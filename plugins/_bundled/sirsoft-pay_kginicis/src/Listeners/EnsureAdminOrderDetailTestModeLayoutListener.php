@@ -309,9 +309,9 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * 확장점 정의를 코어 규약(저작 SSoT `.g7.html` 우선)으로 읽습니다.
+     * 확장점 정의를 코어 규약(소스 SSoT `.g7.html` 우선)으로 읽습니다.
      *
-     * 종전에는 `.json` 을 직접 파싱해 저작본만 고치면 조용히 반영되지 않았다.
+     * 종전에는 `.json` 을 직접 파싱해 소스만 고치면 조용히 반영되지 않았다.
      * 여기 있던 `static $extension` 메모이제이션은 헬퍼의 실행 단위 캐시가 대신한다.
      *
      * @return array<string, mixed>

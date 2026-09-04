@@ -14,7 +14,7 @@
  * 효과 요약(마커 아님 — 평문): modal_draggable, dimension_free_input, image_modal_open, edit_preserved_on_route_switch, tree_dirty_dot, unload_warning, resize_px_change, reset_reverts.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
-// 경로 줄 표기(저작 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
+// 경로 줄 표기(소스 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
 import { selectRouteTreeLayout } from '../../fixtures/route-tree';
 
 const EDITOR_URL = '/admin/layout-editor/sirsoft-basic?route=%2F';

@@ -5,13 +5,13 @@ namespace App\Extension\Helpers;
 use App\Extension\Traits\CollectsFragmentSources;
 
 /**
- * 확장이 소유한 fragment 정의 파일 하나를 저작 SSoT 우선으로 읽는 헬퍼.
+ * 확장이 소유한 fragment 정의 파일 하나를 소스 SSoT 우선으로 읽는 헬퍼.
  *
  * 대부분의 fragment 는 코어가 디렉토리째 수집해 등록하지만(`CollectsFragmentSources`), 확장이
  * **자기 확장점 정의를 스스로 읽어야 하는** 경우가 있다 — 호스트 레이아웃에 자기 확장이 이미
  * 주입돼 있는지 확인하고 없으면 채워 넣는 Listener 계열이 그렇다.
  *
- * 그 자리들이 각자 `file_get_contents`+`json_decode` 로 `.json` 을 직접 읽으면 저작본(`.g7.html`)만
+ * 그 자리들이 각자 `file_get_contents`+`json_decode` 로 `.json` 을 직접 읽으면 소스(`.g7.html`)만
  * 고쳤을 때 조용히 반영되지 않는다. 그리고 같은 코드가 확장마다 복제되므로 규약을 넓힐 때 한쪽이
  * 반쪽으로 남는다 — 실제로 결제 플러그인 네 곳이 같은 사본을 갖고 있었다. 그래서 확장이 쓸 수 있는
  * 공개 진입점을 코어에 한 자리만 둔다.
@@ -55,11 +55,11 @@ class LayoutFragmentSourceHelper
     }
 
     /**
-     * fragment 디렉토리의 정의를 전부 읽습니다 — 저작 SSoT 우선 + 짝 병존 시 1건.
+     * fragment 디렉토리의 정의를 전부 읽습니다 — 소스 SSoT 우선 + 짝 병존 시 1건.
      *
      * 확장이 자기 확장점을 **하나** 확인하는 자리({@see read()}) 말고, **전부** 다시 등록해야 하는
      * 자리가 있다 — 업데이트 직후 overlay 확장을 복원하는 Listener 계열이 그렇다. 그 자리가 스스로
-     * `glob('*.json')` 하면 저작본이 통째로 관측 밖이 되므로 디렉토리 수집도 코어가 맡는다.
+     * `glob('*.json')` 하면 소스가 통째로 관측 밖이 되므로 디렉토리 수집도 코어가 맡는다.
      *
      * 디렉토리가 없으면 빈 배열이다 (호출처가 존재 확인을 중복하지 않게 한다).
      *
@@ -75,7 +75,7 @@ class LayoutFragmentSourceHelper
     }
 
     /**
-     * fragment 정의를 저작 SSoT 우선으로 읽습니다.
+     * fragment 정의를 소스 SSoT 우선으로 읽습니다.
      *
      * @param  string  $fragmentPath  fragment 정의 경로
      * @return array<string, mixed> fragment 정의, 읽지 못하면 빈 배열

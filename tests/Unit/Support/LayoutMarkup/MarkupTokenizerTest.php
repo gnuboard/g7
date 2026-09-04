@@ -10,7 +10,7 @@ use App\Support\LayoutMarkup\MarkupTokenizer;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * MarkupTokenizer 단위 테스트 (`.g7.html` 저작 포맷 S1).
+ * MarkupTokenizer 단위 테스트 (`.g7.html` 마크업 형식 S1).
  *
  * 검증 축은 셋이다:
  *
@@ -119,7 +119,7 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
     public function test_meta_is_a_container_not_a_void_element(): void
     {
         // HTML5 표준 void 목록에는 meta 가 있으나, G7 에서 <meta> 는 <seo> 를 품는
-        // 문서 메타 섹션이다. void 로 취급하면 <seo> 저작이 불가능해진다.
+        // 문서 메타 섹션이다. void 로 취급하면 <seo> 마크업이 불가능해진다.
         $tokens = $this->tokenizer->tokenize('<meta title="t"><seo :enabled="true"/></meta>');
 
         $this->assertFalse($tokens[0]->void);
@@ -209,7 +209,7 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
      */
     public function test_attribute_value_keeps_angle_brackets_and_newlines(): void
     {
-        // 인용된 값 안의 `<`·`>` 는 표현식 저작(`{{a < b}}`)에 필수다.
+        // 인용된 값 안의 `<`·`>` 는 표현식 작성(`{{a < b}}`)에 필수다.
         $tokens = $this->tokenizer->tokenize("<span data-if=\"{{a < b && c > d}}\"\n      class=\"x\"/>");
 
         $this->assertSame('{{a < b && c > d}}', $tokens[0]->attribute('data-if')->value);
@@ -296,7 +296,7 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
      */
     public function test_bare_ampersand_is_preserved_for_expressions(): void
     {
-        // `{{a && b}}` 를 `&amp;&amp;` 로 쓰게 만들면 저작 포맷의 존재 이유가 사라진다.
+        // `{{a && b}}` 를 `&amp;&amp;` 로 쓰게 만들면 마크업 형식의 존재 이유가 사라진다.
         $tokens = $this->tokenizer->tokenize('<span>{{a && b}} R&D 100% &</span>');
 
         $this->assertSame('{{a && b}} R&D 100% &', $tokens[1]->text);
@@ -318,7 +318,7 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
      */
     public function test_bom_and_crlf_are_normalized(): void
     {
-        // Windows 저작 파일의 \r 이 텍스트에 남으면 산출 JSON 이 플랫폼마다 달라진다.
+        // Windows 소스 파일의 \r 이 텍스트에 남으면 산출 JSON 이 플랫폼마다 달라진다.
         $tokens = $this->tokenizer->tokenize("\u{FEFF}<div>\r\na\r\n</div>");
 
         $this->assertSame('div', $tokens[0]->name);
@@ -606,7 +606,7 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
      */
     public function test_detail_is_not_mangled_by_envelope_replacement(): void
     {
-        // 본문에 실린 저작자 원문이 봉투 치환에 휩쓸리면 안 된다 — `:line` 이라는 이름의
+        // 본문에 실린 작성자 원문이 봉투 치환에 휩쓸리면 안 된다 — `:line` 이라는 이름의
         // 속성이 라인 번호로 둔갑하던 함정.
         $error = $this->captureError('<div class="a":line="b"/>');
 

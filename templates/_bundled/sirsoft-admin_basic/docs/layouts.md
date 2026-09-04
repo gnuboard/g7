@@ -280,6 +280,13 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 > 이관 시점 그대로 보존하되, 현재 코드와 어긋나는 부분에는 정정 주석을 달았습니다 —
 > 레이아웃·라우트의 SSoT 는 위 「레이아웃 목록」·「라우트 매핑」 블록입니다.
 
+> **마크업 형식**: 아래 파일 트리는 소스 SSoT 인 `.g7.html`([레이아웃 마크업](../../../../docs/frontend/layout-markup.md)) 기준입니다. 설치 시 서버가 각 `.g7.html` 을 메모리로 JSON 컴파일해 DB(`template_layouts`)에 등록합니다. 산출 JSON 키 계약은 [layout-json.md](../../../../docs/frontend/layout-json.md) 가 SSoT 이며 불변입니다. 디스크에는 진단·복구용 짝 `.json` 이 병존합니다.
+
+> **요약**(이관 시점 실측이며 현행 파일 수와 같습니다):
+> 1. 베이스: `_admin_base.g7.html` (사이드바 + 헤더 + 콘텐츠 슬롯)
+> 2. 코어 페이지 25개(layouts 직속, `_admin_base` 제외): 대시보드, 사용자, 역할, 설정, 확장 관리 등
+> 3. Partial 110개: 탭, 모달, 패널, 필터 등
+
 ### 페이지 맵 (트리 구조)
 
 ```text
@@ -421,7 +428,7 @@ slots.content:
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -462,7 +469,7 @@ slots.content:
 <data-source id="user" endpoint="/api/admin/users/{{route.id}}" method="GET" :auto_fetch="true"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

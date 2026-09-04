@@ -145,7 +145,7 @@ return ResponseHelper::success('messages.success', $data);
 <json key="components">[{"props":{"menu":"{{admin_menu.data}}"}}]</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -241,7 +241,7 @@ class AuthController extends AdminBaseController
 </partial>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -388,7 +388,7 @@ public function index(Request $request): JsonResponse
 <json key="params">{"include":"{{query.include}}"}</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

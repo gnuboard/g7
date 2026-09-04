@@ -427,7 +427,7 @@ export const handlerMap: Record<string, ActionHandler> = {
 </input>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -717,7 +717,7 @@ AMD 로더나 워커처럼 디렉토리 접두 뒤에 파일명을 이어 붙이
 <script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js" id="external-lib" :async="true" data-if="{{_global.modules['sirsoft-ecommerce'].useExternalLib}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -874,7 +874,7 @@ API 레퍼런스: [docs/backend/api/extensions.md](../backend/api/extensions.md)
 | 방법 | 판정 |
 |---|---|
 | `dist/css/components.css` 직접 수정 | 다음 빌드·업데이트에 소실된다 |
-| `src/styles/custom.css` + 빌드 | 확장 **저작자**의 방법으로는 유효하다. 운영자에게는 부적합(빌드 필요 + 업데이트 소실) |
+| `src/styles/custom.css` + 빌드 | 확장 **작성자**의 방법으로는 유효하다. 운영자에게는 부적합(빌드 필요 + 업데이트 소실) |
 | `custom/custom.css` 에 파일만 놓기 | 권장 |
 
 ## AbstractModule 에셋 메서드

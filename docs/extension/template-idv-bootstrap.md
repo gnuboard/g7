@@ -119,7 +119,7 @@ type VerificationResult =
 <modal src="partials/_modal_other.g7.html"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -194,10 +194,10 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
 
 `scripts[].src` 의 호스트는 `config/template.php` 의 `layout_markup.script_src_allowlist` 에 등재돼 있어야 합니다 — 미등재 호스트는 컴파일 시점에 `script_src_not_allowed` 로 거부됩니다. 아래 예시의 `sdk.example.com` 은 자리표시자이므로, 실제 SDK 도입 시 그 호스트를 허용 목록에 먼저 추가합니다.
 
-아래는 그 자리표시자 때문에 **저작 마크업을 병기하지 않는 유일한 예외**입니다 — `<extension>` 으로
+아래는 그 자리표시자 때문에 **마크업을 병기하지 않는 유일한 예외**입니다 — `<extension>` 으로
 적으면 컴파일러가 `sdk.example.com` 을 `script_src_not_allowed` 로 거부해, 문서에 실을 수 없는
 마크업이 됩니다. 실제 도입 시에는 호스트를 허용 목록에 올린 뒤 [layout-extensions.md §확장 주입](layout-extensions.md)
-의 `<extension extension-point>` 형태로 저작합니다.
+의 `<extension extension-point>` 형태로 작성합니다.
 
 플러그인 extension JSON 예시:
 

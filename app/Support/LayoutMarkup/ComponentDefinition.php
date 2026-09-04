@@ -12,7 +12,7 @@ final class ComponentDefinition
 {
     /**
      * @param  string  $name  컴포넌트명 — JSON 노드의 `name` 으로 그대로 방출. 템플릿 소유는 `DataGrid`, 확장 소유는 `{식별자}.{이름}` (예: `sirsoft-ecommerce.ProductCard`)
-     * @param  string  $tag  저작 태그명 — kebab (예: `data-grid`, `sirsoft-ecommerce-product-card`)
+     * @param  string  $tag  마크업 태그명 — kebab (예: `data-grid`, `sirsoft-ecommerce-product-card`)
      * @param  string  $type  JSON 노드의 `type` (`basic`|`composite`|`layout`)
      * @param  array<string, string>  $propTypes  prop 명 → 선언 타입 (`:attr` 판정 힌트, 부분 목록)
      * @param  array<int, string>  $skipBindingKeys  선평가 금지 키 (DEFAULT + 매니페스트 선언 병합 결과)

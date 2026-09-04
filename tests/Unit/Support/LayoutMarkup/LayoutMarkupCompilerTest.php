@@ -10,7 +10,7 @@ use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 
 /**
- * LayoutMarkupCompiler 파사드 종단 테스트 (`.g7.html` 저작 포맷 S6).
+ * LayoutMarkupCompiler 파사드 종단 테스트 (`.g7.html` 마크업 형식 S6).
  *
  * 파사드가 사슬(토큰→트리→문서→강검증→lint)을 올바로 잇는지를 소스 문자열에서 결과까지 한 번에
  * 본다: ① 유효 소스는 산출 JSON + 빈 경고 ② 강검증 위반은 CompileError 전파(컴파일 중단)

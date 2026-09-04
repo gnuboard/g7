@@ -299,10 +299,10 @@ php artisan g7:bench --profile=sirsoft-ecommerce/orders --json   # 기계 판독
 php artisan g7:bench --profile=sirsoft-ecommerce/order_create --allow-write
 ```
 
-### 레이아웃 저작 포맷 Artisan 커맨드
+### 레이아웃 마크업 형식 Artisan 커맨드
 
 ```bash
-# compile = JSON → HTML (저작 소스 산출 · 이관용). 상세: docs/frontend/layout-markup.md
+# compile = JSON → HTML (소스 산출 · 이관용). 상세: docs/frontend/layout-markup.md
 php artisan layout:compile <path>                  # 단일 .json → 짝 .g7.html 생성
 php artisan layout:compile --all                   # 번들 확장·템플릿 전량 생성
 php artisan layout:compile --all --roundtrip       # 생성 없이 왕복 동등성만 검사 (불일치·escape 집계)

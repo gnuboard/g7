@@ -35,7 +35,7 @@ function initModule(): void {
     }
 
     // 기본 판본 — 이름에 모듈 식별자 접두어가 필수다. 접두어가 없으면 템플릿 소유 컴포넌트를
-    // 덮어쓸 수 있고, 저작자가 태그만 보고 출처를 알 수 없다.
+    // 덮어쓸 수 있고, 작성자가 태그만 보고 출처를 알 수 없다.
     registry.registerExtensionComponent(
         `${MODULE_IDENTIFIER}.MemoCard`,
         MemoCard,

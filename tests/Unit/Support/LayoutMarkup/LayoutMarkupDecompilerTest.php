@@ -639,7 +639,7 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     /**
      * 값이 다시 객체면 `<body>` 속성 field-map 으로는 못 내리지만, `<field>` 트리로 내린다 (D42 G6).
      *
-     * 종전에는 이 자리가 `:body='{"meta":{"a":1}}'` 속성 JSON 으로 남았다 — 저작 파일에 통짜 JSON 이
+     * 종전에는 이 자리가 `:body='{"meta":{"a":1}}'` 속성 JSON 으로 남았다 — 소스 파일에 통짜 JSON 이
      * 드러나는 형태다. 중첩 구조값 문법을 세운 뒤로는 태그로 내려가고, 속성 JSON 은 나오지 않는다.
      *
      * @scenario compile_unit=decompile,source_health=valid
@@ -1114,7 +1114,7 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      *
      * 종전에는 `<field>` 컴파일러가 **두 벌**이었다 — `StructuredValueCompiler`(G3·G4·G17, `<item>`
      * 지원)와 `StateTreeCompiler`(`field` 이외 자식 전부 거부). 같은 태그가 자리마다 다른 능력을
-     * 가지면 저작자는 어디서 무엇이 되는지 외워야 하고, 실제로 상태 트리의 문자열 리스트가
+     * 가지면 작성자는 어디서 무엇이 되는지 외워야 하고, 실제로 상태 트리의 문자열 리스트가
      * `:value='["a","b"]'` 통짜 JSON 으로 남고 있었다(ecommerce 13건/6파일).
      *
      * 해소는 표기 신설이 아니라 **통일**이다 — 상태 트리가 같은 SSoT 를 태운다(G14 가 `compileSeo` 를

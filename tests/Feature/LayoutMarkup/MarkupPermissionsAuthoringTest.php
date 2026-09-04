@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * `layout:add-permissions` 의 저작본 전환 계약 (S18.5 축 A — 예고된 red ⓓ).
+ * `layout:add-permissions` 의 소스 전환 계약 (S18.5 축 A — 예고된 red ⓓ).
  *
  * 32차가 `AddLayoutPermissionsCommand` 를 `JSON_ONLY_LAYOUT_CONSUMER_DEBT` 에 등재하면서 사유를
  * 이렇게 적었다 — *"짝이 전건 병존하는 현재는 결함이 0 이지만, 굽기가 `.json` 을 기계 산출로 바꾸면
@@ -18,17 +18,17 @@ use Tests\TestCase;
  *
  * 고정하는 것은 넷이다:
  *
- *  - 저작본에 문서 최상위 `<permissions>` 를 넣으면 **컴파일 산출의 `permissions` 키가 된다**
+ *  - 소스에 문서 최상위 `<permissions>` 를 넣으면 **컴파일 산출의 `permissions` 키가 된다**
  *    (편집이 문법으로 성립함을 산출로 확인 — 문자열이 들어갔다는 것만으로는 부족하다).
  *  - 기존 블록은 **교체**되고 나머지 문서는 한 글자도 바뀌지 않는다.
  *  - **노드 레벨 `<permissions>`(D36)를 문서 권한으로 오인하지 않는다** — 같은 문법이 두 층에서
  *    쓰이므로 문자열 매칭이면 조건 렌더 권한을 레이아웃 권한으로 덮어쓴다.
- *  - 커맨드가 `.json` 을 in-place 로 고치지 않는다 (짝이 있으면 저작본을 고른다).
+ *  - 커맨드가 `.json` 을 in-place 로 고치지 않는다 (짝이 있으면 소스를 고른다).
  */
 class MarkupPermissionsAuthoringTest extends TestCase
 {
     /**
-     * 합성 저작본이 놓이는 디렉토리 (git 미추적, 코퍼스 스캔 밖).
+     * 합성 소스가 놓이는 디렉토리 (git 미추적, 코퍼스 스캔 밖).
      */
     private const SCRATCH = 'storage/framework/testing/markup-permissions';
 
@@ -153,7 +153,7 @@ class MarkupPermissionsAuthoringTest extends TestCase
     }
 
     /**
-     * 편집은 LF 로 정규화된다 (CRLF 로 저작된 파일도 산출은 LF).
+     * 편집은 LF 로 정규화된다 (CRLF 로 작성된 파일도 산출은 LF).
      *
      * @scenario compile_unit=document,source_health=valid
      *
@@ -173,7 +173,7 @@ class MarkupPermissionsAuthoringTest extends TestCase
     }
 
     /**
-     * 커맨드가 짝 병존 레이아웃에서 **저작본**을 고른다 (`.json` in-place 금지).
+     * 커맨드가 짝 병존 레이아웃에서 **소스**을 고른다 (`.json` in-place 금지).
      *
      * 굽기 이후 `.json` 은 기계 산출이므로, 여기 기록하면 다음 `layout:decompile --all --sync` 에
      * 소실된다. 짝을 일부러 갈라 두고 어느 쪽이 바뀌는지로 선택을 관측한다.
@@ -204,7 +204,7 @@ class MarkupPermissionsAuthoringTest extends TestCase
                 ->run();
 
             $this->assertNotSame($markupBefore, File::get($markupFile),
-                '저작본이 그대로다 — 커맨드가 저작본을 고르지 않았다');
+                '소스가 그대로다 — 커맨드가 소스를 고르지 않았다');
             $this->assertSame($jsonBefore, File::get($jsonFile),
                 '짝 `.json` 이 바뀌었다 — 굽기 산출물에 in-place 로 기록하면 다음 굽기에 소실된다');
             $this->assertTrue(MarkupPermissionsEditor::hasDocumentPermissions(File::get($markupFile), $markupFile));
@@ -221,7 +221,7 @@ class MarkupPermissionsAuthoringTest extends TestCase
      * 트리)라 스크래치 디렉토리의 합성 파일이 그 모집단에 들어오지 않기 때문이다. 원본은 테스트가
      * 되돌린다.
      *
-     * @return array<int, array{0: string, 1: string, 2: string}> `[저작본, 짝 .json, 레이아웃 이름]` 목록
+     * @return array<int, array{0: string, 1: string, 2: string}> `[소스, 짝 .json, 레이아웃 이름]` 목록
      */
     private function pairedCorpusLayoutsWithoutPermissions(): array
     {
@@ -259,10 +259,10 @@ class MarkupPermissionsAuthoringTest extends TestCase
     }
 
     /**
-     * 저작 소스를 설치 시점과 같은 파사드로 컴파일합니다.
+     * 소스를 설치 시점과 같은 파사드로 컴파일합니다.
      *
      * @param  string  $file  경로 (레지스트리·문맥 해석용)
-     * @param  string  $source  저작 소스
+     * @param  string  $source  소스
      * @return array<string, mixed> 컴파일 산출
      */
     private function compile(string $file, string $source): array
@@ -275,10 +275,10 @@ class MarkupPermissionsAuthoringTest extends TestCase
     }
 
     /**
-     * 합성 저작본을 스크래치 디렉토리에 씁니다.
+     * 합성 소스를 스크래치 디렉토리에 씁니다.
      *
      * @param  string  $name  파일 이름(확장자 제외)
-     * @param  string  $markup  저작 소스
+     * @param  string  $markup  소스
      * @return string `.g7.html` 절대 경로
      */
     private function writeMarkup(string $name, string $markup): string

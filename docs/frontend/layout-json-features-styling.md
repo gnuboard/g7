@@ -37,7 +37,7 @@
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -71,7 +71,7 @@
 <div class="{{row.status === 'success' ? 'bg-green-100 text-green-800' : row.status === 'danger' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}} px-2 py-1 rounded-full text-xs font-medium"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -91,7 +91,7 @@
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -154,7 +154,7 @@
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -241,7 +241,7 @@ default도 없으면 base 클래스만 적용
 <computed name="formattedDate">{{created_at | date('YYYY-MM-DD')}}</computed>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -282,7 +282,7 @@ default도 없으면 base 클래스만 적용
 <span data-if="{{product.has_discount}}" class="text-sm line-through text-gray-500">{{$computed.originalPrice}}</span>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -319,7 +319,7 @@ default도 없으면 base 클래스만 적용
 <button data-if="{{$computed.canRestore}}">$t:common.restore</button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

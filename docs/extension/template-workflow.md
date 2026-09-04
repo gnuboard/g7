@@ -174,6 +174,7 @@ Phase 6: 빌드 및 설치
 주의: layout_name 필드가 없으면 설치 실패!
 ```
 
+<!-- pair:skip routes.json 은 라우트 선언 파일이라 .g7.html 작성 대상이 아니다 -->
 ```json
 {
   "version": "1.0.0",
@@ -218,7 +219,7 @@ templates/_bundled/vendor-template/
     └── partials/             # partial 파일 (DB 저장 안됨)
 ```
 
-레이아웃 저작 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 각 `.g7.html` 을 메모리로 JSON 컴파일해 DB(`template_layouts`)에 등록한다. 아래 예시들의 JSON 은 그 **산출 런타임 계약 키**([layout-json.md](../frontend/layout-json.md))로, `.g7.html` 이 이 키로 컴파일된다.
+레이아웃 소스 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 각 `.g7.html` 을 메모리로 JSON 컴파일해 DB(`template_layouts`)에 등록한다. 아래 예시들의 JSON 은 그 **산출 런타임 계약 키**([layout-json.md](../frontend/layout-json.md))로, `.g7.html` 이 이 키로 컴파일된다.
 
 ### 2.2 베이스 레이아웃 (`_user_base.g7.html`)
 
@@ -233,7 +234,7 @@ templates/_bundled/vendor-template/
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -273,7 +274,7 @@ templates/_bundled/vendor-template/
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -463,8 +464,8 @@ Tailwind v4 는 JS config 파일을 쓰지 않는다(`tailwind.config.js` 실재
 
 ```text
 필수: 레이아웃 스캔은 `.g7.html` 과 `.json` 을 **둘 다** 앵커한다.
-`.g7.html` 이 저작 SSoT 이자 설치 우선 소스이므로, `.json` 만 스캔하면
-저작본에만 있는 클래스가 조용히 purge 된다 — 빌드도 단위 테스트도 통과하는데
+`.g7.html` 이 소스 SSoT 이자 설치 우선 소스므로, `.json` 만 스캔하면
+소스에만 있는 클래스가 조용히 purge 된다 — 빌드도 단위 테스트도 통과하는데
 화면만 무너지는 형태라 jsdom 으로 검출되지 않는다.
 ```
 
@@ -542,8 +543,8 @@ export type HandlerName = keyof typeof handlerMap;
 
 /**
  * 레이아웃 스캔 (Tailwind v4). 경로는 이 CSS 파일 기준 상대 경로다.
- * 두 표기를 모두 앵커한다 — `.g7.html` 이 저작 SSoT 이자 설치 우선 소스이므로(D38)
- * `.json` 만 스캔하면 저작본에만 있는 클래스가 조용히 purge 된다.
+ * 두 표기를 모두 앵커한다 — `.g7.html` 이 소스 SSoT 이자 설치 우선 소스므로(D38)
+ * `.json` 만 스캔하면 소스에만 있는 클래스가 조용히 purge 된다.
  */
 @source "../../layouts/**/*.g7.html";
 @source "../../layouts/**/*.json";
@@ -672,7 +673,7 @@ php artisan template:activate vendor-template
 layouts/*.{g7.html,json}          // ✅ 스캔 (DB 저장)
 layouts/errors/*.{g7.html,json}   // ✅ 스캔 (DB 저장)
 layouts/partials/*.{g7.html,json} // ❌ 스캔 안 함 (extends로만 참조)
-// `.g7.html` 저작본이 있으면 그것을 설치 시점에 컴파일하고, 짝 마크업이 없는 `.json` 만 직접 읽는다
+// `.g7.html` 소스가 있으면 그것을 설치 시점에 컴파일하고, 짝 마크업이 없는 `.json` 만 직접 읽는다
 ```
 
 ### TemplateManager::validateErrorLayouts()
@@ -706,7 +707,7 @@ $requiredErrorCodes = [404, 403, 500];
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

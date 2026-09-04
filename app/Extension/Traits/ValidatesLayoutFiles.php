@@ -25,7 +25,7 @@ trait ValidatesLayoutFiles
     private array $partialStack = [];
 
     /**
-     * 조각 저작본 컴파일 결과 캐시 (실행 단위 · 키는 경로+mtime+size).
+     * 조각 소스 컴파일 결과 캐시 (실행 단위 · 키는 경로+mtime+size).
      *
      * @var array<string, array<string, mixed>>
      */
@@ -51,7 +51,7 @@ trait ValidatesLayoutFiles
             return $validatedLayouts;
         }
 
-        // 레이아웃 소스 수집 — `.g7.html`(저작 SSoT · 있으면 우선) + 짝 `.g7.html` 이 없는 `.json`.
+        // 레이아웃 소스 수집 — `.g7.html`(소스 SSoT · 있으면 우선) + 짝 `.g7.html` 이 없는 `.json`.
         // `.g7.html` 은 설치 시점에 메모리로 컴파일해 등록하고(디스크 산출 JSON 미기록), `.json` 은
         // 직접 등록한다(병존 · 선택 설치원). 두 SSoT 가 애초에 공존하지 않으므로 provenance 판별이 없다.
         $layoutSources = $this->collectLayoutSources($layoutsPath, $recursive);
@@ -67,7 +67,7 @@ trait ValidatesLayoutFiles
             $relativePath = str_replace('\\', '/', $relativePath);
 
             if ($source['markup']) {
-                // `.g7.html` 저작 파일을 설치 시점에 메모리로 컴파일 (강검증 포함).
+                // `.g7.html` 소스 파일을 설치 시점에 메모리로 컴파일 (강검증 포함).
                 try {
                     $layoutData = $this->compileMarkupLayoutFile($layoutFile);
                 } catch (CompileError $e) {
@@ -357,7 +357,7 @@ trait ValidatesLayoutFiles
     /**
      * 등록할 레이아웃 소스를 수집합니다 — `.g7.html`(있으면 우선) + 짝 `.g7.html` 이 없는 `.json`.
      *
-     * 같은 논리 레이아웃에 `.g7.html` 과 `.json` 이 나란히 있으면(병존) 저작 SSoT 인 `.g7.html` 을
+     * 같은 논리 레이아웃에 `.g7.html` 과 `.json` 이 나란히 있으면(병존) 소스 SSoT 인 `.g7.html` 을
      * 소스로 삼는다. `.g7.html` 은 설치 시점 메모리 컴파일로 등록 content 를 만들고(디스크 산출
      * JSON 미기록), `.json` 은 직접 등록한다.
      *
@@ -419,7 +419,7 @@ trait ValidatesLayoutFiles
                 $content = File::get($source['path']);
 
                 if ($source['markup']) {
-                    // 조각 저작본은 `<partial>` 루트다 (본 레이아웃은 `<layout>`).
+                    // 조각 소스는 `<partial>` 루트다 (본 레이아웃은 `<layout>`).
                     if (preg_match('/<\s*partial[\s>\/]/i', $content) === 1) {
                         continue;
                     }
@@ -451,7 +451,7 @@ trait ValidatesLayoutFiles
     }
 
     /**
-     * `.g7.html` 저작 파일을 설치 시점에 메모리로 컴파일합니다 (강검증 포함, 디스크 미기록).
+     * `.g7.html` 소스 파일을 설치 시점에 메모리로 컴파일합니다 (강검증 포함, 디스크 미기록).
      *
      * 경로에서 대상 템플릿 레지스트리·문맥을 끌어와(`MarkupCompileContextResolver`) 컴파일러 파사드로
      * 토큰→트리→문서→강검증 사슬을 태운다. 산출 JSON 은 곧바로 등록 content 로 쓰이고 파일로 쓰이지
@@ -482,7 +482,7 @@ trait ValidatesLayoutFiles
     }
 
     /**
-     * 레이아웃 디렉토리에서 `.g7.html` 저작 파일을 스캔합니다 (본 레이아웃 스캔과 동일 전략).
+     * 레이아웃 디렉토리에서 `.g7.html` 소스 파일을 스캔합니다 (본 레이아웃 스캔과 동일 전략).
      *
      * @param  string  $layoutsPath  스캔할 기본 경로
      * @param  bool  $recursive  재귀 스캔 여부
@@ -530,7 +530,7 @@ trait ValidatesLayoutFiles
         // 상대 경로 추출 (basePath 기준)
         $relativePath = str_replace($basePath.DIRECTORY_SEPARATOR, '', $filePath);
 
-        // .g7.html / .json 확장자 제거 (저작 소스·산출 어느 쪽이든 같은 논리 이름)
+        // .g7.html / .json 확장자 제거 (소스·산출 어느 쪽이든 같은 논리 이름)
         $relativePath = preg_replace('/\.(g7\.html|json)$/i', '', $relativePath);
 
         // 디렉토리 구분자를 언더스코어로 변환
@@ -581,13 +581,13 @@ trait ValidatesLayoutFiles
     /**
      * 단일 partial을 해석하여 실제 데이터를 반환합니다.
      *
-     * 소스는 저작 SSoT(`.g7.html`)를 우선하고 짝이 없으면 `.json` 을 읽는다 —
+     * 소스는 소스 SSoT(`.g7.html`)를 우선하고 짝이 없으면 `.json` 을 읽는다 —
      * 본 레이아웃({@see collectLayoutSources()})·fragment({@see CollectsFragmentSources})와 같은
      * 우선순위 규약이며, `--layout-source=json` 이면 셋 다 같은 방향으로 뒤집힌다.
      *
      * 실패는 **전부 예외로 표면화한다**. 종전에는 네 갈래(경로 해석·순환 참조·파일 부재·JSON 파싱)가
      * 모두 `createPartialErrorComponent()` 로 빠졌고 그것이 `app.debug=false` 에서 빈 배열이라,
-     * 설치는 성공한 채 DB content 에 구멍이 굽히고 화면 일부가 흔적 없이 사라졌다. 조각을 저작본으로
+     * 설치는 성공한 채 DB content 에 구멍이 굽히고 화면 일부가 흔적 없이 사라졌다. 조각을 소스로
      * 읽게 만들면서 이 침묵을 함께 걷어낸다 — 남겨 두면 다음 결함도 같은 방식으로 숨는다.
      *
      * @param  string  $partialPath  partial 경로
@@ -600,7 +600,7 @@ trait ValidatesLayoutFiles
      */
     protected function resolvePartial(string $partialPath, string $basePath, int $depth, array $dataSources = []): array
     {
-        // 1. 저작 SSoT 우선으로 소스를 고르고 절대 경로로 변환 (layouts 디렉토리 이탈은 여기서 예외).
+        // 1. 소스 SSoT 우선으로 소스를 고르고 절대 경로로 변환 (layouts 디렉토리 이탈은 여기서 예외).
         $source = $this->resolvePartialSource($partialPath, $basePath);
         $absolutePath = $source['path'];
 
@@ -660,9 +660,9 @@ trait ValidatesLayoutFiles
     }
 
     /**
-     * 조각 참조의 실제 소스를 고릅니다 — 저작 SSoT(`.g7.html`) 우선, 없으면 짝 `.json`.
+     * 조각 참조의 실제 소스를 고릅니다 — 소스 SSoT(`.g7.html`) 우선, 없으면 짝 `.json`.
      *
-     * `src` 가 `.json` 이든 `.g7.html` 이든 두 확장자를 모두 후보로 세우므로, 저작본만 있는 신규
+     * `src` 가 `.json` 이든 `.g7.html` 이든 두 확장자를 모두 후보로 세우므로, 소스만 있는 신규
      * 조각도(짝 `.json` 을 굽지 않은 상태) 그대로 해석된다. `--layout-source=json` 이면 후보 순서가
      * 뒤집히고, 그때 짝 `.json` 이 없어 마크업으로 떨어지면 미이행을 로그로 남긴다 — 조용히
      * 누락시키면 등록 자체가 사라져 빈 화면이 되기 때문이다(`collectLayoutSources` 와 같은 규약).
@@ -702,7 +702,7 @@ trait ValidatesLayoutFiles
     }
 
     /**
-     * 조각 저작본을 컴파일합니다 — 같은 설치 실행 안에서는 파일당 한 번만 컴파일합니다.
+     * 조각 소스를 컴파일합니다 — 같은 설치 실행 안에서는 파일당 한 번만 컴파일합니다.
      *
      * 조각 451건이 485회 참조되므로(부모마다 다시 컴파일하면 설치가 그만큼 느려진다) 결과를
      * 경로+mtime+size 키로 재사용한다. 산출은 인라인 전 컴파일 결과이고 `resolveAllPartials` 는
@@ -858,7 +858,7 @@ trait ValidatesLayoutFiles
     {
         // 경로에서 **가장 바깥쪽 `layouts` 경계**까지를 루트로 본다.
         //
-        // 종전에는 `templates/{name}/layouts` 처럼 세그먼트 수를 고정한 정규식이었는데, 실제 저작
+        // 종전에는 `templates/{name}/layouts` 처럼 세그먼트 수를 고정한 정규식이었는데, 실제 작성
         // 경로는 `_bundled` 가 한 단계 더 끼어 있어(`templates/_bundled/{name}/layouts`) 매칭에
         // 실패했다. 그러면 이 함수가 입력을 그대로 돌려주고, 그 위에서 도는 "`partials/…` 는 layouts
         // 루트 기준" 폴백이 **조용히 무효화**된다 — include 는 깨진 채 `app.debug=false` 에서

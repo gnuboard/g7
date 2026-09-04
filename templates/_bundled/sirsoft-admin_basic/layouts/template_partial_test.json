@@ -1,5 +1,5 @@
 {
-    "comment": "템플릿 Partial 시스템이 살아 있는지 눈으로 보는 **개발용 확인 화면**. 업무 기능이 아니다.\n  중첩 2단(이 화면 → `_content_section` → 그 안의 `_header_section`·`_info_card`)이 모두 그려지면\n  치환이 재귀로 도는 것이고, 한 단이라도 빈 자리로 남으면 그 단에서 해석이 끊긴 것이다.\n  본문의 체크 목록은 사람이 읽는 안내 문구라 파일명을 `.json` 으로 적고 있다 — 실제 참조는\n  아래 `<include src>` 한 줄뿐이고 저작 규약대로 `.g7.html` 을 가리킨다.",
+    "comment": "템플릿 Partial 시스템이 살아 있는지 눈으로 보는 **개발용 확인 화면**. 업무 기능이 아니다.\n  중첩 2단(이 화면 → `_content_section` → 그 안의 `_header_section`·`_info_card`)이 모두 그려지면\n  치환이 재귀로 도는 것이고, 한 단이라도 빈 자리로 남으면 그 단에서 해석이 끊긴 것이다.\n  본문의 체크 목록은 사람이 읽는 안내 문구라 파일명을 `.json` 으로 적고 있다 — 실제 참조는\n  아래 `<include src>` 한 줄뿐이고 작성 규약대로 `.g7.html` 을 가리킨다.",
     "version": "1.0.0",
     "layout_name": "template_partial_test",
     "extends": "_admin_base",

@@ -154,7 +154,7 @@ const renderListItems = (items: any[], itemTemplate: ComponentDefinition[]) => {
 </data-grid>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -361,7 +361,7 @@ const finalProps = bindComponentActions(resolvedProps, childDef.actions, itemCon
 </button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

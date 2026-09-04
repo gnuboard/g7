@@ -313,7 +313,7 @@ class UpdateLayoutContentRequest extends FormRequest
             // 메타데이터 (legacy - metadata 키 사용하는 경우)
             'content.metadata' => ['nullable', 'array'],
 
-            // 문서 루트 주석 — 저작본 `<layout>` 의 주석이 컴파일 산출의 루트 `comment` 로 남는다.
+            // 문서 루트 주석 — 소스 `<layout>` 의 주석이 컴파일 산출의 루트 `comment` 로 남는다.
             // 미명시였던 동안 편집기 저장이 이 키를 조용히 떨궜다(레이아웃 문서 3건 보유).
             // S19 ② 의 4벌 대조 게이트가 검출.
             'content.comment' => ['nullable', 'string'],

@@ -27,7 +27,7 @@ async function openAdminUserListMobile(page: Page): Promise<void> {
   await page.goto('/admin/layout-editor/sirsoft-admin_basic');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   // 라우트 트리에서 admin_user_list 선택 — 직접 URL nav 는 route 미선택(트리 클릭 필요).
-  // 경로 줄 표기(저작 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
+  // 경로 줄 표기(소스 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
   await selectRouteTreeLayout(page, 'admin_user_list');
   // 라우트 캔버스 준비 신호 = 드래그 핸들 렌더.
   await page.waitForSelector('[data-dnd-handle-path]', { timeout: 30_000 });

@@ -101,7 +101,7 @@ Input 컴포넌트는 한글 등 IME(Input Method Editor) 조합 입력을 올�
 </input>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

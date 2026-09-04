@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 조각(`<include>`) 해석의 저작 SSoT 우선 규약 테스트 (S18 P1).
+ * 조각(`<include>`) 해석의 소스 SSoT 우선 규약 테스트 (S18 P1).
  *
  * 본 레이아웃과 fragment 등록은 이미 `.g7.html` 우선인데 **조각 해석만 `.json` 전용**이었다.
- * 그래서 `partials/*.g7.html` 451건은 저작본을 고쳐도 반영되지 않고, 짝 `.json` 을 함께 고쳐야만
- * 화면이 바뀌는 상태였다 — 저작 SSoT 가 사실상 두 벌이었다는 뜻이다.
+ * 그래서 `partials/*.g7.html` 451건은 소스를 고쳐도 반영되지 않고, 짝 `.json` 을 함께 고쳐야만
+ * 화면이 바뀌는 상태였다 — 소스 SSoT 가 사실상 두 벌이었다는 뜻이다.
  *
  * 여기서 네 가지를 고정한다:
  *
@@ -20,10 +20,10 @@ use Tests\TestCase;
  *  - `src="*.g7.html"` 직접 참조도 해석된다.
  *  - `--layout-source=json` 이면 우선순위가 뒤집힌다.
  *
- * **`.json` 참조는 JSON 호스트로 낸다 (S21.2 ⓑ · U-REFEXT 안 B)**. 저작본은 저작본을 가리키는 것이
+ * **`.json` 참조는 JSON 호스트로 낸다 (S21.2 ⓑ · U-REFEXT 안 B)**. 소스는 소스를 가리키는 것이
  * 규약이 되었으므로(`<include src="*.json">` 은 이제 컴파일 에러다), *"`.json` 참조가 짝 마크업으로
  * 올라간다"* 는 축은 **산출/설치 JSON 이 참조하는 자리**에서 재현해야 한다 — 그 자리가 이 규약이
- * 실제로 쓰이는 곳이고, 저작본 표기를 바꿨다고 사라지는 축이 아니다. 축 자체는 그대로 유지된다.
+ * 실제로 쓰이는 곳이고, 소스 표기를 바꿨다고 사라지는 축이 아니다. 축 자체는 그대로 유지된다.
  *
  * 그리고 조각 해석 실패가 **설치 오류로 표면화**되는 것을 함께 고정한다. 종전에는
  * `createPartialErrorComponent` 가 `app.debug=false` 에서 빈 배열을 돌려주어, 설치가 성공한 채
@@ -72,7 +72,7 @@ class MarkupPartialResolutionTest extends TestCase
     }
 
     /**
-     * 병존하면 저작 SSoT(`.g7.html`)가 인라인된다.
+     * 병존하면 소스 SSoT(`.g7.html`)가 인라인된다.
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -87,13 +87,13 @@ class MarkupPartialResolutionTest extends TestCase
         $layouts = $this->harness->run($this->layouts);
 
         $this->assertSame('from-markup', $this->inlinedText($layouts),
-            '조각도 본 레이아웃과 같이 .g7.html 이 저작 SSoT 다');
+            '조각도 본 레이아웃과 같이 .g7.html 이 소스 SSoT 다');
     }
 
     /**
      * `.json` 참조인데 짝 마크업만 실재하면 해석된다 (마크업 전용 신규 조각).
      *
-     * 이 축이 실제로 쓰이는 자리는 산출/설치 JSON 의 `partial` 이다 — 저작본은 이제 저작본을
+     * 이 축이 실제로 쓰이는 자리는 산출/설치 JSON 의 `partial` 이다 — 소스는 이제 소스를
      * 가리키므로(S21.2 ⓑ), 호스트를 JSON 으로 두어야 규약이 관측된다.
      *
      * @scenario compile_unit=install,source_health=valid
@@ -126,7 +126,7 @@ class MarkupPartialResolutionTest extends TestCase
         $layouts = $this->harness->run($this->layouts);
 
         $this->assertSame('direct-markup', $this->inlinedText($layouts),
-            'src 가 저작 확장자를 직접 가리켜도 해석된다');
+            'src 가 소스 확장자를 직접 가리켜도 해석된다');
     }
 
     /**
@@ -177,7 +177,7 @@ class MarkupPartialResolutionTest extends TestCase
      * 조각 마크업 컴파일 실패는 **조각 해석 경로에서도** 설치 오류로 표면화된다.
      *
      * 계획서 test 7 은 이 경우를 "현행은 `app.debug=false` 에서 `[]`" 로 적었는데, 실측하면 절반만
-     * 맞다 — 조각 저작본은 `layouts/` 재귀 스캔(모든 설치 호출처가 `recursive: true`)에도 걸려
+     * 맞다 — 조각 소스는 `layouts/` 재귀 스캔(모든 설치 호출처가 `recursive: true`)에도 걸려
      * 독립 컴파일 오류로 이미 설치를 세운다. 조용히 사라지는 것은 **인라인 결과**뿐이었다.
      * 그래서 여기서는 오류 종류를 구별해, 조각 해석 경로가 자기 몫의 오류를 내는지 본다.
      *
@@ -397,7 +397,7 @@ class MarkupPartialResolutionTest extends TestCase
     /**
      * 조각을 참조하는 **JSON 호스트**를 씁니다 (`.json` 참조 축 — S21.2 ⓑ).
      *
-     * 저작본은 저작본을 가리키므로, `.json` 참조가 짝 마크업으로 올라가는 규약은 산출/설치 JSON 이
+     * 소스는 소스를 가리키므로, `.json` 참조가 짝 마크업으로 올라가는 규약은 산출/설치 JSON 이
      * 참조하는 자리에서 재현한다. 마크업 호스트를 함께 쓰지 않는 이유는 병존 시 마크업이 이기기
      * 때문이다 — 그러면 이 축이 관측되지 않는다.
      *
@@ -415,7 +415,7 @@ class MarkupPartialResolutionTest extends TestCase
     /**
      * 조각 컴파일 결과가 요청 단위로 캐시되고, 파일이 바뀌면 무효화된다 (34차 ⚠️ — 무관측 산출물).
      *
-     * 사양 §683 이 이 캐시를 요구한 근거는 성능이다(조각 저작본 451개가 485회 참조되므로 부모마다
+     * 사양 §683 이 이 캐시를 요구한 근거는 성능이다(조각 소스 451개가 485회 참조되므로 부모마다
      * 다시 컴파일하면 설치가 느려진다). 성능은 기능 단언으로 관측되지 않으므로 **캐시 키 계약**을
      * 관측한다 — 키가 `경로|mtime|크기` 이므로, 셋이 같으면 이전 산출을 돌려주고 하나라도 다르면
      * 다시 굽는다. 캐시 조회를 지우면 첫 축이, 키에서 mtime·크기를 빼면 둘째 축이 red 다.
@@ -453,7 +453,7 @@ class MarkupPartialResolutionTest extends TestCase
     }
 
     /**
-     * 조각 저작본(`.g7.html`)을 씁니다.
+     * 조각 소스(`.g7.html`)을 씁니다.
      *
      * @param  string  $name  조각 베이스 이름
      * @param  string  $text  식별용 텍스트

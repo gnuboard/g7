@@ -9,12 +9,12 @@ use App\Extension\Traits\ResolvesLayoutInstallSource;
  *
  * ## 규약
  *
- * 저작본(`.g7.html`)은 저작본을 가리키고, 산출 JSON 은 **기존 JSON 문법을 100% 유지**한다.
+ * 소스(`.g7.html`)은 소스를 가리키고, 산출 JSON 은 **기존 JSON 문법을 100% 유지**한다.
  * 두 세계는 각자 자기완결적이고, 확장자를 바꾸는 일은 오직 컴파일 경계에서만 일어난다.
  *
  * ```
- * 저작   <include src="_x.g7.html"/>   ──컴파일──▶   {"partial": "_x.json"}
- * 저작   <modal   src="_x.g7.html"/>   ──컴파일──▶   modals[] = {"partial": "_x.json"}
+ * 작성   <include src="_x.g7.html"/>   ──컴파일──▶   {"partial": "_x.json"}
+ * 작성   <modal   src="_x.g7.html"/>   ──컴파일──▶   modals[] = {"partial": "_x.json"}
  *        (역컴파일은 정확히 그 역함수 — `.json` → `.g7.html`)
  * ```
  *
@@ -31,7 +31,7 @@ use App\Extension\Traits\ResolvesLayoutInstallSource;
  *
  * 왕복 게이트는 `JSON → 마크업 → JSON` 이므로 매핑이 역함수이기만 하면 항등이 성립한다.
  * 바꿔 말하면 **역함수가 아닌 매핑만이 왕복에서 보인다** — 그래서 변환은 접미사 치환으로
- * 좁게 정의하고(경로 중간의 `.json`·`.g7.html` 은 건드리지 않는다), 저작 쪽 입력이 규약을
+ * 좁게 정의하고(경로 중간의 `.json`·`.g7.html` 은 건드리지 않는다), 작성 쪽 입력이 규약을
  * 벗어나면 조용히 통과시키지 않고 컴파일 에러로 세운다({@see LayoutMarkupErrorCode::PartialSrcNotAuthoring}).
  *
  * 매핑이 낸 이름이 **디스크에 실재하는가**는 왕복이 구조적으로 볼 수 없는 별개 명제이고,
@@ -41,7 +41,7 @@ use App\Extension\Traits\ResolvesLayoutInstallSource;
 final class PartialReferenceNotation
 {
     /**
-     * 저작 SSoT 확장자 — 저작본이 서로를 가리킬 때 쓰는 표기.
+     * 소스 SSoT 확장자 — 소스가 서로를 가리킬 때 쓰는 표기.
      */
     public const MARKUP_EXTENSION = '.g7.html';
 
@@ -51,10 +51,10 @@ final class PartialReferenceNotation
     public const JSON_EXTENSION = '.json';
 
     /**
-     * 저작 표기(`.g7.html` 로 끝남)인지 판정합니다.
+     * 마크업 표기(`.g7.html` 로 끝남)인지 판정합니다.
      *
      * @param  string  $reference  참조 값
-     * @return bool 저작 표기면 true
+     * @return bool 마크업 표기면 true
      */
     public static function isAuthoringNotation(string $reference): bool
     {
@@ -73,12 +73,12 @@ final class PartialReferenceNotation
     }
 
     /**
-     * 저작 표기를 산출 표기로 바꿉니다 (컴파일 방향).
+     * 마크업 표기를 산출 표기로 바꿉니다 (컴파일 방향).
      *
-     * 저작 표기가 아니면 **원본을 그대로 돌려준다** — 여기서 임의로 확장자를 붙이면 규약 위반이
+     * 마크업 표기가 아니면 **원본을 그대로 돌려준다** — 여기서 임의로 확장자를 붙이면 규약 위반이
      * 산출물 안에서 정상처럼 보인다. 규약 강제는 호출부(컴파일러)가 에러로 세우는 몫이다.
      *
-     * @param  string  $src  저작본 `src` 값
+     * @param  string  $src  소스 `src` 값
      * @return string 산출 JSON `partial` 값
      */
     public static function toJson(string $src): string
@@ -89,14 +89,14 @@ final class PartialReferenceNotation
     }
 
     /**
-     * 산출 표기를 저작 표기로 바꿉니다 (역컴파일 방향 — {@see toJson()} 의 역함수).
+     * 산출 표기를 마크업 표기로 바꿉니다 (역컴파일 방향 — {@see toJson()} 의 역함수).
      *
      * 산출 표기가 아니면 원본을 그대로 돌려준다. 그 값은 다시 컴파일될 때 규약 위반으로 걸리고,
      * 역컴파일러의 재컴파일 검증(escape)이 그 자리를 원본 JSON 으로 탈출시킨다 — 조용히
      * 사라지는 대신 escape 예산으로 관측된다.
      *
      * @param  string  $partial  산출 JSON `partial` 값
-     * @return string 저작본 `src` 값
+     * @return string 소스 `src` 값
      */
     public static function toMarkup(string $partial): string
     {
@@ -116,7 +116,7 @@ final class PartialReferenceNotation
      *
      * 대소문자가 다른 표기는 여기서 **인식하지 않는 값**이 되고, 그러면 컴파일러가
      * {@see \App\Enums\LayoutMarkupErrorCode::PartialSrcNotAuthoring} 로 세운다 — 조용히 뭉개는
-     * 대신 저작자에게 표기를 고치라고 말한다.
+     * 대신 작성자에게 표기를 고치라고 말한다.
      *
      * @param  string  $value  대상 값
      * @param  string  $extension  확장자

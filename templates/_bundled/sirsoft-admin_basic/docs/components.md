@@ -19,7 +19,7 @@
 세 분류(basic/composite/layout)는 "얼마나 많이 조합됐는가"로 나뉩니다 — basic 은 HTML 태그를
 그대로 래핑(`Div`→`<div>`)한 최소 단위, composite 는 basic 을 여러 개 조합해 UI 패턴을 캡슐화한
 것(`DataGrid`가 `Table`+`Pagination`+정렬 로직을 감싸는 식), layout 은 페이지 구조 자체(Grid/
-Flex/Container)를 정의합니다. 레이아웃 JSON 저작자는 이 구분을 몰라도 되지만("HTML 태그
+Flex/Container)를 정의합니다. 레이아웃 JSON 작성자는 이 구분을 몰라도 되지만("HTML 태그
 직접 사용 금지" 규정만 지키면 됨), 컴포넌트를 새로 추가하는 쪽은 이 구분에 맞는 디렉토리
 (`src/components/{basic,composite,layout}/`)에 넣어야 `components.json` 카탈로그와
 `editor-spec.json` 팔레트 분류가 어긋나지 않습니다.
@@ -97,9 +97,21 @@ interface SlotContainerProps {
 }
 ```
 
+```html
+<div data-ref="category_filter" data-slot="{{_local.isVisible ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 { "id": "category_filter", "type": "basic", "name": "Div", "slot": "{{_local.isVisible ? 'basic_filters' : 'detail_filters'}}", "slotOrder": 1, "children": [] }
 ```
+
+```html
+<slot-container data-ref="basic_filters_container" slotId="basic_filters"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 { "id": "basic_filters_container", "type": "composite", "name": "SlotContainer", "props": { "slotId": "basic_filters" } }
@@ -421,7 +433,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -522,7 +534,7 @@ interface AdminSidebarProps {
 <admin-sidebar data-ref="admin_sidebar" menu="{{admin_menu.data}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -576,7 +588,7 @@ interface SlotContainerProps {
 <div data-ref="category_filter" data-slot="{{_local.isVisible ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -593,7 +605,7 @@ interface SlotContainerProps {
 <slot-container data-ref="basic_filters_container" slotId="basic_filters"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

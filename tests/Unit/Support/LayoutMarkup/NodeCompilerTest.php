@@ -11,7 +11,7 @@ use App\Support\LayoutMarkup\NodeCompiler;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * NodeCompiler 단위 테스트 (`.g7.html` 저작 포맷 S2 — 매핑 사전 C).
+ * NodeCompiler 단위 테스트 (`.g7.html` 마크업 형식 S2 — 매핑 사전 C).
  *
  * 검증 축은 셋이다:
  *
@@ -347,7 +347,7 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      */
     public function test_node_key_names_that_are_real_props_still_pass(): void
     {
-        // 노드 키와 이름이 같아도 props 로 실사용되는 것은 막지 않는다 — 막으면 정상 저작이
+        // 노드 키와 이름이 같아도 props 로 실사용되는 것은 막지 않는다 — 막으면 정상 마크업이
         // 거부된다. slot(Dropdown trigger/content 배치 4건)·text(24건)·style(13건)·id·type·name.
         $this->assertSame('trigger', $this->compile('<div slot="trigger"/>')['props']['slot']);
         $this->assertSame('안내', $this->compile('<status-badge text="안내"/>')['props']['text']);
@@ -376,7 +376,7 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     public function test_props_are_not_validated_against_manifest_declarations(): void
     {
         // components.json 의 prop 선언은 부분 목록이다(번들 실측 커버리지 75~77%).
-        // 화이트리스트로 강제하면 Button.type 같은 정상 저작이 거부된다.
+        // 화이트리스트로 강제하면 Button.type 같은 정상 마크업이 거부된다.
         $node = $this->compile('<button type="button" undeclaredProp="x"/>');
 
         $this->assertSame('button', $node['props']['type']);
@@ -405,7 +405,7 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     public function test_boolean_attribute_with_literal_string_is_rejected(): void
     {
         // HTML5 는 불리언 속성의 값을 보지 않는다 — `required="false"` 는 표준상 참이라
-        // 저작 의도와 정반대로 동작한다.
+        // 작성 의도와 정반대로 동작한다.
         $this->assertSame(
             LayoutMarkupErrorCode::BooleanAttributeFalse,
             $this->compileError('<input required="false"/>')->getErrorCode(),
@@ -491,7 +491,7 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      */
     public function test_bare_condition_expression_is_wrapped(): void
     {
-        // 감싸지 않은 식은 엔진이 문자열 보간으로 처리해 항상 참이 된다. 저작 시점에 감싼다.
+        // 감싸지 않은 식은 엔진이 문자열 보간으로 처리해 항상 참이 된다. 작성 시점에 감싼다.
         $this->assertSame('{{!row.email}}', $this->compile('<span data-if="!row.email"/>')['if']);
         $this->assertSame('{{!row.email}}', $this->compile('<span data-if="{{!row.email}}"/>')['if']);
     }
@@ -684,7 +684,7 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      */
     public function test_state_field_requires_an_explicit_value(): void
     {
-        // 값도 자식도 없으면 `{}`·`null`·`""` 중 무엇인지 저작자만 안다. 짐작하면 초기 상태가
+        // 값도 자식도 없으면 `{}`·`null`·`""` 중 무엇인지 작성자만 안다. 짐작하면 초기 상태가
         // 조용히 달라지므로 명시를 요구한다.
         $this->assertSame(
             LayoutMarkupErrorCode::MissingRequiredAttribute,

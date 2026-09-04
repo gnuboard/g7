@@ -64,7 +64,7 @@
 <div title="{{user.name}}" email="{{user.email}}" userId="{{route.id}}" category="{{query.category_id}}" sidebarOpen="{{_global.sidebarOpen}}" formData="{{_local.form}}" selectedCount="{{_isolated.selectedItems?.length ?? 0}}">본문</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -95,7 +95,7 @@
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -132,7 +132,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div count="{{products.total}}">{{user.name}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -147,7 +147,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div variant="{{user.isPremium ? 'premium' : 'standard'}}" class="{{isActive ? 'bg-blue-500' : 'bg-gray-500'}}">{{count > 0 ? count + ' items' : 'No items'}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -165,7 +165,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div data-if="{{isAdmin &amp;&amp; hasPermission}}" class="{{isLoggedIn || isGuest ? 'visible' : 'hidden'}}">{{!isEmpty ? 'Has data' : 'Empty'}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -186,7 +186,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div data-if="{{count >= 10}}" class="{{price > 100 ? 'expensive' : 'affordable'}}" disabled="{{stock <= 0}}">{{status == 'active' ? 'Active' : 'Inactive'}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -214,7 +214,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div class="{{isOpen ? 'translate-x-0' : '-translate-x-full'}}" count="{{count || 0}}" enabled="{{status == 'ready' ? true : false}}" value="{{data || null}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -238,7 +238,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform lg:relative lg:translate-x-0" variant="{{score >= 90 ? 'excellent' : score >= 70 ? 'good' : 'poor'}}">{{user.isOnline &amp;&amp; user.status == 'active' ? 'Online' : 'Offline'}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -301,7 +301,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div count="{{users?.data?.total ?? 0}}" info="{{products?.items?.length ?? 0}} items">{{users?.data?.pagination?.total}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -324,7 +324,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div>$t:admin.users.pagination_info|total={{users?.data?.pagination?.total ?? 0}}|from={{users?.data?.pagination?.from ?? 0}}|to={{users?.data?.pagination?.to ?? 0}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -357,7 +357,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div data-ref="mobile_sidebar" class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 lg:relative lg:translate-x-0 bg-white"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -382,7 +382,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div>{{description | stripHtml | truncate(100)}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -420,7 +420,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div>{{content | stripHtml | truncate(100) | default('내용 없음')}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -450,7 +450,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div>{{$get(object, path, fallback)}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -470,7 +470,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div>{{$get(product.multi_currency_price, [currency, 'formatted'], product.price_formatted)}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -484,7 +484,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div>{{$get(product.name, $locale, product.name.ko)}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -498,7 +498,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div value="{{$get(_global.settings, ['drivers', 'mail', 'host'], 'localhost')}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -512,7 +512,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div price="{{$get(prices, [selectedPlan, 'monthly'], 0)}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -528,7 +528,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div>{{item.multi_currency_unit_price[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.unit_price_formatted}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -542,7 +542,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div>{{$get(item.multi_currency_unit_price, [_global.preferredCurrency ?? 'KRW', 'formatted'], item.unit_price_formatted)}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -578,7 +578,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -610,7 +610,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 <div icon="{{tab === 'products' ? 'shopping-bag' : tab === 'contents' ? 'book-open' : tab === 'policies' ? 'file-check' : 'file-text'}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -631,7 +631,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -679,7 +679,7 @@ DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스
 </data-grid>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -732,7 +732,7 @@ DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스
 <p data-ref="error_message">{{_global.errorMessage || $t:common.error_occurred}}</p>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -754,7 +754,7 @@ DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스
 <div>{{isError ? $t:common.error : $t:common.success}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -808,7 +808,7 @@ DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스
 <div value="{{$parent._global.currency}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 모달에서 부모 _local 접근
@@ -850,7 +850,7 @@ $parent._local은 모달 마운트 시 스냅샷 — 모달 열린 후 부모 _l
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

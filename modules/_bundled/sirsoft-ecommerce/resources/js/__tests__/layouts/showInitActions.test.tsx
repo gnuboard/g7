@@ -41,8 +41,8 @@ describe('상품 상세 페이지 init_actions 검증', () => {
         );
         expect(resetAction).toBeDefined();
         expect(resetAction.params.selectedOptionItems).toEqual([]);
-        // 저작본이 `currentSelection="[]"`·`additionalOptions="[]"` 로 선언하므로 정본은 `[]` 다.
-        // 종전 짝 `.json` 에는 `{}` 가 있었고 이 단언이 그것을 보고 있었는데, **설치는 저작본을 읽으므로
+        // 소스가 `currentSelection="[]"`·`additionalOptions="[]"` 로 선언하므로 정본은 `[]` 다.
+        // 종전 짝 `.json` 에는 `{}` 가 있었고 이 단언이 그것을 보고 있었는데, **설치는 소스를 읽으므로
         // 실제로 돌던 값은 처음부터 `[]`** 였다 — 이 단언은 한 번도 실동작을 보지 않았다.
         expect(resetAction.params.currentSelection).toEqual([]);
         expect(resetAction.params.noOptionQuantity).toBe(1);

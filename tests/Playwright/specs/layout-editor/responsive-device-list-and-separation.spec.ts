@@ -20,7 +20,7 @@ import { selectRouteTreeLayout } from '../../fixtures/route-tree';
 async function openAdminUserList(page: Page): Promise<void> {
   await page.goto('/admin/layout-editor/sirsoft-admin_basic');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  // 경로 줄 표기(저작 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
+  // 경로 줄 표기(소스 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
   await selectRouteTreeLayout(page, 'admin_user_list');
   await page.waitForSelector('[data-dnd-handle-path]', { timeout: 30_000 });
 }

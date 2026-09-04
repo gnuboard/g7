@@ -7,7 +7,7 @@ use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use Throwable;
 
 /**
- * 문서에 실린 `.g7.html` 저작 예시가 전건 컴파일되는지 본다 (S20 6차 감사 신설).
+ * 문서에 실린 `.g7.html` 마크업 예시가 전건 컴파일되는지 본다 (S20 6차 감사 신설).
  *
  * ## 왜 저장소 안에 있어야 하는가
  *
@@ -33,7 +33,7 @@ use Throwable;
  * 문서가 거짓이 된다. 대신 건수를 세어 모집단 단언에 쓴다.
  *
  * **그 표지는 펜스 앞 산문에서만 읽는다** (S21 감사 정정). 종전 판본은 펜스 **본문**도 함께 훑어서,
- * 마크업 안에 `<!-- ❌ … -->` 라벨을 단 예시가 **스스로를 게이트에서 면제**시켰다. 저작 내용이 자기
+ * 마크업 안에 `<!-- ❌ … -->` 라벨을 단 예시가 **스스로를 게이트에서 면제**시켰다. 작성 내용이 자기
  * 판정 대상 여부를 정하면 그 예시는 무엇을 실어도 초록이다 — 실측하면 코퍼스 전체에서 딱 한 자리가
  * 그 상태였고, 그 자리는 §10.5 가 *"라벨은 주석이 아니라 펜스 밖 산문으로"* 라고 적은 바로 그 규칙을
  * 스스로 어기고 있었다.
@@ -69,7 +69,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
         'save-to-local-storage', 'load-from-local-storage', 'scroll-to', 'copy-to-clipboard',
     ];
 
-    /** 마크업 예시임을 알리는 신호 — 하나라도 있으면 저작 예시로 본다. */
+    /** 마크업 예시임을 알리는 신호 — 하나라도 있으면 마크업 예시로 본다. */
     private const MARKUP_SIGNALS = [
         '<layout', '<partial', '<extension', '<override',
         'data-if=', 'data-each=', 'data-ref=', 'data-key=', 'data-slot',
@@ -94,12 +94,12 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
      * 판정 레지스트리 — 번들 템플릿 전량에서 도출한다.
      *
      * 41차 정정: 종전 판본은 `sirsoft-admin_basic` **하나**로 판정했다. 그런데 문서는 두 템플릿을
-     * 함께 다루므로, 사용자 템플릿 소유 컴포넌트(`Header` 등)를 쓴 예시가 저작 가능한데도 조용히
+     * 함께 다루므로, 사용자 템플릿 소유 컴포넌트(`Header` 등)를 쓴 예시가 작성 가능한데도 조용히
      * "컴파일 불가" 로 접혔다(실측 `troubleshooting-state-global.md`). 판정기를 한 템플릿으로 좁힌
      * 것은 모집단을 좁힌 것과 같은 종류의 결함이고, 이 트랙이 이미 세 번 겪은 형태다.
      *
      * 템플릿 목록도 손으로 적지 않는다 — 번들 템플릿의 `components.json` 글롭으로 도출한다
-     * (아래 `setUp()` 참조). 어느 하나가 해석하면 그 예시는 저작 가능하다.
+     * (아래 `setUp()` 참조). 어느 하나가 해석하면 그 예시는 작성 가능하다.
      *
      * @var array<string, LayoutMarkupCompiler>
      */
@@ -117,7 +117,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 문서의 저작 마크업 예시가 전건 컴파일됩니다.
+     * 문서의 마크업 예시가 전건 컴파일됩니다.
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -180,7 +180,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
         $this->assertSame(
             [],
             $failures,
-            "컴파일되지 않는 저작 예시:\n".implode("\n", $failures)
+            "컴파일되지 않는 마크업 예시:\n".implode("\n", $failures)
         );
     }
 
@@ -205,7 +205,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
     /**
      * 펜스 **본문**은 스스로를 부정 예시로 선언할 수 없습니다 — 표지는 앞 산문에서만 읽는다.
      *
-     * 이 명제가 깨지면 저작 예시가 마크업 안에 `❌` 한 글자를 넣는 것만으로 컴파일 게이트를
+     * 이 명제가 깨지면 마크업 예시가 마크업 안에 `❌` 한 글자를 넣는 것만으로 컴파일 게이트를
      * 빠져나간다(자기충족 술어). 실물로 한 자리가 그 상태였다.
      */
     public function test_펜스_본문은_스스로를_부정예시로_면제하지_못한다(): void
@@ -215,7 +215,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
 
         $this->assertFalse(
             $this->isNegative($prose, $fence),
-            '펜스 본문의 표지가 그 펜스를 게이트에서 빼고 있다 — 저작 내용이 자기 판정 여부를 정한다',
+            '펜스 본문의 표지가 그 펜스를 게이트에서 빼고 있다 — 작성 내용이 자기 판정 여부를 정한다',
         );
 
         // 앞 산문의 표지는 여전히 읽는다 (반대쪽으로 죽지 않았음을 같은 자리에서 증명).
@@ -269,7 +269,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
             'layout' => "<layout name=\"doc_example\" version=\"1.0.0\">\n{$body}\n</layout>",
             // 최상위 섹션만 담은 조각은 components 가 비어 구조 검증에 걸린다 — 채움 노드를 얹는다.
             'layoutFilled' => "<layout name=\"doc_example\" version=\"1.0.0\">\n{$body}\n<div text=\"본문\"/>\n</layout>",
-            // 모달 조각의 실제 저작 자리 — partial 루트 노드 하나 (코퍼스 관례).
+            // 모달 조각의 실제 작성 자리 — partial 루트 노드 하나 (코퍼스 관례).
             'partial' => "<partial name=\"doc_example\">\n{$body}\n</partial>",
             'node' => "<layout name=\"doc_example\" version=\"1.0.0\">\n<div>\n{$body}\n</div>\n</layout>",
             'action' => "<layout name=\"doc_example\" version=\"1.0.0\">\n<div>\n<on event=\"click\">\n{$body}\n</on>\n</div>\n</layout>",

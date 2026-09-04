@@ -8,11 +8,11 @@ use App\Support\LayoutMarkup\ComponentRegistry;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * ComponentRegistry 단위 테스트 (`.g7.html` 저작 포맷 S2 — 태그 해석 소스).
+ * ComponentRegistry 단위 테스트 (`.g7.html` 마크업 형식 S2 — 태그 해석 소스).
  *
  * 이 층이 지켜야 하는 계약은 둘이다:
  *
- *  1. **런타임과 같은 강도의 매니페스트 검증** — 저작 시점에 통과시켜 봐야 런타임이
+ *  1. **런타임과 같은 강도의 매니페스트 검증** — 작성 시점에 통과시켜 봐야 런타임이
  *     `MANIFEST_INVALID` 로 거부하면 화면이 통째로 죽는다(ComponentRegistry.ts:287-347).
  *  2. **결정적 태그 해석** — 한 태그가 한 컴포넌트로만 해석되어야 한다. 런타임은 같은 이름이
  *     겹치면 나중 등록이 조용히 덮어쓰지만, 컴파일러는 침묵 승자를 만들지 않는다.
@@ -181,7 +181,7 @@ class ComponentRegistryTest extends LayoutMarkupTestCase
             ],
             // 아래 넷은 런타임이 falsy 검사만 해서 비대칭이 생기는 자리다. templateId 는
             // 식별자로 그대로 쓰이므로 문자열이 아닌 값이 통과하면 "Array" 같은 유령
-            // 식별자가 만들어진다 — 저작 시점에 막는다.
+            // 식별자가 만들어진다 — 작성 시점에 막는다.
             'version 이 빈 문자열' => [['version' => '', 'templateId' => 't', 'components' => $components], 'version'],
             'version 이 숫자' => [['version' => 100, 'templateId' => 't', 'components' => $components], 'version'],
             'templateId 가 false' => [['version' => '1.0.0', 'templateId' => false, 'components' => $components], 'templateId'],

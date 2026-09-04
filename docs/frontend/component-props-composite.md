@@ -107,7 +107,7 @@
 </file-uploader>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -138,7 +138,7 @@
 </file-uploader>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -213,7 +213,7 @@
 <dynamic-field-list errors="{{_local.errors ?? {}}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -246,7 +246,7 @@
 </dynamic-field-list>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -347,7 +347,7 @@
 </tag-input>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -436,7 +436,7 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 <multilingual-input value="{{_local.form.name ?? {}}}" layout="tabs" inputType="text" placeholder="$t:common.enter_name" :required="true"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -491,7 +491,7 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 </toggle>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -538,7 +538,7 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 <checkbox checked="{{$computed.allSelected}}" indeterminate="{{$computed.someSelected &amp;&amp; !$computed.allSelected}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -596,7 +596,7 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 </radio-group>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -667,7 +667,7 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 </search-bar>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -740,7 +740,7 @@ G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'
 <html-content content="{{product.data?.description_localized ?? ''}}" isHtml="{{(product.data?.description_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

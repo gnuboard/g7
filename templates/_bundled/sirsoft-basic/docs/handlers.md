@@ -175,7 +175,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -201,7 +201,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -229,7 +229,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -250,7 +250,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -271,7 +271,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -293,7 +293,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -314,7 +314,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -335,7 +335,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -372,7 +372,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -394,7 +394,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -423,7 +423,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -447,7 +447,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -475,7 +475,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -505,7 +505,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -542,7 +542,7 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -565,7 +565,7 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -594,7 +594,7 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -618,7 +618,7 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 { "handler": "getCartKey" }
@@ -636,7 +636,7 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -654,7 +654,7 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

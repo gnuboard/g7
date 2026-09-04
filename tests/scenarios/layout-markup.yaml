@@ -1,7 +1,7 @@
-feature: 레이아웃 저작 포맷 (.g7.html) 컴파일러
+feature: 레이아웃 마크업 형식 (.g7.html) 컴파일러
 
 description: |
-  JSON 레이아웃 엔진을 런타임 SSoT 로 유지한 채, HTML 유사 저작 포맷 `.g7.html` 을
+  JSON 레이아웃 엔진을 런타임 SSoT 로 유지한 채, HTML 유사 마크업 형식 `.g7.html` 을
   설치 시 서버(PHP)가 JSON 으로 컴파일하는 파이프라인.
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
@@ -12,12 +12,12 @@ description: |
   `effects` 와 `test_files` 가 정본이고, 그 둘과 게이트 필터의 정합은 `GateMembershipGuardTest` 가
   양방향으로 잠근다.
 
-  용어(PO 정의, D38): **compile = JSON → HTML**(저작 소스 산출), **decompile = HTML → JSON**(설치·검증).
+  용어(PO 정의, D38): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
 
   S10 범위 — 설치 재아키텍처 (ValidatesLayoutFiles·RefreshesLayoutExtensions, D38·D39):
-    - 저작 SSoT 는 `.g7.html`. 설치는 `.g7.html` 을 **설치 시점에 메모리로 컴파일**(강검증 포함)해
+    - 소스 SSoT 는 `.g7.html`. 설치는 `.g7.html` 을 **설치 시점에 메모리로 컴파일**(강검증 포함)해
       DB 에 등록하고 산출 JSON 을 디스크에 쓰지 않는다. `.g7.html` 이 없으면 `.json` 을 직접 등록한다
-      (병존 · 선택 설치원). 같은 논리 레이아웃에 둘이 나란히 있으면 저작 SSoT 인 `.g7.html` 이 이긴다.
+      (병존 · 선택 설치원). 같은 논리 레이아웃에 둘이 나란히 있으면 소스 SSoT 인 `.g7.html` 이 이긴다.
     - 두 SSoT 가 애초에 공존하지 않으므로 provenance 표식·공존 판별·install-diff 는 폐기됐다.
     - fragment(확장 주입)도 대칭으로 `.g7.html`(있으면 우선)을 등록 시점에 컴파일한다.
 
@@ -50,7 +50,7 @@ description: |
 
   S3 범위 — ActionCompiler + ActionHandlerManifest:
     - `<on>` 이 세 노드 키로 갈린다: type/event=actions[], mount/unmount=lifecycle, listen=onComponentEvent.
-    - 병렬 3형태를 저작 형태로 구분한다: 같은 이벤트 여러 `<on>` 블록=fire-and-forget, 한 블록
+    - 병렬 3형태를 마크업 형태로 구분한다: 같은 이벤트 여러 `<on>` 블록=fire-and-forget, 한 블록
       여러 자식=암묵 sequence, `<parallel>`=명시 병렬. 기계 이관이 시맨틱을 조용히 바꾸지 않게.
     - 키가 top-level 이냐 params 냐는 핸들러가 정한다(매니페스트). target 은 apiCall 이면 엔드포인트,
       setState 면 상태 스코프라 위치가 다르다 — 넣는 자리가 틀리면 엔진이 조용히 무시한다.
@@ -78,12 +78,12 @@ description: |
 
   S2.5 범위 — ComponentManifest + ComponentOverrideResolver + 런타임 self-register:
     - 태그 해석 소스 = **템플릿 + 활성 모듈 + 활성 플러그인 3계통**. 확장이 자기 컴포넌트를
-      제공할 수 있게 되면서 저작 어휘가 템플릿 단독 소유에서 벗어났다(D25 — D20 개정).
+      제공할 수 있게 되면서 마크업 어휘가 템플릿 단독 소유에서 벗어났다(D25 — D20 개정).
     - 좌표계는 소유자로 갈린다: 템플릿은 `DataGrid`/`<data-grid>`, 확장은
       `{식별자}.{이름}`/`<{정규화된-식별자}-{kebab}>`. 프리픽스 덕에 템플릿↔확장·확장↔확장
       이름 충돌이 구조적으로 불가능하다.
     - 태그 프리픽스는 식별자의 `_` 를 `-` 로 접는다 — 번들 확장 14개 중 7개가 언더스코어를
-      품는데 저작 태그명은 소문자·하이픈만 허용하기 때문이다. 접은 결과가 겹치는 두 확장은 거부.
+      품는데 마크업 태그명은 소문자·하이픈만 허용하기 때문이다. 접은 결과가 겹치는 두 확장은 거부.
     - 세 개념을 섞지 않는다: **제공**(확장) / **오버라이드**(템플릿만 — 남의 것을 대체) /
       **템플릿 전용 판본 `for`**(확장 — 자기 것을 그 템플릿에서만 다르게).
     - 오버라이드 승패는 **집합 필터링**이지 priority 가 아니고, 비호환이면 원본 폴백이다
@@ -254,7 +254,7 @@ effects:
   - injected_comments_in_template_owned_extension_fragments_never_reach_the_public_serving_response
   # S21.8 — **새 효과를 더하지 않는다**. 마지막 주입 단락이고, 착수 시 세 축을 따로 물어 셋 다 기존
   # 표본이 덮음을 실측으로 확인했다(가정이 아니다).
-  #  · 파일 종류 — board 저작본 51 = 모듈 소유 관리자 레이아웃 46 + 모듈 소유 확장 조각 5. 두 종류 다
+  #  · 파일 종류 — board 소스 51 = 모듈 소유 관리자 레이아웃 46 + 모듈 소유 확장 조각 5. 두 종류 다
   #    S21.3(ecommerce)이 밟았다. 상속원은 없다 — `extends` 는 8건 전부 `_admin_base` 로 **나가는**
   #    참조이고, board 레이아웃을 상속하는 파일은 코퍼스 전량에서 0 건이다.
   #  · 소비자 — `<seo>` 선언 0 건이라 봇 렌더 경로가 열리지 않고, `resources/layouts/` 아래가 전부
@@ -343,7 +343,7 @@ effects:
   - for_variant_does_not_change_tag_resolution
   - for_variant_without_an_original_is_rejected
   - template_declaring_for_variants_is_rejected
-  # --- S2.5 저작 표면 (세 개념이 같은 태그로 저작된다)
+  # --- S2.5 마크업 표면 (세 개념이 같은 태그로 작성된다)
   - extension_component_authoring_is_identical_across_three_concepts
   # --- S2.5 런타임 등록 (확장 self-register — 코어가 판정)
   - extension_component_requires_identifier_prefix
@@ -403,7 +403,7 @@ effects:
   - layout_missing_required_top_level_field_is_rejected
   - endpoint_outside_whitelist_is_rejected
   # 외부 URL/위험 스킴은 이관(설치) 검증에서는 통과시키고(원본 .json 이 이미 담고 있던 값을
-  # 재봉인하지 않음), 저작 API(Store/Update FormRequest)에서만 거부한다 — S11 NoExternalUrls 분리.
+  # 재봉인하지 않음), 작성 API(Store/Update FormRequest)에서만 거부한다 — S11 NoExternalUrls 분리.
   - external_url_and_dangerous_scheme_pass_migration_validation
   - authoring_api_still_rejects_dangerous_scheme
   - component_name_not_in_registry_is_rejected
@@ -445,7 +445,7 @@ effects:
   - context_drives_source_kind_dependent_lint
   - every_lint_code_has_a_message_in_every_shipped_locale
   # --- S10 설치 재아키텍처 (D38·D39): .g7.html 을 설치 시점에 인메모리 컴파일→DB, 산출 JSON 미기록.
-  #     .json 은 선택 설치원(병존), 둘이 나란히 있으면 저작 SSoT 인 .g7.html 이 이긴다. provenance 폐기.
+  #     .json 은 선택 설치원(병존), 둘이 나란히 있으면 소스 SSoT 인 .g7.html 이 이긴다. provenance 폐기.
   - markup_source_compiles_in_memory_and_registers
   - install_writes_no_json_to_disk
   - markup_wins_when_both_present
@@ -470,7 +470,7 @@ effects:
   - layout_source_option_maps_to_runtime_config
   - invalid_layout_source_option_fails_without_config_change
   # --- S18 P1 소비 경로 정합: 본 레이아웃·fragment 는 이미 마크업 우선인데 **조각(<include>) 해석과
-  #     템플릿 활성화**만 .json 전용이라, 저작본만 고치면 조용히 반영되지 않았다. 네 소비 경로를 같은
+  #     템플릿 활성화**만 .json 전용이라, 소스만 고치면 조용히 반영되지 않았다. 네 소비 경로를 같은
   #     우선순위 규약(ResolvesLayoutInstallSource::layoutSourceCandidates)으로 통일한다.
   - partial_markup_wins_over_json_sibling
   - partial_json_reference_resolves_via_markup_sibling
@@ -479,10 +479,10 @@ effects:
   - json_forced_source_keeps_markup_only_partials
   - nested_partial_markup_resolves_recursively
   # 코퍼스 전수 — 27차 실측이 `<include>` 만 세어 `<modal src>` 213건을 빠뜨렸다. 값을 산문에 적는
-  # 대신 성질(해석 실패 0 · 저작본 있으면 저작본 승)을 단언해 재집계를 사람에게서 떼어낸다.
+  # 대신 성질(해석 실패 0 · 소스 있으면 소스 승)을 단언해 재집계를 사람에게서 떼어낸다.
   - corpus_partial_references_resolve_to_authoring_sources
   # --- S21.2 ⓑ 조각 참조 표기 (U-REFEXT 안 B · PO 확정 2026-08-02) ---
-  # 저작본은 저작본을 가리키고 산출 JSON 은 `.json` 문법을 100% 유지한다 — 확장자를 바꾸는 일은
+  # 소스는 소스를 가리키고 산출 JSON 은 `.json` 문법을 100% 유지한다 — 확장자를 바꾸는 일은
   # 컴파일 경계에서만 일어난다. 안 B 는 양방향 매핑을 신설하므로 **역함수성**이 계약이고, 왕복
   # 게이트(JSON→마크업→JSON)가 잡는 것도 그 성질 하나뿐이라 직접 잰다(표본은 코퍼스에서 도출).
   - partial_reference_notation_is_an_exact_inverse_on_corpus_values
@@ -606,7 +606,7 @@ effects:
   - nested_object_field_map_becomes_field_tree
   - switch_value_prop_emits_first_class_tag
   # --- ㉕·㉗ 계량기 자체의 회귀 봉인: 눈이 멀면 게이트는 통과시키면서 아무것도 못 본다.
-  #     ㉗(D42) 에서 태그 본문 제외를 폐기 — 컴파일러가 받아 준다는 사실과 저작 파일에 JSON 이
+  #     ㉗(D42) 에서 태그 본문 제외를 폐기 — 컴파일러가 받아 준다는 사실과 소스 파일에 JSON 이
   #     통짜로 드러난다는 사실은 별개다. 오검출 방지 대조군을 함께 고정한다.
   - raw_json_metric_counts_entity_escaped_blobs
   - raw_json_metric_counts_every_tag_body
@@ -615,7 +615,7 @@ effects:
   - raw_json_metric_labels_switch_by_its_own_name
   - raw_json_metric_survives_gt_in_attribute_values
   - raw_json_metric_ignores_component_display_text
-  # --- D42(㉗·㉙) 문법 신설 G1~G8: 저작 파일의 통짜 JSON 을 1급 태그로 대체 (대장 0 · escape 0)
+  # --- D42(㉗·㉙) 문법 신설 G1~G8: 소스 파일의 통짜 JSON 을 1급 태그로 대체 (대장 0 · escape 0)
   #     G1 데이터소스 속성 field-map / G2 중첩 <fallback> <field> 트리 / G3 <prop> 평면맵
   #     G4 <prop> <item> 리스트 / G5 <props> 병합 지시자 <append> / G6 액션 구조값 <field name>
   #     G7 확장 주입 <props> DataGrid 컬럼 트리 / G8 switch 분기 대상 배치 분리(on ↔ value)
@@ -682,7 +682,7 @@ effects:
   - fragment_roots_include_template_extensions
   - corpus_roots_are_layout_roots_plus_fragment_roots
   - fragment_scan_excludes_main_layouts
-  # ㊻ — fragment 등록 세 갈래 중 템플릿 오버라이드만 `glob('*.json')` 로 저작본을 무시하던
+  # ㊻ — fragment 등록 세 갈래 중 템플릿 오버라이드만 `glob('*.json')` 로 소스를 무시하던
   # 사각. 공용 trait `CollectsFragmentSources` 로 통일하며 심은 실패 테스트 4건이다.
   - template_override_markup_only_is_registered
   - template_override_markup_wins_over_json_sibling
@@ -713,12 +713,12 @@ effects:
   # `.json` 을 하드코딩하는 소비처. 짝이 병존하는 지금은 무해하나 P2 가 `.json` 을 기계 산출로
   # 바꾸면 in-place 기록분이 다음 굽기에 소실된다.
   - json_only_layout_consumers_do_not_increase_beyond_registered_debt
-  # 31차 테스트 5-b — 결제 리스너 소비 축에서 저작본 해석을 독립 오라클로 관측 (변이검증 4/4 red)
+  # 31차 테스트 5-b — 결제 리스너 소비 축에서 소스 해석을 독립 오라클로 관측 (변이검증 4/4 red)
   - consumed_extension_definition_comes_from_the_authoring_source
   # 타 트랙(현금영수증 프로바이더) 소유 축 — 소유 매니페스트는
   # `plugins/_bundled/sirsoft-tosspayments/tests/scenarios/cash-receipt-provider-refund-integrity.yaml` 이고
   # 거기에도 같은 이름으로 등재돼 있다. 여기 함께 적는 이유는 그 효과를 단 파일이
-  # `EnsureAdminOrderDetailPaymentQueryLayoutListenerTest` 라 **이 트랙의 저작본 해석 축도 같은 파일에서
+  # `EnsureAdminOrderDetailPaymentQueryLayoutListenerTest` 라 **이 트랙의 소스 해석 축도 같은 파일에서
   # 단언**하기 때문이다 — 파일이 이 매니페스트의 test_files 에 있는 한 그 파일의 마킹은 전부 여기서도
   # 등재돼야 한다(형제 축 `declared_effects_cover_every_marked_effect` 의 계약).
   - legacy_kg_cash_receipt_panel_removed
@@ -811,7 +811,7 @@ effects:
   # S20 문서 게이트 2종의 축 — 문서 예시를 프로덕션 컴파일러/Rule 로 판정한다
   - doc_markup_examples_compile_with_production_compiler
   - doc_layout_endpoints_pass_production_whitelist_rule
-  # 39차 — fixture 생성 커맨드가 저작 SSoT 에서 굽는다 (문서 루트만 `.json` 전용이던 자리)
+  # 39차 — fixture 생성 커맨드가 소스 SSoT 에서 굽는다 (문서 루트만 `.json` 전용이던 자리)
   - fixture_command_prefers_the_authoring_source
   - fixture_command_accepts_a_markup_path_argument
   - fixture_command_still_reads_json_only_layouts
@@ -832,7 +832,7 @@ effects:
   - bake_boundary_predicate_detects_both_violation_forms
   # S18.5 — 미착수 대장이 비면서 `assertNotEmpty` 하한이 관측을 잃은 자리를 합성 항목으로 옮긴 축.
   - pending_gate_ledger_predicate_is_self_tested_when_the_ledger_is_empty
-  # S18.5 예고된 red ⓓ — `layout:add-permissions` 의 `.json` in-place 기록을 저작본 편집으로 전환.
+  # S18.5 예고된 red ⓓ — `layout:add-permissions` 의 `.json` in-place 기록을 소스 편집으로 전환.
   # 굽기 이후 `.json` 은 기계 산출이라 거기 기록하면 다음 굽기에 소실된다(32차 부채 등재 사유).
   - authored_permissions_block_compiles_to_the_permissions_key
   - authored_empty_permissions_block_compiles_to_an_empty_array
@@ -854,8 +854,8 @@ effects:
   - operation_axis_declaration_covers_every_planned_operation
   # 보존 판정은 수집이 끝난 뒤 일어나므로 수집 경로 축이 증명하지 못한다 — 소스 4 전량 행동 관측.
   - keep_strategy_preserves_admin_edits_regardless_of_source_selection
-  # S18.5 축 C — 저작 부채 정리(D66 ⓐ). 코퍼스 626 아이콘 표기 + 반복 정적 id 28 + 바인딩 6 을
-  # 저작본에서 고쳤다. 대부분은 표기 정정(렌더 결과 불변)이지만 토글 하나는 실동작 결함이었다 —
+  # S18.5 축 C — 마크업 부채 정리(D66 ⓐ). 코퍼스 626 아이콘 표기 + 반복 정적 id 28 + 바인딩 6 을
+  # 소스에서 고쳤다. 대부분은 표기 정정(렌더 결과 불변)이지만 토글 하나는 실동작 결함이었다 —
   # `{{$event}}` 를 boolean 필드에 넣고 있었고 Toggle 은 이벤트 객체를 넘긴다.
   - icon_size_uses_glyph_font_size_not_box_dimensions
   - iteration_rows_get_unique_dom_ids
@@ -866,7 +866,7 @@ effects:
   - empty_map_stays_object_and_empty_list_stays_array
   - extension_badge_injection_is_idempotent_and_scoped
   - overlay_extensions_are_restored_after_plugin_update
-  # 저작본 정형 — 직렬화기의 inline 규칙을 「텍스트 앞뒤 공백이 의미를 가질 때」로 좁혔다.
+  # 소스 정형 — 직렬화기의 inline 규칙을 「텍스트 앞뒤 공백이 의미를 가질 때」로 좁혔다.
   # 종전에는 글자가 있으면 서브트리 전체를 한 줄로 찍어 액션을 실은 버튼 하나가 1,800자를 넘었다.
   # 무손실 근거는 `normalizeText` 가 텍스트 앞뒤의 개행+공백만 걷어낸다는 것이고, 코퍼스 실측으로
   # 그 예외(앞뒤 공백이 의미를 갖는 text)는 10,907 중 선행 9·후행 9 뿐임을 확인했다.
@@ -943,27 +943,27 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/LayoutDefectLedgerTest.php
   # ㉝ — 코퍼스 SSoT 단일화. 커맨드별 자체 스캐너로 인한 "반쪽 코퍼스 green" 차단
   - tests/Unit/Support/LayoutMarkup/LayoutCorpusTest.php
-  # ㊻ — 템플릿 확장 오버라이드의 `.g7.html` 저작본 무시 사각 (CollectsFragmentSources 통일)
+  # ㊻ — 템플릿 확장 오버라이드의 `.g7.html` 소스 무시 사각 (CollectsFragmentSources 통일)
   - tests/Feature/LayoutMarkup/TemplateOverrideMarkupInstallTest.php
   # 50차 — 빈 map 이 빈 배열로 굳는 결함. PHP 배열은 list/map 을 구분하지 않아 `{}` 가 산출에서
   # `[]` 이 되고, 그 값이 `params.body`/`params.query` 로 서버에 실려 가면 검증이 대상을 못 찾는다
   # (422 또는 침묵 미적용). 판정을 **직렬화 산출 바이트**와 **비-assoc 디코드**로 하는 것이 요점 —
   # assoc 디코드로 읽으면 테스트 자신이 구분을 뭉갠다(초안이 실제로 그렇게 통과했다).
   - tests/Feature/LayoutMarkup/MarkupEmptyMapSerializationTest.php
-  # S18 P1 — 조각(<include>) 해석의 저작 SSoT 우선 + 해석 실패의 침묵 소멸 제거
+  # S18 P1 — 조각(<include>) 해석의 소스 SSoT 우선 + 해석 실패의 침묵 소멸 제거
   - tests/Feature/LayoutMarkup/MarkupPartialResolutionTest.php
   # S18 P1 — 템플릿 활성화 시 활성 확장 fragment 소스 선택 (네 번째 갈래)
   - tests/Feature/LayoutMarkup/TemplateActivationFragmentSourceTest.php
   # 34차 — 에러 레이아웃 존재 검증이 `.json` 전용이라 등록 경로와 SSoT 가 갈리던 자리
   - tests/Feature/LayoutMarkup/MarkupErrorLayoutValidationTest.php
-  # S18 P1 — 미설치 플러그인 레이아웃 집계가 저작본을 센다 (마크업 전용 = 0건으로 보이던 자리)
+  # S18 P1 — 미설치 플러그인 레이아웃 집계가 소스를 센다 (마크업 전용 = 0건으로 보이던 자리)
   - tests/Feature/LayoutMarkup/PluginLayoutCountMarkupTest.php
   # S18 P1 — 확장이 자기 확장점 정의를 읽는 코어 진입점 (파일 하나 + 디렉토리 전체)
   # 30차: Tests\Unit\Extension\Helpers 에 있어 종료 게이트 밖이었다 → 게이트 네임스페이스로 이전
   - tests/Unit/Support/LayoutMarkup/LayoutFragmentSourceHelperTest.php
   # S18 P1 — 사본 재발 도출형 가드 (종료 게이트 --filter=LayoutMarkup 안에 둔다)
   - tests/Unit/Support/LayoutMarkup/FragmentSourceCopyGuardTest.php
-  # S18 P1 — 코퍼스 조각 참조 전수가 저작 SSoT 로 해석되는지 (모집단 정의를 코드로 못박는다)
+  # S18 P1 — 코퍼스 조각 참조 전수가 소스 SSoT 로 해석되는지 (모집단 정의를 코드로 못박는다)
   - tests/Unit/Support/LayoutMarkup/PartialReferenceCorpusTest.php
   # S21.2 ⓑ — 경계 정규화 계약(역함수성 + 양쪽 세계의 표기 유지)
   - tests/Unit/Support/LayoutMarkup/PartialReferenceNotationTest.php
@@ -1007,15 +1007,15 @@ test_files:
   - tests/Feature/LayoutMarkup/LayoutFixtureCommandSourceTest.php
   # S18.5 축 A — `layout:decompile --sync`/`--check` 굽기 계약 + 설치·서빙 경로 미호출(D38) 여집합
   - tests/Feature/LayoutMarkup/LayoutDecompileSyncTest.php
-  # S18.5 예고된 red ⓓ — `layout:add-permissions` 저작본 전환 (`.json` in-place 기록 폐기)
+  # S18.5 예고된 red ⓓ — `layout:add-permissions` 소스 전환 (`.json` in-place 기록 폐기)
   - tests/Feature/LayoutMarkup/MarkupPermissionsAuthoringTest.php
   # S18.5 축 B — 설치 소스 × 확장 동작 매트릭스 (sub_flows.layout_source_matrix)
   - tests/Feature/LayoutMarkup/LayoutSourceMatrixTest.php
-  # S18.5 축 C — 저작 부채 정리분을 코퍼스 전수 단언으로 잠근다(audit 이 다시 사각이 돼도 살아 있다)
+  # S18.5 축 C — 마크업 부채 정리분을 코퍼스 전수 단언으로 잠근다(audit 이 다시 사각이 돼도 살아 있다)
   - tests/Unit/Support/LayoutMarkup/AuthoringDebtLedgerTest.php
   # 토글 이벤트 값 회귀 — 파일 단위 결함이라 코퍼스 대장이 아니라 여기서 진다
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/commonInfoToggleEventValue.test.ts
-  # S20 문서 게이트 2종 — 문서에 실린 저작 예시를 **프로덕션 판정기**로 태운다.
+  # S20 문서 게이트 2종 — 문서에 실린 마크업 예시를 **프로덕션 판정기**로 태운다.
   #
   # 두 파일 다 6차 회차의 산출물인데 그 회차가 끝날 때 여기 오르지 않았다. 마크업 쪽은 이름이
   # `LayoutMarkup` 네임스페이스에 있어 게이트에서는 돌고 있었으므로 `GateMembershipGuardTest::

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 확장 fragment 저작 파일의 설치 소스 선택 테스트 (S10 정정 아키텍처 — D38·D39, B4).
+ * 확장 fragment 소스 파일의 설치 소스 선택 테스트 (S10 정정 아키텍처 — D38·D39, B4).
  *
  * 본 레이아웃과 대칭으로, fragment 도 `.g7.html`(있으면 우선) 을 등록 시점에 메모리 컴파일하고
  * `.json` 은 직접 읽는다. 여기서는 `RefreshesLayoutExtensions::collectFragmentSources` 의 마크업 우선
@@ -107,7 +107,7 @@ class MarkupFragmentInstallTest extends TestCase
         // 게다가 최상위 파일만 훑어 하위 디렉토리의 fragment 도 못 봤다.
         $markupFiles = LayoutCorpus::scanFragments('.g7.html');
 
-        $this->assertNotEmpty($markupFiles, '이관된 fragment 저작 파일을 하나도 찾지 못했습니다.');
+        $this->assertNotEmpty($markupFiles, '이관된 fragment 소스 파일을 하나도 찾지 못했습니다.');
 
         $failures = [];
 

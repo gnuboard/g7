@@ -124,7 +124,7 @@ DB 등록명: sirsoft-sample.user_sample_main
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -365,7 +365,7 @@ if ($this->isModuleLayoutName($layoutName)) {
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -438,7 +438,7 @@ if ($this->isModuleLayoutName($layoutName)) {
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -564,10 +564,10 @@ mkdir -p modules/_bundled/sirsoft-sample/resources/layouts/admin
 touch modules/_bundled/sirsoft-sample/resources/layouts/admin/index.g7.html
 ```
 
-### 2. 레이아웃 저작
+### 2. 레이아웃 작성
 
-저작은 1단계에서 만든 `.g7.html` 마크업에 한다. 문법은 [layout-markup.md](../frontend/layout-markup.md) 가 SSoT 이고,
-설치 시 서버가 이 저작본을 컴파일해 아래 JSON 을 만든다. 아래 블록은 그 **컴파일 산출물의 런타임 계약**이며
+마크업은 1단계에서 만든 `.g7.html` 마크업에 한다. 문법은 [layout-markup.md](../frontend/layout-markup.md) 가 SSoT 이고,
+설치 시 서버가 이 소스를 컴파일해 아래 JSON 을 만든다. 아래 블록은 그 **컴파일 산출물의 런타임 계약**이며
 ([layout-json.md](../frontend/layout-json.md)), 어떤 키가 나와야 하는지를 보여주기 위한 것이다 — 손으로 쓰는 대상이 아니다.
 
 ```html
@@ -580,7 +580,7 @@ touch modules/_bundled/sirsoft-sample/resources/layouts/admin/index.g7.html
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

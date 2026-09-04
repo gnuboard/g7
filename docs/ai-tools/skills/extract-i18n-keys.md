@@ -1,6 +1,6 @@
 # 다국어 키 추출 (extract-i18n-keys)
 
-레이아웃 파일(저작 SSoT `.g7.html` + 런타임 계약 `.json`)에서 사용된 다국어 키를 추출하고 언어 파일과 비교하여 누락된 키를 보고합니다.
+레이아웃 파일(소스 SSoT `.g7.html` + 런타임 계약 `.json`)에서 사용된 다국어 키를 추출하고 언어 파일과 비교하여 누락된 키를 보고합니다.
 
 ## 0단계: 추출 대상 판별
 
@@ -230,7 +230,7 @@ function extractKeys(obj, prefix = '') {
 const fs = require('fs');
 const path = require('path');
 
-// 디렉토리 내 모든 레이아웃 파일 찾기 (저작 SSoT `.g7.html` + 런타임 계약 `.json`)
+// 디렉토리 내 모든 레이아웃 파일 찾기 (소스 SSoT `.g7.html` + 런타임 계약 `.json`)
 // `$t:` 는 정규식으로 추출하므로 마크업/JSON 을 동일 처리한다 — 두 확장자를 모두 수집한다
 function findJsonFiles(dir, files = []) {
   const items = fs.readdirSync(dir);

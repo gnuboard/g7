@@ -32,7 +32,7 @@
 <div data-ref="warning_message" data-if="{{_local.showWarning}}" class="text-orange-500">경고 메시지입니다.</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -78,7 +78,7 @@
 <span data-if="{{row.discount_amount > 0}}">-{{row.discount_amount | number}}원</span>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -115,7 +115,7 @@
 <span data-ref="visible_text" data-if="{{_local.isVisible}}">보임</span>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -139,7 +139,7 @@
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -184,7 +184,7 @@
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -238,7 +238,7 @@
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -318,7 +318,7 @@ type ConditionsProperty = ConditionExpression | ConditionBranch[];
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -347,7 +347,7 @@ type ConditionsProperty = ConditionExpression | ConditionBranch[];
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -378,7 +378,7 @@ type ConditionsProperty = ConditionExpression | ConditionBranch[];
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -430,7 +430,7 @@ type ConditionsProperty = ConditionExpression | ConditionBranch[];
 <json key="components">[{"id":"test","type":"basic","name":"Div","if":"{{ifCondition}}","conditions":"{{conditionsValue}}","text":"if가 우선됨"}]</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -484,7 +484,7 @@ conditions 배열(브랜치)에서 else 브랜치(if 없음)는 컴포넌트 렌
 </ul>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -525,7 +525,7 @@ conditions 배열(브랜치)에서 else 브랜치(if 없음)는 컴포넌트 렌
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -564,7 +564,7 @@ conditions 배열(브랜치)에서 else 브랜치(if 없음)는 컴포넌트 렌
 <li data-each="error in _local.errors">{{error}}</li>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -593,7 +593,7 @@ conditions 배열(브랜치)에서 else 브랜치(if 없음)는 컴포넌트 렌
 <div data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => messages)">본문</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -637,7 +637,7 @@ iteration 내부 컴포넌트에서도 `_local` 상태에 접근할 수 있습�
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -773,7 +773,7 @@ onSortEnd에서 setState로 소스 배열을 업데이트해야 정렬 결과가
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

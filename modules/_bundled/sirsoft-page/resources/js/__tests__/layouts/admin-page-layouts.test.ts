@@ -243,7 +243,7 @@ describe('admin_page_list.json', () => {
     it('list_options 의 published_filter_select 가 composite Select 로 정의됨', () => {
         const select = findById(adminPageList, 'published_filter_select');
         expect(select).not.toBeNull();
-        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 저작 결정이 아니다 — 여기서 고정하지
+        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
         // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         expect(select.name).toBe('Select');
     });

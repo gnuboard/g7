@@ -63,7 +63,7 @@
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -142,7 +142,7 @@
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // GET 요청 - params가 쿼리 스트링으로 전송
@@ -210,7 +210,7 @@
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -236,7 +236,7 @@
 <div contentType="{{_global.uploadFile ? 'multipart/form-data' : 'application/json'}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -293,7 +293,7 @@
 
 ### 오류 예시
 
-> 아래 두 라벨의 `.json` 은 **블록에 실린 런타임 JSON 을 가리키는 코드블록 라벨**이라 그대로 둔다(저작 SSoT 는 `_user_base.g7.html` · `board/boards.g7.html` 이고 디스크에 실재한다). 저작 문법으로 같은 내용을 쓰는 법은 [layout-markup.md](layout-markup.md) 의 `<data-source>` 섹션 참조.
+> 아래 두 라벨의 `.json` 은 **블록에 실린 런타임 JSON 을 가리키는 코드블록 라벨**이라 그대로 둔다(소스 SSoT 는 `_user_base.g7.html` · `board/boards.g7.html` 이고 디스크에 실재한다). 마크업 문법으로 같은 내용을 쓰는 법은 [layout-markup.md](layout-markup.md) 의 `<data-source>` 섹션 참조.
 
 **부모 레이아웃** (`_user_base.json`):
 ```html
@@ -304,7 +304,7 @@
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -333,7 +333,7 @@
 <data-source id="boardList" endpoint="/api/modules/sirsoft-board/boards?limit=100"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -392,7 +392,7 @@
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 공개 API (인증 불필요)
@@ -458,7 +458,7 @@ auth_mode: "optional" 동작 흐름:
 <div auth_mode="required"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 기존 방식 (deprecated)
@@ -485,7 +485,7 @@ auth_mode: "optional" 동작 흐름:
 </global-headers>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 레이아웃 최상위
@@ -517,7 +517,7 @@ auth_mode: "optional" 동작 흐름:
 </global-headers>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -617,7 +617,7 @@ auth_mode: "optional" 동작 흐름:
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -693,7 +693,7 @@ auth_mode: "optional" 동작 흐름:
 
 - 데이터 소스 ID로 참조: `{{데이터소스ID.data}}`
 - API 응답의 `data` 필드가 자동으로 바인딩됨
-- 별도의 `data_binding` 매핑 키는 **사어(死語)** 다 — 렌더러가 읽지 않고 저작 태그로도 승격되지 않는다 ([layout-json.md](layout-json.md) 최상위 속성 표). 명시적 매핑이 필요하면 props 표현식으로 경로를 직접 적는다
+- 별도의 `data_binding` 매핑 키는 **사어(死語)** 다 — 렌더러가 읽지 않고 마크업 태그로도 승격되지 않는다 ([layout-json.md](layout-json.md) 최상위 속성 표). 명시적 매핑이 필요하면 props 표현식으로 경로를 직접 적는다
 
 ---
 
@@ -799,7 +799,7 @@ Object.keys(params).forEach((key) => {
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

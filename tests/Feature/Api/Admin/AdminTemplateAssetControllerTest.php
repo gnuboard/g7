@@ -619,14 +619,14 @@ class AdminTemplateAssetControllerTest extends TestCase
     }
 
     /**
-     * **짝 `.json` 이 없는 저작본만 있어도 편집기 트리에 나타난다** (S19 ⑦ · R16).
+     * **짝 `.json` 이 없는 소스만 있어도 편집기 트리에 나타난다** (S19 ⑦ · R16).
      *
      * 이 단언이 왜 필요한가 — 종전 트리 스캔은 `getExtension() !== 'json'` 으로 걸러
-     * 마크업 전용 레이아웃을 **구조적으로 보지 못했다**. 그런데 현 코퍼스는 저작본 전건이
+     * 마크업 전용 레이아웃을 **구조적으로 보지 못했다**. 그런데 현 코퍼스는 소스 전건이
      * 짝을 가지므로 **코퍼스만으로는 그 결손이 드러나지 않는다** — 짝이 대표해 화면이 멀쩡해
      * 보이고, 규약이 지켜져서가 아니라 가려져 있었을 뿐이다.
      *
-     * 그래서 짝 없는 저작본을 **일부러 만들어** 관측한다. 이것이 없으면 이 회차의 수정이
+     * 그래서 짝 없는 소스를 **일부러 만들어** 관측한다. 이것이 없으면 이 회차의 수정이
      * 실제로 무엇을 고쳤는지 아무 테스트도 증명하지 못한다.
      */
     public function test_serve_routes_includes_markup_only_layout_without_json_twin(): void
@@ -637,7 +637,7 @@ class AdminTemplateAssetControllerTest extends TestCase
         $markupOnly = $layoutDir.DIRECTORY_SEPARATOR.'_s19_markup_only_probe.g7.html';
         $this->assertFileDoesNotExist(
             str_replace('.g7.html', '.json', $markupOnly),
-            '탐침 저작본의 짝이 미리 있으면 이 테스트가 증명하려는 상태가 아니다'
+            '탐침 소스의 짝이 미리 있으면 이 테스트가 증명하려는 상태가 아니다'
         );
 
         // `version` 은 필수이고 `is_base` 는 타입 리터럴(`:attr`)이라야 불리언으로 컴파일된다
@@ -663,8 +663,8 @@ class AdminTemplateAssetControllerTest extends TestCase
             $this->assertContains(
                 '_s19_markup_only_probe',
                 $baseNames,
-                '짝 `.json` 없이 저작본만 있는 레이아웃이 편집기 트리에 나타나야 한다 '
-                .'(트리 스캔이 저작 SSoT 를 모집단으로 삼는가)'
+                '짝 `.json` 없이 소스만 있는 레이아웃이 편집기 트리에 나타나야 한다 '
+                .'(트리 스캔이 소스 SSoT 를 모집단으로 삼는가)'
             );
         } finally {
             @unlink($markupOnly);

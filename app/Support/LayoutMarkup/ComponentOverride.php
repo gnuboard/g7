@@ -7,7 +7,7 @@ namespace App\Support\LayoutMarkup;
  *
  * 레이아웃 오버라이드의 3종 세트(대상 + 버전 제약 + 원본 폴백)를 컴포넌트 축에 그대로
  * 계승한다(`LayoutExtensionService.php:2135-2172`). 대체는 **같은 이름 아래에서** 일어나므로
- * 저작 태그는 바뀌지 않는다 — `<sirsoft-ecommerce-product-card>` 는 원본이 쓰이든 템플릿의
+ * 마크업 태그는 바뀌지 않는다 — `<sirsoft-ecommerce-product-card>` 는 원본이 쓰이든 템플릿의
  * 대체본이 쓰이든 같은 태그이고, 노드 `name` 도 `sirsoft-ecommerce.ProductCard` 그대로다.
  * 갈리는 것은 구현체(런타임)와 엔트리 메타(type/props)뿐이다.
  *

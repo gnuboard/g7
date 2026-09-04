@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
  * 확장 조각(fragment) 소스 파일 목록 수집기 — 등록 경로와 같은 규약으로 고른다.
  *
  * 문서 생성기가 조각 목록을 `.json` 글롭으로 직접 만들면 `.g7.html` 만 있는 조각이 문서에서 조용히
- * 빠지고, 저작 SSoT 가 `.g7.html` 인데 문서는 `.json` 을 부른다. 선택 규약은
+ * 빠지고, 소스 SSoT 가 `.g7.html` 인데 문서는 `.json` 을 부른다. 선택 규약은
  * {@see CollectsFragmentSources} 한 곳에 있으므로 여기서는 그것을 호출만 한다.
  *
  * 이 클래스는 **읽지 않는다** — 파싱이 필요한 자리(대상 레이아웃·확장점)는

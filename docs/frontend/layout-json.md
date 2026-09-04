@@ -2,7 +2,7 @@
 
 > **관련 문서**: [컴포넌트 개발](components.md) | [데이터 바인딩](data-binding.md) | [데이터 소스](data-sources.md)
 >
-> **저작 포맷**: 이 문서는 런타임 JSON 계약(엔진이 소비하는 스키마)이다. 사람·AI 가 직접 작성하는 저작 포맷은 `.g7.html`([layout-markup.md](layout-markup.md), 2026-07-18 문법 동결)이며 설치 시 서버가 이 JSON 으로 컴파일한다. 산출 JSON 키는 이 스키마 그대로다 — 여기 키 이름 ↔ `.g7.html` 태그·속성명 매핑은 layout-markup.md 참조.
+> **마크업 형식**: 이 문서는 런타임 JSON 계약(엔진이 소비하는 스키마)이다. 사람·AI 가 직접 작성하는 마크업 형식은 `.g7.html`([layout-markup.md](layout-markup.md), 2026-07-18 문법 동결)이며 설치 시 서버가 이 JSON 으로 컴파일한다. 산출 JSON 키는 이 스키마 그대로다 — 여기 키 이름 ↔ `.g7.html` 태그·속성명 매핑은 layout-markup.md 참조.
 
 ---
 
@@ -66,7 +66,7 @@
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -203,7 +203,7 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -262,7 +262,7 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -286,7 +286,7 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -307,7 +307,7 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -360,7 +360,7 @@ php artisan layout:add-permissions --layout=admin_dashboard
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -410,7 +410,7 @@ php artisan layout:add-permissions --layout=admin_dashboard
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -473,7 +473,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -519,7 +519,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 </global-headers>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -561,7 +561,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 </global-headers>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -657,7 +657,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 
 ## 컴포넌트 정의
 
-저작에서는 **태그명이 곧 컴포넌트**이고(`name`), `type`(basic/composite/layout)은 레지스트리에서 파생하므로 적지 않는다. `id` 는 `data-ref`, props 는 무접두 속성, 액션은 `<on>` 블록이다.
+작성에서는 **태그명이 곧 컴포넌트**이고(`name`), `type`(basic/composite/layout)은 레지스트리에서 파생하므로 적지 않는다. `id` 는 `data-ref`, props 는 무접두 속성, 액션은 `<on>` 블록이다.
 
 ```html
 <button data-ref="unique_id" title="$t:dashboard.title" value="{{data.field}}">
@@ -667,7 +667,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 </button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. 태그 자리에는 등록된 컴포넌트의 kebab 이름이 온다(`<button>`·`<data-grid>` 등) — 아래 JSON 의 `name` 이 그 태그에서 나오고, `type` 은 레지스트리에서 파생된다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. 태그 자리에는 등록된 컴포넌트의 kebab 이름이 온다(`<button>`·`<data-grid>` 등) — 아래 JSON 의 `name` 이 그 태그에서 나오고, `type` 은 레지스트리에서 파생된다.
 
 ```json
 {
@@ -703,7 +703,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 | `iteration` | object | ❌ | 반복 렌더링 설정 (source, item_var, index_var) |
 | `actions` | array | ❌ | 액션 핸들러 정의 (클릭, 키보드, 폼 제출 등) |
 | `lifecycle` | object | ❌ | 생명주기 핸들러 (onMount, onUnmount) |
-| ~~`data_binding`~~ | object | — | **사어(死語)** — 렌더러가 타입만 선언하고 읽지 않으며 코퍼스 사용 0건이다. 저작 태그로 승격되지 않는다([layout-markup.md 명명 3순위](layout-markup.md)). 데이터는 props 표현식(`value="{{data.field}}"`)으로 바인딩한다 |
+| ~~`data_binding`~~ | object | — | **사어(死語)** — 렌더러가 타입만 선언하고 읽지 않으며 코퍼스 사용 0건이다. 마크업 태그로 승격되지 않는다([layout-markup.md 명명 3순위](layout-markup.md)). 데이터는 props 표현식(`value="{{data.field}}"`)으로 바인딩한다 |
 | `blur_until_loaded` | boolean \| string | ❌ | 데이터 로딩 중 blur 효과 적용 (boolean 또는 표현식 문자열) |
 | `component_layout` | object | ❌ | 컴포넌트 내부 커스텀 렌더링 레이아웃 정의 (RichSelect 등에서 사용) |
 | `isolatedState` | object | ❌ | 격리된 상태 초기값 정의 (engine-v1.14.0+) |
@@ -757,7 +757,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -788,7 +788,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 <button disabled="{{_isolated.currentStep === 1}}">{{_isolated.selectedCategories.length}}개 선택됨</button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -811,7 +811,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -881,7 +881,7 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 <h1 data-ref="page_title" class="text-2xl font-bold">대시보드</h1>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -899,7 +899,7 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 <span data-ref="logo_text" class="text-white font-bold">G7</span>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -935,7 +935,7 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 <h1 data-ref="page_title" class="text-2xl font-bold">$t:dashboard.title</h1>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -957,7 +957,7 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 <span data-ref="user_name">{{user.name}}</span>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -980,7 +980,7 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 </card>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // ✅ text 속성: 단순 텍스트 표시
@@ -1052,7 +1052,7 @@ const renderChildren = useMemo(() => {
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1118,7 +1118,7 @@ const renderChildren = useMemo(() => {
 </extension-point>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1145,7 +1145,7 @@ const renderChildren = useMemo(() => {
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1199,13 +1199,13 @@ const renderChildren = useMemo(() => {
 
 ## 확장이 제공하는 컴포넌트
 
-저작 태그는 식별자의 `_` 를 `-` 로 접은 프리픽스가 앞에 붙은 kebab 이름이고, 노드 `name` 에는 `{확장식별자}.{이름}` 이 그대로 들어간다.
+마크업 태그는 식별자의 `_` 를 `-` 로 접은 프리픽스가 앞에 붙은 kebab 이름이고, 노드 `name` 에는 `{확장식별자}.{이름}` 이 그대로 들어간다.
 
 ```html
 <sirsoft-ecommerce-product-card title="{{product.name}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1215,6 +1215,6 @@ const renderChildren = useMemo(() => {
 }
 ```
 
-저작 어휘는 템플릿 `components.json` 단독이 아니라 템플릿 + 활성 모듈 + 활성 플러그인 3계통이다. 템플릿이 그 컴포넌트를 오버라이드했더라도 노드 `name` 은 바뀌지 않는다 — 대체는 같은 이름 아래에서 일어난다.
+마크업 어휘는 템플릿 `components.json` 단독이 아니라 템플릿 + 활성 모듈 + 활성 플러그인 3계통이다. 템플릿이 그 컴포넌트를 오버라이드했더라도 노드 `name` 은 바뀌지 않는다 — 대체는 같은 이름 아래에서 일어난다.
 
 규약 전문: [../extension/extension-components.md](../extension/extension-components.md)

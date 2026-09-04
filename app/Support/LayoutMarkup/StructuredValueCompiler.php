@@ -5,11 +5,11 @@ namespace App\Support\LayoutMarkup;
 use App\Enums\LayoutMarkupErrorCode;
 
 /**
- * 구조를 가진 값(객체·리스트)을 `<field>`/`<item>` 태그 트리로 저작하는 공통 층 (D42 G2·G3·G4·G6).
+ * 구조를 가진 값(객체·리스트)을 `<field>`/`<item>` 태그 트리로 작성하는 공통 층 (D42 G2·G3·G4·G6).
  *
  * "구조를 가진 값은 어디에 있든 `<field>` 트리로 적는다" 는 D42 공통 원리를 한 곳에 구현한다.
  * 같은 규칙이 세 자리에 필요하기 때문이다 — 데이터소스 자식(`<params>`/`<fallback>`), `<prop>` 값,
- * 액션 구조값 파라미터(`<field name>`). 세 곳에 복제하면 한쪽만 늘려 저작 포맷이 자리마다 달라진다
+ * 액션 구조값 파라미터(`<field name>`). 세 곳에 복제하면 한쪽만 늘려 마크업 형식이 자리마다 달라진다
  * (`EmitsMarkup` 이 방출 규칙을 한 곳에 모은 것과 같은 이유).
  *
  * 표기는 셋이다.

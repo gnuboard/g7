@@ -102,7 +102,7 @@ trait EmitsMarkup
      *  - **표현 가능한 구조값** → `<field>`/`<item>` 트리 (G3·G4, 중첩 포함)
      *  - 그 밖 → JSON 본문 (표현 수단이 아직 없는 자리. 대장에 등재된다)
      *
-     * 저작 파일에서 통짜 JSON 을 없애는 것이 목적이므로(D42), 표현 가능한 형태는 전부 태그로 낸다.
+     * 소스 파일에서 통짜 JSON 을 없애는 것이 목적이므로(D42), 표현 가능한 형태는 전부 태그로 낸다.
      *
      * @param  string  $key  props 키
      * @param  mixed  $value  값
@@ -388,7 +388,7 @@ trait EmitsMarkup
     }
 
     /**
-     * 값을 결정적 JSON 문자열로 인코드합니다 (유니코드·슬래시 비이스케이프 — 저작 가독성).
+     * 값을 결정적 JSON 문자열로 인코드합니다 (유니코드·슬래시 비이스케이프 — 소스 가독성).
      *
      * @param  mixed  $value  값
      * @return string JSON 문자열

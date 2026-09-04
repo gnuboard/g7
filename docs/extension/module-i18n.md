@@ -303,7 +303,7 @@ modules/_bundled/vendor-module/
 <h1 data-ref="page-title" text="$t:sirsoft-sample.admin.index.title"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -332,7 +332,7 @@ $t:sirsoft-sample.messages.save_success
 <page-header data-ref="page-header" title="$t:sirsoft-sample.admin.index.title" description="$t:sirsoft-sample.admin.index.description"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -350,7 +350,7 @@ $t:sirsoft-sample.messages.save_success
 <button data-ref="submit-button" text="$t:sirsoft-sample.admin.create.submit" variant="primary"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

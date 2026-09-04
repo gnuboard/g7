@@ -83,14 +83,14 @@ resources/js/core/template-engine/__tests__/
 ```
 modules/_bundled/{vendor-module}/
 ├── resources/
-│   ├── layouts/admin/*.g7.html        # ← 레이아웃 저작본
+│   ├── layouts/admin/*.g7.html        # ← 레이아웃 소스
 │   └── js/__tests__/
 │       └── layouts/*.test.tsx         # ← 해당 레이아웃 테스트
 ├── package.json
 └── vitest.config.ts
 
 templates/_bundled/{vendor-template}/
-├── layouts/**/*.g7.html               # ← 레이아웃 저작본
+├── layouts/**/*.g7.html               # ← 레이아웃 소스
 ├── __tests__/
 │   └── layouts/*.test.tsx             # ← 해당 레이아웃 테스트
 └── vitest.config.ts
@@ -530,7 +530,7 @@ fetch().json() = { success: true, data: { data: [], meta: {} } }
 </slot>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -564,7 +564,7 @@ fetch().json() = { success: true, data: { data: [], meta: {} } }
 </slot>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -608,7 +608,7 @@ fetch().json() = { success: true, data: { data: [], meta: {} } }
 <div data="{{coupons?.data || []}}">본문</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -626,7 +626,7 @@ fetch().json() = { success: true, data: { data: [], meta: {} } }
 <div data="{{coupons?.data?.data || []}}">본문</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

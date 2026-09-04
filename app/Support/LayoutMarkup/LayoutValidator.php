@@ -30,7 +30,7 @@ use Illuminate\Support\Facades\Validator;
  *    레지스트리에 있는지 한 번 더 훑어 방어한다(ComponentExists 상당).
  *
  * 규칙은 모두 첫 실패에서 조기 종료하므로, 이 층도 정해진 순서(구조→엔드포인트→외부URL→컴포넌트
- * →wait_for→script)로 **첫 위반에서 CompileError 를 던진다** — 저작자는 하나씩 고친다.
+ * →wait_for→script)로 **첫 위반에서 CompileError 를 던진다** — 작성자는 하나씩 고친다.
  */
 final class LayoutValidator
 {
@@ -70,7 +70,7 @@ final class LayoutValidator
         // 않으므로 그 레이아웃들은 오늘도 정상 설치·동작하는데, 파사드만 강검증을 걸어
         // **정상 출하물의 이관을 막고 있었다**.
         //
-        // 규칙은 **저작 API 경로에 살아 있다** — 편집기로 사용자가 제출하는 레이아웃 본문은
+        // 규칙은 **작성 API 경로에 살아 있다** — 편집기로 사용자가 제출하는 레이아웃 본문은
         // `StoreLayoutRequest`·`UpdateLayoutRequest` 가 레이아웃 배열에 `NoExternalUrls` 를 걸어
         // 컴포넌트 트리를 훑는다. 여기서 빠지는 것은 "이미 저장소에 있는 1급 출하물을 형식만
         // 옮기는" 경로뿐이다.

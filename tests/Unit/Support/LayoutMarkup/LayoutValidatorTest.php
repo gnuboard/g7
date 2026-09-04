@@ -10,7 +10,7 @@ use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutValidator;
 
 /**
- * LayoutValidator 단위 테스트 (`.g7.html` 저작 포맷 S6 — 강검증).
+ * LayoutValidator 단위 테스트 (`.g7.html` 마크업 형식 S6 — 강검증).
  *
  * 검증 축은 여섯이다: ① 구조(ValidLayoutStructure/fragment 상당) ② 엔드포인트 화이트리스트
  * ③ 외부 URL·위험 스킴 ④ 컴포넌트 존재 그물 ⑤ wait_for cross-field ⑥ 외부 JS 로더 화이트리스트.
@@ -77,7 +77,7 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
      * 번들 결제 플러그인의 PG사 링크가 정상 출하물인데 파사드만 막고 있어 이관이 불가했다.
      * 설치 경로(`ValidatesLayoutFiles`)는 원래 이 규칙을 돌리지 않으므로 `.json` 설치와 패리티다.
      *
-     * **저작 API 경로에는 규칙이 그대로 살아 있다** — 그 계약은 아래 대조군이 지킨다.
+     * **작성 API 경로에는 규칙이 그대로 살아 있다** — 그 계약은 아래 대조군이 지킨다.
      *
      * @scenario compile_unit=validator,source_health=valid
      *
@@ -95,7 +95,7 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 저작 API 경로는 종전대로 위험 스킴을 막는다 (대조군 — 규칙이 통째로 죽지 않았음).
+     * 작성 API 경로는 종전대로 위험 스킴을 막는다 (대조군 — 규칙이 통째로 죽지 않았음).
      *
      * @scenario compile_unit=validator,source_health=invalid
      *

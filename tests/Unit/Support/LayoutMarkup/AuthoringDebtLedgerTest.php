@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\File;
 use Tests\Feature\LayoutMarkup\LayoutSourceMatrixTest;
 
 /**
- * S18.5 축 C 저작 부채의 **기계 판본** — 고친 것이 다시 들어오지 못하게 잠근다.
+ * S18.5 축 C 마크업 부채의 **기계 판본** — 고친 것이 다시 들어오지 못하게 잠근다.
  *
  * ## 왜 audit 룰이 있는데 또 만드는가
  *
  * 두 장치가 보는 자리가 다르다. audit 룰의 `appliesTo` 는 **`.json` 전용**이고, 코퍼스 `.json` 은
  * S18.5 굽기 이전까지 **어떤 변경셋에도 든 적이 없어** 구조적으로 미검출이었다 — 626건이 그렇게
- * 쌓였다. 이 테스트는 **저작본 `.g7.html` 을 직접, 변경셋과 무관하게 전량** 본다. 그래서 audit 이
+ * 쌓였다. 이 테스트는 **소스 `.g7.html` 을 직접, 변경셋과 무관하게 전량** 본다. 그래서 audit 이
  * 다시 사각이 되더라도(글롭이 바뀌든, 파일이 변경셋에 안 들든) 이 축은 살아 있다.
  *
  * S16 이 결함 대장을 서술에서 {@see LayoutDefectLedgerTest} 로 옮긴 것과 같은 이유다 —
@@ -36,7 +36,7 @@ class AuthoringDebtLedgerTest extends LayoutMarkupTestCase
     private const CORPUS_MINIMUM = 500;
 
     /**
-     * 저작본 전량을 `[상대경로 => 원문]` 으로 돌려준다.
+     * 소스 전량을 `[상대경로 => 원문]` 으로 돌려준다.
      *
      * @return array<string, string>
      */
@@ -51,7 +51,7 @@ class AuthoringDebtLedgerTest extends LayoutMarkupTestCase
         $this->assertGreaterThanOrEqual(
             self::CORPUS_MINIMUM,
             count($out),
-            '저작본 스캔이 '.count($out).'건 — 모집단이 무너졌다. 아래 단언이 공허하게 참이 된다',
+            '소스 스캔이 '.count($out).'건 — 모집단이 무너졌다. 아래 단언이 공허하게 참이 된다',
         );
 
         return $out;
@@ -87,7 +87,7 @@ class AuthoringDebtLedgerTest extends LayoutMarkupTestCase
      * 반복(`data-each`) 안의 `data-ref` 가 행마다 유일하다.
      *
      * 같은 줄에 `data-each` 와 정적 `data-ref` 가 함께 있는 형태만 본다 — 감싸는 반복까지 추적하는
-     * 것은 audit 룰(`layout-iteration-static-id`)이 컴파일된 트리에서 하고, 여기서는 **저작본에서
+     * 것은 audit 룰(`layout-iteration-static-id`)이 컴파일된 트리에서 하고, 여기서는 **소스에서
      * 눈으로 보이는 형태**를 잠근다. 둘은 같은 명제의 서로 다른 관측면이다.
      *
      * @scenario compile_unit=layout,source_health=valid
@@ -118,7 +118,7 @@ class AuthoringDebtLedgerTest extends LayoutMarkupTestCase
             .PHP_EOL.implode(PHP_EOL, $violations));
     }
 
-    // `{{$event}}` 축은 **여기서 지지 않는다** — 저작본 한 줄로는 판정할 수 없다.
+    // `{{$event}}` 축은 **여기서 지지 않는다** — 소스 한 줄로는 판정할 수 없다.
     //
     // 착수 시 이 축을 넣었다가 코퍼스 실측이 반례 3건을 냈다: ⓐ DataGrid `columnVisibilityChange`
     // 처럼 **커스텀 컴포넌트 이벤트**는 `$event` 가 payload 자체라 `{{$event}}` 단독이 정상이고

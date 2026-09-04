@@ -147,7 +147,7 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
 /**
  * 템플릿 오버라이드 런타임 경로 가드.
  *
- * 저작 태그가 방출하는 좌표는 `{확장식별자}.{이름}` 하나뿐이다. 대체본이 그 좌표에 정확히
+ * 마크업 태그가 방출하는 좌표는 `{확장식별자}.{이름}` 하나뿐이다. 대체본이 그 좌표에 정확히
  * 들어앉지 못하면 아무도 안 보는 키에 등록되고, 확장 원본이 경고 한 줄 없이 그대로 렌더된다
  * — 이 규약이 막으려던 바로 그 침묵이다. `exportName` 은 번들 전역의 평면성을 피하는 로컬
  * 별칭일 뿐 좌표가 아니며, 미선언 시 `name` 으로 폴백해 결함이 잠복하므로 별칭이 실제로
@@ -189,7 +189,7 @@ describe('ComponentRegistry.registerTemplateOverrides', () => {
       { EcommerceProductCard: Variant }
     );
 
-    // 저작 태그가 방출하는 좌표
+    // 마크업 태그가 방출하는 좌표
     expect(registry.hasComponent('sirsoft-ecommerce.ProductCard')).toBe(true);
     // 별칭이 섞인 유령 좌표는 존재해선 안 된다
     expect(registry.hasComponent('sirsoft-ecommerce.EcommerceProductCard')).toBe(false);

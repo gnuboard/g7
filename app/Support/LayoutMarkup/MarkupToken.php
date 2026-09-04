@@ -22,7 +22,7 @@ final class MarkupToken
      * @param  int  $line  토큰 시작 라인 (1-base)
      * @param  int  $column  토큰 시작 컬럼 (1-base)
      * @param  string|null  $name  태그명 (태그 토큰 전용, 소문자)
-     * @param  array<int, MarkupAttribute>  $attributes  속성 목록 (시작 태그 전용, 저작 순서 보존)
+     * @param  array<int, MarkupAttribute>  $attributes  속성 목록 (시작 태그 전용, 소스 순서 보존)
      * @param  bool  $selfClosing  자기닫힘 여부 (`/>` 명시 또는 void 요소 자동 닫힘)
      * @param  bool  $void  void 요소(내용을 가질 수 없는 요소) 여부
      * @param  string|null  $text  텍스트·주석 내용 (해당 토큰 전용)
@@ -138,7 +138,7 @@ final class MarkupToken
     /**
      * 공백만으로 이루어진 텍스트 토큰인지 판정합니다.
      *
-     * 저작 인덴트에서 생기는 공백 텍스트를 상위 컴파일러가 걸러낼 때 쓴다 —
+     * 소스 인덴트에서 생기는 공백 텍스트를 상위 컴파일러가 걸러낼 때 쓴다 —
      * 토크나이저는 판정만 제공하고 스스로 버리지 않는다(공백 원문 보존).
      *
      * @return bool 텍스트 토큰이면서 공백뿐이면 true

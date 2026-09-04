@@ -163,11 +163,11 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 
 ### 탭 추가 (admin layout)
 
-`modules/_bundled/{vendor-module}/resources/layouts/admin/admin_*_settings.g7.html` (저작 SSoT) 에 다음을 추가:
+`modules/_bundled/{vendor-module}/resources/layouts/admin/admin_*_settings.g7.html` (소스 SSoT) 에 다음을 추가:
 
 1. `data_sources` 배열에 `{vendor}IdentityPolicies` 추가 — 코어 API `/api/admin/identity/policies` 를 `source_type=module` + `source_identifier={vendor-module}` 로 호출
 2. `TabNavigation.tabs` 배열에 `{ "id": "identity_policies", "label": "$t:..." }` 추가
-3. 조각 참조 `<include src="partials/.../_tab_identity_policies.g7.html"/>` 추가 — **저작본은 저작본을 가리킨다**. 산출 JSON 의 `{ "partial": "..._tab_identity_policies.json" }` 표기는 컴파일러가 경계에서 만든다(`PartialReferenceNotation`). `<include src>` 에 `.json` 을 쓰면 컴파일 에러(`partial_src_not_authoring`)로 막힌다
+3. 조각 참조 `<include src="partials/.../_tab_identity_policies.g7.html"/>` 추가 — **소스는 소스를 가리킨다**. 산출 JSON 의 `{ "partial": "..._tab_identity_policies.json" }` 표기는 컴파일러가 경계에서 만든다(`PartialReferenceNotation`). `<include src>` 에 `.json` 을 쓰면 컴파일 에러(`partial_src_not_authoring`)로 막힌다
 
 ### partial 골격
 
@@ -194,7 +194,7 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -336,7 +336,7 @@ provider 가 자체 launcher / 모달 파셜을 추가하는 경우 (PortOne / K
 - `identity_provider_ui:link` — 링크 안내 슬롯 (코어 default)
 - `identity_provider_ui:provider` — provider 별 SDK 주입 슬롯 (비어있음)
 
-플러그인 extension fragment 는 `plugins/{id}/resources/extensions/identity-provider.g7.html` (저작 SSoT) 로 작성합니다. 아래는 컴파일된 런타임 JSON 계약 기준 예시입니다 (마크업 문법은 [layout-markup.md](../frontend/layout-markup.md) 참조).
+플러그인 extension fragment 는 `plugins/{id}/resources/extensions/identity-provider.g7.html` (소스 SSoT) 로 작성합니다. 아래는 컴파일된 런타임 JSON 계약 기준 예시입니다 (마크업 문법은 [layout-markup.md](../frontend/layout-markup.md) 참조).
 
 `scripts[].src` 의 호스트는 `config/template.php` 의 `layout_markup.script_src_allowlist` 에 등재돼 있어야 합니다 — 미등재 호스트는 컴파일 시점에 `script_src_not_allowed` 로 거부됩니다. 예시의 `sdk.example.com` 은 자리표시자입니다.
 

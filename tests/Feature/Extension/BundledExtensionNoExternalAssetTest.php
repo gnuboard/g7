@@ -53,7 +53,7 @@ class BundledExtensionNoExternalAssetTest extends TestCase
     {
         $patterns = [
             // 번들 확장 런타임 소스
-            // 레이아웃·조각은 저작본(.g7.html)이 SSoT 이고 .json 은 컴파일 산출이다 — 저작본만 있는 화면(짝 .json 없음)도 있으므로 둘 다 훑는다.
+            // 레이아웃·조각은 소스(.g7.html)이 SSoT 이고 .json 은 컴파일 산출이다 — 소스만 있는 화면(짝 .json 없음)도 있으므로 둘 다 훑는다.
             'modules/_bundled/*/resources/**/*.{ts,tsx,json,g7.html}',
             'modules/_bundled/*/src/**/*.{ts,tsx}',
             'plugins/_bundled/*/resources/**/*.{ts,tsx,json,g7.html}',

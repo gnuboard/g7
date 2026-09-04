@@ -18,7 +18,7 @@ use Tests\TestCase;
  * 깨진 채 `app.debug=false` 에서 **빈 배열로 사라진다**(에러 컴포넌트조차 안 남는다).
  *
  * 활성 디렉토리에서는 경로 모양이 맞아떨어져 프로덕션은 무사했고, `_bundled` 를 직접 읽는
- * 도구·테스트만 어긋났다 — 즉 **저작 SSoT 디렉토리에서만 다르게 동작**하고 있었다.
+ * 도구·테스트만 어긋났다 — 즉 **소스 SSoT 디렉토리에서만 다르게 동작**하고 있었다.
  */
 class LayoutPartialBaseDirectoryTest extends TestCase
 {
@@ -41,7 +41,7 @@ class LayoutPartialBaseDirectoryTest extends TestCase
                 'plugins/sirsoft-gdpr/resources/layouts/admin/partials/settings',
                 'plugins/sirsoft-gdpr/resources/layouts',
             ],
-            // _bundled (저작 SSoT — 종전 실패 지점)
+            // _bundled (소스 SSoT — 종전 실패 지점)
             '템플릿 _bundled' => [
                 'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings',
                 'templates/_bundled/sirsoft-admin_basic/layouts',

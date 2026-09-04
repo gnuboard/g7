@@ -8,14 +8,14 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * `.g7.html` 저작 파일의 설치 통합 테스트 (S10 정정 아키텍처 — D38·D39).
+ * `.g7.html` 소스 파일의 설치 통합 테스트 (S10 정정 아키텍처 — D38·D39).
  *
- * 설치는 저작 SSoT 인 `.g7.html` 을 **설치 시점에 메모리로 컴파일**해 등록하고(디스크 산출 JSON 미기록),
+ * 설치는 소스 SSoT 인 `.g7.html` 을 **설치 시점에 메모리로 컴파일**해 등록하고(디스크 산출 JSON 미기록),
  * `.g7.html` 이 없으면 `.json` 을 직접 등록한다. 두 SSoT 가 공존하지 않으므로 provenance 판별이 없다.
  * 여기서는 `ValidatesLayoutFiles::validateLayoutFiles` 를 임시 디렉토리에 대고 네 가지를 고정한다:
  *
  *  - `.g7.html` 만 있으면 → 인메모리 컴파일 산출이 등록됨 (디스크에 `.json` 이 생기지 않음).
- *  - `.g7.html` 과 `.json` 이 나란히 있으면 → 저작 SSoT 인 `.g7.html` 이 이긴다.
+ *  - `.g7.html` 과 `.json` 이 나란히 있으면 → 소스 SSoT 인 `.g7.html` 이 이긴다.
  *  - `.json` 만 있으면 → 그대로 등록 (기존 동작 불변).
  *  - `.g7.html` 이 컴파일 실패하면 → 설치가 거부.
  */
@@ -94,7 +94,7 @@ class MarkupInstallTest extends TestCase
      */
     public function test_markup_wins_when_both_present(): void
     {
-        // 저작 SSoT(.g7.html) 은 Div, 곁의 손저작 .json 은 Span — 등록 content 는 마크업이 이긴다.
+        // 소스 SSoT(.g7.html) 은 Div, 곁의 손 작성 .json 은 Span — 등록 content 는 마크업이 이긴다.
         $this->writeMarkup('demo', "<layout name=\"demo\" version=\"1.0.0\">\n  <div/>\n</layout>\n");
         $this->writeJson('demo', [
             'version' => '1.0.0',
@@ -106,7 +106,7 @@ class MarkupInstallTest extends TestCase
 
         $this->assertCount(1, $layouts, '같은 논리 레이아웃은 한 번만 등록된다 (.json 은 건너뜀)');
         $this->assertSame('Div', $layouts[0]['data']['components'][0]['name'],
-            '.g7.html 과 .json 이 병존하면 저작 SSoT 인 .g7.html 이 이긴다');
+            '.g7.html 과 .json 이 병존하면 소스 SSoT 인 .g7.html 이 이긴다');
     }
 
     /**
@@ -165,7 +165,7 @@ class MarkupInstallTest extends TestCase
             }
         }
 
-        $this->assertNotNull($demo, '.g7.html 로 저작한 hello 데모 레이아웃이 설치 시점 컴파일로 등록되어야 한다');
+        $this->assertNotNull($demo, '.g7.html 로 작성한 hello 데모 레이아웃이 설치 시점 컴파일로 등록되어야 한다');
         $this->assertSame('Div', $demo['data']['components'][0]['name']);
         $this->assertArrayNotHasKey('authoring', $demo['data']['meta'] ?? [],
             'provenance 표식은 폐기됐다 — 등록 content 에 authoring 이 남으면 안 된다');
@@ -369,7 +369,7 @@ class MarkupInstallTest extends TestCase
     }
 
     /**
-     * 손저작 `.json` 파일을 씁니다.
+     * 손 작성 `.json` 파일을 씁니다.
      *
      * @param  string  $name  파일 베이스 이름
      * @param  array<string, mixed>  $json  JSON 데이터

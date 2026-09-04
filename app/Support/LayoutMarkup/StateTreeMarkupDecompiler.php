@@ -5,7 +5,7 @@ namespace App\Support\LayoutMarkup;
 /**
  * 상태 초기화 JSON 객체를 `<field>` 트리로 되돌리는 역변환 층 (S9 — StateTreeCompiler 의 역).
  *
- * 계획서가 "최대 리스크 지점" 으로 꼽은 자리지만, 역변환은 오히려 단순하다. 컴파일 시점의 세 저작
+ * 계획서가 "최대 리스크 지점" 으로 꼽은 자리지만, 역변환은 오히려 단순하다. 컴파일 시점의 세 작성
  * 형태(`<field>` 리터럴 / `<from-source>` / `merge` 속성)가 **모두 같은 JSON 객체로 접히기** 때문이다:
  *
  *  - `<from-source>SRC</from-source>` → `"SRC"` 는 `<field name=k value="SRC"/>` 와 동일 산출
@@ -13,7 +13,7 @@ namespace App\Support\LayoutMarkup;
  *  - `merge="deep"` → `_merge` 키는 평범한 `<field name="_merge">` 와 동일 산출
  *
  * 그래서 역변환은 어느 형태였는지 복원할 필요가 없다 — **JSON 객체를 그대로 `<field>` 트리로** 찍으면
- * 모든 저작 형태와 deep-equal 로 왕복한다. 소스 키 순서대로 필드를 찍어 키 순서도 보존한다. 빈 `{}`↔`[]`
+ * 모든 마크업 형태와 deep-equal 로 왕복한다. 소스 키 순서대로 필드를 찍어 키 순서도 보존한다. 빈 `{}`↔`[]`
  * 구분은 `json_decode(assoc)` 가 양쪽에서 똑같이 `[]` 로 접으므로 발산하지 않는다.
  */
 final class StateTreeMarkupDecompiler

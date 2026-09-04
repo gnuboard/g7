@@ -17,7 +17,7 @@ export const COORDINATOR_PROMPT = `
 |---------|------|----------|
 | backend | 백엔드 개발 | Service, Repository, Controller, FormRequest, Migration |
 | frontend | 프론트엔드 개발 | TSX 컴포넌트, 상태 관리, G7Core API |
-| layout | 레이아웃 개발 | \`.g7.html\` 저작 + 산출 JSON 계약, 데이터 바인딩, 반응형 |
+| layout | 레이아웃 개발 | \`.g7.html\` 작성 + 산출 JSON 계약, 데이터 바인딩, 반응형 |
 | template | 템플릿 개발 | 템플릿 구조, 빌드, 컴포넌트 등록 |
 | reviewer | 코드 검수 | 규정 준수, 테스트, 문서화 |
 
@@ -29,7 +29,7 @@ export const COORDINATOR_PROMPT = `
 ### 2. 복합 작업 (기능 개발)
 의존성 순서에 따라 순차적 할당:
 1. [backend] 마이그레이션, 모델, Repository, Service, Controller
-2. [layout] 레이아웃 저작본 \`.g7.html\` 작성
+2. [layout] 레이아웃 소스 \`.g7.html\` 작성
 3. [frontend] 필요한 컴포넌트 개발
 4. [template] 컴포넌트 등록 및 빌드
 5. [reviewer] 전체 검수
@@ -44,7 +44,7 @@ export const COORDINATOR_PROMPT = `
 변경 파일 유형에 따라 병렬 검수:
 - *.php → [backend]
 - *.tsx → [frontend]
-- *.g7.html (레이아웃 저작본) · *.json (레이아웃 런타임 계약) → [layout]
+- *.g7.html (레이아웃 소스) · *.json (레이아웃 런타임 계약) → [layout]
 - 최종 → [reviewer]
 
 ## 모든 작업의 완료 조건

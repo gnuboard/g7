@@ -35,7 +35,7 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -68,7 +68,7 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 <data-source id="user" type="api" endpoint="/api/admin/users/template" if="{{!route.id}}" initLocal="form"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -121,7 +121,7 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 <data-source id="user" type="api" endpoint="/api/admin/users/template" :auth_required="true" loading_strategy="blocking" initLocal="form" if="{{!route.id}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -158,7 +158,7 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 <data-source id="data" type="api" endpoint="/api/admin/users/template" if="{{query.mode !== 'edit'}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -186,7 +186,7 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 <data-source id="stats" type="api" endpoint="/api/admin/stats/basic" if="{{!_global.isAdmin}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -215,7 +215,7 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 <data-source id="premium_content" type="api" endpoint="/api/modules/sirsoft-board/content/basic" if="{{route.type !== 'premium'}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -283,7 +283,7 @@ type ConditionExpression =
 <json key="data_sources">[{"id":"product","type":"api","endpoint":"/api/modules/sirsoft-ecommerce/products/{{route.id}}","conditions":"{{!!route.id}}"}]</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -309,7 +309,7 @@ type ConditionExpression =
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -339,7 +339,7 @@ type ConditionExpression =
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -372,7 +372,7 @@ type ConditionExpression =
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -405,7 +405,7 @@ type ConditionExpression =
 <json key="data_sources">[{"id":"existing_product","type":"api","endpoint":"/api/modules/sirsoft-ecommerce/products/{{route.id}}","conditions":"{{!!route.id}}","initLocal":"form"},{"id":"copy_source","type":"api","endpoint":"/api/modules/sirsoft-ecommerce/products/{{query.copy_id}}","conditions":{"and":["{{!route.id}}","{{!!query.copy_id}}"]},"initLocal":"form"},{"id":"product_template","type":"api","endpoint":"/api/modules/sirsoft-ecommerce/products/template","conditions":{"and":["{{!route.id}}","{{!query.copy_id}}"]},"initLocal":"form"}]</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -461,7 +461,7 @@ type ConditionExpression =
 <json key="conditions">"{{conditionsValue}}"</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -537,7 +537,7 @@ CAUTION: if와 conditions 동시 사용 시 if 우선
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -612,7 +612,7 @@ data_source onError 있음?
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -659,7 +659,7 @@ API가 200으로 응답하더라도 응답 데이터의 특정 조건에 따라 
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -722,7 +722,7 @@ blocking + showErrorPage(target: "content") 조합 시 주의:
 | `{{error.errors}}` | 필드별 에러 (422) |
 | `{{error.data}}` | 전체 응답 데이터 |
 
-> **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — 정적 검사가 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 저작 권장 경로가 아니다.
+> **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — 정적 검사가 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 작성 권장 경로가 아니다.
 
 ### 에러 상태 접근 (engine-v1.2.0+)
 
@@ -750,7 +750,7 @@ interface DataSourceError {
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -806,7 +806,7 @@ interface DataSourceError {
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -863,7 +863,7 @@ interface DataSourceError {
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -992,7 +992,7 @@ API 응답 데이터를 `_local`, `_global`, 또는 `_isolated` 상태에 자동
 <data-source id="user" type="api" endpoint="/api/admin/users/{{route.id}}" method="GET" :auth_required="true" loading_strategy="progressive" initLocal="form"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1020,7 +1020,7 @@ API 응답 데이터를 `_local`, `_global`, 또는 `_isolated` 상태에 자동
 <data-source id="currentUser" endpoint="/api/me" initGlobal="currentUser"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1042,7 +1042,7 @@ API 응답 데이터를 `_local`, `_global`, 또는 `_isolated` 상태에 자동
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1077,7 +1077,7 @@ API 응답 데이터를 `_local`, `_global`, 또는 `_isolated` 상태에 자동
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1143,7 +1143,7 @@ API 응답의 여러 필드를 각각 다른 `_local` 경로에 매핑할 때 �
 </init-local>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1171,7 +1171,7 @@ API 응답의 여러 필드를 각각 다른 `_local` 경로에 매핑할 때 �
 </init-local>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1199,7 +1199,7 @@ API 응답의 여러 필드를 각각 다른 `_local` 경로에 매핑할 때 �
 </init-local>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1265,7 +1265,7 @@ actualData = response.data.data ?? response.data
 </init-local>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1329,7 +1329,7 @@ actualData = response.data.data ?? response.data
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1412,7 +1412,7 @@ API 응답 수신 → user.data 저장 → _local.form에 복사
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1476,7 +1476,7 @@ SPA에서 같은 페이지로 재진입할 때 이전 수정 데이터가 남아
 <data-source id="board" type="api" endpoint="/api/admin/boards/{{route.id}}" method="GET" :auth_required="true" initLocal="formData" :refetchOnMount="true"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1520,7 +1520,7 @@ WebSocket 데이터 소스는 서버에서 발생하는 실시간 이벤트를 �
 <data-source id="dashboard_resources_ws" type="websocket" channel="admin.dashboard" event="dashboard.resources.updated" channel_type="private" target_source="dashboard_resources"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1590,7 +1590,7 @@ UI 자동 재렌더링
 <data-source id="dashboard_resources_ws" type="websocket" channel="admin.dashboard" event="dashboard.resources.updated" channel_type="private" target_source="dashboard_resources"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1636,7 +1636,7 @@ UI 자동 재렌더링
 <data-source id="notifications_ws" type="websocket" channel="admin.notifications.{{_global.currentUser.id}}" event="notification.received" channel_type="private" target_source="notifications"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1666,7 +1666,7 @@ UI 자동 재렌더링
 <data-source id="system_status_ws" type="websocket" channel="system.status" event="status.updated" channel_type="public"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1795,7 +1795,7 @@ Network 탭 > WS 필터에서 WebSocket 메시지를 직접 확인할 수도 있
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

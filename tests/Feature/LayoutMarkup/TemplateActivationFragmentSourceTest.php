@@ -20,7 +20,7 @@ use Tests\TestCase;
  *
  * fragment 를 DB 에 등록하는 갈래는 넷인데, **템플릿 활성화**만
  * (`LayoutExtensionService::registerAllActiveExtensionsToTemplate`) `File::get`+`json_decode` 로
- * 직행해 저작본(`.g7.html`)을 보지 않았다. 새 템플릿을 켜면 마크업 전용 확장점이 조용히 빠진
+ * 직행해 소스(`.g7.html`)을 보지 않았다. 새 템플릿을 켜면 마크업 전용 확장점이 조용히 빠진
  * 채로 등록이 끝나는 자리였다.
  *
  * @see CollectsFragmentSources
@@ -88,7 +88,7 @@ class TemplateActivationFragmentSourceTest extends TestCase
     }
 
     /**
-     * 병존하면 저작 SSoT(`.g7.html`)의 내용이 등록된다.
+     * 병존하면 소스 SSoT(`.g7.html`)의 내용이 등록된다.
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -117,7 +117,7 @@ class TemplateActivationFragmentSourceTest extends TestCase
         $content = LayoutExtension::where('template_id', $template->id)->firstOrFail()->content;
 
         $this->assertSame('Div', $content['components'][0]['name'] ?? null,
-            '짝이 병존하면 저작본이 등록된다 (Span 이면 .json 이 이긴 것)');
+            '짝이 병존하면 소스가 등록된다 (Span 이면 .json 이 이긴 것)');
     }
 
     /**
@@ -150,7 +150,7 @@ class TemplateActivationFragmentSourceTest extends TestCase
     }
 
     /**
-     * fragment 저작본을 씁니다.
+     * fragment 소스를 씁니다.
      *
      * @param  string  $path  파일 경로
      * @param  string  $point  확장점 이름

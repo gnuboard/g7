@@ -10,7 +10,7 @@ export type IconStyle = 'solid' | 'regular' | 'light' | 'duotone' | 'brands';
  * `Icon` 이 `fa-{size}` 로 그대로 방출하므로 값 집합은 Font Awesome 어휘다(Tailwind 아님).
  * 상대 스케일 `xs`~`2xl` 과 배수 스케일 `2x`~`5x` 가 함께 있다.
  *
- * 이 타입이 레이아웃 저작 `<icon size>` 의 SSoT 이며 audit 레지스트리
+ * 이 타입이 레이아웃 작성 `<icon size>` 의 SSoT 이며 audit 레지스트리
  * (`layout-schema/component-registry.cjs` 의 `Icon.enums.size`)가 이 목록과 대조된다 —
  * 값을 늘리거나 줄이면 `icon-size-registry-sync` 가드가 두 하네스에서 실패한다.
  */

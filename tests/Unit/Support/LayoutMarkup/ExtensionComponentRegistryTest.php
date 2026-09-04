@@ -13,11 +13,11 @@ use App\Support\LayoutMarkup\NodeCompiler;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 확장 컴포넌트 3개념 단위 테스트 (`.g7.html` 저작 포맷 S2.5 — D25).
+ * 확장 컴포넌트 3개념 단위 테스트 (`.g7.html` 마크업 형식 S2.5 — D25).
  *
  * 이 층이 지켜야 하는 계약:
  *
- *  1. **제공** — 확장 컴포넌트는 `{식별자}` 프리픽스 태그로만 저작되고, 노드 `name` 은 핸들러
+ *  1. **제공** — 확장 컴포넌트는 `{식별자}` 프리픽스 태그로만 작성되고, 노드 `name` 은 핸들러
  *     관례와 같은 `{식별자}.{이름}` 이다. 프리픽스 덕에 템플릿·타 확장과의 충돌이 구조적으로
  *     불가능하다.
  *  2. **오버라이드** — 템플릿만 선언할 수 있고, 승패는 집합 필터링이며(priority 아님), 버전
@@ -104,7 +104,7 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 템플릿 컴포넌트는 프리픽스를 받지 않는다 — 확장 컴포넌트가 합류해도 기존 저작이 그대로다.
+     * 템플릿 컴포넌트는 프리픽스를 받지 않는다 — 확장 컴포넌트가 합류해도 기존 마크업이 그대로다.
      *
      * @scenario compile_unit=registry,source_health=valid
      *
@@ -124,8 +124,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
 
     /**
      * 번들 확장 14개 중 7개가 `gnuboard7-hello_module`·`sirsoft-pay_kginicis` 처럼 언더스코어를
-     * 품는다. 저작 태그명은 소문자와 하이픈만 허용하므로(S1 InvalidTagName) 프리픽스는 `_` 를
-     * `-` 로 접어야 저작 자체가 가능하다.
+     * 품는다. 마크업 태그명은 소문자와 하이픈만 허용하므로(S1 InvalidTagName) 프리픽스는 `_` 를
+     * `-` 로 접어야 작성 자체가 가능하다.
      *
      * @scenario compile_unit=registry,source_health=valid
      *
@@ -172,7 +172,7 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
 
     /**
      * 프리픽스가 충돌을 구조적으로 막지만, 템플릿이 확장 프리픽스와 겹치는 이름을 쓰면 같은
-     * 태그가 만들어진다. 런타임은 나중 등록이 조용히 이기므로(:456) 저작 시점에 거부한다.
+     * 태그가 만들어진다. 런타임은 나중 등록이 조용히 이기므로(:456) 작성 시점에 거부한다.
      *
      * @scenario compile_unit=registry,source_health=invalid
      *
@@ -203,7 +203,7 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
 
     /**
      * 승패는 집합 필터링이다 — 원본이 집합에서 빠지고 대체본이 같은 좌표에 들어앉는다.
-     * 태그도 노드 name 도 그대로라 저작은 바뀌지 않는다.
+     * 태그도 노드 name 도 그대로라 마크업은 바뀌지 않는다.
      *
      * @scenario compile_unit=registry,source_health=valid
      *
@@ -279,7 +279,7 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 대상이 활성인데 이름이 없다면 오타이거나 제약이 틀린 것이다 — 둘 다 저작자가 고쳐야 한다.
+     * 대상이 활성인데 이름이 없다면 오타이거나 제약이 틀린 것이다 — 둘 다 작성자가 고쳐야 한다.
      *
      * @scenario compile_unit=registry,source_health=invalid
      *
@@ -376,7 +376,7 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 판본만 있고 원본이 없으면 그 판본은 어느 태그로도 저작할 수 없는 죽은 코드다.
+     * 판본만 있고 원본이 없으면 그 판본은 어느 태그로도 작성할 수 없는 죽은 코드다.
      *
      * @scenario compile_unit=registry,source_health=invalid
      *
@@ -438,8 +438,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
-     * 세 개념 모두 **저작 표면이 같다**는 것이 이 fixture 들의 요점이다. 확장이 원본을 내든,
-     * 템플릿이 대체하든, 확장이 그 템플릿 전용 판본을 내든 저작자가 쓰는 태그와 방출되는 노드
+     * 세 개념 모두 **마크업 표면이 같다**는 것이 이 fixture 들의 요점이다. 확장이 원본을 내든,
+     * 템플릿이 대체하든, 확장이 그 템플릿 전용 판본을 내든 작성자가 쓰는 태그와 방출되는 노드
      * `name` 은 하나다. 갈리는 것은 엔트리 메타(type)와 구현체뿐이다 — 그래서 오버라이드가
      * 붙거나 떨어져도 레이아웃을 고칠 일이 없다.
      *

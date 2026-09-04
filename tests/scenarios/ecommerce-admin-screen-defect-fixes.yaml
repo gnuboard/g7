@@ -37,7 +37,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminScreenDefectFixes.test.ts
 
 notes: |
-  단언 대상은 저작본이 아니라 **구워진 짝 `.json`** — 런타임이 실제로 먹는 값이다.
+  단언 대상은 소스가 아니라 **구워진 짝 `.json`** — 런타임이 실제로 먹는 값이다.
   문자열 단언에서는 개발자 주석을 먼저 걷어낸다. 주석은 계약을 설명하느라 바로 그 이름을
   담기 마련이라(`_global.modal_data` 등) 걷어내지 않으면 설명글이 단언을 깨뜨린다.
   공개 서빙도 같은 두 키를 재귀 제거하므로 이 형태가 브라우저가 보는 값과 같다.

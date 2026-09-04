@@ -10,7 +10,7 @@ namespace App\Support\LayoutMarkup;
  * props 가 아니라 노드 직속 키라 전용 태그로만 표현된다)·**props**(스칼라=속성, 객체/배열=`<prop>` 본문).
  *
  * 임베딩 hoist(columns·cell·expand·footer-cell 등)는 값이 props 배열이라 `<prop name>` JSON 으로도
- * 왕복하지만, 그 자리에 **읽히는 전용 태그**를 찍는다 — 역변환기는 이관(S10~)이 실제로 쓰는 저작
+ * 왕복하지만, 그 자리에 **읽히는 전용 태그**를 찍는다 — 역변환기는 이관(S10~)이 실제로 쓰는 작성
  * 파일을 만드는 도구이므로, DataGrid 컬럼이 거대한 JSON 덩어리가 아니라 `<column>` 태그로 나와야 한다.
  * 두 표기는 컴파일 산출이 동일해 왕복은 어느 쪽이든 성립한다(임베딩 태그가 못 잡는 형태만 `<prop>` 폴백).
  */
@@ -24,7 +24,7 @@ final class NodeMarkupDecompiler
         'dataKey' => 'data-key', 'debounce' => 'data-debounce',
     ];
 
-    /** props 키 별칭 (JSON props → 저작 속성명) */
+    /** props 키 별칭 (JSON props → 마크업 속성명) */
     private const PROPS_ALIASES = ['className' => 'class', 'htmlFor' => 'for'];
 
     /**
@@ -44,7 +44,7 @@ final class NodeMarkupDecompiler
         'titlePrefix' => 'title-prefix', 'titleSuffix' => 'title-suffix',
     ];
 
-    /** `sortable` 노드 키 camel → 저작 kebab 속성 */
+    /** `sortable` 노드 키 camel → 마크업 kebab 속성 */
     private const SORTABLE_ATTRS = [
         'source' => 'source', 'itemVar' => 'item-var', 'itemKey' => 'item-key', 'indexVar' => 'index-var',
         'strategy' => 'strategy', 'group' => 'group', 'handle' => 'handle', 'disabled' => 'disabled',
@@ -79,7 +79,7 @@ final class NodeMarkupDecompiler
     public function node(array $node): MarkupElement
     {
         if (array_key_exists('partial', $node)) {
-            // 산출 `.json` 표기를 저작 표기로 되돌린다 — `NodeCompiler::compileInclude` 의 정확한
+            // 산출 `.json` 표기를 마크업 표기로 되돌린다 — `NodeCompiler::compileInclude` 의 정확한
             // 역함수여야 아래 `verified()` 의 재컴파일 대조가 성립한다(PartialReferenceNotation).
             $src = PartialReferenceNotation::toMarkup((string) $node['partial']);
 
@@ -329,7 +329,7 @@ final class NodeMarkupDecompiler
     }
 
     /**
-     * 노드 name 을 저작 태그로 해석합니다 (레지스트리 우선, 미등록이면 명명 규칙 폴백).
+     * 노드 name 을 마크업 태그로 해석합니다 (레지스트리 우선, 미등록이면 명명 규칙 폴백).
      *
      * @param  string  $name  노드 name
      * @return string 태그명

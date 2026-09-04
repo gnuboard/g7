@@ -9,13 +9,13 @@ use App\Enums\LayoutMarkupErrorCode;
  *
  * 이 층이 확정하는 것은 셋이다.
  *
- * **① `<on>` 이 세 노드 키로 갈린다.** 저작자는 어떤 이벤트에 무엇을 할지를 `<on>` 하나로 쓰지만,
+ * **① `<on>` 이 세 노드 키로 갈린다.** 작성자는 어떤 이벤트에 무엇을 할지를 `<on>` 하나로 쓰지만,
  * 엔진은 이를 세 자리에서 읽는다 — 컴포넌트 자기 이벤트는 `actions[]`, 마운트/언마운트는
  * `lifecycle`, 다른 곳에서 emit 된 이벤트 구독은 `onComponentEvent[]`. `<on>` 의 속성이 어느
  * 자리인지를 정한다: `type`/`event` 는 자기 이벤트, `event="mount|unmount"` 는 생명주기,
  * `listen` 은 구독. 한 이벤트에 여러 `<on>` 블록을 쓰면 fire-and-forget 병렬(각 항목이 별도
  * 액션), 한 `<on>` 안에 여러 자식을 쓰면 순차(암묵 sequence)다 — 병렬 3형태(계획 §201)를
- * 저작 형태로 구분해 왕복이 시맨틱을 조용히 바꾸지 않게 한다.
+ * 마크업 형태로 구분해 왕복이 시맨틱을 조용히 바꾸지 않게 한다.
  *
  * **② 키가 top-level 이냐 params 냐는 핸들러가 정한다.** ActionHandlerManifest 가 SSoT 다.
  * `target` 은 apiCall 이면 엔드포인트(top-level), setState 면 상태 스코프(params)라 핸들러마다
@@ -23,7 +23,7 @@ use App\Enums\LayoutMarkupErrorCode;
  *
  * **③ confirm 은 진입점에서만.** 엔진은 이벤트에 바인딩된 루트 액션에서만 confirm 을 발화하고
  * 중첩 실행(executeAction)에서는 읽지 않는다. 그래서 중첩 액션의 confirm 은 컴파일 에러다 —
- * 저작자는 확인창이 뜰 것으로 기대하지만 실제로는 아무 일도 없기 때문이다. init 루트는 한술 더 떠
+ * 작성자는 확인창이 뜰 것으로 기대하지만 실제로는 아무 일도 없기 때문이다. init 루트는 한술 더 떠
  * confirm 을 포함한 여러 키가 통째로 탈락하므로 축소 화이트리스트로 더 좁게 잡는다.
  *
  * 표현식(`{{...}}`/`$t:`)은 어느 위치에서도 선평가하지 않는다 — 액션 `if` 의 혼합형 판정만이
@@ -583,7 +583,7 @@ final class ActionCompiler
             // `then` 은 엔진이 객체·배열 둘 다 받는다 (ActionDispatcher::handleConditions — 배열이면
             // sequence 처럼 순차 실행, 객체면 단일 실행). 표기 규칙은 `<case>`/`<default>` 의 블록 본문
             // 관용과 같게 둔다 — **자식 하나면 객체, 둘 이상이면 배열**. 전 코퍼스 실측도 객체가 다수형
-            // (객체 46 · 배열 16)이라 이 수렴 방향이 저작 파일의 형태 변화를 최소화한다.
+            // (객체 46 · 배열 16)이라 이 수렴 방향이 소스 파일의 형태 변화를 최소화한다.
             $actions = $this->compileNestedActions($child, $path);
             $branch['then'] = count($actions) === 1 ? $actions[0] : $actions;
             $branches[] = $branch;
@@ -668,7 +668,7 @@ final class ActionCompiler
                 //
                 // 배치는 **속성과 같은 규칙**(D30 ④ 핸들러별 매니페스트)을 탄다 — `resultTo`·
                 // `identity_target` 처럼 값이 객체인 top-level 키가 실재하기 때문이다(D51 G15).
-                // params 전용으로 두면 그 키들은 저작 표기가 없어 `:resultTo='{…}'` 통짜 JSON 으로
+                // params 전용으로 두면 그 키들은 마크업 표기가 없어 `:resultTo='{…}'` 통짜 JSON 으로
                 // 남는다(D42 가 없애려는 형태). 자리마다 배치 규칙이 갈리지 않도록 매니페스트 한 곳만
                 // 본다 — 여기 목록을 따로 두면 속성 배치와 조용히 어긋난다.
                 $name = (string) $this->requiredAttribute($child, 'name', $path);

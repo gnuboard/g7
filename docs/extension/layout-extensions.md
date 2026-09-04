@@ -100,7 +100,7 @@ modules/
 └── vendor-module/
     └── resources/
         └── extensions/           ← 확장 정의 디렉토리
-            └── *.g7.html         ← 확장 저작 파일 (저작 SSoT · 문서 루트 <extension>)
+            └── *.g7.html         ← 확장 소스 파일 (소스 SSoT · 문서 루트 <extension>)
 ```
 
 ### 플러그인
@@ -120,12 +120,12 @@ templates/
 └── vendor-template/
     └── extensions/
         └── {module-identifier}/    ← 오버라이드 대상 확장
-            └── *.g7.html           ← 오버라이드 저작 파일 (문서 루트 <extension>)
+            └── *.g7.html           ← 오버라이드 소스 파일 (문서 루트 <extension>)
 ```
 
 확장 주입 fragment 를 템플릿 판본으로 대체하는 것이므로 문서 루트는 원본과 같은 `<extension>` 입니다. `<override>` 는 **레이아웃** 대체(`layouts/overrides/`) 전용 루트입니다 ([layout-markup.md](../frontend/layout-markup.md) §문서 루트).
 
-세 등록 경로(모듈 · 플러그인 · 템플릿 오버라이드)는 모두 같은 소스 선택 규약을 씁니다 — `.g7.html` 저작본이 있으면 등록 시점에 메모리로 컴파일하고, 짝 마크업이 없는 `.json` 만 직접 읽습니다(`CollectsFragmentSources`).
+세 등록 경로(모듈 · 플러그인 · 템플릿 오버라이드)는 모두 같은 소스 선택 규약을 씁니다 — `.g7.html` 소스가 있으면 등록 시점에 메모리로 컴파일하고, 짝 마크업이 없는 `.json` 만 직접 읽습니다(`CollectsFragmentSources`).
 
 ---
 
@@ -141,7 +141,7 @@ templates/
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -232,7 +232,7 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -293,7 +293,7 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -394,7 +394,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -454,7 +454,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -516,6 +516,14 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 **확장 쪽** — 자기 필드를 그 칸에 setState 한다.
 
+```html
+<on type="change">
+  <set-state target="local" checkoutExtraPayload.cash_receipt_requested="{{$event.target.checked}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "change",
@@ -538,7 +546,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 | 칸 이름 | 위치 | 소비처 |
 |---------|------|--------|
-| `_local.checkoutExtraPayload` | `sirsoft-basic` 주문서 (`_checkout_summary.json`) | 주문 생성 `POST /user/orders` |
+| `_local.checkoutExtraPayload` | `sirsoft-basic` 주문서 (`_checkout_summary.g7.html`) | 주문 생성 `POST /user/orders` |
 
 ---
 
@@ -552,7 +560,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 templates/_bundled/sirsoft-basic/
 └── extensions/
     └── sirsoft-daum_postcode/            ← 오버라이드 대상 확장
-        └── user-address-search.g7.html   ← 오버라이드 파일 (저작 SSoT)
+        └── user-address-search.g7.html   ← 오버라이드 파일 (소스 SSoT)
 ```
 
 ### 오버라이드 매칭 규칙
@@ -564,7 +572,7 @@ templates/_bundled/sirsoft-basic/
 | `override_target` | 상위 **디렉토리명** (= 대상 확장 식별자) |
 | `target_name` | 파일 내용의 `extension_point` 또는 `target_layout` |
 
-파일명은 가독성 관례일 뿐이라 원본과 달라도 됩니다. 저작 SSoT 는 `.g7.html`, 문서 루트는 원본과 같은 `<extension>` 입니다.
+파일명은 가독성 관례일 뿐이라 원본과 달라도 됩니다. 소스 SSoT 는 `.g7.html`, 문서 루트는 원본과 같은 `<extension>` 입니다.
 
 ```
 확장 원본:      plugins/_bundled/sirsoft-daum_postcode/resources/extensions/ecommerce-address-search.g7.html
@@ -593,7 +601,7 @@ templates/_bundled/sirsoft-basic/
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -625,7 +633,7 @@ templates/_bundled/sirsoft-basic/
 
 ### 활성화 시
 
-1. `resources/extensions/` 스캔 — `.g7.html` 저작본 우선(등록 시점 메모리 컴파일), 짝 마크업이 없는 `.json` 은 직접 읽음
+1. `resources/extensions/` 스캔 — `.g7.html` 소스 우선(등록 시점 메모리 컴파일), 짝 마크업이 없는 `.json` 은 직접 읽음
 2. **대상 템플릿 적용 가능 여부 판별** (아래 "템플릿 대상 판정" 참조)
 3. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원)
 4. 레이아웃 캐시 무효화
@@ -673,7 +681,7 @@ sirsoft-board를 오버라이드하는 템플릿 확장도 숨김
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -704,7 +712,7 @@ sirsoft-board를 오버라이드하는 템플릿 확장도 숨김
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -745,7 +753,7 @@ Extension Point의 children으로 주입된 인라인 Modal(`show` prop 기반)�
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -783,7 +791,7 @@ G7Core?.modal?.open?.('payment_error_modal');
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -833,7 +841,7 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 </extension>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

@@ -119,7 +119,7 @@
 </input>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 레이아웃 최상위에 named_actions 정의
@@ -171,7 +171,7 @@
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -217,7 +217,7 @@
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -324,7 +324,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 </data-grid>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -448,7 +448,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `scrollIntoView` | 요소로 스크롤 | 대상 요소 ID | behavior, block |
 | `appendDataSource` | 데이터 소스에 항목 추가 | - | dataSourceId, items |
 | `updateDataSource` | 데이터 소스 항목 갱신 | - | dataSourceId, items |
-| `updateProductField` | 상품 필드 갱신 (이커머스 저작 보조) | - | 필드 경로·값 |
+| `updateProductField` | 상품 필드 갱신 (이커머스 작성 보조) | - | 필드 경로·값 |
 | `updateOptionField` | 상품 옵션 필드 갱신 | - | 필드 경로·값 |
 | `conditions` | 조건 목록 평가 후 분기 | - | conditions (else 키 없음) |
 | `suppress` | 에러 전파 차단 (무의미한 setState 대체) | - | - |
@@ -484,7 +484,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -494,7 +494,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 }
 ```
 
-저작 SSoT `.g7.html` 에서는 핸들러 태그의 **타입 리터럴 속성**(`:attr`)으로 얹는다 — 불리언이므로
+소스 SSoT `.g7.html` 에서는 핸들러 태그의 **타입 리터럴 속성**(`:attr`)으로 얹는다 — 불리언이므로
 `:stopPropagation="true"` 이고 `stopPropagation="true"` (문자열)로 적지 않는다. 배치 규칙은
 [layout-markup.md §8 액션](layout-markup.md) 의 top-level 목록이 SSoT 다.
 
@@ -504,9 +504,9 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 </on>
 ```
 
-> `preventDefault` 는 대응 액션 키가 없다. `<a href>` 의 기본 네비게이션 차단 등은 엔진이 액션 존재 시 자동 처리하므로 저작에서 별도 지정하지 않는다.
+> `preventDefault` 는 대응 액션 키가 없다. `<a href>` 의 기본 네비게이션 차단 등은 엔진이 액션 존재 시 자동 처리하므로 마크업에서 별도 지정하지 않는다.
 
-> **동명이의 주의 — 컴포넌트 prop `stopPropagation` 은 이 액션 키가 아니다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation?: boolean` 을 갖고 자기 클릭 핸들러 안에서 `e.stopPropagation()` 을 호출한다([UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`). 저작 코퍼스에서 이 이름의 **다수파는 prop 쪽**(게시판 목록 4파일)이므로, `<user-info :stopPropagation="true"/>` 처럼 **노드 속성 자리**에 있으면 컴포넌트 prop 이고, `<on>` 아래 핸들러 태그 속성 자리에 있으면 액션 키다. 배치 자리가 둘을 가른다.
+> **동명이의 주의 — 컴포넌트 prop `stopPropagation` 은 이 액션 키가 아니다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation?: boolean` 을 갖고 자기 클릭 핸들러 안에서 `e.stopPropagation()` 을 호출한다([UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`). 소스 코퍼스에서 이 이름의 **다수파는 prop 쪽**(게시판 목록 4파일)이므로, `<user-info :stopPropagation="true"/>` 처럼 **노드 속성 자리**에 있으면 컴포넌트 prop 이고, `<on>` 아래 핸들러 태그 속성 자리에 있으면 액션 키다. 배치 자리가 둘을 가른다.
 
 ---
 
@@ -522,7 +522,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -551,7 +551,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -626,7 +626,7 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // navigate: params.path 사용
@@ -661,7 +661,7 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 전역 상태 변경
@@ -699,7 +699,7 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -724,7 +724,7 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -743,7 +743,7 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

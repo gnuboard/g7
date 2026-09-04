@@ -13,7 +13,7 @@ use Tests\TestCase;
  * 템플릿 확장 오버라이드(`templates/{t}/extensions/{ext}/`)의 설치 소스 선택 테스트.
  *
  * 모듈·플러그인 fragment 는 `RefreshesLayoutExtensions` 가 `.g7.html` 을 우선 컴파일하는데,
- * 템플릿 오버라이드만 `glob('*.json')` 로 남아 있어 **저작 SSoT 를 무시**하고 있었다.
+ * 템플릿 오버라이드만 `glob('*.json')` 로 남아 있어 **소스 SSoT 를 무시**하고 있었다.
  * 세 등록 경로가 같은 규약(`.g7.html` 우선 + 짝 없는 `.json`)을 쓰는지 여기서 고정한다.
  *
  * @see CollectsFragmentSources
@@ -65,12 +65,12 @@ class TemplateOverrideMarkupInstallTest extends TestCase
      */
     public function test_template_override_markup_without_json_sibling_is_collected(): void
     {
-        // 짝 `.json` 없이 저작본만 둔 상태 — 종전 `glob('*.json')` 구현은 0건으로 흘려보냈다.
+        // 짝 `.json` 없이 소스만 둔 상태 — 종전 `glob('*.json')` 구현은 0건으로 흘려보냈다.
         File::put("{$this->tmp}/user-address-search.g7.html", "<extension extension-point=\"address_search_slot\"/>\n");
 
         $sources = $this->invokeProtected('collectFragmentSources', [$this->tmp, []]);
 
-        $this->assertCount(1, $sources, '저작본만 있어도 등록 소스로 수집되어야 한다');
+        $this->assertCount(1, $sources, '소스만 있어도 등록 소스로 수집되어야 한다');
         $this->assertTrue($sources[0]['markup']);
         $this->assertStringEndsWith('user-address-search.g7.html', $sources[0]['path']);
     }

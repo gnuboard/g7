@@ -5,10 +5,10 @@ namespace App\Support\LayoutMarkup;
 use App\Enums\LayoutMarkupErrorCode;
 
 /**
- * 상태 초기값을 `<field>` 중첩 태그 트리로 저작하고 JSON 객체로 컴파일하는 층.
+ * 상태 초기값을 `<field>` 중첩 태그 트리로 작성하고 JSON 객체로 컴파일하는 층.
  *
  * 초기값을 `<isolated-state>{ "scrollIdx": 0 }</isolated-state>` 처럼 JSON 덩어리로 본문에
- * 넣는 표기는 쓰지 않는다(D5). "속성 JSON 추방" 을 절반만 지키는 타협이라, 저작 포맷 안에
+ * 넣는 표기는 쓰지 않는다(D5). "속성 JSON 추방" 을 절반만 지키는 타협이라, 마크업 형식 안에
  * 두 번째 언어가 남는다. 대신 `ul/li` 처럼 객체 구조를 자식 태그 계층으로 표현한다:
  *
  * ```html
@@ -254,7 +254,7 @@ final class StateTreeCompiler
         }
 
         if ($value === null) {
-            // 값도 자식도 없으면 `{}` 인지 `null` 인지 `""` 인지 저작자만 안다. 하나를 골라
+            // 값도 자식도 없으면 `{}` 인지 `null` 인지 `""` 인지 작성자만 안다. 하나를 골라
             // 짐작하면 상태 초기값이 조용히 달라지므로 명시를 요구한다.
             throw $this->error($field, LayoutMarkupErrorCode::MissingRequiredAttribute, $path, [
                 'tag' => 'field',

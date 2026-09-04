@@ -25,7 +25,7 @@ use Illuminate\Validation\ValidationException;
 
 class TemplateService
 {
-    // 편집기 표면의 레이아웃/조각 읽기는 저작 SSoT 규약에 위임한다 (S19 ⑦ · R16).
+    // 편집기 표면의 레이아웃/조각 읽기는 소스 SSoT 규약에 위임한다 (S19 ⑦ · R16).
     // 사본을 두면 `.g7.html` 을 못 보고, 그 결과가 "마크업 전용 레이아웃이 트리에서 사라짐" 이었다.
     use CollectsFragmentSources;
     use ResolvesLanguageFragments;
@@ -1437,7 +1437,7 @@ class TemplateService
      * @return array{base_layouts: array<int, array{layout_name: string, label: string|null}>, modals: array<int, array{modal_id: string, host_layout: string, label: string|null}>}
      */
     /**
-     * 레이아웃 디렉토리의 **문서** 소스를 재귀로 모읍니다 — 저작 SSoT 우선, partials 제외.
+     * 레이아웃 디렉토리의 **문서** 소스를 재귀로 모읍니다 — 소스 SSoT 우선, partials 제외.
      *
      * `collectFragmentSources()` 는 fragment 디렉토리 한 겹(`*.json` glob)만 보므로 라우트
      * 레이아웃 트리(하위 디렉토리 다단)에는 쓸 수 없다. 그래서 열거는 여기서 재귀로 하고,
@@ -1475,7 +1475,7 @@ class TemplateService
 
         // 라우트 레이아웃은 하위 디렉토리(`auth/`, `shop/`, `admin/` 등)에 있으므로 재귀 순회한다
         // (File::files 는 최상위만 읽어 하위 레이아웃의 모달을 누락한다).
-        // **저작 SSoT 를 모집단으로 삼는다** (S19 ⑦ · R16). 종전에는 `getExtension() !== 'json'`
+        // **소스 SSoT 를 모집단으로 삼는다** (S19 ⑦ · R16). 종전에는 `getExtension() !== 'json'`
         // 으로 걸러 **마크업 전용 레이아웃이 편집기 트리에서 아예 보이지 않았다**. 짝을 가진
         // 레이아웃은 짝이 대표해 왔으므로 화면이 멀쩡해 보였지만, 그것은 짝이 전건 병존한
         // 덕이고 규약이 지켜진 결과가 아니다. 소스 선택과 읽기 모두 규약에 위임한다.
@@ -1607,7 +1607,7 @@ class TemplateService
         }
 
         // 읽기는 규약에 위임한다 (S19 ⑦ · R16). 종전에는 이 자리에서 `.json` 만 파싱했다 —
-        // 짝이 전건 병존하는 동안에는 화면이 멀쩡했지만, 저작본만 고친 조각은 반영되지 않고
+        // 짝이 전건 병존하는 동안에는 화면이 멀쩡했지만, 소스만 고친 조각은 반영되지 않고
         // 마크업 전용 조각은 아예 보이지 않는다. `resolveFragmentSource()` 가 `.g7.html` 을
         // 우선 고르고 `loadFragmentSource()` 가 메모리 컴파일한다.
         $source = $this->resolveFragmentSource($resolved);

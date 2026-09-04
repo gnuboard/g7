@@ -11,11 +11,11 @@ use App\Support\LayoutMarkup\MarkupTreeBuilder;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * DocumentCompiler 단위 테스트 (`.g7.html` 저작 포맷 S4 — 매핑 사전 A·B).
+ * DocumentCompiler 단위 테스트 (`.g7.html` 마크업 형식 S4 — 매핑 사전 A·B).
  *
  * 검증 축은 셋이다:
  *
- *  1. **계층별 fixture 쌍** — 저작 파일 다섯 계층(본 레이아웃·standalone·partial·주입 fragment·
+ *  1. **계층별 fixture 쌍** — 소스 파일 다섯 계층(본 레이아웃·standalone·partial·주입 fragment·
  *     오버라이드)이 각각 짝 `.json` 과 **키 순서까지** 같은가. 문서 봉투가 하위 층(노드·액션·상태)을
  *     올바로 조립하는지를 종단으로 본다.
  *  2. **루트 판별** — `<layout>`/`<partial>`/`<extension>`/`<override>` 가 서로 다른 봉투로 갈리고,
@@ -385,7 +385,7 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * (불변조건 4 — DataGrid 밖으로 새지 않는다).
      *
      * 세 대조군을 함께 고정한다. 컴파일 수용 범위가 방출기(`columns` 키에만 `<column>` 을 낸다)보다
-     * 넓어지면 그 차이만큼은 **저작할 수는 있는데 되돌아오지 않는** 표기가 된다.
+     * 넓어지면 그 차이만큼은 **작성할 수는 있는데 되돌아오지 않는** 표기가 된다.
      *
      * @scenario compile_unit=document,source_health=invalid
      *

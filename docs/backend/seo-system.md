@@ -200,7 +200,7 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 <json key="initGlobal">"boards"</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 레이아웃 data_source 예시
@@ -1014,7 +1014,7 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 <computed name="label">static text</computed>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1169,7 +1169,7 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
 <json key="params">{"page":"{{query.page ?? 1}}","per_page":12,"sort":"{{query.sort ?? 'latest'}}","category_slug":"{{route.slug}}"}</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1471,7 +1471,7 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1782,7 +1782,7 @@ SEO 렌더링은 변수 하나가 비어도 나머지 메타태그를 정상 출
 </meta>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

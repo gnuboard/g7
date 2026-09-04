@@ -11,7 +11,7 @@ use App\Support\LayoutMarkup\NodeCompiler;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 임베딩 컴파일 단위 테스트 (`.g7.html` 저작 포맷 S5 — 매핑 사전 D).
+ * 임베딩 컴파일 단위 테스트 (`.g7.html` 마크업 형식 S5 — 매핑 사전 D).
  *
  * 검증 축은 넷이다:
  *
@@ -298,7 +298,7 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     /**
      * 래퍼 없는 직속 `<option>` 은 Option 컴포넌트 노드다 — 절대 접지 않는다.
      *
-     * 종전 휴리스틱은 이쪽도 접어버려서, 네이티브 select 로 저작된 레이아웃이 커스텀
+     * 종전 휴리스틱은 이쪽도 접어버려서, 네이티브 select 로 작성된 레이아웃이 커스텀
      * 드롭다운으로 바뀌었다(실측 2건 — 반대 방향 회귀).
      *
      * @scenario compile_unit=embedding,source_health=valid

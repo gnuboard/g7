@@ -15,7 +15,7 @@ use Tests\Support\LayoutSourceConvention;
  * S17·S18 이 스무 회차 넘게 같은 형태로 반복된 기전 하나가 여기 있다 — 회차마다 "근본 조치" 로
  * 새 단언을 심었고, 그 단언이 **실패할 수 없는 명제**여도 아무도 알아채지 못했다.
  *
- * 29차가 그 최신판이다. 짝 병존 fragment 에서 "저작본이 이긴다" 를 단언하려고 이렇게 썼다:
+ * 29차가 그 최신판이다. 짝 병존 fragment 에서 "소스가 이긴다" 를 단언하려고 이렇게 썼다:
  *
  * ```php
  * $viaMarkup = LayoutFragmentSourceHelper::read($markupFile);
@@ -120,7 +120,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
         <?php
         $viaMarkup = LayoutFragmentSourceHelper::read($markupFile);
         $resolved = LayoutFragmentSourceHelper::read($jsonSibling);
-        $this->assertSame($viaMarkup, $resolved, '저작본으로 해석되지 않았습니다');
+        $this->assertSame($viaMarkup, $resolved, '소스로 해석되지 않았습니다');
         PHP;
 
         // ⓑ 독립 오라클 — 기대값이 선택 경로를 타지 않는다 (준수)
@@ -128,7 +128,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
         <?php
         $compiled = $this->compileFragmentMarkup($markupFile);
         $resolved = LayoutFragmentSourceHelper::read($jsonSibling);
-        $this->assertSame($compiled, $resolved, '저작본으로 해석되지 않았습니다');
+        $this->assertSame($compiled, $resolved, '소스로 해석되지 않았습니다');
         PHP;
 
         // ⓒ 해석기 결과를 원본과 비교 = 준수 (한 변만 통과)

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\File;
  *
  * 관리자 레이아웃에 접근 제어를 위한 permissions 를 추가합니다.
  *
- * ## S18.5 — 저작본을 고친다
+ * ## S18.5 — 소스를 고친다
  *
  * 종전에는 확장 `resources/layouts` 를 재귀 순회하며 `getExtension() !== 'json'` 으로 거르고, 찾은
  * `.json` 에 권한을 **in-place 로 기록**했다. 짝이 전건 병존하던 동안에는 결함이 0 이었으나 두 가지
@@ -22,8 +22,8 @@ use Illuminate\Support\Facades\File;
  * `JSON_ONLY_LAYOUT_CONSUMER_DEBT` 에 등재하며 "S18.5 착수 시 전환해야 하는 자리" 로 사유를 적어 뒀다.
  *
  * 이제 소스 선택을 **규약에 위임**하고({@see ResolvesLayoutInstallSource::mergeLayoutSourcesByPriority()})
- * 이긴 소스를 고친다 — 저작본이 있으면 `.g7.html` 의 `<permissions>` 를, 없으면 종전처럼 `.json` 을.
- * 저작본을 고친 뒤에는 짝을 다시 구워야 하므로 커맨드가 그 명령을 안내한다.
+ * 이긴 소스를 고친다 — 소스가 있으면 `.g7.html` 의 `<permissions>` 를, 없으면 종전처럼 `.json` 을.
+ * 소스를 고친 뒤에는 짝을 다시 구워야 하므로 커맨드가 그 명령을 안내한다.
  *
  * 모집단도 `LayoutCorpus`(번들 트리) 로 옮겼다 — 종전에는 활성 설치 디렉토리를 순회해, 확장 수정은
  * `_bundled` 에서만 한다는 프로젝트 규율과 어긋나 있었고 그 편집은 다음 `{type}:update` 에 덮였다.
@@ -141,7 +141,7 @@ class AddLayoutPermissionsCommand extends Command
         'updated' => 0,
         'skipped' => 0,
         'errors' => 0,
-        // 저작본을 고친 건수 — 0 보다 크면 짝을 다시 구우라고 안내한다.
+        // 소스를 고친 건수 — 0 보다 크면 짝을 다시 구우라고 안내한다.
         'markupUpdated' => 0,
     ];
 
@@ -185,7 +185,7 @@ class AddLayoutPermissionsCommand extends Command
 
         if (! $isDryRun && $this->stats['markupUpdated'] > 0) {
             $this->newLine();
-            $this->warn('저작본(.g7.html) 을 고쳤습니다 — 짝 .json 을 다시 구우세요: php artisan layout:decompile --all --sync');
+            $this->warn('소스(.g7.html) 을 고쳤습니다 — 짝 .json 을 다시 구우세요: php artisan layout:decompile --all --sync');
         }
 
         return self::SUCCESS;
@@ -219,7 +219,7 @@ class AddLayoutPermissionsCommand extends Command
     }
 
     /**
-     * 소스 하나를 처리합니다 (저작본이면 마크업, 아니면 JSON 을 고친다).
+     * 소스 하나를 처리합니다 (소스면 마크업, 아니면 JSON 을 고친다).
      *
      * @param  array{path: string, markup: bool}  $source  소스 디스크립터
      * @param  string|null  $targetLayout  특정 레이아웃만 처리
@@ -265,7 +265,7 @@ class AddLayoutPermissionsCommand extends Command
 
         $permissions = $this->permissionMappings[$layoutName] ?? [];
         $permissionDisplay = $permissions === [] ? '[] (공개)' : json_encode($permissions);
-        $surface = $source['markup'] ? '저작본' : 'JSON';
+        $surface = $source['markup'] ? '소스' : 'JSON';
 
         if ($isDryRun) {
             $this->info("  ✅ 업데이트 예정: {$layoutName} → {$permissionDisplay} ({$surface})");
@@ -291,7 +291,7 @@ class AddLayoutPermissionsCommand extends Command
     }
 
     /**
-     * 저작본의 `<permissions>` 를 고칩니다.
+     * 소스의 `<permissions>` 를 고칩니다.
      *
      * @param  string  $filePath  `.g7.html` 경로
      * @param  array<int, string>  $permissions  권한 목록
@@ -302,7 +302,7 @@ class AddLayoutPermissionsCommand extends Command
     }
 
     /**
-     * 저작본이 없는 레이아웃의 `.json` 에 권한을 기록합니다.
+     * 소스가 없는 레이아웃의 `.json` 에 권한을 기록합니다.
      *
      * @param  string  $filePath  `.json` 경로
      * @param  array<int, string>  $permissions  권한 목록
@@ -319,7 +319,7 @@ class AddLayoutPermissionsCommand extends Command
     }
 
     /**
-     * 레이아웃 이름을 결정합니다 (저작본은 루트 `name` 속성, JSON 은 `layout_name`, 둘 다 없으면 파일명).
+     * 레이아웃 이름을 결정합니다 (소스는 루트 `name` 속성, JSON 은 `layout_name`, 둘 다 없으면 파일명).
      *
      * @param  string  $filePath  소스 경로
      * @return string 레이아웃 이름

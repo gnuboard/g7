@@ -14,9 +14,9 @@ use Tests\Support\InjectsGuardSamples;
 /**
  * 확장이 자기 fragment 정의를 코어 규약 밖에서 직접 읽는 **사본**의 재발 봉인 (S18 P1).
  *
- * fragment 정의는 저작 SSoT 가 `.g7.html` 이고, 짝 판별·컴파일·읽기는 코어가 한 자리에서 끝낸다
+ * fragment 정의는 소스 SSoT 가 `.g7.html` 이고, 짝 판별·컴파일·읽기는 코어가 한 자리에서 끝낸다
  * ({@see LayoutFragmentSourceHelper}). 확장이 자기 `resources/extensions`
- * 를 스스로 globbing 하거나 `json_decode` 로 파싱하면 저작본이 보이지 않으므로, `.g7.html` 만
+ * 를 스스로 globbing 하거나 `json_decode` 로 파싱하면 소스가 보이지 않으므로, `.g7.html` 만
  * 고쳤을 때 그 경로에서만 조용히 반영되지 않는다.
  *
  * **이 가드가 사는 자리가 `Tests\Unit\Support\LayoutMarkup` 인 이유**: S18 종료 검증 명령이
@@ -101,7 +101,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
         foreach ($sources as $file) {
             $source = File::get($file);
 
-            // 주석은 판정에서 뺀다 — 규약을 **설명하는** 독블록이 위반으로 잡히면 저작자는 설명을
+            // 주석은 판정에서 뺀다 — 규약을 **설명하는** 독블록이 위반으로 잡히면 작성자는 설명을
             // 지우게 되고, 그러면 다음 사람이 왜 이렇게 쓰는지 모른 채 사본을 되살린다.
             $code = $this->codeWithoutComments($source);
 
@@ -125,14 +125,14 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
 
         $this->assertSame([], $violations,
             'fragment 정의는 LayoutFragmentSourceHelper::read()/readDirectory() 로 읽는다 — '
-            .'사본을 두면 그 경로에서만 저작본(.g7.html)이 무시된다.');
+            .'사본을 두면 그 경로에서만 소스(.g7.html)이 무시된다.');
     }
 
     /**
-     * 실물 fragment 디렉토리가 코어 진입점을 통해 **저작본으로** 해석된다.
+     * 실물 fragment 디렉토리가 코어 진입점을 통해 **소스로** 해석된다.
      *
-     * 사본을 없앤 것만으로는 절반이다 — 코어 경로가 실제 코퍼스에서 저작본을 고르는지까지 봐야
-     * "저작본만 고쳐도 반영된다" 가 성립한다. 짝이 병존하는 실물에서 `.json` 이 이기면 여기서 걸린다.
+     * 사본을 없앤 것만으로는 절반이다 — 코어 경로가 실제 코퍼스에서 소스를 고르는지까지 봐야
+     * "소스만 고쳐도 반영된다" 가 성립한다. 짝이 병존하는 실물에서 `.json` 이 이기면 여기서 걸린다.
      *
      * **기대값은 검증 대상을 통과하면 안 된다**(30차 검출 — 이 자리가 두 번 무너진 이유):
      * 29차 판본은 기대값을 `LayoutFragmentSourceHelper::read($markupFile)` 로 만들었는데,
@@ -202,7 +202,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
                         $rawJson = json_decode(File::get($jsonSibling), true);
 
                         $this->assertSame($compiled, $resolved,
-                            "짝 병존인데 `.json` 참조가 저작본으로 해석되지 않았습니다: {$this->relative($jsonSibling)}");
+                            "짝 병존인데 `.json` 참조가 소스로 해석되지 않았습니다: {$this->relative($jsonSibling)}");
 
                         // **S18.5 — 값 비교는 굽기 이후 관측력을 잃는다.** 위 단언의 red 경로는
                         // "`.json` 이 이기고 그 `.json` 이 컴파일 산출과 다를 때" 하나뿐인데,
@@ -227,13 +227,13 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
         // (29차 판본에서 템플릿 축이 정확히 그렇게 사라졌다).
         foreach ($checkedPerRoot as $rootGlob => $checked) {
             $this->assertGreaterThan(0, $checked,
-                "이 fragment 루트에서 저작본을 가진 디렉토리가 0건이다: {$rootGlob} — "
+                "이 fragment 루트에서 소스를 가진 디렉토리가 0건이다: {$rootGlob} — "
                 .'순회가 그 축에 도달하지 못하는 상태인지 먼저 확인해야 한다 (재귀 여부·경로 규약)');
 
             // 디렉토리에 도달했다는 것과 **짝을 실제로 비교했다**는 것은 다른 명제다.
             // 이 하한이 없으면 확장(결제 플러그인 등)의 짝 병존 축이 관측 밖으로 빠져도 침묵한다.
             $this->assertGreaterThan(0, $pairsPerRoot[$rootGlob],
-                "이 fragment 루트에서 비교한 짝이 0건이다: {$rootGlob} — 저작본만 있고 짝이 없는 상태인지, "
+                "이 fragment 루트에서 비교한 짝이 0건이다: {$rootGlob} — 소스만 있고 짝이 없는 상태인지, "
                 .'아니면 순회가 짝을 못 찾는 상태인지 확인해야 한다');
         }
 
@@ -290,13 +290,13 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
             </extension>
             HTML);
 
-            // 짝을 일부러 어긋나게 둔다 — 저작본이 이기면 이 값은 결과에 나타나지 않아야 한다.
+            // 짝을 일부러 어긋나게 둔다 — 소스가 이기면 이 값은 결과에 나타나지 않아야 한다.
             File::put($jsonFile, json_encode([
                 'extension_point' => 'probe_point',
                 'mode' => 'append',
                 'priority' => 50,
                 'components' => [],
-                'stale_marker' => '이 키는 저작본 산출에 없다',
+                'stale_marker' => '이 키는 소스 산출에 없다',
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
 
             $compiled = $this->compileFragmentMarkupDirectly($markupFile);
@@ -379,7 +379,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
         };
 
         $this->assertGuardRejects('fragment_read_copy_sample.php', $copy, $production,
-            '확장이 자기 확장점을 직접 읽는 사본 — 이 경로에서만 저작본이 무시된다');
+            '확장이 자기 확장점을 직접 읽는 사본 — 이 경로에서만 소스가 무시된다');
 
         $this->assertGuardAccepts('fragment_helper_sample.php', $compliant, $production,
             '코어 진입점 경유 — 준수 형태');
@@ -422,7 +422,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
         // ⓓ 규약을 설명하는 주석은 위반이 아니다 + 문자열 안의 `/*` 를 주석으로 먹지 않는다
         $documented = <<<'PHP'
         <?php
-        // 여기서 glob('*.json') 하면 저작본이 보이지 않는다.
+        // 여기서 glob('*.json') 하면 소스가 보이지 않는다.
         $pattern = '/resources/extensions/*.json';
         $data = LayoutFragmentSourceHelper::readDirectory(dirname(__DIR__, 2).'/resources/extensions');
         PHP;
@@ -439,7 +439,7 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
         $documentedCode = $this->codeWithoutComments($documented);
 
         $this->assertSame([], $this->readSignalsIn($documentedCode),
-            '주석의 설명이 위반으로 잡힙니다 — 그러면 저작자가 설명을 지우게 된다');
+            '주석의 설명이 위반으로 잡힙니다 — 그러면 작성자가 설명을 지우게 된다');
         $this->assertStringContainsString('resources/extensions/*.json', $documentedCode,
             '주석 제거가 문자열 리터럴까지 먹었습니다 (19차 사고 형태)');
     }

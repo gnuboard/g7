@@ -85,7 +85,7 @@
 | [layout-json-features.md](docs/frontend/layout-json-features.md) | 레이아웃 JSON - 기능 (에러 핸들링, 초기화, 모달, 액션) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
 | [layout-json-inheritance.md](docs/frontend/layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) | extends: 베이스 레이아웃 상속 (베이스에서 노드 키 slot: "이름" 을 단 노드 자리에 삽입) |
 | [layout-json.md](docs/frontend/layout-json.md) | 레이아웃 JSON 스키마 | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
-| [layout-markup.md](docs/frontend/layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 저작 포맷 | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 SSoT 이고 설치 시 서... |
+| [layout-markup.md](docs/frontend/layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 형식 | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 소스 SSoT 이고 설치 시 서... |
 | [layout-testing.md](docs/frontend/layout-testing.md) | 그누보드7 레이아웃 파일 렌더링 테스트 가이드 | createLayoutTest()로 테스트 헬퍼 생성, mockApi()로 API 응답 모킹 |
 | [modal-usage.md](docs/frontend/modal-usage.md) | Modal 컴포넌트 사용 가이드 | modals 섹션 모달은 openModal 핸들러로 열고, closeModal 핸들러로 닫음 |
 | [responsive-layout.md](docs/frontend/responsive-layout.md) | 반응형 레이아웃 개발 (engine-v1.1.0+) | responsive 속성: 컴포넌트 레벨 breakpoint 오버라이드 (권장) |
@@ -104,7 +104,7 @@
 | [cache-driver.md](docs/extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) | 모든 캐시 저장은 CacheInterface 사용 (Cache:: 직접 호출 금지) |
 | [changelog-rules.md](docs/extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) | 확장/코어 버전 업 시 CHANGELOG.md에 변경사항 기록 필수 (미기록 시 버전 업 불가) |
 | [editor-spec.md](docs/extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) | editor-spec.json = 편집기 팔레트/스타일 컨트롤/중첩 규칙/샘플 데이터/레시피의 선언 (... |
-| [extension-components.md](docs/extension/extension-components.md) | 확장 컴포넌트 (Extension Components) | 확장 컴포넌트 이름 = {확장식별자}.{이름} / 저작 태그 = <{정규화된-식별자}-{kebab}> ... |
+| [extension-components.md](docs/extension/extension-components.md) | 확장 컴포넌트 (Extension Components) | 확장 컴포넌트 이름 = {확장식별자}.{이름} / 마크업 태그 = <{정규화된-식별자}-{kebab}>... |
 | [extension-documentation.md](docs/extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) | 확장마다 AGENTS.md(개발자·에이전트용) + README.md(사람용) + docs/(상세) 를 갖는다 |
 | [extension-manager.md](docs/extension/extension-manager.md) | ExtensionManager (확장 관리자) | composer.json 수정 없음 - 런타임 오토로드 방식 사용 |
 | [extension-update-system.md](docs/extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) | 업데이트 감지 우선순위: GitHub > _bundled (2단계, _pending 미참여) |
@@ -328,7 +328,7 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 표준 스케일에 같은 px 이 없는 크기는 **임의값**(`text-[2rem]` 등)으로 둔다 — 근사한 표준 클래스로 바꾸면 화면이 조용히 달라진다. 임의값은 평문 safelist 파일에서 추출되지 않으므로 템플릿 `main.css` 의 `@source inline(...)` 에 있어야 한다.
 
-두 템플릿 모두 **모듈·플러그인 레이아웃을 Tailwind 스캔 대상에 넣지 않는다.** 그래서 모듈·플러그인 저작본에 새 크기 클래스를 쓰면 **렌더 템플릿의 도달 범위에 그 클래스가 있는지 먼저 확인**해야 한다. 없으면 CSS 가 생성되지 않아 크기가 사라진다.
+두 템플릿 모두 **모듈·플러그인 레이아웃을 Tailwind 스캔 대상에 넣지 않는다.** 그래서 모듈·플러그인 소스에 새 크기 클래스를 쓰면 **렌더 템플릿의 도달 범위에 그 클래스가 있는지 먼저 확인**해야 한다. 없으면 CSS 가 생성되지 않아 크기가 사라진다.
 
 `size` prop 은 Font Awesome `fa-*` 클래스로 매핑되며 등가가 아니다 — `size="sm"` → `fa-sm` → `font-size: 0.875em`(상대값) + `line-height` 붕괴로 16px 이 12.25×0.88px 이 된다. 새 아이콘에는 써도 되지만, 기존 `w-N h-N` 의 치환용으로는 쓰지 않는다.
 
@@ -554,7 +554,7 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 | 자산 실패를 `console.error` 한 줄로 끝냄 | `G7Core.assets.notifyFailure({id,label,retry})` — 사용자가 사실을 알고 조치할 수 있어야 한다 |
 | 편집기·코드편집기 확보 실패 시 빈 컨테이너를 남김 | 평문 입력(textarea) 폴백 + 저장 계약 유지(`{name}_mode='text'`) + 재시도 시 입력 내용 승계 |
 | 확장 `dist/`·`src/` 에 운영자 CSS 를 둠 | 확장 디렉토리 안의 **`custom/`** — 빌드 불필요, 확장 교체가 보존 |
-| 번들 확장이 `custom/` 을 담아 배포 | `dist/vendor/` 에 담는다. `custom/` 은 운영자 소유라 보존 계층이 덮어쓰지 않아 **저작자 파일이 영영 반영되지 않는다** |
+| 번들 확장이 `custom/` 을 담아 배포 | `dist/vendor/` 에 담는다. `custom/` 은 운영자 소유라 보존 계층이 덮어쓰지 않아 **작성자 파일이 영영 반영되지 않는다** |
 | 사용자 추가 에셋 URL 을 `ext.cache_version` 으로 무효화 | 파일 서명(수정 시각) — 확장 캐시 버전은 운영자가 파일을 고쳤다고 오르지 않는다 |
 | `custom/` 보존을 rename 경로에만 적용 | 교체 **두 경로 모두**(rename · 제자리 동기화 폴백) — 한쪽만 고치면 Windows 잠금 상황에서만 조용히 사라진다 |
 
@@ -585,7 +585,7 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 | 확장이 훅을 추가할 때 코어 문서를 고침 | 훅 집계는 그 확장의 `docs/extension-points.md` 소유 — 코어에는 총계와 링크만 |
 | 레이아웃에 `data_source` 를 추가하고 `editor-spec.json` 의 `sampleData` 를 그대로 둠 | 같은 ID 로 프리뷰 샘플 추가 — 없으면 **편집기 캔버스에서만** 그 영역이 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다 |
 | 컴포넌트를 추가하고 팔레트에만 등록 | 템플릿 스펙은 `componentPalette.entries` · `componentPalette.groups` · `nesting` · `componentCapabilities` **넷 다** — 하나만 빠지면 편집기에서 절반만 동작하고, 어느 단계가 빠졌는지는 증상으로만 구분된다 |
-| 모듈·플러그인 스펙에 `componentPalette` 선언 | 컴포넌트는 템플릿 소유 — 모듈·플러그인 스펙은 도메인 데이터(`sampleData`·`states`)만 담는다. 같은 자리를 두고 다투면 어느 쪽이 이기는지가 병합 순서에 좌우된다 |
+| 모듈·플러그인 스펙에 템플릿 컴포넌트의 어휘 선언 (`controls`·`nesting`, 또는 자기 식별자 접두가 아닌 이름의 `componentPalette`·`componentCapabilities`) | 템플릿 컴포넌트의 어휘는 템플릿 소유 — 모듈·플러그인 스펙은 도메인 데이터(`sampleData`·`states`)와 **자기 컴포넌트(`{확장식별자}.{이름}`)의 팔레트·역량**만 담는다. 같은 자리를 두고 다투면 어느 쪽이 이기는지가 병합 순서에 좌우되는데, 자기 식별자가 앞에 붙은 이름은 템플릿 선언과 겹칠 수 없다 |
 | 공용 ID(`settings`·`roles`·`me`)를 확장마다 각자 선언 | 템플릿 스펙 한 곳 — 사본이 갈라져도 오류가 나지 않는다 |
 | 편집기 스펙 `description` 에 작업 단계·심사 판정·작업 방법을 적음 (`Phase 4/5 에서 추가`·`— 정당`·`전수 스캔 기반`) | **무엇을 담았는가**만 적는다 — 확장만 내려받은 제3자에게 내부 맥락은 해석 불가이고, "다음에 추가" 는 그 항목이 실제로 들어온 뒤에도 남아 **거짓이 된다**. 문서의 한 줄 요약은 이 필드를 옮기지 않고 실측에서 생성한다 |
 | 편집기 스펙을 고치고 update 커맨드 생략 | 서빙은 **활성 디렉토리만** 읽는다(`_bundled` 폴백 없음) — 파일은 고쳤는데 편집기에 직전 내용이 그대로 보인다 |
@@ -978,10 +978,10 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 
 ---
 
-## 레이아웃 구현 규칙 (저작 `.g7.html` / 런타임 계약 `.json`)
+## 레이아웃 구현 규칙 (작성 `.g7.html` / 런타임 계약 `.json`)
 
 ```
-0. 저작 SSoT 는 `.g7.html` 마크업 — 문법은 layout-markup.md, 산출 JSON 키 계약은 layout-json.md
+0. 소스 SSoT 는 `.g7.html` 마크업 — 문법은 layout-markup.md, 산출 JSON 키 계약은 layout-json.md
 1. 새로운 기능 사용 전 → 반드시 해당 규정 문서에서 지원 여부 확인
 2. 지원되지 않는 문법 사용 금지 → 추측/가정으로 구현하지 않음
 3. 불확실한 경우 → 기존 레이아웃 패턴 참조
@@ -991,12 +991,12 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 ### 레이아웃 작성 체크리스트
 
 ```
-□ 저작본(`.g7.html`) 문법이 layout-markup.md 와 일치하는가? (산출 JSON 키 계약은 layout-json.md)
+□ 소스(`.g7.html`) 문법이 layout-markup.md 와 일치하는가? (산출 JSON 키 계약은 layout-json.md)
 □ 레이아웃 구조가 layout-json.md 스키마와 일치하는가? (`.json` 직접 편집 또는 컴파일 산출 확인 시)
 □ 사용할 컴포넌트가 3소스 중 하나에 정의되어 있는가?
   → 템플릿 소유: components.md
   → 확장 제공: {확장식별자}.{이름} — extension-components.md
-  → 템플릿이 대체한 확장 컴포넌트: 이름은 확장 것 그대로 (저작 표면 불변)
+  → 템플릿이 대체한 확장 컴포넌트: 이름은 확장 것 그대로 (마크업 표면 불변)
 □ 컴포넌트 props가 component-props.md에 정의된 것만 사용하는가?
 □ 사용할 핸들러가 actions.md에 정의되어 있는가?
 □ 핸들러의 params 구조가 actions-handlers.md와 일치하는가?
@@ -1087,7 +1087,7 @@ testUtils.cleanup();
 | `database/migrations/*.php` | 해당 모델/서비스 테스트에서 검증 | 스키마 변경 |
 | `templates/**/src/components/**/*.tsx` | `templates/**/__tests__/*.test.tsx` | 컴포넌트 |
 | `resources/js/core/**/*.ts` | `resources/js/core/__tests__/*.test.ts` | 템플릿 엔진 |
-| `resources/layouts/**/*.{json,g7.html}` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 (`.g7.html` 저작본은 컴파일된 JSON 을 렌더 검증) |
+| `resources/layouts/**/*.{json,g7.html}` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 (`.g7.html` 소스는 컴파일된 JSON 을 렌더 검증) |
 | `modules/**/resources/layouts/**/*.{json,g7.html}` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
 | `templates/**/layouts/**/*.{json,g7.html}` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
 | `plugins/**/resources/layouts/**/*.{json,g7.html}` | `plugins/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 플러그인 레이아웃 렌더링 |
@@ -1097,7 +1097,7 @@ testUtils.cleanup();
 
 | 작업 유형 | 백엔드 (PHPUnit) | 프론트엔드 (Vitest) | 레이아웃 렌더링 (Vitest) |
 | ---------- | ----------------- | ------------------- | ---------------------- |
-| 새 화면 구현 | API 엔드포인트 테스트 | 컴포넌트 테스트 | 레이아웃 렌더링 테스트 (`.g7.html` 저작본은 컴파일된 JSON 을 렌더 검증) |
+| 새 화면 구현 | API 엔드포인트 테스트 | 컴포넌트 테스트 | 레이아웃 렌더링 테스트 (`.g7.html` 소스는 컴파일된 JSON 을 렌더 검증) |
 | 기존 화면 수정 | 변경된 API 테스트 | 변경된 컴포넌트 테스트 | 레이아웃 렌더링 회귀 테스트 |
 | 데이터 흐름 변경 | Service/Repository 테스트 | 상태 관리 테스트 | 데이터 바인딩 렌더링 테스트 |
 
@@ -1309,17 +1309,17 @@ BaseApiController (최상위)
 필수: ActionDispatcher 에 핸들러를 등록하는 확장은 재등록 진입점을 window 전역에 고정 이름으로 노출 — 모듈 window.__[Name].initModule, 플러그인 window.__[Name].initPlugin (미노출 시 로케일 전환 후 해당 확장 액션이 전부 무반응, 에러·토스트 없음). 진입점은 핸들러 재등록만 수행
 필수: 확장 미들웨어는 getMiddleware() 로 부착 대상(targets) 명시 선언 (self-gate) — SP Kernel 미들웨어 그룹 직접 조작·라우트 파일 자기 미들웨어 FQCN 부착 금지, 무규율 전역 개입 금지
 필수: 라우트 정의를 바꾸는 지점은 App\Support\RouteCacheHelper::rebuild() 로 라우트 캐시 갱신 — 확장 설치/활성화/비활성화/삭제/업데이트, 코어 업데이트·업그레이드 스텝. route:clear/route:cache 를 각 지점에 직접 흩어 놓지 않는다 (누락 발생, 비우기만 하면 재생성되지 않아 성능 이점 영구 소실). 훅 캐시와 달리 라우트 캐시에는 스캔 폴백이 없어 캐시에 없는 라우트는 예외·경고 없이 404. 파일 교체 중인 코어 업데이트는 중간에 clear(), 끝에서 rebuild(). 템플릿·모듈 설정은 서버 라우트 무관 (상세: docs/backend/routing.md "라우트 캐시")
-필수: 확장 컴포넌트는 `{확장식별자}.{이름}` 으로 등록 (핸들러 네임스페이스 관례와 동일). 접두어 없는 이름은 템플릿 소유 컴포넌트를 덮어쓰므로 거부됨. 저작 태그는 식별자의 `_` 를 `-` 로 접은 프리픽스가 앞에 붙음 — `<sirsoft-ecommerce-product-card>`
+필수: 확장 컴포넌트는 `{확장식별자}.{이름}` 으로 등록 (핸들러 네임스페이스 관례와 동일). 접두어 없는 이름은 템플릿 소유 컴포넌트를 덮어쓰므로 거부됨. 마크업 태그는 식별자의 `_` 를 `-` 로 접은 프리픽스가 앞에 붙음 — `<sirsoft-ecommerce-product-card>`
 필수: 확장 컴포넌트 등록은 확장 번들이 자가 수행 — `G7Core.getComponentRegistry().registerExtensionComponent()`. 템플릿처럼 매니페스트 + 전역 변수 경로로 실릴 자리가 확장에는 없음
 절대 금지: 확장이 `resources/js/components/overrides/` 를 두는 것 → 다른 확장의 컴포넌트를 대체할 권한은 템플릿 전용 (레이아웃 오버라이드가 `source_type=template` 일 때만 성립하는 것과 같은 규약). 자기 컴포넌트의 특정 템플릿 전용 판본이라면 `components/for/{템플릿식별자}/`
-필수: 템플릿이 확장 컴포넌트를 대체할 때는 `components/overrides/{확장식별자}/` + 매니페스트 `overrides[]`(대상·버전 제약). 비호환이면 대체본 폐기 후 원본 폴백. 대체는 같은 이름 아래에서 일어나므로 저작 표면 불변
+필수: 템플릿이 확장 컴포넌트를 대체할 때는 `components/overrides/{확장식별자}/` + 매니페스트 `overrides[]`(대상·버전 제약). 비호환이면 대체본 폐기 후 원본 폴백. 대체는 같은 이름 아래에서 일어나므로 마크업 표면 불변
 필수: 템플릿 전용 판본(`for`) 선택은 코어가 전담 — 확장은 `forTemplate` 으로 선언만 하고 활성 템플릿을 읽어 스스로 분기하지 않음
 필수: 확장 라우트는 활성 상태인 확장의 것만 등록한다 — 모듈·플러그인 두 라우트 프로바이더가 같은 기준을 쓴다. 게이트가 한쪽에만 있으면 그 비대칭은 오류가 아니라 "조용히 열린 경로" 로만 나타난다: 비활성화해도 화면·메뉴·에셋만 사라지고 API 는 계속 호출 가능하며, 컨트롤러가 정상 처리하므로 오류도 로그도 남지 않는다
 필수: 그 rebuild() 는 확장 상태 캐시 무효화(invalidate*StatusCache()) 뒤에 온다 — route:cache 는 새 앱을 부팅해 라우트를 수집하는데 그 부팅의 확장 라우트 프로바이더는 DB 가 아니라 캐시된 활성 확장 목록(TTL 기본 1일)을 읽으므로, 먼저 구우면 방금 바뀐 상태가 빠진 채 박제되고 자가 회복되지 않는다 (활성화 → 그 확장 API 전량 404 / 비활성화 → 끈 확장 API 가 계속 호출 가능 / 업데이트 → 404 + 훅 리스너 누락). 무효화는 굽기 직전이 아니라 DB 상태 쓰기 직후에 둔다 — 같은 목록을 읽는 굽기가 라우트 캐시 말고도 있다 (오토로드 갱신 안의 훅 매핑 캐시). update 경로만 예외: Updating 전이 직후에는 비우지 않고 (비우면 그 창의 오토로드 갱신이 그 확장을 비활성으로 판정해 훅 리스너를 떨군다) 상태 복원 직후에 비운 뒤 ExtensionManager::regenerateHookCache() 로 훅 캐시를 다시 굽는다. 훅 캐시 폴백은 파일 부재·손상에만 작동해 내용이 stale 한 경우는 조용히 통과한다
 필수: 코어 레이아웃에 모듈 UI 주입은 layout_extensions만 사용
 필수: 플러그인도 자기 화면(완전한 레이아웃)을 가질 수 있으나 그 화면의 라우트는 plugins/{identifier}/ 네임스페이스 안에 선언 — 모듈/템플릿이 소유한 경로를 선언하면 어느 쪽이 이기는지가 설치 순서에 좌우되어 화면이 조용히 바뀐다. 다른 확장의 화면에 UI 를 끼워 넣을 때는 여전히 layout_extensions 사용
 필수: ActionDispatcher 에 핸들러를 등록하는 확장은 재등록 진입점을 window 전역에 고정 이름으로 노출 — 모듈 window.__[Name].initModule, 플러그인 window.__[Name].initPlugin (미노출 시 로케일 전환 후 해당 확장 액션이 전부 무반응, 에러·토스트 없음). 진입점은 핸들러 재등록만 수행
-필수: 플러그인 설정 UI 는 resources/layouts/admin/plugin_settings.g7.html 로 저작 (PHP 하드코딩 금지). 짝 plugin_settings.json 은 런타임 계약이라 함께 둔다 — AbstractPlugin::getSettingsLayout() 이 그 경로를 직접 읽는다
+필수: 플러그인 설정 UI 는 resources/layouts/admin/plugin_settings.g7.html 로 작성 (PHP 하드코딩 금지). 짝 plugin_settings.json 은 런타임 계약이라 함께 둔다 — AbstractPlugin::getSettingsLayout() 이 그 경로를 직접 읽는다
 필수: 모든 확장 작업은 Artisan 커맨드로 수행
 ```
 
@@ -1569,7 +1569,7 @@ php artisan migrate:rollback
 | `database/migrations/**` | [database-guide.md](docs/database-guide.md) |
 | `database/seeders/**` | [database-guide.md](docs/database-guide.md) |
 | `resources/layouts/**/*.json` | [layout-json.md](docs/frontend/layout-json.md) |
-| `resources/layouts/**/*.g7.html`, `(templates\|modules\|plugins)/_bundled/**/{layouts,extensions}/**/*.g7.html` | [layout-markup.md](docs/frontend/layout-markup.md) (저작 SSoT — 산출 JSON 키 계약은 layout-json.md) |
+| `resources/layouts/**/*.g7.html`, `(templates\|modules\|plugins)/_bundled/**/{layouts,extensions}/**/*.g7.html` | [layout-markup.md](docs/frontend/layout-markup.md) (소스 SSoT — 산출 JSON 키 계약은 layout-json.md) |
 | `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.json` | [layout-extensions.md](docs/extension/layout-extensions.md) + [layout-json.md](docs/frontend/layout-json.md) (확장 주입 fragment 의 런타임 계약) |
 | `templates/**/layouts/**/*.json` | [layout-json.md](docs/frontend/layout-json.md) |
 | `templates/**/src/components/**/*.tsx` | [components.md](docs/frontend/components.md) |

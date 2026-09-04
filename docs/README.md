@@ -37,7 +37,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 
 | 순서 | 문서 | TL;DR 핵심 |
 |------|------|----------|
-| 1 | [레이아웃 마크업 (`.g7.html`) 저작 포맷](frontend/layout-markup.md) | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 SSoT 이고 설치 시 서버가 컴파일 |
+| 1 | [레이아웃 마크업 (`.g7.html`) 형식](frontend/layout-markup.md) | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 소스 SSoT 이고 설치 시 서버가 컴파일 |
 | 2 | [레이아웃 JSON 스키마](frontend/layout-json.md) | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
 | 3 | [레이아웃 JSON - 컴포넌트](frontend/layout-json-components.md) | if: 조건부 렌더링 (type: "conditional" 사용 금지!) |
 | 4 | [레이아웃 JSON - 기능](frontend/layout-json-features.md) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
@@ -208,7 +208,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [layout-json-features.md](frontend/layout-json-features.md) | 레이아웃 JSON - 기능 (에러 핸들링, 초기화, 모달, 액션) |
 | [layout-json-inheritance.md](frontend/layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) |
 | [layout-json.md](frontend/layout-json.md) | 레이아웃 JSON 스키마 |
-| [layout-markup.md](frontend/layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 저작 포맷 |
+| [layout-markup.md](frontend/layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 형식 |
 | [layout-testing.md](frontend/layout-testing.md) | 그누보드7 레이아웃 파일 렌더링 테스트 가이드 |
 | [modal-usage.md](frontend/modal-usage.md) | Modal 컴포넌트 사용 가이드 |
 | [README.md](frontend/README.md) | 그누보드7 프론트엔드 개발 가이드 |

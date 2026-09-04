@@ -72,15 +72,15 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
     private const JSON_ONLY_LAYOUT_CONSUMER_DEBT = [
         // **S18.5 해소 — `AddLayoutPermissionsCommand` 가 여기서 빠졌다.** 32차가 이 자리를 등재하며
         // 적은 사유가 *"S18 P2 가 `.json` 을 기계 산출로 바꾸면 이 커맨드의 편집은 다음 굽기에
-        // 소실된다 — 착수 시 저작본을 고치도록 전환해야 하는 자리"* 였고, 그 전환을 S18.5 가
+        // 소실된다 — 착수 시 소스를 고치도록 전환해야 하는 자리"* 였고, 그 전환을 S18.5 가
         // 이행했다: 모집단을 `LayoutCorpus`(번들 트리)로 옮기고 소스 선택을
-        // `mergeLayoutSourcesByPriority()` 에 위임해, 이긴 소스가 저작본이면 `<permissions>` 를
+        // `mergeLayoutSourcesByPriority()` 에 위임해, 이긴 소스가 소스면 `<permissions>` 를
         // 고친다({@see \App\Support\LayoutMarkup\MarkupPermissionsEditor}).
         'app/Console/Commands/PlaywrightSeedLayout.php' => 'Playwright E2E 전용 시드 화면 '
             .'(`e2e_sandbox`)을 활성 템플릿에 깔고 지우는 커맨드. 원본은 `tests/Playwright/fixtures/'
-            .'seed-layouts/*.json` 이고 **저작본 짝이 없으며, 저작본 코퍼스 스캔 대상도 아니다** '
+            .'seed-layouts/*.json` 이고 **소스 짝이 없으며, 소스 코퍼스 스캔 대상도 아니다** '
             .'(`LayoutCorpus` 는 번들 확장·템플릿 트리만 훑는다). 커맨드는 그 파일을 디코드해 '
-            .'시드 DB 행 `content` 에 그대로 싣는 것이 전부라, 저작본으로 옮겨도 곧바로 같은 배열로 '
+            .'시드 DB 행 `content` 에 그대로 싣는 것이 전부라, 소스로 옮겨도 곧바로 같은 배열로 '
             .'되돌려야 한다 — 규약 위반이 아니라 **테스트 자료의 의도된 예외**이며, 등재 목적은 '
             .'"다음 사람이 이것을 사본으로 오인해 고치지 않게" 다 (PO 판정, 5차 병합 후속).',
         'app/Extension/AbstractPlugin.php' => '`getSettingsLayout()` 의 `plugin_settings.json` 경로 '
@@ -118,7 +118,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
         // 등재분은 `TemplateService::resolveModalPartial()` 이었다. 규약을 자기 코드로 복제하고
         // `.json` 만 읽었으며, "짝이 전건 병존해 현재 화면 결함은 없다" 를 근거로 잠가 두었다.
         // 그 근거가 위태로운 종류였다는 것이 이번 전환의 이유다 — 결함이 없는 것이 아니라
-        // **짝이 있는 동안 가려져 있었을 뿐**이고, 저작본만 고친 조각은 반영되지 않았다.
+        // **짝이 있는 동안 가려져 있었을 뿐**이고, 소스만 고친 조각은 반영되지 않았다.
         //
         // 이제 확장자 후보는 `layoutSourceCandidates()`, 읽기는 `loadFragmentSource()` 가 정한다.
     ];
@@ -156,7 +156,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
 
         $this->assertSame([], $violations,
             'fragment 정의 목록을 받아 놓고 같은 메서드에서 읽기를 규약에 위임하지 않는 자리가 '
-            .'있습니다 — `.g7.html` 저작본이 그 경로에서만 조용히 무시된다.');
+            .'있습니다 — `.g7.html` 소스가 그 경로에서만 조용히 무시된다.');
     }
 
     /**
@@ -364,9 +364,9 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
     /**
      * 레이아웃 소스를 `.json` 전용으로 소비하는 코어 코드가 늘지 않는다 (32차 ⚠️ 신설 축).
      *
-     * 종전 두 명제는 **fragment 축**(확장점 정의)과 **조각 경로 규약 축**만 봤다. 그런데 저작
+     * 종전 두 명제는 **fragment 축**(확장점 정의)과 **조각 경로 규약 축**만 봤다. 그런데 작성
      * SSoT 를 무너뜨리는 자리는 그 둘만이 아니다 — 레이아웃 파일을 열거하거나 읽으면서 `.json`
-     * 을 하드코딩하면, 그 소비처에서만 저작본이 없는 것처럼 보인다. 32차 실측으로 `app/` 에
+     * 을 하드코딩하면, 그 소비처에서만 소스가 없는 것처럼 보인다. 32차 실측으로 `app/` 에
      * 그런 자리가 넷 있었고 어느 가드의 모집단에도 없었다.
      *
      * 짝이 전건 병존하는 지금은 화면 결함이 0 이지만, S18 P2 가 `.json` 을 **기계 산출**로

@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\File;
  *    표본은 손으로 적지 않고 **코퍼스 산출 JSON 의 `partial` 값 전량**에서 도출하고(열거는 전수를
  *    증명하지 못한다), 코퍼스에 없는 경계 형태만 합성으로 덧댄다.
  *
- * 2. **양쪽 세계가 각자 자기 표기를 지킨다.** 저작본은 `.g7.html` 만 받고(아니면 컴파일 에러),
+ * 2. **양쪽 세계가 각자 자기 표기를 지킨다.** 소스는 `.g7.html` 만 받고(아니면 컴파일 에러),
  *    산출 JSON 은 `.json` 을 유지한다. 이 두 방향을 컴파일러·역컴파일러 산출로 직접 확인한다.
  *
  * 표기가 코퍼스 전량에서 지켜지는가와 매핑 산출물이 실재하는가는
@@ -73,7 +73,7 @@ class PartialReferenceNotationTest extends LayoutMarkupTestCase
             $markup = PartialReferenceNotation::toMarkup($json);
 
             $this->assertTrue(PartialReferenceNotation::isAuthoringNotation($markup),
-                "산출 표기 '{$json}' 를 저작 표기로 못 바꾼다");
+                "산출 표기 '{$json}' 를 마크업 표기로 못 바꾼다");
 
             $this->assertSame($json, PartialReferenceNotation::toJson($markup),
                 "왕복이 원본으로 돌아오지 않는다: '{$json}' → '{$markup}' → '"
@@ -108,7 +108,7 @@ class PartialReferenceNotationTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 저작본은 저작 표기만 받고, 산출 JSON 은 `.json` 을 유지한다 (`<include>`·`<modal>` 양쪽).
+     * 소스는 마크업 표기만 받고, 산출 JSON 은 `.json` 을 유지한다 (`<include>`·`<modal>` 양쪽).
      *
      * @scenario compile_unit=layout,source_health=valid
      *
@@ -191,7 +191,7 @@ class PartialReferenceNotationTest extends LayoutMarkupTestCase
             }
         }
 
-        // 반대쪽으로 죽지 않았음을 같은 자리에서 증명한다 — 노드 자리의 `<modal>` 은 정상 저작이다
+        // 반대쪽으로 죽지 않았음을 같은 자리에서 증명한다 — 노드 자리의 `<modal>` 은 정상 마크업이다
         // (코퍼스 908건). src 만 거부하는 것이지 태그를 거부하는 것이 아니다.
         $document = $this->compile('<partial><modal data-ref="m" title="t"><div/></modal></partial>');
 
@@ -200,7 +200,7 @@ class PartialReferenceNotationTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 역컴파일이 두 자리 모두 저작 표기로 되돌린다 (재생성이 규약을 되돌리지 않는다).
+     * 역컴파일이 두 자리 모두 마크업 표기로 되돌린다 (재생성이 규약을 되돌리지 않는다).
      *
      * @scenario compile_unit=layout,source_health=valid
      *
@@ -236,7 +236,7 @@ class PartialReferenceNotationTest extends LayoutMarkupTestCase
     /**
      * 마크업을 문서 JSON 으로 컴파일합니다.
      *
-     * @param  string  $markup  저작 마크업
+     * @param  string  $markup  마크업
      * @return array<string, mixed> 문서 JSON
      */
     private function compile(string $markup): array

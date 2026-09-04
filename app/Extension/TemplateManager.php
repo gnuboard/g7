@@ -1270,7 +1270,7 @@ class TemplateManager implements TemplateManagerInterface
 
             // 3. 레이아웃 파일 실제 존재 확인 — layout_name 그대로 layouts/ 하위 파일 경로로 사용.
             //    소스 선택은 설치 경로와 **같은 우선순위 규약**을 쓴다. 종전에는 여기만 `.json` 을
-            //    하드코딩해, 저작본(`.g7.html`)으로만 작성된 에러 레이아웃이 registerLayouts() 로
+            //    하드코딩해, 소스(`.g7.html`)으로만 작성된 에러 레이아웃이 registerLayouts() 로
             //    정상 등록된 직후 이 검증에서 "없다" 로 판정돼 설치가 세워졌다 (34차 ❌2).
             $found = false;
 

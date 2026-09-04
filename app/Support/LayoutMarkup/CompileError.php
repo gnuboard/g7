@@ -6,9 +6,9 @@ use App\Enums\LayoutMarkupErrorCode;
 use Exception;
 
 /**
- * `.g7.html` 저작 포맷 컴파일 과정에서 발생하는 모든 오류의 단일 예외.
+ * `.g7.html` 마크업 형식 컴파일 과정에서 발생하는 모든 오류의 단일 예외.
  *
- * 이 예외는 저작자(사람·AI)에게 **어디를 어떻게 고쳐야 하는지**를 알려주는 것이
+ * 이 예외는 작성자(사람·AI)에게 **어디를 어떻게 고쳐야 하는지**를 알려주는 것이
  * 유일한 목적이다. 따라서 세 가지를 항상 함께 싣는다:
  *
  *  1. **위치** — 소스 파일 경로 + 라인 + 컬럼. 컴파일 대상이 수백 줄짜리 레이아웃
@@ -17,7 +17,7 @@ use Exception;
  *     테스트·문서·audit 룰은 이 코드로 오류를 지목할 수 있다.
  *  3. **제안** — 올바른 표기를 메시지 본문에 포함한다(`<Div>` → `<div>`). G7 문법은
  *     HTML 유사 방언이라 Vue/JSX 관용구 반사 작성이 예상되는 지대이며, 제안 없는
- *     거부는 저작자를 같은 실수로 되돌린다.
+ *     거부는 작성자를 같은 실수로 되돌린다.
  *
  * 메시지 본문은 하드코딩하지 않고 `lang/{ko,en}/exceptions.php` 의
  * `layout_markup.*` 키에서 가져온다(예외 다국어 규정).
@@ -27,7 +27,7 @@ class CompileError extends Exception
     /**
      * 프로퍼티명이 `line`/`column` 이 아닌 `sourceLine`/`sourceColumn` 인 것은 이름
      * 취향이 아니다 — `Exception::$line` 은 **예외를 던진 PHP 파일의 라인**이라 같은
-     * 이름을 쓰면 저작 파일의 라인을 덮어써 오류 좌표가 조용히 뒤바뀐다.
+     * 이름을 쓰면 소스 파일의 라인을 덮어써 오류 좌표가 조용히 뒤바뀐다.
      *
      * @param  LayoutMarkupErrorCode  $errorCode  실패 사유 코드
      * @param  int  $sourceLine  오류 발생 라인 (1-base)
@@ -46,11 +46,11 @@ class CompileError extends Exception
     }
 
     /**
-     * 저작 파일의 좌표가 아닌, **파일 전체**에 대한 오류를 만듭니다.
+     * 소스 파일의 좌표가 아닌, **파일 전체**에 대한 오류를 만듭니다.
      *
-     * 레지스트리 매니페스트(`components.json`)처럼 저작자가 쓴 `.g7.html` 의 특정 지점을
+     * 레지스트리 매니페스트(`components.json`)처럼 작성자가 쓴 `.g7.html` 의 특정 지점을
      * 가리킬 수 없는 오류가 있다. 이때 라인·컬럼을 0 으로 두고 위치 봉투도 파일명만 싣는다 —
-     * 있지도 않은 "1행 1열" 을 지어내면 저작자가 그 자리를 들여다보게 만든다.
+     * 있지도 않은 "1행 1열" 을 지어내면 작성자가 그 자리를 들여다보게 만든다.
      *
      * @param  LayoutMarkupErrorCode  $code  실패 사유 코드
      * @param  string|null  $path  대상 파일 경로
@@ -161,7 +161,7 @@ class CompileError extends Exception
             default => __('exceptions.layout_markup.error_at', $replace + ['file' => $this->sourcePath]),
         };
 
-        // 본문은 봉투 치환이 모두 끝난 뒤에 끼워 넣는다. 본문에는 저작자가 쓴 원문
+        // 본문은 봉투 치환이 모두 끝난 뒤에 끼워 넣는다. 본문에는 작성자가 쓴 원문
         // (속성명 등)이 실리므로, 함께 치환하면 `:line` 같은 이름의 속성이 라인 번호로
         // 둔갑한다.
         return str_replace(':detail', $this->getDetail(), $message);

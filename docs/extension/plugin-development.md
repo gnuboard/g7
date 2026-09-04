@@ -291,7 +291,7 @@ class Plugin implements PluginInterface
 
 ## 화면 컴포넌트 제공
 
-플러그인도 모듈과 같은 방식으로 자기 화면 컴포넌트를 제공한다. 소스는 `resources/js/components/{basic,composite,layout}/`, 이름은 `{플러그인식별자}.{이름}`(저작 태그에 식별자 프리픽스 필수), 등록은 플러그인 번들이 스스로 한다.
+플러그인도 모듈과 같은 방식으로 자기 화면 컴포넌트를 제공한다. 소스는 `resources/js/components/{basic,composite,layout}/`, 이름은 `{플러그인식별자}.{이름}`(마크업 태그에 식별자 프리픽스 필수), 등록은 플러그인 번들이 스스로 한다.
 
 플러그인은 **다른 확장의 컴포넌트를 대체할 수 없다** — 그 권한은 템플릿 전용이다. 자기 컴포넌트의 특정 템플릿 전용 판본은 `resources/js/components/for/{템플릿식별자}/` 에 둔다.
 
@@ -331,7 +331,7 @@ plugins/_bundled/sirsoft-payment/
 │   │   └── en.json
 │   └── layouts/                 # 레이아웃 파일
 │       └── admin/               # 관리자 레이아웃 (admin 템플릿 등록)
-│           ├── plugin_settings.g7.html  # 설정 페이지 레이아웃 (저작 SSoT)
+│           ├── plugin_settings.g7.html  # 설정 페이지 레이아웃 (소스 SSoT)
 │           └── plugin_settings.json     # 짝 런타임 계약 (AbstractPlugin 이 직접 읽음 — 디스크 상주 필수)
 ├── src/
 │   ├── Listeners/              # 이벤트(훅)를 처리하는 리스너
@@ -355,7 +355,7 @@ plugins/_bundled/sirsoft-payment/
 | `database/migrations/` | 플러그인 마이그레이션 파일 |
 | `database/seeders/` | 플러그인 시더 파일 |
 | `resources/lang/` | 다국어 JSON 파일 (ko.json, en.json) |
-| `resources/layouts/admin/` | 설정 페이지 레이아웃 — `plugin_settings.g7.html`(저작 SSoT) + 짝 `plugin_settings.json`(런타임 계약) |
+| `resources/layouts/admin/` | 설정 페이지 레이아웃 — `plugin_settings.g7.html`(소스 SSoT) + 짝 `plugin_settings.json`(런타임 계약) |
 | `src/Listeners/` | 훅 이벤트 리스너 클래스 |
 | `src/Providers/` | 서비스 프로바이더 클래스 |
 | `tests/` | 테스트 파일 (Feature/Unit) |
@@ -611,12 +611,12 @@ public function getHooks(): array
 
 ## 설정 레이아웃 파일 시스템
 
-플러그인 설정 UI는 JSON 레이아웃 파일을 통해 정의합니다. `AbstractPlugin`의 `getSettingsLayout()` 메서드가 레이아웃 파일 경로를 반환하며, 파일이 존재하면 자동으로 설정 UI를 제공합니다.
+플러그인 설정 UI는 레이아웃 소스(`plugin_settings.g7.html`)으로 정의하고, 그 짝 JSON(`plugin_settings.json`)이 런타임 계약이 됩니다. `AbstractPlugin`의 `getSettingsLayout()` 메서드가 그 JSON 경로를 반환하며, 파일이 존재하면 자동으로 설정 UI를 제공합니다.
 
 ### 핵심 원칙
 
 ```text
-필수: 설정 UI는 resources/layouts/admin/plugin_settings.g7.html 로 저작 (PHP 코드에 하드코딩 금지)
+필수: 설정 UI는 resources/layouts/admin/plugin_settings.g7.html 로 작성 (PHP 코드에 하드코딩 금지)
 필수: 짝 plugin_settings.json 을 함께 둔다 — AbstractPlugin::getSettingsLayout() 이 그 경로를 직접 읽으므로
       DB 설치 레이아웃과 달리 .json 이 디스크에 있어야 한다
 ✅ 필수: 템플릿 오버라이드 우선순위 준수
@@ -624,10 +624,10 @@ public function getHooks(): array
 
 ### 레이아웃 파일 경로
 
-저작 파일: `plugins/{identifier}/resources/layouts/admin/plugin_settings.g7.html`
+소스 파일: `plugins/{identifier}/resources/layouts/admin/plugin_settings.g7.html`
 런타임 계약(짝): `plugins/{identifier}/resources/layouts/admin/plugin_settings.json`
 
-저작 문법은 [layout-markup.md](../frontend/layout-markup.md), 산출 JSON 의 키 계약은 [layout-json.md](../frontend/layout-json.md) 를 따른다.
+마크업 문법은 [layout-markup.md](../frontend/layout-markup.md), 산출 JSON 의 키 계약은 [layout-json.md](../frontend/layout-json.md) 를 따른다.
 
 `getSettingsLayout()` 은 DB 설치 레이아웃과 달리 파일을 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다.
 
@@ -663,7 +663,7 @@ public function hasSettings(): bool
 <meta title="$t:settings.page_title" description="$t:settings.page_description"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -719,7 +719,7 @@ public function hasSettings(): bool
 <div label="$t:settings.display_mode.label"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -766,7 +766,7 @@ public function hasSettings(): bool
 </slot>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -859,13 +859,13 @@ plugins/sirsoft-daum_postcode/
             └── plugin_settings.json
 ```
 
-**plugin_settings.g7.html (저작 SSoT — 아래 JSON 은 이 파일의 컴파일 결과이자 런타임 계약):**
+**plugin_settings.g7.html (소스 SSoT — 아래 JSON 은 이 파일의 컴파일 결과이자 런타임 계약):**
 
 ```html
 <meta title="$t:settings.page_title" description="$t:settings.page_description"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1321,7 +1321,7 @@ public function seoVariables(): array
 </meta>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

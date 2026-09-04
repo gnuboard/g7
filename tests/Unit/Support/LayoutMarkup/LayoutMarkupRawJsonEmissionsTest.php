@@ -73,7 +73,7 @@ class LayoutMarkupRawJsonEmissionsTest extends LayoutMarkupTestCase
      * **태그 본문 JSON 은 태그 이름을 가리지 않고 센다 (D42).**
      *
      * D41 은 이 태그들을 "`decodeJsonBody` 가 받는 설계된 정본" 으로 보아 제외했다. 그 제외는
-     * PO 지적(3회차)으로 폐기됐다 — 컴파일러가 받아 준다는 사실과 저작 파일에 JSON 이 통짜로
+     * PO 지적(3회차)으로 폐기됐다 — 컴파일러가 받아 준다는 사실과 소스 파일에 JSON 이 통짜로
      * 드러난다는 사실은 별개이고, 이 포맷이 없애려던 것은 후자다. 라벨은 태그명으로 남겨
      * 게이트 메시지만 보고 어디를 고칠지 알 수 있게 한다.
      *

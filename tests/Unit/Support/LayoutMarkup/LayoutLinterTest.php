@@ -9,7 +9,7 @@ use App\Support\LayoutMarkup\LayoutLinter;
 use App\Support\LayoutMarkup\LintWarning;
 
 /**
- * LayoutLinter 단위 테스트 (`.g7.html` 저작 포맷 S6 — 정적 lint 5종).
+ * LayoutLinter 단위 테스트 (`.g7.html` 마크업 형식 S6 — 정적 lint 5종).
  *
  * lint 은 컴파일을 막지 않는 경고다. 각 lint 이 위반을 정확히 잡고, 위반이 없으면 조용한지(오검출
  * 없음)를 함께 본다 — 경고는 노이즈가 되면 무시되므로 오검출 회피가 정확 검출만큼 중요하다.
@@ -352,7 +352,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * `startInterval`·`stopInterval` 은 `params.id` 를 **필수 인자로 읽는다** — 경고하면 오탐이다.
      *
      * 이 음성 표본이 이 축의 축소 경계를 지킨다: 키 하나를 통째로 금지하는 판정으로 넓히는 순간
-     * 정상 저작이 red 가 된다(ActionDispatcher:5146·5181).
+     * 정상 마크업이 red 가 된다(ActionDispatcher:5146·5181).
      *
      * @scenario compile_unit=linter,source_health=valid
      *
@@ -415,7 +415,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
-     * `sirsoft-basic` 의 Modal 은 hoist 3종을 하나도 선언하지 않는다 — 저작이 조용히 사라진다.
+     * `sirsoft-basic` 의 Modal 은 hoist 3종을 하나도 선언하지 않는다 — 마크업이 조용히 사라진다.
      *
      * @scenario compile_unit=linter,source_health=valid
      *
@@ -451,7 +451,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     /**
      * 같은 이름의 prop 이 Modal 이 아닌 노드에 있으면 판정 대상이 아니다.
      *
-     * hoist 3키의 저작 경로는 Modal 자식뿐이고(EmbeddingCompiler 가 부모를 못박는다), 다른 노드까지
+     * hoist 3키의 소스 경로는 Modal 자식뿐이고(EmbeddingCompiler 가 부모를 못박는다), 다른 노드까지
      * 넓히면 매니페스트 부분 선언(75~77%) 위에서 오탐이 시작된다(D19).
      *
      * @scenario compile_unit=linter,source_health=valid

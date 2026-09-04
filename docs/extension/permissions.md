@@ -498,7 +498,7 @@ G7은 기능 레벨 권한 외에 **리소스 레벨 권한**을 지원합니다
 <button data-if="{{item.abilities.can_update}}" text="수정"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -738,7 +738,7 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

@@ -1,10 +1,10 @@
 /**
  * 프론트엔드/레이아웃 검증 도구
  *
- * 대상 3종 — TSX 컴포넌트 · 레이아웃 저작본 `.g7.html` · 산출 JSON(런타임 계약).
+ * 대상 3종 — TSX 컴포넌트 · 레이아웃 소스 `.g7.html` · 산출 JSON(런타임 계약).
  *
  * **미지원 확장자는 조용히 통과시키지 않는다.** 종전 구현은 `.json`/`.tsx` 두 분기뿐이라
- * 저작 SSoT 인 `.g7.html` 이 어느 분기도 타지 않고 `issues` 빈 채 `valid: true` 를 반환했다
+ * 소스 SSoT 인 `.g7.html` 이 어느 분기도 타지 않고 `issues` 빈 채 `valid: true` 를 반환했다
  * (S17 20차 검출 ❌2). "위반 0" 과 "검사 대상 0" 은 다른 명제이므로, 판별되지 않은 확장자는
  * `unsupported-extension` 오류로 표면화한다.
  */
@@ -57,7 +57,7 @@ export function validateFrontendCode(
 }
 
 /**
- * 레이아웃 저작본 `.g7.html` 검증.
+ * 레이아웃 소스 `.g7.html` 검증.
  *
  * 문법 전수 판정(에러코드 95종 + lint 6종)은 PHP 컴파일러가 SSoT 이므로 여기서 재구현하지 않는다
  * — `php artisan layout:compile <path>` 로 위임하고, 이 도구는 **포맷 무관 규정**(다크 모드 클래스,
@@ -91,7 +91,7 @@ function validateLayoutMarkup(
       continue;
     }
 
-    // 다크 모드 클래스 — 저작본은 className 이 아니라 class 속성이다
+    // 다크 모드 클래스 — 소스는 className 이 아니라 class 속성이다
     const classMatch = line.match(/\sclass=["']([^"']+)["']/);
     if (classMatch) {
       validateDarkModeClasses(filePath, classMatch[1], `line ${lineNum}`, issues);

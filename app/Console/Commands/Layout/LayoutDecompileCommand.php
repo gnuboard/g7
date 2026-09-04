@@ -13,11 +13,11 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
 /**
- * `.g7.html` 저작 파일을 JSON 레이아웃으로 역변환(decompile)·검증하는 커맨드.
+ * `.g7.html` 소스 파일을 JSON 레이아웃으로 역변환(decompile)·검증하는 커맨드.
  *
- * 용어(PO 정의): **compile = JSON → HTML**(저작 소스 산출), **decompile = HTML → JSON**(설치·검증).
+ * 용어(PO 정의): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
  * 설치 경로가 `.g7.html` 을 인메모리로 JSON 화하는 것과 같은 역변환을, 이 커맨드는 오프라인에서
- * 실행해 저작 파일이 올바르게 JSON 으로 풀리는지 확인한다.
+ * 실행해 소스 파일이 올바르게 JSON 으로 풀리는지 확인한다.
  *
  * 하는 일은 네 가지다: **역변환**(토큰→트리→노드/문서), **강검증**(구조·엔드포인트·외부URL·
  * 컴포넌트·wait_for·script — 현행 설치 경로엔 없는 검증), **lint**(경고), 그리고 **굽기**
@@ -26,18 +26,18 @@ use Illuminate\Support\Facades\File;
  * JSON 을 그 경로로 덤프한다(진단·검수용).
  *
  * 경로 하나를 주면 그 파일만, `--all` 이면 번들 확장·템플릿의 모든 `.g7.html` 을 역변환한다.
- * 이관(S10~S16)이 끝난 현재 코퍼스는 `.g7.html` 로 전량 저작돼 있고(`LayoutCorpus::scan('.g7.html')`),
+ * 이관(S10~S16)이 끝난 현재 코퍼스는 `.g7.html` 로 전량 작성돼 있고(`LayoutCorpus::scan('.g7.html')`),
  * `--all` 은 그 전량을 대상으로 돈다.
  *
  * ## 굽기 (S18.5 축 A)
  *
  * `--sync` 는 컴파일 산출을 짝 `.json` 에 기록하고(짝이 없으면 생성), `--check` 는 쓰지 않고
  * 대조만 해 불일치가 있으면 파일 목록과 함께 non-zero 로 끝난다(`prettier --check` 패턴 — CI·훅·
- * 게이트가 소비한다). 두 옵션이 생기기 전까지 짝 `.json` 은 **손유지**였고, 저작본만 고치면
+ * 게이트가 소비한다). 두 옵션이 생기기 전까지 짝 `.json` 은 **손유지**였고, 소스만 고치면
  * 코퍼스 게이트가 사후에 red 를 낼 뿐 고치는 방법은 알려 주지 않았다.
  *
  * **호출 주체는 개발자뿐이다 (D38)** — 설치·서빙 경로는 이 커맨드도, 그 직렬화기
- * ({@see LayoutJsonWriter})도 부르지 않는다. 설치가 저작본을 인메모리로
+ * ({@see LayoutJsonWriter})도 부르지 않는다. 설치가 소스를 인메모리로
  * 컴파일해 DB 에 등록하고 디스크에 쓰지 않는다는 것이 S10 재아키텍처의 결정이며, 굽기가 설치에
  * 끼어들면 프로덕션 배포가 저장소 파일을 수정하게 된다.
  */
@@ -57,7 +57,7 @@ class LayoutDecompileCommand extends Command
     /**
      * @var string
      */
-    protected $description = '.g7.html 저작 파일을 JSON 레이아웃으로 역변환하고 강검증·lint·굽기(--sync/--check) 합니다';
+    protected $description = '.g7.html 소스 파일을 JSON 레이아웃으로 역변환하고 강검증·lint·굽기(--sync/--check) 합니다';
 
     /**
      * 굽기 집계 — `--sync` 는 생성·갱신·무변경, `--check` 는 불일치 파일 목록을 모은다.

@@ -197,14 +197,14 @@ class LayoutSourceMatrixTest extends TestCase
     /**
      * 소스 조합별 기대값 — 계획서 축 B "기대 결과" 표 그대로.
      *
-     * `Div` 는 저작본(`.g7.html`)이 이겼다는 뜻이고 `Span` 은 원본 `.json` 이 이겼다는 뜻이다.
+     * `Div` 는 소스(`.g7.html`)이 이겼다는 뜻이고 `Span` 은 원본 `.json` 이 이겼다는 뜻이다.
      *
      * @return array<string, array{0: string, 1: string}>
      */
     public static function layoutSourceExpectations(): array
     {
         return [
-            'markup-only → 저작본 등록' => ['markup_only', 'Div'],
+            'markup-only → 소스 등록' => ['markup_only', 'Div'],
             'json-only → JSON 등록' => ['json_only', 'Span'],
             'both(auto) → 마크업 승' => ['both_auto', 'Div'],
             'both(forced-json) → JSON 승' => ['both_forced_json', 'Span'],
@@ -215,7 +215,7 @@ class LayoutSourceMatrixTest extends TestCase
      * 소스 조합별 **fragment 수집**도 같은 규약을 탄다 (`template:activate` 갈래).
      *
      * @param  string  $source  소스 조합
-     * @param  bool  $markupWins  저작본이 이겨야 하면 true
+     * @param  bool  $markupWins  소스가 이겨야 하면 true
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -231,7 +231,7 @@ class LayoutSourceMatrixTest extends TestCase
         $this->assertCount(1, $definitions,
             "fragment 등록 집합이 기대와 다릅니다 (소스: {$source}) — 짝 접기가 깨지면 하나가 둘이 된다");
 
-        // 경로가 아니라 **내용**으로 승자를 본다 — 저작본은 `Div`, 원본 `.json` 은 `Span` 을 낸다.
+        // 경로가 아니라 **내용**으로 승자를 본다 — 소스는 `Div`, 원본 `.json` 은 `Span` 을 낸다.
         // 경로 접미사만 보면 "골랐지만 다른 것을 읽는" 형태(29차가 실물로 겪은 자리)를 놓친다.
         $this->assertSame($markupWins ? 'Div' : 'Span',
             $definitions[0]['data']['components'][0]['name'] ?? null,
@@ -249,7 +249,7 @@ class LayoutSourceMatrixTest extends TestCase
     public static function fragmentSourceExpectations(): array
     {
         return [
-            'markup-only → 저작본' => ['markup_only', true],
+            'markup-only → 소스' => ['markup_only', true],
             'json-only → JSON' => ['json_only', false],
             'both(auto) → 마크업 승' => ['both_auto', true],
             // 짝이 있으면 강제가 이행되므로 `.json` 이 이긴다.

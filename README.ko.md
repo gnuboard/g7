@@ -6,11 +6,6 @@
 A modern, extensible CMS platform built with Laravel + React
 
 <p align="center">
-  <strong>모던 아키텍처로 다시 태어난 대한민국 대표 오픈소스 CMS</strong><br>
-  A modern, extensible CMS platform built with Laravel + React
-</p>
-
-<p align="center">
   <a href="#"><img src="https://img.shields.io/badge/version-7.1.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
@@ -57,7 +52,7 @@ Laravel과 React를 기반으로, 보안부터 아키텍처까지 처음부터 �
 | **권한 제어** | 역할별 메뉴와 기능, 데이터 범위까지 제어할 수 있습니다. 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로 조직 구조에 맞는 유연한 접근 관리를 제공합니다 |
 | **본인인증 (IDV)** | 회원가입·비밀번호 재설정·민감 작업 등 모든 본인인증 시점을 라우트/훅 단위 선언형 정책으로 통합 관리합니다. 코어가 메일 프로바이더를 기본 내장하고, 외부 KCP·이니시스·SMS·PortOne·Stripe Identity 등은 동일한 Provider 계약으로 붙일 수 있는 확장점을 제공합니다. 서버가 HTTP 428 응답을 반환하면 프론트엔드 인터셉터가 자동으로 인증 모달을 띄우고 인증 성공 시 원 요청을 재실행합니다 |
 | **보안** | 입력값 자동 검증과 토큰 기반 인증을 제공합니다. 설계부터 보안을 고려한 다층 방어 구조(CSRF/XSS/SQL Injection), 로그인 시도 제한·계정 잠금(HTTP 423) 실제 구현, 설치 완료 후 인스톨러 엔드포인트 자동 차단(HTTP 410) 까지 다층 방어를 구성합니다 |
-| **유연한 화면 구성** | 화면 구조를 정의하면 즉시 반영할 수 있습니다. 프론트엔드 인프라 없이 마크업 저작(.g7.html)만으로 웹앱 수준의 동적 화면 구현이 가능합니다 |
+| **유연한 화면 구성** | 화면 구조를 정의하면 즉시 반영할 수 있습니다. 프론트엔드 인프라 없이 마크업 소스(.g7.html)만으로 웹앱 수준의 동적 화면 구현이 가능합니다 |
 | **레이아웃 편집기** | 위지윅 기반 레이아웃 편집 기능으로 화면 블록을 직접 배치하고 수정 결과를 바로 확인할 수 있습니다 |
 | **검증된 기반** | Laravel + React 기반을 제공합니다. 글로벌 기업이 채택한 기술 스택으로 높은 확장성과 유연한 UI 구현이 가능합니다 |
 | **공통 캐시 시스템** | `CacheInterface` 와 코어/모듈/플러그인 3종 드라이버로 키 접두사(`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`) 를 자동 격리합니다. 태그 기반 자동 무효화와 `g7_core_settings('cache.*_ttl')` 중앙 관리로 하드코딩 없이 운영할 수 있습니다 |
@@ -106,11 +101,11 @@ Gnuboard7
 
 ### 템플릿 엔진 동작 흐름
 
-그누보드7의 템플릿 엔진은 **JSON으로 UI 구조를 선언**하면, 엔진이 이를 해석하여 React 컴포넌트로 렌더링합니다.
+그누보드7의 템플릿 엔진은 **`.g7.html` 마크업으로 UI 구조를 선언**하면, 설치 시 서버가 이를 JSON(런타임 계약)으로 컴파일하고 엔진이 그 JSON 을 해석하여 React 컴포넌트로 렌더링합니다.
 
 #### 제공 기능
 
-- 마크업 저작(.g7.html)만으로 React 기반 UI 구성 — React 전문 지식 없이도 화면 개발 가능
+- 마크업 소스(.g7.html)만으로 React 기반 UI 구성 — React 전문 지식 없이도 화면 개발 가능
 - 모듈/플러그인이 프론트엔드 빌드 없이 UI를 동적으로 주입/확장
 - 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
 - UI가 코드가 아닌 데이터(JSON)로 정의되는 구조를 활용한 **위지윅 레이아웃 편집기** — 비개발자도 화면 블록을 직접 배치·편집하고 결과를 바로 확인할 수 있습니다
@@ -118,7 +113,7 @@ Gnuboard7
 ```mermaid
 flowchart TB
     subgraph Backend ["🔧 Backend — Laravel"]
-        A["📄 레이아웃 저작본 .g7.html<br/>→ 설치 시 JSON 컴파일"] --> B["⚙️ LayoutService"]
+        A["📄 레이아웃 소스 .g7.html<br/>→ 설치 시 JSON 컴파일"] --> B["⚙️ LayoutService"]
         B --> |"상속 해석<br/>extends / partial"| B
         M["📦 모듈 레이아웃"] -.-> |"layout_extensions<br/>extension_point 주입"| B
         P["🔌 플러그인 레이아웃"] -.-> |"layout_extensions<br/>extension_point 주입"| B
@@ -182,40 +177,92 @@ flowchart TB
     linkStyle default stroke:#374151,stroke-width:2px
 ```
 
-**레이아웃 예시** — 저작은 `.g7.html` 마크업으로 하고, 설치 시 서버가 아래 JSON(런타임 계약)으로 컴파일해 실제 React UI 로 렌더링합니다:
+**레이아웃 예시** — 마크업은 아래와 같은 `.g7.html` 마크업으로 하고, 설치 시 서버가 그 아래 JSON(런타임 계약)으로 컴파일해 실제 React UI 로 렌더링합니다:
+
+```html
+<layout name="product_list" version="1.0.0">
+  <data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET"/>
+  <div>
+    <h1 text="$t:product_list"/>
+    <div data-each="item in {{products?.data?.data}}">
+      <span text="{{item.name}}"/>
+    </div>
+    <button text="$t:add" data-if="{{products?.data?.abilities?.can_create}}">
+      <on type="click">
+        <navigate path="/products/create"/>
+      </on>
+    </button>
+  </div>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
+  "version": "1.0.0",
+  "layout_name": "product_list",
   "data_sources": [
-    { "id": "products", "endpoint": "/api/products", "method": "GET" }
+    {
+      "id": "products",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products",
+      "method": "GET"
+    }
   ],
-  "layout": {
-    "type": "basic", "name": "Div",
-    "children": [
-      { "type": "basic", "name": "H1", "text": "$t:product_list" },
-      {
-        "type": "basic", "name": "Div",
-        "iteration": { "source": "{{products?.data?.data}}", "item_var": "$item" },
-        "children": [
-          { "type": "basic", "name": "Span", "text": "{{$item.name}}" }
-        ]
-      },
-      {
-        "type": "basic", "name": "Button", "text": "$t:add",
-        "if": "{{products?.data?.abilities?.can_create}}",
-        "actions": [{
-          "event": "onClick",
-          "handler": "navigate",
-          "params": { "path": "/products/create" }
-        }]
-      }
-    ]
-  }
+  "components": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "H1",
+          "props": {
+            "text": "$t:product_list"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{products?.data?.data}}",
+            "item_var": "item"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "text": "{{item.name}}"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{products?.data?.abilities?.can_create}}",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/products/create"
+              }
+            }
+          ],
+          "props": {
+            "text": "$t:add"
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 
 모듈/플러그인을 활성화하면 해당 UI와 컴포넌트가 자동으로 주입됩니다.
-개발자는 마크업 저작만으로 UI를 추가하거나 변경할 수 있어 별도의 프론트엔드 빌드가 필요 없으며, 권한(abilities)에 따라 UI 요소가 자동으로 표시/숨김 처리됩니다.
+개발자는 마크업 작성만으로 UI를 추가하거나 변경할 수 있어 별도의 프론트엔드 빌드가 필요 없으며, 권한(abilities)에 따라 UI 요소가 자동으로 표시/숨김 처리됩니다.
 
 ### 핵심 시스템
 

@@ -17,7 +17,7 @@ export interface MemoCardProps {
 /**
  * 메모 한 건을 카드로 보여주는 기본 판본.
  *
- * 이 컴포넌트는 **모듈이 제공하는 컴포넌트** 의 최소 예시다. 저작자는 모듈 식별자가 앞에 붙은
+ * 이 컴포넌트는 **모듈이 제공하는 컴포넌트** 의 최소 예시다. 작성자는 모듈 식별자가 앞에 붙은
  * 태그로 쓴다:
  *
  * ```html
@@ -25,7 +25,7 @@ export interface MemoCardProps {
  * ```
  *
  * 태그의 `gnuboard7-hello-module` 은 모듈 식별자 `gnuboard7-hello_module` 의 언더스코어를
- * 하이픈으로 접은 것이다 — 저작 태그명에는 언더스코어를 쓸 수 없기 때문이다. 레지스트리에
+ * 하이픈으로 접은 것이다 — 마크업 태그명에는 언더스코어를 쓸 수 없기 때문이다. 레지스트리에
  * 등록되는 이름은 실제 식별자를 그대로 쓴 `gnuboard7-hello_module.MemoCard` 다.
  */
 export const MemoCard: React.FC<MemoCardProps> = ({

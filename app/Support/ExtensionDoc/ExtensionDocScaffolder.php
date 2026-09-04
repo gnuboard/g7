@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\File;
  */
 class ExtensionDocScaffolder
 {
-    // 조각 읽기는 등록 경로와 같은 규약을 쓴다 — 문서만 `.json` 을 직접 읽으면 저작본만 고친 조각이 문서에서 낡는다.
+    // 조각 읽기는 등록 경로와 같은 규약을 쓴다 — 문서만 `.json` 을 직접 읽으면 소스만 고친 조각이 문서에서 낡는다.
     use CollectsFragmentSources;
 
     /**
@@ -931,15 +931,15 @@ class ExtensionDocScaffolder
 
         $common = [
             'CHANGELOG.md' => ['변경 이력', '버전 상향 시 항목 추가 (미기재 시 버전 상향 불가)'],
-            // 편집기 컴포넌트 선언은 레이아웃 저작자가 읽는 props 계약이다(실측 15파일).
+            // 편집기 컴포넌트 선언은 레이아웃 작성자가 읽는 props 계약이다(실측 15파일).
             // 자리가 없으면 그 선언을 고쳐도 `docs/components.md` 갱신 요구가 걸리지 않는다.
-            'components.json' => ['편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약)', $updateCmd],
+            'components.json' => ['편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약)', $updateCmd],
             // 확장이 셸로 호출하는 외부 실행파일·인증서·WSDL 자리다(실측 6파일, 결제 플러그인).
             // 비면 그 기능이 죽는데 코드에는 "bin/ 에 복사하세요" 안내만 있고 문서에는 자리가 없었다.
             'bin/' => ['확장이 실행하는 외부 바이너리·인증서', '교체 시 OS별 파일과 권한을 함께 확인 (비면 해당 기능 정지)'],
             'docs/' => ['개발자 문서', '표면 변경 시 `php artisan ext:docgen` 재실행'],
             'lang/' => ['다국어', '키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화'],
-            'custom/' => ['운영자 추가 에셋 자리', '저작자는 두지 않는다 (운영자 소유 — 보존 계층이 덮지 않음)'],
+            'custom/' => ['운영자 추가 에셋 자리', '작성자는 두지 않는다 (운영자 소유 — 보존 계층이 덮지 않음)'],
         ];
 
         if ($type === ExtensionInventory::TYPE_TEMPLATE) {
@@ -1335,8 +1335,8 @@ class ExtensionDocScaffolder
         }
 
         // 표에 실을 대상(주입 레이아웃·확장점)은 조각의 **내용**에 있다. 읽기는 등록 경로와 같은 규약
-        // (`loadFragmentDefinitions` — 저작본 `.g7.html` 이 있으면 컴파일해 읽고, 없으면 `.json`)에
-        // 위임한다. 문서가 `.json` 을 직접 읽으면 저작본만 고친 조각의 대상이 문서에서 낡은 채 남는다.
+        // (`loadFragmentDefinitions` — 소스 `.g7.html` 이 있으면 컴파일해 읽고, 없으면 `.json`)에
+        // 위임한다. 문서가 `.json` 을 직접 읽으면 소스만 고친 조각의 대상이 문서에서 낡은 채 남는다.
         $targets = [];
         $root = rtrim((string) $record['path'], '/\\').DIRECTORY_SEPARATOR
             .($isTemplate ? 'extensions' : 'resources'.DIRECTORY_SEPARATOR.'extensions');
@@ -1375,7 +1375,7 @@ class ExtensionDocScaffolder
             foreach ($declared as $key => $value) {
                 $raw = is_string($key) ? $key : (is_string($value) ? $value : (string) $value);
                 $rel = $this->relativeToExtension($ctx, $raw);
-                // 기본 구현은 `.json` 경로를 돌려주고 위 목록은 저작본(`.g7.html`) 경로라, 같은 조각을
+                // 기본 구현은 `.json` 경로를 돌려주고 위 목록은 소스(`.g7.html`) 경로라, 같은 조각을
                 // 짝 이름으로 대조해야 중복이 걸러진다.
                 $relMarkup = preg_replace('/\.json$/', '.g7.html', $rel) ?? $rel;
                 if (isset($known[$rel]) || isset($known[$relMarkup])) {
@@ -1393,7 +1393,7 @@ class ExtensionDocScaffolder
      * 조각 루트 아래 디렉토리별 `.json` 파일 목록을 돌려줍니다 — 템플릿 오버라이드는 `extensions/{확장식별자}/` 로 나뉜다.
      *
      * @param  string  $root  조각 루트 절대 경로
-     * @return array<string, array<int, string>> 디렉토리 => `.json` 절대 경로 목록 (저작본만 있는 디렉토리는 빈 배열)
+     * @return array<string, array<int, string>> 디렉토리 => `.json` 절대 경로 목록 (소스만 있는 디렉토리는 빈 배열)
      */
     private function fragmentDirectories(string $root): array
     {

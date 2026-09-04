@@ -24,7 +24,7 @@ return [
         'circular_include' => 'include循環参照が検出されました: :trace',
         'max_include_depth_exceeded' => 'include最大深度を超過しました (最大: :max段階)',
         'include_outside_directory' => 'includeパスが許可されたディレクトリ外です: :path (許可: :allowed_dir)',
-        'invalid_include_markup' => 'includeの著作ソース(.g7.html)のコンパイルに失敗しました: :path (エラー: :error)',
+        'invalid_include_markup' => 'includeのソース(.g7.html)のコンパイルに失敗しました: :path (エラー: :error)',
     ],
     'layout_version' => [
         'save_failed_after_retries' => 'レイアウトバージョンの保存に失敗しました。:attempts回の再試行後も失敗しました。',
@@ -184,7 +184,7 @@ return [
             'on' => 'イベントの説明は<on>内の最初のアクション前に記述し、アクションが2つ以上の場合は<sequence>で囲んでからその前に記述してください。',
             'default' => '説明する対象のタグのすぐ前に移動してください — 値·構造を持つタグにはコメント領域がありません。',
         ],
-        'partial_src_not_authoring' => '<:tag src=":src"> は原本を指す必要があります: src=":suggestion" のように .g7.html で書いてください。出力 JSON の .json 表記はコンパイラが作成します。',
+        'partial_src_not_authoring' => '<:tag src=":src"> はソース(.g7.html)を指す必要があります: src=":suggestion" のように .g7.html で書いてください。出力 JSON の .json 表記はコンパイラが作成します。',
     ],
     'layout_markup_lint' => [
         'unregistered_handler' => '登録されていないハンドラーです: :handler — コア·テンプレート·拡張のどこにもありません。',

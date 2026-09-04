@@ -1127,7 +1127,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
 
         const radioGroups = findByName(scopeField, 'RadioGroup');
         expect(radioGroups).toHaveLength(1);
-        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 저작 결정이 아니다 — 여기서 고정하지
+        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
         // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         expect(radioGroups[0].props.name).toBe('report_policy.notify_admin_on_report_scope');
 
@@ -1186,7 +1186,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
     it('Select가 composite 타입이다', () => {
         const selects = findByName(tabReportPolicy, 'Select');
         for (const select of selects) {
-            // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 저작 결정이 아니다 — 여기서 고정하지
+            // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
             // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         }
     });
@@ -1298,7 +1298,7 @@ describe('_tab_spam_security.json - 스팸/보안 탭', () => {
     it('Select가 composite 타입이다', () => {
         const selects = findByName(tabSpamSecurity, 'Select');
         for (const select of selects) {
-            // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 저작 결정이 아니다 — 여기서 고정하지
+            // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
             // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         }
     });
@@ -1311,7 +1311,7 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
     it('Partial 메타데이터가 올바르다', () => {
         expect(bulkApplyModal.meta.is_partial).toBe(true);
         expect(bulkApplyModal.id).toBe('bulk_apply_confirm_modal');
-        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 저작 결정이 아니다 — 여기서 고정하지
+        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
         // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         expect(bulkApplyModal.name).toBe('Modal');
     });

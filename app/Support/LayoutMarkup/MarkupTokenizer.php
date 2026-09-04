@@ -6,12 +6,12 @@ use App\Enums\LayoutMarkupErrorCode;
 use LogicException;
 
 /**
- * `.g7.html` 저작 포맷의 경량 토크나이저 — 소스 문자열을 평면 토큰 스트림으로 바꾼다.
+ * `.g7.html` 마크업 형식의 경량 토크나이저 — 소스 문자열을 평면 토큰 스트림으로 바꾼다.
  *
  * HTML5 파서를 쓰지 않는 이유는 두 가지다. ① 브라우저 파서는 **오류를 복구**하도록
- * 설계되어 있어(미닫힘 태그 자동 보정 등) 저작 실수를 침묵으로 삼킨다 — 컴파일러가
+ * 설계되어 있어(미닫힘 태그 자동 보정 등) 작성 실수를 침묵으로 삼킨다 — 컴파일러가
  * 존재하는 이유와 정반대다. ② `<column>`·`<on>` 같은 커스텀 엘리먼트에 HTML 의 암묵
- * 규칙(`<p>` 자동 닫힘, `<table>` foster parenting)이 개입하면 저작 의도가 왜곡된다.
+ * 규칙(`<p>` 자동 닫힘, `<table>` foster parenting)이 개입하면 작성 의도가 왜곡된다.
  *
  * 따라서 본 토크나이저는 HTML5 의 **부분집합**만 인정하고 나머지는 라인·컬럼이 붙은
  * `CompileError` 로 거부한다. 인정 범위:
@@ -23,7 +23,7 @@ use LogicException;
  *  - **태그명은 소문자·kebab**. `<Div>` 는 제안형 오류로 거부한다.
  *  - **속성명은 원문 보존**(대소문자·대괄호·콜론). `:serverSidePagination`·`filters[0][field]` 가 실사용이다.
  *  - **문자 참조는 세미콜론 필수**(`&amp;`). 세미콜론 없는 `&` 는 문자 그대로 보존한다 —
- *    표현식 `{{a && b}}` 를 저작 가능하게 유지하기 위한 의도적 선택이다. 반대로 `&foo;` 처럼
+ *    표현식 `{{a && b}}` 를 작성 가능하게 유지하기 위한 의도적 선택이다. 반대로 `&foo;` 처럼
  *    참조 모양인데 알려지지 않은 이름은 오타로 보고 거부한다.
  *  - **raw text 요소 없음**. `<script>` 는 외부 JS 로더 선언(`src`/`id`)이라 본문을 갖지 않으므로,
  *    HTML 의 `<script>` raw text 규칙을 적용하지 않고 일반 요소로 다룬다.
@@ -33,7 +33,7 @@ use LogicException;
  * 경우만 여기서 잡는다).
  *
  * 전처리: BOM 제거 + 개행 정규화(CRLF·CR → LF). 개행 정규화를 생략하면 Windows 에서
- * 저작한 파일의 텍스트 노드에 `\r` 이 섞여 산출 JSON 이 플랫폼마다 달라진다.
+ * 작성한 파일의 텍스트 노드에 `\r` 이 섞여 산출 JSON 이 플랫폼마다 달라진다.
  */
 final class MarkupTokenizer
 {
@@ -42,13 +42,13 @@ final class MarkupTokenizer
      *
      * HTML5 표준 void 요소 14종에서 **`meta`·`img`·`input` 을 제외한 11종**이다. `<meta>` 는
      * 문서 메타 섹션이며 하위에 `<seo>` 를 두므로(매핑 사전 A) 컨테이너다 — void 로
-     * 두면 `<seo>` 저작이 문법상 불가능해진다.
+     * 두면 `<seo>` 마크업이 문법상 불가능해진다.
      *
      * `<img>`·`<input>` 도 void 에서 뺐다(D36) — G7 의 Img·Input 컴포넌트는 `<on>` 액션을
      * 실을 수 있는데(클릭 이미지·onChange 폼필드), void 로 두면 자식을 못 실어 액션 있는 노드가
-     * 저작 문법으로 표현되지 못한다. 빈 경우는 자가닫힘(`<input .../>`)으로, 액션이 있으면 열고
+     * 마크업 문법으로 표현되지 못한다. 빈 경우는 자가닫힘(`<input .../>`)으로, 액션이 있으면 열고
      * 닫아(`<input>…<on/>…</input>`) 담는다. 나머지(`br`/`hr`/`col` 등)는 액션 대상이 아니라 존치 —
-     * `<br>` 을 쓴 저작자가 "미등록 태그" 대신 "닫히지 않은 태그" 라는 엉뚱한 오류를 받지 않게 한다.
+     * `<br>` 을 쓴 작성자가 "미등록 태그" 대신 "닫히지 않은 태그" 라는 엉뚱한 오류를 받지 않게 한다.
      */
     public const VOID_ELEMENTS = [
         'area',
@@ -90,7 +90,7 @@ final class MarkupTokenizer
      *
      * @param  string  $source  `.g7.html` 소스
      * @param  string|null  $path  소스 파일 경로 (오류 메시지용, 문자열 직접 컴파일 시 null)
-     * @return array<int, MarkupToken> 토큰 스트림 (저작 순서 보존)
+     * @return array<int, MarkupToken> 토큰 스트림 (소스 순서 보존)
      *
      * @throws CompileError 문법 부분집합을 벗어난 표기를 만난 경우
      */
@@ -235,7 +235,7 @@ final class MarkupTokenizer
             }
 
             // `class="a"id="b"` — HTML5 파서는 관대하지만, 속성 경계가 눈에 보이지 않으면
-            // 저작자가 값의 끝을 오해한다. 공백을 강제한다.
+            // 작성자가 값의 끝을 오해한다. 공백을 강제한다.
             if ($spacing === 0 && $attributes !== []) {
                 throw $this->error(LayoutMarkupErrorCode::MissingAttributeSeparator, [
                     'tag' => $name,
@@ -421,7 +421,7 @@ final class MarkupTokenizer
                 throw $this->error(LayoutMarkupErrorCode::UnterminatedAttributeValue, ['attr' => $name, 'quote' => $quote]);
             }
 
-            // `<` 는 인용된 값 안에서 문자 그대로 유효하다 — `data-if="{{a < b}}"` 저작을 위해
+            // `<` 는 인용된 값 안에서 문자 그대로 유효하다 — `data-if="{{a < b}}"` 마크업을 위해
             // 반드시 통과시켜야 한다.
             $run = strcspn($this->source, $quote.'&', $this->offset);
 
@@ -594,7 +594,7 @@ final class MarkupTokenizer
     /**
      * 현재 컬럼(1-base, 문자 단위)을 계산합니다.
      *
-     * 바이트가 아닌 문자 단위인 이유: 저작 파일에는 한국어 라벨이 흔한데, 바이트 컬럼은
+     * 바이트가 아닌 문자 단위인 이유: 소스 파일에는 한국어 라벨이 흔한데, 바이트 컬럼은
      * 편집기가 표시하는 커서 위치와 어긋나 오류 메시지의 좌표 구실을 못 한다.
      *
      * @return int 컬럼 번호 (1-base)

@@ -54,10 +54,10 @@ class GenerateLayoutTestFixture extends Command
 
         $this->info("레이아웃 로드 중: {$layoutPath}");
 
-        // 소스 선택은 설치 경로와 **같은 규약**을 쓴다 — 저작 SSoT(`.g7.html`) 우선, 없으면 짝
+        // 소스 선택은 설치 경로와 **같은 규약**을 쓴다 — 소스 SSoT(`.g7.html`) 우선, 없으면 짝
         // `.json`, `--layout-source=json` 이면 역전. 종전에는 인자 경로를 `json_decode` 로 직행해
-        // 읽어 저작본을 인자로 줄 수도, 짝 저작본을 우선할 수도 없었다(fixture 가 낡은 `.json` 에서
-        // 나오는데 화면은 저작본으로 설치되므로, 그 fixture 로 만든 회귀 테스트가 실물과 갈린다).
+        // 읽어 소스를 인자로 줄 수도, 짝 소스를 우선할 수도 없었다(fixture 가 낡은 `.json` 에서
+        // 나오는데 화면은 소스로 설치되므로, 그 fixture 로 만든 회귀 테스트가 실물과 갈린다).
         $source = null;
 
         foreach ($this->layoutSourceCandidates($layoutPath) as $candidate) {
@@ -74,12 +74,12 @@ class GenerateLayoutTestFixture extends Command
         }
 
         if ($source['markup']) {
-            $this->info('저작본으로 로드합니다: '.$source['path']);
+            $this->info('소스로 로드합니다: '.$source['path']);
 
             try {
                 $layoutData = $this->compileMarkupLayoutFile($source['path']);
             } catch (\Throwable $e) {
-                $this->error('저작본 컴파일 실패: '.$e->getMessage());
+                $this->error('소스 컴파일 실패: '.$e->getMessage());
 
                 return self::FAILURE;
             }
@@ -116,7 +116,7 @@ class GenerateLayoutTestFixture extends Command
         }
 
         // 출력 파일명 결정
-        // 저작본을 인자로 받으면 `pathinfo` 가 `x.g7` 을 돌려주므로 확장자 앞머리를 마저 떤다.
+        // 소스를 인자로 받으면 `pathinfo` 가 `x.g7` 을 돌려주므로 확장자 앞머리를 마저 떤다.
         $fallbackName = preg_replace('/\.g7$/i', '', pathinfo($layoutPath, PATHINFO_FILENAME));
 
         $outputName = $this->option('output')

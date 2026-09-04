@@ -18,7 +18,7 @@ namespace App\Support\LayoutMarkup;
  * ({@see mustRenderInline()}). 자식 사이 개행+공백은 어차피 null 로 걷혀 왕복에 무해하다.
  *
  * 종전에는 텍스트가 있으면 무조건 서브트리 전체를 한 줄로 찍었다 — 액션(`<on>`)을 실은 버튼 하나가
- * 1,800자를 넘겨 저작본이 읽히지 않았고, 그것이 이 규칙을 좁힌 이유다.
+ * 1,800자를 넘겨 소스가 읽히지 않았고, 그것이 이 규칙을 좁힌 이유다.
  */
 final class LayoutMarkupSerializer
 {

@@ -1,12 +1,12 @@
-# 레이아웃 마크업 (`.g7.html`) 저작 포맷
+# 레이아웃 마크업 (`.g7.html`) 형식
 
 ## TL;DR (5초 요약)
 
 ```text
-1. 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 SSoT 이고 설치 시 서버(PHP)가 설치 시점에 메모리로 JSON 컴파일해 DB 등록(디스크 산출 JSON 미기록)
+1. 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 소스 SSoT 이고 설치 시 서버(PHP)가 설치 시점에 메모리로 JSON 컴파일해 DB 등록(디스크 산출 JSON 미기록)
 2. 문법 3원칙: 접두어 없음(지시 속성만 data-*) / 소문자·kebab 태그 / 속성값에 JSON 금지(구조체=자식 태그, 배열=반복 태그)
 3. 태그명이 컴포넌트를 정한다(레지스트리 kebab 해석). 조건표시=data-if, 반복=data-each, 참조=data-ref (무접두 if/each/ref·v-if 는 컴파일 에러)
-4. 용어(D38): compile=JSON→HTML(저작 소스 산출) / decompile=HTML→JSON(설치·검증). 컴파일러: app/Support/LayoutMarkup/* — 토큰→트리→문서(강검증→lint)
+4. 용어(D38): compile=JSON→HTML(소스 산출) / decompile=HTML→JSON(설치·검증). 컴파일러: app/Support/LayoutMarkup/* — 토큰→트리→문서(강검증→lint)
 5. 문서루트 4갈래(layout/partial/extension/override). 태그·속성명은 명명 3순위 규칙으로 확정(S8 동결, 2026-07-18)
 6. 주석 `<!-- -->` 은 바로 다음 태그의 `comment` 가 된다 — 산출에 자리가 없는 태그(`<on>`·값/구조 태그·섹션 컨테이너) 앞에 쓰면 컴파일 에러(§10.5)
 ```
@@ -15,13 +15,13 @@
 
 ## 위치
 
-- 저작 파일: `.g7.html` (본 레이아웃·partial·확장 주입·오버라이드) — 저작 SSoT
+- 소스 파일: `.g7.html` (본 레이아웃·partial·확장 주입·오버라이드) — 소스 SSoT
 - 컴파일러: `app/Support/LayoutMarkup/`
-- 설치(D38·D39): 디스크에는 `.g7.html`(기본) + 원본 `.json`(선택 설치원) 병존. 설치·갱신은 `.g7.html` 을 **설치 시점에 메모리로 컴파일**해 DB(template_layouts)에 등록하고 **산출 JSON 을 디스크에 쓰지 않는다**. `.g7.html` 이 없으면 `.json` 을 직접 등록. 둘이 나란히 있으면 저작 SSoT 인 `.g7.html` 이 이긴다
+- 설치(D38·D39): 디스크에는 `.g7.html`(기본) + 원본 `.json`(선택 설치원) 병존. 설치·갱신은 `.g7.html` 을 **설치 시점에 메모리로 컴파일**해 DB(template_layouts)에 등록하고 **산출 JSON 을 디스크에 쓰지 않는다**. `.g7.html` 이 없으면 `.json` 을 직접 등록. 둘이 나란히 있으면 소스 SSoT 인 `.g7.html` 이 이긴다
 - 검증 커맨드: `php artisan layout:decompile {path|--all}` (HTML→JSON 강검증·lint, 산출 JSON 미기록 — `--out` 지정 시 단일 파일 진단 덤프) / `--template={id}`
-- 이관(생성) 커맨드: `php artisan layout:compile {path|--all}` (JSON→HTML 저작 소스 산출) / `--roundtrip` (왕복 동등성 검증)
+- 이관(생성) 커맨드: `php artisan layout:compile {path|--all}` (JSON→HTML 소스 산출) / `--roundtrip` (왕복 동등성 검증)
 - 코퍼스(왕복 하네스·`<json>` 예산·이관 게이트의 모집단): 본 레이아웃(`layouts/`) **+ 레이아웃 확장 fragment(`extensions/`)**. 정의는 `LayoutCorpus` 가 SSoT — 스캔 글롭을 곳곳에 복제하면 한쪽만 넓힐 때 나머지가 반쪽 코퍼스로 남고 그 위에서 "escape-0" 같은 완료 판정이 나온다
-- 강검증 축(`LayoutValidator`): ① 구조(레이아웃/fragment) ② 엔드포인트 화이트리스트 ③ 컴포넌트 존재 ④ `wait_for` cross-field ⑤ `<script src>` 호스트 화이트리스트. **외부 URL·위험 스킴(`NoExternalUrls`)은 돌리지 않는다** — 설치 경로(`ValidatesLayoutFiles`)가 원래 돌리지 않아 `.json` 설치와 패리티를 맞춘 것이고(PO 확정 07-20), 번들 결제 플러그인이 PG사 공식 주소를 정상 기능으로 들고 있다. 저작 API 경로(`Store/Update LayoutRequest`·`UpdateLayout{Content,ExtensionContent}Request`)에는 규칙이 그대로 살아 있다
+- 강검증 축(`LayoutValidator`): ① 구조(레이아웃/fragment) ② 엔드포인트 화이트리스트 ③ 컴포넌트 존재 ④ `wait_for` cross-field ⑤ `<script src>` 호스트 화이트리스트. **외부 URL·위험 스킴(`NoExternalUrls`)은 돌리지 않는다** — 설치 경로(`ValidatesLayoutFiles`)가 원래 돌리지 않아 `.json` 설치와 패리티를 맞춘 것이고(PO 확정 07-20), 번들 결제 플러그인이 PG사 공식 주소를 정상 기능으로 들고 있다. 작성 API 경로(`Store/Update LayoutRequest`·`UpdateLayout{Content,ExtensionContent}Request`)에는 규칙이 그대로 살아 있다
 - overlay fragment 는 `injections` 없이도 성립한다 — `modals`·`data_sources`·`scripts`·`init_actions` 중 **하나 이상**을 기여하면 유효(런타임 병합 목록과 같은 판정). 아무것도 기여하지 않을 때만 거부
 - 설치 소스 강제: `{module|plugin|template}:{install|update|refresh-layout} --layout-source=json` — 컴파일러 회귀가 의심될 때 짝 `.json` 이 있는 레이아웃을 원본 JSON 기준으로 되돌려 설치하는 진단·복구 탈출구(기본 `auto`). 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일하고 로그에 미이행을 남긴다(조용히 누락시키면 등록이 사라져 빈 화면). 환경 기본값은 `LAYOUT_INSTALL_SOURCE`, SSoT 는 `config/template.php` 의 `layout_markup.install_source`. `{type}:update` 의 기존 `--source=auto|bundled|github`(업데이트 패키지 출처)와는 별개 옵션이다
 
@@ -58,7 +58,7 @@
 | 확장 주입 (`target_layout`/`extension_point`) | `<extension>` | 개념어 |
 | 템플릿→확장 레이아웃 대체 (`override_target`) | `<override>` | 어휘 계승 |
 
-> `<partial name>` 은 `<layout name>` 과 같은 규율 — 최상위 `layout_name` 으로 접히고 **meta 로 흘리지 않는다**. `name` 을 뺀 나머지 `<partial>` 속성은 `meta` 로 접히며, `is_partial: true` 는 컴파일러가 항상 주입한다(저작 불요). partial 의 루트는 노드 **하나**이고, 모달 조각은 그 루트 노드에 `<data-source>` 자식을 얹어 오픈 시 fetch 를 선언할 수 있다.
+> `<partial name>` 은 `<layout name>` 과 같은 규율 — 최상위 `layout_name` 으로 접히고 **meta 로 흘리지 않는다**. `name` 을 뺀 나머지 `<partial>` 속성은 `meta` 로 접히며, `is_partial: true` 는 컴파일러가 항상 주입한다(작성 불요). partial 의 루트는 노드 **하나**이고, 모달 조각은 그 루트 노드에 `<data-source>` 자식을 얹어 오픈 시 fetch 를 선언할 수 있다.
 
 ---
 
@@ -81,16 +81,16 @@
 | `globalHeaders` | `<global-headers><match pattern="*">…</match></global-headers>` |
 | `transition_overlay` | `<transition-overlay>` (bool은 `:enabled`) |
 | `scripts` | `<script src="…" id="…" :async data-if="…"/>` (반복, src 화이트리스트) |
-| `modals` | `<modal src="partials/_modal_delete.g7.html"/>` 또는 인라인 `<modal>노드</modal>` — 저작본은 **저작본을 가리킨다**(§3.1). 산출 JSON 은 `partial: "partials/_modal_delete.json"` 으로 나가고, 실제 소스는 해석기가 고른다: 짝 `.g7.html` 저작본이 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전) |
+| `modals` | `<modal src="partials/_modal_delete.g7.html"/>` 또는 인라인 `<modal>노드</modal>` — 소스는 **소스를 가리킨다**(§3.1). 산출 JSON 은 `partial: "partials/_modal_delete.json"` 으로 나가고, 실제 소스는 해석기가 고른다: 짝 `.g7.html` 소스가 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전) |
 
-### 3.1 조각 참조 표기 — 저작본은 저작본을 가리킨다
+### 3.1 조각 참조 표기 — 소스는 소스를 가리킨다
 
 `<include src>` 와 `<modal src>` 는 다른 레이아웃 조각을 가리킨다. 두 세계가 각자 자기 표기를 지키고,
 확장자를 바꾸는 일은 **컴파일 경계에서만** 일어난다.
 
 | 세계 | 표기 | 강제 |
 | --- | --- | --- |
-| 저작본 `.g7.html` | `src="….g7.html"` | 컴파일 에러 `partial_src_not_authoring` · 정적 검사 |
+| 소스 `.g7.html` | `src="….g7.html"` | 컴파일 에러 `partial_src_not_authoring` · 정적 검사 |
 | 산출/설치 JSON | `"partial": "….json"` | 정적 검사 (**종전 그대로 — 이 규약으로 바뀌지 않았다**) |
 
 ```html
@@ -258,10 +258,10 @@
 | `sortable`(+`itemTemplate`) | `<sortable source="…"><item-template>노드1개</item-template></sortable>` |
 | `component_layout` | `<template slot="item">…</template>` |
 | `default`/`callbacks`(extension_point) | `<default>…</default>`/`<callback name="…">` |
-| `partial`(노드 전체 치환) | `<include src="….g7.html"/>` — 저작본은 저작본을 가리키고 산출 JSON 은 `.json` 을 적는다(`<modal src>` 와 같은 규약, §3.1). 실제 소스는 해석기가 고른다: 짝 `.g7.html` 저작본이 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다 |
+| `partial`(노드 전체 치환) | `<include src="….g7.html"/>` — 소스는 소스를 가리키고 산출 JSON 은 `.json` 을 적는다(`<modal src>` 와 같은 규약, §3.1). 실제 소스는 해석기가 고른다: 짝 `.g7.html` 소스가 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다 |
 | `comment` | `<!-- … -->` |
 
-> `data-if`/`data-each`/`data-key` 등 지시 키를 **무접두 속성**(`if=`·`each=`·`condition=`·`iteration=`)으로 쓰면 `foreign_idiom`/`node_key_as_attribute` 에러가 정확한 형태를 제안한다. AI·인간 저작 실측(S8)에서 자연 성향이 무접두 `if=` 였으나 이 에러가 1스텝 교정한다.
+> `data-if`/`data-each`/`data-key` 등 지시 키를 **무접두 속성**(`if=`·`each=`·`condition=`·`iteration=`)으로 쓰면 `foreign_idiom`/`node_key_as_attribute` 에러가 정확한 형태를 제안한다. AI·인간 작성 실측(S8)에서 자연 성향이 무접두 `if=` 였으나 이 에러가 1스텝 교정한다.
 
 ---
 
@@ -294,7 +294,7 @@
 
 `<footer>` 는 Modal 자식일 때만 `props.footer` 로 hoist 된다(`Footer` 컴포넌트와 이름이 겹쳐 부모 문맥이 가른다 — `<card>` 와 동일). Modal 밖의 `<footer>` 는 `Footer` 컴포넌트로 해석.
 
-> **이 계약은 이제 기계가 강제한다 (S23 축 B).** 대상 템플릿의 `Modal` 이 `footer`/`titlePrefix`/`titleSuffix` 를 선언하지 않았는데 그 자리를 쓰면 `hoist_prop_not_supported_by_template` lint 경고가 난다. 컴파일은 막지 않는다 — 아래 비대칭은 결함이 아니라 의도된 것이고, 막으면 두 템플릿이 공유하는 조각을 저작할 수 없게 된다. 판정 집합은 {@see \App\Support\LayoutMarkup\EmbeddingCompiler} 의 `MODAL_TAGS` 에서 도출하므로 hoist 를 하나 더하면 검사도 따라온다.
+> **이 계약은 이제 기계가 강제한다 (S23 축 B).** 대상 템플릿의 `Modal` 이 `footer`/`titlePrefix`/`titleSuffix` 를 선언하지 않았는데 그 자리를 쓰면 `hoist_prop_not_supported_by_template` lint 경고가 난다. 컴파일은 막지 않는다 — 아래 비대칭은 결함이 아니라 의도된 것이고, 막으면 두 템플릿이 공유하는 조각을 작성할 수 없게 된다. 판정 집합은 {@see \App\Support\LayoutMarkup\EmbeddingCompiler} 의 `MODAL_TAGS` 에서 도출하므로 hoist 를 하나 더하면 검사도 따라온다.
 >
 > **이 세 표기는 문법이지 보편 표면이 아니다 — 템플릿을 확인하고 쓴다.** `<footer>`·`<title-prefix>`·`<title-suffix>` 는 **컴파일러가 어느 템플릿에서든 `props.footer`/`titlePrefix`/`titleSuffix` 로 hoist** 하지만, 그 props 를 **렌더하는 `Modal` 은 `sirsoft-admin_basic` 뿐**이다. `sirsoft-basic` 의 [Modal.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/Modal.tsx) 는 세 prop 을 구조분해하지 않고 rest spread 도 없어 **컴파일·렌더 모두 통과한 뒤 버튼이 조용히 사라진다**. 사용자 템플릿 모달의 확인/취소 버튼은 `children` 안에 둔다. 컴포넌트 측 계약은 [component-props.md §Modal](component-props.md#modal-컴포넌트) · [modal-usage.md §적용 범위](modal-usage.md) 참조.
 >
@@ -346,9 +346,9 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 
 > `:stopPropagation="true"` 는 engine-v1.66.0 에서 신설된 **액션 키**다(불리언이므로 타입 리터럴 `:attr` 로 적는다)(핸들러가 아니다 — `stopPropagation` 이라는 핸들러는 등록된 적이 없다). `true` 일 때만 진입점 액션에서 `event.stopPropagation()` 을 부르는 opt-in 이라, 목록 행 안의 토글처럼 부모 클릭까지 발화되던 자리에 쓴다. `change` 이벤트에서 `preventDefault` 는 부르지 않는다(토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋난다). 배치는 {@see \App\Support\LayoutMarkup\ActionHandlerManifest} 의 `UNIVERSAL_TOP_LEVEL_KEYS` 가 SSoT 다.
 >
-> **같은 이름의 컴포넌트 prop 과 혼동하지 않는다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation` 을 갖는다(구현 [UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`, 저작 4파일). **자리가 둘을 가른다** — 노드 태그 속성(`<user-info :stopPropagation="true"/>`)이면 컴포넌트 prop, `<on>` 아래 핸들러 태그 속성이면 액션 키다.
+> **같은 이름의 컴포넌트 prop 과 혼동하지 않는다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation` 을 갖는다(구현 [UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`, 작성 4파일). **자리가 둘을 가른다** — 노드 태그 속성(`<user-info :stopPropagation="true"/>`)이면 컴포넌트 prop, `<on>` 아래 핸들러 태그 속성이면 액션 키다.
 
-> **`params` 에는 화이트리스트가 없다 — 오타·오배치는 조용히 산다 (S23 축 A).** top-level 목록 밖의 무접두 속성은 검사 없이 전부 `params.*` 로 간다. 그래서 `<navigate condition="…">` 은 컴파일 green 이지만 `params.condition` 이라 아무도 읽지 않고, 실제로 이관 대장의 7건이 「조건이 무시된 채 항상 실행」됐다. 전면 화이트리스트는 두지 않는다(prop 선언 커버리지가 75~77% 라 정상 저작이 대량 거부된다 — D19). 대신 **정본이 다른 자리인 닫힌 3키**만 `action_param_misplaced_key` lint 로 잡는다:
+> **`params` 에는 화이트리스트가 없다 — 오타·오배치는 조용히 산다 (S23 축 A).** top-level 목록 밖의 무접두 속성은 검사 없이 전부 `params.*` 로 간다. 그래서 `<navigate condition="…">` 은 컴파일 green 이지만 `params.condition` 이라 아무도 읽지 않고, 실제로 이관 대장의 7건이 「조건이 무시된 채 항상 실행」됐다. 전면 화이트리스트는 두지 않는다(prop 선언 커버리지가 75~77% 라 정상 마크업이 대량 거부된다 — D19). 대신 **정본이 다른 자리인 닫힌 3키**만 `action_param_misplaced_key` lint 로 잡는다:
 >
 > | `params` 에 실린 키 | 정본 자리 |
 > |---|---|
@@ -387,7 +387,7 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 >
 > **`<action-ref name>` 은 핸들러 없이 성립하는 유일한 액션이다.** `named_actions` 에 정의해 둔 액션을 이름으로 불러 쓰는 형태(`actionRef`)로, `<action>` 은 `handler` 가 필수라 이 형태를 지을 수 없다. 같은 액션을 여러 진입점에서 재사용하거나, `init_actions` 루트처럼 키 화이트리스트가 좁은 자리에서 복잡한 액션을 우회 실행할 때 쓴다.
 >
-> **조건 분기의 실행 블록도 같은 블록 규칙이다 (G9).** `<conditions>` 의 `<when if>`/`<else>` 본문은 `<case>`/`<default>` 와 같다 — 액션이 하나면 `then` 이 단일 객체, 둘 이상이면 배열이 된다. 엔진은 두 형태를 모두 받으므로(배열은 sequence 처럼 순차 실행) 저작에서는 자식 수만 신경 쓰면 된다.
+> **조건 분기의 실행 블록도 같은 블록 규칙이다 (G9).** `<conditions>` 의 `<when if>`/`<else>` 본문은 `<case>`/`<default>` 와 같다 — 액션이 하나면 `then` 이 단일 객체, 둘 이상이면 배열이 된다. 엔진은 두 형태를 모두 받으므로(배열은 sequence 처럼 순차 실행) 작성에서는 자식 수만 신경 쓰면 된다.
 >
 > ```html
 > <on event="change">
@@ -627,7 +627,15 @@ JSON 은 `comment` 키만 늘어난다).
 
 문서의 ```html 펜스도 같은 규칙을 받는다(`DocMarkupExampleCompilesTest` 가 전건 컴파일한다). 한 펜스에
 여러 예시를 나란히 실을 때 각 예시를 구분하는 라벨은 **주석이 아니라 펜스 밖 산문**으로 쓴다 — 소실
-자리에 주석을 다는 예시는 그 자체로 잘못된 저작법을 가르친다.
+자리에 주석을 다는 예시는 그 자체로 잘못된 작성법을 가르친다.
+
+레이아웃 예시는 **마크업이 기본이고 JSON 은 병기**다. 문서 섹션·컴포넌트 노드·액션처럼 작성 단위가
+되는 JSON 을 보여 줄 때는 그 위에 ```html 펜스로 소스를 먼저 두고, 둘 사이를 캡션
+`> 위는 소스(\`.g7.html\`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.` 로 잇는다. 이 규칙은 규정
+문서뿐 아니라 README 와 확장이 소유한 문서에도 적용되며, 마크업 없이 남은 레이아웃 JSON 예시는 정적
+검사가 막는다. 소스가 존재하지 않는 형태(매니페스트·라우트 선언·차단되어야 하는 공격 입력 등)를
+일부러 JSON 으로만 보여 줄 때는 펜스 바로 앞 줄에 `<!-- pair:skip 사유 -->` 를 둔다. 옳고 그름을
+대비하는 예시(`// ✅`·`// ❌`)와 `...` 자리표시 도식은 자동으로 제외된다.
 
 ---
 
@@ -643,7 +651,7 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 
 ## 11. 역변환 (JSON → `.g7.html`) 과 표기 탈출구 (S9)
 
-`layout:compile {path?|--all}`(PO 정의: compile=JSON→HTML) 이 JSON 레이아웃을 짝 `.g7.html` 저작 소스로 산출한다(이관 웨이브용). 내부 구현 클래스는 `LayoutMarkupDecompiler`(JSON→요소 트리 역변환) 로, 각 최상위 키·노드 키를 첫 급부 문법으로 되돌리고 재컴파일이 원본과 **정규화 후 deep-equal** 임을 확인한다(`--roundtrip`). 왕복 하네스는 번들 전 레이아웃을 상시 검사한다(`LayoutMarkupRoundTripCorpusTest`). 이관된 `.g7.html` 은 원본 `.json` 과 100% 동등하고 `<json>` 탈출구가 0 건이어야 한다(회귀 게이트).
+`layout:compile {path?|--all}`(PO 정의: compile=JSON→HTML) 이 JSON 레이아웃을 짝 `.g7.html` 소스로 산출한다(이관 웨이브용). 내부 구현 클래스는 `LayoutMarkupDecompiler`(JSON→요소 트리 역변환) 로, 각 최상위 키·노드 키를 첫 급부 문법으로 되돌리고 재컴파일이 원본과 **정규화 후 deep-equal** 임을 확인한다(`--roundtrip`). 왕복 하네스는 번들 전 레이아웃을 상시 검사한다(`LayoutMarkupRoundTripCorpusTest`). 이관된 `.g7.html` 은 원본 `.json` 과 100% 동등하고 `<json>` 탈출구가 0 건이어야 한다(회귀 게이트).
 
 ### 표기 탈출구 `<json>` — 100% 왕복 보장
 
@@ -652,11 +660,11 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 - `<json key="X">JSON</json>` — 최상위(`<layout>`/`<override>` 직속) 또는 노드 구조 자식으로 두면 그 자리의 키 `X` 를 JSON 값 그대로 설정한다(결함 키·비정규 shape 보존).
 - `<json>JSON</json>`(무키) — 노드 자리에 두면 그 자식 노드 하나 전체를 JSON 그대로 설정한다(void 태그처럼 노드 자리에서 표현 불가한 경우).
 
-방출은 **결함 인벤토리 키 또는 문법 갭**에 한정된다(정상 지원 키가 탈출구로 새면 회귀). 저작 시 `<json>` 을 직접 쓰지 않는다 — 역변환기가 이관 시에만 방출한다.
+방출은 **결함 인벤토리 키 또는 문법 갭**에 한정된다(정상 지원 키가 탈출구로 새면 회귀). 작성 시 `<json>` 을 직접 쓰지 않는다 — 역변환기가 이관 시에만 방출한다.
 
 ### 정규화 인벤토리 ("입력만 받고 정규화")
 
-왕복 비교는 컴파일러가 **결정적으로 파생·생략**하는 값을 양쪽에서 지워 비교한다. 손저작 소스에 낡은 값이 남아 있어도 이관 산출은 컴파일 정본으로 수렴하며, 그 수렴을 왕복 실패로 세지 않는다:
+왕복 비교는 컴파일러가 **결정적으로 파생·생략**하는 값을 양쪽에서 지워 비교한다. 손소스에 낡은 값이 남아 있어도 이관 산출은 컴파일 정본으로 수렴하며, 그 수렴을 왕복 실패로 세지 않는다:
 
 | 정규화 대상 | 컴파일 정본 | 근거 |
 | --- | --- | --- |
@@ -681,7 +689,7 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 - `Toggle`·`Badge` 가 `basic` 으로 적혀 있었다. 두 컴포넌트는 `editorAttrs` 를 명시 수신하고 `{...props}` 를 펼치지 않으므로, basic 분기에서 `editorAttrs` 가 제거되면 **편집 표식이 DOM 에 도달하지 못한다** — 레이아웃 편집기에서 누락된다.
 - 반대로 `Input` 등이 `composite` 로 적혀 있어 `dynamicState` 가 DOM 으로 샜고, `Input.tsx` 가 `const { loadingactions, formdata, ...validProps }` 로 **손수 걷어내는 방어코드**를 달고 있다.
 
-따라서 이관이 `type` 을 레지스트리 값으로 되돌리는 것은 결함 수정이다. 저작 시 `type` 을 적지 않는다 — 태그가 곧 `name` 이고 `type` 은 거기서 나온다.
+따라서 이관이 `type` 을 레지스트리 값으로 되돌리는 것은 결함 수정이다. 작성 시 `type` 을 적지 않는다 — 태그가 곧 `name` 이고 `type` 은 거기서 나온다.
 
 ### `<options>` — Select 옵션 데이터 래퍼 (D42 G13)
 
@@ -730,7 +738,7 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 </modal>
 ```
 
-> S9 실측으로 드러난 문법 갭 3건(void `<input>`/`<img>` 액션·노드 permissions·노드 meta)은 **D36 으로 문법 신설해 해소**됐다 — 이제 첫 급부로 저작되며 `<json>` 방출 대상이 아니다.
+> S9 실측으로 드러난 문법 갭 3건(void `<input>`/`<img>` 액션·노드 permissions·노드 meta)은 **D36 으로 문법 신설해 해소**됐다 — 이제 첫 급부로 작성되며 `<json>` 방출 대상이 아니다.
 
 ---
 
@@ -738,7 +746,7 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 
 새 최상위 키·새 지시 속성·새 핸들러 태그를 도입할 때 **어디를 함께 고쳐야 하는가**를 절차로 둔다.
 이 목록이 필요한 이유는 실측이다 — 최상위 키 선언이 네 곳에 흩어져 있고, 실제로 갈려 있었다
-(`comment` 가 저작 검증에는 있고 편집기 저장 화이트리스트에는 없어 저장이 조용히 떨궜다).
+(`comment` 가 마크업 검증에는 있고 편집기 저장 화이트리스트에는 없어 저장이 조용히 떨궜다).
 
 ### 기계가 잡는 자리 (고치지 않으면 게이트가 red 다)
 
@@ -746,12 +754,12 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 | --- | --- | --- |
 | **액션 핸들러** | 엔진 `ActionDispatcher`(switch 또는 `registerHandler`) + `ActionHandlerManifest::CORE_HANDLERS` | 하네스 가드 `handler-manifest-drift` — 두 선언을 토크나이즈해 대조. 한쪽만 고치면 red |
 | **최상위 키** | `DocumentCompiler::KEY_ORDER` + audit `ALLOWED_ROOT_KEYS` + `UpdateLayoutContentRequest::rules()` | 하네스 가드 `root-key-ledger` — 네 벌 차집합을 등재와 대조. 미등재 신규 차이만 red |
-| **저작 문법 일반** | 짝 `.json` 재생성 | `php artisan layout:decompile --all --check` (Stop 훅 상주) |
+| **마크업 문법 일반** | 짝 `.json` 재생성 | `php artisan layout:decompile --all --check` (Stop 훅 상주) |
 | **컴파일 계약** | 왕복 보존 | `php artisan layout:compile --all --roundtrip` |
 | **규정 ↔ 검사 도구** | 규정 ↔ 룰 매핑 등재 | 매핑 검증기 — `codified` 는 룰 실재, `compiler-enforced` 는 컴파일러 에러 코드 실재를 확인 |
 
 **새 최상위 키를 넣을 때 특히**: `UpdateLayoutContentRequest` 에 `content.<키>` 규칙이 없으면
-Laravel `validated()` 가 그 키를 떨군다. 컴파일러와 저작 검증만 고치면 **파일로는 살아 있고
+Laravel `validated()` 가 그 키를 떨군다. 컴파일러와 마크업 검증만 고치면 **파일로는 살아 있고
 편집기로 저장하는 순간 사라지는** 상태가 된다 — 화면도 게이트도 조용하다.
 
 ### 사람이 판단할 자리 (기계가 대신할 수 없다)

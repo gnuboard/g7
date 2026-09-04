@@ -112,7 +112,7 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 </select>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -152,7 +152,7 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 </select>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -179,7 +179,7 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 </init-local>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -198,7 +198,7 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 </select>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -226,7 +226,7 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 </select>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -324,7 +324,7 @@ Input 컴포넌트는 한글 등 IME 조합 입력을 올바르게 처리합니�
 </input>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -399,7 +399,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 </button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -440,7 +440,7 @@ export interface DataGridColumn {
   sortable?: boolean;               // 정렬 가능 여부
   hidden?: boolean;                 // 컬럼 숨김 (컬럼 선택기 기본 해제)
   required?: boolean;               // 컬럼 선택기에서 해제 불가
-  cellChildren?: DataGridCellChild[]; // 셀 커스텀 — 저작에서는 <cell> 자식
+  cellChildren?: DataGridCellChild[]; // 셀 커스텀 — 작성에서는 <cell> 자식
 }
 
 export interface DataGridProps {
@@ -502,7 +502,7 @@ export interface DataGridProps {
 | `className` | `string` | ❌ | - | CSS 클래스 |
 
 > **`rowKey` / `selectedRows` / `loading` 은 존재한 적이 없는 prop 이다** (S17 20차 실측 —
-> `DataGrid.tsx` grep 각 **0건**). 종전 이 표는 셋을 정식 prop 으로 적었고 아래 저작 예시에도
+> `DataGrid.tsx` grep 각 **0건**). 종전 이 표는 셋을 정식 prop 으로 적었고 아래 마크업 예시에도
 > 실었으나, 엔진은 그 키를 읽지 않으므로 전량 무시된다. 실물 이름은 `idField` · `selectedIds`
 > 이고 로딩 상태는 `DataGrid` 가 받지 않는다(데이터소스 `loading` 을 상위 노드의 `if` 로 가른다).
 
@@ -516,6 +516,16 @@ export interface DataGridProps {
 |----|------|--------|
 | `"page"` | 지금 그려진 행에 없는 선택을 버린다. 대상은 언제나 "보이고 체크된 행" | 일괄 처리 버튼이 달린 목록 화면 |
 | `"free"` | 선택을 컴포넌트가 건드리지 않는다 | 선택 자체가 저장 대상인 폼(적용 대상 고르기 등) — 여러 페이지에 걸쳐 고르는 선택기 포함 |
+
+```html
+<data-grid :selectable="true" selectionScope="page" selectedIds="{{_global.selectedIds_admin_users || []}}">
+  <on type="change" event="onSelectionChange">
+    <set-state target="global" selectedIds_admin_users="{{$args[0]}}"/>
+  </on>
+</data-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -581,7 +591,7 @@ export interface DataGridProps {
 </data-grid>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -684,7 +694,7 @@ export interface DataGridProps {
 </data-grid>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -707,7 +717,7 @@ export interface DataGridProps {
 ```
 
 > 셀 커스텀 키는 `cellChildren`(배열)이다 — `template` 은 `DataGridColumn` 에 존재한 적이 없다
-> (S17 20차 실측: `DataGrid.tsx` 에 `template?:` **0건**). 저작 표기는 `<column><cell>…</cell></column>`.
+> (S17 20차 실측: `DataGrid.tsx` 에 `template?:` **0건**). 마크업 표기는 `<column><cell>…</cell></column>`.
 
 **컬럼 셀 컨텍스트 변수**:
 - `$row`: 현재 행 데이터 객체
@@ -922,7 +932,7 @@ disabledField 동작
 | `expandColumnWidth` | `string` | ❌ | - | 확장 토글 컬럼 너비 |
 | `expandIconExpanded` / `expandIconCollapsed` | `string` | ❌ | - | 확장/축소 아이콘 |
 
-> **`editorAttrs` 는 편집기 내부 표면이라 저작 대상이 아니다** — 레이아웃 저작본에 직접 적지 않는다.
+> **`editorAttrs` 는 편집기 내부 표면이라 작성 대상이 아니다** — 레이아웃 소스에 직접 적지 않는다.
 
 > 이 절은 **전수**다 — `DataGridProps` 인터페이스가 선언한 공개 prop 과 이 문서의 언급 집합이 일치하는지 계약 표면 커버리지 검사가 기계로 대조한다.
 
@@ -992,7 +1002,7 @@ export interface HtmlEditorProps {
 </html-editor>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1072,7 +1082,7 @@ export interface CodeEditorProps {
 </code-editor>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1165,7 +1175,7 @@ export interface ModalProps {
 `sirsoft-basic` 의 `Modal` 은 이 props 를 받지 않으므로, 사용자 템플릿 모달에 넘기면 **조용히 렌더되지 않는다**
 (취소/확인 버튼이 통째로 사라진다). 사용자측 모달의 하단 버튼은 `children` 안에 둔다.
 
-`.g7.html` 저작 표기는 `<title-prefix>`/`<title-suffix>`/`<footer>` 이며 `Modal` 자식일 때만 해당 props 로 hoist 된다
+`.g7.html` 마크업 표기는 `<title-prefix>`/`<title-suffix>`/`<footer>` 이며 `Modal` 자식일 때만 해당 props 로 hoist 된다
 ([layout-markup.md §6 임베딩](layout-markup.md)). 관리자 모달의 footer 배치 규칙은 [modal-usage.md](modal-usage.md) 참조.
 
 ### 회피 불가 모달 설정
@@ -1204,7 +1214,7 @@ export interface ModalProps {
 </modal>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1254,7 +1264,7 @@ export interface ModalProps {
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 모달 열기
@@ -1329,7 +1339,7 @@ export interface LoadingSpinnerProps {
 <loading-spinner size="md" text="$t:common.loading"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1348,7 +1358,7 @@ export interface LoadingSpinnerProps {
 <loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:common.loading" color="text-blue-600" class="py-3"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1382,7 +1392,7 @@ export interface LoadingSpinnerProps {
 <loading-spinner data-if="{{_global.isLoading}}" :fullscreen="true" size="lg" text="$t:common.loading"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

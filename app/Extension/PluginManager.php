@@ -3145,7 +3145,7 @@ class PluginManager implements PluginManagerInterface
      *
      * 레이아웃 파일의 디렉토리 위치에 따라 대상 템플릿 타입이 결정됩니다:
      * 소스 수집은 `ValidatesLayoutFiles::collectLayoutSources()` 가 담당한다 —
-     * 저작 SSoT `.g7.html` 우선, 짝 없는 `.json` 만 병존 등록.
+     * 소스 SSoT `.g7.html` 우선, 짝 없는 `.json` 만 병존 등록.
      *
      * - layouts/admin/*.{g7.html,json} → admin 타입 템플릿에 등록
      * - layouts/user/*.{g7.html,json} → user 타입 템플릿에 등록
@@ -3251,7 +3251,7 @@ class PluginManager implements PluginManagerInterface
 
     // `.json` 만 훑던 `scanLayoutFiles()` 는 지웠다 — 유일한 호출처였던 `countPluginLayoutFiles()`
     // 가 설치 경로와 같은 소스 수집 규약(`ValidatesLayoutFiles::countInstallableLayouts()`)으로
-    // 옮겨가 호출처가 0 이 됐다. 저작본을 보지 못하는 스캐너를 남겨 두면 다음 사람이 그것을 집어
+    // 옮겨가 호출처가 0 이 됐다. 소스를 보지 못하는 스캐너를 남겨 두면 다음 사람이 그것을 집어
     // 쓰게 되고, 그 자리가 다시 `.json` 전용으로 굳는다(같은 이유로 `resolvePartial` 의 침묵
     // 반환도 함께 지웠다). 재귀 스캔이 필요하면 `ValidatesLayoutFiles::scanLayoutFilesRecursively()`
     // 를 쓴다 — 두 매니저가 공유하는 한 벌이다.
@@ -3260,7 +3260,7 @@ class PluginManager implements PluginManagerInterface
      * 파일 경로를 기반으로 레이아웃 이름을 생성합니다.
      *
      * 이 메서드는 `.json` 확장자만 제거하므로 **런타임 계약(`.json`) 경로 전용**입니다.
-     * 저작 SSoT(`.g7.html`)를 포함한 정본 경로는 {@see ValidatesLayoutFiles::generateLayoutNameFromPath()}
+     * 소스 SSoT(`.g7.html`)를 포함한 정본 경로는 {@see ValidatesLayoutFiles::generateLayoutNameFromPath()}
      * 가 담당하며 두 확장자를 모두 제거합니다. 종전 독블록은 예시 입력을 `.g7.html` 로 적어
      * 본문 동작과 정반대였고(그 입력을 넣으면 확장자가 남는다), 호출처가 없어 드러나지 않았습니다.
      *
@@ -3343,7 +3343,7 @@ class PluginManager implements PluginManagerInterface
      * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다.
      *
      * 소스 선택·읽기는 {@see CollectsFragmentSources::loadFragmentDefinitions()}
-     * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 저작본(`.g7.html`)을
+     * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 소스(`.g7.html`)을
      * 보지 않았고, 그래서 활성화 경로만 규약 밖에 남아 있었다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스

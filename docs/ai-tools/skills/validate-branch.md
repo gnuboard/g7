@@ -37,7 +37,7 @@ git status --porcelain                 # 워킹트리
 | `database/migrations/**`, `upgrades/Upgrade_*.php` | **migration** |
 | `**/Listeners/**`, `**/Providers/**` (훅 등록) | **hook** |
 | `lang/**`, `**/lang/**`, `lang-packs/**` | **i18n** |
-| `resources/layouts/**/*.{json,g7.html}`, `**/layouts/**/*.{json,g7.html}`, `**/extensions/**/*.{json,g7.html}`, `**/components/**/*.tsx` | **frontend** (`.g7.html` = 저작 SSoT, `.json` = 런타임 계약 — 동일 취급) |
+| `resources/layouts/**/*.{json,g7.html}`, `**/layouts/**/*.{json,g7.html}`, `**/extensions/**/*.{json,g7.html}`, `**/components/**/*.tsx` | **frontend** (`.g7.html` = 소스 SSoT, `.json` = 런타임 계약 — 동일 취급) |
 | `resources/js/core/template-engine/**` | **engine** (CHANGELOG 보강 필요) |
 | `module.json` / `plugin.json` / `template.json` / `config/app.php` | **version-sync** |
 
@@ -67,7 +67,7 @@ audit 은 **변경된 파일만** 봅니다. 손대지 않은 영역은 `--paths
 | migration | `/validate-migration` | [database-guide.md](../../database-guide.md) |
 | hook | `/validate-hook` | [hooks.md](../../extension/hooks.md) |
 | i18n | `/validate-i18n` | [module-i18n.md](../../extension/module-i18n.md) |
-| frontend | `/validate-frontend` | 저작 마크업 [layout-markup.md](../../frontend/layout-markup.md) + 런타임 계약 [layout-json.md](../../frontend/layout-json.md) · [components.md](../../frontend/components.md) |
+| frontend | `/validate-frontend` | 마크업 [layout-markup.md](../../frontend/layout-markup.md) + 런타임 계약 [layout-json.md](../../frontend/layout-json.md) · [components.md](../../frontend/components.md) |
 | engine | 엔진 CHANGELOG 갱신 확인 | — |
 | version-sync | manifest ↔ package.json ↔ package-lock.json 동기 확인 (번들 템플릿에는 `composer.json` 이 없습니다) | [changelog-rules.md](../../extension/changelog-rules.md) |
 

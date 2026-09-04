@@ -35,8 +35,8 @@
 
 ### 1. `modals` 섹션 (권장)
 
-저작본(`.g7.html`)에서는 `<modal src>` 로 조각을 참조합니다. `src` 값은 런타임 계약인
-`.json` 경로 그대로 둡니다 — 저작 코퍼스의 `<modal src>` 213건 전량이 `.json` 이고, 조각 해석기가 그
+소스(`.g7.html`)에서는 `<modal src>` 로 조각을 참조합니다. `src` 값은 런타임 계약인
+`.json` 경로 그대로 둡니다 — 소스 코퍼스의 `<modal src>` 213건 전량이 `.json` 이고, 조각 해석기가 그
 경로를 읽습니다.
 
 ```html
@@ -55,7 +55,7 @@
 </modal>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. `modals` 는
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. `modals` 는
 > **객체 맵이 아니라 배열**이고, 각 항목은 조각이 인라인된 노드입니다.
 
 ```json
@@ -147,9 +147,9 @@
 | `props.size` | ❌ | 이름 있는 너비 단계 — `sm`/`small` 400px · `md`/`medium` 500px · `lg`/`large` 720px · `xl` 900px · `2xl` 1120px. 모르는 값은 기본 500px 으로 떨어진다 |
 | `props.width` | ❌ | 모달 너비 CSS 값 (기본 `"500px"`). **`size` 와 함께 주면 `width` 가 우선한다** |
 | `children` | ✅ | 모달 **본문** (스크롤 영역) |
-| `props.titlePrefix` | ❌ | 제목 **앞**에 렌더링할 컴포넌트 배열 (아이콘·배지). `.g7.html` 저작은 `<title-prefix>…</title-prefix>` |
-| `props.titleSuffix` | ❌ | 제목 **뒤**에 렌더링할 컴포넌트 배열. `.g7.html` 저작은 `<title-suffix>…</title-suffix>` |
-| `props.footer` | ❌ | 본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 **배열** (취소/확인 버튼). `.g7.html` 저작은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer). ⚠️ **취소/확인 버튼을 `children` 마지막에 두지 말 것** — `Modal` 은 `props.footer` 를 별도 표면으로 렌더한다(S8 신설, F5) |
+| `props.titlePrefix` | ❌ | 제목 **앞**에 렌더링할 컴포넌트 배열 (아이콘·배지). `.g7.html` 마크업은 `<title-prefix>…</title-prefix>` |
+| `props.titleSuffix` | ❌ | 제목 **뒤**에 렌더링할 컴포넌트 배열. `.g7.html` 마크업은 `<title-suffix>…</title-suffix>` |
+| `props.footer` | ❌ | 본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 **배열** (취소/확인 버튼). `.g7.html` 마크업은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer). ⚠️ **취소/확인 버튼을 `children` 마지막에 두지 말 것** — `Modal` 은 `props.footer` 를 별도 표면으로 렌더한다(S8 신설, F5) |
 
 `titlePrefix`·`titleSuffix`·`footer` 3표면은 `sirsoft-admin_basic` 의 `Modal` 에만 있다. `sirsoft-basic` 의 `Modal` 은 이 props 를 구조분해하지 않고 rest spread 도 없어 값이 소멸한다 — 사용자 템플릿 모달에서는 제목 장식과 고정 하단 영역을 쓸 수 없다.
 
@@ -174,7 +174,7 @@
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -194,7 +194,7 @@
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -221,7 +221,7 @@
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -289,7 +289,7 @@
 <p>상품명: {{$parent._local.form.product_name}}</p>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -313,7 +313,7 @@
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -369,7 +369,7 @@ export const myHandler: ActionHandler = async (action, context) => {
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -452,7 +452,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 ### 올바른 패턴 ✅
 
-취소/확인 버튼은 **`props.footer` 배열**에 배치한다. `Modal` 은 이 배열을 본문 스크롤 밖 **고정 하단 표면**으로 렌더한다(S8 신설). `children` 마지막 Div 에 두면 본문과 함께 스크롤된다. `.g7.html` 저작은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer).
+취소/확인 버튼은 **`props.footer` 배열**에 배치한다. `Modal` 은 이 배열을 본문 스크롤 밖 **고정 하단 표면**으로 렌더한다(S8 신설). `children` 마지막 Div 에 두면 본문과 함께 스크롤된다. `.g7.html` 마크업은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer).
 
 ```html
 <modal data-ref="my_modal" title="$t:...">
@@ -472,7 +472,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 </modal>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -506,7 +506,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 }
 ```
 
-> **회귀 배경 (F5)**: 이전에는 `Modal` 에 `footer` 표면이 없어 `props.footer` 가 렌더되지 않았고, 저작이 버튼을 `children` 마지막 Div 로 우회 배치했다. S8 이 `props.footer` 표면을 신설(S16 F5 로 12개 모달 버튼 복원)했으므로 이제 `props.footer` 가 정본이다.
+> **회귀 배경 (F5)**: 이전에는 `Modal` 에 `footer` 표면이 없어 `props.footer` 가 렌더되지 않았고, 마크업이 버튼을 `children` 마지막 Div 로 우회 배치했다. S8 이 `props.footer` 표면을 신설(S16 F5 로 12개 모달 버튼 복원)했으므로 이제 `props.footer` 가 정본이다.
 >
 > **적용 범위 — 관리자 템플릿 한정**: `props.footer` 를 렌더하는 것은 `sirsoft-admin_basic` 의 `Modal` 뿐이다. `sirsoft-basic`(사용자 템플릿)의 `Modal` 은 이 prop 을 받지 않으므로 넘겨도 **조용히 사라진다** — 사용자측 모달의 하단 버튼은 `children` 안에 둔다. props 표면 대조: [component-props.md §Modal](component-props.md#modal-컴포넌트).
 
@@ -514,7 +514,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 | 요소 | 클래스 |
 |------|--------|
-| Footer 컨테이너 | **저작하지 않는다** — `Modal` 이 `props.footer` 를 `modal-footer-row` 로 감싼다. 배열 요소로 버튼만 나열 |
+| Footer 컨테이너 | **작성하지 않는다** — `Modal` 이 `props.footer` 를 `modal-footer-row` 로 감싼다. 배열 요소로 버튼만 나열 |
 | 취소 버튼 | `px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700` |
 | 위험 버튼 (삭제) | `px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700` |
 | 주요 버튼 (확인) | `px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700` |
@@ -625,7 +625,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 <icon data-if="{{_global.isDeleting}}" name="spinner" class="text-base animate-spin"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -642,7 +642,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 <div>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -768,7 +768,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 </button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -873,7 +873,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 </partial>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1039,7 +1039,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 <json key="components">[{"id":"address_modal","type":"composite","name":"Modal","children":[{"type":"extension_point","name":"address_search_slot","props":{"onAddressSelect":{"handler":"setState","params":{"target":"local","form.zipcode":"{{$event.zipcode}}"}}}}]}]</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

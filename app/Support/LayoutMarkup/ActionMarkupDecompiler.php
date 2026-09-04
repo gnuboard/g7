@@ -8,7 +8,7 @@ namespace App\Support\LayoutMarkup;
  * 역변환이 단순해지는 핵심 관찰 둘:
  *
  * **① 마크업 속성은 배치 중립이다.** 컴파일러는 `target`·params 키가 top-level 로 갈지 params 로 갈지
- * 핸들러별 매니페스트로 정하지만, **저작 표면에서는 둘 다 그냥 태그 속성**이다 — `<api-call target=..>`
+ * 핸들러별 매니페스트로 정하지만, **마크업 표면에서는 둘 다 그냥 태그 속성**이다 — `<api-call target=..>`
  * 이든 `<set-state target=..>` 이든 `target="..."` 한 표기다. 그래서 역변환은 매니페스트를 볼 필요가
  * 없다: 소스 액션의 top-level 스칼라와 params 스칼라를 **어디에 있든** 속성으로 찍으면 컴파일러가
  * 같은 자리로 되돌린다((handler,키)→위치가 결정적이라 소스가 넣은 자리와 일치).
@@ -151,7 +151,7 @@ final class ActionMarkupDecompiler
         $children = [];
 
         foreach ($map as $code => $action) {
-            // `comment` 는 상태 코드가 아니라 이 섹션의 저작 주석이다 — 호출부가 요소 앞
+            // `comment` 는 상태 코드가 아니라 이 섹션의 소스 주석이다 — 호출부가 요소 앞
             // `<!-- -->` 로 찍으므로 여기서는 건너뛴다(코드로 오인하면 문자열이 액션으로 흘러간다).
             if ($code === 'comment') {
                 continue;

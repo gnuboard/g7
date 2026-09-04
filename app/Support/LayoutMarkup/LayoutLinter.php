@@ -7,7 +7,7 @@ use App\Enums\LayoutMarkupLintCode;
 /**
  * 컴파일 산출 JSON 에 대한 정적 lint (S6).
  *
- * lint 은 컴파일을 **막지 않는다** — 산출 JSON 은 정상 생성되고, 저작자·리뷰어에게 "런타임에
+ * lint 은 컴파일을 **막지 않는다** — 산출 JSON 은 정상 생성되고, 작성자·리뷰어에게 "런타임에
  * 문제가 될 수 있다" 를 알린다. 강검증(`LayoutValidator`)이 "틀렸으니 못 만든다" 라면, lint 은
  * "만들 수는 있으나 권하지 않는다" 다. 그래서 예외가 아니라 `LintWarning` 목록을 모아 돌려준다.
  *
@@ -23,10 +23,10 @@ use App\Enums\LayoutMarkupLintCode;
  *  ⑥ **switch top-level `value`** — 엔진이 `params.value` 만 읽는다(D42 G8).
  *  ⑦ **액션 `params` 오배치 키** — `condition`·`trigger`·`id` 가 정본이 아닌 자리에 실림(S23 축 A).
  *  ⑧ **hoist 3종 템플릿 미지원** — 대상 템플릿 Modal 이 `footer`·`titlePrefix`·`titleSuffix` 를
- *     선언하지 않았는데 저작이 그 자리를 씀(S23 축 B).
+ *     선언하지 않았는데 마크업이 그 자리를 씀(S23 축 B).
  *
  * lint 은 산출 JSON 을 대상으로 하므로 소스 좌표를 특정하기 어렵다 — 경고는 문서 전체(라인 0)로
- * 낸다. 지어낸 좌표로 저작자를 엉뚱한 자리로 보내지 않는다.
+ * 낸다. 지어낸 좌표로 작성자를 엉뚱한 자리로 보내지 않는다.
  */
 final class LayoutLinter
 {
@@ -96,7 +96,7 @@ final class LayoutLinter
     /**
      * ⑦ 액션 `params` 에 정본이 다른 자리인 키가 실린 곳을 경고합니다 (S23 축 A).
      *
-     * 같은 키·같은 핸들러 조합은 한 번만 낸다 — 좌표가 없는 경고(라인 0)라 반복해 봐야 저작자가
+     * 같은 키·같은 핸들러 조합은 한 번만 낸다 — 좌표가 없는 경고(라인 0)라 반복해 봐야 작성자가
      * 고칠 자리를 더 알게 되지 않고 노이즈만 는다(⑴ 미등록 핸들러와 같은 규율).
      *
      * @param  array<string, mixed>  $json  산출 JSON
@@ -155,7 +155,7 @@ final class LayoutLinter
      *
      * 판정 집합은 {@see EmbeddingCompiler::MODAL_TAGS} 에서 도출한다 — hoist 를 하나 더하는 날
      * 이 검사가 자동으로 따라오게 하기 위해서다. 부모도 같은 곳의 {@see EmbeddingCompiler::MODAL_PARENT}
-     * 를 쓴다: 이 3키의 저작 경로는 Modal 자식뿐이므로 그 밖의 노드까지 넓히면 매니페스트 부분
+     * 를 쓴다: 이 3키의 소스 경로는 Modal 자식뿐이므로 그 밖의 노드까지 넓히면 매니페스트 부분
      * 선언(75~77%) 위에서 오탐이 나기 시작한다(D19).
      *
      * 레지스트리에 없는 이름은 건너뛴다 — 미등록 컴포넌트는 강검증(`LayoutValidator`)이 이미 세운다.
@@ -206,7 +206,7 @@ final class LayoutLinter
      *
      * 엔진은 `params.value` 만 읽는다(`ActionDispatcher::handleSwitch`) — top-level `value` 는
      * 소비되지 않고 `$args[0]` 폴백으로 넘어가므로, 값이 `$args[0]` 과 다르면 조용히 오분기한다.
-     * 저작 표기는 `<switch on="…">` 이 정본이고 `<switch value="…">` 는 이관 보존용이다.
+     * 마크업 표기는 `<switch on="…">` 이 정본이고 `<switch value="…">` 는 이관 보존용이다.
      *
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로

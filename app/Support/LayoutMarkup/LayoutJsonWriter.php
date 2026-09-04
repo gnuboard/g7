@@ -10,15 +10,15 @@ use Tests\Feature\LayoutMarkup\LayoutDecompileSyncTest;
  *
  * ## 왜 이 클래스가 있는가
  *
- * S10 이후 저작 SSoT 는 `.g7.html` 이고 설치는 그것을 인메모리로 컴파일해 DB 에 넣는다. 그런데
- * 짝 `.json` 은 **손유지**로 남아 있었다 — 저작본을 고치면 사람이 `.json` 도 같이 고쳐야 했고,
+ * S10 이후 소스 SSoT 는 `.g7.html` 이고 설치는 그것을 인메모리로 컴파일해 DB 에 넣는다. 그런데
+ * 짝 `.json` 은 **손유지**로 남아 있었다 — 소스를 고치면 사람이 `.json` 도 같이 고쳐야 했고,
  * 그 동기 의무를 강제하는 것은 코퍼스 게이트의 사후 red 하나뿐이었다(고치는 방법은 알려 주지
- * 않는다). 이 클래스가 그 손유지를 굽기로 바꾼다: `.json` 은 이제 **기계 산출물**이고 저작본이
+ * 않는다). 이 클래스가 그 손유지를 굽기로 바꾼다: `.json` 은 이제 **기계 산출물**이고 소스가
  * 유일한 편집 표면이다.
  *
  * ## 호출 주체는 개발자뿐이다 (D38)
  *
- * 설치·서빙 경로는 이 클래스를 부르지 않는다. 설치는 저작본을 **인메모리로** 컴파일해 DB 에
+ * 설치·서빙 경로는 이 클래스를 부르지 않는다. 설치는 소스를 **인메모리로** 컴파일해 DB 에
  * 등록하고 디스크에 쓰지 않는다는 것이 S10 재아키텍처의 결정이며, 굽기가 설치에 끼어들면
  * 프로덕션 배포가 저장소 파일을 수정하게 된다. 이 경계는
  * {@see LayoutDecompileSyncTest::test_install_and_serving_paths_do_not_bake_json()}
@@ -31,7 +31,7 @@ use Tests\Feature\LayoutMarkup\LayoutDecompileSyncTest;
  * 착수 실측: 코퍼스 634 의 실물 들여쓰기는 2-space 514 · 4-space 120 으로 갈려 있었고, 그
  * **4-space 120 은 정확히 `layout:add-permissions` 가 `JSON_PRETTY_PRINT` 로 이미 다시 쓴 최상위
  * 레이아웃들**이다(그 커맨드는 `partials/` 를 건너뛴다). 즉 이 저장소에서 "기계가 쓴 레이아웃
- * JSON" 의 선례는 4-space 이고, 2-space 는 손저작 잔재다. 첫 churn 은 2-space 를 택하면 근사
+ * JSON" 의 선례는 4-space 이고, 2-space 는 손 작성 잔재다. 첫 churn 은 2-space 를 택하면 근사
  * 변경 줄이 431,583 → 181,543 으로 줄지만 그 이득은 **일회성**인 반면 사용자 정의 들여쓰기는
  * 산출물이 기계 소유가 된 뒤에도 영구히 유지해야 하는 사본이므로, 표준 방출기를 그대로 쓴다.
  *
@@ -65,7 +65,7 @@ final class LayoutJsonWriter
     }
 
     /**
-     * `.g7.html` 저작본 경로에 대응하는 짝 `.json` 경로를 돌려줍니다.
+     * `.g7.html` 소스 경로에 대응하는 짝 `.json` 경로를 돌려줍니다.
      *
      * @param  string  $markupFile  `.g7.html` 경로
      * @return string 짝 `.json` 경로

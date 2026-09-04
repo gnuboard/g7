@@ -11,7 +11,7 @@
             "lifecycle": {
                 "onMount": [
                     {
-                        "comment": "코어 [편집] 모달이 열릴 때(섹션 마운트) 요약 맵으로 상태를 시딩하고, 행이 있으면 상세(content)를 받아온다. 카테고리·발신프로필은 작성 셀렉트용(자격증명 미설정 422 는 suppress). audit:allow layout-markup-no-lifecycle-sequence-wrapper develop 이 저작한 구조(sequence 하나) — 주석을 달려고 감싼 래퍼가 아니다",
+                        "comment": "코어 [편집] 모달이 열릴 때(섹션 마운트) 요약 맵으로 상태를 시딩하고, 행이 있으면 상세(content)를 받아온다. 카테고리·발신프로필은 작성 셀렉트용(자격증명 미설정 422 는 suppress). audit:allow layout-markup-no-lifecycle-sequence-wrapper develop 이 작성한 구조(sequence 하나) — 주석을 달려고 감싼 래퍼가 아니다",
                         "handler": "sequence",
                         "actions": [
                             {

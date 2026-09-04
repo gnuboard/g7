@@ -232,7 +232,7 @@ if: "(!_global.identityChallenge?.provider_id || _global.identityChallenge?.prov
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // verify 성공
@@ -291,7 +291,7 @@ IDV 모달 파셜 (`_identity_challenge_modal.g7.html`) 및 동일 패턴을 따
 </input>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -324,7 +324,7 @@ IDV 모달 파셜 (`_identity_challenge_modal.g7.html`) 및 동일 패턴을 따
 </sequence>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

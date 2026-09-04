@@ -77,7 +77,7 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
      * 현재 플러그인이 소유한 overlay 확장 정의를 읽습니다.
      *
      * 수집·짝 판별·읽기는 코어가 맡는다 ({@see LayoutFragmentSourceHelper::readDirectory()}) —
-     * 여기서 `glob('*.json')` 하면 저작본(`.g7.html`)이 통째로 보이지 않아, 저작본만 고친 확장점은
+     * 여기서 `glob('*.json')` 하면 소스(`.g7.html`)이 통째로 보이지 않아, 소스만 고친 확장점은
      * 업데이트 복원에서 조용히 빠진다.
      *
      * @return array<int, array<string, mixed>>

@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\File;
  *
  * 레이아웃 · 액션 핸들러 · 전역 재등록 진입점 · 컴포넌트 · 빌드 산출물을 수집합니다.
  *
- * 레이아웃과 확장 조각은 **저작본(`.g7.html`)을 기본으로** 표기한다 — 저작 SSoT 가 `.g7.html` 이고
- * 짝 `.json` 은 컴파일 산출이라, 문서가 `.json` 만 부르면 저작자가 고칠 파일을 문서에서 찾지 못한다.
+ * 레이아웃과 확장 조각은 **소스(`.g7.html`)을 기본으로** 표기한다 — 소스 SSoT 가 `.g7.html` 이고
+ * 짝 `.json` 은 컴파일 산출이라, 문서가 `.json` 만 부르면 작성자가 고칠 파일을 문서에서 찾지 못한다.
  * 조각 목록은 등록 경로와 같은 규약({@see FragmentSourceInventory})으로 고른다 — 규약을 여기서
  * 복제하면 `.g7.html` 만 있는 조각이 문서에서 조용히 빠진다.
  *
@@ -126,7 +126,7 @@ class FrontendInventory
             $segments = explode('/', $inner);
 
             $layouts[] = [
-                // 표기는 저작본 우선 — 계약값(`extends`)은 짝 `.json` 에서 읽는다(컴파일 산출이라 값이 같다).
+                // 표기는 소스 우선 — 계약값(`extends`)은 짝 `.json` 에서 읽는다(컴파일 산출이라 값이 같다).
                 'relFile' => $this->authoringPath($record, $rel),
                 'name' => basename($inner, '.json'),
                 'group' => count($segments) > 1 ? $segments[0] : '(root)',
@@ -410,11 +410,11 @@ class FrontendInventory
     }
 
     /**
-     * 짝 저작본이 있으면 그 경로를, 없으면 원래 `.json` 경로를 돌려줍니다.
+     * 짝 소스가 있으면 그 경로를, 없으면 원래 `.json` 경로를 돌려줍니다.
      *
      * @param  array<string, mixed>  $record  확장 레코드
      * @param  string  $rel  `.json` 상대 경로
-     * @return string 저작본 우선 상대 경로
+     * @return string 소스 우선 상대 경로
      */
     private function authoringPath(array $record, string $rel): string
     {

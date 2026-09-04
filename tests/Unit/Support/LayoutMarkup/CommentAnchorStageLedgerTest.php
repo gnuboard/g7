@@ -119,7 +119,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 저작본 전량을 `[상대경로 => 원문]` 으로 돌려줍니다.
+     * 소스 전량을 `[상대경로 => 원문]` 으로 돌려줍니다.
      *
      * @return array<string, string>
      */
@@ -134,7 +134,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
         $this->assertGreaterThanOrEqual(
             self::CORPUS_MINIMUM,
             count($out),
-            '저작본 스캔이 '.count($out).'건 — 모집단이 무너졌다. 아래 단언이 공허하게 참이 된다',
+            '소스 스캔이 '.count($out).'건 — 모집단이 무너졌다. 아래 단언이 공허하게 참이 된다',
         );
 
         return $out;
@@ -287,7 +287,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
         }
 
         $this->assertSame([], $unassigned,
-            '어느 주입 단락에도 들지 않는 저작본이 있다 — 그 파일은 보고 표면에서 사라진다:'
+            '어느 주입 단락에도 들지 않는 소스가 있다 — 그 파일은 보고 표면에서 사라진다:'
             .PHP_EOL.implode(PHP_EOL, $unassigned));
 
         $this->assertGreaterThanOrEqual(self::CORPUS_MINIMUM, $assigned,
@@ -308,7 +308,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
         foreach (self::COMPLETED_STAGES as $stage) {
             $this->assertSame(0, $ledger[$stage]['remaining'],
                 $stage.' 은 주입 완료 단락인데 남은 앵커가 '.$ledger[$stage]['remaining']
-                .'건이다 — 새 저작본이 들어왔거나 주석이 지워졌다');
+                .'건이다 — 새 소스가 들어왔거나 주석이 지워졌다');
 
             $this->assertGreaterThan(0, $ledger[$stage]['files'],
                 $stage.' 의 파일 수가 0 이다 — 경계 규칙이 죽어 "잔여 0" 이 공허하게 참이 됐다');

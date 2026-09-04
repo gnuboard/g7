@@ -70,7 +70,7 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(setStateAction.handler).toBe('setState');
         expect(setStateAction.params.selectedOptionItems).toEqual([]);
         // 이 둘은 **옵션 그룹 이름을 키로 갖는 map** 이다(`currentSelection[그룹명]`).
-        // 한때 저작본이 `[]` 로 선언돼 있었고 이 단언이 그 값을 고정하고 있었는데, 그것은 저작
+        // 한때 소스가 `[]` 로 선언돼 있었고 이 단언이 그 값을 고정하고 있었는데, 그것은 작성
         // 이관 때 `{}` 가 `[]` 로 구워진 결과였다(공용 디코더를 쓰지 않은 사본 탓). 프론트는
         // `{}`(속성 접근 대상)와 `[]`(순서 목록)를 구분하므로 정본은 `{}` 다.
         expect(setStateAction.params.currentSelection).toEqual({});
@@ -182,7 +182,7 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
         const json = JSON.stringify(purchaseCard);
 
         // 초기화 값의 모양이 갱신 쪽(`Object.assign({}, …)`)과 같아야 한다 — 둘 다 map 이다.
-        // 종전에는 초기화만 `[]` 였는데, 그것은 저작 이관 때 `{}` 가 `[]` 로 구워진 결과였다.
+        // 종전에는 초기화만 `[]` 였는데, 그것은 소스 이관 때 `{}` 가 `[]` 로 구워진 결과였다.
         expect(json).toContain('"selectedOptionItems":[]');
         expect(json).toContain('"currentSelection":{}');
         expect(json).toContain('"noOptionQuantity":1');

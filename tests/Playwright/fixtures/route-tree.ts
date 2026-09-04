@@ -1,5 +1,5 @@
 /**
- * Layout Editor 라우트 트리 — 저작본 경로 줄을 읽는 spec 공통 헬퍼.
+ * Layout Editor 라우트 트리 — 소스 경로 줄을 읽는 spec 공통 헬퍼.
  *
  * **왜 한 곳으로 모으는가**: 경로 줄 `<span>` 은 `className`(스타일)과 `data-testid`(테스트)를
  * 함께 단다(`RouteTreePanel.tsx`). 소비자가 각자 셀렉터를 고르면 한쪽 표기만 훑은 일괄 수정이
@@ -7,7 +7,7 @@
  * 영원히 매칭되지 않는 대기가 됐다(실브라우저 red). 소비를 이 파일 하나로 모아, 표기 변경이
  * **상수 한 줄 교체**로 끝나게 한다.
  *
- * 확장자가 저작 SSoT(`.g7.html`)인 근거는 S19 ⑦(R1) — 짝 `.json` 은 D63 이후 기계 산출이라
+ * 확장자가 소스 SSoT(`.g7.html`)인 근거는 S19 ⑦(R1) — 짝 `.json` 은 D63 이후 기계 산출이라
  * 사람이 열 파일이 아니다.
  *
  * 새 spec 이 경로 줄을 직접 `querySelector` 하는 것은 audit 룰
@@ -18,7 +18,7 @@ import type { Page } from '@playwright/test';
 /** 경로 줄 엘리먼트 셀렉터 — 클래스가 아니라 testid 로 통일한다. */
 export const ROUTE_TREE_LAYOUT_PATH_SELECTOR = '[data-testid="g7le-route-tree-layout-path"]';
 
-/** 라우트 트리가 표기하는 레이아웃 저작 확장자 (`RouteTreePanel.tsx::AUTHORING_EXTENSION` 과 동치). */
+/** 라우트 트리가 표기하는 레이아웃 소스 확장자 (`RouteTreePanel.tsx::AUTHORING_EXTENSION` 과 동치). */
 export const ROUTE_TREE_AUTHORING_EXTENSION = '.g7.html';
 
 /** `admin_user_list` → `admin_user_list.g7.html` (표기 줄의 말미와 일치하는 파일명). */

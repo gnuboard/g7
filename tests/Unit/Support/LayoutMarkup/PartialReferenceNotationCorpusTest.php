@@ -12,11 +12,11 @@ use Illuminate\Support\Facades\File;
  *
  * ## 규약 (PO 확정 2026-08-02)
  *
- * 저작본(`.g7.html`)은 **저작본을** 가리키고, 산출 JSON 은 **JSON 문법을 100% 유지**한다 —
+ * 소스(`.g7.html`)은 **소스를** 가리키고, 산출 JSON 은 **JSON 문법을 100% 유지**한다 —
  * 즉 경계(컴파일러·역컴파일러)에서 확장자를 정규화한다.
  *
  * ```
- * 저작:  <include src="_x.g7.html"/>      <modal src="_x.g7.html"/>
+ * 작성:  <include src="_x.g7.html"/>      <modal src="_x.g7.html"/>
  * 산출:  {"partial": "_x.json"}           modals[] = {"partial": "_x.json"}
  * ```
  *
@@ -29,11 +29,11 @@ use Illuminate\Support\Facades\File;
  *
  * 그래서 여기서 **왕복이 구조적으로 볼 수 없는 세 가지**를 따로 단언한다 (계획서 신규 회귀 ㄱㄴㄷ):
  *
- *  - (ㄱ) 저작본의 `src` 는 전량 저작 확장자(`.g7.html`) 표기다.
- *  - (ㄴ) 그 `src` 가 가리키는 저작본이 디스크에 실재한다.
+ *  - (ㄱ) 소스의 `src` 는 전량 소스 확장자(`.g7.html`) 표기다.
+ *  - (ㄴ) 그 `src` 가 가리키는 소스가 디스크에 실재한다.
  *  - (ㄷ) **컴파일러가 실제로 산출할 `.json` 이름**이 디스크에 실재한다 — 매핑 결과를 직접 잰다.
  *
- * 세 단언 모두 모집단을 **전수 스캔으로 도출**한다. 파일 목록을 손으로 적으면 새 저작본이
+ * 세 단언 모두 모집단을 **전수 스캔으로 도출**한다. 파일 목록을 손으로 적으면 새 소스가
  * 생겼을 때 규약 밖에 있는 채로 관측에서 빠진다({@see CommentAnchorStageLedgerTest} 와 같은 이유).
  *
  * 참조가 **해석되는가**(설치 시점 우선순위 규약)는 {@see PartialReferenceCorpusTest} 가 이미
@@ -48,7 +48,7 @@ class PartialReferenceNotationCorpusTest extends LayoutMarkupTestCase
     private const REFERENCE_MINIMUM = 400;
 
     /**
-     * 저작본의 조각 참조가 전량 저작 확장자 표기이고, 그 짝이 양쪽 다 실재한다.
+     * 소스의 조각 참조가 전량 소스 확장자 표기이고, 그 짝이 양쪽 다 실재한다.
      *
      * @scenario compile_unit=layout,source_health=valid
      *
@@ -99,7 +99,7 @@ class PartialReferenceNotationCorpusTest extends LayoutMarkupTestCase
                         continue;
                     }
 
-                    // (ㄴ) 가리키는 저작본 실재.
+                    // (ㄴ) 가리키는 소스 실재.
                     $markupPath = $resolver->absolute($reference, $base);
 
                     if ($markupPath === null || ! File::exists($markupPath)) {
@@ -144,12 +144,12 @@ class PartialReferenceNotationCorpusTest extends LayoutMarkupTestCase
             '조각 참조 도출이 '.$references.'건이다 — 모집단이 무너지면 아래 단언이 공허하게 참이 된다');
 
         $this->assertSame([], $wrongNotation,
-            '조각 참조가 저작 확장자(`.g7.html`)가 아닌 표기를 쓴다 — 저작본은 저작본을 가리킨다 '
+            '조각 참조가 소스 확장자(`.g7.html`)가 아닌 표기를 쓴다 — 소스는 소스를 가리킨다 '
             .'(산출 JSON 의 `.json` 표기는 컴파일러가 경계에서 만든다):'
             .PHP_EOL.implode(PHP_EOL, $wrongNotation));
 
         $this->assertSame([], $missingMarkup,
-            '참조가 가리키는 저작본이 디스크에 없다:'.PHP_EOL.implode(PHP_EOL, $missingMarkup));
+            '참조가 가리키는 소스가 디스크에 없다:'.PHP_EOL.implode(PHP_EOL, $missingMarkup));
 
         $this->assertSame([], $missingJson,
             '컴파일러가 산출할 `.json` 이름이 디스크에 없다 — 왕복 게이트(JSON→마크업→JSON)는 '
@@ -191,7 +191,7 @@ class PartialReferenceNotationCorpusTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 저작본에서 조각 참조를 뽑습니다 — `<include src>` 와 `<modal src>` 둘 다.
+     * 소스에서 조각 참조를 뽑습니다 — `<include src>` 와 `<modal src>` 둘 다.
      *
      * @param  string  $content  `.g7.html` 내용
      * @return array<int, string> 참조 값 목록 (중복 포함)

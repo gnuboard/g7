@@ -6,14 +6,14 @@ use App\Enums\LayoutMarkupErrorCode;
 use App\Enums\MarkupTokenType;
 
 /**
- * `.g7.html` 저작본의 **문서 최상위 `<permissions>`** 를 읽고 고치는 편집기 (S18.5 축 A).
+ * `.g7.html` 소스의 **문서 최상위 `<permissions>`** 를 읽고 고치는 편집기 (S18.5 축 A).
  *
- * ## 왜 저작본을 고쳐야 하는가
+ * ## 왜 소스를 고쳐야 하는가
  *
  * S18.5 이전에 `layout:add-permissions` 는 짝 `.json` 에 권한을 **in-place 로 기록**했다. 짝이 전건
  * 병존하던 동안에는 결함이 0 이었으나, 굽기(`layout:decompile --sync`)가 `.json` 을 기계 산출로
  * 바꾸는 순간 그 편집은 **다음 굽기에 소실된다**. 32차가 이 자리를
- * `JSON_ONLY_LAYOUT_CONSUMER_DEBT` 에 등재하면서 "S18.5 착수 시 저작본을 고치도록 전환해야 하는
+ * `JSON_ONLY_LAYOUT_CONSUMER_DEBT` 에 등재하면서 "S18.5 착수 시 소스를 고치도록 전환해야 하는
  * 자리" 라고 사유까지 적어 두었다.
  *
  * ## 왜 정규식이 아니라 토크나이저인가
@@ -32,7 +32,7 @@ final class MarkupPermissionsEditor
      * @param  string|null  $path  경로 (오류 메시지용)
      * @return bool 있으면 true
      *
-     * @throws CompileError 소스가 저작 문법 부분집합을 벗어난 경우
+     * @throws CompileError 소스가 마크업 문법 부분집합을 벗어난 경우
      */
     public static function hasDocumentPermissions(string $source, ?string $path = null): bool
     {
@@ -43,7 +43,7 @@ final class MarkupPermissionsEditor
      * 문서 최상위 `<permissions>` 를 주어진 권한 목록으로 교체하거나 삽입합니다.
      *
      * 기존 블록이 있으면 그 span 을 통째로 갈고, 없으면 루트 첫 자식 **앞 줄**에 넣는다(자식이
-     * 없으면 루트 종료 태그 앞). 들여쓰기는 기준 토큰의 열에서 그대로 가져온다 — 저작본마다 관례가
+     * 없으면 루트 종료 태그 앞). 들여쓰기는 기준 토큰의 열에서 그대로 가져온다 — 소스마다 관례가
      * 다를 수 있으므로 상수로 박지 않는다.
      *
      * @param  string  $source  `.g7.html` 소스
@@ -51,7 +51,7 @@ final class MarkupPermissionsEditor
      * @param  string|null  $path  경로 (오류 메시지용)
      * @return string 편집된 소스 (LF 고정)
      *
-     * @throws CompileError 소스가 저작 문법 부분집합을 벗어난 경우
+     * @throws CompileError 소스가 마크업 문법 부분집합을 벗어난 경우
      */
     public static function apply(string $source, array $permissions, ?string $path = null): string
     {

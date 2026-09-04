@@ -21,7 +21,7 @@ class ValidLayoutStructureTest extends TestCase
      * 종전 규칙은 상속 레이아웃에 `components` 또는 `slots` 중 하나를 **필수**로 요구했다. 그러나
      * [LayoutService::mergeLayouts](app/Services/LayoutService.php#L79) 는 자식의 components·slots 를
      * `?? []` 로 읽어, 둘 다 없으면 부모 구조를 그대로 물려주고 meta·state 만 갈아끼운다 — 실제로
-     * 번들 admin 템플릿의 언어팩 화면 4종이 이 형태로 출하 중이다. 규칙이 정상 저작을 거부하고
+     * 번들 admin 템플릿의 언어팩 화면 4종이 이 형태로 출하 중이다. 규칙이 정상 마크업을 거부하고
      * 있었고(편집기 저장·이관 양쪽), 설치 경로가 이 규칙을 안 돌려 출하만 무사했다.
      */
     public function test_allows_inherited_layout_overriding_only_meta(): void

@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  *
  * 종전에 이 문법은 **코퍼스 왕복으로만** 봉인돼 있었다. 왕복은 "현재 코퍼스가 쓰는 형태" 만 지나가므로
  * ⓐ 코퍼스에 없는 조합(중첩 안의 리스트, 불리언 속성, 빈 컨테이너)과 ⓑ **에러 경로 전부**가 무검증으로
- * 남는다. 에러 경로는 저작자가 오타를 냈을 때 무엇을 보게 되는가를 정하는 자리라 왕복으로는 영영
+ * 남는다. 에러 경로는 작성자가 오타를 냈을 때 무엇을 보게 되는가를 정하는 자리라 왕복으로는 영영
  * 닿지 않는다 — 그래서 여기서 직접 건다.
  *
  * 검증 축은 넷이다:
@@ -167,7 +167,7 @@ class StructuredValueGrammarTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
-     * 실물 저작 형태 그대로 — 속성명은 **원본 props 키를 그대로** 쓴다(`iconName`).
+     * 실물 마크업 형태 그대로 — 속성명은 **원본 props 키를 그대로** 쓴다(`iconName`).
      *
      * @scenario compile_unit=node,source_health=valid
      *
@@ -192,7 +192,7 @@ class StructuredValueGrammarTest extends LayoutMarkupTestCase
     /**
      * `<item>` 속성명은 **어떤 변환도 거치지 않는다** — kebab 으로 적으면 kebab 키가 된다.
      *
-     * 이 규칙이 저작 함정이라 여기 못박는다: 원본 props 키가 `iconName` 인데 `icon-name` 으로 적으면
+     * 이 규칙이 작성 함정이라 여기 못박는다: 원본 props 키가 `iconName` 인데 `icon-name` 으로 적으면
      * **다른 키**가 되어 조용히 왕복이 깨진다. 변환을 걸지 않는 이유는 그 반대 방향이 더 위험하기
      * 때문이다 — 변환을 걸면 원본에 kebab 키(`icon-name`)를 쓰는 props 를 표현할 수 없게 된다.
      *
@@ -233,7 +233,7 @@ class StructuredValueGrammarTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
-    // 에러 경로 — 저작 오타가 무엇으로 보이는가
+    // 에러 경로 — 작성 오타가 무엇으로 보이는가
     // ---------------------------------------------------------------------
 
     /**

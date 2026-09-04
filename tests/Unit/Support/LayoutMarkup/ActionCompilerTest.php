@@ -12,7 +12,7 @@ use App\Support\LayoutMarkup\NodeCompiler;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * ActionCompiler 단위 테스트 (`.g7.html` 저작 포맷 S3 — 매핑 사전 E).
+ * ActionCompiler 단위 테스트 (`.g7.html` 마크업 형식 S3 — 매핑 사전 E).
  *
  * 검증 축은 넷이다:
  *

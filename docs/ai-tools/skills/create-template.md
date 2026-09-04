@@ -11,7 +11,7 @@
 4. hidden 플래그: manifest.hidden=true 시 관리자 UI 제외 (CLI 정상)
 5. 생성 후: npm install → template:build → template:install → template:activate
 ```
-> 레이아웃은 `.g7.html` 마크업으로 저작한다 ([layout-markup.md](../../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 산출 키 계약은 [layout-json.md](../../frontend/layout-json.md) 가 SSoT 다.
+> 레이아웃은 `.g7.html` 마크업으로 작성한다 ([layout-markup.md](../../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 산출 키 계약은 [layout-json.md](../../frontend/layout-json.md) 가 SSoT 다.
 
 ## 사용법
 
@@ -46,8 +46,8 @@
 | `CHANGELOG.md` | Keep a Changelog 형식 |
 | `LICENSE` | MIT 라이선스 |
 | `lang/{ko,en}.json` | 다국어 |
-| `layouts/_[type]_base.g7.html` | 베이스 레이아웃 (slot 시스템) — 저작 SSoT |
-| `layouts/errors/*.g7.html` | 에러 레이아웃 6종 (401/403/404/500/503/maintenance) — 저작 SSoT |
+| `layouts/_[type]_base.g7.html` | 베이스 레이아웃 (slot 시스템) — 소스 SSoT |
+| `layouts/errors/*.g7.html` | 에러 레이아웃 6종 (401/403/404/500/503/maintenance) — 소스 SSoT |
 | `layouts/[초기 페이지].g7.html` | admin: admin_dashboard / user: home |
 | `src/index.ts` | 컴포넌트 등록 엔트리 |
 | `package.json` | npm 패키지 설정 |

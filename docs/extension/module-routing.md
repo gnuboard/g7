@@ -266,7 +266,7 @@ modules/{identifier}/resources/layouts/user/{layout_name}.g7.html
 1. 템플릿 오버라이드: `templates/{template}/layouts/overrides/{module}/{layout}.g7.html`
 2. 모듈 원본: `modules/{module}/resources/layouts/admin/{layout}.g7.html`
 
-> 설치 스캔은 저작 SSoT `.g7.html` 을 우선 채택하고, 짝 `.json` 이 있으면 건너뛴다
+> 설치 스캔은 소스 SSoT `.g7.html` 을 우선 채택하고, 짝 `.json` 이 있으면 건너뛴다
 > ([`ValidatesLayoutFiles::collectLayoutSources()`](../../app/Extension/Traits/ValidatesLayoutFiles.php)).
 > `.g7.html` 이 없는 레이아웃만 `.json` 이 설치원이 된다.
 
@@ -277,7 +277,7 @@ modules/{identifier}/resources/layouts/user/{layout_name}.g7.html
 <meta title="$t:sirsoft-sample.admin.index.title"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

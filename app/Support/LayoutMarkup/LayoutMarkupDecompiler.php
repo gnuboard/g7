@@ -3,9 +3,9 @@
 namespace App\Support\LayoutMarkup;
 
 /**
- * JSON 레이아웃 하나를 `.g7.html` 저작 소스로 되돌리는 최상위 파사드 (S9 — DocumentCompiler 의 역).
+ * JSON 레이아웃 하나를 `.g7.html` 소스로 되돌리는 최상위 파사드 (S9 — DocumentCompiler 의 역).
  *
- * 컴파일러가 저작 파일을 JSON 으로 만드는 사슬(토큰→트리→문서)을 거꾸로 잇는다: **JSON → 요소 트리
+ * 컴파일러가 소스 파일을 JSON 으로 만드는 사슬(토큰→트리→문서)을 거꾸로 잇는다: **JSON → 요소 트리
  * (이 층 + Node/Action/State 역변환) → 소스 문자열(Serializer)**. 왕복 하네스가
  * `compile(decompile(json)) ≡ json` 을 전량 검증하므로, 이 층의 유일한 책임은 각 최상위 키를 컴파일러가
  * 되읽을 섹션 태그로 정확히 되돌리는 것이다.
@@ -60,7 +60,7 @@ final class LayoutMarkupDecompiler
      */
     private function documentChecked(array $json): MarkupElement
     {
-        // 섹션 저작이 아예 실패하는 결함(문자열 액션·init key 금지 등)은 그 한 섹션 키만 `<json>` 으로
+        // 섹션 마크업이 아예 실패하는 결함(문자열 액션·init key 금지 등)은 그 한 섹션 키만 `<json>` 으로
         // 방출한다 — 최상위 키를 통째로 blob 하면 slots/meta 등 정상 키까지 가독성을 잃는다.
         $throwEscape = [];
 
@@ -128,7 +128,7 @@ final class LayoutMarkupDecompiler
     }
 
     /**
-     * 섹션 저작을 실패시키는 최소 최상위 키 집합을 찾습니다.
+     * 섹션 마크업을 실패시키는 최소 최상위 키 집합을 찾습니다.
      *
      * 먼저 각 키를 단독 escape 해 서는지 본다(대개 한 섹션 결함) — 없으면 키를 하나씩 누적해 서는
      * 지점을 찾는다(여러 섹션 결함). 그래도 안 서면 전 키(최후 안전망). 정상 섹션(slots/meta 등)이
@@ -292,7 +292,7 @@ final class LayoutMarkupDecompiler
             $attributes[] = $this->attr('version-constraint', (string) $filtered['version_constraint']);
         }
 
-        // 봉투 주석은 `<layout>` 과 같은 규칙으로 되돌린다 — 이 짝이 없으면 저작본의 문서 주석이
+        // 봉투 주석은 `<layout>` 과 같은 규칙으로 되돌린다 — 이 짝이 없으면 소스의 문서 주석이
         // 왕복에서 사라진다(`<partial>` 은 예외다: 루트 노드가 그 주석을 이미 싣는다).
         return $this->el(
             'override',
@@ -657,7 +657,7 @@ final class LayoutMarkupDecompiler
     /**
      * 구조값을 1급 표기로 되돌립니다 (D42 G1·G2) — 평면이면 속성, 중첩이면 `<field>` 트리.
      *
-     * JSON 본문은 **되돌릴 때 쓰지 않는다.** 저작 파일에 통짜 JSON 이 남지 않게 하는 것이 이 문법의
+     * JSON 본문은 **되돌릴 때 쓰지 않는다.** 소스 파일에 통짜 JSON 이 남지 않게 하는 것이 이 문법의
      * 목적이므로(D42), 표현 가능한 형태는 전부 태그·속성으로 방출한다. 리스트(`[1,2]`)처럼 키가 없는
      * 값만 본문으로 남으며, 그 경우도 빈 배열은 계량 대상이 아니다.
      *
@@ -908,7 +908,7 @@ final class LayoutMarkupDecompiler
      */
     private function modal(array $modal): MarkupElement
     {
-        // 참조 항목은 `{partial}` 이거나 저작 주석이 얹힌 `{comment, partial}` 이다 — 주석이 있다고
+        // 참조 항목은 `{partial}` 이거나 소스 주석이 얹힌 `{comment, partial}` 이다 — 주석이 있다고
         // 노드 분기로 흘려보내면 참조가 노드로 오변환된다(DocumentCompiler::compileModal 의 짝).
         $keys = array_keys($modal);
         sort($keys);
@@ -916,7 +916,7 @@ final class LayoutMarkupDecompiler
         if ($keys === ['partial'] || $keys === ['comment', 'partial']) {
             return $this->el(
                 'modal',
-                // 산출 `.json` → 저작 `.g7.html`. `DocumentCompiler::compileModal` 의 역함수여야
+                // 산출 `.json` → 작성 `.g7.html`. `DocumentCompiler::compileModal` 의 역함수여야
                 // 왕복(JSON→마크업→JSON)이 항등이다(PartialReferenceNotation).
                 [$this->attr('src', PartialReferenceNotation::toMarkup((string) $modal['partial']))],
                 [],

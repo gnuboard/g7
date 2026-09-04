@@ -7,12 +7,12 @@ use Illuminate\Support\Facades\File;
 use Tests\Unit\Support\LayoutMarkup\FragmentSourceCopyGuardTest;
 
 /**
- * fragment 저작본을 **소스 선택 경로를 타지 않고** 직접 컴파일하는 독립 오라클.
+ * fragment 소스를 **소스 선택 경로를 타지 않고** 직접 컴파일하는 독립 오라클.
  *
  * 소스 선택(`.g7.html` 우선)을 검증하는 자리에서 기대값을 `LayoutFragmentSourceHelper::read()` 로
  * 만들면 비교가 항등식이 된다 — 그 함수는 입력이 어느 확장자든 같은 후보 목록으로 수렴하기
  * 때문이다(30차 검출, `OracleIndependenceGuardTest` 가 상주 감시). 기대값은 선택을 거치지 않아야
- * 하므로 저작본을 곧바로 컴파일한다.
+ * 하므로 소스를 곧바로 컴파일한다.
  *
  * 이 트레이트가 `tests/Support` 에 있는 이유는 소비자가 코어 가드와 결제 플러그인 리스너 테스트
  * 양쪽이기 때문이다. 오라클을 각자 복제하면 그 사본이 다음 사각이 된다 — 이 트랙이 `app/` 에서
@@ -21,7 +21,7 @@ use Tests\Unit\Support\LayoutMarkup\FragmentSourceCopyGuardTest;
 trait CompilesFragmentMarkup
 {
     /**
-     * 저작본(`.g7.html`)을 컴파일해 fragment 정의 배열을 돌려줍니다.
+     * 소스(`.g7.html`)을 컴파일해 fragment 정의 배열을 돌려줍니다.
      *
      * @param  string  $markupFile  `.g7.html` 절대 경로
      * @return array<string, mixed> 컴파일된 fragment 정의
@@ -87,7 +87,7 @@ trait CompilesFragmentMarkup
     }
 
     /**
-     * 규약이 저작본(`.g7.html`)을 골랐음을 단언합니다.
+     * 규약이 소스(`.g7.html`)을 골랐음을 단언합니다.
      *
      * @param  string  $fragmentPath  `.json` 참조 경로
      */
@@ -96,16 +96,16 @@ trait CompilesFragmentMarkup
         $chosen = $this->resolvedFragmentSourcePathFor($fragmentPath);
 
         $this->assertStringEndsWith('.g7.html', $chosen,
-            "확장점 정의의 소스로 저작본이 아니라 `{$chosen}` 이 선택됐습니다 — `.g7.html` 만 고치면 "
+            "확장점 정의의 소스로 소스가 아니라 `{$chosen}` 이 선택됐습니다 — `.g7.html` 만 고치면 "
             .'이 소비 경로에는 반영되지 않는다. (값 비교는 짝이 수렴하면 관측력을 잃으므로 선택 '
             .'자체를 단언한다.)');
     }
 
     /**
-     * `.json` 참조 경로에 대응하는 저작본 경로를 돌려줍니다 (실재하지 않으면 null).
+     * `.json` 참조 경로에 대응하는 소스 경로를 돌려줍니다 (실재하지 않으면 null).
      *
      * @param  string  $jsonPath  `.json` 절대 경로
-     * @return string|null 저작본 절대 경로
+     * @return string|null 소스 절대 경로
      */
     protected function markupSiblingOf(string $jsonPath): ?string
     {

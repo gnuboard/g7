@@ -5,7 +5,7 @@ namespace App\Enums;
 use App\Support\LayoutMarkup\PartialReferenceNotation;
 
 /**
- * `.g7.html` 저작 포맷 컴파일 실패 사유 코드 Enum.
+ * `.g7.html` 마크업 형식 컴파일 실패 사유 코드 Enum.
  *
  * `CompileError` 가 이 코드로 오류를 식별하며, 코드 값이 그대로
  * `lang/{locale}/exceptions.php` 의 `layout_markup.{value}` 메시지 키가 된다.
@@ -119,7 +119,7 @@ enum LayoutMarkupErrorCode: string
     case ManifestInvalid = 'manifest_invalid';
 
     /**
-     * 두 컴포넌트가 같은 저작 태그로 해석됨 (매니페스트 모호 등록).
+     * 두 컴포넌트가 같은 마크업 태그로 해석됨 (매니페스트 모호 등록).
      */
     case AmbiguousComponentTag = 'ambiguous_component_tag';
 
@@ -409,9 +409,9 @@ enum LayoutMarkupErrorCode: string
     case ModalSrcWithBody = 'modal_src_with_body';
 
     /**
-     * 조각 참조(`<include src>`·`<modal src>`)가 저작 확장자(`.g7.html`)를 쓰지 않음.
+     * 조각 참조(`<include src>`·`<modal src>`)가 소스 확장자(`.g7.html`)를 쓰지 않음.
      *
-     * 저작본은 저작본을 가리키고, 산출 JSON 의 `.json` 표기는 컴파일러가 경계에서 만든다
+     * 소스는 소스를 가리키고, 산출 JSON 의 `.json` 표기는 컴파일러가 경계에서 만든다
      * ({@see PartialReferenceNotation}). 규약 밖 표기를 통과시키면
      * 그 값이 산출물 안에서 정상처럼 보이므로 여기서 세운다.
      */

@@ -76,7 +76,7 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
      *   `handleDebouncedAction` 으로 분기하므로 원본 이벤트가 방치된다.
      * - 지연 만료 후 실행되는 것은 `preventDefault: () => {}` 인 합성 이벤트다.
      *
-     * 저작 규칙: submit 이벤트에는 debounce 를 쓰지 않는다.
+     * 작성 규칙: submit 이벤트에는 debounce 를 쓰지 않는다.
      */
     const createSubmitEvent = () => ({
       type: 'submit',

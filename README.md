@@ -6,11 +6,6 @@
 The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 <p align="center">
-  <strong>A modern, extensible CMS platform built with Laravel + React</strong><br>
-  The next generation of Gnuboard — Korea's most widely used open-source CMS
-</p>
-
-<p align="center">
   <a href="#"><img src="https://img.shields.io/badge/version-7.1.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
@@ -61,7 +56,7 @@ Everything a modern web platform needs, built in.
 | **Access control** | Control menus, features, and even data scope per role. Role + Permission + Scope three-tier access control provides flexible management that mirrors your organization |
 | **Identity verification (IDV)** | Every verification point — signup, password reset, sensitive operations — is managed centrally through declarative route/hook-level policies. The core ships a mail provider built in, and external providers (Korean identity-verification services such as KG Inicis and NHN KCP, as well as SMS, PortOne, and Stripe Identity-style services) attach through the same provider contract. When the server returns HTTP 428, the frontend interceptor opens a verification modal automatically and replays the original request on success |
 | **Security** | Automatic input validation and token-based authentication. Layered defense designed in from the start (CSRF/XSS/SQL injection), a real implementation of login throttling and account lockout (HTTP 423), and automatic blocking of installer endpoints once setup completes (HTTP 410) |
-| **Flexible screen composition** | Define a screen structure and see it applied immediately. Web-app-grade dynamic screens are achievable with JSON declarations alone, no frontend infrastructure required |
+| **Flexible screen composition** | Define a screen structure and see it applied immediately. Web-app-grade dynamic screens are achievable with markup authoring (`.g7.html`) alone, no frontend infrastructure required |
 | **Layout editor** | A WYSIWYG layout editor lets you place screen blocks directly and see the result right away |
 | **Proven foundation** | Built on Laravel + React — a stack adopted by companies worldwide, offering high extensibility and flexible UI implementation |
 | **Shared cache system** | `CacheInterface` plus three drivers (core/module/plugin) isolate key prefixes automatically (`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`). Tag-based automatic invalidation and central TTL management via `g7_core_settings('cache.*_ttl')` keep operations free of hardcoded values |
@@ -110,7 +105,7 @@ Gnuboard7
 
 ### How the template engine works
 
-In Gnuboard7 you **declare the UI structure in JSON**, and the engine interprets it and renders React components.
+In Gnuboard7 you **declare the UI structure in `.g7.html` markup**; the server compiles it into JSON (the runtime contract) at install time, and the engine interprets that JSON and renders React components.
 
 #### What it gives you
 
@@ -186,35 +181,87 @@ flowchart TB
     linkStyle default stroke:#374151,stroke-width:2px
 ```
 
-**Layout example** — you author in `.g7.html` markup; at install time the server compiles it into the JSON below (the runtime contract), which renders as a real React UI:
+**Layout example** — you author in `.g7.html` markup like the block below; at install time the server compiles it into the runtime contract JSON shown beneath it, which renders as a real React UI:
+
+```html
+<layout name="product_list" version="1.0.0">
+  <data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET"/>
+  <div>
+    <h1 text="$t:product_list"/>
+    <div data-each="item in {{products?.data?.data}}">
+      <span text="{{item.name}}"/>
+    </div>
+    <button text="$t:add" data-if="{{products?.data?.abilities?.can_create}}">
+      <on type="click">
+        <navigate path="/products/create"/>
+      </on>
+    </button>
+  </div>
+</layout>
+```
+
+> Above is the authoring source (`.g7.html`); below is its compiled result, the runtime contract JSON.
 
 ```json
 {
+  "version": "1.0.0",
+  "layout_name": "product_list",
   "data_sources": [
-    { "id": "products", "endpoint": "/api/products", "method": "GET" }
+    {
+      "id": "products",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products",
+      "method": "GET"
+    }
   ],
-  "layout": {
-    "type": "basic", "name": "Div",
-    "children": [
-      { "type": "basic", "name": "H1", "text": "$t:product_list" },
-      {
-        "type": "basic", "name": "Div",
-        "iteration": { "source": "{{products?.data?.data}}", "item_var": "$item" },
-        "children": [
-          { "type": "basic", "name": "Span", "text": "{{$item.name}}" }
-        ]
-      },
-      {
-        "type": "basic", "name": "Button", "text": "$t:add",
-        "if": "{{products?.data?.abilities?.can_create}}",
-        "actions": [{
-          "event": "onClick",
-          "handler": "navigate",
-          "params": { "path": "/products/create" }
-        }]
-      }
-    ]
-  }
+  "components": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "H1",
+          "props": {
+            "text": "$t:product_list"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{products?.data?.data}}",
+            "item_var": "item"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "text": "{{item.name}}"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{products?.data?.abilities?.can_create}}",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/products/create"
+              }
+            }
+          ],
+          "props": {
+            "text": "$t:add"
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 

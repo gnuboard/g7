@@ -17,7 +17,7 @@ use App\Services\LayoutExtensionService;
  *
  * 업데이트 과정에서 오버레이 주입이 소실되면 주문상세의 영수증 링크·가상계좌 정보가
  * 조용히 사라진다. 업데이트 완료 훅에서 resources/extensions 의 확장점 정의를 다시 등록한다
- * (저작본 `.g7.html` 우선 — 짝 판별은 코어가 한다).
+ * (소스 `.g7.html` 우선 — 짝 판별은 코어가 한다).
  */
 class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterface
 {
@@ -87,7 +87,7 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
      * resources/extensions 의 오버레이 확장 정의를 모두 읽습니다.
      *
      * 수집·짝 판별·읽기는 코어가 맡는다 ({@see LayoutFragmentSourceHelper::readDirectory()}) —
-     * 여기서 `glob('*.json')` 하면 저작본(`.g7.html`)이 통째로 보이지 않아, 저작본만 고친 확장점은
+     * 여기서 `glob('*.json')` 하면 소스(`.g7.html`)이 통째로 보이지 않아, 소스만 고친 확장점은
      * 업데이트 복원에서 조용히 빠진다.
      *
      * @return array<int, array<string, mixed>> 확장 정의 목록

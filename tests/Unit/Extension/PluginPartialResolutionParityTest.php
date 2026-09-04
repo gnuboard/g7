@@ -12,7 +12,7 @@ use Tests\TestCase;
  * `PluginManager` 는 `ValidatesLayoutFiles` 트레이트를 쓰면서도 `resolveAllPartials`·
  * `resolvePartialPath` 를 **자기 클래스에 한 벌 더** 들고 있었다. PHP 는 클래스 메서드가 트레이트를
  * 이기므로, 트레이트에만 들어간 개선(`partials/…` 는 layouts 루트 기준으로 폴백)이 플러그인 설치
- * 경로에는 **닿지 않았다**. 같은 저작 관례가 확장 유형에 따라 다르게 동작하는 상태였다.
+ * 경로에는 **닿지 않았다**. 같은 작성 관례가 확장 유형에 따라 다르게 동작하는 상태였다.
  *
  * 복제본을 지워 트레이트 한 벌만 남겼고, 이 테스트가 그 규칙 동일성을 지킨다.
  */

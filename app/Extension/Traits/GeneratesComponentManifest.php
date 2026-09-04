@@ -10,9 +10,9 @@ namespace App\Extension\Traits;
  * 매니페스트를 빌드 경로 루트에 작성한다.
  *
  * 이 매니페스트를 읽는 소비자는 둘이다:
- *  - **컴파일러** — `.g7.html` 저작 시 확장 컴포넌트 태그를 해석한다
+ *  - **컴파일러** — `.g7.html` 작성 시 확장 컴포넌트 태그를 해석한다
  *    (`App\Support\LayoutMarkup\ComponentManifest`). 확장 컴포넌트는 `{identifier}` 프리픽스
- *    태그로 저작되고 노드 `name` 은 `{identifier}.{이름}` 이다 — 핸들러의 네임스페이스 관례와 같다.
+ *    태그로 작성되고 노드 `name` 은 `{identifier}.{이름}` 이다 — 핸들러의 네임스페이스 관례와 같다.
  *  - **런타임** — 확장 IIFE 가 self-register 할 때 이 매니페스트가 선언한 이름과 판본을 쓴다.
  *
  * 스캔 규칙:

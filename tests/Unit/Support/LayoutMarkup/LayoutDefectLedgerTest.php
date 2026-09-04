@@ -365,7 +365,7 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
     /**
      * 노드의 죽은 키·사어를 봉인합니다 (F8).
      *
-     * `_comment` 는 서빙 strip 대상이라 `comment` 와 동치이지만, 저작 채널은 `comment` 하나로 모은다 —
+     * `_comment` 는 서빙 strip 대상이라 `comment` 와 동치이지만, 작성 채널은 `comment` 하나로 모은다 —
      * 방출기가 `<!-- -->` 로 내는 것이 `comment` 뿐이라 `_comment` 는 이관 때마다 탈출구를 쓰게 된다.
      *
      * @scenario compile_unit=node,source_health=defective

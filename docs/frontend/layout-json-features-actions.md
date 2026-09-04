@@ -32,7 +32,7 @@
 <json key="init_actions">[{"handler":"initTheme"},{"handler":"customInit","target":"some_value","params":{"key":"value"}},{"handler":"apiCall","if":"{{!!query.user_id}}","target":"/api/admin/users/search","params":{"method":"GET","query":{"id":"{{query.user_id}}"}},"onSuccess":[{"handler":"setState","params":{"target":"local","userData":"{{response.data}}"}}]}]</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -123,7 +123,7 @@ export const handlerMap = {
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -151,7 +151,7 @@ init_actions는 정적 바인딩을 지원합니다. route params, query, _globa
 <json key="init_actions">[{"handler":"initWithPage","target":"{{query.page}}","params":{"userId":"{{route.id}}","mode":"{{_global.mode}}"}}]</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -233,7 +233,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -296,7 +296,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 </action>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -328,7 +328,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 </button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -345,7 +345,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 </input>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -396,7 +396,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 </modal>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -444,7 +444,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -464,7 +464,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -509,7 +509,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -658,7 +658,7 @@ modals 배열은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -703,7 +703,7 @@ modals 배열은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -749,7 +749,7 @@ const handleUploadComplete = async (result) => {
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -791,7 +791,7 @@ const handleUploadComplete = async (result) => {
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -834,7 +834,7 @@ const handleUploadComplete = async (result) => {
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -944,7 +944,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -978,7 +978,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 </input>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1038,7 +1038,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1082,7 +1082,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1102,7 +1102,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 <script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js" id="ckeditor_script" data-if="{{_global.settings?.editor?.use_ckeditor}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1140,7 +1140,7 @@ scripts로 로드된 외부 라이브러리는 `callExternal` 핸들러로 호�
 </button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

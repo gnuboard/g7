@@ -223,7 +223,7 @@ class LayoutPreviewControllerTest extends TestCase
      * 확장 미리보기(`preview_type=extension`)에서도 개발자 주석이 제거되어야 합니다.
      *
      * 이 분기는 편집 중인 **확장 정의**를 대표 레이아웃에 임시 치환해 그린다. 치환된 content 는
-     * 저작본에서 온 그대로라 주석을 품고 있고, 레이아웃 미리보기와는 다른 호출 지점이므로
+     * 소스에서 온 그대로라 주석을 품고 있고, 레이아웃 미리보기와는 다른 호출 지점이므로
      * 제거를 한 곳에만 걸면 이 분기가 남는다.
      *
      * @scenario compile_unit=layout,source_health=valid

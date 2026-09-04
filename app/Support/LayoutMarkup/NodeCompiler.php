@@ -9,13 +9,13 @@ use App\Enums\LayoutMarkupErrorCode;
  *
  * 이 층이 확정하는 것은 세 가지다.
  *
- * **① 속성 3분할.** 저작자가 쓴 속성은 프리픽스만으로 갈린다 — 무접두는 컴포넌트 props,
+ * **① 속성 3분할.** 작성자가 쓴 속성은 프리픽스만으로 갈린다 — 무접두는 컴포넌트 props,
  * `data-*` 예약어는 엔진 지시자(노드 키), `:attr` 은 타입 리터럴. 이 분할 덕에 "브라우저가
  * 아는 속성 / 우리 엔진이 아는 지시자 / 타입 강제" 가 눈으로 구분된다.
  *
  * **② props 는 검증하지 않고 원문 통과.** components.json 의 prop 선언은 화이트리스트가
  * 아니라 힌트다 — 실측상 선언 커버리지가 75~77% 이고 미선언 목록 상위가 `Button.type`·
- * `Input.value` 같은 정상 props 다. 화이트리스트로 강제하면 정상 저작 7천여 건이 거부된다.
+ * `Input.value` 같은 정상 props 다. 화이트리스트로 강제하면 정상 마크업 7천여 건이 거부된다.
  * 런타임도 props 를 검증하지 않고 그대로 넘긴다(레지스트리는 `name` 만 해석).
  *
  * **③ 표현식은 건드리지 않는다.** `{{...}}`/`$t:` 는 전 위치 무변환 통과다(계획 D3). 컴파일러가
@@ -31,7 +31,7 @@ final class NodeCompiler
      * 엔진 지시 속성 — 여러 컴포넌트에 공통으로 얹히는 노드 지시자만 `data-` 를 쓴다.
      *
      * 값 타입을 키별로 **고정**한다. `data-slot-order="2"` 가 문자열 `"2"` 로 방출되면 JSON 이
-     * 달라지므로(실사용은 정수 31건), 타입이 하나로 정해지는 지시자는 저작자가 `:` 를 붙이지
+     * 달라지므로(실사용은 정수 31건), 타입이 하나로 정해지는 지시자는 작성자가 `:` 를 붙이지
      * 않아도 그 타입으로 읽는다. 반대로 값 타입이 진짜 둘인 지시자(`data-if` 는 표현식 문자열
      * 또는 불리언)만 `:` 타입 리터럴을 허용한다.
      *
@@ -65,11 +65,11 @@ final class NodeCompiler
     /**
      * HTML5 불리언 속성 — 참은 **존재**, 거짓은 **생략**으로 표기한다(W3C).
      *
-     * `required="false"` 는 표준상 참이므로(값을 보지 않는다) 저작자의 의도와 정반대가 된다.
+     * `required="false"` 는 표준상 참이므로(값을 보지 않는다) 작성자의 의도와 정반대가 된다.
      * 리터럴 값을 정말 전달하려면 `:required="false"` 를 쓴다.
      *
      * G7 개념과 겹치는 표준 이름(`default`·`loop`)은 뺐다 — `<class-map default>` 처럼 문자열
-     * 값을 받는 자리가 있어 불리언으로 단정하면 정상 저작을 막는다.
+     * 값을 받는 자리가 있어 불리언으로 단정하면 정상 마크업을 막는다.
      *
      * @var array<int, string>
      */
@@ -87,7 +87,7 @@ final class NodeCompiler
      * props 로 통과시키면 `v-if` 가 화면에 아무 영향도 주지 않은 채 사라진다.
      *
      * `slot` 은 일부러 뺐다 — HTML5 전역 속성이면서 **props 로 실사용 4건**(sirsoft-board 의
-     * Dropdown trigger/content 배치)이라, 막으면 정상 저작이 거부된다. 노드 레벨 슬롯은
+     * Dropdown trigger/content 배치)이라, 막으면 정상 마크업이 거부된다. 노드 레벨 슬롯은
      * `data-slot` 이고 `slot=` 은 props 다 — 속성 3분할이 정확히 이 구분을 위해 있다.
      *
      * @var array<string, string>
@@ -103,14 +103,14 @@ final class NodeCompiler
     /**
      * JSON 노드 키 이름을 무접두 속성으로 쓴 표기 → 올바른 표기 안내.
      *
-     * 옛 JSON 을 손으로 옮기는 저작자는 노드 키를 그대로 속성에 적기 쉽다(`condition="{{x}}"`).
+     * 옛 JSON 을 손으로 옮기는 작성자는 노드 키를 그대로 속성에 적기 쉽다(`condition="{{x}}"`).
      * 무접두는 props 규칙이라 조용히 통과하는데, 엔진은 **노드 키**만 읽으므로 조건이 아예 걸리지
      * 않은 노드가 나온다 — 결함 인벤토리의 "노드 condition bare 식 → 항상 렌더" 와 같은 지대다.
      *
      * 목록은 전 번들 레이아웃의 props 이름과 매니페스트 prop 선언을 전수 대조해, **props 로 쓰이는
      * 이름이 하나도 없는 노드 키**만 넣었다. `id`·`type`·`name`·`text`·`style`·`actions`·`slot`·
      * `responsive`·`sortable`·`children` 은 정상 props 로 실사용되므로 뺐다 — 막으면 D19 와 같은
-     * 실수(정상 저작 거부)가 된다. `dataKey`/`debounce` 는 props 위치 실사용이 있으나 그쪽이
+     * 실수(정상 마크업 거부)가 된다. `dataKey`/`debounce` 는 props 위치 실사용이 있으나 그쪽이
      * 정규화 대상 이형이므로(계획 "입력만 받고 정규화") 노드 키 표기로 안내한다.
      *
      * @var array<string, string>
@@ -135,7 +135,7 @@ final class NodeCompiler
      *
      * 이 목록이 없으면 오타 제안이 엉뚱한 컴포넌트를 짚는다 — `<on>` 은 편집 거리 1 인 `<ol>` 을,
      * `<cell>` 은 `<ul>` 을 "쓰려던 것 아닌가요?" 로 제안한다. G7 어휘를 오타로 취급하는 셈이라
-     * 저작자를 더 헷갈리게 만든다.
+     * 작성자를 더 헷갈리게 만든다.
      *
      * 상위 단계가 해당 태그를 구현하면 **여기서 지운다**. 잊더라도 그 단계의 컴파일 테스트가
      * 이 에러로 실패하므로 목록이 조용히 낡지 않는다.
@@ -167,7 +167,7 @@ final class NodeCompiler
      * "아직 다루지 않음" 이 아니라 "여기 쓸 수 없음" 이다(ACTION_ONLY_TAGS 와 같은 규율).
      *
      * `<slot>` 은 뺐다 — 노드 위치의 `<slot name>` 은 베이스 레이아웃의 자리표시 노드(`type: slot`)라
-     * 정상 저작이다(아래 compileSlotNode). `<modal>` 도 뺐다 — 노드 자리에서는 Modal 컴포넌트다.
+     * 정상 마크업이다(아래 compileSlotNode). `<modal>` 도 뺐다 — 노드 자리에서는 Modal 컴포넌트다.
      * `<permissions>`·`<meta>` 도 뺐다(D36) — 노드 자리의 `<permissions>` 는 그 노드의 조건 렌더 권한,
      * `<meta>` 는 그 노드의 편집기 메타(editor_label 등)다(STRUCTURAL_TAGS 에서 처리). 문서 직속이면 각각
      * 레이아웃 권한/문서 메타 섹션 — 위치로 갈린다(modal/slot 과 동일). `<seo>` 는 문서 `<meta>` 전용 존치.
@@ -226,7 +226,7 @@ final class NodeCompiler
      * `<sortable>` 속성명(kebab) → sortable 구조체 키(camel).
      *
      * sortable 은 노드 키 객체(`{source, itemKey, strategy, handle, itemVar, indexVar}`)이며 짝인
-     * itemTemplate 은 `<item-template>` 이 맡는다(EmbeddingCompiler). 저작 태그명은 kebab 이므로
+     * itemTemplate 은 `<item-template>` 이 맡는다(EmbeddingCompiler). 마크업 태그명은 kebab 이므로
      * 실측 키(camelCase)로 되돌린다 — 왕복 시 이 표를 역으로 적용하면 원문이 복원된다.
      *
      * @var array<string, string>
@@ -435,7 +435,7 @@ final class NodeCompiler
             ]);
         }
 
-        // 저작본은 저작본을 가리키고, 산출 JSON 은 `.json` 표기를 유지한다 — 확장자를 바꾸는 일은
+        // 소스는 소스를 가리키고, 산출 JSON 은 `.json` 표기를 유지한다 — 확장자를 바꾸는 일은
         // 오직 이 경계에서만 일어난다(PartialReferenceNotation). 규약 밖 표기를 통과시키면 그 값이
         // 산출물 안에서 정상처럼 보이므로 세운다.
         if (! PartialReferenceNotation::isAuthoringNotation($src)) {
@@ -834,7 +834,7 @@ final class NodeCompiler
      * 토크나이저의 중복 속성 검사는 **같은 이름**만 본다. 같은 자리를 이름이 다른 표기가 다투는
      * 경로가 셋이므로 여기서 한 번에 막는다 — 별칭(`class`+`className`, `for`+`htmlFor`),
      * 타입 리터럴(`data`+`:data`), 그리고 `<prop name="className">` 처럼 자식 태그로 오는 값.
-     * 막지 않으면 나중 것이 앞엣것을 조용히 지우는데, 저작자는 두 값이 다 반영될 것으로 기대한다.
+     * 막지 않으면 나중 것이 앞엣것을 조용히 지우는데, 작성자는 두 값이 다 반영될 것으로 기대한다.
      *
      * @param  array<string, mixed>  $props  props (참조)
      * @param  string  $key  배치할 props 키
@@ -1121,7 +1121,7 @@ final class NodeCompiler
             $variants[$this->requiredAttribute($child, 'when', $path)] = (string) ($child->text ?? '');
         }
 
-        // `<variant>` 이 없으면 `variants` 를 만들지 않는다 — 저작하지 않은 것을 방출하지 않는다는
+        // `<variant>` 이 없으면 `variants` 를 만들지 않는다 — 작성하지 않은 것을 방출하지 않는다는
         // 빈 컨테이너 규율과 같다. 엔진도 동치로 읽는다(`classMap.variants && key in variants` 가
         // 거짓 → default 폴백 — RenderHelpers::resolveClassMap). 실사용: default 만 두는 responsive
         // 오버라이드용 classMap.
@@ -1161,7 +1161,7 @@ final class NodeCompiler
         $items = $element->children !== [];
 
         // 셋 중 둘 이상을 쓰면 어느 쪽이 데이터소스인지 알 수 없다. 하나를 골라 나머지를 버리면
-        // 저작자가 쓴 값이 조용히 사라진다.
+        // 작성자가 쓴 값이 조용히 사라진다.
         if (count(array_filter([$plain !== null, $typed !== null, $items])) > 1) {
             throw $this->error($element, LayoutMarkupErrorCode::DuplicateAttribute, $path, [
                 'tag' => $element->name,
@@ -1249,7 +1249,7 @@ final class NodeCompiler
      * 조건 표현식을 정규화합니다.
      *
      * `{{}}` 가 없으면 전체를 감싼다 — 감싸지 않은 식은 엔진이 문자열 보간으로 처리해 **항상 참**이
-     * 되는 함정이라(비어 있지 않은 문자열은 truthy) 저작 의도와 정반대로 동작한다.
+     * 되는 함정이라(비어 있지 않은 문자열은 truthy) 작성 의도와 정반대로 동작한다.
      *
      * 반대로 `{{}}` 가 값의 **일부만** 감싼 혼합형(`{{x}} === 'y'`)은 거부한다(D4). 같은 함정을
      * 문법상 쓸 수 없게 만드는 것이 이 포맷의 존재 이유 중 하나이며, 번들 실사용도 0건이다.

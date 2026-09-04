@@ -208,7 +208,7 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
     /**
      * 코퍼스에 실재하는 모든 태그 자리에서 "보존 아니면 거부" 를 전수 확인한다.
      *
-     * 태그 목록은 손으로 적지 않고 저작 코퍼스에서 도출하며, 도출이 죽는 경우를 "위반 0" 과
+     * 태그 목록은 손으로 적지 않고 소스 코퍼스에서 도출하며, 도출이 죽는 경우를 "위반 0" 과
      * 구분하기 위해 태그 수 하한을 단언한다.
      *
      * @scenario compile_unit=facade,source_health=valid

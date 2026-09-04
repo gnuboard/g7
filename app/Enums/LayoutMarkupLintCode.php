@@ -3,9 +3,9 @@
 namespace App\Enums;
 
 /**
- * `.g7.html` 저작 포맷 정적 lint 경고 코드 Enum (S6).
+ * `.g7.html` 마크업 형식 정적 lint 경고 코드 Enum (S6).
  *
- * lint 은 컴파일을 **막지 않는** 경고다 — 산출 JSON 은 정상 생성되지만, 저작자·리뷰어에게
+ * lint 은 컴파일을 **막지 않는** 경고다 — 산출 JSON 은 정상 생성되지만, 작성자·리뷰어에게
  * "이대로 두면 런타임에 문제가 될 수 있다" 를 알린다. 컴파일을 중단시키는 사유는
  * `LayoutMarkupErrorCode`(CompileError) 가 담당하고, 이 Enum 은 `LintWarning` 이 담는다.
  *
@@ -42,7 +42,7 @@ enum LayoutMarkupLintCode: string
      * top-level `value` 는 소비되지 않고 `$args[0]` 폴백으로 넘어간다. 정본 표기는 `<switch on>` 이다.
      *
      * 이 표기가 문법에 남아 있는 이유는 이관 때문이다 — 기존 코퍼스 26건이 top-level 배치이고,
-     * 기계 이관은 배치를 바꿀 수 없다(D38). 신규 저작이 그 죽은 배치를 따라 쓰지 않게 여기서 경고한다.
+     * 기계 이관은 배치를 바꿀 수 없다(D38). 신규 마크업이 그 죽은 배치를 따라 쓰지 않게 여기서 경고한다.
      */
     case SwitchValueNotConsumed = 'switch_value_not_consumed';
 
@@ -67,11 +67,11 @@ enum LayoutMarkupLintCode: string
      * 선언하지 않음** (S23 축 B — 78차 프로브 f5b·f5c).
      *
      * 컴파일은 정상 hoist 하고(`props.footer`) lint 도 통과하지만, `sirsoft-basic` 의 `Modal.tsx` 는
-     * 그 prop 을 읽지 않아 **저작한 내용이 화면에서 조용히 사라진다**. 문법 결함이 아니라 컴포넌트
+     * 그 prop 을 읽지 않아 **작성한 내용이 화면에서 조용히 사라진다**. 문법 결함이 아니라 컴포넌트
      * 계약 비대칭이고, 그 비대칭 자체는 의도된 것이라 문서에 명문화돼 있다(layout-markup.md §6).
      * 남아 있던 문제는 **그 계약을 문서만 지키고 기계가 강제하지 않았다**는 것이며 이 코드가 그 자리다.
      *
-     * 대상은 hoist 3키로 닫혀 있다 — 저작 경로가 `<footer>`/`<title-prefix>`/`<title-suffix>` 뿐이고
+     * 대상은 hoist 3키로 닫혀 있다 — 소스 경로가 `<footer>`/`<title-prefix>`/`<title-suffix>` 뿐이고
      * 컴파일러가 부모를 Modal 로 못박는다(EmbeddingCompiler::applyChild). 닫힌 집합이라 D19 의
      * 「부분 선언」 문제를 타지 않는다: 두 번들 템플릿 182 컴포넌트가 전건 props 표면을 갖고,
      * 이 3키는 admin 선언 있음 / basic 선언 없음이 **컴포넌트 소스와 일치**함을 실측했다.

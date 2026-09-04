@@ -3261,7 +3261,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈의 레이아웃을 활성화된 admin/user 템플릿에 등록합니다.
      *
      * 레이아웃 파일의 디렉토리 위치에 따라 대상 템플릿 타입이 결정됩니다
-     * (소스는 `.g7.html` 저작본 우선 — {@see ValidatesLayoutFiles::collectLayoutSources()}):
+     * (소스는 `.g7.html` 소스 우선 — {@see ValidatesLayoutFiles::collectLayoutSources()}):
      * - layouts/admin/*.{g7.html,json} → admin 타입 템플릿에 등록
      * - layouts/user/*.{g7.html,json} → user 타입 템플릿에 등록
      * - layouts/*.{g7.html,json} (루트) → 스킵 (경고 로그 출력)
@@ -3634,7 +3634,7 @@ class ModuleManager implements ModuleManagerInterface
      * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다.
      *
      * 소스 선택·읽기는 {@see CollectsFragmentSources::loadFragmentDefinitions()}
-     * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 저작본(`.g7.html`)을
+     * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 소스(`.g7.html`)을
      * 보지 않았고, 그래서 활성화 경로만 규약 밖에 남아 있었다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스

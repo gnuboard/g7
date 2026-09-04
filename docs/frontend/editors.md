@@ -102,7 +102,7 @@
 </html-editor>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -160,7 +160,7 @@
 </html-editor>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -198,7 +198,7 @@
 <html-editor data-ref="content_view" content="{{post.data?.content ?? ''}}" isHtml="{{(post.data?.content_mode ?? 'text') === 'html'}}" :readOnly="true" :showHtmlModeToggle="false"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -230,7 +230,7 @@ HtmlEditor는 두 개의 필드를 폼에 바인딩합니다:
 </init-local>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -297,7 +297,7 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 </code-editor>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -334,7 +334,7 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 </code-editor>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -367,7 +367,7 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 <code-editor data-ref="code_viewer" value="{{config.data?.settings ?? '{}'}}" language="json" height="200px" :readOnly="true"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -438,7 +438,7 @@ HtmlEditor는 내부적으로 **DOMPurify**를 사용하여 HTML을 정화합니
 </html-editor>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

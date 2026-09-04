@@ -7,9 +7,9 @@ use App\Support\LayoutMarkup\LayoutCorpus;
 use Illuminate\Support\Facades\File;
 
 /**
- * 코퍼스의 조각 참조가 전부 **저작 SSoT** 로 해석되는지 전수 봉인 (S18 P1).
+ * 코퍼스의 조각 참조가 전부 **소스 SSoT** 로 해석되는지 전수 봉인 (S18 P1).
  *
- * S18 P1 의 D38 동작 불변 실측은 "조각 참조가 전부 저작본으로 해석된다" 였는데, 그 값이 계획서
+ * S18 P1 의 D38 동작 불변 실측은 "조각 참조가 전부 소스로 해석된다" 였는데, 그 값이 계획서
  * 산문에만 있고 **모집단 정의가 어디에도 없었다**. 값이 산문에 박히면 두 가지가 같이 일어난다 —
  * 다음 사람이 재집계할 수 없고, 규약이 변해도 아무 실패 모드가 없다. 그래서 값을 적는 대신
  * **성질을 단언한다**.
@@ -23,12 +23,12 @@ use Illuminate\Support\Facades\File;
  *    세어 **213건(`<modal src>`)을 빠뜨린 채 272 로 기록**했다 — 전수는 485다.
  *
  * 숫자를 단언하지 않는 이유: 이관·신규 화면으로 참조 수는 정상 작업에서도 늘고 준다. 대신
- * ⓐ 후보 0건이면 red ⓑ 해석 실패 하드 0 ⓒ 짝 저작본이 실재하는 참조는 전량 저작본 해석을 본다.
+ * ⓐ 후보 0건이면 red ⓑ 해석 실패 하드 0 ⓒ 짝 소스가 실재하는 참조는 전량 소스 해석을 본다.
  */
 class PartialReferenceCorpusTest extends LayoutMarkupTestCase
 {
     /**
-     * 조각 참조 전량이 해석되고, 저작본이 있으면 저작본이 이긴다.
+     * 조각 참조 전량이 해석되고, 소스가 있으면 소스가 이긴다.
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -78,7 +78,7 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
                         continue;
                     }
 
-                    // 저작본이 실재하는데 `.json` 이 선택됐다면 우선순위 규약이 뒤집힌 것이다.
+                    // 소스가 실재하는데 `.json` 이 선택됐다면 우선순위 규약이 뒤집힌 것이다.
                     if (! $source['markup'] && File::exists(preg_replace('/\.json$/i', '.g7.html', $source['path']))) {
                         $jsonDespiteMarkup[] = $this->relative($file).' → '.$reference;
                     }
@@ -101,7 +101,7 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
             '해석되지 않는 조각 참조가 있습니다 (설치 시점에 오류로 설치를 세운다).');
 
         $this->assertSame([], $jsonDespiteMarkup,
-            '저작본이 실재하는데 `.json` 이 선택된 참조가 있습니다 — 저작 SSoT 가 두 벌로 갈라진 상태입니다.');
+            '소스가 실재하는데 `.json` 이 선택된 참조가 있습니다 — 소스 SSoT 가 두 벌로 갈라진 상태입니다.');
     }
 
     /**
@@ -136,7 +136,7 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 저작본에서 조각 참조를 뽑습니다 — `<include src>` 와 `<modal src>` 둘 다.
+     * 소스에서 조각 참조를 뽑습니다 — `<include src>` 와 `<modal src>` 둘 다.
      *
      * @param  string  $content  `.g7.html` 내용
      * @return array<int, string> 참조 값 목록 (중복 포함 — 참조 수를 세는 것이 목적이다)

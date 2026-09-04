@@ -23,7 +23,7 @@ export interface HelloModuleMemoCardProps {
  * 이름(`overrides/gnuboard7-hello_module/`)이 곧 대상 확장 식별자이며, 레이아웃 오버라이드
  * (`layouts/overrides/{확장식별자}/`)와 같은 규약이다.
  *
- * **대체해도 저작 표면은 그대로다.** 저작자는 여전히 같은 태그를 쓰고 레이아웃도 고치지 않는다:
+ * **대체해도 마크업 표면은 그대로다.** 작성자는 여전히 같은 태그를 쓰고 레이아웃도 고치지 않는다:
  *
  * ```html
  * <gnuboard7-hello-module-memo-card title="{{memo.title}}"/>

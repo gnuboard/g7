@@ -157,7 +157,7 @@ import { Icon, IconName } from '../basic/Icon';
 
 ## 확장이 제공하는 컴포넌트
 
-저작 어휘는 대상 템플릿의 `components.json` 단독이 아니라 **템플릿 + 활성 모듈 + 활성 플러그인 3계통**이다. 확장이 제공한 컴포넌트는 확장 식별자 프리픽스가 붙은 태그로 쓴다.
+마크업 어휘는 대상 템플릿의 `components.json` 단독이 아니라 **템플릿 + 활성 모듈 + 활성 플러그인 3계통**이다. 확장이 제공한 컴포넌트는 확장 식별자 프리픽스가 붙은 태그로 쓴다.
 
 ```html
 <sirsoft-ecommerce-product-card title="{{product.name}}" :featured="true"/>
@@ -167,6 +167,6 @@ import { Icon, IconName } from '../basic/Icon';
 - 태그 프리픽스는 식별자의 `_` 를 `-` 로 접은 것 (`gnuboard7-hello_module` → `<gnuboard7-hello-module-...>`)
 - 템플릿 컴포넌트는 종전대로 프리픽스 없이 쓴다
 
-"미등록 컴포넌트 확인" 규율의 대상이 3계통으로 넓어졌다. 어떤 판본이 실제로 쓰이는지(확장 원본 / 템플릿 대체본 / 템플릿 전용 판본)는 저작자가 알 필요가 없다 — 셋 다 같은 태그·같은 이름이다.
+"미등록 컴포넌트 확인" 규율의 대상이 3계통으로 넓어졌다. 어떤 판본이 실제로 쓰이는지(확장 원본 / 템플릿 대체본 / 템플릿 전용 판본)는 작성자가 알 필요가 없다 — 셋 다 같은 태그·같은 이름이다.
 
 규약 전문: [../extension/extension-components.md](../extension/extension-components.md)

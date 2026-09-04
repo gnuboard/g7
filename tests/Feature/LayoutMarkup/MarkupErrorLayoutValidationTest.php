@@ -12,13 +12,13 @@ use Tests\TestCase;
  *
  * 템플릿 설치는 같은 트랜잭션에서 두 단계를 연달아 밟는다 —
  * `registerLayouts()` 가 레이아웃을 등록하고, 곧바로 `validateErrorLayouts()` 가 필수 에러
- * 레이아웃의 실재를 확인한다. 그런데 앞은 저작본을 알고(`scanMarkupLayoutFiles()` 가
+ * 레이아웃의 실재를 확인한다. 그런데 앞은 소스를 알고(`scanMarkupLayoutFiles()` 가
  * `layouts/errors/*.g7.html` 를 명시적으로 스캔) 뒤는 `.json` 만 봤다. 두 단계가 서로 다른
  * SSoT 를 보고 있었으므로, **마크업 전용 에러 레이아웃을 가진 템플릿은 레이아웃이 정상
  * 등록된 뒤 "에러 레이아웃이 없다" 는 이유로 설치가 세워진다.**
  *
  * 번들 템플릿 넷은 `errors/` 짝이 전건 병존해 오늘 화면 결함은 0 이지만, S18 의 목표 상태가
- * "저작은 `.g7.html` 만" 이고 P3 매트릭스가 `markup-only × install` 을 축으로 선언하므로 그
+ * "마크업은 `.g7.html` 만" 이고 P3 매트릭스가 `markup-only × install` 을 축으로 선언하므로 그
  * 조합이 그대로 실패한다. P2 가 `.json` 을 기계 산출로 바꾼 뒤 마크업 전용 신규 템플릿을
  * 만드는 순간도 같다.
  *
@@ -63,7 +63,7 @@ class MarkupErrorLayoutValidationTest extends TestCase
 
         $this->assertTrue($this->validate(),
             '마크업 전용 에러 레이아웃이 존재로 인정되지 않았다 — 등록 경로는 '
-            .'`layouts/errors/*.g7.html` 를 스캔하는데 검증 경로만 `.json` 을 본다면 저작 SSoT 를 '
+            .'`layouts/errors/*.g7.html` 를 스캔하는데 검증 경로만 `.json` 을 본다면 소스 SSoT 를 '
             .'따른 템플릿이 설치되지 않는다');
     }
 

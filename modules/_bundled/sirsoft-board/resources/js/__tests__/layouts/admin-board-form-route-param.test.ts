@@ -22,7 +22,7 @@
  * @effects wait_for_references_declared_source_only
  *
  * 계약:
- *   ① 게시판 폼 계열 저작본은 `route?.id` 를 쓰지 않는다 (path param 에 없는 이름).
+ *   ① 게시판 폼 계열 소스는 `route?.id` 를 쓰지 않는다 (path param 에 없는 이름).
  *   ② 편집/신규를 가르는 조건은 `route?.slug` 로 판정한다.
  *   ③ `transition_overlay.wait_for` 는 그 레이아웃이 **선언한** 데이터소스 id 만 참조한다.
  *      (엔진은 미존재 id 를 조용히 무시하므로 오탈자가 런타임에 드러나지 않는다 —

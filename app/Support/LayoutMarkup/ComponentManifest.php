@@ -21,7 +21,7 @@ use App\Enums\LayoutMarkupErrorCode;
  *
  * 태그 프리픽스는 식별자의 `_` 를 `-` 로 정규화해 만든다 — 번들 확장 14개 중 7개가
  * `gnuboard7-hello_module`·`sirsoft-pay_kginicis` 처럼 언더스코어를 품는데, 언더스코어는
- * 저작 태그명에 올 수 없기 때문이다(S1 `InvalidTagName`). 정규화가 서로 다른 두 확장을
+ * 마크업 태그명에 올 수 없기 때문이다(S1 `InvalidTagName`). 정규화가 서로 다른 두 확장을
  * 같은 프리픽스로 접을 수 있으므로(`a_b` 와 `a-b`) 그 충돌은 레지스트리 병합 시점에
  * `ExtensionIdTagCollision` 으로 거부한다.
  */
@@ -308,7 +308,7 @@ final class ComponentManifest
                 ]);
             }
 
-            // 대체본은 대상 확장의 좌표(`{target}.{name}`)에 그대로 들어앉는다 — 저작 태그가
+            // 대체본은 대상 확장의 좌표(`{target}.{name}`)에 그대로 들어앉는다 — 마크업 태그가
             // 바뀌면 대체가 아니라 새 컴포넌트다.
             $definition = self::makeDefinition($entry, $target, ComponentOwnerKind::Extension, $at, $path);
 
@@ -335,7 +335,7 @@ final class ComponentManifest
      * 판본 **선택**은 런타임 관심사라 컴파일러는 태그 해석에 이 값을 쓰지 않는다 — 어느
      * 판본이든 같은 이름으로 해석되고 props 는 verbatim 통과(D19)라 컴파일 계약이 갈리지
      * 않기 때문이다. 다만 오타는 여기서 잡는다: 판본만 있고 원본이 없으면 그 판본은 어느
-     * 태그로도 저작할 수 없는 죽은 코드다.
+     * 태그로도 작성할 수 없는 죽은 코드다.
      *
      * @param  array<mixed>  $manifest  매니페스트 배열
      * @param  ComponentOwnerKind  $kind  소유자 종류
@@ -392,10 +392,10 @@ final class ComponentManifest
     }
 
     /**
-     * 확장 식별자를 저작 태그 프리픽스로 정규화합니다.
+     * 확장 식별자를 마크업 태그 프리픽스로 정규화합니다.
      *
      * 번들 확장 14개 중 7개가 `gnuboard7-hello_module`·`sirsoft-pay_kginicis` 처럼 언더스코어를
-     * 품는데, 저작 태그명은 소문자와 하이픈만 허용한다(S1 `InvalidTagName`). 정규화 결과가
+     * 품는데, 마크업 태그명은 소문자와 하이픈만 허용한다(S1 `InvalidTagName`). 정규화 결과가
      * 겹치는 두 확장(`a_b` 와 `a-b`)은 레지스트리 병합 시점에 거부한다.
      *
      * @param  string  $identifier  확장 식별자

@@ -11,12 +11,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
 /**
- * JSON 레이아웃을 `.g7.html` 저작 소스로 컴파일하는 커맨드 (`layout:decompile` 의 짝).
+ * JSON 레이아웃을 `.g7.html` 소스로 컴파일하는 커맨드 (`layout:decompile` 의 짝).
  *
- * 용어(PO 정의): **compile = JSON → HTML**(저작 소스 산출), **decompile = HTML → JSON**(설치·검증).
- * 이관(S10~)이 원본 `.json` 을 `.g7.html` 저작 파일로 옮길 때 쓰는 생성 커맨드다.
+ * 용어(PO 정의): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
+ * 이관(S10~)이 원본 `.json` 을 `.g7.html` 소스 파일로 옮길 때 쓰는 생성 커맨드다.
  *
- * 두 모드다. **컴파일**(기본)은 `.json` 을 짝 `.g7.html` 로 만들어 이관 저작 파일을 산출한다.
+ * 두 모드다. **컴파일**(기본)은 `.json` 을 짝 `.g7.html` 로 만들어 이관 소스 파일을 산출한다.
  * **왕복 검증**(`--roundtrip`)은 산출을 쓰지 않고 `decompile(compile(json)) ≡ json` 을 전량 확인한다 —
  * 계획서 DoD "왕복 불일치 0" 의 기계 오라클이자, 컴파일러·역변환기의 표면 커버리지를 봉인하는 유일한 계량이다.
  *
@@ -38,7 +38,7 @@ class LayoutCompileCommand extends Command
     /**
      * @var string
      */
-    protected $description = 'JSON 레이아웃을 .g7.html 저작 소스로 컴파일하고 왕복 동등성을 검증합니다';
+    protected $description = 'JSON 레이아웃을 .g7.html 소스로 컴파일하고 왕복 동등성을 검증합니다';
 
     /**
      * 경로 → 레지스트리 해석기 (`layout:decompile` 과 공유).

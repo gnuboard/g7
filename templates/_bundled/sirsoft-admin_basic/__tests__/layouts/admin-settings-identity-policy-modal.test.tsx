@@ -231,10 +231,10 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
      * - apiCall body 가 form.conditions 를 그대로 전송
      */
     it('신규 추가 init 상태에서 conditions 가 빈 컨테이너', () => {
-      // 저작본(`.g7.html`)이 `<field name="conditions" :value="[]"/>` 로 선언하므로 정본은 `[]` 다.
-      // 종전 짝 `.json` 에는 `{}` 가 들어 있었고 이 단언이 그것을 보고 있었는데, **설치는 저작본을
+      // 소스(`.g7.html`)이 `<field name="conditions" :value="[]"/>` 로 선언하므로 정본은 `[]` 다.
+      // 종전 짝 `.json` 에는 `{}` 가 들어 있었고 이 단언이 그것을 보고 있었는데, **설치는 소스를
       // 읽으므로 실제로 돌던 값은 처음부터 `[]`** 였다 — 즉 이 단언은 한 번도 실동작을 보지 않았다.
-      // S18.5 굽기가 짝을 저작본에 맞추자 그 사실이 드러났다.
+      // S18.5 굽기가 짝을 소스에 맞추자 그 사실이 드러났다.
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).toContain('"conditions":[]');
     });

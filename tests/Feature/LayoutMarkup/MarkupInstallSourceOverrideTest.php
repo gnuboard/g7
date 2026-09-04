@@ -9,7 +9,7 @@ use Tests\TestCase;
 /**
  * 레이아웃 설치 소스 강제(`--layout-source=json`) 테스트 (계획서 §195).
  *
- * 기본 `auto` 는 저작 SSoT 인 `.g7.html` 을 우선한다. `json` 은 진단·복구용 탈출구로, 컴파일러
+ * 기본 `auto` 는 소스 SSoT 인 `.g7.html` 을 우선한다. `json` 은 진단·복구용 탈출구로, 컴파일러
  * 회귀가 의심될 때 원본 `.json` 기준으로 되돌려 설치하기 위한 것이다. 여기서 세 가지를 고정한다:
  *
  *  - `json` 강제 + 병존 → `.json` 이 이긴다 (기본 우선순위가 뒤집힌다).
@@ -136,7 +136,7 @@ class MarkupInstallSourceOverrideTest extends TestCase
     }
 
     /**
-     * 손저작 `.json` 파일을 씁니다.
+     * 손 작성 `.json` 파일을 씁니다.
      *
      * @param  string  $name  파일 베이스 이름
      * @param  array<string, mixed>  $json  JSON 데이터

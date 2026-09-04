@@ -27,7 +27,8 @@ export default defineConfig({
     },
 
     outDir: 'dist',
-    emptyOutDir: true,
+    // 기본값 true 는 서빙 중인 산출물 디렉토리를 통째로 비운다 — 산출물 정리는 빌드 커맨드가 한다
+    emptyOutDir: false,
     // 배포용 빌드(--production)는 G7_BUILD_SOURCEMAP=0 을 주입해 소스맵을 생성하지 않는다.
     sourcemap: !['0', 'false'].includes(process.env.G7_BUILD_SOURCEMAP ?? ''),
 

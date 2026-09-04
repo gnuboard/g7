@@ -27,7 +27,7 @@ class LayoutMarkupSerializerTest extends TestCase
     }
 
     /**
-     * 직렬화가 저작 표기를 그대로 되돌린다 — 이스케이프·불리언 속성·따옴표 선택·void 처리.
+     * 직렬화가 마크업 표기를 그대로 되돌린다 — 이스케이프·불리언 속성·따옴표 선택·void 처리.
      *
      * @scenario compile_unit=tokenize,source_health=valid
      *
@@ -99,7 +99,7 @@ class LayoutMarkupSerializerTest extends TestCase
     /**
      * 글자와 자식을 함께 가진 요소도 자식은 들여쓰기로 전개한다.
      *
-     * 종전에는 서브트리 전체를 한 줄로 찍었다 — `<button>` 하나가 1,800자를 넘어 저작본이 읽히지
+     * 종전에는 서브트리 전체를 한 줄로 찍었다 — `<button>` 하나가 1,800자를 넘어 소스가 읽히지
      * 않는 원인이었다. 트리 빌더의 `normalizeText` 가 텍스트 **앞뒤**의 개행+공백만 걷어내므로,
      * 텍스트 런이 하나이고 그 앞뒤 공백이 인덴트뿐이면 줄을 나눠도 굽기 결과가 같다.
      *
@@ -120,7 +120,7 @@ class LayoutMarkupSerializerTest extends TestCase
         // 단언은 **자식이 자기 줄에 인덴트와 함께 있는가** 로 잡는다. `">\n"` 같은 느슨한 형태는
         // 끝태그 뒤 개행에도 매칭돼 종전 동작에서도 통과한다(첫 판본이 실제로 그렇게 초록이었다).
         $this->assertStringContainsString("<button type=\"button\">\n  <on type=\"click\">\n    <set-state", $markup,
-            '글자를 가진 요소의 자식이 한 줄에 눌려 있다 — 저작본이 읽히지 않는다');
+            '글자를 가진 요소의 자식이 한 줄에 눌려 있다 — 소스가 읽히지 않는다');
 
         $reparsed = $this->reparse($markup);
 

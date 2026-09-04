@@ -61,7 +61,7 @@
 | Resource | `src/Http/Resources/MemoResource.php` | API 응답 포맷 |
 | Controller | `src/Http/Controllers/Admin/MemoController.php` | RESTful CRUD |
 | Listener | `src/Listeners/*Listener.php` | 훅 구독 (자체 발행도 예시) |
-| Layout | `resources/layouts/admin/admin_memo_{list,form}.g7.html` | 관리자 목록/폼 레이아웃 (저작 SSoT) |
+| Layout | `resources/layouts/admin/admin_memo_{list,form}.g7.html` | 관리자 목록/폼 레이아웃 (소스 SSoT) |
 | Test | `tests/Feature/MemoControllerTest.php` + `tests/Unit/` | Feature + Unit |
 | 다국어 (백엔드) | `src/lang/{ko,en}/messages.php` | PHP 배열 |
 | 다국어 (프론트) | `resources/lang/{ko,en}.json` | JSON |
@@ -78,7 +78,7 @@
 | Listener (Action) | `src/Listeners/*ActionListener.php` | 훅 발생 시 부가 작업 |
 | Listener (Filter) | `src/Listeners/*FilterListener.php` | `type: 'filter'` 명시, 반환값으로 가공 |
 | Settings Schema | `config/settings/defaults.json` + `getSettingsSchema()` | 관리자 UI 설정 |
-| Settings Layout | `resources/layouts/admin/plugin_settings.g7.html` (저작 SSoT) + 짝 `.json` | 설정 UI (자동 바인딩 패턴) |
+| Settings Layout | `resources/layouts/admin/plugin_settings.g7.html` (소스 SSoT) + 짝 `.json` | 설정 UI (자동 바인딩 패턴) |
 | Test | `tests/Feature/`, `tests/Unit/` | 훅 발행 → 구독 검증 |
 | 다국어 (프론트) | `resources/lang/{ko,en}.json` | JSON (백엔드 PHP 다국어 없음) |
 

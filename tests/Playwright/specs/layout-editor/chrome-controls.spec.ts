@@ -102,8 +102,8 @@ test.describe('@layout-editor chrome controls', () => {
   test('후속 — 좌측 트리 라우트 노드에 레이아웃 파일 경로가 라벨 하단에 노출 (출처 prefix)', async ({ page }) => {
     // sirsoft-basic 은 템플릿 소스 → 경로 표기는 "layouts/{layoutName}.g7.html".
     // 트리의 라우트 항목마다 라벨 아래 회색 보조 줄(g7le-route-tree-layout-path)이
-    // 노출되고, 그 텍스트가 layouts/ 로 시작하는 저작본(.g7.html) 경로여야 한다.
-    // 확장자가 저작 SSoT 를 가리키는 근거는 S19 ⑦ (R1) — 짝 .json 은 기계 산출이라 사람이 열 파일이 아니다.
+    // 노출되고, 그 텍스트가 layouts/ 로 시작하는 소스(.g7.html) 경로여야 한다.
+    // 확장자가 소스 SSoT 를 가리키는 근거는 S19 ⑦ (R1) — 짝 .json 은 기계 산출이라 사람이 열 파일이 아니다.
     await enterEditor(page);
     await page.waitForSelector('[data-testid="g7le-route-tree-item"]', { timeout: 15_000 });
 
@@ -120,7 +120,7 @@ test.describe('@layout-editor chrome controls', () => {
       return {
         itemCount: items.length,
         pathCount: paths.length,
-        // 표시된 경로 줄은 모두 저작 확장자(.g7.html)로 끝나야 한다
+        // 표시된 경로 줄은 모두 소스 확장자(.g7.html)로 끝나야 한다
         allEndAuthoring: paths.length > 0 && paths.every((p) => (p.textContent || '').trim().endsWith('.g7.html')),
         homePathText: (homePathEl?.textContent || '').trim(),
         // 그룹 헤더에는 경로 줄이 없어야 한다

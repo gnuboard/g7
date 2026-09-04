@@ -82,7 +82,7 @@ class ValidLayoutStructure implements ValidationRule
         //
         // LayoutService::mergeLayouts 가 자식의 components·slots 를 `?? []` 로 읽으므로, 둘 다 없으면
         // 부모 구조를 그대로 물려받고 meta·state 만 갈아끼운다 — 번들 admin 템플릿의 언어팩 화면
-        // 4종이 이 형태로 출하 중이다. 종전에는 여기서 필수로 요구해 그 정상 저작을 거부했고
+        // 4종이 이 형태로 출하 중이다. 종전에는 여기서 필수로 요구해 그 정상 마크업을 거부했고
         // (편집기 저장·이관 양쪽), 설치 경로가 이 규칙을 안 돌린 덕에 출하만 무사했다.
         if (! isset($data['extends'])) {
             // extends가 없는 경우 (base 레이아웃) - components 필수

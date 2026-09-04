@@ -368,7 +368,7 @@ AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' })
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 로그인 레이아웃 init_actions 예시

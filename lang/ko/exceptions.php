@@ -29,7 +29,7 @@ return [
         // include 관련 예외
         'include_file_not_found' => 'include 파일을 찾을 수 없습니다: :path (해석된 경로: :resolved)',
         'invalid_include_json' => 'include 파일의 JSON 형식이 올바르지 않습니다: :path (오류: :error)',
-        'invalid_include_markup' => 'include 저작본(.g7.html) 컴파일에 실패했습니다: :path (오류: :error)',
+        'invalid_include_markup' => 'include 소스(.g7.html) 컴파일에 실패했습니다: :path (오류: :error)',
         'circular_include' => 'include 순환 참조가 감지되었습니다: :trace',
         'max_include_depth_exceeded' => 'include 최대 깊이를 초과했습니다 (최대: :max단계)',
         'include_outside_directory' => 'include 경로가 허용된 디렉토리 외부입니다: :path (허용: :allowed_dir)',
@@ -41,7 +41,7 @@ return [
         'save_failed_unexpected' => '레이아웃 버전 저장 중 예기치 않은 오류가 발생했습니다.',
     ],
 
-    // 레이아웃 저작 포맷(.g7.html) 컴파일 예외
+    // 레이아웃 마크업 형식(.g7.html) 컴파일 예외
     'layout_markup' => [
         // 위치 접두어 (모든 컴파일 오류 공통 봉투)
         'error_at' => ':file (:line행 :column열): :detail [:code]',
@@ -157,7 +157,7 @@ return [
         'unexpected_document_child' => '<:tag> 는 <:parent> 안에 올 수 없습니다.',
         'partial_root_not_single_node' => '<partial> 은 루트가 노드 하나입니다. 조각의 루트 컴포넌트를 하나만 두세요.',
         'modal_src_with_body' => '<modal src="..."> 는 조각을 참조하므로 본문을 함께 쓸 수 없습니다. 인라인 모달은 src 없이 노드로 쓰세요.',
-        'partial_src_not_authoring' => '<:tag src=":src"> 는 저작본을 가리켜야 합니다: src=":suggestion" 처럼 .g7.html 로 쓰세요. 산출 JSON 의 .json 표기는 컴파일러가 만듭니다.',
+        'partial_src_not_authoring' => '<:tag src=":src"> 는 소스를 가리켜야 합니다: src=":suggestion" 처럼 .g7.html 로 쓰세요. 산출 JSON 의 .json 표기는 컴파일러가 만듭니다.',
         'modal_src_in_node_position' => '<modal src=":src"> 는 문서의 modals 선언 자리에서만 쓸 수 있습니다. 노드 자리에서는 src 를 아무도 읽지 않아 창이 뜨지 않습니다 — 문서 봉투 직속으로 옮기세요.',
         'modal_inline_not_single_node' => '인라인 <modal> 은 노드 하나만 담습니다.',
         'fragment_target_conflict' => '<extension> 은 target-layout 과 extension-point 를 함께 쓸 수 없습니다. 특정 레이아웃에 주입하면 target-layout, 확장 지점에 주입하면 extension-point 하나만 쓰세요.',
@@ -197,7 +197,7 @@ return [
         'standalone_missing_global_host' => '독립 레이아웃이 toast·모달을 발화하지만 Toast·Modal 호스트를 마운트하지 않았습니다 — 화면에 나타나지 않습니다.',
         'switch_value_not_consumed' => '<switch value="…"> 는 엔진이 읽지 않습니다 — 분기 대상은 <switch on="…"> 으로 적어야 params.value 로 전달됩니다.',
         'action_param_misplaced_key' => ':handler 액션의 :key 가 params 로 들어갔습니다 — :handler 는 이 키를 읽지 않으므로 조용히 무시됩니다. 조건은 data-if(액션 if), 이벤트는 <on event="…">, 그 밖에는 해당 핸들러가 실제로 읽는 인자명을 쓰세요.',
-        'hoist_prop_not_supported_by_template' => ':template 템플릿의 :component 은 :prop 을 선언하지 않았습니다 — <:tag> 로 저작한 내용이 렌더되지 않고 사라집니다.',
+        'hoist_prop_not_supported_by_template' => ':template 템플릿의 :component 은 :prop 을 선언하지 않았습니다 — <:tag> 로 작성한 내용이 렌더되지 않고 사라집니다.',
     ],
 
     // 설정 관련 예외

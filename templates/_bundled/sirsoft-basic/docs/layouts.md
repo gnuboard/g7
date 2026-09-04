@@ -300,7 +300,9 @@
 ### sirsoft-basic 레이아웃
 
 > **템플릿 식별자**: `sirsoft-basic` (type: user)
-> **관련 문서**: [컴포넌트](components.md) | [핸들러](handlers.md) | [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md)
+> **관련 문서**: [컴포넌트](components.md) | [핸들러](handlers.md) | [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md) | [마크업](../../../../docs/frontend/layout-markup.md)
+>
+> **마크업 형식**: 아래 파일 트리는 소스 SSoT 인 `.g7.html`([레이아웃 마크업](../../../../docs/frontend/layout-markup.md)) 기준입니다. 설치 시 서버가 각 `.g7.html` 을 메모리로 JSON 컴파일해 DB(`template_layouts`)에 등록합니다. 산출 JSON 키 계약은 [layout-json.md](../../../../docs/frontend/layout-json.md) 가 SSoT 이며 불변입니다. 디스크에는 진단·복구용 짝 `.json` 이 병존합니다.
 
 > **정정(#601)**: 아래 페이지 맵·개수는 이관 시점 값입니다. 실측 총계와 그룹별 분포는 위
 > 「레이아웃 목록」 블록이 SSoT 이며, 이관 이후 추가·삭제된 레이아웃이 있을 수 있습니다.
@@ -601,7 +603,7 @@ slots.content:
 </data-source>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

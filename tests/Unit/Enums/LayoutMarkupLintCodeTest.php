@@ -10,7 +10,7 @@ use Tests\TestCase;
  * LayoutMarkupLintCode ↔ 다국어 메시지 키 정합성 테스트.
  *
  * lint 코드 값은 그대로 `exceptions.layout_markup_lint.{value}` 메시지 키가 된다. 코드만 추가하고
- * 키를 빠뜨리면 저작자에게 번역문 대신 키 문자열이 그대로 노출된다. `LayoutMarkupErrorCodeTest`
+ * 키를 빠뜨리면 작성자에게 번역문 대신 키 문자열이 그대로 노출된다. `LayoutMarkupErrorCodeTest`
  * 와 같은 두 축(코어 supported_locales + 번들 언어팩 파일 직접 대조)으로 그 드리프트를 막는다 —
  * 번들 팩은 설치해야 런타임 로케일이 되므로 `__()` 로는 확인할 수 없어 파일을 직접 읽는다.
  */

@@ -99,7 +99,7 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 <!-- appConfig 활용 예시 - 동적 Select 옵션 (타임존) --><div options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true">본문</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -119,7 +119,7 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 <div data-if="{{_global.isLoading}}" class="{{_global.sidebarOpen ? 'open' : 'closed'}}" text="{{_global.currentTheme}}">본문</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -279,7 +279,7 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 <div data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).length > 0}}" class="{{_local.activeTab === 'basic' ? 'active' : ''}}" value="{{_local.searchQuery}}">본문</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -299,7 +299,7 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -335,7 +335,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 </button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -373,7 +373,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -478,7 +478,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -512,7 +512,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -531,7 +531,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 <div data-if="{{_isolated.currentStep === 2}}" selected="{{_isolated.selectedItems.includes(item.id)}}">{{_isolated.selectedItems.length}}개 선택됨</div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -569,7 +569,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

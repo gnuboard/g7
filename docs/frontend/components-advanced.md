@@ -351,7 +351,7 @@ bindingType 미등록 시: boolean 값이 checked로 바인딩되지 않음
 <json key="components">[{"name":"ComponentName","type":"composite","description":"컴포넌트 설명","path":"src/components/composite/ComponentName.tsx","bindingType":"checked | checkable | 미지정","props":{"propName":{"type":"string","required":true,"description":"prop 설명"}}}]</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

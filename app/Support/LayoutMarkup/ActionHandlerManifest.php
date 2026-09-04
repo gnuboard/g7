@@ -5,13 +5,13 @@ namespace App\Support\LayoutMarkup;
 /**
  * 액션 컴파일(S3)의 SSoT — 내장 핸들러 44종과 키 배치 규칙.
  *
- * 액션 저작의 두 가지 사실을 이 한 곳에 모은다.
+ * 액션 마크업의 두 가지 사실을 이 한 곳에 모은다.
  *
- * **① 핸들러 태그명 ↔ 핸들러명.** 저작 태그는 소문자·kebab 이고 엔진 핸들러명은 camelCase 다
+ * **① 핸들러 태그명 ↔ 핸들러명.** 마크업 태그는 소문자·kebab 이고 엔진 핸들러명은 camelCase 다
  * (`<set-state>` ↔ `setState`). 이 변환은 규칙적(대문자 앞 하이픈)이라 자동 도출할 수 있으나,
  * 44종을 명시 목록으로 못박아 "레지스트리에 없는 kebab 은 핸들러가 아니다" 를 결정적으로 판정한다.
  * 확장·템플릿 핸들러(`sirsoft-ecommerce.toggleArrayValue`)는 점을 품어 태그명이 될 수 없으므로
- * 범용 `<action handler="...">` 로 저작하고 이름을 원문 그대로 싣는다.
+ * 범용 `<action handler="...">` 로 작성하고 이름을 원문 그대로 싣는다.
  *
  * **② 키가 top-level 이냐 params 냐는 핸들러가 정한다.** 엔진은 대부분의 인자를 `params` 에서
  * 읽지만, 제어·메타 키(if·confirm·onSuccess 등)와 일부 핸들러의 `target` 은 액션 객체 최상위에서
@@ -31,7 +31,7 @@ final class ActionHandlerManifest
      * 핸들러 태그 목록에서 제외된다(아래 CONTROL_HANDLERS).
      *
      * 이 목록은 엔진과 **독립 선언**이라 손으로 갈릴 수 있다. 한쪽에만 핸들러가 생기면
-     * 엔진 전용은 컴파일이 저작을 거부하고, 이쪽 전용은 런타임이 조용히 무시한다(후자가 더
+     * 엔진 전용은 컴파일이 마크업을 거부하고, 이쪽 전용은 런타임이 조용히 무시한다(후자가 더
      * 나쁘다 — 화면이 멀쩡해 보이고 아무 게이트도 red 가 아니다). 그래서 drift 를 기계가
      * 본다: 하네스 가드가 `ActionDispatcher.ts` 를 토크나이즈해
      * `switch (action.handler)` 라벨 + `registerHandler('...')` 를 뽑아 이 배열과 대조한다.
@@ -129,10 +129,10 @@ final class ActionHandlerManifest
      * S16 결함 F2, 값이 `{{$args[0]}}` 라 폴백과 우연 일치해 무증상). 기계 이관은 배치를 바꿀 수
      * 없으므로(D38 바이트 동등) **둘 다 표기 수단이 있어야** 한다:
      *
-     *  - `<switch on="…">`  → `params.value` — 엔진이 읽는 정본. 신규 저작은 이쪽.
+     *  - `<switch on="…">`  → `params.value` — 엔진이 읽는 정본. 신규 마크업은 이쪽.
      *  - `<switch value="…">` → top-level `value` — 결함 보존형. lint 이 경고한다.
      *
-     * 표기를 안 가르면 26건이 통째로 `<json>` 탈출해 저작 파일에 액션 트리가 JSON 으로 남는다
+     * 표기를 안 가르면 26건이 통째로 `<json>` 탈출해 소스 파일에 액션 트리가 JSON 으로 남는다
      * (D42 가 없애려는 바로 그 형태). `on` 은 `<switch-value prop on>` 에서 이미 "무엇을 기준으로
      * 분기하는가" 를 뜻하는 개념어라 새 어휘가 아니다(명명 3순위 규칙 ①).
      *
@@ -151,7 +151,7 @@ final class ActionHandlerManifest
      * executeInitActions 는 자식 actionDef 에 이 키만 전달하고 그 밖(cases·actions·confirm·debounce·
      * event·key·identity_target·render·onLoad·actionRef·errorHandling)은 **조용히 탈락**시킨다.
      * 그러므로 init 루트에 화이트리스트 밖 키가 있으면 컴파일 에러로 잡아(중첩 onSuccess 이동 또는
-     * named_actions+actionRef 안내) 무동작 함정을 저작 시점에 차단한다.
+     * named_actions+actionRef 안내) 무동작 함정을 작성 시점에 차단한다.
      *
      * @var array<int, string>
      */

@@ -38,9 +38,9 @@ notes:
     도달할 수 없다. 폴백을 E2E 로 만들려면 운영자 데이터(카테고리 라벨)를 테스트가 지우거나
     미지원 로케일을 주입해야 하는데, 둘 다 사이트 상태를 훼손하는 방식이라 택하지 않는다.
 
-    대신 레이아웃 테스트가 **저작본 `plugins/_bundled/sirsoft-gdpr/resources/extensions/cookie_banner.g7.html` 에서 구워진 짝 산출을
+    대신 레이아웃 테스트가 **소스 `plugins/_bundled/sirsoft-gdpr/resources/extensions/cookie_banner.g7.html` 에서 구워진 짝 산출을
     읽어 그 표현식 문자열을 그대로 꺼내** 평가한다(같은 파일의 `dismissedFor` 분기 선례와
-    동일 방식). 표현식을 테스트에 옮겨 적지 않으므로, 저작본을 고치면 테스트가 함께 따라간다.
+    동일 방식). 표현식을 테스트에 옮겨 적지 않으므로, 소스를 고치면 테스트가 함께 따라간다.
   - |
     라벨과 같은 폴백 사슬을 `category?.description` 도 쓴다(같은 파일 인접 줄). 이번 매니페스트는
     라벨 축만 선언한다 — 회귀가 보고된 표면이 라벨이고, 설명까지 축에 넣으면 선언과 검증 범위가

@@ -9,7 +9,7 @@ use App\Support\LayoutMarkup\MarkupTokenizer;
 use App\Support\LayoutMarkup\MarkupTreeBuilder;
 
 /**
- * MarkupTreeBuilder 단위 테스트 (`.g7.html` 저작 포맷 S2 — 중첩 검출).
+ * MarkupTreeBuilder 단위 테스트 (`.g7.html` 마크업 형식 S2 — 중첩 검출).
  *
  * 토크나이저(S1)는 중첩을 모르므로 짝 맞춤·미닫힘은 **이 층이 유일한 검출 지점**이다.
  * HTML5 파서의 오류 복구(미닫힘 자동 보정)를 쓰지 않는다는 결정이 실제로 지켜지는지,
@@ -84,7 +84,7 @@ class MarkupTreeBuilderTest extends LayoutMarkupTestCase
         $error = $this->buildError("<div>\n  <span>\n</div>");
 
         $this->assertSame(LayoutMarkupErrorCode::MismatchedEndTag, $error->getErrorCode());
-        // 저작자가 고쳐야 할 곳은 닫는 자리가 아니라 열어 둔 자리다 — 둘 다 알려 준다.
+        // 작성자가 고쳐야 할 곳은 닫는 자리가 아니라 열어 둔 자리다 — 둘 다 알려 준다.
         $this->assertStringContainsString('2', $error->getDetail());
         $this->assertSame(3, $error->getSourceLine());
     }

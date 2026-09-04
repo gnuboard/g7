@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 미설치 플러그인의 레이아웃 개수 집계가 저작본을 세는지 확인합니다 (S18 P1).
+ * 미설치 플러그인의 레이아웃 개수 집계가 소스를 세는지 확인합니다 (S18 P1).
  *
  * 설치 화면은 설치 전에 파일 시스템을 직접 세어 "레이아웃 N건" 을 보여주는데, 집계가 `.json` 만
  * 훑었다. 그래서 **마크업 전용 플러그인은 0건으로 보였고**, 짝이 병존하는 플러그인은 반대로
@@ -70,7 +70,7 @@ class PluginLayoutCountMarkupTest extends TestCase
         $this->writeLayoutJson('admin_dashboard');
 
         $this->assertSame(1, $this->layoutCount(),
-            '저작본과 산출 JSON 이 병존해도 논리 레이아웃은 하나다');
+            '소스와 산출 JSON 이 병존해도 논리 레이아웃은 하나다');
     }
 
     /**
@@ -137,7 +137,7 @@ class PluginLayoutCountMarkupTest extends TestCase
     }
 
     /**
-     * 본 레이아웃 저작본을 씁니다.
+     * 본 레이아웃 소스를 씁니다.
      *
      * @param  string  $name  레이아웃 이름
      */
@@ -162,7 +162,7 @@ class PluginLayoutCountMarkupTest extends TestCase
     }
 
     /**
-     * 조각 저작본을 씁니다.
+     * 조각 소스를 씁니다.
      *
      * @param  string  $name  조각 이름
      */

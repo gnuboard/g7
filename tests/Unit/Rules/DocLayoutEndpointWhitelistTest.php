@@ -111,7 +111,7 @@ class DocLayoutEndpointWhitelistTest extends TestCase
                 if (! $entry->isFile() || ! str_ends_with($entry->getFilename(), '.md')) {
                     continue;
                 }
-                // 벤더 산출물은 이 저장소가 저작하지 않는다.
+                // 벤더 산출물은 이 저장소가 작성하지 않는다.
                 if (str_contains(str_replace('\\', '/', $entry->getPathname()), '/node_modules/')) {
                     continue;
                 }

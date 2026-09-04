@@ -10,7 +10,7 @@ use App\Enums\LayoutMarkupErrorCode;
  * 아래 층들이 각각 노드(S2)·액션(S3)·상태 초기화(S2)를 맡지만, 그것들을 조립해 **문서**를 만드는
  * 것은 이 층의 책임이다. 이 층이 확정하는 것은 넷이다.
  *
- * **① 루트가 문서의 종류를 정한다.** 저작 파일은 다섯 계층이고 봉투가 넷이다 — `<layout>`(본
+ * **① 루트가 문서의 종류를 정한다.** 소스 파일은 다섯 계층이고 봉투가 넷이다 — `<layout>`(본
  * 레이아웃), `<partial>`(루트가 노드인 조각), `<extension>`(확장 주입 fragment — 다른 봉투),
  * `<override>`(템플릿 오버라이드). 루트 태그가 무엇을 컴파일할지 정하므로, 노드 층은 이 넷을 노드
  * 자리에서 만나면 거부한다(RootTagInNodePosition).
@@ -608,7 +608,7 @@ final class DocumentCompiler
     /**
      * 요소 앞의 `<!-- -->` 을 그 섹션의 `comment` 키로 되붙입니다.
      *
-     * 주석은 저작자가 남긴 설명이라 왕복에서 사라지면 안 된다(§189 편집 보존). 노드와 데이터소스는
+     * 주석은 작성자가 남긴 설명이라 왕복에서 사라지면 안 된다(§189 편집 보존). 노드와 데이터소스는
      * 이미 이 규칙을 따르는데 섹션 단위(named action·errorHandling·globalHeaders 항목·문서 루트)는
      * 빠져 있어, 그 자리의 주석이 `<json>` 탈출구로 새고 있었다.
      *
@@ -688,7 +688,7 @@ final class DocumentCompiler
             $pattern = $this->requiredAttribute($child, 'pattern', $path);
             $entry = [];
 
-            // 앞선 `<!-- -->` 은 이 항목의 저작 주석이다 — `data-source` 와 같은 규칙.
+            // 앞선 `<!-- -->` 은 이 항목의 소스 주석이다 — `data-source` 와 같은 규칙.
             if ($child->comment !== null) {
                 $entry['comment'] = $child->comment;
             }
@@ -868,7 +868,7 @@ final class DocumentCompiler
 
             $reference = (string) $src->value;
 
-            // 표기 규약도 `<include src>` 와 같다 — 저작본을 가리키고 산출 JSON 이 `.json` 을
+            // 표기 규약도 `<include src>` 와 같다 — 소스를 가리키고 산출 JSON 이 `.json` 을
             // 유지한다. 두 자리가 규칙을 복제하지 않도록 변환은 PartialReferenceNotation 한 벌만 쓴다.
             if (! PartialReferenceNotation::isAuthoringNotation($reference)) {
                 throw $this->error($element, LayoutMarkupErrorCode::PartialSrcNotAuthoring, $path, [
@@ -1278,9 +1278,9 @@ final class DocumentCompiler
      * 우선순위대로:
      *  1. **`<field>`/`<item>` 자식** — 중첩 구조. `<fallback><field name="data"><field name="items" :value="[]"/></field></fallback>`
      *  2. **속성 field-map** — 평면 스칼라 맵. `<params page="{{query.page}}" :per_page="20"/>`
-     *  3. **JSON 본문** — 종전 표기. 하위호환으로 계속 받는다(기존 저작이 깨지지 않는다).
+     *  3. **JSON 본문** — 종전 표기. 하위호환으로 계속 받는다(기존 마크업이 깨지지 않는다).
      *
-     * 1·2 를 신설한 이유는 저작 파일에서 통짜 JSON 을 없애기 위해서다(D42). 셋 다 같은 값을 만들며,
+     * 1·2 를 신설한 이유는 소스 파일에서 통짜 JSON 을 없애기 위해서다(D42). 셋 다 같은 값을 만들며,
      * 역변환기는 값 형태를 보고 1 또는 2 를 고른다 — 3 은 되돌릴 때 쓰지 않는다.
      *
      * @param  MarkupElement  $element  `<params>`/`<headers>`/`<data>`/`<fallback>` 요소

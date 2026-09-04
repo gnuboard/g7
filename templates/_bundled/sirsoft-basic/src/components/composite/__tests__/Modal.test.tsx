@@ -1,7 +1,7 @@
 /**
  * 사용자 템플릿 Modal — `size` 표면 회귀 잠금.
  *
- * 이관 12차 검증에서 검출: 저작 코퍼스가 `<modal size="sm">` 을 216건/199파일 쓰고 있었는데
+ * 이관 12차 검증에서 검출: 소스 코퍼스가 `<modal size="sm">` 을 216건/199파일 쓰고 있었는데
  * 두 템플릿 `Modal.tsx` 어느 쪽도 `size` 를 구조분해하지 않고 rest spread 도 없어 값이 그대로
  * 소멸했다. 지정 크기와 무관하게 전량 기본 500px 로 렌더되던 상태다.
  *
@@ -49,7 +49,7 @@ describe('Modal (sirsoft-basic)', () => {
       expect(screen.getByRole('dialog')).toHaveStyle({ width: '500px' });
     });
 
-    it('알 수 없는 size 값은 기본값으로 떨어진다 (저작 오타가 화면을 깨뜨리지 않음)', () => {
+    it('알 수 없는 size 값은 기본값으로 떨어진다 (작성 오타가 화면을 깨뜨리지 않음)', () => {
       render(<Modal {...mockProps} size={'huge' as any} />);
 
       expect(screen.getByRole('dialog')).toHaveStyle({ width: '500px' });

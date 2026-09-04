@@ -9,7 +9,7 @@ use App\Enums\LayoutMarkupErrorCode;
  *
  * JSON 레이아웃에는 HTML 자식으로 곧장 표기할 수 없는 자리가 있다. `DataGrid.columns[].cellChildren`
  * 처럼 **props 안의 배열 원소가 다시 노드 트리를 품거나**, `responsive.{bp}` 처럼 **노드 키가
- * 브레이크포인트별 부분 노드를 품는** 지점이다. 저작자는 이를 이름 있는 자식 태그로 쓰고
+ * 브레이크포인트별 부분 노드를 품는** 지점이다. 작성자는 이를 이름 있는 자식 태그로 쓰고
  * (`<column><cell>…</cell></column>`), 이 층이 그 서브트리를 컴파일해 제자리로 끌어올린다.
  *
  * 이 층이 지키는 규칙은 셋이다.
@@ -549,7 +549,7 @@ final class EmbeddingCompiler
      * @param  MarkupElement  $child  임베딩 자식
      * @param  ComponentDefinition  $parent  실제 부모 정의
      * @param  array<int, string>  $expected  허용 부모 컴포넌트명
-     * @param  string  $expectedTag  안내에 실을 부모 저작 태그명
+     * @param  string  $expectedTag  안내에 실을 부모 마크업 태그명
      * @param  string|null  $path  소스 파일 경로
      *
      * @throws CompileError 부모가 허용 목록 밖인 경우
@@ -565,8 +565,8 @@ final class EmbeddingCompiler
      * 부모 문맥 오류를 만듭니다.
      *
      * @param  MarkupElement  $child  임베딩 자식
-     * @param  string  $expectedTag  요구되는 부모 저작 태그
-     * @param  string  $foundTag  실제 부모 저작 태그
+     * @param  string  $expectedTag  요구되는 부모 마크업 태그
+     * @param  string  $foundTag  실제 부모 마크업 태그
      * @param  string|null  $path  소스 파일 경로
      * @return CompileError 컴파일 오류
      */

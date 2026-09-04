@@ -33,7 +33,7 @@
 
 ### 베이스 레이아웃의 호스트 컴포넌트 위치
 
-| 템플릿 | 베이스 레이아웃 (저작 SSoT) | Toast 컴포넌트 위치 |
+| 템플릿 | 베이스 레이아웃 (소스 SSoT) | Toast 컴포넌트 위치 |
 |--------|----------------|--------------------|
 | sirsoft-admin_basic | `layouts/_admin_base.g7.html` | `<toast data-ref="global_toast">` (산출 JSON 기준 `components[1]`) |
 | sirsoft-basic | `layouts/_user_base.g7.html` | `<toast data-ref="global_toast">` (산출 JSON 기준 `components[1]`) |
@@ -135,7 +135,7 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 </partial>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // ✅ admin_product_list.json (부모 레이아웃) - computed 정의
@@ -208,7 +208,7 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -246,7 +246,7 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -300,14 +300,14 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 **디렉토리 구조**:
 ```
 templates/sirsoft-admin_basic/layouts/
-├── template_partial_test.g7.html       # 메인 레이아웃 (저작 SSoT) + 짝 .json (런타임 계약)
+├── template_partial_test.g7.html       # 메인 레이아웃 (소스 SSoT) + 짝 .json (런타임 계약)
 └── partials/                           # Partial 파일 폴더
     └── template_partial_test/          # 메인 레이아웃명으로 그룹핑
         ├── _content_section.g7.html    # Level 1 partial (+ 짝 .json)
         └── _info_card.g7.html          # Level 2 partial (+ 짝 .json)
 ```
 
-> 디스크에는 저작본과 짝 `.json` 이 함께 있고, 편집 대상은 `.g7.html` 이다.
+> 디스크에는 소스와 짝 `.json` 이 함께 있고, 편집 대상은 `.g7.html` 이다.
 > 아래 `partial` **값**이 `.json` 인 것은 별개 축 — 그것은 런타임 계약이 참조하는 경로다.
 
 **메인 레이아웃**:
@@ -321,7 +321,7 @@ templates/sirsoft-admin_basic/layouts/
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -353,7 +353,7 @@ templates/sirsoft-admin_basic/layouts/
 </partial>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -381,7 +381,7 @@ templates/sirsoft-admin_basic/layouts/
 </partial>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -408,7 +408,7 @@ Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
 </partial>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -454,7 +454,7 @@ Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
 <card content="Items 총 개수: {{items.data.pagination.total}}"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 메인 레이아웃
@@ -501,7 +501,7 @@ Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
 **디렉토리 구조**:
 ```
 modules/_bundled/sirsoft-board/resources/layouts/admin/
-├── admin_board_form.g7.html            # 메인 레이아웃 (저작 SSoT) + 짝 .json
+├── admin_board_form.g7.html            # 메인 레이아웃 (소스 SSoT) + 짝 .json
 └── partials/
     ├── admin_board_form/               # 레이아웃 전용 Partial 파일 (각각 짝 .json 동반)
     │   ├── _tab_basic.g7.html
@@ -525,7 +525,7 @@ modules/_bundled/sirsoft-board/resources/layouts/admin/
 </layout>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -561,7 +561,7 @@ modules/_bundled/sirsoft-board/resources/layouts/admin/
 </partial>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -875,7 +875,7 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 </global-headers>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -894,7 +894,7 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 </global-headers>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -914,7 +914,7 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 </global-headers>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

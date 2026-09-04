@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Models\UserRole;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -121,7 +122,10 @@ class PlaywrightCleanup extends Command
             return [];
         }
 
-        $candidateIds = DB::table('user_roles')
+        $userRoles = (new UserRole)->getTable();
+        $roles = (new Role)->getTable();
+
+        $candidateIds = DB::table($userRoles)
             ->whereIn('role_id', $roleIds)
             ->distinct()
             ->pluck('user_id')
@@ -132,10 +136,10 @@ class PlaywrightCleanup extends Command
         }
 
         // 후보별 보유 역할 식별자를 모아, 테스트 역할과 admin 외의 것이 섞였는지 본다
-        $held = DB::table('user_roles')
-            ->join('roles', 'roles.id', '=', 'user_roles.role_id')
-            ->whereIn('user_roles.user_id', $candidateIds)
-            ->select('user_roles.user_id', 'roles.identifier')
+        $held = DB::table($userRoles)
+            ->join($roles, "{$roles}.id", '=', "{$userRoles}.role_id")
+            ->whereIn("{$userRoles}.user_id", $candidateIds)
+            ->select("{$userRoles}.user_id", "{$roles}.identifier")
             ->get()
             ->groupBy('user_id');
 

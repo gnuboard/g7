@@ -36,7 +36,7 @@ class WhitelistedEndpoint implements ValidationRule
      * 확장 API 프리픽스 — 확장 식별자(vendor-name — 하이픈 포함 필수) 세그먼트가 뒤따를 때만 허용한다.
      *
      * 이 둘은 라우트 표로 판정하지 않는다. 비활성 확장의 라우트는 표에 없지만 그 확장을 대상으로 한
-     * 레이아웃은 정상 저작이고, 반대로 `modules` 가 등록돼 있다는 이유로 `/api/modules/assets/`
+     * 레이아웃은 정상 마크업이고, 반대로 `modules` 가 등록돼 있다는 이유로 `/api/modules/assets/`
      * (에셋 서빙 경로) 까지 열리면 안 되기 때문이다 — 식별자 **형태**가 정확한 게이트다.
      */
     private const EXTENSION_PREFIX_PATTERN = '/^\/api\/(modules|plugins)\/[a-z0-9][a-z0-9_]*(-[a-z0-9_]+)+(\/|$)/';

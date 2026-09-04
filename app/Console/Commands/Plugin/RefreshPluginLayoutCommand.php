@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * 플러그인 레이아웃 갱신 커맨드
  *
- * 레이아웃만 수정된 경우(저작 SSoT `.g7.html` 또는 짝 `.json`), 빌드 없이 레이아웃만 갱신합니다.
+ * 레이아웃만 수정된 경우(소스 SSoT `.g7.html` 또는 짝 `.json`), 빌드 없이 레이아웃만 갱신합니다.
  *
  * 설치 소스는 `--layout-source` 가 결정한다 — 기본 `auto` 는 `.g7.html` 우선이며
  * `json` 은 짝 `.json` 이 있으면 그것으로 뒤로 물러선다(진단·복구용).

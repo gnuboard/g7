@@ -38,7 +38,7 @@ export interface ModalProps {
      * 이름 있는 크기 단계 — `width` 를 직접 적지 않고 고르는 자리.
      *
      * `width` 를 함께 주면 `width` 가 이긴다(기존 `width` 사용처 무영향). 알 수 없는 값은
-     * 기본값으로 떨어져 저작 오타가 화면을 깨뜨리지 않는다. 컨테이너에 CSS
+     * 기본값으로 떨어져 작성 오타가 화면을 깨뜨리지 않는다. 컨테이너에 CSS
      * `max-w-[calc(100vw-2rem)]` 이 걸려 있어 좁은 화면 넘침은 스타일 계층이 막는다.
      */
     size?: 'sm' | 'small' | 'md' | 'medium' | 'lg' | 'large' | 'xl' | '2xl';

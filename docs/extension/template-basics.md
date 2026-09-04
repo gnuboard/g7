@@ -48,7 +48,7 @@ G7의 템플릿 시스템은 JSON 기반 레이아웃 정의를 통해 동적으
 
 템플릿은 확장(모듈/플러그인)이 제공한 컴포넌트를 자기 구현으로 갈아끼울 수 있다. 구현체는 `src/components/overrides/{확장식별자}/{이름}.tsx` 에 두고 `components.json` 의 `overrides[]` 에 대상·버전 제약을 선언한다 — 디렉토리명이 곧 대상 식별자이며, 레이아웃 오버라이드(`layouts/overrides/{확장식별자}/`)와 같은 규약이다.
 
-대체는 같은 이름 아래에서 일어나므로 **저작 표면은 바뀌지 않는다** — 레이아웃은 오버라이드가 붙든 떨어지든 그대로다. 버전 제약이 대상과 맞지 않으면 대체본을 폐기하고 **원본이 자리를 지킨다**(화면이 조용히 사라지지 않는다).
+대체는 같은 이름 아래에서 일어나므로 **마크업 표면은 바뀌지 않는다** — 레이아웃은 오버라이드가 붙든 떨어지든 그대로다. 버전 제약이 대상과 맞지 않으면 대체본을 폐기하고 **원본이 자리를 지킨다**(화면이 조용히 사라지지 않는다).
 
 이 대체 권한은 템플릿에만 있다. 반대 방향(확장이 템플릿 컴포넌트를 대체)은 열려 있지 않다.
 
@@ -340,15 +340,15 @@ templates/_bundled/[vendor-template]/
 ├── seo-config.json             # SEO 컴포넌트→HTML 매핑 설정 (선택)
 ├── LICENSE                     # 라이선스 전문 (MIT) — API 엔드포인트 `GET /api/admin/templates/{identifier}/license`로 제공
 ├── layouts/
-│   ├── dashboard.g7.html     # 일반 레이아웃 (저작 SSoT)
-│   ├── _admin_base.g7.html   # 베이스 레이아웃 (저작 SSoT)
+│   ├── dashboard.g7.html     # 일반 레이아웃 (소스 SSoT)
+│   ├── _admin_base.g7.html   # 베이스 레이아웃 (소스 SSoT)
 │   └── errors/               # 에러 레이아웃 전용
 │       ├── 404.g7.html
 │       ├── 403.g7.html
 │       └── 500.g7.html
 ```
 
-레이아웃 저작 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 아래 예시의 JSON 은 그 산출 런타임 계약 키다 ([layout-json.md](../frontend/layout-json.md)).
+레이아웃 소스 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 아래 예시의 JSON 은 그 산출 런타임 계약 키다 ([layout-json.md](../frontend/layout-json.md)).
 
 ### 에러 레이아웃 구조
 
@@ -360,7 +360,7 @@ templates/_bundled/[vendor-template]/
 </slot>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -417,7 +417,7 @@ templates/_bundled/[vendor-template]/
 
 스캔은 `TemplateManager` 가 직접 하지 않는다. 세 Manager(템플릿·모듈·플러그인)가 공유하는
 `App\Extension\Traits\ValidatesLayoutFiles` 의 `collectLayoutSources()` 가 단일 지점이며,
-**`.g7.html` 저작본이 있으면 그것을 우선**하고 짝 마크업이 없는 `.json` 만 직접 읽는다.
+**`.g7.html` 소스가 있으면 그것을 우선**하고 짝 마크업이 없는 `.json` 만 직접 읽는다.
 
 ```php
 // ① 같은 전략으로 두 확장자를 각각 수집 (루트 + errors/)
@@ -430,7 +430,7 @@ foreach ($markupFiles as $markupFile) {
     $sources[] = ['path' => $markupFile, 'markup' => true];
 }
 
-// ③ 짝 `.g7.html` 이 있는 `.json` 은 건너뛴다 (저작 SSoT 가 이긴다)
+// ③ 짝 `.g7.html` 이 있는 `.json` 은 건너뛴다 (소스 SSoT 가 이긴다)
 foreach ($jsonFiles as $jsonFile) {
     if (isset($markupJsonSiblings[$jsonFile])) {
         continue;
@@ -605,21 +605,21 @@ Body: { "layout_strategy": "apply_new" }
 필수: _bundled 작업 완료 후 반영/검증은 업데이트 프로세스 사용
 ```
 
-### `custom/` 은 운영자 자리입니다 — 저작자가 선점하지 않습니다
+### `custom/` 은 운영자 자리입니다 — 작성자가 선점하지 않습니다
 
 `templates/{identifier}/custom/` 은 **사이트 운영자**가 자기 CSS·JS 를 덧붙이는 자리입니다.
 확장 교체(업데이트·재설치)가 이 디렉토리만은 보존하므로, 운영자가 넣은 파일은 템플릿을
 업데이트해도 살아남습니다.
 
-그래서 템플릿 저작자는 `_bundled` 에 `custom/` 을 담아 배포하지 않습니다. 보존 계층은
-"덮어쓰지 않음" 이라, 저작자가 담은 파일은 이미 `custom/` 을 가진 사이트에서 **영영
-반영되지 않는 상태**가 됩니다. 저작자의 기본 스타일은 `src/styles/` 에 두고 빌드에
+그래서 템플릿 작성자는 `_bundled` 에 `custom/` 을 담아 배포하지 않습니다. 보존 계층은
+"덮어쓰지 않음" 이라, 작성자가 담은 파일은 이미 `custom/` 을 가진 사이트에서 **영영
+반영되지 않는 상태**가 됩니다. 작성자의 기본 스타일은 `src/styles/` 에 두고 빌드에
 포함시킵니다.
 
 | 대상 | 자리 | 빌드 | 업데이트 시 |
 |---|---|---|---|
-| 저작자 기본 스타일 | `src/styles/` | 필요 | 새 배포본으로 교체 |
-| 저작자 동봉 구동 자산 | `dist/vendor/{lib}/{version}/` | 불필요 | 새 배포본으로 교체 |
+| 작성자 기본 스타일 | `src/styles/` | 필요 | 새 배포본으로 교체 |
+| 작성자 동봉 구동 자산 | `dist/vendor/{lib}/{version}/` | 불필요 | 새 배포본으로 교체 |
 | **운영자 추가 CSS·JS** | **`custom/`** | **불필요** | **보존** |
 
 운영자가 `dist/` 를 직접 고치는 것은 방법이 아닙니다 — 다음 빌드와 다음 업데이트에

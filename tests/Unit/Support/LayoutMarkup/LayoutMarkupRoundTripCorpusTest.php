@@ -780,7 +780,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      *
      *  - 빈 컬렉션 — `[]`·`{}` 는 구조가 없는 값 리터럴이라 계량 대상이 아니다(D42 선행 판정).
      *    착수 시 7건이었고 이행 후 **16건**이다(`:value` 3→12) — 늘어난 9는 속성 JSON 안에 묻혀
-     *    있던 빈 배열이 `<field :value="[]"/>` 리프로 드러난 것이라, 저작 파일의 JSON 은 오히려 줄었다.
+     *    있던 빈 배열이 `<field :value="[]"/>` 리프로 드러난 것이라, 소스 파일의 JSON 은 오히려 줄었다.
      *  - G1 데이터소스 속성 field-map / G2 중첩 `<field>` 트리 → `<params>` 3 · `<fallback>` 6 소멸
      *  - G3 `<prop>` `<field>` / G4 `<prop>` `<item>` / G5 `<props>` `<append>` → `<prop>` 4 · `<props>` 2 소멸
      *  - G6 액션 구조값 파라미터 `<field name>` (중첩 객체·문자열 리스트 포함) → 속성값 전량 소멸
@@ -850,14 +850,14 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * 이관된 `.g7.html` 이 원본과 100% 동등하고 escape-0 임을 봉인합니다 (S10 W1 DoD).
      *
      * 각 `.g7.html` 을 설치 시점과 같은 파사드로 컴파일해 짝 `.json` 과 정규화 후 deep-equal 을 보고,
-     * 저작 파일에 `<json>` 탈출구가 하나도 없음을 확인한다. 기계 이관이 원본 기능을 100% 보존한다는
+     * 소스 파일에 `<json>` 탈출구가 하나도 없음을 확인한다. 기계 이관이 원본 기능을 100% 보존한다는
      * (D38) 계약의 회귀 게이트다. 짝 `.json` 부재·레지스트리 미해석은 **skip 이 아니라 실패**다 —
      * 조용히 건너뛰면 이관이 깨져도 green 이 된다.
      *
      * ## S18.5 — 이 테스트의 **의미가 바뀌었다** (코드는 그대로다)
      *
      * 굽기(`layout:decompile --all --sync`) 이전에 짝 `.json` 은 **손유지 저작물**이었고, 이 단언은
-     * *"두 저작본이 서로 일치하는가"* 를 물었다. 굽기 이후 짝은 **기계 산출물**이므로 같은 단언이
+     * *"두 소스가 서로 일치하는가"* 를 물었다. 굽기 이후 짝은 **기계 산출물**이므로 같은 단언이
      * 이제 *"굽기가 최신인가"* 를 묻는다.
      *
      * 이 변화를 여기 적어 두는 이유는 **실패했을 때 할 일이 정반대**이기 때문이다. 종전에는 "`.json`
@@ -897,7 +897,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
             $markupFile = base_path($relative);
 
             if (! File::exists($markupFile)) {
-                $failures[] = "{$relative} — 이관 저작 파일이 없습니다";
+                $failures[] = "{$relative} — 이관 소스 파일이 없습니다";
 
                 continue;
             }
@@ -1028,7 +1028,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         // 형태의 재발). 대장이 빈 상태에서도 성립해야 하는 것은 "모집단이 살아 있다" 이므로,
         // 하한은 대장이 아니라 스캔 쪽에 건다.
         $this->assertNotEmpty($markup,
-            '저작본 스캔이 0건이다 — 글롭이 낡으면 제외 대장이 비어 있는 한 이 테스트는 영원히 '
+            '소스 스캔이 0건이다 — 글롭이 낡으면 제외 대장이 비어 있는 한 이 테스트는 영원히 '
             .'통과한다. 모집단 도출이 살아 있는지 먼저 확인해야 한다');
 
         $unpaired = [];
@@ -1066,7 +1066,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 번들 확장·템플릿에서 모든 이관 저작 파일 `.g7.html` 을 스캔합니다.
+     * 번들 확장·템플릿에서 모든 이관 소스 파일 `.g7.html` 을 스캔합니다.
      *
      * @return array<int, string> `.g7.html` 절대 경로 목록
      */

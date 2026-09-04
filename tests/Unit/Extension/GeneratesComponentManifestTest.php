@@ -14,7 +14,7 @@ use Tests\TestCase;
  * 학습용 샘플 `gnuboard7-hello_module` 의 **실물 소스**를 스캔한다. 픽스처를 따로 두지 않는
  * 이유: 이 트레이트가 지키는 계약은 "디렉토리 컨벤션 → 매니페스트" 이고, 컨벤션을 실제로
  * 따르는 것이 저 샘플이다. 픽스처로 대체하면 샘플이 컨벤션에서 벗어나도 테스트가 green 이
- * 되어, 정작 저작자가 복사할 실물이 깨진 채 남는다.
+ * 되어, 정작 작성자가 복사할 실물이 깨진 채 남는다.
  */
 class GeneratesComponentManifestTest extends TestCase
 {
@@ -94,7 +94,7 @@ class GeneratesComponentManifestTest extends TestCase
 
     /**
      * 생성된 매니페스트가 컴파일러의 강검증을 그대로 통과해야 한다 — 생성기와 컴파일러가
-     * 서로 다른 스키마를 이해하고 있으면 빌드는 성공하는데 저작이 전부 실패한다.
+     * 서로 다른 스키마를 이해하고 있으면 빌드는 성공하는데 마크업이 전부 실패한다.
      *
      * @scenario compile_unit=registry,source_health=valid
      *
@@ -149,9 +149,9 @@ class GeneratesComponentManifestTest extends TestCase
 
         $registry = ComponentRegistry::fromManifests($template, [$module]);
 
-        // ① 제공 — 모듈 컴포넌트가 프리픽스 태그로 저작된다.
+        // ① 제공 — 모듈 컴포넌트가 프리픽스 태그로 작성된다.
         $card = $registry->resolveTag('gnuboard7-hello-module-memo-card');
-        $this->assertNotNull($card, '모듈이 제공한 컴포넌트가 저작 어휘에 합류하지 않았습니다.');
+        $this->assertNotNull($card, '모듈이 제공한 컴포넌트가 마크업 어휘에 합류하지 않았습니다.');
         $this->assertSame('gnuboard7-hello_module.MemoCard', $card->name);
 
         // ② 오버라이드 — 이 템플릿의 대체본이 같은 좌표를 차지한다. targetVersion(^0.2)이

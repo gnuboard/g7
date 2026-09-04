@@ -30,7 +30,7 @@ templates/[vendor-template]/
 │   ├── /handlers/         # 커스텀 액션 핸들러
 │   ├── index.ts           # export
 │   └── test-setup.ts
-├── /layouts/              # 레이아웃 저작본 \`.g7.html\` + 짝 \`.json\`(런타임 계약)
+├── /layouts/              # 레이아웃 소스 \`.g7.html\` + 짝 \`.json\`(런타임 계약)
 ├── /lang/                 # 다국어 파일
 │   ├── ko.json
 │   └── en.json

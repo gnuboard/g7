@@ -10,7 +10,7 @@ use Tests\TestCase;
  * LayoutMarkupErrorCode ↔ 다국어 메시지 키 정합성 테스트.
  *
  * 에러 코드 값은 그대로 `exceptions.layout_markup.{value}` 메시지 키가 된다. 코드만
- * 추가하고 키를 빠뜨리면 저작자에게 번역문 대신 `exceptions.layout_markup.xxx` 라는
+ * 추가하고 키를 빠뜨리면 작성자에게 번역문 대신 `exceptions.layout_markup.xxx` 라는
  * 키 문자열이 그대로 노출되는데, 이는 컴파일 오류를 만나야만 드러나는 침묵 결함이다.
  * S2 이후 단계가 코드를 누적하므로 그 드리프트를 여기서 기계로 막는다.
  *
@@ -107,7 +107,7 @@ class LayoutMarkupErrorCodeTest extends TestCase
     /**
      * ko 를 제외한 모든 배포 로케일의 `exceptions.php` 를 수집합니다.
      *
-     * 코어 lang 디렉토리(en)와 번들 언어팩(ja 등)을 한 축에 모은다 — 저작자에게 노출되는
+     * 코어 lang 디렉토리(en)와 번들 언어팩(ja 등)을 한 축에 모은다 — 작성자에게 노출되는
      * 경로가 같으므로 검사 강도도 같아야 한다.
      *
      * @return array<string, array{0: string, 1: string}> 라벨 → [라벨, 파일 경로]

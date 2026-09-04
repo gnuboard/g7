@@ -15,7 +15,7 @@
 | 파일 확장자 | 유형             | 검증 방식                                |
 | ----------- | ---------------- | ---------------------------------------- |
 | `*.json`    | 소스코드 (런타임 SSoT) | 파일 전체를 레이아웃 JSON으로 검증       |
-| `*.g7.html` | 소스코드 (저작 SSoT)   | 저작 마크업 → `php artisan layout:decompile {path}` 로 JSON 컴파일 후 동일 규정 검증 |
+| `*.g7.html` | 소스코드 (소스 SSoT)   | 마크업 → `php artisan layout:decompile {path}` 로 JSON 컴파일 후 동일 규정 검증 |
 | `*.tsx`     | 소스코드         | 컴포넌트 코드로 검증 + 테스트 실행       |
 | `*.md`      | **작업계획서**   | 마크다운 내 코드 블록 추출 후 검증       |
 
@@ -54,7 +54,7 @@
   - `components-patterns.md` - 순환 의존성, 다국어, skipBindingKeys
   - `components-advanced.md` - 이벤트 통신, 아이콘, 개발 체크리스트
 - Font Awesome Free 6.4.x 아이콘 (Solid / Regular / Brands)
-- `docs/frontend/layout-markup.md` - **저작 SSoT `.g7.html` 마크업 문법** (태그·속성 3분할·구조 태그·액션 top-level 목록). `.g7.html` 을 검증할 때는 이 문서가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다
+- `docs/frontend/layout-markup.md` - **소스 SSoT `.g7.html` 마크업 문법** (태그·속성 3분할·구조 태그·액션 top-level 목록). `.g7.html` 을 검증할 때는 이 문서가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다
 - `docs/frontend/layout-json.md` - 레이아웃 JSON 스키마 (런타임 계약)
 - `docs/frontend/layout-json-inheritance.md` - 레이아웃 상속
 - `docs/frontend/data-binding.md` - 데이터 바인딩
@@ -268,7 +268,7 @@ grep -rn "[금지 패턴]" [대상 파일/디렉토리]
 <icon name="fa-solid fa-user"/>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // Icon 컴포넌트의 name prop에서 아이콘명 추출
@@ -310,7 +310,7 @@ TSX 파일에서:
 ##### Step 1: 레이아웃에서 아이콘명 추출
 
 ```bash
-# 저작본(.g7.html): <icon name="..."/>
+# 소스(.g7.html): <icon name="..."/>
 LC_ALL=C.UTF-8 grep -rhoP '<icon[^>]*\bname="\K[^"]+' templates/[template]/layouts/ | sort -u
 
 # 산출/미이관 JSON: Icon 컴포넌트의 name prop
@@ -319,7 +319,7 @@ LC_ALL=C.UTF-8 grep -rhoP '"name":\s*"Icon"[^}]*"name":\s*"\K[^"]+' templates/[t
 
 `LC_ALL=C.UTF-8` 접두를 생략하지 않는다. 셸의 기본 로케일이 비어 있으면 `grep -P` 가
 `-P supports only unibyte and UTF-8 locales` 로 죽고 **0건을 반환**한다. 그 0건을 "아이콘 없음" 으로 읽으면
-Free 목록 대조가 통째로 우회된다(저작본 `<icon name=` 은 실제로 고유 290종 이상이다).
+Free 목록 대조가 통째로 우회된다(소스 `<icon name=` 은 실제로 고유 290종 이상이다).
 
 또는 구조를 분석하여 Icon 컴포넌트의 `name` 값을 추출합니다.
 

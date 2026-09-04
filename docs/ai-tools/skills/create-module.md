@@ -11,7 +11,7 @@
 4. hidden 플래그: manifest.hidden=true 시 관리자 UI 제외 (CLI 정상)
 5. 생성 후: extension:update-autoload → module:install → module:activate
 ```
-> 레이아웃은 `.g7.html` 마크업으로 저작한다 ([layout-markup.md](../../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 산출 키 계약은 [layout-json.md](../../frontend/layout-json.md) 가 SSoT 다.
+> 레이아웃은 `.g7.html` 마크업으로 작성한다 ([layout-markup.md](../../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 산출 키 계약은 [layout-json.md](../../frontend/layout-json.md) 가 SSoT 다.
 
 ## 사용법
 
@@ -45,7 +45,7 @@
 | `resources/lang/{ko,en}.json` | 프론트엔드 다국어 |
 | `resources/routes.json` | 프론트엔드 라우트 정의 |
 | `src/routes/web.php` | 웹/API 라우트 |
-| `resources/layouts/admin/pages/index.g7.html` | 초기 관리자 레이아웃 (저작 SSoT) |
+| `resources/layouts/admin/pages/index.g7.html` | 초기 관리자 레이아웃 (소스 SSoT) |
 
 ## 생성되는 디렉토리
 

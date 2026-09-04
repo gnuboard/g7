@@ -45,6 +45,14 @@
 저장 + `document.documentElement` 클래스 적용(Tailwind `dark:` variant 활성화)을,
 `initTheme` 은 params 없이 `init_actions` 에서 호출해 저장된 테마를 앱 시작 시 복원합니다.
 
+```html
+<on type="click">
+  <action handler="setTheme" theme="{{_global.theme === 'dark' ? 'light' : 'dark'}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 { "type": "click", "handler": "setTheme", "params": { "theme": "{{_global.theme === 'dark' ? 'light' : 'dark'}}" } }
 ```
@@ -53,6 +61,14 @@
 
 `params.selector`(CSS 선택자, 필수) 로 지정한 요소로 부드럽게 스크롤합니다. `params.offset`
 (기본 `0`, 음수면 위로)은 고정 헤더 높이를 보상할 때 씁니다.
+
+```html
+<on type="click">
+  <action handler="scrollToSection" selector="#features" :offset="-80"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 { "type": "click", "handler": "scrollToSection", "params": { "selector": "#features", "offset": -80 } }
@@ -90,6 +106,15 @@
 `YYYY-MM-DDTHH:mm:ss` 형식으로 계산해 **반환**합니다(자체적으로 상태를 갱신하지 않음) — 레이아웃
 JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하는 필드에 반영합니다.
 
+```html
+<on type="click">
+  <action handler="setDateRange" preset="today"/>
+  <set-state target="local" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 { "type": "click", "handler": "sequence", "actions": [
   { "handler": "setDateRange", "params": { "preset": "today" } },
@@ -114,6 +139,14 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
 'blob'})` 로 요청한 뒤 objectURL 로 변환해 다운로드합니다. `<a>` 네비게이션은 Authorization
 헤더가 실리지 않아 요청이 guest 로 통과하고 활동이력의 행위자(`user_id`)가 비게 되므로, 코어
 ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리자 본인 이력으로 정확히 남습니다.
+
+```html
+<on type="click">
+  <action handler="downloadAttachment" url="{{attachment.download_url}}" filename="{{attachment.original_name}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 { "type": "click", "handler": "downloadAttachment", "params": { "url": "{{attachment.download_url}}", "filename": "{{attachment.original_name}}" } }
@@ -181,7 +214,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -217,7 +250,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 </button>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -255,7 +288,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -291,7 +324,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -315,7 +348,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </theme-toggle>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -348,7 +381,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -386,7 +419,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </a>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -424,7 +457,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -458,7 +491,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -487,7 +520,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </init>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -509,7 +542,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -530,7 +563,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -552,7 +585,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -586,7 +619,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </div>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -640,7 +673,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -662,7 +695,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -680,7 +713,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

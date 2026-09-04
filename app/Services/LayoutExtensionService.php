@@ -1934,7 +1934,7 @@ class LayoutExtensionService
      *
      * 소스 선택·읽기는 호출처가 {@see CollectsFragmentSources::loadFragmentDefinitions()}
      * 로 끝내고 여기는 등록만 한다 — 종전에는 경로 배열을 받아 여기서 `File::get`+`json_decode` 로
-     * 직행했고, 그래서 **템플릿 활성화**만 저작본(`.g7.html`)을 보지 못하는 네 번째 갈래로 남아 있었다.
+     * 직행했고, 그래서 **템플릿 활성화**만 소스(`.g7.html`)을 보지 못하는 네 번째 갈래로 남아 있었다.
      *
      * @param  array<int, array{path: string, data: array<string, mixed>}>  $definitions  fragment 정의 목록
      * @param  LayoutSourceType  $sourceType  출처 타입

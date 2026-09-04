@@ -85,7 +85,7 @@ Backend → Layout → Frontend → Template → Reviewer
 ```
 
 1. **Backend**: 마이그레이션, Model, Repository, Service, Controller
-2. **Layout**: 레이아웃 저작(`.g7.html`)과 산출 JSON 계약, 데이터 소스, 컴포넌트 구조
+2. **Layout**: 레이아웃 소스(`.g7.html`)과 산출 JSON 계약, 데이터 소스, 컴포넌트 구조
 3. **Frontend**: 필요한 TSX 컴포넌트 개발
 4. **Template**: 컴포넌트 등록, 빌드
 5. **Reviewer**: 전체 검수
@@ -107,7 +107,7 @@ TDD 기반으로 버그를 수정합니다:
 
 - `*.php` → Backend 에이전트
 - `*.tsx` → Frontend 에이전트
-- `*.g7.html` (레이아웃 저작본) · `*.json` (런타임 계약) → Layout 에이전트
+- `*.g7.html` (레이아웃 소스) · `*.json` (런타임 계약) → Layout 에이전트
 - 최종 → Reviewer 에이전트
 
 ## MCP 도구

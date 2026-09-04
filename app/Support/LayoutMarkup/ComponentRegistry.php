@@ -6,10 +6,10 @@ use App\Enums\ComponentOwnerKind;
 use App\Enums\LayoutMarkupErrorCode;
 
 /**
- * 저작 태그(`<data-grid>`)를 JSON 노드의 `name`+`type` 으로 해석하는 컴파일 시점 레지스트리.
+ * 마크업 태그(`<data-grid>`)를 JSON 노드의 `name`+`type` 으로 해석하는 컴파일 시점 레지스트리.
  *
  * **소스는 3계통이다 — 대상 템플릿 + 활성 모듈 + 활성 플러그인**(D25, D20 개정). 확장이 자기
- * 컴포넌트를 제공할 수 있게 되면서 저작 어휘가 템플릿 단독 소유에서 벗어났다. 좌표계는 소유자로
+ * 컴포넌트를 제공할 수 있게 되면서 마크업 어휘가 템플릿 단독 소유에서 벗어났다. 좌표계는 소유자로
  * 갈린다:
  *
  *  - 템플릿 소유: `DataGrid` → `<data-grid>`
@@ -18,7 +18,7 @@ use App\Enums\LayoutMarkupErrorCode;
  * 확장 프리픽스 덕에 템플릿↔확장, 확장↔확장 이름 충돌은 구조적으로 불가능하다. 남는 충돌은
  * ① 템플릿이 확장 프리픽스와 겹치는 이름을 쓴 경우(`Gnuboard7HelloModuleMemoCard`) ② 서로 다른
  * 확장 식별자가 같은 태그 프리픽스로 정규화되는 경우(`a_b` 와 `a-b`) 둘뿐이고, 양쪽 다 거부한다.
- * 런타임은 나중 등록이 조용히 이기지만(ComponentRegistry.ts:456-458) 그 침묵 승자를 저작 시점
+ * 런타임은 나중 등록이 조용히 이기지만(ComponentRegistry.ts:456-458) 그 침묵 승자를 작성 시점
  * 오류로 끌어올린다(D24 침묵 차단 원칙의 연장).
  *
  * 태그 해석은 **전방 매핑**이다 — (소유자, 이름)에서 태그를 만들어 평면 맵에 넣고 정확히 조회한다.
@@ -31,7 +31,7 @@ use App\Enums\LayoutMarkupErrorCode;
  *
  * prop 선언(`props`)은 타입 판정 **힌트로만** 쓰고 화이트리스트로 쓰지 않는다 — 실측상 선언
  * 커버리지가 75~77% 에 그치고 미선언 목록 상위가 `Button.type`·`Input.value` 같은 정상
- * props 라, 화이트리스트로 강제하면 정상 저작이 대량 거부된다(ComponentDefinition::propType 참조).
+ * props 라, 화이트리스트로 강제하면 정상 마크업이 대량 거부된다(ComponentDefinition::propType 참조).
  */
 final class ComponentRegistry
 {
@@ -182,7 +182,7 @@ final class ComponentRegistry
     /**
      * 태그명으로 컴포넌트를 찾습니다.
      *
-     * @param  string  $tag  저작 태그명 (소문자 kebab)
+     * @param  string  $tag  마크업 태그명 (소문자 kebab)
      * @return ComponentDefinition|null 정의, 미등록이면 null
      */
     public function resolveTag(string $tag): ?ComponentDefinition
@@ -214,11 +214,11 @@ final class ComponentRegistry
     /**
      * 미등록 태그에 가장 가까운 등록 태그를 제안합니다.
      *
-     * 제안 없는 거부는 저작자를 같은 실수로 되돌리므로(CompileError 규약), 오타 거리 안에
+     * 제안 없는 거부는 작성자를 같은 실수로 되돌리므로(CompileError 규약), 오타 거리 안에
      * 후보가 있으면 함께 알려 준다. 확장 컴포넌트도 같은 평면에 있으므로
      * `<sirsoft-ecommerce-produkt-card>` 는 `<sirsoft-ecommerce-product-card>` 를 제안받는다.
      *
-     * @param  string  $tag  저작자가 쓴 태그명
+     * @param  string  $tag  작성자가 쓴 태그명
      * @return string|null 제안 태그, 마땅한 후보가 없으면 null
      */
     public function suggestTag(string $tag): ?string
@@ -239,7 +239,7 @@ final class ComponentRegistry
     }
 
     /**
-     * 컴포넌트명을 저작 태그명으로 변환합니다.
+     * 컴포넌트명을 마크업 태그명으로 변환합니다.
      *
      * `DataGrid` → `data-grid`, `H1` → `h1`, `RichSelect` → `rich-select`. 번들 템플릿 전수
      * (admin_basic 117종 / basic 65종 / hello_user 8종) 실측 결과 이 변환의 태그 충돌은 0건이다.

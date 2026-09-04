@@ -270,7 +270,7 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
-        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
+        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,scripts,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         // build/ext: 부트스트랩 리소스 정적 게시본(#122) — 각 서버가 재생성하는 로컬 파생물이라
         // 릴리즈 소스에 없다. 제외하지 않으면 --prune 업데이트가 orphan 으로 삭제해
         // 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다 (백업 대상에서도 제외).

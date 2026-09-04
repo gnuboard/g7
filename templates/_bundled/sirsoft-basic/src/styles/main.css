@@ -13,7 +13,7 @@
 /**
  * 레이아웃에서 동적으로 사용되는 클래스들을 위한 safelist.
  *
- * 저작 SSoT 는 `.g7.html`(D38), 런타임 계약은 짝 `.json` 이다. 이 템플릿은 둘 중
+ * 소스 SSoT 는 `.g7.html`(D38), 런타임 계약은 짝 `.json` 이다. 이 템플릿은 둘 중
  * **어느 쪽도 `@source` 글롭으로 앵커하지 않는다** — 레이아웃에서 오는 클래스는 전부
  * 아래 `safelist.txt` 가 감당한다. 형제 템플릿 `sirsoft-admin_basic` 은 반대로
  * `main.css` 가 `.json`·`.g7.html` 두 글롭을 직접 앵커하고 `prebuild` 의

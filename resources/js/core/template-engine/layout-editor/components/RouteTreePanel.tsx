@@ -22,7 +22,7 @@ import { buildEditorUrl, EDITOR_HISTORY_STATE_MARKER } from '../hooks/useEditorM
 const EMPTY_DIRTY_SET: ReadonlySet<string> = new Set();
 
 /**
- * 라우트 트리가 표시하는 레이아웃 파일의 확장자 — **저작 SSoT** 를 가리킨다.
+ * 라우트 트리가 표시하는 레이아웃 파일의 확장자 — **소스 SSoT** 를 가리킨다.
  *
  * 짝 `.json` 은 S18.5(D63)에서 기계 산출로 강등됐고 사람은 편집하지 않는다. 편집기가 그
  * 경로를 보여 주면 따라간 개발자가 산출물을 손으로 고치게 되고, 그 수정은 다음 굽기에서
@@ -180,8 +180,8 @@ function highlightMatch(text: string, query: string): React.ReactNode {
  *   - module/plugin:   `{identifier} · resources/layouts/{layoutName}.g7.html`
  *   - core(base 등):   `layouts/{layoutName}.g7.html`
  *
- * **확장자는 저작 SSoT 를 가리킨다 (S19 ⑦ · R1).** 종전에는 `.json` 을 붙였는데, 그것은
- * 사람이 여는 파일이 아니다 — S18.5(D63)가 짝 `.json` 을 **기계 산출로 강등**했고 저작은
+ * **확장자는 소스 SSoT 를 가리킨다 (S19 ⑦ · R1).** 종전에는 `.json` 을 붙였는데, 그것은
+ * 사람이 여는 파일이 아니다 — S18.5(D63)가 짝 `.json` 을 **기계 산출로 강등**했고 마크업은
  * `.g7.html` 로 한다. 편집기가 `.json` 을 보여 주면 그 경로를 따라간 개발자가 기계 산출물을
  * 손으로 고치게 되고, 그것은 다음 굽기에서 지워진다. 표기는 사람을 정본으로 안내해야 한다.
  *

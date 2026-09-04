@@ -1187,7 +1187,7 @@ HTTP/1.1 200
         "validation_summary": { "target_version_mismatch": false, "depends_on_core_locale": null },
         "source_meta": { "type": "bundled", "url": null, "installed_by": 1, "latest_version": null, "directory_path": "lang-packs/g7-core-ja" },
         "changelog_entries": [
-            { "version": "1.0.7", "date": "2026-08-20", "categories": [ { "name": "Added", "items": ["레이아웃 저작 파일 검사 문구 일본어 번역 추가"] } ] }
+            { "version": "1.0.7", "date": "2026-08-20", "categories": [ { "name": "Added", "items": ["레이아웃 소스 파일 검사 문구 일본어 번역 추가"] } ] }
         ]
     }
 }
@@ -1395,9 +1395,9 @@ HTTP/1.1 200
     "data": {
         "identifier": "g7-core-ja",
         "entries": [
-            { "version": "1.0.7", "date": "2026-08-20", "categories": [ { "name": "Added", "items": ["레이아웃 저작 파일 검사 문구 일본어 번역 추가"] } ] }
+            { "version": "1.0.7", "date": "2026-08-20", "categories": [ { "name": "Added", "items": ["레이아웃 소스 파일 검사 문구 일본어 번역 추가"] } ] }
         ],
-        "changelog": "# Changelog\n\n## [1.0.7] - 2026-08-20\n\n### Added\n\n- 레이아웃 저작 파일 검사 문구 일본어 번역 추가 …",
+        "changelog": "# Changelog\n\n## [1.0.7] - 2026-08-20\n\n### Added\n\n- 레이아웃 소스 파일 검사 문구 일본어 번역 추가 …",
         "has_changelog": true
     }
 }

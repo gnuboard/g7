@@ -284,7 +284,7 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
     }
 
     /**
-     * 이 리스너가 소비하는 확장점 정의가 **저작본**에서 온다 (S18 P1 테스트 5-b, 31차 신설).
+     * 이 리스너가 소비하는 확장점 정의가 **소스**에서 온다 (S18 P1 테스트 5-b, 31차 신설).
      *
      * 종전 이 파일의 단언들은 실 디스크의 짝 병존 확장점을 읽어 노드 id 존재만 확인했다. 그런데
      * 단언하는 id 는 `.g7.html` 과 `.json` 양쪽에 다 있어서, 코어 진입점이 `.json` 우선으로 회귀하든
@@ -304,7 +304,7 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
         $markupPath = $this->markupSiblingOf($jsonPath);
 
         $this->assertNotNull($markupPath,
-            "저작본이 없습니다: {$jsonPath} — 이 단언은 짝이 병존할 때만 소스 선택을 관측한다");
+            "소스가 없습니다: {$jsonPath} — 이 단언은 짝이 병존할 때만 소스 선택을 관측한다");
 
         // 32차 ⚠️ — 아래 값 비교의 red 경로는 "`.json` 이 이기고 그 `.json` 이 컴파일 산출과
         // 다를 때" 하나뿐이라, 짝이 수렴하면 관측력이 0 이 된다. S18 P2 가 짝을 기계로
@@ -314,7 +314,7 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
         $this->assertSame(
             $this->compileFragmentMarkupDirectly($markupPath),
             LayoutFragmentSourceHelper::read($jsonPath),
-            '확장점 정의가 저작본으로 해석되지 않았습니다 — `.g7.html` 만 고치면 이 리스너의 주입이 '
+            '확장점 정의가 소스로 해석되지 않았습니다 — `.g7.html` 만 고치면 이 리스너의 주입이 '
             .'조용히 낡은 `.json` 을 쓴다'
         );
     }

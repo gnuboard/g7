@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 확장이 자기 fragment 정의를 직접 읽을 때의 저작 SSoT 우선 규약 테스트 (S18 P1).
+ * 확장이 자기 fragment 정의를 직접 읽을 때의 소스 SSoT 우선 규약 테스트 (S18 P1).
  *
  * 코어가 디렉토리째 수집하는 경로와 달리, 확장 Listener 는 **특정 fragment 파일 하나**를 읽어
  * 호스트 레이아웃에 자기 확장이 주입돼 있는지 확인한다. 그 자리들이 각자 `file_get_contents`
- * +`json_decode` 사본을 갖고 있어 저작본(`.g7.html`)을 보지 못했고, 사본이 넷이라 규약을 넓힐 때
+ * +`json_decode` 사본을 갖고 있어 소스(`.g7.html`)을 보지 못했고, 사본이 넷이라 규약을 넓힐 때
  * 한 곳만 고치면 나머지가 남는 구조였다.
  *
  * 여기서는 **코어 진입점의 동작**을 고정한다 — 파일 하나(`read()`)와 디렉토리 전체
@@ -55,7 +55,7 @@ class LayoutFragmentSourceHelperTest extends TestCase
         $this->writeJson('ext', 'json_point');
 
         $this->assertSame('markup_point', LayoutFragmentSourceHelper::read($this->tmp.'/ext.json')['extension_point'] ?? null,
-            '병존하면 저작 SSoT 가 이긴다');
+            '병존하면 소스 SSoT 가 이긴다');
     }
 
     /**
@@ -81,7 +81,7 @@ class LayoutFragmentSourceHelperTest extends TestCase
         $this->writeJson('ext', 'json_only');
 
         $this->assertSame('json_only', LayoutFragmentSourceHelper::read($this->tmp.'/ext.json')['extension_point'] ?? null,
-            '저작본이 없으면 종전대로 .json 을 읽는다');
+            '소스가 없으면 종전대로 .json 을 읽는다');
     }
 
     /**
@@ -113,10 +113,10 @@ class LayoutFragmentSourceHelperTest extends TestCase
     }
 
     /**
-     * 디렉토리 단위 읽기도 저작 SSoT 를 우선한다 — 마크업 전용 정의가 잡힌다.
+     * 디렉토리 단위 읽기도 소스 SSoT 를 우선한다 — 마크업 전용 정의가 잡힌다.
      *
      * 확장이 "자기 확장점 **전부**" 를 읽어야 하는 자리가 있다(업데이트 후 overlay 복원). 그 자리가
-     * 스스로 `glob('*.json')` 하면 저작본이 통째로 보이지 않으므로, 디렉토리 수집도 코어가 맡는다.
+     * 스스로 `glob('*.json')` 하면 소스가 통째로 보이지 않으므로, 디렉토리 수집도 코어가 맡는다.
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -137,7 +137,7 @@ class LayoutFragmentSourceHelperTest extends TestCase
     }
 
     /**
-     * 짝이 병존하면 저작 SSoT 하나만 남는다 (중복 계상 금지).
+     * 짝이 병존하면 소스 SSoT 하나만 남는다 (중복 계상 금지).
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -214,7 +214,7 @@ class LayoutFragmentSourceHelperTest extends TestCase
     }
 
     /**
-     * fragment 저작본을 씁니다.
+     * fragment 소스를 씁니다.
      *
      * @param  string  $name  파일 베이스 이름
      * @param  string  $point  확장점 이름

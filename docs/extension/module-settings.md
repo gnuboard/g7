@@ -74,7 +74,7 @@ modules/{vendor-module}/
 └── resources/
     └── layouts/
         └── admin/
-            ├── admin_{module}_settings.g7.html  ← 설정 UI 저작 SSoT (여기를 편집)
+            ├── admin_{module}_settings.g7.html  ← 설정 UI 소스 SSoT (여기를 편집)
             └── admin_{module}_settings.json     ← 짝 런타임 계약 (설치 시 컴파일 산출)
 ```
 
@@ -444,7 +444,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 </init-local>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -476,7 +476,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 </on>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

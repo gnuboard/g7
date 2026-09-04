@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * `.g7.html` 저작 포맷 토크나이저가 방출하는 토큰의 종류 Enum.
+ * `.g7.html` 마크업 형식 토크나이저가 방출하는 토큰의 종류 Enum.
  *
  * `MarkupTokenizer` → `LayoutMarkupCompiler` 사이의 유일한 계약이며, 컴파일러는 이
  * 종류에 따라 트리 구성·노드 해석을 분기한다.

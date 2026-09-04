@@ -11,7 +11,7 @@ use Tests\TestCase;
 /**
  * `layout:decompile --sync` / `--check` 계약 테스트 (S18.5 축 A — 쌍둥이 기계화).
  *
- * S10 이후 저작 SSoT 는 `.g7.html` 인데 짝 `.json` 은 **손유지**였다. 저작본만 고치면 코퍼스
+ * S10 이후 소스 SSoT 는 `.g7.html` 인데 짝 `.json` 은 **손유지**였다. 소스만 고치면 코퍼스
  * 게이트가 사후에 red 를 낼 뿐 고치는 방법은 알려 주지 않았고, 주석 하나를 다는 데 편집이 두 벌
  * 필요했다(그래서 S21 이 S18.5 를 선행 조건으로 둔다). 굽기는 그 손유지를 기계로 바꾼다.
  *
@@ -29,12 +29,12 @@ use Tests\TestCase;
 class LayoutDecompileSyncTest extends TestCase
 {
     /**
-     * 합성 저작본이 놓이는 디렉토리 (git 미추적, {@see LayoutCorpus} 스캔 밖).
+     * 합성 소스가 놓이는 디렉토리 (git 미추적, {@see LayoutCorpus} 스캔 밖).
      */
     private const SCRATCH = 'storage/framework/testing/layout-decompile-sync';
 
     /**
-     * 굽기 계약을 시험하기에 충분한 최소 저작본 — 컴파일이 결정론적이어야 하므로 단순하게 둔다.
+     * 굽기 계약을 시험하기에 충분한 최소 소스 — 컴파일이 결정론적이어야 하므로 단순하게 둔다.
      */
     private const MARKUP = <<<'HTML'
     <layout name="decompile_sync_probe" version="1.0.0">
@@ -226,7 +226,7 @@ class LayoutDecompileSyncTest extends TestCase
      */
     public function test_sync_output_uses_line_feed_only(): void
     {
-        // CRLF 로 저작된 소스에서도 산출이 LF 여야 한다 — 토크나이저가 CRLF 를 정규화하므로
+        // CRLF 로 작성된 소스에서도 산출이 LF 여야 한다 — 토크나이저가 CRLF 를 정규화하므로
         // 성립하지만, 그 성질에 기대지 않고 여기서 관측한다.
         $markup = $this->writeMarkup('crlf_probe', str_replace("\n", "\r\n", self::MARKUP));
         $json = LayoutJsonWriter::jsonSiblingOf($markup);
@@ -266,7 +266,7 @@ class LayoutDecompileSyncTest extends TestCase
     /**
      * 설치·서빙 경로는 굽지 않는다 (D38) — 코어 전량에서 도출한 여집합 명제.
      *
-     * 설치가 저작본을 **인메모리로** 컴파일해 DB 에 등록하고 디스크에 쓰지 않는다는 것이 S10
+     * 설치가 소스를 **인메모리로** 컴파일해 DB 에 등록하고 디스크에 쓰지 않는다는 것이 S10
      * 재아키텍처의 결정이다. 굽기가 설치에 끼어들면 프로덕션 배포가 저장소 파일을 수정한다.
      *
      * 모집단은 `app/` 전량이고, 면제도 신호도 **손으로 열거하지 않는다** — 둘 다 리플렉션으로
@@ -277,7 +277,7 @@ class LayoutDecompileSyncTest extends TestCase
      *  - 굽기 신호 = 직렬화기 **클래스 이름**. 짝을 쓰는 코어 표면은 그 클래스 하나뿐이므로
      *    이름만 바뀌어도 신호가 자동으로 따라온다.
      *  - 호출 신호 = 커맨드의 **등록된 이름**(`getName()`)을 Artisan 프로그램 호출 형태로 찾는다.
-     *    **문자열로 이름을 언급하는 것은 호출이 아니다** — 저작 안내 문구에 커맨드를 적어 주는
+     *    **문자열로 이름을 언급하는 것은 호출이 아니다** — 작성 안내 문구에 커맨드를 적어 주는
      *    `layout:add-permissions` 가 정확히 그 형태이고, 단순 부분문자열 판정이면 그 안내가
      *    위반으로 잡혀 저자는 안내를 지우게 된다(19차 "설명을 지우게 만드는 가드" 형태).
      *
@@ -365,10 +365,10 @@ class LayoutDecompileSyncTest extends TestCase
     }
 
     /**
-     * 합성 저작본을 스크래치 디렉토리에 씁니다.
+     * 합성 소스를 스크래치 디렉토리에 씁니다.
      *
      * @param  string  $name  파일 이름(확장자 제외)
-     * @param  string|null  $markup  저작 소스 (기본: {@see MARKUP})
+     * @param  string|null  $markup  소스 (기본: {@see MARKUP})
      * @return string `.g7.html` 절대 경로
      */
     private function writeMarkup(string $name, ?string $markup = null): string

@@ -726,7 +726,7 @@ Route::get('products/{product}/logs', [ProductController::class, 'logs']);
 <json key="params">{"per_page":10,"page":1}</json>
 ```
 
-> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
