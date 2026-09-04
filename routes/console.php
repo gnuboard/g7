@@ -52,6 +52,8 @@ Schedule::command('queue:prune-failed')->dailyAt('04:10')->onOneServer();
 Schedule::command('queue:prune-batches')->dailyAt('04:15')->onOneServer();
 Schedule::command('notification:cleanup')->dailyAt('04:20')->onOneServer();
 Schedule::command('ext-bundles:cleanup')->dailyAt('04:25')->onOneServer();
+// 오래된 부트스트랩 리소스 정적 게시 디렉토리 정리 (현재 + 직전 버전 보존)
+Schedule::command('ext-static:cleanup')->dailyAt('04:28')->onOneServer();
 Schedule::command('seo:prune-stats')->dailyAt('04:30')->onOneServer();
 Schedule::command('schedules:prune-history')->dailyAt('04:35')->onOneServer();
 Schedule::command('identity:prune-logs')->dailyAt('04:40')->onOneServer();

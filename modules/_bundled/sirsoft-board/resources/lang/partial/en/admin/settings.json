@@ -311,6 +311,7 @@
       "notify_admin_on_post": "Admin Notification",
       "notify_author": "Author Notification",
       "new_display_hours": "New Post Display Hours",
+      "blocked_keywords": "Blocked Keywords",
       "default_board_permissions": "Default Permissions",
       "manager": "Manage Board"
     }

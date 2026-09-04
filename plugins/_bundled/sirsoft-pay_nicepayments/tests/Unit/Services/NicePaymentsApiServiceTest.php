@@ -4,6 +4,8 @@ namespace Plugins\Sirsoft\PayNicepayments\Tests\Unit\Services;
 
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Plugins\Sirsoft\PayNicepayments\Exceptions\NicePayApiException;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
@@ -66,7 +68,7 @@ class NicePaymentsApiServiceTest extends PluginTestCase
         $authToken = 'AUTH_TOKEN_TEST';
         $mid = self::TEST_MID;
         $amt = 50000;
-        $signature = bin2hex(hash('sha256', $authToken . $mid . (string) $amt . self::TEST_MERCHANT_KEY, true));
+        $signature = bin2hex(hash('sha256', $authToken.$mid.(string) $amt.self::TEST_MERCHANT_KEY, true));
 
         $this->assertTrue($service->verifyCallbackSignature($authToken, $mid, $amt, $signature));
     }
@@ -84,7 +86,7 @@ class NicePaymentsApiServiceTest extends PluginTestCase
 
         $authToken = 'AUTH_TOKEN_TEST';
         $amt = 50000;
-        $signature = bin2hex(hash('sha256', $authToken . self::TEST_MID . (string) $amt . self::TEST_MERCHANT_KEY, true));
+        $signature = bin2hex(hash('sha256', $authToken.self::TEST_MID.(string) $amt.self::TEST_MERCHANT_KEY, true));
 
         // 금액을 변조하여 서명 검증
         $this->assertFalse($service->verifyCallbackSignature($authToken, self::TEST_MID, 99999, $signature));
@@ -249,5 +251,87 @@ class NicePaymentsApiServiceTest extends PluginTestCase
         $this->expectExceptionMessageMatches('/HTTP 500/');
 
         $service->queryTransaction('TID_TEST');
+    }
+
+    /**
+     * 결제창이 넘겨준 콜백 URL 은 공격자가 지정할 수 있고, 서버는 여기에 인증 토큰과
+     * MID 를 실어 POST 한다. 도메인 대조가 연결 계층의 host 해석과 어긋나면 그 자격증명이
+     * 외부로 나가고 내부망 호출까지 가능해진다.
+     *
+     * @param  string  $url  차단되어야 하는 NextAppURL
+     * @param  string  $reason  차단 사유 (실패 메시지용)
+     */
+    #[DataProvider('forgedCallbackUrlProvider')]
+    public function test_authorize_payment_rejects_urls_that_only_look_like_nicepay(string $url, string $reason): void
+    {
+        $service = $this->makeService();
+
+        Http::fake(['*' => Http::response(['ResultCode' => '3001'], 200)]);
+
+        try {
+            $service->authorizePayment($url, 'TID', 'TOKEN', 50000);
+            $this->fail("차단되어야 하는 NextAppURL 이 통과함 ({$reason}): {$url}");
+        } catch (NicePayApiException) {
+            // 기대 동작
+        }
+
+        Http::assertNothingSent();
+    }
+
+    /**
+     * 정규화 후 나이스페이먼츠 공식 도메인인 URL 은 그대로 통과한다.
+     *
+     * @param  string  $url  허용되어야 하는 NextAppURL
+     */
+    #[DataProvider('legitimateCallbackUrlProvider')]
+    public function test_authorize_payment_still_accepts_official_nicepay_urls(string $url): void
+    {
+        $service = $this->makeService();
+
+        Http::fake(['*' => Http::response(['ResultCode' => '3001', 'TID' => 'T'], 200)]);
+
+        $result = $service->authorizePayment($url, 'TID', 'TOKEN', 50000);
+
+        $this->assertSame('3001', $result['ResultCode']);
+    }
+
+    /**
+     * 공식 도메인으로 위장한 콜백 URL 목록.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function forgedCallbackUrlProvider(): array
+    {
+        return [
+            // U+FF0F 는 UTS#46 에서 ASCII `/` 로 매핑된다 — 접미사 대조는 통과하지만
+            // 연결 계층은 `evil.example` 을 host 로 읽는다.
+            '전각 슬래시로 감춘 외부 호스트' => ["https://evil.example\u{FF0F}.nicepay.co.kr/v1/authorize", '정규화 시 host 는 evil.example'],
+            '전각 슬래시로 감춘 루프백' => ["https://127.0.0.1\u{FF0F}.nicepay.co.kr/v1/authorize", '정규화 시 host 는 127.0.0.1'],
+            '전각 슬래시로 감춘 메타데이터' => ["https://169.254.169.254\u{FF0F}.nicepay.co.kr/latest/meta-data/", '정규화 시 host 는 169.254.169.254'],
+            'userinfo 위장' => ['https://pay.nicepay.co.kr@evil.example/v1/authorize', 'userinfo(@) 뒤가 실제 host'],
+            '접미사 확장 도메인' => ['https://pay.nicepay.co.kr.evil.example/v1/authorize', '화이트리스트가 접두사일 뿐'],
+            'http scheme' => ['http://pay.nicepay.co.kr/v1/authorize', 'https 아님'],
+            '완전 무관 도메인' => ['https://evil.example/v1/authorize', '공식 도메인 아님'],
+            '하이픈 접미사' => ['https://pay.nicepay.co.kr-evil.example/v1/authorize', '접미사 확장'],
+        ];
+    }
+
+    /**
+     * 정상 통과해야 하는 공식 콜백 URL 목록.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function legitimateCallbackUrlProvider(): array
+    {
+        return [
+            '표준 인증 URL' => ['https://pay.nicepay.co.kr/v1/authorize'],
+            '다른 서브도메인' => ['https://webapi.nicepay.co.kr/webapi/cancel_process.jsp'],
+            '대소문자 혼용' => ['https://PAY.NicePay.CO.KR/v1/authorize'],
+            '후행 점 표기' => ['https://pay.nicepay.co.kr./v1/authorize'],
+            // U+00AD SOFT HYPHEN 은 UTS#46 에서 제거된다. 정규화 후 host 는
+            // `evil.example.nicepay.co.kr` — 나이스페이먼츠가 소유한 서브도메인이므로
+            // 검증기와 연결 계층의 판정이 일치한다(위장 통로가 아니다).
+            'soft hyphen 제거 후 공식 서브도메인' => ["https://evil.example\u{00AD}.nicepay.co.kr/v1/authorize"],
+        ];
     }
 }

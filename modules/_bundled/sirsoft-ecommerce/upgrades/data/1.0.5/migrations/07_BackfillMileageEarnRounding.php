@@ -4,6 +4,7 @@ namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_0_5\Migrations;
 
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -122,10 +123,6 @@ class BackfillMileageEarnRounding implements DataMigration
      */
     private function settingsFilePath(): string
     {
-        $base = app()->runningUnitTests()
-            ? 'framework/testing/modules/'
-            : 'app/modules/';
-
-        return storage_path($base.self::MODULE_IDENTIFIER.'/settings/mileage.json');
+        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'settings').'/mileage.json';
     }
 }

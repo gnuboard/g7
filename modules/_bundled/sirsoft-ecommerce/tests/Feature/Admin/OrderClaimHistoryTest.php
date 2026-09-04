@@ -320,7 +320,7 @@ class OrderClaimHistoryTest extends ModuleTestCase
 
         // 픽스처는 서비스가 실제로 쓰는 스냅샷 형태여야 한다 — 예전 픽스처는 어느 쓰기 경로도
         // 만든 적 없는 `option_label` 키를 담아, 같은 키를 읽던 리소스의 결함을 가려 주고 있었다
-        // (실데이터에서는 이 값이 항상 null 이었다 — 2026-09-01 4차 `/validate-plan` 브라우저 실측).
+        // (실데이터에서는 이 값이 항상 null 이었다 — 2026-09-01 4차 계획 검증 브라우저 실측).
         $this->assertSame('색상: 블랙, 사이즈: L', $row['new_option_label']);
         $this->assertSame(32000, $row['new_unit_price']);
     }

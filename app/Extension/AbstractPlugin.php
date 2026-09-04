@@ -9,6 +9,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
+use App\Extension\Traits\ReportsLifecycleFailure;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -24,6 +25,8 @@ use ReflectionClass;
  */
 abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInterface
 {
+    use ReportsLifecycleFailure;
+
     /**
      * 플러그인 디렉토리 경로 (캐시)
      */

@@ -6,8 +6,10 @@
  * tests/scenarios 매니페스트(통합 시나리오)에서 다루며, 본 단위 테스트는
  * "초기 가드 + catch 블록 정상 호출" 두 축에 집중합니다.
  */
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
+import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS,
     buildKcpEasyPayReturnFields,
     buildKcpTaxFields,
     isSupportedKcpCurrency,
@@ -221,5 +223,56 @@ describe('requestPaymentHandler', () => {
         });
         expect(buildKcpEasyPayReturnFields('card', false)).toEqual({});
         expect(buildKcpEasyPayReturnFields('nhnkcp_unknown', true)).toEqual({});
+    });
+});
+
+/**
+ * SDK 주입 출처 게이트 (동적 스크립트 주입 정책).
+ *
+ * PG SDK 는 서비스 SDK 라 자체 호스팅할 수 없다. 그래서 **주입 직전에** 호스트를
+ * 확인하는 것이 유일한 게이트다. 확장자 없는 SDK URL 은 정적 검사에도 걸리지 않는다.
+ *
+ * manifest `trusted_script_hosts` 와 코드 상수가 어긋나면 그 차집합이 그대로
+ * 사각이 되므로 두 목록의 일치도 함께 고정한다.
+ */
+describe('SDK URL 신뢰 호스트 게이트', () => {
+    const TRUSTED_SDK_URL = 'https://pay.kcp.co.kr/plugin/payplus_web.jsp';
+
+    it('신뢰 호스트 https URL 은 통과한다', () => {
+        expect(() => assertTrustedSdkUrl(TRUSTED_SDK_URL)).not.toThrow();
+    });
+
+    it.each([
+        ['미신뢰 호스트', 'https://cdn.evil.com/sdk.js'],
+        ['http (평문)', TRUSTED_SDK_URL.replace('https://', 'http://')],
+        ['protocol-relative', TRUSTED_SDK_URL.replace('https://', '//')],
+        ['상대 경로', '/local/sdk.js'],
+        ['빈 문자열', ''],
+        ['javascript 스킴', 'javascript:alert(1)'],
+        ['신뢰 호스트를 userinfo 로 위장', 'https://evil.com/@' + new URL(TRUSTED_SDK_URL).hostname + '/x.js'],
+        ['신뢰 호스트를 서브도메인 접미로 위장', 'https://' + new URL(TRUSTED_SDK_URL).hostname + '.evil.com/x.js'],
+    ])('%s 는 거부된다', (_label, url) => {
+        expect(() => assertTrustedSdkUrl(url as string)).toThrow();
+    });
+
+    it('manifest trusted_script_hosts 와 KNOWN_SDK_HOSTS 가 일치한다', () => {
+        const manifest = JSON.parse(
+            readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')
+        );
+
+        expect([...(manifest.trusted_script_hosts ?? [])].sort()).toEqual(
+            [...KNOWN_SDK_HOSTS].sort()
+        );
+    });
+
+    it('manifest 가 호스트별 사유를 함께 선언한다', () => {
+        const manifest = JSON.parse(
+            readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')
+        );
+
+        for (const host of KNOWN_SDK_HOSTS) {
+            expect(typeof manifest.trusted_script_hosts_reason?.[host]).toBe('string');
+            expect(manifest.trusted_script_hosts_reason[host].length).toBeGreaterThan(0);
+        }
     });
 });

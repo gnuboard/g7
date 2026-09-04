@@ -63,6 +63,7 @@
                   "name": "Select",
                   "props": {
                     "name": "option_{{groupIndex}}",
+                    "data-testid": "option-group-{{groupIndex}}",
                     "className": "w-full",
                     "value": "{{_local.currentSelection?.[group.name_localized] ?? ''}}",
                     "placeholder": "{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}",
@@ -261,6 +262,7 @@
                           "name": "Select",
                           "props": {
                             "name": "add_option_{{itemIndex}}_{{addGroup.id}}",
+                            "data-testid": "add-option-{{itemIndex}}-{{addGroup.id}}",
                             "className": "w-full",
                             "value": "{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}",
                             "placeholder": "$t:shop.additional_option_placeholder",
@@ -332,7 +334,7 @@
                   "type": "basic",
                   "name": "Div",
                   "if": "{{(item.additionalOptionsTotal ?? 0) > 0}}",
-                  "props": { "className": "flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2" },
+                  "props": { "data-testid": "additional-options-amount", "className": "flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2" },
                   "children": [
                     { "type": "basic", "name": "Span", "text": "$t:shop.additional_options_amount" },
                     { "comment": "추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백", "type": "basic", "name": "Span", "text": "{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}" }
@@ -403,7 +405,7 @@
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
+              "props": { "data-testid": "purchase-total", "className": "text-xl font-bold text-gray-900 dark:text-white" },
               "text": "{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}"
             }
           ]
@@ -424,7 +426,7 @@
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
+              "props": { "data-testid": "purchase-total", "className": "text-xl font-bold text-gray-900 dark:text-white" },
               "text": "{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}"
             }
           ]
@@ -440,6 +442,7 @@
               "type": "basic",
               "name": "Button",
               "props": {
+                "data-testid": "buy-now",
                 "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 "disabled": "{{_local.isOrdering || product.data?.is_shippable_to_selected_country === false}}"
               },
@@ -551,6 +554,7 @@
               "type": "basic",
               "name": "Button",
               "props": {
+                "data-testid": "add-to-cart",
                 "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 "disabled": "{{_local.isAddingToCart || _local.isOrdering || product.data?.is_shippable_to_selected_country === false}}"
               },

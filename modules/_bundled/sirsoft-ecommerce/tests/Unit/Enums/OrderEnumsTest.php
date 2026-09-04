@@ -197,7 +197,7 @@ class OrderEnumsTest extends ModuleTestCase
 
     public function test_claim_terminal_statuses_stay_terminal(): void
     {
-        // 완료 시점에 환불 집행·재고 복구가 끝나 있어 상태만 되돌리면 기록과 어긋난다 (PO 확정).
+        // 완료 시점에 환불 집행·재고 복구가 끝나 있어 상태만 되돌리면 기록과 어긋난다 (확정).
         foreach ([OrderStatusEnum::EXCHANGED, OrderStatusEnum::RETURNED] as $terminal) {
             $this->assertSame([], $terminal->allowedTransitions());
             $this->assertFalse($terminal->canTransitionTo(OrderStatusEnum::DELIVERED));

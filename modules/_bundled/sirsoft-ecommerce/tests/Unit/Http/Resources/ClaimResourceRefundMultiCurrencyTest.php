@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 신청서 상세의 대비 행은 기준 통화 줄 바로 밑에 보조 통화 줄을 병기한다. 두 줄은 **같은 값의
  * 다른 표기**여야 하는데, 읽는 필드가 어긋나도 둘 다 정상 서식이라 응답에도 화면에도 흔적이
- * 남지 않는다(2026-09-01 3차 `/validate-plan`).
+ * 남지 않는다(2026-09-01 3차 계획 검증).
  *
  * 이 스위트가 고정하는 두 축:
  *  - 환불 유형: 기준 줄이 `refund_total`(현금 + 마일리지)이므로 보조 통화도 **합계**여야 한다
@@ -124,7 +124,7 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      *
      * 상세의 배송비 대비 행은 교환·반품에서 `mc_claim_shipping_fee` 를 병기한다. 환불 분기의
      * 짝(`mc_refund_shipping_amount`)은 **컬럼이 이미 있는데 리소스가 노출하지 않아**, 같은
-     * 자리에서 환불 신청서만 외화가 사라졌다(2026-09-01 4차 `/validate-plan`).
+     * 자리에서 환불 신청서만 외화가 사라졌다(2026-09-01 4차 계획 검증).
      *
      * 되돌림 축: 이 키를 리소스에서 빼면 화면의 그 줄이 통째로 사라진다.
      */

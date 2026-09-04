@@ -289,7 +289,7 @@ export async function seedGuestSession(page: Page, expiresAt?: string): Promise<
  * 방문자**를 재현한다. 동의 상태의 단일 출처는 서버 응답이므로 그 응답만 갈아끼운다.
  *
  * (동의하지 않은 방문자에게 조회 토큰이 부팅마다 파기되는 것이 옳은지는 이 spec 의 축이 아니라
- * GDPR 플러그인의 allowlist 판정 문제다 — #599 S15b 가 발견해 PO 에게 보고했다.)
+ * GDPR 플러그인의 allowlist 판정 문제다 — #599 S15b 가 발견해 보고했다.)
  *
  * @param page Playwright 페이지
  * @returns 완료 Promise

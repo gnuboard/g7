@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 계산 API 요청 필드 정리(DataMigration) 회귀 테스트
  *
- * 1.2.0 이전 설치본의 `api_request_fields` 에는 전송 후보 밖 값(`order_amount`·`weight`·
+ * 1.3.0 이전 설치본의 `api_request_fields` 에는 전송 후보 밖 값(`order_amount`·`weight`·
  * `zipcode` 등 구버전 샘플이 남긴 값)이 들어 있다. 그 값은 전송되지 않아 기능상 죽은
  * 값이지만 저장 검증이 거절하므로 **조회한 그대로 되돌려 저장해도 422** 가 되어 그 정책은
  * 관리자 화면에서 아무것도 고칠 수 없는 상태로 남는다(S17 B4). 이 백필이 그 상태를 푼다.
@@ -35,15 +35,15 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
         parent::setUp();
 
         require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.2.0/migrations/07_NormalizeShippingApiRequestFields.php';
+            .'/upgrades/data/1.3.0/migrations/07_NormalizeShippingApiRequestFields.php';
 
-        $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_2_0\\Migrations\\NormalizeShippingApiRequestFields';
+        $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\NormalizeShippingApiRequestFields';
 
         $this->migration = new $class;
         $this->context = new UpgradeContext(
             fromVersion: '1.1.1',
-            toVersion: '1.2.0',
-            currentStep: '1.2.0',
+            toVersion: '1.3.0',
+            currentStep: '1.3.0',
         );
     }
 

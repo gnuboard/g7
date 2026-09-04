@@ -340,7 +340,7 @@ class ClaimQuantityGuardTest extends ModuleTestCase
     public function test_admin_bulk_status_change_cannot_assign_a_course_status(): void
     {
         // FormRequest 는 adminAssignableValues 로 목표를 막지만, 내부·훅 호출은 서비스가 막아야
-        // 신청서 없는 코스 상태가 생기지 않는다 (PO 확정 2026-08-22 6차 ③).
+        // 신청서 없는 코스 상태가 생기지 않는다 (확정 2026-08-22 6차 ③).
         $order = $this->createSingleItemClaimOrder();
         $option = $order->options->first();
         $option->forceFill(['option_status' => OrderStatusEnum::DELIVERED])->save();

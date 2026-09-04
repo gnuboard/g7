@@ -495,7 +495,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
-     * 금액 수정이 D19 ③ 축의 직렬화 지점인 주문 행을 잠그는지 (4차 `/validate-plan`)
+     * 금액 수정이 D19 ③ 축의 직렬화 지점인 주문 행을 잠그는지 (4차 계획 검증)
      *
      * 상한의 ③ 축은 "다른 미실행 클레임의 저장 금액 합" 이라 주문 전역 집계다. 자기
      * 신청서 행만 잠그면 같은 주문의 서로 다른 두 신청서가 서로 다른 행을 잠그고 나란히
@@ -590,7 +590,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     // ================================================================
-    // 취소 미리보기 비대칭 해소 (S3 2차 PO 확정 ②)
+    // 취소 미리보기 비대칭 해소 (S3 2차 확정 ②)
     // ================================================================
 
     public function test_estimate_refund_is_422_for_items_locked_by_a_claim_course(): void
@@ -614,7 +614,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     // ================================================================
-    // 취소 가능 금액 — 다통화 · 권한 · 문맥 배타 · 한도 축 (3차 /validate-plan 보강)
+    // 취소 가능 금액 — 다통화 · 권한 · 문맥 배타 · 한도 축 (3차 계획 검증 보강)
     // ================================================================
 
     public function test_cancellable_amount_reports_the_payment_currency_remaining_separately_from_the_base(): void
@@ -744,7 +744,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     // ================================================================
-    // 환불 실행 — 혼합 수단 · 처리자 보존 · 원장 연결 (3차 /validate-plan 보강)
+    // 환불 실행 — 혼합 수단 · 처리자 보존 · 원장 연결 (3차 계획 검증 보강)
     // ================================================================
 
     public function test_execute_splits_a_mixed_pg_and_mileage_refund(): void
@@ -827,7 +827,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     // ================================================================
-    // 금액 수정 — 상태 게이트 2분기 (3차 /validate-plan 보강)
+    // 금액 수정 — 상태 게이트 2분기 (3차 계획 검증 보강)
     // ================================================================
 
     public function test_amounts_rejects_a_cancel_sourced_refund(): void
@@ -863,7 +863,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     // ================================================================
-    // 취소 미리보기 — 사유 전달 · 수량 잠금 (3차 /validate-plan 보강)
+    // 취소 미리보기 — 사유 전달 · 수량 잠금 (3차 계획 검증 보강)
     // ================================================================
 
     public function test_estimate_refund_reports_the_reason_detail_for_admins(): void

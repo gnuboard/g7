@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 목록 카드의 `⇄` 줄과 상세의 교환 대상 줄이 읽는 값이다. 이 필드가 비면 화면은 옵션명 없이
  * 차액만 그리는데, 응답은 200 이고 다른 필드는 정상이라 어긋난 흔적이 남지 않는다
- * (2026-09-01 4차 `/validate-plan` 브라우저 실측에서 드러났다 — 옵션변경 교환이 하나도 없어
+ * (2026-09-01 4차 계획 검증 브라우저 실측에서 드러났다 — 옵션변경 교환이 하나도 없어
  * 그때까지 이 자리가 한 번도 실제로 그려진 적이 없었다).
  */
 class ClaimItemResourceExchangeTargetTest extends ModuleTestCase

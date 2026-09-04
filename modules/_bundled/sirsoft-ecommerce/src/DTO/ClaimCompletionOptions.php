@@ -56,7 +56,7 @@ final class ClaimCompletionOptions
      * 순회하고 ⓑ 주문옵션이 실존할 때만 복구하며 ⓒ 완료가 분할되면 라운드마다 결과가
      * 다르다. 그래서 `OrderReturnService::completeReturn()` 은 지역 플래그로 실제 복구
      * 발생을 세어 헤더 `is_stock_restored` 를 세운다 — 이 메서드로 세우면 아무것도
-     * 복구되지 않은 라운드가 복구됨으로 기록된다. (2026-08-22 PO 확정 ⑥)
+     * 복구되지 않은 라운드가 복구됨으로 기록된다. (2026-08-22 확정 ⑥)
      *
      * @return bool 복구 대상이 있으면 true
      */

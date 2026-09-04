@@ -196,7 +196,7 @@ describe('철회·수정 진입점 — 목록과 상세 두 곳에 있다', () =
   it('상세 셸이 추가결제 주소의 앞부분을 세우고 partial 은 그 값만 읽는다', () => {
     // 승인 시점 결제(pay_on_approval)는 운영자가 승인할 때 서버가 결제 대기 건(CP)을 만든다.
     // 그 뒤 낼 사람은 구매자인데 진입점이 없으면 상세는 미수납 금액만 보여 주고 결제는
-    // 영원히 완결되지 않는다 — 오류도 경고도 남지 않는다(2026-09-01 2차 PO 확정).
+    // 영원히 완결되지 않는다 — 오류도 경고도 남지 않는다(2026-09-01 2차 확정).
     expect(detailShell.initLocal.claimPayApiBase).toBe(
       '/api/modules/sirsoft-ecommerce/user/claim-payments'
     );

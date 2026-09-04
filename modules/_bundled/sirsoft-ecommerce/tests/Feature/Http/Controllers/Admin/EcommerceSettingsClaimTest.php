@@ -253,7 +253,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     #[Test]
     public function reason_label_follows_viewer_locale_and_falls_back_to_ko(): void
     {
-        // 사유명 필수는 "현재 로케일" 이다(2차 라운드 PO 확정). ko 만 담은 행을 만들려면 저장
+        // 사유명 필수는 "현재 로케일" 이다(2차 라운드 확정). ko 만 담은 행을 만들려면 저장
         // 요청의 로케일이 ko 여야 한다 — 이 전제 자체가 그 확정을 실물로 고정한다. 로케일은
         // 요청마다 SetLocale 미들웨어가 다시 정하므로 `app()->setLocale()` 이 아니라 헤더로 준다.
         $this->actingAs($this->adminUser)
@@ -1295,7 +1295,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * 이 탭은 저장할 때마다 카탈로그 **전체**를 되보낸다. ko 만 채운 사유가 한 건이라도 있으면
      * en 로케일 운영자는 손대지 않은 그 행 때문에 클레임 탭 전체가 422 가 된다 — 코드 형식
      * (`ClaimReasonCodeFormat`) 이 기존 코드를 면제하는 것과 같은 이유로 이름도 기존 행을 면제한다
-     * (10차 PO 확정). 신규 행은 여전히 현재 로케일 이름이 필수다.
+     * (10차 확정). 신규 행은 여전히 현재 로케일 이름이 필수다.
      *
      * @scenario reason_type=exchange
      *
@@ -1345,7 +1345,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      *
      * `sometimes` 는 null 만 막는다. 키를 빼면 소비처 `?? true` 가 운영자가 내려 둔 사유를
      * 켜진 채 되살린다 — 같은 파일의 `complete_defaults` 가 이 이유로 `required_with` 인 것과
-     * 같은 강도로 맞춘다 (10차 PO 확정).
+     * 같은 강도로 맞춘다 (10차 확정).
      *
      * @scenario reason_type=exchange
      *

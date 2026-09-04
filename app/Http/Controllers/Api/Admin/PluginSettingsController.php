@@ -113,10 +113,12 @@ class PluginSettingsController extends AdminBaseController
         // 그대로 설정 파일에 병합되는 경로로만 동작했다 (mass-assignment).
         $settings = $request->validated();
 
-        $result = $this->pluginSettingsService->save($identifier, $settings);
+        $result = $this->pluginSettingsService->save($identifier, $settings, $failureReason);
 
         if (! $result) {
-            return $this->error('plugins.settings.update_failed', 500);
+            return $this->error('plugins.settings.update_failed', 500, null, [
+                'error' => $failureReason ?? __('plugins.errors.unknown_error'),
+            ]);
         }
 
         // 저장 응답에도 카탈로그 재부착 — 화면 폼 상태가 응답으로 갱신되므로

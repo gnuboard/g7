@@ -107,7 +107,7 @@ effects:
   - claim_edit_rejection_stays_on_screen
   # 철회 — 진입점이 이 세션에서 붙는다 (확인 절차는 S12 산출)
   - claim_withdraw_entry_points_exist_on_list_and_detail
-  # 미수납 추가결제 — 승인 시점 결제의 진입점 (2026-09-01 2차 `/validate-plan` PO 확정)
+  # 미수납 추가결제 — 승인 시점 결제의 진입점 (2026-09-01 2차 계획 검증 확정)
   - claim_detail_outstanding_payment_has_an_entry_point
 
 test_files:
@@ -137,8 +137,8 @@ notes: |
   데이터소스 endpoint)만 바꾼다. 수정 주소 해석이 비회원 경로(`{shopBase}/guest/claims/{번호}/edit`)
   에서도 같은 위치로 읽히는지는 이 세션의 핸들러 테스트가 이미 고정했다.
 
-  **`pay_on_approval` 로 접수된 신청서의 결제 진입점** — 2026-09-01 2차 `/validate-plan` 에서
-  PO 가 "S13 에서 지금 만든다" 로 확정했다. 상세의 추가결제 블록에 결제 버튼이 서고
+  **`pay_on_approval` 로 접수된 신청서의 결제 진입점** — 2026-09-01 2차 계획 검증 에서
+  "S13 에서 지금 만든다" 로 확정됐다. 상세의 추가결제 블록에 결제 버튼이 서고
   `sirsoft-ecommerce.payClaimOutstanding` 이 `POST {payApiBase}/{결제번호}/pay` 를 부른다
   (그전까지 그 엔드포인트의 프로덕션 소비처는 0 건이었다). 결제 수단은 보내지 않는다 —
   서버가 결제 대기 건을 만들 때 이미 상점의 허용 수단으로 확정해 두었고, 여기서 다시 고르게

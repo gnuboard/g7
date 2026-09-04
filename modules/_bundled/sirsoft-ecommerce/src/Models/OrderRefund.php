@@ -148,7 +148,7 @@ class OrderRefund extends Model
      *
      * 취소 발(`refund_source_type=cancel`) 환불은 취소 축이 대표하므로 환불 축에서 뺀다.
      * 그런데 `!= 'cancel'` 하나로 쓰면 **출처 미상 행이 함께 사라진다** — SQL 3치 논리에서
-     * `NULL != 'cancel'` 은 UNKNOWN 이라 행이 걸러지기 때문이다. 1.2.0 백필 스텝은
+     * `NULL != 'cancel'` 은 UNKNOWN 이라 행이 걸러지기 때문이다. 1.3.0 백필 스텝은
      * `order_cancel_id` 가 없는 구형 환불을 의도적으로 NULL 로 남기므로 그런 행은 실재하고,
      * 그것들은 취소 발이 아니라 **출처를 모르는 직접 환불**이다. 배제하면 목록·요약·존재
      * 판정에서 통째로 사라져 그 주문이 "클레임 없음" 으로 오분류된다.

@@ -5,7 +5,7 @@
         "ko": "Hello 모듈",
         "en": "Hello Module"
     },
-    "version": "0.1.1",
+    "version": "0.1.2",
     "license": "MIT",
     "description": {
         "ko": "학습용 최소 샘플 모듈 (Memo CRUD)",

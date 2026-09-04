@@ -29,6 +29,8 @@ type BoardAuthFixtures = {
   boardManageToken: string;
   /** 게시판 조회 + 첨부 다운로드 권한 토큰 (#413-58b 행위자 기록 검증용) */
   attachmentDownloadToken: string;
+  /** 본문 썸네일 폴백 E2E 용 — 게시판 CRUD + 전용 게시판(e2e-content-thumbnail) 글/첨부 관리 토큰 (공개 #22) */
+  contentThumbnailToken: string;
 };
 
 export const test = base.extend<BoardAuthFixtures>({
@@ -86,6 +88,22 @@ export const test = base.extend<BoardAuthFixtures>({
       issueToken(
         'sirsoft-board.boards.read',
         'sirsoft-board.notice.attachments.download',
+      ),
+    );
+  },
+  contentThumbnailToken: async ({}, use) => {
+    // 전용 카드형 게시판(e2e-content-thumbnail)을 spec 안에서 생성/삭제하고,
+    // 관리자 글 작성 + 첨부 업로드로 첨부 우선 정책까지 실측한다 (공개 #22).
+    await use(
+      issueToken(
+        'sirsoft-board.boards.read',
+        'sirsoft-board.boards.create',
+        'sirsoft-board.boards.update',
+        'sirsoft-board.boards.delete',
+        'sirsoft-board.e2e-content-thumbnail.admin.posts.read',
+        'sirsoft-board.e2e-content-thumbnail.admin.posts.write',
+        'sirsoft-board.e2e-content-thumbnail.admin.manage',
+        'sirsoft-board.e2e-content-thumbnail.admin.attachments.upload',
       ),
     );
   },

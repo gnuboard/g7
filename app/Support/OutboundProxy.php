@@ -14,7 +14,7 @@ namespace App\Support;
  * 않는다 — 관리자 화면에서 입력칸을 감추는 것만으로는 저장 API 를 직접 호출하는 경로를 막지
  * 못하므로, 화면이 아니라 이 판정이 실질 게이트다.
  *
- * @since 7.1.0
+ * @since 7.0.8
  */
 final class OutboundProxy
 {

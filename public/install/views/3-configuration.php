@@ -539,8 +539,8 @@ $currentVendorMode = $formData['vendor_mode'] ?? 'auto';
 window.DB_TEST_FLAGS = {
     write: <?= $dbWriteTested ? 'true' : 'false' ?>,
     read: <?= $dbReadTested ? 'true' : 'false' ?>,
-    writeHash: <?= json_encode($dbWriteHash) ?>,
-    readHash: <?= json_encode($dbReadHash) ?>
+    writeHash: <?= installer_json_encode($dbWriteHash) ?>,
+    readHash: <?= installer_json_encode($dbReadHash) ?>
 };
 
 // ========================================================================

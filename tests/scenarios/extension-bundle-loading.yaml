@@ -24,7 +24,7 @@ axes:
   version_state: [first_request, cache_hit, version_bumped]
   source_map_state: [present, absent]
   css_url_state: [no_url, absolute_url, relative_url]
-  file_state: [all_present, one_missing]
+  file_state: [all_present, all_present_but_empty, one_missing]
   priority_order: [ascending, gdpr_lowest]
   bundle_urls_present: [present, absent_fallback]
 
@@ -41,6 +41,7 @@ effects:
   - per_extension_fault_tolerance_skips_missing_file_keeps_rest
   - css_with_relative_url_excluded_from_bundle
   - empty_bundle_returns_empty_path_and_empty_ok_response
+  - empty_bundle_with_all_declared_files_present_returns_200
   - prod_writes_versioned_cache_file_and_reuses_on_same_version
   - non_production_rebuilds_every_request_no_disk_cache
   - cleanup_removes_stale_version_bundles_only

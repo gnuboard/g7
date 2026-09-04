@@ -185,8 +185,14 @@ class PaymentCallbackController
             'orderId' => $orderId,
         ]);
 
-        // 클레임 추가결제는 실패해도 결제 대기 상태로 남아 신청서 상세에서 재시도한다 —
-        // 주문의 failPayment 에 대응하는 상태 전이가 없으므로 기록은 로그로 충분하다.
+        // 이 엔드포인트는 인증도 서명도 없는 GET 이고, orderId·code·message 는 전부 쿼리스트링에서
+        // 온다. 즉 "실패했다" 는 주장 자체를 누구나 만들 수 있고 대상 주문도 마음대로 고를 수 있다.
+        // 그 주장만으로 주문을 실패 처리하면 링크 하나로 남의 결제대기 주문을 취소시킬 수 있으므로,
+        // 여기서는 주문 상태를 바꾸지 않고 기록과 안내만 한다.
+        // 실제 결제 성립은 success() 의 서버 confirm 이, 결제완료 후 취소는 서명 검증된 웹훅이 담당한다.
+
+        // 클레임 추가결제(CP 채번)도 같은 원칙이다 — 결제 건의 상태를 바꾸지 않고 신청서 상세로
+        // 돌려보내기만 한다. 결제 건은 결제 대기로 남아 신청서 상세에서 재시도한다.
         if ($orderId && ClaimPayment::isClaimPaymentNumber($orderId)) {
             $payment = $this->claimPaymentRepository()->findByPaymentNumber($orderId);
 
@@ -198,14 +204,6 @@ class PaymentCallbackController
             }
 
             return redirect($this->resolveFailUrl(['error' => $code, 'orderId' => $orderId]));
-        }
-
-        if ($orderId) {
-            $order = $this->orderService->findByOrderNumber($orderId);
-
-            if ($order) {
-                $this->orderService->failPayment($order, $code, $message);
-            }
         }
 
         return redirect($this->resolveFailUrl([

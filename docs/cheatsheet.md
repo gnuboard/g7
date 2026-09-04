@@ -299,6 +299,23 @@ php artisan g7:bench --profile=sirsoft-ecommerce/orders --json   # 기계 판독
 php artisan g7:bench --profile=sirsoft-ecommerce/order_create --allow-write
 ```
 
+### 의존성 취약점 점검 Artisan 커맨드
+
+```bash
+# 저장소의 모든 잠금파일(npm·composer) 운영 의존성 취약점 전수 점검.
+# 루트만 감사하면 확장 전부가 사각이 되므로 하위 잠금파일까지 순회한다.
+php artisan security:audit-dependencies                 # 전체 (npm + composer)
+php artisan security:audit-dependencies --npm-only      # npm 잠금파일만
+php artisan security:audit-dependencies --composer-only # composer 잠금파일만
+php artisan security:audit-dependencies --json          # 기계 판독용
+```
+
+취약점이 발견되면 **비-0 으로 종료**한다. 이는 실행 실패가 아니라 조치 대상이 있다는 신호다.
+
+출력의 "대상 없음" 은 의존성이 없는 잠금파일이고, "점검 불가" 는 감사 도구가 실행되지 않은 것이다 — 후자는 "취약점 없음" 과 다르다.
+
+동봉(vendored) 제3자 자산은 어떤 잠금파일에도 없어 감사 도구가 원리상 볼 수 없다. 그 축은 판정하지 않고 목록으로 함께 출력하므로 사람이 확인한다.
+
 ### API 문서 Artisan 커맨드
 
 ```bash

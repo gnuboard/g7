@@ -711,7 +711,7 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
-     * P5 (17차 `/validate-plan`) — 훅 소비자(알림·활동 로그)는 신청서 상태를 읽는다.
+     * P5 (17차 계획 검증) — 훅 소비자(알림·활동 로그)는 신청서 상태를 읽는다.
      *
      * 훅이 전이보다 앞서면 정상 경로에서도 리스너가 보는 상태가 언제나 `payment_pending`
      * 이라 '결제완료' 를 통지하면서 결제대기라고 적게 된다. `docs/api/claim-payments.md`

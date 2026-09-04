@@ -570,7 +570,7 @@ export function buildClaimItemsPayload(items: ClaimApplyItem[]): Array<Record<st
  *  - 정산 표기(`adjustment.refund_formatted.mc.*`) → `{통화코드: 포맷된 문자열}`
  *
  * 그래서 화면이 한 형태를 가정하고 `.formatted` 로 읽으면 다른 형태에서는 오류 없이
- * **빈 문자열**이 되어 그 줄이 통째로 사라진다(2026-08-31 3차 `/validate-plan` 실측).
+ * **빈 문자열**이 되어 그 줄이 통째로 사라진다(2026-08-31 3차 계획 검증 실측).
  * 세 형태를 여기서 하나로 흡수하고, 화면은 `formatted` 만 읽는다.
  *
  * 미리보기는 `*_formatted` 를 주지 않으므로(판정③) 숫자는 그 통화로 여기서 포맷한다.
@@ -961,7 +961,7 @@ export function initClaimApplyHandler(
         claimChargeMethod: allowedCharge[0] ?? '',
         claimPaymentMethod: allowedPayment[0] ?? '',
         claimRefundPriority: 'pg_first',
-        // 환불계좌는 주문 시 등록해 둔 계좌가 있으면 채워서 연다(2026-08-31 PO 확정).
+        // 환불계좌는 주문 시 등록해 둔 계좌가 있으면 채워서 연다(2026-08-31 확정).
         // 채우는 값은 서버가 `refund_account.prefill` 로 실어 준 **원문**이며, 표시용 응답의
         // 마스킹 값(계좌 뒤 4자리·예금주 첫 글자)을 재사용하지 않는다 — 마스킹 값을 채우면
         // 구매자가 손대지 않고 제출했을 때 별표가 섞인 계좌번호가 저장되고, 검증은 통과해
@@ -1882,7 +1882,7 @@ export async function saveClaimEditHandler(
         body.redelivery_address = { ...latest.claimRedelivery, changed_by_user: true };
     }
 
-    // 환불 계좌는 접수와 같은 규칙으로 싣는다(2026-09-01 PO 확정 — 수정 화면에서 편집 가능).
+    // 환불 계좌는 접수와 같은 규칙으로 싣는다(2026-09-01 확정 — 수정 화면에서 편집 가능).
     // 표시 응답의 계좌는 마스킹된 값이라 화면이 되돌려 보낼 수 없으므로 칸은 빈 채로 열리고,
     // 구매자가 실제로 채운 경우에만 전송한다 — 손대지 않은 저장이 기록된 계좌를 지우지
     // 않게 하는 것이 이 조건의 목적이다. 셋 중 일부만 채우면 그대로 보내 서버가 거절한다

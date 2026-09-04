@@ -16,6 +16,12 @@
  */
 
 import type { ActionContext } from '../types';
+import {
+    clearPostcodeSdkFailure,
+    isPostcodeSdkReady,
+    notifyPostcodeSdkFailure,
+    reloadPostcodeSdk,
+} from './postcodeSdk';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('DaumPostcode:OpenPostcode')) ?? {
@@ -89,10 +95,10 @@ function convertToG7AddressEvent(daumData: any): G7AddressEvent {
 /**
  * 다음 우편번호 API를 호출하고 G7 표준 형식으로 변환하여 콜백 실행
  */
-export function openPostcodeHandler(
+export async function openPostcodeHandler(
     action: ActionWithParams,
     context: ActionContext
-): void {
+): Promise<void> {
     const params = action.params || {};
     const {
         callbackAction,
@@ -122,9 +128,19 @@ export function openPostcodeHandler(
     });
 
     // 다음 우편번호 API가 로드되었는지 확인
-    if (!(window as any).daum?.Postcode) {
-        logger.error('[openPostcode] Daum Postcode API not loaded');
-        return;
+    // 종전에는 로그만 남기고 조용히 끝나 버튼이 무반응이었다 — 사용자에게는 클릭이
+    // 먹히지 않는 것으로만 보였고, 원인을 알 방법이 없었다.
+    if (!isPostcodeSdkReady()) {
+        logger.warn('[openPostcode] Daum Postcode API not loaded — retrying');
+
+        if (!(await reloadPostcodeSdk())) {
+            logger.error('[openPostcode] Daum Postcode API unavailable');
+            notifyPostcodeSdkFailure(() => openPostcodeHandler(action, context));
+
+            return;
+        }
+
+        clearPostcodeSdkFailure();
     }
 
     const postcodeConfig: any = {

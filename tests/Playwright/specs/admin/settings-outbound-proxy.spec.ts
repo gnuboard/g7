@@ -19,7 +19,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
  *
  * 이 화면은 하드 로드 시 설정 응답이 도착하기 전에도 폼이 렌더되어 조작할 수 있고,
  * 그 조작은 뒤늦게 도착한 `initLocal` 시드에 덮인다(실측 노출 창 300~430ms).
- * 제품 차원의 잠금은 두지 않기로 했으므로(#600 PO 결정), 테스트가 시드 완료를
+ * 제품 차원의 잠금은 두지 않는다는 결정이 확정되어 있으므로, 테스트가 시드 완료를
  * 기다린 뒤에 조작한다.
  */
 async function gotoAdvancedTab(page: import('@playwright/test').Page): Promise<void> {

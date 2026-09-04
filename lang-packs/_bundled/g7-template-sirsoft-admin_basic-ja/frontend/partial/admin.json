@@ -738,7 +738,10 @@
       "no_modified_layouts": "修正されたレイアウトがありません。",
       "modified_layouts_list_title": "保持される修正レイアウト ({{count}}個)",
       "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が保持されます。",
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "モジュール削除完了"
     },
     "tabs": {
       "file_upload": "ファイル アップロード",
@@ -944,7 +947,10 @@
       "no_modified_layouts": "編集されたレイアウトがありません。",
       "modified_layouts_list_title": "維持される編集レイアウト（{{count}}個）",
       "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が維持されます。",
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "プラグイン削除完了"
     },
     "tabs": {
       "file_upload": "ファイルアップロード",
@@ -1305,6 +1311,8 @@
     "page_title": "環境設定",
     "page_description": "システム環境を設定します。",
     "readonly_notice": "この設定は読み取り専用です。編集権限が必要な場合は管理者にお問い合わせください。",
+    "env_locked_badge": ".env で固定",
+    "env_locked_notice": "このサイトは .env 優先モードで運用されています。.env に値が指定されている項目はここでは変更できず、画面には実際に適用されている値が表示されます。変更するにはサーバーの .env を編集したうえで、設定キャッシュを再作成してください。",
     "tabs": {
       "general": "一般",
       "mail": "メール",
@@ -1423,6 +1431,8 @@
       "og_image_default_width": "OG 画像 デフォルト横幅 (px)",
       "og_image_default_height": "OG 画像 デフォルト高さ (px)",
       "og_image_default_size_hint": "サムネイルの実際のサイズが不明な場合のデフォルト値です。Facebookは推奨 1200×630、最小 200×200。",
+      "og_image_default": "既定の共有画像",
+      "og_image_default_desc": "画面ごとの共有画像がない場合に使用するサイト既定の画像です。リンク共有時のプレビューカードに表示されます。",
       "twitter_default_card": "Twitterカード デフォルト タイプ",
       "twitter_default_card_hint": "大きい画像のカードは summary_large_image、小さいカードは summary を推奨します。",
       "twitter_default_site": "Twitter サイト ハンドル",
@@ -1819,7 +1829,24 @@
       "pagination_result_cap": "総件数集計の上限",
       "pagination_result_cap_desc": "この件数までのみ正確に集計します。0の場合は常にすべてを集計します(大規模リストの場合、リストが遅くなる可能性があります)。",
       "pagination_max_page": "ページ番号の上限",
-      "pagination_max_page_desc": "アドレスから直接リクエスト可能な最大ページ番号です。0の場合は制限しません。通常の次ページへの移動はこの値に関わらず引き続き可能です。"
+      "pagination_max_page_desc": "アドレスから直接リクエスト可能な最大ページ番号です。0の場合は制限しません。通常の次ページへの移動はこの値に関わらず引き続き可能です。",
+      "trusted_proxy": "リバースプロキシ (信頼するプロキシ)",
+      "trusted_proxy_desc": "HTTPS を前段で処理する構成 (AWS ALB, CloudFront, Cloudflare, nginx) で、接続アドレスと訪問者 IP を正しく認識するための設定です。値は .env の TRUSTED_PROXIES でのみ変更できます。",
+      "trusted_proxy_status": "診断結果",
+      "trusted_proxy_status_ok": "正常",
+      "trusted_proxy_status_warning": "対応が必要",
+      "trusted_proxy_status_not_applicable": "判定不可",
+      "trusted_proxy_configured": "TRUSTED_PROXIES の設定値",
+      "trusted_proxy_not_configured": "未設定 (どのプロキシも信頼しません)",
+      "trusted_proxy_forwarded_headers": "受信中のプロキシヘッダー",
+      "trusted_proxy_forwarded_headers_none": "なし",
+      "trusted_proxy_is_secure": "HTTPS の認識",
+      "trusted_proxy_is_secure_yes": "HTTPS として認識",
+      "trusted_proxy_is_secure_no": "HTTP として認識",
+      "trusted_proxy_client_ip": "訪問者 IP として認識された値",
+      "trusted_proxy_remote_addr": "直前の呼び出し元 IP (REMOTE_ADDR)",
+      "trusted_proxy_same_ip_hint": "2 つの値が同じでプロキシヘッダーを受信しています — すべての訪問者が同一人物として記録されている状態です。",
+      "trusted_proxy_doc_hint": "設定方法と導入時の後続対応:"
     },
     "notification_definitions": {
       "title": "通知設定",
@@ -1860,7 +1887,9 @@
       "types": {
         "welcome": "会員登録ウェルカム",
         "reset_password": "パスワード再設定",
-        "password_changed": "パスワード変更通知"
+        "password_changed": "パスワード変更通知",
+        "sitemap_regenerated": "サイトマップ再生成完了",
+        "sitemap_regenerate_failed": "サイトマップ再生成失敗"
       },
       "channels_label": "チャネル:",
       "edit_modal": {
@@ -2209,7 +2238,10 @@
         "lines": "行",
         "chars": "文字"
       },
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "テンプレート削除完了"
     },
     "tabs_install": {
       "file_upload": "ファイルアップロード",

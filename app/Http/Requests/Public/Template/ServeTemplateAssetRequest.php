@@ -4,6 +4,7 @@ namespace App\Http\Requests\Public\Template;
 
 use App\Rules\AllowedTemplateFileType;
 use App\Rules\SafeTemplatePath;
+use App\Support\CustomAssets;
 use App\Support\Routing\DualExtensionRoute;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -32,9 +33,19 @@ class ServeTemplateAssetRequest extends FormRequest
     // 확장 가능한 "동적 필드" 가 없는 요청이라 룰의 취지(필드 확장)도 해당하지 않는다.
     public function rules(): array
     {
-        // 템플릿 식별자로부터 기준 경로 구성
+        // 템플릿 식별자로부터 기준 경로 구성.
+        //
+        // 컨테인먼트 기준은 **실제로 읽는 디렉토리**여야 한다. 템플릿 자산은 `dist/` 이하가
+        // 기본이지만 운영자 소유 디렉토리(`custom/`)만은 그 밖에 있고, 서빙측
+        // `TemplateService::getAssetFilePath()` 가 그 분기를 갖는다. 기준을 `dist` 로
+        // 고정하면 `custom/**` 은 realpath 가 실패해 문자열 접두 비교로만 통과하므로,
+        // 검증한 경로와 읽는 경로가 서로 다른 상태가 된다. 두 곳의 분기를 같은 조건으로
+        // 맞춰 둔다 — 한쪽만 바뀌면 custom 서빙이 조용히 깨지거나 검증이 헐거워진다.
         $identifier = $this->route('identifier');
-        $basePath = base_path("templates/{$identifier}/dist");
+        $requestedPath = (string) $this->input('path');
+        $basePath = str_starts_with($requestedPath, CustomAssets::DIRECTORY.'/')
+            ? base_path("templates/{$identifier}")
+            : base_path("templates/{$identifier}/dist");
 
         return [
             'identifier' => ['required', 'string'],

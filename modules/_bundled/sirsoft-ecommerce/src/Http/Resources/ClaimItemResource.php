@@ -81,7 +81,7 @@ class ClaimItemResource extends BaseApiResource
                 // `option_name`(짧은 표기: "화이트/XL")이다. 둘 다 다국어 배열이라 형제 필드와 같이
                 // `localize()` 를 태운다 — 예전에는 존재하지 않는 `option_label`/`name` 을 읽어
                 // **항상 null** 이었고, 목록 카드의 `⇄` 줄과 상세의 교환 대상 줄이 옵션명 없이
-                // 차액만 그렸다(2026-09-01 4차 `/validate-plan` 실측). 동일상품 교환에는 이 블록이
+                // 차액만 그렸다(2026-09-01 4차 계획 검증 실측). 동일상품 교환에는 이 블록이
                 // 서지 않아 옵션변경 교환이 생기기 전에는 드러나지 않았다.
                 'new_option_label' => $this->localize($this->new_option_snapshot['option_value'] ?? null, $locale)
                     ?? $this->localize($this->new_option_snapshot['option_name'] ?? null, $locale),

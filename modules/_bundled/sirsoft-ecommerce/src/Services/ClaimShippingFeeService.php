@@ -388,7 +388,7 @@ class ClaimShippingFeeService
             // 주문 배송비 경로(`resolveCountrySetting()`)와 달리 `is_active` 로 거르지 않는다.
             // 국가 설정을 끄는 것은 '앞으로 그 나라로 보내지 않는다' 는 선언이지 '이미 배송된
             // 주문의 반품비를 받지 않는다' 는 선언이 아니다. 거르면 주문 시점에 정상이던 정책이
-            // 사후에 꺼졌다는 이유로 과거 주문의 클레임 배송비가 0원이 된다 (PO 확정 2026-08-21).
+            // 사후에 꺼졌다는 이유로 과거 주문의 클레임 배송비가 0원이 된다 (확정 2026-08-21).
             $liveSetting = $policy?->countrySettings
                 ->firstWhere('country_code', $group['country_code']);
 

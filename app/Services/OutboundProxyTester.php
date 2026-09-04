@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
  * 검사 대상은 **저장된 설정이 아니라 이번에 제출된 값**입니다. 그래서 전역 옵션에 의존하지
  * 않고 요청마다 프록시를 명시합니다 — 저장 전에 확인하는 것이 목적이기 때문입니다.
  *
- * @since 7.1.0
+ * @since 7.0.8
  */
 class OutboundProxyTester
 {

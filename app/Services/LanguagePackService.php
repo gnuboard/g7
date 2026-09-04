@@ -763,7 +763,12 @@ class LanguagePackService
 
             $response = Http::timeout(120)->get($url);
             if (! $response->successful()) {
-                throw new LanguagePackOperationException('language_packs.errors.download_failed', ['url' => $url]);
+                // 응답 상태를 사유로 싣는다 — 비우면 치환 자리가 남아 관리자 화면에
+                // 리터럴 ':error' 가 그대로 노출된다.
+                throw new LanguagePackOperationException('language_packs.errors.download_failed', [
+                    'url' => $url,
+                    'error' => 'HTTP '.$response->status(),
+                ]);
             }
             File::put($zipPath, $response->body());
 
@@ -1809,10 +1814,21 @@ class LanguagePackService
                 }
             }
 
-            // 상태 복원 (DB 행이 finalizeInstall 에서 status 를 다시 쓰지 않은 경우만)
+            // 상태 복원 — 파일은 위에서 백업으로 원상 복원되므로 상태도 이전 상태로 되돌린다.
+            // Updating: 설치 트랜잭션 이전에 실패한 경우.
+            // Installed: 설치 트랜잭션이 installed 를 기록한 뒤(활성화 단계 이전/도중) 실패한 경우 —
+            //   여기서 복원하지 않으면 active 였던 팩이 installed 로 방치되어 해당 로케일의
+            //   백엔드 번역이 오류·로그 없이 통째로 폴백된다 (#597 보완 실측에서 유사 상태 실측).
+            //   활성화가 성공적으로 끝난 뒤(active) 실패한 경우는 덮어쓰지 않는다.
             try {
                 $current = $this->repository->findByIdentifier($identifier);
-                if ($current && $current->status === LanguagePackStatus::Updating->value) {
+                $restorable = [
+                    LanguagePackStatus::Updating->value,
+                    LanguagePackStatus::Installed->value,
+                ];
+                if ($current
+                    && $current->status !== $previousStatus
+                    && in_array($current->status, $restorable, true)) {
                     $this->repository->update($current, ['status' => $previousStatus]);
                 }
             } catch (Throwable $statusError) {

@@ -1265,6 +1265,7 @@ return [
         'maintenance_mode' => '점검 모드',
         'asset_url_mode' => '자산 주소 방식',
         'site_logo' => '사이트 로고',
+        'og_image_default' => '기본 공유 이미지',
         // SEO 설정 (추가)
         'bot_user_agents' => '봇 User-Agent 목록',
         'bot_detection_enabled' => '봇 감지 사용',

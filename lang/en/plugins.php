@@ -172,6 +172,7 @@ return [
             'roles_deleted' => ':count roles deleted',
             'permissions_deleted' => ':count permissions deleted',
             'layouts_deleted' => ':count layouts deleted',
+            'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'confirm_prompt' => 'Are you sure you want to uninstall plugin ":plugin"?',
             'confirm_details' => [
                 'roles' => '- :count roles will be deleted.',

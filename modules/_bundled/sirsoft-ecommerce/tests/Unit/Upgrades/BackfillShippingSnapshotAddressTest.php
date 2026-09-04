@@ -28,14 +28,14 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class BackfillShippingSnapshotAddressTest extends ModuleTestCase
 {
-    private const MIGRATION_NS = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_2_0\\Migrations\\BackfillShippingSnapshotAddress';
+    private const MIGRATION_NS = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\BackfillShippingSnapshotAddress';
 
     protected function setUp(): void
     {
         parent::setUp();
 
         // DataMigration 클래스는 오토로드 밖 — 직접 로드
-        require_once dirname(__DIR__, 3).'/upgrades/data/1.2.0/migrations/04_BackfillShippingSnapshotAddress.php';
+        require_once dirname(__DIR__, 3).'/upgrades/data/1.3.0/migrations/04_BackfillShippingSnapshotAddress.php';
     }
 
     private function migration(): object
@@ -49,8 +49,8 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
     {
         return new UpgradeContext(
             fromVersion: '1.1.1',
-            toVersion: '1.2.0',
-            currentStep: '1.2.0',
+            toVersion: '1.3.0',
+            currentStep: '1.3.0',
         );
     }
 

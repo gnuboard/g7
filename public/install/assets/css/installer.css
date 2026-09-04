@@ -2323,6 +2323,17 @@ hr {
   box-shadow: var(--shadow-md);
 }
 
+/*
+ * 결과/안내 섹션으로 스크롤할 때 sticky 헤더에 가려지지 않도록 여백을 확보한다.
+ * 헤더 실높이는 데스크톱 70px / 모바일 60px (+ 하단 테두리 1px) 이므로 여유를 포함해 90px.
+ * 전역 `html { scroll-behavior: smooth }` 는 두지 않는다 — 로그 영역 등 내부 스크롤에
+ * 부작용을 준다. 스크롤 동작은 JS(scrollResultIntoView)가 개별 호출로 지정한다.
+ */
+.result-section,
+#env-setup-section {
+  scroll-margin-top: 90px;
+}
+
 /* 성공 배경 */
 .result-section:has(.result-icon-success) {
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);

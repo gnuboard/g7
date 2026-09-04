@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 저장된 `mc_*` 금액의 절사 잔차 정규화(DataMigration) 회귀 테스트
  *
- * 1.2.0 이전에 기록된 행은 `4505 × 0.01 = 45.050000000000004` 같은 어긋난 표기를 들고
+ * 1.3.0 이전에 기록된 행은 `4505 × 0.01 = 45.050000000000004` 같은 어긋난 표기를 들고
  * 있다. 생산 지점 수정은 이후 기록분에만 적용되므로 과거 행은 이 백필이 담당한다.
  *
  * 검증 축: ① 잔차 제거 ② 금액을 바꾸지 않음(허용오차 밖 정밀값 보존) ③ 정수 표기 보존
@@ -27,15 +27,15 @@ class NormalizeStoredMultiCurrencyRoundingTest extends ModuleTestCase
         parent::setUp();
 
         require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.2.0/migrations/06_NormalizeStoredMultiCurrencyRounding.php';
+            .'/upgrades/data/1.3.0/migrations/06_NormalizeStoredMultiCurrencyRounding.php';
 
-        $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_2_0\\Migrations\\NormalizeStoredMultiCurrencyRounding';
+        $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\NormalizeStoredMultiCurrencyRounding';
 
         $this->migration = new $class;
         $this->context = new UpgradeContext(
             fromVersion: '1.1.1',
-            toVersion: '1.2.0',
-            currentStep: '1.2.0',
+            toVersion: '1.3.0',
+            currentStep: '1.3.0',
         );
     }
 

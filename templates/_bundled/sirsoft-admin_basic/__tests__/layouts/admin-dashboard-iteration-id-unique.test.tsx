@@ -13,7 +13,8 @@
  * - 플러그인 카드 (plugin_item / info / name / version / badge)
  * - 템플릿 카드 (template_item / info / name / version / badge)
  * - 최근 알림 (recent_notification_item / dot / content / subject / recipient / time)
- * - 시스템 알림 (alert_item / icon / content / title / message / time / actions / buttons)
+ * - 시스템 알림 — 하단 카드 (alert_item / icon / content / title / message / time / actions / buttons)
+ * - 시스템 알림 — 상단 경고 배너 (top_alert_item / ... , 경고 2건 이상 적재)
  *
  * 수정 전(정적 id): 각 영역 row 2개 이상 mock → 동일 id 가 2회 이상 → 테스트 fail.
  * 수정 후(동적 id): id 에 {{$idx}} 접미 → row 별 고유 → 중복 0 → green.
@@ -239,6 +240,7 @@ describe('대시보드 iteration HTML id 유일성', () => {
       response: {
         data: [
           {
+            type: 'info',
             subtype: 'recovery_available',
             icon: 'check-circle',
             title: '복구 가능 1',
@@ -248,7 +250,9 @@ describe('대시보드 iteration HTML id 유일성', () => {
             extension_type: 'module',
             identifier: 'm1',
           },
+          // 경고 2건 — 상단 배너 영역이 여러 건을 쌓을 때도 id 가 겹치지 않아야 한다.
           {
+            type: 'warning',
             subtype: 'incompatible_core',
             icon: 'exclamation',
             title: '비호환 1',
@@ -256,6 +260,14 @@ describe('대시보드 iteration HTML id 유일성', () => {
             time: '5분 전',
             extension_type: 'plugin',
             identifier: 'p1',
+          },
+          {
+            type: 'warning',
+            subtype: 'trusted_proxy_missing',
+            icon: 'exclamation-triangle',
+            title: '신뢰 프록시 미설정',
+            message: '메시지 3',
+            time: '1분 전',
           },
         ],
       },

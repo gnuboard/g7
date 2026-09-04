@@ -220,7 +220,9 @@ class SafeLayoutExpressions implements ValidationRule
      * 정규화 후 판정하면 경로 중간의 백슬래시·탭(`/js/a\b.js`)은 authority 를 만들지
      * 않으므로 그대로 통과합니다(과차단 없음).
      *
-     * 클라이언트(`TemplateApp.isAllowedScriptSrc`)·정적 검사
+     * 클라이언트(`resources/js/core/support/scriptSrcPolicy.ts::isAllowedScriptSrc` — 레이아웃
+     * `scripts[]` 뿐 아니라 loadScript 액션·확장 핸들러 재로드·편집기 프리뷰·
+     * `G7Core.asset.loadScript` 가 공유하는 런타임 SSoT)·정적 검사
      * (`layout-scripts-src-same-origin`)와 3층 동형이어야 합니다.
      *
      * 구현 SSoT 는 `TrustedScriptHosts::normalizeForOriginCheck` 입니다 — 같은 저장측

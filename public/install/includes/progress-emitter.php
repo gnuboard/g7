@@ -55,18 +55,14 @@ class SseEmitter implements ProgressEmitter
     public function emit(string $event, array $data): void
     {
         // SSE data 라인은 항상 유효 JSON 이어야 한다 (gnuboard/g7#62).
+        //
         // composer install 등 외부 프로세스 로그에 invalid UTF-8 바이트가 섞이면
-        // json_encode 가 false 를 반환해 "data: \n\n" (빈 값) 이 송출되고,
-        // 프론트 EventSource 리스너의 JSON.parse(e.data) 가 throw 되어 로그 이벤트가 유실된다.
-        // 폴링 응답(state-management)과 동일하게 JSON_INVALID_UTF8_SUBSTITUTE 로 치환하고
-        // false 를 가드한다. (task-runner 의 스트림 scrub 과 이중 안전망)
-        $payload = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-        if ($payload === false) {
-            $payload = json_encode(
-                ['message' => '(log line dropped: encoding error)'],
-                JSON_UNESCAPED_UNICODE
-            );
-        }
+        // 표준 json_encode 는 false 를 반환하고, 그러면 빈 data 라인이 송출되어
+        // 프론트 EventSource 리스너의 JSON.parse(e.data) 가 throw 되고 로그 이벤트가 유실된다.
+        //
+        // installer_json_encode 는 값을 정규화하고 substitute 를 적용하며,
+        // 실패하더라도 파싱 가능한 오류 JSON 을 돌려주므로 빈 data 라인이 나갈 수 없다.
+        $payload = installer_json_encode($data);
 
         echo "event: {$event}\n";
         echo 'data: '.$payload."\n\n";

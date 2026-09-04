@@ -125,7 +125,7 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $row = $response->json('data.claims.0');
         $this->assertSame($return->id, $row['id']);
         $this->assertSame([$itemId], $row['completable_item_ids']);
-        // 재고 복구 대상 유무는 ClaimCompletionOptions::hasStockRestoreTarget() 가 판정한다 (S3 3차 PO 확정 ⑥).
+        // 재고 복구 대상 유무는 ClaimCompletionOptions::hasStockRestoreTarget() 가 판정한다 (S3 3차 확정 ⑥).
         $this->assertTrue($row['has_stock_restore_target']);
         $this->assertSame(1, $row['stock_restore_count']);
         $this->assertSame(0, $row['stock_discard_count']);
@@ -446,7 +446,7 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     }
 
     // ================================================================
-    // 3차 /validate-plan 보강 — 사유 구분 · 다건 스코프 · 권한 · 교차 유형 거절
+    // 3차 계획 검증 보강 — 사유 구분 · 다건 스코프 · 권한 · 교차 유형 거절
     // ================================================================
 
     public function test_completion_preview_blocks_a_return_without_completable_items(): void

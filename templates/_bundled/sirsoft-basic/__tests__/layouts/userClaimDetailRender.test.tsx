@@ -474,7 +474,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
   it('교환 대상 — 차액이 0 이면 보조 통화 줄도 서지 않는다', async () => {
     // 기준 통화 줄(옵션 차액)은 차액이 0 이면 서지 않는다. 보조 통화 iteration 에 같은 게이트가
     // 없으면 "동일 상품으로 교환" 밑에 라벨 없는 `$0.00 ¥0` 만 남는다 — 서버는 교환 행이면
-    // 차액 0 에도 통화별 항목을 싣기 때문이다(2026-09-01 3차 `/validate-plan`).
+    // 차액 0 에도 통화별 항목을 싣기 때문이다(2026-09-01 3차 계획 검증).
     const claim = exchangeDetail();
     claim.items[0].is_option_change = false;
     claim.items[0].new_option_label = null;

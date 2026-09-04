@@ -73,6 +73,31 @@ powershell -Command "npm run test:run"
 2. `_bundled` src/ → PSR-4 prepend 등록 (활성 디렉토리보다 우선 검색)
 3. `autoload-extensions.php` → 이미 로드된 _bundled 항목은 스킵
 4. Manager/RouteServiceProvider → `class_exists` 가드로 중복 선언 방지
+5. 확장 `vendor/` → 제3자 composer 패키지만 골라 별도 로더로 등록
+
+### 확장의 제3자 composer 패키지
+
+확장이 자기 `composer.json` 으로 들여온 제3자 패키지(예: HTML 정화 라이브러리)는 `tests/bootstrap.php`
+가 등록합니다. 확장별 테스트 베이스 클래스에서 같은 일을 다시 하지 않습니다 — 규칙이 두 곳으로
+갈라지면 한쪽만 고쳐져 조용히 어긋납니다.
+
+```
+금지: 확장 vendor 의 autoload.php 를 그대로 require
+필수: 생성된 맵에서 제3자 항목만 골라 vendorDir 없는 로더로 등록
+```
+
+그 오토로더를 그대로 쓰면 두 가지가 오류 없이 깨집니다.
+
+1. 확장 **자신의** PSR-4 와 files 를 활성 디렉토리로 매핑하고 자신을 prepend 로 걸어, 위 2번의
+   `_bundled` 등록을 이깁니다. 테스트가 `_bundled` 가 아니라 활성 디렉토리 사본을 검증하게 되어
+   "`_bundled` 에서만 작업한다" 는 규율이 조용히 깨집니다.
+2. Composer 로더는 `vendorDir` 를 가지면 등록 로더 목록의 맨 앞에 자신을 넣는데, 테스트용 앱
+   생성이 그 첫 항목에서 base path 를 유추합니다. 이후 테스트의 앱 부팅이 확장 디렉토리에서
+   `bootstrap/app.php` 를 찾다 실패합니다. (운영 진입점은 base path 를 명시 전달하므로 영향이 없습니다.)
+
+이 결손은 그 패키지를 쓰는 코드 경로를 아무도 테스트하지 않는 동안 드러나지 않습니다. 확장에
+제3자 패키지를 추가하면 그 패키지를 실제로 로드하는 테스트를 함께 두고, 로드 실패를 skip 이 아니라
+단언 실패로 드러냅니다.
 
 ### 주의사항
 

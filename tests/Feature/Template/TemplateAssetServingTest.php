@@ -5,6 +5,7 @@ namespace Tests\Feature\Template;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Tests\TestCase;
 
 class TemplateAssetServingTest extends TestCase
@@ -12,7 +13,9 @@ class TemplateAssetServingTest extends TestCase
     use RefreshDatabase;
 
     private Template $activeTemplate;
+
     private string $testTemplatePath;
+
     private string $testIdentifier;
 
     protected function setUp(): void
@@ -30,7 +33,7 @@ class TemplateAssetServingTest extends TestCase
 
         // 테스트용 템플릿 디렉토리 생성
         $this->testTemplatePath = base_path("templates/{$this->testIdentifier}/dist");
-        if (!file_exists($this->testTemplatePath)) {
+        if (! file_exists($this->testTemplatePath)) {
             mkdir($this->testTemplatePath, 0755, true);
         }
     }
@@ -66,11 +69,11 @@ class TemplateAssetServingTest extends TestCase
      */
     private function deleteDirectory(string $dir): bool
     {
-        if (!file_exists($dir)) {
+        if (! file_exists($dir)) {
             return true;
         }
 
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return unlink($dir);
         }
 
@@ -79,7 +82,7 @@ class TemplateAssetServingTest extends TestCase
                 continue;
             }
 
-            if (!$this->deleteDirectory($dir.DIRECTORY_SEPARATOR.$item)) {
+            if (! $this->deleteDirectory($dir.DIRECTORY_SEPARATOR.$item)) {
                 return false;
             }
         }
@@ -455,7 +458,7 @@ class TemplateAssetServingTest extends TestCase
         // Assert
         $response->assertStatus(200);
         // baseResponse를 통해 실제 응답 타입 확인
-        $this->assertTrue($response->baseResponse instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse, '200 response should be a file response');
+        $this->assertTrue($response->baseResponse instanceof BinaryFileResponse, '200 response should be a file response');
         $this->assertNotNull($response->headers->get('ETag'), 'New ETag should be provided');
     }
 
@@ -534,7 +537,8 @@ class TemplateAssetServingTest extends TestCase
      */
     public function test_serves_components_json(): void
     {
-        // Arrange
+        // Arrange — public max-age 는 프로덕션 정책 (dev 는 no-cache 환경 분기, #122 작업 C)
+        app()['env'] = 'production';
         $componentsPath = base_path("templates/{$this->testIdentifier}/components.json");
         file_put_contents($componentsPath, json_encode([
             'Button' => ['path' => 'components/Button.jsx'],
@@ -553,6 +557,56 @@ class TemplateAssetServingTest extends TestCase
         $cacheControl = $response->headers->get('Cache-Control');
         $this->assertStringContainsString('public', $cacheControl);
         $this->assertStringContainsString('max-age=3600', $cacheControl);
+    }
+
+    /**
+     * components.json If-None-Match 일치 시 304 (조건부 캐시 — #122 작업 C)
+     */
+    public function test_components_json_returns_304_with_matching_etag(): void
+    {
+        // Arrange
+        app()['env'] = 'production';
+        $componentsPath = base_path("templates/{$this->testIdentifier}/components.json");
+        file_put_contents($componentsPath, json_encode([
+            'Button' => ['path' => 'components/Button.jsx'],
+        ]));
+
+        // Act
+        $first = $this->get($this->templateUrl('components.json'));
+        $etag = $first->headers->get('ETag');
+
+        $second = $this->get($this->templateUrl('components.json'), ['If-None-Match' => (string) $etag]);
+
+        // Assert
+        $this->assertNotNull($etag);
+        $second->assertStatus(304);
+        $this->assertSame('', $second->getContent());
+    }
+
+    /**
+     * 개발 환경에서 components.json 은 no-cache (파일 수정 즉시 반영 — F10)
+     *
+     * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=dev, trigger=self_heal, process_user=web
+     *
+     * @effects fallback_api_no_cache_in_dev
+     */
+    public function test_components_json_no_cache_in_development(): void
+    {
+        // Arrange
+        app()['env'] = 'local';
+        $componentsPath = base_path("templates/{$this->testIdentifier}/components.json");
+        file_put_contents($componentsPath, json_encode([
+            'Button' => ['path' => 'components/Button.jsx'],
+        ]));
+
+        // Act
+        $response = $this->get($this->templateUrl('components.json'));
+
+        // Assert
+        $response->assertStatus(200);
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringNotContainsString('max-age=3600', $cacheControl);
     }
 
     /**

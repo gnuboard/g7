@@ -14,7 +14,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * 검증 강도는 저장 경로(SaveSettingsRequest)와 같게 둡니다 — 테스트만 통과하고 저장에서
  * 거부되거나 그 반대가 되면 운영자가 어느 쪽을 믿어야 할지 알 수 없습니다.
  *
- * @since 7.1.0
+ * @since 7.0.8
  */
 class TestOutboundProxyRequest extends FormRequest
 {

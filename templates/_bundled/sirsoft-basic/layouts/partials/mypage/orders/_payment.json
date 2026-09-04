@@ -687,7 +687,7 @@
         },
         {
           "comment": "PG 제공 블록(가상계좌 입금 안내 · 영수증 · 부가세 내역) 확장 슬롯 — 결제 플러그인 4종(kginicis / nhnkcp / nicepayments / tosspayments)이 resources/extensions/ 로 주입한다. 표시 분기(pg_provider·결제수단·발급상태)는 주입 측이 if 로 처리한다.",
-          "_comment_why_slot": "이 카드가 뜨는 화면이 주문 상세 하나가 아니다 — 클레임 신청서 상세도 같은 partial 을 재사용하고(§6-2), 비회원 화면도 그렇다. 네 플러그인이 레이아웃 이름(target_layout: mypage/orders/show)을 겨냥하고 있으면 그 한 화면에서만 뜨고, 나머지 화면은 결제 정보 카드는 나오는데 이 블록만 빠진 채로 열린다 — 오류도 경고도 남지 않는다. 슬롯은 partial 을 따라가므로 이 카드가 서는 곳이면 어디든 함께 선다. 2026-09-01 PO 확정(주문 상세와 동일하게 노출).",
+          "_comment_why_slot": "이 카드가 뜨는 화면이 주문 상세 하나가 아니다 — 클레임 신청서 상세도 같은 partial 을 재사용하고(§6-2), 비회원 화면도 그렇다. 네 플러그인이 레이아웃 이름(target_layout: mypage/orders/show)을 겨냥하고 있으면 그 한 화면에서만 뜨고, 나머지 화면은 결제 정보 카드는 나오는데 이 블록만 빠진 채로 열린다 — 오류도 경고도 남지 않는다. 슬롯은 partial 을 따라가므로 이 카드가 서는 곳이면 어디든 함께 선다. 2026-09-01 확정(주문 상세와 동일하게 노출).",
           "type": "extension_point",
           "name": "mypage_order_payment_provider_slot",
           "default": []

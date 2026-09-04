@@ -139,28 +139,35 @@ describe('#75 상품 상세 탭 전환이 목록 상태를 지우지 않는다',
         );
         expect(action, '상세 탭 전환 replaceUrl 을 찾지 못했습니다.').toBeTruthy();
 
-        // 탭 값 자체는 이 하네스에서 잴 수 없다 — 레이아웃은 `$args[0]`(눌린 탭 id)로 값을
-        // 받는데, `triggerAction` 이 쓰는 `ActionDispatcher.createHandler` 는 `(event) => void`
-        // 라 추가 인자를 받지 않는다(`$args` 는 named action 경로인 `executeAction(…, args)`
-        // 가 채운다). 그래서 여기서 `q.get('tab')` 을 단언하면 **하네스가 구조적으로 만들 수
-        // 없는 값**을 요구하게 되어 언제나 red 다.
-        //
-        // 그 자리를 선언 단언으로 바꾼다 — 프로덕션에서 탭이 URL 에 실리는 근거가 바로 이
-        // `$args[0]` 바인딩이기 때문이다. 실제 반영은 브라우저 실측으로 확인했다
-        // (2026-09-01 `/validate-plan` 4차 · `/shop/products/1?page=2&sort=price_asc&keyword=신발&category=3`
-        //  에서 리뷰 탭 클릭 → `…&category=3&tab=reviews` · 목록 상태 4종 전건 보존).
+        // 탭 값은 레이아웃이 `$args[0]`(눌린 탭 id)로 받는데, `triggerAction` 이 쓰는
+        // `ActionDispatcher.createHandler` 는 `(event) => void` 라 추가 인자를 받지 않는다
+        // (`$args` 는 named action 경로인 `executeAction(…, args)` 가 채운다). 그래서 두 축으로
+        // 나눠 단언한다 — ① 프로덕션에서 탭이 URL 에 실리는 근거인 `$args[0]` 바인딩 자체를
+        // 선언으로 고정하고(브라우저 실측 2026-09-01 계획 검증 4차 ·
+        // `/shop/products/1?page=2&sort=price_asc&keyword=신발&category=3` 에서 리뷰 탭 클릭 →
+        // `…&category=3&tab=reviews` · 목록 상태 4종 전건 보존), ② 화면이 넘길 값을 그 자리에 직접
+        // 넣어 mergeQuery·query 구성이 목록 상태를 보존한 채 탭을 싣는지를 실제로 잰다.
         const tabBinding = (action as NavAction).params.query as Record<string, unknown>;
         expect(tabBinding.tab, '탭 값이 $args[0] 바인딩이어야 프로덕션에서 URL 에 실린다').toBe(
             '{{$args[0]}}'
         );
 
-        await runAction(action as NavAction);
+        const withTabArg = {
+            ...(action as NavAction),
+            params: {
+                ...(action as NavAction).params,
+                query: { ...((action as NavAction).params.query as Record<string, unknown>), tab: 'reviews' },
+            },
+        } as NavAction;
+
+        await runAction(withTabArg);
         const q = new URLSearchParams(window.location.search);
 
         expect(q.get('page')).toBe('2');
         expect(q.get('sort')).toBe('price_asc');
         expect(q.get('keyword')).toBe('신발');
         expect(q.get('category')).toBe('3');
+        expect(q.get('tab')).toBe('reviews');
     });
 
     it("탭을 누른 뒤 '상품 목록' 으로 돌아가도 보던 페이지가 복원된다", async () => {

@@ -371,7 +371,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 업데이트 확인 중 예외 발생 (`업데이트 확인에 실패했습니다: :error` — `language_packs.check_updates_failed`) |
+| 500 | Internal Server Error | 업데이트 확인 중 예외 발생 (`업데이트 확인에 실패했습니다.` — `language_packs.check_updates_failed`) |
 
 <!-- @generated:end -->
 
@@ -633,7 +633,7 @@ HTTP/1.1 201
 }
 ```
 
-> manifest 검증 실패 시 422 (`language-pack.json 검증에 실패했습니다.`), 그 외 설치 실패 시 500 (`언어팩 설치에 실패했습니다: :error`) 으로 응답합니다.
+> manifest 검증 실패 시 422 (`language-pack.json 검증에 실패했습니다.`), 그 외 설치 실패 시 500 (`언어팩 설치에 실패했습니다.`) 으로 응답합니다.
 
 **에러 응답**
 
@@ -1664,7 +1664,7 @@ HTTP/1.1 200
 }
 ```
 
-> 업데이트 소스 정보가 없거나(`업데이트 소스 정보가 없습니다 (GitHub 소스 언어팩만 업데이트 가능).`) 이미 최신 버전이면(`이미 최신 버전입니다.`) 500 (`언어팩 업데이트에 실패했습니다: :error`) 으로 응답합니다.
+> 업데이트 소스 정보가 없거나(`업데이트 소스 정보가 없습니다 (GitHub 소스 언어팩만 업데이트 가능).`) 이미 최신 버전이면(`이미 최신 버전입니다.`) 500 (`언어팩 업데이트에 실패했습니다.`) 으로 응답합니다.
 
 **에러 응답**
 

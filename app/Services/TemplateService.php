@@ -7,6 +7,7 @@ use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Exceptions\TemplateNotFoundException;
 use App\Exceptions\TemplateOperationException;
@@ -15,6 +16,7 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Traits\ResolvesLanguageFragments;
+use App\Support\CustomAssets;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -431,19 +433,26 @@ class TemplateService
      *
      * @param  string  $identifier  제거할 템플릿 식별자
      * @param  bool  $deleteData  템플릿 관련 데이터 삭제 여부
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
+     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터
      * @return array|null 제거된 템플릿 정보 또는 null
      *
      * @throws ValidationException 제거 실패 시
      */
-    public function uninstallTemplate(string $identifier, bool $deleteData = false): ?array
-    {
+    public function uninstallTemplate(
+        string $identifier,
+        bool $deleteData = false,
+        ?array &$preservedBackups = null,
+    ): ?array {
+        $preservedBackups = [];
+
         HookManager::doAction('core.templates.before_uninstall', $identifier, $deleteData);
 
         try {
             // 제거 전 템플릿 정보 보존
             $templateInfo = $this->templateManager->getTemplateInfo($identifier);
 
-            $result = $this->templateManager->uninstallTemplate($identifier);
+            $result = $this->templateManager->uninstallTemplate($identifier, null, $preservedBackups);
 
             if ($result) {
                 HookManager::doAction('core.templates.after_uninstall', $identifier, $templateInfo, $deleteData);
@@ -476,12 +485,15 @@ class TemplateService
      * 템플릿을 비활성화합니다.
      *
      * @param  int|string  $idOrIdentifier  템플릿 ID 또는 식별자
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return array|null 비활성화된 템플릿 정보 또는 null
      *
      * @throws ValidationException 비활성화 실패 시
      */
-    public function deactivateTemplate(int|string $idOrIdentifier): ?array
+    public function deactivateTemplate(int|string $idOrIdentifier, ?string &$failureReason = null): ?array
     {
+        $failureReason = null;
+
         // ID 또는 identifier로 템플릿 조회
         $template = is_int($idOrIdentifier)
             ? $this->templateRepository->findById($idOrIdentifier)
@@ -496,7 +508,14 @@ class TemplateService
         HookManager::doAction('core.templates.before_deactivate', $template->identifier);
 
         try {
-            $result = $this->templateManager->deactivateTemplate($template->identifier);
+            // 위치 인자로 넘긴다 — 이 의존성은 인터페이스 타입이고 테스트가 그 인터페이스를
+            // mock 하므로, 이름 붙인 인자는 mock 의 __call 에 닿아 "Unknown named parameter" 가 된다.
+            $result = $this->templateManager->deactivateTemplate(
+                $template->identifier,
+                DeactivationReason::Manual->value,
+                null,
+                $failureReason
+            );
 
             if ($result) {
                 // 템플릿 매니저에서 업데이트된 정보 조회
@@ -649,7 +668,13 @@ class TemplateService
         $safePath = $this->sanitizePath($path);
 
         // 3. 파일 경로 구성
-        $filePath = base_path("templates/{$identifier}/dist/{$safePath}");
+        //
+        // 템플릿 자산은 `dist/` 이하가 기본이지만, 운영자 소유 디렉토리(`custom/`)만은
+        // 그 밖에 있다 — 빌드 산출물이 아니라 사람이 넣은 파일이고, 확장 교체가
+        // 보존하는 대상이라 빌드 디렉토리에 둘 수 없다.
+        $filePath = str_starts_with($safePath, CustomAssets::DIRECTORY.'/')
+            ? base_path("templates/{$identifier}/{$safePath}")
+            : base_path("templates/{$identifier}/dist/{$safePath}");
 
         // 4. 파일 존재 확인
         if (! file_exists($filePath) || ! is_file($filePath)) {
@@ -1925,6 +1950,13 @@ class TemplateService
                 }
                 throw $e;
             }
+        } catch (TemplateOperationException $e) {
+            throw $e;
+        } catch (\RuntimeException $e) {
+            // ZipInstallHelper 등 설치 원본 처리의 raw RuntimeException(깨진 zip·manifest
+            // 누락 같은 사용자 입력 오류)을 도메인 예외로 승격한다 — 컨트롤러의 좁혀진
+            // catch 가 인프라 예외와 구분해 종전 422 계약을 유지하고, 사유는 :error 로 보존.
+            throw new TemplateOperationException('templates.errors.install_failed', ['error' => $e->getMessage()], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -1978,6 +2010,12 @@ class TemplateService
                 }
                 throw $e;
             }
+        } catch (TemplateOperationException $e) {
+            throw $e;
+        } catch (\RuntimeException $e) {
+            // GithubHelper·ZipInstallHelper 의 raw RuntimeException(잘못된 URL·다운로드
+            // 실패·manifest 오류)을 도메인 예외로 승격한다 — 종전 422 계약 유지, 사유 보존.
+            throw new TemplateOperationException('templates.errors.install_failed', ['error' => $e->getMessage()], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -2021,7 +2059,11 @@ class TemplateService
         $result = $this->templateManager->installTemplate($identifier);
 
         if (! $result) {
-            throw new TemplateOperationException('templates.errors.install_failed');
+            // installTemplate 은 사유 out 파라미터를 갖지 않으므로 일반 문구로 채운다.
+            // 비워 두면 치환 자리가 남아 관리자 화면에 리터럴 ':error' 가 노출된다.
+            throw new TemplateOperationException('templates.errors.install_failed', [
+                'error' => __('templates.errors.unknown_error'),
+            ]);
         }
 
         return $this->templateManager->getTemplateInfo($identifier);

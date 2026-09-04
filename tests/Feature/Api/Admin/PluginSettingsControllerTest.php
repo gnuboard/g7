@@ -8,6 +8,7 @@ use App\Models\Permission;
 use App\Models\Plugin;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -130,7 +131,7 @@ class PluginSettingsControllerTest extends TestCase
      */
     private function createTestSettingsFile(string $identifier, array $settings): void
     {
-        $settingsDir = storage_path("app/plugins/{$identifier}/settings");
+        $settingsDir = ExtensionStoragePath::plugin($identifier, 'settings');
         $settingsPath = $settingsDir.'/setting.json';
 
         if (! File::isDirectory($settingsDir)) {
@@ -145,7 +146,7 @@ class PluginSettingsControllerTest extends TestCase
      */
     private function cleanupTestSettings(string $identifier): void
     {
-        $pluginDir = storage_path("app/plugins/{$identifier}");
+        $pluginDir = ExtensionStoragePath::plugin($identifier);
         if (File::isDirectory($pluginDir)) {
             File::deleteDirectory($pluginDir);
         }
@@ -319,12 +320,14 @@ class PluginSettingsControllerTest extends TestCase
             ->assertJson(['success' => true]);
 
         // 파일에서 값 확인
-        $settingsPath = storage_path('app/plugins/sirsoft-daum_postcode/settings/setting.json');
-        if (File::exists($settingsPath)) {
-            $savedContent = json_decode(File::get($settingsPath), true);
-            $this->assertSame('popup', $savedContent['display_mode'] ?? null);
-            $this->assertSame(640, $savedContent['popup_width'] ?? null);
-        }
+        $settingsPath = ExtensionStoragePath::plugin('sirsoft-daum_postcode', 'settings').'/setting.json';
+        // 저장이 200 으로 끝났으므로 파일은 반드시 있어야 한다 — `File::exists` 조건 안에
+        // 단언을 두면 경로가 어긋났을 때 검사가 조용히 공허해진다.
+        $this->assertFileExists($settingsPath);
+
+        $savedContent = json_decode(File::get($settingsPath), true);
+        $this->assertSame('popup', $savedContent['display_mode'] ?? null);
+        $this->assertSame(640, $savedContent['popup_width'] ?? null);
 
         // 정리
         $this->cleanupTestSettings('sirsoft-daum_postcode');
@@ -357,12 +360,15 @@ class PluginSettingsControllerTest extends TestCase
             'another_unknown' => ['nested' => true],
         ]);
 
-        $settingsPath = storage_path('app/plugins/sirsoft-daum_postcode/settings/setting.json');
-        if (File::exists($settingsPath)) {
-            $savedContent = json_decode(File::get($settingsPath), true);
-            $this->assertArrayNotHasKey('injected_field', $savedContent);
-            $this->assertArrayNotHasKey('another_unknown', $savedContent);
-        }
+        $settingsPath = ExtensionStoragePath::plugin('sirsoft-daum_postcode', 'settings').'/setting.json';
+        // 스키마 밖 키만 담긴 요청은 저장 자체가 일어나지 않을 수 있다. 그 경우에도 단언은
+        // 수행한다 — 조건 안에 두면 파일이 없을 때 검사가 0건이 되어 공허하게 통과한다.
+        $savedContent = File::exists($settingsPath)
+            ? (json_decode(File::get($settingsPath), true) ?? [])
+            : [];
+
+        $this->assertArrayNotHasKey('injected_field', $savedContent);
+        $this->assertArrayNotHasKey('another_unknown', $savedContent);
 
         $this->cleanupTestSettings('sirsoft-daum_postcode');
     }

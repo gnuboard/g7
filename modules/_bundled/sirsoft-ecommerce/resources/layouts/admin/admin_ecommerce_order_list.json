@@ -226,7 +226,7 @@
             "handler": "sirsoft-ecommerce.initAdminLocale"
         },
         {
-            "comment": "저장값이 **없는** 브라우저의 초기 컬럼 묶음. ColumnSelector 의 defaultColumns(_partial_filter_section.json)와 state.visibleColumns 세 곳이 같은 값이어야 한다 — DataGrid 는 required 를 보지 않고 visibleColumns 에 있는 field 만 그리므로, 여기 목록이 컬럼 field 와 어긋나면 그 컬럼은 신규 운영자에게만 조용히 사라진다. claim 은 기본 표시 컬럼이다(PO 확정). 다만 표시 여부를 이 목록'만'이 정하는 것은 아니다 — ColumnSelector 는 브라우저 저장값(g7_columns_*)이 있으면 그것을 우선하고 신규 **정적** 컬럼을 자동으로 더하지 않는다(자동 포함은 dynamicColumns 전용). 그래서 컬럼 선택을 한 번이라도 만진 기존 운영자에게 claim 컬럼은 뜨지 않는다 — 기존 저장값을 건드리지 않는 것이 PO 확정(7차 Q1)이므로 마이그레이션을 두지 않는다. 그리고 DataGrid 의 컬럼 12개 중 no 는 이 4출처 어디에도 없어 렌더되지 않는다(HEAD 선재, S16 소유).",
+            "comment": "저장값이 **없는** 브라우저의 초기 컬럼 묶음. ColumnSelector 의 defaultColumns(_partial_filter_section.json)와 state.visibleColumns 세 곳이 같은 값이어야 한다 — DataGrid 는 required 를 보지 않고 visibleColumns 에 있는 field 만 그리므로, 여기 목록이 컬럼 field 와 어긋나면 그 컬럼은 신규 운영자에게만 조용히 사라진다. claim 은 기본 표시 컬럼이다(확정). 다만 표시 여부를 이 목록'만'이 정하는 것은 아니다 — ColumnSelector 는 브라우저 저장값(g7_columns_*)이 있으면 그것을 우선하고 신규 **정적** 컬럼을 자동으로 더하지 않는다(자동 포함은 dynamicColumns 전용). 그래서 컬럼 선택을 한 번이라도 만진 기존 운영자에게 claim 컬럼은 뜨지 않는다 — 기존 저장값을 건드리지 않는 것이 확정(7차 Q1)이므로 마이그레이션을 두지 않는다. 그리고 DataGrid 의 컬럼 12개 중 no 는 이 4출처 어디에도 없어 렌더되지 않는다(HEAD 선재, S16 소유).",
             "handler": "loadFromLocalStorage",
             "params": {
                 "key": "g7_order_visible_columns",

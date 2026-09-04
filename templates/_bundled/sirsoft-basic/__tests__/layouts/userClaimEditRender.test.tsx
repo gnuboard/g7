@@ -12,7 +12,7 @@
  *  ③ 제출 버튼 대신 저장 버튼이 선다
  *  ④ 재발송지 변경 차액 안내(D14)는 차액이 있을 때만 선다
  *  ⑤ 수정 거절(4xx) 사유가 요약 카드에 남는다
- *  ⑥ 환불 계좌는 편집할 수 있고, 왜 빈 칸으로 열리는지 화면이 말한다 (2026-09-01 PO 확정)
+ *  ⑥ 환불 계좌는 편집할 수 있고, 왜 빈 칸으로 열리는지 화면이 말한다 (2026-09-01 확정)
  *
  * @scenario claim_type=exchange, charge_method=pay_on_request, refund_branch=none
  * @effects claim_edit_locks_items_and_quantity,
@@ -319,7 +319,7 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(container.textContent ?? '').toContain('승인된 신청은 수정할 수 없습니다.');
   });
 
-  it('환불 계좌는 수정 화면에서 편집할 수 있다 (2026-09-01 PO 확정 — 신청 단계에서만)', async () => {
+  it('환불 계좌는 수정 화면에서 편집할 수 있다 (2026-09-01 확정 — 신청 단계에서만)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_refund_account.json',
       editState({
@@ -336,7 +336,7 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     );
     active = utils;
 
-    // 잠긴 칸이 하나도 없어야 한다 — 잠겨 있으면 PO 확정(편집 가능)이 되돌아간 것이다.
+    // 잠긴 칸이 하나도 없어야 한다 — 잠겨 있으면 확정(편집 가능)이 되돌아간 것이다.
     const inputs = Array.from(
       container.querySelectorAll('input, select')
     ) as HTMLInputElement[];

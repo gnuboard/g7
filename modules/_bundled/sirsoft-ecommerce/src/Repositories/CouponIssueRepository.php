@@ -251,6 +251,19 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function updateIfStatus(int $id, CouponIssueRecordStatus $expected, array $data): int
+    {
+        // 상태 판정을 WHERE 절에 실어 단일 UPDATE 로 수행한다 (compare-and-set).
+        // 조회 후 갱신하면 두 요청이 같은 상태를 읽어 서로를 덮어쓴다.
+        return $this->model
+            ->where('id', $id)
+            ->where('status', $expected->value)
+            ->update($data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function findByIds(array $ids): \Illuminate\Database\Eloquent\Collection
     {
         if (empty($ids)) {

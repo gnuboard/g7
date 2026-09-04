@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\Tosspayments\Tests\Unit\Upgrade;
 
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use App\Upgrades\Data\Ext\Plugins\SirsoftTosspayments\V1_0_1\Migrations\BackfillTossPgProvider;
 use Illuminate\Support\Facades\File;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
@@ -37,7 +38,7 @@ class BackfillTossPgProviderTest extends PluginTestCase
 
         require_once base_path('plugins/_bundled/sirsoft-tosspayments/upgrades/data/1.0.1/migrations/BackfillTossPgProvider.php');
 
-        $this->settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings/order_settings.json');
+        $this->settingsPath = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
         $this->hadOriginalSettings = File::exists($this->settingsPath);
         $this->originalSettings = $this->hadOriginalSettings ? File::get($this->settingsPath) : null;
 

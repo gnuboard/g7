@@ -385,3 +385,67 @@ describe('[사례 3] 확장 부재 시 5초 백지 + 내부 식별자 raw 노출
         expect(normalError.unknownHandler).toBe(false);
     });
 });
+
+/**
+ * 사례 4: CSS 로더에 `onerror` 가 없으면 스타일 소실이 완전히 무음이다
+ *
+ * `<script>` 경로에는 재시도·실패 표면화 계층이 이미 있었는데 CSS 경로만 그 계층이
+ * 없었다. 같은 저장소 안에서 형제 경로의 계층이 어긋나 있으면, 그 차이는 사고가 나기
+ * 전까지 드러나지 않는다.
+ */
+describe('[사례 4] CSS 로드 실패의 무음 처리', () => {
+    /**
+     * head.appendChild 를 가로채 시도별 결과를 발화시킵니다.
+     *
+     * @param decide 시도 회차를 받아 결과를 돌려주는 판정 함수
+     * @return 생성된 link element 목록
+     */
+    function stubStylesheet(decide: (attempt: number) => 'load' | 'error'): HTMLLinkElement[] {
+        const created: HTMLLinkElement[] = [];
+
+        vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+            if (node.tagName !== 'LINK') return node;
+
+            created.push(node);
+            const outcome = decide(created.length);
+
+            queueMicrotask(() => {
+                if (outcome === 'error') {
+                    node.onerror?.(new Event('error'));
+                } else {
+                    node.onload?.(new Event('load'));
+                }
+            });
+
+            return node;
+        }) as any);
+
+        return created;
+    }
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('CSS 실패는 재시도된다 (일시 실패가 스타일 소실로 굳지 않는다)', async () => {
+        const { loadStylesheetWithRetry } = await import('../networkResilience');
+        const created = stubStylesheet(attempt => (attempt === 1 ? 'error' : 'load'));
+
+        await expect(
+            loadStylesheetWithRetry('/a.css', {}, { baseDelayMs: 1 })
+        ).resolves.toBeUndefined();
+
+        expect(created).toHaveLength(2);
+    });
+
+    it('CSS 최종 실패는 reject 된다 (resolve 로 위장하지 않는다)', async () => {
+        const { loadStylesheetWithRetry } = await import('../networkResilience');
+        stubStylesheet(() => 'error');
+
+        // 성공으로 위장하면 호출부의 try/catch 가 무력화되고, 스타일이 없다는 사실이
+        // 어디에도 남지 않는다 — 사례 2 와 동형의 결함이다.
+        await expect(
+            loadStylesheetWithRetry('/a.css', {}, { baseDelayMs: 1 })
+        ).rejects.toThrow(/Failed to load stylesheet/);
+    });
+});

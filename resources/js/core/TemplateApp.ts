@@ -31,8 +31,20 @@ import { createLogger, Logger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
-import { fetchWithRetry, installUnloadGuard, isDocumentUnloading } from './template-engine/networkResilience';
-import { suffixed } from './support/assetUrl';
+import {
+    installUnloadGuard,
+    isDocumentUnloading,
+    loadScriptWithRetry,
+} from './template-engine/networkResilience';
+import { notifyAssetFailure, clearAssetFailure } from './assets/AssetFailureNotice';
+import { suffixed, extStaticUrl, convertToCurrentMode } from './support/assetUrl';
+import { fetchStaticFirst } from './support/fetchStaticFirst';
+import {
+    normalizeScriptSrcForOriginCheck as normalizeScriptSrcForOriginCheckImpl,
+    extractScriptHost as extractScriptHostImpl,
+    getTrustedScriptHosts as getTrustedScriptHostsImpl,
+    isAllowedScriptSrc as isAllowedScriptSrcImpl,
+} from './support/scriptSrcPolicy';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
@@ -244,6 +256,14 @@ export class TemplateApp {
     private globalStateListeners: Set<(state: GlobalState) => void> = new Set();
     /** 현재 진행 중인 라우트 변경 요청 ID (새 요청 시 이전 요청 무시용) */
     private currentRouteChangeId: number = 0;
+    /**
+     * 재시도까지 실패한 레이아웃 스크립트 id 집합.
+     *
+     * 실패를 어딘가에 남기지 않으면 그 스크립트가 등록하는 핸들러가 전부 미등록이어도
+     * 화면에는 "버튼이 안 눌린다" 로만 나타난다. `ModuleAssetLoader` 의 `failedJsAssets`
+     * 와 같은 역할이다.
+     */
+    private failedLayoutScripts: Set<string> = new Set();
     /** 현재 레이아웃의 데이터 소스 정의 (if 조건으로 필터링된 결과 — refetch용) */
     private currentDataSources: any[] = [];
     /**
@@ -456,8 +476,13 @@ export class TemplateApp {
             const componentRegistry = ComponentRegistry.getInstance();
             const authManager = AuthManager.getInstance();
 
-            // 저장된 캐시 버전 로드 (초기 API 호출에 사용)
-            const storedCacheVersion = this.loadCacheVersionFromStorage() || 0;
+            // 캐시 버전 시드 — blade 주입값(현재 렌더와 동일 버전) 우선, 부재 시 localStorage 폴백.
+            // localStorage 만 보면 stale 버전으로 첫 burst 가 나가고 config 핸드셰이크가
+            // routes + lang 을 통째로 재로드하는 이중 로드가 발생한다 (#122, @since engine-v1.61.0)
+            const injectedCacheVersion =
+                typeof window !== 'undefined' ? Number((window as any).G7Config?.cache_version) || 0 : 0;
+            const storedCacheVersion =
+                injectedCacheVersion > 0 ? injectedCacheVersion : this.loadCacheVersionFromStorage() || 0;
 
             const [_, __, routesData, ___, templateConfig] = await Promise.all([
                 // 템플릿 엔진 초기화 (다국어 파일 병렬 로드)
@@ -471,11 +496,16 @@ export class TemplateApp {
                 // ComponentRegistry 로딩 (components.json)
                 componentRegistry.loadComponents(
                     this.config.templateId,
-                    this.config.templateType
+                    this.config.templateType,
+                    storedCacheVersion
                 ),
                 // routes.json 로딩 (저장된 캐시 버전 사용)
-                // 네트워크 일시 실패(응답 없음)에만 재시도한다. HTTP 에러는 아래 체인이 종전대로 throw.
-                fetchWithRetry(
+                // 정적 게시본(bake) 우선 — miss 면 즉시 종전 API 로 폴백 (#122).
+                // legacy 측은 네트워크 일시 실패(응답 없음)에만 재시도. HTTP 에러는 아래 체인이 종전대로 throw.
+                fetchStaticFirst(
+                    storedCacheVersion > 0
+                        ? extStaticUrl(`templates/${this.config.templateId}/routes.json`, storedCacheVersion)
+                        : null,
                     suffixed(`/api/templates/${this.config.templateId}/routes`, 'json', storedCacheVersion > 0 ? storedCacheVersion : null),
                     { label: 'routes.json' }
                 )
@@ -526,7 +556,9 @@ export class TemplateApp {
 
             // 확장 기능 캐시 버전 저장 (모듈/플러그인 활성화 시 갱신됨)
             if (templateConfig?.cache_version !== undefined) {
-                const previousVersion = this.loadCacheVersionFromStorage();
+                // 재로드 판정 기준은 "이번 burst 가 실제 사용한 버전" — stale localStorage 와
+                // 비교하면 blade 시드로 이미 최신 URL 을 쓴 경우에도 재로드가 발화한다 (#122)
+                const previousVersion = storedCacheVersion > 0 ? storedCacheVersion : null;
                 this.extensionCacheVersion = templateConfig.cache_version;
                 this.saveCacheVersionToStorage(this.extensionCacheVersion);
                 logger.log('Extension cache version:', this.extensionCacheVersion);
@@ -535,7 +567,10 @@ export class TemplateApp {
                 if (previousVersion !== null && previousVersion !== this.extensionCacheVersion) {
                     logger.log('Cache version changed, reloading routes...');
                     // routes.json을 새 캐시 버전으로 다시 로드
-                    const newRoutesData = await fetchWithRetry(
+                    // 재로드는 **새 버전** 정적 경로를 조합한다 — 아직 미게시면 404 →
+                    // fetchStaticFirst 가 legacy 로 즉시 폴백 (#122)
+                    const newRoutesData = await fetchStaticFirst(
+                        extStaticUrl(`templates/${this.config.templateId}/routes.json`, this.extensionCacheVersion),
                         suffixed(`/api/templates/${this.config.templateId}/routes`, 'json', this.extensionCacheVersion),
                         { label: 'routes.json (reload)' }
                     )
@@ -760,12 +795,18 @@ export class TemplateApp {
             // bundleUrls 부재 시 개별 로딩 폴백 (회귀 안전)
             if (!bundleUrls) {
                 await this.loadExtensionAssetsIndividually();
+                await moduleAssetLoader.loadCustomAssets();
+
                 return;
             }
 
             // 모듈 번들 → 플러그인 번들 순서 (gdpr 는 플러그인 번들 내 최상단)
             await moduleAssetLoader.loadBundle('module', bundleUrls.moduleJs, bundleUrls.moduleCss);
             await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
+
+            // 운영자가 덧붙인 자산은 **마지막**에 붙인다 — CSS 는 나중에 온 규칙이 이기므로,
+            // 확장 번들보다 뒤에 와야 재정의가 성립한다.
+            await moduleAssetLoader.loadCustomAssets();
 
             logger.log('Extension bundle assets loaded successfully');
         } catch (error) {
@@ -2051,28 +2092,7 @@ export class TemplateApp {
                 continue;
             }
 
-            // 스크립트 동적 로드 (Promise로 래핑)
-            const loadPromise = new Promise<void>((resolve, reject) => {
-                const scriptEl = document.createElement('script');
-                scriptEl.src = script.src;
-                scriptEl.id = script.id;
-                scriptEl.async = script.async ?? true;
-
-                scriptEl.onload = () => {
-                    logger.log(`Script loaded successfully: ${script.id}`);
-                    resolve();
-                };
-
-                scriptEl.onerror = () => {
-                    logger.warn(`Failed to load script: ${script.id} (${script.src})`);
-                    // 스크립트 로드 실패는 경고만 출력하고 계속 진행
-                    resolve();
-                };
-
-                document.head.appendChild(scriptEl);
-            });
-
-            loadPromises.push(loadPromise);
+            loadPromises.push(this.loadLayoutScript(script));
         }
 
         // 모든 스크립트 로드 완료 대기
@@ -2080,6 +2100,66 @@ export class TemplateApp {
             await Promise.all(loadPromises);
             logger.log(`All scripts loaded: ${scripts.filter(s => !document.getElementById(s.id) || loadPromises.length > 0).map(s => s.id).join(', ')}`);
         }
+    }
+
+    /**
+     * 레이아웃 스크립트 1건을 로드합니다 (재시도 + 실패 표면화).
+     *
+     * 종전에는 `onerror` 에서 `resolve()` 로 삼켜, 실패가 로그 한 줄 말고는 어디에도
+     * 남지 않았다. 그 스크립트가 등록하는 핸들러가 전부 미등록이 되어도 사용자에게는
+     * "버튼이 안 눌린다" 로만 나타났다. 같은 저장소의 `ModuleAssetLoader.loadJS` 는
+     * 이미 재시도 + 실패 목록 계층을 갖고 있다 — 이 경로만 그 계층이 없었다.
+     *
+     * `convertToCurrentMode` 를 거치는 이유: 레이아웃 JSON 의 `src` 는 확장자 형태로
+     * 굳어 있는데, 확장자를 정적 location 이 가로채는 서버(자산 URL 이중 모드)에서는
+     * 그 형태가 404 다. 서버가 굳혀 내려준 다른 자산 URL 들과 같은 보정을 받아야 한다.
+     *
+     * 실패해도 reject 하지 않는다 — 한 스크립트의 실패가 나머지 스크립트 로드를 막지
+     * 않는다는 기존 계약을 유지한다. 대신 `failedLayoutScripts` 와 안내 배너로 표면화한다.
+     *
+     * @param script 스크립트 정의
+     * @returns Promise<void> 성공·실패 모두 resolve
+     */
+    private async loadLayoutScript(script: LayoutScript): Promise<void> {
+        const url = script.src.startsWith('/') ? convertToCurrentMode(script.src) : script.src;
+
+        try {
+            await loadScriptWithRetry(
+                url,
+                { id: script.id },
+                { label: `layout-script:${script.id}` }
+            );
+
+            this.failedLayoutScripts.delete(script.id);
+            clearAssetFailure(`layout-script:${script.id}`);
+            logger.log(`Script loaded successfully: ${script.id}`);
+        } catch (error) {
+            this.failedLayoutScripts.add(script.id);
+            logger.warn(`Failed to load script after retries: ${script.id} (${url})`, error);
+
+            notifyAssetFailure({
+                id: `layout-script:${script.id}`,
+                label: script.id,
+                retry: async () => {
+                    document.getElementById(script.id)?.remove();
+                    await loadScriptWithRetry(
+                        url,
+                        { id: script.id },
+                        { label: `layout-script:${script.id}` }
+                    );
+                    this.failedLayoutScripts.delete(script.id);
+                },
+            });
+        }
+    }
+
+    /**
+     * 끝내 로드하지 못한 레이아웃 스크립트 id 목록을 돌려줍니다.
+     *
+     * @returns 실패한 스크립트 id 배열
+     */
+    public getFailedLayoutScripts(): string[] {
+        return Array.from(this.failedLayoutScripts);
     }
 
     /**
@@ -2093,35 +2173,15 @@ export class TemplateApp {
      *     (cdn.ckeditor.com), Daum 우편번호(t1.daumcdn.net).
      * 차단: 그 외 `//`(protocol-relative)·scheme 포함 외부 origin(미선언 원격 코드 로드).
      *
+     * 판정식 자체는 `support/scriptSrcPolicy` 가 SSoT 다 — 같은 판정을 쓰는 주입 경로가
+     * 레이아웃 `scripts[]` 말고도 여럿(loadScript 액션·확장 핸들러 재로드·편집기 프리뷰·
+     * `G7Core.asset.loadScript`)이라, 사본이 생기면 그 차집합이 우회로가 된다.
+     *
      * @param src 스크립트 src 문자열
      * @returns 로드 허용이면 true
      */
     private isAllowedScriptSrc(src: string): boolean {
-        if (typeof src !== 'string') {
-            return false;
-        }
-
-        const trimmed = src.trim();
-
-        if (trimmed === '') {
-            return false;
-        }
-
-        // 접두 검사 전에 브라우저 URL 파서와 동일하게 정규화한다 (아래 메서드 주석 참조)
-        const normalized = TemplateApp.normalizeScriptSrcForOriginCheck(trimmed);
-
-        const isProtocolRelative = normalized.startsWith('//');
-        const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(normalized);
-
-        // same-origin path-only 절대 경로 (`/api/...`) — 항상 허용
-        if (!isProtocolRelative && !hasScheme && normalized.startsWith('/')) {
-            return true;
-        }
-
-        // 외부 origin — 확장이 선언한 신뢰 호스트만 허용
-        const host = this.extractScriptHost(normalized);
-
-        return host !== null && this.getTrustedScriptHosts().includes(host);
+        return isAllowedScriptSrcImpl(src);
     }
 
     /**
@@ -2137,22 +2197,15 @@ export class TemplateApp {
      * 않으므로 그대로 same-origin 으로 통과합니다(과차단 없음).
      *
      * 저장측 `SafeLayoutExpressions::normalizeForOriginCheck` · 정적 검사
-     * `layout-scripts-src-same-origin` 과 3층 동형이어야 합니다.
+     * `layout-scripts-src-same-origin` 과 3층 동형이어야 합니다. 구현은
+     * `support/scriptSrcPolicy` 가 SSoT 이며 이 메서드는 위임입니다.
      *
      * @since engine-v1.60.2
      * @param src 원본 src 문자열
      * @returns 정규화된 src
      */
     private static normalizeScriptSrcForOriginCheck(src: string): string {
-        // ASCII tab / LF / CR 제거 (브라우저 파서가 파싱 전에 제거하는 문자)
-        // → 백슬래시를 슬래시로 (special scheme 에서 등가)
-        const slashed = src.replace(/[\t\n\r]/g, '').replace(/\\/g, '/');
-
-        // 선행 슬래시가 3개 이상이어도 브라우저는 authority 시작으로 접는다
-        // (`///host/x` ≡ `//host/x`, `https:///host/x` ≡ `https://host/x`).
-        // 경로 중간의 연속 슬래시(`/js//a.js`)는 브라우저도 경로로 두므로 건드리지 않는다.
-        // @since engine-v1.60.3
-        return slashed.replace(/^([a-z][a-z0-9+.\-]*:)?\/{2,}/i, '$1//');
+        return normalizeScriptSrcForOriginCheckImpl(src);
     }
 
     /**
@@ -2165,20 +2218,7 @@ export class TemplateApp {
      * @returns 소문자 호스트명 (판정 불가 시 null)
      */
     private extractScriptHost(src: string): string | null {
-        try {
-            const normalized = src.startsWith('//')
-                ? `${window.location.protocol}${src}`
-                : src;
-            const url = new URL(normalized, window.location.origin);
-
-            if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-                return null;
-            }
-
-            return url.hostname.toLowerCase();
-        } catch {
-            return null;
-        }
+        return extractScriptHostImpl(src);
     }
 
     /**
@@ -2187,11 +2227,7 @@ export class TemplateApp {
      * @returns 소문자 호스트명 배열 (window.G7Config.trustedScriptHosts)
      */
     private getTrustedScriptHosts(): string[] {
-        const hosts = (window as any).G7Config?.trustedScriptHosts;
-
-        return Array.isArray(hosts)
-            ? hosts.map((host: unknown) => String(host).toLowerCase())
-            : [];
+        return getTrustedScriptHostsImpl();
     }
 
     /**

@@ -1,0 +1,48 @@
+feature: 본문 첫 이미지 목록 썸네일 폴백
+
+description: |
+  공개 이슈 #22 — 에디터로 본문에 삽입한 이미지가 카드형·갤러리형 목록 썸네일에
+  반영되지 않던 문제. 저장 시 본문 첫 내부 이미지 URL 을 board_posts.content_thumbnail_url
+  에 캐시하고, 이미지 첨부가 없을 때 PostResource thumbnail 이 이를 폴백으로 사용한다.
+  내부 URL 판정은 TrustedScriptHosts::normalizeForOriginCheck 공유 정규화를 따른다.
+
+axes:
+  image_source: [attachment_only, content_internal_only, both, content_external_only, none]
+  secrecy: [normal, secret_unauthorized]
+
+exclusions:
+  - { image_source: attachment_only, secrecy: secret_unauthorized, reason: "비밀글 게이트는 image_source 와 무관하게 최상단에서 null — 대표 1조합(content_internal_only)으로 게이트를 검증하고 첨부 축은 기존 PostResourceThumbnailUrlTest 비밀글 케이스가 커버" }
+  - { image_source: both, secrecy: secret_unauthorized, reason: "동일 — 게이트 선행으로 소스 축 무의미, 대표 조합으로 검증" }
+  - { image_source: content_external_only, secrecy: secret_unauthorized, reason: "동일" }
+  - { image_source: none, secrecy: secret_unauthorized, reason: "동일" }
+
+sub_flows:
+  - id: backfill
+    description: 1.1.0 업그레이드 스텝이 기존 게시물을 chunkById 백필
+    effects:
+      - backfill_fills_legacy_rows
+      - backfill_idempotent_second_run
+      - backfill_keeps_external_only_null
+  - id: recompute
+    description: content/content_mode 변경 시에만 saving 이벤트가 재계산
+    effects:
+      - recompute_on_content_change
+      - no_recompute_on_unrelated_update
+      - filter_hook_can_override_or_block
+      - text_mode_content_never_caches
+      - mode_switch_recomputes_cache
+
+effects:
+  - attachment_takes_precedence_over_content_image
+  - content_internal_image_fills_list_thumbnail
+  - external_only_content_yields_null
+  - secret_post_thumbnail_stays_null
+  - detail_and_og_share_same_fallback
+
+test_files:
+  - tests/Unit/Support/HtmlImageExtractorTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Resources/PostResourceThumbnailUrlTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Models/PostContentThumbnailTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostListContentThumbnailTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/ContentThumbnailBackfillTest.php
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-content-thumbnail.spec.ts

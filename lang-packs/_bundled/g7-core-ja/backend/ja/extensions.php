@@ -33,6 +33,10 @@ return [
         'auto_deactivated_listed' => '自動無効化された拡張の一覧です。',
         'recover_action' => '再度有効化',
         'dismiss_action' => '通知を閉じる',
+        'static_publish_failed_title' => '初期画面ファイルの生成に失敗',
+        'static_publish_failed_parent_not_writable' => '初期画面ファイルを保存するフォルダに書き込めず、:count 回連続で失敗しました。サイトは正常に動作しますが、最初の画面の表示が遅くなります。サーバーで `php artisan ext-static:status` を実行して原因を確認してください。',
+        'static_publish_failed_write_failed' => '初期画面ファイルの生成が :count 回連続で失敗しました。ディスクの空き容量を確認してください。サイトは正常に動作しますが、最初の画面の表示が遅くなります。',
+        'static_publish_failed_lock_unavailable' => '初期画面ファイルの生成が :count 回連続でスキップされました。キャッシュストアの状態を確認してください。サイトは正常に動作しますが、最初の画面の表示が遅くなります。',
     ],
     'badges' => [
         'incompatible' => 'コアアップグレード必要',

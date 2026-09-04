@@ -1308,7 +1308,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
      * 배송사·배송유형 행의 `is_active` 는 키 부재도 거절한다.
      *
      * 동기화가 `?? true` 라 키가 빠지면 운영자가 내려 둔 항목이 켜진 채 되살아난다 — 클레임 사유
-     * 카탈로그와 같은 강도(`required_with`)로 맞춘다 (S10 10차 PO 확정).
+     * 카탈로그와 같은 강도(`required_with`)로 맞춘다 (S10 10차 확정).
      */
     public function test_carrier_and_type_is_active_key_is_required_when_rows_are_sent(): void
     {

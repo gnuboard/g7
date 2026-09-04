@@ -161,6 +161,7 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 - **A→B 방향**: 자동바인딩 `performStateUpdate`가 A에 쓸 때 B에도 `setLocal({render:false})`로 동기 기록
 - **B→A 방향**: 자동바인딩 활성 경로를 `__g7AutoBindingPaths: Map<string, number>`에 추적. 플러그인이 `setLocal({render:false})`로 그 경로를 건드리면 엔진이 **자동으로 `render:true`로 승격**
 - **예외**: `selfManaged: true` 명시한 호출은 자동 승격 제외 (CKEditor5 등 자체 DOM 관리 플러그인 전용)
+- **pending 스냅샷**: 자동바인딩은 `__g7PendingLocalState` 에 "지금 화면과 같은 전체 스냅샷" 을 싣는다. 이 값이 뒤이은 `setLocal` 의 base 가 되므로, 저장소 A 스냅샷을 그대로 실으면 B 에만 있던 값(selfManaged 플러그인이 쓴 편집기 본문 등)이 사라진다. 그래서 렌더러가 화면을 만드는 순서(`dataContext._local → dynamicState → __g7ForcedLocalFields`)를 그대로 따라 합성한다 (engine-v1.63.4)
 
 ### 엔진 수정 시 금지 사항 (CRITICAL)
 
@@ -169,6 +170,10 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 ❌ `parentFormContext.setState`를 직접 호출하는 우회 경로 추가 (자동바인딩 내부 API)
 ❌ `__g7AutoBindingPaths` 레지스트리를 건드리지 않고 자동바인딩 변형 구현
 ❌ setLocal의 `render:false` 자동 승격 분기를 임의로 제거하거나 조건 완화
+❌ 자동바인딩의 pending 스냅샷을 저장소 A 값만으로 구성 (B 전용 값이 조용히 사라진다)
+❌ 저장소 A 에만 쓰는 `_local` 쓰기 경로 추가 (`context.setState(payload)` 단독 호출)
+❌ 키가 **존재하는** 것만 확인하고 그 값이 **최신인지** 보지 않기 (존재 ≠ 신선도)
+❌ 하네스에서 `globalState._local` 을 손으로 채워 발산 상황을 위조 (실 writer 를 거치지 않으면 결함이 시험에 등장하지 않는다)
 ❌ 구독 기반 선택적 리렌더 재시도 (과거에 도입 후 롤백된 실패 경로 — 반드시 검토 후 논의)
 ```
 
@@ -177,8 +182,13 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 ```text
 ✅ _local 쓰기 경로 추가 시 A+B 양쪽 동기화 확인
 ✅ 새 `setLocal({render:false})` 사용처가 자동바인딩 경로와 겹치는지 확인 (겹치면 selfManaged 필요)
+✅ pending 에 쓰는 값이 렌더러가 만드는 `_local` 과 같은 합성 순서인지 확인
 ✅ DynamicRenderer의 레지스트리 useEffect 조건 변경 시 iteration/Strict Mode 이중 마운트 영향 검토
 ✅ SPA 네비게이션 시 레지스트리 재초기화 (new Map()) 유지
+✅ 미러는 그 쓰기를 **지배하는 분기 안**에 둔다 (형제 분기의 미러는 이 분기를 면죄하지 않는다)
+✅ 계약 테스트는 경로마다 A→B / B→A **양방향 쌍**으로 둔다 (한 방향만 두면 반대 방향 회귀가 초록으로 통과한다)
+✅ 하네스는 실제 writer(`G7Core.state.setLocal` · 자동바인딩 · `ActionDispatcher`)를 거친다
+✅ `describe.skip` 은 커버리지가 아니다 — 꺼진 시험은 한 번도 돌지 않는다
 ✅ 수정 후 이중 저장소 동기화 관련 회귀 테스트 전수 통과 확인
 ```
 

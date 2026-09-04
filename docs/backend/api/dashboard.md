@@ -141,13 +141,13 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_목록 응답: `data` 배열 항목의 필드. `data` 는 `core.dashboard.alerts` 필터 훅의 결과이며, 알릴 항목이 없으면 빈 배열(`[]`)입니다. 코어 기본 리스너(`ExtensionCompatibilityAlertListener`)가 주입하는 항목의 필드는 다음과 같습니다._
+_목록 응답: `data` 배열 항목의 필드. `data` 는 `core.dashboard.alerts` 필터 훅의 결과이며, 알릴 항목이 없으면 빈 배열(`[]`)입니다. 코어 기본 리스너(`ExtensionCompatibilityAlertListener`, `StaticPublishFailureAlertListener`, `TrustedProxyAlertListener`)가 주입하는 항목의 필드는 다음과 같습니다._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | string | `compat_plugins_sirsoft-gdpr` | 알림 식별자 (`compat_{type}_{identifier}` = 자동 비활성화, `recover_{type}_{identifier}` = 재호환. 알림 닫기(dismiss) 상태 판정 키) |
-| type | string | `warning` | 알림 등급 (`warning`: 코어 비호환 자동 비활성화, `info`: 재호환 복구 가능) |
-| subtype | string | `incompatible_core` | 알림 세부 분류 (`incompatible_core`: 코어 버전 비호환으로 자동 비활성화됨, `recovery_available`: 코어 업그레이드 후 다시 활성화 가능) |
+| type | string | `warning` | 알림 등급. **화면 배치를 결정합니다** — `warning` 은 관리자 대시보드 **상단 배너**로, 그 외(`info` 등)는 하단 「시스템 알림」 카드로 렌더됩니다. 같은 알림이 두 곳에 중복 노출되지 않습니다 |
+| subtype | string | `incompatible_core` | 알림 세부 분류 (`incompatible_core`: 코어 버전 비호환으로 자동 비활성화됨, `recovery_available`: 코어 업그레이드 후 다시 활성화 가능, `static_publish_parent_not_writable` · `static_publish_write_failed` · `static_publish_lock_unavailable`: 초기 화면 파일 생성이 2회 이상 연속 실패 — 각각 폴더 권한 / 디스크 공간 / 캐시 저장소가 원인, `trusted_proxy_missing`: 리버스 프록시 헤더를 수신 중인데 신뢰 프록시가 설정되지 않음) |
 | icon | string | `exclamation-triangle` | 아이콘 식별자 (warning: `exclamation-triangle`, info: `check-circle`) |
 | title | string | `플러그인 "sirsoft-gdpr" 자동 비활성화됨` | 알림 제목 (다국어 문구 — `extensions.alerts.incompatible_deactivated` / `recovered_title`) |
 | message | string | `필요 버전: 7.0.0-beta.9, 현재 설치됨: 7.0.0-beta.8` | 알림 본문 (다국어 문구 — `extensions.alerts.incompatible_message` / `recovered_body`) |

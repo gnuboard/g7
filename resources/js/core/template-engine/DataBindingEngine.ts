@@ -1469,7 +1469,12 @@ export class DataBindingEngine {
     // 2. 기존 로직: 따옴표 없는 $t: 패턴을 문자열로 변환
     // $t:key.path → "$t:key.path"
     // @since engine-v1.28.1 하이픈(-) 지원 추가
-    return expr.replace(/(?<!['"]\s*)(\$t:[a-zA-Z_][a-zA-Z0-9_.\-]*)(?!\s*['"])/g, '"$1"');
+    // @since engine-v1.60.6 lookbehind 제거 — 선행 따옴표를 소비해 명시 분기한다.
+    //   정규식 lookbehind 는 Safari 16.4 미만이 파싱 자체를 거부해 번들 전체가 실행되지 않는다.
+    return expr.replace(
+      /(['"]\s*)?(\$t:[a-zA-Z_][a-zA-Z0-9_.\-]*)(?!\s*['"])/g,
+      (match, quoted, token) => (quoted ? match : `"${token}"`)
+    );
   }
 
   /**
@@ -1551,13 +1556,16 @@ export class DataBindingEngine {
 
     // 식별자 패턴 (변수명 시작 위치)
     // 식별자는 문자, $, _로 시작하고 문자, 숫자, $, _로 계속됨
-    const identifierPattern = /(?<![.\w$])([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+    // @since engine-v1.60.6 lookbehind 제거 — 문두(^) 또는 선행 구분자 1글자를 소비한다.
+    //   식별자 사이에는 항상 구분자가 1개 이상 있고 각 매치는 정확히 1개만 소비하므로
+    //   인접 매치가 손실되지 않는다. 식별자명은 match[2] 에 있다(구분자가 match[1]).
+    const identifierPattern = /(^|[^.\w$])([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
     const variables = new Set<string>();
     let match;
 
     while ((match = identifierPattern.exec(expr)) !== null) {
-      const varName = match[1];
+      const varName = match[2];
       // 예약어가 아니고, 이미 추출되지 않았다면 추가
       if (!reserved.has(varName)) {
         variables.add(varName);

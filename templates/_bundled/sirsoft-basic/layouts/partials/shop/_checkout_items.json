@@ -139,7 +139,7 @@
                         {
                           "type": "basic",
                           "name": "P",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                          "props": { "data-testid": "checkout-item-additional-option", "className": "text-xs text-gray-500 dark:text-gray-400" },
                           "text": "{{addOpt.group_name ? addOpt.group_name + ': ' : ''}}{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
                         }
                       ]

@@ -72,7 +72,10 @@ _단건 응답: `data` 객체의 필드._
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 탭 설정 그룹. channels 는 알림 채널 목록으로 각 원소가 id(채널 식별자)·is_active(활성 여부)·sort_order(표시 순서)를 가짐 |
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. `limits` 는 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 세 필드로 구성 |
+| _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
+| _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
+| _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -214,6 +217,7 @@ HTTP/1.1 200
 | seo.bot_detection_enabled | body | boolean | 아니오 | — | 검색엔진 봇 감지 사용 여부 (봇 요청에 SEO 렌더링 적용) |
 | seo.bot_detection_library_enabled | body | boolean | 아니오 | — | 봇 감지 라이브러리 사용 여부 (User-Agent 목록 대신 라이브러리 판정) |
 | seo.og_default_site_name | body | string | 아니오 | max 200 | seo.og default site 이름 (식별자) |
+| seo.og_image_default | body | array | 아니오 | 항목: 존재하는 첨부 ID | 사이트 기본 공유 이미지(og:image) 첨부 ID 배열 — 화면별 og:image 가 없을 때 폴백으로 사용. 화면 제출 형태(첨부 객체 배열)도 수용하며 정수 ID 배열로 정규화된다 (7.0.9+) |
 | seo.og_image_default_width | body | integer | 아니오 | min 0, max 8000 | 기본 Open Graph 이미지 너비 (px) |
 | seo.og_image_default_height | body | integer | 아니오 | min 0, max 8000 | 기본 Open Graph 이미지 높이 (px) |
 | seo.twitter_default_card | body | string | 아니오 | — | 기본 트위터 카드 유형 (summary 등) |
@@ -1121,6 +1125,82 @@ HTTP/1.1 200
 **설명**
 
 서버 실행 환경 정보를 한 번에 조회합니다. OS/웹서버/PHP/DB/Laravel/코어 버전, CPU·메모리·디스크 사용량, PHP 주요 설정값(memory_limit·max_execution_time·upload_max_filesize), 주요 경로, PHP 확장 로드 상태, DB 연결 구성 요약 등을 포함합니다. 관리자 시스템 정보 화면과 요구사항 점검용 진단 데이터로 사용됩니다.
+
+
+### GET /api/admin/settings/trusted-proxy
+<!-- @generated:start:api.admin.settings.trusted-proxy -->
+- **라우트명**: `api.admin.settings.trusted-proxy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@trustedProxy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/trusted-proxy HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| forwarded_headers | array | `["X-Forwarded-For","X-Forwarded-Proto"]` | 이 요청이 수신 중인 `X-Forwarded-*` 계열 헤더 이름 목록. 비어 있으면 앞단에 프록시가 없는 직접 노출 구성이다 |
+| trusted_configured | boolean | `false` | `TRUSTED_PROXIES` 가 지정되어 있는지. 빈 문자열은 미설정과 같게 판정된다 |
+| configured_proxies | string\|null | `null` | 지정된 신뢰 프록시 값 (미설정이면 `null`) |
+| is_secure | boolean\|null | `false` | 요청이 HTTPS 로 인식되었는지. 요청이 없는 맥락에서는 `null` |
+| client_ip | string\|null | `10.0.0.5` | 방문자 IP 로 인식된 값. 신뢰 프록시가 없으면 프록시 자신의 주소가 된다 |
+| remote_addr | string\|null | `10.0.0.5` | 직전 호출 IP(`REMOTE_ADDR`). `client_ip` 와 같으면서 `forwarded_headers` 가 비어 있지 않으면 모든 방문자가 한 사람으로 기록되고 있는 상태다 |
+| status | string | `warning` | 진단 결과. `warning`(프록시 헤더 수신 중 + 신뢰 프록시 미설정) / `ok` / `not_applicable`(요청이 없는 맥락) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "forwarded_headers": [
+            "X-Forwarded-For",
+            "X-Forwarded-Proto"
+        ],
+        "trusted_configured": false,
+        "configured_proxies": null,
+        "is_secure": false,
+        "client_ip": "10.0.0.5",
+        "remote_addr": "10.0.0.5",
+        "status": "warning"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+리버스 프록시 뒤에서 구동 중인지, 그리고 신뢰할 프록시가 지정되어 있는지를 진단합니다. **읽기 전용이며 대응하는 쓰기 엔드포인트가 없습니다** — 값은 `.env` 의 `TRUSTED_PROXIES` 로만 변경합니다.
+
+판정식은 "HTTPS 인식 실패" 가 아니라 `forwarded_headers 가 비어 있지 않음 AND trusted_configured 가 거짓` 입니다. HTTP 전용 사이트가 프록시 뒤에 있는 구성에서는 혼합 콘텐츠 차단이 없어 화면이 정상으로 보이지만, 방문자 IP 기록·통보 IP 화이트리스트·로그인 시도 제한은 그대로 어긋나기 때문입니다.
+
+같은 판정을 관리자 대시보드 알림, 환경설정 > 고급 화면, 설치 마법사, `php artisan trusted-proxy:status` 가 공유합니다. 설정 방법과 도입 시 후속 조치는 [reverse-proxy.md](../reverse-proxy.md) 를 참고하세요.
 
 
 ### POST /api/admin/settings/test-driver

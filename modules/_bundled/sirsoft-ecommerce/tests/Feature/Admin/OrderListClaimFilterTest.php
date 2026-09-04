@@ -31,7 +31,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - claim_presence 3종 (none / any / active)
  * - 유형별 상태(취소는 유형) 집합 필터 + 유형 간 OR
  * - 귀책·신청일 축 (취소는 귀책 축 없음 — 매칭 제외)
- * - claim_summary 항상 직렬화 (요청 파라미터와 무관 — 6차 PO 확정으로 opt-in 폐지. 취소 발 환불 제외, 유형별 최신 상태·건수)
+ * - claim_summary 항상 직렬화 (요청 파라미터와 무관 — 6차 확정으로 opt-in 폐지. 취소 발 환불 제외, 유형별 최신 상태·건수)
  * - 어휘 밖 상태값 422
  */
 class OrderListClaimFilterTest extends ModuleTestCase
@@ -455,7 +455,7 @@ class OrderListClaimFilterTest extends ModuleTestCase
     /**
      * 클레임 요약은 어떤 요청에도 실린다.
      *
-     * 계약 변경 (PO 확정, 6차 검증) — 종전에는 `with_claim_summary` 파라미터가 이 축을
+     * 계약 변경 (확정, 6차 검증) — 종전에는 `with_claim_summary` 파라미터가 이 축을
      * 켰고, 그 파라미터의 문자열 불리언 정규화("true"/"false")와 해석 불가 값의 422 를
      * 이 케이스가 고정했다. 표시와 값 수신이 근거를 달리해 어긋나는 결함의 원인이라
      * 파라미터를 없앴다. 이제 확인할 것은 "요청이 무엇이든 실린다" 하나다.

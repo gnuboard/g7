@@ -19,7 +19,8 @@
     "selected": "住所が選択されました。",
     "error": {
       "load_failed": "郵便番号サービスの読み込みに失敗しました。",
-      "search_failed": "住所検索に失敗しました。"
+      "search_failed": "住所検索に失敗しました。",
+      "sdk_unavailable": "住所検索を読み込めませんでした。住所を直接入力してください。"
     }
   },
   "settings": {

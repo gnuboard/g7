@@ -656,7 +656,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').not.toContain('claim.apply.refund_account_title');
   });
 
-  it('환불계좌 — 저가 옵션 교환으로 차액이 돌아오면 선다 (2026-08-31 PO 확정)', async () => {
+  it('환불계좌 — 저가 옵션 교환으로 차액이 돌아오면 선다 (2026-08-31 확정)', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'exchange',
       claimEstimate: { refund_product_amount: 1000 },
@@ -667,7 +667,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').toContain('claim.apply.refund_account_title');
   });
 
-  it('환불계좌 — 주문 시 등록해 둔 계좌가 채워진 상태로 열린다 (2026-08-31 PO 확정)', async () => {
+  it('환불계좌 — 주문 시 등록해 둔 계좌가 채워진 상태로 열린다 (2026-08-31 확정)', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'refund',
       claimableSnapshot: { refund_account: { required: true, banks: [{ code: '004', name: { ko: '국민은행' } }] } },
