@@ -10,12 +10,14 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Services\CancellableAmountCalculator;
@@ -27,14 +29,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * 취소 가능 금액 산정기 테스트 (S2c · D19)
  *
  * ```
- * cancellable = max(0, min(① domain_refundable, ② payment_capacity) − ③ reserved)
+ * cancellable = max(0, min(① domain_refundable, ② payment_capacity))
  * ```
  *
+ * ③(진행 중 클레임 예정액)은 참고 축이라 한도를 깎지 않는다 — S17 B5.
+ *
  * 검증 축:
- * - 세 축이 각각 최솟값이 되는 경우와 그때의 `binding` 표기
+ * - 두 강제 축이 각각 최솟값이 되는 경우와 그때의 `binding` 표기
  * - 복수 결제수단(PG + 마일리지)의 수단별 잔여 내역
  * - 다통화 — 결제 통화 한도를 기본 통화로 환산해 비교하는지
- * - 선점 존재/해소 (진행 중 클레임 3종 · 터미널 상태는 선점하지 않음)
+ * - 예정액 집계 (진행 중 클레임 3종 · 터미널 상태는 집계하지 않음 · 반품은 합산 재계산)
  * - 자기 자신 제외 (실행 직전 가드가 자기 금액을 스스로 빼면 정당한 환불이 막힌다)
  * - 음수 방지
  */
@@ -523,7 +527,13 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
     // ③ 진행 중 클레임 선점액 축
     // ================================================================
 
-    public function test_reserved_axis_binds_when_another_refund_is_in_flight(): void
+    /**
+     * 진행 중인 다른 환불신청서는 예정액으로 **집계만** 되고 한도를 깎지 않는다. (S17 B5)
+     *
+     * 실지급 가능액은 ②(결제수단 잔여)가 이미 실제 취소 누적을 뺀 값이다. 여기서 예정액까지
+     * 빼면 승인조차 되지 않은 남의 신청서가 이 건의 정당한 환불을 0 원으로 막는다.
+     */
+    public function test_pending_refund_is_reported_but_does_not_reduce_the_amount(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
         $this->createRefund($order, 20000);
@@ -535,8 +545,30 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         );
 
         $this->assertSame(20000.0, $result->reserved);
-        $this->assertSame(30000.0, $result->amount);
-        $this->assertSame(CancellableAmount::BINDING_RESERVED, $result->binding);
+        $this->assertSame(50000.0, $result->amount);
+        $this->assertSame(CancellableAmount::BINDING_DOMAIN, $result->binding);
+    }
+
+    /**
+     * 예정액이 아무리 커도 `binding` 은 ①·② 두 강제 축만 가리킨다. (S17 B5)
+     */
+    public function test_binding_never_reports_the_reserved_axis(): void
+    {
+        $order = $this->createSingleItemClaimOrder(price: 50000);
+        $this->createRefund($order, 49000);
+
+        $result = $this->calculator->calculate(
+            $order,
+            $this->claimItemsForAll($order),
+            ClaimTypeEnum::RETURN,
+        );
+
+        $this->assertGreaterThan(0.0, $result->reserved);
+        $this->assertNotSame('reserved', $result->binding);
+        $this->assertContains(
+            $result->binding,
+            [CancellableAmount::BINDING_DOMAIN, CancellableAmount::BINDING_PAYMENT],
+        );
     }
 
     public function test_reserved_includes_mileage_portion_of_a_pending_refund(): void
@@ -613,8 +645,58 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         );
 
         $this->assertSame(30000.0, $result->reserved);
-        $this->assertSame(0.0, $result->amount);
-        $this->assertSame(CancellableAmount::BINDING_RESERVED, $result->binding);
+        $this->assertSame(30000.0, $result->amount);
+        $this->assertSame(CancellableAmount::BINDING_DOMAIN, $result->binding);
+    }
+
+    /**
+     * 진행 중 반품이 여럿이면 **합산 재계산** 한 번으로 예정액을 구한다. (S17 B6)
+     *
+     * 한 건씩 따로 재계산해 더하면 배송비 환급처럼 공유되는 몫이 건마다 중복으로 잡혀
+     * 예정액 합계가 결제 총액을 넘는다 — 실측에서 결제 13,000 원 주문의 예정액이
+     * 16,000 원으로 잡혔다.
+     */
+    public function test_multiple_pending_returns_are_estimated_jointly(): void
+    {
+        $order = $this->createSingleItemClaimOrder(price: 30000, quantity: 2);
+        $this->createPendingReturn($order, quantity: 2);
+        $this->createPendingReturn($order, quantity: 2);
+
+        $option = $order->options->first();
+
+        $result = $this->calculator->calculate(
+            $order,
+            [['order_option_id' => $option->id, 'cancel_quantity' => 1]],
+            ClaimTypeEnum::RETURN,
+        );
+
+        // 건별 독립 추정의 합은 120,000 이지만, 두 건이 같은 상품을 겹쳐 담았으므로
+        // 실제로 나갈 수 있는 최대치는 결제 총액 60,000 이다.
+        $this->assertSame(60000.0, $result->reserved);
+        $this->assertLessThanOrEqual((float) $order->total_paid_amount, $result->reserved);
+    }
+
+    /**
+     * 목록에 실린 건별 예정액의 합은 언제나 총액과 같다. (S17 B6)
+     */
+    public function test_reserved_entries_sum_to_the_reserved_total(): void
+    {
+        $order = $this->createSingleItemClaimOrder(price: 30000, quantity: 2);
+        $this->createPendingReturn($order, quantity: 2);
+        $this->createPendingReturn($order, quantity: 2);
+
+        $option = $order->options->first();
+
+        $result = $this->calculator->calculate(
+            $order,
+            [['order_option_id' => $option->id, 'cancel_quantity' => 1]],
+            ClaimTypeEnum::RETURN,
+        );
+
+        $this->assertSame(
+            round($result->reserved, 2),
+            round(array_sum(array_column($result->reservedClaims, 'amount')), 2),
+        );
     }
 
     public function test_pending_return_reserve_accounts_for_its_deducted_collection_fee(): void
@@ -708,7 +790,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         );
 
         $this->assertSame(7000.0, $result->reserved);
-        $this->assertSame(43000.0, $result->amount);
+        // 예정액은 참고 축이라 한도를 깎지 않는다 (S17 B5).
+        $this->assertSame(50000.0, $result->amount);
     }
 
     public function test_pending_exchange_without_refundable_difference_reserves_nothing(): void
@@ -753,7 +836,7 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
         // 환불신청서 3,000 + 교환 잔여 (7,000 − 4,000) 3,000
         $this->assertSame(6000.0, $result->reserved);
-        $this->assertSame(44000.0, $result->amount);
+        $this->assertSame(50000.0, $result->amount);
         $this->assertCount(2, $result->reservedClaims);
     }
 
@@ -859,7 +942,11 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
             [ClaimTypeEnum::REFUND->value => [$refund->id]],
         );
 
-        $this->assertSame(0.0, $withoutExclusion->amount);
+        // 예정액은 한도를 깎지 않으므로 두 값 모두 도메인 한도 그대로다. 제외 규율이 사는
+        // 곳은 `reserved` 집계 자체 — 자기 신청서를 스스로 예정액으로 세면 화면 근거가 틀린다.
+        $this->assertSame(50000.0, $withoutExclusion->reserved);
+        $this->assertSame(0.0, $withExclusion->reserved);
+        $this->assertSame(50000.0, $withoutExclusion->amount);
         $this->assertSame(50000.0, $withExclusion->amount);
     }
 
@@ -887,7 +974,13 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
     // 음수 방지 · DTO 계약
     // ================================================================
 
-    public function test_reserved_exceeding_the_ceiling_is_clamped_to_zero(): void
+    /**
+     * 예정액이 두 강제 축을 넘어도 한도는 그대로다. (S17 B5)
+     *
+     * 예전에는 이 상황이 0 원으로 잘렸다. 그 결과 결제 잔여가 충분한데도 남의 신청서 때문에
+     * 정당한 환불이 막혔다 — 실측에서 3회 재현된 결함이라 계약을 바꿨다.
+     */
+    public function test_reserved_exceeding_the_ceiling_does_not_clamp_the_amount(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 20000);
         $this->createRefund($order, 20000);
@@ -900,7 +993,28 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         );
 
         $this->assertSame(40000.0, $result->reserved);
+        $this->assertSame(20000.0, $result->amount);
+    }
+
+    /**
+     * 두 강제 축은 그대로 한도를 강제한다 — 예정액 축을 참고로 돌린 것이 한도 자체를
+     * 없앤 것으로 번지지 않았음을 고정한다.
+     */
+    public function test_amount_is_never_negative_when_capacity_is_exhausted(): void
+    {
+        $order = $this->createSingleItemClaimOrder(
+            price: 20000,
+            paymentOverrides: ['cancelled_amount' => 20000, 'payment_status' => PaymentStatusEnum::CANCELLED],
+        );
+
+        $result = $this->calculator->calculate(
+            $order,
+            $this->claimItemsForAll($order),
+            ClaimTypeEnum::RETURN,
+        );
+
         $this->assertSame(0.0, $result->amount);
+        $this->assertSame(CancellableAmount::BINDING_PAYMENT, $result->binding);
     }
 
     public function test_allows_accepts_amounts_within_the_limit(): void
@@ -917,7 +1031,6 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         foreach ([
             CancellableAmount::BINDING_DOMAIN,
             CancellableAmount::BINDING_PAYMENT,
-            CancellableAmount::BINDING_RESERVED,
         ] as $binding) {
             $key = (new CancellableAmount(binding: $binding))->bindingLabelKey();
 
@@ -937,11 +1050,11 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
             ClaimTypeEnum::RETURN,
         )->toArray();
 
-        $this->assertSame(30000.0, $array['amount']);
+        $this->assertSame(50000.0, $array['amount']);
         $this->assertSame(50000.0, $array['domain_refundable']);
         $this->assertSame(50000.0, $array['payment_capacity']);
         $this->assertSame(20000.0, $array['reserved']);
-        $this->assertSame(CancellableAmount::BINDING_RESERVED, $array['binding']);
+        $this->assertSame(CancellableAmount::BINDING_DOMAIN, $array['binding']);
         $this->assertArrayHasKey('binding_label_key', $array);
         $this->assertArrayHasKey('methods', $array);
         $this->assertArrayHasKey('reserved_claims', $array);
@@ -960,5 +1073,122 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
         $this->assertSame($first->amount, $second->amount);
         $this->assertSame($first->binding, $second->binding);
+    }
+
+    // ================================================================
+    // 회수비 기록 자리의 유형 한정 (S15a ⓑ · S17 이월)
+    // ================================================================
+
+    /**
+     * 반품 발 환불신청서의 `refund_shipping_amount` 는 도메인 한도에 관여하지 않습니다.
+     *
+     * 두 유형이 회수비를 **같은 이름의 다른 자리**에 적는다 — 교환은 왕복 배송비를
+     * `refund_shipping_amount` 에 음수로 남기고, 반품은 회수비가 이미 빠진 순액만
+     * `refund_amount` 에 남긴다(회수비의 정본은 원 신청서의 `claim_shipping_fee` 다).
+     * 그래서 교환 경로가 쓰는 "음수분 되더하기" 를 두 유형 공통 식으로 끌어올리면 반품에서만
+     * 회수비만큼 한도가 부풀어, 운영자가 회수비까지 돌려주는 금액을 실행할 수 있게 된다.
+     * 이 결함은 예외도 로그도 남기지 않는다 — 한도 숫자만 달라진다.
+     */
+    public function test_return_sourced_refund_ignores_the_shipping_amount_column(): void
+    {
+        $order = $this->createSingleItemClaimOrder(price: 30000, quantity: 3);
+
+        // 같은 반품·같은 상품인데 `refund_shipping_amount` 만 다른 두 벌.
+        // 그 칸이 반품 한도에 관여하면 두 값이 갈린다.
+        $clean = $this->calculator->calculateForRefund(
+            $order,
+            $this->createReturnSourcedRefund($order, shippingAmount: 0),
+        );
+
+        $withFeeInTheWrongColumn = $this->calculator->calculateForRefund(
+            $order,
+            $this->createReturnSourcedRefund($order, shippingAmount: -3000),
+        );
+
+        $this->assertSame(
+            27000.0,
+            $clean->domainRefundable,
+            '반품 재계산 — 상품 30,000 에서 회수비 3,000 을 뺀 값이다.',
+        );
+        $this->assertSame(
+            $clean->domainRefundable,
+            $withFeeInTheWrongColumn->domainRefundable,
+            '`refund_shipping_amount` 는 반품 한도의 근거가 아니다.',
+        );
+    }
+
+    /**
+     * 교환 발 환불신청서는 반대로 `refund_shipping_amount` 의 음수분을 총액으로 되돌립니다.
+     *
+     * 교환 차액은 재계산 산출물이 아니라 신청 시점 동결값(`refund_product_amount`)이라, 이미
+     * 접수된 몫을 **차감 전 총액**으로 되돌려야 잔여가 맞는다. 되더하기를 빼면 회수비만큼
+     * 잔여가 커져 같은 회수비를 두 번 돌려주게 된다 — 위 반품 축과 정확히 반대 방향이다.
+     */
+    public function test_exchange_sourced_refund_restores_the_fee_from_the_shipping_amount_column(): void
+    {
+        $order = $this->createSingleItemClaimOrder(price: 30000, quantity: 3);
+        $exchange = $this->createPendingExchange($order, 10000);
+
+        // 이미 접수된 차액 3,000 (회수비 1,000 을 빼고 남은 순액) — 총액으로는 4,000 이다.
+        $this->createExchangeRefund($exchange, 3000, RefundStatusEnum::REQUESTED, 1000);
+
+        $pending = $this->createExchangeRefund($exchange, 6000, RefundStatusEnum::REQUESTED);
+
+        $result = $this->calculator->calculateForRefund($order, $pending);
+
+        $this->assertSame(
+            6000.0,
+            $result->domainRefundable,
+            '동결 차액 10,000 − 이미 접수된 총액 4,000. 되더하기가 빠지면 7,000 이 된다.',
+        );
+    }
+
+    /**
+     * 반품 발 환불신청서 1건을 만듭니다. (원 반품 + 신청상품 줄 포함)
+     *
+     * @param  Order  $order  주문
+     * @param  float  $shippingAmount  `refund_shipping_amount` 에 적을 값
+     * @param  int  $collectionFee  원 반품이 동결한 회수배송비
+     * @return OrderRefund 환불신청서
+     */
+    protected function createReturnSourcedRefund(
+        Order $order,
+        float $shippingAmount,
+        int $collectionFee = 3000,
+    ): OrderRefund {
+        $orderReturn = $this->createPendingReturn(
+            $order,
+            quantity: 1,
+            collectionFee: $collectionFee,
+            chargeMethod: ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        );
+
+        $option = $order->options->first();
+
+        $refund = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::RETURN,
+            'refund_source_id' => $orderReturn->id,
+            'refund_number' => 'RF'.uniqid(),
+            'refund_status' => RefundStatusEnum::REQUESTED,
+            'refund_method' => RefundMethodEnum::PG,
+            'refund_amount' => 27000,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => $shippingAmount,
+        ]);
+
+        OrderRefundOption::create([
+            'order_refund_id' => $refund->id,
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'option_status' => RefundOptionStatusEnum::REQUESTED,
+            'quantity' => 1,
+            'unit_price' => (float) $option->unit_price,
+            'subtotal_amount' => (float) $option->unit_price,
+            'discount_amount' => 0,
+            'refund_amount' => 0,
+        ]);
+
+        return $refund->load('refundOptions');
     }
 }

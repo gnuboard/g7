@@ -115,6 +115,8 @@
 | additional_product_amount_formatted | string | `0원` | 추가 상품 금액 표기 |
 | refund_product_amount | number | `0` | 옵션 변경으로 돌려줄 상품 금액 (차액 합 중 음수) |
 | refund_product_amount_formatted | string | `0원` | 환불 상품 금액 표기 |
+| mc_additional_product_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 추가 상품 금액의 보조 통화 맵. 신청 상품 행에 박제된 차액(`mc_price_difference`)을 부호별로 갈라 **서버가 합산**한 값이다 — 화면이 통화별 금액을 직접 더하면 그 규칙이 화면마다 갈리고 환율을 다시 보게 된다. 신청 상품 관계가 로드되지 않은 응답에서는 근거가 없어 `null` 이며 화면은 그 줄을 세우지 않는다 |
+| mc_refund_product_amount | object\|null | `{"KRW":1000,"USD":0.75}` | 환불 상품 금액의 보조 통화 맵. 기준 통화 줄이 `−` 를 앞에 붙여 그리므로 **절대값**으로 낸다 |
 | redelivery_address_snapshot | object\|null | — | 재발송지 스냅샷 (`recipient_name`, `phone`, `zipcode`, `address1`, `address2`, `country_code`, `changed_by_user`) |
 | redelivery_carrier_id | integer\|null | `null` | 재발송 택배사 ID |
 | redelivery_carrier_name | string\|null | `null` | 재발송 택배사명 |
@@ -206,6 +208,8 @@
 | new_additional_options_total_formatted | string | `5,000원` | 추가옵션 합계 표기 |
 | new_unit_price | number | `31000` | (교환 행) 교환 대상 단가 |
 | new_unit_price_formatted | string | `31,000원` | 교환 대상 단가 표기 |
+| new_subtotal_amount | number | `72000` | (교환 행) 교환 대상 소계 (`new_unit_price × quantity`). 원 금액 자리가 소계(`subtotal_amount`)이므로 화면은 이 값을 짝으로 그린다 — 단가를 그리면 수량 1 에서는 같아 보이고 수량 2 이상에서만 좌우가 다른 단위를 말한다 |
+| new_subtotal_amount_formatted | string | `72,000원` | 교환 대상 소계 표기 |
 | price_difference | number | `2000` | (교환 행) 차액 (양수면 추가 결제, 음수면 환불). `((신규 옵션가 + 새로 고른 추가옵션 단위합계) − (원 옵션가 + 원 주문의 추가옵션 단위합계)) × 신청 수량` — 추가옵션을 빼고 교환하면 그만큼이 음수로 돌아온다 |
 | price_difference_formatted | string | `2,000원` | 차액 표기 |
 | mc_price_difference | object | — | 차액 다중 통화 스냅샷 |

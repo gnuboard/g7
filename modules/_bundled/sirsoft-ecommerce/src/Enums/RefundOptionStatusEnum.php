@@ -13,6 +13,7 @@ enum RefundOptionStatusEnum: string
     case ON_HOLD = 'on_hold';          // 환불 보류
     case COMPLETED = 'completed';      // 처리 완료
     case REJECTED = 'rejected';        // 환불 반려
+    case WITHDRAWN = 'withdrawn';      // 환불 철회 (구매자가 거둠 — 판매자 반려와 다른 사실이다)
 
     /**
      * 다국어 라벨을 반환합니다.
@@ -48,6 +49,7 @@ enum RefundOptionStatusEnum: string
             self::ON_HOLD => 'dark',
             self::COMPLETED => 'success',
             self::REJECTED => 'danger',
+            self::WITHDRAWN => 'secondary',
         };
     }
 

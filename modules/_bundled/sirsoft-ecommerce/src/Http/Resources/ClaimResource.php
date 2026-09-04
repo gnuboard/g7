@@ -131,7 +131,14 @@ class ClaimResource extends BaseApiResource
             : ($claim->reason_code ?? '');
 
         // 취소 이력의 사유는 환불 카탈로그에서 읽는다(`OrderCancel::getRefundReasonLabel()` 과 같은 축).
-        $catalogType = $claim instanceof OrderCancel ? ClaimTypeEnum::REFUND->value : $type->value;
+        // 환불신청서는 스스로 카탈로그 유형을 안다 — 교환·반품에서 파생된 건은 부모의 사유 코드를
+        // 물려받으므로 그 코드가 실제로 등록된 부모 카탈로그를 봐야 한다(S17 트랙 A F-2).
+        // 판정은 `OrderRefund::reasonCatalogType()` 단일 출처를 쓴다(모델 게터·목록 라벨 맵과 공유).
+        $catalogType = match (true) {
+            $claim instanceof OrderCancel => ClaimTypeEnum::REFUND->value,
+            $claim instanceof OrderRefund => $claim->reasonCatalogType(),
+            default => $type->value,
+        };
 
         if ($this->reasonLabels !== null) {
             return $this->reasonLabels[$catalogType.':'.$code] ?? $code;
@@ -248,6 +255,13 @@ class ClaimResource extends BaseApiResource
                 'additional_product_amount_formatted' => $this->formatOrderCurrency((float) $claim->additional_product_amount, $currency),
                 'refund_product_amount' => $this->roundToOrderCurrency((float) $claim->refund_product_amount, $currency),
                 'refund_product_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_product_amount, $currency),
+                // 차액 2줄의 보조통화 — 형제 줄(`mc_total_charge_amount`·`mc_claim_shipping_fee`)과 같은
+                // 규약이다. 재료는 신청 상품 행에 박제된 `mc_price_difference` 이고, 부호별로 갈라
+                // 더한다(추가는 양수분, 환불은 음수분의 절대값) — 헤더의 `additional_product_amount` ·
+                // `refund_product_amount` 가 만들어진 방식과 같다. 화면이 환율을 다시 보지 않게
+                // 서버가 합계까지 만들어 내려보낸다(S17 트랙 A F-1).
+                'mc_additional_product_amount' => $this->sumSignedItemPriceDifferences($claim, true),
+                'mc_refund_product_amount' => $this->sumSignedItemPriceDifferences($claim, false),
                 'redelivery_address_snapshot' => $this->forList ? null : $claim->redelivery_address_snapshot,
                 'redelivery_carrier_id' => $claim->redelivery_carrier_id,
                 'redelivery_carrier_name' => $this->whenLoaded('redeliveryCarrier', fn () => $this->redeliveryCarrier?->getLocalizedName(), null),
@@ -351,6 +365,48 @@ class ClaimResource extends BaseApiResource
         };
 
         return $claim->relationLoaded($relation) ? $claim->{$relation} : [];
+    }
+
+    /**
+     * 신청 상품 행의 옵션 차액을 부호별로 합산한 보조통화 맵을 만듭니다. (§5-4 다통화 규약)
+     *
+     * 헤더의 `additional_product_amount`(더 낼 돈) · `refund_product_amount`(돌려받을 돈)는 상품별
+     * 차액을 부호로 갈라 더한 값이다. 보조통화도 **같은 방식으로 서버가 합산**한다 — 화면이 통화별
+     * 금액을 직접 더하면 그 규칙이 화면마다 갈리고, 환율을 다시 보게 되면 예고와 청구의 근거가 갈린다.
+     *
+     * 재료는 접수 시 박제된 `order_exchange_options.mc_price_difference` 다. 관계가 로드되지 않은
+     * 응답(목록의 일부 경로)에서는 근거가 없으므로 null 을 돌려주고, 화면은 그 줄을 세우지 않는다.
+     *
+     * @param  OrderExchange  $claim  교환 신청서
+     * @param  bool  $positive  true 면 추가 청구분(양수), false 면 환불분(음수의 절대값)
+     * @return array<string, float>|null 통화 코드 => 금액 (근거가 없으면 null)
+     */
+    protected function sumSignedItemPriceDifferences(OrderExchange $claim, bool $positive): ?array
+    {
+        if (! $claim->relationLoaded('exchangeOptions')) {
+            return null;
+        }
+
+        $maps = [];
+
+        foreach ($claim->exchangeOptions as $option) {
+            $difference = (float) ($option->price_difference ?? 0);
+
+            if ($difference === 0.0 || ($difference > 0) !== $positive) {
+                continue;
+            }
+
+            $map = $option->mc_price_difference;
+
+            if (! is_array($map) || $map === []) {
+                continue;
+            }
+
+            // 환불분은 화면이 `−` 를 앞에 붙여 그리므로 기준 통화 줄과 같이 절대값으로 낸다.
+            $maps[] = $positive ? $map : array_map(static fn ($v) => abs((float) $v), $map);
+        }
+
+        return $maps === [] ? null : $this->sumMultiCurrency(...$maps);
     }
 
     /**

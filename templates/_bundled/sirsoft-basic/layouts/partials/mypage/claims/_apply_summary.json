@@ -192,10 +192,35 @@
               "text": "$t:claim.apply.option_price_difference"
             },
             {
+              "comment": "기준통화 표기 + 보조통화 병기 — 바로 위 배송비 줄, 아래 총 청구액 줄과 **같은 규약**이다(§5-4). 이 줄만 기준 통화 하나로 두면 같은 카드 안에서 표기가 갈리고, 접수 뒤 상세는 이 값을 병기하므로 같은 금액이 화면마다 다르게 보인다(S17 트랙 A F-1).",
               "type": "basic",
-              "name": "Span",
-              "props": { "className": "{{(_local.claimEstimate?.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}}" },
-              "text": "{{((_local.claimEstimate?.price_difference ?? 0) > 0 ? '+' : '-') + (_local.claimEstimateFormatted?.price_difference ?? '')}}"
+              "name": "Div",
+              "props": { "className": "text-right" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "{{(_local.claimEstimate?.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}}" },
+                  "text": "{{((_local.claimEstimate?.price_difference ?? 0) > 0 ? '+' : '-') + (_local.claimEstimateFormatted?.price_difference ?? '')}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
+                  "iteration": {
+                    "source": "{{_local.claimEstimateFormatted?.mc_price_difference ?? []}}",
+                    "item_var": "priceDifferenceCurrency"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{priceDifferenceCurrency.formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -291,10 +316,35 @@
               "text": "$t:claim.apply.collection_fee_deducted"
             },
             {
+              "comment": "기준통화 표기 + 보조통화 병기 — 위(차감 전 환불액)·아래(최종 환불액) 두 줄과 **같은 규약**이다(§5-4). 가운데 이 줄만 기준 통화 하나로 두면 세 줄의 표기가 갈린다(S17 트랙 A F-1).",
               "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{'-' + (_local.claimEstimateFormatted?.deducted_shipping_fee ?? '')}}"
+              "name": "Div",
+              "props": { "className": "text-right" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-gray-900 dark:text-white" },
+                  "text": "{{'-' + (_local.claimEstimateFormatted?.deducted_shipping_fee ?? '')}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
+                  "iteration": {
+                    "source": "{{_local.claimEstimateFormatted?.mc_deducted_shipping_fee ?? []}}",
+                    "item_var": "deductedFeeCurrency"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{deductedFeeCurrency.formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -651,9 +701,10 @@
           "props": { "name": "spinner", "className": "text-sm animate-spin mr-1" }
         },
         {
+          "comment": "실행 버튼의 라벨은 **지금 결제창이 뜨는가**를 말한다. 서버의 `requires_payment` 는 `ClaimChargeMethodEnum::requiresPayment()` = '상계가 아니다' 라는 도메인 뜻이라 `신청 시 결제`와 `승인 후 결제`를 구분하지 않는다 — 그 값만 보면 승인 후 결제에서도 'N원 결제하기' 로 예고하는데 실제로는 접수만 되고 결제창이 뜨지 않는다(S17 트랙 A F-6). 결제 시점 축(`charge_method`)을 함께 본다. 결제 시점의 정본은 미리보기 응답의 `charge_method` 이고, 응답이 아직 없으면 사용자가 고른 값으로 떨어진다.",
           "type": "basic",
           "name": "Span",
-          "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : (_local.claimEstimate?.requires_payment === true ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit')))}}"
+          "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : (_local.claimEstimate?.requires_payment === true && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) === 'pay_on_request' ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit')))}}"
         }
       ]
     },

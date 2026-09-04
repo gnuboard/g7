@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 
@@ -49,5 +50,26 @@ class OrderRefundOptionRepository implements OrderRefundOptionRepositoryInterfac
         return $this->model->newQuery()
             ->where('order_refund_id', $refundId)
             ->update($updates);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listByRefundId(int $refundId): Collection
+    {
+        return $this->model->newQuery()
+            ->where('order_refund_id', $refundId)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateRefundAmount(OrderRefundOption $option, float $refundAmount): OrderRefundOption
+    {
+        $option->update(['refund_amount' => $refundAmount]);
+
+        return $option->refresh();
     }
 }

@@ -194,6 +194,12 @@ class OrderReturnService
                 $refundBeforeDeduction,
                 $order->currency_snapshot ?? [],
             ),
+            // 차감액 줄도 같은 규약이다 — 반품 요약 3줄(차감 전 · 차감 · 최종) 중 가운데만
+            // 기준 통화 한 줄로 남으면 위아래와 표기가 갈린다(S17 트랙 A F-1).
+            'mc_deducted_shipping_fee' => $this->toMultiCurrencyOrNull(
+                (float) $adjustment->getAdditionalCharges(),
+                $order->currency_snapshot ?? [],
+            ),
             'requires_payment' => $shippingFee->fee > 0 && $chargeMethod?->requiresPayment() === true,
         ];
     }

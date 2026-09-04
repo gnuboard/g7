@@ -298,12 +298,21 @@ async function refreshClaimCompletePreview(allowRetry = true): Promise<boolean> 
             throw new Error('empty preview');
         }
 
+        // 환불이 발생하지 않는 대상만 모여 있으면 '지금 접수' 는 고를 수 없는 선택지다 —
+        // 그대로 제출하면 서버가 422 로 거절하고 모달은 열린 채 남는다. 모달이 스스로
+        // "0 건 생성" 을 표시하면서 기본값은 '지금 접수' 였던 것이 S17 B1 이다.
+        // 한 건이라도 환불 대상이면 서버가 나머지를 건너뛰므로 선택을 건드리지 않는다.
+        const refundApplicable = (preview?.claims ?? [])
+            .some((claim: any) => claim?.refund?.applicable === true);
+        const effectiveRefundRequest = refundApplicable ? createRefundRequest : false;
+
         G7Core.state.set({
             claimCompletePreview: preview,
             claimCompleteRows: buildClaimCompleteRows(preview, targets, restoreMap),
+            claimCompleteCreateRefundRequest: effectiveRefundRequest,
             // 이 응답을 만든 환불신청서 선택 — 실패 시 되돌릴 기준이다. 재고 쪽은 행
             // (`claimCompleteRows[].restore`)이 같은 역할을 하므로 따로 두지 않는다.
-            claimCompleteAppliedRefundRequest: createRefundRequest,
+            claimCompleteAppliedRefundRequest: effectiveRefundRequest,
         });
 
         // 응답이 답한 상품 행으로 맵을 다시 만들어 보낸 것과 다르면 요약이 체크 상태와

@@ -393,6 +393,7 @@ return [
         'on_hold' => 'Refund On Hold',
         'completed' => 'Completed',
         'rejected' => 'Refund Rejected',
+        'withdrawn' => 'Refund Withdrawn',
     ],
 
     // Review Status (ReviewStatus values)

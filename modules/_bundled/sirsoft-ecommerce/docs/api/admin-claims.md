@@ -564,8 +564,13 @@
 한도와 실행 가드의 한도는 같은 값입니다.
 
 ```text
-amount = max(0, min(domain_refundable, payment_capacity) − reserved)
+amount = max(0, min(domain_refundable, payment_capacity))
 ```
+
+한도를 강제하는 것은 이 둘이고, 진행 중인 다른 신청서의 환불 예정액(`reserved`)은 **한도에서
+빼지 않는 참고 값**입니다. 실지급 가능액은 `payment_capacity` 가 이미 실제 취소 누적을 뺀 값이고
+같은 상품을 다시 신청하는 경로는 신청 단계에서 막히므로, 예정액까지 빼면 승인조차 되지 않은 다른
+신청서가 이 건의 정당한 환불을 0 원으로 막습니다.
 
 **권한**: `sirsoft-ecommerce.claims.read`
 
@@ -593,15 +598,15 @@ amount = max(0, min(domain_refundable, payment_capacity) − reserved)
       "amount_formatted": "24,000원",
       "domain_refundable": 29000,
       "domain_refundable_formatted": "29,000원",
-      "payment_capacity": 29000,
-      "payment_capacity_formatted": "29,000원",
+      "payment_capacity": 24000,
+      "payment_capacity_formatted": "24,000원",
       "reserved": 5000,
       "reserved_formatted": "5,000원",
-      "binding": "reserved",
-      "binding_label_key": "sirsoft-ecommerce::messages.claims.cancellable_binding.reserved",
-      "binding_label": "진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.",
+      "binding": "payment_capacity",
+      "binding_label_key": "sirsoft-ecommerce::messages.claims.cancellable_binding.payment_capacity",
+      "binding_label": "결제수단 잔여 한도가 한도입니다.",
       "methods": [
-        {"type": "payment", "payment_id": 88, "method": "card", "method_label": "신용카드", "currency": "KRW", "remaining_local": 29000, "remaining_base": 29000, "remaining_local_formatted": "29,000원", "remaining_base_formatted": "29,000원"}
+        {"type": "payment", "payment_id": 88, "method": "card", "method_label": "신용카드", "currency": "KRW", "remaining_local": 24000, "remaining_base": 24000, "remaining_local_formatted": "24,000원", "remaining_base_formatted": "24,000원"}
       ],
       "reserved_claims": [
         {"type": "refund", "type_label": "환불", "id": 12, "number": "RF20260825-1006538924", "amount": 5000, "amount_formatted": "5,000원"}
@@ -613,9 +618,11 @@ amount = max(0, min(domain_refundable, payment_capacity) − reserved)
 }
 ```
 
-`binding` 은 한도를 정한 축입니다 (`domain_refundable`/`payment_capacity`/`reserved`).
+`binding` 은 한도를 정한 축입니다 — 값은 `domain_refundable` · `payment_capacity` 둘이며,
+`reserved` 는 한도를 깎지 않으므로 `binding` 으로 나오지 않습니다.
 `methods` 는 수단별 잔여 한도(결제 통화 원값 `remaining_local` 병기 — D18 화면의 수단별 한도),
-`reserved_claims` 는 선점 근거(진행 중인 다른 클레임)입니다.
+`reserved` 와 `reserved_claims` 는 "진행 중인 다른 신청서가 앞으로 얼마를 환불할 예정인가" 를
+운영자에게 알리는 참고 값입니다.
 
 금액의 표기 문자열(`*_formatted`)과 라벨(`binding_label` · `method_label` · `type_label`)은
 서버가 만듭니다 — 통화 기호와 소수 자릿수는 설정과 **거래 시점 스냅샷**이 정하므로 화면이

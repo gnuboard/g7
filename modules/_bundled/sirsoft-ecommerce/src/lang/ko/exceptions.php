@@ -105,7 +105,10 @@ return [
     'claim_charge_method_required' => '청구 금액이 있어 청구 방식을 선택해야 합니다.',
     'claim_charge_method_not_allowed' => '선택한 청구 방식은 현재 사용할 수 없습니다.',
     'claim_request_period_expired' => '신청 가능 기간(:days일)이 지나 신청할 수 없습니다.',
-    'claim_transition_not_allowed' => ':from 에서 :to 로는 상태를 변경할 수 없습니다.',
+    // 조사는 상태명이 아니라 고정어('상태')에 붙인다 — 상태명 뒤에 바로 붙이면 받침 유무에
+    // 따라 '로는/으로는' 이 갈리고, 치환값 앞에 띄어쓰기가 그대로 남는다.
+    // 형제 문구(validation.status_transition.invalid)와 같은 문형이다.
+    'claim_transition_not_allowed' => ':from 상태에서 :to 상태로는 변경할 수 없습니다.',
     'claim_not_withdrawable' => '현재 상태에서는 신청을 철회할 수 없습니다.',
     'claim_completion_flow_required' => '완료 처리는 완료 처리 화면에서만 진행할 수 있습니다.',
     'claim_completion_items_invalid' => '완료 처리할 수 있는 신청 상품이 없습니다.',

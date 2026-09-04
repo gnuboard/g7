@@ -253,6 +253,9 @@
                   "comment": "완료 전이는 곧바로 실행하지 않고 완료 처리 모달을 연다 (D26) — 분기는 핸들러가 한다. 경로 세그먼트는 서버가 준 값을 그대로 쓴다: 화면이 `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 된다.",
                   "type": "click",
                   "handler": "sirsoft-ecommerce.executeClaimItemBulkStatus",
+                  "onError": [
+                    { "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.", "handler": "suppress" }
+                  ],
                   "params": {
                     "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
                     "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
@@ -341,6 +344,17 @@
                               "className": "text-xs text-blue-600 dark:text-blue-300 mt-0.5"
                             },
                             "text": "→ {{row.new_option_label}}"
+                          },
+                          {
+                            "id": "cli_004_new_additional_options",
+                            "comment": "이 교환에 얹은 추가옵션 — 신청 시점 동결값이라 운영자가 나중에 선택지를 고쳐도 표기는 바뀌지 않는다. 재발송 담당자가 새겨 보낼 문구(custom_text)를 여기서만 확인할 수 있다. 추가금은 아래 차액 줄에 이미 합산돼 있어 이름만 나열한다 — 구매자 화면(_detail_items.json)과 같은 형태다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(row.new_additional_options ?? []).length > 0}}",
+                            "props": {
+                              "className": "text-xs text-secondary mt-0.5"
+                            },
+                            "text": "+ {{(row.new_additional_options ?? []).map(o => o.custom_text ? (o.name + ' (' + o.custom_text + ')') : o.name).join(', ')}}"
                           }
                         ]
                       }
@@ -384,23 +398,24 @@
                         "text": "{{row.subtotal_amount_formatted ?? row.unit_price_formatted ?? ''}}"
                       },
                       {
-                        "comment": "옵션 변경 행에서만 그린다 — `new_unit_price_formatted` 는 서버가 `unit_price` 로 폴백해 언제나 실리므로 값의 존재는 교환 대상의 근거가 아니다(실측: 동일 옵션 교환에 `→ 53,000원` 노출).",
+                        "comment": "옵션 변경 행에서만 그린다 — `new_unit_price_formatted` 는 서버가 `unit_price` 로 폴백해 언제나 실리므로 값의 존재는 교환 대상의 근거가 아니다(실측: 동일 옵션 교환에 `→ 53,000원` 노출). 왼쪽이 소계이므로 오른쪽도 소계를 쓴다 — 단가를 그리면 수량 1 에서는 같아 보이고 수량 2 이상에서만 값이 어긋난다(S17 B8).",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{row.is_option_change === true && !!row.new_unit_price_formatted}}",
+                        "if": "{{row.is_option_change === true && !!row.new_subtotal_amount_formatted}}",
                         "props": {
                           "className": "text-xs text-secondary mt-0.5"
                         },
-                        "text": "→ {{row.new_unit_price_formatted}}"
+                        "text": "→ {{row.new_subtotal_amount_formatted}}"
                       },
                       {
+                        "comment": "DataGrid `cellChildren` 안의 치환 파라미터는 `$t:defer:` 로 미뤄야 항목 컨텍스트(row)와 함께 해소된다. 일반 `$t:` 는 라벨만 번역되고 `{{amount}}` 가 빈 문자열로 지워져 금액 없는 '차액' 만 남는다(S17 재실측). 같은 표에서 defer 를 쓰는 형제 셀과 같은 규율이다.",
                         "type": "basic",
                         "name": "Div",
                         "if": "{{!!row.price_difference_formatted && (row.price_difference ?? 0) !== 0}}",
                         "props": {
                           "className": "text-xs text-blue-600 dark:text-blue-300 mt-0.5"
                         },
-                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.price_difference|amount={{row.price_difference_formatted}}"
+                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.price_difference|amount={{row.price_difference_formatted}}"
                       }
                     ]
                   }

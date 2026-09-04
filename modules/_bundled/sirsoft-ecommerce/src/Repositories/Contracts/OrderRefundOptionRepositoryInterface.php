@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 
 /**
@@ -33,4 +34,21 @@ interface OrderRefundOptionRepositoryInterface
      * @return int 변경된 행 수
      */
     public function bulkUpdateStatus(int $refundId, string $status, ?int $processedBy = null, ?Carbon $completedAt = null): int;
+
+    /**
+     * 환불신청서에 딸린 상품 행을 조회합니다.
+     *
+     * @param  int  $refundId  환불신청서 ID
+     * @return Collection<int, OrderRefundOption> 상품 행 목록 (ID 오름차순)
+     */
+    public function listByRefundId(int $refundId): Collection;
+
+    /**
+     * 상품 행의 환불 금액을 갱신합니다.
+     *
+     * @param  OrderRefundOption  $option  상품 행
+     * @param  float  $refundAmount  갱신할 환불 금액
+     * @return OrderRefundOption 갱신된 상품 행
+     */
+    public function updateRefundAmount(OrderRefundOption $option, float $refundAmount): OrderRefundOption;
 }

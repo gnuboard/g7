@@ -555,6 +555,25 @@
                       ]
                     },
                     {
+                      "comment": "보조 통화 — 바로 위 기준 통화 줄과 같은 값의 다른 표기다. 게이트도 그 줄과 **같아야 한다** — 차액이 0 인 신청에서 기준 줄은 서지 않는데 이 iteration 만 돌면 근거 없는 `$0.00 ¥0` 만 남는다. 같은 카드의 총 청구액 줄은 이미 병기하므로 이 줄만 비면 표기가 갈린다(S17 트랙 A F-1).",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{claim.claim_type === 'exchange' && (claim.additional_product_amount ?? 0) > 0}}",
+                      "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
+                      "iteration": {
+                        "source": "{{Object.entries(claim.mc_additional_product_amount ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "item_var": "additionalAmountCurrency"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                          "text": "{{additionalAmountCurrency[1]?.formatted ?? additionalAmountCurrency[1] ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
                       "comment": "교환의 환불 상품금액 — 저가 옵션으로 바꿔 차액이 돌아오는 경우.",
                       "type": "basic",
                       "name": "Div",
@@ -572,6 +591,25 @@
                           "name": "Span",
                           "props": { "className": "text-sm text-blue-600 dark:text-blue-400" },
                           "text": "−{{claim.refund_product_amount_formatted ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "보조 통화 — 바로 위 기준 통화 줄과 같은 값의 다른 표기다. 게이트도 그 줄과 **같아야 한다** — 차액이 0 인 신청에서 기준 줄은 서지 않는데 이 iteration 만 돌면 근거 없는 `$0.00 ¥0` 만 남는다. 같은 카드의 총 청구액 줄은 이미 병기하므로 이 줄만 비면 표기가 갈린다(S17 트랙 A F-1).",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{claim.claim_type === 'exchange' && (claim.refund_product_amount ?? 0) > 0}}",
+                      "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
+                      "iteration": {
+                        "source": "{{Object.entries(claim.mc_refund_product_amount ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "item_var": "refundAmountCurrency"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                          "text": "{{refundAmountCurrency[1]?.formatted ?? refundAmountCurrency[1] ?? ''}}"
                         }
                       ]
                     },

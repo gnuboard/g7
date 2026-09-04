@@ -301,11 +301,28 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
 
         $this->assertSame(RefundStatusEnum::WITHDRAWN, $withdrawn->refund_status);
         $this->assertNotNull($withdrawn->withdrawn_at);
-        $this->assertSame(RefundOptionStatusEnum::REJECTED, $withdrawn->refundOptions->first()->option_status);
+        // 상품 행도 **철회**로 남는다 — 반려(판매자가 거절)와 철회(구매자가 거둠)는 다른 사실이고,
+        // 화면의 상품 뱃지가 이 값을 그대로 읽으므로 반려로 적으면 구매자가 자기 철회를
+        // "판매자가 반려함" 으로 읽는다. 반품·교환 옵션은 이미 `withdrawn` 을 쓴다(S17 트랙 A F-4).
+        $this->assertSame(RefundOptionStatusEnum::WITHDRAWN, $withdrawn->refundOptions->first()->option_status);
         $this->assertSame(1, $fired);
         // 잠금이 풀려 같은 수량을 다시 신청할 수 있다.
         $again = $this->service->request($order->fresh(['options']), $this->payload($order));
         $this->assertSame(RefundStatusEnum::REQUESTED, $again['refund']->refund_status);
+    }
+
+    /**
+     * 반려는 그대로 반려로 남는다 — 철회 분기를 더하면서 반려까지 옮겨 가면 안 된다.
+     */
+    public function test_reject_keeps_the_option_rows_rejected(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        $rejected = $this->service->transition($refund, RefundStatusEnum::REJECTED, ['reject_reason' => '재고 없음']);
+
+        $this->assertSame(RefundStatusEnum::REJECTED, $rejected->refund_status);
+        $this->assertSame(RefundOptionStatusEnum::REJECTED, $rejected->refundOptions->first()->option_status);
     }
 
     public function test_withdraw_is_blocked_after_approval(): void
@@ -349,5 +366,96 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertSame($adminId, (int) $rejected->processed_by);
 
         $this->assertClaimException('claim_transition_not_allowed', fn () => $this->service->transition($rejected, RefundStatusEnum::APPROVED));
+    }
+
+    // ================================================================
+    // 운영자 금액 수정 → 신청상품 행 반영 (S17 B7)
+    // ================================================================
+
+    /**
+     * 헤더 감액은 신청상품 행까지 내려간다.
+     *
+     * 행 금액은 접수 시점 1회만 기록되므로, 헤더만 고치면 상세가 접수 당시 금액을 계속
+     * 말한다 — 실측에서 신청서 155,000 원 ↔ 상품행 합계 151,000 원으로 갈렸다.
+     */
+    public function test_amount_reduction_reaches_the_option_rows(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        $this->assertSame(29000.0, (float) $refund->refundOptions->sum('refund_amount'));
+
+        $updated = $this->service->updateAmounts($refund, ['refund_amount' => 25000]);
+
+        $this->assertSame(25000.0, (float) $updated->refund_amount);
+        $this->assertSame(25000.0, $this->optionRowTotal($updated->id));
+    }
+
+    /**
+     * 증액도 같은 경로를 탄다 — 감액만 내려가면 되돌린 뒤 행이 낮은 값에 고착된다.
+     */
+    public function test_amount_change_tracks_the_option_rows_in_both_directions(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        $reduced = $this->service->updateAmounts($refund, ['refund_amount' => 10000]);
+        $this->assertSame(10000.0, $this->optionRowTotal($reduced->id));
+
+        $restored = $this->service->updateAmounts($reduced->fresh(), ['refund_amount' => 29000]);
+        $this->assertSame(29000.0, (float) $restored->refund_amount);
+        $this->assertSame(29000.0, $this->optionRowTotal($restored->id));
+    }
+
+    /**
+     * 헤더 합계와 행 합계가 애초에 다른 신청서(반품 발 — 헤더에 배송비 환급이 섞인다)도
+     * 감액 **비율**만큼 행이 줄어든다. 차액을 그대로 빼면 상품에 귀속되지 않는 몫까지
+     * 행에서 빠져 0 원으로 잘린다(실데이터에서 확인).
+     */
+    public function test_reduction_scales_option_rows_when_header_exceeds_their_sum(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        // 헤더만 두 배로 올려 "행 합계 < 헤더" 상태를 만든다 (반품 발 신청서의 형태).
+        $inflated = $this->service->updateAmounts($refund, ['refund_amount' => 29000]);
+        $this->assertSame(29000.0, $this->optionRowTotal($inflated->id));
+
+        // 헤더를 절반으로 — 행도 절반이 되어야 한다(0 으로 잘리지 않는다).
+        $halved = $this->service->updateAmounts($inflated->fresh(), ['refund_amount' => 14500]);
+
+        $this->assertSame(14500.0, (float) $halved->refund_amount);
+        $this->assertSame(14500.0, $this->optionRowTotal($halved->id));
+        $this->assertGreaterThan(0.0, $this->optionRowTotal($halved->id));
+    }
+
+    /**
+     * 금액을 건드리지 않는 수정(메모 등)은 행을 손대지 않는다 — 무관한 저장이 행을 재배분하면
+     * 접수 시점 근거가 이유 없이 흔들린다.
+     */
+    public function test_non_amount_update_leaves_the_option_rows_untouched(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        $before = $refund->refundOptions->pluck('refund_amount', 'id')->map(fn ($v) => (float) $v)->all();
+
+        $this->service->updateAmounts($refund, ['admin_memo' => '확인함']);
+
+        $after = OrderRefund::find($refund->id)->refundOptions
+            ->pluck('refund_amount', 'id')->map(fn ($v) => (float) $v)->all();
+
+        $this->assertSame($before, $after);
+    }
+
+    /**
+     * 신청상품 행 금액의 합계를 반환합니다.
+     *
+     * @param  int  $refundId  환불신청서 ID
+     * @return float 행 금액 합계
+     */
+    private function optionRowTotal(int $refundId): float
+    {
+        return round((float) OrderRefund::find($refundId)->refundOptions()->sum('refund_amount'), 2);
     }
 }

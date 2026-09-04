@@ -75,6 +75,10 @@ interface RangeTierError {
 /** 기본 배송비가 필요한 정책 */
 const REQUIRES_BASE_FEE = [
     'fixed', 'conditional_free',
+    // 계산 API 정책의 base_fee 는 외부 API 장애 시의 폴백 배송비다. 서버
+    // (ChargePolicyEnum::requiresBaseFee)가 0 을 거절하는데 화면이 입력칸을 감추면
+    // 그 정책은 관리자 화면에서 영영 저장할 수 없다(S17 B4).
+    'api',
     'per_quantity', 'per_weight', 'per_volume', 'per_volume_weight', 'per_amount',
 ];
 

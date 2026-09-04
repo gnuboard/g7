@@ -130,6 +130,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | order_number | string | `20260714-1032557148` | 주문번호 |
+| base_currency | string | `KRW` | 주문 금액 표기 기준 통화 — 이 응답의 모든 `*_formatted` 가 그 통화다. 화면이 다통화를 병기할 때 **기준 통화를 목록에서 빼는 필터**로 쓴다. 회원 응답(`OrderResource`)과 같은 키·같은 판정(거래 시점 통화 스냅샷 → 없으면 상점 기본 통화)이며, 비회원 응답에만 없으면 그 화면에서만 기준 통화가 보조 통화 줄에 한 번 더 나열된다 |
 | order_status | string | `cancelled` | 주문 상태 (`pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `confirmed`, `cancelled`, `exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) |
 | order_status_label | string\|null | `주문취소` | 주문 상태의 다국어 라벨 |
 | order_status_variant | string\|null | `danger` | 주문 상태 뱃지 표시용 variant |

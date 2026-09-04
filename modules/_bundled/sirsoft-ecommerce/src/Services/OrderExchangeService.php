@@ -216,6 +216,14 @@ class OrderExchangeService
             'price_difference' => $priceDifference,
             'additional_product_amount' => $additional,
             'refund_product_amount' => $refund,
+            // 차액 3줄의 보조통화 — 형제 금액 줄(`mc_total_charge_amount`·`shipping_fee.mc_fee`)과 같은
+            // 재료·같은 환율이다. 이 값이 없으면 요약과 목록의 '옵션 차액 / 추가·환불 상품금액' 만
+            // 기준 통화 한 줄로 남아, 바로 위아래 줄과 표기 규약이 갈린다(S17 트랙 A F-1).
+            // 접수 뒤에는 같은 값이 `order_exchange_options.mc_price_difference` 로 박제되고 상세가
+            // 그것을 병기하므로, 예고 경로만 비어 있으면 같은 금액이 화면마다 다르게 보인다.
+            'mc_price_difference' => $this->toMultiCurrency($priceDifference, $order->currency_snapshot ?? []),
+            'mc_additional_product_amount' => $this->toMultiCurrency($additional, $order->currency_snapshot ?? []),
+            'mc_refund_product_amount' => $this->toMultiCurrency($refund, $order->currency_snapshot ?? []),
             'total_charge_amount' => $totalCharge,
             // 접수 시 신청서에 박제되는 값(`mc_total_charge_amount`)과 같은 재료·같은 환율로 낸다.
             // 미리보기에 이 값이 없으면 보조통화를 쓰는 구매자는 신청 화면에서 자기 통화의 청구액을

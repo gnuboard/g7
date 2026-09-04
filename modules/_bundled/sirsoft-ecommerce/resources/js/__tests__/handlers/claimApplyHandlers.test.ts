@@ -233,6 +233,30 @@ describe('claimApplyHandlers', () => {
         expect(mockLocalState.claimItems[0].selected).toBe(true);
     });
 
+    it('초기화 — 기준 통화는 반응 대상 응답이 들고 온다 (order 가 아직 안 왔어도 보조통화에서 걸러진다)', () => {
+        // 회귀(S17 트랙 A F-5): 통화 기준을 `order` 데이터소스에서만 읽으면 두 응답 중 어느 쪽이
+        // 먼저 오느냐에 따라 결과가 갈린다. `order` 가 늦은 순서에서는 기준이 null 이 되어 보조 통화
+        // 목록에서 기준 통화가 걸러지지 않고, 상품 줄에 같은 금액이 두 번 나온다(비회원 화면 실측).
+        // 오류도 경고도 없이 금액 줄만 하나 늘어난다.
+        mockDataSources = {}; // order 아직 미도착
+
+        initClaimApplyHandler(
+            {
+                handler: 'initClaimApply',
+                params: {
+                    claimType: 'exchange',
+                    preselected: '310',
+                    claimable: { ...claimableResponse.data, base_currency: 'KRW' },
+                },
+            },
+            {} as any
+        );
+
+        const row = mockLocalState.claimItems.find((i: any) => i.order_option_id === 311);
+
+        expect(row.mc_unit_price).toEqual([{ code: 'USD', formatted: '$41.65' }]);
+    });
+
     it('초기화 — 유형과 미리 선택 상품은 주소에서 읽는다 (데이터소스 onSuccess 에는 route·query 가 없다)', () => {
         // 회귀(2026-08-31 브라우저 실측): 레이아웃이 {{route.type}} 을 param 으로 넘겨도
         // 데이터소스 onSuccess 의 실행 컨텍스트에는 route·query 가 없어 빈 값이 도착한다.

@@ -234,6 +234,7 @@ return [
         'on_hold' => '返金保留',
         'completed' => '処理完了',
         'rejected' => '返金却下',
+        'withdrawn' => '返金取消',
     ],
     'review_status' => [
         'visible' => '表示中',

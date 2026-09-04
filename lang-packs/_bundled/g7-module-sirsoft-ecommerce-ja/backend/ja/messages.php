@@ -1157,7 +1157,6 @@ return [
         'cancellable_binding' => [
             'domain_refundable' => '返金対象金額が上限です。',
             'payment_capacity' => '決済方法の残り上限が上限です。',
-            'reserved' => '進行中の他のクレームが占有した金額分、上限が減少しました。',
         ],
         'payment_order_name' => ':type 追加決済 (:number)',
         'claimable_retrieved' => '申請可能な商品を照会しました。',

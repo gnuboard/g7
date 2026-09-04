@@ -72,6 +72,11 @@ trait HandlesClaimActions
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.claimable_retrieved', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
+                // 이 응답의 onSuccess 가 상품 줄을 세우면서 보조 통화 목록에서 기준 통화를 걸러낸다.
+                // 그 기준을 다른 데이터소스(`order`)에서 읽으면 두 응답의 도착 순서에 따라 결과가
+                // 갈리므로, 반응 대상인 이 응답이 스스로 들고 온다(S17 트랙 A F-5). 판정은 서비스가
+                // 소유한다 — 여기서 다시 계산하면 주문 리소스와 규칙이 갈릴 수 있다.
+                'base_currency' => $payload['base_currency'],
                 'resolved_type' => $payload['resolved_type'],
                 'options' => array_map(fn (array $row) => [
                     'option' => (new OrderOptionResource($row['option']))->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)->toArray(request()),

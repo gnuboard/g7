@@ -116,11 +116,20 @@ function claimableData(G7Core: any): any {
  * 금액 표기는 거래 시점 통화로 고정한다 — 운영자가 이후 기본 통화를 바꿔도 이 신청서의
  * 표기는 주문 통화를 따른다.
  *
+ * **`claimable` 응답을 먼저 본다.** 이 화면의 상품 줄은 `claimable` 의 onSuccess 에서 세워지는데,
+ * 통화 기준을 `order` 데이터소스에서만 읽으면 두 응답 중 어느 쪽이 먼저 오느냐에 따라 결과가
+ * 갈린다 — `order` 가 늦게 오는 순서에서는 기준이 null 이 되어 보조 통화 목록에서 기준 통화가
+ * 걸러지지 않고, 같은 금액이 두 줄로 나온다(S17 트랙 A F-5). 반응 대상 응답이 스스로 그 기준을
+ * 들고 있으면 경합 자체가 성립하지 않는다. `order` 는 그 값이 없는 예전 응답을 위한 폴백이다.
+ *
  * @param G7Core G7Core 인스턴스
+ * @param claimable `claimable-options` 응답 (있으면 이 값을 우선한다)
  * @returns 통화 코드 (없으면 null → 설정 기본 통화)
  */
-function orderCurrencyCode(G7Core: any): string | null {
-    return G7Core.dataSource?.get?.('order')?.data?.base_currency ?? null;
+function orderCurrencyCode(G7Core: any, claimable?: any): string | null {
+    return (claimable ?? claimableData(G7Core))?.base_currency
+        ?? G7Core.dataSource?.get?.('order')?.data?.base_currency
+        ?? null;
 }
 
 /**
@@ -763,6 +772,13 @@ export function formatClaimEstimate(estimate: any, currencyCode: string | null):
             currencyCode
         ),
         mc_refund_before_deduction: toSecondaryCurrencyList(estimate?.mc_refund_before_deduction, currencyCode),
+        // 차액·차감 줄도 형제 금액 줄과 같은 규약이다(S17 트랙 A F-1). 이 세 줄이 비면 요약 카드
+        // 안에서 어떤 줄은 보조통화를 달고 어떤 줄은 기준 통화만 남아, 같은 금액이 화면마다 다르게
+        // 보인다 — 상세는 이미 `mc_price_difference` 로 병기하고 있었다.
+        mc_price_difference: toSecondaryCurrencyList(estimate?.mc_price_difference, currencyCode),
+        mc_additional_product_amount: toSecondaryCurrencyList(estimate?.mc_additional_product_amount, currencyCode),
+        mc_refund_product_amount: toSecondaryCurrencyList(estimate?.mc_refund_product_amount, currencyCode),
+        mc_deducted_shipping_fee: toSecondaryCurrencyList(estimate?.mc_deducted_shipping_fee, currencyCode),
     };
 }
 
@@ -803,7 +819,7 @@ export function formatClaimEstimate(estimate: any, currencyCode: string | null):
  * @param claimType 클레임 유형
  */
 function seedClaimEditState(G7Core: any, claim: any, claimable: any, claimType: string): void {
-    const currency = orderCurrencyCode(G7Core);
+    const currency = orderCurrencyCode(G7Core, claimable);
     const items = buildClaimEditItems(claim, currency);
 
     G7Core.state.setLocal({
@@ -889,7 +905,7 @@ export function initClaimApplyHandler(
         .map((value) => Number(value))
         .filter((value) => value > 0);
 
-    const currency = orderCurrencyCode(G7Core);
+    const currency = orderCurrencyCode(G7Core, claimable);
 
     const items: ClaimApplyItem[] = (claimable.options ?? [])
         .filter((entry: any) => (entry.claimable_types ?? []).includes(claimType))

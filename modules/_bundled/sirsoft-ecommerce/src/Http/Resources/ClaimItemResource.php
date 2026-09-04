@@ -102,6 +102,11 @@ class ClaimItemResource extends BaseApiResource
                 ),
                 'new_unit_price' => $this->roundToOrderCurrency($newUnitPrice, $currency),
                 'new_unit_price_formatted' => $this->formatOrderCurrency($newUnitPrice, $currency),
+                // 원 금액 자리가 소계(`subtotal_amount`)이므로 교환 후 금액도 소계로 낸다.
+                // 화면이 단가를 그리면 수량 1 에서는 같아 보이고 수량 2 이상에서만 값이
+                // 어긋나, 같은 줄의 좌우가 서로 다른 단위를 말한다(S17 B8).
+                'new_subtotal_amount' => $this->roundToOrderCurrency($newUnitPrice * $quantity, $currency),
+                'new_subtotal_amount_formatted' => $this->formatOrderCurrency($newUnitPrice * $quantity, $currency),
                 'price_difference' => $this->roundToOrderCurrency($difference, $currency),
                 'price_difference_formatted' => $this->formatOrderCurrency($difference, $currency),
                 'mc_price_difference' => $this->formatStoredMultiCurrency($this->mc_price_difference),

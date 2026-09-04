@@ -131,6 +131,12 @@ class UserClaimService
 
         return [
             'options' => $options,
+            // 이 주문의 금액 표기 기준 통화. 신청서 화면은 이 응답의 onSuccess 에서 상품 줄을 세우면서
+            // 보조 통화 목록에서 기준 통화를 걸러낸다. 그 기준을 **다른 데이터소스**(`order`)에서 읽으면
+            // 둘 중 어느 응답이 먼저 오느냐에 따라 결과가 갈린다 — 늦게 오는 날에는 기준 통화가 보조
+            // 통화 줄에 한 번 더 나열되고, 오류도 경고도 없이 금액 줄만 하나 늘어난다(S17 트랙 A F-5).
+            // 반응 대상 응답이 스스로 그 기준을 들고 오면 경합 자체가 성립하지 않는다.
+            'base_currency' => $this->orderBaseCurrency($order),
             'resolved_type' => count($branches) === 1 ? array_key_first($branches) : (count($branches) > 1 ? 'mixed' : null),
             'reasons' => [
                 ClaimTypeEnum::EXCHANGE->value => $this->claimReasonRepository->getUserSelectableReasons(ClaimTypeEnum::EXCHANGE->value),
@@ -141,6 +147,27 @@ class UserClaimService
             'refund_account' => $this->refundAccountRequirement($order),
             'pending_images' => $this->attachmentService->listPendingFor($order),
         ];
+    }
+
+    /**
+     * 주문의 금액 표기 기준 통화 코드를 돌려줍니다.
+     *
+     * 판정 규칙은 주문 리소스(`HasMultiCurrencyPrices::resolveOrderBaseCurrencyCode`)와 같다 —
+     * 거래 시점에 동결된 스냅샷이 정본이고, 없으면 상점 기본 통화로 떨어진다. 두 곳이 갈리면
+     * 같은 주문을 두 응답이 다른 통화로 말하게 되므로 규칙을 그대로 맞춘다.
+     *
+     * @param  Order  $order  주문
+     * @return string 기준 통화 코드
+     */
+    protected function orderBaseCurrency(Order $order): string
+    {
+        $snapshot = $order->currency_snapshot;
+
+        if (is_array($snapshot) && filled($snapshot['base_currency'] ?? null)) {
+            return (string) $snapshot['base_currency'];
+        }
+
+        return (string) ($this->settingsService->getSetting('language_currency.default_currency') ?: 'KRW');
     }
 
     /**
@@ -411,7 +438,14 @@ class UserClaimService
         foreach ($byType as $claims) {
             foreach ($claims as $claim) {
                 $isCancel = $claim instanceof OrderCancel;
-                $type = $isCancel ? ClaimTypeEnum::REFUND->value : $claim->claimType()->value;
+                // 카탈로그 유형은 `ClaimResource::resolveReasonLabel` 과 **같은 규칙**이어야 한다 —
+                // 갈리면 목록(주입 경로)과 상세(모델 게터 경로)가 서로 다른 라벨을 말한다. 환불신청서는
+                // 파생 출처의 카탈로그를 볼 수 있으므로 그 판정을 모델에 위임한다(S17 트랙 A F-2).
+                $type = match (true) {
+                    $isCancel => ClaimTypeEnum::REFUND->value,
+                    $claim instanceof OrderRefund => $claim->reasonCatalogType(),
+                    default => $claim->claimType()->value,
+                };
                 $code = (string) ($isCancel ? ($claim->cancel_reason_type ?? '') : ($claim->reason_code ?? ''));
 
                 if ($code !== '') {

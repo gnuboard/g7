@@ -868,3 +868,88 @@ describe('완료 처리 모달 — 미리보기 응답 경합 (4차 F1)', () => 
         ).toHaveLength(0);
     });
 });
+
+describe('환불 대상이 0 건인 완료 처리 — 고를 수 없는 기본값 (S17 B1)', () => {
+    /**
+     * 환불 대상이 없는 미리보기 응답을 만듭니다.
+     *
+     * @returns 미리보기 응답
+     */
+    function previewWithoutRefundTarget(): any {
+        return {
+            success: true,
+            data: {
+                claims: [
+                    {
+                        id: 31,
+                        claim_number: 'RT20260826000031',
+                        currency_code: 'KRW',
+                        completable_item_ids: [55],
+                        completable_item_count: 1,
+                        has_stock_restore_target: true,
+                        stock_restore_count: 1,
+                        stock_discard_count: 0,
+                        earn_recovery: false,
+                        coupon_restore: false,
+                        refund: {
+                            applicable: false,
+                            already_filed: false,
+                            blocked_reason: 'no_refundable_amount',
+                            refund_amount: 0,
+                            refund_amount_formatted: '0원',
+                            refund_points_amount: 0,
+                            refund_points_amount_formatted: '0원',
+                        },
+                    },
+                ],
+                skipped: [],
+                totals: { claim_count: 1, completable_item_count: 1, refund_amount_total: 0 },
+            },
+        };
+    }
+
+    /**
+     * 완료 처리 모달을 엽니다.
+     *
+     * @param createRefundRequest 설정이 정하는 초기 선택값
+     * @returns 없음
+     */
+    async function openModal(createRefundRequest: boolean): Promise<void> {
+        await openClaimCompleteModalHandler(
+            {
+                handler: 'x',
+                params: {
+                    claimType: 'return',
+                    targets: [{ id: 31, claim_number: 'RT20260826000031', item_label: '헤비 후드 XL' }],
+                    defaults: { create_refund_request: createRefundRequest, restore_stock: true },
+                    execute: { url: BULK_STATUS_URL, method: 'POST', body: { type: 'return', ids: [31] } },
+                },
+            },
+            mockContext,
+        );
+    }
+
+    it('환불 대상이 하나도 없으면 설정 기본값이 켜져 있어도 접수하지 않음으로 내려간다', async () => {
+        mockG7Core.api.post.mockResolvedValue(previewWithoutRefundTarget());
+
+        await openModal(true);
+
+        expect(mockGlobalState.claimCompleteCreateRefundRequest).toBe(false);
+        expect(mockGlobalState.claimCompleteAppliedRefundRequest).toBe(false);
+    });
+
+    it('그 상태로 제출해도 서버에는 접수하지 않음이 실린다 (422 회피)', async () => {
+        mockG7Core.api.post.mockResolvedValue(previewWithoutRefundTarget());
+
+        await openModal(true);
+        await executeClaimCompletionHandler({ handler: 'x' }, mockContext);
+
+        expect(lastBodyTo(BULK_STATUS_URL).completion.create_refund_request).toBe(false);
+    });
+
+    it('한 건이라도 환불 대상이면 선택을 건드리지 않는다', async () => {
+        await openModal(true);
+
+        expect(mockGlobalState.claimCompleteCreateRefundRequest).toBe(true);
+    });
+});

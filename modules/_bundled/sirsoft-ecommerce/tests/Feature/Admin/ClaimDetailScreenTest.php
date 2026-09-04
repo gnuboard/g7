@@ -963,8 +963,9 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
-     * 취소 가능 금액은 성격이 다른 세 상한의 최솟값이다 (D19) — 최종 금액만으로는 왜 그
-     * 금액인지 알 수 없고, 한도를 정한 축에 따라 운영자의 조치가 갈린다.
+     * 취소 가능 금액은 성격이 다른 두 상한의 최솟값이고, 진행 중 클레임 예정액은 한도를
+     * 깎지 않는 참고 축이다 (D19). 최종 금액만으로는 왜 그 금액인지 알 수 없고, 한도를
+     * 정한 축에 따라 운영자의 조치가 갈리므로 세 값이 모두 응답에 실린다.
      *
      * @scenario claim_type=refund, cancellable=present
      *

@@ -284,4 +284,112 @@ test.describe('구매자 클레임 신청서 작성 — 교환', () => {
       '고른 추가옵션이 미리보기 요청에 실리지 않았다',
     ).toBe(GIFT_WRAP.values[0].id);
   });
+  test('승인 후 결제는 지금 결제하지 않으므로 버튼이 결제하기가 아니다 (S17 트랙 A F-6)', async ({
+    page,
+    memberToken,
+  }) => {
+    // @scenario exchange_mode=same, charge_method=pay_on_approval, preview_result=ok
+    // @effects claim_apply_submit_label_matches_payment_timing
+    //
+    // 서버의 `requires_payment` 는 "상계가 아니다" 라는 도메인 뜻이라 신청 시 결제와 승인 후
+    // 결제를 구분하지 않는다. 그 값만 보고 라벨을 정하면 승인 후 결제에서도 "N원 결제하기" 로
+    // 예고하는데 실제로는 접수만 되고 결제창이 뜨지 않는다 — 실행이 예고와 갈린다.
+    await grantFunctionalConsent(page);
+    await authenticatePage(page, memberToken);
+    await mockOrder(page);
+    // 청구방식 라디오는 `settings.allowed_charge_methods` 가 그리는 만큼만 선다. 공유 픽스처의
+    // 기본값에는 `pay_on_approval` 이 없어 그대로 쓰면 그 라디오 자체가 렌더되지 않는다 —
+    // 이 케이스는 두 결제 시점을 오가며 라벨을 재는 것이라 그 값을 여기서 열어 준다.
+    await mockClaimable(page, [EXCHANGE_ITEM], {
+      settings: {
+        allowed_charge_methods: ['pay_on_request', 'pay_on_approval'],
+        charge_payment_methods: ['card'],
+        max_images: 5,
+        image_max_size_kb: 5120,
+      },
+    });
+
+    const calls = await mockPreview(page, (body) => ({
+      claim_type: 'exchange',
+      charge_method: body?.charge_method ?? 'pay_on_request',
+      requires_payment: true,
+      shipping_fee: { fee: 0, extra_fee: 0, groups: [] },
+      price_difference: 2_000,
+      mc_price_difference: { KRW: 2_000, USD: 1.7 },
+      additional_product_amount: 2_000,
+      refund_product_amount: 0,
+      total_charge_amount: 2_000,
+      mc_total_charge_amount: { KRW: 2_000, USD: 1.7 },
+      refund_before_deduction: 0,
+      deducted_shipping_fee: 0,
+      adjustment: { refund_total: 0 },
+      items: [{ order_option_id: EXCHANGE_ITEM.option.id, price_difference: 2_000 }],
+    }));
+
+    await page.goto(`/mypage/orders/${encodeURIComponent(MOCK_ORDER.number)}/claims/apply/exchange`);
+    await waitForApplyScreen(page);
+
+    await page.locator('#claim_apply_items input[type="checkbox"]').last().check();
+    await pickReason(page);
+    await expect.poll(() => calls.length, { timeout: 15_000 }).toBeGreaterThan(0);
+
+    const submit = page.locator('#claim_apply_summary button').last();
+
+    // 신청 시 결제 — 정말로 결제창이 뜨므로 금액과 함께 예고한다.
+    await expect
+      .poll(async () => (await submit.innerText()).includes('결제하기'), { timeout: 15_000 })
+      .toBe(true);
+
+    // 승인 후 결제로 바꾸면 지금 나가는 돈이 없으므로 예고도 사라진다.
+    await page.locator('input[type="radio"][value="pay_on_approval"]').check();
+    await expect
+      .poll(async () => (await submit.innerText()).includes('결제하기'), { timeout: 15_000 })
+      .toBe(false);
+  });
+
+  test('요약의 옵션 차액 줄도 형제 금액 줄과 같이 보조통화를 단다 (S17 트랙 A F-1)', async ({
+    page,
+    memberToken,
+  }) => {
+    // @scenario exchange_mode=same, preview_result=ok
+    // @effects claim_apply_summary_amount_rows_all_show_secondary_currency
+    //
+    // 차액 줄만 기준 통화 하나로 남으면 위(배송비)·아래(총 청구액) 줄과 표기가 갈리고,
+    // 접수 뒤 상세는 같은 값을 병기하므로 구매자가 같은 금액을 화면마다 다르게 본다.
+    await grantFunctionalConsent(page);
+    await authenticatePage(page, memberToken);
+    await mockOrder(page);
+    await mockClaimable(page, [EXCHANGE_ITEM]);
+
+    const calls = await mockPreview(page, () => ({
+      claim_type: 'exchange',
+      charge_method: 'pay_on_request',
+      requires_payment: true,
+      shipping_fee: { fee: 0, extra_fee: 0, mc_fee: { KRW: 0, USD: 0 }, groups: [] },
+      price_difference: 2_000,
+      mc_price_difference: { KRW: 2_000, USD: 1.7 },
+      additional_product_amount: 2_000,
+      refund_product_amount: 0,
+      total_charge_amount: 2_000,
+      mc_total_charge_amount: { KRW: 2_000, USD: 1.7 },
+      refund_before_deduction: 0,
+      deducted_shipping_fee: 0,
+      adjustment: { refund_total: 0 },
+      items: [{ order_option_id: EXCHANGE_ITEM.option.id, price_difference: 2_000 }],
+    }));
+
+    await page.goto(`/mypage/orders/${encodeURIComponent(MOCK_ORDER.number)}/claims/apply/exchange`);
+    await waitForApplyScreen(page);
+
+    await page.locator('#claim_apply_items input[type="checkbox"]').last().check();
+    await pickReason(page);
+    await expect.poll(() => calls.length, { timeout: 15_000 }).toBeGreaterThan(0);
+
+    // 차액 줄의 보조통화가 글자로 나온다 — 서버가 실어 준 값을 그 줄이 그대로 그린다.
+    await expect
+      .poll(async () => (await page.locator('#claim_apply_summary').innerText()).match(/\$1\.70/g)?.length ?? 0, {
+        timeout: 15_000,
+      })
+      .toBeGreaterThan(1);
+  });
 });

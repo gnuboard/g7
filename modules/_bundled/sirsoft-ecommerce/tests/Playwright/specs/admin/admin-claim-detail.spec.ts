@@ -19,9 +19,14 @@
  * 클레임 축이 아직 stub 이라(계획서 이월 5) 목록에서 발견되는 건으로 진행하고, 한 건도
  * 없으면 그 사실을 드러내며 건너뛴다 — 없는 데이터를 있는 척 단언하지 않는다.
  *
+ *  ⑥ **신청상품 표의 금액·추가옵션 표기**(S17). 이 표는 DataGrid 셀 안에서 그려지므로
+ *     단위 테스트 하네스가 `$t:defer:` 를 해소하지 못한다 — 차액 금액이 실제로 나오는지는
+ *     브라우저에서만 확인된다. 교환 후 금액이 단가가 아닌 소계인지도 수량 2 이상에서만
+ *     드러난다.
+ *
  * @scenario admin-claim-detail
  * @axes claim_type=exchange|return|refund
- * @effects detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile
+ * @effects detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -413,5 +418,55 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
 
     await page.locator('#crm_007_cancel').click();
     await expect(page.locator('#crm_005_total')).toHaveCount(0);
+  });
+
+  /**
+   * 신청상품 표의 금액 칸이 좌우 같은 단위(소계)를 말하고, 차액 줄에 금액이 함께 나온다.
+   *
+   * 두 축 모두 브라우저에서만 드러난다 — 차액 줄은 DataGrid 셀 안이라 `$t:defer:` 로
+   * 미뤄야 항목 컨텍스트와 함께 해소되고(일반 `$t:` 는 라벨만 남는다), 소계·단가 혼재는
+   * 수량 1 에서는 값이 같아 보인다.
+   */
+  // @scenario claim_type=exchange, claim_stage=in_progress
+  // @effects detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount
+  test('신청상품 표가 교환 전후 소계를 짝으로 그리고 차액 금액을 함께 보여준다', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaimOfType(request, claimsManageToken, 'exchange');
+    test.skip(claim === null, '교환 신청서가 한 건도 없다 — 이 표의 교환 열은 그 유형에만 선다');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    // 서버가 그 행에 무엇을 실었는지 먼저 읽는다 — 화면이 그리는 값의 정답지다.
+    const payload = await request.get(
+      `/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(claim!.claimNumber)}`,
+      { headers: { Authorization: `Bearer ${claimsManageToken}`, Accept: 'application/json' } },
+    );
+    expect(payload.ok()).toBe(true);
+    const items = (await payload.json())?.data?.claim?.items ?? [];
+    const optionChange = items.find((item: any) => item?.is_option_change === true);
+    test.skip(!optionChange, '옵션 변경 교환 행이 없다 — 교환 후 금액 줄은 그 행에만 선다');
+
+    await expect(page.locator('#claim_items_card')).toBeVisible({ timeout: 15_000 });
+
+    const bodyText = await page.locator('body').innerText();
+
+    // 좌우가 같은 단위 — 교환 후 금액은 단가가 아니라 소계다.
+    expect(bodyText).toContain(String(optionChange.subtotal_amount_formatted));
+    expect(bodyText).toContain(String(optionChange.new_subtotal_amount_formatted));
+
+    // 차액이 있는 행이면 금액이 라벨과 함께 나온다 — 라벨만 남으면 치환이 죽은 것이다.
+    if (Number(optionChange.price_difference ?? 0) !== 0) {
+      expect(bodyText).toContain(String(optionChange.price_difference_formatted));
+    }
+
+    // 교환에 얹은 추가옵션은 이름과 직접 입력 문구까지 보인다.
+    for (const option of optionChange.new_additional_options ?? []) {
+      expect(bodyText).toContain(String(option.name));
+
+      if (option.custom_text) {
+        expect(bodyText).toContain(String(option.custom_text));
+      }
+    }
   });
 });

@@ -431,8 +431,81 @@ class OrderRefundRequestService
                 $updates['processed_by'] = $processedBy;
             }
 
-            return $this->refundRepository->update($refund, $updates);
+            $previousAmount = (float) $refund->refund_amount;
+            $updated = $this->refundRepository->update($refund, $updates);
+
+            // 감액은 신청상품 행까지 내려간다 — 행 금액은 접수 시점 1회만 기록되므로, 헤더만
+            // 고치면 상세가 접수 당시 금액을 계속 말한다(S17 B7). 어느 상품이 얼마나 깎였는지는
+            // 운영자가 총액만 조정하므로 알 수 없다 — 헤더가 줄어든 **비율**을 행에 그대로
+            // 적용하는 것이 유일한 근거다.
+            if (array_key_exists('refund_amount', $updates)) {
+                $this->applyAmountRatioToOptions(
+                    (int) $updated->id,
+                    $previousAmount,
+                    (float) $updated->refund_amount,
+                );
+            }
+
+            return $updated;
         });
+    }
+
+    /**
+     * 신청서 환불액이 줄어든(늘어난) 비율을 신청상품 행에 적용합니다.
+     *
+     * **차액이 아니라 비율**을 적용한다. 행 금액의 합계는 헤더와 같지 않을 수 있기 때문이다 —
+     * 반품 발 신청서의 헤더에는 배송비 환급처럼 상품에 귀속되지 않는 몫이 함께 들어 있다.
+     * 차액을 행에 그대로 빼면 그 몫만큼 과다 차감되어 행이 0 으로 잘린다(실데이터에서 확인).
+     * 비율은 두 경우 모두를 옳게 다룬다 — 행 합계가 헤더와 같은 신청서에서는 결과가
+     * `행 합계 == 헤더` 로 정확히 떨어진다.
+     *
+     * 행 금액의 합계가 0 이면 비례 근거가 없으므로 수량으로 나눈다. 반올림 잔여는 마지막 행이
+     * 흡수해 배분 합계를 목표치와 정확히 맞춘다 — 행마다 따로 반올림하면 합계가 몇 원씩
+     * 어긋난 채 남는다.
+     *
+     * @param  int  $refundId  환불신청서 ID
+     * @param  float  $previousAmount  수정 전 헤더 환불액
+     * @param  float  $currentAmount  수정 후 헤더 환불액
+     */
+    protected function applyAmountRatioToOptions(int $refundId, float $previousAmount, float $currentAmount): void
+    {
+        if (abs($currentAmount - $previousAmount) < 0.005) {
+            return;
+        }
+
+        $options = $this->refundOptionRepository->listByRefundId($refundId);
+
+        if ($options->isEmpty()) {
+            return;
+        }
+
+        $weights = $options->map(fn ($option) => max(0.0, (float) $option->refund_amount))->all();
+        $weightTotal = array_sum($weights);
+        $currentTotal = (float) $options->sum(fn ($option) => (float) $option->refund_amount);
+
+        if ($weightTotal <= 0) {
+            $weights = $options->map(fn ($option) => max(1.0, (float) $option->quantity))->all();
+            $weightTotal = array_sum($weights);
+        }
+
+        // 수정 전 헤더가 0 이면 비율을 낼 수 없다 — 그 경우에만 헤더 값을 그대로 나눈다.
+        $targetTotal = $previousAmount > 0
+            ? max(0.0, $currentTotal * ($currentAmount / $previousAmount))
+            : max(0.0, $currentAmount);
+
+        $assigned = 0.0;
+        $lastIndex = $options->count() - 1;
+
+        foreach ($options->values() as $index => $option) {
+            $amount = $index === $lastIndex
+                ? round($targetTotal - $assigned, 2)
+                : round($targetTotal * ($weights[$index] / $weightTotal), 2);
+
+            $amount = max(0.0, $amount);
+            $assigned += $amount;
+
+            $this->refundOptionRepository->updateRefundAmount($option, $amount);
+        }
     }
 
     /**
@@ -707,10 +780,21 @@ class OrderRefundRequestService
         $updated = DB::transaction(function () use ($refund, $updates, $target) {
             $fresh = $this->refundRepository->update($refund, $updates);
 
-            if (in_array($target, [RefundStatusEnum::REJECTED, RefundStatusEnum::WITHDRAWN], true)) {
+            // 반려(판매자가 거절)와 철회(구매자가 거둠)는 신청서를 닫는다는 점만 같고 **다른 사실**이다.
+            // 상품 행에 둘 다 `rejected` 로 적으면, 화면의 상품 뱃지가 이 값을 그대로 읽으므로 구매자가
+            // 자기 철회를 "판매자가 반려함" 으로 읽는다. 신청서 헤더는 `환불철회` 인데 상품 행만 `환불반려`
+            // 라 같은 카드 안에서 두 상태가 어긋나며, 정상 서식이라 오류도 로그도 남지 않는다.
+            // 반품·교환 옵션은 이미 각 상태 Enum 의 `WITHDRAWN` 을 쓴다 — 환불만 어긋나 있었다.
+            $optionStatus = match ($target) {
+                RefundStatusEnum::REJECTED => RefundOptionStatusEnum::REJECTED,
+                RefundStatusEnum::WITHDRAWN => RefundOptionStatusEnum::WITHDRAWN,
+                default => null,
+            };
+
+            if ($optionStatus !== null) {
                 $this->refundOptionRepository->bulkUpdateStatus(
                     $fresh->id,
-                    RefundOptionStatusEnum::REJECTED->value,
+                    $optionStatus->value,
                     $updates['processed_by'] ?? null,
                 );
             }

@@ -393,6 +393,7 @@ return [
         'on_hold' => '환불보류',
         'completed' => '처리완료',
         'rejected' => '환불반려',
+        'withdrawn' => '환불철회',
     ],
 
     // 리뷰 상태 (ReviewStatus 값과 일치)

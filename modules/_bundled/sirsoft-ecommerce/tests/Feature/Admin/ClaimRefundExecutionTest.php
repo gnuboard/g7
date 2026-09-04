@@ -692,11 +692,17 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ->assertJsonValidationErrors('items.0.order_option_id');
     }
 
-    public function test_cancellable_amount_reports_the_reserved_axis_as_binding(): void
+    /**
+     * ③ 진행 중 클레임 예정액은 **참고 축**이다 — 아무리 커도 한도를 깎지 않는다.
+     *
+     * 예전에는 이 축이 한도를 0 으로 잘라, 결제 잔여가 충분한데도 승인조차 되지 않은 남의
+     * 신청서 때문에 정당한 환불이 막혔다(S17 B5 — 실측 3회 재현). 응답은 근거로서 예정액과
+     * 그 내역을 계속 싣되, `binding` 은 ①·② 두 강제 축만 가리킨다.
+     */
+    public function test_cancellable_amount_reports_the_reserved_axis_but_does_not_bind_on_it(): void
     {
         $order = $this->deliveredClaimOrder(quantity: 2);
 
-        // 선점이 도메인·결제 한도보다 크면 ③ 축이 한도를 정한다.
         $other = $this->makeDirectRefund($order, $order->options->first(), 2, RefundStatusEnum::APPROVED);
         $other->update(['refund_amount' => 999000]);
 
@@ -704,8 +710,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ->getJson($this->base()."/orders/{$order->id}/cancellable-amount");
 
         $response->assertStatus(200);
-        $this->assertSame('reserved', $response->json('data.cancellable.binding'));
-        $this->assertSame(0.0, (float) $response->json('data.cancellable.amount'));
+        $this->assertGreaterThan(0.0, (float) $response->json('data.cancellable.reserved'));
+        $this->assertNotSame('reserved', $response->json('data.cancellable.binding'));
+        $this->assertGreaterThan(0.0, (float) $response->json('data.cancellable.amount'));
     }
 
     public function test_cancellable_amount_reports_the_payment_axis_as_binding(): void

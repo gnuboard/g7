@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\DTO\CancellationAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\ExchangeAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\OrderAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\ReturnAdjustment;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
@@ -25,25 +26,32 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterf
 /**
  * 취소 가능 금액 산정기 (D19)
  *
- * "이 주문에서 지금 얼마까지 되돌릴 수 있는가" 를 세 상한의 최솟값으로 산정한다.
+ * "이 주문에서 지금 얼마까지 되돌릴 수 있는가" 를 두 상한의 최솟값으로 산정한다.
+ * ③ 진행 중 클레임 예정액은 한도를 깎지 않는 참고 축이다(아래 표).
  *
  * ```
- * cancellable = max(0, min(① domain_refundable, ② payment_capacity) − ③ reserved)
+ * cancellable = max(0, min(① domain_refundable, ② payment_capacity))
  * ```
  *
- * | 축 | 정의 | 출처 |
- * |---|---|---|
- * | ① 도메인 환불 대상 | 재계산으로 나온 환불 대상 금액 | `OrderAdjustmentService::calculate()` **그대로** |
- * | ② 결제수단 잔여 한도 | 수단별 실청구액 − 누적취소액 | `OrderPayment::getCancellableAmount()` + 마일리지 잔여 |
- * | ③ 진행 중 클레임 선점액 | 아직 실행되지 않은 다른 클레임이 잡아 둔 환불 예정액 | 클레임 3종 조회 |
+ * | 축 | 정의 | 출처 | 한도 |
+ * |---|---|---|---|
+ * | ① 도메인 환불 대상 | 재계산으로 나온 환불 대상 금액 | `OrderAdjustmentService::calculate()` **그대로** | 강제 |
+ * | ② 결제수단 잔여 한도 | 수단별 실청구액 − 누적취소액 | `OrderPayment::getCancellableAmount()` + 마일리지 잔여 | 강제 |
+ * | ③ 진행 중 클레임 예정액 | 아직 실행되지 않은 다른 클레임의 환불 예정 합계 | 클레임 3종 조회 | **참고** |
  *
  * ① 을 여기서 다시 계산하지 않는 것이 이 클래스의 핵심 규율이다. 배송비 재판정·조건부무료
  * 소멸·쿠폰 최소금액 미달 복원이 전부 `OrderAdjustmentService` 에서 나오므로, 같은 식을
  * 두 벌로 두면 한쪽만 고쳐질 때 화면이 보여 준 한도와 서버가 강제하는 한도가 갈린다.
  *
- * ③ 은 신설 축이다. 기존 취소는 즉시 실행이라 선점 구간이 0 이었지만, 클레임은
- * 승인 → 회수 → 완료 사이에 시간이 있어 "승인은 됐는데 아직 환불되지 않은" 금액이 존재한다.
- * 그 금액이 두 번 나가지 않게 하려면 한도에서 미리 빼야 한다.
+ * ③ 은 참고 축이다. 클레임은 승인 → 회수 → 완료 사이에 시간이 있어 "아직 환불되지 않은"
+ * 예정액이 존재하므로 운영자에게 알린다. 그러나 한도에서 빼지는 **않는다** — 실지급 가능액은
+ * ② 가 이미 실제 취소 누적(`cancelled_amount`)을 뺀 값이고, 같은 상품을 두 번 신청하는 경로는
+ * 신청 단계에서 막히기 때문이다. 예정액까지 빼면 승인조차 되지 않은 남의 신청서가 이 건의
+ * 정당한 환불을 0 원으로 막는다 — 실제로 그 상태가 실측에서 3회 재현됐다(S17 B5).
+ *
+ * ③ 의 합계는 같은 주문의 진행 중 반품을 **한 번에** 재계산해 구한다. 한 건씩 따로 재계산해
+ * 더하면 배송비 환급처럼 공유되는 몫이 건마다 중복으로 잡혀 예정액 합계가 결제 총액을
+ * 넘는다(S17 B6). 목록에 싣는 건별 금액은 그 합계에 대한 **증분**이다.
  *
  * 관리자 화면 표시와 서버 실행 가드가 **같은 메서드**를 쓴다. 저장 시점과 실행 직전 두 번
  * 재계산해 동시 처리를 차단하는 것이 D19 의 설계다.
@@ -184,7 +192,7 @@ class CancellableAmountCalculator
         }
 
         // 출처 소실(원 신청서 삭제)·취소 발 — 재계산 근거가 없으므로 저장된 환불액을 상한으로 둔다.
-        // 결제수단 잔여(②)·선점(③) 축은 그대로 작동해 초과 실행을 막는다.
+        // 결제수단 잔여(②) 축이 그대로 작동해 초과 실행을 막는다 — ③ 은 한도를 깎지 않는다.
         $domainRefundable = (float) $refund->refund_amount + (float) $refund->refund_points_amount;
 
         return $this->assembleFromDomain($order, $domainRefundable, $excludeClaims, $refundPriority);
@@ -211,15 +219,18 @@ class CancellableAmountCalculator
         // ③ 진행 중 클레임 선점액.
         [$reserved, $reservedClaims] = $this->resolveReserved($order, $excludeClaims, $refundPriority);
 
-        $ceiling = min($domainRefundable, $paymentCapacity);
-        $amount = max(0.0, $ceiling - $reserved);
+        // 선점(③)은 한도를 깎지 않는다 — 실지급 가능액은 ②(결제수단 잔여)가 이미 실제 취소
+        // 누적을 뺀 값이고, 같은 상품을 두 번 신청하는 경로는 신청 단계에서 막힌다. ③ 까지
+        // 빼면 승인도 되지 않은 남의 신청서가 이 건의 정당한 환불을 0 원으로 막는다(S17 B5).
+        // ③ 은 "다른 클레임이 앞으로 얼마를 환불할 예정인가" 를 알리는 참고 축으로 남는다.
+        $amount = max(0.0, min($domainRefundable, $paymentCapacity));
 
         return new CancellableAmount(
             amount: $amount,
             domainRefundable: $domainRefundable,
             paymentCapacity: $paymentCapacity,
             reserved: $reserved,
-            binding: $this->resolveBinding($domainRefundable, $paymentCapacity, $reserved),
+            binding: $this->resolveBinding($domainRefundable, $paymentCapacity),
             methods: $methods,
             reservedClaims: $reservedClaims,
             currency: $this->resolveBaseCurrency($order),
@@ -362,8 +373,32 @@ class CancellableAmountCalculator
             ];
         }
 
+        // 반품은 한 건씩 따로 재계산해 더하지 않는다 — 배송비 환급처럼 여러 건이 공유하는 몫이
+        // 건마다 중복으로 잡혀 예정액 합계가 결제 총액을 넘는다(S17 B6). 누적 집합을 한 번에
+        // 재계산하고, 건별 금액은 그 합계에 대한 증분으로 싣는다(건별 합 = 총액).
+        $accumulatedItems = [];
+        $accumulatedFee = 0;
+        $previousJointTotal = 0.0;
+
         foreach ($this->pendingReturns($order, $excludeClaims) as $orderReturn) {
-            $amount = $this->estimateReturnRefund($order, $orderReturn, $refundPriority);
+            $items = $this->returnItemsOf($orderReturn);
+
+            if ($items === []) {
+                continue;
+            }
+
+            $accumulatedItems = $this->mergeClaimItems($accumulatedItems, $items);
+            $accumulatedFee += $this->deductedCollectionFeeOf($orderReturn);
+
+            $jointTotal = $this->estimateReturnRefundForItems(
+                $order,
+                $accumulatedItems,
+                $accumulatedFee,
+                $refundPriority,
+            );
+
+            $amount = max(0.0, $jointTotal - $previousJointTotal);
+            $previousJointTotal = $jointTotal;
 
             if ($amount <= 0) {
                 continue;
@@ -482,23 +517,104 @@ class CancellableAmountCalculator
      */
     protected function estimateReturnRefund(Order $order, OrderReturn $orderReturn, RefundPriorityEnum $refundPriority): float
     {
+        $items = $this->returnItemsOf($orderReturn);
+
+        if ($items === []) {
+            return 0.0;
+        }
+
+        return $this->estimateReturnRefundForItems(
+            $order,
+            $items,
+            $this->deductedCollectionFeeOf($orderReturn),
+            $refundPriority,
+        );
+    }
+
+    /**
+     * 반품 신청서의 대상 아이템 배열을 만듭니다.
+     *
+     * @param  OrderReturn  $orderReturn  반품 신청서
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 대상 아이템
+     */
+    protected function returnItemsOf(OrderReturn $orderReturn): array
+    {
         $items = [];
 
         foreach ($orderReturn->returnOptions as $option) {
             $items[] = [
-                'order_option_id' => $option->order_option_id,
+                'order_option_id' => (int) $option->order_option_id,
                 'cancel_quantity' => (int) $option->return_quantity,
             ];
         }
 
+        return $items;
+    }
+
+    /**
+     * 환불금에서 차감되는 회수배송비만 반환합니다.
+     *
+     * 신청·승인 시점 결제 방식은 별도 클레임 결제로 이미 받으므로 환불 예정액에 영향이 없다.
+     *
+     * @param  OrderReturn  $orderReturn  반품 신청서
+     * @return int 차감 대상 회수배송비 (별도 결제면 0)
+     */
+    protected function deductedCollectionFeeOf(OrderReturn $orderReturn): int
+    {
+        return $orderReturn->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+            ? (int) round((float) $orderReturn->claim_shipping_fee)
+            : 0;
+    }
+
+    /**
+     * 같은 옵션의 대상 수량을 합산해 아이템 배열을 병합합니다.
+     *
+     * 재계산기의 제외 맵은 옵션 ID 를 키로 덮어쓰므로, 같은 옵션을 담은 두 신청서를
+     * 그대로 이어 붙이면 뒤엣것만 남아 앞 신청서의 수량이 조용히 사라진다.
+     *
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $base  누적 아이템
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $additional  더할 아이템
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 병합 결과
+     */
+    protected function mergeClaimItems(array $base, array $additional): array
+    {
+        $merged = [];
+
+        foreach ([...$base, ...$additional] as $item) {
+            $optionId = (int) $item['order_option_id'];
+            $merged[$optionId] = [
+                'order_option_id' => $optionId,
+                'cancel_quantity' => (int) ($merged[$optionId]['cancel_quantity'] ?? 0)
+                    + (int) $item['cancel_quantity'],
+            ];
+        }
+
+        return array_values($merged);
+    }
+
+    /**
+     * 반품 대상 아이템 집합의 환불 예정액을 재계산으로 추정합니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $items  대상 아이템
+     * @param  int  $deductedCollectionFee  환불금 차감 회수배송비 합계
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return float 환불 예정액 (기본 통화)
+     */
+    protected function estimateReturnRefundForItems(
+        Order $order,
+        array $items,
+        int $deductedCollectionFee,
+        RefundPriorityEnum $refundPriority,
+    ): float {
         if ($items === []) {
             return 0.0;
         }
 
         $adjustment = new ReturnAdjustment(
             returnItems: $items,
-            collectionFee: (int) round((float) $orderReturn->claim_shipping_fee),
-            chargeMethod: $orderReturn->charge_method,
+            collectionFee: $deductedCollectionFee,
+            chargeMethod: $deductedCollectionFee > 0 ? ClaimChargeMethodEnum::DEDUCT_FROM_REFUND : null,
         );
 
         return (float) $this->adjustmentService
@@ -509,20 +625,16 @@ class CancellableAmountCalculator
     /**
      * 한도를 정한 축을 판정합니다.
      *
-     * 선점액이 실제로 한도를 깎았을 때만 선점 축으로 본다 — 선점이 0 이면
-     * 두 상한 중 작은 쪽이 한도를 정한 것이고, 동률이면 도메인 축으로 표기한다.
+     * 한도를 강제하는 축은 ①·② 둘뿐이다 — ③(진행 중 클레임 예정액)은 참고 축이라
+     * 한도를 깎지 않으므로 판정에 들어오지 않는다. 두 상한 중 작은 쪽이 한도를 정하고,
+     * 동률이면 도메인 축으로 표기한다.
      *
      * @param  float  $domainRefundable  ① 도메인 환불 대상
      * @param  float  $paymentCapacity  ② 결제수단 잔여 한도
-     * @param  float  $reserved  ③ 선점액
      * @return string 한도를 정한 축 (BINDING_* 상수)
      */
-    protected function resolveBinding(float $domainRefundable, float $paymentCapacity, float $reserved): string
+    protected function resolveBinding(float $domainRefundable, float $paymentCapacity): string
     {
-        if ($reserved > 0) {
-            return CancellableAmount::BINDING_RESERVED;
-        }
-
         if ($paymentCapacity < $domainRefundable) {
             return CancellableAmount::BINDING_PAYMENT;
         }

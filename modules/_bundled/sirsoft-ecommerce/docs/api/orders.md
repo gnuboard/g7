@@ -3322,6 +3322,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- | --- |
 | order_id | integer | `120` | 주문 ID |
 | order_number | string | `20260823-1130558472` | 주문번호 |
+| base_currency | string | `KRW` | 이 주문의 금액 표기 기준 통화. 신청서 화면이 보조 통화 목록에서 기준 통화를 걸러 낼 때 쓴다 — 그 기준을 주문 상세 응답에서 따로 읽으면 두 응답의 도착 순서에 따라 기준 통화가 보조 통화 줄에 한 번 더 나열된다. 판정 규칙은 주문 상세의 `base_currency` 와 같다(거래 시점 통화 스냅샷 → 없으면 상점 기본 통화) |
 | resolved_type | string\|null | `null` | 취소·환불 신청이 열리는 상품들의 분기 — 전부 즉시취소면 `cancel`, 전부 환불신청이면 `refund`, 섞여 있으면 `mixed`, 열린 상품이 없으면 `null` |
 | options[].option | object | — | 주문 옵션 (`OrderOptionResource`, 취소된 옵션은 제외) |
 | options[].available_quantity | integer | `1` | 지금 신청할 수 있는 잔여 수량 (옵션 수량 − 진행 중 클레임 점유 수량) |
@@ -3354,6 +3355,7 @@ Authorization: Bearer {YOUR_TOKEN}
     "data": {
         "order_id": 120,
         "order_number": "20260823-1130558472",
+        "base_currency": "KRW",
         "resolved_type": null,
         "options": [
             {
@@ -3451,6 +3453,9 @@ _교환 (`type=exchange`)_
 | price_difference | number | `0` | 옵션 차액 합계 (양수 추가 결제 / 음수 환불) |
 | additional_product_amount | number | `0` | 추가로 받을 상품 금액 |
 | refund_product_amount | number | `0` | 돌려줄 상품 금액 |
+| mc_price_difference | object\|null | `{"KRW":3000,"USD":2.25}` | 옵션 차액 합계의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`). 요약 카드의 형제 금액 줄과 **같은 규약**이라 이 값이 없으면 그 줄만 기준 통화 하나로 남는다 |
+| mc_additional_product_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 추가로 받을 상품 금액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`). 요약 카드의 형제 금액 줄과 **같은 규약**이라 이 값이 없으면 그 줄만 기준 통화 하나로 남는다 |
+| mc_refund_product_amount | object\|null | `{"KRW":0,"USD":0}` | 돌려줄 상품 금액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`). 요약 카드의 형제 금액 줄과 **같은 규약**이라 이 값이 없으면 그 줄만 기준 통화 하나로 남는다 |
 | total_charge_amount | number | `6000` | 총 청구액 (배송비 + 추가 상품 금액) |
 | mc_total_charge_amount | object\|null | `{"KRW":9000,"USD":6.75}` | 총 청구액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`) |
 | fault_type | string | `customer` | 사유의 귀책 구분 |
@@ -3468,6 +3473,7 @@ _반품 (`type=return`)_
 | total_charge_amount | number | `3000` | 총 청구액 (반품 배송비) |
 | mc_total_charge_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 총 청구액의 통화별 환산 (배송비 산정이 낸 값. 스냅샷이 없으면 `null`) |
 | deducted_shipping_fee | number | `3000` | 환불금에서 실제로 차감한 회수 배송비. 청구 방식이 `deduct_from_refund` 일 때만 0 이 아니다 — 별도 결제 방식(`pay_on_request`/`pay_on_approval`)은 배송비를 클레임 결제 건으로 따로 받으므로 0 이다 |
+| mc_deducted_shipping_fee | object\|null | `{"KRW":3000,"USD":2.25}` | 차감한 회수 배송비의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`). 요약 카드의 형제 금액 줄과 **같은 규약**이라 이 값이 없으면 그 줄만 기준 통화 하나로 남는다 |
 | refund_before_deduction | number | `29000` | 회수 배송비를 빼기 **전**의 환불 예정액. `adjustment.refund_total` 은 이미 차감된 뒤의 금액이라, 화면이 "환불예정 / 회수비 / 최종" 세 줄을 세우려면 이 값이 필요하다. 차감하지 않는 방식에서는 `adjustment.refund_total` 과 같다 |
 | mc_refund_before_deduction | object\|null | `{"KRW":29000,"USD":21.75}` | 차감 전 환불 예정액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`) |
 | requires_payment | boolean | `true` | 신청 시 추가결제가 필요한지 |

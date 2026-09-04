@@ -394,6 +394,135 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
+   * 요약 카드의 **모든** 금액 줄이 같은 규약으로 보조통화를 단다 (S17 트랙 A F-1).
+   *
+   * 차액·차감 줄만 기준 통화 하나로 남아 있었다. 위(배송비)·아래(총 청구액) 줄에는 보조통화가
+   * 붙어 있어 같은 카드 안에서 표기가 갈렸고, 접수 뒤 상세는 같은 값을 병기하므로 구매자는
+   * 같은 금액을 화면마다 다르게 봤다.
+   *
+   * @scenario claim_type=exchange, exchange_mode=change, preview_result=ok
+   * @effects claim_apply_summary_amount_rows_all_show_secondary_currency
+   */
+  it('옵션 차액 줄도 보조통화를 단다 (형제 금액 줄과 같은 규약)', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimItems: [{ order_option_id: 430, selected: true }],
+        claimReason: 'size_mismatch',
+        claimEstimateFormatted: {
+          ...estimateState().claimEstimateFormatted,
+          mc_price_difference: [{ code: 'USD', formatted: '$2.25' }],
+        },
+      })
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('+3,000원');
+    expect(text).toContain('$2.25');
+  });
+
+  /**
+   * @scenario claim_type=return, charge_method=deduct_from_refund, preview_result=ok
+   * @effects claim_apply_summary_amount_rows_all_show_secondary_currency,
+   *   claim_apply_return_summary_shows_gross_deduction_and_final
+   */
+  it('회수 배송비 차감 줄도 보조통화를 단다 (반품 요약 3줄이 같은 규약)', async () => {
+    const base = estimateState();
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'return',
+        claimItems: [{ order_option_id: 431, selected: true }],
+        claimReason: 'changed_mind',
+        claimChargeMethod: 'deduct_from_refund',
+        claimEstimate: {
+          deducted_shipping_fee: 3000,
+          refund_before_deduction: 29000,
+          adjustment: { refund_total: 26000 },
+        },
+        claimEstimateFormatted: {
+          ...base.claimEstimateFormatted,
+          deducted_shipping_fee: '3,000원',
+          refund_before_deduction: '29,000원',
+          mc_deducted_shipping_fee: [{ code: 'USD', formatted: '$2.25' }],
+          mc_refund_before_deduction: [{ code: 'USD', formatted: '$21.75' }],
+        },
+      })
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('-3,000원');
+    expect(text).toContain('$2.25');
+  });
+
+  /**
+   * 제출 버튼 라벨은 **지금 결제창이 뜨는가**를 말해야 한다 (S17 트랙 A F-6).
+   *
+   * 서버의 `requires_payment` 는 `ClaimChargeMethodEnum::requiresPayment()` = "상계가 아니다"
+   * 라는 도메인 뜻이라 `신청 시 결제`와 `승인 후 결제`를 구분하지 않는다. 그 값만 보고 라벨을
+   * 정하면 승인 후 결제에서도 "N원 결제하기" 로 예고하는데 실제로는 접수만 되고 결제창이 뜨지
+   * 않는다 — 실행이 예고와 갈리고, 처리는 정상 성공하므로 어디에도 흔적이 남지 않는다.
+   *
+   * @scenario claim_type=exchange, charge_method=pay_on_approval, preview_result=ok
+   * @effects claim_apply_submit_label_matches_payment_timing
+   */
+  it('승인 후 결제 — 지금 결제하지 않으므로 버튼이 결제하기가 아니다', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimChargeMethod: 'pay_on_approval',
+        claimItems: [{ order_option_id: 420, selected: true }],
+        claimReason: 'color_mismatch',
+        claimEstimate: {
+          price_difference: 2000,
+          charge_method: 'pay_on_approval',
+          requires_payment: true,
+          adjustment: { refund_total: 0 },
+        },
+      })
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('claim.apply.submit');
+    expect(text).not.toContain('claim.apply.submit_with_payment');
+  });
+
+  /**
+   * 반대쪽 변종 — 신청 시 결제는 정말로 결제창이 뜨므로 금액과 함께 예고한다.
+   *
+   * @scenario claim_type=exchange, charge_method=pay_on_request, preview_result=ok
+   * @effects claim_apply_submit_label_matches_payment_timing
+   */
+  it('신청 시 결제 — 버튼이 금액과 함께 결제하기로 예고한다', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimChargeMethod: 'pay_on_request',
+        claimItems: [{ order_option_id: 421, selected: true }],
+        claimReason: 'color_mismatch',
+        claimEstimate: {
+          price_difference: 2000,
+          charge_method: 'pay_on_request',
+          requires_payment: true,
+          adjustment: { refund_total: 0 },
+        },
+      })
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('claim.apply.submit_with_payment');
+    expect(text).toContain('9,000원');
+  });
+
+  /**
    * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
    * @effects claim_apply_refund_branch_drives_notice_and_submit_label
    */

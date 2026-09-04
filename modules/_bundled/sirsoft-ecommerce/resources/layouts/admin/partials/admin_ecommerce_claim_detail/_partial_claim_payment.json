@@ -1024,6 +1024,9 @@
                           "comment": "금액 수정 게이트는 `claims.update-amounts` 다 (D18) — 버튼 활성 조건을 상태 전이 권한으로 잡으면 그 권한만 가진 운영자에게 버튼은 살아 있고 저장만 403 이 된다. 청구가 0 이던 신청서의 배송비를 올릴 때는 청구 방식을 함께 보내야 하며, 빠지면 서버가 `claim_charge_method_required` 로 거절한다.",
                           "type": "click",
                           "handler": "sirsoft-ecommerce.saveClaimAmounts",
+                          "onError": [
+                            { "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.", "handler": "suppress" }
+                          ],
                           "params": {
                             "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
                             "claimId": "{{claim?.data?.claim?.id ?? null}}",
@@ -1496,7 +1499,7 @@
               "id": "cre_cancellable_card",
               "type": "basic",
               "name": "Div",
-              "comment": "취소 가능 금액은 성격이 다른 세 상한의 최솟값이다 (D19) — 최종 금액만 보이면 운영자는 왜 그 금액인지 알 수 없고, 한도를 정한 축(`binding`)이 무엇인지에 따라 조치가 갈린다(선점이면 다른 클레임을 먼저 끝내야 하고, 결제수단 잔여면 더 되돌릴 수 없다). 산정도 표기도 서버가 하며, 실행 직전 서버가 같은 식으로 다시 계산한다.",
+              "comment": "취소 가능 금액은 성격이 다른 두 상한의 최솟값이다 (D19) — 최종 금액만 보이면 운영자는 왜 그 금액인지 알 수 없고, 한도를 정한 축(`binding`)이 무엇인지에 따라 조치가 갈린다(환불 대상 금액이면 대상 상품이 그만큼이고, 결제수단 잔여면 더 되돌릴 수 없다). 진행 중 클레임 예정액은 한도를 깎지 않는 참고 축이라 `binding` 으로 나오지 않는다. 산정도 표기도 서버가 하며, 실행 직전 서버가 같은 식으로 다시 계산한다.",
               "props": {
                 "className": "admin-card"
               },
@@ -1643,7 +1646,7 @@
                       "id": "cre_005_reserved_claim_{{rIdx}}",
                       "type": "basic",
                       "name": "Div",
-                      "comment": "선점 근거 — 어느 신청서가 얼마를 잡고 있는지 보이지 않으면 한도가 줄어든 이유를 운영자가 확인할 방법이 없다.",
+                      "comment": "예정액 근거 — 어느 신청서가 얼마를 환불할 예정인지 알린다. 이 값은 한도를 깎지 않는다(참고 축) — 깎으면 승인도 되지 않은 남의 신청서가 이 건의 정당한 환불을 0 원으로 막는다.",
                       "iteration": {
                         "source": "{{claim?.data?.cancellable?.reserved_claims ?? []}}",
                         "item_var": "reservedClaim",
@@ -1753,7 +1756,7 @@
                               "props": {
                                 "className": "text-sm text-secondary"
                               },
-                              "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.pg_amount"
+                              "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount"
                             },
                             {
                               "id": "cre_008_pg_amount",
@@ -1977,6 +1980,9 @@
                               "comment": "저장과 실행은 다른 처리다 — 승인 직후 금액만 고쳐 두고 실행은 나중에 하는 운영이 성립한다. 게이트도 다르다(`claims.update-amounts` vs `claims.execute-refund`).",
                               "type": "click",
                               "handler": "sirsoft-ecommerce.saveClaimAmounts",
+                              "onError": [
+                                { "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.", "handler": "suppress" }
+                              ],
                               "params": {
                                 "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
                                 "claimId": "{{claim?.data?.claim?.id ?? null}}",

@@ -469,7 +469,6 @@ return [
         'cancellable_binding' => [
             'domain_refundable' => 'The refundable amount is the binding limit.',
             'payment_capacity' => 'The remaining payment method capacity is the binding limit.',
-            'reserved' => 'The limit was reduced by amounts reserved by other in-progress claims.',
         ],
         // Display label for the per-method remaining capacity (D19). Mileage has no payment row —
         // it is an order-column ledger, so it is absent from the payment method vocabulary.

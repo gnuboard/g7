@@ -1543,6 +1543,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(6.75, $preview['mc_total_charge_amount']['USD']);
         // 예고와 기록이 같은 값이어야 한다.
         $this->assertSame($exchange->mc_total_charge_amount, $preview['mc_total_charge_amount']);
+
+        // 옵션 차액 줄도 형제 금액 줄과 같은 규약으로 보조통화를 낸다(S17 트랙 A F-1).
+        // 이 값이 없으면 요약의 '옵션 차액' 만 기준 통화 한 줄로 남는다 — 바로 위 배송비와 아래
+        // 총 청구액에는 보조통화가 붙어 있어 같은 카드 안에서 표기 규약이 갈린다. 저장 행에는
+        // 이미 `order_exchange_options.mc_price_difference` 로 실재하는 값이라 예고 경로만 비어 있었다.
+        $this->assertSame(3000, $preview['mc_price_difference']['KRW']);
+        $this->assertSame(2.25, $preview['mc_price_difference']['USD']);
+        $this->assertSame(3000, $preview['mc_additional_product_amount']['KRW']);
+        $this->assertSame(0, $preview['mc_refund_product_amount']['KRW']);
     }
 
     /** 통화 스냅샷이 없는 주문은 보조통화를 낼 근거가 없으므로 null 이다 (화면이 그 줄을 세우지 않는다). */

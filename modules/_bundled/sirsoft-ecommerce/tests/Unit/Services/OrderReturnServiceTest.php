@@ -2586,6 +2586,19 @@ class OrderReturnServiceTest extends ModuleTestCase
             (float) $preview['mc_refund_before_deduction']['USD'],
             0.01,
         );
+
+        // 차감액 줄도 같은 규약이다(S17 트랙 A F-1). 이 값이 없으면 반품 요약 3줄 중 가운데
+        // '회수 배송비 차감' 만 기준 통화 한 줄로 남아, 위아래 두 줄과 표기 규약이 갈린다.
+        $this->assertNotNull($preview['mc_deducted_shipping_fee']);
+        $this->assertSame(
+            $preview['deducted_shipping_fee'],
+            (float) $preview['mc_deducted_shipping_fee']['KRW'],
+        );
+        $this->assertEqualsWithDelta(
+            $preview['deducted_shipping_fee'] / 1000 * 0.75,
+            (float) $preview['mc_deducted_shipping_fee']['USD'],
+            0.01,
+        );
     }
 
     /** 스냅샷이 없으면 차감 전 금액의 보조통화도 null 이다 (형제 줄과 같은 규약). */

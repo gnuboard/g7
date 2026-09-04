@@ -56,6 +56,13 @@ class GuestOrderResource extends BaseApiResource
 
         return [
             'order_number' => $this->order_number,
+            // 주문 금액 표기 기준 통화 — 회원 응답(`OrderResource`)과 **같은 키로 같은 값**이다.
+            // 비회원 화면은 회원과 같은 partial·핸들러를 쓰고, 그 핸들러가 보조 통화 목록에서
+            // 기준 통화를 걸러 낼 때 이 키를 읽는다(`claimApplyHandlers.ts::orderCurrencyCode`).
+            // 이 키가 없으면 필터 기준이 null 이 되어 비회원 신청서에서만 같은 금액이 기준 통화
+            // 줄과 보조 통화 줄에 **두 번** 나온다 — 둘 다 정상 서식이라 흔적이 남지 않는다.
+            // 통화 코드는 민감 정보가 아니며 이미 모든 `*_formatted` 가 그 통화로 표기된다.
+            'base_currency' => $orderCurrency,
             'order_status' => $this->order_status,
             'order_status_label' => $this->order_status ? $this->order_status->label() : null,
             'order_status_variant' => $this->order_status ? $this->order_status->variant() : null,

@@ -252,6 +252,9 @@
                       "comment": "메모는 금액 수정 엔드포인트(D18)가 함께 받는 축이라 게이트도 `claims.update-amounts` 다 — 버튼 활성 조건을 상태 전이 권한으로 잡으면 그 권한만 가진 운영자에게 버튼은 살아 있고 저장만 403 이 된다.",
                       "type": "click",
                       "handler": "sirsoft-ecommerce.saveClaimAdminMemo",
+                      "onError": [
+                        { "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.", "handler": "suppress" }
+                      ],
                       "params": {
                         "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
                         "claimId": "{{claim?.data?.claim?.id ?? null}}",

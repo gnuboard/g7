@@ -66,7 +66,11 @@ class StoreShippingPolicyRequest extends FormRequest
 
             // 구간별 설정
             'country_settings.*.ranges' => ['nullable', 'array'],
-            'country_settings.*.ranges.type' => ['required_with:country_settings.*.ranges', 'string'],
+            // `type` 은 구간(tiers)의 기준 축을 가리키는 값이라 tiers 가 있을 때만 뜻이 있다.
+            // `ranges` 전체에 걸면 단위당 정책이 저장하는 `{unit_value}` 만 담긴 ranges 가
+            // 조회한 그대로 되돌려도 422 가 된다 — 화면에 이 오류를 그릴 자리도 없어 저장이
+            // 조용히 실패한다(S17 B4).
+            'country_settings.*.ranges.type' => ['required_with:country_settings.*.ranges.tiers', 'string'],
             'country_settings.*.ranges.unit_value' => ['nullable', 'numeric', 'min:0.01'],
             'country_settings.*.ranges.tiers' => ['nullable', 'array', 'min:1'],
             'country_settings.*.ranges.tiers.*.min' => ['required', 'numeric', 'min:0'],

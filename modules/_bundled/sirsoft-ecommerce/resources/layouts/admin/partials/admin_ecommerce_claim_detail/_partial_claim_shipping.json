@@ -155,6 +155,9 @@
                       "comment": "회수준비중이면 저장이 회수중 전이를 함께 일으킨다 — 그래서 저장 후 상세를 다시 읽어 진행단계와 상태 뱃지를 맞춘다.",
                       "type": "click",
                       "handler": "sirsoft-ecommerce.saveClaimTracking",
+                      "onError": [
+                        { "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.", "handler": "suppress" }
+                      ],
                       "params": {
                         "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
                         "claimId": "{{claim?.data?.claim?.id ?? null}}",
@@ -362,6 +365,9 @@
                     {
                       "type": "click",
                       "handler": "sirsoft-ecommerce.saveClaimTracking",
+                      "onError": [
+                        { "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.", "handler": "suppress" }
+                      ],
                       "params": {
                         "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
                         "claimId": "{{claim?.data?.claim?.id ?? null}}",

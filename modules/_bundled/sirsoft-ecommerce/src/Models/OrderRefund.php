@@ -231,13 +231,35 @@ class OrderRefund extends Model
     }
 
     /**
+     * 이 신청서의 사유 코드가 등록된 카탈로그 유형을 반환합니다. (사유 라벨 해석의 단일 출처)
+     *
+     * 교환·반품에서 파생된 환불신청서는 **부모의 사유 코드를 그대로 물려받는다**. 사유 카탈로그는
+     * 유형별로 나뉘어 있어서, 교환에만 있는 코드(`defective_product` 등)를 환불 카탈로그에서 찾으면
+     * 매칭에 실패하고 폴백이 원시 코드를 그대로 화면에 내보낸다(S17 트랙 A F-2). 코드가 실제로
+     * 등록된 곳은 **파생 출처의 유형**이므로 그쪽을 먼저 본다.
+     *
+     * 취소 발(`cancel`)과 직접 환불(`direct`)은 환불 카탈로그가 정본이다 — 취소 사유는
+     * `OrderCancel::getRefundReasonLabel()` 과 같은 축을 쓴다.
+     *
+     * @return string 카탈로그 유형 값
+     */
+    public function reasonCatalogType(): string
+    {
+        return match ($this->refund_source_type) {
+            RefundSourceTypeEnum::EXCHANGE => ClaimTypeEnum::EXCHANGE->value,
+            RefundSourceTypeEnum::RETURN => ClaimTypeEnum::RETURN->value,
+            default => ClaimTypeEnum::REFUND->value,
+        };
+    }
+
+    /**
      * 환불 사유 라벨을 반환합니다.
      *
      * @return string 현지화된 사유 라벨
      */
     public function getReasonLabel(): string
     {
-        $reason = ClaimReason::where('type', ClaimTypeEnum::REFUND->value)
+        $reason = ClaimReason::where('type', $this->reasonCatalogType())
             ->where('code', $this->reason_code)->first();
 
         return $reason ? $reason->getLocalizedName() : ($this->reason_code ?? '');

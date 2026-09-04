@@ -48,7 +48,7 @@
                   "props": {
                     "className": "text-secondary"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.pg_amount"
+                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount"
                 },
                 {
                   "id": "crm_002_pg_amount",

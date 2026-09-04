@@ -41,13 +41,17 @@ const EXCHANGE_ITEMS = [
     option_name: '차콜 / M',
     is_option_change: true,
     new_option_label: '블랙 / L',
-    quantity: 1,
-    original_quantity: 2,
+    // 수량 2 — 소계와 단가가 갈라져야 금액 자리의 좌우 단위 혼재가 드러난다(S17 B8).
+    quantity: 2,
+    original_quantity: 3,
     unit_price_formatted: '29,000원',
-    subtotal_amount_formatted: '29,000원',
+    subtotal_amount_formatted: '58,000원',
     new_unit_price_formatted: '32,000원',
-    price_difference: 3000,
-    price_difference_formatted: '3,000원',
+    new_subtotal_amount_formatted: '64,000원',
+    // 교환에 얹은 추가옵션 — 재발송 담당자가 새겨 보낼 문구다(S17 B3).
+    new_additional_options: [{ name: '각인 서비스', custom_text: 'HJ' }],
+    price_difference: 6000,
+    price_difference_formatted: '6,000원',
     status_label: '교환회수중',
     status_variant: 'info',
     thumbnail_url: '/storage/products/1/thumb.jpg',
@@ -65,6 +69,8 @@ const EXCHANGE_ITEMS = [
     unit_price_formatted: '39,000원',
     subtotal_amount_formatted: '39,000원',
     new_unit_price_formatted: '39,000원',
+    new_subtotal_amount_formatted: '39,000원',
+    new_additional_options: [],
     price_difference: 0,
     price_difference_formatted: '0원',
     status_label: '교환회수중',
@@ -456,11 +462,11 @@ describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
     expect(rows).toHaveLength(2);
 
     const amount = rows[0].querySelector('[data-field="amount"]')?.textContent ?? '';
-    expect(amount).toContain('29,000원');
-    expect(amount).toContain('32,000원');
+    expect(amount).toContain('58,000원');
+    expect(amount).toContain('64,000원');
 
     const quantity = rows[0].querySelector('[data-field="quantity"]')?.textContent ?? '';
-    expect(quantity).toBe('1 / 2');
+    expect(quantity).toBe('2 / 3');
     utils.cleanup();
   });
 
@@ -491,11 +497,51 @@ describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
     const rows = screen.queryAllByTestId(GRID_ROW_TESTID);
 
     // 옵션 변경 행: 교환 대상 가격과 옵션이 함께 나온다.
-    expect(rows[0].querySelector('[data-field="amount"]')?.textContent).toContain('32,000원');
+    expect(rows[0].querySelector('[data-field="amount"]')?.textContent).toContain('64,000원');
     expect(rows[0].querySelector('[data-field="product_info"]')?.textContent).toContain('블랙 / L');
 
     // 동일 옵션 교환 행: 서버가 값을 채워 보내도 화살표 줄이 없다.
     expect(rows[1].querySelector('[data-field="amount"]')?.textContent).not.toContain('→');
+    utils.cleanup();
+  });
+
+  /**
+   * 좌항이 소계(58,000)인데 우항에 단가(32,000)를 그리면 같은 줄의 좌우가 서로 다른 단위를
+   * 말한다. 수량 1 에서는 값이 같아 드러나지 않고 수량 2 이상에서만 보인다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_items_grid_pairs_subtotal_with_subtotal
+   */
+  it('교환 후 금액도 단가가 아니라 소계로 그린다', async () => {
+    const utils = await renderProbe(itemsSection as Node);
+
+    const amount = screen.queryAllByTestId(GRID_ROW_TESTID)[0]
+      .querySelector('[data-field="amount"]')?.textContent ?? '';
+
+    expect(amount).toContain('58,000원');
+    expect(amount).toContain('64,000원');
+    expect(amount).not.toContain('32,000원');
+    utils.cleanup();
+  });
+
+  /**
+   * 서버는 교환에 얹은 추가옵션(각인 문구 등)을 싣고 청구액에도 반영한다. 관리자 화면이
+   * 그리지 않으면 재발송 담당자가 새겨 보낼 문구를 어디에서도 확인할 수 없다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_items_grid_shows_exchange_additional_options
+   */
+  it('교환 추가옵션의 이름과 입력 문구를 그린다', async () => {
+    const utils = await renderProbe(itemsSection as Node);
+
+    const rows = screen.queryAllByTestId(GRID_ROW_TESTID);
+    const info = rows[0].querySelector('[data-field="product_info"]')?.textContent ?? '';
+
+    expect(info).toContain('각인 서비스');
+    expect(info).toContain('HJ');
+
+    // 추가옵션이 없는 행에는 줄이 서지 않는다.
+    expect(rows[1].querySelector('[data-field="product_info"]')?.textContent).not.toContain('+ ');
     utils.cleanup();
   });
 
@@ -636,19 +682,19 @@ describe('결제 정보 · 환불 실행 섹션 — 유형별 렌더 (S9b · D17
     total_earned_points_amount: 0,
   };
 
-  /** 취소 가능 금액 산정 결과 (D19) — 세 축과 한도를 정한 축이 함께 온다 */
+  /** 취소 가능 금액 산정 결과 (D19) — 두 상한과 참고 축(선점), 그리고 한도를 정한 축이 함께 온다 */
   const CANCELLABLE = {
     amount: 24000,
     amount_formatted: '24,000원',
     domain_refundable: 29000,
     domain_refundable_formatted: '29,000원',
-    payment_capacity: 29000,
-    payment_capacity_formatted: '29,000원',
+    payment_capacity: 24000,
+    payment_capacity_formatted: '24,000원',
     reserved: 5000,
     reserved_formatted: '5,000원',
-    binding: 'reserved',
-    binding_label_key: 'sirsoft-ecommerce::messages.claims.cancellable_binding.reserved',
-    binding_label: '진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.',
+    binding: 'payment_capacity',
+    binding_label_key: 'sirsoft-ecommerce::messages.claims.cancellable_binding.payment_capacity',
+    binding_label: '결제수단 잔여 한도가 한도입니다.',
     currency: 'KRW',
     methods: [
       {
@@ -657,10 +703,10 @@ describe('결제 정보 · 환불 실행 섹션 — 유형별 렌더 (S9b · D17
         method: 'card',
         method_label: '신용카드',
         currency: 'KRW',
-        remaining_local: 29000,
-        remaining_base: 29000,
-        remaining_local_formatted: '29,000원',
-        remaining_base_formatted: '29,000원',
+        remaining_local: 24000,
+        remaining_base: 24000,
+        remaining_local_formatted: '24,000원',
+        remaining_base_formatted: '24,000원',
       },
     ],
     reserved_claims: [
@@ -810,14 +856,14 @@ describe('결제 정보 · 환불 실행 섹션 — 유형별 렌더 (S9b · D17
     const utils = await renderProbe(paymentSection as Node, refundResponse());
 
     expect(document.querySelector('#cre_001_domain_refundable')?.textContent).toContain('29,000원');
-    expect(document.querySelector('#cre_002_payment_capacity')?.textContent).toContain('29,000원');
+    expect(document.querySelector('#cre_002_payment_capacity')?.textContent).toContain('24,000원');
     expect(document.querySelector('#cre_004_reserved')?.textContent).toContain('5,000원');
     expect(document.querySelector('#cre_006_cancellable_amount')?.textContent).toBe('24,000원');
     expect(document.querySelector('#cre_007_binding_label')?.textContent).toBe(
-      '진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.',
+      '결제수단 잔여 한도가 한도입니다.',
     );
-    // 선점 근거 — 어느 신청서가 얼마를 잡고 있는지 보이지 않으면 한도가 줄어든 이유를
-    // 운영자가 확인할 방법이 없다.
+    // 선점 근거 — 한도를 깎지는 않지만(참고 축), 어느 신청서가 얼마를 환불할 예정인지
+    // 보이지 않으면 운영자가 처리 순서를 정할 근거가 없다.
     expect(document.querySelector('#cre_005_reserved_claim_0')?.textContent).toContain('RF20260825000003');
 
     utils.cleanup();
