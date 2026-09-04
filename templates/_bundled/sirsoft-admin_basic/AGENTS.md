@@ -122,7 +122,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 206개 | `vitest.config.ts` |
+| Vitest | 207개 | `vitest.config.ts` |
 | Playwright | 9개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 
