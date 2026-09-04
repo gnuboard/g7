@@ -11,8 +11,9 @@
             <label class="form-label">
               <span>$t:admin.settings.mail.mailer</span>
               <span class="text-red-500 ml-1">*</span>
+              <badge data-if="{{_computed.envLocked?.['mail.mailer'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
-            <select name="mail.mailer" class="w-full" disabled="{{_computed.isReadOnly}}" placeholder="$t:admin.settings.mail.select_mailer" options="{{(_local.form?.available_drivers?.mail ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}" error="{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"/>
+            <select name="mail.mailer" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailer'] === true}}" placeholder="$t:admin.settings.mail.select_mailer" options="{{(_local.form?.available_drivers?.mail ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}" error="{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"/>
             <p data-ref="unavailable_driver_notice_mail" data-if="{{!!_local.form?.mail?.mailer &amp;&amp; !(_local.form?.available_drivers?.mail ?? []).some(d => d.id === _local.form?.mail?.mailer)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-mail">
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
               <span class="font-mono">{{_local.form?.mail?.mailer ?? ''}}</span>
@@ -36,8 +37,9 @@
               <label class="form-label">
                 <span>$t:admin.settings.mail.host</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['mail.host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="text" name="mail.host" placeholder="smtp.example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['mail.host'] ? 'input-error' : ''}}"/>
+              <input type="text" name="mail.host" placeholder="smtp.example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.host'] === true}}" class="input {{_local.errors?.['mail.host'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['mail.host']}}" class="form-error">{{_local.errors?.['mail.host']?.[0] ?? ''}}</span>
             </div>
           </div>
@@ -46,18 +48,25 @@
               <label class="form-label">
                 <span>$t:admin.settings.mail.port</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['mail.port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="number" name="mail.port" placeholder="587" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['mail.port'] ? 'input-error' : ''}}"/>
+              <input type="number" name="mail.port" placeholder="587" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.port'] === true}}" class="input {{_local.errors?.['mail.port'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['mail.port']}}" class="form-error">{{_local.errors?.['mail.port']?.[0] ?? ''}}</span>
             </div>
             <div data-ref="field_username">
-              <label class="form-label">$t:admin.settings.mail.username</label>
-              <input type="text" name="mail.username" placeholder="your@email.com" disabled="{{_computed.isReadOnly}}" class="input"/>
+              <label class="form-label">
+                <span>$t:admin.settings.mail.username</span>
+                <badge data-if="{{_computed.envLocked?.['mail.username'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="mail.username" placeholder="your@email.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.username'] === true}}" class="input"/>
             </div>
           </div>
           <div data-ref="field_password">
-            <label class="form-label">$t:admin.settings.mail.password</label>
-            <input type="password" name="mail.password" placeholder="********" disabled="{{_computed.isReadOnly}}" class="input"/>
+            <label class="form-label">
+              <span>$t:admin.settings.mail.password</span>
+              <badge data-if="{{_computed.envLocked?.['mail.password'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="password" name="mail.password" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.password'] === true}}" class="input"/>
           </div>
         </div>
         <div data-ref="mailgun_settings_fields" data-if="{{_local.form?.mail?.mailer === 'mailgun'}}" class="row-stack">
@@ -66,22 +75,27 @@
               <label class="form-label">
                 <span>$t:admin.settings.mail.mailgun_domain</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['mail.mailgun_domain'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="text" name="mail.mailgun_domain" placeholder="mg.example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['mail.mailgun_domain'] ? 'input-error' : ''}}"/>
+              <input type="text" name="mail.mailgun_domain" placeholder="mg.example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_domain'] === true}}" class="input {{_local.errors?.['mail.mailgun_domain'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['mail.mailgun_domain']}}" class="form-error">{{_local.errors?.['mail.mailgun_domain']?.[0] ?? ''}}</span>
             </div>
             <div data-ref="field_mailgun_secret">
               <label class="form-label">
                 <span>$t:admin.settings.mail.mailgun_secret</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['mail.mailgun_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="password" name="mail.mailgun_secret" placeholder="key-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['mail.mailgun_secret'] ? 'input-error' : ''}}"/>
+              <input type="password" name="mail.mailgun_secret" placeholder="key-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_secret'] === true}}" class="input {{_local.errors?.['mail.mailgun_secret'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['mail.mailgun_secret']}}" class="form-error">{{_local.errors?.['mail.mailgun_secret']?.[0] ?? ''}}</span>
             </div>
           </div>
           <div data-ref="field_mailgun_endpoint">
-            <label class="form-label">$t:admin.settings.mail.mailgun_endpoint</label>
-            <input type="text" name="mail.mailgun_endpoint" placeholder="api.mailgun.net" disabled="{{_computed.isReadOnly}}" class="input"/>
+            <label class="form-label">
+              <span>$t:admin.settings.mail.mailgun_endpoint</span>
+              <badge data-if="{{_computed.envLocked?.['mail.mailgun_endpoint'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="mail.mailgun_endpoint" placeholder="api.mailgun.net" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_endpoint'] === true}}" class="input"/>
           </div>
         </div>
         <div data-ref="ses_settings_fields" data-if="{{_local.form?.mail?.mailer === 'ses'}}" class="row-stack">
@@ -90,16 +104,18 @@
               <label class="form-label">
                 <span>$t:admin.settings.mail.ses_key</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['mail.ses_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="text" name="mail.ses_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['mail.ses_key'] ? 'input-error' : ''}}"/>
+              <input type="text" name="mail.ses_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_key'] === true}}" class="input {{_local.errors?.['mail.ses_key'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['mail.ses_key']}}" class="form-error">{{_local.errors?.['mail.ses_key']?.[0] ?? ''}}</span>
             </div>
             <div data-ref="field_ses_secret">
               <label class="form-label">
                 <span>$t:admin.settings.mail.ses_secret</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['mail.ses_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="password" name="mail.ses_secret" placeholder="********" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['mail.ses_secret'] ? 'input-error' : ''}}"/>
+              <input type="password" name="mail.ses_secret" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_secret'] === true}}" class="input {{_local.errors?.['mail.ses_secret'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['mail.ses_secret']}}" class="form-error">{{_local.errors?.['mail.ses_secret']?.[0] ?? ''}}</span>
             </div>
           </div>
@@ -107,8 +123,9 @@
             <label class="form-label">
               <span>$t:admin.settings.mail.ses_region</span>
               <span class="text-red-500 ml-1">*</span>
+              <badge data-if="{{_computed.envLocked?.['mail.ses_region'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
-            <select name="mail.ses_region" class="w-full" disabled="{{_computed.isReadOnly}}" placeholder="$t:admin.settings.mail.select_ses_region" error="{{_local.errors?.['mail.ses_region']?.[0] ?? ''}}">
+            <select name="mail.ses_region" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_region'] === true}}" placeholder="$t:admin.settings.mail.select_ses_region" error="{{_local.errors?.['mail.ses_region']?.[0] ?? ''}}">
               <options>
                 <option value="ap-northeast-2">Asia Pacific (Seoul) - ap-northeast-2</option>
                 <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
@@ -128,16 +145,18 @@
                 <label class="form-label">
                   <span>$t:admin.settings.mail.from_address</span>
                   <span class="text-red-500 ml-1">*</span>
+                  <badge data-if="{{_computed.envLocked?.['mail.from_address'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
                 </label>
-                <input type="email" name="mail.from_address" placeholder="noreply@example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['mail.from_address'] ? 'input-error' : ''}}"/>
+                <input type="email" name="mail.from_address" placeholder="noreply@example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.from_address'] === true}}" class="input {{_local.errors?.['mail.from_address'] ? 'input-error' : ''}}"/>
                 <span data-if="{{_local.errors?.['mail.from_address']}}" class="form-error">{{_local.errors?.['mail.from_address']?.[0] ?? ''}}</span>
               </div>
               <div data-ref="field_from_name">
                 <label class="form-label">
                   <span>$t:admin.settings.mail.from_name</span>
                   <span class="text-red-500 ml-1">*</span>
+                  <badge data-if="{{_computed.envLocked?.['mail.from_name'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
                 </label>
-                <input type="text" name="mail.from_name" placeholder="그누보드7" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['mail.from_name'] ? 'input-error' : ''}}"/>
+                <input type="text" name="mail.from_name" placeholder="그누보드7" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.from_name'] === true}}" class="input {{_local.errors?.['mail.from_name'] ? 'input-error' : ''}}"/>
                 <span data-if="{{_local.errors?.['mail.from_name']}}" class="form-error">{{_local.errors?.['mail.from_name']?.[0] ?? ''}}</span>
               </div>
             </div>

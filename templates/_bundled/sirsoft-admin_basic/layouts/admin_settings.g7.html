@@ -188,6 +188,7 @@
     <field name="policyIsSaving" :value="false"/>
   </init-local>
   <computed name="isReadOnly">{{!!_global.settingsAbilities &amp;&amp; !(_global.settingsAbilities?.can_update ?? false)}}</computed>
+  <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
   <permissions>
     <permission>core.settings.read</permission>
   </permissions>
@@ -228,6 +229,12 @@
         <div class="flex-center gap-3">
           <icon name="lock" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
           <p class="text-warning-soft">$t:admin.settings.readonly_notice</p>
+        </div>
+      </div>
+      <div data-ref="env_priority_banner" data-if="{{_local.form?._meta?.env_priority_enabled === true}}" class="alert-info">
+        <div class="flex-center gap-3">
+          <icon name="lock" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+          <p class="text-info-soft">$t:admin.settings.env_locked_notice</p>
         </div>
       </div>
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">

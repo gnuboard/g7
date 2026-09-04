@@ -72,6 +72,17 @@
                                                         "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['mail.mailer'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
                                                 }
                                             ]
                                         },
@@ -81,7 +92,7 @@
                                             "props": {
                                                 "name": "mail.mailer",
                                                 "className": "w-full",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.mailer'] === true}}",
                                                 "placeholder": "$t:admin.settings.mail.select_mailer",
                                                 "options": "{{(_local.form?.available_drivers?.mail ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}",
                                                 "error": "{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"
@@ -201,6 +212,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['mail.host'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -211,7 +233,7 @@
                                                         "type": "text",
                                                         "name": "mail.host",
                                                         "placeholder": "smtp.example.com",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.host'] === true}}",
                                                         "className": "input {{_local.errors?.['mail.host'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -259,6 +281,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['mail.port'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -269,7 +302,7 @@
                                                         "type": "number",
                                                         "name": "mail.port",
                                                         "placeholder": "587",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.port'] === true}}",
                                                         "className": "input {{_local.errors?.['mail.port'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -295,7 +328,24 @@
                                                     "props": {
                                                         "className": "form-label"
                                                     },
-                                                    "text": "$t:admin.settings.mail.username"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.mail.username"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['mail.username'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -304,7 +354,7 @@
                                                         "type": "text",
                                                         "name": "mail.username",
                                                         "placeholder": "your@email.com",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.username'] === true}}",
                                                         "className": "input"
                                                     }
                                                 }
@@ -323,7 +373,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.mail.password"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.mail.password"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['mail.password'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -332,7 +399,7 @@
                                                 "type": "password",
                                                 "name": "mail.password",
                                                 "placeholder": "********",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.password'] === true}}",
                                                 "className": "input"
                                             }
                                         }
@@ -380,6 +447,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['mail.mailgun_domain'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -390,7 +468,7 @@
                                                         "type": "text",
                                                         "name": "mail.mailgun_domain",
                                                         "placeholder": "mg.example.com",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_domain'] === true}}",
                                                         "className": "input {{_local.errors?.['mail.mailgun_domain'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -429,6 +507,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['mail.mailgun_secret'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -439,7 +528,7 @@
                                                         "type": "password",
                                                         "name": "mail.mailgun_secret",
                                                         "placeholder": "key-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_secret'] === true}}",
                                                         "className": "input {{_local.errors?.['mail.mailgun_secret'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -467,7 +556,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.mail.mailgun_endpoint"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.mail.mailgun_endpoint"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['mail.mailgun_endpoint'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -476,7 +582,7 @@
                                                 "type": "text",
                                                 "name": "mail.mailgun_endpoint",
                                                 "placeholder": "api.mailgun.net",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_endpoint'] === true}}",
                                                 "className": "input"
                                             }
                                         }
@@ -524,6 +630,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['mail.ses_key'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -534,7 +651,7 @@
                                                         "type": "text",
                                                         "name": "mail.ses_key",
                                                         "placeholder": "AKIAIOSFODNN7EXAMPLE",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_key'] === true}}",
                                                         "className": "input {{_local.errors?.['mail.ses_key'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -573,6 +690,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['mail.ses_secret'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -583,7 +711,7 @@
                                                         "type": "password",
                                                         "name": "mail.ses_secret",
                                                         "placeholder": "********",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_secret'] === true}}",
                                                         "className": "input {{_local.errors?.['mail.ses_secret'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -624,6 +752,17 @@
                                                         "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['mail.ses_region'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
                                                 }
                                             ]
                                         },
@@ -633,7 +772,7 @@
                                             "props": {
                                                 "name": "mail.ses_region",
                                                 "className": "w-full",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_region'] === true}}",
                                                 "placeholder": "$t:admin.settings.mail.select_ses_region",
                                                 "error": "{{_local.errors?.['mail.ses_region']?.[0] ?? ''}}",
                                                 "options": [
@@ -712,6 +851,17 @@
                                                                         "className": "text-red-500 ml-1"
                                                                     },
                                                                     "text": "*"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "if": "{{_computed.envLocked?.['mail.from_address'] === true}}",
+                                                                    "props": {
+                                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                                        "variant": "secondary",
+                                                                        "size": "sm",
+                                                                        "className": "ml-2"
+                                                                    }
                                                                 }
                                                             ]
                                                         },
@@ -722,7 +872,7 @@
                                                                 "type": "email",
                                                                 "name": "mail.from_address",
                                                                 "placeholder": "noreply@example.com",
-                                                                "disabled": "{{_computed.isReadOnly}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.from_address'] === true}}",
                                                                 "className": "input {{_local.errors?.['mail.from_address'] ? 'input-error' : ''}}"
                                                             }
                                                         },
@@ -761,6 +911,17 @@
                                                                         "className": "text-red-500 ml-1"
                                                                     },
                                                                     "text": "*"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "if": "{{_computed.envLocked?.['mail.from_name'] === true}}",
+                                                                    "props": {
+                                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                                        "variant": "secondary",
+                                                                        "size": "sm",
+                                                                        "className": "ml-2"
+                                                                    }
                                                                 }
                                                             ]
                                                         },
@@ -771,7 +932,7 @@
                                                                 "type": "text",
                                                                 "name": "mail.from_name",
                                                                 "placeholder": "그누보드7",
-                                                                "disabled": "{{_computed.isReadOnly}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.from_name'] === true}}",
                                                                 "className": "input {{_local.errors?.['mail.from_name'] ? 'input-error' : ''}}"
                                                             }
                                                         },

@@ -13,6 +13,7 @@
 | `banner_enabled` | `boolean` | `true` | 쿠키 배너 노출 |
 | `banner_position` | `string` | `bottom_bar` | 배너 위치 |
 | `blocked_domains` | `json` | `{"functional":["*.crisp.chat","client.crisp.chat","*.intercom.io","widget.intercom.io","*.tawk.to","embed.tawk.to","cdn.weglot.com","*.weglot.com","*.usercentrics.eu"],"analytics":["google-analytics.com","*.google-analytics.com","googletagmanager.com","*.googletagmanager.com","ssl.google-analytics.com","*.hotjar.com","static.hotjar.com","*.mixpanel.com","cdn.mxpnl.com","*.amplitude.com","cdn.amplitude.com","*.segment.io","*.segment.com","wcs.naver.net","wcs.naver.com","*.beusable.net"],"marketing":["facebook.net","connect.facebook.net","facebook.com","*.facebook.com","doubleclick.net","*.doubleclick.net","googleadservices.com","googlesyndication.com","ads.google.com","*.criteo.com","static.criteo.net","*.adnxs.com","*.taboola.com","cdn.taboola.com","*.outbrain.com","*.kakao.com","analytics.ad.daum.net","platform.twitter.com","*.twitter.com","platform.linkedin.com","*.linkedin.com"]}` | 추적 도메인 차단 목록 |
+| `necessary_storage_allowlist` | `array` | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7_cart_key","g7-devtools-panel","g7_guest_order_token","g7_guest_order_number","g7_guest_order_expires_at","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7le.*","__sirsoftKginicisMobilePaymentReturnPending","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash"],"sessionStorage":["g7:sirsoft-pay_kginicis:pendingClose","g7:sirsoft-pay_nhnkcp:pendingClose","g7:sirsoft-tosspayments:pendingClose","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash","__sirsoftKginicisMobilePaymentReturnPending","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance"]}` | 필수 저장 항목 허용목록 |
 | `cookie_categories` | `json` | `[]` | 쿠키 카테고리 정의 |
 
 기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
@@ -25,6 +26,22 @@
 동기화가 필요합니다, §AGENTS.md 수정 시 동반 의무). `cookie_categories` 가 기본값 `[]` 로
 비어 있는 것은 4대 표준 카테고리(필수/기능/분석/마케팅)가 이미 코드/Enum(`CookieCategory`)에
 고정돼 있어, 이 설정은 그 표준을 벗어나는 **추가** 카테고리를 위한 자리이기 때문입니다.
+
+`necessary_storage_allowlist` 는 기능 쿠키에 동의하지 않은 방문자에게도 저장이 허용되는 항목
+목록입니다. 위 표의 기본값은 **신규 설치 시 시드되는 출하 카탈로그**일 뿐이고, 실제 판정에는
+저장된 운영자 값이 쓰입니다 — 관리자 환경설정의 「필수 저장 항목」 카드에서 저장소 구분
+(`localStorage` / `sessionStorage` / `cookie`)별로 편집합니다. 항목 끝의 `*` 는 앞부분 매칭이며
+(`g7_filters_*` 는 `g7_filters_orders_1` 을 포함), `*` 는 끝에만 쓸 수 있습니다. 이 구조 덕분에
+새로 설치한 확장이 저장하는 항목을 이 플러그인 수정 없이 운영자가 직접 추가할 수 있습니다.
+
+목록 밖의 항목은 방문마다 파기되는데 그 파기는 예외도 로그도 남기지 않습니다 — 운영자에게는
+"설정이 저장되지 않는다" 는 증상만 보입니다. 그래서 화면의 안내 박스가 이 사실과 항목 이름을
+찾는 방법을 함께 설명합니다.
+
+`necessary_storage_locked`(`auth_token` · `XSRF-TOKEN` · 세션 쿠키 · `gdpr_session`)는 **설정이
+아닙니다.** 스키마에 없으므로 저장 요청에 담아도 반영되지 않고, 코드가 판정 시점에 운영자
+목록과 합쳐 적용합니다. 없으면 사이트가 서지 못하는 항목이라 지울 수 있으면 안 되기 때문이며,
+세션 쿠키 이름은 `session.cookie` 설정에서 런타임 해석됩니다.
 <!-- @intent END -->
 
 ## 권한

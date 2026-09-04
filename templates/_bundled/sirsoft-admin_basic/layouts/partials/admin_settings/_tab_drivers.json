@@ -54,7 +54,24 @@
                                     "props": {
                                         "className": "form-label"
                                     },
-                                    "text": "$t:admin.settings.drivers.storage.driver"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.storage.driver"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.storage_driver'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -68,7 +85,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "drivers.storage_driver",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.storage_driver'] === true}}",
                                                 "className": "w-full",
                                                 "error": "{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}",
                                                 "options": "{{(_local.form?.available_drivers?.storage ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
@@ -140,7 +157,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.drivers.storage.s3_bucket"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.storage.s3_bucket"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['drivers.s3_bucket'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -149,7 +183,7 @@
                                                 "type": "text",
                                                 "name": "drivers.s3_bucket",
                                                 "placeholder": "my-bucket",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_bucket'] === true}}",
                                                 "className": "{{_local.errors?.['drivers.s3_bucket'] ? 'input-error md:w-64' : 'md:w-64'}}"
                                             }
                                         },
@@ -177,7 +211,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.drivers.storage.s3_region"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.storage.s3_region"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['drivers.s3_region'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -186,7 +237,7 @@
                                                 "type": "text",
                                                 "name": "drivers.s3_region",
                                                 "placeholder": "ap-northeast-2",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_region'] === true}}",
                                                 "className": "{{_local.errors?.['drivers.s3_region'] ? 'input-error md:w-64 font-mono' : 'md:w-64 font-mono'}}"
                                             }
                                         },
@@ -222,7 +273,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.drivers.storage.s3_access_key"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.storage.s3_access_key"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['drivers.s3_access_key'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -231,7 +299,7 @@
                                                 "type": "text",
                                                 "name": "drivers.s3_access_key",
                                                 "placeholder": "AKIAIOSFODNN7EXAMPLE",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_access_key'] === true}}",
                                                 "className": "{{_local.errors?.['drivers.s3_access_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"
                                             }
                                         },
@@ -259,7 +327,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.drivers.storage.s3_secret_key"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.storage.s3_secret_key"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['drivers.s3_secret_key'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -268,7 +353,7 @@
                                                 "type": "password",
                                                 "name": "drivers.s3_secret_key",
                                                 "placeholder": "********",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_secret_key'] === true}}",
                                                 "className": "{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"
                                             }
                                         },
@@ -297,7 +382,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.drivers.storage.s3_endpoint"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.storage.s3_endpoint"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['drivers.s3_endpoint'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -306,7 +408,7 @@
                                                 "type": "text",
                                                 "name": "drivers.s3_endpoint",
                                                 "placeholder": "https://<account-id>.r2.cloudflarestorage.com",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_endpoint'] === true}}",
                                                 "className": "{{_local.errors?.['drivers.s3_endpoint'] ? 'input-error' : ''}}"
                                             }
                                         },
@@ -363,6 +465,17 @@
                                                                 "className": "text-label-subtle"
                                                             },
                                                             "text": "$t:admin.settings.drivers.storage.s3_use_path_style_desc"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.s3_use_path_style'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -372,7 +485,7 @@
                                                     "props": {
                                                         "name": "drivers.s3_use_path_style",
                                                         "size": "md",
-                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_use_path_style'] === true}}"
                                                     }
                                                 }
                                             ]
@@ -392,7 +505,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.drivers.storage.s3_url"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.storage.s3_url"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['drivers.s3_url'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -401,7 +531,7 @@
                                                 "type": "text",
                                                 "name": "drivers.s3_url",
                                                 "placeholder": "https://my-bucket.s3.ap-northeast-2.amazonaws.com",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_url'] === true}}",
                                                 "className": "{{_local.errors?.['drivers.s3_url'] ? 'input-error' : ''}}"
                                             }
                                         },
@@ -757,7 +887,24 @@
                                     "props": {
                                         "className": "form-label"
                                     },
-                                    "text": "$t:admin.settings.drivers.cache.driver"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.cache.driver"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.cache_driver'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -771,7 +918,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "drivers.cache_driver",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.cache_driver'] === true}}",
                                                 "className": "w-full",
                                                 "error": "{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}",
                                                 "options": "{{(_local.form?.available_drivers?.cache ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
@@ -849,7 +996,24 @@
                                                     "props": {
                                                         "className": "form-label"
                                                     },
-                                                    "text": "$t:admin.settings.drivers.cache.redis_host"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.drivers.cache.redis_host"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.redis_host'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -858,7 +1022,7 @@
                                                         "type": "text",
                                                         "name": "drivers.redis_host",
                                                         "placeholder": "127.0.0.1",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_host'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.redis_host'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -886,7 +1050,24 @@
                                                     "props": {
                                                         "className": "form-label"
                                                     },
-                                                    "text": "$t:admin.settings.drivers.cache.redis_port"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.drivers.cache.redis_port"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.redis_port'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -897,7 +1078,7 @@
                                                         "placeholder": "6379",
                                                         "min": "{{_local?.form?._meta?.limits?.drivers_redis_port_min ?? 1}}",
                                                         "max": "{{_local?.form?._meta?.limits?.drivers_redis_port_max ?? 65535}}",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_port'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.redis_port'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -934,7 +1115,24 @@
                                                     "props": {
                                                         "className": "form-label"
                                                     },
-                                                    "text": "$t:admin.settings.drivers.cache.redis_password"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.drivers.cache.redis_password"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.redis_password'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -943,7 +1141,7 @@
                                                         "type": "password",
                                                         "name": "drivers.redis_password",
                                                         "placeholder": "$t:admin.settings.drivers.common.optional",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_password'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.redis_password'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -971,7 +1169,24 @@
                                                     "props": {
                                                         "className": "form-label"
                                                     },
-                                                    "text": "$t:admin.settings.drivers.cache.redis_database"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.drivers.cache.redis_database"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.redis_database'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -982,7 +1197,7 @@
                                                         "placeholder": "0",
                                                         "min": "{{_local?.form?._meta?.limits?.drivers_redis_database_min ?? 0}}",
                                                         "max": "{{_local?.form?._meta?.limits?.drivers_redis_database_max ?? 15}}",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_database'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.redis_database'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -1187,7 +1402,24 @@
                                                     "props": {
                                                         "className": "form-label"
                                                     },
-                                                    "text": "$t:admin.settings.drivers.cache.memcached_host"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.drivers.cache.memcached_host"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.memcached_host'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -1196,7 +1428,7 @@
                                                         "type": "text",
                                                         "name": "drivers.memcached_host",
                                                         "placeholder": "127.0.0.1",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.memcached_host'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.memcached_host'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -1224,7 +1456,24 @@
                                                     "props": {
                                                         "className": "form-label"
                                                     },
-                                                    "text": "$t:admin.settings.drivers.cache.memcached_port"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.drivers.cache.memcached_port"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.memcached_port'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -1235,7 +1484,7 @@
                                                         "placeholder": "11211",
                                                         "min": "{{_local?.form?._meta?.limits?.drivers_memcached_port_min ?? 1}}",
                                                         "max": "{{_local?.form?._meta?.limits?.drivers_memcached_port_max ?? 65535}}",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.memcached_port'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.memcached_port'] ? 'input-error' : ''}}"
                                                     }
                                                 },
@@ -1458,7 +1707,24 @@
                                     "props": {
                                         "className": "form-label"
                                     },
-                                    "text": "$t:admin.settings.drivers.search_engine.driver"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.search_engine.driver"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.search_engine_driver'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -1472,7 +1738,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "drivers.search_engine_driver",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.search_engine_driver'] === true}}",
                                                 "className": "w-full",
                                                 "error": "{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}",
                                                 "options": "{{(_local.form?.available_drivers?.search ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
@@ -1603,7 +1869,24 @@
                                     "props": {
                                         "className": "form-label"
                                     },
-                                    "text": "$t:admin.settings.drivers.session.driver"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.session.driver"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.session_driver'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -1617,7 +1900,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "drivers.session_driver",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.session_driver'] === true}}",
                                                 "className": "w-full",
                                                 "error": "{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}",
                                                 "options": "{{(_local.form?.available_drivers?.session ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
@@ -1703,7 +1986,24 @@
                                     "props": {
                                         "className": "form-label"
                                     },
-                                    "text": "$t:admin.settings.drivers.session.lifetime"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.session.lifetime"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.session_lifetime'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -1721,7 +2021,7 @@
                                                 "placeholder": "120",
                                                 "min": "{{_local?.form?._meta?.limits?.drivers_session_lifetime_min ?? 1}}",
                                                 "max": "{{_local?.form?._meta?.limits?.drivers_session_lifetime_max ?? 43200}}",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.session_lifetime'] === true}}",
                                                 "className": "{{_local.errors?.['drivers.session_lifetime'] ? 'input-error w-32' : 'w-32'}}"
                                             }
                                         },
@@ -1792,7 +2092,24 @@
                                     "props": {
                                         "className": "form-label"
                                     },
-                                    "text": "$t:admin.settings.drivers.queue.driver"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.queue.driver"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.queue_driver'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -1806,7 +2123,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "drivers.queue_driver",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.queue_driver'] === true}}",
                                                 "className": "w-full",
                                                 "error": "{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}",
                                                 "options": "{{(_local.form?.available_drivers?.queue ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
@@ -1976,7 +2293,24 @@
                                     "props": {
                                         "className": "form-label"
                                     },
-                                    "text": "$t:admin.settings.drivers.log.driver"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.log.driver"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.log_driver'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -1990,7 +2324,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "drivers.log_driver",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_driver'] === true}}",
                                                 "className": "w-full",
                                                 "error": "{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}",
                                                 "options": "{{(_local.form?.available_drivers?.log ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
@@ -2053,7 +2387,24 @@
                                     "props": {
                                         "className": "form-label"
                                     },
-                                    "text": "$t:admin.settings.drivers.log.level"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.log.level"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.log_level'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -2067,7 +2418,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "drivers.log_level",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_level'] === true}}",
                                                 "className": "w-full",
                                                 "error": "{{_local.errors?.['drivers.log_level']?.[0] ?? ''}}",
                                                 "options": [
@@ -2149,7 +2500,24 @@
                                             "props": {
                                                 "className": "form-label"
                                             },
-                                            "text": "$t:admin.settings.drivers.log.retention_days"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.log.retention_days"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['drivers.log_days'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -2167,7 +2535,7 @@
                                                         "placeholder": "14",
                                                         "min": "{{_local?.form?._meta?.limits?.drivers_log_days_min ?? 1}}",
                                                         "max": "{{_local?.form?._meta?.limits?.drivers_log_days_max ?? 365}}",
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_days'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.log_days'] ? 'input-error w-32' : 'w-32'}}"
                                                     }
                                                 },
@@ -2294,6 +2662,17 @@
                                                 "className": "text-label-subtle"
                                             },
                                             "text": "$t:admin.settings.drivers.websocket.enabled_desc"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.websocket_enabled'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
                                         }
                                     ]
                                 },
@@ -2303,7 +2682,7 @@
                                     "props": {
                                         "name": "drivers.websocket_enabled",
                                         "size": "md",
-                                        "disabled": "{{_computed.isReadOnly}}"
+                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_enabled'] === true}}"
                                     }
                                 }
                             ]
@@ -2350,6 +2729,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.websocket_app_id'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -2361,7 +2751,7 @@
                                                         "name": "drivers.websocket_app_id",
                                                         "placeholder": "my-app-id",
                                                         "required": true,
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_id'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.websocket_app_id'] ? 'input-error font-mono' : 'font-mono'}}"
                                                     }
                                                 },
@@ -2402,6 +2792,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.websocket_app_key'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -2413,7 +2814,7 @@
                                                         "name": "drivers.websocket_app_key",
                                                         "placeholder": "my-app-key",
                                                         "required": true,
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_key'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.websocket_app_key'] ? 'input-error font-mono' : 'font-mono'}}"
                                                     }
                                                 },
@@ -2454,6 +2855,17 @@
                                                                 "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.websocket_app_secret'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -2465,7 +2877,7 @@
                                                         "name": "drivers.websocket_app_secret",
                                                         "placeholder": "my-app-secret",
                                                         "required": true,
-                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_secret'] === true}}",
                                                         "className": "{{_local.errors?.['drivers.websocket_app_secret'] ? 'input-error font-mono' : 'font-mono'}}"
                                                     }
                                                 },
@@ -2628,7 +3040,7 @@
                                                 "id": "input_websocket_verify_ssl",
                                                 "type": "checkbox",
                                                 "name": "drivers.websocket_verify_ssl",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_verify_ssl'] === true}}",
                                                 "className": "h-4 w-4 text-blue-600 rounded"
                                             }
                                         },
@@ -2643,7 +3055,24 @@
                                                         "htmlFor": "input_websocket_verify_ssl",
                                                         "className": "text-body font-medium cursor-pointer"
                                                     },
-                                                    "text": "$t:admin.settings.drivers.websocket.verify_ssl"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.drivers.websocket.verify_ssl"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['drivers.websocket_verify_ssl'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2693,7 +3122,24 @@
                                                             "props": {
                                                                 "className": "form-label"
                                                             },
-                                                            "text": "$t:admin.settings.drivers.websocket.server_host"
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.settings.drivers.websocket.server_host"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "if": "{{_computed.envLocked?.['drivers.websocket_server_host'] === true}}",
+                                                                    "props": {
+                                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                                        "variant": "secondary",
+                                                                        "size": "sm",
+                                                                        "className": "ml-2"
+                                                                    }
+                                                                }
+                                                            ]
                                                         },
                                                         {
                                                             "type": "basic",
@@ -2702,7 +3148,7 @@
                                                                 "type": "text",
                                                                 "name": "drivers.websocket_server_host",
                                                                 "placeholder": "127.0.0.1",
-                                                                "disabled": "{{_computed.isReadOnly}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_host'] === true}}",
                                                                 "className": "{{_local.errors?.['drivers.websocket_server_host'] ? 'input-error' : ''}}"
                                                             }
                                                         },
@@ -2730,7 +3176,24 @@
                                                             "props": {
                                                                 "className": "form-label"
                                                             },
-                                                            "text": "$t:admin.settings.drivers.websocket.server_port"
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.settings.drivers.websocket.server_port"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "if": "{{_computed.envLocked?.['drivers.websocket_server_port'] === true}}",
+                                                                    "props": {
+                                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                                        "variant": "secondary",
+                                                                        "size": "sm",
+                                                                        "className": "ml-2"
+                                                                    }
+                                                                }
+                                                            ]
                                                         },
                                                         {
                                                             "type": "basic",
@@ -2741,7 +3204,7 @@
                                                                 "placeholder": "8080",
                                                                 "min": "{{_local?.form?._meta?.limits?.drivers_websocket_server_port_min ?? 1}}",
                                                                 "max": "{{_local?.form?._meta?.limits?.drivers_websocket_server_port_max ?? 65535}}",
-                                                                "disabled": "{{_computed.isReadOnly}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_port'] === true}}",
                                                                 "className": "{{_local.errors?.['drivers.websocket_server_port'] ? 'input-error' : ''}}"
                                                             }
                                                         },
@@ -2769,14 +3232,31 @@
                                                             "props": {
                                                                 "className": "form-label"
                                                             },
-                                                            "text": "$t:admin.settings.drivers.websocket.server_scheme"
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.settings.drivers.websocket.server_scheme"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "if": "{{_computed.envLocked?.['drivers.websocket_server_scheme'] === true}}",
+                                                                    "props": {
+                                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                                        "variant": "secondary",
+                                                                        "size": "sm",
+                                                                        "className": "ml-2"
+                                                                    }
+                                                                }
+                                                            ]
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Select",
                                                             "props": {
                                                                 "name": "drivers.websocket_server_scheme",
-                                                                "disabled": "{{_computed.isReadOnly}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_scheme'] === true}}",
                                                                 "className": "w-full",
                                                                 "error": "{{_local.errors?.['drivers.websocket_server_scheme']?.[0] ?? ''}}",
                                                                 "options": [

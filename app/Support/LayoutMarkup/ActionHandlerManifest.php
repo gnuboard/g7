@@ -88,10 +88,12 @@ final class ActionHandlerManifest
      * 동시에 구현이 `params.target` 을 읽어도 된다. 이름만으로는 못 가르므로 실측이 유일한 근거다:
      * 전 코퍼스에서 top-level 은 `initTheme` 3건뿐이고 나머지(`sirsoft-ecommerce.toggleArrayValue`
      * 15·`scrollTo` 1)는 전부 `params.target` → 기본을 params 로 두고 여기만 지목한다.
+     * setTheme 도 여기 든다 — 템플릿 핸들러(setThemeHandler)가 action.target 만 읽고 params.theme 은 무시하므로
+     * (dev-g7#640, 감사 handler-registry 와 동일) params 형태로 구우면 조용한 no-op 이 된다.
      *
      * @var array<int, string>
      */
-    private const CUSTOM_TARGET_TOP_LEVEL_HANDLERS = ['initTheme'];
+    private const CUSTOM_TARGET_TOP_LEVEL_HANDLERS = ['initTheme', 'setTheme'];
 
     /**
      * 핸들러 무관 공통 top-level 키 — 나머지 속성은 전부 `params` 로 간다.

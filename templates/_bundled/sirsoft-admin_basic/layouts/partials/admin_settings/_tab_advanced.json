@@ -788,6 +788,17 @@
                                                         "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['advanced.debug_mode'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
                                                 }
                                             ]
                                         },
@@ -836,7 +847,7 @@
                                             "props": {
                                                 "name": "advanced.debug_mode",
                                                 "size": "md",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.debug_mode'] === true}}"
                                             }
                                         }
                                     ]
@@ -1321,6 +1332,17 @@
                                                 "className": "text-heading"
                                             },
                                             "text": "$t:admin.settings.advanced.core_update_github_url"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['advanced.core_update_github_url'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
                                         }
                                     ]
                                 },
@@ -1339,7 +1361,7 @@
                                         "type": "url",
                                         "name": "advanced.core_update_github_url",
                                         "placeholder": "https://github.com/owner/repo",
-                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.core_update_github_url'] === true}}",
                                         "className": "input {{_local.errors?.['advanced.core_update_github_url'] ? 'input-error' : ''}}"
                                     }
                                 },
@@ -1373,6 +1395,17 @@
                                                 "className": "text-heading"
                                             },
                                             "text": "$t:admin.settings.advanced.core_update_github_token"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['advanced.core_update_github_token'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
                                         }
                                     ]
                                 },
@@ -1392,7 +1425,7 @@
                                         "name": "advanced.core_update_github_token",
                                         "placeholder": "ghp_xxxxxxxxxxxxxxxxxxxx",
                                         "autoComplete": "off",
-                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.core_update_github_token'] === true}}",
                                         "className": "input {{_local.errors?.['advanced.core_update_github_token'] ? 'input-error' : ''}}"
                                     }
                                 },
@@ -1469,6 +1502,17 @@
                                                 "className": "text-label-subtle"
                                             },
                                             "text": "$t:admin.settings.advanced.geoip_enabled_desc"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['advanced.geoip_enabled'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
                                         }
                                     ]
                                 },
@@ -1478,7 +1522,7 @@
                                     "props": {
                                         "name": "advanced.geoip_enabled",
                                         "size": "md",
-                                        "disabled": "{{_computed.isReadOnly}}"
+                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_enabled'] === true}}"
                                     }
                                 }
                             ]
@@ -1514,6 +1558,17 @@
                                                         "className": "text-heading"
                                                     },
                                                     "text": "$t:admin.settings.advanced.geoip_license_key"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['advanced.geoip_license_key'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
                                                 }
                                             ]
                                         },
@@ -1533,7 +1588,7 @@
                                                 "name": "advanced.geoip_license_key",
                                                 "placeholder": "xxxxxxxxxxxxxxxx",
                                                 "autoComplete": "off",
-                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_license_key'] === true}}",
                                                 "className": "{{_local.errors?.['advanced.geoip_license_key'] ? 'input-error' : ''}}"
                                             }
                                         },
@@ -1575,6 +1630,17 @@
                                                         "className": "text-label-subtle"
                                                     },
                                                     "text": "$t:admin.settings.advanced.geoip_auto_update_enabled_desc"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
                                                 }
                                             ]
                                         },
@@ -1584,7 +1650,7 @@
                                             "props": {
                                                 "name": "advanced.geoip_auto_update_enabled",
                                                 "size": "md",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}"
                                             }
                                         }
                                     ]

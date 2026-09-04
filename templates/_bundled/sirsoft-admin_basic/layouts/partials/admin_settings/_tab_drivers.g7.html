@@ -9,9 +9,12 @@
       <div class="card-description">$t:admin.settings.drivers.storage.desc</div>
       <div class="row-stack">
         <div data-ref="field_storage_driver" class="">
-          <label class="form-label">$t:admin.settings.drivers.storage.driver</label>
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.storage.driver</span>
+            <badge data-if="{{_computed.envLocked?.['drivers.storage_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="w-full md:w-64">
-            <select name="drivers.storage_driver" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.storage ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <select name="drivers.storage_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.storage_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.storage ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.storage_driver']}}" class="form-error">{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_storage" data-if="{{!!_local.form?.drivers?.storage_driver &amp;&amp; !(_local.form?.available_drivers?.storage ?? []).some(d => d.id === _local.form?.drivers?.storage_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-storage">
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
@@ -23,29 +26,44 @@
         <!-- 공개 자산 스토리지만 s3 인 구성(파일 스토리지는 로컬)에서도 접속 정보를 입력해야 하므로 두 축 중 하나라도 s3 면 노출한다 -->
         <div data-ref="s3_settings" data-if="{{_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div class="py-3">
-            <label class="form-label">$t:admin.settings.drivers.storage.s3_bucket</label>
-            <input type="text" name="drivers.s3_bucket" placeholder="my-bucket" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.s3_bucket'] ? 'input-error md:w-64' : 'md:w-64'}}"/>
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_bucket</span>
+              <badge data-if="{{_computed.envLocked?.['drivers.s3_bucket'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_bucket" placeholder="my-bucket" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_bucket'] === true}}" class="{{_local.errors?.['drivers.s3_bucket'] ? 'input-error md:w-64' : 'md:w-64'}}"/>
             <span data-if="{{_local.errors?.['drivers.s3_bucket']}}" class="form-error">{{_local.errors?.['drivers.s3_bucket']?.[0] ?? ''}}</span>
           </div>
           <div class="py-3">
-            <label class="form-label">$t:admin.settings.drivers.storage.s3_region</label>
-            <input type="text" name="drivers.s3_region" placeholder="ap-northeast-2" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.s3_region'] ? 'input-error md:w-64 font-mono' : 'md:w-64 font-mono'}}"/>
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_region</span>
+              <badge data-if="{{_computed.envLocked?.['drivers.s3_region'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_region" placeholder="ap-northeast-2" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_region'] === true}}" class="{{_local.errors?.['drivers.s3_region'] ? 'input-error md:w-64 font-mono' : 'md:w-64 font-mono'}}"/>
             <span data-if="{{_local.errors?.['drivers.s3_region']}}" class="form-error">{{_local.errors?.['drivers.s3_region']?.[0] ?? ''}}</span>
             <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_region_desc</p>
           </div>
           <div class="py-3">
-            <label class="form-label">$t:admin.settings.drivers.storage.s3_access_key</label>
-            <input type="text" name="drivers.s3_access_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.s3_access_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"/>
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_access_key</span>
+              <badge data-if="{{_computed.envLocked?.['drivers.s3_access_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_access_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_access_key'] === true}}" class="{{_local.errors?.['drivers.s3_access_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"/>
             <span data-if="{{_local.errors?.['drivers.s3_access_key']}}" class="form-error">{{_local.errors?.['drivers.s3_access_key']?.[0] ?? ''}}</span>
           </div>
           <div class="py-3">
-            <label class="form-label">$t:admin.settings.drivers.storage.s3_secret_key</label>
-            <input type="password" name="drivers.s3_secret_key" placeholder="********" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"/>
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_secret_key</span>
+              <badge data-if="{{_computed.envLocked?.['drivers.s3_secret_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="password" name="drivers.s3_secret_key" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_secret_key'] === true}}" class="{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"/>
             <span data-if="{{_local.errors?.['drivers.s3_secret_key']}}" class="form-error">{{_local.errors?.['drivers.s3_secret_key']?.[0] ?? ''}}</span>
           </div>
           <div data-ref="s3_endpoint_field" class="py-3">
-            <label class="form-label">$t:admin.settings.drivers.storage.s3_endpoint</label>
-            <input type="text" name="drivers.s3_endpoint" placeholder="https://<account-id>.r2.cloudflarestorage.com" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.s3_endpoint'] ? 'input-error' : ''}}"/>
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_endpoint</span>
+              <badge data-if="{{_computed.envLocked?.['drivers.s3_endpoint'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_endpoint" placeholder="https://<account-id>.r2.cloudflarestorage.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_endpoint'] === true}}" class="{{_local.errors?.['drivers.s3_endpoint'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['drivers.s3_endpoint']}}" class="form-error">{{_local.errors?.['drivers.s3_endpoint']?.[0] ?? ''}}</span>
             <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_endpoint_desc</p>
           </div>
@@ -54,13 +72,17 @@
               <div>
                 <span class="text-heading">$t:admin.settings.drivers.storage.s3_use_path_style</span>
                 <p class="text-label-subtle">$t:admin.settings.drivers.storage.s3_use_path_style_desc</p>
+                <badge data-if="{{_computed.envLocked?.['drivers.s3_use_path_style'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </div>
-              <toggle name="drivers.s3_use_path_style" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle name="drivers.s3_use_path_style" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_use_path_style'] === true}}"/>
             </div>
           </div>
           <div class="py-3">
-            <label class="form-label">$t:admin.settings.drivers.storage.s3_url</label>
-            <input type="text" name="drivers.s3_url" placeholder="https://my-bucket.s3.ap-northeast-2.amazonaws.com" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.s3_url'] ? 'input-error' : ''}}"/>
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_url</span>
+              <badge data-if="{{_computed.envLocked?.['drivers.s3_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_url" placeholder="https://my-bucket.s3.ap-northeast-2.amazonaws.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_url'] === true}}" class="{{_local.errors?.['drivers.s3_url'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['drivers.s3_url']}}" class="form-error">{{_local.errors?.['drivers.s3_url']?.[0] ?? ''}}</span>
             <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_url_desc</p>
           </div>
@@ -131,9 +153,12 @@
       <div class="card-description">$t:admin.settings.drivers.cache.desc</div>
       <div class="row-stack">
         <div data-ref="field_cache_driver" class="">
-          <label class="form-label">$t:admin.settings.drivers.cache.driver</label>
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.cache.driver</span>
+            <badge data-if="{{_computed.envLocked?.['drivers.cache_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="w-full md:w-64">
-            <select name="drivers.cache_driver" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.cache ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <select name="drivers.cache_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.cache_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.cache ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.cache_driver']}}" class="form-error">{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_cache" data-if="{{!!_local.form?.drivers?.cache_driver &amp;&amp; !(_local.form?.available_drivers?.cache ?? []).some(d => d.id === _local.form?.drivers?.cache_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-cache">
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
@@ -145,25 +170,37 @@
         <div data-ref="redis_settings" data-if="{{_local.form?.drivers?.cache_driver === 'redis'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div class="grid-2col-responsive">
             <div class="py-3">
-              <label class="form-label">$t:admin.settings.drivers.cache.redis_host</label>
-              <input type="text" name="drivers.redis_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.redis_host'] ? 'input-error' : ''}}"/>
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.redis_host</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.redis_host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="drivers.redis_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_host'] === true}}" class="{{_local.errors?.['drivers.redis_host'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.redis_host']}}" class="form-error">{{_local.errors?.['drivers.redis_host']?.[0] ?? ''}}</span>
             </div>
             <div class="py-3">
-              <label class="form-label">$t:admin.settings.drivers.cache.redis_port</label>
-              <input type="number" name="drivers.redis_port" placeholder="6379" min="{{_local?.form?._meta?.limits?.drivers_redis_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_redis_port_max ?? 65535}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.redis_port'] ? 'input-error' : ''}}"/>
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.redis_port</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.redis_port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="number" name="drivers.redis_port" placeholder="6379" min="{{_local?.form?._meta?.limits?.drivers_redis_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_redis_port_max ?? 65535}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_port'] === true}}" class="{{_local.errors?.['drivers.redis_port'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.redis_port']}}" class="form-error">{{_local.errors?.['drivers.redis_port']?.[0] ?? ''}}</span>
             </div>
           </div>
           <div class="grid-2col-responsive">
             <div class="py-3">
-              <label class="form-label">$t:admin.settings.drivers.cache.redis_password</label>
-              <input type="password" name="drivers.redis_password" placeholder="$t:admin.settings.drivers.common.optional" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.redis_password'] ? 'input-error' : ''}}"/>
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.redis_password</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.redis_password'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="password" name="drivers.redis_password" placeholder="$t:admin.settings.drivers.common.optional" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_password'] === true}}" class="{{_local.errors?.['drivers.redis_password'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.redis_password']}}" class="form-error">{{_local.errors?.['drivers.redis_password']?.[0] ?? ''}}</span>
             </div>
             <div class="py-3">
-              <label class="form-label">$t:admin.settings.drivers.cache.redis_database</label>
-              <input type="number" name="drivers.redis_database" placeholder="0" min="{{_local?.form?._meta?.limits?.drivers_redis_database_min ?? 0}}" max="{{_local?.form?._meta?.limits?.drivers_redis_database_max ?? 15}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.redis_database'] ? 'input-error' : ''}}"/>
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.redis_database</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.redis_database'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="number" name="drivers.redis_database" placeholder="0" min="{{_local?.form?._meta?.limits?.drivers_redis_database_min ?? 0}}" max="{{_local?.form?._meta?.limits?.drivers_redis_database_max ?? 15}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_database'] === true}}" class="{{_local.errors?.['drivers.redis_database'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.redis_database']}}" class="form-error">{{_local.errors?.['drivers.redis_database']?.[0] ?? ''}}</span>
             </div>
           </div>
@@ -208,13 +245,19 @@
         <div data-ref="memcached_settings" data-if="{{_local.form?.drivers?.cache_driver === 'memcached'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div class="grid-2col-responsive">
             <div class="py-3">
-              <label class="form-label">$t:admin.settings.drivers.cache.memcached_host</label>
-              <input type="text" name="drivers.memcached_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.memcached_host'] ? 'input-error' : ''}}"/>
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.memcached_host</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.memcached_host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="drivers.memcached_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.memcached_host'] === true}}" class="{{_local.errors?.['drivers.memcached_host'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.memcached_host']}}" class="form-error">{{_local.errors?.['drivers.memcached_host']?.[0] ?? ''}}</span>
             </div>
             <div class="py-3">
-              <label class="form-label">$t:admin.settings.drivers.cache.memcached_port</label>
-              <input type="number" name="drivers.memcached_port" placeholder="11211" min="{{_local?.form?._meta?.limits?.drivers_memcached_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_memcached_port_max ?? 65535}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.memcached_port'] ? 'input-error' : ''}}"/>
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.memcached_port</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.memcached_port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="number" name="drivers.memcached_port" placeholder="11211" min="{{_local?.form?._meta?.limits?.drivers_memcached_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_memcached_port_max ?? 65535}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.memcached_port'] === true}}" class="{{_local.errors?.['drivers.memcached_port'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.memcached_port']}}" class="form-error">{{_local.errors?.['drivers.memcached_port']?.[0] ?? ''}}</span>
             </div>
           </div>
@@ -262,9 +305,12 @@
       <div class="card-description">$t:admin.settings.drivers.search_engine.desc</div>
       <div class="row-stack">
         <div data-ref="field_search_engine_driver" class="">
-          <label class="form-label">$t:admin.settings.drivers.search_engine.driver</label>
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.search_engine.driver</span>
+            <badge data-if="{{_computed.envLocked?.['drivers.search_engine_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="w-full md:w-64">
-            <select name="drivers.search_engine_driver" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.search ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <select name="drivers.search_engine_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.search_engine_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.search ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.search_engine_driver']}}" class="form-error">{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_search" data-if="{{!!_local.form?.drivers?.search_engine_driver &amp;&amp; !(_local.form?.available_drivers?.search ?? []).some(d => d.id === _local.form?.drivers?.search_engine_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-search">
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
@@ -285,9 +331,12 @@
       <div class="card-description">$t:admin.settings.drivers.session.desc</div>
       <div class="row-stack">
         <div data-ref="field_session_driver" class="">
-          <label class="form-label">$t:admin.settings.drivers.session.driver</label>
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.session.driver</span>
+            <badge data-if="{{_computed.envLocked?.['drivers.session_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="w-full md:w-64">
-            <select name="drivers.session_driver" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.session ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <select name="drivers.session_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.session_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.session ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.session_driver']}}" class="form-error">{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_session" data-if="{{!!_local.form?.drivers?.session_driver &amp;&amp; !(_local.form?.available_drivers?.session ?? []).some(d => d.id === _local.form?.drivers?.session_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-session">
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
@@ -301,9 +350,12 @@
           </p>
         </div>
         <div data-ref="field_session_lifetime" class="">
-          <label class="form-label">$t:admin.settings.drivers.session.lifetime</label>
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.session.lifetime</span>
+            <badge data-if="{{_computed.envLocked?.['drivers.session_lifetime'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="flex-center gap-2">
-            <input type="number" name="drivers.session_lifetime" placeholder="120" min="{{_local?.form?._meta?.limits?.drivers_session_lifetime_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_session_lifetime_max ?? 43200}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.session_lifetime'] ? 'input-error w-32' : 'w-32'}}"/>
+            <input type="number" name="drivers.session_lifetime" placeholder="120" min="{{_local?.form?._meta?.limits?.drivers_session_lifetime_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_session_lifetime_max ?? 43200}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.session_lifetime'] === true}}" class="{{_local.errors?.['drivers.session_lifetime'] ? 'input-error w-32' : 'w-32'}}"/>
             <span class="text-label-subtle">$t:admin.settings.drivers.session.minutes</span>
           </div>
           <span data-if="{{_local.errors?.['drivers.session_lifetime']}}" class="form-error">{{_local.errors?.['drivers.session_lifetime']?.[0] ?? ''}}</span>
@@ -315,9 +367,12 @@
       <div class="card-description">$t:admin.settings.drivers.queue.desc</div>
       <div>
         <div data-ref="field_queue_driver" class="">
-          <label class="form-label">$t:admin.settings.drivers.queue.driver</label>
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.queue.driver</span>
+            <badge data-if="{{_computed.envLocked?.['drivers.queue_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="w-full md:w-64">
-            <select name="drivers.queue_driver" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.queue ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <select name="drivers.queue_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.queue_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.queue ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.queue_driver']}}" class="form-error">{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_queue" data-if="{{!!_local.form?.drivers?.queue_driver &amp;&amp; !(_local.form?.available_drivers?.queue ?? []).some(d => d.id === _local.form?.drivers?.queue_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-queue">
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
@@ -346,9 +401,12 @@
       <div class="card-description">$t:admin.settings.drivers.log.desc</div>
       <div class="row-stack">
         <div data-ref="field_log_driver" class="">
-          <label class="form-label">$t:admin.settings.drivers.log.driver</label>
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.log.driver</span>
+            <badge data-if="{{_computed.envLocked?.['drivers.log_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="w-full md:w-64">
-            <select name="drivers.log_driver" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.log ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <select name="drivers.log_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.log ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
             <span data-if="{{_local.errors?.['drivers.log_driver']}}" class="form-error">{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}</span>
             <p data-ref="unavailable_driver_notice_log" data-if="{{!!_local.form?.drivers?.log_driver &amp;&amp; !(_local.form?.available_drivers?.log ?? []).some(d => d.id === _local.form?.drivers?.log_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-log">
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
@@ -358,9 +416,12 @@
           </div>
         </div>
         <div data-ref="field_log_level" class="">
-          <label class="form-label">$t:admin.settings.drivers.log.level</label>
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.log.level</span>
+            <badge data-if="{{_computed.envLocked?.['drivers.log_level'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="w-full md:w-64">
-            <select name="drivers.log_level" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.log_level']?.[0] ?? ''}}">
+            <select name="drivers.log_level" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_level'] === true}}" class="w-full" error="{{_local.errors?.['drivers.log_level']?.[0] ?? ''}}">
               <options>
                 <option value="debug">$t:admin.settings.drivers.log.levels.debug</option>
                 <option value="info">$t:admin.settings.drivers.log.levels.info</option>
@@ -378,9 +439,12 @@
         </div>
         <div data-ref="log_days_settings" data-if="{{_local.form?.drivers?.log_driver === 'daily'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div class="py-3">
-            <label class="form-label">$t:admin.settings.drivers.log.retention_days</label>
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.log.retention_days</span>
+              <badge data-if="{{_computed.envLocked?.['drivers.log_days'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
             <div class="flex-center gap-2">
-              <input type="number" name="drivers.log_days" placeholder="14" min="{{_local?.form?._meta?.limits?.drivers_log_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_log_days_max ?? 365}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.log_days'] ? 'input-error w-32' : 'w-32'}}"/>
+              <input type="number" name="drivers.log_days" placeholder="14" min="{{_local?.form?._meta?.limits?.drivers_log_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_log_days_max ?? 365}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_days'] === true}}" class="{{_local.errors?.['drivers.log_days'] ? 'input-error w-32' : 'w-32'}}"/>
               <span class="text-label-subtle">$t:admin.settings.drivers.log.days</span>
             </div>
             <span data-if="{{_local.errors?.['drivers.log_days']}}" class="form-error">{{_local.errors?.['drivers.log_days']?.[0] ?? ''}}</span>
@@ -402,8 +466,9 @@
           <div>
             <span class="text-heading">$t:admin.settings.drivers.websocket.enabled</span>
             <p class="text-label-subtle">$t:admin.settings.drivers.websocket.enabled_desc</p>
+            <badge data-if="{{_computed.envLocked?.['drivers.websocket_enabled'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </div>
-          <toggle name="drivers.websocket_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle name="drivers.websocket_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_enabled'] === true}}"/>
         </div>
         <div data-ref="websocket_settings_detail" data-if="{{_local.form?.drivers?.websocket_enabled}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -411,24 +476,27 @@
               <label class="form-label">
                 <span>$t:admin.settings.drivers.websocket.app_id</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.websocket_app_id'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="text" name="drivers.websocket_app_id" placeholder="my-app-id" :required="true" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_app_id'] ? 'input-error font-mono' : 'font-mono'}}"/>
+              <input type="text" name="drivers.websocket_app_id" placeholder="my-app-id" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_id'] === true}}" class="{{_local.errors?.['drivers.websocket_app_id'] ? 'input-error font-mono' : 'font-mono'}}"/>
               <span data-if="{{_local.errors?.['drivers.websocket_app_id']}}" class="form-error">{{_local.errors?.['drivers.websocket_app_id']?.[0] ?? ''}}</span>
             </div>
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.websocket.app_key</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.websocket_app_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="text" name="drivers.websocket_app_key" placeholder="my-app-key" :required="true" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_app_key'] ? 'input-error font-mono' : 'font-mono'}}"/>
+              <input type="text" name="drivers.websocket_app_key" placeholder="my-app-key" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_key'] === true}}" class="{{_local.errors?.['drivers.websocket_app_key'] ? 'input-error font-mono' : 'font-mono'}}"/>
               <span data-if="{{_local.errors?.['drivers.websocket_app_key']}}" class="form-error">{{_local.errors?.['drivers.websocket_app_key']?.[0] ?? ''}}</span>
             </div>
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.websocket.app_secret</span>
                 <span class="text-red-500 ml-1">*</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.websocket_app_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
-              <input type="password" name="drivers.websocket_app_secret" placeholder="my-app-secret" :required="true" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_app_secret'] ? 'input-error font-mono' : 'font-mono'}}"/>
+              <input type="password" name="drivers.websocket_app_secret" placeholder="my-app-secret" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_secret'] === true}}" class="{{_local.errors?.['drivers.websocket_app_secret'] ? 'input-error font-mono' : 'font-mono'}}"/>
               <span data-if="{{_local.errors?.['drivers.websocket_app_secret']}}" class="form-error">{{_local.errors?.['drivers.websocket_app_secret']?.[0] ?? ''}}</span>
             </div>
           </div>
@@ -455,9 +523,12 @@
             </div>
           </div>
           <div data-ref="websocket_verify_ssl_field" class="flex-center gap-3 mt-4">
-            <input id="input_websocket_verify_ssl" type="checkbox" name="drivers.websocket_verify_ssl" disabled="{{_computed.isReadOnly}}" class="h-4 w-4 text-blue-600 rounded"/>
+            <input id="input_websocket_verify_ssl" type="checkbox" name="drivers.websocket_verify_ssl" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_verify_ssl'] === true}}" class="h-4 w-4 text-blue-600 rounded"/>
             <div>
-              <label for="input_websocket_verify_ssl" class="text-body font-medium cursor-pointer">$t:admin.settings.drivers.websocket.verify_ssl</label>
+              <label for="input_websocket_verify_ssl" class="text-body font-medium cursor-pointer">
+                <span>$t:admin.settings.drivers.websocket.verify_ssl</span>
+                <badge data-if="{{_computed.envLocked?.['drivers.websocket_verify_ssl'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
               <p class="text-tertiary">$t:admin.settings.drivers.websocket.verify_ssl_desc</p>
             </div>
           </div>
@@ -465,18 +536,27 @@
             <h4 class="text-body font-semibold mb-1">$t:admin.settings.drivers.websocket.server_endpoint_title</h4>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="py-3">
-                <label class="form-label">$t:admin.settings.drivers.websocket.server_host</label>
-                <input type="text" name="drivers.websocket_server_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_server_host'] ? 'input-error' : ''}}"/>
+                <label class="form-label">
+                  <span>$t:admin.settings.drivers.websocket.server_host</span>
+                  <badge data-if="{{_computed.envLocked?.['drivers.websocket_server_host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+                </label>
+                <input type="text" name="drivers.websocket_server_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_host'] === true}}" class="{{_local.errors?.['drivers.websocket_server_host'] ? 'input-error' : ''}}"/>
                 <span data-if="{{_local.errors?.['drivers.websocket_server_host']}}" class="form-error">{{_local.errors?.['drivers.websocket_server_host']?.[0] ?? ''}}</span>
               </div>
               <div class="py-3">
-                <label class="form-label">$t:admin.settings.drivers.websocket.server_port</label>
-                <input type="number" name="drivers.websocket_server_port" placeholder="8080" min="{{_local?.form?._meta?.limits?.drivers_websocket_server_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_websocket_server_port_max ?? 65535}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_server_port'] ? 'input-error' : ''}}"/>
+                <label class="form-label">
+                  <span>$t:admin.settings.drivers.websocket.server_port</span>
+                  <badge data-if="{{_computed.envLocked?.['drivers.websocket_server_port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+                </label>
+                <input type="number" name="drivers.websocket_server_port" placeholder="8080" min="{{_local?.form?._meta?.limits?.drivers_websocket_server_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_websocket_server_port_max ?? 65535}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_port'] === true}}" class="{{_local.errors?.['drivers.websocket_server_port'] ? 'input-error' : ''}}"/>
                 <span data-if="{{_local.errors?.['drivers.websocket_server_port']}}" class="form-error">{{_local.errors?.['drivers.websocket_server_port']?.[0] ?? ''}}</span>
               </div>
               <div class="py-3">
-                <label class="form-label">$t:admin.settings.drivers.websocket.server_scheme</label>
-                <select name="drivers.websocket_server_scheme" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.websocket_server_scheme']?.[0] ?? ''}}">
+                <label class="form-label">
+                  <span>$t:admin.settings.drivers.websocket.server_scheme</span>
+                  <badge data-if="{{_computed.envLocked?.['drivers.websocket_server_scheme'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+                </label>
+                <select name="drivers.websocket_server_scheme" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_scheme'] === true}}" class="w-full" error="{{_local.errors?.['drivers.websocket_server_scheme']?.[0] ?? ''}}">
                   <options>
                     <option value="http">HTTP</option>
                     <option value="https">HTTPS</option>

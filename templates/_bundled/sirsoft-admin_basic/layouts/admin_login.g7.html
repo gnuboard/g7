@@ -97,14 +97,14 @@
             <on type="click">
               <!-- 밝은 테마 고정. 이 화면은 베이스의 테마 토글 컴포넌트를 못 쓰므로 3버튼을 직접 두었고,
                    핸들러는 관리자 화면 전체와 같은 저장 키를 공유한다. -->
-              <action handler="setTheme" theme="light"/>
+              <action handler="setTheme" target="light"/>
             </on>
             <icon data-ref="theme_light_icon" name="sun" size="sm"/>
           </button>
           <button data-ref="theme_dark_button" type="button" class="{{_global.theme === 'dark' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.dark">
             <on type="click">
               <!-- 어두운 테마 고정. -->
-              <action handler="setTheme" theme="dark"/>
+              <action handler="setTheme" target="dark"/>
             </on>
             <icon data-ref="theme_dark_icon" name="moon" size="sm"/>
           </button>
@@ -112,7 +112,7 @@
             <on type="click">
               <!-- 시스템 설정 따라가기 — 저장값이 아예 없을 때의 기본 상태이기도 하다(선택 표시가
                    `theme === 'auto'` 뿐 아니라 미설정도 함께 보는 이유). -->
-              <action handler="setTheme" theme="auto"/>
+              <action handler="setTheme" target="auto"/>
             </on>
             <icon data-ref="theme_auto_icon" name="desktop" size="sm"/>
           </button>

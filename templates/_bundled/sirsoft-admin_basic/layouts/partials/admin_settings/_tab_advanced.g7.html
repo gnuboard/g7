@@ -132,13 +132,14 @@
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.advanced.debug_mode</span>
               <span class="text-red-500 ml-1">*</span>
+              <badge data-if="{{_computed.envLocked?.['advanced.debug_mode'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </div>
             <p class="text-label-subtle">$t:admin.settings.advanced.debug_mode_desc</p>
             <span data-if="{{_local.errors?.['advanced.debug_mode']}}" class="form-error">{{_local.errors?.['advanced.debug_mode']?.[0] ?? ''}}</span>
           </div>
           <div class="flex-center gap-3">
             <a data-ref="btn_dev_dashboard" data-if="{{_local.form?.advanced?.debug_mode}}" href="/dev" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white dark:text-white text-xs font-medium rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors whitespace-nowrap no-underline">$t:admin.settings.advanced.dev_dashboard</a>
-            <toggle name="advanced.debug_mode" size="md" disabled="{{_computed.isReadOnly}}"/>
+            <toggle name="advanced.debug_mode" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.debug_mode'] === true}}"/>
           </div>
         </div>
         <div data-ref="toggle_sql_query_log" class="flex-between">
@@ -228,17 +229,19 @@
         <div data-ref="input_core_update_github_url">
           <div class="flex-center">
             <span class="text-heading">$t:admin.settings.advanced.core_update_github_url</span>
+            <badge data-if="{{_computed.envLocked?.['advanced.core_update_github_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </div>
           <p class="text-label-subtle">$t:admin.settings.advanced.core_update_github_url_desc</p>
-          <input type="url" name="advanced.core_update_github_url" placeholder="https://github.com/owner/repo" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['advanced.core_update_github_url'] ? 'input-error' : ''}}"/>
+          <input type="url" name="advanced.core_update_github_url" placeholder="https://github.com/owner/repo" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.core_update_github_url'] === true}}" class="input {{_local.errors?.['advanced.core_update_github_url'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['advanced.core_update_github_url']}}" class="form-error">{{_local.errors?.['advanced.core_update_github_url']?.[0] ?? ''}}</span>
         </div>
         <div data-ref="input_core_update_github_token">
           <div class="flex-center">
             <span class="text-heading">$t:admin.settings.advanced.core_update_github_token</span>
+            <badge data-if="{{_computed.envLocked?.['advanced.core_update_github_token'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </div>
           <p class="text-label-subtle">$t:admin.settings.advanced.core_update_github_token_desc</p>
-          <input type="password" name="advanced.core_update_github_token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autoComplete="off" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['advanced.core_update_github_token'] ? 'input-error' : ''}}"/>
+          <input type="password" name="advanced.core_update_github_token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autoComplete="off" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.core_update_github_token'] === true}}" class="input {{_local.errors?.['advanced.core_update_github_token'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['advanced.core_update_github_token']}}" class="form-error">{{_local.errors?.['advanced.core_update_github_token']?.[0] ?? ''}}</span>
         </div>
       </div>
@@ -251,24 +254,27 @@
           <div>
             <span class="text-heading">$t:admin.settings.advanced.geoip_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.advanced.geoip_enabled_desc</p>
+            <badge data-if="{{_computed.envLocked?.['advanced.geoip_enabled'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </div>
-          <toggle name="advanced.geoip_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle name="advanced.geoip_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_enabled'] === true}}"/>
         </div>
         <div data-ref="geoip_settings_detail" data-if="{{_local.form?.advanced?.geoip_enabled}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div data-ref="input_geoip_license_key" class="row-stack">
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.advanced.geoip_license_key</span>
+              <badge data-if="{{_computed.envLocked?.['advanced.geoip_license_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </div>
             <p class="text-label-subtle">$t:admin.settings.advanced.geoip_license_key_desc</p>
-            <input type="password" name="advanced.geoip_license_key" placeholder="xxxxxxxxxxxxxxxx" autoComplete="off" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['advanced.geoip_license_key'] ? 'input-error' : ''}}"/>
+            <input type="password" name="advanced.geoip_license_key" placeholder="xxxxxxxxxxxxxxxx" autoComplete="off" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_license_key'] === true}}" class="{{_local.errors?.['advanced.geoip_license_key'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['advanced.geoip_license_key']}}" class="form-error">{{_local.errors?.['advanced.geoip_license_key']?.[0] ?? ''}}</span>
           </div>
           <div data-ref="toggle_geoip_auto_update" class="flex-between py-2">
             <div>
               <span class="text-heading">$t:admin.settings.advanced.geoip_auto_update_enabled</span>
               <p class="text-label-subtle">$t:admin.settings.advanced.geoip_auto_update_enabled_desc</p>
+              <badge data-if="{{_computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </div>
-            <toggle name="advanced.geoip_auto_update_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+            <toggle name="advanced.geoip_auto_update_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}"/>
           </div>
           <div data-ref="geoip_last_updated_block" class="row-stack">
             <span class="text-heading block">$t:admin.settings.advanced.geoip_last_updated_at</span>

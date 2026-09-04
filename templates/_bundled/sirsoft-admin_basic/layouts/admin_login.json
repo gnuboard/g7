@@ -411,9 +411,7 @@
                                                     "comment": "밝은 테마 고정. 이 화면은 베이스의 테마 토글 컴포넌트를 못 쓰므로 3버튼을 직접 두었고,\n                   핸들러는 관리자 화면 전체와 같은 저장 키를 공유한다.",
                                                     "type": "click",
                                                     "handler": "setTheme",
-                                                    "params": {
-                                                        "theme": "light"
-                                                    }
+                                                    "target": "light"
                                                 }
                                             ],
                                             "props": {
@@ -442,9 +440,7 @@
                                                     "comment": "어두운 테마 고정.",
                                                     "type": "click",
                                                     "handler": "setTheme",
-                                                    "params": {
-                                                        "theme": "dark"
-                                                    }
+                                                    "target": "dark"
                                                 }
                                             ],
                                             "props": {
@@ -473,9 +469,7 @@
                                                     "comment": "시스템 설정 따라가기 — 저장값이 아예 없을 때의 기본 상태이기도 하다(선택 표시가\n                   `theme === 'auto'` 뿐 아니라 미설정도 함께 보는 이유).",
                                                     "type": "click",
                                                     "handler": "setTheme",
-                                                    "params": {
-                                                        "theme": "auto"
-                                                    }
+                                                    "target": "auto"
                                                 }
                                             ],
                                             "props": {

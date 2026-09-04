@@ -9,6 +9,7 @@ use App\Extension\HookManager;
 use App\Http\Resources\AttachmentResource;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Support\ConfigCacheHelper;
+use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
 use App\Support\ProcessOutputEncoding;
@@ -151,7 +152,100 @@ class SettingsService
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
+        return $this->overlayEnvLockedValues($settings);
+    }
+
+    /**
+     * `.env` 로 잠긴 키의 표시값을 유효값(런타임 config)으로 덮어씁니다.
+     *
+     * 잠긴 필드에 사문화된 저장값이 남아 있으면 운영자는 적용되지 않는 값을 읽게 됩니다.
+     * 화면이 보여줄 진실은 실제로 적용 중인 값이므로, 그 값으로 대체합니다.
+     *
+     * 민감 키는 제외합니다 — `.env` 의 비밀값을 관리자 화면 응답에 실어 보내지 않기
+     * 위해서입니다(잠금 표시만 하고 값은 저장값 그대로 둡니다).
+     *
+     * 스위치가 꺼져 있으면 아무 것도 하지 않습니다.
+     *
+     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
+     * @return array<string, mixed> 유효값이 덮인 설정 배열
+     */
+    private function overlayEnvLockedValues(array $settings): array
+    {
+        if (! EnvPriority::enabled()) {
+            return $settings;
+        }
+
+        foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
+            if (EnvPriority::isSensitive($storageKey)) {
+                continue;
+            }
+
+            [$category, $key] = explode('.', $storageKey, 2);
+            $value = EnvPriority::effectiveValue($storageKey);
+
+            foreach ($this->resolveFrontendKeyTargets($category, $key) as [$targetCategory, $outputKey]) {
+                if (isset($settings[$targetCategory]) && is_array($settings[$targetCategory])) {
+                    $settings[$targetCategory][$outputKey] = $value;
+                }
+            }
+        }
+
         return $settings;
+    }
+
+    /**
+     * `.env` 로 잠긴 키 목록을 프론트엔드 키 형태로 반환합니다.
+     *
+     * 화면(레이아웃 JSON)이 참조하는 키는 `frontend_key`/`merge_into` 변환을 거친 이름
+     * (예: `advanced.debug_mode`)이므로, 저장소 키(`debug.mode`)를 그대로 내보내면 화면의
+     * 잠금 표시가 조용히 미발동합니다.
+     *
+     * `getAllSettings()` 가 값을 두 위치(병합 대상 + 원본 카테고리)에 싣는 것과 동일하게
+     * 잠금 표시도 두 위치를 모두 담습니다.
+     *
+     * @return array<string, bool> 프론트엔드 키(`카테고리.키`) => true
+     */
+    public function envLockedMeta(): array
+    {
+        $meta = [];
+
+        foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
+            [$category, $key] = explode('.', $storageKey, 2);
+
+            foreach ($this->resolveFrontendKeyTargets($category, $key) as [$targetCategory, $outputKey]) {
+                $meta[$targetCategory.'.'.$outputKey] = true;
+            }
+        }
+
+        return $meta;
+    }
+
+    /**
+     * 저장소 키가 응답에서 실리는 (카테고리, 키) 쌍 목록을 반환합니다.
+     *
+     * `getAllSettings()` 의 변환 규칙과 같은 규칙을 씁니다 — 갈라지면 잠금 표시가 값과
+     * 다른 자리를 가리키게 되고, 그 어긋남은 화면에서 "잠금이 안 걸린 것"과 구분되지 않습니다.
+     *
+     * @param  string  $category  저장소 카테고리명
+     * @param  string  $key  저장소 키
+     * @return array<int, array{0: string, 1: string}> (카테고리, 출력 키) 쌍 목록
+     */
+    private function resolveFrontendKeyTargets(string $category, string $key): array
+    {
+        $schema = $this->configRepository->getFrontendSchema();
+        $categorySchema = $schema[$category] ?? [];
+        $fields = $categorySchema['fields'] ?? [];
+
+        $outputKey = $fields[$key]['frontend_key'] ?? $key;
+        $targetCategory = $categorySchema['frontend_name'] ?? $categorySchema['merge_into'] ?? $category;
+
+        $targets = [[$targetCategory, $outputKey]];
+
+        if ($targetCategory !== $category) {
+            $targets[] = [$category, $outputKey];
+        }
+
+        return $targets;
     }
 
     /**
@@ -539,6 +633,13 @@ class SettingsService
             // frontend_key를 원본 키로 역변환
             $tabSettings = $this->reverseFrontendKeys($tabSettings);
 
+            // `.env` 가 소유권을 가져간 키는 저장 대상에서 제거한다. 화면의 disabled 는
+            // 게이트가 아니다 — 저장 API 를 직접 호출하는 경로가 남으므로 실질 차단은 여기다.
+            // (advanced 탭은 아직 카테고리가 갈리지 않았으므로 saveAdvancedSettings 가 분리 후 적용한다.)
+            if ($tab !== 'advanced') {
+                $tabSettings = EnvPriority::rejectLockedForSave($tab, $tabSettings);
+            }
+
             // advanced 탭은 cache와 debug 두 카테고리로 분리
             if ($tab === 'advanced') {
                 $result = $this->saveAdvancedSettings($tabSettings);
@@ -730,6 +831,10 @@ class SettingsService
 
         // 각 카테고리별 병합 저장
         foreach ($categorized as $category => $categorySettings) {
+            // 고급 탭은 여러 카테고리가 한 폼에 섞여 오므로 잠금 필터를 분리 후에 적용한다
+            // (탭 이름 'advanced' 는 저장소 카테고리가 아니라 매핑이 걸리지 않는다).
+            $categorySettings = EnvPriority::rejectLockedForSave($category, $categorySettings);
+
             if (empty($categorySettings)) {
                 continue;
             }

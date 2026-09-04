@@ -11,9 +11,10 @@
             <label class="form-label">
               <span>$t:admin.settings.upload.max_file_size</span>
               <span class="text-red-500 ml-1">*</span>
+              <badge data-if="{{_computed.envLocked?.['upload.max_file_size'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <div class="flex-center gap-2">
-              <input type="number" name="upload.max_file_size" min="{{_local?.form?._meta?.limits?.upload_max_file_size_min ?? 1}}" max="{{_local?.form?._meta?.limits?.upload_max_file_size_max ?? 1024}}" disabled="{{_computed.isReadOnly}}" class="input flex-1 {{_local.errors?.['upload.max_file_size'] ? 'input-error' : ''}}"/>
+              <input type="number" name="upload.max_file_size" min="{{_local?.form?._meta?.limits?.upload_max_file_size_min ?? 1}}" max="{{_local?.form?._meta?.limits?.upload_max_file_size_max ?? 1024}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['upload.max_file_size'] === true}}" class="input flex-1 {{_local.errors?.['upload.max_file_size'] ? 'input-error' : ''}}"/>
               <span class="text-label-subtle">MB</span>
             </div>
             <span data-if="{{_local.errors?.['upload.max_file_size']}}" class="form-error">{{_local.errors?.['upload.max_file_size']?.[0] ?? ''}}</span>
@@ -35,23 +36,32 @@
       <div class="card-description">$t:admin.settings.upload.image_settings_desc</div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div data-ref="field_image_max_width">
-          <label class="form-label">$t:admin.settings.upload.image_max_width</label>
+          <label class="form-label">
+            <span>$t:admin.settings.upload.image_max_width</span>
+            <badge data-if="{{_computed.envLocked?.['upload.image_max_width'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="flex-center gap-2">
-            <input type="number" name="upload.image_max_width" min="{{_local?.form?._meta?.limits?.upload_image_max_width_min ?? 100}}" max="{{_local?.form?._meta?.limits?.upload_image_max_width_max ?? 10000}}" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
+            <input type="number" name="upload.image_max_width" min="{{_local?.form?._meta?.limits?.upload_image_max_width_min ?? 100}}" max="{{_local?.form?._meta?.limits?.upload_image_max_width_max ?? 10000}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_width'] === true}}" class="input flex-1"/>
             <span class="text-label-subtle">px</span>
           </div>
         </div>
         <div data-ref="field_image_max_height">
-          <label class="form-label">$t:admin.settings.upload.image_max_height</label>
+          <label class="form-label">
+            <span>$t:admin.settings.upload.image_max_height</span>
+            <badge data-if="{{_computed.envLocked?.['upload.image_max_height'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="flex-center gap-2">
-            <input type="number" name="upload.image_max_height" min="{{_local?.form?._meta?.limits?.upload_image_max_height_min ?? 100}}" max="{{_local?.form?._meta?.limits?.upload_image_max_height_max ?? 10000}}" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
+            <input type="number" name="upload.image_max_height" min="{{_local?.form?._meta?.limits?.upload_image_max_height_min ?? 100}}" max="{{_local?.form?._meta?.limits?.upload_image_max_height_max ?? 10000}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_height'] === true}}" class="input flex-1"/>
             <span class="text-label-subtle">px</span>
           </div>
         </div>
         <div data-ref="field_image_quality">
-          <label class="form-label">$t:admin.settings.upload.image_quality</label>
+          <label class="form-label">
+            <span>$t:admin.settings.upload.image_quality</span>
+            <badge data-if="{{_computed.envLocked?.['upload.image_quality'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
           <div class="flex-center gap-2">
-            <input type="number" name="upload.image_quality" min="{{_local?.form?._meta?.limits?.upload_image_quality_min ?? 1}}" max="{{_local?.form?._meta?.limits?.upload_image_quality_max ?? 100}}" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
+            <input type="number" name="upload.image_quality" min="{{_local?.form?._meta?.limits?.upload_image_quality_min ?? 1}}" max="{{_local?.form?._meta?.limits?.upload_image_quality_max ?? 100}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['upload.image_quality'] === true}}" class="input flex-1"/>
             <span class="text-label-subtle">%</span>
           </div>
           <p class="form-hint">$t:admin.settings.upload.image_quality_hint</p>
