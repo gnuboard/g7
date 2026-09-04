@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\Public;
 
 use App\Services\ExtensionBundleService;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
 
@@ -40,26 +41,37 @@ class ExtensionBundleServingTest extends TestCase
     /**
      * 번들 서비스를 모킹합니다.
      *
-     * `$memoryContent` / `$declaredCount` 는 빈 경로(`$returnPath === ''`)일 때의 분기를
-     * 정한다 — 디스크 캐시 실패(메모리 폴백)인지, 선언 0개(정상 빈 번들)인지,
-     * 선언은 있는데 결과가 0인지(장애)를 컨트롤러가 이 둘로 가른다.
+     * `$memoryContent` / `$declaredCount` / `$missing` 은 빈 경로(`$returnPath === ''`)일 때의
+     * 분기를 정한다 — 디스크 캐시 실패(메모리 폴백)인지, 병합 결과가 정당하게 비었는지
+     * (선언 0 이거나 선언한 산출물이 전부 존재하되 비어 있음), 선언한 산출물이 소실됐는지
+     * (장애)를 컨트롤러가 이 셋으로 가른다.
+     *
+     * 503 의 근거는 `$declaredCount` 가 아니라 `$missing` 이다. 선언만으로 판정하면
+     * "스타일이 비어 있는 확장" 의 정당한 상태가 배포 장애와 구분되지 않는다.
      *
      * @param  string  $returnPath  getBundleFilePath 반환값
      * @param  string  $memoryContent  buildBundleContent 반환값
      * @param  int  $declaredCount  countAssetDeclaringExtensions 반환값
-     * @param  int  $presentCount  countAssetPresentExtensions 반환값 (선언한 산출물이 실제로 존재하는 확장 수)
+     * @param  list<string>  $missing  findMissingDeclaredAssets 반환값 (소실 산출물 절대 경로)
      */
-    private function bindBundleService(string $returnPath, string $memoryContent = '', int $declaredCount = 0, int $presentCount = 0): void
-    {
+    private function bindBundleService(
+        string $returnPath,
+        string $memoryContent = '',
+        int $declaredCount = 0,
+        array $missing = []
+    ): void {
         $mock = Mockery::mock(ExtensionBundleService::class);
         $mock->shouldReceive('getCurrentVersion')->andReturn(777);
         $mock->shouldReceive('getBundleFilePath')->andReturn($returnPath);
         $mock->shouldReceive('buildBundleContent')->andReturn($memoryContent);
         $mock->shouldReceive('countAssetDeclaringExtensions')->andReturn($declaredCount);
-        $mock->shouldReceive('countAssetPresentExtensions')->andReturn($presentCount);
+        $mock->shouldReceive('findMissingDeclaredAssets')->andReturn($missing);
         $this->app->instance(ExtensionBundleService::class, $mock);
     }
 
+    /**
+     * @effects bundle_endpoint_serves_with_etag_and_304
+     */
     public function test_module_bundle_js_serves_merged_file_with_etag(): void
     {
         $path = $this->fixtureDir.'/module.777.js';
@@ -75,6 +87,9 @@ class ExtensionBundleServingTest extends TestCase
         $this->assertStringContainsString("\n;\n", $response->streamedContent() ?? $response->getContent());
     }
 
+    /**
+     * @effects bundle_endpoint_serves_with_etag_and_304
+     */
     public function test_bundle_returns_304_on_matching_etag(): void
     {
         $path = $this->fixtureDir.'/plugin.777.js';
@@ -90,6 +105,9 @@ class ExtensionBundleServingTest extends TestCase
         $second->assertStatus(304);
     }
 
+    /**
+     * @effects empty_bundle_returns_empty_path_and_empty_ok_response
+     */
     public function test_empty_bundle_returns_empty_ok_response(): void
     {
         // 에셋을 선언한 활성 확장이 0개 → 빈 번들이 정상이다 → 빈 200
@@ -127,17 +145,22 @@ class ExtensionBundleServingTest extends TestCase
     }
 
     /**
-     * 선언은 있는데 병합 결과가 비면 503 이다 (E2).
+     * 선언한 산출물이 소실됐는데 병합 결과가 비면 503 이다 (E2).
      *
      * 배포 중 `dist` 가 잠깐 비면 **모든 확장이 빠진 빈 번들**이 200 으로 나가고, 프론트는
      * 404 도 오류도 받지 못한 채 한참 뒤 "Unknown action handler" 로 죽는다 — 그 시점에는
      * 원인이 번들이라는 사실이 화면에도 로그에도 남아 있지 않다.
      *
-     * @effects bundle_empty_with_declared_assets_returns_503
+     * 판정 근거는 선언 축이 아니라 **소실 축**이다. 선언 축만 보면 스타일이 비어 있는
+     * 확장(정당한 0바이트 산출물)까지 장애로 잡혀 기본 구성이 503 이 된다.
+     *
+     * // @scenario ext_type=module, asset_kind=js, active_combo=multiple, file_state=one_missing
+     *
+     * @effects bundle_empty_with_declared_assets_returns_503, empty_result_with_missing_declared_artifact_returns_503
      */
     public function test_empty_bundle_with_declared_assets_returns_503(): void
     {
-        $this->bindBundleService('', memoryContent: '', declaredCount: 3);
+        $this->bindBundleService('', memoryContent: '', declaredCount: 3, missing: ['/x/dist/js/a.js']);
 
         $response = $this->get('/api/modules/bundle.js?v=777');
 
@@ -145,17 +168,19 @@ class ExtensionBundleServingTest extends TestCase
     }
 
     /**
-     * 선언한 산출물이 전부 존재하는데 내용이 비면 503 이 아니라 빈 200 이다.
+     * 선언한 산출물이 **존재하되 비어 있으면** 정상 빈 200 이다 (이 이슈의 재현).
      *
-     * 주석만 있는 `main.css` 의 빌드 산출물은 0 바이트다. 그 확장이 활성인 설치에서 번들
-     * 요청을 503 으로 보내면 프론트가 매 화면에서 자산 실패 안내를 띄우고, 장애의 근거였던
-     * "파일이 없다" 는 사실이 아니다 — 503 은 선언 수와 존재 수가 어긋날 때만 낸다.
+     * 스타일 소스가 자리표시 주석뿐이라 0바이트 CSS 를 내보내는 확장은 정당한 상태다.
+     * 종전 판정은 "선언 > 0 && 병합 결과 0" 을 곧 배포 장애로 등치해, 그런 확장만 설치된
+     * 기본 구성의 사용자 화면마다 실패 안내가 떴다.
      *
-     * @effects empty_bundle_with_all_declared_files_present_returns_200
+     * // @scenario ext_type=module, asset_kind=css, active_combo=one, file_state=present_empty
+     *
+     * @effects empty_result_with_present_empty_artifacts_returns_200
      */
-    public function test_empty_bundle_with_all_declared_files_present_returns_200(): void
+    public function test_empty_result_with_present_empty_artifacts_returns_200(): void
     {
-        $this->bindBundleService('', memoryContent: '', declaredCount: 1, presentCount: 1);
+        $this->bindBundleService('', memoryContent: '', declaredCount: 1, missing: []);
 
         $response = $this->get('/api/modules/bundle.css?v=777');
 
@@ -165,27 +190,43 @@ class ExtensionBundleServingTest extends TestCase
     }
 
     /**
-     * 선언 수보다 존재 수가 적으면(하나라도 파일이 없으면) 여전히 503 이다.
+     * 플러그인 경로도 같은 판정을 쓴다 — 존재하되 비어 있으면 빈 200.
      *
-     * @effects bundle_empty_with_declared_assets_returns_503
+     * // @scenario ext_type=plugin, asset_kind=css, active_combo=one, file_state=present_empty
+     *
+     * @effects bundle_decision_is_shared_across_extension_types, empty_result_with_present_empty_artifacts_returns_200
      */
-    public function test_empty_bundle_with_one_declared_file_missing_returns_503(): void
+    public function test_plugin_bundle_returns_200_when_declared_artifacts_present_but_empty(): void
     {
-        $this->bindBundleService('', memoryContent: '', declaredCount: 2, presentCount: 1);
+        $this->bindBundleService('', memoryContent: '', declaredCount: 1, missing: []);
 
-        $this->get('/api/modules/bundle.css?v=777')->assertStatus(503);
+        $response = $this->get('/api/plugins/bundle.css?v=777');
+
+        $response->assertOk();
+        $this->assertSame('', $response->getContent());
     }
 
     /**
-     * 플러그인 경로도 "전부 존재 + 빈 내용 = 200" 판정을 공유한다.
+     * 503 로그가 **어느 산출물이 없는지**를 싣는다.
      *
-     * @effects empty_bundle_with_all_declared_files_present_returns_200
+     * 경로가 없으면 운영자는 조치 대상을 짚을 수 없다 — 선언 수만으로는 어느 확장의
+     * 어느 파일인지 알 수 없다.
+     *
+     * // @scenario ext_type=module, asset_kind=css, active_combo=one, file_state=one_missing
+     *
+     * @effects missing_artifact_paths_are_logged
      */
-    public function test_plugin_bundle_returns_200_when_declared_files_all_present_but_empty(): void
+    public function test_503_log_lists_missing_artifact_paths(): void
     {
-        $this->bindBundleService('', memoryContent: '', declaredCount: 1, presentCount: 1);
+        Log::spy();
 
-        $this->get('/api/plugins/bundle.css?v=777')->assertOk();
+        $this->bindBundleService('', memoryContent: '', declaredCount: 1, missing: ['/x/dist/css/a.css']);
+
+        $this->get('/api/modules/bundle.css?v=777')->assertStatus(503);
+
+        Log::shouldHaveReceived('error')->withArgs(
+            fn ($message, $context) => ($context['missing'] ?? null) === ['/x/dist/css/a.css']
+        )->once();
     }
 
     /**
@@ -195,7 +236,7 @@ class ExtensionBundleServingTest extends TestCase
      */
     public function test_plugin_bundle_returns_503_when_declared_but_empty(): void
     {
-        $this->bindBundleService('', memoryContent: '', declaredCount: 1);
+        $this->bindBundleService('', memoryContent: '', declaredCount: 1, missing: ['/x/dist/css/a.css']);
 
         $this->get('/api/plugins/bundle.css?v=777')->assertStatus(503);
     }

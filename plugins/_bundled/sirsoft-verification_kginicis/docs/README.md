@@ -1,4 +1,4 @@
-# KG이니시스 본인인증 개발자 문서
+# 그누보드7 KG이니시스 본인인증 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-verification_kginicis · 플러그인
 

@@ -1,4 +1,4 @@
-# Hello 플러그인
+# 그누보드7 Hello 플러그인
 
 **그누보드7 플러그인 · gnuboard7-hello_plugin**
 학습용 최소 샘플 플러그인 (Hello 모듈 훅 소비)

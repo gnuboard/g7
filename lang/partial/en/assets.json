@@ -1,6 +1,8 @@
 {
   "load_failed": "Could not load {label}.",
   "load_failed_multiple": "Could not load {count} items.",
+  "module_styles": "module styles",
+  "plugin_styles": "plugin styles",
   "retry": "Retry",
   "retrying": "Retrying...",
   "close": "Close",

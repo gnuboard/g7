@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ModuleAssetLoader, type ModuleAsset } from '../ModuleAssetLoader';
+import { ModuleAssetLoader, parseBundleUrlsFromConfig, type ModuleAsset } from '../ModuleAssetLoader';
+import { clearAllAssetFailures, getAssetFailures } from '../../assets/AssetFailureNotice';
 
 describe('ModuleAssetLoader', () => {
     let loader: ModuleAssetLoader;
@@ -310,6 +311,9 @@ describe('ModuleAssetLoader', () => {
     });
 
     describe('loadBundle (서버측 병합 번들)', () => {
+        /**
+         * @effects loadbundle_single_script_single_link_append
+         */
         it('단일 script + 단일 link 를 1개씩만 append 한다', async () => {
             const scriptAppends: string[] = [];
             const linkAppends: string[] = [];
@@ -350,6 +354,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects loadbundle_dedup_guard_no_double_load
+         */
         it('같은 key 를 중복 로드하지 않는다 (중복 가드)', async () => {
             let scriptCount = 0;
             // 실제 DOM 에 삽입해 element id 가 등록되어야 getElementById 중복 가드가 동작
@@ -370,6 +377,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects loadbundle_null_urls_noop
+         */
         it('jsUrl/cssUrl 모두 null 이면 no-op', async () => {
             const appendSpy = vi.spyOn(document.head, 'appendChild');
             await expect(loader.loadBundle('module', null, null)).resolves.toBeUndefined();
@@ -379,6 +389,9 @@ describe('ModuleAssetLoader', () => {
     });
 
     describe('concat 자가등록 (IIFE 병합 계약)', () => {
+        /**
+         * @effects concat_iife_self_registration_preserved
+         */
         it(';\\n 로 이어붙인 2개 IIFE 가 모두 실행되어 레지스트리에 자가등록된다', () => {
             // 모의 IIFE 2개 — ecommerce IIFE 처럼 세미콜론 없이 끝나도 `\n;\n` 구분자로 ASI 경계 보호
             const registry: Record<string, unknown> = {};
@@ -477,6 +490,83 @@ describe('ModuleAssetLoader', () => {
             await expect(
                 loader.loadBundle('module', null, '/api/modules/bundle.css')
             ).resolves.toBeUndefined();
+        });
+
+        /**
+         * 배너 항목명은 사용자 어휘여야 한다 — 내부 구분 키(module/plugin)를 그대로
+         * 넘기면 "module을(를) 불러오지 못했습니다" 처럼 해석 불가한 문구가 노출된다.
+         *
+         * 테스트 환경에는 G7Core.t 가 없으므로 폴백 문구가 쓰인다.
+         *
+         * @effects bundle_css_failure_banner_uses_user_vocabulary
+         * @since engine-v1.64.7
+         */
+        it('번들 CSS 실패 안내 항목명이 사용자 어휘다 (모듈)', async () => {
+            clearAllAssetFailures();
+            stubAssetLoading(['error', 'error', 'error']);
+
+            await loader.loadBundle('module', null, '/api/modules/bundle.css');
+
+            const failure = getAssetFailures().find(f => f.id === 'ext-css:bundle-module');
+
+            expect(failure).toBeDefined();
+            expect(failure!.label).toBe('모듈 스타일');
+            expect(failure!.label).not.toBe('module');
+        });
+
+        /**
+         * @effects bundle_css_failure_banner_uses_user_vocabulary
+         * @since engine-v1.64.7
+         */
+        it('번들 CSS 실패 안내 항목명이 사용자 어휘다 (플러그인)', async () => {
+            clearAllAssetFailures();
+            stubAssetLoading(['error', 'error', 'error']);
+
+            await loader.loadBundle('plugin', null, '/api/plugins/bundle.css');
+
+            const failure = getAssetFailures().find(f => f.id === 'ext-css:bundle-plugin');
+
+            expect(failure).toBeDefined();
+            expect(failure!.label).toBe('플러그인 스타일');
+            expect(failure!.label).not.toBe('plugin');
+        });
+    });
+
+    /**
+     * bundleUrls 부재(구버전 blade) 시 개별 로딩으로 폴백한다.
+     *
+     * 폴백 판정은 파싱 결과가 null 인지로 이뤄진다(TemplateApp.loadExtensionAssets).
+     * null 이 아닌데 폴백하거나 그 반대면 확장 에셋이 통째로 로드되지 않는데, 오류도
+     * 경고도 남지 않는다.
+     *
+     * @effects missing_bundle_urls_falls_back_to_individual_loading
+     */
+    describe('bundleUrls 부재 폴백 판정', () => {
+        afterEach(() => {
+            delete (window as any).G7Config;
+        });
+
+        it('G7Config 자체가 없으면 null 이다 (개별 로딩 폴백)', () => {
+            delete (window as any).G7Config;
+
+            expect(parseBundleUrlsFromConfig()).toBeNull();
+        });
+
+        it('G7Config 는 있으나 bundleUrls 가 없으면 null 이다 (개별 로딩 폴백)', () => {
+            (window as any).G7Config = { moduleAssets: [] };
+
+            expect(parseBundleUrlsFromConfig()).toBeNull();
+        });
+
+        it('bundleUrls 가 있으면 폴백하지 않는다 (번들 경로)', () => {
+            (window as any).G7Config = {
+                bundleUrls: { moduleJs: '/api/modules/bundle.js', moduleCss: null, pluginJs: null, pluginCss: null },
+            };
+
+            const urls = parseBundleUrlsFromConfig();
+
+            expect(urls).not.toBeNull();
+            expect(urls!.moduleJs).toContain('/api/modules/bundle');
         });
     });
 

@@ -1,4 +1,4 @@
-# Hello 모듈
+# 그누보드7 Hello 모듈
 
 **그누보드7 모듈 · gnuboard7-hello_module**
 학습용 최소 샘플 모듈 (Memo CRUD)

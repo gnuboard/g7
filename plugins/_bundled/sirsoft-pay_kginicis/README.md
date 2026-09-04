@@ -1,4 +1,4 @@
-# KG 이니시스
+# 그누보드7 KG 이니시스 플러그인
 
 **그누보드7 플러그인 · sirsoft-pay_kginicis**
 KG 이니시스 표준결제를 sirsoft-ecommerce 에 연결하는 결제 플러그인

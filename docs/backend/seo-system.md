@@ -823,7 +823,7 @@ SEO 엔진은 컴포넌트 지식을 갖지 않습니다. 모든 컴포넌트→
 | `text_props` | string[] | 텍스트 추출 우선순위 (예: `["text", "label", "value", "title"]`) |
 | `attr_map` | object | props→HTML 속성 매핑 (예: `{"className": "class", "htmlFor": "for"}`) |
 | `allowed_attrs` | string[] | 허용 HTML 속성 목록 (목록에 없는 속성은 출력 안됨) |
-| `stylesheets` | string[] | 외부 CSS URL (예: Font Awesome CDN) |
+| `stylesheets` | string[] | 추가 CSS URL |
 | `self_closing` | string[] | 셀프 클로징 태그 목록 (예: `["img", "input", "hr", "br"]`) |
 | `component_map` | object | 컴포넌트명 → HTML 태그 매핑 |
 | `render_modes` | object | 렌더 모드 정의 |
@@ -1489,6 +1489,11 @@ SeoRenderer.render()
   └─ metaResolver.resolve(seoConfig, context, moduleId, pluginId, routeParams) → vars 치환
   └─ View::make('seo', [..., 'stylesheets' => config.stylesheets])
 ```
+
+봇 화면의 `<link>` 에는 활성 사용자 템플릿의 `template.json` `assets.css` 도 실린다. 그 선언은
+**파일이 실재할 때만** 링크한다 — 선언은 있는데 산출물이 없는 경로를 그대로 실으면 봇 화면에서만
+404 가 나고 일반 화면에는 흔적이 없다. 서버 로그에도 남지 않으므로 운영자가 알 방법이 없다.
+내용이 비어 있는 파일(0바이트)은 실재하므로 링크한다.
 
 ### navigate 핸들러 링크 자동 생성
 

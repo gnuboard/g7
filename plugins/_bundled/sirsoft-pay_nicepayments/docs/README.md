@@ -1,4 +1,4 @@
-# 나이스페이먼츠 개발자 문서
+# 그누보드7 나이스페이먼츠 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-pay_nicepayments · 플러그인
 

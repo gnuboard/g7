@@ -29,18 +29,13 @@
     },
     "assets": {
         "css": [
-            "assets/css/main.css",
-            "assets/css/ui-system.css"
+            "dist/css/components.css"
         ],
         "js": [
-            "dist/components.js"
+            "dist/js/components.iife.js"
         ],
-        "fonts": [
-            "assets/fonts/"
-        ],
-        "images": [
-            "assets/images/"
-        ]
+        "fonts": [],
+        "images": []
     },
     "components": {
         "basic": [

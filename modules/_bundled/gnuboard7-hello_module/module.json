@@ -16,9 +16,5 @@
     "dependencies": {
         "modules": {},
         "plugins": {}
-    },
-    "assets": {
-        "js": [],
-        "css": []
     }
 }

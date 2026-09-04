@@ -9,9 +9,25 @@
 import { createLogger } from '../utils/Logger';
 import { loadScriptWithRetry, loadStylesheetWithRetry } from '../template-engine/networkResilience';
 import { convertToCurrentMode, staticToLegacy } from '../support/assetUrl';
-import { notifyAssetFailure } from '../assets/AssetFailureNotice';
+import { assetText, notifyAssetFailure } from '../assets/AssetFailureNotice';
 
 const logger = createLogger('ModuleAssetLoader');
+
+/**
+ * 병합 CSS 번들의 실패 안내 항목명 (사용자 어휘).
+ *
+ * 번들 구분 키(`module`/`plugin`)는 내부 이름이다. 그대로 배너에 넘기면
+ * "module을(를) 불러오지 못했습니다" 처럼 사용자가 해석할 수 없는 문구가 된다.
+ *
+ * @param key 번들 구분 키 ('module' | 'plugin')
+ * @return string 사용자 어휘 항목명
+ * @since engine-v1.64.7
+ */
+function bundleCssLabel(key: string): string {
+    return key === 'plugin'
+        ? assetText('core.assets.plugin_styles', '플러그인 스타일')
+        : assetText('core.assets.module_styles', '모듈 스타일');
+}
 
 /**
  * 모듈 에셋 정보 인터페이스
@@ -321,7 +337,7 @@ export class ModuleAssetLoader {
             // 항상 실패한다 — 버튼은 있는데 아무것도 고치지 못하는 상태가 된다.
             this.surfaceCssFailure(
                 `bundle-${key}`,
-                key,
+                bundleCssLabel(key),
                 legacyUrl !== null ? convertToCurrentMode(legacyUrl) : url,
                 error
             );

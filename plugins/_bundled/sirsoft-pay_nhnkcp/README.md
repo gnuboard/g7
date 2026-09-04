@@ -1,4 +1,4 @@
-# NHN KCP
+# 그누보드7 NHN KCP 플러그인
 
 **그누보드7 플러그인 · sirsoft-pay_nhnkcp**
 NHN KCP Standard Pay 결제를 sirsoft-ecommerce 에 연결하는 결제 플러그인
