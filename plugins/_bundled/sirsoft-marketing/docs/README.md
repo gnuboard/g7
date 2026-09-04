@@ -1,4 +1,4 @@
-# 마케팅 동의 개발자 문서
+# 그누보드7 마케팅 동의 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-marketing · 플러그인
 

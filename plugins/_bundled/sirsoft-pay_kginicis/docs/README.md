@@ -1,4 +1,4 @@
-# KG 이니시스 개발자 문서
+# 그누보드7 KG 이니시스 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-pay_kginicis · 플러그인
 

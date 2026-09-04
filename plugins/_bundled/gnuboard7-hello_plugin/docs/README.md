@@ -1,4 +1,4 @@
-# Hello 플러그인 개발자 문서
+# 그누보드7 Hello 플러그인 개발자 문서
 
 > plugins/_bundled/gnuboard7-hello_plugin · 플러그인
 

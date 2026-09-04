@@ -2143,7 +2143,7 @@ class ExtensionDocScaffolder
         $label = ExtensionInventory::typeLabel($record['type']);
 
         $lines = [];
-        $lines[] = "# {$name} — 에이전트 가이드";
+        $lines[] = '# '.ExtensionInventory::docTitle($name, $record['type']).' — 에이전트 가이드';
         $lines[] = '';
         $lines[] = "> 이 문서는 이 {$label}을 수정하는 에이전트·확장개발자를 위한 것입니다. 도입 검토·운영 관점은 [README.md](README.md) 를 보세요.";
         $lines[] = '';
@@ -2307,8 +2307,10 @@ class ExtensionDocScaffolder
         // 대등하게 병렬로 존재하는 구성요소이고, 각자가 코어와 같은 히어로 브랜딩을 받으면
         // "이 확장이 곧 독립 프로젝트" 라는 착시를 준다. `@generated:badges` 블록의
         // flat-square 정보 배지는 manifest 에서 오는 것이라 그대로 둔다.
+        // 제목은 확장명만이 아니라 「그누보드7 {확장명} {유형}」 이다 (PO 결정 2026-09-04) —
+        // 이 문서만 연 사람이 그누보드7의 어떤 종류 확장인지 제목에서 알 수 있어야 한다.
         $lines = [];
-        $lines[] = '# '.$name;
+        $lines[] = '# '.ExtensionInventory::docTitle($name, $record['type']);
         $lines[] = '';
         $lines[] = "**그누보드7 {$label} · {$record['id']}**";
         $lines[] = $this->escape($description);
@@ -2423,7 +2425,7 @@ class ExtensionDocScaffolder
         $record = $ctx['record'];
 
         $lines = [];
-        $lines[] = "# {$record['name']} 개발자 문서";
+        $lines[] = '# '.ExtensionInventory::docTitle($record['name'], $record['type']).' 개발자 문서';
         $lines[] = '';
         $lines[] = "> {$record['relPath']} · ".ExtensionInventory::typeLabel($record['type']);
         $lines[] = '';

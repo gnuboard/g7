@@ -1,4 +1,4 @@
-# NHN KCP 휴대폰 본인확인
+# 그누보드7 NHN KCP 휴대폰 본인확인 플러그인
 
 **그누보드7 플러그인 · sirsoft-verification_nhnkcp**
 NHN KCP 휴대폰 본인확인(V2 REST)을 그누보드7 코어 IDV 인프라에 Provider 로 등록하는 플러그인

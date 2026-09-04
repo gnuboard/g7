@@ -1,4 +1,4 @@
-# KG이니시스 본인인증
+# 그누보드7 KG이니시스 본인인증 플러그인
 
 **그누보드7 플러그인 · sirsoft-verification_kginicis**
 KG이니시스 통합인증의 본인확인(reqSvcCd=03)을 그누보드7 코어 IDV 인프라에 Provider 로 등록하는 플러그인

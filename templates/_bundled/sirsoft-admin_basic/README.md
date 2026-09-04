@@ -1,4 +1,4 @@
-# Admin Basic
+# 그누보드7 Admin Basic 템플릿
 
 **그누보드7 템플릿 · sirsoft-admin_basic**
 그누보드7 기본 관리자 템플릿

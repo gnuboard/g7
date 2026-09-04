@@ -1144,6 +1144,76 @@ class ExtensionDocContractTest extends TestCase
     }
 
     /**
+     * 진입 문서 3종의 제목이 「그누보드7 {확장명} {유형}」 을 담는지 단언합니다.
+     *
+     * PO 결정(2026-09-04): 확장 README 제목이 확장명뿐(`# 게시판`)이면 그 문서만 연 사람이
+     * 이것이 그누보드7의 확장인지, 모듈인지 템플릿인지 알 수 없다. README · AGENTS.md ·
+     * docs/README.md 는 제3자가 처음 여는 진입 문서이므로 셋 다 같은 제목을 쓴다.
+     *
+     * 기대값은 손으로 적지 않고 생성기와 같은 헬퍼(`ExtensionInventory::docTitle`)에서
+     * 만든다 — 규칙을 두 곳에 적으면 한쪽만 고쳐 어긋난다. 골격 생성기 출력도 같은 판정을
+     * 받아, 다음 확장이 확장명만 든 제목으로 태어나는 경로를 막는다.
+     */
+    public function test_entry_documents_carry_product_and_type_in_their_title(): void
+    {
+        $inventory = new ExtensionInventory;
+        $records = $inventory->collect('all');
+        $this->assertNotEmpty($records, '번들 확장을 하나도 발견하지 못했습니다.');
+
+        $expectedFor = fn (array $record): array => [
+            'README.md' => '# '.ExtensionInventory::docTitle($record['name'], $record['type']),
+            'AGENTS.md' => '# '.ExtensionInventory::docTitle($record['name'], $record['type']).' — 에이전트 가이드',
+            'docs/README.md' => '# '.ExtensionInventory::docTitle($record['name'], $record['type']).' 개발자 문서',
+        ];
+
+        $checked = 0;
+        $mismatched = [];
+
+        foreach ($records as $record) {
+            foreach ($expectedFor($record) as $rel => $heading) {
+                $file = $record['path'].'/'.$rel;
+                if (! is_file($file)) {
+                    continue;
+                }
+
+                $checked++;
+                $firstLine = strtok((string) file_get_contents($file), "\r\n");
+
+                if ($firstLine !== $heading) {
+                    $mismatched[] = "{$record['relPath']}/{$rel}: \"{$firstLine}\" (기대: \"{$heading}\")";
+                }
+            }
+        }
+
+        $this->assertGreaterThan(
+            0,
+            $checked,
+            '진입 문서를 가진 번들 확장이 하나도 없습니다 — 모집단이 비면 이 단언은 공허 통과합니다.',
+        );
+        $this->assertSame(
+            [],
+            $mismatched,
+            "진입 문서 제목이 「그누보드7 {확장명} {유형}」 형식이 아닙니다:\n".implode("\n", $mismatched),
+        );
+
+        // 이미 놓인 파일만 보면 다음 확장이 사각이다 — 골격 생성기 출력도 같은 판정을 받는다.
+        $scaffolder = new ExtensionDocScaffolder;
+
+        foreach ($records as $record) {
+            $ctx = $this->contextFor($record, $inventory);
+
+            foreach ($expectedFor($record) as $rel => $heading) {
+                $skeleton = $scaffolder->skeleton($rel, $ctx);
+                $this->assertSame(
+                    $heading,
+                    strtok($skeleton, "\r\n"),
+                    "골격 생성기의 {$rel} 제목이 형식을 따르지 않습니다 ({$record['id']} 기준).",
+                );
+            }
+        }
+    }
+
+    /**
      * 확장 문서의 「활동 로그 훅」 표가 리스너의 실제 구독과 일치하는지 단언합니다.
      *
      * 이 목록은 코어 `docs/backend/activity-log-hooks.md` 에서 확장 소유로 옮겨온 것이고(#601),

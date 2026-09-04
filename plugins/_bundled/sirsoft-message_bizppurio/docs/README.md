@@ -1,4 +1,4 @@
-# 비즈뿌리오 메시지 발송 개발자 문서
+# 그누보드7 비즈뿌리오 메시지 발송 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-message_bizppurio · 플러그인
 

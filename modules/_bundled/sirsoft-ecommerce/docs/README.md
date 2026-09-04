@@ -1,4 +1,4 @@
-# 이커머스 개발자 문서
+# 그누보드7 이커머스 모듈 개발자 문서
 
 > modules/_bundled/sirsoft-ecommerce · 모듈
 

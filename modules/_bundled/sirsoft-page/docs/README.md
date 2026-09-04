@@ -1,4 +1,4 @@
-# 페이지 개발자 문서
+# 그누보드7 페이지 모듈 개발자 문서
 
 > modules/_bundled/sirsoft-page · 모듈
 

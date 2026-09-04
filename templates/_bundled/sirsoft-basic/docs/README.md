@@ -1,4 +1,4 @@
-# Basic 개발자 문서
+# 그누보드7 Basic 템플릿 개발자 문서
 
 > templates/_bundled/sirsoft-basic · 템플릿
 

@@ -1,4 +1,4 @@
-# GDPR (일반 데이터 보호 규정) 개발자 문서
+# 그누보드7 GDPR (일반 데이터 보호 규정) 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-gdpr · 플러그인
 

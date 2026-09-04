@@ -1,4 +1,4 @@
-# NHN KCP 휴대폰 본인확인 개발자 문서
+# 그누보드7 NHN KCP 휴대폰 본인확인 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-verification_nhnkcp · 플러그인
 

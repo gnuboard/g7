@@ -1,4 +1,4 @@
-# Hello Admin Template 개발자 문서
+# 그누보드7 Hello Admin Template 개발자 문서
 
 > templates/_bundled/gnuboard7-hello_admin_template · 템플릿
 

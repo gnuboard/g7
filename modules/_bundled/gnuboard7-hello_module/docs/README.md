@@ -1,4 +1,4 @@
-# Hello 모듈 개발자 문서
+# 그누보드7 Hello 모듈 개발자 문서
 
 > modules/_bundled/gnuboard7-hello_module · 모듈
 

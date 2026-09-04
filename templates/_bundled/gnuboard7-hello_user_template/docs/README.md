@@ -1,4 +1,4 @@
-# Hello 사용자 템플릿 개발자 문서
+# 그누보드7 Hello 사용자 템플릿 개발자 문서
 
 > templates/_bundled/gnuboard7-hello_user_template · 템플릿
 

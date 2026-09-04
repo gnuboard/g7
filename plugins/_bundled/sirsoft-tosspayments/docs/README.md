@@ -1,4 +1,4 @@
-# 토스페이먼츠 개발자 문서
+# 그누보드7 토스페이먼츠 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-tosspayments · 플러그인
 

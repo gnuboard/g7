@@ -1,4 +1,4 @@
-# Hello Admin Template
+# 그누보드7 Hello Admin Template
 
 **그누보드7 템플릿 · gnuboard7-hello_admin_template**
 그누보드7 학습용 최소 Admin 템플릿 스켈레톤

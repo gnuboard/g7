@@ -1,4 +1,4 @@
-# 게시판 개발자 문서
+# 그누보드7 게시판 모듈 개발자 문서
 
 > modules/_bundled/sirsoft-board · 모듈
 

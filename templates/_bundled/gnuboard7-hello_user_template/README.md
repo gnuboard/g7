@@ -1,4 +1,4 @@
-# Hello 사용자 템플릿
+# 그누보드7 Hello 사용자 템플릿
 
 **그누보드7 템플릿 · gnuboard7-hello_user_template**
 학습용 최소 샘플 사용자 템플릿 (Basic 8개 컴포넌트)
