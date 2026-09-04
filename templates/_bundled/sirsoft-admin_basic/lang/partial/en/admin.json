@@ -1307,6 +1307,8 @@
     "page_title": "Settings",
     "page_description": "Configure system settings.",
     "readonly_notice": "These settings are read-only. Contact your administrator for edit access.",
+    "env_locked_badge": "Set in .env",
+    "env_locked_notice": "This site runs with .env priority enabled. Fields whose values are set in .env cannot be changed here, and the values shown are the ones actually in effect. To change them, edit .env on the server and rebuild the configuration cache.",
     "tabs": {
       "general": "General",
       "mail": "Mail",

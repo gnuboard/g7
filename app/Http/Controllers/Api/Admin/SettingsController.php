@@ -15,6 +15,7 @@ use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
 use App\Services\OutboundProxyTester;
 use App\Services\SettingsService;
+use App\Support\EnvPriority;
 use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -37,6 +38,27 @@ class SettingsController extends AdminBaseController
     }
 
     /**
+     * 설정 응답에 동봉할 `_meta` 를 만듭니다.
+     *
+     * 조회와 저장 두 응답이 같은 모양이어야 화면이 저장 직후에도 같은 판정을 이어갑니다 —
+     * 한쪽만 필드가 늘면 저장 후 잠금 표시가 조용히 사라집니다.
+     *
+     * - `limits`: 입력 한계값 (core.settings_limits)
+     * - `env_priority_enabled`: `.env` 우선 모드 활성 여부 (안내 배너 표시 판정)
+     * - `env_locked`: `.env` 로 잠긴 필드 목록 (프론트엔드 키 기준)
+     *
+     * @return array<string, mixed> 응답 메타 배열
+     */
+    private function buildSettingsMeta(): array
+    {
+        return [
+            'limits' => config('core.settings_limits', []),
+            'env_priority_enabled' => EnvPriority::enabled(),
+            'env_locked' => $this->settingsService->envLockedMeta(),
+        ];
+    }
+
+    /**
      * 모든 시스템 설정을 조회합니다.
      *
      * @return JsonResponse 시스템 설정 목록을 포함한 JSON 응답
@@ -46,7 +68,7 @@ class SettingsController extends AdminBaseController
         try {
             $settings = $this->settingsService->getAllSettings();
             $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
-            $settings['_meta'] = ['limits' => config('core.settings_limits', [])];
+            $settings['_meta'] = $this->buildSettingsMeta();
 
             return $this->success('settings.fetch_success',
                 (new SettingsResource($settings))->toArray(request())
@@ -74,7 +96,7 @@ class SettingsController extends AdminBaseController
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $allSettings = $this->settingsService->getAllSettings();
                 $allSettings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
-                $allSettings['_meta'] = ['limits' => config('core.settings_limits', [])];
+                $allSettings['_meta'] = $this->buildSettingsMeta();
 
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,
