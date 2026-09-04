@@ -348,7 +348,9 @@ public function boot(): void
 ```
 
 등록 후 `.env`에서 `SCOUT_DRIVER=meilisearch`로 전환하거나, 관리자 환경설정 > 드라이버의
-검색엔진 항목에서 선택할 수 있습니다.
+검색엔진 항목에서 선택할 수 있습니다. 두 값이 모두 있으면 관리자 환경설정이 이깁니다 —
+`.env` 값을 기준으로 삼으려면 `.env` 우선 모드(`G7_ENV_PRIORITY=true`)를 켭니다
+([admin-settings-access.md](admin-settings-access.md) "env 우선 모드").
 
 #### 드라이버 폴백 가드
 

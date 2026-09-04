@@ -630,6 +630,24 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 
 > 상세: [module-settings.md](docs/extension/module-settings.md) "카탈로그 병합 설정의 공개 응답"
 
+### 설정 주입과 `.env` 우선
+
+관리자 환경설정(`storage/app/settings/*.json`)은 `SettingsServiceProvider` 를 거쳐 `config()` 에 주입되어 `.env` 유래 값을 덮는다. `.env` 를 배포 기준값으로 관리하는 설치(컨테이너·IaC·다중 서버)를 위해 그 소유권을 **키 단위**로 되돌리는 옵트인 스위치(`G7_ENV_PRIORITY`)가 있고, 판정은 `App\Support\EnvPriority` 가 단독으로 소유한다.
+
+| 금지 | 올바른 사용 |
+|--------|---------------|
+| `SettingsServiceProvider` 에 settings → config 주입을 추가하면서 `EnvPriority::MAP`(또는 `EXEMPT`) 미등재 | 맵을 동반 갱신 — 등재를 잊으면 그 키는 영원히 settings 승으로 남고, 화면상 "그 키가 `.env` 에 없다"와 구분되지 않는다 |
+| env 명시 여부를 런타임 `env()` 로 판별 | config 빌드 시점 캡처(`config/env-priority.php`, `disk_explicit` 패턴) — `config:cache` 에서 `env()` 는 null 이라 판정이 영구 미발동한다 |
+| 잠긴 키 표시값에 sensitive 값(`.env` 비밀값) 노출 | 잠금 표시만 — 민감 키는 유효값 오버레이 대상에서 제외한다 |
+| 제거된 키의 **부재를 값으로 읽는 지점**을 그대로 둠 (게이트·기본값 주입·형제 폴백) | 그 자리는 유효값(런타임 config)으로 보정하거나 잠금일 때만 건너뛴다 — `array_key_exists`/`empty()` 로 판정하면 "저장값이 없는 호출"과 "잠겨서 제거된 호출"이 구분되지 않는다 |
+
+명시 판별은 strict 다 — `KEY=`(빈 값)·`KEY=null`·미설정만 미명시이고, `APP_DEBUG=false`·`REDIS_DB=0` 같은 falsy 명시는 명시로 취급한다(`?:` 를 쓰면 그 값들이 미명시로 오판된다).
+
+잠금은 **그 키의 주입만** 건너뛰는 것이다. 그런데 제거된 키를 읽는 자리가 그 부재를 값으로 해석하면 잠금이 형제 설정까지 무너뜨린다 — 다섯 형태가 있고 전부 오류도 로그도 남기지 않는다: ① 마스터 토글의 OFF 강제(웹소켓) ② 게이트가 되는 키(디버그 모드 → 로그 레벨 강제·프록시 적용, 메일 드라이버 → mailgun/ses 하위 주입) ③ 저장값이 비어도 박히던 기본값(`services.{mailgun.endpoint,ses.region}`) ④ 형제 값으로의 폴백(웹소켓 server endpoint 가 관리자 소유 client 값을 `.env` 자리에 덮어씀) ⑤ 파생 판정(`storage_driver=s3` → `attachment.disk`). 판정에 쓰는 자리는 유효값으로 보정하고, 주입을 건너뛰어야 하는 자리는 `EnvPriority::isLocked()` 를 직접 묻는다.
+
+> 상세: [admin-settings-access.md](docs/backend/admin-settings-access.md) "env 우선 모드(G7_ENV_PRIORITY)"
+> 자동 차단: 정적 검사가 주입 메서드의 필터 배선 실존을 확인하고, 맵 패리티·캡처 일치·`env()` 재유입과 표시값·저장 게이트는 계약 테스트가 잠근다. 부재를 값으로 읽는 자리는 의미 판정 영역이라 정적 검사가 덮지 못한다 — 게이트·기본값·폴백·파생 네 축을 각각 고정하는 회귀 테스트가 그 자리를 잠근다
+
 ### 목록 조회 컬럼 프루닝과 지연 조인
 
 | 금지 | 올바른 사용 |

@@ -70,6 +70,17 @@
                             "className": "text-red-500 ml-1"
                           },
                           "text": "*"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Badge",
+                          "if": "{{_computed.envLocked?.['general.site_name'] === true}}",
+                          "props": {
+                            "text": "$t:admin.settings.env_locked_badge",
+                            "variant": "secondary",
+                            "size": "sm",
+                            "className": "ml-2"
+                          }
                         }
                       ]
                     },
@@ -80,7 +91,7 @@
                         "type": "text",
                         "name": "general.site_name",
                         "placeholder": "그누보드7",
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['general.site_name'] === true}}",
                         "className": "input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"
                       }
                     },
@@ -119,6 +130,17 @@
                             "className": "text-red-500 ml-1"
                           },
                           "text": "*"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Badge",
+                          "if": "{{_computed.envLocked?.['general.site_url'] === true}}",
+                          "props": {
+                            "text": "$t:admin.settings.env_locked_badge",
+                            "variant": "secondary",
+                            "size": "sm",
+                            "className": "ml-2"
+                          }
                         }
                       ]
                     },
@@ -129,7 +151,7 @@
                         "type": "url",
                         "name": "general.site_url",
                         "placeholder": "https://example.com",
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['general.site_url'] === true}}",
                         "className": "input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"
                       }
                     },
@@ -386,6 +408,17 @@
                             "className": "text-red-500 ml-1"
                           },
                           "text": "*"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Badge",
+                          "if": "{{_computed.envLocked?.['general.language'] === true}}",
+                          "props": {
+                            "text": "$t:admin.settings.env_locked_badge",
+                            "variant": "secondary",
+                            "size": "sm",
+                            "className": "ml-2"
+                          }
                         }
                       ]
                     },
@@ -395,7 +428,7 @@
                       "props": {
                         "name": "general.language",
                         "className": "w-full",
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['general.language'] === true}}",
                         "placeholder": "$t:admin.settings.general.select_language",
                         "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                         "error": "{{_local.errors?.['general.language']?.[0] ?? ''}}"
@@ -436,6 +469,17 @@
                             "className": "text-red-500 ml-1"
                           },
                           "text": "*"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Badge",
+                          "if": "{{_computed.envLocked?.['general.timezone'] === true}}",
+                          "props": {
+                            "text": "$t:admin.settings.env_locked_badge",
+                            "variant": "secondary",
+                            "size": "sm",
+                            "className": "ml-2"
+                          }
                         }
                       ]
                     },
@@ -445,7 +489,7 @@
                       "props": {
                         "name": "general.timezone",
                         "className": "w-full",
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['general.timezone'] === true}}",
                         "placeholder": "$t:admin.settings.general.select_timezone",
                         "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
                         "searchable": true,
