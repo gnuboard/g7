@@ -139,7 +139,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 23개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
+| Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 1개 | `tests/scenarios` |
 

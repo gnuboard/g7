@@ -20,10 +20,13 @@
             "refetchOnMount": true,
             "initLocal": "form",
             "loading_strategy": "blocking",
+            "_comment_verify_token": "검증 토큰은 자격증명이라 헤더로 보낸다 — 쿼리로 실으면 웹서버 접근 기록과 Referer 에 그대로 남는다. 빈 값은 엔진이 헤더에서 제외한다.",
+            "headers": {
+                "X-Board-Post-Verify-Token": "{{_local.verificationToken ?? ''}}"
+            },
             "params": {
                 "post_id": "{{route?.id ?? ''}}",
-                "parent_id": "{{query?.parent_id ?? ''}}",
-                "verification_token": "{{_local.verificationToken ?? ''}}"
+                "parent_id": "{{query?.parent_id ?? ''}}"
             },
             "onSuccess": {
                 "comment": "refetch 후 _local.form을 응답값으로 직접 덮어씌우기 (비밀글 content 반영)",
@@ -59,10 +62,13 @@
             "auth_mode": "optional",
             "cache": false,
             "refetchOnMount": true,
+            "_comment_verify_token": "검증 토큰은 자격증명이라 헤더로 보낸다 — 쿼리로 실으면 웹서버 접근 기록과 Referer 에 그대로 남는다. 빈 값은 엔진이 헤더에서 제외한다.",
+            "headers": {
+                "X-Board-Post-Verify-Token": "{{_local.verificationToken ?? ''}}"
+            },
             "params": {
                 "post_id": "{{route?.id ?? ''}}",
-                "parent_id": "{{query?.parent_id ?? ''}}",
-                "verification_token": "{{_local.verificationToken ?? ''}}"
+                "parent_id": "{{query?.parent_id ?? ''}}"
             },
             "errorHandling": {
                 "403": {

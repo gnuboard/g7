@@ -26,6 +26,7 @@ use Modules\Sirsoft\Board\Http\Requests\User\VerifyGuestPasswordRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
@@ -161,89 +162,7 @@ class PostController extends PublicBaseController
                 $post->view_count = (int) $post->view_count + 1;
             }
 
-            // manager 권한 체크 (삭제 게시글/댓글 포함 여부 결정)
-            $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
-
-            // 댓글 로드 (게시판 comment_order 설정 적용, manager 권한 + 토글 ON 시 삭제 댓글 포함)
-            $withTrashedComments = $canViewDeleted && $request->boolean('del_cmt');
-
-            // comment_page 가 오면 원댓글 기준 페이지네이션 경로를 쓴다. 댓글이 상한을 넘는
-            // 글에서도 뒤쪽 댓글에 도달할 수 있어야 하기 때문이다. 파라미터가 없으면
-            // 종전대로 상한까지 전량을 싣는다(기존 화면 응답 형태 불변).
-            $commentPage = $this->resolveCommentPage($request);
-            $commentPagination = null;
-
-            if ($commentPage !== null) {
-                $paginated = $this->commentService->paginateCommentsByPostId(
-                    $slug,
-                    $id,
-                    perPage: $commentPage['per_page'],
-                    page: $commentPage['page'],
-                    context: 'user',
-                    withTrashed: $withTrashedComments,
-                    boardId: $board->id,
-                    board: $board,
-                );
-
-                $comments = $paginated->getCollection();
-                $commentPagination = [
-                    'current_page' => $paginated->currentPage(),
-                    'per_page' => $paginated->perPage(),
-                    'total' => $paginated->total(),
-                    'last_page' => $paginated->lastPage(),
-                    'has_more_pages' => $paginated->hasMorePages(),
-                    'total_relation' => $paginated->totalRelation()->value,
-                    'total_is_exact' => $paginated->totalRelation()->isExact(),
-                    'result_cap' => $paginated->resultCap(),
-                ];
-            } else {
-                $comments = $this->commentService->getCommentsByPostId($slug, $id, context: 'user', withTrashed: $withTrashedComments, boardId: $board->id, board: $board);
-            }
-
-            // 신고 여부 일괄 조회 (N+1 방지: 댓글별 개별 쿼리 → 1회 일괄 쿼리)
-            $user = $request->user();
-            if ($user) {
-                $commentIds = $comments->pluck('id')->all();
-                $reportedCommentIds = $this->reportService
-                    ->getReportedTargetIds($user->id, $board->id, 'comment', $commentIds);
-
-                foreach ($comments as $comment) {
-                    $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
-                    $comment->setRelation('post', $post);
-                }
-            } else {
-                // 비로그인: 신고 불가이므로 모두 false
-                foreach ($comments as $comment) {
-                    $comment->is_already_reported_preloaded = false;
-                    $comment->setRelation('post', $post);
-                }
-            }
-
-            // 정렬된 댓글을 post에 설정
-            $post->setRelation('comments', $comments);
-
-            // 댓글 목록은 상한에서 끊길 수 있다. 끊겼다면 그 사실을 화면에 알린다 —
-            // 조용히 잘라내면 사용자에게는 "댓글이 그만큼뿐" 으로 보인다.
-            // 상한 이하면 이미 전량을 받았으므로 세는 쿼리를 추가하지 않는다.
-            $commentCap = PaginationLimits::resultCap('board.comments');
-
-            if ($commentPagination !== null) {
-                // 페이지네이션 경로는 잘림 여부를 페이지 메타가 그대로 알린다.
-                $post->comments_pagination = $commentPagination;
-                $post->comments_total = $commentPagination['total'];
-                $post->comments_total_is_exact = $commentPagination['total_is_exact'];
-            } elseif ($commentCap !== null && $comments->count() >= $commentCap) {
-                $commentTotal = $this->commentService->countCommentsByPostId(
-                    $slug,
-                    $id,
-                    $withTrashedComments,
-                    $board->id
-                );
-
-                $post->comments_truncated = true;
-                $post->comments_total = $commentTotal->total;
-                $post->comments_total_is_exact = $commentTotal->totalRelation()->isExact();
-            }
+            $this->attachComments($request, $post, $board, $slug, $id);
 
             // 비밀글 권한 체크 및 content 필터링은 PostResource에서 처리
             return $this->successWithResource(
@@ -443,7 +362,11 @@ class PostController extends PublicBaseController
             }
 
             // 게시글 수정
-            $data = $request->validated();
+            // password / verification_token 은 본인 확인용 자격증명이므로 저장 데이터에서 제거한다.
+            // 그대로 넘기면 검증에 쓰인 평문이 기존 bcrypt 해시를 덮어써, 비밀번호가 평문으로
+            // 남고 이후 본인 확인이 "bcrypt 가 아니다" 예외로 끝나 본인이 자기 글을 수정·삭제할
+            // 수 없게 된다. 댓글 수정 경로(CommentController::update)와 같은 규칙이다.
+            $data = collect($request->validated())->except(['password', 'verification_token'])->toArray();
 
             // `attachment_ids` 를 Service 로 넘기지 않으면 검증(형식·개수 상한 합산)은 통과하고
             // 첨부만 조용히 연결되지 않는다 (200 + 첨부 0 건). 관리자 경로는 넘기고 있으므로
@@ -550,7 +473,15 @@ class PostController extends PublicBaseController
             }
 
             // 게시글 조회 (첨부파일 포함). 이미 조회한 Board 를 넘겨 재조회를 막는다.
-            $post = $this->postService->getPostWithCounts($slug, $id, board: $board);
+            // context 는 상세 조회와 같은 값을 넘긴다 — 라우트의 {id} 는 Model 로 resolve
+            // 되지 않아 미들웨어 스코프 검사가 건너뛰므로, 서비스 계층이 유일한 스코프 관문이다.
+            $post = $this->postService->getPostWithCounts($slug, $id, board: $board, context: 'user');
+
+            // 삭제된 게시글은 상세 조회와 동일하게 manager 권한을 요구한다. 이 판정이 없으면
+            // 목록에서 사라진 글의 원문이 주소를 아는 쪽에만 열려 형제 경로로 새어나간다.
+            if ($post->trashed() && ! $this->checkBoardPermission($slug, 'manager', PermissionType::User)) {
+                throw new PostNotFoundException($id);
+            }
 
             // 비밀번호 검증 (Service 사용)
             $password = $request->validated('password');
@@ -563,11 +494,22 @@ class PostController extends PublicBaseController
             // 검증 성공 - password_verified 플래그 설정하여 PostResource에서 content 포함
             $post->password_verified = true;
 
+            // 상세 조회와 같은 스키마를 돌려준다. 화면은 이 응답으로 게시글 데이터소스를
+            // 통째로 교체하므로, 댓글을 싣지 않으면 목록이 사라진 채 "댓글 N" 헤더만 남는다.
+            $this->attachComments($request, $post, $board, $slug, $id);
+
+            // 이 플래그는 이 응답 안에서만 산다. 화면은 원문이 열린 사람에게 댓글·답글·신고를
+            // 내주는데 그 요청들은 각각 별개라, 같은 사실을 넘길 토큰을 함께 발급한다.
+            $viewToken = $this->postService->issueSecretViewToken($slug, $id);
+
             // successWithResource 사용: $this->when() 조건부 필드가 올바르게 직렬화됨
             // (toArray 직접 호출 시 MissingValue 객체가 반환되는 문제 방지)
             return $this->successWithResource(
                 'sirsoft-board::messages.posts.password_verified',
-                new PostResource($post)
+                (new PostResource($post))->additional([
+                    'secret_view_token' => $viewToken['token'],
+                    'secret_view_expires_at' => $viewToken['expires_at'],
+                ])
             );
         } catch (ModelNotFoundException $e) {
             throw new PostNotFoundException($id);
@@ -681,11 +623,9 @@ class PostController extends PublicBaseController
                 $requiresPassword = ! $post->user_id && $post->password;
 
                 // verification_token이 유효하면 비밀번호 확인 불필요
-                if ($requiresPassword && $request->filled('verification_token')) {
-                    $token = $request->get('verification_token');
-                    if ($this->isVerificationTokenValid($slug, $postId, $token)) {
-                        $requiresPassword = false;
-                    }
+                $token = $this->verificationTokenFrom($request);
+                if ($requiresPassword && $token !== '' && $this->verificationTokenMatches($slug, $postId, $token)) {
+                    $requiresPassword = false;
                 }
 
                 $metaData['requires_password'] = $requiresPassword;
@@ -771,9 +711,9 @@ class PostController extends PublicBaseController
                 // 비밀글 또는 비회원 글의 검증 처리
                 // 1. verification_token으로 검증 (권장 - 비밀번호 재전송 불필요)
                 // 2. password로 검증 (fallback)
-                if ($request->filled('verification_token')) {
-                    $token = $request->get('verification_token');
-                    if ($this->isVerificationTokenValid($slug, $postId, $token)) {
+                $token = $this->verificationTokenFrom($request);
+                if ($token !== '') {
+                    if ($this->verificationTokenMatches($slug, $postId, $token)) {
                         $post->password_verified = true;
                     }
                 } elseif ($request->filled('password') && $post->password) {
@@ -798,7 +738,7 @@ class PostController extends PublicBaseController
                     'parent_id' => $postData['parent_id'] ?? null,
                     'attachments' => $postData['attachments'] ?? [],
                     // 비회원 글 수정 시 verification_token 유지 (PUT 요청에 필요)
-                    'verification_token' => $request->get('verification_token', ''),
+                    'verification_token' => $this->verificationTokenFrom($request),
                 ];
             }
             // 답변글 모드
@@ -940,8 +880,8 @@ class PostController extends PublicBaseController
         // 3. 비회원 게시글인 경우 verification_token 또는 비밀번호로 확인
         if (! $post->user_id && $post->password) {
             // 3-1. verification_token 확인 (권장)
-            $token = $request->input('verification_token');
-            if ($token && $this->isVerificationTokenValid($slug, $post->id, $token)) {
+            $token = $this->verificationTokenFrom($request);
+            if ($token !== '' && $this->consumeVerificationToken($slug, $post->id, $token)) {
                 return true;
             }
 
@@ -960,14 +900,58 @@ class PostController extends PublicBaseController
     // =========================================================================
 
     /**
-     * verification_token이 유효한지 확인하고 소비합니다.
+     * 요청에서 게시글 검증 토큰을 꺼냅니다.
+     *
+     * 헤더를 먼저 본다 — 자격증명이 주소에 실리면 웹서버 접근 기록과 Referer 에 남는다.
+     * 폼 조회(GET)는 헤더로만 보내도록 바꿨지만, 저장·삭제는 이미 본문으로 보내고 있고
+     * 외부에서 그 형태로 호출하는 쪽이 있을 수 있어 기존 경로도 계속 받는다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return string 검증 토큰 (없으면 빈 문자열)
+     */
+    private function verificationTokenFrom(Request $request): string
+    {
+        $header = $request->header(PostService::VERIFY_TOKEN_HEADER);
+
+        if (is_string($header) && $header !== '') {
+            return $header;
+        }
+
+        $value = $request->input('verification_token');
+
+        return is_string($value) ? $value : '';
+    }
+
+    /**
+     * verification_token 이 유효한지 확인만 합니다 (소비하지 않음).
+     *
+     * 수정 화면은 「비밀번호 확인 → 폼 조회 → 저장」 순으로 같은 토큰을 여러 번 제시한다.
+     * 폼 조회가 토큰을 써 버리면 저장 시점에 남지 않아, 비밀번호를 정확히 넣고 본문까지 본
+     * 사용자가 「수정 권한이 없습니다」로 거부된다 — 토큰을 다시 받을 방법이 화면에 없어
+     * 그 글은 수정 자체가 불가능해진다. 그래서 읽기는 이 확인만 쓴다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
      * @param  string  $token  검증 토큰
      * @return bool 토큰 유효 여부
      */
-    private function isVerificationTokenValid(string $slug, int $postId, string $token): bool
+    private function verificationTokenMatches(string $slug, int $postId, string $token): bool
+    {
+        return $this->postService->hasValidDeleteVerifyToken($slug, $postId, $token);
+    }
+
+    /**
+     * verification_token 을 확인하고 소비합니다.
+     *
+     * 소비는 상태를 바꾸는 요청(수정·삭제)에서만 한다 — 그 지점이 토큰의 목적이고,
+     * 1회용이라야 같은 토큰으로 두 번 쓰는 것을 막을 수 있다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  string  $token  검증 토큰
+     * @return bool 토큰 유효 여부
+     */
+    private function consumeVerificationToken(string $slug, int $postId, string $token): bool
     {
         return $this->postService->consumeDeleteVerifyToken($slug, $postId, $token);
     }
@@ -1051,5 +1035,107 @@ class PostController extends PublicBaseController
         $perPage = max(1, min($perPage, 100));
 
         return ['page' => $page, 'per_page' => $perPage];
+    }
+
+    /**
+     * 게시글에 댓글 목록과 그 메타를 적재합니다.
+     *
+     * 상세 조회와 비밀번호 검증이 같은 응답 스키마를 약속하므로(문서: "GET 상세와 동일
+     * 스키마") 적재 규칙을 한 곳에 둔다. 검증 응답에서 이 적재가 빠지면 화면이 그 응답으로
+     * 게시글 데이터소스를 통째로 교체하는 순간 댓글 목록이 사라지는데, 댓글 수는 집계
+     * 컬럼이라 그대로 남아 "댓글 N" 아래가 비어 보인다 — 오류도 경고도 남지 않는다.
+     *
+     * @param  Request  $request  HTTP 요청 (del_cmt / comment_page 파라미터 해석)
+     * @param  Post  $post  대상 게시글 (comments 관계와 메타가 이 인스턴스에 설정된다)
+     * @param  Board  $board  이미 조회한 게시판 (재조회 방지)
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     */
+    private function attachComments(Request $request, Post $post, Board $board, string $slug, int $id): void
+    {
+        // manager 권한 체크 (삭제 게시글/댓글 포함 여부 결정)
+        $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+
+        // 댓글 로드 (게시판 comment_order 설정 적용, manager 권한 + 토글 ON 시 삭제 댓글 포함)
+        $withTrashedComments = $canViewDeleted && $request->boolean('del_cmt');
+
+        // comment_page 가 오면 원댓글 기준 페이지네이션 경로를 쓴다. 댓글이 상한을 넘는
+        // 글에서도 뒤쪽 댓글에 도달할 수 있어야 하기 때문이다. 파라미터가 없으면
+        // 종전대로 상한까지 전량을 싣는다(기존 화면 응답 형태 불변).
+        $commentPage = $this->resolveCommentPage($request);
+        $commentPagination = null;
+
+        if ($commentPage !== null) {
+            $paginated = $this->commentService->paginateCommentsByPostId(
+                $slug,
+                $id,
+                perPage: $commentPage['per_page'],
+                page: $commentPage['page'],
+                context: 'user',
+                withTrashed: $withTrashedComments,
+                boardId: $board->id,
+                board: $board,
+            );
+
+            $comments = $paginated->getCollection();
+            $commentPagination = [
+                'current_page' => $paginated->currentPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+                'last_page' => $paginated->lastPage(),
+                'has_more_pages' => $paginated->hasMorePages(),
+                'total_relation' => $paginated->totalRelation()->value,
+                'total_is_exact' => $paginated->totalRelation()->isExact(),
+                'result_cap' => $paginated->resultCap(),
+            ];
+        } else {
+            $comments = $this->commentService->getCommentsByPostId($slug, $id, context: 'user', withTrashed: $withTrashedComments, boardId: $board->id, board: $board);
+        }
+
+        // 신고 여부 일괄 조회 (N+1 방지: 댓글별 개별 쿼리 → 1회 일괄 쿼리)
+        $user = $request->user();
+        if ($user) {
+            $commentIds = $comments->pluck('id')->all();
+            $reportedCommentIds = $this->reportService
+                ->getReportedTargetIds($user->id, $board->id, 'comment', $commentIds);
+
+            foreach ($comments as $comment) {
+                $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
+                $comment->setRelation('post', $post);
+            }
+        } else {
+            // 비로그인: 신고 불가이므로 모두 false
+            foreach ($comments as $comment) {
+                $comment->is_already_reported_preloaded = false;
+                $comment->setRelation('post', $post);
+            }
+        }
+
+        // 정렬된 댓글을 post에 설정
+        $post->setRelation('comments', $comments);
+
+        // 댓글 목록은 상한에서 끊길 수 있다. 끊겼다면 그 사실을 화면에 알린다 —
+        // 조용히 잘라내면 사용자에게는 "댓글이 그만큼뿐" 으로 보인다.
+        // 상한 이하면 이미 전량을 받았으므로 세는 쿼리를 추가하지 않는다.
+        $commentCap = PaginationLimits::resultCap('board.comments');
+
+        if ($commentPagination !== null) {
+            // 페이지네이션 경로는 잘림 여부를 페이지 메타가 그대로 알린다.
+            $post->comments_pagination = $commentPagination;
+            $post->comments_total = $commentPagination['total'];
+            $post->comments_total_is_exact = $commentPagination['total_is_exact'];
+        } elseif ($commentCap !== null && $comments->count() >= $commentCap) {
+            $commentTotal = $this->commentService->countCommentsByPostId(
+                $slug,
+                $id,
+                $withTrashedComments,
+                $board->id
+            );
+
+            $post->comments_truncated = true;
+            $post->comments_total = $commentTotal->total;
+            $post->comments_total_is_exact = $commentTotal->totalRelation()->isExact();
+        }
+
     }
 }

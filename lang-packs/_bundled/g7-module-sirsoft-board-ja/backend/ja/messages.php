@@ -104,6 +104,7 @@ return [
         'verify_password_failed' => 'パスワードの確認に失敗しました。',
         'post_blinded' => 'ブロック処理された投稿にはコメントを作成できません。',
         'post_deleted' => '削除された投稿にはコメントを作成できません。',
+        'post_secret' => '閲覧権限のない秘密投稿にはコメントを作成できません。',
     ],
     'comments' => [
         'comments_disabled' => 'この掲示板はコメント機能が無効化されています。',

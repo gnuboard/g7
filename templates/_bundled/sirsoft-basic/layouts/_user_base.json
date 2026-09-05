@@ -37,6 +37,13 @@
             "headers": {
                 "X-Guest-Order-Token": "{{_global.guestOrderToken}}"
             }
+        },
+        {
+            "_comment": "비밀글 열람 확인 토큰 — 비밀번호로 원문을 연 사실을 다음 요청(댓글·답글·신고)으로 넘긴다. 서버가 토큰을 게시글에 결속시키므로 다른 글에는 통하지 않고, 비밀글이 아닌 요청에서는 아예 평가되지 않는다. 결제 취소 기록(orders/{n}/cancel-payment) 처럼 헤더 없이는 정당 사용자가 막히는 경로라 globalHeaders 로 단일 배선한다.",
+            "pattern": "/api/modules/sirsoft-board/*",
+            "headers": {
+                "X-Board-Secret-View-Token": "{{_global.secretViewToken}}"
+            }
         }
     ],
     "transition_overlay": {

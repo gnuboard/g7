@@ -190,7 +190,7 @@
                       "name": "Span",
                       "if": "{{post?.data?.is_new}}",
                       "props": {
-                        "className": "px-2 py-1 text-xs font-bold bg-red-500 text-white rounded flex-shrink-0"
+                        "className": "px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white dark:text-white rounded flex-shrink-0"
                       },
                       "text": "N"
                     }
@@ -862,6 +862,14 @@
                           "params": {
                             "dataSourceId": "post",
                             "data": "{{result}}"
+                          }
+                        },
+                        {
+                          "comment": "열람 확인 토큰 보관 — 비밀번호를 맞혔다는 사실은 이 응답에서만 살아 있다. 댓글·답글·신고는 각각 별도 요청이라, 이 토큰을 넘기지 않으면 원문을 연 사람도 화면이 내준 버튼에서 전부 거부된다. _user_base 의 globalHeaders 가 board API 요청에 자동으로 싣는다.",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "secretViewToken": "{{result.secret_view_token ?? ''}}"
                           }
                         },
                         {

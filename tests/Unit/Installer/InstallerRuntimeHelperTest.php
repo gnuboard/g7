@@ -312,12 +312,13 @@ ENV;
 
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
 
-        $this->assertStringContainsString('DB_WRITE_HOST=real-host.example.com', $merged);
-        $this->assertStringContainsString('DB_WRITE_PORT=3307', $merged);
-        $this->assertStringContainsString('DB_WRITE_DATABASE=real_db', $merged);
-        $this->assertStringContainsString('DB_WRITE_USERNAME=real_user', $merged);
+        // 값은 전부 serializeEnvValue 를 지나 따옴표로 감싸진다 (개행 주입 차단 관문 일원화).
+        $this->assertStringContainsString('DB_WRITE_HOST="real-host.example.com"', $merged);
+        $this->assertStringContainsString('DB_WRITE_PORT="3307"', $merged);
+        $this->assertStringContainsString('DB_WRITE_DATABASE="real_db"', $merged);
+        $this->assertStringContainsString('DB_WRITE_USERNAME="real_user"', $merged);
         $this->assertStringContainsString('DB_WRITE_PASSWORD="real_pass"', $merged);
-        $this->assertStringContainsString('DB_PREFIX=real_', $merged);
+        $this->assertStringContainsString('DB_PREFIX="real_"', $merged);
 
         // Read 라인도 write 와 동기화되어 치환되어야 함
         $this->assertStringNotContainsString('DB_WRITE_HOST=127.0.0.1', $merged);
@@ -350,10 +351,10 @@ ENV;
         $this->assertStringContainsString("DB_READ_HOST=\n", $merged);
         $this->assertStringContainsString("DB_READ_DATABASE=\n", $merged);
         $this->assertStringContainsString("DB_READ_USERNAME=\n", $merged);
-        $this->assertStringNotContainsString('DB_READ_HOST=w-host', $merged);
-        $this->assertStringNotContainsString('DB_READ_DATABASE=wdb', $merged);
+        $this->assertStringNotContainsString('DB_READ_HOST="w-host"', $merged);
+        $this->assertStringNotContainsString('DB_READ_DATABASE="wdb"', $merged);
         // write 라인은 정상 기록
-        $this->assertStringContainsString('DB_WRITE_HOST=w-host', $merged);
+        $this->assertStringContainsString('DB_WRITE_HOST="w-host"', $merged);
     }
 
     public function test_merge_uses_separate_read_when_specified(): void
@@ -369,8 +370,8 @@ ENV;
 
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
 
-        $this->assertStringContainsString('DB_READ_HOST=r-host', $merged);
-        $this->assertStringContainsString('DB_READ_DATABASE=rdb', $merged);
+        $this->assertStringContainsString('DB_READ_HOST="r-host"', $merged);
+        $this->assertStringContainsString('DB_READ_DATABASE="rdb"', $merged);
     }
 
     public function test_merge_appends_db_lines_when_absent_from_template(): void
@@ -392,8 +393,8 @@ ENV;
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
 
         // .env.example 에 라인이 없는 비표준 케이스 — 끝에 추가
-        $this->assertStringContainsString('DB_WRITE_HOST=h', $merged);
-        $this->assertStringContainsString('DB_WRITE_DATABASE=d', $merged);
+        $this->assertStringContainsString('DB_WRITE_HOST="h"', $merged);
+        $this->assertStringContainsString('DB_WRITE_DATABASE="d"', $merged);
     }
 
     public function test_merge_preserves_db_lines_when_runtime_has_no_db(): void

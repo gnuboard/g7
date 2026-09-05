@@ -157,6 +157,63 @@ class BinaryPathPolicyTest extends TestCase
     }
 
     /**
+     * 검증 지점과 실행 지점이 같은 정책 파일을 쓰는지 확인합니다.
+     *
+     * 정책이 한 파일에 있어도 어느 한 진입점이 그 파일을 require 하지 않으면
+     * "저장은 막히는데 실행은 통과" 같은 어긋난 상태가 남고, 그 어긋남은 오류를
+     * 남기지 않는다. 그래서 파일 참조 자체를 계약으로 고정한다 (KVE-2026-2043).
+     */
+    #[Test]
+    public function validation_and_execution_entrypoints_share_the_same_policy_file(): void
+    {
+        $projectRoot = dirname(__DIR__, 3);
+
+        $entrypoints = [
+            'api/check-configuration.php' => $projectRoot.'/public/install/api/check-configuration.php',
+            'includes/task-runner.php' => $projectRoot.'/public/install/includes/task-runner.php',
+            'includes/request-handler.php' => $projectRoot.'/public/install/includes/request-handler.php',
+        ];
+
+        foreach ($entrypoints as $label => $path) {
+            $this->assertFileExists($path, "정책 소비 진입점이 사라졌다: {$label}");
+            $this->assertStringContainsString(
+                'binary-path-policy.php',
+                (string) file_get_contents($path),
+                "{$label} 이 공용 정책을 로드하지 않는다 — 자체 판정으로 갈라지면 우회로가 된다"
+            );
+        }
+    }
+
+    /**
+     * UNC·임의 phar 는 (PHP, Composer) 쌍 해석에서도 거부된다.
+     *
+     * 쌍 해석은 자리별 규칙을 재사용하므로 여기서도 같은 결론이 나와야 한다 —
+     * 한쪽만 막히면 그 경로가 우회로가 된다.
+     */
+    #[Test]
+    public function the_pair_resolver_rejects_unc_and_arbitrary_phar(): void
+    {
+        $this->assertNull(
+            installer_resolve_php_composer_pair('\\\\server\\share\\php.exe /usr/local/bin/composer'),
+            'UNC PHP 경로가 쌍 해석에서 통과했다'
+        );
+        $this->assertNull(
+            installer_resolve_php_composer_pair('/usr/bin/php \\\\server\\share\\composer.phar'),
+            'UNC Composer 경로가 쌍 해석에서 통과했다'
+        );
+        $this->assertNull(
+            installer_resolve_php_composer_pair('/usr/bin/php /tmp/evil.phar'),
+            '임의 이름 phar 가 쌍 해석에서 통과했다'
+        );
+
+        // 정상 조합은 그대로 동작한다 (회귀 방지).
+        $this->assertSame(
+            ['php' => '/usr/bin/php', 'composer' => '/usr/local/bin/composer.phar'],
+            installer_resolve_php_composer_pair('/usr/bin/php /usr/local/bin/composer.phar')
+        );
+    }
+
+    /**
      * 통과해야 하는 토큰 목록.
      *
      * @return array<string, array{string, string}>
@@ -171,7 +228,6 @@ class BinaryPathPolicyTest extends TestCase
             'Plesk 경로' => ['/opt/plesk/php/8.2/bin/php', '패널 환경'],
             'Windows 드라이브' => ['C:\\php\\php.exe', 'Windows'],
             'Windows 슬래시' => ['C:/php/php.exe', 'Windows 정방향 슬래시'],
-            'UNC 경로' => ['\\\\server\\share\\php.exe', '네트워크 공유'],
             '점 포함 디렉토리' => ['/usr/local/php.d/bin/php', '단일 점은 상위 참조가 아님'],
         ];
     }
@@ -200,6 +256,12 @@ class BinaryPathPolicyTest extends TestCase
             '따옴표' => ['/usr/bin/"php"', '셸 메타문자'],
             '개행' => ["/usr/bin/php\nid", '제어문자'],
             'NUL 바이트' => ["/usr/bin/php\x00", '제어문자'],
+            // KVE-2026-2043: UNC 경로는 공격자가 지정한 원격 SMB 공유의 파일을 실행하게 만든다.
+            'UNC 경로' => ['\\\\server\\share\\php.exe', '원격 공유 실행 — KVE-2026-2043'],
+            'UNC 정방향 슬래시' => ['//server/share/php.exe', '원격 공유 실행'],
+            'phar 스트림 래퍼' => ['phar:///tmp/evil.phar/run', 'stream wrapper'],
+            'http 스트림 래퍼' => ['http://evil.example.com/x', 'stream wrapper'],
+            'file 스트림 래퍼' => ['file:///usr/bin/php', 'stream wrapper'],
         ];
     }
 
@@ -215,7 +277,9 @@ class BinaryPathPolicyTest extends TestCase
             '절대경로 composer' => ['/usr/local/bin/composer', true, '일반 설치'],
             'composer2' => ['/usr/local/bin/composer2', true, '버전 붙은 이름'],
             'composer.phar' => ['/opt/composer.phar', true, 'phar 아카이브'],
-            '임의 이름 phar' => ['/opt/tools/mytool.phar', true, 'phar 는 이름 무관 허용'],
+            // KVE-2026-2043: 임의 이름 .phar 허용은 업로드된 아카이브를 그대로 실행시킨다.
+            '임의 이름 phar' => ['/opt/tools/mytool.phar', false, '이름이 composer 계열이 아닌 phar'],
+            'composerN.phar' => ['/opt/composer2.phar', true, '버전 붙은 composer phar'],
             'composer.bat' => ['C:\\laragon\\bin\\composer\\composer.bat', true, 'Windows 배치'],
             'composer.exe' => ['C:\\tools\\composer.exe', true, 'Windows 실행 파일'],
             '임의 스크립트' => ['/tmp/evil.py', false, '인터프리터가 실행할 임의 스크립트 — 이번 취약점'],

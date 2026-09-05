@@ -910,7 +910,7 @@ components:
 
 ```text
 _user_base.json
-├── globalHeaders: [X-Cart-Key 헤더 (이커머스, 인증 API)]
+├── globalHeaders: [X-Cart-Key (이커머스·인증 API) / X-Guest-Order-Token (비회원 주문 후속 액션) / X-Board-Secret-View-Token (게시판 API)]
 ├── transition_overlay: { style: "skeleton", target: "main_content_area" }
 ├── init_actions: [initTheme, initCartKey, loadPreferredCurrency, setState(shopBase)]
 ├── data_sources:
@@ -934,7 +934,15 @@ _user_base.json
 - `content` — 각 페이지의 메인 콘텐츠가 삽입되는 위치
 
 **특수사항**:
-- `globalHeaders`: 이커머스 API에 `X-Cart-Key` 자동 첨부
+- `globalHeaders`: 패턴별 공통 헤더 자동 첨부
+  - `/api/modules/sirsoft-ecommerce/*` — `X-Cart-Key`, `X-Currency`, `X-Shipping-Country`
+  - `/api/modules/sirsoft-ecommerce/guest/orders/*` — `X-Guest-Order-Token` (비회원 주문 후속 액션)
+  - `/api/modules/sirsoft-board/*` — `X-Board-Secret-View-Token`
+    비밀번호를 입력해 비밀글 원문을 연 사실을 다음 요청으로 넘기는 값입니다. 서버는 이
+    사실을 검증 응답 하나에만 담고 있어서, 토큰을 싣지 않으면 원문을 연 사용자도 댓글·답글·
+    신고에서 전부 거부됩니다. 토큰은 게시글에 결속되므로 다른 글에는 통하지 않고, 비밀글이
+    아닌 요청에서는 서버가 아예 평가하지 않습니다. `board/types/basic/show.json` 의
+    비밀번호 검증 `onSuccess` 가 `_global.secretViewToken` 에 넣습니다.
 - `transition_overlay.style: "skeleton"`: 페이지 전환 시 PageSkeleton 표시
 - `responsive`: 모바일 오버레이/네비게이션은 `portable` breakpoint에서만 표시
 - `auth_mode: "optional"`: 비회원도 장바구니 카운트 조회 가능

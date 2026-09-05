@@ -39,6 +39,14 @@
 하나(카드 한 장)를 열지, 사용자가 고른 개별 토스 결제수단(`params.paymentMethodId`)을
 지정해 열지가 갈리지만(`params.paymentMethod`, 미지정 시 `_local.paymentMethod` 참조) 그
 분기도 이 핸들러 하나 안에서 처리합니다.
+
+구매자가 결제창을 닫으면(`USER_CANCEL`) 이 핸들러가 이커머스 모듈의 결제 취소 기록
+엔드포인트(`orders/{orderNumber}/cancel-payment`)를 부릅니다. 이 엔드포인트는 회원과
+비회원이 공유하고 서버가 소유권을 대조하므로, 비회원 주문이면 `_global.guestOrderToken`
+을 `X-Guest-Order-Token` 헤더로 함께 보내야 합니다 — 그 토큰은 주문 생성 직후 체크아웃이
+발급합니다. 헤더가 빠지면 서버가 404 로 거부하는데, 여기서는 `console.warn` 만 남기고
+취소 안내 모달이 평소대로 뜨기 때문에 이력이 유실된 사실이 화면에 드러나지 않습니다.
+`G7Core.api` 는 레이아웃의 `globalHeaders` 를 타지 않으므로 헤더는 호출부가 직접 붙입니다.
 <!-- @intent END -->
 
 ## 전역 진입점
