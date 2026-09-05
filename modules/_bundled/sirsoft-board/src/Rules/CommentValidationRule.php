@@ -8,13 +8,17 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 
 /**
  * 댓글/대댓글 작성 시 검증 규칙
  *
  * 검증 대상에 따라 다음을 검증합니다:
- * - post_id: 게시글의 블라인드/삭제 상태
- * - parent_id: 부모 댓글의 블라인드/삭제 상태, 게시판 max_comment_depth 초과 여부
+ * - post_id: 게시글의 블라인드/삭제 상태, 비밀글 열람 권한
+ * - parent_id: 부모 댓글의 블라인드/삭제 상태, 부모 게시글의 비밀글 열람 권한,
+ *   게시판 max_comment_depth 초과 여부
+ *
+ * 비밀글 게이트는 요청 단계의 조기 차단이며 최종 관문은 CommentService 다(이중 방어).
  */
 class CommentValidationRule implements ValidationRule
 {
@@ -78,6 +82,12 @@ class CommentValidationRule implements ValidationRule
 
         if ($post->status === PostStatus::Deleted || $post->deleted_at !== null) {
             $fail(__('sirsoft-board::validation.comment.post_id.deleted'));
+
+            return;
+        }
+
+        if (! $this->canWriteChildOf($post, $board)) {
+            $fail(__('sirsoft-board::validation.comment.post_id.secret'));
         }
     }
 
@@ -115,9 +125,41 @@ class CommentValidationRule implements ValidationRule
             return;
         }
 
+        // 부모 게시글의 비밀글 게이트 — 부모 댓글의 블라인드/삭제 검사와는 별개 축이다.
+        // 대댓글도 비밀글의 하위 콘텐츠이므로 같은 열람 기준을 적용한다 (KVE-2026-2044).
+        $parentPost = Post::where('board_id', $board->id)
+            ->withTrashed()
+            ->find($this->postId ?? $parentComment->post_id);
+
+        if ($parentPost && ! $this->canWriteChildOf($parentPost, $board)) {
+            $fail(__('sirsoft-board::validation.comment.post_id.secret'));
+
+            return;
+        }
+
         // 댓글 깊이 제한 검증
         if ($parentComment->depth + 1 > $board->max_comment_depth) {
             $fail(__('sirsoft-board::validation.comment.depth.exceeded', ['max' => $board->max_comment_depth]));
         }
+    }
+
+    /**
+     * 부모 게시글의 하위 콘텐츠를 작성할 수 있는지 판정합니다.
+     *
+     * 판정 규칙은 읽기 게이트와 같은 SecretContentGate(SSoT)를 재사용한다.
+     * board 관계를 붙여 두는 이유는 게이트의 슬러그 해석이 라우트에 없을 때
+     * 관계로 폴백하기 때문이다(미로딩이면 fail-closed).
+     *
+     * @param  Post  $post  부모 게시글
+     * @param  Board  $board  대상 게시판
+     * @return bool 작성 가능 여부
+     */
+    private function canWriteChildOf(Post $post, Board $board): bool
+    {
+        if (! $post->relationLoaded('board')) {
+            $post->setRelation('board', $board);
+        }
+
+        return app(SecretContentGate::class)->canWriteChild($post);
     }
 }

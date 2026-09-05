@@ -149,8 +149,8 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 28개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 8개 | `vitest.config.ts` |
+| PHPUnit | 29개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| Vitest | 9개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 1개 | `tests/scenarios` |
 

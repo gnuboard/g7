@@ -123,6 +123,7 @@ return [
         // Comment availability
         'post_blinded' => 'You cannot comment on a blinded post.',
         'post_deleted' => 'You cannot comment on a deleted post.',
+        'post_secret' => 'You cannot comment on a secret post you are not allowed to view.',
     ],
 
     // Additional comment messages

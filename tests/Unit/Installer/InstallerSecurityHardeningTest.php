@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Installer;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ValidationApi;
@@ -484,29 +485,25 @@ class InstallerSecurityHardeningTest extends TestCase
     }
 
     // ========================================================================
-    // Medium-1 — escapeEnvValue 개행 제거
+    // Medium-1 — escapeEnvValue 개행 거부
     // ========================================================================
+    //
+    // 종전에는 개행을 조용히 지웠다(Medium-1). KVE-2026-2042 정정으로 직렬화기는 개행을
+    // 만나면 예외를 던진다 — 지우면 운영자가 입력한 값과 저장된 값이 달라지는데 그 사실이
+    // 화면에 나타나지 않기 때문이다. 하위호환 별칭 escapeEnvValue 도 같은 관문에 위임한다.
 
-    public function test_escape_env_value_strips_newlines(): void
+    public function test_escape_env_value_rejects_newlines(): void
     {
-        $payload = "secret\nINJECTED=true";
-        $result = escapeEnvValue($payload);
+        $this->expectException(InvalidArgumentException::class);
 
-        // 핵심 보안 속성: 결과에 개행 문자가 없어야 한다 (라인 주입 차단).
-        // INJECTED=true 가 따옴표 내부 일부로 포함되는 것은 문제 아님 — .env 파서는
-        // 따옴표 닫힘 전까지 단일 값으로만 해석.
-        $this->assertStringNotContainsString("\n", $result, 'LF 가 결과에 포함되면 안 됨');
-        $this->assertStringNotContainsString("\r", $result);
-        // 결과는 따옴표로 시작/종료 (라인 주입이 성립하려면 따옴표가 닫힌 뒤 개행이 와야 하나 개행이 제거됨)
-        $this->assertStringStartsWith('"', $result);
-        $this->assertStringEndsWith('"', $result);
+        escapeEnvValue("secret\nINJECTED=true");
     }
 
-    public function test_escape_env_value_strips_crlf(): void
+    public function test_escape_env_value_rejects_crlf(): void
     {
-        $result = escapeEnvValue("a\r\nb");
+        $this->expectException(InvalidArgumentException::class);
 
-        $this->assertSame('"ab"', $result);
+        escapeEnvValue("a\r\nb");
     }
 
     public function test_escape_env_value_preserves_normal_password(): void

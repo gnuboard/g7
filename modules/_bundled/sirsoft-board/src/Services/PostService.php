@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
@@ -36,6 +37,15 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class PostService
 {
+    /**
+     * 게시글 수정·삭제용 검증 토큰을 싣는 요청 헤더 이름.
+     *
+     * 이 토큰은 종전에 GET 쿼리 파라미터로만 다녔다 — 자격증명이 주소에 실리면 웹서버
+     * 접근 기록과 Referer 에 그대로 남는다. 헤더로 옮기되, 이미 본문으로 보내는 저장·삭제
+     * 요청과 외부 연동을 깨지 않도록 기존 경로도 계속 받는다.
+     */
+    public const VERIFY_TOKEN_HEADER = 'X-Board-Post-Verify-Token';
+
     /**
      * 검색 정렬 이름 → [실제 컬럼, 방향] 선언
      *
@@ -1372,6 +1382,28 @@ class PostService
     }
 
     /**
+     * 게시글 비밀번호 검증 토큰이 유효한지 확인만 합니다 (소비하지 않음).
+     *
+     * 수정 화면은 「비밀번호 확인 → 폼 조회 → 저장」 순으로 같은 토큰을 여러 번 제시합니다.
+     * 폼 조회 단계가 토큰을 소비하면 저장 시점에는 남아 있지 않아, 비밀번호를 정확히 입력한
+     * 사용자가 수정 권한 없음으로 거부됩니다. 조회는 이 확인을, 상태를 바꾸는 요청만
+     * `consumeDeleteVerifyToken()` 을 씁니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  string  $token  검증 토큰
+     * @return bool 토큰 유효 여부
+     */
+    public function hasValidDeleteVerifyToken(string $slug, int $postId, string $token): bool
+    {
+        if ($token === '') {
+            return false;
+        }
+
+        return $this->cache->has("board_post_verify_{$slug}_{$postId}_{$token}");
+    }
+
+    /**
      * 게시글 비밀번호 검증 토큰의 유효성을 확인하고 소비합니다.
      *
      * 토큰이 유효하면 즉시 삭제하여 재사용을 방지합니다.
@@ -1390,6 +1422,67 @@ class PostService
         $this->cache->forget($key);
 
         return true;
+    }
+
+    /**
+     * 비밀글 열람 확인 토큰을 발급해 캐시에 저장합니다.
+     *
+     * 비밀번호를 맞혔다는 사실은 그 응답 하나에만 살아 있고 다음 요청으로 이어지지 않습니다
+     * (`$post->password_verified` 는 메모리 플래그입니다). 그런데 화면은 원문이 열린 사람에게
+     * 댓글·답글·신고를 내주므로, 그 후속 요청이 같은 사실을 제시할 통로가 필요합니다.
+     *
+     * 수정·삭제용 토큰(storeDeleteVerifyToken)과 달리 **소비하지 않습니다** — 열람자는 한
+     * 화면에서 댓글을 여러 번 달 수 있고, 1회용이면 두 번째부터 다시 비밀번호를 물어야 합니다.
+     * 대신 게시글 단위로 묶이고 유효기간이 있어, 권한 범위는 비밀번호를 아는 것과 같습니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return array{token: string, expires_at: string} 토큰 및 만료 시각
+     */
+    public function issueSecretViewToken(string $slug, int $postId): array
+    {
+        $ttl = (int) g7_core_settings('cache.post_verify_token_ttl', 3600);
+        $token = Str::random(40);
+        $expiresAt = now()->addSeconds($ttl);
+
+        $this->cache->put(self::secretViewTokenKey($slug, $postId, $token), true, $ttl);
+
+        return [
+            'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ];
+    }
+
+    /**
+     * 비밀글 열람 확인 토큰이 그 게시글에 대해 유효한지 확인합니다 (소비하지 않음).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  string|null  $token  제시된 토큰
+     * @return bool 유효 여부
+     */
+    public function hasValidSecretViewToken(string $slug, int $postId, ?string $token): bool
+    {
+        if (! is_string($token) || $token === '') {
+            return false;
+        }
+
+        return $this->cache->has(self::secretViewTokenKey($slug, $postId, $token));
+    }
+
+    /**
+     * 비밀글 열람 확인 토큰의 캐시 키를 만듭니다.
+     *
+     * 게시판 슬러그와 게시글 ID 를 키에 넣어, 한 글에서 받은 토큰이 다른 글에 통하지 않게 합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  string  $token  토큰
+     * @return string 캐시 키
+     */
+    private static function secretViewTokenKey(string $slug, int $postId, string $token): string
+    {
+        return "board_post_secret_view_{$slug}_{$postId}_{$token}";
     }
 
     /**

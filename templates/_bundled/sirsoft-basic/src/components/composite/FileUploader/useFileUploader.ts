@@ -16,6 +16,7 @@ import imageCompression from 'browser-image-compression';
 import type { Attachment, PendingFile, FileUploaderProps, ApiEndpoints } from './types';
 import { formatFileSize, extractErrorMessage, t } from './utils';
 import { isCrossOriginAssetUrl } from '../assetOrigin';
+import { secretContentHeaders } from '../../../support/secretContentHeaders';
 
 /** 동봉한 browser-image-compression 버전 */
 const IMAGE_COMPRESSION_VERSION = '2.0.2';
@@ -744,8 +745,11 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         }
 
         try {
+          // 비밀글 첨부는 서버가 열람 권한을 재확인한다. globalHeaders 는 이 경로에
+          // 적용되지 않으므로 열람 확인 토큰을 직접 싣는다 (없으면 빈 객체라 영향 없음).
           const blob = await G7Core.api.get(file.download_url, {
             responseType: 'blob',
+            headers: secretContentHeaders(),
           });
           if (!cancelled && blob) {
             const objectUrl = URL.createObjectURL(blob);

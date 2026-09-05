@@ -259,6 +259,7 @@ return [
             'not_found' => 'Parent post not found.',
             'blinded' => 'Cannot create reply on blinded post.',
             'deleted' => 'Cannot create reply on deleted post.',
+            'secret' => 'Cannot create reply on a secret post you are not allowed to view.',
             'depth_exceeded' => 'This board allows replies up to :max level(s) only.',
             'notice_not_allowed' => 'Replies cannot be created on notice posts.',
         ],
@@ -445,6 +446,7 @@ return [
             'not_found' => 'Post not found.',
             'blinded' => 'Cannot create comment on blinded post.',
             'deleted' => 'Cannot create comment on deleted post.',
+            'secret' => 'Cannot create comment on a secret post you are not allowed to view.',
         ],
         'parent_id' => [
             'exists' => 'Parent comment does not exist.',

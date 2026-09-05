@@ -902,6 +902,11 @@ _단건 응답: `data` 객체의 필드._
 | items | array | `[{"id":962,"quantity":2, …}]` | 수량 반영 후의 장바구니 전체 아이템 목록 (CartItemResource — 필드 구성은 POST `/cart` 의 "장바구니 아이템 필드" 표와 동일. 프론트가 refetch 없이 화면을 갱신하도록 전체를 함께 반환) |
 | item_count | integer | `1` | 장바구니 아이템 개수 |
 | calculation | object | `{"items":[…],"summary":{…},"promotions":{…},"validation_errors":[]}` | 선택 아이템 기준 금액 계산 결과 (GET `/cart` 의 `calculation` 과 동일 구조 — 소계·할인·배송비·적립·최종 결제금액 등) |
+| item_ids | array | `[962]` | 장바구니 아이템 ID 목록 |
+| has_unshippable_items | boolean | `false` | 선택된 배송 국가로 보낼 수 없는 상품이 1건이라도 있으면 `true` (주문 전체 차단 플래그) |
+| selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
+
+> 이 응답은 GET `/cart` 와 **같은 키 집합**입니다. 화면이 이 응답으로 장바구니 데이터를 통째로 교체하므로(refetch 제거), 한쪽에만 있는 키가 생기면 수량을 바꾸는 순간 그 값이 사라집니다 — 특히 `has_unshippable_items` 가 빠지면 주문 차단이 조용히 풀립니다.
 
 **응답 예시**
 

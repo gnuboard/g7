@@ -6,19 +6,24 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Services\BoardSettingsService;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Exceptions\DeletedReportStatusChangeException;
+use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 신고 관리 서비스 클래스
@@ -119,7 +124,7 @@ class ReportService
      * @param  int  $id  신고 ID
      * @return Report 조회된 신고 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function getReport(int $id): Report
     {
@@ -138,9 +143,9 @@ class ReportService
      * 1케이스 구조이므로 케이스(report) + 신고자 목록(logs) + 처리 이력(process_histories)을 반환합니다.
      *
      * @param  int  $id  케이스 ID
-     * @return array{report: Report, reporters: \Illuminate\Database\Eloquent\Collection, cancelled_reports: \Illuminate\Database\Eloquent\Collection, report_count: int, first_reported_at: mixed, last_reported_at: mixed}
+     * @return array{report: Report, reporters: Collection, cancelled_reports: Collection, report_count: int, first_reported_at: mixed, last_reported_at: mixed}
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function getGroupedReportDetail(int $id): array
     {
@@ -150,7 +155,7 @@ class ReportService
         if (! PermissionHelper::checkScopeAccess($report, 'sirsoft-board.reports.view')) {
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
-        
+
         // 신고자 로그 목록 로드 (reporter 관계 eager load)
         $report->load(['logs' => fn ($q) => $q->latest()->with('reporter'), 'board']);
 
@@ -172,12 +177,12 @@ class ReportService
     /**
      * 신고 케이스의 신고자 목록을 페이지네이션으로 반환합니다.
      *
-     * @param  int  $id       신고 케이스 ID
+     * @param  int  $id  신고 케이스 ID
      * @param  int  $perPage  페이지당 항목 수
-     * @param  int  $page     페이지 번호
-     * @return \Illuminate\Pagination\LengthAwarePaginator
+     * @param  int  $page  페이지 번호
+     * @return LengthAwarePaginator
      */
-    public function paginateReporters(int $id, int $perPage = 10, int $page = 1): \Illuminate\Pagination\LengthAwarePaginator
+    public function paginateReporters(int $id, int $perPage = 10, int $page = 1): LengthAwarePaginator
     {
         $this->reportRepository->findOrFail($id); // 케이스 존재 확인 (404 처리)
 
@@ -195,7 +200,7 @@ class ReportService
      * @param  array  $data  신고 생성 데이터
      * @return Report 케이스 모델
      *
-     * @throws \Modules\Sirsoft\Board\Exceptions\DuplicateReportException
+     * @throws DuplicateReportException
      */
     public function createReport(array $data): Report
     {
@@ -301,8 +306,8 @@ class ReportService
      * @param  array  $data  변경할 데이터 (status, process_note)
      * @return Report 상태가 변경된 신고 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
-     * @throws \Modules\Sirsoft\Board\Exceptions\DeletedReportStatusChangeException 영구삭제 상태에서 변경 시도 시
+     * @throws ModelNotFoundException
+     * @throws DeletedReportStatusChangeException 영구삭제 상태에서 변경 시도 시
      */
     public function updateReportStatus(int $id, array $data): Report
     {
@@ -504,7 +509,7 @@ class ReportService
      * @param  string  $action  처리 액션 (status 값 또는 reported/re_reported 등 특수 타입)
      * @param  string|null  $reason  처리 사유
      * @param  int|null  $processorId  처리자 ID (신고 접수 시 null)
-     * @param  \Carbon\Carbon  $processedAt  처리 일시
+     * @param  Carbon  $processedAt  처리 일시
      * @param  int|null  $reporterCount  현재 사이클 신고자 수 (reported/re_reported 시 사용)
      * @return array 이력 항목
      */
@@ -539,7 +544,7 @@ class ReportService
      * @param  int  $id  신고 ID
      * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function deleteReport(int $id): bool
     {
@@ -1254,6 +1259,7 @@ class ReportService
      * 신고 대상이 신고 가능한 상태인지 확인합니다.
      *
      * 블라인드 또는 삭제된 대상은 신고할 수 없습니다.
+     * 열람 권한이 없는 비밀글과 그 비밀글에 달린 댓글도 신고할 수 없습니다.
      *
      * @param  int  $boardId  게시판 ID
      * @param  string  $targetType  신고 대상 타입 (post/comment)
@@ -1278,6 +1284,26 @@ class ReportService
         // 삭제된 상태이면 신고 불가
         if ($target->status === PostStatus::Deleted || $target->deleted_at !== null) {
             return false;
+        }
+
+        // 비밀글 하위 쓰기 게이트 (KVE-2026-2044)
+        // 신고도 대상 게시글에 딸린 생성형 쓰기이므로, 원문을 볼 수 없는 사용자는
+        // 그 게시글(또는 그 게시글의 댓글)을 신고할 수 없다. 판정은 읽기 게이트와
+        // 같은 SecretContentGate(SSoT)를 쓴다.
+        $parentPost = $targetType === 'post'
+            ? $target
+            : $this->postRepository->findByBoardId($boardId, (int) $target->post_id);
+
+        // 비밀글일 때만 board 를 붙인다 — 게이트의 슬러그 해석이 라우트에 없으면 관계로
+        // 폴백하고, 미로딩이면 fail-closed 다. 비밀글이 아니면 게이트는 언제나 통과한다.
+        if ($parentPost && $parentPost->is_secret) {
+            if (! $parentPost->relationLoaded('board')) {
+                $parentPost->load('board');
+            }
+
+            if (! app(SecretContentGate::class)->canWriteChild($parentPost)) {
+                return false;
+            }
         }
 
         return true;
