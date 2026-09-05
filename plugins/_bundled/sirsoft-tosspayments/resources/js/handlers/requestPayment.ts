@@ -400,13 +400,24 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             console.info('[sirsoft-tosspayments] Payment cancelled by user');
 
             // 1. 결제 취소 이력 기록 API 호출 (PG사 응답값 전달)
+            //
+            // 이 엔드포인트는 회원/비회원 공유라 서버가 소유권을 대조한다. 비회원 주문은 조회
+            // 토큰이 그 증명이므로 반드시 함께 보낸다 — 빠지면 서버가 404 로 거부하고, 여기서는
+            // console.warn 만 남긴 채 취소 안내 모달이 평소대로 떠서 이력 유실이 드러나지 않는다.
+            // 토큰은 주문 생성 직후 체크아웃이 발급해 _global.guestOrderToken 에 넣어 둔다.
             try {
+                const guestToken = G7Core?.state?.get?.('_global')?.guestOrderToken;
+                const config = guestToken
+                    ? { headers: { 'X-Guest-Order-Token': guestToken } }
+                    : undefined;
+
                 await G7Core.api.post(
                     `/modules/sirsoft-ecommerce/orders/${pgPaymentData.order_number}/cancel-payment`,
                     {
                         cancel_code: error.code,
                         cancel_message: error.message,
-                    }
+                    },
+                    config
                 );
             } catch (e) {
                 console.warn('[sirsoft-tosspayments] Failed to record cancellation', e);

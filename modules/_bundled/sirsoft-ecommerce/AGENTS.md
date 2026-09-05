@@ -230,7 +230,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 470개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 471개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 161개 | `vitest.config.ts` |
 | Playwright | 53개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 110개 | `tests/scenarios` |

@@ -407,7 +407,13 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
         // 4-2. 과세/비과세 금액 조회 (optional — 실패해도 결제 진행)
         try {
-            const orderRes = await G7Core.api.get(`/modules/sirsoft-ecommerce/user/orders/${pgPaymentData.order_number}`);
+            // 비회원 주문은 X-Guest-Order-Token 이 없으면 서버가 주문을 찾지 못한다.
+            // 헤더를 빼면 과세/비과세 금액이 조회되지 않아 결제사에 세금 구분이 빠진 채 전달된다.
+            const guestToken = G7Core?.state?.get?.('_global')?.guestOrderToken;
+            const orderRes = await G7Core.api.get(
+                `/modules/sirsoft-ecommerce/user/orders/${pgPaymentData.order_number}`,
+                guestToken ? { headers: { 'X-Guest-Order-Token': guestToken } } : undefined,
+            );
             const od = orderRes?.data as Record<string, unknown> | null | undefined;
             if (od) {
                 const taxAmt = Number(od['total_tax_amount'] ?? 0);

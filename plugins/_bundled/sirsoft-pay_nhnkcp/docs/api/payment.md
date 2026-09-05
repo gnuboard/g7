@@ -179,13 +179,14 @@ PC 표준결제창에서 사용자가 결제를 완료하지 않고 창을 닫�
 | good_mny | numeric | 아니오 | 결제 금액 (min 1) |
 | use_pay_method | string | 아니오 | 사용된 결제수단 |
 | nhnkcp_easy_pay_method | string | 아니오 | 간편결제 수단 식별값 (max 50) |
+| param_opt_2 | string | 아니오 | 모바일 가상계좌 세션 확인값 (max 50). 승인키 발급 시점에 실어 보낸 일회성 값을 KCP 가 그대로 되돌려준다 — 모바일 가상계좌 분기는 이 값이 주문에 저장된 값과 일치할 때만 계좌를 저장한다 |
 | bankname · bank_name · account · depositor · account_holder · va_date | string | 아니오 | 모바일 가상계좌 콜백이 평문으로 전달하는 계좌 정보 변종 키 |
 
 **응답**
 
 JSON 이 아니라 **리다이렉트**다. 성공 시 상점 성공 페이지로, 실패 시 실패 페이지로 이동하며 실패 사유를 쿼리스트링(`error` · `message` · `orderId`)으로 전달한다. 쿼리 규약과 예외 원문 비노출 원칙은 [vbank.md "결제 실패 리다이렉트 규약"](vbank.md) 에 있다.
 
-고정 `error` 값: `amount_mismatch` · `callback_locked` · `cli_exception` · `confirm_failed` · `currency_not_supported` · `invalid_payment_currency` · `order_not_found` · `order_not_retryable` · `vbank_save_failed`.
+고정 `error` 값: `amount_mismatch` · `callback_locked` · `cli_exception` · `confirm_failed` · `currency_not_supported` · `invalid_payment_currency` · `order_not_found` · `order_not_retryable` · `vbank_save_failed` · `vbank_session_mismatch`.
 
 이 밖에 KCP 가 돌려준 결과코드(`res_cd`)가 그대로 실리는 분기가 있다. 화면이 `error` 로 분기할 때는 위 고정값만 신뢰하고, 그 밖의 값은 미확정 실패로 다룬다.
 
@@ -196,3 +197,5 @@ KCP 표준결제창이 인증을 마치고 브라우저를 통해 가맹점으�
 이 문서 상단 **"주문 상태를 바꾸는 경로는 하나뿐이다"** 가 이 엔드포인트의 핵심 계약이다 — 승인 전에 판정되는 실패(금액 불일치·인증 결과코드 비정상)에서는 주문 상태를 바꾸지 않는다. 승인이 이미 일어난 뒤(`tno` 존재)의 실패만 주문에 반영하고, 그 경우 KCP 측에 잔존한 승인을 자동 취소한다.
 
 이 엔드포인트를 수정할 때는 실패 분기마다 **"이 판정의 근거가 브라우저가 보낸 값인가"** 를 먼저 확인한다. 근거가 브라우저 입력뿐이면 주문 상태를 바꾸지 않는다.
+
+모바일 가상계좌 분기는 서버-서버 승인이 없어 계좌 정보의 유일한 출처가 브라우저 평문이다. 그래서 평문을 읽기 **전에** `param_opt_2` 가 주문에 저장된 세션 확인값과 일치하는지 대조하고, 일치하지 않으면 `vbank_session_mismatch` 로 되돌린다. 확인값은 저장 시 소멸하므로 같은 값으로 다시 올 수 없다. 발급 지점은 [vbank.md](vbank.md) 참조.

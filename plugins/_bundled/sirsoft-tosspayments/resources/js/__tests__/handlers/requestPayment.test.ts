@@ -27,7 +27,7 @@ const CLIENT_CONFIG_DATA = {
 describe('requestPaymentHandler', () => {
     let mockG7Core: {
         api: { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
-        state: { setLocal: ReturnType<typeof vi.fn> };
+        state: { setLocal: ReturnType<typeof vi.fn>; get: ReturnType<typeof vi.fn> };
         modal: { open: ReturnType<typeof vi.fn> };
     };
 
@@ -37,7 +37,7 @@ describe('requestPaymentHandler', () => {
                 get: vi.fn().mockResolvedValue(CLIENT_CONFIG_DATA),
                 post: vi.fn().mockResolvedValue({ success: true }),
             },
-            state: { setLocal: vi.fn() },
+            state: { setLocal: vi.fn(), get: vi.fn().mockReturnValue({}) },
             modal: { open: vi.fn() },
         };
         (window as any).G7Core = mockG7Core;
@@ -136,7 +136,28 @@ describe('requestPaymentHandler', () => {
                 {
                     cancel_code: 'USER_CANCEL',
                     cancel_message: 'User cancelled',
-                }
+                },
+                undefined
+            );
+
+            consoleInfoSpy.mockRestore();
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('비회원 컨텍스트에서는 취소 기록에 X-Guest-Order-Token 헤더를 첨부한다', async () => {
+            // 이 엔드포인트는 회원/비회원 공유라 서버가 소유권을 대조한다. 토큰이 빠지면
+            // 서버가 404 로 거부하는데 화면은 console.warn 만 남기고 평소대로 취소 안내를
+            // 띄우므로, 이력이 유실된 사실이 어디에도 드러나지 않는다.
+            const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            mockG7Core.state.get.mockReturnValue({ guestOrderToken: 'guest-token-abc' });
+
+            await callWithCancel();
+
+            expect(mockG7Core.api.post).toHaveBeenCalledWith(
+                '/modules/sirsoft-ecommerce/orders/ORD-002/cancel-payment',
+                expect.anything(),
+                { headers: { 'X-Guest-Order-Token': 'guest-token-abc' } }
             );
 
             consoleInfoSpy.mockRestore();

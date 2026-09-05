@@ -156,8 +156,8 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 155개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 33개 | `vitest.config.ts` |
+| PHPUnit | 157개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 34개 | `vitest.config.ts` |
 | Playwright | 26개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 34개 | `tests/scenarios` |
 
