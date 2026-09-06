@@ -30,9 +30,22 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
 {
     private array $createdPaths = [];
 
+    /**
+     * 테스트 진입 전의 spawn 플래그 상태 (없으면 false) — tearDown 에서 되돌린다.
+     */
+    private string|false $originalSpawnFlag = false;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 이 클래스의 절반은 "spawn 플래그가 없는 단독 실행" 을 전제한다. 그런데 같은 프로세스에서
+        // 앞서 돈 테스트가 `core:update`(CoreUpdateCommand::handle) 를 한 번이라도 거치면 그 플래그가
+        // 프로세스 env 에 남아 여기 도착한다 — 부모 커맨드는 "프로세스 종료와 함께 소멸" 을 전제로
+        // 정리하지 않기 때문이다. 실행 순서에 따라 결과가 갈리지 않도록 진입 시 비우고 종료 시 되돌린다.
+        $this->originalSpawnFlag = getenv('G7_UPDATE_IN_PROGRESS');
+        putenv('G7_UPDATE_IN_PROGRESS');
+        unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
 
         // 빈 upgrade step 디렉토리 보장 — 본 테스트는 step 자체가 아닌 사전/사후 단계만 검증.
         // 임시 dummy step 파일을 작성해 from < to 비교가 ">=" 조건을 통과하도록 한다.
@@ -49,6 +62,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->createdPaths = [];
 
         Mockery::close();
+
+        if ($this->originalSpawnFlag === false) {
+            putenv('G7_UPDATE_IN_PROGRESS');
+            unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
+        } else {
+            putenv('G7_UPDATE_IN_PROGRESS='.$this->originalSpawnFlag);
+            $_ENV['G7_UPDATE_IN_PROGRESS'] = $this->originalSpawnFlag;
+            $_SERVER['G7_UPDATE_IN_PROGRESS'] = $this->originalSpawnFlag;
+        }
 
         parent::tearDown();
     }
@@ -180,6 +202,34 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
             '--skip-cache-clear' => true,
             '--skip-bundled-updates' => true,
         ]);
+        $this->assertSame(0, $exitCode);
+    }
+
+    /**
+     * 부모(구버전 코드)의 정리 단계가 남긴 빈 격리 디렉토리(`core_{ts}/extracted` 껍데기)는
+     * 신버전 코드로 도는 이 자식이 치운다. spawn 자식 모드에서도, 단독 실행에서도 호출된다 —
+     * 구버전 부모에서 올라오는 업데이트(7.0.9→7.0.10)를 덮는 유일한 자리이기 때문이다.
+     *
+     * @effects ExecuteUpgradeStepsCommand_sweeps_empty_staging_directories_left_by_parent
+     */
+    public function test_스텝_완료_후_빈_격리_디렉토리를_청소한다(): void
+    {
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldReceive('sweepEmptyStagingDirectories')->once()->andReturn(1);
+
+        putenv('G7_UPDATE_IN_PROGRESS=1');
+        $_ENV['G7_UPDATE_IN_PROGRESS'] = '1';
+        $_SERVER['G7_UPDATE_IN_PROGRESS'] = '1';
+
+        try {
+            $exitCode = $this->runCommand([]);
+        } finally {
+            putenv('G7_UPDATE_IN_PROGRESS');
+            unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
+        }
+
         $this->assertSame(0, $exitCode);
     }
 
@@ -404,6 +454,9 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         // 종료부의 root 산출물 소유권 정상화(#615 도입)는 모든 경로에서 호출되며 본 테스트의 관심사가
         // 아니다 — 기본 허용으로 두어 각 케이스가 자기 단계만 단언하게 한다.
         $service->shouldReceive('normalizeRuntimeOwnershipAfterRootRun')->andReturnNull()->byDefault();
+        // 종료부의 빈 격리 디렉토리 청소(7.0.10 도입)도 모든 경로에서 호출된다 — 전용 케이스가
+        // once() 로 단언하고, 나머지 케이스는 기본 허용.
+        $service->shouldReceive('sweepEmptyStagingDirectories')->andReturn(0)->byDefault();
         $module = Mockery::mock(ModuleManager::class);
         $plugin = Mockery::mock(PluginManager::class);
         $template = Mockery::mock(TemplateManager::class);

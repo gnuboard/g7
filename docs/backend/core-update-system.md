@@ -222,7 +222,13 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > **기본 동작 변경 배경 (공개 #64)**: 이전에는 Step 7 이 targets 전체를 무조건 재복사하고 orphan 을 삭제하여, 사용자가 수정한 `public/.htaccess` 커스텀 블록이나 `_bundled/` 아래 커스텀 확장이 소실되는 사고가 반복 제보되었다. 기본 동작을 "코어가 실제로 변경/추가한 파일만 적용(3-way)"으로 전환해 발생 표면을 제거했다. 전체 덮어쓰기 + 정리를 원하면 `--prune` 을 지정한다. "코어도 바꾸고 사용자도 바꾼" 파일은 코어 버전으로 갱신되지만 백업에 원본이 보존되어 복구 가능하다.
 
-> **증분 모드 잔존 stale 파일 정리**: 기본(증분) 모드는 orphan 을 삭제하지 않으므로, 신 버전에서 제거된 파일이 활성 디렉토리에 잔존할 수 있다. 완료 요약이 잔존을 안내하며, 정리하려면 다음 업데이트를 `--prune` 으로 실행하거나 단발성 정리 도구 `php artisan hotfix:rollback-stale-files --prune` 을 사용한다 (진단 모드 기본, `--prune` 시 확인 프롬프트 후 정리, symlink/protected_paths 가드 적용). 상세 사용법: [docs/cheatsheet.md](../cheatsheet.md) "단발성 결함 보정 (hotfix)".
+> **증분 모드 잔존 stale 파일 정리**: 기본(증분) 모드는 orphan 을 삭제하지 않으므로, 신 버전에서 제거된 파일이 활성 디렉토리에 잔존할 수 있다. 완료 요약이 잔존을 안내하며, 정리하려면 같은 업데이트를 `--prune` 으로 다시 실행한다. 단발성 정리 도구 `php artisan hotfix:rollback-stale-files --prune` 은 **자동 롤백 뒤**(백업 디렉토리와 `_new_files_manifest.json` 이 남아 있는 상태) 전용이다 — 성공한 업데이트는 Step 11 에서 백업을 지우므로 그 뒤에 실행하면 "사용 가능한 백업이 없습니다" 로 끝난다. 완료 안내문이 이 명령을 가리키던 것은 7.0.10 에서 걷어냈다. 상세 사용법: [docs/cheatsheet.md](../cheatsheet.md) "단발성 결함 보정 (hotfix)".
+
+> **격리 디렉토리는 루트째 지우고, 이번 실행이 만든 것은 소유권 기준에서 뺀다 (7.0.10)**: 업데이트 소스는 `storage/app/core_pending/core_{Ymd_His}/` 격리 디렉토리 안에 놓이는데, ZIP·GitHub 경로는 그 안쪽 `extracted/{루트}/` 를, `--local` 은 `local_source/` 를 소스 경로로 돌려준다. 7.0.9 까지의 정리 단계는 그 소스 경로만 지워 `core_{ts}/extracted/` 껍데기가 업데이트마다 남았고, sudo 실행이면 root 소유(0770)라 운영자·웹서버 계정이 지울 수 없었다(같은 서버의 7.0.0 부터의 설치본마다 하나씩 실측). 세 층으로 닫았다.
+>
+> - **부모 정리**: `cleanupPending()` 이 `resolveStagingRoot()` 로 격리 디렉토리 루트까지 올라가 통째로 지운다. pending 기준 디렉토리 밖 경로(`--source` 외부 디렉토리)는 올라가지 않는다.
+> - **자식 청소**: 부모는 구버전 클래스를 메모리에 들고 있어 이 수정이 다음 업데이트부터 효력이 있으므로, 신버전 코드로 도는 두 자식(`core:execute-upgrade-steps`, `core:execute-bundled-updates`)이 종료 직전 `sweepEmptyStagingDirectories()` 로 **파일이 하나도 없는** `core_*` 디렉토리만 치운다. 부모가 쓰는 중인 격리 디렉토리는 파일을 갖고 있어 술어상 제외된다. 구버전 부모에서 올라오는 업데이트(7.0.9→7.0.10)는 번들 일괄 업데이트 자식이 부모 정리 뒤에 돌므로 그 자리에서 껍데기가 사라진다.
+> - **스냅샷 제외**: 항목별 소유권 스냅샷은 격리 디렉토리가 생긴 **뒤에** 찍힌다. 제외하지 않으면 root 가 만든 추출본이 "원본 소유권" 으로 기록되고 복원이 잔존물을 다시 root 로 되돌리므로, 부모는 `snapshotOwnershipDetailed(..., excludes: [격리 디렉토리 루트])` 로 이번 실행의 것을 뺀다. 그러면 잔존물이 생겨도 상위 `storage/app/core_pending` 의 재귀 chown 이 운영자 계정·웹서버 그룹으로 맞춰 지울 수 있다.
 
 > **`public/storage` symlink 보존 + 종료 시 복구 (#43)**: 심층 방어 2층 구조로 `--prune` 실행 후에도 `public/storage` symlink 가 정상 유지된다.
 > - **층 1 (예방)**: `--prune` 은 `public` 타깃에서 orphan(릴리즈 소스에 없는 항목)을 삭제하는데, 런타임 symlink 인 `public/storage` 는 릴리즈 소스에 없어 orphan 으로 판정되어 삭제되던 결함이 있었다(업로드 파일 404). `applyUpdate` 가 `public` 타깃 처리 시 `FilePermissionHelper::copyDirectory(..., preserveLinkPaths: ['storage'])` 로 화이트리스트를 전달해, 매칭되는 orphan symlink/junction 만 삭제에서 제외한다. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다(정밀 보호 — 무조건 보존 아님).
@@ -286,8 +292,8 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 3. bootstrap/cache 파일 삭제 (services.php, packages.php)
 4. php artisan package:discover 재실행
 5. php artisan extension:update-autoload (코어 업데이트로 _bundled 변경 가능)
-6. _pending 디렉토리 삭제
-7. 성공 시 백업 삭제
+6. _pending 격리 디렉토리(core_{ts}) 루트째 삭제
+7. 성공 시 백업 삭제 (이후 `hotfix:rollback-stale-files` 는 대상이 없다)
 8. 유지보수 모드 해제
 ```
 

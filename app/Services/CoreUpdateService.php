@@ -1906,13 +1906,126 @@ class CoreUpdateService
     /**
      * _pending 하위 디렉토리를 정리합니다.
      *
-     * 타임스탬프 기반 격리 디렉토리를 통째로 삭제합니다.
+     * 타임스탬프 기반 격리 디렉토리(`core_{Ymd_His}/`)를 통째로 삭제합니다.
      *
-     * @param  string  $pendingPath  삭제할 pending 디렉토리 경로
+     * 호출자가 넘기는 경로는 격리 디렉토리 자체가 아니라 그 안쪽의 소스 경로일 수 있다 —
+     * ZIP·GitHub 경로는 `core_{ts}/extracted/{루트}/` 를, `--local` 은 `core_{ts}/local_source/`
+     * 를 소스로 돌려준다. 그 안쪽만 지우면 `core_{ts}/extracted/` 껍데기가 업데이트마다 남고,
+     * sudo 실행이면 root 소유라 운영자·웹서버 계정이 지울 수 없다(7.0.0 부터 누적된 실사례).
+     * 그래서 격리 디렉토리 루트로 올라가서 지운다.
+     *
+     * @param  string  $pendingPath  삭제할 pending 경로 (격리 디렉토리 또는 그 하위 소스 경로)
      */
     public function cleanupPending(string $pendingPath): void
     {
-        ExtensionPendingHelper::cleanupStaging($pendingPath);
+        ExtensionPendingHelper::cleanupStaging($this->resolveStagingRoot($pendingPath));
+    }
+
+    /**
+     * 경로가 속한 격리 디렉토리(`{pending_path}/core_*`) 루트를 돌려줍니다.
+     *
+     * 경로가 pending 기준 디렉토리 아래가 아니면 그대로 돌려준다 (`--source` 로 넘어온
+     * 외부 디렉토리처럼 우리가 만들지 않은 경로를 위로 올라가 지우는 일이 없도록).
+     *
+     * @param  string  $path  격리 디렉토리 또는 그 하위 경로
+     * @return string 격리 디렉토리 루트 또는 입력 경로 그대로
+     */
+    public function resolveStagingRoot(string $path): string
+    {
+        $rawBase = rtrim((string) config('app.update.pending_path'), '/\\');
+        $base = str_replace('\\', '/', $rawBase);
+        $normalized = rtrim(str_replace('\\', '/', $path), '/');
+
+        if ($base === '' || $normalized === $base || ! str_starts_with($normalized, $base.'/')) {
+            return $path;
+        }
+
+        $relative = substr($normalized, strlen($base) + 1);
+        $first = explode('/', $relative, 2)[0];
+
+        if ($first === '' || $first === '.' || $first === '..') {
+            return $path;
+        }
+
+        return $rawBase.DIRECTORY_SEPARATOR.$first;
+    }
+
+    /**
+     * pending 기준 디렉토리에 남은 **빈** 격리 디렉토리(`core_*`)를 청소합니다.
+     *
+     * 이전 버전의 정리 단계가 소스 경로 안쪽만 지워 남긴 `core_{ts}/extracted/` 껍데기가
+     * 대상이다. 부모(구버전 코드)가 남긴 것을 새 코드가 도는 자식 프로세스가 치우므로,
+     * 이 결함을 가진 버전에서 올라오는 업데이트도 껍데기 없이 끝난다.
+     *
+     * 파일이 하나라도 있는 디렉토리는 건드리지 않는다 — 부모가 아직 쓰고 있는 격리
+     * 디렉토리(추출본·vendor)는 파일을 갖고 있으므로 이 술어만으로 안전하게 구분된다.
+     *
+     * @return int 삭제한 격리 디렉토리 수
+     */
+    public function sweepEmptyStagingDirectories(): int
+    {
+        $base = (string) config('app.update.pending_path');
+
+        if ($base === '' || ! File::isDirectory($base)) {
+            return 0;
+        }
+
+        $swept = 0;
+
+        foreach (File::directories($base) as $dir) {
+            if (! str_starts_with(basename($dir), 'core_') || is_link($dir)) {
+                continue;
+            }
+
+            if (! $this->isDirectoryTreeEmpty($dir)) {
+                continue;
+            }
+
+            ExtensionPendingHelper::cleanupStaging($dir);
+
+            if (File::isDirectory($dir)) {
+                Log::channel('upgrade')->warning('코어 업데이트: 빈 격리 디렉토리 청소 실패 (권한)', ['path' => $dir]);
+
+                continue;
+            }
+
+            $swept++;
+        }
+
+        if ($swept > 0) {
+            Log::channel('upgrade')->info('코어 업데이트: 빈 격리 디렉토리 청소', ['swept' => $swept]);
+        }
+
+        return $swept;
+    }
+
+    /**
+     * 디렉토리 트리에 파일(또는 링크)이 하나도 없는지 판정합니다.
+     *
+     * 읽을 수 없는 하위 디렉토리가 있으면 "비어 있지 않다" 로 본다 — 내용을 모르는
+     * 디렉토리를 지우지 않기 위해서다.
+     *
+     * @param  string  $dir  판정할 디렉토리
+     */
+    private function isDirectoryTreeEmpty(string $dir): bool
+    {
+        try {
+            $items = new \FilesystemIterator($dir, \FilesystemIterator::SKIP_DOTS);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        foreach ($items as $item) {
+            if ($item->isLink() || ! $item->isDir()) {
+                return false;
+            }
+
+            if (! $this->isDirectoryTreeEmpty($item->getPathname())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -2140,10 +2253,16 @@ class CoreUpdateService
      * - chown 미지원 환경(Windows 등) 은 빈 배열 반환
      * - symbolic link 는 lstat 으로 처리하여 대상 따라가지 않음 (은닉 cycle 방어)
      *
+     * 제외 경로(`$excludes`)는 이번 실행이 스스로 만든 격리 디렉토리를 넘기는 자리다.
+     * 스냅샷은 격리 디렉토리가 만들어진 **뒤에** 수집되므로, 제외하지 않으면 sudo 실행이
+     * root 로 만든 추출본이 "원본 소유권" 으로 기록되고 복원 단계가 그 항목을 다시 root
+     * 로 되돌린다 — 정리가 어떤 이유로든 실패하면 잔존물은 언제나 root 소유가 된다.
+     *
      * @param  array<int, string>  $paths  base_path 상대 또는 절대 경로 목록
+     * @param  array<int, string>  $excludes  스냅샷에서 제외할 경로 (그 하위 전체 포함)
      * @return array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>
      */
-    public function snapshotOwnershipDetailed(array $paths): array
+    public function snapshotOwnershipDetailed(array $paths, array $excludes = []): array
     {
         if (! function_exists('chown')) {
             return [];
@@ -2152,6 +2271,14 @@ class CoreUpdateService
         $snapshot = [];
         $maxItems = 50000;
         $truncated = false;
+        $excludePrefixes = [];
+
+        foreach ($excludes as $exclude) {
+            $exclude = rtrim(str_replace('\\', '/', trim((string) $exclude)), '/');
+            if ($exclude !== '') {
+                $excludePrefixes[] = $exclude;
+            }
+        }
 
         foreach ($paths as $rawPath) {
             $rawPath = trim((string) $rawPath);
@@ -2164,7 +2291,7 @@ class CoreUpdateService
                 continue;
             }
 
-            $this->collectStatRecursively($absolute, $snapshot, $maxItems, $truncated);
+            $this->collectStatRecursively($absolute, $snapshot, $maxItems, $truncated, $excludePrefixes);
 
             if ($truncated) {
                 break;
@@ -2206,13 +2333,23 @@ class CoreUpdateService
      * 트리를 재귀 stat 하여 snapshot 배열에 누적합니다.
      *
      * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $snapshot
+     * @param  array<int, string>  $excludePrefixes  제외 경로(슬래시 정규화, 끝 슬래시 없음) — 일치하거나 그 하위면 건너뛴다
      */
-    private function collectStatRecursively(string $path, array &$snapshot, int $maxItems, bool &$truncated): void
+    private function collectStatRecursively(string $path, array &$snapshot, int $maxItems, bool &$truncated, array $excludePrefixes = []): void
     {
         if ($truncated || count($snapshot) >= $maxItems) {
             $truncated = true;
 
             return;
+        }
+
+        if ($excludePrefixes !== []) {
+            $normalized = rtrim(str_replace('\\', '/', $path), '/');
+            foreach ($excludePrefixes as $prefix) {
+                if ($normalized === $prefix || str_starts_with($normalized, $prefix.'/')) {
+                    return;
+                }
+            }
         }
 
         $isLink = is_link($path);
@@ -2237,7 +2374,7 @@ class CoreUpdateService
 
         $items = new \FilesystemIterator($path, \FilesystemIterator::SKIP_DOTS);
         foreach ($items as $item) {
-            $this->collectStatRecursively($item->getPathname(), $snapshot, $maxItems, $truncated);
+            $this->collectStatRecursively($item->getPathname(), $snapshot, $maxItems, $truncated, $excludePrefixes);
             if ($truncated) {
                 return;
             }
