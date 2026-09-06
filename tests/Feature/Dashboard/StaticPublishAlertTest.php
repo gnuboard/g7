@@ -198,6 +198,26 @@ class StaticPublishAlertTest extends TestCase
     }
 
     /**
+     * 리스너는 훅에 한 번만 등록된다.
+     *
+     * 코어 리스너는 CoreServiceProvider 의 자동 발견(훅 캐시 또는 app/Listeners 스캔)이 등록한다.
+     * AppServiceProvider 가 같은 리스너를 손으로 한 번 더 등록하면 같은 알림 카드가 두 장 뜬다 —
+     * 예외도 로그도 없이 화면에 중복으로만 나타난다 (7.0.10 신규 설치 대시보드에서 실제 발생).
+     *
+     * @effects publish_failure_listener_is_registered_on_hook
+     */
+    public function test_listener_is_registered_exactly_once(): void
+    {
+        $this->seedMarker(2);
+
+        $alerts = HookManager::applyFilters('core.dashboard.alerts', []);
+
+        $ids = array_count_values(array_column($alerts, 'id'));
+
+        $this->assertSame(1, $ids['static_publish_failure'] ?? 0, '정적 게시 실패 알림이 중복 등록되었다 — 같은 카드가 두 장 뜬다');
+    }
+
+    /**
      * 마커 접근자가 서비스의 기록과 같은 키를 본다 (키 오타 회귀 가드).
      *
      * @effects failure_marker_key_is_shared_between_writer_and_reader
