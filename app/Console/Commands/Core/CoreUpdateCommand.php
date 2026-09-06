@@ -301,12 +301,16 @@ class CoreUpdateCommand extends Command
             // Step 11/12 의 restoreOwnership 이 항목별 정확 복원하도록 전달한다.
             // 사용자 데이터 영역(storage/app/{modules,plugins,attachments,public,settings})
             // 은 본 스냅샷 대상이 아니며 chown 자체가 빠지므로 시드/업로드 owner 가 보존된다.
+            //
+            // 이번 실행이 방금 만든 격리 디렉토리(core_{ts})는 제외한다 — 스냅샷은 그 디렉토리가
+            // 생긴 뒤에 찍히므로, 제외하지 않으면 sudo 가 root 로 만든 추출본이 "원본" 으로
+            // 기록되고 복원이 잔존물을 다시 root 로 되돌린다(7.0.0~7.0.9 실사례).
             $detailedOwnershipSnapshot = $service->snapshotOwnershipDetailed([
                 'storage/logs',
                 'storage/framework',
                 'storage/app/core_pending',
                 'bootstrap/cache',
-            ]);
+            ], excludes: [$service->resolveStagingRoot($pendingPath)]);
             if (! empty($detailedOwnershipSnapshot)) {
                 $log('항목별 정확 스냅샷 수집: '.count($detailedOwnershipSnapshot).'개 항목 (PHP-FPM 쓰기 영역)');
             }

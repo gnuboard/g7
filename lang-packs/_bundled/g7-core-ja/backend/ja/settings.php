@@ -142,7 +142,7 @@ return [
         'step_composer_prod' => '運用ディレクトリの composer install 中...',
         'step_cleanup' => 'クリーンアップ中...',
         'apply_mode_incremental' => 'ファイル適用: コアが実際に変更したファイルのみを適用しました (新規 :added 個、変更 :changed 個)。その他のファイルは現在の状態のまま保持されました。',
-        'apply_mode_incremental_prune_hint' => '新バージョンで削除されたファイルをあわせてクリーンアップするには、`--prune` オプションで再実行するか、`php artisan hotfix:rollback-stale-files --prune` を使用してください。',
+        'apply_mode_incremental_prune_hint' => '新バージョンで削除されたファイルをあわせてクリーンアップするには、同じアップデートを `--prune` オプションで再実行してください。',
         'apply_mode_prune' => 'ファイル適用: 全体上書き + 削除ファイルのクリーンアップを実行しました (--prune)。',
         'apply_mode_fallback' => 'ファイル適用: バックアップがないため、増分適用をスキップして全体上書きを実行しました。ユーザーのカスタムファイル保持をご希望の場合は、次回以降はバックアップを保持したままアップデートしてください。',
         'github_url_not_configured' => 'GitHub リポジトリ URL が設定されていません。',

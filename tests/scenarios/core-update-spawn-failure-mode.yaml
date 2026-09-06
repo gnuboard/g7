@@ -49,6 +49,8 @@ axes:
   upgrade_step_v_one_pattern: [app_service_call, app_manager_call, app_repository_call, local_only]
   audit_allow_inline: [present, absent]                              # 면제 주석 적용 여부
   symlink_target_state: [valid, broken, windows_no_privilege]        # symlink 보존 분기 (§1 연동)
+  staging_source_shape: [inner_extracted_root, staging_root_itself, external_source_dir]  # cleanupPending 이 받는 경로 형태 — ZIP·GitHub / --local·--source 복제 / --source 외부
+  staging_leftover_content: [empty_skeleton, has_files, non_core_dir]  # 자식 청소 술어 — 빈 껍데기만 대상
   resume_exec_context: [non_root, root_web_known, root_web_symmetric, root_web_unknown]  # 핸드오프 재실행 권한 안내 분기 (실행 사용자 × 웹서버 계정 식별성)
 
 exclusions:
@@ -105,6 +107,12 @@ effects:
   - renderResumeGuidance_root_web_known_prefixes_sudo_u_and_warns_with_account_name
   - renderResumeGuidance_root_web_symmetric_prints_command_verbatim
   - renderResumeGuidance_root_web_unknown_uses_placeholder_and_generic_warning
+  # §9 격리 디렉토리 정리 3층 (부모 루트째 삭제 / 자식 빈 껍데기 청소 / 스냅샷 제외) + 완료 안내문
+  - cleanupPending_removes_whole_staging_root_when_given_inner_source_path
+  - sweepEmptyStagingDirectories_removes_empty_core_dirs_and_keeps_dirs_with_files
+  - snapshotOwnershipDetailed_excludes_current_run_staging_root
+  - execute_bundled_updates_child_sweeps_empty_staging_directories_left_by_parent
+  - apply_mode_incremental_prune_hint_does_not_reference_rollback_command
 
 test_files:
   - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php
@@ -115,6 +123,8 @@ test_files:
   - tests/Feature/Console/CoreUpdateResumeGuidanceTest.php
   - tests/Feature/Upgrades/MultiVersionUpgradePathTest.php
   - tests/Unit/Extension/Helpers/FilePermissionHelperSymlinkTest.php
+  - tests/Unit/Services/CoreUpdateServiceStagingCleanupTest.php
+  - tests/Feature/Console/ExecuteBundledUpdatesCommandTest.php
 
 # 본 매니페스트의 axes cross product 는 800+ 케이스이나, 실제 회귀 가드는 test_files 의
 # 통과 테스트들이 SSoT — 매니페스트는 매트릭스 SSoT 역할.

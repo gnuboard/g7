@@ -170,7 +170,7 @@ return [
 
         // 파일 적용 방식 요약 (Step 7)
         'apply_mode_incremental' => '파일 적용: 코어가 실제 변경한 파일만 적용했습니다 (신규 :added개, 변경 :changed개). 그 외 파일은 현재 상태 그대로 보존되었습니다.',
-        'apply_mode_incremental_prune_hint' => '신 버전에서 제거된 파일을 함께 정리하려면 `--prune` 옵션으로 다시 실행하거나 `php artisan hotfix:rollback-stale-files --prune` 을 사용하세요.',
+        'apply_mode_incremental_prune_hint' => '신 버전에서 제거된 파일을 함께 정리하려면 같은 업데이트를 `--prune` 옵션으로 다시 실행하세요.',
         'apply_mode_prune' => '파일 적용: 전체 덮어쓰기 + 제거된 파일 정리를 수행했습니다 (--prune).',
         'apply_mode_fallback' => '파일 적용: 백업이 없어 증분 적용을 건너뛰고 전체 덮어쓰기를 수행했습니다. 사용자 커스텀 파일 보존을 원하면 다음부터는 백업을 유지한 채 업데이트하세요.',
 

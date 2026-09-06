@@ -290,12 +290,36 @@ class ExecuteUpgradeStepsCommand extends Command
         }
 
         $this->restoreUpgradeLogOwnership();
+        $this->sweepEmptyStagingDirectories($service);
         // 단독 실행(sudo core:execute-upgrade-steps)이 만든 캐시/번들 root 산출물
         // 소유권 정상화 — spawn 자식 모드에서도 무해(멱등)하며, 부모(CoreUpdateCommand)
         // 종료부의 동일 호출이 부모 측 후속 쓰기를 담당한다
         $service->normalizeRuntimeOwnershipAfterRootRun();
 
         return self::SUCCESS;
+    }
+
+    /**
+     * 이전 버전 부모가 남긴 빈 격리 디렉토리(`core_{ts}/extracted` 껍데기)를 청소합니다.
+     *
+     * 부모의 정리 단계는 소스 경로 안쪽만 지우던 결함(7.0.0~7.0.9)이 있어 업데이트마다
+     * 껍데기가 남았고, sudo 실행이면 root 소유라 운영자·웹서버 계정이 지울 수 없었다.
+     * 부모는 구버전 클래스를 메모리에 들고 있어 고쳐도 다음 업데이트부터 효력이 있으므로,
+     * 신버전 코드로 도는 이 자식이 치운다. 파일이 있는 디렉토리(부모가 쓰는 중인 격리
+     * 디렉토리)는 술어상 건드리지 않는다. 실패는 업데이트 결과와 무관하므로 경고로 흡수한다.
+     *
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스
+     */
+    private function sweepEmptyStagingDirectories(CoreUpdateService $service): void
+    {
+        try {
+            $swept = $service->sweepEmptyStagingDirectories();
+            if ($swept > 0) {
+                $this->info("[spawn] 빈 격리 디렉토리 청소: {$swept}개");
+            }
+        } catch (\Throwable $e) {
+            Log::channel('upgrade')->warning('[spawn] 빈 격리 디렉토리 청소 실패', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
