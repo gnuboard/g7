@@ -4,6 +4,7 @@ namespace Tests\Unit\Support\LayoutMarkup;
 
 use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
+use Tests\Support\ScansDocRoots;
 use Throwable;
 
 /**
@@ -21,7 +22,7 @@ use Throwable;
  *
  * ## 모집단과 조각 처리
  *
- * `docs` · `.claude/docs` · `.codex/docs` 의 ```html 펜스 중 마크업 신호 보유분. 문서는 한 펜스에
+ * `docs`(개발 하네스는 `G7_DOC_SCAN_EXTRA_ROOTS` 로 내부 문서 루트를 더한다)의 ```html 펜스 중 마크업 신호 보유분. 문서는 한 펜스에
  * 여러 예시를 나란히 싣는 관례가 있어(평면/조건형 `<permissions>`, `target_layout`/`extension_point`
  * 두 형태 …) **최상위 형제 단위로 쪼개** 각각 검사한다 — 합쳐 태우면 `duplicate_node_key` 같은
  * 하네스 인공 실패가 난다.
@@ -40,6 +41,8 @@ use Throwable;
  */
 class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
 {
+    use ScansDocRoots;
+
     /** 마크업 예시로 볼 펜스 언어. */
     private const MARKUP_LANGS = ['html', 'g7', 'g7html'];
 
@@ -164,8 +167,10 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
         );
 
         // "실패 0" 과 "검사 대상 0" 은 다른 명제다 — 펜스 추출식이 깨지면 이 단언이 먼저 red 다.
+        // 공개 `docs` 만으로 실측 487(2026-09-06) — 내부 문서 루트를 더하면 더 많아지지만 하한은
+        // 공개 배포본에서도 성립해야 하므로 공개 실측에 맞춘다.
         $this->assertGreaterThan(
-            500,
+            450,
             $inspected,
             "검사한 마크업 조각이 {$inspected}건뿐 — 펜스/신호 추출식이 어긋났는지 먼저 확인할 것"
         );
@@ -517,7 +522,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
     {
         $files = [];
 
-        foreach (['docs', '.claude/docs', '.codex/docs'] as $dir) {
+        foreach ($this->docRoots() as $dir) {
             $abs = base_path($dir);
             if (! is_dir($abs)) {
                 continue;

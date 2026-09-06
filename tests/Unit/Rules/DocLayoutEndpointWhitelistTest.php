@@ -3,6 +3,7 @@
 namespace Tests\Unit\Rules;
 
 use App\Rules\WhitelistedEndpoint;
+use Tests\Support\ScansDocRoots;
 use Tests\TestCase;
 
 /**
@@ -29,6 +30,8 @@ use Tests\TestCase;
  */
 class DocLayoutEndpointWhitelistTest extends TestCase
 {
+    use ScansDocRoots;
+
     /** 부정 예시 표지 — 이 표지가 붙은 블록은 일부러 위반을 싣는다. */
     private const NEGATIVE_MARKS = ['❌', '금지', '잘못된', '차단', '공격', 'attack', '거부'];
 
@@ -100,7 +103,7 @@ class DocLayoutEndpointWhitelistTest extends TestCase
     {
         $files = [];
 
-        foreach (['docs', '.claude/docs', '.codex/docs'] as $dir) {
+        foreach ($this->docRoots() as $dir) {
             $abs = base_path($dir);
             if (! is_dir($abs)) {
                 continue;
