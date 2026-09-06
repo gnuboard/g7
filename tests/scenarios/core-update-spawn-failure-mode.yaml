@@ -41,6 +41,8 @@ axes:
   spawn_failure_mode: [abort, fallback]
   from_to_relation: [from_lt_to, from_eq_to_forced]                # version_compare 분기
   parent_memory_version: [equal_to_to, less_than_to, greater_than_to]  # stale 가드 트리거 조건
+  memory_version_source: [env_app_version, config_only_env_absent]  # 가드 판독 출처 — env 우선(spawn 자식 계약), env 부재 시 config 폴백
+  child_config_cache_state: [cached_from_version, no_cache]        # 자식이 이전 버전 config 캐시로 부팅하는가 (7.0.9→7.0.10 실사례)
   steps_executed_signal: [present_positive, present_zero, absent]   # 자식의 [STEPS_EXECUTED] count 발행 상태
   steps_discovered_signal: [discovered_positive, discovered_zero, absent]  # 범위 내 발견된 스텝 파일 수 (신버전 자식만 발행, 구버전=absent)
   child_process_origin: [beta_5_plus, beta_4_or_earlier]            # 이전 버전 자식 (silent skip 시뮬레이션)
@@ -81,6 +83,12 @@ effects:
   - runUpgradeSteps_throws_UpgradeHandoffException_when_memory_lt_to_with_abort_mode
   - runUpgradeSteps_logs_warning_when_memory_lt_to_with_fallback_mode
   - runUpgradeSteps_proceeds_silently_when_memory_eq_or_gt_to
+  - runUpgradeSteps_reads_env_APP_VERSION_before_config_so_spawn_child_with_stale_config_cache_passes_guard
+  - runUpgradeSteps_falls_back_to_config_version_when_env_APP_VERSION_absent
+  # config 캐시 부팅 자식 (2026-09-06 전수조사) — 부모는 spawn 전에 캐시를 비우고, 자식은 캐시 부팅이면 디스크 config 를 읽는다
+  - spawnUpgradeStepsProcess_clears_config_cache_before_proc_open
+  - execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
+  - route_cache_rebuild_preserves_container_instance
   - runUpgradeSteps_resume_command_format_matches_execute_upgrade_steps_signature
   # §1 symlink 보존 (CoreBackupHelper 위임 경로 포함)
   - copyDirectory_preserves_symlink_target_pointer_on_linux
@@ -100,6 +108,9 @@ effects:
 
 test_files:
   - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php
+  - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php
+  - tests/Unit/Services/CoreUpdateServiceFreshDiskConfigTest.php
+  - tests/Unit/Support/RouteCacheHelperContainerTest.php
   - tests/Feature/Console/CoreUpdateCommandHandoffTest.php
   - tests/Feature/Console/CoreUpdateResumeGuidanceTest.php
   - tests/Feature/Upgrades/MultiVersionUpgradePathTest.php

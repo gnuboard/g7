@@ -183,6 +183,65 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * 자식이 이전 버전 config 캐시로 부팅했으면(구버전 부모는 spawn 전에 캐시를 비우지 않는다)
+     * `config('app.update.restore_ownership_group_writable')` 은 옛 목록이다. 이때는 디스크의
+     * `config/app.php` 를 직접 읽어 신버전이 추가한 디렉토리까지 권한 정상화 대상에 넣는다
+     * (7.0.9→7.0.10 서버 실측: `public/build/ext` 누락).
+     *
+     * @effects execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
+     */
+    public function test_config_캐시로_부팅한_자식은_쓰기권한_목록을_디스크_config_에서_읽는다(): void
+    {
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        config(['app.update.restore_ownership_group_writable' => ['stale/only']]);
+
+        $service->shouldReceive('freshDiskUpdateConfig')
+            ->once()
+            ->with('restore_ownership_group_writable', [])
+            ->andReturn(['fresh/dir']);
+        $service->shouldReceive('ensureWritableDirectories')
+            ->once()
+            ->withArgs(fn (array $paths) => $paths === ['fresh/dir']);
+        $service->shouldReceive('runUpgradeSteps')->once();
+
+        // 상대 경로 — Application::normalizeCachePath 는 `/`·`\` 로 시작하지 않는 값을 basePath 기준으로
+        // 해석하므로 Windows 절대 경로는 어긋난다.
+        $relativeCachePath = 'storage/framework/testing/child-config-cache-'.uniqid().'.php';
+        $cachePath = base_path($relativeCachePath);
+        File::ensureDirectoryExists(dirname($cachePath));
+        File::put($cachePath, "<?php return [];\n");
+
+        $originalCacheEnv = $_ENV['APP_CONFIG_CACHE'] ?? null;
+        $_ENV['APP_CONFIG_CACHE'] = $relativeCachePath;
+        $_SERVER['APP_CONFIG_CACHE'] = $relativeCachePath;
+        putenv('APP_CONFIG_CACHE='.$relativeCachePath);
+        $originalEnv = getenv('G7_UPDATE_IN_PROGRESS');
+        putenv('G7_UPDATE_IN_PROGRESS=1');
+
+        try {
+            $this->assertSame($cachePath, $this->app->getCachedConfigPath(), '전제: APP_CONFIG_CACHE 가 캐시 경로를 정한다');
+            $this->assertFileExists($cachePath, '전제: 자식 시점에 config 캐시 파일이 존재한다');
+            $this->assertSame(0, $this->runCommand([]));
+        } finally {
+            if ($originalEnv === false) {
+                putenv('G7_UPDATE_IN_PROGRESS');
+            } else {
+                putenv('G7_UPDATE_IN_PROGRESS='.$originalEnv);
+            }
+            if ($originalCacheEnv === null) {
+                unset($_ENV['APP_CONFIG_CACHE'], $_SERVER['APP_CONFIG_CACHE']);
+                putenv('APP_CONFIG_CACHE');
+            } else {
+                $_ENV['APP_CONFIG_CACHE'] = $originalCacheEnv;
+                $_SERVER['APP_CONFIG_CACHE'] = $originalCacheEnv;
+                putenv('APP_CONFIG_CACHE='.$originalCacheEnv);
+            }
+            File::delete($cachePath);
+        }
+    }
+
     public function test_spawn_child_env_bypasses_all_pre_and_post_steps_without_skip_options(): void
     {
         // 구버전 부모(beta.5) 가 신버전 자식(beta.6+) 을 spawn 할 때 `--skip-*` 옵션을 모르므로
@@ -342,6 +401,9 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
     private function bindMocks(): array
     {
         $service = Mockery::mock(CoreUpdateService::class);
+        // 종료부의 root 산출물 소유권 정상화(#615 도입)는 모든 경로에서 호출되며 본 테스트의 관심사가
+        // 아니다 — 기본 허용으로 두어 각 케이스가 자기 단계만 단언하게 한다.
+        $service->shouldReceive('normalizeRuntimeOwnershipAfterRootRun')->andReturnNull()->byDefault();
         $module = Mockery::mock(ModuleManager::class);
         $plugin = Mockery::mock(PluginManager::class);
         $template = Mockery::mock(TemplateManager::class);
