@@ -13,7 +13,6 @@ use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener;
-use Plugins\Sirsoft\Gdpr\Support\NecessaryAllowlist;
 
 /**
  * GDPR (일반 데이터 보호 규정) 플러그인
@@ -37,7 +36,7 @@ class Plugin extends AbstractPlugin
      *
      * 잠금 항목(`auth_token` / `XSRF-TOKEN` / 세션 쿠키 / `gdpr_session`)은 여기 넣지
      * 않습니다 — 설정에 담기면 API 로 지울 수 있어 잠금이 아니게 됩니다
-     * (Support\NecessaryAllowlist::locked()).
+     * (self::lockedNecessaryStorage()).
      *
      * @var array<string, array<int, string>>
      */
@@ -458,6 +457,29 @@ class Plugin extends AbstractPlugin
      *
      * @return array 설정 값 배열
      */
+    /**
+     * strictly necessary 잠금 항목 — 운영자가 지울 수 없는 최소 집합.
+     *
+     * 설정에 넣지 않는다. 설정에 넣으면 API 로 지울 수 있어 잠금이 아니게 된다.
+     * 세션 쿠키 이름은 `session.cookie` 가 정하는 런타임 값이라 상수로 둘 수 없다 —
+     * 이름을 하드코딩하면 `SESSION_COOKIE` 를 지정한 사이트에서 그 항목이 죽는다.
+     *
+     * 이 정의는 `src/` 가 아니라 진입 파일에 둔다. `getConfigValues()` 는 신규 설치 흐름에서
+     * 이 플러그인의 PSR-4 오토로드가 등록되기 전에 호출되므로, `src/` 클래스를 부르면
+     * "Class not found" 로 설치가 중단된다 (업그레이드 경로는 기설치본 매핑이 있어 재현되지
+     * 않는다). `Support\NecessaryAllowlist::locked()` 는 이 메서드에 위임한다.
+     *
+     * @return array<string, array<int, string>> 스코프 => 항목 배열
+     */
+    public static function lockedNecessaryStorage(): array
+    {
+        return [
+            'localStorage' => ['auth_token'],
+            'sessionStorage' => [],
+            'cookie' => ['XSRF-TOKEN', (string) config('session.cookie', 'laravel_session'), 'gdpr_session'],
+        ];
+    }
+
     public function getConfigValues(): array
     {
         return [
@@ -498,7 +520,7 @@ class Plugin extends AbstractPlugin
             // 잠금 항목 — 설정이 아니라 코드가 정한다. 스키마에 넣지 않으므로 저장 요청에
             // 섞여 와도 validated() 에서 배제되어 저장되지 않는다. 화면에는 읽기 전용으로
             // 표시하고, 판정은 언제나 '운영자 목록 ∪ 이 집합' 이다.
-            'necessary_storage_locked' => NecessaryAllowlist::locked(),
+            'necessary_storage_locked' => self::lockedNecessaryStorage(),
 
             'cookie_categories' => json_encode([
                 [
