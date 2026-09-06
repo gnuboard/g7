@@ -107,6 +107,7 @@ if (! defined('REQUIRED_DIRECTORIES')) {
         'plugins/_pending' => false,
         'templates' => false,
         'templates/_pending' => false,
+        'public/build' => false,          // 초기 화면 정적 파일 게시 루트(public/build/ext)의 상위 — 설치 마지막 단계와 웹 렌더 자가 치유가 웹 계정으로 쓴다
         'lang-packs' => false,            // 언어팩 활성 디렉토리 (코어/모듈/플러그인/템플릿 lang-packs)
         'lang-packs/_pending' => false,   // 외부 ZIP/URL/GitHub 다운로드 staging
         'storage/app/core_pending' => false,  // 코어 업데이트 _pending (기본값, 커스텀 경로는 Step 3에서 설정)
