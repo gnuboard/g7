@@ -874,6 +874,15 @@ class CoreUpdateCommand extends Command
             'G7_UPDATE_IN_PROGRESS' => '1',
         ]);
 
+        // spawn 직전 config 캐시 제거. 자식은 새 프로세스라 `bootstrap/cache/config.php` 가 있으면
+        // 그 캐시로 부팅하는데, 그 캐시는 이전 버전 설치본이 만든 것이다(설치 마법사·설정 저장·
+        // 확장 업데이트). 캐시 부팅에서는 `.env` 도 읽지 않고 위 `$env` 의 APP_VERSION 오버라이드도
+        // config 에 반영되지 않으며, 신버전 `config/app.php` 가 추가한 update 목록(쓰기 권한
+        // 디렉토리 등)도 자식에게 보이지 않는다 (7.0.9→7.0.10 실사례: stale 가드 오판 +
+        // `public/build/ext` 권한 정상화 누락). 부모의 메모리 config 는 영향받지 않고, 캐시는
+        // Step 11 의 `ConfigCacheHelper::rebuild()` 가 모든 파일이 안착한 뒤 다시 만든다.
+        ConfigCacheHelper::clear();
+
         $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
         if (! is_resource($process)) {
             return $this->failSpawnWithMode(

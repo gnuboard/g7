@@ -1433,8 +1433,12 @@ class SettingsService
     public function optimizeSystem(): bool
     {
         try {
-            Artisan::call('config:cache');
-            Artisan::call('route:cache');
+            // config:cache / route:cache 는 새 Application 을 부팅하며 전역 Container 를 바꿔 놓는다.
+            // 보존 래퍼 없이 부르면 이 요청의 후속 `app()->terminating()` 예약이 사라진다.
+            ConfigCacheHelper::withPreservedContainer(static function (): void {
+                Artisan::call('config:cache');
+                Artisan::call('route:cache');
+            });
             Artisan::call('view:cache');
 
             return true;

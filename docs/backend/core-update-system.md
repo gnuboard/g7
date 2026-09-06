@@ -259,6 +259,10 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > **단독 실행 안전성 (beta.6 이후)**: `core:execute-upgrade-steps` 는 HANDOFF 안내 또는 수동 복구 목적으로 운영자가 직접 호출되는 경로가 있다. 단독 실행 시 자식은 기본값으로 부모 Step 9 (`runMigrations` + `reloadCoreConfigAndResync`), Step 11 (`updateVersionInEnv` + `clearAllCaches`), Step 12 (번들 확장 일괄 업데이트) 를 자체적으로 수행해 단일 명령으로 업그레이드를 완결한다. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess()` 는 자식 명령 라인에 `--skip-migrations`, `--skip-resync`, `--skip-version-env`, `--skip-cache-clear`, `--skip-bundled-updates` 5개를 무조건 추가해 중복 회피한다 — 부모가 자식 종료 후 동일 단계를 직접 수행하기 때문이다.
 
+> **spawn 자식은 이전 버전의 config 캐시로 부팅한다**: 부모는 Step 10(spawn) 전에 config 캐시를 비우지 않는다 — `clearAllCaches()` 는 Step 11 이다. 그래서 이전 버전 설치본에 `bootstrap/cache/config.php` 가 있으면(설치 마법사·설정 저장·확장 업데이트가 만든다) 자식은 그 캐시로 부팅하고, 자식의 `config('app.version')` 은 부모가 env 로 넘긴 `APP_VERSION={toVersion}` 이 아니라 캐시에 박힌 fromVersion 이다. 업데이트 흐름 안에서 "지금 프로세스의 코어 버전" 을 판정하는 코드는 `config('app.version')` 을 직접 읽지 않고 `CoreVersionChecker::getCoreVersion()`(env 우선, config 폴백)을 쓴다. `runUpgradeSteps()` 의 stale 메모리 가드가 config 만 읽던 시절에는 정상 spawn 자식을 stale 부모로 오판해 스텝이 0건인 릴리즈에서도 핸드오프로 중단됐다(7.0.9→7.0.10). 부모 in-process fallback 에서는 env 가 `.env` 의 fromVersion 이므로 가드는 그대로 발동한다.
+>
+> 같은 이유로 자식이 `config('app.update.*')` 로 읽는 목록(쓰기 권한 디렉토리 등)도 캐시에 박힌 옛 목록이다 — 신버전이 항목을 추가해도 자식에게 보이지 않는다. 방어는 두 겹이다: ① 부모(7.0.10+)는 `spawnUpgradeStepsProcess()` 가 `proc_open` 직전에 `ConfigCacheHelper::clear()` 로 캐시를 비워 자식이 디스크 config + `.env` + spawn env 로 부팅하게 한다(캐시는 Step 11 이 다시 만든다). ② 자식(7.0.10+)은 이전 버전 부모가 캐시를 남겨 둔 경우를 위해, 캐시 파일이 있으면 `CoreUpdateService::freshDiskUpdateConfig()` 로 디스크의 `config/app.php` 를 직접 읽는다 — 캐시 부팅에서는 `.env` 도 로드되지 않으므로 그 안에서 `.env` 를 먼저 불변 로드한다(프로세스 env 의 `APP_VERSION` 은 덮어쓰지 않는다).
+
 #### 재실행 안내의 권한 분기 (핸드오프 catch)
 
 spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)하고 `spawn_failure_mode=abort`(기본값) 이면, 파일·버전은 이미 `toVersion` 으로 반영되지만 업그레이드 스텝이 미실행 상태로 남아 운영자에게 `core:execute-upgrade-steps` 재실행을 안내한다. 이때 **sudo(root) 로 `core:update` 를 실행한 경우**, 안내받은 명령을 root 로 그대로 재실행하면 스텝이 만드는 파일·캐시가 root 소유로 생성되어 이후 웹서버(php-fpm www-data 등) 요청이 그 경로에 쓰기 실패한다.

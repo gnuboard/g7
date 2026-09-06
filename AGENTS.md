@@ -641,6 +641,8 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 | custom 변경 감지 서명과 게시 복사 집합을 서로 다른 코드가 정의 | 같은 열거자(`CustomAssets::publishableFiles()`) — 감지가 최상위 css/js 만 보면 하위 글꼴·이미지 교체가 영영 미게시다 |
 | 버전 키·서명 키를 기본 TTL 로 `put()` | `PERSISTENT_TTL_SECONDS`(10년) 명시 — `forever()` 는 `CacheInterface` 밖(공개 표면 변경), `put(…, 0)` 은 forget |
 | 서명 스코프를 렌더 템플릿만으로 나눔 | `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버 간 mtime 차이로 요청마다 재게시가 왕복한다 |
+| `config:cache` / `route:cache` / `event:cache` / `optimize` 를 헬퍼 밖에서 `Artisan::call` | `ConfigCacheHelper::rebuild()` / `RouteCacheHelper::rebuild()` (내부가 `withPreservedContainer`) — 이 명령들은 새 Application 을 부팅하며 전역 `Container` 를 일회용 앱으로 바꿔 놓아, 그 뒤 등록되는 `app()->terminating()` 재게시 예약이 종료되지 않는 앱에 걸려 사라진다 |
+| 코어 업데이트 흐름에서 현재 프로세스의 버전·update 목록을 `config('app.version')`·`config('app.update.*')` 로 판독 | spawn 자식은 부모가 비우지 않은 이전 버전 config 캐시로 부팅한다 — 버전은 `CoreVersionChecker::getCoreVersion()`(env 우선), update 목록은 캐시 부팅이면 `CoreUpdateService::freshDiskUpdateConfig()`, 부모는 spawn 직전 `ConfigCacheHelper::clear()` |
 
 이 결함군은 예외도 로그도 남기지 않는다 — 게시본이 정상 200 으로 옛 내용을 내보내는 것, 또는 매일 전체 재생성이 일어나는 것이 유일한 증상이다. 재게시 누락의 안전망은 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기](`POST /api/admin/settings/static-cache/republish`)이며, 상태 판정은 `ExtensionStaticCacheService::statusReport()` 한 곳이 CLI·API·화면에 공급한다.
 

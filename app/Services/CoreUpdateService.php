@@ -26,7 +26,9 @@ use App\Extension\Vendor\VendorResolver;
 use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
+use Dotenv\Dotenv;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Env;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -1627,6 +1629,47 @@ class CoreUpdateService
     }
 
     /**
+     * 디스크의 `config/app.php` 에서 `update.{$key}` 를 직접 읽습니다.
+     *
+     * spawn 자식(`core:execute-upgrade-steps`)은 부모가 spawn 전에 config 캐시를 비우지 않은 경우
+     * (7.0.9 이하 부모) 이전 버전 설치본의 `bootstrap/cache/config.php` 로 부팅한다. 그 상태의
+     * `config('app.update.*')` 는 캐시에 박힌 옛 목록이라, 신버전이 추가한 항목(7.0.10 의
+     * `public/build/ext` 쓰기 권한 디렉토리)이 자식의 권한 정상화에서 빠진다 (2026-09-06 서버 실측).
+     * 본 메서드는 메모리 config 를 건드리지 않고 디스크 파일을 평가해 신버전 값을 돌려준다.
+     *
+     * 캐시 부팅에서는 `.env` 도 로드되지 않으므로(`LoadEnvironmentVariables` 가 건너뜀), 운영자의
+     * `G7_UPDATE_*` 재정의가 `config/app.php` 의 `env()` 에 보이도록 `.env` 를 먼저 불변 로드한다 —
+     * 이미 프로세스 env 에 있는 값(부모가 넘긴 `APP_VERSION` 등)은 덮어쓰지 않는다.
+     *
+     * @param  string  $key  `config/app.php` 의 `update` 배열 키
+     * @param  mixed  $default  파일에 키가 없을 때 돌려줄 값
+     * @return mixed 디스크 config 의 값
+     */
+    public function freshDiskUpdateConfig(string $key, mixed $default = []): mixed
+    {
+        $path = config_path('app.php');
+        if (! File::exists($path)) {
+            return $default;
+        }
+
+        if (app()->configurationIsCached() && File::exists(base_path('.env'))) {
+            try {
+                // audit:allow service-direct-data-access reason: Dotenv 는 모델이 아니라 .env 파서 — 캐시 부팅에서 로드되지 않은 .env 를 불변 로드한다 (프로세스 env 우선)
+                Dotenv::create(Env::getRepository(), base_path(), '.env')->safeLoad();
+            } catch (\Throwable $e) {
+                Log::channel('upgrade')->warning('freshDiskUpdateConfig: .env 로드 실패 — 프로세스 env 만으로 평가', ['error' => $e->getMessage()]);
+            }
+        }
+
+        $fresh = require $path;
+        if (! is_array($fresh)) {
+            return $default;
+        }
+
+        return $fresh['update'][$key] ?? $default;
+    }
+
+    /**
      * 코어 업그레이드 스텝을 실행합니다.
      * 각 스텝에서 환경설정 파일 생성, 데이터 마이그레이션 등을 수행합니다.
      *
@@ -1650,9 +1693,22 @@ class CoreUpdateService
         // 보유한 채 step 을 실행 중. upgrade step 안에서 신규 메서드 호출 시 fatal 위험.
         // `spawn_failure_mode` 와 연동하여 abort/fallback 분기.
         //
-        // spawn 자식 (ExecuteUpgradeStepsCommand) 의 경우 spawn env 의 APP_VERSION=toVersion
-        // 이 적용된 채 새 프로세스에서 부팅되므로 memoryVersion === toVersion → 가드 미발동.
-        $memoryVersion = (string) config('app.version', $fromVersion);
+        // spawn 자식 (ExecuteUpgradeStepsCommand) 은 spawn env 의 APP_VERSION=toVersion 을 받아
+        // 부팅되므로 memoryVersion === toVersion → 가드 미발동이어야 한다.
+        //
+        // 판독은 `CoreVersionChecker::getCoreVersion()` (env 우선, config 폴백) 으로 한다.
+        // `config('app.version')` 만 읽으면 안 된다 — 부모는 spawn 전(Step 10)에 config 캐시를
+        // 비우지 않으므로, 이전 버전 설치본의 `bootstrap/cache/config.php` 가 있으면 자식은
+        // 그 캐시로 부팅해 config 에는 fromVersion 이 박혀 있고 env 오버라이드는 무시된다.
+        // 그 상태에서 config 만 보면 정상 spawn 자식을 stale 부모로 오판해 abort 한다
+        // (7.0.9→7.0.10 실사례, 2026-09-06 — 스텝 0건 릴리즈에서도 중단). 이전 릴리즈에서는
+        // 자식 진입부의 `config:cache` 가 전역 Container 를 일회용 앱으로 바꿔 놓는 부수효과로
+        // `config()` 가 우연히 env 기반 값을 읽어 가드가 침묵했을 뿐이며, 그 부수효과는
+        // `ConfigCacheHelper::withPreservedContainer` 가 제거했다.
+        //
+        // 부모 in-process fallback 에서는 env 가 .env 의 APP_VERSION(= 아직 fromVersion, Step 11 전)
+        // 이므로 가드가 그대로 발동한다.
+        $memoryVersion = CoreVersionChecker::getCoreVersion() ?: (string) config('app.version', $fromVersion);
         if (version_compare($memoryVersion, $toVersion, '<')) {
             $mode = config('app.update.spawn_failure_mode', 'fallback');
             $message = sprintf(
