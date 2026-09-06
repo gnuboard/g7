@@ -28,6 +28,7 @@ import { LayoutAttachmentManager } from './components/property-controls/LayoutAt
 import { CustomTranslationManager } from './components/property-controls/CustomTranslationManager';
 import { PageSettingsModal } from './components/page-settings/PageSettingsModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
+import { CustomAssetsModal } from './components/CustomAssetsModal';
 import type { VersionTarget } from './hooks/useLayoutVersions';
 import { ShortcutHelpModal } from './components/ShortcutHelpModal';
 import { collectReferencedCustomKeys } from './utils/customTranslations';
@@ -521,6 +522,69 @@ function LayoutEditorChromeBody({
     [templateIdentifier, activeDocument.isDirty, t],
   );
 
+  // 커스텀 자산 관리 모달 — 운영자 CSS·JS·폰트·이미지를 화면에서 직접 넣고 고친다.
+  // 권한은 서버가 판정하므로 여기서 버튼을 감추지 않는다(모달이 403 을 안내로 바꾼다).
+  const handleManageCustomAssets = useCallback(() => {
+    const id = modal.open({
+      ariaLabel: t('layout_editor.custom_assets.title'),
+      width: 860,
+      maxHeightRatio: 0.86,
+      content: React.createElement(CustomAssetsModal, {
+        templateIdentifier,
+        t,
+        onClose: () => modal.close(id),
+      }),
+    });
+  }, [modal, templateIdentifier, t]);
+
+  // 사용자 추가 에셋(`custom/`) 적용 토글 — 탈출구(D33).
+  //
+  // 운영자가 넣은 CSS 한 줄이 화면을 조작 불능으로 만들면, 그것을 고칠 편집기에도
+  // 그 CSS 가 실려 있어 스스로 갇힌다. `?custom=off` 로 다시 열면 서버가 목록을
+  // 비워 자산이 페이지에 **도달하지 않는다** — 이미 깨진 화면에서 자바스크립트가
+  // 돌기를 기대하지 않아도 된다.
+  //
+  // DOM 에서 `<link>` 를 떼는 방식을 쓰지 않는 이유: 이미 실행된 custom JS 는 되돌릴
+  // 수 없어 절반만 꺼진다. 나가기·템플릿 전환과 같은 dirty 가드를 태운다.
+  //
+  // 현재 상태는 **서버가 실제로 한 일**(`G7Config.customAssetsDisabled`)로 판정한다.
+  // URL 로 판정하면 안 된다 — SPA 부팅이 주소를 다시 쓰면서 `?custom=off` 를 지우므로,
+  // 자산은 꺼졌는데 버튼은 "켜져 있음" 으로 표시되고 되돌릴 방법이 화면에서 사라진다.
+  // URL 검사는 서버가 그 값을 심지 않는 구형 렌더용 폴백으로만 남긴다.
+  const customAssetsDisabled =
+    typeof window !== 'undefined' &&
+    (!!(window as any).G7Config?.customAssetsDisabled ||
+      new URLSearchParams(window.location.search).get('custom') === 'off');
+
+  const handleToggleCustomAssets = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (activeDocument.isDirty) {
+      const proceed = window.confirm(t('layout_editor.chrome.dirty_guard.message'));
+      if (!proceed) return;
+    }
+
+    const url = new URL(window.location.href);
+
+    if (customAssetsDisabled) {
+      url.searchParams.delete('custom');
+
+      // 주소가 이미 파라미터를 잃은 상태라면 같은 주소로의 이동은 아무 일도 하지 않는다.
+      // 그 경우 다시 요청하는 것 자체가 되돌리는 동작이다.
+      if (url.toString() === window.location.href) {
+        window.location.reload();
+
+        return;
+      }
+    } else {
+      url.searchParams.set('custom', 'off');
+    }
+
+    (window as any).G7Core?.dispatch?.({
+      handler: 'openWindow',
+      params: { path: `${url.pathname}${url.search}${url.hash}`, target: '_self' },
+    });
+  }, [activeDocument.isDirty, customAssetsDisabled, t]);
+
   // 코드편집 — 기존 텍스트 레이아웃 편집기 화면을 새 창으로 연다(위지윅 편집은
   // 유지한 채 코드 편집을 별도 창에서). 본체는 별도 라우트로 이미 존재
   // (admin_template_layout_edit). 위지윅에서 선택 중이던 라우트 path 를 `?route=` 쿼리로
@@ -890,6 +954,9 @@ function LayoutEditorChromeBody({
             templateVersion={templateVersion}
             templateList={templateList}
             onSwitchTemplate={handleSwitchTemplate}
+            onToggleCustomAssets={handleToggleCustomAssets}
+            customAssetsDisabled={customAssetsDisabled}
+            onManageCustomAssets={handleManageCustomAssets}
           />
           <SaveFeedbackBanner
             result={saveResult}

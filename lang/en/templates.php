@@ -258,6 +258,7 @@ return [
             'confirm_question' => 'Do you want to continue?',
             'layouts_deleted' => ':count layout(s) deleted',
             'versions_deleted' => ':count version(s) deleted',
+            'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'aborted' => 'Uninstall aborted.',
         ],
         'list' => [

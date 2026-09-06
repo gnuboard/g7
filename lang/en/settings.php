@@ -27,6 +27,9 @@ return [
     'restore_failed' => 'Failed to restore settings.',
     'restore_error' => 'An error occurred while restoring settings.',
     'save_individual_failed' => 'Settings save failed: :error',
+    'static_cache_status_loaded' => 'Startup file status loaded.',
+    'static_cache_republished' => 'Startup files were rebuilt.',
+    'static_cache_republish_failed' => 'Startup files could not be rebuilt. The site keeps working normally.',
 
     // App key related messages
     'invalid_password' => 'Password does not match.',
@@ -167,7 +170,7 @@ return [
 
         // File apply mode summary (Step 7)
         'apply_mode_incremental' => 'File apply: only files actually changed by the core were applied (:added new, :changed changed). All other files were left untouched as-is.',
-        'apply_mode_incremental_prune_hint' => 'To also remove files deleted in the new version, re-run with the `--prune` option or use `php artisan hotfix:rollback-stale-files --prune`.',
+        'apply_mode_incremental_prune_hint' => 'To also remove files deleted in the new version, re-run the same update with the `--prune` option.',
         'apply_mode_prune' => 'File apply: full overwrite plus cleanup of removed files was performed (--prune).',
         'apply_mode_fallback' => 'File apply: no backup available, so incremental apply was skipped and a full overwrite was performed. To preserve custom files, keep the backup enabled on future updates.',
 
@@ -206,4 +209,19 @@ return [
         'source_vendor_missing' => 'No vendor directory in source. composer install may not have been executed.',
         'composer_failed_with_output' => 'composer install failed.:output',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trusted Proxy Diagnostic (#124)
+    |--------------------------------------------------------------------------
+    |
+    | The value is edited in .env only — the screen shows a read-only diagnostic.
+    |
+    */
+
+    'trusted_proxy' => [
+        'alert_title' => 'Trusted proxies are not configured',
+        'alert_message' => 'Proxy headers (:headers) are being received but no trusted proxy is configured, so every visitor is recorded with the same address (:ip). Set TRUSTED_PROXIES in .env. Details: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+    ],
+
 ];

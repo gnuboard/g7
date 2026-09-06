@@ -49,6 +49,8 @@
   "logout": "ログアウト",
   "expand_sidebar": "サイドバーを展開",
   "collapse_sidebar": "サイドバーを折りたたむ",
+  "expand": "展開",
+  "collapse": "折りたたむ",
   "module": "モジュール",
   "plugin": "プラグイン",
   "status_active": "有効化",

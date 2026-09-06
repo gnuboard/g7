@@ -12,8 +12,8 @@
 
 import React, { type ComponentType } from 'react';
 import { createLogger } from '../utils/Logger';
-import { fetchWithRetry } from './networkResilience';
-import { suffixed } from '../support/assetUrl';
+import { suffixed, extStaticUrl } from '../support/assetUrl';
+import { fetchStaticFirst } from '../support/fetchStaticFirst';
 
 const logger = createLogger('ComponentRegistry');
 
@@ -126,6 +126,9 @@ export class ComponentRegistry {
   /** 컴포넌트 매니페스트 */
   private manifest: ComponentManifest | null = null;
 
+  /** 확장 캐시 버전 (0 = 무버전 URL — 편집기 경로) */
+  private cacheVersion = 0;
+
   /** 로딩 상태 */
   private loadingState: LoadingState = 'idle';
 
@@ -182,8 +185,11 @@ export class ComponentRegistry {
    *
    * @param templateId 템플릿 식별자
    * @param templateType 템플릿 타입 (admin 또는 user)
+   * @param cacheVersion 확장 캐시 버전 — 0(기본)이면 무버전 URL(편집기 경로,
+   *   서버는 `?v` 생략 시 현재 버전 폴백 #588). 매니페스트 캐시 키에도 포함되어
+   *   버전 간 교차 오염을 막는다 (#122, @since engine-v1.61.0)
    */
-  public async loadComponents(templateId: string, templateType: string): Promise<void> {
+  public async loadComponents(templateId: string, templateType: string, cacheVersion: number = 0): Promise<void> {
     if (this.loadingState === 'loading') {
       throw new ComponentRegistryError(
         'Components are already being loaded',
@@ -199,6 +205,7 @@ export class ComponentRegistry {
     this.loadingState = 'loading';
     this.templateId = templateId;
     this.templateType = templateType;
+    this.cacheVersion = cacheVersion;
     this.error = null;
 
     try {
@@ -235,8 +242,8 @@ export class ComponentRegistry {
         );
       }
 
-      // 캐시 키 생성
-      const cacheKey = `${this.templateId}:${this.templateType}`;
+      // 캐시 키 생성 (버전 포함 — 확장 라이프사이클 후 stale 매니페스트 교차 오염 방지)
+      const cacheKey = `${this.templateId}:${this.templateType}:v${this.cacheVersion || 0}`;
 
       // 캐시 확인
       if (ComponentRegistry.manifestCache.has(cacheKey)) {
@@ -248,8 +255,20 @@ export class ComponentRegistry {
       // 캐시 미스 - API에서 로드
       // 네트워크 일시 실패(응답 없음)에만 재시도. HTTP 에러는 아래 !ok 분기가 종전대로 처리.
       // @since engine-v1.53.0
-      const manifestUrl = suffixed(`/api/templates/${this.templateId}/components`, 'json');
-      const response = await fetchWithRetry(manifestUrl, { label: 'components.json' });
+      const manifestUrl = suffixed(
+        `/api/templates/${this.templateId}/components`,
+        'json',
+        this.cacheVersion > 0 ? this.cacheVersion : null,
+      );
+      // 정적 게시본(bake) 우선 (#122) — 편집기 경로(v0)는 legacy 직행 유지.
+      // miss 는 fetchStaticFirst 가 legacy 로 폴백하고, legacy 측이 fetchWithRetry 를 재사용한다.
+      const response = await fetchStaticFirst(
+        this.cacheVersion > 0
+          ? extStaticUrl(`templates/${this.templateId}/components.json`, this.cacheVersion)
+          : null,
+        manifestUrl,
+        { label: 'components.json' }
+      );
 
       if (!response.ok) {
         throw new ComponentRegistryError(

@@ -29,6 +29,16 @@ return [
         'too_long_marketing' => '마케팅 카테고리 — 도메인은 253자를 초과할 수 없습니다.',
         'must_be_array' => '카테고리별 도메인 목록은 배열이어야 합니다.',
     ],
+    'necessary_storage_allowlist' => [
+        'invalid_format_local_storage' => '브라우저 저장소 — 항목 형식이 올바르지 않습니다. (영문·숫자와 _ . : @ + - 사용, 끝에 * 하나만 가능)',
+        'invalid_format_session_storage' => '세션 저장소 — 항목 형식이 올바르지 않습니다. (영문·숫자와 _ . : @ + - 사용, 끝에 * 하나만 가능)',
+        'invalid_format_cookie' => '쿠키 — 항목 형식이 올바르지 않습니다. (영문·숫자와 _ . : @ + - 사용, 끝에 * 하나만 가능)',
+        'too_long_local_storage' => '브라우저 저장소 — 항목은 128자를 초과할 수 없습니다.',
+        'too_long_session_storage' => '세션 저장소 — 항목은 128자를 초과할 수 없습니다.',
+        'too_long_cookie' => '쿠키 — 항목은 128자를 초과할 수 없습니다.',
+        'must_be_array' => '저장소별 항목 목록은 배열이어야 합니다.',
+        'invalid_scope' => '알 수 없는 저장소 구분입니다: :scope (브라우저 저장소·세션 저장소·쿠키만 사용할 수 있습니다)',
+    ],
     'settings' => [
         'saved' => '설정이 저장되었습니다.',
         'title' => 'GDPR 설정',
@@ -42,6 +52,7 @@ return [
             'cookie_categories' => '쿠키 카테고리',
             'cookie_policy_version' => '쿠키 정책 버전',
             'auto_blocking' => '자동 차단 정책',
+            'necessary_storage' => '필수 저장 항목',
             'auto_blocking_desc' => '쿠키 배너 노출이 ON 일 때 아래 카테고리별 차단 도메인 목록의 외부 추적 리소스가 사용자 동의 전까지 자동 차단됩니다. (별도 토글 없음 — 배너 노출과 함께 자동 작동)',
         ],
         'nav' => [
@@ -101,6 +112,9 @@ return [
                     'analytics' => '분석 카테고리 차단 도메인',
                     'marketing' => '마케팅 카테고리 차단 도메인',
                 ],
+            ],
+            'necessary_storage_allowlist' => [
+                'label' => '필수 저장 항목 허용목록',
             ],
             'cookie_categories' => [
                 'description' => '쿠키 카테고리 4종의 용도와 차단 도구 예시는 각 카드의 [정보 펼치기] 에서 확인할 수 있습니다.',
@@ -201,6 +215,7 @@ return [
                 'register' => '회원가입',
                 'mypage' => '마이페이지',
                 'mypage_renew_all' => '마이페이지 일괄 재동의',
+                'withdraw' => '회원탈퇴',
             ],
             'col' => [
                 'created_at' => '시점',

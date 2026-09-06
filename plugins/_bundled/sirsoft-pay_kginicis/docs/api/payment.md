@@ -225,6 +225,8 @@ _단건 응답: `data` 객체의 필드._
 
 PC 표준결제창(KRW)에서 사용자가 결제를 완료하지 않고 창을 닫았을 때 프론트엔드가 이를 서버에 보고하는 엔드포인트로, 해당 주문의 결제 실패/취소 이력을 기록합니다. `OrderProcessingService::failPayment()` 로 주문을 `USER_CANCEL` 사유로 실패 처리하고 `recordPaymentCancellation()` 으로 취소 이력을 남기며, 간편결제 선택 정보가 있으면 결제 메타에 병합합니다. 인증은 불필요하나(결제창 컨텍스트에서 호출) FormRequest 검증과 `oid` 기준 IP별 분당 20회 레이트리밋, 주문 존재·통화 KRW·구매자 일치·금액 일치를 검증하고, 이미 결제 가능 상태가 아니거나(`order_not_payable`) 이미 결제 완료(`payment_already_paid`)면 성공 응답에 `status: ignored` 로 무시 처리해 결제 성공 콜백과의 경쟁 상태를 차단합니다. 검증 규칙 위반 시 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 실패 403 으로 응답합니다.
 
+이 엔드포인트가 **주문을 실패로 전이시키는 유일한 결제창 경로**입니다. 브라우저 리턴 콜백(PC `/payment/callback`, 모바일 `/payment/mobile/callback`, 해외결제 `/payment/cbt/callback`)은 PG 서명도 IP 증명도 없고 주문번호도 요청자가 고른 값이므로, 서버 승인이 실패해도 주문 상태를 바꾸지 않고 실패 URL 로 되돌려 보내기만 합니다. 정당한 결제창 닫힘은 구매자 대조를 통과한 이 요청으로만 기록됩니다.
+
 
 ### POST /api/plugins/sirsoft-pay_kginicis/payment/mobile/signature
 <!-- @generated:start:api.plugins.sirsoft-pay_kginicis.payment.mobile.signature -->

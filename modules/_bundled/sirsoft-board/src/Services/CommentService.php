@@ -19,6 +19,7 @@ use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -299,7 +300,7 @@ class CommentService
      * @return bool 댓글 작성 가능 여부
      *
      * @throws ModelNotFoundException 게시글을 찾을 수 없는 경우
-     * @throws PostNotCommentableException 블라인드/삭제된 게시글인 경우
+     * @throws PostNotCommentableException 블라인드/삭제/비열람 비밀 게시글인 경우
      */
     public function validatePostForComment(string $slug, int $postId): bool
     {
@@ -311,6 +312,21 @@ class CommentService
 
         if ($post->status === PostStatus::Deleted || $post->deleted_at) {
             throw PostNotCommentableException::deleted();
+        }
+
+        // 비밀글 하위 쓰기 게이트 (KVE-2026-2044) — 요청 단계 규칙을 우회해도 여기서 막힌다.
+        // 서비스가 최종 관문이므로 판정은 읽기와 같은 SecretContentGate(SSoT)를 쓴다.
+        // 비밀글일 때만 board 를 붙인다: 게이트의 슬러그 해석이 라우트에 없으면 관계로
+        // 폴백하는데, 미로딩이면 fail-closed 라 비-HTTP 호출에서 정상 흐름까지 막힌다.
+        // 비밀글이 아니면 게이트는 언제나 통과하므로 그 조회를 하지 않는다.
+        if ($post->is_secret) {
+            if (! $post->relationLoaded('board')) {
+                $post->load('board');
+            }
+
+            if (! app(SecretContentGate::class)->canWriteChild($post)) {
+                throw PostNotCommentableException::secret();
+            }
         }
 
         return true;

@@ -43,6 +43,7 @@ return [
             'cookie_policy_version' => 'クッキーポリシーバージョン',
             'auto_blocking' => '自動ブロックポリシー',
             'auto_blocking_desc' => 'クッキーバナー表示が ON の場合、下記カテゴリー別ブロックドメイン一覧の外部トラッキングリソースがユーザー同意前まで自動ブロックされます。(個別トグルなし — バナー表示と共に自動で動作)',
+            'necessary_storage' => '必須の保存項目',
         ],
         'nav' => [
             'operator' => '運営情報',
@@ -108,6 +109,9 @@ return [
                 'description' => 'クッキーカテゴリー 4 種の用途とブロック作業の例は、各カードの [情報を展開] から確認できます。',
                 'category_required_badge' => '必須',
                 'category_optional_badge' => '選択',
+            ],
+            'necessary_storage_allowlist' => [
+                'label' => '必須の保存項目許可リスト',
             ],
         ],
         'save_success' => '設定が保存されました。',
@@ -203,6 +207,7 @@ return [
                 'register' => '会員登録',
                 'mypage' => 'マイページ',
                 'mypage_renew_all' => 'マイページ一括再同意',
+                'withdraw' => '会員退会',
             ],
             'col' => [
                 'created_at' => '時点',
@@ -285,5 +290,15 @@ return [
         'preferences_description' => 'カテゴリ別クッキー使用について個別に同意・撤回できます。必須カテゴリはオフにできません。',
         'category_required_badge' => '必須',
         'view_policy_label' => '変更されたポリシー本文を表示',
+    ],
+    'necessary_storage_allowlist' => [
+        'invalid_format_local_storage' => 'ブラウザストレージ — 項目の形式が正しくありません。(英字·数字と _ . : @ + - を使用し、末尾には * 1つのみ可能)',
+        'invalid_format_session_storage' => 'セッションストレージ — 項目の形式が正しくありません。(英字·数字と _ . : @ + - を使用し、末尾には * 1つのみ可能)',
+        'invalid_format_cookie' => 'Cookie — 項目の形式が正しくありません。(英字·数字と _ . : @ + - を使用し、末尾には * 1つのみ可能)',
+        'too_long_local_storage' => 'ブラウザストレージ — 項目は128文字を超えることはできません。',
+        'too_long_session_storage' => 'セッションストレージ — 項目は128文字を超えることはできません。',
+        'too_long_cookie' => 'Cookie — 項目は128文字を超えることはできません。',
+        'must_be_array' => 'ストレージ別の項目リストは配列である必要があります。',
+        'invalid_scope' => '不明なストレージの区分です: :scope (ブラウザストレージ·セッションストレージ·Cookie のみ使用できます)',
     ],
 ];

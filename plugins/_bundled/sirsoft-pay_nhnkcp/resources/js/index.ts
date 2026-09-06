@@ -5,6 +5,7 @@ import { installMypageOrderShowInjector } from './mypageOrderShowInjector';
 import { installAdminApplePayNoticeInjector } from './adminApplePayNoticeInjector';
 import { installAdminPaymentMethodBrandInjector } from './adminPaymentMethodBrandInjector';
 import { installAdminOrderPaymentDisplayInjector } from './adminOrderPaymentDisplayInjector';
+import { reportPaymentFailureOnReturn } from './paymentCloseReport';
 
 class KcpReceiptPopup {
     constructor(params: { url?: string; cash_url?: string }) {
@@ -60,6 +61,11 @@ function registerHandlers(): number {
 }
 
 function initPlugin(): void {
+    // 결제 실패로 돌아온 화면이면 서버에 보고한다. 브라우저 리턴 콜백은 PG 서명도 IP 증명도
+    // 없어 주문 상태를 바꾸지 않으므로, 소유권을 대조하는 close-report 가 정당한 결제 실패를
+    // 기록하는 유일한 경로다. 저장해 둔 정보가 없으면 아무 일도 하지 않는다.
+    void reportPaymentFailureOnReturn();
+
     const doInit = () => {
         const count = registerHandlers();
 

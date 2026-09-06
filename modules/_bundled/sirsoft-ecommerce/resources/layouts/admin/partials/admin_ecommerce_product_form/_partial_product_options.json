@@ -1661,7 +1661,8 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                "data-testid": "additional-option-use"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.use",
                                             "actions": [
@@ -1678,7 +1679,8 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                "data-testid": "additional-option-not-use"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.not_use",
                                             "actions": [
@@ -1891,7 +1893,8 @@
                                                             "index_var": "addValIdx"
                                                         },
                                                         "props": {
-                                                            "className": "flex flex-col gap-2 sm:flex-row sm:items-start p-3 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded"
+                                                            "className": "flex flex-col gap-2 sm:flex-row sm:items-start p-3 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded",
+                                                            "data-testid": "additional-value-{{addIdx}}-{{addValIdx}}"
                                                         },
                                                         "children": [
                                                             {

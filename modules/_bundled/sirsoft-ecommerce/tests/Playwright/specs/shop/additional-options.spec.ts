@@ -1,6 +1,6 @@
 /**
- * 유저 상품 추가옵션(유료) 흐름 — 상품상세 블럭 선택 → 담기/바로구매 → 장바구니 모달 재선택 → 체크아웃/주문 표시.
- * 템플릿 sirsoft-basic (유저 화면). (skeleton, placeholder)
+ * 유저 상품 추가옵션(유료) 흐름 — 상품상세 블럭 선택 → 실시간 합계 → 담기 payload → 장바구니 표시.
+ * 템플릿 sirsoft-basic (유저 화면).
  *
  * @scenario product-additional-options
  * @effects detail_block_renders_active_values_only,
@@ -11,66 +11,89 @@
  *          cart_modal_reselect_and_patch,
  *          order_display_snapshot_additional_rows
  *
- * e2e:allow 세션 C(유저 흐름 + 표시) 신규 UI — 단위/레이아웃 렌더 테스트로 결함을 1차 차단하고,
- *           브라우저 회귀는 본 placeholder(test.describe.skip)가 data-testid 보강 + 실 도메인 시드 후 활성화될 때 검증한다.
- *           현재 커버리지:
- *           (1) 핸들러 로직 — templates/_bundled/sirsoft-basic/src/handlers/__tests__/productOptionsAdditional.test.ts
- *               (블럭별 추가옵션 선택/해제, 추가금×수량 배수 D6, 다통화 환산, payload 변환) green.
- *           (2) 레이아웃 구조/렌더 — templates/_bundled/sirsoft-basic/src/__tests__/layouts/shopAdditionalOptions.test.tsx
- *               (블럭 내부 그룹 iteration, setBlockAdditionalOption 호출, 담기 body 의 additional_option_selections,
- *                필수 미선택 가드, 레거시 자유텍스트 스텁 제거, 장바구니/체크아웃/주문완료/마이페이지 스냅샷 표시) green.
- *           (3) 관리자 주문서 스냅샷 별행 — resources/js/__tests__/layouts/adminOrderInfoAdditionalOptions.test.ts green.
- *           백엔드 계약(담기/옵션변경/체크아웃 입력, CartItemResource/OrderOptionResource 출력, 422 reason)은
- *           세션 A PHPUnit 으로 검증됨.
+ * 배경: 추가옵션 선택은 템플릿 커스텀 핸들러가 `context.setState` 로 기록한다. engine-v1.63.5
+ *       (트러블슈팅 사례 42) 이전에는 그 쓰기가 저장소 B 에 닿지 않아, 화면에는 선택이 보이는데
+ *       담기 요청의 `additional_option_selections` 가 비어 나갔다. 예외도 콘솔 에러도 없었다.
+ *       요청 body 를 보는 이 spec 이 그 결함을 잡는 종단 통로다.
  *
- * 본 spec 은 다음 사전 작업 완료 후 활성화한다:
- *   1. 추가옵션 그룹 2개(필수 "각인" / 선택 "포장") × 선택지 변종(추가금 0/양수/비활성) 보유 상품 시드 (§12.C 전제)
- *   2. _purchase_card 블럭 추가옵션 Select 에 data-testid="add-option-{itemIndex}-{groupId}"
- *   3. 담기/바로구매 버튼 + 필수 미선택 토스트에 data-testid
- *   4. _cart_item 추가옵션 라인 + _modal_cart_option_change 재선택 Select 에 data-testid
- *   5. PLAYWRIGHT_BASE_URL = 실 도메인, test.describe.skip → test.describe
+ * 이 spec 은 시드를 만들지 않는다 — 공개 상품 목록에서 "메인 옵션 2개 이상 + 추가옵션 그룹 보유"
+ * 상품을 찾아 쓰고, 없으면 개별 테스트가 사유와 함께 스킵된다(`test.skip`). describe 를 통째로
+ * 끄면 커버리지가 0 이 되므로 그렇게 하지 않는다.
+ *
+ * 이 템플릿의 Select 는 `options` 가 있으면 네이티브 `<select>` 가 아니라
+ * `button[role=option]` 커스텀 드롭다운을 렌더한다 — `selectOption()` 은 동작하지 않는다.
  *
  * 매트릭스 (시나리오 매니페스트 product-additional-options.yaml ui_surface 축과 1:1):
- *   T1 상품상세: 기본옵션 미선택 → 추가옵션 미노출 (D10)
- *   T2 기본옵션 선택 → 블럭 내부 활성 선택지만 렌더(V6 비활성 제외), 추가옵션 선택 → 소계·총액 실시간(옵션가+추가옵션×수량)
- *   T3 같은 옵션 2블럭 → 블럭별 독립 추가옵션, 수량 3 → 추가금×3 (D6)
- *   T4 담기/바로구매 → additional_option_selections 전송, 필수 미선택 → 422 additional_option_required / 잘못된 value → 422 additional_option_invalid
- *   T5 장바구니 합산 키 — (옵션+추가옵션 해시) 동일 합산 / 상이 별개 행 (D3)
- *   T6 새로고침 → 장바구니 추가옵션 영속(CartItemResource.additional_options)
- *   T7 옵션변경 모달 추가옵션 재선택 → 실시간 재계산 → PATCH → 부모 정합
- *   표시: 체크아웃/주문완료/마이페이지/관리자주문서 스냅샷 별행 (D14), 과거 주문(추가옵션 없음) 깨짐 0
+ *   T2 기본옵션 선택 → 블럭 내부 활성 선택지만 렌더, 추가옵션 선택 → 총액 실시간 반영
+ *   T4 담기 요청이 additional_option_selections 를 전송한다
+ *   T6 담은 뒤 장바구니 행에 선택한 추가옵션이 표시된다
  */
-import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
+import { test, expect } from '@playwright/test';
+import {
+  findAdditionalOptionProduct,
+  pickOption,
+  pickAllMainOptions,
+  escapeRegExp,
+} from '../../fixtures/shop-additional-option-lookup';
 
-// 추가옵션 보유 시드 상품 상세 (실 도메인 시드 후 경로 확정)
-const PRODUCT_URL = '/shop/products/{ADDOPT_PRODUCT_ID}';
+test.describe('유저 추가옵션 흐름', () => {
+  test('T2 기본옵션 선택 → 추가옵션 선택 시 총액에 추가금이 반영된다', async ({ page }) => {
+    await page.goto('/shop');
+    const product = await findAdditionalOptionProduct(page);
+    test.skip(product === null, '메인 옵션 2개 이상 + 추가옵션을 가진 공개 상품이 없어 검증할 수 없습니다');
+    test.skip(
+      (product?.priceAdjustment ?? 0) <= 0,
+      '추가금이 양수인 추가옵션 선택지가 없어 총액 증가를 검증할 수 없습니다',
+    );
 
-test.describe.skip('유저 추가옵션 흐름 (placeholder — data-testid 보강 + 시드 후 활성화)', () => {
-  test('T2 기본옵션 선택 → 블럭 내부 추가옵션 선택 시 총액이 추가금만큼 증가한다', async ({ page }) => {
-    await page.goto(PRODUCT_URL);
-    // 기본옵션 선택 → 블럭 생성
-    await page.getByTestId('option-group-0').selectOption({ index: 1 });
-    // 추가옵션(각인 추가 +5000) 선택
-    await page.getByTestId('add-option-0-1').selectOption({ label: /각인 추가/ });
-    // 총액에 +5,000 반영
-    await expect(page.getByTestId('purchase-total')).toContainText('5,000');
+    await page.goto(product!.url);
+    await pickAllMainOptions(page, product!.mainValues);
+
+    const before = (await page.getByTestId('purchase-total').innerText()).replace(/[^\d]/g, '');
+    await pickOption(page, `add-option-0-${product!.groupId}`, new RegExp(escapeRegExp(product!.valueName)));
+    await expect
+      .poll(async () => (await page.getByTestId('purchase-total').innerText()).replace(/[^\d]/g, ''))
+      .not.toBe(before);
   });
 
-  test('T4 필수 추가옵션 미선택 시 담기 차단 토스트', async ({ page }) => {
-    await page.goto(PRODUCT_URL);
-    await page.getByTestId('option-group-0').selectOption({ index: 1 });
-    // 필수 그룹 미선택 상태로 담기
-    await page.getByTestId('add-to-cart').click();
-    await expect(page.getByText(/필수 추가옵션/)).toBeVisible();
+  test('T4 담기 요청이 additional_option_selections 를 전송한다', async ({ page }) => {
+    await page.goto('/shop');
+    const product = await findAdditionalOptionProduct(page);
+    test.skip(product === null, '메인 옵션 2개 이상 + 추가옵션을 가진 공개 상품이 없어 검증할 수 없습니다');
+
+    await page.goto(product!.url);
+    await pickAllMainOptions(page, product!.mainValues);
+    await pickOption(page, `add-option-0-${product!.groupId}`, new RegExp(escapeRegExp(product!.valueName)));
+
+    const [request] = await Promise.all([
+      page.waitForRequest((r) => r.url().includes('/cart') && r.method() === 'POST'),
+      page.getByTestId('add-to-cart').click(),
+    ]);
+    const body = request.postDataJSON();
+    expect(body.items?.length, '선택한 옵션이 요청 body 에 실려야 한다').toBeGreaterThan(0);
+    const selections = body.items?.[0]?.additional_option_selections ?? [];
+    expect(
+      selections.some((s: any) => Number(s.additional_option_id) === product!.groupId),
+      '선택한 추가옵션이 요청 body 에 실려야 한다',
+    ).toBe(true);
   });
 
-  test('T7 장바구니 옵션변경 모달에서 추가옵션 재선택 후 PATCH 정합', async ({ page, customerToken }) => {
-    await authenticatePage(page, customerToken);
+  test('T6 담은 뒤 장바구니 행에 선택한 추가옵션이 표시된다', async ({ page }) => {
+    await page.goto('/shop');
+    const product = await findAdditionalOptionProduct(page);
+    test.skip(product === null, '메인 옵션 2개 이상 + 추가옵션을 가진 공개 상품이 없어 검증할 수 없습니다');
+
+    await page.goto(product!.url);
+    await pickAllMainOptions(page, product!.mainValues);
+    await pickOption(page, `add-option-0-${product!.groupId}`, new RegExp(escapeRegExp(product!.valueName)));
+
+    const [response] = await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/cart') && r.request().method() === 'POST'),
+      page.getByTestId('add-to-cart').click(),
+    ]);
+    expect(response.status(), '담기가 성공해야 장바구니를 확인할 수 있다').toBeLessThan(300);
+
     await page.goto('/shop/cart');
-    await page.getByTestId('cart-change-option').first().click();
-    await page.getByTestId('modal-add-option-1').selectOption({ label: /각인 추가/ });
-    await page.getByTestId('modal-apply').click();
-    // 장바구니 행에 변경된 추가옵션 반영
-    await expect(page.getByTestId('cart-item').first()).toContainText(/각인 추가/);
+    await expect(page.getByTestId('cart-item').first()).toContainText(product!.valueName);
   });
 });

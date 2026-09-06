@@ -31,16 +31,14 @@
  *    적용하지 않음 — SSE 호환성 사전 체크(sse-probe.php) 가 buffered 환경을 감지하면
  *    클라이언트가 폴링 모드로 fallback.
  * ============================================================================
- *
- * @package G7\Installer
  */
 
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/installer-state.php';
-require_once __DIR__ . '/../includes/progress-emitter.php';
-require_once __DIR__ . '/../includes/task-runner.php';
-require_once __DIR__ . '/_guard.php';
+require_once __DIR__.'/../includes/config.php';
+require_once __DIR__.'/../includes/functions.php';
+require_once __DIR__.'/../includes/installer-state.php';
+require_once __DIR__.'/../includes/progress-emitter.php';
+require_once __DIR__.'/../includes/task-runner.php';
+require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
 // SSE는 세션을 사용하지 않음 (세션 잠금 방지)
@@ -52,7 +50,7 @@ $translations = loadTranslations($lang);
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     header('Content-Type: application/json');
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'message' => lang('sse_method_not_allowed'),
     ], JSON_UNESCAPED_UNICODE);
@@ -94,14 +92,14 @@ error_reporting(E_ALL);
 
 // Worker 시작 로그 (디버깅용)
 addLog('=== Install Worker SSE Started ===');
-addLog('Client IP: ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+addLog('Client IP: '.($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
 
 // 워커 lock 획득 — 다른 워커가 활동 중이면 진입 거부 (race 차단).
 // SSE 응답으로 거부 사유 전달 후 종료.
 $lockResult = acquireWorkerLock(15);
 if (! $lockResult['acquired']) {
     addLog('=== SSE Worker rejected — another worker is active ===');
-    setProgressEmitter(new SseEmitter());
+    setProgressEmitter(new SseEmitter);
     sendSSEEvent('aborted', [
         'message' => lang('error_worker_busy'),
         'reason' => 'busy',
@@ -110,7 +108,7 @@ if (! $lockResult['acquired']) {
 }
 
 $workerId = $lockResult['worker_id'];
-addLog('Worker lock acquired: ' . $workerId . ' (reason: ' . $lockResult['reason'] . ')');
+addLog('Worker lock acquired: '.$workerId.' (reason: '.$lockResult['reason'].')');
 
 // 워커 종료 시 lock 자동 해제
 register_shutdown_function('releaseWorkerLock', $workerId);

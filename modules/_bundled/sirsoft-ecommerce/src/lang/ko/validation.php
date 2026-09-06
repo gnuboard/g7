@@ -1451,6 +1451,7 @@ return [
         'order_settings.bank_accounts.*.is_default' => '기본 계좌',
         'order_settings.auto_cancel_expired' => '미결제 자동취소',
         'order_settings.auto_cancel_days' => '자동취소 기한(일)',
+        'order_settings.pending_order_expire_minutes' => '결제 미완료 주문 만료 기준(분)',
         'order_settings.cart_expiry_days' => '장바구니 보관기간(일)',
         'order_settings.default_pg_provider' => '기본 PG사',
         'order_settings.payment_methods.*.pg_provider' => 'PG사',
@@ -1780,6 +1781,12 @@ return [
                 'integer' => '자동취소 기한은 정수여야 합니다.',
                 'min' => '자동취소 기한은 1일 이상이어야 합니다.',
                 'max' => '자동취소 기한은 최대 30일까지 설정 가능합니다.',
+            ],
+            'pending_order_expire_minutes' => [
+                'required' => '결제 미완료 주문 만료 기준을 입력해주세요.',
+                'integer' => '결제 미완료 주문 만료 기준은 정수여야 합니다.',
+                'min' => '결제 미완료 주문 만료 기준은 0분 이상이어야 합니다. (0 은 정리하지 않음)',
+                'max' => '결제 미완료 주문 만료 기준은 최대 20160분(14일)까지 설정 가능합니다.',
             ],
             'cart_expiry_days' => [
                 'integer' => '장바구니 보관기간은 정수여야 합니다.',

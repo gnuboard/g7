@@ -244,6 +244,9 @@ return [
         'template_install_from_file' => 'Template installed from file',
         'template_install_from_github' => 'Template installed from GitHub',
         'template_refresh_layouts' => 'Template layouts refreshed (:template_name)',
+        'custom_asset_save' => 'Custom asset saved (:identifier — :path)',
+        'custom_asset_upload' => 'Custom asset uploaded (:identifier — :path)',
+        'custom_asset_delete' => 'Custom asset deleted (:identifier — :path)',
 
         // Core update
         'core_update_check' => 'Core update checked',

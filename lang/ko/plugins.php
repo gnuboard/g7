@@ -172,6 +172,7 @@ return [
             'roles_deleted' => ':count개 역할 삭제됨',
             'permissions_deleted' => ':count개 권한 삭제됨',
             'layouts_deleted' => ':count개 레이아웃 삭제됨',
+            'custom_preserved' => '운영자 파일(:directory)을 :archive 에 보관했습니다.',
             'confirm_prompt' => '플러그인 ":plugin"을(를) 삭제하시겠습니까?',
             'confirm_details' => [
                 'roles' => '- :count개의 역할이 삭제됩니다.',

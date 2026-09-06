@@ -1135,7 +1135,9 @@ class LayoutService
         }
 
         $identifier = $template->identifier;
-        $cacheVersion = (int) $this->cache->get('ext.cache_version', 0);
+        // 원시 키 읽기는 `cache:clear` 직후 0 을 돌려주어 `.v0` 키를 지우고 실제 키는 남긴다 —
+        // 트레이트 게터는 부재 시 재생성하므로 실제 서빙 키와 같은 버전을 본다.
+        $cacheVersion = self::getExtensionCacheVersion();
 
         // PublicLayoutController::serve() 가 일반 응답과 편집 모드(`with_source_meta=1`) 응답을
         // 별도 캐시 키로 저장한다 (`.meta` 접미사). 본 PR Phase 3 S5a-1 에서 편집 모드 응답 캐시

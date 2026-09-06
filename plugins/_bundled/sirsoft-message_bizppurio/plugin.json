@@ -5,7 +5,7 @@
         "ko": "비즈뿌리오 메시지 발송",
         "en": "Bizppurio Messaging"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": {
         "ko": "비즈뿌리오 연동 SMS/LMS·카카오 알림톡 발송 플러그인입니다. 코어 알림 시스템 채널로 문자·알림톡을 발송하고 발송 결과를 webhook 으로 수신합니다.",
         "en": "Bizppurio SMS/LMS and KakaoTalk alimtalk plugin. Sends messages through core notification channels and receives delivery results via webhook."

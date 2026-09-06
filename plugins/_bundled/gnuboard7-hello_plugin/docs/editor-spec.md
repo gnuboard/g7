@@ -1,0 +1,82 @@
+# Hello 플러그인 — 레이아웃 편집기 스펙
+
+> 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 · 진입점: [AGENTS.md](../AGENTS.md)
+
+## 선언 요약
+
+<!-- @generated:editor-spec-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+_이 확장은 편집기 스펙(`editor-spec.json`)을 두지 않습니다. 편집기는 코어 기본 팔레트와 활성 템플릿의 스펙만으로 이 확장의 화면을 다룹니다._
+<!-- @generated:editor-spec-summary END -->
+
+<!-- @intent START -->
+학습용 샘플 플러그인이라 편집기 스펙을 두지 않았고, 지금 상태에서는 **둘 필요도
+없습니다.** 이 플러그인이 소유한 화면은 설정 화면 하나이고 그 화면이 읽는 `settings` 는
+여러 확장이 공유하는 공용 ID 라 admin 템플릿 스펙이 이미 채웁니다.
+
+이것이 "스펙 없음" 의 정상 형태입니다 — 아래 미커버 목록이 비어 있다는 사실이 그
+근거입니다.
+<!-- @intent END -->
+
+## 선언 블록
+
+<!-- @generated:editor-spec-blocks START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+_선언된 편집기 스펙 블록이 없습니다._
+<!-- @generated:editor-spec-blocks END -->
+
+<!-- @intent START -->
+선언한 블록이 없습니다. 공용 ID 만 쓰는 확장은 자기 스펙을 갖지 않는 것이 규율에
+맞습니다 — 같은 ID 의 샘플을 확장마다 두면 어느 것이 쓰이는지가 합본 순서에 좌우되고,
+둘이 갈라져도 오류가 나지 않습니다.
+<!-- @intent END -->
+
+## 컴포넌트 팔레트
+
+<!-- @generated:editor-spec-palette START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+_이 확장은 편집기 팔레트에 항목을 추가하지 않습니다._
+<!-- @generated:editor-spec-palette END -->
+
+<!-- @intent START -->
+컴포넌트를 만드는 것은 템플릿의 일이므로, 이 확장이 팔레트에 얹을 것은 원래 없습니다.
+편집기 팔레트는 활성 템플릿의 스펙이 정합니다 — 이 확장에 편집기 스펙이 생기더라도
+`componentPalette` 는 여전히 비어 있을 것입니다.
+<!-- @intent END -->
+
+## 샘플 데이터와 페이지 상태
+
+<!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+_이 확장은 편집기 스펙을 두지 않아 선언된 샘플 데이터·페이지 상태가 없습니다._
+
+_이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
+<!-- @generated:editor-spec-samples END -->
+
+<!-- @intent START -->
+미커버가 없습니다. 이 플러그인의 레이아웃이 쓰는 `data_source` 는 전부 번들 템플릿
+스펙이 채우므로, 편집기에서 설정 화면을 열면 값이 채워진 상태로 보입니다.
+
+스펙을 갖지 않은 확장이 이 상태여야 정상입니다.
+<!-- @intent END -->
+
+## 수정 시 동반 의무
+
+<!-- @generated:editor-spec-obligations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+_이 확장은 아직 편집기 스펙을 두지 않습니다. 아래 변경이 생기면 `editor-spec.json` 을 신설합니다._
+
+| 이런 변경을 했다면 | 편집기 스펙에서 함께 할 일 |
+|---|---|
+| 컴포넌트를 새로 만들었다 | `componentPalette` 에 항목 추가 · `componentCapabilities` 에 편집 역량 선언 · `nesting` 에 담길 자리 규정 |
+| 레이아웃에 `data_sources` 를 추가했다 | `sampleData` 에 같은 ID 로 프리뷰 응답 추가 (없으면 편집기 캔버스만 빈 화면) |
+| `_global.*` 을 새로 읽는다 | `sampleGlobal` 에 baseline 값 추가 |
+| 빈 목록·오류 같은 화면 변종을 추가했다 | `states` 에 변종 추가 · `stateLabels` 에 친화 명칭 |
+| 새 액션·조건 패턴을 도입했다 | `actionRecipes` / `conditionRecipes` 에 친화 명칭 등록 |
+<!-- @generated:editor-spec-obligations END -->
+
+<!-- @intent START -->
+편집기 스펙을 신설해야 하는 시점은 하나입니다 — **이 확장이 소유한 레이아웃에
+이 확장만 쓰는 `data_source` 가 생겼을 때**. 그 순간부터 편집기 캔버스의 그 영역은
+빈 화면이 되고, 실제 화면은 정상 동작하므로 오류도 경고도 남지 않습니다.
+
+신설 절차는 확장 루트에 `editor-spec.json` 을 만들고 `sampleData.byDataSourceId` 에
+그 ID 를 넣는 것으로 시작합니다. 팔레트·컨트롤은 템플릿의 일이므로 넣지 않습니다.
+파일을 만든 뒤 update 커맨드로 활성 디렉토리에 반영해야 편집기가 읽습니다 —
+`_bundled` 폴백이 없습니다.
+<!-- @intent END -->

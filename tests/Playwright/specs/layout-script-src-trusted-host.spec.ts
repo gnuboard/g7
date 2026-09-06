@@ -63,17 +63,46 @@ test.describe('레이아웃 외부 스크립트 신뢰 출처 허용목록', () 
       return {
         ckeditorActive: has('sirsoft-ckeditor5'),
         daumActive: has('sirsoft-daum_postcode'),
+        kginicisActive: has('sirsoft-pay_kginicis'),
+        tossActive: has('sirsoft-tosspayments'),
+        niceActive: has('sirsoft-pay_nicepayments'),
+        kcpActive: has('sirsoft-pay_nhnkcp'),
         hasCkeditorHost: hosts.includes('cdn.ckeditor.com'),
         hasDaumHost: hosts.includes('t1.daumcdn.net'),
+        hasKginicisHosts:
+          hosts.includes('stdpay.inicis.com') && hosts.includes('stgstdpay.inicis.com'),
+        hasTossHost: hosts.includes('js.tosspayments.com'),
+        hasNiceHost: hosts.includes('web.nicepay.co.kr'),
+        hasKcpHosts: hosts.includes('pay.kcp.co.kr') && hosts.includes('testpay.kcp.co.kr'),
       };
     });
 
     // 확장이 활성일 때만 그 선언 호스트가 목록에 있어야 한다(비활성이면 스킵 — 서버 상태 독립).
-    if (result.ckeditorActive) {
-      expect(result.hasCkeditorHost).toBe(true);
-    }
     if (result.daumActive) {
       expect(result.hasDaumHost).toBe(true);
+    }
+
+    // 결제 플러그인의 PG SDK 호스트 — 서비스 SDK 라 자체 호스팅이 불가능해 선언 대상이다.
+    if (result.kginicisActive) {
+      expect(result.hasKginicisHosts).toBe(true);
+    }
+    if (result.tossActive) {
+      expect(result.hasTossHost).toBe(true);
+    }
+    if (result.niceActive) {
+      expect(result.hasNiceHost).toBe(true);
+    }
+    if (result.kcpActive) {
+      expect(result.hasKcpHosts).toBe(true);
+    }
+
+    // CKEditor5 는 7.0.10 에서 자체 제공으로 전환해 더 이상 CDN 호스트를 선언하지 않는다.
+    // 이 호스트가 다시 나타나면 외부 CDN 의존으로 되돌아갔다는 뜻이다(자체 제공 원칙 회귀).
+    if (result.ckeditorActive) {
+      expect(
+        result.hasCkeditorHost,
+        'CKEditor5 가 자체 제공에서 외부 CDN 의존으로 되돌아갔다',
+      ).toBe(false);
     }
   });
 

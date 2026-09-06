@@ -48,6 +48,8 @@ class AuthCallbackRequest extends FormRequest
             'good_mny' => ['nullable', 'numeric', 'min:1'],
             'use_pay_method' => ['nullable', 'string'],
             'param_opt_1' => ['nullable', 'string', 'max:50'],
+            // 모바일 가상계좌 세션 nonce (승인키 발급 시점에 실어 보낸 값을 KCP 가 되돌려준다)
+            'param_opt_2' => ['nullable', 'string', 'max:50'],
             'nhnkcp_easy_pay_method' => ['nullable', 'string', 'max:50'],
             // 모바일 SmartPhone Pay 가상계좌 콜백 (enc_data 없이 평문 전달)
             // KCP가 보내는 변종 키 모두 허용 — handleVbankIssued 에서 우선순위로 처리

@@ -67,6 +67,17 @@
                             "className": "text-red-500 ml-1"
                           },
                           "text": "*"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Badge",
+                          "if": "{{_computed.envLocked?.['upload.max_file_size'] === true}}",
+                          "props": {
+                            "text": "$t:admin.settings.env_locked_badge",
+                            "variant": "secondary",
+                            "size": "sm",
+                            "className": "ml-2"
+                          }
                         }
                       ]
                     },
@@ -85,7 +96,7 @@
                             "name": "upload.max_file_size",
                             "min": "{{_local?.form?._meta?.limits?.upload_max_file_size_min ?? 1}}",
                             "max": "{{_local?.form?._meta?.limits?.upload_max_file_size_max ?? 1024}}",
-                            "disabled": "{{_computed.isReadOnly}}",
+                            "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.max_file_size'] === true}}",
                             "className": "input flex-1 {{_local.errors?.['upload.max_file_size'] ? 'input-error' : ''}}"
                           }
                         },
@@ -215,7 +226,24 @@
                   "props": {
                     "className": "form-label"
                   },
-                  "text": "$t:admin.settings.upload.image_max_width"
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.upload.image_max_width"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Badge",
+                      "if": "{{_computed.envLocked?.['upload.image_max_width'] === true}}",
+                      "props": {
+                        "text": "$t:admin.settings.env_locked_badge",
+                        "variant": "secondary",
+                        "size": "sm",
+                        "className": "ml-2"
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "basic",
@@ -232,7 +260,7 @@
                         "name": "upload.image_max_width",
                         "min": "{{_local?.form?._meta?.limits?.upload_image_max_width_min ?? 100}}",
                         "max": "{{_local?.form?._meta?.limits?.upload_image_max_width_max ?? 10000}}",
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_width'] === true}}",
                         "className": "input flex-1"
                       }
                     },
@@ -259,7 +287,24 @@
                   "props": {
                     "className": "form-label"
                   },
-                  "text": "$t:admin.settings.upload.image_max_height"
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.upload.image_max_height"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Badge",
+                      "if": "{{_computed.envLocked?.['upload.image_max_height'] === true}}",
+                      "props": {
+                        "text": "$t:admin.settings.env_locked_badge",
+                        "variant": "secondary",
+                        "size": "sm",
+                        "className": "ml-2"
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "basic",
@@ -276,7 +321,7 @@
                         "name": "upload.image_max_height",
                         "min": "{{_local?.form?._meta?.limits?.upload_image_max_height_min ?? 100}}",
                         "max": "{{_local?.form?._meta?.limits?.upload_image_max_height_max ?? 10000}}",
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_height'] === true}}",
                         "className": "input flex-1"
                       }
                     },
@@ -303,7 +348,24 @@
                   "props": {
                     "className": "form-label"
                   },
-                  "text": "$t:admin.settings.upload.image_quality"
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.upload.image_quality"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Badge",
+                      "if": "{{_computed.envLocked?.['upload.image_quality'] === true}}",
+                      "props": {
+                        "text": "$t:admin.settings.env_locked_badge",
+                        "variant": "secondary",
+                        "size": "sm",
+                        "className": "ml-2"
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "basic",
@@ -320,7 +382,7 @@
                         "name": "upload.image_quality",
                         "min": "{{_local?.form?._meta?.limits?.upload_image_quality_min ?? 1}}",
                         "max": "{{_local?.form?._meta?.limits?.upload_image_quality_max ?? 100}}",
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_quality'] === true}}",
                         "className": "input flex-1"
                       }
                     },

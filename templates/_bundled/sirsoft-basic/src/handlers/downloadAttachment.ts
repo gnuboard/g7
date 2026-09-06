@@ -16,6 +16,8 @@
  * 비회원: 토큰이 없으므로 종전과 동일하게 user_id 가 NULL 로 남는다(현행 정책 유지).
  */
 
+import { secretContentHeaders } from '../support/secretContentHeaders';
+
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = (window as any).G7Core?.createLogger?.('Handler:DownloadAttachment') ?? {
   log: (...args: unknown[]) => console.log('[Handler:DownloadAttachment]', ...args),
@@ -49,7 +51,12 @@ export async function downloadAttachmentHandler(action?: any, _context?: any): P
 
   try {
     // 코어 ApiClient 경로 → Authorization(Bearer) 헤더 자동 첨부 → 회원 토큰이 실린다.
-    const blob = await G7Core.api.get(url, { responseType: 'blob' });
+    // 비밀글 첨부는 서버가 열람 권한을 재확인한다. globalHeaders 는 이 경로에 적용되지
+    // 않으므로 열람 확인 토큰을 여기서 직접 싣는다 (없으면 빈 객체라 영향 없음).
+    const blob = await G7Core.api.get(url, {
+      responseType: 'blob',
+      headers: secretContentHeaders(),
+    });
 
     if (blob) {
       const objectUrl = URL.createObjectURL(blob);

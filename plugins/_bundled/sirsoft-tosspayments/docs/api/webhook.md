@@ -27,7 +27,7 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| orderId | body | string | 예 | max 100 | 주문번호 (G7 `orders.order_number`). 이 값으로 주문·결제 레코드를 조회한다. |
+| orderId | body | string | 예 | max 100 | 주문번호 (그누보드7 `orders.order_number`). 이 값으로 주문·결제 레코드를 조회한다. |
 | status | body | string | 예 | `DONE`, `CANCELED` | 입금 결과. `DONE`=입금완료 → 결제완료 처리, `CANCELED`=입금취소 → 결제실패 처리. |
 | secret | body | string | 아니오 | max 255 | 결제 승인 응답에서 발급받아 `payment_meta.toss_secret` 에 저장해 둔 값. 위조 방지 대조에 사용. |
 | transactionKey | body | string | 아니오 | max 255 | 토스 거래 키. 결제완료 처리 시 `transaction_id` 로 기록한다 (없으면 기존 값 유지). |
@@ -111,7 +111,7 @@ OK
 | eventType | body | string | 아니오 | max 64 | 토스 이벤트 종류 (예: `PAYMENT_STATUS_CHANGED`). |
 | createdAt | body | string | 아니오 | max 64 | 토스가 이벤트를 생성한 시각. |
 | data | body | array | 예 | — | 결제 정보 객체. `data.orderId`(주문번호)와 `data.status`(토스 결제상태)를 읽어 로컬 상태와 대조한다. |
-| data.orderId | body | string | 예 | max 100 | 주문번호 (G7 `orders.order_number`). 이 값으로 주문·결제 레코드를 조회해 로컬 결제상태를 확인한다. |
+| data.orderId | body | string | 예 | max 100 | 주문번호 (그누보드7 `orders.order_number`). 이 값으로 주문·결제 레코드를 조회해 로컬 결제상태를 확인한다. |
 | data.status | body | string | 예 | max 40 | 토스 측 결제상태 (예: `DONE`, `CANCELED`, `WAITING_FOR_DEPOSIT`). 로컬 `payments.payment_status` 와 함께 로그에 기록해 불일치를 추적한다. |
 | data.paymentKey | body | string | 아니오 | max 255 | 토스 결제 키. 수신만 하며 이 엔드포인트에서 상태 전이에 사용하지 않는다. |
 

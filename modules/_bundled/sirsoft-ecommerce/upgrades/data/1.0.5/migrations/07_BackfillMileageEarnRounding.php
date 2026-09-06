@@ -2,8 +2,10 @@
 
 namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_0_5\Migrations;
 
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -103,6 +105,8 @@ class BackfillMileageEarnRounding implements DataMigration
         $settings['currency_rules'] = $rules;
 
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 만든 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info(sprintf(
             '[ecommerce:1.0.5] 적립 절사 기준 백필 완료 (%d개 통화 규칙 → %s / %s)',
@@ -122,10 +126,6 @@ class BackfillMileageEarnRounding implements DataMigration
      */
     private function settingsFilePath(): string
     {
-        $base = app()->runningUnitTests()
-            ? 'framework/testing/modules/'
-            : 'app/modules/';
-
-        return storage_path($base.self::MODULE_IDENTIFIER.'/settings/mileage.json');
+        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'settings').'/mileage.json';
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 
+use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Listeners\CoreActivityLogListener;
 use App\Models\User;
@@ -46,6 +47,19 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
             'sirsoft-ecommerce.settings.read',
             'sirsoft-ecommerce.settings.update',
         ]);
+
+        // 모듈 훅 리스너는 부팅 시점의 `getActiveModuleIdentifiers()` 가 이 모듈을 활성으로
+        // 봐야 등록된다. 그런데 그 목록은 빈 결과를 캐시하지 않고(빈 값이 굳으면 모든 확장이
+        // 꺼진 것처럼 동작하므로 의도된 설계다), 모듈 등록 행은 부팅 **이후** setUp 에서
+        // 만들어진다. 그래서 확장 상태 캐시가 비어 있는 채로 부팅하면 이 모듈이 비활성으로
+        // 보여 리스너가 조용히 등록되지 않는다 — 예외도 로그도 남지 않고, 훅만 발화하지
+        // 않아 "무효화가 수행되지 않았다" 로만 나타난다.
+        //
+        // 앞선 테스트가 그 캐시를 비웠는지에 따라 결과가 갈리므로(실행 순서 의존) 이
+        // 테스트가 스스로 리스너 등록을 보장한다. 손으로 addAction 하지 않고 실제 등록
+        // 경로(`HookListenerRegistrar`)를 태워 큐 래핑·우선순위 계약까지 그대로 재현한다.
+        // 부팅이 이미 등록했다면 프로세스 내 중복 등록 가드가 이 호출을 skip 한다.
+        HookListenerRegistrar::register(SeoSettingsCacheListener::class, 'sirsoft-ecommerce');
 
         $this->received = [];
         HookManager::addAction('core.module_settings.after_save', function (...$args) {

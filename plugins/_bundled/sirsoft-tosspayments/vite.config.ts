@@ -9,6 +9,7 @@ export default defineConfig({
             formats: ['iife'],
         },
         outDir: 'dist',
+        emptyOutDir: false, // 동봉 vendor 보존 — 산출물 정리는 빌드 커맨드가 한다
         rollupOptions: {
             output: {
                 entryFileNames: 'js/plugin.iife.js',

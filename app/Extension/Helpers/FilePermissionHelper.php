@@ -388,6 +388,122 @@ class FilePermissionHelper
     }
 
     /**
+     * 이미 존재하는 디렉토리의 퍼미션·소유권을 umask 와 무관하게 정합화합니다.
+     *
+     * `File::ensureDirectoryExists($dir, 0775)` 등 생성 API 의 mode 인자는 **umask 로 깎인다** —
+     * umask 022 환경에서는 0775 요청이 0755 로 만들어져 그룹 공유(웹 계정)가 쓸 수 없다.
+     * 명시 `chmod` 로 umask 를 무력화하고, POSIX 에서는 setgid 를 세워 그 아래에 만들어지는
+     * 하위 디렉토리가 그룹을 상속하게 한다. setgid 가 없으면 CLI(스케줄러/큐)가 먼저 만든
+     * 하위 디렉토리를 웹 프로세스가 쓰지 못한다. Windows 에는 setgid 개념이 없어 제외한다.
+     *
+     * 마지막으로 부모 소유권을 상속시켜 sudo/CLI 계정 고정을 막는다.
+     *
+     * @param  string  $path  대상 디렉토리 절대 경로
+     * @param  int  $mode  적용할 퍼미션 (예: 0775)
+     */
+    public static function hardenDirectory(string $path, int $mode = 0775): void
+    {
+        @chmod($path, $mode);
+
+        if (PHP_OS_FAMILY !== 'Windows') {
+            @chmod($path, $mode | 02000);
+        }
+
+        static::inheritOwnershipFromParent($path);
+    }
+
+    /**
+     * 쓰기 가능한 디렉토리를 확보합니다 — 없으면 만들고, 권한을 정합화한 뒤 실제 쓰기 가능 여부를 판정합니다.
+     *
+     * 제3자 라이브러리에 넘길 캐시·임시 디렉토리처럼 "확보하지 못하면 그 기능만 끄면 되는"
+     * 자리를 위한 프리미티브다. **예외도 PHP 경고도 내지 않는다** — `File::ensureDirectoryExists()`
+     * 는 `mkdir()` 을 억제 없이 호출하므로 생성 실패가 `E_WARNING` 으로 나오고 Laravel
+     * `HandleExceptions` 가 이를 `ErrorException` 으로 승격시켜 요청이 500 이 된다. 쓰기 경로를
+     * 지정하는 목적 자체가 그 500 을 막는 것이므로, 확보 실패가 다시 500 을 내면 무의미하다.
+     *
+     * 실패 정책은 호출부가 정한다 — 조용히 성능 저하로 이어갈지(정의 캐시), 시끄럽게 실패로
+     * 처리할지(정적 게시)가 자리마다 다르기 때문이다. 사유는 `$failure` out 파라미터로 올린다.
+     *
+     * @param  string  $path  확보할 디렉토리 절대 경로
+     * @param  int  $mode  생성 시 적용할 퍼미션
+     * @param  array{reason: string, path: string}|null  $failure  out — 실패 사유와 그 대상 경로.
+     *                                                             reason 은 `occupied_by_file`(경로가 파일로 점유) /
+     *                                                             `ancestor_not_writable`(실재하는 최근접 상위가 쓰기 불가) /
+     *                                                             `create_failed`(생성 실패) / `not_writable`(존재하나 쓰기 불가)
+     * @return bool 확보 성공 여부
+     */
+    public static function ensureWritableDirectory(string $path, int $mode = 0775, ?array &$failure = null): bool
+    {
+        $failure = null;
+
+        if (! is_dir($path)) {
+            // 같은 이름의 파일이 자리를 차지하면 mkdir 이 경고를 낸다 — 먼저 걸러낸다.
+            if (file_exists($path)) {
+                $failure = ['reason' => 'occupied_by_file', 'path' => $path];
+
+                return false;
+            }
+
+            // 상위가 쓰기 불가라면 생성 자체가 불가능하다. 여기서 끊어야 호출부가 "무엇을
+            // 고쳐야 하는지"(대상 디렉토리가 아니라 그 상위)를 운영자에게 지목할 수 있다.
+            $ancestor = static::nearestExistingAncestor($path);
+
+            if ($ancestor === null || ! is_writable($ancestor)) {
+                $failure = ['reason' => 'ancestor_not_writable', 'path' => $ancestor ?? dirname($path)];
+
+                return false;
+            }
+
+            // force 인자로 경고를 억제한다. 실패는 아래 판정이 흡수한다.
+            File::makeDirectory($path, $mode, true, true);
+
+            if (is_dir($path)) {
+                static::hardenDirectory($path, $mode);
+            }
+        }
+
+        // 방금 만든 경로의 stat 은 캐시돼 있을 수 있다 — 판정 전에 비운다.
+        clearstatcache(true, $path);
+
+        if (! is_dir($path)) {
+            $failure = ['reason' => 'create_failed', 'path' => $path];
+
+            return false;
+        }
+
+        if (! is_writable($path)) {
+            $failure = ['reason' => 'not_writable', 'path' => $path];
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 경로에서 위로 올라가며 실재하는 첫 디렉토리를 찾습니다.
+     *
+     * @param  string  $path  기준 경로
+     * @return string|null 실재하는 최근접 상위 (루트까지 없으면 null)
+     */
+    public static function nearestExistingAncestor(string $path): ?string
+    {
+        $current = dirname($path);
+
+        while (! File::isDirectory($current)) {
+            $parent = dirname($current);
+
+            if ($parent === $current) {
+                return null;
+            }
+
+            $current = $parent;
+        }
+
+        return $current;
+    }
+
+    /**
      * 소유자·그룹을 적용합니다. sudo 없이 실행 시 silent fail 로 현행 동작 유지.
      *
      * @param  string  $path  대상 경로
@@ -448,6 +564,73 @@ class FilePermissionHelper
         }
 
         return [$baseOwner, $baseGroup, 'base_path (대칭 구성)'];
+    }
+
+    /** 테스트 전용 — `describeWebServerAccount()` 판정 오버라이드 (null = 실판정) */
+    private static ?array $webServerAccountForTesting = null;
+
+    /**
+     * 테스트 전용 — 실행 환경 판정을 강제합니다 (posix 부재 환경에서 root 분기를 재현하기 위해).
+     *
+     * @param  array{mode: string, name: string|null}|null  $account  강제할 판정 (null 로 실판정 복귀)
+     */
+    public static function fakeWebServerAccountForTesting(?array $account): void
+    {
+        self::$webServerAccountForTesting = $account;
+    }
+
+    /**
+     * 현재 프로세스 기준으로 "웹서버 계정" 안내에 필요한 실행 환경을 분류합니다.
+     *
+     * root(sudo) 로 artisan 을 실행하면 그 명령이 만드는 캐시 샤드·번들·임시 파일이 root 소유로 남아
+     * 이후 웹 프로세스의 쓰기가 실패한다. 그래서 root 실행을 감지한 명령은 "웹서버 계정으로 실행"
+     * 을 안내해야 하는데, 그 판정을 명령마다 다시 쓰면 한 곳만 어긋나도 서로 다른 안내가 나간다.
+     * `core:update` 의 재실행 안내가 처음 세운 4분기를 그대로 옮겨 공유한다 — 동작 불변.
+     *
+     * 반환 모드:
+     *  - `non_root`           : posix 미지원(Windows 등) 또는 현재 유효 사용자가 root 가 아님
+     *                           (일반 SSH 사용자 = 파일 소유자, 공유 호스팅 대칭 구성 포함).
+     *  - `root_web_known`     : root 실행 + 웹서버 계정 식별 성공 + 실행 사용자(root)와 다름.
+     *  - `root_web_symmetric` : root 실행 + 웹서버 계정이 root 로 추정됨 (root 서비스 구성).
+     *  - `root_web_unknown`   : root 실행 + 웹서버 계정 추정 실패 (스냅샷/추정 불가).
+     *
+     * 웹서버 계정은 `inferWebServerOwnership()` 이 storage/bootstrap 쓰기 영역 소유자로 추정한다.
+     *
+     * @return array{mode: string, name: string|null} 모드와 웹서버 계정명(`root_web_known` 일 때만)
+     */
+    public static function describeWebServerAccount(): array
+    {
+        if (self::$webServerAccountForTesting !== null) {
+            return self::$webServerAccountForTesting;
+        }
+
+        if (! function_exists('posix_geteuid') || ! function_exists('posix_getpwuid')) {
+            return ['mode' => 'non_root', 'name' => null];
+        }
+
+        if (posix_geteuid() !== 0) {
+            return ['mode' => 'non_root', 'name' => null];
+        }
+
+        [$owner] = static::inferWebServerOwnership();
+
+        if ($owner === false) {
+            return ['mode' => 'root_web_unknown', 'name' => null];
+        }
+
+        if ($owner === 0) {
+            return ['mode' => 'root_web_symmetric', 'name' => null];
+        }
+
+        $entry = posix_getpwuid($owner);
+        $name = $entry['name'] ?? null;
+
+        // uid 는 나왔지만 이름 해석 실패 — 미상 경로로 처리 (uid 노출은 오히려 혼란).
+        if ($name === null) {
+            return ['mode' => 'root_web_unknown', 'name' => null];
+        }
+
+        return ['mode' => 'root_web_known', 'name' => $name];
     }
 
     /**

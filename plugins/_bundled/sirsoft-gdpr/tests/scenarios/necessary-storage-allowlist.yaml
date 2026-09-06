@@ -1,0 +1,140 @@
+# audit:allow test-scenario-coverage reason: 판정 축(스코프 3 × 표기 2 × 잠금 2 × 설정상태 3)과 저장 축(요청 5)은 서로 독립이라 곱집합의 대부분이 성립하지 않는 조합이다 — 예컨대 "잠금 항목을 와일드카드로 적은 요청"은 입력 자체가 존재하지 않는다. 등록된 PHPUnit 45 + Vitest 178 + Playwright 3 = 226 케이스가 각 축의 경계값(스코프 넘나듦·와일드카드 앞부분 경계·설정 비었을 때 잠금 생존·설정 미도달 폴백·형식/스코프 위반·키 미전송)과 후속 효과 체인을 전부 덮는다.
+
+feature: 필수 저장 항목 허용목록의 운영자 설정 이관
+
+description: |
+  기능 쿠키 미동의 상태에서도 저장이 허용되는 항목(허용목록)을 플러그인 코드 상수에서
+  **운영자 설정**(`necessary_storage_allowlist`)으로 옮긴다. 코드 상수는 신규 설치 시
+  채워지는 출하 기본 카탈로그와 관리자 화면 추천 목록 역할만 남는다.
+
+  왜:
+    허용목록이 코드 상수이면, 새 확장이 저장 키를 도입할 때마다 GDPR 플러그인도 함께 고쳐야
+    한다. 제3자 확장 개발자에게는 그 방법이 없고, 운영자는 자기 사이트에서 무엇이 필수로
+    분류되어 있는지 보지도 바꾸지도 못한다. 누락은 예외도 로그도 남기지 않고 "설정이 저장되지
+    않는다" 는 증상만 남긴다 (dev-g7#640 에서 15건 / 6계열이 그 상태였다).
+
+  구조:
+    [출하 기본 카탈로그] plugin.php 상수
+        → 신규 설치 시드 + 관리자 화면 추천 목록
+    [운영자 설정] necessary_storage_allowlist  ← 관리자 화면에서 편집
+        → G7Config 인라인 페이로드 (fetch 이전에 도달해야 한다)
+    [소비자] storageInterceptor · cookieInterceptor · functionalCleaner · CookieConsentMiddleware
+
+  잠금 항목(`auth_token` / `XSRF-TOKEN` / 세션 쿠키 / `gdpr_session`)은 설정에 넣지 않는다 —
+  설정에 담기면 API 로 지울 수 있어 잠금이 아니게 된다. 판정은 언제나 운영자 목록 ∪ 잠금 집합.
+
+axes:
+  scope: [localStorage, sessionStorage, cookie]
+  notation: [exact, wildcard]
+  locked: [locked_item, operator_item]
+  settings_state: [populated, empty, unreachable]
+  request: [valid_item, invalid_format, unknown_scope, locked_key_in_body, key_absent]
+
+exclusions:
+  - { locked: locked_item, settings_state: any, reason: "잠금 항목은 설정과 무관하게 항상 통과 — 설정 상태 축과 교차하지 않는다" }
+  - { locked: locked_item, notation: wildcard, reason: "잠금 항목은 코드가 정한 고정 이름이라 와일드카드 표기가 없다" }
+  - { request: key_absent, scope: any, reason: "키 미전송은 스코프와 무관하게 기존 값 보존 하나로 판정된다" }
+  - { request: unknown_scope, notation: any, reason: "스코프 키 자체가 거부 대상이라 항목 표기 축과 교차하지 않는다" }
+  - { request: locked_key_in_body, notation: any, reason: "잠금 키 전송은 항목 표기와 무관하게 validated() 에서 배제된다" }
+  - { settings_state: unreachable, request: any, reason: "설정이 도달하지 못한 상태는 저장 경로가 아니라 판정 경로의 축이다" }
+
+effects:
+  # 설정 정의 · 노출
+  - allowlist_default_seeded_from_shipped_catalog
+  - allowlist_exposed_in_inline_payload_via_frontend_schema
+  - locked_set_exposed_in_inline_payload
+  - locked_set_absent_from_shipped_catalog
+  - shipped_catalog_items_pass_save_validation
+
+  # 클라이언트 소비 (storageInterceptor)
+  - storage_allows_item_listed_in_settings
+  - storage_blocks_item_removed_from_settings
+  - storage_wildcard_matches_prefix_only
+  - storage_scope_does_not_leak_across_storages
+  - storage_locked_item_survives_empty_settings
+  - storage_config_update_applies_new_allowlist
+
+  # 클라이언트 소비 (cookieInterceptor)
+  - cookie_allows_item_listed_in_settings
+  - cookie_blocks_item_removed_from_settings
+  - cookie_wildcard_matches_prefix_only
+  - cookie_scope_does_not_borrow_storage_scope
+  - cookie_config_update_applies_new_allowlist
+
+  # 클라이언트 소비 (functionalCleaner)
+  - cleaner_preserves_items_listed_in_settings
+  - cleaner_purges_items_removed_from_settings
+  - cleaner_cookie_wildcard_preserves_prefix_match
+  - cleaner_scope_does_not_leak_across_storages
+  - cleaner_locked_items_survive_missing_settings
+
+  # 서버 소비 (CookieConsentMiddleware)
+  - middleware_passes_cookie_listed_in_operator_settings
+  - middleware_removes_cookie_absent_from_settings
+  - middleware_supports_wildcard_in_cookie_allowlist
+  - middleware_locked_cookies_survive_empty_settings
+  - middleware_locked_cookies_cannot_be_removed_via_settings
+  - middleware_session_cookie_name_resolved_at_runtime
+
+  # 저장 · 검증
+  - update_persists_allowlist_per_scope
+  - update_normalizes_textarea_string_to_array
+  - update_without_key_leaves_existing_value_untouched
+  - update_rejects_invalid_item_format_with_scope_indexed_error_key
+  - update_rejects_unknown_scope
+  - update_ignores_locked_list_from_request
+  - show_includes_default_catalog_previews
+
+  # 기설치본 시드 (업그레이드 스텝)
+  - upgrade_seeds_allowlist_when_key_absent
+  - upgrade_preserves_operator_edited_allowlist
+  - upgrade_is_idempotent
+  - upgrade_skips_when_settings_file_missing
+  - upgrade_skips_when_settings_json_malformed
+  - upgrade_does_not_seed_locked_items
+
+  # 두 구현 정합 (PHP ↔ TS)
+  - ts_fallback_matches_php_locked_set
+  - ts_fallback_is_not_a_catalog_copy
+  - wildcard_rule_is_isomorphic_across_php_and_ts
+  - scope_vocabulary_matches_across_php_and_ts
+  - server_cookie_gate_reads_settings_not_hardcoded_list
+
+  # 관리자 화면 (레이아웃 구조)
+  - layout_renders_three_scope_cards
+  - layout_uses_static_setstate_key_with_object_spread
+  - layout_extracts_value_from_event_target_value
+  - layout_error_key_prefix_matches_scope
+  - layout_locked_chips_read_response_not_form_state
+  - layout_card_not_gated_behind_banner_toggle
+  - layout_i18n_keys_exist_in_ko_and_en
+
+  # 브라우저 종단 (E2E)
+  - e2e_allowlist_cards_render_three_scopes
+  - e2e_locked_chips_render_readonly
+  - e2e_allowlist_tag_persists_after_reload
+  - e2e_allowlist_reaches_inline_payload
+  - e2e_allowlist_invalid_item_rejected
+
+test_files:
+  # PHPUnit (백엔드)
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Http/Middleware/CookieConsentMiddlewareTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/GdprAdminSettingsControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/SeedNecessaryStorageAllowlistTest.php
+
+  # Vitest (프론트엔드)
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/storageInterceptor.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/cookieInterceptor.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/functionalCleaner.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/necessaryAllowlistCoverage.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/admin_plugin_settings.test.tsx
+
+  # Playwright (브라우저 종단)
+  - plugins/_bundled/sirsoft-gdpr/tests/Playwright/specs/admin/necessary-allowlist-settings.spec.ts
+
+limitations:
+  - "새 확장의 저장 키를 찾는 일은 운영자 몫이다 — 플러그인은 저장 키를 관측·수집하지 않는다 (관측하면 그 자체가 추적이 된다)."
+  - "`*` 는 항목 끝에만 쓸 수 있다. 앞이나 중간의 `*` 는 저장 시점에 거부된다 — 접두사가 비면 전체 개방이 되어 게이트가 무력화되기 때문이다."
+  - "인라인 페이로드가 도달하지 못하면 잠금 집합만으로 서고, 그 창에서는 운영자가 등재한 항목이 파기된다. 그 상태는 로그를 남기지 않으므로 E2E 의 인라인 페이로드 축이 유일한 관문이다."
+  - "세션 쿠키 이름은 서버 설정(`session.cookie`)이 정하는 런타임 값이라 클라이언트 폴백에 담을 수 없다. 인라인이 실패한 극단 상황에서는 세션 쿠키의 httpOnly 기본값이 방어한다."
+  - "출하 카탈로그를 나중에 줄여도 이미 시드된 사이트의 저장값은 그대로 남는다 (의도) — 운영자가 화면에서 직접 빼야 한다."

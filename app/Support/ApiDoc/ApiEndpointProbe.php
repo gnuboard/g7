@@ -40,14 +40,15 @@ class ApiEndpointProbe
     private ?User $user = null;
 
     /**
-     * @param  string|null  $baseUrl  기준 URL (null 이면 .env 의 APP_URL 직접 사용)
+     * @param  string|null  $baseUrl  기준 URL (null 이면 config('app.url') 사용)
      */
     public function __construct(?string $baseUrl = null)
     {
-        // config('app.url') 은 테스트 환경에서 override 될 수 있으므로(test.example.com 등),
-        // 실측은 .env 의 APP_URL 을 우선 신뢰한다. 명시 인자가 있으면 그것을 최우선한다.
+        // 기준 URL 은 config('app.url') 에서 해석한다. 이전에는 `.env` 를 우선 신뢰하려고
+        // env('APP_URL') 을 먼저 읽었는데, config:cache 환경에서 env() 는 null 로 고정되므로
+        // 그 우선순위는 실제로 성립한 적이 없었다(그대로 config 폴백으로 떨어졌다).
+        // 실측 대상을 지정해야 하면 명시 인자를 넘긴다 — 그쪽이 최우선이다.
         $resolved = $baseUrl
-            ?: (string) env('APP_URL')
             ?: (string) config('app.url');
 
         $this->baseUrl = rtrim($resolved, '/');

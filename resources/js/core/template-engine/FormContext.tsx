@@ -343,9 +343,29 @@ export const updateByScope = (
       (window as any).G7Core.state.set(update);
     }
   } else if (context.setState) {
-    // 로컬 상태 업데이트
+    // 로컬 상태 업데이트 — 저장소 A(React localDynamicState)와 B(_global._local) 양쪽에 쓴다.
+    //
+    // engine-v1.63.5: 엔진의 이중 저장소 불변조건은 "B 가 정본, A 는 쓰는 시점에 강제로
+    // 일치시키는 미러" 다(DynamicRenderer performStateUpdate 상단 주석). A 에만 쓰면
+    // 커스텀 핸들러가 읽는 유일한 공개 통로인 G7Core.state.getLocal() 이 stale 값을 보고,
+    // sequence 후속 액션의 요청 body 가 비어 나간다. 예외도 콘솔 에러도 남지 않는다.
+    //
+    // setLocal 은 4단계에서 __g7ActionContext.setState 로 저장소 A 도 갱신하므로,
+    // 그 writer 가 지금의 context.setState 와 다른 참조일 때만 A 를 추가로 쓴다.
     const update = setNestedValue({}, fullPath, value);
-    context.setState(update);
+    const w = window as any;
+    const setLocal = w.G7Core?.state?.setLocal;
+    const canMirror =
+      typeof setLocal === 'function' &&
+      !!w.__templateApp &&
+      ((w.__g7LayoutContextStack || []) as any[]).length === 0;
+
+    // 저장소 B 쓰기와 저장소 A 쓰기를 같은 높이에 나란히 둔다 — 한쪽을 분기 안으로 넣으면
+    // "이 쓰기에 미러가 동반되는가" 를 읽는 쪽(사람도 정적 검사도)이 판정할 수 없다.
+    if (canMirror) setLocal(update, { render: false });
+
+    const mirrorAlreadyWroteA = canMirror && w.__g7ActionContext?.setState === context.setState;
+    if (!mirrorAlreadyWroteA) context.setState(update);
   }
 };
 

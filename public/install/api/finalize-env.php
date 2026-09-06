@@ -37,7 +37,7 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 
 ignore_user_abort(true);
 
-$accepted = json_encode(['accepted' => true]);
+$accepted = installer_json_encode(['accepted' => true]);
 
 header('Content-Type: application/json; charset=utf-8');
 header('Content-Length: '.strlen($accepted));

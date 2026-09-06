@@ -3,6 +3,11 @@
     "data_source": {
       "settings": "エディター設定",
       "ckeditor5Uploads": "アップロード画像一覧"
+    },
+    "asset": {
+      "label": "エディター",
+      "style_label": "エディタースタイル",
+      "fallback_notice": "エディターを読み込めませんでした。一時的な入力ウィンドウに切り替えました。作成した内容はそのまま保存されます。"
     }
   },
   "settings": {

@@ -5,6 +5,7 @@ namespace Tests\Feature\Template;
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
+use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -163,6 +164,151 @@ class PublicTemplateControllerTest extends TestCase
 
         // 두 응답의 데이터가 동일한지 확인
         $this->assertEquals($response1->json('data'), $response2->json('data'));
+    }
+
+    /**
+     * `?v` 명시 요청은 조건부 캐시 헤더를 받는다 (#122 작업 D)
+     *
+     * 버전 키드 URL 은 bump 시 URL 자체가 바뀌므로 1h 공개 캐시가 안전하다.
+     */
+    public function test_versioned_routes_request_has_conditional_cache_headers(): void
+    {
+        app()['env'] = 'production';
+
+        Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $response = $this->getJson('/api/templates/sirsoft-admin_basic/routes.json?v=1234');
+
+        $response->assertStatus(200)->assertJson(['success' => true]);
+        $this->assertNotNull($response->headers->get('ETag'));
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringContainsString('max-age=3600', $cacheControl);
+        $this->assertStringContainsString('Accept-Encoding', (string) $response->headers->get('Vary'));
+    }
+
+    /**
+     * `?v` 명시 요청의 If-None-Match 일치 시 304 (#122 작업 D)
+     */
+    public function test_versioned_routes_request_returns_304_with_matching_etag(): void
+    {
+        app()['env'] = 'production';
+
+        Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $first = $this->getJson('/api/templates/sirsoft-admin_basic/routes.json?v=1234');
+        $etag = $first->headers->get('ETag');
+        $this->assertNotNull($etag);
+
+        $second = $this->getJson(
+            '/api/templates/sirsoft-admin_basic/routes.json?v=1234',
+            ['If-None-Match' => $etag]
+        );
+
+        $second->assertStatus(304);
+        $this->assertSame('', $second->getContent());
+    }
+
+    /**
+     * 무버전 요청은 종전대로 공개 캐시 헤더가 없다 (#122 작업 D — 핸드셰이크 신선도 보존)
+     */
+    public function test_unversioned_routes_request_has_no_public_cache_headers(): void
+    {
+        app()['env'] = 'production';
+
+        Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $response = $this->getJson('/api/templates/sirsoft-admin_basic/routes.json');
+
+        $response->assertStatus(200);
+        $this->assertNull($response->headers->get('ETag'));
+        $this->assertStringNotContainsString('max-age=3600', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
+     * 개발 환경에서 `?v` 요청도 no-cache (dev 파일 수정 즉시 반영 — #122 작업 D 환경 분기)
+     */
+    public function test_versioned_routes_request_no_cache_in_development(): void
+    {
+        app()['env'] = 'local';
+
+        Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $response = $this->getJson('/api/templates/sirsoft-admin_basic/routes.json?v=1234');
+
+        $response->assertStatus(200);
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringNotContainsString('max-age=3600', $cacheControl);
+    }
+
+    /**
+     * 열화 라우트 스냅샷은 `?v` 요청이어도 공개 캐시 헤더를 받지 않는다 (#493 대칭, #122 작업 D)
+     *
+     * 서버측 캐시 회피(#493)만으로는 부족하다 — 같은 `?v` URL 에 `public, max-age` 가
+     * 붙으면 브라우저/CDN 계층이 열화 응답을 1시간 박제하고, 버전은 이미 올라간 뒤라
+     * 스스로 회복되지 않는다. 정적 게시 경로(publishTemplate)의 열화 제외와 동일 규율.
+     *
+     * @effects degraded_snapshot_gets_no_public_cache
+     */
+    public function test_degraded_routes_snapshot_has_no_public_cache_headers(): void
+    {
+        app()['env'] = 'production';
+
+        Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        // proxy partial — 실제 인스턴스를 감싸 미지정 메서드는 실구현으로 위임
+        // (makePartial 은 생성자를 건너뛰어 typed property 미초기화 오류가 난다)
+        $service = \Mockery::mock(app(TemplateService::class));
+        $service->shouldReceive('lastRouteMergeWasDegraded')->andReturn(true);
+        $this->app->instance(TemplateService::class, $service);
+
+        $response = $this->getJson('/api/templates/sirsoft-admin_basic/routes.json?v=1234');
+
+        $response->assertStatus(200)->assertJson(['success' => true]);
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringNotContainsString('public', $cacheControl);
+        $this->assertStringNotContainsString('max-age=3600', $cacheControl);
     }
 
     /**

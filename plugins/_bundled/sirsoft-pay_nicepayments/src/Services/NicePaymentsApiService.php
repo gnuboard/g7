@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayNicepayments\Services;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use App\Support\OutboundUrlValidator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\PayNicepayments\Exceptions\NicePayApiException;
@@ -52,7 +53,7 @@ class NicePaymentsApiService
             return '';
         }
 
-        return str_starts_with($suffix, 'SR') ? $suffix : 'SR' . $suffix;
+        return str_starts_with($suffix, 'SR') ? $suffix : 'SR'.$suffix;
     }
 
     /**
@@ -116,6 +117,7 @@ class NicePaymentsApiService
      * @param  string  $buyerAddress  구매자 주소
      * @param  string  $registerName  등록자명
      * @return array NicePay 응답 (UTF-8 변환 + JSON 파싱)
+     *
      * @throws \Exception API 호출 실패 또는 PG 오류 시
      */
     public function registerEscrowDelivery(
@@ -127,7 +129,7 @@ class NicePaymentsApiService
     ): array {
         $reqType = '03';
         $ediDate = $this->computeEdiDate();
-        $signData = bin2hex(hash('sha256', $tid . $this->mid . $reqType . $ediDate . $this->merchantKey, true));
+        $signData = bin2hex(hash('sha256', $tid.$this->mid.$reqType.$ediDate.$this->merchantKey, true));
 
         $response = Http::timeout(15)->asForm()->post(self::DELIVERY_REG_URL, [
             'MID' => $this->mid,
@@ -144,7 +146,7 @@ class NicePaymentsApiService
         ]);
 
         if ($response->failed()) {
-            throw new NicePayApiException('NicePayments delivery reg API error: HTTP ' . $response->status());
+            throw new NicePayApiException('NicePayments delivery reg API error: HTTP '.$response->status());
         }
 
         $result = $response->json() ?? [];
@@ -172,7 +174,7 @@ class NicePaymentsApiService
      */
     public function verifyCallbackSignature(string $authToken, string $mid, int $amt, string $signature): bool
     {
-        $expected = bin2hex(hash('sha256', $authToken . $mid . (string) $amt . $this->merchantKey, true));
+        $expected = bin2hex(hash('sha256', $authToken.$mid.(string) $amt.$this->merchantKey, true));
 
         return hash_equals($expected, $signature);
     }
@@ -187,7 +189,7 @@ class NicePaymentsApiService
      */
     public function verifyVbankNotifySignature(string $tid, int $amt, string $signature): bool
     {
-        $expected = bin2hex(hash('sha256', $tid . $this->mid . (string) $amt . $this->merchantKey, true));
+        $expected = bin2hex(hash('sha256', $tid.$this->mid.(string) $amt.$this->merchantKey, true));
 
         return hash_equals($expected, $signature);
     }
@@ -195,22 +197,23 @@ class NicePaymentsApiService
     /**
      * 서버 승인 API 호출 (2단계 인증)
      *
-     * @param string $nextAppUrl  나이스페이먼츠가 전달한 승인 URL
-     * @param string $txTid       임시 거래번호
-     * @param string $authToken   인증 토큰
-     * @param int    $amt         결제 금액
+     * @param  string  $nextAppUrl  나이스페이먼츠가 전달한 승인 URL
+     * @param  string  $txTid  임시 거래번호
+     * @param  string  $authToken  인증 토큰
+     * @param  int  $amt  결제 금액
      * @return array PG 응답 데이터
+     *
      * @throws \Exception API 호출 실패 시
      */
     public function authorizePayment(string $nextAppUrl, string $txTid, string $authToken, int $amt): array
     {
         // SSRF 방지: NextAppURL은 반드시 나이스페이먼츠 공식 도메인이어야 함
         if (! $this->isNicePayUrl($nextAppUrl)) {
-            throw new NicePayApiException('Invalid NextAppURL host: ' . parse_url($nextAppUrl, PHP_URL_HOST));
+            throw new NicePayApiException('Invalid NextAppURL host: '.parse_url($nextAppUrl, PHP_URL_HOST));
         }
 
         $ediDate = $this->computeEdiDate();
-        $signData = bin2hex(hash('sha256', $authToken . $this->mid . (string) $amt . $ediDate . $this->merchantKey, true));
+        $signData = bin2hex(hash('sha256', $authToken.$this->mid.(string) $amt.$ediDate.$this->merchantKey, true));
 
         $response = Http::timeout(15)->asForm()->post($nextAppUrl, [
             'TID' => $txTid,
@@ -223,7 +226,7 @@ class NicePaymentsApiService
         ]);
 
         if ($response->failed()) {
-            throw new NicePayApiException('NicePayments authorize API error: HTTP ' . $response->status());
+            throw new NicePayApiException('NicePayments authorize API error: HTTP '.$response->status());
         }
 
         return $response->json() ?? [];
@@ -244,6 +247,7 @@ class NicePaymentsApiService
      * @param  string|null  $refundBankCd  환불 은행 코드
      * @param  string|null  $refundAcctNm  환불 계좌 예금주명
      * @return array PG 응답 데이터
+     *
      * @throws \Exception API 호출 실패 시
      */
     public function cancelPayment(
@@ -257,7 +261,7 @@ class NicePaymentsApiService
         ?string $refundAcctNm = null,
     ): array {
         $ediDate = $this->computeEdiDate();
-        $signData = bin2hex(hash('sha256', $this->mid . (string) $cancelAmt . $ediDate . $this->merchantKey, true));
+        $signData = bin2hex(hash('sha256', $this->mid.(string) $cancelAmt.$ediDate.$this->merchantKey, true));
 
         // NicePay 취소 API는 EUC-KR 인코딩 요구
         $cancelMsgEuc = mb_convert_encoding($cancelMsg, 'EUC-KR', 'UTF-8');
@@ -287,7 +291,7 @@ class NicePaymentsApiService
         $response = Http::timeout(15)->asForm()->post(self::CANCEL_URL, $params);
 
         if ($response->failed()) {
-            throw new NicePayApiException('NicePayments cancel API error: HTTP ' . $response->status());
+            throw new NicePayApiException('NicePayments cancel API error: HTTP '.$response->status());
         }
 
         // 취소 API는 EUC-KR 응답을 반환하므로 UTF-8로 변환 후 JSON 파싱
@@ -313,15 +317,16 @@ class NicePaymentsApiService
     /**
      * 단건 거래 조회 API 호출
      *
-     * @param string $tid 조회할 거래번호
+     * @param  string  $tid  조회할 거래번호
      * @return array PG 응답 데이터
+     *
      * @throws \Exception API 호출 실패 시
      */
     public function queryTransaction(string $tid): array
     {
         $ediDate = $this->computeEdiDate();
         // SignData: hex(sha256(TID + MID + EdiDate + MerchantKey)) — TID 먼저
-        $signData = bin2hex(hash('sha256', $tid . $this->mid . $ediDate . $this->merchantKey, true));
+        $signData = bin2hex(hash('sha256', $tid.$this->mid.$ediDate.$this->merchantKey, true));
 
         $response = Http::timeout(15)->asForm()->post(self::QUERY_URL, [
             'TID' => $tid,
@@ -333,7 +338,7 @@ class NicePaymentsApiService
         ]);
 
         if ($response->failed()) {
-            throw new NicePayApiException('NicePayments query API error: HTTP ' . $response->status());
+            throw new NicePayApiException('NicePayments query API error: HTTP '.$response->status());
         }
 
         return $response->json() ?? [];
@@ -342,10 +347,10 @@ class NicePaymentsApiService
     /**
      * 망취소 요청 (서버 승인 중 예외 발생 시 결제 원천 취소)
      *
-     * @param string $netCancelUrl 나이스페이먼츠가 전달한 망취소 URL
-     * @param string $txTid        임시 거래번호 (TxTid)
-     * @param string $authToken    인증 토큰
-     * @param int    $amt          결제 금액
+     * @param  string  $netCancelUrl  나이스페이먼츠가 전달한 망취소 URL
+     * @param  string  $txTid  임시 거래번호 (TxTid)
+     * @param  string  $authToken  인증 토큰
+     * @param  int  $amt  결제 금액
      */
     public function sendNetCancel(string $netCancelUrl, string $txTid, string $authToken, int $amt): void
     {
@@ -357,7 +362,7 @@ class NicePaymentsApiService
 
         try {
             $ediDate = $this->computeEdiDate();
-            $signData = bin2hex(hash('sha256', $authToken . $this->mid . (string) $amt . $ediDate . $this->merchantKey, true));
+            $signData = bin2hex(hash('sha256', $authToken.$this->mid.(string) $amt.$ediDate.$this->merchantKey, true));
 
             Http::timeout(10)->asForm()->post($netCancelUrl, [
                 'TID' => $txTid,
@@ -399,7 +404,7 @@ class NicePaymentsApiService
      */
     public function generateSignData(string $ediDate, int $amt): string
     {
-        return bin2hex(hash('sha256', $ediDate . $this->mid . (string) $amt . $this->merchantKey, true));
+        return bin2hex(hash('sha256', $ediDate.$this->mid.(string) $amt.$this->merchantKey, true));
     }
 
     private function computeEdiDate(): string
@@ -407,13 +412,37 @@ class NicePaymentsApiService
         return $this->generateEdiDate();
     }
 
-    /** NextAppURL / NetCancelURL이 나이스페이먼츠 공식 도메인인지 검증 (SSRF 방지) */
+    /**
+     * NextAppURL / NetCancelURL이 나이스페이먼츠 공식 도메인인지 검증 (SSRF 방지)
+     *
+     * 이 URL 은 결제창이 콜백으로 넘겨준 값이라 공격자가 지정할 수 있고, 서버는 여기에
+     * 인증 토큰·MID 를 실어 POST 한다. 접미사 대조를 원문 host 로 수행하면 연결 계층의
+     * 해석과 어긋난다 — `evil.example／.nicepay.co.kr`(U+FF0F)은 접미사 검사를 통과하지만
+     * UTS#46 정규화 후에는 host 가 `evil.example` 이 된다. 코어 검증기의 정규화를 그대로
+     * 재사용해(사본 금지) 판정 기준을 연결 계층과 일치시킨다.
+     *
+     * @param  string  $url  검증 대상 URL (결제 콜백이 제공)
+     * @return bool 나이스페이먼츠 공식 도메인이면 true
+     */
     private function isNicePayUrl(string $url): bool
     {
         $parsed = parse_url($url);
-        $scheme = $parsed['scheme'] ?? '';
-        $host = $parsed['host'] ?? '';
 
-        return $scheme === 'https' && str_ends_with($host, '.nicepay.co.kr');
+        if (($parsed['scheme'] ?? '') !== 'https') {
+            return false;
+        }
+
+        // userinfo(`user:pass@host`)는 host 위조의 핵심 벡터 — 존재만으로 거부
+        if (isset($parsed['user']) || isset($parsed['pass'])) {
+            return false;
+        }
+
+        $host = OutboundUrlValidator::normalizeHost((string) ($parsed['host'] ?? ''));
+
+        if ($host === null) {
+            return false;
+        }
+
+        return $host === 'nicepay.co.kr' || str_ends_with($host, '.nicepay.co.kr');
     }
 }

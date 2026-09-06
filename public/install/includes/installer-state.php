@@ -9,6 +9,9 @@ if (! defined('BASE_PATH')) {
     define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3)); // public/install/includes에서 프로젝트 루트로
 }
 
+// UTF-8 정규화 헬퍼 — scan-extensions 경로에서는 config.php 보다 먼저 로드된다.
+require_once __DIR__.'/utf8.php';
+
 if (! defined('STATE_PATH')) {
     define('STATE_PATH', BASE_PATH.'/storage/installer-state.json');
 }
@@ -106,8 +109,13 @@ function saveInstallationState(array $state): bool
     // last_updated 타임스탬프 업데이트
     $state['last_updated'] = date('Y-m-d\TH:i:s\Z');
 
-    // JSON 형식으로 저장
-    $content = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    // JSON 형식으로 저장 — 외부 유래 값(경로·확장 이름·로그)이 섞이므로 먼저 정규화한다.
+    // 이 함수는 addLog 재귀 금지 구역이라 installer_json_encode 대신 자체 가드를 쓴다.
+    // json-encode:allow — 정규화 + substitute 를 직접 적용한 자리
+    $content = json_encode(
+        installer_utf8_normalize_deep($state),
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+    );
 
     if ($content === false) {
         $msg = '[installer-state] Failed to encode state as JSON: '.json_last_error_msg();
@@ -497,12 +505,8 @@ function addLogBatch(array $messages): bool
     $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
     $entries = '';
     foreach ($messages as $message) {
-        if ($isWindows) {
-            $encoding = mb_detect_encoding($message, ['UTF-8', 'EUC-KR', 'CP949'], true);
-            if ($encoding && $encoding !== 'UTF-8') {
-                $message = mb_convert_encoding($message, 'UTF-8', $encoding);
-            }
-        }
+        // 항상 유효 UTF-8 만 로그에 저장한다 (gnuboard/g7#62).
+        $message = installer_utf8_normalize($message);
         $microtime = microtime(true);
         $ms = sprintf('%03d', (int) (($microtime - floor($microtime)) * 1000));
         $timestamp = date('Y-m-d H:i:s', (int) $microtime).'.'.$ms;
@@ -589,24 +593,16 @@ function _addLogInternal(string $message): bool
         return false;
     }
 
-    // Windows에서 CP949 인코딩된 메시지를 UTF-8로 변환
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        $encoding = mb_detect_encoding($message, ['UTF-8', 'EUC-KR', 'CP949'], true);
-        if ($encoding && $encoding !== 'UTF-8') {
-            $message = mb_convert_encoding($message, 'UTF-8', $encoding);
-        }
-    }
-
-    // OS 무관 최종 방어 — 항상 유효 UTF-8 만 로그에 저장한다 (gnuboard/g7#62).
-    // composer install 등 외부 프로세스 stdout 이 시스템 코드페이지로 출력되거나
-    // 진행바(\r 갱신)가 임의 바이트 경계에서 잘려 mb_detect_encoding 이 확정 감지에
-    // 실패한 경우(위 분기 미적용), invalid 바이트가 그대로 로그에 남으면
+    // 항상 유효 UTF-8 만 로그에 저장한다 (gnuboard/g7#62).
+    //
+    // composer install 등 외부 프로세스 stdout 은 시스템 코드페이지(한국어 Windows = CP949)로
+    // 출력되고, 진행바(\r 갱신)는 임의 바이트 경계에서 잘린다. invalid 바이트가 로그에 남으면
     // 폴링 응답 state-management.php 의 json_encode 가 false 를 반환해 빈 본문(HTTP 200)
     // → 프론트 res.json() 이 "Unexpected end of JSON input" 으로 폭주한다.
-    // mb_scrub 은 invalid 바이트를 U+FFFD 로 치환해 응답 무력화를 원천 차단한다.
-    if (! mb_check_encoding($message, 'UTF-8')) {
-        $message = mb_scrub($message, 'UTF-8');
-    }
+    //
+    // 정규화는 복원 가능한 코드페이지 출력을 먼저 되살리고(한글 보존),
+    // 복원 불가능한 바이트만 U+FFFD 로 치환한다.
+    $message = installer_utf8_normalize($message);
 
     // 타임스탬프와 함께 로그 작성 — millisecond 정밀도 (hang 진단 시 정확한 timing 필요)
     $microtime = microtime(true);

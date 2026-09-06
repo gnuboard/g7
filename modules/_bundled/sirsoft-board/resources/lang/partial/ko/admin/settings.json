@@ -311,6 +311,7 @@
             "notify_admin_on_post": "관리자 알림",
             "notify_author": "작성자 알림",
             "new_display_hours": "새글 표시 시간",
+            "blocked_keywords": "금지어",
             "default_board_permissions": "기본 권한",
             "manager": "게시판 관리"
         }

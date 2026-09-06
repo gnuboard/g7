@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
 use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
@@ -22,6 +23,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
  */
 class MobileApprovalController
 {
+    use BindsMobileVbankSession;
     use RecordsPaymentWindowClosure;
 
     /** 결제수단 → KCP 모바일 pay_method 코드 */
@@ -197,6 +199,21 @@ class MobileApprovalController
                 $settings = plugin_settings(self::PLUGIN_IDENTIFIER) ?? [];
                 $fields['vcnt_expire_term'] = (string) ((int) ($settings['vbank_expire_days'] ?? 3));
                 $fields['disp_tax_yn'] = 'N';
+
+                // 모바일 가상계좌 콜백은 계좌번호를 브라우저 평문으로만 전달한다.
+                // 이 지점은 소유자 인증(auth:sanctum)을 통과했으므로 여기서 만든 일회성
+                // nonce 를 passthrough 파라미터로 실어 보내고, 콜백에서 되돌아온 값과
+                // 대조해 그 콜백이 이 결제 세션에서 비롯됐음을 확인한다 (KVE-2026-2019).
+                // param_opt_1 은 간편결제 수단 식별자가 점유하므로 param_opt_2 를 쓴다.
+                $mobileVbankState = $this->issueMobileVbankState($order);
+                if ($mobileVbankState === null) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Failed to prepare the virtual account payment session.',
+                    ], 500);
+                }
+
+                $fields['param_opt_2'] = $mobileVbankState;
             }
 
             if ($isEasyPay) {

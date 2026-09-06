@@ -19,37 +19,29 @@
  * @module sirsoft-gdpr/cookieInterceptor
  */
 
+import {
+    LOCKED_FALLBACK,
+    isNecessary,
+    type NecessaryAllowlist,
+} from './necessaryAllowlist';
 import { isUserInitiated } from './userInitiatedTracker';
 
 /**
  * 인터셉터 설정.
  *
  * @property functionalConsented functional 카테고리 동의 여부
- * @property necessaryAllowlist strictly necessary 쿠키 이름 (서버 cookie 와 별개 — 클라이언트 쓰기 화이트리스트)
+ * @property necessaryAllowlist strictly necessary 허용목록 (운영자 설정 ∪ 잠금 집합) — `cookie` 스코프만 사용
  */
 export interface CookieInterceptorConfig {
     functionalConsented: boolean;
-    necessaryAllowlist: readonly string[];
+    necessaryAllowlist: NecessaryAllowlist;
 }
-
-/**
- * 정적 strictly necessary 쿠키 화이트리스트 (클라이언트 쓰기).
- *
- * 일반적으로 코어가 쓰는 쿠키는 모두 서버 Set-Cookie 로 발급되므로 클라이언트 쓰기는
- * 거의 없음. 폼 보호용 XSRF-TOKEN refresh, 세션 ID 등 일부만 화이트리스트.
- */
-export const DEFAULT_NECESSARY_COOKIE_ALLOWLIST: readonly string[] = [
-    'XSRF-TOKEN',
-    'laravel_session',
-    'laravel_maintenance',
-    'gdpr_session',
-];
 
 let installed = false;
 let originalCookieDescriptor: PropertyDescriptor | null = null;
 let config: CookieInterceptorConfig = {
     functionalConsented: false,
-    necessaryAllowlist: DEFAULT_NECESSARY_COOKIE_ALLOWLIST,
+    necessaryAllowlist: LOCKED_FALLBACK,
 };
 
 /**
@@ -67,13 +59,16 @@ function extractCookieName(raw: string): string | null {
 }
 
 /**
- * 이름이 strictly necessary 화이트리스트에 포함되는지 검사합니다.
+ * 이름이 strictly necessary 허용목록에 포함되는지 검사합니다.
+ *
+ * 판정은 저장소 목록과 **같은 함수**를 쓴다 — 쿠키만 정확 일치 전용이면 운영자가 쿠키 카드에
+ * 적은 `myplugin_*` 이 저장소 카드와 달리 동작하지 않는다.
  *
  * @param  name  쿠키 이름
  * @return 매칭 여부
  */
 function matchesNecessary(name: string): boolean {
-    return config.necessaryAllowlist.includes(name);
+    return isNecessary(name, 'cookie', config.necessaryAllowlist);
 }
 
 /**
@@ -202,7 +197,7 @@ export function uninstallCookieInterceptor(): void {
     originalCookieDescriptor = null;
     config = {
         functionalConsented: false,
-        necessaryAllowlist: DEFAULT_NECESSARY_COOKIE_ALLOWLIST,
+        necessaryAllowlist: LOCKED_FALLBACK,
     };
     installed = false;
 }

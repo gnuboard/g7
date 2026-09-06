@@ -3,6 +3,7 @@
 namespace App\Extension\Cache;
 
 use App\Contracts\Extension\CacheInterface;
+use Illuminate\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -48,15 +49,15 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     public function resolveKey(string $key): string
     {
-        return $this->getPrefix() . ':' . $key;
+        return $this->getPrefix().':'.$key;
     }
 
     /**
      * Laravel Cache 스토어 인스턴스를 반환합니다.
      *
-     * @return \Illuminate\Cache\Repository 캐시 스토어 인스턴스
+     * @return Repository 캐시 스토어 인스턴스
      */
-    protected function store(): \Illuminate\Cache\Repository
+    protected function store(): Repository
     {
         return Cache::store($this->store);
     }
@@ -122,7 +123,13 @@ abstract class AbstractCacheDriver implements CacheInterface
         $resolvedKey = $this->resolveKey($key);
         $ttl = $ttl ?? $this->getDefaultTtl();
 
-        return $this->store()->put($resolvedKey, $value, $ttl);
+        try {
+            return $this->store()->put($resolvedKey, $value, $ttl);
+        } catch (\Throwable $e) {
+            $this->warnWriteFailure('put', $resolvedKey, $e);
+
+            return false;
+        }
     }
 
     /**
@@ -144,7 +151,13 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     public function forget(string $key): bool
     {
-        return $this->store()->forget($this->resolveKey($key));
+        try {
+            return $this->store()->forget($this->resolveKey($key));
+        } catch (\Throwable $e) {
+            $this->warnWriteFailure('forget', $this->resolveKey($key), $e);
+
+            return false;
+        }
     }
 
     // === Remember 패턴 ===
@@ -170,8 +183,25 @@ abstract class AbstractCacheDriver implements CacheInterface
 
         // 항상 일반 remember + 키 인덱스에 태그 매핑 기록
         // Laravel 네이티브 태그 저장은 사용하지 않음 (get/has와의 일관성 보장)
-        $result = $this->store()->remember($resolvedKey, $ttl, $callback);
-        $this->recordKeyTags($resolvedKey, $allTags);
+        //
+        // 저장 실패는 fail-soft — 캐시는 최적화이므로 콜백 결과를 그대로 반환한다.
+        // Repository::remember 를 쓰지 않고 get→callback→put 을 직접 수행하는 이유:
+        // put 예외를 잡아도 콜백을 재실행하지 않기 위해서다 (부수효과 이중 실행 금지).
+        // 실사례: sudo 업데이트가 키 인덱스 파일을 root 소유로 남기면 웹의 모든
+        // remember 가 put 예외로 죽어 부팅 전면 500 이 됐다 (7.0.9→7.0.10).
+        $cached = $this->store()->get($resolvedKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $result = $callback();
+
+        try {
+            $this->store()->put($resolvedKey, $result, $ttl);
+            $this->recordKeyTags($resolvedKey, $allTags);
+        } catch (\Throwable $e) {
+            $this->warnWriteFailure('remember', $resolvedKey, $e);
+        }
 
         return $result;
     }
@@ -187,7 +217,7 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     public function rememberQuery(string $queryHash, callable $callback, ?int $ttl = null, array $tags = []): mixed
     {
-        return $this->remember('query:' . $queryHash, $callback, $ttl, $tags);
+        return $this->remember('query:'.$queryHash, $callback, $ttl, $tags);
     }
 
     // === 벌크 연산 ===
@@ -237,7 +267,13 @@ abstract class AbstractCacheDriver implements CacheInterface
             $resolved[$this->resolveKey($key)] = $value;
         }
 
-        return $this->store()->putMany($resolved, $ttl);
+        try {
+            return $this->store()->putMany($resolved, $ttl);
+        } catch (\Throwable $e) {
+            $this->warnWriteFailure('putMany', implode(',', array_keys($resolved)), $e);
+
+            return false;
+        }
     }
 
     // === 무효화 ===
@@ -292,6 +328,42 @@ abstract class AbstractCacheDriver implements CacheInterface
     // === 키 인덱스 (태그 미지원 드라이버용) ===
 
     /**
+     * 캐시 쓰기 실패를 경고 로그로 강등합니다 (fail-soft).
+     *
+     * 캐시는 최적화다 — 쓰기 실패(권한/디스크)가 페이지를 죽이면 안 된다. 실사례:
+     * sudo 코어 업데이트가 키 인덱스 파일을 root 소유로 남겨 웹 프로세스의 모든
+     * 캐시 쓰기가 Permission denied 로 죽고 부팅 경로가 전면 500 이 됐다
+     * (예외가 로거 도달 전에 발생해 laravel.log 도 비어 있었다).
+     *
+     * 로그 폭주 방지: 같은 (연산, 예외 메시지) 조합은 프로세스당 1회만 기록한다.
+     *
+     * @param  string  $operation  실패한 연산 (put/forget/putMany/remember/index)
+     * @param  string  $key  대상 키 (진단용)
+     * @param  \Throwable  $e  원인 예외
+     */
+    protected function warnWriteFailure(string $operation, string $key, \Throwable $e): void
+    {
+        static $warned = [];
+
+        $signature = $operation.'|'.$e->getMessage();
+        if (isset($warned[$signature])) {
+            return;
+        }
+        $warned[$signature] = true;
+
+        try {
+            Log::warning('캐시 쓰기 실패 — 무캐시로 계속 동작합니다 (스토리지 권한/디스크 확인 필요)', [
+                'operation' => $operation,
+                'key' => $key,
+                'store' => $this->store,
+                'error' => $e->getMessage(),
+            ]);
+        } catch (\Throwable) {
+            // 로그 기록조차 불가한 환경(로그 디렉토리 권한 등) — 조용히 계속
+        }
+    }
+
+    /**
      * 키-태그 매핑을 인덱스에 기록합니다.
      *
      * file/database 드라이버처럼 태그를 지원하지 않는 경우,
@@ -318,16 +390,22 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     private function flushByIndex(): bool
     {
-        $indexKey = $this->getIndexKey();
-        $index = $this->store()->get($indexKey, []);
+        try {
+            $indexKey = $this->getIndexKey();
+            $index = $this->store()->get($indexKey, []);
 
-        foreach (array_keys($index) as $key) {
-            $this->store()->forget($key);
+            foreach (array_keys($index) as $key) {
+                $this->store()->forget($key);
+            }
+
+            $this->store()->forget($indexKey);
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->warnWriteFailure('flush', $this->getIndexKey(), $e);
+
+            return false;
         }
-
-        $this->store()->forget($indexKey);
-
-        return true;
     }
 
     /**
@@ -338,20 +416,26 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     private function flushTagsByIndex(array $tags): bool
     {
-        $indexKey = $this->getIndexKey();
-        $index = $this->store()->get($indexKey, []);
-        $tagsSet = array_flip($tags);
+        try {
+            $indexKey = $this->getIndexKey();
+            $index = $this->store()->get($indexKey, []);
+            $tagsSet = array_flip($tags);
 
-        foreach ($index as $key => $keyTags) {
-            if (array_intersect_key(array_flip($keyTags), $tagsSet)) {
-                $this->store()->forget($key);
-                unset($index[$key]);
+            foreach ($index as $key => $keyTags) {
+                if (array_intersect_key(array_flip($keyTags), $tagsSet)) {
+                    $this->store()->forget($key);
+                    unset($index[$key]);
+                }
             }
+
+            $this->store()->put($indexKey, $index, 86400 * 30);
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->warnWriteFailure('flushTags', implode(',', $tags), $e);
+
+            return false;
         }
-
-        $this->store()->put($indexKey, $index, 86400 * 30);
-
-        return true;
     }
 
     /**
@@ -361,6 +445,6 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     private function getIndexKey(): string
     {
-        return 'g7:_idx:' . $this->getPrefix();
+        return 'g7:_idx:'.$this->getPrefix();
     }
 }

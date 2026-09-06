@@ -2,8 +2,10 @@
 
 namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_0_0\Migrations;
 
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -68,6 +70,8 @@ class AbsorbLegacyDueDaysIntoAutoCancelDays implements DataMigration
         unset($settings['vbank_due_days'], $settings['dbank_due_days']);
 
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 만든 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info('[ecommerce:1.0.0] 구 입금기한 키 정리 완료');
     }
@@ -79,6 +83,6 @@ class AbsorbLegacyDueDaysIntoAutoCancelDays implements DataMigration
      */
     private function settingsFilePath(): string
     {
-        return storage_path('app/modules/'.self::MODULE_IDENTIFIER.'/settings/order_settings.json');
+        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'settings').'/order_settings.json';
     }
 }

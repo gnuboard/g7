@@ -45,3 +45,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## 동봉된 제3자 소프트웨어
+
+이 템플릿은 아래 소프트웨어를 함께 배포합니다. 각 소프트웨어는 원저작자의 라이선스를
+그대로 따르며, 위 라이선스는 이 템플릿 자신의 코드에만 적용됩니다.
+
+| 소프트웨어 | 버전 | 라이선스 | 경로 |
+| --- | --- | --- | --- |
+| Font Awesome Free | 6.4.0 | 아이콘 CC BY 4.0 · 폰트 SIL OFL 1.1 · 코드 MIT | `dist/vendor/font-awesome/6.4.0/` |
+| Pretendard | 1.3.9 | SIL OFL 1.1 | `dist/vendor/pretendard/1.3.9/` |
+| flag-icons | 7.2.3 | MIT | `dist/vendor/flag-icons/7.2.3/` |
+| Monaco Editor | 0.54.0 | MIT | `dist/vendor/monaco-editor/0.54.0/` |
+| browser-image-compression | 2.0.2 | MIT | `dist/vendor/browser-image-compression/2.0.2/` |
+
+원본 라이선스 전문은 각 디렉토리에 수정 없이 포함되어 있습니다.
+
+Font Awesome 의 `css/all.inlined.css` 는 배포본 CSS 에 웹폰트를 data: URI 로 넣어
+재생성한 파일입니다. 재생성 절차는 `scripts/vendor-inline-css.mjs` 에 있으며, 원본
+CSS(`css/all.min.css`)와 웹폰트 파일을 입력으로 받아 같은 결과를 다시 만들 수 있습니다.

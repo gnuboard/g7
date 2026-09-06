@@ -784,6 +784,17 @@
                             "className": "text-red-500 ml-1"
                           },
                           "text": "*"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Badge",
+                          "if": "{{_computed.envLocked?.['advanced.debug_mode'] === true}}",
+                          "props": {
+                            "text": "$t:admin.settings.env_locked_badge",
+                            "variant": "secondary",
+                            "size": "sm",
+                            "className": "ml-2"
+                          }
                         }
                       ]
                     },
@@ -832,7 +843,7 @@
                       "props": {
                         "name": "advanced.debug_mode",
                         "size": "md",
-                        "disabled": "{{_computed.isReadOnly}}"
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.debug_mode'] === true}}"
                       }
                     }
                   ]
@@ -1314,6 +1325,17 @@
                         "className": "text-heading"
                       },
                       "text": "$t:admin.settings.advanced.core_update_github_url"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Badge",
+                      "if": "{{_computed.envLocked?.['advanced.core_update_github_url'] === true}}",
+                      "props": {
+                        "text": "$t:admin.settings.env_locked_badge",
+                        "variant": "secondary",
+                        "size": "sm",
+                        "className": "ml-2"
+                      }
                     }
                   ]
                 },
@@ -1332,7 +1354,7 @@
                     "type": "url",
                     "name": "advanced.core_update_github_url",
                     "placeholder": "https://github.com/owner/repo",
-                    "disabled": "{{_computed.isReadOnly}}",
+                    "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.core_update_github_url'] === true}}",
                     "className": "input {{_local.errors?.['advanced.core_update_github_url'] ? 'input-error' : ''}}"
                   }
                 },
@@ -1366,6 +1388,17 @@
                         "className": "text-heading"
                       },
                       "text": "$t:admin.settings.advanced.core_update_github_token"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Badge",
+                      "if": "{{_computed.envLocked?.['advanced.core_update_github_token'] === true}}",
+                      "props": {
+                        "text": "$t:admin.settings.env_locked_badge",
+                        "variant": "secondary",
+                        "size": "sm",
+                        "className": "ml-2"
+                      }
                     }
                   ]
                 },
@@ -1385,7 +1418,7 @@
                     "name": "advanced.core_update_github_token",
                     "placeholder": "ghp_xxxxxxxxxxxxxxxxxxxx",
                     "autoComplete": "off",
-                    "disabled": "{{_computed.isReadOnly}}",
+                    "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.core_update_github_token'] === true}}",
                     "className": "input {{_local.errors?.['advanced.core_update_github_token'] ? 'input-error' : ''}}"
                   }
                 },
@@ -1462,6 +1495,17 @@
                         "className": "text-label-subtle"
                       },
                       "text": "$t:admin.settings.advanced.geoip_enabled_desc"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Badge",
+                      "if": "{{_computed.envLocked?.['advanced.geoip_enabled'] === true}}",
+                      "props": {
+                        "text": "$t:admin.settings.env_locked_badge",
+                        "variant": "secondary",
+                        "size": "sm",
+                        "className": "ml-2"
+                      }
                     }
                   ]
                 },
@@ -1471,7 +1515,7 @@
                   "props": {
                     "name": "advanced.geoip_enabled",
                     "size": "md",
-                    "disabled": "{{_computed.isReadOnly}}"
+                    "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_enabled'] === true}}"
                   }
                 }
               ]
@@ -1507,6 +1551,17 @@
                             "className": "text-heading"
                           },
                           "text": "$t:admin.settings.advanced.geoip_license_key"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Badge",
+                          "if": "{{_computed.envLocked?.['advanced.geoip_license_key'] === true}}",
+                          "props": {
+                            "text": "$t:admin.settings.env_locked_badge",
+                            "variant": "secondary",
+                            "size": "sm",
+                            "className": "ml-2"
+                          }
                         }
                       ]
                     },
@@ -1526,7 +1581,7 @@
                         "name": "advanced.geoip_license_key",
                         "placeholder": "xxxxxxxxxxxxxxxx",
                         "autoComplete": "off",
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_license_key'] === true}}",
                         "className": "{{_local.errors?.['advanced.geoip_license_key'] ? 'input-error' : ''}}"
                       }
                     },
@@ -1568,6 +1623,17 @@
                             "className": "text-label-subtle"
                           },
                           "text": "$t:admin.settings.advanced.geoip_auto_update_enabled_desc"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Badge",
+                          "if": "{{_computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}",
+                          "props": {
+                            "text": "$t:admin.settings.env_locked_badge",
+                            "variant": "secondary",
+                            "size": "sm",
+                            "className": "ml-2"
+                          }
                         }
                       ]
                     },
@@ -1577,7 +1643,7 @@
                       "props": {
                         "name": "advanced.geoip_auto_update_enabled",
                         "size": "md",
-                        "disabled": "{{_computed.isReadOnly}}"
+                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}"
                       }
                     }
                   ]
@@ -1677,6 +1743,230 @@
                       ]
                     }
                   ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_trusted_proxy",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-stack-item"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:admin.settings.advanced.trusted_proxy"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-description"
+          },
+          "text": "$t:admin.settings.advanced.trusted_proxy_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "row-stack"
+          },
+          "children": [
+            {
+              "id": "trusted_proxy_status_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_status"
+                },
+                {
+                  "id": "trusted_proxy_status_badge",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "{{trustedProxy?.data?.status === 'warning' ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : (trustedProxy?.data?.status === 'ok' ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300')}}"
+                  },
+                  "text": "{{trustedProxy?.data?.status === 'warning' ? $t('admin.settings.advanced.trusted_proxy_status_warning') : (trustedProxy?.data?.status === 'ok' ? $t('admin.settings.advanced.trusted_proxy_status_ok') : $t('admin.settings.advanced.trusted_proxy_status_not_applicable'))}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_configured"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading"
+                  },
+                  "text": "{{trustedProxy?.data?.trusted_configured ? (trustedProxy?.data?.configured_proxies ?? '-') : $t('admin.settings.advanced.trusted_proxy_not_configured')}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_forwarded_headers"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading"
+                  },
+                  "text": "{{(trustedProxy?.data?.forwarded_headers ?? []).length > 0 ? trustedProxy?.data.forwarded_headers.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none')}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_is_secure"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading"
+                  },
+                  "text": "{{trustedProxy?.data?.is_secure === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (trustedProxy?.data?.is_secure === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-')}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_client_ip"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading"
+                  },
+                  "text": "{{trustedProxy?.data?.client_ip ?? '-'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_remote_addr"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading"
+                  },
+                  "text": "{{trustedProxy?.data?.remote_addr ?? '-'}}"
+                }
+              ]
+            },
+            {
+              "id": "trusted_proxy_same_ip_hint",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{trustedProxy?.data?.status === 'warning' && trustedProxy?.data?.client_ip && trustedProxy?.data?.client_ip === trustedProxy?.data?.remote_addr}}",
+              "props": {
+                "className": "form-hint text-amber-600 dark:text-amber-400"
+              },
+              "text": "$t:admin.settings.advanced.trusted_proxy_same_ip_hint"
+            },
+            {
+              "id": "trusted_proxy_doc_hint",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-hint"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:admin.settings.advanced.trusted_proxy_doc_hint"
+                },
+                {
+                  "id": "trusted_proxy_doc_link",
+                  "type": "basic",
+                  "name": "A",
+                  "props": {
+                    "href": "https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md",
+                    "target": "_blank",
+                    "rel": "noopener noreferrer",
+                    "className": "ml-1 underline hover:no-underline"
+                  },
+                  "text": "docs/backend/reverse-proxy.md"
                 }
               ]
             }

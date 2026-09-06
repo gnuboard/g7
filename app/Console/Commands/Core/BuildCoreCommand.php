@@ -88,7 +88,7 @@ class BuildCoreCommand extends Command
         // 감시 모드: 엔진 번들 + 편집기 번들(layout-editor.min.js)을 각각 vite --watch 로
         // 병렬 감시한다. (기존 dev 서버는 코어 lib 를 빌드하지 않으므로 사용 불가)
         if ($watchMode) {
-            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진 + 레이아웃 편집기)');
+            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
             $this->line('   Ctrl+C로 종료할 수 있습니다.');
 
             return $this->runWatchBundles($projectPath);
@@ -125,11 +125,61 @@ class BuildCoreCommand extends Command
             return $devtoolsResult;
         }
 
-        $this->info('✅ 코어 빌드 완료 (템플릿 엔진 + 레이아웃 편집기 + DevTools)');
+        // ── 4) 개발 대시보드 CSS (자체 제공 — 종전 Tailwind Play CDN 대체) ──
+        $this->info('🔨 코어 빌드 시작 (개발 대시보드 CSS)'.($productionMode ? ' (프로덕션)' : ''));
+        $dashboardResult = $this->runNpmCommand(['npm', 'run', 'build:core-devdashboard'], $projectPath, true, $buildEnv);
+
+        if ($dashboardResult !== Command::SUCCESS) {
+            $this->error('❌ 개발 대시보드 CSS 빌드 실패');
+
+            return $dashboardResult;
+        }
+
+        $this->pruneStaleSourceMaps($productionMode);
+
+        $this->info('✅ 코어 빌드 완료 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
         $this->showEngineBuildResults($projectPath);
         $this->incrementExtensionCacheVersion();
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * 프로덕션 빌드 후 `public/build/core/` 에 남은 소스맵을 제거합니다.
+     *
+     * 프로덕션 빌드는 `G7_BUILD_SOURCEMAP=0` 으로 맵을 **만들지 않을 뿐**, 이전 개발 빌드가
+     * 남긴 맵을 지우지는 않는다. 그 디렉토리는 웹루트라 남아 있는 맵은 웹서버가 그대로
+     * 서빙하고, 맵에는 원본 코드 전문(`sourcesContent`)이 담긴다 — 확장자 화이트리스트가
+     * 막아 주는 확장 에셋과 달리 이 경로는 정적 서빙이라 통과한다.
+     *
+     * 종전에는 루트 `npm run build` 의 `emptyOutDir` 이 디렉토리를 통째로 비우면서 이 맵들을
+     * 함께 지웠다. 그 동작은 서빙 중인 코어 번들·게시본까지 지우는 결함이라 껐으므로(#122),
+     * 소스맵 정리 책임을 빌드 커맨드가 명시적으로 넘겨받는다.
+     *
+     * @param  bool  $productionMode  프로덕션 빌드 여부
+     */
+    private function pruneStaleSourceMaps(bool $productionMode): void
+    {
+        if (! $productionMode) {
+            // 로컬 빌드는 디버깅을 위해 맵을 의도적으로 생성한다 — 지우면 그 목적이 사라진다.
+            return;
+        }
+
+        $removed = [];
+
+        foreach (glob(public_path('build/core').DIRECTORY_SEPARATOR.'*.map') ?: [] as $map) {
+            if (@unlink($map)) {
+                $removed[] = basename($map);
+
+                continue;
+            }
+
+            $this->warn('   ⚠️  소스맵 삭제 실패 (수동 제거 필요): '.$map);
+        }
+
+        if ($removed !== []) {
+            $this->line('   🧹 잔존 소스맵 제거: '.implode(', ', $removed));
+        }
     }
 
     /**
@@ -140,11 +190,14 @@ class BuildCoreCommand extends Command
      */
     private function runWatchBundles(string $projectPath): int
     {
-        // 엔진 + 편집기 + DevTools 번들을 각각 vite --watch 로 병렬 감시
+        // 엔진 + 편집기 + DevTools + 개발 대시보드 CSS 를 각각 vite --watch 로 병렬 감시.
+        // 1회 빌드가 굽는 산출물과 같은 집합이어야 한다 — 한쪽만 빠지면 감시 모드에서
+        // 그 산출물만 조용히 stale 해진다.
         $bundles = [
             'engine' => ['npm', 'run', 'build:core-watch'],
             'editor' => ['npm', 'run', 'build:core-editor-watch'],
             'devtools' => ['npm', 'run', 'build:core-devtools-watch'],
+            'dashboard' => ['npm', 'run', 'build:core-devdashboard-watch'],
         ];
 
         /** @var array<string, Process> $processes */
@@ -209,6 +262,7 @@ class BuildCoreCommand extends Command
         );
 
         if ($result === Command::SUCCESS && ! $watchMode) {
+            $this->pruneStaleSourceMaps($productionMode);
             $this->info('✅ 코어 빌드 완료 (전체)');
             $this->showFullBuildResults($projectPath);
             $this->incrementExtensionCacheVersion();

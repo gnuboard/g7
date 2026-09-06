@@ -228,6 +228,54 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
             'localhost' => ['http://localhost/calc'],
             '사설 IP' => ['http://192.168.0.10/calc'],
             '내부 도메인' => ['http://vault.internal/calc'],
+
+            // 점 동등 유니코드 문자(U+3002·U+FF0E·U+FF61)와 전각 슬래시(U+FF0F)는 연결
+            // 계층의 UTS#46 정규화에서 ASCII 로 바뀐다. 게이트가 원문 host 로만 판정하면
+            // 검증 시점과 접속 시점의 목적지가 달라져 내부망 조회가 열린다.
+            'U+3002 로 감춘 localhost' => ["http://localhost\u{3002}/calc"],
+            'U+FF0E 로 감춘 localhost' => ["http://localhost\u{FF0E}/calc"],
+            'U+FF61 로 감춘 localhost' => ["http://localhost\u{FF61}/calc"],
+            'U+3002 로 감춘 루프백 IP' => ["http://127\u{3002}0\u{3002}0\u{3002}1/calc"],
+            'U+FF0E 로 감춘 메타데이터' => ["http://169\u{FF0E}254\u{FF0E}169\u{FF0E}254/latest/meta-data/"],
+            'U+3002 로 감춘 내부 도메인' => ["http://vault\u{3002}internal/calc"],
+            '전각 슬래시로 감춘 루프백' => ["http://127.0.0.1\u{FF0F}.example.com/calc"],
+            '후행 점 localhost' => ['http://localhost./calc'],
+        ];
+    }
+
+    /**
+     * 정규화가 정상 외부 API 엔드포인트까지 막지는 않는다 (회귀 방지).
+     *
+     * @param  string  $endpoint  정상 호출 가능한 엔드포인트
+     */
+    #[DataProvider('legitimateEndpointProvider')]
+    public function test_public_endpoint_is_still_callable(string $endpoint): void
+    {
+        Http::fake(['*' => Http::response(['shipping_fee' => 3000], 200)]);
+
+        $response = $this->actingAs($this->adminUser)->postJson($this->url, [
+            'endpoint' => $endpoint,
+            'method' => 'GET',
+            'response_format' => 'json',
+            'response_path' => 'shipping_fee',
+        ]);
+
+        $response->assertOk();
+        Http::assertSentCount(1);
+    }
+
+    /**
+     * 정규화 후에도 통과해야 하는 정상 엔드포인트 목록.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function legitimateEndpointProvider(): array
+    {
+        return [
+            '공개 도메인' => ['https://api.example.com/shipping/fee'],
+            '비표준 포트' => ['https://api.example.com:8443/shipping/fee'],
+            '국제화 도메인' => ["https://\u{4F8B}\u{3048}.jp/shipping/fee"],
+            'punycode 도메인' => ['https://xn--r8jz45g.jp/shipping/fee'],
         ];
     }
 

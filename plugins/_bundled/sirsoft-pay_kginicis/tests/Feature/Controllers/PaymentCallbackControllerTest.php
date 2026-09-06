@@ -294,10 +294,53 @@ class PaymentCallbackControllerTest extends PluginTestCase
             ], 200),
         ]);
 
+        $statusBefore = $order->order_status;
+
         $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/callback', $params);
 
         $response->assertRedirect();
         $this->assertStringContainsString('error=9999', $response->headers->get('Location'));
+
+        // 계약 변경(KVE-2026-2018 형제): 승인이 성립하지 않은 비인증 브라우저 콜백은
+        // 주문 상태를 바꾸지 않는다. 정당한 결제창 닫힘은 close-report 가 기록한다.
+        $order->refresh();
+        $this->assertEquals($statusBefore, $order->order_status, '비인증 콜백이 주문 상태를 바꿨습니다.');
+        $this->assertNotEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+    }
+
+    /**
+     * 무인증 위조 콜백으로 타인의 결제대기 주문을 취소할 수 없다.
+     *
+     * 공격자는 로그인하지 않고 피해자의 주문번호(moid)와 위조 authToken 만으로 이 엔드포인트를
+     * 친다. 서버 승인은 당연히 실패하는데, 그 실패를 주문 실패로 오인 처리하면 남의 주문이 취소된다.
+     */
+    public function test_forged_unauthenticated_callback_cannot_cancel_another_users_order(): void
+    {
+        $victimOrder = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        $params = $this->makeCallbackParams($victimOrder->order_number, 50000);
+        $params['authToken'] = 'FORGED_AUTH_TOKEN';
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response([
+                'resultCode' => '9999',
+                'resultMsg' => '인증정보가 올바르지 않습니다',
+            ], 200),
+            '*' => Http::response('OK', 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/callback', $params);
+
+        $response->assertRedirect();
+
+        $victimOrder->refresh();
+        $this->assertEquals(
+            OrderStatusEnum::PENDING_ORDER,
+            $victimOrder->order_status,
+            '무인증 위조 콜백이 피해자의 주문을 취소시켰습니다.'
+        );
+        $this->assertArrayNotHasKey('payment_failure_code', $victimOrder->order_meta ?? []);
     }
 
     public function test_auth_callback_sends_net_cancel_and_redirects_to_fail_on_authorize_http_error(): void

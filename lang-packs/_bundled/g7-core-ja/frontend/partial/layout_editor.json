@@ -35,7 +35,13 @@
       "translations": "多言語",
       "data_sources": "データ",
       "reset": "初期化",
-      "switch_template": "別のテンプレートに切り替える"
+      "switch_template": "別のテンプレートに切り替える",
+      "custom_assets": "カスタムアセット",
+      "custom_assets_hint": "運営者が追加したCSS·JS·フォント·画像を管理します。",
+      "custom_assets_off": "カスタムアセット オフ",
+      "custom_assets_on": "カスタムアセット オン",
+      "custom_assets_off_hint": "運営者が追加したCSS·JSなしでこの画面を再度開きます。追加されたアセットが画面を破損した場合に使用します。",
+      "custom_assets_on_hint": "現在、運営者が追加したアセットはオフになっています。クリックして再度適用します。"
     },
     "route_tree": {
       "panel_title": "画面/ルート",
@@ -1357,5 +1363,26 @@
     "invalid": "有効なJSON形式ではありません。",
     "must_be_object": "オブジェクト（JSON）形式である必要があります。例：{ \"名前\": 値 }",
     "invalid_keys": "値の名前は英文字で始まり、英文字・数字・_ のみ使用できます：{keys}"
+  },
+  "custom_assets": {
+    "title": "カスタムアセット",
+    "close": "閉じる",
+    "loading": "読み込み中…",
+    "empty": "追加されたファイルがありません。以下にパスを入力して保存するか、ファイルをアップロードして開始してください。",
+    "forbidden": "カスタムアセットを管理する権限がありません。管理者に「カスタムアセット管理」権限をリクエストしてください。",
+    "new_path_placeholder": "例：10-overrides.css",
+    "path_label": "ファイルパス",
+    "content_label": "ファイル本文",
+    "new_file": "新しいファイル",
+    "save": "保存",
+    "upload": "ファイルアップロード",
+    "delete": "削除",
+    "delete_confirm": "このファイルを削除します。元に戻すことはできません。",
+    "binary_hint": "このフォーマット(:extension)は本文を直接編集できません。同じ名前で再度アップロードして置き換えてください。",
+    "apply_hint": "保存すると次の画面から適用されます。",
+    "target_label": "管理対象の拡張",
+    "type_template": "テンプレート",
+    "type_module": "モジュール",
+    "type_plugin": "プラグイン"
   }
 }

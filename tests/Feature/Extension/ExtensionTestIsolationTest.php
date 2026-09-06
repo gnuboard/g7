@@ -82,6 +82,38 @@ class ExtensionTestIsolationTest extends TestCase
     }
 
     /**
+     * 테스트는 운영 라우트 캐시로 부팅하지 않는다.
+     *
+     * 라우트 캐시가 있으면 `RouteServiceProvider::boot()` 이 캐시 로드로 분기해 **라우트 파일이
+     * 실행되지 않는다.** 그러면 allowlist 가 라우트 축에서 통째로 무력화되어, core-only 테스트가
+     * 굽던 시점에 활성이던 모든 확장의 라우트를 가진 채 부팅한다.
+     *
+     * 위의 GDPR 라우트 단언만으로는 이 결함을 안정적으로 잡지 못한다 — GDPR 이 그 머신에
+     * 설치돼 있어야만 red 가 되기 때문이다. 여기서는 **메커니즘 자체**를 단언한다.
+     *
+     * @effects tests_do_not_boot_with_production_route_cache
+     */
+    public function test_tests_do_not_boot_with_the_production_route_cache(): void
+    {
+        $cachedRoutesPath = $this->app->getCachedRoutesPath();
+
+        // 경로 구분자를 슬래시로 통일해 판정한다 — Windows 는 역슬래시를 섞어 돌려준다.
+        $normalized = strtr($cachedRoutesPath, '\\', '/');
+
+        $this->assertStringNotContainsString(
+            'bootstrap/cache',
+            $normalized,
+            '테스트가 운영 라우트 캐시 경로를 본다 — tests/bootstrap.php 의 APP_ROUTES_CACHE '
+            .'리다이렉트가 사라졌다. 라우트 파일이 실행되지 않아 확장 격리가 무력화된다.'
+        );
+
+        $this->assertFalse(
+            $this->app->routesAreCached(),
+            '테스트가 캐시된 라우트로 부팅했다 — 라우트 파일이 실행되지 않아 allowlist 가 적용되지 않는다.'
+        );
+    }
+
+    /**
      * @effects allowlist_inactive_when_never_configured
      */
     public function test_allowlist_is_inactive_when_never_configured(): void
@@ -99,7 +131,7 @@ class ExtensionTestIsolationTest extends TestCase
     /**
      * @effects selfExtension_returns_null_for_core_tests
      */
-    public function test_selfExtension_returns_null_for_core_tests(): void
+    public function test_self_extension_returns_null_for_core_tests(): void
     {
         // 본 테스트 클래스는 tests/Feature/ 하위 (코어 테스트) →
         // selfExtension() 의 modules/plugins 경로 패턴에 매칭되지 않아 null 반환

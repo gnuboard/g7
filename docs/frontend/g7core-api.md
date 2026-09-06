@@ -23,7 +23,7 @@
 
 | 문서 | 내용 |
 |------|------|
-| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 플러그인/모듈 설정, 위지윅 편집기 |
+| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 플러그인/모듈 설정, 확장 자산, 위지윅 편집기 |
 | [g7core-api-advanced.md](g7core-api-advanced.md) | 다국어, 액션 실행, 컴포넌트 이벤트, 이벤트 생성 헬퍼, 렌더링 헬퍼, 인증/API, WebSocket, 반응형, React Hooks, 타입 정의 |
 
 ---
@@ -38,7 +38,8 @@
 6. [스타일 헬퍼 (G7Core.style)](#스타일-헬퍼-g7corestyle)
 7. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
 8. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
-9. [위지윅 편집기 (G7Core.wysiwyg)](#위지윅-편집기-g7corewysiwyg)
+9. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
+10. [위지윅 편집기 (G7Core.wysiwyg)](#위지윅-편집기-g7corewysiwyg)
 
 ---
 
@@ -65,6 +66,8 @@
 | 인증 | `G7Core.AuthManager` | 인증 상태 관리 | [고급 API](g7core-api-advanced.md) |
 | API | `G7Core.api` | API 클라이언트 | [고급 API](g7core-api-advanced.md) |
 | WebSocket | `G7Core.websocket` | 실시간 통신 | [고급 API](g7core-api-advanced.md) |
+| 확장 자산 URL | `G7Core.asset` | 템플릿/모듈/플러그인 자산 URL 생성, 재시도 로더 | 현재 문서 |
+| 자산 실패 안내 | `G7Core.assets` | 자산 로드 실패 표면화 및 재시도 | 현재 문서 |
 | 위지윅 | `G7Core.wysiwyg` | 레이아웃 편집기 | 현재 문서 |
 | React Hooks | `G7Core.useControllableState` | 상태 패턴 훅 | [고급 API](g7core-api-advanced.md) |
 
@@ -788,6 +791,121 @@ const PriceDisplay: React.FC<{ price: number }> = ({ price }) => {
   );
 };
 ```
+
+---
+
+## 확장 자산 (G7Core.asset, G7Core.assets)
+
+> **버전**: engine-v1.62.0+
+
+확장(템플릿·모듈·플러그인)이 **자기 자산을 런타임에 불러올 때** 쓰는 API입니다. 확장 번들은
+코어 모듈을 import 할 수 없으므로, 자산 URL 생성과 실패 표면화는 이 전역을 통해 제공됩니다.
+
+구동에 필요한 자산(js·css·웹폰트)은 제3자 CDN 에서 실시간으로 받지 않고 확장이 함께 담아
+`dist/vendor/{라이브러리}/{버전}/` 에서 자체 제공합니다. 자세한 규약은
+[module-assets.md](../extension/module-assets.md)를 참조하세요.
+
+### G7Core.asset — 자산 URL 생성
+
+| 메서드 | 시그니처 | 설명 |
+|--------|----------|------|
+| `template` | `(identifier, path, version?) => string` | 템플릿 자산 URL |
+| `templateDir` | `(identifier, path) => string` | 템플릿 자산 **디렉토리** URL |
+| `module` | `(identifier, path, version?) => string` | 모듈 자산 URL |
+| `plugin` | `(identifier, path, version?) => string` | 플러그인 자산 URL |
+| `convertToCurrentMode` | `(url) => string` | 서버가 확장자 형태로 굳혀 내려준 URL 을 현재 모드로 보정 |
+| `loadScript` | `(url, attrs?, options?) => Promise<void>` | 재시도 계층을 갖춘 스크립트 로더 (출처 게이트 적용) |
+| `loadStylesheet` | `(url, attrs?, options?) => Promise<void>` | 재시도 계층을 갖춘 스타일시트 로더 |
+| `isAllowedScriptSrc` | `(url) => boolean` | 스크립트 URL 이 주입 허용 대상인지 판정 |
+
+`loadScript` 의 `url` 은 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받습니다 — same-origin
+절대 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 하며, 그 밖의
+원격 URL 은 reject 됩니다. 로더를 쓸 수 없는 주입(iframe `document.write` 등)은
+`isAllowedScriptSrc` 로 같은 판정을 재사용하세요.
+상세: [security.md](security.md#외부-스크립트-신뢰-출처-허용목록)
+
+`path` 기준이 확장 타입마다 다릅니다. **템플릿은 서버가 `dist/` 를 자동으로 붙이므로 `path` 에
+`dist/` 를 포함하지 않고**, 모듈·플러그인은 확장 루트 기준이라 `dist/` 를 직접 포함합니다.
+서버측 `App\Support\AssetUrl` 과 같은 비대칭입니다.
+
+```javascript
+// 템플릿 — dist/ 를 붙이지 않는다
+G7Core.asset.template('sirsoft-admin_basic', 'vendor/monaco-editor/0.54.0/vs/loader.js');
+
+// 플러그인 — 확장 루트 기준이라 dist/ 를 포함한다
+G7Core.asset.plugin('sirsoft-ckeditor5', 'dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js');
+
+// 모듈
+G7Core.asset.module('sirsoft-board', 'dist/js/board.js');
+```
+
+### 자산 URL 을 문자열로 조립하지 않습니다
+
+```javascript
+// ❌ 금지 — 확장자를 정적 location 이 가로채는 서버에서 404 가 된다
+const url = '/api/plugins/assets/sirsoft-ckeditor5/dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js';
+
+// ✅ 올바른 사용
+const url = G7Core.asset.plugin('sirsoft-ckeditor5', 'dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js');
+```
+
+자산 URL 은 서버 설정(`general.asset_url_mode`)과 정적 게시 상태에 따라 **확장자 형태**
+(`.../ckeditor5.umd.js`)와 **쿼리 형태**(`...?file=...`), **정적 게시본 경로**
+(`/build/ext/{버전}/...`) 중 하나로 해석됩니다. 문자열로 조립하면 그 판정을 건너뛰어, 정규식
+location 이 확장자를 먼저 가로채는 서버에서 그 자산만 조용히 404 가 됩니다.
+
+### templateDir — 디렉토리 접두가 필요한 소비자
+
+AMD 로더나 워커처럼 **디렉토리 접두 뒤에 파일명을 이어 붙이는** 소비자는 `template()` 대신
+`templateDir()` 을 씁니다. 쿼리 형태(`?file=`)는 뒤에 파일명을 이어 붙일 수 없기 때문입니다.
+확장자 없는 모드에서 404 일 수 있으므로 **소비자가 폴백을 갖춰야 합니다.**
+
+```javascript
+loader.config({
+  paths: { vs: G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.54.0/vs') },
+});
+```
+
+### G7Core.assets — 자산 실패 표면화
+
+로드에 끝내 실패한 자산을 화면 상단 배너로 알리고 [다시 시도] 를 제공합니다. 실패를
+`console.error` 한 줄로 끝내면 사용자에게는 "빈 자리" 로만 나타나고 자체 서버 로그에도 흔적이
+남지 않아 운영자가 원인을 특정할 수 없습니다.
+
+| 메서드 | 시그니처 | 설명 |
+|--------|----------|------|
+| `notifyFailure` | `(failure: AssetFailure) => void` | 실패 등록 (같은 `id` 는 갱신) |
+| `clearFailure` | `(id: string) => void` | 해당 실패 해제 |
+| `clearAll` | `() => void` | 전체 해제 |
+| `getFailures` | `() => AssetFailure[]` | 현재 등록된 실패 목록 |
+| `retryAll` | `() => Promise<void>` | 등록된 실패 전부 재시도 — 각 `retry` 를 순차 await 하므로 완료를 기다리려면 반환값을 await 한다 |
+
+`AssetFailure` 필드:
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `id` | `string` | 중복 누적을 막는 식별자 (필수) |
+| `label` | `string` | 짧은 항목명 — 여러 건 합산 표시에 쓰인다. **사용자 어휘**여야 한다: 내부 구분 키·식별자를 그대로 넘기면 배너에 「module을(를) 불러오지 못했습니다」처럼 해석 불가한 문구가 노출된다 |
+| `message` | `string?` | 사용자에게 보일 안내 문장. 생략하면 `label` 기반 기본 문구 |
+| `retry` | `() => Promise<void> \| void` | 생략하면 [다시 시도] 버튼을 렌더하지 않는다 |
+
+```javascript
+try {
+  await G7Core.asset.loadStylesheet(url, { id: 'my-plugin-css' });
+  G7Core.assets.clearFailure('my-plugin-css');
+} catch (error) {
+  G7Core.assets.notifyFailure({
+    id: 'my-plugin-css',
+    label: '편집기 스타일',
+    retry: () => G7Core.asset.loadStylesheet(url, { id: 'my-plugin-css' }),
+  });
+}
+```
+
+배너는 독립 레이아웃(`extends` 없음)에서도 떠야 하므로 호스트 컴포넌트에 의존하지 않고
+DOM 에 직접 주입됩니다. Toast 와 달리 **사용자가 닫을 때까지 유지**되며 `role="alert"` 를
+갖습니다. `retry` 가 resolve 되면 그 실패는 자동으로 해제되고, reject 되면 배너를 유지한 채
+재시도 실패를 알립니다.
 
 ---
 

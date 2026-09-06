@@ -85,6 +85,10 @@ return [
         // 주문
         'auto_cancel_days_min' => 1,
         'auto_cancel_days_max' => 30,
+        // 결제창까지 갔으나 결제가 성립하지 않은 주문의 만료 기준(분).
+        // 0 은 "그 부류는 정리하지 않음" 을 뜻한다 — 운영자가 끌 수 있는 여지를 남긴다.
+        'pending_order_expire_minutes_min' => 0,
+        'pending_order_expire_minutes_max' => 20160,
         'cart_expiry_days_min' => 1,
         'cart_expiry_days_max' => 365,
 

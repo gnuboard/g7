@@ -5,7 +5,7 @@
  */
 
 // 컨테이너 ID → 인스턴스 맵 (initEditor.ts와 공유)
-import { editorInstances } from './editorInstances';
+import { editorInstances, stopExternalSyncs } from './editorInstances';
 import { disconnectDarkModeObserver } from './initEditor';
 
 /**
@@ -24,6 +24,10 @@ export async function destroyEditorHandler(
     // action.params.name 기반으로 containerId 계산 (initEditor와 동일한 패턴)
     const editorName = (action.params?.name as string) ?? 'content';
     const containerId = `ckeditor5-${editorName}`;
+    // 외부 폼 값 재동기화 타이머를 먼저 멈춘다 — 인스턴스가 사라진 뒤에도 남으면
+    // 파괴된 편집기를 계속 들여다보는 타이머가 화면마다 쌓인다.
+    stopExternalSyncs(containerId);
+
     const instances = editorInstances.get(containerId);
 
     if (!instances || instances.size === 0) {

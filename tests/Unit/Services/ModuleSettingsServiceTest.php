@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\Services;
 
-use App\Contracts\Extension\ModuleInterface;
 use App\Extension\ModuleManager;
 use App\Extension\TemplateManager;
 use App\Services\LayoutService;
 use App\Services\ModuleSettingsService;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
 use Mockery;
@@ -48,7 +48,7 @@ class ModuleSettingsServiceTest extends TestCase
         );
 
         // 테스트용 설정 디렉토리 경로
-        $this->testSettingsDir = storage_path('app/modules');
+        $this->testSettingsDir = dirname(ExtensionStoragePath::module('placeholder'));
     }
 
     // ========================================================================

@@ -107,6 +107,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | 부트스트랩 리소스 정적 게시 (bake)
+    |--------------------------------------------------------------------------
+    | 초기 부트스트랩 리소스(다국어 병합·컴포넌트 정의·라우트·확장 번들·템플릿
+    | dist 에셋)를 캐시 버전 디렉토리(`public/build/ext/{v}/`)에 실파일로 게시해
+    | 웹서버가 rewrite 전에 직접 서빙하는 fast path 의 스위치입니다.
+    |
+    | 끄면(false) 게시가 중단되고 blade 가 정적 URL 을 방출하지 않아 전면 API
+    | 폴백(종전 동작)으로 돌아갑니다. 이미 게시된 파일은 참조되지 않은 채 남습니다.
+    */
+    'static_cache' => [
+        'enabled' => env('G7_STATIC_CACHE', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | 아웃바운드 프록시 연결 테스트
     |--------------------------------------------------------------------------
     | 운영자가 환경설정에 입력한 프록시가 실제로 동작하는지, 그리고 그 프록시를 거쳐
@@ -251,6 +266,22 @@ return [
                     ['identifier' => 'core.templates.activate', 'type' => 'admin', 'name' => ['ko' => '템플릿 활성화', 'en' => 'Activate Templates'], 'description' => ['ko' => '템플릿을 활성화/비활성화할 수 있습니다.', 'en' => 'Can activate/deactivate templates.'], 'order' => 3],
                     ['identifier' => 'core.templates.uninstall', 'type' => 'admin', 'name' => ['ko' => '템플릿 삭제', 'en' => 'Uninstall Templates'], 'description' => ['ko' => '템플릿을 삭제할 수 있습니다.', 'en' => 'Can uninstall templates.'], 'order' => 4],
                     ['identifier' => 'core.templates.layouts.edit', 'type' => 'admin', 'name' => ['ko' => '레이아웃 편집', 'en' => 'Edit Layouts'], 'description' => ['ko' => '템플릿 레이아웃을 편집할 수 있습니다.', 'en' => 'Can edit template layouts.'], 'order' => 5],
+                ],
+            ],
+            [
+                'identifier' => 'core.extensions',
+                'name' => ['ko' => '확장 공통', 'en' => 'Extension Common'],
+                'description' => ['ko' => '모듈·플러그인·템플릿에 공통으로 적용되는 권한', 'en' => 'Permissions that apply across modules, plugins and templates'],
+                'category' => 'extensions',
+                'order' => 5.5,
+                'type' => 'admin',
+                'permissions' => [
+                    // 확장 타입을 가리지 않는 단일 권한이다. 타입별로 쪼개면 운영자가 셋을 모두
+                    // 부여해야 하고, "모듈 CSS 는 되는데 템플릿 CSS 는 안 되는" 상태가 실질적
+                    // 의미 없이 생긴다. 레이아웃 편집 권한과는 분리한다 — 여기서 올린 스크립트는
+                    // 그 레이아웃 한 장이 아니라 사이트 전 화면에서 실행되므로, 레이아웃을 고칠
+                    // 수 있다는 것이 곧 그 권한이 될 수 없다.
+                    ['identifier' => 'core.extensions.custom_assets.manage', 'type' => 'admin', 'name' => ['ko' => '커스텀 자산 관리', 'en' => 'Manage Custom Assets'], 'description' => ['ko' => '모듈·플러그인·템플릿에 운영자 CSS·JS·폰트·이미지를 추가하거나 수정할 수 있습니다. 추가한 스크립트는 사이트 전체에서 실행되므로 레이아웃 편집과 별도로 부여합니다.', 'en' => 'Can add or edit operator CSS/JS/fonts/images on modules, plugins and templates. Added scripts run across the whole site, so this is granted separately from layout editing.'], 'order' => 1],
                 ],
             ],
             [

@@ -7,10 +7,27 @@
  */
 
 import { createLogger } from '../utils/Logger';
-import { loadScriptWithRetry } from '../template-engine/networkResilience';
-import { convertToCurrentMode } from '../support/assetUrl';
+import { loadScriptWithRetry, loadStylesheetWithRetry } from '../template-engine/networkResilience';
+import { convertToCurrentMode, staticToLegacy } from '../support/assetUrl';
+import { assetText, notifyAssetFailure } from '../assets/AssetFailureNotice';
 
 const logger = createLogger('ModuleAssetLoader');
+
+/**
+ * 병합 CSS 번들의 실패 안내 항목명 (사용자 어휘).
+ *
+ * 번들 구분 키(`module`/`plugin`)는 내부 이름이다. 그대로 배너에 넘기면
+ * "module을(를) 불러오지 못했습니다" 처럼 사용자가 해석할 수 없는 문구가 된다.
+ *
+ * @param key 번들 구분 키 ('module' | 'plugin')
+ * @return string 사용자 어휘 항목명
+ * @since engine-v1.64.7
+ */
+function bundleCssLabel(key: string): string {
+    return key === 'plugin'
+        ? assetText('core.assets.plugin_styles', '플러그인 스타일')
+        : assetText('core.assets.module_styles', '모듈 스타일');
+}
 
 /**
  * 모듈 에셋 정보 인터페이스
@@ -71,6 +88,27 @@ export class ModuleAssetLoader {
      * @since engine-v1.53.0
      */
     private failedJsAssets: Set<string> = new Set();
+
+    /**
+     * 로드에 최종 실패한 CSS 번들/확장 식별자 집합
+     *
+     * CSS 실패는 로드 흐름을 멈추지 않지만(스타일이 없어도 화면은 동작한다) 사실은
+     * 남긴다 — 아이콘만 있는 버튼이 다수인 화면에서는 스타일 소실이 곧 조작 불능이라,
+     * 원인을 특정할 근거가 필요하다.
+     *
+     * @since engine-v1.62.0
+     */
+    private failedCssAssets: Set<string> = new Set();
+
+    /**
+     * CSS 에셋 로드에 최종 실패한 식별자 목록을 반환합니다.
+     *
+     * @return string[] 실패한 번들 키/확장 식별자 목록
+     * @since engine-v1.62.0
+     */
+    getFailedCssAssets(): string[] {
+        return [...this.failedCssAssets];
+    }
 
     /**
      * JS 에셋 로드에 최종 실패한 확장이 하나라도 있는지 반환합니다.
@@ -178,6 +216,77 @@ export class ModuleAssetLoader {
     }
 
     /**
+     * 운영자가 덧붙인 사용자 추가 에셋(`custom/`)을 로드합니다.
+     *
+     * 목록은 서버가 `window.G7Config.customAssets` 로 내려준다 — 활성 확장의 `custom/`
+     * 디렉토리를 서버가 해석한 결과이며, 출처(파일 선언·규약 스캔·향후 설정 입력)에
+     * 관계없이 같은 모양의 서술자다.
+     *
+     * 확장 번들이 모두 끝난 뒤 호출해야 한다. CSS 는 나중에 온 규칙이 이기므로,
+     * 운영자 스타일이 확장 스타일보다 뒤에 붙어야 재정의가 성립한다.
+     *
+     * 실패해도 throw 하지 않는다 — 운영자 추가 자산 하나가 실패했다고 앱 부팅을
+     * 중단시킬 이유가 없다. 대신 안내 배너로 표면화한다.
+     *
+     * @return Promise<void>
+     * @since engine-v1.62.0
+     */
+    async loadCustomAssets(): Promise<void> {
+        const assets = parseCustomAssetsFromConfig();
+
+        if (assets.length === 0) {
+            return;
+        }
+
+        for (const asset of assets) {
+            const elementId = `g7-custom-${asset.type}-${cssEscapeId(asset.id)}`;
+
+            if (document.getElementById(elementId)) {
+                continue;
+            }
+
+            const label = `${asset.type === 'style' ? 'custom CSS' : 'custom JS'}: ${asset.id}`;
+            const load = (url: string, retries?: number) =>
+                asset.type === 'style'
+                    ? loadStylesheetWithRetry(convertToCurrentMode(url), { id: elementId }, { label, retries })
+                    : loadScriptWithRetry(convertToCurrentMode(url), { id: elementId }, { label, retries });
+
+            // 정적 게시(bake) URL 이면 1회만 시도하고, 미스 시 종전 API URL 로 전환한다 —
+            // 형제 경로(`loadBundleCss`)가 이미 갖춘 계층이다. 게시 디렉토리는 GC(현재+직전
+            // 1개 보존) 대상이라 캐시된 HTML 의 구버전 정적 URL 이 404 가 될 수 있고, 같은
+            // 정적 URL 재시도는 그 상태를 복구하지 못한다. 이 계층이 없으면 운영자 자산만
+            // 조용히 빠진 화면이 남는다.
+            const legacyUrl = staticToLegacy(asset.url);
+
+            try {
+                if (legacyUrl !== null) {
+                    try {
+                        await load(asset.url, 0);
+                    } catch {
+                        logger.warn(`Custom asset static miss, falling back to API: ${asset.id} (${asset.url} -> ${legacyUrl})`);
+                        await load(legacyUrl);
+                    }
+                } else {
+                    await load(asset.url);
+                }
+
+                logger.log(`Custom asset loaded: ${asset.id}`);
+            } catch (error) {
+                logger.warn(`Failed to load custom asset: ${asset.id} (${asset.url})`, error);
+                notifyAssetFailure({
+                    id: `custom-asset:${asset.id}`,
+                    label: asset.id.split(':').pop() ?? asset.id,
+                    retry: async () => {
+                        document.getElementById(elementId)?.remove();
+                        // 죽은 정적 URL 을 다시 부르지 않는다 — 복구 가능한 쪽으로 재시도한다
+                        await load(legacyUrl ?? asset.url);
+                    },
+                });
+            }
+        }
+    }
+
+    /**
      * 병합 CSS 번들을 단일 `<link>` 로 로드합니다(중복 가드).
      *
      * @param key 번들 구분 키
@@ -191,25 +300,48 @@ export class ModuleAssetLoader {
             return;
         }
 
-        return new Promise<void>((resolve) => {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = url;
-            link.id = elementId;
+        // 정적 게시(bake) URL 이면 1회만 시도하고, 미스 시 종전 API URL 로 전환한다 (#122).
+        // 게시 디렉토리는 GC(현재+직전 1개 보존) 대상이라 캐시된 HTML 의 구버전 정적 URL 이
+        // 404 가 될 수 있고, 같은 정적 URL 재시도는 그 상태를 복구하지 못한다.
+        const legacyUrl = staticToLegacy(url);
 
-            link.onload = () => {
-                logger.log(`Bundle CSS loaded: ${key}`);
+        try {
+            if (legacyUrl !== null) {
+                try {
+                    await loadStylesheetWithRetry(
+                        url,
+                        { id: elementId },
+                        { label: `bundle CSS: ${key}`, retries: 0 }
+                    );
+                } catch {
+                    logger.warn(`Bundle CSS static miss, falling back to API: ${key} (${url} -> ${legacyUrl})`);
+                    await loadStylesheetWithRetry(
+                        convertToCurrentMode(legacyUrl),
+                        { id: elementId },
+                        { label: `bundle CSS: ${key}` }
+                    );
+                }
+            } else {
+                await loadStylesheetWithRetry(url, { id: elementId }, { label: `bundle CSS: ${key}` });
+            }
+
+            logger.log(`Bundle CSS loaded: ${key}`);
+
+            const link = document.getElementById(elementId);
+            if (link) {
                 this.registerLoadedAsset(`bundle-${key}`, { type: 'css', element: link });
-                resolve();
-            };
-
-            link.onerror = () => {
-                logger.warn(`Failed to load bundle CSS: ${key} (${url})`);
-                resolve();
-            };
-
-            document.head.appendChild(link);
-        });
+            }
+        } catch (error) {
+            // 배너의 [다시 시도] 에는 **복구 가능한 URL** 을 넘긴다. 정적 미스로 여기 왔다면
+            // 원본 정적 URL 은 이미 404 가 확정된 주소라, 그대로 넘기면 재시도가 구조적으로
+            // 항상 실패한다 — 버튼은 있는데 아무것도 고치지 못하는 상태가 된다.
+            this.surfaceCssFailure(
+                `bundle-${key}`,
+                bundleCssLabel(key),
+                legacyUrl !== null ? convertToCurrentMode(legacyUrl) : url,
+                error
+            );
+        }
     }
 
     /**
@@ -240,7 +372,25 @@ export class ModuleAssetLoader {
             return existingPromise;
         }
 
-        const loadPromise = loadScriptWithRetry(url, { id: elementId }, { label: `bundle JS: ${key}` })
+        // 정적 게시(bake) URL 이면 1회만 시도하고, 미스 시 종전 API URL 로 전환해 기존
+        // 재시도 예산을 이어간다 (#122 — fetchStaticFirst 와 동형: 정적 1 + 레거시 재시도).
+        // 게시 디렉토리는 GC(현재+직전 1개 보존) 대상이라 캐시된 HTML 의 구버전 정적
+        // URL 이 404 가 될 수 있고, 같은 정적 URL 재시도는 그 상태를 복구하지 못한다.
+        const legacyUrl = staticToLegacy(url);
+        const attempt = legacyUrl !== null
+            ? loadScriptWithRetry(url, { id: elementId }, { label: `bundle JS: ${key}`, retries: 0 })
+                .catch(() => {
+                    logger.warn(`Bundle JS static miss, falling back to API: ${key} (${url} -> ${legacyUrl})`);
+
+                    return loadScriptWithRetry(
+                        convertToCurrentMode(legacyUrl),
+                        { id: elementId },
+                        { label: `bundle JS: ${key}` }
+                    );
+                })
+            : loadScriptWithRetry(url, { id: elementId }, { label: `bundle JS: ${key}` });
+
+        const loadPromise = attempt
             .then(() => {
                 logger.log(`Bundle JS loaded: ${key}`);
                 const script = document.getElementById(elementId);
@@ -263,6 +413,15 @@ export class ModuleAssetLoader {
     /**
      * CSS 파일을 동적으로 로드합니다.
      *
+     * `loadJS`·`loadBundleJs` 와 같이 in-flight Promise 를 공유한다 — CSS 경로만 이
+     * 계층이 없어서, 같은 확장의 CSS 를 동시에 요청하면 `<link>` 가 중복 생성되고
+     * 재시도 로더가 기존 element 를 제거하면서 서로의 시도를 지웠다.
+     *
+     * 키는 `module-css-{id}` 로 둔다 — `loadJS` 가 raw identifier 를 키로 쓰므로,
+     * 같은 키공간을 쓰면 JS 로드가 CSS 로드로 오인되어 조용히 건너뛰어진다.
+     *
+     * 실패해도 throw 하지 않는 기존 계약을 유지한다(`surfaceCssFailure`).
+     *
      * @param identifier 모듈 식별자
      * @param url CSS 파일 URL
      */
@@ -275,25 +434,60 @@ export class ModuleAssetLoader {
             return;
         }
 
-        return new Promise<void>((resolve, reject) => {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = url;
-            link.id = elementId;
+        // 이미 로딩 중인 경우 대기 (JS 키공간과 겹치지 않는 elementId 를 키로 쓴다)
+        const existingPromise = this.loadingPromises.get(elementId);
+        if (existingPromise) {
+            logger.log(`CSS already loading: ${identifier}`);
+            return existingPromise;
+        }
 
-            link.onload = () => {
+        const loadPromise = loadStylesheetWithRetry(url, { id: elementId }, { label: `CSS: ${identifier}` })
+            .then(() => {
                 logger.log(`CSS loaded: ${identifier}`);
-                this.registerLoadedAsset(identifier, { type: 'css', element: link });
-                resolve();
-            };
 
-            link.onerror = () => {
-                logger.warn(`Failed to load CSS: ${identifier} (${url})`);
-                // CSS 로드 실패는 경고만 출력하고 계속 진행
-                resolve();
-            };
+                const link = document.getElementById(elementId);
+                if (link) {
+                    this.registerLoadedAsset(identifier, { type: 'css', element: link });
+                }
+                this.loadingPromises.delete(elementId);
+            })
+            .catch((error) => {
+                this.loadingPromises.delete(elementId);
+                this.surfaceCssFailure(identifier, identifier, url, error);
+            });
 
-            document.head.appendChild(link);
+        this.loadingPromises.set(elementId, loadPromise);
+
+        return loadPromise;
+    }
+
+    /**
+     * CSS 로드 최종 실패를 표면화합니다.
+     *
+     * JS 와 달리 **throw 하지 않는다** — 스타일이 없어도 화면은 동작하므로, 한 확장의
+     * CSS 실패로 나머지 확장 로드를 중단시키지 않는다는 기존 계약을 유지한다. 대신
+     * 실패 사실을 `failedCssAssets` 와 안내 배너에 남긴다. 종전에는 `console.warn`
+     * 한 줄이 전부여서, 아이콘만 있는 버튼이 조작 불능이 되어도 원인을 알 수 없었다.
+     *
+     * @param assetKey 실패 목록에 기록할 키
+     * @param label 사용자에게 보일 항목명
+     * @param url 실패한 URL
+     * @param error 마지막 시도의 에러
+     * @since engine-v1.62.0
+     */
+    private surfaceCssFailure(assetKey: string, label: string, url: string, error: unknown): void {
+        logger.warn(`Failed to load CSS after retries: ${assetKey} (${url})`, error);
+        this.failedCssAssets.add(assetKey);
+
+        notifyAssetFailure({
+            id: `ext-css:${assetKey}`,
+            label,
+            retry: async () => {
+                document.getElementById(`module-css-${assetKey}`)?.remove();
+                document.getElementById(`ext-bundle-css-${assetKey.replace(/^bundle-/, '')}`)?.remove();
+                await loadStylesheetWithRetry(url, {}, { label: `CSS retry: ${assetKey}` });
+                this.failedCssAssets.delete(assetKey);
+            },
         });
     }
 
@@ -419,6 +613,64 @@ let moduleAssetLoaderInstance: ModuleAssetLoader | null = null;
 /**
  * ModuleAssetLoader 싱글톤 인스턴스를 반환합니다.
  */
+/**
+ * 사용자 추가 에셋 서술자
+ *
+ * 서버(`App\Support\CustomAssets`)가 만든 것과 같은 모양이다. 소비자는 `source` 를
+ * 보지 않는다 — 파일에서 왔든, 선언에서 왔든, 나중에 설정 화면에서 왔든 같은 규칙으로
+ * 로드된다.
+ *
+ * @since engine-v1.62.0
+ */
+export interface CustomAsset {
+    /** 중복 로드 방지 식별자 */
+    id: string;
+    /** 자산 종류 */
+    type: 'style' | 'script';
+    /** 로드할 URL */
+    url: string;
+    /** 캐시 무효화 버전 (파일 수정 시각 등) */
+    version?: number | null;
+    /** 출처 (진단용 — 로드 규칙에는 영향을 주지 않는다) */
+    source?: string;
+}
+
+/**
+ * `window.G7Config.customAssets` 를 파싱합니다.
+ *
+ * @return CustomAsset[] 서술자 목록 (없으면 빈 배열)
+ * @since engine-v1.62.0
+ */
+export function parseCustomAssetsFromConfig(): CustomAsset[] {
+    const raw = (window as any)?.G7Config?.customAssets;
+
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+
+    return raw.filter(
+        (item: any): item is CustomAsset =>
+            item
+            && typeof item.id === 'string'
+            && typeof item.url === 'string'
+            && (item.type === 'style' || item.type === 'script')
+    );
+}
+
+/**
+ * 서술자 id 를 element id 에 쓸 수 있는 형태로 바꿉니다.
+ *
+ * 서술자 id 는 `custom:templates:sirsoft-basic:custom.css` 형태라 콜론·점을 포함한다.
+ * 그대로 두면 `document.getElementById` 는 되지만 CSS 선택자로 못 쓴다.
+ *
+ * @param id 서술자 id
+ * @return string 안전한 id 조각
+ * @since engine-v1.62.0
+ */
+function cssEscapeId(id: string): string {
+    return id.replace(/[^A-Za-z0-9_-]/g, '-');
+}
+
 export function getModuleAssetLoader(): ModuleAssetLoader {
     if (!moduleAssetLoaderInstance) {
         moduleAssetLoaderInstance = new ModuleAssetLoader();

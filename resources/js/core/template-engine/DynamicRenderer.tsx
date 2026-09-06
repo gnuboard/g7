@@ -220,6 +220,50 @@ export const deepMergeState = (
 };
 
 /**
+ * 자동바인딩이 `__g7PendingLocalState` 에 실을 스냅샷을 합성합니다.
+ *
+ * 자동바인딩의 base 는 `parentFormContext.state`(= `extendedDataContext._local`)다.
+ * 그 값은 `useMemo` 결과라, memo 가 재계산되지 않은 구간에서는 **입력 이전 스냅샷으로 고정**된다.
+ * `setLocal({ render:false, selfManaged:true })`(CKEditor5 등 자체 DOM 관리 플러그인)이
+ * 저장소 B 에만 쓰면 React 렌더가 0회라 memo 가 갱신되지 않고, 그 뒤 memo deps 와 무관한
+ * 리렌더(폭 변경 등)가 `__g7PendingLocalState` 를 null 로 지우면 base 가 stale 인 채 남는다.
+ *
+ * 그 stale 스냅샷을 그대로 pending 에 실으면, 이어지는 `setLocal` 이
+ * `currentSnapshot = pendingState || baseLocal`(G7CoreGlobals) 로 그것을 채택해
+ * 저장소 B 를 통째 교체한다 — 편집기 본문이 예외도 콘솔 에러도 없이 사라진다.
+ *
+ * 그래서 pending 은 **렌더러가 화면에 쓰는 것과 같은 순서**로 합성한다.
+ * `extendedDataContext._local` 이 `dataContext._local → dynamicState → __g7ForcedLocalFields`
+ * 순으로 합성하는 것과 동형이며, pending 은 `getLocal()` 이 읽는 "화면과 같은 전체 스냅샷"
+ * 이어야 하므로 이 정합이 맞다.
+ *
+ * `__g7ForcedLocalFields` 는 `setLocal` 이 쓴 필드만 담고(engine-v1.17.4 · 사례 11),
+ * 자동바인딩의 매 키입력이 자기 경로로 그것을 갱신하므로 stale 이 되지 않는다.
+ * 방금 입력한 경로만 마지막에 다시 얹어, forced 의 직전 값이 입력을 되돌리지 못하게 한다.
+ *
+ * 저장소 A 경로(`parentFormContext.setState`)에는 적용하지 않는다 — 그쪽 base 를 바꾸는 것이
+ * 2026-04-22 에 로그인 폼 email 손실로 철회된 수정이다(사례 36 이력).
+ *
+ * @param update 저장소 A 기반 전체 스냅샷 (`setNestedValue(parentFormContext.state, path, value)`)
+ * @param forced `__g7ForcedLocalFields` — setLocal 이 소유한 필드만 담긴 오버레이
+ * @param fullPath 방금 입력된 필드 경로 (`${dataKey}.${name}`)
+ * @param newValue 방금 입력된 값
+ * @returns pending 에 실을 스냅샷 (인자를 변이하지 않음)
+ *
+ * @since engine-v1.63.4
+ */
+export const composeAutoBindingPendingSnapshot = (
+  update: Record<string, any>,
+  forced: unknown,
+  fullPath: string,
+  newValue: any
+): Record<string, any> => {
+  if (!forced || typeof forced !== 'object' || Array.isArray(forced)) return update;
+  const merged = deepMergeState(update, forced as Record<string, any>);
+  return setNestedValue(merged, fullPath, newValue);
+};
+
+/**
  * setLocal()이 업데이트한 키를 localDynamicState에서 재귀적으로 제거
  *
  * setLocal()은 dataContext._local을 직접 업데이트하므로,
@@ -3608,7 +3652,18 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
         // 저장소 A: React setState가 비동기이므로, 액션 핸들러에서 즉시 최신 값을 읽을 수 있도록
         // 전역 캐시(__g7PendingLocalState)에 업데이트된 상태를 저장. G7Core.state.getLocal()이 이 캐시를 우선 사용.
-        (window as any).__g7PendingLocalState = update;
+        //
+        // engine-v1.63.4 (사례 41): `update` 를 그대로 싣지 않는다. base 인 parentFormContext.state 는
+        // 재계산되지 않은 useMemo 결과일 수 있어, selfManaged 플러그인이 저장소 B 에만 쓴 편집분을
+        // 담고 있지 않다. 그 stale 스냅샷이 pending 에 실리면 아래 setLocal 이 그것을 base 로 채택해
+        // (`currentSnapshot = pendingState || baseLocal`) 저장소 B 를 통째 교체한다.
+        // 렌더러와 같은 순서로 __g7ForcedLocalFields 를 얹어 화면과 같은 스냅샷을 싣는다.
+        (window as any).__g7PendingLocalState = composeAutoBindingPendingSnapshot(
+          update,
+          (window as any).__g7ForcedLocalFields,
+          fullPath,
+          newValue
+        );
 
         // 저장소 A: React localDynamicState — 해당 Input 트리 리렌더 (기존 경로, 성능 보존)
         parentFormContext.setState!(update);

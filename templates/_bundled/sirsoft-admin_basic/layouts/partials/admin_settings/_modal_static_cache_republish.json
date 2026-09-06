@@ -1,0 +1,165 @@
+{
+  "meta": {
+    "editor_label": "$t:admin.modal_label.admin_settings.settings_static_cache_republish_modal",
+    "is_partial": true,
+    "description": "초기 화면 정적 파일 다시 만들기 확인 모달"
+  },
+  "id": "settings_static_cache_republish_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.settings.general.static_cache_republish_confirm_title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "py-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-gray-700 dark:text-gray-300"
+          },
+          "text": "$t:admin.settings.general.static_cache_republish_confirm_body"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "mt-2 text-label-subtle"
+          },
+          "text": "$t:admin.settings.general.static_cache_republish_confirm_warning"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "modal-footer-buttons"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-secondary",
+            "disabled": "{{_global.isRepublishingStaticCache}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "id": "static_cache_republish_confirm_button",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isRepublishingStaticCache}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isRepublishingStaticCache": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/settings/static-cache/republish",
+                  "params": {
+                    "method": "POST"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isRepublishingStaticCache": false
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "staticCacheStatus"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "{{response?.data?.republished ? 'success' : 'warning'}}",
+                        "message": "{{response?.data?.republished ? $t('admin.settings.general.static_cache_republished') : (response?.data?.publishable === false ? $t('admin.settings.general.static_cache_republish_not_publishable') : $t('admin.settings.general.static_cache_republish_failed'))}}"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isRepublishingStaticCache": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message ?? $t('admin.settings.general.static_cache_republish_failed')}}"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isRepublishingStaticCache}}",
+              "props": {
+                "name": "spinner",
+                "className": "spinner-sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isRepublishingStaticCache ? '$t:admin.settings.general.static_cache_republishing' : '$t:admin.settings.general.static_cache_republish'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

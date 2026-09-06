@@ -2,8 +2,10 @@
 
 namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_0_0\Migrations;
 
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -99,6 +101,8 @@ class NormalizeCurrencyBaseUnit implements DataMigration
         $settings['currencies'] = $currencies;
 
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 만든 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info(sprintf(
             '[ecommerce:1.0.0] 통화 base_unit 정규화 완료 (기본=%s, base_unit=%d, 환율 스케일=%s)',
@@ -153,10 +157,6 @@ class NormalizeCurrencyBaseUnit implements DataMigration
      */
     private function settingsFilePath(): string
     {
-        $base = app()->runningUnitTests()
-            ? 'framework/testing/modules/'
-            : 'app/modules/';
-
-        return storage_path($base.self::MODULE_IDENTIFIER.'/settings/language_currency.json');
+        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'settings').'/language_currency.json';
     }
 }

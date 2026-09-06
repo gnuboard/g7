@@ -202,6 +202,17 @@ core.settings.available_mail_drivers
 # 드라이버 확장 훅 (Action) — 플러그인 드라이버 선택 시 Config 적용
 core.settings.apply_driver_config
 
+# 사용자 추가 에셋 훅 (Filter) — 운영자가 확장에 덧붙인 CSS·JS 목록을 보정/추가
+core.assets.custom_assets   # applyFilters($assets, $extensionType, $identifier)
+
+# 사용자 추가 에셋 관리 훅 (Action) — 화면에서 파일을 저장/업로드/삭제한 직후
+core.custom_assets.after_change   # doAction($extensionType, $identifier, $operation, $path)
+
+# 사용자 추가 에셋 관리 검증 훅 (Filter) — 관리 API 의 FormRequest 규칙 확장
+core.extension_custom_asset.read_validation_rules
+core.extension_custom_asset.save_validation_rules
+core.extension_custom_asset.upload_validation_rules
+
 # SEO 렌더링 훅 (Filter)
 core.seo.filter_context        # DataSource 결합 후 컨텍스트 보강 ($context 배열)
 core.seo.filter_og_data         # OG 태그 분기별 hook ($og 배열) — image_width/site_name/extra 주입

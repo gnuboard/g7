@@ -1119,6 +1119,52 @@
                                                                 "text": "$t:sirsoft-gdpr.admin.consent_log.source.mypage_renew_all"
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.sources || []).includes('withdraw')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'withdraw'), 'withdraw'] : (_local.filter.sources || []).filter(s => s !== 'withdraw')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.source.withdraw"
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             }

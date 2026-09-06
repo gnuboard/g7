@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+import { secretContentHeaders } from '../../../support/secretContentHeaders';
 import { Div } from '../../basic/Div';
 import { Button } from '../../basic/Button';
 import { Span } from '../../basic/Span';
@@ -92,8 +93,11 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
 
     const loadAuthenticatedImage = async () => {
       try {
+        // 비밀글 첨부는 서버가 열람 권한을 재확인한다. globalHeaders 는 이 경로에
+        // 적용되지 않으므로 열람 확인 토큰을 직접 싣는다 (없으면 빈 객체라 영향 없음).
         const blob = await G7Core.api.get(downloadUrl, {
           responseType: 'blob',
+          headers: secretContentHeaders(),
         });
         if (isMounted && blob) {
           objectUrl = URL.createObjectURL(blob);

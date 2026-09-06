@@ -190,6 +190,40 @@ class KcpCallbackResolverTest extends PluginTestCase
     }
 
     /**
+     * 브라우저 실패 코드만으로는 대상 인증을 고를 수 없다.
+     *
+     * 결제 콜백은 주문번호가 사실상 공개값이라 공격자가 피해 대상을 지목할 수 있었지만
+     * (KVE-2026-2018), 이 콜백은 거래를 `reg_cert_key`(KCP 발급 비밀) 또는 challenge UUID
+     * 로만 찾는다. 둘 다 추측할 수 없으므로 res_cd 를 위조해도 남의 인증 로그에 닿지 못한다.
+     * 이 성질이 깨지면 여기도 결제 콜백과 같은 통로가 된다.
+     */
+    public function test_forged_failure_callback_cannot_select_another_users_verification(): void
+    {
+        $log = $this->createChallenge(User::factory()->create()->id);
+        Http::fake();
+
+        // 공격자는 비밀값을 모르므로 임의 키·임의 challenge id 로 시도할 수밖에 없다.
+        foreach ([
+            ['res_cd' => '9999', 'reg_cert_key' => 'GUESSED-KEY'],
+            ['res_cd' => 'CS12', 'param_opt_1' => (string) Str::uuid()],
+            ['res_cd' => '9999'],
+        ] as $forged) {
+            $outcome = $this->resolver->resolve($forged);
+
+            $this->assertFalse($outcome->success);
+            $this->assertSame('NOT_FOUND', $outcome->failureCode);
+        }
+
+        // 피해자의 인증 로그는 그대로 남아 있어야 한다.
+        $this->assertSame(
+            IdentityVerificationStatus::Sent->value,
+            $this->logRepository->findById($log->id)->status->value,
+            '위조 콜백이 타인의 인증 로그 상태를 바꿨습니다.'
+        );
+        Http::assertNothingSent();
+    }
+
+    /**
      * @scenario outcome=provider_error,lookup=by_reg_cert_key,missing_field=none
      *
      * @effects provider_error_marks_log_failed_with_res_cd

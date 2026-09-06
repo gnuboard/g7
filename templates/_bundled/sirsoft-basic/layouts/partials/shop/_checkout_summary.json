@@ -474,9 +474,55 @@
                           {
                             "if": "{{response.data.requires_pg_payment && response.data.pg_payment_handler}}",
                             "then": {
-                              "handler": "{{response.data.pg_payment_handler}}",
+                              "handler": "sequence",
                               "params": {
-                                "pgPaymentData": "{{response.data.pg_payment_data}}"
+                                "actions": [
+                                  {
+                                    "comment": "비회원 조회 토큰을 결제창을 열기 **전에** 발급한다. 결제창을 닫으면 그 즉시 취소 이력 기록(orders/{n}/cancel-payment)이 호출되는데, 그 엔드포인트는 회원/비회원 공유라 서버가 소유권을 대조한다 — 토큰이 없으면 정당한 비회원의 취소 기록이 404 로 거부되고 화면에는 아무 신호도 남지 않는다. 종전에는 non-PG 분기에서만 발급했다.",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                      {
+                                        "if": "{{!_global.currentUser?.uuid}}",
+                                        "then": {
+                                          "handler": "apiCall",
+                                          "target": "/api/modules/sirsoft-ecommerce/guest/orders/verify",
+                                          "auth_mode": "optional",
+                                          "params": {
+                                            "method": "POST",
+                                            "body": {
+                                              "order_number": "{{response.data.order.order_number}}",
+                                              "orderer_phone": "{{_local.orderer?.phone ?? ''}}",
+                                              "guest_lookup_password": "{{_local.guestLookupPassword ?? ''}}"
+                                            }
+                                          },
+                                          "onSuccess": [
+                                            {
+                                              "comment": "토큰 + 주문번호 + 만료시각 sessionStorage 저장 + _global.guestOrderToken 동기 set (모듈 커스텀 핸들러).",
+                                              "handler": "saveGuestOrderToken",
+                                              "params": {
+                                                "token": "{{response.data.guest_order_token}}",
+                                                "orderNumber": "{{response.data.order.order_number}}",
+                                                "expiresAt": "{{response.data.expires_at}}"
+                                              }
+                                            }
+                                          ],
+                                          "onError": [
+                                            {
+                                              "comment": "verify 실패는 결제 자체를 막지 않는다 — 주문은 이미 생성되었고 사용자는 나중에 조회 폼으로 재인증할 수 있다. 취소 이력만 남지 않는다.",
+                                              "handler": "suppress"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "handler": "{{response.data.pg_payment_handler}}",
+                                    "params": {
+                                      "pgPaymentData": "{{response.data.pg_payment_data}}"
+                                    }
+                                  }
+                                ]
                               }
                             }
                           },

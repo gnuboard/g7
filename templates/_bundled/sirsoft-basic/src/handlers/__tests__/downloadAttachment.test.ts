@@ -12,7 +12,7 @@
  * 실제 호출 인자를 단언한다(거짓 통과 방지).
  *
  * @scenario card=user_post
- * @effects download_via_api_client_with_token,filename_preserved,download_failure_shows_error_toast
+ * @effects download_via_api_client_with_token,filename_preserved,download_failure_shows_error_toast,download_carries_secret_view_token
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -58,8 +58,34 @@ describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이�
     expect(apiGetSpy).toHaveBeenCalledTimes(1);
     expect(apiGetSpy).toHaveBeenCalledWith(
       '/api/modules/sirsoft-board/boards/notice/attachment/abc123',
-      { responseType: 'blob' },
+      { responseType: 'blob', headers: {} },
     );
+  });
+
+  it('비밀글 열람 확인 토큰이 있으면 요청 헤더에 실어 보낸다', async () => {
+    (window as any).G7Core.state = {
+      get: (key: string) => (key === '_global' ? { secretViewToken: 'tok-secret-view-40' } : undefined),
+    };
+
+    await downloadAttachmentHandler({
+      params: { url: '/api/modules/sirsoft-board/boards/notice/attachment/abc123', filename: 'a.pdf' },
+    });
+
+    expect(apiGetSpy).toHaveBeenCalledWith(
+      '/api/modules/sirsoft-board/boards/notice/attachment/abc123',
+      {
+        responseType: 'blob',
+        headers: { 'X-Board-Secret-View-Token': 'tok-secret-view-40' },
+      },
+    );
+  });
+
+  it('토큰이 없으면 헤더를 만들지 않는다 (빈 값 전송 금지)', async () => {
+    (window as any).G7Core.state = { get: () => ({}) };
+
+    await downloadAttachmentHandler({ params: { url: '/d/x', filename: 'a.pdf' } });
+
+    expect(apiGetSpy).toHaveBeenCalledWith('/d/x', { responseType: 'blob', headers: {} });
   });
 
   it('받은 blob 을 objectURL 로 변환해 filename 으로 다운로드하고 revoke 한다', async () => {

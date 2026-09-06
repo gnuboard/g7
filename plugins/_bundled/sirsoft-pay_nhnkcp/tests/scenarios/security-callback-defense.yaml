@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 NHN KCP 콜백 보안 매트릭스의 명세 문서. CLI sanitization 단위 테스트가 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
 
-feature: 콜백 보안 방어 (replay attack / CLI command injection / post-approve net cancel)
+feature: 콜백 보안 방어 (replay attack / CLI command injection / post-approve net cancel / 비인증 브라우저 콜백의 주문 변조)
 
 description: |
   NHN KCP 결제 콜백 처리 경로의 3가지 핵심 보안 위협에 대한 방어 매트릭스.
@@ -18,8 +18,9 @@ description: |
 
 axes:
   context: [paymentCallback_card, paymentCallback_vbank, mobileApproval]
-  threat: [replay, cli_injection, post_approve_failure]
-  callback_state: [first_arrival, second_arrival_same_tno, cli_arg_normal, cli_arg_unsafe, domain_succeeds, domain_fails]
+  threat: [replay, cli_injection, post_approve_failure, forged_browser_callback]
+  callback_state: [first_arrival, second_arrival_same_tno, cli_arg_normal, cli_arg_unsafe, domain_succeeds, domain_fails, approval_not_yet_attempted, approval_failed, approval_succeeded]
+  caller: [pg_server_verified, unauthenticated_browser, ownership_verified_buyer]
 
 exclusions:
   - { threat: replay, callback_state: cli_arg_normal, reason: "replay 는 CLI 단계 이전 분기" }
@@ -36,6 +37,26 @@ exclusions:
   - { threat: post_approve_failure, callback_state: cli_arg_normal, reason: "post-approve 실패는 CLI 와 무관" }
   - { threat: post_approve_failure, callback_state: cli_arg_unsafe, reason: "post-approve 실패는 CLI 와 무관" }
   - { threat: post_approve_failure, context: paymentCallback_vbank, reason: "vbank 통보는 PG 측 비동기 입금 — post-approve 단계 없음" }
+  - { threat: forged_browser_callback, callback_state: first_arrival, reason: "위조 콜백은 도착 차수가 아니라 승인 성립 여부로 갈린다" }
+  - { threat: forged_browser_callback, callback_state: second_arrival_same_tno, reason: "동일" }
+  - { threat: forged_browser_callback, callback_state: cli_arg_normal, reason: "위조 콜백 축은 CLI 인수 정제 단계가 아니다" }
+  - { threat: forged_browser_callback, callback_state: cli_arg_unsafe, reason: "동일" }
+  - { threat: forged_browser_callback, callback_state: domain_succeeds, reason: "도메인 처리 이전에 승인 성립 여부로 판정한다" }
+  - { threat: forged_browser_callback, callback_state: domain_fails, reason: "동일" }
+  - { threat: replay, callback_state: approval_not_yet_attempted, reason: "승인 성립 축은 위조 콜백 전용 — replay 는 도착 차수 분기" }
+  - { threat: replay, callback_state: approval_failed, reason: "동일" }
+  - { threat: replay, callback_state: approval_succeeded, reason: "동일" }
+  - { threat: cli_injection, callback_state: approval_not_yet_attempted, reason: "CLI 인젝션은 인수 정제 단계 분기" }
+  - { threat: cli_injection, callback_state: approval_failed, reason: "동일" }
+  - { threat: cli_injection, callback_state: approval_succeeded, reason: "동일" }
+  - { threat: post_approve_failure, callback_state: approval_not_yet_attempted, reason: "정의상 승인 이후 분기" }
+  - { threat: post_approve_failure, callback_state: approval_failed, reason: "동일" }
+  - { threat: post_approve_failure, callback_state: approval_succeeded, reason: "post-approve 실패는 domain_fails 로 표현한다" }
+  - { caller: ownership_verified_buyer, threat: replay, reason: "close-report 는 결제창 콜백이 아니라 별도 소유권 검증 엔드포인트" }
+  - { caller: ownership_verified_buyer, threat: cli_injection, reason: "동일 — CLI 를 호출하지 않는다" }
+  - { caller: ownership_verified_buyer, threat: post_approve_failure, reason: "동일 — 승인 단계가 없다" }
+  - { caller: pg_server_verified, threat: forged_browser_callback, reason: "위조 축의 전제가 비인증 브라우저 입력이다" }
+  - { caller: unauthenticated_browser, threat: cli_injection, reason: "CLI 인수는 상점 설정·주문 저장값에서 오고 브라우저 입력이 아니다" }
 
 effects:
   # Replay defense — PreventsReplayCallback trait
@@ -62,15 +83,41 @@ effects:
   - cli_exec_uses_escapeshellarg
   - cli_no_shell_executed_on_unsafe_input
 
+  # 비인증 브라우저 콜백의 주문 변조 차단 (KVE-2026-2018 + 형제)
+  - unauthenticated_callback_cannot_cancel_another_users_order
+  - browser_result_code_alone_never_transitions_order_state
+  - pre_approval_failure_sink_does_not_call_fail_payment
+  - pre_approval_amount_mismatch_does_not_mutate_the_order
+  - post_approval_failure_still_records_failure_with_tno
+  - payment_method_branch_is_decided_by_stored_order_value_only
+  - request_pay_method_cannot_route_a_card_order_into_vbank_branch
+  - forged_vbank_callback_cannot_cancel_a_card_order
+  - forged_vbank_callback_cannot_write_an_account_number_to_the_order
+  - mobile_vbank_issuance_failure_does_not_mutate_the_order
+  - pc_vbank_cli_exception_does_not_mutate_the_order
+  - vbank_save_failure_mutates_only_on_pc_server_confirmed_issuance
+  - cancelled_order_is_restored_only_after_approval_or_issuance_is_confirmed
+  - legitimate_failure_is_recorded_by_ownership_verified_close_report
+  - close_report_rejects_buyer_mismatch
+  - normal_approval_still_completes_the_order
+
   # Post-approve net cancel
   - post_approve_failure_triggers_auto_cancel
   - net_cancel_sends_pg_cancel_api_call
   - net_cancel_passes_approved_tno
   - net_cancel_passes_full_amount
 
-test_files: []
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentCallbackControllerTest.php
 
 manual_verification:
+  - description: "위조 콜백 PoC — 남의 주문번호로 결제 실패 유도"
+    steps:
+      - "피해자 계정으로 결제대기 주문 1건 생성 (pending_order / ready)"
+      - "로그아웃 상태에서 authCallback 에 피해 ordr_idxx + res_cd=0000 + 위조 암호문 POST"
+      - "302 리다이렉트만 발생하고 주문 상태·결제 상태가 불변인지 재조회로 확인"
+      - "요청에 use_pay_method=VCNT 를 섞어도 카드 주문이 가상계좌 분기로 흐르지 않는지 확인"
+      - "위조 bankname/account 가 주문에 기록되지 않는지 확인"
   - description: "Replay PoC — paymentCallback 두 번 전송"
     steps:
       - "정상 카드 콜백 1차 전송 → 200 OK, payment_status=paid"

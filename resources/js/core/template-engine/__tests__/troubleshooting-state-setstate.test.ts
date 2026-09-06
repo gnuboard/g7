@@ -5269,3 +5269,221 @@ describe('[사례 39] dot notation setState 의 canonical source 동기화 (engi
     expect(globalState._local.form).toEqual({ title: '변경', body: '유지' });
   });
 });
+
+describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 B 와 반환값에서 함께 사라짐 (engine-v1.63.3)', () => {
+  let dispatcher: ActionDispatcher;
+  let globalState: Record<string, any>;
+  let componentState: Record<string, any>;
+  let setStateCalls: any[];
+
+  /** TemplateApp.setGlobalState 와 동일한 계약: 최상위 키 얕은 병합 + 동기 대입 */
+  const globalStateUpdater = vi.fn((updates: any) => {
+    globalState = { ...globalState, ...updates };
+  });
+
+  beforeEach(() => {
+    setStateCalls = [];
+    componentState = {};
+    globalState = { _local: {} };
+
+    dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+    dispatcher.setGlobalStateUpdater(globalStateUpdater);
+    Logger.getInstance().setDebug(false);
+
+    (window as any).__templateApp = { getGlobalState: () => globalState };
+    // 리사이즈 렌더가 이미 pending 을 비운 상태를 결정화한다
+    // (관측 가능한 결과가 이 값 하나뿐이므로 타이밍 모사가 불필요)
+    (window as any).__g7PendingLocalState = null;
+    (window as any).__g7ForcedLocalFields = undefined;
+    (window as any).__g7LayoutContextStack = [];
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    delete (window as any).__templateApp;
+    (window as any).__g7PendingLocalState = undefined;
+    (window as any).__g7ForcedLocalFields = undefined;
+    (window as any).__g7LayoutContextStack = [];
+  });
+
+  const context = () => ({
+    state: componentState,
+    setState: vi.fn((updates: any) => {
+      setStateCalls.push(updates);
+      componentState = { ...componentState, ...updates };
+    }),
+    actionId: 'case-40',
+  });
+
+  it('1. 결함 재현 핀: B 의 편집기 본문이 stale A 스냅샷으로 덮이지 않는다', async () => {
+    // @scenario save_flow=create, resize_kind=same_breakpoint
+    // @effects canonical_local_keeps_editor_content_after_resize, setstate_local_preserves_canonical_keys_when_pending_is_null
+    // CKEditor 가 setLocal({ render:false, selfManaged:true }) 로 B 에만 기록한 본문
+    globalState._local = { form: { title: '제목', content: '<p>본문</p>' }, isSaving: false };
+    // 리사이즈 렌더로 memo 가 재계산되지 않아 context.state 는 본문 타이핑 이전 스냅샷
+    componentState = { form: { title: '제목', content: '' }, isSaving: false };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { isSaving: true, errors: null } },
+      context()
+    );
+
+    expect(globalState._local.form.content).toBe('<p>본문</p>');
+    expect(globalState._local.isSaving).toBe(true);
+  });
+
+  it('2. body 회귀 핀: 반환값에도 원문 본문이 실린다 (없으면 422 가 남는다)', async () => {
+    // @scenario save_flow=edit, resize_kind=crossed_breakpoint
+    // @effects request_body_content_matches_editor_getdata, edit_save_persists_typed_addition
+    globalState._local = { form: { title: '제목', content: '<p>본문</p>' } };
+    componentState = { form: { title: '제목', content: '' } };
+
+    const result = await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { isSaving: true } },
+      context()
+    );
+
+    expect(result.data.form.content).toBe('<p>본문</p>');
+    expect(result.data.isSaving).toBe(true);
+    expect(result.data.__target).toBe('local');
+  });
+
+  it('3. 사례 22 핀: __g7PendingLocalState 는 A 계열 기반으로 유지된다', async () => {
+    globalState._local = { form: { content: '<p>본문</p>' }, expandedRows: [] };
+    componentState = { form: { content: '' }, expandedRows: [301] };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { isSaving: true } },
+      context()
+    );
+
+    // pending 은 A(context.state) 기반이어야 한다 — B 기반으로 바꾸면 사례 22 재발
+    expect((window as any).__g7PendingLocalState.expandedRows).toEqual([301]);
+  });
+
+  it('4. 중첩 경로 핀: 다국어 form.{name}.{locale} 에서 형제 로케일/필드가 보존된다', async () => {
+    globalState._local = { form: { content: { ko: '<p>본문</p>', en: '<p>body</p>' }, title: { ko: '제목' } } };
+    componentState = { form: { content: { ko: '', en: '' }, title: { ko: '제목' } } };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { 'form.title.ko': '새 제목' } },
+      context()
+    );
+
+    expect(globalState._local.form.content).toEqual({ ko: '<p>본문</p>', en: '<p>body</p>' });
+    expect(globalState._local.form.title.ko).toBe('새 제목');
+  });
+
+  it('5. 사례 17 핀: merge replace 는 live B 를 base 로 쓰지 않는다', async () => {
+    globalState._local = { form: { content: '<p>본문</p>' }, keep: 1 };
+    componentState = { form: { content: '' } };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { merge: 'replace', only: 'this' } },
+      context()
+    );
+
+    expect(globalState._local.keep).toBeUndefined();
+    expect(globalState._local.only).toBe('this');
+  });
+
+  it('6. 사례 29 핀: 모달 컨텍스트 스택이 있으면 종전 동작(전체 스냅샷)을 유지한다', async () => {
+    (window as any).__g7LayoutContextStack = [{ state: {}, setState: vi.fn() }];
+    globalState._local = { form: { content: '<p>페이지 본문</p>' } };
+    componentState = { modalField: 'x' };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { modalField: 'y' } },
+      context()
+    );
+
+    // 모달 안에서는 live B 를 base 로 삼지 않는다 (페이지 _local 흡수 방지)
+    expect(globalState._local.modalField).toBe('y');
+    expect(globalState._local.form).toBeUndefined();
+  });
+
+  it('7. 폴백 핀: __templateApp 이 없으면 종전 전체 스냅샷 경로를 탄다', async () => {
+    delete (window as any).__templateApp;
+    componentState = { form: { content: '' }, a: 1 };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { b: 2 } },
+      context()
+    );
+
+    expect(globalState._local).toEqual({ form: { content: '' }, a: 1, b: 2 });
+  });
+
+  it('8. A 전용 키 핀: loadingActions 가 반환값에 남는다', async () => {
+    globalState._local = { form: { content: '<p>본문</p>' } };
+    componentState = { form: { content: '' }, loadingActions: { save: true } };
+
+    const result = await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { isSaving: true } },
+      context()
+    );
+
+    expect(result.data.loadingActions).toEqual({ save: true });
+    expect(result.data.form.content).toBe('<p>본문</p>');
+  });
+
+  it('9. B 의 중첩 객체가 in-place 변이되지 않는다', async () => {
+    const liveForm = { title: '제목', content: '<p>본문</p>' };
+    globalState._local = { form: liveForm };
+    componentState = { form: { title: '제목', content: '' } };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { 'form.title': '변경' } },
+      context()
+    );
+
+    // 원본 참조는 변이되지 않아야 한다
+    expect(liveForm.title).toBe('제목');
+    expect(globalState._local.form.title).toBe('변경');
+  });
+
+  it('10. merge shallow 핀(F3): payload 밖 키를 live B 값으로 보존한다', async () => {
+    // 모집단: admin_ecommerce_{order,product}_list 필터 (#421 회귀 핀 대상)
+    globalState._local = { filters: { status: 'paid' }, search: '주문번호', page: 3 };
+    componentState = { filters: { status: 'paid' } };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { merge: 'shallow', page: 1 } },
+      context()
+    );
+
+    expect(globalState._local.page).toBe(1);
+    expect(globalState._local.search).toBe('주문번호');
+    expect(globalState._local.filters).toEqual({ status: 'paid' });
+  });
+
+  it('11. A 전용 키 핀(F2): loadingActions 가 B 에도 보충된다 (setLocal 선례와 대칭)', async () => {
+    globalState._local = { form: { content: '<p>본문</p>' } };
+    componentState = { form: { content: '' }, loadingActions: { save: true }, apiError: null };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { isSaving: true } },
+      context()
+    );
+
+    expect(globalState._local.loadingActions).toEqual({ save: true });
+    expect(globalState._local.form.content).toBe('<p>본문</p>');
+  });
+
+  it('12. 편집기 프리뷰 핀(F5): 격리 façade 에서도 canonical 경로를 타고 폴백이 발생하지 않는다', async () => {
+    // PreviewCanvas 는 _local 을 항상 객체로 보장하므로 폴백이 발생하지 않는다
+    const isolatedStore: Record<string, any> = { _local: { previewOnly: true } };
+    (window as any).__templateApp = { getGlobalState: () => isolatedStore };
+    componentState = { form: { content: '' } };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { isSaving: true } },
+      context()
+    );
+
+    expect(globalState._local.previewOnly).toBe(true);
+    expect(globalState._local.isSaving).toBe(true);
+    // 격리 store 자체는 globalStateUpdater 를 통하지 않으므로 그대로다
+    expect(isolatedStore._local).toEqual({ previewOnly: true });
+  });
+});

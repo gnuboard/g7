@@ -90,5 +90,10 @@
         "vbank_due_label": "입금 기한",
         "receipt_label": "영수증",
         "receipt_view": "영수증 보기"
+    },
+    "payment": {
+        "error": {
+            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
+        }
     }
 }

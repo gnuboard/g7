@@ -11,6 +11,10 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * - GET /api/plugins/sirsoft-gdpr/admin/settings
  * - PUT /api/plugins/sirsoft-gdpr/admin/settings
+ *
+ * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=invalid_format
+ *
+ * @effects update_persists_allowlist_per_scope, update_normalizes_textarea_string_to_array, update_without_key_leaves_existing_value_untouched, update_rejects_invalid_item_format_with_scope_indexed_error_key, update_rejects_unknown_scope, update_ignores_locked_list_from_request, show_includes_default_catalog_previews
  */
 class GdprAdminSettingsControllerTest extends PluginTestCase
 {
@@ -503,7 +507,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
     /**
      * PluginSettingsService::get 을 통제 가능한 Mock 으로 교체.
      *
-     * @param array<string, mixed> $values
+     * @param  array<string, mixed>  $values
      * @return void
      */
     private function mockPluginSettings(array $values): void
@@ -529,4 +533,270 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
         $this->app->instance(PluginSettingsService::class, $mock);
     }
 
+    /**
+     * 관리자 응답에 출하 카탈로그 두 벌이 실린다 (추천 목록 결함 해소).
+     *
+     * 관리자 레이아웃의 TagInput 은 이 값을 자동완성 추천으로 쓴다. 응답에 없으면 드롭다운에
+     * **이미 선택된 칩만** 다시 나타나므로 추천이 동작하는 것처럼 보이고, 오류도 빈 목록도
+     * 남지 않아 증상만으로는 알 수 없다.
+     *
+     * @return void
+     */
+    public function test_show_includes_default_catalog_previews(): void
+    {
+        $mock = $this->createMock(PluginSettingsService::class);
+        $mock->method('get')->willReturnCallback(
+            fn (string $id, ?string $key = null, mixed $default = null) => $key === null ? [] : $default
+        );
+        $this->app->instance(PluginSettingsService::class, $mock);
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $response = $this->actingAs($user)->getJson('/api/plugins/sirsoft-gdpr/admin/settings');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'default_blocked_domains_preview' => ['functional', 'analytics', 'marketing'],
+                    'default_necessary_allowlist_preview' => ['localStorage', 'sessionStorage', 'cookie'],
+                ],
+            ]);
+
+        $this->assertContains(
+            'g7_color_scheme',
+            $response->json('data.default_necessary_allowlist_preview.localStorage'),
+            '출하 카탈로그가 실제 항목을 담아야 추천이 의미를 가진다'
+        );
+        $this->assertContains(
+            'google-analytics.com',
+            $response->json('data.default_blocked_domains_preview.analytics')
+        );
+    }
+
+    /**
+     * 잠금 항목은 출하 카탈로그(운영자 편집 대상)에 실리지 않는다.
+     *
+     * 실리면 운영자가 화면에서 지울 수 있고, 그 순간 잠금이 잠금이 아니게 된다.
+     *
+     * @return void
+     */
+    public function test_default_catalog_preview_excludes_locked_items(): void
+    {
+        $mock = $this->createMock(PluginSettingsService::class);
+        $mock->method('get')->willReturnCallback(
+            fn (string $id, ?string $key = null, mixed $default = null) => $key === null ? [] : $default
+        );
+        $this->app->instance(PluginSettingsService::class, $mock);
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $preview = $this->actingAs($user)
+            ->getJson('/api/plugins/sirsoft-gdpr/admin/settings')
+            ->json('data.default_necessary_allowlist_preview');
+
+        $this->assertNotContains('auth_token', $preview['localStorage']);
+        $this->assertNotContains('XSRF-TOKEN', $preview['cookie']);
+        $this->assertNotContains('gdpr_session', $preview['cookie']);
+    }
+
+    /**
+     * 필수 저장 항목 허용목록이 스코프별로 저장된다.
+     *
+     * @return void
+     */
+    public function test_update_persists_necessary_storage_allowlist(): void
+    {
+        $captured = $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_allowlist' => [
+                'localStorage' => ['g7_locale', 'g7_filters_*'],
+                'sessionStorage' => ['g7:sirsoft-pay_kginicis:pendingClose'],
+                'cookie' => ['laravel_maintenance', 'myplugin_*'],
+            ],
+        ])->assertOk();
+
+        $saved = $captured->value['necessary_storage_allowlist'] ?? null;
+        $this->assertIsArray($saved);
+        $this->assertSame(['g7_locale', 'g7_filters_*'], $saved['localStorage']);
+        $this->assertSame(['g7:sirsoft-pay_kginicis:pendingClose'], $saved['sessionStorage']);
+        $this->assertSame(['laravel_maintenance', 'myplugin_*'], $saved['cookie']);
+    }
+
+    /**
+     * 줄바꿈 문자열로 들어와도 배열로 정규화된다 (blocked_domains 와 동일 규약).
+     *
+     * @return void
+     */
+    public function test_update_normalizes_necessary_storage_allowlist_textarea_string(): void
+    {
+        $captured = $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_allowlist' => [
+                'localStorage' => "g7_locale\n  g7_color_scheme  \n\n",
+            ],
+        ])->assertOk();
+
+        $saved = $captured->value['necessary_storage_allowlist'];
+        $this->assertSame(['g7_locale', 'g7_color_scheme'], $saved['localStorage']);
+        // 전송하지 않은 스코프는 빈 배열로 보충되어 화면이 항상 세 카드를 그린다.
+        $this->assertSame([], $saved['sessionStorage']);
+        $this->assertSame([], $saved['cookie']);
+    }
+
+    /**
+     * 키를 아예 보내지 않으면 기존 저장값을 건드리지 않는다.
+     *
+     * 빈 배열로 보충해 버리면 이 화면을 모르는 클라이언트의 저장 한 번이 허용목록을 통째로
+     * 비우고, 그 사이트는 다음 방문부터 로그인 외 모든 설정을 잃는다.
+     *
+     * @return void
+     */
+    public function test_update_without_allowlist_key_leaves_it_untouched(): void
+    {
+        $captured = $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'banner_enabled' => true,
+        ])->assertOk();
+
+        $this->assertArrayNotHasKey('necessary_storage_allowlist', $captured->value);
+    }
+
+    /**
+     * 항목 형식 위반은 스코프·인덱스가 드러나는 키로 422 를 낸다.
+     *
+     * 에러 키가 `necessary_storage_allowlist.{scope}.{index}` 여야 화면이 그 카드에
+     * 메시지를 붙일 수 있다.
+     *
+     * @return void
+     */
+    public function test_update_rejects_invalid_allowlist_item_format(): void
+    {
+        $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_allowlist' => [
+                'localStorage' => ['bad key!'],
+            ],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['necessary_storage_allowlist.localStorage.0']);
+
+        // `*` 는 끝에만 허용 — 중간/앞 표기는 거른다 (앞에 두면 전체 개방이 된다).
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_allowlist' => [
+                'cookie' => ['*_suffix'],
+            ],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['necessary_storage_allowlist.cookie.0']);
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_allowlist' => [
+                'sessionStorage' => ['g7_*_middle'],
+            ],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['necessary_storage_allowlist.sessionStorage.0']);
+    }
+
+    /**
+     * 와일드카드 표기와 실제 사용 키는 통과한다 (위 테스트의 대조군).
+     *
+     * @return void
+     */
+    public function test_update_accepts_valid_allowlist_items(): void
+    {
+        $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_allowlist' => [
+                'localStorage' => ['g7_locale', 'g7_filters_*', 'g7le.clipboard', 'g7_asset_url_mode*'],
+                'sessionStorage' => ['g7:sirsoft-pay_nhnkcp:pendingClose', '__sirsoftKginicisMobilePaymentReturnPending'],
+                'cookie' => ['laravel_maintenance', 'XSRF-TOKEN'],
+            ],
+        ])->assertOk();
+    }
+
+    /**
+     * 스코프 키 화이트리스트 — 알 수 없는 스코프는 422.
+     *
+     * 조용히 버리면 그 항목은 어떤 판정에도 쓰이지 않은 채 저장되고, 운영자에게는
+     * "등록했는데 안 되는" 상태로만 보인다.
+     *
+     * @return void
+     */
+    public function test_update_rejects_unknown_allowlist_scope(): void
+    {
+        $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_allowlist' => [
+                'localstorage' => ['g7_locale'],
+            ],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['necessary_storage_allowlist.localstorage']);
+    }
+
+    /**
+     * 잠금 항목 목록은 저장되지 않는다 (요청에 섞여 와도 무시).
+     *
+     * 저장 가능하면 API 한 번으로 잠금을 무력화할 수 있다.
+     *
+     * @return void
+     */
+    public function test_update_ignores_locked_list_from_request(): void
+    {
+        $captured = $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_locked' => [
+                'localStorage' => [],
+                'sessionStorage' => [],
+                'cookie' => [],
+            ],
+        ])->assertOk();
+
+        $this->assertArrayNotHasKey('necessary_storage_locked', $captured->value);
+    }
+
+    /**
+     * 저장 페이로드를 가로채는 PluginSettingsService mock 을 등록합니다.
+     *
+     * @return object 저장된 페이로드를 담는 컨테이너 (`value` 프로퍼티)
+     */
+    private function captureSave(): object
+    {
+        $captured = new class
+        {
+            /** @var array<string, mixed> */
+            public array $value = [];
+        };
+
+        $mock = $this->createMock(PluginSettingsService::class);
+        $mock->method('save')->willReturnCallback(function (string $id, array $settings) use ($captured) {
+            $captured->value = $settings;
+
+            return true;
+        });
+        $mock->method('get')->willReturnCallback(
+            fn (string $id, ?string $key = null, mixed $default = null) => $key === null ? [] : $default
+        );
+        $this->app->instance(PluginSettingsService::class, $mock);
+
+        return $captured;
+    }
 }

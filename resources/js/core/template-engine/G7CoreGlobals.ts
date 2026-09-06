@@ -22,6 +22,7 @@ import { DataBindingEngine, dataBindingEngine } from './DataBindingEngine';
 import { hasPipes } from './PipeRegistry';
 import { extractSingleBinding } from './BindingShape';
 import { evaluateStringCondition } from './helpers/ConditionEvaluator';
+import { addMissingLeafKeys } from './helpers/StateMerge';
 import { DataSourceManager, dataSourceManager } from './DataSourceManager';
 import DynamicRenderer from './DynamicRenderer';
 import { useTransitionState } from './TransitionContext';
@@ -55,6 +56,23 @@ import {
 } from '../hooks/useControllableState';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import { IdentityGuardInterceptor, IDENTITY_REDIRECT_STASH_KEY } from '../identity/IdentityGuardInterceptor';
+import { loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
+import {
+  templateAsset,
+  templateAssetDir,
+  moduleAsset,
+  pluginAsset,
+  convertToCurrentMode,
+} from '../support/assetUrl';
+import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
+import {
+  notifyAssetFailure,
+  drainExternalAssetFailures,
+  clearAssetFailure,
+  clearAllAssetFailures,
+  getAssetFailures,
+  retryAssetFailures,
+} from '../assets/AssetFailureNotice';
 
 const logger = createLogger('G7CoreGlobals');
 
@@ -858,6 +876,111 @@ function initLayoutEditorStub(G7Core: any): void {
 }
 
 /**
+ * 자산 URL·자산 실패 안내 API 초기화
+ *
+ * 확장(모듈·플러그인·템플릿)의 IIFE 번들은 코어의 `assetUrl.ts` 를 import 할 수 없다
+ * — 별도 번들이라 모듈 그래프가 이어지지 않는다. 그래서 확장이 자기 동봉 자산의 URL 을
+ * 만들려면 `/api/plugins/assets/...` 를 **문자열로 조립**하는 수밖에 없었는데, 그러면
+ * 자산 URL 이중 모드(확장자 없는 서버)에서 그 자산만 404 가 된다.
+ *
+ * `G7Core.asset.*` 이 그 seam 이다 — 서버측 `AssetUrl` 과 같은 규약으로 URL 을 만든다.
+ * `G7Core.assets.*` 는 그 자산을 끝내 못 불러왔을 때의 안내·재시도 표면이다.
+ *
+ * @param G7Core 전역 객체
+ * @return void
+ * @since engine-v1.62.0
+ */
+function initAssetUrlAPI(G7Core: any): void {
+  /**
+   * 확장 자산 URL 생성기.
+   *
+   * 템플릿은 서버가 `dist/` 를 자동 부가하므로 `path` 에 `dist/` 를 포함하지 않는다
+   * (모듈·플러그인은 확장 루트 기준이라 `dist/` 를 직접 포함 — 서버측과 동일한 비대칭).
+   */
+  G7Core.asset = {
+    /** 템플릿 자산 URL (`dist/` 이하 경로) */
+    template: (identifier: string, path: string, version?: number | string | null): string =>
+      templateAsset(identifier, path, version),
+    /**
+     * 템플릿 자산 **디렉토리** URL — AMD 로더·워커처럼 디렉토리 접두에 파일명을
+     * 이어 붙이는 소비자용. 확장자 없는 모드에서 404 일 수 있으므로 폴백이 필요하다.
+     */
+    templateDir: (identifier: string, path: string): string => templateAssetDir(identifier, path),
+    /** 모듈 자산 URL (모듈 루트 기준 경로) */
+    module: (identifier: string, path: string, version?: number | string | null): string =>
+      moduleAsset(identifier, path, version),
+    /** 플러그인 자산 URL (플러그인 루트 기준 경로) */
+    plugin: (identifier: string, path: string, version?: number | string | null): string =>
+      pluginAsset(identifier, path, version),
+    /** 서버가 확장자 형태로 굳혀 내려준 URL 을 현재 모드로 보정 */
+    convertToCurrentMode: (url: string): string => convertToCurrentMode(url),
+    /**
+     * 재시도 계층을 갖춘 스크립트 로더.
+     *
+     * 확장이 자기 자산을 런타임에 직접 로드할 때 쓴다. 확장 번들이 코어 모듈을
+     * import 할 수 없어 각자 `document.createElement('script')` 를 쓰면, 코어가
+     * 갖춘 재시도·실패 표면화 계층이 그 경로에만 없게 된다.
+     *
+     * `url` 은 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받는다 — same-origin 절대
+     * 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 한다.
+     * 이 seam 만 게이트가 없으면 저장측 검증을 우회한 원격 코드 로드 통로가 된다.
+     *
+     * @since engine-v1.64.0 출처 게이트 추가 (미신뢰 URL 은 reject)
+     */
+    loadScript: (
+      url: string,
+      attrs?: Record<string, string>,
+      options?: Record<string, unknown>
+    ): Promise<void> => {
+      if (!isAllowedScriptSrc(url, getTrustedScriptHosts())) {
+        return Promise.reject(
+          new Error(
+            `Blocked untrusted script src (same-origin path or declared trusted host required): ${url}`
+          )
+        );
+      }
+
+      return loadScriptWithRetry(url, attrs, options as any);
+    },
+    /**
+     * 스크립트 URL 이 주입 허용 대상인지 판정합니다.
+     *
+     * 로더를 쓸 수 없는 주입(iframe `document.write` 등)이 같은 판정을 재사용하는 통로다.
+     *
+     * @since engine-v1.64.0
+     */
+    isAllowedScriptSrc: (url: string): boolean =>
+      isAllowedScriptSrc(url, getTrustedScriptHosts()),
+    /** 재시도 계층을 갖춘 스타일시트 로더 */
+    loadStylesheet: (
+      url: string,
+      attrs?: Record<string, string>,
+      options?: Record<string, unknown>
+    ): Promise<void> => loadStylesheetWithRetry(url, attrs, options as any),
+  };
+
+  /**
+   * 자산 로드 실패 안내.
+   *
+   * 실패를 화면에 표면화하지 않으면 사용자에게는 "빈 자리" 로만 나타나고, 자체 서버
+   * 로그에도 흔적이 남지 않아 운영자가 원인을 특정할 수 없다.
+   */
+  G7Core.assets = {
+    notifyFailure: notifyAssetFailure,
+    clearFailure: clearAssetFailure,
+    clearAll: clearAllAssetFailures,
+    getFailures: getAssetFailures,
+    retryAll: retryAssetFailures,
+  };
+
+  // 서버가 심은 템플릿 externals 는 엔진보다 먼저 평가되므로 실패가 대기열에 쌓여 있다.
+  // 여기서 비우지 않으면 아이콘 폰트·글꼴 실패가 화면에 영영 드러나지 않는다.
+  drainExternalAssetFailures();
+
+  logger.log('전역 객체 window.G7Core.asset / window.G7Core.assets 노출됨');
+}
+
+/**
  * 번역 관련 API 초기화
  */
 function initTranslationAPI(G7Core: any, deps: G7CoreDependencies): void {
@@ -1531,48 +1654,10 @@ function hasOnlyNumericKeys(obj: Record<string, any>): boolean {
  * @param source 병합할 소스 객체
  * @returns 병합된 결과 객체
  */
-/**
- * base 객체에 없는 leaf 키만 extra에서 추가합니다.
- *
- * deepMerge와 달리 base에 이미 존재하는 값(배열 포함)은 절대 덮어쓰지 않습니다.
- * extra에만 존재하는 키는 재귀적으로 추가됩니다.
- *
- * 용도: setLocal에서 dynamicLocal(actionContext.state)의 setState 전용 키를 globalLocal에
- * 안전하게 추가할 때 사용. dynamicLocal의 stale 배열(init_actions 기본값)이 globalLocal의
- * 정상 API 데이터를 덮어쓰는 것을 방지합니다.
- *
- * @since engine-v1.41.0
- *
- * @example
- * ```ts
- * const base = { form: { category_ids: [381, 384], name: 'A' } };
- * const extra = { form: { category_ids: [], options: [] }, selectedProducts: [1] };
- * addMissingLeafKeys(base, extra);
- * // → { form: { category_ids: [381, 384], name: 'A', options: [] }, selectedProducts: [1] }
- * // base의 category_ids는 보존, extra의 selectedProducts와 options는 추가
- * ```
- */
-function addMissingLeafKeys(base: Record<string, any>, extra: Record<string, any>): Record<string, any> {
-  const result = { ...base };
-  for (const key of Object.keys(extra)) {
-    if (!(key in result)) {
-      // base에 없는 키: extra 값 그대로 추가
-      result[key] = extra[key];
-    } else if (
-      result[key] !== null &&
-      typeof result[key] === 'object' &&
-      !Array.isArray(result[key]) &&
-      extra[key] !== null &&
-      typeof extra[key] === 'object' &&
-      !Array.isArray(extra[key])
-    ) {
-      // 양쪽 모두 plain object: 재귀적으로 처리
-      result[key] = addMissingLeafKeys(result[key], extra[key]);
-    }
-    // base에 이미 존재하는 leaf 값(배열, 문자열, 숫자 등): 건너뜀 (base 값 보존)
-  }
-  return result;
-}
+// addMissingLeafKeys 는 engine-v1.63.3 에서 helpers/StateMerge 로 이동했다.
+// ActionDispatcher 의 handleSetState COMPONENT path 가 같은 보충 규칙을 써야 하는데
+// G7CoreGlobals → ActionDispatcher import 가 이미 있어 역방향 값 import 가 순환이 되기 때문이다.
+// 동작은 원문 그대로다 (사례 13 회귀 테스트가 잠금 역할).
 
 function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
   // 특수 케이스: target이 배열이고 source가 숫자 키만 가진 객체인 경우
@@ -1788,6 +1873,11 @@ function initStateAPI(G7Core: any): void {
           if (targetContext?.setState) {
             // 함수형 업데이트를 사용하여 항상 최신 상태와 병합
             // React setState는 비동기이므로 스냅샷 대신 함수형 업데이트 필수
+            //
+            // scope:'parent'|'root' 은 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의
+            // 부모/루트 슬롯을 대상으로 한다. 여기서 저장소 B 를 함께 쓰면 모달의 쓰기가
+            // 페이지 _local 을 오염시킨다(사례 29).
+            // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
             targetContext.setState((currentLocal: Record<string, any>) => {
               if (mergeMode === 'replace') return converted;
               if (mergeMode === 'shallow') return { ...(currentLocal || {}), ...converted };
@@ -2267,7 +2357,31 @@ function initStateAPI(G7Core: any): void {
       // globalState._local도 함께 업데이트해야 후속 getLocal() 호출이 최신 값을 반환함.
       const templateApp = (window as any).__templateApp;
       if (templateApp?.setGlobalState) {
-        templateApp.setGlobalState({ _local: merged });
+        // 저장소 B 쓰기의 base 는 live B 다 (engine-v1.63.3 / 공개 이슈 #130 과 같은 정책).
+        //
+        // `merged` 는 부모 컨텍스트의 **저장소 A**(`parentEntry.state._local`)를 base 로 만든 값이다.
+        // `setGlobalState` 는 `_local` 을 얕게 병합하므로 그것을 그대로 쓰면 B 가 통째 교체되고,
+        // A 가 아직 받지 못한 값(예: selfManaged 플러그인이 B 에만 쓴 편집기 본문)이 사라진다.
+        // 부모 컨텍스트가 페이지 루트일 때 그 A 스냅샷은 B 보다 뒤처져 있을 수 있다(사례 21).
+        //
+        // 그래서 B 에는 live B + 변경 키만 얹고, A 전용 키는 `addMissingLeafKeys` 로 보충한다.
+        // 저장소 A 경로(`parentEntry.setState`)와 pending 은 종전 그대로 둔다 — 그쪽 base 를
+        // 바꾸면 React 전용 배열이 B 초기값으로 덮이는 사례 22 위험이 생긴다.
+        //
+        // `merge: 'replace'` 는 의도적 리셋이므로 제외한다(사례 17).
+        const canonicalLocal = templateApp.getGlobalState?.()?._local;
+        const canUseCanonical = mergeMode !== 'replace'
+          && !!canonicalLocal && typeof canonicalLocal === 'object' && !Array.isArray(canonicalLocal);
+
+        const canonicalMerged = canUseCanonical
+          ? (mergeMode === 'shallow'
+            ? { ...(canonicalLocal as Record<string, any>), ...converted }
+            : deepMerge(canonicalLocal as Record<string, any>, converted))
+          : undefined;
+
+        templateApp.setGlobalState({
+          _local: canonicalMerged ? addMissingLeafKeys(canonicalMerged, merged) : merged,
+        });
       }
 
       parentEntry.setState(merged);
@@ -3148,6 +3262,7 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
   initLayoutEditorStub(G7Core);
   initCoreAPIs(G7Core, deps);
+  initAssetUrlAPI(G7Core);
   initTranslationAPI(G7Core, deps);
   initHelperAPIs(G7Core, deps);
   initDispatchAPI(G7Core);

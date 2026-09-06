@@ -360,6 +360,23 @@ export interface EditorToolbarProps {
   onPreview?: () => void | Promise<void>;
   /** 버전 히스토리 클릭 — 현재 레이아웃 저장 버전 목록·복원 모달 */
   onShowVersions?: () => void;
+  /**
+   * 사용자 추가 에셋(`custom/`) 적용 토글 — 탈출구(D33).
+   *
+   * 끄기는 `?custom=off` 를 붙여 페이지를 **다시 여는** 방식이다. DOM 에서 `<link>` 를
+   * 떼는 방식이 아닌 이유: 이미 실행된 custom JS 는 되돌릴 수 없어 절반만 꺼진다.
+   * 서버가 목록을 비우면 CSS·JS 가 애초에 페이지에 도달하지 않는다.
+   */
+  onToggleCustomAssets?: () => void;
+  /** 현재 요청이 `?custom=off` 상태인지 (버튼 문구·상태 표시) */
+  customAssetsDisabled?: boolean;
+  /**
+   * 커스텀 자산 관리 모달 열기.
+   *
+   * 버튼을 권한으로 감추지 않는다 — 서버가 403 을 돌려주면 모달이 "무엇이 부족한지"를
+   * 문장으로 알린다. 보이지 않는 버튼은 권한이 없다는 사실조차 알려 주지 못한다.
+   */
+  onManageCustomAssets?: () => void;
 }
 
 export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElement {
@@ -379,6 +396,9 @@ export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElemen
     templateVersion,
     templateList,
     onSwitchTemplate,
+    onToggleCustomAssets,
+    customAssetsDisabled = false,
+    onManageCustomAssets,
   } = props;
 
   // 저장 진행 상태 — onSave 가 Promise 면 완료까지 스피너 + disabled.
@@ -464,6 +484,15 @@ export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElemen
     backgroundColor: '#2563eb',
     color: '#ffffff',
     borderColor: '#2563eb',
+    fontWeight: 600,
+  };
+
+  // custom 자산이 꺼진 동안의 토글 강조 — 지금 화면이 평소와 다른 상태임을 알린다.
+  // 이 사실이 안 보이면 운영자가 "내 CSS 가 사라졌다" 를 새 결함으로 오인한다.
+  const activeToggleStyle: React.CSSProperties = {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+    color: '#92400e',
     fontWeight: 600,
   };
 
@@ -693,6 +722,38 @@ export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElemen
             hoverStyle={buttonHover}
           >
             🌐 {t('layout_editor.chrome.toolbar.translations')}
+          </ToolbarButton>
+          <ToolbarButton
+            data-testid="g7le-toolbar-custom-assets"
+            disabled={!onManageCustomAssets}
+            onClick={() => onManageCustomAssets?.()}
+            title={t('layout_editor.chrome.toolbar.custom_assets_hint')}
+            baseStyle={buttonBase}
+            hoverStyle={buttonHover}
+          >
+            🎨 {t('layout_editor.chrome.toolbar.custom_assets')}
+          </ToolbarButton>
+          <ToolbarButton
+            data-testid="g7le-toolbar-toggle-custom-assets"
+            data-custom-disabled={customAssetsDisabled ? 'true' : 'false'}
+            disabled={!onToggleCustomAssets}
+            onClick={() => onToggleCustomAssets?.()}
+            aria-pressed={customAssetsDisabled}
+            title={t(
+              customAssetsDisabled
+                ? 'layout_editor.chrome.toolbar.custom_assets_on_hint'
+                : 'layout_editor.chrome.toolbar.custom_assets_off_hint'
+            )}
+            baseStyle={buttonBase}
+            hoverStyle={buttonHover}
+            style={customAssetsDisabled ? { ...buttonBase, ...activeToggleStyle } : undefined}
+          >
+            {customAssetsDisabled ? '👁' : '🚫'}{' '}
+            {t(
+              customAssetsDisabled
+                ? 'layout_editor.chrome.toolbar.custom_assets_on'
+                : 'layout_editor.chrome.toolbar.custom_assets_off'
+            )}
           </ToolbarButton>
           <ToolbarButton
             data-testid="g7le-toolbar-page-settings"

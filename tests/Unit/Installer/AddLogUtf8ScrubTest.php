@@ -173,6 +173,33 @@ class AddLogUtf8ScrubTest extends TestCase
         $this->assertNotSame('', $encoded, '인코딩 결과 본문이 비어 있으면 안 된다.');
     }
 
+    /**
+     * 한국어 Windows 의 CP949 출력은 U+FFFD 로 훼손되지 않고 복원되어야 한다.
+     *
+     * 이전 구현은 mb_scrub 단독이라 한글이 물음표/대체문자로 뭉개졌다.
+     * 로그는 운영자가 원인을 찾는 유일한 단서이므로 읽을 수 있어야 한다 (gnuboard/g7#62).
+     */
+    #[Test]
+    public function addlog_restores_cp949_korean_output(): void
+    {
+        addLog('warmup');
+
+        $expected = 'it-manager\\티아모라';
+        $raw = (string) mb_convert_encoding($expected, 'CP949', 'UTF-8');
+
+        $this->assertFalse(mb_check_encoding($raw, 'UTF-8'), '표본은 invalid UTF-8 이어야 한다.');
+
+        addLog($raw);
+        $logs = getInstallationLogs();
+        $message = $logs[count($logs) - 1]['message'] ?? '';
+
+        $this->assertSame(
+            $expected,
+            $message,
+            'CP949 한글 출력은 U+FFFD 훼손 없이 원문으로 복원되어야 한다.'
+        );
+    }
+
     #[Test]
     public function addlog_preserves_valid_utf8_korean_unchanged(): void
     {
@@ -225,11 +252,15 @@ class AddLogUtf8ScrubTest extends TestCase
     }
 
     /**
-     * progress-emitter.php 의 SseEmitter::emit 이 JSON_INVALID_UTF8_SUBSTITUTE 를 적용하는지
+     * progress-emitter.php 의 SseEmitter::emit 이 빈 data 라인을 송출할 수 없는지
      * 소스 레벨로 회귀 검증한다 (PollingResponseFlushTest 정적 검증과 동일 방식).
+     *
+     * 가드는 인라인 플래그에서 공용 헬퍼 installer_json_encode 로 옮겨졌다.
+     * 헬퍼는 값을 정규화하고 substitute 를 적용하며, 실패해도 파싱 가능한 JSON 을 돌려주므로
+     * 빈 data 라인이 나갈 수 있는 경로가 없다. 계약은 그대로이고 수단만 단일화됐다.
      */
     #[Test]
-    public function sse_emitter_source_uses_invalid_utf8_substitute_flag(): void
+    public function sse_emitter_source_routes_through_guarded_encoder(): void
     {
         $source = (string) file_get_contents(
             dirname(__DIR__, 3).'/public/install/includes/progress-emitter.php'
@@ -242,10 +273,17 @@ class AddLogUtf8ScrubTest extends TestCase
         $sseBody = substr($source, $classStart, $classEnd !== false ? $classEnd - $classStart : null);
 
         $this->assertStringContainsString(
-            'JSON_INVALID_UTF8_SUBSTITUTE',
+            'installer_json_encode(',
             $sseBody,
-            'SseEmitter::emit 의 json_encode 는 JSON_INVALID_UTF8_SUBSTITUTE 를 적용해 '.
-            'invalid UTF-8 로그로 인한 빈 SSE data 라인 송출을 차단해야 한다.'
+            'SseEmitter::emit 은 가드된 공용 인코더를 경유해야 한다 '.
+            '(invalid UTF-8 로그로 인한 빈 SSE data 라인 송출 차단).'
+        );
+
+        // raw json_encode 로 되돌아가면 빈 data 라인 경로가 되살아난다.
+        $this->assertDoesNotMatchRegularExpression(
+            '/(?<![A-Za-z0-9_])json_encode\\s*\\(/',
+            $sseBody,
+            'SseEmitter::emit 에 가드 없는 json_encode 가 남아 있으면 안 된다.'
         );
     }
 }

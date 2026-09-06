@@ -5,6 +5,180 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.64.7] - 2026-09-04
+
+### Fixed
+
+#### 확장 번들 스타일 실패 안내에 내부 구분 이름이 노출되던 문제
+
+- 병합 CSS 번들 로드에 끝내 실패했을 때 안내 배너의 항목명이 번들 구분 키(`module`/`plugin`)였다. 사용자 어휘(`core.assets.module_styles` · `core.assets.plugin_styles`, 번역 미적재 시 폴백 문구)로 바꾼다 (ModuleAssetLoader.ts, AssetFailureNotice.ts)
+
+## [engine-v1.64.0] - 2026-09-02
+
+### Security
+
+#### 동적 스크립트 주입 경로 전부에 출처 게이트 적용 (KVE-2026-1915 B-2 후속)
+
+- 레이아웃 `scripts[]` 에만 있던 원격 스크립트 차단 게이트를 **브라우저에 새 `<script>` 를 붙이는 모든 경로**로 넓혔다. 종전에는 `loadScript` 액션 · `reloadModuleHandlers`/`reloadPluginHandlers` 의 확장 자산 · 편집기 프리뷰 캔버스 · `G7Core.asset.loadScript` 가 게이트 밖이라, 저장측(SafeLayoutExpressions·NoExternalUrls)이 외부 URL 저장을 422 로 막아도 런타임 디스패치 한 번으로 임의 원격 코드가 로드됐다(실브라우저 실측: 미신뢰 CDN 스크립트 로드 성공, 전역 생성 확인).
+- 판정식을 `resources/js/core/support/scriptSrcPolicy.ts` 로 분리해 런타임 SSoT 를 하나로 두었다. `TemplateApp` 의 private 4개(`isAllowedScriptSrc` · `normalizeScriptSrcForOriginCheck` · `extractScriptHost` · `getTrustedScriptHosts`)는 그 모듈로 위임하는 thin delegate 로 남긴다(테스트 seam 보존). `ActionDispatcher → TemplateApp` import 는 순환의존이라 불가능하므로 공유 모듈이 유일한 해법이다.
+- 게이트 실패 시 동작은 경로 성격에 맞춘다: 액션(`loadScript` · 확장 자산 재로드)은 `ActionError` 로 실패해 `onError`/`errorHandling` 오류 채널로 전달되고, 레이아웃 `scripts[]` 와 편집기 프리뷰는 종전대로 skip + 경고다.
+- `G7Core.asset.isAllowedScriptSrc(url)` 를 공개 seam 으로 노출한다. 코어 로더를 쓸 수 없는 주입(iframe `document.write` 등)이 같은 판정을 재사용하는 통로다. `G7Core.asset.loadScript` 는 미신뢰 URL 을 reject 한다 — 공개 API 계약 변경이다.
+- `callExternal`/`callExternalEmbed` 에 심층 방어를 더했다. 해석된 생성자가 `Function`·`eval`·`setTimeout`·`setInterval` 이면 **참조 동일성**으로 거부하고(별칭 전역도 차단), 경로 세그먼트가 `__proto__`/`prototype`/`constructor` 면 `getNestedProperty` 가 `undefined` 를 돌려준다. `callbackSetState` 매핑 키도 같은 판정을 받아, 매핑 한 줄이 `deepMergeWithState` → `setState` 를 타고 앱 전역 객체를 오염시키던 쓰기 경로를 닫았다.
+
+### Fixed
+
+#### 같은 스크립트를 동시에 요청하면 로드 전에 완료 처리되던 문제
+
+- `loadScript` 액션이 in-flight 를 추적하지 않아, 2번째 호출이 "DOM 에 태그가 있다" 는 이유로 **1번째 로드가 끝나기 전에** 즉시 완료됐다(실측 0ms resolve). 그 호출자의 `onLoad` 는 SDK 전역이 아직 없는 시점에 실행되어 아무 일도 일어나지 않았고, 예외도 콘솔 에러도 남지 않았다.
+- 이제 `scriptId` 별 공유 Promise 를 두어 태그는 하나만 만들고, 동시 호출자 모두 그 태그의 `onload` 이후에 완료된다. 공유 Promise 는 "로드 완료" 만 담고 `onLoad` 는 호출자별로 각자 실행한다. dispatcher 가 만들지 않은 외래 태그는 로드 상태를 식별할 수 없으므로 종전대로 완료로 간주한다.
+
+#### 확장 핸들러 재로드에서 script 가 이미 있으면 CSS 까지 건너뛰던 문제
+
+- `reloadModuleHandlers`/`reloadPluginHandlers` 의 `assets.js` 기존재 early `return` 이 뒤따르는 CSS 로드까지 통째로 건너뛰었다. CSS 블록이 `if (assets.js)` 안에 중첩돼 있어 **CSS 만 있는 확장**은 아예 스타일이 붙지 않았다. 이제 JS 만 건너뛰고 CSS 는 형제 블록에서 독립적으로 처리한다.
+- 두 핸들러의 원시 `<script>`/`<link>` 생성을 `loadScriptWithRetry`/`loadStylesheetWithRetry` 로 교체했다. 실패한 element 를 남기지 않으므로 잔존 태그가 다음 시도를 조기 완료시키지 않는다.
+
+#### 확장 CSS 를 동시에 요청하면 `<link>` 가 중복 생성되던 문제
+
+- `ModuleAssetLoader.loadCSS` 만 in-flight Promise 공유(`loadingPromises`)가 없어 같은 확장의 CSS 동시 요청이 `<link>` 를 중복 생성했고, 재시도 로더가 기존 element 를 제거하면서 서로의 시도를 지웠다. 키는 `module-css-{id}` 로 둬 `loadJS` 의 raw identifier 키공간과 겹치지 않게 한다. 실패 시 throw 하지 않는 기존 계약은 유지한다.
+
+### Changed
+
+- 동의 관리(gdpr) preblocker 가 차단한 스크립트는 `loadScript` 액션에서 **오류가 아니라 미완료 상태**로 끝난다(`false` 반환). 태그를 붙이지 않고 캐시·in-flight 에도 기록하지 않으므로, 동의 후 다시 디스패치하면 정상 로드된다. `onLoad` 는 실행되지 않는다.
+
+## [engine-v1.63.5] - 2026-09-02
+
+### Fixed
+
+#### 커스텀 핸들러가 기록한 값이 요청 body 에 실리지 않던 문제
+
+- 커스텀 핸들러가 받는 `context.setState` 는 **저장소 A**(React `localDynamicState`)만 갱신했다. engine-v1.63.3 이 sequence 후속 액션의 `_local` 을 live B 기준으로 바꾼 뒤로, 저장소 B 에 이미 그 키가 있으면 `addMissingLeafKeys` 보충 대상에서 빠져 **A 의 값이 조용히 유실**된다. 상품상세에서 옵션을 고르면 화면에는 담긴 항목이 그대로 보이는데 `POST …/checkout` body 가 `{"direct_items":[]}` 로 나가 422 가 났고, 「장바구니 담기」는 클라 가드에 걸려 요청조차 나가지 않았다. 예외도 콘솔 에러도 없었다.
+- 엔진이 스스로 선언한 이중 저장소 불변조건(`performStateUpdate` 상단 주석)은 "B 가 정본, A 는 쓰는 시점에 강제로 일치시키는 미러" 다. engine-v1.63.3 의 중재 규칙은 그 선언과 일치하므로 **그대로 두고**, 그 규칙을 어기던 쓰기 경로를 규칙에 맞췄다.
+- 커스텀 핸들러에게 넘기는 `setState` 를 A/B 양쪽에 쓰는 writer 로 승격한다. 래퍼는 `handleCustomAction` **한 곳**에만 싣는다 — 컨텍스트 생성 지점에서 감싸면 그 컨텍스트가 `handleOpenModal` 을 통해 `__g7LayoutContextStack` 으로 새고, 그 스택을 읽는 부모 스코프 경로 4곳이 오염된다.
+- 미러는 `G7Core.state.setLocal({ render:false })` 로 수행해 `__g7PendingLocalState` · `__g7ForcedLocalFields` · `__g7SetLocalOverrideKeys` · **`__g7SequenceLocalSync`** 를 함께 갱신한다. 마지막 것이 핵심이다 — `handleSequence` 는 커스텀 핸들러 뒤에 오직 그 변수로만 `currentState` 를 갱신하는데, `context.setState` 경로는 그 변수를 전혀 건드리지 않아 엔진이 마련한 전파 장치가 사문화돼 있었다.
+- 종전 동작을 유지하는 제외 조건: 함수형 업데이터, `scope: 'parent' | 'root'`, 모달 컨텍스트 스택이 있는 경우(사례 29), `merge: 'replace'`(사례 17), payload 에 `errors` 키 또는 `File`·`Blob`·`Date` 같은 non-plain 객체, `__templateApp`/`setLocal` 부재(테스트·프리뷰 폴백).
+- `__mergeMode` 를 명시한 호출은 `__g7ForcedLocalFields` 를 **얕은 스프레드**로 재보정한다. `setLocal` 은 깊게 병합하는데 저장소 A 경로는 얕은 스프레드여서, 사례 19 의 2차 수정(`currentSelection: {}` 리셋)이 깊은 병합에서는 무효화된다.
+
+#### 저장소 A 에만 쓰던 나머지 경로 정리
+
+- `resultTo: { target: '_local' }` · isolated 폴백 · `setState` 기본 분기 · `handleSetError` · `callExternal`/`callExternalEmbed` 콜백 · `loadFromLocalStorage` · `FormContext.updateByScope` 가 저장소 B 도 함께 갱신한다.
+- `loadingActions`(apiCall 로딩 플래그)와 `$parent`/`$root` 스코프 쓰기는 대상에서 제외한다. 전자는 apiCall 을 발화한 컴포넌트 자신의 일시적 표시 플래그라 페이지 단위 슬롯에 실으면 다른 컴포넌트로 새고 해제가 되지 않으며, 후자는 `_local` 정본이 아닌 다른 슬롯을 노린다.
+
+### Changed
+
+- 이중 저장소 계약을 경로별 **양방향 쌍**(`[이중저장소 A→B]` / `[이중저장소 B→A]`)으로 고정하는 테스트를 추가했다. 한 방향만 시험하면 반대 방향 회귀가 초록으로 통과한다 — 사례 41 은 B→A 축, 사례 42 는 A→B 축으로 각각 그렇게 새어 나갔다.
+
+## [engine-v1.63.4] - 2026-09-01
+
+### Fixed
+
+#### 자동바인딩 키입력이 편집기 본문을 서버 원본으로 되돌리던 문제
+
+- 자동바인딩(`performStateUpdate`)이 `__g7PendingLocalState` 에 **저장소 A 기반 전체 스냅샷**을 그대로 대입했다. 그 base(`parentFormContext.state`)는 `extendedDataContext` useMemo 의 결과라, `setLocal({ render:false, selfManaged:true })`(CKEditor5 등)이 저장소 B 에만 쓴 뒤 memo 가 재계산되지 않은 구간에서는 **편집 이전 스냅샷으로 고정**된다. 이어지는 `setLocal` 이 `currentSnapshot = pendingState || baseLocal` 로 그것을 채택해 저장소 B 를 통째 교체하면서 편집분이 사라졌다.
+- 이제 pending 은 렌더러가 화면을 만드는 순서(`dataContext._local → dynamicState → __g7ForcedLocalFields`)와 같게 합성한다(`composeAutoBindingPendingSnapshot`). pending 은 `getLocal()` 이 읽는 "화면과 같은 전체 스냅샷" 이므로 이 정합이 맞다. 방금 입력한 경로는 마지막에 다시 얹어, 오버레이의 직전 값이 입력을 되돌리지 못하게 한다.
+- 성립 조건에는 **memo deps 와 무관한 리렌더**가 선행해야 한다(브라우저 실측: 폭 변경). 그것이 없으면 손실이 없다 — 리사이즈 없는 대조군은 정상이다. engine-v1.63.3(#130)이 저장 클릭 경로를 고쳤다면 이번 수정은 **그 앞의 키입력 경로**를 고친다.
+- 작성 화면은 `내용은 필수입니다` 422 로, **수정 화면은 성공 토스트와 함께 서버 원본이 저장되어** 편집분이 조용히 사라졌다. 화면의 편집기에는 고친 내용이 그대로 보이고 콘솔 에러도 없었다.
+- 저장소 A 경로(`parentFormContext.setState`)와 `setLocal` 의 base 우선순위는 **건드리지 않는다**. 전자는 2026-04-22 에 로그인 폼 email 손실로 철회된 수정의 자리이고, 후자는 `_localInit`(engine-v1.49.2)이 초기 데이터를 pending 에만 실어 두는 구간을 깨뜨린다.
+
+## [engine-v1.63.3] - 2026-09-01
+
+### Fixed
+
+#### 리사이즈 후 저장 시 편집기 본문이 저장소 B 와 sequence 반환값에서 함께 사라지던 문제 (#130)
+
+- `handleSetState` 의 COMPONENT 분기가 `_global._local`(저장소 B)을 동기화할 때, base 를 저장소 A 계열 전체 스냅샷 대신 **live B + 변경 키**로 삼는다. `setGlobalState` 는 `_local` 을 얕게 병합하므로 이 동기화는 patch 가 아니라 **통째 교체**였고, A 가 아직 받지 못한 값이 조용히 사라졌다. 정답 선례는 같은 파일의 dot-notation 경로(engine-v1.58.2)이며 그 주석이 이 경로를 위험으로 지목하고 있었다.
+- **같은 분기의 반환값도 live B 기반으로 신선화한다.** 요청 body 는 저장소 B 를 읽지 않는다 — sequence 의 `currentState`(= 이 반환값)에서 온다. B 쓰기만 고치면 B 는 지켜지지만 저장은 여전히 422 가 났다.
+- A 가 값을 못 받는 대표 경로는 `setLocal({ render:false, selfManaged:true })`(CKEditor5 등 자체 DOM 관리 플러그인)다. 이 호출은 React 렌더를 한 번도 일으키지 않아, `extendedDataContext` useMemo 가 재계산되지 않고 `context.state` 가 입력 이전 스냅샷으로 고정된다. 여기에 **브레이크포인트를 넘지 않는 폭 변경**(19px 로 재현)이 겹쳐 `__g7PendingLocalState` 가 null 이 되면 base 가 stale A 로 떨어졌다.
+- 예외도 콘솔 에러도 남지 않는 결함이었다 — 작성 화면은 422, **수정 화면은 성공 토스트와 함께 직전 본문이 저장되어 편집분이 사라졌다.**
+- 제외 조건은 종전 동작을 유지한다: `merge:"replace"`(의도적 리셋 · 사례 17), 모달 컨텍스트 스택이 있는 경우(사례 29), `__templateApp` 부재(v1.50.4 호환 폴백). `merge:"shallow"` 는 제외하지 않는다 — 현행 shallow 는 리프 컴포넌트의 부분 상태를 base 로 써서 오히려 이 결함에 더 노출돼 있었다.
+- 두 쓰기 경로(B 쓰기 · 반환값)가 같은 규칙으로 저장소 A 전용 키(`loadingActions` 등)를 보충한다. 규칙이 갈리면 나중에 소비자가 생길 때 어느 경로를 탔느냐로 결과가 달라진다.
+
+#### `setParentLocal` 이 모달에서 부모로 값을 올릴 때 저장소 B 를 통째 교체하던 문제
+
+- `setParentLocal` 은 부모 컨텍스트의 **저장소 A**(`parentEntry.state._local`)를 base 로 만든 값을 그대로 `setGlobalState({ _local: ... })` 에 넘겼다. 위와 같은 얕은 병합 특성 때문에 이 쓰기도 patch 가 아니라 통째 교체였고, 부모가 페이지 루트일 때 그 A 스냅샷은 B 보다 뒤처져 있을 수 있다(사례 21). 이제 B 에는 live B + 변경 키만 얹고 A 전용 키는 보충한다.
+- 저장소 A 경로(`parentEntry.setState`)와 `__g7PendingLocalState` 는 종전 그대로다 — 그쪽 base 까지 B 기반으로 바꾸면 React 전용 배열이 B 초기값으로 덮이는 사례 22 위험이 생긴다. `merge:"replace"` 는 여기서도 제외한다(사례 17).
+
+### Changed
+
+- `addMissingLeafKeys` 를 `helpers/StateMerge.ts` 로 옮겨 `G7CoreGlobals` 와 `ActionDispatcher` 가 공유한다. `G7CoreGlobals` 가 이미 `ActionDispatcher` 를 import 하고 있어 역방향 값 import 가 런타임 순환이 되기 때문이며, 동작은 원문 그대로다.
+
+## [engine-v1.63.2] - 2026-08-27
+
+### Fixed
+
+#### 정적 게시본이 200 인데 본문이 손상된 경우 폴백하지 못하던 문제 (#122)
+
+- `fetchStaticFirst()` 가 정적 응답의 본문이 **JSON 으로 파싱되는지까지** 확인한 뒤 돌려준다. 종전에는 `response.ok` 만 보았는데, 디스크가 가득 찼거나 quota 를 넘긴 상태에서 만들어진 게시본은 내용이 중간에 잘린 채로도 웹서버가 정상 200 으로 서빙한다. 그러면 폴백이 걸리지 않은 채 호출부의 `response.json()` 이 예외를 던지고, 그 지점에는 폴백 계층이 없어 화면 전체가 뜨지 않았다 — 정적·API·태그 3층 폴백이 유일하게 개입하지 못하던 경로다. 이제 손상이 확인되면 종전 API 로 폴백하고, 폴백 사실을 콘솔 경고 한 줄로 남긴다(조용한 폴백 금지).
+- 검증을 위해 본문을 읽더라도 호출부가 그대로 다시 소비할 수 있다 — 응답 본문은 1회용 스트림이라, 읽고 그대로 돌려주면 호출부에서 빈 본문이 된다.
+
+## [engine-v1.63.1] - 2026-08-27
+
+### Fixed
+
+#### 정적 게시 미스에서 운영자 추가 자산이 복구되지 않던 문제 (#123)
+
+- `staticToLegacy()` 가 세 확장 타입을 모두 역변환한다 — 종전에는 `templates/{id}/assets/**` 만 처리했다. 모듈·플러그인의 `custom/**` 도 같은 형태(`{type}/{id}/assets/**`)로 게시되는데 그 규칙이 없어, 게시본이 GC(현재+직전 1개 보존)로 사라지면 되돌릴 주소를 만들지 못했다. blade 인라인 복구기(`partials/asset-url-recovery.blade.php`)도 동형으로 갱신했다 — 두 구현이 갈리면 코어 번들 로드 전 경로만 조용히 다르게 동작한다.
+- `ModuleAssetLoader.loadCustomAssets()` 가 정적 → 종전 API 폴백 계층을 갖는다. 형제 경로(`loadBundleCss`)는 이미 갖고 있었고 이 경로만 비어 있었다: 정적 URL 이 404 가 확정된 뒤에도 같은 URL 을 3회 재시도할 뿐이라 복구가 원리상 불가능했고, 화면은 정상 렌더되면서 운영자가 덧붙인 스타일만 조용히 빠졌다.
+- 자산 실패 배너의 [다시 시도]가 **복구 가능한 주소**를 다시 부른다. 종전에는 정적 미스로 실패한 경우에도 원본 정적 URL 을 넘겨, 버튼은 있는데 눌러도 구조적으로 항상 실패했다.
+
+## [engine-v1.63.0] - 2026-08-26
+
+### Added
+
+#### 서버가 심은 템플릿 externals 의 로드 실패 표면화 (#123)
+
+- `drainExternalAssetFailures()` 신설 — 템플릿 `externals`(아이콘 폰트 CSS·웹폰트·부팅 스크립트)는 서버가 HTML 에 직접 심으므로 엔진 번들보다 먼저 평가된다. 실패해도 자바스크립트에는 아무 신호가 오지 않아, engine-v1.62.0 이 세운 실패 표면화 계층이 **이 경로만 통째로 비어 있었다**: 아이콘 58개가 0×0 으로 사라진 화면이 배너도 로그도 없이 남았고(아이콘만으로 조작하는 버튼이 있는 화면에서는 곧 조작 불능), 자체 서버 로그에도 흔적이 없어 운영자가 원인을 특정할 수 없었다. 이제 각 태그의 `onerror` 가 부트스트랩 대기열에 쌓이고, 엔진이 뜨면 그 대기열을 배너로 흘려보낸 뒤 이후 실패용 sink 를 건다. 배너의 [다시 시도]는 해당 태그를 캐시 무효화 쿼리와 함께 다시 심어 복구되면 배너를 해제한다.
+- 힌트(`preload`/`preconnect`/`dns-prefetch`)는 대상에서 제외한다 — 실패해도 화면 기능이 사라지지 않으므로, 여기까지 알리면 안내가 잡음이 되어 정작 조작 불능을 만드는 실패가 묻힌다.
+
+#### 커스텀 자산 관리가 모듈·플러그인까지 확장 (#123)
+
+- 편집기 [커스텀 자산] 모달이 **대상 선택기**를 갖는다 — 편집 중인 템플릿과 활성 모듈·플러그인을 오간다. 같은 기능이 확장 타입에 따라 화면에서 되고 안 되면 운영자는 그 이유를 알 수 없고, 모듈·플러그인 `custom/` 은 그동안 FTP 말고 경로가 없었다.
+- 관리 API 가 확장 공통 엔드포인트(`/api/admin/extensions/{type}/{id}/custom-assets`)로 재편됐다. 타입별로 나누면 같은 검증·문서·테스트가 세 벌로 갈리고, 그중 하나만 약해지면 그 경로가 조용한 우회로가 된다.
+- 대상을 바꾸면 이전 확장의 선택·초안을 버린다. 남겨 두면 A 확장에서 열어 둔 본문을 B 확장에 저장하게 되고, 경로가 유효하면 서버는 정상 200 으로 받아들인다.
+
+### Changed
+
+#### 레이아웃 편집기 번들 로드의 재시도 계층 + 실패 문구 정리 (#123)
+
+- `loadLayoutEditorBundle()` 이 `loadScriptWithRetry` 를 쓴다 — 이 경로만 재시도 계층이 없어(원시 `<script>` + `onerror` 1회), 일시적 네트워크 유실 한 번에 편집기가 통째로 열리지 않았다. 다른 모든 자산 경로(레이아웃 스크립트·확장 병합 번들·CSS)가 이미 이 로더를 쓰고 있었다.
+- 실패 화면 문구에서 번들 경로를 걷어냈다. 종전에는 `편집기 번들 로드 실패: /build/core/layout-editor.min.js` 처럼 내부 배치 구조가 그대로 노출됐는데, 사용자가 고칠 수 있는 정보가 아니다. 경로는 콘솔 로그로만 남기고, 화면에는 다음 행동(네트워크 확인 · 새로고침)을 안내한다.
+
+## [engine-v1.62.0] - 2026-08-25
+
+### Added
+
+#### 구동 자산 자체 제공 seam + 로드 실패 표면화 (#123)
+
+- `networkResilience.loadStylesheetWithRetry()` 신설 — `loadScriptWithRetry` 와 동형(3시도·지수 백오프·재시도 전 element 제거·**최종 실패 시 reject**). CSS 경로만 이 계층이 없어 실패가 통째로 무음이었다: `onerror` 를 아예 걸지 않거나 `resolve()` 로 삼켜, 스타일이 붙지 않은 화면(아이콘 소실·본문 서식 붕괴)이 오류 없이 남았다.
+- `G7Core.asset.{template,templateDir,module,plugin,convertToCurrentMode,loadScript,loadStylesheet}` 신설 — 확장 IIFE 번들은 코어의 `assetUrl.ts` 를 import 할 수 없어 URL 을 문자열로 조립하는 수밖에 없었고, 그 조립은 자산 URL 이중 모드(확장자를 정적 location 이 가로채는 서버)에서 그 자산만 404 로 만든다.
+- `templateAssetDir()` — AMD 로더·워커처럼 **디렉토리 접두에 파일명을 이어 붙이는** 소비자용. 정적 게시본이 있으면 그 실경로를 우선하고(모드와 무관하게 하위 파일이 해석된다), 없으면 확장자 형태 API 경로를 돌려준다. 확장자를 가로채는 서버에서는 후자가 404 이므로 소비자가 폴백을 갖춰야 한다.
+- `G7Core.assets.{notifyFailure,clearFailure,clearAll,getFailures,retryAll}` + `assets/AssetFailureNotice.ts` — 자산 로드 실패를 사용자에게 알리고 재시도를 제공한다. **호스트 컴포넌트에 의존하지 않고 DOM 에 직접 주입**한다: Toast·Modal 은 베이스 레이아웃이 마운트한 호스트가 있어야 뜨는데, 독립 레이아웃(`extends` 없음 — 예: `admin_login.json`)에는 그 호스트가 없고 자산 실패는 바로 그런 화면에서도 알려야 한다. 테마 색은 일괄 문자열(cssText)이 아니라 개별 프로퍼티로도 못 박는다 — 파서가 모르는 선언 하나로 전체가 버려지는 환경에서 배너가 배경 없이 뜨면 안내로서 기능하지 못한다.
+- `ModuleAssetLoader.loadCustomAssets()` + `parseCustomAssetsFromConfig()` — 운영자가 확장 `custom/` 에 덧붙인 자산을 확장 병합 번들 **뒤**에 로드한다. CSS 는 나중에 온 규칙이 이기므로 앞에 붙이면 운영자의 재정의가 확장 스타일에 밀린다.
+
+### Changed
+
+- `TemplateApp.loadLayoutScripts` — ① same-origin 경로에 `convertToCurrentMode` 적용(종전 미적용: 확장자를 가로채는 서버에서 자체 제공 자산이 404) ② `loadScriptWithRetry` 로 교체 ③ 최종 실패를 `failedLayoutScripts` 에 기록하고 안내 배너로 표면화. "한 스크립트의 실패가 나머지 로드를 막지 않는다" 는 기존 계약은 유지한다.
+- `ModuleAssetLoader` 의 `loadCSS`/`loadBundleCss` 가 재시도 계층을 갖는다. 최종 실패는 `failedCssAssets` 와 안내 배너에 남기되 **throw 하지 않는다** — 스타일이 없어도 화면은 동작하므로 한 확장의 CSS 실패로 나머지 확장 로드를 중단시키지 않는다. 병합 CSS 의 정적 게시 미스 폴백은 종전 "같은 `<link>` 의 href 1회 교체"(재시도 예산 없음)에서 레거시 URL 에 대한 정규 재시도로 바뀌었다.
+
+## [engine-v1.61.0] - 2026-08-25
+
+### Added
+
+#### 부트스트랩 리소스 정적 게시(bake) 우선 로더 + API 폴백 (#122)
+
+- 서버가 병합 결과물(routes/lang/components)을 캐시 버전 디렉토리(`/build/ext/{v}/…`)에 실파일로 게시하면, blade 가 `window.G7Config.staticBase` 를 주입하고 프론트 로더가 그 정적 경로를 **우선** 시도한다. 정적 응답이 `!ok`(부분 게시·GC 직후 404 포함)이거나 네트워크 실패면 **즉시** 종전 API URL 로 폴백한다 (`fetchStaticFirst` — legacy 측은 기존 `fetchWithRetry` 네트워크 복원력 유지, 폴백 발생은 console.warn 1줄로 관측 가능).
+- `assetUrl.ts` 에 `extStaticBase()`/`extStaticVersion()`/`extStaticUrl()`/`staticToLegacy()` 추가 — 서버측 `AssetUrl` 의 게시 트리 규약과 경로 규칙 1:1. `staticBase` 미주입(비프로덕션/kill-switch/미게시)이면 전 리소스가 종전 API 직행으로, 기존 동작과 바이트 동일하다.
+- 소비자 전환: TemplateApp routes(초기 burst + 핸드셰이크 재로드 — 재로드는 새 버전 정적 경로 조합, 미게시 시 legacy 폴백) · TranslationEngine lang(`bustCache` 재로드는 목적상 legacy 직행) · ComponentRegistry components(편집기 v0 경로는 legacy 유지).
+- 태그 계층 자가 복구: `asset-url-recovery` 파샬에 `staticToLegacy` 역변환 추가 — 실패한 `/build/ext/{v}/…` 태그 자산(`<link>`/`<script>`)을 종전 `/api/…` URL 로 1회 전환한다 (GC 된 구버전 자산을 참조하는 캐시된 HTML 방어, `/build/core/**` 는 계속 변환 제외, 단방향 1회·자동 reload 금지 불변식 유지).
+- `ModuleAssetLoader` 확장 병합 번들(JS/CSS)도 동일 폴백 — 정적 번들 URL 은 1회만 시도하고 미스 시 `staticToLegacy` + `convertToCurrentMode` 로 종전 API URL 에 합류한다 (JS 는 기존 재시도 예산을 레거시에서 이어가고, CSS 는 같은 `<link>` 의 href 를 1회 교체). 종전에는 같은 정적 URL 만 재시도해 게시본 소실 시 확장 핸들러가 조용히 전부 미등록되었다.
+- 그 역변환 결과는 언제나 확장자 형태이므로, 확장자 없는 형태로 이미 확정된 모드에서는 결과를 다시 `toExtensionless` 로 넘긴다. 확장자 주소를 가로채는 서버(자산 URL 이중 모드의 대상)에서 CSS `<link>` 는 교체 예산이 1회뿐이라, 그 한 번이 확장자 형태로 끝나면 스타일이 영구히 붙지 않았다 (`<script>` 는 재시도 예산이 남아 다음 시도에서 모드 전환 분기가 발동하므로 영향 없음).
+
+### Fixed
+
+#### stale 캐시버전 재방문의 부트 이중 로드 (#122)
+
+- localStorage `g7_cache_version` 이 stale 이면 첫 burst 가 구버전 `?v` 로 나가고, config 핸드셰이크가 routes 재로드 + lang(ko·en) `_=` 버스터 재다운로드를 유발했다 (~500KB 중복, 부트 ~1.3s 연장). blade 는 이미 현재 버전을 `G7Config.cache_version` 으로 주입하고 있었으므로, TemplateApp 의 캐시 버전 시드를 **blade 주입값 우선**(부재 시 localStorage 폴백)으로 교체하고, 핸드셰이크 재로드 판정 기준을 "이번 burst 가 실제 사용한 버전" 으로 바꿨다. 렌더~부트 사이 bump 는 종전대로 핸드셰이크가 복구한다.
+- `ComponentRegistry.loadComponents()` 에 옵셔널 `cacheVersion` 파라미터를 추가해 components.json 요청에 `?v` 를 부착하고, 정적 manifestCache 키에 버전을 포함해 확장 라이프사이클 전후의 stale 매니페스트 교차 오염을 막았다 (편집기 경로는 버전 미전달 — v0 캐시 키 + 무버전 URL 하위 호환).
+
 ## [engine-v1.60.6] - 2026-08-22
 
 ### Fixed

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Public\SitemapController;
 use App\Seo\TemplateRouteResolver;
+use App\Support\StaticExtensionPattern;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -35,7 +36,7 @@ Route::prefix('admin')
             }
 
             return view('admin');
-        })->where('any', '(?!.*\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)).*');
+        })->where('any', StaticExtensionPattern::catchAllExclusion());
     });
 
 // Sitemap XML 라우트
@@ -48,6 +49,12 @@ Route::get('/sitemap-{n}.xml.gz', [SitemapController::class, 'child'])->whereNum
 // User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지
 Route::middleware(['template.dependencies:user', 'seo'])
     ->group(function () {
+        // `where('any', ...)` 의 예약 프리픽스는 전수 제외한다 — catch-all 이 GET 을 먼저
+        // 삼키면 그 뒤에 등록된 라우트가 도달 불가가 되는데, 예외도 404 도 아닌 **SPA 셸 200**
+        // 이라 요청한 쪽은 무엇이 잘못됐는지 알 방법이 없다. `_boost`(DevTools) 가 실제로 이렇게
+        // 가려져 있었고, "우연히 안전" 한 상태를 게이트 대신 의지하게 만들었다(공개#128).
+        // `modules` 는 향후 모듈이 web GET 라우트를 소유할 때 같은 일이 반복되지 않도록 미리
+        // 비워 둔다. `admin` catch-all(위)은 `admin/` 스코프 한정이라 대상이 아니다.
         Route::get('/{any?}', function (Request $request) {
             // 미등록 경로는 SPA 셸 본문 + HTTP 404 (soft 404 방지 — 공개#47).
             $path = '/'.ltrim($request->getPathInfo(), '/');
@@ -56,5 +63,5 @@ Route::middleware(['template.dependencies:user', 'seo'])
             }
 
             return view('app');
-        })->where('any', '(?!admin)(?!api)(?!plugins)(?!.*\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)).*');
+        })->where('any', '(?!admin)(?!api)(?!plugins)(?!_boost)(?!modules)'.StaticExtensionPattern::catchAllExclusion());
     });

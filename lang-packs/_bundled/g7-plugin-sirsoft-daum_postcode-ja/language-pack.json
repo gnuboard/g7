@@ -12,7 +12,7 @@
         "en": "G7 plugin (sirsoft-daum_postcode) Japanese language pack (bundled)",
         "ja": "G7 プラグイン (sirsoft-daum_postcode) 日本語 言語パック(バンドル)"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "scope": "plugin",
     "target_identifier": "sirsoft-daum_postcode",

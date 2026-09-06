@@ -568,4 +568,213 @@ class NoExternalUrlsTest extends TestCase
             'UpdateLayoutRequest 의 content 배열 규칙에 NoExternalUrls 가 부착되어야 합니다'
         );
     }
+
+    // ==========================================
+    // 순회 사각 폐쇄 (액션이 실행되는 자리 / 값이 sink 로 흐르는 자리)
+    // ==========================================
+    //
+    // 종전 순회는 `components[].props/actions/children` + `init_actions` 뿐이었다.
+    // 나머지 키는 저장 검증을 그대로 통과했고, 통과는 오류를 남기지 않는다.
+
+    /**
+     * 최상위 키에 외부 URL 을 심은 레이아웃을 만든다.
+     *
+     * @param  string  $key  최상위 키
+     * @param  mixed  $payload  그 키의 값
+     * @return array<string, mixed> 레이아웃 배열
+     */
+    private function layoutWith(string $key, mixed $payload): array
+    {
+        return ['version' => '1.0.0', 'components' => [], $key => $payload];
+    }
+
+    /**
+     * 규칙을 돌려 실패 여부를 돌려준다.
+     *
+     * @param  array<string, mixed>  $layout  레이아웃 배열
+     * @return bool 차단되면 true
+     */
+    private function blocks(array $layout): bool
+    {
+        $failed = false;
+        $this->rule->validate('content', $layout, function () use (&$failed) {
+            $failed = true;
+        });
+
+        return $failed;
+    }
+
+    /**
+     * 신규 순회 키별 외부 URL 차단.
+     *
+     * @return array<string, array{0: array<string, mixed>}>
+     */
+    public static function newlyTraversedKeyProvider(): array
+    {
+        $evilAction = ['handler' => 'loadScript', 'params' => ['src' => 'https://cdn.evil.com/x.js']];
+
+        return [
+            'initActions (신철자)' => [
+                ['version' => '1.0.0', 'components' => [], 'initActions' => [$evilAction]],
+            ],
+            'modals 안 컴포넌트 props' => [
+                [
+                    'version' => '1.0.0',
+                    'components' => [],
+                    'modals' => [
+                        'confirm' => [
+                            'components' => [
+                                ['component' => 'Img', 'props' => ['src' => 'https://cdn.evil.com/x.png']],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'named_actions' => [
+                ['version' => '1.0.0', 'components' => [], 'named_actions' => ['boot' => $evilAction]],
+            ],
+            'errorHandling' => [
+                [
+                    'version' => '1.0.0',
+                    'components' => [],
+                    'errorHandling' => ['404' => ['handler' => 'navigate', 'params' => ['path' => 'https://evil.com']]],
+                ],
+            ],
+            'component lifecycle.onMount' => [
+                [
+                    'version' => '1.0.0',
+                    'components' => [
+                        ['component' => 'Div', 'lifecycle' => ['onMount' => [$evilAction]]],
+                    ],
+                ],
+            ],
+            'component onComponentEvent' => [
+                [
+                    'version' => '1.0.0',
+                    'components' => [
+                        ['component' => 'Div', 'onComponentEvent' => [$evilAction]],
+                    ],
+                ],
+            ],
+            'component slots' => [
+                [
+                    'version' => '1.0.0',
+                    'components' => [
+                        [
+                            'component' => 'Card',
+                            'slots' => [
+                                'header' => [
+                                    ['component' => 'Img', 'props' => ['src' => 'https://cdn.evil.com/x.png']],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'component component_layout' => [
+                [
+                    'version' => '1.0.0',
+                    'components' => [
+                        [
+                            'component' => 'Widget',
+                            'component_layout' => [
+                                'components' => [
+                                    ['props' => ['src' => 'https://cdn.evil.com/x.png']],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'component responsive.props' => [
+                [
+                    'version' => '1.0.0',
+                    'components' => [
+                        [
+                            'component' => 'Img',
+                            'responsive' => ['md' => ['props' => ['src' => 'https://cdn.evil.com/x.png']]],
+                        ],
+                    ],
+                ],
+            ],
+            'protocol-relative 우회 형태' => [
+                [
+                    'version' => '1.0.0',
+                    'components' => [
+                        ['component' => 'Div', 'lifecycle' => ['onMount' => [['params' => ['src' => '/\\/evil.com/x.js']]]]],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider newlyTraversedKeyProvider
+     *
+     * @param  array<string, mixed>  $layout  검사 대상 레이아웃
+     */
+    public function test_blocks_external_url_in_newly_traversed_keys(array $layout): void
+    {
+        $this->assertTrue($this->blocks($layout), '신규 순회 키의 외부 URL 은 차단되어야 합니다');
+    }
+
+    /**
+     * same-origin 값은 신규 순회 키에서도 통과한다 (과차단 방지).
+     */
+    public function test_passes_same_origin_values_in_newly_traversed_keys(): void
+    {
+        $ok = ['handler' => 'loadScript', 'params' => ['src' => '/api/templates/assets/x/a.js']];
+
+        $this->assertFalse($this->blocks($this->layoutWith('initActions', [$ok])));
+        $this->assertFalse($this->blocks($this->layoutWith('named_actions', ['boot' => $ok])));
+        $this->assertFalse($this->blocks([
+            'version' => '1.0.0',
+            'components' => [
+                ['component' => 'Div', 'lifecycle' => ['onMount' => [$ok]]],
+                ['component' => 'Img', 'responsive' => ['md' => ['props' => ['src' => '/images/a.png']]]],
+                ['component' => 'Card', 'slots' => ['header' => [['props' => ['src' => '/images/a.png']]]]],
+            ],
+        ]));
+        $this->assertFalse($this->blocks([
+            'version' => '1.0.0',
+            'components' => [],
+            'modals' => ['confirm' => ['partial' => 'partials/confirm.json']],
+        ]));
+    }
+
+    /**
+     * 데이터 계층은 여전히 순회하지 않는다 (예시/안내 URL 을 담는 정당한 용례 보호).
+     *
+     * 이 회귀 단언이 없으면 다음 확장 때 "이왕 넓히는 김에" 로 데이터 계층까지 순회 대상이
+     * 되어, 저장되던 레이아웃이 갑자기 422 가 된다.
+     */
+    public function test_does_not_traverse_data_layer_keys(): void
+    {
+        foreach (['defines', 'state', 'computed', 'initLocal', 'initGlobal', 'initIsolated'] as $key) {
+            $this->assertFalse(
+                $this->blocks($this->layoutWith($key, ['docsUrl' => 'https://example.com/guide'])),
+                "$key 는 데이터 계층이므로 순회 대상이 아닙니다"
+            );
+        }
+    }
+
+    /**
+     * 오류 경로에 modals/slots 위치가 남는다 (어느 자리인지 알 수 있어야 고칠 수 있다).
+     */
+    public function test_reports_modal_and_slot_paths(): void
+    {
+        $paths = [];
+        $rule = new NoExternalUrls;
+
+        $rule->validate('content', [
+            'version' => '1.0.0',
+            'components' => [
+                ['component' => 'Card', 'slots' => ['header' => [['props' => ['src' => 'https://evil.com/x.png']]]]],
+            ],
+        ], function () use (&$paths) {
+            $paths[] = true;
+        });
+
+        $this->assertNotEmpty($paths, 'slots 안의 외부 URL 이 차단되어야 합니다');
+    }
 }

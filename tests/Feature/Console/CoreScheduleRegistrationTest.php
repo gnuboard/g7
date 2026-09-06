@@ -49,6 +49,7 @@ class CoreScheduleRegistrationTest extends TestCase
             'queue:prune-batches' => '15 4 * * *',
             'notification:cleanup' => '20 4 * * *',
             'ext-bundles:cleanup' => '25 4 * * *',
+            'ext-static:cleanup' => '28 4 * * *',
             'seo:prune-stats' => '30 4 * * *',
             'schedules:prune-history' => '35 4 * * *',
             'identity:prune-logs' => '40 4 * * *',

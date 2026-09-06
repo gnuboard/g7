@@ -26,7 +26,9 @@ use App\Extension\Vendor\VendorResolver;
 use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
+use Dotenv\Dotenv;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Env;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -1627,6 +1629,47 @@ class CoreUpdateService
     }
 
     /**
+     * 디스크의 `config/app.php` 에서 `update.{$key}` 를 직접 읽습니다.
+     *
+     * spawn 자식(`core:execute-upgrade-steps`)은 부모가 spawn 전에 config 캐시를 비우지 않은 경우
+     * (7.0.9 이하 부모) 이전 버전 설치본의 `bootstrap/cache/config.php` 로 부팅한다. 그 상태의
+     * `config('app.update.*')` 는 캐시에 박힌 옛 목록이라, 신버전이 추가한 항목(7.0.10 의
+     * `public/build/ext` 쓰기 권한 디렉토리)이 자식의 권한 정상화에서 빠진다 (2026-09-06 서버 실측).
+     * 본 메서드는 메모리 config 를 건드리지 않고 디스크 파일을 평가해 신버전 값을 돌려준다.
+     *
+     * 캐시 부팅에서는 `.env` 도 로드되지 않으므로(`LoadEnvironmentVariables` 가 건너뜀), 운영자의
+     * `G7_UPDATE_*` 재정의가 `config/app.php` 의 `env()` 에 보이도록 `.env` 를 먼저 불변 로드한다 —
+     * 이미 프로세스 env 에 있는 값(부모가 넘긴 `APP_VERSION` 등)은 덮어쓰지 않는다.
+     *
+     * @param  string  $key  `config/app.php` 의 `update` 배열 키
+     * @param  mixed  $default  파일에 키가 없을 때 돌려줄 값
+     * @return mixed 디스크 config 의 값
+     */
+    public function freshDiskUpdateConfig(string $key, mixed $default = []): mixed
+    {
+        $path = config_path('app.php');
+        if (! File::exists($path)) {
+            return $default;
+        }
+
+        if (app()->configurationIsCached() && File::exists(base_path('.env'))) {
+            try {
+                // audit:allow service-direct-data-access reason: Dotenv 는 모델이 아니라 .env 파서 — 캐시 부팅에서 로드되지 않은 .env 를 불변 로드한다 (프로세스 env 우선)
+                Dotenv::create(Env::getRepository(), base_path(), '.env')->safeLoad();
+            } catch (\Throwable $e) {
+                Log::channel('upgrade')->warning('freshDiskUpdateConfig: .env 로드 실패 — 프로세스 env 만으로 평가', ['error' => $e->getMessage()]);
+            }
+        }
+
+        $fresh = require $path;
+        if (! is_array($fresh)) {
+            return $default;
+        }
+
+        return $fresh['update'][$key] ?? $default;
+    }
+
+    /**
      * 코어 업그레이드 스텝을 실행합니다.
      * 각 스텝에서 환경설정 파일 생성, 데이터 마이그레이션 등을 수행합니다.
      *
@@ -1650,9 +1693,22 @@ class CoreUpdateService
         // 보유한 채 step 을 실행 중. upgrade step 안에서 신규 메서드 호출 시 fatal 위험.
         // `spawn_failure_mode` 와 연동하여 abort/fallback 분기.
         //
-        // spawn 자식 (ExecuteUpgradeStepsCommand) 의 경우 spawn env 의 APP_VERSION=toVersion
-        // 이 적용된 채 새 프로세스에서 부팅되므로 memoryVersion === toVersion → 가드 미발동.
-        $memoryVersion = (string) config('app.version', $fromVersion);
+        // spawn 자식 (ExecuteUpgradeStepsCommand) 은 spawn env 의 APP_VERSION=toVersion 을 받아
+        // 부팅되므로 memoryVersion === toVersion → 가드 미발동이어야 한다.
+        //
+        // 판독은 `CoreVersionChecker::getCoreVersion()` (env 우선, config 폴백) 으로 한다.
+        // `config('app.version')` 만 읽으면 안 된다 — 부모는 spawn 전(Step 10)에 config 캐시를
+        // 비우지 않으므로, 이전 버전 설치본의 `bootstrap/cache/config.php` 가 있으면 자식은
+        // 그 캐시로 부팅해 config 에는 fromVersion 이 박혀 있고 env 오버라이드는 무시된다.
+        // 그 상태에서 config 만 보면 정상 spawn 자식을 stale 부모로 오판해 abort 한다
+        // (7.0.9→7.0.10 실사례, 2026-09-06 — 스텝 0건 릴리즈에서도 중단). 이전 릴리즈에서는
+        // 자식 진입부의 `config:cache` 가 전역 Container 를 일회용 앱으로 바꿔 놓는 부수효과로
+        // `config()` 가 우연히 env 기반 값을 읽어 가드가 침묵했을 뿐이며, 그 부수효과는
+        // `ConfigCacheHelper::withPreservedContainer` 가 제거했다.
+        //
+        // 부모 in-process fallback 에서는 env 가 .env 의 APP_VERSION(= 아직 fromVersion, Step 11 전)
+        // 이므로 가드가 그대로 발동한다.
+        $memoryVersion = CoreVersionChecker::getCoreVersion() ?: (string) config('app.version', $fromVersion);
         if (version_compare($memoryVersion, $toVersion, '<')) {
             $mode = config('app.update.spawn_failure_mode', 'fallback');
             $message = sprintf(
@@ -1850,13 +1906,126 @@ class CoreUpdateService
     /**
      * _pending 하위 디렉토리를 정리합니다.
      *
-     * 타임스탬프 기반 격리 디렉토리를 통째로 삭제합니다.
+     * 타임스탬프 기반 격리 디렉토리(`core_{Ymd_His}/`)를 통째로 삭제합니다.
      *
-     * @param  string  $pendingPath  삭제할 pending 디렉토리 경로
+     * 호출자가 넘기는 경로는 격리 디렉토리 자체가 아니라 그 안쪽의 소스 경로일 수 있다 —
+     * ZIP·GitHub 경로는 `core_{ts}/extracted/{루트}/` 를, `--local` 은 `core_{ts}/local_source/`
+     * 를 소스로 돌려준다. 그 안쪽만 지우면 `core_{ts}/extracted/` 껍데기가 업데이트마다 남고,
+     * sudo 실행이면 root 소유라 운영자·웹서버 계정이 지울 수 없다(7.0.0 부터 누적된 실사례).
+     * 그래서 격리 디렉토리 루트로 올라가서 지운다.
+     *
+     * @param  string  $pendingPath  삭제할 pending 경로 (격리 디렉토리 또는 그 하위 소스 경로)
      */
     public function cleanupPending(string $pendingPath): void
     {
-        ExtensionPendingHelper::cleanupStaging($pendingPath);
+        ExtensionPendingHelper::cleanupStaging($this->resolveStagingRoot($pendingPath));
+    }
+
+    /**
+     * 경로가 속한 격리 디렉토리(`{pending_path}/core_*`) 루트를 돌려줍니다.
+     *
+     * 경로가 pending 기준 디렉토리 아래가 아니면 그대로 돌려준다 (`--source` 로 넘어온
+     * 외부 디렉토리처럼 우리가 만들지 않은 경로를 위로 올라가 지우는 일이 없도록).
+     *
+     * @param  string  $path  격리 디렉토리 또는 그 하위 경로
+     * @return string 격리 디렉토리 루트 또는 입력 경로 그대로
+     */
+    public function resolveStagingRoot(string $path): string
+    {
+        $rawBase = rtrim((string) config('app.update.pending_path'), '/\\');
+        $base = str_replace('\\', '/', $rawBase);
+        $normalized = rtrim(str_replace('\\', '/', $path), '/');
+
+        if ($base === '' || $normalized === $base || ! str_starts_with($normalized, $base.'/')) {
+            return $path;
+        }
+
+        $relative = substr($normalized, strlen($base) + 1);
+        $first = explode('/', $relative, 2)[0];
+
+        if ($first === '' || $first === '.' || $first === '..') {
+            return $path;
+        }
+
+        return $rawBase.DIRECTORY_SEPARATOR.$first;
+    }
+
+    /**
+     * pending 기준 디렉토리에 남은 **빈** 격리 디렉토리(`core_*`)를 청소합니다.
+     *
+     * 이전 버전의 정리 단계가 소스 경로 안쪽만 지워 남긴 `core_{ts}/extracted/` 껍데기가
+     * 대상이다. 부모(구버전 코드)가 남긴 것을 새 코드가 도는 자식 프로세스가 치우므로,
+     * 이 결함을 가진 버전에서 올라오는 업데이트도 껍데기 없이 끝난다.
+     *
+     * 파일이 하나라도 있는 디렉토리는 건드리지 않는다 — 부모가 아직 쓰고 있는 격리
+     * 디렉토리(추출본·vendor)는 파일을 갖고 있으므로 이 술어만으로 안전하게 구분된다.
+     *
+     * @return int 삭제한 격리 디렉토리 수
+     */
+    public function sweepEmptyStagingDirectories(): int
+    {
+        $base = (string) config('app.update.pending_path');
+
+        if ($base === '' || ! File::isDirectory($base)) {
+            return 0;
+        }
+
+        $swept = 0;
+
+        foreach (File::directories($base) as $dir) {
+            if (! str_starts_with(basename($dir), 'core_') || is_link($dir)) {
+                continue;
+            }
+
+            if (! $this->isDirectoryTreeEmpty($dir)) {
+                continue;
+            }
+
+            ExtensionPendingHelper::cleanupStaging($dir);
+
+            if (File::isDirectory($dir)) {
+                Log::channel('upgrade')->warning('코어 업데이트: 빈 격리 디렉토리 청소 실패 (권한)', ['path' => $dir]);
+
+                continue;
+            }
+
+            $swept++;
+        }
+
+        if ($swept > 0) {
+            Log::channel('upgrade')->info('코어 업데이트: 빈 격리 디렉토리 청소', ['swept' => $swept]);
+        }
+
+        return $swept;
+    }
+
+    /**
+     * 디렉토리 트리에 파일(또는 링크)이 하나도 없는지 판정합니다.
+     *
+     * 읽을 수 없는 하위 디렉토리가 있으면 "비어 있지 않다" 로 본다 — 내용을 모르는
+     * 디렉토리를 지우지 않기 위해서다.
+     *
+     * @param  string  $dir  판정할 디렉토리
+     */
+    private function isDirectoryTreeEmpty(string $dir): bool
+    {
+        try {
+            $items = new \FilesystemIterator($dir, \FilesystemIterator::SKIP_DOTS);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        foreach ($items as $item) {
+            if ($item->isLink() || ! $item->isDir()) {
+                return false;
+            }
+
+            if (! $this->isDirectoryTreeEmpty($item->getPathname())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -2084,10 +2253,16 @@ class CoreUpdateService
      * - chown 미지원 환경(Windows 등) 은 빈 배열 반환
      * - symbolic link 는 lstat 으로 처리하여 대상 따라가지 않음 (은닉 cycle 방어)
      *
+     * 제외 경로(`$excludes`)는 이번 실행이 스스로 만든 격리 디렉토리를 넘기는 자리다.
+     * 스냅샷은 격리 디렉토리가 만들어진 **뒤에** 수집되므로, 제외하지 않으면 sudo 실행이
+     * root 로 만든 추출본이 "원본 소유권" 으로 기록되고 복원 단계가 그 항목을 다시 root
+     * 로 되돌린다 — 정리가 어떤 이유로든 실패하면 잔존물은 언제나 root 소유가 된다.
+     *
      * @param  array<int, string>  $paths  base_path 상대 또는 절대 경로 목록
+     * @param  array<int, string>  $excludes  스냅샷에서 제외할 경로 (그 하위 전체 포함)
      * @return array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>
      */
-    public function snapshotOwnershipDetailed(array $paths): array
+    public function snapshotOwnershipDetailed(array $paths, array $excludes = []): array
     {
         if (! function_exists('chown')) {
             return [];
@@ -2096,6 +2271,14 @@ class CoreUpdateService
         $snapshot = [];
         $maxItems = 50000;
         $truncated = false;
+        $excludePrefixes = [];
+
+        foreach ($excludes as $exclude) {
+            $exclude = rtrim(str_replace('\\', '/', trim((string) $exclude)), '/');
+            if ($exclude !== '') {
+                $excludePrefixes[] = $exclude;
+            }
+        }
 
         foreach ($paths as $rawPath) {
             $rawPath = trim((string) $rawPath);
@@ -2108,7 +2291,7 @@ class CoreUpdateService
                 continue;
             }
 
-            $this->collectStatRecursively($absolute, $snapshot, $maxItems, $truncated);
+            $this->collectStatRecursively($absolute, $snapshot, $maxItems, $truncated, $excludePrefixes);
 
             if ($truncated) {
                 break;
@@ -2150,13 +2333,23 @@ class CoreUpdateService
      * 트리를 재귀 stat 하여 snapshot 배열에 누적합니다.
      *
      * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $snapshot
+     * @param  array<int, string>  $excludePrefixes  제외 경로(슬래시 정규화, 끝 슬래시 없음) — 일치하거나 그 하위면 건너뛴다
      */
-    private function collectStatRecursively(string $path, array &$snapshot, int $maxItems, bool &$truncated): void
+    private function collectStatRecursively(string $path, array &$snapshot, int $maxItems, bool &$truncated, array $excludePrefixes = []): void
     {
         if ($truncated || count($snapshot) >= $maxItems) {
             $truncated = true;
 
             return;
+        }
+
+        if ($excludePrefixes !== []) {
+            $normalized = rtrim(str_replace('\\', '/', $path), '/');
+            foreach ($excludePrefixes as $prefix) {
+                if ($normalized === $prefix || str_starts_with($normalized, $prefix.'/')) {
+                    return;
+                }
+            }
         }
 
         $isLink = is_link($path);
@@ -2181,10 +2374,66 @@ class CoreUpdateService
 
         $items = new \FilesystemIterator($path, \FilesystemIterator::SKIP_DOTS);
         foreach ($items as $item) {
-            $this->collectStatRecursively($item->getPathname(), $snapshot, $maxItems, $truncated);
+            $this->collectStatRecursively($item->getPathname(), $snapshot, $maxItems, $truncated, $excludePrefixes);
             if ($truncated) {
                 return;
             }
+        }
+    }
+
+    /**
+     * root 로 실행된 업데이트가 종료된 뒤, 런타임 쓰기 디렉토리의 소유권을 정상화합니다.
+     *
+     * `restoreOwnership()` 은 흐름 **중간**의 한 단계라, 그 이후에 일어나는 캐시
+     * 쓰기(버전 bump·상태/훅 캐시 재생성·키 인덱스 갱신·번들 빌드)가 root 소유
+     * 파일을 새로 만든다. 그 파일들이 남으면 웹 프로세스의 캐시 쓰기가 Permission
+     * denied 로 죽어 전면 500 이 된다 (실사례: 7.0.9→7.0.10 sudo 업데이트 —
+     * 치명점은 모든 remember 가 갱신하는 캐시 키 인덱스 파일).
+     *
+     * 따라서 이 메서드는 **흐름의 마지막**(restoreUpgradeLogOwnership 과 같은
+     * 지점)에서 호출되어, 대상 디렉토리 자신의 소유자(웹 쓰기 소유)를 기준으로
+     * 내용물을 재귀 정상화하고 그룹 쓰기를 동기화한다. 과거 업데이트가 남긴
+     * root 잔재도 함께 정리된다 (재귀 전체 대상).
+     *
+     * 비-root 프로세스는 chown 자체가 불가능하고 필요도 없으므로 즉시 no-op.
+     * 기준 디렉토리 자체가 root 소유(비정상 배포)면 상속 근거가 없어 스킵한다.
+     */
+    public function normalizeRuntimeOwnershipAfterRootRun(): void
+    {
+        if (! function_exists('chown') || ! function_exists('posix_geteuid') || posix_geteuid() !== 0) {
+            return;
+        }
+
+        $targets = [
+            storage_path('framework/cache'),
+            base_path('bootstrap/cache'),
+            storage_path('app/ext-bundles'),
+            // 확장 업데이트의 다운로드·추출 임시 폴더. 부모 `storage/app/temp` 가 sudo 업데이트에서 root 로
+            // 최초 생성되면 이후 관리자 화면의 확장 업데이트가 임시 폴더를 만들지 못한다 (#651 F14).
+            storage_path('app/temp'),
+            // `restore_ownership` 은 `storage/logs` 를 포함하지만 그 복원은 흐름 **중간**(Step 11)이라,
+            // 그 뒤에 만들어지는 daily 롤오버·신규 로그 파일은 root 로 남는다 (#651 F15).
+            storage_path('logs'),
+        ];
+
+        foreach ($targets as $dir) {
+            if (! is_dir($dir)) {
+                continue;
+            }
+
+            $owner = @fileowner($dir);
+            $group = @filegroup($dir);
+
+            if ($owner === false || $owner === 0) {
+                Log::channel('upgrade')->warning('런타임 소유권 정상화 스킵 — 기준 디렉토리가 root/판독불가 소유', [
+                    'dir' => $dir,
+                ]);
+
+                continue;
+            }
+
+            FilePermissionHelper::chownRecursive($dir, $owner, $group);
+            FilePermissionHelper::syncGroupWritability($dir);
         }
     }
 

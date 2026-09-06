@@ -311,5 +311,10 @@
         "vbank_notify_hint": "KG 이니시스 가맹점 어드민에서 이 URL을 PC 가상계좌 입금통보 URL로 등록해야 합니다.",
         "vbank_notify_copied": "URL이 클립보드에 복사되었습니다.",
         "copy": "복사"
+    },
+    "payment": {
+        "error": {
+            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
+        }
     }
 }

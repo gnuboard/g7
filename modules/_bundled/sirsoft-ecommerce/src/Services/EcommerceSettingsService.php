@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Extension\HookManager;
+use App\Support\ExtensionStoragePath;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -610,19 +611,16 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     /**
      * 설정 저장 경로 반환
      *
-     * testing 환경에서는 운영 설정(storage/app/modules/.../settings)을 보호하기 위해
-     * 격리된 임시 경로를 사용합니다. 설정 저장 API를 호출하는 Feature 테스트가
-     * 운영 mileage.json 등을 덮어쓰는 것을 차단합니다(운영 설정 영구 보존).
+     * 경로는 `modules` 디스크 root(`config/filesystems.php`)를 단일 출처로 삼는다. 그 root 가
+     * 테스트 환경에서 운영 데이터와 격리된 경로를 가리키므로, 운영 설정(storage/app/modules/
+     * .../settings)을 덮어쓰지 않기 위한 분기를 이 서비스가 따로 들고 있지 않는다 — 분기를
+     * 확장마다 복사하면 한 곳만 빠뜨려도 그 확장의 테스트가 조용히 운영 파일을 건드린다.
      *
      * @return string 설정 파일 저장 디렉토리 경로
      */
     private function getStoragePath(): string
     {
-        if (app()->runningUnitTests()) {
-            return storage_path('framework/testing/modules/'.self::MODULE_IDENTIFIER.'/settings');
-        }
-
-        return storage_path('app/modules/'.self::MODULE_IDENTIFIER.'/settings');
+        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'settings');
     }
 
     /**

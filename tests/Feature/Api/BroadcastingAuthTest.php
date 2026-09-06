@@ -6,8 +6,10 @@ use App\Enums\ExtensionOwnerType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Contracts\Broadcasting\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Route as RouteFacade;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -106,6 +108,71 @@ class BroadcastingAuthTest extends TestCase
     }
 
     /**
+     * `broadcasting/auth` 로 끝나는 라우트는 게이트된 `api/broadcasting/auth` 하나뿐이어야 한다.
+     *
+     * 배경 (이슈 #128 F4):
+     *   `bootstrap/app.php` 의 `withRouting(channels: ...)` 인자는 ApplicationBuilder 가
+     *   `withBroadcasting()` 을 자동 호출하게 만들고, 그 결과 `booted` 에서 `Broadcast::routes()`
+     *   가 **게이트 없는** `GET|POST /broadcasting/auth` 를 등록했다. 프론트는 이 경로를 쓰지
+     *   않으므로(`WebSocketManager` 는 `/api/broadcasting/auth` 만 호출) 死라우트인 동시에,
+     *   웹소켓 킬스위치(`broadcasting.default === 'null'`, 공개#50)를 통째로 우회하는 경로였다.
+     *   production 에서 미인증 POST 가 200 을 받았다.
+     *
+     *   채널 정의(`routes/channels.php`)는 `App\Providers\BroadcastServiceProvider` 가
+     *   `require` 로 계속 로드하므로 인가 콜백은 그대로 살아 있다 — 아래 채널 테스트가 그 증거다.
+     */
+    public function test_only_the_gated_api_broadcasting_auth_route_is_registered(): void
+    {
+        $found = [];
+
+        foreach (RouteFacade::getRoutes() as $route) {
+            $uri = $route->uri();
+
+            if ($uri === 'broadcasting/auth' || str_ends_with($uri, '/broadcasting/auth')) {
+                $found[$uri] = $route->gatherMiddleware();
+            }
+        }
+
+        // 모집단 가드 — 라우트가 하나도 안 잡히면 이 단언은 공허참이 된다.
+        $this->assertArrayHasKey(
+            'api/broadcasting/auth',
+            $found,
+            '게이트된 api/broadcasting/auth 라우트가 등록되어 있지 않습니다.'
+        );
+
+        $this->assertSame(
+            ['api/broadcasting/auth'],
+            array_keys($found),
+            '게이트 없는 broadcasting/auth 라우트가 등록되어 있습니다 (킬스위치 우회로): '
+            .implode(', ', array_keys($found))
+        );
+
+        $this->assertContains(
+            'auth:sanctum',
+            $found['api/broadcasting/auth'],
+            'api/broadcasting/auth 에 auth:sanctum 이 붙어 있지 않습니다.'
+        );
+    }
+
+    /**
+     * 채널 정의(`routes/channels.php`)가 여전히 로드되어야 한다.
+     *
+     * `withRouting(channels: ...)` 인자를 제거했으므로 채널 등록은 전적으로
+     * `BroadcastServiceProvider::boot()` 의 `require` 에 달려 있다. 이 로드가 사라지면
+     * 예외 없이 **모든 private 채널 구독이 403** 이 된다 — 콜백이 없는 채널은 거부되기 때문.
+     */
+    public function test_channel_definitions_are_loaded_by_broadcast_service_provider(): void
+    {
+        foreach (['App.Models.User.{id}', 'core.admin.dashboard', 'core.admin.seo.sitemap'] as $channel) {
+            $this->assertInstanceOf(
+                \Closure::class,
+                $this->channelCallback($channel),
+                "채널 정의가 로드되지 않았습니다: {$channel}"
+            );
+        }
+    }
+
+    /**
      * 등록된 브로드캐스트 채널의 인가 콜백을 반환합니다.
      *
      * @param  string  $channel  채널명 (private- 접두 없이)
@@ -113,7 +180,7 @@ class BroadcastingAuthTest extends TestCase
      */
     private function channelCallback(string $channel): \Closure
     {
-        $broadcaster = app(\Illuminate\Contracts\Broadcasting\Factory::class)->connection();
+        $broadcaster = app(Factory::class)->connection();
 
         $ref = new \ReflectionClass($broadcaster);
         while ($ref !== false && ! $ref->hasProperty('channels')) {

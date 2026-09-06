@@ -9,6 +9,7 @@ import {
     clearStandardPaymentCloseReportContext,
     installPaymentCloseMessageListener,
     markStandardPaymentCloseReportContext,
+    reportStandardPaymentFailureOnReturn,
     resetCheckoutSubmittingState,
 } from '../paymentCloseMessageListener';
 
@@ -215,5 +216,125 @@ describe('paymentCloseMessageListener', () => {
 
         expect(setLocal).toHaveBeenCalledWith({ isSubmittingOrder: false });
         expect(hasMobilePaymentReturnPending()).toBe(false);
+    });
+});
+
+/**
+ * 결제 실패 화면 복귀 시 보고
+ *
+ * 브라우저 리턴 콜백(PC·모바일·해외결제)은 PG 서명도 IP 증명도 없어 주문 상태를 바꾸지 않는다.
+ * 승인이 거절된 정당한 실패는 이 경로(소유권 대조 close-report)로만 기록된다.
+ * 전체 페이지 이동으로 window 컨텍스트가 사라지므로 sessionStorage 로 이어받는다.
+ */
+describe('결제 실패 화면 복귀 보고', () => {
+    const CONTEXT = {
+        closeReportUrl: '/plugins/sirsoft-pay_kginicis/payment/close-report',
+        oid: 'ORD-KGI-RETURN-001',
+        price: 10000,
+        buyer_email: 'buyer@example.com',
+        buyer_phone: '01012345678',
+    };
+
+    /**
+     * 화면 주소를 바꿔 결제 리턴 상황을 재현한다.
+     */
+    function setLocation(pathname: string, search: string): void {
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: { pathname, search, origin: 'https://shop.example' },
+        });
+    }
+
+    beforeEach(() => {
+        window.sessionStorage.clear();
+        clearStandardPaymentCloseReportContext();
+    });
+
+    afterEach(() => {
+        delete windowRecord().G7Core;
+        vi.restoreAllMocks();
+        window.sessionStorage.clear();
+        clearStandardPaymentCloseReportContext();
+    });
+
+    it('실패 화면으로 돌아오면 저장해 둔 구매자 정보로 보고한다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        markStandardPaymentCloseReportContext(CONTEXT);
+        // 전체 페이지 이동으로 window 컨텍스트가 사라진 상황을 재현한다.
+        delete windowRecord()['__sirsoftKginicisActiveStandardPaymentCloseContext'];
+
+        setLocation('/shop/checkout', '?error=9999&message=fail&orderId=ORD-KGI-RETURN-001');
+
+        await reportStandardPaymentFailureOnReturn();
+
+        expect(apiPost).toHaveBeenCalledWith(
+            '/plugins/sirsoft-pay_kginicis/payment/close-report',
+            expect.objectContaining({ oid: 'ORD-KGI-RETURN-001', price: 10000 }),
+        );
+    });
+
+    it('두 번 호출해도 한 번만 보고한다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        markStandardPaymentCloseReportContext(CONTEXT);
+        setLocation('/shop/checkout', '?error=9999&orderId=ORD-KGI-RETURN-001');
+
+        await reportStandardPaymentFailureOnReturn();
+        await reportStandardPaymentFailureOnReturn();
+
+        expect(apiPost).toHaveBeenCalledTimes(1);
+    });
+
+    it('다른 주문번호로 돌아왔으면 보고하지 않는다', async () => {
+        const apiPost = vi.fn();
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        markStandardPaymentCloseReportContext(CONTEXT);
+        setLocation('/shop/checkout', '?error=9999&orderId=ORD-KGI-OTHER');
+
+        await reportStandardPaymentFailureOnReturn();
+
+        expect(apiPost).not.toHaveBeenCalled();
+    });
+
+    it('결제 완료 화면으로 돌아오면 보고하지 않고 저장분만 지운다', async () => {
+        const apiPost = vi.fn();
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        markStandardPaymentCloseReportContext(CONTEXT);
+        setLocation('/shop/orders/ORD-KGI-RETURN-001/complete', '');
+
+        await reportStandardPaymentFailureOnReturn();
+
+        expect(apiPost).not.toHaveBeenCalled();
+        expect(window.sessionStorage.getItem('g7:sirsoft-pay_kginicis:pendingClose')).toBeNull();
+    });
+
+    it('상점이 실패 주소를 바꿔 체크아웃 경로가 아니어도 보고한다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        markStandardPaymentCloseReportContext(CONTEXT);
+        delete windowRecord()['__sirsoftKginicisActiveStandardPaymentCloseContext'];
+
+        setLocation('/store/payment-failed', '?error=9999&orderId=ORD-KGI-RETURN-001');
+
+        await reportStandardPaymentFailureOnReturn();
+
+        expect(apiPost).toHaveBeenCalled();
+    });
+
+    it('저장분이 없으면 아무것도 보내지 않는다', async () => {
+        const apiPost = vi.fn();
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        setLocation('/shop/checkout', '?error=9999&orderId=ORD-KGI-RETURN-001');
+
+        await reportStandardPaymentFailureOnReturn();
+
+        expect(apiPost).not.toHaveBeenCalled();
     });
 });

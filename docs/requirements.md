@@ -138,8 +138,8 @@ stat -c '%a %U:%G' storage
 
 ```bash
 # 인스톨러 완료 후 운영자가 1회 실행
-sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates
-sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates
+sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates public/build
+sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates public/build
 ```
 
 추가로 php-fpm / systemd 의 umask 를 `002` 로 설정하면 cron·composer·수동 SSH artisan 등 외부 프로세스도 동일 권한으로 파일을 만든다.
@@ -154,7 +154,7 @@ sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates
 **방식 B/C (단일 소유자)**:
 
 ```bash
-sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates
+sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates public/build
 ```
 
 그룹 쓰기 비트가 없으므로 코어 자동 umask 동조는 발동하지 않는다 (운영자 의도 존중). 추가 설정 불필요.
@@ -293,11 +293,37 @@ Composer 설치 방식을 선택할 때만 필요하다.
 | 환경 | 요구사항 |
 |------|---------|
 | 프로덕션 | **HTTPS 필수** |
+| 앞단 종단 구성 (ALB·CloudFront·Cloudflare·nginx·ngrok) | HTTPS + `.env` 의 `TRUSTED_PROXIES` 지정 |
 
 - 설치 단계에서는 HTTPS 여부를 경고로 안내하며 설치를 차단하지 않는다. 정책상 필수라는
   선언은 유지하되, 자동으로 강제되지는 않으므로 운영자가 직접 확인해야 한다
 - Laravel Reverb WebSocket도 `wss://` 프로토콜 사용 (`REVERB_SCHEME=https`)
-- Sanctum 세션 인증 시 `SESSION_SECURE_COOKIE=true` 설정 권장
+- Sanctum 세션 인증 시 `SESSION_SECURE_COOKIE=true` 설정 권장. 미설정 시 요청 스킴으로
+  자동 판정되므로, 앞단 종단 구성에서는 `TRUSTED_PROXIES` 가 지정되어야 그 판정이 맞는다
+- TLS 를 앞단에서 종단하고 앱에는 HTTP 로 전달하는 구성에서는 `APP_URL` 을 `https://` 로
+  두는 것만으로 부족하다. 신뢰할 프록시를 지정하지 않으면 화면 표시·결제 통보 수신·IP 기록이
+  어긋난다 — [backend/reverse-proxy.md](backend/reverse-proxy.md)
+
+---
+
+### 5.2 의존성 보안 버전
+
+의존성 취약점은 `php artisan security:audit-dependencies` 로 전수 점검한다. 저장소의 모든
+잠금파일(npm · composer)을 순회하며, 취약점이 있으면 비-0 으로 종료한다.
+
+메이저 상향을 보류한 패키지는 사유와 **최소 보안 버전**을 아래에 남긴다. 기록 없는 보류는
+그 지점이 잊히는 것과 같다.
+
+| 패키지 | 현재 | 보류 사유 | 최소 보안 버전 |
+|---|---|---|---|
+| `guzzlehttp/guzzle` | 7.15.x | 8.x 는 `aws/aws-sdk-php` · `laravel/framework` · `pusher/pusher-php-server` 의 제약이 막는다. 상위 패키지가 8.x 를 지원하기 전에는 올릴 수 없다 | **7.15.2** |
+| `ckeditor5` | 43.3.1 | 다섯 개 메이저를 건너뛰는 상향이라 초기화 설정·툴바 재구성과 글쓰기/이미지 업로드 전 경로 재검수를 수반한다. 별도 작업으로 분리한다. CDN 의존은 이미 자체 서빙으로 해소되어 있다 | 상향 작업에서 확정 |
+| `monaco-editor` 내장 `dompurify` | 3.4.8 | monaco 가 자기 배포 번들에 정화기를 인라인하므로 소비자가 버전을 고를 수 없다. 배포된 최신본(0.56.0)이 담은 것이 3.4.8 이다. 상류가 새 정화기를 담은 판을 내면 함께 올린다 | **3.4.13** (상류 대기) |
+| `vite` (확장 빌드 툴체인) | 5.4.x | 8.x 는 메이저 상향이며 확장 스물넷의 빌드 설정을 동시에 옮겨야 한다. 빌드 도구라 배포 산출물에 실리지 않아 최종 사용자 노출면이 없다 | **8.2.2** |
+| `vitest` (확장 테스트 툴체인) | 2.1.x | 4.x 는 메이저 상향이며 테스트 API 변경으로 확장 열여덟의 테스트를 동시에 손봐야 한다. 테스트 실행기 전용이라 배포·런타임 노출면이 없다 | **4.1.11** |
+
+동봉(vendored) 제3자 자산은 어떤 잠금파일에도 없어 감사 도구가 원리상 볼 수 없다. 점검
+명령이 그 목록을 함께 출력하므로 사람이 확인한다.
 
 ---
 
@@ -312,9 +338,11 @@ Composer 설치 방식을 선택할 때만 필요하다.
 | WebSocket | `php artisan reverb:start` | Supervisor 등 |
 
 ```bash
-# cron 예시 (스케줄러)
-* * * * * cd /path/to/g7 && php artisan schedule:run >> /dev/null 2>&1
+# cron 예시 (스케줄러) — 웹 서버 계정으로 실행 (root crontab 에 그대로 두면 캐시 파일이 root 소유가 된다)
+* * * * * cd /path/to/g7 && sudo -u www-data php artisan schedule:run >> /dev/null 2>&1
 ```
+
+`php artisan` 명령과 cron 은 웹 서버 실행 계정으로 실행한다 — 캐시·병합 번들·임시 파일이 다른 계정 소유로 남으면 이후 웹 요청이 `Permission denied` 로 실패한다. 예외는 소유권 복원이 내장된 `core:update` 만이다. 상세: [INSTALL.md](../INSTALL.md) 「명령줄·cron 실행 계정」.
 
 ---
 
@@ -342,6 +370,19 @@ Composer 설치 방식을 선택할 때만 필요하다.
 - Internet Explorer 미지원
 
 ---
+
+## 7-1. 오프라인·폐쇄망 동작 범위
+
+화면 구동에 필요한 자산(아이콘·글꼴·편집기·코드 편집기·국기 아이콘·이미지 압축)은 모두
+설치본에 함께 담겨 사이트 자신의 서버에서 제공됩니다. 외부 인터넷에 나가지 못하는 환경에서도
+관리자·사용자 화면이 정상 동작합니다.
+
+**외부 연결이 필요한 유일한 기능은 주소 검색(우편번호)입니다.** 이 기능은 라이브러리가 아니라
+Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작하지 않습니다. 연결하지 못하는
+환경에서는 우편번호·주소를 직접 입력할 수 있으며 안내가 표시됩니다.
+
+운영자가 별도로 설정한 외부 서비스(검색엔진 분석 도구 등)는 이 범위와 무관하게 그 설정을
+따릅니다.
 
 ## 8. 호스팅 환경별 제한사항
 

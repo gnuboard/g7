@@ -67,6 +67,7 @@ effects:
   - allowlisted_plugin_middleware_is_registered_in_web_group
   - selfExtension_returns_null_for_core_tests
   - production_env_keeps_full_extension_loading
+  - tests_do_not_boot_with_production_route_cache
 
 test_files:
   - tests/Unit/Extension/ExtensionTestAllowlistTest.php

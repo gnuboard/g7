@@ -35,7 +35,13 @@
       "translations": "Translations",
       "data_sources": "Data",
       "reset": "Reset",
-      "switch_template": "Switch to another template"
+      "switch_template": "Switch to another template",
+      "custom_assets": "Custom assets",
+      "custom_assets_hint": "Manage operator-added CSS, JS, fonts and images.",
+      "custom_assets_off": "Disable custom assets",
+      "custom_assets_on": "Enable custom assets",
+      "custom_assets_off_hint": "Reopen this screen without operator-added CSS/JS. Use it when an added asset breaks the screen.",
+      "custom_assets_on_hint": "Operator-added assets are currently disabled. Click to apply them again."
     },
     "route_tree": {
       "panel_title": "Screens / Routes",
@@ -105,6 +111,27 @@
     "extension_gated_desc": "The area this extension injects into only appears in a specific screen state. That state is not defined in the editor settings, so it cannot be edited visually. Please use code editing instead.",
     "extension_gated_desc_with_states": "The area this extension injects into only appears in a specific screen state. Switch to that state using the state selector at the top to edit it.",
     "slot_area_label": "Content area"
+  },
+  "custom_assets": {
+    "target_label": "Target extension",
+    "type_template": "Template",
+    "type_module": "Module",
+    "type_plugin": "Plugin",
+    "title": "Custom assets",
+    "close": "Close",
+    "loading": "Loading…",
+    "empty": "No files yet. Type a path below and save, or upload a file to start.",
+    "forbidden": "You do not have permission to manage custom assets. Ask an administrator for the “Manage Custom Assets” permission.",
+    "new_path_placeholder": "e.g. 10-overrides.css",
+    "path_label": "File path",
+    "content_label": "File content",
+    "new_file": "New file",
+    "save": "Save",
+    "upload": "Upload file",
+    "delete": "Delete",
+    "delete_confirm": "This file will be deleted. This cannot be undone.",
+    "binary_hint": "This file type (:extension) cannot be edited directly. Upload a replacement with the same name.",
+    "apply_hint": "Saved changes apply from the next page load."
   },
   "version_history": {
     "title": "Version history",

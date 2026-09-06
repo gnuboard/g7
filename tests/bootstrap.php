@@ -1,5 +1,7 @@
 <?php
 
+use Composer\Autoload\ClassLoader;
+
 /**
  * PHPUnit 테스트용 부트스트랩 파일
  *
@@ -142,6 +144,35 @@ $configCacheFile = __DIR__.'/../bootstrap/cache/config.php';
 if (file_exists($configCacheFile)) {
     unlink($configCacheFile);
 }
+
+/*
+|--------------------------------------------------------------------------
+| 라우트 캐시 격리 (테스트 환경 보장)
+|--------------------------------------------------------------------------
+|
+| 라우트 캐시가 있으면 `RouteServiceProvider::boot()` 이 캐시 로드로 분기해 **라우트 파일이
+| 아예 실행되지 않는다.** 그러면 테스트가 선언한 확장 allowlist(`requiredExtensions`)가
+| 라우트 축에서 통째로 무력화된다 — core-only 테스트인데도 굽던 시점에 활성이던 모든 확장의
+| 라우트가 등록된 채로 부팅한다. 실패는 그 사실을 단언하는 테스트에서만 드러나고, 나머지
+| 테스트는 격리가 깨진 줄 모르는 채 통과한다.
+|
+| 라우트 캐시는 확장 설치·활성화·업데이트마다 `RouteCacheHelper::rebuild()` 가 다시 굽기
+| 때문에, 개발 머신에서는 사실상 항상 존재한다.
+|
+| 삭제하지 않고 **경로를 돌린다.** 삭제하면 테스트를 한 번 돌릴 때마다 운영 중 사이트의
+| 라우트 캐시가 사라지고(재생성은 다음 확장 작업까지 일어나지 않는다), 그 사이 모든 요청이
+| 라우트 파일 스캔 경로로 떨어진다. 돌려놓은 경로의 파일은 만들지 않으므로
+| `routesAreCached()` 가 false 가 되어 라우트 파일이 정상 실행되고, 테스트 안에서
+| `route:cache` 를 굽더라도 그 산출물이 운영 캐시를 덮지 않는다.
+|
+| config 캐시(위)와 달리 삭제가 아니라 리다이렉트인 이유가 이것이다 — config 캐시는
+| `config:cache` 로 즉시 복구되지만 라우트 캐시는 복구 시점이 확장 작업에 묶여 있다.
+|
+*/
+$testingRoutesCache = 'storage/framework/testing/routes-v7.php';
+putenv('APP_ROUTES_CACHE='.$testingRoutesCache);
+$_ENV['APP_ROUTES_CACHE'] = $testingRoutesCache;
+$_SERVER['APP_ROUTES_CACHE'] = $testingRoutesCache;
 
 // Composer 오토로더 로드
 $loader = require __DIR__.'/../vendor/autoload.php';
@@ -336,6 +367,100 @@ if (file_exists($extensionAutoloadFile)) {
             }
         }
     }
+}
+
+/*
+|--------------------------------------------------------------------------
+| 확장 vendor(제3자 composer 패키지) 오토로드 등록
+|--------------------------------------------------------------------------
+|
+| `autoload-extensions.php` 의 `vendor_autoloads` 를 소비하는 진입점은 `public/index.php`
+| 와 `artisan` 뿐이라, PHPUnit 프로세스에서는 확장 전용 composer 패키지(`\HTMLPurifier` 등)가
+| 오토로드되지 않았다. 그 패키지를 쓰는 코드 경로가 통째로 테스트 불가였고, 그 결손은 아무도
+| 그 경로를 테스트하지 않는 동안 드러나지 않는다 (공개 #125).
+|
+| 확장 vendor 의 `autoload.php` 를 그대로 require 하지 않고 생성된 맵만 읽어 자체 로더를 만든다.
+| 그 오토로더를 그대로 쓰면 두 가지가 깨진다.
+|
+|  1. 확장 자신의 PSR-4 와 files 를 **활성 디렉토리**로 매핑하고 자신을 prepend 로 걸어, 위에서
+|     _bundled 를 prepend 한 등록을 이긴다 — 테스트가 `_bundled` 가 아니라 활성 디렉토리 사본을
+|     검증하게 되어 "_bundled 에서만 작업한다" 는 규율이 조용히 깨진다.
+|  2. Composer 로더는 `vendorDir` 를 갖고 자신을 `ClassLoader::getRegisteredLoaders()` 맨 앞에
+|     넣는데, `Illuminate\Foundation\Testing\TestCase::createApplication()` 이
+|     `Application::inferBasePath()` 로 그 첫 항목에서 base path 를 유추한다. 이후 테스트의 앱
+|     부팅이 `modules/{id}/bootstrap/app.php` 를 찾다 실패한다. (운영 진입점은 basePath 를 명시
+|     전달하므로 영향이 없다.)
+|
+| 그래서 `Modules\` / `Plugins\` 로 시작하는 항목은 전부 제외하고 — 확장 자기 코드는 위에서
+| 이미 등록했다 — `vendorDir` 없는 단일 로더로 제3자 패키지만 등록한다. 루트 오토로더가 먼저
+| 등록되어 있으므로 append 로 걸어 루트 vendor 가 우선하게 둔다(같은 패키지 중복 선언 방지).
+|
+*/
+$extensionVendorLoader = new ClassLoader;
+$extensionVendorClassMap = [];
+$extensionVendorFiles = [];
+$isExtensionOwnSymbol = static fn (string $symbol): bool => str_starts_with($symbol, 'Modules\\')
+    || str_starts_with($symbol, 'Plugins\\');
+
+foreach (['modules', 'plugins'] as $extensionType) {
+    foreach ([__DIR__.'/../'.$extensionType, __DIR__.'/../'.$extensionType.'/_bundled'] as $searchDir) {
+        if (! is_dir($searchDir)) {
+            continue;
+        }
+
+        foreach (scandir($searchDir) ?: [] as $entry) {
+            if ($entry === '.' || $entry === '..' || $entry === '_bundled' || $entry === '_pending') {
+                continue;
+            }
+
+            $vendorDir = $searchDir.'/'.$entry.'/vendor';
+            $classmapFile = $vendorDir.'/composer/autoload_classmap.php';
+
+            if (! is_dir($vendorDir) || ! file_exists($classmapFile)) {
+                continue;
+            }
+
+            // 먼저 발견한 것(활성 디렉토리)이 이긴다 — 같은 클래스를 뒤에서 덮어쓰지 않는다.
+            foreach (require $classmapFile as $fqcn => $path) {
+                if (! $isExtensionOwnSymbol($fqcn) && ! isset($extensionVendorClassMap[$fqcn])) {
+                    $extensionVendorClassMap[$fqcn] = $path;
+                }
+            }
+
+            $psr4File = $vendorDir.'/composer/autoload_psr4.php';
+            if (file_exists($psr4File)) {
+                foreach (require $psr4File as $prefix => $paths) {
+                    if (! $isExtensionOwnSymbol($prefix)) {
+                        $extensionVendorLoader->addPsr4($prefix, $paths);
+                    }
+                }
+            }
+
+            // 패키지가 요구하는 부트스트랩 파일(HTMLPurifier 의 HTMLPURIFIER_PREFIX 정의 등).
+            // vendor 디렉토리 바깥의 항목(확장 자신의 helpers)은 제외한다.
+            $filesFile = $vendorDir.'/composer/autoload_files.php';
+            if (file_exists($filesFile)) {
+                $vendorReal = realpath($vendorDir) ?: $vendorDir;
+
+                foreach (require $filesFile as $file) {
+                    if (str_starts_with(realpath($file) ?: $file, $vendorReal)) {
+                        $extensionVendorFiles[] = $file;
+                    }
+                }
+            }
+        }
+    }
+}
+
+if ($extensionVendorClassMap !== []) {
+    $extensionVendorLoader->addClassMap($extensionVendorClassMap);
+}
+
+// vendorDir 를 주지 않았으므로 register() 가 registeredLoaders 를 건드리지 않는다.
+$extensionVendorLoader->register();
+
+foreach ($extensionVendorFiles as $extensionVendorFile) {
+    require_once $extensionVendorFile;
 }
 
 // 모듈/플러그인 테스트 네임스페이스 등록 (tests/ 디렉토리)

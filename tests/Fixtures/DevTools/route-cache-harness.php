@@ -17,7 +17,11 @@ use Illuminate\Support\Facades\Artisan;
  *
  * 사용법:
  *   php tests/Fixtures/DevTools/route-cache-harness.php bake     <cacheRelDir>
- *   php tests/Fixtures/DevTools/route-cache-harness.php dispatch <cacheRelDir> <METHOD> <URI> [<base64Body>]
+ *   php tests/Fixtures/DevTools/route-cache-harness.php dispatch <cacheRelDir> <METHOD> <URI> [<base64Body>] [on|off]
+ *
+ * 여섯째 인자는 자식 프로세스의 `APP_DEBUG` 다 (기본 `on`). `off` 는 DevTools 그룹 게이트가
+ * 라우트 캐시 상태에서도 살아 있는지(미들웨어가 캐시에 함께 구워지는지) 확인하는 축이다 —
+ * 게이트를 그룹 미들웨어로 올린 뒤 캐시 경로에서만 빠지면 예외 없이 그대로 열린다.
  *
  * 본문은 **base64 로 인코딩해서** 넘긴다. Windows 의 `escapeshellarg()` 는 인자 안의
  * 큰따옴표를 공백으로 치환하므로 JSON 을 그대로 넘기면 `{"test":true}` 가 `{ test :true}` 로
@@ -73,11 +77,15 @@ if (! is_dir($cacheAbsDir) && ! @mkdir($cacheAbsDir, 0755, true) && ! is_dir($ca
     exit(2);
 }
 
+// dispatch 의 여섯째 인자로 디버그 모드를 고른다 (bake 는 항상 on — 굽기는 게이트와 무관).
+$debugFlag = ($mode === 'dispatch' && ($argvLocal[6] ?? 'on') === 'off') ? 'false' : 'true';
+
 // 함정 2: $_SERVER/$_ENV 에 직접 주입 (Env::disablePutenv 대응).
 $envOverrides = [
     'APP_ENV' => 'testing',
-    // 게이트 단축평가 통과 + 예외 본문을 JSON 으로 확보한다.
-    'APP_DEBUG' => 'true',
+    // 기본값 true — 게이트 단축평가 통과 + 예외 본문을 JSON 으로 확보한다.
+    // 'off' 로 넘기면 게이트가 실제로 차단하는지(403)를 캐시 상태에서 검증한다.
+    'APP_DEBUG' => $debugFlag,
     'APP_ROUTES_CACHE' => $cacheRelDir.'/routes-v7.php',
     'APP_CONFIG_CACHE' => $cacheRelDir.'/config.php',
     'APP_PACKAGES_CACHE' => $cacheRelDir.'/packages.php',
@@ -194,6 +202,9 @@ harnessEmit([
     'mode' => 'dispatch',
     'method' => $method,
     'uri' => $uri,
+    // 부팅된 앱이 실제로 의도한 디버그 상태인지 — 이걸 단언하지 않으면 403 테스트가
+    // "debug on 인데도 403" 인지 "debug off 라서 403" 인지 구분하지 못한다.
+    'appDebug' => (bool) config('app.debug'),
     'routesAreCached' => $app->routesAreCached(),
     'cachedRoutesPath' => str_replace('\\', '/', $app->getCachedRoutesPath()),
     'status' => $status,

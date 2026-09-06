@@ -1369,7 +1369,8 @@
                                                                                                                 "target": "global",
                                                                                                                 "selectedPlugin": "{{row}}",
                                                                                                                 "deletePluginData": false,
-                                                                                                                "pluginUninstallInfo": null
+                                                                                                                "pluginUninstallInfo": null,
+                                                                                                                "pluginUninstallBackups": null
                                                                                                             }
                                                                                                         },
                                                                                                         {

@@ -139,14 +139,25 @@ describe('#75 상품 상세 탭 전환이 목록 상태를 지우지 않는다',
         );
         expect(action, '상세 탭 전환 replaceUrl 을 찾지 못했습니다.').toBeTruthy();
 
-        await runAction(action as NavAction);
+        // 이 액션의 `tab` 값은 `{{$args[0]}}` 다 — 실제 화면에서는 Tabs 의 onTabChange 가 넘긴다.
+        // `triggerAction` 은 `$args` 를 제공하지 않으므로(이벤트 하나만 만든다) 그 자리에
+        // 화면이 넘길 값을 그대로 넣는다. 나머지(mergeQuery·query 구성)는 실 레이아웃 그대로다.
+        const withTabArg = {
+            ...(action as NavAction),
+            params: {
+                ...(action as NavAction).params,
+                query: { ...((action as NavAction).params.query as Record<string, unknown>), tab: 'reviews' },
+            },
+        } as NavAction;
+
+        await runAction(withTabArg);
         const q = new URLSearchParams(window.location.search);
 
         expect(q.get('page')).toBe('2');
         expect(q.get('sort')).toBe('price_asc');
         expect(q.get('keyword')).toBe('신발');
         expect(q.get('category')).toBe('3');
-        expect(q.get('tab')).toBeTruthy();
+        expect(q.get('tab')).toBe('reviews');
     });
 
     it("탭을 누른 뒤 '상품 목록' 으로 돌아가도 보던 페이지가 복원된다", async () => {

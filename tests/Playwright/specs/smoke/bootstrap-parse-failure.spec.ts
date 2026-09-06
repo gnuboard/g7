@@ -115,6 +115,80 @@ async function assertNetworkFailure(page: Page, url: string): Promise<void> {
 }
 
 /**
+ * 혼합 콘텐츠 차단 케이스 본문 — 회선은 멀쩡한데 브라우저가 요청을 거부하는 실패다 (공개 #124).
+ *
+ * 문서 HTML 의 코어 스크립트 URL 만 `http://` 로 바꾸면 재현된다 — TLS 종단 프록시도
+ * 인증서도 필요 없다. 프록시 뒤에서 신뢰 프록시가 지정되지 않았을 때 서버가 만들어 내는
+ * 것이 바로 이 HTML 이기 때문이다.
+ *
+ * 판정은 `location.protocol === 'https:'` 를 보므로, 기대값은 실행 시점 base URL 의
+ * 스킴에서 파생한다 — http base 에서는 이 실패가 그냥 도달 불가이므로 `network` 가 정답이다.
+ * 분기 자체의 방출은 스킴과 무관하게 BootstrapFallbackDiagnosisTest 가 단언한다.
+ *
+ * @param page Playwright page
+ * @param url 진입 경로
+ * @return {Promise<void>}
+ */
+async function assertMixedContentBlocked(page: Page, url: string): Promise<void> {
+  const consoleErrors: string[] = [];
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleErrors.push(m.text());
+  });
+
+  // 문서 응답을 가로채 코어 번들 URL 만 절대 http:// 로 바꾼다.
+  // 서버는 이 URL 을 절대(`https://host/build/core/…`) 또는 상대(`/build/core/…`) 어느
+  // 형태로도 낼 수 있으므로 두 경우를 모두 정규화해 다룬다 — 한 형태만 가정하면 치환이
+  // 조용히 0건이 되어 테스트가 아무것도 재현하지 않은 채 실패한다.
+  let rewritten = 0;
+
+  await page.route('**/*', async (route) => {
+    if (route.request().resourceType() !== 'document') return route.fallback();
+
+    const response = await route.fetch();
+    const body = await response.text();
+    const origin = new URL(route.request().url()).origin;
+
+    const patched = body.replace(
+      /src="([^"]*\/build\/core\/template-engine\.min\.js[^"]*)"/g,
+      (whole, src: string) => {
+        const abs = new URL(src, origin);
+        if (abs.protocol !== 'https:') return whole;
+        abs.protocol = 'http:';
+        rewritten += 1;
+        return `src="${abs.toString()}"`;
+      }
+    );
+
+    return route.fulfill({ response, body: patched });
+  });
+
+  await page.goto(url);
+  await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+  const isHttpsBase = new URL(page.url()).protocol === 'https:';
+  if (isHttpsBase) {
+    // 치환이 실제로 일어났는지 확인한다 — 0 건이면 아래 단언은 결함이 아니라
+    // 재현 실패를 보고하게 된다.
+    expect(rewritten, '코어 번들 URL 치환이 0 건입니다 — 재현되지 않았습니다').toBeGreaterThan(0);
+  }
+
+  const isHttps = isHttpsBase;
+  const fallback = await readFallback(page);
+
+  expect(fallback.reason).toBe(isHttps ? 'blocked' : 'network');
+  expect(fallback.title.length).toBeGreaterThan(0);
+  // 차단은 새로고침으로 낫지 않는다 — 버튼을 두면 그것 자체가 다시 거짓 안내가 된다.
+  expect(fallback.buttons).toBe(isHttps ? 0 : 1);
+
+  if (isHttps) {
+    // 화면에서 뺀 원인·조치는 콘솔에서 운영자에게 도달해야 한다.
+    const joined = consoleErrors.join(' | ');
+    expect(joined).toMatch(/Blocked as mixed content/);
+    expect(joined).toMatch(/TRUSTED_PROXIES/);
+  }
+}
+
+/**
  * 정상 부팅 케이스 본문 — 폴백이 오발동하지 않아야 한다.
  *
  * @param page Playwright page
@@ -173,6 +247,22 @@ test.describe('부팅 실패 사유별 안내 분기 (공개 #121)', () => {
    */
   test('@smoke [admin] 번들 상시 부재 → 기존 네트워크 안내 + 새로고침 버튼 유지', async ({ page }) => {
     await assertNetworkFailure(page, '/admin');
+  });
+
+  /**
+   * @scenario entrypoint=user, failure_mode=mixed_content_blocked
+   * @effects mixed_content_blocked_renders_blocked_notice, blocked_notice_omits_reload_button
+   */
+  test('@smoke [user] 코어 번들이 http 로 차단 → 사이트 설정 안내 + 새로고침 버튼 부재', async ({ page }) => {
+    await assertMixedContentBlocked(page, '/');
+  });
+
+  /**
+   * @scenario entrypoint=admin, failure_mode=mixed_content_blocked
+   * @effects mixed_content_blocked_renders_blocked_notice, blocked_notice_omits_reload_button
+   */
+  test('@smoke [admin] 코어 번들이 http 로 차단 → 사이트 설정 안내 + 새로고침 버튼 부재', async ({ page }) => {
+    await assertMixedContentBlocked(page, '/admin');
   });
 
   /**

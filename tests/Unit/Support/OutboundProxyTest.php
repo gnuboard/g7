@@ -69,11 +69,12 @@ class OutboundProxyTest extends TestCase
             'outbound_proxy' => 'socks5h://127.0.0.1:1080',
         ]);
 
-        $this->assertSame([
-            'http' => 'socks5h://127.0.0.1:1080',
-            'https' => 'socks5h://127.0.0.1:1080',
-            'no' => [],
-        ], $resolved);
+        $this->assertSame('socks5h://127.0.0.1:1080', $resolved['http']);
+        $this->assertSame('socks5h://127.0.0.1:1080', $resolved['https']);
+
+        // `no` 는 비어 있지 않다 — 자기 호스트·루프백은 운영자 입력과 무관하게 항상 들어간다.
+        // 그 계약은 test_site_own_host_is_always_bypassed 이하가 따로 잠근다.
+        $this->assertIsArray($resolved['no']);
     }
 
     /**
@@ -156,9 +157,11 @@ class OutboundProxyTest extends TestCase
             'outbound_proxy_bypass' => [' g7.dev ', '', 'g7.dev', 'localhost', 42, null],
         ]);
 
-        $this->assertSame(['g7.dev', 'localhost'], $resolved['no']);
+        // 운영자 입력분: 공백 제거·빈 항목 제거·중복 제거가 그대로 적용된다.
+        $this->assertSame(1, count(array_keys($resolved['no'], 'g7.dev', true)), '중복이 남았습니다.');
+        $this->assertSame(1, count(array_keys($resolved['no'], 'localhost', true)), '자동 항목과 운영자 항목이 겹쳐 중복이 남았습니다.');
         $this->assertSame(
-            [0, 1],
+            range(0, count($resolved['no']) - 1),
             array_keys($resolved['no']),
             '예외 목록 키가 비연속입니다 — JSON 직렬화 시 객체가 되어 목록으로 읽히지 않습니다.'
         );
@@ -179,7 +182,8 @@ class OutboundProxyTest extends TestCase
             'outbound_proxy_bypass' => 'g7.dev',
         ]);
 
-        $this->assertSame([], $resolved['no']);
+        // 배열이 아닌 값은 통째로 버린다 — 문자열을 한 항목으로 해석하지 않는다.
+        $this->assertNotContains('g7.dev', $resolved['no']);
     }
 
     /**
@@ -201,10 +205,12 @@ class OutboundProxyTest extends TestCase
             'outbound_proxy_bypass' => ['g7.dev', 'localhost'],
         ])]);
 
-        $this->assertSame([
-            CURLOPT_PROXY => 'socks5h://127.0.0.1:1080',
-            CURLOPT_NOPROXY => 'g7.dev,localhost',
-        ], OutboundProxy::curlOptions());
+        $options = OutboundProxy::curlOptions();
+
+        $this->assertSame('socks5h://127.0.0.1:1080', $options[CURLOPT_PROXY]);
+        // 자동 항목(자기 호스트·루프백)과 운영자 항목이 같은 쉼표 목록으로 전달된다.
+        $this->assertStringContainsString('g7.dev', $options[CURLOPT_NOPROXY]);
+        $this->assertStringContainsString('127.0.0.1', $options[CURLOPT_NOPROXY]);
     }
 
     /**
@@ -252,7 +258,104 @@ class OutboundProxyTest extends TestCase
         $tested = OutboundProxy::options($url, $bypass);
 
         $this->assertSame($applied, $tested);
-        $this->assertSame(['g7.dev', 'localhost'], $tested['no']);
+        $this->assertContains('g7.dev', $tested['no']);
         $this->assertSame('socks5h://127.0.0.1:1080', $tested['https']);
+    }
+
+    /**
+     * 사이트 자기 호스트는 운영자가 적지 않아도 항상 프록시를 우회합니다.
+     *
+     * 아웃바운드 프록시는 바깥으로 나가는 트래픽의 출발지를 지정하려는 장치입니다. 자기
+     * 자신에게 되돌아오는 요청(SEO 렌더러의 데이터소스 조회, API 문서 생성기의 엔드포인트
+     * 탐침)까지 프록시로 내보내면, 프록시가 응답하지 않을 때 그 호출이 연결 실패 시각까지
+     * 매달립니다. 실패는 삼켜지므로 예외도 오류 화면도 없이 저장 요청만 느려집니다.
+     *
+     * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
+     *
+     * @effects self_host_always_bypasses_proxy
+     */
+    public function test_site_own_host_is_always_bypassed(): void
+    {
+        config(['app.url' => 'https://shop.example.com']);
+
+        $resolved = OutboundProxy::resolve([
+            'mode' => true,
+            'outbound_proxy' => 'socks5h://127.0.0.1:1080',
+            'outbound_proxy_bypass' => [],
+        ]);
+
+        $this->assertContains(
+            'shop.example.com',
+            $resolved['no'],
+            '자기 호스트가 프록시 우회 목록에 없습니다 — 사이트가 자기 자신에게 거는 요청까지 프록시로 나갑니다.'
+        );
+    }
+
+    /**
+     * 루프백 호스트도 항상 우회합니다.
+     *
+     * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
+     *
+     * @effects self_host_always_bypasses_proxy
+     */
+    public function test_loopback_hosts_are_always_bypassed(): void
+    {
+        $resolved = OutboundProxy::resolve([
+            'mode' => true,
+            'outbound_proxy' => 'socks5h://127.0.0.1:1080',
+            'outbound_proxy_bypass' => [],
+        ]);
+
+        foreach (['localhost', '127.0.0.1', '::1'] as $host) {
+            $this->assertContains(
+                $host,
+                $resolved['no'],
+                "루프백 호스트 {$host} 가 우회 목록에 없습니다."
+            );
+        }
+    }
+
+    /**
+     * 운영자가 지정한 예외는 자동 항목과 함께 보존됩니다.
+     *
+     * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
+     *
+     * @effects self_host_always_bypasses_proxy
+     */
+    public function test_operator_bypass_entries_survive_alongside_self_hosts(): void
+    {
+        config(['app.url' => 'https://shop.example.com']);
+
+        $resolved = OutboundProxy::resolve([
+            'mode' => true,
+            'outbound_proxy' => 'socks5h://127.0.0.1:1080',
+            'outbound_proxy_bypass' => ['internal.example', 'localhost'],
+        ]);
+
+        $this->assertContains('internal.example', $resolved['no']);
+        $this->assertContains('shop.example.com', $resolved['no']);
+        $this->assertSame(
+            array_values(array_unique($resolved['no'])),
+            $resolved['no'],
+            '자동 항목과 운영자 항목이 겹쳐 중복이 남았습니다.'
+        );
+    }
+
+    /**
+     * 예외 목록이 배열이 아니어도 자동 항목은 유지됩니다.
+     *
+     * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
+     *
+     * @effects self_host_always_bypasses_proxy
+     */
+    public function test_self_hosts_survive_a_non_array_bypass_value(): void
+    {
+        $resolved = OutboundProxy::resolve([
+            'mode' => true,
+            'outbound_proxy' => 'socks5h://127.0.0.1:1080',
+            'outbound_proxy_bypass' => 'g7.dev',
+        ]);
+
+        $this->assertContains('127.0.0.1', $resolved['no']);
     }
 }

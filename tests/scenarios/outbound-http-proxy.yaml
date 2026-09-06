@@ -13,6 +13,10 @@ description: |
     - 개별 요청의 withOptions(['proxy' => ...]) 가 전역 옵션보다 우선
     - Http:: 파사드를 쓰지 못하는 curl 직접 호출은 OutboundProxy::curlOptions() 로 편입
     - 저장 전 연결 테스트는 저장값이 아니라 제출값을 검사하고 출발지 IP 를 보고
+    - 사이트 자기 호스트(config app.url)와 루프백은 운영자 입력과 무관하게 항상 우회 —
+      자기 자신에게 되돌아오는 요청(SEO 데이터소스 조회, API 문서 엔드포인트 탐침)까지
+      프록시로 내보내면 프록시 무응답 시 그 호출이 연결 실패 시각까지 매달리고, 실패가
+      폴백으로 삼켜져 예외 없이 저장 요청만 느려진다
 
   축 설계: 판정에 실제로 영향을 주는 입력만 축으로 둔다. 검증 지점(단위/저장/적용/화면)은
   같은 조합을 여러 계층에서 확인하는 것이므로 축이 아니라 테스트 파일의 분담이다.
@@ -34,6 +38,7 @@ effects:
   - proxy_applied_when_debug_mode_on
   - proxy_rejects_disallowed_scheme
   - proxy_bypass_list_normalized
+  - self_host_always_bypasses_proxy
   - proxy_setting_persists_to_debug_category
   - proxy_setting_rejects_invalid_url
   - proxy_applied_to_global_http_options

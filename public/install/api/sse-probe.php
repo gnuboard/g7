@@ -25,11 +25,11 @@
  *  data: {"phase":2,"server_ts":1234567892.456}
  *
  * @method GET
- * @package G7\Installer
  */
 
 // 설치 완료 시 인스톨러 비즈니스 로직 진입 차단
-require_once __DIR__ . '/_guard.php';
+require_once __DIR__.'/../includes/utf8.php';
+require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
 // SSE 헤더 설정 (install-worker.php 와 동일 — 호환성 검증의 정확도 보장)
@@ -55,7 +55,7 @@ ignore_user_abort(false);
 
 // Phase 1 — 즉시 송신
 echo "event: probe\n";
-echo 'data: ' . json_encode(['phase' => 1, 'server_ts' => microtime(true)], JSON_UNESCAPED_UNICODE) . "\n\n";
+echo 'data: '.installer_json_encode(['phase' => 1, 'server_ts' => microtime(true)], JSON_UNESCAPED_UNICODE)."\n\n";
 @flush();
 
 // 클라이언트는 두 phase 도착 시각 차이로 streaming 호환성 판정.
@@ -64,7 +64,7 @@ sleep(2);
 
 // Phase 2 — 송신 후 즉시 종료
 echo "event: probe\n";
-echo 'data: ' . json_encode(['phase' => 2, 'server_ts' => microtime(true)], JSON_UNESCAPED_UNICODE) . "\n\n";
+echo 'data: '.installer_json_encode(['phase' => 2, 'server_ts' => microtime(true)], JSON_UNESCAPED_UNICODE)."\n\n";
 @flush();
 
 exit;

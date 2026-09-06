@@ -12,6 +12,8 @@ use App\Extension\PluginManager;
 use App\Http\View\Composers\TemplateComposer;
 use App\Http\View\Composers\UserTemplateComposer;
 use App\Listeners\ExtensionCompatibilityAlertListener;
+use App\Listeners\StaticPublishFailureAlertListener;
+use App\Listeners\TrustedProxyAlertListener;
 use App\Notifications\NotificationChannelManager;
 use App\Services\ChannelReadinessService;
 use App\Services\GeoIpService;
@@ -99,8 +101,8 @@ class AppServiceProvider extends ServiceProvider
         View::composer('admin', TemplateComposer::class);
         View::composer('app', UserTemplateComposer::class);
 
-        // 확장 호환성 알림 리스너 등록
-        $this->registerExtensionCompatibilityAlertListener();
+        // 코어 훅 리스너 등록 (대시보드 알림 등)
+        $this->registerCoreHookListeners();
 
         // SQL 쿼리 로그 설정
         $this->configureSqlQueryLogging();
@@ -135,25 +137,38 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * 확장 호환성 알림 리스너를 등록합니다.
+     * 코어가 소유한 훅 리스너를 등록합니다.
      *
-     * 코어 버전 호환성 문제로 자동 비활성화된 확장에 대한
-     * 알림을 관리자 대시보드에 표시하기 위한 훅 리스너입니다.
+     * 확장 리스너와 달리 코어 리스너는 자동 발견 대상이 아니므로 여기서 등록한다. 목록만
+     * 늘리면 되도록 루프로 둔다 — 리스너마다 등록 메서드를 복제하면 한 곳만 빠져도 그
+     * 리스너가 조용히 동작하지 않는다(등록 실패는 예외도 로그도 남기지 않는다).
+     *
+     * 등록 대상:
+     * - `ExtensionCompatibilityAlertListener` — 코어 호환성으로 자동 비활성화/재호환된 확장
+     * - `StaticPublishFailureAlertListener` — 부트스트랩 리소스 정적 게시 실패 (#122)
+     * - `TrustedProxyAlertListener` — 프록시 헤더 수신 중 신뢰 프록시 미설정 (#124)
      */
-    private function registerExtensionCompatibilityAlertListener(): void
+    private function registerCoreHookListeners(): void
     {
-        $listener = new ExtensionCompatibilityAlertListener;
-        $subscribedHooks = ExtensionCompatibilityAlertListener::getSubscribedHooks();
+        $listenerClasses = [
+            ExtensionCompatibilityAlertListener::class,
+            StaticPublishFailureAlertListener::class,
+            TrustedProxyAlertListener::class,
+        ];
 
-        foreach ($subscribedHooks as $hookName => $config) {
-            $method = $config['method'] ?? 'handle';
-            $priority = $config['priority'] ?? 10;
-            $type = $config['type'] ?? 'action';
+        foreach ($listenerClasses as $listenerClass) {
+            $listener = new $listenerClass;
 
-            if ($type === 'filter') {
-                HookManager::addFilter($hookName, [$listener, $method], $priority);
-            } else {
-                HookManager::addAction($hookName, [$listener, $method], $priority);
+            foreach ($listenerClass::getSubscribedHooks() as $hookName => $config) {
+                $method = $config['method'] ?? 'handle';
+                $priority = $config['priority'] ?? 10;
+                $type = $config['type'] ?? 'action';
+
+                if ($type === 'filter') {
+                    HookManager::addFilter($hookName, [$listener, $method], $priority);
+                } else {
+                    HookManager::addAction($hookName, [$listener, $method], $priority);
+                }
             }
         }
     }

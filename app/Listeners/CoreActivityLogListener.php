@@ -130,6 +130,7 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.templates.after_uninstall' => ['method' => 'handleTemplateAfterUninstall', 'priority' => 20],
             'core.templates.after_version_update' => ['method' => 'handleTemplateAfterVersionUpdate', 'priority' => 20],
             'core.templates.after_refresh_layouts' => ['method' => 'handleTemplateAfterRefreshLayouts', 'priority' => 20],
+            'core.custom_assets.after_change' => ['method' => 'handleCustomAssetAfterChange', 'priority' => 20],
 
             // ─── Layout ───
             'core.layout.after_update' => ['method' => 'handleLayoutAfterUpdate', 'priority' => 20],
@@ -1100,6 +1101,31 @@ class CoreActivityLogListener implements HookListenerInterface
         $this->logActivity('template.refresh_layouts', [
             'description_key' => 'activity_log.description.template_refresh_layouts',
             'description_params' => ['template_name' => $identifier],
+        ]);
+    }
+
+    /**
+     * 사용자 추가 에셋(`custom/`) 변경 후 로그 기록
+     *
+     * @param  string  $extensionType  확장 타입 (`templates` 등)
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $operation  수행한 작업 (`save` | `upload` | `delete`)
+     * @param  string  $path  `custom/` 기준 상대 경로
+     */
+    public function handleCustomAssetAfterChange(
+        string $extensionType,
+        string $identifier,
+        string $operation,
+        string $path
+    ): void {
+        $this->logActivity('custom_asset.'.$operation, [
+            'description_key' => 'activity_log.description.custom_asset_'.$operation,
+            'description_params' => ['identifier' => $identifier, 'path' => $path],
+            'properties' => [
+                'extension_type' => $extensionType,
+                'identifier' => $identifier,
+                'path' => $path,
+            ],
         ]);
     }
 

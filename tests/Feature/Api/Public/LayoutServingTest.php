@@ -911,4 +911,71 @@ class LayoutServingTest extends TestCase
         // 메시지도 raw UTF-8 (레이아웃 제공 성공 메시지)
         $this->assertMatchesRegularExpression('/[가-힣]/u', $body);
     }
+
+    /**
+     * 프로덕션에서 레이아웃 응답은 공개 캐시 헤더를 유지한다 (#122 작업 D — successWithCache 환경 분기 동반 효과)
+     *
+     * @effects fallback_api_serves_etag_304
+     */
+    public function test_layout_has_public_cache_headers_in_production(): void
+    {
+        app()['env'] = 'production';
+
+        $template = Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'dashboard',
+            'content' => ['meta' => [], 'data_sources' => [], 'components' => []],
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
+
+        $response->assertStatus(200);
+        $this->assertNotNull($response->headers->get('ETag'));
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringContainsString('max-age=3600', $cacheControl);
+    }
+
+    /**
+     * 개발 환경에서 레이아웃 응답은 no-cache (dev 레이아웃 반영성 — #122 작업 D 환경 분기)
+     *
+     * @effects fallback_api_no_cache_in_dev
+     */
+    public function test_layout_no_cache_in_development(): void
+    {
+        app()['env'] = 'local';
+
+        $template = Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'dashboard',
+            'content' => ['meta' => [], 'data_sources' => [], 'components' => []],
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
+
+        $response->assertStatus(200);
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringNotContainsString('max-age=3600', $cacheControl);
+    }
 }

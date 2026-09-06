@@ -7,7 +7,9 @@ use App\Enums\ExtensionStatus;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Template;
+use App\Services\ExtensionStaticCacheService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
@@ -284,5 +286,83 @@ class ClearsTemplateCachesTest extends TestCase
         $newVersion = ClearsTemplateCaches::getExtensionCacheVersion();
         $this->assertGreaterThan(0, $newVersion);
         $this->assertLessThanOrEqual(time(), $newVersion);
+    }
+
+    /**
+     * 캐시 버전 키는 만료되지 않는다 (#651 F11).
+     *
+     * 종전에는 `put()` 에 TTL 을 넘기지 않아 `cache.default_ttl`(86400) 로 **매일 만료**됐고,
+     * 다음 독자가 `regenerateExtensionCacheVersion()` 으로 새 버전을 만들어 정적 게시본 전체
+     * (715파일·40MB)를 재생성하고 전 방문자의 자산 URL 을 바꿨다. 재생성은 `cache:clear` 나
+     * 스토어 소실 때만 일어나야 한다.
+     *
+     * @effects cache_version_key_does_not_expire
+     */
+    public function test_version_key_survives_two_days(): void
+    {
+        $this->traitUser->callIncrementExtensionCacheVersion();
+        $version = ClearsTemplateCaches::getExtensionCacheVersion();
+        $this->assertGreaterThan(0, $version);
+
+        try {
+            Carbon::setTestNow(now()->addDays(2));
+
+            $this->assertSame(
+                $version,
+                (int) Cache::get('g7:core:ext.cache_version'),
+                '캐시 버전 키가 이틀 뒤 만료됐다 — 매일 정적 게시본 전체가 재생성되고 전 방문자의 자산 URL 이 바뀐다'
+            );
+            $this->assertSame($version, ClearsTemplateCaches::getExtensionCacheVersion());
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * 영구 TTL 상수는 `put(…, 0)`(forget) 도, 기본 TTL 도 아닌 명시 양수여야 한다.
+     *
+     * @effects cache_version_key_does_not_expire
+     */
+    public function test_persistent_ttl_constant_is_positive_and_longer_than_default(): void
+    {
+        $this->assertGreaterThan(
+            (int) config('cache.default_ttl', 86400) * 365,
+            ExtensionStaticCacheService::PERSISTENT_TTL_SECONDS
+        );
+    }
+
+    /**
+     * 버전 **재생성** 경로도 정적 게시를 예약한다 (D1).
+     *
+     * 회귀 가드: `incrementExtensionCacheVersion()` 에만 예약이 있고 재생성 경로에는
+     * 없었다. 그래서 `cache:clear` 후 첫 호출자가 CLI 면 포인터만 새 버전으로 점프하고
+     * 산출물은 옛 버전에 남았다 — "캐시 버전 갱신 → 게시" 단일 지점 규율의 유일한 구멍.
+     * 스케줄 GC 가 바로 그 첫 호출자라 매일 재현됐다.
+     *
+     * @effects regenerate_path_schedules_publish
+     */
+    public function test_regenerate_path_schedules_static_publish(): void
+    {
+        $this->app['env'] = 'production';
+        ExtensionStaticCacheService::resetPublishScheduleForTesting();
+        ExtensionStaticCacheService::fakeRootProcessForTesting(false);
+        Cache::forget('g7:core:ext.static.publish_failure');
+
+        // 키 부재 → getExtensionCacheVersion 이 재생성 경로를 탄다.
+        Cache::forget('g7:core:ext.cache_version');
+
+        $this->assertFalse(
+            ExtensionStaticCacheService::isPublishScheduledForTesting(),
+            '사전 조건 오염 — 예약 플래그가 이미 서 있다'
+        );
+
+        ClearsTemplateCaches::getExtensionCacheVersion();
+
+        $this->assertTrue(
+            ExtensionStaticCacheService::isPublishScheduledForTesting(),
+            '재생성 경로가 게시를 예약하지 않았다 — 포인터만 점프하고 산출물이 옛 버전에 남는다'
+        );
+
+        ExtensionStaticCacheService::resetPublishScheduleForTesting();
     }
 }

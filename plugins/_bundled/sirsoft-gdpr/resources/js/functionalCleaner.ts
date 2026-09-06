@@ -7,7 +7,7 @@
  *
  * cleanup 정책 (Phase 2 단순화):
  *   - 운영자 등록 표 (functional_storage_keys / functional_cookies) 불필요
- *   - strictly necessary allowlist (코드 상수) 외 모든 키/이름을 자동 파기
+ *   - strictly necessary 허용목록(운영자 설정 ∪ 잠금 집합) 외 모든 키/이름을 자동 파기
  *   - GDPR 원칙 "strictly necessary 외 비-필수는 동의 전 차단" 의 cleanup 측 적용
  *
  * 본 함수는 인터셉터 install 이후 호출되어도 안전 — removeItem 은 인터셉터가
@@ -18,51 +18,21 @@
  */
 
 import {
-    DEFAULT_NECESSARY_COOKIE_ALLOWLIST,
-} from './cookieInterceptor';
-import {
-    DEFAULT_NECESSARY_ALLOWLIST,
-    type NecessaryAllowlistEntry,
-    type StorageKind,
-} from './storageInterceptor';
+    LOCKED_FALLBACK,
+    isNecessary,
+    type NecessaryAllowlist,
+} from './necessaryAllowlist';
+import { type StorageKind } from './storageInterceptor';
 
 /**
  * cleanup 옵션 (선택).
  *
- * @property storageAllowlist  strictly necessary storage allowlist (기본: DEFAULT_NECESSARY_ALLOWLIST)
- * @property cookieAllowlist   strictly necessary cookie allowlist (기본: DEFAULT_NECESSARY_COOKIE_ALLOWLIST)
+ * @property allowlist  strictly necessary 허용목록 (운영자 설정 ∪ 잠금 집합).
+ *                      생략 시 잠금 집합만 남는 최소 폴백 — 설정을 읽지 못한 상황에서도
+ *                      로그인 토큰·CSRF·동의 쿠키는 파기하지 않는다.
  */
 export interface FunctionalCleanupOptions {
-    storageAllowlist?: readonly NecessaryAllowlistEntry[];
-    cookieAllowlist?: readonly string[];
-}
-
-/**
- * 키가 strictly necessary storage allowlist 에 매칭되는지 검사합니다.
- *
- * @param  key  스토리지 키
- * @param  storage  호출 스토리지 종류
- * @param  allowlist  allowlist 항목 배열
- * @return 매칭 여부
- */
-function isNecessaryStorage(
-    key: string,
-    storage: StorageKind,
-    allowlist: readonly NecessaryAllowlistEntry[],
-): boolean {
-    for (const entry of allowlist) {
-        if (entry.storage && entry.storage !== storage) {
-            continue;
-        }
-        const matchType = entry.matchType ?? 'exact';
-        if (matchType === 'exact' && entry.key === key) {
-            return true;
-        }
-        if (matchType === 'prefix' && key.startsWith(entry.key)) {
-            return true;
-        }
-    }
-    return false;
+    allowlist?: NecessaryAllowlist;
 }
 
 /**
@@ -78,7 +48,7 @@ function isNecessaryStorage(
 function purgeStorage(
     storage: Storage,
     storageKind: StorageKind,
-    allowlist: readonly NecessaryAllowlistEntry[],
+    allowlist: NecessaryAllowlist,
 ): void {
     const keys: string[] = [];
     for (let i = 0; i < storage.length; i++) {
@@ -87,7 +57,7 @@ function purgeStorage(
     }
 
     for (const key of keys) {
-        if (isNecessaryStorage(key, storageKind, allowlist)) {
+        if (isNecessary(key, storageKind, allowlist)) {
             continue;
         }
         try {
@@ -101,10 +71,10 @@ function purgeStorage(
 /**
  * document.cookie 에서 strictly necessary allowlist 외 모든 cookie 를 Max-Age=0 으로 파기합니다.
  *
- * @param  allowlist  necessary cookie allowlist (이름 배열)
+ * @param  allowlist  necessary 허용목록 (`cookie` 스코프만 사용)
  * @return void
  */
-function purgeCookies(allowlist: readonly string[]): void {
+function purgeCookies(allowlist: NecessaryAllowlist): void {
     const raw = document.cookie;
     if (!raw) return;
 
@@ -113,7 +83,7 @@ function purgeCookies(allowlist: readonly string[]): void {
         const eq = cookie.indexOf('=');
         const name = (eq > -1 ? cookie.substring(0, eq) : cookie).trim();
         if (!name) continue;
-        if (allowlist.includes(name)) continue;
+        if (isNecessary(name, 'cookie', allowlist)) continue;
 
         // 표준 cookie 파기 패턴 — Max-Age=0 + 빈 값 + Path=/
         // cookieInterceptor 의 isClearingCookie 가드로 통과.
@@ -134,10 +104,9 @@ function purgeCookies(allowlist: readonly string[]): void {
  * @return void
  */
 export function cleanupFunctionalArtifacts(options: FunctionalCleanupOptions = {}): void {
-    const storageAllowlist = options.storageAllowlist ?? DEFAULT_NECESSARY_ALLOWLIST;
-    const cookieAllowlist = options.cookieAllowlist ?? DEFAULT_NECESSARY_COOKIE_ALLOWLIST;
+    const allowlist = options.allowlist ?? LOCKED_FALLBACK;
 
-    purgeStorage(window.localStorage, 'localStorage', storageAllowlist);
-    purgeStorage(window.sessionStorage, 'sessionStorage', storageAllowlist);
-    purgeCookies(cookieAllowlist);
+    purgeStorage(window.localStorage, 'localStorage', allowlist);
+    purgeStorage(window.sessionStorage, 'sessionStorage', allowlist);
+    purgeCookies(allowlist);
 }

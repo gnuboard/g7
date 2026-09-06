@@ -14,8 +14,8 @@ export interface PaginationProps {
    * 마지막 페이지 번호
    *
    * 총 건수가 상한을 넘겨 정확히 세지 않은 목록은 마지막 페이지를 계산할 수 없다.
-   * 그 경우 서버가 `null` 을 보내며, 페이지 번호 목록과 마지막 페이지 점프가 사라지고
-   * 이전/다음 이동만 남는다. 0 이나 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하게 된다.
+   * 그 경우 서버가 `null` 을 보내며, 마지막 페이지 점프만 사라진다. 1 부터 현재 페이지까지와
+   * (`hasMorePages` 가 참이면) 다음 페이지 번호는 그대로 그린다. 0 이나 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하게 된다.
    */
   totalPages: number | null;
   onPageChange: (page: number) => void;
@@ -91,8 +91,8 @@ export const Pagination: React.FC<PaginationProps> = ({
   editorAttrs,
 }) => {
   // 총 건수를 정확히 세지 못한 목록은 마지막 페이지를 계산할 수 없다.
-  // 이때는 페이지 번호 목록과 마지막 페이지 점프를 감추고 이전/다음 이동만 남긴다 —
-  // 끝까지 넘겨 보는 것은 그대로 가능하다.
+  // 계산 불가한 값은 마지막 페이지 번호 하나뿐이므로 그 점프만 감춘다. 1 부터 현재
+  // 페이지까지는 확실히 존재하고, 다음 페이지 존재 여부는 서버가 `hasMorePages` 로 알린다.
   const isBounded = totalPages !== null && totalPages !== undefined;
   const resolvedTotalPages = isBounded ? (totalPages as number) : 0;
 
@@ -112,7 +112,21 @@ export const Pagination: React.FC<PaginationProps> = ({
     const pages: (number | string)[] = [];
 
     if (!isBounded) {
-      // 마지막 페이지를 모르면 번호 목록을 만들 수 없다 (현재 페이지만 별도로 표시)
+      // 마지막 페이지를 모르면 아는 범위(1..현재, 다음이 있으면 현재+1)만 그린다.
+      // 현재+1 너머는 존재 여부를 모르므로 번호 대신 계속됨 표시만 둔다.
+      const halfVisible = Math.floor(maxVisiblePages / 2);
+      const startPage = currentPage <= maxVisiblePages ? 1 : currentPage - halfVisible;
+      if (startPage > 1) {
+        pages.push(1);
+        if (startPage > 2) pages.push('...');
+      }
+      for (let i = startPage; i <= currentPage; i++) {
+        pages.push(i);
+      }
+      if (hasMorePages) {
+        pages.push(currentPage + 1);
+        pages.push('...');
+      }
       return pages;
     }
 
@@ -160,7 +174,7 @@ export const Pagination: React.FC<PaginationProps> = ({
     }
 
     return pages;
-  }, [currentPage, resolvedTotalPages, isBounded, maxVisiblePages]);
+  }, [currentPage, resolvedTotalPages, isBounded, maxVisiblePages, hasMorePages]);
 
   const handlePageClick = (page: number) => {
     if (page < 1 || page === currentPage) return;
@@ -210,13 +224,8 @@ export const Pagination: React.FC<PaginationProps> = ({
         {prevText || <>&#8249;</>}
       </Button>
 
-      {/* Page Numbers — 마지막 페이지를 모르면 현재 페이지만 표시 */}
+      {/* Page Numbers — 마지막 페이지를 모르면 아는 범위까지만 표시 */}
       <Div className="pagination">
-        {!isBounded && (
-          <Span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-            {currentPage}
-          </Span>
-        )}
         {pageNumbers.map((page, index) => {
           if (page === '...') {
             return (

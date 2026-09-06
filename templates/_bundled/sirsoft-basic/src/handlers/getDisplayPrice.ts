@@ -4,7 +4,22 @@
  * 사용자가 선택한 통화에 맞는 가격 문자열을 반환합니다.
  */
 
-import { HandlerContext } from '../types';
+import { HandlerContext, TemplateActionDefinition } from '../types';
+
+/**
+ * 전역 상태의 한 경로를 읽는다.
+ *
+ * 엔진 `ActionContext` 에는 `getState` 가 없다 — 상태 조회 공개 통로는 `G7Core.state.get()` 이다.
+ *
+ * @param key 전역 상태 키 (예: 'preferredCurrency')
+ * @return 값 (없으면 undefined)
+ */
+function readGlobal(key: string): string | undefined {
+  const value = (window as any).G7Core?.state?.get?.()?.[key];
+
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
 
 interface CurrencyPrice {
   value: number;
@@ -30,10 +45,8 @@ interface GetDisplayPriceParams {
 /**
  * 선호 통화에 맞는 가격을 반환합니다.
  *
- * @param params.product - 상품 객체
- * @param params.priceField - 가격 필드 ('selling_price' | 'list_price')
- * @param params.currencyCode - 통화 코드 (선택, 미지정 시 전역 설정 사용)
- * @param context - 핸들러 컨텍스트
+ * @param action - 액션 정의 (`params.product` / `params.priceField` / `params.currencyCode`)
+ * @param _context - 핸들러 컨텍스트 (미사용 — 표시 통화는 G7Core 전역에서 읽는다)
  * @returns 포맷팅된 가격 문자열
  *
  * @example
@@ -43,14 +56,15 @@ interface GetDisplayPriceParams {
  * }
  */
 export function getDisplayPriceHandler(
-  params: GetDisplayPriceParams,
-  context: HandlerContext
+  action: TemplateActionDefinition,
+  _context?: HandlerContext
 ): string {
+  const params = (action?.params ?? {}) as GetDisplayPriceParams;
   const { product, priceField, currencyCode } = params;
   // 통화를 못 박지 않는다 — 판정 실패 시 아래 *_formatted(기준 통화 표기)로 폴백한다.
   const preferredCurrency = currencyCode
-    || context.getState('_global.preferredCurrency')
-    || context.getState('_global.defaultCurrency')
+    || readGlobal('preferredCurrency')
+    || readGlobal('defaultCurrency')
     || '';
 
   const multiCurrencyField = `multi_currency_${priceField}` as keyof Product;

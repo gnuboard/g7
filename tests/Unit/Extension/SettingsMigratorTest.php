@@ -3,6 +3,7 @@
 namespace Tests\Unit\Extension;
 
 use App\Extension\Helpers\SettingsMigrator;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -18,8 +19,8 @@ class SettingsMigratorTest extends TestCase
     {
         parent::setUp();
 
-        $this->moduleSettingsDir = storage_path('app/modules/test-migrator-mod/settings');
-        $this->pluginSettingsDir = storage_path('app/plugins/test-migrator-plug/settings');
+        $this->moduleSettingsDir = ExtensionStoragePath::module('test-migrator-mod', 'settings');
+        $this->pluginSettingsDir = ExtensionStoragePath::plugin('test-migrator-plug', 'settings');
         $this->moduleDir = base_path('modules/test-migrator-mod');
 
         // 모듈 설정 디렉토리 및 파일 생성
@@ -59,12 +60,12 @@ class SettingsMigratorTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (File::isDirectory(storage_path('app/modules/test-migrator-mod'))) {
-            File::deleteDirectory(storage_path('app/modules/test-migrator-mod'));
+        if (File::isDirectory(ExtensionStoragePath::module('test-migrator-mod'))) {
+            File::deleteDirectory(ExtensionStoragePath::module('test-migrator-mod'));
         }
 
-        if (File::isDirectory(storage_path('app/plugins/test-migrator-plug'))) {
-            File::deleteDirectory(storage_path('app/plugins/test-migrator-plug'));
+        if (File::isDirectory(ExtensionStoragePath::plugin('test-migrator-plug'))) {
+            File::deleteDirectory(ExtensionStoragePath::plugin('test-migrator-plug'));
         }
 
         if (File::isDirectory($this->moduleDir)) {

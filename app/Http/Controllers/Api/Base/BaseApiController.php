@@ -210,17 +210,37 @@ abstract class BaseApiController extends Controller
     }
 
     /**
-     * JSON 응답을 반환합니다 (캐싱 헤더 포함).
+     * JSON 응답을 반환합니다 (조건부 캐싱 헤더 포함).
+     *
+     * ETag 기반 조건부 캐시(If-None-Match → 304)와 환경별 Cache-Control 분기를
+     * 적용한다 — 프로덕션은 `public, max-age`, 그 외 환경은 `no-cache`(파일 수정
+     * 즉시 반영 — `fileResponse` 의 환경 분기와 동일 사상).
      *
      * @param  mixed  $data  JSON으로 변환할 데이터
      * @param  int  $maxAge  캐시 유지 시간 (초, 기본: 1시간)
      * @param  int  $status  HTTP 상태 코드
-     * @return JsonResponse JSON 응답
+     * @return JsonResponse|Response JSON 응답 또는 304 응답
      */
-    protected function cachedJsonResponse(mixed $data, int $maxAge = 3600, int $status = 200): JsonResponse
+    protected function cachedJsonResponse(mixed $data, int $maxAge = 3600, int $status = 200): JsonResponse|Response
     {
+        $etag = $this->generateETag($data);
+
+        $cacheControl = app()->environment('production')
+            ? "public, max-age={$maxAge}"
+            : 'no-cache';
+
+        if ($status === 200 && $this->isNotModified($etag)) {
+            $response = $this->notModifiedResponse($etag, $maxAge);
+            $response->headers->set('Cache-Control', $cacheControl);
+            $response->headers->set('Vary', 'Accept-Encoding');
+
+            return $response;
+        }
+
         return response()->json($data, $status, [
-            'Cache-Control' => "public, max-age={$maxAge}",
+            'Cache-Control' => $cacheControl,
+            'ETag' => $etag,
+            'Vary' => 'Accept-Encoding',
         ], ResponseHelper::JSON_ENCODE_OPTIONS);
     }
 
@@ -283,9 +303,18 @@ abstract class BaseApiController extends Controller
     ): JsonResponse|Response {
         $etag = $this->generateETag($data);
 
+        // 환경별 캐싱 정책 — 프로덕션 외 환경은 no-cache 로 파일/데이터 수정 즉시 반영
+        // (`fileResponse`/`cachedJsonResponse` 와 동일 사상, #122 작업 D)
+        $cacheControl = app()->environment('production')
+            ? "public, max-age={$maxAge}"
+            : 'no-cache';
+
         // 304 Not Modified 처리
         if ($this->isNotModified($etag)) {
-            return $this->notModifiedResponse($etag, $maxAge);
+            $response = $this->notModifiedResponse($etag, $maxAge);
+            $response->headers->set('Cache-Control', $cacheControl);
+
+            return $response;
         }
 
         return response()->json([
@@ -294,7 +323,7 @@ abstract class BaseApiController extends Controller
             'data' => $data,
         ], 200, [], ResponseHelper::JSON_ENCODE_OPTIONS)
             ->header('ETag', $etag)
-            ->header('Cache-Control', "public, max-age={$maxAge}")
+            ->header('Cache-Control', $cacheControl)
             ->header('Vary', 'Accept-Encoding, Accept-Language');
     }
 }

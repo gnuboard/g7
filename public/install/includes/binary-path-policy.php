@@ -68,22 +68,34 @@ if (! function_exists('installer_binary_path_shape_ok')) {
 
 if (! function_exists('installer_binary_path_is_absolute')) {
     /**
-     * 절대경로인지 판정합니다 (POSIX / Windows 드라이브 / UNC).
+     * 절대경로인지 판정합니다 (POSIX / Windows 드라이브).
+     *
+     * UNC(`\\server\share`, `//server/share`)와 스트림 래퍼(`scheme://`)는 절대경로로
+     * 인정하지 않는다. UNC 는 공격자가 지정한 원격 SMB 공유의 파일을 그대로 실행하게 만들고,
+     * 스트림 래퍼는 로컬 파일이 아닌 것을 실행 대상으로 삼는다 (KVE-2026-2043).
+     * 판정은 전부 순수 문자열 규칙이라 `open_basedir` 회귀(#361)와 무관하다.
      *
      * @param  string  $token  경로 토큰
      * @return bool 절대경로면 true
      */
     function installer_binary_path_is_absolute(string $token): bool
     {
+        // 스트림 래퍼(`scheme://`) 거부. 단일 문자 스킴은 Windows 드라이브와 구분되지
+        // 않으므로 두 글자 이상만 스킴으로 본다.
+        if (preg_match('#^[A-Za-z][A-Za-z0-9+.-]+://#', $token)) {
+            return false;
+        }
+
+        // UNC 거부 — 슬래시/백슬래시 두 형태 모두.
+        if (str_starts_with($token, '\\\\') || str_starts_with($token, '//')) {
+            return false;
+        }
+
         if ($token[0] === '/') {
             return true;
         }
 
-        if (preg_match('#^[A-Za-z]:[\\\\/]#', $token)) {
-            return true;
-        }
-
-        return str_starts_with($token, '\\\\');
+        return (bool) preg_match('#^[A-Za-z]:[\\\\/]#', $token);
     }
 }
 
@@ -93,6 +105,9 @@ if (! function_exists('installer_is_composer_binary_path')) {
      *
      * 이 자리는 인터프리터가 실행하는 스크립트가 되므로 이름 형태를 제한한다.
      * 제한이 없으면 `PHP경로 /tmp/올려둔파일` 형태가 그대로 남는다.
+     *
+     * 이름은 composer 계열만 허용한다. 임의 이름의 `.phar` 를 열어 두면 업로드해 둔
+     * 아카이브를 그대로 실행시킬 수 있다 (KVE-2026-2043).
      *
      * @param  string  $token  경로 토큰
      * @return bool Composer 계열이면 true
@@ -105,11 +120,7 @@ if (! function_exists('installer_is_composer_binary_path')) {
 
         $basename = basename(str_replace('\\', '/', $token));
 
-        if (preg_match('/^composer[0-9]*(\.[0-9]+)*(\.phar|\.exe|\.bat|\.cmd)?$/i', $basename)) {
-            return true;
-        }
-
-        return (bool) preg_match('/\.phar$/i', $basename);
+        return (bool) preg_match('/^composer[0-9]*(\.[0-9]+)*(\.phar|\.exe|\.bat|\.cmd)?$/i', $basename);
     }
 }
 

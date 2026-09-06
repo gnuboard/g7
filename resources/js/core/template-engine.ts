@@ -31,6 +31,7 @@ import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
+import { loadScriptWithRetry } from './template-engine/networkResilience';
 // LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
 // (layout-editor.min.js)로 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
 // @since engine-v1.51.0
@@ -378,13 +379,23 @@ async function initTemplateEngine(options: InitOptions): Promise<void> {
  * @since engine-v1.51.0
  *
  * 편집기는 메인 코어 번들에서 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
- * 이미 로드돼 있으면 즉시 반환(멱등), 아니면 `<script>` 를 1회 주입하고 로드 완료를 대기한다.
+ * 이미 로드돼 있으면 즉시 반환(멱등), 아니면 `<script>` 를 주입하고 로드 완료를 대기한다.
  * 동시 다중 호출은 in-flight promise 로 병합해 중복 주입을 막는다.
+ *
+ * 주입은 `loadScriptWithRetry` 에 위임한다 — 종전에는 이 경로만 재시도 계층이 없어,
+ * 일시적 네트워크 유실 한 번에 편집기가 통째로 열리지 않았다. 다른 모든 자산 경로
+ * (레이아웃 스크립트·확장 번들·CSS)가 이미 이 로더를 쓰므로 편집기만 예외일 이유가 없다.
+ *
+ * 실패 문구에는 번들 경로를 싣지 않는다. 사용자가 고칠 수 있는 정보가 아니고,
+ * 내부 배치 구조를 화면에 노출한다. 경로는 콘솔 로그로만 남긴다.
  *
  * @returns LayoutEditorChrome React 컴포넌트
  * @throws {Error} 스크립트 로드 실패 또는 컴포넌트 미노출 시
  */
 let layoutEditorLoadPromise: Promise<any> | null = null;
+
+/** 편집기 번들 `<script>` element id */
+const LAYOUT_EDITOR_SCRIPT_ID = 'g7-layout-editor-bundle';
 
 function loadLayoutEditorBundle(): Promise<any> {
   const g7 = (window as any).G7Core;
@@ -399,54 +410,44 @@ function loadLayoutEditorBundle(): Promise<any> {
     return layoutEditorLoadPromise;
   }
 
-  layoutEditorLoadPromise = new Promise((resolve, reject) => {
+  layoutEditorLoadPromise = (async () => {
     // 번들 URL — blade 가 주입한 버전 포함 URL 우선, 폴백은 표준 경로
     const src =
       (window as any).G7Config?.coreEditorAsset || '/build/core/layout-editor.min.js';
-    const scriptId = 'g7-layout-editor-bundle';
 
-    // 이미 주입된 <script> 재사용
-    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+    // 앞선 시도가 남긴 element 제거 — 남겨두면 IIFE 가 두 번 실행된다
+    document.getElementById(LAYOUT_EDITOR_SCRIPT_ID)?.remove();
 
-    const onReady = () => {
-      const chrome = (window as any).G7Core?.__LayoutEditorChrome;
-      if (chrome) {
-        resolve(chrome);
-      } else {
-        reject(new Error('편집기 번들 로드됨 — 그러나 __LayoutEditorChrome 미노출'));
-      }
+    // 편집기 엔트리가 컴포넌트 노출 직후 호출하는 준비 완료 콜백 (주입 전에 등록)
+    (window as any).G7Core = (window as any).G7Core || {};
+    (window as any).G7Core.__onChromeReady = () => {
+      /* 노출 시점 통지 — 실제 대기는 script load 이벤트가 담당한다 */
     };
 
-    // 편집기 엔트리가 컴포넌트 노출 직후 호출할 준비 완료 콜백 (onload fallback 병행)
-    (window as any).G7Core = (window as any).G7Core || {};
-    (window as any).G7Core.__onChromeReady = onReady;
-
-    if (existing) {
-      // 주입돼 있으나 아직 실행 전 — load 이벤트 대기
-      existing.addEventListener('load', onReady, { once: true });
-      existing.addEventListener(
-        'error',
-        () => reject(new Error(`편집기 번들 로드 실패: ${src}`)),
-        { once: true }
+    try {
+      await loadScriptWithRetry(
+        src,
+        { id: LAYOUT_EDITOR_SCRIPT_ID },
+        { label: 'layout-editor bundle' }
       );
-      return;
+    } catch (error) {
+      layoutEditorLoadPromise = null; // 재시도 가능하도록 초기화
+      logger.error(`편집기 번들 로드 실패 (${src})`, error);
+
+      throw new Error('편집기를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
     }
 
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = src;
-    script.async = false; // 로드 순서 보존 (메인 번들 이후)
-    script.addEventListener('load', onReady, { once: true });
-    script.addEventListener(
-      'error',
-      () => {
-        layoutEditorLoadPromise = null; // 재시도 가능하도록 초기화
-        reject(new Error(`편집기 번들 로드 실패: ${src}`));
-      },
-      { once: true }
-    );
-    document.head.appendChild(script);
-  });
+    const chrome = (window as any).G7Core?.__LayoutEditorChrome;
+
+    if (!chrome) {
+      layoutEditorLoadPromise = null;
+      logger.error(`편집기 번들 로드됨 — 그러나 __LayoutEditorChrome 미노출 (${src})`);
+
+      throw new Error('편집기를 불러왔으나 초기화하지 못했습니다. 페이지를 새로고침해 주세요.');
+    }
+
+    return chrome;
+  })();
 
   return layoutEditorLoadPromise;
 }

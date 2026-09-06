@@ -5,9 +5,11 @@ namespace Tests\Unit\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -142,6 +144,140 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
         $service = $this->makeService(existingValue: 'sync', setResult: false);
 
         $this->assertFalse($service->setSetting('drivers.queue_driver', 'redis'));
+    }
+
+    /**
+     * 자산 URL 방식을 단건으로 바꾸면 확장 캐시 버전이 오른다 — 실제 키 관측 (#651 F5).
+     *
+     * 병합 번들 CSS 에는 그 시점의 자산 URL 형태(확장자 / `?file=`)가 구워져 있고, 디스크 번들과
+     * 정적 게시본은 캐시 버전으로 키드된다. 버전이 오르지 않으면 모드를 바꿔도 옛 형태의
+     * `url()` 이 남아 글꼴·이미지가 404 가 된다.
+     *
+     * @effects asset_url_mode_change_bumps_extension_cache_version
+     */
+    public function test_asset_url_mode_change_bumps_extension_cache_version(): void
+    {
+        $this->mock(SeoCacheManagerInterface::class)->shouldIgnoreMissing();
+        Artisan::shouldReceive('call')->zeroOrMoreTimes();
+
+        ClearsTemplateCaches::resetExtensionCacheStoreMemo();
+        Cache::put('g7:core:ext.cache_version', 1000);
+
+        $service = $this->makeService(existingValue: 'extensionless');
+        $this->assertTrue($service->setSetting('general.asset_url_mode', 'extension'));
+
+        $this->assertGreaterThan(
+            1000,
+            (int) Cache::get('g7:core:ext.cache_version'),
+            '자산 URL 방식 단건 변경이 확장 캐시 버전을 올리지 않았다 — 번들 CSS 의 옛 url() 형태가 남는다.'
+        );
+    }
+
+    /**
+     * 값이 그대로면 확장 캐시 버전도 그대로다.
+     *
+     * @effects asset_url_mode_change_bumps_extension_cache_version
+     */
+    public function test_same_asset_url_mode_keeps_extension_cache_version(): void
+    {
+        $this->mock(SeoCacheManagerInterface::class)->shouldIgnoreMissing();
+        Artisan::shouldReceive('call')->zeroOrMoreTimes();
+
+        ClearsTemplateCaches::resetExtensionCacheStoreMemo();
+        Cache::put('g7:core:ext.cache_version', 1000);
+
+        $service = $this->makeService(existingValue: 'extension');
+        $this->assertTrue($service->setSetting('general.asset_url_mode', 'extension'));
+
+        $this->assertSame(1000, (int) Cache::get('g7:core:ext.cache_version'));
+    }
+
+    /**
+     * 벌크 저장(saveSettings) 경로도 같은 부수효과를 갖는다 — 화면 [저장] 버튼이 타는 경로다.
+     *
+     * @effects asset_url_mode_change_bumps_extension_cache_version
+     */
+    public function test_bulk_save_asset_url_mode_change_bumps_extension_cache_version(): void
+    {
+        $this->mock(SeoCacheManagerInterface::class)->shouldIgnoreMissing();
+        Artisan::shouldReceive('call')->zeroOrMoreTimes();
+
+        $existing = ['asset_url_mode' => 'extensionless'];
+        $configRepository = $this->mock(ConfigRepositoryInterface::class)->shouldIgnoreMissing();
+        $configRepository->shouldReceive('getCategory')->with('general')->andReturnUsing(function () use (&$existing): array {
+            return $existing;
+        });
+        $configRepository->shouldReceive('saveCategory')->andReturn(true);
+        $this->mock(AttachmentRepositoryInterface::class)->shouldIgnoreMissing();
+        $this->mock(CacheInterface::class)->shouldIgnoreMissing();
+
+        ClearsTemplateCaches::resetExtensionCacheStoreMemo();
+        Cache::put('g7:core:ext.cache_version', 1000);
+
+        $service = app(SettingsService::class);
+        $this->assertTrue($service->saveSettings(['_tab' => 'general', 'general' => ['asset_url_mode' => 'extension']]));
+
+        $this->assertGreaterThan(1000, (int) Cache::get('g7:core:ext.cache_version'));
+
+        // 같은 값 재저장은 올리지 않는다
+        Cache::put('g7:core:ext.cache_version', 2000);
+        $existing = ['asset_url_mode' => 'extension'];
+        $this->assertTrue($service->saveSettings(['_tab' => 'general', 'general' => ['asset_url_mode' => 'extension']]));
+        $this->assertSame(2000, (int) Cache::get('g7:core:ext.cache_version'));
+    }
+
+    /**
+     * 설정 복원으로 자산 URL 방식이 바뀌면 SEO 캐시 삭제 + 확장 캐시 버전 bump 가 따른다.
+     *
+     * 복원은 설정 전체를 갈아엎는 쓰기라 두 저장 경로와 같은 부수효과를 받아야 한다 —
+     * 종전에는 변경 감지 자체가 없었다.
+     *
+     * @effects asset_url_mode_change_bumps_extension_cache_version
+     */
+    public function test_restore_asset_url_mode_change_bumps_extension_cache_version(): void
+    {
+        $this->mock(SeoCacheManagerInterface::class)->shouldReceive('clearAll')->once();
+        Artisan::shouldReceive('call')->zeroOrMoreTimes();
+
+        $configRepository = $this->mock(ConfigRepositoryInterface::class)->shouldIgnoreMissing();
+        // 복원 전 / 복원 후 순서대로 읽힌다
+        $configRepository->shouldReceive('get')->with('general.asset_url_mode')->andReturn('extensionless', 'extension');
+        $configRepository->shouldReceive('restore')->andReturn(true);
+        $this->mock(AttachmentRepositoryInterface::class)->shouldIgnoreMissing();
+        $this->mock(CacheInterface::class)->shouldIgnoreMissing();
+
+        ClearsTemplateCaches::resetExtensionCacheStoreMemo();
+        Cache::put('g7:core:ext.cache_version', 1000);
+
+        $service = app(SettingsService::class);
+        $this->assertTrue($service->restoreSettings('/tmp/backup.json'));
+
+        $this->assertGreaterThan(1000, (int) Cache::get('g7:core:ext.cache_version'));
+    }
+
+    /**
+     * 복원 전후 값이 같으면 두 부수효과 모두 없다.
+     *
+     * @effects asset_url_mode_change_bumps_extension_cache_version
+     */
+    public function test_restore_with_same_asset_url_mode_has_no_side_effects(): void
+    {
+        $this->mock(SeoCacheManagerInterface::class)->shouldReceive('clearAll')->never();
+        Artisan::shouldReceive('call')->zeroOrMoreTimes();
+
+        $configRepository = $this->mock(ConfigRepositoryInterface::class)->shouldIgnoreMissing();
+        $configRepository->shouldReceive('get')->with('general.asset_url_mode')->andReturn('extensionless');
+        $configRepository->shouldReceive('restore')->andReturn(true);
+        $this->mock(AttachmentRepositoryInterface::class)->shouldIgnoreMissing();
+        $this->mock(CacheInterface::class)->shouldIgnoreMissing();
+
+        ClearsTemplateCaches::resetExtensionCacheStoreMemo();
+        Cache::put('g7:core:ext.cache_version', 1000);
+
+        $service = app(SettingsService::class);
+        $this->assertTrue($service->restoreSettings('/tmp/backup.json'));
+
+        $this->assertSame(1000, (int) Cache::get('g7:core:ext.cache_version'));
     }
 
     /**

@@ -5,7 +5,7 @@
         "ko": "Hello 플러그인",
         "en": "Hello Plugin"
     },
-    "version": "0.1.1",
+    "version": "0.1.2",
     "license": "MIT",
     "description": {
         "ko": "학습용 최소 샘플 플러그인 (Hello 모듈 훅 소비)",

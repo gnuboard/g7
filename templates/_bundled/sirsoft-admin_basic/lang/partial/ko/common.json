@@ -49,6 +49,8 @@
   "logout": "로그아웃",
   "expand_sidebar": "사이드바 펼치기",
   "collapse_sidebar": "사이드바 접기",
+  "expand": "펼치기",
+  "collapse": "접기",
   "module": "모듈",
   "plugin": "플러그인",
   "status_active": "활성화",

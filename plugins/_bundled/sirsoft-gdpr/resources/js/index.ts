@@ -29,10 +29,16 @@ import { startBlocker, setCurrentConsent, setBlockedDomains } from './blocker';
 import {
     installCookieInterceptor,
     updateCookieInterceptorConfig,
-    DEFAULT_NECESSARY_COOKIE_ALLOWLIST,
 } from './cookieInterceptor';
 import { cleanupFunctionalArtifacts } from './functionalCleaner';
 import { fetchPublicSettings, fetchConsentSnapshot } from './layouts';
+import {
+    LOCKED_FALLBACK,
+    isEmptyAllowlist,
+    mergeAllowlists,
+    normalizeAllowlist,
+    type NecessaryAllowlist,
+} from './necessaryAllowlist';
 import {
     installPreblocker,
     updatePreblockerConfig,
@@ -42,7 +48,6 @@ import {
 import {
     installStorageInterceptor,
     updateStorageInterceptorConfig,
-    DEFAULT_NECESSARY_ALLOWLIST,
 } from './storageInterceptor';
 import { installUserInitiatedTracker } from './userInitiatedTracker';
 
@@ -75,6 +80,30 @@ function readInlineBlockedDomains(): Record<string, readonly string[]> {
         if (strs.length > 0) normalized[category] = strs;
     }
     return normalized;
+}
+
+/**
+ * G7Config 인라인 페이로드에서 strictly necessary 허용목록 즉시 조회.
+ *
+ * 인터셉터는 `fetchPublicSettings()` **앞에서** 선다 — 동의 전 첫 저장을 막는 것이 이
+ * 기능의 목적이라 응답을 기다릴 수 없다. 그래서 허용목록은 인라인으로 와야 하고,
+ * `defaults.json` 의 `frontend_schema` 에 `expose: true` 가 없으면 여기서 빈 목록이 된다.
+ *
+ * 판정은 언제나 **운영자 목록 ∪ 잠금 집합**이다. 잠금 집합이 통째로 비어 오면 페이로드가
+ * 도달하지 않았다는 뜻이므로 코드 폴백으로 내려간다 — 그러지 않으면 인터셉터가 빈 목록으로
+ * 서서 동의 없는 첫 방문자의 로그인 토큰까지 차단한다.
+ *
+ * @return 스코프별 허용 패턴 목록
+ */
+function readInlineNecessaryAllowlist(): NecessaryAllowlist {
+    if (typeof window === 'undefined') return LOCKED_FALLBACK;
+    const config = (window as unknown as { G7Config?: G7Config }).G7Config;
+    const pluginConfig = config?.plugins?.[PLUGIN_IDENTIFIER];
+
+    const operator = normalizeAllowlist(pluginConfig?.necessary_storage_allowlist);
+    const locked = normalizeAllowlist(pluginConfig?.necessary_storage_locked);
+
+    return mergeAllowlists(operator, isEmptyAllowlist(locked) ? LOCKED_FALLBACK : locked);
 }
 
 /**
@@ -124,18 +153,19 @@ function registerSyncHandler(): void {
         });
 
         // 3. Phase 2: storage / cookie 인터셉터 동기화
+        const necessaryAllowlist = readInlineNecessaryAllowlist();
         updateStorageInterceptorConfig({
             functionalConsented,
-            necessaryAllowlist: DEFAULT_NECESSARY_ALLOWLIST,
+            necessaryAllowlist,
         });
         updateCookieInterceptorConfig({
             functionalConsented,
-            necessaryAllowlist: DEFAULT_NECESSARY_COOKIE_ALLOWLIST,
+            necessaryAllowlist,
         });
 
         // 4. EDPB §117: 동의 철회 즉시 파기 — strictly necessary allowlist 외 모든 storage/cookie cleanup.
         if (!functionalConsented) {
-            cleanupFunctionalArtifacts();
+            cleanupFunctionalArtifacts({ allowlist: necessaryAllowlist });
         }
 
         // 5. 동의 받은 카테고리의 preblocker 차단 요소 복원 (단, needs_renewal=true 면 복원 안 함)
@@ -173,15 +203,16 @@ async function bootstrap(): Promise<void> {
         //   - userInitiatedTracker: 사용자 인터랙션 시각 기록 (WP29 §3.6 면제 판정용, 항상 활성)
         //   - storageInterceptor: localStorage / sessionStorage 신규 쓰기 가로채기
         //   - cookieInterceptor: document.cookie 신규 쓰기 가로채기
-        // 모두 strictly necessary allowlist (코드 상수) 외 미동의 + 비-사용자 쓰기는 차단.
+        // 모두 strictly necessary 허용목록(운영자 설정 ∪ 잠금 집합) 외 미동의 + 비-사용자 쓰기는 차단.
         installUserInitiatedTracker();
+        const inlineAllowlist = readInlineNecessaryAllowlist();
         installStorageInterceptor({
             functionalConsented: false,
-            necessaryAllowlist: DEFAULT_NECESSARY_ALLOWLIST,
+            necessaryAllowlist: inlineAllowlist,
         });
         installCookieInterceptor({
             functionalConsented: false,
-            necessaryAllowlist: DEFAULT_NECESSARY_COOKIE_ALLOWLIST,
+            necessaryAllowlist: inlineAllowlist,
         });
     }
 
@@ -217,20 +248,21 @@ async function bootstrap(): Promise<void> {
         snapshot !== null && !snapshot.needs_renewal && snapshot.categories.functional === true;
 
     // Phase 2: storage / cookie 인터셉터 설정 갱신 (functional 동의 여부만 반영).
+    const necessaryAllowlist = readInlineNecessaryAllowlist();
     updateStorageInterceptorConfig({
         functionalConsented,
-        necessaryAllowlist: DEFAULT_NECESSARY_ALLOWLIST,
+        necessaryAllowlist,
     });
     updateCookieInterceptorConfig({
         functionalConsented,
-        necessaryAllowlist: DEFAULT_NECESSARY_COOKIE_ALLOWLIST,
+        necessaryAllowlist,
     });
 
     // Phase 2: 부팅 시점 functional 미동의면 allowlist 외 모든 storage/cookie 파기 (EDPB §117).
     //   - 재방문 시 이전 세션의 잔류 데이터 정리
     //   - 신규 게스트 / 거부 후 재방문 모두 동일 처리
     if (!functionalConsented) {
-        cleanupFunctionalArtifacts();
+        cleanupFunctionalArtifacts({ allowlist: necessaryAllowlist });
     }
 
     if (snapshot !== null) {

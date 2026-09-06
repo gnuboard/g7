@@ -1261,7 +1261,7 @@
     },
     "scroll_to_section": {
       "label": "特定の領域にスクロール",
-      "param_section_id": "領域ID"
+      "param_target_id": "領域ID"
     },
     "set_date_range": {
       "label": "期間を素早く選択",
@@ -1269,15 +1269,15 @@
       "preset_today": "今日",
       "preset_week": "今週",
       "preset_month": "今月",
-      "preset_year": "今年"
+      "preset_1year": "直近1年"
     },
     "toggle_filter_visibility": {
       "label": "フィルターの表示·非表示",
-      "param_filter_key": "フィルターキー"
+      "param_storage_key": "保存キー",
+      "param_filter_id": "フィルターID"
     },
     "save_multilingual_tag": {
-      "label": "多言語タグを保存",
-      "param_tag": "タグ"
+      "label": "多言語タグを保存"
     },
     "init_theme": {
       "label": "画面のテーマをリセット",
@@ -1290,7 +1290,8 @@
       "label": "アドレスからメニューを初期化"
     },
     "init_filter_visibility": {
-      "label": "フィルター表示をリセット"
+      "label": "フィルター表示をリセット",
+      "param_storage_key": "保存キー"
     }
   },
   "condition": {
@@ -1573,11 +1574,13 @@
     "template_info": "テンプレート情報",
     "templates": "テンプレートリスト",
     "tokenValidation": "トークン検証",
+    "trustedProxy": "信頼するプロキシ診断",
     "user": "ユーザー",
     "users": "ユーザーリスト",
     "dashboard_recent_notifications": "ダッシュボード最近の通知",
     "sitemap_status": "サイトマップ生成ステータス",
-    "sitemap_progress_ws": "サイトマップ生成進行中（リアルタイム）"
+    "sitemap_progress_ws": "サイトマップ生成進行中（リアルタイム）",
+    "staticCacheStatus": "初期画面静的ファイル状態"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

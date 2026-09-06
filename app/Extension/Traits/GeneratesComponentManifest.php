@@ -53,7 +53,11 @@ trait GeneratesComponentManifest
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
         );
 
-        $written = $json !== false && file_put_contents($outputPath, $json.PHP_EOL) !== false;
+        // 종결 개행은 "\n" 고정 — PHP_EOL 은 Windows 에서 "\r\n" 이라, 같은 소스를 빌드해도
+        // 빌드한 OS 에 따라 산출물의 마지막 바이트가 달라진다. components.json 은 Git 추적
+        // 대상이므로 그 차이가 매 빌드마다 변경으로 잡히는데, 줄 내용이 같아 diff 는 비어
+        // 보인다 — 무엇이 바뀐 것인지 알 수 없는 변경만 남는다.
+        $written = $json !== false && file_put_contents($outputPath, $json."\n") !== false;
 
         $count = count($components['basic']) + count($components['composite']) + count($components['layout']);
 

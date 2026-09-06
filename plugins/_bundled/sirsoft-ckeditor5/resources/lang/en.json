@@ -3,6 +3,11 @@
         "data_source": {
             "settings": "Editor Settings",
             "ckeditor5Uploads": "Uploaded Image List"
+        },
+        "asset": {
+            "label": "Editor",
+            "style_label": "Editor styles",
+            "fallback_notice": "Could not load the editor. Switched to a plain text box. What you write is still saved."
         }
     },
     "admin": {
@@ -85,11 +90,11 @@
                 "label": "Max Image Size (MB)",
                 "hint": "Maximum allowed size for uploaded images. (1 ~ 10 MB)"
             },
-      "public_asset_disk": {
-        "label": "Public Asset Disk",
-        "hint": "Select to use a different disk for this plugin only. Leave empty to follow the core public asset disk setting.",
-        "follow_core": "Follow core setting"
-      },
+            "public_asset_disk": {
+                "label": "Public Asset Disk",
+                "hint": "Select to use a different disk for this plugin only. Leave empty to follow the core public asset disk setting.",
+                "follow_core": "Follow core setting"
+            },
             "editor_height": {
                 "label": "Editor Height (px)",
                 "hint": "Set the minimum height of the editor in pixels. (200 ~ 2000 px)"

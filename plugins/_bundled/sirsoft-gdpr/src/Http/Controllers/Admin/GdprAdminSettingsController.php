@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\Gdpr\Http\Requests\UpdateAdminSettingsRequest;
+use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Services\GdprSettingsService;
 
 /**
@@ -43,6 +44,10 @@ class GdprAdminSettingsController extends AdminBaseController
     /**
      * 현재 GDPR 플러그인 설정 전체를 반환합니다 (관리자 화면 폼 바인딩용).
      *
+     * 출하 기본 카탈로그 두 벌을 함께 싣습니다. 관리자 화면의 TagInput 이 이 값을 자동완성
+     * 추천으로 쓰는데, 응답에 없으면 드롭다운에 **이미 선택된 칩만** 다시 나타나 추천이
+     * 동작하는 것처럼 보인다 — 오류도 빈 목록도 남지 않아 증상만으로는 알 수 없다.
+     *
      * @return JsonResponse
      */
     public function show(): JsonResponse
@@ -53,6 +58,8 @@ class GdprAdminSettingsController extends AdminBaseController
 
         return ResponseHelper::success('common.success', [
             'settings' => $settings,
+            'default_blocked_domains_preview' => Plugin::DEFAULT_BLOCKED_DOMAINS_CATALOG,
+            'default_necessary_allowlist_preview' => Plugin::DEFAULT_NECESSARY_ALLOWLIST_CATALOG,
         ]);
     }
 

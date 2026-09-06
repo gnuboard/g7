@@ -6,6 +6,7 @@
  * 사용자가 선택한 확장 기능 목록을 state.json에 저장합니다.
  *
  * @method POST
+ *
  * @body {
  *   "admin_templates": ["sirsoft-admin_basic"],
  *   "user_templates": ["sirsoft-basic"],
@@ -26,11 +27,11 @@ header('Content-Type: application/json; charset=utf-8');
 define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
 
 // 세션 및 설정 포함
-require_once dirname(__DIR__) . '/includes/session.php';
-require_once dirname(__DIR__) . '/includes/config.php';
-require_once dirname(__DIR__) . '/includes/installer-state.php';
-require_once dirname(__DIR__) . '/includes/functions.php';
-require_once __DIR__ . '/_guard.php';
+require_once dirname(__DIR__).'/includes/session.php';
+require_once dirname(__DIR__).'/includes/config.php';
+require_once dirname(__DIR__).'/includes/installer-state.php';
+require_once dirname(__DIR__).'/includes/functions.php';
+require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
 // 다국어 로드
@@ -40,7 +41,7 @@ $translations = loadTranslations($currentLang);
 // POST 요청만 허용
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'error' => lang('api_method_not_allowed'),
     ], JSON_UNESCAPED_UNICODE);
@@ -52,7 +53,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 
 if (json_last_error() !== JSON_ERROR_NONE) {
     http_response_code(400);
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'error' => lang('api_invalid_request'),
     ], JSON_UNESCAPED_UNICODE);
@@ -88,7 +89,7 @@ $extensionNames = isset($input['extension_names']) && is_array($input['extension
 // 관리자 템플릿은 최소 1개 필수
 if (empty($adminTemplates)) {
     http_response_code(400);
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'error' => lang('error_admin_template_required'),
     ], JSON_UNESCAPED_UNICODE);
@@ -114,9 +115,9 @@ $identifierGroups = [
 ];
 foreach ($identifierGroups as $groupKey => $ids) {
     foreach ($ids as $id) {
-        if (!preg_match($identifierPattern, $id)) {
+        if (! preg_match($identifierPattern, $id)) {
             http_response_code(400);
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'error' => lang('error_invalid_extension_identifier', ['identifier' => $id, 'group' => $groupKey]),
             ], JSON_UNESCAPED_UNICODE);
@@ -153,7 +154,7 @@ try {
     // 상태 저장
     $saved = saveInstallationState($state);
 
-    if (!$saved) {
+    if (! $saved) {
         throw new Exception(lang('state_save_failed'));
     }
 
@@ -167,7 +168,7 @@ try {
     ]));
 
     // 성공 응답
-    echo json_encode([
+    echo installer_json_encode([
         'success' => true,
         'message' => lang('log_extensions_saved'),
         'data' => [
@@ -178,7 +179,7 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'error' => $e->getMessage(),
     ], JSON_UNESCAPED_UNICODE);

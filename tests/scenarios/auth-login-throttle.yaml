@@ -15,6 +15,7 @@ description: |
       만 담당.
 
 axes:
+  session_issue_path: [password_login, two_factor_complete, token_refresh]
   login_attempt_enabled: [true, false]
   user_existence: [exists, not_exists]
   lock_state: [none, active, expired, permanent]
@@ -35,6 +36,11 @@ exclusions:
   - { lockout_minutes_setting: zero, lock_state: expired, reason: "영구 잠금은 만료되지 않음" }
   - { unlock_path: admin_manual, user_existence: not_exists, reason: "해제 대상이 없음" }
 
+  - { session_issue_path: two_factor_complete, user_existence: not_exists, reason: "challenge 는 이미 확인된 사용자에게만 발급된다 — 미존재 사용자로는 이 지점에 도달하지 못한다" }
+  - { session_issue_path: token_refresh, user_existence: not_exists, reason: "토큰 재발급은 유효한 세션이 전제 — 미존재 사용자 분기가 없다" }
+  - { session_issue_path: token_refresh, credential: invalid, reason: "재발급은 자격 증명을 다시 받지 않는다" }
+  - { session_issue_path: two_factor_complete, unlock_path: admin_manual, reason: "관리자 수동 해제는 잠금 해제 경로 — 2FA 완료 지점의 재검사 축과 교차하지 않는다" }
+  - { session_issue_path: token_refresh, unlock_path: admin_manual, reason: "동일" }
 effects:
   - failed_attempt_increments_counter
   - counter_reaches_threshold_triggers_lock
@@ -61,10 +67,26 @@ effects:
   - admin_manual_unlock_requires_users_update_permission
   - finite_lockout_setting_keeps_previous_expiry_behavior
 
+  # 세션 발급 지점의 잠금 재검사 — 비밀번호 확인만이 아니라 토큰을 내주는 모든 지점
+  - lock_recheck_runs_at_every_session_issuing_path
+  - lock_check_logic_is_a_single_shared_helper_not_a_copy
+  - two_factor_complete_rechecks_lock_before_auth_login
+  - challenge_issued_before_lock_cannot_complete_after_lock
+  - blocked_two_factor_attempt_issues_no_token
+  - blocked_two_factor_attempt_does_not_reset_failed_attempts
+  - blocked_two_factor_attempt_does_not_reset_locked_until
+  - two_factor_locked_response_status_423
+  - two_factor_locked_response_payload_matches_login_endpoint
+  - two_factor_lock_recheck_honors_login_attempt_enabled_setting
+  - unlocked_account_completes_two_factor_normally
+  - token_refresh_rejects_locked_account
+  - token_refresh_still_works_for_unlocked_account
+
 test_files:
   - tests/Feature/Auth/LoginThrottleTest.php
   - tests/Feature/Auth/AccountLockoutTest.php
   - tests/Unit/Repositories/UserRepositoryAccountLockTest.php
+  - tests/Feature/Auth/TwoFactorAccountLockTest.php
 
 rules_layer_coverage:
   - rule: service-direct-data-access

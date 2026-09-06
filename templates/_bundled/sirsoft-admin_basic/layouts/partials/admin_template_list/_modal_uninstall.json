@@ -8,13 +8,14 @@
   "type": "composite",
   "name": "Modal",
   "props": {
-    "title": "$t:admin.templates.modals.uninstall_title",
+    "title": "{{_global.templateUninstallBackups?.length ? '$t:admin.templates.modals.uninstall_done_title' : '$t:admin.templates.modals.uninstall_title'}}",
     "size": "medium"
   },
   "children": [
     {
       "type": "basic",
       "name": "Div",
+      "if": "{{!(_global.templateUninstallBackups?.length)}}",
       "props": {
         "className": "py-2"
       },
@@ -41,6 +42,7 @@
       "id": "delete_data_option",
       "type": "basic",
       "name": "Div",
+      "if": "{{!(_global.templateUninstallBackups?.length)}}",
       "props": {
         "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
       },
@@ -100,6 +102,7 @@
       "id": "extension_directory_section",
       "type": "basic",
       "name": "Div",
+      "if": "{{!(_global.templateUninstallBackups?.length)}}",
       "props": {
         "className": "mt-4 border-t border-gray-200 dark:border-gray-600 pt-4"
       },
@@ -125,7 +128,7 @@
               "name": "Icon",
               "props": {
                 "name": "spinner",
-                "className": "w-5 h-5 animate-spin text-gray-400"
+                "className": "text-xl animate-spin text-gray-400"
               }
             }
           ]
@@ -150,7 +153,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "folder-open",
-                    "className": "w-4 h-4 text-gray-500"
+                    "className": "text-base text-gray-500"
                   }
                 },
                 {
@@ -210,6 +213,80 @@
       ]
     },
     {
+      "id": "preserved_backups_section",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.templateUninstallBackups?.length}}",
+      "props": {
+        "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "folder-open",
+                "className": "text-base text-gray-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-body font-medium"
+              },
+              "text": "$t:admin.templates.modals.preserved_title"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "mt-2 text-label-subtle"
+          },
+          "text": "$t:admin.templates.modals.preserved_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": {
+                "source": "_global.templateUninstallBackups",
+                "item_var": "backup"
+              },
+              "props": {
+                "className": "px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-xs font-mono text-gray-700 dark:text-gray-300 select-all break-all"
+                  },
+                  "text": "{{backup.archive}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "type": "basic",
       "name": "Div",
       "props": {
@@ -219,6 +296,7 @@
         {
           "type": "basic",
           "name": "Button",
+          "if": "{{!(_global.templateUninstallBackups?.length)}}",
           "props": {
             "className": "btn btn-secondary",
             "disabled": "{{_global.isTemplateUninstalling}}"
@@ -240,6 +318,7 @@
         {
           "type": "basic",
           "name": "Button",
+          "if": "{{!(_global.templateUninstallBackups?.length)}}",
           "props": {
             "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isTemplateUninstalling}}"
@@ -279,6 +358,14 @@
                       "handler": "setState",
                       "params": {
                         "target": "global",
+                        "templateUninstallBackups": "{{response.data?.preserved_backups ?? []}}"
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "if": "{{!(response.data?.preserved_backups?.length)}}",
+                      "params": {
+                        "target": "global",
                         "selectedTemplate": null,
                         "deleteTemplateData": false
                       }
@@ -300,7 +387,8 @@
                       "handler": "reloadExtensions"
                     },
                     {
-                      "handler": "closeModal"
+                      "handler": "closeModal",
+                      "if": "{{!(response.data?.preserved_backups?.length)}}"
                     }
                   ],
                   "onError": [
@@ -337,6 +425,42 @@
               "type": "basic",
               "name": "Span",
               "text": "{{_global.isTemplateUninstalling ? '$t:admin.templates.uninstalling' : '$t:admin.templates.actions.uninstall'}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{_global.templateUninstallBackups?.length}}",
+          "props": {
+            "className": "btn btn-secondary"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "selectedTemplate": null,
+                    "deleteTemplateData": false,
+                    "templateUninstallInfo": null,
+                    "templateUninstallBackups": null
+                  }
+                },
+                {
+                  "handler": "closeModal"
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.close"
             }
           ]
         }

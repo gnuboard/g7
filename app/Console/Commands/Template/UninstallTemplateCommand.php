@@ -71,7 +71,7 @@ class UninstallTemplateCommand extends Command
             // 템플릿 삭제
             $onProgress = $this->createProgressCallback(TemplateManager::UNINSTALL_STEPS);
             try {
-                $result = $this->templateManager->uninstallTemplate($identifier, $onProgress);
+                $result = $this->templateManager->uninstallTemplate($identifier, $onProgress, $preservedBackups);
                 $this->finishProgress();
             } catch (\Exception $e) {
                 $this->finishProgress();
@@ -82,6 +82,15 @@ class UninstallTemplateCommand extends Command
                 // 성공 메시지
                 $this->info('✅ '.__('templates.commands.uninstall.success', ['template' => $identifier]));
                 $this->info('   - '.__('templates.commands.uninstall.layouts_deleted', ['count' => $layoutsCount]));
+
+                // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 알리지 않으면
+                // 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.
+                foreach ($preservedBackups ?? [] as $backup) {
+                    $this->info('   - '.__('templates.commands.uninstall.custom_preserved', [
+                        'directory' => $backup['directory'],
+                        'archive' => $backup['archive'],
+                    ]));
+                }
 
                 Log::info(__('templates.commands.uninstall.success', ['template' => $identifier]));
 

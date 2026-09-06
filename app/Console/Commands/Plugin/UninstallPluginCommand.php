@@ -92,7 +92,13 @@ class UninstallPluginCommand extends Command
             $deleteData = $this->option('delete-data');
             $onProgress = $this->createProgressCallback(PluginManager::UNINSTALL_STEPS);
             try {
-                $result = $this->pluginManager->uninstallPlugin($identifier, $deleteData, $onProgress);
+                $result = $this->pluginManager->uninstallPlugin(
+                    $identifier,
+                    $deleteData,
+                    $onProgress,
+                    $uninstallFailureReason,
+                    $preservedBackups
+                );
                 $this->finishProgress();
             } catch (\Exception $e) {
                 $this->finishProgress();
@@ -104,6 +110,16 @@ class UninstallPluginCommand extends Command
                 $this->info('   - '.__('plugins.commands.uninstall.roles_deleted', ['count' => $rolesCount]));
                 $this->info('   - '.__('plugins.commands.uninstall.permissions_deleted', ['count' => $permissionsCount]));
                 $this->info('   - '.__('plugins.commands.uninstall.layouts_deleted', ['count' => $layoutsCount]));
+
+                // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 알리지 않으면
+                // 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.
+                foreach ($preservedBackups ?? [] as $backup) {
+                    $this->info('   - '.__('plugins.commands.uninstall.custom_preserved', [
+                        'directory' => $backup['directory'],
+                        'archive' => $backup['archive'],
+                    ]));
+                }
+
                 Log::info(__('plugins.commands.uninstall.success', ['plugin' => $identifier]));
 
                 return Command::SUCCESS;

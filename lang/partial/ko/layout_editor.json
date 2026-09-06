@@ -35,7 +35,13 @@
       "translations": "다국어",
       "data_sources": "데이터",
       "reset": "초기화",
-      "switch_template": "다른 템플릿으로 전환"
+      "switch_template": "다른 템플릿으로 전환",
+      "custom_assets": "커스텀 자산",
+      "custom_assets_hint": "운영자가 추가한 CSS·JS·폰트·이미지를 관리합니다.",
+      "custom_assets_off": "커스텀 자산 끄기",
+      "custom_assets_on": "커스텀 자산 켜기",
+      "custom_assets_off_hint": "운영자가 추가한 CSS·JS 없이 이 화면을 다시 엽니다. 추가 자산이 화면을 망가뜨렸을 때 씁니다.",
+      "custom_assets_on_hint": "지금은 운영자 추가 자산이 꺼져 있습니다. 눌러서 다시 적용합니다."
     },
     "route_tree": {
       "panel_title": "화면 / 라우트",
@@ -105,6 +111,27 @@
     "extension_gated_desc": "이 확장이 들어가는 영역은 특정 화면 상태에서만 나타납니다. 그 상태가 편집 설정에 정의되어 있지 않아 시각 편집할 수 없습니다. 코드 편집을 이용해 주세요.",
     "extension_gated_desc_with_states": "이 확장이 들어가는 영역은 특정 화면 상태에서만 나타납니다. 상단의 상태 선택에서 해당 상태로 바꾸면 편집할 수 있습니다.",
     "slot_area_label": "콘텐츠 영역"
+  },
+  "custom_assets": {
+    "target_label": "관리 대상 확장",
+    "type_template": "템플릿",
+    "type_module": "모듈",
+    "type_plugin": "플러그인",
+    "title": "커스텀 자산",
+    "close": "닫기",
+    "loading": "불러오는 중…",
+    "empty": "추가한 파일이 없습니다. 아래에 경로를 적고 저장하거나, 파일을 올려 시작하세요.",
+    "forbidden": "커스텀 자산을 관리할 권한이 없습니다. 관리자에게 «커스텀 자산 관리» 권한을 요청해 주세요.",
+    "new_path_placeholder": "예: 10-overrides.css",
+    "path_label": "파일 경로",
+    "content_label": "파일 본문",
+    "new_file": "새 파일",
+    "save": "저장",
+    "upload": "파일 올리기",
+    "delete": "삭제",
+    "delete_confirm": "이 파일을 삭제합니다. 되돌릴 수 없습니다.",
+    "binary_hint": "이 형식(:extension)은 본문을 직접 편집할 수 없습니다. 같은 이름으로 다시 올려 교체하세요.",
+    "apply_hint": "저장하면 다음 화면부터 적용됩니다."
   },
   "version_history": {
     "title": "버전 기록",

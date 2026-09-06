@@ -90,5 +90,10 @@
         "vbank_due_label": "Deposit deadline",
         "receipt_label": "Receipt",
         "receipt_view": "View receipt"
+    },
+    "payment": {
+        "error": {
+            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
+        }
     }
 }

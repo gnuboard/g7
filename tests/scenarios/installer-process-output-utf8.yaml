@@ -1,0 +1,76 @@
+# audit:allow test-scenario-coverage reason: 인스톨러(설치 전 표면)는 설치 완료 사이트에 붙는 Playwright 인프라와 양립하지 않는다 (_guard 가 410). 브라우저 계층은 Chrome MCP 정밀 점검 매트릭스로 대체하며, 그 결과는 작업 이력 문서에 기재한다.
+
+feature: 인스톨러 프로세스 출력 인코딩 정규화와 JSON 응답 경계
+
+description: |
+  외부 프로세스 출력(`whoami`, composer stdout, powershell/wmic)은 UTF-8 이 아니라
+  그 명령을 실행한 콘솔의 코드페이지로 나온다. 한국어 Windows(OEM 949)에서 계정명에
+  한글이 있으면 invalid UTF-8 바이트가 응답 배열에 실리고, `json_encode()` 가 false 를
+  반환해 `echo false` = HTTP 200 + 빈 본문이 나간다. 예외도 로그도 남지 않는다.
+
+  핵심 동작:
+    - ProcessOutputEncoding: 한국어 코드페이지 확정 감지 → Windows OEM/ANSI 폴백 → mb_scrub
+      (복원 가능한 출력은 한글 그대로 살리고, 불가능한 바이트만 대체)
+    - installer_json_encode: 정규화 + substitute + 실패 시 파싱 가능한 오류 JSON
+      (false·빈 문자열을 절대 반환하지 않는다)
+    - 출처 정규화: getWebServerUser/Group, composer 스트림, addLog, 상태 파일 저장
+    - 관측성: 정규화가 실제로 필요했으면 설치 로그에 1회 기록, encode 실패는 키 경로까지 기록
+    - 프론트: 빈 본문/비 JSON 응답을 읽을 수 있는 안내 문구로, 폴링은 5회 연속 실패 시 중단
+
+axes:
+  output_encoding: [utf8, cp949_korean, cp949_extended_hangul, truncated_utf8, single_high_byte, empty]
+  sink:
+    - requirements_response
+    - polling_state_response
+    - sse_event
+    - state_json_file
+    - installation_log
+    - js_embedded_view
+    - core_system_info
+  value_position: [scalar, nested_array_value, array_key]
+  locale: [ko, en]
+
+exclusions:
+  - { output_encoding: empty, value_position: array_key, reason: "빈 문자열 키는 인스톨러 응답 형태에 존재하지 않는다" }
+  - { sink: core_system_info, value_position: array_key, reason: "CPU 정보는 스칼라 값 한 개" }
+  - { sink: core_system_info, locale: en, reason: "정규화는 로케일에 의존하지 않는다 — ko 표본으로 충분" }
+  - { sink: installation_log, value_position: array_key, reason: "로그 메시지는 스칼라 문자열" }
+  - { sink: installation_log, value_position: nested_array_value, reason: "동일" }
+
+effects:
+  # 응답이 절대 비지 않는다 (결함 본체)
+  - response_body_never_empty
+  - requirements_response_parses_after_cp949_account_name
+  - polling_response_parses_after_invalid_utf8_log
+  - sse_data_line_never_empty
+  # 복원 품질 (mb_scrub 단독 대비 향상)
+  - korean_account_name_restored_exactly
+  - extended_hangul_restored
+  - valid_utf8_passes_through_unchanged
+  - non_string_scalars_preserve_type_and_value
+  - unrecoverable_bytes_still_yield_encodable_utf8
+  # 출처 차단
+  - web_server_user_always_valid_utf8
+  - composer_stream_line_normalized_before_emit
+  - state_json_file_written_with_substitute_flag
+  - core_cpu_info_normalized_before_serialization
+  # 관측성 (제보 사례에 로그 흔적이 0 이었다)
+  - encode_failure_logged_with_key_path
+  - non_utf8_process_output_logged_once_per_source
+  # 프론트 안내
+  - frontend_shows_readable_message_on_empty_body
+  - frontend_shows_readable_message_on_unparsable_body
+  - polling_stops_after_5_consecutive_parse_failures
+  - polling_parse_failure_counter_resets_on_success
+  - new_error_message_keys_defined_in_ko_and_en
+  # 재발 차단
+  - no_raw_json_encode_remains_in_installer_output_paths
+  - sse_emitter_routes_through_guarded_encoder
+  - get_cpu_info_routes_both_branches_through_normalizer
+
+test_files:
+  - tests/Unit/Support/ProcessOutputEncodingTest.php
+  - tests/Unit/Installer/InstallerJsonOutputTest.php
+  - tests/Unit/Installer/RequirementsResponseUtf8Test.php
+  - tests/Unit/Installer/AddLogUtf8ScrubTest.php
+  - tests/Unit/Services/SettingsServiceCpuInfoTest.php

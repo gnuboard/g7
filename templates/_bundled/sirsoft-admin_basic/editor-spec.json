@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "templateId": "sirsoft-admin_basic",
   "version": "1.0.0",
-  "description": "레이아웃 편집기 스펙 — Phase 3 (nesting + componentPalette 블록).  controls/componentCapabilities/actionRecipes 등은 Phase 4/5 에서 추가.",
+  "description": "관리자 템플릿 레이아웃 편집기 스펙 — 컴포넌트 팔레트·스타일 컨트롤·편집 역량·중첩 규칙과 관리자 화면 프리뷰 샘플.",
   "styleSystem": "tailwind",
   "darkMode": {
     "comment": "Tailwind 다크는 조상.dark 클래스. 편집기 프리뷰 격리: 코어 CSS 서빙 API 가 편집기용 CSS 의.dark 셀렉터를 프리뷰 전용 마커(.g7le-preview-dark)로 치환해 서빙한다. 사용자 페이지 CSS 는 원본 그대로.",

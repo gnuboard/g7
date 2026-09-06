@@ -2,7 +2,7 @@
     "name": "plugins/sirsoft-message_bizppurio",
     "description": "Bizppurio SMS/LMS and KakaoTalk alimtalk messaging plugin for G7 platform by sirsoft",
     "type": "library",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "authors": [
         {
