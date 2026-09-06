@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Upgrades;
 
 use App\Contracts\Extension\UpgradeStepInterface;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\UpgradeContext;
 use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
@@ -120,6 +121,8 @@ class Upgrade_1_0_0_beta_4 implements UpgradeStepInterface
         // 7. 저장
         $settings['payment_methods'] = $merged;
         File::put($path, json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 만든 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info('[v1.0.0-beta.4] KG 이니시스 간편결제 결제수단을 phone 뒤에 삽입 완료', [
             'inserted' => $missingIds,

@@ -14,6 +14,7 @@ use App\Services\ExtensionBundleService;
 use App\Services\ExtensionStaticCacheService;
 use App\Services\LanguagePackService;
 use App\Services\TemplateService;
+use App\Support\CustomAssets;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use Illuminate\Filesystem\Filesystem;
@@ -286,6 +287,132 @@ class ExtensionStaticCacheServiceTest extends TestCase
             File::deleteDirectory(base_path("modules/{$module}"));
             File::deleteDirectory(base_path("plugins/{$plugin}"));
         }
+    }
+
+    /**
+     * 게시된 custom 파일 집합 == `CustomAssets::publishableFiles()` 집합 (#651 F7 패리티).
+     *
+     * 변경 감지가 이 열거자로 서명을 만들므로, 게시가 다른 집합을 복사하면 "감지됐는데 게시본에
+     * 없다" 또는 "게시본에 있는데 바꿔도 감지되지 않는다" 가 된다. 두 소비자가 같은 열거자를
+     * 쓰는지를 산출물로 잠근다.
+     *
+     * @effects custom_signature_covers_publishable_tree
+     */
+    public function test_published_custom_set_matches_publishable_files(): void
+    {
+        $template = $this->createActiveTemplate();
+        $identifier = (string) $template->identifier;
+        $dir = base_path("templates/{$identifier}/custom");
+
+        File::ensureDirectoryExists($dir.'/img/deep');
+        File::put($dir.'/custom.css', "body { background-image: url('./img/deep/m.svg'); }");
+        File::put($dir.'/img/deep/m.svg', '<svg/>');
+        File::put($dir.'/fonts.woff2', 'font');
+        File::put($dir.'/notes.txt', 'not an asset');
+
+        try {
+            CustomAssets::flushCache();
+            $service = $this->service();
+            $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
+
+            $customRoot = $service->versionDir(self::VERSION)."/templates/{$identifier}/assets/custom";
+            $published = [];
+            foreach (File::allFiles($customRoot) as $file) {
+                $published[] = str_replace('\\', '/', $file->getRelativePathname());
+            }
+            sort($published, SORT_STRING);
+
+            $enumerated = array_column(CustomAssets::publishableFiles('templates', $identifier), 'relative');
+
+            $this->assertSame($enumerated, $published, '게시된 custom 집합이 공유 열거자 집합과 다르다 — 감지와 게시 범위가 어긋난다');
+            $this->assertSame(['custom.css', 'fonts.woff2', 'img/deep/m.svg'], $published);
+        } finally {
+            File::deleteDirectory($dir);
+            // 요청 스코프 메모가 지운 파일을 가리키지 않도록 비운다 (같은 프로세스의 다음 테스트가 게시한다)
+            CustomAssets::flushCache();
+        }
+    }
+
+    /**
+     * 상태 보고서는 미게시/게시 상태를 필드로 구분해 돌려준다 — CLI·API·화면이 같은 판정을 소비한다.
+     *
+     * @effects status_endpoint_returns_report_fields
+     */
+    public function test_status_report_reflects_publish_state(): void
+    {
+        $service = $this->service();
+
+        $before = $service->statusReport();
+        $this->assertSame(self::VERSION, $before['version']);
+        $this->assertFalse($before['published']);
+        $this->assertSame(0, $before['files']);
+        $this->assertNull($before['published_at']);
+        $this->assertFalse($before['publishable'], 'testing 환경은 publishable 이 아니다');
+        $this->assertTrue($before['enabled']);
+        $this->assertNull($before['failure']);
+        $this->assertSame([], $before['retained_versions']);
+
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
+
+        $after = $service->statusReport();
+        $this->assertTrue($after['published']);
+        $this->assertGreaterThan(0, $after['files']);
+        $this->assertNotNull($after['published_at']);
+        $this->assertSame([self::VERSION], $after['retained_versions']);
+        $this->assertTrue($after['tree_writable']);
+    }
+
+    /**
+     * 수동 복구는 버전을 올리고 새 버전을 강제 게시한다 (`force` 없으면 같은 초 재게시가 skip 된다).
+     *
+     * @effects republish_bumps_version_and_publishes
+     */
+    public function test_republish_bumps_version_and_force_publishes(): void
+    {
+        $this->app['env'] = 'production';
+        ExtensionStaticCacheService::fakeRootProcessForTesting(false);
+
+        $service = $this->service();
+        $result = $service->republish();
+
+        $this->assertTrue($result['republished'], json_encode($result));
+        $this->assertSame(self::VERSION, $result['previous_version']);
+        $this->assertGreaterThan(self::VERSION, $result['version']);
+        $this->assertTrue($result['version_changed']);
+        $this->assertTrue($result['published']);
+        $this->assertNull($result['reason']);
+        $this->assertFileExists($service->versionDir($result['version']).'/manifest.json');
+
+        // 같은 초의 연속 복구도 **내용을 다시 만든다** — manifest 시각이 갱신된다
+        $firstManifest = (string) file_get_contents($service->versionDir($result['version']).'/manifest.json');
+        sleep(1);
+        $second = $service->republish();
+        $this->assertTrue($second['republished']);
+        $this->assertNotSame($firstManifest, (string) file_get_contents($service->versionDir($second['version']).'/manifest.json'));
+    }
+
+    /**
+     * 게시가 쓰이지 않는 환경(비프로덕션 / kill-switch)에서는 bump 하지 않고 사유를 돌려준다.
+     *
+     * @effects republish_disabled_when_not_publishable
+     */
+    public function test_republish_refuses_without_bump_when_not_publishable(): void
+    {
+        $service = $this->service();
+
+        $result = $service->republish();
+        $this->assertFalse($result['republished']);
+        $this->assertSame('not_production', $result['reason']);
+        $this->assertSame(self::VERSION, $result['version']);
+        $this->assertFalse($result['version_changed']);
+
+        config(['core.static_cache.enabled' => false]);
+        $this->app['env'] = 'production';
+
+        $result = $service->republish();
+        $this->assertFalse($result['republished']);
+        $this->assertSame('disabled', $result['reason']);
+        $this->assertSame(self::VERSION, ExtensionStaticCacheService::getExtensionCacheVersion());
     }
 
     /**

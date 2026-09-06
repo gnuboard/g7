@@ -6,6 +6,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Resources\AttachmentResource;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Support\ConfigCacheHelper;
@@ -28,6 +29,10 @@ use Illuminate\Validation\ValidationException;
  */
 class SettingsService
 {
+    // 자산 URL 방식 변경 시 확장 캐시 버전 bump 용. 주입된 `$this->cache` 로 직접 put 하지
+    // 않는다 — 트레이트가 고정 `CoreCacheDriver` + 메모이즈 스토어를 쓰는 이유가 그 안에 있다.
+    use ClearsTemplateCaches;
+
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
         private AttachmentRepositoryInterface $attachmentRepository,
@@ -706,6 +711,7 @@ class SettingsService
                 // CLI(`g7:asset-url-mode`)와 동일한 처리 (계획서 §알려진 한계).
                 if ($assetUrlModeChanged) {
                     $this->clearSeoCacheForAssetUrlMode();
+                    $this->bumpExtensionCacheForAssetUrlMode();
                 }
 
                 // drivers 탭은 queue/broadcasting/cache 등 long-running worker에 영향
@@ -1090,6 +1096,7 @@ class SettingsService
 
                 if ($assetUrlModeChanged) {
                     $this->clearSeoCacheForAssetUrlMode();
+                    $this->bumpExtensionCacheForAssetUrlMode();
                 }
 
                 if (str_starts_with($key, 'drivers.') || $key === 'drivers') {
@@ -1126,15 +1133,40 @@ class SettingsService
      */
     public function restoreSettings(string $backupPath): bool
     {
+        // 자산 URL 방식은 복원 **전**에 읽어 둔다 — 복원 뒤에는 이전 값을 알 수 없어
+        // 변경 여부를 판별할 수 없다 (saveSettings/setSetting 과 같은 사유).
+        $previousAssetUrlMode = $this->configRepository->get('general.asset_url_mode');
+
         $result = $this->configRepository->restore($backupPath);
 
         if ($result) {
             // 복원도 설정 전체를 갈아엎는 쓰기다 — 캐시만 비우고 미러를 두면
             // 같은 프로세스가 복원 전 값을 계속 읽는다 (저장 경로와 동일 결함, 공개이슈 #109).
             $this->invalidateSettingsCache();
+
+            // 복원으로 자산 URL 방식이 바뀌었으면 두 저장 경로와 동일하게 처리한다 —
+            // SEO 프리렌더와 병합 번들 CSS 양쪽에 구워진 URL 형태가 어긋난다.
+            if ($this->configRepository->get('general.asset_url_mode') !== $previousAssetUrlMode) {
+                $this->clearSeoCacheForAssetUrlMode();
+                $this->bumpExtensionCacheForAssetUrlMode();
+            }
         }
 
         return $result;
+    }
+
+    /**
+     * 자산 URL 방식이 바뀌었을 때 확장 캐시 버전을 올립니다 (정적 게시본 재생성).
+     *
+     * 병합 번들 CSS 는 내부 `url()` 참조가 그 시점의 자산 URL **형태**(확장자 / `?file=`)로
+     * 본문에 구워진다(`ExtensionBundleService` 의 `AssetCssUrlRewriter`). 디스크 번들과 정적
+     * 게시본은 캐시 버전으로 키드되어 있어, 버전이 오르지 않으면 모드를 바꿔도 옛 형태의
+     * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다(#651 F5). bump 단일 지점이
+     * 번들 재병합과 정적 재게시를 함께 예약한다.
+     */
+    private function bumpExtensionCacheForAssetUrlMode(): void
+    {
+        $this->incrementExtensionCacheVersion();
     }
 
     /**

@@ -27,6 +27,7 @@ use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
@@ -2637,14 +2638,17 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
-        // 디렉토리 생성
+        // 디렉토리 생성 — sudo 코어 업데이트 경로에서 root 로 만들어지면 `storage/app/plugins` 는
+        // restore_ownership 제외 경로라 되돌려지지 않는다 → 부모 소유권 상속 (#651 F13)
         if (! File::isDirectory($settingsDir)) {
             File::makeDirectory($settingsDir, 0755, true);
+            FilePermissionHelper::inheritOwnershipFromParent($settingsDir);
         }
 
         // 기본값 저장
         $content = json_encode($defaults, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         File::put($settingsPath, $content);
+        FilePermissionHelper::inheritOwnershipFromParent($settingsPath);
 
         Log::info('플러그인 기본 설정 파일 생성 완료', [
             'plugin' => $identifier,
@@ -4369,7 +4373,7 @@ class PluginManager implements PluginManagerInterface
         $tempDir = storage_path('app/temp/plugin_update_'.uniqid());
 
         try {
-            File::ensureDirectoryExists($tempDir);
+            ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
 
             // GitHub에서 다운로드 및 추출 (코어와 동일한 폴백 체인)
             $extractedDir = $this->extensionManager->downloadAndExtractFromGitHub(

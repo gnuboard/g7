@@ -628,6 +628,24 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 
 > 상세: [api-resources.md](docs/backend/api-resources.md), [service-repository.md](docs/backend/service-repository.md)
 
+### 확장 캐시 버전은 트레이트 게터로만 읽고, 만료시키지 않는다
+
+확장 캐시 버전(`ext.cache_version`)은 모든 자산 URL 의 `?v=`·정적 게시본(`public/build/ext/{v}/`)·병합 번들 파일명의 좌표다. 그 키를 올리는 단일 지점(`incrementExtensionCacheVersion()`)이 재게시까지 예약하므로, 게시본에 구워지는 입력이 바뀌는 경로는 전부 그 지점을 타야 하고, 키 자체는 만료로 재생성되어서는 안 된다 — 재생성은 정적 파일 전체 재생성이자 전 방문자의 자산 URL 변경이다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `$cache->get('ext.cache_version', 0)` / `app(CacheInterface::class)->get(...)` / `->forget('ext.cache_version')` 원시 접근 | `ExtensionStaticCacheService::getExtensionCacheVersion()` 또는 트레이트를 조합한 클래스 안의 `self::getExtensionCacheVersion()` — 부재 시 재생성하므로 `cache:clear` 직후 0 이 새지 않고, 컨테이너 바인딩의 확장 네임스페이스 누수도 없다 |
+| 트레이트 정적 메서드를 트레이트 이름으로 직접 호출 (`ClearsTemplateCaches::getExtensionCacheVersion()`) | 트레이트를 조합한 코어 클래스 경유 — PHP 8.1+ E_DEPRECATED 이고, 트레이트 상수는 `self::` 로 읽을 수 없다 |
+| 게시본에 구워지는 설정값(`general.asset_url_mode`)을 바꾸는 경로에서 bump 누락 | 저장·단건 저장·복원·CLI 어느 경로든 `incrementExtensionCacheVersion()` — 번들 CSS 안의 `url()` 형태가 본문에 구워져 있다 |
+| 게시 입력이 바뀌는 수명주기 경로를 조건부 bump 에 위임 (템플릿 update 가 레이아웃 변경 건수 > 0 일 때만) | 모듈·플러그인과 동형으로 무조건 bump — 조건은 게시 입력 중 레이아웃 축만 본다 |
+| custom 변경 감지 서명과 게시 복사 집합을 서로 다른 코드가 정의 | 같은 열거자(`CustomAssets::publishableFiles()`) — 감지가 최상위 css/js 만 보면 하위 글꼴·이미지 교체가 영영 미게시다 |
+| 버전 키·서명 키를 기본 TTL 로 `put()` | `PERSISTENT_TTL_SECONDS`(10년) 명시 — `forever()` 는 `CacheInterface` 밖(공개 표면 변경), `put(…, 0)` 은 forget |
+| 서명 스코프를 렌더 템플릿만으로 나눔 | `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버 간 mtime 차이로 요청마다 재게시가 왕복한다 |
+
+이 결함군은 예외도 로그도 남기지 않는다 — 게시본이 정상 200 으로 옛 내용을 내보내는 것, 또는 매일 전체 재생성이 일어나는 것이 유일한 증상이다. 재게시 누락의 안전망은 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기](`POST /api/admin/settings/static-cache/republish`)이며, 상태 판정은 `ExtensionStaticCacheService::statusReport()` 한 곳이 CLI·API·화면에 공급한다.
+
+> 상세: [static-asset-publishing.md](docs/backend/static-asset-publishing.md) "버전은 만료되지 않는다" · "5-1. 관리자 화면에서의 수동 복구"
+
 ### 저장값 + 확장 카탈로그 병합 설정의 공개 응답
 
 설정 항목이 "운영자 저장값 + 확장이 훅으로 등록한 카탈로그" 의 병합으로 만들어지면, 저장값은 남아 있는데 카탈로그에서 항목이 사라지는 상태가 생긴다 — 그 확장을 삭제·비활성화했거나, 확장이 자기 기능 토글을 껐을 때다. 병합부는 이를 고아 항목으로 표시하지만 저장값의 `is_active` 는 참 그대로 남는다.

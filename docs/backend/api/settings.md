@@ -1127,6 +1127,169 @@ HTTP/1.1 200
 서버 실행 환경 정보를 한 번에 조회합니다. OS/웹서버/PHP/DB/Laravel/코어 버전, CPU·메모리·디스크 사용량, PHP 주요 설정값(memory_limit·max_execution_time·upload_max_filesize), 주요 경로, PHP 확장 로드 상태, DB 연결 구성 요약 등을 포함합니다. 관리자 시스템 정보 화면과 요구사항 점검용 진단 데이터로 사용됩니다.
 
 
+### GET /api/admin/settings/static-cache
+<!-- @generated:start:api.admin.settings.static-cache -->
+- **라우트명**: `api.admin.settings.static-cache`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@staticCacheStatus`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/static-cache HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| enabled | boolean | `true` | kill-switch(`G7_STATIC_CACHE`) 상태. `false` 면 게시하지 않고 모든 화면이 API 로 동작한다 |
+| publishable | boolean | `true` | 지금 이 설치에서 게시가 실제로 쓰이는지 — `enabled` 이고 운영 모드(`APP_ENV=production`)일 때만 `true`. 화면의 [지금 다시 만들기] 활성 조건 |
+| environment | string | `production` | 현재 앱 환경 |
+| version | integer | `1788656566` | 현재 확장 캐시 버전 (정적 게시 디렉토리 이름). 키가 없으면 새로 만들어 돌려주므로 항상 유효값 |
+| published | boolean | `true` | 현재 버전의 게시 완료(manifest 존재) 여부 |
+| files | integer | `714` | manifest 에 기록된 게시 파일 수 (미게시면 0) |
+| published_at | string\|null | `2026-09-06T01:02:49+00:00` | 마지막 게시 시각 (ISO 8601, 미게시면 `null`) |
+| tree_writable | boolean | `true` | 게시 트리(`public/build/ext`)에 쓸 수 있는지 — 없으면 부모에 만들 수 있는지 |
+| process_user | string | `www-data` | 웹 프로세스 계정명 (posix 미지원 환경은 `unknown`). 게시 산출물의 소유자가 될 계정 |
+| failure | object\|null | `null` | 최근 게시 실패 마커 `{version, at, reason, count, message}`. `reason` 은 `parent_not_writable` / `write_failed` / `lock_unavailable` |
+| retained_versions | array | `[1788171201,1788656566]` | 게시 루트에 남아 있는 버전 디렉토리 목록 (오름차순). 정상은 현재 + 직전 1개 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "초기 화면 정적 파일 상태를 불러왔습니다.",
+    "data": {
+        "enabled": true,
+        "publishable": true,
+        "environment": "production",
+        "version": 1788656566,
+        "published": true,
+        "files": 714,
+        "published_at": "2026-09-06T01:02:49+00:00",
+        "tree_writable": true,
+        "process_user": "www-data",
+        "failure": null,
+        "retained_versions": [
+            1788171201,
+            1788656566
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+부트스트랩 리소스 정적 게시(초기 화면 정적 파일)의 상태를 돌려줍니다. 판정은 서비스 한 곳이 소유하며 CLI `php artisan ext-static:status` 와 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」 카드가 같은 값을 소비합니다. 읽기 전용이며 입력이 없습니다.
+
+`publishable` 이 `false` 이면 게시가 쓰이지 않는 환경(kill-switch 꺼짐 또는 비프로덕션)이라 화면은 [지금 다시 만들기] 를 비활성으로 두고 그 이유를 안내합니다. `failure` 는 게시가 거듭 실패했을 때만 채워지며, 대시보드 알림과 같은 마커를 읽습니다. 상세: [static-asset-publishing.md](../static-asset-publishing.md) "5-1. 관리자 화면에서의 수동 복구".
+
+
+### POST /api/admin/settings/static-cache/republish
+<!-- @generated:start:api.admin.settings.static-cache.republish -->
+- **라우트명**: `api.admin.settings.static-cache.republish`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@republishStaticCache`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/static-cache/republish HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 — 아래 4개 + `GET /api/admin/settings/static-cache` 의 상태 보고서 필드 전부._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| republished | boolean | `true` | 새 버전 게시가 완료됐는지. `false` 여도 HTTP 200 으로 응답한다 — 게시 실패는 요청 처리 실패가 아니라 진단 결과다 (사이트는 API 폴백으로 정상) |
+| version_changed | boolean | `true` | 캐시 버전이 이전과 달라졌는지. 같은 초에 연속 호출하면 `false` 일 수 있으나 내용은 강제로 다시 만들어진다 |
+| previous_version | integer | `1788656566` | 호출 전 캐시 버전 |
+| reason | string\|null | `null` | `republished=false` 일 때의 사유. `disabled`(kill-switch 꺼짐) / `not_production`(비프로덕션 — 이 둘은 버전을 올리지 않는다) / 실패 마커 사유(`parent_not_writable` · `write_failed` · `lock_unavailable`) / `publish_failed` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "초기 화면 정적 파일을 다시 만들었습니다.",
+    "data": {
+        "republished": true,
+        "version_changed": true,
+        "previous_version": 1788656566,
+        "reason": null,
+        "enabled": true,
+        "publishable": true,
+        "environment": "production",
+        "version": 1788657022,
+        "published": true,
+        "files": 714,
+        "published_at": "2026-09-06T01:10:22+00:00",
+        "tree_writable": true,
+        "process_user": "www-data",
+        "failure": null,
+        "retained_versions": [
+            1788656566,
+            1788657022
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+초기 화면 정적 파일을 지금 다시 만듭니다(관리자 수동 복구). 확장 캐시 버전을 올리고 현재 버전을 **강제** 재게시하므로, 같은 초에 다시 호출해도 내용을 새로 만듭니다. 캐시 버전은 만료로 재생성되지 않으므로(영구 번호) 재게시 트리거가 빠진 상태의 안전망이 이 엔드포인트입니다 — 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기] 와 대시보드 「초기 화면 파일 생성 실패」 알림의 [다시 만들기] 가 호출합니다.
+
+게시가 쓰이지 않는 환경(`publishable=false`)에서는 버전을 올리지 않고 `republished=false` + `reason` 으로 돌아옵니다. 게시 실패도 HTTP 200 으로 돌아오며(연결 테스트·드라이버 테스트와 같은 규약) 실패 마커가 `failure` 에 실립니다.
+
+715파일·40MB 복사와 확장 번들 재병합이 요청 안에서 동기로 수행됩니다. 서버는 실행 시간을 게시 락 TTL(300초)만큼 확보하고 클라이언트가 끊어도 게시를 끝내지만, FPM·nginx 타임아웃이 그보다 짧으면 응답이 먼저 끊길 수 있습니다 — 그 경우에도 게시는 계속되므로 상태 조회로 결과를 확인합니다.
+
+
 ### GET /api/admin/settings/trusted-proxy
 <!-- @generated:start:api.admin.settings.trusted-proxy -->
 - **라우트명**: `api.admin.settings.trusted-proxy`

@@ -28,7 +28,8 @@
       "adminIdentityPolicies",
       "policies",
       "language_packs",
-      "sitemap_status"
+      "sitemap_status",
+      "staticCacheStatus"
     ]
   },
   "data_sources": [
@@ -124,6 +125,31 @@
           "laravel_version": "-",
           "database_type": "-",
           "server_software": "-"
+        }
+      }
+    },
+    {
+      "id": "staticCacheStatus",
+      "label_key": "$t:editor.data_source.staticCacheStatus",
+      "type": "api",
+      "endpoint": "/api/admin/settings/static-cache",
+      "method": "GET",
+      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'general'}}",
+      "auto_fetch": true,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "enabled": true,
+          "publishable": false,
+          "environment": null,
+          "version": 0,
+          "published": false,
+          "files": 0,
+          "published_at": null,
+          "tree_writable": null,
+          "process_user": null,
+          "failure": null,
+          "retained_versions": []
         }
       }
     },
@@ -893,6 +919,9 @@
     },
     {
       "partial": "partials/admin_settings/_modal_cache_delete.json"
+    },
+    {
+      "partial": "partials/admin_settings/_modal_static_cache_republish.json"
     },
     {
       "partial": "partials/admin_settings/_modal_notification_template_form.json"

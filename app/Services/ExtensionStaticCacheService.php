@@ -532,6 +532,166 @@ class ExtensionStaticCacheService
     }
 
     /**
+     * 지금 이 설치에서 게시가 의미 있는지 판정합니다 — kill-switch 켜짐 + 프로덕션.
+     *
+     * `publishCurrent()` 자체에는 환경 게이트가 없다(명시적 `ext-static:publish` 가 어느 환경에서든
+     * 돌 수 있어야 하므로). 환경 판정은 자가 치유(`AssetUrl::staticExtBase`)와 terminating 예약
+     * (`schedulePublishOnTerminate`)에만 있었는데, 관리자 화면의 수동 복구는 두 판정을 **한 값**으로
+     * 보여 줘야 하므로 여기서 묶는다. 비프로덕션은 blade 가 정적 URL 을 방출하지 않아 게시해도
+     * 아무도 참조하지 않는다.
+     *
+     * @return bool 게시가 실제로 쓰이는 환경이면 true
+     */
+    public function isPublishable(): bool
+    {
+        return $this->isEnabled() && app()->environment('production');
+    }
+
+    /**
+     * 게시 상태 보고서 — CLI(`ext-static:status`)·관리자 API·화면이 **같은 판정**을 소비한다.
+     *
+     * 판정을 소비처마다 다시 쓰면 한 곳만 어긋나도 서로 다른 답을 내놓는다(`TrustedProxyDiagnostic`
+     * 이 CLI·대시보드·API 에 같은 판정을 공급하는 것과 같은 패턴). 문구·힌트는 소비처가 정한다.
+     *
+     * @return array{
+     *     enabled: bool,
+     *     publishable: bool,
+     *     environment: string,
+     *     version: int,
+     *     published: bool,
+     *     files: int,
+     *     published_at: string|null,
+     *     tree_writable: bool,
+     *     process_user: string,
+     *     failure: array{version:int, at:string, reason:string, count:int, message:string}|null,
+     *     retained_versions: array<int, int>
+     * } 상태 보고서
+     */
+    public function statusReport(): array
+    {
+        $version = self::getExtensionCacheVersion();
+        $base = $this->baseDir();
+
+        unset($this->publishedMemo[$version]);
+        $published = $this->isPublished($version);
+
+        $files = 0;
+        $publishedAt = null;
+
+        if ($published) {
+            $manifest = json_decode((string) @file_get_contents($this->versionDir($version).DIRECTORY_SEPARATOR.self::MANIFEST_FILE), true);
+
+            if (is_array($manifest)) {
+                $files = count($manifest['files'] ?? []);
+                $publishedAt = is_string($manifest['published_at'] ?? null) ? $manifest['published_at'] : null;
+            }
+        }
+
+        return [
+            'enabled' => $this->isEnabled(),
+            'publishable' => $this->isPublishable(),
+            'environment' => (string) app()->environment(),
+            'version' => $version,
+            'published' => $published,
+            'files' => $files,
+            'published_at' => $publishedAt,
+            'tree_writable' => $this->isPublishTreeWritable($base),
+            'process_user' => self::currentProcessUser(),
+            'failure' => self::failureMarker(),
+            'retained_versions' => $this->publishedVersions($base),
+        ];
+    }
+
+    /**
+     * 관리자 수동 복구 — 캐시 버전을 올리고 현재 버전을 **강제** 재게시합니다.
+     *
+     * 자동 경로(수명주기 bump → terminating 게시 · blade 자가 치유)가 놓친 갱신을 운영자가 즉시
+     * 되돌리는 통로다. 캐시 버전이 만료로 재생성되지 않으므로(`PERSISTENT_TTL_SECONDS`) 재게시
+     * 누락은 무기한 stale 이 되는데, 이 복구가 그 안전망이다.
+     *
+     *  - 게시가 쓰이지 않는 환경(kill-switch 꺼짐 / 비프로덕션)이면 bump 하지 않고 사유만 돌려준다.
+     *  - `force: true` 가 필수다 — 직전 게시와 같은 초면 버전이 같아 manifest 존재로 skip 되어
+     *    아무것도 다시 만들지 않는다.
+     *  - 게시 실패는 예외가 아니라 결과다(`republished=false` + 실패 마커). 사이트는 API 폴백으로 정상.
+     *  - 715파일·40MB 복사 + 번들 재병합이 웹 요청 안에서 돈다 — 게시 락 TTL(300초)만큼 실행 시간을
+     *    확보하고, 클라이언트가 끊어도 게시는 끝낸다(중간에 죽으면 `.tmp` 만 남고 다음 GC 가 치운다).
+     *
+     * @return array<string, mixed> `republished`·`version_changed`·`previous_version` + `statusReport()`
+     */
+    public function republish(): array
+    {
+        $previous = self::getExtensionCacheVersion();
+
+        if (! $this->isPublishable()) {
+            return [
+                'republished' => false,
+                'version_changed' => false,
+                'previous_version' => $previous,
+                'reason' => $this->isEnabled() ? 'not_production' : 'disabled',
+            ] + $this->statusReport();
+        }
+
+        @set_time_limit(300);
+        @ignore_user_abort(true);
+
+        $this->incrementExtensionCacheVersion();
+
+        $republished = $this->publishCurrent(force: true);
+        $current = self::getExtensionCacheVersion();
+
+        return [
+            'republished' => $republished,
+            'version_changed' => $current !== $previous,
+            'previous_version' => $previous,
+            'reason' => $republished ? null : (self::failureMarker()['reason'] ?? 'publish_failed'),
+        ] + $this->statusReport();
+    }
+
+    /**
+     * 게시 트리에 쓸 수 있는지(없으면 만들 수 있는지) 판정합니다.
+     *
+     * @param  string  $base  게시 루트 절대 경로
+     * @return bool 쓰기 가능 여부
+     */
+    private function isPublishTreeWritable(string $base): bool
+    {
+        if (File::isDirectory($base)) {
+            return is_writable($base);
+        }
+
+        $parent = dirname($base);
+
+        return File::isDirectory($parent) && is_writable($parent);
+    }
+
+    /**
+     * 게시 루트에 남아 있는 버전 디렉토리 목록을 반환합니다 (오름차순).
+     *
+     * @param  string  $base  게시 루트 절대 경로
+     * @return array<int, int> 버전 목록
+     */
+    private function publishedVersions(string $base): array
+    {
+        if (! File::isDirectory($base)) {
+            return [];
+        }
+
+        $versions = [];
+
+        foreach (File::directories($base) as $dir) {
+            $name = basename($dir);
+
+            if (ctype_digit($name)) {
+                $versions[] = (int) $name;
+            }
+        }
+
+        sort($versions);
+
+        return $versions;
+    }
+
+    /**
      * 한 버전의 게시를 실제 수행합니다 (tmp 쓰기 → rename → manifest → GC).
      *
      * @param  int  $version  게시할 확장 캐시 버전
@@ -555,6 +715,10 @@ class ExtensionStaticCacheService
         try {
             File::deleteDirectory($tmp);
             $this->makeDirectory($tmp);
+
+            // custom 열거 메모를 비우고 디스크를 다시 읽는다 — 게시는 요청 뒤(terminating)나 장수 프로세스에서
+            // 돌 수 있어, 앉아 있는 메모가 이미 지워진 파일을 가리키면 복사가 실패해 게시 전체가 중단된다.
+            CustomAssets::flushCache();
 
             $files = [];
 
@@ -909,15 +1073,46 @@ class ExtensionStaticCacheService
         // URL 은 **public 아래 실제 파일일 때만** 200 이 되므로, 문서가 안내하는
         // "폰트·이미지를 custom/ 에 두고 상대 경로로 참조" 를 성립시키는 방법은 게시뿐이다.
         //
-        // 갱신 축은 확장 자산과 동일하다 — 운영자가 파일을 고치면 `CustomAssets` 가
+        // 갱신 축은 확장 자산과 동일하다 — 운영자가 파일을 고치면 `CollectsCustomAssets` 가
         // 그것을 감지해 `ext.cache_version` 을 올리고, 그 단일 지점이 재게시까지 예약한다.
-        $this->publishDistAssets(
-            base_path("templates/{$identifier}/".CustomAssets::DIRECTORY),
+        // 게시 집합은 감지와 **같은 열거자**(`CustomAssets::publishableFiles`)가 정한다.
+        $this->publishCustomAssets(
+            'templates',
+            $identifier,
             $templateDir.DIRECTORY_SEPARATOR.'assets'.DIRECTORY_SEPARATOR.CustomAssets::DIRECTORY,
             $files,
-            $tmp,
-            excludeCustom: false
+            $tmp
         );
+    }
+
+    /**
+     * 확장 하나의 운영자 소유 디렉토리(`custom/`)를 게시합니다.
+     *
+     * 파일 집합은 `CustomAssets::publishableFiles()` 가 정한다 — 변경 감지(`CollectsCustomAssets`)
+     * 와 같은 열거자다. 게시와 감지가 서로 다른 코드로 범위를 정하면 어긋나고, 그 어긋남은
+     * "글꼴을 바꿨는데 반영되지 않는다" 로만 나타난다(#651 F7).
+     *
+     * @param  string  $extensionType  `templates` | `modules` | `plugins`
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $targetDir  게시 대상 절대 경로 (`…/assets/custom`)
+     * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
+     * @param  string  $tmp  tmp 루트 (상대 경로 계산용)
+     */
+    private function publishCustomAssets(
+        string $extensionType,
+        string $identifier,
+        string $targetDir,
+        array &$files,
+        string $tmp
+    ): void {
+        foreach (CustomAssets::publishableFiles($extensionType, $identifier) as $file) {
+            $this->copyFile(
+                $file['absolute'],
+                $targetDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $file['relative']),
+                $files,
+                $tmp
+            );
+        }
     }
 
     /**
@@ -927,7 +1122,8 @@ class ExtensionStaticCacheService
      * @param  string  $targetDir  게시 대상 절대 경로
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
      * @param  string  $tmp  tmp 루트 (상대 경로 계산용)
-     * @param  bool  $excludeCustom  원본 안의 `custom/` 하위를 건너뛸지 (dist 원본에서만 참)
+     * @param  bool  $excludeCustom  원본 안의 `custom/` 하위를 건너뛸지 (dist 원본은 참 — `custom/` 은
+     *                               `publishCustomAssets()` 가 공유 열거자로 따로 게시한다)
      */
     private function publishDistAssets(
         string $sourceDir,
@@ -1064,13 +1260,13 @@ class ExtensionStaticCacheService
                     continue;
                 }
 
-                $this->publishDistAssets(
-                    base_path("{$root}/{$identifier}/".CustomAssets::DIRECTORY),
+                $this->publishCustomAssets(
+                    $root,
+                    $identifier,
                     $tmp.DIRECTORY_SEPARATOR.$root.DIRECTORY_SEPARATOR.$identifier
                         .DIRECTORY_SEPARATOR.'assets'.DIRECTORY_SEPARATOR.CustomAssets::DIRECTORY,
                     $files,
-                    $tmp,
-                    excludeCustom: false
+                    $tmp
                 );
             }
         }

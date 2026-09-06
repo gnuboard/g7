@@ -781,8 +781,14 @@ php artisan core:check-updates
     'backup_only'   => ['vendor'],         // 백업/복원 전용 (applyUpdate 제외)
     'backup_extra'  => [...],              // 추가 백업 대상
     'excludes'      => [...],              // 제외 패턴
+    'restore_ownership'                => [...], // sudo 실행 후 소유권을 원상 복원할 경로 (Step 11)
+    'restore_ownership_group_writable' => [...], // 복원 직후 그룹 쓰기(g+w)까지 동기화할 경로
 ],
 ```
+
+`restore_ownership` 복원은 흐름 **중간**(Step 11)이므로 그 뒤에 만들어지는 런타임 산출물은 흐름 **마지막**의 런타임 소유권 정상화가 덮는다. 대상은 다섯 곳이다: `storage/framework/cache`(캐시 키 인덱스·락 샤드), `bootstrap/cache`, `storage/app/ext-bundles`(병합 번들), `storage/app/temp`(확장 업데이트 임시 폴더 — 부모가 root 로 최초 생성되면 이후 관리자 화면의 확장 업데이트가 실패한다), `storage/logs`(daily 롤오버·신규 로그 파일). `storage/app/{modules,plugins}` 는 사용자 데이터 영역이라 의도적으로 제외되어 있으므로, 그 아래에 파일·디렉토리를 만드는 코드(설정 시드·업그레이드 마이그레이션)는 스스로 부모 소유권을 상속시킨다.
+
+`.env` 에서 `G7_UPDATE_EXCLUDES` · `G7_UPDATE_TARGETS` · `G7_UPDATE_PROTECTED_PATHS` · `G7_UPDATE_RESTORE_OWNERSHIP` · `G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE` 로 재정의할 수 있다. 재정의 값은 기본 목록을 **통째로 대체**하므로 전체 목록을 다시 적는다 — 예를 들어 `G7_UPDATE_EXCLUDES` 에서 `build/ext` 가 빠지면 `--prune` 업데이트가 정적 게시본을 지운다. 기본값은 `.env.example` 에 주석으로 실려 있다.
 
 ---
 

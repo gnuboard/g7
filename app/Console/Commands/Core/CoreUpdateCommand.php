@@ -1371,44 +1371,17 @@ class CoreUpdateCommand extends Command
      *  - `root_web_symmetric` : root 실행 + 웹서버 계정이 root 로 추정됨 (root 서비스 구성).
      *  - `root_web_unknown`   : root 실행 + 웹서버 계정 추정 실패 (스냅샷/추정 불가).
      *
-     * 웹서버 계정은 `FilePermissionHelper::inferWebServerOwnership()` 이 storage/bootstrap
-     * 쓰기 영역 소유자로 추정한다.
+     * 판정은 `FilePermissionHelper::describeWebServerAccount()` 가 소유한다 — 정적 게시 상태·게시
+     * 명령(`ext-static:*`)의 root 경고와 같은 4분기를 공유하기 위해 옮겼다(#651 C1). 이 메서드는
+     * 그 결과를 종전 반환 형태(`[모드, 계정명]`)로 바꿔 주는 위임만 한다.
      *
      * @return array{0: string, 1: string|null} [모드, 웹서버 계정명 또는 null]
      */
     private function classifyResumeExecutionContext(): array
     {
-        if (! function_exists('posix_geteuid') || ! function_exists('posix_getpwuid')) {
-            return ['non_root', null];
-        }
+        $account = FilePermissionHelper::describeWebServerAccount();
 
-        // root(sudo) 실행이 아니면 일반 SSH 사용자 = 파일 소유자 → 권한 분기 안내 불필요.
-        // (공유 호스팅에서 웹서버·PHP·실행 유저가 같은 경우도 여기서 non_root 로 처리됨.)
-        if (posix_geteuid() !== 0) {
-            return ['non_root', null];
-        }
-
-        [$owner] = FilePermissionHelper::inferWebServerOwnership();
-
-        // 추정 실패 (스냅샷 불가) — 계정명 미상 경고 경로.
-        if ($owner === false) {
-            return ['root_web_unknown', null];
-        }
-
-        // 웹서버 계정이 root 로 추정됨 — root 로 서비스하는 구성이라 재실행도 root 로 무해.
-        if ($owner === 0) {
-            return ['root_web_symmetric', null];
-        }
-
-        $entry = posix_getpwuid($owner);
-        $name = $entry['name'] ?? null;
-
-        // uid 는 나왔지만 이름 해석 실패 — 미상 경로로 처리 (uid 노출은 오히려 혼란).
-        if ($name === null) {
-            return ['root_web_unknown', null];
-        }
-
-        return ['root_web_known', $name];
+        return [$account['mode'], $account['name']];
     }
 
     /**

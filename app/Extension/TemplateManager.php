@@ -2854,7 +2854,7 @@ class TemplateManager implements TemplateManagerInterface
         $tempDir = storage_path('app/temp/template_update_'.uniqid());
 
         try {
-            File::ensureDirectoryExists($tempDir);
+            ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
 
             // GitHub에서 다운로드 및 추출 (코어와 동일한 폴백 체인)
             $extractedDir = $this->extensionManager->downloadAndExtractFromGitHub(
@@ -3183,11 +3183,14 @@ class TemplateManager implements TemplateManagerInterface
 
             $this->clearAllTemplateLanguageCaches();
             $this->clearAllTemplateRoutesCaches();
-            // refreshTemplateLayouts() 내부에서 변경 시 incrementExtensionCacheVersion() 호출됨
-            // 비활성 템플릿이라 refreshTemplateLayouts()를 건너뛴 경우에만 여기서 증가
-            if ($previousStatus !== ExtensionStatus::Active->value) {
-                $this->incrementExtensionCacheVersion();
-            }
+            // 모듈(`updateModule`)·플러그인(`updatePlugin`)과 동형으로 **무조건** 올린다 —
+            // lang/routes/components/dist 만 바뀐 릴리스도 정적 게시본(#122)을 갱신해야 한다.
+            // 종전에는 활성 템플릿이면 `refreshTemplateLayouts()` 의 조건부 bump(레이아웃
+            // 변경 건수 > 0)에 위임했는데, 그 조건은 게시 입력 중 레이아웃 축만 보므로
+            // 레이아웃이 그대로인 릴리스는 게시본이 immutable 로 stale 하게 남았다(#651 F1).
+            // `refreshTemplateLayouts()` 내부의 조건부 bump 는 단독 호출처(refresh-layout)가
+            // 있어 그대로 두며, 이중 bump 는 put 1회 비용이고 terminating 게시는 1회로 병합된다.
+            $this->incrementExtensionCacheVersion();
             self::invalidateTemplateStatusCache();
 
             // 훅 발행: 템플릿 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
@@ -3236,6 +3239,15 @@ class TemplateManager implements TemplateManagerInterface
                 'status' => $previousStatus,
                 'updated_at' => now(),
             ]);
+
+            // 실패 경로도 bump 한다 — 백업 복원이 실패했거나 부분 반영된 디스크가 남을 수
+            // 있어, 게시본을 새 버전으로 다시 굽는 쪽이 옛 게시본을 그대로 두는 쪽보다
+            // 안전하다(#651 F2). 원래 예외를 가리지 않도록 bump 실패는 삼킨다.
+            try {
+                $this->incrementExtensionCacheVersion();
+            } catch (\Throwable) {
+                // 원래 예외(아래 throw)가 진짜 원인이다 — bump 실패는 로그(트레이트)로 충분
+            }
 
             throw new \RuntimeException(
                 __('templates.errors.update_failed', [

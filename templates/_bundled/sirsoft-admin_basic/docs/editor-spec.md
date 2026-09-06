@@ -13,7 +13,7 @@
 | 스타일 시스템 | `tailwind` |
 | 다크 모드 전략 | `ancestor-class` |
 
-> 분할 13블록 · 팔레트 79 · 스타일 컨트롤 303 · 편집 역량 86 · 중첩 컨테이너 19 · 프리뷰 샘플 71 · 페이지 상태 10 · 액션 레시피 14
+> 분할 13블록 · 팔레트 79 · 스타일 컨트롤 303 · 편집 역량 86 · 중첩 컨테이너 19 · 프리뷰 샘플 72 · 페이지 상태 10 · 액션 레시피 14
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -39,7 +39,7 @@
 | `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 86 | `editor-spec/componentCapabilities.json` |
 | `nesting.draggable` | 캔버스에서 끌어 옮길 수 있는 컴포넌트 | 84 | `editor-spec/nesting.json` |
 | `nesting.containers` | 자식을 담을 수 있는 컴포넌트와 그 허용 규칙 | 19 | `editor-spec/nesting.json` |
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 71 | `editor-spec/sampleData.json` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 72 | `editor-spec/sampleData.json` |
 | `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 5 | `editor-spec/sampleGlobal.json` |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 10 | `editor-spec/states.json` |
 | `stateLabels` | 상태값 친화 명칭 카탈로그 | 8 | `editor-spec/stateLabels.json` |
@@ -91,7 +91,7 @@
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 71 | `trustedProxy` · `sitemap_status` · `sitemap_progress_ws` · `locales` · `me` · `installed_modules` · `active_plugins` · `users` · `roles` · `availableChannels` · `identityProviders` · `identityPurposes` … 외 59개 |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 72 | `trustedProxy` · `sitemap_status` · `sitemap_progress_ws` · `staticCacheStatus` · `locales` · `me` · `installed_modules` · `active_plugins` · `users` · `roles` · `availableChannels` · `identityProviders` … 외 60개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 10 | `_admin_base` · `*/admin/users` · `*/admin/users/:id/edit` · `*/admin/settings` · `*/admin/reset-password` · `*/admin/roles/:id/edit` · `*/admin/identity/challenge` · `*/admin/templates/:type` · `*/admin/login` · `*/admin/forgot-password` |
 

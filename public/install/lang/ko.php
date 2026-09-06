@@ -380,6 +380,7 @@ return [
     'error_language_pack_install_failed' => '언어팩 설치에 실패했습니다',
     'log_language_pack_install_success' => '언어팩 설치 완료',
     'warning_language_pack_install_partial' => '언어팩 일부 설치에 실패했습니다: :identifier (계속 진행)',
+    'warning_best_effort_task_failed' => ':task 에 실패했습니다 (설치는 계속 진행됩니다)',
 
     // 에러 메시지 - Worker (Cache)
     'error_cache_clear_failed' => '캐시 클리어에 실패했습니다',

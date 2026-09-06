@@ -418,6 +418,12 @@ sudo chown -R www-data:www-data storage bootstrap/cache modules plugins template
 
 전체 권한 모델(그룹 공유 방식 A / 소유자 통일 방식 B / ACL 방식 C 와 umask 운영)은 [docs/requirements.md](docs/requirements.md) "파일 권한 및 umask 운영 방식" 절을 참고하세요.
 
+### 명령줄·cron 실행 계정
+
+`php artisan` 명령과 cron 은 **웹 서버 실행 계정으로** 실행합니다 (예: `sudo -u www-data php artisan …`, 또는 `crontab -u www-data -e` 로 등록). 대부분의 명령이 캐시·병합 번들·임시 파일을 만드는데, root 나 다른 계정으로 실행하면 그 산출물이 그 계정 소유로 남아 이후 웹 요청이 같은 자리에 쓰려는 순간 `Permission denied` 로 500 을 낼 수 있습니다. 이 문제는 특정 명령의 결함이 아니라 캐시를 건드리는 모든 명령에 공통이므로, 계정을 맞추는 것이 유일한 해법입니다.
+
+예외는 코어 업데이트(`php artisan core:update`)입니다. 이 명령은 `.env` 등 웹 계정이 쓸 수 없는 파일까지 고치므로 `sudo` 를 권장하며, 실행이 끝날 때 자기가 만든 파일의 소유권을 되돌리는 절차가 내장되어 있습니다.
+
 ---
 
 ## 업그레이드
@@ -665,7 +671,9 @@ G7_ENV_PRIORITY=true
 cron에 아래 항목을 등록합니다.
 
 ```bash
-* * * * * cd /path/to/g7 && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /path/to/g7 && sudo -u www-data php artisan schedule:run >> /dev/null 2>&1
 ```
+
+웹 서버 계정(`www-data` · `nginx` · `apache` 등)으로 실행해야 합니다 — root 의 crontab 에 그대로 등록하면 매분 캐시 파일이 root 소유로 만들어져 웹 요청이 실패할 수 있습니다. `crontab -u www-data -e` 로 그 계정의 crontab 에 등록하면 `sudo -u` 없이 같은 줄을 씁니다. 「명령줄·cron 실행 계정」 절을 참고하세요.
 
 > 상세 내용은 [docs/requirements.md](docs/requirements.md)를 참조하세요.

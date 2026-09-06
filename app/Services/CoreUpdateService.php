@@ -2215,6 +2215,12 @@ class CoreUpdateService
             storage_path('framework/cache'),
             base_path('bootstrap/cache'),
             storage_path('app/ext-bundles'),
+            // 확장 업데이트의 다운로드·추출 임시 폴더. 부모 `storage/app/temp` 가 sudo 업데이트에서 root 로
+            // 최초 생성되면 이후 관리자 화면의 확장 업데이트가 임시 폴더를 만들지 못한다 (#651 F14).
+            storage_path('app/temp'),
+            // `restore_ownership` 은 `storage/logs` 를 포함하지만 그 복원은 흐름 **중간**(Step 11)이라,
+            // 그 뒤에 만들어지는 daily 롤오버·신규 로그 파일은 root 로 남는다 (#651 F15).
+            storage_path('logs'),
         ];
 
         foreach ($targets as $dir) {

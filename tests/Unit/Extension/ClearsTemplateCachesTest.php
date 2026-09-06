@@ -9,6 +9,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Template;
 use App\Services\ExtensionStaticCacheService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
@@ -285,6 +286,49 @@ class ClearsTemplateCachesTest extends TestCase
         $newVersion = ClearsTemplateCaches::getExtensionCacheVersion();
         $this->assertGreaterThan(0, $newVersion);
         $this->assertLessThanOrEqual(time(), $newVersion);
+    }
+
+    /**
+     * 캐시 버전 키는 만료되지 않는다 (#651 F11).
+     *
+     * 종전에는 `put()` 에 TTL 을 넘기지 않아 `cache.default_ttl`(86400) 로 **매일 만료**됐고,
+     * 다음 독자가 `regenerateExtensionCacheVersion()` 으로 새 버전을 만들어 정적 게시본 전체
+     * (715파일·40MB)를 재생성하고 전 방문자의 자산 URL 을 바꿨다. 재생성은 `cache:clear` 나
+     * 스토어 소실 때만 일어나야 한다.
+     *
+     * @effects cache_version_key_does_not_expire
+     */
+    public function test_version_key_survives_two_days(): void
+    {
+        $this->traitUser->callIncrementExtensionCacheVersion();
+        $version = ClearsTemplateCaches::getExtensionCacheVersion();
+        $this->assertGreaterThan(0, $version);
+
+        try {
+            Carbon::setTestNow(now()->addDays(2));
+
+            $this->assertSame(
+                $version,
+                (int) Cache::get('g7:core:ext.cache_version'),
+                '캐시 버전 키가 이틀 뒤 만료됐다 — 매일 정적 게시본 전체가 재생성되고 전 방문자의 자산 URL 이 바뀐다'
+            );
+            $this->assertSame($version, ClearsTemplateCaches::getExtensionCacheVersion());
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * 영구 TTL 상수는 `put(…, 0)`(forget) 도, 기본 TTL 도 아닌 명시 양수여야 한다.
+     *
+     * @effects cache_version_key_does_not_expire
+     */
+    public function test_persistent_ttl_constant_is_positive_and_longer_than_default(): void
+    {
+        $this->assertGreaterThan(
+            (int) config('cache.default_ttl', 86400) * 365,
+            ExtensionStaticCacheService::PERSISTENT_TTL_SECONDS
+        );
     }
 
     /**

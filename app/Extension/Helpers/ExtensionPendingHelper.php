@@ -823,6 +823,31 @@ class ExtensionPendingHelper
     }
 
     /**
+     * 확장 업데이트용 임시 디렉토리(다운로드·추출)를 부모 소유권까지 정합화해 확보합니다.
+     *
+     * 세 매니저(모듈·플러그인·템플릿)가 같은 경로 규약(`storage/app/temp/{type}_update_{uid}`)을 쓰므로
+     * 확보 절차도 한 곳에 둔다 — 복사본은 서로 다른 하드닝을 갖고 갈라진다.
+     *
+     * @param  string  $tempDir  임시 디렉토리 절대 경로
+     */
+    public static function ensureUpdateTempDirectory(string $tempDir): void
+    {
+        // 부모(`storage/app/temp`)는 최초 1회만 만들어지고 자식만 삭제된다 — sudo 코어 업데이트의
+        // 번들 확장 업데이트가 그 최초 생성자면 부모가 root 소유로 굳어, 이후 관리자 화면(웹 계정)의
+        // 확장 업데이트가 임시 폴더를 만들지 못한다 (#651 F14). 부모는 소유권 상속·그룹 쓰기까지
+        // 정합화하는 프리미티브로 확보하고, 자식은 만든 뒤 부모 소유권을 상속시킨다.
+        // 확보 실패는 종전 동작(`ensureDirectoryExists` 의 예외 흐름)으로 폴백해 계약을 바꾸지 않는다.
+        if (! FilePermissionHelper::ensureWritableDirectory(dirname($tempDir))) {
+            File::ensureDirectoryExists($tempDir);
+
+            return;
+        }
+
+        File::ensureDirectoryExists($tempDir);
+        FilePermissionHelper::inheritOwnershipFromParent($tempDir);
+    }
+
+    /**
      * 업데이트 스테이징용 타임스탬프 디렉토리를 생성합니다.
      *
      * `{basePath}/_pending/{identifier}_{Ymd_His}/` 형식의 격리된 디렉토리를 생성하여

@@ -27,6 +27,9 @@ return [
     'restore_failed' => 'Failed to restore settings.',
     'restore_error' => 'An error occurred while restoring settings.',
     'save_individual_failed' => 'Settings save failed: :error',
+    'static_cache_status_loaded' => 'Startup file status loaded.',
+    'static_cache_republished' => 'Startup files were rebuilt.',
+    'static_cache_republish_failed' => 'Startup files could not be rebuilt. The site keeps working normally.',
 
     // App key related messages
     'invalid_password' => 'Password does not match.',
