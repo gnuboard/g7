@@ -7,7 +7,7 @@
 ```text
 1. 유형: 플러그인 (sirsoft-gdpr) — 쿠키 동의 배너·동의 이력·GDPR/개인정보보호법 대응을 소유
 2. 확장 방식: `sirsoft-gdpr.consent.granted`/`revoked` 훅 구독, `data-gdpr-category` HTML 속성으로 자체 호스팅 자원 등록
-3. 건드리면 안 되는 것: 필수 허용목록의 **잠금 항목**(`Support\NecessaryAllowlist::locked()`), 동의 이력(immutable append-only) 직접 수정
+3. 건드리면 안 되는 것: 필수 허용목록의 **잠금 항목**(`Plugin::lockedNecessaryStorage()`, `Support\NecessaryAllowlist::locked()` 가 위임), 동의 이력(immutable append-only) 직접 수정
 4. 작업 위치: `plugins/_bundled/sirsoft-gdpr` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-gdpr --force`
 ```
@@ -47,6 +47,11 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 **잠금 항목만 설정 밖입니다** — `auth_token` · `XSRF-TOKEN` · 세션 쿠키(런타임 해석) ·
 `gdpr_session` 넷은 없으면 사이트가 서지 못하므로 코드가 정하고, 판정에는 언제나 운영자 목록과
 합집합으로 얹힙니다. 설정에 담으면 저장 요청 한 번으로 지워져 잠금이 아니게 됩니다.
+
+그 정의는 진입 파일 `plugin.php`(`Plugin::lockedNecessaryStorage()`)가 소유하고 `Support\NecessaryAllowlist::locked()` 는
+위임만 합니다. `getConfigValues()` 가 신규 설치 흐름에서 이 플러그인의 클래스 경로 등록보다 먼저 호출되기
+때문입니다 — 진입 파일이 `src/` 클래스를 부르면 새로 설치하는 사이트에서만 "Class not found" 로 설치가
+중단되고, 업그레이드는 기설치본 매핑이 있어 통과합니다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -160,7 +165,8 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | 회원탈퇴(`after_withdraw`)에서 신원 정보(user_id 등)를 제거 | 활성 동의만 철회 처리, 신원은 완전삭제(`before_delete`) 시점에만 익명화 | 두 이벤트를 섞으면 탈퇴 회원의 재가입·이력 조회가 깨진다 |
 | 운영자가 등록하지 않은 functional 쿠키를 화이트리스트에 추가 | 필수 허용목록(운영자 설정) ∪ 잠금 집합만 예외 | GDPR 은 "동의 전 전면 차단"이 원칙이지 "등록된 것만 차단"이 아니다 |
 | 소비자(인터셉터·정리기·미들웨어)가 자기 목록 사본을 들고 판정 | 넷 다 같은 설정을 같은 함수로 읽는다 | 사본은 갈라지는데 그 어긋남은 "그 항목만 안 되는" 상태로만 나타난다 |
-| 잠금 항목을 설정(`necessary_storage_allowlist`)에 넣기 | 코드(`NecessaryAllowlist::locked()`)가 정하고 판정에서 합집합 | 설정에 있으면 저장 요청 한 번으로 지워져 잠금이 아니게 된다 |
+| 잠금 항목을 설정(`necessary_storage_allowlist`)에 넣기 | 코드(`Plugin::lockedNecessaryStorage()`)가 정하고 판정에서 합집합 | 설정에 있으면 저장 요청 한 번으로 지워져 잠금이 아니게 된다 |
+| `plugin.php` 의 `getConfigValues()`/`getSettingsSchema()` 등이 `src/` 클래스를 직접 호출(정적 메서드·`new`·상수) | 값은 진입 파일이 소유하고 `src/` 쪽이 위임한다 (`::class` 참조는 무방) | 신규 설치 흐름은 클래스 경로 등록 전에 진입 파일을 읽어 "Class not found" 로 멈춘다. 업그레이드에서는 재현되지 않아 출시 전 검증을 통과한다 (`tests/Unit/EntryFileAutoloadIndependenceTest.php` 가 잠근다) |
 | 세션 쿠키 이름을 `'laravel_session'` 으로 하드코딩 | `config('session.cookie')` 런타임 해석 | `SESSION_COOKIE` 를 지정한 사이트에서 그 항목이 죽고, 그 사실이 어디에도 드러나지 않는다 |
 | 새 확장의 저장 키를 플러그인이 관측·수집해 자동 등재 | 운영자가 화면에서 직접 추가 | 저장 키 관측은 그 자체가 추적이다 — 동의 없이 하는 관측을 이 플러그인이 할 수는 없다 |
 | 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭 | 자동화하면 사소한 문구 수정에도 전 회원이 재동의 화면을 보게 된다 |
@@ -172,7 +178,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 25개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| PHPUnit | 26개 | `plugins/_bundled/sirsoft-gdpr/tests` |
 | Vitest | 13개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 6개 | `tests/scenarios` |

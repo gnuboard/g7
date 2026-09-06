@@ -32,19 +32,15 @@ class NecessaryAllowlist
     /**
      * 잠금 항목 — 운영자가 지울 수 없는 최소 집합.
      *
-     * 설정에 넣지 않는다. 설정에 넣으면 API 로 지울 수 있어 잠금이 아니게 된다.
-     * 세션 쿠키 이름은 `session.cookie` 가 정하는 런타임 값이라 상수로 둘 수 없다 —
-     * 이름을 하드코딩하면 `SESSION_COOKIE` 를 지정한 사이트에서 그 항목이 죽는다.
+     * 정의는 진입 파일(`Plugin::lockedNecessaryStorage()`)이 소유한다. `getConfigValues()` 가
+     * 신규 설치 흐름에서 이 클래스의 오토로드 등록보다 먼저 호출되기 때문이다. 여기서는
+     * 그 정의에 위임만 한다.
      *
      * @return array<string, array<int, string>> 스코프 => 항목 배열
      */
     public static function locked(): array
     {
-        return [
-            'localStorage' => ['auth_token'],
-            'sessionStorage' => [],
-            'cookie' => ['XSRF-TOKEN', (string) config('session.cookie', 'laravel_session'), 'gdpr_session'],
-        ];
+        return Plugin::lockedNecessaryStorage();
     }
 
     /**
