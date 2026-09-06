@@ -167,8 +167,17 @@ export async function detectAssetUrlModeHandler(
         }
 
         // 폼 값 + 상태를 함께 반영 (저장은 관리자가 명시적으로 수행)
+        //
+        // 값 경로가 'form.general.asset_url_mode' 인 이유: 이 필드를 감싸는 Div 가
+        // dataKey: "form" 이라(admin_settings.json) 자동바인딩 경로가 _local.form.general.*
+        // 이고, 저장 body 도 _local.form[tab] 을 읽는다. 'general.asset_url_mode' 로 쓰면
+        // _local.general.* 에 떨어져 Select 표시에도 저장 body 에도 도달하지 않는다.
+        // 감지 상태(asset_url_mode_detect_status)는 폼 밖 안내 문구용이라 루트에 둔다.
         if (typeof setState === 'function') {
-            setState({ 'general.asset_url_mode': result, asset_url_mode_detect_status: result });
+            setState({
+                'form.general.asset_url_mode': result,
+                asset_url_mode_detect_status: result,
+            });
         } else {
             logger.warn('setState 를 찾지 못해 감지 결과를 폼에 반영하지 못했습니다');
         }

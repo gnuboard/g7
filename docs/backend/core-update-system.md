@@ -222,7 +222,13 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > **기본 동작 변경 배경 (공개 #64)**: 이전에는 Step 7 이 targets 전체를 무조건 재복사하고 orphan 을 삭제하여, 사용자가 수정한 `public/.htaccess` 커스텀 블록이나 `_bundled/` 아래 커스텀 확장이 소실되는 사고가 반복 제보되었다. 기본 동작을 "코어가 실제로 변경/추가한 파일만 적용(3-way)"으로 전환해 발생 표면을 제거했다. 전체 덮어쓰기 + 정리를 원하면 `--prune` 을 지정한다. "코어도 바꾸고 사용자도 바꾼" 파일은 코어 버전으로 갱신되지만 백업에 원본이 보존되어 복구 가능하다.
 
-> **증분 모드 잔존 stale 파일 정리**: 기본(증분) 모드는 orphan 을 삭제하지 않으므로, 신 버전에서 제거된 파일이 활성 디렉토리에 잔존할 수 있다. 완료 요약이 잔존을 안내하며, 정리하려면 다음 업데이트를 `--prune` 으로 실행하거나 단발성 정리 도구 `php artisan hotfix:rollback-stale-files --prune` 을 사용한다 (진단 모드 기본, `--prune` 시 확인 프롬프트 후 정리, symlink/protected_paths 가드 적용). 상세 사용법: [docs/cheatsheet.md](../cheatsheet.md) "단발성 결함 보정 (hotfix)".
+> **증분 모드 잔존 stale 파일 정리**: 기본(증분) 모드는 orphan 을 삭제하지 않으므로, 신 버전에서 제거된 파일이 활성 디렉토리에 잔존할 수 있다. 완료 요약이 잔존을 안내하며, 정리하려면 같은 업데이트를 `--prune` 으로 다시 실행한다. 단발성 정리 도구 `php artisan hotfix:rollback-stale-files --prune` 은 **자동 롤백 뒤**(백업 디렉토리와 `_new_files_manifest.json` 이 남아 있는 상태) 전용이다 — 성공한 업데이트는 Step 11 에서 백업을 지우므로 그 뒤에 실행하면 "사용 가능한 백업이 없습니다" 로 끝난다. 완료 안내문이 이 명령을 가리키던 것은 7.0.10 에서 걷어냈다. 상세 사용법: [docs/cheatsheet.md](../cheatsheet.md) "단발성 결함 보정 (hotfix)".
+
+> **격리 디렉토리는 루트째 지우고, 이번 실행이 만든 것은 소유권 기준에서 뺀다 (7.0.10)**: 업데이트 소스는 `storage/app/core_pending/core_{Ymd_His}/` 격리 디렉토리 안에 놓이는데, ZIP·GitHub 경로는 그 안쪽 `extracted/{루트}/` 를, `--local` 은 `local_source/` 를 소스 경로로 돌려준다. 7.0.9 까지의 정리 단계는 그 소스 경로만 지워 `core_{ts}/extracted/` 껍데기가 업데이트마다 남았고, sudo 실행이면 root 소유(0770)라 운영자·웹서버 계정이 지울 수 없었다(같은 서버의 7.0.0 부터의 설치본마다 하나씩 실측). 세 층으로 닫았다.
+>
+> - **부모 정리**: `cleanupPending()` 이 `resolveStagingRoot()` 로 격리 디렉토리 루트까지 올라가 통째로 지운다. pending 기준 디렉토리 밖 경로(`--source` 외부 디렉토리)는 올라가지 않는다.
+> - **자식 청소**: 부모는 구버전 클래스를 메모리에 들고 있어 이 수정이 다음 업데이트부터 효력이 있으므로, 신버전 코드로 도는 두 자식(`core:execute-upgrade-steps`, `core:execute-bundled-updates`)이 종료 직전 `sweepEmptyStagingDirectories()` 로 **파일이 하나도 없는** `core_*` 디렉토리만 치운다. 부모가 쓰는 중인 격리 디렉토리는 파일을 갖고 있어 술어상 제외된다. 구버전 부모에서 올라오는 업데이트(7.0.9→7.0.10)는 번들 일괄 업데이트 자식이 부모 정리 뒤에 돌므로 그 자리에서 껍데기가 사라진다.
+> - **스냅샷 제외**: 항목별 소유권 스냅샷은 격리 디렉토리가 생긴 **뒤에** 찍힌다. 제외하지 않으면 root 가 만든 추출본이 "원본 소유권" 으로 기록되고 복원이 잔존물을 다시 root 로 되돌리므로, 부모는 `snapshotOwnershipDetailed(..., excludes: [격리 디렉토리 루트])` 로 이번 실행의 것을 뺀다. 그러면 잔존물이 생겨도 상위 `storage/app/core_pending` 의 재귀 chown 이 운영자 계정·웹서버 그룹으로 맞춰 지울 수 있다.
 
 > **`public/storage` symlink 보존 + 종료 시 복구 (#43)**: 심층 방어 2층 구조로 `--prune` 실행 후에도 `public/storage` symlink 가 정상 유지된다.
 > - **층 1 (예방)**: `--prune` 은 `public` 타깃에서 orphan(릴리즈 소스에 없는 항목)을 삭제하는데, 런타임 symlink 인 `public/storage` 는 릴리즈 소스에 없어 orphan 으로 판정되어 삭제되던 결함이 있었다(업로드 파일 404). `applyUpdate` 가 `public` 타깃 처리 시 `FilePermissionHelper::copyDirectory(..., preserveLinkPaths: ['storage'])` 로 화이트리스트를 전달해, 매칭되는 orphan symlink/junction 만 삭제에서 제외한다. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다(정밀 보호 — 무조건 보존 아님).
@@ -259,6 +265,10 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > **단독 실행 안전성 (beta.6 이후)**: `core:execute-upgrade-steps` 는 HANDOFF 안내 또는 수동 복구 목적으로 운영자가 직접 호출되는 경로가 있다. 단독 실행 시 자식은 기본값으로 부모 Step 9 (`runMigrations` + `reloadCoreConfigAndResync`), Step 11 (`updateVersionInEnv` + `clearAllCaches`), Step 12 (번들 확장 일괄 업데이트) 를 자체적으로 수행해 단일 명령으로 업그레이드를 완결한다. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess()` 는 자식 명령 라인에 `--skip-migrations`, `--skip-resync`, `--skip-version-env`, `--skip-cache-clear`, `--skip-bundled-updates` 5개를 무조건 추가해 중복 회피한다 — 부모가 자식 종료 후 동일 단계를 직접 수행하기 때문이다.
 
+> **spawn 자식은 이전 버전의 config 캐시로 부팅한다**: 부모는 Step 10(spawn) 전에 config 캐시를 비우지 않는다 — `clearAllCaches()` 는 Step 11 이다. 그래서 이전 버전 설치본에 `bootstrap/cache/config.php` 가 있으면(설치 마법사·설정 저장·확장 업데이트가 만든다) 자식은 그 캐시로 부팅하고, 자식의 `config('app.version')` 은 부모가 env 로 넘긴 `APP_VERSION={toVersion}` 이 아니라 캐시에 박힌 fromVersion 이다. 업데이트 흐름 안에서 "지금 프로세스의 코어 버전" 을 판정하는 코드는 `config('app.version')` 을 직접 읽지 않고 `CoreVersionChecker::getCoreVersion()`(env 우선, config 폴백)을 쓴다. `runUpgradeSteps()` 의 stale 메모리 가드가 config 만 읽던 시절에는 정상 spawn 자식을 stale 부모로 오판해 스텝이 0건인 릴리즈에서도 핸드오프로 중단됐다(7.0.9→7.0.10). 부모 in-process fallback 에서는 env 가 `.env` 의 fromVersion 이므로 가드는 그대로 발동한다.
+>
+> 같은 이유로 자식이 `config('app.update.*')` 로 읽는 목록(쓰기 권한 디렉토리 등)도 캐시에 박힌 옛 목록이다 — 신버전이 항목을 추가해도 자식에게 보이지 않는다. 방어는 두 겹이다: ① 부모(7.0.10+)는 `spawnUpgradeStepsProcess()` 가 `proc_open` 직전에 `ConfigCacheHelper::clear()` 로 캐시를 비워 자식이 디스크 config + `.env` + spawn env 로 부팅하게 한다(캐시는 Step 11 이 다시 만든다). ② 자식(7.0.10+)은 이전 버전 부모가 캐시를 남겨 둔 경우를 위해, 캐시 파일이 있으면 `CoreUpdateService::freshDiskUpdateConfig()` 로 디스크의 `config/app.php` 를 직접 읽는다 — 캐시 부팅에서는 `.env` 도 로드되지 않으므로 그 안에서 `.env` 를 먼저 불변 로드한다(프로세스 env 의 `APP_VERSION` 은 덮어쓰지 않는다).
+
 #### 재실행 안내의 권한 분기 (핸드오프 catch)
 
 spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)하고 `spawn_failure_mode=abort`(기본값) 이면, 파일·버전은 이미 `toVersion` 으로 반영되지만 업그레이드 스텝이 미실행 상태로 남아 운영자에게 `core:execute-upgrade-steps` 재실행을 안내한다. 이때 **sudo(root) 로 `core:update` 를 실행한 경우**, 안내받은 명령을 root 로 그대로 재실행하면 스텝이 만드는 파일·캐시가 root 소유로 생성되어 이후 웹서버(php-fpm www-data 등) 요청이 그 경로에 쓰기 실패한다.
@@ -282,8 +292,8 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 3. bootstrap/cache 파일 삭제 (services.php, packages.php)
 4. php artisan package:discover 재실행
 5. php artisan extension:update-autoload (코어 업데이트로 _bundled 변경 가능)
-6. _pending 디렉토리 삭제
-7. 성공 시 백업 삭제
+6. _pending 격리 디렉토리(core_{ts}) 루트째 삭제
+7. 성공 시 백업 삭제 (이후 `hotfix:rollback-stale-files` 는 대상이 없다)
 8. 유지보수 모드 해제
 ```
 
@@ -781,8 +791,14 @@ php artisan core:check-updates
     'backup_only'   => ['vendor'],         // 백업/복원 전용 (applyUpdate 제외)
     'backup_extra'  => [...],              // 추가 백업 대상
     'excludes'      => [...],              // 제외 패턴
+    'restore_ownership'                => [...], // sudo 실행 후 소유권을 원상 복원할 경로 (Step 11)
+    'restore_ownership_group_writable' => [...], // 복원 직후 그룹 쓰기(g+w)까지 동기화할 경로
 ],
 ```
+
+`restore_ownership` 복원은 흐름 **중간**(Step 11)이므로 그 뒤에 만들어지는 런타임 산출물은 흐름 **마지막**의 런타임 소유권 정상화가 덮는다. 대상은 다섯 곳이다: `storage/framework/cache`(캐시 키 인덱스·락 샤드), `bootstrap/cache`, `storage/app/ext-bundles`(병합 번들), `storage/app/temp`(확장 업데이트 임시 폴더 — 부모가 root 로 최초 생성되면 이후 관리자 화면의 확장 업데이트가 실패한다), `storage/logs`(daily 롤오버·신규 로그 파일). `storage/app/{modules,plugins}` 는 사용자 데이터 영역이라 의도적으로 제외되어 있으므로, 그 아래에 파일·디렉토리를 만드는 코드(설정 시드·업그레이드 마이그레이션)는 스스로 부모 소유권을 상속시킨다.
+
+`.env` 에서 `G7_UPDATE_EXCLUDES` · `G7_UPDATE_TARGETS` · `G7_UPDATE_PROTECTED_PATHS` · `G7_UPDATE_RESTORE_OWNERSHIP` · `G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE` 로 재정의할 수 있다. 재정의 값은 기본 목록을 **통째로 대체**하므로 전체 목록을 다시 적는다 — 예를 들어 `G7_UPDATE_EXCLUDES` 에서 `build/ext` 가 빠지면 `--prune` 업데이트가 정적 게시본을 지운다. 기본값은 `.env.example` 에 주석으로 실려 있다.
 
 ---
 

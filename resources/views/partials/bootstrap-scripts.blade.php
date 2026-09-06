@@ -94,6 +94,9 @@
         /** 모드 전환을 이미 시도했는지 (L1 — 페이지 수명당 1회) */
         modeSwitched: false,
 
+        /** 정적 게시 URL → API URL 전환을 이미 시도했는지 (#122 F15 — 페이지 수명당 1회) */
+        staticRecovered: false,
+
         /**
          * 정적 <script> 로드 실패 시 동적 재시도를 시작한다.
          *
@@ -111,7 +114,39 @@
             if (attempt >= MAX_ATTEMPTS) {
                 console.error(LABEL + ' Failed to load after ' + MAX_ATTEMPTS + ' attempts: ' + src);
                 bootstrap.failed = true;
-                bootstrap.renderFallback('network');
+
+                // HTTPS 페이지가 http:// 자산을 요청하면 브라우저가 요청을 발신조차 하지 않고
+                // 차단한다(Mixed Content). 회선은 멀쩡하고 새로고침으로도 낫지 않으므로
+                // 'network' 안내는 두 겹의 거짓 안내가 된다 (#124).
+                var blocked = location.protocol === 'https:' && absoluteUrl(src).indexOf('http://') === 0;
+
+                if (blocked) {
+                    // 화면에서 뺀 원인·조치는 여기서 운영자에게 도달해야 한다. 기존 로그와 같은
+                    // 계열로 영문 통일 (개발자 대상).
+                    console.error(LABEL + ' Blocked as mixed content: ' + src);
+                    console.error(
+                        LABEL + ' This HTTPS page requested an http:// asset, so the browser refused to send'
+                        + ' the request. The app is likely behind a TLS-terminating reverse proxy without'
+                        + ' trusted proxies configured. Set TRUSTED_PROXIES in .env'
+                        + ' (see https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md).'
+                    );
+                }
+
+                bootstrap.renderFallback(blocked ? 'blocked' : 'network');
+                return;
+            }
+
+            // 정적 게시(bake) URL 실패 → 종전 API URL 로 즉시 1회 전환 (#122 F15).
+            // GC 된 구버전 자산을 참조하는 캐시된 HTML 등 서빙 시점 404 를 복구한다.
+            // 기존 예산(attempt)을 그대로 소비한다 (L2).
+            var legacy = (bootstrap.staticRecovered || !assetUrl || !assetUrl.staticToLegacy)
+                ? null
+                : assetUrl.staticToLegacy(src);
+            if (legacy && legacy !== src) {
+                bootstrap.staticRecovered = true;
+                console.warn(LABEL + ' Static asset failed, retrying with API URL: ' + legacy);
+
+                bootstrap.replaceScript(legacy, attempt);
                 return;
             }
 
@@ -187,7 +222,8 @@
          * 사유별로 문구가 갈린다 — 새로고침이 도움이 되는 실패와 그렇지 않은 실패를
          * 같은 문구로 안내하면 사용자가 자기 회선을 탓하며 영원히 새로고침하게 된다.
          *
-         * @param reason 'network'(다운로드 실패) | 'incompatible'(브라우저가 실행 못 함)
+         * @param reason 'network'(다운로드 실패) | 'blocked'(HTTPS 페이지가 http 자산 요청 →
+         *               브라우저 차단, 사이트 설정 문제) | 'incompatible'(브라우저가 실행 못 함)
          *               | 'corrupt'(받았으나 전역 부재, 사유 미상). 미지정 시 'network'.
          */
         renderFallback: function (reason) {
@@ -198,16 +234,22 @@
             if (app.childElementCount > 0) return; // 이미 렌더된 화면은 덮지 않는다
 
             var incompatible = reason === 'incompatible';
+            var blocked = reason === 'blocked';
 
             var title = incompatible
                 ? @json(__('errors.bootstrap.incompatible_title'))
-                : @json(__('errors.bootstrap.title'));
+                : (blocked
+                    ? @json(__('errors.bootstrap.blocked_title'))
+                    : @json(__('errors.bootstrap.title')));
             var message = incompatible
                 ? @json(__('errors.bootstrap.incompatible_message'))
-                : @json(__('errors.bootstrap.message'));
+                : (blocked
+                    ? @json(__('errors.bootstrap.blocked_message'))
+                    : @json(__('errors.bootstrap.message')));
 
             // 새로고침해도 낫지 않는 상황에서 버튼을 두면 그것 자체가 다시 거짓 안내가 된다.
-            var button = incompatible
+            // 'blocked' 도 같다 — 설정을 고치기 전에는 몇 번을 눌러도 동일하게 차단된다.
+            var button = (incompatible || blocked)
                 ? ''
                 : '<button type="button" onclick="window.location.reload()" ' +
                   'style="border:0;border-radius:6px;background:#2563eb;color:#fff;font-size:14px;font-weight:500;' +
@@ -216,7 +258,8 @@
                   '</button>';
 
             app.innerHTML =
-                '<div data-g7-bootstrap-fallback="' + (incompatible ? 'incompatible' : 'network') + '" ' +
+                '<div data-g7-bootstrap-fallback="' +
+                (incompatible ? 'incompatible' : (blocked ? 'blocked' : 'network')) + '" ' +
                 'style="min-height:60vh;display:flex;align-items:center;justify-content:center;padding:24px;' +
                 'font-family:system-ui,-apple-system,\'Segoe UI\',sans-serif;">' +
                 '<div style="text-align:center;max-width:420px;">' +

@@ -267,6 +267,51 @@ class CartControllerTest extends ModuleTestCase
     }
 
     /**
+     * 수량 변경 응답은 장바구니 조회 응답과 같은 키 집합이어야 합니다.
+     *
+     * 화면은 수량 변경 응답으로 장바구니 데이터소스를 **통째로 교체**한다(refetch 제거).
+     * 그래서 조회 응답에만 있는 키는 수량을 한 번 바꾸는 순간 사라진다. 특히
+     * `has_unshippable_items` 는 배송 불가 상품이 담겼을 때 주문 버튼을 잠그는 값이라,
+     * 사라지면 그 잠금이 조용히 풀린다 — 오류도 경고도 남지 않는다.
+     */
+    public function test_update_quantity_response_matches_cart_query_shape(): void
+    {
+        // Given: 장바구니에 아이템이 존재
+        $data = $this->createProductWithOption();
+        $cartKey = 'ck_'.str_repeat('e', 32);
+
+        $addResponse = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $data['product']->id,
+            'items' => [
+                ['product_option_id' => $data['option']->id, 'quantity' => 2],
+            ],
+        ], ['X-Cart-Key' => $cartKey]);
+        $addResponse->assertStatus(201);
+        $cartId = $addResponse->json('data.items.0.id');
+
+        // When: 조회와 수량 변경을 각각 호출
+        $queryResponse = $this->getJson('/api/modules/sirsoft-ecommerce/cart', ['X-Cart-Key' => $cartKey]);
+        $quantityResponse = $this->patchJson(
+            "/api/modules/sirsoft-ecommerce/cart/{$cartId}/quantity",
+            ['quantity' => 3],
+            ['X-Cart-Key' => $cartKey]
+        );
+
+        $queryResponse->assertStatus(200);
+        $quantityResponse->assertStatus(200);
+
+        // Then: 조회 응답의 키가 하나도 빠지지 않는다
+        $queryKeys = array_keys($queryResponse->json('data'));
+        $quantityKeys = array_keys($quantityResponse->json('data'));
+
+        $this->assertSame(
+            [],
+            array_values(array_diff($queryKeys, $quantityKeys)),
+            '수량 변경 응답에 장바구니 조회 응답의 키가 빠져 있습니다 — 화면이 데이터소스를 통째로 교체하므로 그 값들이 사라집니다.'
+        );
+    }
+
+    /**
      * #90 수량을 0으로 변경 시도 시 422 에러를 반환합니다.
      */
     public function test_update_quantity_returns_422_for_zero_quantity(): void

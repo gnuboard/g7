@@ -71,6 +71,20 @@ async function bodyText(page: Page): Promise<string> {
   return page.evaluate(() => document.body.innerText.trim().replace(/\n+/g, ' | '));
 }
 
+/**
+ * 정적 게시(bake, #122) fast path 강제 미스.
+ *
+ * 정적 게시가 완료된 프로덕션 사이트에서는 routes/components/lang/번들이
+ * `/build/ext/{v}/…` 를 먼저 타므로, `/api/**` 패턴 인터셉트가 한 건도 걸리지
+ * 않은 채 이 스펙 전체가 무력화된다 (suffixedPath 3형태 밖의 4번째 URL 형태).
+ * 이 스펙의 검증 대상은 **API 폴백 경로의 복원력**이므로 정적 요청을 404 로
+ * 강제해 앱 자체 폴백(fetchStaticFirst / staticToLegacy)이 API 계층으로
+ * 내려보내게 한다. 미게시 사이트에서는 `/build/ext/**` 요청이 없어 무해하다.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.route('**/build/ext/**', (route) => route.fulfill({ status: 404, body: '' }));
+});
+
 test.describe('네트워크 복원력 — 요청 1건의 일시 실패 (#463)', () => {
   // 각 경로의 첫 요청 1건을 취소해도 재시도로 복구되어 앱이 정상 렌더돼야 한다.
   const SINGLE_ABORT_PATHS: Array<{ name: string; pattern: string | ((url: URL) => boolean) }> = [
@@ -220,6 +234,19 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
       },
     );
 
+    // 게시(bake) 사이트에서는 blade 가 이 번들을 정적 URL 로 방출하고, 그 1회가
+    // MAX_ATTEMPTS 예산의 첫 슬롯을 소비한다 (L2 — 예산 신설 금지, staticToLegacy 는
+    // 남은 예산으로 API 형태에 합류). 정적 시도를 따로 세어 총 예산으로 단언한다.
+    let staticAttempts = 0;
+    await page.route(
+      (url) => /\/build\/ext\/.*components\.iife\.js/.test(url.pathname),
+      (route) => {
+        staticAttempts += 1;
+
+        return route.fulfill({ status: 404, body: '' });
+      },
+    );
+
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     await page.waitForFunction(
@@ -234,8 +261,9 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
     expect(text).toMatch(FALLBACK_UI);
     await expect(page.locator('#app button')).toBeVisible();
 
-    // 재시도 3시도 (초기 1 + 재시도 2)
-    expect(attempts).toBe(3);
+    // 총 3시도 (초기 1 + 재시도 2) — 게시 사이트는 정적 1 + API 2, 미게시는 API 3.
+    // 합산 정확값으로 잠가 과잉 재시도(예산 신설) 회귀를 양쪽 세계에서 차단한다.
+    expect(attempts + staticAttempts).toBe(3);
   });
 
   /**

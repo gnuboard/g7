@@ -6,6 +6,14 @@
  * 디버깅 데이터 덤프 및 로그 전송 엔드포인트
  * 디버그 모드가 활성화된 경우에만 동작
  *
+ * 디버그 모드 게이트:
+ *   이 파일 안에는 게이트가 없다. `bootstrap/app.php` 의 devtools 래퍼가
+ *   `Route::middleware(['api', 'debug.gate'])` 로 **그룹 전체**에 `EnsureDebugMode` 를 건다.
+ *   핸들러 안에 `DebugGate::isEnabled()` 를 다시 적지 말 것 — 그렇게 흩어 두었던 탓에 8개
+ *   라우트 중 POST 3종에만 붙고 GET 4종·DELETE clear 는 빠져 있었고, 그중 clear 는
+ *   production 에서 미인증 200 으로 `storage/debug-dump` 전체를 지웠다(공개#128).
+ *   게이트 누락은 예외도 로그도 남기지 않아 그 엔드포인트가 정상 응답하는 것이 유일한 증상이다.
+ *
  * 라우트 캐시 안전성:
  *   `route:cache` 가 걸리면 이 파일은 **로드되지 않는다** — `RouteServiceProvider::boot()` 이
  *   `loadCachedRoutes()` 로 분기하고 클로저만 `SerializableClosure` 로 복원된다. 따라서 이
@@ -21,7 +29,6 @@
 
 use App\Support\DevTools\BrowserLogWriter;
 use App\Support\DevTools\DebugDumpWriter;
-use App\Support\DevTools\DebugGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -52,13 +59,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::post('_boost/browser-logs', function (Request $request): JsonResponse {
-    if (! DebugGate::isEnabled()) {
-        return response()->json([
-            'status' => 'error',
-            'message' => __('devtools.debug_disabled'),
-        ], 403);
-    }
-
     return BrowserLogWriter::handle($request);
 })->name('boost.browser-logs');
 
@@ -71,9 +71,14 @@ Route::post('_boost/browser-logs', function (Request $request): JsonResponse {
 | 상태 덤프, 로그 전송 등 디버깅 관련 엔드포인트를 제공합니다.
 |
 | 이 그룹은 자체 미들웨어를 선언하지 않는다 — `bootstrap/app.php` 가 이 파일 전체를
-| `api` 그룹으로 감싸므로 `->middleware('api')` 를 덧붙이면 같은 그룹이 두 번 지정된다
-| (`Router::uniqueMiddleware()` 가 중복을 제거해 동작은 같지만, 이 그룹만 별도 미들웨어가
-| 필요하다는 오해를 남긴다). 위 `_boost/browser-logs` 라우트도 같은 규율을 따른다.
+| `['api', 'debug.gate']` 로 감싸므로, 디버그 모드 게이트를 포함한 미들웨어는 그 단일 지점이
+| 부여한다. 여기서 `->middleware('api')` 를 덧붙이면 같은 그룹이 두 번 지정되고
+| (`Router::uniqueMiddleware()` 가 중복을 제거해 동작은 같다), `->middleware('debug.gate')` 를
+| 라우트마다 붙이면 그룹 부착의 의미가 사라져 빠뜨린 라우트가 다시 생긴다.
+| 위 `_boost/browser-logs` 라우트도 같은 래퍼 안에 있어 동일한 게이트를 공유한다.
+|
+| 등록 계약(모든 `_boost` 라우트의 `gatherMiddleware()` 에 `debug.gate` 포함)은
+| `tests/Feature/DevTools/DevtoolsRouteGateContractTest.php` 가 강제한다.
 |
 */
 
@@ -85,13 +90,6 @@ Route::prefix('_boost/g7-debug')->group(function () {
      * 섹션별 분할 전송을 지원합니다.
      */
     Route::post('dump-state', function (Request $request): JsonResponse {
-        if (! DebugGate::isEnabled()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('devtools.debug_disabled'),
-            ], 403);
-        }
-
         // 테스트 요청 처리
         if ($request->boolean('test')) {
             return response()->json([
@@ -127,13 +125,6 @@ Route::prefix('_boost/g7-debug')->group(function () {
      * 디버그 로그, 에러, 프로파일 데이터를 저장합니다.
      */
     Route::post('log', function (Request $request): JsonResponse {
-        if (! DebugGate::isEnabled()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('devtools.debug_disabled'),
-            ], 403);
-        }
-
         $debugDir = storage_path('debug-dump');
 
         if (! File::isDirectory($debugDir)) {

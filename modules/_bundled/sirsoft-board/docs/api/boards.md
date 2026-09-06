@@ -3215,6 +3215,8 @@ HTTP/1.1 200
 
 **설명** 게시글 작성/수정 폼의 초기 입력값을 반환합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, 쿼리 파라미터로 모드가 분기됩니다: `post_id` 가 있으면 기존 글 값(수정 모드), `parent_id` 가 있으면 원글 제목을 기반으로 한 답변글 초기값(답변 모드), 둘 다 없으면 빈 기본값(생성 모드)입니다. 수정/답변 모드에서는 본인·관리자 여부와 비회원 글의 비밀번호/토큰 검증을 확인하며, 답변 대상이 블라인드/삭제 상태면 진입을 차단합니다.
 
+비회원 글의 본인 확인 값(`verification_token`)은 요청 헤더 `X-Board-Post-Verify-Token` 으로 보냅니다 — 자격증명을 쿼리 문자열에 실으면 웹서버 접근 기록과 `Referer` 에 그대로 남기 때문입니다. 호환을 위해 본문/쿼리의 `verification_token` 도 계속 받으며, 헤더가 있으면 헤더를 먼저 사용합니다. 이 값은 조회 단계에서 소비되지 않고 확인만 하며, 저장·삭제 요청에서 한 번 사용되면 폐기됩니다.
+
 
 ### GET /api/modules/sirsoft-board/boards/{slug}/posts/form-meta
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.form-meta -->
@@ -3337,6 +3339,8 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명** 게시글 작성/수정 폼 렌더링에 필요한 게시판 메타 정보를 반환합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, 게시판 설정과 사용자 권한(`user_abilities`)을 담습니다. `post_id` 가 있으면 수정 모드로 작성자/작성일/첨부 목록을 포함하되 회원 글은 본인 또는 관리자만, 비회원 글은 비밀번호/검증 토큰 확인을 요구합니다. `parent_id` 가 있으면 답변 모드로 원글 정보를 포함하며, 답변 기능이 꺼져 있거나 원글이 블라인드/삭제 상태면 차단합니다.
+
+비회원 글의 본인 확인 값(`verification_token`)은 요청 헤더 `X-Board-Post-Verify-Token` 으로 보냅니다 — 자격증명을 쿼리 문자열에 실으면 웹서버 접근 기록과 `Referer` 에 그대로 남기 때문입니다. 호환을 위해 본문/쿼리의 `verification_token` 도 계속 받으며, 헤더가 있으면 헤더를 먼저 사용합니다. 이 값은 조회 단계에서 소비되지 않고 확인만 하며, 저장·삭제 요청에서 한 번 사용되면 폐기됩니다.
 
 
 ### DELETE /api/modules/sirsoft-board/boards/{slug}/posts/{id}
@@ -3853,6 +3857,8 @@ HTTP/1.1 200
 
 **설명** 게시글을 수정합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 또는 게시판 manager 권한이 필요하며, `UpdatePostRequest` 로 검증된 값으로 갱신합니다. 작성자 본인, 게시판 관리자, 또는 비회원 글의 검증 토큰·비밀번호 확인 중 하나를 만족해야 수정할 수 있고, 조건 미충족 시 403을 반환합니다.
 
+`password` 와 `verification_token` 은 **본인 확인용 자격증명이며 저장되지 않습니다.** 게시글 비밀번호는 작성 시점에 설정된 값이 그대로 유지되며, 이 엔드포인트로 변경할 수 없습니다(수정 요청에 실린 값을 저장하면 저장된 해시가 평문으로 덮여 이후 본인 확인이 불가능해집니다). 같은 규칙이 댓글 수정 엔드포인트에도 적용됩니다.
+
 
 ### GET /api/modules/sirsoft-board/boards/{slug}/posts/{id}/navigation
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.navigation -->
@@ -3945,6 +3951,13 @@ Content-Type: application/json
 **응답 필드** (`data` 내부)
 
 _단건 응답: `data` 객체의 필드. 검증 성공 시 `password_verified` 플래그가 설정되어 게시글 상세(`PostResource`)를 그대로 반환합니다 — 즉 `GET /boards/{slug}/posts/{id}` 와 동일 스키마이며, 차이는 비밀글이라도 `content` 와 `attachments` 가 채워진다는 점입니다._
+
+_이 응답은 `data` 밖 최상위에 다음 두 필드를 함께 싣습니다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| secret_view_token | string | `k3Jd…40자` | 열람 확인 토큰. 이후 이 게시글의 댓글·답글·신고 요청에 `X-Board-Secret-View-Token` 헤더로 실어 보내면 비밀번호를 맞힌 사실이 인정됩니다. 이 값을 보내지 않으면 원문을 연 사용자도 하위 글쓰기가 거부됩니다. 토큰은 이 게시글에만 유효하며 소비되지 않아 유효기간 안에서 여러 번 쓸 수 있습니다. |
+| secret_view_expires_at | string | `2026-09-04T20:55:42+09:00` | 위 토큰의 만료 시각 (ISO 8601). 기간은 코어 설정 `cache.post_verify_token_ttl` 을 따릅니다. |
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |

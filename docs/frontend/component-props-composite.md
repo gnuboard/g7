@@ -1,6 +1,6 @@
 # 컴포넌트 Props 레퍼런스 - Composite
 
-> **관련 문서**: [컴포넌트 Props (Basic/DataGrid/Modal)](component-props.md) | [컴포넌트 개발 규칙](components.md) | [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
+> **관련 문서**: [컴포넌트 Props (Basic/DataGrid/Modal)](component-props.md) | [컴포넌트 개발 규칙](components.md) | [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
 
 ---
 
@@ -671,7 +671,7 @@ G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'
 - [컴포넌트 Props (Basic/DataGrid/Modal)](component-props.md)
 - [컴포넌트 개발 규칙](components.md)
 - [컴포넌트 고급 기능](components-advanced.md)
-- [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
+- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
 - [액션 핸들러 - 커스텀 콜백](actions.md#커스텀-이벤트-event-필드)
 - [보안 가이드 - HTML 렌더링](security.md#htmlcontent--htmleditor-html-렌더링이-필요한-경우)
 - [에디터 컴포넌트](editors.md)

@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
@@ -785,23 +786,47 @@ class OrderRepository implements OrderRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function getExpiredPendingPaymentOrders(int $limit = 100): Collection
+    public function getExpiredPendingPaymentOrders(int $limit = 100, ?int $pendingOrderExpireMinutes = null): Collection
     {
         return $this->model
             ->with(['payment', 'user'])
-            ->where('order_status', OrderStatusEnum::PENDING_PAYMENT->value)
-            ->whereHas('payment', function ($query) {
-                $query->where(function ($q) {
-                    // vbank 가상계좌 입금 기한 만료
-                    $q->where('payment_method', PaymentMethodEnum::VBANK->value)
-                        ->whereNotNull('vbank_due_at')
-                        ->where('vbank_due_at', '<', now());
-                })->orWhere(function ($q) {
-                    // dbank 무통장입금(수동 입금확인) 입금 기한 만료
-                    $q->where('payment_method', PaymentMethodEnum::DBANK->value)
-                        ->whereNotNull('deposit_due_at')
-                        ->where('deposit_due_at', '<', now());
+            ->where(function ($outer) use ($pendingOrderExpireMinutes) {
+                // 입금 기한이 있는 결제수단 — 기한 도과분
+                $outer->where(function ($scope) {
+                    $scope->where('order_status', OrderStatusEnum::PENDING_PAYMENT->value)
+                        ->whereHas('payment', function ($query) {
+                            $query->where(function ($q) {
+                                // vbank 가상계좌 입금 기한 만료
+                                $q->where('payment_method', PaymentMethodEnum::VBANK->value)
+                                    ->whereNotNull('vbank_due_at')
+                                    ->where('vbank_due_at', '<', now());
+                            })->orWhere(function ($q) {
+                                // dbank 무통장입금(수동 입금확인) 입금 기한 만료
+                                $q->where('payment_method', PaymentMethodEnum::DBANK->value)
+                                    ->whereNotNull('deposit_due_at')
+                                    ->where('deposit_due_at', '<', now());
+                            });
+                        });
                 });
+
+                // 결제창까지 갔지만 결제가 성립하지 않은 주문(PG 카드 등) — 입금 기한이라는 개념이
+                // 없어 종전에는 어떤 정리 주체도 없이 무한히 남았다. 브라우저 리턴 콜백이 주문
+                // 상태를 바꾸지 않게 되면서(위조 콜백으로 남의 주문을 취소시킬 수 있었던 통로 차단)
+                // 승인 거절분도 여기에 머무르므로, 주문 시각 기준 경과분을 정리 대상에 포함한다.
+                // 선차감 마일리지 복원도 이 정리에서 함께 이루어진다.
+                if ($pendingOrderExpireMinutes !== null && $pendingOrderExpireMinutes > 0) {
+                    $outer->orWhere(function ($scope) use ($pendingOrderExpireMinutes) {
+                        $scope->where('order_status', OrderStatusEnum::PENDING_ORDER->value)
+                            ->where('ordered_at', '<', now()->subMinutes($pendingOrderExpireMinutes))
+                            // 승인 콜백과 경쟁해 이미 결제가 성립한 주문은 건드리지 않는다.
+                            ->whereHas('payment', function ($query) {
+                                $query->whereNotIn('payment_status', [
+                                    PaymentStatusEnum::PAID->value,
+                                    PaymentStatusEnum::WAITING_DEPOSIT->value,
+                                ]);
+                            });
+                    });
+                }
             })
             ->orderBy('ordered_at', 'asc')
             ->limit($limit)

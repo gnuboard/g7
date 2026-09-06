@@ -8,6 +8,7 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
+use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Services\ModuleSettingsService;
@@ -25,6 +26,7 @@ use Illuminate\View\View;
 class UserTemplateComposer
 {
     use CollectsActiveExtensionMeta;
+    use CollectsCustomAssets;
     use CollectsExtensionAssets;
     use CollectsTemplateExternals;
 
@@ -101,11 +103,12 @@ class UserTemplateComposer
             $appConfig = [];
         }
 
-        // 템플릿의 외부 리소스 정보 수집
-        $templateExternals = $this->collectTemplateExternals($activeTemplate);
-
         // 확장 기능 캐시 버전 (브라우저 캐시 무효화용)
         $extensionCacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
+
+        // 템플릿의 외부 리소스 정보 수집
+        // (자체 제공 `asset` 항목의 URL 을 만들 때 캐시 버전이 필요해 뒤로 옮겼다)
+        $templateExternals = $this->collectTemplateExternals($activeTemplate, $extensionCacheVersion);
 
         // 확장 프론트엔드 병합 번들 URL (상시 ON — 활성 에셋이 없으면 null)
         $bundleUrls = $this->buildExtensionBundleUrls($moduleAssets, $pluginAssets, $extensionCacheVersion);
@@ -126,6 +129,8 @@ class UserTemplateComposer
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
         $view->with('templateExternals', $templateExternals);
+        $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
+        $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);
     }
 }

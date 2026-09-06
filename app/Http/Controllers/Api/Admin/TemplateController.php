@@ -286,10 +286,14 @@ class TemplateController extends AdminBaseController
             $templateName = $validated['template_name'];
             $deleteData = $validated['delete_data'] ?? false;
 
-            $result = $this->templateService->uninstallTemplate($templateName, $deleteData);
+            $result = $this->templateService->uninstallTemplate($templateName, $deleteData, $preservedBackups);
 
             if ($result) {
-                return $this->success('templates.uninstall_success');
+                // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 응답에 실어
+                // 알리지 않으면 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.
+                return $this->success('templates.uninstall_success', [
+                    'preserved_backups' => $preservedBackups ?? [],
+                ]);
             } else {
                 return $this->error('templates.uninstall_failed', 400, null, [
                     'error' => __('templates.errors.unknown_error'),

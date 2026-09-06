@@ -111,7 +111,17 @@ class ExecuteUpgradeStepsCommand extends Command
         // 해당 release 의 upgrade step 단발 처리. (예: beta.3→beta.4 의 lang-packs/* 보정)
         if (! $stepsOnly) {
             try {
-                $writablePaths = (array) config('app.update.restore_ownership_group_writable', []);
+                // 구버전 부모(7.0.9 이하)는 spawn 전에 config 캐시를 비우지 않아 이 자식이 이전 버전
+                // 캐시로 부팅할 수 있다. 그러면 `config()` 는 옛 목록이라 신버전이 추가한 디렉토리가
+                // 빠진다 — 캐시 부팅이면 디스크 config/app.php 를 직접 읽는다 (7.0.9→7.0.10 실사례).
+                // 판정은 캐시 파일의 실존으로 한다 — 부팅에 쓰였든 위 updateComposerAutoload() 가 방금
+                // 재생성했든, 파일이 있으면 메모리 config 를 신뢰하지 않는다 (디스크 판독은 멱등).
+                if (is_file($this->laravel->getCachedConfigPath())) {
+                    Log::channel('upgrade')->warning('[spawn] 이전 버전 config 캐시로 부팅됨 — update 목록은 디스크 config/app.php 에서 읽는다');
+                    $writablePaths = (array) $service->freshDiskUpdateConfig('restore_ownership_group_writable', []);
+                } else {
+                    $writablePaths = (array) config('app.update.restore_ownership_group_writable', []);
+                }
                 if (! empty($writablePaths)) {
                     $service->ensureWritableDirectories(
                         $writablePaths,
@@ -206,6 +216,7 @@ class ExecuteUpgradeStepsCommand extends Command
             ]);
 
             $this->restoreUpgradeLogOwnership();
+            $service->normalizeRuntimeOwnershipAfterRootRun();
 
             return UpgradeHandoffException::EXIT_CODE;
         } catch (\Throwable $e) {
@@ -217,6 +228,7 @@ class ExecuteUpgradeStepsCommand extends Command
             $this->error($e->getMessage());
 
             $this->restoreUpgradeLogOwnership();
+            $service->normalizeRuntimeOwnershipAfterRootRun();
 
             return self::FAILURE;
         }
@@ -278,8 +290,36 @@ class ExecuteUpgradeStepsCommand extends Command
         }
 
         $this->restoreUpgradeLogOwnership();
+        $this->sweepEmptyStagingDirectories($service);
+        // 단독 실행(sudo core:execute-upgrade-steps)이 만든 캐시/번들 root 산출물
+        // 소유권 정상화 — spawn 자식 모드에서도 무해(멱등)하며, 부모(CoreUpdateCommand)
+        // 종료부의 동일 호출이 부모 측 후속 쓰기를 담당한다
+        $service->normalizeRuntimeOwnershipAfterRootRun();
 
         return self::SUCCESS;
+    }
+
+    /**
+     * 이전 버전 부모가 남긴 빈 격리 디렉토리(`core_{ts}/extracted` 껍데기)를 청소합니다.
+     *
+     * 부모의 정리 단계는 소스 경로 안쪽만 지우던 결함(7.0.0~7.0.9)이 있어 업데이트마다
+     * 껍데기가 남았고, sudo 실행이면 root 소유라 운영자·웹서버 계정이 지울 수 없었다.
+     * 부모는 구버전 클래스를 메모리에 들고 있어 고쳐도 다음 업데이트부터 효력이 있으므로,
+     * 신버전 코드로 도는 이 자식이 치운다. 파일이 있는 디렉토리(부모가 쓰는 중인 격리
+     * 디렉토리)는 술어상 건드리지 않는다. 실패는 업데이트 결과와 무관하므로 경고로 흡수한다.
+     *
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스
+     */
+    private function sweepEmptyStagingDirectories(CoreUpdateService $service): void
+    {
+        try {
+            $swept = $service->sweepEmptyStagingDirectories();
+            if ($swept > 0) {
+                $this->info("[spawn] 빈 격리 디렉토리 청소: {$swept}개");
+            }
+        } catch (\Throwable $e) {
+            Log::channel('upgrade')->warning('[spawn] 빈 격리 디렉토리 청소 실패', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

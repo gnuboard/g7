@@ -162,6 +162,25 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 
 두 형태는 **모두 영구 유지**됩니다. 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨집니다.
 
+#### CSS 응답의 상대 참조 치환
+
+확장 자산 엔드포인트(`/api/{templates|modules|plugins}/assets/…`)가 **CSS 를 서빙할 때**는 본문 안의
+상대 참조를 절대 자산 URL 로 바꿔 내보냅니다. 대상은 `url(...)` 과 `@import "…"` 이며, 절대 URL ·
+프로토콜 상대(`//host/x`) · `data:` 같은 스킴 참조는 원문 그대로 둡니다.
+
+브라우저는 CSS 안의 상대 참조를 그 스타일시트 URL 의 **디렉토리** 기준으로 해석합니다. 확장자 없는
+형태에서는 경로의 마지막 세그먼트가 확장 식별자이고 파일 경로가 쿼리에 있으므로 기준 디렉토리가
+`/api/{타입}/assets/` 로 잡히고, `url('./woff2/f.woff2')` 가 실재하지 않는 주소를 가리킵니다. 치환은
+이 어긋남을 서빙 시점에 해소합니다.
+
+치환된 본문은 두 가지 계약을 따릅니다.
+
+- **ETag 는 내보내는 본문 기준**입니다. 자산 URL 모드가 바뀌면 본문이 달라지므로 ETag 도 함께 바뀝니다.
+- **서브리소스는 CSS 가 받은 `v` 를 승계**합니다. 캐시 버전이 오르면 두 계층이 같은 시점에 무효화됩니다.
+
+CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`/build/ext/{v}/…`)은 웹서버가 직접 경로
+형태로 서빙하므로 상대 해석이 원래 정상이며 이 경로를 타지 않습니다.
+
 어느 형태를 쓸지는 서버 환경에 따라 결정되며, 다음 프로브 엔드포인트로 판정합니다.
 
 | 메서드 | URI | 인증/권한 | 설명 |
@@ -200,7 +219,7 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 36 · **엔드포인트 수**: 319
+- **문서 수**: 36 · **엔드포인트 수**: 325
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -213,7 +232,7 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 | [changelog.md](changelog.md) | `changelog` | 1 |
 | [core-update.md](core-update.md) | `core-update` | 2 |
 | [dashboard.md](dashboard.md) | `dashboard` | 5 |
-| [extensions.md](extensions.md) | `extensions` | 3 |
+| [extensions.md](extensions.md) | `extensions` | 8 |
 | [identity.md](identity.md) | `identity` | 27 |
 | [language-packs.md](language-packs.md) | `language-packs` | 15 |
 | [layouts.md](layouts.md) | `layouts` | 2 |
@@ -235,7 +254,7 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 | [schedules.md](schedules.md) | `schedules` | 12 |
 | [search.md](search.md) | `search` | 1 |
 | [seo.md](seo.md) | `seo` | 5 |
-| [settings.md](settings.md) | `settings` | 15 |
+| [settings.md](settings.md) | `settings` | 18 |
 | [system.md](system.md) | `system` | 2 |
 | [templates.md](templates.md) | `templates` | 57 |
 | [users.md](users.md) | `users` | 12 |
@@ -248,7 +267,7 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 > 각 확장이 자신의 API 문서를 소유합니다. 아래 표는 자동 생성됩니다.
 
 <!-- @generated:start:api-readme-extensions -->
-- **확장 수**: 14 · **엔드포인트 수**: 416
+- **확장 수**: 14 · **엔드포인트 수**: 428
 
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 | --- | --- | --- | --- |
@@ -256,10 +275,10 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 | `sirsoft-board` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-board/docs/api/README.md) | 10 / 80 |
 | `sirsoft-ecommerce` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 239 |
 | `sirsoft-page` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
-| `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 2 / 2 |
+| `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
-| `sirsoft-message_bizppurio` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-message_bizppurio/docs/api/README.md) | 6 / 12 |
+| `sirsoft-message_bizppurio` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-message_bizppurio/docs/api/README.md) | 6 / 21 |
 | `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 34 |
 | `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 0 / 0 |
 | `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |

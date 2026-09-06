@@ -73,7 +73,7 @@ class GdprConsentService
      * @param  string|null  $sessionId  게스트 세션 ID (회원이면 NULL)
      * @param  string  $consentKey  동의 항목 키
      * @param  bool  $value  동의 여부
-     * @param  string  $source  변경 경로 (허용 어휘는 ConsentSource enum — banner/preference_center/register/mypage/mypage_renew_all)
+     * @param  string  $source  변경 경로 (허용 어휘는 {@see ConsentSource} 가 SSoT)
      * @param  array|null  $categories  카테고리 스냅샷 (배너 일괄 변경 시)
      * @param  bool  $isRejection  명시적 거부 신호 (이슈 #430). 선택형 미동의 항목을 is_rejected=true 로 저장.
      * @return void
@@ -302,7 +302,7 @@ class GdprConsentService
         // 멱등하게 작성해야 한다.
         DB::transaction(function () use ($userId, $activeConsents) {
             foreach ($activeConsents as $consent) {
-                $this->updateConsent($userId, null, $consent->consent_key, false, 'withdraw');
+                $this->updateConsent($userId, null, $consent->consent_key, false, ConsentSource::Withdraw->value);
             }
         });
     }

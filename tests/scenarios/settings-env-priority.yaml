@@ -1,0 +1,55 @@
+feature: .env 키 단위 우선 (G7_ENV_PRIORITY 옵트인)
+
+description: |
+  관리자 환경설정(storage/app/settings/*.json)이 `.env` 유래 config 를 덮는 기존 설계를
+  키 단위로 되돌리는 옵트인 스위치. `.env` 에 값이 명시된 항목만 settings 주입에서 빠지고,
+  관리자 화면은 그 필드를 편집 불가 + 잠금 배지로 표시하며, 저장 API 는 서버측에서 필터한다.
+
+  핵심 동작:
+    - 명시 판별은 config 빌드 시점 캡처(config/env-priority.php) — env() 런타임 호출은
+      config:cache 환경에서 null 로 고정되어 판별이 영구 미발동한다
+    - 판별은 strict: `KEY=`(빈 값)·`KEY=null`·미설정만 미명시. `APP_DEBUG=false`·`REDIS_DB=0`
+      같은 falsy 명시는 명시로 취급
+    - env 두 개가 한 설정을 나누는 키(redis_database)는 any-of 로 판정
+    - 스위치 OFF 면 전 경로 조기 return — 현행 동작 100% 동일
+    - 잠긴 키의 화면 표시값은 유효값(런타임 config). 단 민감 키는 값을 싣지 않는다
+    - 웹소켓 마스터 토글 잠금 시 OFF 강제 3종 오진입 금지 (`.env` 권위)
+    - 디버그 모드 잠금 시 2차 효과(로그 레벨 강제·프록시 게이트)를 유효값으로 보정
+
+axes:
+  switch: [off, on]
+  key_state: [unlocked, locked_plain, locked_sensitive, locked_falsy]
+  surface: [inject, get_meta, get_effective_value, post_filter, ui_lock]
+
+exclusions:
+  - { switch: off, key_state: locked_plain, reason: "스위치 OFF 는 잠금 판정 자체를 하지 않는다 — 전 key_state 가 unlocked 와 동일 경로" }
+  - { switch: off, key_state: locked_sensitive, reason: "동일" }
+  - { switch: off, key_state: locked_falsy, reason: "동일" }
+  - { key_state: locked_sensitive, surface: inject, reason: "민감 여부는 표시 경로에서만 갈린다 — 주입 스킵은 locked_plain 과 같은 코드 경로" }
+  - { key_state: locked_sensitive, surface: post_filter, reason: "동일 — 저장 필터는 민감 여부를 보지 않는다" }
+  - { key_state: locked_sensitive, surface: ui_lock, reason: "동일 — 화면 잠금 표시는 민감 여부와 무관" }
+  - { key_state: locked_falsy, surface: get_effective_value, reason: "falsy 명시는 판별 축이라 표시값 경로에서는 locked_plain 과 같다 — 유효값 오버레이는 민감 여부만 본다" }
+  - { key_state: locked_falsy, surface: ui_lock, reason: "falsy 명시는 판별 축이라 화면 표시에서는 locked_plain 과 구분되지 않는다" }
+
+effects:
+  - switch_off_behaves_identically
+  - explicit_env_skips_injection
+  - empty_string_env_not_explicit
+  - false_env_is_explicit
+  - map_parity_covers_every_injected_default_key
+  - env_examples_document_env_priority_switch
+  - websocket_enabled_lock_skips_off_branch
+  - debug_mode_lock_corrects_outbound_gate
+  - locked_key_filtered_on_save_including_advanced
+  - locked_plain_shows_effective_value
+  - locked_sensitive_hides_effective_value
+  - meta_env_locked_uses_frontend_keys
+  - badge_and_disabled_rendered
+
+test_files:
+  - tests/Unit/Support/EnvPriorityTest.php
+  - tests/Unit/Providers/SettingsServiceProviderEnvPriorityTest.php
+  - tests/Feature/Settings/EnvPriorityContractTest.php
+  - tests/Feature/Settings/SettingsEnvLockedMetaTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-env-locked.test.tsx
+  - tests/Playwright/specs/admin/settings-env-priority.spec.ts

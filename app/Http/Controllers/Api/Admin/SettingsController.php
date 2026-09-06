@@ -13,8 +13,11 @@ use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
 use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
+use App\Services\ExtensionStaticCacheService;
 use App\Services\OutboundProxyTester;
 use App\Services\SettingsService;
+use App\Support\EnvPriority;
+use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -30,9 +33,31 @@ class SettingsController extends AdminBaseController
         private SettingsService $settingsService,
         private DriverConnectionTester $driverConnectionTester,
         private DriverRegistryService $driverRegistryService,
-        private OutboundProxyTester $outboundProxyTester
+        private OutboundProxyTester $outboundProxyTester,
+        private ExtensionStaticCacheService $staticCacheService
     ) {
         parent::__construct();
+    }
+
+    /**
+     * 설정 응답에 동봉할 `_meta` 를 만듭니다.
+     *
+     * 조회와 저장 두 응답이 같은 모양이어야 화면이 저장 직후에도 같은 판정을 이어갑니다 —
+     * 한쪽만 필드가 늘면 저장 후 잠금 표시가 조용히 사라집니다.
+     *
+     * - `limits`: 입력 한계값 (core.settings_limits)
+     * - `env_priority_enabled`: `.env` 우선 모드 활성 여부 (안내 배너 표시 판정)
+     * - `env_locked`: `.env` 로 잠긴 필드 목록 (프론트엔드 키 기준)
+     *
+     * @return array<string, mixed> 응답 메타 배열
+     */
+    private function buildSettingsMeta(): array
+    {
+        return [
+            'limits' => config('core.settings_limits', []),
+            'env_priority_enabled' => EnvPriority::enabled(),
+            'env_locked' => $this->settingsService->envLockedMeta(),
+        ];
     }
 
     /**
@@ -45,7 +70,7 @@ class SettingsController extends AdminBaseController
         try {
             $settings = $this->settingsService->getAllSettings();
             $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
-            $settings['_meta'] = ['limits' => config('core.settings_limits', [])];
+            $settings['_meta'] = $this->buildSettingsMeta();
 
             return $this->success('settings.fetch_success',
                 (new SettingsResource($settings))->toArray(request())
@@ -73,7 +98,7 @@ class SettingsController extends AdminBaseController
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $allSettings = $this->settingsService->getAllSettings();
                 $allSettings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
-                $allSettings['_meta'] = ['limits' => config('core.settings_limits', [])];
+                $allSettings['_meta'] = $this->buildSettingsMeta();
 
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,
@@ -148,6 +173,56 @@ class SettingsController extends AdminBaseController
 
             return $this->error('common.error_occurred', 500, $e->getMessage());
         }
+    }
+
+    /**
+     * 신뢰 프록시(리버스 프록시) 설정 진단 결과를 조회합니다 (#124).
+     *
+     * 읽기 전용이다 — 값 편집 엔드포인트는 두지 않는다. 이 값은 "앱이 프록시 없이 도달
+     * 가능한가" 라는 배포 구조 지식이 있어야 정할 수 있고, 웹에서 편집 가능해지면 관리자
+     * 계정 탈취가 곧 X-Forwarded-For 위조 경로가 된다. 편집은 `.env` 전용이다.
+     *
+     * 판정 대상은 관리자 브라우저의 **실제 요청**이므로 현재 요청을 그대로 쓴다.
+     * 입력을 받지 않는 읽기 전용 조회라 FormRequest 를 두지 않는다.
+     *
+     * @return JsonResponse 진단 결과 JSON 응답
+     */
+    public function trustedProxy(): JsonResponse
+    {
+        return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 초기 화면 정적 파일(부트스트랩 리소스 정적 게시) 상태를 조회합니다 (#651).
+     *
+     * CLI `ext-static:status` 와 **같은 판정**(`ExtensionStaticCacheService::statusReport`)을 돌려준다.
+     * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않는다 (`trustedProxy` 와 동형).
+     *
+     * @return JsonResponse 상태 보고서 JSON 응답
+     */
+    public function staticCacheStatus(): JsonResponse
+    {
+        return $this->success('settings.static_cache_status_loaded', $this->staticCacheService->statusReport());
+    }
+
+    /**
+     * 초기 화면 정적 파일을 지금 다시 만듭니다 (관리자 수동 복구, #651).
+     *
+     * 캐시 버전을 올리고 현재 버전을 강제 재게시한다. 게시 실패·게시가 쓰이지 않는 환경은
+     * 요청 처리 실패가 아니라 **진단 결과**라 HTTP 200 으로 돌려주고 성공 여부는 페이로드
+     * (`republished`)가 말한다 — 연결 테스트·드라이버 테스트와 같은 규약. 사이트는 어느 경우에도
+     * API 폴백으로 정상이다.
+     *
+     * @return JsonResponse 재게시 결과 + 상태 보고서 JSON 응답
+     */
+    public function republishStaticCache(): JsonResponse
+    {
+        $result = $this->staticCacheService->republish();
+
+        return $this->success(
+            ($result['republished'] ?? false) ? 'settings.static_cache_republished' : 'settings.static_cache_republish_failed',
+            $result
+        );
     }
 
     /**

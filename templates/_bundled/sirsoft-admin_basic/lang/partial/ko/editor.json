@@ -1261,7 +1261,7 @@
     },
     "scroll_to_section": {
       "label": "특정 영역으로 스크롤",
-      "param_section_id": "영역 ID"
+      "param_target_id": "영역 ID"
     },
     "set_date_range": {
       "label": "기간 빠르게 선택",
@@ -1269,15 +1269,15 @@
       "preset_today": "오늘",
       "preset_week": "이번 주",
       "preset_month": "이번 달",
-      "preset_year": "올해"
+      "preset_1year": "최근 1년"
     },
     "toggle_filter_visibility": {
       "label": "필터 보이기/숨기기",
-      "param_filter_key": "필터 키"
+      "param_storage_key": "저장 키",
+      "param_filter_id": "필터 ID"
     },
     "save_multilingual_tag": {
-      "label": "다국어 태그 저장",
-      "param_tag": "태그"
+      "label": "다국어 태그 저장"
     },
     "init_theme": {
       "label": "화면 테마 초기화",
@@ -1290,7 +1290,8 @@
       "label": "주소로 메뉴 초기화"
     },
     "init_filter_visibility": {
-      "label": "필터 표시 초기화"
+      "label": "필터 표시 초기화",
+      "param_storage_key": "저장 키"
     }
   },
   "computed": {
@@ -1648,12 +1649,14 @@
     "settings": "환경설정",
     "sitemap_status": "Sitemap 생성 상태",
     "sitemap_progress_ws": "Sitemap 생성 진행 (실시간)",
+    "staticCacheStatus": "초기 화면 정적 파일 상태",
     "systemInfo": "시스템 정보",
     "templateDetail": "템플릿 상세",
     "templateInstallPreview": "템플릿 설치 미리보기",
     "template_info": "템플릿 정보",
     "templates": "템플릿 목록",
     "tokenValidation": "토큰 검증",
+    "trustedProxy": "신뢰 프록시 진단",
     "user": "사용자",
     "users": "사용자 목록"
   }

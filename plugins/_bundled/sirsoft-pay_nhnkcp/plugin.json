@@ -5,7 +5,7 @@
         "ko": "NHN KCP",
         "en": "NHN KCP"
     },
-    "version": "1.0.3",
+    "version": "1.0.4",
     "license": "MIT",
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_nhnkcp",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_nhnkcp/blob/main/CHANGELOG.md",
@@ -13,12 +13,20 @@
         "ko": "NHN KCP 결제 게이트웨이 (Standard Pay 연동)",
         "en": "NHN KCP payment gateway (Standard Pay integration)"
     },
-    "g7_version": ">=7.0.5",
+    "g7_version": ">=7.0.10",
     "dependencies": {
         "modules": {
             "sirsoft-ecommerce": ">=1.1.0"
         },
         "plugins": {}
+    },
+    "trusted_script_hosts": [
+        "testpay.kcp.co.kr",
+        "pay.kcp.co.kr"
+    ],
+    "trusted_script_hosts_reason": {
+        "testpay.kcp.co.kr": "NHN KCP 테스트 결제창 SDK 다. 스크립트가 KCP 서버와 통신하므로 자체 호스팅해도 결제가 성립하지 않는다.",
+        "pay.kcp.co.kr": "NHN KCP 운영 결제창 SDK 다. 스크립트가 KCP 서버와 통신하므로 자체 호스팅해도 결제가 성립하지 않는다."
     },
     "assets": {
         "js": {

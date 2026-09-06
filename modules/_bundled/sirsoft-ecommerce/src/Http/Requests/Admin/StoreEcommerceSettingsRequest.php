@@ -286,6 +286,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // sometimes 필수: rules() 는 탭 구분 없이 적용되므로 무조건 required 로 두면
             // 이 키를 보내지 않는 다른 탭(마일리지 등) 저장이 통째로 막힌다. 키가 온 경우에만 필수.
             'order_settings.auto_cancel_days' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.auto_cancel_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.auto_cancel_days_max', 30)],
+            'order_settings.pending_order_expire_minutes' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.pending_order_expire_minutes_min', 0), 'max:'.config('sirsoft-ecommerce.limits.pending_order_expire_minutes_max', 20160)],
             'order_settings.cart_expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.cart_expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.cart_expiry_days_max', 365)],
             'order_settings.stock_restore_on_cancel' => ['nullable', 'boolean'],
             'order_settings.confirmable_statuses' => ['nullable', 'array'],
@@ -1213,6 +1214,10 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.auto_cancel_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.integer'),
             'order_settings.auto_cancel_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.min'),
             'order_settings.auto_cancel_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.max'),
+            'order_settings.pending_order_expire_minutes.required' => __('sirsoft-ecommerce::validation.custom.order_settings.pending_order_expire_minutes.required'),
+            'order_settings.pending_order_expire_minutes.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.pending_order_expire_minutes.integer'),
+            'order_settings.pending_order_expire_minutes.min' => __('sirsoft-ecommerce::validation.custom.order_settings.pending_order_expire_minutes.min'),
+            'order_settings.pending_order_expire_minutes.max' => __('sirsoft-ecommerce::validation.custom.order_settings.pending_order_expire_minutes.max'),
             'order_settings.cart_expiry_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.integer'),
             'order_settings.cart_expiry_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.min'),
             'order_settings.cart_expiry_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.max'),

@@ -243,20 +243,33 @@ class PluginService
      * @param  string  $pluginName  플러그인 식별자
      * @param  bool  $deleteData  플러그인이 생성한 DB 데이터/스토리지 디렉토리까지 삭제 여부
      * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
+     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터
      * @return bool 제거 성공 여부
      *
      * @throws ValidationException 제거 실패 시
      */
-    public function uninstallPlugin(string $pluginName, bool $deleteData = false, ?string &$failureReason = null): bool
-    {
+    public function uninstallPlugin(
+        string $pluginName,
+        bool $deleteData = false,
+        ?string &$failureReason = null,
+        ?array &$preservedBackups = null,
+    ): bool {
         $failureReason = null;
+        $preservedBackups = [];
 
         HookManager::doAction('core.plugins.before_uninstall', $pluginName, $deleteData);
 
         try {
             $this->pluginManager->loadPlugins();
 
-            $result = $this->pluginManager->uninstallPlugin($pluginName, $deleteData, null, $failureReason);
+            $result = $this->pluginManager->uninstallPlugin(
+                $pluginName,
+                $deleteData,
+                null,
+                $failureReason,
+                $preservedBackups
+            );
 
             HookManager::doAction('core.plugins.after_uninstall', $pluginName, $deleteData, $result);
 

@@ -325,5 +325,10 @@
     "copy": "コピー",
     "japan_restrict_jpy_payment_methods": "JPY注文決済方法制限",
     "japan_restrict_jpy_payment_methods_hint": "有効化するとJPY注文はクレジットカード、PayPay、日本コンビニ決済のみCBTで進行されます。無効化すると従来どおり選択決済方法を制限しません。"
+  },
+  "payment": {
+    "error": {
+      "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。"
+    }
   }
 }

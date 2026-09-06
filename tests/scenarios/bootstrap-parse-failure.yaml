@@ -12,18 +12,25 @@ description: |
     - window 의 error 이벤트로 번들 SyntaxError 를 관측(element 이벤트로는 구분 불가)
     - 관측되면 renderFallback('incompatible') — 전용 문구 + 새로고침 버튼 생략
     - 관측되지 않으면 renderFallback('corrupt') — 기존 문구 유지(사유 미상)
-    - 재시도 소진 경로는 renderFallback('network') — 기존 문구 + 버튼 유지
+    - 재시도 소진 경로는 두 갈래다 — HTTPS 페이지가 http:// 자산을 요청해 브라우저가
+      차단한 경우는 renderFallback('blocked'), 그 외는 renderFallback('network')
+    - 'blocked' 는 회선이 멀쩡하고 새로고침으로도 낫지 않으므로 버튼을 렌더하지 않고,
+      화면 문구는 방문자 기준(서버 설정 지시 없음) · 원인과 조치는 콘솔에 운영자 기준
     - 코어 엔진 번들에서 정규식 lookbehind 제거(파싱 하한 Safari 16.4 → 14.1)
 
 axes:
   entrypoint: [user, admin]
-  failure_mode: [parse_error, network_exhausted, none]
+  failure_mode: [parse_error, network_exhausted, mixed_content_blocked, none]
 
 effects:
   - syntax_error_renders_incompatible_notice
   - incompatible_notice_omits_reload_button
   - network_failure_renders_network_notice
   - network_notice_keeps_reload_button
+  - blocked_branch_is_emitted_with_https_http_judgment
+  - mixed_content_blocked_renders_blocked_notice
+  - blocked_notice_omits_reload_button
+  - blocked_notice_splits_visitor_screen_and_operator_console
   - normal_boot_renders_no_fallback
   - shipped_core_bundle_has_no_lookbehind
   - bootstrap_partial_emits_reason_branch
@@ -37,6 +44,13 @@ test_files:
   - resources/js/core/template-engine/__tests__/DataBindingEngine.test.ts
 
 notes: |
+  `blocked` 축(공개 #124)은 프록시 없이 재현한다 — 문서 HTML 의 코어 스크립트 URL 만
+  `http://` 로 바꾸면 브라우저가 혼합 콘텐츠로 차단하므로, 인증서도 TLS 종단 프록시도
+  필요 없다. 다만 판정이 `location.protocol === 'https:'` 를 보므로, E2E 의 기대값은
+  실행 시점 base URL 의 스킴에서 파생된다(http base 에서는 `network` 가 정답이다).
+  분기 자체의 방출과 문구·대상 분리는 BootstrapFallbackDiagnosisTest 가 스킴과 무관하게
+  단언한다.
+
   로케일 축은 E2E cross product 에 넣지 않는다 — 화면 문구는 서버가 렌더한 문자열을
   그대로 심는 구조라 브라우저 경로가 로케일마다 갈리지 않기 때문이다. ko/en/ja 문구의
   실존과 상호 구분은 BootstrapFallbackDiagnosisTest 가 직접 단언하고, 번들 ja 언어팩의

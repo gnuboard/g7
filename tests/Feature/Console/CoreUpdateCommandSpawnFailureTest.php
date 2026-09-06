@@ -37,12 +37,20 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
 
     private string $silentStepPath;
 
+    private ?string $originalEnvVersion = null;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->failingStepPath = base_path('upgrades/Upgrade_0_0_1_test_spawn_failure_fail.php');
         $this->silentStepPath = base_path('upgrades/Upgrade_0_0_1_test_spawn_failure_silent.php');
+
+        // stale 가드는 spawn 자식이 받는 env APP_VERSION 을 먼저 읽는다 (config 캐시가 있으면
+        // config('app.version') 은 캐시에 박힌 구버전이라 신뢰할 수 없다 — 7.0.9→7.0.10 실사례).
+        // 각 테스트가 부모/자식 시나리오에 맞춰 env 를 직접 세우도록 원값을 보관하고 비운다.
+        $this->originalEnvVersion = $_ENV['APP_VERSION'] ?? null;
+        $this->setEnvVersion(null);
     }
 
     protected function tearDown(): void
@@ -53,7 +61,28 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
             }
         }
 
+        $this->setEnvVersion($this->originalEnvVersion);
+
         parent::tearDown();
+    }
+
+    /**
+     * 프로세스 env 의 APP_VERSION 을 세우거나(문자열) 비운다(null).
+     *
+     * @param  string|null  $version  세울 버전. null 이면 세 채널($_ENV/$_SERVER/putenv) 모두 제거
+     */
+    private function setEnvVersion(?string $version): void
+    {
+        if ($version === null) {
+            unset($_ENV['APP_VERSION'], $_SERVER['APP_VERSION']);
+            putenv('APP_VERSION');
+
+            return;
+        }
+
+        $_ENV['APP_VERSION'] = $version;
+        $_SERVER['APP_VERSION'] = $version;
+        putenv('APP_VERSION='.$version);
     }
 
     #[Test]
@@ -348,6 +377,8 @@ PHP);
     #[Test]
     public function run_upgrade_steps_stale_메모리_감지_시_abort_throw_한다(): void
     {
+        // 부모 in-process fallback 시나리오: .env 의 APP_VERSION 은 아직 fromVersion (Step 11 전).
+        $this->setEnvVersion('7.0.0-beta.3');
         config(['app.version' => '7.0.0-beta.3']);
         config(['app.update.spawn_failure_mode' => 'abort']);
 
@@ -367,6 +398,7 @@ PHP);
     #[Test]
     public function run_upgrade_steps_stale_메모리_감지_시_fallback_은_경고_후_진행한다(): void
     {
+        $this->setEnvVersion('7.0.0-beta.3');
         config(['app.version' => '7.0.0-beta.3']);
         config(['app.update.spawn_failure_mode' => 'fallback']);
 
@@ -382,6 +414,7 @@ PHP);
     #[Test]
     public function run_upgrade_steps_memory_가_target_과_동일하면_가드_미발동(): void
     {
+        $this->setEnvVersion('7.0.0-beta.5');
         config(['app.version' => '7.0.0-beta.5']);
         config(['app.update.spawn_failure_mode' => 'abort']);
 
@@ -391,6 +424,103 @@ PHP);
         $service->runUpgradeSteps('7.0.0-beta.3', '7.0.0-beta.5');
 
         $this->assertTrue(true);
+    }
+
+    /**
+     * 7.0.9 → 7.0.10 실사례 (2026-09-06): 7.0.9 설치본에는 `bootstrap/cache/config.php` 가 있고
+     * 부모는 spawn 전에 그 캐시를 비우지 않는다. 자식은 env `APP_VERSION=toVersion` 을 받지만
+     * 캐시로 부팅하므로 `config('app.version')` 은 캐시에 박힌 fromVersion 이다. 가드가 config 만
+     * 읽으면 정상 spawn 자식을 stale 부모로 오판해 abort 한다 — 스텝 0건 릴리즈에서도 중단된다.
+     */
+    #[Test]
+    public function run_upgrade_steps_spawn_자식은_config_캐시가_stale_해도_env_버전으로_가드를_통과한다(): void
+    {
+        // 자식이 받는 env 는 toVersion, 캐시로 부팅한 config 는 fromVersion.
+        $this->setEnvVersion('7.0.10');
+        config(['app.version' => '7.0.9']);
+        config(['app.update.spawn_failure_mode' => 'abort']);
+
+        $service = app(CoreUpdateService::class);
+
+        $discovered = null;
+        $service->runUpgradeSteps('7.0.9', '7.0.10', null, false, function (int $count) use (&$discovered): void {
+            $discovered = $count;
+        });
+
+        // 가드를 지나 스텝 발견 단계까지 도달했다 (throw 시 여기 미도달).
+        $this->assertNotNull($discovered, 'env APP_VERSION=toVersion 인 spawn 자식은 stale 가드를 통과해야 한다');
+    }
+
+    /**
+     * 부모는 spawn 직전에 config 캐시를 비운다 — 자식이 이전 버전 캐시로 부팅하면 env `APP_VERSION`
+     * 오버라이드와 신버전 `config/app.php` 의 update 목록(쓰기 권한 디렉토리 등)이 모두 무시된다.
+     * 캐시 파일 위치는 `APP_CONFIG_CACHE` 로 격리한다 (자식도 같은 env 를 물려받는다). 부모가 지우지
+     * 않으면 자식은 이 불완전한 캐시로 부팅해 비정상 종료한다.
+     *
+     * @effects spawnUpgradeStepsProcess_clears_config_cache_before_proc_open
+     */
+    #[Test]
+    public function spawn_전에_config_캐시_파일을_지워_자식이_디스크_config_로_부팅하게_한다(): void
+    {
+        if (! function_exists('proc_open')) {
+            $this->markTestSkipped('proc_open 미지원 환경');
+        }
+
+        config(['app.update.spawn_failure_mode' => 'abort']);
+
+        // 상대 경로로 지정한다 — Application::normalizeCachePath 는 `/`·`\` 로 시작하지 않는 값을
+        // basePath 기준 상대 경로로 해석하므로 Windows 절대 경로(`C:\…`)는 어긋난다. 자식도 같은
+        // basePath(cwd) 에서 부팅하므로 같은 파일을 가리킨다.
+        $relativeCachePath = 'storage/framework/testing/stale-config-cache-'.uniqid().'.php';
+        $cachePath = base_path($relativeCachePath);
+        File::ensureDirectoryExists(dirname($cachePath));
+        File::put($cachePath, "<?php return ['app' => ['version' => '0.0.0']];\n");
+
+        $originalCacheEnv = $_ENV['APP_CONFIG_CACHE'] ?? null;
+        $_ENV['APP_CONFIG_CACHE'] = $relativeCachePath;
+        $_SERVER['APP_CONFIG_CACHE'] = $relativeCachePath;
+        putenv('APP_CONFIG_CACHE='.$relativeCachePath);
+
+        try {
+            $this->assertSame($cachePath, $this->app->getCachedConfigPath(), '전제: APP_CONFIG_CACHE 가 캐시 경로를 정한다');
+            $this->assertFileExists($cachePath, '전제: 부모 시점에 config 캐시 파일이 존재한다');
+
+            $command = $this->makeCommandWithDummyIo();
+            $method = new \ReflectionMethod(CoreUpdateCommand::class, 'spawnUpgradeStepsProcess');
+            $method->setAccessible(true);
+
+            $result = $method->invoke($command, '9.9.8', '9.9.9', true, fn () => null);
+
+            $this->assertFileDoesNotExist($cachePath, 'spawn 전에 config 캐시를 비워야 자식이 디스크 config + env 로 부팅한다');
+            $this->assertTrue($result, '캐시가 비워졌으면 자식은 정상 부팅해 스텝 0건 통과');
+        } finally {
+            if ($originalCacheEnv === null) {
+                unset($_ENV['APP_CONFIG_CACHE'], $_SERVER['APP_CONFIG_CACHE']);
+                putenv('APP_CONFIG_CACHE');
+            } else {
+                $_ENV['APP_CONFIG_CACHE'] = $originalCacheEnv;
+                $_SERVER['APP_CONFIG_CACHE'] = $originalCacheEnv;
+                putenv('APP_CONFIG_CACHE='.$originalCacheEnv);
+            }
+            if (File::exists($cachePath)) {
+                File::delete($cachePath);
+            }
+        }
+    }
+
+    /**
+     * env 가 비어 있으면(운영자 단독 실행 등) 종전처럼 config('app.version') 으로 판정한다.
+     */
+    #[Test]
+    public function run_upgrade_steps_env_부재_시_config_버전으로_stale_을_판정한다(): void
+    {
+        $this->setEnvVersion(null);
+        config(['app.version' => '7.0.9']);
+        config(['app.update.spawn_failure_mode' => 'abort']);
+
+        $this->expectException(UpgradeHandoffException::class);
+
+        app(CoreUpdateService::class)->runUpgradeSteps('7.0.9', '7.0.10');
     }
 
     /**

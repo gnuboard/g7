@@ -6,6 +6,7 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 require_once __DIR__.'/../../ModuleTestCase.php';
 
 use App\Models\User;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Board\Models\Board;
@@ -42,7 +43,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
         // 일반 사용자 생성 (권한 없음)
         $this->normalUser = $this->createUser();
 
-        $this->settingsStoragePath = storage_path('app/modules/sirsoft-board/settings');
+        $this->settingsStoragePath = ExtensionStoragePath::module('sirsoft-board', 'settings');
 
         // 테스트 전 저장소 정리
         if (File::isDirectory($this->settingsStoragePath)) {

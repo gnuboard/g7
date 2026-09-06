@@ -28,10 +28,12 @@ import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { evaluateConditionBranches } from './helpers/ConditionEvaluator';
+import { addMissingLeafKeys } from './helpers/StateMerge';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
-import { isAbortError, isNetworkFailure } from './networkResilience';
+import { isAbortError, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
+import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 
 const logger = createLogger('ActionDispatcher');
 
@@ -638,6 +640,17 @@ export class ActionDispatcher {
    * @since engine-v1.26.1
    */
   private previewMode: boolean = false;
+
+  /**
+   * `writeLocalState` 재진입 깊이.
+   *
+   * 미러 쓰기(`G7Core.state.setLocal`)가 다시 저장소 A writer 를 호출하는 구조라,
+   * 그 안에서 같은 헬퍼로 되돌아오면 무한 재귀가 된다. 0 보다 크면 미러를 붙이지 않고
+   * 원본 writer 만 호출한다.
+   *
+   * @since engine-v1.63.5
+   */
+  private localMirrorDepth = 0;
 
   /**
    * startInterval 핸들러로 등록된 타이머 맵.
@@ -1398,43 +1411,36 @@ export class ActionDispatcher {
               const scriptUrl = moduleData.assets.js;
               const scriptId = `module-${identifier}`;
 
-              // 이미 로드된 스크립트인지 확인
+              // 출처 게이트 — 정상 확장 자산 URL 은 전부 `/api/...` same-origin 이다.
+              this.assertAllowedExtensionAssetUrl(scriptUrl, `module script (${identifier})`, action);
+
+              // 이미 로드된 스크립트면 JS 만 건너뛴다 (CSS 는 아래 형제 블록이 계속 처리).
               if (document.getElementById(scriptId)) {
                 logger.warn(`reloadModuleHandlers: Script ${scriptId} already loaded`);
-                return;
+              } else {
+                await loadScriptWithRetry(
+                  scriptUrl,
+                  { id: scriptId },
+                  { label: `module-script:${identifier}` }
+                );
+                logger.log(`reloadModuleHandlers: Script loaded successfully for ${identifier}`);
               }
+            }
 
-              // <script> 태그 동적 생성
-              const script = document.createElement('script');
-              script.id = scriptId;
-              script.src = scriptUrl;
-              script.async = true;
+            // CSS 파일이 있으면 동적 로드 (JS 유무·기존재와 무관한 형제 작업)
+            if (moduleData.assets.css) {
+              const cssUrl = moduleData.assets.css;
+              const linkId = `module-css-${identifier}`;
 
-              await new Promise<void>((resolve, reject) => {
-                script.onload = () => {
-                  logger.log(`reloadModuleHandlers: Script loaded successfully for ${identifier}`);
-                  resolve();
-                };
-                script.onerror = () => {
-                  logger.error(`reloadModuleHandlers: Failed to load script for ${identifier}`);
-                  reject(new Error(`Failed to load module script: ${scriptUrl}`));
-                };
-                document.head.appendChild(script);
-              });
+              this.assertAllowedExtensionAssetUrl(cssUrl, `module stylesheet (${identifier})`, action);
 
-              // CSS 파일이 있으면 동적 로드
-              if (moduleData.assets.css) {
-                const cssUrl = moduleData.assets.css;
-                const linkId = `module-css-${identifier}`;
-
-                if (!document.getElementById(linkId)) {
-                  const link = document.createElement('link');
-                  link.id = linkId;
-                  link.rel = 'stylesheet';
-                  link.href = cssUrl;
-                  document.head.appendChild(link);
-                  logger.log(`reloadModuleHandlers: CSS loaded for ${identifier}`);
-                }
+              if (!document.getElementById(linkId)) {
+                await loadStylesheetWithRetry(
+                  cssUrl,
+                  { id: linkId },
+                  { label: `module-css:${identifier}` }
+                );
+                logger.log(`reloadModuleHandlers: CSS loaded for ${identifier}`);
               }
             }
           }
@@ -1518,43 +1524,36 @@ export class ActionDispatcher {
               const scriptUrl = pluginData.assets.js;
               const scriptId = `plugin-${identifier}`;
 
-              // 이미 로드된 스크립트인지 확인
+              // 출처 게이트 — 정상 확장 자산 URL 은 전부 `/api/...` same-origin 이다.
+              this.assertAllowedExtensionAssetUrl(scriptUrl, `plugin script (${identifier})`, action);
+
+              // 이미 로드된 스크립트면 JS 만 건너뛴다 (CSS 는 아래 형제 블록이 계속 처리).
               if (document.getElementById(scriptId)) {
                 logger.warn(`reloadPluginHandlers: Script ${scriptId} already loaded`);
-                return;
+              } else {
+                await loadScriptWithRetry(
+                  scriptUrl,
+                  { id: scriptId },
+                  { label: `plugin-script:${identifier}` }
+                );
+                logger.log(`reloadPluginHandlers: Script loaded successfully for ${identifier}`);
               }
+            }
 
-              // <script> 태그 동적 생성
-              const script = document.createElement('script');
-              script.id = scriptId;
-              script.src = scriptUrl;
-              script.async = true;
+            // CSS 파일이 있으면 동적 로드 (JS 유무·기존재와 무관한 형제 작업)
+            if (pluginData.assets.css) {
+              const cssUrl = pluginData.assets.css;
+              const linkId = `plugin-css-${identifier}`;
 
-              await new Promise<void>((resolve, reject) => {
-                script.onload = () => {
-                  logger.log(`reloadPluginHandlers: Script loaded successfully for ${identifier}`);
-                  resolve();
-                };
-                script.onerror = () => {
-                  logger.error(`reloadPluginHandlers: Failed to load script for ${identifier}`);
-                  reject(new Error(`Failed to load plugin script: ${scriptUrl}`));
-                };
-                document.head.appendChild(script);
-              });
+              this.assertAllowedExtensionAssetUrl(cssUrl, `plugin stylesheet (${identifier})`, action);
 
-              // CSS 파일이 있으면 동적 로드
-              if (pluginData.assets.css) {
-                const cssUrl = pluginData.assets.css;
-                const linkId = `plugin-css-${identifier}`;
-
-                if (!document.getElementById(linkId)) {
-                  const link = document.createElement('link');
-                  link.id = linkId;
-                  link.rel = 'stylesheet';
-                  link.href = cssUrl;
-                  document.head.appendChild(link);
-                  logger.log(`reloadPluginHandlers: CSS loaded for ${identifier}`);
-                }
+              if (!document.getElementById(linkId)) {
+                await loadStylesheetWithRetry(
+                  cssUrl,
+                  { id: linkId },
+                  { label: `plugin-css:${identifier}` }
+                );
+                logger.log(`reloadPluginHandlers: CSS loaded for ${identifier}`);
               }
             }
           }
@@ -2349,6 +2348,12 @@ export class ActionDispatcher {
 
         // 기존 loadingActions 상태 유지하면서 새 액션 추가
         const currentLoadingActions = context.state?.loadingActions || {};
+        // loadingActions 는 apiCall 을 발화한 컴포넌트 자신의 일시적 표시 플래그다.
+        // 저장소 B 는 페이지 단위 공유 슬롯이라 미러하면 ① 한 컴포넌트의 로딩 플래그가
+        // 다른 컴포넌트로 새고 ② __g7ForcedLocalFields 가 그 값을 모든 컴포넌트에 강제하는데,
+        // 해제는 키 생략으로 하므로 깊은 병합에서 지워지지 않아 스피너가 영구히 남는다.
+        // 소비자는 자기 렌더 컨텍스트로만 읽는다.
+        // audit:allow local-store-write-must-mirror 컴포넌트별 일시 표시 플래그 (위 사유)
         context.setState({
           loadingActions: {
             ...currentLoadingActions,
@@ -2564,7 +2569,7 @@ export class ActionDispatcher {
           const updateWithMode = resultToMergeMode !== 'deep'
             ? { ...update, __mergeMode: resultToMergeMode }
             : update;
-          context.setState(updateWithMode);
+          this.writeLocalState(context, updateWithMode);
           logger.log(`[resultTo] Saved to _local.${resolvedKey} (merge=${resultToMergeMode}):`, result);
         } else if (target === '_local' && this.globalStateUpdater) {
           // init_actions 등에서 componentContext가 없는 경우 globalStateUpdater를 통해 _local 업데이트
@@ -2806,6 +2811,12 @@ export class ActionDispatcher {
         const currentLoadingActions = context.state?.loadingActions || {};
         const { [actionId]: _, ...remainingLoadingActions } = currentLoadingActions;
 
+        // loadingActions 는 apiCall 을 발화한 컴포넌트 자신의 일시적 표시 플래그다.
+        // 저장소 B 는 페이지 단위 공유 슬롯이라 미러하면 ① 한 컴포넌트의 로딩 플래그가
+        // 다른 컴포넌트로 새고 ② __g7ForcedLocalFields 가 그 값을 모든 컴포넌트에 강제하는데,
+        // 해제는 키 생략으로 하므로 깊은 병합에서 지워지지 않아 스피너가 영구히 남는다.
+        // 소비자는 자기 렌더 컨텍스트로만 읽는다.
+        // audit:allow local-store-write-must-mirror 컴포넌트별 일시 표시 플래그 (위 사유)
         context.setState({
           loadingActions: remainingLoadingActions
         });
@@ -4024,7 +4035,7 @@ export class ActionDispatcher {
           const finalPayload = mergeMode === 'deep'
             ? this.deepMergeWithState(resolvedPayload, currentState)
             : resolvedPayload;  // replace, shallow: DynamicRenderer에서 처리
-          context.setState(finalPayload);
+          this.writeLocalState(context, finalPayload);
           if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
           return finalPayload;
         } else {
@@ -4059,6 +4070,10 @@ export class ActionDispatcher {
               : cleanPayload;  // replace, shallow: 병합 없이 payload 그대로
 
             logger.log(`[handleSetState] scope=${scope}: 타겟 컨텍스트에 상태 업데이트`, finalPayload);
+            // scope:'parent'|'root' 은 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의
+            // 부모/루트 슬롯을 노린다. 여기서 저장소 B 를 함께 쓰면 모달의 setState 가
+            // 페이지 _local 을 오염시킨다(사례 29).
+            // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
             targetContext.setState(finalPayload);
 
             if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
@@ -4141,9 +4156,69 @@ export class ActionDispatcher {
         // (_localInit 미반영 시점)에 __g7PendingLocalState 를 fresh B baseline 으로 미리 채워두므로,
         // currentState 가 pending(정상)을 우선 사용하여 stale context.state 를 건너뛴다.
         // 그 사전설정 경로를 변경/제거하면 사례 13/22(stale 배열의 globalLocal 통째 교체 오염) 재발 가능성을 함께 점검해야 한다.
+        // engine-v1.63.3 (공개 이슈 #130): B 동기화의 base 를 A 계열 전체 스냅샷에서
+        // live B(_global._local) + 변경 키로 바꾼다.
+        //
+        // 위 [안전성 의존 관계] 주석이 전제한 "currentState 가 정합한 _local 전체" 는 성립하지
+        // 않는 구간이 있다. CKEditor 등 selfManaged 플러그인이 setLocal({render:false}) 로
+        // B 에만 본문을 쓰면 React 렌더가 일어나지 않아 extendedDataContext useMemo 가
+        // 재계산되지 않고(deps 에 __g7ForcedLocalFields 가 없다 — window 전역이라 deps 가 될 수 없다),
+        // context.state 는 본문 타이핑 이전 스냅샷으로 고정된다. 그 상태에서 폭 변경 리렌더가
+        // __g7PendingLocalState 를 null 로 지우면(DynamicRenderer.tsx:1110) currentState 가
+        // stale A 로 떨어지고, 그것을 B 에 통째로 덮어써 본문이 사라진다.
+        //
+        // 정답 선례는 같은 파일의 dot-notation path(engine-v1.58.2, :4235~)다. 그것이 이미
+        // "live B base + 변경 키" 로 같은 문제를 풀었고 주석에서 이 COMPONENT path 를 위험으로
+        // 지목했다. 이번 수정은 그 정책을 이 경로에 맞춘다.
+        //
+        // 제외 조건:
+        // - merge:"replace" — 의도적 리셋이므로 live B 를 base 로 삼지 않는다 (사례 17)
+        // - 모달 컨텍스트 스택이 있음 — 모달의 setState 가 페이지 _local 을 흡수하는 것을 막는다
+        //   (사례 29, setLocal v1.24.7 가드와 동형)
+        //   한계: 스택은 openModal/closeModal 핸들러에서만 push/pop 되므로(:4836·:4911)
+        //   setState 플래그로 여는 모달과 G7Core.modal.open() 은 depth 0 으로 보인다. 이는
+        //   v1.24.7 가드가 이미 가진 사각과 동일하며, 그 경우에도 새 동작은 "B 통째 교체" 가
+        //   아니라 "B 에 병합" 이라 사례 29 대비 악화되지 않는다.
+        // - __templateApp 부재 — 종전 전체 스냅샷 폴백 (v1.50.4 호환)
+        //
+        // merge:"shallow" 는 제외하지 않는다. 현행 shallow 는 pending 을 무시하고 context.state
+        // 만 base 로 쓰므로(:4110) 리프 컴포넌트의 부분 상태가 base 가 되어 오히려 이 결함에
+        // 더 노출돼 있다.
+        const modalDepth = ((window as any).__g7LayoutContextStack || []).length;
+        let canonicalMerged: Record<string, any> | undefined;
+
         if (this.globalStateUpdater) {
-          this.globalStateUpdater({ _local: pendingExpected }, { render: false });
-          logger.log('[handleSetState] _global._local synced (render:false):', pendingExpected);
+          const canonicalLocal = modalDepth === 0
+            ? (window as any).__templateApp?.getGlobalState?.()?._local
+            : undefined;
+          const canUseCanonical = mergeMode !== 'replace'
+            && !!canonicalLocal && typeof canonicalLocal === 'object' && !Array.isArray(canonicalLocal);
+
+          if (canUseCanonical) {
+            // convertedPayload 를 쓰면 안 된다 — 그것은 빈 base 위의 변환이라
+            // {"form.title":"X"} → {form:{title:"X"}} 가 되고, 얕게 얹으면 B.form 이 통째
+            // 교체되어 고치려던 결함을 재생산한다. deepMergeWithState 는 createNestedUpdate 로
+            // 형제 키를 유지한 채 leaf 만 바꾼다. result={...currentState}(:4521) 로 시작하고
+            // deepMergeInto 가 참조 동일성 가드(:4608)로 매 레벨 방어 복사하므로 live B 를
+            // 변이하지 않는다.
+            const merged = mergeMode === 'deep'
+              ? this.deepMergeWithState(resolvedPayload, canonicalLocal as Record<string, any>)
+              : { ...(canonicalLocal as Record<string, any>), ...resolvedPayload };
+            const { __mergeMode: _cmm, __setStateId: _cssid, ...rest } = merged as any;
+            canonicalMerged = rest;
+          } else if (mergeMode !== 'replace') {
+            logger.log('[handleSetState] canonical _local 미사용 → 전체 스냅샷 폴백',
+              { modalDepth, hasTemplateApp: !!(window as any).__templateApp });
+          }
+
+          // B 쓰기에도 A 전용 키를 보충한다 — setLocal 선례(G7CoreGlobals 의
+          // addMissingLeafKeys(globalLocal, dynamicLocal))와 대칭.
+          // addMissingLeafKeys 는 base 에 이미 있는 값을 절대 덮지 않으므로 사례 13/22 위험이 없다.
+          const syncedLocal = canonicalMerged
+            ? addMissingLeafKeys(canonicalMerged, pendingExpected)
+            : pendingExpected;
+          this.globalStateUpdater({ _local: syncedLocal }, { render: false });
+          logger.log('[handleSetState] _global._local synced (render:false):', syncedLocal);
         }
 
         // engine-v1.17.5: dataKey 자동 바인딩이 있는 컴포넌트에서 setState 핸들러 호출 시
@@ -4170,7 +4245,24 @@ export class ActionDispatcher {
         // DevTools: 렌더링 완료 후 상태 변경 완료 (DynamicRenderer에서 처리되지만 fallback으로 setTimeout 사용)
         if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
         // sequence에서 _local 동기화에 사용하기 위해 __target 마커 추가
-        return { __target: 'local', ...fullMergedState };
+        //
+        // engine-v1.63.3 (공개 이슈 #130): 반환값도 live B 기반으로 신선화한다.
+        // 요청 body 는 저장소 B 를 읽지 않는다 — handleApiCall 의 getLocal() 은
+        // getMatchingGlobalHeaders 전용이고, body 는 sequence 의 currentState(= 이 반환값)에서
+        // 온다(handleSequence:5342·5379·5428, 트러블슈팅 사례 15 계약). 따라서 B 쓰기만 고치면
+        // B 는 지켜지지만 422 는 그대로 난다.
+        //
+        // base 는 live B(충돌 leaf 는 B 승), extra 는 A 기반 스냅샷에서 B 에 없는 키만 보충
+        // — 사례 13(engine-v1.41.0) 정책 재사용. React 전용 키(loadingActions, DataGrid 선택 등)를
+        // 잃지 않는다. __mergeMode 재부착은 handleSequence:5431~5438 계약 보존용.
+        const returnedState = canonicalMerged
+          ? addMissingLeafKeys(canonicalMerged, pendingExpected)
+          : fullMergedState;
+        return {
+          __target: 'local',
+          ...returnedState,
+          ...(mergeMode !== 'deep' ? { __mergeMode: mergeMode } : {}),
+        };
       } else if (this.globalStateUpdater) {
         // init_actions 등에서 componentContext가 없는 경우 globalStateUpdater를 통해 _local 업데이트
         logger.log('[handleSetState] Using GLOBAL STATE UPDATER path for _local');
@@ -4280,7 +4372,7 @@ export class ActionDispatcher {
       const finalPayload = mergeMode === 'deep'
         ? this.deepMergeWithState(resolvedPayload, currentState)
         : resolvedPayload;  // replace, shallow: DynamicRenderer에서 처리
-      context.setState(finalPayload);
+      this.writeLocalState(context, finalPayload, undefined, { scope });
       // DevTools: 상태 변경 완료
       if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
       return finalPayload;
@@ -4432,6 +4524,10 @@ export class ActionDispatcher {
         const update = this.createNestedUpdate(nestedPath, value, currentLocal);
         const mergedState = { ...currentLocal, ...update };
         logger.log(`[handleParentScopeSetState] ${target}: 로컬 상태 중첩 경로 업데이트`, update);
+        // $parent/$root 스코프는 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의 부모/루트
+        // 슬롯을 대상으로 한다. 저장소 B 를 함께 쓰면 모달의 setState 가 페이지 _local 을
+        // 오염시킨다(사례 29). 스택 state·dataContext 동기화는 바로 아래에서 직접 수행한다.
+        // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
         targetContext.setState(update);
         // 스택의 state와 dataContext._local 모두 업데이트하여
         // 다음 setState 호출 시 currentLocal이 최신 값을 읽고,
@@ -4458,6 +4554,10 @@ export class ActionDispatcher {
             ? { ...currentLocal, ...cleanPayload }
             : this.deepMergeWithState(cleanPayload, currentLocal);
         logger.log(`[handleParentScopeSetState] ${target}: 로컬 상태 업데이트 (mergeMode=${mergeMode})`, expectedState);
+        // $parent/$root 스코프는 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의 부모/루트
+        // 슬롯을 대상으로 한다. 저장소 B 를 함께 쓰면 모달의 setState 가 페이지 _local 을
+        // 오염시킨다(사례 29). 스택 state·dataContext 동기화는 바로 아래에서 직접 수행한다.
+        // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
         targetContext.setState(setStatePayload);
         // 스택의 state와 dataContext._local 모두 업데이트하여
         // 다음 setState 호출 시 currentLocal이 최신 값을 읽고,
@@ -4772,7 +4872,7 @@ export class ActionDispatcher {
       logger.log('[handleSetError] Error set to global state:', errorMessage);
     } else if (context.setState) {
       // 로컬 상태에 저장 (기본값)
-      context.setState({ apiError: errorMessage });
+      this.writeLocalState(context, { apiError: errorMessage });
       logger.log('[handleSetError] Error set to local state:', errorMessage);
     } else {
       logger.warn('[handleSetError] Cannot set error: no state updater available');
@@ -5678,15 +5778,61 @@ export class ActionDispatcher {
   }
 
   /**
+   * 확장 자산 URL(js/css)이 주입 허용 대상인지 검사하고, 아니면 차단합니다.
+   *
+   * 확장 활성화 응답이 지시하는 URL 을 그대로 `<script>`/`<link>` 로 붙이는 경로는
+   * 레이아웃 `scripts[]` 와 같은 출처 정책을 받아야 한다. 정상 확장 자산 URL 은 전부
+   * `/api/...` same-origin 이므로 과차단은 발생하지 않는다.
+   *
+   * @param url 자산 URL
+   * @param what 오류 메시지에 실을 대상 설명
+   * @param action 액션 정의 (ActionError 컨텍스트)
+   * @throws ActionError 미신뢰 출처인 경우
+   * @since engine-v1.64.0
+   */
+  private assertAllowedExtensionAssetUrl(url: string, what: string, action: ActionDefinition): void {
+    if (isAllowedScriptSrc(url, getTrustedScriptHosts())) {
+      return;
+    }
+
+    logger.error(`Blocked untrusted ${what} asset url: ${url}`);
+    throw new ActionError(
+      `Blocked untrusted ${what} url (same-origin path or declared trusted host required): ${url}`,
+      action
+    );
+  }
+
+  /**
    * 로드된 외부 스크립트 ID를 추적하기 위한 Set
    */
   private static loadedScripts: Set<string> = new Set();
+
+  /**
+   * 로드 진행 중인 스크립트의 공유 Promise (키 = scriptId).
+   *
+   * 같은 스크립트를 동시에 요청한 호출자들이 하나의 `<script>` 태그를 공유하고,
+   * **1회차 onload 이후에** 함께 완료되도록 한다. 종전에는 in-flight 를 추적하지 않아
+   * 2번째 호출이 "DOM 에 태그가 있다" 는 이유로 로드 완료 전에 즉시 resolve 했고,
+   * 그 호출자의 onLoad 는 SDK 전역이 아직 없는 시점에 실행됐다 (예외 없이 무반응).
+   *
+   * 공유 Promise 는 "로드 완료" 만 담는다 — onLoad 는 호출자별로 await 후 각자 실행한다.
+   *
+   * @since engine-v1.64.0
+   */
+  private static loadingScripts: Map<string, Promise<void>> = new Map();
 
   /**
    * 외부 스크립트를 동적으로 로드합니다.
    *
    * 이미 로드된 스크립트는 재로드하지 않고 캐시된 상태를 사용합니다.
    * 스크립트 로드 완료 시 onLoad 액션을 실행합니다.
+   *
+   * `src` 는 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받는다 — same-origin 절대 경로이거나
+   * 확장이 manifest 로 선언한 신뢰 호스트여야 하며, 그 밖의 원격 URL 은 로드 전에 차단된다
+   * (`support/scriptSrcPolicy`). 이 경로만 게이트가 없으면 저장측 검증을 우회한 임의 원격
+   * 코드가 그대로 실행된다.
+   *
+   * 같은 스크립트를 동시에 요청하면 하나의 태그를 공유하고 모두 1회차 로드 완료 후 resolve 한다.
    *
    * @param params 스크립트 로드 파라미터
    *   - src: 스크립트 URL (필수)
@@ -5719,6 +5865,18 @@ export class ActionDispatcher {
       throw new ActionError('loadScript handler requires "src" parameter', action);
     }
 
+    // 출처 게이트 — 캐시 검사보다 앞이다. 뒤에 두면 이미 로드된 미신뢰 스크립트가
+    // 캐시 히트로 통과한다.
+    if (!isAllowedScriptSrc(src, getTrustedScriptHosts())) {
+      logger.warn(
+        `loadScript: blocked untrusted script src (same-origin path or declared trusted host required): ${src}`
+      );
+      throw new ActionError(
+        `Blocked untrusted script src (same-origin path or declared trusted host required): ${src}`,
+        action
+      );
+    }
+
     const scriptId = id || `script_${src.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
     // 이미 로드된 스크립트인지 확인
@@ -5733,7 +5891,22 @@ export class ActionDispatcher {
       return true;
     }
 
+    // 같은 스크립트가 로드 중이면 그 Promise 를 공유한다 (태그 1개, 완료는 함께).
+    const inFlight = ActionDispatcher.loadingScripts.get(scriptId);
+    if (inFlight) {
+      logger.log(`loadScript: joining in-flight load: ${scriptId}`);
+      await inFlight;
+
+      if (action.onLoad) {
+        await this.executeAction(action.onLoad, context);
+      }
+
+      return true;
+    }
+
     // DOM에 이미 스크립트가 존재하는지 확인
+    // (dispatcher 가 만들지 않은 외래 태그 — 로드 상태를 식별할 수 없으므로 완료로 간주한다.
+    //  dispatcher 자신의 경합은 위 in-flight Map 이 이미 제거했다.)
     const existingScript = document.getElementById(scriptId);
     if (existingScript) {
       logger.log(`loadScript: script element already exists: ${scriptId}`);
@@ -5749,36 +5922,56 @@ export class ActionDispatcher {
 
     logger.log(`loadScript: loading script: ${src}`);
 
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = src;
-      script.async = async;
-      script.defer = defer;
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = src;
+    script.async = async;
+    script.defer = defer;
 
-      script.onload = async () => {
+    // 동의 관리(gdpr) preblocker 가 src setter 에서 동기적으로 차단을 기록한다.
+    // 차단된 스크립트는 append 해도 영영 로드되지 않으므로, 태그를 붙이지 않고
+    // 미완료 상태(resolve(false))로 돌려준다 — 오류가 아니라 "동의 전" 이라는 상태다.
+    // 캐시·in-flight 에 기록하지 않으므로 동의 후 재디스패치하면 정상 로드된다.
+    if (script.hasAttribute('data-gdpr-blocked-src')) {
+      logger.warn(`loadScript: script blocked by consent manager (not loaded): ${src}`);
+      return false;
+    }
+
+    const loadPromise = new Promise<void>((resolve, reject) => {
+      script.onload = () => {
         logger.log(`loadScript: script loaded successfully: ${scriptId}`);
         ActionDispatcher.loadedScripts.add(scriptId);
-
-        // onLoad 액션 실행
-        if (action.onLoad) {
-          try {
-            await this.executeAction(action.onLoad, context);
-          } catch (error) {
-            logger.error('loadScript: onLoad action failed:', error);
-          }
-        }
-
-        resolve(true);
+        ActionDispatcher.loadingScripts.delete(scriptId);
+        resolve();
       };
 
       script.onerror = (error) => {
         logger.error(`loadScript: failed to load script: ${src}`, error);
+        ActionDispatcher.loadingScripts.delete(scriptId);
         reject(new ActionError(`Failed to load script: ${src}`, action));
       };
 
       document.head.appendChild(script);
     });
+
+    // 공유 Promise 의 rejection 이 구독자 없는 시점에 unhandled 로 새지 않게 한다
+    // (아래 await 와 join 경로가 각자 처리한다).
+    loadPromise.catch(() => {});
+
+    ActionDispatcher.loadingScripts.set(scriptId, loadPromise);
+
+    await loadPromise;
+
+    // onLoad 액션 실행
+    if (action.onLoad) {
+      try {
+        await this.executeAction(action.onLoad, context);
+      } catch (error) {
+        logger.error('loadScript: onLoad action failed:', error);
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -5861,6 +6054,10 @@ export class ActionDispatcher {
       );
     }
 
+    // 심층 방어: 스크립트 로드 게이트를 통과한 전역만 호출된다는 전제 위에서,
+    // 임의 코드 실행으로 직결되는 생성자는 참조 동일성으로 거부한다.
+    this.assertCallableExternalConstructor(Constructor, constructorPath, action);
+
     logger.log(`callExternal: calling constructor ${constructorPath}`);
 
     // 콜백 함수 생성 (callbackEvent가 지정된 경우)
@@ -5886,8 +6083,15 @@ export class ActionDispatcher {
             const processMapping = (mapping: Record<string, any>): Record<string, any> => {
               const result: Record<string, any> = {};
               for (const [fieldName, dataPath] of Object.entries(mapping)) {
+                // 프로토타입 오염 차단: 이 결과는 deepMergeWithState → setState 로 흘러가므로
+                // 매핑 키 하나가 앱 전역의 모든 객체를 오염시킬 수 있다.
+                if (ActionDispatcher.isPrototypePathSegment(fieldName)) {
+                  logger.warn(`callExternal: skipped prototype-polluting mapping key: ${fieldName}`);
+                  continue;
+                }
+
                 if (typeof dataPath === 'string') {
-                  // 리프 노드: 실제 데이터 매핑
+                  // 리프 노드: 실제 데이터 매핑 (경로 세그먼트도 같은 판정을 받는다)
                   result[fieldName] = this.getNestedProperty(data, dataPath);
                 } else if (typeof dataPath === 'object' && dataPath !== null) {
                   // 중첩 객체: 재귀 처리
@@ -5903,10 +6107,10 @@ export class ActionDispatcher {
             // 깊은 병합 수행: 기존 상태의 다른 필드 유지
             const mergedValues = this.deepMergeWithState(mappedValues, context.state || {});
             logger.log(`callExternal: merged with existing state`, mergedValues);
-            context.setState(mergedValues);
+            this.writeLocalState(context, mergedValues);
           } else if (callbackEvent && context.setState) {
             // callbackSetState가 없으면 기존 방식으로 이벤트 결과 저장
-            context.setState({ [`${callbackEvent.replace(/:/g, '_')}_result`]: data });
+            this.writeLocalState(context, { [`${callbackEvent.replace(/:/g, '_')}_result`]: data });
           }
 
           // callbackAction 처리: 콜백 데이터를 $event로 전달하여 액션 실행 (engine-v1.9.0+)
@@ -6012,6 +6216,10 @@ export class ActionDispatcher {
       );
     }
 
+    // 심층 방어: 스크립트 로드 게이트를 통과한 전역만 호출된다는 전제 위에서,
+    // 임의 코드 실행으로 직결되는 생성자는 참조 동일성으로 거부한다.
+    this.assertCallableExternalConstructor(Constructor, constructorPath, action);
+
     logger.log(`callExternalEmbed: creating layer for ${constructorPath}`);
 
     // 레이어 요소들 생성
@@ -6039,8 +6247,15 @@ export class ActionDispatcher {
             const processMapping = (mapping: Record<string, any>): Record<string, any> => {
               const result: Record<string, any> = {};
               for (const [fieldName, dataPath] of Object.entries(mapping)) {
+                // 프로토타입 오염 차단: 이 결과는 deepMergeWithState → setState 로 흘러가므로
+                // 매핑 키 하나가 앱 전역의 모든 객체를 오염시킬 수 있다.
+                if (ActionDispatcher.isPrototypePathSegment(fieldName)) {
+                  logger.warn(`callExternal: skipped prototype-polluting mapping key: ${fieldName}`);
+                  continue;
+                }
+
                 if (typeof dataPath === 'string') {
-                  // 리프 노드: 실제 데이터 매핑
+                  // 리프 노드: 실제 데이터 매핑 (경로 세그먼트도 같은 판정을 받는다)
                   result[fieldName] = this.getNestedProperty(data, dataPath);
                 } else if (typeof dataPath === 'object' && dataPath !== null) {
                   // 중첩 객체: 재귀 처리
@@ -6056,7 +6271,7 @@ export class ActionDispatcher {
             // 깊은 병합 수행: 기존 상태의 다른 필드 유지
             const mergedValues = this.deepMergeWithState(mappedValues, context.state || {});
             logger.log(`callExternalEmbed: merged with existing state`, mergedValues);
-            context.setState(mergedValues);
+            this.writeLocalState(context, mergedValues);
           }
 
           // callbackAction 처리: 콜백 데이터를 $event로 전달하여 액션 실행 (engine-v1.9.0+)
@@ -6214,7 +6429,38 @@ export class ActionDispatcher {
   }
 
   /**
+   * 프로토타입 체인에 도달하는 경로 세그먼트 (읽기·쓰기 양쪽에서 거부한다).
+   *
+   * 이 세그먼트를 타면 객체의 데이터가 아니라 **모든 객체가 공유하는 프로토타입**에
+   * 닿는다. 읽기 쪽에서는 `Object.constructor` 같은 경로가 임의 함수 생성자로 이어지고,
+   * 쓰기 쪽에서는 `__proto__` 매핑 한 줄이 앱 전역의 객체를 오염시킨다.
+   *
+   * @since engine-v1.64.0
+   */
+  private static readonly PROTOTYPE_PATH_SEGMENTS: readonly string[] = [
+    '__proto__',
+    'prototype',
+    'constructor',
+  ];
+
+  /**
+   * 경로 세그먼트가 프로토타입 체인에 닿는지 판정합니다.
+   *
+   * @param segment 경로 세그먼트
+   * @returns 프로토타입 체인 세그먼트면 true
+   * @since engine-v1.64.0
+   */
+  private static isPrototypePathSegment(segment: string): boolean {
+    return ActionDispatcher.PROTOTYPE_PATH_SEGMENTS.includes(segment);
+  }
+
+  /**
    * 중첩된 객체 속성을 경로로 접근합니다.
+   *
+   * 프로토타입 체인 세그먼트(`__proto__`/`prototype`/`constructor`)가 포함된 경로는
+   * `undefined` 를 돌려준다 — 던지지 않는 이유는 이 함수가 상태 경로 해석에도 쓰이는
+   * 공용 함수이기 때문이다. callExternal 에서는 이 undefined 가 기존의
+   * "Constructor not found" ActionError 로 수렴한다.
    *
    * @param obj 대상 객체 (예: window)
    * @param path 점으로 구분된 경로 (예: "daum.Postcode")
@@ -6222,8 +6468,49 @@ export class ActionDispatcher {
    */
   private getNestedProperty(obj: Record<string, any>, path: string): any {
     return path.split('.').reduce((current: any, key: string) => {
+      if (ActionDispatcher.isPrototypePathSegment(key)) {
+        return undefined;
+      }
       return current && current[key] !== undefined ? current[key] : undefined;
     }, obj);
+  }
+
+  /**
+   * callExternal 이 해석한 생성자가 임의 코드 실행 seam 인지 검사합니다.
+   *
+   * 이름이 아니라 **참조 동일성**으로 판정한다 — `window.myAlias = Function` 처럼 별칭을
+   * 만들어 두면 이름 비교는 그대로 통과하기 때문이다. 스크립트 로드 게이트를 통과한
+   * 전역만 호출된다는 전제 위의 심층 방어다.
+   *
+   * @param Constructor 해석된 생성자
+   * @param constructorPath 오류 메시지에 실을 경로
+   * @param action 액션 정의 (ActionError 컨텍스트)
+   * @throws ActionError 임의 코드 실행 seam 인 경우
+   * @since engine-v1.64.0
+   */
+  private assertCallableExternalConstructor(
+    Constructor: unknown,
+    constructorPath: string,
+    action: ActionDefinition
+  ): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const denied: unknown[] = [
+      (window as any).Function,
+      (window as any).eval,
+      (window as any).setTimeout,
+      (window as any).setInterval,
+    ];
+
+    if (denied.some(fn => fn !== undefined && fn === Constructor)) {
+      logger.error(`callExternal: blocked arbitrary code execution seam: ${constructorPath}`);
+      throw new ActionError(
+        `Blocked constructor (arbitrary code execution): ${constructorPath}`,
+        action
+      );
+    }
   }
 
   /**
@@ -6303,7 +6590,7 @@ export class ActionDispatcher {
 
         // 기본값이 있고 상태에 설정해야 하는 경우
         if (stateKey && context.setState) {
-          context.setState({ [stateKey]: defaultValue });
+          this.writeLocalState(context, { [stateKey]: defaultValue });
         }
 
         return defaultValue;
@@ -6322,7 +6609,7 @@ export class ActionDispatcher {
 
       // 상태에 설정
       if (stateKey && context.setState) {
-        context.setState({ [stateKey]: parsedValue });
+        this.writeLocalState(context, { [stateKey]: parsedValue });
       }
 
       return parsedValue;
@@ -6330,6 +6617,180 @@ export class ActionDispatcher {
       logger.error('loadFromLocalStorage: failed to load', { key, error });
       return defaultValue;
     }
+  }
+
+  /**
+   * 저장소 A 전용 `_local` 쓰기를 저장소 B(canonical `_global._local`)에도 함께 반영한다.
+   *
+   * 엔진이 선언한 이중 저장소 불변조건(DynamicRenderer `performStateUpdate` 상단 주석)은
+   * "B 가 플러그인/핸들러가 읽는 정본이고, A 는 쓰는 시점에 강제로 일치시키는 미러" 다.
+   * 그런데 커스텀 핸들러·resultTo·외부 콜백 등 여러 쓰기 경로가 `context.setState`
+   * (= 저장소 A) 만 갱신해 왔다. engine-v1.63.3 이 sequence 후속 액션의 `_local` 을
+   * live B 기준으로 바꾼 뒤로, B 에 이미 키가 있으면 `addMissingLeafKeys` 보충 대상에서
+   * 빠져 A 의 값이 조용히 유실된다 (상품상세 「바로 구매」·「장바구니 담기」가 빈 배열을
+   * 전송해 422 — 예외도 콘솔 에러도 남지 않는다).
+   *
+   * 이 헬퍼는 그 쓰기를 `G7Core.state.setLocal({ render: false })` 로 승격해
+   * B · `__g7PendingLocalState` · `__g7ForcedLocalFields` · `__g7SetLocalOverrideKeys` ·
+   * `__g7SequenceLocalSync` 를 함께 갱신한다. 마지막 것이 핵심이다 — `handleSequence` 는
+   * 커스텀 핸들러 뒤에 **오직 그 변수로만** currentState 를 갱신하는데, `context.setState`
+   * 경로는 그 변수를 전혀 건드리지 않아 엔진이 마련한 전파 장치가 사문화돼 있었다.
+   *
+   * 아래 조건에서는 미러를 붙이지 않고 원본 writer 만 호출한다(종전 동작 유지):
+   *
+   *  1. writer 부재 — 갱신할 대상이 없다
+   *  2. 함수형 업데이터 — payload 를 추출할 수 없다 (`handleLocalSetState` 는 지원한다)
+   *  3. `scope: 'parent' | 'root'` — 대상 슬롯이 `_local` 정본이 아니다
+   *  4. 모달 컨텍스트 스택 > 0 — 모달의 쓰기가 페이지 B 를 흡수하는 것 방지(사례 29).
+   *     `setLocal` 의 모달 가드는 base 에서 A 를 뺄 뿐 **B 쓰기를 막지 않으므로** 여기서 막는다
+   *  5. 재진입 — 미러가 다시 이 헬퍼를 타는 것 방지
+   *  6. `merge: 'replace'` — `setLocal` 의 replace 는 forced·override 까지 리셋하므로(사례 17)
+   *     부분 replace 가 **B 전체 손실**로 확대된다. `handleSetState` 의 replace 제외와 동형
+   *  7. payload 에 `errors` 키 또는 non-plain 객체(File/Blob/Date/Map …) —
+   *     `deepMergeState` 는 `errors` 를 교체하는데 `deepMerge` 는 병합하고,
+   *     File 은 `{...file}` 전개로 손상된다
+   *  8. `__templateApp` 또는 `setLocal` 부재 — 테스트·프리뷰 폴백 (v1.50.4 정책 동형)
+   *
+   * @param context 액션 컨텍스트
+   * @param updates 상태 갱신 payload (`__mergeMode` / `__setStateId` 메타 포함 가능)
+   * @param originalSetState 원본 저장소 A writer (프록시에서 클로저로 잡은 원본). 미지정 시 `context.setState`
+   * @param opts 추가 옵션 — `scope` 는 게이트 3 판정에만 쓰인다
+   * @return 없음
+   * @since engine-v1.63.5
+   */
+  private writeLocalState(
+    context: ActionContext,
+    updates: any,
+    originalSetState?: (updates: any) => void,
+    opts?: { scope?: string }
+  ): void {
+    const setState = originalSetState || context.setState;
+    if (!setState) return;
+
+    // 게이트 2 — 함수형 업데이터는 payload 를 꺼낼 수 없다
+    if (typeof updates === 'function') {
+      logger.warn(
+        '[writeLocalState] 함수형 업데이터는 저장소 B 미러 대상이 아닙니다 (payload 추출 불가). 저장소 A 만 갱신합니다.'
+      );
+      setState(updates);
+      return;
+    }
+
+    // 게이트 3 — 부모/루트 스코프는 `_local` 정본이 아닌 다른 슬롯을 노린다
+    if (opts?.scope === 'parent' || opts?.scope === 'root') {
+      setState(updates);
+      return;
+    }
+
+    // 게이트 5 — 재진입 차단 (미러가 다시 이 경로를 타는 것 방지)
+    if (this.localMirrorDepth > 0 || (setState as any)?.__g7CanonicalWriter) {
+      setState(updates);
+      return;
+    }
+
+    const raw = (updates && typeof updates === 'object' ? updates : {}) as Record<string, any>;
+    const mergeMode = raw.__mergeMode as ('replace' | 'shallow' | 'deep' | undefined);
+
+    // 게이트 6 — replace 는 forced·override 까지 리셋하므로 부분 replace 가 B 전체 손실이 된다
+    if (mergeMode === 'replace') {
+      setState(updates);
+      return;
+    }
+
+    const { __mergeMode: _mm, __setStateId: _ssid, ...cleanPayload } = raw;
+
+    // 게이트 7 — 병합 의미가 다르거나 전개로 손상되는 payload
+    if ('errors' in cleanPayload || !ActionDispatcher.isMirrorSafePayload(cleanPayload)) {
+      setState(updates);
+      return;
+    }
+
+    const w = window as any;
+
+    // 게이트 4 — 모달 컨텍스트 스택
+    if (((w.__g7LayoutContextStack || []) as any[]).length > 0) {
+      setState(updates);
+      return;
+    }
+
+    // 게이트 8 — 저장소 B writer 부재 (테스트·프리뷰)
+    const setLocal = w.G7Core?.state?.setLocal;
+    if (!w.__templateApp || typeof setLocal !== 'function') {
+      setState(updates);
+      return;
+    }
+
+    // dot-notation 을 중첩으로 통일한다 (`handleSetState` COMPONENT path 선례).
+    // A 쪽은 원본 payload 를 그대로 넘기므로, 양쪽이 같은 leaf 를 가리키게 맞추는 단계다.
+    const payload = this.deepMergeWithState(cleanPayload, {});
+
+    this.localMirrorDepth++;
+    try {
+      setLocal(payload, { render: false, merge: mergeMode ?? 'deep' });
+
+      // `setLocal` 4단계는 `__g7ActionContext.setState` 로 저장소 A 를 갱신한다.
+      // 그 writer 가 지금의 원본과 **같은 참조**면 A 는 이미 갱신됐으므로 중복 호출하지 않는다.
+      // (`!__g7ActionContext` 조건으로 판정하면 컨텍스트가 다른 경우를 놓친다)
+      if (w.__g7ActionContext?.setState !== setState) {
+        setState(updates);
+      }
+
+      // `__mergeMode` 를 명시한 호출은 forced 필드를 **얕은 스프레드**로 재보정한다.
+      // `setLocal` 은 forced 를 깊게 병합하는데(:1932) 저장소 A 경로는 얕은 스프레드라(:1653),
+      // 사례 19 의 2차 수정(`currentSelection: {}` 리셋)이 깊은 병합에서는 무효화된다.
+      if (mergeMode) {
+        w.__g7ForcedLocalFields = { ...(w.__g7ForcedLocalFields || {}), ...payload };
+      }
+    } finally {
+      this.localMirrorDepth--;
+    }
+  }
+
+  /**
+   * 저장소 B 미러에 안전한 payload 인지 판정한다.
+   *
+   * `setLocal` 의 `deepMerge` 는 객체를 `{...obj}` 로 전개하므로 File/Blob/Date/Map 등
+   * 자체 내부 슬롯을 가진 값은 전개 시 손상된다. 순수 객체와 배열만 통과시킨다.
+   *
+   * @param value 검사 대상
+   * @param depth 재귀 깊이
+   * @return 미러해도 안전하면 true
+   * @since engine-v1.63.5
+   */
+  private static isMirrorSafePayload(value: any, depth = 0): boolean {
+    if (value === null || typeof value !== 'object') return true;
+    if (depth >= 8) return true;
+    if (Array.isArray(value)) {
+      return value.every((v) => ActionDispatcher.isMirrorSafePayload(v, depth + 1));
+    }
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) return false;
+    return Object.values(value).every((v) => ActionDispatcher.isMirrorSafePayload(v, depth + 1));
+  }
+
+  /**
+   * 커스텀 핸들러에게 넘길 `setState` 미러 프록시를 만든다.
+   *
+   * 래퍼를 `handleCustomAction` 한 곳에만 싣는 이유: 컨텍스트 생성 지점(`executeActions`)에서
+   * 감싸면 그 컨텍스트가 `handleOpenModal` 을 통해 `__g7LayoutContextStack` 으로 새고,
+   * 그 스택을 읽는 `setLocal({scope:'parent'})` · `handleSetState scope:'parent'` ·
+   * `handleParentScopeSetState` 가 래퍼를 호출해 **제외하기로 한 부모 스코프 경로가 오염된다.**
+   * onError 커스텀 핸들러도 `executeAction` 을 거쳐 같은 seam 을 지나므로 누락이 없다.
+   *
+   * @param context 액션 컨텍스트
+   * @return 미러 프록시 (원본 writer 가 없으면 undefined)
+   * @since engine-v1.63.5
+   */
+  private makeLocalSetStateProxy(context: ActionContext): ((updates: any) => void) | undefined {
+    const original = context.setState;
+    if (!original) return undefined;
+    if ((original as any).__g7CanonicalWriter) return original;
+
+    const proxy = (updates: any) => {
+      this.writeLocalState(context, updates, original);
+    };
+    (proxy as any).__g7CanonicalWriter = true;
+    return proxy;
   }
 
   /**
@@ -6370,7 +6831,16 @@ export class ActionDispatcher {
       throw unknownHandlerError;
     }
 
-    return await handler(action, context);
+    // engine-v1.63.5: 커스텀 핸들러에게는 저장소 A/B 를 함께 갱신하는 setState 를 넘긴다.
+    // 확장의 올바른 API 는 `G7Core.state.setLocal()` 이지만, 실제 확장 핸들러 다수가
+    // `context.setState` 를 쓰고 있고 그 경로는 저장소 B 를 갱신하지 않아 후속 액션의
+    // 요청 body 가 비어 나갔다. 래퍼를 이 한 곳(seam)에만 싣는 이유는 헬퍼 주석 참조.
+    const mirroredSetState = this.makeLocalSetStateProxy(context);
+    const handlerContext = mirroredSetState && mirroredSetState !== context.setState
+      ? { ...context, setState: mirroredSetState }
+      : context;
+
+    return await handler(action, handlerContext);
   }
 
   /**

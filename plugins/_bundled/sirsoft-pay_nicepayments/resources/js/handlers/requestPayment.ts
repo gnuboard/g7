@@ -82,13 +82,93 @@ declare global {
     }
 }
 
-function loadScript(src: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-        if (document.querySelector(`script[src="${src}"]`)) {
-            resolve();
-            return;
-        }
+/**
+ * SDK 스크립트를 로드할 수 있는 호스트 (plugin.json `trusted_script_hosts` 미러).
+ *
+ * 나이스페이먼츠 결제창은 라이브러리가 아니라 그 회사 서버와 통신하는 서비스 SDK 라
+ * 자체 호스팅할 수 없다. 대신 **주입 직전에** 호스트를 확인해, 설정·응답이 어떤
+ * 경로로든 다른 주소를 지시하면 결제를 진행하지 않는다(fail-closed).
+ *
+ * PG사가 SDK 호스트를 바꾸면 이 상수와 plugin.json 을 **함께** 갱신한다 —
+ * 둘이 어긋나면 테스트가 실패한다.
+ */
+export const KNOWN_SDK_HOSTS: readonly string[] = ['web.nicepay.co.kr'];
 
+/**
+ * 번역 문자열을 얻습니다.
+ *
+ * @param key 번역 키 (플러그인 네임스페이스 이하)
+ * @param fallback 번역 엔진 부재 시 사용할 문구
+ * @returns 번역된 문자열
+ */
+function t(key: string, fallback: string): string {
+    const translate = (window as any)?.G7Core?.t;
+
+    if (typeof translate !== 'function') {
+        return fallback;
+    }
+
+    const full = `sirsoft-pay_nicepayments.${key}`;
+    const result = translate(full);
+
+    return typeof result === 'string' && result !== full ? result : fallback;
+}
+
+/**
+ * SDK URL 이 신뢰 호스트인지 확인하고, 아니면 예외를 던집니다.
+ *
+ * @param url 주입할 SDK URL
+ * @throws Error 미신뢰 호스트이거나 https 가 아닌 경우
+ */
+export function assertTrustedSdkUrl(url: string): void {
+    let parsed: URL | null = null;
+
+    try {
+        parsed = new URL(url);
+    } catch {
+        parsed = null;
+    }
+
+    if (
+        parsed === null
+        || parsed.protocol !== 'https:'
+        || !KNOWN_SDK_HOSTS.includes(parsed.hostname.toLowerCase())
+    ) {
+        throw new Error(
+            t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+        );
+    }
+}
+
+/**
+ * SDK 스크립트를 로드합니다.
+ *
+ * 완료 판정은 **SDK 전역 확보**로 한다 — DOM 에 태그가 있다는 것은 로드 완료를
+ * 뜻하지 않는다(로드 중이거나, 실패해 남은 잔재일 수 있다). 종전에는 태그 존재만으로
+ * 즉시 resolve 해서, 전역이 없는 상태로 다음 단계가 진행되고 결제창이 열리지 않았다.
+ *
+ * @param src SDK URL
+ * @throws Error 미신뢰 호스트이거나 로드에 실패한 경우
+ */
+async function loadScript(src: string): Promise<void> {
+    assertTrustedSdkUrl(src);
+
+    if (typeof window.goPay === 'function') {
+        return;
+    }
+
+    // 전역이 없는데 태그만 남아 있으면 미완료·실패 잔재다 — 제거 후 새로 로드한다.
+    document.querySelectorAll(`script[src="${CSS.escape(src)}"]`).forEach((el) => el.remove());
+
+    const loader = (window as any)?.G7Core?.asset?.loadScript;
+
+    if (typeof loader === 'function') {
+        await loader(src, {}, { label: 'nicepayments SDK' });
+
+        return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
         const script = document.createElement('script');
         script.src = src;
         script.onload = () => resolve();
@@ -327,7 +407,13 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
         // 4-2. 과세/비과세 금액 조회 (optional — 실패해도 결제 진행)
         try {
-            const orderRes = await G7Core.api.get(`/modules/sirsoft-ecommerce/user/orders/${pgPaymentData.order_number}`);
+            // 비회원 주문은 X-Guest-Order-Token 이 없으면 서버가 주문을 찾지 못한다.
+            // 헤더를 빼면 과세/비과세 금액이 조회되지 않아 결제사에 세금 구분이 빠진 채 전달된다.
+            const guestToken = G7Core?.state?.get?.('_global')?.guestOrderToken;
+            const orderRes = await G7Core.api.get(
+                `/modules/sirsoft-ecommerce/user/orders/${pgPaymentData.order_number}`,
+                guestToken ? { headers: { 'X-Guest-Order-Token': guestToken } } : undefined,
+            );
             const od = orderRes?.data as Record<string, unknown> | null | undefined;
             if (od) {
                 const taxAmt = Number(od['total_tax_amount'] ?? 0);

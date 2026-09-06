@@ -6,27 +6,51 @@
 
 import { initEditorHandler } from './handlers/initEditor';
 import { destroyEditorHandler } from './handlers/destroyEditor';
+import { ckeditorCssUrl } from './handlers/ckeditorAssets';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-ckeditor5';
 
 const CKEDITOR5_CSS_ID = 'ckeditor5-content-styles';
 const CKEDITOR5_CSS_OVERRIDE_ID = 'ckeditor5-content-styles-override';
-const CKEDITOR5_CSS_URL = 'https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css';
 
 /**
  * CKEditor5 content styles CSS를 동적으로 주입하는 핸들러
  * html-content.json extension_point의 onMount에서 호출됩니다.
  *
- * HtmlContent 컴포넌트에 ck-content 클래스가 적용되어 CDN CSS가 직접 동작합니다.
- * 다크모드(CDN 미지원)와 col 너비 처리만 override로 추가합니다.
+ * HtmlContent 컴포넌트에 ck-content 클래스가 적용되어 동봉 CSS가 직접 동작합니다.
+ * 다크모드(원본 미지원)와 col 너비 처리만 override로 추가합니다.
+ *
+ * 이 CSS 는 **작성 화면이 아니라 방문자가 보는 본문**에 걸린다. 실패하면 이미 작성된
+ * 글의 표·정렬·목록 서식이 통째로 깨지므로, 종전의 무음 처리(`onerror` 없음)를
+ * 재시도 + 실패 표면화로 바꾼다.
  */
 function injectContentCssHandler(): void {
     if (!document.getElementById(CKEDITOR5_CSS_ID)) {
-        const link = document.createElement('link');
-        link.id = CKEDITOR5_CSS_ID;
-        link.rel = 'stylesheet';
-        link.href = CKEDITOR5_CSS_URL;
-        document.head.appendChild(link);
+        const asset = (window as any)?.G7Core?.asset;
+
+        try {
+            const url = ckeditorCssUrl();
+
+            if (typeof asset?.loadStylesheet === 'function') {
+                asset.loadStylesheet(url, { id: CKEDITOR5_CSS_ID }, { label: 'ckeditor5 content CSS' })
+                    .catch((error: unknown) => {
+                        console.warn('[ckeditor5] 본문 스타일 로드 실패:', error);
+                        (window as any)?.G7Core?.assets?.notifyFailure?.({
+                            id: 'ckeditor5-content-css',
+                            label: '본문 스타일',
+                            retry: () => injectContentCssHandler(),
+                        });
+                    });
+            } else {
+                const link = document.createElement('link');
+                link.id = CKEDITOR5_CSS_ID;
+                link.rel = 'stylesheet';
+                link.href = url;
+                document.head.appendChild(link);
+            }
+        } catch (error) {
+            console.warn('[ckeditor5] 본문 스타일 URL 을 만들지 못했습니다:', error);
+        }
     }
 
     if (!document.getElementById(CKEDITOR5_CSS_OVERRIDE_ID)) {

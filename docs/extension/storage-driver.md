@@ -968,6 +968,36 @@ $basePath = $this->storage->getBasePath('images');
 // → /path/to/g7/storage/app/modules/sirsoft-ecommerce/images
 ```
 
+#### 제3자 라이브러리에 절대 경로를 넘길 때
+
+제3자 라이브러리(HTML 정화기, PDF 생성기, 이미지 처리기 등)는 캐시·임시파일 경로를 설정하지 않으면 **자기 설치 폴더**(vendor 안)나 현재 작업 디렉토리에 쓴다. 표준 Laravel 배포는 웹서버에 `storage/` 와 `bootstrap/cache` 만 쓰기 권한을 주므로 그 쓰기는 실패하는데, 실패가 예외가 아니라 PHP 경고라 Laravel `HandleExceptions` 가 `ErrorException` 으로 승격시켜 **요청이 500 으로 끝난다**. 설정 해시당 1회만 기록하는 라이브러리라면 캐시가 영영 생기지 않아 매 요청이 같은 실패를 반복한다. 개발 머신에서는 vendor 가 쓰기 가능해 한 번 성공하고 끝나므로 재현되지 않는다.
+
+`cache` 카테고리의 절대 경로를 명시적으로 넘긴다.
+
+```php
+$cacheDir = ExtensionStoragePath::module('sirsoft-ecommerce', 'cache/htmlpurifier');
+
+if (! FilePermissionHelper::ensureWritableDirectory($cacheDir, 0775, $failure)) {
+    // 캐시만 끄고 정화는 그대로 수행한다 (아래 (c))
+}
+
+$config = \HTMLPurifier_Config::createDefault();
+$config->set('Cache.SerializerPath', $cacheDir);
+$config->set('Cache.SerializerPermissions', 0775);
+```
+
+세 가지 규율을 함께 지킨다.
+
+**(a) 디렉토리를 먼저 만든다.** 경로 해석기는 경로를 계산할 뿐 만들지 않고, 라이브러리도 대개 지정한 base 아래의 **하위** 디렉토리만 만든다. base 가 없으면 경고 한 줄을 내고 끝나므로, 경로만 지정하면 실패 지점이 "vendor 쓰기 실패" 에서 "base 없음 실패" 로 옮겨갈 뿐이다.
+
+확보는 코어 프리미티브 `FilePermissionHelper::ensureWritableDirectory($path, $mode, $failure)` 가 맡는다. 이 프리미티브는 **예외도 PHP 경고도 내지 않고** `bool` 을 돌려준다 — `File::ensureDirectoryExists()` 는 `mkdir()` 을 억제 없이 부르므로 생성 실패가 `E_WARNING` 으로 나오고 Laravel 이 `ErrorException` 으로 승격시켜, 막으려던 500 이 다른 줄에서 그대로 난다. 직접 조립하지 않는다.
+
+**(b) 권한 정합화는 프리미티브가 함께 수행한다.** 생성 API 의 mode 인자는 umask 로 깎이므로 명시 `chmod` 를 재적용하고, POSIX 에서는 setgid 도 함께 세운다 — 새 디렉토리의 그룹은 생성 프로세스의 egid 이므로, setgid 가 없으면 스케줄러(CLI)가 먼저 만든 하위 디렉토리를 웹 프로세스가 쓰지 못한다. 부모 소유권 상속까지 한 곳에 있으므로 호출부가 이 셋을 각자 복사하지 않는다. 이미 존재하는 디렉토리만 정합화하려면 `FilePermissionHelper::hardenDirectory($path, $mode)` 를 쓴다.
+
+**(c) 확보 실패는 기능 실패가 아니다.** 프리미티브가 `false` 와 함께 사유(`occupied_by_file` / `ancestor_not_writable` / `create_failed` / `not_writable`)를 돌려주므로 통지에 그 사유를 싣는다 — 사유마다 운영자가 고쳐야 할 대상이 다르다. 디렉토리가 이미 있는데 쓰기 불가라면 요청 경로에서 권한과 싸우지 않는다. 캐시만 끄고(`Cache.DefinitionImpl = null` 같은 라이브러리별 비활성 스위치) 본래 기능은 계속 수행하며, 통지는 프로세스당 1회만 남긴다. 그 통지는 `error` 수준으로 남긴다 — 출하 기본 로그 수준이 `error` 라 `warning` 으로 남기면 기본 설치 상태에서 파일에 기록되지 않고, 기능은 성공하므로 운영자에게 도달하는 흔적이 그 통지 하나뿐이다. **정화·검증 자체를 건너뛰는 폴백은 금지한다** — 캐시는 성능 장치이고 정화는 보안 장치라, 캐시 실패가 보안 장치를 건너뛰게 만들어서는 안 된다.
+
+**디스크 주의**: 경로를 `getBasePath('cache')` 로 얻지 말고 `App\Support\ExtensionStoragePath::module($identifier, 'cache/…')` 로 얻는다. 이 해석기는 `modules`/`plugins` 디스크의 root(`config/filesystems.php`)를 단일 출처로 삼아 로컬 절대 경로를 조립하며, 그 root 가 테스트 환경을 인지하므로 확장이 `app()->runningUnitTests()` 분기를 자기 안에 복사할 필요가 없다. `getBasePath()` 는 `Storage::disk()->path()` 위임이라 카테고리 디스크가 비로컬(S3 등)로 오버라이드되면 파일시스템 경로가 아니게 되고, 그러면 라이브러리가 그 값을 상대경로로 보고 현재 작업 디렉토리 기준으로 해석해 **조용히 엉뚱한 곳에 쓴다**. 대부분의 정의 캐시는 `file_put_contents` 로 쓰는 로컬 전용 장치다. 두 경로는 기본 설정에서 바이트 단위로 동일하므로 `cache` 카테고리 규약은 레이아웃 차원에서 그대로 지켜진다.
+
 ---
 
 ### getDisk()

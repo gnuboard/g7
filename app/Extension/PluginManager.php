@@ -21,11 +21,13 @@ use App\Exceptions\LayoutIncludeException;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
@@ -44,6 +46,7 @@ use App\Providers\CoreServiceProvider;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
+use App\Support\ExtensionStoragePath;
 use App\Support\RouteCacheHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -357,167 +360,184 @@ class PluginManager implements PluginManagerInterface
 
         // _pending 또는 _bundled에서 활성 디렉토리로 복사 (미설치 플러그인 설치 시)
         // force=true 시 활성 디렉토리가 있어도 원본으로 덮어씀 (불완전 설치 복구)
+        // 검증은 로드된 확장 인스턴스를 요구해 복사보다 뒤에 온다. 그래서 검증이 실패하면
+        // 방금 만든 활성 디렉토리가 고아로 남는다 — DB 행이 없어 목록에도 뜨지 않고 오류도
+        // 남지 않은 채 디스크만 점유한다. 이번 호출이 만든 것이면 되돌린다.
+        $rollbackDirExisted = File::isDirectory($activePath);
+
         $onProgress?->__invoke('copy', '파일 복사 중...');
         $this->copyFromPendingOrBundled($pluginName, $onProgress, $force);
 
-        // 플러그인이 활성 디렉토리에 있지 않으면 로드 시도
-        $plugin = $this->getPlugin($pluginName);
-        if (! $plugin) {
-            // 복사 후 재로드 시도
-            $this->reloadPlugin($pluginName);
-            $plugin = $this->getPlugin($pluginName);
-        }
-
-        if (! $plugin) {
-            throw new \Exception(__('plugins.not_found', ['plugin' => $pluginName]));
-        }
-
-        // 그누보드7 코어 버전 호환성 검증
-        CoreVersionChecker::validateExtension(
-            $plugin->getRequiredCoreVersion(),
-            $plugin->getIdentifier(),
-            'plugin'
-        );
-
-        // 의존성 확인 (트랜잭션 외부에서 먼저 검증)
-        $this->checkDependencies($plugin);
-
-        // 언어 파일 경로 검증 (lang 경로 필수)
-        $this->validateTranslationPath($plugin, 'plugin');
-
-        // SEO 변수명 중복 검증
-        $this->validateSeoVariables($plugin, 'plugin');
-
-        // 플러그인 설치 실행
-        $onProgress?->__invoke('validate', '검증 중...');
-        $plugin->clearLifecycleFailureReason();
-        $result = $plugin->install();
-
-        if (! $result) {
-            $failureReason = $plugin->getLifecycleFailureReason() ?? __('plugins.errors.unknown_error');
-        }
-
-        if (! $result) {
-            return false;
-        }
-
-        // Phase 1: 마이그레이션 실행 (DDL - 트랜잭션 외부)
-        // MySQL에서 CREATE TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
-        $onProgress?->__invoke('migration', '마이그레이션 실행 중...');
-        $this->runMigrations($plugin);
-
-        // Phase 2: 데이터 작업 (DML - 트랜잭션 내부)
-        $onProgress?->__invoke('db', 'DB 등록 중...');
         try {
-            DB::beginTransaction();
+            // 플러그인이 활성 디렉토리에 있지 않으면 로드 시도
+            $plugin = $this->getPlugin($pluginName);
+            if (! $plugin) {
+                // 복사 후 재로드 시도
+                $this->reloadPlugin($pluginName);
+                $plugin = $this->getPlugin($pluginName);
+            }
 
-            // GitHub에서 최신 버전 정보 가져오기
-            $latestVersion = $this->fetchLatestVersion($plugin);
-            $updateAvailable = $latestVersion ? version_compare($latestVersion, $plugin->getVersion(), '>') : false;
+            if (! $plugin) {
+                throw new \Exception(__('plugins.not_found', ['plugin' => $pluginName]));
+            }
 
-            // 다국어 name, description 처리 (역호환성 지원)
-            $name = $this->convertToMultilingual($plugin->getName());
-            $description = $this->convertToMultilingual($plugin->getDescription());
-
-            // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
-            $manifest = HookManager::applyFilters(
-                "plugin.{$plugin->getIdentifier()}.manifest.translations",
-                ['name' => $name, 'description' => $description]
-            );
-            $name = $manifest['name'] ?? $name;
-            $description = $manifest['description'] ?? $description;
-
-            // 데이터베이스에 플러그인 정보 저장
-            $this->pluginRepository->updateOrCreate(
-                ['identifier' => $plugin->getIdentifier()],
-                [
-                    'vendor' => $plugin->getVendor(),
-                    'name' => $name,
-                    'version' => $plugin->getVersion(),
-                    'latest_version' => $latestVersion,
-                    'description' => $description,
-                    'github_url' => $plugin->getGithubUrl(),
-                    'github_changelog_url' => $this->buildChangelogUrl($plugin->getGithubUrl()),
-                    'update_available' => $updateAvailable,
-                    'metadata' => $plugin->getMetadata(),
-                    'status' => ExtensionStatus::Inactive->value,
-                    'vendor_mode' => $resolvedVendorMode->value,
-                    'hooks' => $this->normalizeHooksToArray($plugin->getHooks()),
-                    'created_by' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
+            // 그누보드7 코어 버전 호환성 검증
+            CoreVersionChecker::validateExtension(
+                $plugin->getRequiredCoreVersion(),
+                $plugin->getIdentifier(),
+                'plugin'
             );
 
-            // Role 자동 생성
-            $this->createPluginRoles($plugin);
+            // 의존성 확인 (트랜잭션 외부에서 먼저 검증)
+            $this->checkDependencies($plugin);
 
-            // 권한 자동 생성
-            $this->createPluginPermissions($plugin);
+            // 언어 파일 경로 검증 (lang 경로 필수)
+            $this->validateTranslationPath($plugin, 'plugin');
 
-            // 권한-Role 연결
-            $this->assignPermissionsToRoles($plugin);
+            // SEO 변수명 중복 검증
+            $this->validateSeoVariables($plugin, 'plugin');
 
-            // 관리자 메뉴 자동 생성 (모듈 installModule 과 동일 순서)
-            $this->createPluginMenus($plugin);
+            // 플러그인 설치 실행
+            $onProgress?->__invoke('validate', '검증 중...');
+            $plugin->clearLifecycleFailureReason();
+            $result = $plugin->install();
 
-            // IDV 정책 자동 동기화 (identity_policies 테이블)
-            $this->syncPluginIdentityPolicies($plugin);
+            if (! $result) {
+                $failureReason = $plugin->getLifecycleFailureReason() ?? __('plugins.errors.unknown_error');
+            }
 
-            // IDV 메시지 정의/템플릿 자동 동기화
-            $this->syncPluginIdentityMessages($plugin);
+            if (! $result) {
+                return false;
+            }
 
-            // 알림 정의/템플릿 자동 동기화 (notification_definitions / notification_templates)
-            $this->syncPluginNotificationDefinitions($plugin);
+            // Phase 1: 마이그레이션 실행 (DDL - 트랜잭션 외부)
+            // MySQL에서 CREATE TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
+            $onProgress?->__invoke('migration', '마이그레이션 실행 중...');
+            $this->runMigrations($plugin);
 
-            DB::commit();
+            // Phase 2: 데이터 작업 (DML - 트랜잭션 내부)
+            $onProgress?->__invoke('db', 'DB 등록 중...');
+            try {
+                DB::beginTransaction();
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+                // GitHub에서 최신 버전 정보 가져오기
+                $latestVersion = $this->fetchLatestVersion($plugin);
+                $updateAvailable = $latestVersion ? version_compare($latestVersion, $plugin->getVersion(), '>') : false;
+
+                // 다국어 name, description 처리 (역호환성 지원)
+                $name = $this->convertToMultilingual($plugin->getName());
+                $description = $this->convertToMultilingual($plugin->getDescription());
+
+                // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
+                $manifest = HookManager::applyFilters(
+                    "plugin.{$plugin->getIdentifier()}.manifest.translations",
+                    ['name' => $name, 'description' => $description]
+                );
+                $name = $manifest['name'] ?? $name;
+                $description = $manifest['description'] ?? $description;
+
+                // 데이터베이스에 플러그인 정보 저장
+                $this->pluginRepository->updateOrCreate(
+                    ['identifier' => $plugin->getIdentifier()],
+                    [
+                        'vendor' => $plugin->getVendor(),
+                        'name' => $name,
+                        'version' => $plugin->getVersion(),
+                        'latest_version' => $latestVersion,
+                        'description' => $description,
+                        'github_url' => $plugin->getGithubUrl(),
+                        'github_changelog_url' => $this->buildChangelogUrl($plugin->getGithubUrl()),
+                        'update_available' => $updateAvailable,
+                        'metadata' => $plugin->getMetadata(),
+                        'status' => ExtensionStatus::Inactive->value,
+                        'vendor_mode' => $resolvedVendorMode->value,
+                        'hooks' => $this->normalizeHooksToArray($plugin->getHooks()),
+                        'created_by' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+
+                // Role 자동 생성
+                $this->createPluginRoles($plugin);
+
+                // 권한 자동 생성
+                $this->createPluginPermissions($plugin);
+
+                // 권한-Role 연결
+                $this->assignPermissionsToRoles($plugin);
+
+                // 관리자 메뉴 자동 생성 (모듈 installModule 과 동일 순서)
+                $this->createPluginMenus($plugin);
+
+                // IDV 정책 자동 동기화 (identity_policies 테이블)
+                $this->syncPluginIdentityPolicies($plugin);
+
+                // IDV 메시지 정의/템플릿 자동 동기화
+                $this->syncPluginIdentityMessages($plugin);
+
+                // 알림 정의/템플릿 자동 동기화 (notification_definitions / notification_templates)
+                $this->syncPluginNotificationDefinitions($plugin);
+
+                DB::commit();
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+            // Phase 3: 시더 실행 (트랜잭션 외부)
+            // 시더 내부에서 별도 트랜잭션을 사용할 수 있으므로 외부에서 실행
+            $onProgress?->__invoke('seed', '시더 실행 중...');
+            $this->runPluginSeeders($plugin);
+
+            // Phase 4: 기본 설정 파일 생성
+            $onProgress?->__invoke('settings', '설정 초기화 중...');
+            $this->initializePluginSettings($plugin);
+
+            // Phase 4.5: Composer 의존성 설치 (외부 패키지가 있는 경우에만)
+            // _pending에서 이미 설치한 경우 스킵 (vendor/가 활성 디렉토리에 복사됨)
+            if (! $composerDoneInPending) {
+                $onProgress?->__invoke('composer', 'Composer 의존성 설치 중...');
+                if (! app()->environment('testing')
+                    && $this->extensionManager->hasComposerDependencies('plugins', $pluginName)) {
+                    $composerResult = $this->extensionManager->runComposerInstall('plugins', $pluginName);
+                    if (! $composerResult) {
+                        Log::warning('플러그인 Composer 의존성 설치 실패', ['plugin' => $pluginName]);
+                    }
+                }
+            }
+
+            // Phase 5: 오토로드 병합 실행 (트랜잭션 외부)
+            $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
+            $this->extensionManager->updateComposerAutoload();
+
+            // Phase 6: 플러그인 상태 캐시 무효화
+            self::invalidatePluginStatusCache();
+
+            // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
+            $this->incrementExtensionCacheVersion();
+            RouteCacheHelper::rebuild();
+
+            // 확장 미들웨어 인덱스 무효화 — 새 플러그인의 미들웨어 선언이 즉시 게이트에 반영.
+            ExtensionMiddlewareRegistry::flush();
+
+            // 훅 발행: 플러그인 설치 완료
+            HookManager::doAction('core.plugins.installed', $pluginName);
+
+            return true;
+        } catch (\Throwable $e) {
+            ExtensionInstallRollbackHelper::removeIfCreatedByThisInstall(
+                $activePath,
+                $rollbackDirExisted,
+                $pluginName,
+                'plugin',
+            );
+
             throw $e;
         }
 
-        // Phase 3: 시더 실행 (트랜잭션 외부)
-        // 시더 내부에서 별도 트랜잭션을 사용할 수 있으므로 외부에서 실행
-        $onProgress?->__invoke('seed', '시더 실행 중...');
-        $this->runPluginSeeders($plugin);
-
-        // Phase 4: 기본 설정 파일 생성
-        $onProgress?->__invoke('settings', '설정 초기화 중...');
-        $this->initializePluginSettings($plugin);
-
-        // Phase 4.5: Composer 의존성 설치 (외부 패키지가 있는 경우에만)
-        // _pending에서 이미 설치한 경우 스킵 (vendor/가 활성 디렉토리에 복사됨)
-        if (! $composerDoneInPending) {
-            $onProgress?->__invoke('composer', 'Composer 의존성 설치 중...');
-            if (! app()->environment('testing')
-                && $this->extensionManager->hasComposerDependencies('plugins', $pluginName)) {
-                $composerResult = $this->extensionManager->runComposerInstall('plugins', $pluginName);
-                if (! $composerResult) {
-                    Log::warning('플러그인 Composer 의존성 설치 실패', ['plugin' => $pluginName]);
-                }
-            }
-        }
-
-        // Phase 5: 오토로드 병합 실행 (트랜잭션 외부)
-        $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
-        $this->extensionManager->updateComposerAutoload();
-
-        // Phase 6: 플러그인 상태 캐시 무효화
-        self::invalidatePluginStatusCache();
-
-        // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
-        $this->incrementExtensionCacheVersion();
-        RouteCacheHelper::rebuild();
-
-        // 확장 미들웨어 인덱스 무효화 — 새 플러그인의 미들웨어 선언이 즉시 게이트에 반영.
-        ExtensionMiddlewareRegistry::flush();
-
-        // 훅 발행: 플러그인 설치 완료
-        HookManager::doAction('core.plugins.installed', $pluginName);
-
-        return true;
     }
 
     /**
@@ -932,6 +952,9 @@ class PluginManager implements PluginManagerInterface
      * @param  bool  $deleteData  플러그인 데이터(테이블) 삭제 여부
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
+     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
+     *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 플러그인을 찾을 수 없을 때
@@ -941,8 +964,10 @@ class PluginManager implements PluginManagerInterface
         bool $deleteData = false,
         ?\Closure $onProgress = null,
         ?string &$failureReason = null,
+        ?array &$preservedBackups = null,
     ): bool {
         $failureReason = null;
+        $preservedBackups = [];
 
         // 상태 가드: 진행 중 상태 체크
         $existingRecord = $this->pluginRepository->findByIdentifier($pluginName);
@@ -1075,7 +1100,10 @@ class PluginManager implements PluginManagerInterface
 
                 // 활성 플러그인 디렉토리 전체 삭제 (_pending/_bundled에 원본 보존되므로 재설치 가능)
                 $onProgress?->__invoke('files', '파일 삭제 중...');
-                ExtensionPendingHelper::deleteExtensionDirectory($this->pluginsPath, $plugin->getIdentifier());
+                $preservedBackups = ExtensionPendingHelper::deleteExtensionDirectory(
+                    $this->pluginsPath,
+                    $plugin->getIdentifier()
+                );
 
                 // 메모리에서 플러그인 제거
                 unset($this->plugins[$plugin->getIdentifier()]);
@@ -2584,7 +2612,7 @@ class PluginManager implements PluginManagerInterface
     protected function initializePluginSettings(PluginInterface $plugin): void
     {
         $identifier = $plugin->getIdentifier();
-        $settingsDir = storage_path("app/plugins/{$identifier}/settings");
+        $settingsDir = ExtensionStoragePath::plugin($identifier, 'settings');
         $settingsPath = $settingsDir.'/setting.json';
 
         // 이미 설정 파일이 존재하면 스킵 (재설치 시 기존 설정 유지)
@@ -2610,14 +2638,17 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
-        // 디렉토리 생성
+        // 디렉토리 생성 — sudo 코어 업데이트 경로에서 root 로 만들어지면 `storage/app/plugins` 는
+        // restore_ownership 제외 경로라 되돌려지지 않는다 → 부모 소유권 상속 (#651 F13)
         if (! File::isDirectory($settingsDir)) {
             File::makeDirectory($settingsDir, 0755, true);
+            FilePermissionHelper::inheritOwnershipFromParent($settingsDir);
         }
 
         // 기본값 저장
         $content = json_encode($defaults, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         File::put($settingsPath, $content);
+        FilePermissionHelper::inheritOwnershipFromParent($settingsPath);
 
         Log::info('플러그인 기본 설정 파일 생성 완료', [
             'plugin' => $identifier,
@@ -2665,7 +2696,7 @@ class PluginManager implements PluginManagerInterface
     protected function deletePluginSettingsDirectory(PluginInterface $plugin): void
     {
         $identifier = $plugin->getIdentifier();
-        $pluginStorageDir = storage_path("app/plugins/{$identifier}");
+        $pluginStorageDir = ExtensionStoragePath::plugin($identifier);
 
         if (File::isDirectory($pluginStorageDir)) {
             File::deleteDirectory($pluginStorageDir);
@@ -2735,7 +2766,7 @@ class PluginManager implements PluginManagerInterface
 
         // 5. 스토리지 디렉토리 1-depth 용량 조회
         $storageInfo = $this->getStorageDirectoriesInfo(
-            storage_path('app/plugins/'.$identifier)
+            ExtensionStoragePath::plugin($identifier)
         );
 
         // 6. Composer vendor 디렉토리 정보 조회
@@ -4342,7 +4373,7 @@ class PluginManager implements PluginManagerInterface
         $tempDir = storage_path('app/temp/plugin_update_'.uniqid());
 
         try {
-            File::ensureDirectoryExists($tempDir);
+            ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
 
             // GitHub에서 다운로드 및 추출 (코어와 동일한 폴백 체인)
             $extractedDir = $this->extensionManager->downloadAndExtractFromGitHub(

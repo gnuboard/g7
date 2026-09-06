@@ -19,7 +19,8 @@
     "selected": "Address has been selected.",
     "error": {
       "load_failed": "Failed to load postcode service.",
-      "search_failed": "Address search failed."
+      "search_failed": "Address search failed.",
+      "sdk_unavailable": "Could not load address search. Please enter the address manually."
     }
   },
   "settings": {

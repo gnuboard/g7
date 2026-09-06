@@ -49,5 +49,13 @@ return [
         // 새로고침해도 낫지 않으므로 이 분기에서는 새로고침 버튼을 렌더하지 않는다.
         'incompatible_title' => 'This browser cannot display the page',
         'incompatible_message' => 'Your browser is too old to run this site. Please update it to the latest version, or try a different browser.',
+
+        // The HTTPS page requested an http:// asset and the browser blocked it (running behind a
+        // reverse proxy without trusted proxies configured, #124). Ordinary visitors see this
+        // screen, but only the operator can act on it, so the screen carries no server-side
+        // instructions — the cause and the fix go to the console for the operator. Reloading does
+        // not help, so no button is rendered and no natural recovery is implied.
+        'blocked_title' => 'Something went wrong with this site',
+        'blocked_message' => 'The site cannot be displayed because of a configuration problem. This is not caused by anything on your side — the site operator needs to fix it.',
     ],
 ];

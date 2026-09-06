@@ -6,11 +6,11 @@
 
 <!-- AUTO-GENERATED-START: docs-quick-reference -->
 
-### 백엔드 [backend/](docs/backend/) (34개)
+### 백엔드 [backend/](docs/backend/) (36개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
-| [activity-log-hooks.md](docs/backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 이커머스 92훅 + 게시판 32훅 + 페이지 8훅 = 총 198훅 |
+| [activity-log-hooks.md](docs/backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 확장 132훅 = 총 198훅 (확장별 목록은 그 확장이 소유) |
 | [activity-log.md](docs/backend/activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel('activity... |
 | [admin-settings-access.md](docs/backend/admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) | 동기화 SSoT: storage/app/settings/*.json → SettingsServicePr... |
 | [api-documentation.md](docs/backend/api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) | 모든 API 엔드포인트는 레퍼런스 문서 필수 — 메서드/URI/파라미터/응답 필드 + 요청·응답 예시 ... |
@@ -35,17 +35,19 @@
 | [notification-system.md](docs/backend/notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스 불필요) |
 | [pagination.md](docs/backend/pagination.md) | 대용량 목록 페이지네이션 (Pagination) | 총 건수만 상한을 받는다 — 상한 이하면 정확, 초과면 "이상"(total_relation=at_least) |
 | [response-helper.md](docs/backend/response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
+| [reverse-proxy.md](docs/backend/reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) | 프록시 뒤에서는 요청이 스스로 스킴·IP 를 증명하지 못한다 — 신뢰할 프록시를 지정해야 한다 |
 | [routing.md](docs/backend/routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](docs/backend/search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL FULLTEXT + ... |
 | [seo-system.md](docs/backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → SeoRenderer가 ... |
 | [service-provider.md](docs/backend/service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](docs/backend/service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](docs/backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈로그 빌드 시점에 보강 |
+| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트와 운영자 cu... |
 | [translatable-seeders.md](docs/backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) | 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 TranslatableSeede... |
 | [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
 
-### 프론트엔드 [frontend/](docs/frontend/) (50개)
+### 프론트엔드 [frontend/](docs/frontend/) (44개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
@@ -93,20 +95,15 @@
 | [tailwind-safelist.md](docs/frontend/tailwind-safelist.md) | Tailwind Safelist 가이드 | Tailwind는 빌드 시 사용된 클래스만 CSS에 포함 |
 | [template-development.md](docs/frontend/template-development.md) | 템플릿 개발 가이드라인 | 디렉토리: templates/[vendor-template]/ (예: sirsoft-admin_basic) |
 | [template-handlers.md](docs/frontend/template-handlers.md) | 템플릿 전용 핸들러 | setLocale: 앱 언어 변경 — 엔진 빌트인 (ActionDispatcher) |
-| [components.md](docs/frontend/templates/sirsoft-admin_basic/components.md) | sirsoft-admin_basic 컴포넌트 | Basic 37개: HTML 래핑 (Div, Button, Input, Select, Form, A, ... |
-| [handlers.md](docs/frontend/templates/sirsoft-admin_basic/handlers.md) | sirsoft-admin_basic 핸들러 | setLocale: 앱 언어 변경 (locale 파라미터) |
-| [layouts.md](docs/frontend/templates/sirsoft-admin_basic/layouts.md) | sirsoft-admin_basic 레이아웃 | 베이스: _admin_base.json (사이드바 + 헤더 + 콘텐츠 슬롯) |
-| [components.md](docs/frontend/templates/sirsoft-basic/components.md) | sirsoft-basic 컴포넌트 | Basic 26개: HTML 래핑 (Div, Button, Input, Select, Form, A, ... |
-| [handlers.md](docs/frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
-| [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
 
-### 확장 시스템 [extension/](docs/extension/) (30개)
+### 확장 시스템 [extension/](docs/extension/) (31개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
 | [cache-driver.md](docs/extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) | 모든 캐시 저장은 CacheInterface 사용 (Cache:: 직접 호출 금지) |
 | [changelog-rules.md](docs/extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) | 확장/코어 버전 업 시 CHANGELOG.md에 변경사항 기록 필수 (미기록 시 버전 업 불가) |
 | [editor-spec.md](docs/extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) | editor-spec.json = 편집기 팔레트/스타일 컨트롤/중첩 규칙/샘플 데이터/레시피의 선언 (... |
+| [extension-documentation.md](docs/extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) | 확장마다 AGENTS.md(개발자·에이전트용) + README.md(사람용) + docs/(상세) 를 갖는다 |
 | [extension-manager.md](docs/extension/extension-manager.md) | ExtensionManager (확장 관리자) | composer.json 수정 없음 - 런타임 오토로드 방식 사용 |
 | [extension-update-system.md](docs/extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) | 업데이트 감지 우선순위: GitHub > _bundled (2단계, _pending 미참여) |
 | [hooks.md](docs/extension/hooks.md) | 훅 시스템 (Hook System) | Action 훅: doAction() - 부가 작업 (로그, 알림, 캐시) |
@@ -152,7 +149,7 @@
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 319 |
+| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 325 |
 
 
 ### 확장 API 레퍼런스 (14개 확장, 자동 스캔)
@@ -175,6 +172,34 @@
 | `sirsoft-tosspayments` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
 | `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
 | `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 1 / 1 |
+
+
+### 확장 개발자 문서 (20개 확장, 자동 스캔)
+
+> 확장을 수정하기 전에 읽는 문서. 설계 의도 · 디렉토리 지도 · 확장점(발행/구독 훅) · 수정 시 동반 의무 · 금지 패턴을 담는다. `php artisan ext:docgen` 이 실측 부분을 유지하며, 이 표는 `{modules,plugins,templates}/_bundled/*/docs/README.md` 를 패턴 스캔해 자동 편입된다(확장명 하드코딩 없음).
+
+| 확장 | 유형 | 에이전트 가이드 | 문서 목차 | 실측 집계 |
+|------|------|----------------|----------|----------|
+| `gnuboard7-hello_module` | 모듈 | [AGENTS.md](modules/_bundled/gnuboard7-hello_module/AGENTS.md) | [docs/](modules/_bundled/gnuboard7-hello_module/docs/README.md) | 훅 1 · 라우트 7 · 모델 1 · 레이아웃 3 |
+| `sirsoft-board` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](modules/_bundled/sirsoft-board/docs/README.md) | 훅 90 · 라우트 80 · 모델 9 · 레이아웃 46 |
+| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 508 · 라우트 239 · 모델 47 · 레이아웃 206 |
+| `sirsoft-page` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-page/AGENTS.md) | [docs/](modules/_bundled/sirsoft-page/docs/README.md) | 훅 21 · 라우트 17 · 모델 3 · 레이아웃 3 |
+| `gnuboard7-hello_plugin` | 플러그인 | [AGENTS.md](plugins/_bundled/gnuboard7-hello_plugin/AGENTS.md) | [docs/](plugins/_bundled/gnuboard7-hello_plugin/docs/README.md) | 훅 1 · 라우트 0 · 모델 0 · 레이아웃 1 |
+| `sirsoft-ckeditor5` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-ckeditor5/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-ckeditor5/docs/README.md) | 훅 4 · 라우트 5 · 모델 1 · 레이아웃 2 |
+| `sirsoft-daum_postcode` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-daum_postcode/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-daum_postcode/docs/README.md) | 훅 2 · 라우트 0 · 모델 0 · 레이아웃 1 |
+| `sirsoft-gdpr` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-gdpr/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-gdpr/docs/README.md) | 훅 2 · 라우트 15 · 모델 3 · 레이아웃 4 |
+| `sirsoft-marketing` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-marketing/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-marketing/docs/README.md) | 훅 4 · 라우트 2 · 모델 2 · 레이아웃 1 |
+| `sirsoft-message_bizppurio` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-message_bizppurio/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-message_bizppurio/docs/README.md) | 훅 1 · 라우트 21 · 모델 2 · 레이아웃 1 |
+| `sirsoft-pay_kginicis` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_kginicis/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_kginicis/docs/README.md) | 훅 6 · 라우트 35 · 모델 0 · 레이아웃 1 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_nhnkcp/docs/README.md) | 훅 8 · 라우트 16 · 모델 0 · 레이아웃 1 |
+| `sirsoft-pay_nicepayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_nicepayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_nicepayments/docs/README.md) | 훅 5 · 라우트 15 · 모델 0 · 레이아웃 1 |
+| `sirsoft-tosspayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-tosspayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-tosspayments/docs/README.md) | 훅 4 · 라우트 5 · 모델 0 · 레이아웃 1 |
+| `sirsoft-verification_kginicis` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_kginicis/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_kginicis/docs/README.md) | 훅 3 · 라우트 2 · 모델 2 · 레이아웃 1 |
+| `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
+| `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
+| `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 145 |
+| `sirsoft-basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 40 · 모델 0 · 레이아웃 166 |
 
 
 <!-- AUTO-GENERATED-END: docs-quick-reference -->
@@ -288,6 +313,26 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 | await 후 캡처된 상태 사용 | await 후 `G7Core.state.getLocal()` 재조회 |
 | setState params 키에 `{{}}` 사용 | 키는 정적 경로만, 배열 조작은 `.map()`/`.filter()` |
 
+### 저장소 B 통째 교체 금지
+
+엔진은 폼 상태를 React `localDynamicState`(저장소 A)와 `globalState._local`(저장소 B)에 이중 저장한다. `TemplateApp.setGlobalState` 는 최상위 키를 **얕게** 병합하므로 `setGlobalState({ _local: X })` 는 B 를 patch 가 아니라 **통째 교체**한다. X 가 A 계열 스냅샷이면, A 가 아직 받지 못한 값이 조용히 사라진다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `globalStateUpdater({ _local: <A 계열 스냅샷> })` (저장소 B 통째 교체) | live B(`getGlobalState()._local`)를 base 로 변경 키만 얹기 |
+| sequence 반환값을 stale base 로 구성 | 반환값도 live B 기반 + `addMissingLeafKeys` 로 A 전용 키 보충 |
+| 두 쓰기 경로(B 쓰기 / 반환값)에 서로 다른 병합 규칙 | 같은 규칙 — 갈라지면 나중에 소비자가 생길 때 어느 경로를 탔느냐로 결과가 달라진다 |
+| `__g7ForcedLocalFields` 오버레이가 있으니 `context.state` 도 최신이라고 가정 | 그 오버레이는 `extendedDataContext` **useMemo 안에서 읽는 window 전역**이라 deps 가 아니다 — memo 가 재계산되지 않으면 실리지 않는다 |
+| 자동바인딩이 `__g7PendingLocalState` 에 저장소 A 스냅샷을 그대로 대입 | 렌더러와 같은 순서로 `__g7ForcedLocalFields` 를 얹고 방금 입력한 경로를 다시 적용 — pending 은 `getLocal()` 이 읽는 "화면과 같은 전체 스냅샷" 이다 |
+| 저장소 A 에만 쓰는 `_local` 경로 (`context.setState(payload)` 단독) | 같은 지배 분기 안에서 B 도 갱신 — `G7Core.state.setLocal(payload, { render: false })`. B 에 이미 키가 있으면 보충 대상에서 빠져 A 의 값이 조용히 유실된다 |
+| 미러를 **형제 분기**에 두고 이 분기도 지켜진다고 간주 | 미러는 그 쓰기를 **지배하는 분기 안**에 둔다 — 긴 함수를 통째로 보면 한 분기의 미러가 다른 분기를 면죄한다 |
+
+A 가 값을 못 받는 대표 경로는 `setLocal({ render: false, selfManaged: true })`(CKEditor 등 자체 DOM 관리 플러그인)다. `render:false` 는 `updateTemplateData` 앞에서 조기 return 하고 액션 밖이라 `__g7ActionContext` 도 없으므로 **React 렌더가 0회** — memo 가 재계산되지 않아 `context.state` 가 입력 이전 스냅샷으로 고정된다. 여기에 폭 변경 리렌더가 `__g7PendingLocalState` 를 null 로 지우면(의존성 배열 없는 `useLayoutEffect`) base 가 stale A 로 떨어진다.
+
+pending 은 저장소 B 의 base 가 된다 — `setLocal` 이 `currentSnapshot = pendingState || baseLocal` 로 pending 을 우선 채택하기 때문이다. 그래서 A 스냅샷을 그대로 실으면 위와 같은 통째 교체가 **저장 클릭 전, 키입력 시점에** 일어난다. 방아쇠는 memo deps 와 무관한 리렌더(폭 변경 등)가 선행하는 것이고, 그것이 없으면 성립하지 않는다.
+
+이 결함군은 예외도 콘솔 에러도 남기지 않는다 — 화면에는 본문이 그대로 보이는데 요청 body 만 비어 나가고(작성 화면 422), 수정 화면에서는 성공 토스트와 함께 **직전 본문이 저장되어 편집분이 사라진다**. 정적 검사가 `_local` 동기화 호출의 base 를 검사한다.
+
 ### 핸들러 정의
 
 | 금지 | 올바른 사용 |
@@ -334,6 +379,22 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 | 벤더/프로바이더가 `boot()` 에서 조건부 등록하는 라우트에 의존 | 그 URI 를 G7 라우트 파일이 직접 소유 |
 
 전역 함수 위반은 `Call to undefined function` 500 인데 예외의 `file` 이 `laravel-serializable-closure://` 라 원인 파일이 스택에 드러나지 않는다. 프로바이더 등록분이 사라지는 이유는 별개다 — `Router::setCompiledRoutes()` 가 `booted` 콜백에서 라우트 컬렉션을 통째로 교체하므로 그보다 앞선 등록은 조건 충족 여부와 무관하게 폐기된다(프레임워크 자신의 `BroadcastManager::routes()` 는 `routesAreCached()` 가드를 갖지만 모든 패키지가 그렇지는 않다). 정적 검사가 라우트 파일의 전역 함수 선언을 차단한다. 상세: [routing.md](docs/backend/routing.md) "캐시 안전한 라우트 작성".
+
+### 조건부로만 열리는 라우트군의 게이트 (디버그·개발 라우트)
+
+특정 조건에서만 열려야 하는 라우트군은 판정을 핸들러 안이 아니라 그룹 미들웨어에 둔다. 게이트가 핸들러마다 흩어져 있으면 라우트를 추가할 때 함께 적는 것을 잊게 되고, 빠뜨려도 예외도 로그도 남지 않는다 — 그 엔드포인트가 정상 응답하는 것이 유일한 증상이다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| 디버그 라우트 핸들러 안에서 `DebugGate::isEnabled()` 로 개별 판정 | `bootstrap/app.php` 의 그룹 래퍼(`Route::middleware(['api', 'debug.gate'])`)가 단일 부착 |
+| catch-all 제외 패턴에 예약 프리픽스 누락 (`_boost`·`modules`) | `(?!admin)(?!api)(?!plugins)(?!_boost)(?!modules)` 전수 제외 — shadow 를 보호로 삼지 않는다 |
+| 게이트 부착을 행위 테스트(403 이 나오는지)로만 확인 | 라우트군 전체의 `gatherMiddleware()` 에 게이트 별칭이 있는지 단언하는 등록 계약 테스트 + 모집단 가드 |
+| 그룹 게이트가 라우트 캐시에도 구워질 것이라 가정 | 캐시 상태에서의 차단도 검증 — 라우트 캐시는 확장 수명주기 지점에서 자동 생성되어 오히려 흔한 상태다 |
+| `withRouting(channels: ...)` 로 채널 정의를 로드 | 프로바이더에서 `require routes/channels.php` — `channels:` 인자는 `Broadcast::routes()`(게이트 없는 `/broadcasting/auth`)까지 자동 등록해 킬스위치 우회로를 만든다 |
+
+catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 라우트는 도달 불가라 게이트가 없어도 증상이 없고, 제외 패턴이 한 줄 바뀌는 순간 무방비로 노출된다 — 실제로 `_boost` GET 4종이 그 상태였고, 같은 그룹의 `DELETE clear` 는 shadow 밖이라 운영 환경·`APP_DEBUG=false` 에서 미인증 200 으로 `storage/debug-dump` 전체를 지웠다(공개#128). 등록 계약 축을 행위 테스트로 대체할 수 없는 이유도 같다: 가려진 라우트는 행위상 "막힌 것" 과 구분되지 않는다.
+
+정적 검사가 디버그 라우트 파일의 개별 게이트를 차단하며, 부착·행위·캐시 축과 방송 인증 라우트 단일성은 테스트가 잠근다. 상세: [routing.md](docs/backend/routing.md) "디버그·개발 라우트는 그룹 단위로 게이트한다".
 
 ### 목록 컨텍스트 왕복 (list context round-trip)
 
@@ -415,6 +476,140 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 > 상세: [validation.md](docs/backend/validation.md), [service-repository.md](docs/backend/service-repository.md), [frontend/security.md](docs/frontend/security.md)
 
+### 제3자 라이브러리는 쓰기 경로를 지정받는다
+
+제3자 라이브러리는 캐시·임시파일 경로를 설정하지 않으면 **자기 설치 폴더**(vendor 안)나 시스템 temp 에 쓴다. 표준 Laravel 배포는 웹서버에 `storage/` 와 `bootstrap/cache` 만 쓰기 권한을 주므로 그 쓰기는 실패하는데, 실패가 예외가 아니라 PHP 경고라 Laravel `HandleExceptions` 가 `ErrorException` 으로 승격시켜 요청이 500 이 된다. 해시당 1회만 기록하는 라이브러리라면 캐시가 영영 생기지 않아 **매 요청이 같은 실패를 반복**한다 — 개발 머신에서는 vendor 가 쓰기 가능해 한 번 성공하고 끝나므로 재현되지 않는다 (공개 #125).
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 제3자 라이브러리를 기본 설정 그대로 인스턴스화 | 캐시·임시파일 경로를 `ExtensionStoragePath::module($id, 'cache/…')` 로 명시 — 기본값은 **라이브러리 자기 설치 폴더**다 |
+| 쓰기 경로만 지정하고 디렉토리 생성은 라이브러리에 맡김 | `FilePermissionHelper::ensureWritableDirectory()` 로 **먼저 확보한다** — 라이브러리는 대개 하위 디렉토리만 만들고, base 가 없으면 경고만 내고 끝난다 |
+| 확보 절차(억제 생성·chmod·setgid·소유권·쓰기 판정)를 호출부가 자기 안에 복사 | 코어 프리미티브 한 곳에서 수행 — 사본은 서로 다른 하드닝을 갖고 갈라진다(실제로 억제 mkdir·setgid·`clearstatcache` 가 사본마다 한쪽씩 빠져 있었다) |
+| 확장 저장 경로를 `storage_path('app/modules/…')` 로 직접 조립 | `ExtensionStoragePath::{module,plugin}()` — 디스크 root 가 단일 출처이고 테스트 환경을 인지하므로, 확장이 `runningUnitTests()` 분기를 복사하지 않는다. 복사본은 한 곳만 빠뜨려도 그 확장의 테스트가 **운영 설정 파일을 덮어쓴다** |
+| 캐시 쓰기 실패를 그대로 500 으로 흘림 | 캐시는 성능 장치다 — 확보 실패 시 캐시만 끄고 본래 기능은 계속한다. **정화·검증 자체를 건너뛰는 폴백은 금지** |
+| 폴백 통지를 `Log::warning` 으로 남김 | `Log::error` — 출하 기본 로그 수준(`config/settings/defaults.json` 의 `log_level`)이 `error` 라 `warning` 은 기본 설치 상태에서 파일에 기록되지 않는다. 기능은 성공하므로 그 통지가 유일한 흔적이다 |
+
+확보 프리미티브는 **예외도 PHP 경고도 내지 않는다** — `File::ensureDirectoryExists()` 는 `mkdir()` 을 억제 없이 부르므로 생성 실패가 `E_WARNING` → `ErrorException` 으로 승격되어, 막으려던 500 이 다른 줄에서 그대로 난다. 실패는 `bool` 과 사유(`occupied_by_file` / `ancestor_not_writable` / `create_failed` / `not_writable`)로 올라오고, 그 사유를 통지에 실어 운영자가 고칠 대상을 지목한다.
+
+경로는 `ExtensionStoragePath` 가 해석한다. `getBasePath('cache')` 는 `Storage::disk()->path()` 위임이라 비로컬 디스크(S3 등)에서 파일시스템 경로가 아니게 되는데, 그러면 라이브러리가 상대경로를 CWD 기준으로 해석해 **조용히 엉뚱한 곳에 쓴다** — 지금 결함보다 나쁘다. 대부분의 정의 캐시는 `file_put_contents` 로 쓰는 로컬 전용 장치다.
+
+> 상세: [storage-driver.md](docs/extension/storage-driver.md) "제3자 라이브러리에 절대 경로를 넘길 때", [service-repository.md](docs/backend/service-repository.md) "서비스가 제3자 라이브러리를 붙일 때"
+
+### 직접 전송로는 자격증명을 스스로 싣는다
+
+레이아웃의 `globalHeaders` 는 **데이터소스(DataSourceManager)와 `apiCall` 핸들러(ActionDispatcher)** 에만 적용된다. 코어 ApiClient(`G7Core.api.*`)를 직접 부르거나 `fetch` 를 쓰는 경로는 그 배선을 타지 않아 `Authorization` 과 `Accept-Language` 만 실린다. 게이트된 엔드포인트를 그렇게 부르면 서버는 정당한 사용자를 거부하는데, 화면은 버튼·썸네일을 이미 내준 뒤라 **예외도 콘솔 오류도 없이 그 자리만 비는 것**이 유일한 증상이다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 게이트된 엔드포인트를 `G7Core.api.*` / `fetch` 로 부르며 자격증명 헤더를 생략 | 호출부가 직접 싣는다 — 비밀글 첨부는 `X-Board-Secret-View-Token`, 비회원 주문은 `X-Guest-Order-Token` |
+| 자격증명이 없을 때 조용히 `return null` 로 이탈 | 회원/비회원 두 경로를 모두 구성한다 — 한쪽을 비우면 서버가 지원하는 기능이 도달 불가로만 남는다 |
+| 헤더 구성을 호출부마다 복제 | 확장·템플릿 안에 단일 지점(`secretContentHeaders()` / `buildOrderRequestHeaders()`)을 두고 경유 |
+| `<img src>` 에 헤더를 실으려 시도 | 이미지 태그는 헤더를 실을 수 없다 — 한시 서명 URL 을 발급하거나 blob 으로 받아 그린다 |
+| 자격증명을 GET 쿼리 문자열로 전달 | 헤더로 보낸다 — 쿼리는 웹서버 접근 기록과 `Referer` 에 그대로 남는다 |
+
+같은 기능을 여러 확장이 제공할 때는 **형제 구현의 강도가 갈리지 않는지** 확인한다. 서버가 비회원을 지원하는데 프론트 한쪽만 토큰을 보내면, 나머지 확장에서는 그 서버 기능이 존재하지만 도달 불가인 상태로 남는다.
+
+### 확장·템플릿 구동 에셋은 자체 제공한다
+
+브라우저가 화면을 그리기 위해 제3자 CDN 에 도달해야 하면, 그 도달 실패는 **예외도 로그도 남기지 않고 화면 기능만 조용히 사라진다.** 폐쇄망·방화벽·광고차단기에서 재현되며 자체 서버 로그에 흔적이 없어 운영자가 원인을 특정할 수 없다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 구동 자산(js/css/웹폰트)을 외부 CDN 에서 실시간 로드 | 확장이 `dist/vendor/{lib}/{version}/` 에 동봉하고 same-origin 서빙 |
+| `trusted_script_hosts` 만 선언하고 사유는 생략 | `trusted_script_hosts_reason` 에 호스트별 사유 동반 — 자체 제공이 원칙이고 예외는 근거가 코드에 남는다 |
+| 자산 URL 을 문자열로 조립 (`'/api/plugins/assets/'+id+'/…'`) | `G7Core.asset.{template,module,plugin}` — 확장자를 정적 location 이 가로채는 서버에서 조립 URL 만 404 가 된다 |
+| AMD 로더·워커에 `G7Core.asset.template()` 결과를 base 로 전달 | `G7Core.asset.templateDir()` — 쿼리 형태(`?file=`)는 뒤에 파일명을 이어 붙일 수 없다. 확장자 없는 모드에서 404 일 수 있으므로 **소비자가 폴백을 갖춘다** |
+| CSS 로드에 `onerror` 미설치 또는 `resolve()` 로 삼킴 | `loadStylesheetWithRetry` — 아이콘만으로 조작하는 버튼이 있는 화면에서 스타일 소실은 곧 조작 불능이다 |
+| 자산 실패를 `console.error` 한 줄로 끝냄 | `G7Core.assets.notifyFailure({id,label,retry})` — 사용자가 사실을 알고 조치할 수 있어야 한다 |
+| 편집기·코드편집기 확보 실패 시 빈 컨테이너를 남김 | 평문 입력(textarea) 폴백 + 저장 계약 유지(`{name}_mode='text'`) + 재시도 시 입력 내용 승계 |
+| 확장 `dist/`·`src/` 에 운영자 CSS 를 둠 | 확장 디렉토리 안의 **`custom/`** — 빌드 불필요, 확장 교체가 보존 |
+| 번들 확장이 `custom/` 을 담아 배포 | `dist/vendor/` 에 담는다. `custom/` 은 운영자 소유라 보존 계층이 덮어쓰지 않아 **저작자 파일이 영영 반영되지 않는다** |
+| 사용자 추가 에셋 URL 을 `ext.cache_version` 으로 무효화 | 파일 서명(수정 시각) — 확장 캐시 버전은 운영자가 파일을 고쳤다고 오르지 않는다 |
+| `custom/` 보존을 rename 경로에만 적용 | 교체 **두 경로 모두**(rename · 제자리 동기화 폴백) — 한쪽만 고치면 Windows 잠금 상황에서만 조용히 사라진다 |
+
+동봉 자산은 배포 산출물이므로 `sourceMappingURL` 참조를 남기지 않는다(`.map` 은 gitignore 대상이라 404 가 된다). 인라인 여부는 "없으면 조작 불능인가" 로 가른다 — 아이콘 폰트는 인라인, 글꼴·장식 아이콘은 파일 분리. 분리한 자산을 CSS 가 상대 경로로 가리켜도 된다: 확장 자산 CSS 는 서빙 시점에 내부 상대 참조가 절대 자산 URL 로 치환된다(`ServesRewritableCssAssets`). 치환이 없으면 쿼리 형태(`?file=`) 서버에서 그 참조가 조용히 404 가 된다.
+
+사용자 추가 에셋(`custom/`)은 **출처에 의존하지 않는 서술자**로 해석하고 `core.assets.custom_assets` 필터 훅을 해석기 끝에 둔다. 소비자(뷰 컴포저·프론트 로더·서빙)가 출처를 보면, 나중에 다른 출처(템플릿 환경설정의 화면 입력 등)가 붙을 때 평행 경로가 생기고 "운영자 CSS 가 어디서 오는가" 의 SSoT 가 둘로 갈린다.
+
+> 상세: [module-assets.md](docs/extension/module-assets.md) "사용자 추가 에셋", [static-asset-publishing.md](docs/backend/static-asset-publishing.md)
+> 정적 검사가 외부 자산 URL 과 번들 확장의 `custom/` 배포를 차단한다. 서술자 형태와 교체 2경로 보존은 테스트가 잠근다.
+
+### 확장은 자기 개발자 문서를 소유한다
+
+`docs/api/**` 는 "엔드포인트가 무엇을 받고 무엇을 돌려주는가" 만 답한다. 확장을 고치려는 쪽이 실제로 묻는 것은 그 앞이다 — **왜 이렇게 설계됐는가 / 어디를 확장해야 하는가 / 무엇을 건드리면 안 되는가.** 그 답이 코드 안에만 있으면 매번 `src/` 전체를 훑어 구조를 재발견하게 되고, 확장이 발행하는 훅은 확장점인데도 사실상 비공개가 된다.
+
+확장마다 `AGENTS.md`(고치는 쪽) · `README.md`(도입·운영 쪽) · `docs/**`(상세)를 두고, 코드에서 실측되는 표는 `php artisan ext:docgen` 이 유지한다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 확장 표면(훅·라우트·권한·모델·레이아웃·핸들러)을 바꾸고 그 확장 문서를 그대로 둠 | 같은 작업 단위에 `ext:docgen --scope={type}:{id}` 재실행 + 낡은 서술 정정 |
+| 자동 생성 블록(`@generated:*`) 안쪽을 손으로 고침 | 생성기가 교체하는 자리다 — 코드를 고치거나 블록 **밖**에 서술한다 |
+| 생성기에 파괴적 재생성 플래그(`--force`)를 추가 | 기본 동작이 "블록 안쪽 교체" 다. 사람 서술이 소실될 경로를 만들지 않는다 |
+| 문서에 없는 블록 키를 생성기가 임의 위치에 주입 | 누락으로 보고하고 사람이 마커 자리를 정한다 (문서 구조는 사람 소유) |
+| 필수 문서·섹션·블록 목록을 검사 스크립트에 복제 | `ExtensionDocScaffolder::DOCUMENTS` 단일 SSoT — 스크립트는 `ext:docgen --check --json` 을 소비한다 |
+| `TODO:` 마커를 추측으로 채움 | 코드 근거를 읽어 서술한다 — 다섯 자리(의도·흐름·금지패턴·사용방법·트러블슈팅)는 생성기가 채울 수 없는 **왜** 다 |
+| `5. 수정 시 동반 의무` 에 코어 횡단 규정을 전부 나열 | 그 확장에 **실제로 걸리는 것만** 추린다 — 전부 적으면 정작 걸리는 항목이 묻힌다 |
+| 신규 확장을 문서 없이 스캐폴딩 | `php artisan ext:docgen --scope={type}:{id} --init` 으로 골격을 함께 만든다 — 없으면 21번째 확장부터 다시 문서 없이 태어난다 |
+| 확장 문서를 활성 디렉토리에서 작성 | `_bundled` 에서만 작성하고 update 커맨드로 반영 (문서만이면 빌드 불필요) |
+| 확장이 훅을 추가할 때 코어 문서를 고침 | 훅 집계는 그 확장의 `docs/extension-points.md` 소유 — 코어에는 총계와 링크만 |
+| 레이아웃에 `data_source` 를 추가하고 `editor-spec.json` 의 `sampleData` 를 그대로 둠 | 같은 ID 로 프리뷰 샘플 추가 — 없으면 **편집기 캔버스에서만** 그 영역이 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다 |
+| 컴포넌트를 추가하고 팔레트에만 등록 | 템플릿 스펙은 `componentPalette.entries` · `componentPalette.groups` · `nesting` · `componentCapabilities` **넷 다** — 하나만 빠지면 편집기에서 절반만 동작하고, 어느 단계가 빠졌는지는 증상으로만 구분된다 |
+| 모듈·플러그인 스펙에 `componentPalette` 선언 | 컴포넌트는 템플릿 소유 — 모듈·플러그인 스펙은 도메인 데이터(`sampleData`·`states`)만 담는다. 같은 자리를 두고 다투면 어느 쪽이 이기는지가 병합 순서에 좌우된다 |
+| 공용 ID(`settings`·`roles`·`me`)를 확장마다 각자 선언 | 템플릿 스펙 한 곳 — 사본이 갈라져도 오류가 나지 않는다 |
+| 편집기 스펙 `description` 에 작업 단계·심사 판정·작업 방법을 적음 (`Phase 4/5 에서 추가`·`— 정당`·`전수 스캔 기반`) | **무엇을 담았는가**만 적는다 — 확장만 내려받은 제3자에게 내부 맥락은 해석 불가이고, "다음에 추가" 는 그 항목이 실제로 들어온 뒤에도 남아 **거짓이 된다**. 문서의 한 줄 요약은 이 필드를 옮기지 않고 실측에서 생성한다 |
+| 편집기 스펙을 고치고 update 커맨드 생략 | 서빙은 **활성 디렉토리만** 읽는다(`_bundled` 폴백 없음) — 파일은 고쳤는데 편집기에 직전 내용이 그대로 보인다 |
+
+이 결함군은 오류를 남기지 않는다. 문서가 코드와 어긋난 채로 계속 읽히는 것이 유일한 증상이며, 훅 이름이 어긋나면 그 확장을 잡으려던 쪽이 **잡히지 않는 훅을 구독**하게 된다(예외도 경고도 없이 리스너가 호출되지 않을 뿐이다).
+
+mermaid 문법 오류는 GitHub 렌더 시점에만 드러난다. 구조 검사가 잡을 수 있는 것은 선언된 다이어그램 종류·빈 본문·괄호 균형까지이므로, 새 형식은 실제 렌더를 눈으로 확인한다.
+
+`docs/editor-spec.md` 는 세 유형 공통이다 — 편집기 스펙을 두지 않는 확장에도 문서를 둔다. 미보유가 정상일 수 있고("이 확장은 공용 ID 만 쓴다") 그 정상 여부를 적을 자리가 없으면 다음 사람이 부재를 누락으로 오해하거나 필요한 시점을 놓친다. 그 문서의 "샘플 데이터와 페이지 상태" 절은 그 확장 레이아웃의 `data_source` 중 프리뷰 샘플이 붙지 않는 것을 실측해 나열한다 — 이 결함은 편집기 캔버스에서만 빈 화면으로 나타나므로 그 목록이 유일한 통로다.
+
+> 상세: [extension-documentation.md](docs/extension/extension-documentation.md)
+> 정적 검사가 확장 표면 변경 시 문서 미동반과 미채움 마커 잔존을 검출한다. 생성기의 비파괴 계약(블록 밖 손실 0 · 재실행 멱등 · 미존재 키 미주입)과 필수 문서·섹션·블록 목록은 테스트가 잠근다.
+
+### 의존성 감사 신호는 거짓일 수 있다
+
+`npm audit --omit=dev` 는 **`dependencies` 에 선언된 것만** 본다. 실행에 쓰이는 라이브러리가 `devDependencies` 에 있으면 그 패키지는 검사 대상에서 통째로 빠지고, 취약점이 있어도 감사는 0건을 돌려준다. "운영 의존성 취약점 없음" 이라는 완료 조건이 취약한 상태로도 충족된 것처럼 보인다.
+
+동봉(vendored) 제3자 자산은 더 나아가 **어떤 잠금파일에도 없어** 감사 도구가 원리상 볼 수 없다. 그 안에 재번들된 라이브러리가 브라우저로 나간다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 런타임 소스가 import 하는 패키지를 `devDependencies` 에만 선언 | `dependencies` 로 선언 — 검사 대상에 들어가야 감사 신호가 사실이 된다 |
+| 루트 잠금파일만 감사하고 완료 선언 | 확장의 잠금파일까지 전수 (`php artisan security:audit-dependencies`) — 루트만 보면 확장 전부가 사각이다 |
+| 동봉 자산을 감사 범위에 들었다고 간주 | 잠금파일에 없으므로 **사람이 확인한다** — 점검 명령이 목록으로 노출한다 |
+| 잠금만 올리고 재빌드를 생략 | 브라우저가 받는 버전은 커밋된 `dist/` 가 정한다 — 잠금 갱신 후 반드시 재빌드·재게시 |
+| "점검 대상 0" 과 "점검 불가" 를 같은 문구로 보고 | 구분 보고 — 뭉뚱그리면 운영자가 "전부 정상" 으로 읽는다 |
+| 동봉 자산 버전을 여러 곳에 적고 상향 시 일부만 갱신 | 모든 기재(디렉토리 · 의존성 핀 · 복사 스크립트 · 소스 상수 · 테스트 어서션)를 한 버전으로 — 하나만 어긋나도 그 자산이 404 가 되는데 빌드와 테스트는 통과한다 |
+| 상류가 못 고치는 잔여 취약을 감사에서 가리기(`overrides` 로 무마) | 잔여는 **하한과 사유를 기록**하고 그 아래로 내려가는 것만 막는다 — 가리면 그 지점이 영원히 보이지 않는다 |
+
+이 결함군은 예외도 로그도 남기지 않는다. 취약한 라이브러리가 정상 동작하고 감사가 0건을 보고하는 것이 유일한 증상이다. 정적 검사가 앞의 두 항목을 차단하고, 출하 산출물의 정화기 버전과 점검 명령의 모집단은 테스트가 고정한다.
+
+> 상세: [module-assets.md](docs/extension/module-assets.md), [cheatsheet.md](docs/cheatsheet.md)
+
+### 프록시 뒤 요청은 스킴·IP 를 스스로 증명하지 않는다
+
+TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB, CloudFront, Cloudflare, nginx/Apache 리버스 프록시, ngrok)에서 신뢰할 프록시가 지정되지 않으면 Laravel 은 `X-Forwarded-*` 를 전부 무시한다. 요청 객체가 평문 HTTP 로 인식되어 `asset()`/`url()` 이 `http://` 를 만들고(HTTPS 페이지에서 혼합 콘텐츠로 차단 → **사이트 전체 백지**), `$request->ip()` 가 프록시 IP 가 되어 통보 IP 화이트리스트·rate limit·IP 기록·GeoIP 가 동시에 무너진다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `bootstrap/app.php` 에서 `trustProxies(at: env('TRUSTED_PROXIES'))` | `config/trustedproxy.php` 의 `'proxies' => env('TRUSTED_PROXIES')` — `withMiddleware` 클로저는 `.env` 로드 전에 평가되어 `env()` 가 항상 `null` 이다(오류 없이 no-op) |
+| 신뢰 프록시를 `'*'` 로 하드코딩 | env opt-in — 앱이 직접 노출된 환경에서 `X-Forwarded-For` 위조로 기록 IP·IP 제한이 조작된다 |
+| `$middleware->trustHosts()` 호출 | 호출 자체가 모든 설치처에서 Host 검증을 켠다(미등록 호스트 400) — opt-in 원칙 위반 |
+| IP 화이트리스트·rate limit·IP 기록을 `$request->ip()` 로 두면서 프록시 구성을 문서화하지 않음 | 그 기능이 프록시 신뢰 설정에 의존한다는 사실을 문서에 남긴다 |
+| 절대 URL 이 필요한 곳에서 요청 스킴 의존(`url()`/`asset()`)과 설정 앵커(`config('app.url')`)를 혼용 | 외부 시스템에 등록·전송되는 URL(PG 콜백·webhook 안내)은 설정 앵커, 화면 자산은 요청 기준 |
+| 진단 판정을 "HTTPS 인식 실패" 로 세움 | `X-Forwarded-* 수신 중 AND 신뢰 프록시 미설정` — HTTP 전용 사이트가 프록시 뒤에 있으면 **화면은 완전히 정상 렌더되면서** webhook 403·IP 왜곡만 계속된다. HTTPS 기준 판정은 그 구성에서 침묵한다 |
+| 같은 판정을 노출면(대시보드·환경설정·설치 마법사·커맨드)마다 다시 작성 | `App\Support\TrustedProxyDiagnostic` 단일 판정 — 면마다 조건을 복제하면 한 곳만 어긋나도 서로 다른 답을 내놓는다 |
+| 신뢰 프록시 값을 관리자 화면에서 편집 가능하게 제공 | 읽기 전용 진단만. ① 프록시 뒤에서는 그 화면 자체가 뜨지 않는 것이 이 결함이라 정작 필요한 순간에 도달 불가(잠금 역설) ② 웹 편집이 가능해지면 관리자 계정 탈취가 곧 XFF 위조 경로가 된다 |
+
+이 결함군은 서버 로그에 흔적을 남기지 않는다. 브라우저 콘솔의 차단 로그와 "모든 방문자가 같은 IP" 라는 데이터 상태만이 증상이며, 설치 마법사는 `X-Forwarded-Proto` 를 읽어 "HTTPS 정상" 이라고 보고하므로 운영자에게는 원인 추적 단서가 없다.
+
+`**` 는 Laravel 내장 미들웨어에서 `*` 과 같은 코드 경로를 타므로 "모든 프록시 신뢰" 가 아니다. 프록시가 여러 단인 구성에서는 체인의 모든 프록시 IP·CIDR 를 나열해야 최초 클라이언트 IP 가 해석된다.
+
+> 상세: [reverse-proxy.md](docs/backend/reverse-proxy.md)
+> `config/trustedproxy.php` 의 키 계약, 신뢰/미신뢰 분기, 쿠키 Secure 자동 판정, `bootstrap/app.php` 로의 `env()` 함정 재유입 차단은 테스트가 잠근다. `url()`/`asset()`/`$request->ip()` 는 정상 사용례가 다수라 정적 금지 규칙을 두지 않는다.
+
 ### 목록 응답의 하위 컬렉션
 
 목록은 화면이 그 행에서 **실제로 그리는 것**만 싣는다. 행마다 하위 컬렉션을 통째로 직렬화하면 한 페이지를 여는 것만으로 수백~수천 행이 응답에 실린다 (공개 #76 — 상품 100건 × 옵션 20건).
@@ -433,6 +628,26 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 > 상세: [api-resources.md](docs/backend/api-resources.md), [service-repository.md](docs/backend/service-repository.md)
 
+### 확장 캐시 버전은 트레이트 게터로만 읽고, 만료시키지 않는다
+
+확장 캐시 버전(`ext.cache_version`)은 모든 자산 URL 의 `?v=`·정적 게시본(`public/build/ext/{v}/`)·병합 번들 파일명의 좌표다. 그 키를 올리는 단일 지점(`incrementExtensionCacheVersion()`)이 재게시까지 예약하므로, 게시본에 구워지는 입력이 바뀌는 경로는 전부 그 지점을 타야 하고, 키 자체는 만료로 재생성되어서는 안 된다 — 재생성은 정적 파일 전체 재생성이자 전 방문자의 자산 URL 변경이다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `$cache->get('ext.cache_version', 0)` / `app(CacheInterface::class)->get(...)` / `->forget('ext.cache_version')` 원시 접근 | `ExtensionStaticCacheService::getExtensionCacheVersion()` 또는 트레이트를 조합한 클래스 안의 `self::getExtensionCacheVersion()` — 부재 시 재생성하므로 `cache:clear` 직후 0 이 새지 않고, 컨테이너 바인딩의 확장 네임스페이스 누수도 없다 |
+| 트레이트 정적 메서드를 트레이트 이름으로 직접 호출 (`ClearsTemplateCaches::getExtensionCacheVersion()`) | 트레이트를 조합한 코어 클래스 경유 — PHP 8.1+ E_DEPRECATED 이고, 트레이트 상수는 `self::` 로 읽을 수 없다 |
+| 게시본에 구워지는 설정값(`general.asset_url_mode`)을 바꾸는 경로에서 bump 누락 | 저장·단건 저장·복원·CLI 어느 경로든 `incrementExtensionCacheVersion()` — 번들 CSS 안의 `url()` 형태가 본문에 구워져 있다 |
+| 게시 입력이 바뀌는 수명주기 경로를 조건부 bump 에 위임 (템플릿 update 가 레이아웃 변경 건수 > 0 일 때만) | 모듈·플러그인과 동형으로 무조건 bump — 조건은 게시 입력 중 레이아웃 축만 본다 |
+| custom 변경 감지 서명과 게시 복사 집합을 서로 다른 코드가 정의 | 같은 열거자(`CustomAssets::publishableFiles()`) — 감지가 최상위 css/js 만 보면 하위 글꼴·이미지 교체가 영영 미게시다 |
+| 버전 키·서명 키를 기본 TTL 로 `put()` | `PERSISTENT_TTL_SECONDS`(10년) 명시 — `forever()` 는 `CacheInterface` 밖(공개 표면 변경), `put(…, 0)` 은 forget |
+| 서명 스코프를 렌더 템플릿만으로 나눔 | `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버 간 mtime 차이로 요청마다 재게시가 왕복한다 |
+| `config:cache` / `route:cache` / `event:cache` / `optimize` 를 헬퍼 밖에서 `Artisan::call` | `ConfigCacheHelper::rebuild()` / `RouteCacheHelper::rebuild()` (내부가 `withPreservedContainer`) — 이 명령들은 새 Application 을 부팅하며 전역 `Container` 를 일회용 앱으로 바꿔 놓아, 그 뒤 등록되는 `app()->terminating()` 재게시 예약이 종료되지 않는 앱에 걸려 사라진다 |
+| 코어 업데이트 흐름에서 현재 프로세스의 버전·update 목록을 `config('app.version')`·`config('app.update.*')` 로 판독 | spawn 자식은 부모가 비우지 않은 이전 버전 config 캐시로 부팅한다 — 버전은 `CoreVersionChecker::getCoreVersion()`(env 우선), update 목록은 캐시 부팅이면 `CoreUpdateService::freshDiskUpdateConfig()`, 부모는 spawn 직전 `ConfigCacheHelper::clear()` |
+
+이 결함군은 예외도 로그도 남기지 않는다 — 게시본이 정상 200 으로 옛 내용을 내보내는 것, 또는 매일 전체 재생성이 일어나는 것이 유일한 증상이다. 재게시 누락의 안전망은 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기](`POST /api/admin/settings/static-cache/republish`)이며, 상태 판정은 `ExtensionStaticCacheService::statusReport()` 한 곳이 CLI·API·화면에 공급한다.
+
+> 상세: [static-asset-publishing.md](docs/backend/static-asset-publishing.md) "버전은 만료되지 않는다" · "5-1. 관리자 화면에서의 수동 복구"
+
 ### 저장값 + 확장 카탈로그 병합 설정의 공개 응답
 
 설정 항목이 "운영자 저장값 + 확장이 훅으로 등록한 카탈로그" 의 병합으로 만들어지면, 저장값은 남아 있는데 카탈로그에서 항목이 사라지는 상태가 생긴다 — 그 확장을 삭제·비활성화했거나, 확장이 자기 기능 토글을 껐을 때다. 병합부는 이를 고아 항목으로 표시하지만 저장값의 `is_active` 는 참 그대로 남는다.
@@ -448,6 +663,24 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 이 결함은 예외도 경고도 로그도 남기지 않는다. 이미 제공 불가한 항목이 사용자 화면에서 선택 가능한 상태로 남아 있는 것이 유일한 증상이고, 관리자 화면은 고아 표시로 정상 차단하고 있어 양쪽을 나란히 보지 않으면 드러나지 않는다.
 
 > 상세: [module-settings.md](docs/extension/module-settings.md) "카탈로그 병합 설정의 공개 응답"
+
+### 설정 주입과 `.env` 우선
+
+관리자 환경설정(`storage/app/settings/*.json`)은 `SettingsServiceProvider` 를 거쳐 `config()` 에 주입되어 `.env` 유래 값을 덮는다. `.env` 를 배포 기준값으로 관리하는 설치(컨테이너·IaC·다중 서버)를 위해 그 소유권을 **키 단위**로 되돌리는 옵트인 스위치(`G7_ENV_PRIORITY`)가 있고, 판정은 `App\Support\EnvPriority` 가 단독으로 소유한다.
+
+| 금지 | 올바른 사용 |
+|--------|---------------|
+| `SettingsServiceProvider` 에 settings → config 주입을 추가하면서 `EnvPriority::MAP`(또는 `EXEMPT`) 미등재 | 맵을 동반 갱신 — 등재를 잊으면 그 키는 영원히 settings 승으로 남고, 화면상 "그 키가 `.env` 에 없다"와 구분되지 않는다 |
+| env 명시 여부를 런타임 `env()` 로 판별 | config 빌드 시점 캡처(`config/env-priority.php`, `disk_explicit` 패턴) — `config:cache` 에서 `env()` 는 null 이라 판정이 영구 미발동한다 |
+| 잠긴 키 표시값에 sensitive 값(`.env` 비밀값) 노출 | 잠금 표시만 — 민감 키는 유효값 오버레이 대상에서 제외한다 |
+| 제거된 키의 **부재를 값으로 읽는 지점**을 그대로 둠 (게이트·기본값 주입·형제 폴백) | 그 자리는 유효값(런타임 config)으로 보정하거나 잠금일 때만 건너뛴다 — `array_key_exists`/`empty()` 로 판정하면 "저장값이 없는 호출"과 "잠겨서 제거된 호출"이 구분되지 않는다 |
+
+명시 판별은 strict 다 — `KEY=`(빈 값)·`KEY=null`·미설정만 미명시이고, `APP_DEBUG=false`·`REDIS_DB=0` 같은 falsy 명시는 명시로 취급한다(`?:` 를 쓰면 그 값들이 미명시로 오판된다).
+
+잠금은 **그 키의 주입만** 건너뛰는 것이다. 그런데 제거된 키를 읽는 자리가 그 부재를 값으로 해석하면 잠금이 형제 설정까지 무너뜨린다 — 다섯 형태가 있고 전부 오류도 로그도 남기지 않는다: ① 마스터 토글의 OFF 강제(웹소켓) ② 게이트가 되는 키(디버그 모드 → 로그 레벨 강제·프록시 적용, 메일 드라이버 → mailgun/ses 하위 주입) ③ 저장값이 비어도 박히던 기본값(`services.{mailgun.endpoint,ses.region}`) ④ 형제 값으로의 폴백(웹소켓 server endpoint 가 관리자 소유 client 값을 `.env` 자리에 덮어씀) ⑤ 파생 판정(`storage_driver=s3` → `attachment.disk`). 판정에 쓰는 자리는 유효값으로 보정하고, 주입을 건너뛰어야 하는 자리는 `EnvPriority::isLocked()` 를 직접 묻는다.
+
+> 상세: [admin-settings-access.md](docs/backend/admin-settings-access.md) "env 우선 모드(G7_ENV_PRIORITY)"
+> 자동 차단: 정적 검사가 주입 메서드의 필터 배선 실존을 확인하고, 맵 패리티·캡처 일치·`env()` 재유입과 표시값·저장 게이트는 계약 테스트가 잠근다. 부재를 값으로 읽는 자리는 의미 판정 영역이라 정적 검사가 덮지 못한다 — 게이트·기본값·폴백·파생 네 축을 각각 고정하는 회귀 테스트가 그 자리를 잠근다
 
 ### 목록 조회 컬럼 프루닝과 지연 조인
 
@@ -780,6 +1013,20 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 필수: 규정 문서에 정의된 핸들러/props/바인딩 문법만 사용 (API 응답 구조도 확인 후 바인딩)
 필수: Partial은 컴포넌트 치환만 수행 (computed, data_sources, modals, state 미지원)
 필수: data_sources ID 고유성 유지, 조건부 렌더링은 if 속성만 사용 (type: "conditional" 미지원)
+```
+
+### 독립 레이아웃(extends 없음)의 글로벌 호스트 컴포넌트
+
+`toast`, `openModal` 등 글로벌 상태 기반 핸들러(`_global.toasts`, `_global.modal`)는 호스트 컴포넌트(`Toast`, `ModalRoot` 등)가 마운트되어야 화면에 렌더된다. 베이스 레이아웃(`_user_base`, `_admin_base`)은 일반적으로 이들을 마운트하므로 자식 레이아웃은 별도 작업이 필요 없지만, `extends` 없이 정의된 독립 레이아웃(예: `admin_login.json`)은 호스트 컴포넌트가 자동 주입되지 않는다.
+
+```text
+필수: 독립 레이아웃에서 toast/modal 사용 시 components 최상단에 호스트 컴포넌트를 직접 추가
+  - Toast: { type: "composite", name: "Toast", props: { toasts: "{{_global.toasts}}", ... } }
+  - 누락 시 핸들러는 success 로 기록되나 화면에는 미노출 (조용한 실패)
+
+필수: 의심 시 베이스 레이아웃의 호스트 컴포넌트 정의를 그대로 복사
+  - sirsoft-admin_basic: layouts/_admin_base.json 의 #global_toast 블록
+  - sirsoft-basic: layouts/_user_base.json 의 토스트 컴포넌트 블록
 ```
 
 ---
@@ -1197,7 +1444,23 @@ php artisan plugin:build sirsoft-payment --active       # 활성 디렉토리에
 
 > **빌드 원칙**: 기본값은 `_bundled` 디렉토리. 빌드 결과물은 빌드 경로 내에만 남음.
 
-`_bundled` 의 `dist/`(코어는 `public/build/core/`)는 Git 추적되는 배포 산출물이다 (`*.map` 만 ignore). src 변경 시 커밋 dist 를 `--production` 으로 동반 재빌드한다 — 신규 소스 리터럴이 dist 에 없으면 stale 빌드이며, 정적 검사가 이를 검출한다. 커밋 dist 에 `//# sourceMappingURL=` 참조를 남기지 않는다 — `.map` 은 배포본에 존재하지 않아 브라우저 개발자 도구에서 404 를 유발한다. 코어 3번들 재빌드는 `core:build --production` (`--full` 은 앱 번들 전용 — `public/build` 를 비워 코어 3번들을 지운다).
+`_bundled` 의 `dist/`(코어는 `public/build/core/`)는 Git 추적되는 배포 산출물이다 (`*.map` 만 ignore). src 변경 시 커밋 dist 를 `--production` 으로 동반 재빌드한다 — 신규 소스 리터럴이 dist 에 없으면 stale 빌드이며, 정적 검사가 이를 검출한다. 커밋 dist 에 `//# sourceMappingURL=` 참조를 남기지 않는다 — `.map` 은 배포본에 존재하지 않아 브라우저 개발자 도구에서 404 를 유발한다. 코어 3번들 재빌드는 `core:build --production`.
+
+### 빌드는 자기 산출물만 교체한다 (`emptyOutDir`)
+
+모든 vite config 는 `build.emptyOutDir: false` 를 **명시**한다. 기본값 `true` 는 산출물 디렉토리를 통째로 비우는데, 그 디렉토리에는 vite 가 만들지 않는 서빙 자산이 함께 산다.
+
+| 함께 지워지던 것 | 결과 |
+|---|---|
+| `public/build/core/` 3번들 | 폴백이 없다 — `template-engine.min.js` 는 동기 classic 스크립트라 소실 = **사이트 부팅 불가**, 안내 화면조차 렌더되지 않는다 |
+| `public/build/ext/{v}/` 게시본 | 이미 배달된 HTML 의 immutable URL 이 404. 재게시로 새 버전이 생겨도 **그 URL 은 복구되지 않는다** |
+| 확장 `dist/vendor/` | 확장이 동봉한 구동 제3자 자산 소실 (자체 제공 원칙 위반) |
+
+소실은 예외도 서버 로그도 남기지 않는다 — 브라우저 404 로만 나타나므로 운영자에게는 흔적이 없다. 잔존하는 구 해시 산출물은 `manifest.json`(또는 고정 파일명)이 선택하므로 참조되지 않는 사표이고, 정리 책임은 빌드 커맨드가 진다.
+
+빌드 커맨드의 산출물 정리는 **활성 디렉토리를 건너뛴다.** 정리는 빌드 *전에* 돌므로 웹이 서빙 중인 `dist/` 를 비우면 빌드 완료까지가 통째로 서빙 공백이 되고, 빌드가 실패하면 빈 채로 남는다. 정리 대상은 `_bundled` / `_pending` 소스 디렉토리뿐이다.
+
+정적 검사가 모든 vite config 의 명시 선언을 강제한다 (기본값 의존 금지 — 규약이 코드에 남지 않으면 다음 편집자가 같은 결함을 재도입한다).
 > 활성 디렉토리 반영은 `update` 커맨드로만 수행. `--watch` 모드는 실시간 개발용으로 활성 디렉토리를 자동 사용.
 
 ---
@@ -1284,6 +1547,7 @@ php artisan migrate:rollback
 
 | 수정 대상 파일 패턴 | 작업 전 필수 참조 |
 | ------------------- | ------------------ |
+| `(modules\|plugins\|templates)/_bundled/{id}/**` (그 확장의 소스 전반) | 그 확장의 `AGENTS.md` · `docs/README.md` — 설계 의도·디렉토리 지도·확장점·**수정 시 동반 의무**·금지 패턴. 수정 후 표면이 바뀌었으면 `php artisan ext:docgen --scope={type}:{id}` ([extension-documentation.md](docs/extension/extension-documentation.md)) |
 | `app/Http/Controllers/**` | [controllers.md](docs/backend/controllers.md), [api-documentation.md](docs/backend/api-documentation.md) |
 | `app/Services/**` | [service-repository.md](docs/backend/service-repository.md) |
 | `app/Http/Requests/**` | [validation.md](docs/backend/validation.md) |

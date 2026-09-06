@@ -4,16 +4,17 @@
  * 그누보드7 웹 인스톨러 설정 파일
  *
  * 인스톨러의 기본 상수와 설정을 정의합니다.
- *
- * @package G7\Installer
  */
 
 // 프로젝트 루트 경로 (public/install/includes에서 3단계 상위)
-if (!defined('BASE_PATH')) {
+if (! defined('BASE_PATH')) {
     define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
 }
 
-// 인스톨러 기본 URL 
+// UTF-8 정규화 / JSON 출력 헬퍼 (의존성 0 — 가장 먼저 로드)
+require_once __DIR__.'/utf8.php';
+
+// 인스톨러 기본 URL
 $installerPath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
 
 // install이 없으면 추가
@@ -24,22 +25,22 @@ if (substr($installerPath, -8) !== '/install') {
 // 다음 define 들은 가드 필수 — 테스트 환경에서 같은 프로세스가 config.php 를 직접/간접
 // 재진입(예: Laravel bootstrap + 테스트 require)할 수 있어 PHP 9 에서 fatal 이 되는
 // 중복 정의 warning 을 차단.
-if (!defined('INSTALLER_BASE_URL')) {
+if (! defined('INSTALLER_BASE_URL')) {
     define('INSTALLER_BASE_URL', $installerPath);
 }
 
 // 소프트웨어 최초 출시 연도 (저작권 표시용)
-if (!defined('APP_RELEASE_YEAR')) {
+if (! defined('APP_RELEASE_YEAR')) {
     define('APP_RELEASE_YEAR', '2026');
 }
 
 // 최소 PHP 버전
-if (!defined('MIN_PHP_VERSION')) {
+if (! defined('MIN_PHP_VERSION')) {
     define('MIN_PHP_VERSION', '8.2.0');
 }
 
 // 필수 PHP 모듈
-if (!defined('REQUIRED_EXTENSIONS')) {
+if (! defined('REQUIRED_EXTENSIONS')) {
     define('REQUIRED_EXTENSIONS', [
         'pdo',
         'mbstring',
@@ -59,7 +60,7 @@ if (!defined('REQUIRED_EXTENSIONS')) {
 }
 
 // 선택적 PHP 모듈 (설치를 권장하지만 필수는 아님)
-if (!defined('OPTIONAL_EXTENSIONS')) {
+if (! defined('OPTIONAL_EXTENSIONS')) {
     define('OPTIONAL_EXTENSIONS', [
         'zlib',     // gzip 압축 지원 (응답 압축에 사용)
         'gd',       // 이미지 처리
@@ -70,7 +71,7 @@ if (!defined('OPTIONAL_EXTENSIONS')) {
 }
 
 // 최소 디스크 공간 (MB)
-if (!defined('MIN_DISK_SPACE_MB')) {
+if (! defined('MIN_DISK_SPACE_MB')) {
     define('MIN_DISK_SPACE_MB', 500);
 }
 
@@ -78,24 +79,24 @@ if (!defined('MIN_DISK_SPACE_MB')) {
 // MySQL identifier 한도(64자) 안에서 자동 생성 인덱스명이 안전하도록 제한한다.
 // 가장 긴 자동 생성 인덱스명(접두사 제외)이 58자이므로 58 + 6 = 64 로 정확히 한도에 맞는다.
 // 7자 이상 접두사는 일부 인덱스명이 65자가 되어 마이그레이션이 실패한다.
-if (!defined('MAX_DB_PREFIX_LENGTH')) {
+if (! defined('MAX_DB_PREFIX_LENGTH')) {
     define('MAX_DB_PREFIX_LENGTH', 6);
 }
 
 // 디렉토리 권한 설정 (8진수)
 // 업계 표준 755 (WordPress/Drupal/Joomla/Laravel 공통) — 실제 통과 기준은 is_writable() && is_readable()
-if (!defined('REQUIRED_DIRECTORY_PERMISSIONS')) {
+if (! defined('REQUIRED_DIRECTORY_PERMISSIONS')) {
     define('REQUIRED_DIRECTORY_PERMISSIONS', 0755);
 }
 
 // 권한 표시용 문자열 (사용자에게 보여줄 형식)
-if (!defined('REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY')) {
+if (! defined('REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY')) {
     define('REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY', '755');
 }
 
 // 권한 검증이 필요한 디렉토리 목록
 // 값이 true인 경우 하위 디렉토리까지 재귀적으로 체크
-if (!defined('REQUIRED_DIRECTORIES')) {
+if (! defined('REQUIRED_DIRECTORIES')) {
     define('REQUIRED_DIRECTORIES', [
         'storage' => true,
         'bootstrap/cache' => false,
@@ -113,7 +114,7 @@ if (!defined('REQUIRED_DIRECTORIES')) {
 }
 
 // 인스톨러 기본 설정값
-if (!defined('DEFAULT_INSTALL_CONFIG')) {
+if (! defined('DEFAULT_INSTALL_CONFIG')) {
     define('DEFAULT_INSTALL_CONFIG', [
         // Write DB 설정
         'db_write_host' => 'localhost',
@@ -160,7 +161,7 @@ if (!defined('DEFAULT_INSTALL_CONFIG')) {
 
 // 설치 단계별 파일 매핑
 // Step 5 (installation)에서 완료/실패/중단 화면까지 모두 처리
-if (!defined('STEP_FILE_MAP')) {
+if (! defined('STEP_FILE_MAP')) {
     define('STEP_FILE_MAP', [
         0 => 'welcome',
         1 => 'license',
@@ -172,7 +173,7 @@ if (!defined('STEP_FILE_MAP')) {
 }
 
 // 인스톨러 기본 상태 정의
-if (!defined('DEFAULT_INSTALLATION_STATE')) {
+if (! defined('DEFAULT_INSTALLATION_STATE')) {
     define('DEFAULT_INSTALLATION_STATE', [
         'current_step' => 0,
         'step_status' => [
@@ -200,7 +201,7 @@ if (!defined('DEFAULT_INSTALLATION_STATE')) {
 }
 
 // 지원 언어 목록 (언어 추가 시 이 한 곳만 수정)
-if (!defined('SUPPORTED_LANGUAGES')) {
+if (! defined('SUPPORTED_LANGUAGES')) {
     define('SUPPORTED_LANGUAGES', [
         'ko' => '한국어 (Korean)',
         'en' => 'English',
@@ -208,7 +209,7 @@ if (!defined('SUPPORTED_LANGUAGES')) {
 }
 
 // 설치 완료 후 인스톨러 파일 삭제 여부
-if (!defined('DELETE_INSTALLER_AFTER_COMPLETE')) {
+if (! defined('DELETE_INSTALLER_AFTER_COMPLETE')) {
     define('DELETE_INSTALLER_AFTER_COMPLETE', true);
 }
 
@@ -223,9 +224,9 @@ if (!defined('DELETE_INSTALLER_AFTER_COMPLETE')) {
 // 클래스를 못 본 채 require 로 내려가는데, BASE_PATH 를 임시 디렉토리로 바꿔 두는
 // 인스톨러 단위 테스트에서는 그 경로에 app/Support 가 없어 fatal 이 된다.
 // 순수 인스톨러 실행 시에는 등록된 오토로더가 없어 false 를 반환하므로 require 가 그대로 돈다.
-if (!class_exists('App\\Support\\PrivilegedDatabaseAccounts')) {
-    require_once BASE_PATH . '/app/Support/PrivilegedDatabaseAccounts.php';
+if (! class_exists('App\\Support\\PrivilegedDatabaseAccounts')) {
+    require_once BASE_PATH.'/app/Support/PrivilegedDatabaseAccounts.php';
 }
-if (!class_exists('App\\Support\\OpcacheStatus')) {
-    require_once BASE_PATH . '/app/Support/OpcacheStatus.php';
+if (! class_exists('App\\Support\\OpcacheStatus')) {
+    require_once BASE_PATH.'/app/Support/OpcacheStatus.php';
 }

@@ -13,7 +13,8 @@
  */
 
 import { createLogger } from '../utils/Logger';
-import { suffixed } from '../support/assetUrl';
+import { suffixed, extStaticUrl } from '../support/assetUrl';
+import { fetchStaticFirst } from '../support/fetchStaticFirst';
 // 순환 import (DataBindingEngine → TranslationEngine → DataBindingEngine) 이지만
 // 양쪽 모두 모듈 평가 시점이 아니라 메서드 실행 시점에만 서로를 참조하므로
 // live binding 이 채워진 뒤에 사용된다.
@@ -242,7 +243,15 @@ export class TranslationEngine {
         extraParams.length > 0 ? extraParams.join('&') : undefined,
       );
 
-      const response = await fetch(url);
+      // 정적 게시본(bake) 우선 (#122) — bustCache 재로드는 목적상 정적 캐시를
+      // 우회해야 하므로 legacy 직행. miss 는 fetchStaticFirst 가 legacy 로 폴백.
+      const staticUrl = ! bustCache && this.cacheVersion > 0
+        ? extStaticUrl(`templates/${templateId}/lang/${locale}.json`, this.cacheVersion)
+        : null;
+
+      const response = staticUrl !== null
+        ? await fetchStaticFirst(staticUrl, url, { label: `lang/${locale}.json` })
+        : await fetch(url);
 
       if (!response.ok) {
         throw new TranslationError(

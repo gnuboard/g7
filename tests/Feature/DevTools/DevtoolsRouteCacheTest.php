@@ -252,6 +252,83 @@ class DevtoolsRouteCacheTest extends TestCase
     }
 
     /**
+     * 그룹 게이트는 라우트 캐시 상태에서도 살아 있어야 한다 (이슈 #128).
+     *
+     * 게이트를 핸들러 안에서 그룹 미들웨어로 올렸으므로, 이제 게이트 적용은 **미들웨어가
+     * 라우트와 함께 캐시에 구워지는가**에 달려 있다. 구워지지 않으면 캐시된 사이트에서만
+     * `DELETE clear` 가 다시 열리는데 — 라우트 캐시는 확장 설치·활성화 등 수명주기 지점에서
+     * 자동 생성되므로 그쪽이 오히려 흔한 상태다 — 예외도 로그도 없이 파괴적 엔드포인트가
+     * 미인증 200 을 돌려준다.
+     *
+     * `storage/debug-dump` 를 실제로 지우지 않는 것까지 확인한다: 자식 프로세스는 실
+     * storage 를 쓰므로, 게이트가 없으면 이 테스트 한 번으로 개발자 덤프가 사라진다.
+     */
+    public function test_debug_gate_blocks_destructive_clear_under_route_cache(): void
+    {
+        $dumpDir = base_path('storage/debug-dump');
+        $before = is_dir($dumpDir) ? count(glob($dumpDir.'/*') ?: []) : 0;
+
+        $result = $this->dispatch('DELETE', '/_boost/g7-debug/clear', '', debug: false);
+
+        $this->assertTrue(
+            $result['routesAreCached'],
+            '라우트 캐시가 걸리지 않은 채 통과하면 이 테스트는 아무것도 검증하지 못합니다 (가짜 green).'
+        );
+        $this->assertStringContainsString('route-cache-', $result['cachedRoutesPath']);
+
+        // 403 이 "debug on 인데도 막혔다" 가 아니라 "debug off 라서 막혔다" 임을 고정한다.
+        $this->assertFalse(
+            $result['appDebug'],
+            '자식 프로세스가 APP_DEBUG=false 로 부팅되지 않았습니다 (하네스 인자 전달 실패).'
+        );
+
+        $this->assertSame(
+            403,
+            $result['status'],
+            "라우트 캐시 상태에서도 DELETE clear 는 403 이어야 합니다.
+body: {$result['body']}"
+        );
+
+        $after = is_dir($dumpDir) ? count(glob($dumpDir.'/*') ?: []) : 0;
+        $this->assertSame(
+            $before,
+            $after,
+            'DELETE clear 가 차단되었는데도 덤프 파일 수가 변했습니다 (게이트가 삭제 뒤에 걸렸습니다).'
+        );
+    }
+
+    /**
+     * 디버그 ON 에서는 캐시 상태에서도 GET 조회가 도달해야 한다 (게이트가 상시 차단이 아님).
+     *
+     * `_boost/g7-debug/state` 는 `routes/web.php` 의 User catch-all 제외 패턴에 `_boost` 가
+     * 들어가면서 비로소 도달 가능해진 경로다. 캐시된 라우트에도 그 제외가 구워지는지 본다.
+     */
+    public function test_gated_get_endpoint_is_reachable_under_route_cache_when_debug_enabled(): void
+    {
+        $result = $this->dispatch('GET', '/_boost/g7-debug/state');
+
+        $this->assertTrue($result['routesAreCached']);
+        $this->assertTrue($result['appDebug']);
+
+        $this->assertSame(
+            200,
+            $result['status'],
+            "라우트 캐시 상태에서 GET state 가 200 이어야 합니다.
+body: {$result['body']}"
+        );
+
+        // 하네스는 본문을 4000자로 자른다 (`state` 덤프는 그보다 훨씬 크다) — 전체 JSON 파싱은
+        // 원리상 실패하므로 앞머리로 판정한다. 여기서 가려야 하는 것은 "DevTools JSON 인가
+        // SPA 셸 HTML 인가" 뿐이다.
+        $this->assertMatchesRegularExpression(
+            '/^\{"status":"(success|no_data)"/',
+            $result['body'],
+            'SPA 셸 HTML 이 아니라 DevTools JSON 이어야 합니다 (catch-all shadow 회귀).'
+        );
+        $this->assertStringNotContainsString('<!DOCTYPE', $result['body']);
+    }
+
+    /**
      * 임시 경로에 라우트 캐시를 굽는다 (클래스당 1회).
      *
      * @return array<string, mixed> 하네스 bake 결과
@@ -285,9 +362,10 @@ class DevtoolsRouteCacheTest extends TestCase
      * @param  string  $method  HTTP 메서드
      * @param  string  $uri  요청 URI
      * @param  string  $body  JSON 본문
+     * @param  bool  $debug  자식 프로세스의 APP_DEBUG (false 면 DevTools 그룹 게이트가 차단해야 한다)
      * @return array<string, mixed> 하네스 dispatch 결과
      */
-    private function dispatch(string $method, string $uri, string $body = ''): array
+    private function dispatch(string $method, string $uri, string $body = '', bool $debug = true): array
     {
         $this->bakeOnce();
 
@@ -299,6 +377,7 @@ class DevtoolsRouteCacheTest extends TestCase
             $method,
             $uri,
             $body === '' ? '' : base64_encode($body),
+            $debug ? 'on' : 'off',
         ]);
 
         return $this->parseHarnessOutput($output);

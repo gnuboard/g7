@@ -10,7 +10,8 @@
     "description": "$t:admin.settings.page_description"
   },
   "computed": {
-    "isReadOnly": "{{!!_global.settingsAbilities && !(_global.settingsAbilities?.can_update ?? false)}}"
+    "isReadOnly": "{{!!_global.settingsAbilities && !(_global.settingsAbilities?.can_update ?? false)}}",
+    "envLocked": "{{_local.form?._meta?.env_locked ?? null}}"
   },
   "transition_overlay": {
     "target": "settings_tab_content",
@@ -27,7 +28,8 @@
       "adminIdentityPolicies",
       "policies",
       "language_packs",
-      "sitemap_status"
+      "sitemap_status",
+      "staticCacheStatus"
     ]
   },
   "data_sources": [
@@ -123,6 +125,52 @@
           "laravel_version": "-",
           "database_type": "-",
           "server_software": "-"
+        }
+      }
+    },
+    {
+      "id": "staticCacheStatus",
+      "label_key": "$t:editor.data_source.staticCacheStatus",
+      "type": "api",
+      "endpoint": "/api/admin/settings/static-cache",
+      "method": "GET",
+      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'general'}}",
+      "auto_fetch": true,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "enabled": true,
+          "publishable": false,
+          "environment": null,
+          "version": 0,
+          "published": false,
+          "files": 0,
+          "published_at": null,
+          "tree_writable": null,
+          "process_user": null,
+          "failure": null,
+          "retained_versions": []
+        }
+      }
+    },
+    {
+      "id": "trustedProxy",
+      "label_key": "$t:editor.data_source.trustedProxy",
+      "type": "api",
+      "endpoint": "/api/admin/settings/trusted-proxy",
+      "method": "GET",
+      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}",
+      "auto_fetch": true,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "forwarded_headers": [],
+          "trusted_configured": false,
+          "configured_proxies": null,
+          "is_secure": null,
+          "client_ip": null,
+          "remote_addr": null,
+          "status": "not_applicable"
         }
       }
     },
@@ -401,6 +449,42 @@
                       "className": "text-warning-soft"
                     },
                     "text": "$t:admin.settings.readonly_notice"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "env_priority_banner",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.form?._meta?.env_priority_enabled === true}}",
+            "props": {
+              "className": "alert-info"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "flex-center gap-3"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "lock",
+                      "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                      "className": "text-info-soft"
+                    },
+                    "text": "$t:admin.settings.env_locked_notice"
                   }
                 ]
               }
@@ -835,6 +919,9 @@
     },
     {
       "partial": "partials/admin_settings/_modal_cache_delete.json"
+    },
+    {
+      "partial": "partials/admin_settings/_modal_static_cache_republish.json"
     },
     {
       "partial": "partials/admin_settings/_modal_notification_template_form.json"

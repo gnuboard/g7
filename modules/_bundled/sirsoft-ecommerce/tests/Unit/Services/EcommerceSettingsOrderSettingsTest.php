@@ -117,6 +117,8 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
      */
     public function test_saving_settings_does_not_touch_production_path(): void
     {
+        // audit:allow extension-storage-path-hand-assembled 운영 경로를 **의도적으로** 가리킨다 —
+        // 이 단언의 대상은 "테스트가 운영 파일을 건드리지 않았는가" 이므로 해석기를 쓰면 검사가 성립하지 않는다.
         $productionFile = storage_path('app/modules/sirsoft-ecommerce/settings/order_settings.json');
         $existedBefore = File::exists($productionFile);
         $contentBefore = $existedBefore ? File::get($productionFile) : null;

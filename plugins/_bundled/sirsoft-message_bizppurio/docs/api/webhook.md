@@ -33,7 +33,7 @@
 | PHONE | body | string | 아니오 | max 20 | 수신 전화번호 |
 | MEDIA | body | string | 아니오 | max 10 | 실제 발송된 매체 유형(대체발송 시 요청 유형과 다를 수 있음) |
 | RESULT | body | string | 예 | max 10 | 발송 결과 코드 — ResultCodeResolver 가 성공/실패와 사유로 해석 |
-| REFKEY | body | string | 예 | max 32 | 발송 시 G7 이 부여한 참조 키 — 이 값으로 bizppurio_dispatches 행을 찾는다 |
+| REFKEY | body | string | 예 | max 32 | 발송 시 그누보드7 이 부여한 참조 키 — 이 값으로 bizppurio_dispatches 행을 찾는다 |
 | TELRES | body | string | 아니오 | max 10 | 대체발송(문자) 결과 코드 |
 | KAORES | body | string | 아니오 | max 10 | 알림톡 발송 결과 코드 |
 

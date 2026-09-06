@@ -1281,6 +1281,7 @@ return [
         'order_settings.bank_accounts.*.is_default' => 'デフォルト口座',
         'order_settings.auto_cancel_expired' => '未決済自動キャンセル',
         'order_settings.auto_cancel_days' => '自動キャンセル期限（日）',
+        'order_settings.pending_order_expire_minutes' => '決済未完了注文の期限（分）',
         'order_settings.cart_expiry_days' => 'カート保管期間（日）',
         'order_settings.default_pg_provider' => 'デフォルトPG会社',
         'order_settings.payment_methods.*.pg_provider' => 'PG会社',
@@ -1608,6 +1609,12 @@ return [
                 'integer' => '自動キャンセルの期限は整数である必要があります。',
                 'min' => '自動キャンセルの期限は1日以上である必要があります。',
                 'max' => '自動キャンセルの期限は最大30日まで設定可能です。',
+            ],
+            'pending_order_expire_minutes' => [
+                'required' => '決済未完了注文の期限を入力してください。',
+                'integer' => '決済未完了注文の期限は整数である必要があります。',
+                'min' => '決済未完了注文の期限は0分以上である必要があります。（0 は整理しない）',
+                'max' => '決済未完了注文の期限は最大20160分（14日）まで設定可能です。',
             ],
             'cart_expiry_days' => [
                 'integer' => 'カートの保管期間は整数である必要があります。',

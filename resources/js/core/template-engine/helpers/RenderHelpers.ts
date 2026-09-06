@@ -1,7 +1,3 @@
-// audit:allow seo-renderer-parity-sync 이번 변경은 노드 키·컨텍스트 처리 추가가 아니라
-// 리터럴 판정을 BindingShape 로 위임한 것이다. 봇(SEO) 측 ExpressionEvaluator 는
-// 이미 'true'/'false'/'null' 을 리터럴로 해석하고 있었으므로(app/Seo/ExpressionEvaluator.php),
-// 이 수정은 React 경로를 봇 경로에 맞춘 것이며 패리티를 좁힌다. 봇 측 대응 변경 없음.
 /**
  * 렌더링 관련 헬퍼 함수 모듈
  *

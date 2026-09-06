@@ -110,6 +110,19 @@ class AuthController extends AdminBaseController
             }
 
             return $this->success('common.success', $data);
+        } catch (AccountLockedException $e) {
+            // 재발급도 세션을 여는 지점이다 — 사용자 경로와 같은 423 계약을 따른다.
+            // 이 catch 가 없으면 잠긴 계정의 재발급 시도가 500 으로 새어 나간다.
+            return $this->error(
+                $e->isPermanent() ? 'auth.account_locked_permanently' : 'auth.account_locked',
+                423,
+                [
+                    'locked_until' => $e->lockedUntil?->toIso8601String(),
+                    'retry_after_seconds' => $e->remainingMinutes === null ? null : $e->remainingMinutes * 60,
+                    'permanent' => $e->isPermanent(),
+                ],
+                ['minutes' => $e->remainingMinutes]
+            );
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.unauthenticated');
         }

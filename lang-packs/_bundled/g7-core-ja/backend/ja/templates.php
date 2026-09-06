@@ -230,6 +230,7 @@ return [
             'layouts_deleted' => 'レイアウト:count個を削除しました',
             'versions_deleted' => 'バージョン履歴:count個を削除しました',
             'aborted' => '削除がキャンセルされました。',
+            'custom_preserved' => '運営者ファイル(:directory)を:archiveに保管しました。',
         ],
         'list' => [
             'no_templates' => '登録されたテンプレートがありません。',

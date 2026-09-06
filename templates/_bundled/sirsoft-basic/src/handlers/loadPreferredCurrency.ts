@@ -11,7 +11,7 @@ const logger = ((window as any).G7Core?.createLogger?.('Handler:Currency')) ?? {
     error: (...args: unknown[]) => console.error('[Handler:Currency]', ...args),
 };
 
-import { HandlerContext } from '../types';
+import { HandlerContext, TemplateActionDefinition } from '../types';
 
 const STORAGE_KEY = 'g7_preferred_currency';
 
@@ -39,10 +39,20 @@ interface LoadPreferredCurrencyParams {
 }
 
 /**
+ * 선호 통화를 전역 상태에 반영한다.
+ *
+ * @param currencyCode 통화 코드
+ * @return 없음
+ */
+function writeGlobalCurrency(currencyCode: string): void {
+  (window as any).G7Core?.state?.set?.({ preferredCurrency: currencyCode });
+}
+
+/**
  * localStorage에서 선호 통화를 로드하여 전역 상태에 설정합니다.
  *
- * @param params.defaultCurrency - 기본 통화 (선택, 기본값: 'KRW')
- * @param context - 핸들러 컨텍스트
+ * @param action - 액션 정의 (`params.defaultCurrency`)
+ * @param _context - 핸들러 컨텍스트 (미사용 — 전역 상태는 G7Core.state.set() 으로 쓴다)
  * @returns 로드된 통화 코드
  *
  * @example
@@ -57,9 +67,10 @@ interface LoadPreferredCurrencyParams {
  * }
  */
 export function loadPreferredCurrencyHandler(
-  params: LoadPreferredCurrencyParams,
-  context: HandlerContext
+  action: TemplateActionDefinition,
+  _context?: HandlerContext
 ): string {
+  const params = (action?.params ?? {}) as LoadPreferredCurrencyParams;
   const { defaultCurrency = resolveConfiguredDefaultCurrency() } = params;
 
   let currency = defaultCurrency;
@@ -76,8 +87,9 @@ export function loadPreferredCurrencyHandler(
     logger.warn('localStorage 접근 불가, 기본 통화 사용:', defaultCurrency);
   }
 
-  // 전역 상태에 설정
-  context.setState('global', { preferredCurrency: currency });
+  // 전역 상태에 설정 — 엔진 context.setState 는 객체 하나만 받는 로컬 writer 다.
+  // 전역 쓰기 공개 통로는 G7Core.state.set() 이다.
+  writeGlobalCurrency(currency);
 
   return currency;
 }
@@ -85,8 +97,8 @@ export function loadPreferredCurrencyHandler(
 /**
  * 선호 통화를 localStorage에 저장합니다.
  *
- * @param currencyCode - 저장할 통화 코드
- * @param context - 핸들러 컨텍스트
+ * @param action - 액션 정의 (`params.currencyCode`)
+ * @param _context - 핸들러 컨텍스트 (미사용 — 전역 상태는 G7Core.state.set() 으로 쓴다)
  *
  * @example
  * // 통화 선택 드롭다운에서 사용
@@ -101,10 +113,10 @@ export function loadPreferredCurrencyHandler(
  * }
  */
 export function savePreferredCurrencyHandler(
-  params: { currencyCode: string },
-  context: HandlerContext
+  action: TemplateActionDefinition,
+  _context?: HandlerContext
 ): void {
-  const { currencyCode } = params;
+  const { currencyCode } = (action?.params ?? {}) as { currencyCode: string };
 
   if (!isValidCurrency(currencyCode)) {
     logger.warn('유효하지 않은 통화 코드:', currencyCode);
@@ -120,7 +132,7 @@ export function savePreferredCurrencyHandler(
   }
 
   // 전역 상태 업데이트
-  context.setState('global', { preferredCurrency: currencyCode });
+  writeGlobalCurrency(currencyCode);
 }
 
 /**

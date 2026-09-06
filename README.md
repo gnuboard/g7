@@ -1,16 +1,12 @@
 <p align="center">English | <a href="README.ko.md">한국어</a></p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Gnuboard7-그누보드7-000000?style=for-the-badge&labelColor=0066FF&logoColor=white" height="200" alt="Gnuboard7 (그누보드7)">
-</p>
+# Gnuboard7
+
+**A modern, extensible CMS platform built with Laravel + React**
+The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 <p align="center">
-  <strong>A modern, extensible CMS platform built with Laravel + React</strong><br>
-  The next generation of Gnuboard — Korea's most widely used open-source CMS
-</p>
-
-<p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.0.9-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.0.10-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -530,17 +526,17 @@ Thanks to everyone who reported an issue or suggested a feature that shipped —
 <!-- community-contributors:start -->
 <p>
   <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
-  <a href="https://github.com/Tuwasduliebst" title="Tuwasduliebst"><img src="https://github.com/Tuwasduliebst.png" width="48" alt="Tuwasduliebst"></a>
   <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
+  <a href="https://github.com/Tuwasduliebst" title="Tuwasduliebst"><img src="https://github.com/Tuwasduliebst.png" width="48" alt="Tuwasduliebst"></a>
+  <a href="https://github.com/lyg-kaban" title="lyg-kaban"><img src="https://github.com/lyg-kaban.png" width="48" alt="lyg-kaban"></a>
   <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
   <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
-  <a href="https://github.com/lyg-kaban" title="lyg-kaban"><img src="https://github.com/lyg-kaban.png" width="48" alt="lyg-kaban"></a>
   <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>
   <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
   <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
   <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>
-  <a href="https://github.com/yks118" title="yks118"><img src="https://github.com/yks118.png" width="48" alt="yks118"></a>
   <a href="https://github.com/kitrio" title="kitrio"><img src="https://github.com/kitrio.png" width="48" alt="kitrio"></a>
+  <a href="https://github.com/yks118" title="yks118"><img src="https://github.com/yks118.png" width="48" alt="yks118"></a>
   <a href="https://github.com/movielee2020" title="movielee2020"><img src="https://github.com/movielee2020.png" width="48" alt="movielee2020"></a>
   <a href="https://github.com/ChoDongHyeon" title="ChoDongHyeon"><img src="https://github.com/ChoDongHyeon.png" width="48" alt="ChoDongHyeon"></a>
   <a href="https://github.com/comtylove-netizen" title="comtylove-netizen"><img src="https://github.com/comtylove-netizen.png" width="48" alt="comtylove-netizen"></a>

@@ -10,6 +10,7 @@
 3. 분할 형식: manifest(editor-spec.json) + `$include` 맵 → editor-spec/{block}.json. 서버가 합본해 단일 spec 으로 서빙
 4. 서빙은 활성 디렉토리만 기준 (_bundled 폴백 없음). _bundled 작업분은 {type}:update 로 활성 반영 후 런타임 노출
 5. 친화 라벨은 $t: 다국어 키, comment 는 작성자 메모(엔진 무시), 알려진 필드 외 자유 필드는 보존만
+6. 확장별 선언 실측·동반 의무는 그 확장의 docs/editor-spec.md 가 소유 (ext:docgen 이 유지)
 ```
 
 ## 개요
@@ -59,6 +60,71 @@ editor-spec.json 이 커지면(코어 admin 템플릿은 단일 파일 18,000줄
 ### 서빙은 활성 디렉토리 기준
 
 런타임 서빙은 **활성 디렉토리(`templates/{id}/...`)만** 읽는다. `_bundled` 폴백은 없다. `_bundled` 에서 작업한 분할본은 `{type}:update {id} --force` 로 활성 디렉토리에 반영된 뒤에만 편집기에 나타난다. JSON 만 바뀐 경우 빌드는 불필요하고 update 만 실행한다.
+
+## 확장 개발자의 작업 순서
+
+아래 규칙들은 블록 하나하나의 **문법**을 말한다. 실제로 확장을 고칠 때 필요한 것은 그
+앞의 판단이다 — 무엇을 손대야 하고, 무엇을 빠뜨리면 어떤 증상이 나는가.
+
+### 어느 확장의 스펙에 넣는가
+
+컴포넌트를 만드는 것은 템플릿의 일이고, 모듈·플러그인은 템플릿이 제공하는 컴포넌트를
+쓰기만 한다. 그래서 두 부류가 담는 것이 다르다.
+
+| 선언할 것 | 자리 |
+|---|---|
+| `componentPalette` · `controls` · `componentCapabilities` · `nesting` | **템플릿** 스펙 |
+| `sampleData` · `sampleGlobal` · `states` · `*Recipes` | 그 데이터를 소유한 **모듈·플러그인** 스펙 |
+| 여러 확장이 함께 쓰는 공용 ID(`settings` · `roles` · `me` 등) | **템플릿** 스펙 |
+
+공용 ID 를 확장마다 각자 선언하면 같은 ID 의 샘플이 여러 곳에 생기고, 그것들이 갈라져도
+오류가 나지 않는다 — 어느 것이 쓰이는지가 병합 순서에 좌우된다.
+
+모듈·플러그인이 `componentPalette` 를 선언하면 템플릿 선언과 같은 자리를 두고 다투게
+되므로 두지 않는다. 팔레트에 얹고 싶은 것이 있다면 그것은 활성 템플릿의 스펙으로 간다.
+
+### 무엇을 빠뜨렸는지는 증상으로 가른다
+
+편집기는 선언되지 않은 것을 **없는 것**으로 다룰 뿐 실패를 보고하지 않는다. 그래서
+빠뜨린 자리를 알려 주는 것은 오류 메시지가 아니라 증상이다.
+
+| 증상 | 빠뜨린 자리 |
+|---|---|
+| 컴포넌트가 팔레트 목록에 아예 없다 | `componentPalette.entries` |
+| 팔레트에 등록했는데 목록에 안 보인다 | `componentPalette.groups` 의 어느 묶음에도 없다 |
+| 팔레트에서 끌어 놓을 수 없다 | `nesting.draggable` |
+| 놓을 자리가 없다(컨테이너가 거부한다) | `nesting.containers` |
+| 놓았는데 속성 패널이 비어 있다 | `componentCapabilities` |
+| 속성 패널에 특정 항목만 없다 | `controls` |
+| 캔버스의 한 영역만 빈 화면이다 | `sampleData.byDataSourceId`(또는 `byEndpointPattern`) |
+| 값이 `undefined` 라 영역 전체가 사라진다 | `sampleGlobal` |
+| 특정 상태(빈 목록·오류·모달 열림)를 볼 수 없다 | `states` |
+
+캔버스는 실제 API 를 부르지 않고 `sampleData` 로 그린다. 그래서 레이아웃에
+`data_source` 를 추가하고 샘플을 붙이지 않으면 **편집기에서만** 그 자리가 비고 실제
+화면은 정상 동작한다 — 오류도 경고도 서버 로그도 남지 않는다.
+
+캔버스는 또한 정적 시뮬레이션이라 클릭·응답으로 만들어지는 상태를 스스로 만들지 못한다.
+모바일 드로어(햄버거 클릭), 쿠키 동의 배너(동의 전 방문자), 본인인증 창(428 응답)처럼
+**어떤 사건 뒤에만 나타나는 화면**은 `states` 로 그 상태를 주입해 두지 않으면 편집
+자체가 불가능하다.
+
+### 반영 절차
+
+편집기 스펙은 JSON 이므로 빌드가 필요 없다. 다만 서빙은 **활성 디렉토리만** 읽고
+`_bundled` 폴백이 없으므로, `_bundled` 에서 고친 뒤 update 커맨드를 돌리지 않으면
+편집기에는 직전 내용이 그대로 보인다. 파일은 고쳤는데 화면이 안 바뀌었다면 거의 이 경우다.
+
+```bash
+php artisan {module|plugin|template}:update {id} --force
+```
+
+### 확장별 실측은 그 확장이 소유한다
+
+어느 확장이 무엇을 얼마나 선언했는지, 그 확장에서 프리뷰 샘플이 붙지 않는 `data_source`
+가 무엇인지는 **그 확장의 `docs/editor-spec.md`** 가 답한다. `php artisan ext:docgen` 이
+그 실측 부분을 유지하므로 스펙을 고친 뒤 재실행한다. 코어 문서(이 문서)에는 블록 문법과
+공통 판단 기준만 둔다.
 
 ## 블록별 작성 규칙
 
@@ -226,6 +292,21 @@ export function registerSirsoftAdminBasicEditorWidgets(): void {
 6. **어포던스는 대상 바깥 전용 레일 + 코어 위 z-index** — 거터/핸들/이동 버튼을 대상(셀/노드/항목) 위에 겹치지 않고 대상 바깥 전용 레인에 두고, 코어 오버레이 위 전용 z-index 밴드에 둔다(클릭 가로채기 0 — `elementFromPoint` topmost=self 로 실측). 빈 셀 찌부러짐은 편집기 전용 CSS(td height) 1회 주입(content 무오염).
 7. **탭/인플레이스 본체는 노드 파생 무상태** — 속성 모달은 패치마다 content 를 재마운트하므로, 탭 본체(ConditionBuilder/배열 에디터 등)는 자체 `useState` 로 값을 들고 있지 않고 매 렌더 노드 prop 에서 재구성한다(또는 노드 path 로 keying + 자유값 state 는 `useEffect` 재동기화). stale state 로 인한 오저장/409 회귀를 막는다.
 
+## manifest `description` 작성 규칙
+
+`description` 은 **이 스펙이 무엇을 담고 있는가**만 적는다. 독자는 이 확장을 쓰는 사람이다.
+
+| 적지 않는다 | 이유 |
+|---|---|
+| 내부 작업 단계 (`Phase 3`, `1차 작업`, `추후 추가`) | 확장만 내려받은 제3자에게는 해석할 근거가 없다. 그리고 다음 단계가 실제로 들어온 뒤에도 문구는 그대로 남아 **거짓이 된다** |
+| 심사·검토 판정 (`— 정당`, `타당함`, `확인 완료`) | 작업자가 리뷰어에게 하는 해명이다. 읽는 쪽은 누가 무엇을 심사했는지 모른다 |
+| 작업 방법 (`전수 스캔 기반`, `역추론해 작성`) | 스펙이 무엇인지가 아니라 어떻게 만들었는지다. 그 정보가 필요하면 `$comment` 에 둔다 |
+| 항목 ID 나열 | 스펙이 커지면 곧 낡는다. 개수와 목록은 문서 생성기가 실측해 싣는다 |
+
+비어 있을 것과 없을 것을 구분해 적는 것은 권장한다 — "`sampleGlobal` 은 이 모듈이 `_global` 키를 두지 않아 선언하지 않는다" 처럼, **왜 없는지**는 읽는 쪽이 부재를 누락으로 오해하지 않게 한다.
+
+확장 문서(`docs/editor-spec.md`)의 한 줄 요약은 이 필드를 옮겨 싣지 않고 **실측에서 생성**한다. 사람이 쓴 메모는 코드와 대조되지 않아 낡아도 드러나지 않는데, 문서에 옮겨지면 바로 아래 실측 표와 서로를 반박하게 된다.
+
 ## 작성자 메모와 자유 필드
 
 - `comment` 키는 어느 블록에서나 작성자 메모이며 엔진이 무시한다(레시피/컨트롤로 해석되지 않음).
@@ -240,4 +321,6 @@ export function registerSirsoftAdminBasicEditorWidgets(): void {
 - 타입 SSoT: `resources/js/core/template-engine/layout-editor/spec/specTypes.ts`
 - 로더(fetch + 병합): `resources/js/core/template-engine/layout-editor/spec/editorSpecLoader.ts`
 - 서버 합본 헬퍼: `app/Extension/Helpers/EditorSpecAssembler.php`
+- 확장별 실측 문서 생성: `php artisan ext:docgen` — 각 확장 `docs/editor-spec.md`
+- 확장 문서 규정: [extension-documentation.md](extension-documentation.md)
 - 서빙: `app/Http/Controllers/Api/Public/PublicTemplateController.php`, `app/Http/Controllers/Api/Admin/AdminTemplateAssetController.php`, `app/Services/ModuleService.php`, `app/Services/PluginService.php`

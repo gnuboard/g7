@@ -289,7 +289,7 @@ unzip g7-release.zip
 
 # 압축 해제 결과 확인 — 루트 디렉토리가 g7이 아니면 이름 변경
 ls -la
-# (필요 시) mv g7-7.0.9 g7
+# (필요 시) mv g7-7.0.10 g7
 
 # ZIP 파일 정리 (선택)
 rm g7-release.zip
@@ -368,6 +368,28 @@ http://도메인/install
 
 ---
 
+## 설치 트러블슈팅
+
+### 2단계에서 "Unexpected end of JSON input" 오류가 표시되는 경우
+
+**증상**: 설치 마법사 2단계(설치 환경 확인)에서 요구사항 카드가 표시되지 않고
+`요구사항 검증 실패: ... Unexpected end of JSON input` 이 표시됩니다.
+서버 로그에는 아무 오류도 남지 않습니다.
+
+**원인**: Windows 사용자 계정 이름에 한글(또는 서버가 쓰는 문자 인코딩 밖의 문자)이
+포함되어 있으면, 설치 마법사가 계정 이름을 조회하는 과정에서 응답을 만들지 못합니다.
+
+**해결**:
+
+- **7.0.10 이상**: 수정되었습니다. 별도 조치가 필요하지 않습니다.
+- **7.0.9 이하**: 계정 이름이 영문인 Windows 계정으로 웹 서버를 실행하거나,
+  코어를 7.0.10 이상으로 올린 뒤 설치를 진행하세요.
+
+설치 과정에서 문자 인코딩 관련 조치가 있었다면 `storage/logs/installation.log` 에
+`[env] whoami output was not UTF-8 — normalized` 형태로 기록됩니다.
+
+---
+
 ## 설치 후 확인
 
 설치가 완료되면 아래 페이지에 접근할 수 있습니다.
@@ -378,6 +400,29 @@ http://도메인/install
 | **사용자 페이지** | `http://도메인/` | 사용자 템플릿 설치 필수 |
 
 > 사용자 페이지는 사용자 템플릿이 설치되어 있어야 접근할 수 있습니다. 인스톨러에서 사용자 템플릿을 함께 설치하거나, 관리자 페이지에서 템플릿을 먼저 설치해 주세요.
+
+### 파일 권한 (설치 후 확인)
+
+POSIX 권한 모델 (Linux/macOS/BSD) 환경에서 웹 서버 실행 계정이 쓸 수 있어야 하는 위치는 다음과 같습니다. Windows 환경에서는 해당하지 않습니다.
+
+| 위치 | 필요한 이유 |
+|------|------------|
+| `storage/` · `bootstrap/cache` | 애플리케이션 동작에 항상 필요 (로그·캐시·세션·업로드·런타임 캐시) |
+| `modules/` · `plugins/` · `templates/` · `public/build` | 관리자 화면에서 확장(모듈/플러그인/템플릿)을 설치·업데이트·삭제할 때 필요 |
+
+```bash
+sudo chown -R www-data:www-data storage bootstrap/cache modules plugins templates public/build
+```
+
+**`vendor/` 에는 쓰기 권한이 필요하지 않습니다.** 확장의 `vendor/` 는 설치·업데이트 시점에만 기록되며, 애플리케이션이 동작하면서 만드는 런타임 캐시는 모두 `storage/` 아래에 기록됩니다. 명령줄로 설치·업데이트를 수행한다면 그 계정만 쓸 수 있으면 됩니다.
+
+전체 권한 모델(그룹 공유 방식 A / 소유자 통일 방식 B / ACL 방식 C 와 umask 운영)은 [docs/requirements.md](docs/requirements.md) "파일 권한 및 umask 운영 방식" 절을 참고하세요.
+
+### 명령줄·cron 실행 계정
+
+`php artisan` 명령과 cron 은 **웹 서버 실행 계정으로** 실행합니다 (예: `sudo -u www-data php artisan …`, 또는 `crontab -u www-data -e` 로 등록). 대부분의 명령이 캐시·병합 번들·임시 파일을 만드는데, root 나 다른 계정으로 실행하면 그 산출물이 그 계정 소유로 남아 이후 웹 요청이 같은 자리에 쓰려는 순간 `Permission denied` 로 500 을 낼 수 있습니다. 이 문제는 특정 명령의 결함이 아니라 캐시를 건드리는 모든 명령에 공통이므로, 계정을 맞추는 것이 유일한 해법입니다.
+
+예외는 코어 업데이트(`php artisan core:update`)입니다. 이 명령은 `.env` 등 웹 계정이 쓸 수 없는 파일까지 고치므로 `sudo` 를 권장하며, 실행이 끝날 때 자기가 만든 파일의 소유권을 되돌리는 절차가 내장되어 있습니다.
 
 ---
 
@@ -540,6 +585,54 @@ sudo php artisan hotfix:rollback-stale-files --prune
 
 프로덕션 환경에서는 HTTPS를 사용해야 합니다. `.env` 파일에서 `APP_URL`을 `https://`로 설정하세요.
 
+`APP_URL` 은 명령줄 실행·큐 워커·메일 발송처럼 **요청이 없는 맥락**에서 절대 URL 을 만들 때의
+기준입니다. 웹 요청에서 만들어지는 절대 URL(화면 자산, 콜백 주소 등)은 `APP_URL` 이 아니라
+**요청 자체의 스킴과 호스트**를 따릅니다.
+
+따라서 TLS 를 앞단에서 처리하고 사이트에는 HTTP 로 전달하는 구성(AWS ALB, CloudFront,
+Cloudflare, nginx 리버스 프록시, ngrok)에서는 `APP_URL` 만 `https://` 로 두어서는 부족합니다.
+사이트가 접속 주소와 방문자 IP 를 올바르게 인식하려면 `.env` 에 `TRUSTED_PROXIES` 를 함께
+지정해야 합니다.
+
+```dotenv
+# 프록시 뒤에서 구동하는 경우에만 지정합니다 (미설정이 기본값).
+TRUSTED_PROXIES=*
+```
+
+지정하지 않으면 화면이 표시되지 않거나(혼합 콘텐츠 차단), 결제 통보가 수신되지 않고, 모든
+방문자가 같은 IP 로 기록됩니다. 값 선택 기준과 도입 시 후속 조치는
+[docs/backend/reverse-proxy.md](docs/backend/reverse-proxy.md) 를 참고하세요.
+
+### `.env` 를 운영 기준값으로 삼기 (선택)
+
+기본 설계에서 **관리자 환경설정 화면이 운영 기준**입니다. 설치가 끝나면 메일·드라이버·디버그
+같은 항목은 화면에서 관리하며, 그 값이 `.env` 의 같은 항목보다 우선합니다. 설치 마법사가
+초기값을 저장하므로 **설치 직후부터** 그 우선순위가 적용됩니다.
+
+컨테이너·구성 관리 도구·다중 서버처럼 `.env` 를 배포 기준값으로 관리하는 환경에서는 이
+우선순위를 뒤집을 수 있습니다. `.env` 에 다음 한 줄을 추가하세요.
+
+```dotenv
+G7_ENV_PRIORITY=true
+```
+
+켜면 **`.env` 에 값이 적혀 있는 항목만** 화면 저장값의 영향을 받지 않습니다. 그 항목들은
+관리자 화면에서 편집 불가로 표시되고, 화면에는 실제로 적용 중인 값이 나타납니다. 값이 비어
+있거나 줄이 없는 항목은 종전대로 화면에서 관리합니다.
+
+주의할 점:
+
+- `.env.example` 은 `APP_NAME`, `LOG_LEVEL`, `G7_UPDATE_GITHUB_URL` 등에 값을 채워 배포합니다.
+  그 파일을 복사해 쓰고 있다면 스위치를 켜는 즉시 **그 항목들도 함께 잠깁니다.** 화면에서
+  관리하고 싶은 항목은 값을 비우거나(`KEY=`) 줄을 지우세요.
+- `.env` 에 `BROADCAST_CONNECTION` 이나 `REVERB_*` 를 적으면 웹소켓 사용 여부까지 `.env` 가
+  결정합니다. 관리자 화면의 웹소켓 토글은 그 설치에서 동작하지 않습니다.
+- `.env` 만 고친 경우에는 `php artisan config:cache` 를 다시 실행해야 반영됩니다. 관리자
+  화면에서 저장하는 경우에는 자동으로 처리됩니다.
+- 비밀번호·시크릿·토큰 같은 값은 잠금 표시만 되고 화면에 나타나지 않습니다.
+
+스위치를 넣지 않으면 아무 것도 달라지지 않습니다(기존 설치 무영향).
+
 ### `.env` 권한 강화 (선택)
 
 `.env` 는 DB 비밀번호와 `APP_KEY` 등 평문 자격증명을 포함합니다. 인스톨러는 설치 직후 `.env` 의 권한을 임의로 변경하지 않으므로, 운영자가 환경에 맞춰 직접 강화 권한을 적용할 수 있습니다.
@@ -578,7 +671,9 @@ sudo php artisan hotfix:rollback-stale-files --prune
 cron에 아래 항목을 등록합니다.
 
 ```bash
-* * * * * cd /path/to/g7 && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /path/to/g7 && sudo -u www-data php artisan schedule:run >> /dev/null 2>&1
 ```
+
+웹 서버 계정(`www-data` · `nginx` · `apache` 등)으로 실행해야 합니다 — root 의 crontab 에 그대로 등록하면 매분 캐시 파일이 root 소유로 만들어져 웹 요청이 실패할 수 있습니다. `crontab -u www-data -e` 로 그 계정의 crontab 에 등록하면 `sudo -u` 없이 같은 줄을 씁니다. 「명령줄·cron 실행 계정」 절을 참고하세요.
 
 > 상세 내용은 [docs/requirements.md](docs/requirements.md)를 참조하세요.

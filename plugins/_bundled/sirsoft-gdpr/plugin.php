@@ -13,6 +13,7 @@ use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener;
+use Plugins\Sirsoft\Gdpr\Support\NecessaryAllowlist;
 
 /**
  * GDPR (일반 데이터 보호 규정) 플러그인
@@ -23,15 +24,101 @@ use Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener;
 class Plugin extends AbstractPlugin
 {
     /**
+     * strictly necessary 허용목록 출하 기본 카탈로그.
+     *
+     * 이 상수는 **판정 목록이 아니라 출하 기본값**입니다. 실제 판정은 운영자 설정
+     * `necessary_storage_allowlist` 가 하며, 이 카탈로그는 신규 설치 시 그 설정의 기본값과
+     * 관리자 화면 추천 목록(`default_necessary_allowlist_preview`)으로만 쓰입니다.
+     *
+     * 그래서 새 확장이 저장 키를 도입해도 이 플러그인을 고칠 필요가 없습니다 — 운영자가
+     * 관리자 화면에서 직접 추가합니다.
+     *
+     * 표기 규칙: 끝의 `*` 는 앞부분 매칭, 없으면 정확 일치.
+     *
+     * 잠금 항목(`auth_token` / `XSRF-TOKEN` / 세션 쿠키 / `gdpr_session`)은 여기 넣지
+     * 않습니다 — 설정에 담기면 API 로 지울 수 있어 잠금이 아니게 됩니다
+     * (Support\NecessaryAllowlist::locked()).
+     *
+     * @var array<string, array<int, string>>
+     */
+    public const DEFAULT_NECESSARY_ALLOWLIST_CATALOG = [
+        // 저장소(localStorage) — 사용자 명시 선택 · 구매 동선 · 관리자 화면 상태 · 복귀 기록
+        'localStorage' => [
+            // 사용자 명시 선택 (WP29 §3.6) — 다국어 설정과 화면 테마.
+            // 테마가 목록에서 빠져 있는 동안에는 테마를 바꿔도 새로고침하면 되돌아갔다 (dev-g7#640).
+            'g7_locale',
+            'g7_color_scheme',
+            // 코어 캐시 버전 — 운영자가 의도적 갱신 시 사용
+            'g7_cache_version',
+            // 자산 URL 형식 판정 캐시 — 사용자 정보가 아니라 서버 능력 판정 결과다.
+            // 파기되면 재방문마다 기본 형식으로 첫 자산 요청을 보내 404 를 겪는다. 키에 캐시
+            // 버전이 붙으므로 앞부분 매칭으로 등재한다.
+            'g7_asset_url_mode*',
+            // 장바구니 게스트 키 — 익명 카트 식별 (구매 동선 필수)
+            'g7_cart_key',
+            // devtools UI 상태
+            'g7-devtools-panel',
+            // 비회원 주문 조회 — 주문 이행에 필요 (Art.6(1)(b))
+            'g7_guest_order_token',
+            'g7_guest_order_number',
+            'g7_guest_order_expires_at',
+            // 관리자 화면 상태 (필터/정렬/컬럼/devtools) — 사용자 의사로 조작
+            'g7_devtools_*',
+            'g7_filters_*',
+            'g7_columns_*',
+            'g7_order_*',
+            // 관리자 화면 표시 설정 — 테마와 같은 범주. `g7_filters_` 는 필터 '값' 이고
+            // `g7_filter_visibility_` 는 필터 '표시 여부' 라 접두사가 서로 덮지 않는다.
+            'g7_admin_sidebar_collapsed',
+            'g7_filter_visibility_*',
+            'g7_dismissed_warnings',
+            // 레이아웃 편집기 작업 상태 (라우트 트리 접힘) — 운영자 편집 동선 유지
+            'g7le.*',
+            // 결제·본인인증 복귀 기록 — 실제 쓰기는 sessionStorage 지만, 이관 전 목록이 저장소
+            // 종류를 가리지 않았으므로 판정 범위를 좁히지 않는다.
+            '__sirsoftKginicisMobilePaymentReturnPending',
+            'g7.identity.redirectStash',
+            'sirsoft-verification_nhnkcp.formStash',
+        ],
+        // 세션 저장소(sessionStorage) — 탭 수명 동안의 복귀·작업 상태
+        'sessionStorage' => [
+            // 결제 진행 기록 — 결제창 복귀 시 종료·실패 사유 보고에 필요 (Art.6(1)(b)).
+            // 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 부팅 시 파기되면 그 보고가 통째로 누락된다.
+            'g7:sirsoft-pay_kginicis:pendingClose',
+            'g7:sirsoft-pay_nhnkcp:pendingClose',
+            'g7:sirsoft-tosspayments:pendingClose',
+            // 본인인증 복귀 — 인증창에서 돌아왔을 때 원래 화면·입력 내용 복원에 필요
+            'g7.identity.redirectStash',
+            'sirsoft-verification_nhnkcp.formStash',
+            // 결제창 복귀 대기 표식
+            '__sirsoftKginicisMobilePaymentReturnPending',
+            // 레이아웃 편집기 클립보드 — 같은 탭에서 다른 레이아웃으로 붙여넣기
+            'g7le.*',
+            // 관리자 화면 상태 — 저장소 종류를 가리지 않던 이관 전 판정 범위를 그대로 옮긴다
+            'g7_devtools_*',
+            'g7_filters_*',
+            'g7_columns_*',
+            'g7_order_*',
+            'g7_filter_visibility_*',
+        ],
+        // 쿠키 — 클라이언트 쓰기 + 서버 Set-Cookie 공통 목록
+        'cookie' => [
+            // 유지보수 모드 우회 (운영자 전용)
+            'laravel_maintenance',
+        ],
+    ];
+
+    /**
      * 기본 차단 도메인 카탈로그 (BE SSoT).
      *
      * 신규 설치 시 `blocked_domains` 기본값 + `GdprSettingsController` 응답
      * `default_blocked_domains_preview` 의 데이터 출처입니다.
      *
-     * SSoT 동기 의무: 본 상수는 클라이언트 코드 상수 `resources/js/blocker-domains.ts`
-     * 의 `DEFAULT_BLOCKED_DOMAINS` 와 동일하게 유지합니다. 한쪽 갱신 시 다른 쪽도
-     * 같은 PR 에서 갱신해야 하며, 어긋날 경우 신규 설치 사이트와 관리자 UI 추천
-     * 도메인이 불일치합니다.
+     * 본 상수가 유일한 정본입니다. `resources/js/blocker-domains.ts` 의
+     * `DEFAULT_BLOCKED_DOMAINS` 는 런타임 소비처가 없어 번들에서 tree-shake 되며
+     * (그 파일 헤더의 `audit:allow` 참조) 내용도 이 카탈로그와 다릅니다 — 두 목록을
+     * "동일하게 유지" 하지 않습니다. 신규 설치 기본값과 관리자 UI 추천 도메인은
+     * 모두 이 상수에서 나옵니다.
      *
      * @var array<string, array<int, string>>
      */
@@ -402,28 +489,39 @@ class Plugin extends AbstractPlugin
             // 가져오기)" 링크가 클라이언트 측 Set 합집합으로 처리.
             'blocked_domains' => self::DEFAULT_BLOCKED_DOMAINS_CATALOG,
 
+            // 필수 저장 항목 허용목록 — 운영자가 관리자 화면에서 편집하는 설정.
+            // 여기 값은 **신규 설치 시드용 기본값**이며, 판정에 실제로 쓰이는 값은 저장된 설정이다.
+            // 배열 그대로 둔다: 코어는 설정값을 json_decode 하지 않으므로 문자열로 선언하면
+            // 브라우저 측 판독기가 그 값을 조용히 버린다.
+            'necessary_storage_allowlist' => self::DEFAULT_NECESSARY_ALLOWLIST_CATALOG,
+
+            // 잠금 항목 — 설정이 아니라 코드가 정한다. 스키마에 넣지 않으므로 저장 요청에
+            // 섞여 와도 validated() 에서 배제되어 저장되지 않는다. 화면에는 읽기 전용으로
+            // 표시하고, 판정은 언제나 '운영자 목록 ∪ 이 집합' 이다.
+            'necessary_storage_locked' => NecessaryAllowlist::locked(),
+
             'cookie_categories' => json_encode([
                 [
                     'key' => 'necessary',
                     'required' => true,
                     'label' => ['ko' => '필수 쿠키', 'en' => 'Strictly Necessary'],
                     'description' => [
-                        // g7_locale 은 ePrivacy Art.5(3) + WP29 Opinion 04/2012 §3.6 의 user-initiated preference
-                        // 예외 (사용자 가입 시 명시 선택) 로 strictly necessary 분류. 사용자 안내에 명시.
-                        'ko' => '세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.',
-                        'en' => 'Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference at registration, cookie consent record. Cannot be disabled.',
+                        // g7_locale·g7_color_scheme 은 ePrivacy Art.5(3) + WP29 Opinion 04/2012 §3.6 의 user-initiated preference
+                        // 예외 (사용자가 화면에서 직접 고른 표시 환경) 로 strictly necessary 분류. 사용자 안내에 명시.
+                        'ko' => '세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 직접 고른 언어 설정과 화면 테마, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.',
+                        'en' => 'Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference and display theme, cookie consent record. Cannot be disabled.',
                     ],
                 ],
                 [
                     // Phase 1: functional 카테고리 신설 — ICO/CNIL 4분류 체계 부합.
-                    // 자체 functional 키 (다크모드/통화) + 외부 functional 도구 (Crisp, Intercom 등) 분류 영역.
+                    // 자체 functional 키 (표시 통화 등) + 외부 functional 도구 (Crisp, Intercom 등) 분류 영역.
                     // Phase 2 에서 실제 게이팅 (Storage.prototype 가로채기 + cookie 가로채기 + Set-Cookie 미들웨어) 구현 예정.
                     'key' => 'functional',
                     'required' => false,
                     'label' => ['ko' => '기능 쿠키', 'en' => 'Functional'],
                     'description' => [
-                        'ko' => '사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.',
-                        'en' => 'Cookies that remember user preferences such as dark mode and display currency. If declined, defaults are used on every visit.',
+                        'ko' => '사용자 선호도(표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.',
+                        'en' => 'Cookies that remember user preferences such as display currency. If declined, defaults are used on every visit.',
                     ],
                 ],
                 [
@@ -523,6 +621,19 @@ class Plugin extends AbstractPlugin
                 'hint' => [
                     'ko' => '카테고리별 차단 도메인 목록(JSON 객체). 신규 설치 시 카탈로그 도메인이 채워져 있으며 운영자가 추가·삭제 가능. FQDN 만 지원하며 *.example.com 와일드카드 가능.',
                     'en' => 'Per-category blocked domain list (JSON object). Pre-filled with the catalog on fresh install; operators can add/remove domains. FQDN only; supports *.example.com wildcard.',
+                ],
+                'required' => false,
+            ],
+            'necessary_storage_allowlist' => [
+                // json 이 아니라 array 로 선언한다 — 코어 설정 검증 규칙 생성기는 json 타입을
+                // 모르므로 nullable 만 붙고 항목 형식이 전혀 검사되지 않는다.
+                // 항목 형식·스코프 화이트리스트는 UpdateAdminSettingsRequest 가 검증한다.
+                'type' => 'array',
+                'default' => self::DEFAULT_NECESSARY_ALLOWLIST_CATALOG,
+                'label' => ['ko' => '필수 저장 항목 허용목록', 'en' => 'Strictly Necessary Storage Allowlist'],
+                'hint' => [
+                    'ko' => '기능 쿠키 미동의 상태에서도 저장이 허용되는 항목(브라우저 저장소·세션 저장소·쿠키). 끝에 * 를 붙이면 앞부분이 같은 항목을 모두 포함합니다.',
+                    'en' => 'Items allowed to persist even without functional consent (local storage, session storage, cookies). A trailing * matches every name with that prefix.',
                 ],
                 'required' => false,
             ],

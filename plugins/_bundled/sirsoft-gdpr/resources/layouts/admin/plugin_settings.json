@@ -152,6 +152,10 @@
                                                 {
                                                     "id": "card_auto_blocking_policy",
                                                     "label": "$t:sirsoft-gdpr.settings.nav.auto_blocking_policy"
+                                                },
+                                                {
+                                                    "id": "card_necessary_storage",
+                                                    "label": "$t:sirsoft-gdpr.settings.nav.necessary_storage"
                                                 }
                                             ],
                                             "className": "flex gap-1",
@@ -1877,6 +1881,580 @@
                                                                         "text": "{{(Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('blocked_domains.' + category.key + '.'))?.[1]?.[0]) ?? ''}}"
                                                                     }
                                                                 ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "card_necessary_storage",
+                                "type": "basic",
+                                "name": "Div",
+                                "comment": "필수 저장 항목 허용목록 — 기능 쿠키 미동의 상태에서도 저장이 허용되는 항목을 운영자가 편집한다. 자동 차단 카드와 달리 쿠키 배너 노출 토글 뒤에 두지 않는다: 배너를 꺼도 저장 게이팅은 동작하므로 항상 보여야 한다.",
+                                "props": {
+                                    "className": "mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 scroll-mt-32"
+                                },
+                                "children": [
+                                    {
+                                        "id": "card_necessary_storage_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "panel-header-row flex-between"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H3",
+                                                        "props": {
+                                                            "className": "section-heading-md"
+                                                        },
+                                                        "text": "$t:sirsoft-gdpr.settings.section.necessary_storage"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-gdpr.settings.section.necessary_storage_desc"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "card_necessary_storage_fields",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "p-6 space-y-6"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "necessary_storage_warnings_box",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "comment": "안내 — 목적 / 와일드카드 표기 / 항목 이름 찾는 법 / 필수 항목만 등록.",
+                                                "props": {
+                                                    "className": "bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg p-4"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-center gap-2 mb-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "circle-info",
+                                                                    "size": "sm",
+                                                                    "className": "text-blue-600 dark:text-blue-400"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "H4",
+                                                                "props": {
+                                                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.warnings_title"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Ul",
+                                                        "props": {
+                                                            "className": "list-disc list-inside space-y-1.5 text-xs text-gray-800 dark:text-gray-100 leading-relaxed"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.warning_purpose"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.warning_wildcard"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.warning_discovery"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.warning_necessary_only"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "necessary_storage_scope_cards",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "comment": "저장소별 카드 3개 — 스코프가 고정 3개이므로 iteration 대신 정적 카드로 둔다.",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "necessary_storage_card_localStorage",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "comment": "localStorage 스코프 카드. 이 스코프에 422 검증 에러가 있으면 외곽 테두리를 빨간색으로 강조한다. 항목 인덱스가 0이 아닐 수 있으므로 prefix 로 시작하는 키 어느 것이든 존재 여부를 검사한다(some).",
+                                                        "props": {
+                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.localStorage.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex-center gap-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "hard-drive",
+                                                                            "size": "sm",
+                                                                            "className": "text-sky-600 dark:text-sky-400"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.scope.local_storage"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.scope_desc.local_storage"
+                                                            },
+                                                            {
+                                                                "id": "necessary_storage_locked_localStorage",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "comment": "잠금 항목 읽기 전용 행. 잠금 항목은 설정이 아니라 코드가 정하므로 편집 대상 값(_local.form)에 넣지 않고 여기에만 표시한다 — TagInput 은 칩 단위 잠금을 지원하지 않아 분리 표시가 유일하게 확실한 방법이다.",
+                                                                "if": "{{(gdprSettings?.data?.settings?.necessary_storage_locked?.localStorage ?? []).length > 0}}",
+                                                                "props": {
+                                                                    "className": "rounded-md bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 space-y-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex-center gap-2"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "lock",
+                                                                                    "size": "sm",
+                                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
+                                                                                },
+                                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_label"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex flex-wrap gap-1.5"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "comment": "잠금 칩 — 편집 가능한 칩과 시각적으로 구분되도록 흐리게(opacity) + 금지 커서로 표시한다.",
+                                                                                "props": {
+                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 opacity-70 cursor-not-allowed"
+                                                                                },
+                                                                                "iteration": {
+                                                                                    "source": "gdprSettings?.data?.settings?.necessary_storage_locked?.localStorage ?? []",
+                                                                                    "item_var": "lockedKey",
+                                                                                    "index_var": "lockedIdx"
+                                                                                },
+                                                                                "text": "{{lockedKey}}"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "P",
+                                                                        "props": {
+                                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                        },
+                                                                        "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_hint"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "necessary_storage_input_localStorage",
+                                                                "type": "composite",
+                                                                "name": "TagInput",
+                                                                "comment": "항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성)",
+                                                                "props": {
+                                                                    "value": "{{_local.form?.necessary_storage_allowlist?.localStorage ?? []}}",
+                                                                    "options": "{{((gdprSettings?.data?.default_necessary_allowlist_preview?.localStorage) ?? []).map(k => ({ value: k, label: k }))}}",
+                                                                    "creatable": true,
+                                                                    "placeholder": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder",
+                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.necessary_storage_allowlist": "{{({...(_local.form?.necessary_storage_allowlist ?? {}), localStorage: ($event?.target?.value ?? [])})}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "comment": "스코프 내 첫 잘못된 항목의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출된다.",
+                                                                "if": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.localStorage.'))}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{(Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('necessary_storage_allowlist.localStorage.'))?.[1]?.[0]) ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "necessary_storage_card_sessionStorage",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "comment": "sessionStorage 스코프 카드. 이 스코프에 422 검증 에러가 있으면 외곽 테두리를 빨간색으로 강조한다. 항목 인덱스가 0이 아닐 수 있으므로 prefix 로 시작하는 키 어느 것이든 존재 여부를 검사한다(some).",
+                                                        "props": {
+                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.sessionStorage.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex-center gap-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "clock-rotate-left",
+                                                                            "size": "sm",
+                                                                            "className": "text-amber-600 dark:text-amber-400"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.scope.session_storage"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.scope_desc.session_storage"
+                                                            },
+                                                            {
+                                                                "id": "necessary_storage_locked_sessionStorage",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "comment": "잠금 항목 읽기 전용 행. 잠금 항목은 설정이 아니라 코드가 정하므로 편집 대상 값(_local.form)에 넣지 않고 여기에만 표시한다 — TagInput 은 칩 단위 잠금을 지원하지 않아 분리 표시가 유일하게 확실한 방법이다.",
+                                                                "if": "{{(gdprSettings?.data?.settings?.necessary_storage_locked?.sessionStorage ?? []).length > 0}}",
+                                                                "props": {
+                                                                    "className": "rounded-md bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 space-y-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex-center gap-2"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "lock",
+                                                                                    "size": "sm",
+                                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
+                                                                                },
+                                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_label"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex flex-wrap gap-1.5"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "comment": "잠금 칩 — 편집 가능한 칩과 시각적으로 구분되도록 흐리게(opacity) + 금지 커서로 표시한다.",
+                                                                                "props": {
+                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 opacity-70 cursor-not-allowed"
+                                                                                },
+                                                                                "iteration": {
+                                                                                    "source": "gdprSettings?.data?.settings?.necessary_storage_locked?.sessionStorage ?? []",
+                                                                                    "item_var": "lockedKey",
+                                                                                    "index_var": "lockedIdx"
+                                                                                },
+                                                                                "text": "{{lockedKey}}"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "P",
+                                                                        "props": {
+                                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                        },
+                                                                        "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_hint"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "necessary_storage_input_sessionStorage",
+                                                                "type": "composite",
+                                                                "name": "TagInput",
+                                                                "comment": "항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성)",
+                                                                "props": {
+                                                                    "value": "{{_local.form?.necessary_storage_allowlist?.sessionStorage ?? []}}",
+                                                                    "options": "{{((gdprSettings?.data?.default_necessary_allowlist_preview?.sessionStorage) ?? []).map(k => ({ value: k, label: k }))}}",
+                                                                    "creatable": true,
+                                                                    "placeholder": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder",
+                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.necessary_storage_allowlist": "{{({...(_local.form?.necessary_storage_allowlist ?? {}), sessionStorage: ($event?.target?.value ?? [])})}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "comment": "스코프 내 첫 잘못된 항목의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출된다.",
+                                                                "if": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.sessionStorage.'))}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{(Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('necessary_storage_allowlist.sessionStorage.'))?.[1]?.[0]) ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "necessary_storage_card_cookie",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "comment": "cookie 스코프 카드. 이 스코프에 422 검증 에러가 있으면 외곽 테두리를 빨간색으로 강조한다. 항목 인덱스가 0이 아닐 수 있으므로 prefix 로 시작하는 키 어느 것이든 존재 여부를 검사한다(some).",
+                                                        "props": {
+                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.cookie.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex-center gap-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "cookie-bite",
+                                                                            "size": "sm",
+                                                                            "className": "text-rose-600 dark:text-rose-400"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.scope.cookie"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.scope_desc.cookie"
+                                                            },
+                                                            {
+                                                                "id": "necessary_storage_locked_cookie",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "comment": "잠금 항목 읽기 전용 행. 잠금 항목은 설정이 아니라 코드가 정하므로 편집 대상 값(_local.form)에 넣지 않고 여기에만 표시한다 — TagInput 은 칩 단위 잠금을 지원하지 않아 분리 표시가 유일하게 확실한 방법이다.",
+                                                                "if": "{{(gdprSettings?.data?.settings?.necessary_storage_locked?.cookie ?? []).length > 0}}",
+                                                                "props": {
+                                                                    "className": "rounded-md bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 space-y-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex-center gap-2"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "lock",
+                                                                                    "size": "sm",
+                                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
+                                                                                },
+                                                                                "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_label"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex flex-wrap gap-1.5"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "comment": "잠금 칩 — 편집 가능한 칩과 시각적으로 구분되도록 흐리게(opacity) + 금지 커서로 표시한다.",
+                                                                                "props": {
+                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 opacity-70 cursor-not-allowed"
+                                                                                },
+                                                                                "iteration": {
+                                                                                    "source": "gdprSettings?.data?.settings?.necessary_storage_locked?.cookie ?? []",
+                                                                                    "item_var": "lockedKey",
+                                                                                    "index_var": "lockedIdx"
+                                                                                },
+                                                                                "text": "{{lockedKey}}"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "P",
+                                                                        "props": {
+                                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                        },
+                                                                        "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_hint"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "necessary_storage_input_cookie",
+                                                                "type": "composite",
+                                                                "name": "TagInput",
+                                                                "comment": "항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성)",
+                                                                "props": {
+                                                                    "value": "{{_local.form?.necessary_storage_allowlist?.cookie ?? []}}",
+                                                                    "options": "{{((gdprSettings?.data?.default_necessary_allowlist_preview?.cookie) ?? []).map(k => ({ value: k, label: k }))}}",
+                                                                    "creatable": true,
+                                                                    "placeholder": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder",
+                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.necessary_storage_allowlist": "{{({...(_local.form?.necessary_storage_allowlist ?? {}), cookie: ($event?.target?.value ?? [])})}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "comment": "스코프 내 첫 잘못된 항목의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출된다.",
+                                                                "if": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.cookie.'))}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{(Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('necessary_storage_allowlist.cookie.'))?.[1]?.[0]) ?? ''}}"
                                                             }
                                                         ]
                                                     }

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-09-06
+
+### Added
+
+- 결제 모듈 주소를 확인하지 못했을 때 표시되는 안내 문구의 일본어 번역을 추가했습니다 — 일본어 로케일에서 한국어 안내가 보이던 문제가 해소됩니다.
+
 ## [1.0.2] - 2026-08-19
 
 ### Added

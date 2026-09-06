@@ -823,7 +823,7 @@ SEO 엔진은 컴포넌트 지식을 갖지 않습니다. 모든 컴포넌트→
 | `text_props` | string[] | 텍스트 추출 우선순위 (예: `["text", "label", "value", "title"]`) |
 | `attr_map` | object | props→HTML 속성 매핑 (예: `{"className": "class", "htmlFor": "for"}`) |
 | `allowed_attrs` | string[] | 허용 HTML 속성 목록 (목록에 없는 속성은 출력 안됨) |
-| `stylesheets` | string[] | 외부 CSS URL (예: Font Awesome CDN) |
+| `stylesheets` | string[] | 추가 CSS URL |
 | `self_closing` | string[] | 셀프 클로징 태그 목록 (예: `["img", "input", "hr", "br"]`) |
 | `component_map` | object | 컴포넌트명 → HTML 태그 매핑 |
 | `render_modes` | object | 렌더 모드 정의 |
@@ -1114,7 +1114,7 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 | `if` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::evaluateBooleanExpression` | 거짓 판정: `''`, `false`, `0`, `null`, `undefined` (대소문자·공백 무시) |
 | `condition` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::shouldRender` | `if` 의 별칭 |
 | `conditions` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::evaluateConditions` | 문자열 / `{and:[]}` / `{or:[]}` / `[{if:…}]` 체인. 빈 AND=참, 빈 OR=거짓. 어느 형식도 아니면 **렌더링**(양쪽 동일 — 숨기면 봇 화면에서만 사라짐) |
-| `iteration` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderIteration` | `item_var` / `index_var` 별칭 포함 |
+| `iteration` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderIteration` | `item_var` / `index_var` 별칭 포함. 자동 변수 `{item_var}_index` 도 양쪽 동일 주입 (engine-v1.56.0 패리티) |
 | `type: "iterator"` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::normalizeIteratorNode` | `data`/`itemName`/`indexName` → `iteration` 변환 |
 | `classMap` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::resolveClassMap` | |
 | `responsive` | 전체 브레이크포인트 | 데스크톱 폭만 | `app/Seo/ComponentHtmlMapper.php::applyResponsiveOverrides` / `matchingBreakpointKey` | 봇=데스크톱 고정. `props`/`if`/`text`/`children`/`iteration` 오버라이드 반영. 매칭 키가 여럿이면 **하나만** 적용 — 커스텀 범위 > 프리셋, 좁은 범위 > 넓은 범위 (양쪽 동일) |
@@ -1131,11 +1131,13 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 | `isolatedState` / `$parent` / `_isolated` | ✅ | ❌ (무해) | 미처리 | 격리·모달 부모 컨텍스트 |
 | `blur_until_loaded` / 노드 최상위 `style` | ✅ | ❌ (무해) | 미처리 | 표현 전용 |
 | 노드 최상위에 잘못 놓인 컴포넌트 prop (`size` 등) | ❌ | ❌ | 미처리 | 양쪽 모두 `props` 객체만 읽으므로 무시됨 — 값을 적용하려면 `props` 안으로 옮겨야 함 |
+| `comment` / `_comment` 접두 계열 (`_comment_id` 등) | ❌ | ❌ | 미처리 | 개발자 주석 메타 — 양쪽 렌더러 모두 무시. `_comment` 는 접두사 계열로 판정한다 (`SeoNodeKeyParityTest::isCommentKey`) |
 | `props.isHtml` (콘텐츠 노드) | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderRawMode` | 거짓이면 이스케이프, 참(기본)이면 정화 후 HTML — "봇 화면의 HTML 정화" 참조 |
 | `props.value` (폼 제어) | 속성 | 속성 | `app/Seo/ComponentHtmlMapper.php::resolveTextContent` | `select`/`option`/`input`/`textarea` 등에서는 글자로 승계하지 않음 — 선택 목록은 `options` 로 항목 라벨을 그림 |
 | `props.purifyConfig` | ✅ | ❌ (의도) | 미처리 | 봇 화면은 기본 정화 규칙만 적용 |
 | `modals` | ✅ | ❌ (무해) | `SeoRenderer` 가 `components` 만 렌더 | 봇 화면은 모달을 렌더하지 않음 |
 | 레이아웃 최상위 `state` / `initLocal` / `initGlobal` | ✅ | ✅ | `app/Seo/SeoRenderer.php::resolveInitStateBlock` / `resolveInitActionState` | `init_actions` 의 상태 설정(로컬/전역)도 반영 |
+| **데이터소스 레벨** `initLocal` 옵션 | ✅ | ❌ (의도) | 미처리 | 봇 화면 미지원 확정 (2026-08-25) — 이 옵션을 쓰는 화면(장바구니·주문서·프로필 수정·게시판 작성 폼 등)은 인증·인터랙션 화면이라 봇 렌더 가치가 없다. 봇 노출이 필요한 상태 시드는 레이아웃 최상위 `initLocal`/`state` 를 사용한다 |
 
 이 표는 `tests/Unit/Seo/SeoNodeKeyParityTest.php` 의 분류 목록과 동기 유지합니다. 표를 바꾸면 그 테스트의 목록도 함께 바꿔야 합니다. 반대로 레이아웃에 새 노드 키가 등장하면 그 테스트가 실패하므로, 봇 화면에서 해석이 필요한지 판단한 뒤 양쪽을 갱신하세요.
 
@@ -1487,6 +1489,11 @@ SeoRenderer.render()
   └─ metaResolver.resolve(seoConfig, context, moduleId, pluginId, routeParams) → vars 치환
   └─ View::make('seo', [..., 'stylesheets' => config.stylesheets])
 ```
+
+봇 화면의 `<link>` 에는 활성 사용자 템플릿의 `template.json` `assets.css` 도 실린다. 그 선언은
+**파일이 실재할 때만** 링크한다 — 선언은 있는데 산출물이 없는 경로를 그대로 실으면 봇 화면에서만
+404 가 나고 일반 화면에는 흔적이 없다. 서버 로그에도 남지 않으므로 운영자가 알 방법이 없다.
+내용이 비어 있는 파일(0바이트)은 실재하므로 링크한다.
 
 ### navigate 핸들러 링크 자동 생성
 

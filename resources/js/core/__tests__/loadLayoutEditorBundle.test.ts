@@ -6,7 +6,8 @@
  * - 이미 로드됨(__LayoutEditorChrome 존재) → 즉시 반환, <script> 미주입 (멱등)
  * - 미로드 → <script> 1회 주입, load 이벤트 후 컴포넌트 반환
  * - 동시 다중 호출 → in-flight promise 병합 (중복 주입 없음)
- * - 로드 실패(error) → reject + 재시도 가능
+ * - 로드 실패(error) → 재시도(기본 3시도) 후 reject + 재시도 가능
+ * - 실패 문구에 번들 경로 미노출 (engine-v1.63.0)
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -94,13 +95,64 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     expect(r3).toBe(fakeChrome);
   });
 
-  it('로드 실패(error) → reject 한다', async () => {
+  it('로드 실패 → 3시도 후 reject 한다 (재시도 계층)', async () => {
+    vi.useFakeTimers();
+
     const promise = loadLayoutEditorBundle();
-    expect(appendedScripts).toHaveLength(1);
+    const rejection = expect(promise).rejects.toThrow(/불러오지 못했습니다/);
 
-    // 네트워크 실패 시뮬레이션
-    appendedScripts[0].dispatchEvent(new Event('error'));
+    // 1회차 실패 → 백오프 대기 후 2회차 주입 → … 총 3회 시도
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      expect(appendedScripts).toHaveLength(attempt);
+      appendedScripts[attempt - 1].dispatchEvent(new Event('error'));
+      await vi.advanceTimersByTimeAsync(3000);
+    }
 
-    await expect(promise).rejects.toThrow(/편집기 번들 로드 실패/);
+    expect(appendedScripts).toHaveLength(3);
+    await rejection;
+
+    vi.useRealTimers();
+  });
+
+  it('실패 문구에 번들 경로를 싣지 않는다', async () => {
+    vi.useFakeTimers();
+
+    const promise = loadLayoutEditorBundle();
+    const captured = promise.catch((e: Error) => e);
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      appendedScripts[attempt - 1].dispatchEvent(new Event('error'));
+      await vi.advanceTimersByTimeAsync(3000);
+    }
+
+    const error = (await captured) as Error;
+    expect(error.message).not.toContain('layout-editor.min.js');
+    expect(error.message).not.toContain('/build/core');
+
+    vi.useRealTimers();
+  });
+
+  it('실패 후 재호출하면 다시 주입한다 (in-flight promise 초기화)', async () => {
+    vi.useFakeTimers();
+
+    const first = loadLayoutEditorBundle();
+    const firstSettled = first.catch(() => undefined);
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      appendedScripts[attempt - 1].dispatchEvent(new Event('error'));
+      await vi.advanceTimersByTimeAsync(3000);
+    }
+    await firstSettled;
+
+    const fakeChrome = () => null;
+    const second = loadLayoutEditorBundle();
+
+    expect(appendedScripts).toHaveLength(4);
+    (window as any).G7Core.__LayoutEditorChrome = fakeChrome;
+    appendedScripts[3].dispatchEvent(new Event('load'));
+
+    await expect(second).resolves.toBe(fakeChrome);
+
+    vi.useRealTimers();
   });
 });

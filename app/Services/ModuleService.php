@@ -366,13 +366,20 @@ class ModuleService
      * @param  string  $moduleName  제거할 모듈명
      * @param  bool  $deleteData  모듈 데이터(테이블) 삭제 여부
      * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
+     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터
      * @return bool 제거 성공 여부
      *
      * @throws ValidationException 모듈 제거 실패 시
      */
-    public function uninstallModule(string $moduleName, bool $deleteData = false, ?string &$failureReason = null): bool
-    {
+    public function uninstallModule(
+        string $moduleName,
+        bool $deleteData = false,
+        ?string &$failureReason = null,
+        ?array &$preservedBackups = null,
+    ): bool {
         $failureReason = null;
+        $preservedBackups = [];
 
         HookManager::doAction('core.modules.before_uninstall', $moduleName, $deleteData);
 
@@ -381,7 +388,13 @@ class ModuleService
             $this->moduleManager->loadModules();
             $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-            $result = $this->moduleManager->uninstallModule($moduleName, $deleteData, null, $failureReason);
+            $result = $this->moduleManager->uninstallModule(
+                $moduleName,
+                $deleteData,
+                null,
+                $failureReason,
+                $preservedBackups
+            );
 
             if ($result) {
                 $module = $this->moduleRepository->findByName($moduleName);

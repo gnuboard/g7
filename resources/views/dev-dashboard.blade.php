@@ -534,7 +534,8 @@ if (isset($_GET['ajax_action'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', '그누보드7') }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    {{-- 스타일: 자체 빌드 CSS (종전 Tailwind Play CDN 대체 — 외부 도달 실패 시 화면이 무너졌다) --}}
+    <link rel="stylesheet" href="{{ asset('build/core/dev-dashboard.css') }}">
     <style>
         .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }
@@ -1051,6 +1052,28 @@ if (isset($_GET['ajax_action'])) {
                             </div>
                         </div>
 
+                        <!-- 확장 개발자 문서 -->
+                        <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-lg">📗</span>
+                                <span class="text-xs font-medium text-slate-200">확장 개발자 문서</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="runCommand('ext:docgen --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white text-xs font-medium rounded transition-colors" title="번들 확장별 훅·모델·마이그레이션·레이아웃 실측 집계와 문서 대상을 출력합니다. 파일을 만들거나 고치지 않습니다.">
+                                    <span>확장 문서 대상·집계 확인</span>
+                                    <span class="text-[10px] opacity-60">(ext:docgen --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('ext:docgen --check')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors" title="문서 누락·필수 섹션 누락·자동 생성 블록이 코드 실측과 어긋나는지 검사합니다. 파일을 고치지 않습니다.">
+                                    <span>확장 문서 drift 검사</span>
+                                    <span class="text-[10px] opacity-60">(ext:docgen --check)</span>
+                                </button>
+                                <button onclick="runCommand('ext:docgen')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors" title="자동 생성 블록 안쪽만 코드 실측으로 갱신합니다. 블록 밖 사람이 쓴 서술은 건드리지 않습니다.">
+                                    <span>확장 문서 갱신</span>
+                                    <span class="text-[10px] opacity-60">(ext:docgen)</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- 유지보수 -->
                         <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
                             <div class="flex items-center gap-2 mb-3">
@@ -1069,6 +1092,26 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('ext-bundles:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>확장 번들 정리</span>
                                     <span class="text-[10px] opacity-60">(ext-bundles:cleanup)</span>
+                                </button>
+                                <button onclick="runCommand('ext-static:publish --force')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>정적 게시 재생성</span>
+                                    <span class="text-[10px] opacity-60">(ext-static:publish)</span>
+                                </button>
+                                <button onclick="runCommand('ext-static:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>정적 게시 정리</span>
+                                    <span class="text-[10px] opacity-60">(ext-static:cleanup)</span>
+                                </button>
+                                <button onclick="runCommand('ext-static:status')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>정적 게시 점검</span>
+                                    <span class="text-[10px] opacity-60">(ext-static:status)</span>
+                                </button>
+                                <button onclick="runCommand('trusted-proxy:status')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>신뢰 프록시 점검</span>
+                                    <span class="text-[10px] opacity-60">(trusted-proxy:status)</span>
+                                </button>
+                                <button onclick="runCommand('security:audit-dependencies')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>의존성 취약점 점검</span>
+                                    <span class="text-[10px] opacity-60">(security:audit-dependencies)</span>
                                 </button>
                                 <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 캐시 통계 정리</span>
@@ -1548,13 +1591,45 @@ if (isset($_GET['ajax_action'])) {
             }
         }
 
-        async function runArtisanCommand(command, stepName) {
+        /** 화면이 커맨드 응답을 기다리는 기본 시간 (ms) */
+        const DEFAULT_COMMAND_TIMEOUT = 60000;
+
+        /**
+         * 기본 대기 시간 안에 끝나지 않는 커맨드의 개별 대기 시간 (ms).
+         *
+         * 잠금파일 전수를 레지스트리에 물어보는 점검처럼, 실행 자체가 기본 대기 시간에
+         * 근접하거나 넘는 커맨드가 있다. 화면이 먼저 포기하면 운영자에게는 타임아웃만
+         * 남고 결과가 도달하지 않는다 — 서버에서는 점검이 정상 수행 중인데도 화면만
+         * 보면 "점검이 실패했다" 로 읽힌다.
+         */
+        const COMMAND_TIMEOUTS = {
+            'security:audit-dependencies': 300000,
+            // 확장 20개의 진입 클래스를 실제로 부팅해 선언형 getter 40종을 호출한다.
+            // 기본 60초를 넘기면 화면은 타임아웃을 띄우는데 서버는 계속 문서를 쓰므로,
+            // "실패했다" 와 "성공했는데 화면이 포기했다" 가 구분되지 않는다.
+            'ext:docgen': 300000,
+        };
+
+        /**
+         * 커맨드 문자열에서 대기 시간을 정한다. 옵션은 무시하고 커맨드 이름으로만 찾는다.
+         *
+         * @param {string} command 실행할 Artisan 커맨드 (옵션 포함 가능)
+         * @returns {number} 대기 시간 (ms)
+         */
+        function resolveCommandTimeout(command) {
+            const name = String(command).trim().split(/\s+/)[0];
+
+            return COMMAND_TIMEOUTS[name] ?? DEFAULT_COMMAND_TIMEOUT;
+        }
+
+        async function runArtisanCommand(command, stepName, timeoutMs = null) {
+            const limit = timeoutMs ?? resolveCommandTimeout(command);
+
             try {
                 const url = `${window.location.pathname}?ajax_action=artisan&command=${encodeURIComponent(command)}`;
 
-                // 타임아웃 설정 (60초)
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000);
+                const timeoutId = setTimeout(() => controller.abort(), limit);
 
                 const response = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -1568,7 +1643,7 @@ if (isset($_GET['ajax_action'])) {
                 return { ...result, stepName };
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    return { success: false, output: '⏱️ 타임아웃 (60초 초과)', stepName };
+                    return { success: false, output: `⏱️ 타임아웃 (${Math.round(limit / 1000)}초 초과)`, stepName };
                 }
                 return { success: false, output: '❌ ' + error.message, stepName };
             }

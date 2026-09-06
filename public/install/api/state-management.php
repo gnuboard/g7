@@ -63,7 +63,7 @@ class StateManagementApi
         // GET 메서드만 허용
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             http_response_code(405);
-            echo json_encode([
+            echo installer_json_encode([
                 'error' => 'Method Not Allowed',
                 'message' => lang('error_get_method_required'),
             ], JSON_UNESCAPED_UNICODE);
@@ -139,27 +139,22 @@ class StateManagementApi
 
         // JSON 응답 반환
         //
-        // 최종 안전망 (gnuboard/g7#62): $response['logs'] 에 invalid UTF-8 바이트가
-        // 섞이면 json_encode 가 false 를 반환하고 echo false = 빈 본문(HTTP 200) 이 되어
+        // 최종 안전망 (gnuboard/g7#62): $response 의 로그·경로에 invalid UTF-8 바이트가
+        // 섞이면 표준 json_encode 는 false 를 반환하고, echo false = 빈 본문(HTTP 200) 이 되어
         // 프론트 폴링(res.json())이 "Unexpected end of JSON input" 으로 폭주한다.
-        // 로그는 addLog / task-runner 에서 이미 scrub 되지만, 어떤 경로로도 응답이
-        // 빈 본문이 되지 않도록 JSON_INVALID_UTF8_SUBSTITUTE 로 치환하고 false 를 가드한다.
-        $encoded = json_encode(
+        //
+        // installer_json_encode 는 값을 정규화하고 substitute 를 적용하며,
+        // 실패하더라도 파싱 가능한 오류 JSON 을 돌려주므로 빈 본문이 나갈 수 없다.
+        //
+        // 폴백에도 `status`/`logs`/`log_total` 을 실어 보낸다. 프론트 PollingMonitor 는
+        // `state.status` 로 진행/완료/실패를 판정하므로, 그 키가 없는 응답은 파싱은 되지만
+        // 아무 전이도 일으키지 못해 화면이 조용히 멈춘 것처럼 보인다(파싱 실패 카운터도
+        // 걸리지 않는다). 도달 확률과 무관하게 소비자 계약을 폴백에서도 유지한다.
+        echo installer_json_encode(
             $response,
-            JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_INVALID_UTF8_SUBSTITUTE
+            JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT,
+            ['status' => $status, 'logs' => [], 'log_total' => $logTotal]
         );
-
-        if ($encoded === false) {
-            // substitute 플래그로도 인코딩 실패한 극단적 케이스 — 폴링이 파싱 가능한
-            // 최소 유효 JSON 을 반환해 프론트가 다음 tick 에서 정상 복구되도록 한다.
-            $encoded = json_encode([
-                'status' => $status,
-                'logs' => [],
-                'log_total' => $logTotal,
-            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-        }
-
-        echo $encoded;
     }
 
     /**
@@ -175,7 +170,7 @@ class StateManagementApi
         // POST 메서드만 허용
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => 'Only POST method is allowed',
             ], JSON_UNESCAPED_UNICODE);
@@ -224,7 +219,7 @@ class StateManagementApi
         // 성공 응답
         http_response_code(200);
 
-        echo json_encode([
+        echo installer_json_encode([
             'success' => true,
             'message' => lang('state_reset_completed', ['step' => $targetStep]),
             'target_step' => $targetStep,
@@ -243,7 +238,7 @@ class StateManagementApi
         // POST 메서드만 허용
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => lang('api_method_not_allowed'),
             ]);
@@ -263,7 +258,7 @@ class StateManagementApi
         // 설치가 이미 완료된 경우
         if (isset($state['installation_status']) && $state['installation_status'] === 'completed') {
             addLog(lang('abort_api_already_completed'));
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => lang('abort_api_already_completed'),
             ]);
@@ -273,7 +268,7 @@ class StateManagementApi
         // 이미 중단된 경우 - 멱등성 보장 (재진입 시 400 에러 방지)
         if (isset($state['installation_status']) && $state['installation_status'] === 'aborted') {
             addLog(lang('abort_api_already_aborted'));
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => true,
                 'message' => lang('abort_api_already_aborted'),
             ]);
@@ -283,7 +278,7 @@ class StateManagementApi
         // 설치가 진행 중이 아닌 경우
         if (! isset($state['installation_status']) || $state['installation_status'] !== 'running') {
             addLog(lang('abort_api_not_running', ['status' => $state['installation_status'] ?? 'null']));
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => lang('abort_api_not_running', ['status' => $state['installation_status'] ?? 'null']),
             ]);
@@ -329,7 +324,7 @@ class StateManagementApi
         addLog(lang('abort_installation_stopped'));
 
         // 성공 응답 (리다이렉트 없음 - 현재 Step 5 유지)
-        echo json_encode([
+        echo installer_json_encode([
             'success' => true,
             'message' => lang('abort_installation_stopped'),
         ]);
@@ -341,7 +336,7 @@ class StateManagementApi
     private function error400(string $message): void
     {
         http_response_code(400);
-        echo json_encode([
+        echo installer_json_encode([
             'success' => false,
             'error' => 'Bad Request',
             'message' => $message,
@@ -363,7 +358,7 @@ class StateManagementApi
 
         // 에러 응답
         http_response_code(500);
-        echo json_encode([
+        echo installer_json_encode([
             'success' => false,
             'error' => 'Internal Server Error',
             'message' => $e->getMessage(),
