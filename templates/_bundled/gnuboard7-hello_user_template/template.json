@@ -31,9 +31,7 @@
         "plugins": {}
     },
     "assets": {
-        "css": [
-            "dist/css/components.css"
-        ],
+        "css": [],
         "js": [
             "dist/js/components.iife.js"
         ],

@@ -74,6 +74,3 @@ test_files:
   - tests/Unit/Installer/RequirementsResponseUtf8Test.php
   - tests/Unit/Installer/AddLogUtf8ScrubTest.php
   - tests/Unit/Services/SettingsServiceCpuInfoTest.php
-
-validation:
-  browser_matrix: .claude/docs/chrome-mcp-inspection-matrix.md

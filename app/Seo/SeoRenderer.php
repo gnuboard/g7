@@ -740,17 +740,35 @@ class SeoRenderer implements SeoRendererInterface
     }
 
     /**
+     * 템플릿 디렉토리의 절대 경로를 반환합니다.
+     *
+     * 테스트가 임시 디렉토리를 템플릿 루트로 쓸 수 있도록 분리한 seam 이다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return string 템플릿 루트 절대 경로
+     */
+    protected function templateRootPath(string $identifier): string
+    {
+        return base_path("templates/{$identifier}");
+    }
+
+    /**
      * 템플릿의 CSS 에셋 URL 목록을 반환합니다.
      *
      * template.json의 assets.css 경로를 서빙 URL로 변환합니다.
      * 예: "dist/css/components.css" → "/api/templates/assets/{id}/css/components.css"
+     *
+     * `assets.css` 는 **선언**일 뿐이라 산출물이 없을 수 있다. 없는 경로를 그대로 링크하면
+     * 봇 화면에서만 404 가 나고 일반 화면에는 흔적이 없다 — 서버 로그에도 남지 않아
+     * 운영자가 알 방법이 없다. 그래서 파일이 실재하는 경로만 싣는다(0바이트는 정상).
      *
      * @param  string  $templateIdentifier  템플릿 식별자
      * @return array CSS URL 배열
      */
     private function getTemplateCssUrls(string $templateIdentifier): array
     {
-        $templateJsonPath = base_path("templates/{$templateIdentifier}/template.json");
+        $templateRoot = $this->templateRootPath($templateIdentifier);
+        $templateJsonPath = $templateRoot.'/template.json';
         if (! file_exists($templateJsonPath)) {
             return [];
         }
@@ -767,6 +785,12 @@ class SeoRenderer implements SeoRendererInterface
 
         $urls = [];
         foreach ($cssPaths as $cssPath) {
+            // 선언한 파일이 실재할 때만 링크한다 — 없는 경로의 <link> 는 봇 화면에서만
+            // 404 가 되고 어디에도 흔적을 남기지 않는다
+            if (! is_file($templateRoot.'/'.$cssPath)) {
+                continue;
+            }
+
             // dist/ 접두사 제거 (서빙 경로에서는 dist가 자동 추가됨)
             $servePath = preg_replace('#^dist/#', '', $cssPath);
 

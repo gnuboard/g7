@@ -1,4 +1,4 @@
-# 이커머스 — 에이전트 가이드
+# 그누보드7 이커머스 모듈 — 에이전트 가이드
 
 > 이 문서는 이 모듈을 수정하는 에이전트·확장개발자를 위한 것입니다. 도입 검토·운영 관점은 [README.md](README.md) 를 보세요.
 
@@ -195,7 +195,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 401개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 402개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 142개 | `vitest.config.ts` |
 | Playwright | 42개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 93개 | `tests/scenarios` |

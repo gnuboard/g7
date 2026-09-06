@@ -278,6 +278,42 @@ class ExtensionInventory
     }
 
     /**
+     * 진입 문서(README · AGENTS.md · docs/README.md)의 제목을 만듭니다.
+     *
+     * 확장명만 제목으로 두면(`# 게시판`) 제3자가 그 문서만 열었을 때 이것이 그누보드7의
+     * 확장인지, 모듈인지 템플릿인지 알 수 없다(PO 결정 2026-09-04). 그래서 제목은
+     * 「그누보드7 {확장명} {유형}」 으로 조립한다 — 「그누보드7 게시판 모듈」.
+     *
+     * 확장명이 이미 유형으로 끝나면(「Hello 모듈」·「Hello User Template」) 유형을 겹쳐
+     * 붙이지 않는다 — 「그누보드7 Hello 모듈 모듈」 이 되기 때문이다. 영문 유형명도 같은
+     * 판정을 받는다(샘플 템플릿의 이름이 영문이다).
+     *
+     * @param  string  $name  manifest 에서 해석한 확장명
+     * @param  string  $type  확장 유형
+     * @return string 문서 제목
+     */
+    public static function docTitle(string $name, string $type): string
+    {
+        $label = self::typeLabel($type);
+        $name = trim($name);
+
+        $english = match ($type) {
+            self::TYPE_MODULE => 'module',
+            self::TYPE_PLUGIN => 'plugin',
+            self::TYPE_TEMPLATE => 'template',
+            default => '',
+        };
+
+        $lower = mb_strtolower($name);
+        $alreadyTyped = str_ends_with($name, $label)
+            || ($english !== '' && str_ends_with($lower, $english));
+
+        return $alreadyTyped
+            ? '그누보드7 '.$name
+            : '그누보드7 '.$name.' '.$label;
+    }
+
+    /**
      * manifest 의 name 을 한국어 우선으로 해석합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 배열

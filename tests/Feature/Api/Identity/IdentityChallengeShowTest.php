@@ -75,13 +75,18 @@ class IdentityChallengeShowTest extends TestCase
 
         $response = $this->getJson("/api/identity/challenges/{$id}");
 
-        // 시도 횟수(attempts / max_attempts)·코드 본체·target_hash·verification_token 등 노출 금지.
-        // 이 엔드포인트는 권한 가드 없는 공개 폴링용이므로 남은 시도 횟수를 추론할 단서를 응답에 담지 않는다.
+        // 누적 시도 횟수(attempts)·코드 본체·target_hash·verification_token 등 노출 금지.
+        // 이 엔드포인트는 권한 가드 없는 공개 폴링용이므로, 남의 인증이 몇 번 실패했는지를
+        // 추론할 단서를 응답에 담지 않는다.
         $response->assertJsonMissingPath('data.attempts')
-            ->assertJsonMissingPath('data.max_attempts')
             ->assertJsonMissingPath('data.target_hash')
             ->assertJsonMissingPath('data.verification_token')
             ->assertJsonMissingPath('data.metadata');
+
+        // 상한(max_attempts)은 정책 상수라 노출한다 — 화면이 남은 횟수를 표시하려면 필요하고,
+        // 상수 자체로는 그 인증 건이 몇 번 실패했는지가 드러나지 않는다.
+        // (Service::getStatus 의 판정과 같은 계약. 한쪽만 바뀌면 이 단언이 먼저 깨진다.)
+        $this->assertIsInt($response->json('data.max_attempts'));
     }
 
     public function test_show_reflects_status_transitions(): void

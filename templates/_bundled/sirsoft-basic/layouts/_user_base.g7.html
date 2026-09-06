@@ -96,6 +96,8 @@
     <match pattern="/api/auth/*" X-Cart-Key="{{_global.cartKey}}"/>
     <!-- 비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.g7.html, guest_order_show.g7.html). -->
     <match pattern="/api/modules/sirsoft-ecommerce/guest/orders/*" X-Guest-Order-Token="{{_global.guestOrderToken}}"/>
+    <!-- 비밀글 열람 확인 토큰 — 비밀번호로 원문을 연 사실을 다음 요청(댓글·답글·신고)으로 넘긴다. 서버가 토큰을 게시글에 결속시키므로 다른 글에는 통하지 않고, 비밀글이 아닌 요청에서는 아예 평가되지 않는다. 결제 취소 기록(orders/{n}/cancel-payment) 처럼 헤더 없이는 정당 사용자가 막히는 경로라 globalHeaders 로 단일 배선한다. -->
+    <match pattern="/api/modules/sirsoft-board/*" X-Board-Secret-View-Token="{{_global.secretViewToken}}"/>
   </global-headers>
   <transition-overlay enabled style="spinner" target="main_content_area">
     <spinner component="PageLoading"/>

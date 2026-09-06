@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
@@ -38,6 +39,7 @@ use Plugins\Sirsoft\PayNhnkcp\Support\ShopRedirectUrl;
  */
 class PaymentCallbackController
 {
+    use BindsMobileVbankSession;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
     use RecordsPaymentWindowClosure;
@@ -607,6 +609,24 @@ class PaymentCallbackController
         $isMobile = $encData === '' || $encInfo === '';
 
         if ($isMobile) {
+            // 모바일 분기는 PG 서버 호출이 없어 계좌 정보의 유일한 출처가 브라우저 평문이다.
+            // 그래서 이 콜백이 소유자 인증을 거친 결제 세션에서 비롯됐는지를 먼저 확인한다 —
+            // 승인키 발급 시점에 실어 보낸 일회성 nonce 가 param_opt_2 로 되돌아와야 한다
+            // (KVE-2026-2019). 불일치/부재면 상태를 전혀 바꾸지 않고 실패 URL 로 돌린다
+            // ("브라우저 입력만으로 상태 변경 금지" — KVE-2026-2018/2046 과 같은 기준).
+            if (! $this->mobileVbankStateMatches($order, $validated['param_opt_2'] ?? null)) {
+                Log::warning('KCP: mobile vbank callback rejected — session state mismatch', [
+                    'ordr_idxx' => $ordrIdxx,
+                    'has_echoed_state' => ($validated['param_opt_2'] ?? '') !== '',
+                ]);
+
+                return redirect($this->resolveFailUrl([
+                    'error' => 'vbank_session_mismatch',
+                    'message' => __('sirsoft-pay_nhnkcp::messages.errors.payment_failed'),
+                    'orderId' => $ordrIdxx,
+                ]));
+            }
+
             // 모바일: 콜백 POST 의 평문 필드를 그대로 응답으로 취급
             // KCP 변종 키 모두 대응 (bankname|bank_name, depositor|account_holder, va_date|vnbank_expire_date)
             $pgResponse = [

@@ -91,5 +91,5 @@
 (완료된 PII), `InicisIdentityLogQueryRepository`(동일인 검증 전용 `IdentityVerificationLog`
 조회, 코어 로그 테이블을 이 플러그인 관점으로 좁혀 읽는 어댑터). 결제 플러그인들이
 Repository 를 하나도 두지 않는 것과 대조적으로, 이 플러그인은 실제 PII 를 소유하므로
-Repository 인터페이스 주입 원칙(§CLAUDE.md "Service-Repository 패턴")이 그대로 적용됩니다.
+Repository 인터페이스 주입 원칙(§코어 AGENTS.md "Service-Repository 패턴")이 그대로 적용됩니다.
 <!-- @intent END -->

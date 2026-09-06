@@ -1,4 +1,4 @@
-# CKEditor 5 WYSIWYG 에디터 개발자 문서
+# 그누보드7 CKEditor 5 WYSIWYG 에디터 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-ckeditor5 · 플러그인
 

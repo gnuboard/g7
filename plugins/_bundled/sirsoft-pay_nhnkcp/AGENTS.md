@@ -1,4 +1,4 @@
-# NHN KCP — 에이전트 가이드
+# 그누보드7 NHN KCP 플러그인 — 에이전트 가이드
 
 > 이 문서는 이 플러그인을 수정하는 에이전트·확장개발자를 위한 것입니다. 도입 검토·운영 관점은 [README.md](README.md) 를 보세요.
 
@@ -149,8 +149,8 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 28개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 8개 | `vitest.config.ts` |
+| PHPUnit | 29개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| Vitest | 9개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 1개 | `tests/scenarios` |
 

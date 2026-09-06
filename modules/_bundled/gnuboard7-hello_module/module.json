@@ -18,7 +18,9 @@
         "plugins": {}
     },
     "assets": {
-        "js": ["dist/js/hello-module.iife.js"],
-        "css": []
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/hello-module.iife.js"
+        }
     }
 }

@@ -1,4 +1,4 @@
-# Admin Basic 개발자 문서
+# 그누보드7 Admin Basic 템플릿 개발자 문서
 
 > templates/_bundled/sirsoft-admin_basic · 템플릿
 

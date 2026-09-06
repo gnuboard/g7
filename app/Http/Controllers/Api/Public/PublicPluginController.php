@@ -34,7 +34,7 @@ class PublicPluginController extends PublicBaseController
      *
      * 병합 파일을 fileResponse 로 서빙한다(ETag/304/환경별 Cache-Control 재사용).
      * 디스크 캐시가 실패하면 메모리 병합 결과로 200 을 낸다(캐시는 최적화일 뿐이다).
-     * 에셋을 선언한 활성 확장이 0개면 빈 200, 선언은 있는데 결과가 비면 503 —
+     * 선언한 산출물이 소실·판독 불가면 503, 존재하되 비었으면(또는 선언 0) 빈 200 —
      * 판정은 ServesExtensionBundles::bundleResponse() 단일 지점.
      *
      * @return BinaryFileResponse|Response 병합 JS 파일 응답 또는 빈 응답

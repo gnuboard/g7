@@ -1,9 +1,13 @@
+import { buildOrderRequestHeaders } from './guestOrderToken';
+
 const PLUGIN_ID = 'sirsoft-pay_nicepayments';
 const FLAG = '__nicepayOrderShowInjectorInstalled';
 const ROW_ID = 'nicepay-mp-receipt-row';
 const VBANK_BLOCK_ID = 'nicepay-mp-vbank-info';
 
-const ORDER_SHOW_RE = /^\/mypage\/orders\/([^/]+)$/;
+// 회원 마이페이지(/mypage/orders/{N}) 와 비회원 주문 상세(/shop/guest/orders/{N}) 를 함께 매칭한다.
+// 비회원 경로를 빼면 그 화면에서는 영수증 정보가 조회조차 되지 않는다 (서버는 지원한다).
+const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/]+))$/;
 
 interface Payment {
     pg_provider?: string;
@@ -42,16 +46,14 @@ function getOrderFromState(orderNumber: string): OrderData | null {
     }
 }
 
-function getToken(): string | null {
-    return localStorage.getItem('auth_token');
-}
 
 async function fetchReceiptInfo(orderNumber: string): Promise<ReceiptInfo | null> {
-    const token = getToken();
-    if (!token) return null;
+    const headers = buildOrderRequestHeaders();
+    if (!headers) return null;
     try {
         const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+            headers,
+            credentials: 'same-origin',
         });
         if (!res.ok) return null;
         return (await res.json()) as ReceiptInfo;
@@ -250,7 +252,9 @@ function startPolling(orderNumber: string): void {
 
 function onRouteChange(): void {
     const match = location.pathname.match(ORDER_SHOW_RE);
-    if (match) startPolling(match[1]);
+    // 회원 그룹(match[1]) 또는 비회원 그룹(match[2]) 중 한쪽이 채워진다.
+    const segment = match?.[1] ?? match?.[2];
+    if (segment) startPolling(segment);
 }
 
 export function installMypageOrderShowInjector(): void {

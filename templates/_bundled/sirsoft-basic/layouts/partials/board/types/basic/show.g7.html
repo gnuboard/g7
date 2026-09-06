@@ -38,7 +38,7 @@
             <!-- 삭제됨 배지 -->
             <span data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
             <!-- 새글 배지 (제목 바로 옆) -->
-            <span data-if="{{post?.data?.is_new}}" class="px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
+            <span data-if="{{post?.data?.is_new}}" class="px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white dark:text-white rounded flex-shrink-0">N</span>
           </div>
         </div>
         <!-- 작성자 정보 + 조회수/댓글수 -->
@@ -178,6 +178,8 @@
               <api-call target="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/verify-password" auth_mode="optional" method="POST" body="{{_local?.secretPasswordForm}}">
                 <success>
                   <update-data-source dataSourceId="post" data="{{result}}"/>
+                  <!-- 열람 확인 토큰 보관 — 비밀번호를 맞혔다는 사실은 이 응답에서만 살아 있다. 댓글·답글·신고는 각각 별도 요청이라, 이 토큰을 넘기지 않으면 원문을 연 사람도 화면이 내준 버튼에서 전부 거부된다. _user_base 의 globalHeaders 가 board API 요청에 자동으로 싣는다. -->
+                  <set-state target="global" secretViewToken="{{result.secret_view_token ?? ''}}"/>
                   <set-state target="local" :isVerifyingPassword="false"/>
                   <toast type="success" message="$t:board.password_verified"/>
                 </success>

@@ -101,6 +101,14 @@
 - `GeneratesComponentManifest`(PHP) — `module:build`/`plugin:build` 가 확장의 컴포넌트 소스를 스캔해 매니페스트를 만든다. `for/{템플릿식별자}/` 하위는 같은 이름의 다른 구현이므로 컴포넌트 목록에 중복 등재하지 않고 `for` 맵에만 싣는다.
 - 컴포넌트 소스의 `{이름}Props` 선언에서 prop 메타데이터(타입·필수 여부·설명)를 추출한다. 종전에는 빈 객체라 편집기가 확장 컴포넌트의 prop 을 편집할 방법이 없었다. 추출 결과는 부분 목록이다 — 상속된 표준 속성은 선언에 나타나지 않으며, 컴파일러도 이 선언을 화이트리스트가 아니라 타입 판정 힌트로만 쓴다.
 
+## [engine-v1.64.7] - 2026-09-04
+
+### Fixed
+
+#### 확장 번들 스타일 실패 안내에 내부 구분 이름이 노출되던 문제
+
+- 병합 CSS 번들 로드에 끝내 실패했을 때 안내 배너의 항목명이 번들 구분 키(`module`/`plugin`)였다. 사용자 어휘(`core.assets.module_styles` · `core.assets.plugin_styles`, 번역 미적재 시 폴백 문구)로 바꾼다 (ModuleAssetLoader.ts, AssetFailureNotice.ts)
+
 ## [engine-v1.64.0] - 2026-09-02
 
 ### Security

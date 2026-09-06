@@ -1,4 +1,4 @@
-# 게시판 — 에이전트 가이드
+# 그누보드7 게시판 모듈 — 에이전트 가이드
 
 > 이 문서는 이 모듈을 수정하는 에이전트·확장개발자를 위한 것입니다. 도입 검토·운영 관점은 [README.md](README.md) 를 보세요.
 
@@ -156,8 +156,8 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 157개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 37개 | `vitest.config.ts` |
+| PHPUnit | 159개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 38개 | `vitest.config.ts` |
 | Playwright | 27개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 37개 | `tests/scenarios` |
 

@@ -55,7 +55,7 @@ IDV 공통 팝업 UI로 존재합니다.
 
 <!-- @intent START -->
 `window.__SirsoftVerificationNhnkcp`로 노출되는 이유는 코어가 로케일 전환 시 이 이름으로
-재등록 진입점을 찾기 때문입니다(§CLAUDE.md "재등록 진입점"). `sirsoft-verification_kginicis`와
+재등록 진입점을 찾기 때문입니다(§코어 AGENTS.md "재등록 진입점"). `sirsoft-verification_kginicis`와
 마찬가지로 이 플러그인은 결제창 SDK 를 동적 로드하지 않습니다 — 인증 화면 자체가 서버
 렌더링 페이지(팝업 안) 또는 리다이렉트 대상(모바일)이므로 프론트가 별도 스크립트를 불러올
 필요가 없습니다.

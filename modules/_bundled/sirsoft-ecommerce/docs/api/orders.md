@@ -1850,7 +1850,11 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 회원/비회원이 PG 결제창을 닫았을 때 결제 취소 이력만 기록합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `Public\OrderController@cancelPayment`가 `OrderProcessingService::recordPaymentCancellation()`으로 주문 상태는 변경하지 않고 `order_payments`에 취소창 닫힘 이력(`cancel_code`·`cancel_message`)만 남깁니다. 결제 SDK가 사용자 취소 콜백을 받았을 때 프론트가 호출해 결제 시도 이력을 추적하는 용도입니다.
+**설명** 회원/비회원이 PG 결제창을 닫았을 때 결제 취소 이력만 기록합니다.
+
+**비회원 요청은 `X-Guest-Order-Token` 헤더가 필요합니다.** 이 경로는 `optional.sanctum` 으로 회원/비회원이 공유하므로 소유권 판정이 분기됩니다 — 회원 주문은 로그인 본인만, 비회원 주문(`user_id` 없음)은 비회원 주문 조회에서 발급받은 토큰이 그 주문번호와 일치할 때만 통과합니다. 토큰이 없거나 만료·위조·다른 주문의 것이면 정보 노출을 막기 위해 존재하지 않는 주문과 동일하게 `404` 를 반환합니다. 토큰 발급은 비회원 주문 조회 인증(`POST /api/modules/sirsoft-ecommerce/guest/orders/authenticate`)이 담당합니다.
+
+`optional.sanctum`으로 회원/비회원 모두 접근하며, `Public\OrderController@cancelPayment`가 `OrderProcessingService::recordPaymentCancellation()`으로 주문 상태는 변경하지 않고 `order_payments`에 취소창 닫힘 이력(`cancel_code`·`cancel_message`)만 남깁니다. 결제 SDK가 사용자 취소 콜백을 받았을 때 프론트가 호출해 결제 시도 이력을 추적하는 용도입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/orders

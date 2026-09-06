@@ -95,12 +95,17 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         // ── develop 병합 유입분 (3·4·5차). 아래 22행은 이 트랙이 만든 것이 아니라 develop 라인이
         //    자기 트랙 테스트에 마킹을 달고 시나리오 매니페스트는 두지 않은 채 넘어온 것이다.
         //    귀속 실측: 전부 develop 계보 커밋(`2b38e15aa`·`03b48f76a`·`6217f4d78` 등)이 도입했고
-        //    5차 병합이 새로 들인 마킹 테스트는 0건이다. 소유 트랙이 매니페스트를 세우면 그 즉시
+        //    5차 병합이 새로 들인 마킹 테스트는 0건이고 6·7차도 0건, 8차가 4건을 들였다(아래 별도 묶음). 소유 트랙이 매니페스트를 세우면 그 즉시
         //    "여기서도 빼라" 가 red 이므로, 이 목록은 늘지 않게만 잠그는 자리다.
         'modules/_bundled/sirsoft-board/tests/Feature/CommentPostStateTest.php' => '게시판 트랙 소유 (블라인드 게시글의 댓글 작성 거부).',
         'modules/_bundled/sirsoft-board/tests/Feature/NoticeResultCapTest.php' => '게시판 트랙 소유 (공지 조회의 결과 상한 준수).',
         'modules/_bundled/sirsoft-board/tests/Feature/PostNumberBoundedTotalRegressionTest.php' => '게시판 트랙 소유 (총 건수 절사 시 글번호 표기).',
         'modules/_bundled/sirsoft-board/tests/Feature/PostSearchKeywordSanitizationTest.php' => '게시판 트랙 소유 (전문검색 연산자 입력의 500 방지).',
+        // ── develop 8차 병합 유입분(7.0.10 · KVE-2026 보안 6묶음). 같은 형태 — develop 라인이 마킹은 달고
+        //    매니페스트는 두지 않았다. 귀속 실측: 커밋 `07fd45e6b`(#645) 도입, 이 트랙 변경 0.
+        'modules/_bundled/sirsoft-board/tests/Feature/SecretPostChildWriteGateTest.php' => '게시판 트랙 소유 (비밀글 하위 쓰기 게이트 — 댓글·답글·신고의 부모 열람 권한 재적용, KVE-2026-2044).',
+        'modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PlaintextPostPasswordRehashTest.php' => '게시판 트랙 소유 (평문으로 저장된 비회원 글 비밀번호의 업그레이드 재해시).',
+        'modules/_bundled/sirsoft-board/tests/Feature/User/PostSecretVerifyPasswordTest.php' => '게시판 트랙 소유 (비밀글 비밀번호 검증 응답 형상과 열람 확인 토큰 발급).',
         'modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PostListViewCountIndexUpgradeTest.php' => '게시판 트랙 소유 (기설치 사이트의 목록 인덱스 백필).',
         'modules/_bundled/sirsoft-board/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'modules/_bundled/sirsoft-board/tests/Unit/Repositories/UserCommentedActivityDeferredJoinTest.php' => '목록 지연 조인 트랙 소유 (그룹 쿼리 총 건수·컬럼 프루닝).',
@@ -121,6 +126,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/PluginCacheContextualBindingTest.php' => '확장 캐시 바인딩 트랙 소유 (플러그인 컨텍스추얼 바인딩).',
         'plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CleanKcpRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
         'tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
+        'tests/Unit/Installer/InstallerStep3EnvValueGuardTest.php' => '설치 마법사 트랙 소유 (3단계 입력의 줄바꿈 주입으로 .env 항목이 끼워지는 것 방지, KVE-2026-2042 — develop 8차 유입).',
         'tests/Unit/Http/Resources/HasRowNumberBoundedTotalTest.php' => '대용량 목록 상한 트랙 소유 (총 건수 절사 시 행번호 표기).',
         'tests/Unit/Repositories/Concerns/SortableColumnsGateContractTest.php' => '정렬 화이트리스트 트랙 소유 (저장소 ↔ 게이트 포함관계).',
         'tests/Unit/Search/KeywordSearchTest.php' => '검색 트랙 소유 (키워드 술어의 활성 엔진 위임).',

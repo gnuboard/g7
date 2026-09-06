@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 
 /**
  * 결제 취소 기록 요청
@@ -45,14 +47,14 @@ class CancelPaymentRequest extends FormRequest
     /**
      * 추가 검증 로직
      *
-     * @param Validator $validator
+     * @param  Validator  $validator
      * @return void
      */
     protected function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
             $orderNumber = $this->route('orderNumber');
-            $this->order = Order::where('order_number', $orderNumber)->first();
+            $this->order = app(OrderRepositoryInterface::class)->findByOrderNumber((string) $orderNumber);
 
             if (! $this->order) {
                 abort(ResponseHelper::moduleError(
@@ -62,14 +64,33 @@ class CancelPaymentRequest extends FormRequest
                 ));
             }
 
-            // 소유권 검증: 회원 주문은 본인만, 비회원 주문은 주문번호로 접근 허용
-            $userId = Auth::id();
-            if ($this->order->user_id !== null && $this->order->user_id !== $userId) {
-                abort(ResponseHelper::moduleError(
-                    'sirsoft-ecommerce',
-                    'exceptions.order_not_found',
-                    404
-                ));
+            // 소유권 검증
+            // - 회원 주문: 본인만 통과.
+            // - 비회원 주문: 보호된 게스트 경로(guest/orders/*)와 동일하게 X-Guest-Order-Token 을 요구한다.
+            //   주문번호만으로 통과시키면 익명 요청이 결제를 cancelled 로 영속 변경할 수 있다.
+            //   미들웨어(VerifyGuestOrderToken)를 라우트에 붙이지 않는 이유는 그 미들웨어에
+            //   회원 pass-through 가 없어 공유 라우트에서 로그인 회원이 404 가 되기 때문이다.
+            if ($this->order->user_id !== null) {
+                if ($this->order->user_id !== Auth::id()) {
+                    abort(ResponseHelper::moduleError(
+                        'sirsoft-ecommerce',
+                        'exceptions.order_not_found',
+                        404
+                    ));
+                }
+            } else {
+                $verified = app(GuestOrderAuthService::class)->verifyToken(
+                    $this->header('X-Guest-Order-Token'),
+                    (string) $orderNumber
+                );
+
+                if (! $verified) {
+                    abort(ResponseHelper::moduleError(
+                        'sirsoft-ecommerce',
+                        'exceptions.order_not_found',
+                        404
+                    ));
+                }
             }
 
             if ($this->order->order_status !== OrderStatusEnum::PENDING_ORDER) {
@@ -84,7 +105,7 @@ class CancelPaymentRequest extends FormRequest
     /**
      * 검증 실패 시 응답 커스터마이징
      *
-     * @param Validator $validator
+     * @param  Validator  $validator
      * @return void
      *
      * @throws ValidationException

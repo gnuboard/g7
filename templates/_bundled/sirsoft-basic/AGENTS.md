@@ -1,4 +1,4 @@
-# Basic — 에이전트 가이드
+# 그누보드7 Basic 템플릿 — 에이전트 가이드
 
 > 이 문서는 이 템플릿을 수정하는 에이전트·확장개발자를 위한 것입니다. 도입 검토·운영 관점은 [README.md](README.md) 를 보세요.
 
@@ -158,7 +158,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 142개 | `vitest.config.ts` |
+| Vitest | 145개 | `vitest.config.ts` |
 | Playwright | 8개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 3개 | `tests/scenarios` |
 

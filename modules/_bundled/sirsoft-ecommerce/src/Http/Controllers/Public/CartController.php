@@ -99,15 +99,11 @@ class CartController extends PublicBaseController
                 selectedCartIds: $selectedIds
             );
 
-            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.fetched', [
-                'items' => CartItemResource::collection($result->items),
-                'item_ids' => $result->items->pluck('id')->values()->toArray(),
-                'item_count' => $result->count(),
-                'calculation' => $result->calculation->toArray(),
-                // 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 주문 전체 차단 플래그 (D1 — layer 1)
-                'has_unshippable_items' => $this->hasUnshippableItems($result->items),
-                'selected_shipping_country' => ResolveShippingCountry::getCountry(),
-            ]);
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.cart.fetched',
+                $this->buildCartPayload($result)
+            );
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -216,11 +212,11 @@ class CartController extends PublicBaseController
                 selectedCartIds: $selectedIds
             );
 
-            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.quantity_updated', [
-                'items' => CartItemResource::collection($result->items),
-                'item_count' => $result->count(),
-                'calculation' => $result->calculation->toArray(),
-            ]);
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.cart.quantity_updated',
+                $this->buildCartPayload($result)
+            );
         } catch (CartUnavailableException $e) {
             // 판매불가/재고/구매수량 한도 위반 — generic 500 이 아닌 사유별 422 매핑
             return $this->cartUnavailableResponse($e);
@@ -521,6 +517,31 @@ class CartController extends PublicBaseController
             $e->getStatusCode(),
             ['code' => $e->getReason()]
         );
+    }
+
+    /**
+     * 장바구니 응답 페이로드를 조립합니다.
+     *
+     * 조회와 수량 변경이 같은 조립기를 쓴다. 화면은 수량 변경 응답으로 장바구니 데이터소스를
+     * **통째로 교체**하므로(refetch 제거), 두 응답의 키 집합이 갈라지면 조회에만 있던 값이
+     * 수량을 한 번 바꾸는 순간 사라진다. 특히 `has_unshippable_items` 는 배송 불가 상품이
+     * 담겼을 때 주문 버튼을 잠그는 값이라, 사라지면 그 잠금이 조용히 풀린다 — 요청은 정상
+     * 성공하고 오류도 경고도 남지 않는다.
+     *
+     * @param  mixed  $result  getCartWithCalculation 결과 (items / count / calculation)
+     * @return array<string, mixed> 응답 페이로드
+     */
+    protected function buildCartPayload($result): array
+    {
+        return [
+            'items' => CartItemResource::collection($result->items),
+            'item_ids' => $result->items->pluck('id')->values()->toArray(),
+            'item_count' => $result->count(),
+            'calculation' => $result->calculation->toArray(),
+            // 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 주문 전체 차단 플래그 (D1 — layer 1)
+            'has_unshippable_items' => $this->hasUnshippableItems($result->items),
+            'selected_shipping_country' => ResolveShippingCountry::getCountry(),
+        ];
     }
 
     /**

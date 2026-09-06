@@ -1,4 +1,4 @@
-# CKEditor 5 WYSIWYG 에디터
+# 그누보드7 CKEditor 5 WYSIWYG 에디터 플러그인
 
 **그누보드7 플러그인 · sirsoft-ckeditor5**
 CKEditor 5를 이용한 WYSIWYG 에디터 플러그인입니다. 플러그인 설치만으로 기존 HtmlEditor가 교체됩니다.

@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\User;
 
 use App\Extension\HookManager;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
@@ -12,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -19,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -822,14 +825,24 @@ class UserOrderControllerTest extends ModuleTestCase
     }
 
     /**
-     * 비로그인 사용자가 비회원 주문 결제 취소 기록 성공
+     * 비로그인 사용자가 유효한 게스트 조회 토큰으로 비회원 주문 결제 취소 기록 성공
+     *
+     * 주문번호만으로는 통과하지 않는다 — 보호된 게스트 경로와 동일하게
+     * X-Guest-Order-Token 이 필요하다 (토큰 부재 차단은 GuestCancelPaymentAuthTest).
      */
     public function test_비로그인_사용자_비회원_주문_결제_취소_기록_성공(): void
     {
+        $guestPassword = 'guest12';
+        $guestPhone = '010-1234-5678';
+
         // 비회원 주문 (user_id = null)
         $order = Order::factory()->create([
             'user_id' => null,
             'order_status' => OrderStatusEnum::PENDING_ORDER,
+            'guest_lookup_password_hash' => Hash::make($guestPassword),
+        ]);
+        OrderAddress::factory()->shipping()->forOrder($order)->create([
+            'orderer_phone' => $guestPhone,
         ]);
         OrderPayment::factory()->create([
             'order_id' => $order->id,
@@ -837,8 +850,13 @@ class UserOrderControllerTest extends ModuleTestCase
             'payment_method' => PaymentMethodEnum::CARD,
         ]);
 
+        $token = app(GuestOrderAuthService::class)
+            ->authenticate($order->order_number, $guestPhone, $guestPassword, '10.0.0.1')['token'];
+
         $response = $this->postJson(
-            "/api/modules/sirsoft-ecommerce/orders/{$order->order_number}/cancel-payment"
+            "/api/modules/sirsoft-ecommerce/orders/{$order->order_number}/cancel-payment",
+            [],
+            ['X-Guest-Order-Token' => $token]
         );
 
         $response->assertStatus(200)

@@ -1,4 +1,4 @@
-# Daum 우편번호 개발자 문서
+# 그누보드7 Daum 우편번호 플러그인 개발자 문서
 
 > plugins/_bundled/sirsoft-daum_postcode · 플러그인
 

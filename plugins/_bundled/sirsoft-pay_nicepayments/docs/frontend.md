@@ -55,7 +55,7 @@
 
 <!-- @intent START -->
 `window.__SirsoftNicepayments`로 노출되는 이유는 코어가 로케일 전환 시 이 이름으로 재등록
-진입점을 찾기 때문입니다(§CLAUDE.md "재등록 진입점"). 나이스페이먼츠 결제창 스크립트
+진입점을 찾기 때문입니다(§코어 AGENTS.md "재등록 진입점"). 나이스페이먼츠 결제창 스크립트
 자체는 이 진입점이 미리 로드하지 않습니다 — `requestPayment` 핸들러가 결제 시도 시점에
 동적으로 스크립트를 삽입한 뒤 `goPay()`를 호출합니다.
 <!-- @intent END -->
@@ -76,4 +76,23 @@
 결제 시도 시점에 동적으로 로드하는 제3자 자산이라, 이 플러그인이 빌드 시 번들링하는
 `dist/` 산출물과는 다른 층입니다. CSS 산출물이 없는 것은 결제창 자체는 PG 가 그리고, 이
 플러그인은 간편결제 버튼 같은 최소한의 UI만 코어 컴포넌트로 구성하기 때문입니다.
+<!-- @intent END -->
+
+## 비회원 주문의 자격 증명
+
+<!-- @intent START -->
+영수증·결제수단 표시는 주문 정보를 서버에서 다시 조회해 만든다. 이 요청은 레이아웃의
+`globalHeaders` 배선을 타지 않는 직접 호출(`fetch`)이므로, 자격 증명을 호출부가 직접 실어야 한다.
+
+- 회원: `Authorization: Bearer …`
+- 비회원: `X-Guest-Order-Token: …` (코어 storageHandlers 가 sessionStorage 에 저장, 전역 상태 폴백)
+
+두 경로 모두 `plugins/_bundled/sirsoft-pay_nicepayments/resources/js/guestOrderToken.ts` 의 `buildOrderRequestHeaders()` 한 곳을 거친다.
+비회원 분기를 비우면 서버는 그 주문을 찾을 수 없다고 응답하고, 화면에는 영수증 버튼이 아예
+나타나지 않는다 — 예외도 콘솔 오류도 남지 않아 운영자가 원인을 알 수 없다. 서버(`UserReceiptController`)는
+비회원을 이미 지원하므로, 이 배선이 빠지면 서버 기능이 도달 불가 상태로만 남는다.
+
+주문 상세 화면의 경로 판정(`ORDER_SHOW_RE`)도 회원(`/mypage/orders/{N}`)과
+비회원(`/shop/guest/orders/{N}`) 두 주소를 함께 매칭해야 한다. 한쪽을 빼면 그 화면에서는
+조회가 시작조차 되지 않는다.
 <!-- @intent END -->

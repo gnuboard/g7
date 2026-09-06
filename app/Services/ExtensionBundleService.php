@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\Log;
  * 경로는 절대경로 게터(`getBuiltAssetAbsolutePaths()`)를 재사용한다 —
  * `ModuleService::getAssetFilePath()` 의 `base_path("modules/{id}/...")`
  * 하드코딩을 복제하지 않아야 `_bundled` 확장에서도 정확히 읽는다(제약 4).
+ * 소실 판정만 선언 축 게터(`getDeclaredAssetAbsolutePaths()`)를 쓴다 — 그 게터는
+ * `file_exists()` 게이트를 타지 않아 "선언은 있는데 파일이 없다" 를 셀 수 있다.
  *
  * @see TemplateComposer
  */
@@ -315,10 +317,13 @@ class ExtensionBundleService
     /**
      * 해당 타입에서 프론트엔드 에셋을 **선언한** 활성 확장 수를 반환합니다.
      *
-     * "선언이 0 이라 빈 번들" (정상)과 "선언은 있는데 병합 결과가 0" (장애 — 배포 중
-     * `dist` 가 잠깐 비었거나 경로가 어긋났다)을 구분하는 유일한 근거다. 구분하지 않으면
-     * 후자가 빈 200 으로 나가고, 프론트는 404 도 오류도 받지 못한 채 한참 뒤
-     * "Unknown action handler" 로 죽는다.
+     * 이 값은 **선언 축**이다 — 503 의 판정은 소실 축(`findMissingDeclaredAssets()`)이
+     * 한다. 선언 축만으로 "선언 > 0 && 병합 결과 0 = 장애" 로 등치하면, 산출물이 존재하되
+     * 비어 있는 정당한 상태(스타일이 비어 있는 확장)까지 배포 장애로 잡혀 그 확장만
+     * 설치된 기본 구성이 통째로 503 이 된다.
+     *
+     * 선언 축은 로그 컨텍스트(운영자가 보는 "선언한 확장이 몇 개인가")와 화면 진단이
+     * 근거로 삼는다.
      *
      * 판정은 **kind 별**이다 — js 만 선언한 확장이 있는 상태에서 css 번들이 비는 것은
      * 정상이므로, 그 경우까지 장애로 보면 정상 구성이 503 이 된다.
@@ -362,6 +367,57 @@ class ExtensionBundleService
             ]);
 
             return 0;
+        }
+    }
+
+    /**
+     * 선언된 산출물 중 **소실·판독 불가**한 것의 절대 경로 목록을 반환합니다.
+     *
+     * 503 의 근거는 선언이 아니라 이 소실 축이다. 선언만으로 판정하면 "선언됨 + 산출물이 존재하지만
+     * 0바이트"(스타일이 비어 있는 확장의 정당한 상태) 와 "선언됨 + 산출물 소실"(배포 중 dist 가 잠깐 빔)
+     * 이 구분되지 않아 정상 구성이 503 이 된다 — 번들 확장만 설치한 기본 구성 전부가 그랬다.
+     *
+     * 모집단은 countAssetDeclaringExtensions() 와 같다. 경로는 확장의 선언 축 게터로만 얻는다 —
+     * getBuiltAssetAbsolutePaths() 는 file_exists() 게이트라 부재를 셀 수 없고, base_path("modules"…)
+     * 직접 조립은 _bundled 확장에서 어긋난다.
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @return list<string> 소실·판독 불가 산출물의 절대 경로 (없으면 빈 배열)
+     */
+    public function findMissingDeclaredAssets(string $type, string $kind): array
+    {
+        try {
+            $extensions = $type === 'plugin'
+                ? $this->pluginManager->getActivePlugins()
+                : $this->moduleManager->getActiveModules();
+
+            $missing = [];
+
+            foreach ($extensions as $extension) {
+                // global 전략만 번들 대상 — 병합 대상 모집단과 동일한 필터를 쓴다
+                if (($extension->getAssetLoadingConfig()['strategy'] ?? 'global') !== 'global') {
+                    continue;
+                }
+
+                $path = $extension->getDeclaredAssetAbsolutePaths()[$kind] ?? null;
+
+                if ($path !== null && (! is_file($path) || ! is_readable($path))) {
+                    $missing[] = $path;
+                }
+            }
+
+            return $missing;
+        } catch (\Throwable $e) {
+            // 판정 자체가 실패하면 장애로 단정하지 않는다(선언 축 카운트와 같은 fail-open). 흔적은 error 로 —
+            // 출하 기본 로그 수준이 error 라 warning 은 기록되지 않는다.
+            Log::error('확장 에셋 소실 판정 실패', [
+                'type' => $type,
+                'kind' => $kind,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
         }
     }
 
