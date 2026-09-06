@@ -17,7 +17,7 @@ export default defineConfig({
 
         // 빌드 출력 설정
         outDir: 'dist',
-        emptyOutDir: true,
+        emptyOutDir: false, // 동봉 vendor 보존 — 산출물 정리는 빌드 커맨드가 한다
 
         // 소스맵 생성
         // 배포용 빌드(--production)는 G7_BUILD_SOURCEMAP=0 을 주입해 소스맵을 생성하지 않는다.

@@ -36,6 +36,12 @@ return [
         'auto_deactivated_listed' => 'Auto-deactivated extensions listed.',
         'recover_action' => 'Re-activate',
         'dismiss_action' => 'Dismiss alert',
+        'static_publish_failed_title' => 'Failed to generate startup files',
+        'static_publish_failed_parent_not_writable' => 'Could not write to the folder for startup files — :count consecutive failures. The site works normally but the first screen loads more slowly. Run `php artisan ext-static:status` on the server to see the cause. You can retry right away with "Rebuild now" under Admin > Settings > General.',
+        'static_publish_failed_write_failed' => 'Generating startup files failed :count times in a row. Check available disk space. The site works normally but the first screen loads more slowly. You can retry right away with "Rebuild now" under Admin > Settings > General.',
+        'static_publish_failed_lock_unavailable' => 'Startup file generation was skipped :count times in a row. Check the cache store. The site works normally but the first screen loads more slowly. You can retry right away with "Rebuild now" under Admin > Settings > General.',
+        'static_publish_recover_label' => 'Rebuild',
+        'static_publish_recovered' => 'Startup files were rebuilt.',
     ],
 
     'badges' => [

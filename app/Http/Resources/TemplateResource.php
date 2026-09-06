@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Services\ExtensionStaticCacheService;
 use App\Support\TemplateExternals;
 use Composer\Semver\Semver;
 use Illuminate\Http\Request;
@@ -118,8 +119,18 @@ class TemplateResource extends BaseApiResource
             'components' => $this->getValue('components', ['basic' => [], 'composite' => []]),
             'license' => $this->getValue('license'),
             'metadata' => $this->getValue('metadata', []),
-            // 외부 리소스 (template.json externals) — 정규화 책임은 TemplateExternals 에 위임
-            'externals' => TemplateExternals::normalize($this->getValue('externals', [])),
+            // 외부 리소스 (template.json externals) — 정규화 책임은 TemplateExternals 에 위임.
+            // `asset` 항목의 URL 해석에는 식별자와 캐시 버전이 필요하므로 뷰 컴포저
+            // (CollectsTemplateExternals) 와 같은 인자를 넘긴다 — 빠뜨리면 `asset` 항목이
+            // "식별자 미상" 으로 조용히 버려져 응답에서 사라진다.
+            'externals' => TemplateExternals::normalize(
+                $this->getValue('externals', []),
+                $this->getValue('identifier'),
+                // 트레이트를 사용하는 클래스 경유로 호출한다 — 트레이트 정적 메서드
+                // 직접 호출(`ClearsTemplateCaches::`)은 PHP 8.1+ E_DEPRECATED 라
+                // 템플릿 상세 응답마다 로그를 남긴다 (AssetUrl::staticExtBase 와 동형).
+                ExtensionStaticCacheService::getExtensionCacheVersion(),
+            ),
             // 의존성 상세 정보
             'dependencies' => $this->getDetailedDependencies(),
             // 타임스탬프

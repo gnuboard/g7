@@ -1,0 +1,14 @@
+/**
+ * 개발 대시보드 전용 스타일
+ *
+ * 종전에는 Tailwind Play CDN(`cdn.tailwindcss.com`)이 브라우저에서 실시간으로 CSS 를
+ * 만들어 줬다. 그 요청이 실패하면 대시보드가 스타일 없는 문서로 무너지고, 디버그 모드면
+ * 프로덕션에서도 접근 가능한 화면이라 외부 의존을 남길 이유가 없다.
+ *
+ * 자동 소스 탐지는 끈다(`source(none)`) — 켜 두면 저장소 전체(확장 동봉 자산 포함)를
+ * 훑어 빌드가 끝나지 않는다. 대시보드 blade 한 파일만 `@source` 로 지정한다.
+ */
+
+@import "tailwindcss" source(none);
+
+@source "../views/dev-dashboard.blade.php";

@@ -22,6 +22,18 @@ class RunUpgradeStepsAbstractGuardTest extends TestCase
 {
     private array $stubStepFiles = [];
 
+    private ?string $originalEnvVersion = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // stale 메모리 가드는 env APP_VERSION 을 먼저 읽는다 (spawn 자식 계약). 테스트 프로세스의
+        // .env.testing 값이 target 판정에 끼어들지 않도록 비우고, 각 테스트가 직접 세운다.
+        $this->originalEnvVersion = $_ENV['APP_VERSION'] ?? null;
+        $this->setMemoryVersion(null);
+    }
+
     protected function tearDown(): void
     {
         foreach ($this->stubStepFiles as $file) {
@@ -29,13 +41,34 @@ class RunUpgradeStepsAbstractGuardTest extends TestCase
                 File::delete($file);
             }
         }
+        $this->setMemoryVersion($this->originalEnvVersion);
         parent::tearDown();
+    }
+
+    /**
+     * 가드가 읽는 "메모리 버전" 을 env 와 config 양쪽에 세운다 (null 이면 env 만 비운다).
+     *
+     * @param  string|null  $version  세울 버전
+     */
+    private function setMemoryVersion(?string $version): void
+    {
+        if ($version === null) {
+            unset($_ENV['APP_VERSION'], $_SERVER['APP_VERSION']);
+            putenv('APP_VERSION');
+
+            return;
+        }
+
+        $_ENV['APP_VERSION'] = $version;
+        $_SERVER['APP_VERSION'] = $version;
+        putenv('APP_VERSION='.$version);
+        config(['app.version' => $version]);
     }
 
     public function test_throws_when_beta5_step_does_not_extend_abstract(): void
     {
         // stale 메모리 가드 우회를 위해 메모리 버전을 target 이상으로
-        config(['app.version' => '7.9.9']);
+        $this->setMemoryVersion('7.9.9');
 
         // 7.9.9-test.guard.a 는 7.0.0-beta.5 보다 명확히 큼 (version_compare 의 pre-release
         // 해석에 영향 받지 않음). stub 은 AbstractUpgradeStep 미상속 → fatal 가드 발동.
@@ -66,7 +99,7 @@ PHP);
 
     public function test_passes_when_beta5_step_extends_abstract(): void
     {
-        config(['app.version' => '7.9.9']);
+        $this->setMemoryVersion('7.9.9');
 
         $version = '7_9_9_test_guard_b';
         $className = 'Upgrade_'.$version;
@@ -100,7 +133,7 @@ PHP);
     public function test_legacy_pre_beta5_step_bypasses_guard(): void
     {
         // legacy beta.4 이하 step 은 AbstractUpgradeStep 미상속이어도 통과 (호환)
-        config(['app.version' => '7.0.0-beta.5']);
+        $this->setMemoryVersion('7.0.0-beta.5');
 
         $version = '7_0_0_beta_4_test_guard_legacy';
         $className = 'Upgrade_'.$version;

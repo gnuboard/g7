@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Services\ExtensionStaticCacheService;
 use App\Support\Routing\DualExtensionRoute;
 
 /**
@@ -60,6 +61,23 @@ class AssetUrl
     private static ?string $modeOverride = null;
 
     /**
+     * 정적 게시(bake) 베이스 경로 메모 (요청당 1회 판정).
+     */
+    private static ?string $staticExtBaseMemo = null;
+
+    /**
+     * 정적 게시 베이스 판정 완료 여부.
+     */
+    private static bool $staticExtBaseResolved = false;
+
+    /**
+     * 태그 계층 파일 단위 게이트 메모 (상대 경로 => 존재 여부).
+     *
+     * @var array<string, bool>
+     */
+    private static array $staticFileMemo = [];
+
+    /**
      * 현재 자산 URL 모드를 반환합니다.
      *
      * 설정 조회가 실패해도(설치 전·마이그레이션 전 등) 예외를 던지지 않고
@@ -104,6 +122,105 @@ class AssetUrl
     }
 
     /**
+     * 정적 게시(bake) 베이스 경로를 반환합니다 (#122).
+     *
+     * 게이트 3조건 — ① 프로덕션 ② `core.static_cache.enabled` ③ 현재 버전 게시
+     * 완료(manifest 존재) — 을 전부 통과할 때만 `/build/ext/{v}` 를 반환한다.
+     * 아니면 null (종전 API URL 방출). 요청당 1회 판정 후 메모이즈한다.
+     *
+     * 자가 치유 — 프로덕션인데 현재 버전이 미게시면 terminating 게시를 예약한다.
+     * 이번 응답은 종전 API URL 로 나가고(첫 방문자 1회만 종전 속도), 다음
+     * 렌더부터 정적 fast path 가 적용된다.
+     *
+     * blade 렌더 경로에서 호출되므로 어떤 실패도 예외로 새 나가면 안 된다.
+     *
+     * @return string|null 정적 베이스 경로 또는 null
+     */
+    public static function staticExtBase(): ?string
+    {
+        if (self::$staticExtBaseResolved) {
+            return self::$staticExtBaseMemo;
+        }
+
+        self::$staticExtBaseResolved = true;
+        self::$staticExtBaseMemo = null;
+
+        try {
+            if (! app()->environment('production')) {
+                return null;
+            }
+
+            if (! (bool) config('core.static_cache.enabled', true)) {
+                return null;
+            }
+
+            // 트레이트 정적 메서드 직접 호출(ClearsTemplateCaches::)은 PHP 8.1+ E_DEPRECATED
+            // — 트레이트를 사용하는 클래스 경유로 호출한다 (게이트·게시자가 같은 static
+            // 스토어 메모 슬롯을 공유하게 되는 부수 이점도 있다)
+            $version = ExtensionStaticCacheService::getExtensionCacheVersion();
+
+            if (! app(ExtensionStaticCacheService::class)->isPublished($version)) {
+                // 자가 치유 — 응답 종료 후 게시 시도 (실패해도 API 폴백으로 정상)
+                ExtensionStaticCacheService::schedulePublishOnTerminate();
+
+                return null;
+            }
+
+            self::$staticExtBaseMemo = '/build/ext/'.$version;
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return self::$staticExtBaseMemo;
+    }
+
+    /**
+     * 정적 게시 베이스 메모를 초기화합니다 (테스트 전용).
+     */
+    public static function resetStaticExtBaseMemo(): void
+    {
+        self::$staticExtBaseResolved = false;
+        self::$staticExtBaseMemo = null;
+        self::$staticFileMemo = [];
+    }
+
+    /**
+     * 정적 게시본 내 파일 존재 여부를 확인합니다 (태그 계층 파일 단위 게이트).
+     *
+     * `<link>`/`<script>` 태그는 404 를 받아도 스스로 재시도하지 못하므로,
+     * manifest 게이트에 더해 그 자산의 실파일 존재까지 확인한 뒤에만 정적 URL 을
+     * 방출한다 (요청당 태그 대상 ~6개 파일, 메모이즈).
+     *
+     * @param  string  $relative  게시 트리 상대 경로
+     * @return bool 파일 존재 여부
+     */
+    private static function staticFileExists(string $relative): bool
+    {
+        $version = substr((string) self::$staticExtBaseMemo, strlen('/build/ext/'));
+
+        return self::$staticFileMemo[$relative] ??= is_file(
+            public_path('build/ext/'.$version.'/'.$relative)
+        );
+    }
+
+    /**
+     * 태그 계층 자산의 정적 게시 URL 을 반환합니다 (파일 존재 확인 포함).
+     *
+     * @param  string  $relative  게시 트리 상대 경로
+     * @return string|null 정적 URL 또는 null (게이트 미통과)
+     */
+    private static function staticTagUrl(string $relative): ?string
+    {
+        $base = self::staticExtBase();
+
+        if ($base === null || ! self::staticFileExists($relative)) {
+            return null;
+        }
+
+        return $base.'/'.$relative;
+    }
+
+    /**
      * 템플릿 자산 URL 을 생성합니다.
      *
      * 템플릿은 서버가 `dist/` 를 자동 부가하므로 `$path` 는 `dist/` 를 포함하지 않는다
@@ -112,11 +229,28 @@ class AssetUrl
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $path  `dist/` 이하 파일 경로 (예: `js/components.iife.js`)
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
+     * @param  bool  $allowStatic  정적 게시본(bake) 경로 허용 여부. 생성한 URL 이 정적
+     *                             게시 GC(현재+직전 1개 보존)보다 오래 사는 저장소에 박제되는
+     *                             호출부(SEO 페이지 캐시 등)는 false 로 종전 API URL 을 받는다
      * @return string 생성된 URL
      */
-    public static function templateAsset(string $identifier, string $path, int|string|null $version = null): string
+    public static function templateAsset(string $identifier, string $path, int|string|null $version = null, bool $allowStatic = true): string
     {
-        return self::asset('templates', $identifier, $path, $version);
+        // 정적 게시본(bake) 우선 (#122) — 버전 디렉토리 경로라 `?v` 쿼리가 불필요하다.
+        // 게이트(프로덕션·kill-switch·게시 완료·개별 파일 존재) 미통과 시 종전 URL 그대로.
+        // `$version` 이 현재 게시 버전과 다르면 정적 분기를 건너뛴다 — 정적 경로는 항상
+        // 현재 게시본이므로, 다른 버전을 명시한 호출에 현재본을 주면 "요청 버전이 URL 에
+        // 반영된다" 는 시그니처 계약이 조용히 깨진다 (현 호출부는 전부 현재 버전 전달).
+        $static = null;
+        if ($allowStatic) {
+            $base = self::staticExtBase();
+
+            if ($base !== null && ($version === null || $base === '/build/ext/'.$version)) {
+                $static = self::staticTagUrl('templates/'.$identifier.'/assets/'.ltrim($path, '/'));
+            }
+        }
+
+        return $static ?? self::asset('templates', $identifier, $path, $version);
     }
 
     /**
@@ -130,9 +264,13 @@ class AssetUrl
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
      * @return string 생성된 URL
      */
-    public static function moduleAsset(string $identifier, string $path, int|string|null $version = null): string
-    {
-        return self::asset('modules', $identifier, $path, $version);
+    public static function moduleAsset(
+        string $identifier,
+        string $path,
+        int|string|null $version = null,
+        bool $allowStatic = false
+    ): string {
+        return self::extensionStaticOrApi('modules', $identifier, $path, $version, $allowStatic);
     }
 
     /**
@@ -143,9 +281,52 @@ class AssetUrl
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
      * @return string 생성된 URL
      */
-    public static function pluginAsset(string $identifier, string $path, int|string|null $version = null): string
-    {
-        return self::asset('plugins', $identifier, $path, $version);
+    public static function pluginAsset(
+        string $identifier,
+        string $path,
+        int|string|null $version = null,
+        bool $allowStatic = false
+    ): string {
+        return self::extensionStaticOrApi('plugins', $identifier, $path, $version, $allowStatic);
+    }
+
+    /**
+     * 모듈·플러그인 자산의 정적 게시본 우선 URL 을 만듭니다.
+     *
+     * 정적 분기가 **기본 꺼짐**인 것이 템플릿과 다른 점이고, 그것이 의도다. 모듈·플러그인의
+     * 빌드 산출물은 개별 파일로 게시되지 않고 **병합 번들**로만 게시되므로, 그 경로에
+     * 존재 검사를 걸어 봐야 언제나 실패하는 파일시스템 조회만 늘어난다. 개별 게시 대상은
+     * 운영자 소유 디렉토리(`custom/`) 하나뿐이라 그 호출부만 켜서 쓴다.
+     *
+     * @param  string  $root  `modules` | `plugins`
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $path  확장 루트 기준 파일 경로
+     * @param  int|string|null  $version  캐시 무효화 버전
+     * @param  bool  $allowStatic  정적 게시본 우선 여부
+     * @return string 생성된 URL
+     */
+    private static function extensionStaticOrApi(
+        string $root,
+        string $identifier,
+        string $path,
+        int|string|null $version,
+        bool $allowStatic
+    ): string {
+        // 게이트는 템플릿과 동일하다 — 프로덕션·kill-switch·게시 완료·개별 파일 존재를
+        // `staticTagUrl` 이 확인하고, 버전이 현재 게시본과 다르면 정적 분기를 건너뛴다.
+        if ($allowStatic) {
+            $base = self::staticExtBase();
+
+            if ($base !== null && ($version === null || $base === '/build/ext/'.$version)) {
+                $static = self::staticTagUrl($root.'/'.$identifier.'/assets/'.ltrim($path, '/'));
+
+                if ($static !== null) {
+                    return $static;
+                }
+            }
+        }
+
+        return self::asset($root, $identifier, $path, $version);
     }
 
     /**
@@ -178,6 +359,17 @@ class AssetUrl
      */
     public static function extensionBundle(string $type, string $kind, int|string|null $version = null): string
     {
+        // 정적 게시본(bake) 우선 (#122) — `bundles/{modules|plugins}.{js|css}` 사본.
+        // `$version` 명시 호출이 현재 게시 버전과 다르면 건너뛴다 (templateAsset 과 동일 계약)
+        $base = self::staticExtBase();
+        $static = $base !== null && ($version === null || $base === '/build/ext/'.$version)
+            ? self::staticTagUrl("bundles/{$type}.{$kind}")
+            : null;
+
+        if ($static !== null) {
+            return $static;
+        }
+
         $base = self::isExtensionless()
             ? "/api/{$type}/bundle/{$kind}"
             : "/api/{$type}/bundle.{$kind}";
@@ -203,6 +395,25 @@ class AssetUrl
         $url = self::isExtensionless() ? $base : $base.'.'.$normalized;
 
         return $url.self::versionQuery($version);
+    }
+
+    /**
+     * 확장 자산의 **API 서빙 URL** 을 생성합니다 (정적 게시본 분기 없음).
+     *
+     * 정적 게시본을 건너뛰는 이유: 이 메서드의 호출자는 CSS 서빙 컨트롤러다. 게시본이
+     * 활성이면 그 CSS 자체가 웹서버에서 경로 형태로 나가 컨트롤러에 도달하지 않으므로,
+     * 여기 도달했다는 것은 이 요청에 게시본이 적용되지 않았다는 뜻이다. 한 스타일시트
+     * 안에서 서빙 경로가 갈리지 않도록 API 형태로 통일한다.
+     *
+     * @param  string  $type  `templates` / `modules` / `plugins`
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $path  확장 기준 파일 경로
+     * @param  int|string|null  $version  캐시 무효화 버전
+     * @return string 생성된 URL (현재 모드 반영)
+     */
+    public static function extensionApiAsset(string $type, string $identifier, string $path, int|string|null $version = null): string
+    {
+        return self::asset($type, $identifier, $path, $version);
     }
 
     /**

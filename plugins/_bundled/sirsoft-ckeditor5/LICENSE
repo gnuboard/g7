@@ -45,3 +45,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## 동봉된 제3자 소프트웨어
+
+이 플러그인은 아래 소프트웨어를 함께 배포합니다. 각 소프트웨어는 원저작자의 라이선스를
+그대로 따르며, 위 MIT 라이선스는 이 플러그인 자신의 코드에만 적용됩니다.
+
+| 소프트웨어 | 버전 | 라이선스 | 경로 |
+| --- | --- | --- | --- |
+| CKEditor 5 | 43.3.1 | GPL-2.0-or-later | `dist/vendor/ckeditor5/43.3.1/` |
+
+원본 라이선스 전문은 `dist/vendor/ckeditor5/43.3.1/LICENSE.md` 에 수정 없이 포함되어
+있습니다. 동봉본은 배포처(npm `ckeditor5@43.3.1`)의 파일이며, 참조하는 소스맵 파일을
+배포에 포함하지 않으므로 각 파일 끝의 `sourceMappingURL` 주석 한 줄만 제거했습니다.

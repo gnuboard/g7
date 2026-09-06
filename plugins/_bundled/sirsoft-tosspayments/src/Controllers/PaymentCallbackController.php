@@ -176,14 +176,11 @@ class PaymentCallbackController
             'orderId' => $orderId,
         ]);
 
-        if ($orderId) {
-            $order = $this->orderService->findByOrderNumber($orderId);
-
-            if ($order) {
-                $this->orderService->failPayment($order, $code, $message);
-            }
-        }
-
+        // 이 엔드포인트는 인증도 서명도 없는 GET 이고, orderId·code·message 는 전부 쿼리스트링에서
+        // 온다. 즉 "실패했다" 는 주장 자체를 누구나 만들 수 있고 대상 주문도 마음대로 고를 수 있다.
+        // 그 주장만으로 주문을 실패 처리하면 링크 하나로 남의 결제대기 주문을 취소시킬 수 있으므로,
+        // 여기서는 주문 상태를 바꾸지 않고 기록과 안내만 한다.
+        // 실제 결제 성립은 success() 의 서버 confirm 이, 결제완료 후 취소는 서명 검증된 웹훅이 담당한다.
         return redirect($this->resolveFailUrl([
             'error' => $code,
             'message' => $message,

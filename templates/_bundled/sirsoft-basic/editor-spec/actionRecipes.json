@@ -68,8 +68,8 @@
     ],
     "build": {
       "handler": "setState",
-      "target": "local",
       "params": {
+        "target": "local",
         "{{key}}": "{{value}}"
       }
     }
@@ -132,7 +132,7 @@
     ],
     "build": {
       "handler": "setTheme",
-      "params": { "target": "{{target}}" }
+      "target": "{{target}}"
     }
   },
   "savePreferredCurrency": {
@@ -240,7 +240,7 @@
     ],
     "build": {
       "handler": "initTheme",
-      "params": { "target": "{{target}}" }
+      "target": "{{target}}"
     }
   },
   "initCartKey": {

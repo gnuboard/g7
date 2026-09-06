@@ -19,7 +19,8 @@
     "selected": "주소가 선택되었습니다.",
     "error": {
       "load_failed": "우편번호 서비스를 불러오는데 실패했습니다.",
-      "search_failed": "주소 검색에 실패했습니다."
+      "search_failed": "주소 검색에 실패했습니다.",
+      "sdk_unavailable": "주소 검색을 불러오지 못했습니다. 주소를 직접 입력해 주세요."
     }
   },
   "settings": {

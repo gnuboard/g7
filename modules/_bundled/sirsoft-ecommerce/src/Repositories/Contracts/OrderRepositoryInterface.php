@@ -167,14 +167,20 @@ interface OrderRepositoryInterface
     public function hasOrderByUser(int $userId): bool;
 
     /**
-     * 입금 기한 만료된 결제대기 주문 조회
+     * 기한이 지난 미결제 주문 조회
      *
-     * vbank/dbank 결제의 입금 기한이 지난 주문들을 조회합니다.
+     * 두 부류를 함께 조회합니다.
+     *  - vbank/dbank 결제의 입금 기한이 지난 결제대기 주문
+     *  - 결제창까지 갔으나 결제가 성립하지 않은 주문대기 주문 (PG 카드 등, 경과 시간 기준)
+     *
+     * 후자는 입금 기한이라는 개념이 없어 어떤 정리 주체도 없이 남던 부류다.
+     * `$pendingOrderExpireMinutes` 가 null 이거나 0 이하면 후자는 조회하지 않는다.
      *
      * @param  int  $limit  최대 조회 개수
-     * @return Collection 입금 기한 만료된 결제대기 주문 컬렉션
+     * @param  int|null  $pendingOrderExpireMinutes  주문대기 주문의 만료 기준(분)
+     * @return Collection 기한이 지난 미결제 주문 컬렉션
      */
-    public function getExpiredPendingPaymentOrders(int $limit = 100): Collection;
+    public function getExpiredPendingPaymentOrders(int $limit = 100, ?int $pendingOrderExpireMinutes = null): Collection;
 
     /**
      * ID 목록으로 주문을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).

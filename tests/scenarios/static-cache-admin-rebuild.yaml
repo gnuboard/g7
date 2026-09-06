@@ -1,0 +1,58 @@
+feature: 초기 화면 정적 파일 — 관리자 상태 조회 + 수동 복구 (다시 만들기)
+
+description: |
+  부트스트랩 리소스 정적 게시(#122)의 캐시 버전은 만료로 재생성되지 않는다(영구 번호, #651). 그래서
+  재게시 트리거가 하나라도 빠지면 게시본은 무기한 stale 이 된다. 운영자가 그 상태를 **보고 즉시
+  되돌릴** 통로가 이 기능이다 — 환경설정 > 일반 「초기 화면 정적 파일」 카드(상태 배지·버전·파일 수·
+  마지막 게시 시각·실행 계정·최근 실패)와 [지금 다시 만들기](확인 모달 → POST → 토스트 → 카드 재조회),
+  그리고 대시보드의 게시 실패 알림에 붙는 [다시 만들기] 버튼(같은 엔드포인트).
+
+  핵심 동작:
+    - 상태 판정은 서비스 한 곳(`statusReport`)이 소유하고 CLI(`ext-static:status`)·API·화면이 소비한다
+    - 재게시는 캐시 버전 bump + **강제** 재게시 — 같은 초 재클릭도 내용을 다시 만든다
+    - 게시가 쓰이지 않는 환경(kill-switch 꺼짐 / 비프로덕션)은 bump 하지 않고 사유를 돌려준다
+    - 게시 실패는 요청 실패가 아니라 진단 결과 — HTTP 200 + `republished=false` (사이트는 API 폴백으로 정상)
+    - 읽기는 `core.settings.read`, 재게시는 `core.settings.update`
+
+  `tests/scenarios/ext-static-cache.yaml` 의 6축(게시 상태·환경·트리거·실행 주체·무결성·쓰기 가능성)과
+  교차시키지 않는다 — 수동 복구의 축(권한·publishable·결과)은 그것들과 직교하고, 곱하면 108 조합의
+  exclusions 가 필요하다.
+
+coverage_strategy: pairwise
+
+axes:
+  permission: [granted, denied]
+  publishable: [production_enabled, kill_switch_off, non_production]
+  outcome: [success, publish_failed_marker]
+
+exclusions:
+  - { permission: denied, outcome: publish_failed_marker, reason: "거부된 요청은 게시를 시도하지 않는다 — 결과 축이 성립하지 않는다" }
+  - { publishable: kill_switch_off, outcome: success, reason: "kill-switch 꺼짐은 재게시를 시도하지 않는다 — republished=false 만 성립" }
+  - { publishable: non_production, outcome: success, reason: "비프로덕션은 재게시를 시도하지 않는다 — republished=false 만 성립" }
+
+effects:
+  - status_endpoint_returns_report_fields
+  - republish_bumps_version_and_publishes
+  - republish_denied_without_settings_update_permission
+  - republish_disabled_when_not_publishable
+  - card_renders_status_rows
+  - republish_button_disabled_when_not_publishable
+  - confirm_modal_then_toast_and_refetch
+  - dashboard_alert_points_to_admin_republish
+
+test_files:
+  - tests/Feature/Api/Admin/SettingsStaticCacheTest.php
+  - tests/Feature/Services/ExtensionStaticCacheServiceTest.php
+  - tests/Feature/Dashboard/StaticPublishAlertTest.php
+  - tests/Feature/Console/ExtStaticStatusCommandTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-static-cache.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_dashboard.recovery.test.tsx
+  - tests/Playwright/specs/admin/settings-static-cache-rebuild.spec.ts
+
+notes: |
+  outcome=publish_failed_marker 의 마커는 게시 실패(권한·디스크)에서만 생겨 Windows 개발기와 브라우저로는
+  재현할 수 없다 — 카드의 실패 행 분기는 Vitest 가 페이로드로, 마커 기록은 ExtensionStaticCacheServiceTest 가
+  덮는다. 대시보드 알림의 [다시 만들기] 버튼은 T2(UI) 와 같은 엔드포인트를 POST 하므로 동작 검증은
+  카드 경로가 대표한다(리스너 페이로드 + 레이아웃 `if` 분기는 단위로 잠근다).
+  E2E 대상 사이트(g7_2.dev)는 평소 local 이라 재게시 케이스는 운영 모드 실측 창에서만 수행되고, 그 밖에서는
+  비활성 계약(버튼 disabled + 사유 힌트)만 잠근 채 skip 된다.

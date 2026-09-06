@@ -1,0 +1,187 @@
+feature: ext-static-cache
+
+description: |
+  부트스트랩 리소스 정적 게시(bake) — 공개 #122.
+
+  초기 부트스트랩 리소스(다국어 병합·컴포넌트 정의·라우트·확장 번들·템플릿 dist
+  에셋)를 캐시 버전 디렉토리(`public/build/ext/{v}/`)에 실파일로 게시해 웹서버가
+  rewrite 전에 직접 서빙한다. 병합 입력이 바뀌는 수명주기 이벤트마다
+  `incrementExtensionCacheVersion()` 단일 지점의 terminating 예약으로 재게시되고,
+  누락 시 blade 렌더의 자가 치유가 보충한다. 미게시/부분게시/GC 직후에는 프론트
+  fetch 계층(fetchStaticFirst)과 태그 계층(asset-url-recovery 파샬)이 종전 API 로
+  폴백한다.
+
+  핵심 동작:
+    - 게시 원자성: {v}.tmp 쓰기 → rename → manifest 마지막 기록 (manifest 존재 = 완료)
+    - 서빙 게이트 3조건: 프로덕션 + core.static_cache.enabled + 게시 완료
+    - 태그 계층은 개별 파일 file_exists 까지 확인 후 정적 URL 방출
+    - blade 주입 cache_version 시드로 stale localStorage 이중 로드 제거 (작업 A)
+    - components.json `?v` 부착 + 버전 키드 manifestCache (작업 B)
+    - 폴백 API 품질: ETag/304 + 환경 분기 (작업 C·D)
+
+axes:
+  publish_state: [published, unpublished, partial]
+  environment: [production, dev]
+  trigger: [lifecycle, self_heal, manual_command, kill_switch]
+  # 실행 주체(uid) 축 — sudo CLI(root)와 웹 계정이 갈리는 파일 산출물 기능의 필수 축.
+  # 7.0.10 업그레이드 실사례: root terminating 게시가 캐시 락 샤드를 root 소유로 남겨
+  # 웹 캐시 쓰기가 전면 500. 이 축이 없어 24축 매트릭스가 그 조합을 못 잡았다.
+  process_user: [web, root_cli]
+  # 산출물 무결성 축 — 200 인데 본문이 온전하지 않은 상태를 축으로 세운다.
+  # File::put 은 디스크 풀/quota 에서 짧은 int 를 돌려주며 성공한 것처럼 보이고,
+  # 절단된 JSON 은 웹서버가 정상 200 으로 서빙한다 — response.ok 만 보는 프론트가
+  # 폴백하지 못한 채 부팅 전체가 실패하던 유일한 사각이다 (#122 A1).
+  artifact_integrity: [intact, truncated, absent]
+  # 쓰기 가능성 축 — 제보 본건. CLI 계정과 웹 계정이 다르면 게시 트리 소유권이
+  # 최초 게시자에게 고정되어 이후 재게시가 영구 실패한다 (P1/P2).
+  filesystem_writable: [writable, parent_denied, tree_denied]
+
+exclusions:
+  - { environment: dev, publish_state: published, reason: "dev 는 staticBase 미주입 — 게시 상태와 무관하게 전 리소스 API 직행" }
+  - { environment: dev, publish_state: partial, reason: "동일 — dev 는 정적 경로 자체가 없다" }
+  - { trigger: kill_switch, publish_state: published, reason: "kill-switch off 는 게이트에서 base 자체를 차단 — 게시 상태 무관" }
+  - { trigger: kill_switch, publish_state: partial, reason: "동일" }
+  - { process_user: root_cli, trigger: self_heal, reason: "자가 치유는 웹 렌더 경로 전용 — root 웹 프로세스는 존재하지 않는 구성" }
+  - { process_user: root_cli, environment: dev, reason: "dev 는 게시 자체가 무의미 (terminating 게이트가 프로덕션 한정)" }
+  - { process_user: root_cli, trigger: kill_switch, reason: "kill-switch 는 uid 판정 이전의 선행 게이트 — uid 무관" }
+  - { process_user: root_cli, trigger: manual_command, reason: "명시적 ext-static:publish 는 root 게이트 밖 (운영자 책임 — 규정 §6). 게시 로직 자체는 web 축 케이스가 검증" }
+  - { process_user: root_cli, publish_state: published, reason: "root 게이트는 게시 상태 판정 이전에 위치 — 상태와 직교, 대표 조합(unpublished×lifecycle)으로 고정" }
+  - { process_user: root_cli, publish_state: partial, reason: "동일 — 상태 직교" }
+  # --- artifact_integrity: 기본값 intact 외의 값은 대표 조합에 고정한다 ---
+  # 무결성은 "게시된 산출물을 소비할 때" 만 의미가 있다. 다른 축과 곱하면 조합만 늘고
+  # 검증 대상은 같아지므로, root_cli 축과 같은 방식으로 대표 조합에 못박는다.
+  - { artifact_integrity: truncated, environment: dev, reason: "dev 는 정적 경로가 없어 절단 산출물을 참조할 경로 자체가 없다" }
+  - { artifact_integrity: absent, environment: dev, reason: "동일" }
+  - { artifact_integrity: truncated, process_user: root_cli, reason: "무결성 판정은 소비 시점 — 게시 주체(uid)와 직교" }
+  - { artifact_integrity: absent, process_user: root_cli, reason: "동일" }
+  - { artifact_integrity: truncated, filesystem_writable: parent_denied, reason: "쓸 수 없으면 절단 산출물도 남지 않는다 — 두 실패 모드는 배타적" }
+  - { artifact_integrity: truncated, filesystem_writable: tree_denied, reason: "동일" }
+  - { artifact_integrity: absent, filesystem_writable: parent_denied, reason: "산출물 부재는 쓰기 불가의 결과 — 별도 조합으로 세지 않는다" }
+  - { artifact_integrity: absent, filesystem_writable: tree_denied, reason: "동일" }
+  - { artifact_integrity: truncated, publish_state: unpublished, reason: "미게시 상태에는 산출물 자체가 없다 — 판정 대상 부재" }
+  - { artifact_integrity: truncated, publish_state: published, reason: "절단은 manifest 기록 전에 예외로 차단된다 — published 로 확정될 수 없다" }
+  - { artifact_integrity: absent, publish_state: published, reason: "게시 완료(manifest 존재)와 산출물 부재는 동시에 성립하지 않는다" }
+  - { artifact_integrity: absent, publish_state: unpublished, reason: "미게시와 중복 — publish_state 축이 이미 표현한다" }
+  - { artifact_integrity: truncated, trigger: self_heal, reason: "대표 조합(partial×lifecycle)으로 고정 — 트리거와 직교" }
+  - { artifact_integrity: truncated, trigger: manual_command, reason: "동일" }
+  - { artifact_integrity: truncated, trigger: kill_switch, reason: "kill-switch 는 게시 자체를 막는 선행 게이트" }
+  - { artifact_integrity: absent, trigger: lifecycle, reason: "대표 조합(partial×self_heal)으로 고정 — 산출물 부재는 소비 시점 폴백이 대상이다" }
+  - { artifact_integrity: absent, trigger: manual_command, reason: "동일" }
+  - { artifact_integrity: absent, trigger: kill_switch, reason: "kill-switch 는 정적 경로 자체를 차단" }
+
+  # --- filesystem_writable: 기본값 writable 외의 값은 대표 조합에 고정한다 ---
+  # 쓰기 불가는 게시 시도 시점에만 의미가 있다(프리플라이트). 소비 축과 곱할 이유가 없다.
+  - { filesystem_writable: parent_denied, environment: dev, reason: "dev 는 게시 자체를 하지 않는다 (terminating 게이트가 프로덕션 한정)" }
+  - { filesystem_writable: tree_denied, environment: dev, reason: "동일" }
+  - { filesystem_writable: parent_denied, publish_state: published, reason: "부모 쓰기 불가면 게시가 성립한 적이 없다" }
+  - { filesystem_writable: tree_denied, publish_state: published, reason: "동일" }
+  - { filesystem_writable: parent_denied, publish_state: partial, reason: "프리플라이트가 병합 전에 끊으므로 부분 산출물이 생기지 않는다" }
+  - { filesystem_writable: tree_denied, publish_state: partial, reason: "동일" }
+  - { filesystem_writable: parent_denied, trigger: kill_switch, reason: "kill-switch 는 쓰기 판정 이전의 선행 게이트 — 권한 무관" }
+  - { filesystem_writable: tree_denied, trigger: kill_switch, reason: "동일" }
+  - { filesystem_writable: parent_denied, trigger: self_heal, reason: "대표 조합(unpublished×lifecycle)으로 고정 — 트리거와 직교" }
+  - { filesystem_writable: parent_denied, trigger: manual_command, reason: "동일" }
+  - { filesystem_writable: tree_denied, trigger: self_heal, reason: "동일" }
+  - { filesystem_writable: tree_denied, trigger: manual_command, reason: "동일" }
+  - { filesystem_writable: parent_denied, process_user: root_cli, reason: "root 게이트가 쓰기 판정 이전에 예약을 막는다 — uid 와 직교" }
+  - { filesystem_writable: tree_denied, process_user: root_cli, reason: "동일" }
+
+effects:
+  - published_lang_matches_api_payload
+  - published_routes_has_success_envelope
+  - published_tree_excludes_inactive_extensions
+  - published_tree_excludes_sourcemaps
+  - identifier_outside_pattern_rejected
+  - publish_is_idempotent_until_forced
+  - write_failure_cleans_tmp_and_falls_back
+  - cleanup_keeps_current_and_previous_versions
+  - kill_switch_disables_publish_and_gate
+  - terminating_publish_gated_to_production
+  - terminating_publish_uses_final_version_after_burst
+  - static_gate_requires_manifest
+  - tag_layer_checks_individual_file_existence
+  - static_first_fetch_falls_back_to_api_on_miss
+  - fallback_is_observable_via_console_warn
+  - static_asset_tag_recovers_to_api_url
+  - no_duplicate_boot_requests
+  - versioned_boot_urls
+  - handshake_reload_preserved_on_version_mismatch
+  - manifest_cache_keys_are_version_scoped
+  - fallback_api_serves_etag_304
+  - fallback_api_no_cache_in_dev
+  - degraded_snapshot_gets_no_public_cache
+  - seo_html_never_references_gc_target_static_path
+  - static_miss_skips_spa_catch_all
+  - terminating_schedule_rearms_after_execution
+  - published_htaccess_declares_compression
+  - bundle_script_static_miss_falls_back_to_api
+  - root_cli_defers_publish_to_web_self_heal
+  - truncated_artifact_rejected_before_manifest
+  - parent_denied_short_circuits_before_merge
+  - regenerate_path_schedules_publish
+  - gc_preserves_previous_when_current_absent
+  - publish_failure_reaches_dashboard
+  - publish_failure_recorded_in_marker
+  - publish_success_clears_failure_marker
+  - publish_failure_backoff_suppresses_reschedule
+  - cleanup_removes_only_stale_work_directories
+  - static_miss_returns_404_for_every_servable_extension
+  - admin_catch_all_shares_static_exclusion
+  - prune_skips_active_serving_path
+  - extension_copy_paths_inherit_directory_ownership
+  # #651 — 재게시 누락 3건·버전 수명·root 안내
+  - template_update_always_bumps_cache_version
+  - template_update_failure_bumps_after_restore
+  - asset_url_mode_change_bumps_extension_cache_version
+  - cache_version_key_does_not_expire
+  - custom_signature_covers_publishable_tree
+  - custom_signature_scoped_per_host
+  - status_command_warns_root_and_hints_web_account
+  - publish_command_warns_root_but_continues
+  - status_command_consumes_service_report
+
+test_files:
+  - tests/Feature/Services/ExtensionStaticCacheServiceTest.php
+  - tests/Feature/Api/Public/PublicComponentsCachingTest.php
+  - tests/Feature/Template/PublicTemplateControllerTest.php
+  - tests/Feature/Template/TemplateAssetServingTest.php
+  - tests/Feature/Template/TemplateLanguageServingTest.php
+  - tests/Feature/Api/Public/LayoutServingTest.php
+  - tests/Feature/Http/BuildPathCatchAllExclusionTest.php
+  - tests/Feature/Api/Public/ExtensionBundleServingTest.php
+  - tests/Feature/Dashboard/StaticPublishAlertTest.php
+  - tests/Feature/Console/BuildCommandPruneScopeTest.php
+  - tests/Feature/Extension/ExtensionPendingOwnershipTest.php
+  - tests/Unit/Extension/ClearsTemplateCachesTest.php
+  - tests/Unit/Extension/TemplateUpdateConfigCacheInvalidationTest.php
+  - tests/Unit/Services/SettingsServiceSetSettingSideEffectsTest.php
+  - tests/Unit/Support/CustomAssetsPublishableFilesTest.php
+  - tests/Feature/View/CustomAssetInjectionTest.php
+  - tests/Feature/Console/ExtStaticStatusCommandTest.php
+  - tests/Unit/Services/ExtensionBundleServiceTest.php
+  - tests/Unit/Build/ViteOutDirContractTest.php
+  - tests/Unit/Support/AssetUrlTest.php
+  - tests/Unit/Seo/SeoRendererStaticAssetBypassTest.php
+  - resources/js/core/__tests__/TemplateApp.cacheVersionSeed.test.ts
+  - resources/js/core/support/__tests__/fetchStaticFirst.test.ts
+  - resources/js/core/support/__tests__/assetUrlRecovery.test.ts
+  - resources/js/core/template-engine/__tests__/ComponentRegistry.manifestVersion.test.ts
+  - resources/js/core/modules/__tests__/ModuleAssetLoader.test.ts
+  - tests/Playwright/specs/smoke/bootstrap-request-dedup.spec.ts
+  - tests/Playwright/specs/smoke/static-cache-fallback.spec.ts
+
+notes: |
+  리소스 5종(lang/components/routes/번들/dist)은 축이 아니라 effects 로 커버한다 —
+  게시·게이트·폴백은 리소스 무관 공통 메커니즘이고, 리소스별 형상 차이는
+  published_* effects (payload/봉투/소스맵 제외) 가 각각 단언한다.
+  environment=dev 축은 PHPUnit(환경 분기 케이스)과 AssetUrl 게이트 단위가 담당한다 —
+  E2E 대상 사이트(g7_2.dev)는 평소 local 이라, 브라우저 실측은 실측 창 동안만 `.env` 를
+  production 으로 전환해 수행하고 끝나면 원본을 복구한다(md5 대조). dev 축 자체는 브라우저로
+  실측하지 않는다.
+  관리자 수동 복구(상태 GET + 재게시 POST + 카드·모달·알림 버튼)는 축이 다르므로 별도
+  매니페스트 `tests/scenarios/static-cache-admin-rebuild.yaml` 이 소유한다 — 이 파일의 6축에
+  trigger 값을 더하면 108 조합의 exclusions 가 필요해진다.
+  trigger=lifecycle 의 실기기 검증(확장 비활성/활성 → 재게시 → 새 staticBase)은
+  Chrome MCP 매트릭스 T10a~T10d 가 수행한다 (원상 복구 의무 포함).
+  publish_state=partial 은 태그 계층(개별 file_exists 게이트)과 fetch 계층
+  (fetchStaticFirst 404 폴백) 양쪽에서 단위/브라우저로 커버된다.

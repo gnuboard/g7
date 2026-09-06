@@ -7,6 +7,10 @@
  * 공통 유틸리티 함수를 제공합니다.
  */
 
+// UTF-8 정규화 / JSON 출력 헬퍼 (js_escape · getWebServerUser 가 사용)
+require_once __DIR__.'/utf8.php';
+require_once __DIR__.'/env-value.php';
+
 /**
  * HTML 이스케이프 함수
  *
@@ -31,9 +35,12 @@ if (! function_exists('e')) {
  */
 function js_escape(mixed $value): string
 {
-    $json = json_encode($value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+    $json = installer_json_encode(
+        $value,
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE
+    );
 
-    if ($json === false) {
+    if ($json === '') {
         return '""';
     }
 
@@ -571,6 +578,8 @@ function showStepFileNotFoundError(int $currentStep): void
  */
 function getDatabaseFieldHash(array $config, string $prefix): string
 {
+    // json-encode:allow — 캐시 키 계산용 md5 입력, 응답으로 나가지 않는다.
+    // 플래그를 바꾸면 해시값이 달라져 "필드가 바뀌었다" 는 오판이 생기므로 그대로 둔다.
     return md5(json_encode([
         $config["{$prefix}_host"] ?? '',
         $config["{$prefix}_port"] ?? '',
@@ -716,17 +725,22 @@ function getWebServerUser(): ?string
     }
 
     // 2. exec('whoami')
+    //
+    // whoami 는 UTF-8 이 아니라 그 명령을 실행한 콘솔의 코드페이지로 출력한다.
+    // 한국어 Windows(OEM 949)에서 계정명에 한글이 있으면 invalid UTF-8 바이트가 들어오고,
+    // 그 값이 응답에 실리면 json_encode 가 false 를 반환해 빈 본문(HTTP 200)이 나간다
+    // (gnuboard/g7#62). 반환 전에 반드시 정규화한다.
     if (function_exists('exec')) {
         $user = @exec('whoami');
         if (! empty($user)) {
-            return trim($user);
+            return installer_normalize_process_output(trim($user), 'whoami');
         }
     }
 
     // 3. 환경변수
     $envUser = getenv('USER') ?: getenv('APACHE_RUN_USER') ?: null;
     if (! empty($envUser)) {
-        return $envUser;
+        return installer_normalize_process_output($envUser, 'env:USER');
     }
 
     return null;
@@ -748,7 +762,7 @@ function getWebServerGroup(): ?string
 
     $envGroup = getenv('APACHE_RUN_GROUP') ?: null;
     if (! empty($envGroup)) {
-        return $envGroup;
+        return installer_normalize_process_output($envGroup, 'env:APACHE_RUN_GROUP');
     }
 
     return null;
@@ -1048,22 +1062,10 @@ if (! function_exists('escapeEnvValue')) {
      */
     function escapeEnvValue(string $value): string
     {
-        // 개행 문자는 .env 라인 구분자이므로 사용자 입력에 포함되면 추가 변수 라인이 주입될 수 있다.
-        // CR/LF 모두 제거 — DB 비밀번호·바이너리 경로·토큰 등 정상 값에는 개행이 들어갈 일이 없다.
-        if ($value !== '') {
-            $value = str_replace(["\r", "\n"], '', $value);
-        }
-
-        // 빈 값은 빈 따옴표로
-        if ($value === '') {
-            return '""';
-        }
-
-        // 큰따옴표와 백슬래시를 이스케이프
-        $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
-
-        // 큰따옴표로 감싸기
-        return '"'.$escaped.'"';
+        // 직렬화 정책은 serializeEnvValue 단일 관문이 소유한다 (KVE-2026-2042).
+        // 이 이름은 하위호환 별칭일 뿐이며, 개행을 조용히 지우던 종전 동작은 남기지 않는다 —
+        // 남겨 두면 다음 호출자가 그 경로로 같은 결함을 다시 들여온다.
+        return serializeEnvValue($value);
     }
 }
 
@@ -1089,21 +1091,21 @@ function generateEnvContent(): ?string
     // 데이터베이스 설정 치환
     $replacements = [
         'DB_CONNECTION=mysql' => 'DB_CONNECTION=mysql',
-        'DB_WRITE_HOST=127.0.0.1' => 'DB_WRITE_HOST='.($config['db_write_host'] ?? '127.0.0.1'),
-        'DB_WRITE_PORT=3306' => 'DB_WRITE_PORT='.($config['db_write_port'] ?? '3306'),
-        'DB_WRITE_DATABASE=g7' => 'DB_WRITE_DATABASE='.($config['db_write_database'] ?? 'g7'),
-        'DB_WRITE_USERNAME=root' => 'DB_WRITE_USERNAME='.($config['db_write_username'] ?? 'root'),
-        'DB_WRITE_PASSWORD=' => 'DB_WRITE_PASSWORD='.escapeEnvValue($config['db_write_password'] ?? ''),
-        'DB_PREFIX=g7_' => 'DB_PREFIX='.($config['db_prefix'] ?? 'g7_'),
+        'DB_WRITE_HOST=127.0.0.1' => 'DB_WRITE_HOST='.serializeEnvValue((string) ($config['db_write_host'] ?? '127.0.0.1')),
+        'DB_WRITE_PORT=3306' => 'DB_WRITE_PORT='.serializeEnvValue((string) ($config['db_write_port'] ?? '3306')),
+        'DB_WRITE_DATABASE=g7' => 'DB_WRITE_DATABASE='.serializeEnvValue((string) ($config['db_write_database'] ?? 'g7')),
+        'DB_WRITE_USERNAME=root' => 'DB_WRITE_USERNAME='.serializeEnvValue((string) ($config['db_write_username'] ?? 'root')),
+        'DB_WRITE_PASSWORD=' => 'DB_WRITE_PASSWORD='.serializeEnvValue((string) ($config['db_write_password'] ?? '')),
+        'DB_PREFIX=g7_' => 'DB_PREFIX='.serializeEnvValue((string) ($config['db_prefix'] ?? 'g7_')),
     ];
 
     // Read DB 설정
     if (! empty($config['use_read_db']) && $config['use_read_db']) {
-        $replacements['DB_READ_HOST='] = 'DB_READ_HOST='.($config['db_read_host'] ?? '127.0.0.1');
-        $replacements['DB_READ_PORT='] = 'DB_READ_PORT='.($config['db_read_port'] ?? '3306');
-        $replacements['DB_READ_DATABASE='] = 'DB_READ_DATABASE='.($config['db_read_database'] ?? 'g7');
-        $replacements['DB_READ_USERNAME='] = 'DB_READ_USERNAME='.($config['db_read_username'] ?? 'root');
-        $replacements['DB_READ_PASSWORD='] = 'DB_READ_PASSWORD='.escapeEnvValue($config['db_read_password'] ?? '');
+        $replacements['DB_READ_HOST='] = 'DB_READ_HOST='.serializeEnvValue((string) ($config['db_read_host'] ?? '127.0.0.1'));
+        $replacements['DB_READ_PORT='] = 'DB_READ_PORT='.serializeEnvValue((string) ($config['db_read_port'] ?? '3306'));
+        $replacements['DB_READ_DATABASE='] = 'DB_READ_DATABASE='.serializeEnvValue((string) ($config['db_read_database'] ?? 'g7'));
+        $replacements['DB_READ_USERNAME='] = 'DB_READ_USERNAME='.serializeEnvValue((string) ($config['db_read_username'] ?? 'root'));
+        $replacements['DB_READ_PASSWORD='] = 'DB_READ_PASSWORD='.serializeEnvValue((string) ($config['db_read_password'] ?? ''));
     } else {
         // Read DB를 사용하지 않는 경우 DB_READ_* 를 빈 값으로 둔다.
         // config/database.php 의 write fallback(Elvis) 이 SELECT 를 write DB 로 넘기므로
@@ -1116,9 +1118,9 @@ function generateEnvContent(): ?string
     }
 
     // 앱 설정 치환
-    $replacements['APP_NAME=그누보드7'] = 'APP_NAME="'.($config['app_name'] ?? '그누보드7').'"';
-    $replacements['APP_ENV=production'] = 'APP_ENV='.($config['app_env'] ?? 'production');
-    $replacements['APP_URL=http://localhost'] = 'APP_URL='.($config['app_url'] ?? 'http://localhost');
+    $replacements['APP_NAME=그누보드7'] = 'APP_NAME='.serializeEnvValue((string) ($config['app_name'] ?? '그누보드7'));
+    $replacements['APP_ENV=production'] = 'APP_ENV='.serializeEnvValue((string) ($config['app_env'] ?? 'production'));
+    $replacements['APP_URL=http://localhost'] = 'APP_URL='.serializeEnvValue((string) ($config['app_url'] ?? 'http://localhost'));
 
     // 언어 설정
     $currentLang = getCurrentLanguage();
@@ -1134,15 +1136,15 @@ function generateEnvContent(): ?string
     $coreGithubUrl = $config['core_update_github_url'] ?? 'https://github.com/gnuboard/g7';
     $coreGithubToken = $config['core_update_github_token'] ?? '';
 
-    $replacements['G7_UPDATE_PENDING_PATH='] = 'G7_UPDATE_PENDING_PATH='.escapeEnvValue($corePendingPath);
-    $replacements['G7_UPDATE_GITHUB_URL=https://github.com/gnuboard/g7'] = 'G7_UPDATE_GITHUB_URL='.$coreGithubUrl;
-    $replacements['G7_UPDATE_GITHUB_TOKEN='] = 'G7_UPDATE_GITHUB_TOKEN='.escapeEnvValue($coreGithubToken);
+    $replacements['G7_UPDATE_PENDING_PATH='] = 'G7_UPDATE_PENDING_PATH='.serializeEnvValue((string) $corePendingPath);
+    $replacements['G7_UPDATE_GITHUB_URL=https://github.com/gnuboard/g7'] = 'G7_UPDATE_GITHUB_URL='.serializeEnvValue((string) $coreGithubUrl);
+    $replacements['G7_UPDATE_GITHUB_TOKEN='] = 'G7_UPDATE_GITHUB_TOKEN='.serializeEnvValue((string) $coreGithubToken);
 
     // PHP CLI / Composer 바이너리 경로 치환
     $phpBinary = $config['php_binary'] ?? 'php';
     $composerBinary = $config['composer_binary'] ?? '';
-    $replacements['PHP_BINARY=php'] = 'PHP_BINARY='.escapeEnvValue($phpBinary);
-    $replacements['COMPOSER_BINARY='] = 'COMPOSER_BINARY='.escapeEnvValue($composerBinary);
+    $replacements['PHP_BINARY=php'] = 'PHP_BINARY='.serializeEnvValue((string) $phpBinary);
+    $replacements['COMPOSER_BINARY='] = 'COMPOSER_BINARY='.serializeEnvValue((string) $composerBinary);
 
     foreach ($replacements as $search => $replace) {
         $envContent = str_replace($search, $replace, $envContent);

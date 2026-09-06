@@ -301,12 +301,16 @@ class CoreUpdateCommand extends Command
             // Step 11/12 의 restoreOwnership 이 항목별 정확 복원하도록 전달한다.
             // 사용자 데이터 영역(storage/app/{modules,plugins,attachments,public,settings})
             // 은 본 스냅샷 대상이 아니며 chown 자체가 빠지므로 시드/업로드 owner 가 보존된다.
+            //
+            // 이번 실행이 방금 만든 격리 디렉토리(core_{ts})는 제외한다 — 스냅샷은 그 디렉토리가
+            // 생긴 뒤에 찍히므로, 제외하지 않으면 sudo 가 root 로 만든 추출본이 "원본" 으로
+            // 기록되고 복원이 잔존물을 다시 root 로 되돌린다(7.0.0~7.0.9 실사례).
             $detailedOwnershipSnapshot = $service->snapshotOwnershipDetailed([
                 'storage/logs',
                 'storage/framework',
                 'storage/app/core_pending',
                 'bootstrap/cache',
-            ]);
+            ], excludes: [$service->resolveStagingRoot($pendingPath)]);
             if (! empty($detailedOwnershipSnapshot)) {
                 $log('항목별 정확 스냅샷 수집: '.count($detailedOwnershipSnapshot).'개 항목 (PHP-FPM 쓰기 영역)');
             }
@@ -593,6 +597,10 @@ class CoreUpdateCommand extends Command
             // fallback(spawn 실패)로 부모가 upgrade step 을 직접 실행한 경우, 부모가 만든
             // upgrade 로그가 root 로 남는다 — 모든 로그 쓰기가 끝난 이 시점에 정합한다.
             $this->restoreUpgradeLogOwnership();
+            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
+            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
+            // 전면 500 차단 (7.0.9→7.0.10 실사례)
+            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::SUCCESS;
 
@@ -677,6 +685,10 @@ class CoreUpdateCommand extends Command
             }
 
             $this->restoreUpgradeLogOwnership();
+            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
+            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
+            // 전면 500 차단 (7.0.9→7.0.10 실사례)
+            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::SUCCESS;
 
@@ -772,6 +784,10 @@ class CoreUpdateCommand extends Command
             }
 
             $this->restoreUpgradeLogOwnership();
+            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
+            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
+            // 전면 500 차단 (7.0.9→7.0.10 실사례)
+            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::FAILURE;
         }
@@ -861,6 +877,15 @@ class CoreUpdateCommand extends Command
             'APP_VERSION' => $toVersion,
             'G7_UPDATE_IN_PROGRESS' => '1',
         ]);
+
+        // spawn 직전 config 캐시 제거. 자식은 새 프로세스라 `bootstrap/cache/config.php` 가 있으면
+        // 그 캐시로 부팅하는데, 그 캐시는 이전 버전 설치본이 만든 것이다(설치 마법사·설정 저장·
+        // 확장 업데이트). 캐시 부팅에서는 `.env` 도 읽지 않고 위 `$env` 의 APP_VERSION 오버라이드도
+        // config 에 반영되지 않으며, 신버전 `config/app.php` 가 추가한 update 목록(쓰기 권한
+        // 디렉토리 등)도 자식에게 보이지 않는다 (7.0.9→7.0.10 실사례: stale 가드 오판 +
+        // `public/build/ext` 권한 정상화 누락). 부모의 메모리 config 는 영향받지 않고, 캐시는
+        // Step 11 의 `ConfigCacheHelper::rebuild()` 가 모든 파일이 안착한 뒤 다시 만든다.
+        ConfigCacheHelper::clear();
 
         $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
         if (! is_resource($process)) {
@@ -1359,44 +1384,17 @@ class CoreUpdateCommand extends Command
      *  - `root_web_symmetric` : root 실행 + 웹서버 계정이 root 로 추정됨 (root 서비스 구성).
      *  - `root_web_unknown`   : root 실행 + 웹서버 계정 추정 실패 (스냅샷/추정 불가).
      *
-     * 웹서버 계정은 `FilePermissionHelper::inferWebServerOwnership()` 이 storage/bootstrap
-     * 쓰기 영역 소유자로 추정한다.
+     * 판정은 `FilePermissionHelper::describeWebServerAccount()` 가 소유한다 — 정적 게시 상태·게시
+     * 명령(`ext-static:*`)의 root 경고와 같은 4분기를 공유하기 위해 옮겼다(#651 C1). 이 메서드는
+     * 그 결과를 종전 반환 형태(`[모드, 계정명]`)로 바꿔 주는 위임만 한다.
      *
      * @return array{0: string, 1: string|null} [모드, 웹서버 계정명 또는 null]
      */
     private function classifyResumeExecutionContext(): array
     {
-        if (! function_exists('posix_geteuid') || ! function_exists('posix_getpwuid')) {
-            return ['non_root', null];
-        }
+        $account = FilePermissionHelper::describeWebServerAccount();
 
-        // root(sudo) 실행이 아니면 일반 SSH 사용자 = 파일 소유자 → 권한 분기 안내 불필요.
-        // (공유 호스팅에서 웹서버·PHP·실행 유저가 같은 경우도 여기서 non_root 로 처리됨.)
-        if (posix_geteuid() !== 0) {
-            return ['non_root', null];
-        }
-
-        [$owner] = FilePermissionHelper::inferWebServerOwnership();
-
-        // 추정 실패 (스냅샷 불가) — 계정명 미상 경고 경로.
-        if ($owner === false) {
-            return ['root_web_unknown', null];
-        }
-
-        // 웹서버 계정이 root 로 추정됨 — root 로 서비스하는 구성이라 재실행도 root 로 무해.
-        if ($owner === 0) {
-            return ['root_web_symmetric', null];
-        }
-
-        $entry = posix_getpwuid($owner);
-        $name = $entry['name'] ?? null;
-
-        // uid 는 나왔지만 이름 해석 실패 — 미상 경로로 처리 (uid 노출은 오히려 혼란).
-        if ($name === null) {
-            return ['root_web_unknown', null];
-        }
-
-        return ['root_web_known', $name];
+        return [$account['mode'], $account['name']];
     }
 
     /**

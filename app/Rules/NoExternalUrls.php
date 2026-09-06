@@ -8,8 +8,12 @@ use Illuminate\Contracts\Validation\ValidationRule;
 /**
  * 레이아웃 JSON에서 외부 URL을 차단하는 Custom Rule
  *
- * 컴포넌트 props·actions 와 최상위 init_actions 내의 http://, https://, data:,
- * javascript: 등 위험한 URI 스킴을 감지하여 차단합니다.
+ * 컴포넌트 props·actions·lifecycle·onComponentEvent·slots·component_layout·responsive 와
+ * 최상위 init_actions/initActions·modals·named_actions·errorHandling 내의 http://, https://,
+ * data:, javascript: 등 위험한 URI 스킴을 감지하여 차단합니다.
+ *
+ * 순회 대상은 "액션이 실행되거나 값이 sink(컴포넌트 prop)로 흘러 들어가는 자리" 다.
+ * 한 자리만 빠져도 그 키가 그대로 저장 우회로가 되며, 우회는 오류를 남기지 않는다.
  *
  * 검사 대상 구분(신뢰 경계): init_actions 는 로드 시 자동 실행되는 액션이라 외부
  * navigate/apiCall URL 이 곧 자동 리다이렉트·데이터 유출 경로가 되므로 실행 지점에서
@@ -55,55 +59,128 @@ class NoExternalUrls implements ValidationRule
             $this->validateComponents($value['components'], $fail);
         }
 
-        // init_actions: 로드 시 자동 실행되는 액션 — 외부 navigate/apiCall URL 은 로드 시점
-        // 자동 리다이렉트/데이터 유출 경로가 되므로 컴포넌트 actions 와 동일하게 검사한다.
-        if (isset($value['init_actions']) && is_array($value['init_actions'])) {
-            foreach ($value['init_actions'] as $i => $action) {
-                if (is_array($action)) {
-                    $this->validateObject($action, "init_actions[$i]", $fail);
+        // init_actions / initActions: 로드 시 자동 실행되는 액션 — 외부 navigate/apiCall URL 은
+        // 로드 시점 자동 리다이렉트/데이터 유출 경로가 되므로 컴포넌트 actions 와 동일하게
+        // 검사한다. 엔진(LayoutLoader)이 두 철자를 모두 소비하므로 두 철자 모두 검사한다 —
+        // 한쪽만 보면 다른 철자가 그대로 우회로가 된다.
+        foreach (['init_actions', 'initActions'] as $initKey) {
+            if (isset($value[$initKey]) && is_array($value[$initKey])) {
+                foreach ($value[$initKey] as $i => $action) {
+                    if (is_array($action)) {
+                        $this->validateObject($action, "{$initKey}[$i]", $fail);
+                    }
                 }
             }
+        }
+
+        // modals: 각 항목이 컴포넌트 정의다 — 모달 안의 props/actions 도 같은 sink 이므로
+        // 컴포넌트와 동일하게 재귀 검사한다.
+        if (isset($value['modals']) && is_array($value['modals'])) {
+            foreach ($value['modals'] as $modalKey => $modal) {
+                if (! is_array($modal)) {
+                    continue;
+                }
+
+                $this->validateComponents([$modal], $fail, "modals.$modalKey");
+
+                if (isset($modal['components']) && is_array($modal['components'])) {
+                    $this->validateComponents($modal['components'], $fail, "modals.$modalKey.components");
+                }
+            }
+        }
+
+        // named_actions: 이름으로 호출되는 액션 정의 — 실행 시 컴포넌트 actions 와 동일한 sink.
+        if (isset($value['named_actions']) && is_array($value['named_actions'])) {
+            foreach ($value['named_actions'] as $name => $named) {
+                if (is_array($named)) {
+                    $this->validateObject($named, "named_actions.$name", $fail);
+                }
+            }
+        }
+
+        // errorHandling: 오류 시 실행되는 액션(navigate/apiCall)을 담는다.
+        if (isset($value['errorHandling']) && is_array($value['errorHandling'])) {
+            $this->validateObject($value['errorHandling'], 'errorHandling', $fail);
         }
     }
 
     /**
      * components 배열을 재귀적으로 검증
+     *
+     * @param  array  $components  컴포넌트 정의 배열
+     * @param  Closure  $fail  실패 콜백
+     * @param  string  $basePath  오류 메시지에 실을 경로 접두 (modals/slots 경로 보존)
      */
-    private function validateComponents(array $components, Closure $fail): void
+    private function validateComponents(array $components, Closure $fail, string $basePath = 'components'): void
     {
         foreach ($components as $index => $component) {
             if (! is_array($component)) {
                 continue;
             }
 
+            $path = "{$basePath}[$index]";
+
             // props 검사
             if (isset($component['props']) && is_array($component['props'])) {
-                $this->validateObject($component['props'], "components[$index].props", $fail);
+                $this->validateObject($component['props'], "$path.props", $fail);
             }
 
             // actions 검사
             if (isset($component['actions']) && is_array($component['actions'])) {
-                $this->validateActions($component['actions'], $index, $fail);
+                $this->validateActions($component['actions'], $path, $fail);
+            }
+
+            // lifecycle: 마운트/언마운트 시 자동 실행되는 액션 — init_actions 와 같은 성격이다.
+            if (isset($component['lifecycle']) && is_array($component['lifecycle'])) {
+                $this->validateObject($component['lifecycle'], "$path.lifecycle", $fail);
+            }
+
+            // onComponentEvent: 컴포넌트 이벤트로 발화되는 액션 배열.
+            if (isset($component['onComponentEvent']) && is_array($component['onComponentEvent'])) {
+                $this->validateObject($component['onComponentEvent'], "$path.onComponentEvent", $fail);
+            }
+
+            // slots: 슬롯 이름별 컴포넌트 배열 — 슬롯 안의 컴포넌트도 같은 sink 다.
+            if (isset($component['slots']) && is_array($component['slots'])) {
+                foreach ($component['slots'] as $slotName => $slotComponents) {
+                    if (is_array($slotComponents)) {
+                        $this->validateComponents($slotComponents, $fail, "$path.slots.$slotName");
+                    }
+                }
+            }
+
+            // component_layout: 컴포넌트가 품는 하위 레이아웃 정의.
+            if (isset($component['component_layout']) && is_array($component['component_layout'])) {
+                $this->validateObject($component['component_layout'], "$path.component_layout", $fail);
+            }
+
+            // responsive: breakpoint 별 props/children 오버라이드 — 그 안의 값도 같은 sink 다.
+            if (isset($component['responsive']) && is_array($component['responsive'])) {
+                $this->validateObject($component['responsive'], "$path.responsive", $fail);
             }
 
             // children 재귀 검사
             if (isset($component['children']) && is_array($component['children'])) {
-                $this->validateComponents($component['children'], $fail);
+                $this->validateComponents($component['children'], $fail, "$path.children");
             }
         }
     }
 
     /**
      * actions 배열 검증
+     *
+     * @param  array  $actions  액션 정의 배열
+     * @param  string  $componentPath  컴포넌트 경로 (오류 메시지용)
+     * @param  Closure  $fail  실패 콜백
      */
-    private function validateActions(array $actions, int $componentIndex, Closure $fail): void
+    private function validateActions(array $actions, string $componentPath, Closure $fail): void
     {
         foreach ($actions as $actionIndex => $action) {
             if (! is_array($action)) {
                 continue;
             }
 
-            $this->validateObject($action, "components[$componentIndex].actions[$actionIndex]", $fail);
+            $this->validateObject($action, "{$componentPath}.actions[$actionIndex]", $fail);
         }
     }
 

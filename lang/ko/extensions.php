@@ -36,6 +36,12 @@ return [
         'auto_deactivated_listed' => '자동 비활성화된 확장 목록입니다.',
         'recover_action' => '다시 활성화',
         'dismiss_action' => '알림 닫기',
+        'static_publish_failed_title' => '초기 화면 파일 생성 실패',
+        'static_publish_failed_parent_not_writable' => '초기 화면 파일을 저장할 폴더에 쓸 수 없어 :count회 연속 실패했습니다. 사이트는 정상 동작하지만 첫 화면이 느려집니다. 서버에서 `php artisan ext-static:status` 로 원인을 확인하세요. 관리자 > 환경설정 > 일반 의 「지금 다시 만들기」로 즉시 재시도할 수 있습니다.',
+        'static_publish_failed_write_failed' => '초기 화면 파일을 만드는 중 :count회 연속 실패했습니다. 디스크 여유 공간을 확인하세요. 사이트는 정상 동작하지만 첫 화면이 느려집니다. 관리자 > 환경설정 > 일반 의 「지금 다시 만들기」로 즉시 재시도할 수 있습니다.',
+        'static_publish_failed_lock_unavailable' => '초기 화면 파일 생성이 :count회 연속 건너뛰어졌습니다. 캐시 저장소 상태를 확인하세요. 사이트는 정상 동작하지만 첫 화면이 느려집니다. 관리자 > 환경설정 > 일반 의 「지금 다시 만들기」로 즉시 재시도할 수 있습니다.',
+        'static_publish_recover_label' => '다시 만들기',
+        'static_publish_recovered' => '초기 화면 파일을 다시 만들었습니다.',
     ],
 
     'badges' => [

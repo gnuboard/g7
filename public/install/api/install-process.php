@@ -36,7 +36,7 @@ header('Content-Type: application/json; charset=UTF-8');
  */
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'message' => lang('error_method_not_allowed'),
     ], JSON_UNESCAPED_UNICODE);
@@ -58,7 +58,7 @@ try {
         // state.json에도 config가 없으면 에러
         if (empty($config)) {
             http_response_code(400);
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => lang('error_config_not_in_session'),
             ], JSON_UNESCAPED_UNICODE);
@@ -108,7 +108,7 @@ try {
 
     if (! empty($missingFields)) {
         http_response_code(400);
-        echo json_encode([
+        echo installer_json_encode([
             'success' => false,
             'message' => lang('error_required_fields_missing', ['fields' => implode(', ', $missingFields)]),
         ], JSON_UNESCAPED_UNICODE);
@@ -125,7 +125,7 @@ try {
 
     if (! empty($missingRequiredFiles)) {
         http_response_code(400);
-        echo json_encode([
+        echo installer_json_encode([
             'success' => false,
             'message' => lang('error_env_not_found'),
             'env_required' => true,
@@ -250,7 +250,7 @@ try {
     /**
      * 응답 JSON 준비 (echo 이전에 미리 문자열화하여 Content-Length 계산용)
      */
-    $responseJson = json_encode([
+    $responseJson = installer_json_encode([
         'success' => true,
         'status' => 'started',
         'message' => lang('success_installation_started'),
@@ -374,7 +374,7 @@ try {
 
     // 에러 응답
     http_response_code(500);
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'message' => lang('error_installation_start_exception', ['error' => $e->getMessage()]),
     ], JSON_UNESCAPED_UNICODE);

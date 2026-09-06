@@ -1,6 +1,17 @@
 {
   "comment": "admin 자체 + 코어 SSoT 도메인. locales/admin_menus/me/installed_modules/active_plugins/users 등. 실제 데이터소스 ID 는 착수 시점 admin 레이아웃 data_sources 로 재검증 — 본 블록은 코어 SSoT/공통 폴백.",
   "byDataSourceId": {
+    "trustedProxy": {
+      "data": {
+        "status": "warning",
+        "trusted_configured": false,
+        "configured_proxies": null,
+        "forwarded_headers": ["X-Forwarded-For", "X-Forwarded-Proto"],
+        "is_secure": false,
+        "client_ip": "10.0.2.31",
+        "remote_addr": "203.0.113.7"
+      }
+    },
     "sitemap_status": {
       "data": {
         "last_updated_at": "2026-06-21T15:40:00+09:00",
@@ -23,6 +34,21 @@
           "written": 64,
           "percent": 50
         }
+      }
+    },
+    "staticCacheStatus": {
+      "data": {
+        "enabled": true,
+        "publishable": true,
+        "environment": "production",
+        "version": 1788656566,
+        "published": true,
+        "files": 714,
+        "published_at": "2026-09-06T01:02:49+00:00",
+        "tree_writable": true,
+        "process_user": "www-data",
+        "failure": null,
+        "retained_versions": [1788171201, 1788656566]
       }
     },
     "locales": {

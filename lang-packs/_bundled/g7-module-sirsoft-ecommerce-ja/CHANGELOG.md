@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-09-06
+
+### Added
+
+- 주문 설정의 「결제 미완료 주문 만료 기준(분)」 입력과 그 검증 문구의 일본어 번역을 추가했습니다.
+
 ## [1.1.3] - 2026-08-24
 
 ### Fixed

@@ -6,6 +6,7 @@ use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleType;
 use App\Exceptions\LanguagePackOperationException;
 use App\Models\Schedule;
+use App\Rules\PublicOutboundUrl;
 use App\Services\DriverConnectionTester;
 use App\Services\LanguagePackService;
 use App\Services\ScheduleService;
@@ -100,6 +101,52 @@ class OutboundRequestGuardTest extends TestCase
     }
 
     /**
+     * FormRequest 게이트(`PublicOutboundUrl` Rule)도 같은 정규화를 거친다.
+     *
+     * 이 Rule 이 스케줄 생성·언어팩 URL 설치 등의 프론트도어다. 서비스 계층만 막고
+     * 여기가 열려 있으면 저장 자체는 성공해 위조 URL 이 설정에 남는다.
+     *
+     * @param  string  $url  내부망을 가리키는 URL
+     */
+    #[DataProvider('internalUrlProvider')]
+    public function test_public_outbound_url_rule_blocks_internal_addresses(string $url): void
+    {
+        $validator = validator(
+            ['endpoint' => $url],
+            ['endpoint' => [new PublicOutboundUrl(['http', 'https'])]],
+        );
+
+        $this->assertTrue(
+            $validator->fails(),
+            "차단되어야 하는 URL 이 FormRequest 게이트를 통과함: {$url}"
+        );
+    }
+
+    /**
+     * 정규화가 정상 외부 URL 까지 막지는 않는다 (프론트도어 회귀 방지).
+     */
+    public function test_public_outbound_url_rule_still_allows_public_urls(): void
+    {
+        $urls = [
+            'https://api.example.com/shipping/fee',
+            'https://api.example.com:8443/shipping/fee',
+            'https://github.com/owner/repo/releases/download/v1/pack.zip',
+            // 정당한 국제화 도메인은 정규화 후에도 통과해야 한다.
+            "https://\u{4F8B}\u{3048}.jp/shipping/fee",
+            'https://xn--r8jz45g.jp/shipping/fee',
+        ];
+
+        foreach ($urls as $url) {
+            $validator = validator(
+                ['endpoint' => $url],
+                ['endpoint' => [new PublicOutboundUrl(['http', 'https'])]],
+            );
+
+            $this->assertFalse($validator->fails(), "정상 URL 이 차단됨: {$url}");
+        }
+    }
+
+    /**
      * URL 스케줄 실행이 차단되고 요청이 전송되지 않았음을 단언합니다.
      *
      * `runSchedule` 은 실행 실패를 실패 이력으로 기록한 뒤 ValidationException 으로 전파한다
@@ -174,6 +221,17 @@ class OutboundRequestGuardTest extends TestCase
             'localhost' => ['http://localhost/pack.zip'],
             '사설 IP' => ['http://10.0.0.5/pack.zip'],
             'userinfo 위장' => ['https://github.com@127.0.0.1/pack.zip'],
+
+            // 점 동등 유니코드 문자(U+3002·U+FF0E·U+FF61)와 전각 슬래시(U+FF0F)는
+            // 연결 계층의 UTS#46 정규화에서 ASCII 로 바뀐다. 게이트가 원문으로만 판정하면
+            // 검증 시점과 접속 시점의 host 가 달라져 내부망이 열린다.
+            'U+3002 로 감춘 localhost' => ["http://localhost\u{3002}/pack.zip"],
+            'U+FF0E 로 감춘 localhost' => ["http://localhost\u{FF0E}/pack.zip"],
+            'U+FF61 로 감춘 localhost' => ["http://localhost\u{FF61}/pack.zip"],
+            'U+3002 로 감춘 루프백 IP' => ["http://127\u{3002}0\u{3002}0\u{3002}1/pack.zip"],
+            'U+FF0E 로 감춘 메타데이터' => ["http://169\u{FF0E}254\u{FF0E}169\u{FF0E}254/latest/meta-data/"],
+            '전각 슬래시로 감춘 루프백' => ["http://127.0.0.1\u{FF0F}.example.com/pack.zip"],
+            '후행 점 localhost' => ['http://localhost./pack.zip'],
         ];
     }
 

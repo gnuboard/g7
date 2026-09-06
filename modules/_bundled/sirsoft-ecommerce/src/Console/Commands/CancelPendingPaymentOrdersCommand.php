@@ -65,8 +65,19 @@ class CancelPendingPaymentOrdersCommand extends Command
         );
 
         try {
+            // 결제창까지 갔으나 결제가 성립하지 않은 주문(PG 카드 등)의 만료 기준(분).
+            // 0 이하로 두면 그 부류는 정리하지 않는다 — 운영자가 끌 수 있는 여지를 남긴다.
+            $pendingOrderExpireMinutes = (int) module_setting(
+                'sirsoft-ecommerce',
+                'order_settings.pending_order_expire_minutes',
+                1440
+            );
+
             // 만료된 주문 조회
-            $expiredOrders = $this->orderRepository->getExpiredPendingPaymentOrders($limit);
+            $expiredOrders = $this->orderRepository->getExpiredPendingPaymentOrders(
+                $limit,
+                $pendingOrderExpireMinutes > 0 ? $pendingOrderExpireMinutes : null,
+            );
 
             if ($expiredOrders->isEmpty()) {
                 $this->info('처리할 만료 주문이 없습니다.');
@@ -82,9 +93,13 @@ class CancelPendingPaymentOrdersCommand extends Command
             foreach ($expiredOrders as $order) {
                 $paymentMethodEnum = $order->payment?->payment_method;
                 $paymentMethodValue = $paymentMethodEnum?->value ?? 'unknown';
-                $dueAt = $paymentMethodEnum === PaymentMethodEnum::DBANK
-                    ? $order->payment?->deposit_due_at
-                    : $order->payment?->vbank_due_at;
+                $dueAt = match (true) {
+                    $paymentMethodEnum === PaymentMethodEnum::DBANK => $order->payment?->deposit_due_at,
+                    $paymentMethodEnum === PaymentMethodEnum::VBANK => $order->payment?->vbank_due_at,
+                    // 결제창까지 갔으나 성립하지 않은 주문은 입금 기한이 없다 — 주문 시각을 보여
+                    // 운영자가 어느 기준으로 정리되었는지 알 수 있게 한다.
+                    default => $order->ordered_at,
+                };
 
                 $this->line("- 주문번호: {$order->order_number} ({$paymentMethodValue}, 기한: {$dueAt})");
 

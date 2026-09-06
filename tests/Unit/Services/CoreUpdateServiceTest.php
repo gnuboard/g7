@@ -1294,6 +1294,48 @@ MD;
     }
 
     /**
+     * `applyUpdate(prune:true)` 가 `public` 타깃을 정리할 때 정적 게시본
+     * (`public/build/ext`)을 orphan 으로 삭제하지 않고 보존합니다 (#122).
+     *
+     * 게시본은 릴리즈 소스에 없는 로컬 파생물이라 excludes(`build/ext`) 미등록 시
+     * prune 이 삭제해, 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다.
+     */
+    public function test_apply_update_prune_preserves_static_publish_dir(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['public']);
+
+        // prepareApplyUpdateEnv 가 excludes 를 비우므로 실제 기본값(config/app.php)을 재주입 —
+        // 이 테스트의 검증 대상이 바로 excludes 의 `build/ext` 항목이다
+        config(['app.update.excludes' => ['node_modules', '.git', 'bootstrap/cache', 'build/ext']]);
+
+        try {
+            // source(릴리즈): public/build/core 는 추적 배포 산출물이라 항상 존재,
+            // build/ext 는 로컬 파생물이라 릴리즈 소스에 없다
+            File::ensureDirectoryExists($source.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'build'.DIRECTORY_SEPARATOR.'core');
+            File::put($source.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'index.php', "<?php // core\n");
+            File::put(
+                $source.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'build'.DIRECTORY_SEPARATOR.'core'.DIRECTORY_SEPARATOR.'template-engine.min.js',
+                '// bundle'
+            );
+
+            // 활성(mine): 정적 게시본 + manifest
+            $publishDir = $fakeBase.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'build'
+                .DIRECTORY_SEPARATOR.'ext'.DIRECTORY_SEPARATOR.'1234';
+            File::ensureDirectoryExists($publishDir);
+            File::put($publishDir.DIRECTORY_SEPARATOR.'manifest.json', '{}');
+
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $this->assertFileExists(
+                $publishDir.DIRECTORY_SEPARATOR.'manifest.json',
+                'prune 업데이트가 정적 게시본(public/build/ext)을 orphan 삭제하면 안 된다',
+            );
+        } finally {
+            $restore();
+        }
+    }
+
+    /**
      * end-to-end 회귀 (#43): `applyUpdate(prune:true)` 가 `public` 타깃을 정리할 때
      * `public/storage` symlink 를 orphan 으로 삭제하지 않고 보존합니다.
      *

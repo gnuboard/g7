@@ -28,6 +28,20 @@ class AllowedPluginFileType implements ValidationRule
     ];
 
     /**
+     * 환경과 무관한 기본 허용 확장자 목록을 반환합니다.
+     *
+     * `getAllowedExtensions()` 는 로컬에서 소스맵(`map`)을 덧붙이는 **환경 의존** 게터라
+     * 라우트 패턴처럼 정의 시점에 한 번 굳어 캐시에 박히는 소비자가 쓰면 안 된다
+     * (캐시를 구운 환경에 따라 패턴이 달라진다). 그런 소비자는 이 게터를 쓴다.
+     *
+     * @return array<string> 기본 허용 확장자 목록
+     */
+    public static function allowedExtensions(): array
+    {
+        return self::ALLOWED_EXTENSIONS;
+    }
+
+    /**
      * 허용된 파일 타입인지 검증
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void

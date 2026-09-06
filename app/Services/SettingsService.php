@@ -6,11 +6,14 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Resources\AttachmentResource;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Support\ConfigCacheHelper;
+use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
+use App\Support\ProcessOutputEncoding;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +29,10 @@ use Illuminate\Validation\ValidationException;
  */
 class SettingsService
 {
+    // 자산 URL 방식 변경 시 확장 캐시 버전 bump 용. 주입된 `$this->cache` 로 직접 put 하지
+    // 않는다 — 트레이트가 고정 `CoreCacheDriver` + 메모이즈 스토어를 쓰는 이유가 그 안에 있다.
+    use ClearsTemplateCaches;
+
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
         private AttachmentRepositoryInterface $attachmentRepository,
@@ -150,7 +157,100 @@ class SettingsService
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
+        return $this->overlayEnvLockedValues($settings);
+    }
+
+    /**
+     * `.env` 로 잠긴 키의 표시값을 유효값(런타임 config)으로 덮어씁니다.
+     *
+     * 잠긴 필드에 사문화된 저장값이 남아 있으면 운영자는 적용되지 않는 값을 읽게 됩니다.
+     * 화면이 보여줄 진실은 실제로 적용 중인 값이므로, 그 값으로 대체합니다.
+     *
+     * 민감 키는 제외합니다 — `.env` 의 비밀값을 관리자 화면 응답에 실어 보내지 않기
+     * 위해서입니다(잠금 표시만 하고 값은 저장값 그대로 둡니다).
+     *
+     * 스위치가 꺼져 있으면 아무 것도 하지 않습니다.
+     *
+     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
+     * @return array<string, mixed> 유효값이 덮인 설정 배열
+     */
+    private function overlayEnvLockedValues(array $settings): array
+    {
+        if (! EnvPriority::enabled()) {
+            return $settings;
+        }
+
+        foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
+            if (EnvPriority::isSensitive($storageKey)) {
+                continue;
+            }
+
+            [$category, $key] = explode('.', $storageKey, 2);
+            $value = EnvPriority::effectiveValue($storageKey);
+
+            foreach ($this->resolveFrontendKeyTargets($category, $key) as [$targetCategory, $outputKey]) {
+                if (isset($settings[$targetCategory]) && is_array($settings[$targetCategory])) {
+                    $settings[$targetCategory][$outputKey] = $value;
+                }
+            }
+        }
+
         return $settings;
+    }
+
+    /**
+     * `.env` 로 잠긴 키 목록을 프론트엔드 키 형태로 반환합니다.
+     *
+     * 화면(레이아웃 JSON)이 참조하는 키는 `frontend_key`/`merge_into` 변환을 거친 이름
+     * (예: `advanced.debug_mode`)이므로, 저장소 키(`debug.mode`)를 그대로 내보내면 화면의
+     * 잠금 표시가 조용히 미발동합니다.
+     *
+     * `getAllSettings()` 가 값을 두 위치(병합 대상 + 원본 카테고리)에 싣는 것과 동일하게
+     * 잠금 표시도 두 위치를 모두 담습니다.
+     *
+     * @return array<string, bool> 프론트엔드 키(`카테고리.키`) => true
+     */
+    public function envLockedMeta(): array
+    {
+        $meta = [];
+
+        foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
+            [$category, $key] = explode('.', $storageKey, 2);
+
+            foreach ($this->resolveFrontendKeyTargets($category, $key) as [$targetCategory, $outputKey]) {
+                $meta[$targetCategory.'.'.$outputKey] = true;
+            }
+        }
+
+        return $meta;
+    }
+
+    /**
+     * 저장소 키가 응답에서 실리는 (카테고리, 키) 쌍 목록을 반환합니다.
+     *
+     * `getAllSettings()` 의 변환 규칙과 같은 규칙을 씁니다 — 갈라지면 잠금 표시가 값과
+     * 다른 자리를 가리키게 되고, 그 어긋남은 화면에서 "잠금이 안 걸린 것"과 구분되지 않습니다.
+     *
+     * @param  string  $category  저장소 카테고리명
+     * @param  string  $key  저장소 키
+     * @return array<int, array{0: string, 1: string}> (카테고리, 출력 키) 쌍 목록
+     */
+    private function resolveFrontendKeyTargets(string $category, string $key): array
+    {
+        $schema = $this->configRepository->getFrontendSchema();
+        $categorySchema = $schema[$category] ?? [];
+        $fields = $categorySchema['fields'] ?? [];
+
+        $outputKey = $fields[$key]['frontend_key'] ?? $key;
+        $targetCategory = $categorySchema['frontend_name'] ?? $categorySchema['merge_into'] ?? $category;
+
+        $targets = [[$targetCategory, $outputKey]];
+
+        if ($targetCategory !== $category) {
+            $targets[] = [$category, $outputKey];
+        }
+
+        return $targets;
     }
 
     /**
@@ -538,6 +638,13 @@ class SettingsService
             // frontend_key를 원본 키로 역변환
             $tabSettings = $this->reverseFrontendKeys($tabSettings);
 
+            // `.env` 가 소유권을 가져간 키는 저장 대상에서 제거한다. 화면의 disabled 는
+            // 게이트가 아니다 — 저장 API 를 직접 호출하는 경로가 남으므로 실질 차단은 여기다.
+            // (advanced 탭은 아직 카테고리가 갈리지 않았으므로 saveAdvancedSettings 가 분리 후 적용한다.)
+            if ($tab !== 'advanced') {
+                $tabSettings = EnvPriority::rejectLockedForSave($tab, $tabSettings);
+            }
+
             // advanced 탭은 cache와 debug 두 카테고리로 분리
             if ($tab === 'advanced') {
                 $result = $this->saveAdvancedSettings($tabSettings);
@@ -604,6 +711,7 @@ class SettingsService
                 // CLI(`g7:asset-url-mode`)와 동일한 처리 (계획서 §알려진 한계).
                 if ($assetUrlModeChanged) {
                     $this->clearSeoCacheForAssetUrlMode();
+                    $this->bumpExtensionCacheForAssetUrlMode();
                 }
 
                 // drivers 탭은 queue/broadcasting/cache 등 long-running worker에 영향
@@ -729,6 +837,10 @@ class SettingsService
 
         // 각 카테고리별 병합 저장
         foreach ($categorized as $category => $categorySettings) {
+            // 고급 탭은 여러 카테고리가 한 폼에 섞여 오므로 잠금 필터를 분리 후에 적용한다
+            // (탭 이름 'advanced' 는 저장소 카테고리가 아니라 매핑이 걸리지 않는다).
+            $categorySettings = EnvPriority::rejectLockedForSave($category, $categorySettings);
+
             if (empty($categorySettings)) {
                 continue;
             }
@@ -984,6 +1096,7 @@ class SettingsService
 
                 if ($assetUrlModeChanged) {
                     $this->clearSeoCacheForAssetUrlMode();
+                    $this->bumpExtensionCacheForAssetUrlMode();
                 }
 
                 if (str_starts_with($key, 'drivers.') || $key === 'drivers') {
@@ -1020,15 +1133,40 @@ class SettingsService
      */
     public function restoreSettings(string $backupPath): bool
     {
+        // 자산 URL 방식은 복원 **전**에 읽어 둔다 — 복원 뒤에는 이전 값을 알 수 없어
+        // 변경 여부를 판별할 수 없다 (saveSettings/setSetting 과 같은 사유).
+        $previousAssetUrlMode = $this->configRepository->get('general.asset_url_mode');
+
         $result = $this->configRepository->restore($backupPath);
 
         if ($result) {
             // 복원도 설정 전체를 갈아엎는 쓰기다 — 캐시만 비우고 미러를 두면
             // 같은 프로세스가 복원 전 값을 계속 읽는다 (저장 경로와 동일 결함, 공개이슈 #109).
             $this->invalidateSettingsCache();
+
+            // 복원으로 자산 URL 방식이 바뀌었으면 두 저장 경로와 동일하게 처리한다 —
+            // SEO 프리렌더와 병합 번들 CSS 양쪽에 구워진 URL 형태가 어긋난다.
+            if ($this->configRepository->get('general.asset_url_mode') !== $previousAssetUrlMode) {
+                $this->clearSeoCacheForAssetUrlMode();
+                $this->bumpExtensionCacheForAssetUrlMode();
+            }
         }
 
         return $result;
+    }
+
+    /**
+     * 자산 URL 방식이 바뀌었을 때 확장 캐시 버전을 올립니다 (정적 게시본 재생성).
+     *
+     * 병합 번들 CSS 는 내부 `url()` 참조가 그 시점의 자산 URL **형태**(확장자 / `?file=`)로
+     * 본문에 구워진다(`ExtensionBundleService` 의 `AssetCssUrlRewriter`). 디스크 번들과 정적
+     * 게시본은 캐시 버전으로 키드되어 있어, 버전이 오르지 않으면 모드를 바꿔도 옛 형태의
+     * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다(#651 F5). bump 단일 지점이
+     * 번들 재병합과 정적 재게시를 함께 예약한다.
+     */
+    private function bumpExtensionCacheForAssetUrlMode(): void
+    {
+        $this->incrementExtensionCacheVersion();
     }
 
     /**
@@ -1295,8 +1433,12 @@ class SettingsService
     public function optimizeSystem(): bool
     {
         try {
-            Artisan::call('config:cache');
-            Artisan::call('route:cache');
+            // config:cache / route:cache 는 새 Application 을 부팅하며 전역 Container 를 바꿔 놓는다.
+            // 보존 래퍼 없이 부르면 이 요청의 후속 `app()->terminating()` 예약이 사라진다.
+            ConfigCacheHelper::withPreservedContainer(static function (): void {
+                Artisan::call('config:cache');
+                Artisan::call('route:cache');
+            });
             Artisan::call('view:cache');
 
             return true;
@@ -1496,7 +1638,10 @@ class SettingsService
         if (PHP_OS_FAMILY === 'Windows') {
             $output = @shell_exec('powershell -NoProfile -NonInteractive -Command "(Get-CimInstance Win32_Processor | Select-Object -First 1).Name" 2>&1');
             if ($output) {
-                $name = trim($output);
+                // 2>&1 로 합쳐진 오류 문장은 시스템 코드페이지(한국어 Windows = CP949)로 출력된다.
+                // 정규화하지 않으면 이 값이 시스템 정보 API 응답에 실려 JsonResponse 직렬화가
+                // Malformed UTF-8 로 500 을 낸다 (gnuboard/g7#62 와 동형).
+                $name = trim(ProcessOutputEncoding::normalize($output));
                 if ($name !== '' && ! str_contains(strtolower($name), 'error')) {
                     return $name;
                 }
@@ -1504,7 +1649,7 @@ class SettingsService
 
             $output = @shell_exec('wmic cpu get name 2>&1');
             if ($output) {
-                $lines = explode("\n", trim($output));
+                $lines = explode("\n", trim(ProcessOutputEncoding::normalize($output)));
                 if (isset($lines[1]) && trim($lines[1]) !== '') {
                     return trim($lines[1]);
                 }

@@ -485,7 +485,10 @@ class SeoRenderer implements SeoRendererInterface
 
         // stylesheets: 템플릿 자체 CSS + seo-config.json 선언 stylesheets 병합
         $templateCssUrls = $this->getTemplateCssUrls($templateIdentifier);
-        $configStylesheets = $seoTemplateConfig['stylesheets'] ?? [];
+        $configStylesheets = $this->resolveConfigStylesheets(
+            $seoTemplateConfig['stylesheets'] ?? [],
+            $templateIdentifier
+        );
         $allStylesheets = array_merge($templateCssUrls, $configStylesheets);
 
         $viewData = [
@@ -701,17 +704,71 @@ class SeoRenderer implements SeoRendererInterface
     }
 
     /**
+     * `seo-config.json` 의 stylesheets 선언을 실제 URL 로 해석합니다.
+     *
+     * 절대 URL(`http://`·`https://`·`//`)이나 `/` 로 시작하는 경로는 그대로 쓴다.
+     * 그 외 값은 **템플릿이 자체 제공하는 자산의 `dist/` 이하 경로**로 보고 자산 URL 을
+     * 만든다 — 봇이 보는 화면도 사용자 화면과 같은 자산을 같은 origin 에서 받아야 한다.
+     *
+     * 정적 게시 경로는 쓰지 않는다(`allowStatic: false`). SEO 페이지는 캐시에 오래
+     * 남는데, 정적 게시본은 GC(현재+직전 1개 보존) 대상이라 캐시된 HTML 이 사라진
+     * 버전 디렉토리를 가리키게 된다.
+     *
+     * @param  array<int, mixed>  $stylesheets  선언 목록
+     * @param  string  $templateIdentifier  템플릿 식별자
+     * @return array<int, string> 해석된 URL 목록
+     */
+    private function resolveConfigStylesheets(array $stylesheets, string $templateIdentifier): array
+    {
+        $resolved = [];
+
+        foreach ($stylesheets as $stylesheet) {
+            if (! is_string($stylesheet) || $stylesheet === '') {
+                continue;
+            }
+
+            if (preg_match('#^(https?:)?//#i', $stylesheet) === 1 || str_starts_with($stylesheet, '/')) {
+                $resolved[] = $stylesheet;
+
+                continue;
+            }
+
+            $resolved[] = AssetUrl::templateAsset($templateIdentifier, $stylesheet, null, false);
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * 템플릿 디렉토리의 절대 경로를 반환합니다.
+     *
+     * 테스트가 임시 디렉토리를 템플릿 루트로 쓸 수 있도록 분리한 seam 이다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return string 템플릿 루트 절대 경로
+     */
+    protected function templateRootPath(string $identifier): string
+    {
+        return base_path("templates/{$identifier}");
+    }
+
+    /**
      * 템플릿의 CSS 에셋 URL 목록을 반환합니다.
      *
      * template.json의 assets.css 경로를 서빙 URL로 변환합니다.
      * 예: "dist/css/components.css" → "/api/templates/assets/{id}/css/components.css"
+     *
+     * `assets.css` 는 **선언**일 뿐이라 산출물이 없을 수 있다. 없는 경로를 그대로 링크하면
+     * 봇 화면에서만 404 가 나고 일반 화면에는 흔적이 없다 — 서버 로그에도 남지 않아
+     * 운영자가 알 방법이 없다. 그래서 파일이 실재하는 경로만 싣는다(0바이트는 정상).
      *
      * @param  string  $templateIdentifier  템플릿 식별자
      * @return array CSS URL 배열
      */
     private function getTemplateCssUrls(string $templateIdentifier): array
     {
-        $templateJsonPath = base_path("templates/{$templateIdentifier}/template.json");
+        $templateRoot = $this->templateRootPath($templateIdentifier);
+        $templateJsonPath = $templateRoot.'/template.json';
         if (! file_exists($templateJsonPath)) {
             return [];
         }
@@ -728,9 +785,20 @@ class SeoRenderer implements SeoRendererInterface
 
         $urls = [];
         foreach ($cssPaths as $cssPath) {
+            // 선언한 파일이 실재할 때만 링크한다 — 없는 경로의 <link> 는 봇 화면에서만
+            // 404 가 되고 어디에도 흔적을 남기지 않는다
+            if (! is_file($templateRoot.'/'.$cssPath)) {
+                continue;
+            }
+
             // dist/ 접두사 제거 (서빙 경로에서는 dist가 자동 추가됨)
             $servePath = preg_replace('#^dist/#', '', $cssPath);
-            $urls[] = AssetUrl::templateAsset($templateIdentifier, $servePath);
+
+            // 정적 게시본(bake) 경로 금지 — 이 URL 은 SeoCacheManager(`seo.page.*`,
+            // 키에 cache_version 미포함)에 캐시된 HTML 에 박제되는데, 정적 디렉토리는
+            // GC 가 현재+직전 1개만 보존해 캐시 수명 안에 404 가 될 수 있다. SEO HTML 은
+            // asset-url-recovery 파샬도 없어 자가 복구가 불가하므로 무버전 API URL 고정.
+            $urls[] = AssetUrl::templateAsset($templateIdentifier, $servePath, allowStatic: false);
         }
 
         return $urls;
@@ -953,6 +1021,11 @@ class SeoRenderer implements SeoRendererInterface
      *
      * 프론트엔드 TemplateApp이 레이아웃 레벨 initLocal/initGlobal을 상태에 적용하는 것과
      * 동일하게, 각 값의 {{}} 표현식을 해석해 반환합니다.
+     *
+     * **데이터소스 레벨 `initLocal` 옵션은 의도적으로 처리하지 않는다** (2026-08-25 확정) —
+     * 그 옵션을 쓰는 화면(장바구니·주문서·프로필 수정·게시판 작성 폼 등)은 인증·인터랙션
+     * 화면이라 봇 렌더 가치가 없다. 봇 노출이 필요한 상태 시드는 레이아웃 최상위
+     * `initLocal`/`state` 를 사용한다 (docs/backend/seo-system.md 지원 노드 키 표 참조).
      *
      * @param  mixed  $block  초기 상태 블록 (키 → 값)
      * @param  array  $context  현재 컨텍스트 (route, query 등 포함)

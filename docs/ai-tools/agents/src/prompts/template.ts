@@ -173,8 +173,8 @@ global.window = {
 - docs/frontend/template-development.md
 - docs/extension/template-basics.md
 - docs/extension/template-commands.md
-- docs/frontend/templates/sirsoft-admin_basic/components.md
-- docs/frontend/templates/sirsoft-basic/components.md
+- templates/_bundled/sirsoft-admin_basic/docs/components.md
+- templates/_bundled/sirsoft-basic/docs/components.md
 
 ## 테스트 실행
 \`\`\`powershell

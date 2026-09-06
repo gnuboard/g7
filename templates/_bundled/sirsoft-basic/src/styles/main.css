@@ -17,6 +17,15 @@
 @source "./safelist.txt";
 
 /**
+ * 기본 sans-serif 폰트
+ * 동봉본은 Variable 1종이라 패밀리명이 `Pretendard Variable` 이다. 구 static 배포본을
+ * 따로 설치한 환경을 위해 `Pretendard` 도 뒤에 남겨 둔다.
+ */
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/**
  * 커스텀 테마 색상 정의
  * Nexibase 스타일 기반
  */
@@ -71,9 +80,10 @@
   }
 
   /* 기본 body 스타일 */
+  /* font-family 를 여기서 다시 선언하지 않는다 — 선언하면 `--font-sans`(동봉 Pretendard)를
+     덮어써 글꼴이 적용되지 않는다. 시스템 폰트는 `--font-sans` 스택 뒤쪽에 그대로 있다. */
   body {
     @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-white;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 
   /* 링크 기본 스타일 */

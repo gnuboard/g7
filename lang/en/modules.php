@@ -58,6 +58,7 @@ return [
             'permissions_deleted' => ':count permissions deleted',
             'menus_deleted' => ':count menus deleted',
             'layouts_deleted' => ':count layouts deleted',
+            'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'confirm_prompt' => 'Are you sure you want to uninstall module ":module"?',
             'confirm_details' => [
                 'roles' => '- :count roles will be deleted.',

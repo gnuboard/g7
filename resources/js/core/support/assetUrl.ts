@@ -179,6 +179,38 @@ export function templateAsset(identifier: string, path: string, version?: number
 }
 
 /**
+ * 템플릿 자산 **디렉토리** URL 을 생성합니다.
+ *
+ * AMD 로더나 웹 워커처럼 "디렉토리 접두에 파일명을 이어 붙이는" 소비자를 위한 것이다
+ * (예: Monaco 의 `paths.vs`). 그런 소비자에게는 확장자 없는 모드의 `?file=` 쿼리 형태를
+ * 줄 수 없다 — 뒤에 `/editor/editor.main.js` 를 이어 붙이면 쿼리 값 안에 경로가 들어간
+ * 엉뚱한 URL 이 된다.
+ *
+ * 그래서 우선순위가 다르다:
+ *  1. 정적 게시본이 있으면 그 경로 — 웹서버가 직접 서빙하는 **실제 디렉토리**라
+ *     자산 URL 모드와 무관하게 하위 파일이 그대로 해석된다.
+ *  2. 없으면 확장자 형태의 API 경로. 확장자를 가로채는 서버에서는 이 경로가 404 이므로
+ *     **소비자가 폴백을 갖춰야 한다** (Monaco 는 textarea 폴백을 갖는다).
+ *
+ * @param identifier 템플릿 식별자
+ * @param path `dist/` 이하 디렉토리 경로 (예: `vendor/monaco-editor/0.54.0/vs`)
+ * @returns 디렉토리 URL (뒤에 `/` 는 붙이지 않는다)
+ * @since engine-v1.62.0
+ */
+export function templateAssetDir(identifier: string, path: string): string {
+    const normalizedPath = path.replace(/^\/+/, '').replace(/\/+$/, '');
+    const id = encodeURIComponent(identifier);
+
+    const staticUrl = extStaticUrl(`templates/${identifier}/assets/${normalizedPath}`);
+
+    if (staticUrl !== null) {
+        return staticUrl;
+    }
+
+    return `/api/templates/assets/${id}/${normalizedPath}`;
+}
+
+/**
  * 모듈 자산 URL 을 생성합니다.
  *
  * 모듈은 모듈 루트 기준이라 `path` 에 `dist/` 를 직접 포함한다 (템플릿과 비대칭).
@@ -319,6 +351,116 @@ export function layoutUrl(
  */
 export function layoutPreviewUrl(token: string): string {
     return suffixed(`/api/layouts/preview/${encodeURIComponent(token)}`, 'json');
+}
+
+/**
+ * 정적 게시(bake) 베이스 경로를 반환합니다 (#122).
+ *
+ * blade 가 게이트(프로덕션 + kill-switch + 게시 완료) 통과 시에만
+ * `window.G7Config.staticBase` (`/build/ext/{v}`) 를 주입한다. 부재 시 null —
+ * 소비자는 종전 API URL 로 직행한다.
+ *
+ * @returns 정적 베이스 경로 또는 null
+ * @since engine-v1.61.0
+ */
+export function extStaticBase(): string | null {
+    const base = (globalThis as any)?.G7Config?.staticBase;
+
+    return typeof base === 'string' && base !== '' ? base.replace(/\/+$/, '') : null;
+}
+
+/**
+ * 정적 게시 베이스에 담긴 캐시 버전을 반환합니다.
+ *
+ * @returns 버전 숫자 또는 null (베이스 부재/형식 불일치)
+ * @since engine-v1.61.0
+ */
+export function extStaticVersion(): number | null {
+    const base = extStaticBase();
+    if (!base) return null;
+
+    const match = base.match(/\/(\d+)$/);
+
+    return match ? Number(match[1]) : null;
+}
+
+/**
+ * 정적 게시본 내 파일의 URL 을 생성합니다 (#122).
+ *
+ * `forVersion` 을 주면 그 버전 디렉토리를 조합한다 — 핸드셰이크 재로드처럼
+ * 페이지 렌더 시점과 다른 버전을 요구하는 경우다. 그 버전이 아직 미게시면
+ * 404 가 나고, 호출부의 `fetchStaticFirst` 가 legacy API 로 폴백한다.
+ *
+ * 서버측 `App\Support\AssetUrl`(정적 게시 트리 규약)과 경로 규칙 1:1 —
+ * 실파일 확장자를 그대로 쓰므로 dualSuffix 접미사 규칙은 적용하지 않는다.
+ *
+ * @param path 게시 트리 상대 경로 (예: `templates/{id}/routes.json`)
+ * @param forVersion 명시 버전 (생략 시 페이지 렌더 버전)
+ * @returns 정적 URL 또는 null (staticBase 미주입)
+ * @since engine-v1.61.0
+ */
+export function extStaticUrl(path: string, forVersion?: number): string | null {
+    const base = extStaticBase();
+    if (!base) return null;
+
+    const normalizedPath = path.replace(/^\/+/, '');
+
+    if (forVersion !== undefined && forVersion > 0 && forVersion !== extStaticVersion()) {
+        return `${base.replace(/\/\d+$/, '')}/${forVersion}/${normalizedPath}`;
+    }
+
+    return `${base}/${normalizedPath}`;
+}
+
+/**
+ * 실패한 정적 게시 URL 을 종전 API URL 로 역변환합니다 (#122 F15).
+ *
+ * blade 인라인 복구기(`partials/asset-url-recovery.blade.php` 의 `staticToLegacy`)와
+ * **동일 규칙**이어야 한다 — 드리프트는 `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.
+ * 변환 대상이 아니면(정적 게시 경로가 아니면) null. `/build/core/**` 등 다른 정적
+ * 파일은 대상이 아니다.
+ *
+ * @param url 실패한 URL
+ * @returns 종전 API URL 또는 null
+ * @since engine-v1.61.0
+ */
+export function staticToLegacy(url: string): string | null {
+    if (!url) return null;
+
+    const origin = (globalThis as any)?.location?.origin;
+    const relative = origin && url.startsWith(origin) ? url.slice(origin.length) : url;
+
+    const match = relative.match(/^\/build\/ext\/(\d+)\/(.+)$/);
+    if (!match) return null;
+
+    const version = match[1];
+    const rest = match[2].split('?')[0];
+
+    // 세 확장 타입이 같은 형태로 게시된다 — 템플릿은 `dist/**`, 모듈·플러그인은
+    // 운영자의 `custom/**` 이 각각 `{type}/{id}/assets/**` 로 실린다. 한 타입만 역변환하면
+    // 나머지 타입의 게시본이 GC 로 사라졌을 때 복구 경로가 없어, 화면은 정상인데 그 확장의
+    // 자산만 조용히 빠진다.
+    const extensionAssetMatch = rest.match(/^(templates|modules|plugins)\/([^/]+)\/assets\/(.+)$/);
+    if (extensionAssetMatch) {
+        const [, type, identifier, assetPath] = extensionAssetMatch;
+
+        return `/api/${type}/assets/${identifier}/${assetPath}?v=${version}`;
+    }
+
+    const bundleMatch = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);
+    if (bundleMatch) {
+        return `/api/${bundleMatch[1]}/bundle.${bundleMatch[2]}?v=${version}`;
+    }
+
+    const templateFetchMatch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([a-zA-Z-]+)\.json)$/);
+    if (templateFetchMatch) {
+        const [, identifier, kind] = templateFetchMatch;
+        const suffixless = kind.replace(/\.json$/, '');
+
+        return `/api/templates/${identifier}/${suffixless}.json?v=${version}`;
+    }
+
+    return null;
 }
 
 /**

@@ -7,6 +7,7 @@ use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\TemplateComposer;
+use App\Support\AssetCssUrlRewriter;
 use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Log;
 
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Log;
  * 경로는 절대경로 게터(`getBuiltAssetAbsolutePaths()`)를 재사용한다 —
  * `ModuleService::getAssetFilePath()` 의 `base_path("modules/{id}/...")`
  * 하드코딩을 복제하지 않아야 `_bundled` 확장에서도 정확히 읽는다(제약 4).
+ * 소실 판정만 선언 축 게터(`getDeclaredAssetAbsolutePaths()`)를 쓴다 — 그 게터는
+ * `file_exists()` 게이트를 타지 않아 "선언은 있는데 파일이 없다" 를 셀 수 있다.
  *
  * @see TemplateComposer
  */
@@ -38,6 +41,13 @@ class ExtensionBundleService
      * 번들 캐시 파일이 저장되는 스토리지 디스크(= storage/app/ext-bundles).
      */
     private const BUNDLE_DISK = 'ext-bundles';
+
+    /**
+     * 원자적 쓰기 임시 파일(`*.tmp.{pid}`)을 잔존물로 보는 나이 (초).
+     *
+     * pid 는 재사용되므로 "그 pid 가 살아 있는가" 로는 진행 중 여부를 판정할 수 없다.
+     */
+    private const TEMP_BUNDLE_STALE_SECONDS = 600;
 
     /**
      * 서비스 주입
@@ -57,9 +67,12 @@ class ExtensionBundleService
      * 필터/정렬을 쓰도록 하는 SSoT. 순서 제어는 오직 manifest
      * `loading.priority` 숫자 오름차순뿐이며 특정 확장 이름 하드코딩은 없다(제약 1).
      *
+     * `cssRelPath` 는 확장 루트 기준 상대 경로다 — 병합 시 CSS 안의 상대 참조를 그 CSS 가
+     * 놓인 위치 기준으로 풀어야 하는데, 절대 경로만으로는 확장 루트를 되짚을 수 없다.
+     *
      * @param  string  $type  'module' | 'plugin'
-     * @return array<string, array{jsAbsPath: ?string, cssAbsPath: ?string, priority: int}>
-     *                                                                                      identifier => 절대경로/우선순위 (priority 오름차순 정렬)
+     * @return array<string, array{jsAbsPath: ?string, cssAbsPath: ?string, cssRelPath: ?string, priority: int}>
+     *                                                                                                           identifier => 절대경로/상대경로/우선순위 (priority 오름차순 정렬)
      */
     public function getOrderedGlobalAssetPaths(string $type): array
     {
@@ -91,9 +104,14 @@ class ExtensionBundleService
                 continue;
             }
 
+            // CSS 안의 상대 참조를 풀려면 그 CSS 가 확장 안에서 **어디에 놓였는지**가 필요하다.
+            // 절대 경로만으로는 확장 루트를 되짚을 수 없으므로 선언된 상대 경로를 함께 싣는다.
+            $cssRelPath = $extension->getBuiltAssetPaths()['css'] ?? null;
+
             $ordered[$extension->getIdentifier()] = [
                 'jsAbsPath' => $jsAbsPath,
                 'cssAbsPath' => $cssAbsPath,
+                'cssRelPath' => $cssRelPath,
                 'priority' => (int) ($loadingConfig['priority'] ?? 100),
             ];
         }
@@ -157,9 +175,12 @@ class ExtensionBundleService
     /**
      * 확장 타입의 CSS 번들 문자열을 생성합니다.
      *
-     * priority 순으로 각 CSS 파일을 읽어 `\n` 구분자로 이어붙인다. 상대경로
-     * `url(...)` 참조가 있는 CSS 는 병합 시 경로가 깨지므로 번들에서 제외하고
-     * 경고 로그를 남긴다(안전장치 — 현재 번들 CSS 는 url() 0건).
+     * priority 순으로 각 CSS 파일을 읽어 `\n` 구분자로 이어붙인다. CSS 안의 상대
+     * `url(...)`·`@import` 참조는 그 확장의 절대 자산 URL 로 치환한다 — 병합본의 주소는
+     * 어느 확장의 dist 디렉토리도 아니라 상대 해석이 반드시 어긋나기 때문이다.
+     *
+     * 치환은 개별 자산 서빙(ServesRewritableCssAssets)과 같은 규칙(AssetCssUrlRewriter)을
+     * 쓴다. 두 경로가 서로 다른 코드로 갈라지면 한쪽만 고쳐진 채 남는다.
      *
      * @param  string  $type  'module' | 'plugin'
      * @return string 병합된 CSS (활성 global 에셋이 없으면 빈 문자열)
@@ -168,6 +189,8 @@ class ExtensionBundleService
     {
         $ordered = $this->getOrderedGlobalAssetPaths($type);
         $isProduction = app()->environment('production');
+        $typeSegment = $type === 'plugin' ? 'plugins' : 'modules';
+        $version = $this->getCurrentVersion();
         $segments = [];
 
         foreach ($ordered as $identifier => $paths) {
@@ -188,16 +211,24 @@ class ExtensionBundleService
                     continue;
                 }
 
-                // 상대경로 url() 참조가 있으면 병합 시 폰트/이미지 경로가 깨진다.
-                // 절대/data URI 는 안전하므로 상대경로만 검출해 해당 CSS 제외.
-                if ($this->hasRelativeUrl($content)) {
-                    Log::warning('확장 CSS 에 상대경로 url() 존재 — 번들에서 제외(개별 폴백 유지)', [
-                        'type' => $type,
-                        'identifier' => $identifier,
-                    ]);
-
-                    continue;
-                }
+                // 상대 참조는 **치환**한다. 병합본의 주소(`/api/{type}/bundle.css` 또는 정적
+                // 게시본)는 어느 확장의 dist 디렉토리도 아니므로 상대 해석이 반드시 어긋나는데,
+                // 그 실패는 404 하나로만 나타나 서버 로그에 흔적이 없다.
+                //
+                // 종전에는 그런 CSS 를 가진 확장을 번들에서 통째로 제외했다. 그러나 번들 URL 이
+                // 내려오면 프론트는 개별 로딩을 아예 타지 않으므로(TemplateApp.loadExtensionAssets)
+                // 제외 = 그 확장의 스타일이 **하나도 적용되지 않음** 이었다. 주석이 말하던
+                // "개별 폴백" 은 bundleUrls 부재(구버전 blade) 경로에만 있다.
+                $content = AssetCssUrlRewriter::rewrite(
+                    $content,
+                    (string) ($paths['cssRelPath'] ?? ''),
+                    fn (string $path): string => AssetUrl::extensionApiAsset(
+                        $typeSegment,
+                        $identifier,
+                        $path,
+                        $version
+                    )
+                );
 
                 $segments[] = $this->processCssSourceMap($content, $isProduction);
             } catch (\Throwable $e) {
@@ -236,20 +267,158 @@ class ExtensionBundleService
             return '';
         }
 
-        $storage = $this->bundleStorage();
         $relativeName = $this->bundleFileName($type, $kind, $version);
 
-        // 비프로덕션은 캐시하지 않고 임시 파일로 매번 build → rebuild 즉시 반영
-        if (! app()->environment('production')) {
-            return $this->writeAtomically($storage, $relativeName, $content, cache: false);
-        }
+        // 디스크 캐시는 **최적화**다 — 쓰기 실패가 공개 엔드포인트의 500 이 되면 안 된다.
+        // `ext-bundles` 디스크는 `throw => true` 라 권한 문제(uid 독점 0700 등)에서
+        // `UnableToWriteFile` 이 그대로 올라오고, 그러면 모든 확장의 프론트엔드 JS/CSS 가
+        // 통째로 나가지 못한다. 병합 결과는 이미 메모리에 있으므로 그것을 그대로 응답하면
+        // 화면은 정상이다 (커밋 63a30ab29 의 AbstractCacheDriver fail-soft 와 같은 원칙).
+        try {
+            $storage = $this->bundleStorage();
 
-        // 프로덕션: 동일 version 캐시가 있으면 그대로 사용
-        if ($storage->exists('', $relativeName)) {
-            return $storage->getBasePath('').'/'.$relativeName;
-        }
+            // 비프로덕션은 캐시하지 않고 임시 파일로 매번 build → rebuild 즉시 반영
+            if (! app()->environment('production')) {
+                return $this->writeAtomically($storage, $relativeName, $content, cache: false);
+            }
 
-        return $this->writeAtomically($storage, $relativeName, $content, cache: true);
+            // 프로덕션: 동일 version 캐시가 있으면 그대로 사용
+            if ($storage->exists('', $relativeName)) {
+                return $storage->getBasePath('').'/'.$relativeName;
+            }
+
+            return $this->writeAtomically($storage, $relativeName, $content, cache: true);
+        } catch (\Throwable $e) {
+            Log::warning('확장 번들 디스크 캐시 실패 — 메모리 병합 결과로 서빙합니다', [
+                'type' => $type,
+                'kind' => $kind,
+                'version' => $version,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * 번들을 서빙할 때 쓸 병합 결과를 반환합니다 (디스크 캐시 실패 시 메모리 폴백용).
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @return string 병합 결과 (없으면 빈 문자열)
+     */
+    public function buildBundleContent(string $type, string $kind): string
+    {
+        return $kind === 'css'
+            ? $this->buildCssBundle($type)
+            : $this->buildJsBundle($type);
+    }
+
+    /**
+     * 해당 타입에서 프론트엔드 에셋을 **선언한** 활성 확장 수를 반환합니다.
+     *
+     * 이 값은 **선언 축**이다 — 503 의 판정은 소실 축(`findMissingDeclaredAssets()`)이
+     * 한다. 선언 축만으로 "선언 > 0 && 병합 결과 0 = 장애" 로 등치하면, 산출물이 존재하되
+     * 비어 있는 정당한 상태(스타일이 비어 있는 확장)까지 배포 장애로 잡혀 그 확장만
+     * 설치된 기본 구성이 통째로 503 이 된다.
+     *
+     * 선언 축은 로그 컨텍스트(운영자가 보는 "선언한 확장이 몇 개인가")와 화면 진단이
+     * 근거로 삼는다.
+     *
+     * 판정은 **kind 별**이다 — js 만 선언한 확장이 있는 상태에서 css 번들이 비는 것은
+     * 정상이므로, 그 경우까지 장애로 보면 정상 구성이 503 이 된다.
+     *
+     * 근거는 manifest 의 `assets.{kind}.output` **선언**이며 산출물 파일의 존재를 보지
+     * 않는다. `getOrderedGlobalAssetPaths()` / `hasAssets()` / `getBuiltAssetPaths()` 는
+     * 전부 `file_exists()` 게이트를 타므로, 그 경로로 세면 "dist 가 잠깐 빔" 이 곧
+     * "선언 0" 이 되어 **막으려던 바로 그 상태가 정상(빈 200)으로 판정된다.** 선언과
+     * 산출은 다른 축이고, 이 메서드가 재는 것은 선언 축이다.
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @return int 해당 kind 의 에셋을 선언한 활성 확장 수
+     */
+    public function countAssetDeclaringExtensions(string $type, string $kind): int
+    {
+        try {
+            $extensions = $type === 'plugin'
+                ? $this->pluginManager->getActivePlugins()
+                : $this->moduleManager->getActiveModules();
+
+            $declared = 0;
+
+            foreach ($extensions as $extension) {
+                // global 전략만 번들 대상 — 병합 대상 모집단과 동일한 필터를 쓴다
+                if (($extension->getAssetLoadingConfig()['strategy'] ?? 'global') !== 'global') {
+                    continue;
+                }
+
+                if (! empty($extension->getAssets()[$kind]['output'] ?? null)) {
+                    $declared++;
+                }
+            }
+
+            return $declared;
+        } catch (\Throwable $e) {
+            Log::warning('확장 에셋 선언 수 집계 실패', [
+                'type' => $type,
+                'kind' => $kind,
+                'error' => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
+    }
+
+    /**
+     * 선언된 산출물 중 **소실·판독 불가**한 것의 절대 경로 목록을 반환합니다.
+     *
+     * 503 의 근거는 선언이 아니라 이 소실 축이다. 선언만으로 판정하면 "선언됨 + 산출물이 존재하지만
+     * 0바이트"(스타일이 비어 있는 확장의 정당한 상태) 와 "선언됨 + 산출물 소실"(배포 중 dist 가 잠깐 빔)
+     * 이 구분되지 않아 정상 구성이 503 이 된다 — 번들 확장만 설치한 기본 구성 전부가 그랬다.
+     *
+     * 모집단은 countAssetDeclaringExtensions() 와 같다. 경로는 확장의 선언 축 게터로만 얻는다 —
+     * getBuiltAssetAbsolutePaths() 는 file_exists() 게이트라 부재를 셀 수 없고, base_path("modules"…)
+     * 직접 조립은 _bundled 확장에서 어긋난다.
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @return list<string> 소실·판독 불가 산출물의 절대 경로 (없으면 빈 배열)
+     */
+    public function findMissingDeclaredAssets(string $type, string $kind): array
+    {
+        try {
+            $extensions = $type === 'plugin'
+                ? $this->pluginManager->getActivePlugins()
+                : $this->moduleManager->getActiveModules();
+
+            $missing = [];
+
+            foreach ($extensions as $extension) {
+                // global 전략만 번들 대상 — 병합 대상 모집단과 동일한 필터를 쓴다
+                if (($extension->getAssetLoadingConfig()['strategy'] ?? 'global') !== 'global') {
+                    continue;
+                }
+
+                $path = $extension->getDeclaredAssetAbsolutePaths()[$kind] ?? null;
+
+                if ($path !== null && (! is_file($path) || ! is_readable($path))) {
+                    $missing[] = $path;
+                }
+            }
+
+            return $missing;
+        } catch (\Throwable $e) {
+            // 판정 자체가 실패하면 장애로 단정하지 않는다(선언 축 카운트와 같은 fail-open). 흔적은 error 로 —
+            // 출하 기본 로그 수준이 error 라 warning 은 기록되지 않는다.
+            Log::error('확장 에셋 소실 판정 실패', [
+                'type' => $type,
+                'kind' => $kind,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**
@@ -271,6 +440,17 @@ class ExtensionBundleService
                 continue;
             }
 
+            // 원자적 쓰기의 임시 파일(`{type}.{v}.{kind}.tmp.{pid}`)은 번들 파일 패턴에
+            // 맞지 않아 GC 대상에서 통째로 빠져 있었다 — rename 이 실패한 만큼 영구
+            // 잔존한다(실측 560개). 나이 가드를 붙여 진행 중인 쓰기는 건드리지 않는다.
+            if ($this->isStaleTempBundleFile($name, $storage)) {
+                if ($storage->delete('', $name)) {
+                    $deleted++;
+                }
+
+                continue;
+            }
+
             if ($this->isBundleFile($name) && $storage->delete('', $name)) {
                 $deleted++;
             }
@@ -280,7 +460,34 @@ class ExtensionBundleService
     }
 
     /**
+     * 파일명이 **오래된** 원자적 쓰기 임시 파일인지 판정합니다.
+     *
+     * 진행 중인 쓰기를 파괴하지 않도록 나이 가드를 둔다 — pid 는 재사용되므로 "그 pid 가
+     * 살아 있는가" 로는 판정할 수 없다.
+     *
+     * @param  string  $name  파일명
+     * @param  CoreStorageDriver  $storage  번들 디스크 스토리지
+     * @return bool 삭제 대상 여부
+     */
+    private function isStaleTempBundleFile(string $name, CoreStorageDriver $storage): bool
+    {
+        if (! preg_match('/^(module|plugin)\.\d+\.(js|css)\.tmp\.\d+$/', $name)) {
+            return false;
+        }
+
+        $mtime = @filemtime($storage->getBasePath('').'/'.$name);
+
+        // 나이를 읽지 못하면 남긴다 — 진행 중인 쓰기를 지우는 쪽이 더 나쁘다.
+        return $mtime !== false && (time() - $mtime) > self::TEMP_BUNDLE_STALE_SECONDS;
+    }
+
+    /**
      * 번들 캐시 파일을 삭제합니다(cache-clear 커맨드용).
+     *
+     * **현재 버전은 보존한다** — `cleanupStaleBundles()` 와 같은 정책이다. 현재 버전까지
+     * 지우면 같은 순간 서빙 중인 웹 요청이 "존재함" 판정 직후 `filemtime()` 에서 500 을
+     * 낸다(bump 직후 TOCTOU). 캐시 파일은 없으면 다음 요청이 다시 만들므로, 지우는 것의
+     * 이득은 없고 그 창의 500 만 남는다.
      *
      * @param  string|null  $type  'module' | 'plugin' 지정 시 해당 타입만, null 이면 전체
      * @return int 삭제된 파일 수
@@ -288,12 +495,18 @@ class ExtensionBundleService
     public function clearBundles(?string $type = null): int
     {
         $storage = $this->bundleStorage();
+        $currentVersion = $this->getCurrentVersion();
         $deleted = 0;
 
         foreach ($storage->files('', '') as $file) {
             $name = basename($file);
 
             if ($name === '.gitignore' || ! $this->isBundleFile($name)) {
+                continue;
+            }
+
+            // 현재 버전 보존 (cleanupStaleBundles 와 동형 — 정책이 갈라지면 한쪽이 창을 연다)
+            if ($this->matchesVersion($name, $currentVersion)) {
                 continue;
             }
 
@@ -444,42 +657,6 @@ class ExtensionBundleService
 
         // 구분자로 `~` 사용 — 패턴에 `/`, `#` 가 포함됨
         return preg_replace('~/\*#\s*sourceMappingURL=\S+?\s*\*/~', '', $content) ?? $content;
-    }
-
-    /**
-     * CSS 내용에 상대경로 url() 참조가 있는지 확인합니다.
-     *
-     * 절대 URL(http/https), 루트 절대경로(/), data URI 는 병합에 안전하므로
-     * 그 외의 url() 참조만 상대경로로 간주한다.
-     *
-     * @param  string  $css  CSS 내용
-     * @return bool 상대경로 url() 이 하나라도 있으면 true
-     */
-    private function hasRelativeUrl(string $css): bool
-    {
-        if (! preg_match_all('/url\(\s*[\'"]?([^\'")]+)[\'"]?\s*\)/i', $css, $matches)) {
-            return false;
-        }
-
-        foreach ($matches[1] as $url) {
-            $url = trim($url);
-
-            if ($url === '') {
-                continue;
-            }
-
-            $isAbsolute = str_starts_with($url, 'http://')
-                || str_starts_with($url, 'https://')
-                || str_starts_with($url, '//')
-                || str_starts_with($url, '/')
-                || str_starts_with($url, 'data:');
-
-            if (! $isAbsolute) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

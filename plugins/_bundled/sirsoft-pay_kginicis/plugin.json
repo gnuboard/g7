@@ -5,7 +5,7 @@
         "ko": "KG 이니시스",
         "en": "KG Inicis"
     },
-    "version": "1.1.2",
+    "version": "1.1.3",
     "license": "MIT",
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_kginicis",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_kginicis/blob/main/CHANGELOG.md",
@@ -13,12 +13,20 @@
         "ko": "KG 이니시스 결제 게이트웨이 (표준결제창 연동, 일본결제 지원)",
         "en": "KG Inicis payment gateway (standard payment window, Japan payment support)"
     },
-    "g7_version": ">=7.0.8",
+    "g7_version": ">=7.0.10",
     "dependencies": {
         "modules": {
             "sirsoft-ecommerce": ">=1.1.0"
         },
         "plugins": {}
+    },
+    "trusted_script_hosts": [
+        "stgstdpay.inicis.com",
+        "stdpay.inicis.com"
+    ],
+    "trusted_script_hosts_reason": {
+        "stgstdpay.inicis.com": "KG 이니시스 테스트 표준결제창 SDK 다. 결제창 스크립트가 KG 이니시스 서버와 통신하므로 자체 호스팅해도 결제가 성립하지 않는다.",
+        "stdpay.inicis.com": "KG 이니시스 운영 표준결제창 SDK 다. 결제창 스크립트가 KG 이니시스 서버와 통신하므로 자체 호스팅해도 결제가 성립하지 않는다."
     },
     "assets": {
         "js": {

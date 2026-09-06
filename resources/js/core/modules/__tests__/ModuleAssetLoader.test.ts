@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ModuleAssetLoader, type ModuleAsset } from '../ModuleAssetLoader';
+import { ModuleAssetLoader, parseBundleUrlsFromConfig, type ModuleAsset } from '../ModuleAssetLoader';
+import { clearAllAssetFailures, getAssetFailures } from '../../assets/AssetFailureNotice';
 
 describe('ModuleAssetLoader', () => {
     let loader: ModuleAssetLoader;
@@ -18,8 +19,151 @@ describe('ModuleAssetLoader', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
-        document.head.querySelectorAll('[id^="module-js-"],[id^="module-css-"],[id^="ext-bundle-js-"],[id^="ext-bundle-css-"]')
+        // head 뿐 아니라 문서 전체를 훑는다 — appendChild 를 가로채는 테스트는 노드를
+        // body 에 붙이므로, head 만 치우면 다음 테스트의 "이미 로드됨" 가드에 걸린다.
+        document.querySelectorAll('[id^="module-js-"],[id^="module-css-"],[id^="ext-bundle-js-"],[id^="ext-bundle-css-"]')
             .forEach(el => el.remove());
+    });
+
+    describe('loadBundle 정적 게시 폴백 (#122)', () => {
+        /**
+         * @effects bundle_script_static_miss_falls_back_to_api
+         */
+        it('정적 번들 JS 실패 시 레거시 API URL 로 전환한다', async () => {
+            const requested: string[] = [];
+
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    requested.push(node.getAttribute('src'));
+
+                    if (requested.length === 1) {
+                        // 정적 fast path 미스 (게시 디렉토리 GC / 파일 소실)
+                        queueMicrotask(() => node.onerror?.(new Event('error')));
+                    } else {
+                        queueMicrotask(() => node.onload?.());
+                    }
+                }
+                return node;
+            }) as any);
+
+            await loader.loadBundle('module', '/build/ext/1787637589/bundles/modules.js', null);
+
+            expect(requested).toEqual([
+                '/build/ext/1787637589/bundles/modules.js',
+                '/api/modules/bundle.js?v=1787637589',
+            ]);
+            appendSpy.mockRestore();
+        });
+
+        it('정적 번들 CSS 실패 시 레거시 API URL 로 전환한다', async () => {
+            const hrefs: string[] = [];
+
+            // 정적 1회차는 실패, 그 다음 시도는 성공시킨다.
+            // 단언 대상은 element 동일성이 아니라 **요청된 URL 의 순서**다 — 재시도 로더가
+            // 시도마다 새 <link> 를 만드는 것은 구현이고, 계약은 "정적 미스 → 레거시" 다.
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'LINK') {
+                    hrefs.push(node.getAttribute('href'));
+                    document.body.appendChild(node);
+
+                    const isFirstAttempt = hrefs.length === 1;
+                    queueMicrotask(() => {
+                        if (isFirstAttempt) {
+                            node.onerror?.(new Event('error'));
+                        } else {
+                            node.onload?.(new Event('load'));
+                        }
+                    });
+                }
+                return node;
+            }) as any);
+
+            try {
+                await loader.loadBundle('module', null, '/build/ext/1787637589/bundles/modules.css');
+
+                expect(hrefs[0]).toBe('/build/ext/1787637589/bundles/modules.css');
+                expect(hrefs[1]).toBe('/api/modules/bundle.css?v=1787637589');
+            } finally {
+                appendSpy.mockRestore();
+            }
+        });
+
+        it('정적 경로가 아닌 번들 URL 은 종전 재시도 계약 그대로다', async () => {
+            const requested: string[] = [];
+
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    requested.push(node.getAttribute('src'));
+                    queueMicrotask(() => node.onload?.());
+                }
+                return node;
+            }) as any);
+
+            await loader.loadBundle('plugin', '/api/plugins/bundle.js?v=7', null);
+
+            expect(requested).toEqual(['/api/plugins/bundle.js?v=7']);
+            appendSpy.mockRestore();
+        });
+    });
+
+    /**
+     * 사용자 추가 에셋(`custom/`)의 정적 게시 폴백 (#122 R2/W9).
+     *
+     * 스타일(`type: 'style'`) 축은 형제 파일 `ModuleAssetLoader.customAssets.test.ts`
+     * 가 세 확장 타입 전부에 대해 이미 고정하고 있다. 여기 남기는 것은 그 파일이 덮지
+     * 않는 **스크립트 축**뿐이다 — 스타일은 `loadStylesheetWithRetry`, 스크립트는
+     * `loadScriptWithRetry` 로 서로 다른 로더를 타므로 한쪽의 통과가 다른 쪽의 근거가
+     * 되지 않는다.
+     */
+    describe('loadCustomAssets 정적 게시 폴백 — script 축 (#122 R2/W9)', () => {
+        afterEach(() => {
+            delete (window as any).G7Config;
+            document.querySelectorAll('[id^="g7-custom-"]').forEach(el => el.remove());
+        });
+
+        /**
+         * @effects custom_asset_static_miss_falls_back_to_api
+         */
+        it('정적 게시 JS 미스 시 레거시 API URL 로 전환한다', async () => {
+            (window as any).G7Config = {
+                customAssets: [
+                    {
+                        id: 'custom:modules:sirsoft-board:custom.js',
+                        type: 'script',
+                        url: '/build/ext/42/modules/sirsoft-board/assets/custom/custom.js',
+                    },
+                ],
+            };
+
+            const urls: string[] = [];
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    urls.push(node.getAttribute('src'));
+                    document.body.appendChild(node);
+
+                    const failed = urls.length === 1;
+                    queueMicrotask(() => {
+                        if (failed) {
+                            node.onerror?.(new Event('error'));
+                        } else {
+                            node.onload?.(new Event('load'));
+                        }
+                    });
+                }
+                return node;
+            }) as any);
+
+            try {
+                await loader.loadCustomAssets();
+
+                expect(urls).toEqual([
+                    '/build/ext/42/modules/sirsoft-board/assets/custom/custom.js',
+                    '/api/modules/assets/sirsoft-board/custom/custom.js?v=42',
+                ]);
+            } finally {
+                appendSpy.mockRestore();
+            }
+        });
     });
 
     describe('loadActiveExtensionAssets', () => {
@@ -167,6 +311,9 @@ describe('ModuleAssetLoader', () => {
     });
 
     describe('loadBundle (서버측 병합 번들)', () => {
+        /**
+         * @effects loadbundle_single_script_single_link_append
+         */
         it('단일 script + 단일 link 를 1개씩만 append 한다', async () => {
             const scriptAppends: string[] = [];
             const linkAppends: string[] = [];
@@ -207,6 +354,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects loadbundle_dedup_guard_no_double_load
+         */
         it('같은 key 를 중복 로드하지 않는다 (중복 가드)', async () => {
             let scriptCount = 0;
             // 실제 DOM 에 삽입해 element id 가 등록되어야 getElementById 중복 가드가 동작
@@ -227,6 +377,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects loadbundle_null_urls_noop
+         */
         it('jsUrl/cssUrl 모두 null 이면 no-op', async () => {
             const appendSpy = vi.spyOn(document.head, 'appendChild');
             await expect(loader.loadBundle('module', null, null)).resolves.toBeUndefined();
@@ -236,6 +389,9 @@ describe('ModuleAssetLoader', () => {
     });
 
     describe('concat 자가등록 (IIFE 병합 계약)', () => {
+        /**
+         * @effects concat_iife_self_registration_preserved
+         */
         it(';\\n 로 이어붙인 2개 IIFE 가 모두 실행되어 레지스트리에 자가등록된다', () => {
             // 모의 IIFE 2개 — ecommerce IIFE 처럼 세미콜론 없이 끝나도 `\n;\n` 구분자로 ASI 경계 보호
             const registry: Record<string, unknown> = {};
@@ -334,6 +490,142 @@ describe('ModuleAssetLoader', () => {
             await expect(
                 loader.loadBundle('module', null, '/api/modules/bundle.css')
             ).resolves.toBeUndefined();
+        });
+
+        /**
+         * 배너 항목명은 사용자 어휘여야 한다 — 내부 구분 키(module/plugin)를 그대로
+         * 넘기면 "module을(를) 불러오지 못했습니다" 처럼 해석 불가한 문구가 노출된다.
+         *
+         * 테스트 환경에는 G7Core.t 가 없으므로 폴백 문구가 쓰인다.
+         *
+         * @effects bundle_css_failure_banner_uses_user_vocabulary
+         * @since engine-v1.64.7
+         */
+        it('번들 CSS 실패 안내 항목명이 사용자 어휘다 (모듈)', async () => {
+            clearAllAssetFailures();
+            stubAssetLoading(['error', 'error', 'error']);
+
+            await loader.loadBundle('module', null, '/api/modules/bundle.css');
+
+            const failure = getAssetFailures().find(f => f.id === 'ext-css:bundle-module');
+
+            expect(failure).toBeDefined();
+            expect(failure!.label).toBe('모듈 스타일');
+            expect(failure!.label).not.toBe('module');
+        });
+
+        /**
+         * @effects bundle_css_failure_banner_uses_user_vocabulary
+         * @since engine-v1.64.7
+         */
+        it('번들 CSS 실패 안내 항목명이 사용자 어휘다 (플러그인)', async () => {
+            clearAllAssetFailures();
+            stubAssetLoading(['error', 'error', 'error']);
+
+            await loader.loadBundle('plugin', null, '/api/plugins/bundle.css');
+
+            const failure = getAssetFailures().find(f => f.id === 'ext-css:bundle-plugin');
+
+            expect(failure).toBeDefined();
+            expect(failure!.label).toBe('플러그인 스타일');
+            expect(failure!.label).not.toBe('plugin');
+        });
+    });
+
+    /**
+     * bundleUrls 부재(구버전 blade) 시 개별 로딩으로 폴백한다.
+     *
+     * 폴백 판정은 파싱 결과가 null 인지로 이뤄진다(TemplateApp.loadExtensionAssets).
+     * null 이 아닌데 폴백하거나 그 반대면 확장 에셋이 통째로 로드되지 않는데, 오류도
+     * 경고도 남지 않는다.
+     *
+     * @effects missing_bundle_urls_falls_back_to_individual_loading
+     */
+    describe('bundleUrls 부재 폴백 판정', () => {
+        afterEach(() => {
+            delete (window as any).G7Config;
+        });
+
+        it('G7Config 자체가 없으면 null 이다 (개별 로딩 폴백)', () => {
+            delete (window as any).G7Config;
+
+            expect(parseBundleUrlsFromConfig()).toBeNull();
+        });
+
+        it('G7Config 는 있으나 bundleUrls 가 없으면 null 이다 (개별 로딩 폴백)', () => {
+            (window as any).G7Config = { moduleAssets: [] };
+
+            expect(parseBundleUrlsFromConfig()).toBeNull();
+        });
+
+        it('bundleUrls 가 있으면 폴백하지 않는다 (번들 경로)', () => {
+            (window as any).G7Config = {
+                bundleUrls: { moduleJs: '/api/modules/bundle.js', moduleCss: null, pluginJs: null, pluginCss: null },
+            };
+
+            const urls = parseBundleUrlsFromConfig();
+
+            expect(urls).not.toBeNull();
+            expect(urls!.moduleJs).toContain('/api/modules/bundle');
+        });
+    });
+
+    describe('loadCSS in-flight Promise 공유', () => {
+        /**
+         * appendChild 를 가로채 생성된 element 를 모으고 즉시 load 를 발화시킨다.
+         *
+         * @return 생성된 element 목록
+         */
+        function stubStylesheetLoading(): HTMLElement[] {
+            const created: HTMLElement[] = [];
+
+            vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'LINK' || node.tagName === 'SCRIPT') {
+                    created.push(node);
+                    document.body.appendChild(node);
+                    queueMicrotask(() => node.onload?.(new Event('load')));
+                }
+                return node;
+            }) as any);
+
+            return created;
+        }
+
+        it('같은 확장 CSS 동시 2회 → link 1개만 생성된다', async () => {
+            const created = stubStylesheetLoading();
+
+            await Promise.all([
+                (loader as any).loadCSS('vendor-ext', '/api/modules/x.css'),
+                (loader as any).loadCSS('vendor-ext', '/api/modules/x.css'),
+            ]);
+
+            expect(created.filter(el => el.tagName === 'LINK')).toHaveLength(1);
+            expect(document.getElementById('module-css-vendor-ext')).not.toBeNull();
+        });
+
+        it('CSS 로드 실패는 여전히 throw 하지 않는다 (no-throw 계약 유지)', async () => {
+            vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'LINK') {
+                    document.body.appendChild(node);
+                    queueMicrotask(() => node.onerror?.(new Event('error')));
+                }
+                return node;
+            }) as any);
+
+            await expect(
+                (loader as any).loadCSS('vendor-fail', '/api/modules/x.css')
+            ).resolves.toBeUndefined();
+        });
+
+        it('CSS in-flight 키는 JS 키공간과 겹치지 않는다', async () => {
+            stubStylesheetLoading();
+
+            const pending = (loader as any).loadCSS('vendor-ext', '/api/modules/x.css');
+
+            expect((loader as any).loadingPromises.has('module-css-vendor-ext')).toBe(true);
+            expect((loader as any).loadingPromises.has('vendor-ext')).toBe(false);
+
+            await pending;
         });
     });
 });

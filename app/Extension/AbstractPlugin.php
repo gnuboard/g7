@@ -1127,6 +1127,29 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
+     * 매니페스트가 **선언한** 프론트엔드 자산의 절대 경로를 반환합니다 (파일 존재 여부 무관).
+     *
+     * `getBuiltAssetAbsolutePaths()` 는 `file_exists()` 게이트라 소실된 산출물이 목록에서
+     * 사라진다. 배포 중 `dist` 가 잠깐 비는 상태를 "선언은 있는데 파일이 없다" 로 세려면
+     * 선언 축을 그대로 돌려주는 통로가 필요하다 — 이 메서드가 그 축이다.
+     *
+     * @return array<string, string> kind('js'|'css') => 절대 경로 (선언된 kind 만)
+     */
+    public function getDeclaredAssetAbsolutePaths(): array
+    {
+        $assets = $this->getAssets();
+        $result = [];
+
+        foreach (['js', 'css'] as $kind) {
+            if (! empty($assets[$kind]['output'])) {
+                $result[$kind] = $this->getPluginPath().'/'.$assets[$kind]['output'];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * 플러그인이 설정 페이지를 가지고 있는지 확인합니다.
      *
      * 설정 레이아웃 파일이 존재하면 설정 페이지가 있는 것으로 간주합니다.

@@ -8,6 +8,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
@@ -517,7 +518,7 @@ class PostGuestTest extends BoardTestCase
         $this->setGuestPermissions(['posts.read', 'posts.write']);
 
         // 테스트용 파일 생성
-        $file = \Illuminate\Http\UploadedFile::fake()->create('test.pdf', 100);
+        $file = UploadedFile::fake()->create('test.pdf', 100);
 
         // When: 비회원이 파일과 함께 게시글 생성
         $response = $this->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts", [
@@ -541,7 +542,7 @@ class PostGuestTest extends BoardTestCase
         // Given: 비회원 파일 업로드 권한 있음 (기본 설정)
 
         // 테스트용 파일 생성
-        $file = \Illuminate\Http\UploadedFile::fake()->create('test.pdf', 100);
+        $file = UploadedFile::fake()->create('test.pdf', 100);
 
         // When: 비회원이 파일과 함께 게시글 생성
         $response = $this->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts", [
@@ -608,5 +609,46 @@ class PostGuestTest extends BoardTestCase
         $this->assertIsArray($posts);
         $postIds = array_column($posts, 'id');
         $this->assertNotContains($postId, $postIds);
+    }
+
+    /**
+     * 회귀 — 비회원 게시글을 수정해도 저장된 비밀번호가 해시로 유지되어야 한다.
+     *
+     * 결함: 수정 요청의 `password` 는 본인 확인용 자격증명인데, 컨트롤러가 그것을 그대로
+     * 저장 데이터로 넘겨 기존 bcrypt 해시를 **평문으로 덮었다**. 그 결과 ① 비회원 게시글
+     * 비밀번호가 평문으로 DB 에 남고 ② 이후 비밀번호 검증이 "bcrypt 가 아니다" 예외로
+     * 끝나 본인이 자기 글을 수정·삭제할 수 없게 됐다.
+     *
+     * 같은 자리에서 댓글 수정 경로는 이미 password/verification_token 을 저장 데이터에서
+     * 제거하고 있었다 — 게시글 경로만 빠져 있던 비대칭이다.
+     */
+    public function test_guest_post_password_stays_hashed_after_update(): void
+    {
+        $password = 'staysHashed123';
+
+        $createResponse = $this->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts", [
+            'title' => '비밀번호 보존 확인',
+            'content' => '초기 내용입니다. 최소 10자 이상.',
+            'author_name' => '테스트비회원',
+            'password' => $password,
+        ]);
+        $createResponse->assertStatus(201);
+        $postId = $createResponse->json('data.id');
+
+        $this->putJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}", [
+            'title' => '수정 후 비밀번호 보존 확인',
+            'content' => '수정된 내용입니다.',
+            'password' => $password,
+        ])->assertStatus(200);
+
+        $stored = (string) DB::table('board_posts')->where('id', $postId)->value('password');
+
+        $this->assertNotSame($password, $stored, '수정 후 비밀번호가 평문으로 저장되었다');
+        $this->assertSame(
+            'bcrypt',
+            password_get_info($stored)['algoName'] ?? 'unknown',
+            '수정 후 저장값이 해시 형식이 아니다 — 이후 본인 확인이 예외로 끝난다'
+        );
+        $this->assertTrue(Hash::check($password, $stored), '수정 후 원래 비밀번호로 검증되지 않는다');
     }
 }

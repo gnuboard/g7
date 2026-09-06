@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Gdpr\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * 관리자 GDPR 설정 저장 요청 검증
@@ -35,6 +36,26 @@ class UpdateAdminSettingsRequest extends FormRequest
      * - punycode·localhost·단일 라벨 도메인 미지원 (운영자 안내 박스 hint 명시)
      */
     private const DOMAIN_REGEX = '/^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i';
+
+    /**
+     * 필수 저장 항목(저장소 키 / 쿠키 이름) 정규식
+     *
+     * - 이름 문자: 영숫자와 `_ . : @ + -` (코어·확장이 실제로 쓰는 키 형태)
+     * - 와일드카드 `*` 는 **끝에만** 1개 허용 (`g7_filters_*`)
+     * - `*` 단독 표기는 허용하지 않는다 — 접두사가 비면 전체 개방이 되어 게이트가 무력화된다
+     */
+    private const STORAGE_KEY_REGEX = '/^[A-Za-z0-9_.:@+\-]+\*?$/';
+
+    /**
+     * 필수 저장 항목 허용목록의 스코프 화이트리스트
+     *
+     * blocked_domains 는 카테고리 키를 검사하지 않고 남긴 빈틈이 있는데, 여기서는 남기지
+     * 않는다 — 스코프가 오타나면 그 항목은 어떤 판정에도 쓰이지 않은 채 저장되고,
+     * 운영자에게는 "등록했는데 안 되는" 상태로만 보인다.
+     *
+     * @var array<int, string>
+     */
+    private const ALLOWLIST_SCOPES = ['localStorage', 'sessionStorage', 'cookie'];
 
     /**
      * 권한 확인 (permission 미들웨어에서 처리)
@@ -86,6 +107,14 @@ class UpdateAdminSettingsRequest extends FormRequest
             'blocked_domains' => ['nullable', 'array'],
             'blocked_domains.*' => ['array'],
             'blocked_domains.*.*' => ['string', 'max:253', 'regex:'.self::DOMAIN_REGEX],
+
+            // 필수 저장 항목 허용목록 — 스코프(localStorage/sessionStorage/cookie) 별 문자열 배열.
+            // 스코프 키 화이트리스트는 withValidator() 에서 검사한다 (규칙 문법으로는 키를 못 건다).
+            // necessary_storage_locked 는 규칙에 넣지 않는다 → validated() 에서 자동 배제되어
+            // 운영자가 그 키를 보내도 저장되지 않는다 (잠금 항목은 코드가 정한다).
+            'necessary_storage_allowlist' => ['nullable', 'array'],
+            'necessary_storage_allowlist.*' => ['array'],
+            'necessary_storage_allowlist.*.*' => ['string', 'max:128', 'regex:'.self::STORAGE_KEY_REGEX],
         ];
     }
 
@@ -108,6 +137,14 @@ class UpdateAdminSettingsRequest extends FormRequest
             'blocked_domains.marketing.*.regex' => __('sirsoft-gdpr::messages.blocked_domains.invalid_format_marketing'),
             'blocked_domains.marketing.*.max' => __('sirsoft-gdpr::messages.blocked_domains.too_long_marketing'),
             'blocked_domains.*.array' => __('sirsoft-gdpr::messages.blocked_domains.must_be_array'),
+            // 스코프별 메시지 — 운영자가 어느 카드의 어느 항목이 잘못됐는지 즉시 식별 가능.
+            'necessary_storage_allowlist.localStorage.*.regex' => __('sirsoft-gdpr::messages.necessary_storage_allowlist.invalid_format_local_storage'),
+            'necessary_storage_allowlist.localStorage.*.max' => __('sirsoft-gdpr::messages.necessary_storage_allowlist.too_long_local_storage'),
+            'necessary_storage_allowlist.sessionStorage.*.regex' => __('sirsoft-gdpr::messages.necessary_storage_allowlist.invalid_format_session_storage'),
+            'necessary_storage_allowlist.sessionStorage.*.max' => __('sirsoft-gdpr::messages.necessary_storage_allowlist.too_long_session_storage'),
+            'necessary_storage_allowlist.cookie.*.regex' => __('sirsoft-gdpr::messages.necessary_storage_allowlist.invalid_format_cookie'),
+            'necessary_storage_allowlist.cookie.*.max' => __('sirsoft-gdpr::messages.necessary_storage_allowlist.too_long_cookie'),
+            'necessary_storage_allowlist.*.array' => __('sirsoft-gdpr::messages.necessary_storage_allowlist.must_be_array'),
         ];
     }
 
@@ -132,6 +169,7 @@ class UpdateAdminSettingsRequest extends FormRequest
             'banner_position' => __('sirsoft-gdpr::messages.settings.fields.banner_position.label'),
             'cookie_categories' => __('sirsoft-gdpr::messages.settings.section.cookie_categories'),
             'blocked_domains' => __('sirsoft-gdpr::messages.settings.section.auto_blocking'),
+            'necessary_storage_allowlist' => __('sirsoft-gdpr::messages.settings.section.necessary_storage'),
         ];
     }
 
@@ -143,6 +181,8 @@ class UpdateAdminSettingsRequest extends FormRequest
      * 3. cookie_categories 의 키 중 necessary 제외한 모든 키가 blocked_domains 에
      *    존재하도록 빈 배열로 자동 보충 (운영자가 새 카테고리 추가 시 UI iteration
      *    미렌더·검증 실패 방지)
+     * 4. necessary_storage_allowlist 도 같은 방식으로 정규화 (줄바꿈 문자열 분해 · trim ·
+     *    빈 항목 제거 · 세 스코프 빈 배열 보충)
      *
      * @return void
      */
@@ -160,7 +200,59 @@ class UpdateAdminSettingsRequest extends FormRequest
             $merge['blocked_domains'] = $blockedDomains;
         }
 
+        $necessaryAllowlist = $this->normalizeNecessaryAllowlist($this->input('necessary_storage_allowlist'));
+        if ($necessaryAllowlist !== null) {
+            $merge['necessary_storage_allowlist'] = $necessaryAllowlist;
+        }
+
         $this->merge($merge);
+    }
+
+    /**
+     * necessary_storage_allowlist 입력을 정규화합니다.
+     *
+     * 스코프별 값이 string 이면 줄바꿈으로 split → trim → 빈 항목 제거. 이미 array 면 항목만
+     * trim 합니다. 세 스코프 중 없는 것은 빈 배열로 보충해 UI 가 항상 세 카드를 그리도록
+     * 합니다. **키를 아예 보내지 않았으면 null 을 돌려** 기존 저장값을 보존합니다 — 빈 배열로
+     * 보충해 버리면 이 화면을 모르는 클라이언트의 저장 한 번이 허용목록을 통째로 비운다.
+     *
+     * 스코프 키 자체는 여기서 거르지 않습니다 — 오타 스코프를 조용히 버리면 운영자에게는
+     * "저장했는데 사라지는" 상태가 되므로, withValidator() 가 422 로 알립니다.
+     *
+     * @param  mixed  $input  necessary_storage_allowlist 입력값
+     * @return array<string, array<int, string>>|null
+     */
+    private function normalizeNecessaryAllowlist(mixed $input): ?array
+    {
+        if (! is_array($input)) {
+            return null;
+        }
+
+        $normalized = [];
+        foreach ($input as $scope => $value) {
+            if (is_string($value)) {
+                $normalized[$scope] = collect(preg_split('/\R/', $value))
+                    ->map(fn ($line) => is_string($line) ? trim($line) : '')
+                    ->filter(fn ($line) => $line !== '')
+                    ->values()
+                    ->all();
+            } elseif (is_array($value)) {
+                $normalized[$scope] = array_values(array_filter(
+                    array_map(fn ($line) => is_string($line) ? trim($line) : '', $value),
+                    fn ($line) => $line !== '',
+                ));
+            } else {
+                $normalized[$scope] = [];
+            }
+        }
+
+        foreach (self::ALLOWLIST_SCOPES as $scope) {
+            if (! array_key_exists($scope, $normalized)) {
+                $normalized[$scope] = [];
+            }
+        }
+
+        return $normalized;
     }
 
     /**
@@ -217,14 +309,16 @@ class UpdateAdminSettingsRequest extends FormRequest
     }
 
     /**
-     * 검증 후 cookie_categories 내 key 중복 차단.
+     * 검증 후 추가 검사:
+     * 1. cookie_categories 내 key 중복 차단
+     * 2. necessary_storage_allowlist 의 스코프 키가 화이트리스트에 있는지 검사
      *
-     * @param  \Illuminate\Validation\Validator  $validator
+     * @param  Validator  $validator
      * @return void
      */
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function (\Illuminate\Validation\Validator $validator) {
+        $validator->after(function (Validator $validator) {
             $categories = (array) $this->input('cookie_categories', []);
             $keys = array_column($categories, 'key');
             if (count($keys) !== count(array_unique($keys))) {
@@ -234,6 +328,21 @@ class UpdateAdminSettingsRequest extends FormRequest
                 );
             }
 
+            $allowlist = $this->input('necessary_storage_allowlist');
+            if (is_array($allowlist)) {
+                foreach (array_keys($allowlist) as $scope) {
+                    if (in_array($scope, self::ALLOWLIST_SCOPES, true)) {
+                        continue;
+                    }
+
+                    $validator->errors()->add(
+                        'necessary_storage_allowlist.'.$scope,
+                        __('sirsoft-gdpr::messages.necessary_storage_allowlist.invalid_scope', [
+                            'scope' => is_scalar($scope) ? (string) $scope : '',
+                        ])
+                    );
+                }
+            }
         });
     }
 

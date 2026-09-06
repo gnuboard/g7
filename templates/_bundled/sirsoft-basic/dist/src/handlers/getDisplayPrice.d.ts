@@ -1,29 +1,9 @@
-import { HandlerContext } from '../types';
-interface CurrencyPrice {
-    value: number;
-    formatted: string;
-}
-interface Product {
-    selling_price: number;
-    selling_price_formatted: string;
-    list_price?: number;
-    list_price_formatted?: string;
-    multi_currency_selling_price?: Record<string, CurrencyPrice>;
-    multi_currency_list_price?: Record<string, CurrencyPrice>;
-    [key: string]: unknown;
-}
-interface GetDisplayPriceParams {
-    product: Product;
-    priceField: 'selling_price' | 'list_price';
-    currencyCode?: string;
-}
+import { HandlerContext, TemplateActionDefinition } from '../types';
 /**
  * 선호 통화에 맞는 가격을 반환합니다.
  *
- * @param params.product - 상품 객체
- * @param params.priceField - 가격 필드 ('selling_price' | 'list_price')
- * @param params.currencyCode - 통화 코드 (선택, 미지정 시 전역 설정 사용)
- * @param context - 핸들러 컨텍스트
+ * @param action - 액션 정의 (`params.product` / `params.priceField` / `params.currencyCode`)
+ * @param _context - 핸들러 컨텍스트 (미사용 — 표시 통화는 G7Core 전역에서 읽는다)
  * @returns 포맷팅된 가격 문자열
  *
  * @example
@@ -32,5 +12,4 @@ interface GetDisplayPriceParams {
  *   "text": "{{handler('getDisplayPrice', { product: product.data, priceField: 'selling_price' })}}"
  * }
  */
-export declare function getDisplayPriceHandler(params: GetDisplayPriceParams, context: HandlerContext): string;
-export {};
+export declare function getDisplayPriceHandler(action: TemplateActionDefinition, _context?: HandlerContext): string;

@@ -19,6 +19,9 @@ if (! defined('BASE_PATH')) {
     throw new RuntimeException('installer-runtime.php requires BASE_PATH constant.');
 }
 
+// .env 값 직렬화 정책 (개행 주입 차단) — functions.php 와 같은 관문을 공유한다.
+require_once __DIR__.'/env-value.php';
+
 if (! defined('INSTALLER_RUNTIME_PATH')) {
     define('INSTALLER_RUNTIME_PATH', BASE_PATH.'/storage/installer/runtime.php');
 }
@@ -130,11 +133,11 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
         // DB 자격증명 치환 — state.config 결손 안전망
         $write = $runtime['db']['write'] ?? null;
         if (is_array($write)) {
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_HOST', (string) ($write['host'] ?? ''));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PORT', (string) ($write['port'] ?? ''));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_DATABASE', (string) ($write['database'] ?? ''));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_USERNAME', (string) ($write['username'] ?? ''));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PASSWORD', escapeEnvValue((string) ($write['password'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_HOST', serializeEnvValue((string) ($write['host'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PORT', serializeEnvValue((string) ($write['port'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_DATABASE', serializeEnvValue((string) ($write['database'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_USERNAME', serializeEnvValue((string) ($write['username'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PASSWORD', serializeEnvValue((string) ($write['password'] ?? '')));
         }
 
         // Read DB — runtime 에 read 키가 있을 때(use_read_db=true)만 명시 기록한다.
@@ -143,11 +146,11 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
         // (이슈 #63)
         $read = $runtime['db']['read'] ?? null;
         if (is_array($read)) {
-            $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', (string) ($read['host'] ?? ''));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', (string) ($read['port'] ?? ''));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', (string) ($read['database'] ?? ''));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', (string) ($read['username'] ?? ''));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', escapeEnvValue((string) ($read['password'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', serializeEnvValue((string) ($read['host'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', serializeEnvValue((string) ($read['port'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', serializeEnvValue((string) ($read['database'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', serializeEnvValue((string) ($read['username'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', serializeEnvValue((string) ($read['password'] ?? '')));
         } else {
             $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', '');
             $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', '');
@@ -157,7 +160,7 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
         }
 
         if (isset($runtime['db']['prefix'])) {
-            $envContent = replaceEnvLine($envContent, 'DB_PREFIX', (string) $runtime['db']['prefix']);
+            $envContent = replaceEnvLine($envContent, 'DB_PREFIX', serializeEnvValue((string) $runtime['db']['prefix']));
         }
 
         // APP_KEY 치환
@@ -188,18 +191,8 @@ if (! function_exists('escapeEnvValue')) {
      */
     function escapeEnvValue(string $value): string
     {
-        // CR/LF 제거 — .env 라인 주입 차단 (functions.php 의 정의와 동일 정책)
-        if ($value !== '') {
-            $value = str_replace(["\r", "\n"], '', $value);
-        }
-
-        if ($value === '') {
-            return '""';
-        }
-
-        $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
-
-        return '"'.$escaped.'"';
+        // 직렬화 정책은 serializeEnvValue 단일 관문이 소유한다 (KVE-2026-2042).
+        return serializeEnvValue($value);
     }
 }
 

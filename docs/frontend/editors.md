@@ -366,7 +366,7 @@ HtmlEditor는 내부적으로 **DOMPurify**를 사용하여 HTML을 정화합니
 ## 관련 문서
 
 - [컴포넌트 Props 레퍼런스](component-props.md) - Select, Input, Button Props
-- [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md) - Admin 컴포넌트 목록
+- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md) - Admin 컴포넌트 목록
 - [레이아웃 JSON](layout-json.md) - 레이아웃 JSON 스키마
 - [데이터 바인딩](data-binding.md) - {{}} 표현식, $t: 다국어
 - [상태 관리](state-management.md) - _local, setState

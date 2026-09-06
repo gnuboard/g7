@@ -48,6 +48,19 @@ class PostNotCommentableException extends Exception
     }
 
     /**
+     * 열람 권한이 없는 비밀글에 대한 예외를 생성합니다.
+     *
+     * 비밀글 원문을 볼 수 없는 사용자는 그 게시글의 하위 콘텐츠도 만들 수 없다
+     * (KVE-2026-2044). 판정 SSoT 는 SecretContentGate 다.
+     *
+     * @return self 비밀글 사유 예외
+     */
+    public static function secret(): self
+    {
+        return new self('secret', 'sirsoft-board::messages.comment.post_secret');
+    }
+
+    /**
      * 다국어 메시지 키를 반환합니다.
      *
      * @return string 다국어 메시지 키

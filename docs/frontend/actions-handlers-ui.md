@@ -827,6 +827,8 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 외부 스크립트를 동적으로 로드합니다. 외부 서비스(Daum 우편번호, 결제 SDK 등) 연동 시 사용합니다.
 
+`src` 는 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받습니다 — same-origin 절대 경로(`/` 로 시작)이거나, 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 그 밖의 원격 URL 은 로드 전에 차단되고 액션이 실패합니다(`onError`·`errorHandling` 오류 채널로 전달). 상세: [security.md](security.md#외부-스크립트-신뢰-출처-허용목록)
+
 ```json
 {
   "type": "click",
@@ -859,7 +861,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 {
   "handler": "loadScript",
   "params": {
-    "src": "https://example.com/sdk.js"
+    "src": "/api/plugins/assets/vendor-plugin/dist/vendor/example-sdk/1.0.0/sdk.js"
   },
   "onLoad": {
     "handler": "callExternal",
@@ -875,10 +877,17 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 동일한 ID의 스크립트가 이미 로드되었거나 DOM에 존재하면 다시 로드하지 않고 `onLoad`만 즉시 실행합니다.
 
+같은 스크립트를 **동시에** 요청하면 태그는 하나만 만들어지고, 두 호출자 모두 그 태그의 로드가 끝난 뒤에 완료됩니다. 로드 중인 스크립트를 "이미 있다"는 이유로 먼저 완료 처리하면, 그 호출자의 `onLoad` 가 SDK 전역이 아직 없는 시점에 실행되어 아무 일도 일어나지 않습니다.
+
 ```text
 ✅ 스크립트 중복 로드 자동 방지
 ✅ 이미 로드된 경우 onLoad 즉시 실행
+✅ 동시 요청은 하나의 태그를 공유하고 각자 onLoad 실행
 ```
+
+### 동의 관리(개인정보 배너)와의 관계
+
+동의 관리 플러그인이 아직 동의받지 않은 스크립트를 차단하고 있으면, 이 액션은 스크립트를 붙이지 않고 **미완료 상태로 끝납니다**(오류가 아니라 "동의 전"이라는 상태이므로 실패로 취급하지 않습니다). `onLoad` 는 실행되지 않고, 캐시에도 기록하지 않으므로 동의 후 다시 호출하면 정상적으로 로드됩니다.
 
 ---
 

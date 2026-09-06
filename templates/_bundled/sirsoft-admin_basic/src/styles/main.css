@@ -3,8 +3,10 @@
 @import "./layout/_admin_base.css";
 
 /* Pretendard 폰트를 기본 sans-serif 폰트로 설정 */
+/* 동봉본은 Variable 1종이라 패밀리명이 `Pretendard Variable` 이다. 구 static 배포본을
+   따로 설치한 환경을 위해 `Pretendard` 도 뒤에 남겨 둔다. */
 @theme {
-  --font-sans: 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 @variant dark (.dark &);

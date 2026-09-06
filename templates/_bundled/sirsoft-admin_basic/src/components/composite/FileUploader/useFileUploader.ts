@@ -24,6 +24,35 @@ import type { Attachment, PendingFile, FileUploaderProps, ApiEndpoints } from '.
 import { formatFileSize, extractErrorMessage, t } from './utils';
 import { isCrossOriginAssetUrl } from '../assetOrigin';
 
+/** 동봉한 browser-image-compression 버전 */
+const IMAGE_COMPRESSION_VERSION = '2.0.2';
+
+/**
+ * 웹 워커가 불러올 압축 라이브러리 URL 을 돌려줍니다.
+ *
+ * `useWebWorker: true` 일 때 라이브러리는 워커 안에서 자기 사본을 다시 받는데, 기본값이
+ * 외부 CDN 이다. 그 요청이 실패하면 라이브러리가 메인 스레드로 폴백하므로 기능이 깨지지는
+ * 않지만, 폐쇄망에서 매 업로드마다 외부로 나가는 요청이 남는다. 템플릿이 함께 담은
+ * 사본을 가리켜 그 왕복을 없앤다.
+ *
+ * URL 을 만들 수 없으면(구 코어) `undefined` 를 돌려주어 종전 동작을 유지한다.
+ *
+ * @returns 압축 라이브러리 URL 또는 undefined
+ */
+function resolveCompressionLibUrl(): string | undefined {
+    const asset = (window as any)?.G7Core?.asset;
+
+    if (typeof asset?.template !== 'function') {
+        return undefined;
+    }
+
+    return asset.template(
+        'sirsoft-admin_basic',
+        `vendor/browser-image-compression/${IMAGE_COMPRESSION_VERSION}/browser-image-compression.js`
+    );
+}
+
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
 
@@ -192,6 +221,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         maxSizeMB: compressionOptions?.maxSizeMB ?? 1,
         maxWidthOrHeight: compressionOptions?.maxWidthOrHeight ?? 1920,
         useWebWorker: true,
+        libURL: resolveCompressionLibUrl(),
       };
       return await imageCompression(file, compressionOpts);
     },

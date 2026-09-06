@@ -258,6 +258,7 @@ return [
             'confirm_question' => '계속하시겠습니까?',
             'layouts_deleted' => '레이아웃 :count개 삭제됨',
             'versions_deleted' => '버전 히스토리 :count개 삭제됨',
+            'custom_preserved' => '운영자 파일(:directory)을 :archive 에 보관했습니다.',
             'aborted' => '삭제가 취소되었습니다.',
         ],
         'list' => [

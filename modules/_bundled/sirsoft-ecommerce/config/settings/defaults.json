@@ -241,6 +241,7 @@
       ],
       "auto_cancel_expired": true,
       "auto_cancel_days": 3,
+      "pending_order_expire_minutes": 1440,
       "cart_expiry_days": 30,
       "stock_restore_on_cancel": true,
       "cancellable_statuses": ["payment_complete"],

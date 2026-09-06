@@ -11,7 +11,8 @@
 2. sync 된 키는 config() 와 g7_core_settings() 가 동치 — 둘 중 어느 쪽을 써도 같은 값
 3. 예외 1: app.timezone 은 항상 UTC (서버 저장용). 사용자 시간대는 g7_core_settings('general.timezone') 또는 config('app.default_user_timezone')
 4. 예외 2: testing 환경에서 drivers.cache/session/queue/session_lifetime 은 sync 차단 (격리 보호) — config() 는 phpunit.xml 격리값, g7_core_settings() 는 dev 공유 파일값
-5. 결론: 드라이버 카테고리는 config() 우선. 그 외 admin 관리 키는 둘 다 가능 (취향)
+5. 예외 3: `.env` 에 `G7_ENV_PRIORITY=true` 를 명시한 설치는 .env 에 값이 있는 항목만 sync 에서 빠진다 (기본 OFF)
+6. 결론: 드라이버 카테고리는 config() 우선. 그 외 admin 관리 키는 둘 다 가능 (취향)
 ```
 
 ---
@@ -49,6 +50,8 @@
 | `geoip.feature_enabled`, `geoip.license_key`, `geoip.auto_update_enabled` | `geoip.*` |
 
 위 매핑은 [`app/Providers/SettingsServiceProvider.php`](../../app/Providers/SettingsServiceProvider.php) 가 단일 SSoT.
+
+이 sync 를 키 단위로 되돌리는 옵트인 모드가 있다 — 아래 [env 우선 모드](#env-우선-모드-g7_env_priority) 참조.
 
 ---
 
@@ -138,7 +141,8 @@ plugin_setting('sirsoft-pay_kginicis', 'api_key');
 2. sync 코드를 추가하지 않으면 → `g7_core_settings()` 만 사용 가능. `config()` 는 sync 되지 않은 키를 모르기 때문이다.
 3. testing 격리가 필요한 키 (드라이버, 외부 서비스 자격증명 등) 는 `! $isTestingEnv` 가드로 sync 를 차단한다. 이 키들은 `config()` 가 testing 격리 SSoT 다.
 4. 의미가 다른 키 (`app.timezone` 처럼) 는 sync 하지 않고 별도 키 (`app.default_user_timezone`) 로 분리한다.
-5. 고급 탭 화면에 얹을 카테고리는 `config/settings/defaults.json` 의 `frontend_schema.{카테고리}.merge_into` 를 `advanced` 로 선언한다. 저장 시 어느 카테고리 파일에 쓸지는 이 선언에서 도출되므로 별도 등록이 필요 없다. 선언이 없으면 화면·검증·읽기가 모두 정상인데 입력값만 저장되지 않고 버려진다 — 저장 응답은 성공이고 화면에도 값이 보여 실패 신호가 없으므로, 새 카테고리를 추가했으면 저장 후 `storage/app/settings/{카테고리}.json` 이 생성되는지 직접 확인한다.
+5. sync 코드를 추가했다면 `App\Support\EnvPriority` 의 `MAP`(env 대응이 있는 경우) 또는 `EXEMPT`(없는 경우)에 그 키를 등재한다. 등재를 잊으면 env 우선 모드를 켠 설치에서 그 키만 계속 settings 승으로 남는데, 오류도 로그도 남지 않아 "그 키가 `.env` 에 없다" 와 구분되지 않는다. 계약 테스트가 미등재를 red 로 만든다.
+6. 고급 탭 화면에 얹을 카테고리는 `config/settings/defaults.json` 의 `frontend_schema.{카테고리}.merge_into` 를 `advanced` 로 선언한다. 저장 시 어느 카테고리 파일에 쓸지는 이 선언에서 도출되므로 별도 등록이 필요 없다. 선언이 없으면 화면·검증·읽기가 모두 정상인데 입력값만 저장되지 않고 버려진다 — 저장 응답은 성공이고 화면에도 값이 보여 실패 신호가 없으므로, 새 카테고리를 추가했으면 저장 후 `storage/app/settings/{카테고리}.json` 이 생성되는지 직접 확인한다.
 
 ---
 
@@ -178,6 +182,68 @@ plugin_setting('sirsoft-pay_kginicis', 'api_key');
 외부 연동 규약 때문에 `Http::` 를 쓸 수 없는 확장은 `OutboundProxy::curlOptions()` 를 쓴다. 판정은 코어가 하고 확장은 결과만 받으므로 게이트가 갈라지지 않으며, 미적용 상태에서는 빈 배열이라 그대로 넘겨도 무해하다.
 
 이 결함은 신호를 남기지 않는다 — 우회한 호출도 정상 성공하고, 상대편에 보이는 출발지 IP 만 달라진다. 외부 호출 지점을 새로 만들 때 어느 통로를 쓰는지 확인한다.
+
+---
+
+## env 우선 모드 (`G7_ENV_PRIORITY`)
+
+기본 설계에서 admin UI 는 운영 SSoT 다. 공유호스팅처럼 `.env` 를 직접 만지기 어려운 환경을 1차 대상으로 삼았기 때문이다. 그런데 `.env` 를 배포 기준값으로 관리하는 설치(컨테이너·IaC·다중 서버)에서는 그 설계가 반대로 작동한다 — `.env` 에 적은 값이 설치 직후부터 조용히 사문화된다(설치기가 `config/settings/defaults.json` 을 시드하므로 저장값이 항상 존재한다).
+
+`.env` 에 `G7_ENV_PRIORITY=true` 를 명시하면 그 소유권이 **키 단위**로 되돌아간다.
+
+- **잠금 대상**: `.env` 에 값이 명시된 env 변수에 대응하는 설정 키만. 나머지는 종전대로 admin UI 가 이긴다.
+- **스위치 미설정**: 아무 것도 달라지지 않는다(기존 설치 무영향).
+- **화면**: 잠긴 필드는 편집 불가 + `.env` 고정 배지. 표시값은 저장값이 아니라 **실제로 적용 중인 값**이다.
+- **저장 API**: 잠긴 키는 서버측에서 제거된다. 화면의 `disabled` 는 게이트가 아니다.
+
+### 명시 판별 규약
+
+명시 여부는 `config/env-priority.php` 가 **config 빌드 시점에 캡처**한다. `env()` 를 런타임에 부르면 `config:cache` 환경에서 null 로 고정되어 판별이 영구 미발동하기 때문이다(`config/attachment.php` 의 `disk_explicit` 와 같은 함정).
+
+판별은 strict 다.
+
+| `.env` 표기 | 판정 |
+|---|---|
+| `MAIL_PORT=2599` | 명시 |
+| `APP_DEBUG=false` | **명시** (falsy 값도 운영자가 정한 값이다) |
+| `REDIS_DB=0` | **명시** |
+| `MAIL_PORT=` (빈 값) | 미명시 |
+| `AWS_BUCKET=null` | 미명시 |
+| 줄 자체가 없음 | 미명시 |
+
+한 설정을 env 두 개가 나누는 키(`drivers.redis_database` ↔ `REDIS_DB`/`REDIS_CACHE_DB`)는 **하나라도** 명시되면 잠긴다 — 주입이 그 하나를 덮어 버리기 때문이다.
+
+### 매핑 SSoT
+
+대상 키와 env 변수의 대응은 `App\Support\EnvPriority::MAP` 이 단독으로 갖는다. env 대응이 없어 대상에서 제외한 키는 그 사유와 함께 `EXEMPT` 에 등재한다 — 이 구분이 없으면 새 주입이 추가됐을 때 "빠뜨린 것"과 "대응이 없는 것"을 판별할 수 없다.
+
+`SettingsServiceProvider` 에 settings → config 주입을 추가하면 **`MAP` 또는 `EXEMPT` 를 동반 갱신**해야 한다.
+
+### 웹소켓 — 소유권이 통째로 넘어간다
+
+`drivers.websocket_enabled`(마스터 토글)가 잠기면 웹소켓 계층 전체의 권위가 `.env`/config 기본값으로 넘어간다. 관리자 화면의 토글은 그 설치에서 무력화되며, OFF 강제(브로드캐스트 드라이버 `null` 화, reverb key 비우기)도 수행하지 않는다. `.env` 에 `BROADCAST_CONNECTION`·`REVERB_*` 를 적었다면 운영자가 그 소유권을 가져간 것으로 본다.
+
+### 잠금은 그 키의 주입만 건너뛴다
+
+제거된 키를 읽는 자리가 그 부재를 **값**으로 해석하면, 잠금이 형제 설정까지 무너뜨린다. 다섯 형태가 있고 전부 오류도 로그도 남기지 않는다.
+
+| 형태 | 보정하지 않으면 |
+|---|---|
+| 마스터 토글의 OFF 강제 | `.env` 로 웹소켓을 켠 설치에 강제 OFF 가 걸린다 |
+| 게이트가 되는 키 | 디버그 모드 잠금 시 로그 레벨 강제·프록시 적용이 죽고, 메일 드라이버 잠금 시 mailgun·ses 하위 저장값이 주입되지 않는다 |
+| 저장값이 비어도 박히던 기본값 | `services.mailgun.endpoint`·`services.ses.region` 의 기본값 주입이 저장값 없는 호출에서도 사라진다 |
+| 형제 값으로의 폴백 | 웹소켓 server endpoint 가 비면 관리자 소유 client 값으로 폴백하는데, 그 값이 `.env` 가 소유한 `REVERB_HOST`/`PORT`/`SCHEME` 자리에 덮인다 |
+| 파생 판정 | `storage_driver=s3` → `attachment.disk` 파생이 멈춰, `FILESYSTEM_DISK=s3` 를 잠근 설치에서 첨부 업로드만 로컬 디스크로 되돌아간다 |
+
+판정에 쓰는 자리는 유효값(런타임 config)으로 보정하고, 주입을 건너뛰어야 하는 자리는 `EnvPriority::isLocked()` 를 직접 묻는다. `array_key_exists`/`empty()` 로 판정하면 "저장값이 없는 호출" 과 "잠겨서 제거된 호출" 이 구분되지 않아, 전자에서도 종전 동작이 사라진다.
+
+### 민감 키
+
+`.env` 의 비밀값(비밀번호·시크릿·토큰·라이선스 키)은 화면·응답에 싣지 않는다. 잠금 표시만 하고 값은 저장값 그대로 남긴다.
+
+### `.env` 만 고쳤을 때
+
+설정 저장 경로는 config 캐시를 자동으로 다시 굽지만, `.env` 파일만 편집한 경우에는 반영되지 않는다. `php artisan config:cache` 를 다시 실행한다.
 
 ---
 

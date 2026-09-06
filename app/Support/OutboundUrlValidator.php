@@ -112,6 +112,75 @@ class OutboundUrlValidator
     }
 
     /**
+     * host 문자열을 실제 연결 계층과 같은 규칙으로 정규화한다.
+     *
+     * 이 메서드가 정규화의 SSoT 다. 검증기 밖에서 host 를 대조하는 소비자(결제 콜백
+     * URL 의 도메인 접미사 확인 등)도 이 메서드를 거쳐야 판정이 갈리지 않는다.
+     *
+     * 정규화 내용:
+     *  - 점(.) 동등 유니코드 문자(U+3002·U+FF0E·U+FF61)를 ASCII 점으로 치환.
+     *    검증기가 ASCII 점만 구분자로 보면 `localhost。` 는 단일 라벨(공개 도메인)로
+     *    읽히지만 libcurl/libidn2 는 UTS#46 정규화로 `localhost` 에 연결한다.
+     *  - IDNA/UTS#46 A-label(punycode) 변환 — 유니코드 표기와 ASCII 표기를 한 형태로 모은다.
+     *  - 소문자화 및 완전한 DNS 이름의 후행 점 제거.
+     *
+     * @param  string  $host  정규화할 host 문자열 (IPv6 는 대괄호 없이)
+     * @return string|null 정규화된 host, 정규화할 수 없으면 null
+     */
+    public static function normalizeHost(string $host): ?string
+    {
+        $host = strtolower(trim($host));
+
+        if ($host === '') {
+            return null;
+        }
+
+        // 점 동등 문자 사전 치환 — idn_to_ascii 는 구현에 따라 이들을 남길 수 있으므로
+        // 라벨 분리 자체를 여기서 확정한다.
+        $host = strtr($host, [
+            "\u{3002}" => '.',   // IDEOGRAPHIC FULL STOP
+            "\u{FF0E}" => '.',   // FULLWIDTH FULL STOP
+            "\u{FF61}" => '.',   // HALFWIDTH IDEOGRAPHIC FULL STOP
+        ]);
+
+        if (function_exists('idn_to_ascii')) {
+            $ascii = idn_to_ascii($host, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
+
+            if (is_string($ascii) && $ascii !== '') {
+                $host = $ascii;
+            } elseif (preg_match('/[^\x20-\x7E]/', $host) === 1) {
+                // 변환에 실패했는데 비-ASCII 가 남아 있으면 연결 계층이 어떤 host 로
+                // 해석할지 알 수 없다 — 판정 불가는 거부로 처리한다.
+                return null;
+            }
+        } elseif (preg_match('/[^\x20-\x7E]/', $host) === 1) {
+            // polyfill 부재 환경 fail-safe: 비-ASCII host 는 판정 불가로 보고 거부.
+            return null;
+        }
+
+        $host = strtolower($host);
+
+        // 완전한 DNS 이름 표기(`example.com.`)의 후행 점 제거 — 남겨 두면 최상위 라벨이
+        // 빈 문자열이 되어 정상 도메인이 차단되고, `localhost.` 가 내부 이름 대조를 빠져나간다.
+        while (str_ends_with($host, '.')) {
+            $host = substr($host, 0, -1);
+        }
+
+        // 정규화 결과가 host 로 성립하는지 확인한다. UTS#46 은 전각 문자를 ASCII 로
+        // 매핑하므로 `127.0.0.1／.example.com`(U+FF0F) 은 `127.0.0.1/.example.com` 이 된다.
+        // parse_url 은 전각 문자를 구분자로 보지 않아 이 전체를 host 로 넘기지만, 연결
+        // 계층은 정규화 후 첫 구분자 앞(`127.0.0.1`)까지만 host 로 읽는다. 즉 접미사·
+        // 화이트리스트 대조는 뒤쪽 도메인으로 통과하는데 실제 접속은 앞쪽 주소로 간다.
+        // punycode(A-label)와 IP 리터럴은 항상 letter/digit/hyphen/dot 뿐이므로, 그 밖의
+        // 문자가 남았다면 어느 host 로 해석될지 알 수 없다 — 판정 불가는 거부로 처리한다.
+        if (preg_match('/^[a-z0-9._-]+$/', $host) !== 1) {
+            return null;
+        }
+
+        return $host === '' ? null : $host;
+    }
+
+    /**
      * host 문자열(URL 이 아닌 host 단독)이 공개 인터넷 주소인지 판정한다.
      *
      * @param  string  $host  host 문자열 (예: 'example.com', '127.0.0.1', '[::1]')
@@ -124,6 +193,13 @@ class OutboundUrlValidator
         // parse_url 이 IPv6 를 대괄호째 반환하므로 벗겨낸다
         if (str_starts_with($host, '[') && str_ends_with($host, ']')) {
             $host = substr($host, 1, -1);
+        }
+
+        // 직접 호출자(URL 을 거치지 않는 경로)도 같은 정규화를 받아야 한다.
+        // 단 IP 리터럴은 IDNA 라벨 구조가 없어 정규화 대상이 아니다 — 특히 IPv6 의 ':' 는
+        // 정규화의 호스트명 문자 집합 검사에 걸려 공개 IPv6 까지 차단된다.
+        if (filter_var($host, FILTER_VALIDATE_IP) === false) {
+            $host = self::normalizeHost($host) ?? '';
         }
 
         if ($host === '' || in_array($host, self::INTERNAL_HOST_NAMES, true)) {
@@ -208,6 +284,13 @@ class OutboundUrlValidator
 
         $host = strtolower(trim($parts['host']));
 
-        return $host === '' ? null : $host;
+        // IPv6 리터럴은 대괄호째 유지한다 — 라벨 구조가 없어 IDNA 정규화 대상이 아니다.
+        if (str_starts_with($host, '[') && str_ends_with($host, ']')) {
+            return $host === '[]' ? null : $host;
+        }
+
+        // 실제 연결 계층(libcurl/libidn2)과 같은 규칙으로 정규화한 뒤 상위 판정에 넘긴다.
+        // 정규화 없이 넘기면 `localhost。` 처럼 검증 시점과 연결 시점의 host 가 달라진다.
+        return self::normalizeHost($host);
     }
 }

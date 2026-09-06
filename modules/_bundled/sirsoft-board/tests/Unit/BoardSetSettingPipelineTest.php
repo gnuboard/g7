@@ -236,6 +236,8 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
      */
     public function test_storage_path_is_isolated_during_tests(): void
     {
+        // audit:allow extension-storage-path-hand-assembled 운영 경로를 **의도적으로** 가리킨다 —
+        // 이 단언의 대상은 "테스트가 운영 파일을 건드리지 않았는가" 이므로 해석기를 쓰면 검사가 성립하지 않는다.
         $productionPath = storage_path('app/modules/sirsoft-board/settings/basic_defaults.json');
         // 운영 파일의 존재 여부·내용을 그대로 스냅샷 (환경마다 상태가 다르므로 변화 없음만 단언)
         $before = File::exists($productionPath) ? File::get($productionPath) : null;

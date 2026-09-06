@@ -332,6 +332,10 @@ class GatePermissionTest extends TestCase
         // 역할에 권한 부여
         $this->userRole->permissions()->attach($newPermission->id);
 
+        // 권한 판정은 인스턴스 단위로 한 번만 적재된다(요청당 반복 쿼리 방지). 같은 인스턴스에서
+        // 역할을 바꾼 직후 다시 판정하려면 운영 코드(역할 동기화 서비스)와 같이 캐시를 비운다.
+        $this->regularUser->flushPermissionCaches();
+
         // 이제 권한 있음
         $this->assertTrue(Gate::allows('test.new.permission'));
     }

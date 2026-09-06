@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "moduleId": "sirsoft-board",
   "version": "1.0.0",
-  "description": "레이아웃 편집기 스펙 — 게시판 모듈 도메인 sampleData/sampleGlobal/states. 실제 admin 레이아웃 data_source ID 전수 스캔 기반 도메인 ID(posts/post/reports/report_detail/reporters_list/boards/boards_list/board_types/form_data/form_meta/settings) + 사용자 게시판 페이지 byEndpointPattern. 공용 인프라(roles/availableChannels/identityProviders/boardIdentity*/boardNotificationDefinitions)는 admin 템플릿 스펙(roles/availableChannels/identityProviders)·코어 프리셋 폴백이 커버.",
+  "description": "게시판 모듈 레이아웃 편집기 스펙 — 관리자·사용자 게시판 화면의 프리뷰 샘플과 페이지 상태. 공용 인프라(roles·availableChannels·identityProviders 등)는 관리자 템플릿 스펙과 코어 기본값이 커버한다.",
   "sampleGlobal": {
     "comment": "게시판 도메인 _global keyspace.",
     "notifications": {

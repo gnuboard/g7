@@ -30,7 +30,7 @@
 
 | 문서 | 제목 | 핵심 내용 |
 |------|------|----------|
-| [activity-log-hooks.md](activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 이커머스 92훅 + 게시판 32훅 + 페이지 8훅 = 총 198훅 |
+| [activity-log-hooks.md](activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 확장 132훅 = 총 198훅 (확장별 목록은 그 확장이 소유) |
 | [activity-log.md](activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel... |
 | [admin-settings-access.md](admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) | 동기화 SSoT: storage/app/settings/*.json → Setting... |
 | [api-documentation.md](api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) | 모든 API 엔드포인트는 레퍼런스 문서 필수 — 메서드/URI/파라미터/응답 필드 +... |
@@ -55,12 +55,14 @@
 | [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스... |
 | [pagination.md](pagination.md) | 대용량 목록 페이지네이션 (Pagination) | 총 건수만 상한을 받는다 — 상한 이하면 정확, 초과면 "이상"(total_relat... |
 | [response-helper.md](response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
+| [reverse-proxy.md](reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) | 프록시 뒤에서는 요청이 스스로 스킴·IP 를 증명하지 못한다 — 신뢰할 프록시를 지정... |
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL F... |
 | [seo-system.md](seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → Seo... |
 | [service-provider.md](service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈... |
+| [static-asset-publishing.md](static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이... |
 | [translatable-seeders.md](translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) | 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 Transla... |
 | [user-overrides.md](user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array ... |
 | [validation.md](validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |

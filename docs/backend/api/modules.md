@@ -1139,14 +1139,29 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만). 컨트롤러가 `success('module.uninstall_success')` 를 데이터 인자 없이 호출합니다._
+| 이름 | 타입 | 예시 | 용도 |
+| --- | --- | --- | --- |
+| preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
+| preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
+| preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
+
+> 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
+> 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
 
 **응답 예시**
 
 ```json
 {
     "success": true,
-    "message": "모듈이 성공적으로 제거되었습니다."
+    "message": "모듈이 성공적으로 제거되었습니다.",
+    "data": {
+        "preserved_backups": [
+            {
+                "directory": "custom",
+                "archive": "/var/www/g7/storage/app/extension-custom-backups/sirsoft-board-20260825_231500/custom"
+            }
+        ]
+    }
 }
 ```
 
@@ -2083,11 +2098,11 @@ Cache-Control: public, max-age=31536000
 
 **에러 응답**
 
-_에러 응답 없음 — 공개 엔드포인트이며, 병합 대상이 없어도 빈 본문의 200(text/css)을 반환합니다._
+_선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-Control: no-cache, private`) — 배포 중 `dist` 가 잠깐 비었거나 경로가 어긋난 상태입니다. 에셋을 선언한 활성 확장이 없거나, 선언한 산출물이 전부 존재하되 비어 있으면(스타일 규칙이 아직 없는 확장) 정상 빈 200 입니다._
 
 <!-- @generated:end -->
 
-**설명** 활성 모듈들의 프론트엔드 CSS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 global 모듈 에셋이 없으면 빈 200(text/css) 응답을 반환하고, 있으면 병합 파일을 ETag·환경별 Cache-Control 과 함께 서빙합니다. 페이지가 모듈 스타일을 요청 1건으로 로드하도록 합니다.
+**설명** 활성 모듈들의 프론트엔드 CSS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙하고, 비어 있으면 그 이유에 따라 갈립니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/css), 선언한 산출물이 소실·판독 불가면 503 입니다. 0바이트 CSS 는 스타일 규칙이 아직 없는 확장의 정당한 상태이므로 장애로 보지 않습니다. 페이지가 모듈 스타일을 요청 1건으로 로드하도록 합니다.
 
 
 ### GET /api/modules/bundle.js
@@ -2125,11 +2140,11 @@ Cache-Control: public, max-age=31536000
 
 **에러 응답**
 
-_에러 응답 없음 — 공개 엔드포인트이며, 병합 대상이 없어도 빈 본문의 200(text/javascript)을 반환합니다._
+_선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-Control: no-cache, private`) — 배포 중 `dist` 가 잠깐 비었거나 경로가 어긋난 상태입니다. 에셋을 선언한 활성 확장이 없거나, 선언한 산출물이 전부 존재하되 비어 있으면(스타일 규칙이 아직 없는 확장) 정상 빈 200 입니다._
 
 <!-- @generated:end -->
 
-**설명** 활성 모듈들의 프론트엔드 IIFE JS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 global 모듈 에셋이 없으면 빈 200(text/javascript) 응답을 반환하고(프론트는 빈 스크립트 로드로 무해), 있으면 병합 파일을 ETag·환경별 Cache-Control 과 함께 서빙합니다. 프론트는 `G7Config.bundleUrls` 를 읽어 이 번들을 로드합니다.
+**설명** 활성 모듈들의 프론트엔드 IIFE JS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙하고, 비어 있으면 그 이유에 따라 갈립니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/javascript, 프론트는 빈 스크립트 로드로 무해), 선언한 산출물이 소실·판독 불가면 503 입니다. 프론트는 `G7Config.bundleUrls` 를 읽어 이 번들을 로드합니다.
 
 
 ### GET /api/modules/bundle/css
@@ -2302,7 +2317,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 모듈 컴포넌트 매니페스트(`GET /api/modules/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/modules/{identifier}/components.json
@@ -2373,7 +2388,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 모듈의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스 병합하기 위해 fetch 하며, 구버전 모듈처럼 파일이 없으면 빈 components 로 폴백합니다. 응답은 1시간 캐시됩니다. 모듈 미존재 시 404.
+**설명** 모듈의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스 병합하기 위해 fetch 하며, 구버전 모듈처럼 파일이 없으면 빈 components 로 폴백합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 모듈 미존재 시 404.
 
 
 ### GET /api/modules/{identifier}/editor-spec

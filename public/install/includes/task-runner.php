@@ -33,6 +33,27 @@ if (! function_exists('sendSSEEvent')) {
     }
 }
 
+if (! function_exists('bestEffortFailureMessage')) {
+    /**
+     * best-effort 작업 실패 안내 문구를 만듭니다.
+     *
+     * 종전에는 작업 종류와 무관하게 언어팩 전용 문구(`warning_language_pack_install_partial`)를 재사용해,
+     * 대상(`target`)이 없는 `static_publish`·`config_cache` 실패가 "언어팩 일부 설치에 실패했습니다:  (계속 진행)"
+     * 으로 찍혔다(#651 F20). 작업 라벨(`task_{id}`)에 대상이 있으면 괄호로 덧붙인다.
+     *
+     * @param  string  $taskId  작업 식별자 (예: static_publish)
+     * @param  string  $target  작업 대상 (없으면 빈 문자열)
+     * @return string 안내 문구
+     */
+    function bestEffortFailureMessage(string $taskId, string $target): string
+    {
+        $taskName = lang("task_{$taskId}");
+        $display = $target !== '' ? "{$taskName} ({$target})" : $taskName;
+
+        return lang('warning_best_effort_task_failed', ['task' => $display]);
+    }
+}
+
 if (! function_exists('sendRollbackOutputSSE')) {
     /**
      * 롤백 실행 결과를 로그 이벤트로 출력합니다.
@@ -578,14 +599,15 @@ if (! function_exists('installComposerDependenciesSSE')) {
             $line = fgets($pipes[1]);
             if ($line !== false) {
                 $line = trim($line);
-                // composer stdout 이 시스템 코드페이지(Windows CP949 등)로 출력하거나
-                // 진행바(\r 갱신)가 non-blocking 읽기와 겹쳐 임의 바이트 경계에서 잘리면
-                // invalid UTF-8 바이트가 섞인다. SSE 응답(progress-emitter 의 json_encode)과
-                // 폴링 응답(state-management) 양쪽이 무력화되지 않도록 로그 전송 전 정규화한다.
+                // composer stdout 은 시스템 코드페이지(Windows CP949 등)로 출력되고,
+                // 진행바 갱신이 non-blocking 읽기와 겹치면 임의 바이트 경계에서 잘려
+                // invalid UTF-8 바이트가 섞인다. SSE 응답(progress-emitter)과
+                // 폴링 응답(state-management) 양쪽이 무력화되지 않도록 전송 전 정규화한다.
+                //
+                // 정규화는 복원 가능한 코드페이지 출력(한글 경로·메시지)을 먼저 되살리므로,
+                // 이전의 mb_scrub 단독 처리와 달리 한글이 U+FFFD 로 훼손되지 않는다.
                 // (gnuboard/g7#62 — addLog 최종 방어와 이중 안전망)
-                if ($line !== '' && ! mb_check_encoding($line, 'UTF-8')) {
-                    $line = mb_scrub($line, 'UTF-8');
-                }
+                $line = installer_utf8_normalize($line);
                 if (! empty($line)) {
                     sendSSEEvent('log', ['message' => $line]);
                 }
@@ -1576,6 +1598,27 @@ if (! function_exists('optimizeConfigCacheSSE')) {
     }
 }
 
+if (! function_exists('publishStaticCacheSSE')) {
+    /**
+     * 설치 완료 직후 부트스트랩 리소스 정적 게시(bake)를 최초 수행한다 (#122).
+     *
+     * 이 지점이 없으면 첫 방문자가 blade 자가 치유(1회 API 폴백)를 겪는다.
+     * best_effort — 실패해도 설치는 완료 처리한다(사이트는 API 폴백으로 정상).
+     *
+     * @return array 태스크 실행 결과
+     */
+    function publishStaticCacheSSE(): array
+    {
+        return executeArtisanCommandSSE(
+            artisanCommand: 'ext-static:publish --force',
+            taskId: 'static_publish',
+            taskNameKey: 'task_static_publish',
+            successMsgKey: 'log_static_publish_success',
+            errorMsgKey: 'error_static_publish_failed'
+        );
+    }
+}
+
 if (! function_exists('createSettingsJsonSSE')) {
     function createSettingsJsonSSE(): array
     {
@@ -1664,7 +1707,7 @@ if (! function_exists('createSettingsJsonSSE')) {
                 ];
                 $data = array_merge($data, $settings);
 
-                $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                $json = installer_json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
                 $filePath = $settingsDir.'/'.$category.'.json';
 
                 file_put_contents($filePath, $json, LOCK_EX);
@@ -1859,6 +1902,9 @@ if (! function_exists('runInstallationTasks')) {
             // complete_flag(installer_completed=true) 이후에 config 캐시를 최초 생성해야
             // 설치가 config:cache 켜진 상태로 시작한다. best_effort — 실패해도 설치는 완료.
             $tasks[] = ['id' => 'config_cache', 'function' => 'optimizeConfigCacheSSE', 'best_effort' => true];
+            // 부트스트랩 리소스 정적 게시(bake) 최초 수행 — 없으면 첫 방문자가
+            // 자가 치유(1회 API 폴백)를 겪는다. best_effort — 실패해도 설치는 완료.
+            $tasks[] = ['id' => 'static_publish', 'function' => 'publishStaticCacheSSE', 'best_effort' => true];
 
             foreach ($tasks as $task) {
                 if (checkAbortStatusSSE()) {
@@ -1910,7 +1956,7 @@ if (! function_exists('runInstallationTasks')) {
                 if (! $result['success']) {
                     // best-effort task (예: 번들 언어팩 설치) — 실패 시 경고 로그만 남기고 계속 진행
                     if ($bestEffort) {
-                        $warnMsg = lang('warning_language_pack_install_partial', ['identifier' => (string) $target]);
+                        $warnMsg = bestEffortFailureMessage((string) $taskId, (string) $target);
                         sendSSEEvent('log', ['message' => $warnMsg]);
                         addLog($warnMsg);
 

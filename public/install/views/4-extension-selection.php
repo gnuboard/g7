@@ -214,23 +214,23 @@
 <script>
 // Step 4 번역 키 전달
 window.EXTENSION_LABELS = {
-    version: <?= json_encode(lang('version')) ?>,
-    select: <?= json_encode(lang('select')) ?>,
-    selected: <?= json_encode(lang('selected')) ?>,
-    dependencies: <?= json_encode(lang('dependencies')) ?>,
-    admin_template_required: <?= json_encode(lang('admin_template_required')) ?>,
-    saving: <?= json_encode(lang('saving')) ?>,
-    save_failed: <?= json_encode(lang('save_failed')) ?>,
-    next: <?= json_encode(lang('next')) ?>,
-    extension_load_failed: <?= json_encode(lang('extension_load_failed')) ?>,
-    dep_auto_badge_label: <?= json_encode(lang('dep_auto_badge_label')) ?>,
-    dep_lock_message: <?= json_encode(lang('dep_lock_message')) ?>,
-    dep_version_required: <?= json_encode(lang('dep_version_required')) ?>,
-    dep_version_available: <?= json_encode(lang('dep_version_available')) ?>,
-    language_pack_disabled_by_extension: <?= json_encode(lang('language_pack_disabled_by_extension')) ?>,
-    language_pack_scope_core: <?= json_encode(lang('language_pack_scope_core')) ?>,
-    language_pack_scope_module: <?= json_encode(lang('language_pack_scope_module')) ?>,
-    language_pack_scope_plugin: <?= json_encode(lang('language_pack_scope_plugin')) ?>,
-    language_pack_scope_template: <?= json_encode(lang('language_pack_scope_template')) ?>
+    version: <?= installer_json_encode(lang('version')) ?>,
+    select: <?= installer_json_encode(lang('select')) ?>,
+    selected: <?= installer_json_encode(lang('selected')) ?>,
+    dependencies: <?= installer_json_encode(lang('dependencies')) ?>,
+    admin_template_required: <?= installer_json_encode(lang('admin_template_required')) ?>,
+    saving: <?= installer_json_encode(lang('saving')) ?>,
+    save_failed: <?= installer_json_encode(lang('save_failed')) ?>,
+    next: <?= installer_json_encode(lang('next')) ?>,
+    extension_load_failed: <?= installer_json_encode(lang('extension_load_failed')) ?>,
+    dep_auto_badge_label: <?= installer_json_encode(lang('dep_auto_badge_label')) ?>,
+    dep_lock_message: <?= installer_json_encode(lang('dep_lock_message')) ?>,
+    dep_version_required: <?= installer_json_encode(lang('dep_version_required')) ?>,
+    dep_version_available: <?= installer_json_encode(lang('dep_version_available')) ?>,
+    language_pack_disabled_by_extension: <?= installer_json_encode(lang('language_pack_disabled_by_extension')) ?>,
+    language_pack_scope_core: <?= installer_json_encode(lang('language_pack_scope_core')) ?>,
+    language_pack_scope_module: <?= installer_json_encode(lang('language_pack_scope_module')) ?>,
+    language_pack_scope_plugin: <?= installer_json_encode(lang('language_pack_scope_plugin')) ?>,
+    language_pack_scope_template: <?= installer_json_encode(lang('language_pack_scope_template')) ?>
 };
 </script>
