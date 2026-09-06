@@ -384,6 +384,13 @@ class ModuleManager implements ModuleManagerInterface
         $onProgress?->__invoke('copy', '파일 복사 중...');
         $this->copyFromPendingOrBundled($moduleName, $onProgress, $force);
 
+        // 설치 시점에는 autoload-extensions.php 가 아직 갱신되지 않았다. module.php 의
+        // getConfigValues()/getSettingsSchema() 등이 자기 src/ 클래스를 호출하면 그 클래스가
+        // 해석되지 않아 "Class not found" 로 설치가 중단된다 (업그레이드 경로는 기설치본의
+        // 매핑이 이미 있어 재현되지 않는다). 시더 실행 직전이 아니라 진입 파일을 로드하기
+        // 전에 그 확장의 PSR-4 매핑을 등록한다.
+        ExtensionManager::registerExtensionAutoloadPaths('modules', $moduleName);
+
         try {
             // 모듈이 활성 디렉토리에 있지 않으면 로드 시도
             $module = $this->getModule($moduleName);
