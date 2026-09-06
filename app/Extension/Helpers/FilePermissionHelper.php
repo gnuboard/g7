@@ -566,6 +566,73 @@ class FilePermissionHelper
         return [$baseOwner, $baseGroup, 'base_path (대칭 구성)'];
     }
 
+    /** 테스트 전용 — `describeWebServerAccount()` 판정 오버라이드 (null = 실판정) */
+    private static ?array $webServerAccountForTesting = null;
+
+    /**
+     * 테스트 전용 — 실행 환경 판정을 강제합니다 (posix 부재 환경에서 root 분기를 재현하기 위해).
+     *
+     * @param  array{mode: string, name: string|null}|null  $account  강제할 판정 (null 로 실판정 복귀)
+     */
+    public static function fakeWebServerAccountForTesting(?array $account): void
+    {
+        self::$webServerAccountForTesting = $account;
+    }
+
+    /**
+     * 현재 프로세스 기준으로 "웹서버 계정" 안내에 필요한 실행 환경을 분류합니다.
+     *
+     * root(sudo) 로 artisan 을 실행하면 그 명령이 만드는 캐시 샤드·번들·임시 파일이 root 소유로 남아
+     * 이후 웹 프로세스의 쓰기가 실패한다. 그래서 root 실행을 감지한 명령은 "웹서버 계정으로 실행"
+     * 을 안내해야 하는데, 그 판정을 명령마다 다시 쓰면 한 곳만 어긋나도 서로 다른 안내가 나간다.
+     * `core:update` 의 재실행 안내가 처음 세운 4분기를 그대로 옮겨 공유한다 — 동작 불변.
+     *
+     * 반환 모드:
+     *  - `non_root`           : posix 미지원(Windows 등) 또는 현재 유효 사용자가 root 가 아님
+     *                           (일반 SSH 사용자 = 파일 소유자, 공유 호스팅 대칭 구성 포함).
+     *  - `root_web_known`     : root 실행 + 웹서버 계정 식별 성공 + 실행 사용자(root)와 다름.
+     *  - `root_web_symmetric` : root 실행 + 웹서버 계정이 root 로 추정됨 (root 서비스 구성).
+     *  - `root_web_unknown`   : root 실행 + 웹서버 계정 추정 실패 (스냅샷/추정 불가).
+     *
+     * 웹서버 계정은 `inferWebServerOwnership()` 이 storage/bootstrap 쓰기 영역 소유자로 추정한다.
+     *
+     * @return array{mode: string, name: string|null} 모드와 웹서버 계정명(`root_web_known` 일 때만)
+     */
+    public static function describeWebServerAccount(): array
+    {
+        if (self::$webServerAccountForTesting !== null) {
+            return self::$webServerAccountForTesting;
+        }
+
+        if (! function_exists('posix_geteuid') || ! function_exists('posix_getpwuid')) {
+            return ['mode' => 'non_root', 'name' => null];
+        }
+
+        if (posix_geteuid() !== 0) {
+            return ['mode' => 'non_root', 'name' => null];
+        }
+
+        [$owner] = static::inferWebServerOwnership();
+
+        if ($owner === false) {
+            return ['mode' => 'root_web_unknown', 'name' => null];
+        }
+
+        if ($owner === 0) {
+            return ['mode' => 'root_web_symmetric', 'name' => null];
+        }
+
+        $entry = posix_getpwuid($owner);
+        $name = $entry['name'] ?? null;
+
+        // uid 는 나왔지만 이름 해석 실패 — 미상 경로로 처리 (uid 노출은 오히려 혼란).
+        if ($name === null) {
+            return ['mode' => 'root_web_unknown', 'name' => null];
+        }
+
+        return ['mode' => 'root_web_known', 'name' => $name];
+    }
+
     /**
      * 경로와 그 하위 항목의 소유자·그룹을 재귀적으로 복원합니다.
      *

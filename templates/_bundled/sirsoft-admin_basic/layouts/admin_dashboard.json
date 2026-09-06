@@ -429,7 +429,7 @@
                                                         "id": "top_alert_recover_button_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Button",
-                                                        "if": "{{alert.subtype === 'recovery_available'}}",
+                                                        "if": "{{!!alert.recover_endpoint}}",
                                                         "props": {
                                                             "type": "button",
                                                             "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
@@ -448,7 +448,7 @@
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "success",
-                                                                            "message": "$t:extensions.alerts.recovered_success"
+                                                                            "message": "{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"
                                                                         }
                                                                     },
                                                                     {
@@ -481,6 +481,13 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
+                                                                "if": "{{!!alert.recover_label}}",
+                                                                "text": "{{alert.recover_label}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!alert.recover_label}}",
                                                                 "text": "$t:extensions.alerts.recover_action"
                                                             }
                                                         ]
@@ -1708,7 +1715,7 @@
                                                                         "id": "alert_recover_button_{{$idx}}",
                                                                         "type": "basic",
                                                                         "name": "Button",
-                                                                        "if": "{{alert.subtype === 'recovery_available'}}",
+                                                                        "if": "{{!!alert.recover_endpoint}}",
                                                                         "props": {
                                                                             "type": "button",
                                                                             "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
@@ -1727,7 +1734,7 @@
                                                                                         "handler": "toast",
                                                                                         "params": {
                                                                                             "type": "success",
-                                                                                            "message": "$t:extensions.alerts.recovered_success"
+                                                                                            "message": "{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"
                                                                                         }
                                                                                     },
                                                                                     {
@@ -1760,6 +1767,13 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
+                                                                                "if": "{{!!alert.recover_label}}",
+                                                                                "text": "{{alert.recover_label}}"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{!alert.recover_label}}",
                                                                                 "text": "$t:extensions.alerts.recover_action"
                                                                             }
                                                                         ]

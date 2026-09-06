@@ -6,6 +6,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Services\ExtensionStaticCacheService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -120,7 +121,10 @@ trait InvalidatesLayoutCache
         //    받는다. 레이아웃 저장 경로(LayoutService::clearPublicServingCache)는 이미 두 키를
         //    지우므로 정합을 맞춘다.
         if ($templateIdentifier) {
-            $cacheVersion = (int) $cache->get('ext.cache_version', 0);
+            // 트레이트 게터 경유 — 이 트레이트만 조합한 클래스가 있을 수 있어 `self::` 가 아니라
+            // `ClearsTemplateCaches` 를 조합한 서비스 클래스를 통해 부른다(트레이트 정적 직접 호출은
+            // PHP 8.1+ E_DEPRECATED). 원시 키 읽기는 `cache:clear` 직후 0 을 돌려주어 실제 키를 못 지운다.
+            $cacheVersion = ExtensionStaticCacheService::getExtensionCacheVersion();
             $cache->forget("layout.{$templateIdentifier}.{$layout->name}.v{$cacheVersion}");
             $cache->forget("layout.{$templateIdentifier}.{$layout->name}.v{$cacheVersion}.meta");
         }

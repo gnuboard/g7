@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Container\Container;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -52,11 +53,35 @@ class ConfigCacheHelper
         }
 
         try {
-            Artisan::call('config:cache');
+            self::withPreservedContainer(static fn () => Artisan::call('config:cache'));
         } catch (\Throwable $e) {
             Log::warning('config 캐시 재생성 실패 (config:clear 로 stale 은 제거됨 — 다음 요청은 비캐시 부팅)', [
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * 콜백 실행 뒤 전역 컨테이너 인스턴스를 원래 앱으로 되돌립니다.
+     *
+     * `config:cache` 는 신선한 설정을 얻기 위해 **새 Application 을 부팅**하는데, `Application` 생성자가
+     * `Container::setInstance()` 를 호출하므로 그 순간부터 `app()` 헬퍼가 실행 중인 앱이 아니라 그
+     * 일회용 앱을 가리킨다(파사드는 별도 참조라 그대로다). 같은 프로세스에서 그 뒤에 등록되는
+     * `app()->terminating()` 콜백은 종료되지 않는 앱에 걸려 **영원히 실행되지 않는다** — 설정 저장
+     * 뒤의 확장 캐시 버전 bump 가 예약한 정적 재게시가 그렇게 조용히 사라졌다(#651 F5 실측: 버전은
+     * 올랐는데 게시는 다음 렌더의 자가 치유까지 미뤄짐). 예외도 로그도 없고, 자가 치유가 한 렌더
+     * 뒤에 덮어 주므로 "한 박자 늦게 반영" 으로만 나타난다.
+     *
+     * @param  callable  $callback  전역 인스턴스를 바꿔 놓을 수 있는 작업
+     */
+    public static function withPreservedContainer(callable $callback): void
+    {
+        $app = Container::getInstance();
+
+        try {
+            $callback();
+        } finally {
+            Container::setInstance($app);
         }
     }
 

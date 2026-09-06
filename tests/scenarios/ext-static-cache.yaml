@@ -129,6 +129,16 @@ effects:
   - admin_catch_all_shares_static_exclusion
   - prune_skips_active_serving_path
   - extension_copy_paths_inherit_directory_ownership
+  # #651 — 재게시 누락 3건·버전 수명·root 안내
+  - template_update_always_bumps_cache_version
+  - template_update_failure_bumps_after_restore
+  - asset_url_mode_change_bumps_extension_cache_version
+  - cache_version_key_does_not_expire
+  - custom_signature_covers_publishable_tree
+  - custom_signature_scoped_per_host
+  - status_command_warns_root_and_hints_web_account
+  - publish_command_warns_root_but_continues
+  - status_command_consumes_service_report
 
 test_files:
   - tests/Feature/Services/ExtensionStaticCacheServiceTest.php
@@ -143,6 +153,11 @@ test_files:
   - tests/Feature/Console/BuildCommandPruneScopeTest.php
   - tests/Feature/Extension/ExtensionPendingOwnershipTest.php
   - tests/Unit/Extension/ClearsTemplateCachesTest.php
+  - tests/Unit/Extension/TemplateUpdateConfigCacheInvalidationTest.php
+  - tests/Unit/Services/SettingsServiceSetSettingSideEffectsTest.php
+  - tests/Unit/Support/CustomAssetsPublishableFilesTest.php
+  - tests/Feature/View/CustomAssetInjectionTest.php
+  - tests/Feature/Console/ExtStaticStatusCommandTest.php
   - tests/Unit/Services/ExtensionBundleServiceTest.php
   - tests/Unit/Build/ViteOutDirContractTest.php
   - tests/Unit/Support/AssetUrlTest.php
@@ -160,7 +175,12 @@ notes: |
   게시·게이트·폴백은 리소스 무관 공통 메커니즘이고, 리소스별 형상 차이는
   published_* effects (payload/봉투/소스맵 제외) 가 각각 단언한다.
   environment=dev 축은 PHPUnit(환경 분기 케이스)과 AssetUrl 게이트 단위가 담당한다 —
-  E2E 대상 사이트(g7_2.dev)는 production 이라 dev 축을 브라우저로 실측할 수 없다.
+  E2E 대상 사이트(g7_2.dev)는 평소 local 이라, 브라우저 실측은 실측 창 동안만 `.env` 를
+  production 으로 전환해 수행하고 끝나면 원본을 복구한다(md5 대조). dev 축 자체는 브라우저로
+  실측하지 않는다.
+  관리자 수동 복구(상태 GET + 재게시 POST + 카드·모달·알림 버튼)는 축이 다르므로 별도
+  매니페스트 `tests/scenarios/static-cache-admin-rebuild.yaml` 이 소유한다 — 이 파일의 6축에
+  trigger 값을 더하면 108 조합의 exclusions 가 필요해진다.
   trigger=lifecycle 의 실기기 검증(확장 비활성/활성 → 재게시 → 새 staticBase)은
   Chrome MCP 매트릭스 T10a~T10d 가 수행한다 (원상 복구 의무 포함).
   publish_state=partial 은 태그 계층(개별 file_exists 게이트)과 fetch 계층

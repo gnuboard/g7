@@ -293,6 +293,7 @@ class InstallerJsonOutputTest extends TestCase
             'error_empty_server_response',
             'error_invalid_server_response',
             'error_polling_response_invalid',
+            'warning_best_effort_task_failed',
         ];
 
         foreach (['ko', 'en'] as $locale) {

@@ -208,6 +208,21 @@ php artisan hooks:clear                           # 캐시 삭제 (삭제 후 �
 
 > 훅 캐시는 확장 install/update 및 코어 업데이트(`clearAllCaches` → `extension:update-autoload`) 시 자동 재생성됩니다. 코어 리스너 코드 배포 시에만 `hooks:cache` 수동 실행. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](extension/hooks.md).
 
+### 부트스트랩 리소스 정적 게시
+
+```bash
+# 상태 점검 — 이상 발견 시 비-0 종료 (실행 계정·버전·게시 여부·실패 마커·잔존 버전)
+php artisan ext-static:status
+
+# 수동 게시 (웹 계정으로 — root 로 실행하면 캐시 폴더가 root 소유가 되어 이후 웹 요청이 500 을 낼 수 있다)
+sudo -u www-data php artisan ext-static:publish [--force]
+
+# 구버전 게시 디렉토리 정리 (현재 + 직전 1개 보존, 스케줄 일 1회 자동)
+php artisan ext-static:cleanup
+```
+
+> 관리자 화면에서는 환경설정 > 일반 「초기 화면 정적 파일」 카드에서 같은 상태를 보고 [지금 다시 만들기] 로 즉시 재게시할 수 있습니다. 상세: [backend/static-asset-publishing.md](backend/static-asset-publishing.md).
+
 ### 단발성 결함 보정 (hotfix)
 
 `hotfix:*` prefix 는 특정 버전의 결함 회복을 위해 신설되는 단발성 도구를 위한 표준 prefix 다. `core:*` (영구 운영 도구) 와 명확히 구분되며 dev-dashboard 자동 노출 면제 대상이다.

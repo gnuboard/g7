@@ -338,9 +338,11 @@ Composer 설치 방식을 선택할 때만 필요하다.
 | WebSocket | `php artisan reverb:start` | Supervisor 등 |
 
 ```bash
-# cron 예시 (스케줄러)
-* * * * * cd /path/to/g7 && php artisan schedule:run >> /dev/null 2>&1
+# cron 예시 (스케줄러) — 웹 서버 계정으로 실행 (root crontab 에 그대로 두면 캐시 파일이 root 소유가 된다)
+* * * * * cd /path/to/g7 && sudo -u www-data php artisan schedule:run >> /dev/null 2>&1
 ```
+
+`php artisan` 명령과 cron 은 웹 서버 실행 계정으로 실행한다 — 캐시·병합 번들·임시 파일이 다른 계정 소유로 남으면 이후 웹 요청이 `Permission denied` 로 실패한다. 예외는 소유권 복원이 내장된 `core:update` 만이다. 상세: [INSTALL.md](../INSTALL.md) 「명령줄·cron 실행 계정」.
 
 ---
 

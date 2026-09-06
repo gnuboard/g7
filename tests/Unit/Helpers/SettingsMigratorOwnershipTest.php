@@ -3,6 +3,7 @@
 namespace Tests\Unit\Helpers;
 
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Extension\Helpers\SettingsMigrator;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -97,6 +98,31 @@ class SettingsMigratorOwnershipTest extends TestCase
     }
 
     /**
+     * settings 디렉토리 생성도 파일과 대칭으로 부모 소유권을 상속한다 (#651 B1).
+     *
+     * 파일(`writeJsonFile`)만 상속하고 디렉토리(`makeDirectory`)는 상속하지 않던 비대칭 — sudo
+     * 업그레이드 스텝이 디렉토리를 root 로 만들면 `storage/app/{modules,plugins}` 는 restore_ownership
+     * 의도적 제외 경로라 되돌려지지 않고, 이후 웹 프로세스의 그 모듈 설정 저장이 영구 실패한다.
+     *
+     * @effects settings_directory_seed_inherits_ownership
+     */
+    public function test_settings_migrator_make_directory_invokes_inherit_ownership(): void
+    {
+        $body = (string) file_get_contents((new \ReflectionClass(SettingsMigrator::class))->getFileName());
+
+        $pos = strpos($body, 'File::makeDirectory($settingsDir');
+        $this->assertNotFalse($pos, 'SettingsMigrator 의 settings 디렉토리 생성 지점을 찾지 못했다');
+
+        $window = implode("\n", array_slice(explode("\n", substr($body, $pos)), 0, 4));
+
+        $this->assertStringContainsString(
+            'FilePermissionHelper::inheritOwnershipFromParent($settingsDir)',
+            $window,
+            'SettingsMigrator: settings 디렉토리 생성 뒤 부모 소유권 상속이 없다 (파일만 상속하는 비대칭)'
+        );
+    }
+
+    /**
      * SettingsMigrator::writeJsonFile 호출 후 *.json 의 owner 가 부모와 일치.
      *
      * `SettingsMigrator` 는 protected 메서드 + non-static 이라 직접 호출이 어려우므로,
@@ -107,7 +133,7 @@ class SettingsMigratorOwnershipTest extends TestCase
      */
     public function test_settings_migrator_write_json_file_invokes_inherit_ownership(): void
     {
-        $reflection = new \ReflectionClass(\App\Extension\Helpers\SettingsMigrator::class);
+        $reflection = new \ReflectionClass(SettingsMigrator::class);
         $method = $reflection->getMethod('writeJsonFile');
         $body = file_get_contents($method->getFileName());
 

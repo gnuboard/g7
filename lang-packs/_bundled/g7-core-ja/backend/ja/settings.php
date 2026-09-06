@@ -76,8 +76,6 @@ return [
     'driver_test_partial' => '一部のドライバ接続テストが失敗しました。',
     'driver_test_error' => 'ドライバ接続テスト中にエラーが発生しました。',
     'unknown_driver' => '不明なドライバです。',
-
-    // アウトバウンドプロキシ接続テストメッセージ
     'outbound_proxy_test_success' => 'プロキシ接続に成功しました。外部サービスにはこの IP アドレスとして見えます。',
     'outbound_proxy_test_failed' => 'プロキシ経由で接続できませんでした。アドレスとプロキシサーバーの状態を確認してください。',
     'outbound_proxy_test_invalid_url' => 'プロキシアドレスの形式が正しくありません。',
@@ -174,10 +172,11 @@ return [
         'source_vendor_missing' => 'ソースディレクトリに vendor がありません。composer install が実行されていない可能性があります。',
         'composer_failed_with_output' => 'composer install 実行に失敗しました。:output',
     ],
-
     'trusted_proxy' => [
         'alert_title' => '信頼するプロキシが設定されていません',
         'alert_message' => 'プロキシヘッダー(:headers)を受信していますが、信頼するプロキシが設定されていないため、すべての訪問者が同じアドレス(:ip)として記録されています。.env に TRUSTED_PROXIES を指定してください。詳細: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
     ],
-
+    'static_cache_status_loaded' => 'ホーム画面の静的ファイルの状態を読み込みました。',
+    'static_cache_republished' => 'ホーム画面の静的ファイルを再作成しました。',
+    'static_cache_republish_failed' => 'ホーム画面の静的ファイルを再作成できませんでした。サイトは正常に動作しています。',
 ];
