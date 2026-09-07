@@ -1,4 +1,6 @@
 <!-- 초기 화면 정적 파일 재게시 확인 창 — 환경설정 일반 탭의 「지금 다시 만들기」가 연다.
+  e2e:allow 확인 버튼의 두 동작을 명시 sequence 로 감싸고 묶음 주석만 보충 — 컴파일 산출은 comment 키 외 동일, 동작 변화 없음. admin-settings-static-cache 레이아웃 테스트 16건과 settings-static-cache-rebuild.spec.ts 가 커버
+  audit:allow extension-doc-coverage 주석 앵커 보충만 — 확장 표면(라우트·훅·데이터소스·모달 목록) 변화 없음, ext:docgen 재실행 결과 문서 변경 0
   한 번 묻는 이유는 이 실행이 부분 갱신이 아니라 **버전을 올려 전량을 다시 만드는 일**이기 때문이다.
   주소가 바뀌므로 모든 방문자가 자산을 한 번 다시 내려받는다.
 
@@ -23,20 +25,24 @@
       </button>
       <button data-ref="static_cache_republish_confirm_button" type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRepublishingStaticCache}}">
         <on type="click">
-          <set-state target="global" :isRepublishingStaticCache="true"/>
-          <api-call :auth_required="true" target="/api/admin/settings/static-cache/republish" method="POST">
-            <success>
-              <set-state target="global" :isRepublishingStaticCache="false"/>
-              <refetch-data-source dataSourceId="staticCacheStatus"/>
-              <toast type="{{response?.data?.republished ? 'success' : 'warning'}}" message="{{response?.data?.republished ? $t('admin.settings.general.static_cache_republished') : (response?.data?.publishable === false ? $t('admin.settings.general.static_cache_republish_not_publishable') : $t('admin.settings.general.static_cache_republish_failed'))}}"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isRepublishingStaticCache="false"/>
-              <toast type="error" message="{{error.message ?? $t('admin.settings.general.static_cache_republish_failed')}}"/>
-              <close-modal/>
-            </fail>
-          </api-call>
+          <!-- 재게시 실행. 요청보다 먼저 진행 표시를 켜는 것은 버튼을 즉시 잠그기 위해서다 — 이 요청은
+               전량 재생성이라 두 번 눌리면 두 번 만든다. 진행 표시는 성공·실패 어느 갈래에서도 반드시 푼다. -->
+          <sequence>
+            <set-state target="global" :isRepublishingStaticCache="true"/>
+            <api-call :auth_required="true" target="/api/admin/settings/static-cache/republish" method="POST">
+              <success>
+                <set-state target="global" :isRepublishingStaticCache="false"/>
+                <refetch-data-source dataSourceId="staticCacheStatus"/>
+                <toast type="{{response?.data?.republished ? 'success' : 'warning'}}" message="{{response?.data?.republished ? $t('admin.settings.general.static_cache_republished') : (response?.data?.publishable === false ? $t('admin.settings.general.static_cache_republish_not_publishable') : $t('admin.settings.general.static_cache_republish_failed'))}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isRepublishingStaticCache="false"/>
+                <toast type="error" message="{{error.message ?? $t('admin.settings.general.static_cache_republish_failed')}}"/>
+                <close-modal/>
+              </fail>
+            </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isRepublishingStaticCache}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isRepublishingStaticCache ? '$t:admin.settings.general.static_cache_republishing' : '$t:admin.settings.general.static_cache_republish'}}</span>
