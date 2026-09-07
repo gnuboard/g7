@@ -68,6 +68,9 @@ effects:
   - cleaner_scope_does_not_leak_across_storages
   - cleaner_locked_items_survive_missing_settings
 
+  # 출하 카탈로그 전량 — 미동의 상태에서 저장되고 다음 방문(회수)까지 남는다 (항목마다 기계 파생)
+  - shipped_catalog_items_survive_unconsented_write_and_cleanup
+
   # 서버 소비 (CookieConsentMiddleware)
   - middleware_passes_cookie_listed_in_operator_settings
   - middleware_removes_cookie_absent_from_settings

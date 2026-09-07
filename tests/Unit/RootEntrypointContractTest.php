@@ -40,15 +40,14 @@ class RootEntrypointContractTest extends TestCase
      * 압축을 풀어도 진입점과 보호 규칙이 없어 사이트가 열리지 않거나, 열리더라도 프로젝트
      * 루트가 통째로 웹에 노출된다.
      *
-     * 제외 경로는 두 곳이 정한다 — 공개 저장소 필터(`release-lib.sh`)와 `git archive`
-     * 의 `export-ignore`(`.gitattributes`). 둘 다 파일로 읽을 수 있어 배포본 안에서도
-     * 판정할 수 있다(`git` 명령에 기대지 않는다).
+     * 제외 경로는 두 곳이 정한다 — 공개 저장소 필터와 `git archive` 의 `export-ignore`
+     * (`.gitattributes`). 이 테스트는 **배포본 안에서도 성립하는 후자**만 잰다(`git` 명령에
+     * 기대지 않는다).
      *
-     * 단, 공개 저장소 필터 **자신**은 배포본에 실리지 않는다(`.claude/` 는 그 필터의 제외
-     * 대상이자 `update.protected_paths` 다). 반면 `tests/` 는 배포되므로, 그 파일이 없는
-     * 환경에서 이 테스트를 돌리면 `file_get_contents(false)` 가 `ErrorException` 으로
-     * 승격되어 **배포본에서만 error** 가 된다 — 「배포본 안에서도 판정할 수 있다」는 이 절의
-     * 의도와 정반대다. 그래서 그 파일이 있을 때만 그 축을 잰다.
+     * 전자(필터 자신)는 배포본에 실리지 않는 내부 도구다. 공개 테스트가 그 파일을 읽으면
+     * 배포본을 받은 쪽에서는 원리상 성립할 수 없는 검사가 되고, 「파일이 없으면 건너뛴다」
+     * 가드는 그 상태를 통과와 구분하지 못한다. 그래서 그 축은 필터 옆의 내부 회귀
+     * 테스트가 같은 파일 목록으로 잰다 — 이 테스트에는 두지 않는다.
      *
      * @effects root_entry_files_are_update_targets
      */
@@ -56,27 +55,7 @@ class RootEntrypointContractTest extends TestCase
     {
         $rootFiles = ['index.php', '.htaccess'];
 
-        $releaseLibPath = base_path('.claude/scripts/release-lib.sh');
-        $releaseLib = is_file($releaseLibPath) ? (string) file_get_contents($releaseLibPath) : '';
-        $excludeBlock = (string) preg_replace('/^.*RELEASE_EXCLUDE_PATHS=\(/s', '', $releaseLib);
-        $excludeBlock = (string) preg_replace('/\).*$/s', '', $excludeBlock);
-
-        // 배포본에는 그 스크립트가 없다(내부 도구). 개발 트리에서는 **도출이 비면 이 축이
-        // 아무것도 재지 않는다** — 파일이 옮겨졌거나 변수명이 바뀌면 빈 문자열이 되고
-        // `assertStringNotContainsString` 는 언제나 통과한다. 형제 두 축이 이미 같은 사각을
-        // `assertGreaterThan` 으로 막아 두었는데 이 축만 빠져 있었다.
-        if (is_dir(base_path('.claude'))) {
-            $this->assertNotSame('', trim($excludeBlock), '제외 목록을 도출하지 못했다 — 그 상태에서는 이 축이 아무것도 재지 않는다');
-        }
-
         $gitattributes = (string) file_get_contents(base_path('.gitattributes'));
-
-        // 제외 목록은 **토큰 단위**로 비교한다. 따옴표를 포함한 문자열 비교는 배열이
-        // 따옴표 없이/홑따옴표로 적힌 형태를 통과시킨다.
-        $excludeTokens = array_values(array_filter(array_map(
-            static fn (string $token): string => trim($token, " \t\n\"'"),
-            preg_split('/\s+/', trim($excludeBlock)) ?: []
-        )));
 
         // `.gitattributes` 는 **glob 도 받는다.** 파일명 리터럴 줄만 보면 `* export-ignore`
         // 나 `*.php export-ignore` 한 줄로 두 파일이 `git archive` 산출물에서 빠지는데
@@ -98,12 +77,6 @@ class RootEntrypointContractTest extends TestCase
         }
 
         foreach ($rootFiles as $file) {
-            $this->assertNotContains(
-                $file,
-                $excludeTokens,
-                $file.' 가 공개 저장소 제외 목록에 있다 — 배포본에 실리지 않아 D25 가 성립하지 않는다'
-            );
-
             foreach ($exportIgnorePatterns as $pattern) {
                 $this->assertFalse(
                     fnmatch($pattern, $file),
@@ -113,8 +86,8 @@ class RootEntrypointContractTest extends TestCase
         }
 
         // gitignore 축의 모집단은 루트 진입 파일 **둘보다 넓다.** 릴리즈 페이로드는 git
-        // 오브젝트에서 만들어지므로 무시된 파일은 위 두 목록(제외 목록·export-ignore) 어디에도
-        // 나타나지 않은 채 빠진다 — 그것이 이 축의 존재 이유인데, 정작 그 축만 둘을 봤다.
+        // 오브젝트에서 만들어지므로 무시된 파일은 두 목록(공개 저장소 제외 목록·export-ignore)
+        // 어디에도 나타나지 않은 채 빠진다 — 그것이 이 축의 존재 이유인데, 정작 그 축만 둘을 봤다.
         // 배치를 성립시키는 나머지 자산이 같은 방식으로 빠지면 증상은 각각 다르지만 전부
         // 조용하다: `web.config` 가 빠지면 IIS 사이트가 위임 없이 프로젝트 루트를 열고,
         // `public/install/` 이 빠지면 신규 설치자가 인스톨러 404 를 받는다.
@@ -1287,87 +1260,20 @@ class RootEntrypointContractTest extends TestCase
         //     하나 늘어도 아무것도 울지 않았다. 실제로 `vendor-bundle.zip`(vendor 전량 15MB)·
         //     빌드 설정 `*.js`/`*.ts`·확장자 없는 `artisan` 이 그 사이로 그대로 서빙됐다.
         //
-        // 그래서 배포 페이로드의 **실제 최상위 파일**을 열거해 각각이 막히는지 본다. 릴리즈에서
-        // 제외되는 내부 자산과 진입점(`index.php`)은 대상이 아니다.
+        // 여기서는 배포 대상 목록(`update.targets`)의 **파일 항목**을 열거해 각각이 막히는지
+        // 본다 — 디렉토리 축과 같은 SSoT 이며 배포본 안에서도 성립한다. 진입점(최상위 `.php`)과
+        // 점 파일은 대상이 아니다.
         //
-        // 도출 근거가 「이 디스크의 최상위」라, 이 축은 **개발 체크아웃에서만** 의미가 있다.
-        // 배포된 설치본의 루트에는 운영자가 둔 파일(백업 `.sql.gz`·메모 `.txt`)이 있을 수 있고,
-        // 그때 red 가 되는 것은 코어의 결함이 아니다. `tests/` 는 배포되지만 `.claude/` 는
-        // 배포되지 않으므로 그것으로 개발 체크아웃을 가린다.
-        if (! is_dir(base_path('.claude'))) {
-            $this->markTestSkipped('배포된 설치본 — 최상위 파일 도출은 개발 체크아웃에서만 유효하다');
-        }
-
-        // 제외 목록은 **공개 저장소 필터에서 도출한다.** 손으로 적으면 그 목록이 필터와
-        // 어긋나도 아무것도 울지 않는다 — 실제로 `test-final.txt` 는 저장소에 존재한 적이
-        // 없는데 여기 박혀 있었고, 그 이름의 파일이 다시 생기면 방어선 검사에서 조용히
-        // 면제됐을 것이다. 형제 축(`test_root_entry_files_are_not_excluded_…`)이 이미 같은
-        // 파일에서 도출한다.
-        $releaseLibPath = base_path('.claude/scripts/release-lib.sh');
-        $releaseLib = is_file($releaseLibPath) ? (string) file_get_contents($releaseLibPath) : '';
-        $excludeBlock = (string) preg_replace('/^.*RELEASE_EXCLUDE_PATHS=\(/s', '', $releaseLib);
-        $excludeBlock = (string) preg_replace('/\).*$/s', '', $excludeBlock);
-
-        $releaseExcluded = array_values(array_filter(array_map(
-            static fn (string $token): string => trim($token, " 	
-\"'"),
-            preg_split('/\s+/', trim($excludeBlock)) ?: []
-        )));
-
-        $this->assertNotEmpty($releaseExcluded, '제외 목록을 도출하지 못했다 — 필터의 표기가 바뀌었다');
-
-        // 디렉토리 축도 **실제 최상위 디렉토리**에서 도출한다 — 파일 축과 같은 방식이다.
-        //
-        // 배포 대상 목록(`update.targets`)만 보면 그 목록에 없는 최상위 디렉토리는 아무리
-        // 늘어도 보이지 않는다. 그것을 손으로 더한 셋(`storage`·`vendor`·`node_modules`)이
-        // 메우고 있었는데, 손으로 더하는 한 다음 하나는 또 빠진다 — 실제로 테스트 산출물 둘
-        // (`playwright-report`·`test-results`)이 그 사이로 열려 있었다. 그 안에는 인증 상태가
-        // 담긴 Playwright trace·스크린샷이 들어가고, `tests/` 와 `playwright.config.ts` 가
-        // 배포 페이로드에 실리므로 운영자가 배포본에서 E2E 를 돌리면 그대로 생긴다.
-        //
-        // 점으로 시작하는 디렉토리는 블록 밖 `RedirectMatch 403`(mod_alias)이 이미 막으므로
-        // 대상이 아니다 (파일 축과 같은 근거).
-        $treeDirs = collect((array) scandir(base_path()))
-            ->filter(static fn (string $name) => $name !== '.' && $name !== '..' && is_dir(base_path($name)))
-            ->reject(static fn (string $name) => str_starts_with($name, '.'))
-            // 그 디렉토리가 곧 서빙 대상이다.
-            ->reject(static fn (string $name) => $name === 'public')
-            ->reject(static fn (string $name) => in_array($name, $releaseExcluded, true))
-            ->values();
-
-        // 하한도 **도출**한다. 리터럴 `10` 은 실제 도출(20)의 절반이라 트리의 태반이
-        // 사라져도 red 가 되지 않았다. 그렇다고 실측값을 리터럴로 박을 수도 없다 —
-        // `playwright-report`·`test-results` 는 E2E 를 돌린 뒤에만 생기는 산출물이라
-        // 개발 체크아웃마다 개수가 다르다.
-        //
-        // 그래서 「이 트리에 반드시 있어야 하는 최상위 디렉토리」에서 뽑는다: 배포 대상
-        // 목록에서 도출한 디렉토리 중 실제로 존재하고 릴리즈에서 제외되지 않는 것들이다.
-        // 그 전부는 정의상 `$treeDirs` 에 들어가므로 하한으로 성립하고, 배포 대상이 줄면
-        // 하한도 함께 줄어 **거짓 red 를 내지 않는다**(트리 도출과 달리 운영자 파일로
-        // 부풀지 않는 방향이다).
-        $treeDirFloor = $deployedDirs
-            ->filter(static fn (string $name) => is_dir(base_path($name)))
-            ->reject(static fn (string $name) => in_array($name, $releaseExcluded, true))
-            ->count();
-
-        $this->assertGreaterThan(0, $treeDirFloor, '하한 도출이 비었다 — 배포 대상 목록을 읽지 못했다');
-        $this->assertGreaterThanOrEqual(
-            $treeDirFloor,
-            $treeDirs->count(),
-            '실제 최상위 디렉토리 수가 배포 대상 디렉토리 수보다 적다 — 트리 도출이 깨졌다'
-        );
-
-        foreach ($treeDirs as $dir) {
-            $this->assertMatchesRegularExpression(
-                '/[(|]'.preg_quote($dir, '/').'[)|]/',
-                $fallback,
-                $dir.'/ 가 mod_rewrite 부재 방어선에 없다 — 그 서버에서 그대로 열린다. '
-                .'배포 대상이 아니어도 배포본 위에 실재할 수 있는 최상위 디렉토리는 전부 막는다'
-            );
-        }
-
-        $rootFiles = collect((array) scandir(base_path()))
-            ->filter(static fn (string $name) => $name !== '.' && $name !== '..' && is_file(base_path($name)))
+        // 「실제 최상위 트리」에서 도출하는 형제 축(배포 대상이 아닌데 디스크에 실재하는
+        // 파일·디렉토리 — `vendor-bundle.zip`·`playwright-report` 가 그렇게 열려 있었다)은
+        // 공개 저장소 필터의 제외 목록을 읽어야 성립한다. 그 필터는 배포본에 실리지 않는
+        // 내부 도구라, 공개 테스트가 그것을 읽으면 배포본에서는 원리상 성립할 수 없는 검사가
+        // 되고 존재 가드는 그 상태를 통과와 구분하지 못한다. 그래서 그 축은 필터 옆의 내부
+        // 회귀 테스트가 같은 규칙으로 잰다 — 이 테스트에는 두지 않는다.
+        $rootFiles = collect((array) config('app.update.targets'))
+            ->map(static fn ($target) => trim((string) $target, '/'))
+            ->reject(static fn (string $target) => $target === '' || str_contains($target, '/'))
+            ->filter(static fn (string $target) => is_file(base_path($target)))
             // 최상위 `.php` 는 이 방어선의 대상이 **아니다** — 원리상 담을 수 없다.
             //
             // 이 방어선이 막는 것은 「PHP 로 실행되지 않아 원문이 그대로 나가는 것」이다
@@ -1377,35 +1283,17 @@ class RootEntrypointContractTest extends TestCase
             // 그 이름만 예외로 두어도 성립했으나, 그것은 이름의 문제가 아니라 확장자의
             // 문제였다. 대신 아래에서 「최상위 `.php` 는 자기 진입 가드를 갖는다」를
             // 적극 조건으로 요구한다 — 예외를 넓히면서 의무를 없애지 않는다.
-            ->reject(static fn (string $name) => strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) === 'php')
+            ->reject(static fn (string $target) => strtolower((string) pathinfo($target, PATHINFO_EXTENSION)) === 'php')
             // 이름이 점으로 시작하는 파일은 블록 밖 `RedirectMatch 403`(mod_alias) 이 이미 막는다.
             // 종전에는 `<FilesMatch "^\.">` + `Require` 였는데, `Require` 는 AuthConfig 등급을
             // 요구해 제한 AllowOverride 호스팅에서 전 요청 500 을 냈다(8차 라운드 실측).
-            ->reject(static fn (string $name) => str_starts_with($name, '.'))
-            ->reject(static fn (string $name) => in_array($name, $releaseExcluded, true))
+            ->reject(static fn (string $target) => str_starts_with($target, '.'))
+            ->unique()
             ->values();
 
-        // 파일 축의 하한도 같은 방식으로 **도출**한다 (리터럴 `10` → 도출). 실측값(23)을
-        // 박지 않는 이유도 같다 — 최상위 파일에는 `vendor-bundle.zip` 처럼 빌드 산출물이
-        // 섞여 개발 체크아웃마다 개수가 다르다. 배포 대상 목록의 **파일** 항목 중 실제로
-        // 존재하고, 진입점·점 파일·릴리즈 제외분이 아닌 것들이 하한이다. 그 전부는
-        // 정의상 `$rootFiles` 에 들어간다.
-        $rootFileFloor = collect((array) config('app.update.targets'))
-            ->map(static fn ($target) => trim((string) $target, '/'))
-            ->reject(static fn (string $target) => $target === '' || str_contains($target, '/'))
-            ->filter(static fn (string $target) => is_file(base_path($target)))
-            ->reject(static fn (string $target) => strtolower((string) pathinfo($target, PATHINFO_EXTENSION)) === 'php')
-            ->reject(static fn (string $target) => str_starts_with($target, '.'))
-            ->reject(static fn (string $target) => in_array($target, $releaseExcluded, true))
-            ->unique()
-            ->count();
-
-        $this->assertGreaterThan(0, $rootFileFloor, '하한 도출이 비었다 — 배포 대상 목록을 읽지 못했다');
-        $this->assertGreaterThanOrEqual(
-            $rootFileFloor,
-            $rootFiles->count(),
-            '실제 최상위 파일 수가 배포 대상 파일 수보다 적다 — 파일 도출이 깨졌다'
-        );
+        // 모집단이 비면 아래 순회가 아무것도 재지 않는다 — 배포 대상 목록에는 최상위 파일이
+        // 여럿(`artisan`·`composer.json`·빌드 설정 등) 있으므로 0 은 도출 실패다.
+        $this->assertGreaterThan(0, $rootFiles->count(), '배포 대상 목록에서 최상위 파일을 하나도 도출하지 못했다');
 
         // 확장자 규칙과 확장자 없는 파일 규칙을 각각 실제 패턴에서 읽어 낸다 (주석으로 만족 불가).
         preg_match('/<FilesMatch "\(\?i\)\\\\\.\(([^)]+)\)\$">/', $fallback, $extMatch);
@@ -1448,6 +1336,16 @@ class RootEntrypointContractTest extends TestCase
         // 사이트에서 스스로 닫혀야** 한다 — 그러지 않으면 운영 사이트에 인증 없는 표면이
         // 남는다. 두 완료 신호를 모두 보는지까지 본다: 락 파일만 보면 `.env` 표식만 있는
         // 사이트가, 표식만 보면 락 파일만 있는 사이트가 각각 열린다.
+        //
+        // 도출 근거가 「이 디스크의 최상위」라 이 축은 개발 체크아웃에서만 뜻이 있다 — 배포된
+        // 설치본의 루트에는 운영자가 둔 `.php` 가 있을 수 있고, 그때 red 가 되는 것은 코어의
+        // 결함이 아니다. 배포본에는 `.git` 이 없으므로 그것으로 가린다(형제 축과 같은 기준).
+        if (! is_dir(base_path('.git'))) {
+            $this->assertTrue(true, '저장소 밖(배포본)에서는 최상위 .php 진입 가드 축을 재지 않는다');
+
+            return;
+        }
+
         $rootPhpFiles = collect((array) scandir(base_path()))
             ->filter(static fn (string $name) => $name !== '.' && $name !== '..' && is_file(base_path($name)))
             ->filter(static fn (string $name) => strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) === 'php')

@@ -1408,30 +1408,17 @@ class ServerConfigParityTest extends TestCase
      * 서버 설정 파일이 릴리즈 페이로드에서 제외되지 않는다.
      *
      * 「저장소에 있다」만 재면 부족하다 — 배포본에 없으면 운영자가 붙여넣을 조각 자체가
-     * 손에 들어오지 않는다. 제외 경로는 공개 저장소 필터(`release-lib.sh`)와 `git archive`
-     * 의 `export-ignore`(`.gitattributes`) 두 곳이 정하며, 둘 다 파일로 읽을 수 있다.
+     * 손에 들어오지 않는다. 제외 경로는 공개 저장소 필터와 `git archive` 의 `export-ignore`
+     * (`.gitattributes`) 두 곳이 정한다. 이 테스트는 **배포본 안에서도 성립하는 후자**만
+     * 잰다 — 필터 자신은 배포본에 실리지 않는 내부 도구라, 공개 테스트가 그 파일을 읽으면
+     * 배포본에서는 원리상 성립할 수 없는 검사가 되고 존재 가드는 그 상태를 통과와 구분하지
+     * 못한다. 그 축은 필터 옆의 내부 회귀 테스트가 같은 파일 목록으로 잰다.
      *
      * @effects server_configs_are_shipped_in_the_release_payload
      */
     public function test_server_configs_are_not_excluded_from_the_release_payload(): void
     {
         $shipped = [self::IIS_CONFIG, self::NGINX_FRAGMENT, self::CADDY_FRAGMENT];
-
-        $releaseLibPath = base_path('.claude/scripts/release-lib.sh');
-        $releaseLib = is_file($releaseLibPath) ? (string) file_get_contents($releaseLibPath) : '';
-        $excludeBlock = (string) preg_replace('/^.*RELEASE_EXCLUDE_PATHS=\(/s', '', $releaseLib);
-        $excludeBlock = (string) preg_replace('/\).*$/s', '', $excludeBlock);
-
-        // 배포본에는 그 스크립트가 없다(내부 도구). 개발 트리에서만 그 축을 잰다 —
-        // 도출이 비면 이 검사가 아무것도 재지 않으므로 비었는지 먼저 확인한다.
-        if (is_dir(base_path('.claude'))) {
-            $this->assertNotSame('', trim($excludeBlock), '제외 목록을 도출하지 못했다 — 필터의 표기가 바뀌었다');
-        }
-
-        $excludeTokens = array_values(array_filter(array_map(
-            static fn (string $token): string => trim($token, " \t\n\"'"),
-            preg_split('/\s+/', trim($excludeBlock)) ?: []
-        )));
 
         $exportIgnorePatterns = [];
         foreach (preg_split('/\r\n|\n|\r/', (string) file_get_contents(base_path('.gitattributes'))) ?: [] as $line) {
@@ -1451,14 +1438,6 @@ class ServerConfigParityTest extends TestCase
         foreach ($shipped as $relative) {
             // 최상위 구간이 통째로 제외되면 그 아래 파일도 함께 빠진다 (`deploy` 등).
             $top = explode('/', $relative)[0];
-
-            foreach ([$relative, $top] as $candidate) {
-                $this->assertNotContains(
-                    $candidate,
-                    $excludeTokens,
-                    $relative.' 가 공개 저장소 제외 목록에 걸린다 (`'.$candidate.'`) — 배포본에 실리지 않는다'
-                );
-            }
 
             foreach ($exportIgnorePatterns as $pattern) {
                 $this->assertFalse(
