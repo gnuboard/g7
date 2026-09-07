@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 143개 (루트: `layouts`).
+레이아웃 144개 (루트: `layouts`).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 26개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 110개 |
+| `partials` | 111개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -122,6 +122,7 @@
 | `_modal_notification_template_form` | `partials` | partial | - |
 | `_modal_notification_template_preview` | `partials` | partial | - |
 | `_modal_password_confirm` | `partials` | partial | - |
+| `_modal_static_cache_republish` | `partials` | partial | - |
 | `_tab_advanced` | `partials` | partial | - |
 | `_tab_drivers` | `partials` | partial | - |
 | `_tab_general` | `partials` | partial | - |
@@ -332,7 +333,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_core_update_result.g7.html
 │           ├── _modal_notification_template_form.g7.html
 │           ├── _modal_notification_template_preview.g7.html
-│           └── _modal_password_confirm.g7.html
+│           ├── _modal_password_confirm.g7.html
+│           └── _modal_static_cache_republish.g7.html
 │
 ├── 모듈 관리
 │   └── admin_module_list.g7.html

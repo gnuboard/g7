@@ -99,6 +99,29 @@ class StaticPublishAlertTest extends TestCase
     }
 
     /**
+     * 알림에서 바로 복구한다 — 관리자 수동 복구 엔드포인트와 버튼 라벨·성공 문구를 싣는다 (#651 D11).
+     *
+     * 대시보드 렌더러는 `recover_endpoint` 가 있는 알림에 [다시 만들기] 버튼을 그리고 그 주소로
+     * POST 한다. 운영자가 결함을 처음 만나는 곳이 알림이므로 그 자리에서 복구가 끝나야 한다.
+     *
+     * @effects dashboard_alert_points_to_admin_republish
+     */
+    public function test_alert_carries_admin_republish_recover_wiring(): void
+    {
+        $this->seedMarker(2);
+
+        $alerts = $this->listener()->addStaticPublishAlert([]);
+
+        $this->assertSame('/api/admin/settings/static-cache/republish', $alerts[0]['recover_endpoint']);
+        $this->assertNotSame('', $alerts[0]['recover_label']);
+        $this->assertStringNotContainsString('extensions.alerts.', $alerts[0]['recover_label']);
+        $this->assertStringNotContainsString('extensions.alerts.', $alerts[0]['recover_success_message']);
+
+        // 문구도 관리자 화면 경로를 안내한다 — CLI 만 안내하면 수동 복구 UI 가 있어도 운영자가 모른다
+        $this->assertStringContainsString('환경설정', $alerts[0]['message']);
+    }
+
+    /**
      * 사유별로 subtype 과 문구가 갈린다 — 조치할 곳이 다르기 때문이다.
      *
      * @effects publish_failure_alert_distinguishes_reason
@@ -172,6 +195,26 @@ class StaticPublishAlertTest extends TestCase
             $ids,
             '리스너가 훅에 등록되지 않았다 — 알림이 조용히 뜨지 않는다'
         );
+    }
+
+    /**
+     * 리스너는 훅에 한 번만 등록된다.
+     *
+     * 코어 리스너는 CoreServiceProvider 의 자동 발견(훅 캐시 또는 app/Listeners 스캔)이 등록한다.
+     * AppServiceProvider 가 같은 리스너를 손으로 한 번 더 등록하면 같은 알림 카드가 두 장 뜬다 —
+     * 예외도 로그도 없이 화면에 중복으로만 나타난다 (7.0.10 신규 설치 대시보드에서 실제 발생).
+     *
+     * @effects publish_failure_listener_is_registered_on_hook
+     */
+    public function test_listener_is_registered_exactly_once(): void
+    {
+        $this->seedMarker(2);
+
+        $alerts = HookManager::applyFilters('core.dashboard.alerts', []);
+
+        $ids = array_count_values(array_column($alerts, 'id'));
+
+        $this->assertSame(1, $ids['static_publish_failure'] ?? 0, '정적 게시 실패 알림이 중복 등록되었다 — 같은 카드가 두 장 뜬다');
     }
 
     /**

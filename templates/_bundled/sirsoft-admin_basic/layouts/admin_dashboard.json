@@ -445,10 +445,10 @@
                                                         "id": "top_alert_recover_button_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Button",
-                                                        "if": "{{alert.subtype === 'recovery_available'}}",
+                                                        "if": "{{!!alert.recover_endpoint}}",
                                                         "actions": [
                                                             {
-                                                                "comment": "복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.",
+                                                                "comment": "복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.\n                       버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.\n                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다.",
                                                                 "type": "click",
                                                                 "handler": "apiCall",
                                                                 "target": "{{alert.recover_endpoint}}",
@@ -461,7 +461,7 @@
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "success",
-                                                                            "message": "$t:extensions.alerts.recovered_success"
+                                                                            "message": "{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"
                                                                         }
                                                                     },
                                                                     {
@@ -496,6 +496,13 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
+                                                                "if": "{{!!alert.recover_label}}",
+                                                                "text": "{{alert.recover_label}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!alert.recover_label}}",
                                                                 "text": "$t:extensions.alerts.recover_action"
                                                             }
                                                         ]
@@ -1716,10 +1723,10 @@
                                                                         "id": "alert_recover_button_{{$idx}}",
                                                                         "type": "basic",
                                                                         "name": "Button",
-                                                                        "if": "{{alert.subtype === 'recovery_available'}}",
+                                                                        "if": "{{!!alert.recover_endpoint}}",
                                                                         "actions": [
                                                                             {
-                                                                                "comment": "복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —\n                           복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.\n                           성공하면 경고 목록만 다시 받는다(그 경고가 사라졌는지가 결과다).",
+                                                                                "comment": "복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —\n                           복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.\n                           같은 이유로 버튼이 뜨는 조건도 경고 종류가 아니라 복구 주소의 유무이고,\n                           버튼 글자·성공 안내도 경고가 실어 오면 그것을 쓴다(없으면 공통 문구).\n                           성공하면 경고 목록만 다시 받는다(그 경고가 사라졌는지가 결과다).",
                                                                                 "type": "click",
                                                                                 "handler": "apiCall",
                                                                                 "target": "{{alert.recover_endpoint}}",
@@ -1732,7 +1739,7 @@
                                                                                         "handler": "toast",
                                                                                         "params": {
                                                                                             "type": "success",
-                                                                                            "message": "$t:extensions.alerts.recovered_success"
+                                                                                            "message": "{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"
                                                                                         }
                                                                                     },
                                                                                     {
@@ -1767,6 +1774,13 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
+                                                                                "if": "{{!!alert.recover_label}}",
+                                                                                "text": "{{alert.recover_label}}"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{!alert.recover_label}}",
                                                                                 "text": "$t:extensions.alerts.recover_action"
                                                                             }
                                                                         ]

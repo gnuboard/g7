@@ -1648,6 +1648,7 @@
     "schedules": "Schedules",
     "settings": "Settings",
     "sitemap_status": "Sitemap Generation Status",
+    "staticCacheStatus": "Startup static file status",
     "sitemap_progress_ws": "Sitemap Generation Progress (Live)",
     "systemInfo": "System Info",
     "templateDetail": "Template Detail",

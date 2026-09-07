@@ -49,6 +49,7 @@ effects:
   - queue_workers_not_restarted_for_other_categories
   - side_effects_skipped_when_save_fails
   - single_key_save_uses_storage_key_verbatim   # 화면 키 역변환 미적용 (프로그램 호출자 보호)
+  - asset_url_mode_change_bumps_extension_cache_version   # 번들 CSS 에 구워진 URL 형태 재생성 (#651)
 
 sub_flows:
   - id: single_key_side_effects
@@ -64,6 +65,7 @@ sub_flows:
       - queue_workers_not_restarted_for_other_categories
       - side_effects_skipped_when_save_fails
       - single_key_save_uses_storage_key_verbatim
+      - asset_url_mode_change_bumps_extension_cache_version
 
 test_files:
   - tests/Feature/Api/Admin/SettingsSingleValueUpdateTest.php

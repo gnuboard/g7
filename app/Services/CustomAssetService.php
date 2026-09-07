@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Exceptions\CustomAssetOperationException;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Rules\AllowedTemplateFileType;
@@ -279,7 +279,9 @@ class CustomAssetService
         CustomAssets::flushCache();
 
         try {
-            app(CacheInterface::class)->forget(CustomAssets::SIGNATURE_CACHE_KEY);
+            // 서명을 쓰는 뷰 컴포저와 **같은 통로**(고정 스토어·코어 네임스페이스)로 지운다 —
+            // 다른 통로로 지우면 그쪽 서명이 남아 다음 렌더가 같은 변경을 한 번 더 bump 한다.
+            self::customSignatureCache()->forget(CustomAssets::SIGNATURE_CACHE_KEY);
         } catch (\Exception $e) {
             Log::warning('사용자 추가 에셋 서명 캐시 삭제 실패', ['error' => $e->getMessage()]);
         }
@@ -385,8 +387,24 @@ class CustomAssetService
             return;
         }
 
-        if (! @mkdir($directory, 0755, true) && ! is_dir($directory)) {
-            throw new CustomAssetOperationException('custom_assets.errors.directory_failed', ['path' => $directory]);
+        // 확보는 코어 공통 프리미티브가 맡는다 — 소유권 상속·그룹 쓰기까지 정합화하고, 실패는 예외가 아니라
+        // 사유로 올라온다. `custom/` 은 지연 생성이라 `deploy:deploy 0755` 로 배포된 확장 디렉토리에서
+        // 첫 저장이 여기서 실패하는데, 경로만 적으면 운영자가 무엇을 고쳐야 하는지 알 수 없다(#651 D6).
+        // 사유·소유자·권한·실행 계정·조치 예시를 함께 싣는다 (정적 게시 프리플라이트와 같은 식).
+        if (FilePermissionHelper::ensureWritableDirectory($directory, 0775, $failure)) {
+            return;
         }
+
+        $failedPath = (string) ($failure['path'] ?? $directory);
+        $reason = (string) ($failure['reason'] ?? 'create_failed');
+
+        throw new CustomAssetOperationException('custom_assets.errors.directory_failed', [
+            'path' => $directory,
+            'reason' => __('custom_assets.errors.reason.'.$reason),
+            'owner' => (string) (@fileowner($failedPath) ?: 'unknown'),
+            'perms' => file_exists($failedPath) ? substr(sprintf('%o', @fileperms($failedPath)), -4) : 'absent',
+            'process_user' => ExtensionStaticCacheService::currentProcessUser(),
+            'hint' => __('custom_assets.errors.directory_failed_hint', ['path' => $failedPath]),
+        ]);
     }
 }

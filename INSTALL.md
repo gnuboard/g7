@@ -348,7 +348,7 @@ http://도메인/install
 | 4. 확장 선택 | 템플릿/모듈/플러그인 선택 (의존성 자동 해결) |
 | 5. 설치 실행 | "설치 시작" 버튼 클릭 후 진행 상황 모니터링 |
 
-`.env` 파일 생성과 `storage` / `bootstrap/cache` 쓰기 권한 부여는 인스톨러가 환경(소유자 일치 여부 등)에 맞춰 Step 0 및 이후 단계에서 자동 안내하므로, 사전 SSH 작업으로 수행할 필요 없습니다.
+`.env` 파일 생성과 `storage` / `bootstrap/cache` / `public/build` 쓰기 권한 부여는 인스톨러가 환경(소유자 일치 여부 등)에 맞춰 Step 0 및 이후 단계에서 자동 안내하므로, 사전 SSH 작업으로 수행할 필요 없습니다.
 
 **Step 3 — Vendor 설치 방식 선택:**
 
@@ -417,6 +417,12 @@ sudo chown -R www-data:www-data storage bootstrap/cache modules plugins template
 **`vendor/` 에는 쓰기 권한이 필요하지 않습니다.** 확장의 `vendor/` 는 설치·업데이트 시점에만 기록되며, 애플리케이션이 동작하면서 만드는 런타임 캐시는 모두 `storage/` 아래에 기록됩니다. 명령줄로 설치·업데이트를 수행한다면 그 계정만 쓸 수 있으면 됩니다.
 
 전체 권한 모델(그룹 공유 방식 A / 소유자 통일 방식 B / ACL 방식 C 와 umask 운영)은 [docs/requirements.md](docs/requirements.md) "파일 권한 및 umask 운영 방식" 절을 참고하세요.
+
+### 명령줄·cron 실행 계정
+
+`php artisan` 명령과 cron 은 **웹 서버 실행 계정으로** 실행합니다 (예: `sudo -u www-data php artisan …`, 또는 `crontab -u www-data -e` 로 등록). 대부분의 명령이 캐시·병합 번들·임시 파일을 만드는데, root 나 다른 계정으로 실행하면 그 산출물이 그 계정 소유로 남아 이후 웹 요청이 같은 자리에 쓰려는 순간 `Permission denied` 로 500 을 낼 수 있습니다. 이 문제는 특정 명령의 결함이 아니라 캐시를 건드리는 모든 명령에 공통이므로, 계정을 맞추는 것이 유일한 해법입니다.
+
+예외는 코어 업데이트(`php artisan core:update`)입니다. 이 명령은 `.env` 등 웹 계정이 쓸 수 없는 파일까지 고치므로 `sudo` 를 권장하며, 실행이 끝날 때 자기가 만든 파일의 소유권을 되돌리는 절차가 내장되어 있습니다.
 
 ---
 
@@ -665,7 +671,9 @@ G7_ENV_PRIORITY=true
 cron에 아래 항목을 등록합니다.
 
 ```bash
-* * * * * cd /path/to/g7 && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /path/to/g7 && sudo -u www-data php artisan schedule:run >> /dev/null 2>&1
 ```
+
+웹 서버 계정(`www-data` · `nginx` · `apache` 등)으로 실행해야 합니다 — root 의 crontab 에 그대로 등록하면 매분 캐시 파일이 root 소유로 만들어져 웹 요청이 실패할 수 있습니다. `crontab -u www-data -e` 로 그 계정의 crontab 에 등록하면 `sudo -u` 없이 같은 줄을 씁니다. 「명령줄·cron 실행 계정」 절을 참고하세요.
 
 > 상세 내용은 [docs/requirements.md](docs/requirements.md)를 참조하세요.

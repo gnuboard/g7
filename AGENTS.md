@@ -42,7 +42,7 @@
 | [service-provider.md](docs/backend/service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](docs/backend/service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](docs/backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈로그 빌드 시점에 보강 |
-| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트와 운영자 cu... |
+| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트·자산 URL ... |
 | [translatable-seeders.md](docs/backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) | 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 TranslatableSeede... |
 | [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
@@ -200,7 +200,7 @@
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 143 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 144 |
 | `sirsoft-basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 40 · 모델 0 · 레이아웃 164 |
 
 
@@ -672,6 +672,26 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 착수 전 **소비처를 실측**한다. 화면이 그 값을 실제로 순회·렌더하면 제거는 기능 축소다 — 계획서에 "안 쓴다" 고 적혀 있어도 레이아웃 JSON 을 열어 확인한다.
 
 > 상세: [api-resources.md](docs/backend/api-resources.md), [service-repository.md](docs/backend/service-repository.md)
+
+### 확장 캐시 버전은 트레이트 게터로만 읽고, 만료시키지 않는다
+
+확장 캐시 버전(`ext.cache_version`)은 모든 자산 URL 의 `?v=`·정적 게시본(`public/build/ext/{v}/`)·병합 번들 파일명의 좌표다. 그 키를 올리는 단일 지점(`incrementExtensionCacheVersion()`)이 재게시까지 예약하므로, 게시본에 구워지는 입력이 바뀌는 경로는 전부 그 지점을 타야 하고, 키 자체는 만료로 재생성되어서는 안 된다 — 재생성은 정적 파일 전체 재생성이자 전 방문자의 자산 URL 변경이다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `$cache->get('ext.cache_version', 0)` / `app(CacheInterface::class)->get(...)` / `->forget('ext.cache_version')` 원시 접근 | `ExtensionStaticCacheService::getExtensionCacheVersion()` 또는 트레이트를 조합한 클래스 안의 `self::getExtensionCacheVersion()` — 부재 시 재생성하므로 `cache:clear` 직후 0 이 새지 않고, 컨테이너 바인딩의 확장 네임스페이스 누수도 없다 |
+| 트레이트 정적 메서드를 트레이트 이름으로 직접 호출 (`ClearsTemplateCaches::getExtensionCacheVersion()`) | 트레이트를 조합한 코어 클래스 경유 — PHP 8.1+ E_DEPRECATED 이고, 트레이트 상수는 `self::` 로 읽을 수 없다 |
+| 게시본에 구워지는 설정값(`general.asset_url_mode`)을 바꾸는 경로에서 bump 누락 | 저장·단건 저장·복원·CLI 어느 경로든 `incrementExtensionCacheVersion()` — 번들 CSS 안의 `url()` 형태가 본문에 구워져 있다 |
+| 게시 입력이 바뀌는 수명주기 경로를 조건부 bump 에 위임 (템플릿 update 가 레이아웃 변경 건수 > 0 일 때만) | 모듈·플러그인과 동형으로 무조건 bump — 조건은 게시 입력 중 레이아웃 축만 본다 |
+| custom 변경 감지 서명과 게시 복사 집합을 서로 다른 코드가 정의 | 같은 열거자(`CustomAssets::publishableFiles()`) — 감지가 최상위 css/js 만 보면 하위 글꼴·이미지 교체가 영영 미게시다 |
+| 버전 키·서명 키를 기본 TTL 로 `put()` | `PERSISTENT_TTL_SECONDS`(10년) 명시 — `forever()` 는 `CacheInterface` 밖(공개 표면 변경), `put(…, 0)` 은 forget |
+| 서명 스코프를 렌더 템플릿만으로 나눔 | `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버 간 mtime 차이로 요청마다 재게시가 왕복한다 |
+| `config:cache` / `route:cache` / `event:cache` / `optimize` 를 헬퍼 밖에서 `Artisan::call` | `ConfigCacheHelper::rebuild()` / `RouteCacheHelper::rebuild()` (내부가 `withPreservedContainer`) — 이 명령들은 새 Application 을 부팅하며 전역 `Container` 를 일회용 앱으로 바꿔 놓아, 그 뒤 등록되는 `app()->terminating()` 재게시 예약이 종료되지 않는 앱에 걸려 사라진다 |
+| 코어 업데이트 흐름에서 현재 프로세스의 버전·update 목록을 `config('app.version')`·`config('app.update.*')` 로 판독 | spawn 자식은 부모가 비우지 않은 이전 버전 config 캐시로 부팅한다 — 버전은 `CoreVersionChecker::getCoreVersion()`(env 우선), update 목록은 캐시 부팅이면 `CoreUpdateService::freshDiskUpdateConfig()`, 부모는 spawn 직전 `ConfigCacheHelper::clear()` |
+
+이 결함군은 예외도 로그도 남기지 않는다 — 게시본이 정상 200 으로 옛 내용을 내보내는 것, 또는 매일 전체 재생성이 일어나는 것이 유일한 증상이다. 재게시 누락의 안전망은 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기](`POST /api/admin/settings/static-cache/republish`)이며, 상태 판정은 `ExtensionStaticCacheService::statusReport()` 한 곳이 CLI·API·화면에 공급한다.
+
+> 상세: [static-asset-publishing.md](docs/backend/static-asset-publishing.md) "버전은 만료되지 않는다" · "5-1. 관리자 화면에서의 수동 복구"
 
 ### 저장값 + 확장 카탈로그 병합 설정의 공개 응답
 

@@ -13,6 +13,7 @@ use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
 use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
+use App\Services\ExtensionStaticCacheService;
 use App\Services\OutboundProxyTester;
 use App\Services\SettingsService;
 use App\Support\EnvPriority;
@@ -32,7 +33,8 @@ class SettingsController extends AdminBaseController
         private SettingsService $settingsService,
         private DriverConnectionTester $driverConnectionTester,
         private DriverRegistryService $driverRegistryService,
-        private OutboundProxyTester $outboundProxyTester
+        private OutboundProxyTester $outboundProxyTester,
+        private ExtensionStaticCacheService $staticCacheService
     ) {
         parent::__construct();
     }
@@ -188,6 +190,39 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 초기 화면 정적 파일(부트스트랩 리소스 정적 게시) 상태를 조회합니다 (#651).
+     *
+     * CLI `ext-static:status` 와 **같은 판정**(`ExtensionStaticCacheService::statusReport`)을 돌려준다.
+     * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않는다 (`trustedProxy` 와 동형).
+     *
+     * @return JsonResponse 상태 보고서 JSON 응답
+     */
+    public function staticCacheStatus(): JsonResponse
+    {
+        return $this->success('settings.static_cache_status_loaded', $this->staticCacheService->statusReport());
+    }
+
+    /**
+     * 초기 화면 정적 파일을 지금 다시 만듭니다 (관리자 수동 복구, #651).
+     *
+     * 캐시 버전을 올리고 현재 버전을 강제 재게시한다. 게시 실패·게시가 쓰이지 않는 환경은
+     * 요청 처리 실패가 아니라 **진단 결과**라 HTTP 200 으로 돌려주고 성공 여부는 페이로드
+     * (`republished`)가 말한다 — 연결 테스트·드라이버 테스트와 같은 규약. 사이트는 어느 경우에도
+     * API 폴백으로 정상이다.
+     *
+     * @return JsonResponse 재게시 결과 + 상태 보고서 JSON 응답
+     */
+    public function republishStaticCache(): JsonResponse
+    {
+        $result = $this->staticCacheService->republish();
+
+        return $this->success(
+            ($result['republished'] ?? false) ? 'settings.static_cache_republished' : 'settings.static_cache_republish_failed',
+            $result
+        );
     }
 
     /**

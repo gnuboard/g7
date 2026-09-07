@@ -67,6 +67,27 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 초기 화면 정적 파일 상태 — 일반 탭에서만 받는다. 게시가 켜져 있는지·지금 게시할 수 있는 환경인지·
+    현재 버전·파일 수·마지막 게시 시각·최근 실패·게시 프로세스의 실행 계정을 서버가 판정해 돌려준다.
+    응답이 없으면 fallback 의 publishable=false 로 떨어져 「지금 다시 만들기」 버튼이 잠긴 채 그려진다 —
+    상태를 모르는 채로 재게시를 누르게 두지 않기 위해서다. -->
+  <data-source id="staticCacheStatus" label_key="$t:editor.data_source.staticCacheStatus" type="api" endpoint="/api/admin/settings/static-cache" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'general'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="enabled" :value="true"/>
+        <field name="publishable" :value="false"/>
+        <field name="environment" :value="null"/>
+        <field name="version" :value="0"/>
+        <field name="published" :value="false"/>
+        <field name="files" :value="0"/>
+        <field name="published_at" :value="null"/>
+        <field name="tree_writable" :value="null"/>
+        <field name="process_user" :value="null"/>
+        <field name="failure" :value="null"/>
+        <field name="retained_versions" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 리버스 프록시 진단 — 고급 탭에서만 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다. -->
   <data-source id="trustedProxy" label_key="$t:editor.data_source.trustedProxy" type="api" endpoint="/api/admin/settings/trusted-proxy" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
@@ -205,6 +226,7 @@
     <wait-for>policies</wait-for>
     <wait-for>language_packs</wait-for>
     <wait-for>sitemap_status</wait-for>
+    <wait-for>staticCacheStatus</wait-for>
     <wait-for>trustedProxy</wait-for>
   </transition-overlay>
   <init>
@@ -359,6 +381,8 @@
   <modal src="partials/admin_settings/_modal_password_confirm.g7.html"/>
   <!-- 캐시 비우기 확인 창(고급 탭). -->
   <modal src="partials/admin_settings/_modal_cache_delete.g7.html"/>
+  <!-- 초기 화면 정적 파일 재게시 확인 창 — 전체 재생성이라 누르기 전에 한 번 묻는다. -->
+  <modal src="partials/admin_settings/_modal_static_cache_republish.g7.html"/>
   <!-- 알림 템플릿 편집 창 — 정의 하나의 채널별 본문을 고친다. -->
   <modal src="partials/admin_settings/_modal_notification_template_form.g7.html"/>
   <!-- 알림 템플릿 미리보기 창 — 치환값을 넣어 실제 발송 모습을 보여 준다. -->

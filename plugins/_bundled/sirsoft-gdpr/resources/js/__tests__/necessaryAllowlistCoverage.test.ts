@@ -346,7 +346,11 @@ function discoverStorageKeys(): { keys: DiscoveredKey[]; unresolved: string[] } 
 /**
  * PHP 원문에서 `이름 => [ ... ]` 형태의 스코프 그룹을 문자열 배열로 파싱합니다.
  *
- * 대상은 `plugin.php` 의 출하 카탈로그와 `plugins/_bundled/sirsoft-gdpr/src/Support/NecessaryAllowlist.php` 의 잠금 집합.
+ * 대상은 둘 다 `plugin.php` — 출하 카탈로그와 잠금 집합이다. 잠금 집합이 진입 파일에 있는 것은
+ * 취향이 아니라 제약이다: 신규 설치에서 `getConfigValues()` 는 이 플러그인의 오토로드가 등록되기
+ * 전에 호출되므로, 진입 파일이 `src/` 클래스를 부르면 "Class not found" 로 설치가 멈춘다.
+ * `NecessaryAllowlist::locked()` 는 그 정의에 위임만 하며, 그 위임은 PHPUnit
+ * (`EntryFileAutoloadIndependenceTest`) 이 잠근다.
  * PHP 를 실행하지 않고 원문을 읽는 이유는, 이 대조가 **두 언어의 목록이 어긋났는지** 를
  * 보는 것이라 한쪽 런타임에 의존하면 안 되기 때문이다.
  *
@@ -421,7 +425,7 @@ const SHIPPED_CATALOG = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'DEFAULT_NECESSARY_ALLOWLIST_CATALOG ='),
 );
 const PHP_LOCKED = parsePhpScopeMap(
-    sliceBracketBlock(ALLOWLIST_PHP, 'public static function locked(): array'),
+    sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array'),
 );
 
 /**
@@ -533,7 +537,7 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
     });
 
     it('세션 쿠키 이름은 런타임 해석 값이다 (하드코딩 금지)', () => {
-        const locked = sliceBracketBlock(ALLOWLIST_PHP, 'public static function locked(): array');
+        const locked = sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array');
 
         expect(locked).toContain("config('session.cookie'");
         // 폴백 인자로서의 등장 1회만 허용 — 목록에 직접 적힌 항목으로 남아서는 안 된다.

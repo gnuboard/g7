@@ -91,6 +91,13 @@ class StaticPublishFailureAlertListener implements HookListenerInterface
                 ? TimezoneHelper::toUserCarbon(Carbon::parse($marker['at']))?->diffForHumans()
                 : null,
             'read' => false,
+            // 알림에서 바로 복구한다 (#651 D11) — 운영자가 결함을 처음 만나는 곳이 알림이므로 그 자리에서
+            // 끝나야 한다. 대시보드 렌더러는 `recover_endpoint` 가 있는 알림에 버튼을 그리고 POST 한다
+            // (기존 재호환 알림과 같은 배선). 성공 문구는 재호환 알림의 기본 문구가 이 알림에는 맞지
+            // 않으므로 리스너가 함께 싣는다.
+            'recover_endpoint' => '/api/admin/settings/static-cache/republish',
+            'recover_label' => __('extensions.alerts.static_publish_recover_label'),
+            'recover_success_message' => __('extensions.alerts.static_publish_recovered'),
         ];
 
         return $alerts;

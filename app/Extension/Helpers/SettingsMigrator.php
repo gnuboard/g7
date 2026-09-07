@@ -357,9 +357,13 @@ class SettingsMigrator
             return false;
         }
 
-        // 디렉토리 확인 및 생성
+        // 디렉토리 확인 및 생성 — 파일(`writeJsonFile`)과 대칭으로 디렉토리도 부모 소유권을 상속한다.
+        // sudo 코어 업데이트의 업그레이드 스텝이 이 디렉토리를 root 로 만들면 `storage/app/{modules,
+        // plugins}` 는 restore_ownership 의도적 제외 경로라 코어 업데이트로도 되돌려지지 않고, 이후
+        // 웹 프로세스의 그 모듈 설정 저장이 영구 실패한다 (#651 F13).
         if (! File::isDirectory($settingsDir)) {
             File::makeDirectory($settingsDir, 0755, true);
+            FilePermissionHelper::inheritOwnershipFromParent($settingsDir);
         }
 
         // 카테고리 파일 생성

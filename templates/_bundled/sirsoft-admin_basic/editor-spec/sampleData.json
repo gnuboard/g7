@@ -36,6 +36,21 @@
         }
       }
     },
+    "staticCacheStatus": {
+      "data": {
+        "enabled": true,
+        "publishable": true,
+        "environment": "production",
+        "version": 1788656566,
+        "published": true,
+        "files": 714,
+        "published_at": "2026-09-06T01:02:49+00:00",
+        "tree_writable": true,
+        "process_user": "www-data",
+        "failure": null,
+        "retained_versions": [1788171201, 1788656566]
+      }
+    },
     "locales": {
       "data": [
         {

@@ -162,12 +162,14 @@
             <p data-ref="top_alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
             <p data-ref="top_alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
             <div data-ref="top_alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
-              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{alert.subtype === 'recovery_available'}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
                 <on type="click">
-                  <!-- 복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다. -->
+                  <!-- 복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.
+                       버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.
+                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다. -->
                   <api-call :auth_required="true" target="{{alert.recover_endpoint}}" method="POST">
                     <success>
-                      <toast type="success" message="$t:extensions.alerts.recovered_success"/>
+                      <toast type="success" message="{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"/>
                       <refetch-data-source dataSourceId="dashboard_alerts"/>
                     </success>
                     <fail>
@@ -176,7 +178,8 @@
                   </api-call>
                 </on>
                 <icon name="check-circle" size="xs"/>
-                <span>$t:extensions.alerts.recover_action</span>
+                <span data-if="{{!!alert.recover_label}}">{{alert.recover_label}}</span>
+                <span data-if="{{!alert.recover_label}}">$t:extensions.alerts.recover_action</span>
               </button>
               <button data-ref="top_alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" aria-label="$t:extensions.alerts.dismiss_action">
                 <on type="click">
@@ -433,14 +436,16 @@
                 <p data-ref="alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
                 <p data-ref="alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
                 <div data-ref="alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
-                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{alert.subtype === 'recovery_available'}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
                     <on type="click">
                       <!-- 복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —
                            복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.
+                           같은 이유로 버튼이 뜨는 조건도 경고 종류가 아니라 복구 주소의 유무이고,
+                           버튼 글자·성공 안내도 경고가 실어 오면 그것을 쓴다(없으면 공통 문구).
                            성공하면 경고 목록만 다시 받는다(그 경고가 사라졌는지가 결과다). -->
                       <api-call :auth_required="true" target="{{alert.recover_endpoint}}" method="POST">
                         <success>
-                          <toast type="success" message="$t:extensions.alerts.recovered_success"/>
+                          <toast type="success" message="{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"/>
                           <refetch-data-source dataSourceId="dashboard_alerts"/>
                         </success>
                         <fail>
@@ -449,7 +454,8 @@
                       </api-call>
                     </on>
                     <icon name="check-circle" size="xs"/>
-                    <span>$t:extensions.alerts.recover_action</span>
+                    <span data-if="{{!!alert.recover_label}}">{{alert.recover_label}}</span>
+                    <span data-if="{{!alert.recover_label}}">$t:extensions.alerts.recover_action</span>
                   </button>
                   <button data-ref="alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" aria-label="$t:extensions.alerts.dismiss_action">
                     <on type="click">

@@ -109,6 +109,32 @@
             "comment": "서버·프레임워크 정보 — 정보 탭에서만 받는다(읽기 전용이라 저장 대상이 아니다)."
         },
         {
+            "id": "staticCacheStatus",
+            "label_key": "$t:editor.data_source.staticCacheStatus",
+            "type": "api",
+            "endpoint": "/api/admin/settings/static-cache",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'general'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "enabled": true,
+                    "publishable": false,
+                    "environment": null,
+                    "version": 0,
+                    "published": false,
+                    "files": 0,
+                    "published_at": null,
+                    "tree_writable": null,
+                    "process_user": null,
+                    "failure": null,
+                    "retained_versions": []
+                }
+            },
+            "comment": "초기 화면 정적 파일 상태 — 일반 탭에서만 받는다. 게시가 켜져 있는지·지금 게시할 수 있는 환경인지·\n    현재 버전·파일 수·마지막 게시 시각·최근 실패·게시 프로세스의 실행 계정을 서버가 판정해 돌려준다.\n    응답이 없으면 fallback 의 publishable=false 로 떨어져 「지금 다시 만들기」 버튼이 잠긴 채 그려진다 —\n    상태를 모르는 채로 재게시를 누르게 두지 않기 위해서다."
+        },
+        {
             "id": "trustedProxy",
             "label_key": "$t:editor.data_source.trustedProxy",
             "type": "api",
@@ -374,6 +400,7 @@
             "policies",
             "language_packs",
             "sitemap_status",
+            "staticCacheStatus",
             "trustedProxy"
         ]
     },
@@ -953,6 +980,10 @@
         {
             "comment": "캐시 비우기 확인 창(고급 탭).",
             "partial": "partials/admin_settings/_modal_cache_delete.json"
+        },
+        {
+            "comment": "초기 화면 정적 파일 재게시 확인 창 — 전체 재생성이라 누르기 전에 한 번 묻는다.",
+            "partial": "partials/admin_settings/_modal_static_cache_republish.json"
         },
         {
             "comment": "알림 템플릿 편집 창 — 정의 하나의 채널별 본문을 고친다.",

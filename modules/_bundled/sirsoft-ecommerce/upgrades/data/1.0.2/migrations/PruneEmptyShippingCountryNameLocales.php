@@ -2,6 +2,7 @@
 
 namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_0_2\Migrations;
 
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
 use App\Support\ExtensionStoragePath;
@@ -84,6 +85,8 @@ class PruneEmptyShippingCountryNameLocales implements DataMigration
         // 인코딩 플래그는 EcommerceSettingsService 의 저장부와 동일해야 한다.
         // 다르면 이 스텝이 국가명과 무관한 값(URL 등)의 이스케이프까지 조용히 바꿔 쓴다.
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 만든 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info(sprintf(
             '[ecommerce:1.0.2] 국가명 빈 로케일 키 %d개 제거 완료 (국가 %d개 검사)',
