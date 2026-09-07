@@ -8,6 +8,7 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
+use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -181,6 +182,15 @@ class ExecuteBundledUpdatesCommand extends Command
             foreach ($report->failed as $identifier => $message) {
                 $this->warn('  '.__('search.index.rebuild_failed_item', ['index' => $identifier, 'error' => $message]));
             }
+        }
+
+        // 이전 버전 부모가 남긴 빈 격리 디렉토리(core_{ts}/extracted 껍데기) 청소 —
+        // 부모의 정리 단계는 이 자식보다 먼저 끝나므로, 구버전 부모에서 올라오는
+        // 업데이트도 이 자리에서 껍데기 없이 마무리된다. 실패해도 업데이트 결과와 무관.
+        try {
+            app(CoreUpdateService::class)->sweepEmptyStagingDirectories();
+        } catch (\Throwable $e) {
+            Log::channel('upgrade')->warning('[spawn] 빈 격리 디렉토리 청소 실패', ['error' => $e->getMessage()]);
         }
 
         // 부모 프로세스가 결과를 복원할 수 있도록 표식 라인으로 페이로드 출력

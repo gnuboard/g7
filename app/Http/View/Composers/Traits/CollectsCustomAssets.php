@@ -2,10 +2,10 @@
 
 namespace App\Http\View\Composers\Traits;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Extension\Traits\ClearsTemplateCaches;
+use App\Services\ExtensionStaticCacheService;
 use App\Support\CustomAssets;
 use Illuminate\Support\Facades\Log;
 
@@ -53,7 +53,7 @@ trait CollectsCustomAssets
         // 한 번을 더 해야 반영된다 — 원인을 알 수 없는 한 박자 지연으로만 나타난다.
         // 새 버전으로 다시 해석한다. 게시본은 아직 없으므로 URL 은 API 형태로 떨어지고,
         // 그 응답은 디스크의 최신 내용을 그대로 준다. 다음 요청부터 정적 경로가 된다.
-        if ($this->syncCustomAssetCacheVersion($assets, $templateIdentifier)) {
+        if ($this->syncCustomAssetCacheVersion($templateIdentifier)) {
             CustomAssets::flushCache();
             $assets = $this->resolveCustomAssets($templateIdentifier);
         }
@@ -114,30 +114,29 @@ trait CollectsCustomAssets
      * 쓰기 뒤 이 키 하나를 `forget` 하는 것에 의존하므로(같은 키를 보는 두 소비자),
      * 키를 쪼개면 그 소비자가 일부만 지우게 되어 같은 결함군이 재생산된다.
      *
-     * @param  array<int, array<string, mixed>>  $assets  수집된 서술자 목록
+     * 서명 재료는 **게시와 같은 열거자**(`CustomAssets::publishableFiles`) — 활성 모듈·플러그인과
+     * 이 렌더의 템플릿의 `custom/**` 전체(하위 디렉토리·글꼴·이미지 포함)의 경로·수정 시각·
+     * 크기다. 종전에는 로드 목록(최상위 css/js)의 mtime 만 봤는데, 게시는 재귀 복사라
+     * 글꼴만 교체한 변경이 영영 감지되지 않았다(#651 F7). 크기를 함께 넣는 이유는 mtime 해상도
+     * (1초·일부 파일시스템 2초) 안의 재작성과 mtime 보존 복사(rsync -t)를 잡기 위해서다.
+     *
+     * 스코프 키에는 **호스트명**을 붙인다. 다중 웹서버가 캐시를 공유하면 같은 파일이라도 서버마다
+     * 배포 시각(mtime)이 달라, 하나의 자리를 서버들이 번갈아 덮어쓰며 요청마다 "변경" 으로
+     * 읽혀 전체 재게시가 왕복한다(#651 F9). 서버별로 기억하면 각 서버는 자기 파일만 대조한다.
+     *
      * @param  string|null  $scope  렌더 스코프 (활성 템플릿 식별자)
      * @return bool 확장 캐시 버전을 올렸으면 true
      */
-    private function syncCustomAssetCacheVersion(array $assets, ?string $scope = null): bool
+    private function syncCustomAssetCacheVersion(?string $scope = null): bool
     {
         try {
-            $parts = [];
+            $signature = $this->customAssetSignature($scope);
 
-            foreach ($assets as $asset) {
-                // 파일 출처만 본다 — 외부 URL·훅이 더한 항목은 파일 서명이 없다
-                if (($asset['source'] ?? null) !== 'file') {
-                    continue;
-                }
+            $scopeKey = ($scope ?? '').'@'.(gethostname() ?: 'host');
 
-                $parts[] = ($asset['id'] ?? '').'@'.($asset['version'] ?? '');
-            }
-
-            sort($parts, SORT_STRING);
-            $signature = $parts === [] ? 'empty' : md5(implode('|', $parts));
-
-            $scopeKey = $scope ?? '';
-
-            $cache = app(CacheInterface::class);
+            // 버전 키와 같은 고정 스토어·코어 네임스페이스 — 컨테이너 바인딩을 거치면 재바인딩
+            // 컨텍스트에서 다른 네임스페이스에 저장되어 첫 관측 규칙이 실제 변경을 삼킨다.
+            $cache = self::customSignatureCache();
 
             // 구 배포본이 남긴 스칼라 값은 맵이 아니다 — 어느 스코프의 것인지 알 수 없으므로
             // 서명으로 쓰지 않고 미관측으로 취급한다(첫 관측은 기록만 하니 헛된 bump 가 없다).
@@ -151,7 +150,9 @@ trait CollectsCustomAssets
             }
 
             $storedMap[$scopeKey] = $signature;
-            $cache->put(CustomAssets::SIGNATURE_CACHE_KEY, $storedMap);
+            // 버전 키와 같은 영구 TTL — 기본 TTL 로 만료되면 그 경계의 첫 관측이 "기록만" 이라
+            // 실제 변경 1회를 놓친다.
+            $cache->put(CustomAssets::SIGNATURE_CACHE_KEY, $storedMap, ExtensionStaticCacheService::PERSISTENT_TTL_SECONDS);
 
             if ($stored === null) {
                 return false;
@@ -172,6 +173,44 @@ trait CollectsCustomAssets
 
             return false;
         }
+    }
+
+    /**
+     * 이 렌더 스코프의 custom 파일 서명을 만듭니다.
+     *
+     * 재료 = 활성 모듈 → 활성 플러그인 → 렌더 템플릿 순으로 `publishableFiles()` 전체의
+     * `{type}/{id}/{relative}@{mtime}@{size}`. 정렬 뒤 md5. 파일이 하나도 없으면 `empty`.
+     *
+     * @param  string|null  $scope  렌더 스코프 (활성 템플릿 식별자)
+     * @return string 서명
+     */
+    private function customAssetSignature(?string $scope): string
+    {
+        $parts = [];
+
+        $targets = [];
+
+        foreach ($this->activeExtensionIdentifiers('modules') as $identifier) {
+            $targets[] = ['modules', $identifier];
+        }
+
+        foreach ($this->activeExtensionIdentifiers('plugins') as $identifier) {
+            $targets[] = ['plugins', $identifier];
+        }
+
+        if (! empty($scope)) {
+            $targets[] = ['templates', $scope];
+        }
+
+        foreach ($targets as [$type, $identifier]) {
+            foreach (CustomAssets::publishableFiles($type, $identifier) as $file) {
+                $parts[] = $type.'/'.$identifier.'/'.$file['relative'].'@'.$file['mtime'].'@'.$file['size'];
+            }
+        }
+
+        sort($parts, SORT_STRING);
+
+        return $parts === [] ? 'empty' : md5(implode('|', $parts));
     }
 
     /**

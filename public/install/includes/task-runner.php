@@ -33,6 +33,27 @@ if (! function_exists('sendSSEEvent')) {
     }
 }
 
+if (! function_exists('bestEffortFailureMessage')) {
+    /**
+     * best-effort 작업 실패 안내 문구를 만듭니다.
+     *
+     * 종전에는 작업 종류와 무관하게 언어팩 전용 문구(`warning_language_pack_install_partial`)를 재사용해,
+     * 대상(`target`)이 없는 `static_publish`·`config_cache` 실패가 "언어팩 일부 설치에 실패했습니다:  (계속 진행)"
+     * 으로 찍혔다(#651 F20). 작업 라벨(`task_{id}`)에 대상이 있으면 괄호로 덧붙인다.
+     *
+     * @param  string  $taskId  작업 식별자 (예: static_publish)
+     * @param  string  $target  작업 대상 (없으면 빈 문자열)
+     * @return string 안내 문구
+     */
+    function bestEffortFailureMessage(string $taskId, string $target): string
+    {
+        $taskName = lang("task_{$taskId}");
+        $display = $target !== '' ? "{$taskName} ({$target})" : $taskName;
+
+        return lang('warning_best_effort_task_failed', ['task' => $display]);
+    }
+}
+
 if (! function_exists('sendRollbackOutputSSE')) {
     /**
      * 롤백 실행 결과를 로그 이벤트로 출력합니다.
@@ -1935,7 +1956,7 @@ if (! function_exists('runInstallationTasks')) {
                 if (! $result['success']) {
                     // best-effort task (예: 번들 언어팩 설치) — 실패 시 경고 로그만 남기고 계속 진행
                     if ($bestEffort) {
-                        $warnMsg = lang('warning_language_pack_install_partial', ['identifier' => (string) $target]);
+                        $warnMsg = bestEffortFailureMessage((string) $taskId, (string) $target);
                         sendSSEEvent('log', ['message' => $warnMsg]);
                         addLog($warnMsg);
 

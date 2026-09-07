@@ -646,6 +646,328 @@
           ]
         }
       ]
+    },
+    {
+      "id": "card_static_cache",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:admin.settings.general.static_cache_title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-description"
+          },
+          "text": "$t:admin.settings.general.static_cache_description"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "row-stack"
+          },
+          "children": [
+            {
+              "id": "static_cache_summary_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-x-6 gap-y-2"
+              },
+              "children": [
+                {
+                  "id": "static_cache_status_row",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.general.static_cache_status"
+                    },
+                    {
+                      "id": "static_cache_status_badge",
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                        "classMap": {
+                          "key": "{{staticCacheStatus?.data?.enabled === false ? 'disabled' : (staticCacheStatus?.data?.publishable !== true ? 'dev_mode' : (staticCacheStatus?.data?.published ? 'published' : 'unpublished'))}}",
+                          "variants": {
+                            "published": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+                            "unpublished": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+                            "disabled": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+                            "dev_mode": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "id": "static_cache_status_text_disabled",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{staticCacheStatus?.data?.enabled === false}}",
+                          "text": "$t:admin.settings.general.static_cache_status_disabled"
+                        },
+                        {
+                          "id": "static_cache_status_text_dev_mode",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!!staticCacheStatus?.data && staticCacheStatus?.data?.enabled !== false && staticCacheStatus?.data?.publishable !== true}}",
+                          "text": "$t:admin.settings.general.static_cache_status_dev_mode"
+                        },
+                        {
+                          "id": "static_cache_status_text_published",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{staticCacheStatus?.data?.publishable === true && !!staticCacheStatus?.data?.published}}",
+                          "text": "$t:admin.settings.general.static_cache_status_published"
+                        },
+                        {
+                          "id": "static_cache_status_text_unpublished",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{staticCacheStatus?.data?.publishable === true && !staticCacheStatus?.data?.published}}",
+                          "text": "$t:admin.settings.general.static_cache_status_unpublished"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "static_cache_version_row",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.general.static_cache_version"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{Number(staticCacheStatus?.data?.version ?? 0) > 0 ? staticCacheStatus?.data?.version : '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "static_cache_files_row",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.general.static_cache_files"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{staticCacheStatus?.data?.published ? Number(staticCacheStatus?.data?.files ?? 0).toLocaleString() : '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "static_cache_published_at_row",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.general.static_cache_published_at"
+                    },
+                    {
+                      "id": "static_cache_published_at_value",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!!staticCacheStatus?.data?.published_at}}",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{staticCacheStatus.data.published_at | datetime('YYYY-MM-DD HH:mm:ss')}}"
+                    },
+                    {
+                      "id": "static_cache_published_at_never",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!staticCacheStatus?.data?.published_at}}",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:admin.settings.general.static_cache_never"
+                    }
+                  ]
+                },
+                {
+                  "id": "static_cache_process_user_row",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.general.static_cache_process_user"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{staticCacheStatus?.data?.process_user ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "static_cache_actions",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "ml-auto"
+                  },
+                  "children": [
+                    {
+                      "id": "static_cache_republish_button",
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "disabled": "{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}",
+                        "aria-disabled": "{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}",
+                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                      },
+                      "text": "$t:admin.settings.general.static_cache_republish_now",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "openModal",
+                          "target": "settings_static_cache_republish_modal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "static_cache_failure_row",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!!staticCacheStatus?.data?.failure}}",
+              "props": {
+                "className": "form-hint text-red-600 dark:text-red-400 break-words"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:admin.settings.general.static_cache_failure|count={{staticCacheStatus?.data?.failure?.count ?? 0}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": " "
+                },
+                {
+                  "id": "static_cache_failure_reason_parent_not_writable",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{staticCacheStatus?.data?.failure?.reason === 'parent_not_writable'}}",
+                  "text": "$t:admin.settings.general.static_cache_failure_parent_not_writable"
+                },
+                {
+                  "id": "static_cache_failure_reason_lock_unavailable",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{staticCacheStatus?.data?.failure?.reason === 'lock_unavailable'}}",
+                  "text": "$t:admin.settings.general.static_cache_failure_lock_unavailable"
+                },
+                {
+                  "id": "static_cache_failure_reason_write_failed",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!['parent_not_writable', 'lock_unavailable'].includes(staticCacheStatus?.data?.failure?.reason ?? '')}}",
+                  "text": "$t:admin.settings.general.static_cache_failure_write_failed"
+                }
+              ]
+            },
+            {
+              "id": "static_cache_not_publishable_hint",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!!staticCacheStatus?.data && staticCacheStatus?.data?.publishable !== true}}",
+              "props": {
+                "className": "form-hint"
+              },
+              "children": [
+                {
+                  "id": "static_cache_hint_disabled",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{staticCacheStatus?.data?.enabled === false}}",
+                  "text": "$t:admin.settings.general.static_cache_hint_disabled"
+                },
+                {
+                  "id": "static_cache_hint_dev_mode",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{staticCacheStatus?.data?.enabled !== false}}",
+                  "text": "$t:admin.settings.general.static_cache_hint_dev_mode"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

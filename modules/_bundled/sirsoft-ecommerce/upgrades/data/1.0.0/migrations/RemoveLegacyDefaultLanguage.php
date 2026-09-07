@@ -2,6 +2,7 @@
 
 namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_0_0\Migrations;
 
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
 use App\Support\ExtensionStoragePath;
@@ -50,6 +51,8 @@ class RemoveLegacyDefaultLanguage implements DataMigration
         unset($settings['default_language']);
 
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 만든 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info('[ecommerce:1.0.0] 구 default_language 키 정리 완료 (코어 언어 일원화)');
     }

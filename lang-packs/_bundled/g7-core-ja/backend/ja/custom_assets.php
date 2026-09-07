@@ -13,6 +13,13 @@ return [
         'invalid_extension_target' => 'ターゲット拡張が見つかりません: :identifier',
         'extension_not_allowed' => '許可されていないファイル形式です: :extension',
         'upload_too_large' => 'アップロードファイルが大きすぎます。(最大 :limit バイト)',
+        'directory_failed_hint' => 'サーバーで `sudo chown -R {ウェブアカウント}:{ウェブアカウント} :path` を実行してウェブアカウントに所有者を変更するか、グループ書き込み権限(`chmod -R g+w :path`)を付与してから再度お試しください。',
+        'reason' => [
+            'occupied_by_file' => '同じ名前のファイルが既に存在します',
+            'ancestor_not_writable' => '親ディレクトリへの書き込みができません',
+            'create_failed' => 'ディレクトリの作成に失敗しました',
+            'not_writable' => 'ディレクトリは存在しますが、書き込みができません',
+        ],
     ],
     'validation' => [
         'path_required' => 'ファイルパスを指定してください。',

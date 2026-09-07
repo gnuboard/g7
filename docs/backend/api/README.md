@@ -254,7 +254,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [schedules.md](schedules.md) | `schedules` | 12 |
 | [search.md](search.md) | `search` | 1 |
 | [seo.md](seo.md) | `seo` | 5 |
-| [settings.md](settings.md) | `settings` | 16 |
+| [settings.md](settings.md) | `settings` | 18 |
 | [system.md](system.md) | `system` | 2 |
 | [templates.md](templates.md) | `templates` | 57 |
 | [users.md](users.md) | `users` | 12 |

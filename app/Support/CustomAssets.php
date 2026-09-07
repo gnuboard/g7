@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Extension\HookManager;
+use App\Rules\AllowedTemplateFileType;
 use App\Services\ExtensionStaticCacheService;
 use Illuminate\Support\Facades\Log;
 
@@ -54,6 +55,14 @@ class CustomAssets
     private static array $cache = [];
 
     /**
+     * 게시 대상 파일 열거 결과의 요청 스코프 메모이즈 (키 형식은 `$cache` 와 같다 — `{type}|{id}`).
+     *
+     * 서술자 메모(`$cache`)와 자리를 나눈다 — 서술자는 **로드 목록**(최상위 css/js), 이것은
+     * **게시·변경 감지 집합**(하위 디렉토리 포함 전 허용 확장자)이라 의미가 다르다.
+     */
+    private static array $fileCache = [];
+
+    /**
      * 확장 하나의 사용자 추가 에셋 목록을 돌려줍니다.
      *
      * @param  string  $extensionType  `templates` | `modules` | `plugins`
@@ -87,6 +96,110 @@ class CustomAssets
     public static function flushCache(): void
     {
         self::$cache = [];
+        self::$fileCache = [];
+    }
+
+    /**
+     * 확장 하나의 `custom/` 아래 **게시 대상 파일 전체**를 열거합니다.
+     *
+     * 정적 게시(`ExtensionStaticCacheService`)와 변경 감지(`CollectsCustomAssets`)가 **같은
+     * 열거자**를 쓴다. 종전에는 게시가 `custom/**` 를 재귀로 복사하고 감지는 최상위 css/js 의
+     * mtime 만 서명해 범위가 어긋났다 — 문서가 권장하는 `url('./fonts/x.woff2')` 의 글꼴만
+     * 교체하면 게시본이 영영 갱신되지 않았다(#651 F7). 감지 범위와 게시 범위를 한 코드가
+     * 정의해야 다시 어긋나지 않는다.
+     *
+     * 규약 스캔의 **로드 목록**(`forExtension()` — 최상위 css/js) 과는 별개다. 글꼴·이미지는
+     * CSS 가 상대 경로로 참조하는 대상이지 그 자체로 로드할 것이 아니므로 로드 목록은 그대로다.
+     *
+     * 허용 확장자는 종전 게시와 동일하게 `AllowedTemplateFileType::allowedExtensions()`(환경
+     * 무관 게터)에서 소스맵(`map`)을 뺀 목록이다 — 배포 금지 정책(`*.map` gitignore)과 같다.
+     *
+     * @param  string  $extensionType  `templates` | `modules` | `plugins`
+     * @param  string  $identifier  확장 식별자
+     * @return array<int, array{relative: string, absolute: string, mtime: int, size: int}> 상대 경로 오름차순
+     */
+    public static function publishableFiles(string $extensionType, string $identifier): array
+    {
+        $cacheKey = $extensionType.'|'.$identifier;
+
+        if (array_key_exists($cacheKey, self::$fileCache)) {
+            return self::$fileCache[$cacheKey];
+        }
+
+        return self::$fileCache[$cacheKey] = self::enumeratePublishableFiles($extensionType, $identifier);
+    }
+
+    /**
+     * `publishableFiles()` 의 실제 열거 (메모 없음).
+     *
+     * @param  string  $extensionType  확장 타입
+     * @param  string  $identifier  확장 식별자
+     * @return array<int, array{relative: string, absolute: string, mtime: int, size: int}> 상대 경로 오름차순
+     */
+    private static function enumeratePublishableFiles(string $extensionType, string $identifier): array
+    {
+        $directory = self::directory($extensionType, $identifier);
+
+        if ($directory === null) {
+            return [];
+        }
+
+        $realRoot = realpath($directory);
+
+        if ($realRoot === false || ! is_dir($realRoot)) {
+            return [];
+        }
+
+        $allowed = array_diff(AllowedTemplateFileType::allowedExtensions(), ['map']);
+
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($realRoot, \FilesystemIterator::SKIP_DOTS)
+            );
+        } catch (\UnexpectedValueException $e) {
+            Log::warning('사용자 추가 에셋 디렉토리를 열 수 없습니다.', [
+                'identifier' => $identifier,
+                'directory' => $realRoot,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        $files = [];
+
+        /** @var \SplFileInfo $file */
+        foreach ($iterator as $file) {
+            if (! $file->isFile()) {
+                continue;
+            }
+
+            $extension = strtolower($file->getExtension());
+
+            if (! in_array($extension, $allowed, true)) {
+                continue;
+            }
+
+            // 컨테인먼트 검증 — 심볼릭 링크 등으로 custom 밖을 가리키는 실경로 차단 (게시와 동일)
+            $realFile = $file->getRealPath();
+
+            if ($realFile === false || ! str_starts_with($realFile, $realRoot.DIRECTORY_SEPARATOR)) {
+                continue;
+            }
+
+            $relative = str_replace('\\', '/', substr($realFile, strlen($realRoot) + 1));
+
+            $files[$relative] = [
+                'relative' => $relative,
+                'absolute' => $realFile,
+                'mtime' => (int) (@$file->getMTime() ?: 0),
+                'size' => (int) (@$file->getSize() ?: 0),
+            ];
+        }
+
+        ksort($files, SORT_STRING);
+
+        return array_values($files);
     }
 
     /**

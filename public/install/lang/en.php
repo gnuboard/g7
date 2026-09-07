@@ -380,6 +380,7 @@ return [
     'error_language_pack_install_failed' => 'Language pack installation failed',
     'log_language_pack_install_success' => 'Language pack installation completed',
     'warning_language_pack_install_partial' => 'Language pack install partially failed: :identifier (continuing)',
+    'warning_best_effort_task_failed' => ':task failed (installation continues)',
 
     // Error Messages - Worker (Cache)
     'error_cache_clear_failed' => 'Cache clearing failed',

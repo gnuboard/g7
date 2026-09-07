@@ -22,6 +22,9 @@ coverage_strategy: pairwise
 axes:
   custom_source: [none, convention_scan, assets_json, assets_json_broken]
   custom_asset: [css, js, static_file, external_url]
+  # 변경 감지 범위 축 (#651 F7) — 감지 서명이 게시 집합(custom/** 재귀)과 같은 열거자를 쓰는지.
+  # 종전 서명은 최상위 css/js 의 mtime 만 봐서 하위 디렉토리 글꼴·이미지 교체가 영영 미게시였다.
+  custom_change_detection: [top_level_asset, nested_static_file, no_change]
 
 exclusions:
   - { custom_source: none, custom_asset: css, reason: "출처가 없으면 자산 종류 축이 성립하지 않는다" }
@@ -32,6 +35,21 @@ exclusions:
   - { custom_source: assets_json_broken, custom_asset: js, reason: "깨진 선언은 종류와 무관하게 빈 목록" }
   - { custom_source: assets_json_broken, custom_asset: static_file, reason: "동일" }
   - { custom_source: assets_json_broken, custom_asset: external_url, reason: "동일" }
+  # --- custom_change_detection: 파일이 있어야 변경이 성립한다 ---
+  - { custom_source: none, custom_change_detection: top_level_asset, reason: "출처가 없으면 바뀔 파일도 없다 — no_change 만 성립" }
+  - { custom_source: none, custom_change_detection: nested_static_file, reason: "동일" }
+  - { custom_asset: external_url, custom_change_detection: top_level_asset, reason: "외부 URL 은 파일 서명이 없다 — 감지 재료가 아니다" }
+  - { custom_asset: external_url, custom_change_detection: nested_static_file, reason: "동일" }
+  - { custom_source: assets_json_broken, custom_change_detection: top_level_asset, reason: "깨진 선언은 로드 목록이 비지만 감지 집합은 디스크 기준 — 대표 조합(convention_scan)으로 고정" }
+  - { custom_source: assets_json_broken, custom_change_detection: nested_static_file, reason: "동일" }
+  - { custom_source: assets_json_broken, custom_change_detection: no_change, reason: "동일" }
+  - { custom_source: assets_json, custom_change_detection: top_level_asset, reason: "선언 파일 여부는 감지 집합(디스크 전체)과 직교 — 대표 조합(convention_scan)으로 고정" }
+  - { custom_source: assets_json, custom_change_detection: nested_static_file, reason: "동일" }
+  - { custom_source: assets_json, custom_change_detection: no_change, reason: "동일" }
+  - { custom_asset: css, custom_change_detection: nested_static_file, reason: "하위 디렉토리 파일 축은 static_file 에서만 성립 — css/js 는 최상위 로드 자산" }
+  - { custom_asset: js, custom_change_detection: nested_static_file, reason: "동일" }
+  - { custom_asset: static_file, custom_change_detection: top_level_asset, reason: "최상위 로드 자산 축은 css/js 에서만 성립" }
+  - { custom_asset: js, custom_change_detection: top_level_asset, reason: "감지 재료는 확장자와 무관(경로·mtime·크기) — 대표 조합(css)으로 고정" }
 
 effects:
   - custom_asset_loaded_after_extension_bundles
@@ -51,10 +69,16 @@ effects:
   - custom_asset_containment_base_matches_serving_root
   - custom_asset_published_with_extension_assets
   - custom_assets_disabled_by_request_parameter
+  - custom_asset_signature_is_scoped_per_render
+  - custom_signature_covers_publishable_tree
+  - custom_signature_scoped_per_host
+  - custom_directory_failure_explains_reason_and_action
 
 test_files:
   - tests/Unit/Support/CustomAssetsTest.php
   - tests/Feature/View/CustomAssetInjectionTest.php
+  - tests/Unit/Support/CustomAssetsPublishableFilesTest.php
+  - tests/Unit/Services/CustomAssetServiceDirectoryFailureTest.php
   - tests/Feature/Extension/CustomAssetPreservationTest.php
   - resources/js/core/__tests__/ModuleAssetLoader.customAssets.test.ts
   - tests/Playwright/specs/custom-assets.spec.ts

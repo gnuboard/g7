@@ -29,6 +29,32 @@ class CoreUpdateRuntimeOwnershipTest extends TestCase
     }
 
     /**
+     * 정상화 타깃에 확장 업데이트 임시 폴더와 로그 디렉토리가 포함된다 (#651 B5).
+     *
+     * `storage/app/temp` 의 부모는 sudo 업데이트가 최초 생성자가 되면 root 로 굳어 이후 관리자 화면의
+     * 확장 업데이트가 임시 폴더를 만들지 못하고, `storage/logs` 는 restore_ownership 복원(Step 11)
+     * 뒤에 만들어지는 daily 롤오버·신규 로그 파일이 root 로 남는다.
+     *
+     * @effects runtime_ownership_targets_cover_temp_and_logs
+     */
+    public function test_runtime_ownership_targets_include_temp_and_logs(): void
+    {
+        $method = new \ReflectionMethod(CoreUpdateService::class, 'normalizeRuntimeOwnershipAfterRootRun');
+        $lines = file($method->getFileName()) ?: [];
+        $body = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        foreach ([
+            "storage_path('framework/cache')",
+            "base_path('bootstrap/cache')",
+            "storage_path('app/ext-bundles')",
+            "storage_path('app/temp')",
+            "storage_path('logs')",
+        ] as $target) {
+            $this->assertStringContainsString($target, $body, "런타임 소유권 정상화 타깃에 {$target} 이 없다");
+        }
+    }
+
+    /**
      * 부모(CoreUpdateCommand)·자식(ExecuteUpgradeStepsCommand) 흐름 종료부가
      * 정상화를 호출한다 — 로그 소유권 정상화(restoreUpgradeLogOwnership)와
      * 항상 짝으로 (#519 소스 훑기 선례).

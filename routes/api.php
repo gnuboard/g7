@@ -657,6 +657,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 읽기 전용 진단 (#124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
         // `{key}` 와일드카드보다 먼저 등록해야 그 라우트에 흡수되지 않는다.
         Route::get('trusted-proxy', [AdminSettingsController::class, 'trustedProxy'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.trusted-proxy');
+        // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
+        Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
+        Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
         Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.regenerate-app-key');
         Route::post('clear-cache', [AdminSettingsController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.clear-cache');

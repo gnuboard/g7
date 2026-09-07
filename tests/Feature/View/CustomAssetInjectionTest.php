@@ -9,6 +9,7 @@ use App\Extension\PluginManager;
 use App\Http\View\Composers\TemplateComposer;
 use App\Support\CustomAssets;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionMethod;
@@ -285,9 +286,9 @@ class CustomAssetInjectionTest extends TestCase
      * `?custom=off` 진동은 `customAssetsDisabledByRequest` 가 이미 막고 있다 — 같은
      * 진동의 다른 원인인 admin/user 템플릿 비대칭만 열려 있었다.
      *
-     * @scenario custom_source=convention_scan, custom_ext_type=template
+     * @scenario custom_source=convention_scan, custom_asset=css, custom_change_detection=top_level_asset
      *
-     * @effects custom_asset_signature_is_scoped_per_render
+     * @effects custom_asset_signature_is_scoped_per_render, custom_signature_scoped_per_host
      */
     #[Test]
     public function 관리자_사용자_렌더가_서명_키를_서로_덮어쓰지_않는다(): void
@@ -322,21 +323,23 @@ class CustomAssetInjectionTest extends TestCase
                 $collect->invoke($composer, $identifier);
             }
 
-            // 두 렌더의 서명이 **각자** 기억된다 — 하나의 자리를 서로 덮어쓰지 않는다
+            // 두 렌더의 서명이 **각자** 기억된다 — 하나의 자리를 서로 덮어쓰지 않는다.
+            // 스코프 키는 `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버별로 기억한다(#651 F9).
+            $host = gethostname() ?: 'host';
             $stored = $cache->get(CustomAssets::SIGNATURE_CACHE_KEY);
 
             $this->assertIsArray($stored, '서명이 스코프별로 기억되지 않는다 (단일 값으로 덮어쓰기)');
-            $this->assertArrayHasKey($adminTemplate, $stored);
-            $this->assertArrayHasKey($userTemplate, $stored);
-            $this->assertNotSame($stored[$adminTemplate], $stored[$userTemplate]);
+            $this->assertArrayHasKey($adminTemplate.'@'.$host, $stored);
+            $this->assertArrayHasKey($userTemplate.'@'.$host, $stored);
+            $this->assertNotSame($stored[$adminTemplate.'@'.$host], $stored[$userTemplate.'@'.$host]);
 
             // 파일은 그대로다 — 렌더를 오간다고 버전이 올라서는 안 된다
             $this->assertFalse(
-                $sync->invoke($composer, $adminAssets, $adminTemplate),
+                $sync->invoke($composer, $adminTemplate),
                 '관리자 렌더가 사용자 렌더의 서명을 덮어써 파일 변경으로 오독했다'
             );
             $this->assertFalse(
-                $sync->invoke($composer, $userAssets, $userTemplate),
+                $sync->invoke($composer, $userTemplate),
                 '사용자 렌더가 관리자 렌더의 서명을 덮어써 파일 변경으로 오독했다'
             );
 
@@ -346,7 +349,7 @@ class CustomAssetInjectionTest extends TestCase
             CustomAssets::flushCache();
 
             $this->assertTrue(
-                $sync->invoke($composer, $resolve->invoke($composer, $userTemplate), $userTemplate),
+                $sync->invoke($composer, $userTemplate),
                 '파일을 고쳤는데 변경 감지가 발화하지 않았다'
             );
         } finally {
@@ -354,6 +357,94 @@ class CustomAssetInjectionTest extends TestCase
                 File::deleteDirectory(base_path('templates/'.$identifier));
             }
             CustomAssets::flushCache();
+        }
+    }
+
+    /**
+     * `custom/` **하위 디렉토리**의 글꼴·이미지 변경도 감지한다 — 게시와 같은 범위 (#651 F7).
+     *
+     * 종전 서명은 로드 목록(최상위 css/js)의 mtime 만 봤다. 게시는 `custom/**` 를 재귀로
+     * 복사하므로, 문서가 권장하는 `url('./img/marker.svg')` 의 대상 파일만 교체하면 게시본이
+     * 영영 갱신되지 않았다 — 실측(g7_2.dev): svg 62B→78B 교체 뒤 버전 불변, 게시본 62B.
+     * mtime 이 같은 재작성도 크기로 잡는다.
+     *
+     * @scenario custom_source=convention_scan, custom_asset=static_file, custom_change_detection=nested_static_file
+     *
+     * @effects custom_signature_covers_publishable_tree
+     */
+    #[Test]
+    public function custom_하위_파일_크기_변경은_버전을_올린다(): void
+    {
+        $template = 'g7test-nested_tpl';
+        $dir = base_path('templates/'.$template.'/custom');
+
+        File::ensureDirectoryExists($dir.'/img');
+        File::put($dir.'/custom.css', ".x{background:url('./img/marker.svg')}");
+        File::put($dir.'/img/marker.svg', '<svg/>');
+
+        try {
+            $composer = app(TemplateComposer::class);
+            $sync = new ReflectionMethod(TemplateComposer::class, 'syncCustomAssetCacheVersion');
+            $cache = app(CacheInterface::class);
+
+            $cache->forget(CustomAssets::SIGNATURE_CACHE_KEY);
+            $cache->put('ext.cache_version', 1000);
+
+            CustomAssets::flushCache();
+            $this->assertFalse($sync->invoke($composer, $template), '첫 관측은 기록만 해야 한다');
+            $this->assertFalse($sync->invoke($composer, $template), '변경이 없으면 올리지 않는다');
+
+            // 최상위 css 는 그대로, 하위 svg 만 내용(크기)이 바뀐다 — mtime 은 그대로 둔다
+            $mtime = filemtime($dir.'/img/marker.svg');
+            File::put($dir.'/img/marker.svg', '<svg><!-- v2 --></svg>');
+            touch($dir.'/img/marker.svg', $mtime);
+            CustomAssets::flushCache();
+
+            $this->assertTrue(
+                $sync->invoke($composer, $template),
+                '하위 디렉토리 파일의 크기 변경이 감지되지 않았다 — 게시본의 글꼴·이미지가 영영 갱신되지 않는다'
+            );
+            $this->assertGreaterThan(1000, (int) $cache->get('ext.cache_version'));
+        } finally {
+            File::deleteDirectory(base_path('templates/'.$template));
+            CustomAssets::flushCache();
+        }
+    }
+
+    /**
+     * 서명 키는 만료되지 않는다 — 기본 TTL 로 만료되면 그 경계의 첫 관측이 "기록만" 이라 변경 1회를 놓친다 (#651 F11).
+     *
+     * @scenario custom_source=convention_scan, custom_asset=css, custom_change_detection=no_change
+     *
+     * @effects cache_version_key_does_not_expire
+     */
+    #[Test]
+    public function 서명_키는_이틀_뒤에도_남아_있다(): void
+    {
+        $this->mock(PluginManager::class, function ($mock) {
+            $mock->shouldReceive('getActivePlugins')->andReturn([self::FAKE_PLUGIN => []]);
+            $mock->shouldReceive('loadPlugins')->andReturnNull();
+        });
+
+        $composer = app(TemplateComposer::class);
+        $collect = new ReflectionMethod(TemplateComposer::class, 'collectCustomAssets');
+        $cache = app(CacheInterface::class);
+
+        $cache->forget(CustomAssets::SIGNATURE_CACHE_KEY);
+        CustomAssets::flushCache();
+        $collect->invoke($composer, null);
+
+        $this->assertIsArray($cache->get(CustomAssets::SIGNATURE_CACHE_KEY));
+
+        try {
+            Carbon::setTestNow(now()->addDays(2));
+
+            $this->assertIsArray(
+                $cache->get(CustomAssets::SIGNATURE_CACHE_KEY),
+                '서명 키가 기본 TTL 로 만료됐다 — 만료 경계의 실제 변경 1회가 조용히 삼켜진다'
+            );
+        } finally {
+            Carbon::setTestNow();
         }
     }
 }
