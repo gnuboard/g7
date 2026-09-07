@@ -42,6 +42,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
+| 20260902-0557051431 | boolean | `true` | 응답 객체의 키가 곧 주문번호이며 값 `true`는 해당 주문이 KG 이니시스 테스트 모드 결제임을 뜻한다. 목록에 존재하는 주문번호만 테스트 결제로 간주하면 된다. |
 | 20260619-1358556131 | boolean | `true` | 응답 객체의 키가 곧 주문번호이며 값 `true`는 해당 주문이 KG 이니시스 테스트 모드 결제임을 뜻한다. 목록에 존재하는 주문번호만 테스트 결제로 간주하면 된다. |
 | 20260619-1425382147 | boolean | `true` | 위와 동일 — 키가 주문번호, 값 `true`는 테스트 모드 결제 주문임을 나타낸다. |
 | APIDOC-KGINICIS-000001 | boolean | `true` | 위와 동일 — 키가 주문번호, 값 `true`는 테스트 모드 결제 주문임을 나타낸다. |
@@ -70,6 +71,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.read`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 `AdminOrderListController@testModeMap` 가 최근 6개월 이내 `pg_provider = kginicis` 결제 주문을 조회해 그중 테스트 모드 결제만 `{ "주문번호": true, ... }` 맵으로 반환한다. 테스트 판별은 `payment_meta.is_test_mode === true` → `pg_raw_response.mid` 가 KG 이니시스 Live MID 접두사(`SIR`)가 아님 → `transaction_id` 에 `Test` 포함 순으로 이루어진다. 어드민 주문 목록에서 결제수단 셀 하단에 "(테스트 결제)" 배지를 붙이는 용도이며, 응답 필드 키가 곧 주문번호이므로 특정 주문이 맵에 존재하면 테스트 결제로 간주하면 된다. `sirsoft-ecommerce.orders.read` 권한이 필요하고, 파라미터 없이 전체 맵을 한 번에 조회한다.
@@ -183,6 +186,8 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 `AdminCbtCvsOperationsController@show` 가 `CbtCvsOperationsService::summary` 를 호출해 CBT(일본결제) 편의점(CVS) 입금 결제의 운영 요약을 반환한다. 주문번호로 결제·메타(`payment_meta`)를 읽어 입금 상태(`cvs_status`), 편의점 확인번호/접수번호(`conf_no`/`receipt_no`), 입금 마감(`payment_term` 및 포맷된 값), 시간 경과 만료 여부(`is_expired_by_time`), NOTI 통보 이력(`notify_history`), 통보 수신 URL 등을 집계한다. `can_simulate_notify`(테스트 모드 + 입금대기)와 `can_mark_expired`(입금대기 + 기한 경과)는 후속 운영 액션의 버튼 노출을 제어하는 게이트값이다. `sirsoft-ecommerce.orders.read` 권한이 필요하며, 주문이 없으면 플러그인 표준 404(`order_not_found`)를 반환한다.
@@ -298,6 +303,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 `AdminCbtCvsOperationsController@expire` 가 `CbtCvsOperationsService::expireOverdue` 를 호출해 입금 기한이 지난 CBT 편의점 결제를 만료 상태로 전환한다. 결제 row 를 트랜잭션 내에서 잠근 뒤 `canMarkExpired`(CVS 메타 + `waiting_deposit` 상태 + `cvs_payment_term` 경과)를 재판정해 통과할 때만 `payment_status` 를 `expired` 로 바꾸고 메타에 `cvs_expired_at`·`cvs_expiry_reason=payment_term_elapsed` 를 기록한다. 잠금·재판정으로 동시 입금 통보(NOTI)와의 경합을 방지하며, 만료 조건 미충족 시 `not_expirable` 422 를 반환한다. `sirsoft-ecommerce.orders.update` 권한이 필요하고, CVS 결제가 아니면 `not_cvs` 422, 주문 미존재 시 404 로 응답한다.
 
@@ -410,6 +417,8 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 `AdminCbtCvsOperationsController@recheck` 가 `CbtCvsOperationsService::markRechecked` 를 호출해 CBT 편의점 결제의 로컬 상태 확인 시각만 메타에 기록한다(`cvs_last_recheck_at`, `cvs_last_recheck_result=local_status_checked`). CBT 편의점 입금은 한국 INIAPI 거래조회 대상이 아니므로 외부 PG 조회 없이 관리자가 "로컬 상태를 확인했다"는 감사 흔적을 남기는 용도이며, 결제 상태 자체는 변경하지 않는다. 처리 후 갱신된 운영 요약(summary)을 반환한다. `sirsoft-ecommerce.orders.read` 권한이 필요하고, CVS 결제가 아니면 `not_cvs` 422, 주문 미존재 시 404 로 응답한다.
@@ -540,6 +549,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 `AdminCbtCvsOperationsController@simulateNotify` 가 `CbtCvsOperationsService::simulatePaidNotify` 를 호출해, 테스트 모드에 한해 편의점 입금 완료 NOTI(`status=00`)를 관리자 동작으로 합성·재생한다. 저장된 메타(`cbt_mid`/`cbt_sid`/`cvs_*`)와 결제 통화 환산 금액으로 payload 를 만들어 실제 통보 처리 경로(`handleNotify`)에 흘려보내므로, 정상 처리 시 결제가 입금완료로 전환되고 주문 결제가 확정된다. 가드로 `is_test_mode` 가 아니면 `not_test_mode` 422, 결제가 `waiting_deposit` 이 아니면 `not_waiting_deposit` 422, 합성 통보가 OK 가 아니면 `simulate_failed` 422 를 반환한다. `sirsoft-ecommerce.orders.update` 권한이 필요하며, 운영(Live) 결제에는 사용할 수 없는 테스트 전용 도구다.
 
@@ -612,6 +623,8 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 `AdminCbtReconciliationController@show` 가 `CbtReconciliationService::get` 을 호출해 주문에 연결된 CBT 자동환불 조정(reconciliation) 레코드를 반환한다. 이 레코드는 CBT 결제의 자동환불 처리 이력(상태, TID, 금액, 환불 결과/에러, 재시도 횟수)을 담으며, `status` 에서 파생된 `manual_action_required`(수동 환불 필요 여부)와 `can_retry`(수동환불필요 + TID 존재 시 재시도 가능)를 함께 노출한다. 조정 레코드가 없는 주문이면 `data` 가 `null` 로 내려간다(정상 응답). `sirsoft-ecommerce.orders.read` 권한이 필요하며, 관리자 화면에서 자동환불 실패 건의 재시도 버튼 활성화 판단에 사용된다.
@@ -712,6 +725,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 `AdminCbtReconciliationController@retryRefund` 가 실패한 CBT 자동환불을 관리자 동작으로 재시도한다. 먼저 `claimRefundRetry` 로 레코드를 잠금 획득하는데, `can_retry`(상태가 `manual_refund_required` + TID 존재)가 아니면 획득에 실패해 `not_retryable` 422 를 반환한다. 획득 성공 시 저장된 CBT 자격증명(`is_test_mode`/`cbt_mid`)으로 `KgInicisApiService::refundCbtPayment` 를 호출하고, 성공하면 상태를 `auto_refunded` 로, 예외 발생 시 `manual_refund_required` 로 되돌리며 에러를 기록한다. `sirsoft-ecommerce.orders.update` 권한이 필요하고, 환불 API 실패 시 `retry_failed` 502 로 응답한다.
 
@@ -805,6 +820,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 `AdminEscrowDeliveryController@formData` 가 에스크로 배송등록 폼에 필요한 초기 데이터를 반환한다. 대상 주문의 KG 이니시스 에스크로 결제(`is_escrow = true`)를 찾아 TID, 결제금액, 공식 택배사 코드표(`courier_codes`), 배송지 기반 수령인 선입력값(`prefill`)을 내려주고, `payment_meta` 에서 이미 등록된 배송 이력(`registered_delivery`)·구매확정(`escrow_confirm`)·구매거절확인(`deny_confirmed`) 여부를 함께 제공한다. 에스크로 결제가 아닌 주문은 `has_escrow_payment` 없이 `data` 가 `null` 로 내려간다. `sirsoft-ecommerce.orders.read` 권한이 필요하며, 실제 배송등록(POST) 전 화면 표시·중복 등록 방지 판단에 사용된다.
 
@@ -821,7 +838,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | orderNumber | path | string | 예 | — | 대상 order number의 식별자 |
 | invoice | body | string | 예 | max 40 | 운송장번호 (KG 이니시스 규격 40자) |
-| ex_code | body | string | 예 | 공식 택배사 코드표 | 택배사 코드 — `formData` 응답의 `courier_codes`(컨트롤러 상수 `COURIER_CODES`)에 존재하는 코드만 허용 |
+| ex_code | body | string | 예 | — | 택배사 코드 — `formData` 응답의 `courier_codes`(컨트롤러 상수 `COURIER_CODES`)에 존재하는 코드만 허용 |
 | report | body | string | 아니오 | `I`, `U` | 등록/수정 구분 (I 최초 등록 / U 수정). 미전송·허용값 밖이면 컨트롤러 기본값 `I` 로 흡수 |
 | charge | body | string | 아니오 | `SH`, `BH` | 배송비 부담 구분 (SH 판매자 / BH 구매자). 미전송·허용값 밖이면 컨트롤러 기본값 `SH` 로 흡수 |
 | recv_name | body | string | 아니오 | max 30 | 수령인명 (미전송 시 배송지 DB 값으로 채움) |
@@ -844,10 +861,19 @@ Authorization: Bearer {YOUR_TOKEN}
 Content-Type: application/json
 
 {
-    "invoice": "1234567890123",
-    "ex_code": "cjgls",
+    "invoice": "예시값",
+    "ex_code": "예시값",
     "report": "I",
-    "charge": "SH"
+    "charge": "SH",
+    "recv_name": "예시 이름",
+    "recv_tel": "예시값",
+    "recv_post": "예시값",
+    "recv_addr": "예시값",
+    "regist_name": "예시 이름",
+    "send_name": "예시 이름",
+    "send_tel": "예시값",
+    "send_post": "예시값",
+    "send_addr": "예시값"
 }
 ```
 
@@ -894,6 +920,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 `AdminEscrowDeliveryController@register` 가 KG 이니시스 에스크로 결제의 배송정보를 INIAPI 에 등록한다. 형식·길이·택배사 코드 검증은 `EscrowDeliveryRegisterRequest` 가 담당한다 — 운송장번호(`invoice`, 필수·최대 40자)와 택배사코드(`ex_code`, 필수·공식 코드표 `COURIER_CODES` 내 값), 등록/수정 구분(`report`: I/U)·배송비 부담(`charge`: SH/BH, 미전송·비허용 값은 컨트롤러 기본값 I/SH 로 흡수), 수령인·발송인 필드 길이 상한(이름 30자/전화 20자/우편번호 10자/주소 200자)을 검증하며 위반 시 표준 validation 422(다국어 메시지)로 거부한다. 수령인 정보는 요청값 우선·부재 시 배송지 DB 로 채운다. 에스크로 결제는 반드시 에스크로 자격증명(`useEscrowCredentials`)으로 `registerEscrowDelivery` 를 호출하며, 성공 시 정제된 PG 응답과 배송 이력을 `payment_meta.escrow_delivery` 에 저장한다. `sirsoft-ecommerce.orders.update` 권한이 필요하고, 입력 검증 실패 422 / 에스크로 결제 미존재 404 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
 
@@ -918,6 +946,11 @@ POST /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/escrow-deny-co
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "dcnf_name": "예시 이름"
+}
 ```
 
 **응답 필드** (`data` 내부)
@@ -958,6 +991,8 @@ HTTP/1.1 200
 | 502 | Bad Gateway | KG 이니시스 구매거절확인 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 `AdminEscrowDenyConfirmController@confirm` 이 구매자가 구매거절을 선택한 에스크로 주문에 대해 판매자(관리자) 측 거절 확인을 처리한다(INIAPI v1 `type=Dncf`). 대상 에스크로 결제(`is_escrow = true`)를 찾아 이미 거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있으면 중복 처리 없이 422 로 막고, 에스크로 자격증명으로 `denyConfirmEscrow` 를 호출한다. 성공 시 확인 시각과 담당자명(`dcnf_name`, 최대 20자 — `EscrowDenyConfirmRequest` 가 형식 검증하며 미입력 시 다국어 기본값 `escrow.default_confirmer`, ko: "관리자"), 정제된 PG 응답을 메타에 기록한다. `sirsoft-ecommerce.orders.update` 권한이 필요하며, 에스크로 결제 미존재 404 / 이미 확인됨 422 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
@@ -1118,6 +1153,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 `AdminTransactionController@queryByOrder` 가 주문번호로 KG 이니시스 결제의 실시간 거래 상태를 조회한다. 결제 TID 를 찾은 뒤, CBT(일본결제, TID 가 `INIJPG` 로 시작하거나 통화 JPY)면 한국 INIAPI 조회 대상이 아니므로 로컬에 저장된 승인/입금 정보로 응답을 구성하고(`_is_local_confirmation=true`), 그 외에는 결제 시점 MID·모드(`is_test_mode`, MID `SIR` 접두사=Live 추정)에 맞는 자격증명으로 실제 `queryTransaction` API 를 호출한다. 응답은 `_pay_method_label`·카드/가상계좌/은행 상세·부분취소 이력·에스크로 상태 등 화면 표시용 `_` 접두 필드로 보강되며, 결제수단/은행/할부 코드는 한국어 라벨로 매핑된다. `sirsoft-ecommerce.orders.read` 권한이 필요하고, 결제 미존재 시 `data`=`null`, 조회 예외 시 502 로 응답한다.
 
@@ -1235,6 +1272,8 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 `UserReceiptController@show` 가 회원/비회원 공용 영수증 조회를 제공한다(선택적 인증). 로그인 사용자는 본인 소유 주문만, 비로그인 사용자는 `X-Guest-Order-Token` 헤더로 비회원 주문을 매칭하고, 토큰이 없거나 stale 하면 결제 직후 PG 콜백이 발급한 단기 영수증 쿠키(5분 유효)로 폴백한다. 소유권/토큰/쿠키 검증 실패는 모두 404 로 통일된다. CBT(일본결제) 결제면 KG 이니시스 매출전표가 없으므로 결제확인서용 필드 목록(`receipt_fields`)과 라벨을 직접 구성해 `receipt_type=cbt_confirmation` 으로 내려주고, 일반 결제는 KG 이니시스 영수증 URL(`receipt_type=inicis_receipt`)을 생성해 반환한다.

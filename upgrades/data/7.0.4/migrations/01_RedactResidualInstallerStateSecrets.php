@@ -162,8 +162,8 @@ final class RedactResidualInstallerStateSecrets implements DataMigration
 
         // file_put_contents — 기존 inode 의 권한·소유자를 그대로 유지 (CLI 컨텍스트에서
         // tmp+rename 하면 새 inode 가 CLI 사용자 소유가 되어 웹 서버 읽기가 깨질 수 있다).
-        // ë¶ë¶ ì°ê¸°ë ì¤í¨ë¡ ì½ëë¤ â ìë¦° ìí íì¼ì ì±ê³µì¼ë¡ ë³´ê³ íë©´
-        // íë¬¸ ë¹ë°ì´ ìì¡´íëë°ë ì´ììê° ê²½ê³ ë¥¼ ë°ì§ ëª»íë¤.
+        // 부분 쓰기도 실패로 읽는다 — 잘린 상태 파일을 성공으로 보고하면
+        // 평문 비밀이 잔존하는데도 운영자가 경고를 받지 못한다.
         $written = @file_put_contents($statePath, $encoded, LOCK_EX);
 
         if ($written === false || $written !== strlen($encoded)) {

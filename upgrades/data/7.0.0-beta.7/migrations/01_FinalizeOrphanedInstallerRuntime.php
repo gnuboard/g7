@@ -119,8 +119,8 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
 
         $merged = $this->mergeRuntimeIntoEnv($envBase, $runtime);
 
-        // ë¶ë¶ ì°ê¸°ë `false` ê° ìëë¼ ì´ ë°ì´í¸ ìë¤ â ê·¸ê²ì ì±ê³µì¼ë¡ ì½ì¼ë©´ ìë¦° `.env` ë¥¼
-        // ë¨ê¸°ê³  ë°ë¡ ìëìì ì ì¼í ë³µêµ¬ ê·¼ê±°ì¸ `runtime.php` ë¥¼ ì§ì´ë¤.
+        // 부분 쓰기는 `false` 가 아니라 쓴 바이트 수다 — 그것을 성공으로 읽으면 잘린 `.env` 를
+        // 남기고 바로 아래에서 유일한 복구 근거인 `runtime.php` 를 지운다.
         $written = @file_put_contents($envPath, $merged, LOCK_EX);
 
         if ($written === false || $written !== strlen($merged)) {

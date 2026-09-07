@@ -39,7 +39,7 @@ Authorization: Bearer {YOUR_TOKEN}
 Content-Type: application/json
 
 {
-    "tid": "StdpayCARDSIRSOFT001202606191358556131"
+    "tid": "예시값"
 }
 ```
 
@@ -165,6 +165,8 @@ HTTP/1.1 200
 | 502 | Bad Gateway | KG 이니시스 조회 API 호출 실패(HTTP 오류·타임아웃 등) 시 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
