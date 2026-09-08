@@ -83,6 +83,11 @@ class StorageCategoryDiskTest extends TestCase
             {
                 return ['ko' => '테스트', 'en' => 'Test'];
             }
+
+            public function exposedResolvePublicAssetDisk(?string $override = null): ?string
+            {
+                return $this->resolvePublicAssetDisk($override);
+            }
         };
     }
 
@@ -208,5 +213,84 @@ class StorageCategoryDiskTest extends TestCase
 
         $this->assertNull($module->exposedResolvePublicAssetDisk());
         $this->assertNull($module->exposedResolvePublicAssetDisk('vanished_plugin_disk'));
+    }
+
+    /**
+     * 플러그인 사본도 모듈과 동일한 해석 규칙을 따라야 합니다.
+     *
+     * 위임 이관(공개 #134) 전까지 플러그인 사본은 직접 테스트가 0건이라 오타가 나도
+     * 아무도 잡지 못하는 자리였다. 모듈과 같은 4축을 플러그인 더블에도 돌린다.
+     *
+     * @effects none_override_forces_streaming_over_global, orphan_disk_falls_back_to_streaming
+     */
+    #[Test]
+    public function plugin_resolve_public_asset_disk_matches_module_rules(): void
+    {
+        $plugin = $this->makePlugin();
+
+        // 미설정 → 스트리밍
+        $this->assertNull($plugin->exposedResolvePublicAssetDisk());
+
+        // 전역 설정 → 그 값
+        Config::set('core.storage.public_asset_disk', 'fake_cdn');
+        $this->assertSame('fake_cdn', $plugin->exposedResolvePublicAssetDisk());
+        $this->assertSame('fake_cdn', $plugin->exposedResolvePublicAssetDisk(''));
+
+        // override 우선
+        $this->assertSame('public', $plugin->exposedResolvePublicAssetDisk('public'));
+
+        // 'none' override → 스트리밍 강제
+        $this->assertNull($plugin->exposedResolvePublicAssetDisk('none'));
+
+        // 고아 디스크 → 스트리밍 폴백
+        Config::set('core.storage.public_asset_disk', 'vanished_plugin_disk');
+        $this->assertNull($plugin->exposedResolvePublicAssetDisk());
+    }
+
+    /**
+     * getStorageUrl()/getStorageBasePath() 가 카테고리에 배선된 디스크를 따라야 합니다.
+     *
+     * 기본 디스크를 보던 시절에는 images 를 공개 자산 디스크로 옮긴 확장이 이 API 로
+     * 항상 null 을 받았다 (공개 #134 전수조사 F4·F7).
+     *
+     * @effects url_returned_for_public_and_url_configured_disk
+     */
+    #[Test]
+    public function storage_url_and_base_path_follow_category_disk(): void
+    {
+        $module = new class extends AbstractModule
+        {
+            public function getName(): array
+            {
+                return ['ko' => '테스트', 'en' => 'Test'];
+            }
+
+            public function getVersion(): string
+            {
+                return '1.0.0';
+            }
+
+            public function getDescription(): array
+            {
+                return ['ko' => '테스트', 'en' => 'Test'];
+            }
+
+            public function getStorageDiskFor(string $category): string
+            {
+                return $category === 'images' ? 'fake_cdn' : $this->getStorageDisk();
+            }
+        };
+
+        // 배선된 카테고리 → fake_cdn 의 url 설정을 따라 직접 URL
+        $url = $module->getStorageUrl('images', 'a/b.png');
+        $this->assertNotNull($url);
+        $this->assertStringStartsWith('https://cdn.test/assets', $url);
+
+        // 미배선 카테고리는 기본 디스크(직접 URL 불가) → null
+        $this->assertNull($module->getStorageUrl('settings', 'a/b.json'));
+
+        // 기본 경로도 배선된 디스크 기준
+        $this->assertStringContainsString('fake_cdn', $module->getStorageBasePath('images'));
+        $this->assertStringNotContainsString('fake_cdn', $module->getStorageBasePath('settings'));
     }
 }

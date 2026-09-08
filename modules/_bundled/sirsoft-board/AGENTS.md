@@ -144,6 +144,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
 | 비밀글 상세만 `SecretContentGate` 로 막고 댓글 목록·첨부 다운로드는 그대로 노출 | 댓글 목록은 부모 글 비밀 여부 확인 후 빈 배열, 첨부 서빙은 403 — 두 경로 모두 게이트 재적용 | 상세 API 하나만 막으면 같은 정보가 형제 엔드포인트로 새어나간다 (KVE-2026-1914) |
+| 첨부 접근 URL 을 저장소 직접 URL(CDN)로 발급 | 게이트를 통과하는 다운로드 서빙 URL(`download_url`)을 돌려준다 | 직접 URL 은 비밀글·삭제글 확인이 걸린 서빙 경로를 통째로 우회한다 — 응답에서 감춰도 그 주소를 아는 쪽은 계속 열 수 있어 회수되지 않는다 |
 | 게시글/댓글 삭제·복원 시 `posts_count`/`comments_count` 를 Service 에서 `increment()`/`decrement()` | 훅(`after_create`/`after_delete`/`after_restore`) 리스너의 count 동기화에 맡긴다 | 직접 증감은 훅 기반 동기화와 이중 집계되어 카운트가 어긋난다 |
 | 게시판별 동적 권한/역할을 board 삭제와 별도 시점에 정리 | `BoardService` 삭제 흐름 안에서 즉시 정리(또는 stale cleanup 이 `getDynamicPermissionIdentifiers()` 로 정확히 판정하게 유지) | 정리가 늦으면 존재하지 않는 게시판의 권한이 역할에 남아 관리 화면에 유령 항목이 뜬다 |
 | 새 콘텐츠 타입을 board 코드에 `if ($type === 'inquiry')` 로 직접 분기 | `EcommerceInquiryHookListener` 처럼 필터 훅으로 CRUD 를 위임 | board 코드가 알지 못하는 도메인이 늘어날수록 분기가 무한 증식한다 |

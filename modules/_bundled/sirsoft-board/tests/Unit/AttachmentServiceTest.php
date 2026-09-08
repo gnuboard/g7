@@ -823,29 +823,54 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_download');
     }
 
+    /**
+     * 업로드 응답의 url 칸이 게이트가 살아 있는 서빙 URL 이어야 합니다.
+     *
+     * 이전에는 비공개 디스크에서 항상 null 이 나가 응답의 url 칸이 늘 비어 있었다.
+     * 게시판 첨부는 비밀글·삭제글 게이트가 걸려 있으므로 직접 URL 로 바꾸지 않고,
+     * 그 게이트를 통과하는 다운로드 서빙 URL 로 채운다.
+     *
+     * @effects board_upload_response_url_uses_gated_route, download_url_falls_back_to_api_path_when_direct_unavailable
+     */
     #[Test]
-    public function test_get_url_returns_url(): void
+    public function test_get_url_returns_gated_serving_url(): void
     {
         // Arrange
         $attachment = new Attachment([
-            'id' => 1,
             'path' => 'notice/2025/01/21/test.jpg',
         ]);
+        $attachment->hash = 'abc123def456';
+        $attachment->setRelation('board', new Board(['slug' => 'notice']));
 
         $this->repository->shouldReceive('findById')
             ->once()
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        $this->storage->shouldReceive('url')
-            ->once()
-            ->with('attachments', 'notice/2025/01/21/test.jpg')
-            ->andReturn('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg');
+        // 직접 URL 은 시도조차 하지 않는다 (게이트 우회 차단)
+        $this->storage->shouldNotReceive('url');
 
         // Act
         $result = $this->service->getUrl('notice', 1);
 
         // Assert
-        $this->assertEquals('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg', $result);
+        $this->assertSame(
+            '/api/modules/sirsoft-board/boards/notice/attachment/abc123def456',
+            $result
+        );
+    }
+
+    /**
+     * 첨부가 없으면 null 이어야 합니다 (기존 계약 유지).
+     */
+    #[Test]
+    public function test_get_url_returns_null_when_attachment_missing(): void
+    {
+        $this->repository->shouldReceive('findById')
+            ->once()
+            ->with('notice', 99)
+            ->andReturnNull();
+
+        $this->assertNull($this->service->getUrl('notice', 99));
     }
 }

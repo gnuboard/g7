@@ -201,6 +201,51 @@ describe('ImagePickerControl', () => {
     await vi.waitFor(() => expect(screen.getByTestId('g7le-image-error')).toBeTruthy());
   });
 
+  /**
+   * 공개 자산 스토리지를 켜면 업로드 응답의 url 이 교차 출처 절대 주소(CDN)로 온다 (공개 #134).
+   * 위젯은 그 문자열을 가공 없이 값으로 세워야 한다 — same-origin 상대 경로를 가정해
+   * 접두사를 붙이거나 정규화하면 CDN 주소가 깨지고, 그 값이 레이아웃에 그대로 저장된다.
+   *
+   * @scenario public_asset_disk=public,row_disk=public,filter_url_hook=absent
+   *
+   * @effects direct_url_when_row_matches_public_disk, editor_thumbnail_renders_cross_origin
+   */
+  it('업로드 응답의 교차 출처 CDN 절대 URL 을 값으로 그대로 세운다', async () => {
+    const cdnUrl = 'https://cdn.example.test/template-layout-attachments/sirsoft-basic/hero.png';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { url: cdnUrl } }),
+      }),
+    );
+    const onChange = renderImage(undefined);
+    const file = new File(['x'], 'hero.png', { type: 'image/png' });
+    fireEvent.change(screen.getByTestId('g7le-image-file'), { target: { files: [file] } });
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalled());
+    const v = onChange.mock.calls.at(-1)![0] as Record<string, unknown>;
+    expect(v.url).toBe(cdnUrl);
+    expect(v.size).toBe('cover'); // 기본 fill 모드 — 교차 출처여도 분해 규칙은 동일
+  });
+
+  /**
+   * 교차 출처 절대 URL 도 미리보기 배경 CSS 로 분해돼야 한다 (공개 #134).
+   *
+   * @scenario public_asset_disk=public,row_disk=public,filter_url_hook=absent
+   *
+   * @effects editor_thumbnail_renders_cross_origin
+   */
+  it('교차 출처 CDN 절대 URL 을 배경 CSS 와 입력칸에 그대로 반영한다', () => {
+    const cdnUrl = 'https://cdn.example.test/template-layout-attachments/sirsoft-basic/hero.png';
+    renderImage({ url: cdnUrl, size: 'contain', repeat: 'no-repeat', position: 'top' });
+    const preview = screen.getByTestId('g7le-image-preview');
+    expect(preview.style.backgroundImage).toContain(cdnUrl);
+    expect(preview.style.backgroundSize).toBe('contain');
+    // jsdom 은 background-position 단일 키워드를 'center top' 으로 정규화한다
+    expect(preview.style.backgroundPosition).toContain('top');
+    expect(screen.getByTestId('g7le-image-url')).toHaveValue(cdnUrl);
+  });
+
   it('`기본` → onChange(undefined)', () => {
     const onChange = renderImage({ url: 'https://x/a.png' });
     fireEvent.click(screen.getByTestId('g7le-image-clear'));

@@ -326,4 +326,100 @@ class TemplateLayoutAttachmentControllerTest extends TestCase
 
         $response->assertStatus(404);
     }
+
+    /**
+     * 공개 자산 디스크로 쓸 가짜 CDN 디스크를 등록합니다.
+     *
+     * `Storage::fake()` 는 해석된 디스크 인스턴스만 교체하고 `filesystems.disks.*`
+     * config 는 건드리지 않는다. 공개 자산 디스크 게이트는 그 config 존재를 보므로,
+     * fake 만으로는 고아 디스크로 판정되어 프록시가 나온다.
+     */
+    private function registerFakeCdnDisk(): void
+    {
+        config(['filesystems.disks.fake_cdn' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => 'https://cdn.test/assets',
+        ]]);
+        Storage::fake('fake_cdn', ['url' => 'https://cdn.test/assets']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 공개 자산 디스크 — 업로드 저장 위치와 응답 URL 형태 (공개 #134)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * 공개 자산 디스크 미설정이면 기존 첨부 디스크에 저장되고 프록시 URL 이어야 합니다.
+     *
+     * @scenario public_asset_disk=unset,row_disk=attachments,filter_url_hook=absent
+     *
+     * @effects upload_stores_on_public_disk, proxy_url_otherwise
+     */
+    public function test_upload_without_public_asset_disk_uses_attachment_disk(): void
+    {
+        config(['core.storage.public_asset_disk' => '']);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/admin/templates/{$this->template->identifier}/layout-attachments", [
+                'file' => UploadedFile::fake()->image('bg.png', 20, 20),
+                'layout_name' => 'home',
+            ]);
+
+        $response->assertStatus(200);
+
+        $attachment = TemplateLayoutAttachment::first();
+        $this->assertSame(config('attachment.disk', 'attachments'), $attachment->disk);
+        $this->assertStringContainsString('/layout-attachments/', (string) $response->json('data.url'));
+        $this->assertStringContainsString('/file', (string) $response->json('data.url'));
+    }
+
+    /**
+     * 공개 자산 디스크가 선언되면 그 디스크에 저장되고 직접 URL 이 발급돼야 합니다.
+     *
+     * @scenario public_asset_disk=public,row_disk=public,filter_url_hook=absent
+     *
+     * @effects upload_stores_on_public_disk, direct_url_when_row_matches_public_disk
+     */
+    public function test_upload_with_public_asset_disk_stores_there_and_returns_direct_url(): void
+    {
+        $this->registerFakeCdnDisk();
+        config(['core.storage.public_asset_disk' => 'fake_cdn']);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/admin/templates/{$this->template->identifier}/layout-attachments", [
+                'file' => UploadedFile::fake()->image('cdn.png', 20, 20),
+                'layout_name' => 'home',
+            ]);
+
+        $response->assertStatus(200);
+
+        $attachment = TemplateLayoutAttachment::first();
+        $this->assertSame('fake_cdn', $attachment->disk);
+        Storage::disk('fake_cdn')->assertExists('template-layout-attachments/'.$attachment->path);
+
+        $this->assertStringStartsWith('https://cdn.test/assets', (string) $response->json('data.url'));
+    }
+
+    /**
+     * 공개 자산 디스크를 켜도 그 이전에 올라간(다른 disk) 행은 프록시를 유지해야 합니다.
+     *
+     * @scenario public_asset_disk=public,row_disk=attachments,filter_url_hook=absent
+     *
+     * @effects proxy_url_otherwise
+     */
+    public function test_legacy_row_keeps_proxy_url_after_enabling_public_asset_disk(): void
+    {
+        $legacy = $this->makeStoredAttachment();
+
+        $this->registerFakeCdnDisk();
+        config(['core.storage.public_asset_disk' => 'fake_cdn']);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-attachments");
+
+        $response->assertStatus(200);
+        $url = (string) $response->json('data.0.url');
+        $this->assertStringContainsString("/layout-attachments/{$legacy->id}/file", $url);
+        $this->assertStringNotContainsString('cdn.test', $url);
+    }
 }

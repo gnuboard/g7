@@ -27,8 +27,6 @@ use Tests\TestCase;
  *
  * 실 캐시 파일을 건드리지 않도록 협력자를 전부 목으로 대체한다. testing DB 의 활성 확장 구성은
  * 개발 DB 와 다르므로, 실제 생성을 태우면 개발 환경 매핑이 testing 기준으로 교체된다.
- *
- * @see .claude/docs/frontend/troubleshooting-backend.md 사례 32
  */
 class ExtensionUpdateAutoloadHookCacheTest extends TestCase
 {
