@@ -665,4 +665,4 @@ WHERE name = 'sirsoft-sample.admin_sample_index';
 - [module-commands.md](module-commands.md) - 모듈 Artisan 커맨드
 - [module-i18n.md](module-i18n.md) - 모듈 다국어
 - [template-caching.md](template-caching.md) - 템플릿 캐싱 전략
-- [index.md](index.md) - 확장 시스템 인덱스
+- [README.md](README.md) - 확장 시스템 인덱스

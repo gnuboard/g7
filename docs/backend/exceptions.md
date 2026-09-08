@@ -431,4 +431,4 @@ class LayoutService
 ## 관련 문서
 
 - [validation.md](./validation.md) - Custom Rule 다국어 처리
-- [index.md](./index.md) - 백엔드 가이드 인덱스
+- [README.md](./README.md) - 백엔드 가이드 인덱스

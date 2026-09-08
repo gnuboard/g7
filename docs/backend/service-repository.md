@@ -1,6 +1,6 @@
 # Service-Repository 패턴
 
-> **백엔드 가이드** | [목차로 돌아가기](index.md)
+> **백엔드 가이드** | [목차로 돌아가기](README.md)
 
 ---
 
@@ -1693,4 +1693,4 @@ $data['depth'] = ($parent->depth ?? 0) + 1;
 - [컨트롤러 계층 구조](controllers.md) - Controller에서 Service 사용
 - [검증 로직 구현](validation.md) - FormRequest 검증 규칙
 - [DTO 사용 규칙](dto.md) - Service 가 반환하는 DTO 의 두 패턴 (Value Object / Data Carrier)
-- [index.md](index.md) - 백엔드 가이드 전체 목차
+- [README.md](README.md) - 백엔드 가이드 전체 목차

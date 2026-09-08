@@ -1,6 +1,6 @@
 # 인증 및 세션 처리
 
-> **관련 문서**: [index.md](index.md) | [middleware.md](middleware.md)
+> **관련 문서**: [README.md](README.md) | [middleware.md](middleware.md)
 
 ---
 
@@ -328,5 +328,5 @@ $hashedToken = hash('sha256', $bearerToken); // 잘못됨
 
 ## 관련 문서
 
-- [index.md](index.md) - 백엔드 가이드 인덱스
+- [README.md](README.md) - 백엔드 가이드 인덱스
 - [middleware.md](middleware.md) - 미들웨어 등록 규칙 (OptionalSanctumMiddleware 포함)
