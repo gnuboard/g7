@@ -21,7 +21,7 @@ import path from 'node:path';
 const MANAGER = path.resolve(__dirname, '../DataSourceManager.ts');
 const source = fs.readFileSync(MANAGER, 'utf8');
 
-describe('[사례 1] onSuccess 핸들러가 자기 데이터소스를 읽으면 null', () => {
+describe('[case:state-global-onsuccess-self-datasource-null] onSuccess 핸들러가 자기 데이터소스를 읽으면 null', () => {
   it('onSuccess 는 응답을 `response` 컨텍스트로 넘긴다 (핸들러가 store 를 다시 읽지 않아도 되도록)', () => {
     // 응답을 컨텍스트로 넘기지 않으면 핸들러는 store 를 읽을 수밖에 없고, 그 시점의 store 는
     // 아직 이전 값이다 — TemplateApp 의 React 상태 갱신이 fetch 해소 뒤이기 때문이다.
@@ -35,7 +35,7 @@ describe('[사례 1] onSuccess 핸들러가 자기 데이터소스를 읽으면 
   });
 });
 
-describe('[사례 2] onSuccess params 의 route·query 가 빈 값으로 도착', () => {
+describe('[case:state-global-onsuccess-route-query-empty] onSuccess params 의 route·query 가 빈 값으로 도착', () => {
   it('onSuccess dispatch 컨텍스트에는 route·query·_local 이 실리지 않는다', () => {
     // 이 계약이 바뀌면(= route 를 싣게 되면) 문서의 "주소에서 직접 읽어라" 지침이 과잉이 된다.
     // 반대로 지금 형태에서 `{{route.*}}` 를 params 로 넘기면 빈 값이 도착하고 예외는 나지 않는다.
@@ -61,7 +61,7 @@ describe('[사례 2] onSuccess params 의 route·query 가 빈 값으로 도착'
   });
 });
 
-describe('[사례 3] 체인으로 부른 데이터소스가 뒤로가기 재진입에서 화면에 닿지 않음', () => {
+describe('[case:state-global-chained-datasource-back-reentry] 체인으로 부른 데이터소스가 뒤로가기 재진입에서 화면에 닿지 않음', () => {
   it('refetchDataSource 는 auto_fetch:false 소스도 강제 fetch 한다 (체인이 성립하는 근거)', () => {
     // 체인 자체는 동작한다 — 깨지는 것은 그 결과가 도착할 무렵 화면이 이미 재마운트된 경우다.
     // 이 단언이 red 가 되면 체인 경로(북마크 진입 폴백)가 통째로 사라진 것이다.
@@ -79,7 +79,7 @@ describe('[사례 3] 체인으로 부른 데이터소스가 뒤로가기 재진�
   });
 });
 
-describe('[사례 14] modals 배열 모달의 로컬 경로', () => {
+describe('[case:state-advanced-modals-array-parent-local] modals 배열 모달의 로컬 경로', () => {
   it('클레임 교환상품 변경 모달은 $parent 를 쓰지 않는다 (페이지 로컬 = 모달 로컬)', () => {
     // `$parent._local` 로 쓰면 조건이 전부 거짓이 되어 제목·푸터만 남은 빈 모달이 열린다.
     // 오류가 남지 않으므로 구조로 고정한다.

@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\ComposerInstallInfo;
+
 /**
  * Vendor 번들 설치 헬퍼 (웹 인스톨러 전용 shim).
  *
@@ -8,7 +10,6 @@
  *
  * Laravel 측 클래스와의 동등성은 VendorBundleInstallerShimTest 가 보장한다.
  */
-
 const VENDOR_BUNDLE_SCHEMA_VERSION = '1.0';
 const VENDOR_BUNDLE_ZIP_FILENAME = 'vendor-bundle.zip';
 const VENDOR_BUNDLE_MANIFEST_FILENAME = 'vendor-bundle.json';
@@ -297,7 +298,7 @@ function deleteVendorBundleDirectory(string $dir): bool
  * 본 함수는 Laravel\Foundation\ComposerScripts::clearCompiled() 와 동일한 3개 파일을 정리한다.
  *
  * @param  string  $basePath  프로젝트 루트 (bootstrap/cache 의 상위 디렉토리)
- * @return array<string>  실제로 삭제된 파일명 목록 (basename)
+ * @return array<string> 실제로 삭제된 파일명 목록 (basename)
  */
 function clearLaravelCompiledCache(string $basePath): array
 {
@@ -316,6 +317,31 @@ function clearLaravelCompiledCache(string $basePath): array
     }
 
     return $cleared;
+}
+
+/**
+ * 이미 준비된 vendor 가 개발용(require-dev 포함) 설치인지 조사합니다.
+ *
+ * 판정은 코어와 공유하는 `App\Support\ComposerInstallInfo` 가 단독으로 소유한다 — 인스톨러와
+ * 코어 업데이트가 같은 vendor 를 두고 서로 다른 답을 내놓지 않도록.
+ *
+ * 클래스 파일 경로는 인자 `$basePath` 가 아니라 **인스톨러 자신의 트리** 기준으로 읽는다.
+ * 단위 테스트는 임시 디렉토리를 `$basePath` 로 넘기는데 그 경로에는 `app/Support` 가 없다.
+ *
+ * @param  string  $basePath  프로젝트 루트 (vendor 의 상위 디렉토리)
+ * @return array{dev: bool|null, packages: array<int, string>} dev 가 null 이면 판정 불가
+ */
+function detectDevVendorInstall(string $basePath): array
+{
+    if (! class_exists('App\\Support\\ComposerInstallInfo')) {
+        $classFile = dirname(__DIR__, 3).'/app/Support/ComposerInstallInfo.php';
+        if (! is_file($classFile)) {
+            return ['dev' => null, 'packages' => []];
+        }
+        require_once $classFile;
+    }
+
+    return ComposerInstallInfo::inspect(rtrim($basePath, '/\\').'/vendor');
 }
 
 /**

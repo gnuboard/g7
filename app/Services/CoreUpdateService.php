@@ -23,6 +23,7 @@ use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use App\Support\PackageManifestCacheHelper;
 use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
@@ -1835,6 +1836,20 @@ class CoreUpdateService
         }
 
         File::put($envPath, $content);
+
+        // 프로세스 환경도 함께 갱신한다.
+        //
+        // 부모가 config 캐시 **없이** 부팅했다면 Dotenv 가 `.env` 를 읽어 `$_ENV['APP_VERSION']` 에
+        // 이전 버전을 채워 두었고, Laravel 의 env 저장소는 불변(immutable)이라 뒤이어 부팅하는
+        // 프로세스가 `.env` 를 다시 읽어도 그 값을 덮지 않는다. 그래서 Step 11 의 `config:cache` 가
+        // 굽는 `bootstrap/cache/config.php` 에 **이전 버전**이 박제되고, 이후 모든 웹 요청이 옛 버전으로
+        // 판정한다 — 새 코어를 요구하는 확장이 `incompatible_core` 로 꺼지는 경로다
+        // (2026-09-07 실측: `config:clear` 후 7.0.10 → 7.0.11 업데이트가 config 캐시에 7.0.10 을 구웠다).
+        //
+        // 캐시 부팅에서는 Dotenv 가 아예 돌지 않아 이 값이 비어 있을 수 있으므로 세 채널 모두 세운다.
+        $_ENV['APP_VERSION'] = $version;
+        $_SERVER['APP_VERSION'] = $version;
+        putenv('APP_VERSION='.$version);
     }
 
     /**
@@ -2074,7 +2089,8 @@ class CoreUpdateService
      * 모든 캐시를 초기화하고 패키지 목록을 재생성합니다.
      *
      * vendor 교체 후 bootstrap/cache의 컴파일 캐시가 stale 상태일 수 있으므로
-     * services.php/packages.php 삭제 후 package:discover로 재생성합니다.
+     * services.php/packages.php 삭제 후 package:discover로 재생성합니다
+     * (`PackageManifestCacheHelper::rebuild()` — spawn 직전 선정리와 같은 삭제 로직을 공유).
      * 이는 composer install의 post-autoload-dump 후속 작업(clearCompiled + package:discover)을 재현합니다.
      */
     public function clearAllCaches(): void
@@ -2085,14 +2101,10 @@ class CoreUpdateService
         Artisan::call('route:clear');
         Artisan::call('view:clear');
 
-        // 2. 컴파일 캐시 삭제 (composer postAutoloadDump → clearCompiled 재현)
-        //    services.php, packages.php가 교체 전 vendor를 참조할 수 있음
-        $app = app();
-        @unlink($app->getCachedServicesPath());
-        @unlink($app->getCachedPackagesPath());
-
-        // 3. 현재 vendor 기반으로 packages.php 재생성
-        Artisan::call('package:discover');
+        // 2~3. 컴파일 캐시 삭제 후 현재 vendor 기반으로 재생성
+        //      (composer postAutoloadDump → clearCompiled + package:discover 재현).
+        //      services.php, packages.php 가 교체 전 vendor 를 참조할 수 있다.
+        PackageManifestCacheHelper::rebuild();
 
         // 4. 확장 오토로드 재생성 (코어 업데이트로 _bundled 변경 가능)
         Artisan::call('extension:update-autoload');
@@ -2105,6 +2117,29 @@ class CoreUpdateService
         clearstatcache(true);
         if (function_exists('opcache_reset')) {
             @opcache_reset();
+        }
+    }
+
+    /**
+     * 상주 중인 큐 워커에 정상 종료 후 재시작 신호를 보냅니다.
+     *
+     * 큐 워커는 부팅이 한 번뿐이라 코어 코드·config·확장 목록을 기동 시점 상태로 물고 있다.
+     * 코어 업데이트가 파일을 전부 교체해도 워커는 옛 코드로 잡을 계속 처리하며, 그 사실이
+     * 오류로 드러나지 않는다 — 운영자가 워커를 손수 재시작할 때까지 조용히 어긋난 채 돈다.
+     *
+     * 캐시가 새 코드 기준으로 정리된 뒤(`clearAllCaches()` 직후) 호출해야 워커가 새 캐시로
+     * 재기동한다. 신호 전송 실패는 업데이트 결과를 되돌리지 않는다 (경고 로깅 후 계속).
+     *
+     * @return void
+     */
+    public function signalQueueRestart(): void
+    {
+        try {
+            Artisan::call('queue:restart');
+        } catch (\Throwable $e) {
+            Log::channel('upgrade')->warning('queue:restart 실행 실패 (업데이트는 계속 진행)', [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

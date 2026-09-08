@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * SettingsMigrator owner 상속 회귀 테스트.
+ * [case:backend-28] SettingsMigrator owner 상속 회귀 테스트.
  *
  * sudo update 흐름에서 모듈/플러그인 upgrade step 이 root 로 실행될 때
  * `SettingsMigrator::writeJsonFile` 가 만드는 *.json 파일이 root 소유로 영구 잔존하는

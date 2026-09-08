@@ -147,6 +147,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 - [ ] TSX/TS 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 프론트엔드 변경은 Playwright spec 동반 — 단위 테스트만으로는 화면 회귀가 드러나지 않는다
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-basic --force` (편집기는 활성 디렉토리만 읽는다)
+- [ ] 로그인 화면의 2단계 인증 단계를 고쳤다면 1단계·2단계 `if` 의 상보성과 `login`/`loginTwoFactor` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호 단계에서 Enter 가 새 challenge 를 발급한다
 
 ## 6. 금지 패턴
 
@@ -164,6 +165,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | `dist/` 재빌드 없이 `src/` 만 고치고 커밋 | `template:build --production` 후 `dist/` 동반 커밋 | 브라우저가 받는 것은 커밋된 `dist/` 다 — 소스 수정이 사문화된다 |
 | 클레임 공유 partial 에서 `_global.currentUser` 참조 | 인증 차이는 셸(데이터소스 endpoint·헤더)이 흡수하고, partial 은 `claim`·`claims`·`claimable`·`estimate` 컨텍스트만 읽는다 | 회원·비회원이 같은 조각을 쓰므로 한쪽에서만 값이 비어 조용히 깨진다 |
 | 신청서 요약 금액을 화면에서 계산 | 서버 `POST claims/preview` 응답(`estimate`)을 표시만 | 배송비·차액·청구 방식 규칙은 서버가 소유한다 — 화면 계산은 접수 시 서버 값과 어긋난다 |
+| `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -172,9 +174,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 156개 | `vitest.config.ts` |
+| Vitest | 158개 | `vitest.config.ts` |
 | Playwright | 8개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 3개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

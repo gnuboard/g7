@@ -1280,6 +1280,14 @@
       "label": "ログイン処理",
       "param_body": "ログイン情報"
     },
+    "login_two_factor": {
+      "label": "認証番号の確認",
+      "param_body": "認証情報"
+    },
+    "login_two_factor_resend": {
+      "label": "認証番号の再送信",
+      "param_body": "認証リクエスト情報"
+    },
     "logout": {
       "label": "ログアウト処理",
       "param_target": "移動先"

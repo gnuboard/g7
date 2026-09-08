@@ -59,13 +59,22 @@ export function isAbortError(error: unknown): boolean {
  * fetch 스펙상 네트워크 오류는 TypeError 로 reject 된다. 취소(AbortError)는
  * 호출부의 의도이므로 재시도 대상이 아니다.
  *
+ * axios 경로(로그인 등 ApiClient 를 쓰는 요청)는 TypeError 가 아니라 `AxiosError` 로
+ * reject 되며 종류는 `code` 에만 남는다. TypeError 만 보면 그 경로의 네트워크 실패가
+ * 판정에서 빠져 영문 원문(`Network Error`)이 그대로 화면에 노출된다.
+ *
  * @param error 검사할 에러
  * @return bool 재시도할 가치가 있는 네트워크 실패이면 true
  * @since engine-v1.53.0
+ * @since engine-v1.65.0 axios 네트워크 오류 코드(ERR_NETWORK/ECONNABORTED) 인식
  */
 export function isNetworkFailure(error: unknown): boolean {
     if (isAbortError(error)) return false;
-    return error instanceof TypeError;
+    if (error instanceof TypeError) return true;
+
+    const code = (error as { code?: string } | null)?.code;
+
+    return code === 'ERR_NETWORK' || code === 'ECONNABORTED';
 }
 
 let unloading = false;

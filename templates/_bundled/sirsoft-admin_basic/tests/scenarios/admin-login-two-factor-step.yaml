@@ -1,0 +1,42 @@
+# audit:allow test-scenario-coverage reason: response 축(ok/challenge/401/403/423/429/503/network)은 서버 응답
+# 종류를 열거한 것이라 레이아웃 구조 테스트가 케이스별로 나눠 단언할 실체가 아니다 — 구조 테스트는 화면이
+# 그 응답들을 받을 수 있는 형태인지(상보 조건·controlled 입력·상호배타 액션)를 본다. 실제 회귀 가드는
+# effects 이며 전부 @effects 로 귀속되어 있다(미검증 0건). 응답별 화면 실측은 Playwright spec 이 담당한다.
+
+feature: 관리자 로그인 화면 2단계 인증 단계 (sirsoft-admin_basic)
+
+description: |
+  관리자 로그인도 2단계 인증 대상이다. 관리자가 들어갈 수 없으면 설정을 되돌릴 수단까지
+  사라지므로 사용자 화면보다 파급이 크다(공개 #133).
+
+  사용자 템플릿과 평행한 구조이며 네임스페이스만 _local 로 다르다 — 이 화면은 독립 레이아웃이라
+  전역 상태를 쓰지 않는다. 관리자가 아닌 계정의 403 도 인증번호 오류 자리에 표시된다.
+
+axes:
+  step: [credentials, code]
+  response: [ok, challenge, 401, 403, 423, 429, 503, network]
+  action: [submit, resend, restart, enter_key]
+
+exclusions:
+  - { step: credentials, action: resend, reason: "재발송 버튼은 인증번호 단계에만 있다" }
+  - { step: credentials, action: restart, reason: "동일" }
+  - { step: code, response: challenge, reason: "challenge 는 비밀번호 단계의 응답이다" }
+
+effects:
+  - no_raw_typeerror_text
+  - code_step_rendered_on_challenge
+  - credential_step_hidden_on_challenge
+  - login_and_verify_are_mutually_exclusive
+  - code_input_is_controlled_without_events_wrapper
+  - resend_clears_code_and_replaces_challenge
+  - restart_resets_to_credential_step
+  - locked_until_rendered
+  - init_actions_reset_two_factor_state
+  - admin_required_message_rendered_in_code_step
+  - toast_host_mounted_on_standalone_layout
+  - network_message_translated
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-login-two-factor-step.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-login-two-factor-render.test.tsx
+  - tests/Playwright/specs/auth/two-factor-login.spec.ts

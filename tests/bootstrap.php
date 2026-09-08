@@ -174,6 +174,39 @@ putenv('APP_ROUTES_CACHE='.$testingRoutesCache);
 $_ENV['APP_ROUTES_CACHE'] = $testingRoutesCache;
 $_SERVER['APP_ROUTES_CACHE'] = $testingRoutesCache;
 
+/*
+|--------------------------------------------------------------------------
+| 패키지 매니페스트 캐시 격리 (테스트 환경 보장)
+|--------------------------------------------------------------------------
+|
+| `bootstrap/cache/packages.php` · `services.php` 도 라우트 캐시와 같이 **경로를 돌린다.**
+| 코어 업데이트 흐름은 이 두 파일을 지우고 다시 만드는 코드를 여럿 갖고 있고(spawn 직전 선정리,
+| `bootstrap/app.php` 의 업데이트 트리 자가 치유, `clearAllCaches()` 의 `package:discover`), 그
+| 코드를 태우는 테스트 가운데 몇은 `proc_open` 으로 **진짜 자식 프로세스**를 띄운다. 자식은 부모의
+| 테스트 격리(임시 base path·목)를 하나도 물려받지 못하고 env 만 물려받으므로, 경로를 env 로
+| 돌려 두는 것이 부모와 자식을 한 번에 격리하는 유일한 수단이다. 돌리지 않으면 테스트를 한 번
+| 돌릴 때마다 개발 클론의 실제 매니페스트가 지워지고 다시 만들어진다 — 오늘은 재생성 내용이 같아
+| 무해하지만, 그 사이 다른 프로세스가 부팅하면 매번 재빌드를 겪고, 테스트가 실제 파일을 건드리는
+| 구조 자체가 `.env` 삭제 사고와 같은 부류다.
+|
+| 자기 경로를 따로 쓰는 테스트(`CoreUpdateCommandStalePackageManifestTest` 등)는 여기 값을
+| 원값으로 보관·복원하므로 그대로 동작한다.
+|
+*/
+$testingManifestDir = __DIR__.'/../storage/framework/testing';
+if (! is_dir($testingManifestDir)) {
+    @mkdir($testingManifestDir, 0777, true);
+}
+foreach ([
+    'APP_PACKAGES_CACHE' => 'storage/framework/testing/packages.php',
+    'APP_SERVICES_CACHE' => 'storage/framework/testing/services.php',
+] as $manifestEnvKey => $manifestRelativePath) {
+    putenv($manifestEnvKey.'='.$manifestRelativePath);
+    $_ENV[$manifestEnvKey] = $manifestRelativePath;
+    $_SERVER[$manifestEnvKey] = $manifestRelativePath;
+}
+unset($testingManifestDir, $manifestEnvKey, $manifestRelativePath);
+
 // Composer 오토로더 로드
 $loader = require __DIR__.'/../vendor/autoload.php';
 

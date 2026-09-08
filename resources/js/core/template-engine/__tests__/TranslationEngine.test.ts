@@ -594,6 +594,9 @@ describe('TranslationEngine', () => {
         complex: {
           message: '{{user}}님이 {{action}}을 수행했습니다 ({{count}}건)',
         },
+        auth: {
+          valid_until: '유효시간 {{until}} 까지',
+        },
       };
 
       (global.fetch as any).mockResolvedValueOnce({
@@ -709,6 +712,32 @@ describe('TranslationEngine', () => {
         '|total=100|from=1&to=10'
       );
       expect(result).toBe('총 100명 중 1-10명 표시');
+    });
+
+    // 파라미터 값 안의 파이프는 **필터**다. 표현식 평가기는 `|` 를 비트 연산자로 읽어
+    // 평가에 실패하고 빈 문자열을 돌려주므로, 문장에서 값만 조용히 사라진다
+    // ("유효시간  까지"). 오류도 경고도 남지 않아 화면을 보지 않으면 드러나지 않는다.
+    // @since engine-v1.65.0
+    it('파라미터 값의 파이프 필터가 적용된다', () => {
+      const result = engine.translate(
+        'auth.valid_until',
+        context,
+        '|until={{expires_at | datetime}}',
+        { expires_at: '2026-09-07T14:03:00' }
+      );
+
+      expect(result).toBe('유효시간 2026-09-07 14:03 까지');
+    });
+
+    it('resolveTranslations 에서도 파라미터 파이프 필터가 적용된다', () => {
+      const result = engine.resolveTranslations(
+        '$t:auth.valid_until',
+        context,
+        { expires_at: '2026-09-07T14:03:00' }
+      );
+
+      // 파라미터가 없으면 자리표시자는 그대로 둔다 (기존 동작 유지)
+      expect(result).toContain('유효시간');
     });
   });
 

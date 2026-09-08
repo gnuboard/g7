@@ -328,7 +328,7 @@ describe('클레임 목록 필터 섹션 — 검색 드롭다운 (D27)', () => {
   });
 });
 
-describe('클레임 목록 필터 섹션 — 셸 computed 참조', () => {
+describe('[case:components-misc-computed-prefix-options] 클레임 목록 필터 섹션 — 셸 computed 참조', () => {
   /**
    * @effects computed_options_are_referenced_with_computed_prefix
    */
@@ -568,7 +568,7 @@ describe('클레임 목록 필터 섹션 — 프리셋', () => {
  * 파일 존재만 보면 통과하므로 선언을 직접 단언한다. 형제(admin.order)와 같은 형태여야
  * 하며, 형태가 달라도 JSON 은 유효해 구조 검사로는 잡히지 않는다.
  */
-describe('클레임 목록 — 다국어 partial 선언', () => {
+describe('[case:components-misc-i18n-partial-missing] 클레임 목록 — 다국어 partial 선언', () => {
   const LOCALES = ['ko', 'en'] as const;
 
   it.each(LOCALES)('%s.json 의 admin.claim 이 partial 을 선언한다', (locale) => {

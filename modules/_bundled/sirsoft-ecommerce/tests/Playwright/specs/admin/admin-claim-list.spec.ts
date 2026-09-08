@@ -43,7 +43,7 @@ async function waitForList(page: import('@playwright/test').Page): Promise<void>
   await expect(page.locator('#claim_type_subtabs')).toBeVisible({ timeout: 30_000 });
 }
 
-test.describe('관리자 클레임 목록 본체 (#599 S8b)', () => {
+test.describe('[case:components-form-select-options-nonnative] 관리자 클레임 목록 본체 (#599 S8b)', () => {
   // @scenario claim_type=exchange
   // @effects list_body_replaces_placeholder, subtabs_render_above_filter_card
   test('목록에 유형 서브탭 4종과 DataGrid 본체가 그려진다', async ({ page, claimsManageToken }) => {

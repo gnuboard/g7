@@ -9,6 +9,7 @@ use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Helpers\ResponseHelper;
 use App\Http\View\Composers\TemplateComposer;
 use App\Http\View\Composers\UserTemplateComposer;
 use App\Notifications\NotificationChannelManager;
@@ -126,7 +127,18 @@ class AppServiceProvider extends ServiceProvider
                 $maxPerMinute = 60;
             }
 
-            return Limit::perMinute($maxPerMinute)->by($request->ip());
+            // 기본 응답은 영문 "Too Many Attempts." 이다 — 로그인 화면은 이 문구를
+            // 그대로 노출하므로 다국어 키로 갈아끼운다.
+            return Limit::perMinute($maxPerMinute)
+                ->by($request->ip())
+                ->response(function (Request $request, array $headers) {
+                    return ResponseHelper::error(
+                        'auth.too_many_attempts',
+                        429,
+                        null,
+                        ['seconds' => (int) ($headers['Retry-After'] ?? 60)]
+                    )->withHeaders($headers);
+                });
         });
     }
 

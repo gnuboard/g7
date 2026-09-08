@@ -105,6 +105,10 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 
 - 봇 감지: `BotDetector` 4-레이어 체인 (아래 "봇 감지 구조" 섹션 참조)
 - 렌더링 실패 시: SPA fallback (기존 응답 통과)
+- 캐시 키: 경로 + **정규화된** 쿼리(`locale`·`_escaped_fragment_` 제외, 키 순서 정렬, 개수·길이 상한)
+- 미스 렌더는 IP 당 분당 상한 안에서만 — 초과분은 SPA + `X-SEO-Cache: BYPASS`(오류가 아니다). 렌더러가 "그릴 게 없음"(null)으로 돌아온 요청은 차감을 되돌린다
+- 저장 상한: 경로·언어당 쿼리 변종 수 · 캐시 인덱스 전체 항목 수
+- 캐시 HIT/MISS 를 통계에 기록 (IP 당 분당 상한). HIT 의 레이아웃명은 캐시 항목에 함께 저장된 값으로 귀속한다
 
 ## 봇 감지 구조
 
@@ -655,7 +659,7 @@ php artisan seo:warmup              # SEO 캐시 워밍업
 php artisan seo:warmup --layout=shop/show  # 특정 레이아웃만
 php artisan seo:clear               # 전체 SEO 캐시 삭제
 php artisan seo:clear --layout=home # 특정 레이아웃만
-php artisan seo:stats               # 캐시 통계 출력
+php artisan seo:stats               # 캐시 통계 출력 (미들웨어가 HIT/MISS 를 기록 — IP 당 분당 상한)
 php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치, mode=auto)
 php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 php artisan seo:generate-sitemap --rebuild            # 전체 재생성 (mode=full 상당)
@@ -754,6 +758,57 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 | og_image_default_height | integer | 630 | og:image:height 기본값 (픽셀) |
 | twitter_default_card | string | "summary_large_image" | twitter:card 기본 (summary/summary_large_image/app/player) |
 | twitter_default_site | string | "" | twitter:site 핸들 (예: @gnuboard). 비면 출력 생략 |
+
+## 캐시 상한 (config/core.php `seo_cache_limits`)
+
+봇 판정은 User-Agent 문자열뿐이라 위장이 가능하고, 캐시 키에 쿼리가 들어가므로 물음표 뒤 값만 바꾼 반복 요청이 매번 미스가 됩니다. 미스 1건은 레이아웃 병합 · 표현식 평가 · 자기 API 루프백 호출을 유발하고 그 결과가 캐시에 쌓이므로, 요청 하나가 워커 여러 개를 묶고 저장소를 계속 키울 수 있습니다.
+
+아래 상한이 그 증식을 막습니다. 관리자 화면에는 노출하지 않고 서버 설정으로만 조정합니다.
+
+| 키 | env | 기본값 | 설명 |
+|----|-----|-------|------|
+| max_query_params | `G7_SEO_CACHE_MAX_QUERY_PARAMS` | 10 | 캐시 키에 허용하는 쿼리 파라미터 수. 초과 시 캐시·렌더 안 함 |
+| max_query_length | `G7_SEO_CACHE_MAX_QUERY_LENGTH` | 512 | 정규화된 쿼리 문자열 길이 상한(바이트) |
+| max_variants_per_path | `G7_SEO_CACHE_MAX_VARIANTS_PER_PATH` | 50 | 같은 경로·언어에 저장하는 쿼리 변종 수 (언어별로 따로 센다) |
+| max_entries | `G7_SEO_CACHE_MAX_ENTRIES` | 20000 | 캐시 인덱스 전체 항목 수 |
+| render_misses_per_minute | `G7_SEO_RENDER_MISSES_PER_MINUTE` | 60 | IP 당 분당 미스 렌더 수. 렌더러가 그릴 게 없다고 돌아온 요청(미라우트 404·SEO 비활성 화면)은 세지 않는다 |
+| stats_records_per_minute | `G7_SEO_STATS_RECORDS_PER_MINUTE` | 300 | IP 당 분당 통계 기록 수 |
+
+상한을 넘긴 요청은 **차단되지 않고** 일반 SPA 응답을 받습니다. 봇에게 오류를 돌려주면 그 URL 이 색인에서 빠지므로 차단이 곧 손해입니다. 판정 결과는 응답 헤더 `X-SEO-Cache`(`HIT`/`MISS`/`BYPASS`)로 드러나며, 그것이 운영 진단의 통로입니다.
+
+이미 캐시에 있는 키의 **갱신**은 저장 규모를 늘리지 않으므로 상한과 무관하게 수행됩니다.
+
+### IP 단위 상한은 프록시 신뢰 설정에 의존합니다
+
+`render_misses_per_minute` 와 `stats_records_per_minute` 는 요청 IP 를 기준으로 셉니다. TLS 가 앞단에서 종단되는 구성(리버스 프록시, CDN, 로드밸런서)에서 신뢰할 프록시를 지정하지 않으면 모든 요청의 IP 가 프록시 IP 하나로 보이므로, 그 분당 예산을 사이트 전체 봇 트래픽이 함께 쓰게 됩니다. 예산을 넘긴 시점부터 정상 검색엔진 봇도 SEO HTML 대신 SPA 를 받아 색인 품질이 떨어지고, 응답은 200 이라 서버 로그에 흔적이 남지 않습니다.
+
+프록시 뒤에 두는 설치본은 `TRUSTED_PROXIES` 를 반드시 지정합니다 — 설정 방법과 진단은 [리버스 프록시 환경](reverse-proxy.md)에 있습니다. 진단이 어려우면 응답 헤더 `X-SEO-Cache` 가 `BYPASS` 로 몰리는지를 먼저 봅니다.
+
+### 경로당 변종 상한은 언어별로 셉니다
+
+캐시 인덱스 항목은 URL 과 로케일의 조합마다 하나입니다. 경로만 보고 변종을 합산하면 언어 수만큼 실효 상한이 줄어, 언어가 셋인 사이트는 한 경로에 언어당 16개만 저장되고 목록 17페이지부터는 봇이 올 때마다 새로 그리되 저장하지 않게 됩니다. 그래서 상한은 경로와 언어의 조합 단위로 판정합니다.
+
+### 그릴 게 없는 요청은 렌더 예산을 쓰지 않습니다
+
+렌더 예산은 새로 그리기 직전에 1을 차감합니다. 그런데 미라우트 주소(404)나 SEO 를 끈 화면은 렌더러가 "그릴 게 없음"으로 바로 돌아오고 캐시에도 남지 않아, 올 때마다 다시 차감됩니다. 봇은 예전에 있던 죽은 주소를 오래 다시 긁으므로 그 요청까지 세면 정상 페이지의 예산이 죽은 주소에 소진됩니다. 렌더러가 null 을 돌려주면 그 차감을 되돌리고, 렌더 도중 예외는 비용을 이미 치른 것이라 되돌리지 않습니다.
+
+### 캐시 항목은 레이아웃명을 함께 담습니다
+
+페이지 캐시 값은 HTML 과 레이아웃명의 쌍입니다. 캐시 적중(HIT) 경로는 렌더러를 거치지 않아 요청 속성에 레이아웃명이 없으므로, 통계를 화면별로 귀속하려면 캐시 항목이 그것을 알아야 합니다. `SeoCacheManagerInterface::get()` 은 종전대로 HTML 만 돌려주고, 코어 구현 `SeoCacheManager::getEntry()` 가 쌍 전체를 돌려줍니다. 미들웨어는 코어 구현일 때만 쌍을 읽고, 다른 구현이 바인딩된 경우에는 레이아웃명 없이 기록합니다. 이전 버전이 문자열로만 저장한 항목은 레이아웃명 없이 그대로 읽힙니다 — 배포 직후 살아 있는 캐시를 버리지 않습니다.
+
+통계 테이블(`seo_cache_stats`)의 `url` 컬럼은 캐시 키 URL 상한(경로 + 정규화 쿼리 최대 512바이트)을 담도록 768자입니다. 컬럼이 짧으면 긴 주소의 기록이 엄격 모드에서 실패하고, 통계 서비스는 그 예외를 삼키므로 흔적이 남지 않습니다.
+
+### 저장 상한이 세는 것은 살아 있는 항목입니다
+
+캐시 인덱스 항목은 페이지보다 오래 삽니다(기본 30일 vs 2시간). 그래서 저장 상한에 닿으면 **먼저 만료된 항목을 인덱스에서 걷어내고 다시 판정**합니다. 그러지 않으면 상한이 "지금 저장된 양"이 아니라 "과거에 저장한 적이 있는 양"을 재게 되어, 한 번 상한에 닿은 경로는 실제 캐시가 비어 있어도 다시는 저장되지 않습니다.
+
+이 정리는 인덱스 전체를 훑으므로 **최소 60초 간격**으로만 수행합니다. 살아 있는 항목만으로 상한에 닿은 경우에는 정리해도 자리가 나지 않는데, 그 상태에서 저장 시도마다 훑으면 비용만 반복되기 때문입니다. 따라서 항목이 만료된 뒤 저장이 다시 열리기까지 최대 그 간격만큼 늦어질 수 있습니다.
+
+### 상한은 봇 요청만이 아니라 모든 저장 경로에 걸립니다
+
+저장 상한은 `SeoCacheManagerInterface` 의 저장 메서드(`put`·`putWithLayout`)에 공통으로 걸립니다. 봇 요청의 미스 렌더뿐 아니라, 게시글·상품을 저장할 때 도는 단건 재생성(`SeoCacheRegenerator`)도 같은 판정을 거칩니다 — 한쪽만 상한 밖이면 그쪽이 증식 우회로가 되기 때문입니다.
+
+상한에 닿아 저장하지 않은 경우 재생성 호출은 **예외를 던지지 않고** 흔적을 `Log::debug` 로만 남깁니다. 콘텐츠 페이지는 서로 다른 경로라 경로당 변종 상한(`max_variants_per_path`)과는 무관하고, 전체 항목 상한(`max_entries`)은 만료 항목을 걷어낸 뒤 판정하므로 실제로는 페이지 TTL 안에 살아 있는 항목만 셉니다. 그래도 대규모 사이트에서 이 상한에 닿는다면 저장이 조용히 넘어가므로, `seo:stats` 의 미스 비율이 지속적으로 오르는지를 신호로 삼고 `G7_SEO_CACHE_MAX_ENTRIES` 를 올립니다.
 
 ## SEO Config 동적 확장 시스템
 
@@ -1653,9 +1708,10 @@ SeoCacheManager는 URL + locale 기반 캐시 키(`md5($cacheUrl.'|'.$locale)`)�
 
 SeoMiddleware의 `buildCacheUrl()`이 캐시 키용 URL을 구성합니다:
 
-- **경로 + 쿼리 파라미터 포함**: `/shop/products?page=2&sort=price` → 페이지별 독립 캐시
-- **`locale` 파라미터 제외**: locale은 캐시 키의 두 번째 차원(`$locale`)으로 별도 관리
+- **경로 + 정규화된 쿼리 파라미터**: `/shop/products?page=2&sort=price` → 페이지별 독립 캐시
+- **시스템 파라미터 제외**: `locale` 은 캐시 키의 두 번째 차원(`$locale`)으로 별도 관리하고, 봇 렌더 표식인 `_escaped_fragment_` 는 내용에 영향이 없어 키에서 뺍니다(남기면 같은 페이지가 두 벌 저장됩니다)
 - **쿼리 파라미터 정렬**: `ksort()` — 동일 파라미터 조합 = 동일 캐시 키 보장
+- **상한 초과 시 캐시 불가**: 파라미터 수·길이가 상한을 넘으면 색인 대상이 아니라고 보고 캐시도 렌더도 하지 않습니다(위 "캐시 상한" 절)
 
 ## SEO 변수 시스템
 

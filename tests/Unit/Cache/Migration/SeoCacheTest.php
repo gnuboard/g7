@@ -60,7 +60,8 @@ class SeoCacheTest extends TestCase
         $this->manager->put('/board/notice/123', 'ko', '<html>Hello</html>');
 
         $expectedKey = 'seo.page.'.md5('/board/notice/123|ko');
-        $this->assertSame('<html>Hello</html>', $this->cache->get($expectedKey));
+        // 페이지는 레이아웃명과 함께 저장된다 — 적중 경로가 통계를 화면별로 귀속할 출처다.
+        $this->assertSame('<html>Hello</html>', $this->cache->get($expectedKey)['html'] ?? null);
         $this->assertSame(
             'g7:core:'.$expectedKey,
             $this->cache->resolveKey($expectedKey)

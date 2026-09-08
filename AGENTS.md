@@ -149,7 +149,7 @@
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 325 |
+| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 328 |
 
 
 ### 확장 API 레퍼런스 (14개 확장, 자동 스캔)
@@ -503,6 +503,24 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 
 > 상세: [validation.md](docs/backend/validation.md), [service-repository.md](docs/backend/service-repository.md), [frontend/security.md](docs/frontend/security.md)
 
+### 서버가 조건에 따라 다른 형태의 200 을 돌려주는 엔드포인트
+
+같은 엔드포인트가 설정·상태에 따라 **다른 형태의 2xx** 를 낸다면, 프론트는 형태를 판별한 뒤에 읽어야 한다. 한 형태만 가정하면 다른 형태에서 필드 접근이 그 자리에서 던지고, 그 원문이 오류 박스에 영문으로 노출된다. 서버는 정상 응답했으므로 **서버 로그에는 흔적이 없다** — 깨진 것은 클라이언트뿐이다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 응답 타입을 한 형태로 고정 선언하고 `response.data.user.*` 를 바로 읽기 | 판별 유니온으로 두 형태를 표현 (`LoginResult` = `{status:'authenticated', user}` \| `{status:'two_factor_required', challenge}`) |
+| 저장 지점에 형태 가드 없이 `setToken(response.data.token)` | 비어 있지 않은 문자열만 저장 — `localStorage` 는 무엇을 넣든 문자열로 바꾸므로 `undefined` 가 `"undefined"`(truthy)로 남아 이후 모든 요청이 `Bearer undefined` 로 나가 401 이 된다 |
+| 대체 형태 분기를 사용자 경로에만 두고 관리자 경로는 그대로 | 관리자 경로가 먼저 500 이 되면 설정을 되돌릴 수단까지 사라진다 — 두 경로 동시 적용 |
+| `onSuccess` 후속 액션에 조건 없이 성공 처리를 나열 | 대체 형태에서 실행되면 안 되는 액션마다 `if:"{{!response.대체형태플래그}}"` |
+| `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 시점 컨텍스트는 아직 갱신 전이다 — `{{response.*}}` 만 읽는다 (`onSuccess` 결과는 `handleSequence` 의 상태 동기화 대상이 아니다) |
+| 서버가 제공하는 기능의 프론트 화면 부재를 "미사용" 으로 간주 | 토글을 켠 사이트에서만 드러나는 미구현이다 — 서버 토글 ↔ 화면 존재를 전수 대조 |
+
+착수 전 전수조사 축은 **"서버가 대체 형태 2xx 를 내는 엔드포인트 ↔ 프론트 처리 여부"** 다. 그리고 **"서버 토글 ON 시 프론트 화면 존재 여부"** 를 함께 본다 — 2단계 인증은 도입 후 여러 버전 동안 입력 화면이 없었고, 그 토글을 켠 사이트에서만 전원 로그인 불가로 나타났다(공개 #133).
+
+> 상세: [auth-system.md "2단계 인증 로그인"](docs/frontend/auth-system.md)
+> 정적 검사로는 잡히지 않는다 — 응답 변종은 서버 분기의 의미 판정이므로 코드 리뷰에서 확인한다.
+
 ### 제3자 라이브러리는 쓰기 경로를 지정받는다
 
 제3자 라이브러리는 캐시·임시파일 경로를 설정하지 않으면 **자기 설치 폴더**(vendor 안)나 시스템 temp 에 쓴다. 표준 Laravel 배포는 웹서버에 `storage/` 와 `bootstrap/cache` 만 쓰기 권한을 주므로 그 쓰기는 실패하는데, 실패가 예외가 아니라 PHP 경고라 Laravel `HandleExceptions` 가 `ErrorException` 으로 승격시켜 요청이 500 이 된다. 해시당 1회만 기록하는 라이브러리라면 캐시가 영영 생기지 않아 **매 요청이 같은 실패를 반복**한다 — 개발 머신에서는 vendor 가 쓰기 가능해 한 번 성공하고 끝나므로 재현되지 않는다 (공개 #125).
@@ -669,7 +687,7 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 | 버전 키·서명 키를 기본 TTL 로 `put()` | `PERSISTENT_TTL_SECONDS`(10년) 명시 — `forever()` 는 `CacheInterface` 밖(공개 표면 변경), `put(…, 0)` 은 forget |
 | 서명 스코프를 렌더 템플릿만으로 나눔 | `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버 간 mtime 차이로 요청마다 재게시가 왕복한다 |
 | `config:cache` / `route:cache` / `event:cache` / `optimize` 를 헬퍼 밖에서 `Artisan::call` | `ConfigCacheHelper::rebuild()` / `RouteCacheHelper::rebuild()` (내부가 `withPreservedContainer`) — 이 명령들은 새 Application 을 부팅하며 전역 `Container` 를 일회용 앱으로 바꿔 놓아, 그 뒤 등록되는 `app()->terminating()` 재게시 예약이 종료되지 않는 앱에 걸려 사라진다 |
-| 코어 업데이트 흐름에서 현재 프로세스의 버전·update 목록을 `config('app.version')`·`config('app.update.*')` 로 판독 | spawn 자식은 부모가 비우지 않은 이전 버전 config 캐시로 부팅한다 — 버전은 `CoreVersionChecker::getCoreVersion()`(env 우선), update 목록은 캐시 부팅이면 `CoreUpdateService::freshDiskUpdateConfig()`, 부모는 spawn 직전 `ConfigCacheHelper::clear()` |
+| 코어 업데이트 흐름에서 현재 프로세스의 버전·update 목록을 `config('app.version')`·`config('app.update.*')` 로 판독 | spawn 자식은 부모가 비우지 않은 이전 버전 config 캐시로 부팅한다 — 버전은 `CoreVersionChecker::getCoreVersion()`(업데이트 트리 안에서만 env 우선), update 목록은 캐시 부팅이면 `CoreUpdateService::freshDiskUpdateConfig()`, 부모는 spawn 직전 `ConfigCacheHelper::clear()` + `PackageManifestCacheHelper::clear()` |
 
 이 결함군은 예외도 로그도 남기지 않는다 — 게시본이 정상 200 으로 옛 내용을 내보내는 것, 또는 매일 전체 재생성이 일어나는 것이 유일한 증상이다. 재게시 누락의 안전망은 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기](`POST /api/admin/settings/static-cache/republish`)이며, 상태 판정은 `ExtensionStaticCacheService::statusReport()` 한 곳이 CLI·API·화면에 공급한다.
 
@@ -690,6 +708,27 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 이 결함은 예외도 경고도 로그도 남기지 않는다. 이미 제공 불가한 항목이 사용자 화면에서 선택 가능한 상태로 남아 있는 것이 유일한 증상이고, 관리자 화면은 고아 표시로 정상 차단하고 있어 양쪽을 나란히 보지 않으면 드러나지 않는다.
 
 > 상세: [module-settings.md](docs/extension/module-settings.md) "카탈로그 병합 설정의 공개 응답"
+
+### vendor 를 교체한 뒤 새 PHP 프로세스를 띄우기 전에는 패키지 매니페스트를 비운다
+
+Laravel 은 `bootstrap/cache/packages.php` 가 있으면 stale 여부를 검사하지 않고 그대로 읽어 provider 를 `new` 한다. 그래서 vendor 를 바꾼 뒤 그 파일을 남겨 두면 다음에 부팅하는 프로세스가 새 vendor 에 없는 클래스를 찾다 부팅 단계에서 죽고, 예외는 부팅 전이라 앱 로그에 남지 않는다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| vendor 교체 뒤 `proc_open`·`config:cache`·`route:cache` 등 새 부팅을 `bootstrap/cache/{packages,services}.php` 정리 없이 실행 | 부팅 직전 `PackageManifestCacheHelper::clear()`(재생성까지 필요하면 `rebuild()`) — `ConfigCacheHelper::clear()` 와 짝으로 |
+| 정리 로직을 호출부마다 `@unlink` 로 복제 | 헬퍼 단일 지점 — `clearAllCaches()` 도 같은 헬퍼를 쓴다 |
+| 자식 프로세스 보호를 부모 코드에만 두기 | 부모는 이미 배포된 옛 코드일 수 있다 — 새 버전의 `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS` 를 보고 스스로 비운다(App\ 클래스 미참조·실패 무시) |
+| 코어 버전 판정에서 프로세스 env `APP_VERSION` 을 무조건 우선 | env 우선은 `CoreUpdateContext::isInProgress()` 인 프로세스 트리 안에서만 — 업데이트 전에 뜬 `artisan serve`·큐 워커는 옛 값을 물고 있다 |
+| 업데이트 커맨드 argv 판정을 SAPI 게이트 없이 두기 | argv 는 명령줄 SAPI(`cli`·`phpdbg`)에서만 읽는다 — CGI/FPM 은 `register_argc_argv=On` 이면 `$_SERVER['argv']` 를 쿼리스트링에서 채워(`?x+core:update`) 비인증 웹 요청이 업데이트 트리로 판정되고, 자가 치유가 요청마다 매니페스트를 지운다. env 플래그 채널은 웹에서 주입할 수 없으므로 그대로 둔다 |
+| 매니페스트 삭제 실패를 `@unlink` 로 삼키기 | `clear()` 가 지우지 못한 경로를 돌려주고 spawn 직전 호출부가 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식도 같은 이유로 실패해 증상은 제보와 같고, 이 경고가 원인을 가리키는 유일한 흔적이다 |
+| 업데이트 트리 판정을 지점마다 다시 작성 | `App\Support\CoreUpdateContext` 단일 SSoT — `CoreServiceProvider::isCoreUpdateInProgress()` 도 위임이다. `bootstrap/app.php` 의 복제본은 부팅 전이라 불가피한 예외이며 주석으로 상호 참조한다 |
+| 자동 비활성화 로그의 `core_version` 을 `config('app.version')` 으로 적기 | 판정과 같은 `CoreVersionChecker::getCoreVersion()` — 로그와 판정 근거가 갈리면 운영자가 원인을 특정할 수 없다 |
+| "이미 있으니 건너뛴다" 분기(인스톨러 vendor 재사용)가 산출물의 출처를 보지 않음 | `installed.json` 의 `dev`/`dev-package-names` 로 출처를 보고 경고 카드·로그를 남기며, 재사용 경로에서도 컴파일 캐시를 정리한다 |
+| 코어 업데이트를 마치고 상주 워커에 신호를 보내지 않음 | Step 11·핸드오프·단독 재개 사후 단계에서 `signalQueueRestart()` |
+
+이 결함군은 예외도 로그도 남기지 않는다 — 자식 프로세스가 부팅 단계에서 죽어 부모가 핸드오프로 멈추는 것, 또는 업데이트 직후 확장이 `incompatible_core` 로 꺼지는 것이 유일한 증상이다. 후자는 관리자 템플릿이 대상이면 복구 UI 자체에 도달할 수 없어 자가 회복 경로가 없다.
+
+> 상세: [core-update-system.md](docs/backend/core-update-system.md) "spawn 전 캐시 정리 계약(3계층)" · [extension-update-system.md](docs/extension/extension-update-system.md) "판정의 단일 출처와 이 플래그가 게이트하는 것"
 
 ### 화면이 읽는 데이터소스의 권한 폭
 
@@ -1510,6 +1549,8 @@ lazy 번들(편집기/devtools)이 코어 런타임(DynamicRenderer·엔진 싱�
 - 확장 에셋 절대경로는 `getBuiltAssetAbsolutePaths()`(=`getModulePath()`/`getPluginPath()`) 만 쓴다. `base_path("modules"|"plugins")` 직접 조립은 `_bundled` 경로 오해석 → 빈 번들.
 - concat 루프는 확장별 try/catch — 실패 확장만 skip 하고 나머지 병합을 지속한다.
 - 번들 파일명에 확장 캐시 버전을 포함(`{type}.{version}.{js,css}`). 조합 변경 시 version bump → 새 파일명 → 자동 재생성. 구파일 GC 는 `ext-bundles:cleanup` + `{module,plugin,template}:cache-clear` 가 담당한다. prod 은 version-in-path 디스크 캐시, 비프로덕션은 매 요청 concat.
+- 프로덕션은 캐시 파일 존재를 **빌드보다 먼저** 확인한다. 캐시 키는 `(type, kind, version)` 만으로 계산되는데 빌드를 앞세우면 캐시 적중에도 매 요청 활성 확장 열거·파일 읽기가 일어나고, 원본이 소실되면 멀쩡한 캐시를 두고 503 이 된다. 캐시 미스는 같은 키의 잠금으로 1회 빌드에 수렴하고 잠금 뒤 캐시를 재확인하며, 잠금 대기 초과·저장소 장애는 실패가 아니라 각자 빌드로 폴백한다.
+- 병합 결과가 비어도 선언 산출물이 전부 존재하거나 선언이 0이면 0바이트 캐시 파일을 만들어 정적 게시까지 간다. 만들지 않으면 그 구성의 자산 URL 이 API 로 폴백해 방문자의 모든 페이지 로드가 PHP 를 거친다. 캐시하지 않는 것은 산출물 소실(503 판정 보존)·병합 단계에서 건너뛴 확장이 있는 결과(굳지 않도록 매 요청 재시도)·디스크 쓰기 실패뿐이다.
 
 ### 빌드 명령어 (Artisan)
 

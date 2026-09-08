@@ -668,7 +668,7 @@ describe('완료 처리 모달 — 세 진입점 공용 (D26)', () => {
    *
    * @effects defer_translation_only_inside_repeat_context
    */
-  it('$t:defer: 는 cellChildren/expandChildren 안에서만 쓴다', () => {
+  it('[case:components-datagrid-iteration-tdefer] $t:defer: 는 cellChildren/expandChildren 안에서만 쓴다', () => {
     const offenders: string[] = [];
 
     const walk = (node: any, inItemChildren: boolean): void => {

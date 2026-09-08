@@ -132,6 +132,8 @@ export type ActionType =
   | 'replaceUrl' // URL만 변경 (데이터소스 refetch 없음)
   | 'apiCall' // API 호출
   | 'login' // 로그인 (토큰 저장 포함)
+  | 'loginTwoFactor' // 2단계 인증 코드 확인 (로그인 완료)
+  | 'loginTwoFactorResend' // 2단계 인증 코드 재발송
   | 'logout' // 로그아웃
   | 'setState' // 상태 변경
   | 'setError' // 에러 상태 설정
@@ -2464,6 +2466,22 @@ export class ActionDispatcher {
           );
           break;
 
+        case 'loginTwoFactor':
+          result = await this.handleLoginTwoFactor(
+            resolvedTarget!,
+            resolvedParams,
+            context
+          );
+          break;
+
+        case 'loginTwoFactorResend':
+          result = await this.handleLoginTwoFactorResend(
+            resolvedTarget!,
+            resolvedParams,
+            context
+          );
+          break;
+
         case 'logout':
           result = await this.handleLogout(resolvedTarget!, context);
           break;
@@ -3828,8 +3846,7 @@ export class ActionDispatcher {
       );
     }
 
-    // target을 인증 타입으로 사용 (admin 또는 user)
-    const authType: AuthType = target === 'user' ? 'user' : 'admin';
+    const authType = this.resolveAuthType(target);
 
     // 로그인 엔드포인트 결정 (globalHeaders 패턴 매칭용)
     // ApiClient는 baseURL이 '/api'이므로 실제 요청 경로에 '/api' prefix 추가
@@ -3837,49 +3854,184 @@ export class ActionDispatcher {
       ? '/api/auth/admin/login'
       : '/api/auth/login';
 
-    // globalHeaders에서 패턴 매칭되는 헤더 추출
-    // Stale Closure 방지: G7Core.state.getGlobal/getLocal()로 최신 상태 조회
-    // (cartKey 재발급 등 중간에 상태가 변경된 경우에도 최신 값 사용)
-    const currentGlobalState = (window as any).G7Core?.state?.getGlobal?.() || _context.state?._global || {};
-    const currentLocalState = (window as any).G7Core?.state?.getLocal?.() || _context.state?._local || {};
-
-    const expressionContext: Record<string, any> = {
-      _global: currentGlobalState,
-      _local: currentLocalState,
-    };
-    const globalHeadersResolved = this.getMatchingGlobalHeaders(loginEndpoint, expressionContext);
-
     const authManager = AuthManager.getInstance();
 
     try {
       // AuthManager.login()을 통해 로그인 및 토큰 저장
       // globalHeaders가 있으면 options.headers로 전달
-      const loginOptions = Object.keys(globalHeadersResolved).length > 0
-        ? { headers: globalHeadersResolved }
-        : undefined;
-
-      const user = await authManager.login(
+      const result = await authManager.login(
         authType,
         { email: body.email, password: body.password },
-        loginOptions
+        this.buildAuthRequestOptions(loginEndpoint, _context)
+      );
+
+      // 2단계 인증이 켜진 사이트에서는 아직 로그인이 끝나지 않았다. 레이아웃이 그 사실을
+      // 알 통로가 없으면 인증번호 입력 단계로 넘어갈 방법이 없다.
+      if (result.status === 'two_factor_required') {
+        return {
+          user: null,
+          two_factor_required: true,
+          challenge_id: result.challenge.challengeId,
+          provider_id: result.challenge.providerId,
+          expires_at: result.challenge.expiresAt,
+        };
+      }
+
+      // `user` 는 종전 계약 그대로 유지한다 — 기존 레이아웃이 `response.user` 를 읽는다.
+      return { user: result.user, two_factor_required: false };
+    } catch (error: any) {
+      throw this.toLoginActionError(error, 'Login failed');
+    }
+  }
+
+  /**
+   * loginTwoFactor 액션을 처리합니다.
+   *
+   * 비밀번호 확인 단계가 돌려준 challenge 와 사용자가 받은 인증번호로 로그인을 완료합니다.
+   *
+   * @param target 인증 타입 (admin 또는 user)
+   * @param params 요청 파라미터 (body에 challenge_id, code 포함)
+   * @param context 액션 컨텍스트
+   * @since engine-v1.65.0
+   */
+  private async handleLoginTwoFactor(
+    target: string,
+    params: Record<string, any>,
+    context: ActionContext
+  ): Promise<any> {
+    const { body } = params;
+
+    if (!body || !body.challenge_id || !body.code) {
+      throw new ActionError(
+        'loginTwoFactor requires challenge_id and code in body params'
+      );
+    }
+
+    const authType = this.resolveAuthType(target);
+    const endpoint = authType === 'admin'
+      ? '/api/auth/admin/login/two-factor'
+      : '/api/auth/login/two-factor';
+
+    try {
+      const user = await AuthManager.getInstance().completeTwoFactor(
+        authType,
+        { challengeId: String(body.challenge_id), code: String(body.code) },
+        this.buildAuthRequestOptions(endpoint, context)
       );
 
       return { user };
     } catch (error: any) {
-      // AuthManager에서 이미 API 응답 메시지를 추출한 에러를 throw하므로
-      // error.message에 실제 서버 응답 메시지가 들어있음
-      const errorMessage = error.message || 'Login failed';
+      throw this.toLoginActionError(error, 'Login failed');
+    }
+  }
 
-      const apiError: any = new Error(errorMessage);
-      apiError.response = error.response?.data || {};
-      apiError.status = error.status || error.response?.status || 500;
+  /**
+   * loginTwoFactorResend 액션을 처리합니다.
+   *
+   * 서버가 기존 challenge 를 취소하고 새로 발행하므로, 레이아웃은 반환된 새
+   * `challenge_id` 로 반드시 교체해야 합니다.
+   *
+   * @param target 인증 타입 (admin 또는 user)
+   * @param params 요청 파라미터 (body에 challenge_id 포함)
+   * @param context 액션 컨텍스트
+   * @since engine-v1.65.0
+   */
+  private async handleLoginTwoFactorResend(
+    target: string,
+    params: Record<string, any>,
+    context: ActionContext
+  ): Promise<any> {
+    const { body } = params;
 
+    if (!body || !body.challenge_id) {
       throw new ActionError(
-        errorMessage,
-        undefined,
-        apiError
+        'loginTwoFactorResend requires challenge_id in body params'
       );
     }
+
+    const authType = this.resolveAuthType(target);
+    const endpoint = authType === 'admin'
+      ? '/api/auth/admin/login/two-factor/resend'
+      : '/api/auth/login/two-factor/resend';
+
+    try {
+      const challenge = await AuthManager.getInstance().resendTwoFactor(
+        authType,
+        { challengeId: String(body.challenge_id) },
+        this.buildAuthRequestOptions(endpoint, context)
+      );
+
+      return {
+        two_factor_required: true,
+        challenge_id: challenge.challengeId,
+        provider_id: challenge.providerId,
+        expires_at: challenge.expiresAt,
+      };
+    } catch (error: any) {
+      throw this.toLoginActionError(error, 'Resend failed');
+    }
+  }
+
+  /**
+   * 액션 target 을 인증 타입으로 해석합니다.
+   *
+   * @param target 액션 target
+   * @returns 인증 타입
+   */
+  private resolveAuthType(target: string): AuthType {
+    return target === 'user' ? 'user' : 'admin';
+  }
+
+  /**
+   * 인증 요청에 실을 globalHeaders 옵션을 만듭니다.
+   *
+   * 세 인증 핸들러가 같은 규칙을 공유하도록 단일 지점에 둔다 — 갈라지면 한 경로에만
+   * 공통 헤더가 빠져 그 요청만 조용히 다르게 나간다.
+   *
+   * @param endpoint 요청 경로 (globalHeaders 패턴 매칭용, '/api' prefix 포함)
+   * @param context 액션 컨텍스트
+   * @returns headers 옵션 (매칭된 헤더가 없으면 undefined)
+   */
+  private buildAuthRequestOptions(
+    endpoint: string,
+    context: ActionContext
+  ): { headers: Record<string, string> } | undefined {
+    // Stale Closure 방지: G7Core.state.getGlobal/getLocal()로 최신 상태 조회
+    // (cartKey 재발급 등 중간에 상태가 변경된 경우에도 최신 값 사용)
+    const currentGlobalState = (window as any).G7Core?.state?.getGlobal?.() || context.state?._global || {};
+    const currentLocalState = (window as any).G7Core?.state?.getLocal?.() || context.state?._local || {};
+
+    const expressionContext: Record<string, any> = {
+      _global: currentGlobalState,
+      _local: currentLocalState,
+    };
+
+    const resolved = this.getMatchingGlobalHeaders(endpoint, expressionContext);
+
+    return Object.keys(resolved).length > 0 ? { headers: resolved } : undefined;
+  }
+
+  /**
+   * AuthManager 오류를 액션 오류로 재포장합니다.
+   *
+   * `code` 를 보존해야 호출자가 네트워크 실패와 HTTP 오류를 구분해 다국어 문구로
+   * 안내할 수 있다 — axios 오류는 `TypeError` 가 아니다.
+   *
+   * @param error 원본 오류
+   * @param fallbackMessage 서버 메시지가 없을 때 쓸 기본 문구
+   * @returns 액션 오류
+   */
+  private toLoginActionError(error: any, fallbackMessage: string): ActionError {
+    // AuthManager에서 이미 API 응답 메시지를 추출한 에러를 throw하므로
+    // error.message에 실제 서버 응답 메시지가 들어있음
+    const errorMessage = error?.message || fallbackMessage;
+
+    const apiError: any = new Error(errorMessage);
+    apiError.response = error?.response?.data || {};
+    apiError.status = error?.status || error?.response?.status || 500;
+    apiError.code = error?.code;
+
+    return new ActionError(errorMessage, undefined, apiError);
   }
 
   /**

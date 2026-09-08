@@ -8,6 +8,11 @@
   },
   "init_actions": [
     {
+      "_comment": "2단계 인증 단계 상태는 전역이라 화면을 떠나도 남는다 — 진입할 때마다 1단계로 되돌린다.",
+      "handler": "setState",
+      "params": { "target": "global", "twoFactor": null }
+    },
+    {
       "if": "{{query?.reason === 'session_expired'}}",
       "handler": "toast",
       "params": {

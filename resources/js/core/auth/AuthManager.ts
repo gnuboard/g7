@@ -36,7 +36,37 @@ export interface AuthConfig {
   loginEndpoint: string;
   logoutEndpoint: string;
   refreshEndpoint: string;
+  /** 2단계 인증 코드 확인 엔드포인트 */
+  twoFactorEndpoint: string;
+  /** 2단계 인증 코드 재발송 엔드포인트 */
+  twoFactorResendEndpoint: string;
 }
+
+/**
+ * 2단계 인증 challenge 정보
+ *
+ * 비밀번호 확인만 통과한 상태다 — 토큰은 아직 발급되지 않았고, 코드 확인에 성공해야
+ * 세션이 열린다.
+ *
+ * @since engine-v1.65.0
+ */
+export interface TwoFactorChallenge {
+  challengeId: string;
+  providerId: string;
+  expiresAt: string | null;
+}
+
+/**
+ * 로그인 결과
+ *
+ * 서버는 보안 환경설정에 따라 **두 가지 형태의 200** 을 돌려준다. 한 형태만 가정하면
+ * 다른 형태에서 토큰·사용자 필드가 없어 화면이 알 수 없는 오류로 멈춘다.
+ *
+ * @since engine-v1.65.0
+ */
+export type LoginResult =
+  | { status: 'authenticated'; user: AuthUser }
+  | { status: 'two_factor_required'; challenge: TwoFactorChallenge };
 
 /**
  * 인증된 사용자 정보
@@ -63,6 +93,20 @@ export interface AuthState {
 type EventHandler = (...args: any[]) => void;
 
 /**
+ * 로그인·2단계 인증 응답의 data 페이로드
+ *
+ * 두 형태(토큰 발급 / challenge 발급)가 같은 자리에 오므로 전부 선택 필드다.
+ */
+interface LoginResponseData {
+  token?: string;
+  user?: AuthUser;
+  two_factor_required?: boolean;
+  challenge_id?: string;
+  provider_id?: string;
+  expires_at?: string | null;
+}
+
+/**
  * 기본 인증 설정
  */
 const defaultConfigs: Record<AuthType, AuthConfig> = {
@@ -74,6 +118,8 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     loginEndpoint: '/auth/admin/login',
     logoutEndpoint: '/admin/auth/logout',
     refreshEndpoint: '/admin/auth/refresh',
+    twoFactorEndpoint: '/auth/admin/login/two-factor',
+    twoFactorResendEndpoint: '/auth/admin/login/two-factor/resend',
   },
   user: {
     type: 'user',
@@ -83,6 +129,8 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     loginEndpoint: '/auth/login',
     logoutEndpoint: '/auth/logout',
     refreshEndpoint: '/auth/refresh',
+    twoFactorEndpoint: '/auth/login/two-factor',
+    twoFactorResendEndpoint: '/auth/login/two-factor/resend',
   },
 };
 
@@ -238,14 +286,82 @@ export class AuthManager {
   /**
    * 로그인 처리
    *
+   * 서버는 두 가지 형태의 200 을 돌려준다 — 토큰과 사용자가 실린 정상 응답, 그리고
+   * 2단계 인증이 켜져 있을 때의 challenge 응답이다. 후자에는 토큰도 사용자도 없으므로
+   * 세션을 열지 않고 challenge 만 돌려준다.
+   *
    * @param type - 인증 타입
    * @param credentials - 로그인 자격 증명
    * @param options - 추가 옵션 (headers 등)
-   * @returns 인증된 사용자 정보
+   * @returns 인증 완료 또는 2단계 인증 요구
+   * @since engine-v1.65.0 반환 타입이 `AuthUser` 에서 `LoginResult` 로 바뀌었습니다.
    */
   async login(
     type: AuthType,
     credentials: { email: string; password: string },
+    options?: { headers?: Record<string, string> }
+  ): Promise<LoginResult> {
+    const apiClient = getApiClient();
+    const config = this.config.get(type);
+
+    if (!config) {
+      throw new Error(`Unknown auth type: ${type}`);
+    }
+
+    try {
+      // 추가 헤더 설정 (globalHeaders 지원)
+      const requestConfig = options?.headers ? { headers: options.headers } : undefined;
+
+      const response = await apiClient.post<{
+        success: boolean;
+        data: LoginResponseData;
+      }>(config.loginEndpoint, credentials, requestConfig);
+
+      if (response.success && response.data) {
+        // 2단계 인증 요구 — 토큰이 없으므로 상태를 건드리지 않는다.
+        if (response.data.two_factor_required === true) {
+          trackAuthEvent('login', true, undefined, { type, two_factor: true });
+
+          return {
+            status: 'two_factor_required',
+            challenge: {
+              challengeId: String(response.data.challenge_id ?? ''),
+              providerId: String(response.data.provider_id ?? ''),
+              expiresAt: response.data.expires_at ?? null,
+            },
+          };
+        }
+
+        // 두 필드가 모두 있을 때만 세션을 연다 — 한쪽만 보고 진행하면 undefined 토큰이
+        // 저장되어 이후 모든 요청이 401 이 된다.
+        if (response.data.token && response.data.user) {
+          return {
+            status: 'authenticated',
+            user: this.establishSession(type, response.data.token, response.data.user),
+          };
+        }
+      }
+
+      throw new Error('Login failed');
+    } catch (error: any) {
+      this.clearState();
+
+      throw this.enhanceAuthError(error, type, 'Login failed');
+    }
+  }
+
+  /**
+   * 2단계 인증 코드를 확인하고 로그인을 완료합니다.
+   *
+   * @param type - 인증 타입
+   * @param payload - challenge 식별자와 사용자가 받은 인증번호
+   * @param options - 추가 옵션 (headers 등)
+   * @returns 인증된 사용자 정보
+   * @since engine-v1.65.0
+   */
+  async completeTwoFactor(
+    type: AuthType,
+    payload: { challengeId: string; code: string },
     options?: { headers?: Record<string, string> }
   ): Promise<AuthUser> {
     const apiClient = getApiClient();
@@ -255,86 +371,165 @@ export class AuthManager {
       throw new Error(`Unknown auth type: ${type}`);
     }
 
-    // 로그인 엔드포인트 결정
-    const loginEndpoint = type === 'admin'
-        ? defaultConfigs.admin.loginEndpoint
-        : defaultConfigs.user.loginEndpoint;
-
     try {
-      // 추가 헤더 설정 (globalHeaders 지원)
       const requestConfig = options?.headers ? { headers: options.headers } : undefined;
 
       const response = await apiClient.post<{
         success: boolean;
-        data: {
-          token: string;
-          user: AuthUser;
-        };
-      }>(loginEndpoint, credentials, requestConfig);
+        data: LoginResponseData;
+      }>(
+        config.twoFactorEndpoint,
+        { challenge_id: payload.challengeId, code: payload.code },
+        requestConfig
+      );
 
-      if (response.success && response.data) {
-        // 토큰 저장
-        apiClient.setToken(response.data.token);
-
-        // 사용자의 language 설정 확인 및 로케일 변경 처리
-        const userLanguage = response.data.user.language;
-        const currentLocale = localStorage.getItem(AuthManager.LOCALE_STORAGE_KEY);
-        const localeChanged = userLanguage && userLanguage !== currentLocale;
-
-        if (userLanguage) {
-          try {
-            localStorage.setItem(AuthManager.LOCALE_STORAGE_KEY, userLanguage);
-          } catch (error) {
-            logger.warn('Failed to save user language to localStorage:', error);
-          }
-        }
-
-        // 상태 업데이트
-        this.state = {
-          isAuthenticated: true,
-          user: response.data.user,
-          type: type,
-        };
-
-        this.emit('login', this.state);
-        this.emit('authStateChange', this.state);
-
-        // DevTools 추적
-        trackAuthEvent('login', true, undefined, {
-          userId: response.data.user.uuid,
-          email: response.data.user.email,
-          type,
-        });
-
-        // 로케일이 변경된 경우 TemplateApp 재초기화
-        if (localeChanged && (window as any).__templateApp) {
-          // changeLocale은 비동기이므로 await 하지 않고 실행
-          // navigate가 먼저 실행되고, changeLocale이 완료되면 UI가 업데이트됨
-          (window as any).__templateApp.changeLocale(userLanguage);
-        }
-
-        return response.data.user;
+      if (response.success && response.data?.token && response.data?.user) {
+        return this.establishSession(type, response.data.token, response.data.user);
       }
 
       throw new Error('Login failed');
     } catch (error: any) {
       this.clearState();
 
-      // Axios 에러에서 API 응답 메시지 추출
-      // error.response.data.message가 실제 서버 응답 메시지
-      const apiMessage = error.response?.data?.message;
-      const enhancedError: any = new Error(apiMessage || error.message || 'Login failed');
-      enhancedError.response = error.response;
-      enhancedError.status = error.response?.status;
-
-      // DevTools 추적
-      trackAuthEvent('login', false, enhancedError.message, {
-        type,
-        status: error.response?.status,
-      });
-
-      throw enhancedError;
+      throw this.enhanceAuthError(error, type, 'Login failed');
     }
+  }
+
+  /**
+   * 2단계 인증 코드를 재발송합니다.
+   *
+   * 서버가 기존 challenge 를 취소하고 새로 발행하므로, 앞서 받은 인증번호는 더 이상
+   * 통하지 않습니다 — 호출자는 반드시 새 challenge 로 교체해야 합니다.
+   *
+   * @param type - 인증 타입
+   * @param payload - 재발송할 challenge 식별자
+   * @param options - 추가 옵션 (headers 등)
+   * @returns 새 challenge 정보
+   * @since engine-v1.65.0
+   */
+  async resendTwoFactor(
+    type: AuthType,
+    payload: { challengeId: string },
+    options?: { headers?: Record<string, string> }
+  ): Promise<TwoFactorChallenge> {
+    const apiClient = getApiClient();
+    const config = this.config.get(type);
+
+    if (!config) {
+      throw new Error(`Unknown auth type: ${type}`);
+    }
+
+    try {
+      const requestConfig = options?.headers ? { headers: options.headers } : undefined;
+
+      const response = await apiClient.post<{
+        success: boolean;
+        data: LoginResponseData;
+      }>(
+        config.twoFactorResendEndpoint,
+        { challenge_id: payload.challengeId },
+        requestConfig
+      );
+
+      if (response.success && response.data?.challenge_id) {
+        return {
+          challengeId: String(response.data.challenge_id),
+          providerId: String(response.data.provider_id ?? ''),
+          expiresAt: response.data.expires_at ?? null,
+        };
+      }
+
+      throw new Error('Resend failed');
+    } catch (error: any) {
+      // 재발송 실패는 세션 상태와 무관하다 — 이미 열린 세션이 없으므로 상태를 지우지 않는다.
+      throw this.enhanceAuthError(error, type, 'Resend failed');
+    }
+  }
+
+  /**
+   * 토큰을 저장하고 인증 상태·로케일을 확정합니다.
+   *
+   * 정상 로그인과 2단계 인증 완료가 같은 후처리를 공유하도록 단일 지점에 둔다 —
+   * 갈라지면 한쪽 경로에서만 로케일 전환이나 이벤트 발행이 빠진다.
+   *
+   * @param type - 인증 타입
+   * @param token - 발급된 토큰
+   * @param user - 인증된 사용자
+   * @returns 인증된 사용자 정보
+   */
+  private establishSession(type: AuthType, token: string, user: AuthUser): AuthUser {
+    const apiClient = getApiClient();
+
+    // 토큰 저장
+    apiClient.setToken(token);
+
+    // 사용자의 language 설정 확인 및 로케일 변경 처리
+    const userLanguage = user.language;
+    const currentLocale = localStorage.getItem(AuthManager.LOCALE_STORAGE_KEY);
+    const localeChanged = userLanguage && userLanguage !== currentLocale;
+
+    if (userLanguage) {
+      try {
+        localStorage.setItem(AuthManager.LOCALE_STORAGE_KEY, userLanguage);
+      } catch (error) {
+        logger.warn('Failed to save user language to localStorage:', error);
+      }
+    }
+
+    // 상태 업데이트
+    this.state = {
+      isAuthenticated: true,
+      user,
+      type,
+    };
+
+    this.emit('login', this.state);
+    this.emit('authStateChange', this.state);
+
+    // DevTools 추적
+    trackAuthEvent('login', true, undefined, {
+      userId: user.uuid,
+      email: user.email,
+      type,
+    });
+
+    // 로케일이 변경된 경우 TemplateApp 재초기화
+    if (localeChanged && (window as any).__templateApp) {
+      // changeLocale은 비동기이므로 await 하지 않고 실행
+      // navigate가 먼저 실행되고, changeLocale이 완료되면 UI가 업데이트됨
+      (window as any).__templateApp.changeLocale(userLanguage);
+    }
+
+    return user;
+  }
+
+  /**
+   * 인증 실패 오류에 서버 응답 정보를 실어 다시 던질 오류를 만듭니다.
+   *
+   * `code` 를 보존해야 호출자가 네트워크 실패(`ERR_NETWORK` 등)와 HTTP 오류를 구분해
+   * 다국어 문구로 안내할 수 있다 — axios 오류는 `TypeError` 가 아니다.
+   *
+   * @param error - 원본 오류
+   * @param type - 인증 타입
+   * @param fallbackMessage - 서버 메시지가 없을 때 쓸 기본 문구
+   * @returns 보강된 오류
+   */
+  private enhanceAuthError(error: any, type: AuthType, fallbackMessage: string): any {
+    // Axios 에러에서 API 응답 메시지 추출
+    // error.response.data.message가 실제 서버 응답 메시지
+    const apiMessage = error?.response?.data?.message;
+    const enhancedError: any = new Error(apiMessage || error?.message || fallbackMessage);
+    enhancedError.response = error?.response;
+    enhancedError.status = error?.response?.status;
+    enhancedError.code = error?.code;
+
+    // DevTools 추적
+    trackAuthEvent('login', false, enhancedError.message, {
+      type,
+      status: error?.response?.status,
+    });
+
+    return enhancedError;
   }
 
   /**

@@ -16,7 +16,9 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorMode;
 use App\Services\CoreUpdateService;
+use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
+use App\Support\PackageManifestCacheHelper;
 use App\Support\RouteCacheHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -320,6 +322,22 @@ class CoreUpdateCommand extends Command
             $composerSkipped = $vendorMode !== VendorMode::Bundled
                 && $service->isComposerUnchangedForCore($pendingPath);
 
+            // 운영 vendor 에 개발용(require-dev) 패키지가 섞여 있는지 알린다. 그대로 두면
+            // 이전 설치본이 만든 패키지 매니페스트가 새 vendor 와 어긋나 이후 부팅이 깨지고,
+            // 그 사실은 오류 메시지 어디에도 "dev 설치본" 으로 드러나지 않는다.
+            $devPackages = ComposerInstallInfo::devPackageNames(base_path('vendor'));
+            if ($devPackages !== []) {
+                $devCount = count($devPackages);
+                $devSample = implode(', ', array_slice($devPackages, 0, 5)).($devCount > 5 ? ' …' : '');
+                if ($composerSkipped) {
+                    $this->warn("운영 vendor 에 개발용 패키지 {$devCount}개 감지 — composer.json/lock 변경이 없어 vendor 를 재설치하지 않으므로 그대로 남습니다. 업데이트 후 'composer install --no-dev --optimize-autoloader' 실행을 권장합니다.");
+                    $log("운영 vendor 개발용 패키지 {$devCount}개 잔존 (composer 스킵): {$devSample}");
+                } else {
+                    $this->line("운영 vendor 에 개발용 패키지 {$devCount}개 감지 — 이번 업데이트가 --no-dev vendor 로 교체합니다.");
+                    $log("운영 vendor 개발용 패키지 {$devCount}개 감지 — --no-dev vendor 로 교체: {$devSample}");
+                }
+            }
+
             if ($composerSkipped) {
                 $bar->setMessage('Composer 의존성 변경 없음 — 스킵');
                 $bar->advance();
@@ -511,6 +529,11 @@ class CoreUpdateCommand extends Command
             $service->updateVersionInEnv($toVersion);
             $service->clearAllCaches();
 
+            // 상주 큐 워커는 부팅이 한 번뿐이라 옛 코드를 물고 있다 — 캐시가 새 코드 기준으로
+            // 정리된 직후 재시작 신호를 보낸다.
+            $service->signalQueueRestart();
+            $log('큐 워커 재시작 신호 전송 (queue:restart)');
+
             // 코어 업데이트 후 프론트엔드가 새 lang/routes/layout 자원으로 fetch 하도록
             // `ext.cache_version` bump. 코어 lang JSON 변경이 프론트엔드 캐시에
             // 반영되지 않는 회귀를 차단한다 (core-frontend-i18n-infrastructure 계획서).
@@ -636,6 +659,9 @@ class CoreUpdateCommand extends Command
             try {
                 $service->updateVersionInEnv($toVersion);
                 $service->clearAllCaches();
+                // 핸드오프로 멈춰도 파일은 이미 toVersion 이므로 워커는 새 코드로 재기동해야 한다.
+                $service->signalQueueRestart();
+                $log('큐 워커 재시작 신호 전송 (queue:restart)');
                 // 핸드오프 cleanup 에서도 프론트엔드 캐시 버전 bump — 사용자가 resume 명령
                 // (execute-upgrade-steps) 을 실행하기 전이라도 이미 toVersion 으로 반영된
                 // 코어 lang/routes/layout 자원이 프론트엔드 캐시 stale 로 가려지지 않도록.
@@ -886,6 +912,24 @@ class CoreUpdateCommand extends Command
         // `public/build/ext` 권한 정상화 누락). 부모의 메모리 config 는 영향받지 않고, 캐시는
         // Step 11 의 `ConfigCacheHelper::rebuild()` 가 모든 파일이 안착한 뒤 다시 만든다.
         ConfigCacheHelper::clear();
+
+        // 같은 이유로 패키지 매니페스트(bootstrap/cache/packages.php · services.php)도 비운다.
+        // vendor 는 Step 6/8 에서 이미 교체됐지만 두 파일은 Step 11 clearAllCaches 까지 이전
+        // 설치본의 것이 남고, Laravel 은 packages.php 가 "없을 때만" 다시 만든다. 이전 설치본이
+        // dev composer(require-dev 전이 의존성 laravel/mcp 의 McpServiceProvider 포함)로 깔렸다면
+        // 자식은 새 vendor 에 없는 provider 를 new 하다 부팅 단계에서 죽는다 (7.0.9→7.0.10 실사례).
+        // 부모 메모리의 매니페스트는 영향받지 않고, Step 11 이 package:discover 로 다시 만든다.
+        //
+        // 지우지 못한 파일(권한·소유권 불일치)은 로그에 남긴다. 그 상태면 자식의 자가 치유도 같은
+        // 권한으로 실패하므로 증상은 이전 설치본 provider 의 「Class not found」 그대로이고, 이 기록이
+        // 권한이 원인이라는 유일한 흔적이다.
+        $remainingManifests = PackageManifestCacheHelper::clear();
+        if ($remainingManifests !== []) {
+            $manifestWarning = 'spawn 직전 패키지 매니페스트 삭제 실패 — 자식이 이전 설치본의 provider 목록으로 부팅할 수 있습니다 (권한·소유권 확인): '
+                .implode(', ', $remainingManifests);
+            $log($manifestWarning);
+            $this->warn($manifestWarning);
+        }
 
         $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
         if (! is_resource($process)) {

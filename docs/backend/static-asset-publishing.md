@@ -33,7 +33,7 @@ public/build/ext/{cache_version}/
 │   ├── routes.json                            ← 병합 결과 + {"success":true,...} 봉투
 │   └── assets/{dist 이하 경로}                 ← dist/** 사본 (*.map 제외, 허용 확장자만)
 └── bundles/
-    ├── modules.js / modules.css               ← 확장 병합 번들 사본
+    ├── modules.js / modules.css               ← 확장 병합 번들 사본 (빈 번들도 0바이트로 게시)
     └── plugins.js / plugins.css
 ```
 
@@ -176,7 +176,7 @@ public/build/ext/{cache_version}/
 
 같은 엔드포인트가 대시보드의 「초기 화면 파일 생성 실패」 알림에도 [다시 만들기] 버튼으로 붙는다 — 운영자가 결함을 처음 만나는 곳에서 복구가 끝나도록.
 
-715파일·40MB 복사와 번들 재병합이 **웹 요청 안에서** 돈다. 서버는 게시 락 TTL(300초)만큼 실행 시간을 확보하고 클라이언트가 끊어도 게시를 끝내지만, FPM `request_terminate_timeout`·nginx `fastcgi_read_timeout` 이 그보다 짧은 서버에서는 응답이 먼저 끊길 수 있다. 그 경우에도 게시는 계속되므로 카드를 다시 열어 결과를 확인한다.
+715파일·40MB 복사와 번들 재병합이 **웹 요청 안에서** 돈다(번들은 캐시가 있으면 재병합하지 않는다). 서버는 게시 락 TTL(300초)만큼 실행 시간을 확보하고 클라이언트가 끊어도 게시를 끝내지만, FPM `request_terminate_timeout`·nginx `fastcgi_read_timeout` 이 그보다 짧은 서버에서는 응답이 먼저 끊길 수 있다. 그 경우에도 게시는 계속되므로 카드를 다시 열어 결과를 확인한다.
 
 이 통로가 있으므로 kill-switch 를 관리자 UI 로 두지 않는 방침(§5)은 그대로다 — 복구는 화면에서, 끄기는 서버에서.
 

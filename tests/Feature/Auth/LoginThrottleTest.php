@@ -127,7 +127,7 @@ class LoginThrottleTest extends TestCase
     /**
      * @test
      */
-    public function login_attempt_enabled_가_OFF_이면_무제한_시도_허용된다(): void
+    public function login_attempt_enabled_가_off_이면_무제한_시도_허용된다(): void
     {
         $this->setSecuritySettings([
             'login_attempt_enabled' => false,
@@ -190,7 +190,7 @@ class LoginThrottleTest extends TestCase
     /**
      * @test
      */
-    public function 존재하지_않는_이메일은_DB에_카운트_저장되지_않는다(): void
+    public function 존재하지_않는_이메일은_db에_카운트_저장되지_않는다(): void
     {
         $response = $this->postJson('/api/auth/login', [
             'email' => 'ghost@example.com',
@@ -200,6 +200,41 @@ class LoginThrottleTest extends TestCase
         $response->assertStatus(401);
         // 존재하지 않는 이메일에 대해서는 user 가 없으므로 DB 변경 없음 — IP throttle 이 백업
         $this->assertDatabaseMissing('users', ['email' => 'ghost@example.com']);
+    }
+
+    /**
+     * @test
+     *
+     * @scenario two_factor=off, controller=user, delivery=sent
+     *
+     * @effects too_many_attempts_message_translated
+     */
+    public function 분당_요청_상한을_넘으면_다국어_문구로_응답한다(): void
+    {
+        // 기본 응답은 영문 "Too Many Attempts." 이다 — 로그인 화면이 그 문구를 그대로
+        // 노출하므로, 한국어 사이트에서 영문 원문이 오류 박스에 뜬다.
+        $limit = max(30, 3 * 6);
+
+        for ($i = 0; $i <= $limit; $i++) {
+            $response = $this->postJson('/api/auth/login', [
+                'email' => 'ghost@example.com',
+                'password' => 'wrong-password',
+            ]);
+
+            if ($response->getStatusCode() === 429) {
+                break;
+            }
+        }
+
+        $response->assertStatus(429);
+        $this->assertNotSame('Too Many Attempts.', $response->json('message'));
+        $this->assertStringNotContainsString(':seconds', (string) $response->json('message'));
+        $this->assertSame(
+            __('auth.too_many_attempts', ['seconds' => (int) $response->headers->get('Retry-After')]),
+            $response->json('message')
+        );
+        // 재시도 시점 안내는 그대로 유지되어야 한다.
+        $this->assertNotNull($response->headers->get('Retry-After'));
     }
 
     private function setSecuritySettings(array $values): void

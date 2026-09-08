@@ -1301,6 +1301,14 @@
       "label": "로그인 처리",
       "param_body": "로그인 정보"
     },
+    "login_two_factor": {
+      "label": "인증번호 확인",
+      "param_body": "인증 정보"
+    },
+    "login_two_factor_resend": {
+      "label": "인증번호 다시 받기",
+      "param_body": "인증 요청 정보"
+    },
     "logout": {
       "label": "로그아웃 처리",
       "param_target": "이동할 곳"

@@ -5,6 +5,27 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.65.0] - 2026-09-07
+
+### Added
+
+#### 2단계 인증 로그인 단계 지원
+- 로그인 응답을 `LoginResult` 판별 유니온으로 표현 — 정상 로그인과 인증번호 요구(challenge)를 타입으로 구분 (AuthManager.ts)
+- `completeTwoFactor()` / `resendTwoFactor()` 추가 — 인증번호 확인·재발송 (AuthManager.ts)
+- `AuthConfig` 에 `twoFactorEndpoint` / `twoFactorResendEndpoint` 추가 (AuthManager.ts)
+- 액션 핸들러 `loginTwoFactor` / `loginTwoFactorResend` 추가 — 레이아웃에서 인증번호 확인·재발송 (ActionDispatcher.ts)
+- `login` 핸들러 반환에 `two_factor_required` / `challenge_id` / `provider_id` / `expires_at` 추가 (기존 `user` 필드 유지) (ActionDispatcher.ts)
+- 레이아웃 편집기 [화면 동작] 탭에 두 핸들러 등록 (coreActionRecipes.ts, ActionAddPicker.tsx)
+
+### Fixed
+
+#### 2단계 인증이 켜진 사이트에서 로그인 화면이 영문 오류로 멈추던 문제
+- 로그인 응답 형태를 하나로 가정해 인증번호 요구 응답에서 `TypeError` 원문이 오류 박스에 노출되던 문제 (AuthManager.ts)
+- 문자열이 아닌 토큰이 저장되어 이후 모든 요청이 401 로 튕기던 문제 (ApiClient.ts)
+- `updateConfig({ loginEndpoint })` 로 지정한 엔드포인트가 무시되던 문제 (AuthManager.ts)
+- axios 네트워크 오류가 네트워크 실패로 판정되지 않아 영문 원문이 노출되던 문제 (networkResilience.ts, ActionDispatcher.ts)
+- 다국어 파라미터 값의 파이프 필터(`$t:key|until={{x | datetime}}`)가 평가되지 않아 문장에서 값만 사라지던 문제 (TranslationEngine.ts)
+
 ## [engine-v1.64.7] - 2026-09-04
 
 ### Fixed

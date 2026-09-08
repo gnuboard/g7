@@ -1301,6 +1301,14 @@
       "label": "Handle login",
       "param_body": "Login info"
     },
+    "login_two_factor": {
+      "label": "Verify code",
+      "param_body": "Verification info"
+    },
+    "login_two_factor_resend": {
+      "label": "Resend code",
+      "param_body": "Challenge info"
+    },
     "logout": {
       "label": "Handle logout",
       "param_target": "Destination"

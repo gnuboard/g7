@@ -19,6 +19,7 @@
         "isLoggingIn": false,
         "loginError": null,
         "loginErrors": null,
+        "twoFactor": null,
         "loginForm": {
           "email": "",
           "password": ""
@@ -149,6 +150,27 @@
                         "className": "text-sm text-red-600 dark:text-red-400"
                       },
                       "text": "{{_local.loginError}}"
+                    },
+                    {
+                      "comment": "계정 잠금 해제 시각 — 언제 다시 시도할 수 있는지 알려주지 않으면 계속 눌러 보게 된다",
+                      "id": "login_error_locked_until",
+                      "type": "basic",
+                      "name": "P",
+                      "if": "{{_local.loginErrors?.locked_until}}",
+                      "props": {
+                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                      },
+                      "text": "$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}"
+                    },
+                    {
+                      "id": "login_error_locked_permanent",
+                      "type": "basic",
+                      "name": "P",
+                      "if": "{{_local.loginErrors?.permanent === true}}",
+                      "props": {
+                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                      },
+                      "text": "$t:auth.login.locked_permanent"
                     }
                   ]
                 },
@@ -157,6 +179,7 @@
                   "id": "login_email_field",
                   "type": "basic",
                   "name": "Div",
+                  "if": "{{!_local.twoFactor?.required}}",
                   "children": [
                     {
                       "id": "login_email_label",
@@ -200,6 +223,7 @@
                   "id": "login_password_field",
                   "type": "basic",
                   "name": "Div",
+                  "if": "{{!_local.twoFactor?.required}}",
                   "children": [
                     {
                       "id": "login_password_label",
@@ -243,6 +267,7 @@
                   "id": "login_forgot_password",
                   "type": "basic",
                   "name": "Div",
+                  "if": "{{!_local.twoFactor?.required}}",
                   "props": {
                     "className": "flex-center justify-end"
                   },
@@ -273,6 +298,7 @@
                   "id": "login_submit_button",
                   "type": "basic",
                   "name": "Button",
+                  "if": "{{!_local.twoFactor?.required}}",
                   "props": {
                     "type": "submit",
                     "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
@@ -303,6 +329,241 @@
                       "text": "$t:auth.login.processing"
                     }
                   ]
+                },
+                {
+                  "comment": "2단계 인증 — 비밀번호 확인만 통과한 상태다. 인증번호를 확인해야 로그인이 완료된다.",
+                  "id": "login_two_factor_step",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.twoFactor?.required}}",
+                  "props": { "className": "space-y-6" },
+                  "children": [
+                    {
+                      "id": "login_two_factor_notice",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800",
+                        "role": "status",
+                        "aria-live": "polite"
+                      },
+                      "children": [
+                        {
+                          "id": "login_two_factor_notice_sent",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{!_local.twoFactor?.resent}}",
+                          "props": { "className": "text-sm text-blue-700 dark:text-blue-300" },
+                          "text": "$t:auth.login.two_factor.sent"
+                        },
+                        {
+                          "id": "login_two_factor_notice_resent",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{_local.twoFactor?.resent}}",
+                          "props": { "className": "text-sm text-blue-700 dark:text-blue-300" },
+                          "text": "$t:auth.login.two_factor.resent"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "login_two_factor_error",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{_local.twoFactor?.error}}",
+                      "props": { "className": "alert-danger", "role": "alert" },
+                      "children": [
+                        {
+                          "id": "login_two_factor_error_text",
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-sm text-red-600 dark:text-red-400" },
+                          "text": "{{_local.twoFactor?.error ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "login_two_factor_field",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "id": "login_two_factor_label",
+                          "type": "basic",
+                          "name": "Label",
+                          "props": { "htmlFor": "two_factor_code", "className": "form-label" },
+                          "text": "$t:auth.login.two_factor.code_label"
+                        },
+                        {
+                          "comment": "자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다",
+                          "id": "login_two_factor_input",
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "id": "two_factor_code",
+                            "type": "text",
+                            "name": "two_factor_code",
+                            "value": "{{_local.twoFactor?.code ?? ''}}",
+                            "inputMode": "numeric",
+                            "autoComplete": "one-time-code",
+                            "maxLength": 10,
+                            "placeholder": "$t:auth.login.two_factor.code_placeholder",
+                            "className": "input py-3 text-center text-xl tracking-widest font-mono",
+                            "disabled": "{{_local.isLoggingIn}}"
+                          },
+                          "actions": [
+                            {
+                              "event": "onChange",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "twoFactor.code": "{{$event.target.value}}",
+                                "twoFactor.error": null
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "유효시각 정적 표기 — 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다",
+                          "id": "login_two_factor_valid_until",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{_local.twoFactor?.expires_at}}",
+                          "props": { "className": "mt-2 text-sm text-gray-500 dark:text-gray-400" },
+                          "text": "$t:auth.login.two_factor.valid_until|until={{_local.twoFactor?.expires_at | datetime}}"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "인증번호 확인 — submit 이라 Enter 키로도 제출된다",
+                      "id": "login_two_factor_submit",
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "submit",
+                        "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
+                        "disabled": "{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}"
+                      },
+                      "children": [
+                        {
+                          "id": "login_two_factor_spinner",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.isLoggingIn}}",
+                          "props": { "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" }
+                        },
+                        {
+                          "id": "login_two_factor_submit_text",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!_local.isLoggingIn}}",
+                          "text": "$t:auth.login.two_factor.verify"
+                        },
+                        {
+                          "id": "login_two_factor_submit_processing",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.isLoggingIn}}",
+                          "text": "$t:auth.login.two_factor.verifying"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "login_two_factor_actions",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex flex-col sm:flex-row gap-2" },
+                      "children": [
+                        {
+                          "id": "login_two_factor_resend",
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "type": "button",
+                            "className": "flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer",
+                            "disabled": "{{_local.twoFactor?.resending || _local.isLoggingIn}}"
+                          },
+                          "text": "$t:auth.login.two_factor.resend",
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "twoFactor.resending": true,
+                                    "twoFactor.error": null
+                                  }
+                                },
+                                {
+                                  "handler": "loginTwoFactorResend",
+                                  "target": "admin",
+                                  "params": {
+                                    "body": { "challenge_id": "{{_local.twoFactor?.challenge_id}}" }
+                                  },
+                                  "onSuccess": [
+                                    {
+                                      "_comment": "같은 시퀀스 안에서는 상태가 아직 갱신 전이므로 응답 값만 읽는다.",
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "twoFactor": {
+                                          "required": true,
+                                          "challenge_id": "{{response.challenge_id}}",
+                                          "provider_id": "{{response.provider_id}}",
+                                          "expires_at": "{{response.expires_at}}",
+                                          "code": "",
+                                          "error": null,
+                                          "verifying": false,
+                                          "resending": false,
+                                          "resent": true
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "onError": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "twoFactor.resending": false,
+                                        "twoFactor.error": "{{error.message}}"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "login_two_factor_restart",
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "type": "button",
+                            "className": "flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer",
+                            "disabled": "{{_local.isLoggingIn}}"
+                          },
+                          "text": "$t:auth.login.two_factor.restart",
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "twoFactor": null,
+                                "loginError": null,
+                                "loginErrors": null
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ],
               "actions": [
@@ -320,8 +581,10 @@
                       }
                     },
                     {
+                      "_comment": "1·2단계는 상호배타다. if 는 시퀀스 시작 시점 스냅샷으로 평가되므로 한 제출에 정확히 하나만 실행된다 — 이 if 가 빠지면 인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨진다.",
                       "handler": "login",
                       "target": "admin",
+                      "if": "{{!_local.twoFactor?.required}}",
                       "params": {
                         "body": {
                           "email": "{{_local.loginForm.email}}",
@@ -330,7 +593,28 @@
                       },
                       "onSuccess": [
                         {
+                          "_comment": "2단계 인증이 켜진 사이트는 아직 로그인이 끝나지 않았다 — 토큰도 사용자도 없다.",
                           "handler": "setState",
+                          "if": "{{response.two_factor_required}}",
+                          "params": {
+                            "target": "local",
+                            "isLoggingIn": false,
+                            "twoFactor": {
+                              "required": true,
+                              "challenge_id": "{{response.challenge_id}}",
+                              "provider_id": "{{response.provider_id}}",
+                              "expires_at": "{{response.expires_at}}",
+                              "code": "",
+                              "error": null,
+                              "verifying": false,
+                              "resending": false,
+                              "resent": false
+                            }
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "if": "{{!response.two_factor_required}}",
                           "params": {
                             "target": "local",
                             "isLoggingIn": false
@@ -338,6 +622,7 @@
                         },
                         {
                           "handler": "navigate",
+                          "if": "{{!response.two_factor_required}}",
                           "params": {
                             "path": "{{query.redirect ?? '/admin'}}"
                           }
@@ -350,6 +635,45 @@
                             "target": "local",
                             "isLoggingIn": false,
                             "loginError": "{{error.message}}",
+                            "loginErrors": "{{error.errors}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "handler": "loginTwoFactor",
+                      "target": "admin",
+                      "if": "{{_local.twoFactor?.required}}",
+                      "params": {
+                        "body": {
+                          "challenge_id": "{{_local.twoFactor?.challenge_id}}",
+                          "code": "{{_local.twoFactor?.code}}"
+                        }
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isLoggingIn": false,
+                            "twoFactor": null
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "{{query.redirect ?? '/admin'}}"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "_comment": "423 잠금은 1단계와 같은 문구 규칙을 따르도록 loginErrors 도 함께 싣는다. 403(관리자 아님)도 이 자리에 표시된다.",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isLoggingIn": false,
+                            "twoFactor.error": "{{error.message}}",
                             "loginErrors": "{{error.errors}}"
                           }
                         }

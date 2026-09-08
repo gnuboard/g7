@@ -1,0 +1,94 @@
+# audit:allow test-scenario-coverage reason: 7축 cross product 는 조건부 축(actor 는 controller=admin 에서만,
+# lock_state 는 세션을 여는 단계에서만, delivery 는 비밀번호 단계에서만 의미가 있다)을 곱해 낸 명목상 조합이라
+# 개별 케이스에 docblock 을 매핑할 실체가 없다. 실제 회귀 가드는 effects 22건이며 전부 test_files 의
+# PHPUnit·Playwright 테스트에 @effects 로 귀속되어 있다(미검증 0건).
+
+feature: 로그인 2단계 인증 (인증번호 확인·재발송)
+
+description: |
+  보안 환경설정의 「2단계 인증」이 켜져 있으면 비밀번호가 맞아도 토큰을 발급하지 않고
+  인증 요청(challenge)만 돌려준다. 즉 로그인 응답은 **두 가지 형태의 200** 이다.
+
+  핵심 동작:
+    - 사용자·관리자 두 경로가 같은 규칙으로 challenge 를 발급한다. 관리자 판정은
+      코드 확인에 성공한 뒤에 수행한다 (그 전에는 사용자도 토큰도 없다).
+    - 코드 확인 시점에 토큰이 발급되므로, 그 뒤 관리자 판정으로 거부하는 경로는
+      발급분을 반드시 회수한다.
+    - 재발송은 기존 challenge 를 취소하고 새로 발행한다 — 유효한 코드를 여러 개
+      살려 두면 대입 시도의 표적이 넓어진다.
+    - 인증번호를 보내지 못하면 401 이 아니라 503 으로 답한다. 자격 증명은 올바른데
+      401 로 뭉개면 사용자는 비밀번호를 의심하고 운영자는 원인을 알 수 없다.
+    - 로그인 challenge 는 공개 본인인증 경로(verify/cancel)로 소진할 수 없다.
+      소진되면 그 challenge 로 영영 로그인할 수 없게 된다(자기 DoS).
+
+axes:
+  controller: [user, admin]
+  two_factor: [on, off]
+  delivery: [sent, failed]
+  code: [valid, invalid, expired, consumed_by_public_verify]
+  resend: [none, active, expired, verified, cancelled]
+  actor: [admin, non_admin]
+  lock_state: [none, active]
+
+exclusions:
+  - { two_factor: off, code: valid, reason: "2단계 인증이 꺼져 있으면 코드 확인 단계가 없다" }
+  - { two_factor: off, code: invalid, reason: "동일" }
+  - { two_factor: off, code: expired, reason: "동일" }
+  - { two_factor: off, code: consumed_by_public_verify, reason: "동일" }
+  - { two_factor: off, resend: active, reason: "challenge 자체가 발급되지 않는다" }
+  - { two_factor: off, resend: expired, reason: "동일" }
+  - { two_factor: off, resend: verified, reason: "동일" }
+  - { two_factor: off, resend: cancelled, reason: "동일" }
+  - { two_factor: off, delivery: failed, reason: "발송 경로를 타지 않는다" }
+  - { delivery: failed, code: valid, reason: "발송에 실패하면 확인할 코드가 없다" }
+  - { delivery: failed, code: invalid, reason: "동일" }
+  - { delivery: failed, code: expired, reason: "동일" }
+  - { delivery: failed, code: consumed_by_public_verify, reason: "동일" }
+  - { delivery: failed, resend: active, reason: "동일 — 재발송할 challenge 가 없다" }
+  - { delivery: failed, resend: expired, reason: "동일" }
+  - { delivery: failed, resend: verified, reason: "동일" }
+  - { delivery: failed, resend: cancelled, reason: "동일" }
+  - { controller: user, actor: non_admin, reason: "사용자 경로는 관리자 판정을 하지 않는다" }
+  - { resend: active, code: invalid, reason: "재발송은 코드 확인 이전 단계라 코드 상태와 직교하지 않는다" }
+  - { resend: active, code: expired, reason: "동일" }
+  - { resend: active, code: consumed_by_public_verify, reason: "동일" }
+  - { resend: expired, code: invalid, reason: "동일" }
+  - { resend: expired, code: expired, reason: "동일" }
+  - { resend: expired, code: consumed_by_public_verify, reason: "동일" }
+  - { resend: verified, code: invalid, reason: "동일" }
+  - { resend: verified, code: expired, reason: "동일" }
+  - { resend: verified, code: consumed_by_public_verify, reason: "동일" }
+  - { resend: cancelled, code: invalid, reason: "동일" }
+  - { resend: cancelled, code: expired, reason: "동일" }
+  - { resend: cancelled, code: consumed_by_public_verify, reason: "동일" }
+
+effects:
+  - challenge_response_has_no_token
+  - challenge_response_has_no_user
+  - delivery_failure_503_with_reason
+  - admin_login_returns_challenge_not_500
+  - admin_two_factor_issues_token_for_admin
+  - non_admin_two_factor_revokes_token
+  - non_admin_admin_login_revokes_token
+  - public_verify_rejects_login_purpose
+  - public_cancel_rejects_login_purpose
+  - login_completes_after_public_endpoints_refuse
+  - signup_purpose_unaffected_by_login_gate
+  - resend_cancels_previous_challenge
+  - resend_rejects_verified_challenge
+  - resend_rejects_expired_challenge
+  - resend_rejects_cancelled_challenge
+  - resend_refused_while_locked
+  - admin_resend_returns_new_challenge
+  - admin_resend_refuses_non_admin
+  - too_many_attempts_message_translated
+  - invalid_code_retries_until_success
+  - session_state_cleared_after_two_factor_success
+  - double_submit_sends_single_verify_request
+
+test_files:
+  - tests/Feature/Auth/TwoFactorAuthTest.php
+  - tests/Feature/Auth/TwoFactorAccountLockTest.php
+  - tests/Feature/Auth/LoginThrottleTest.php
+  - tests/Feature/Identity/IdentityLoginPurposeGateTest.php
+  - tests/Playwright/specs/auth/two-factor-login.spec.ts
