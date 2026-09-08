@@ -185,6 +185,8 @@ class ClaimResource extends BaseApiResource
             'status' => $status instanceof \BackedEnum ? $status->value : $status,
             'status_label' => $status instanceof \BackedEnum ? $status->label() : null,
             'status_variant' => $status instanceof \BackedEnum && method_exists($status, 'variant') ? $status->variant() : null,
+            // 상태를 상징하는 아이콘 — 뱃지와 진행단계 스텝퍼가 같은 값을 읽는다 (Enum `icon()` 단일 출처).
+            'status_icon' => $status instanceof \BackedEnum && method_exists($status, 'icon') ? $status->icon() : null,
             'is_final' => method_exists($claim, 'isFinal') ? $claim->isFinal() : true,
             'is_withdrawable' => method_exists($claim, 'isWithdrawable') ? $claim->isWithdrawable() : false,
             // 수정 가능 경계 = 철회 경계 (D13 — 승인 전)

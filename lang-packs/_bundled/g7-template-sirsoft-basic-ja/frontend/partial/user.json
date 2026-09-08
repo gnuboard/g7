@@ -192,6 +192,7 @@
       "detail_items": "申請商品",
       "detail_shipping": "配送",
       "detail_claim_info": "クレーム情報",
+      "detail_progress": "進行段階",
       "detail_reason": "申請理由",
       "image_viewer_modal": "添付写真を表示"
     }

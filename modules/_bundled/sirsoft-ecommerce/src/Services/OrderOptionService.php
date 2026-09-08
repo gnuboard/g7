@@ -127,6 +127,10 @@ class OrderOptionService
             ? $option->option_status->value
             : $option->option_status;
 
+        // 변경 전 스냅샷 (활동 로그의 전/후 표 — 일괄 변경 경로와 같은 계약). 상태만 넘기면
+        // 분할 전이의 수량 변화가 이력에서 사라진다.
+        $snapshot = $option->attributesToArray();
+
         // 상태 전이 규칙 2차 도메인 불변식 가드 (우회 방어).
         // 정상 흐름은 FormRequest(단건/일괄)가 먼저 422 로 막으므로 여기 도달하지 않는다.
         // 취소(CANCELLED) 진입은 게이트가 통과 처리하므로 취소 모달 경로는 비간섭.
@@ -260,8 +264,8 @@ class OrderOptionService
             }
         });
 
-        // 변경 후 훅
-        HookManager::doAction('sirsoft-ecommerce.order_option.after_status_change', $result['original'], $newStatus, $result['split']);
+        // 변경 후 훅 (변경 전 스냅샷 동반 — OrderActivityLogListener 가 전/후를 기록한다)
+        HookManager::doAction('sirsoft-ecommerce.order_option.after_status_change', $result['original'], $newStatus, $result['split'], $snapshot);
 
         // 구매확정 전이는 유저 셀프 확정(OrderService::confirmOption)과 동일하게 order-option.after_confirm 을 발화한다.
         // (즉시 적립·구매확정 활동로그 등 확정 전용 부수효과가 관리자 경로에서도 대칭 동작하도록)
@@ -796,6 +800,11 @@ class OrderOptionService
         // OrderStatusNotificationListener 가 결제완료/배송중/배송완료/구매확정 알림으로 매핑한다.
         // 목표 상태($newStatus->value)를 스칼라로 명시 전달 — 큐 지연 재로드 오매핑 방지 (N1).
         HookManager::doAction('sirsoft-ecommerce.order.after_status_change', $order->fresh(), $previousStatus, $newStatus->value);
+
+        // 파생 전이 이력 — 운영자가 고른 전이가 아니라 상품 상태에서 따라온 결과이므로
+        // 활동 로그에 별도 줄(전/후 포함)로 남긴다. `after_status_change` 는 알림 전용 축이라
+        // 그쪽에 로그를 붙이면 단건 수정·일괄 변경에서 한 전이가 두 줄이 된다.
+        HookManager::doAction('sirsoft-ecommerce.order.after_status_sync', $order->fresh(), $previousStatus, $newStatus->value);
 
         // 구매확정 훅 — order.confirmed_at 이 최초로 세팅된 순간에만 1회 발화(멱등).
         // 기존 order.after_confirm 은 completePayment 안의 "결제완료" 훅이지 구매확정 훅이 아니다(이름 혼동 주의).

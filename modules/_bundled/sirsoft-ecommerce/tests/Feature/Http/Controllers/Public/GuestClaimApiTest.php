@@ -11,6 +11,7 @@ use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
@@ -158,8 +159,16 @@ class GuestClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.pagination.total', 1)
             ->assertJsonPath('data.data.0.claim_number', $number);
 
-        $this->getJson($this->base($order)."/claims/{$number}", ['X-Guest-Order-Token' => $token])
-            ->assertOk()->assertJsonPath('data.claim.claim_number', $number);
+        // 상세는 회원과 같은 봉투다 — 진행단계 배열과 상태 아이콘이 같은 자리에 실린다.
+        $detail = $this->getJson($this->base($order)."/claims/{$number}", ['X-Guest-Order-Token' => $token])
+            ->assertOk()->assertJsonPath('data.claim.claim_number', $number)
+            ->assertJsonPath('data.progress_steps.0.value', 'requested')
+            ->assertJsonPath('data.progress_steps.0.icon', 'status-request');
+        $this->assertSame(
+            ReturnStatusEnum::from($detail->json('data.claim.status'))->icon(),
+            $detail->json('data.claim.status_icon'),
+            '상태 아이콘은 상태 Enum 이 정한 값이어야 합니다 — 뱃지와 스텝퍼가 같은 그림을 그립니다.'
+        );
 
         $this->patchJson($this->base($order)."/claims/{$number}", ['reason_detail' => '비회원 수정'], ['X-Guest-Order-Token' => $token])
             ->assertOk()->assertJsonPath('data.claim.reason_detail', '비회원 수정');

@@ -843,6 +843,15 @@ class OrderService
                     $previousStatus,
                     OrderStatusEnum::CONFIRMED->value
                 );
+
+                // 파생 전이 이력 — 상품 확정에서 따라온 주문 확정을 활동 로그에 전/후와 함께
+                // 남긴다 (OrderOptionService::transitionOrderStatus 와 같은 축).
+                HookManager::doAction(
+                    'sirsoft-ecommerce.order.after_status_sync',
+                    $order->fresh(),
+                    $previousStatus,
+                    OrderStatusEnum::CONFIRMED->value
+                );
             }
 
             return $option->fresh();

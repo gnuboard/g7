@@ -204,18 +204,25 @@ export async function mockClaimList(
  *
  * 상세 응답은 신청서를 `claim` 아래에 담는다(`data.claim.*`) — 목록의 행 표현과 봉투가 다르다.
  *
+ * 봉투에는 `claim` 옆에 `progress_steps` 가 실린다(관리자 상세와 같은 배열) — 필요하면 `envelope` 로 넘긴다.
+ *
  * @param page Playwright 페이지
  * @param claim 신청서 페이로드
+ * @param envelope `claim` 옆에 실을 봉투 필드 (예: `progress_steps`)
  * @returns 완료 Promise
  */
-export async function mockClaimDetail(page: Page, claim: Record<string, unknown>): Promise<void> {
+export async function mockClaimDetail(
+  page: Page,
+  claim: Record<string, unknown>,
+  envelope: Record<string, unknown> = {},
+): Promise<void> {
   await page.route(`**${API}/user/claims/*`, async (route) => {
     if (route.request().url().includes('/user/claims?')) {
       await route.fallback();
 
       return;
     }
-    await fulfillData(route, { claim });
+    await fulfillData(route, { claim, ...envelope });
   });
 }
 

@@ -1,0 +1,33 @@
+feature: 주문 상태 파생 전이 이력 + 상품 상태 변경 전/후 (활동 로그)
+
+description: |
+  상품 상태 변경으로 부모 주문 상태가 자동으로 따라 바뀌는 전이(옵션 일괄 변경 · 취소 후
+  동기화 · 구매확정)는 종전에 활동 로그가 없었다 — 운영자가 고른 전이가 아니라 "주문 상태가
+  왜 바뀌었는가" 를 되짚을 통로가 상품 줄뿐이었다. 이제 이력 전용 훅(`order.after_status_sync`)이
+  전/후 값과 함께 발화하고 `OrderActivityLogListener` 가 별도 줄(`order.status_sync`)로 남긴다.
+  알림 훅(`after_status_change`)에 로그를 붙이지 않는 이유는 단건 수정·일괄 변경 경로가 이미
+  자기 줄을 남겨 한 전이가 두 줄이 되기 때문이다.
+
+  단건 옵션 상태 변경은 "변경 후" 만 properties 에 적혀 화면의 전/후 표가 서지 않았다 — 일괄
+  변경 경로와 같은 계약(변경 전 스냅샷 → ChangeDetector)으로 훅 4번째 인자에 스냅샷을 싣는다.
+
+axes:
+  transition_path: [single_option, bulk_option, confirm_option]
+  parent_outcome: [transitions, stays]
+
+exclusions:
+  - { transition_path: single_option, parent_outcome: [transitions, stays], reason: "단건 옵션 변경은 부모 동기화를 부르지 않는다(호출부가 따로 부른다) — 이 경로의 축은 스냅샷 전달뿐이다" }
+
+effects:
+  # 훅 발화 (Unit — OrderOptionServiceTest · OrderStatusSyncHookTest)
+  - order_status_sync_hook_fires_with_before_and_after
+  - order_status_sync_hook_silent_when_parent_stays
+  - order_option_single_status_change_carries_before_and_after
+  # 이력 (Unit — OrderActivityLogListenerTest)
+  - order_status_sync_log_carries_before_and_after
+  - order_option_status_change_log_carries_before_and_after_with_snapshot
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderStatusSyncHookTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php

@@ -60,6 +60,7 @@
 | status | string | `requested` | 유형별 상태 값 (교환 `ExchangeStatusEnum`, 반품 `ReturnStatusEnum`, 환불신청 `RefundStatusEnum`, 취소 `CancelStatusEnum`) |
 | status_label | string\|null | `반품신청` | 상태 라벨 (유형 접두가 붙는다 — 교환 `교환신청`, 반품 `반품신청`, 환불 `환불신청`) |
 | status_variant | string\|null | `info` | 상태 뱃지 variant |
+| status_icon | string\|null | `status-pickup` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) 참조). 상태 Enum 의 `icon()` 단일 출처이며, 토큰을 실제 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다. 상태 뱃지와 진행단계 스텝퍼가 같은 그림을 그린다 |
 | is_final | boolean | `false` | 종결 상태인지 (철회·반려·완료) |
 | is_withdrawable | boolean | `true` | 사용자가 철회할 수 있는 상태인지 (승인 전) |
 | is_editable | boolean | `true` | 사용자가 수정할 수 있는지 — 철회 가능 경계와 같고, 취소(`cancel`)는 항상 `false` |
@@ -403,6 +404,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | claim | object | — | 신청서 상세 ([ClaimResource](#claim-resource)) — 교환·반품은 결제 블록(`payments`, `outstanding_amount`, `pending_payment`, `payment_entry`) 포함 |
+| progress_steps | array | — | 진행단계 스텝퍼. 관리자 상세(`admin/claims/{claimNumber}`)와 **같은 배열**을 같은 규칙으로 만든다 — 항목 필드는 [admin-claims.md](admin-claims.md#progress_steps-항목) 참조 (`value` / `label` / `state` / `icon` / `variant`). 취소는 신청 → 완료 두 칸 |
 
 **응답 예시**
 
@@ -418,6 +420,7 @@ Authorization: Bearer {YOUR_TOKEN}
             "order_number": "20260823-1130558472",
             "status": "payment_pending",
             "status_label": "반품결제대기",
+            "status_icon": "status-payment-pending",
             "is_editable": true,
             "charge_method": "pay_on_request",
             "total_charge_amount": 3000,
@@ -434,7 +437,12 @@ Authorization: Bearer {YOUR_TOKEN}
                 "pg_payment_handler": "sirsoft-pay_kginicis.requestPayment",
                 "pg_payment_data": { "order_number": "CP20260823-1435226549", "amount": 3000, "currency": "KRW" }
             }
-        }
+        },
+        "progress_steps": [
+            { "value": "requested", "label": "반품신청", "state": "done", "icon": "status-request", "variant": "secondary" },
+            { "value": "payment_pending", "label": "반품결제대기", "state": "current", "icon": "status-payment-pending", "variant": "warning" },
+            { "value": "paid", "label": "반품결제완료", "state": "upcoming", "icon": "status-paid", "variant": "success" }
+        ]
     }
 }
 ```
@@ -451,6 +459,8 @@ Authorization: Bearer {YOUR_TOKEN}
 <!-- @generated:end -->
 
 **설명** 클레임 번호 하나로 4종 어느 신청서든 조회합니다. 교환·반품 상세에는 결제 블록이 붙어 결제 대기 건이 있으면 `payment_entry` 로 바로 결제창을 열 수 있습니다(주문 결제와 같은 4키 계약). 다른 회원의 신청서는 404 이며 존재 여부를 드러내지 않습니다.
+
+`progress_steps` 는 관리자 상세와 같은 지점(`ClaimProgressSteps`)에서 만들어집니다 — 화면이 순서를 다시 적으면 그 사본이 어휘의 두 번째 출처가 되어 회원 화면만 낡은 채 남습니다. 비회원 조회(`guest/orders/{orderNumber}/claims/{claimNumber}`)도 같은 봉투입니다.
 
 상세 응답은 상품 행의 **원 주문옵션**(`product_name`·`product_option_name`·`thumbnail_url`)과 **회수·재발송 배송사**(`collection_carrier_name`·`collection_tracking_url`·`redelivery_carrier_name`·`redelivery_tracking_url`)를 함께 싣습니다. 목록과 달리 첨부(`images`)와 사유 상세·반려 사유·주소/배송비 스냅샷·환불 계좌도 모두 실립니다 — 신청서 상세 화면이 그리는 값들입니다.
 

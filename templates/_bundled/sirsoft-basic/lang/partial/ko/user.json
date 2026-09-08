@@ -192,6 +192,7 @@
       "detail_items": "신청 상품",
       "detail_shipping": "배송",
       "detail_claim_info": "클레임 정보",
+      "detail_progress": "진행 단계",
       "detail_reason": "신청 사유",
       "image_viewer_modal": "첨부 사진 보기"
     }

@@ -26,7 +26,7 @@
  *
  * @scenario admin-claim-detail
  * @axes claim_type=exchange|return|refund
- * @effects detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount
+ * @effects detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -154,6 +154,83 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
 
     // 원문 다국어 키가 화면에 노출되지 않는다.
     expect(await page.locator('body').innerText()).not.toContain('sirsoft-ecommerce.admin.claim.detail');
+  });
+
+  /**
+   * 진행단계 — 칸 폭이 라벨 길이를 따라가면 언어마다 들쭉날쭉해지고, 모바일에서 한 줄에 몰아넣으면
+   * 가로 스크롤이 생긴다. 꺾쇠는 칸 사이에만 선다(PC 는 마지막 칸 제외, 모바일은 줄 끝도 제외).
+   * 어느 쪽도 오류를 남기지 않아 실측으로만 드러난다.
+   */
+  // @scenario claim_type=exchange, claim_stage=in_progress
+  // @effects claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll, claim_progress_steps_carry_icon_and_variant
+  test('진행단계는 칸 폭이 균일하고 꺾쇠가 칸 사이에만 서며 모바일에서 스크롤 없이 줄바꿈된다', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaim(request, claimsManageToken);
+    test.skip(
+      claim === null,
+      '클레임 신청서가 한 건도 없다 — `playwright:seed-ecommerce` 클레임 시드(계획서 이월 5) 선행',
+    );
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    const cells = page.locator('[id^="claim_progress_step_"]');
+    await expect(cells.first()).toBeVisible({ timeout: 30_000 });
+    const count = await cells.count();
+    expect(count).toBeGreaterThan(1);
+
+    // 칸마다 서버가 준 상태 아이콘 하나
+    await expect(page.locator('[id^="claim_progress_step_"] .rounded-full i[class*="fa-"]')).toHaveCount(count);
+    // 상태 속성은 서버 배열의 값 그대로
+    const states = await cells.evaluateAll((els) => els.map((el) => el.getAttribute('data-step-state')));
+    expect(states.every((s) => ['done', 'current', 'upcoming', 'off_path'].includes(s ?? ''))).toBe(true);
+
+    // PC — 칸 폭 균일 · 9칸까지는 한 줄, 10칸 이상은 6칸/줄 · 꺾쇠는 줄 끝을 뺀 칸 사이
+    const widths = await cells.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+    const pcTops = await cells.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+    const pcPerRow = count > 9 ? 6 : count;
+    expect(new Set(pcTops).size).toBe(Math.ceil(count / pcPerRow));
+    const expectedPcChevrons = [...Array(count - 1).keys()].filter((i) => i % pcPerRow !== pcPerRow - 1).length;
+    await expect(page.locator('[data-step-chevron="pc"]:visible')).toHaveCount(expectedPcChevrons);
+
+    // 꺾쇠는 양쪽 원과 같은 거리에 선다 (칸 경계 + 간격 절반에 중심)
+    const gaps = await page.locator('[id^="claim_progress_step_"]').evaluateAll((els) => {
+      const out: number[] = [];
+      els.forEach((el, i) => {
+        const chevron = el.querySelector('[data-step-chevron="pc"] i');
+        const next = els[i + 1];
+        if (!chevron || !next || getComputedStyle(chevron.parentElement as Element).display === 'none') return;
+        const a = (el.querySelector('.rounded-full') as Element).getBoundingClientRect();
+        const b = (next.querySelector('.rounded-full') as Element).getBoundingClientRect();
+        const g = chevron.getBoundingClientRect();
+        out.push(Math.abs((g.left - a.right) - (b.left - g.right)));
+      });
+      return out;
+    });
+    expect(gaps.length).toBeGreaterThan(0);
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(2);
+    await expect(page.locator('[data-step-chevron="mobile"]:visible')).toHaveCount(0);
+
+    // 모바일 390 — 4칸/줄 줄바꿈 · 가로 스크롤 없음 · 줄 끝 꺾쇠 없음
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(async () => {
+      const tops = await cells.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+
+      return new Set(tops).size;
+    }, { timeout: 10_000 }).toBe(Math.ceil(count / 4));
+
+    const mobileWidths = await cells.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));
+    expect(Math.max(...mobileWidths) - Math.min(...mobileWidths)).toBeLessThanOrEqual(1);
+
+    const box = await page.locator('#claim_progress_steps').evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
+    expect(box.scroll).toBeLessThanOrEqual(box.client + 1);
+    const doc = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+    expect(doc.scroll).toBeLessThanOrEqual(doc.client + 1);
+
+    const expectedMobileChevrons = [...Array(count - 1).keys()].filter((i) => i % 4 !== 3).length;
+    await expect(page.locator('[data-step-chevron="mobile"]:visible')).toHaveCount(expectedMobileChevrons);
+    await expect(page.locator('[data-step-chevron="pc"]:visible')).toHaveCount(0);
   });
 
   /**

@@ -100,6 +100,32 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         );
         $this->assertSame(ReturnStatusEnum::REQUESTED->value, $logs->first()->properties['previous_status']);
         $this->assertSame(ReturnStatusEnum::APPROVED->value, $logs->first()->properties['new_status']);
+
+        // 전/후는 `changes` 에도 실린다 — 활동 로그 화면은 이 자리만 "변경 전 → 변경 후" 표로 그린다.
+        $changes = $logs->first()->changes;
+        $this->assertCount(1, $changes, '헤더 전이는 status 한 항목이어야 합니다.');
+        $this->assertSame('status', $changes[0]['field']);
+        $this->assertSame('enum', $changes[0]['type']);
+        $this->assertSame(ReturnStatusEnum::REQUESTED->value, $changes[0]['old']);
+        $this->assertSame(ReturnStatusEnum::APPROVED->value, $changes[0]['new']);
+        $this->assertSame(ReturnStatusEnum::REQUESTED->labelKey(), $changes[0]['old_label_key']);
+        $this->assertSame(ReturnStatusEnum::APPROVED->labelKey(), $changes[0]['new_label_key']);
+        $this->assertSame('sirsoft-ecommerce::activity_log.fields.status', $changes[0]['label_key']);
+    }
+
+    /**
+     * 같은 상태로의 재호출은 전/후 표를 만들지 않는다 — 바뀐 것이 없으면 표도 없다.
+     *
+     * @effects status_change_carries_before_and_after_in_changes
+     */
+    public function test_status_change_with_the_same_value_records_no_changes(): void
+    {
+        $return = $this->requestedReturn();
+        ActivityLog::query()->delete();
+
+        $this->listener->handleStatusChanged($return, ReturnStatusEnum::REQUESTED->value, ReturnStatusEnum::REQUESTED->value);
+
+        $this->assertNull(ActivityLog::where('action', 'claim_return.status_change')->firstOrFail()->changes);
     }
 
     /**
@@ -252,6 +278,14 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->assertSame($itemA, $log->properties['options'][0]['option_id']);
         $this->assertSame(ReturnStatusEnum::REQUESTED->value, $log->properties['options'][0]['previous']);
         $this->assertSame($return->id, $log->loggable_id);
+
+        // 상품별 전/후 — 코어 일괄 형식(신청 상품 ID 키)으로 실려야 화면이 상품마다 표를 그린다.
+        $changes = $log->changes;
+        $this->assertArrayHasKey($itemA, $changes, '상품 단위 전이의 changes 는 신청 상품 ID 를 키로 갖습니다.');
+        $this->assertSame('option_status', $changes[$itemA][0]['field']);
+        $this->assertSame(ReturnStatusEnum::REQUESTED->value, $changes[$itemA][0]['old']);
+        $this->assertSame(ReturnStatusEnum::REJECTED->value, $changes[$itemA][0]['new']);
+        $this->assertSame(ReturnStatusEnum::REJECTED->labelKey(), $changes[$itemA][0]['new_label_key']);
     }
 
     /**

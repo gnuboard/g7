@@ -239,7 +239,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "classMap": {
-                                  "base": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                                  "base": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
                                   "key": "{{claim.data?.claim?.status_variant}}",
                                   "variants": {
                                     "success": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -252,7 +252,10 @@
                                   },
                                   "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
                                 },
-                                "text": "{{claim.data?.claim?.status_label ?? ''}}"
+                                "children": [
+                                  { "comment": "상태 아이콘 — 서버가 상태 Enum 에서 실어 준 값(status_icon). 진행 단계 스텝퍼와 같은 그림이다.", "type": "basic", "name": "Icon", "if": "{{!!claim.data?.claim?.status_icon}}", "props": { "name": "{{claim.data?.claim?.status_icon}}", "className": "text-xs" } },
+                                  { "type": "basic", "name": "Span", "text": "{{claim.data?.claim?.status_label ?? ''}}" }
+                                ]
                               }
                             ]
                           },
@@ -353,6 +356,7 @@
                   }
                 },
                 "children": [
+                  { "partial": "partials/mypage/claims/_detail_progress.json" },
                   { "partial": "partials/mypage/claims/_detail_items.json" },
                   { "partial": "partials/mypage/claims/_detail_shipping.json" },
                   { "partial": "partials/mypage/claims/_detail_claim_info.json" },

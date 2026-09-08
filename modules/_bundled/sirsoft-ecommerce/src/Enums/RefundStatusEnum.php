@@ -54,6 +54,27 @@ enum RefundStatusEnum: string
     }
 
     /**
+     * 상태를 상징하는 아이콘 의미 토큰을 반환합니다. (아이콘 라이브러리 중립)
+     *
+     * 교환·반품과 같은 단계(신청·승인·완료·보류·반려·철회)는 같은 아이콘이다. 색은
+     * `variant()` 가 정한다.
+     *
+     * @return string 의미 토큰 (`status-*`) — 실제 글리프는 화면(템플릿)의 Icon 이 자기 아이콘 세트로 해석한다
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::REQUESTED => 'status-request',
+            self::APPROVED => 'status-approved',
+            self::PROCESSING => 'status-processing',
+            self::ON_HOLD => 'status-on-hold',
+            self::COMPLETED => 'status-completed',
+            self::REJECTED => 'status-rejected',
+            self::WITHDRAWN => 'status-withdrawn',
+        };
+    }
+
+    /**
      * 최종 상태 여부를 반환합니다.
      *
      * @return bool

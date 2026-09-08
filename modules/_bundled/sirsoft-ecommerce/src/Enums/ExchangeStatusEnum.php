@@ -84,6 +84,39 @@ enum ExchangeStatusEnum: string
     }
 
     /**
+     * 상태를 상징하는 아이콘 의미 토큰을 반환합니다. (아이콘 라이브러리 중립)
+     *
+     * 진행단계 스텝퍼와 상태 뱃지가 같은 값을 읽는다 — 화면마다 아이콘을 따로 고르면
+     * 같은 상태가 화면에 따라 다른 그림으로 보인다. 색은 `variant()` 가 정한다.
+     *
+     * 값은 특정 아이콘 라이브러리의 글리프 이름이 아니라 **의미 토큰**이다(`status-request` ·
+     * `status-pickup` …). 백엔드가 글리프 이름을 박으면 그 라이브러리에 묶인다 — 토큰을
+     * 글리프로 바꾸는 표는 아이콘 세트를 소유한 템플릿의 Icon 컴포넌트가 가진다. 같은 단계는
+     * 유형(교환·반품·환불·취소)이 달라도 같은 토큰이다.
+     *
+     * @return string 의미 토큰 (`status-*`) — 실제 글리프는 화면(템플릿)의 Icon 이 자기 아이콘 세트로 해석한다
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::REQUESTED => 'status-request',
+            self::PAYMENT_PENDING => 'status-payment-pending',
+            self::PAID => 'status-paid',
+            self::APPROVED => 'status-approved',
+            self::ON_HOLD => 'status-on-hold',
+            self::REJECTED => 'status-rejected',
+            self::COLLECTION_READY => 'status-pickup-ready',
+            self::COLLECTING => 'status-pickup',
+            self::COLLECTED => 'status-received',
+            self::REDELIVERY_READY => 'status-dispatch-ready',
+            self::REDELIVERING => 'status-dispatch',
+            self::REDELIVERED => 'status-delivered',
+            self::COMPLETED => 'status-completed',
+            self::WITHDRAWN => 'status-withdrawn',
+        };
+    }
+
+    /**
      * 최종(터미널) 상태 여부를 반환합니다.
      *
      * @return bool 최종 상태이면 true

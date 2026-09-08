@@ -38,6 +38,7 @@ return [
         'send_email' => 'Email Sent',
         'set_default' => 'Set as Default',
         'status_change' => 'Status Changed',
+        'status_sync' => 'Status Auto-synced',
         'stock_sync' => 'Stock Synchronized',
         'toggle_active' => 'Active Status Changed',
         'toggle_status' => 'Status Toggled',
@@ -92,6 +93,7 @@ return [
         'order_reset_guest_password' => 'Guest lookup password reset (:order_number)',
         'order_option_status_change' => 'Order option status changed (Order: :order_number)',
         'order_option_bulk_status_change' => 'Order option statuses bulk changed (:count items)',
+        'order_status_sync' => 'Order status auto-synced from item statuses (:order_number)',
 
         // Coupon management (Admin)
         'coupon_index' => 'Coupon list viewed',

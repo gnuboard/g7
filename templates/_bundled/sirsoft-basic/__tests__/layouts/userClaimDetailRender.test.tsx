@@ -18,7 +18,8 @@
  *   claim_detail_shipping_card_absent_for_refund,
  *   claim_detail_contrast_axis_shows_both_sides,
  *   claim_detail_refund_account_reads_the_claim_row,
- *   claim_detail_reject_reason_leads_the_reason_card
+ *   claim_detail_reject_reason_leads_the_reason_card,
+ *   claim_detail_progress_stepper_renders_server_steps
  *
  * @vitest-environment jsdom
  */
@@ -35,8 +36,9 @@ import {
 function setupRegistry() {
   const registry = createMockComponentRegistryWithBasics();
 
-  registry.register('basic', 'Icon', ({ className, name }: any) =>
-    React.createElement('i', { className, 'data-icon': name })
+  // 실제 Icon 처럼 부가 속성(data-*)을 DOM 에 남긴다 — 진행 단계의 꺾쇠를 속성으로 센다.
+  registry.register('basic', 'Icon', ({ className, name, ...rest }: any) =>
+    React.createElement('i', { className, 'data-icon': name, ...rest })
   );
 
   return registry;
@@ -77,6 +79,7 @@ function detailLayout(files: string[]): any {
 const TRANSLATIONS = {
   claim: {
     detail: {
+      progress_title: '진행 단계',
       items_title: '신청 상품',
       no_items: '신청 상품이 없습니다.',
       item_refund_amount: '환불 예정 {{amount}}',
@@ -233,7 +236,11 @@ const ORDER = {
   total_amount_formatted: '81,000원',
 };
 
-async function renderDetail(files: string[], claim: Record<string, any>) {
+async function renderDetail(
+  files: string[],
+  claim: Record<string, any>,
+  envelope: Record<string, any> = {}
+) {
   const utils = createLayoutTest(detailLayout(files), {
     initialState: { _local: {} },
     locale: 'ko',
@@ -241,7 +248,8 @@ async function renderDetail(files: string[], claim: Record<string, any>) {
     componentRegistry: setupRegistry(),
   });
 
-  utils.mockApi('claim', { response: { data: { claim } } });
+  // 상세 봉투는 `claim` 옆에 `progress_steps` 를 싣는다 (관리자 상세와 같은 배열).
+  utils.mockApi('claim', { response: { data: { claim, ...envelope } } });
   utils.mockApi('order', { response: { data: ORDER } });
 
   const { container } = await utils.render();
@@ -255,6 +263,49 @@ describe('클레임 신청서 상세 — 렌더', () => {
   afterEach(() => {
     active?.cleanup();
     active = null;
+  });
+
+  const PROGRESS_STEPS = [
+    { value: 'requested', label: '교환신청', state: 'done', icon: 'status-request', variant: 'secondary' },
+    { value: 'approved', label: '교환승인', state: 'done', icon: 'status-approved', variant: 'info' },
+    { value: 'collection_ready', label: '교환회수준비중', state: 'done', icon: 'status-pickup-ready', variant: 'primary' },
+    { value: 'collecting', label: '교환회수중', state: 'current', icon: 'status-pickup', variant: 'primary' },
+    { value: 'collected', label: '교환회수도착', state: 'upcoming', icon: 'status-received', variant: 'primary' },
+    { value: 'completed', label: '교환완료', state: 'upcoming', icon: 'status-completed', variant: 'success' },
+  ];
+
+  // @scenario claim_type=exchange, screen=detail, entry=none
+  // @effects claim_detail_progress_stepper_renders_server_steps
+  it('진행 단계 — 서버가 준 칸을 그리고 현재 칸이 하나이며 꺾쇠는 칸 사이에만 선다', async () => {
+    const { utils, container } = await renderDetail(['_detail_progress.json'], exchangeDetail(), {
+      progress_steps: PROGRESS_STEPS,
+    });
+    active = utils;
+
+    expect(container.textContent).toContain('진행 단계');
+
+    const cells = [...container.querySelectorAll('[id^="claim_progress_step_"]')];
+    expect(cells).toHaveLength(PROGRESS_STEPS.length);
+    expect(cells.map((el) => el.textContent?.trim())).toEqual(PROGRESS_STEPS.map((s) => s.label));
+    expect(cells.filter((el) => el.getAttribute('data-step-state') === 'current')).toHaveLength(1);
+    expect(cells.map((el) => el.querySelector('.rounded-full [data-icon]')?.getAttribute('data-icon'))).toEqual(
+      PROGRESS_STEPS.map((s) => s.icon)
+    );
+    expect(container.querySelectorAll('[data-step-chevron="pc"]')).toHaveLength(PROGRESS_STEPS.length - 1);
+    expect(container.querySelector('#claim_progress_steps')?.className).toContain('auto-cols-fr');
+    expect(container.querySelector('#claim_progress_steps')?.className).not.toContain('overflow-x-auto');
+  });
+
+  // @scenario claim_type=exchange, screen=detail, entry=none
+  // @effects claim_detail_progress_stepper_renders_server_steps
+  it('진행 단계 — 배열이 비면 카드 자체가 서지 않는다', async () => {
+    const { utils, container } = await renderDetail(['_detail_progress.json'], exchangeDetail(), {
+      progress_steps: [],
+    });
+    active = utils;
+
+    expect(container.textContent).not.toContain('진행 단계');
+    expect(container.querySelector('#claim_progress_steps')).toBeNull();
   });
 
   it('신청 상품 — 상품·옵션·수량·금액과 교환 대상이 나온다', async () => {

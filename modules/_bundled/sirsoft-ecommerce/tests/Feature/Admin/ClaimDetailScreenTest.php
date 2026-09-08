@@ -414,6 +414,35 @@ class ClaimDetailScreenTest extends ModuleTestCase
      *
      * @effects claim_progress_off_path_stage_appended
      */
+    /**
+     * 칸마다 아이콘·색이 실린다 — 화면이 상태 값으로 그림을 다시 고르면 그 표가 어휘의
+     * 두 번째 출처가 된다. 값은 상태 Enum 의 `icon()`/`variant()` 와 같아야 뱃지와 그림이 맞는다.
+     *
+     * @scenario claim_type=exchange, claim_stage=in_progress
+     *
+     * @effects claim_progress_steps_carry_icon_and_variant
+     */
+    public function test_progress_steps_carry_the_icon_and_variant_of_each_status(): void
+    {
+        $exchange = $this->makeExchange();
+
+        $steps = $this->actingAs($this->admin)
+            ->getJson($this->base()."/claims/{$exchange->exchange_number}")
+            ->assertOk()
+            ->json('data.progress_steps');
+
+        $this->assertNotEmpty($steps);
+
+        foreach ($steps as $step) {
+            $case = ExchangeStatusEnum::from($step['value']);
+            $this->assertSame($case->icon(), $step['icon']);
+            $this->assertSame($case->variant(), $step['variant']);
+        }
+
+        $this->assertSame('status-request', $steps[0]['icon']);
+        $this->assertSame('status-completed', end($steps)['icon']);
+    }
+
     public function test_progress_steps_append_an_off_path_stage_for_a_rejected_refund(): void
     {
         $return = $this->moveReturnToCompleted($this->makeReturn());

@@ -145,6 +145,7 @@
   },
   "detail": {
     "back": "신청내역",
+    "progress_title": "진행 단계",
     "items_title": "신청 상품",
     "no_items": "신청 상품이 없습니다.",
     "item_refund_amount": "환불 예정 {{amount}}",

@@ -145,6 +145,7 @@
   },
   "detail": {
     "back": "Requests",
+    "progress_title": "Progress",
     "items_title": "Requested items",
     "no_items": "No requested items.",
     "item_refund_amount": "Refund {{amount}}",

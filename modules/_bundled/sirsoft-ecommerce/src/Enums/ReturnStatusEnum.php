@@ -78,6 +78,31 @@ enum ReturnStatusEnum: string
     }
 
     /**
+     * 상태를 상징하는 아이콘 의미 토큰을 반환합니다. (아이콘 라이브러리 중립)
+     *
+     * 교환과 같은 단계는 같은 아이콘이다 — 회수 세 단계는 교환의 회수 단계와 그림이 같아야
+     * 운영자가 유형을 바꿔 가며 볼 때 단계를 다시 익히지 않는다. 색은 `variant()` 가 정한다.
+     *
+     * @return string 의미 토큰 (`status-*`) — 실제 글리프는 화면(템플릿)의 Icon 이 자기 아이콘 세트로 해석한다
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::REQUESTED => 'status-request',
+            self::PAYMENT_PENDING => 'status-payment-pending',
+            self::PAID => 'status-paid',
+            self::APPROVED => 'status-approved',
+            self::ON_HOLD => 'status-on-hold',
+            self::REJECTED => 'status-rejected',
+            self::COLLECTION_READY => 'status-pickup-ready',
+            self::COLLECTING => 'status-pickup',
+            self::COLLECTED => 'status-received',
+            self::COMPLETED => 'status-completed',
+            self::WITHDRAWN => 'status-withdrawn',
+        };
+    }
+
+    /**
      * 최종(터미널) 상태 여부를 반환합니다.
      *
      * @return bool 최종 상태이면 true

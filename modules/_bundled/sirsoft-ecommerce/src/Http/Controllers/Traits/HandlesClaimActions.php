@@ -27,6 +27,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimProgressSteps;
 
 /**
  * 클레임 신청 액션 공용 처리 (회원 · 비회원 컨트롤러 공유)
@@ -220,8 +221,13 @@ trait HandlesClaimActions
             // 배송사(배송사명·추적 URL)를 그린다 — 다시 싣지 않으면 그 칸들이 오류 없이
             // 전부 비고, 응답은 200 이라 어디에도 어긋난 흔적이 남지 않는다. 수정 응답이
             // 이미 같은 이유로 `reloaded()` 를 거친다.
+            $claim = $this->reloaded($resolved['claim']);
+
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.retrieved', [
-                'claim' => $this->detailResource($this->reloaded($resolved['claim']))->toArray(request()),
+                'claim' => $this->detailResource($claim)->toArray(request()),
+                // 진행단계 — 관리자 상세와 **같은 배열**을 같은 자리에서 만든다. 화면이 순서를
+                // 다시 적으면 그 사본이 어휘의 두 번째 출처가 되어 회원 화면만 낡은 채 남는다.
+                'progress_steps' => ClaimProgressSteps::for($claim),
             ]);
         } catch (OrderClaimException $e) {
             return $this->claimNotFound();

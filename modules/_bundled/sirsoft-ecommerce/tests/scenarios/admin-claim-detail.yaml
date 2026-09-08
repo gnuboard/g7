@@ -87,6 +87,9 @@ effects:
   - claim_progress_stepper_renders_server_steps
   - claim_progress_payment_stages_follow_charge_method
   - claim_progress_off_path_stage_appended
+  - claim_progress_steps_carry_icon_and_variant
+  - claim_progress_cells_uniform_width_with_chevrons
+  - claim_progress_wraps_on_mobile_without_scroll
   # 신청상품 일괄 변경 (D24·D25)
   - claim_item_status_vocabulary_matches_gate
   - claim_items_grid_declares_selection_scope

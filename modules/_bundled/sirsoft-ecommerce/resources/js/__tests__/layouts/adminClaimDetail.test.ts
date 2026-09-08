@@ -545,8 +545,73 @@ describe('신청상품 — 일괄 변경 바와 표 (D24·D25)', () => {
   it('진행단계 스텝퍼가 서버가 준 배열만 그린다', () => {
     const steps = byId(itemsSection, 'claim_progress_step_{{stepIdx}}');
 
+
     expect(steps.iteration.source).toBe('{{claim?.data?.progress_steps ?? []}}');
     expect(strings(byId(itemsSection, 'claim_progress_card')).join(' ')).not.toContain('collection_ready');
+  });
+
+  /**
+   * 칸 폭이 라벨 길이를 따라가면 언어마다 칸이 들쭉날쭉해지고, 모바일에서 한 줄에 몰아넣으면
+   * 가로 스크롤이 생긴다. 균일 폭(auto-cols-fr)과 4칸/줄 줄바꿈이 그 둘을 막는다.
+   *
+   * @effects claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll
+   */
+  it('진행단계 칸은 균일 폭 grid 이고 모바일은 4칸/줄로 줄바꿈하며 가로 스크롤을 만들지 않는다', () => {
+    const container = byId(itemsSection, 'claim_progress_steps');
+    const pc = container.props.className as string;
+    const mobile = container.responsive.portable.props.className as string;
+
+    expect(pc).toContain('grid-flow-col');
+    expect(pc).toContain('auto-cols-fr');
+    expect(mobile).toContain('grid-cols-4');
+    expect(pc).not.toContain('overflow-x-auto');
+    expect(mobile).not.toContain('overflow-x-auto');
+
+    const card = strings(byId(itemsSection, 'claim_progress_card')).join(' ');
+    expect(card).not.toContain('overflow-x-auto');
+    expect(card).not.toContain('whitespace-nowrap');
+    expect(card).not.toContain('shrink-0');
+  });
+
+  /**
+   * 아이콘·색은 서버가 상태 Enum 에서 실어 준다 — 화면이 상태 값으로 그림을 다시 고르면 그 표가
+   * 어휘의 두 번째 출처가 된다. 꺾쇠는 칸 사이에만 서고(PC 는 마지막 칸 제외, 모바일은 줄 끝도 제외).
+   *
+   * @effects claim_progress_steps_carry_icon_and_variant, claim_progress_cells_uniform_width_with_chevrons
+   */
+  it('칸마다 서버가 준 아이콘·색을 읽고 꺾쇠는 마지막 칸과 모바일 줄 끝을 뺀다', () => {
+    const step = byId(itemsSection, 'claim_progress_step_{{stepIdx}}');
+    const icons = collect(step, (n) => n.name === 'Icon');
+
+    const statusIcon = icons.find((n) => String(n.props?.name ?? '').includes('step.icon'));
+    expect(statusIcon, '상태 아이콘 노드').toBeTruthy();
+
+    const circle = collect(step, (n) => typeof n.classMap?.key === 'string' && n.classMap.key.includes('step.variant'))[0];
+    expect(circle, '상태 색 classMap').toBeTruthy();
+    const variantKeys = Object.keys(circle.classMap.variants);
+    expect(variantKeys).toEqual(expect.arrayContaining(['done:success', 'current:info', 'current:primary', 'off_path:danger']));
+    expect(variantKeys.filter((k) => k.startsWith('done:'))).toHaveLength(7);
+    expect(variantKeys.filter((k) => k.startsWith('current:'))).toHaveLength(7);
+
+    // 꺾쇠의 숨김은 래퍼 Div 가 맡는다 — Icon 에 `hidden` 을 직접 주면 Font Awesome 의 display
+    // 규칙(레이어 밖)이 Tailwind 유틸리티(레이어 안)를 이겨 숨겨지지 않는다(실서버 실측).
+    const chevrons = collect(step, (n) => typeof n.props?.['data-step-chevron'] === 'string');
+    const pcChevron = chevrons.find((n) => n.props['data-step-chevron'] === 'pc');
+    const mobileChevron = chevrons.find((n) => n.props['data-step-chevron'] === 'mobile');
+    expect(pcChevron.name).toBe('Div');
+    expect(mobileChevron.name).toBe('Div');
+    expect(collect(pcChevron, (n) => n.name === 'Icon')[0].props.name).toBe('chevron-right');
+    expect(pcChevron.if).toContain('length - 1');
+    expect(pcChevron.responsive.portable.props.className).toBe('hidden');
+    expect(mobileChevron.if).toContain('% 4 !== 3');
+    expect(mobileChevron.props.className).toBe('hidden');
+    expect(mobileChevron.responsive.portable.props.className).not.toContain('hidden');
+    expect(icons.some((n) => String(n.props?.className ?? '').split(' ').includes('hidden'))).toBe(false);
+
+    // 라벨은 nowrap 이 아니라 칸 안에서 줄바꿈한다.
+    const label = collect(step, (n) => n.name === 'Span' && String(n.text ?? '').includes('step.label'))[0];
+    expect(label.classMap.base).toContain('break-words');
+    expect(label.classMap.base).not.toContain('whitespace-nowrap');
   });
 });
 

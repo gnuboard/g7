@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use App\ActivityLog\ChangeDetector;
-use App\Enums\ActivityLogType;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -38,13 +37,14 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 훅 구독 수가 21개인지 확인 (기존 20 + after_reset_guest_password 1)
+     * 훅 구독 수가 22개인지 확인 (기존 21 + order.after_status_sync 1 — 파생 전이 이력)
      */
-    public function test_getSubscribedHooks_returns_all_21_hooks(): void
+    public function test_get_subscribed_hooks_returns_all_22_hooks(): void
     {
         $hooks = OrderActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(21, $hooks);
+        $this->assertCount(22, $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.order.after_status_sync', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_update', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_delete', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_bulk_update', $hooks);
@@ -72,7 +72,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // 단건 OrderService 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleOrderAfterUpdate_with_snapshot(): void
+    public function test_handle_order_after_update_with_snapshot(): void
     {
         $order = Order::factory()->create(['order_status' => OrderStatusEnum::PENDING_PAYMENT]);
         $snapshot = $order->toArray();
@@ -92,7 +92,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertNotNull($log->changes);
     }
 
-    public function test_handleOrderAfterUpdate_without_snapshot(): void
+    public function test_handle_order_after_update_without_snapshot(): void
     {
         $order = Order::factory()->create();
 
@@ -107,7 +107,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertNull($log->changes);
     }
 
-    public function test_handleOrderAfterDelete_logs_activity(): void
+    public function test_handle_order_after_delete_logs_activity(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-DEL-001']);
 
@@ -128,7 +128,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 수정 시 N건의 per-item 로그가 생성되는지 확인
      */
-    public function test_handleOrderAfterBulkUpdate_creates_per_item_logs(): void
+    public function test_handle_order_after_bulk_update_creates_per_item_logs(): void
     {
         $orders = Order::factory()->count(3)->create();
         $ids = $orders->pluck('id')->toArray();
@@ -149,7 +149,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 수정 시 loggable_id가 각 주문을 정확히 가리키는지 확인
      */
-    public function test_handleOrderAfterBulkUpdate_loggable_points_to_correct_order(): void
+    public function test_handle_order_after_bulk_update_loggable_points_to_correct_order(): void
     {
         $order1 = Order::factory()->create(['order_number' => 'BULK-001']);
         $order2 = Order::factory()->create(['order_number' => 'BULK-002']);
@@ -172,7 +172,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 수정 시 스냅샷 전달하면 changes가 감지되는지 확인
      */
-    public function test_handleOrderAfterBulkUpdate_detects_changes_with_snapshots(): void
+    public function test_handle_order_after_bulk_update_detects_changes_with_snapshots(): void
     {
         $order = Order::factory()->create(['order_status' => OrderStatusEnum::PENDING_PAYMENT]);
         $snapshot = $order->toArray();
@@ -198,7 +198,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 수정 시 스냅샷 없으면 changes가 null인지 확인
      */
-    public function test_handleOrderAfterBulkUpdate_null_changes_without_snapshots(): void
+    public function test_handle_order_after_bulk_update_null_changes_without_snapshots(): void
     {
         $order = Order::factory()->create();
 
@@ -215,7 +215,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 상태 변경 시 per-item 로그 생성 확인
      */
-    public function test_handleOrderAfterBulkStatusUpdate_creates_per_item_logs(): void
+    public function test_handle_order_after_bulk_status_update_creates_per_item_logs(): void
     {
         $orders = Order::factory()->count(2)->create();
         $ids = $orders->pluck('id')->toArray();
@@ -234,7 +234,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 배송 변경 시 per-item 로그 생성 확인
      */
-    public function test_handleOrderAfterBulkShippingUpdate_creates_per_item_logs(): void
+    public function test_handle_order_after_bulk_shipping_update_creates_per_item_logs(): void
     {
         $orders = Order::factory()->count(3)->create();
         $ids = $orders->pluck('id')->toArray();
@@ -254,7 +254,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 배송 변경 시 스냅샷 전달하면 changes 감지 확인
      */
-    public function test_handleOrderAfterBulkShippingUpdate_detects_changes_with_snapshots(): void
+    public function test_handle_order_after_bulk_shipping_update_detects_changes_with_snapshots(): void
     {
         $order = Order::factory()->create(['order_status' => OrderStatusEnum::PENDING_PAYMENT]);
         $snapshot = $order->toArray();
@@ -279,7 +279,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 수정 시 description_params에 count가 포함되는지 확인
      */
-    public function test_handleOrderAfterBulkUpdate_description_params_includes_count(): void
+    public function test_handle_order_after_bulk_update_description_params_includes_count(): void
     {
         $orders = Order::factory()->count(3)->create();
         $ids = $orders->pluck('id')->toArray();
@@ -294,7 +294,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 상태 변경 시 description_params에 count가 포함되는지 확인
      */
-    public function test_handleOrderAfterBulkStatusUpdate_description_params_includes_count(): void
+    public function test_handle_order_after_bulk_status_update_description_params_includes_count(): void
     {
         $orders = Order::factory()->count(2)->create();
         $ids = $orders->pluck('id')->toArray();
@@ -309,7 +309,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 배송 변경 시 description_params에 count가 포함되는지 확인
      */
-    public function test_handleOrderAfterBulkShippingUpdate_description_params_includes_count(): void
+    public function test_handle_order_after_bulk_shipping_update_description_params_includes_count(): void
     {
         $orders = Order::factory()->count(3)->create();
         $ids = $orders->pluck('id')->toArray();
@@ -324,7 +324,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 옵션 상태 변경 시 description_params에 count가 포함되는지 확인
      */
-    public function test_handleOrderOptionAfterBulkStatusChange_description_params_includes_count(): void
+    public function test_handle_order_option_after_bulk_status_change_description_params_includes_count(): void
     {
         $order = Order::factory()->create();
         $option1 = OrderOption::factory()->create(['order_id' => $order->id]);
@@ -418,7 +418,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 배송지 변경 시 loggable이 OrderAddress인지 확인
      */
-    public function test_handleOrderAfterUpdateShippingAddress_loggable_is_order_address(): void
+    public function test_handle_order_after_update_shipping_address_loggable_is_order_address(): void
     {
         $order = Order::factory()->create();
         $address = OrderAddress::factory()->create([
@@ -444,7 +444,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 배송지 변경 시 ChangeDetector가 변경사항을 감지하는지 확인
      */
-    public function test_handleOrderAfterUpdateShippingAddress_detects_changes(): void
+    public function test_handle_order_after_update_shipping_address_detects_changes(): void
     {
         $order = Order::factory()->create();
         $address = OrderAddress::factory()->create([
@@ -474,7 +474,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 배송지 변경 — address 없이 호출 시 fallback으로 Order에 기록
      */
-    public function test_handleOrderAfterUpdateShippingAddress_fallback_to_order(): void
+    public function test_handle_order_after_update_shipping_address_fallback_to_order(): void
     {
         $order = Order::factory()->create();
 
@@ -494,7 +494,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 단건 옵션 상태 변경 로그 확인
      */
-    public function test_handleOrderOptionAfterStatusChange_logs_activity(): void
+    public function test_handle_order_option_after_status_change_logs_activity(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-OPT-001']);
         $option = OrderOption::factory()->create(['order_id' => $order->id]);
@@ -508,12 +508,80 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertNotNull($log);
         $this->assertEquals(OrderOption::class, $log->loggable_type);
         $this->assertEquals('confirmed', $log->properties['new_status']);
+        $this->assertNull($log->changes, '스냅샷이 없으면 전/후 표를 만들 근거가 없습니다.');
+    }
+
+    /**
+     * 단건 옵션 상태 변경에 변경 전 스냅샷이 실리면 전/후 표(changes)가 남는다.
+     *
+     * 종전에는 "변경 후" 만 properties 에 적혀 활동 로그 화면에 전/후 표가 서지 않았다 —
+     * 일괄 변경 경로와 같은 계약(스냅샷 → ChangeDetector)으로 맞춘다.
+     *
+     * @effects order_option_status_change_log_carries_before_and_after_with_snapshot
+     */
+    public function test_handle_order_option_after_status_change_records_before_and_after_with_snapshot(): void
+    {
+        $order = Order::factory()->create(['order_number' => 'ORD-OPT-002']);
+        $option = OrderOption::factory()->create(['order_id' => $order->id, 'option_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+        $snapshot = $option->attributesToArray();
+
+        OrderOption::where('id', $option->id)->update(['option_status' => OrderStatusEnum::SHIPPING->value]);
+        $option->refresh();
+
+        $this->listener->handleOrderOptionAfterStatusChange($option, OrderStatusEnum::SHIPPING, null, $snapshot);
+
+        $log = ActivityLog::where('action', 'order_option.status_change')->where('loggable_id', $option->id)->firstOrFail();
+
+        $this->assertEquals('payment_complete', $log->properties['previous_status']);
+        $statusChange = collect($log->changes)->firstWhere('field', 'option_status');
+        $this->assertNotNull($statusChange, '전/후 표에 option_status 항목이 있어야 합니다.');
+        $this->assertEquals('payment_complete', $statusChange['old']);
+        $this->assertEquals('shipping', $statusChange['new']);
+        $this->assertEquals('sirsoft-ecommerce::enums.order_status.payment_complete', $statusChange['old_label_key']);
+        $this->assertEquals('sirsoft-ecommerce::enums.order_status.shipping', $statusChange['new_label_key']);
+    }
+
+    /**
+     * 상품 상태에 맞춰 부모 주문 상태가 자동으로 따라 바뀐 전이는 별도 줄(전/후 포함)로 남는다.
+     *
+     * @effects order_status_sync_log_carries_before_and_after
+     */
+    public function test_handle_order_status_sync_records_the_derived_transition_with_before_and_after(): void
+    {
+        $order = Order::factory()->create(['order_number' => 'ORD-SYNC-001', 'order_status' => OrderStatusEnum::SHIPPING]);
+
+        $this->listener->handleOrderStatusSync($order, OrderStatusEnum::PAYMENT_COMPLETE->value, OrderStatusEnum::SHIPPING->value);
+
+        $log = ActivityLog::where('action', 'order.status_sync')->where('loggable_id', $order->id)->firstOrFail();
+
+        $this->assertEquals(Order::class, $log->loggable_type);
+        $this->assertEquals('sirsoft-ecommerce::activity_log.description.order_status_sync', $log->description_key);
+        $this->assertEquals('ORD-SYNC-001', $log->description_params['order_number']);
+        $this->assertEquals('payment_complete', $log->properties['previous_status']);
+        $this->assertEquals('shipping', $log->properties['new_status']);
+        $this->assertEquals('option_status', $log->properties['trigger']);
+        $this->assertEquals('order_status', $log->changes[0]['field']);
+        $this->assertEquals('sirsoft-ecommerce::enums.order_status.payment_complete', $log->changes[0]['old_label_key']);
+        $this->assertEquals('sirsoft-ecommerce::enums.order_status.shipping', $log->changes[0]['new_label_key']);
+        $this->assertNotSame('activity_log.action.status_sync', $log->action_label, '액션 라벨 다국어 키가 해석되어야 합니다.');
+    }
+
+    /**
+     * 전/후가 같으면 파생 전이 줄을 남기지 않는다.
+     */
+    public function test_handle_order_status_sync_skips_when_nothing_changed(): void
+    {
+        $order = Order::factory()->create(['order_status' => OrderStatusEnum::SHIPPING]);
+
+        $this->listener->handleOrderStatusSync($order, OrderStatusEnum::SHIPPING->value, OrderStatusEnum::SHIPPING->value);
+
+        $this->assertSame(0, ActivityLog::where('action', 'order.status_sync')->count());
     }
 
     /**
      * 일괄 옵션 상태 변경 시 per-item 로그 생성 확인
      */
-    public function test_handleOrderOptionAfterBulkStatusChange_creates_per_item_logs(): void
+    public function test_handle_order_option_after_bulk_status_change_creates_per_item_logs(): void
     {
         $order = Order::factory()->create();
         $option1 = OrderOption::factory()->create(['order_id' => $order->id]);
@@ -539,7 +607,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 일괄 옵션 상태 변경 시 스냅샷으로 changes 감지 확인
      */
-    public function test_handleOrderOptionAfterBulkStatusChange_detects_changes_with_snapshots(): void
+    public function test_handle_order_option_after_bulk_status_change_detects_changes_with_snapshots(): void
     {
         $order = Order::factory()->create();
         $option = OrderOption::factory()->create([
@@ -574,7 +642,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 구매확인 시 OrderOption에 로그가 기록되는지 확인
      */
-    public function test_handleOrderOptionAfterConfirm_logs_activity(): void
+    public function test_handle_order_option_after_confirm_logs_activity(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-CONFIRM-001']);
         $option = OrderOption::factory()->create(['order_id' => $order->id]);
@@ -598,7 +666,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // OrderCancellationService 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleOrderAfterCancel_logs_activity_with_snapshot(): void
+    public function test_handle_order_after_cancel_logs_activity_with_snapshot(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-CANCEL-001']);
 
@@ -621,7 +689,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 부분 취소 시 Order 로그 + per-OrderOption 로그가 생성되는지 확인
      */
-    public function test_handleOrderAfterPartialCancel_creates_order_and_per_option_logs(): void
+    public function test_handle_order_after_partial_cancel_creates_order_and_per_option_logs(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-PC-001']);
         $option1 = OrderOption::factory()->create(['order_id' => $order->id]);
@@ -663,7 +731,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     /**
      * 부분 취소 시 cancel_items 없으면 per-option 로그 미생성
      */
-    public function test_handleOrderAfterPartialCancel_without_cancel_items(): void
+    public function test_handle_order_after_partial_cancel_without_cancel_items(): void
     {
         $order = Order::factory()->create();
 
@@ -682,7 +750,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         ]);
     }
 
-    public function test_handleCouponRestore_logs_activity(): void
+    public function test_handle_coupon_restore_logs_activity(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-CR-001']);
         $restoredIds = [101, 102];
@@ -697,7 +765,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals($restoredIds, $log->properties['restored_coupon_issue_ids']);
     }
 
-    public function test_handleMileageRestore_logs_activity(): void
+    public function test_handle_mileage_restore_logs_activity(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-MR-001']);
 
@@ -715,7 +783,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // OrderProcessingService 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleOrderAfterCreate_logs_activity(): void
+    public function test_handle_order_after_create_logs_activity(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-NEW-001', 'total_amount' => 75000]);
 
@@ -730,7 +798,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals('ORD-NEW-001', $log->properties['order_number']);
     }
 
-    public function test_handleOrderAfterPaymentComplete_logs_activity(): void
+    public function test_handle_order_after_payment_complete_logs_activity(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-PAY-001']);
 
@@ -743,7 +811,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         ]);
     }
 
-    public function test_handleOrderAfterPaymentFailed_logs_activity(): void
+    public function test_handle_order_after_payment_failed_logs_activity(): void
     {
         $order = Order::factory()->create(['order_number' => 'ORD-FAIL-001']);
 
@@ -758,7 +826,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals('Insufficient funds', $log->properties['error_message']);
     }
 
-    public function test_handleCouponUse_logs_activity(): void
+    public function test_handle_coupon_use_logs_activity(): void
     {
         $order = Order::factory()->create();
         $appliedCouponIds = [501, 502];
@@ -773,7 +841,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals($appliedCouponIds, $log->properties['applied_coupon_ids']);
     }
 
-    public function test_handleMileageUse_logs_activity(): void
+    public function test_handle_mileage_use_logs_activity(): void
     {
         $order = Order::factory()->create();
 
@@ -787,7 +855,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertSame(ecommerce_format_price(3000.0), $log->description_params['amount']);
     }
 
-    public function test_handleMileageEarn_logs_activity(): void
+    public function test_handle_mileage_earn_logs_activity(): void
     {
         $order = Order::factory()->create();
 
@@ -805,7 +873,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // 이메일/기타 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleOrderAfterSendEmail_logs_activity(): void
+    public function test_handle_order_after_send_email_logs_activity(): void
     {
         $data = ['order_id' => 10, 'order_number' => 'ORD-EMAIL', 'template' => 'order_confirmation'];
 
@@ -818,7 +886,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals('order_confirmation', $log->properties['template']);
     }
 
-    public function test_handleOrderAfterSendEmail_handles_missing_keys(): void
+    public function test_handle_order_after_send_email_handles_missing_keys(): void
     {
         $this->listener->handleOrderAfterSendEmail([]);
 

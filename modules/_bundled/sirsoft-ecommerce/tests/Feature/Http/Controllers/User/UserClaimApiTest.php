@@ -515,6 +515,44 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 상세는 관리자 상세와 같은 진행단계 배열을 같은 자리(`data.progress_steps`)에 싣는다.
+     *
+     * 관리자 응답에만 있던 배열이라 회원 화면은 상태 뱃지 하나로만 단계를 읽어야 했다. 배열을
+     * 화면이 다시 적으면 그 사본이 어휘의 두 번째 출처가 되므로 서버가 한 곳에서 만든다.
+     * 칸마다 아이콘·색이 실리고 헤더의 `status_icon` 도 같은 Enum 값이다.
+     *
+     * @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
+     *
+     * @effects claim_detail_response_carries_progress_steps
+     */
+    public function test_show_carries_the_progress_steps_and_the_status_icon(): void
+    {
+        $order = $this->myDeliveredOrder();
+        $result = app(UserClaimService::class)->requestReturn($order, ['items' => $this->items($order), 'reason_code' => 'changed_mind', 'charge_method' => 'pay_on_request', 'requested_by' => $this->user->id], [], 'card');
+        $return = $result['claim'];
+
+        $response = $this->actingAs($this->user)->getJson($this->base()."/claims/{$return->return_number}")
+            ->assertOk()
+            ->assertJsonPath('data.claim.status', 'payment_pending')
+            ->assertJsonPath('data.claim.status_icon', ReturnStatusEnum::PAYMENT_PENDING->icon());
+
+        $steps = $response->json('data.progress_steps');
+
+        $this->assertSame(
+            array_column(ReturnStatusEnum::progressSequence(), 'value'),
+            array_column($steps, 'value'),
+            '결제형 청구(신청 시 결제)라 결제 두 칸을 포함한 전체 순서가 실려야 합니다.'
+        );
+        $this->assertSame('payment_pending', collect($steps)->firstWhere('state', 'current')['value']);
+
+        foreach ($steps as $step) {
+            $case = ReturnStatusEnum::from($step['value']);
+            $this->assertSame($case->icon(), $step['icon']);
+            $this->assertSame($case->variant(), $step['variant']);
+        }
+    }
+
+    /**
      * 목록은 화면이 그 행에서 실제로 그리는 것만 싣는다. (S13 — P3)
      *
      * 이 리소스는 목록·상세 겸용이라 상세용 필드(첨부 전량·주소/배송비 스냅샷 JSON·상세 사유·

@@ -8,7 +8,11 @@ use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Listeners\Concerns\BuildsEnumFieldChange;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\ResolvesClaimIdentity;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
@@ -36,9 +40,17 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
  * 상태 라벨은 표시 시점 로케일로 해석해야 하므로 문구에 박제하지 않는다(코어 규정 —
  * description_params 에 표시용 이름 저장 금지). 로그 문구는 클레임 번호까지만 담고,
  * 전이 전/후 상태 값은 properties 에 원값으로 남긴다.
+ *
+ * ## 전/후는 `changes` 에도 싣는다
+ *
+ * 활동 로그 화면은 `changes` 에 실린 항목만 "변경 전 → 변경 후" 표로 그린다. properties 에만
+ * 두면 값은 남는데 관리자 활동 로그·클레임 상세 활동 로그 어디에도 나타나지 않아, 이력이
+ * "상태 변경" 한 줄로만 보인다. 그래서 헤더 전이는 `status` 한 항목, 상품 단위 전이는
+ * 상품별(`option_id` 키) 항목 묶음으로 코어 형식(`ChangeDetector` 와 동형)을 함께 남긴다.
  */
 class ClaimActivityLogListener implements HookListenerInterface
 {
+    use BuildsEnumFieldChange;
     use ResolvesActivityLogType;
     use ResolvesClaimIdentity;
 
@@ -159,6 +171,9 @@ class ClaimActivityLogListener implements HookListenerInterface
         ?string $target = null,
     ): void {
         $type = $this->claimTypeOf($claim);
+        // 전이 시점에 캡처된 목표 상태가 기준이다 — 큐 지연 중 재전이된 모델의 "지금"
+        // 상태를 적으면 이력이 실제로 일어난 전이와 어긋난다.
+        $new = $target ?? $this->claimStatusValue($claim);
 
         $this->logActivity($this->actionFor($type, 'status_change'), [
             'loggable' => $claim,
@@ -167,9 +182,10 @@ class ClaimActivityLogListener implements HookListenerInterface
             'properties' => [
                 'claim_type' => $type->value,
                 'previous_status' => $previous,
-                // 전이 시점에 캡처된 목표 상태가 기준이다 — 큐 지연 중 재전이된 모델의 "지금"
-                // 상태를 적으면 이력이 실제로 일어난 전이와 어긋난다.
-                'new_status' => $target ?? $this->claimStatusValue($claim),
+                'new_status' => $new,
+            ],
+            'changes' => $previous === $new ? null : [
+                $this->enumFieldChange('status', self::FIELD_LABEL_PREFIX.'status', $this->statusEnumClassFor($type), $previous, $new),
             ],
         ]);
     }
@@ -198,6 +214,22 @@ class ClaimActivityLogListener implements HookListenerInterface
         }
 
         $type = $this->claimTypeOf($claim);
+        $enumClass = $this->statusEnumClassFor($type);
+
+        // 상품별 전/후 — 코어 일괄 형식(`{모델ID: [항목…]}`)으로 실어야 화면이 상품마다 표를
+        // 그린다. 신청 상품 행의 ID 가 키다.
+        $bulkChanges = [];
+        foreach ($changes as $change) {
+            $bulkChanges[(int) ($change['option_id'] ?? 0)] = [
+                $this->enumFieldChange(
+                    'option_status',
+                    self::FIELD_LABEL_PREFIX.'option_status',
+                    $enumClass,
+                    $change['previous'] ?? null,
+                    $change['new'] ?? null,
+                ),
+            ];
+        }
 
         $this->logActivity($this->actionFor($type, 'option_status_change'), [
             'loggable' => $claim,
@@ -210,7 +242,23 @@ class ClaimActivityLogListener implements HookListenerInterface
                 // 상태 값은 원값으로 남긴다 — 라벨은 표시 시점 로케일로 해석한다.
                 'options' => $changes,
             ],
+            'changes' => $bulkChanges !== [] ? $bulkChanges : null,
         ]);
+    }
+
+    /**
+     * 유형별 상태 Enum 클래스를 반환합니다. (전/후 라벨 키 해석용)
+     *
+     * @param  ClaimTypeEnum  $type  클레임 유형
+     * @return class-string<ExchangeStatusEnum|ReturnStatusEnum|RefundStatusEnum> Enum 클래스
+     */
+    private function statusEnumClassFor(ClaimTypeEnum $type): string
+    {
+        return match ($type) {
+            ClaimTypeEnum::EXCHANGE => ExchangeStatusEnum::class,
+            ClaimTypeEnum::RETURN => ReturnStatusEnum::class,
+            default => RefundStatusEnum::class,
+        };
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Enums;
 
 use Modules\Sirsoft\Ecommerce\Enums\AdjustmentType;
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
@@ -643,5 +644,58 @@ class ClaimEnumsTest extends ModuleTestCase
             );
             $this->assertNotSame('', $case->variant());
         }
+    }
+
+    // ========================================
+    // 상태 아이콘 (진행단계 스텝퍼 · 상태 뱃지 공용)
+    // ========================================
+
+    /**
+     * 상태 Enum 4종의 모든 case 가 라이브러리 중립 의미 토큰(`status-*`)을 가진다. 백엔드가
+     * 특정 아이콘 라이브러리의 글리프 이름을 박으면 그 라이브러리에 묶인다 — 토큰을 글리프로
+     * 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다. 어휘 밖 토큰은 화면에서 빈 네모로 그려진다.
+     */
+    public function test_every_claim_status_has_a_library_neutral_icon_token(): void
+    {
+        $allowed = [
+            'status-request', 'status-payment-pending', 'status-paid', 'status-approved', 'status-on-hold',
+            'status-rejected', 'status-pickup-ready', 'status-pickup', 'status-received', 'status-dispatch-ready',
+            'status-dispatch', 'status-delivered', 'status-completed', 'status-withdrawn', 'status-processing',
+        ];
+
+        foreach ([ExchangeStatusEnum::class, ReturnStatusEnum::class, RefundStatusEnum::class, CancelStatusEnum::class] as $enum) {
+            foreach ($enum::cases() as $case) {
+                $this->assertContains($case->icon(), $allowed, "{$enum}::{$case->name} 의 아이콘 토큰이 어휘 밖입니다.");
+                $this->assertStringStartsWith('status-', $case->icon());
+                $this->assertStringStartsNotWith('fa-', $case->icon(), '백엔드는 아이콘 라이브러리 글리프 이름을 알지 않습니다.');
+            }
+        }
+    }
+
+    /**
+     * 유형이 달라도 같은 단계는 같은 그림이어야 운영자가 유형마다 단계를 다시 익히지 않는다.
+     */
+    public function test_shared_stages_use_the_same_icon_across_claim_types(): void
+    {
+        foreach (['requested', 'approved', 'on_hold', 'rejected', 'completed', 'withdrawn'] as $value) {
+            $this->assertSame(ExchangeStatusEnum::from($value)->icon(), ReturnStatusEnum::from($value)->icon(), $value);
+            $this->assertSame(ExchangeStatusEnum::from($value)->icon(), RefundStatusEnum::from($value)->icon(), $value);
+        }
+
+        foreach (['payment_pending', 'paid', 'collection_ready', 'collecting', 'collected'] as $value) {
+            $this->assertSame(ExchangeStatusEnum::from($value)->icon(), ReturnStatusEnum::from($value)->icon(), $value);
+        }
+
+        $this->assertSame(ExchangeStatusEnum::REQUESTED->icon(), CancelStatusEnum::REQUESTED->icon());
+        $this->assertSame(ExchangeStatusEnum::COMPLETED->icon(), CancelStatusEnum::COMPLETED->icon());
+    }
+
+    /**
+     * 취소는 신청 → 완료 두 칸이고 이탈 상태가 없다.
+     */
+    public function test_cancel_status_progress_sequence_is_two_stages(): void
+    {
+        $this->assertSame([CancelStatusEnum::REQUESTED, CancelStatusEnum::COMPLETED], CancelStatusEnum::progressSequence());
+        $this->assertFalse(CancelStatusEnum::REQUESTED->isOffProgressPath());
     }
 }

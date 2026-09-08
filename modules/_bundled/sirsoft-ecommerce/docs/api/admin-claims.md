@@ -94,7 +94,7 @@
 | requester_name | string\|null | `홍길동` | 신청자 표기 (주문자명 — 비회원 신청도 값이 있다) |
 | requested_by | integer\|null | `7` | 신청 회원 ID (비회원 `null`, 취소는 `cancelled_by`) |
 | is_guest_request | boolean | `false` | 비회원 신청 여부 |
-| status / status_label / status_variant | string / string\|null / string\|null | `requested` / `반품신청` / `secondary` | 유형별 상태 |
+| status / status_label / status_variant / status_icon | string / string\|null / string\|null / string\|null | `requested` / `반품신청` / `secondary` / `status-request` | 유형별 상태 (아이콘은 상태 Enum `icon()` 의 의미 토큰 — 진행단계 칸과 같은 그림) |
 | is_final | boolean | `false` | 종결 여부 |
 | reason_code / reason_label | string\|null | `changed_mind` / `단순 변심` | 사유 |
 | fault_type / fault_type_label | string\|null | `customer` / `고객 귀책` | 귀책 (취소는 `null`) |
@@ -256,6 +256,8 @@
 | value | string | `collecting` | 상태 값 (유형별 상태 Enum) |
 | label | string | `교환회수중` | 상태 라벨 (표시 시점 로케일) |
 | state | string | `current` | `done` 지나감 / `current` 현재 / `upcoming` 남음 / `off_path` 이탈(보류·반려·철회) |
+| icon | string | `status-pickup` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립). 상태 Enum 의 `icon()` — 상태 뱃지(`status_icon`)와 같은 값. 어휘(15종)는 아래 표 |
+| variant | string | `primary` | 상태 색 (상태 뱃지와 같은 `variant()` 팔레트 — `success`/`warning`/`info`/`primary`/`secondary`/`danger`/`dark`). 화면은 칸 색을 이 값으로만 고른다 |
 
 순서는 유형별 상태 Enum 이 소유합니다(교환 11칸 · 반품 8칸 · 환불 4칸이 최대). 두 가지가
 그 순서를 신청서에 맞게 추립니다:
@@ -268,6 +270,31 @@
 
 도달 지점은 현재 상태의 위치와 신청서가 박아 둔 시각(승인·회수도착·재발송도착·완료) 중 더
 나아간 쪽입니다 — 이탈 상태에서는 현재 상태만으로 어디까지 갔는지 알 수 없기 때문입니다.
+
+이 배열은 회원·비회원 상세(`user/claims/{claimNumber}` · `guest/orders/{orderNumber}/claims/{claimNumber}`)도
+**같은 자리(`data.progress_steps`)에 같은 규칙으로** 받습니다 — 한 곳(`ClaimProgressSteps`)이 만듭니다.
+
+**아이콘 의미 토큰 어휘** — 백엔드는 아이콘 라이브러리를 알지 않습니다. 토큰을 실제 글리프로 바꾸는 표는
+아이콘 세트를 소유한 템플릿의 Icon 컴포넌트가 가지며(번들 템플릿은 Font Awesome 6 Free 로 해석), 어휘 밖
+토큰이나 표가 없는 템플릿에서는 그 자리가 빈 네모로 그려집니다.
+
+| 토큰 | 단계 | 번들 템플릿 글리프 |
+| --- | --- | --- |
+| `status-request` | 신청 접수 | `file-lines` |
+| `status-payment-pending` | 결제 대기 | `credit-card` |
+| `status-paid` | 결제 완료 | `money-bill` |
+| `status-approved` | 승인 | `thumbs-up` |
+| `status-on-hold` | 보류 | `pause` |
+| `status-rejected` | 반려 | `ban` |
+| `status-pickup-ready` | 회수 준비 | `box-open` |
+| `status-pickup` | 회수 중 | `truck` |
+| `status-received` | 회수 도착 | `warehouse` |
+| `status-dispatch-ready` | 재발송 준비 | `box` |
+| `status-dispatch` | 재발송 중 | `truck-fast` |
+| `status-delivered` | 재발송 도착 | `house` |
+| `status-completed` | 완료 | `circle-check` |
+| `status-withdrawn` | 철회 | `rotate-left` |
+| `status-processing` | 처리 중(환불 PG 요청) | `hourglass-half` |
 
 **응답**: `200` `data` — 위 구조 / `404` 부재·취소 유형.
 

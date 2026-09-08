@@ -134,7 +134,17 @@ export declare enum IconName {
     Sync = "fa-sync",
     RotateLeft = "fa-rotate-left",
     MapPin = "fa-map-marker-alt",
-    HelpCircle = "fa-question-circle"
+    HelpCircle = "fa-question-circle",
+    FileLines = "fa-file-lines",
+    MoneyBill = "fa-money-bill",
+    Pause = "fa-pause",
+    Ban = "fa-ban",
+    BoxOpen = "fa-box-open",
+    Warehouse = "fa-warehouse",
+    TruckFast = "fa-truck-fast",
+    House = "fa-house",
+    CircleCheck = "fa-circle-check",
+    HourglassHalf = "fa-hourglass-half"
 }
 /**
  * 문자열 아이콘 이름을 IconName enum으로 매핑합니다.

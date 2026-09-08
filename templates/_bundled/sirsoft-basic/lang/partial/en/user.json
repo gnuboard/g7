@@ -192,6 +192,7 @@
       "detail_items": "Requested items",
       "detail_shipping": "Shipping",
       "detail_claim_info": "Request details",
+      "detail_progress": "Progress",
       "detail_reason": "Reason",
       "image_viewer_modal": "Photo viewer"
     }

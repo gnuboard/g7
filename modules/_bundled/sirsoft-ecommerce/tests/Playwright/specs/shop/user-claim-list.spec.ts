@@ -287,6 +287,62 @@ test.describe('구매자 클레임 신청내역', () => {
     expect(detailQuery.get('page'), '상세로 가며 페이지가 사라졌다').toBe('1');
   });
 
+  test('신청서 상세는 관리자와 같은 진행 단계를 그리고 모바일에서 스크롤 없이 줄바꿈한다', async ({ page }) => {
+    // @scenario claim_type=exchange, screen=detail, entry=none
+    // @effects claim_detail_progress_stepper_renders_server_steps
+    const progress = [
+      { value: 'requested', label: '교환신청', state: 'done', icon: 'status-request', variant: 'secondary' },
+      { value: 'approved', label: '교환승인', state: 'done', icon: 'status-approved', variant: 'info' },
+      { value: 'collection_ready', label: '교환회수준비중', state: 'done', icon: 'status-pickup-ready', variant: 'primary' },
+      { value: 'collecting', label: '교환회수중', state: 'current', icon: 'status-pickup', variant: 'primary' },
+      { value: 'collected', label: '교환회수도착', state: 'upcoming', icon: 'status-received', variant: 'primary' },
+      { value: 'redelivery_ready', label: '교환발송준비중', state: 'upcoming', icon: 'status-dispatch-ready', variant: 'primary' },
+      { value: 'redelivering', label: '교환발송중', state: 'upcoming', icon: 'status-dispatch', variant: 'primary' },
+      { value: 'redelivered', label: '교환발송도착', state: 'upcoming', icon: 'status-delivered', variant: 'primary' },
+      { value: 'completed', label: '교환완료', state: 'upcoming', icon: 'status-completed', variant: 'success' },
+    ];
+
+    await mockOrder(page);
+    await mockClaimDetail(
+      page,
+      {
+        ...EDITABLE,
+        claim_number: 'EX20260902-0600',
+        status: 'collecting',
+        status_label: '교환회수중',
+        status_variant: 'primary',
+        status_icon: 'status-pickup',
+        is_editable: false,
+        is_withdrawable: false,
+      },
+      { progress_steps: progress },
+    );
+
+    await page.goto('/mypage/claims/EX20260902-0600');
+    await waitForApp(page);
+
+    const cells = page.locator('[id^="claim_progress_step_"]');
+    await expect(cells).toHaveCount(progress.length, { timeout: 30_000 });
+    await expect(cells.nth(3)).toHaveAttribute('data-step-state', 'current');
+    await expect(page.locator('[id^="claim_progress_step_"] .rounded-full i.fa-truck')).toHaveCount(1);
+    await expect(page.locator('[data-step-chevron="pc"]:visible')).toHaveCount(progress.length - 1);
+
+    // 헤더 뱃지에도 같은 상태 아이콘이 붙는다.
+    await expect(page.locator('h1 ~ span i.fa-truck, h1 + span i.fa-truck').first()).toBeVisible();
+
+    // 모바일 — 4칸/줄 줄바꿈, 스텝퍼도 문서도 가로 스크롤 없음
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(async () => {
+      const tops = await cells.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+
+      return new Set(tops).size;
+    }, { timeout: 10_000 }).toBe(Math.ceil(progress.length / 4));
+    const box = await page.locator('#claim_progress_steps').evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
+    expect(box.scroll).toBeLessThanOrEqual(box.client + 1);
+    const doc = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+    expect(doc.scroll).toBeLessThanOrEqual(doc.client + 1);
+  });
+
   test('결제 결과 배너는 세 결과를 구분하고, 쿼리가 없으면 서지 않는다', async ({ page }) => {
     // @scenario claim_type=exchange, screen=detail, entry=none
     // @effects claim_payment_result_banner_distinguishes_three_outcomes, claim_payment_result_banner_absent_without_the_query

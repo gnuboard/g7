@@ -81,15 +81,15 @@ const EXCHANGE_ITEMS = [
 
 /** 진행단계 (서버가 만든 배열 — 청구액이 없는 교환이라 결제 두 칸이 빠져 있다) */
 const PROGRESS_STEPS = [
-  { value: 'requested', label: '교환신청', state: 'done' },
-  { value: 'approved', label: '교환승인', state: 'done' },
-  { value: 'collection_ready', label: '교환회수준비중', state: 'done' },
-  { value: 'collecting', label: '교환회수중', state: 'current' },
-  { value: 'collected', label: '교환회수도착', state: 'upcoming' },
-  { value: 'redelivery_ready', label: '교환발송준비중', state: 'upcoming' },
-  { value: 'redelivering', label: '교환발송중', state: 'upcoming' },
-  { value: 'redelivered', label: '교환발송도착', state: 'upcoming' },
-  { value: 'completed', label: '교환완료', state: 'upcoming' },
+  { value: 'requested', label: '교환신청', state: 'done', icon: 'status-request', variant: 'secondary' },
+  { value: 'approved', label: '교환승인', state: 'done', icon: 'status-approved', variant: 'info' },
+  { value: 'collection_ready', label: '교환회수준비중', state: 'done', icon: 'status-pickup-ready', variant: 'primary' },
+  { value: 'collecting', label: '교환회수중', state: 'current', icon: 'status-pickup', variant: 'primary' },
+  { value: 'collected', label: '교환회수도착', state: 'upcoming', icon: 'status-received', variant: 'primary' },
+  { value: 'redelivery_ready', label: '교환발송준비중', state: 'upcoming', icon: 'status-dispatch-ready', variant: 'primary' },
+  { value: 'redelivering', label: '교환발송중', state: 'upcoming', icon: 'status-dispatch', variant: 'primary' },
+  { value: 'redelivered', label: '교환발송도착', state: 'upcoming', icon: 'status-delivered', variant: 'primary' },
+  { value: 'completed', label: '교환완료', state: 'upcoming', icon: 'status-completed', variant: 'success' },
 ];
 
 /**
@@ -164,6 +164,11 @@ let registry: MockComponentRegistry;
 
 beforeEach(() => {
   registry = createMockComponentRegistryWithBasics();
+
+  // 아이콘은 이름·부가 속성이 DOM 에 남아야 진행단계 칸의 그림과 꺾쇠를 셀 수 있다.
+  registry.register('basic', 'Icon', ({ name, className, ...rest }: any) =>
+    React.createElement('i', { className: `fa-${name} ${className ?? ''}`.trim(), 'data-icon': name, ...rest })
+  );
 
   registry.register('composite', 'DataGrid', ({ columns, data, selectable, selectionScope }: any) =>
     React.createElement(
@@ -448,6 +453,35 @@ describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
     expect(labels).toHaveLength(PROGRESS_STEPS.length);
     expect(labels.join(' ')).toContain('교환회수중');
     expect(labels.join(' ')).not.toContain('교환결제대기');
+    utils.cleanup();
+  });
+
+  /**
+   * 칸마다 서버가 준 아이콘이 서고 상태는 DOM 속성으로 드러난다. 꺾쇠는 칸 수보다 하나 적다 —
+   * 마지막 칸 뒤에 꺾쇠가 서면 '다음 단계가 더 있다' 로 읽힌다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_progress_steps_carry_icon_and_variant, claim_progress_cells_uniform_width_with_chevrons
+   */
+  it('진행단계 칸마다 상태 아이콘이 서고 PC 꺾쇠는 칸 수보다 하나 적다', async () => {
+    const utils = await renderProbe(itemsSection as Node);
+
+    const cells = [...document.querySelectorAll('[id^="claim_progress_step_"]')];
+    expect(cells.map((el) => el.getAttribute('data-step-state'))).toEqual(PROGRESS_STEPS.map((s) => s.state));
+
+    const icons = cells.map((el) => el.querySelector('.rounded-full [data-icon]')?.getAttribute('data-icon'));
+    expect(icons).toEqual(PROGRESS_STEPS.map((s) => s.icon));
+
+    // 현재 칸(교환회수중)은 primary 팔레트의 '현재' 색을, 지나간 칸은 채움색을 입는다.
+    const current = cells[3].querySelector('.rounded-full') as HTMLElement;
+    expect(current.className).toContain('border-indigo-600');
+    expect(current.className).toContain('bg-indigo-100');
+    const done = cells[1].querySelector('.rounded-full') as HTMLElement;
+    expect(done.className).toContain('bg-blue-600');
+
+    expect(document.querySelectorAll('[data-step-chevron="pc"]')).toHaveLength(PROGRESS_STEPS.length - 1);
+    // 모바일 꺾쇠는 줄 끝(4n번째)을 빼고 선다 — 9칸이면 8 - 2 = 6.
+    expect(document.querySelectorAll('[data-step-chevron="mobile"]')).toHaveLength(6);
     utils.cleanup();
   });
 

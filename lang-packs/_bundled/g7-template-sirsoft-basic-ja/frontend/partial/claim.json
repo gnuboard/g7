@@ -145,6 +145,7 @@
   },
   "detail": {
     "back": "申請内容",
+    "progress_title": "進行段階",
     "items_title": "申請商品",
     "no_items": "申請商品がありません。",
     "item_refund_amount": "返金予定 {{amount}}",

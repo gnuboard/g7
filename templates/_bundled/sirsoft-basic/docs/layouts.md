@@ -5,7 +5,7 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 184개 (루트: `layouts`).
+레이아웃 185개 (루트: `layouts`).
 
 | 그룹 | 개수 |
 |---|---|
@@ -15,7 +15,7 @@
 | `errors` | 6개 |
 | `mypage` | 14개 |
 | `page` | 1개 |
-| `partials` | 137개 |
+| `partials` | 138개 |
 | `search` | 1개 |
 | `shop` | 11개 |
 | `users` | 2개 |
@@ -115,6 +115,7 @@
 | `_apply_summary` | `partials` | partial | - |
 | `_detail_claim_info` | `partials` | partial | - |
 | `_detail_items` | `partials` | partial | - |
+| `_detail_progress` | `partials` | partial | - |
 | `_detail_reason` | `partials` | partial | - |
 | `_detail_shipping` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |

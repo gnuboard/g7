@@ -15,6 +15,17 @@
 | `modals` | 1개 |
 <!-- @generated:components END -->
 
+## 상태 의미 토큰 (`status-*`)
+
+`Icon` 은 Font Awesome 글리프 이름 외에 **아이콘 라이브러리 중립 토큰**을 받는다. 서버(예:
+쇼핑몰 모듈의 클레임 상태 Enum)는 특정 아이콘 글꼴을 알지 않고 `status-request` · `status-pickup`
+같은 의미 토큰만 내보내며, 그 토큰을 이 템플릿의 글리프로 바꾸는 표는
+`src/components/basic/IconTypes.ts` 의 `iconNameMap` 한 곳이다. 어휘(15종)와 각 토큰의 뜻은
+쇼핑몰 모듈 API 문서(`docs/api/admin-claims.md` "아이콘 의미 토큰 어휘")가 소유한다.
+
+표에 없는 토큰은 `fa-status-…` 로 떨어져 오류 없이 빈 네모가 그려진다 — 어휘가 늘면 이 표에
+먼저 더한다. 다른 아이콘 세트를 쓰는 템플릿은 같은 토큰을 자기 글리프로 해석하면 된다.
+
 <!-- @intent START -->
 세 분류(basic/composite/layout)는 "얼마나 많이 조합됐는가"로 나뉩니다 — basic 은 HTML 태그를
 그대로 래핑(`Div`→`<div>`)한 최소 단위, composite 는 basic 을 여러 개 조합해 UI 패턴을 캡슐화한

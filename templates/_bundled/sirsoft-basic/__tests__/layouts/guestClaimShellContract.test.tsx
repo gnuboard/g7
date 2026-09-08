@@ -70,6 +70,7 @@ function shopPath(p: string): string {
 
 const SHARED_CLAIM_PARTIALS = [
   '_list.json',
+  '_detail_progress.json',
   '_detail_items.json',
   '_detail_shipping.json',
   '_detail_claim_info.json',
@@ -100,7 +101,7 @@ describe('공유 partial 규율 — 회원/비회원을 스스로 판단하지 �
     }
 
     // 모집단이 비면 red — 파일명이 바뀌었는데 검사만 통과하는 상태를 막는다.
-    expect(SHARED_CLAIM_PARTIALS.length).toBe(13);
+    expect(SHARED_CLAIM_PARTIALS.length).toBe(14);
     expect(offenders).toEqual([]);
   });
 

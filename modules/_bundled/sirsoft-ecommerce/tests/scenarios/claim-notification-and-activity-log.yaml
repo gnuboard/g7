@@ -108,6 +108,7 @@ effects:
   - request_writes_one_activity_row_with_the_claim_number
   - service_transition_writes_exactly_one_status_change_row
   - status_change_records_the_captured_target
+  - status_change_carries_before_and_after_in_changes
   - amount_edits_are_recorded_in_the_core_changes_shape
   - amount_edits_with_no_effective_change_record_no_changes
   - item_level_transition_is_recorded_even_when_the_header_does_not_move

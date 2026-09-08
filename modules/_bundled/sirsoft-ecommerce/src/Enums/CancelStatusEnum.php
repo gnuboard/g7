@@ -44,6 +44,41 @@ enum CancelStatusEnum: string
     }
 
     /**
+     * 상태를 상징하는 아이콘 의미 토큰을 반환합니다. (아이콘 라이브러리 중립)
+     *
+     * 다른 클레임 유형의 같은 단계(신청·완료)와 같은 아이콘이다. 색은 `variant()` 가 정한다.
+     *
+     * @return string 의미 토큰 (`status-*`) — 실제 글리프는 화면(템플릿)의 Icon 이 자기 아이콘 세트로 해석한다
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::REQUESTED => 'status-request',
+            self::COMPLETED => 'status-completed',
+        };
+    }
+
+    /**
+     * 진행 순서를 반환합니다. (취소는 신청 → 완료 두 칸이고 이탈 상태가 없다)
+     *
+     * @return array<int, self> 진행 순서
+     */
+    public static function progressSequence(): array
+    {
+        return [self::REQUESTED, self::COMPLETED];
+    }
+
+    /**
+     * 진행 순서에 속하지 않는 이탈 상태인지 반환합니다. (취소에는 없다 — 항상 false)
+     *
+     * @return bool 이탈 상태이면 true
+     */
+    public function isOffProgressPath(): bool
+    {
+        return ! in_array($this, self::progressSequence(), true);
+    }
+
+    /**
      * 최종 상태 여부를 반환합니다.
      *
      * @return bool

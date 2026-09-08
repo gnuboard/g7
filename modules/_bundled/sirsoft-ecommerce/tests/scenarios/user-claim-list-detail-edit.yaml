@@ -89,6 +89,11 @@ effects:
   - claim_detail_contrast_axis_shows_both_sides
   - claim_detail_refund_account_reads_the_claim_row
   - claim_detail_reject_reason_leads_the_reason_card
+  # 상세 — 진행 단계 (관리자 상세와 같은 배열을 같은 자리에서 받는다)
+  - claim_detail_response_carries_progress_steps
+  - claim_detail_progress_stepper_renders_server_steps
+  - claim_progress_steps_single_source_for_admin_and_user
+  - claim_progress_cancel_has_two_stages
   # 결제 결과 복귀 — 신청서 상세가 서면서 원래 자리로 돌아왔다
   - claim_payment_returns_to_a_screen_that_exists
   - claim_payment_result_banner_distinguishes_three_outcomes
@@ -113,6 +118,7 @@ effects:
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentRedirectTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimProgressStepsTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimEditHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimListHandlers.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimListDetailContract.test.tsx

@@ -39,6 +39,7 @@ return [
         'send_email' => '이메일 발송',
         'set_default' => '기본값 설정',
         'status_change' => '상태 변경',
+        'status_sync' => '상태 자동 동기화',
         'stock_sync' => '재고 동기화',
         'toggle_active' => '활성 상태 변경',
         'toggle_status' => '상태 전환',
@@ -93,6 +94,7 @@ return [
         'order_reset_guest_password' => '비회원 조회 비밀번호 재설정 (:order_number)',
         'order_option_status_change' => '주문 옵션 상태 변경 (주문: :order_number)',
         'order_option_bulk_status_change' => '주문 옵션 일괄 상태 변경 (:count건)',
+        'order_status_sync' => '주문 상태 자동 변경 — 상품 상태에 맞춰 (:order_number)',
 
         // 쿠폰 관리 (Admin)
         'coupon_index' => '쿠폰 목록 조회',
