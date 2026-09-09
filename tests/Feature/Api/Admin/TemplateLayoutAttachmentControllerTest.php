@@ -7,11 +7,13 @@ use App\Extension\HookManager;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Template;
+use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutAttachment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
@@ -325,5 +327,206 @@ class TemplateLayoutAttachmentControllerTest extends TestCase
         $response = $this->getJson("/api/templates/{$this->template->identifier}/layout-attachments/{$attachment->id}/file");
 
         $response->assertStatus(404);
+    }
+
+    /**
+     * 공개 자산 디스크로 쓸 가짜 CDN 디스크를 등록합니다.
+     *
+     * `Storage::fake()` 는 해석된 디스크 인스턴스만 교체하고 `filesystems.disks.*`
+     * config 는 건드리지 않는다. 공개 자산 디스크 게이트는 그 config 존재를 보므로,
+     * fake 만으로는 고아 디스크로 판정되어 프록시가 나온다.
+     */
+    private function registerFakeCdnDisk(): void
+    {
+        config(['filesystems.disks.fake_cdn' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => 'https://cdn.test/assets',
+        ]]);
+        Storage::fake('fake_cdn', ['url' => 'https://cdn.test/assets']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 공개 자산 디스크 — 업로드 저장 위치와 응답 URL 형태 (공개 #134)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * 공개 자산 디스크 미설정이면 기존 첨부 디스크에 저장되고 프록시 URL 이어야 합니다.
+     *
+     * @scenario public_asset_disk=unset,row_disk=attachments,filter_url_hook=absent
+     *
+     * @effects upload_stores_on_public_disk, proxy_url_otherwise
+     */
+    public function test_upload_without_public_asset_disk_uses_attachment_disk(): void
+    {
+        config(['core.storage.public_asset_disk' => '']);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/admin/templates/{$this->template->identifier}/layout-attachments", [
+                'file' => UploadedFile::fake()->image('bg.png', 20, 20),
+                'layout_name' => 'home',
+            ]);
+
+        $response->assertStatus(200);
+
+        $attachment = TemplateLayoutAttachment::first();
+        $this->assertSame(config('attachment.disk', 'attachments'), $attachment->disk);
+        $this->assertStringContainsString('/layout-attachments/', (string) $response->json('data.url'));
+        $this->assertStringContainsString('/file', (string) $response->json('data.url'));
+    }
+
+    /**
+     * 공개 자산 디스크가 선언되면 그 디스크에 저장되고 직접 URL 이 발급돼야 합니다.
+     *
+     * @scenario public_asset_disk=public,row_disk=public,filter_url_hook=absent
+     *
+     * @effects upload_stores_on_public_disk, direct_url_when_row_matches_public_disk
+     */
+    public function test_upload_with_public_asset_disk_stores_there_and_returns_direct_url(): void
+    {
+        $this->registerFakeCdnDisk();
+        config(['core.storage.public_asset_disk' => 'fake_cdn']);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/admin/templates/{$this->template->identifier}/layout-attachments", [
+                'file' => UploadedFile::fake()->image('cdn.png', 20, 20),
+                'layout_name' => 'home',
+            ]);
+
+        $response->assertStatus(200);
+
+        $attachment = TemplateLayoutAttachment::first();
+        $this->assertSame('fake_cdn', $attachment->disk);
+        Storage::disk('fake_cdn')->assertExists('template-layout-attachments/'.$attachment->path);
+
+        $this->assertStringStartsWith('https://cdn.test/assets', (string) $response->json('data.url'));
+    }
+
+    /**
+     * 공개 자산 디스크를 켜도 그 이전에 올라간(다른 disk) 행은 프록시를 유지해야 합니다.
+     *
+     * @scenario public_asset_disk=public,row_disk=attachments,filter_url_hook=absent
+     *
+     * @effects proxy_url_otherwise
+     */
+    public function test_legacy_row_keeps_proxy_url_after_enabling_public_asset_disk(): void
+    {
+        $legacy = $this->makeStoredAttachment();
+
+        $this->registerFakeCdnDisk();
+        config(['core.storage.public_asset_disk' => 'fake_cdn']);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-attachments");
+
+        $response->assertStatus(200);
+        $url = (string) $response->json('data.0.url');
+        $this->assertStringContainsString("/layout-attachments/{$legacy->id}/file", $url);
+        $this->assertStringNotContainsString('cdn.test', $url);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+    // 업로드 응답 url → 레이아웃 저장 게이트 왕복
+    //
+    // 헤더 「로고 이미지」처럼 값 슬롯이 하나뿐인 컨트롤은 업로드 응답 url 을 props 에 그대로
+    // 넣는다. 그 값이 저장 요청의 NoExternalUrls 를 통과하지 못하면 운영자는 "업로드는
+    // 됐는데 저장은 422" 를 본다. 배경 이미지는 style 로 들어가 스캔되지 않아 드러나지 않았다.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * 업로드 응답 url 을 props 에 넣은 레이아웃을 PUT 합니다.
+     *
+     * @param  string  $url  업로드 응답 url
+     * @return TestResponse
+     */
+    private function saveLayoutWithLogo(string $url)
+    {
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'home',
+        ]);
+
+        $content = $layout->content;
+        // 팩토리 기본 endpoint(`/api/{단어}`)는 WhitelistedEndpoint 에 걸린다 — 이 테스트의 축이 아니다.
+        $content['endpoint'] = '/api/public/home';
+        $content['components'] = [[
+            'id' => 'header',
+            'type' => 'composite',
+            'name' => 'Header',
+            'props' => ['logo' => $url],
+        ]];
+
+        return $this->withHeaders($this->authHeaders())
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/home", [
+                'expected_lock_version' => (int) ($layout->lock_version ?? 0),
+                'content' => $content,
+            ]);
+    }
+
+    /**
+     * 프록시 변종 — 업로드 응답 url 이 저장 요청을 통과해야 합니다.
+     *
+     * @scenario url_host=site_relative_path
+     *
+     * @effects proxy_url_is_site_relative, issued_asset_url_passes_storage_gate
+     */
+    public function test_uploaded_proxy_url_is_accepted_by_layout_save(): void
+    {
+        $upload = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/admin/templates/{$this->template->identifier}/layout-attachments", [
+                'file' => UploadedFile::fake()->image('logo.png', 48, 24),
+                'layout_name' => 'home',
+            ]);
+        $upload->assertStatus(200);
+        $url = (string) $upload->json('data.url');
+
+        $this->assertStringStartsWith('/api/', $url, '프록시 URL 은 사이트 상대 경로여야 합니다');
+
+        $save = $this->saveLayoutWithLogo($url);
+
+        $save->assertStatus(200);
+        $this->assertSame($url, TemplateLayout::where('name', 'home')->first()->content['components'][0]['props']['logo']);
+    }
+
+    /**
+     * 직접 URL(CDN) 변종 — 운영자가 선언한 공개 자산 디스크의 절대 URL 도 저장 요청을 통과해야 합니다.
+     *
+     * @scenario url_host=public_asset_disk
+     *
+     * @effects issued_asset_url_passes_storage_gate
+     */
+    public function test_uploaded_direct_url_is_accepted_by_layout_save(): void
+    {
+        $this->registerFakeCdnDisk();
+        config(['core.storage.public_asset_disk' => 'fake_cdn']);
+
+        $upload = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/admin/templates/{$this->template->identifier}/layout-attachments", [
+                'file' => UploadedFile::fake()->image('logo.png', 48, 24),
+                'layout_name' => 'home',
+            ]);
+        $upload->assertStatus(200);
+        $url = (string) $upload->json('data.url');
+
+        $this->assertStringStartsWith('https://cdn.test/assets', $url);
+
+        $save = $this->saveLayoutWithLogo($url);
+
+        $save->assertStatus(200);
+        $this->assertSame($url, TemplateLayout::where('name', 'home')->first()->content['components'][0]['props']['logo']);
+    }
+
+    /**
+     * 선언되지 않은 외부 host 는 여전히 차단되어야 합니다 — 허용 범위가 "서버가 발급하는 주소" 를
+     * 넘어 넓어지지 않았는지 고정한다.
+     *
+     * @scenario url_host=external_undeclared
+     *
+     * @effects external_host_still_rejected
+     */
+    public function test_external_host_url_is_still_rejected_by_layout_save(): void
+    {
+        $save = $this->saveLayoutWithLogo('https://attacker.example/template-layout-attachments/x.png');
+
+        $save->assertStatus(422);
     }
 }

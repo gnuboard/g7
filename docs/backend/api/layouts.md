@@ -345,7 +345,7 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | pageConfig / schema | object | `{}` | 플러그인 설정 레이아웃 전용 (설정 UI 안내/스키마) |
 | lock_version | integer | `3` | 낙관적 잠금 버전. `with_source_meta=1` 일 때만 부착 (편집기 저장 시 `expected_lock_version` 으로 되돌려 보냄) |
 | __editor | object | `{"original": { ... }}` | 자식 레이아웃의 저장 원본 content. `with_source_meta=1` 일 때만 부착 (편집기 전용) |
-| __source (각 노드 내부) | object | `{"kind":"base","layout":"_user_base"}` | 각 컴포넌트/데이터소스 노드의 출처 메타 (`base` / `extension` / `partial` / `route`). `with_source_meta=1` 일 때만 부착 |
+| __source (각 노드 내부) | object | `{"kind":"base","layout":"_user_base"}` | 각 컴포넌트/데이터소스 노드의 출처 메타 (`base` / `extension` / `partial` / `route`). `with_source_meta=1` 일 때만 부착. `extension` 출처가 overlay 주입이면 `injectionIndex`(그 확장 content 의 `injections[]` 순번)를 함께 실어 편집기가 저장 시 원래 injection 으로 되돌린다 |
 
 응답 헤더: `ETag`(본문 md5), `Cache-Control: public, max-age=3600`, `Vary: Accept-Encoding, Accept-Language`. 클라이언트 `If-None-Match` 가 일치하면 본문 없이 `304 Not Modified` 를 반환합니다.
 
@@ -394,6 +394,6 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 병합된 레이아웃 JSON을 프론트엔드에 서빙합니다. 템플릿이 존재하고 활성 상태여야 하며, 상속 병합·확장 적용을 마친 결과를 ETag·Cache-Control 헤더와 함께 반환하고 미변경 시 304로 응답합니다. 레이아웃의 `permissions`에 따라 접근을 제한하고(비회원 401, 권한 부족 403), 컴포넌트 단위 권한 필터링을 사용자별로 적용합니다. 쿼리 `v`(정수 캐시 버전)로 캐시를 구분하며, `with_source_meta=1`은 `core.templates.layouts.edit` 권한이 있어야 노드별 출처 메타(편집기 전용)를 포함해 반환합니다.
+**설명** 활성 템플릿의 병합된 레이아웃 JSON을 프론트엔드에 서빙합니다. 템플릿이 존재하고 활성 상태여야 하며, 상속 병합·확장 적용을 마친 결과를 ETag·Cache-Control 헤더와 함께 반환하고 미변경 시 304로 응답합니다. 레이아웃의 `permissions`에 따라 접근을 제한하고(비회원 401, 권한 부족 403), 컴포넌트 단위 권한 필터링을 사용자별로 적용합니다. 쿼리 `v` 는 브라우저 HTTP 캐시 우회용 좌표이며(레이아웃 편집기는 `{cache_version}.{nonce}` 형식으로 보냄), 서버 캐시 키는 요청의 `v` 와 무관하게 서버 현재 확장 캐시 버전으로만 만들어져 저장·복원 직후의 재요청이 항상 최신 내용을 받습니다. `with_source_meta=1`은 `core.templates.layouts.edit` 권한이 있어야 노드별 출처 메타(편집기 전용)를 포함해 반환합니다.
 
 

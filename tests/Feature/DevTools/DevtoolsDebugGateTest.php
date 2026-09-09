@@ -229,7 +229,7 @@ class DevtoolsDebugGateTest extends TestCase
     }
 
     /**
-     * GET 4종은 디버그 ON 에서 정상 응답한다 (게이트만 걸고 기능은 유지 — PO 결정).
+     * GET 4종은 디버그 ON 에서 정상 응답한다 (게이트만 걸고 기능은 유지 — 설계 결정).
      */
     public function test_get_endpoints_respond_when_debug_enabled(): void
     {

@@ -1,0 +1,71 @@
+# audit:allow test-scenario-coverage [cross_product] reason: task-runner.php 는 진입과 함께 SSE 를 실행하는 파일이라 include 불가 — 조합은 순수 함수 단위 effect 로 검증하고, 분기 순서는 소스 문자열로 잠근다.
+
+feature: 인스톨러 vendor 재사용 경로의 개발용(require-dev) 패키지 감지·안내와 컴파일 캐시 정리
+
+description: |
+  인스톨러는 `vendor/autoload.php` 와 `composer.lock` 이 둘 다 있으면 composer 단계를 통째로
+  건너뛰고 그 vendor 를 그대로 쓴다. 그런데 그 vendor 가 `composer install`(옵션 없음)의
+  결과면 require-dev 와 그 전이 의존성까지 들어 있고, 그 목록이 `bootstrap/cache/packages.php`
+  에 provider 로 등재된다. 종전에는 이 사실을 아무 데도 표시하지 않았다.
+
+  그 상태로 운영하면 이후 코어 업데이트가 vendor 를 `--no-dev` 로 교체할 때 매니페스트에만
+  남은 provider 를 찾다 spawn 자식이 부팅 단계에서 죽고, 업데이트가 「Class ... not found」
+  와 수동 재개 안내로 멈춘다 (sir.kr 제보, 7.0.9 → 7.0.10).
+
+  같은 재사용 분기가 컴파일 캐시도 정리하지 않고 return 했다. `key_generate` 가 이미 완료된
+  재개 설치에서는 인스톨러 어느 지점에서도 정리가 일어나지 않아, 이전 환경의 캐시가 그대로
+  남았다.
+
+  처치 (설계 결정 D1 — 설치를 차단하지 않는다):
+    1. 설치 환경 확인(Step 2) 에 「Composer 의존성 구성」 카드를 **선택 항목**으로 추가.
+       경고 상태여도 `isAllRequiredPassed()` 는 이를 보지 않고 `다음` 버튼도 활성이다.
+    2. 설치 로그(Step 5) 에 감지 사실과 정리 명령 안내를 남긴다.
+    3. 재사용 경로에서도 `clearLaravelCompiledCache()` 를 호출한다.
+
+  판정은 코어와 공유하는 `App\Support\ComposerInstallInfo` 가 단독으로 소유한다 — 인스톨러와
+  코어 업데이트가 같은 vendor 를 두고 서로 다른 답을 내놓으면 화면과 로그가 어긋난다.
+  "판정 불가"(installed.json 부재·JSON 오류·Composer 1 형식)는 "개발용 아님" 과 구분한다.
+
+axes:
+  vendor_state: [absent, present_no_dev, present_dev, present_without_lock]
+  composer_available: [yes, no]
+  install_resume_state: [fresh, resumed_key_generate_done]
+  surface: [env_check_card, install_log]
+
+exclusions:
+  - { vendor_state: absent, surface: env_check_card, reason: "vendor 가 없으면 카드를 그리지 않는다 — 마법사가 운영용 구성으로 자동 설치하므로 안내할 것이 없다" }
+  - { vendor_state: absent, install_resume_state: resumed_key_generate_done, reason: "vendor 가 없는 상태로 key_generate 까지 도달하는 흐름이 없다 — composer 단계가 선행한다" }
+  - { vendor_state: present_without_lock, surface: env_check_card, reason: "lock 부재는 재사용 분기에 들어가지 않고 vendor 삭제 후 재설치로 간다 (기존 경로, 이번 변경 대상 아님)" }
+  - { vendor_state: present_without_lock, install_resume_state: resumed_key_generate_done, reason: "동일 — 재사용 분기 밖" }
+  - { vendor_state: present_no_dev, composer_available: no, reason: "이미 준비된 vendor 를 재사용하므로 composer 실행 가능 여부가 분기를 바꾸지 않는다" }
+  - { vendor_state: present_dev, composer_available: no, reason: "동일 — 재사용 분기는 composer 를 실행하지 않는다" }
+
+effects:
+  # 판정 SSoT (App\Support\ComposerInstallInfo)
+  - core_detects_dev_vendor_from_installed_json
+  - core_reports_no_dev_packages_for_no_dev_vendor
+  - core_returns_unknown_when_installed_json_missing
+  # 인스톨러 shim (순수 PHP — Laravel 오토로드 없이 로드)
+  - installer_detects_dev_vendor_from_installed_json
+  - installer_treats_missing_installed_json_as_unknown
+  - installer_shim_matches_core_composer_install_info
+  # 재사용 분기 — 경고하되 설치는 계속하고, 캐시를 정리한다
+  - installer_warns_and_keeps_dev_vendor
+  - installer_clears_compiled_cache_on_reuse_path
+  # 설치 환경 확인 카드 — 선택 항목이며 게이트로 승격되지 않는다
+  - installer_env_check_shows_dev_vendor_card_without_gating
+  # 다국어 — ko/en 쌍과 치환 자리
+  - installer_lang_keys_exist_in_both_locales
+
+  # 실행되는 명령만이 아니라 실패 시 안내하는 명령까지 --no-dev 를 갖는다
+  - installer_composer_commands_all_carry_no_dev
+
+test_files:
+  - tests/Feature/Installer/DevVendorDetectionTest.php
+  - tests/Unit/Support/ComposerInstallInfoTest.php
+  - tests/Unit/Installer/RequirementsVendorDevPackagesTest.php
+
+manual_verification: |
+  브라우저 실측 매트릭스는 구현 계획서 §7.3 (T1 환경 확인 카드 / T3 설치 로그 / T10(a) 재개 설치
+  캐시 정리 / T10(b) vendor 없는 신규 설치) 를 따른다. 인스톨러는 SSE 스트림으로 진행하므로
+  로그 문구·카드 배지는 실제 브라우저에서만 최종 확인된다.

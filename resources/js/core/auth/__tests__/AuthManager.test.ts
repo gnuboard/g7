@@ -308,7 +308,7 @@ describe('AuthManager', () => {
         password: 'password',
       });
 
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual({ status: 'authenticated', user: mockUser });
       expect(mockApiClient.setToken).toHaveBeenCalledWith('new-token');
       expect(authManager.isAuthenticated()).toBe(true);
       expect(authManager.getUser()).toEqual(mockUser);
@@ -380,6 +380,156 @@ describe('AuthManager', () => {
         { email: 'test@example.com', password: 'password' },
         undefined
       );
+    });
+
+    it('2단계 인증 응답에서는 토큰을 저장하지 않고 challenge 를 돌려줘야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: {
+          two_factor_required: true,
+          challenge_id: 'challenge-uuid',
+          provider_id: 'g7:core.mail',
+          expires_at: '2026-09-07T14:03:00+09:00',
+        },
+      });
+
+      const result = await authManager.login('user', {
+        email: 'test@example.com',
+        password: 'password',
+      });
+
+      expect(result).toEqual({
+        status: 'two_factor_required',
+        challenge: {
+          challengeId: 'challenge-uuid',
+          providerId: 'g7:core.mail',
+          expiresAt: '2026-09-07T14:03:00+09:00',
+        },
+      });
+      // 토큰도 사용자도 없는 응답이다 — 저장하면 이후 모든 요청이 Bearer undefined 로 나간다.
+      expect(mockApiClient.setToken).not.toHaveBeenCalled();
+      expect(authManager.isAuthenticated()).toBe(false);
+    });
+
+    it('updateConfig 로 바꾼 loginEndpoint 를 사용해야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { token: 'new-token', user: { id: 1, name: 'T', email: 't@e.com' } },
+      });
+
+      authManager.updateConfig('user', { loginEndpoint: '/auth/custom-login' });
+
+      await authManager.login('user', { email: 'test@example.com', password: 'password' });
+
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        '/auth/custom-login',
+        { email: 'test@example.com', password: 'password' },
+        undefined
+      );
+    });
+
+    it('네트워크 오류의 code 를 보존해야 합니다', async () => {
+      const networkError: any = new Error('Network Error');
+      networkError.code = 'ERR_NETWORK';
+      mockApiClient.post.mockRejectedValue(networkError);
+
+      // TypeError 가 아니므로 code 가 사라지면 네트워크 실패 판정이 불가능해진다.
+      await expect(
+        authManager.login('user', { email: 'test@example.com', password: 'password' })
+      ).rejects.toMatchObject({ code: 'ERR_NETWORK' });
+    });
+  });
+
+  describe('completeTwoFactor', () => {
+    it('코드 확인에 성공하면 토큰을 저장하고 로그인 상태가 되어야 합니다', async () => {
+      const mockUser: AuthUser = {
+        id: 1,
+        name: 'Test User',
+        email: 'test@example.com',
+      };
+
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { token: 'two-factor-token', user: mockUser },
+      });
+
+      const loginHandler = vi.fn();
+      authManager.on('login', loginHandler);
+
+      const result = await authManager.completeTwoFactor('user', {
+        challengeId: 'challenge-uuid',
+        code: '135790',
+      });
+
+      expect(result).toEqual(mockUser);
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        '/auth/login/two-factor',
+        { challenge_id: 'challenge-uuid', code: '135790' },
+        undefined
+      );
+      expect(mockApiClient.setToken).toHaveBeenCalledWith('two-factor-token');
+      expect(authManager.isAuthenticated()).toBe(true);
+      expect(loginHandler).toHaveBeenCalled();
+    });
+
+    it('관리자 타입은 관리자 전용 엔드포인트를 사용해야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { token: 't', user: { id: 1, name: 'T', email: 't@e.com' } },
+      });
+
+      await authManager.completeTwoFactor('admin', {
+        challengeId: 'challenge-uuid',
+        code: '135790',
+      });
+
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        '/auth/admin/login/two-factor',
+        { challenge_id: 'challenge-uuid', code: '135790' },
+        undefined
+      );
+    });
+
+    it('실패 시 서버 메시지를 실은 에러를 throw 해야 합니다', async () => {
+      const error: any = new Error('Request failed');
+      error.response = { status: 401, data: { message: '인증번호가 올바르지 않습니다.' } };
+      mockApiClient.post.mockRejectedValue(error);
+
+      await expect(
+        authManager.completeTwoFactor('user', { challengeId: 'c', code: '000000' })
+      ).rejects.toThrow('인증번호가 올바르지 않습니다.');
+
+      expect(authManager.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe('resendTwoFactor', () => {
+    it('새 challenge 를 돌려주고 토큰은 건드리지 않아야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: {
+          two_factor_required: true,
+          challenge_id: 'new-challenge',
+          provider_id: 'g7:core.mail',
+          expires_at: null,
+        },
+      });
+
+      const result = await authManager.resendTwoFactor('user', {
+        challengeId: 'old-challenge',
+      });
+
+      expect(result).toEqual({
+        challengeId: 'new-challenge',
+        providerId: 'g7:core.mail',
+        expiresAt: null,
+      });
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        '/auth/login/two-factor/resend',
+        { challenge_id: 'old-challenge' },
+        undefined
+      );
+      expect(mockApiClient.setToken).not.toHaveBeenCalled();
     });
   });
 });

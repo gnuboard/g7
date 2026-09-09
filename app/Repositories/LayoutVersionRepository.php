@@ -8,6 +8,7 @@ use App\Models\TemplateLayoutVersion;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LayoutVersionRepository implements LayoutVersionRepositoryInterface
@@ -28,9 +29,10 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
      * @param  int  $layoutId  레이아웃 ID
      * @param  array  $content  저장할 content 스냅샷 (이 버전이 담는 내용)
      * @param  array|null  $previousContent  직전 버전 content (변경 요약 기준). null 이면 변경 요약 0
+     * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
      * @return TemplateLayoutVersion 생성된 버전
      */
-    public function saveVersion(int $layoutId, array $content, ?array $previousContent = null): TemplateLayoutVersion
+    public function saveVersion(int $layoutId, array $content, ?array $previousContent = null, ?int $createdBy = null): TemplateLayoutVersion
     {
         $nextVersion = $this->getNextVersion($layoutId);
 
@@ -44,6 +46,8 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
             'version' => $nextVersion,
             'content' => $content,
             'changes_summary' => $changesSummary,
+            // 저장자 — 버전 목록의 「저장자」 표시 근거. 종전엔 기록하지 않아 항상 「알 수 없음」이었다.
+            'created_by' => $createdBy ?? Auth::id(),
         ]);
     }
 
@@ -109,9 +113,11 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
             $layout = TemplateLayout::findOrFail($layoutId);
             $currentContent = $layout->content;
 
-            // 3. 레이아웃을 복원할 content로 업데이트
+            // 3. 레이아웃을 복원할 content로 업데이트 — lock_version 도 올린다. 복원 직전 화면을 열어 둔
+            //    다른 편집기가 옛 lock 으로 저장하면 409 가 나야 복원 결과가 조용히 덮이지 않는다.
             $layout->update([
                 'content' => $versionToRestore->content,
+                'lock_version' => ((int) ($layout->lock_version ?? 0)) + 1,
             ]);
 
             // 4. 복원 결과를 새 버전으로 저장 — content 는 복원된 내용(versionToRestore),

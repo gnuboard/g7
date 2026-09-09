@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-09-09
+
+### Added
+
+- 로그인 화면의 2단계 인증(인증번호 입력·다시 받기·처음부터·유효 시각)과 계정 잠금 해제 시각 안내의 일본어 번역을 추가했습니다.
+
 ## [1.1.2] - 2026-08-24
 
 ### Fixed

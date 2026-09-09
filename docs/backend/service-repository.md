@@ -1679,6 +1679,15 @@ $data['depth'] = ($parent->depth ?? 0) + 1;
 
 ---
 
+## 입력 크기에 비례하는 메모리
+
+브라우저에서 잘 돌던 알고리즘을 PHP 로 옮길 때 시간 상한만 함께 오고 메모리 상한은 오지 않는다. PHP 배열은 원소당 수십 바이트라 (줄 수)² 크기 표는 2,350줄에서 약 150MB 이고, 운영 서버의 PHP 기본 `memory_limit` 은 128M 이다. 개발 머신에서는 통과하고 서버에서만 500 이 되며, 남는 것은 `Allowed memory size … exhausted` 한 줄뿐이다.
+
+- 카운트·길이만 쓰는 LCS/DP 는 두 행 DP 로 길이만 구한다. 추가 = 새 줄 − LCS, 삭제 = 옛 줄 − LCS 이므로 전체 표를 되짚어 얻는 숫자와 같다. 실제 줄을 그려야 하는 쪽(브라우저 diff 뷰)만 전체 표를 쓴다.
+- 브라우저 구현의 임계값을 옮겨 왔다면 그 임계에서의 PHP 메모리를 실측한다. 시간만 막는 임계가 있다.
+- "인접 버전 비교는 변경 영역이 작다" 같은 가정으로 최악 경로를 비워 두지 않는다. 앞뒤 공통 부분 트리밍은 양끝이 동시에 바뀌면 무력하고, 편집기가 `comment` 키를 떼어내는 첫 저장이 정확히 그 형태다.
+- 메모리 회귀 테스트는 `memory_get_peak_usage()` 증가량의 상한을 단언한다. 잠금 대상은 코어 `CalculatesJsonContentDiff`(레이아웃·레이아웃 확장 버전 변경량)이며 `tests/Unit/Repositories/Concerns/CalculatesJsonContentDiffTest.php` 가 상한과 참조 구현 동치를 함께 고정한다.
+
 ## 관련 문서
 
 - [컨트롤러 계층 구조](controllers.md) - Controller에서 Service 사용

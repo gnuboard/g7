@@ -60,6 +60,14 @@ describe('registerCoreWidgets — Phase 4 위젯 7종', () => {
     expect(isCoreWidgetsRegistered()).toBe(true);
   });
 
+  it('4-5 number 위젯을 등록한다 (미등록 시 「지원하지 않는 컨트롤」 폴백)', () => {
+    // `widget:"number"` 컨트롤(예 Header 「탭 표시 게시판 수」)이 속성 모달에서 편집
+    // 불가였던 원인. 레지스트리 등록만이 그 폴백을 없앤다.
+    registerCoreWidgets();
+    expect(getWidget('number')).toBeTruthy();
+    expect(getRegisteredWidgetNames()).toContain('number');
+  });
+
   it('component-target-picker 위젯을 등록한다', () => {
     // 캔버스 컴포넌트 영역 picker. [로딩 화면] target/fallback·navigate transition_overlay_target·
     // 향후 요소 ID param 공용. editor-spec param widget 타입으로 어느 폼에서나 선언 가능.

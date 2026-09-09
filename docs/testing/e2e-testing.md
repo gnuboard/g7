@@ -132,6 +132,7 @@ UA 를 실제 브라우저 값으로 고정해도 그 검증은 그대로 동작
 | 공유 상태 | 같은 관리자 설정 화면을 건드리는 spec 이 병렬로 돌면 서로의 저장 상태를 덮어써 실패할 수 있다. 실행 옵션에 맡기지 않고 그 `describe` 에 `test.describe.configure({ mode: 'serial' })` 를 둔다 |
 | 워커 수 | 관리자 SPA 는 번들이 크고 레이아웃을 여러 번 받아온다. 개발 머신에서 2워커 이상이면 `page.waitForLoadState` 가 30초를 넘겨 **비결정적으로** 실패한다(실측: 같은 스위트가 회차마다 다른 5~7건 실패, 테스트당 8초 → 25초). 판정은 `--workers=1` 결과로 한다 |
 | 편집기 spec 만 몰아 실행할 때 | 레이아웃 편집기 spec 만 골라 돌리면 워커 전부가 동시에 편집기 페이지를 연다 — 전체 스위트에서는 가벼운 spec 이 섞여 그 집중이 생기지 않는다. 실측: 편집기 7파일 27건을 7워커로 돌리면 `g7le-preview-frame` 대기가 전부 30초 타임아웃(27/27 실패), 같은 코드로 2워커는 26/27 통과. 편집기만 선택 실행할 때는 `--workers=2` 이하로 둔다 |
+| 봇 렌더 spec 의 IP 예산 | 검색봇 화면의 미스 렌더는 **IP 당 분당 상한**(`G7_SEO_RENDER_MISSES_PER_MINUTE`, 기본 60)을 쓴다. 자동 검사는 전부 같은 IP 에서 나가므로 봇 경로 spec 을 많이 몰아 돌리면 예산을 넘긴 요청이 SEO HTML 대신 SPA(`X-SEO-Cache: BYPASS`)를 받아 본문 단언이 실패한다. 오류가 아니라 200 이라 원인이 드러나지 않으므로, 봇 spec 이 간헐 실패하면 응답 헤더가 `BYPASS` 인지 먼저 본다 (실측: `seo-bot-rendering` 12건 + `page-og-image` 2건은 기본값에서 여유가 있다) |
 
 ### 브라우저 범위
 
@@ -168,12 +169,57 @@ Firefox/WebKit 프로젝트를 상시 스위트에 넣지 않은 이유:
 |---|---|---|---|
 | 코어 권한/역할/유저/Sanctum 토큰 | 코어 | `app/Console/Commands/PlaywrightIssueToken.php` | `php artisan playwright:issue-token --permissions=core.xxx` (권한 경계 검증은 `--no-admin-role` 추가 — §5.1) |
 | 편집기 저장 spec 대상 시드 화면 | 코어 | `app/Console/Commands/PlaywrightSeedLayout.php` | `php artisan playwright:seed-layout [--remove]` (globalSetup/globalTeardown 자동 호출) |
+| 로그인 2단계 인증 계정·인증번호 | 코어 | `app/Console/Commands/PlaywrightSeedTwoFactor.php` | `php artisan playwright:seed-two-factor --ensure-user=… \| --plant=<challenge_id>` (§4.2) |
 | 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 코어 커맨드의 `--permissions=` 임의 식별자 | 동일 (Permission::firstOrCreate 자동 생성) |
 | 모듈 도메인 데이터 (상품/주문) | 모듈 | `modules/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | `php artisan playwright:seed-{id}` |
 | 플러그인 도메인 데이터 (결제 키) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | 동일 |
 | 외부 의존 (토스 결제창 응답) | spec 안 mock | `page.route(...)` | 호출 없음 |
 
 **핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드를 코어에 두면 의존 역전.
+
+### 4.2 로그인 2단계 인증 픽스처
+
+2단계 인증은 **사이트 설정과 메일 발송**에 의존하므로 브라우저만으로는 재현할 수 없다.
+`tests/Playwright/fixtures/two-factor.ts` 가 세 가지를 가역적으로 준비한다.
+
+| 준비 항목 | 방법 | 원복 |
+|---|---|---|
+| 보안 설정 `security.two_factor_auth` | 관리자 토큰으로 `/api/admin/settings` GET → POST (탭 전체를 되돌려 보낸다) | 읽어 둔 탭 전체 값을 그대로 되쓴다 |
+| 메일 발송 | 받아서 버리는 로컬 SMTP 싱크를 띄우고 `mail.json` 의 `host`/`port`/`encryption` 을 줄 단위 치환 | 백업 파일에서 바이트 그대로 복원 |
+| 인증번호 | `php artisan playwright:seed-two-factor --plant=<challenge_id> --code=135790` | 없음 (challenge 는 일회성) |
+| 테스트 계정 | `--ensure-user=` 로 생성 | `--purge-users` 로 종료 시 즉시 제거 |
+
+**메일을 `log` 메일러로 돌리지 않는 이유**: `log` 는 이 제품의 설정 스키마에 없다. 저장 검증이
+등록된 메일 드라이버(`smtp`·`mailgun`·`ses`)만 허용하고, 설정 파일을 직접 고쳐도 드라이버 해석
+단계에서 `smtp` 로 되돌아간다(실측 확인). 그래서 `tests/Playwright/fixtures/smtp-sink.ts` 가
+Node 기본 `net` 만으로 최소 SMTP 서버를 127.0.0.1 에 잠깐 띄우고 그쪽으로 돌린다 —
+인증도 TLS 도 요구하지 않으며 받은 메일은 어디에도 남기지 않는다.
+
+**메일 설정만 파일을 직접 다루는 이유**: 원래 값(빈 SMTP 호스트)은 저장 검증(`smtp` 이면 host
+필수)을 통과하지 못해 **API 로는 되돌릴 수 없다**. 보안 설정은 API 로, 메일 설정은 파일
+백업·복원으로 왕복한다.
+
+`playwright:seed-two-factor` 계약:
+
+| 옵션 | 하는 일 |
+|---|---|
+| `--ensure-user=<접미사>` | `playwright_2fa_<접미사>@example.test` 계정을 알려진 비밀번호로 생성/갱신하고 이메일을 출력. 잠금·실패 카운트도 초기화한다 |
+| `--admin` | 위 계정에 admin 역할 부여 (없으면 기존 역할을 떼어 관리자 거부 경로를 재현할 수 있게 한다) |
+| `--password=` | `--ensure-user` 가 설정할 비밀번호 (기본 `Passw0rd!2fa`) |
+| `--plant=<uuid>` | 그 challenge 에 알려진 인증번호의 해시를 심고 코드를 출력 |
+| `--code=` | `--plant` 가 심을 인증번호 (기본 `135790`) |
+| `--gc-hours=` | 이 시간보다 오래된 테스트 계정 정리 (기본 6, `0` 이면 정리 안 함) |
+| `--purge-users` | 나이와 무관하게 테스트 계정을 전부 제거 — 실측 종료 직후 호출한다. 이 계정들은 알려진 비밀번호를 갖고 관리자용은 관리자 역할까지 가지므로, 나이 기준 정리를 기다리는 사이가 그대로 열린 문이 된다 |
+
+가드는 `playwright:issue-token` 과 동형이다 — CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1` + `APP_DEBUG` 강제.
+
+인증번호는 해시로만 저장되어 되읽을 수 없다. 메일함을 실제로 여는 대신 알려진 값을 심는 이유이며,
+방식은 PHPUnit `TwoFactorAuthTest::issuedCode()` 와 같다 — 검증 대상은 코드 생성이 아니라
+로그인 흐름(코드 확인 전 토큰 미발급 / 확인 후 발급)이다.
+
+**원복 실패를 삼키지 않는다.** 되돌리지 못한 채 끝나면 사이트가 2단계 인증이 켜진 상태로 남아
+이후 **모든 로그인이 막힌다**. 그래서 이 spec 은 `test.describe.configure({ mode: 'serial' })`
+로 한 워커에서만 실행하고, `afterAll` 의 원복 실패는 그대로 던진다.
 
 ### 4.1 저장(PUT)하는 spec 은 제품 화면을 대상으로 두지 않는다
 

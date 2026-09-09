@@ -299,6 +299,8 @@
     "blocked_inactive_extension": "無効化された拡張コンポーネントが新たに追加されているため保存できません",
     "network_error_title": "保存中にネットワークエラーが発生しました",
     "guard_no_document": "保存するレイアウトドキュメントが読み込まれていません",
+    "guard_extension_reassembly_title": "拡張の内容を元の位置に戻せないため保存しませんでした",
+    "guard_extension_reassembly": "この拡張が差し込んだ要素 {count} 件が、どの位置から来たのか確認できません。このまま保存するとその要素が消えるため、保存を止めました。ページを再読み込みしてからもう一度お試しください。",
     "concurrent": {
       "title": "別のユーザーが先に保存しました",
       "message": "このレイアウトは別の管理者が先に保存しました。最新版を読み込みますか？",
@@ -322,6 +324,9 @@
       "mode_tile": "タイル",
       "upload_failed": "画像アップロードに失敗しました"
     },
+    "number": {
+      "placeholder": "数値を入力"
+    },
     "dimension": {
       "placeholder": "例: 320px, 50%, 24rem, auto"
     },
@@ -335,6 +340,11 @@
       "right": "右",
       "bottom": "下",
       "left": "左"
+    },
+    "bound_value": {
+      "notice": "データ連携の値です（自動で入ります）",
+      "replace": "直接指定に変更",
+      "restore": "データ連携に戻す"
     }
   },
   "recipe": {
@@ -1279,6 +1289,14 @@
     "login": {
       "label": "ログイン処理",
       "param_body": "ログイン情報"
+    },
+    "login_two_factor": {
+      "label": "認証番号の確認",
+      "param_body": "認証情報"
+    },
+    "login_two_factor_resend": {
+      "label": "認証番号の再送信",
+      "param_body": "認証リクエスト情報"
     },
     "logout": {
       "label": "ログアウト処理",

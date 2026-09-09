@@ -243,6 +243,15 @@ return [
     'opcache_disabled_warning' => 'OPcache is disabled. In this state, every single page view re-parses all of your site\'s PHP code from scratch. On identical hardware this can make responses several times slower, and the gap widens as traffic grows. You can continue the installation as-is, but if this server will be used in production we strongly recommend setting opcache.enable=1 in php.ini and restarting your web server.',
     'opcache_unknown' => 'OPcache status could not be determined. Reading PHP settings is restricted on this server.',
 
+    // Composer Dependency Set Messages
+    'vendor_dev_packages' => 'Composer dependencies',
+    'vendor_dev_packages_none_short' => 'Production set (no dev packages)',
+    'vendor_dev_packages_none' => 'No development packages in vendor. (recommended)',
+    'vendor_dev_packages_detected_short' => ':count development package(s) present — not recommended for production',
+    'vendor_dev_packages_detected_warning' => 'The existing vendor directory contains :count development (require-dev) package(s). Installation can continue, but on a production server run composer install --no-dev --optimize-autoloader from the project root after installation to remove them. (The setup wizard installs the production set automatically only when vendor is absent.)',
+    'vendor_dev_packages_unknown' => 'Could not inspect vendor (installed.json missing or unrecognized).',
+    'vendor_dev_packages_no_vendor' => 'No vendor directory — the wizard installs the production set automatically.',
+
     // API Response Messages
     'api_method_not_allowed' => 'Only POST requests are allowed.',
     'api_invalid_request' => 'Invalid request data.',
@@ -318,6 +327,8 @@ return [
     'log_composer_installing_from_lock' => 'Installing dependencies from composer.lock...',
     'log_composer_fresh_install' => 'Installing new Composer dependencies...',
     'log_composer_cache_cleared' => 'Cleared previous package cache',
+    'log_composer_dev_packages_detected' => 'Existing vendor contains :count development package(s) (:packages)',
+    'warning_composer_dev_packages_kept' => 'Keeping the vendor directory that contains development packages. On a production site, run "composer install --no-dev --optimize-autoloader" after installation (installation continues)',
 
     // Error Messages - Worker (.env)
     'error_env_example_not_found' => '.env.example file not found',

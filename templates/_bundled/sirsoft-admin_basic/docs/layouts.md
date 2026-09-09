@@ -215,6 +215,30 @@
 `admin_reset_password`)에서만 호출됩니다. 사이드바 접힘 상태 복원(`initSidebar`)은 레이아웃이
 아니라 템플릿 부트스트랩(`src/index.ts`)에서 직접 호출됩니다. `_admin_base` 를 고칠 때 이
 문서의 낡은 구조를 그대로 믿지 말고 실제 JSON 을 확인하세요.
+
+### `admin_login.json` 의 2단계 인증(인증번호) 단계
+
+보안 설정에서 2단계 인증을 켠 사이트에서는 관리자 로그인 응답도 두 형태로 갈립니다 — 정상
+로그인과 인증번호 요구(challenge)입니다. `admin_login.json` 은 그 둘을 같은 카드 안에서 단계
+전환으로 처리합니다. 이 화면은 `_admin_base` 를 상속하지 않는 독립 레이아웃이라 모달을 쓸 수
+없고, Toast 호스트도 이 레이아웃이 직접 마운트합니다.
+
+- 1단계(이메일·비밀번호) 블록은 `if: "{{!_local.twoFactor?.required}}"`, 2단계(인증번호) 블록은
+  그 부정형입니다. 두 `if` 는 언제나 상보여야 합니다. 상태는 `_global` 이 아니라 **`_local`** 입니다.
+- 제출 시퀀스의 `login` 과 `loginTwoFactor` 도 같은 쌍으로 상호배타입니다. `loginTwoFactor` 쪽
+  `if` 가 빠지면 인증번호 단계에서 Enter 를 눌렀을 때 새 challenge 가 발급되어 흐름이 끊깁니다.
+- 인증번호 입력은 controlled 입니다(`value` + `onChange` 의 `setState` 쌍). `events: {}` 래퍼는
+  쓰지 않습니다.
+- 화면 진입 시 `init_actions` 의 `setState` 가 `twoFactor` 를 `null` 로 되돌립니다.
+- 관리자가 아닌 계정이 인증번호를 맞춰도 서버가 403(`auth.admin_required`)으로 거부하고 이미
+  발급한 토큰을 회수합니다. 그 문구는 `loginTwoFactor` 의 `onError` 가 인증번호 오류 자리에 그대로
+  싣습니다 — 별도 분기를 두지 않습니다.
+- 만료 시각은 정적 표기입니다(`| datetime`). 카운트다운을 쓰지 않습니다.
+
+**금지 — 같은 시퀀스·onSuccess 안에서 방금 저장한 상태를 다시 읽지 않습니다**
+
+`setState` 직후 형제 액션의 `if` 나 값으로 그 상태를 재독하면 갱신 이전 값을 읽습니다. 그 자리에서는
+`{{response.*}}` 만 씁니다. 오류도 경고도 남지 않고 분기만 조용히 어긋납니다.
 <!-- @intent END -->
 
 ## 라우트 매핑

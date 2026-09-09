@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.2] - 2026-09-09
+
+### Changed
+
+- Composer 잠금 파일을 최신 Composer 형식으로 갱신했습니다.
+
+### Fixed
+
+- 첨부파일을 올린 뒤 돌려주는 응답의 파일 주소 칸이 늘 비어 있던 문제를 수정했습니다. 이 칸을 읽어 연동하던 외부 도구는 주소를 얻지 못했습니다. 이제 게시판의 첨부 다운로드 주소가 채워지며, 이 주소는 비밀글·삭제글 확인을 그대로 거치므로 볼 수 없는 첨부가 열리지는 않습니다.
+
 ## [1.1.1] - 2026-09-06
 
 ### Added

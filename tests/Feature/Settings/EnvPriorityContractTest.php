@@ -6,7 +6,7 @@ use App\Support\EnvPriority;
 use Tests\TestCase;
 
 /**
- * `.env` 키 단위 우선 규약의 계약 테스트.
+ * [case:backend-26] `.env` 키 단위 우선 규약의 계약 테스트.
  *
  * 이 결함군은 오류를 남기지 않는다 — 매핑이 뒤처지거나 배선이 빠지면 잠금이 조용히
  * 미발동하고, 그 상태는 "그 키가 `.env` 에 없다"와 화면상 구분되지 않는다. 그래서

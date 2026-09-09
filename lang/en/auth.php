@@ -38,6 +38,7 @@ return [
     'account_pending_verification' => 'Identity verification is not complete. Please complete the email verification.',
     'account_locked' => 'Too many failed login attempts. Your account is locked for :minutes minute(s).',
     'account_locked_permanently' => 'Too many failed login attempts. Your account has been locked. Please contact an administrator.',
+    'too_many_attempts' => 'Too many requests. Please try again in :seconds second(s).',
     'account_unlocked' => 'The account lock has been released.',
 
     // Password reset

@@ -47,4 +47,21 @@ describe('coreProps — dataKey', () => {
     expect(CORE_PROP_CONTROLS.dataKey.label).toContain('layout_editor.core_props.dataKey');
     expect(CORE_PROP_CONTROLS.dataKey.placeholder).toContain('layout_editor.core_props.dataKey');
   });
+
+  // nodeKey apply 구현으로 격리 2키가 ControlRenderer 경유로도 렌더 가능해졌다.
+  // 그러면 「격리 영역」 전용 UI 와 같은 노드 키를 두 경로가 쓰게 되고, 그 순간 값 타입이
+  // 갈린다 — IsolatedScopeControl 은 ON 시 `{}`(빈 객체), toggle 위젯은 `true`.
+  it('5-12 전용 UI 소유 키(isolatedState)는 렌더 목록에서 제외한다 (이중 경로 차단)', () => {
+    expect(resolveCorePropKeys(['id', 'isolatedState'])).toEqual(['id']);
+    expect(resolveCorePropKeys(['id', 'isolatedScopeId'])).toEqual(['id']);
+    expect(resolveCorePropKeys(['isolatedState', 'isolatedScopeId'])).toEqual([]);
+  });
+
+  it('5-13 제외는 격리 2키에만 — id·dataKey 는 회귀 없음', () => {
+    expect(resolveCorePropKeys(['id', 'dataKey'])).toEqual(['id', 'dataKey']);
+    expect(resolveCorePropKeys(undefined)).toEqual(['id']);
+    // SSoT 선언 자체는 남는다 — 전용 UI 가 이 정의를 읽는다.
+    expect(CORE_PROP_CONTROLS.isolatedState).toBeTruthy();
+    expect(CORE_PROP_CONTROLS.isolatedScopeId).toBeTruthy();
+  });
 });

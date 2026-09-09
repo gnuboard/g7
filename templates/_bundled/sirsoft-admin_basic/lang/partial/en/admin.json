@@ -1693,7 +1693,7 @@
       },
       "public_asset": {
         "title": "Public Asset Storage",
-        "desc": "Configure the disk for serving fully public assets (product, category, review, and editor images, etc.) via direct URLs. When disabled, the existing streaming method is used.",
+        "desc": "Configure the disk for serving fully public assets (product, category, review, and editor images, layout background images, etc.) via direct URLs. When disabled, the existing streaming method is used. Only files uploaded after enabling this get direct URLs, and those addresses stay in the saved layout.",
         "disk": "Disk",
         "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used."
       },

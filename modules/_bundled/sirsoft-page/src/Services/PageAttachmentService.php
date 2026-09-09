@@ -471,17 +471,6 @@ class PageAttachmentService
     }
 
     /**
-     * 파일 URL을 반환합니다.
-     *
-     * @param  PageAttachment  $attachment  첨부파일 모델
-     * @return string|null 파일 URL 또는 null
-     */
-    public function getUrl(PageAttachment $attachment): ?string
-    {
-        return $this->storage->url('attachments', $attachment->path);
-    }
-
-    /**
      * 첨부파일 삭제 권한을 확인합니다.
      *
      * @param  PageAttachment  $attachment  첨부파일 모델

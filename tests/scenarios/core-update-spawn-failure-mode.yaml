@@ -52,6 +52,14 @@ axes:
   staging_source_shape: [inner_extracted_root, staging_root_itself, external_source_dir]  # cleanupPending 이 받는 경로 형태 — ZIP·GitHub / --local·--source 복제 / --source 외부
   staging_leftover_content: [empty_skeleton, has_files, non_core_dir]  # 자식 청소 술어 — 빈 껍데기만 대상
   resume_exec_context: [non_root, root_web_known, root_web_symmetric, root_web_unknown]  # 핸드오프 재실행 권한 안내 분기 (실행 사용자 × 웹서버 계정 식별성)
+  package_manifest_state: [fresh, stale_dev_provider]                # bootstrap/cache/packages.php 가 이전 설치본(dev composer)의 provider 를 담고 있는가
+  parent_generation: [pre_7_0_11, 7_0_11_plus]                       # 부모가 spawn 직전 매니페스트를 비우는 세대인가 (이미 배포된 7.0.9·7.0.10 은 비우지 않는다)
+  child_self_heal_flag: [present, absent]                            # 자식이 G7_UPDATE_IN_PROGRESS 를 물려받았는가 (자가 치유 게이트)
+  process_context: [update_tree, long_lived_outside_update]          # 버전 판독 범위 — 상주 프로세스(artisan serve·큐 워커)는 트리 밖이다
+  argv_sapi: [console, web_with_forged_query_argv]                   # argv 보조 판정을 읽는 SAPI — CGI/FPM 은 register_argc_argv=On 이면 `?x+core:update` 로 argv 를 위조할 수 있다
+  manifest_unlink_result: [removed, left_by_permission]              # spawn 직전 매니페스트 삭제 결과 — 지우지 못한 파일은 업그레이드 로그에 남긴다
+  vendor_dev_packages: [present, absent, unknown]                    # 운영 vendor 에 require-dev 가 섞여 있는가 (installed.json 판정)
+  composer_step_branch: [reinstalled, skipped_unchanged]             # Step 6 이 vendor 를 교체했는가 스킵했는가
 
 exclusions:
   - { spawn_branch: proc_open_disabled, parent_memory_version: equal_to_to, reason: "proc_open 비활성 시점에 부모는 항상 fromVersion 메모리 — equal 케이스 시뮬 불가" }
@@ -61,6 +69,10 @@ exclusions:
   - { child_process_origin: beta_4_or_earlier, steps_discovered_signal: discovered_zero, reason: "동일 — 구버전 자식은 discovered 필드 미발행(absent)" }
   - { spawn_branch: child_zero_steps_no_step_files, steps_discovered_signal: discovered_positive, reason: "스텝 파일 부재 브랜치는 정의상 discovered=0 — positive 모순" }
   - { spawn_branch: child_zero_steps_with_discovered, steps_discovered_signal: discovered_zero, reason: "스텝 파일 존재 브랜치는 정의상 discovered>0 — zero 모순" }
+  - { parent_generation: 7_0_11_plus, package_manifest_state: stale_dev_provider, reason: "7.0.11+ 부모는 spawn 직전에 매니페스트를 비우므로 자식이 stale 을 보는 상태 자체가 성립하지 않는다 — 계층 ② 검증은 pre_7_0_11 부모에서만 의미가 있다" }
+  - { process_context: long_lived_outside_update, child_self_heal_flag: present, reason: "플래그를 물고 있으면 정의상 업데이트 트리 안이다 — 모순" }
+  - { vendor_dev_packages: unknown, composer_step_branch: skipped_unchanged, reason: "판정 불가(installed.json 부재)에서는 감지 로그 자체가 출력되지 않아 분기가 구분되지 않는다" }
+  - { argv_sapi: web_with_forged_query_argv, child_self_heal_flag: present, reason: "env 플래그는 웹 요청으로 주입할 수 없다 — 위조 argv 축은 플래그 부재 상태에서만 의미가 있다" }
 
 effects:
   # §2 spawn_failure_mode + failSpawnWithMode
@@ -113,6 +125,23 @@ effects:
   - snapshotOwnershipDetailed_excludes_current_run_staging_root
   - execute_bundled_updates_child_sweeps_empty_staging_directories_left_by_parent
   - apply_mode_incremental_prune_hint_does_not_reference_rollback_command
+  # #658 stale 패키지 매니페스트 3계층 (부모 선정리 / 자식 자가 치유 / 버전 판독 범위)
+  - spawnUpgradeStepsProcess_clears_package_manifests_before_proc_open
+  - spawn_child_boots_with_regenerated_package_manifest_when_parent_left_stale_dev_manifest
+  - bootstrap_app_unlinks_stale_package_manifest_when_update_flag_present
+  - bootstrap_app_leaves_package_manifest_untouched_without_update_flag
+  - PackageManifestCacheHelper_clear_unlinks_packages_and_services_at_configured_paths
+  - clearAllCaches_rebuilds_package_manifest_via_helper
+  - CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv
+  - CoreUpdateContext_ignores_argv_outside_console_sapi
+  - CoreUpdateContext_env_flag_is_honored_regardless_of_sapi
+  - PackageManifestCacheHelper_clear_returns_paths_it_could_not_remove
+  - spawnUpgradeStepsProcess_logs_manifest_files_it_could_not_remove
+  - getCoreVersion_prefers_env_APP_VERSION_only_inside_update_tree
+  - getCoreVersion_ignores_env_APP_VERSION_outside_update_tree
+  - getCoreVersion_falls_back_to_config_when_env_absent_inside_update_tree
+  # #658 상주 큐 워커 재시작 신호
+  - core_update_step11_signals_queue_restart
 
 test_files:
   - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php
@@ -125,6 +154,11 @@ test_files:
   - tests/Unit/Extension/Helpers/FilePermissionHelperSymlinkTest.php
   - tests/Unit/Services/CoreUpdateServiceStagingCleanupTest.php
   - tests/Feature/Console/ExecuteBundledUpdatesCommandTest.php
+  - tests/Feature/Console/CoreUpdateCommandStalePackageManifestTest.php
+  - tests/Unit/Support/PackageManifestCacheHelperTest.php
+  - tests/Unit/Support/CoreUpdateContextTest.php
+  - tests/Unit/Extension/CoreVersionCheckerEnvPriorityTest.php
+  - tests/Unit/Services/CoreUpdateServiceQueueRestartTest.php
 
 # 본 매니페스트의 axes cross product 는 800+ 케이스이나, 실제 회귀 가드는 test_files 의
 # 통과 테스트들이 SSoT — 매니페스트는 매트릭스 SSoT 역할.

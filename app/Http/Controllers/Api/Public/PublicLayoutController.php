@@ -63,20 +63,18 @@ class PublicLayoutController extends PublicBaseController
         }
 
         try {
-            // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화.
+            // 서버 캐시 키는 **서버 현재** 확장 캐시 버전으로만 조립한다. 클라이언트 `?v=` 는 브라우저
+            // HTTP 캐시 우회용 좌표일 뿐 서버 키의 근거가 아니다.
             //
-            // 서버 캐시 키에는 **정수 버전만** 쓴다(소수 nonce 제거). 레이아웃 편집기는 같은 세션의
-            // 저장·버전 복원 직후 브라우저 HTTP 캐시를 우회하려고 `?v={cacheVersion}.{nonce}` 형식으로
-            // 요청한다(클라이언트 cache-bust nonce). 그런데 `serve` 가 이 문자열을 그대로 캐시 키에
-            // 쓰면 키가 `...v{cacheVersion}.{nonce}.meta` 가 되는데, 저장 경로
-            // `LayoutService::clearPublicServingCache` 는 `(int) ext.cache_version` 으로 nonce 없는
-            // 키만 forget 하므로 키 형식이 어긋나 무효화가 빗나간다(저장/복원 후 편집기 캔버스만
-            // stale). nonce 는 브라우저 HTTP 캐시 우회용(URL·ETag 차이로 이미 달성)이고, 서버 캐시 키
-            // 정합은 정수 버전이 SSoT 다. `(int)` 캐스팅은 PHP 가 소수점에서 절단해 정수부만 남긴다.
-            // `?v` 생략 시 현재 버전으로 폴백 — 리터럴 0 폴백은 워밍/무효화 어느 경로에도
-            // 걸리지 않는 `.v0` 영구 사각 키를 만든다 (#588).
-            $rawVersion = request()->query('v');
-            $cacheVersion = $rawVersion !== null ? (int) $rawVersion : self::getExtensionCacheVersion();
+            // 종전엔 `?v` 의 정수부를 키에 썼다(#588 — nonce 제거). 그런데 레이아웃 편집기는 부팅
+            // 시점 `window.G7Config.cache_version` 에 nonce 만 붙여 계속 요청하고, 저장·복원은
+            // `ext.cache_version` 을 `time()` 으로 올리며 `clearPublicServingCache` 는 **현재** 버전
+            // 키만 지운다. 그래서 두 번째 bump 부터 부팅 버전 키가 영영 지워지지 않아 초기화·복원·
+            // 409 「최신 불러오기」가 옛 content 를 받았고(실측: 초기화 직후 lock 4 응답, DB 는 lock 7),
+            // 그 화면을 다시 저장하면 옛 내용이 최신을 덮을 수 있었다. 서버 버전으로 키를 고정하면
+            // 무효화(현재 버전 키 forget)와 굽기(현재 버전 키 remember)가 같은 키를 본다. `?v` 가 어떤
+            // 값이든 결과는 같고, 이전 버전 키는 bump 로 자연 이탈한다(TTL 만료).
+            $cacheVersion = self::getExtensionCacheVersion();
 
             // 편집기 출처 메타 옵션
             // - 옵션이 truthy 면 각 노드에 `__source` 메타를 부여한 응답을 반환

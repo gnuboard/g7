@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { readConflictVersion } from '../utils/conflictVersion';
 import { useLayoutEditor } from '../LayoutEditorContext';
 import {
   buildEditorAccessError,
@@ -130,7 +131,12 @@ export type SaveResult =
   | { kind: 'concurrent_modification'; currentVersion: number; yourVersion: number }
   | { kind: 'blocked_inactive_extension'; blockedPaths: string[] }
   | { kind: 'network_error'; message: string }
-  | { kind: 'guard_no_document' };
+  | { kind: 'guard_no_document' }
+  /**
+   * 확장 편집 모드(overlay) 저장 가드 — 추출한 노드 중 어느 injection 에서 왔는지 알 수 없는 것이
+   * 있어 PUT 하지 않았다. 그대로 저장하면 그 노드가 버려져 injections 가 비워진다.
+   */
+  | { kind: 'guard_extension_reassembly'; unassigned: number };
 
 export interface UseLayoutDocumentResult {
   /** 현재 로드된 문서 (null = 로드 전 / 라우트 미선택) */
@@ -940,12 +946,13 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
         };
       }
 
-      // 409 — 동시 수정
+      // 409 — 동시 수정. 서버(ResponseHelper::error)는 버전을 `errors` 아래에 싣는다 —
+      // 최상위만 읽으면 배너가 「최신 버전: -1」 을 표시한다.
       if (response.status === 409) {
         return {
           kind: 'concurrent_modification',
-          currentVersion: (body as any)?.current_version ?? -1,
-          yourVersion: (body as any)?.your_version ?? current.lockVersion,
+          currentVersion: readConflictVersion(body, 'current_version') ?? -1,
+          yourVersion: readConflictVersion(body, 'your_version') ?? current.lockVersion,
         };
       }
 

@@ -766,6 +766,11 @@ class SeoRendererTest extends TestCase
             ],
         ], JSON_PRETTY_PRINT));
 
+        // 선언한 산출물이 실재해야 링크된다 — 없는 경로의 <link> 는 봇 화면에서만 404 가
+        // 되고 어디에도 흔적이 남지 않으므로 렌더러가 실재 파일만 싣는다.
+        mkdir("{$configDir}/dist/css", 0755, true);
+        file_put_contents("{$configDir}/dist/css/components.css", '');
+
         // 자산 URL 모드를 고정 — 운영 설정(general.asset_url_mode)에 따라
         // 확장자 유지/제거 두 형태가 나오므로 검증 대상 형태를 명시한다.
         AssetUrl::forceMode(AssetUrl::MODE_EXTENSION);
@@ -818,6 +823,9 @@ class SeoRendererTest extends TestCase
             $this->assertNotNull($result);
         } finally {
             AssetUrl::forceMode(null);
+            @unlink("{$configDir}/dist/css/components.css");
+            @rmdir("{$configDir}/dist/css");
+            @rmdir("{$configDir}/dist");
             @unlink("{$configDir}/template.json");
             @rmdir($configDir);
         }

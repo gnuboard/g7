@@ -10,7 +10,7 @@ import { GlobalHeaderRule } from '../LayoutLoader';
 import { Logger } from '../../utils/Logger';
 
 // AuthManager mock - login 호출 시 전달된 인자 추적
-const mockLogin = vi.fn().mockResolvedValue({ id: 1, name: 'Test User' });
+const mockLogin = vi.fn().mockResolvedValue({ status: 'authenticated', user: { id: 1, name: 'Test User' } });
 const mockLogout = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../../auth/AuthManager', () => ({
@@ -40,7 +40,7 @@ describe('ActionDispatcher - globalHeaders', () => {
     mockNavigate = vi.fn();
     mockGetToken.mockReset();
     mockLogin.mockReset();
-    mockLogin.mockResolvedValue({ id: 1, name: 'Test User' });
+    mockLogin.mockResolvedValue({ status: 'authenticated', user: { id: 1, name: 'Test User' } });
     dispatcher = new ActionDispatcher({ navigate: mockNavigate });
     Logger.getInstance().setDebug(false);
 
