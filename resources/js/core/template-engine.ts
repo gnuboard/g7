@@ -777,6 +777,23 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
       state.currentDataContext._computed = mergedGlobalState._computed;
     }
 
+    // 레이아웃 편집기 모드 — 재렌더 금지 (renderTemplate 의 편집기 분기와 대칭).
+    //
+    // 편집기 모드에서 `TemplateApp.init` 은 `renderTemplate({ layoutJson: { components: [] } })`
+    // 으로 부르고, renderTemplate 의 편집기 분기가 그 빈 배열 대신 LayoutEditorChrome 을
+    // 같은 reactRoot 에 렌더한다. 그래서 `state.currentLayoutJson.components` 는 **빈 배열**이다.
+    // 여기서 그대로 재렌더하면 같은 루트에 빈 트리를 커밋해 편집기를 통째로 제거한다 — 화면이
+    // 백지가 되고 예외도 콘솔 오류도 남지 않는다.
+    //
+    // renderTemplate 의 편집기 분기는 비동기(`loadLayoutEditorBundle`)라, 부팅 중 도착한
+    // setGlobalState 한 번이 그 커밋 뒤에 실행되면 발현하는 **경합**이다(간헐 재현).
+    // 데이터 병합은 위에서 이미 끝났으므로 여기서는 렌더만 건너뛴다 — 편집기 트리는
+    // 자기 상태를 스스로 관리하고 currentLayoutJson 에 의존하지 않는다.
+    if (typeof window !== 'undefined' && checkLayoutEditorMode(window.location.pathname)) {
+      logger.log('레이아웃 편집기 모드 — 재렌더 건너뜀 (편집기 트리 보존)');
+      return;
+    }
+
     const components = state.currentLayoutJson.components || [];
     const modals = state.currentLayoutJson.modals || [];
     logger.log('updateTemplateData - modals 배열:', modals);

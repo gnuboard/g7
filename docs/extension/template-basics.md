@@ -1,7 +1,7 @@
 # 템플릿 시스템 기초
 
 > **위치**: `docs/extension/template-basics.md`
-> **관련 문서**: [index.md](./index.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
+> **관련 문서**: [README.md](./README.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
 
 ---
 
@@ -680,7 +680,7 @@ SEO 페이지 생성기가 컴포넌트를 HTML로 변환할 때 사용하는 �
 
 ## 관련 문서
 
-- [index.md](./index.md) - 확장 시스템 인덱스
+- [README.md](./README.md) - 확장 시스템 인덱스
 - [template-routing.md](./template-routing.md) - 템플릿 라우트/언어 파일 규칙
 - [template-security.md](./template-security.md) - 템플릿 보안 정책
 - [template-caching.md](./template-caching.md) - 템플릿 캐싱 전략

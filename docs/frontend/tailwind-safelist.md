@@ -1,6 +1,6 @@
 # Tailwind Safelist 가이드
 
-> **상위 문서**: [프론트엔드 가이드 인덱스](index.md)
+> **상위 문서**: [프론트엔드 가이드 인덱스](README.md)
 
 Tailwind CSS는 빌드 시 사용된 클래스만 포함합니다. JSON 레이아웃에서 동적으로 사용하는 클래스는 safelist에 등록해야 합니다.
 

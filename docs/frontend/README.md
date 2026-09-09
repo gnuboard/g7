@@ -162,7 +162,7 @@
 
 ## 관련 문서
 
-- [AGENTS.md](../../../AGENTS.md) - 그누보드7 개발 가이드 (메인)
+- [AGENTS.md](../../AGENTS.md) - 그누보드7 개발 가이드 (메인)
 - [backend/](../backend/) - 백엔드 개발 규칙
 - [database-guide.md](../database-guide.md) - 데이터베이스 규칙
 - [testing-guide.md](../testing-guide.md) - 테스트 규칙

@@ -75,7 +75,7 @@ effects:
   - order_claim_history_badges_read_server_counts
   - order_claim_history_rows_filtered_by_claim_type
   # 기본 서브탭 — 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불), 넷 다 비었으면 교환.
-  # 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 빈 안내가 먼저 보였다(PO 2026-09-09).
+  # 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 빈 안내가 먼저 보였다(설계 결정 2026-09-09).
   - order_claim_history_default_subtab_is_first_type_with_claims
   - order_claim_history_empty_type_shows_notice
   - order_claim_history_unavailable_distinguished_from_empty

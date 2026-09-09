@@ -890,7 +890,7 @@ Footer 버튼은 `children` 배열의 **마지막 요소**로 Div에 감싸서 �
    (모달 자체의 _local 스코프에 쓰기 — 부모 상태는 "$parent._local" 사용)
 ```
 
-> 상세: [layout-extensions.md](../../extension/layout-extensions.md) "지원 위치" 섹션 참조
+> 상세: [layout-extensions.md](../extension/layout-extensions.md) "지원 위치" 섹션 참조
 
 ---
 

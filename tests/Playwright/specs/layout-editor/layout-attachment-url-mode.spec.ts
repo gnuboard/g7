@@ -13,6 +13,10 @@
  *
  * 축 요약(마커 아님 — 평문): public_asset_disk=unset, row_disk=attachments,
  * filter_url_hook=absent.
+ *
+ * 뒤의 두 테스트는 별도 매니페스트(layout-attachment-url-storage-gate.yaml)의 축이다 —
+ * 발급 url 이 사이트 상대 경로여야 헤더 「로고 이미지」 같은 propValue 컨트롤의 저장이
+ * 외부 URL 차단 규칙에 걸리지 않는다. 절대 URL 이던 시절 그 저장은 422 였다.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { bodyRootPath } from '../../fixtures/layout-editor';
@@ -70,6 +74,16 @@ async function openStyleTab(page: Page): Promise<void> {
   await page.getByTestId('g7le-context-menu-edit-props').click();
   await page.waitForSelector('[data-testid="g7le-property-modal"]', { timeout: 10_000 });
   await page.getByTestId('g7le-property-tab-style').click();
+}
+
+/** ⓘ → 속성 편집 → props 탭 (헤더 「로고 이미지」 컨트롤이 있는 탭). */
+async function openPropsTab(page: Page): Promise<void> {
+  await page.waitForSelector('[data-testid="g7le-overlay-info-button"]', { timeout: 10_000 });
+  await page.getByTestId('g7le-overlay-info-button').click();
+  await page.waitForSelector('[data-testid="g7le-context-menu-edit-props"]', { timeout: 5_000 });
+  await page.getByTestId('g7le-context-menu-edit-props').click();
+  await page.waitForSelector('[data-testid="g7le-property-modal"]', { timeout: 10_000 });
+  await page.getByTestId('g7le-property-tab-props').click();
 }
 
 async function enterEditor(page: Page): Promise<void> {
@@ -143,6 +157,8 @@ test.describe('@layout-editor 레이아웃 첨부 URL 발급 모드', () => {
 
     // 공개 자산 디스크 미설정 = 기본 설치 → 공개 서빙 라우트(프록시) 형태
     expect(uploaded.url as string).toContain(`/layout-attachments/${uploaded.id}/file`);
+    // 사이트 상대 경로 — 절대 URL 이면 저장 게이트(NoExternalUrls)가 서버 자신의 주소를 외부로 차단한다
+    expect(uploaded.url as string).toMatch(/^\/api\//);
 
     // 그 주소는 인증 없이 이미지로 열려야 한다 (발행 배경은 방문자에게 로드된다)
     const served = await page.evaluate(async (url: string) => {
@@ -264,9 +280,11 @@ test.describe('@layout-editor 레이아웃 첨부 URL 발급 모드', () => {
 
     // 방문자 화면 — 저장된 문자열이 실제 요청으로 나가는지 본다.
     const visitor = await page.context().newPage();
+    // 발급 url 은 사이트 상대 경로다 — 응답 URL(절대)과는 pathname 으로 비교한다.
+    const uploadedPath = new URL(uploaded.url as string, 'https://placeholder.invalid').pathname;
     const attachmentRequests: number[] = [];
     visitor.on('response', (res) => {
-      if (res.url() === uploaded.url) attachmentRequests.push(res.status());
+      if (new URL(res.url()).pathname === uploadedPath) attachmentRequests.push(res.status());
     });
     await visitor.goto(SANDBOX_ROUTE['sirsoft-basic']);
     await visitor.waitForLoadState('domcontentloaded', { timeout: 30_000 });
@@ -277,6 +295,142 @@ test.describe('@layout-editor 레이아웃 첨부 URL 발급 모드', () => {
     await visitor.close();
 
     // 시드 화면은 다음 실행에서 fixture 로 덮이므로 첨부만 정리한다.
+    await deleteAttachment(page, token, uploaded.id);
+  });
+  /**
+   * 헤더 「로고 이미지」는 값 슬롯이 하나뿐인 propValue 컨트롤이라 업로드 응답 url 이 그대로
+   * props 에 들어간다. 그 값이 사이트 상대 경로여야 저장 게이트를 통과한다 — 절대 URL 이던
+   * 시절 이 흐름은 "업로드는 되는데 저장은 422" 였다.
+   *
+   * 공통 레이아웃(_user_base)은 제품 화면이므로 여기서는 저장하지 않는다 — 위젯 값과 캔버스
+   * src 까지만 본다. 저장 왕복은 다음 테스트가 샌드박스 화면에서 잠근다.
+   */
+  // @scenario url_host=site_relative_path
+  // @effects editor_logo_control_receives_site_relative_url, proxy_url_is_site_relative
+  test('헤더 로고 컨트롤에서 파일 업로드 → 위젯 값·캔버스 src 가 사이트 상대 경로다', async ({ page }) => {
+    test.setTimeout(90_000);
+    const token = issueToken('core.templates.layouts.edit');
+    await authenticatePage(page, token);
+
+    await page.goto('/admin/layout-editor/sirsoft-basic?route=%2F&edit=__base__%2F_user_base');
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+    await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
+    await page.waitForFunction(() => document.querySelectorAll('[data-editor-path]').length > 0, {
+      timeout: 20_000,
+    });
+
+    const headerPath = await page.evaluate(
+      () =>
+        document
+          .querySelector('[data-editor-path][data-editor-name="Header"]')
+          ?.getAttribute('data-editor-path') ?? null,
+    );
+    expect(headerPath, '공통 레이아웃에 Header 노드가 있어야 합니다').not.toBeNull();
+    await selectNode(page, headerPath as string);
+    await openPropsTab(page);
+
+    // 로고 값이 환경설정과 연결된 표현식이면 「직접 지정으로 바꾸기」로 열어야 업로드가 가능하다.
+    const replace = page.getByTestId('g7le-image-expression-replace');
+    if (await replace.isVisible().catch(() => false)) {
+      await replace.click();
+    }
+
+    const uploadPromise = page.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' && /\/layout-attachments$/.test(new URL(r.url()).pathname),
+      { timeout: 20_000 },
+    );
+    await page
+      .locator('[data-testid="g7le-property-modal"] input[type="file"]')
+      .setInputFiles({ name: 'e2e-logo.png', mimeType: 'image/png', buffer: Buffer.from(PNG_BASE64, 'base64') });
+    const uploadRes = await uploadPromise;
+    expect(uploadRes.status()).toBe(200);
+    const body = (await uploadRes.json()) as { data?: { id?: number; url?: string } };
+    const url = body?.data?.url ?? null;
+    const id = body?.data?.id ?? null;
+    expect(url).not.toBeNull();
+    expect(url as string).toMatch(/^\/api\//);
+
+    // 위젯 값 = 발급 url (가공 없음), 캔버스 Header <img src> 도 같은 값
+    await expect(page.getByTestId('g7le-image-url')).toHaveValue(url as string);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            (p) => document.querySelector(`[data-editor-path="${p}"] img`)?.getAttribute('src') ?? null,
+            headerPath,
+          ),
+        { timeout: 8_000 },
+      )
+      .toBe(url);
+
+    await deleteAttachment(page, token, id);
+  });
+
+  /**
+   * 발급 url 을 이미지 prop(`Img.src` — 로고와 같은 props sink)에 넣고 저장하면 200 이어야 하고,
+   * 그 화면을 연 방문자가 같은 주소를 200 으로 받아야 한다. 절대 URL 이던 시절 이 PUT 은
+   * 「HTTPS 프로토콜 URL은 허용되지 않습니다」 422 였다.
+   *
+   * 저장은 E2E 전용 시드 화면(e2e_sandbox)에 한다 — globalSetup 이 매 실행 fixture 로 덮는다.
+   */
+  // @scenario url_host=site_relative_path
+  // @effects issued_asset_url_passes_storage_gate, saved_logo_renders_for_visitor
+  test('발급 url 을 이미지 prop 에 넣고 저장 → 200, 방문자 화면이 그 주소를 200 으로 받는다', async ({ page }) => {
+    test.setTimeout(90_000);
+    const token = issueToken('core.templates.layouts.edit');
+    await authenticatePage(page, token);
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+    const uploaded = await uploadAttachment(page, token, 'e2e-prop-gate.png');
+    expect(uploaded.status).toBe(200);
+    expect(uploaded.url as string).toMatch(/^\/api\//);
+
+    const saved = await page.evaluate(
+      async ({ bearer, url }) => {
+        const headers = { Authorization: `Bearer ${bearer}`, Accept: 'application/json' };
+        const show = await fetch('/api/admin/templates/sirsoft-basic/layouts/e2e_sandbox', { headers });
+        const showBody = await show.json().catch(() => null);
+        const data = showBody?.data ?? {};
+        // show 응답의 content 는 편집 페이지용 JSON 문자열이다 (LayoutResource).
+        const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+        if (!content?.slots?.content?.[0]) return { status: -1, reason: 'sandbox content shape' };
+        const root = content.slots.content[0];
+        root.children = Array.isArray(root.children) ? root.children : [];
+        root.children.push({
+          id: 'e2e_prop_gate_img',
+          type: 'basic',
+          name: 'Img',
+          props: { src: url, alt: 'e2e prop gate', className: 'h-6' },
+        });
+        const put = await fetch('/api/admin/templates/sirsoft-basic/layouts/e2e_sandbox', {
+          method: 'PUT',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expected_lock_version: data.lock_version ?? 0, content }),
+          credentials: 'same-origin',
+        });
+        const putBody = await put.json().catch(() => null);
+        return { status: put.status, message: putBody?.message ?? null };
+      },
+      { bearer: token, url: uploaded.url as string },
+    );
+    expect(saved, saved.message ?? '').toMatchObject({ status: 200 });
+
+    // 방문자 — 저장된 문자열이 실제 요청으로 나가고 200 으로 응답하는지
+    const visitor = await page.context().newPage();
+    const uploadedPath = new URL(uploaded.url as string, 'https://placeholder.invalid').pathname;
+    const statuses: number[] = [];
+    visitor.on('response', (res) => {
+      if (new URL(res.url()).pathname === uploadedPath) statuses.push(res.status());
+    });
+    await visitor.goto(SANDBOX_ROUTE['sirsoft-basic']);
+    await visitor.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+    await expect.poll(() => statuses.length, { timeout: 15_000 }).toBeGreaterThan(0);
+    expect(statuses.every((s) => s === 200)).toBe(true);
+    await expect(visitor.locator(`img[src="${uploaded.url}"]`)).toHaveCount(1);
+    await visitor.close();
+
     await deleteAttachment(page, token, uploaded.id);
   });
 });

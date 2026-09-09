@@ -190,8 +190,14 @@ class TemplateLayoutAttachmentService
     /**
      * 공개 서빙 라우트(프록시) URL 을 생성합니다.
      *
+     * 사이트 상대 경로(`/api/templates/...`)로 발급한다. 절대 URL 로 발급하면 ① 저장
+     * 게이트(`NoExternalUrls`)가 서버 자신이 발급한 주소를 외부로 차단해 image 위젯의
+     * 업로드 → 저장이 422 로 끝나고(배경은 style 로 들어가 스캔되지 않아 드러나지 않았다),
+     * ② 저장된 레이아웃이 발급 시점의 도메인·스킴에 묶여 주소가 바뀌면 그 이미지가 전부
+     * 깨진다. 직접 URL(CDN)은 저장소가 정하는 절대 주소이므로 이 규칙의 대상이 아니다.
+     *
      * @param  TemplateLayoutAttachment  $attachment  첨부 파일
-     * @return string 공개 서빙 URL
+     * @return string 공개 서빙 URL (사이트 상대 경로)
      */
     private function proxyUrl(TemplateLayoutAttachment $attachment): string
     {
@@ -201,7 +207,7 @@ class TemplateLayoutAttachmentService
         return route('api.public.templates.layout-attachment-file', [
             'identifier' => $identifier,
             'attachment' => $attachment->id,
-        ]);
+        ], false);
     }
 
     /**

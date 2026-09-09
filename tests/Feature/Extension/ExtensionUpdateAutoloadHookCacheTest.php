@@ -13,7 +13,7 @@ use Tests\TestCase;
 /**
  * 확장 업데이트 직후 훅 캐시 복구 경로 계약.
  *
- * [case:backend-32]
+ * [case:backend-35]
  *
  * 확장을 `--force` 로 반영한 프로세스는 부팅 시점에 그 확장의 **구버전** `module.php`/
  * `plugin.php` 클래스를 이미 로드해 두었고 PHP 는 같은 프로세스에서 클래스를 다시 정의할 수

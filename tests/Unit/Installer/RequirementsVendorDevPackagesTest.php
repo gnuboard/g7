@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * 설치 2단계(설치 환경 확인)의 Composer 의존성 구성 카드 회귀 테스트 (dev-g7 #658).
  *
- * 이 항목은 **선택 항목**이다 — 개발용 패키지가 섞여 있어도 설치는 진행되어야 한다(PO 결정 D1).
+ * 이 항목은 **선택 항목**이다 — 개발용 패키지가 섞여 있어도 설치는 진행되어야 한다(설계 결정 D1).
  * 게이트로 승격되면 이미 dev vendor 로 준비해 둔 운영자가 설치를 시작조차 못 한다.
  *
  * `check-configuration.php` 는 `CHECK_CONFIGURATION_LIBRARY` 모드로 로드해 요청 처리를 막고,

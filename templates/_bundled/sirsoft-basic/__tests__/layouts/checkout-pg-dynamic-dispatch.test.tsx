@@ -52,9 +52,20 @@ const conditionsNode = findNode(
   (n) => n.handler === 'conditions' && Array.isArray(n.conditions)
 );
 
-/** PG 결제 진입 분기 = then.params.pgPaymentData 를 가진 conditions 항목. */
+/**
+ * PG 결제 진입 분기 = if 가드가 pg_payment_handler 를 보는 conditions 항목.
+ * then 은 sequence 다 — 결제창을 열기 전에 비회원 조회 토큰을 먼저 발급해야 하므로
+ * (결제창을 닫으면 곧바로 취소 이력 기록이 호출되고 그 엔드포인트는 소유권을 대조한다),
+ * 실제 dispatch 액션은 그 sequence 안에 있다.
+ */
 const pgBranch = conditionsNode?.conditions?.find(
-  (c: any) => c?.then?.params && 'pgPaymentData' in c.then.params
+  (c: any) => typeof c?.if === 'string' && c.if.includes('pg_payment_handler')
+);
+
+/** PG 분기 안의 실제 결제 진입 dispatch 액션 = params.pgPaymentData 를 가진 노드. */
+const pgDispatch = findNode(
+  pgBranch?.then,
+  (n) => n?.params && typeof n.params === 'object' && 'pgPaymentData' in n.params
 );
 
 /** non-PG fallback 분기 = if 없는 (else) 분기. */
@@ -76,11 +87,12 @@ describe('체크아웃 결제 진입 provider-agnostic 동적 dispatch', () => {
 
     it('PG 분기의 handler 는 응답값 바인딩이어야 한다 (리터럴 핸들러명 금지)', () => {
       expect(pgBranch, 'PG 결제 진입 분기').toBeDefined();
-      expect(pgBranch.then.handler).toBe('{{response.data.pg_payment_handler}}');
+      expect(pgDispatch, 'PG 결제 진입 dispatch 액션').toBeDefined();
+      expect(pgDispatch.handler).toBe('{{response.data.pg_payment_handler}}');
     });
 
     it('PG 분기는 pgPaymentData 를 응답값으로 전달해야 한다', () => {
-      expect(pgBranch.then.params.pgPaymentData).toBe('{{response.data.pg_payment_data}}');
+      expect(pgDispatch.params.pgPaymentData).toBe('{{response.data.pg_payment_data}}');
     });
 
     it('PG 분기 if 가드는 requires_pg_payment + pg_payment_handler 존재를 함께 검사해야 한다', () => {

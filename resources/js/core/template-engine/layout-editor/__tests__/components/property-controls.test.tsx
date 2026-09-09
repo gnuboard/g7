@@ -24,6 +24,7 @@ import { TagInputControl } from '../../components/property-controls/TagInputCont
 import { CompositeSettingsForm } from '../../components/property-controls/CompositeSettingsForm';
 import { AdvancedPropsForm } from '../../components/property-controls/AdvancedPropsForm';
 import { ControlRenderer } from '../../components/property-controls/ControlRenderer';
+import { NumberWidget } from '../../components/property-controls/StyleControlWidgets';
 import { registerWidget, clearWidgetRegistry } from '../../spec/widgetRegistry';
 import { registerCoreWidgets, resetCoreWidgetRegistration } from '../../spec/registerCoreWidgets';
 import { LayoutEditorProvider } from '../../LayoutEditorContext';
@@ -250,6 +251,187 @@ describe('ImagePickerControl', () => {
     const onChange = renderImage({ url: 'https://x/a.png' });
     fireEvent.click(screen.getByTestId('g7le-image-clear'));
     expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+});
+
+// ============================================================================
+// ImagePickerControl — 단일 값 슬롯 / 데이터 연결 보호 (공개 #135)
+//
+// `propValue`·`cssVar`·단일 `styleProp` 은 값 슬롯이 하나뿐이라 size/repeat/position
+// 을 저장할 자리가 없다. 그런 컨트롤에서 표시모드 버튼은 눌러도 저장되지 않는 죽은
+// 컨트롤이므로 **컨테이너째 미렌더**한다(disabled 는 "URL 을 넣으면 살아난다"는 거짓
+// 정보를 준다). 판정은 블랙리스트라 `apply` 미선언 컨트롤은 현행대로 모드 버튼을 유지한다.
+// ============================================================================
+describe('ImagePickerControl — 단일 값 슬롯 / 데이터 연결 보호 (공개 #135)', () => {
+  /** 실물 `hdrLogo` — sirsoft-basic 헤더 「로고 이미지」 */
+  const logoCtrl: EditorControlSpec = {
+    widget: 'image',
+    apply: { type: 'propValue', propKey: 'logo' },
+  };
+  /** 실물 `backgroundImage` — 배경 4속성 묶음 */
+  const bundleCtrl: EditorControlSpec = {
+    widget: 'image',
+    apply: {
+      type: 'styleProp',
+      props: ['backgroundImage', 'backgroundSize', 'backgroundRepeat', 'backgroundPosition'],
+    },
+  };
+
+  function renderWith(control: EditorControlSpec, value: unknown, onChange = vi.fn()) {
+    render(
+      <LayoutEditorProvider templateIdentifier="sirsoft-basic" initialLocale="ko">
+        <EditorModalProvider>
+          <ImagePickerControl control={control} value={value} onChange={onChange} t={t} />
+        </EditorModalProvider>
+      </LayoutEditorProvider>,
+    );
+    return onChange;
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, data: [] }) }),
+    );
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  /** @effects single_value_slot_control_hides_display_mode_buttons_entirely */
+  it('3-1 단일 슬롯(propValue) — 표시모드 컨테이너와 3버튼이 모두 미렌더', () => {
+    renderWith(logoCtrl, { url: '/a.png' });
+    expect(screen.queryByTestId('g7le-image-modes')).toBeNull();
+    expect(screen.queryByTestId('g7le-image-mode-fill')).toBeNull();
+    expect(screen.queryByTestId('g7le-image-mode-fit')).toBeNull();
+    expect(screen.queryByTestId('g7le-image-mode-tile')).toBeNull();
+  });
+
+  /** @effects single_value_slot_control_emits_url_only_object_without_size_repeat_position */
+  it('3-2 단일 슬롯 — URL blur 시 onChange 인자가 정확히 { url } (다른 키 없음)', () => {
+    const onChange = renderWith(logoCtrl, undefined);
+    const url = screen.getByTestId('g7le-image-url');
+    fireEvent.change(url, { target: { value: '/b.png' } });
+    fireEvent.blur(url, { target: { value: '/b.png' } });
+    expect(onChange).toHaveBeenCalledWith({ url: '/b.png' });
+  });
+
+  /** @effects single_value_slot_preview_is_pinned_to_contain_not_a_false_preview */
+  it('3-3 단일 슬롯 — 미리보기는 contain 고정 (저장되지 않는 size 를 흉내내지 않는다)', () => {
+    renderWith(logoCtrl, { url: '/a.png', size: 'cover' });
+    const preview = screen.getByTestId('g7le-image-preview') as HTMLElement;
+    expect(preview.style.backgroundSize).toBe('contain');
+  });
+
+  /** @effects bundle_control_keeps_display_mode_buttons_and_active_state */
+  it('3-4 bundle 컨트롤 — 모드 버튼 존재 + 현행 활성 표시 보존', () => {
+    renderWith(bundleCtrl, { url: '/a.png', size: 'cover', repeat: 'no-repeat' });
+    expect(screen.getByTestId('g7le-image-modes')).toBeTruthy();
+    expect(screen.getByTestId('g7le-image-mode-fill').getAttribute('data-active')).toBe('true');
+  });
+
+  /** @effects apply_undeclared_control_keeps_display_mode_buttons_blacklist_not_whitelist */
+  it('3-5 apply 미선언 컨트롤 — 판정 보류라 모드 버튼 유지 (기존 계약 보존)', () => {
+    renderWith({ widget: 'image' }, { url: '/a.png' });
+    expect(screen.getByTestId('g7le-image-modes')).toBeTruthy();
+  });
+
+  it('3-6 옵션-only apply 도 합집합으로 판정한다 (control.apply 부재에 속지 않음)', () => {
+    const optionOnly = {
+      widget: 'image',
+      options: [{ value: 'a', apply: { type: 'propValue', propKey: 'logo' } }],
+    } as unknown as EditorControlSpec;
+    renderWith(optionOnly, { url: '/a.png' });
+    expect(screen.queryByTestId('g7le-image-modes')).toBeNull();
+  });
+
+  /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls */
+  it('3-7 데이터 연결 값 — 미리보기 대신 원문 배지, 업로드·제거 비활성', () => {
+    renderWith(logoCtrl, { url: '{{_global.settings?.general?.site_logo_url}}' });
+    expect(screen.queryByTestId('g7le-image-preview')).toBeNull();
+    const badge = screen.getByTestId('g7le-image-expression');
+    expect(badge.textContent).toBe('{{_global.settings?.general?.site_logo_url}}');
+    expect((screen.getByTestId('g7le-image-file') as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByTestId('g7le-image-clear') as HTMLButtonElement).disabled).toBe(true);
+    // 원문은 입력칸에도 남아 있고 편집만 막힌다 — 사라지지 않는다.
+    expect((screen.getByTestId('g7le-image-url') as HTMLInputElement).readOnly).toBe(true);
+  });
+
+  /** @effects replace_affordance_reopens_editing_without_emitting_a_change */
+  it('3-8 「직접 지정으로 바꾸기」 → 편집 개방, 그 클릭만으로는 값을 바꾸지 않는다', () => {
+    const onChange = renderWith(logoCtrl, {
+      url: '{{_global.settings?.general?.site_logo_url}}',
+    });
+    fireEvent.click(screen.getByTestId('g7le-image-expression-replace'));
+    expect((screen.getByTestId('g7le-image-file') as HTMLInputElement).disabled).toBe(false);
+    expect((screen.getByTestId('g7le-image-url') as HTMLInputElement).readOnly).toBe(false);
+    expect(screen.queryByTestId('g7le-image-expression')).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls */
+  it('3-9 데이터 연결 값 — 「이미지 관리」 진입도 잠근다 (창 안의 「배경」이 우회로다)', () => {
+    renderWith(logoCtrl, { url: '{{_global.settings?.general?.site_logo_url}}' });
+    // 관리 모달은 onSelect 를 받아 각 카드에 「배경」 버튼을 띄우고, 그 클릭이 같은
+    // setUrl 을 호출한다 — 인라인 썸네일 「사용」과 동일 동작의 다른 렌더 위치다.
+    // 하나만 잠그면 나머지 하나가 조용한 우회로가 된다.
+    expect((screen.getByTestId('g7le-image-manage') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  /** @effects replace_affordance_reopens_editing_without_emitting_a_change */
+  it('3-10 「직접 지정으로 바꾸기」 후 되돌리기 — 아직 안 바꿨으면 값 변경 없이 배지로 복귀', () => {
+    const expr = '{{_global.settings?.general?.site_logo_url}}';
+    const onChange = renderWith(logoCtrl, { url: expr });
+
+    fireEvent.click(screen.getByTestId('g7le-image-expression-replace'));
+    expect(screen.queryByTestId('g7le-image-expression')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('g7le-image-expression-restore'));
+    // 배지 복귀 + 잠금 재적용
+    expect(screen.getByTestId('g7le-image-expression').textContent).toBe(expr);
+    expect((screen.getByTestId('g7le-image-manage') as HTMLButtonElement).disabled).toBe(true);
+    // 바꾼 것이 없으므로 불필요한 history push 를 만들지 않는다
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  /** @effects replace_affordance_reopens_editing_without_emitting_a_change */
+  it('3-11 URL 을 넣은 뒤에도 되돌리기로 원래 연결값을 복구한다', () => {
+    const expr = '{{_global.settings?.general?.site_logo_url}}';
+    const seen: unknown[] = [];
+
+    // 실제 편집기처럼 값이 되돌아오는 controlled 하네스 —
+    // 고정 prop 으로는 "값을 바꾼 뒤" 상태를 재현할 수 없다.
+    function Harness(): React.ReactElement {
+      const [v, setV] = React.useState<unknown>({ url: expr });
+      return (
+        <ImagePickerControl
+          control={logoCtrl}
+          value={v}
+          onChange={(next) => {
+            seen.push(next);
+            setV(next);
+          }}
+          t={t}
+        />
+      );
+    }
+
+    render(
+      <LayoutEditorProvider templateIdentifier="sirsoft-basic" initialLocale="ko">
+        <EditorModalProvider>
+          <Harness />
+        </EditorModalProvider>
+      </LayoutEditorProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId('g7le-image-expression-replace'));
+    const url = screen.getByTestId('g7le-image-url');
+    fireEvent.change(url, { target: { value: '/uploaded.png' } });
+    fireEvent.blur(url, { target: { value: '/uploaded.png' } });
+    expect(seen[seen.length - 1]).toEqual({ url: '/uploaded.png' });
+
+    // 원문이 화면에서 사라진 뒤에도 되돌릴 수 있어야 한다 — 없으면 편도가 된다.
+    fireEvent.click(screen.getByTestId('g7le-image-expression-restore'));
+    expect(seen[seen.length - 1]).toEqual({ url: expr });
+    expect(screen.getByTestId('g7le-image-expression').textContent).toBe(expr);
   });
 });
 
@@ -737,5 +919,98 @@ describe('SpacingWidget (여백 방향+크기)', () => {
   it('무관 토큰(w-full)만 있으면 미적용 — 일괄 모드 + all 미설정', () => {
     render(<ControlRenderer controlKey="paddingAll" control={padding} node={{ name: 'Div', props: { className: 'w-full max-w-md' } }} t={t} onPatch={vi.fn()} />);
     expect((screen.getByTestId('g7le-spacing-all-enabled') as HTMLInputElement).checked).toBe(false);
+  });
+});
+
+// ============================================================================
+// NumberWidget — 숫자 prop 편집 (A1)
+//
+// 이 위젯이 없어 `widget:"number"` 컨트롤은 「지원하지 않는 컨트롤」로 폴백했다.
+// 출력 타입이 `number` 여야 컴포넌트 prop 계약(`maxVisibleBoards?: number`)을 만족한다.
+// ============================================================================
+describe('NumberWidget', () => {
+  const ctrl: EditorControlSpec = { widget: 'number' };
+
+  it('4-6 숫자 입력 후 blur → onChange(숫자) — 문자열이 아니다', () => {
+    const onChange = vi.fn();
+    render(<NumberWidget control={ctrl} value={undefined} onChange={onChange} t={t} />);
+    const input = screen.getByTestId('g7le-number-input');
+    fireEvent.change(input, { target: { value: '7' } });
+    fireEvent.blur(input, { target: { value: '7' } });
+    expect(onChange).toHaveBeenCalledWith(7);
+    expect(typeof onChange.mock.calls.at(-1)![0]).toBe('number');
+  });
+
+  it('4-7 빈 입력 → onChange(undefined) (prop 삭제)', () => {
+    const onChange = vi.fn();
+    render(<NumberWidget control={ctrl} value={5} onChange={onChange} t={t} />);
+    const input = screen.getByTestId('g7le-number-input');
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input, { target: { value: '' } });
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it('4-8 비숫자 입력 → onChange 미호출 (저장본 무손실 보존)', () => {
+    const onChange = vi.fn();
+    render(<NumberWidget control={ctrl} value={5} onChange={onChange} t={t} />);
+    const input = screen.getByTestId('g7le-number-input');
+    fireEvent.blur(input, { target: { value: 'abc' } });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('4-9 0 은 유효값이라 삭제가 아니라 0 으로 방출된다', () => {
+    const onChange = vi.fn();
+    render(<NumberWidget control={ctrl} value={undefined} onChange={onChange} t={t} />);
+    fireEvent.blur(screen.getByTestId('g7le-number-input'), { target: { value: '0' } });
+    expect(onChange).toHaveBeenCalledWith(0);
+  });
+
+  it('4-10 Enter 키도 blur 와 같이 커밋한다', () => {
+    const onChange = vi.fn();
+    render(<NumberWidget control={ctrl} value={undefined} onChange={onChange} t={t} />);
+    const input = screen.getByTestId('g7le-number-input');
+    fireEvent.change(input, { target: { value: '3' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it('4-11 min/max/step 을 HTML 속성으로 전달한다 (클램프하지 않는다)', () => {
+    const bounded: EditorControlSpec = { widget: 'number', min: 1, max: 10, step: 1 };
+    const onChange = vi.fn();
+    render(<NumberWidget control={bounded} value={undefined} onChange={onChange} t={t} />);
+    const input = screen.getByTestId('g7le-number-input') as HTMLInputElement;
+    expect(input.getAttribute('min')).toBe('1');
+    expect(input.getAttribute('max')).toBe('10');
+    expect(input.getAttribute('step')).toBe('1');
+    // 범위 밖 값도 사용자가 넣은 그대로 방출된다 — 조용한 변조 금지.
+    fireEvent.blur(input, { target: { value: '99' } });
+    expect(onChange).toHaveBeenCalledWith(99);
+  });
+
+  // 계약 이전(engine-v1.66.0): 바인딩 값 보호는 **위젯이 아니라** `ControlRenderer` 의
+  // 공용 게이트(`boundValueGuard`)가 담당한다. 종전에는 이 위젯이 자체 읽기전용 배지를
+  // 가졌는데, 그 방식이면 위젯마다 복붙이 필요하고 한 곳이 빠져도 오류가 나지 않는다 —
+  // 실제로 image 위젯에서 「이미지 관리」 진입 하나만 잠기지 않은 채 남아 있었다.
+  // 게다가 위젯 자체 분기는 공용 게이트의 「직접 지정으로 바꾸기」 해제 경로까지 막았다.
+  // 공용 게이트의 동작은 ControlRenderer.boundValueGuard.test.tsx 가 잠근다.
+  it('4-12 위젯 자체는 바인딩 값을 특별 취급하지 않는다 (보호는 공용 게이트 소관)', () => {
+    const onChange = vi.fn();
+    render(<NumberWidget control={ctrl} value="{{_global.x}}" onChange={onChange} t={t} />);
+    // 위젯 전용 배지는 더 이상 존재하지 않는다
+    expect(screen.queryByTestId('g7le-number-binding')).toBeNull();
+    // 해제된 뒤에는 정상 입력칸이어야 한다 — 여기서 막으면 해제가 무의미해진다
+    expect(screen.getByTestId('g7le-number-input')).toBeInTheDocument();
+    // 렌더만으로는 값을 건드리지 않는다
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('4-13 외부 value 변경 시 입력칸 draft 를 동기화한다', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <NumberWidget control={ctrl} value={5} onChange={onChange} t={t} />,
+    );
+    expect((screen.getByTestId('g7le-number-input') as HTMLInputElement).value).toBe('5');
+    rerender(<NumberWidget control={ctrl} value={9} onChange={onChange} t={t} />);
+    expect((screen.getByTestId('g7le-number-input') as HTMLInputElement).value).toBe('9');
   });
 });

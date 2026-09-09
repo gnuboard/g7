@@ -74,4 +74,16 @@ describe('saveInjectedPropsToExtension', () => {
     const result = await saveInjectedPropsToExtension(tpl, 99, 'h', {}, fetchMock as any);
     expect(result.kind).toBe('not_found');
   });
+  it('409 본문이 errors 아래에 버전을 담아도(ResponseHelper 형식) conflict 버전을 읽는다', async () => {
+    const content = { injections: [{ target_id: 'h', position: 'inject_props', props: {} }] };
+    const fetchMock = vi.fn();
+    fetchMock.mockResolvedValueOnce(
+      jsonRes(200, { data: { id: 2, content: JSON.stringify(content), lock_version: 3 } }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      jsonRes(409, { success: false, errors: { current_version: 7, your_version: 3 } }, false),
+    );
+    const result = await saveInjectedPropsToExtension(tpl, 2, 'h', { a: 1 }, fetchMock as any);
+    expect(result).toEqual({ kind: 'conflict', currentVersion: 7, yourVersion: 3 });
+  });
 });

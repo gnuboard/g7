@@ -217,6 +217,63 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(1);
     }
 
+    /**
+     * 미설치 확장(활성 디렉토리 없음)도 --check 는 _bundled 의 composer.json 을 기준으로 판정한다.
+     *
+     * 종전에는 활성 디렉토리 부재를 "소스 경로 없음" 으로 보고하고 판정을 건너뛰어, _bundled 에
+     * 외부 의존성이 선언됐는데 번들이 없거나 stale 인 상태가 --check 를 통과했다.
+     */
+    public function test_module_vendor_bundle_check_judges_bundled_when_extension_not_installed(): void
+    {
+        $identifier = 'test-uninstalled-'.uniqid();
+        $bundledPath = base_path('modules/_bundled/'.$identifier);
+        File::ensureDirectoryExists($bundledPath);
+        File::put($bundledPath.'/composer.json', json_encode([
+            'name' => 'test/uninstalled',
+            'require' => ['php' => '^8.2', 'test/lib' => '^1.0'],
+        ]));
+
+        try {
+            $this->assertDirectoryDoesNotExist(base_path('modules/'.$identifier));
+
+            $this->artisan('module:vendor-bundle', [
+                'identifier' => $identifier,
+                '--check' => true,
+            ])
+                ->doesntExpectOutputToContain('소스 경로 없음')
+                ->expectsOutputToContain('STALE')
+                ->assertExitCode(1);
+        } finally {
+            File::deleteDirectory($bundledPath);
+        }
+    }
+
+    /**
+     * 미설치 + 외부 의존성 없음은 종전과 같이 SKIPPED (번들 대상 아님).
+     */
+    public function test_module_vendor_bundle_check_skips_uninstalled_extension_without_external_dependencies(): void
+    {
+        $identifier = 'test-uninstalled-'.uniqid();
+        $bundledPath = base_path('modules/_bundled/'.$identifier);
+        File::ensureDirectoryExists($bundledPath);
+        File::put($bundledPath.'/composer.json', json_encode([
+            'name' => 'test/uninstalled-plain',
+            'require' => ['php' => '^8.2'],
+        ]));
+
+        try {
+            $this->artisan('module:vendor-bundle', [
+                'identifier' => $identifier,
+                '--check' => true,
+            ])
+                ->doesntExpectOutputToContain('소스 경로 없음')
+                ->expectsOutputToContain('SKIPPED (외부 composer 의존성 없음)')
+                ->assertExitCode(0);
+        } finally {
+            File::deleteDirectory($bundledPath);
+        }
+    }
+
     public function test_module_vendor_bundle_check_reports_up_to_date_after_build(): void
     {
         $this->artisan('module:vendor-bundle', ['identifier' => $this->fakeModuleIdentifier])

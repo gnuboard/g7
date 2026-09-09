@@ -38,7 +38,12 @@ export function SaveFeedbackBanner(props: SaveFeedbackBannerProps): React.ReactE
   // 는 5초 후 자동 dismiss. concurrent / validation 은 사용자가 명시적으로 닫음.
   useEffect(() => {
     if (!result) return;
-    if (result.kind === 'concurrent_modification' || result.kind === 'validation_failed') return;
+    if (
+      result.kind === 'concurrent_modification' ||
+      result.kind === 'validation_failed' ||
+      result.kind === 'guard_extension_reassembly'
+    )
+      return;
     const timer = setTimeout(onDismiss, 5000);
     return () => clearTimeout(timer);
   }, [result, onDismiss]);
@@ -94,6 +99,22 @@ export function SaveFeedbackBanner(props: SaveFeedbackBannerProps): React.ReactE
       <BannerShell tone="error" testId="g7le-save-banner-network" onDismiss={onDismiss}>
         <strong>{t('layout_editor.save.network_error_title')}</strong>
         <div style={{ marginTop: 4, fontSize: 12 }}>{result.message}</div>
+      </BannerShell>
+    );
+  }
+
+  if (result.kind === 'guard_extension_reassembly') {
+    // 확장 편집 모드 저장 가드 — 자동 dismiss 없음(저장이 안 됐다는 사실을 운영자가 봐야 한다).
+    return (
+      <BannerShell
+        tone="error"
+        testId="g7le-save-banner-guard-extension-reassembly"
+        onDismiss={onDismiss}
+      >
+        <strong>{t('layout_editor.save.guard_extension_reassembly_title')}</strong>
+        <div style={{ marginTop: 4, fontSize: 12 }}>
+          {t('layout_editor.save.guard_extension_reassembly', { count: String(result.unassigned) })}
+        </div>
       </BannerShell>
     );
   }

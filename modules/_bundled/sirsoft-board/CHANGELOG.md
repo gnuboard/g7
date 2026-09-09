@@ -4,7 +4,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.2] - 2026-09-08
+## [1.1.2] - 2026-09-09
+
+### Changed
+
+- Composer 잠금 파일을 최신 Composer 형식으로 갱신했습니다.
 
 ### Fixed
 

@@ -14,9 +14,10 @@ interface LayoutVersionRepositoryInterface
      * @param  int  $layoutId  레이아웃 ID
      * @param  array  $oldContent  이전 콘텐츠
      * @param  array|null  $newContent  새 콘텐츠 (null이면 현재 레이아웃 content 사용)
+     * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
      * @return TemplateLayoutVersion 생성된 버전 모델
      */
-    public function saveVersion(int $layoutId, array $oldContent, ?array $newContent = null): TemplateLayoutVersion;
+    public function saveVersion(int $layoutId, array $oldContent, ?array $newContent = null, ?int $createdBy = null): TemplateLayoutVersion;
 
     /**
      * 특정 레이아웃의 모든 버전 조회 (최신순)

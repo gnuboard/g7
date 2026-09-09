@@ -255,4 +255,24 @@ class TemplateLayoutAttachmentUrlResolutionTest extends TestCase
 
         $this->assertProxyUrl($this->service->resolveUrl($this->makeAttachment('s3')));
     }
+
+    /**
+     * 프록시 URL 은 사이트 상대 경로여야 합니다.
+     *
+     * 절대 URL 로 발급하면 두 가지가 어긋난다 — ① 저장 게이트(NoExternalUrls)가 서버가
+     * 스스로 발급한 주소를 외부로 차단해 업로드 → 저장이 422 로 끝나고, ② 저장된 레이아웃이
+     * 발급 시점의 도메인·스킴에 묶여 주소가 바뀌면 그 이미지가 전부 깨진다.
+     *
+     * @scenario url_host=site_relative_path
+     *
+     * @effects proxy_url_is_site_relative, issued_asset_url_passes_storage_gate
+     */
+    public function test_proxy_url_is_site_relative_path(): void
+    {
+        $url = $this->service->resolveUrl($this->makeAttachment('attachments'));
+
+        $this->assertStringStartsWith('/api/', $url);
+        $this->assertDoesNotMatchRegularExpression('#^[a-z][a-z0-9+.\-]*:#i', $url, '프록시 URL 에 스킴이 있으면 안 됩니다');
+        $this->assertStringNotContainsString('//', $url);
+    }
 }

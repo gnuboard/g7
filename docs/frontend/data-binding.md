@@ -1,6 +1,6 @@
 # 데이터 바인딩 및 표현식
 
-> **관련 문서**: [index.md](index.md) | [layout-json.md](layout-json.md) | [data-sources.md](data-sources.md)
+> **관련 문서**: [README.md](README.md) | [layout-json.md](layout-json.md) | [data-sources.md](data-sources.md)
 
 ---
 
@@ -705,7 +705,7 @@ $parent._local은 모달 마운트 시 스냅샷 — 모달 열린 후 부모 _l
 
 - [다국어 처리](data-binding-i18n.md) - $localized(), $t:, 컴포넌트 다국어 처리
 - [g7core-api.md](g7core-api.md) - G7Core 전역 API 레퍼런스
-- [index.md](index.md) - 프론트엔드 가이드 인덱스
+- [README.md](README.md) - 프론트엔드 가이드 인덱스
 - [layout-json.md](layout-json.md) - 레이아웃 JSON 스키마
 - [data-sources.md](data-sources.md) - 데이터 소스 시스템
 - [state-management.md](state-management.md) - 전역 상태 관리

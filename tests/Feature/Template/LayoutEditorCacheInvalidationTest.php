@@ -8,6 +8,7 @@ use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Traits\InvalidatesLayoutCache;
 use App\Models\Template;
 use App\Models\TemplateLayout;
+use App\Services\ExtensionStaticCacheService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -70,7 +71,9 @@ class LayoutEditorCacheInvalidationTest extends TestCase
         ]);
 
         $cache = $this->coreCache();
-        $version = (int) $cache->get('ext.cache_version', 0);
+        // 트레이트 게터와 같은 근거 — 원시 키 읽기는 키 부재 시 0 을 돌려주어 실제 무효화 키(`.v{time}`)와
+        // 어긋난 `.v0` 키를 만든다(트레이트는 부재 시 재생성). 무효화 대상 키는 게터가 SSoT 다.
+        $version = ExtensionStaticCacheService::getExtensionCacheVersion();
 
         // PublicLayoutController::serve() 가 쓰는 두 캐시 키 — 일반 + 편집기(.meta)
         $generalKey = "layout.sirsoft-basic.home.v{$version}";
@@ -105,7 +108,9 @@ class LayoutEditorCacheInvalidationTest extends TestCase
         ]);
 
         $cache = $this->coreCache();
-        $version = (int) $cache->get('ext.cache_version', 0);
+        // 트레이트 게터와 같은 근거 — 원시 키 읽기는 키 부재 시 0 을 돌려주어 실제 무효화 키(`.v{time}`)와
+        // 어긋난 `.v0` 키를 만든다(트레이트는 부재 시 재생성). 무효화 대상 키는 게터가 SSoT 다.
+        $version = ExtensionStaticCacheService::getExtensionCacheVersion();
         $metaKey = "layout.sirsoft-basic.home.v{$version}.meta";
         $cache->put($metaKey, ['stale' => 'editor-old-content'], 3600);
 

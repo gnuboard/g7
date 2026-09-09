@@ -1358,7 +1358,7 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
-     * 우선순위는 교환 → 반품 → 취소 → 환불이다 (PO 2026-09-09). 화면 서브탭의 배열 순서
+     * 우선순위는 교환 → 반품 → 취소 → 환불이다 (설계 결정 2026-09-09). 화면 서브탭의 배열 순서
      * (교환·반품·환불·취소)와 다르므로 배열 위치로 고르면 취소·환불이 둘 다 있을 때 갈린다.
      *
      * @scenario surface=member, has_image=no

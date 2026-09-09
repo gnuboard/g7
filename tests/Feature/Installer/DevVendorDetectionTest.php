@@ -115,7 +115,7 @@ class DevVendorDetectionTest extends TestCase
     /**
      * 재사용 분기가 dev 를 감지해 경고하되 설치를 계속한다 (소스 계약).
      *
-     * 감지·경고·"설치 계속" 셋이 한 분기 안에 있어야 한다 — 차단으로 바뀌면 PO 결정(D1) 위반이다.
+     * 감지·경고·"설치 계속" 셋이 한 분기 안에 있어야 한다 — 차단으로 바뀌면 설계 결정(D1) 위반이다.
      *
      * @effects installer_warns_and_keeps_dev_vendor
      */

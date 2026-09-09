@@ -37,8 +37,12 @@ import {
   type OverlayBox,
 } from '../utils/overlayGeometry';
 import { isDraggableNode } from '../dnd/nestingRules';
-import { findNodeByPath, isInsideIterationInstance, serializeEditorPath, isResponsiveSegment, type EditorNode, type ComponentPath } from '../utils/layoutTreeUtils';
-import { classifyLockKind, parseEditorPath } from '../hooks/useElementSelection';
+import { collectAncestors, findNodeByPath, isInsideIterationInstance, serializeEditorPath, type EditorNode } from '../utils/layoutTreeUtils';
+import {
+  classifyLockKind,
+  isEditableLockKind,
+  parseEditorPath,
+} from '../hooks/useElementSelection';
 import { useCanvasDnd, type UseCanvasDndParams } from '../hooks/useCanvasDnd';
 import { buildDropSlots, type DropSlot } from '../dnd/dropSlots';
 import { dndHandleZIndex, DND_DROP_SLOT, DND_DRAG_OVERLAY } from '../utils/overlayZIndex';
@@ -311,7 +315,7 @@ export function DndCanvasLayer(props: DndCanvasLayerProps): React.ReactElement |
       // 제외 조건에서 data_bound 를 빼야 한다 — 종전에는 `classifyLockKind !== 'none'`
       // 으로 data_bound 까지 핸들을 막아, 데이터 바인딩 composite(상품 이미지 갤러리 등)가
       // 선택·이동 불가였고 클릭이 조상 핸들에 가로채였다.
-      const ancestors = ancestorsOf(root, indexes);
+      const ancestors = collectAncestors(root, indexes);
       // 반복(iteration) 인스턴스 **내부** 노드는 핸들 제외 — 펼침 인스턴스를 개별로
       // 선택/드래그하면 안 된다. 묶음 단위 편집은 아래 가상 묶음으로.
       // 예외: 반복 항목 편집 모드의 편집 대상 iteration 인스턴스 내부는 개별 핸들 허용.
@@ -323,11 +327,7 @@ export function DndCanvasLayer(props: DndCanvasLayerProps): React.ReactElement |
       }
       const lockKind = classifyLockKind(node, editMode, currentExtensionId, ancestors);
       // 편집 대상 iteration 인스턴스 내부는 그 모드의 편집 대상이므로 잠금/데이터바운드 무관 허용.
-      if (
-        lockKind !== 'none' &&
-        lockKind !== 'data_bound' &&
-        !isInsideEditableIteration(path, editableRootSourcePath)
-      ) {
+      if (!isEditableLockKind(lockKind) && !isInsideEditableIteration(path, editableRootSourcePath)) {
         return;
       }
       const box = measureOverlay(el, frameEl);
@@ -353,9 +353,9 @@ export function DndCanvasLayer(props: DndCanvasLayerProps): React.ReactElement |
       if (!name) continue;
       // 원본 노드 자체의 잠금만 검사(base/partial/extension). 원본은 iteration 정의
       // 노드라 data_bound 지만 대로 묶음 선택/이동은 허용.
-      const ancestors = ancestorsOf(root, indexes);
+      const ancestors = collectAncestors(root, indexes);
       const lockKind = classifyLockKind(ownerNode, editMode, currentExtensionId, ancestors);
-      if (lockKind !== 'none' && lockKind !== 'data_bound') continue;
+      if (!isEditableLockKind(lockKind)) continue;
       const box = unionBoxes(boxes);
       if (!box) continue;
       // 인스턴스를 frame 가시 영역으로 이미 걸렀으나, union 결과도 frame 과 겹치는지
@@ -782,23 +782,3 @@ function DraggableHandle(props: {
   );
 }
 
-/** path 조상 노드 배열(루트→부모, 자기 제외) — classifyLockKind ancestors 입력 */
-function ancestorsOf(root: EditorNode, path: ComponentPath): EditorNode[] {
-  const out: EditorNode[] = [];
-  let current: EditorNode = root;
-  let childArray: EditorNode[] = Array.isArray(root.children) ? (root.children as EditorNode[]) : [];
-  for (let i = 0; i < path.length - 1; i++) {
-    const seg = path[i]!;
-    if (isResponsiveSegment(seg)) {
-      const branch = current.responsive?.[seg.responsive];
-      childArray = branch && Array.isArray(branch.children) ? (branch.children as EditorNode[]) : [];
-      continue;
-    }
-    const next = childArray[seg] ?? null;
-    if (!next) break;
-    out.push(next);
-    current = next;
-    childArray = Array.isArray(next.children) ? (next.children as EditorNode[]) : [];
-  }
-  return out;
-}

@@ -589,7 +589,7 @@ class UserResource extends BaseApiResource
 
 ## 관련 문서
 
-- [index.md](./index.md) - 백엔드 가이드 인덱스
+- [README.md](./README.md) - 백엔드 가이드 인덱스
 - [controllers.md](./controllers.md) - 컨트롤러에서 리소스 사용
 - [response-helper.md](./response-helper.md) - API 응답 규칙
 - [service-repository.md](./service-repository.md) - Eager Loading으로 N+1 방지

@@ -1,0 +1,43 @@
+feature: 레이아웃 첨부 URL 저장 게이트 통과 (서버가 발급한 주소는 외부가 아니다)
+
+description: |
+  레이아웃 편집기의 image 위젯으로 파일을 올리면 첨부 API 가 돌려준 url 이 props 에 들어간다.
+  그 url 이 절대 형태(`https://<사이트>/api/templates/.../file`)라 저장 요청의 외부 URL
+  차단 규칙(NoExternalUrls)이 서버 자신이 발급한 주소를 외부로 차단해, 헤더 「로고 이미지」
+  처럼 값 슬롯이 하나뿐인 컨트롤(propValue)에서 업로드는 되고 저장은 422 로 끝났다. 배경
+  이미지는 style 로 들어가 스캔되지 않아 같은 주소가 통과했으므로 증상이 로고에서만 났다.
+
+  결정 사슬:
+    - 생산자: 프록시(공개 서빙 라우트) URL 은 사이트 상대 경로(`/api/...`)로 발급한다. 절대 URL 은
+      저장 게이트 충돌뿐 아니라 저장된 레이아웃을 발급 시점 도메인·스킴에 묶는다.
+    - 게이트: 사이트 자기 host(app.url)와 운영자가 선언한 공개 자산 디스크(PublicAssetDisk::
+      resolve())의 host 는 외부가 아니다 (SiteAssetHosts 단일 판정). 요청 Host 헤더는 위조
+      가능하므로 근거로 쓰지 않는다.
+    - 판정은 접두 문자열 비교가 아니라 브라우저와 같은 정규화 뒤 host 등가 비교 — 흉내 host
+      (`host.evil.com`·`host@evil.com`·`evil.com\@host`)를 통과시키지 않는다.
+    - protocol-relative(`//host/...`)와 http/https 밖의 스킴은 host 가 같아도 종전대로 차단한다.
+
+coverage_strategy: full
+
+axes:
+  url_host: [site_relative_path, own_site_absolute, public_asset_disk, external_undeclared, lookalike, dangerous_scheme]
+
+effects:
+  - proxy_url_is_site_relative
+  - issued_asset_url_passes_storage_gate
+  - external_host_still_rejected
+  # 편집기 로고 컨트롤(propValue)이 파일 업로드 후 받는 값이 사이트 상대 경로다 (E2E)
+  - editor_logo_control_receives_site_relative_url
+  # 발급 url 을 prop 에 넣어 저장한 화면을 방문자가 열면 그 주소가 200 으로 응답한다 (E2E)
+  - saved_logo_renders_for_visitor
+
+test_files:
+  - tests/Feature/Rules/NoExternalUrlsTest.php
+  - tests/Unit/Support/SiteAssetHostsTest.php
+  - tests/Unit/Services/TemplateLayoutAttachmentUrlResolutionTest.php
+  - tests/Feature/Api/Admin/TemplateLayoutAttachmentControllerTest.php
+  - tests/Playwright/specs/layout-editor/layout-attachment-url-mode.spec.ts
+
+rules_layer_coverage:
+  - rule: no-storage-disk-direct
+    coverage: 공개 자산 디스크 host 해석은 CoreStorageDriver::url() 경유 — Storage facade 직접 호출 도입 없음

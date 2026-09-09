@@ -328,6 +328,20 @@ export interface EditorControlSpec {
   iconColumns?: number;
   /** 검색 입력 placeholder — `$t:...` 키 */
   iconSearchPlaceholder?: string;
+  /**
+   * `number` 위젯이 입력칸에 그대로 실어 보내는 HTML 입력 제약 선언.
+   *
+   * 그 입력칸은 `type="text"`(비숫자 입력을 원문 그대로 쥐고 있어야 미방출 정책이
+   * 성립한다) 이므로 **브라우저 검증도 스피너도 동작하지 않는다** — 이 세 필드는 값을
+   * 제한하는 장치가 아니라 작성자 의도의 선언이다.
+   *
+   * 위젯은 이 값으로 **클램프하지 않는다** — 사용자가 넣은 값은 보존한다(조용한 데이터
+   * 변조 금지). 아래 세 필드는 index signature 가 이미 허용하므로 하위호환 100% 이고,
+   * 명시 선언은 발견성만 개선한다.
+   */
+  min?: number;
+  max?: number;
+  step?: number;
   /** 작성자 자유 필드 — 코어는 widget/apply 외 필드를 그대로 보존만 한다 */
   [key: string]: unknown;
 }

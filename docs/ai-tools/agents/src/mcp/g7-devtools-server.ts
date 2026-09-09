@@ -2834,7 +2834,7 @@ server.tool(
       `| 인증 상태 | ${authIcon} ${state.isAuthenticated ? '인증됨' : '미인증'} |`,
     );
 
-    if (state.user) {
+    if (state.user && !Array.isArray(state.user) && state.user.id != null) {
       sb.push(`| 사용자 ID | ${state.user.id} |`);
       sb.push(`| 이메일 | ${state.user.email} |`);
       if (state.user.name) {
@@ -3018,7 +3018,7 @@ server.tool(
 
     // 이슈 분석
     let issues = styleData.issues || [];
-    let components = styleData.components || [];
+    let components = styleData.componentStyles || [];
 
     // search 필터링
     if (search) {
