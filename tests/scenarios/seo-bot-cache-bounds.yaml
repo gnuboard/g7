@@ -1,0 +1,56 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 입력 axis 의 완전 cross-product(5축)는 조합 폭발이라 대표 조합만 마킹한다. effects 축은 면제하지 않는다 — 모든 effect 가 테스트 마킹으로 도달해야 한다.
+
+feature: SEO 봇 캐시 상한 (키 정규화 · 렌더 예산 · 저장 규모 · 통계 기록)
+
+description: |
+  봇 판정은 User-Agent 문자열뿐이라 누구나 위장할 수 있는데, 캐시 키가 경로 + 전체 쿼리였다.
+  물음표 뒤 값만 바꾸면 매 요청이 미스가 되고, 미스 1건은 레이아웃 병합 · 표현식 평가 ·
+  자기 API 루프백 HTTP 호출을 유발하며 그 결과가 무제한으로 저장됐다. 요청 하나가 워커
+  여러 개를 묶고 캐시 저장소를 계속 키우는 통로였고, 통계 기록 호출처가 없어 그 진행이
+  운영자 화면에 전혀 나타나지 않았다.
+
+  핵심 동작:
+    - SeoCacheBounds 가 상한 판정의 단일 출처 (config/core.php seo_cache_limits + env)
+    - 키 정규화: locale · _escaped_fragment_ 제거 + ksort, 개수·길이 상한 초과 시 캐시 불가
+    - 렌더 예산: IP 당 분당 미스 렌더 상한, 초과분은 SPA + X-SEO-Cache: BYPASS (429 아님)
+    - 저장 규모: 경로당 변종 수 · 전체 항목 수 상한, 기존 키 갱신은 상한과 무관
+    - 통계: 미들웨어가 HIT/MISS 를 기록하되 IP 당 분당 상한 안에서만
+    - 캐시 항목은 HTML + 레이아웃명 — HIT 통계가 화면별로 귀속된다 (이전 문자열 항목 호환)
+    - 경로당 변종 상한은 언어별로 센다 (인덱스 항목이 url|locale 별이므로)
+    - 렌더러가 null 을 돌려준 요청은 렌더 예산을 되돌린다 (예외는 되돌리지 않는다)
+    - 통계 url 컬럼(768)은 캐시 키 URL 상한을 담는다 — 마이그레이션 왕복 안전
+
+axes:
+  bot_state: [bot, browser]
+  cache_state: [hit, miss]
+  ip_budget: [within, exhausted]
+  query_shape: [none, system_only, normal, oversized]
+  store_state: [under_caps, path_cap, global_cap]
+
+exclusions:
+  - { bot_state: browser, cache_state: hit, reason: "비봇 요청은 SEO 파이프라인에 들어가지 않아 캐시를 보지 않는다" }
+  - { cache_state: hit, store_state: path_cap, reason: "저장 상한은 미스 경로에서만 판정된다" }
+
+effects:
+  - bot_miss_over_limit_gets_spa_bypass
+  - bot_hit_served_regardless_of_limit
+  - system_query_params_excluded_from_key
+  - oversized_query_bypasses_cache_and_render
+  - cache_hit_and_miss_are_recorded_in_stats
+  - stats_recording_capped_per_ip
+  - store_skips_write_at_path_variant_cap
+  - store_skips_write_at_global_cap
+  - expired_index_entries_are_pruned_before_cap_verdict
+  - put_and_put_with_layout_share_the_storage_cap
+  - index_prune_is_throttled_to_one_scan_per_interval
+  - cache_hit_carries_layout_name_from_cache_entry
+  - store_counts_path_variants_per_locale
+  - null_render_refunds_render_budget
+  - stats_url_column_fits_normalized_cache_url
+
+test_files:
+  - tests/Unit/Seo/SeoCacheBoundsTest.php
+  - tests/Unit/Seo/SeoCacheManagerTest.php
+  - tests/Feature/Seo/SeoMiddlewareTest.php
+  - tests/Unit/Seo/SeoCacheStatsServiceTest.php
+  - tests/Feature/Database/ModifyUrlInSeoCacheStatsMigrationTest.php

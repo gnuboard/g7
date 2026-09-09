@@ -98,6 +98,28 @@ describe('ApiClient', () => {
     it('토큰이 없으면 null을 반환해야 함', () => {
       expect(apiClient.getToken()).toBeNull();
     });
+
+    it('문자열이 아닌 토큰은 저장하지 않아야 함', () => {
+      // localStorage 는 무엇을 넣든 문자열로 바꾼다 — undefined 를 넘기면 "undefined" 라는
+      // truthy 문자열이 남아 이후 모든 요청이 Bearer undefined 로 나가고 401 로 튕긴다.
+      apiClient.setToken(undefined as unknown as string);
+
+      expect(localStorage.getItem('auth_token')).toBeNull();
+      expect(apiClient.getToken()).toBeNull();
+    });
+
+    it('빈 문자열 토큰도 저장하지 않아야 함', () => {
+      apiClient.setToken('');
+
+      expect(localStorage.getItem('auth_token')).toBeNull();
+    });
+
+    it('기존 토큰이 있어도 잘못된 값으로 덮어쓰지 않아야 함', () => {
+      apiClient.setToken('valid-token');
+      apiClient.setToken(null as unknown as string);
+
+      expect(apiClient.getToken()).toBe('valid-token');
+    });
   });
 
   describe('HTTP 메서드', () => {

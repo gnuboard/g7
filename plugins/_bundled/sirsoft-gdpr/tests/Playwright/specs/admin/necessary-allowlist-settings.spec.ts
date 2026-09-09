@@ -18,7 +18,7 @@
  *  3. 저장된 목록이 인라인 페이로드에 실려 브라우저에 도달한다 (+ 잠금 집합 동반)
  *  4. 형식 위반 항목은 422 로 거부되고 그 카드에 에러가 붙는다
  *
- * 종료 시 추가한 항목을 되돌린다 — PO 와 브라우저를 공유하므로 원상 복구는 의무다.
+ * 종료 시 추가한 항목을 되돌린다 — 사람이 쓰는 브라우저를 공유하므로 원상 복구는 의무다.
  */
 import { test, expect, authenticatePage } from '../../fixtures/gdpr-auth';
 import type { Page } from '@playwright/test';

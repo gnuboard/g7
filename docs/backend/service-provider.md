@@ -197,6 +197,9 @@ class TemplateService
 ```
 인스톨러 단계 1: composer install
 ├─ .env 없음 → ModuleRouteServiceProvider 스킵 ✅
+├─ vendor 재사용 분기 (vendor/autoload.php + composer.lock 존재)
+│  ├─ 개발용 패키지 감지 → 경고 카드·설치 로그 (설치는 계속)
+│  └─ 이전 환경의 컴파일 캐시 정리 (packages/services/config)
 └─ package:discover 정상 완료
 
 인스톨러 단계 2: .env 생성

@@ -9,7 +9,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 확장 프론트엔드 병합 번들 서빙 엔드포인트 Feature 테스트
+ * [case:backend-27] 확장 프론트엔드 병합 번들 서빙 엔드포인트 Feature 테스트
  *
  * /api/{modules,plugins}/bundle.{js,css} 의 응답 계약(Content-Type, ETag,
  * 304 Not Modified, 빈 번들 처리)을 검증한다. ExtensionBundleService 를

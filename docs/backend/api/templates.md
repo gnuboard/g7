@@ -94667,7 +94667,7 @@ _목록 응답: `data` 는 첨부 항목 배열입니다 (페이지네이션 없
 | original_name | string | `hero-bg.png` | 업로드 당시 원본 파일명 |
 | mime_type | string | `image/png` | 파일 MIME 타입 |
 | size | integer | `204800` | 파일 크기 (바이트) |
-| url | string | `/storage/template-layout-attachments/sirsoft-basic/hero-bg.png` | 첨부 파일 접근 URL |
+| url | string | `/api/templates/sirsoft-basic/layout-attachments/1/file` | 첨부 파일 접근 URL. 기본은 공개 서빙 라우트(프록시)의 **사이트 상대 경로**(`/api/...`)이고, 관리자 환경설정의 공개 자산 스토리지를 켠 뒤 그 디스크에 올라간 첨부만 직접 URL(CDN 절대 주소)로 내려온다. 어느 형태든 레이아웃 저장의 외부 URL 차단 규칙을 통과한다(사이트 자기 host 와 선언된 공개 자산 디스크 host 는 외부가 아니다) |
 | created_at | string | `2026-07-14T10:00:00+09:00` | 업로드 일시 (ISO 8601) |
 
 **응답 예시**
@@ -94748,7 +94748,7 @@ _단건 응답: `data` 객체의 필드._
 | original_name | string | `hero-bg.png` | 업로드된 원본 파일명 |
 | mime_type | string | `image/png` | 파일 MIME 타입 |
 | size | integer | `204800` | 파일 크기 (바이트) |
-| url | string | `/storage/template-layout-attachments/sirsoft-basic/hero-bg.png` | 업로드된 파일의 접근 URL (편집기 ImagePickerControl 이 사용) |
+| url | string | `/api/templates/sirsoft-basic/layout-attachments/1/file` | 업로드된 파일의 접근 URL (편집기 ImagePickerControl 이 값으로 그대로 쓴다). 기본은 공개 서빙 라우트(프록시)의 **사이트 상대 경로**(`/api/...`)이고, 공개 자산 스토리지를 켜 그 디스크에 저장된 경우에만 직접 URL(CDN 절대 주소)이다. 어느 형태든 레이아웃 저장의 외부 URL 차단 규칙을 통과한다 — 절대 프록시 URL 이던 시절 로고처럼 props 에 들어가는 값은 저장 시 422 였다 |
 
 **응답 예시**
 
@@ -94762,7 +94762,7 @@ _단건 응답: `data` 객체의 필드._
         "original_name": "hero-bg.png",
         "mime_type": "image/png",
         "size": 204800,
-        "url": "/storage/template-layout-attachments/sirsoft-basic/hero-bg.png"
+        "url": "/api/templates/sirsoft-basic/layout-attachments/1/file"
     }
 }
 ```

@@ -31,6 +31,7 @@ return [
         'admin_policy_has_no_default' => 'Admin-created policies do not have a declared default.',
         'reset_field_failed' => 'Failed to reset the field to its declared default. Check if the field is valid.',
         'cannot_delete_system_policy' => 'System-declared policies cannot be deleted. Only administrator-created policies can be deleted.',
+        'purpose_not_allowed' => 'This verification request cannot be handled on this screen.',
     ],
 
     'messages' => [

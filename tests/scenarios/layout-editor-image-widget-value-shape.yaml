@@ -1,0 +1,127 @@
+feature: 레이아웃 편집기 image 위젯 값 형태 — 단일 값 슬롯 축약 / 런타임 방어 / 저장 데이터 백필
+
+# 입력 axis 는 5축 265조합이다. 전수 마킹은 실효가 없어(테스트 1건이 조합 1개만
+# 덮으므로 265건이 필요하다) **pairwise** 로 좁힌다 — 어떤 두 축의 조합도 최소 한 번은
+# 지나가므로 축 간 상호작용 결함은 그대로 잡히고, 마킹 대상은 실측 9건으로 줄어든다.
+# effects 축은 면제하지 않는다 — 모든 effect 가 테스트 마킹으로 도달해야 한다.
+coverage_strategy: pairwise
+
+description: |
+  코어 `image` 위젯은 배경 이미지용으로 설계되어 `{url,size,repeat,position}` **객체**를
+  내보낸다. 그 값을 노드에 기록하는 apply 4종 중 `styleProp` 의 다중 props(배경 묶음)만
+  객체를 CSS 4속성으로 분해했고, `propValue`·`cssVar`·단일 `styleProp` 은 객체를 그대로
+  기록했다. 소비 컴포넌트가 `<Img src={객체}>` 로 받으면 브라우저가 `[object Object]` 를
+  URL 로 해석해 이미지가 깨진다(공개 #135, `sirsoft-basic` 헤더 「로고 이미지」).
+
+  이 결함은 예외도 콘솔 오류도 서버 로그도 남기지 않는다 — 깨진 이미지 요청은 SPA
+  catch-all 때문에 404 조차 아니라 200(HTML)을 받고, 편집기 위젯의 미리보기는 정상이라
+  조작 중에는 이상이 보이지 않는다. 유일한 증상은 화면의 엑박이다.
+
+  방어선은 넷이다:
+    1. **쓰기 축약** — 단일 값 슬롯 writer 3종이 공용 헬퍼 `scalarizeImageValue` 를 경유해
+       url 문자열만 남긴다. 게이트는 `widget === 'image'` 이며 값 형태 sniffing 이 아니다
+       (`isImageValueObject` 는 4키 중 하나만 있어도 참이라, 값만 보면 `{position:'left'}`
+       같은 정당한 객체 prop 을 이미지로 오인해 삭제한다).
+    2. **읽기 역조립** — 저장된 문자열을 `{url}` 로 되감아 위젯이 현재 값을 읽게 한다.
+       표현식 문자열도 감싼다 — 감싸지 않으면 빈 피커로 보이고 업로드 1클릭에 그 표현식이
+       소리 없이 소실된다. 깨진 미리보기 억제와 실수 덮어쓰기 방지는 위젯이 맡는다.
+    3. **런타임 방어** — 업그레이드 전 화면을 위해 템플릿 `Img` 가 객체값에서 url 을
+       해석하고, 손상값이면 `src` 를 아예 붙이지 않는다(엑박도 빈 문자열도 아니다).
+    4. **저장 데이터 백필** — 업그레이드 스텝이 기설치본의 prop 자리 객체를 축약한다.
+       판정식은 런타임 방어와 **완전히 같은 엄격도**(키 집합 ⊆ 4키 AND url 문자열)를 쓴다 —
+       두 방어선의 기준이 어긋나면 한쪽만 통과하는 값이 생긴다.
+
+  단일 값 슬롯 컨트롤에서는 표시모드(채움/맞춤/타일) 버튼을 **컨테이너째 미렌더**한다.
+  `size`/`repeat`/`position` 을 저장할 자리가 없어 눌러도 저장되지 않는 죽은 컨트롤이기
+  때문이다. `disabled` 로 두면 "URL 을 넣으면 살아나겠지" 라는 거짓 정보를 준다.
+
+axes:
+  widget_output:
+    - scalar_string             # 이미 문자열 (회귀 0)
+    - image_object              # {url,size,repeat,position} 전체
+    - image_object_empty_url    # url 이 빈 문자열
+    - image_object_nonstring_url # url 이 객체/배열/숫자
+    - undefined_cleared         # 「제거」 → undefined
+  apply_type: [propValue, styleProp, cssVar, classToken]
+  stored_shape: [string, object, binding_expression, absent]
+  consumer: [img_src, header_logo, mobilenav_logo, div_background, none]
+  storage_scope:
+    - template_layouts
+    - template_layout_extensions
+    - layout_versions_untouched
+    - layout_previews_untouched
+
+exclusions:
+  - { apply_type: styleProp, consumer: [img_src, header_logo, mobilenav_logo], reason: "styleProp 은 인라인 style 로 흐른다 — <Img src> sink 에 도달하지 않는다" }
+  - { apply_type: propValue, consumer: div_background, reason: "배경은 style 자리 — propValue 로 흐르지 않는다" }
+  - { apply_type: cssVar, consumer: [img_src, header_logo, mobilenav_logo, div_background], reason: "CSS 변수는 소비 sink 가 선언되지 않았다 — 축약만 검증(정적 룰이 신규 선언을 차단)" }
+  - { apply_type: classToken, widget_output: [image_object, image_object_empty_url, image_object_nonstring_url], reason: "image × classToken 은 정적 룰이 저장 이전에 차단해 런타임 도달 불가" }
+  - { widget_output: undefined_cleared, consumer: [img_src, div_background], reason: "해제는 폴백 축 — header_logo 에서 대표 검증(사이트명 텍스트 폴백)" }
+  - { widget_output: undefined_cleared, stored_shape: [object, string, binding_expression], reason: "해제 결과는 absent 하나뿐" }
+  - { stored_shape: binding_expression, widget_output: [image_object, image_object_empty_url, image_object_nonstring_url], reason: "표현식은 문자열이라 객체 형태와 배타" }
+  - { storage_scope: [layout_versions_untouched, layout_previews_untouched], apply_type: [styleProp, cssVar, classToken], reason: "스냅샷 미보존 단언은 apply 무관 단일 축 — propValue 에서 대표 검증" }
+  - { storage_scope: template_layout_extensions, consumer: [mobilenav_logo, div_background, none], reason: "확장 주입 경로는 injections[].props 순회 포섭만 검증 — 소비 sink 는 코어 경로와 동일" }
+
+effects:
+  # ① 쓰기 축약 (코어 엔진)
+  - image_object_narrows_to_url_string_in_propvalue_slot
+  - image_object_narrows_to_wrapped_css_url_in_cssvar_and_single_styleprop
+  - legacy_css_url_wrapping_is_stripped_for_component_prop_sink
+  - image_object_without_url_or_with_empty_url_deletes_the_prop
+  - non_image_widget_object_and_array_props_are_preserved_intact
+  - styleprop_bundle_four_property_decomposition_is_unchanged
+  - apply_fixed_value_wins_over_control_value_then_gets_narrowed
+  # ② 읽기 역조립
+  - stored_string_is_rewrapped_as_url_object_for_the_widget
+  - binding_expression_is_rewrapped_so_one_click_upload_cannot_silently_lose_it
+  - legacy_object_stored_value_is_returned_losslessly
+  - non_image_widget_values_are_not_rewrapped
+  - node_axis_roundtrip_is_a_fixed_point_after_first_pass
+  - dark_scope_stays_readonly_for_inline_apply
+  # ③ 위젯 표면
+  - single_value_slot_control_hides_display_mode_buttons_entirely
+  - single_value_slot_control_emits_url_only_object_without_size_repeat_position
+  - single_value_slot_preview_is_pinned_to_contain_not_a_false_preview
+  - bundle_control_keeps_display_mode_buttons_and_active_state
+  - apply_undeclared_control_keeps_display_mode_buttons_blacklist_not_whitelist
+  - bound_value_shows_expression_badge_and_locks_destructive_controls
+  - replace_affordance_reopens_editing_without_emitting_a_change
+  - bound_value_protection_is_a_single_shared_gate_for_every_widget
+  - restore_affordance_recovers_the_original_binding_after_replacement
+  # ④ 런타임 방어 (템플릿 Img)
+  - img_string_src_passes_through_unchanged
+  - img_image_value_object_resolves_to_its_url
+  - img_corrupted_value_attaches_no_src_neither_object_object_nor_empty_string
+  - img_object_with_key_outside_the_four_is_rejected_same_strictness_as_backfill
+  - img_other_attributes_pass_through_spread_regression_zero
+  # ⑤ 백필 (업그레이드 스텝)
+  - backfill_narrows_prop_slot_objects_in_layouts_and_extensions
+  - backfill_strict_predicate_leaves_normal_props_untouched
+  - backfill_excludes_style_slot_where_background_decomposition_lives
+  - backfill_traverses_responsive_branches_nested_nodes_and_injections
+  - backfill_traverses_modals_in_both_list_and_map_shape
+  - backfill_drops_prop_key_on_corrupted_url_with_warning_log
+  - backfill_is_idempotent_and_performs_no_update_on_unchanged_rows
+  - backfill_increments_lock_version_only_on_changed_rows
+  - backfill_preserves_original_content_hash_so_modified_judgement_holds
+  - backfill_leaves_version_and_preview_snapshots_untouched
+  - backfill_converts_soft_deleted_rows_for_restore_safety
+  - backfill_uses_keyset_chunking_so_no_row_is_skipped_past_the_boundary
+  - backfill_skips_broken_json_rows_without_aborting_the_run
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/recipeEngine.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/ControlRenderer.boundValueGuard.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/Img.test.tsx
+  - tests/Feature/Upgrades/Upgrade7011ImageObjectPropBackfillTest.php
+  - tests/Playwright/specs/layout-editor/image-widget-value-shape.spec.ts
+
+validation:
+  note: |
+    백필 축(⑤)은 DB 데이터 상태라 브라우저 E2E 로 재현할 수 없다. PHPUnit 26케이스가
+    판정식 엄격도·순회 범위·멱등·lock_version·hash 불변·스냅샷 미개입을 전수 잠근다.
+
+    `image` 위젯을 값이 스칼라로 축약되지 않는 apply 경로(classToken/cssVar/apply 미선언)에
+    새로 연결하는 것은 정적 검사가 저장 이전에 차단한다 — 그래서 그 조합은 런타임에 도달
+    불가이며 exclusions 에 명시했다.

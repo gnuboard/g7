@@ -122,6 +122,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SEO 봇 캐시 상한
+    |--------------------------------------------------------------------------
+    | 봇 판정은 User-Agent 문자열뿐이라 위장이 가능하고, 캐시 키에 쿼리가 들어가므로
+    | 물음표 뒤 값만 바꾸면 매 요청이 미스가 됩니다. 미스 1건은 레이아웃 병합·표현식
+    | 평가·자기 API 루프백 호출을 유발하고 그 결과가 캐시에 쌓입니다.
+    |
+    | 아래 값이 그 증식을 막는 상한입니다. 렌더 예산을 넘긴 요청은 오류가 아니라
+    | 일반 SPA 응답을 받습니다(봇에게 오류를 주면 색인에서 URL 이 빠집니다).
+    |
+    | IP 단위 상한(render_misses_per_minute, stats_records_per_minute)은 요청 IP 를
+    | 기준으로 셉니다. 리버스 프록시·CDN 뒤에 두면서 TRUSTED_PROXIES 를 지정하지 않으면
+    | 모든 요청이 프록시 IP 하나로 보여 사이트 전체가 한 예산을 나눠 쓰게 되고, 정상
+    | 검색엔진 봇도 예산 초과 시점부터 SPA 를 받습니다. docs/backend/reverse-proxy.md 참조.
+    */
+    'seo_cache_limits' => [
+        // 캐시 키에 허용하는 쿼리 파라미터 수 (초과 → 캐시·렌더 안 함)
+        'max_query_params' => (int) env('G7_SEO_CACHE_MAX_QUERY_PARAMS', 10),
+
+        // 정규화된 쿼리 문자열 길이 상한 (바이트)
+        'max_query_length' => (int) env('G7_SEO_CACHE_MAX_QUERY_LENGTH', 512),
+
+        // 같은 경로·언어에 대해 저장하는 쿼리 변종 수 상한 (언어별로 따로 센다)
+        'max_variants_per_path' => (int) env('G7_SEO_CACHE_MAX_VARIANTS_PER_PATH', 50),
+
+        // 캐시 인덱스 전체 항목 수 상한
+        'max_entries' => (int) env('G7_SEO_CACHE_MAX_ENTRIES', 20000),
+
+        // IP 당 분당 미스 렌더 수 (초과 → SPA + X-SEO-Cache: BYPASS)
+        'render_misses_per_minute' => (int) env('G7_SEO_RENDER_MISSES_PER_MINUTE', 60),
+
+        // IP 당 분당 통계 기록 수 (통계 테이블이 새 증식 축이 되지 않도록)
+        'stats_records_per_minute' => (int) env('G7_SEO_STATS_RECORDS_PER_MINUTE', 300),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | 아웃바운드 프록시 연결 테스트
     |--------------------------------------------------------------------------
     | 운영자가 환경설정에 입력한 프록시가 실제로 동작하는지, 그리고 그 프록시를 거쳐

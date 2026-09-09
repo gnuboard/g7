@@ -134,14 +134,30 @@ php artisan {module|plugin|template}:update {id} --force
 
 ### controls — 재사용 스타일 컨트롤
 
-위젯 종류(`widget`)·친화 라벨(`label`)·적용 방식(`apply`)·대상(`target`)·선택지(`options`)를 한 곳에 선언하고 `componentCapabilities.styleControls`(스타일 탭) 또는 `propControls`(속성 탭)가 키로 참조한다. `apply` 타입은 `classToken`(클래스 토큰 교체) / `styleProp`(인라인 스타일 속성) / `cssVar` / `propValue`(임의 `node.props[propKey]` 기입 — 속성 탭의 기본 적용 방식). 색·크기 등 라이브러리 대응 컨트롤은 프리셋 토큰 + 자유값(tokenTemplate)을 함께 선언한다. 상/우/하/좌 여백처럼 측마다 다른 값이 공존하는 속성은 다값을 1급으로 다룬다(일괄/개별 2모드, 단일 토큰 교체 금지).
+위젯 종류(`widget`)·친화 라벨(`label`)·적용 방식(`apply`)·대상(`target`)·선택지(`options`)를 한 곳에 선언하고 `componentCapabilities.styleControls`(스타일 탭) 또는 `propControls`(속성 탭)가 키로 참조한다. `apply` 타입은 `classToken`(클래스 토큰 교체) / `styleProp`(인라인 스타일 속성) / `cssVar` / `propValue`(임의 `node.props[propKey]` 기입 — 속성 탭의 기본 적용 방식) / `nodeKey`(노드 **최상위** 구조키 `node[nodeKey]` 기입 — `dataKey` 처럼 런타임 엔진이 props 가 아니라 노드 자신에서 읽는 키. `props`·`children`·`type` 등 예약 구조키는 지정해도 무시되고, 디바이스(breakpoint) 축은 무시하며 항상 최상위에 쓴다 — 런타임 responsive 병합은 `props`/`children`/`text`/`if`/`iteration` 5키만 보므로 분기에 쓰면 영원히 읽히지 않는다). 색·크기 등 라이브러리 대응 컨트롤은 프리셋 토큰 + 자유값(tokenTemplate)을 함께 선언한다. 상/우/하/좌 여백처럼 측마다 다른 값이 공존하는 속성은 다값을 1급으로 다룬다(일괄/개별 2모드, 단일 토큰 교체 금지).
 
 **`propControls` 전용 위젯 종류**:
 
 - `icon-picker` — 아이콘 prop(예 `iconName`/`triggerIcon`)을 카탈로그 그리드에서 검색·선택한다. **카탈로그는 템플릿 소유**(라이브러리 종속) — Font Awesome 등 아이콘셋을 쓰는 템플릿이 `G7Core.layoutEditor.registerWidget('icon-picker', ...)` 로 자기 위젯을 등록한다(코어는 위젯명만 디스패치, 아이콘 라이브러리 토큰 0). 프리뷰 폴백은 `preview.html`(코어 비해석) → `preview.className` → raw value 순. 카탈로그 미공급 시 자유 텍스트 입력으로 디그레이드.
 - `options-list` — `Select`/`RadioGroup` 등의 정적 `options` 배열(value/label 행)을 추가/삭제/이동 편집한다. 값이 `{{바인딩}}` 이면 "바인딩됨(코드 편집)" 디그레이드(덮어쓰기 차단). 데이터소스 바인딩(dataProps `options`)과 직교 공존(위 "선택지 직교 완화").
 - `array-items` / `array-group` / `array-cell-tree` / `number-list` — 정적 배열 prop 편집(탭/차트 데이터/카드 컬럼 등). `nodeEditor` 슬롯 또는 propControl 로 결선한다(아래 "데이터 정의 빌트인" 참조).
+- `number` — 숫자를 기대하는 prop(예 `maxVisibleBoards`)을 편집한다. 위젯이 `number` 타입을 직접 내보내므로 `"5"` 같은 문자열이 저장되지 않는다. 빈 입력은 prop 삭제, `0` 은 유효값이라 삭제되지 않으며, 숫자로 해석할 수 없는 입력은 방출하지 않아 저장본을 보존한다(조용한 변조 금지). `min`/`max`/`step` 은 선언만 하고 **클램프하지 않는다** — 사용자가 넣은 값은 그대로 보존한다. 값이 `{{바인딩}}` 문자열일 때의 보호는 위젯이 아니라 아래 「데이터 연결 값 보호」 공용 게이트가 맡는다 — 숫자 입력칸이 그 값을 빈칸으로 표시해 다음 blur 에 소실시키는 것을 그 게이트가 차단한다.
 - `i18n-text` vs `text` — **표시 텍스트**(사용자가 화면에서 읽는 라벨/메시지/플레이스홀더)는 `i18n-text` 를 쓴다. `i18n-text` 는 평문 입력 시 `createCustomKey` 로 다국어 키를 자동 생성해 `$t:custom.*` 로 치환하고(미리보기에 raw 키 미노출), 🌐 펼침으로 ko/en/ja 동시 편집을 제공하며, `{{바인딩}}` 값이면 읽기전용 디그레이드한다(공통 위젯 `I18nTextField`). **비-표시값**(URL/id/수치/색/통화코드/separator 등)만 `text` 를 쓴다. 표시 텍스트에 `text` 를 쓰면 raw `$t:` 노출·다국어 누락 회귀가 발생한다(정적 검사가 배열 라벨 필드의 `text` 사용을 차단).
+
+**데이터 연결 값 보호 — 모든 위젯 공통**:
+prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, 그 값을 편집하는 컨트롤은 **원문 배지**로 디그레이드된다. 위젯은 그 문자열을 해석하지 못해 빈 컨트롤로 보이고, 그 상태에서 조작하면 표현식이 그대로 덮여 **환경설정과의 연결이 끊기기** 때문이다. 이 판정은 개별 위젯이 아니라 컨트롤 렌더러 한 곳에서 이뤄지므로 **새 위젯을 등록해도 자동 적용**된다 — 위젯 안에 같은 판정을 다시 넣지 않는다(넣으면 해제 경로까지 막혀 「직접 지정으로 바꾸기」가 무반응이 된다).
+
+보호 상태에서는 그 컨트롤의 파괴적 조작이 함께 잠긴다. 값을 바꾸려면 「직접 지정으로 바꾸기」를 눌러 명시적으로 열고, 「되돌리기」로 원래 연결값을 복구할 수 있다(해제 직후에는 취소, 값을 넣은 뒤에는 복구로 동작).
+
+예외는 표현식 자체를 다루도록 설계된 위젯뿐이다 — `text`·`i18n-text` 는 표현식을 데이터 칩으로 **분해해 보여 주는 것**이 그 위젯의 기능이고, `image`·`core-id` 는 같은 보호를 위젯 안에서 더 세밀하게(갤러리·업로드·관리 모달 진입까지) 제공한다. 새 위젯을 이 예외에 넣으려면 **원문 표시·해제·복구 셋을 모두** 갖춰야 한다.
+
+**`image` 위젯의 값 형태 — apply 경로에 따라 축약된다**:
+
+`image` 위젯은 배경 이미지용으로 설계되어 `{url, size, repeat, position}` **객체**를 내보낸다. 그런데 값 슬롯이 하나뿐인 apply 경로(`propValue` / `cssVar` / 단일 `styleProp`)는 그 객체를 담을 수 없다 — 엔진이 `url` 만 남겨 스칼라로 축약한다(컴포넌트 prop 은 맨 문자열, CSS 값 문맥은 `url(...)` 래핑). `url` 이 없거나 비어 있으면 그 자리를 삭제해 컴포넌트의 폴백이 살아난다.
+
+축약을 전제로 위젯 표면도 달라진다 — 단일 값 슬롯 컨트롤에서는 표시모드(채움/맞춤/타일) 버튼이 **렌더되지 않는다**(`size`/`repeat`/`position` 을 저장할 자리가 없어 눌러도 저장되지 않는 죽은 컨트롤이다). 4속성을 모두 저장하려면 `styleProp` 의 `props` 배열에 `backgroundImage`·`backgroundSize`·`backgroundRepeat`·`backgroundPosition` 을 함께 선언한다.
+
+`image` 를 `classToken` 이나 `cssVar` 에 연결하거나 `apply` 를 생략하면 값이 문자열로 축약될 경로가 없어 `[object Object]` 가 저장된다 — 정적 검사가 그 선언을 차단한다.
 
 ### componentCapabilities — 컴포넌트별 편집 역량
 
@@ -171,6 +187,8 @@ php artisan {module|plugin|template}:update {id} --force
 **데이터 정의 빌트인(옵션/배열/차트 수동 데이터)**: 정적으로 편집 가능한 "데이터 정의" 표면(Select.options, TabNavigation.tabs, BarChart.labels+datasets, DonutChart.data, CardGrid.cardColumns, DynamicFieldList.columns, SocialLoginButtons.providers 등)은 모두 `nodeEditor`(array/array-group/array-cell-tree) 또는 `propControls`(options-list) 로 편집 가능하게 선언한다. 전 draggable 컴포넌트는 데이터 표면을 가지면 편집 슬롯을 보유하거나(누락 0), 보유하지 않으면 비대상 allowlist(flat scalar / 표시 텍스트 / 레이아웃 / 런타임 scalar 바인딩전용)에 등록되어야 한다 — 정적 검사가 둘 다 아닌 draggable 을 차단한다.
 
 **코어 제공 속성(요소 ID) + opt-out**: 코어는 모든 draggable 컴포넌트의 [속성] 탭 최상단에 "요소 ID" 컨트롤을 일괄 제공한다(값 = 표준 `node.props.id`, 강제 DOM 주입 없음 — 컴포넌트 passthrough 책임). 기존 `elemId`(→id) 같은 템플릿 propControl 은 코어로 이전(중복 선언 금지 — 코어 우선). 인라인 루트가 없는 컴포넌트(서드파티 모달/Portal)는 capability 에 `"coreProps": false` 로 opt-out 한다. `"coreProps": ["id"]` 처럼 부분집합 선언도 가능(미선언 = 코어 기본 전체). 코어 id 컨트롤은 `{{바인딩}}` 값이면 "바인딩됨(코드 편집)" 디그레이드, HTML 안전 문자만 허용(한글·공백 자동 제거). 컴포넌트 측 id passthrough 규약은 `docs/frontend/components-types.md` "요소 id 패스스루" 참조.
+
+**전용 UI 를 가진 코어 속성은 `coreProps` 로 다시 선언하지 않는다**: `isolatedState`·`isolatedScopeId` 는 편집기가 별도 전용 컨트롤로 제공하며 그것이 값의 단일 출처다. 이 두 키를 `coreProps` 배열에 적어도 [속성] 탭의 일반 컨트롤 목록에는 나타나지 않는다 — 같은 값을 두 경로가 쓰면 값 형태가 갈리기 때문이다(전용 UI 는 켜짐 상태를 객체로 쓰는데 일반 토글 위젯은 `true` 를 낸다). 선언 자체는 오류가 아니고 조용히 무시되므로, 격리 설정을 노출하려면 그 전용 컨트롤을 쓴다.
 
 ### nesting — 중첩 규칙
 

@@ -10,6 +10,7 @@ use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
 use App\Extension\Traits\ReportsLifecycleFailure;
+use App\Support\PublicAssetDisk;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -1313,15 +1314,7 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      */
     protected function resolvePublicAssetDisk(?string $override = null): ?string
     {
-        $disk = ($override !== null && $override !== '')
-            ? $override
-            : (string) config('core.storage.public_asset_disk', '');
-
-        if ($disk === '' || $disk === 'none' || config("filesystems.disks.{$disk}") === null) {
-            return null;
-        }
-
-        return $disk;
+        return PublicAssetDisk::resolve($override);
     }
 
     /**
@@ -1359,26 +1352,30 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 카테고리별 스토리지 기본 경로 반환
      *
+     * 카테고리가 다른 디스크로 배선돼 있으면(getStorageDiskFor 오버라이드) 그 디스크
+     * 기준 경로를 돌려줍니다. 기본 디스크를 보면 배선한 카테고리의 경로가 어긋납니다.
+     *
      * @param  string  $category  카테고리 (settings, data, temp)
      * @return string 전체 파일 시스템 경로
      */
     public function getStorageBasePath(string $category): string
     {
-        return $this->getStorage()->getBasePath($category);
+        return $this->getStorageFor($category)->getBasePath($category);
     }
 
     /**
      * 파일의 공개 URL 반환
      *
-     * public disk인 경우 직접 URL을 반환하고,
-     * private disk인 경우 null을 반환합니다 (별도 API 엔드포인트 사용).
+     * 카테고리에 배선된 디스크(getStorageDiskFor)가 직접 URL 을 지원하면 그 URL 을,
+     * 아니면 null 을 반환합니다 (별도 API 엔드포인트 사용). 기본 디스크를 보면
+     * 공개 자산 디스크로 옮긴 카테고리가 항상 null 을 받습니다.
      *
      * @param  string  $category  카테고리
      * @param  string  $path  파일 경로
-     * @return string|null 파일 URL (private disk인 경우 null)
+     * @return string|null 파일 URL (직접 URL 불가 디스크인 경우 null)
      */
     public function getStorageUrl(string $category, string $path): ?string
     {
-        return $this->getStorage()->url($category, $path);
+        return $this->getStorageFor($category)->url($category, $path);
     }
 }

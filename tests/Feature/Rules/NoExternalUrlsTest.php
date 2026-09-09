@@ -7,6 +7,7 @@ use App\Http\Requests\Layout\UpdateLayoutContentRequest;
 use App\Http\Requests\Layout\UpdateLayoutExtensionContentRequest;
 use App\Http\Requests\Layout\UpdateLayoutRequest;
 use App\Rules\NoExternalUrls;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class NoExternalUrlsTest extends TestCase
@@ -494,6 +495,160 @@ class NoExternalUrlsTest extends TestCase
     // 편집기 저장 경로(LayoutController::update → UpdateLayoutContentRequest)의 content
     // 트리에 이 규칙이 붙어 있지 않으면, init_actions·props·actions 의 외부 URL 차단이
     // 그 경로에서만 조용히 발화하지 않는다.
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 사이트 자산 host — 서버가 스스로 발급한 주소는 외부가 아니다
+    //
+    // 레이아웃 첨부 API 가 돌려준 URL(프록시 경로 또는 운영자가 선언한 공개 자산
+    // 디스크의 직접 URL)을 image 위젯이 props 에 넣는데, 그 값을 이 규칙이 "외부" 로
+    // 차단하면 업로드 → 저장이 422 로 끝난다. 배경 이미지는 style 로 들어가 스캔되지
+    // 않아 같은 URL 이 통과했으므로, 증상은 로고(propValue) 에서만 나타났다.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * props.logo 하나를 가진 최소 레이아웃을 만듭니다.
+     *
+     * @param  string  $url  logo 값
+     * @return array<string, mixed>
+     */
+    private function layoutWithLogo(string $url): array
+    {
+        return [
+            'version' => '1.0.0',
+            'layout_name' => 'test',
+            'components' => [
+                [
+                    'id' => 'header',
+                    'type' => 'composite',
+                    'name' => 'Header',
+                    'props' => ['logo' => $url],
+                    'children' => [],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 규칙 통과 여부를 돌려줍니다.
+     *
+     * @param  array<string, mixed>  $layout  검사 대상
+     * @return string|null 실패 메시지 (통과면 null)
+     */
+    private function failureOf(array $layout): ?string
+    {
+        $message = null;
+        $this->rule->validate('content', $layout, function ($m) use (&$message) {
+            $message = (string) $m;
+        });
+
+        return $message;
+    }
+
+    /**
+     * 사이트 자기 host(app.url)의 절대 URL 은 통과해야 합니다 — 프록시 서빙 라우트가 절대
+     * 형태로 발급되던 배포본(7.0.10 이하)에서 저장된 값과, 운영자가 자기 사이트 주소를
+     * 직접 적은 값이 여기에 해당한다.
+     *
+     * @scenario url_host=own_site_absolute
+     *
+     * @effects issued_asset_url_passes_storage_gate
+     */
+    public function test_passes_with_own_site_absolute_url_in_props(): void
+    {
+        Config::set('app.url', 'https://shop.example.test');
+
+        foreach ([
+            'https://shop.example.test/api/templates/sirsoft-basic/layout-attachments/4/file',
+            'http://shop.example.test/storage/template-layout-attachments/sirsoft-basic/logo.png',
+            'https://SHOP.example.TEST/api/templates/sirsoft-basic/layout-attachments/4/file',
+        ] as $url) {
+            $this->assertNull($this->failureOf($this->layoutWithLogo($url)), "자기 host 절대 URL 은 통과해야 합니다: {$url}");
+        }
+    }
+
+    /**
+     * 운영자가 선언한 공개 자산 디스크의 host 는 통과해야 합니다 — 직접 URL(CDN) 변종에서
+     * 첨부 API 가 돌려주는 값이다.
+     *
+     * @scenario url_host=public_asset_disk
+     *
+     * @effects issued_asset_url_passes_storage_gate
+     */
+    public function test_passes_with_public_asset_disk_host_in_props(): void
+    {
+        Config::set('app.url', 'https://shop.example.test');
+        Config::set('core.storage.public_asset_disk', 'public');
+        Config::set('filesystems.disks.public.url', 'https://cdn.example.test/assets');
+
+        $url = 'https://cdn.example.test/assets/template-layout-attachments/sirsoft-basic/bg.png';
+
+        $this->assertNull($this->failureOf($this->layoutWithLogo($url)), '공개 자산 디스크 host 는 통과해야 합니다');
+    }
+
+    /**
+     * 같은 host 라도 공개 자산 디스크로 선언되지 않았으면 여전히 외부입니다 — 허용의 근거는
+     * "URL 을 만들 수 있는 디스크가 있다" 가 아니라 운영자 선언이다.
+     *
+     * @scenario url_host=external_undeclared
+     *
+     * @effects external_host_still_rejected
+     */
+    public function test_fails_with_cdn_host_when_public_asset_disk_is_not_declared(): void
+    {
+        Config::set('app.url', 'https://shop.example.test');
+        Config::set('core.storage.public_asset_disk', '');
+        Config::set('filesystems.disks.public.url', 'https://cdn.example.test/assets');
+
+        $url = 'https://cdn.example.test/assets/template-layout-attachments/sirsoft-basic/bg.png';
+
+        $this->assertNotNull($this->failureOf($this->layoutWithLogo($url)), '선언되지 않은 디스크 host 는 차단되어야 합니다');
+    }
+
+    /**
+     * 자기 host 를 흉내 낸 URL 은 전부 차단되어야 합니다 — 접두 문자열 비교로 허용하면
+     * 이 형태들이 통과한다. 판정은 브라우저와 같은 정규화 뒤의 host 등가 비교여야 한다.
+     *
+     * @scenario url_host=lookalike
+     *
+     * @effects external_host_still_rejected
+     */
+    public function test_fails_with_lookalike_of_own_host(): void
+    {
+        Config::set('app.url', 'https://shop.example.test');
+        Config::set('core.storage.public_asset_disk', '');
+
+        foreach ([
+            'https://shop.example.test.evil.com/x.png',
+            'https://shop.example.test@evil.com/x.png',
+            'https://evil.com\\@shop.example.test/x.png',
+            'https://evil.com/shop.example.test/x.png',
+            'https://evil.com/?u=https://shop.example.test/x.png',
+            'https://shop.example.test%2eevil.com/x.png',
+            // protocol-relative 는 자기 host 라도 종전대로 차단한다 (별도 판정 축)
+            '//shop.example.test/x.png',
+        ] as $url) {
+            $this->assertNotNull($this->failureOf($this->layoutWithLogo($url)), "자기 host 흉내는 차단되어야 합니다: {$url}");
+        }
+    }
+
+    /**
+     * 자기 host 허용은 http/https 에만 적용됩니다 — 위험 스킴은 host 가 같아도 차단한다.
+     *
+     * @scenario url_host=dangerous_scheme
+     *
+     * @effects external_host_still_rejected
+     */
+    public function test_fails_with_dangerous_scheme_even_on_own_host(): void
+    {
+        Config::set('app.url', 'https://shop.example.test');
+
+        foreach ([
+            'ftp://shop.example.test/x.png',
+            'file://shop.example.test/x.png',
+        ] as $url) {
+            $this->assertNotNull($this->failureOf($this->layoutWithLogo($url)), "위험 스킴은 host 와 무관하게 차단되어야 합니다: {$url}");
+        }
+    }
 
     /**
      * FormRequest 의 content 배열 규칙에서 NoExternalUrls 인스턴스를 찾는다.

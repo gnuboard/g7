@@ -681,3 +681,148 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(result.current.document.needsHostPicker).toBe(false);
   });
 });
+
+// ============================================================================
+// [case:backend-34] overlay 확장 — 호스트 병합 모드 저장이 injections 를 보존해야 한다
+// ============================================================================
+describe('[case:backend-34] overlay 확장 호스트 병합 저장 — injections 보존', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchSpy = vi.fn();
+    (global as any).fetch = fetchSpy;
+    if (typeof window !== 'undefined') window.localStorage?.clear();
+  });
+
+  function enterExtension(result: any, extId: string) {
+    act(() => {
+      result.current.editor.dispatch({ type: 'ENTER_EXTENSION_EDIT', extensionId: extId });
+    });
+  }
+
+  const overlayContent = {
+    target_layout: '_user_base',
+    injections: [
+      { target_id: 'anchor', position: 'append_child', components: [{ id: 'ext-sel', name: 'Div' }] },
+    ],
+    priority: 320,
+  };
+
+  /** 확장 GET + 호스트 GET(with_source_meta) mock — 호스트 앵커 아래 주입 노드 1개 */
+  function mockOverlay(hostChild: Record<string, unknown>) {
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.includes('/layout-extensions/')) {
+        return Promise.resolve(
+          extResponse({
+            id: 7,
+            extension_type: 'overlay',
+            lock_version: 0,
+            content: JSON.stringify(overlayContent),
+            host_layouts: ['_user_base'],
+          }),
+        );
+      }
+      return Promise.resolve(
+        hostResponse([{ id: 'anchor', name: 'Div', __source: { kind: 'base' }, children: [hostChild] }]),
+      );
+    });
+  }
+
+  it('reassembleContent — __injectionIndex 없이 백엔드 __source.injectionIndex 만 있어도 원래 injection 으로 분배', () => {
+    const roots = [
+      { id: 'ext-sel', name: 'Div', __source: { kind: 'extension', extensionId: 7, injectionIndex: 0 } },
+    ] as any;
+    const out = reassembleContent(overlayContent as any, roots) as any;
+    expect(out.injections[0].components).toEqual([{ id: 'ext-sel', name: 'Div' }]);
+  });
+
+  it('호스트 병합 모드 무변경 저장 — 주입 컴포넌트가 그대로 PUT 된다(비워지지 않음)', async () => {
+    mockOverlay({
+      id: 'ext-sel',
+      name: 'Div',
+      __source: { kind: 'extension', extensionId: 7, injectionIndex: 0 },
+    });
+    const { result } = renderHook(() => combinedHook(), { wrapper: makeWrapper() });
+    enterExtension(result, '7');
+    await waitFor(() => expect(result.current.document.document).not.toBeNull());
+    expect(result.current.document.document!.editability).toBe('ok');
+
+    fetchSpy.mockImplementationOnce(() =>
+      Promise.resolve({ ok: true, status: 200, json: async () => ({ data: { lock_version: 1 } }) }),
+    );
+    let saveResult: any;
+    await act(async () => {
+      saveResult = await result.current.document.save();
+    });
+    expect(saveResult.kind).toBe('success');
+    const putCall = fetchSpy.mock.calls.find((c) => c[1]?.method === 'PUT')!;
+    const body = JSON.parse(putCall[1].body);
+    // 종전: injections[0].components 가 [] 로 비워져 PUT — 사이트에서 그 확장 UI 가 조용히 사라졌다.
+    expect(body.content.injections[0].components).toEqual([{ id: 'ext-sel', name: 'Div' }]);
+    expect(body.content.priority).toBe(320);
+    expect(body.content.target_layout).toBe('_user_base');
+  });
+
+  it('injection 을 되찾을 수 없는 노드가 있으면 PUT 하지 않고 guard 를 돌려준다(손실 차단)', async () => {
+    // 순번 메타도 없고 id 도 원본 injection 과 맞지 않는 노드 — 어느 injection 인지 알 수 없다.
+    mockOverlay({ id: 'unknown-node', name: 'Div', __source: { kind: 'extension', extensionId: 7 } });
+    const { result } = renderHook(() => combinedHook(), { wrapper: makeWrapper() });
+    enterExtension(result, '7');
+    await waitFor(() => expect(result.current.document.document).not.toBeNull());
+
+    let saveResult: any;
+    await act(async () => {
+      saveResult = await result.current.document.save();
+    });
+    expect(saveResult.kind).toBe('guard_extension_reassembly');
+    expect(fetchSpy.mock.calls.find((c) => c[1]?.method === 'PUT')).toBeUndefined();
+  });
+
+  it('순번 메타가 없어도 id 가 원본 injection 의 노드와 맞으면 그 injection 으로 되돌린다(구 백엔드 호환)', async () => {
+    mockOverlay({ id: 'ext-sel', name: 'Div', __source: { kind: 'extension', extensionId: 7 } });
+    const { result } = renderHook(() => combinedHook(), { wrapper: makeWrapper() });
+    enterExtension(result, '7');
+    await waitFor(() => expect(result.current.document.document).not.toBeNull());
+    fetchSpy.mockImplementationOnce(() =>
+      Promise.resolve({ ok: true, status: 200, json: async () => ({ data: { lock_version: 1 } }) }),
+    );
+    let saveResult: any;
+    await act(async () => {
+      saveResult = await result.current.document.save();
+    });
+    expect(saveResult.kind).toBe('success');
+    const putCall = fetchSpy.mock.calls.find((c) => c[1]?.method === 'PUT')!;
+    expect(JSON.parse(putCall[1].body).content.injections[0].components).toEqual([
+      { id: 'ext-sel', name: 'Div' },
+    ]);
+  });
+
+  it('409 — 서버가 errors 아래에 넣는 current_version/your_version 을 읽는다(종전 -1)', async () => {
+    fetchSpy.mockResolvedValue(
+      extResponse({
+        id: 1,
+        extension_type: 'extension_point',
+        lock_version: 3,
+        content: JSON.stringify({ components: [{ id: 'root' }] }),
+      }),
+    );
+    const { result } = renderHook(() => combinedHook(), { wrapper: makeWrapper() });
+    enterExtension(result, '1');
+    await waitFor(() => expect(result.current.document.document).not.toBeNull());
+
+    fetchSpy.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        success: false,
+        message: '다른 사용자가 먼저 저장했습니다.',
+        errors: { error: 'concurrent_modification', current_version: 5, your_version: 3 },
+      }),
+    });
+    let saveResult: any;
+    await act(async () => {
+      saveResult = await result.current.document.save();
+    });
+    expect(saveResult).toEqual({ kind: 'concurrent_modification', currentVersion: 5, yourVersion: 3 });
+  });
+});

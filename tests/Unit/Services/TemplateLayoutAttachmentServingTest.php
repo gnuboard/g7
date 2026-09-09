@@ -121,4 +121,35 @@ class TemplateLayoutAttachmentServingTest extends TestCase
 
         $this->assertNull($result);
     }
+
+    /**
+     * 고아 disk 행은 withDisk 없이 주입 스토리지로 서빙돼야 합니다 (500 회귀 가드).
+     *
+     * 공개 자산 디스크가 플러그인 등록 디스크일 수 있으므로, 그 플러그인이 비활성화되면
+     * 행의 disk 가 config 에서 사라진다. 미등록 disk 로 withDisk 를 만들면 이후
+     * response() 가 InvalidArgumentException 을 던져 **무인증 공개 서빙 라우트가 500**
+     * 이 된다. 파일 도달 불가는 404 로 끝나는 것이 정상 degradation 이다.
+     *
+     * @scenario public_asset_disk=ghost_disk,row_disk=attachments,filter_url_hook=absent
+     *
+     * @effects orphan_row_disk_serves_without_exception, proxy_url_otherwise
+     */
+    public function test_orphan_row_disk_falls_back_to_injected_storage(): void
+    {
+        $template = new Template;
+        $template->id = 7;
+        $this->templateRepository->shouldReceive('findByIdentifier')
+            ->with('sirsoft-basic')->andReturn($template);
+
+        // 고아 disk 로는 withDisk 가 불려서는 안 된다
+        $this->storage->shouldNotReceive('withDisk');
+        $this->storage->shouldReceive('response')->once()->andReturnNull();
+
+        $result = $this->service->getServableResponse(
+            'sirsoft-basic',
+            $this->makeAttachment(7, 'vanished_plugin_disk')
+        );
+
+        $this->assertNull($result);
+    }
 }

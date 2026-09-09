@@ -97,6 +97,7 @@ use App\Services\LayoutExtensionService;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
+use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivilegedDatabaseAccounts;
 use Illuminate\Support\Facades\Config;
@@ -562,7 +563,7 @@ class CoreServiceProvider extends ServiceProvider
                     'type' => $type,
                     'identifier' => $identifier,
                     'required_version' => $requiredVersion,
-                    'core_version' => config('app.version'),
+                    'core_version' => CoreVersionChecker::getCoreVersion(),
                 ]);
             }
         }
@@ -627,6 +628,21 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
+     * 현재 프로세스가 코어 업데이트 중인지 판정합니다.
+     *
+     * 판정은 `App\Support\CoreUpdateContext::isInProgress()` 가 단독으로 소유한다 — 같은
+     * 플래그가 확장 자동 비활성화 스킵 · 코어 버전의 env 우선 판독 · `bootstrap/app.php` 의
+     * 패키지 매니페스트 자가 치유를 함께 게이트하므로, 판정이 갈라지면 한 경로만 조용히
+     * 다르게 동작한다. 이 메서드는 기존 호출처(각 Manager)를 위한 위임으로 남는다.
+     *
+     * @return bool 업데이트 트리 안이면 true (version-based 자동 비활성화 스킵)
+     */
+    public static function isCoreUpdateInProgress(): bool
+    {
+        return CoreUpdateContext::isInProgress();
+    }
+
+    /**
      * 호환되지 않는 템플릿을 자동 비활성화합니다.
      *
      * 코어 버전 업데이트 후 템플릿이 새 코어 버전과 호환되지 않는 경우
@@ -634,30 +650,6 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param  TemplateManager  $templateManager  템플릿 매니저
      */
-    /**
-     * 현재 프로세스가 코어 업데이트 중인지 판정합니다.
-     *
-     * 판정 조건 (OR):
-     *   1. 환경변수 `G7_UPDATE_IN_PROGRESS=1` — 부모 CoreUpdateCommand 가 시작 시 설정,
-     *      spawn 자식에도 `$env` 로 전파
-     *   2. artisan command 이름이 `core:update` / `core:execute-upgrade-steps` — 1 이 전파되지
-     *      않은 극단 상황 대비 보조 판정
-     *
-     * 둘 중 하나라도 true 면 업데이트 컨텍스트로 간주하여 version-based 자동 비활성화 스킵.
-     */
-    public static function isCoreUpdateInProgress(): bool
-    {
-        $envFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
-        if ($envFlag === '1' || $envFlag === 1 || $envFlag === true) {
-            return true;
-        }
-
-        $argv = $_SERVER['argv'] ?? [];
-        $command = $argv[1] ?? '';
-
-        return in_array($command, ['core:update', 'core:execute-upgrade-steps'], true);
-    }
-
     protected function validateAndDeactivateIncompatibleTemplates(TemplateManager $templateManager): void
     {
         // 업데이트 중 자동 비활성화 스킵 (validateAndDeactivateIncompatibleExtensions 와 동일 사유)
@@ -702,7 +694,7 @@ class CoreServiceProvider extends ServiceProvider
                     'type' => 'templates',
                     'identifier' => $identifier,
                     'required_version' => $requiredVersion,
-                    'core_version' => config('app.version'),
+                    'core_version' => CoreVersionChecker::getCoreVersion(),
                 ]);
             }
         }
@@ -730,7 +722,7 @@ class CoreServiceProvider extends ServiceProvider
         $alerts = $cache->get('ext.compatibility_alerts', []);
         $alerts[$type] = [
             'deactivated' => $deactivated,
-            'core_version' => config('app.version'),
+            'core_version' => CoreVersionChecker::getCoreVersion(),
             'timestamp' => now()->toIso8601String(),
         ];
         $cache->put('ext.compatibility_alerts', $alerts, 86400); // 24시간

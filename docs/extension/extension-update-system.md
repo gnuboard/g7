@@ -238,6 +238,20 @@ $process = proc_open($cmd, $descriptors, $pipes, $cwd, $env);
 
 `isCoreUpdateInProgress()` 는 env 외에 `$argv[1]` 이 `core:update` / `core:execute-upgrade-steps` 인 경우도 true 판정 — env 전파 실패 극단 상황 방어용. 하지만 `php -r '...'` 로 기동되는 spawn (inline 스크립트) 은 argv 판정이 되지 않으므로 env 전파가 유일한 수단입니다.
 
+argv 판정은 명령줄 SAPI(`cli`·`phpdbg`)에서만 유효합니다. 웹 요청의 `$_SERVER['argv']` 는 `register_argc_argv` 설정에 따라 쿼리스트링에서 채워지므로 신뢰하지 않으며, 웹 요청 안에서 업데이트 흐름을 시작하는 코드는 env 플래그를 프로세스 안에서 세워 판정을 받습니다.
+
+#### 판정의 단일 출처와 이 플래그가 게이트하는 것
+
+`CoreServiceProvider::isCoreUpdateInProgress()` 는 `App\Support\CoreUpdateContext::isInProgress()` 위임입니다. 같은 플래그가 서로 다른 계층에서 셋을 게이트하므로 판정이 갈라지면 그중 한 경로만 조용히 다르게 동작합니다.
+
+| 게이트 대상 | 위치 | 플래그가 없으면 |
+|-------------|------|-----------------|
+| 확장·템플릿 자동 비활성화 스킵 | `CoreServiceProvider::validateAndDeactivate*` | 일시적 버전 불일치로 활성 확장이 꺼진다 |
+| 코어 버전의 env `APP_VERSION` 우선 판독 | `CoreVersionChecker::getCoreVersion()` | 캐시된 config 의 fromVersion 으로 판정한다 (반대로, 트리 밖에서 env 를 우선하면 상주 프로세스가 옛 버전을 물고 확장을 끈다) |
+| 패키지 매니페스트 자가 치유 | `bootstrap/app.php` | 이전 설치본의 `packages.php` 로 부팅하다 "Class ... not found" 로 죽는다 |
+
+`bootstrap/app.php` 의 자가 치유 블록은 부팅 전이라 `App\` 클래스를 참조할 수 없어 같은 판정을 순수 PHP 로 복제합니다 — 조건을 바꾸면 양쪽을 함께 고쳐야 합니다.
+
 ### 동적 엔티티 보존 (Permission / Role / Menu)
 
 모듈·플러그인이 런타임에 동적으로 생성한 Permission/Role/Menu 는 정적 정의(`getPermissions()`, `getRoles()`, `getAdminMenus()`)에 포함되지 않으므로, 업데이트 시 `cleanupStaleModuleEntries()` / `cleanupStalePluginEntries()` 가 stale 로 오판하지 않도록 모듈 측에서 아래 hook 을 override 해 현재 식별자 전체를 반환한다.

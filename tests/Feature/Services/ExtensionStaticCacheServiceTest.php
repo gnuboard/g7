@@ -1461,4 +1461,52 @@ class ExtensionStaticCacheServiceTest extends TestCase
 
         return $next === 1 ? substr($rest, 0, $m[0][1] + 1) : $rest;
     }
+
+    /**
+     * 병합 결과가 비어 있어도(선언 산출물이 전부 존재하거나 선언이 0) 번들은 게시된다.
+     *
+     * 게시하지 않으면 그 구성의 자산 URL 이 API 로 폴백해, 방문자의 **모든 페이지 로드**가
+     * PHP 를 거친다. 오류도 로그도 남지 않고 화면은 정상이라 드러나지 않는 경로다.
+     *
+     * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
+     *
+     * @effects zero_byte_bundle_is_statically_published
+     */
+    public function test_publish_includes_zero_byte_bundle_when_declared_artifacts_are_empty(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $this->createActiveTemplate();
+
+        // 활성 확장 0건 = 병합 결과가 빈 문자열인 대표 구성(기본 설치)
+        $service = $this->service();
+
+        try {
+            $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
+
+            $bundleDir = public_path('build/ext/'.self::VERSION.'/bundles');
+
+            foreach (['modules.css', 'modules.js', 'plugins.css', 'plugins.js'] as $name) {
+                $this->assertFileExists($bundleDir.DIRECTORY_SEPARATOR.$name, "빈 번들도 게시되어야 한다: {$name}");
+                $this->assertSame(0, filesize($bundleDir.DIRECTORY_SEPARATOR.$name));
+            }
+
+            $manifest = json_decode(
+                (string) file_get_contents(public_path('build/ext/'.self::VERSION.'/manifest.json')),
+                true
+            );
+
+            $this->assertIsArray($manifest);
+            $this->assertContains('bundles/modules.css', $manifest['files'] ?? []);
+        } finally {
+            // 번들 캐시는 격리된 public 루트 밖(storage/app/ext-bundles)에 쓰이므로 직접 치운다 —
+            // 남기면 실 설치본의 번들 디렉토리에 테스트 버전 파일이 쌓인다.
+            foreach (['module', 'plugin'] as $type) {
+                foreach (['js', 'css'] as $kind) {
+                    @unlink(storage_path("app/ext-bundles/{$type}.".self::VERSION.".{$kind}"));
+                }
+            }
+        }
+    }
 }

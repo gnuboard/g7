@@ -256,6 +256,9 @@ Route::prefix('auth')->group(function () {
         // 로그인과 같은 제한을 적용해 코드 대입 시도를 함께 억제한다.
         Route::post('login/two-factor', [UserAuthController::class, 'verifyTwoFactor'])
             ->name('api.auth.login.two-factor');
+        // 인증번호 재발송 — 기존 challenge 를 취소하고 새로 발행한다.
+        Route::post('login/two-factor/resend', [UserAuthController::class, 'resendTwoFactor'])
+            ->name('api.auth.login.two-factor.resend');
     });
 
     // 공개 인증 라우트 (세션 불필요)
@@ -280,6 +283,13 @@ Route::prefix('auth')->group(function () {
         Route::post('login', [AdminAuthController::class, 'login'])
             ->middleware(['throttle:auth-login', 'start.api.session'])
             ->name('api.auth.admin.login');
+        // 관리자 2단계 인증 확인·재발송 — 사용자 경로와 같은 제한을 적용한다.
+        Route::post('login/two-factor', [AdminAuthController::class, 'verifyTwoFactor'])
+            ->middleware(['throttle:auth-login', 'start.api.session'])
+            ->name('api.auth.admin.login.two-factor');
+        Route::post('login/two-factor/resend', [AdminAuthController::class, 'resendTwoFactor'])
+            ->middleware(['throttle:auth-login', 'start.api.session'])
+            ->name('api.auth.admin.login.two-factor.resend');
     });
 });
 

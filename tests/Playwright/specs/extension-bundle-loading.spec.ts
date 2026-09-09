@@ -109,8 +109,12 @@ test.describe('확장 병합 번들 로딩', () => {
    * @effects bundle_css_failure_banner_uses_user_vocabulary
    */
   test('번들 CSS 가 503 이면 안내 항목명이 사용자 어휘다', async ({ page }) => {
-    await page.route(/\/api\/(modules|plugins)\/bundle[./]css/, (route) =>
-      route.fulfill({ status: 503, contentType: 'text/css', body: '' }),
+    // 번들 CSS 는 구성에 따라 정적 게시본(`/build/ext/{v}/bundles/*.css`) 또는 API 로
+    // 나간다 — 빈 번들도 0바이트로 게시되므로 기본 구성은 정적 URL 이다. 한쪽만 가로채면
+    // 그 구성에서 이 시나리오가 발화하지 않은 채 통과한다.
+    await page.route(
+      /(\/api\/(modules|plugins)\/bundle[./]css|\/build\/ext\/\d+\/bundles\/(modules|plugins)\.css)/,
+      (route) => route.fulfill({ status: 503, contentType: 'text/css', body: '' }),
     );
 
     await page.goto('/');

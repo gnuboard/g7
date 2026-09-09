@@ -111,12 +111,13 @@ class ExtensionAssetCssRewriteContractTest extends TestCase
             '병합 CSS 번들 라우트가 하나도 잡히지 않았습니다 — 이 테스트가 공허하게 통과하고 있습니다.'
         );
 
-        $source = $this->methodSource(ExtensionBundleService::class, 'buildCssBundle');
+        // 병합 루프는 mergeCss() 에 있다 — buildCssBundle()/buildBundleContent()/캐시 경로가 모두 이 루프를 거친다.
+        $source = $this->methodSource(ExtensionBundleService::class, 'mergeCss');
 
         $this->assertStringContainsString(
             self::REWRITER,
             $source,
-            'ExtensionBundleService::buildCssBundle() 이 '.self::REWRITER.' 를 거치지 않습니다. '
+            'ExtensionBundleService::mergeCss() 이 '.self::REWRITER.' 를 거치지 않습니다. '
             .'개별 자산 서빙과 병합 번들이 서로 다른 규칙을 쓰면 한쪽만 고쳐진 채 남습니다.'
         );
     }

@@ -330,6 +330,10 @@ trait BundledExtensionUpdatePrompt
             // ENV 합집합 (G7_UPDATE_IN_PROGRESS 등 핵심 플래그 자식에 전달)
             $env = array_merge(getenv(), $_ENV);
 
+            // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고,
+            // 두 호출처가 모두 clearAllCaches() 뒤다 — CoreUpdateCommand Step 11(패키지 매니페스트 재생성)
+            // 다음의 Step 12, ExecuteUpgradeStepsCommand 단독 실행의 캐시 정리 다음 단계. 따라서 자식이
+            // 읽는 매니페스트는 이미 현재 vendor 기준으로 다시 만들어진 것이다.
             $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
             if (! is_resource($process)) {
                 return null;

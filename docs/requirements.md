@@ -174,6 +174,11 @@ sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates publi
 두 도구 모두 필요하지 않다.** 소스에서 직접 빌드하거나 개발 환경을 구성할 때, 또는
 Composer 설치 방식을 선택할 때만 필요하다.
 
+Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autoloader` 를 쓴다.
+옵션 없는 `composer install` 은 개발용 패키지까지 설치하며, 그 상태로 운영하면
+이후 코어 업데이트가 vendor 를 교체할 때 이전 패키지 목록 캐시와 어긋나 부팅이 깨진다.
+개발용 패키지가 섞여 있으면 설치 마법사의 「설치 환경 확인」 단계가 경고한다.
+
 ---
 
 ## 2. 데이터베이스

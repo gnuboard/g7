@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
@@ -11,6 +12,7 @@ use App\Enums\IdentityVerificationPurpose;
 use App\Enums\IdentityVerificationStatus;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Extension\HookManager;
 use App\Models\User;
 use Carbon\Carbon;
@@ -30,6 +32,7 @@ class AuthService
         private UserConsentRepositoryInterface $userConsentRepository,
         private PasswordResetTokenRepositoryInterface $passwordResetTokenRepository,
         private IdentityPolicyService $policyService,
+        private IdentityVerificationLogRepositoryInterface $identityLogRepository,
     ) {}
 
     /**
@@ -228,9 +231,9 @@ class AuthService
                 'provider_id' => $challenge->providerId,
             ]);
 
-            throw ValidationException::withMessages([
-                'email' => [__('auth.two_factor_delivery_failed')],
-            ]);
+            // 자격 증명은 올바르다 — 401 로 뭉개면 사용자는 비밀번호를 의심하며 같은 실패를
+            // 반복하고, 운영자는 메일 설정이 깨진 사실을 알 방법이 없다.
+            throw new TwoFactorDeliveryFailedException;
         }
 
         HookManager::doAction('core.auth.two_factor_requested', $user, [
@@ -296,6 +299,83 @@ class AuthService
         Auth::login($user);
 
         return $this->issueLoginSession($user, (string) $user->email);
+    }
+
+    /**
+     * 2단계 인증 코드를 재발송합니다.
+     *
+     * 아직 사용되지 않은 challenge 만 재발송 대상입니다. 기존 challenge 를 취소하고 새로
+     * 발행하므로, 재발송 이후에는 앞서 받은 인증번호가 통하지 않습니다 — 재발송을 남겨 두면
+     * 유효한 코드가 여러 개 동시에 살아 있어 대입 시도의 표적이 넓어집니다.
+     *
+     * 해석된 사용자는 응답 페이로드에 실리지 않고 out 파라미터로만 올린다 — 관리자 경로가
+     * 그 사용자로 등급을 판정해야 하지만, 사용자 경로가 그대로 내보내면 모델이 응답에 새는다.
+     *
+     * @param  string  $challengeId  비밀번호 확인 단계가 돌려준 challenge UUID
+     * @param  User|null  $resolvedUser  (out) challenge 가 식별한 사용자
+     * @return array{two_factor_required: bool, challenge_id: string, provider_id: string, expires_at: mixed} 새 challenge 정보
+     *
+     * @throws ValidationException challenge 가 재발송 대상이 아닐 때
+     * @throws AccountLockedException 계정이 잠겨 있을 때
+     * @throws TwoFactorDeliveryFailedException 인증번호를 보내지 못했을 때
+     */
+    public function resendTwoFactorChallenge(string $challengeId, ?User &$resolvedUser = null): array
+    {
+        $log = $this->identityLogRepository->findById($challengeId);
+
+        // 존재하지 않음 / 다른 용도 / 이미 검증·취소·실패·만료 — 전부 같은 응답으로 답한다.
+        // 사유를 구분해 주면 challenge id 를 넣어 보며 상태를 캐낼 수 있다.
+        $resendable = [
+            IdentityVerificationStatus::Requested->value,
+            IdentityVerificationStatus::Sent->value,
+        ];
+
+        if ($log === null
+            || $log->purpose !== IdentityVerificationPurpose::Login->value
+            || ! in_array($log->status->value, $resendable, true)
+            || ($log->expires_at !== null && $log->expires_at->isPast())
+        ) {
+            throw ValidationException::withMessages([
+                'challenge_id' => [__('auth.two_factor_invalid_challenge')],
+            ]);
+        }
+
+        $user = $log->user_id === null ? null : $this->userRepository->findById((int) $log->user_id);
+
+        if (! $user || $user->status !== UserStatus::Active->value) {
+            throw ValidationException::withMessages([
+                'challenge_id' => [__('auth.two_factor_invalid_challenge')],
+            ]);
+        }
+
+        // challenge 발급 이후에 잠겼을 수 있다 — 재발송도 잠긴 계정에는 코드를 보내지 않는다.
+        $this->assertNotLocked($user);
+
+        $resolvedUser = $user;
+
+        app(IdentityVerificationService::class)->cancel($log->id);
+
+        return $this->startTwoFactorChallenge($user, (string) $user->email);
+    }
+
+    /**
+     * 이미 발급된 세션(토큰 + web 세션)을 되돌립니다.
+     *
+     * 2단계 인증 완료는 코드 확인 시점에 토큰을 발급하므로, 그 뒤에 권한 검사로 거절하는
+     * 경로는 발급분을 반드시 회수해야 합니다. `logout()` 은 `currentAccessToken()` 에
+     * 의존해 이 시점(요청 자체는 미인증)에는 아무 일도 하지 않습니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @param  string  $plainTextToken  방금 발급한 평문 토큰 ({id}|{token} 형식)
+     */
+    public function revokeIssuedSession(User $user, string $plainTextToken): void
+    {
+        PersonalAccessToken::findToken($plainTextToken)?->delete();
+
+        // completeTwoFactor() 의 Auth::login() 이 연 세션도 함께 닫는다.
+        if (request()->hasSession() && request()->session()->isStarted() && Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+        }
     }
 
     /**

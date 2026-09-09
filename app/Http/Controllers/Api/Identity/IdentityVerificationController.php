@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Identity;
 
 use App\Enums\IdentityOriginType;
+use App\Enums\IdentityVerificationPurpose;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Identity\CancelChallengeRequest;
@@ -96,6 +97,15 @@ class IdentityVerificationController extends PublicBaseController
      */
     public function verify(VerifyChallengeRequest $request, IdentityVerificationLog $challenge): JsonResponse
     {
+        // 로그인 challenge 는 이 공개 경로로 다루지 않는다. 여기서 검증·취소되면
+        // 바로 뒤의 `auth/login/two-factor` 가 INVALID_STATE 로 거절해, 그 challenge 로는
+        // 영영 로그인할 수 없게 된다(자기 DoS). 로그인 전용 엔드포인트만 사용한다.
+        if ($challenge->purpose === IdentityVerificationPurpose::Login->value) {
+            return $this->error('identity.errors.purpose_not_allowed', 403, [
+                'failure_code' => 'PURPOSE_NOT_ALLOWED',
+            ]);
+        }
+
         $result = $this->service->verify(
             challengeId: $challenge->id,
             input: $request->validated(),
@@ -142,6 +152,15 @@ class IdentityVerificationController extends PublicBaseController
      */
     public function cancel(CancelChallengeRequest $request, IdentityVerificationLog $challenge): JsonResponse
     {
+        // 로그인 challenge 는 이 공개 경로로 다루지 않는다. 여기서 검증·취소되면
+        // 바로 뒤의 `auth/login/two-factor` 가 INVALID_STATE 로 거절해, 그 challenge 로는
+        // 영영 로그인할 수 없게 된다(자기 DoS). 로그인 전용 엔드포인트만 사용한다.
+        if ($challenge->purpose === IdentityVerificationPurpose::Login->value) {
+            return $this->error('identity.errors.purpose_not_allowed', 403, [
+                'failure_code' => 'PURPOSE_NOT_ALLOWED',
+            ]);
+        }
+
         $ok = $this->service->cancel($challenge->id);
 
         if (! $ok) {

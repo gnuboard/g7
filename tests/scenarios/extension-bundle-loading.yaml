@@ -30,7 +30,6 @@ axes:
 
 exclusions:
   - { strategy: layout, active_combo: none, reason: "layout/lazy 전략은 번들 대상 아님 — 개별 레이아웃 처리" }
-  - { active_combo: none, version_state: cache_hit, reason: "활성 에셋 0건이면 캐시 파일을 만들지 않음 (빈 경로)" }
 
 effects:
   - ordered_by_priority_ascending_only_no_name_hardcode
@@ -65,6 +64,13 @@ effects:
   - empty_result_with_missing_declared_artifact_returns_503
   - missing_artifact_paths_are_logged
   - bundle_css_failure_banner_uses_user_vocabulary
+  - prod_cache_hit_skips_build_and_source_reads
+  - prod_cache_miss_builds_once_under_lock_and_rechecks
+  - prod_build_lock_failure_falls_back_to_unlocked_build
+  - prod_empty_result_with_present_artifacts_is_cached_as_zero_byte_file
+  - prod_empty_result_with_missing_artifact_is_not_cached
+  - prod_build_with_skipped_extension_is_not_cached
+  - zero_byte_bundle_is_statically_published
 
 test_files:
   - tests/Unit/Services/ExtensionBundleServiceTest.php
@@ -72,6 +78,7 @@ test_files:
   - tests/Unit/Extension/AbstractPluginDeclaredAssetsTest.php
   - tests/Unit/Extension/BundledManifestAssetDeclarationTest.php
   - tests/Feature/Api/Public/ExtensionBundleServingTest.php
+  - tests/Feature/Services/ExtensionStaticCacheServiceTest.php
   - resources/js/core/modules/__tests__/ModuleAssetLoader.test.ts
   - tests/Playwright/specs/extension-bundle-loading.spec.ts
 

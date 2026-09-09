@@ -490,7 +490,28 @@ if (! function_exists('installComposerDependenciesSSE')) {
         $lockExists = file_exists(BASE_PATH.'/composer.lock');
 
         if ($vendorExists && $lockExists) {
-            sendSSEEvent('log', ['message' => lang('log_composer_already_installed')]);
+            // 이미 준비된 vendor 를 그대로 쓴다. 그 vendor 가 개발용(require-dev 포함) 설치면
+            // 설치는 계속하되 운영자에게 알린다 — 그대로 두면 이후 코어 업데이트가 vendor 를
+            // --no-dev 로 교체할 때 이전 매니페스트에만 남은 provider 를 찾다 부팅이 깨진다.
+            $devInfo = detectDevVendorInstall(BASE_PATH);
+            if ($devInfo['dev'] === true) {
+                sendSSEEvent('log', ['message' => lang('log_composer_dev_packages_detected', [
+                    'count' => count($devInfo['packages']),
+                    'packages' => implode(', ', array_slice($devInfo['packages'], 0, 5)).(count($devInfo['packages']) > 5 ? ' …' : ''),
+                ])]);
+                // sendSSEEvent('log') 는 progress emitter 안에서 installation.log 에도 기록한다
+                // (SSE·폴링 두 모드 공통) — 여기서 addLog 를 또 부르면 로그에 같은 줄이 두 번 남는다.
+                sendSSEEvent('log', ['message' => lang('warning_composer_dev_packages_kept')]);
+            } else {
+                sendSSEEvent('log', ['message' => lang('log_composer_already_installed')]);
+            }
+
+            // 재사용 경로에서도 이전 환경의 컴파일 캐시를 정리한다 — 종전에는 정리 없이
+            // return 해, key_generate 가 이미 완료된 재개 설치에서는 어디서도 정리되지 않았다.
+            if (! empty(clearLaravelCompiledCache(BASE_PATH))) {
+                sendSSEEvent('log', ['message' => lang('log_composer_cache_cleared')]);
+            }
+
             sendSSEEvent('log', ['message' => lang('log_task_completed', ['task' => $taskName])]);
             sendSSEEvent('log', ['message' => lang('log_separator')]);
 

@@ -177,4 +177,36 @@ describe('LayoutAttachmentManager', () => {
     fireEvent.click(screen.getByTestId('g7le-attachment-delete-1'));
     expect(fn.mock.calls.some((c) => (c[1] as RequestInit)?.method === 'DELETE')).toBe(false);
   });
+  /**
+   * 공개 자산 스토리지를 켜면 서버가 교차 출처 절대 URL 을 돌려준다 (공개 #134).
+   * 화면은 그 문자열을 가공 없이 그대로 배경 CSS 와 선택 콜백에 흘려야 한다 —
+   * same-origin 상대 경로를 가정해 접두사를 붙이면 CDN 주소가 깨진다.
+   *
+   * @scenario public_asset_disk=public,row_disk=public,filter_url_hook=absent
+   *
+   * @effects editor_thumbnail_renders_cross_origin, direct_url_when_row_matches_public_disk
+   */
+  it('교차 출처 CDN 절대 URL 을 썸네일·선택 콜백에 그대로 보존', async () => {
+    const cdnUrl = 'https://cdn.example.test/template-layout-attachments/sirsoft-basic/hero.png';
+    const cdnList = [{ ...sampleList[0], url: cdnUrl }];
+    mockFetch(() => ({ ok: true, json: async () => ({ success: true, data: cdnList }) }));
+
+    const onSelect = vi.fn();
+    render(
+      <LayoutAttachmentManager
+        templateIdentifier="sirsoft-basic"
+        layoutName="home"
+        t={t}
+        onSelect={onSelect}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const card = await screen.findByTestId('g7le-attachment-card-1');
+    const thumb = card.firstElementChild as HTMLElement;
+    expect(thumb.style.backgroundImage).toContain(cdnUrl);
+
+    fireEvent.click(screen.getByTestId('g7le-attachment-use-1'));
+    expect(onSelect).toHaveBeenCalledWith(cdnUrl);
+  });
 });

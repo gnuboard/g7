@@ -8,6 +8,7 @@ use App\Models\TemplateLayoutExtensionVersion;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LayoutExtensionVersionRepository implements LayoutExtensionVersionRepositoryInterface
@@ -28,9 +29,10 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
      * @param  int  $extensionId  레이아웃 확장 ID
      * @param  array  $content  저장할 content 스냅샷
      * @param  array|null  $previousContent  직전 버전 content (변경 요약 기준). null 이면 변경 요약 0
+     * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
      * @return TemplateLayoutExtensionVersion 생성된 버전
      */
-    public function saveVersion(int $extensionId, array $content, ?array $previousContent = null): TemplateLayoutExtensionVersion
+    public function saveVersion(int $extensionId, array $content, ?array $previousContent = null, ?int $createdBy = null): TemplateLayoutExtensionVersion
     {
         $nextVersion = $this->getNextVersion($extensionId);
 
@@ -44,6 +46,8 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
             'version' => $nextVersion,
             'content' => $content,
             'changes_summary' => $changesSummary,
+            // 저장자 — 버전 목록의 「저장자」 표시 근거. 종전엔 기록하지 않아 항상 「알 수 없음」이었다.
+            'created_by' => $createdBy ?? Auth::id(),
         ]);
     }
 
@@ -165,9 +169,10 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
             $extension = LayoutExtension::findOrFail($extensionId);
             $currentContent = $extension->content;
 
-            // 3. 확장을 복원할 content로 업데이트
+            // 3. 확장을 복원할 content로 업데이트 — lock_version 도 올린다(레이아웃 본체와 동형).
             $extension->update([
                 'content' => $versionToRestore->content,
+                'lock_version' => ((int) ($extension->lock_version ?? 0)) + 1,
             ]);
 
             // 4. 복원 결과를 새 버전으로 저장 — content 는 복원된 내용, changes_summary 는 복원

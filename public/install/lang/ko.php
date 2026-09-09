@@ -243,6 +243,15 @@ return [
     'opcache_disabled_warning' => 'OPcache가 비활성화되어 있습니다. 이 상태에서는 방문자가 페이지를 열 때마다 사이트의 모든 PHP 코드를 처음부터 다시 해석합니다. 같은 서버, 같은 사양에서도 응답 속도가 몇 배까지 느려지며 방문자가 많을수록 격차가 커집니다. 설치는 이대로 진행할 수 있지만, 운영에 사용할 서버라면 php.ini에서 opcache.enable=1 을 켠 뒤 웹서버를 재시작하시기를 강력히 권장합니다.',
     'opcache_unknown' => 'OPcache 상태를 확인할 수 없습니다. 서버에서 설정 조회가 제한되어 있습니다.',
 
+    // Composer 의존성 구성 메시지
+    'vendor_dev_packages' => 'Composer 의존성 구성',
+    'vendor_dev_packages_none_short' => '운영용 구성 (개발용 패키지 없음)',
+    'vendor_dev_packages_none' => 'vendor 에 개발용 패키지가 없습니다. (권장)',
+    'vendor_dev_packages_detected_short' => '개발용 패키지 :count개 포함 — 운영 사이트에는 권장하지 않음',
+    'vendor_dev_packages_detected_warning' => '이미 준비된 vendor 에 개발용(require-dev) 패키지 :count개가 포함되어 있습니다. 설치는 이대로 진행할 수 있지만, 운영에 사용할 서버라면 설치 후 프로젝트 루트에서 composer install --no-dev --optimize-autoloader 를 실행해 개발용 패키지를 제거하시기를 권장합니다. (설치 마법사는 vendor 가 없을 때만 운영용 구성으로 자동 설치합니다.)',
+    'vendor_dev_packages_unknown' => 'vendor 구성을 확인할 수 없습니다 (installed.json 없음 또는 형식 불명).',
+    'vendor_dev_packages_no_vendor' => 'vendor 없음 — 설치 마법사가 운영용 구성으로 자동 설치합니다.',
+
     // API 응답 메시지
     'api_method_not_allowed' => 'POST 요청만 허용됩니다.',
     'api_invalid_request' => '잘못된 요청 데이터입니다.',
@@ -318,6 +327,8 @@ return [
     'log_composer_installing_from_lock' => 'composer.lock 파일을 사용하여 의존성을 설치합니다...',
     'log_composer_fresh_install' => '새로운 Composer 의존성을 설치합니다...',
     'log_composer_cache_cleared' => '이전 패키지 캐시를 삭제했습니다',
+    'log_composer_dev_packages_detected' => '기존 vendor 에 개발용 패키지 :count개가 포함되어 있습니다 (:packages)',
+    'warning_composer_dev_packages_kept' => '개발용 패키지가 포함된 vendor 를 그대로 사용합니다. 운영 사이트라면 설치 후 "composer install --no-dev --optimize-autoloader" 를 실행하세요 (설치는 계속 진행됩니다)',
 
     // 에러 메시지 - Worker (.env)
     'error_env_example_not_found' => '.env.example 파일을 찾을 수 없습니다',

@@ -54,7 +54,9 @@ effects:
   - stable_stringify_sorts_keys_preserves_array_order
   - changes_summary_uses_line_lcs_unit_matching_diff_view
   - changes_summary_recalculated_for_existing_versions
+  - changes_summary_memory_bounded_for_full_span_change
 test_files:
+  - tests/Unit/Repositories/Concerns/CalculatesJsonContentDiffTest.php
   - resources/js/core/template-engine/layout-editor/__tests__/components/VersionHistoryModal.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/EditorToolbar.versionPreview.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/VersionDiffView.test.tsx

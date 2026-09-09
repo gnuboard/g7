@@ -117,8 +117,20 @@ class ApiClient {
 
   /**
    * 토큰 저장
+   *
+   * 문자열이 아닌 값은 저장하지 않는다. `localStorage` 는 무엇을 넣든 문자열로 바꿔
+   * 저장하므로 `undefined` 를 넘기면 `"undefined"` 라는 truthy 문자열이 남고, 이후
+   * 모든 요청이 `Bearer undefined` 로 나가 401 로 튕긴다 — 화면에는 "세션이 만료되었습니다"
+   * 로 보여 원인을 추적할 단서가 남지 않는다.
+   *
+   * @since engine-v1.65.0
    */
   setToken(token: string): void {
+    if (typeof token !== 'string' || token === '') {
+      logger.warn('Ignoring invalid auth token — token must be a non-empty string.');
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       localStorage.setItem(this.TOKEN_KEY, token);
     }

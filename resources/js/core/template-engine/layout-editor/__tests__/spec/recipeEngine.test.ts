@@ -1,3 +1,7 @@
+// @scenario apply_type=cssVar, consumer=none, storage_scope=template_layouts, stored_shape=object, widget_output=image_object
+// @scenario apply_type=propValue, consumer=none, storage_scope=template_layouts, stored_shape=string, widget_output=scalar_string
+// @scenario apply_type=propValue, consumer=none, storage_scope=template_layouts, stored_shape=string, widget_output=image_object_empty_url
+// @scenario apply_type=classToken, consumer=none, storage_scope=template_layouts, stored_shape=absent, widget_output=undefined_cleared
 /**
  * recipeEngine.test.ts — 컨트롤 레시피 ↔ 노드 패치 변환
  *
@@ -526,5 +530,337 @@ describe('propValue 임의 prop 편집 (icon-picker / options-list / text)', () 
     const out = applyRecipe(node, iconName, 'fa-heart', { colorScheme: 'dark', breakpoint: 'base' });
     // 다크 scope 인라인(propValue) 은 short-circuit 으로 원본 반환 (바이트 동일).
     expect(out).toBe(node);
+  });
+});
+
+// ============================================================================
+// image 위젯 × 단일 값 슬롯 — 값 축약 / 역조립 (공개 #135)
+//
+// `image` 위젯은 배경 이미지용으로 설계되어 `{url,size,repeat,position}` **객체**를
+// 내보낸다. 그 값을 노드에 기록하는 apply 4종 중 `styleProp` 의 다중 props(배경 묶음)
+// 만 객체를 4속성으로 분해했고, `propValue`·`cssVar`·단일 `styleProp` 은 객체를 그대로
+// 기록했다 → 소비 컴포넌트가 `<Img src={객체}>` 로 받아 `[object Object]` 가 URL 이 됐다.
+//
+// 게이트는 **위젯 이름**(`widget === 'image'`)이며 값 형태 sniffing 이 아니다 —
+// `isImageValueObject` 는 4키 중 하나만 있어도 참이라, 값만 보면 `{position:'left'}`
+// 같은 정당한 객체 prop 을 이미지로 오인해 삭제한다(1-6/1-7 이 그 가드다).
+// ============================================================================
+describe('image 위젯 × 단일 값 슬롯 (공개 #135)', () => {
+  /** 실물 `hdrLogo` — sirsoft-basic 헤더 「로고 이미지」 */
+  const logoCtrl: EditorControlSpec = {
+    widget: 'image',
+    apply: { type: 'propValue', propKey: 'logo' },
+  };
+  const bgBundle: EditorControlSpec = {
+    widget: 'image',
+    group: 'bg-image',
+    apply: {
+      type: 'styleProp',
+      props: ['backgroundImage', 'backgroundSize', 'backgroundRepeat', 'backgroundPosition'],
+    },
+  };
+
+  /** @effects image_object_narrows_to_url_string_in_propvalue_slot */
+  it('1-1 값 객체를 url 문자열로 축약해 props 에 기록한다', () => {
+    const next = applyRecipe({ name: 'Header' }, logoCtrl, {
+      url: '/a.png',
+      size: 'cover',
+      repeat: 'no-repeat',
+      position: 'center',
+    });
+    expect(next.props?.logo).toBe('/a.png');
+    expect(typeof next.props?.logo).toBe('string');
+  });
+
+  /** @effects legacy_css_url_wrapping_is_stripped_for_component_prop_sink */
+  it('1-2 레거시 url(...) 래핑을 벗긴다 (컴포넌트 prop 은 CSS 문맥이 아니다)', () => {
+    const next = applyRecipe({ name: 'Header' }, logoCtrl, { url: 'url(/a.png)' });
+    expect(next.props?.logo).toBe('/a.png');
+  });
+
+  /** @effects image_object_without_url_or_with_empty_url_deletes_the_prop */
+  it('1-3 url 없이 모드만 담긴 값은 prop 을 삭제한다 (기존 빈값 술어에 위임)', () => {
+    const seeded: EditorNode = { name: 'Header', props: { logo: '/old.png' } };
+    expect(applyRecipe(seeded, logoCtrl, { size: 'contain' }).props?.logo).toBeUndefined();
+  });
+
+  it('1-4 빈 url 은 prop 을 삭제한다', () => {
+    expect(applyRecipe({ name: 'Header' }, logoCtrl, { url: '' }).props?.logo).toBeUndefined();
+  });
+
+  it('1-5 undefined(기본으로 되돌리기) 는 prop 을 삭제한다', () => {
+    const seeded: EditorNode = { name: 'Header', props: { logo: '/old.png' } };
+    expect(applyRecipe(seeded, logoCtrl, undefined).props?.logo).toBeUndefined();
+  });
+
+  /** @effects non_image_widget_object_and_array_props_are_preserved_intact */
+  it('1-6 오탐 가드 — 비-image 위젯의 객체 prop 은 통째로 보존한다', () => {
+    // `{position:'left'}` 는 isImageValueObject 를 통과한다(4키 중 하나 보유).
+    // 값 sniffing 으로 게이트했다면 여기서 정당한 prop 이 삭제됐을 것이다.
+    const tooltipCtrl: EditorControlSpec = {
+      widget: 'select',
+      apply: { type: 'propValue', propKey: 'tooltip' },
+    };
+    const next = applyRecipe({ name: 'Button' }, tooltipCtrl, { position: 'left' });
+    expect(next.props?.tooltip).toEqual({ position: 'left' });
+  });
+
+  it('1-7 오탐 가드 — options-list 배열은 그대로 보존한다', () => {
+    const optionsCtrl: EditorControlSpec = {
+      widget: 'options-list',
+      apply: { type: 'propValue', propKey: 'options' },
+    };
+    const next = applyRecipe({ name: 'Select' }, optionsCtrl, [{ value: 'a' }]);
+    expect(next.props?.options).toEqual([{ value: 'a' }]);
+  });
+
+  /** @effects image_object_narrows_to_wrapped_css_url_in_cssvar_and_single_styleprop */
+  it('1-8 cssVar 슬롯은 CSS 문맥이므로 url(...) 로 감싼다', () => {
+    const heroVar: EditorControlSpec = {
+      widget: 'image',
+      apply: { type: 'cssVar', varName: '--hero' },
+    };
+    const next = applyRecipe({ name: 'Div' }, heroVar, { url: '/a.png', size: 'cover' });
+    expect((next.props?.style as Record<string, unknown>)['--hero']).toBe('url(/a.png)');
+  });
+
+  it('1-9 단일 styleProp 슬롯도 CSS 문맥이므로 url(...) 로 감싼다', () => {
+    const singleBg: EditorControlSpec = {
+      widget: 'image',
+      apply: { type: 'styleProp', prop: 'backgroundImage' },
+    };
+    const next = applyRecipe({ name: 'Div' }, singleBg, { url: '/a.png', size: 'cover' });
+    expect((next.props?.style as Record<string, unknown>).backgroundImage).toBe('url(/a.png)');
+  });
+
+  /** @effects styleprop_bundle_four_property_decomposition_is_unchanged */
+  it('1-10 bundle(다중 props) 경로는 무회귀 — 4속성 분해가 그대로', () => {
+    const value = { url: '/a.png', size: 'cover', repeat: 'no-repeat', position: 'center' };
+    const style = applyRecipe({ name: 'Div' }, bgBundle, value).props?.style as Record<
+      string,
+      unknown
+    >;
+    expect(style).toEqual({
+      backgroundImage: 'url(/a.png)',
+      backgroundSize: 'cover',
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'center',
+    });
+  });
+
+  /** @effects apply_fixed_value_wins_over_control_value_then_gets_narrowed */
+  it('1-11 apply.value 고정값이 값보다 우선하고, 그 뒤에 축약이 적용된다', () => {
+    const fixed: EditorControlSpec = {
+      widget: 'image',
+      apply: { type: 'propValue', propKey: 'logo', value: '/fixed.png' },
+    };
+    expect(applyRecipe({ name: 'Header' }, fixed, { url: '/x.png' }).props?.logo).toBe(
+      '/fixed.png',
+    );
+  });
+
+  /** @effects stored_string_is_rewrapped_as_url_object_for_the_widget */
+  it('2-1 저장된 문자열을 위젯이 이해하는 객체로 되감는다', () => {
+    const node: EditorNode = { name: 'Header', props: { logo: '/a.png' } };
+    expect(reverseResolve(node, logoCtrl)).toEqual({ value: { url: '/a.png' }, matched: true });
+  });
+
+  it('2-2 값이 없으면 미매칭', () => {
+    expect(reverseResolve({ name: 'Header', props: {} }, logoCtrl)).toEqual({
+      value: undefined,
+      matched: false,
+    });
+  });
+
+  /** @effects binding_expression_is_rewrapped_so_one_click_upload_cannot_silently_lose_it */
+  it('2-3 표현식 문자열도 감싼다 — 빈 피커로 보여 1클릭에 소실되지 않도록', () => {
+    const expr = '{{_global.settings?.general?.site_logo_url}}';
+    const node: EditorNode = { name: 'Header', props: { logo: expr } };
+    expect(reverseResolve(node, logoCtrl)).toEqual({ value: { url: expr }, matched: true });
+  });
+
+  it('2-4 레거시 url(...) 저장값은 언래핑해 되감는다', () => {
+    const node: EditorNode = { name: 'Header', props: { logo: 'url(/a.png)' } };
+    expect(reverseResolve(node, logoCtrl)).toEqual({ value: { url: '/a.png' }, matched: true });
+  });
+
+  /** @effects legacy_object_stored_value_is_returned_losslessly */
+  it('2-5 레거시 객체 저장값은 무손실로 그대로 돌려준다', () => {
+    const legacy = { url: '/a.png', size: 'cover' };
+    const node: EditorNode = { name: 'Header', props: { logo: legacy } };
+    expect(reverseResolve(node, logoCtrl)).toEqual({ value: legacy, matched: true });
+  });
+
+  /** @effects non_image_widget_values_are_not_rewrapped */
+  it('2-6 비-image 위젯은 감싸지 않는다 (문자열 그대로)', () => {
+    const widthProp: EditorControlSpec = {
+      widget: 'select',
+      apply: { type: 'propValue', propKey: 'size' },
+    };
+    const node: EditorNode = { name: 'Button', props: { size: 'sm' } };
+    expect(reverseResolve(node, widthProp)).toEqual({ value: 'sm', matched: true });
+  });
+
+  /** @effects node_axis_roundtrip_is_a_fixed_point_after_first_pass */
+  it('2-7 노드 축 고정점 — apply → reverse → apply 2회차가 1회차와 동일', () => {
+    const first = applyRecipe({ name: 'Header' }, logoCtrl, {
+      url: '/a.png',
+      size: 'cover',
+      repeat: 'no-repeat',
+      position: 'center',
+    });
+    const back = reverseResolve(first, logoCtrl);
+    const second = applyRecipe(first, logoCtrl, back.value);
+    expect(second).toEqual(first);
+  });
+
+  /** @effects dark_scope_stays_readonly_for_inline_apply */
+  it('2-8 다크 scope 는 인라인이라 읽기 전용', () => {
+    const node: EditorNode = { name: 'Header', props: { logo: '/a.png' } };
+    expect(reverseResolve(node, logoCtrl, { colorScheme: 'dark', breakpoint: 'base' })).toEqual({
+      value: undefined,
+      matched: false,
+      darkReadonly: true,
+    });
+  });
+});
+
+// ============================================================================
+// number 위젯 값 — propValue 숫자 기록 (A1)
+//
+// `applyPropValue` 는 값을 가공하지 않으므로 위젯이 `number` 를 내보내야 한다.
+// `0` 은 유효값이며 빈값 술어(`''|null|undefined`)에 걸리지 않는다.
+// ============================================================================
+describe('number 위젯 값 — propValue 숫자 기록', () => {
+  const maxBoards: EditorControlSpec = {
+    widget: 'number',
+    apply: { type: 'propValue', propKey: 'maxVisibleBoards' },
+  };
+
+  it('4-1 숫자를 그대로 props 에 기록한다 (문자열로 변질되지 않음)', () => {
+    const next = applyRecipe({ name: 'Header' }, maxBoards, 5);
+    expect(next.props?.maxVisibleBoards).toBe(5);
+    expect(typeof next.props?.maxVisibleBoards).toBe('number');
+  });
+
+  it('4-2 0 은 유효값이라 삭제되지 않는다', () => {
+    const next = applyRecipe({ name: 'Header' }, maxBoards, 0);
+    expect(next.props?.maxVisibleBoards).toBe(0);
+  });
+
+  it('4-3 빈 문자열·undefined 는 prop 을 삭제한다', () => {
+    const seeded: EditorNode = { name: 'Header', props: { maxVisibleBoards: 5 } };
+    expect(applyRecipe(seeded, maxBoards, '').props?.maxVisibleBoards).toBeUndefined();
+    expect(applyRecipe(seeded, maxBoards, undefined).props?.maxVisibleBoards).toBeUndefined();
+  });
+
+  it('4-4 라운드트립 — 숫자 그대로 역해석', () => {
+    const applied = applyRecipe({ name: 'Header' }, maxBoards, 7);
+    expect(reverseResolve(applied, maxBoards)).toEqual({ value: 7, matched: true });
+    // 0 도 역해석된다(undefined 와 구분).
+    const zero = applyRecipe({ name: 'Header' }, maxBoards, 0);
+    expect(reverseResolve(zero, maxBoards)).toEqual({ value: 0, matched: true });
+  });
+});
+
+// ============================================================================
+// nodeKey apply — 노드 최상위 구조키 패치 (A2)
+//
+// `coreProps.ts` 가 `{type:'nodeKey', nodeKey:'dataKey'}` 를 선언했는데 엔진 switch 에
+// case 가 없어 **무음 no-op** 이었다 — 값을 넣어도 아무 일도 일어나지 않고 역해석도
+// 항상 undefined 였다. props 로 흘리면 `props.dataKey` 가 돼 런타임이 영영 읽지 않는다.
+// ============================================================================
+describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
+  const dataKeyCtrl: EditorControlSpec = {
+    widget: 'core-datakey',
+    apply: { type: 'nodeKey', nodeKey: 'dataKey' } as unknown as string,
+  };
+
+  it('5-1 노드 최상위에 기록하고 props 를 오염시키지 않는다', () => {
+    const next = applyRecipe({ name: 'Form' }, dataKeyCtrl, 'orderer') as EditorNode &
+      Record<string, unknown>;
+    expect(next.dataKey).toBe('orderer');
+    expect(next.props?.dataKey).toBeUndefined();
+  });
+
+  it('5-2 빈 문자열은 키를 삭제한다', () => {
+    const seeded = { name: 'Form', dataKey: 'orderer' } as EditorNode;
+    const next = applyRecipe(seeded, dataKeyCtrl, '') as EditorNode & Record<string, unknown>;
+    expect('dataKey' in next).toBe(false);
+  });
+
+  it('5-3 undefined 도 키를 삭제한다', () => {
+    const seeded = { name: 'Form', dataKey: 'orderer' } as EditorNode;
+    const next = applyRecipe(seeded, dataKeyCtrl, undefined) as EditorNode &
+      Record<string, unknown>;
+    expect('dataKey' in next).toBe(false);
+  });
+
+  it('5-4 역해석 — 노드 최상위에서 읽는다', () => {
+    const node = { name: 'Form', dataKey: 'orderer' } as EditorNode;
+    expect(reverseResolve(node, dataKeyCtrl)).toEqual({ value: 'orderer', matched: true });
+  });
+
+  it('5-5 역해석 — 값이 없으면 미매칭', () => {
+    expect(reverseResolve({ name: 'Form' }, dataKeyCtrl)).toEqual({
+      value: undefined,
+      matched: false,
+    });
+  });
+
+  it('5-6 예약키 가드 — nodeKey:"children" 은 no-op (노드 파괴 차단)', () => {
+    const evil: EditorControlSpec = {
+      widget: 'text',
+      apply: { type: 'nodeKey', nodeKey: 'children' } as unknown as string,
+    };
+    const node: EditorNode = { name: 'Div', children: [{ name: 'Span' }] };
+    const out = applyRecipe(node, evil, 'boom');
+    expect(out).toBe(node); // 참조 동일 — 사본조차 만들지 않는다
+    expect(node.children).toEqual([{ name: 'Span' }]);
+    expect(reverseResolve(node, evil)).toEqual({ value: undefined, matched: false });
+  });
+
+  it('5-7 디바이스 scope 도 최상위에 쓴다 (responsive 브랜치는 런타임이 안 읽는다)', () => {
+    const next = applyRecipe({ name: 'Form' }, dataKeyCtrl, 'orderer', {
+      colorScheme: 'light',
+      breakpoint: 'mobile',
+    }) as EditorNode & Record<string, unknown>;
+    expect(next.dataKey).toBe('orderer');
+    expect(next.responsive).toBeUndefined();
+  });
+
+  it('5-8 디바이스 scope 역해석도 최상위에서 — placeholder 흐림을 만들지 않는다', () => {
+    const node = { name: 'Form', dataKey: 'orderer' } as EditorNode;
+    expect(
+      reverseResolve(node, dataKeyCtrl, { colorScheme: 'light', breakpoint: 'mobile' }),
+    ).toEqual({ value: 'orderer', matched: true });
+  });
+
+  it('5-9 다크 scope 는 no-op (인라인 무손실 보존)', () => {
+    const node = { name: 'Form', dataKey: 'orderer' } as EditorNode;
+    expect(applyRecipe(node, dataKeyCtrl, 'other', { colorScheme: 'dark', breakpoint: 'base' })).toBe(
+      node,
+    );
+  });
+
+  it('5-10 입력 노드는 변경되지 않는다 (불변)', () => {
+    const node = { name: 'Form' } as EditorNode;
+    const snapshot = JSON.stringify(node);
+    applyRecipe(node, dataKeyCtrl, 'orderer');
+    expect(JSON.stringify(node)).toBe(snapshot);
+  });
+
+  it('5-11 비-문자열/빈 nodeKey 는 no-op', () => {
+    const bad: EditorControlSpec = {
+      widget: 'text',
+      apply: { type: 'nodeKey', nodeKey: 42 } as unknown as string,
+    };
+    const node: EditorNode = { name: 'Form' };
+    expect(applyRecipe(node, bad, 'x')).toBe(node);
+    const empty: EditorControlSpec = {
+      widget: 'text',
+      apply: { type: 'nodeKey', nodeKey: '' } as unknown as string,
+    };
+    expect(applyRecipe(node, empty, 'x')).toBe(node);
   });
 });

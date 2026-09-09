@@ -487,6 +487,39 @@
             );
         }
 
+        // 9-1. Composer 의존성 구성 카드 (권장 사항, 필수 아님)
+        // failedRequirements.push() 를 하지 않는다 — 개발용 패키지가 섞여 있어도 설치는 진행된다.
+        // vendor 자체가 없으면 마법사가 운영용 구성으로 자동 설치하므로 카드를 그리지 않는다.
+        if (data.vendor_dev_packages && data.vendor_dev_packages.vendor_exists) {
+            const vendorInfo = data.vendor_dev_packages;
+            let vendorStatusClass, vendorStatusText, vendorHint = '';
+            if (vendorInfo.dev === true) {
+                // 단순히 '개발용 포함' 만 보이면 이후 코어 업데이트가 깨진다는 실질이 전달되지 않는다.
+                vendorStatusClass = 'status-warning';
+                vendorStatusText = lang('vendor_dev_packages_detected_short')
+                    .replace(':count', (vendorInfo.packages || []).length);
+                vendorHint = lang('vendor_dev_packages_detected_warning')
+                    .replace(':count', (vendorInfo.packages || []).length);
+            } else if (vendorInfo.dev === false) {
+                vendorStatusClass = 'status-pass';
+                vendorStatusText = lang('vendor_dev_packages_none_short');
+            } else {
+                // installed.json 부재·형식 불명 — 확인 불가 (경고도 차단도 아님)
+                vendorStatusClass = 'status-pass';
+                vendorStatusText = lang('vendor_dev_packages_unknown');
+            }
+            html += renderSingleItemCard(
+                lang('vendor_dev_packages'),
+                vendorStatusClass,
+                vendorStatusText,
+                '',
+                false
+            );
+            if (vendorHint) {
+                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${vendorHint}</p>`;
+            }
+        }
+
         // 10. 자산 URL 방식 카드 (안내 항목, 필수 아님)
         // 서버는 판정할 수 없으므로(loopback 이 vhost·프록시를 우회) "확인 중" 으로 먼저
         // 그리고 refreshAssetUrlModeCard() 가 브라우저 프로브 결과로 갱신한다.

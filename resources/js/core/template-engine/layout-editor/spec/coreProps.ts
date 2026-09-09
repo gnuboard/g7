@@ -98,7 +98,23 @@ export const DEFAULT_CORE_PROP_KEYS: CorePropKey[] = ['id'];
 export function resolveCorePropKeys(coreProps: unknown): CorePropKey[] {
   if (coreProps === false) return [];
   if (Array.isArray(coreProps)) {
-    return coreProps.filter((k): k is CorePropKey => k in CORE_PROP_CONTROLS);
+    return coreProps.filter(
+      (k): k is CorePropKey => k in CORE_PROP_CONTROLS && !DEDICATED_UI_KEYS.has(k as CorePropKey),
+    );
   }
-  return [...DEFAULT_CORE_PROP_KEYS];
+  return DEFAULT_CORE_PROP_KEYS.filter((k) => !DEDICATED_UI_KEYS.has(k));
 }
+
+/**
+ * 전용 UI(`IsolatedScopeControl`)가 SSoT 인 코어 속성 키 — `ControlRenderer` 경유 렌더 금지.
+ *
+ * 이 두 키는 「격리 영역」 그룹이 직접 렌더한다. 어떤 템플릿이든 capability 에
+ * `coreProps:["id","isolatedState"]` 한 줄을 쓰면 **같은 키를 두 UI 가 쓰는 이중 경로**가
+ * 생기고, 그 순간 값 타입이 갈린다 — `IsolatedScopeControl` 은 ON 시 `isolatedState = {}`
+ * (빈 객체)를 쓰는데 `toggle` 위젯은 `true` 를 낸다. 렌더 목록 층에서만 제외하고
+ * `CORE_PROP_CONTROLS` 의 정의 자체는 남긴다(SSoT 선언 유지).
+ */
+const DEDICATED_UI_KEYS: ReadonlySet<CorePropKey> = new Set<CorePropKey>([
+  'isolatedState',
+  'isolatedScopeId',
+]);

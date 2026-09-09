@@ -433,3 +433,146 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(container.firstChild).toBeNull();
   });
 });
+
+// ============================================================================
+// 상속·주입 노드 드래그 핸들 미렌더 (A3)
+//
+// 이 노드들은 종전에 `data_bound` 로 분류돼 핸들이 렌더됐고, 옮겨도 저장 시 폐기됐다.
+// 핸들 자체를 만들지 않아 "옮길 수 있다" 는 어포던스를 주지 않는다.
+// ============================================================================
+describe('DndCanvasLayer — 상속·주입 노드 드래그 핸들 차단 (A3)', () => {
+  /** 펼침 인스턴스 2개를 owner 아래에 깔아 가상 묶음 합성 조건을 만든다. */
+  function appendIterationInstances(frame: HTMLElement, ownerPath: string): void {
+    const owner = frame.querySelector(`[data-editor-path="${ownerPath}"]`)!;
+    for (const [i, top] of [0, 50].entries()) {
+      const inst = document.createElement('div');
+      const p = `${ownerPath}.iteration.${i}`;
+      inst.dataset.editorPath = p;
+      inst.setAttribute('data-editor-path', p);
+      vi.spyOn(inst, 'getBoundingClientRect').mockReturnValue(
+        domRect({ left: 0, top, width: 400, height: 50 }),
+      );
+      owner.appendChild(inst);
+    }
+  }
+
+  function renderLayer(components: EditorNode[]) {
+    const frame = buildFrame([
+      { path: '0', rect: { left: 0, top: 0, width: 400, height: 100 } },
+      { path: '1', rect: { left: 0, top: 100, width: 400, height: 100 } },
+    ]);
+    render(
+      <DndCanvasLayer
+        frameEl={frame}
+        nesting={NESTING}
+        editMode="route"
+        components={components}
+        patchLayout={vi.fn()}
+        pushHistory={vi.fn()}
+        onSelectPath={vi.fn()}
+      />,
+    );
+  }
+
+  it('N13 base 출처 + 바인딩 노드 → 핸들 미렌더 (route 소유 형제는 렌더)', () => {
+    renderLayer([
+      { name: 'Div', id: 'a', __source: { kind: 'base' }, text: '{{site.title}}' },
+      { name: 'Div', id: 'b', __source: { kind: 'route' }, text: '{{user.name}}' },
+    ]);
+    expect(screen.queryByTestId('g7le-dnd-handle-0')).not.toBeInTheDocument();
+    // 회귀 가드 — route 소유 data_bound 는 그대로 핸들이 있다.
+    expect(screen.queryByTestId('g7le-dnd-handle-1')).toBeInTheDocument();
+  });
+
+  it('N14 base 출처 iteration 노드 → 가상 묶음 핸들도 미렌더', () => {
+    renderLayer([
+      {
+        name: 'Div',
+        id: 'list',
+        __source: { kind: 'base' },
+        iteration: { source: '{{posts.data}}' },
+      },
+      { name: 'Div', id: 'b', __source: { kind: 'route' } },
+    ]);
+    expect(screen.queryByTestId('g7le-dnd-handle-0')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('g7le-dnd-handle-1')).toBeInTheDocument();
+  });
+
+  /**
+   * N14b — 가상 묶음 합성 루프(`DndCanvasLayer` 의 iterationGroups 순회)를 **실제로 진입**시켜
+   * 원본 노드의 출처 잠금이 그 루프에서도 걸리는지 잰다.
+   *
+   * N14 는 펼침 인스턴스(`0.iteration.N`) DOM 을 만들지 않아 묶음 합성 루프에 애초에
+   * 들어가지 않았다 — 그래서 그 안의 잠금 게이트를 지워도 초록이었다(라운드3 probe 실측).
+   * 여기서는 인스턴스를 실제로 깔아 묶음이 합성되는 조건을 만든 뒤 부재를 단언한다.
+   */
+  it('N14b base 출처 iteration 노드 → 펼침 인스턴스가 있어도 가상 묶음 핸들 미합성', () => {
+    const frame = buildFrame([{ path: '0', rect: { left: 0, top: 0, width: 400, height: 100 } }]);
+    appendIterationInstances(frame, '0');
+    render(
+      <DndCanvasLayer
+        frameEl={frame}
+        nesting={NESTING}
+        editMode="route"
+        components={[
+          {
+            name: 'Div',
+            id: 'list',
+            __source: { kind: 'base', layout: '_user_base' },
+            iteration: { source: '{{posts.data}}' } as EditorNode['iteration'],
+            children: [{ name: 'Span', id: 'cell' }],
+          },
+        ]}
+        patchLayout={vi.fn()}
+        pushHistory={vi.fn()}
+        onSelectPath={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('g7le-dnd-handle-0')).not.toBeInTheDocument();
+  });
+
+  /**
+   * N14c — N14b 의 「부재」가 공허하지 않음을 증명하는 반증 가드.
+   * 같은 픽스처에서 출처만 route 로 바꾸면 묶음 핸들이 실제로 합성된다.
+   */
+  it('N14c 회귀 가드 — route 출처 iteration 노드는 가상 묶음 핸들이 합성된다', () => {
+    const frame = buildFrame([{ path: '0', rect: { left: 0, top: 0, width: 400, height: 100 } }]);
+    appendIterationInstances(frame, '0');
+    render(
+      <DndCanvasLayer
+        frameEl={frame}
+        nesting={NESTING}
+        editMode="route"
+        components={[
+          {
+            name: 'Div',
+            id: 'list',
+            __source: { kind: 'route' },
+            iteration: { source: '{{posts.data}}' } as EditorNode['iteration'],
+            children: [{ name: 'Span', id: 'cell' }],
+          },
+        ]}
+        patchLayout={vi.fn()}
+        pushHistory={vi.fn()}
+        onSelectPath={vi.fn()}
+      />,
+    );
+    const groupHandle = screen.queryByTestId('g7le-dnd-handle-0');
+    expect(groupHandle).toBeInTheDocument();
+    expect(groupHandle?.getAttribute('data-dnd-iteration-group')).toBe('true');
+  });
+
+  it('N15 extension 출처 + 바인딩 노드 → 핸들 미렌더', () => {
+    renderLayer([
+      {
+        name: 'Div',
+        id: 'a',
+        __source: { kind: 'extension', extensionId: 35 },
+        text: '{{content}}',
+      },
+      { name: 'Div', id: 'b', __source: { kind: 'route' } },
+    ]);
+    expect(screen.queryByTestId('g7le-dnd-handle-0')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('g7le-dnd-handle-1')).toBeInTheDocument();
+  });
+});

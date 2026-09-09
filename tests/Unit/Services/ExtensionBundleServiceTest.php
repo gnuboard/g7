@@ -5,12 +5,15 @@ namespace Tests\Unit\Services;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Services\ExtensionBundleService;
+use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Mockery;
 use Tests\TestCase;
 
 /**
- * ExtensionBundleService 단위 테스트
+ * [case:backend-30] ExtensionBundleService 단위 테스트
  *
  * 활성 확장 IIFE/CSS 의 priority 정렬, `\n;\n` 구분자 병합, sourceMappingURL
  * 처리, 확장별 fault tolerance, 캐시 파일 생성/정리를 검증한다.
@@ -128,7 +131,8 @@ class ExtensionBundleServiceTest extends TestCase
         int $priority,
         array $assets,
         string $strategy = 'global',
-        ?array $declaredPaths = null
+        ?array $declaredPaths = null,
+        ?array $builtPaths = null
     ): object {
         $ext = Mockery::mock();
         $ext->shouldReceive('hasAssets')->andReturn($assets !== []);
@@ -139,8 +143,10 @@ class ExtensionBundleServiceTest extends TestCase
             'dependencies' => [],
         ]);
         $ext->shouldReceive('getAssets')->andReturn($assets);
+        // 실제 확장은 존재하는 산출물만 built 경로로 돌려준다(getBuiltAssetPaths 가 file_exists 로 거른다).
+        // 기본값은 "산출물 없음" 상태를 흉내 내는 부재 경로다 — 존재하는 산출물을 흉내 내려면 $builtPaths 로 지정한다.
         $ext->shouldReceive('getBuiltAssetAbsolutePaths')->andReturn(
-            array_map(fn () => $this->fixtureDir.'/missing-'.$identifier.'.out', $assets)
+            $builtPaths ?? array_map(fn () => $this->fixtureDir.'/missing-'.$identifier.'.out', $assets)
         );
         $ext->shouldReceive('getBuiltAssetPaths')->andReturn(
             array_map(fn () => 'dist/css/module.css', $assets)
@@ -437,8 +443,8 @@ class ExtensionBundleServiceTest extends TestCase
         app()->detectEnvironment(fn () => 'production');
 
         $a = $this->writeFixture('a.js', '(function(){window.A=1})()');
-        // getActiveModules 는 두 번 호출될 수 있으므로 안정적으로 반환
-        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+        // 캐시 적중 경로는 활성 확장을 다시 열거하지 않아야 하므로 정확히 1회로 조인다
+        $this->moduleManager->shouldReceive('getActiveModules')->once()->andReturn([
             'ext-a' => $this->fakeExtension('ext-a', 10, $a, null),
         ]);
 
@@ -449,9 +455,12 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertFileExists($path1);
         $this->assertStringContainsString('module.999.js', $path1);
 
+        $content1 = (string) file_get_contents($path1);
+
         // 같은 version 재요청 → 동일 파일 (캐시 히트)
         $path2 = $svc->getBundleFilePath('module', 'js', 999);
         $this->assertSame($path1, $path2);
+        $this->assertSame($content1, (string) file_get_contents($path2));
     }
 
     /**
@@ -710,5 +719,311 @@ class ExtensionBundleServiceTest extends TestCase
         ]);
 
         $this->assertSame([$absent], $this->service()->findMissingDeclaredAssets('plugin', 'js'));
+    }
+
+    /**
+     * 프로덕션에서 같은 version 캐시가 있으면 **빌드도 원본 읽기도 하지 않는다**.
+     *
+     * 캐시 적중 판정이 빌드 뒤에 있으면 캐시가 있어도 요청마다 활성 확장을 열거하고
+     * 산출물 파일을 전부 읽는다. 응답은 정상 200 이라 타이밍 말고는 드러나는 증상이
+     * 없고, 원본이 사라진 순간에는 캐시가 멀쩡한데도 빈 경로가 반환되어 503 이 된다.
+     *
+     * @effects prod_cache_hit_skips_build_and_source_reads
+     */
+    public function test_prod_cache_hit_returns_cached_path_without_enumerating_or_reading_sources(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $a = $this->writeFixture('cache-hit.js', '(function(){window.A=1})()');
+
+        $enumerations = 0;
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturnUsing(function () use (&$enumerations, $a) {
+            $enumerations++;
+
+            return ['ext-a' => $this->fakeExtension('ext-a', 10, $a, null)];
+        });
+
+        $svc = $this->service();
+
+        $path1 = $svc->getBundleFilePath('module', 'js', 424242);
+        $this->assertNotSame('', $path1);
+        $this->assertFileExists($path1);
+        $this->assertSame(1, $enumerations);
+
+        $before = (string) file_get_contents($path1);
+
+        // 원본 소실 — 캐시가 있으므로 응답에 영향이 없어야 한다
+        @unlink($a);
+
+        $path2 = $svc->getBundleFilePath('module', 'js', 424242);
+
+        $this->assertSame($path1, $path2);
+        $this->assertSame(1, $enumerations, '캐시 적중 시 활성 확장을 다시 열거하면 안 된다');
+        $this->assertSame($before, (string) file_get_contents($path2));
+    }
+
+    /**
+     * 프로덕션은 같은 version 이면 원본이 바뀌어도 캐시를 그대로 서빙한다.
+     *
+     * 비프로덕션 거울 테스트(test_non_production_rebuilds_every_request_without_cache_reuse)와
+     * 짝을 이룬다 — 원본 교체는 version bump 로만 반영된다.
+     *
+     * @effects prod_cache_hit_skips_build_and_source_reads
+     */
+    public function test_prod_cache_hit_does_not_rebuild_when_source_changes_on_same_version(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $a = $this->writeFixture('prod-stable.js', '(function(){window.A=1})()');
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-a' => $this->fakeExtension('ext-a', 10, $a, null),
+        ]);
+
+        $svc = $this->service();
+
+        $path1 = $svc->getBundleFilePath('module', 'js', 424243);
+        $this->assertStringContainsString('window.A=1', (string) file_get_contents($path1));
+
+        File::put($a, '(function(){window.A=2})()');
+        $path2 = $svc->getBundleFilePath('module', 'js', 424243);
+
+        $this->assertSame($path1, $path2);
+        $this->assertStringContainsString('window.A=1', (string) file_get_contents($path2));
+        $this->assertStringNotContainsString('window.A=2', (string) file_get_contents($path2));
+    }
+
+    /**
+     * 캐시 미스는 같은 (type, kind, version) 잠금으로 1회 빌드에 수렴하고,
+     * 잠금 뒤에 캐시를 **다시 확인**한다.
+     *
+     * 다른 프로세스가 대기 중에 캐시를 완성했다면 이쪽은 빌드하지 않아야 한다.
+     *
+     * @effects prod_cache_miss_builds_once_under_lock_and_rechecks
+     */
+    public function test_prod_cache_miss_serializes_concurrent_builds_and_rechecks_cache_inside_lock(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $bundleDir = storage_path('app/ext-bundles');
+        File::ensureDirectoryExists($bundleDir);
+        $cachePath = $bundleDir.'/module.424244.js';
+        @unlink($cachePath);
+
+        $enumerations = 0;
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturnUsing(function () use (&$enumerations) {
+            $enumerations++;
+
+            return [];
+        });
+
+        $lock = Mockery::mock(Lock::class);
+        // 대기 중 다른 프로세스가 캐시를 완성한 상황
+        $lock->shouldReceive('block')->once()->andReturnUsing(function () use ($cachePath) {
+            File::put($cachePath, '(function(){window.OTHER=1})()');
+
+            return true;
+        });
+        $lock->shouldReceive('release')->once()->andReturn(true);
+
+        Cache::shouldReceive('lock')->once()->andReturn($lock);
+
+        $path = $this->service()->getBundleFilePath('module', 'js', 424244);
+
+        // 경로 구분자는 스토리지 드라이버가 정한다 — 같은 파일을 가리키는지만 본다
+        $this->assertSame(realpath($cachePath), realpath($path));
+        $this->assertSame(0, $enumerations, '잠금 뒤 재확인이 적중하면 빌드하지 않아야 한다');
+
+        @unlink($cachePath);
+    }
+
+    /**
+     * 잠금 대기가 초과되어도 실패로 바꾸지 않는다 — 잠금 없이 각자 빌드한다.
+     *
+     * @effects prod_build_lock_failure_falls_back_to_unlocked_build
+     */
+    public function test_prod_cache_miss_builds_without_lock_when_lock_times_out(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $a = $this->writeFixture('lock-timeout.js', '(function(){window.A=1})()');
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-a' => $this->fakeExtension('ext-a', 10, $a, null),
+        ]);
+
+        $lock = Mockery::mock(Lock::class);
+        $lock->shouldReceive('block')->once()->andThrow(new LockTimeoutException);
+        $lock->shouldReceive('release')->never();
+
+        Cache::shouldReceive('lock')->once()->andReturn($lock);
+
+        $path = $this->service()->getBundleFilePath('module', 'js', 424245);
+
+        $this->assertNotSame('', $path);
+        $this->assertFileExists($path);
+        $this->assertStringContainsString('window.A=1', (string) file_get_contents($path));
+    }
+
+    /**
+     * 캐시 저장소가 잠금을 제공하지 못해도(드라이버 미지원·권한 등) 빌드는 계속한다.
+     *
+     * @effects prod_build_lock_failure_falls_back_to_unlocked_build
+     */
+    public function test_prod_cache_miss_builds_without_lock_when_store_cannot_lock(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $a = $this->writeFixture('lock-unavailable.js', '(function(){window.A=1})()');
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-a' => $this->fakeExtension('ext-a', 10, $a, null),
+        ]);
+
+        Cache::shouldReceive('lock')->once()->andThrow(new \RuntimeException('lock unsupported'));
+
+        $path = $this->service()->getBundleFilePath('module', 'js', 424246);
+
+        $this->assertNotSame('', $path);
+        $this->assertFileExists($path);
+        $this->assertStringContainsString('window.A=1', (string) file_get_contents($path));
+    }
+
+    /**
+     * 선언 산출물이 **전부 존재하되 비어 있으면** 0바이트 캐시 파일을 만든다.
+     *
+     * 그래야 정적 게시 대상이 되어 브라우저가 웹서버에서 직접 받는다. 만들지 않으면
+     * 그 구성의 모든 페이지 로드가 PHP 를 경유하고, 요청마다 컨트롤러가 열거를 세 번
+     * 반복한다(경로 조회 → 재빌드 → 소실 판정).
+     *
+     * @effects prod_empty_result_with_present_artifacts_is_cached_as_zero_byte_file
+     */
+    public function test_prod_caches_zero_byte_bundle_when_declared_artifacts_exist_but_empty(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $cssPath = $this->writeFixture('zero-byte.css', '');
+
+        $enumerations = 0;
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturnUsing(function () use (&$enumerations, $cssPath) {
+            $enumerations++;
+
+            return [
+                'ext-empty-css' => $this->fakeExtensionWithAssets(
+                    'ext-empty-css',
+                    100,
+                    ['css' => ['output' => 'dist/css/module.css']],
+                    'global',
+                    ['css' => $cssPath],
+                    ['css' => $cssPath]
+                ),
+            ];
+        });
+
+        $svc = $this->service();
+
+        $path = $svc->getBundleFilePath('module', 'css', 424247);
+
+        $this->assertNotSame('', $path);
+        $this->assertFileExists($path);
+        $this->assertSame(0, filesize($path));
+
+        $enumerationsAfterFirst = $enumerations;
+        $this->assertSame($path, $svc->getBundleFilePath('module', 'css', 424247));
+        $this->assertSame($enumerationsAfterFirst, $enumerations, '0바이트 캐시도 적중하면 열거하지 않는다');
+    }
+
+    /**
+     * 선언 산출물이 **소실**이면 캐시하지 않는다 — 503 계약을 보존한다.
+     *
+     * 0바이트 캐시가 소실 상태까지 가리면 배포 중 dist 가 빈 장애가 정상(빈 200)으로
+     * 위장된다.
+     *
+     * @effects prod_empty_result_with_missing_artifact_is_not_cached
+     */
+    public function test_prod_does_not_cache_when_declared_artifact_missing(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $absent = $this->fixtureDir.'/absent-prod.css';
+        @unlink($absent);
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-gone' => $this->fakeExtensionWithAssets(
+                'ext-gone',
+                100,
+                ['css' => ['output' => 'dist/css/module.css']],
+                'global',
+                ['css' => $absent]
+            ),
+        ]);
+
+        $path = $this->service()->getBundleFilePath('module', 'css', 424248);
+
+        $this->assertSame('', $path);
+        $this->assertFileDoesNotExist(storage_path('app/ext-bundles/module.424248.css'));
+    }
+
+    /**
+     * 선언한 확장이 **하나도 없어도** 0바이트 캐시를 만든다(정적 게시 가능).
+     *
+     * @effects prod_empty_result_with_present_artifacts_is_cached_as_zero_byte_file
+     */
+    public function test_prod_caches_zero_byte_bundle_when_nothing_declared(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
+
+        $path = $this->service()->getBundleFilePath('module', 'css', 424249);
+
+        $this->assertNotSame('', $path);
+        $this->assertFileExists($path);
+        $this->assertSame(0, filesize($path));
+    }
+
+    /**
+     * 병합 단계에서 건너뛴 확장이 하나라도 있으면 캐시하지 않는다 — 파일은 존재·판독 가능한데
+     * 읽기·치환이 실패한 상태가 0바이트(또는 일부 빠진) 캐시로 굳으면 버전 bump 전까지 그
+     * 확장 스타일이 사라진 채 고정된다. 종전처럼 매 요청 재시도해 원인이 사라지면 회복한다.
+     *
+     * @effects prod_build_with_skipped_extension_is_not_cached
+     */
+    public function test_prod_does_not_cache_when_an_extension_was_skipped_during_merge(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        $cssPath = $this->writeFixture('unreadable.css', '.a{color:red}');
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-unreadable' => $this->fakeExtension('ext-unreadable', 100, null, $cssPath),
+        ]);
+
+        $svc = new class($this->moduleManager, $this->pluginManager) extends ExtensionBundleService
+        {
+            public string $failOn = '';
+
+            protected function readAssetSource(string $path): string|false
+            {
+                return $path === $this->failOn ? false : parent::readAssetSource($path);
+            }
+        };
+        $svc->failOn = $cssPath;
+
+        $this->assertSame('', $svc->getBundleFilePath('module', 'css', 424250));
+        $this->assertFileDoesNotExist(storage_path('app/ext-bundles/module.424250.css'));
+
+        // 원인이 사라지면 다음 요청이 정상 캐시한다 (매 요청 재시도)
+        $svc->failOn = '';
+        $path = $svc->getBundleFilePath('module', 'css', 424250);
+
+        $this->assertNotSame('', $path);
+        $this->assertStringEqualsFile($path, '.a{color:red}');
     }
 }

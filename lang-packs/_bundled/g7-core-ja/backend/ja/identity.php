@@ -30,6 +30,7 @@ return [
         'admin_policy_has_no_default' => '管理者が直接作成したポリシーには宣言デフォルト値がありません。',
         'reset_field_failed' => '宣言デフォルト値の復元に失敗しました。フィールドが有効であることを確認してください。',
         'cannot_delete_system_policy' => 'システムが宣言したポリシーは削除できません。管理者が直接作成したポリシーのみ削除できます。',
+        'purpose_not_allowed' => 'この認証リクエストはこの画面では処理できません。',
     ],
     'messages' => [
         'challenge_requested' => '本人認証コードを送信しました。',

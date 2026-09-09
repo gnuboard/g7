@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PropertyEditorModal } from '../../components/PropertyEditorModal';
 import { registerCoreWidgets } from '../../spec/registerCoreWidgets';
 import {
@@ -194,5 +194,44 @@ describe('PropertyEditorModal — 데이터 연결(dataProps) 영역', () => {
   it('iteration 없는 노드 → 반복 데이터 연결 영역 0(노드 구조 기반 게이트)', () => {
     renderBinding({ name: 'CardGrid', props: {} });
     expect(screen.queryByTestId('g7le-iteration-binding-section')).toBeNull();
+  });
+});
+
+// ============================================================================
+// 코어 dataKey 컨트롤 — nodeKey apply 통합 (A2)
+//
+// 엔진 switch 에 `nodeKey` case 가 없던 동안 이 컨트롤은 값을 넣어도 아무 일도
+// 일어나지 않는 무음 no-op 이었다. 통합 축으로 "패치가 노드 최상위에 간다" 를 잠근다.
+// ============================================================================
+describe('PropertyEditorModal — 코어 dataKey(nodeKey apply) 통합', () => {
+  const dataKeySpec: EditorSpec = {
+    controls: {},
+    componentCapabilities: {
+      // 폼 컨테이너 opt-in — coreProps 에 dataKey 를 명시해야 노출된다.
+      Form: { coreProps: ['id', 'dataKey'] },
+    },
+  };
+
+  it('5-15 dataKey 입력 → onPatchNode 인자의 node.dataKey 설정, props.dataKey 부재', () => {
+    const onPatchNode = vi.fn();
+    render(
+      <PropertyEditorModal
+        node={{ name: 'Form' }}
+        spec={dataKeySpec}
+        manifest={null}
+        t={t}
+        onPatchNode={onPatchNode}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const input = screen.getByTestId('g7le-widget-core-datakey');
+    fireEvent.change(input, { target: { value: 'orderer' } });
+    fireEvent.blur(input, { target: { value: 'orderer' } });
+
+    expect(onPatchNode).toHaveBeenCalled();
+    const patched = onPatchNode.mock.calls.at(-1)![0] as EditorNode & Record<string, unknown>;
+    expect(patched.dataKey).toBe('orderer');
+    expect(patched.props?.dataKey).toBeUndefined();
   });
 });

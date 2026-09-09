@@ -5,6 +5,7 @@ namespace App\Extension;
 use App\Contracts\Extension\CacheInterface;
 use App\Exceptions\CoreVersionMismatchException;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Support\CoreUpdateContext;
 use Composer\Semver\Semver;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -31,10 +32,11 @@ class CoreVersionChecker
      * 현재 설치된 그누보드7 코어 버전 반환
      *
      * 반환 우선순위:
-     *   1. 환경변수 `APP_VERSION` (getenv / $_ENV / $_SERVER)
+     *   1. 코어 업데이트 프로세스 트리 안(`CoreUpdateContext::isInProgress()`)이면
+     *      환경변수 `APP_VERSION` (getenv / $_ENV / $_SERVER)
      *   2. `config('app.version')`
      *
-     * 왜 env 를 우선 읽는가:
+     * 왜 업데이트 트리 안에서만 env 를 우선 읽는가:
      *   코어 업그레이드 중 `core:update` 는 `core:execute-upgrade-steps` / 각 업그레이드 스텝의
      *   inline 스크립트를 `proc_open` 으로 spawn 한다. 디스크 `.env` 의 `APP_VERSION` 은
      *   `updateVersionInEnv()` 가 최종 단계(Step 11)에서 기록하므로, spawn 이 부팅되는
@@ -44,23 +46,28 @@ class CoreVersionChecker
      *   env 오버라이드가 반영되지 않는 회귀가 있었다 (확장이 `>= 신버전` 요구 시
      *   `validateAndDeactivateIncompatibleExtensions` 가 전 확장을 자동 비활성화).
      *
-     *   env 를 우선 읽는 본 구현은 config cache 유무와 무관하게 spawn 이 전달한 버전을 그대로
-     *   신뢰한다. 일반 요청 경로에서는 `APP_VERSION` 이 `.env` 에 기록된 값 그대로이므로
-     *   동작에 차이가 없다.
+     * 왜 트리 밖에서는 env 를 읽지 않는가:
+     *   `php artisan serve` · 큐 워커 · Horizon 처럼 오래 사는 프로세스는 기동 시점의
+     *   `APP_VERSION` 을 프로세스 환경 테이블에 물고 있다. 업데이트가 끝나 `.env` 와 config 가
+     *   새 버전이 되어도 그 프로세스만 옛 버전으로 판정해, 새 코어를 요구하는 확장을
+     *   `incompatible_core` 로 자동 비활성화한다 (관리자 템플릿이 꺼지면 복구 UI 에도 도달할 수
+     *   없다 — 2026-09-07 실측). 업데이트 트리 밖에서는 config 가 유일한 근거다.
      *
-     *   규정 예외: "env() 는 config 파일에서만 사용" 규칙의 본문 예외. 정당성은 버전 판정이
-     *   config cache 우회를 요구하기 때문이다.
+     *   규정 예외: "env() 는 config 파일에서만 사용" 규칙의 본문 예외. 정당성은 업데이트 중
+     *   버전 판정이 config cache 우회를 요구하기 때문이다.
      *
      * @return string 코어 버전 문자열 (예: "7.0.0-beta.4")
      */
     public static function getCoreVersion(): string
     {
-        $envVersion = $_ENV['APP_VERSION'] ?? $_SERVER['APP_VERSION'] ?? getenv('APP_VERSION');
-        if (is_string($envVersion) && $envVersion !== '') {
-            return $envVersion;
+        if (CoreUpdateContext::isInProgress()) {
+            $envVersion = $_ENV['APP_VERSION'] ?? $_SERVER['APP_VERSION'] ?? getenv('APP_VERSION');
+            if (is_string($envVersion) && $envVersion !== '') {
+                return $envVersion;
+            }
         }
 
-        return config('app.version');
+        return (string) config('app.version');
     }
 
     /**

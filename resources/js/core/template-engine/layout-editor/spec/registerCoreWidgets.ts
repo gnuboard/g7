@@ -16,6 +16,7 @@ import {
   SelectWidget,
   ToggleWidget,
   DimensionWidget,
+  NumberWidget,
   SpacingWidget,
 } from '../components/property-controls/StyleControlWidgets';
 import { ColorPickerControl } from '../components/property-controls/ColorPickerControl';
@@ -46,6 +47,10 @@ export function registerCoreWidgets(): void {
   registerWidget('slider', SliderWidget);
   registerWidget('select', SelectWidget);
   registerWidget('dimension', DimensionWidget);
+  // 숫자 prop(propValue) 편집 위젯. 종전 미등록이라 `widget:"number"` 컨트롤
+  // (예 Header 「탭 표시 게시판 수」)이 속성 모달에서 "지원하지 않는 컨트롤" 로 폴백돼
+  // 편집 자체가 불가했다. `number` 타입을 직접 내보내 컴포넌트 prop 계약을 만족시킨다.
+  registerWidget('number', NumberWidget);
   registerWidget('spacing', SpacingWidget);
   registerWidget('toggle', ToggleWidget);
   registerWidget('color', ColorPickerControl);

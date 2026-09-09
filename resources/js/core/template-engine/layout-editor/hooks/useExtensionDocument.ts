@@ -45,6 +45,7 @@ import type { EditorNode, NodeSource } from '../utils/layoutTreeUtils';
 import { trackEditorDocument } from '../devtools/editorTrackers';
 import { readSanctumToken } from '../utils/authToken';
 import { getCacheBustNonce, bumpCacheBustNonce } from '../utils/editorCacheBust';
+import { readConflictVersion } from '../utils/conflictVersion';
 import type { SaveResult } from './useLayoutDocument';
 import { suffixed } from '../../../support/assetUrl';
 
@@ -114,23 +115,90 @@ export function reassembleContent(
     return { ...content, components: cleaned };
   }
   if (Array.isArray(content.injections)) {
-    const injections = (content.injections as any[]).map((inj) => ({ ...inj }));
-    // components 를 가진 injection 의 components 를 비운 뒤 편집 결과로 재분배.
-    injections.forEach((inj) => {
-      if (Array.isArray(inj.components)) inj.components = [];
-    });
-    for (const node of roots) {
-      const idx = (node as any).__injectionIndex;
-      const target =
-        typeof idx === 'number' && idx >= 0 && idx < injections.length ? injections[idx] : null;
-      if (target) {
-        if (!Array.isArray(target.components)) target.components = [];
-        target.components.push(stripExtensionEditorMeta(node));
-      }
-    }
-    return { ...content, injections };
+    return reassembleOverlayContent(content, roots).content;
   }
   return content;
+}
+
+/** overlay 재조립 결과 — 되돌리지 못한 노드 수를 함께 돌려준다(저장 가드 근거). */
+export interface OverlayReassembly {
+  /** 저장용 content */
+  content: Record<string, unknown>;
+  /** 어느 injection 에서 왔는지 알 수 없어 버려질 뻔한 루트 노드 수 — 0 이 아니면 PUT 하지 않는다 */
+  unassigned: number;
+}
+
+/** 트리의 모든 노드 id 를 모은다(원본 injection 의 id 집합 — 순번 메타 없는 노드의 폴백 매칭용). */
+function collectNodeIds(nodes: unknown, out: Set<string>): void {
+  if (!Array.isArray(nodes)) return;
+  for (const n of nodes) {
+    if (!n || typeof n !== 'object') continue;
+    const id = (n as { id?: unknown }).id;
+    if (typeof id === 'string' && id !== '') out.add(id);
+    collectNodeIds((n as { children?: unknown }).children, out);
+  }
+}
+
+/**
+ * overlay content 의 injections 를 편집 결과 루트로 되돌린다.
+ *
+ * 노드가 어느 injection 에서 왔는지는 세 단계로 판정한다 — ① 조각 단독 모드가 붙인
+ * `__injectionIndex` ② 호스트 병합 모드에서 백엔드가 `__source.injectionIndex` 로 실어 준 순번
+ * ③ 둘 다 없으면 원본 injection 의 노드 id 집합과 대조(구 백엔드 응답 호환). 셋 다 실패한
+ * 노드는 **버리지 않고 센다** — 종전엔 조용히 버려져 호스트 병합 모드의 무변경 저장만으로
+ * `injections[].components` 가 통째로 비워졌다(이커머스 → `_user_base` 헤더 통화 선택기 소실).
+ *
+ * @param content 원본 파싱 content(비편집 키 보존용)
+ * @param roots 편집된 루트 노드 배열
+ * @returns 저장용 content + 되돌리지 못한 노드 수
+ */
+export function reassembleOverlayContent(
+  content: Record<string, unknown>,
+  roots: EditorNode[],
+): OverlayReassembly {
+  const original = Array.isArray(content.injections) ? (content.injections as any[]) : [];
+  const injections = original.map((inj) => ({ ...inj }));
+  const originalIds = original.map((inj) => {
+    const ids = new Set<string>();
+    if (inj && Array.isArray(inj.components)) collectNodeIds(inj.components, ids);
+    return ids;
+  });
+  // components 를 가진 injection 의 components 를 비운 뒤 편집 결과로 재분배.
+  injections.forEach((inj) => {
+    if (Array.isArray(inj.components)) inj.components = [];
+  });
+  let unassigned = 0;
+  for (const node of roots) {
+    const explicit = (node as any).__injectionIndex;
+    const fromSource = (node as any).__source?.injectionIndex;
+    let idx: number | undefined =
+      typeof explicit === 'number' ? explicit : typeof fromSource === 'number' ? fromSource : undefined;
+    if (idx === undefined) {
+      const id = (node as { id?: unknown }).id;
+      if (typeof id === 'string') {
+        const found = originalIds.findIndex((ids) => ids.has(id));
+        if (found >= 0) idx = found;
+      }
+    }
+    const target =
+      typeof idx === 'number' && idx >= 0 && idx < injections.length ? injections[idx] : null;
+    if (!target) {
+      unassigned += 1;
+      continue;
+    }
+    if (!Array.isArray(target.components)) target.components = [];
+    target.components.push(stripExtensionEditorMeta(node));
+  }
+  return { content: { ...content, injections }, unassigned };
+}
+
+/** 원본 overlay content 가 가진 주입 컴포넌트 루트 수 — 0 이면 잃을 것이 없어 가드가 불필요하다. */
+function countInjectionComponents(content: Record<string, unknown>): number {
+  if (!Array.isArray(content.injections)) return 0;
+  return (content.injections as any[]).reduce(
+    (n, inj) => n + (inj && Array.isArray(inj.components) ? inj.components.length : 0),
+    0,
+  );
 }
 
 /**
@@ -641,7 +709,29 @@ export function useExtensionDocument(): UseExtensionDocumentResult {
     const extracted = extractCurrentExtensionNodes(current.components, current.extensionId);
     const fragmentRoots = extracted.length > 0 ? extracted : current.components;
     // 편집한 components 를 원본 content 형태로 재조립(비편집 키 보존, 메타 제거).
-    const contentToSave = reassembleContent(contentRef.current, fragmentRoots);
+    let contentToSave: Record<string, unknown>;
+    const isOverlay =
+      Array.isArray(contentRef.current.injections) && !Array.isArray(contentRef.current.components);
+    if (isOverlay) {
+      // 손실 가드 — 되돌리지 못한 노드가 있고 원본에 잃을 컴포넌트가 있으면 PUT 하지 않는다.
+      // (종전엔 그 노드를 조용히 버려 무변경 저장만으로 injections 가 비워졌다.)
+      const reassembled = reassembleOverlayContent(contentRef.current, fragmentRoots);
+      if (reassembled.unassigned > 0 && countInjectionComponents(contentRef.current) > 0) {
+        trackEditorDocument({
+          op: 'save',
+          layoutName: `extension:${current.extensionId}`,
+          editMode: 'extension',
+          saveTarget: 'layout_extension',
+          endpoint: url,
+          isDirty,
+          timestamp: Date.now(),
+        });
+        return { kind: 'guard_extension_reassembly', unassigned: reassembled.unassigned };
+      }
+      contentToSave = reassembled.content;
+    } else {
+      contentToSave = reassembleContent(contentRef.current, fragmentRoots);
+    }
 
     trackEditorDocument({
       op: 'save',
@@ -710,8 +800,8 @@ export function useExtensionDocument(): UseExtensionDocumentResult {
     if (response.status === 409) {
       return {
         kind: 'concurrent_modification',
-        currentVersion: (body as any)?.current_version ?? -1,
-        yourVersion: (body as any)?.your_version ?? current.lockVersion,
+        currentVersion: readConflictVersion(body, 'current_version') ?? -1,
+        yourVersion: readConflictVersion(body, 'your_version') ?? current.lockVersion,
       };
     }
     if (response.status === 422) {

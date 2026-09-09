@@ -1,0 +1,45 @@
+# audit:allow test-scenario-coverage reason: response 축(ok/challenge/401/403/423/429/503/network)은 서버 응답
+# 종류를 열거한 것이라 레이아웃 구조 테스트가 케이스별로 나눠 단언할 실체가 아니다 — 구조 테스트는 화면이
+# 그 응답들을 받을 수 있는 형태인지(상보 조건·controlled 입력·상호배타 액션)를 본다. 실제 회귀 가드는
+# effects 이며 전부 @effects 로 귀속되어 있다(미검증 0건). 응답별 화면 실측은 Playwright spec 이 담당한다.
+
+feature: 로그인 화면 2단계 인증 단계 (sirsoft-basic)
+
+description: |
+  2단계 인증이 켜진 사이트에서 로그인 화면은 비밀번호 단계와 인증번호 단계를 같은 카드 안에서
+  전환한다. 서버가 두 가지 형태의 200 을 돌려주므로, 화면이 한 형태만 가정하면 영문 오류가
+  노출되고 로그인이 불가능해진다(공개 #133).
+
+  핵심 동작:
+    - 1단계 블록과 2단계 블록의 조건이 상보적이다 (동시 노출 금지).
+    - 제출 시퀀스의 login 과 loginTwoFactor 가 상호배타 조건을 갖는다. 조건이 빠지면
+      인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨진다.
+    - 인증번호 입력은 상태가 값을 소유한다 (재발송 시 입력을 비워야 하므로).
+    - 인증 단계 상태는 전역이라 화면 진입 시 초기화한다.
+
+axes:
+  step: [credentials, code]
+  response: [ok, challenge, 401, 423, 429, 503, network]
+  action: [submit, resend, restart, enter_key]
+
+exclusions:
+  - { step: credentials, action: resend, reason: "재발송 버튼은 인증번호 단계에만 있다" }
+  - { step: credentials, action: restart, reason: "동일" }
+  - { step: code, response: challenge, reason: "challenge 는 비밀번호 단계의 응답이다" }
+
+effects:
+  - no_raw_typeerror_text
+  - code_step_rendered_on_challenge
+  - credential_step_hidden_on_challenge
+  - login_and_verify_are_mutually_exclusive
+  - code_input_is_controlled_without_events_wrapper
+  - resend_clears_code_and_replaces_challenge
+  - restart_resets_to_credential_step
+  - locked_until_rendered
+  - init_actions_reset_two_factor_state
+  - network_message_translated
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/login-two-factor-step.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/login-two-factor-render.test.tsx
+  - tests/Playwright/specs/auth/two-factor-login.spec.ts

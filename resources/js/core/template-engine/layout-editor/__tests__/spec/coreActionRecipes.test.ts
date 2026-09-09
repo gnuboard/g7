@@ -24,7 +24,7 @@ const EXPECTED_HANDLERS = [
   // C14~C16 데이터
   'refetchDataSource', 'appendDataSource', 'updateDataSource',
   // C17~C22 기타
-  'scrollIntoView', 'login', 'logout', 'setLocale', 'emitEvent', 'apiCall',
+  'scrollIntoView', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'logout', 'setLocale', 'emitEvent', 'apiCall',
   // C24~C27 제어흐름(C23 top-level if 는 엔진 처리 — 카탈로그 비포함) + C29 conditions
   'conditions', 'sequence', 'parallel', 'switch', 'suppress',
   // 결제 진입(requestPgPayment)은 코어 카탈로그에서 제외됨 — 결제는 커머스 도메인이라

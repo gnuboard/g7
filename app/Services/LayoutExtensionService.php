@@ -292,13 +292,19 @@ class LayoutExtensionService
      * @param  array  $components  주입된 컴포넌트 배열
      * @param  int  $extensionId  확장 PK
      * @param  LayoutExtension|null  $extension  출처 라벨 부여용 확장 모델
+     * @param  int|null  $injectionIndex  overlay `injections[]` 순번 — 편집기가 저장 시 노드를 원래 injection 으로 되돌리는 열쇠. extension_point 주입은 null
      * @return array 메타가 부여된 컴포넌트 배열
      *
      * @since engine-v1.50.0
      */
-    private function markExtensionSource(array $components, int $extensionId, ?LayoutExtension $extension = null): array
+    private function markExtensionSource(array $components, int $extensionId, ?LayoutExtension $extension = null, ?int $injectionIndex = null): array
     {
-        return $this->applySourceMetaRecursively($components, $this->buildExtensionSourceMeta($extension, $extensionId));
+        $meta = $this->buildExtensionSourceMeta($extension, $extensionId);
+        if ($injectionIndex !== null) {
+            $meta['injectionIndex'] = $injectionIndex;
+        }
+
+        return $this->applySourceMetaRecursively($components, $meta);
     }
 
     /**
@@ -747,7 +753,11 @@ class LayoutExtensionService
                 'injection_count' => count($injections),
             ]);
 
-            foreach ($injections as $injection) {
+            // injection 순번을 함께 순회한다 — 편집기 확장 편집 모드가 호스트 병합 트리에서 이 확장의
+            // 노드를 추출해 `injections[].components` 로 되돌릴 때 어느 injection 인지 알 수 있어야
+            // 한다. 순번이 메타에 없으면 재조립이 모든 노드를 버려 저장본의 injections 가 통째로
+            // 비워진다(무변경 저장으로도 발생, 예외·경고 없음).
+            foreach ($injections as $injectionIndex => $injection) {
                 $targetId = $injection['target_id'] ?? null;
                 $position = $injection['position'] ?? 'append_child';
 
@@ -785,7 +795,12 @@ class LayoutExtensionService
                     // 편집 모드 출처 메타 부여 — 주입 노드와 그 자식 모두에 extension 메타
                     // @since engine-v1.50.0
                     if ($withSourceMeta) {
-                        $components = $this->markExtensionSource($components, $overlay->id, $overlay);
+                        $components = $this->markExtensionSource(
+                            $components,
+                            $overlay->id,
+                            $overlay,
+                            is_int($injectionIndex) ? $injectionIndex : null
+                        );
                     }
 
                     $injected = $this->injectAtTarget(

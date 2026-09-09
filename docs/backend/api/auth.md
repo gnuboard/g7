@@ -339,12 +339,177 @@ HTTP/1.1 200
 | 403 | Forbidden | 자격 증명은 맞지만 관리자 역할이 아닌 경우 (`auth.admin_required`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
+| 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
 
 <!-- @generated:end -->
 
 **설명**
 
 관리자 로그인. `email`/`password` 검증 후 `AuthService::login()` 이 인증하고, 인증 사용자가 `isAdmin()` 이 아니면 `403 auth.admin_required` 로 거부한다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user`(UserResource) 를 반환한다. 계정 잠금 시 `AccountLockedException`, 자격 불일치 시 `422` 검증 오류를 반환한다. 이후 모든 관리자 API 호출은 이 토큰을 `Authorization: Bearer` 헤더로 실어야 한다.
+
+**403 거부는 이미 발급된 세션을 회수한다.** `AuthService::login()` 은 관리자 판정보다 먼저 토큰과 web 세션을 발급하므로, 거부하면서 그대로 두면 관리자가 아닌 사용자가 응답만 `403` 을 받을 뿐 유효한 세션을 손에 쥔다. 거부 경로는 `AuthService::revokeIssuedSession()` 으로 그 발급분을 되돌린다.
+
+**2단계 인증이 켜져 있는 경우**: 사용자 로그인과 동일하게 `200` + `message: auth.two_factor_required` 와 `two_factor_required` / `challenge_id` / `provider_id` / `expires_at` 을 반환한다(필드 정의는 `POST /api/auth/login` 의 같은 절 참조). 이 단계에서는 아직 사용자도 토큰도 없으므로 **관리자 판정을 하지 않는다** — 판정은 `POST /api/auth/admin/login/two-factor` 가 코드 확인에 성공한 뒤에 수행한다.
+
+
+### POST /api/auth/admin/login/two-factor
+<!-- @generated:start:api.auth.admin.login.two-factor -->
+- **라우트명**: `api.auth.admin.login.two-factor`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AuthController@verifyTwoFactor`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 challenge 가 식별한다)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| challenge_id | body | string | 예 | uuid | 관리자 로그인 응답이 돌려준 challenge 식별자 |
+| code | body | string | 예 | min 4, max 16 | 사용자가 받은 인증 코드 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.two_factor_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/admin/login/two-factor HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40",
+    "code": "135790"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `POST /api/auth/admin/login` 의 성공 페이로드와 동일하다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user | object | `{"uuid":"a234c2b1-…","is_admin":true, …}` | 로그인한 관리자 정보 (`UserResource`) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "관리자 로그인이 성공했습니다.",
+    "data": {
+        "user": {
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "name": "API 문서 샘플 사용자",
+            "email": "apidoc-sample-user@example.com",
+            "status": "active",
+            "is_admin": true,
+            "is_owner": true
+        },
+        "token": "{MASKED}",
+        "token_type": "Bearer"
+    }
+}
+```
+
+> `user` 객체는 지면 절약을 위해 축약했습니다. 실제로는 `UserResource` 필드 전수가 내려옵니다.
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthorized | 코드가 틀렸거나(`auth.two_factor_failed`), challenge 의 `purpose` 가 `login` 이 아니거나, 확인된 사용자가 없거나 `active` 상태가 아닌 경우 |
+| 403 | Forbidden | 코드 확인은 통과했으나 관리자 역할이 아닌 경우 (`auth.admin_required`) |
+| 422 | Unprocessable Entity | `challenge_id`/`code` 형식 위반 |
+| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 로그인의 인증번호 확인 단계. 사용자 경로(`POST /api/auth/login/two-factor`)와 같은 규칙으로 코드를 확인하고, **확인에 성공한 뒤에** 관리자 여부를 판정한다.
+
+`AuthService::completeTwoFactor()` 는 코드 확인에 성공한 시점에 토큰을 발급하므로, 관리자 판정으로 `403` 을 돌려줄 때는 반드시 그 발급분을 회수한다(`revokeIssuedSession()`). 회수하지 않으면 관리자가 아닌 사용자가 응답만 `403` 을 받을 뿐 유효한 세션을 손에 쥔다.
+
+
+### POST /api/auth/admin/login/two-factor/resend
+<!-- @generated:start:api.auth.admin.login.two-factor.resend -->
+- **라우트명**: `api.auth.admin.login.two-factor.resend`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AuthController@resendTwoFactor`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 challenge 가 식별한다)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| challenge_id | body | string | 예 | uuid | 관리자 로그인 응답이 돌려준 challenge 식별자 |
+
+**요청 예시**
+
+```http
+POST /api/auth/admin/login/two-factor/resend HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_`POST /api/auth/login/two-factor/resend` 와 동일한 형태다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| two_factor_required | boolean | `true` | 항상 `true` |
+| challenge_id | string(uuid) | `9f1c2f2e-0b3a-…` | **새** challenge 식별자 (이전 값은 취소됨) |
+| provider_id | string | `g7:core.mail` | 코드를 발송한 본인인증 프로바이더 |
+| expires_at | string(ISO8601)\|null | `2026-09-07T14:03:00+09:00` | 새 challenge 만료 시각 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "인증번호를 보냈습니다. 받은 번호를 입력해 로그인을 완료해주세요.",
+    "data": {
+        "two_factor_required": true,
+        "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40",
+        "provider_id": "g7:core.mail",
+        "expires_at": "2026-09-07T14:03:00+09:00"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 403 | Forbidden | challenge 가 식별한 사용자가 관리자 역할이 아닌 경우 (`auth.admin_required`) |
+| 422 | Unprocessable Entity | 재발송 대상이 아닌 challenge (`auth.two_factor_invalid_challenge`) — 사유는 구분하지 않는다 |
+| 423 | Locked | challenge 를 받은 뒤 계정이 잠긴 경우 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
+| 503 | Service Unavailable | 새 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 로그인의 인증번호 재발송. 규칙은 `POST /api/auth/login/two-factor/resend` 와 동일하다 — 기존 challenge 를 취소하고 새로 발행하므로 앞서 받은 인증번호는 통하지 않는다.
+
+이 단계는 토큰을 발급하지 않으므로 회수할 것이 없다. 다만 완료할 수 없는 상대에게 새 인증번호를 계속 보내지는 않으므로, challenge 가 식별한 사용자가 관리자가 아니면 `403 auth.admin_required` 로 거부한다. 발급 자체를 막는 것이 아니라 **재발송만** 막는 것이며, 비밀번호 확인 단계(`POST /api/auth/admin/login`)는 종전대로 관리자 판정 없이 challenge 를 돌려준다.
 
 
 ### POST /api/auth/forgot-password
@@ -488,6 +653,8 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 이메일/비밀번호가 일치하지 않거나 계정 상태가 활성이 아닌 경우 (`auth.login_failed`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts` — `Retry-After` 헤더 동반) |
+| 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
 
 <!-- @generated:end -->
 
@@ -504,7 +671,9 @@ HTTP/1.1 200
 | `provider_id` | string | 코드를 발송한 본인인증 프로바이더 |
 | `expires_at` | string(ISO8601)\|null | challenge 만료 시각 |
 
-이 응답에는 `data.token` 과 `data.user` 가 없다. 토큰 존재 여부로 로그인 완료를 판정하는 클라이언트는 그대로 동작한다.
+이 응답에는 `data.token` 과 `data.user` 가 없다. **클라이언트는 `two_factor_required` 를 먼저 판정해야 한다** — 응답 형태가 하나라고 가정하고 `data.user.*` 를 읽으면 그 자리에서 예외가 나고, `data.token` 을 그대로 저장하면 `"undefined"` 문자열이 남아 이후 모든 요청이 `401` 로 튕긴다(공개 #133). 코어 클라이언트(`AuthManager.login()`)는 `LoginResult` 판별 유니온으로 두 형태를 구분해 돌려준다.
+
+**인증번호를 보내지 못한 경우**: 자격 증명은 올바르지만 코드를 전달할 수단이 없으므로 로그인을 완료할 수 없다. 이때는 `401`(자격 증명 오류)이 아니라 `503 auth.two_factor_delivery_failed` 를 반환한다 — `401` 로 뭉뚱그리면 사용자는 비밀번호를 의심하며 같은 실패를 반복하고, 운영자는 메일 설정이 깨진 사실을 알 방법이 없다. 발송에 실패해도 2단계 인증을 건너뛰고 로그인시키지는 않는다.
 
 
 ### POST /api/auth/login/two-factor
@@ -590,7 +759,7 @@ HTTP/1.1 200
 | 401 | Unauthorized | 코드가 틀렸거나(`auth.two_factor_failed`), challenge 의 `purpose` 가 `login` 이 아니거나, 확인된 사용자가 없거나 `active` 상태가 아닌 경우. **세 사유를 같은 응답으로 뭉뚱그린다** — 구분해 내보내면 challenge 유효성 탐색에 쓰인다 |
 | 422 | Unprocessable Entity | `challenge_id`/`code` 형식 위반 |
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 (`auth.account_locked` / 무기한이면 `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`) |
-| 429 | Too Many Requests | `throttle:auth-login` 초과 (로그인과 같은 제한을 공유하므로 코드 대입 시도도 함께 억제된다) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 (로그인과 같은 제한을 공유하므로 코드 대입 시도도 함께 억제된다 — `auth.too_many_attempts`) |
 
 <!-- @generated:end -->
 
@@ -601,6 +770,79 @@ HTTP/1.1 200
 challenge 의 `purpose` 가 `login` 인지 먼저 대조한다 — 대조하지 않으면 회원가입·비밀번호 재설정 등 다른 흐름에서 발급된 challenge 로 로그인할 수 있다. 코드 확인에 성공하기 전에는 어떤 경우에도 토큰이 발급되지 않는다.
 
 **계정 잠금은 이 단계에서 다시 검사한다.** 세션을 여는 것은 비밀번호 단계가 아니라 이 엔드포인트이므로, challenge 를 받은 뒤 잠긴 계정은 여기서 `423` 으로 차단된다. 잠기기 전에 발급받은 challenge 를 잠긴 뒤에 완료하는 것만으로 잠금을 우회할 수 없다. 차단은 로그인 완료 훅(`core.auth.after_login`)보다 앞서므로 실패 횟수·잠금 해제 시각도 초기화되지 않는다.
+
+
+### POST /api/auth/login/two-factor/resend
+<!-- @generated:start:api.auth.login.two-factor.resend -->
+- **라우트명**: `api.auth.login.two-factor.resend`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@resendTwoFactor`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| challenge_id | body | string | 예 | uuid | 로그인 응답이 돌려준 challenge 식별자 |
+
+**요청 예시**
+
+```http
+POST /api/auth/login/two-factor/resend HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 (`AuthService::resendTwoFactorChallenge()` 가 새로 발행한 challenge — `POST /api/auth/login` 의 2단계 인증 응답과 같은 형태)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| two_factor_required | boolean | `true` | 항상 `true` — 여전히 추가 확인 단계임을 나타낸다 |
+| challenge_id | string(uuid) | `9f1c2f2e-0b3a-…` | **새** challenge 식별자. 이전 값은 취소되었으므로 반드시 교체해야 한다 |
+| provider_id | string | `g7:core.mail` | 코드를 발송한 본인인증 프로바이더 |
+| expires_at | string(ISO8601)\|null | `2026-09-07T14:03:00+09:00` | 새 challenge 만료 시각 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "인증번호를 보냈습니다. 받은 번호를 입력해 로그인을 완료해주세요.",
+    "data": {
+        "two_factor_required": true,
+        "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40",
+        "provider_id": "g7:core.mail",
+        "expires_at": "2026-09-07T14:03:00+09:00"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | `challenge_id` 형식 위반, 또는 재발송 대상이 아닌 challenge (`auth.two_factor_invalid_challenge`) — 존재하지 않음 / `purpose` 가 `login` 이 아님 / 이미 검증·취소·실패 / 만료 / 대상 사용자가 없거나 `active` 가 아님. **사유를 구분하지 않는다** — 구분해 내보내면 challenge 유효성 탐색에 쓰인다 |
+| 423 | Locked | challenge 를 받은 뒤 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
+| 503 | Service Unavailable | 새 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+인증번호를 받지 못했을 때 새 코드를 발행한다. 서버는 **기존 challenge 를 취소하고 새로 발행**하므로, 앞서 받은 인증번호는 더 이상 통하지 않는다 — 유효한 코드를 여러 개 동시에 살려 두면 대입 시도의 표적이 넓어진다. 클라이언트는 응답의 `challenge_id` 로 반드시 교체하고 입력란을 비워야 한다.
+
+계정 잠금은 여기서도 다시 검사한다. challenge 를 받은 뒤 잠긴 계정에는 새 코드를 보내지 않는다. 로그인과 같은 요청 제한(`throttle:auth-login`)이 걸린다.
 
 
 ### POST /api/auth/logout

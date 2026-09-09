@@ -219,14 +219,14 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 36 · **엔드포인트 수**: 325
+- **문서 수**: 36 · **엔드포인트 수**: 328
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
 | [activity-logs.md](activity-logs.md) | `activity-logs` | 3 |
 | [attachment.md](attachment.md) | `attachment` | 1 |
 | [attachments.md](attachments.md) | `attachments` | 4 |
-| [auth.md](auth.md) | `auth` | 15 |
+| [auth.md](auth.md) | `auth` | 18 |
 | [avatar.md](avatar.md) | `avatar` | 2 |
 | [broadcasting.md](broadcasting.md) | `broadcasting` | 1 |
 | [changelog.md](changelog.md) | `changelog` | 1 |

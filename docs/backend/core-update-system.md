@@ -9,7 +9,8 @@
 2. 마이그레이션 = 스키마 변경만, 데이터 백필/변환 = 업그레이드 스텝 (역할 분리 필수)
 3. 업데이트 실행 흐름: 11단계 (감지 → 다운로드 → 백업 → 적용 → 마이그레이션 → 동기화 → 업그레이드 → 마무리)
 4. 롤백: CoreBackupHelper로 백업 생성, 실패 시 자동 복원
-5. 부트스트랩 호환성 검증: .env의 APP_VERSION < 확장 g7_version 시 자동 비활성화 (1시간 캐시)
+5. 부트스트랩 호환성 검증: 코어 버전 < 확장 g7_version 시 자동 비활성화 (1시간 캐시)
+6. vendor 를 교체한 뒤 새 프로세스를 띄우기 전에는 패키지 매니페스트를 비운다 (3계층 — 부모 선정리 / 자식 자가 치유 / 버전 판독 범위)
 ```
 
 ---
@@ -72,6 +73,7 @@
 
 ```text
 1. CoreVersionChecker::getCoreVersion() → config('app.version') 읽기
+   (코어 업데이트 트리 안에서만 env APP_VERSION 우선 — CoreUpdateContext::isInProgress())
 2. CoreUpdateService::checkForUpdates() → GitHub API로 최신 릴리스 조회
 3. version_compare(current, latest) → 업데이트 가용 여부 판단
 4. 원격 CHANGELOG 캐시 → storage/app/temp/core_remote_changelog.md
@@ -168,6 +170,9 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
    - composer.json + composer.lock 의 MD5 비교 (_pending vs base_path)
    - 동일 → "composer 의존성 변경 없음 — 스킵" (Step 6 + Step 8 모두 스킵)
    - 변경됨 → composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+   - 운영 vendor 의 개발용(require-dev) 패키지 감지 → 로그 기록
+     · 재설치 분기: "--no-dev vendor 로 교체합니다" (정보)
+     · 스킵 분기: "그대로 남습니다 … composer install --no-dev 실행 권장" (경고)
 
 3. Bundled 모드 (신규, 공유 호스팅 대응):
    - _pending/vendor-bundle.zip 무결성 검증 (SHA256)
@@ -265,9 +270,25 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > **단독 실행 안전성 (beta.6 이후)**: `core:execute-upgrade-steps` 는 HANDOFF 안내 또는 수동 복구 목적으로 운영자가 직접 호출되는 경로가 있다. 단독 실행 시 자식은 기본값으로 부모 Step 9 (`runMigrations` + `reloadCoreConfigAndResync`), Step 11 (`updateVersionInEnv` + `clearAllCaches`), Step 12 (번들 확장 일괄 업데이트) 를 자체적으로 수행해 단일 명령으로 업그레이드를 완결한다. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess()` 는 자식 명령 라인에 `--skip-migrations`, `--skip-resync`, `--skip-version-env`, `--skip-cache-clear`, `--skip-bundled-updates` 5개를 무조건 추가해 중복 회피한다 — 부모가 자식 종료 후 동일 단계를 직접 수행하기 때문이다.
 
-> **spawn 자식은 이전 버전의 config 캐시로 부팅한다**: 부모는 Step 10(spawn) 전에 config 캐시를 비우지 않는다 — `clearAllCaches()` 는 Step 11 이다. 그래서 이전 버전 설치본에 `bootstrap/cache/config.php` 가 있으면(설치 마법사·설정 저장·확장 업데이트가 만든다) 자식은 그 캐시로 부팅하고, 자식의 `config('app.version')` 은 부모가 env 로 넘긴 `APP_VERSION={toVersion}` 이 아니라 캐시에 박힌 fromVersion 이다. 업데이트 흐름 안에서 "지금 프로세스의 코어 버전" 을 판정하는 코드는 `config('app.version')` 을 직접 읽지 않고 `CoreVersionChecker::getCoreVersion()`(env 우선, config 폴백)을 쓴다. `runUpgradeSteps()` 의 stale 메모리 가드가 config 만 읽던 시절에는 정상 spawn 자식을 stale 부모로 오판해 스텝이 0건인 릴리즈에서도 핸드오프로 중단됐다(7.0.9→7.0.10). 부모 in-process fallback 에서는 env 가 `.env` 의 fromVersion 이므로 가드는 그대로 발동한다.
+> **spawn 자식은 이전 버전의 config 캐시로 부팅한다**: 7.0.9 이하 부모는 Step 10(spawn) 전에 config 캐시를 비우지 않았다 — `clearAllCaches()` 는 Step 11 이다. 그래서 이전 버전 설치본에 `bootstrap/cache/config.php` 가 있으면(설치 마법사·설정 저장·확장 업데이트가 만든다) 자식은 그 캐시로 부팅하고, 자식의 `config('app.version')` 은 부모가 env 로 넘긴 `APP_VERSION={toVersion}` 이 아니라 캐시에 박힌 fromVersion 이다. 업데이트 흐름 안에서 "지금 프로세스의 코어 버전" 을 판정하는 코드는 `config('app.version')` 을 직접 읽지 않고 `CoreVersionChecker::getCoreVersion()`(env 우선, config 폴백)을 쓴다. `runUpgradeSteps()` 의 stale 메모리 가드가 config 만 읽던 시절에는 정상 spawn 자식을 stale 부모로 오판해 스텝이 0건인 릴리즈에서도 핸드오프로 중단됐다(7.0.9→7.0.10). 부모 in-process fallback 에서는 env 가 `.env` 의 fromVersion 이므로 가드는 그대로 발동한다.
 >
 > 같은 이유로 자식이 `config('app.update.*')` 로 읽는 목록(쓰기 권한 디렉토리 등)도 캐시에 박힌 옛 목록이다 — 신버전이 항목을 추가해도 자식에게 보이지 않는다. 방어는 두 겹이다: ① 부모(7.0.10+)는 `spawnUpgradeStepsProcess()` 가 `proc_open` 직전에 `ConfigCacheHelper::clear()` 로 캐시를 비워 자식이 디스크 config + `.env` + spawn env 로 부팅하게 한다(캐시는 Step 11 이 다시 만든다). ② 자식(7.0.10+)은 이전 버전 부모가 캐시를 남겨 둔 경우를 위해, 캐시 파일이 있으면 `CoreUpdateService::freshDiskUpdateConfig()` 로 디스크의 `config/app.php` 를 직접 읽는다 — 캐시 부팅에서는 `.env` 도 로드되지 않으므로 그 안에서 `.env` 를 먼저 불변 로드한다(프로세스 env 의 `APP_VERSION` 은 덮어쓰지 않는다).
+
+#### spawn 전 캐시 정리 계약 (3계층)
+
+config 캐시와 같은 문제가 **패키지 매니페스트**(`bootstrap/cache/packages.php` · `services.php`)에도 있고, 이쪽은 결과가 더 무겁다. Laravel 의 `PackageManifest` 는 `packages.php` 가 있으면 stale 여부를 검사하지 않고 그대로 읽고, `ProviderRepository` 가 거기 등재된 eager provider 를 `new` 한다. Step 6/8 이 vendor 를 `--no-dev` 로 교체해도 두 파일은 Step 11 까지 이전 설치본의 것이 남으므로, 이전 설치본이 `composer install`(옵션 없음)로 깔린 개발용 설치였다면 자식은 새 vendor 에 없는 provider 를 찾다 **부팅 단계에서** 죽는다. 예외는 앱 로그가 열리기 전이라 남지 않고, 부모에게는 자식의 비정상 종료로만 보인다 (7.0.9 → 7.0.10 실사례).
+
+| 계층 | 위치 | 막는 실패 | 잠그는 테스트 |
+|------|------|-----------|--------------|
+| ① 부모 선정리 | `CoreUpdateCommand::spawnUpgradeStepsProcess()` 가 `proc_open` 직전 `PackageManifestCacheHelper::clear()`. 지우지 못한 파일이 있으면 그 경로를 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식의 계층 ② 도 같은 이유로 실패해 증상은 제보와 같은 「Class not found」 인데, 이 경고가 원인을 가리키는 유일한 흔적이다 | 7.0.11+ 부모가 띄우는 자식의 부팅 실패 | `CoreUpdateCommandStalePackageManifestTest` |
+| ② 자식 자가 치유 | `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS=1`(또는 명령줄 SAPI 에서의 업데이트 argv)이면 두 파일을 스스로 삭제 | **이미 배포된** 7.0.9·7.0.10 부모 아래에서 도는 신버전 자식 — 그 부모 코드는 고칠 수 없다 | 같은 테스트 (플래그 유·무 대조군 포함) |
+| ③ 버전 판독 범위 | `CoreVersionChecker::getCoreVersion()` 의 env 우선은 `CoreUpdateContext::isInProgress()` 트리 안에서만 | 업데이트 **전에** 뜬 `php artisan serve`·큐 워커가 옛 `APP_VERSION` 을 물고 확장을 `incompatible_core` 로 끄는 것 | `CoreVersionCheckerEnvPriorityTest` · `CoreUpdateContextTest` |
+
+계층 ②는 `config:cache`/`route:cache` 가 만드는 in-process 일회용 앱에도 발동한다 — 그 부팅도 `bootstrap/app.php` 를 다시 require 하고 플래그를 상속하기 때문이다. 웹 요청·`queue:work`·운영자 셸은 플래그가 없어 no-op 이다.
+
+argv 채널은 명령줄 SAPI(`cli`·`phpdbg`)에서만 읽는다. CGI/FPM 은 `register_argc_argv=On` 이면 `$_SERVER['argv']` 를 쿼리스트링을 `+` 로 쪼갠 값으로 채우므로(`GET /?x+core:update` → `argv[1] === 'core:update'`), 그 게이트가 없으면 비인증 웹 요청이 요청마다 매니페스트를 지우고 다시 만들게 된다. env 플래그 채널은 웹 요청으로 주입할 수 없어 그대로 두며, 웹 요청 안에서 시작되는 업데이트 흐름은 그 플래그를 프로세스 안에서 세워 판정된다.
+
+계층 ③의 판정은 `App\Support\CoreUpdateContext` 가 단독으로 소유하고 `CoreServiceProvider::isCoreUpdateInProgress()` 가 그리로 위임한다. 자동 비활성화 로그의 `core_version` 도 같은 게터를 쓴다 — 로그가 `config('app.version')` 을 적고 판정은 env 로 하면 운영자가 보는 근거와 실제 판정이 어긋난다.
 
 #### 재실행 안내의 권한 분기 (핸드오프 catch)
 
@@ -288,14 +309,19 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 
 ```text
 1. .env의 APP_VERSION 갱신
-2. 캐시 클리어: config, cache, route, view
+2. 캐시 클리어: config, cache, route, view (spawn 직전에도 config + 패키지 매니페스트 선정리)
 3. bootstrap/cache 파일 삭제 (services.php, packages.php)
 4. php artisan package:discover 재실행
 5. php artisan extension:update-autoload (코어 업데이트로 _bundled 변경 가능)
 6. _pending 격리 디렉토리(core_{ts}) 루트째 삭제
 7. 성공 시 백업 삭제 (이후 `hotfix:rollback-stale-files` 는 대상이 없다)
 8. 유지보수 모드 해제
+9. 큐 워커 재시작 신호 (queue:restart)
 ```
+
+> 3~4 는 `PackageManifestCacheHelper::rebuild()` 한 호출이다 — spawn 직전 선정리(계층 ①)와 같은 삭제 로직을 공유한다.
+>
+> 9 는 상주 큐 워커가 부팅 시점의 코어 코드·config 를 계속 쓰는 것을 막는다. 워커는 옛 코드로도 잡을 정상 처리하므로 오류가 나지 않고, 운영자가 손수 재시작할 때까지 조용히 어긋난 채 돈다. 핸드오프 cleanup 과 `core:execute-upgrade-steps` 단독 실행의 사후 단계도 같은 신호를 보낸다. 롤백 catch 는 제외다 — 백업으로 되돌린 옛 코드가 다시 도는 자리라 재기동시킬 이유가 없다.
 
 ### Step 12: _bundled 확장 일괄 업데이트 프롬프트 (인터랙티브)
 
@@ -586,6 +612,8 @@ public function withCurrentStep(string $stepVersion): self  // 불변 복제
 
 ```php
 CoreVersionChecker::getCoreVersion()  // → config('app.version')
+                                      // (코어 업데이트 트리 안에서만 env APP_VERSION 우선
+                                      //  — CoreUpdateContext::isInProgress())
 ```
 
 ### 버전 갱신 (Step 11)
@@ -710,7 +738,8 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `runUpgradeSteps()` | `(string $from, string $to, ?Closure $onStep): void` | upgrades/ 자동 발견 + 실행 |
 | `updateVersionInEnv()` | `(string $version): void` | .env의 APP_VERSION 갱신 |
-| `clearAllCaches()` | `(): void` | config/cache/route/view 클리어 + package:discover |
+| `clearAllCaches()` | `(): void` | config/cache/route/view 클리어 + 패키지 매니페스트 재생성(`PackageManifestCacheHelper::rebuild()`) |
+| `signalQueueRestart()` | `(): void` | 상주 큐 워커에 재시작 신호 (실패는 경고만 — 업데이트를 되돌리지 않는다) |
 
 ### 유지보수 모드
 

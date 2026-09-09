@@ -5,6 +5,7 @@ namespace Tests\Unit\Repositories;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
+use App\Models\User;
 use App\Repositories\LayoutVersionRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -686,5 +687,42 @@ class LayoutVersionRepositoryTest extends TestCase
         $map = $this->repository->getCurrentVersionsByTemplateId($this->template->id);
 
         $this->assertSame([], $map);
+    }
+
+    /**
+     * saveVersion 은 인증 사용자를 created_by 로 기록한다 — 종전엔 항상 NULL 이라 버전 목록의
+     * 저장자가 「알 수 없음」으로만 표시됐다.
+     */
+    public function test_save_version_records_authenticated_user_as_creator(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $version = $this->repository->saveVersion($this->layout->id, ['components' => []]);
+
+        $this->assertSame($user->id, $version->created_by);
+    }
+
+    /**
+     * restoreVersion 은 레이아웃 lock_version 을 올린다 — 복원 직전 화면을 열어 둔 다른 편집기가
+     * 복원 결과를 409 없이 덮지 못하게 한다.
+     */
+    public function test_restore_version_increments_layout_lock_version(): void
+    {
+        $this->layout->forceFill([
+            'lock_version' => 4,
+            'content' => ['components' => [['type' => 'basic', 'name' => 'Span']]],
+        ])->save();
+        $target = TemplateLayoutVersion::factory()->create([
+            'layout_id' => $this->layout->id,
+            'version' => 1,
+            'content' => ['components' => []],
+        ]);
+
+        $this->repository->restoreVersion($this->layout->id, $target->id);
+
+        $this->layout->refresh();
+        $this->assertSame(5, (int) $this->layout->lock_version);
+        $this->assertEquals(['components' => []], $this->layout->content);
     }
 }

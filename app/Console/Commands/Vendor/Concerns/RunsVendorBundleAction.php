@@ -3,8 +3,8 @@
 namespace App\Console\Commands\Vendor\Concerns;
 
 use App\Extension\Vendor\Exceptions\VendorInstallException;
-use App\Extension\Vendor\VendorBundleResult;
 use App\Extension\Vendor\VendorBundler;
+use App\Extension\Vendor\VendorBundleResult;
 use App\Extension\Vendor\VendorIntegrityChecker;
 use Illuminate\Support\Facades\File;
 
@@ -210,14 +210,17 @@ trait RunsVendorBundleAction
         $sourcePath = $this->resolveSourcePath($target);
         $outputPath = $this->resolveOutputPath($target);
 
-        if (! is_dir($sourcePath)) {
-            $this->warn("- $label: 소스 경로 없음 ($sourcePath)");
+        // 판정 기준 파일은 빌드(VendorBundler::build / isStale)와 같은 규칙 — 출력(_bundled) 우선,
+        // 없으면 활성 디렉토리 폴백. 활성 디렉토리만 보면 미설치 확장을 "소스 경로 없음" 으로
+        // 보고해 _bundled 의 stale 번들이 --check 를 통과한다.
+        $composerJsonPath = $this->resolveCheckFile($sourcePath, $outputPath, 'composer.json');
+        if ($composerJsonPath === null) {
+            if (! is_dir($sourcePath) && ! is_dir($outputPath)) {
+                $this->warn("- $label: 경로 없음 ($outputPath)");
 
-            return false;
-        }
+                return false;
+            }
 
-        $composerJsonPath = $sourcePath.DIRECTORY_SEPARATOR.'composer.json';
-        if (! is_file($composerJsonPath)) {
             $this->line("- $label: SKIPPED (composer.json 없음)");
 
             return false;
@@ -238,6 +241,24 @@ trait RunsVendorBundleAction
         }
 
         return $stale;
+    }
+
+    /**
+     * --check 가 읽을 composer 파일 경로 — 출력(_bundled) 우선, 없으면 활성 디렉토리 폴백.
+     *
+     * VendorBundler::resolveHashTarget() 과 같은 규칙. 판정 파일이 빌드·해시 기준과
+     * 다르면 --check 결과가 실제 stale 여부와 어긋난다.
+     */
+    private function resolveCheckFile(string $sourcePath, string $outputPath, string $filename): ?string
+    {
+        $outputFile = $outputPath.DIRECTORY_SEPARATOR.$filename;
+        if (is_file($outputFile)) {
+            return $outputFile;
+        }
+
+        $sourceFile = $sourcePath.DIRECTORY_SEPARATOR.$filename;
+
+        return is_file($sourceFile) ? $sourceFile : null;
     }
 
     /**

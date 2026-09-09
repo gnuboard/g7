@@ -792,6 +792,10 @@ class AttachmentService
     /**
      * 첨부파일 URL 조회
      *
+     * 게시판 첨부는 비밀글·삭제글 게이트가 걸린 서빙 경로를 통해서만 내보낸다.
+     * 직접 URL(CDN)로 바꾸면 그 게이트가 통째로 우회되므로, 게이트가 살아 있는
+     * 다운로드 서빙 URL 을 돌려준다.
+     *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
      * @return string|null 파일 URL 또는 없을 경우 null
@@ -800,11 +804,7 @@ class AttachmentService
     {
         $attachment = $this->repository->findById($slug, $id);
 
-        if (! $attachment) {
-            return null;
-        }
-
-        return $this->storage->url('attachments', $attachment->path);
+        return $attachment?->download_url;
     }
 
     /**

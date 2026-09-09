@@ -78,6 +78,7 @@ class ValidationApi
             'required_files' => $this->checkRequiredFiles(),
             'https' => $this->checkHttps(),
             'opcache' => $this->checkOpcache(),
+            'vendor_dev_packages' => $this->checkVendorDevPackages(),
             'asset_url_mode' => $this->checkAssetUrlMode(),
         ];
 
@@ -600,6 +601,52 @@ class ValidationApi
             'required' => false, // OPcache는 선택 사항 (성능 권장)
             'loaded' => $status['loaded'],
             'enabled' => $status['enabled'],
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * 기존 vendor 의 개발용(require-dev) 패키지 포함 여부 (선택 항목 — 경고만, 설치 차단 없음)
+     *
+     * 인스톨러는 vendor 가 이미 있으면 그대로 재사용한다. 그 vendor 가 `composer install`
+     * (옵션 없음)의 결과면 개발용 패키지가 섞여 있고, 그 목록이 패키지 매니페스트에 등재된다.
+     * 이후 코어 업데이트가 vendor 를 `--no-dev` 로 교체하면 매니페스트에만 남은 provider 를
+     * 찾다 부팅이 깨지므로, 설치 시점에 미리 알린다.
+     *
+     * `dev` 가 null 이면 판정 불가(installed.json 부재·형식 불명)로, 경고도 차단도 하지 않는다.
+     *
+     * @return array{required: bool, vendor_exists: bool, dev: bool|null, packages: array<int, string>, message: string}
+     */
+    private function checkVendorDevPackages(): array
+    {
+        $vendorExists = is_dir(BASE_PATH.'/vendor') && file_exists(BASE_PATH.'/vendor/autoload.php');
+
+        if (! $vendorExists) {
+            return [
+                'required' => false,
+                'vendor_exists' => false,
+                'dev' => null,
+                'packages' => [],
+                'message' => lang('vendor_dev_packages_no_vendor'),
+            ];
+        }
+
+        require_once __DIR__.'/../includes/vendor-bundle-installer.php';
+        $info = detectDevVendorInstall(BASE_PATH);
+
+        if ($info['dev'] === true) {
+            $message = lang('vendor_dev_packages_detected_warning', ['count' => count($info['packages'])]);
+        } elseif ($info['dev'] === false) {
+            $message = lang('vendor_dev_packages_none');
+        } else {
+            $message = lang('vendor_dev_packages_unknown');
+        }
+
+        return [
+            'required' => false, // 개발용 패키지 감지는 선택 항목 (권장 사항)
+            'vendor_exists' => true,
+            'dev' => $info['dev'],
+            'packages' => $info['packages'],
             'message' => $message,
         ];
     }
@@ -1133,7 +1180,8 @@ class ValidationApi
             return false;
         }
 
-        // HTTPS / OPcache 는 선택 사항이므로 검증하지 않음 (경고만 표시하고 설치는 진행)
+        // HTTPS / OPcache / Composer 의존성 구성은 선택 사항이므로 검증하지 않음
+        // (경고만 표시하고 설치는 진행)
 
         return true;
     }

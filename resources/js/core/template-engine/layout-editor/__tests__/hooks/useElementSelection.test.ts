@@ -14,6 +14,9 @@ import {
   isContextMenuAllowed,
   sliceDomPathToDepth,
   resolveSourceExtensionId,
+  isEditableLockKind,
+  resolveDndDenial,
+  type SelectionLockKind,
 } from '../../hooks/useElementSelection';
 import type { EditorNode } from '../../utils/layoutTreeUtils';
 
@@ -198,16 +201,32 @@ describe('classifyLockKind', () => {
     expect(classifyLockKind(node, 'base')).toBe('extension');
   });
 
-  // route 모드는 종전 동작(data_bound 우선)을 그대로 보존해야 한다.
-  it('route 모드 + 확장 출처 data_bound 노드 → data_bound (종전 동작 보존, 회귀 방지)', () => {
-    // 확장 주입 영역 안의 바인딩 노드. route 모드에서는 data_bound 로 분류돼 "데이터 영역" 표식
-    // 을 유지하고, 잠긴 확장 루트는 별도로 extension 어포던스를 띄운다(별도 노드).
+  // 계약 변경(의도적): 종전에는 route 모드에서 data_bound 를 먼저 판정해 이 노드가
+  // `data_bound`(= 편집 허용)로 분류됐다. 그런데 저장 시 `stripInheritedNode` 가 확장 출처
+  // 노드를 통째로 폐기하므로 편집분이 오류도 경고도 없이 사라졌다(저장은 200 성공, history
+  // clear 로 undo 불가). 종전 기대값이 고정하던 것은 "route 는 한 줄도 바꾸지 않는다" 는
+  // 보수성 선언이었고, 그 보수성이 곧 결함이었다.
+  it('route 모드 + 확장 출처 data_bound 노드 → extension (편집 차단 + 확장 편집 유도)', () => {
     const node: EditorNode = {
       name: 'Span',
       __source: { kind: 'extension', extensionId: 35 },
       text: '{{content}}',
     };
+    expect(classifyLockKind(node, 'route')).toBe('extension');
+    expect(isContextMenuAllowed(classifyLockKind(node, 'route'))).toBe(false);
+  });
+
+  // ⚠ 위 변경이 좁힌 것은 "어느 노드가 data_bound 로 분류되는가" 뿐이다.
+  // `data_bound ⇒ 선택·드래그·구조 편집 허용` 계약은 그대로다 — 아래가 그 반증 가드이며,
+  // 반대 방향으로 되돌리는 변경은 여기서 막힌다.
+  it('route 모드 + route 출처 data_bound 노드 → data_bound (편집 허용 계약 보존)', () => {
+    const node: EditorNode = {
+      name: 'Img',
+      __source: { kind: 'route' },
+      props: { src: '{{product.image}}' },
+    };
     expect(classifyLockKind(node, 'route')).toBe('data_bound');
+    expect(isContextMenuAllowed(classifyLockKind(node, 'route'))).toBe(true);
   });
 
   it('route 모드 + 확장 출처 (바인딩 없음) 노드 → extension 잠금(확장 편집 어포던스)', () => {
@@ -280,5 +299,138 @@ describe('resolveSourceExtensionId', () => {
     expect(resolveSourceExtensionId({ __source: { kind: 'route' } } as EditorNode)).toBeNull();
     expect(resolveSourceExtensionId({} as EditorNode)).toBeNull();
     expect(resolveSourceExtensionId(null)).toBeNull();
+  });
+});
+
+// ============================================================================
+// route 모드 출처 잠금 우선 — 상속·주입 노드 편집 소실 차단 (A3)
+//
+// 종전에는 route 모드만 `data_bound` 를 먼저 판정해, 상속(base)·주입(extension) 노드 중
+// props 값 하나라도 `{{ }}` 인 것이 "편집 가능" 으로 분류됐다. 그런데 저장 시
+// `stripInheritedNode` 가 그 노드를 통째로 폐기하므로 편집분이 오류도 경고도 없이
+// 사라졌다(저장은 200 성공 + history clear 로 undo 불가).
+//
+// N5~N9 는 `data_bound ⇒ 선택·드래그·구조 편집 허용` 계약의 **반증 가드**다 —
+// 되돌리는 변경은 여기서 막힌다.
+// ============================================================================
+describe('classifyLockKind — route 모드 출처 잠금 우선 (A3)', () => {
+  const menu = (kind: SelectionLockKind) => isContextMenuAllowed(kind);
+  const drag = (kind: SelectionLockKind) => resolveDndDenial(kind) === null;
+
+  it('N1 base 출처 + 텍스트 바인딩 → base (ⓘ·드래그 차단)', () => {
+    const node: EditorNode = {
+      name: 'H1',
+      __source: { kind: 'base', layout: '_user_base' },
+      text: '{{site.title}}',
+    };
+    const kind = classifyLockKind(node, 'route');
+    expect(kind).toBe('base');
+    expect(menu(kind)).toBe(false);
+    expect(drag(kind)).toBe(false);
+  });
+
+  it('N2 base 출처 + props 바인딩 → base', () => {
+    const node: EditorNode = {
+      name: 'Div',
+      __source: { kind: 'base' },
+      props: { className: '{{theme}}' },
+    };
+    const kind = classifyLockKind(node, 'route');
+    expect(kind).toBe('base');
+    expect(menu(kind)).toBe(false);
+    expect(drag(kind)).toBe(false);
+  });
+
+  it('N3 base 출처 + iteration → base (반복 항목 편집 진입도 함께 닫힌다)', () => {
+    const node: EditorNode = {
+      name: 'List',
+      __source: { kind: 'base' },
+      iteration: { source: '{{recent.data}}' },
+    };
+    const kind = classifyLockKind(node, 'route');
+    expect(kind).toBe('base');
+    expect(menu(kind)).toBe(false);
+    expect(drag(kind)).toBe(false);
+  });
+
+  it('N4 extension 출처 + 바인딩 → extension', () => {
+    const node: EditorNode = {
+      name: 'Span',
+      __source: { kind: 'extension', extensionId: 35 },
+      text: '{{content}}',
+    };
+    const kind = classifyLockKind(node, 'route');
+    expect(kind).toBe('extension');
+    expect(menu(kind)).toBe(false);
+    expect(drag(kind)).toBe(false);
+  });
+
+  it('N5 회귀 가드 — route 출처 + props 바인딩은 data_bound (편집 허용)', () => {
+    const node: EditorNode = {
+      name: 'Img',
+      __source: { kind: 'route' },
+      props: { src: '{{product.image}}' },
+    };
+    const kind = classifyLockKind(node, 'route');
+    expect(kind).toBe('data_bound');
+    expect(menu(kind)).toBe(true);
+    expect(drag(kind)).toBe(true);
+  });
+
+  it('N6 회귀 가드 — route 출처 + iteration 도 data_bound (편집 허용)', () => {
+    const node: EditorNode = {
+      name: 'Div',
+      __source: { kind: 'route' },
+      iteration: { source: '{{posts.data}}' },
+    };
+    const kind = classifyLockKind(node, 'route');
+    expect(kind).toBe('data_bound');
+    expect(menu(kind)).toBe(true);
+    expect(drag(kind)).toBe(true);
+  });
+
+  it('N7 회귀 가드 — 조상이 route 출처 iteration 이면 data_bound', () => {
+    const node: EditorNode = { name: 'Span' };
+    const ancestors: EditorNode[] = [
+      { name: 'List', __source: { kind: 'route' }, iteration: { source: '{{posts.data}}' } },
+    ];
+    const kind = classifyLockKind(node, 'route', undefined, ancestors);
+    expect(kind).toBe('data_bound');
+    expect(menu(kind)).toBe(true);
+  });
+
+  it('N8 회귀 가드 — __source 미부여(신규 삽입) + 바인딩은 data_bound', () => {
+    const node: EditorNode = { name: 'Span', text: '{{x}}' };
+    const kind = classifyLockKind(node, 'route');
+    expect(kind).toBe('data_bound');
+    expect(menu(kind)).toBe(true);
+  });
+
+  it('N9 회귀 가드 — 조상만 base 이고 자신은 미태깅이면 none (조상은 보지 않는다)', () => {
+    const node: EditorNode = { name: 'Span' };
+    const ancestors: EditorNode[] = [{ name: 'Div', __source: { kind: 'base' } }];
+    const kind = classifyLockKind(node, 'route', undefined, ancestors);
+    expect(kind).toBe('none');
+    expect(menu(kind)).toBe(true);
+    expect(drag(kind)).toBe(true);
+  });
+
+  it('isEditableLockKind / resolveDndDenial 이 같은 판정을 공유한다 (조건 복사 금지)', () => {
+    const kinds: SelectionLockKind[] = [
+      'none',
+      'data_bound',
+      'base',
+      'partial',
+      'extension',
+      'extension_point',
+    ];
+    for (const k of kinds) {
+      expect(resolveDndDenial(k) === null).toBe(isEditableLockKind(k));
+      expect(isContextMenuAllowed(k)).toBe(isEditableLockKind(k));
+    }
+    expect(resolveDndDenial('base')).toBe('denied_base_locked');
+    expect(resolveDndDenial('partial')).toBe('denied_base_locked');
+    expect(resolveDndDenial('extension')).toBe('denied_extension_locked');
+    expect(resolveDndDenial('extension_point')).toBe('denied_extension_locked');
   });
 });

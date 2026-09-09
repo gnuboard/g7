@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
+use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
+use App\Http\Requests\Auth\TwoFactorResendRequest;
 use App\Http\Requests\Auth\ValidateResetTokenRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
@@ -18,6 +21,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends AuthBaseController
 {
+    use BuildsAuthFailureResponses;
+
     public function __construct(
         private AuthService $authService
     ) {
@@ -27,8 +32,9 @@ class AuthController extends AuthBaseController
         // 공개 인증 엔드포인트를 제외한 나머지에만 인증 미들웨어 적용
         $this->middleware('auth:sanctum')->except([
             'login',
-            // 2단계 인증 확인은 아직 토큰이 없는 상태에서 호출된다 — 주체는 challenge 가 식별한다
+            // 2단계 인증 확인·재발송은 아직 토큰이 없는 상태에서 호출된다 — 주체는 challenge 가 식별한다
             'verifyTwoFactor',
+            'resendTwoFactor',
             'register',
             'forgotPassword',
             'resetPassword',
@@ -61,6 +67,8 @@ class AuthController extends AuthBaseController
             return $this->success('auth.login_success', $data);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (TwoFactorDeliveryFailedException $e) {
+            return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.login_failed');
         }
@@ -92,32 +100,37 @@ class AuthController extends AuthBaseController
             // 세션을 여는 지점이므로 `login` 과 같은 423 계약을 따른다 — 화면은 두 경로를
             // 구분하지 않으므로 한쪽만 다른 모양이면 잠금 안내가 깨진다.
             return $this->lockedResponse($e);
+        } catch (TwoFactorDeliveryFailedException $e) {
+            return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.two_factor_failed');
         }
     }
 
     /**
-     * 계정 잠금 응답(423)을 구성합니다.
+     * 2단계 인증 코드를 재발송합니다.
      *
-     * 세션을 발급하는 모든 엔드포인트가 같은 페이로드를 돌려주도록 단일 지점에서 만든다.
+     * 기존 challenge 는 취소되고 새 challenge 가 발행되므로, 앞서 받은 인증번호는
+     * 더 이상 통하지 않습니다.
      *
-     * @param  AccountLockedException  $e  잠금 예외
-     * @return JsonResponse 423 응답
+     * @param  TwoFactorResendRequest  $request  challenge 재발송 요청
+     * @return JsonResponse 새 challenge 정보를 포함한 JSON 응답
      */
-    private function lockedResponse(AccountLockedException $e): JsonResponse
+    public function resendTwoFactor(TwoFactorResendRequest $request): JsonResponse
     {
-        // 영구 잠금(무한대 설정)은 해제 시각·잔여 시간이 없다 — null 그대로 노출.
-        return $this->error(
-            $e->isPermanent() ? 'auth.account_locked_permanently' : 'auth.account_locked',
-            423,
-            [
-                'locked_until' => $e->lockedUntil?->toIso8601String(),
-                'retry_after_seconds' => $e->remainingMinutes === null ? null : $e->remainingMinutes * 60,
-                'permanent' => $e->isPermanent(),
-            ],
-            ['minutes' => $e->remainingMinutes]
-        );
+        try {
+            $data = $this->authService->resendTwoFactorChallenge(
+                $request->validated()['challenge_id']
+            );
+
+            return $this->success('auth.two_factor_required', $data);
+        } catch (AccountLockedException $e) {
+            return $this->lockedResponse($e);
+        } catch (TwoFactorDeliveryFailedException $e) {
+            return $this->deliveryFailedResponse();
+        } catch (ValidationException $e) {
+            return $this->validationError($e->errors(), 'auth.two_factor_invalid_challenge');
+        }
     }
 
     /**

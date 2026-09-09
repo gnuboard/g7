@@ -1,0 +1,61 @@
+feature: 레이아웃 첨부 URL 발급 모드 (공개 #134)
+
+description: |
+  레이아웃 편집기에서 올린 배경 이미지의 주소가 항상 공개 서빙 라우트(프록시)로
+  발급되어, 공개 자산 디스크(S3+CDN 등)를 설정해도 방문자 요청이 매번 오리진 PHP 를
+  거치던 결함을 고친다.
+
+  결정 사슬:
+    - 업로드 저장 위치: PublicAssetDisk::resolve() ?? config('attachment.disk').
+      행이 자기 disk 를 기록하므로 이후 설정 변경과 무관하게 각 행은 자기 위치를 기억한다.
+    - URL 해석: 행 disk 가 **지금** 설정된 공개 자산 디스크와 일치할 때만 직접 URL 시도,
+      그 외에는 프록시. `filesystems.disks.{disk}.url` 존재 여부는 판정 근거가 아니다
+      (비공개 버킷 + 공개 URL 설정 조합에서 직접 URL 은 403).
+    - 훅이 URL 을 차단하면(url() null) 프록시로 폴백한다.
+    - 고아 disk 행(디스크를 제공하던 플러그인 비활성화)은 withDisk 없이 주입 스토리지로
+      서빙·삭제 — 무인증 공개 라우트가 500 이 되지 않고 404 로 끝난다.
+    - 게시판·페이지 첨부는 권한 게이트가 걸려 있어 직접 URL 배선 대상이 아니다.
+      게시판 업로드 응답의 url 칸은 게이트가 살아 있는 서빙 URL 로 채운다.
+
+coverage_strategy: pairwise
+
+axes:
+  public_asset_disk: [unset, public, s3_private, ghost_disk]
+  row_disk: [attachments, s3, public]
+  filter_url_hook: [absent, blocks]
+
+exclusions:
+  - { public_asset_disk: unset, row_disk: public, reason: "공개 디스크 미설정이면 public 행이 새로 생기지 않는다" }
+  - { public_asset_disk: ghost_disk, row_disk: public, reason: "고아 디스크는 resolve 단계에서 null — row_disk 축 도달 전 차단" }
+  - { public_asset_disk: ghost_disk, row_disk: s3, reason: "동일 — resolve 가 null 이라 행 disk 와 무관하게 프록시" }
+  - { public_asset_disk: s3_private, row_disk: attachments, reason: "비공개 s3 는 판정 근거가 아니므로 unset 축과 결과가 동일" }
+  - { filter_url_hook: blocks, public_asset_disk: unset, reason: "직접 URL 시도 자체가 없어 훅이 발화하지 않는다" }
+  - { filter_url_hook: blocks, public_asset_disk: ghost_disk, reason: "동일 — 게이트에서 차단되어 url() 미호출" }
+
+effects:
+  - direct_url_when_row_matches_public_disk
+  - proxy_url_otherwise
+  - upload_stores_on_public_disk
+  - orphan_row_disk_serves_without_exception
+  - board_upload_response_url_uses_gated_route
+  - editor_thumbnail_renders_cross_origin
+  # 저장까지 왕복해 방문자 화면이 실제로 요청하는 주소를 본다 (E2E 시드 화면 대상)
+  - saved_layout_url_is_what_visitor_requests
+
+test_files:
+  - tests/Unit/Support/PublicAssetDiskTest.php
+  - tests/Unit/Services/TemplateLayoutAttachmentUrlResolutionTest.php
+  - tests/Unit/Services/TemplateLayoutAttachmentServingTest.php
+  - tests/Unit/Extension/Storage/StorageCategoryDiskTest.php
+  - tests/Feature/Api/Admin/TemplateLayoutAttachmentControllerTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/AttachmentServiceTest.php
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/layoutAttachments.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/dimension-and-attachments.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls.test.tsx
+  - tests/Playwright/specs/layout-editor/layout-attachment-url-mode.spec.ts
+
+rules_layer_coverage:
+  - rule: no-storage-disk-direct
+    coverage: 모든 접근이 StorageInterface 경유 — Storage facade 직접 호출 도입 없음
+  - rule: repository-interface-injection
+    coverage: 서비스 시그니처 무변경 — 해석 규칙만 교체

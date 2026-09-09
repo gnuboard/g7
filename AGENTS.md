@@ -42,7 +42,7 @@
 | [service-provider.md](docs/backend/service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](docs/backend/service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](docs/backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈로그 빌드 시점에 보강 |
-| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트와 운영자 cu... |
+| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트·자산 URL ... |
 | [translatable-seeders.md](docs/backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) | 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 TranslatableSeede... |
 | [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
@@ -149,7 +149,7 @@
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 325 |
+| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 328 |
 
 
 ### 확장 API 레퍼런스 (14개 확장, 자동 스캔)
@@ -198,7 +198,7 @@
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 145 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 146 |
 | `sirsoft-basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 40 · 모델 0 · 레이아웃 166 |
 
 
@@ -277,6 +277,57 @@
 |------|------------|
 | `"item"`, `"index"` | `"item_var"`, `"index_var"` |
 | iteration 내 if 순서 무시 | if가 iteration보다 먼저 평가됨 |
+
+### 위젯 값 형태 ↔ apply 경로
+
+편집기 위젯 중 **값이 스칼라가 아닌 것**(`image` → `{url,size,repeat,position}` 객체)을 값 슬롯이 하나뿐인 apply 경로에 연결하면, 객체가 그대로 `props[key]` 에 저장되어 소비 컴포넌트가 `[object Object]` 를 URL 로 받는다. 이 결함은 예외도 콘솔 오류도 서버 로그도 남기지 않는다 — 깨진 이미지 요청은 SPA catch-all 때문에 404 조차 아니라 **200(HTML)** 이고, 편집기 위젯의 미리보기는 정상이라 조작 중에는 이상이 보이지 않는다. 화면의 엑박이 유일한 증상이다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `image` 위젯을 `classToken`·`cssVar` 에 연결하거나 `apply` 를 생략 | 값이 스칼라로 축약되는 경로만 — `propValue`(맨 url 문자열) 또는 `backgroundImage` 를 포함한 `styleProp` 묶음(4속성 분해) |
+| 축약 판정을 **값 형태 sniffing** 으로 게이트 | `widget === 'image'` 게이트 — `isImageValueObject` 는 4키 중 **하나만** 있어도 참이라 `props.tooltip = {position:'left'}` 같은 정당한 객체 prop 을 이미지로 오인해 삭제한다 |
+| 축약 분기를 writer 마다 복붙 | 공용 헬퍼 `scalarizeImageValue` 단일 지점 — 이번 결함의 원인이 정확히 "방어가 `applyStyleProp` 안에만 있었다" 이다 |
+| 쓰기만 축약하고 읽기는 그대로 | `propValue` 역해석이 저장 문자열을 `{url}` 로 되감는다. **표현식 문자열도 감싼다** — 감싸지 않으면 빈 피커로 보이고 업로드 1클릭에 그 표현식이 소리 없이 소실된다 |
+| 저장되지 않는 컨트롤을 `disabled` 로 남김 | 단일 값 슬롯이면 표시모드 버튼을 **컨테이너째 미렌더** — `disabled` 는 *일시적* 비활성의 시각 언어라 "URL 을 넣으면 살아나겠지" 라는 거짓 정보를 준다 |
+| 저장되지 않는 `size` 를 미리보기에 반영 | 단일 슬롯 미리보기는 `contain` 고정 — 실제 표시 방식은 소비 컴포넌트의 클래스가 정하므로 편집기가 흉내내면 거짓 미리보기다 |
+| 코어 엔진의 느슨한 판정식을 **백필**에 이식 | 백필·런타임 방어는 **엄격 판정식**(키 집합 ⊆ 4키 **AND** `url` 키 존재). 느슨한 판정식은 레이아웃 전수에서 2,219건을 매치하고 그 대부분이 정상 props 다(`{className,name,size}` 674건 · `{name,size}` 552건) — 엄격 판정식의 매치는 0건이었다 |
+| 백필 순회 범위를 **노드 키 allowlist** 로 정의 | `props` 키 진입 시 모드 ON / `style` 키 진입 시 OFF 인 **모드 플래그 전역 재귀** — 실측상 `props` 안에 컴포넌트 노드가 1,150건 살아 allowlist 는 원리상 완결 불가다 |
+| 두 방어선(런타임 `Img` / 백필)의 판정 강도를 따로 정함 | 완전히 같은 엄격도 — 어긋나면 한쪽만 통과하는 값이 생긴다 |
+
+> 상세: [editor-spec.md](docs/extension/editor-spec.md) "controls — 재사용 스타일 컨트롤"
+> 정적 검사가 두 축을 함께 본다 — editor-spec 선언과 코어 엔진의 축약 분기 실존. 선언 축만 보면 코어 분기가 삭제돼도 통과하는데 결함은 부활한다. 기설치본 보정은 DB 데이터 상태라 정적 검사 대상이 아니며, 업그레이드 스텝의 회귀 테스트가 그 축을 잠근다
+
+### 편집기 컨트롤의 데이터 연결 값 보호
+
+레이아웃의 prop 자리에는 `{{_global.settings?.general?.site_logo_url}}` 같은 **표현식 문자열**이 저장돼 있을 수 있다. 위젯은 그 값을 해석하지 못해 **빈 컨트롤**로 보이고, 조작하는 순간 그 연결이 사라진다 — 값 하나가 아니라 **환경설정과의 연결**이 끊기고, 원문이 화면 어디에도 남지 않아 되돌릴 수단조차 없다. 예외도 콘솔 오류도 남지 않는다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 바인딩 판정·배지·잠금을 위젯마다 구현 | `ControlRenderer` 의 **공용 게이트 한 곳** — 새 위젯을 등록해도 자동 적용된다 |
+| 해제 경로 없이 잠그기만 | 「직접 지정으로 바꾸기」로 **명시적으로만** 연다 |
+| 「직접 지정으로 바꾸기」를 편도로 두기 | 「되돌리기」 동반 — 해제 직후엔 취소로, 값을 이미 넣은 뒤엔 원문 복구로 동작한다 |
+| 파괴적 조작 표면 중 일부만 잠그기 | 그 위젯의 **전 표면** — 업로드·제거·목록 선택뿐 아니라 **관리 모달 진입**까지. 같은 동작이 두 곳에 렌더되면 하나만 잠근 것은 판단이 아니라 누락이다 |
+| 위젯이 자체 처리를 가지면서 공용 게이트도 통과 | 둘 중 하나 — 자체 처리 위젯은 제외 목록에 등재하고, 그 위젯이 **원문 표시·해제·복구 셋을 모두** 제공하는지 확인한다 |
+| 자체 분기가 공용 해제 경로를 막음 | 해제된 뒤에는 위젯이 평소대로 편집 가능해야 한다 |
+| 해석 못 하는 값을 위젯이 흉내내 표시 | 원문 배지로 대체 — 흉내내면 거짓 컨트롤이다 |
+
+> 상세: [editor-spec.md](docs/extension/editor-spec.md) "데이터 연결 값 보호"
+
+### 상속·주입 노드의 편집 표면
+
+저장 마스킹(`stripInheritedFromLayoutContent`)은 상속(base)·주입(extension) 출처 노드를 **정상 저장에서도 항상 폐기**한다. 그래서 그 노드를 편집할 수 있게 열어 두면 편집분이 오류도 경고도 없이 사라진다 — 저장은 200 으로 성공하고 `history.clear()` 로 undo 도 불가능하다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 잠금 판정에 편집 모드 예외를 둠 (`editMode !== 'route' && isNodeLocked(...)`) | 출처 잠금이 `data_bound` 보다 **항상 우선** — "route 는 종전 동작을 한 줄도 바꾸지 않는다" 는 계약이 아니라 보수성 선언이었고, 그 보수성이 곧 결함이었다 |
+| `data_bound` 의 **의미**를 좁혀 해결 | 의미는 그대로 두고(= 편집 가능, 텍스트만 잠금) **어느 노드가 그렇게 분류되는가**만 좁힌다 — 형제 경로(DnD·오버레이)가 그 계약에 실제로 의존한다 |
+| 게이트 조건을 표면마다 복사 | 단일 판정 헬퍼 `isEditableLockKind` / `resolveDndDenial` 만 호출 — 한 곳만 빠져도 같은 소실 결함이 재발한다 |
+| ⓘ 메뉴와 드래그 핸들만 막고 끝냄 | 인라인 편집(더블클릭)·복제·키보드 `Delete`·잘라내기까지 전 표면 — 키보드 경로는 ⓘ 메뉴를 거치지 않아 무방비였다 |
+| 드래그 거부를 `zone === null` 에 기댄 간접 방어로 | commit 직전 최종 가드 — stale 슬롯이나 유효 zone 이 들어오면 그대로 이동 commit 된다 |
+| 거부된 드래그가 `activeDragPath` 를 남김 | 거부 시 즉시 비운다 — 남으면 DragOverlay 가 잡힌 노드를 따라다녀 "옮길 수 있다" 는 거짓 어포던스를 준다 |
+| 조상 산출 구현을 파일마다 복제 | `collectAncestors` 단일 출처 — 잠금 판정의 입력이 갈리면 "핸들은 있는데 드래그는 거부" 같은 어긋남이 조용히 생긴다 |
+
+차단된 노드에는 「🔒 공통 레이아웃 편집」·「🔒 확장 편집」 진입 어포던스가 대신 뜬다. 상속 노드의 「데이터 영역」 라벨은 사라지지만 후자가 행동 가능한 정보이므로 순증이다.
 
 ### 컴포넌트 Props
 
@@ -476,6 +527,24 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 
 > 상세: [validation.md](docs/backend/validation.md), [service-repository.md](docs/backend/service-repository.md), [frontend/security.md](docs/frontend/security.md)
 
+### 서버가 조건에 따라 다른 형태의 200 을 돌려주는 엔드포인트
+
+같은 엔드포인트가 설정·상태에 따라 **다른 형태의 2xx** 를 낸다면, 프론트는 형태를 판별한 뒤에 읽어야 한다. 한 형태만 가정하면 다른 형태에서 필드 접근이 그 자리에서 던지고, 그 원문이 오류 박스에 영문으로 노출된다. 서버는 정상 응답했으므로 **서버 로그에는 흔적이 없다** — 깨진 것은 클라이언트뿐이다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 응답 타입을 한 형태로 고정 선언하고 `response.data.user.*` 를 바로 읽기 | 판별 유니온으로 두 형태를 표현 (`LoginResult` = `{status:'authenticated', user}` \| `{status:'two_factor_required', challenge}`) |
+| 저장 지점에 형태 가드 없이 `setToken(response.data.token)` | 비어 있지 않은 문자열만 저장 — `localStorage` 는 무엇을 넣든 문자열로 바꾸므로 `undefined` 가 `"undefined"`(truthy)로 남아 이후 모든 요청이 `Bearer undefined` 로 나가 401 이 된다 |
+| 대체 형태 분기를 사용자 경로에만 두고 관리자 경로는 그대로 | 관리자 경로가 먼저 500 이 되면 설정을 되돌릴 수단까지 사라진다 — 두 경로 동시 적용 |
+| `onSuccess` 후속 액션에 조건 없이 성공 처리를 나열 | 대체 형태에서 실행되면 안 되는 액션마다 `if:"{{!response.대체형태플래그}}"` |
+| `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 시점 컨텍스트는 아직 갱신 전이다 — `{{response.*}}` 만 읽는다 (`onSuccess` 결과는 `handleSequence` 의 상태 동기화 대상이 아니다) |
+| 서버가 제공하는 기능의 프론트 화면 부재를 "미사용" 으로 간주 | 토글을 켠 사이트에서만 드러나는 미구현이다 — 서버 토글 ↔ 화면 존재를 전수 대조 |
+
+착수 전 전수조사 축은 **"서버가 대체 형태 2xx 를 내는 엔드포인트 ↔ 프론트 처리 여부"** 다. 그리고 **"서버 토글 ON 시 프론트 화면 존재 여부"** 를 함께 본다 — 2단계 인증은 도입 후 여러 버전 동안 입력 화면이 없었고, 그 토글을 켠 사이트에서만 전원 로그인 불가로 나타났다(공개 #133).
+
+> 상세: [auth-system.md "2단계 인증 로그인"](docs/frontend/auth-system.md)
+> 정적 검사로는 잡히지 않는다 — 응답 변종은 서버 분기의 의미 판정이므로 코드 리뷰에서 확인한다.
+
 ### 제3자 라이브러리는 쓰기 경로를 지정받는다
 
 제3자 라이브러리는 캐시·임시파일 경로를 설정하지 않으면 **자기 설치 폴더**(vendor 안)나 시스템 temp 에 쓴다. 표준 Laravel 배포는 웹서버에 `storage/` 와 `bootstrap/cache` 만 쓰기 권한을 주므로 그 쓰기는 실패하는데, 실패가 예외가 아니라 PHP 경고라 Laravel `HandleExceptions` 가 `ErrorException` 으로 승격시켜 요청이 500 이 된다. 해시당 1회만 기록하는 라이브러리라면 캐시가 영영 생기지 않아 **매 요청이 같은 실패를 반복**한다 — 개발 머신에서는 vendor 가 쓰기 가능해 한 번 성공하고 끝나므로 재현되지 않는다 (공개 #125).
@@ -494,6 +563,25 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 경로는 `ExtensionStoragePath` 가 해석한다. `getBasePath('cache')` 는 `Storage::disk()->path()` 위임이라 비로컬 디스크(S3 등)에서 파일시스템 경로가 아니게 되는데, 그러면 라이브러리가 상대경로를 CWD 기준으로 해석해 **조용히 엉뚱한 곳에 쓴다** — 지금 결함보다 나쁘다. 대부분의 정의 캐시는 `file_put_contents` 로 쓰는 로컬 전용 장치다.
 
 > 상세: [storage-driver.md](docs/extension/storage-driver.md) "제3자 라이브러리에 절대 경로를 넘길 때", [service-repository.md](docs/backend/service-repository.md) "서비스가 제3자 라이브러리를 붙일 때"
+
+### 공개 자산 직접 URL 은 운영자 선언으로만 열린다
+
+저장된 파일의 주소를 직접 URL(CDN)로 내보내면 서버 스트리밍 경로가 통째로 건너뛰어진다. 그 경로에 게이트가 있으면 게이트가 사라지고, 대상 저장소가 실제로는 비공개면 발급된 주소가 403 이 된다. 둘 다 예외도 로그도 남기지 않는다 — 그 이미지들만 조용히 깨지거나, 막아야 할 파일이 조용히 열린다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `filesystems.disks.{disk}.url` 이 설정돼 있다는 이유로 그 디스크를 공개로 간주해 직접 URL 발급 | 운영자가 명시 선언한 `core.storage.public_asset_disk` 와 **행 disk 가 일치할 때만** 직접 URL. `url` 설정 유무는 "URL 을 만들 수 있는가" 이지 "익명 읽기가 되는가" 가 아니다 |
+| 권한·게이트(비밀글·소유권·발행 상태·본인인증·다운로드 카운트)가 걸린 첨부 경로를 직접 URL 로 전환 | 게이트가 없는 완전 공개 자산 카테고리에만 배선. 게이트가 있는 경로의 응답 `url` 칸은 그 게이트를 통과하는 서빙 URL 로 채운다 |
+| 공개 판정을 `PublicAssetDisk::resolve()` 밖에서 사본으로 재작성 | 판정은 그 단일 지점 경유. `''`·`'none'`·config 에 없는 고아 디스크가 등가 비교만으로 통과하는 것을 막는다 |
+| 행 disk 로 `withDisk()` 를 무검증 호출 | 존재 확인 후 폴백 — 공개 자산 디스크가 플러그인 등록 디스크일 수 있고, 그 플러그인 비활성화 시 무인증 공개 서빙 라우트가 **500** 이 된다 |
+| 직접 URL 로 전환하면서 "행 삭제 = 접근 차단" 전제를 그대로 둠 | 직접 URL 은 행과 무관하게 파일을 가리킨다 — 회수 수단(파일 삭제)과 그 한계를 문서에 남긴다 |
+| 서버가 스스로 발급하는 자산 주소(프록시 서빙 URL)를 절대 URL 로 만듦 | 사이트 상대 경로 — 절대면 저장 규칙(외부 URL 차단)이 자기 주소를 외부로 차단해 image 위젯의 업로드 → 저장이 422 가 되고(배경은 `style` 이라 스캔되지 않아 로고에서만 드러났다), 저장된 레이아웃이 발급 시점 도메인·스킴에 묶인다 |
+| 저장 규칙의 "외부" 판정을 스킴 접두 문자열로만 두고 자기 주소를 예외 없이 차단 | 사이트 자기 host(`app.url`)·선언된 공개 자산 디스크 host 는 외부가 아니다 — `SiteAssetHosts` 단일 판정(정규화 후 host 등가 비교). 접두 비교는 `host.evil.com`·`host@evil.com` 을 통과시키고, 요청 `Host` 헤더는 위조 가능해 근거가 아니다 |
+
+이 결함군의 유일한 증상은 화면이다: 직접 URL 이 403 을 돌려주면 그 이미지들만 깨지고, 게이트가 우회되면 정상 200 이 나간다. 서버 로그에는 어느 쪽도 흔적이 없다.
+
+> 상세: [storage-driver.md](docs/extension/storage-driver.md) "공개 자산 전용 디스크 분리"
+> 이 규칙은 정적 검사로 판정할 수 없다 — "이 경로에 게이트가 있는가"·"행 disk 와 설정이 같은 축인가" 는 의미 판정이므로, 회귀 테스트(특히 비공개 S3 행 + 공개 URL 설정 조합에서 서빙 라우트가 나오는 케이스)가 잠근다
 
 ### 직접 전송로는 자격증명을 스스로 싣는다
 
@@ -642,7 +730,7 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 | 버전 키·서명 키를 기본 TTL 로 `put()` | `PERSISTENT_TTL_SECONDS`(10년) 명시 — `forever()` 는 `CacheInterface` 밖(공개 표면 변경), `put(…, 0)` 은 forget |
 | 서명 스코프를 렌더 템플릿만으로 나눔 | `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버 간 mtime 차이로 요청마다 재게시가 왕복한다 |
 | `config:cache` / `route:cache` / `event:cache` / `optimize` 를 헬퍼 밖에서 `Artisan::call` | `ConfigCacheHelper::rebuild()` / `RouteCacheHelper::rebuild()` (내부가 `withPreservedContainer`) — 이 명령들은 새 Application 을 부팅하며 전역 `Container` 를 일회용 앱으로 바꿔 놓아, 그 뒤 등록되는 `app()->terminating()` 재게시 예약이 종료되지 않는 앱에 걸려 사라진다 |
-| 코어 업데이트 흐름에서 현재 프로세스의 버전·update 목록을 `config('app.version')`·`config('app.update.*')` 로 판독 | spawn 자식은 부모가 비우지 않은 이전 버전 config 캐시로 부팅한다 — 버전은 `CoreVersionChecker::getCoreVersion()`(env 우선), update 목록은 캐시 부팅이면 `CoreUpdateService::freshDiskUpdateConfig()`, 부모는 spawn 직전 `ConfigCacheHelper::clear()` |
+| 코어 업데이트 흐름에서 현재 프로세스의 버전·update 목록을 `config('app.version')`·`config('app.update.*')` 로 판독 | spawn 자식은 부모가 비우지 않은 이전 버전 config 캐시로 부팅한다 — 버전은 `CoreVersionChecker::getCoreVersion()`(업데이트 트리 안에서만 env 우선), update 목록은 캐시 부팅이면 `CoreUpdateService::freshDiskUpdateConfig()`, 부모는 spawn 직전 `ConfigCacheHelper::clear()` + `PackageManifestCacheHelper::clear()` |
 
 이 결함군은 예외도 로그도 남기지 않는다 — 게시본이 정상 200 으로 옛 내용을 내보내는 것, 또는 매일 전체 재생성이 일어나는 것이 유일한 증상이다. 재게시 누락의 안전망은 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기](`POST /api/admin/settings/static-cache/republish`)이며, 상태 판정은 `ExtensionStaticCacheService::statusReport()` 한 곳이 CLI·API·화면에 공급한다.
 
@@ -663,6 +751,27 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 이 결함은 예외도 경고도 로그도 남기지 않는다. 이미 제공 불가한 항목이 사용자 화면에서 선택 가능한 상태로 남아 있는 것이 유일한 증상이고, 관리자 화면은 고아 표시로 정상 차단하고 있어 양쪽을 나란히 보지 않으면 드러나지 않는다.
 
 > 상세: [module-settings.md](docs/extension/module-settings.md) "카탈로그 병합 설정의 공개 응답"
+
+### vendor 를 교체한 뒤 새 PHP 프로세스를 띄우기 전에는 패키지 매니페스트를 비운다
+
+Laravel 은 `bootstrap/cache/packages.php` 가 있으면 stale 여부를 검사하지 않고 그대로 읽어 provider 를 `new` 한다. 그래서 vendor 를 바꾼 뒤 그 파일을 남겨 두면 다음에 부팅하는 프로세스가 새 vendor 에 없는 클래스를 찾다 부팅 단계에서 죽고, 예외는 부팅 전이라 앱 로그에 남지 않는다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| vendor 교체 뒤 `proc_open`·`config:cache`·`route:cache` 등 새 부팅을 `bootstrap/cache/{packages,services}.php` 정리 없이 실행 | 부팅 직전 `PackageManifestCacheHelper::clear()`(재생성까지 필요하면 `rebuild()`) — `ConfigCacheHelper::clear()` 와 짝으로 |
+| 정리 로직을 호출부마다 `@unlink` 로 복제 | 헬퍼 단일 지점 — `clearAllCaches()` 도 같은 헬퍼를 쓴다 |
+| 자식 프로세스 보호를 부모 코드에만 두기 | 부모는 이미 배포된 옛 코드일 수 있다 — 새 버전의 `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS` 를 보고 스스로 비운다(App\ 클래스 미참조·실패 무시) |
+| 코어 버전 판정에서 프로세스 env `APP_VERSION` 을 무조건 우선 | env 우선은 `CoreUpdateContext::isInProgress()` 인 프로세스 트리 안에서만 — 업데이트 전에 뜬 `artisan serve`·큐 워커는 옛 값을 물고 있다 |
+| 업데이트 커맨드 argv 판정을 SAPI 게이트 없이 두기 | argv 는 명령줄 SAPI(`cli`·`phpdbg`)에서만 읽는다 — CGI/FPM 은 `register_argc_argv=On` 이면 `$_SERVER['argv']` 를 쿼리스트링에서 채워(`?x+core:update`) 비인증 웹 요청이 업데이트 트리로 판정되고, 자가 치유가 요청마다 매니페스트를 지운다. env 플래그 채널은 웹에서 주입할 수 없으므로 그대로 둔다 |
+| 매니페스트 삭제 실패를 `@unlink` 로 삼키기 | `clear()` 가 지우지 못한 경로를 돌려주고 spawn 직전 호출부가 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식도 같은 이유로 실패해 증상은 제보와 같고, 이 경고가 원인을 가리키는 유일한 흔적이다 |
+| 업데이트 트리 판정을 지점마다 다시 작성 | `App\Support\CoreUpdateContext` 단일 SSoT — `CoreServiceProvider::isCoreUpdateInProgress()` 도 위임이다. `bootstrap/app.php` 의 복제본은 부팅 전이라 불가피한 예외이며 주석으로 상호 참조한다 |
+| 자동 비활성화 로그의 `core_version` 을 `config('app.version')` 으로 적기 | 판정과 같은 `CoreVersionChecker::getCoreVersion()` — 로그와 판정 근거가 갈리면 운영자가 원인을 특정할 수 없다 |
+| "이미 있으니 건너뛴다" 분기(인스톨러 vendor 재사용)가 산출물의 출처를 보지 않음 | `installed.json` 의 `dev`/`dev-package-names` 로 출처를 보고 경고 카드·로그를 남기며, 재사용 경로에서도 컴파일 캐시를 정리한다 |
+| 코어 업데이트를 마치고 상주 워커에 신호를 보내지 않음 | Step 11·핸드오프·단독 재개 사후 단계에서 `signalQueueRestart()` |
+
+이 결함군은 예외도 로그도 남기지 않는다 — 자식 프로세스가 부팅 단계에서 죽어 부모가 핸드오프로 멈추는 것, 또는 업데이트 직후 확장이 `incompatible_core` 로 꺼지는 것이 유일한 증상이다. 후자는 관리자 템플릿이 대상이면 복구 UI 자체에 도달할 수 없어 자가 회복 경로가 없다.
+
+> 상세: [core-update-system.md](docs/backend/core-update-system.md) "spawn 전 캐시 정리 계약(3계층)" · [extension-update-system.md](docs/extension/extension-update-system.md) "판정의 단일 출처와 이 플래그가 게이트하는 것"
 
 ### 설정 주입과 `.env` 우선
 
@@ -726,6 +835,19 @@ TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB
 | 관련도순(`_ft_score`)에 커서 적용 | 계산값은 WHERE 절 경계로 쓸 수 없다 — offset 유지 (`KeysetPaginator::supports` 가 판정) |
 
 > 상세: [pagination.md](docs/backend/pagination.md)
+
+### 입력 크기에 비례해 커지는 메모리는 PHP 기본 한계 안에서 잰다
+
+브라우저에서 잘 돌던 알고리즘·상수를 PHP 로 옮길 때 시간 상한(O(n·m) 가드)만 함께 오고 **메모리 상한은 오지 않는다.** PHP 배열은 원소당 수십 바이트라 (줄 수)² 표는 2,350줄에서 약 150MB 이고, 운영 서버의 기본 `memory_limit` 은 128M 이다. 개발 머신(512M)에서는 통과하고 서버에서만 500 이 되며, 예외는 `FatalError` 한 줄뿐이라 어느 요청의 어떤 입력이었는지 로그에 남지 않는다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 카운트·길이만 쓰는 LCS/DP 에 전체 표 + backtrack | 두 행(또는 한 행) DP 로 길이만 구한다 — 추가 = 새 줄 − LCS, 삭제 = 옛 줄 − LCS 라 숫자가 같다 |
+| 브라우저 구현의 임계값(`DIFF_MAX_LINES` 등)을 그대로 이식하고 "가드가 있다" 고 간주 | 그 임계에서의 PHP 메모리를 실측하고 128M 아래인지 확인 — 임계가 시간 축만 막는 경우가 있다 |
+| "인접 버전 비교는 변경 영역이 작다" 는 가정으로 최악 경로를 비워 둠 | 변경 영역은 양끝이 동시에 바뀌면 파일 전체다 — 편집기가 `comment` 키를 떼어내는 첫 저장이 정확히 그 형태 |
+| 메모리 회귀 테스트를 "통과했다" 로만 잠금 | `memory_get_peak_usage()` 증가량 상한을 단언하고, 수정 전 값(146MB)을 테스트 메시지에 남긴다 |
+
+> 상세: [service-repository.md "입력 크기에 비례하는 메모리"](docs/backend/service-repository.md)
 
 ### 검색 인덱스 재생성(리인덱싱)
 
@@ -982,6 +1104,7 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 - `## [버전] - YYYY-MM-DD` 헤더 필수
 - `### Added` / `### Changed` / `### Fixed` / `### Removed` 카테고리 사용
 - 최신 버전이 파일 상단
+- 한 버전 섹션 안에 같은 카테고리 헤딩은 한 번만 — 브랜치마다 섹션 머리에 자기 `### Fixed` 블록을 얹고 병합이 양쪽을 이어 붙이면 같은 제목이 두 번 남는다. 항목은 기존 카테고리 블록 끝에 추가하고, 병합 뒤 두 번째 블록이 보이면 그 항목을 첫 블록에 합치고 헤딩만 지운다(항목 삭제 금지). 같은 버전 헤더 중복·허용 밖 카테고리도 같은 결함군이며 정적 검사가 working 버전 섹션에서 차단한다. 공개 배포된 과거 섹션은 소급 수정하지 않는다
 
 ---
 
@@ -1414,6 +1537,8 @@ lazy 번들(편집기/devtools)이 코어 런타임(DynamicRenderer·엔진 싱�
 - 확장 에셋 절대경로는 `getBuiltAssetAbsolutePaths()`(=`getModulePath()`/`getPluginPath()`) 만 쓴다. `base_path("modules"|"plugins")` 직접 조립은 `_bundled` 경로 오해석 → 빈 번들.
 - concat 루프는 확장별 try/catch — 실패 확장만 skip 하고 나머지 병합을 지속한다.
 - 번들 파일명에 확장 캐시 버전을 포함(`{type}.{version}.{js,css}`). 조합 변경 시 version bump → 새 파일명 → 자동 재생성. 구파일 GC 는 `ext-bundles:cleanup` + `{module,plugin,template}:cache-clear` 가 담당한다. prod 은 version-in-path 디스크 캐시, 비프로덕션은 매 요청 concat.
+- 프로덕션은 캐시 파일 존재를 **빌드보다 먼저** 확인한다. 캐시 키는 `(type, kind, version)` 만으로 계산되는데 빌드를 앞세우면 캐시 적중에도 매 요청 활성 확장 열거·파일 읽기가 일어나고, 원본이 소실되면 멀쩡한 캐시를 두고 503 이 된다. 캐시 미스는 같은 키의 잠금으로 1회 빌드에 수렴하고 잠금 뒤 캐시를 재확인하며, 잠금 대기 초과·저장소 장애는 실패가 아니라 각자 빌드로 폴백한다.
+- 병합 결과가 비어도 선언 산출물이 전부 존재하거나 선언이 0이면 0바이트 캐시 파일을 만들어 정적 게시까지 간다. 만들지 않으면 그 구성의 자산 URL 이 API 로 폴백해 방문자의 모든 페이지 로드가 PHP 를 거친다. 캐시하지 않는 것은 산출물 소실(503 판정 보존)·병합 단계에서 건너뛴 확장이 있는 결과(굳지 않도록 매 요청 재시도)·디스크 쓰기 실패뿐이다.
 
 ### 빌드 명령어 (Artisan)
 

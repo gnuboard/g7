@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.2] - 2026-09-09
+
+### Changed
+
+- Composer 잠금 파일을 최신 Composer 형식으로 갱신했습니다.
+
+### Removed
+
+- 사용되지 않던 첨부파일 주소 조회 기능을 제거했습니다. 화면·API 어디에서도 호출되지 않았고 항상 빈 값을 돌려주던 기능이라 실제 동작 변화는 없습니다.
+
 ## [1.1.1] - 2026-09-06
 
 ### Added
