@@ -362,3 +362,50 @@ export async function shopBase(page: Page): Promise<string> {
     return typeof value === 'string' ? value : '/shop';
   });
 }
+
+/**
+ * 회원 주문상세 '이 주문의 클레임' 목록(`user/orders/{id}/claims`) 응답을 세웁니다.
+ *
+ * 회원 목록(`mockClaimList`)과 같은 봉투이며 주문 ID 스코프 경로만 다르다 — 그 경로로 나간 요청의
+ * URL 을 돌려주어 spec 이 "유형별로 다시 불렀는가" 를 셀 수 있게 한다.
+ *
+ * @param page Playwright 페이지
+ * @param rowsByType 유형별 행 (없는 유형은 빈 목록)
+ * @returns 이 경로로 나간 요청 URL 목록 (도착 순)
+ */
+/** 주문 스코프 목록의 기본 유형 판정 순서 (서버 `UserClaimService::ORDER_LIST_TYPE_PRIORITY` 와 같다) */
+export const ORDER_LIST_TYPE_PRIORITY = ['exchange', 'return', 'cancel', 'refund'] as const;
+
+export async function mockOrderClaimList(
+  page: Page,
+  rowsByType: Record<string, Record<string, unknown>[]>,
+): Promise<URL[]> {
+  const requested: URL[] = [];
+
+  await page.route(`**${API}/user/orders/*/claims?**`, async (route) => {
+    const url = new URL(route.request().url());
+    // 서버 계약: 유형을 비우면 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불), 넷 다 없으면 교환.
+    const requestedType = url.searchParams.get('type') || null;
+    const type =
+      requestedType ??
+      ORDER_LIST_TYPE_PRIORITY.find((t) => (rowsByType[t] ?? []).length > 0) ??
+      'exchange';
+    const rows = rowsByType[type] ?? [];
+    requested.push(url);
+
+    await fulfillData(route, {
+      data: rows,
+      pagination: {
+        current_page: Number(url.searchParams.get('page') ?? 1),
+        per_page: 20,
+        total: rows.length,
+        last_page: 1,
+        total_relation: 'eq',
+      },
+      claim_type: type,
+      counts: Object.fromEntries(ORDER_LIST_TYPE_PRIORITY.map((t) => [t, (rowsByType[t] ?? []).length])),
+    });
+  });
+
+  return requested;
+}

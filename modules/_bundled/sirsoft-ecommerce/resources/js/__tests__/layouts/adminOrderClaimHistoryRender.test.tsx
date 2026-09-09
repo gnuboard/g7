@@ -11,7 +11,7 @@
  *     `item_var` 를 못 읽으면 행이 0개가 되고 표만 남는다.
  *  3. **서브탭이 재조회 없이 목록을 바꾸는가** (D20).
  *  4. **뱃지 숫자가 서버 `counts` 인가** — `claims` 배열 길이와 다른 값을 심어 구분한다.
- *  5. **취소 행에 [신청서 조회하기] 가 없는가** (`detail_url: null` — S6a 판정 ⑤).
+ *  5. **취소 행도 번호가 링크인가** (취소도 조회 전용 상세가 열린다) · 이미지 없는 상품의 자리표시.
  *  6. **모바일 390 에서 표가 사라지고 카드가 나오는가** (D20).
  *  7. **권한이 없어 못 불러온 경우와 접수 건이 없는 경우가 구분되는가.**
  *  8. **결제 정보의 클레임 추가결제 합계 행이 0원에서 사라지는가.**
@@ -150,7 +150,7 @@ const EXCHANGE_ONE_ITEM: Node = {
   ],
 };
 
-/** 취소 신청서 — 상세 라우트가 없어 `detail_url` 이 null 이다 (S6a 판정 ⑤) */
+/** 취소 신청서 — 취소도 조회 전용 상세가 있어 서버가 `detail_url` 을 준다 */
 const CANCEL_CLAIM: Node = {
   id: 2,
   claim_number: 'CL20260827-000002',
@@ -163,7 +163,7 @@ const CANCEL_CLAIM: Node = {
   reason_label: '주문 실수',
   fault_type_label: null,
   reject_reason: null,
-  detail_url: null,
+  detail_url: '/admin/ecommerce/claims/CL20260827-000002',
   items: [
     {
       product_name: '소프트 터치 니트',
@@ -264,10 +264,10 @@ const COMPUTED_DEFINITIONS = { _computedDefinitions: (shell as Node).computed };
  * 클레임 내역 섹션을 특정 응답·서브탭으로 렌더한다.
  *
  * @param response 그룹 응답
- * @param claimHistoryType 선택된 유형 서브탭
+ * @param claimHistoryType 운영자가 누른 유형 서브탭 (빈 값이면 접수 건이 있는 첫 유형이 선다)
  * @returns 테스트 유틸
  */
-async function renderSection(response: Record<string, unknown>, claimHistoryType = 'exchange') {
+async function renderSection(response: Record<string, unknown>, claimHistoryType = '') {
   const utils = createLayoutTest(probe(claimHistory as Node, ['orderClaims']) as any, {
     componentRegistry: registry as any,
     locale: 'ko',
@@ -369,6 +369,76 @@ describe('S9c — 주문상세 클레임 내역 섹션 렌더 (D20)', () => {
 
   describe('유형 서브탭', () => {
     /**
+     * 활성 서브탭 id 를 읽는다 — 활성 변형은 채운 배경(bg-blue-600)이고 나머지는 흰 배경이다.
+     *
+     * @returns 활성 서브탭의 유형 값
+     */
+    function activeSubtab(): string[] {
+      return [...document.querySelectorAll('button[id^="claim_history_subtab_"]')]
+        .filter((b) => b.className.includes('bg-blue-600'))
+        .map((b) => b.id.replace('claim_history_subtab_', ''));
+    }
+
+    /**
+     * 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 '접수된 건이 없습니다' 가 먼저 보였다.
+     *
+     * @effects order_claim_history_default_subtab_is_first_type_with_claims
+     */
+    it('누른 값이 없으면 접수 건이 있는 첫 유형이 선택돼 그 행이 보인다 (취소만 있는 주문 → 취소)', async () => {
+      const utils = await renderSection(claimsResponse([CANCEL_CLAIM], { cancel: 1 }));
+
+      expect(activeSubtab()).toEqual(['cancel']);
+      expect(document.body.textContent).toContain('CL20260827-000002');
+      expect(document.querySelector('#claim_history_empty')).toBeNull();
+
+      utils.cleanup();
+    });
+
+    /**
+     * @effects order_claim_history_default_subtab_is_first_type_with_claims
+     */
+    it('여러 유형에 건이 있으면 교환 → 반품 → 취소 → 환불 순서의 첫 유형이다', async () => {
+      // 교환 0 · 반품 2 · 취소 1 · 환불 3 → 반품
+      const utils = await renderSection(claimsResponse([CANCEL_CLAIM], { return: 2, cancel: 1, refund: 3 }));
+      expect(activeSubtab()).toEqual(['return']);
+      utils.cleanup();
+
+      // 교환이 있으면 교환이 먼저다
+      const withExchange = await renderSection(
+        claimsResponse([EXCHANGE_ONE_ITEM, CANCEL_CLAIM], { exchange: 1, cancel: 1 })
+      );
+      expect(activeSubtab()).toEqual(['exchange']);
+      expect(document.body.textContent).toContain('EX20260827-000012');
+      withExchange.cleanup();
+    });
+
+    /**
+     * @effects order_claim_history_default_subtab_is_first_type_with_claims, order_claim_history_empty_type_shows_notice
+     */
+    it('넷 다 비었으면 교환이 선택되고 빈 안내가 선다', async () => {
+      const utils = await renderSection(claimsResponse([], {}));
+
+      expect(activeSubtab()).toEqual(['exchange']);
+      expect(document.querySelector('#claim_history_empty')).not.toBeNull();
+
+      utils.cleanup();
+    });
+
+    /**
+     * 누른 값이 있으면 counts 와 무관하게 그 값이 선다 — 기본 판정은 누르기 전까지만이다.
+     *
+     * @effects order_claim_history_default_subtab_is_first_type_with_claims
+     */
+    it('누른 값이 있으면 그 유형이 선다 — 기본 판정은 누르기 전까지만이다', async () => {
+      const utils = await renderSection(claimsResponse([CANCEL_CLAIM], { cancel: 1 }), 'refund');
+
+      expect(activeSubtab()).toEqual(['refund']);
+      expect(document.querySelector('#claim_history_empty')).not.toBeNull();
+
+      utils.cleanup();
+    });
+
+    /**
      * @effects order_claim_history_rows_filtered_by_claim_type, order_claim_history_subtab_switch_does_not_refetch
      */
     it('선택한 유형의 신청서만 그린다 — 재조회 없이 같은 응답을 거른다', async () => {
@@ -422,7 +492,7 @@ describe('S9c — 주문상세 클레임 내역 섹션 렌더 (D20)', () => {
     });
   });
 
-  describe('[클레임 신청서 조회하기]', () => {
+  describe('신청번호 링크', () => {
     /**
      * @effects order_claim_history_detail_link_opens_new_window, order_claim_history_detail_link_uses_server_url
      */
@@ -437,15 +507,55 @@ describe('S9c — 주문상세 클레임 내역 섹션 렌더 (D20)', () => {
     });
 
     /**
-     * @effects order_claim_history_detail_link_absent_for_cancel
+     * @effects order_claim_history_number_links_for_every_type
      */
-    it('취소 행에는 버튼 자체가 없다 — 서버가 detail_url: null 을 준다', async () => {
+    it('취소 행도 번호가 새 창 링크다 — 취소는 조회 전용 상세가 열린다', async () => {
       const utils = await renderSection(claimsResponse([CANCEL_CLAIM], { cancel: 1 }), 'cancel');
+      const links = document.querySelectorAll('td[rowspan] a');
 
-      expect(document.body.textContent).toContain('CL20260827-000002');
-      expect(document.querySelectorAll('td[rowspan] a')).toHaveLength(0);
+      // 번호가 곧 링크다 — 별도의 [조회하기] 버튼은 없다
+      expect(links).toHaveLength(1);
+      expect(links[0].textContent).toContain('CL20260827-000002');
+      expect(links[0].getAttribute('href')).toBe('/admin/ecommerce/claims/CL20260827-000002');
+      expect(links[0].getAttribute('target')).toBe('_blank');
 
       utils.cleanup();
+    });
+
+    /**
+     * @effects order_claim_history_number_is_the_link
+     */
+    it('서버가 경로를 못 만든 행만 번호가 글자로 남는다', async () => {
+      const utils = await renderSection(
+        claimsResponse([{ ...EXCHANGE_ONE_ITEM, detail_url: null }], { exchange: 1 })
+      );
+
+      expect(document.querySelectorAll('td[rowspan] a')).toHaveLength(0);
+      expect(document.querySelector('td[rowspan]')?.textContent).toContain('EX20260827-000012');
+
+      utils.cleanup();
+    });
+
+    /**
+     * @effects order_claim_history_thumbnail_placeholder_when_missing
+     */
+    it('이미지 없는 상품에는 자리표시 아이콘이 서고 Img 는 없다', async () => {
+      const utils = await renderSection(claimsResponse([CANCEL_CLAIM], { cancel: 1 }), 'cancel');
+
+      expect(document.querySelectorAll('tbody [data-icon="image"]')).toHaveLength(1);
+      expect(document.querySelectorAll('tbody img')).toHaveLength(0);
+
+      utils.cleanup();
+
+      const withImage = await renderSection(
+        claimsResponse([{ ...CANCEL_CLAIM, items: [{ ...CANCEL_CLAIM.items[0], thumbnail_url: '/storage/p/1.jpg' }] }], { cancel: 1 }),
+        'cancel'
+      );
+
+      expect(document.querySelectorAll('tbody img')).toHaveLength(1);
+      expect(document.querySelectorAll('tbody [data-icon="image"]')).toHaveLength(0);
+
+      withImage.cleanup();
     });
   });
 
@@ -622,8 +732,8 @@ describe('S9c — 주문상세 클레임 내역 섹션 렌더 (D20)', () => {
         ...EXCHANGE_ONE_ITEM,
         claim_number: `XX-${claimType}`,
         claim_type: claimType,
-        // 취소 유형은 상세 라우트가 없어 서버가 null 을 준다 (S6a 판정 ⑤)
-        detail_url: claimType === 'cancel' ? null : `/admin/ecommerce/claims/XX-${claimType}`,
+        // 네 유형 모두 서버가 상세 경로를 준다 (취소도 조회 전용 상세)
+        detail_url: `/admin/ecommerce/claims/XX-${claimType}`,
       };
 
       const claims = claimType === 'cancel'

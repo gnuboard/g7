@@ -67,13 +67,21 @@
       "no_detail": "상세 사유가 입력되지 않았습니다.",
       "images_label": "첨부 이미지"
     },
+    "cancel_info": {
+      "title": "취소 정보",
+      "cancel_type": "취소 구분",
+      "refund_status": "환불 상태",
+      "refund_amount": "환불 금액",
+      "cancelled_at": "취소 일시"
+    },
     "memo": {
       "title": "관리자 메모",
       "placeholder": "내부 처리 메모를 입력하세요 (고객에게 노출되지 않습니다)",
       "save": "메모 저장",
       "saved": "관리자 메모를 저장했습니다.",
       "error": "관리자 메모를 저장하지 못했습니다.",
-      "not_supported": "환불신청서에는 관리자 메모를 저장할 수 없습니다."
+      "not_supported": "환불신청서에는 관리자 메모를 저장할 수 없습니다.",
+      "not_supported_cancel": "취소 신청서에는 관리자 메모를 저장할 수 없습니다."
     },
     "activity_log": {
       "title": "활동 로그",

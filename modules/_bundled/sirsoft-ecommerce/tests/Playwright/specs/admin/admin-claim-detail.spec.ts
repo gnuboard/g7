@@ -25,8 +25,8 @@
  *     드러난다.
  *
  * @scenario admin-claim-detail
- * @axes claim_type=exchange|return|refund
- * @effects detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll
+ * @axes claim_type=exchange|return|refund|cancel
+ * @effects detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll, claim_detail_cancel_is_read_only, claim_detail_cancel_info_card_rendered
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -545,5 +545,40 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
         expect(bodyText).toContain(String(option.custom_text));
       }
     }
+  });
+
+  /**
+   * 취소 번호도 같은 상세 화면이 연다 — 종전에는 404 였다. 취소는 조회 전용이라 취소 정보 카드가
+   * 서고 배송 섹션·메모 입력·상품 단위 전이 컨트롤은 없다.
+   */
+  // @scenario claim_type=cancel, claim_stage=final
+  // @effects claim_detail_cancel_is_read_only, claim_detail_cancel_info_card_rendered
+  test('취소 신청서는 조회 전용 상세로 열린다 — 취소 정보 카드가 서고 전이 컨트롤이 없다', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaimOfType(request, claimsManageToken, 'cancel');
+    test.skip(claim === null, '취소 신청서가 한 건도 없다 — 클레임 시드 선행');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    await expect(page.locator('#cd_003_claim_number')).toHaveText(claim!.claimNumber);
+    await expect(page.locator('#claim_cancel_info_card')).toBeVisible({ timeout: 30_000 });
+    // 네 줄 전부 서버 값이 들어와 있다 (빈 자리는 '-')
+    for (const id of ['cc_001_cancel_type', 'cc_002_refund_status', 'cc_003_refund_amount', 'cc_004_cancelled_at']) {
+      expect((await page.locator(`#${id}`).innerText()).trim().length).toBeGreaterThan(0);
+    }
+
+    await expect(page.locator('[data-section-id="shipping_info"]')).toHaveCount(0);
+    await expect(page.locator('#cm_003_memo_textarea')).toHaveCount(0);
+    await expect(page.locator('#cm_001b_memo_unavailable_cancel')).toBeVisible();
+    // 상품 단위 전이 셀렉트·완료 처리 버튼이 없다 (조회 전용)
+    await expect(page.locator('[data-section-id="claim_info"] select')).toHaveCount(0);
+    await expect(page.locator('[data-section-id="activity_log"]')).toHaveCount(1);
+
+    // 진행단계는 취소 상태 두 칸
+    await expect(page.locator('[id^="claim_progress_step_"]')).toHaveCount(2);
+
+    // 원문 다국어 키가 화면에 노출되지 않는다.
+    expect(await page.locator('body').innerText()).not.toContain('sirsoft-ecommerce.admin.claim.detail');
   });
 });

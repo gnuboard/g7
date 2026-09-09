@@ -77,6 +77,11 @@ return [
         'returned' => '반품완료',
     ],
 
+    // 주문 상태 합산 카운터 라벨 — 마이페이지 목록 상단 건수 칸(OrderStatusEnum::statisticsFilterGroups)
+    'order_status_groups' => [
+        'preparing' => '상품준비·배송준비',
+    ],
+
     // 결제상태 (PaymentStatusEnum 값과 일치)
     'payment_status' => [
         'ready' => '결제대기',

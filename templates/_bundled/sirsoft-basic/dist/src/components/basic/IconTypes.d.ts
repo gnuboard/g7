@@ -144,7 +144,13 @@ export declare enum IconName {
     TruckFast = "fa-truck-fast",
     House = "fa-house",
     CircleCheck = "fa-circle-check",
-    HourglassHalf = "fa-hourglass-half"
+    HourglassHalf = "fa-hourglass-half",
+    BoxesPacking = "fa-boxes-packing",
+    RightLeft = "fa-right-left",
+    Reply = "fa-reply",
+    ArrowsRotate = "fa-arrows-rotate",
+    BoxArchive = "fa-box-archive",
+    CircleXmark = "fa-circle-xmark"
 }
 /**
  * 문자열 아이콘 이름을 IconName enum으로 매핑합니다.

@@ -48,6 +48,8 @@ class OrderListResource extends BaseApiResource
             'order_status' => $this->order_status,
             'order_status_label' => $this->order_status ? $this->order_status->label() : null,
             'order_status_variant' => $this->order_status ? $this->order_status->variant() : null,
+            // 아이콘 의미 토큰(status-*) — 글리프 이름이 아니다. 템플릿 Icon 이 해석한다.
+            'order_status_icon' => $this->order_status ? $this->order_status->icon() : null,
             // 금액 표기 기준 통화(base) + 결제 통화(order_currency) + 교차 통화 여부.
             'base_currency' => $orderCurrency,
             'payment_currency' => $paymentCurrency,

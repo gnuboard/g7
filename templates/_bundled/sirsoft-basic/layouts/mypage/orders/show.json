@@ -4,9 +4,16 @@
     "permissions": [],
     "extends": "_user_base",
     "_comment_claim_actions": "클레임(교환/반품/취소·환불) 신청 진입을 이 화면이 소유한다. useClaimActions 는 공유 partial(_items.json)에 '이 셸은 클레임 신청 버튼을 쓴다' 를 알리는 표식이다 — 그 partial 은 비회원 주문상세와 공유하므로, 표식이 없는 셸(비회원)은 종전 [주문 취소] 버튼을 그대로 유지한다. 비회원 진입은 S14 가 같은 표식을 세워 전환한다.",
+    "_comment_claim_list": "'이 주문의 클레임' 섹션을 이 화면이 소유한다 — 비회원 주문 상세(shop/guest_order_show)와 **같은 partial**(partials/mypage/claims/_list.json)을 무수정으로 쓴다. 신청번호는 새 창 상세 링크(claimDetailLinkMode: new_window)이고 유형 서브탭·페이지는 이 화면의 주소에 ?type=·?page= 로 실린다. 목록 데이터소스(claims)는 회원 클레임 API 가 주문 ID 를 받으므로 order 응답 뒤에 claimable 과 같은 체인으로 부른다.",
     "initLocal": {
         "useClaimActions": true,
         "claimOrderId": null,
+        "isGuest": false,
+        "withdrawRefreshDataSourceId": "claims",
+        "claimDetailLinkMode": "new_window",
+        "claimWithdrawApiBase": "/api/modules/sirsoft-ecommerce/user/claims",
+        "claimDetailPathBase": "/mypage/claims",
+        "claimEmptyCtaPath": "/mypage/orders",
         "isSubmittingAddress": false,
         "selectedItemIds": [],
         "selectAllItems": false,
@@ -27,6 +34,16 @@
         "isSubmittingReview": false,
         "reviewError": null
     },
+    "init_actions": [
+        {
+            "comment": "공유 목록 partial 이 서브탭·페이지 왕복에 쓰는 화면 주소 — 이 화면 자신이다. 레이아웃 initLocal 은 표현식을 해석하지 않으므로(값을 그대로 복사한다) 주문번호가 들어가는 값은 여기서 세운다(비회원 셸과 같은 규칙).",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "claimListPath": "{{'/mypage/orders/' + (route.order_number ?? '')}}"
+            }
+        }
+    ],
     "data_sources": [
         {
             "id": "order",
@@ -61,6 +78,13 @@
                                 "params": {
                                     "dataSourceId": "claimable"
                                 }
+                            },
+                            {
+                                "comment": "이 주문의 클레임 목록도 주문 ID 가 필요해 같은 체인에서 부른다 — 서브탭·페이지 이동은 주소만 바꾸고 이 화면을 다시 세우므로 그때마다 이 체인이 다시 돈다.",
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "claims"
+                                }
                             }
                         ]
                     }
@@ -80,6 +104,21 @@
                 "data": {
                     "options": []
                 }
+            }
+        },
+        {
+            "comment": "이 주문의 신청 내역 — 회원 신청내역 목록·비회원 주문상세 섹션과 같은 계약이다(유형 서브탭 하나 · 최신순 · 페이지). 회원 API 는 주문 ID 를 받으므로 auto_fetch 를 끄고 order 응답 뒤 체인에서 부른다. 철회한 신청서도 목록에 남으므로 페이지네이션은 필수다. 주소에 유형이 없으면 type 을 비워 보낸다 — 그러면 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 골라 응답 claim_type 으로 알려 주고, 공유 partial 이 그 값으로 활성 서브탭을 세운다(여기서 'exchange' 를 박으면 그 판정이 영영 돌지 않는다). 주석은 params 밖에 둔다 — params 의 키는 전부 쿼리스트링으로 전송된다.",
+            "id": "claims",
+            "label_key": "$t:editor.data_source.claims",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{_local.claimOrderId}}/claims",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "cache": false,
+            "params": {
+                "type": "{{query.type ?? ''}}",
+                "page": "{{query.page ?? 1}}"
             }
         },
         {
@@ -313,6 +352,35 @@
                                         ]
                                     },
                                     {
+                                        "id": "order_claim_section",
+                                        "comment": "이 주문의 클레임 — 비회원 주문 상세와 **같은 partial** 을 무수정으로 쓴다. 복제하면 카드 규칙이 두 벌이 되어 한쪽만 낡는다. 서브탭·페이지 왕복 주소는 셸이 준 _local.claimListPath(이 화면 자신)다.",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 rounded-lg p-6"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "bg-white dark:bg-gray-800 rounded-lg p-4"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "text-lg font-bold text-gray-900 dark:text-white mb-4"
+                                                },
+                                                "text": "$t:claim.list.order_section_title"
+                                            },
+                                            {
+                                                "partial": "partials/mypage/claims/_list.json"
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "comment": "액션 버튼 영역",
                                         "type": "basic",
                                         "name": "Div",
@@ -404,6 +472,10 @@
         ]
     },
     "modals": [
+        {
+            "comment": "이 주문의 클레임 카드의 [철회] 확인 — 셸 계약값(claimWithdrawApiBase · isGuest · withdrawRefreshDataSourceId)은 initLocal 이 세운다.",
+            "partial": "partials/mypage/claims/_modal_withdraw.json"
+        },
         {
             "partial": "partials/mypage/orders/_modal_cancel.json"
         },

@@ -10,6 +10,7 @@
   },
   "detail": {
     "title": "Order Details",
+    "progress_title": "Progress",
     "description": "View order details",
     "placeholder": "Order details will be displayed here",
     "order_number": "Order Number",
@@ -318,7 +319,6 @@
       "total_charge": "Total charge",
       "original_product": "Original",
       "exchange_product": "Exchange",
-      "view_detail": "View claim request",
       "amount_type": {
         "charge": "Additional charge",
         "refund": "Refund",

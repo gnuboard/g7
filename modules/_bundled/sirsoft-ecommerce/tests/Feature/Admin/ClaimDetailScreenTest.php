@@ -6,16 +6,23 @@ use App\Extension\HookManager;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
+use Modules\Sirsoft\Ecommerce\Enums\CancelOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
@@ -1089,5 +1096,127 @@ class ClaimDetailScreenTest extends ModuleTestCase
             'name' => ['ko' => '테스트택배', 'en' => 'Test Carrier'],
             'is_active' => true,
         ]);
+    }
+
+    // ================================================================
+    // 취소 상세 — 조회 전용 (주문상세 클레임 내역·클레임 목록 취소 탭의 번호가 여는 화면)
+    // ================================================================
+
+    /**
+     * 취소 신청서 한 건을 만듭니다. (취소 옵션 행 + 취소 발 환불 행)
+     *
+     * 실서비스는 `OrderCancellationService` 가 세 행을 함께 만든다 — 상세는 취소 행에서
+     * 구분·사유를, 취소 발 환불 행에서 환불 상태·금액을 읽는다.
+     */
+    protected function makeCancel(?Order $order = null): OrderCancel
+    {
+        $order ??= $this->paidClaimOrder();
+        $option = $order->options->first();
+
+        $cancel = OrderCancel::create([
+            'order_id' => $order->id,
+            'cancel_number' => 'CN-DETAIL-'.uniqid(),
+            'cancel_type' => CancelTypeEnum::PARTIAL,
+            'cancel_status' => CancelStatusEnum::COMPLETED,
+            'cancel_reason_type' => 'changed_mind',
+            'cancel_amount' => (float) $option->unit_price,
+            'items_snapshot' => [],
+        ]);
+
+        OrderCancelOption::create([
+            'order_cancel_id' => $cancel->id,
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'cancel_quantity' => 1,
+            'original_quantity' => (int) $option->quantity,
+            'unit_price' => (float) $option->unit_price,
+            'subtotal_amount' => (float) $option->unit_price,
+            'option_status' => CancelOptionStatusEnum::COMPLETED,
+        ]);
+
+        OrderRefund::create([
+            'order_id' => $order->id,
+            'order_cancel_id' => $cancel->id,
+            'refund_source_type' => RefundSourceTypeEnum::CANCEL,
+            'refund_number' => 'RF-CANCEL-'.uniqid(),
+            'refund_status' => RefundStatusEnum::COMPLETED,
+            'refund_method' => RefundMethodEnum::PG,
+            'refund_amount' => (float) $option->unit_price,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => 0,
+        ]);
+
+        return $cancel->fresh(['refund', 'cancelOptions']);
+    }
+
+    /**
+     * 취소 번호도 같은 상세 봉투로 열린다. 취소에는 전이·송장·청구·환불 실행 축이 없어 그 자리가
+     * 비고(세그먼트 null · 택배사/청구 방식/환불 수단 빈 배열 · 정산/취소 가능 금액 null), 화면은
+     * 취소를 조회 전용으로 그린다. 종전에는 이 번호가 404 라 클레임 목록 취소 탭의 번호를 누르면
+     * 오류 화면이 열렸다.
+     *
+     * @scenario claim_type=cancel, claim_stage=final
+     *
+     * @effects claim_detail_cancel_resolves_by_number, claim_detail_cancel_is_read_only
+     */
+    public function test_detail_by_number_resolves_a_cancel_as_a_read_only_detail(): void
+    {
+        $cancel = $this->makeCancel();
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$cancel->cancel_number)
+            ->assertOk()
+            ->assertJsonPath('data.claim.claim_number', $cancel->cancel_number)
+            ->assertJsonPath('data.claim.claim_type', 'cancel')
+            ->assertJsonPath('data.claim.cancel_type', 'partial')
+            ->assertJsonPath('data.claim.refund_status', 'completed')
+            ->assertJsonPath('data.claim_path_segment', null)
+            ->assertJsonPath('data.carriers', [])
+            ->assertJsonPath('data.charge_methods', [])
+            ->assertJsonPath('data.refund_methods', [])
+            ->assertJsonPath('data.settlement', null)
+            ->assertJsonPath('data.cancellable', null)
+            ->assertJsonPath('data.redelivery_address_differs', null);
+
+        // 환불 금액은 취소 발 환불 행에서 온다 — 서버가 표기까지 만든다.
+        $this->assertNotNull($response->json('data.claim.refund_amount_formatted'));
+        $this->assertCount(1, $response->json('data.claim.items'), '취소 상품 행이 실리지 않았다');
+
+        // 진행단계는 취소 상태 Enum 의 두 칸이다 (신청 → 완료)
+        $steps = $response->json('data.progress_steps');
+        $this->assertSame(['requested', 'completed'], array_column($steps, 'value'));
+        $this->assertContains($steps[1]['state'], ['current', 'done']);
+
+        // 결제 정보 섹션이 그리는 주문 봉투도 함께 실린다
+        $this->assertSame($cancel->order_id, $response->json('data.order.id'));
+    }
+
+    /**
+     * 취소는 추가결제·첨부 축이 없고, 대신 취소 발 환불 행의 이력이 같은 신청서의 것이다.
+     *
+     * @scenario claim_type=cancel, claim_stage=final
+     *
+     * @effects claim_logs_include_cancel_linked_refund
+     */
+    public function test_logs_for_a_cancel_merge_its_linked_refund_entries(): void
+    {
+        $cancel = $this->makeCancel();
+        $other = $this->makeCancel($this->paidClaimOrder());
+
+        $this->logFor($cancel->getMorphClass(), $cancel->id, 'order.cancel');
+        $this->logFor($cancel->refund->getMorphClass(), $cancel->refund->id, 'claim_refund.execute');
+        $this->logFor($other->refund->getMorphClass(), $other->refund->id, 'claim_refund.complete');
+
+        $actions = array_column(
+            $this->actingAs($this->admin)
+                ->getJson($this->base().'/claims/'.$cancel->cancel_number.'/logs')
+                ->assertOk()
+                ->json('data.data'),
+            'action',
+        );
+
+        $this->assertContains('order.cancel', $actions, '취소 행 자신의 로그가 빠졌다');
+        $this->assertContains('claim_refund.execute', $actions, '취소 발 환불 행의 로그가 빠졌다');
+        $this->assertNotContains('claim_refund.complete', $actions, '다른 취소의 환불 로그가 섞였다');
     }
 }

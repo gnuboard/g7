@@ -67,13 +67,21 @@
       "no_detail": "詳細な理由は入力されていません。",
       "images_label": "添付画像"
     },
+    "cancel_info": {
+      "title": "キャンセル情報",
+      "cancel_type": "キャンセル区分",
+      "refund_status": "返金状態",
+      "refund_amount": "返金金額",
+      "cancelled_at": "キャンセル日時"
+    },
     "memo": {
       "title": "管理者メモ",
       "placeholder": "内部処理メモを入力してください(お客様には表示されません)",
       "save": "メモを保存",
       "saved": "管理者メモを保存しました。",
       "error": "管理者メモを保存できませんでした。",
-      "not_supported": "返金申請書には管理者メモを保存できません。"
+      "not_supported": "返金申請書には管理者メモを保存できません。",
+      "not_supported_cancel": "キャンセル申請書には管理者メモを保存できません。"
     },
     "activity_log": {
       "title": "アクティビティログ",

@@ -1011,8 +1011,8 @@ Content-Type: application/json
 | --- | --- | --- | --- | --- | --- |
 | orderNumber | path | string | 예 | — | 주문번호 |
 | X-Guest-Order-Token | header | string | 예 | — | 비회원 주문 조회 토큰 |
-| type | query | string | 아니오 | `exchange` \| `return` \| `refund` \| `cancel` | 유형 서브탭 (기본 `exchange`) |
-| status | query | string | 아니오 | 유형별 상태 Enum | 상태 필터 |
+| type | query | string | 아니오 | `exchange` \| `return` \| `refund` \| `cancel` | 유형 서브탭. 비우면(`?type=` 포함) 접수 건이 있는 첫 유형을 서버가 고른다 — 교환 → 반품 → 취소 → 환불 순, 넷 다 없으면 `exchange`. 고른 값은 응답 `claim_type` 에 실린다 |
+| status | query | string | 아니오 | 유형별 상태 Enum | 상태 필터 (`type` 과 함께 쓴다 — 유형을 비우면 상태 어휘는 교환 기준으로 검증된다) |
 | from | query | date | 아니오 | — | 신청일 시작 (그날 00:00:00 부터) |
 | to | query | date | 아니오 | — | 신청일 종료 (그날 23:59:59 까지) |
 | page | query | integer | 아니오 | 1 이상 | 페이지 번호 |
@@ -1033,6 +1033,8 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 | --- | --- | --- | --- |
 | data | array | — | 이 유형의 신청서 목록 ([ClaimResource](claims.md#claim-resource) 목록 표현, 최신순) |
 | pagination | object | — | 페이지 정보 (`current_page` / `per_page` / `from` / `to` / `has_more_pages` / `last_page` / `total`) |
+| claim_type | string | `return` | 이 응답이 실은 유형 — `type` 을 지정했으면 그 값, 비웠으면 서버가 고른 값. 화면은 주소에 유형이 없을 때 이 값으로 활성 서브탭을 세운다 |
+| counts | object | `{"exchange": 0, "return": 1, "refund": 0, "cancel": 0}` | 이 주문의 유형별 접수 건수 (네 유형 전부). 목록과 같은 기준으로 세므로 환불 건수에 취소 발 환불은 들지 않는다 |
 
 **응답 예시**
 
@@ -1052,7 +1054,9 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
             "has_more_pages": false,
             "last_page": 1,
             "total": 1
-        }
+        },
+        "claim_type": "return",
+        "counts": { "exchange": 0, "return": 1, "refund": 0, "cancel": 0 }
     }
 }
 ```
@@ -1063,7 +1067,7 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 
 <!-- @generated:end -->
 
-**설명** 비회원에게는 주문을 가로지르는 신청내역 화면이 없으므로(조회 토큰이 주문 하나에 묶인다) 이 응답이 비회원의 목록입니다. 그래서 회원 신청내역([claims.md](claims.md))과 같은 계약을 씁니다 — 유형 서브탭 하나를 최신순 페이지로 읽습니다. 종전에는 네 유형을 한 응답에 전량 실었는데, 그 형태는 한 주문의 신청 건수가 그 주문의 상품 수에 묶인다는 전제에 기댔습니다. 철회는 행을 남기므로(수량 잠금만 풀립니다) 같은 주문에서 신청↔철회를 반복하면 계속 쌓여 그 전제가 성립하지 않습니다.
+**설명** 비회원에게는 주문을 가로지르는 신청내역 화면이 없으므로(조회 토큰이 주문 하나에 묶인다) 이 응답이 비회원의 목록입니다. 그래서 회원 신청내역([claims.md](claims.md))과 같은 계약을 씁니다 — 유형 서브탭 하나를 최신순 페이지로 읽습니다. 종전에는 네 유형을 한 응답에 전량 실었는데, 그 형태는 한 주문의 신청 건수가 그 주문의 상품 수에 묶인다는 전제에 기댔습니다. 철회는 행을 남기므로(수량 잠금만 풀립니다) 같은 주문에서 신청↔철회를 반복하면 계속 쌓여 그 전제가 성립하지 않습니다. 주소에 유형이 없으면 화면은 `type` 을 비워 보내고, 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 골라 `claim_type` 으로 알려 줍니다(회원 주문 상세 [orders.md](orders.md) `GET /user/orders/{id}/claims` 와 같은 규칙). `counts` 는 유형별 접수 건수입니다.
 
 ---
 

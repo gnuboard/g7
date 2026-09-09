@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Support\OrderProgressSteps;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
@@ -53,6 +54,10 @@ class OrderResource extends BaseApiResource
             'order_status' => $this->order_status,
             'order_status_label' => $this->order_status ? $this->order_status->label() : null,
             'order_status_variant' => $this->order_status ? $this->order_status->variant() : null,
+            // 아이콘 의미 토큰(status-*) — 글리프 이름이 아니다. 템플릿 Icon 이 해석한다.
+            'order_status_icon' => $this->order_status ? $this->order_status->icon() : null,
+            // 진행단계 배열 — 관리자·회원·비회원 상세가 같은 배열로 스텝퍼를 그린다(OrderProgressSteps 단일 출처).
+            'progress_steps' => OrderProgressSteps::for($this->resource),
             // 부분취소 파생 플래그 — 일부 옵션만 취소된 주문(취소옵션 ∧ 잔여 활성옵션). 별도 order_status 아님.
             // 주문 상태는 잔여 활성 옵션 기준으로 결정되고, "일부 취소됨" 표시는 이 플래그로 한다 (partial_cancelled 제거).
             'is_partially_cancelled' => $this->isPartiallyCancelled(),

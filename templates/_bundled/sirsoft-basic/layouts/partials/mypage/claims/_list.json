@@ -6,13 +6,13 @@
   },
   "_comment": "§6-1 — 서브탭 4종(교환/반품/환불/취소) × 신청서 단위 카드. 카드 본문은 PC 4열(신청상품·사유·배송조회·금액), 모바일은 1단 스택이다. 유형마다 4열째의 구성이 다르므로 유형 분기는 그 열 안에서만 한다 — 카드 골격을 유형별로 복제하면 헤더·액션 규칙을 네 곳에서 고쳐야 한다.",
   "_comment_type_tabs": "서브탭은 라우트가 아니라 ?type= 으로 왕복한다. 유형마다 서버가 **다른 테이블**을 읽으므로(교환/반품/환불/취소) 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다 — 그래서 탭 전환만은 목록 상태를 승계하지 않고 page 를 함께 초기화한다.",
-  "_comment_shell_contract": "셸이 _local.claimWithdrawApiBase / isGuest / withdrawRefreshDataSourceId 를 세운다. 철회 확인 모달(_modal_withdraw.json)은 그 값만 읽으므로 이 파일은 [철회] 버튼과 대상 번호만 넘긴다.",
+  "_comment_shell_contract": "셸이 _local.claimWithdrawApiBase / isGuest / withdrawRefreshDataSourceId 를 세운다. 철회 확인 모달(_modal_withdraw.json)은 그 값만 읽으므로 이 파일은 [철회] 버튼과 대상 번호만 넘긴다. 주문상세 셸은 claimDetailLinkMode 를 더 세운다 — 회원(mypage/orders/show)은 new_window(신청번호가 새 창 상세 링크), 비회원(shop/guest_order_show)은 same_window(번호가 같은 창에서 상세로 이동 — 조회 토큰이 탭에 묶여 새 창에 실리지 않는다). 어느 쪽이든 푸터 [상세보기]는 서지 않는다. 신청내역 목록 화면은 세우지 않는다.",
   "_comment_shell_paths": "화면 주소도 셸이 준다 — 이 목록은 회원 신청내역(/mypage/claims)과 비회원 주문상세의 '이 주문의 클레임' 섹션이 같이 쓰는데, 두 화면의 주소 모양이 다르다. 셋을 셸이 세운다: claimListPath(이 목록을 소유한 화면 — 서브탭·페이지 왕복의 목적지) / claimDetailPathBase(상세·수정 주소의 앞부분) / claimEmptyCtaPath(빈 목록에서 나갈 곳). partial 이 주소를 리터럴로 들면 비회원이 회원 전용 주소로 보내져 로그인 화면이 열린다 — 오류도 토스트도 남지 않는다.",
   "type": "basic",
   "name": "Div",
   "children": [
     {
-      "comment": "유형 서브탭 — 활성 판정은 주소(query.type)가 단일 출처다. 로컬 상태로 이중화하면 새로고침·뒤로가기에서 주소와 화면이 갈린다.",
+      "comment": "유형 서브탭 — 활성 판정은 주소(query.type)가 단일 출처다. 로컬 상태로 이중화하면 새로고침·뒤로가기에서 주소와 화면이 갈린다. 주소에 유형이 없을 때만 응답의 claim_type(주문상세 셸이 type 을 비워 보내면 서버가 접수 건이 있는 첫 유형을 골라 돌려준다)을 읽고, 그것도 없으면 교환이다(신청내역 목록 화면은 늘 유형을 실어 보내므로 종전 그대로 교환).",
       "type": "basic",
       "name": "Div",
       "props": { "className": "flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 mb-4 overflow-x-auto" },
@@ -31,7 +31,7 @@
           },
           "props": {
             "type": "button",
-            "className": "{{(query.type ?? 'exchange') === tab.id ? 'px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}"
+            "className": "{{(query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}"
           },
           "actions": [
             {
@@ -87,8 +87,53 @@
                   "props": { "className": "min-w-0" },
                   "children": [
                     {
+                      "id": "claim_list_number_link_{{claim.claim_number}}",
+                      "comment": "회원 주문상세 셸(claimDetailLinkMode: new_window)에서는 신청번호 자체가 새 창 상세 링크다 — 주문 상세의 작업 맥락을 잃지 않기 위해서다. 신청내역 목록 화면은 이 값을 세우지 않으므로 종전대로 글자만 두고 푸터 [상세보기]가 같은 창으로 이동한다. 경로는 셸이 준 claimDetailPathBase 를 쓴다.",
+                      "type": "basic",
+                      "name": "A",
+                      "if": "{{_local.claimDetailLinkMode === 'new_window'}}",
+                      "props": {
+                        "className": "inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate",
+                        "href": "{{(_local.claimDetailPathBase ?? '') + '/' + (claim.claim_number ?? '')}}",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer"
+                      },
+                      "children": [
+                        { "type": "basic", "name": "Span", "text": "{{claim.claim_number ?? ''}}" },
+                        { "type": "basic", "name": "Icon", "props": { "name": "arrow-up-right-from-square", "className": "text-xs" } }
+                      ]
+                    },
+                    {
+                      "id": "claim_list_number_button_{{claim.claim_number}}",
+                      "comment": "비회원 주문상세 셸(claimDetailLinkMode: same_window)은 번호가 같은 창에서 상세로 간다 — 비회원 조회 토큰은 탭에 묶여(sessionStorage) 새 창에 실리지 않으므로, 새 창으로 열면 조회 폼으로 되돌아간다. 목록 상태(서브탭·페이지)를 물려주어 뒤로 돌아왔을 때 보던 자리가 남게 한다.",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.claimDetailLinkMode === 'same_window'}}",
+                      "props": {
+                        "className": "inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate cursor-pointer",
+                        "role": "link"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "{{(_local.claimDetailPathBase ?? '') + '/' + (claim.claim_number ?? '')}}",
+                            "mergeQuery": true,
+                            "query": {}
+                          }
+                        }
+                      ],
+                      "children": [
+                        { "type": "basic", "name": "Span", "text": "{{claim.claim_number ?? ''}}" },
+                        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "text-xs" } }
+                      ]
+                    },
+                    {
+                      "id": "claim_list_number_text_{{claim.claim_number}}",
                       "type": "basic",
                       "name": "P",
+                      "if": "{{!_local.claimDetailLinkMode}}",
                       "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white truncate" },
                       "text": "{{claim.claim_number ?? ''}}"
                     },
@@ -709,9 +754,11 @@
               ]
             },
             {
-              "comment": "카드 푸터 — 상세보기. 목록 상태(서브탭·페이지)를 그대로 물려주어 뒤로 돌아왔을 때 보던 자리가 남게 한다.",
+              "comment": "카드 푸터 — 상세보기. 목록 상태(서브탭·페이지)를 그대로 물려주어 뒤로 돌아왔을 때 보던 자리가 남게 한다. 주문상세 셸(claimDetailLinkMode 가 선 곳)에서는 번호 자체가 링크라 이 푸터가 중복이므로 세우지 않는다.",
+              "id": "claim_list_card_footer_{{claim.claim_number}}",
               "type": "basic",
               "name": "Div",
+              "if": "{{!_local.claimDetailLinkMode}}",
               "props": { "className": "flex justify-end pt-3 mt-3 border-t border-gray-100 dark:border-gray-700" },
               "children": [
                 {

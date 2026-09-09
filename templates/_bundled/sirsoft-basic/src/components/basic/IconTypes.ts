@@ -194,6 +194,12 @@ export enum IconName {
   House = 'fa-house',
   CircleCheck = 'fa-circle-check',
   HourglassHalf = 'fa-hourglass-half',
+  BoxesPacking = 'fa-boxes-packing',
+  RightLeft = 'fa-right-left',
+  Reply = 'fa-reply',
+  ArrowsRotate = 'fa-arrows-rotate',
+  BoxArchive = 'fa-box-archive',
+  CircleXmark = 'fa-circle-xmark',
 }
 
 /**
@@ -389,4 +395,11 @@ export const iconNameMap: Record<string, IconName> = {
   'status-completed': IconName.CircleCheck,
   'status-withdrawn': IconName.RotateLeft,
   'status-processing': IconName.HourglassHalf,
+  // 주문 상태 전용 토큰 — OrderStatusEnum::icon()
+  'status-preparing': IconName.BoxesPacking,
+  'status-cancelled': IconName.CircleXmark,
+  'status-exchange': IconName.RightLeft,
+  'status-return': IconName.Reply,
+  'status-exchanged': IconName.ArrowsRotate,
+  'status-returned': IconName.BoxArchive,
 };

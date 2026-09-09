@@ -53,6 +53,51 @@ class ClaimController extends AuthBaseController
     }
 
     /**
+     * 이 주문의 신청 내역 (마이페이지 주문상세 '이 주문의 클레임' 섹션)
+     *
+     * 회원 신청내역 목록(`user.claims.index`)·비회원 주문상세 섹션(`guest.orders.claims.index`)과
+     * 같은 계약(유형 서브탭 하나 · 최신순 · 페이지)이며 조회도 같은 `listForOrderPaginated()` 다.
+     * 회원 목록에 주문 필터를 얹지 않고 주문 스코프 경로를 따로 두는 것은, 주문 상세가 이미
+     * 주문 ID 로 형제 자원(`claimable-options`)을 부르고 있어 같은 모양이 화면에 자연스럽고,
+     * 본인 주문이 아니면 존재를 드러내지 않고 404 로 닫는 규칙을 그 형제와 함께 두기 위해서다.
+     *
+     * @param  ClaimListRequest  $request  검증된 목록 요청
+     * @param  int  $id  주문 ID
+     * @return JsonResponse 응답
+     */
+    public function orderClaims(ClaimListRequest $request, int $id): JsonResponse
+    {
+        $this->logApiUsage('user.orders.claims.index');
+
+        $order = $this->orderRepository->findWithShippingAddress($id);
+
+        if (! $order || $order->user_id !== Auth::id()) {
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.order_not_found', 404);
+        }
+
+        try {
+            // 유형 미지정이면 접수 건이 있는 첫 유형을 서버가 고른다 — 화면은 응답의 claim_type 으로
+            // 활성 서브탭을 세우고 counts 로 뱃지를 단다 (관리자 클레임 내역과 같은 규칙).
+            $counts = $this->claimService->countsForOrder($order);
+            $type = $this->claimService->resolveOrderListType($request->requestedClaimType(), $counts);
+            $claims = $this->claimService->listForOrderPaginated(
+                $order,
+                $type,
+                $request->filters(),
+                $request->perPage(),
+            );
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.list_retrieved',
+                (new ClaimCollection($claims))->withTypeSummary($type, $counts),
+            );
+        } catch (Exception $e) {
+            return $this->claimServerError('order-claims', $e);
+        }
+    }
+
+    /**
      * 신청 미리보기 (배송비·차액·환불 예정액)
      *
      * @param  ClaimPreviewRequest  $request  검증된 요청

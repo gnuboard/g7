@@ -124,6 +124,8 @@ const RETURN_CLAIM = {
 const GUEST_LOCALS = {
   isGuest: true,
   withdrawRefreshDataSourceId: 'claims',
+  // 비회원 조회 토큰은 탭에 묶여(sessionStorage) 새 창에 실리지 않는다 — 번호는 같은 창에서 상세로 간다.
+  claimDetailLinkMode: 'same_window',
   claimWithdrawApiBase: '/api/modules/sirsoft-ecommerce/guest/orders/20260901-0007/claims',
   claimListPath: '/shop/guest/orders/20260901-0007',
   claimDetailPathBase: '/shop/guest/claims',
@@ -156,6 +158,48 @@ function makeTest(locals: Record<string, any> = GUEST_LOCALS, rows: any[] = [RET
   return test;
 }
 
+describe('비회원 주문상세 클레임 섹션 — 기본 서브탭 (서버가 고른 유형)', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  // @scenario claim_type=return, entry=with_token, screen=order_section
+  // @effects guest_order_detail_sends_no_type_when_address_has_none
+  it('비회원 셸도 주소에 유형이 없을 때 type 을 비워 보내고, 응답의 claim_type 이 활성 서브탭이다', async () => {
+    const shell = JSON.parse(
+      require('node:fs').readFileSync(path.resolve(__dirname, '../../layouts/shop/guest_order_show.json'), 'utf8'),
+    );
+    const claims = (shell.data_sources ?? []).find((d: any) => d.id === 'claims');
+    expect(claims.params.type).toBe("{{query.type ?? ''}}");
+
+    const test = createLayoutTest(sectionLayout(), {
+      componentRegistry: setupRegistry(),
+      translations: TRANSLATIONS,
+      queryParams: { page: '1' },
+      initialState: { _local: GUEST_LOCALS },
+    });
+    test.mockApi('claims', {
+      response: {
+        data: {
+          data: [RETURN_CLAIM],
+          claim_type: 'return',
+          counts: { exchange: 0, return: 1, refund: 0, cancel: 0 },
+          pagination: { current_page: 1, per_page: 20, last_page: 1, total: 1, has_more_pages: false },
+        },
+      },
+    });
+    await test.render();
+
+    const active = [...document.querySelectorAll('button')]
+      .filter((b) => b.className.includes('border-gray-900'))
+      .map((b) => b.textContent?.trim());
+    // 탭 라벨은 표현식 안 $t() 라 하네스가 키를 그대로 남긴다 — 활성 판정만 본다
+    expect(active).toEqual(['claim.list.tab_return']);
+
+    test.cleanup();
+  });
+});
+
 describe('비회원 주문상세 클레임 섹션 — 같은 카드가 비회원 주소로 이어진다', () => {
   let active: ReturnType<typeof createLayoutTest> | null = null;
 
@@ -176,11 +220,17 @@ describe('비회원 주문상세 클레임 섹션 — 같은 카드가 비회원
 
   // @scenario claim_type=return, entry=with_token, screen=order_section
   // @effects guest_order_claim_section_links_to_the_guest_routes
-  it('상세보기가 비회원 신청서 주소로 간다 (셸이 준 앞부분이 실제로 이어붙는다)', async () => {
+  // @scenario surface=guest, has_image=yes
+  // @effects guest_order_detail_number_navigates_in_the_same_window
+  it('신청번호가 같은 창에서 비회원 신청서 주소로 간다 (셸이 준 앞부분이 실제로 이어붙는다)', async () => {
     active = makeTest();
     await active.render();
 
-    fireEvent.click(screen.getByText('상세보기'));
+    // 번호가 곧 링크라 푸터 [상세보기] 는 서지 않고, 새 창 링크(<a target=_blank>)도 아니다 — 토큰이 탭에 묶여 있다.
+    expect(screen.queryByText('상세보기')).toBeNull();
+    expect(document.querySelector('a[target="_blank"]')).toBeNull();
+
+    fireEvent.click(screen.getByText('RT20260901-0003'));
 
     const history = active.getNavigationHistory();
     expect(history.some((p) => p.startsWith('/shop/guest/claims/RT20260901-0003'))).toBe(true);
@@ -199,6 +249,18 @@ describe('비회원 주문상세 클레임 섹션 — 같은 카드가 비회원
     const history = active.getNavigationHistory();
     expect(history.some((p) => p.startsWith('/shop/guest/claims/RT20260901-0003/edit'))).toBe(true);
     expect(history.some((p) => p.includes('/mypage/'))).toBe(false);
+  });
+
+  // @scenario surface=guest, has_image=no
+  // @effects order_claim_section_thumbnail_placeholder_when_missing
+  it('이미지 없는 상품에는 자리표시 아이콘이 선다 (회원 화면과 같은 규칙)', async () => {
+    active = makeTest(GUEST_LOCALS, [
+      { ...RETURN_CLAIM, items: [{ ...RETURN_CLAIM.items[0], thumbnail_url: null }] },
+    ]);
+    await active.render();
+
+    expect(document.querySelector('[data-icon="image"]')).not.toBeNull();
+    expect(document.querySelector('img')).toBeNull();
   });
 
   it('빈 목록의 나가는 버튼도 비회원 주소다 (주문 내역 화면이 없다)', async () => {

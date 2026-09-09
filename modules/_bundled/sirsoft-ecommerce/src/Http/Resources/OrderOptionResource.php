@@ -40,6 +40,8 @@ class OrderOptionResource extends BaseApiResource
             'option_status' => $this->option_status,
             'option_status_label' => $this->option_status ? $this->option_status->label() : null,
             'option_status_variant' => $this->option_status ? $this->option_status->variant() : null,
+            // 아이콘 의미 토큰(status-*) — 상품 행 뱃지가 상태 아이콘을 함께 그린다.
+            'option_status_icon' => $this->option_status ? $this->option_status->icon() : null,
             'product_id' => $this->product_id,
             'product_option_id' => $this->product_option_id,
             'sku' => $this->sku,

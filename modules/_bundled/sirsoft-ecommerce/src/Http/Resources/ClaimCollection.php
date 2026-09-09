@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiCollection;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 
 /**
@@ -15,6 +16,29 @@ use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
  */
 class ClaimCollection extends BaseApiCollection
 {
+    /**
+     * 주문 스코프 목록의 유형 요약 — 이 응답이 실은 유형과 유형별 접수 건수 (없으면 null)
+     *
+     * @var array{claim_type: string, counts: array<string, int>}|null
+     */
+    protected ?array $typeSummary = null;
+
+    /**
+     * 유형 요약을 싣습니다. (주문상세 섹션 — 서브탭 뱃지와 기본 유형 판정의 근거)
+     *
+     * 회원 신청내역(주문 횡단 목록)은 싣지 않는다 — 그 화면은 주소의 유형이 늘 있고 뱃지도 없다.
+     *
+     * @param  ClaimTypeEnum  $type  이 응답이 실은 유형 (요청 미지정 시 서버가 고른 값)
+     * @param  array<string, int>  $counts  유형별 접수 건수 (네 유형 전부)
+     * @return static
+     */
+    public function withTypeSummary(ClaimTypeEnum $type, array $counts): static
+    {
+        $this->typeSummary = ['claim_type' => $type->value, 'counts' => $counts];
+
+        return $this;
+    }
+
     /**
      * 리소스를 배열로 변환
      *
@@ -34,7 +58,7 @@ class ClaimCollection extends BaseApiCollection
             'data' => $this->collection
                 ->map(fn (ClaimResource $claim) => $claim->forList()->withReasonLabels($reasonLabels)->toArray($request))
                 ->toArray(),
-        ], $this->paginationMeta());
+        ], $this->paginationMeta(), $this->typeSummary ?? []);
     }
 
     /**

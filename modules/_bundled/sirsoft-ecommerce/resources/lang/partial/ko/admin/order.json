@@ -10,6 +10,7 @@
   },
   "detail": {
     "title": "주문 상세",
+    "progress_title": "진행 단계",
     "description": "주문 상세 정보를 확인합니다",
     "placeholder": "주문 상세가 여기에 표시됩니다",
     "order_number": "주문번호",
@@ -170,7 +171,6 @@
       "total_charge": "총 청구액",
       "original_product": "원상품",
       "exchange_product": "교환상품",
-      "view_detail": "클레임 신청서 조회하기",
       "amount_type": {
         "charge": "추가 청구",
         "refund": "환불",

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -22,5 +23,5 @@ interface ClaimActivityLogRepositoryInterface
      * @param  array{per_page?: int, sort_order?: string}  $filters  조회 필터
      * @return LengthAwarePaginator 활동 로그 페이지네이션
      */
-    public function paginateForClaim(OrderExchange|OrderReturn|OrderRefund $claim, array $filters = []): LengthAwarePaginator;
+    public function paginateForClaim(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim, array $filters = []): LengthAwarePaginator;
 }

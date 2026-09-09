@@ -1420,4 +1420,61 @@ class UserOrderControllerTest extends ModuleTestCase
             'claim_summary 가 빈 객체(`{}`)로 직렬화됐다 — 화면 반복이 돌지 않는다'
         );
     }
+
+    /**
+     * 목록 상단 건수 칸 배열 — 통계와 같은 키·건수에 아이콘 토큰·색·라벨이 붙는다.
+     * 합산 카운터(상품준비중)는 그룹 라벨을 쓴다.
+     */
+    public function test_주문_목록_상단_건수_칸_배열(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        Order::factory()->count(2)->forUser($user)->pendingPayment()->create();
+        Order::factory()->count(3)->forUser($user)->shipping()->create();
+
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/orders');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(6, 'data.status_summary')
+            ->assertJsonPath('data.status_summary.0.key', 'pending_payment')
+            ->assertJsonPath('data.status_summary.0.count', 2)
+            ->assertJsonPath('data.status_summary.0.icon', 'status-payment-pending')
+            ->assertJsonPath('data.status_summary.0.variant', 'warning')
+            ->assertJsonPath('data.status_summary.0.label', __('sirsoft-ecommerce::enums.order_status.pending_payment'))
+            ->assertJsonPath('data.status_summary.2.key', 'preparing')
+            ->assertJsonPath('data.status_summary.2.label', __('sirsoft-ecommerce::enums.order_status_groups.preparing'))
+            ->assertJsonPath('data.status_summary.3.key', 'shipping')
+            ->assertJsonPath('data.status_summary.3.count', 3);
+
+        // 칸 순서는 통계 키 순서와 같다 — 클릭 필터가 같은 키를 보낸다.
+        $this->assertSame(
+            array_keys($response->json('data.statistics')),
+            array_column($response->json('data.status_summary'), 'key'),
+        );
+
+        // 목록 행에도 상태 아이콘 토큰이 실린다.
+        $this->assertSame('status-dispatch', collect($response->json('data.data'))->firstWhere('status', 'shipping')['status_icon']);
+    }
+
+    /**
+     * 주문 상세에 진행단계 배열과 상태 아이콘 토큰이 실린다 — 관리자 상세와 같은 배열.
+     */
+    public function test_본인_주문_상세에_진행단계가_실린다(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $order = Order::factory()->forUser($user)->shipping()->create();
+
+        $response = $this->getJson("/api/modules/sirsoft-ecommerce/user/orders/{$order->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.order_status_icon', 'status-dispatch')
+            ->assertJsonCount(7, 'data.progress_steps')
+            ->assertJsonPath('data.progress_steps.4.value', 'shipping')
+            ->assertJsonPath('data.progress_steps.4.state', 'current')
+            ->assertJsonPath('data.progress_steps.4.icon', 'status-dispatch')
+            ->assertJsonPath('data.progress_steps.6.state', 'upcoming');
+    }
 }

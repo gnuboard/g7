@@ -46,6 +46,21 @@ trait PaginatesBuyerClaimList
     abstract protected function buyerClaimListColumns(): array;
 
     /**
+     * 이 주문에서 접수된 이 유형의 건수를 셉니다. (주문상세 섹션의 서브탭 뱃지·기본 유형 판정)
+     *
+     * 기준 쿼리(`buyerClaimListQuery()`)를 그대로 세므로 유형 고유 스코프(환불의 취소 발 제외)가
+     * 목록과 같은 근거로 걸린다 — 따로 세면 뱃지와 목록이 갈린다. 상태·기간 필터는 받지 않는다:
+     * 뱃지는 "이 유형에 접수된 건이 있는가" 를 말하는 자리다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @return int 건수
+     */
+    public function countForOrder(int $orderId): int
+    {
+        return $this->buyerClaimListQuery()->where('order_id', $orderId)->count();
+    }
+
+    /**
      * 기준 쿼리에 공통 필터를 적용하고 페이지네이션합니다.
      *
      * @param  Builder  $query  열람자 조건이 이미 걸린 쿼리

@@ -1121,4 +1121,26 @@ class OrderControllerTest extends ModuleTestCase
             ['X-Guest-Order-Token' => $newVerify->json('data.guest_order_token')]
         )->assertStatus(200);
     }
+
+    /**
+     * 관리자 주문 상세에 진행단계 배열과 상태 아이콘 토큰이 실린다 — 회원·비회원 상세와 같은 배열.
+     */
+    public function test_show_carries_progress_steps_and_status_icons(): void
+    {
+        $order = OrderFactory::new()->delivered()->create();
+        OrderOptionFactory::new()->count(2)->forOrder($order)->create();
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.order_status_icon', 'status-delivered')
+            ->assertJsonCount(7, 'data.progress_steps')
+            ->assertJsonPath('data.progress_steps.5.value', 'delivered')
+            ->assertJsonPath('data.progress_steps.5.state', 'current');
+
+        foreach ($response->json('data.options') as $option) {
+            $this->assertStringStartsWith('status-', $option['option_status_icon']);
+        }
+    }
 }

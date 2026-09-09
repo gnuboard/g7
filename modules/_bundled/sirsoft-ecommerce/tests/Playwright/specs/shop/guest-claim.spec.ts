@@ -93,7 +93,11 @@ function guestClaimDetail(claimNumber: string): Record<string, unknown> {
  * @param claims '이 주문의 클레임' 목록에 실을 행
  * @returns 완료 Promise
  */
-async function mockGuestOrderScreens(page: Page, claims: Record<string, unknown>[] = []): Promise<void> {
+async function mockGuestOrderScreens(
+  page: Page,
+  claims: Record<string, unknown>[] = [],
+  claimsType: 'exchange' | 'return' | 'refund' | 'cancel' = 'exchange',
+): Promise<void> {
   await page.route(`**${API}/user/orders/${MOCK_ORDER.number}*`, async (route) => {
     await fulfillData(route, {
       id: MOCK_ORDER.id,
@@ -163,17 +167,21 @@ async function mockGuestOrderScreens(page: Page, claims: Record<string, unknown>
     }
 
     if (url.pathname.endsWith('/claims')) {
-      const type = url.searchParams.get('type') ?? 'exchange';
+      // 서버 계약: 유형을 비우면 접수 건이 있는 첫 유형, 넷 다 없으면 교환. 이 목은 한 유형(claimsType)에만 행을 둔다.
+      const type = url.searchParams.get('type') || (claims.length > 0 ? claimsType : 'exchange');
+      const rows = type === claimsType ? claims : [];
 
       await fulfillData(route, {
-        data: type === 'exchange' ? claims : [],
+        data: rows,
         pagination: {
           current_page: Number(url.searchParams.get('page') ?? 1),
           per_page: 20,
-          total: type === 'exchange' ? claims.length : 0,
+          total: rows.length,
           last_page: 1,
           total_relation: 'eq',
         },
+        claim_type: type,
+        counts: { exchange: 0, return: 0, refund: 0, cancel: 0, [claimsType]: claims.length },
       });
 
       return;
@@ -261,6 +269,46 @@ test.describe('비회원 클레임 화면', () => {
         `${label} 서브탭이 없다`,
       ).toBeVisible();
     }
+
+    // 번호가 곧 상세 링크다 — 푸터 [상세보기] 는 서지 않는다. 새 창 링크는 아니다: 비회원 조회
+    // 토큰이 탭(sessionStorage)에 묶여 새 창에 실리지 않으므로 같은 창에서 이동한다.
+    await expect(page.locator('[id^="claim_list_number_button_"]')).toHaveCount(1);
+    await expect(page.locator('a[target="_blank"]', { hasText: 'EX20260902-0900' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '상세보기' })).toHaveCount(0);
+  });
+
+  test('주소에 유형이 없으면 접수 건이 있는 유형이 먼저 열린다 — 누르기 전에 (회원 섹션과 같은 규칙)', async ({ page }) => {
+    // @scenario screen=order_section, entry=with_token, claim_type=return
+    // @effects guest_order_detail_sends_no_type_when_address_has_none
+    const base = await resolveShopBase(page);
+    await grantFunctionalConsent(page);
+    await seedGuestSession(page);
+    const requested: URL[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname.endsWith(`/guest/orders/${encodeURIComponent(MOCK_ORDER.number)}/claims`)) requested.push(u);
+    });
+    await mockGuestOrderScreens(
+      page,
+      [claimRow({ claim_number: 'RT20260902-0930', claim_type: 'return', claim_type_label: '반품', status_label: '반품신청' })],
+      'return',
+    );
+
+    await page.goto(`${base}/guest/orders/${encodeURIComponent(MOCK_ORDER.number)}`);
+    await waitForApp(page);
+
+    await expect
+      .poll(async () => (await screenText(page)).includes('RT20260902-0930'), { timeout: 30_000 })
+      .toBe(true);
+
+    // 반품만 활성(진한 밑줄) — 교환 탭의 빈 안내가 먼저 보이지 않는다
+    await expect(page.getByRole('button', { name: '반품', exact: true })).toHaveClass(/border-gray-900/);
+    await expect(page.getByRole('button', { name: '교환', exact: true })).not.toHaveClass(/border-gray-900/);
+    expect(new URL(page.url()).searchParams.get('type')).toBeNull();
+
+    // 화면이 유형을 정하지 않았다 — 나간 요청의 type 은 전부 비어 있다
+    expect(requested.length).toBeGreaterThan(0);
+    expect(requested.every((u) => !u.searchParams.get('type'))).toBe(true);
   });
 
   test('상품을 고르면 신청 진입 3종이 열리고 비회원 주소로 보낸다', async ({ page }) => {
@@ -316,7 +364,8 @@ test.describe('비회원 클레임 화면', () => {
       .poll(async () => (await screenText(page)).includes('EX20260902-0901'), { timeout: 30_000 })
       .toBe(true);
 
-    await page.getByRole('button', { name: '상세보기' }).first().click();
+    // 번호가 곧 링크다 — 같은 창에서 이동한다 (조회 토큰이 탭에 묶여 있어 새 창은 조회 폼으로 되돌아간다).
+    await page.locator('[id^="claim_list_number_button_"]').first().click();
 
     // 비회원 상세 주소에는 주문번호가 없다 — 스코프는 토큰의 짝인 `_global.guestOrderNumber` 다.
     await expect

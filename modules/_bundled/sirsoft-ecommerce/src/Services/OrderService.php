@@ -124,6 +124,43 @@ class OrderService
     }
 
     /**
+     * 마이페이지 목록 상단 건수 칸 배열을 만듭니다.
+     *
+     * 칸의 순서·키·건수는 `getUserStatistics()` 가 정한다(클릭 필터도 같은 키를 보낸다). 여기서는
+     * 그 키에 아이콘 토큰·색·라벨을 붙여, 화면이 상태 어휘를 다시 적지 않게 한다. 합산 카운터
+     * (상품준비중 + 배송준비완료)는 한 상태의 라벨이 아니므로 그룹 라벨을 쓴다.
+     *
+     * @param  array<string, int>  $statistics  상태별 주문 건수 (getUserStatistics 결과)
+     * @return array<int, array{key: string, label: string, icon: string, variant: string, count: int}> 건수 칸 배열
+     */
+    public function getUserStatusSummary(array $statistics): array
+    {
+        $summary = [];
+
+        foreach ($statistics as $key => $count) {
+            $status = OrderStatusEnum::tryFrom((string) $key);
+
+            if ($status === null) {
+                continue;
+            }
+
+            $isGroup = count(OrderStatusEnum::expandStatisticsFilter($status->value)) > 1;
+
+            $summary[] = [
+                'key' => $status->value,
+                'label' => $isGroup
+                    ? __('sirsoft-ecommerce::enums.order_status_groups.'.$status->value)
+                    : $status->label(),
+                'icon' => $status->icon(),
+                'variant' => $status->variant(),
+                'count' => (int) $count,
+            ];
+        }
+
+        return $summary;
+    }
+
+    /**
      * 주문 상세 조회 (관계 포함)
      *
      * @param  int  $id  주문 ID

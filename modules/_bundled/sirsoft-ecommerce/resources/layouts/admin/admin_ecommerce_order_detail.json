@@ -14,8 +14,10 @@
     "orderDetailTabs": "{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((orderClaims?.data?.claims ?? []).length > 0 ? ' (' + (orderClaims?.data?.claims ?? []).length + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}",
     "_comment_claimHistoryTypes": "유형 서브탭 4종 (D20). 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 claims 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다.",
     "claimHistoryTypes": "{{['exchange', 'return', 'cancel', 'refund'].map(t => ({ value: t, label: $t('sirsoft-ecommerce.admin.order.detail.claim_history.subtabs.' + t), count: orderClaims?.data?.counts?.[t] ?? 0 }))}}",
-    "_comment_claimHistoryRows": "서브탭 필터는 화면이 claim_type 으로 거른다 (S6c 판정 ⑤ — 서버는 전 유형 평면 배열 하나를 신청 역순으로 내려준다). 별도 데이터소스를 만들지 않으므로 서브탭 전환에 재조회가 없다.",
-    "claimHistoryRows": "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType ?? 'exchange'))}}"
+    "_comment_claimHistoryActiveType": "지금 보는 유형 서브탭. 운영자가 누른 값(_local.claimHistoryType)이 있으면 그것, 없으면 접수 건이 있는 첫 유형 — 순서는 교환 → 반품 → 취소 → 환불이고 넷 다 비었으면 교환이다. 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 '접수된 건이 없습니다' 가 먼저 보였다. 판정은 뱃지와 같은 counts 를 읽는다 — claims 배열을 세면 상한이 걸린 응답에서 뱃지와 갈린다. computed 는 다른 computed 를 읽지 못하므로 아래 claimHistoryRows 가 같은 식을 되풀이한다 — 순서를 바꾸면 두 곳을 함께 바꾼다.",
+    "claimHistoryActiveType": "{{_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')}}",
+    "_comment_claimHistoryRows": "서브탭 필터는 화면이 claim_type 으로 거른다 (S6c 판정 ⑤ — 서버는 전 유형 평면 배열 하나를 신청 역순으로 내려준다). 별도 데이터소스를 만들지 않으므로 서브탭 전환에 재조회가 없다. 기준 유형은 claimHistoryActiveType 과 같은 식이다(computed 간 참조 불가).",
+    "claimHistoryRows": "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')))}}"
   },
   "state": {
     "selectedProducts": [],
@@ -24,7 +26,8 @@
     "batchCarrierId": "",
     "batchTrackingNumber": "",
     "activeOrderTab": "order_info",
-    "claimHistoryType": "exchange",
+    "_comment_claimHistoryType": "운영자가 누른 유형 서브탭. 비어 있으면 computed claimHistoryActiveType 이 접수 건이 있는 첫 유형을 고른다 — 여기에 'exchange' 를 박으면 그 판정이 영영 돌지 않는다.",
+    "claimHistoryType": "",
     "expandedCashReceiptHistory": []
   },
   "transition_overlay": {
@@ -155,7 +158,7 @@
       "params": {
         "target": "local",
         "activeOrderTab": "order_info",
-        "claimHistoryType": "exchange",
+        "claimHistoryType": "",
         "selectedProducts": [],
         "selectAll": false,
         "batchOrderStatus": "",
@@ -378,6 +381,9 @@
                     ]
                   }
                 ]
+              },
+              {
+                "partial": "partials/admin_ecommerce_order_detail/_partial_order_progress.json"
               },
               {
                 "id": "tab_navigation",

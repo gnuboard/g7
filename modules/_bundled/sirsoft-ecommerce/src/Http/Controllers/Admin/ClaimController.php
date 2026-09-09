@@ -29,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderClaimHistoryResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -672,10 +673,14 @@ class ClaimController extends AdminBaseController
      * (기본 역할 `manager`)에게만 403 이 되고, 상점이 꺼 둔 기본값이 조용히 계약 기본값으로
      * 되돌아간다 — 목록이 이 통로를 택한 것과 같은 근거다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * 취소(`OrderCancel`)도 같은 봉투로 나간다 — 취소에는 전이·송장·청구·환불 실행 축이 없어
+     * 그 자리(세그먼트·택배사·청구 방식·환불 수단·취소 가능 금액)가 비고, 화면은 취소를 조회
+     * 전용으로 그린다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return array<string, mixed> 상세 응답 페이로드
      */
-    protected function detailPayload(OrderExchange|OrderReturn|OrderRefund $claim): array
+    protected function detailPayload(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): array
     {
         return [
             'claim' => $this->detailResource($claim),
@@ -692,7 +697,7 @@ class ClaimController extends AdminBaseController
             // 이 화면(`claims.read`)이 직접 부르면 클레임 권한만 가진 운영자에게만 403 이 되고
             // 드롭다운이 빈 채로 열린다 — 송장을 저장할 수 없게 되므로 이 응답이 통로다.
             // 환불에는 회수·재발송 축이 없어 빈 배열이다 (그리지 않는 값을 싣지 않는다).
-            'carriers' => $claim instanceof OrderRefund
+            'carriers' => $claim instanceof OrderRefund || $claim instanceof OrderCancel
                 ? []
                 : $this->carrierService->getActiveCarrierOptions(),
             // 결제 정보 섹션(D17-③)이 그리는 원 주문의 결제 카드·금액 행 세트. 주문 상세
@@ -705,7 +710,7 @@ class ClaimController extends AdminBaseController
             'settlement' => $this->adminClaimService->settlementFor($claim),
             // 청구 방식 어휘는 운영자 설정(`claim.allowed_charge_methods`)이 정하고 그 조회는
             // `settings.read` 게이트다 — 완료 기본값·택배사와 같은 이유로 봉투가 나른다.
-            'charge_methods' => $claim instanceof OrderRefund
+            'charge_methods' => $claim instanceof OrderRefund || $claim instanceof OrderCancel
                 ? []
                 : $this->adminClaimService->chargeMethodOptions(),
             // 환불 수단 어휘 — 환불 실행 섹션의 라디오. 다른 유형에는 그 축이 없다.
@@ -802,7 +807,7 @@ class ClaimController extends AdminBaseController
      * @param  OrderExchange|OrderReturn|OrderRefund|null  $claim  신청서
      * @return ClaimResource|null 상세 리소스
      */
-    protected function detailResource(OrderExchange|OrderReturn|OrderRefund|null $claim): ?ClaimResource
+    protected function detailResource(OrderExchange|OrderReturn|OrderRefund|OrderCancel|null $claim): ?ClaimResource
     {
         if ($claim === null) {
             return null;

@@ -32,7 +32,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - 그룹 응답 구조 계약 — `counts` 4유형 + `claims`(신청서가 상품 배열을 품는 그룹 구조)
  * - 취소 발 환불신청서의 환불 축 제외 (취소 축이 대표)
  * - 상품 행 정규화 금액 축(`amount`/`amount_type`) — 교환 차액 부호 판정
- * - `detail_url` — 교환·반품·환불은 클레임 상세 경로, 취소는 null (상세 라우트 없음)
+ * - `detail_url` — 네 유형 모두 클레임 상세 경로 (취소도 조회 전용 상세가 열린다)
  * - 권한 403
  */
 class OrderClaimHistoryTest extends ModuleTestCase
@@ -200,9 +200,12 @@ class OrderClaimHistoryTest extends ModuleTestCase
     }
 
     /**
-     * @effects order_claims_response_detail_url_null_for_cancel
+     * 신청번호가 여는 상세 경로는 서버가 만든다. 취소도 예외가 아니다 — 종전에는 취소만 null 이라
+     * 주문상세에서는 링크가 빠지고, 클레임 목록 취소 탭의 번호는 404 로 이어졌다.
+     *
+     * @effects order_claims_response_detail_url_for_every_type
      */
-    public function test_order_claims_detail_url_is_claim_path_except_cancel(): void
+    public function test_order_claims_detail_url_is_the_claim_path_for_every_type(): void
     {
         $order = OrderFactory::new()->create();
         $return = $this->makeReturnWithItems($order);
@@ -221,9 +224,9 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $returnRow = collect($claims)->firstWhere('claim_type', 'return');
         $this->assertSame('/admin/ecommerce/claims/'.$return->return_number, $returnRow['detail_url']);
 
-        // 취소는 상세 라우트가 없다 (S6a 판정 ⑤ — 이 섹션이 취소 이력의 종착)
+        // 취소도 같은 상세 화면이 번호로 연다 (조회 전용)
         $cancelRow = collect($claims)->firstWhere('claim_type', 'cancel');
-        $this->assertNull($cancelRow['detail_url']);
+        $this->assertSame('/admin/ecommerce/claims/'.$cancelRow['claim_number'], $cancelRow['detail_url']);
     }
 
     public function test_order_claims_are_ordered_by_request_time_descending(): void

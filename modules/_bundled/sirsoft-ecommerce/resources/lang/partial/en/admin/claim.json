@@ -67,13 +67,21 @@
       "no_detail": "No detailed reason was provided.",
       "images_label": "Attachments"
     },
+    "cancel_info": {
+      "title": "Cancellation",
+      "cancel_type": "Cancellation type",
+      "refund_status": "Refund status",
+      "refund_amount": "Refund amount",
+      "cancelled_at": "Cancelled at"
+    },
     "memo": {
       "title": "Admin Memo",
       "placeholder": "Internal processing notes (not shown to the customer)",
       "save": "Save memo",
       "saved": "The admin memo has been saved.",
       "error": "Failed to save the admin memo.",
-      "not_supported": "Refund requests do not store an admin memo."
+      "not_supported": "Refund requests do not store an admin memo.",
+      "not_supported_cancel": "Cancellation requests do not store an admin memo."
     },
     "activity_log": {
       "title": "Activity Log",

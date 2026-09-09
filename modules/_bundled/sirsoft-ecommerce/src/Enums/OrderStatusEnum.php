@@ -78,6 +78,77 @@ enum OrderStatusEnum: string
     }
 
     /**
+     * 상태를 상징하는 아이콘 의미 토큰을 반환합니다.
+     *
+     * 아이콘 라이브러리(Font Awesome 등)의 글리프 이름이 아니라 라이브러리 중립 토큰이다 —
+     * 토큰→글리프 표는 각 템플릿이 소유한다. 어휘는 모듈 API 문서 "아이콘 의미 토큰 어휘" 절이
+     * 정하며, 클레임 상태 Enum 과 같은 단계는 같은 토큰을 쓴다(결제·발송·배송완료·완료).
+     *
+     * @return string 아이콘 의미 토큰 (status-*)
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::PENDING_ORDER => 'status-request',
+            self::PENDING_PAYMENT => 'status-payment-pending',
+            self::PAYMENT_COMPLETE => 'status-paid',
+            self::SHIPPING_HOLD => 'status-on-hold',
+            self::PREPARING => 'status-preparing',
+            self::SHIPPING_READY => 'status-dispatch-ready',
+            self::SHIPPING => 'status-dispatch',
+            self::DELIVERED => 'status-delivered',
+            self::CONFIRMED => 'status-completed',
+            self::CANCELLED => 'status-cancelled',
+            self::EXCHANGE_IN_PROGRESS => 'status-exchange',
+            self::RETURN_IN_PROGRESS => 'status-return',
+            self::EXCHANGED => 'status-exchanged',
+            self::RETURNED => 'status-returned',
+        };
+    }
+
+    /**
+     * 진행단계 스텝퍼에 한 줄로 세우는 순서를 반환합니다. (7단계)
+     *
+     * `progressOrder()` 가 전이 규칙용 전체 순서(주문대기·배송보류 포함 9단계)라면, 이것은
+     * 구매자·운영자에게 **보여 주는** 순서다 — 주문대기는 결제창 진입 전 임시 상태라 목록·통계에서도
+     * 숨기고, 배송보류는 흐름을 따라가는 단계가 아니라 멈추는 사건이라 이탈 칸으로 따로 붙는다.
+     *
+     * @return array<self> 진행 순서
+     */
+    public static function progressSequence(): array
+    {
+        return [
+            self::PENDING_PAYMENT,
+            self::PAYMENT_COMPLETE,
+            self::PREPARING,
+            self::SHIPPING_READY,
+            self::SHIPPING,
+            self::DELIVERED,
+            self::CONFIRMED,
+        ];
+    }
+
+    /**
+     * 진행 순서 밖으로 벗어난(멈춘) 상태인지 확인합니다.
+     *
+     * 배송보류·주문취소·교환/반품 진행·교환/반품 완료가 여기 든다. 주문대기는 순서 밖이지만
+     * 이탈이 아니라 첫 칸 앞이므로 포함하지 않는다.
+     *
+     * @return bool 이탈 상태 여부
+     */
+    public function isOffProgressPath(): bool
+    {
+        return in_array($this, [
+            self::SHIPPING_HOLD,
+            self::CANCELLED,
+            self::EXCHANGE_IN_PROGRESS,
+            self::RETURN_IN_PROGRESS,
+            self::EXCHANGED,
+            self::RETURNED,
+        ], true);
+    }
+
+    /**
      * 모든 값 배열을 반환합니다.
      *
      * @return array<string> 상태 값 배열

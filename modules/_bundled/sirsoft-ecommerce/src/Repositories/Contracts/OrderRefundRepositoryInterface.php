@@ -114,6 +114,16 @@ interface OrderRefundRepositoryInterface
     public function paginateForOrder(int $orderId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
 
     /**
+     * 이 주문에서 접수된 이 유형의 건수를 셉니다. (주문상세 섹션의 서브탭 뱃지·기본 유형 판정)
+     *
+     * `paginateForOrder()` 와 같은 기준 쿼리를 세므로 유형 고유 스코프가 목록과 같은 근거로 걸린다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @return int 건수
+     */
+    public function countForOrder(int $orderId): int;
+
+    /**
      * 관리자 목록을 페이지네이션 조회합니다. (최신순, 취소 발 환불 제외 — 취소 서브탭이 담당)
      *
      * @param  array  $filters  필터 (statuses / from / to / fault_types / reason_code / requester_type / search_field / search_keyword)

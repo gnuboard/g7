@@ -115,14 +115,22 @@ class GuestClaimController extends PublicBaseController
     public function index(ClaimListRequest $request): JsonResponse
     {
         try {
+            // 유형 미지정이면 접수 건이 있는 첫 유형을 서버가 고른다 — 회원 주문상세 섹션과 같은 규칙.
+            $order = $request->getOrder();
+            $counts = $this->claimService->countsForOrder($order);
+            $type = $this->claimService->resolveOrderListType($request->requestedClaimType(), $counts);
             $claims = $this->claimService->listForOrderPaginated(
-                $request->getOrder(),
-                $request->claimType(),
+                $order,
+                $type,
                 $request->filters(),
                 $request->perPage(),
             );
 
-            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.list_retrieved', new ClaimCollection($claims));
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.list_retrieved',
+                (new ClaimCollection($claims))->withTypeSummary($type, $counts),
+            );
         } catch (Exception $e) {
             return $this->claimServerError('guest-index', $e);
         }

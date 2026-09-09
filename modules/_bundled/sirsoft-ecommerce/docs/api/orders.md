@@ -83,6 +83,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | order_status | string | `pending_payment` | 주문상태 (OrderStatusEnum 값 — 결제대기/결제완료/배송중 등) |
 | order_status_label | string | `결제대기` | `order_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | order_status_variant | string | `warning` | `order_status` 값의 표시 변형 키 (UI 배지 색상/스타일) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
 | base_currency | string | `JPY` | 금액 표기 기준 통화 (모든 *_formatted 필드의 통화, 주문 시점 base_currency 고정) |
 | payment_currency | string | `JPY` | 결제 통화 (유저가 선택·결제한 통화, base_currency 와 다르면 병기 표시) |
 | is_cross_currency | boolean | `false` | cross currency 여부 |
@@ -471,6 +472,8 @@ _단건 응답: `data` 객체의 필드._
 | order_status | string | `payment_complete` | 주문상태 (OrderStatusEnum) |
 | order_status_label | string | `Payment Complete` | `order_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | order_status_variant | string | `info` | `order_status` 값의 표시 변형 키 (UI 배지 색상/스타일) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
+| progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
@@ -1917,6 +1920,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | status | string | `preparing` | 주문상태 값 (OrderStatusEnum value — 마이페이지용 status 별칭) |
 | status_label | string | `상품준비중` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `info` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
+| status_icon | string\|null | `status-preparing` | 상태를 상징하는 **아이콘 의미 토큰** (`OrderStatusEnum::icon()`) — 목록 행 상태 뱃지가 라벨 앞에 아이콘을 함께 그린다 |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
 | recipient_country_code | string | `KR` | 배송국가 코드 (ISO 3166-1 alpha-2, shippingAddress 로드 시) |
 | recipient_country_name | object | `{"ko":"한국","en":"South Korea"}` | 배송국가 현지화명 (로케일별 국가명 맵) |
@@ -1933,6 +1937,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | total_earned_points_amount | integer | `300` | 총 적립 예정 포인트 |
 | total_earned_points_amount_formatted | string | `¥300` | `total_earned_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | items | array | `[{"product_name":"USB 충전 케이블 #7","product_option_name":"2…` | 주문 품목 목록 (상품명·옵션명·썸네일·수량·단가/소계·추가옵션 요약) |
+| statistics | object | `{"pending_payment":0,"payment_complete":20,"preparing":10,…}` | 상태별 주문 건수 (응답 최상위 `data.statistics`). `preparing` 은 상품준비중 + 배송준비완료 합산(`OrderStatusEnum::statisticsFilterGroups`) — `status` 필터로 `preparing` 을 보내면 같은 집합으로 확장된다 |
+| status_summary | array | `[{"key":"pending_payment","label":"결제대기","icon":"status-payment-pending","variant":"warning","count":0}, …]` | 마이페이지 목록 상단 **건수 칸 배열** (응답 최상위 `data.status_summary`). 순서·키·건수는 `statistics` 와 같고(클릭 필터가 같은 키를 보낸다), 상태 Enum 의 아이콘 토큰·색·라벨이 붙는다. 합산 칸(`preparing`)의 라벨은 `enums.order_status_groups.preparing`("상품준비·배송준비") |
 | item_count | integer | `1` | item 개수 (집계) |
 | claim_summary | array | `[{"type":"exchange","type_label":"교환","count":1,"latest_c…` | 그 주문에 접수된 클레임의 유형별 최신 상태 배지 배열. 관리자 목록과 **같은 산출**(`SummarizesClaims`)이라 같은 주문이 두 화면에서 같은 상태로 보인다. 항상 직렬화되며 접수 건이 있는 유형만 항목으로 실리므로 클레임이 없는 주문은 빈 배열(`[]`)이다. 항목: `{type, type_label, count, latest_claim_number, status, status_label, status_variant}` |
 | abilities | object | `{"can_view":true,"can_cancel":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -2229,6 +2235,8 @@ _단건 응답: `data` 객체의 필드._
 | order_status | string | `pending_payment` | 주문상태 (OrderStatusEnum) |
 | order_status_label | string | `결제대기` | `order_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | order_status_variant | string | `warning` | `order_status` 값의 표시 변형 키 (UI 배지 색상/스타일) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
+| progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
@@ -3065,6 +3073,8 @@ _단건 응답: `data` 객체의 필드._
 | order_status | string | `pending_payment` | 주문상태 (OrderStatusEnum) |
 | order_status_label | string | `결제대기` | `order_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | order_status_variant | string | `warning` | `order_status` 값의 표시 변형 키 (UI 배지 색상/스타일) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
+| progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
@@ -3177,6 +3187,8 @@ _단건 응답: `data` 객체의 필드._
 | order_status | string | `payment_complete` | 주문상태 (OrderStatusEnum) |
 | order_status_label | string | `결제완료` | `order_status` 의 사람이 읽는 라벨 |
 | order_status_variant | string | `info` | `order_status` 의 표시 변형 키 (UI 배지 색상) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
+| progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | 부분취소 여부 (options 로드 시) |
 | subtotal_amount / subtotal_amount_formatted | integer / string | `184000` / `184,000원` | 상품 합계 (할인 전) |
 | total_discount_amount / total_discount_amount_formatted | integer / string | `0` / `0원` | 총 할인금액 |
@@ -3286,6 +3298,7 @@ HTTP/1.1 200
 | 메서드 | URI | 라우트명 |
 | --- | --- | --- |
 | GET | /api/modules/sirsoft-ecommerce/user/orders/{id}/claimable-options | `api.modules.sirsoft-ecommerce.user.orders.claimable-options` |
+| GET | /api/modules/sirsoft-ecommerce/user/orders/{id}/claims | `api.modules.sirsoft-ecommerce.user.orders.claims.index` |
 | POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/preview | `api.modules.sirsoft-ecommerce.user.orders.claims.preview` |
 | POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/exchanges | `api.modules.sirsoft-ecommerce.user.orders.exchanges.store` |
 | POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/returns | `api.modules.sirsoft-ecommerce.user.orders.returns.store` |
@@ -3405,6 +3418,77 @@ Authorization: Bearer {YOUR_TOKEN}
 <!-- @generated:end -->
 
 **설명** 클레임 신청 화면을 여는 첫 호출입니다. 주문의 각 상품에 어떤 클레임이 열려 있는지(`claimable_types`), 잔여 수량, 취소·환불 신청 시 즉시취소/환불신청 분기, 사유 카탈로그, 화면이 따라야 할 설정값, 작성 중 올려 둔 임시 첨부를 한 번에 돌려줍니다. 교환·반품이 진행 중인 상품은 옵션 상태가 코스 상태(`exchange_in_progress`/`return_in_progress`)라 `claimable_types` 가 비고, 직접 환불신청이 진행 중인 상품은 상태가 그대로라도 `locked_quantity` 만큼 잔여가 줄어듭니다. `resolved_type` 이 `mixed` 면 즉시취소 상품과 환불신청 상품을 한 신청에 섞을 수 없으므로 화면이 상품 선택을 분기별로 나눠야 합니다. `refund_account` 는 그 주문의 환불이 계좌 이체로 나가는지, 그때 고를 은행 목록, 그리고 주문 시 등록해 둔 계좌(`prefill`)입니다 — 화면은 이 값으로만 계좌 입력칸을 세우고 채웁니다. 프리필은 반드시 `prefill` 을 쓰고 표시용 응답의 마스킹된 계좌를 되쓰지 않습니다(마스킹 값을 되보내면 별표가 섞인 계좌가 저장됩니다). 계좌 입력칸은 반품·취소·환불 세 유형에 서고, 교환은 저가 옵션으로 바꿔 **차액이 구매자에게 돌아갈 때만** 섭니다.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claims
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.claims.index -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claims.index`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@orderClaims`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID (본인 주문이 아니면 존재를 드러내지 않고 404) |
+| type | query | string | 아니오 | `exchange` \| `return` \| `refund` \| `cancel` | 유형 서브탭. 비우면(`?type=` 포함) 접수 건이 있는 첫 유형을 서버가 고른다 — 교환 → 반품 → 취소 → 환불 순, 넷 다 없으면 `exchange`. 고른 값은 응답 `claim_type` 에 실린다 |
+| status | query | string | 아니오 | 유형별 상태 Enum | 상태 필터 (`type` 과 함께 쓴다 — 유형을 비우면 상태 어휘는 교환 기준으로 검증된다) |
+| from | query | date | 아니오 | — | 신청일 시작 (그날 00:00:00 부터) |
+| to | query | date | 아니오 | — | 신청일 종료 (그날 23:59:59 까지) |
+| page | query | integer | 아니오 | 1 이상 | 페이지 번호 |
+| per_page | query | integer | 아니오 | 1~50 | 페이지당 건수 (기본 20) |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/user/orders/120/claims?type=return&page=1&per_page=20 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| data | array | — | 이 주문에서 접수된 그 유형의 신청서 목록 ([ClaimResource](claims.md#claim-resource) 목록 표현, 최신순) |
+| pagination | object | — | 페이지 정보 (`current_page` / `per_page` / `from` / `to` / `has_more_pages` / `last_page` / `total`) |
+| claim_type | string | `return` | 이 응답이 실은 유형 — `type` 을 지정했으면 그 값, 비웠으면 서버가 고른 값. 화면은 주소에 유형이 없을 때 이 값으로 활성 서브탭을 세운다 |
+| counts | object | `{"exchange": 0, "return": 1, "refund": 0, "cancel": 0}` | 이 주문의 유형별 접수 건수 (네 유형 전부). 목록과 같은 기준으로 세므로 환불 건수에 취소 발 환불은 들지 않는다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청 내역을 조회했습니다.",
+    "data": {
+        "data": [
+            { "claim_number": "RT20260823-1358024460", "claim_type": "return", "status": "requested", "order_number": "20260823-1130558472" }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 1,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 1
+        },
+        "claim_type": "return",
+        "counts": { "exchange": 0, "return": 1, "refund": 0, "cancel": 0 }
+    }
+}
+```
+
+**오류 응답**
+
+401 (미인증) / 403 (`user-claims.read` 없음) / 404 (본인 주문이 아니거나 없음) / 422 (유형·상태 어휘 밖, 페이지 범위 밖) / 500.
+
+<!-- @generated:end -->
+
+**설명** 마이페이지 주문 상세의 '이 주문의 취소·반품·교환' 섹션이 읽는 목록입니다. 회원 신청내역([claims.md](claims.md) `GET /user/claims`)·비회원 주문상세 섹션([guest.md](guest.md) `GET /guest/orders/{orderNumber}/claims`)과 같은 계약(유형 서브탭 하나 · 최신순 · 페이지)이며 조회도 같은 지점입니다 — 회원 목록에 주문 필터를 얹지 않고 주문 스코프 경로를 따로 두는 것은, 주문 상세가 이미 주문 ID 로 형제 자원(`claimable-options`)을 부르고 있어 같은 모양이 화면에 자연스럽고, 본인 주문이 아니면 존재를 드러내지 않고 404 로 닫는 규칙을 그 형제와 함께 두기 위해서입니다. 화면은 주문 응답이 도착해 주문 ID 를 얻은 뒤 이 목록을 부르고, 유형 서브탭·페이지는 주문 상세 주소의 `?type=`·`?page=` 로 왕복합니다. 주소에 유형이 없으면 화면은 `type` 을 비워 보내고, 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 골라 `claim_type` 으로 알려 줍니다 — 종전에는 늘 교환이어서 취소만 있는 주문에서 '접수된 건이 없습니다' 가 먼저 보였습니다. `counts` 는 유형별 접수 건수이고 회원 신청내역(`GET /user/claims`)에는 이 두 필드가 없습니다(그 화면은 주소가 늘 유형을 실어 보냅니다).
 
 ---
 

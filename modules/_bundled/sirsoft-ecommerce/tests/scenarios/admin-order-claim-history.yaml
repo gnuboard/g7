@@ -20,8 +20,9 @@ description: |
      부호를 다시 붙이면 저가 교환에서 이중 부호(`-2,000원 환불`)가 된다.
 
   ④ **상세 경로를 화면이 조립하면** 경로 규칙의 두 번째 출처가 되고, 규칙이 바뀌어도 오류
-     없이 404 만 나는 URL 이 만들어진다. 취소는 상세 라우트가 없어 서버가 `detail_url: null`
-     을 주며(S6a 판정 ⑤ — 취소 이력은 이 섹션이 종착) 그때는 버튼 자체가 없어야 한다.
+     없이 404 만 나는 URL 이 만들어진다. 신청번호 자체가 새 창 링크이고 네 유형 모두 상세가
+     있다(취소도 조회 전용 상세) — 서버가 경로를 못 만든 행만 글자로 남는다. 상품 썸네일은
+     이미지가 없어도 같은 크기의 자리표시로 남는다.
 
   ⑤ **이 데이터소스의 게이트(`claims.read`)는 화면 라우트 권한(`orders.read`)보다 좁다.**
      클레임 권한이 없는 주문 담당자에게는 403 이 오는데, 전파를 끊지 않으면 주문 화면 전체가
@@ -34,8 +35,8 @@ description: |
      다시 세면 상한이 걸린 응답에서 뱃지와 목록 건수가 달라진다.
 
 # axis 의미:
-#   claim_type    — 유형 서브탭 4종. 취소는 상세 라우트가 없어 [신청서 조회하기] 가 빠지는
-#                   유일한 유형이라 다른 셋과 같은 축에 둔다.
+#   claim_type    — 유형 서브탭 4종. 취소는 조회 전용 상세가 새로 열리는 유형이라(종전에는
+#                   링크가 빠졌다) 다른 셋과 같은 축에 둔다.
 #   claims_present — 그 유형에 접수된 건이 있는지. 빈 유형은 안내를 그리고 표를 그리지 않는다.
 #
 # 상품 수(1건/다건)·화면 너비(PC/모바일)·권한 조합은 유형과 직교하지 않는 파생 상태라 axis 로
@@ -61,16 +62,21 @@ effects:
   - order_claim_history_merged_cell_spans_item_count
   - order_claim_history_request_level_amounts_stay_in_merged_cell
   - order_claim_history_amount_direction_from_amount_type
-  # [클레임 신청서 조회하기] (④)
+  # 신청번호 링크 · 썸네일 (④)
+  - order_claim_history_number_is_the_link
   - order_claim_history_detail_link_opens_new_window
   - order_claim_history_detail_link_uses_server_url
-  - order_claim_history_detail_link_absent_for_cancel
+  - order_claim_history_number_links_for_every_type
+  - order_claim_history_thumbnail_placeholder_when_missing
   # 데이터소스 (⑤·⑥)
   - order_claim_history_single_datasource
   - order_claim_history_datasource_failure_does_not_break_screen
   - order_claim_history_subtab_switch_does_not_refetch
   - order_claim_history_badges_read_server_counts
   - order_claim_history_rows_filtered_by_claim_type
+  # 기본 서브탭 — 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불), 넷 다 비었으면 교환.
+  # 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 빈 안내가 먼저 보였다(PO 2026-09-09).
+  - order_claim_history_default_subtab_is_first_type_with_claims
   - order_claim_history_empty_type_shows_notice
   - order_claim_history_unavailable_distinguished_from_empty
   # 표기
@@ -87,12 +93,15 @@ effects:
   - order_payment_info_claim_additional_paid_row_hidden_when_zero
   # 서버 계약 (D20 그룹 응답 — S6c 산출, 이 화면이 그것을 그대로 그린다)
   - order_claims_response_groups_items_under_each_request
-  - order_claims_response_detail_url_null_for_cancel
+  - order_claims_response_detail_url_for_every_type
   - order_claims_response_amount_carries_magnitude_only
   # 브라우저 실측 (E2E)
   - order_detail_claim_history_tab_reveals_section
   - order_detail_claim_history_subtabs_switch_without_refetch
   - order_detail_claim_history_detail_link_targets_blank
+  - order_detail_claim_history_cancel_number_opens_cancel_detail
+  - order_detail_claim_history_thumbnail_placeholder_visible
+  - order_detail_claim_history_default_subtab_has_claims
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderClaimHistory.test.ts

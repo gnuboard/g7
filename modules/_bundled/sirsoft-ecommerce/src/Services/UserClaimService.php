@@ -586,6 +586,67 @@ class UserClaimService
     }
 
     /**
+     * 기본 유형 판정 순서 — 접수 건이 있는 첫 유형을 고른다 (PO 2026-09-09: 교환 → 반품 → 취소 → 환불).
+     *
+     * 화면의 서브탭 배열 순서(교환·반품·환불·취소)와 다르다 — 순서는 "무엇을 먼저 보여 줄 것인가" 의
+     * 결정이지 배열 위치가 아니다. 관리자 주문상세 클레임 내역(`claimHistoryActiveType`)도 같은 순서다.
+     *
+     * @var array<int, ClaimTypeEnum>
+     */
+    public const ORDER_LIST_TYPE_PRIORITY = [
+        ClaimTypeEnum::EXCHANGE,
+        ClaimTypeEnum::RETURN,
+        ClaimTypeEnum::CANCEL,
+        ClaimTypeEnum::REFUND,
+    ];
+
+    /**
+     * 주문의 유형별 접수 건수를 돌려줍니다. (주문상세 섹션의 서브탭 뱃지·기본 유형 판정)
+     *
+     * 건수는 목록과 같은 저장소 기준 쿼리로 세므로(`countForOrder`) 환불 탭의 취소 발 제외가
+     * 뱃지와 목록에 같은 근거로 걸린다. 네 유형 전부를 늘 돌려준다 — 화면이 키 부재를 0 으로
+     * 읽으면 "세지 않음" 과 "0건" 이 구분되지 않는다.
+     *
+     * @param  Order  $order  주문
+     * @return array<string, int> 유형 값 => 건수 (네 유형 전부)
+     */
+    public function countsForOrder(Order $order): array
+    {
+        return [
+            ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->countForOrder($order->id),
+            ClaimTypeEnum::RETURN->value => $this->returnRepository->countForOrder($order->id),
+            ClaimTypeEnum::REFUND->value => $this->refundRepository->countForOrder($order->id),
+            ClaimTypeEnum::CANCEL->value => $this->cancelRepository->countForOrder($order->id),
+        ];
+    }
+
+    /**
+     * 주문상세 섹션이 처음 보여 줄 유형을 정합니다.
+     *
+     * 요청이 유형을 지정했으면 그 값이다(서브탭을 누른 상태·북마크). 지정하지 않았으면 접수 건이
+     * 있는 첫 유형(`ORDER_LIST_TYPE_PRIORITY` 순서), 넷 다 비었으면 교환이다 — 종전에는 늘
+     * 교환이어서 취소만 있는 주문에서 빈 안내가 먼저 보였다.
+     *
+     * @param  ClaimTypeEnum|null  $requested  요청이 지정한 유형 (없으면 null)
+     * @param  array<string, int>  $counts  유형별 건수 (`countsForOrder()`)
+     * @return ClaimTypeEnum 목록에 쓸 유형
+     */
+    public function resolveOrderListType(?ClaimTypeEnum $requested, array $counts): ClaimTypeEnum
+    {
+        if ($requested !== null) {
+            return $requested;
+        }
+
+        foreach (self::ORDER_LIST_TYPE_PRIORITY as $type) {
+            if (($counts[$type->value] ?? 0) > 0) {
+                return $type;
+            }
+        }
+
+        return ClaimTypeEnum::EXCHANGE;
+    }
+
+    /**
      * 주문의 클레임 목록을 유형별로 전량 돌려줍니다. (관리자 주문상세 '클레임 내역' 섹션 — D20)
      *
      * 구매자 화면(비회원 주문상세 섹션)은 이 메서드를 쓰지 않는다 — 유형 하나를 페이지 단위로

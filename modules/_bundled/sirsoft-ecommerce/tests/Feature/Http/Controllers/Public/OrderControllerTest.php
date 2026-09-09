@@ -1848,4 +1848,24 @@ class OrderControllerTest extends ModuleTestCase
         $response->assertStatus(500);
         $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
     }
+
+    /**
+     * 비회원 상세에도 회원 상세와 같은 진행단계 배열이 실린다 — 같은 partial 이 그린다.
+     */
+    public function test_비회원_상세에_진행단계가_실린다(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+
+        $response = $this->getJson(
+            "/api/modules/sirsoft-ecommerce/user/orders/{$orderNumber}",
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(200)
+            ->assertJsonCount(7, 'data.progress_steps')
+            ->assertJsonPath('data.progress_steps.0.value', 'pending_payment');
+
+        $this->assertStringStartsWith('status-', $response->json('data.order_status_icon'));
+        $this->assertContains('current', array_column($response->json('data.progress_steps'), 'state'));
+    }
 }

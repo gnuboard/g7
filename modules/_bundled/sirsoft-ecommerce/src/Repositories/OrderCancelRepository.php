@@ -69,6 +69,16 @@ class OrderCancelRepository implements OrderCancelRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findById(int $id, array $relations = []): ?OrderCancel
+    {
+        return $this->model->newQuery()
+            ->with($relations)
+            ->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function listByOrderId(int $orderId, array $relations = []): Collection
     {
         // 건수가 주문의 상품 수에 묶인다는 전제는 성립하지 않는다 — 이 조회에는 상태 필터가 없고

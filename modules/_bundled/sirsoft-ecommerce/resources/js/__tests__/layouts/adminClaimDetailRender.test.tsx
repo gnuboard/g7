@@ -1016,3 +1016,91 @@ describe('결제 정보 · 환불 실행 섹션 — 유형별 렌더 (S9b · D17
     utils.cleanup();
   });
 });
+
+describe('취소 상세 — 조회 전용 (취소 정보 카드 · 메모 안내 · 배송 섹션 없음)', () => {
+  /** 취소 신청서 응답 — 취소 행 + 취소 발 환불 행의 값이 한 신청서에 실린다. */
+  function cancelResponse(overrides: Node = {}) {
+    return claimResponse(
+      {
+        claim_number: 'CN20260902-000009',
+        claim_type: 'cancel',
+        claim_type_label: '취소',
+        status: 'completed',
+        status_label: '취소완료',
+        status_variant: 'success',
+        is_final: true,
+        cancel_type: 'partial',
+        cancel_type_label: '부분취소',
+        refund_status: 'completed',
+        refund_status_label: '환불완료',
+        refund_amount_formatted: '12,000원',
+        cancelled_at_formatted: '2026-09-02 20:34',
+        admin_memo: null,
+        reject_reason: null,
+        items: [{ ...EXCHANGE_ITEMS[1], is_option_change: false }],
+        ...overrides,
+      },
+      {
+        claim_path_segment: null,
+        carriers: [],
+        progress_steps: [
+          { value: 'requested', label: '취소신청', state: 'done', icon: 'status-request', variant: 'secondary' },
+          { value: 'completed', label: '취소완료', state: 'current', icon: 'status-completed', variant: 'success' },
+        ],
+      }
+    );
+  }
+
+  /**
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects claim_detail_cancel_info_card_rendered
+   */
+  it('취소 정보 카드가 서버 값을 그대로 그린다', async () => {
+    const utils = await renderProbe(reasonBlock as Node, cancelResponse());
+
+    expect(document.getElementById('claim_cancel_info_card')).not.toBeNull();
+    expect(document.getElementById('cc_001_cancel_type')?.textContent).toBe('부분취소');
+    expect(document.getElementById('cc_002_refund_status')?.textContent).toBe('환불완료');
+    expect(document.getElementById('cc_003_refund_amount')?.textContent).toBe('12,000원');
+    expect(document.getElementById('cc_004_cancelled_at')?.textContent).toBe('2026-09-02 20:34');
+    utils.cleanup();
+  });
+
+  /**
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects claim_detail_cancel_is_read_only
+   */
+  it('취소에는 메모 입력 대신 취소 전용 안내가 나오고, 교환에는 취소 카드가 없다', async () => {
+    const utils = await renderProbe(reasonBlock as Node, cancelResponse());
+
+    expect(document.getElementById('cm_003_memo_textarea')).toBeNull();
+    expect(document.getElementById('cm_001_memo_unavailable')).toBeNull();
+    expect(document.getElementById('cm_001b_memo_unavailable_cancel')).not.toBeNull();
+    utils.cleanup();
+
+    const exchange = await renderProbe(reasonBlock as Node);
+
+    expect(document.getElementById('claim_cancel_info_card')).toBeNull();
+    expect(document.getElementById('cm_001b_memo_unavailable_cancel')).toBeNull();
+    exchange.cleanup();
+  });
+
+  /**
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects claim_detail_cancel_is_read_only
+   */
+  it('취소에서는 배송 섹션이 사라지고 상품 표는 선택 불가다', async () => {
+    const shipping = await renderProbe(shippingSection as Node, cancelResponse());
+
+    expect(document.querySelector('[data-section-id="shipping_info"]')).toBeNull();
+    shipping.cleanup();
+
+    const items = await renderProbe(itemsSection as Node, cancelResponse());
+
+    expect(screen.getAllByTestId(GRID_ROW_TESTID)).toHaveLength(1);
+    expect(document.querySelector('[data-testid="claim-items-grid"]')?.getAttribute('data-selectable')).toBe('false');
+    // 진행단계는 서버가 준 두 칸 그대로
+    expect(document.querySelectorAll('[id^="claim_progress_step_"]')).toHaveLength(2);
+    items.cleanup();
+  });
+});

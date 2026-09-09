@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 227개 (루트: `resources/layouts`).
+레이아웃 228개 (루트: `resources/layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 227개 |
+| `admin` | 228개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -93,6 +93,7 @@
 | `_partial_activity_log` | `admin` | partial | - |
 | `_partial_claim_history` | `admin` | partial | - |
 | `_partial_order_info` | `admin` | partial | - |
+| `_partial_order_progress` | `admin` | partial | - |
 | `_partial_payment_info` | `admin` | partial | - |
 | `_modal_excel_download` | `admin` | partial | - |
 | `_modal_preset_manage` | `admin` | partial | - |

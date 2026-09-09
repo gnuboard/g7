@@ -17,9 +17,9 @@
 ## 상태 의미 토큰 (`status-*`)
 
 `Icon` 은 Font Awesome 글리프 이름 외에 **아이콘 라이브러리 중립 토큰**을 받는다. 서버(예:
-쇼핑몰 모듈의 클레임 상태 Enum)는 특정 아이콘 글꼴을 알지 않고 `status-request` · `status-pickup`
+쇼핑몰 모듈의 클레임·주문 상태 Enum)는 특정 아이콘 글꼴을 알지 않고 `status-request` · `status-pickup`
 같은 의미 토큰만 내보내며, 그 토큰을 이 템플릿의 글리프로 바꾸는 표는
-`src/components/basic/IconTypes.ts` 의 `iconNameMap` 한 곳이다. 어휘(15종)와 각 토큰의 뜻은
+`src/components/basic/IconTypes.ts` 의 `iconNameMap` 한 곳이다. 어휘(21종 — 클레임 15 + 주문 전용 6)와 각 토큰의 뜻은
 쇼핑몰 모듈 API 문서(`docs/api/admin-claims.md` "아이콘 의미 토큰 어휘")가 소유한다.
 
 표에 없는 토큰은 `fa-status-…` 로 떨어져 오류 없이 빈 네모가 그려진다 — 어휘가 늘면 이 표에

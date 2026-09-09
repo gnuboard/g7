@@ -9,6 +9,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -32,22 +33,35 @@ class ClaimActivityLogRepository implements ClaimActivityLogRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function paginateForClaim(OrderExchange|OrderReturn|OrderRefund $claim, array $filters = []): LengthAwarePaginator
+    public function paginateForClaim(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim, array $filters = []): LengthAwarePaginator
     {
         $perPage = (int) ($filters['per_page'] ?? 10);
         $sortOrder = ($filters['sort_order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
-        $paymentIds = $claim instanceof OrderRefund
+        // 취소는 추가결제·첨부 축이 없다(관계 자체가 없다). 대신 취소 발 환불 행이 환불 실행
+        // 이력을 들고 있으므로 그 행의 로그를 같은 신청서의 것으로 합친다.
+        $paymentIds = $claim instanceof OrderRefund || $claim instanceof OrderCancel
             ? []
             : $claim->claimPayments()->pluck('id')->all();
-        $imageIds = $claim->images()->pluck('id')->all();
+        $imageIds = $claim instanceof OrderCancel
+            ? []
+            : $claim->images()->pluck('id')->all();
+        $linkedRefund = $claim instanceof OrderCancel ? $claim->refund : null;
 
-        $query = ActivityLog::where(function (Builder $q) use ($claim, $paymentIds, $imageIds) {
+        $query = ActivityLog::where(function (Builder $q) use ($claim, $paymentIds, $imageIds, $linkedRefund) {
             // 신청서 자체 로그 (신청·상태 전이·상품 단위 전이·금액 수정·환불 실행)
             $q->where(function (Builder $sub) use ($claim) {
                 $sub->where('loggable_type', $claim->getMorphClass())
                     ->where('loggable_id', $claim->getKey());
             });
+
+            // 취소 발 환불 행의 로그 (환불 실행·완료)
+            if ($linkedRefund !== null) {
+                $q->orWhere(function (Builder $sub) use ($linkedRefund) {
+                    $sub->where('loggable_type', $linkedRefund->getMorphClass())
+                        ->where('loggable_id', $linkedRefund->getKey());
+                });
+            }
 
             // 이 신청서의 추가결제 로그 (결제 완료·환급·취소)
             if (! empty($paymentIds)) {

@@ -160,7 +160,7 @@
 |------|------|--------------|----------------|
 | `gnuboard7-hello_module` | 모듈 | [docs/api/](modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 7 |
 | `sirsoft-board` | 모듈 | [docs/api/](modules/_bundled/sirsoft-board/docs/api/README.md) | 10 / 80 |
-| `sirsoft-ecommerce` | 모듈 | [docs/api/](modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 37 / 285 |
+| `sirsoft-ecommerce` | 모듈 | [docs/api/](modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 37 / 286 |
 | `sirsoft-page` | 모듈 | [docs/api/](modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
 | `sirsoft-ckeditor5` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
@@ -182,7 +182,7 @@
 |------|------|----------------|----------|----------|
 | `gnuboard7-hello_module` | 모듈 | [AGENTS.md](modules/_bundled/gnuboard7-hello_module/AGENTS.md) | [docs/](modules/_bundled/gnuboard7-hello_module/docs/README.md) | 훅 1 · 라우트 7 · 모델 1 · 레이아웃 3 |
 | `sirsoft-board` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](modules/_bundled/sirsoft-board/docs/README.md) | 훅 90 · 라우트 80 · 모델 9 · 레이아웃 46 |
-| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 524 · 라우트 285 · 모델 54 · 레이아웃 227 |
+| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 525 · 라우트 286 · 모델 54 · 레이아웃 228 |
 | `sirsoft-page` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-page/AGENTS.md) | [docs/](modules/_bundled/sirsoft-page/docs/README.md) | 훅 21 · 라우트 17 · 모델 3 · 레이아웃 3 |
 | `gnuboard7-hello_plugin` | 플러그인 | [AGENTS.md](plugins/_bundled/gnuboard7-hello_plugin/AGENTS.md) | [docs/](plugins/_bundled/gnuboard7-hello_plugin/docs/README.md) | 훅 1 · 라우트 0 · 모델 0 · 레이아웃 1 |
 | `sirsoft-ckeditor5` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-ckeditor5/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-ckeditor5/docs/README.md) | 훅 4 · 라우트 5 · 모델 1 · 레이아웃 2 |
@@ -199,7 +199,7 @@
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 146 |
-| `sirsoft-basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 47 · 모델 0 · 레이아웃 184 |
+| `sirsoft-basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 47 · 모델 0 · 레이아웃 185 |
 
 
 <!-- AUTO-GENERATED-END: docs-quick-reference -->

@@ -9,11 +9,12 @@
     },
     "_comment": "비회원 주문 상세 — 회원 mypage/orders/show.json 과 동일한 partial 5개를 재사용하되, 회원 전용 데이터/CTA 는 비노출. data_source endpoint 는 user/orders/{N} 통합 라우트 사용 (optional.sanctum) — 백엔드가 X-Guest-Order-Token 으로 비회원 분기, 토큰 매칭되면 GuestOrderResource 반환. 401/404 시 토큰 삭제 + 로그인 페이지로 안내.",
     "_comment_claim_actions": "클레임(교환/반품/취소·환불) 신청 진입과 '이 주문의 클레임' 섹션을 이 화면이 소유한다 (S14). useClaimActions 는 공유 partial(_items.json)에 '이 셸은 클레임 신청 버튼을 쓴다' 를 알리는 표식이며, 그것이 서면 종전 [주문 취소] 버튼이 감춰진다 — 취소는 [취소·환불 신청] 이 통합 입구로 받고 서버가 상품 상태로 즉시취소/환불신청을 분기한다(D2).",
-    "_comment_claim_list": "비회원에게는 주문을 가로지르는 신청내역 화면이 없다(조회 토큰이 주문 하나에 묶인다, §5-1-3). 그래서 이 화면의 '이 주문의 클레임' 섹션이 곧 비회원의 목록이며, 회원 신청내역과 **같은 partial**(_list.json)을 무수정으로 쓴다. 서브탭·페이지는 이 화면의 주소에 ?type=·?page= 로 실린다.",
+    "_comment_claim_list": "비회원에게는 주문을 가로지르는 신청내역 화면이 없다(조회 토큰이 주문 하나에 묶인다, §5-1-3). 그래서 이 화면의 '이 주문의 클레임' 섹션이 곧 비회원의 목록이며, 회원 신청내역과 **같은 partial**(_list.json)을 무수정으로 쓴다. 서브탭·페이지는 이 화면의 주소에 ?type=·?page= 로 실린다. claimDetailLinkMode: same_window 로 신청번호가 같은 창에서 상세로 이어진다 — 비회원 조회 토큰은 탭에 묶여(sessionStorage) 새 창에 실리지 않으므로 새 창으로 열면 조회 폼으로 되돌아간다(회원 주문상세는 new_window).",
     "initLocal": {
         "useClaimActions": true,
         "isGuest": true,
         "withdrawRefreshDataSourceId": "claims",
+        "claimDetailLinkMode": "same_window",
         "selectedItemIds": [],
         "selectAllItems": false,
         "showCancelModal": false,
@@ -115,7 +116,7 @@
             }
         },
         {
-            "_comment": "이 주문의 신청 내역 — 회원 신청내역과 같은 계약이다(유형 서브탭 하나 · 최신순 · 페이지). 유형 기본값은 교환이며 서버 게이트가 어휘 밖 값을 422 로 거절한다. 철회한 신청서도 목록에 남으므로(행이 사라지지 않는다) 페이지네이션은 필수다. 주석은 params 밖에 둔다 — params 의 키는 전부 쿼리스트링으로 전송된다.",
+            "_comment": "이 주문의 신청 내역 — 회원 신청내역과 같은 계약이다(유형 서브탭 하나 · 최신순 · 페이지). 주소에 유형이 없으면 type 을 비워 보낸다 — 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 골라 응답 claim_type 으로 알려 주고 공유 partial 이 그 값으로 활성 서브탭을 세운다(회원 주문상세와 같은 규칙, 여기서 'exchange' 를 박으면 그 판정이 영영 돌지 않는다). 서버 게이트가 어휘 밖 값을 422 로 거절한다. 철회한 신청서도 목록에 남으므로(행이 사라지지 않는다) 페이지네이션은 필수다. 주석은 params 밖에 둔다 — params 의 키는 전부 쿼리스트링으로 전송된다.",
             "id": "claims",
             "label_key": "$t:editor.data_source.claims",
             "type": "api",
@@ -130,7 +131,7 @@
             "cache": false,
             "refetchOnMount": true,
             "params": {
-                "type": "{{query.type ?? 'exchange'}}",
+                "type": "{{query.type ?? ''}}",
                 "page": "{{query.page ?? 1}}"
             }
         }

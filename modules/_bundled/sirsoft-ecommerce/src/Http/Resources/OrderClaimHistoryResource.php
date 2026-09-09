@@ -13,8 +13,9 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
  * `ClaimResource` 의 상세 표현(신청서 + 상품 행 그룹)을 그대로 상속하고, 이 화면이
  * 추가로 요구하는 축 두 가지만 얹는다:
  *
- * - `detail_url` — [클레임 신청서 조회하기] 새 창 진입 경로. 취소는 상세 라우트가 없어
- *   (S6a 판정 ⑤ — 취소 이력은 이 섹션이 종착) `null` 이다.
+ * - `detail_url` — 신청번호가 새 창으로 여는 관리자 상세 경로. 네 유형 모두 같은 화면
+ *   (`/admin/ecommerce/claims/{번호}`)으로 이어지며 서버가 번호에서 유형을 해석한다. 취소도
+ *   열린다 — 취소는 조회 전용 상세라 전이·송장 축 없이 취소 구분·환불 상태·활동 로그를 보인다.
  * - 상품 행의 `amount`/`amount_formatted`/`amount_type` — 네 유형의 금액 축(교환 차액 /
  *   반품·취소 대상 금액 / 환불액)을 한 컬럼으로 그리기 위한 정규화 값. `amount` 는 언제나
  *   **크기(0 이상)** 이고 방향은 `amount_type` 이 단독으로 나른다. 원본 필드
@@ -37,7 +38,7 @@ class OrderClaimHistoryResource extends ClaimResource
         $data = parent::toArray($request);
         $type = $this->resource->claimType();
 
-        $data['detail_url'] = $this->resolveDetailUrl($type, $data['claim_number'] ?? null);
+        $data['detail_url'] = $this->resolveDetailUrl($data['claim_number'] ?? null);
 
         // 부모의 items 는 ClaimItemResource 컬렉션(통화 주입 완료)이다 — 배열로 풀어
         // 정규화 금액 축을 행마다 덧붙인다. (each() 체인의 반환형은 Support\Collection 이다)
@@ -57,15 +58,14 @@ class OrderClaimHistoryResource extends ClaimResource
      * 클레임 상세 화면 진입 경로를 반환합니다.
      *
      * 프론트 라우트(admin/ecommerce/claims/:claimNumber)의 앱 내 경로만 싣는다 —
-     * origin 은 화면이 정한다. 취소는 상세 라우트가 없으므로 null.
+     * origin 은 화면이 정한다. 번호가 없는 행(비정상 데이터)만 null 이다.
      *
-     * @param  ClaimTypeEnum  $type  클레임 유형
      * @param  string|null  $claimNumber  클레임 번호
-     * @return string|null 상세 경로 (취소는 null)
+     * @return string|null 상세 경로 (번호가 없으면 null)
      */
-    protected function resolveDetailUrl(ClaimTypeEnum $type, ?string $claimNumber): ?string
+    protected function resolveDetailUrl(?string $claimNumber): ?string
     {
-        if ($type === ClaimTypeEnum::CANCEL || $claimNumber === null) {
+        if ($claimNumber === null || $claimNumber === '') {
             return null;
         }
 

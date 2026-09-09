@@ -48,6 +48,8 @@ class UserOrderListResource extends BaseApiResource
             'status' => $this->order_status?->value,
             'status_label' => $this->order_status?->label(),
             'status_variant' => $this->order_status?->variant(),
+            // 아이콘 의미 토큰(status-*) — 목록 행 상태 뱃지가 아이콘을 함께 그린다.
+            'status_icon' => $this->order_status?->icon(),
             // 부분취소 파생 플래그 — 일부 옵션만 취소된 주문(별도 order_status 아님). 보조 뱃지 표시용.
             'is_partially_cancelled' => $this->resolveIsPartiallyCancelled(),
 

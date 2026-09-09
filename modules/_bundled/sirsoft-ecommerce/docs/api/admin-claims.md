@@ -9,7 +9,7 @@
 
 ```text
 1. 목록은 유형 서브탭 단위 — type 파라미터(기본 exchange)로 한 유형만 받고, counts 로 4유형 건수 뱃지를 함께 준다
-2. 유형 스코프 경로는 /admin/{exchanges|returns|refunds}/{id} — 취소(cancel)는 목록에만 있고 상세·전이 대상이 아니다. 관리자 상세 화면은 번호로 들어온다: /admin/claims/{claimNumber}(+/logs) 가 유형을 해석하고 화면이 쓰는 봉투(세그먼트·능력·완료 기본값·진행단계·택배사)를 함께 준다
+2. 유형 스코프 경로는 /admin/{exchanges|returns|refunds}/{id} — 취소(cancel)는 전이 대상이 아니다. 관리자 상세 화면은 번호로 들어온다: /admin/claims/{claimNumber}(+/logs) 가 유형을 해석하고 화면이 쓰는 봉투(세그먼트·능력·완료 기본값·진행단계·택배사)를 함께 준다. 취소 번호(CN…)도 같은 경로로 열리며 조회 전용 봉투(세그먼트 null · 택배사/청구 방식/환불 수단 빈 배열 · 정산/취소 가능 금액 null)를 받는다
 3. 상태 쓰기 어휘는 유형별 adminAssignableValues() — requested/paid/withdrawn 직접 지정 불가 (환불은 approved/on_hold/rejected 만). 미수납 승인은 pay_on_approval 결제 요청 우회 / pay_on_request 422
 4. 완료 전이(status=completed)는 completion 객체 필수 — 모달이 실행 전에 보여줄 값은 claims/completion-preview 가 SSoT (D26)
 5. 금액 수정({claimType}/{id}/amounts)·환불 실행(refunds/{id}/execute)의 상한은 취소 가능 금액(D19) — 초과는 저장·실행 모두 422, 재실행은 409, 근거는 orders/{order}/cancellable-amount 가 같은 식으로 답한다
@@ -194,7 +194,13 @@
 클레임 번호로 신청서 상세를 조회합니다. 관리자 상세 화면
 (`/admin/ecommerce/claims/{claimNumber}`)의 진입 경로이며, 번호에서 유형을 읽어내는 해석은
 서버가 합니다 — 채번 접두는 운영자가 바꿀 수 있어 화면이 추측하면 규칙의 두 번째 출처가
-됩니다. 취소(`CN…`)는 관리자 상세 화면이 없어 `404` 입니다(취소 이력은 주문 상세가 담당).
+됩니다. 취소(`CN…`)도 같은 경로로 열립니다 — 주문 상세 클레임 내역과 클레임 목록 취소 탭의
+신청번호가 이 화면으로 이어집니다. 취소에는 전이·송장·청구·환불 실행 축이 없어 봉투의 그 자리가
+빕니다(`claim_path_segment: null` · `carriers`/`charge_methods`/`refund_methods` 빈 배열 ·
+`settlement`/`cancellable`/`redelivery_address_differs` null). `data.claim` 은 취소 표현
+(`cancel_type`·`refund_status`·`refund_amount`·`cancelled_at_formatted` — 환불 축은 취소 발 환불
+행에서 읽는다)이고 `progress_steps` 는 취소 상태 Enum 의 두 칸(신청 → 완료)입니다. 활동 로그
+(`/logs`)는 취소 행 자신의 이력에 취소 발 환불 행의 이력을 합쳐 돌려줍니다(추가결제·첨부 축은 없다).
 
 `data.claim` 은 유형 스코프 상세(`GET {claimType}/{id}`)와 같은 표현이고, 그 위에 상세 화면이
 쓰는 봉투 축이 더해집니다. 이 봉투가 그 값들의 전달 통로인 이유는 게이트 폭입니다 — 설정
@@ -256,7 +262,7 @@
 | value | string | `collecting` | 상태 값 (유형별 상태 Enum) |
 | label | string | `교환회수중` | 상태 라벨 (표시 시점 로케일) |
 | state | string | `current` | `done` 지나감 / `current` 현재 / `upcoming` 남음 / `off_path` 이탈(보류·반려·철회) |
-| icon | string | `status-pickup` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립). 상태 Enum 의 `icon()` — 상태 뱃지(`status_icon`)와 같은 값. 어휘(15종)는 아래 표 |
+| icon | string | `status-pickup` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립). 상태 Enum 의 `icon()` — 상태 뱃지(`status_icon`)와 같은 값. 어휘(21종 — 클레임 15 + 주문 전용 6)는 아래 표 |
 | variant | string | `primary` | 상태 색 (상태 뱃지와 같은 `variant()` 팔레트 — `success`/`warning`/`info`/`primary`/`secondary`/`danger`/`dark`). 화면은 칸 색을 이 값으로만 고른다 |
 
 순서는 유형별 상태 Enum 이 소유합니다(교환 11칸 · 반품 8칸 · 환불 4칸이 최대). 두 가지가
@@ -274,7 +280,7 @@
 이 배열은 회원·비회원 상세(`user/claims/{claimNumber}` · `guest/orders/{orderNumber}/claims/{claimNumber}`)도
 **같은 자리(`data.progress_steps`)에 같은 규칙으로** 받습니다 — 한 곳(`ClaimProgressSteps`)이 만듭니다.
 
-**아이콘 의미 토큰 어휘** — 백엔드는 아이콘 라이브러리를 알지 않습니다. 토큰을 실제 글리프로 바꾸는 표는
+**아이콘 의미 토큰 어휘** — 클레임 상태 Enum 4종과 주문 상태 Enum(`OrderStatusEnum::icon()`, [orders.md](orders.md) 의 `order_status_icon`·`progress_steps`·`option_status_icon`·`status_summary`)이 함께 쓰는 어휘입니다. 백엔드는 아이콘 라이브러리를 알지 않습니다. 토큰을 실제 글리프로 바꾸는 표는
 아이콘 세트를 소유한 템플릿의 Icon 컴포넌트가 가지며(번들 템플릿은 Font Awesome 6 Free 로 해석), 어휘 밖
 토큰이나 표가 없는 템플릿에서는 그 자리가 빈 네모로 그려집니다.
 
@@ -295,6 +301,12 @@
 | `status-completed` | 완료 | `circle-check` |
 | `status-withdrawn` | 철회 | `rotate-left` |
 | `status-processing` | 처리 중(환불 PG 요청) | `hourglass-half` |
+| `status-preparing` | 상품준비중 (주문) | `boxes-packing` |
+| `status-cancelled` | 주문취소 (주문) | `circle-xmark` |
+| `status-exchange` | 교환진행중 (주문) | `right-left` |
+| `status-return` | 반품진행중 (주문) | `reply` |
+| `status-exchanged` | 교환완료 (주문) | `arrows-rotate` |
+| `status-returned` | 반품완료 (주문) | `box-archive` |
 
 **응답**: `200` `data` — 위 구조 / `404` 부재·취소 유형.
 

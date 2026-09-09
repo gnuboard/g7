@@ -124,6 +124,22 @@ class ClaimListRequest extends FormRequest
     }
 
     /**
+     * 요청이 지정한 조회 유형을 반환합니다. (지정하지 않았으면 null)
+     *
+     * `claimType()` 은 부재를 교환으로 메운다 — 주문 스코프 목록은 부재를 "접수 건이 있는 첫
+     * 유형" 으로 서버가 고르므로(`UserClaimService::resolveOrderListType()`) 지정 여부 자체가
+     * 필요하다. 빈 문자열(`?type=`)은 미들웨어가 null 로 바꾸므로 부재와 같다.
+     *
+     * @return ClaimTypeEnum|null 유형 (미지정이면 null)
+     */
+    public function requestedClaimType(): ?ClaimTypeEnum
+    {
+        $type = $this->validated('type');
+
+        return $type ? ClaimTypeEnum::from((string) $type) : null;
+    }
+
+    /**
      * 저장소 필터를 반환합니다.
      *
      * @return array{status: ?string, from: ?string, to: ?string} 필터

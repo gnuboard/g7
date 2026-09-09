@@ -174,6 +174,130 @@
       ]
     },
     {
+      "id": "claim_cancel_info_card",
+      "type": "basic",
+      "name": "Div",
+      "comment": "취소 신청서 전용 카드. 취소는 전이·송장·청구·환불 실행 축이 없어 조회 전용이다 — 취소 구분·환불 상태·환불 금액·취소 일시를 여기서 보이고, 값은 서버가 취소 행과 취소 발 환불 행에서 만든다(화면이 금액을 조립하지 않는다).",
+      "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'cancel'}}",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": {
+            "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-between text-sm py-1.5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.cancel_type"
+            },
+            {
+              "id": "cc_001_cancel_type",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-900 dark:text-gray-100"
+              },
+              "text": "{{claim?.data?.claim?.cancel_type_label ?? '-'}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-between text-sm py-1.5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.refund_status"
+            },
+            {
+              "id": "cc_002_refund_status",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-900 dark:text-gray-100"
+              },
+              "text": "{{claim?.data?.claim?.refund_status_label ?? '-'}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-between text-sm py-1.5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.refund_amount"
+            },
+            {
+              "id": "cc_003_refund_amount",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-900 dark:text-gray-100"
+              },
+              "text": "{{claim?.data?.claim?.refund_amount_formatted ?? '-'}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-between text-sm py-1.5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.cancelled_at"
+            },
+            {
+              "id": "cc_004_cancelled_at",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-900 dark:text-gray-100"
+              },
+              "text": "{{claim?.data?.claim?.cancelled_at_formatted ?? '-'}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "claim_memo_card",
       "type": "basic",
       "name": "Div",
@@ -199,6 +323,17 @@
             "className": "text-sm text-secondary"
           },
           "text": "$t:sirsoft-ecommerce.admin.claim.detail.memo.not_supported"
+        },
+        {
+          "id": "cm_001b_memo_unavailable_cancel",
+          "type": "basic",
+          "name": "P",
+          "comment": "취소 신청서도 관리자 메모 컬럼이 없다 — 환불신청서와 같은 이유로 입력을 그리지 않는다.",
+          "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'cancel'}}",
+          "props": {
+            "className": "text-sm text-secondary"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.claim.detail.memo.not_supported_cancel"
         },
         {
           "id": "cm_002_memo_editor",

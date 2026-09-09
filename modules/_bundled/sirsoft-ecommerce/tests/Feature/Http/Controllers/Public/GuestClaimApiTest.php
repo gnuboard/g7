@@ -534,6 +534,47 @@ class GuestClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 유형을 지정하지 않으면 접수 건이 있는 첫 유형이 열린다 — 회원 주문상세 섹션과 같은 규칙.
+     * 결제완료 주문의 취소·환불 신청은 즉시취소로 분기하므로 취소만 있는 주문이 된다 — PO 가
+     * 스크린샷으로 지적한 바로 그 형태(취소 1건인데 교환 탭의 빈 안내가 먼저 보이던 것)다.
+     *
+     * @scenario claim_type=cancel, entry=with_token, screen=order_section
+     *
+     * @effects guest_order_claim_list_default_type_is_first_with_requests
+     */
+    public function test_the_order_claim_list_picks_the_first_type_with_requests_when_type_is_absent(): void
+    {
+        [$order, $token] = $this->guestOrderWithToken(OrderStatusEnum::PAYMENT_COMPLETE);
+
+        $this->postJson($this->base($order).'/refund-requests', [
+            'items' => $this->items($order), 'reason_code' => 'changed_mind',
+        ], ['X-Guest-Order-Token' => $token])
+            ->assertCreated()
+            ->assertJsonPath('data.branch', 'cancel');
+
+        // 미지정 → 취소. 취소 발 환불 행은 환불 탭에 세지 않는다(뱃지와 목록이 같은 근거).
+        $this->getJson($this->base($order).'/claims', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'cancel')
+            ->assertJsonPath('data.counts.cancel', 1)
+            ->assertJsonPath('data.counts.refund', 0)
+            ->assertJsonPath('data.counts.exchange', 0)
+            ->assertJsonPath('data.data.0.claim_type', 'cancel');
+
+        // 빈 문자열은 미지정과 같다 — 주소에 유형이 없을 때 화면이 이렇게 보낸다
+        $this->getJson($this->base($order).'/claims?type=&page=1', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'cancel');
+
+        // 지정하면 그 유형이다 — 비어 있어도 바꾸지 않고, 건수는 그대로 실린다
+        $this->getJson($this->base($order).'/claims?type=refund', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'refund')
+            ->assertJsonPath('data.pagination.total', 0)
+            ->assertJsonPath('data.counts.cancel', 1);
+    }
+
+    /**
      * @scenario claim_type=cancel, entry=with_token, screen=order_section
      *
      * @effects guest_order_claim_list_rejects_a_type_outside_the_vocabulary

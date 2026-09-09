@@ -37,17 +37,20 @@ description: |
 
 # axis 의미:
 #   claim_type — 탭 배열·섹션 존재·상품 단위 전이 가능 여부·메모 저장 가능 여부·진행단계
-#                순서가 전부 여기서 갈린다. 취소(cancel)는 관리자 상세 화면이 없다 —
-#                취소 이력은 주문 상세(D20, S9c)가 담당한다.
+#                순서가 전부 여기서 갈린다. 취소(cancel)는 조회 전용 상세다 — 전이·송장·청구·
+#                환불 실행 축이 없고 취소 정보 카드(구분·환불 상태·환불 금액·취소 일시)가 선다.
+#                주문상세 클레임 내역과 클레임 목록 취소 탭의 번호가 이 화면으로 이어진다.
 #   claim_stage — 진행단계가 그리는 모양이 갈리는 축. `in_progress` 는 순서 안의 한 칸이
 #                 현재이고, `off_path` 는 순서 밖(보류·반려·철회)이라 현재 칸이 없다,
 #                 `final` 은 완료 처리 카드가 사라지는 지점이다.
 axes:
-  claim_type: [exchange, return, refund]
+  claim_type: [exchange, return, refund, cancel]
   claim_stage: [in_progress, off_path, final]
 
 exclusions:
   - { claim_type: refund, claim_stage: final, reason: "환불의 완료는 환불 실행(S9b)이 옮기는 상태라 이 세션의 화면에 그 전이 지점이 없다" }
+  - { claim_type: cancel, claim_stage: in_progress, reason: "취소는 접수 즉시 완료로 기록된다(CancelStatusEnum requested→completed 가 한 트랜잭션) — 진행 중 상태로 열리는 화면이 없다" }
+  - { claim_type: cancel, claim_stage: off_path, reason: "취소 상태 Enum 에는 보류·반려·철회 같은 이탈 상태가 없다" }
 
 effects:
   # 라우트·셸 배선
@@ -113,6 +116,11 @@ effects:
   - claim_item_completion_opens_shared_modal
   - claim_item_completion_scopes_to_checked_items
   - claim_completion_refetches_opener_datasource
+  # 취소 상세 (조회 전용)
+  - claim_detail_cancel_resolves_by_number
+  - claim_detail_cancel_is_read_only
+  - claim_detail_cancel_info_card_rendered
+  - claim_logs_include_cancel_linked_refund
   # 사유·관리자 메모
   - claim_reject_reason_row_conditional
   - claim_admin_memo_input_absent_for_refund

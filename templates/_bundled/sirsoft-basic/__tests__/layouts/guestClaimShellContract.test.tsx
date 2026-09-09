@@ -242,6 +242,8 @@ describe('셸 계약값 — 비회원은 주문 스코프가 붙는다', () => {
     expect(guestOrder.initLocal.withdrawRefreshDataSourceId).toBe('claims');
     // 클레임 신청 진입을 쓰는 셸이라는 표식 — 없으면 종전 [주문 취소] 버튼이 그대로 남는다.
     expect(guestOrder.initLocal.useClaimActions).toBe(true);
+    // 번호가 곧 상세 링크인 셸 표식. 비회원은 같은 창이다 — 조회 토큰이 탭(sessionStorage)에 묶여 새 창에 실리지 않는다.
+    expect(guestOrder.initLocal.claimDetailLinkMode).toBe('same_window');
   });
 
   // @scenario claim_type=exchange, entry=with_token, screen=edit
@@ -386,12 +388,13 @@ describe('비회원 데이터소스 — 조회 토큰이 유일한 자격이다'
 
   // @scenario claim_type=exchange, entry=with_token, screen=order_section
   // @effects guest_order_claim_list_is_paginated_by_type
-  it('이 주문의 클레임 목록은 유형·페이지를 주소에서 읽는다', () => {
+  it('이 주문의 클레임 목록은 유형·페이지를 주소에서 읽는다 (유형이 없으면 비워 보내 서버가 고른다)', () => {
     const claims = sources(guestOrder).find((s: any) => s.id === 'claims');
 
     expect(claims.endpoint).toContain('/guest/orders/');
     expect(claims.endpoint).toContain('/claims');
-    expect(claims.params.type).toBe("{{query.type ?? 'exchange'}}");
+    // 주소에 유형이 없으면 type 을 비워 보낸다 — 서버가 접수 건이 있는 첫 유형을 골라 claim_type 으로 알려 준다.
+    expect(claims.params.type).toBe("{{query.type ?? ''}}");
     expect(claims.params.page).toBe('{{query.page ?? 1}}');
     // 철회한 신청서도 목록에 남으므로(행이 사라지지 않는다) 매번 다시 읽는다.
     expect(claims.cache).toBe(false);

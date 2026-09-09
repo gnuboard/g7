@@ -9,10 +9,10 @@
  *     따라오지 않는다. 오류는 나지 않는다 — 두 화면의 결과만 갈린다.
  *  2. **1열 병합이 상품 수와 맞는가**. `rowSpan` 이 그 신청서의 상품 수가 아니거나 첫 행
  *     분기가 없으면 표가 오류 없이 어긋난 채 그려진다.
- *  3. **[클레임 신청서 조회하기]가 서버 경로를 그대로 쓰는가**. 화면이 `/admin/ecommerce/
+ *  3. **신청번호 링크가 서버 경로를 그대로 쓰는가**. 화면이 `/admin/ecommerce/
  *     claims/` + 번호로 조립하면 경로 규칙의 두 번째 출처가 되고, 규칙이 바뀌어도 오류 없이
- *     404 만 나는 URL 이 만들어진다. 취소는 서버가 `detail_url: null` 을 주므로(S6a 판정 ⑤)
- *     그때는 버튼 자체가 없어야 한다.
+ *     404 만 나는 URL 이 만들어진다. 번호 자체가 새 창 링크이고 네 유형 모두 상세가 있다
+ *     (취소도 조회 전용 상세) — 서버가 경로를 못 만든 행만 글자로 남는다.
  *  4. **서브탭이 재조회하지 않는가** (D20 — "별도 데이터소스를 만들지 않는다"). 서버가 전
  *     유형을 한 응답에 싣는 것이 전제다.
  *  5. **뱃지 숫자가 서버 `counts` 인가**. 화면이 `claims` 배열을 다시 세면 상한이 걸린
@@ -52,6 +52,9 @@ const ORPHAN_MOCK_TABS = ['_tab_claim_refund.json', '_tab_claim_return.json', '_
 
 /** 유형 서브탭 어휘 (ClaimTypeEnum 값) */
 const CLAIM_TYPES = ['exchange', 'return', 'cancel', 'refund'];
+
+/** 기본 서브탭 판정식 — 접수 건이 있는 첫 유형, 없으면 교환 */
+const DEFAULT_TYPE = "(['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')";
 
 /**
  * 서브트리의 모든 노드를 훑는다. (children 뿐 아니라 props/responsive 안쪽까지)
@@ -141,6 +144,7 @@ describe('S9c — 주문상세 클레임 내역 섹션 구조 계약 (D20)', () 
       const order = partials.filter((p) => p.includes('admin_ecommerce_order_detail/_partial_'));
 
       expect(order).toEqual([
+        'partials/admin_ecommerce_order_detail/_partial_order_progress.json',
         'partials/admin_ecommerce_order_detail/_partial_order_info.json',
         'partials/admin_ecommerce_order_detail/_partial_payment_info.json',
         'partials/admin_ecommerce_order_detail/_partial_claim_history.json',
@@ -268,14 +272,14 @@ describe('S9c — 주문상세 클레임 내역 섹션 구조 계약 (D20)', () 
     });
   });
 
-  describe('[클레임 신청서 조회하기]', () => {
+  describe('신청번호 링크', () => {
     /**
-     * @effects order_claim_history_detail_link_opens_new_window, order_claim_history_detail_link_uses_server_url
+     * @effects order_claim_history_number_is_the_link, order_claim_history_detail_link_opens_new_window, order_claim_history_detail_link_uses_server_url
      */
-    it('새 창으로 열고 경로는 서버가 준 detail_url 을 그대로 쓴다', () => {
+    it('번호 자체가 새 창 링크이고 경로는 서버가 준 detail_url 을 그대로 쓴다 (PC 병합셀 · 모바일 카드)', () => {
       for (const id of [
-        'claim_history_detail_link_{{claim.claim_number}}',
-        'claim_history_card_detail_link_{{claim.claim_number}}',
+        'claim_history_number_link_{{claim.claim_number}}',
+        'claim_history_card_number_link_{{claim.claim_number}}',
       ]) {
         const link = byId(claimHistory, id);
 
@@ -283,6 +287,42 @@ describe('S9c — 주문상세 클레임 내역 섹션 구조 계약 (D20)', () 
         expect(link?.props?.target).toBe('_blank');
         expect(link?.props?.href).toBe('{{claim.detail_url}}');
         expect(link?.if).toBe('{{!!claim.detail_url}}');
+        expect(JSON.stringify(link)).toContain("{{claim.claim_number ?? ''}}");
+      }
+    });
+
+    /**
+     * @effects order_claim_history_number_links_for_every_type
+     */
+    it('별도의 [조회하기] 버튼이 없고, 서버가 경로를 못 만든 행만 글자로 남는다 (취소만 빼던 분기가 없다)', () => {
+      expect(byId(claimHistory, 'claim_history_detail_link_{{claim.claim_number}}')).toBeUndefined();
+      expect(byId(claimHistory, 'claim_history_card_detail_link_{{claim.claim_number}}')).toBeUndefined();
+
+      for (const id of [
+        'claim_history_number_text_{{claim.claim_number}}',
+        'claim_history_card_number_text_{{claim.claim_number}}',
+      ]) {
+        expect(byId(claimHistory, id)?.if).toBe('{{!claim.detail_url}}');
+      }
+
+      expect(JSON.stringify(claimHistory)).not.toContain("claim_type === 'cancel'");
+    });
+
+    /**
+     * @effects order_claim_history_thumbnail_placeholder_when_missing
+     */
+    it('상품 썸네일 자리는 이미지가 없어도 남는다 — Img 와 자리표시 아이콘이 반대 조건으로 선다', () => {
+      for (const id of [
+        'claim_history_item_thumb_{{claim.claim_number}}_{{itemIndex}}',
+        'claim_history_card_item_thumb_{{claim.claim_number}}_{{cardItemIndex}}',
+      ]) {
+        const box = byId(claimHistory, id);
+        const img = (box?.children ?? []).find((c: Node) => c.name === 'Img');
+        const icon = (box?.children ?? []).find((c: Node) => c.name === 'Icon');
+
+        expect(img?.if).toBe('{{!!item.thumbnail_url}}');
+        expect(icon?.if).toBe('{{!item.thumbnail_url}}');
+        expect(icon?.props?.name).toBe('image');
       }
     });
 
@@ -351,9 +391,32 @@ describe('S9c — 주문상세 클레임 내역 섹션 구조 계약 (D20)', () 
      */
     it('서브탭 필터는 claim_type 으로 거른다 (S6c 판정 ⑤ — 서버는 전 유형 평면 배열)', () => {
       expect(String((shell as Node).computed?.claimHistoryRows)).toBe(
-        "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType ?? 'exchange'))}}"
+        '{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || ' + DEFAULT_TYPE + '))}}'
       );
-      expect((shell as Node).state?.claimHistoryType).toBe('exchange');
+    });
+
+    /**
+     * 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 '접수된 건이 없습니다' 가 먼저 보였다.
+     * 기본 유형은 접수 건이 있는 첫 유형이고 순서는 교환 → 반품 → 취소 → 환불, 넷 다 비었으면
+     * 교환이다. 판정은 뱃지와 같은 counts 를 읽는다.
+     *
+     * @effects order_claim_history_default_subtab_is_first_type_with_claims
+     */
+    it('기본 서브탭은 접수 건이 있는 첫 유형이다 (교환 → 반품 → 취소 → 환불, 없으면 교환)', () => {
+      expect(String((shell as Node).computed?.claimHistoryActiveType)).toBe(
+        '{{_local.claimHistoryType || ' + DEFAULT_TYPE + '}}'
+      );
+      // 누른 값이 비어 있어야 판정이 돈다 — 초기 상태와 진입 초기화 둘 다
+      expect((shell as Node).state?.claimHistoryType).toBe('');
+      const initActions = ((shell as Node).init_actions ?? []) as Array<{ params?: Record<string, unknown> }>;
+      const entry = initActions.find((a) => a.params && 'claimHistoryType' in a.params);
+      expect(entry?.params?.claimHistoryType).toBe('');
+      // 행 필터도 같은 기준을 쓴다 (computed 간 참조가 불가해 식이 되풀이된다)
+      expect(String((shell as Node).computed?.claimHistoryRows)).toContain('_local.claimHistoryType || ' + DEFAULT_TYPE);
+      // partial 의 활성 판정은 그 computed 를 읽는다 — _local 에 직접 폴백하면 판정을 건너뛴다
+      const partialText = JSON.stringify(claimHistory);
+      expect(partialText).toContain('_computed.claimHistoryActiveType');
+      expect(partialText).not.toContain("_local.claimHistoryType ?? 'exchange'");
     });
   });
 

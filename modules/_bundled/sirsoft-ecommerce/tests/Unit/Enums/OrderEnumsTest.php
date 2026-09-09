@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Enums;
 
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderDateTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -621,5 +622,81 @@ class OrderEnumsTest extends ModuleTestCase
             [OrderStatusEnum::SHIPPING->value],
             OrderStatusEnum::expandStatisticsFilter(OrderStatusEnum::SHIPPING->value)
         );
+    }
+
+    // ========================================
+    // 상태 아이콘 · 진행단계 순서 (스텝퍼 · 상태 뱃지 공용)
+    // ========================================
+
+    /**
+     * 모든 주문 상태가 라이브러리 중립 의미 토큰(`status-*`)을 가진다. 백엔드가 특정 아이콘
+     * 라이브러리의 글리프 이름을 박으면 그 라이브러리에 묶인다 — 토큰을 글리프로 바꾸는 표는
+     * 템플릿의 Icon 컴포넌트가 가진다. 어휘 밖 토큰은 화면에서 빈 네모로 그려진다.
+     *
+     * @scenario surface=admin_detail, order_stage=in_progress, viewport=desktop
+     *
+     * @effects order_progress_steps_carry_icon_and_variant
+     */
+    public function test_every_order_status_has_a_library_neutral_icon_token(): void
+    {
+        $allowed = [
+            'status-request', 'status-payment-pending', 'status-paid', 'status-approved', 'status-on-hold',
+            'status-rejected', 'status-pickup-ready', 'status-pickup', 'status-received', 'status-dispatch-ready',
+            'status-dispatch', 'status-delivered', 'status-completed', 'status-withdrawn', 'status-processing',
+            'status-preparing', 'status-cancelled', 'status-exchange', 'status-return', 'status-exchanged', 'status-returned',
+        ];
+
+        foreach (OrderStatusEnum::cases() as $case) {
+            $this->assertContains($case->icon(), $allowed, "OrderStatusEnum::{$case->name} 의 아이콘 토큰이 어휘 밖입니다.");
+            $this->assertStringStartsWith('status-', $case->icon());
+            $this->assertStringStartsNotWith('fa-', $case->icon(), '백엔드는 아이콘 라이브러리 글리프 이름을 알지 않습니다.');
+        }
+    }
+
+    /**
+     * 클레임과 같은 단계는 같은 그림이어야 구매자가 화면마다 단계를 다시 익히지 않는다.
+     *
+     * @scenario surface=mypage_detail, order_stage=in_progress, viewport=desktop
+     *
+     * @effects order_status_badge_carries_icon
+     */
+    public function test_shared_stages_use_the_same_icon_as_claims(): void
+    {
+        $this->assertSame(ExchangeStatusEnum::PAYMENT_PENDING->icon(), OrderStatusEnum::PENDING_PAYMENT->icon());
+        $this->assertSame(ExchangeStatusEnum::PAID->icon(), OrderStatusEnum::PAYMENT_COMPLETE->icon());
+        $this->assertSame(ExchangeStatusEnum::ON_HOLD->icon(), OrderStatusEnum::SHIPPING_HOLD->icon());
+        $this->assertSame(ExchangeStatusEnum::REDELIVERY_READY->icon(), OrderStatusEnum::SHIPPING_READY->icon());
+        $this->assertSame(ExchangeStatusEnum::REDELIVERING->icon(), OrderStatusEnum::SHIPPING->icon());
+        $this->assertSame(ExchangeStatusEnum::REDELIVERED->icon(), OrderStatusEnum::DELIVERED->icon());
+        $this->assertSame(ExchangeStatusEnum::COMPLETED->icon(), OrderStatusEnum::CONFIRMED->icon());
+    }
+
+    /**
+     * 진행단계는 7단계이고, 이탈 상태 6종은 순서 밖이다. 주문대기는 순서 밖이지만 이탈이 아니다.
+     *
+     * @scenario surface=admin_detail, order_stage=off_path, viewport=desktop
+     *
+     * @effects order_progress_steps_seven_stages, order_progress_off_path_appends_last_cell
+     */
+    public function test_progress_sequence_is_seven_stages_and_off_path_is_outside(): void
+    {
+        $sequence = OrderStatusEnum::progressSequence();
+
+        $this->assertSame(
+            ['pending_payment', 'payment_complete', 'preparing', 'shipping_ready', 'shipping', 'delivered', 'confirmed'],
+            array_map(fn ($case) => $case->value, $sequence),
+        );
+
+        foreach ($sequence as $case) {
+            $this->assertFalse($case->isOffProgressPath(), "{$case->name} 은 순서 안의 단계입니다.");
+        }
+
+        foreach ([OrderStatusEnum::SHIPPING_HOLD, OrderStatusEnum::CANCELLED, OrderStatusEnum::EXCHANGE_IN_PROGRESS, OrderStatusEnum::RETURN_IN_PROGRESS, OrderStatusEnum::EXCHANGED, OrderStatusEnum::RETURNED] as $case) {
+            $this->assertTrue($case->isOffProgressPath(), "{$case->name} 은 이탈 상태입니다.");
+            $this->assertNotContains($case, $sequence);
+        }
+
+        $this->assertFalse(OrderStatusEnum::PENDING_ORDER->isOffProgressPath());
+        $this->assertNotContains(OrderStatusEnum::PENDING_ORDER, $sequence);
     }
 }

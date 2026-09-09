@@ -168,7 +168,7 @@ class AdminClaimService
      * @param  int  $id  신청서 ID
      * @return OrderExchange|OrderReturn|OrderRefund|null 신청서 (없으면 null)
      */
-    public function findForDetail(ClaimTypeEnum $type, int $id): OrderExchange|OrderReturn|OrderRefund|null
+    public function findForDetail(ClaimTypeEnum $type, int $id): OrderExchange|OrderReturn|OrderRefund|OrderCancel|null
     {
         return match ($type) {
             // 주문 배송지는 재발송지 뱃지 판정(D14)이 읽는다 — 미로드로 두면 상세 1회당
@@ -184,7 +184,12 @@ class AdminClaimService
             ClaimTypeEnum::REFUND => $this->refundRepository->findById($id, [
                 'refundOptions.orderOption', 'images', 'order.payments',
             ]),
-            ClaimTypeEnum::CANCEL => null,
+            // 취소 이력도 번호로 열린다 — 주문상세 클레임 내역과 클레임 목록 취소 탭의 번호가
+            // 같은 화면으로 이어져야 한다. 취소는 전이·송장·메모 축이 없어 조회 전용이며,
+            // 취소 발 환불(`refund`)이 환불 상태·금액의 출처다.
+            ClaimTypeEnum::CANCEL => $this->cancelRepository->findById($id, [
+                'cancelOptions.orderOption', 'refund', 'order.payments', 'order.shippingAddress',
+            ]),
         };
     }
 
@@ -218,11 +223,11 @@ class AdminClaimService
     /**
      * 신청서 한 건의 활동 로그를 조회합니다. (신청서 + 추가결제 + 첨부)
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @param  array{per_page?: int, sort_order?: string}  $filters  조회 필터
      * @return LengthAwarePaginator 활동 로그
      */
-    public function activityLogs(OrderExchange|OrderReturn|OrderRefund $claim, array $filters = []): LengthAwarePaginator
+    public function activityLogs(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim, array $filters = []): LengthAwarePaginator
     {
         return $this->activityLogRepository->paginateForClaim($claim, $filters);
     }
@@ -233,10 +238,10 @@ class AdminClaimService
      * 배열의 규칙(결제 칸 추림·이탈 칸·도달 지점)은 `ClaimProgressSteps` 가 소유한다 —
      * 회원·비회원 상세가 같은 배열을 받으므로 여기서는 위임만 한다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return array<int, array{value: string, label: string, state: string, icon: string, variant: string}> 진행 단계
      */
-    public function progressSteps(OrderExchange|OrderReturn|OrderRefund $claim): array
+    public function progressSteps(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): array
     {
         return ClaimProgressSteps::for($claim);
     }
@@ -247,10 +252,10 @@ class AdminClaimService
      * 교환이 아닌 유형에는 재발송 축이 없어 `null` 이다 — `false`(같다)와 구분해야 화면이
      * "비교할 것이 없다" 와 "비교했더니 같다" 를 뒤섞지 않는다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return bool|null 다르면 true, 같으면 false, 재발송 축이 없으면 null
      */
-    public function redeliveryAddressDiffers(OrderExchange|OrderReturn|OrderRefund $claim): ?bool
+    public function redeliveryAddressDiffers(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?bool
     {
         return $claim instanceof OrderExchange
             ? $this->exchangeService->redeliveryAddressDiffersFromOrder($claim)
@@ -744,16 +749,17 @@ class AdminClaimService
      * 상세와 모달이 같은 신청서에 대해 서로 다른 금액을 말하지 않는다.
      *
      * 환불신청서는 자기 금액이 헤더 컬럼이므로(`refund_amount` 등) 이 블록이 필요 없다 —
-     * `null` 을 돌려주어 화면이 그 자리를 그리지 않게 한다.
+     * `null` 을 돌려주어 화면이 그 자리를 그리지 않게 한다. 취소도 같다 — 환불은 이미 실행된
+     * 값이라 예고할 것이 없고, 그 금액은 취소 발 환불 행이 헤더에 싣는다.
      *
      * 단건 상세 전용이다 — 목록 응답의 행마다 부르면 주문 재계산이 행 수만큼 돈다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return array{refund_amount: float, refund_amount_formatted: string, refund_points_amount: float, refund_points_amount_formatted: string, deducted_shipping_fee: float, deducted_shipping_fee_formatted: string, refund_product_amount: float|null, refund_product_amount_formatted: string|null, refund_shipping_amount: float|null, refund_shipping_amount_formatted: string|null, blocked_reason: string|null, already_filed: bool, earn_recovery: bool, currency_code: string}|null 정산 근거 (환불신청서는 null)
      */
-    public function settlementFor(OrderExchange|OrderReturn|OrderRefund $claim): ?array
+    public function settlementFor(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?array
     {
-        if ($claim instanceof OrderRefund) {
+        if ($claim instanceof OrderRefund || $claim instanceof OrderCancel) {
             return null;
         }
 

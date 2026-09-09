@@ -1,7 +1,7 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "Order Detail - Claim History Section (D20) — 유형 서브탭 + 신청서 단위 rowspan 병합 표 · 조회 전용 · 모바일 카드 (S9c)"
+    "description": "Order Detail - Claim History Section (D20) — 유형 서브탭 + 신청서 단위 rowspan 병합 표 · 조회 전용 · 모바일 카드 (S9c). 신청번호는 새 창 상세 링크, 상품은 썸네일(없으면 자리표시)"
   },
   "id": "section_claim_history",
   "type": "basic",
@@ -50,7 +50,7 @@
           "id": "claim_history_subtabs",
           "type": "basic",
           "name": "Div",
-          "comment": "유형 서브탭. 서버가 전 유형을 한 응답에 싣고(D20 — counts + 평면 배열) 화면이 claim_type 으로 거르므로 전환에 재조회가 없다. 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다.",
+          "comment": "유형 서브탭. 서버가 전 유형을 한 응답에 싣고(D20 — counts + 평면 배열) 화면이 claim_type 으로 거르므로 전환에 재조회가 없다. 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다. 활성 판정은 셸 computed claimHistoryActiveType 이다 — 누른 값이 없으면 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)이 서므로, 여기서 _local 값에 'exchange' 를 직접 폴백하면 그 판정을 건너뛴다.",
           "props": {
             "className": "flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4"
           },
@@ -68,7 +68,7 @@
               },
               "classMap": {
                 "base": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors",
-                "key": "{{claimType.value === (_local.claimHistoryType ?? 'exchange') ? 'active' : 'idle'}}",
+                "key": "{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}",
                 "variants": {
                   "active": "border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500 font-medium",
                   "idle": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -86,7 +86,7 @@
                   "name": "Span",
                   "classMap": {
                     "base": "inline-flex items-center justify-center min-w-5 px-1.5 text-xs rounded-full",
-                    "key": "{{claimType.value === (_local.claimHistoryType ?? 'exchange') ? 'active' : 'idle'}}",
+                    "key": "{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}",
                     "variants": {
                       "active": "bg-white/25 text-white",
                       "idle": "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
@@ -188,8 +188,38 @@
                           },
                           "children": [
                             {
+                              "id": "claim_history_card_number_link_{{claim.claim_number}}",
+                              "type": "basic",
+                              "name": "A",
+                              "comment": "PC 병합셀의 번호 링크와 같은 규칙이다 — 새 창 · 서버가 준 detail_url.",
+                              "if": "{{!!claim.detail_url}}",
+                              "props": {
+                                "className": "inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all",
+                                "href": "{{claim.detail_url}}",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "{{claim.claim_number ?? ''}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "arrow-up-right-from-square",
+                                    "className": "text-xs"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "id": "claim_history_card_number_text_{{claim.claim_number}}",
                               "type": "basic",
                               "name": "Span",
+                              "if": "{{!claim.detail_url}}",
                               "props": {
                                 "className": "text-sm font-medium text-gray-900 dark:text-gray-100 break-all"
                               },
@@ -256,34 +286,6 @@
                               "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.total_charge: {{claim.total_charge_amount_formatted ?? ''}}"
                             }
                           ]
-                        },
-                        {
-                          "id": "claim_history_card_detail_link_{{claim.claim_number}}",
-                          "type": "basic",
-                          "name": "A",
-                          "comment": "취소는 상세 라우트가 없어 서버가 detail_url: null 을 준다 (S6a 판정 ⑤ — 취소 이력은 이 섹션이 종착). null 이면 버튼 자체를 렌더하지 않는다. 경로는 서버가 만든 값을 그대로 쓴다 — 화면이 다시 조립하면 규칙의 두 번째 출처가 된다.",
-                          "if": "{{!!claim.detail_url}}",
-                          "props": {
-                            "className": "inline-flex items-center gap-1 mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline",
-                            "href": "{{claim.detail_url}}",
-                            "target": "_blank",
-                            "rel": "noopener noreferrer"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.view_detail"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": {
-                                "name": "arrow-up-right-from-square",
-                                "className": "text-xs"
-                              }
-                            }
-                          ]
                         }
                       ]
                     },
@@ -308,14 +310,35 @@
                           },
                           "children": [
                             {
+                              "id": "claim_history_card_item_thumb_{{claim.claim_number}}_{{cardItemIndex}}",
                               "type": "basic",
-                              "name": "Img",
-                              "if": "{{!!item.thumbnail_url}}",
+                              "name": "Div",
+                              "comment": "PC 표의 썸네일 자리와 같은 규칙 — 이미지가 없어도 자리는 남는다.",
                               "props": {
-                                "src": "{{item.thumbnail_url}}",
-                                "alt": "{{item.product_name ?? ''}}",
-                                "className": "w-12 h-12 rounded object-cover border border-gray-200 dark:border-gray-700 shrink-0"
-                              }
+                                "className": "w-12 h-12 rounded overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 shrink-0 flex items-center justify-center"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Img",
+                                  "if": "{{!!item.thumbnail_url}}",
+                                  "props": {
+                                    "src": "{{item.thumbnail_url}}",
+                                    "alt": "{{item.product_name ?? ''}}",
+                                    "className": "w-full h-full object-cover"
+                                  }
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "if": "{{!item.thumbnail_url}}",
+                                  "props": {
+                                    "name": "image",
+                                    "className": "text-base text-gray-400 dark:text-gray-500",
+                                    "data-thumb-placeholder": "true"
+                                  }
+                                }
+                              ]
                             },
                             {
                               "type": "basic",
@@ -531,8 +554,38 @@
                           },
                           "children": [
                             {
+                              "id": "claim_history_number_link_{{claim.claim_number}}",
+                              "type": "basic",
+                              "name": "A",
+                              "comment": "신청번호 자체가 상세 링크다 — 새 창(target=_blank)으로 여는 것은 주문상세의 작업 맥락을 잃지 않기 위해서다 (D20). 경로는 서버가 만든 detail_url 을 그대로 쓴다 — 화면이 다시 조립하면 규칙의 두 번째 출처가 된다. 네 유형 모두 상세가 있으므로(취소도 조회 전용 상세) 서버가 번호를 못 만든 행에서만 아래 글자 노드가 선다.",
+                              "if": "{{!!claim.detail_url}}",
+                              "props": {
+                                "className": "inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all",
+                                "href": "{{claim.detail_url}}",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "{{claim.claim_number ?? ''}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "arrow-up-right-from-square",
+                                    "className": "text-xs"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "id": "claim_history_number_text_{{claim.claim_number}}",
                               "type": "basic",
                               "name": "Div",
+                              "if": "{{!claim.detail_url}}",
                               "props": {
                                 "className": "text-sm font-medium text-gray-900 dark:text-gray-100 break-all"
                               },
@@ -597,34 +650,6 @@
                                   "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.total_charge: {{claim.total_charge_amount_formatted ?? ''}}"
                                 }
                               ]
-                            },
-                            {
-                              "id": "claim_history_detail_link_{{claim.claim_number}}",
-                              "type": "basic",
-                              "name": "A",
-                              "comment": "취소는 서버가 detail_url: null 을 준다 (S6a 판정 ⑤) — 그때는 버튼 자체를 렌더하지 않는다. 새 창(target=_blank)으로 여는 것은 주문상세의 작업 맥락을 잃지 않기 위해서다 (D20).",
-                              "if": "{{!!claim.detail_url}}",
-                              "props": {
-                                "className": "inline-flex items-center gap-1 mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline",
-                                "href": "{{claim.detail_url}}",
-                                "target": "_blank",
-                                "rel": "noopener noreferrer"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.view_detail"
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Icon",
-                                  "props": {
-                                    "name": "arrow-up-right-from-square",
-                                    "className": "text-xs"
-                                  }
-                                }
-                              ]
                             }
                           ]
                         },
@@ -643,14 +668,35 @@
                               },
                               "children": [
                                 {
+                                  "id": "claim_history_item_thumb_{{claim.claim_number}}_{{itemIndex}}",
                                   "type": "basic",
-                                  "name": "Img",
-                                  "if": "{{!!item.thumbnail_url}}",
+                                  "name": "Div",
+                                  "comment": "이미지가 없는 상품도 같은 크기의 자리를 차지한다 — 자리표시 없이 Img 만 조건부로 두면 이미지 유무에 따라 줄의 시작점이 흔들린다(구매자 신청내역 카드와 같은 규칙).",
                                   "props": {
-                                    "src": "{{item.thumbnail_url}}",
-                                    "alt": "{{item.product_name ?? ''}}",
-                                    "className": "w-12 h-12 rounded object-cover border border-gray-200 dark:border-gray-700 shrink-0"
-                                  }
+                                    "className": "w-12 h-12 rounded overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 shrink-0 flex items-center justify-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Img",
+                                      "if": "{{!!item.thumbnail_url}}",
+                                      "props": {
+                                        "src": "{{item.thumbnail_url}}",
+                                        "alt": "{{item.product_name ?? ''}}",
+                                        "className": "w-full h-full object-cover"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Icon",
+                                      "if": "{{!item.thumbnail_url}}",
+                                      "props": {
+                                        "name": "image",
+                                        "className": "text-base text-gray-400 dark:text-gray-500",
+                                        "data-thumb-placeholder": "true"
+                                      }
+                                    }
+                                  ]
                                 },
                                 {
                                   "type": "basic",

@@ -72,6 +72,9 @@ effects:
   # ④ 이 주문의 클레임 — 비회원의 목록
   - guest_order_claim_list_is_paginated_by_type
   - guest_order_claim_list_rejects_a_type_outside_the_vocabulary
+  # 유형 미지정 → 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 서버가 고른다 (회원 섹션과 같은 규칙)
+  - guest_order_claim_list_default_type_is_first_with_requests
+  - guest_order_detail_sends_no_type_when_address_has_none
   - guest_order_claim_section_reuses_the_member_list_partial
   - guest_order_detail_offers_the_three_claim_entries
   # ⑤ 요청 빈도 제한

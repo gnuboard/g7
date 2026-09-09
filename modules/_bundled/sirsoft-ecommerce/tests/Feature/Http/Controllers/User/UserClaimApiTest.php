@@ -1252,4 +1252,142 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertSame(1, $response->json('data.pagination.total'));
         $this->assertFalse($response->json('data.pagination.has_more_pages'));
     }
+
+    // ================================================================
+    // 주문 스코프 신청 내역 (마이페이지 주문상세 '이 주문의 클레임' 섹션)
+    // ================================================================
+
+    /**
+     * 회원 목록·비회원 주문상세 섹션과 같은 계약(유형 서브탭 하나 · 페이지)이며, 이 주문의 것만 싣는다.
+     *
+     * @scenario surface=member, has_image=no
+     *
+     * @effects order_claim_section_lists_only_this_orders_requests
+     */
+    public function test_order_claims_lists_this_orders_requests_by_type(): void
+    {
+        $order = $this->myDeliveredOrder(quantity: 3);
+        $claims = app(UserClaimService::class);
+        $claims->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+
+        // 같은 회원의 다른 주문 반품은 이 주문 스코프에 실리지 않는다 — 회원 목록과 다른 점이다.
+        $another = $this->myDeliveredOrder();
+        $claims->requestReturn($another, ['items' => $this->items($another), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims?type=return")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.claim_type', 'return')
+            ->assertJsonPath('data.data.0.order_number', $order->order_number)
+            ->assertJsonPath('data.pagination.total', 1);
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims?type=exchange")
+            ->assertOk()->assertJsonCount(0, 'data.data');
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims?type=cancel")
+            ->assertOk()->assertJsonCount(0, 'data.data');
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims?type=bogus")
+            ->assertStatus(422);
+    }
+
+    /**
+     * 본인 주문이 아니면 존재를 드러내지 않고 404 다 — 형제 자원(claimable-options)과 같은 규칙.
+     *
+     * @scenario surface=member, has_image=yes
+     *
+     * @effects order_claim_section_hides_other_members_orders
+     */
+    public function test_order_claims_hides_other_members_orders(): void
+    {
+        $other = $this->deliveredClaimOrder();
+        app(UserClaimService::class)->requestReturn($other, ['items' => $this->items($other), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $other->user_id]);
+
+        // 익명 요청이 먼저다 — actingAs 는 같은 테스트 안의 뒤따르는 요청에도 남는다.
+        $this->getJson($this->base()."/orders/{$other->id}/claims?type=return")
+            ->assertUnauthorized();
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$other->id}/claims?type=return")
+            ->assertStatus(404);
+    }
+
+    /**
+     * 유형을 지정하지 않으면 접수 건이 있는 첫 유형이 열린다 — 종전에는 늘 교환이라 취소만 있는
+     * 주문에서 빈 안내가 먼저 보였다. 응답은 고른 유형(`claim_type`)과 유형별 건수(`counts`)를
+     * 싣는다 — 화면은 그 둘로 활성 서브탭과 뱃지를 세운다.
+     *
+     * @scenario surface=member, has_image=yes
+     *
+     * @effects order_claim_section_default_type_is_first_with_requests, order_claim_section_response_carries_type_counts
+     */
+    public function test_order_claims_default_type_is_the_first_type_with_requests_and_carries_counts(): void
+    {
+        $order = $this->myDeliveredOrder(quantity: 3);
+        app(UserClaimService::class)->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+
+        // 미지정 → 교환(0건)을 건너뛰고 반품
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims")
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'return')
+            ->assertJsonPath('data.counts', ['exchange' => 0, 'return' => 1, 'refund' => 0, 'cancel' => 0])
+            ->assertJsonPath('data.data.0.claim_type', 'return')
+            ->assertJsonPath('data.pagination.total', 1);
+
+        // 빈 문자열은 미지정과 같다 — 주소에 유형이 없을 때 화면이 이렇게 보낸다(`?type=&page=1`)
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims?type=&page=1")
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'return');
+
+        // 지정하면 그 유형이다 — 비어 있어도 서버가 바꾸지 않는다(서브탭을 누른 상태·북마크)
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims?type=exchange")
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'exchange')
+            ->assertJsonCount(0, 'data.data')
+            ->assertJsonPath('data.counts.return', 1);
+
+        // 접수 건이 하나도 없으면 교환 — 종전 기본값 그대로
+        $empty = $this->myDeliveredOrder();
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$empty->id}/claims")
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'exchange')
+            ->assertJsonPath('data.counts', ['exchange' => 0, 'return' => 0, 'refund' => 0, 'cancel' => 0]);
+
+        // 회원 신청내역(주문 횡단 목록)은 요약을 싣지 않는다 — 그 화면은 주소의 유형이 늘 있고 뱃지도 없다
+        $this->actingAs($this->user)->getJson($this->base().'/claims?type=return')
+            ->assertOk()
+            ->assertJsonMissingPath('data.claim_type')
+            ->assertJsonMissingPath('data.counts');
+    }
+
+    /**
+     * 우선순위는 교환 → 반품 → 취소 → 환불이다 (PO 2026-09-09). 화면 서브탭의 배열 순서
+     * (교환·반품·환불·취소)와 다르므로 배열 위치로 고르면 취소·환불이 둘 다 있을 때 갈린다.
+     *
+     * @scenario surface=member, has_image=no
+     *
+     * @effects order_claim_section_default_type_is_first_with_requests
+     */
+    public function test_order_claims_default_type_priority_is_exchange_return_cancel_refund(): void
+    {
+        $service = app(UserClaimService::class);
+
+        $this->assertSame(ClaimTypeEnum::EXCHANGE, $service->resolveOrderListType(null, ['exchange' => 1, 'return' => 1, 'cancel' => 1, 'refund' => 1]));
+        $this->assertSame(ClaimTypeEnum::RETURN, $service->resolveOrderListType(null, ['exchange' => 0, 'return' => 2, 'cancel' => 1, 'refund' => 3]));
+        $this->assertSame(ClaimTypeEnum::CANCEL, $service->resolveOrderListType(null, ['cancel' => 1, 'refund' => 1]));
+        $this->assertSame(ClaimTypeEnum::REFUND, $service->resolveOrderListType(null, ['refund' => 1]));
+        $this->assertSame(ClaimTypeEnum::EXCHANGE, $service->resolveOrderListType(null, []));
+        // 지정 값은 건수와 무관하다
+        $this->assertSame(ClaimTypeEnum::REFUND, $service->resolveOrderListType(ClaimTypeEnum::REFUND, ['exchange' => 5]));
+
+        // 실제 주문 — 교환과 반품이 함께 있으면 교환이 먼저다
+        $order = $this->myDeliveredOrder(quantity: 3);
+        $claims = app(UserClaimService::class);
+        $claims->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'size_mismatch', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims")
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'exchange')
+            ->assertJsonPath('data.counts.exchange', 1)
+            ->assertJsonPath('data.counts.return', 1)
+            ->assertJsonPath('data.data.0.claim_type', 'exchange');
+    }
 }

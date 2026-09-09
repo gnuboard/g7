@@ -51,6 +51,9 @@ return [
         'exchanged' => '交換完了',
         'returned' => '返品完了',
     ],
+    'order_status_groups' => [
+        'preparing' => '商品準備・配送準備',
+    ],
     'payment_status' => [
         'ready' => '決済待機',
         'in_progress' => '決済進行中',

@@ -514,6 +514,11 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
             ->name('user.orders.cash-receipt.issue');
 
         // ── 클레임(교환/반품/취소·환불) 신청 — 주문 스코프 ─────────────────
+        // GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claims - 이 주문의 신청 내역 (마이페이지 주문상세 섹션)
+        Route::get('/{id}/claims', [UserClaimController::class, 'orderClaims'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+            ->name('user.orders.claims.index');
+
         // GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claimable-options - 클레임 가능 상품·유형·사유·설정
         Route::get('/{id}/claimable-options', [UserClaimController::class, 'claimableOptions'])
             ->whereNumber('id')

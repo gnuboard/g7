@@ -68,7 +68,7 @@ class OrderController extends AuthBaseController
         $collection = new UserOrderCollection($orders);
 
         return ResponseHelper::success('sirsoft-ecommerce::messages.orders.retrieved',
-            $collection->withStatistics($statistics)
+            $collection->withStatistics($statistics, $this->orderService->getUserStatusSummary($statistics))
         );
     }
 

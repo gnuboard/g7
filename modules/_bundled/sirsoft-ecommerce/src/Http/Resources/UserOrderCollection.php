@@ -39,15 +39,17 @@ class UserOrderCollection extends BaseApiCollection
      * 통계가 포함된 형태의 배열을 반환합니다.
      *
      * @param  array  $statistics  주문상태별 통계 데이터
+     * @param  array  $statusSummary  목록 상단 건수 칸 배열 (키·라벨·아이콘 토큰·색·건수)
      * @return array<string, mixed> 통계 정보가 포함된 주문 컬렉션
      */
-    public function withStatistics(array $statistics = []): array
+    public function withStatistics(array $statistics = [], array $statusSummary = []): array
     {
         return array_merge([
             'data' => $this->collection->map(function ($order) {
                 return (new UserOrderListResource($order))->toArray(request());
             })->toArray(),
             'statistics' => $statistics,
+            'status_summary' => $statusSummary,
             'abilities' => [
                 'can_create' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create'),
             ],

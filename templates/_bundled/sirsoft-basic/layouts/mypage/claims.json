@@ -8,7 +8,7 @@
     "description": "$t:user.mypage.claims_description"
   },
   "_comment": "클레임 신청내역 목록 셸 (§6-1). 유형 서브탭은 ?type= 으로 왕복하고 서버는 유형마다 다른 테이블을 페이지네이션한다 — 그래서 목록은 유형 단위이며 한 응답에 네 유형이 섞이지 않는다.",
-  "_comment_shell_contract": "공유 partial(_list.json / _modal_withdraw.json)은 회원/비회원을 스스로 판단하지 않는다. 셸이 값을 세우고 partial 은 그것만 읽는다 — isGuest / claimWithdrawApiBase / withdrawRefreshDataSourceId + 화면 주소 3종(claimListPath / claimDetailPathBase / claimEmptyCtaPath). 철회 라우트는 회원과 비회원의 모양이 다르다(회원 /user/claims 주문 스코프 없음, 비회원 /guest/orders/{orderNumber}/claims 있음)이므로 앞부분을 통째로 셸이 준다. 주소도 같은 이유다 — 비회원에게는 이 목록을 소유한 화면이 주문 상세이고 신청서 상세 주소도 다르다(S14 shop/guest_order_show · shop/guest_claim_show).",
+  "_comment_shell_contract": "공유 partial(_list.json / _modal_withdraw.json)은 회원/비회원을 스스로 판단하지 않는다. 셸이 값을 세우고 partial 은 그것만 읽는다 — isGuest / claimWithdrawApiBase / withdrawRefreshDataSourceId + 화면 주소 3종(claimListPath / claimDetailPathBase / claimEmptyCtaPath). 철회 라우트는 회원과 비회원의 모양이 다르다(회원 /user/claims 주문 스코프 없음, 비회원 /guest/orders/{orderNumber}/claims 있음)이므로 앞부분을 통째로 셸이 준다. 주소도 같은 이유다 — 비회원에게는 이 목록을 소유한 화면이 주문 상세이고 신청서 상세 주소도 다르다(S14 shop/guest_order_show · shop/guest_claim_show). 이 화면은 claimDetailLinkMode 를 세우지 않는다 — 신청번호는 글자로 두고 푸터 [상세보기]가 같은 창에서 상세로 간다(주문상세 셸만 번호를 링크로 만든다).",
   "transition_overlay": {
     "enabled": true,
     "style": "spinner",
