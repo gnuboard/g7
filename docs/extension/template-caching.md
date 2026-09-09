@@ -1,6 +1,6 @@
 # 템플릿 캐싱 전략
 
-> **관련 문서**: [cache-driver.md](./cache-driver.md) (공통 캐시 인터페이스 · 권장) | [template-basics.md](./template-basics.md) | [template-security.md](./template-security.md) | [index.md](./index.md)
+> **관련 문서**: [cache-driver.md](./cache-driver.md) (공통 캐시 인터페이스 · 권장) | [template-basics.md](./template-basics.md) | [template-security.md](./template-security.md) | [README.md](./README.md)
 
 > **⚠️ 중요**: 본 문서는 템플릿 캐싱의 **개념적 계층**을 설명합니다.
 > 실제 구현은 [`CacheInterface`](./cache-driver.md) 를 사용해야 하며, `Cache::` 파사드 직접 호출은 금지되었습니다.
@@ -556,4 +556,4 @@ $this->incrementExtensionCacheVersion();
 - [템플릿 기초](./template-basics.md) - 템플릿 타입, 메타데이터
 - [템플릿 보안](./template-security.md) - API 서빙, 화이트리스트
 - [템플릿 커맨드](./template-commands.md) - Artisan 커맨드
-- [확장 시스템 인덱스](./index.md) - 전체 문서 목록
+- [확장 시스템 인덱스](./README.md) - 전체 문서 목록

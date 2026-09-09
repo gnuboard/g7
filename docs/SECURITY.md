@@ -477,7 +477,7 @@ HookManager::addFilter(
 ```
 
 > 참고: Filter 훅이므로 리스너에서 `type: 'filter'` 명시 필수 (미지정 시 반환값 무시)
-> 상세: [훅 시스템](../extension/hooks.md)
+> 상세: [훅 시스템](extension/hooks.md)
 
 ---
 

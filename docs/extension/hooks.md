@@ -1350,4 +1350,4 @@ public function download(int $id, ?User $user): ?Attachment
 - [Service-Repository 패턴](../backend/service-repository.md) - Service에서 훅 실행 패턴
 - [활동 로그 시스템](../backend/activity-log.md) - 활동 로그 Listener 작성 패턴, Per-Item Bulk 로깅 규칙
 - [권한 시스템](permissions.md) - Permission, Role 체계
-- [확장 시스템 인덱스](index.md) - 전체 확장 시스템 개요
+- [확장 시스템 인덱스](README.md) - 전체 확장 시스템 개요
