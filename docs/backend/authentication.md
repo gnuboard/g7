@@ -321,8 +321,8 @@ $hashedToken = hash('sha256', $bearerToken); // 잘못됨
 
 ## 참고 자료
 
-- **구현 파일**: [app/Services/AuthService.php](../../../app/Services/AuthService.php)
-- **테스트 파일**: [tests/Feature/Api/Admin/AdminAuthTest.php](../../../tests/Feature/Api/Admin/AdminAuthTest.php)
+- **구현 파일**: [app/Services/AuthService.php](../../app/Services/AuthService.php)
+- **테스트 파일**: [tests/Feature/Api/Admin/AdminAuthTest.php](../../tests/Feature/Api/Admin/AdminAuthTest.php)
 
 ---
 
