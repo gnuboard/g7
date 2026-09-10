@@ -603,7 +603,6 @@ protected function prepareForValidation(): void
 
 주입 조건에 **종속 필드가 실제로 전송되었는지**를 반드시 포함한다. 무조건 주입하면 사용자가 보내지도 않은 토글이 검증 대상으로 올라와, 그 필드와 무관한 부분 수정이 조건부 규칙의 영향을 받는다.
 
-자동 차단: 정적 검사 대상. store/update 사이의 조건부 검증 비대칭은 차단되고, `sometimes` + `array` + `min` 조합이 무효화되는 형태는 경고로 보고된다.
 
 ---
 
@@ -1130,7 +1129,6 @@ Rule::exists("board_{$slug}_posts", 'id'),
 | Service 2차 방어 | 검증을 우회하는 경로(시더 / 훅 / 기존 오염 데이터)를 위해 재귀 함수에 방문 ID 가드를 둔다. 무한 루프 대신 유한 실패 + 로그 |
 | 코어 Rule 재사용 | `App\Rules\NotCircularParent` 는 `App\Models\Menu` 하드코딩이다. 다른 모델에는 모듈 로컬 Rule 을 신설한다 (코어 시그니처 변경 = 확장 버전 제약 연쇄) |
 
-자동 차단: 정적 검사 대상 (위반 시 차단).
 
 ---
 
@@ -1381,7 +1379,7 @@ FormRequest 책임).
 
 ### 자동 검증
 
-정적 검사가 FormRequest 내 DB facade / Model
+자동 검증이 FormRequest 내 DB facade / Model
 정적 호출 / 영속 메서드(`save`/`saveQuietly`/`forceDelete`) 직접 호출을 자동
 차단한다. `Rule::exists(Model::class, ...)` 같은 validation rule helper 는 면제.
 

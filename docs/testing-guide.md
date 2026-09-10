@@ -275,7 +275,7 @@ $this->assertSame(20000, $seo['sitemap_urls_per_file']);
 
 ## 기능 단위 시나리오 매트릭스
 
-테스트 코드를 추가하기 전에 소유 시나리오의 입력 조건과 후속 효과를 정의·갱신한다. 기존 테스트 파일에 메서드만 추가하는 경우도 같다. `test_files`로 파일을 연결하고 각 테스트에 `@scenario` 또는 `@effects`를 붙인다. 클래스·파일 상단의 포괄적 마킹이 새 테스트의 매핑을 대신하지 않는다. 매핑 표시는 실제 단언과 대조해야 하며 작성 순서와 단언의 의미는 정적 검사만으로 증명할 수 없다.
+테스트 코드를 추가하기 전에 소유 시나리오의 입력 조건과 후속 효과를 정의·갱신한다. 기존 테스트 파일에 메서드만 추가하는 경우도 같다. `test_files`로 파일을 연결하고 각 테스트에 `@scenario` 또는 `@effects`를 붙인다. 클래스·파일 상단의 포괄적 마킹이 새 테스트의 매핑을 대신하지 않는다. 매핑 표시는 실제 단언과 대조해야 하며 작성 순서와 단언의 의미는 자동 검증만으로 증명할 수 없다.
 
 ```text
 필수: 신규 기능 또는 도메인 표면 변경 시 시나리오 매니페스트 작성/갱신 (tests/scenarios/<feature>.yaml)
@@ -366,7 +366,7 @@ public function test_pg_payment_member_with_mileage_to_jeju(): void { ... }
 
 TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
 
-정적 검사가 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출한다 (자동 차단).
+자동 검증이 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출한다 (자동 차단).
 
 #### 항목 구분자는 쉼표뿐이다
 
@@ -388,7 +388,7 @@ TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
  */
 ```
 
-구분자 형식은 정적 검사가 강제한다 (자동 차단).
+구분자 형식은 자동 검증이 강제한다 (자동 차단).
 
 #### 한 docblock 은 조합 하나를 덮는다
 
@@ -708,6 +708,9 @@ public function comment_count_updates_after_comment_creation(): void
 
 ```
 필수: 테스트 통과 = 작업 완료 (작성만으로 불충분)
+필수: 테스트 출력은 파일로 저장. 결과 열람만을 위한 재실행은 금지하며, 수정·새 실패·사용자 재실행 요청에 따른 재검증은 수행한다
+필수: .env.testing 이 없으면 생성 필요를 먼저 알리고 기존 사용자 허가를 확인한 뒤 예시 파일에서 생성한다
+필수: 백엔드 테스트 전 테스트 DB 가 개발 DB 와 다른지 확인한다 (접속 정보는 출력하지 않는다)
 ```
 
 ---
@@ -1611,3 +1614,133 @@ php artisan test
 ```
 
 ---
+
+## 테스트 프로토콜
+```text
+기능 구현 = 테스트 코드 작성 필수
+신규 기능 / 도메인 표면 변경 = 시나리오 매니페스트(tests/scenarios/<feature>.yaml) 작성 의무 — 입력 axis cross product + 후속 효과 체인 전수 커버
+테스트 통과 = 작업 완료 (작성만으로는 완료가 아니다)
+기존 테스트 있음 → 변경사항 반영하여 수정 후 실행
+기능 구현 시 관련된 모든 계층(백엔드+프론트엔드+레이아웃 렌더링) 테스트 필수
+주의: 모듈/플러그인 프론트엔드 테스트는 독립 vitest.config.ts 사용 (루트 config 포함 금지)
+필수: 도메인 매트릭스 = 테스트 위치/형식 가이드. 입력 조합 망라 의무는 시나리오 매니페스트가 SSoT
+필수: 버그 수정은 먼저 실패하는 회귀 테스트 → fail 확인 → 수정 → green 4단계
+필수: 테스트 중 발견한 무관 에러도 같은 작업에서 처리 (stale test 또는 로직 수정)
+필수: 릴리스 전 composer test-smoke 통과
+```
+
+> 상세: [docs/testing-guide.md](testing-guide.md) — 기능 단위 시나리오 매트릭스, 도메인 매트릭스, Pre-release Smoke Suite, 회귀 테스트 4단계, 무관 에러 처리
+
+### 그누보드7 레이아웃 렌더링 테스트
+
+```text
+그누보드7 레이아웃 테스트는 브라우저 기반 E2E가 아니다
+Vitest + createLayoutTest() 유틸리티 사용 → 추가 인프라 불필요
+"인프라 부족" 을 이유로 레이아웃 테스트를 건너뛰지 않는다
+레이아웃 테스트는 해당 레이아웃이 속한 확장 디렉토리에 작성
+모듈 테스트: modules/_bundled/{id}/resources/js/__tests__/layouts/
+템플릿 테스트: templates/_bundled/{id}/__tests__/layouts/
+코어 테스트: resources/js/core/template-engine/__tests__/layouts/
+```
+
+| 특성 | 설명 |
+|------|------|
+| **테스트 환경** | Vitest (jsdom) - 브라우저 불필요 |
+| **렌더링** | DynamicRenderer를 통한 실제 React 렌더링 |
+| **유틸리티** | `createLayoutTest()` - 이미 구축됨 |
+| **API 모킹** | `mockApi()` - fetch 자동 모킹 |
+| **상태 관리** | `getState()`, `setState()` - 즉시 사용 가능 |
+| **액션 트리거** | `triggerAction()` - 핸들러 실행 |
+
+```typescript
+import { createLayoutTest, screen } from '../utils/layoutTestUtils';
+
+const testUtils = createLayoutTest(layoutJson);
+testUtils.mockApi('products', { response: { data: [] } });
+await testUtils.render();
+expect(screen.getByTestId('element')).toBeInTheDocument();
+testUtils.cleanup();
+```
+
+### 테스트 작성 트리거
+
+| 수정 대상 | 테스트 파일 위치 | 테스트 유형 |
+|----------|-----------------|-------------|
+| `app/Models/*.php` | `tests/Unit/Models/*Test.php` | 모델 메서드, 관계, 스코프 |
+| `app/Services/*.php` | `tests/Unit/Services/*Test.php` | 비즈니스 로직 |
+| `app/Enums/*.php` | `tests/Unit/Enums/*Test.php` | Enum 메서드 |
+| `app/Http/Controllers/**/*.php` | `tests/Feature/**/*Test.php` | API 엔드포인트 |
+| `database/migrations/*.php` | 해당 모델/서비스 테스트에서 검증 | 스키마 변경 |
+| `templates/**/src/components/**/*.tsx` | `templates/**/__tests__/*.test.tsx` | 컴포넌트 |
+| `resources/js/core/**/*.ts` | `resources/js/core/__tests__/*.test.ts` | 템플릿 엔진 |
+| `resources/layouts/**/*.json` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 |
+| `modules/**/resources/layouts/**/*.json` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
+| `templates/**/layouts/**/*.json` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
+
+### 기능 구현 시 전 계층 테스트
+
+| 작업 유형 | 백엔드 (PHPUnit) | 프론트엔드 (Vitest) | 레이아웃 렌더링 (Vitest) |
+| ---------- | ----------------- | ------------------- | ---------------------- |
+| 새 화면 구현 | API 엔드포인트 테스트 | 컴포넌트 테스트 | 레이아웃 JSON 렌더링 테스트 |
+| 기존 화면 수정 | 변경된 API 테스트 | 변경된 컴포넌트 테스트 | 레이아웃 렌더링 회귀 테스트 |
+| 데이터 흐름 변경 | Service/Repository 테스트 | 상태 관리 테스트 | 데이터 바인딩 렌더링 테스트 |
+
+### Windows 환경 테스트 규칙
+
+```text
+프론트엔드 (npm/Vitest) → PowerShell 래퍼 필수
+백엔드 (PHPUnit/Laravel) → Bash 직접 실행
+```
+
+**프론트엔드 (템플릿 디렉토리에서 실행 권장)**:
+
+```bash
+# 템플릿 디렉토리에서 실행 (해당 템플릿만 테스트)
+cd templates/sirsoft-admin_basic
+powershell -Command "npm run test:run"              # 전체
+powershell -Command "npm run test:run -- DataGrid"  # 특정 테스트
+
+# 루트에서 실행 (모든 테스트)
+powershell -Command "npm run test:run"
+powershell -Command "npm run test:run -- template-engine"  # 코어 테스트
+```
+
+**백엔드**:
+
+```bash
+php artisan test
+php artisan test --filter=TestName
+```
+
+**_bundled 확장 테스트 (활성 디렉토리 복사 불필요)**:
+
+```bash
+# _bundled 모듈 테스트 직접 실행
+php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests
+php vendor/bin/phpunit --filter=ShippingPolicyControllerTest modules/_bundled/sirsoft-ecommerce/tests
+
+# _bundled 모듈 프론트엔드 테스트
+cd modules/_bundled/sirsoft-ecommerce
+powershell -Command "npm run test:run"
+```
+
+### 필수 준수 사항
+
+```text
+필수: 기능 구현 시 모든 계층(백엔드+프론트엔드+레이아웃) 테스트 포함
+필수: 테스트 통과 확인 후 완료 선언 (기존 테스트 유지 — 삭제/skip 금지)
+필수: createLayoutTest() 유틸리티 활용 (추가 인프라 불필요)
+```
+
+> 상세: [testing-guide.md](testing-guide.md) | [layout-testing.md](frontend/layout-testing.md)
+
+## npm install 규칙
+기본 `npm install`은 `package-lock.json`을 자동 수정할 수 있으므로, lock 파일 변경 의도가 없는 의존성 복구나 작업 환경 재구성에는 `npm install --package-lock=false`를 사용합니다.
+
+| 상황 | 권장 명령어 | 비고 |
+| ---- | ----------- | ---- |
+| 누락 의존성 복구 / 작업 환경 재구성 | `npm install --package-lock=false` | lock 파일 변경 없이 설치 |
+| clean install | `npm ci` | `package.json`과 `package-lock.json`이 동기화된 경우 |
+| 의존성 신규 추가/업데이트 | `npm install <pkg>` | lock 변경이 작업 범위에 포함된 경우만 |
+
+lock 파일 변경 의도가 없는 상황에서 `npm install` 단독 실행을 피합니다. `module.json`, `plugin.json`, `template.json`의 `version`을 바꾸면 해당 확장의 `package.json`, `package-lock.json`, `composer.json` 버전도 함께 동기화합니다. 의존성 재설치 없이 lock 파일의 version 필드만 갱신할 때는 `npm install --package-lock-only`를 사용합니다.

@@ -10,6 +10,8 @@
 3. 상태 가드: ExtensionStatusGuard.assertNotInProgress(ExtensionStatus, identifier)
 4. 업그레이드 콜백: upgrades/ 디렉토리에 Upgrade_X_Y_Z.php (UpgradeStepInterface 구현)
 5. 역할/권한/메뉴 동기화: user_overrides로 사용자 커스터마이징 보존 (개별 식별자 보호)
+6. 확장 수정/개발은 _bundled 에서만 (활성 디렉토리 직접 수정 금지 → {type}:update 로 반영)
+7. DB/설정 구조 변경 시 업그레이드 스텝 작성 필수 (필요 판단은 "업그레이드 스텝이 필요한 경우" 표)
 ```
 
 ---

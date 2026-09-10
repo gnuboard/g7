@@ -67,7 +67,7 @@ G7 의 REST API 는 라우트 `->name()` 규약은 있으나 엔드포인트별 
 | `sirsoft-tosspayments` | `web.php` | 없음 — PG 콜백 2건 전부 브라우저 리다이렉트 |
 | `gnuboard7-hello_plugin` | `web.php` | 없음 |
 
-정적 검사는 `src/routes/api.php` 존재 여부로 이를 판정해, 해당 확장의
+자동 검증은 `src/routes/api.php` 존재 여부로 이를 판정해, 해당 확장의
 라우트/컨트롤러/FormRequest 변경에는 문서 동반을 요구하지 않는다. 확장에 `api.php` 를 추가하면
 그 시점부터 자동으로 검사 대상이 되므로, 문서 생성을 함께 수행한다.
 
@@ -95,7 +95,7 @@ G7 의 REST API 는 라우트 `->name()` 규약은 있으나 엔드포인트별 
 보존된다.
 
 확장 API 문서의 발견성은 이 목차를 통해 확보한다. `api:docgen` 과 코어 인덱스 생성기
-(`generate-docs-index.cjs`) 는 확장명을 하드코딩하지 않고
+문서 색인 생성은 확장명을 하드코딩하지 않고
 `{modules,plugins}/_bundled/*/docs/api/README.md` 를 **패턴 스캔**해, 코어 README 의 "확장 API 레퍼런스"
 표와 AGENTS.md·docs-index 에 자동 편입한다(동적 로딩 원칙 — 코어는 규약과 스캔 패턴만, 확장
 이름은 파일 시스템에서 발견). 문서 수·엔드포인트 수는 각 README 의 집계 라인
@@ -378,7 +378,6 @@ php artisan api:docgen --scope=core --dry-run
 같은 원리로 `is_default` / `status=active` 같은 승격·활성 플래그를 샘플에 붙이지 않는다. 샘플 레코드를
 만들기 전에 "이 조합이 전역 설정을 읽는 쿼리에 걸리는가" 를 확인한다.
 
-자동 차단: 정적 검사 대상 (위반 시 차단).
 
 ### 설명 백필 커맨드 (`api:docgen-backfill-*`)
 
@@ -407,7 +406,7 @@ php artisan api:docgen-backfill-fields
 - 트리거: `app/Http/Controllers/**`, `routes/api.php`, `app/Http/Requests/**`, `app/Http/Resources/**`
   (+ 확장 대응 경로) 편집.
 - 절차: 코드 변경 → `api:docgen --scope=...` 재실행 → `@generated` 블록 갱신 → 신규 TODO 서술 채움.
-- 검증: `api:docgen --check` 로 drift 0 확인. 정적 검사가 변경셋에 대응 문서
+- 검증: `api:docgen --check` 로 drift 0 확인. 자동 검증이 변경셋에 대응 문서
   동반 여부를 검사한다. 강제 수준은 **대상별**로 다르다 — 문서가 완비된 대상은 차단, 진행 중
   대상은 경고에 그친다. 코어(`docs/backend/api/`)는 2026-07-08 문서 완비로 차단 대상이 됐다.
   즉 코어 API 표면(`routes/api.php`·`app/Http/{Controllers,Requests,Resources}/**`)을

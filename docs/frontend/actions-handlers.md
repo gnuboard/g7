@@ -13,6 +13,8 @@
 3. setState: 상태 변경 (_global/_local/_isolated 경로, target 옵션)
 4. openModal/closeModal: 모달 열기/닫기
 5. sequence/parallel: 여러 액션 순차/병렬 실행
+6. navigate 에 replace: true 금지 — URL만 바꿀 때는 replaceUrl 핸들러 사용
+7. onSuccess 콜백은 {{response.xxx}} 로 참조 ($ 접두사 없음 — $response 금지)
 ```
 
 ---
