@@ -964,3 +964,46 @@ const renderChildren = useMemo(() => {
 - [데이터 바인딩](data-binding.md) - `{{}}` 표현식, `$t:` 다국어
 - [데이터 소스](data-sources.md) - API 데이터 자동 fetch
 - [상태 관리](state-management.md) - `_global` 전역 상태
+
+## 레이아웃 JSON 구현 규칙
+```
+1. 새로운 기능 사용 전 → 반드시 해당 규정 문서에서 지원 여부 확인
+2. 지원되지 않는 문법 사용 금지 → 추측/가정으로 구현하지 않음
+3. 불확실한 경우 → 기존 레이아웃 패턴 참조
+4. 규정 문서에 없는 기능 → 절대 사용 금지
+```
+
+### 레이아웃 작성 체크리스트
+
+```
+□ 레이아웃 구조가 layout-json.md 스키마와 일치하는가?
+□ 사용할 컴포넌트가 components.md에 정의되어 있는가?
+□ 컴포넌트 props가 component-props.md에 정의된 것만 사용하는가?
+□ 사용할 핸들러가 actions.md에 정의되어 있는가?
+□ 핸들러의 params 구조가 actions-handlers.md와 일치하는가?
+□ 데이터 바인딩 문법이 data-binding.md에 정의된 형식인가?
+□ 다크 모드 클래스가 dark-mode.md 규칙을 따르는가?
+□ 기존 유사 레이아웃에서 동일 패턴이 사용되고 있는가?
+```
+
+### 주의 사항
+
+```text
+필수: 규정 문서에 정의된 핸들러/props/바인딩 문법만 사용 (API 응답 구조도 확인 후 바인딩)
+필수: Partial은 컴포넌트 치환만 수행 (computed, data_sources, modals, state 미지원)
+필수: data_sources ID 고유성 유지, 조건부 렌더링은 if 속성만 사용 (type: "conditional" 미지원)
+```
+
+### 독립 레이아웃(extends 없음)의 글로벌 호스트 컴포넌트
+
+`toast`, `openModal` 등 글로벌 상태 기반 핸들러(`_global.toasts`, `_global.modal`)는 호스트 컴포넌트(`Toast`, `ModalRoot` 등)가 마운트되어야 화면에 렌더된다. 베이스 레이아웃(`_user_base`, `_admin_base`)은 일반적으로 이들을 마운트하므로 자식 레이아웃은 별도 작업이 필요 없지만, `extends` 없이 정의된 독립 레이아웃(예: `admin_login.json`)은 호스트 컴포넌트가 자동 주입되지 않는다.
+
+```text
+필수: 독립 레이아웃에서 toast/modal 사용 시 components 최상단에 호스트 컴포넌트를 직접 추가
+  - Toast: { type: "composite", name: "Toast", props: { toasts: "{{_global.toasts}}", ... } }
+  - 누락 시 핸들러는 success 로 기록되나 화면에는 미노출 (조용한 실패)
+
+필수: 의심 시 베이스 레이아웃의 호스트 컴포넌트 정의를 그대로 복사
+  - sirsoft-admin_basic: layouts/_admin_base.json 의 #global_toast 블록
+  - sirsoft-basic: layouts/_user_base.json 의 토스트 컴포넌트 블록
+```

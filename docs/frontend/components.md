@@ -12,6 +12,8 @@
 3. 집합 컴포넌트 재사용 우선 (새로 만들기 전 기존 확인)
 4. G7Core.t() 함수로 다국어 처리
 5. 다크 모드: light/dark variant 함께 지정
+6. 배열 props 는 fallback 필수 (Select options={{options ?? []}})
+7. 폼 안의 Button 은 type="button" 명시 (기본 submit 동작 방지)
 ```
 
 ---
