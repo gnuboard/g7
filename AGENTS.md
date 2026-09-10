@@ -1534,6 +1534,8 @@ vendor/bin/pint --dirty
 
 ### PHPDoc
 
+메서드는 접근 수준(public/protected/private)과 반환형(void 포함)에 관계없이 PHPDoc을 작성한다. 파라미터마다 이름이 일치하는 `@param`, 반환값에는 `@return`을 명시하고 한국어 설명을 붙인다. 생성자·소멸자는 `@return`만 생략한다. 상속 계약을 그대로 따르는 경우 `{@inheritDoc}`를 사용할 수 있다. 테스트는 테스트별 목적과 시나리오 매핑을 기록하며, 타입만 있는 태그가 Pint에서 제거되지 않도록 설명을 유지한다.
+
 ```php
 /**
  * 상품을 생성합니다.
