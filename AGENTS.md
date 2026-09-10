@@ -125,7 +125,7 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 | `plugins/**/plugin.json` | [plugin-development](docs/extension/plugin-development.md) |
 | `templates/**/routes.json` | [template-routing](docs/extension/template-routing.md) |
 | `**/layouts/**/*.json` | [layout-json](docs/frontend/layout-json.md), [actions-handlers](docs/frontend/actions-handlers.md) |
-| `**/partials/**/*.json` | [layout-json-inheritance](docs/frontend/layout-json-inheritance.md), [troubleshooting-components](docs/frontend/troubleshooting-components.md) |
+| `**/partials/**/*.json` | [layout-json-inheritance](docs/frontend/layout-json-inheritance.md) |
 | `**/handlers/**/*.ts` | [g7core-api](docs/frontend/g7core-api.md), [actions-handlers](docs/frontend/actions-handlers.md) |
 | `**/components/**/*.tsx` | [components](docs/frontend/components.md), [components](templates/_bundled/sirsoft-admin_basic/docs/components.md), [components](templates/_bundled/sirsoft-basic/docs/components.md) |
 | `**/upgrades/Upgrade_*.php` | [upgrade-step-guide](docs/extension/upgrade-step-guide.md) |
