@@ -539,7 +539,7 @@ $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
 
 ### 도메인 스키마 ownership — seoOgDefaults / seoTwitterDefaults / seoStructuredData
 
-모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` 정적 검사가 자동 차단).
+모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` 자동 검증이 자동 차단).
 
 ```php
 class EcommerceModule extends AbstractModule

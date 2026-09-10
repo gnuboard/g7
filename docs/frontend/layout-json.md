@@ -104,7 +104,7 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 
 의도적으로 재선언해야 하는 예외는 그 객체의 `comment` 에
 `audit:allow layout-json-duplicate-object-key <사유>` 를 남긴다 (JSON 은 주석을 담을 수 없으므로
-표식 자리가 `comment` 값이다). 정적 검사가 차단한다.
+표식 자리가 `comment` 값이다). 자동 검증이 차단한다.
 
 ### layout_name 네이밍 규칙
 

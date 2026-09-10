@@ -1,4 +1,4 @@
-<!-- 자동 생성: node export-public-skills.cjs — 원본 스킬 validate 을 고친 뒤 다시 생성한다. -->
+<!-- 자동 생성 문서입니다. 직접 고치지 마세요. -->
 
 # 규정 준수 검증 (validate)
 
@@ -72,7 +72,6 @@
 - references/i18n.md(아래 「i18n」 절) — 하드코딩·ko/en 동기·모듈 접두사·번들 언어팩
 - references/branch.md(아래 「branch」 절) — 브랜치 범위 결정·카테고리 분류·보조 스크립트·통합 보고
 - 원칙: validation-principle.md, good-faith-principle.md, [AGENTS.md](../../../AGENTS.md#파일-유형별-규정-확인)
-- 하네스: audit-branch.cjs
 - 관련 스킬: `/validate-plan`, `/pre-commit-review`, `/run-tests`, `/troubleshooting`, `/i18n sync`
 
 ---

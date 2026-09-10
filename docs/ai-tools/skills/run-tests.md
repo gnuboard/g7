@@ -1,4 +1,4 @@
-<!-- 자동 생성: node export-public-skills.cjs — 원본 스킬 run-tests 을 고친 뒤 다시 생성한다. -->
+<!-- 자동 생성 문서입니다. 직접 고치지 마세요. -->
 
 # 테스트 실행 (run-tests)
 
@@ -6,7 +6,7 @@
 
 - 코드 변경 후 그 변경에 걸리는 테스트를 검증할 때, 사용자가 테스트 실행을 지시할 때, 커밋 전 점검 때.
 - 재검증은 수정·새 실패·사용자 재실행 요청이 있을 때만 한다. 결과 열람만을 위한 재실행은 하지 않고 저장된 출력을 읽는다.
-- `backend` = PHPUnit, `frontend` = Vitest(핸들러·컴포넌트·레이아웃 렌더링 `layouts` 패턴), `e2e` = Playwright(references/e2e.md(아래 「e2e」 절)). "전체" 타입은 없다 — 무필터 실행은 PreToolUse `shell-guards.cjs` testScope 가 차단한다(테스트 실행 범위, run-only-needed-test-scope-never-full-suite).
+- `backend` = PHPUnit, `frontend` = Vitest(핸들러·컴포넌트·레이아웃 렌더링 `layouts` 패턴), `e2e` = Playwright(references/e2e.md(아래 「e2e」 절)). "전체" 타입은 없다 — 변경 범위에 걸리는 테스트만 고른다(테스트 실행 범위, run-only-needed-test-scope-never-full-suite).
 
 ## 입력
 
@@ -43,7 +43,6 @@
 - operations.md — .env.testing, Windows 환경 테스트 규칙, 테스트 실행 범위
 - [testing-guide.md](../../testing-guide.md), [layout-testing.md](../../frontend/layout-testing.md), [e2e-testing.md](../../testing/e2e-testing.md)
 - testing.md — phpunit-parallel-and-output, no-skip-without-root-fix
-- 하네스: shell-guards.cjs, audit-branch.cjs, validate-test-scenario.cjs
 - 계획: plan-tests
 
 ---
@@ -163,7 +162,7 @@ Playwright spec 과 Chrome MCP 실측을 같은 개발 서버에서 동시에 �
 - 총 / 통과 / 실패 / 오류 / 리스키·스킵 건수
 - 다계층 확인: 백엔드 [실행/미해당], 프론트엔드 [..], 레이아웃 렌더링 [..], E2E [..]
 - 시나리오 매니페스트 충족도(해당 시): cross product N/M, effects N/M, 누락 목록, audit PASS/FAIL
-- FAIL/ERROR/RISKY 전수 나열 — 항목마다 파일:라인, 원인, 연관 여부(YES/NO/UNCLEAR), 판정 근거(커밋·blame·git log -S), 조치 분기(테스트 수정 / 로직 수정 + 회귀 테스트 / PO 확인 요청)
+- FAIL/ERROR/RISKY 전수 나열 — 항목마다 파일:라인, 원인, 연관 여부(YES/NO/UNCLEAR), 판정 근거(커밋·blame·git log -S), 조치 분기(테스트 수정 / 로직 수정 + 회귀 테스트 / 사용자 확인 요청)
 ```
 
 대표 1건만 적고 나머지를 생략하지 않는다. 제외 허용 범위와 분기 기준은 testing-guide.md 무관 에러 처리.

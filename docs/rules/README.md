@@ -3,7 +3,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 표의 왼쪽은 금지, 오른쪽이 올바른 사용 — 정적 검사가 대부분을 차단한다
+1. 표의 왼쪽은 금지, 오른쪽이 올바른 사용 — 자동 검증이 대부분을 차단한다
 2. 프론트 액션·바인딩·상태 → frontend-actions-binding.md
 3. 라우팅·인증·보안 경계 → routing-security.md · 목록·검색 → list-context.md
 4. 확장 에셋·문서·캐시 → extension-assets.md · 편집기 위젯 → editor-widgets.md

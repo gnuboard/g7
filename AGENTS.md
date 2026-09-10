@@ -89,7 +89,7 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 
 ## 절대 금지 패턴 (CRITICAL RULES)
 
-표의 왼쪽은 금지, 오른쪽이 올바른 사용이다. 정적 검사가 대부분을 차단한다. 영역별 전문: [docs/rules/README.md](docs/rules/README.md)
+표의 왼쪽은 금지, 오른쪽이 올바른 사용이다. 영역별 전문: [docs/rules/README.md](docs/rules/README.md)
 
 | 영역 | 문서 |
 |---|---|

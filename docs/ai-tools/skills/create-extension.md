@@ -1,4 +1,4 @@
-<!-- 자동 생성: node export-public-skills.cjs — 원본 스킬 create-extension 을 고친 뒤 다시 생성한다. -->
+<!-- 자동 생성 문서입니다. 직접 고치지 마세요. -->
 
 # 확장 스캐폴딩 (create-extension)
 
@@ -37,7 +37,7 @@
 
 - references 골격 파일이 전부 존재하고 manifest 가 유효한 JSON 이며 `_bundled` 밖을 건드리지 않았다.
 - 5단계 명령(오토로드 또는 빌드)의 실행 결과가 기록됐다. 실행하지 못한 명령은 이유와 명령을 적었다.
-- 6단계 `ext:docgen --init` 을 실행하고 TODO 3곳을 채웠으며 `--check` 와 `check-extension-docs.cjs --no-drift` 가 통과했다.
+- 6단계 `ext:docgen --init` 을 실행하고 TODO 3곳을 채웠으며 `--check` 와 6단계에 적은 문서 정합 검사가 통과했다.
 - 보고에 다음 단계와 추가 필요 항목이 있고, 이력 문서(`/auto-document`)에 명령 출력·건수를 실측으로 남겼다.
 
 ## 참조
@@ -634,7 +634,7 @@ templates/_bundled/<id>/
 }
 ```
 
-`externals` 는 최초 HTML 문서에 정적으로 필요한 스타일·웹폰트·스크립트 선언이다. `components.basic` 에 `icon` 을 등록하면 Font Awesome `style` 항목이 있어야 아이콘이 표시된다(Icon 을 안 쓰면 `[]` 또는 생략). 웹폰트는 `"type": "webfont"`. `asset` 은 템플릿 `dist/` 이하 상대 경로이며 라이브러리는 `dist/vendor/{lib}/{version}/` 에 `LICENSE` 와 함께 동봉한다 — 제3자 CDN `url` 은 폐쇄망·광고차단기에서 아이콘이 사라지므로 정적 검사가 차단한다. 자체 제공이 불가능한 서비스 SDK 만 예외이고 `trusted_script_hosts`·`trusted_script_hosts_reason` 을 manifest 에 함께 둔다. 상세: docs/extension/template-basics.md "외부 리소스 (externals)".
+`externals` 는 최초 HTML 문서에 정적으로 필요한 스타일·웹폰트·스크립트 선언이다. `components.basic` 에 `icon` 을 등록하면 Font Awesome `style` 항목이 있어야 아이콘이 표시된다(Icon 을 안 쓰면 `[]` 또는 생략). 웹폰트는 `"type": "webfont"`. `asset` 은 템플릿 `dist/` 이하 상대 경로이며 라이브러리는 `dist/vendor/{lib}/{version}/` 에 `LICENSE` 와 함께 동봉한다 — 제3자 CDN `url` 은 폐쇄망·광고차단기에서 아이콘이 사라지므로 쓰지 않는다. 자체 제공이 불가능한 서비스 SDK 만 예외이고 `trusted_script_hosts`·`trusted_script_hosts_reason` 을 manifest 에 함께 둔다. 상세: docs/extension/template-basics.md "외부 리소스 (externals)".
 
 #### template.json (user) — admin 과 다른 부분
 

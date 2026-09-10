@@ -275,7 +275,7 @@ $this->assertSame(20000, $seo['sitemap_urls_per_file']);
 
 ## 기능 단위 시나리오 매트릭스
 
-테스트 코드를 추가하기 전에 소유 시나리오의 입력 조건과 후속 효과를 정의·갱신한다. 기존 테스트 파일에 메서드만 추가하는 경우도 같다. `test_files`로 파일을 연결하고 각 테스트에 `@scenario` 또는 `@effects`를 붙인다. 클래스·파일 상단의 포괄적 마킹이 새 테스트의 매핑을 대신하지 않는다. 매핑 표시는 실제 단언과 대조해야 하며 작성 순서와 단언의 의미는 정적 검사만으로 증명할 수 없다.
+테스트 코드를 추가하기 전에 소유 시나리오의 입력 조건과 후속 효과를 정의·갱신한다. 기존 테스트 파일에 메서드만 추가하는 경우도 같다. `test_files`로 파일을 연결하고 각 테스트에 `@scenario` 또는 `@effects`를 붙인다. 클래스·파일 상단의 포괄적 마킹이 새 테스트의 매핑을 대신하지 않는다. 매핑 표시는 실제 단언과 대조해야 하며 작성 순서와 단언의 의미는 자동 검증만으로 증명할 수 없다.
 
 ```text
 필수: 신규 기능 또는 도메인 표면 변경 시 시나리오 매니페스트 작성/갱신 (tests/scenarios/<feature>.yaml)
@@ -366,7 +366,7 @@ public function test_pg_payment_member_with_mileage_to_jeju(): void { ... }
 
 TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
 
-정적 검사가 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출한다 (자동 차단).
+자동 검증이 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출한다 (자동 차단).
 
 #### 항목 구분자는 쉼표뿐이다
 
@@ -388,7 +388,7 @@ TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
  */
 ```
 
-구분자 형식은 정적 검사가 강제한다 (자동 차단).
+구분자 형식은 자동 검증이 강제한다 (자동 차단).
 
 ### cross product 폭발 관리
 

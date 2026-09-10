@@ -28,7 +28,7 @@
 주의: ResponseHelper::success($messageKey, $data) — 메시지가 첫 번째 인수
 ```
 
-갱신값이 항상 필터 소속을 유지해 안전한 경우(예: `whereNotNull` + 갱신값이 항상 non-null)만 예외이며, 그 근거를 코드 주석에 남긴다. 정적 검사가 이 패턴을 검출한다.
+갱신값이 항상 필터 소속을 유지해 안전한 경우(예: `whereNotNull` + 갱신값이 항상 non-null)만 예외이며, 그 근거를 코드 주석에 남긴다. 자동 검증이 이 패턴을 검출한다.
 
 > 상세 규칙 (API 리소스, ServiceProvider, validation, 인증, 활동 로그 등): [docs/backend/](../backend/) 각 문서 참조
 
@@ -77,7 +77,6 @@ BaseApiController (최상위)
 잠금은 **그 키의 주입만** 건너뛰는 것이다. 그런데 제거된 키를 읽는 자리가 그 부재를 값으로 해석하면 잠금이 형제 설정까지 무너뜨린다 — 다섯 형태가 있고 전부 오류도 로그도 남기지 않는다: ① 마스터 토글의 OFF 강제(웹소켓) ② 게이트가 되는 키(디버그 모드 → 로그 레벨 강제·프록시 적용, 메일 드라이버 → mailgun/ses 하위 주입) ③ 저장값이 비어도 박히던 기본값(`services.{mailgun.endpoint,ses.region}`) ④ 형제 값으로의 폴백(웹소켓 server endpoint 가 관리자 소유 client 값을 `.env` 자리에 덮어씀) ⑤ 파생 판정(`storage_driver=s3` → `attachment.disk`). 판정에 쓰는 자리는 유효값으로 보정하고, 주입을 건너뛰어야 하는 자리는 `EnvPriority::isLocked()` 를 직접 묻는다.
 
 > 상세: [admin-settings-access.md](../backend/admin-settings-access.md) "env 우선 모드(G7_ENV_PRIORITY)"
-> 자동 차단: 정적 검사가 주입 메서드의 필터 배선 실존을 확인하고, 맵 패리티·캡처 일치·`env()` 재유입과 표시값·저장 게이트는 계약 테스트가 잠근다. 부재를 값으로 읽는 자리는 의미 판정 영역이라 정적 검사가 덮지 못한다 — 게이트·기본값·폴백·파생 네 축을 각각 고정하는 회귀 테스트가 그 자리를 잠근다
 
 ## 입력 크기에 비례해 커지는 메모리는 PHP 기본 한계 안에서 잰다
 

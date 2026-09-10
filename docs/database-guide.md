@@ -244,7 +244,7 @@ $table->index(['deleted_at', 'created_at']);
 
 #### `->change()` 패턴의 멱등성
 
-`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. 정적 검사는 `->change()` 라인을 자동 제외하므로 false positive 미발생.
+`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. 자동 검증은 `->change()` 라인을 자동 제외하므로 false positive 미발생.
 
 #### 검증 절차
 
