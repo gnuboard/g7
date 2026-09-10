@@ -354,7 +354,22 @@
                 "className": "w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                 "disabled": "{{_local.isPayingClaim === true}}"
               },
-              "text": "{{_local.isPayingClaim === true ? $t('claim.detail.pay_in_progress') : $t('claim.detail.pay_action')}}",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.isPayingClaim}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "text-sm animate-spin mr-1"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{_local.isPayingClaim === true ? $t('claim.detail.pay_in_progress') : $t('claim.detail.pay_action')}}"
+                }
+              ],
               "actions": [
                 {
                   "type": "click",

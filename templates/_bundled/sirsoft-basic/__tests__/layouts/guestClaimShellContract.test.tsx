@@ -376,6 +376,7 @@ describe('비회원 데이터소스 — 조회 토큰이 유일한 자격이다'
     expect(raw).toContain('error.errors?.redirect_to');
   });
 
+  /** @effects guest_claim_detail_loads_order_after_claim_response */
   it('원 주문은 스스로 부르지 않는다 (첫 호출의 404 가 받아 둔 주문을 덮어쓴다)', () => {
     const order = sources(guestDetail).find((s: any) => s.id === 'order');
 
@@ -394,8 +395,8 @@ describe('비회원 데이터소스 — 조회 토큰이 유일한 자격이다'
     expect(claims.endpoint).toContain('/guest/orders/');
     expect(claims.endpoint).toContain('/claims');
     // 주소에 유형이 없으면 type 을 비워 보낸다 — 서버가 접수 건이 있는 첫 유형을 골라 claim_type 으로 알려 준다.
-    expect(claims.params.type).toBe("{{query.type ?? ''}}");
-    expect(claims.params.page).toBe('{{query.page ?? 1}}');
+    expect(claims.params.type).toBe("{{_local.claimsType ?? query.type ?? ''}}");
+    expect(claims.params.page).toBe('{{_local.claimsPage ?? query.page ?? 1}}');
     // 철회한 신청서도 목록에 남으므로(행이 사라지지 않는다) 매번 다시 읽는다.
     expect(claims.cache).toBe(false);
     expect(claims.refetchOnMount).toBe(true);
@@ -403,6 +404,7 @@ describe('비회원 데이터소스 — 조회 토큰이 유일한 자격이다'
 });
 
 describe('비회원 라우트 — 서버측 주소 SSoT 와 같은 모양이다', () => {
+  /** @effects guest_claim_routes_allow_guest_and_use_claim_number */
   it('작성·수정·상세 세 라우트가 등록되어 있고 인증을 요구하지 않는다', () => {
     const guestRoutes = routes.routes.filter((r: any) => String(r.path).includes('/guest/'));
     const byLayout = Object.fromEntries(guestRoutes.map((r: any) => [r.path, r]));
@@ -429,6 +431,7 @@ describe('비회원 라우트 — 서버측 주소 SSoT 와 같은 모양이다'
     );
   });
 
+  /** @effects guest_claim_routes_allow_guest_and_use_claim_number */
   it('수정 주소는 위치로 번호를 읽을 수 있는 모양이다 (접두사로 유형을 가르지 않는다)', () => {
     // resolveClaimEditNumber 는 `.../claims/{번호}/edit` 의 위치로 읽는다 — 유형별 접두사
     // (EX/RT/RF/CN)는 운영자가 채번 설정에서 바꿀 수 있어 접두사로 가르면 그 상점에서만 어긋난다.

@@ -320,17 +320,36 @@
               "props": {
                 "type": "button",
                 "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{(_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}"
+                "disabled": "{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}"
               },
               "responsive": {
                 "portable": {
                   "props": {
                     "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply_full"
+                  }
                 }
               },
-              "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.isUpdatingClaimItems}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "spinner-sm mr-1"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply",
+                  "responsive": {
+                    "portable": {
+                      "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply_full"
+                    }
+                  }
+                }
+              ],
               "actions": [
                 {
                   "comment": "완료 전이는 곧바로 실행하지 않고 완료 처리 모달을 연다 (D26) — 분기는 핸들러가 한다. 경로 세그먼트는 서버가 준 값을 그대로 쓴다: 화면이 `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 된다.",

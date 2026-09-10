@@ -45,8 +45,8 @@
       "cache": false,
       "refetchOnMount": true,
       "params": {
-        "type": "{{query.type ?? 'exchange'}}",
-        "page": "{{query.page ?? 1}}"
+        "type": "{{_local.claimsType ?? query.type ?? 'exchange'}}",
+        "page": "{{_local.claimsPage ?? query.page ?? 1}}"
       }
     }
   ],

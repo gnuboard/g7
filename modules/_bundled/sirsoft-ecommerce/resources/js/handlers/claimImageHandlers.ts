@@ -288,6 +288,7 @@ export async function removeClaimImageHandler(
     // 넘긴다 — 서버가 같은 흐름에서 처리해야 장수 상한 판정(삭제 후 남을 장수)이 화면과
     // 갈리지 않는다.
     const current = G7Core.state.getLocal();
+    if (current.removingClaimImageId != null || current.isSubmittingClaim === true) return;
     const target = (current.claimImages ?? []).find(
         (image: ClaimPendingImage & { attached?: boolean }) => Number(image.id) === imageId
     );
@@ -306,6 +307,7 @@ export async function removeClaimImageHandler(
         return;
     }
 
+    G7Core.state.setLocal({ removingClaimImageId: imageId });
     try {
         await G7Core.api.delete(imageDeleteBase + '/' + imageId, claimRequestConfig(action.params?.isGuest === true));
     } catch (error: any) {
@@ -318,6 +320,8 @@ export async function removeClaimImageHandler(
         );
 
         return;
+    } finally {
+        G7Core.state.setLocal({ removingClaimImageId: null });
     }
 
     const latest = G7Core.state.getLocal();

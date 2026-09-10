@@ -232,8 +232,8 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 474개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 162개 | `vitest.config.ts` |
-| Playwright | 56개 | `tests/Playwright` |
+| Vitest | 164개 | `vitest.config.ts` |
+| Playwright | 57개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 113개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).

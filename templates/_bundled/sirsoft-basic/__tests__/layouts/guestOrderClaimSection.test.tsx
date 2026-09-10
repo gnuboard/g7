@@ -170,7 +170,7 @@ describe('비회원 주문상세 클레임 섹션 — 기본 서브탭 (서버�
       require('node:fs').readFileSync(path.resolve(__dirname, '../../layouts/shop/guest_order_show.json'), 'utf8'),
     );
     const claims = (shell.data_sources ?? []).find((d: any) => d.id === 'claims');
-    expect(claims.params.type).toBe("{{query.type ?? ''}}");
+    expect(claims.params.type).toBe("{{_local.claimsType ?? query.type ?? ''}}");
 
     const test = createLayoutTest(sectionLayout(), {
       componentRegistry: setupRegistry(),
@@ -208,6 +208,7 @@ describe('비회원 주문상세 클레임 섹션 — 같은 카드가 비회원
     active = null;
   });
 
+  /** @effects guest_claim_cards_keep_shared_values */
   it('신청서 카드가 회원 화면과 같은 값을 그린다', async () => {
     active = makeTest();
     await active.render();
@@ -263,6 +264,7 @@ describe('비회원 주문상세 클레임 섹션 — 같은 카드가 비회원
     expect(document.querySelector('img')).toBeNull();
   });
 
+  /** @effects guest_claim_empty_list_returns_to_guest_shop */
   it('빈 목록의 나가는 버튼도 비회원 주소다 (주문 내역 화면이 없다)', async () => {
     active = makeTest(GUEST_LOCALS, []);
     await active.render();
@@ -276,6 +278,7 @@ describe('비회원 주문상세 클레임 섹션 — 같은 카드가 비회원
     expect(history.some((p) => p.includes('/mypage/'))).toBe(false);
   });
 
+  /** @effects guest_claim_tab_uses_shell_path */
   it('유형 서브탭이 셸이 준 화면 주소로 되돌아간다 (구조로 잰다)', () => {
     // 탭 전환은 `sequence` 의 중첩 `actions` 로 되어 있고 이 하네스는 그 중첩을 실행하지
     // 않는다(클릭해도 이동 이력이 비어 있다). 실 화면에서는 엔진이 실행한다 — S13 브라우저

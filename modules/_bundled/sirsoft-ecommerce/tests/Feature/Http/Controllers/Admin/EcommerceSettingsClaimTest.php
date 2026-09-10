@@ -4,8 +4,12 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 
 use App\Models\Permission;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\GetSettingRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateSettingRequest;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
@@ -126,6 +130,70 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     // ==================== 정책 스칼라 ====================
+
+    /**
+     * 모든 카테고리의 조회 결과가 전체 설정 조회와 일치합니다.
+     *
+     * @effects settings_all_categories_match_full_response
+     */
+    public function test_category_settings_match_full_settings_for_every_category(): void
+    {
+        $this->actingAs($this->adminUser);
+        $all = $this->getJson($this->apiBase)->assertOk()->json('data');
+        foreach (array_keys(app(EcommerceSettingsService::class)->getAllSettings()) as $category) {
+            $part = $this->getJson($this->apiBase.'/'.$category)->assertOk()->json('data.settings');
+            $this->assertSame($all[$category], $part, $category.' 카테고리의 조회 값이 전체 조회와 다릅니다.');
+        }
+    }
+
+    /**
+     * 카테고리 조회와 개별 설정 메서드도 사유의 실제 저장소인 DB를 사용합니다.
+     *
+     * @effects settings_single_catalog_writes_database_and_reads_same_catalog
+     */
+    public function test_single_catalog_setting_uses_database_and_category_reads_it(): void
+    {
+        $this->actingAs($this->adminUser);
+        $settings = app(EcommerceSettingsService::class);
+        $settings->setSetting('claim.max_images', 7);
+
+        $request = UpdateSettingRequest::create('/', 'PUT', [
+            'key' => 'claim.exchange_reasons',
+            'value' => [$this->reasonRow('audit_exchange')],
+        ]);
+        $request->setContainer($this->app)->setRedirector($this->app['redirect']);
+        $request->validateResolved();
+        $controller = app(EcommerceSettingsController::class);
+        $this->assertSame(200, $controller->updateSetting($request)->getStatusCode());
+        $this->assertDatabaseHas('ecommerce_claim_reasons', ['code' => 'audit_exchange', 'type' => 'exchange']);
+        $this->assertSame(7, $settings->getSetting('claim.max_images'));
+
+        $category = $this->getJson($this->apiBase.'/claim')->assertOk()->json('data.settings');
+        $this->assertContains('audit_exchange', array_column($category['exchange_reasons'], 'code'));
+        $read = GetSettingRequest::create('/', 'GET', ['key' => 'claim.exchange_reasons']);
+        $read->setContainer($this->app)->setRedirector($this->app['redirect']);
+        $read->validateResolved();
+        $value = $controller->getSetting($read)->getData(true)['data']['value'];
+        $this->assertSame($category['exchange_reasons'], $value);
+    }
+
+    /**
+     * 개별 저장이 숫자 문자열 정규화와 상태 허용값 검증을 우회하지 않습니다.
+     *
+     * @effects settings_single_value_normalizes_and_rejects_invalid_status
+     */
+    public function test_single_setting_normalizes_numeric_values_and_validates_statuses(): void
+    {
+        $request = UpdateSettingRequest::create('/', 'PUT', ['key' => 'order_settings.auto_cancel_days', 'value' => '19']);
+        $request->setContainer($this->app)->setRedirector($this->app['redirect']);
+        $request->validateResolved();
+        $this->assertSame(19, $request->validated('value'));
+
+        $invalid = UpdateSettingRequest::create('/', 'PUT', ['key' => 'order_settings.cancellable_statuses', 'value' => ['cancelled']]);
+        $invalid->setContainer($this->app)->setRedirector($this->app['redirect']);
+        $this->expectException(ValidationException::class);
+        $invalid->validateResolved();
+    }
 
     /**
      * 정책 스칼라 12축이 저장되고 재조회에서 그대로 읽힌다 (`max_images`·`image_max_size_kb` 는 numeric_axes_are_stored_as_integers 가 소유).
@@ -402,7 +470,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             // 종결된 옵션이 취소 분기로 들어간다.
             '교환 신청 가능 상태 어휘 밖' => [['exchange_requestable_statuses' => ['not_a_status']], 'claim.exchange_requestable_statuses.0'],
             '반품 신청 가능 상태 어휘 밖' => [['return_requestable_statuses' => ['not_a_status']], 'claim.return_requestable_statuses.0'],
-            '즉시취소 가능 상태 어휘 밖' => [['instant_cancel_statuses' => ['delivered']], 'claim.instant_cancel_statuses.0'],
+            '즉시취소 가능 상태 어휘 밖' => [['instant_cancel_statuses' => ['cancelled']], 'claim.instant_cancel_statuses.0'],
             '환불신청 가능 상태 어휘 밖' => [['refund_request_statuses' => ['not_a_status']], 'claim.refund_request_statuses.0'],
             '청구 방식 어휘 밖' => [['allowed_charge_methods' => ['pay_someday']], 'claim.allowed_charge_methods.0'],
             '결제수단 어휘 밖' => [['charge_payment_methods' => ['crypto']], 'claim.charge_payment_methods.0'],
@@ -1651,6 +1719,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      *
      * 쓰이지 않는 사유까지 보존하면 stale 정리 자체가 무의미해지므로, **사용 중인 것만**
      * 살아남고 미사용 잔여는 계속 걷히는지 두 축을 함께 단언한다.
+     *
+     * @effects settings_claim_seeder_preserves_used_and_removes_unused_reasons
      */
     #[Test]
     public function the_seeder_stale_cleanup_keeps_reasons_that_claims_still_reference(): void

@@ -35,6 +35,11 @@ axes:
   has_image: [yes, no]
 
 effects:
+  # 관리자 상태 버튼도 desktop(1280)/portable(375) × pending on/off에서 아이콘·라벨·disabled를 유지한다.
+  - claim_pending_feedback_preserves_responsive_label
+  - claim_actions_follow_order_items
+  - claim_order_id_initialization_uses_unwrapped_response
+  - claim_tabs_and_pages_refetch_only_claims
   # 회원 셸 계약 (①)
   - member_order_detail_declares_claim_section_contract
   - member_order_detail_mounts_the_shared_claim_list
@@ -47,6 +52,10 @@ effects:
   - order_claim_section_hides_other_members_orders
   # 목록 재조회 (④)
   - member_order_detail_claim_list_is_paginated_by_type
+  - claim_tab_keeps_scroll_and_focus_without_order_refetch
+  - claim_page_keeps_scroll_and_focus_without_order_refetch
+  - claim_buttons_follow_paid_order_policy_and_use_action_colors
+  - claim_async_buttons_show_spinner_and_block_duplicate_requests
   # 기본 서브탭 (⑥) — 주소에 유형이 없으면 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 고르고
   # 응답의 claim_type/counts 로 화면이 활성 탭·뱃지를 세운다. 종전에는 늘 교환이라 취소만 있는 주문에서
   # 빈 안내가 먼저 보였다(설계 결정 2026-09-09, 관리자 클레임 내역과 같은 규칙).
@@ -59,6 +68,11 @@ effects:
   - order_claim_section_thumbnail_placeholder_when_missing
 
 test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-pending-feedback.spec.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/orderClaimInteraction.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/claimButtonFeedback.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/claimButtonFeedback.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimButtonPending.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userOrderClaimSection.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/guestOrderClaimSection.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php

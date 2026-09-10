@@ -35,6 +35,9 @@ axes:
   setting_value_type: [int, numeric_string, degenerate]
 
 effects:
+  # 주문/클레임 양쪽 설정 키의 유효값·빈 배열은 보존하고 취소완료 상태는 거절한다.
+  - cancel_status_values_survive_both_tab_validations
+  - invalid_cancel_status_is_rejected
   # 입금기한 산정
   - vbank_due_at_survives_string_setting
   - deposit_due_at_survives_string_setting

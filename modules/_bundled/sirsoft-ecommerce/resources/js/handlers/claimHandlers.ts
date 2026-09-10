@@ -129,6 +129,10 @@ let previewDebounceWaiters: Array<(applied: boolean) => void> = [];
  * @returns 반영 성공 여부
  */
 function scheduleClaimCompletePreview(): Promise<boolean> {
+    // 새 선택의 예약부터 이전 응답을 무효화한다. 전송 시점까지 기다리면 debounce
+    // 사이에 끝난 이전 요청이 새 선택의 스피너와 실행 잠금을 풀어 버린다.
+    previewGeneration += 1;
+    core()?.state?.set?.({ claimCompletePreviewLoading: true });
     if (previewDebounceTimer) {
         clearTimeout(previewDebounceTimer);
         previewDebounceTimer = null;
@@ -167,6 +171,7 @@ export function clearClaimCompleteTimersHandler(): void {
     waiters.forEach((waiter) => waiter(false));
 
     previewGeneration += 1;
+    core()?.state?.set?.({ claimCompletePreviewLoading: false });
 }
 
 /**
@@ -263,6 +268,7 @@ async function refreshClaimCompletePreview(allowRetry = true): Promise<boolean> 
 
     // 이 요청의 세대. 응답을 반영하기 전에 아직 최신인지 확인한다.
     const generation = ++previewGeneration;
+    G7Core.state.set({ claimCompletePreviewLoading: true });
 
     const targets: ClaimCompleteTarget[] = context.targets ?? [];
     const restoreMap: Record<string, boolean> = globalState.claimCompleteRestore ?? {};
@@ -340,6 +346,10 @@ async function refreshClaimCompletePreview(allowRetry = true): Promise<boolean> 
         );
 
         return false;
+    } finally {
+        if (generation === previewGeneration) {
+            G7Core.state.set({ claimCompletePreviewLoading: false });
+        }
     }
 }
 
@@ -628,6 +638,8 @@ export async function executeClaimCompletionHandler(
     const globalState = G7Core.state.get() ?? {};
     const context = globalState.claimCompleteContext;
     const rows: Array<Record<string, any>> = globalState.claimCompleteRows ?? [];
+
+    if (globalState.claimCompletePreviewLoading === true) return;
 
     if (!context?.execute || rows.length === 0) {
         G7Core.toast?.error?.(t('sirsoft-ecommerce.admin.claim.complete.error', '완료 처리에 실패했습니다.'));
@@ -978,6 +990,9 @@ export async function executeClaimItemBulkStatusHandler(
         return;
     }
 
+    if (G7Core.state.getLocal?.()?.isUpdatingClaimItems === true) return;
+    G7Core.state.setLocal?.({ isUpdatingClaimItems: true });
+
     try {
         const response = await G7Core.api.patch(`${base}/options/bulk-status`, {
             items: itemIds,
@@ -1007,6 +1022,8 @@ export async function executeClaimItemBulkStatusHandler(
             ?? t('sirsoft-ecommerce.admin.claim.detail.items.bulk_error', '신청 상품 상태 변경에 실패했습니다.'),
         );
         throw error;
+    } finally {
+        G7Core.state.setLocal?.({ isUpdatingClaimItems: false });
     }
 }
 
@@ -1059,6 +1076,7 @@ export async function saveClaimTrackingHandler(
     const savingKey = isRedelivery ? 'isSavingRedelivery' : 'isSavingCollection';
     const url = isRedelivery ? `${base}/redelivery-tracking` : `${base}/collection-tracking`;
 
+    if (G7Core.state.getLocal?.()?.[savingKey] === true) return;
     G7Core.state.setLocal?.({ [savingKey]: true });
 
     try {
@@ -1117,6 +1135,7 @@ export async function saveClaimAdminMemoHandler(
         return;
     }
 
+    if (G7Core.state.getLocal?.()?.isSavingMemo === true) return;
     G7Core.state.setLocal?.({ isSavingMemo: true });
 
     try {
@@ -1254,6 +1273,7 @@ export async function saveClaimAmountsHandler(
         return;
     }
 
+    if (G7Core.state.getLocal?.()?.isSavingAmounts === true) return;
     G7Core.state.setLocal?.({ isSavingAmounts: true });
 
     try {

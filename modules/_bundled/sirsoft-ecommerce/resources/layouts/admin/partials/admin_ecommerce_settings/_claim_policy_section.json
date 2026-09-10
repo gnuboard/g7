@@ -218,6 +218,18 @@
                       {
                         "value": "shipping_ready",
                         "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_ready"
+                      },
+                      {
+                        "value": "shipping",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping"
+                      },
+                      {
+                        "value": "delivered",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.delivered"
+                      },
+                      {
+                        "value": "confirmed",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.confirmed"
                       }
                     ],
                     "value": "{{_local.form?.claim?.instant_cancel_statuses ?? ['payment_complete']}}",

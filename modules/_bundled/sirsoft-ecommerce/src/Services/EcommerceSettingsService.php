@@ -104,6 +104,10 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             $categoryData = $value;
         } else {
             $categoryData = $this->loadCategorySettings($category);
+            if ($category === 'claim' && $parts[0] !== 'instant_cancel_statuses') {
+                // 다른 클레임 값을 고칠 때 저장본에 남은 옛 별칭이 취소 정책을 되돌리지 않게 한다.
+                $categoryData['instant_cancel_statuses'] = $this->getSetting('order_settings.cancellable_statuses', []);
+            }
             Arr::set($categoryData, implode('.', $parts), $value);
         }
 
@@ -138,6 +142,11 @@ class EcommerceSettingsService implements ModuleSettingsInterface
 
         // 저장된 데이터를 defaults 스키마에 맞게 정규화 (하위호환성)
         $settings = $this->normalizeSettingsData($settings, $defaultValues);
+
+        // 취소 가능 상태는 기존 주문 설정이 단일 출처다. 클레임 도입 시 복사한 값이
+        // 독립적으로 남으면 주문 abilities/취소 검증과 클레임 신청 자격이 서로 갈린다.
+        // 기존 클레임 키는 API 호환 별칭으로만 제공한다 (빈 배열도 운영자의 설정이다).
+        $settings['claim']['instant_cancel_statuses'] = $settings['order_settings']['cancellable_statuses'] ?? [];
 
         // language_currency.currencies 는 정수키 리스트라 array_merge 가 통째 교체 →
         // defaults 에 있고 저장본에 없는 통화는 code 기준으로 보충(환율은 저장본 우선 보존).
@@ -293,6 +302,24 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      */
     public function saveSettings(array $settings): bool
     {
+        // 두 관리 화면과 기존 API 클라이언트의 쓰기를 같은 설정으로 모은다.
+        // 전체 API 페이로드에 두 키가 있으면 정본인 주문 설정이 우선이다.
+        $claimStatuses = $settings['claim']['instant_cancel_statuses'] ?? null;
+        $orderStatuses = $settings['order_settings']['cancellable_statuses'] ?? null;
+        if (is_array($orderStatuses) || is_array($claimStatuses)) {
+            $statuses = is_array($orderStatuses) ? $orderStatuses : $claimStatuses;
+            $settings['order_settings'] = array_replace(
+                $this->loadCategorySettings('order_settings'),
+                $settings['order_settings'] ?? [],
+                ['cancellable_statuses' => $statuses],
+            );
+            $settings['claim'] = array_replace(
+                $this->loadCategorySettings('claim'),
+                $settings['claim'] ?? [],
+                ['instant_cancel_statuses' => $statuses],
+            );
+        }
+
         $success = true;
         $defaults = $this->getDefaults();
         $defaultValues = $defaults['defaults'] ?? [];
@@ -356,6 +383,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      *
      * 생성자 상호 주입은 순환이라 lazy 해석하며, `resolved()` 가드로 아직 필요하지 않은
      * 서비스를 저장이 강제로 인스턴스화하지 않게 한다.
+     *
+     * @return void 설정 관련 캐시 초기화
      */
     private function flushResolvedCaches(): void
     {
@@ -1245,6 +1274,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      *
      * payment.json이 존재하고 order_settings.json이 없을 때
      * 기존 데이터를 order_settings 구조로 변환합니다.
+     *
+     * @return void 이전 결제 설정을 주문 설정으로 이전
      */
     private function migratePaymentToOrderSettings(): void
     {
@@ -1298,6 +1329,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
 
     /**
      * 캐시 초기화
+     *
+     * @return void 설정 관련 캐시 초기화
      */
     public function clearCache(): void
     {

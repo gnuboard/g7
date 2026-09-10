@@ -52,6 +52,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 이후 Carbon 같은 strict 타입 경계에서 TypeError 가 발생한다(무통장입금 주문 500 실패).
      *
      * 대상 필드는 rules() 에서 파생한다 — 손으로 열거하면 규칙이 추가될 때 누락된다.
+     *
+     * @return void 요청값 정규화
      */
     protected function prepareForValidation(): void
     {
@@ -308,6 +310,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.pending_order_expire_minutes' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.pending_order_expire_minutes_min', 0), 'max:'.config('sirsoft-ecommerce.limits.pending_order_expire_minutes_max', 20160)],
             'order_settings.cart_expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.cart_expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.cart_expiry_days_max', 365)],
             'order_settings.stock_restore_on_cancel' => ['nullable', 'boolean'],
+            'order_settings.cancellable_statuses' => ['sometimes', 'array'],
+            'order_settings.cancellable_statuses.*' => ['string', Rule::in(self::claimInstantCancelStatuses())],
             'order_settings.confirmable_statuses' => ['nullable', 'array'],
             'order_settings.confirmable_statuses.*' => ['string', 'in:payment_complete,shipping_hold,preparing,shipping_ready,shipping,delivered'],
 
@@ -508,6 +512,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 추가 검증 로직 설정
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 설정의 연관 검증 실행
      */
     public function withValidator(Validator $validator): void
     {
@@ -545,6 +550,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * (소프트삭제 포함 — 삭제분도 과거 base 로 생성된 이력) 동일 통화 재저장은 변경이 아니므로 통과.
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateBaseCurrencyChangeable(Validator $validator): void
     {
@@ -577,6 +583,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 활성화 의미가 없으므로 거부한다. (비활성 상태에서는 0% 허용)
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateMileageEarnRate(Validator $validator): void
     {
@@ -605,6 +612,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 형식(ISO 4217)은 rules() 의 regex 로 선검증되며, 여기서는 도메인 정합성만 다룬다.
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateMileageCurrencyRules(Validator $validator): void
     {
@@ -695,6 +703,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 통화 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateUniqueCurrencyCodes(Validator $validator): void
     {
@@ -725,6 +734,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 통화명 필수 검증 - 최소 하나의 로케일에 이름이 있어야 함
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateCurrencyNames(Validator $validator): void
     {
@@ -769,6 +779,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 결제수단 최소 1개 활성화 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateAtLeastOneActivePaymentMethod(Validator $validator): void
     {
@@ -801,6 +812,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 해당 결제수단의 pg_provider 또는 default_pg_provider가 설정되어 있어야 합니다.
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validatePgRequiredForActivation(Validator $validator): void
     {
@@ -845,6 +857,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 계좌가 존재하는 경우 하나 이상은 기본 선택 + 사용 선택 상태여야 합니다.
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateBankAccountDefaults(Validator $validator): void
     {
@@ -874,6 +887,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송가능국가 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateUniqueCountryCodes(Validator $validator): void
     {
@@ -904,6 +918,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송가능국가 이름 필수 검증 - 최소 하나의 로케일에 이름이 있어야 함
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateCountryNames(Validator $validator): void
     {
@@ -946,6 +961,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 기본 국가가 배송가능국가 목록에 존재하는지 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateDefaultCountryExists(Validator $validator): void
     {
@@ -1041,6 +1057,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송사 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateUniqueCarrierCodes(Validator $validator): void
     {
@@ -1071,6 +1088,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송사명 필수 검증 - ko 로케일에 이름이 있어야 함
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateCarrierNames(Validator $validator): void
     {
@@ -1111,6 +1129,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송유형 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateUniqueShippingTypeCodes(Validator $validator): void
     {
@@ -1141,6 +1160,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송유형명 필수 검증 - ko 로케일에 이름이 있어야 함
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateShippingTypeNames(Validator $validator): void
     {
@@ -1210,6 +1230,9 @@ class StoreEcommerceSettingsRequest extends FormRequest
             OrderStatusEnum::SHIPPING_HOLD->value,
             OrderStatusEnum::PREPARING->value,
             OrderStatusEnum::SHIPPING_READY->value,
+            OrderStatusEnum::SHIPPING->value,
+            OrderStatusEnum::DELIVERED->value,
+            OrderStatusEnum::CONFIRMED->value,
         ];
     }
 
@@ -1308,6 +1331,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @param  Validator  $validator  Validator 인스턴스
      * @param  string  $type  사유 유형 (exchange|return|refund)
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateUniqueClaimReasonCodes(Validator $validator, string $type): void
     {
@@ -1347,6 +1371,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @param  Validator  $validator  Validator 인스턴스
      * @param  string  $type  사유 유형 (exchange|return|refund)
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateClaimReasonCodeSwaps(Validator $validator, string $type): void
     {
@@ -1369,6 +1394,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 코드 칸이 화면에서 자유 편집이라 API 가 아니라 설정 화면에서 그대로 재현된다.
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateCarrierCodeSwaps(Validator $validator): void
     {
@@ -1391,6 +1417,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 거절한다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용한다(삭제가 먼저다).
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateShippingTypeCodeSwaps(Validator $validator): void
     {
@@ -1420,6 +1447,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * @param  mixed  $rows  요청 행 배열
      * @param  \Closure(array<int, string>): Collection  $findByCodes  코드 목록으로 현재 행을 찾는 조회
      * @param  string  $message  거절 메시지 (번역 완료)
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     private function rejectCodeSwaps(Validator $validator, string $key, mixed $rows, \Closure $findByCodes, string $message): void
     {
@@ -1468,6 +1496,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @param  Validator  $validator  Validator 인스턴스
      * @param  string  $type  사유 유형 (exchange|return|refund)
+     * @return void 입력값을 검사하고 검증 오류를 등록
      */
     protected function validateClaimReasonNames(Validator $validator, string $type): void
     {

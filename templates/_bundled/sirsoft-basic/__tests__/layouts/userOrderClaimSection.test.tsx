@@ -228,7 +228,7 @@ describe('회원 주문상세 셸 — 클레임 섹션 계약 (구조)', () => {
     expect(String(claims.endpoint)).toContain('/user/orders/{{_local.claimOrderId}}/claims');
     // 주소에 유형이 없으면 type 을 비워 보낸다 — 서버가 접수 건이 있는 첫 유형을 고른다. 'exchange' 를
     // 박으면 그 판정이 영영 돌지 않는다.
-    expect(claims.params).toEqual({ type: "{{query.type ?? ''}}", page: '{{query.page ?? 1}}' });
+    expect(claims.params).toEqual({ type: "{{_local.claimsType ?? query.type ?? ''}}", page: '{{_local.claimsPage ?? query.page ?? 1}}' });
 
     // 주문 응답 → claimOrderId → claimable 과 claims 를 같은 sequence 에서 부른다
     const order = (shell.data_sources ?? []).find((d: Node) => d.id === 'order');
@@ -303,7 +303,7 @@ describe('회원 주문상세 클레임 섹션 — 기본 서브탭 (서버가 �
   it('셸의 목록 데이터소스는 주소에 유형이 없을 때 type 을 비워 보낸다 (서버 판정 위임)', () => {
     const shell = readLayout('mypage/orders/show.json');
     const claims = (shell.data_sources ?? []).find((d: Node) => d.id === 'claims');
-    expect(claims.params.type).toBe("{{query.type ?? ''}}");
+    expect(claims.params.type).toBe("{{_local.claimsType ?? query.type ?? ''}}");
     expect(String(claims.comment)).toContain('claim_type');
   });
 });

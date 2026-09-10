@@ -127,6 +127,7 @@ function lastBodyTo(url: string): any {
 }
 
 describe('일괄 상태 변경 — 입력 가드', () => {
+    /** @effects bulk_confirmation_requires_selection_and_status */
     it('선택이 없으면 확인 모달을 열지 않는다', async () => {
         await buildClaimBulkConfirmDataHandler(
             { handler: 'x', params: { claimType: 'return', status: 'approved', ids: [], rows: ROWS } },
@@ -137,6 +138,7 @@ describe('일괄 상태 변경 — 입력 가드', () => {
         expect(mockG7Core.toast.warning).toHaveBeenCalled();
     });
 
+    /** @effects bulk_confirmation_requires_selection_and_status */
     it('상태를 고르지 않으면 확인 모달을 열지 않는다', async () => {
         await buildClaimBulkConfirmDataHandler(
             { handler: 'x', params: { claimType: 'return', status: '', ids: [31], rows: ROWS } },
@@ -163,6 +165,7 @@ describe('일괄 상태 변경 — 입력 가드', () => {
         expect(mockG7Core.modal.open).not.toHaveBeenCalled();
     });
 
+    /** @effects noncomplete_transition_uses_confirmation */
     it('완료가 아닌 전이는 확인 모달에 유형·상태·라벨을 실어 연다', async () => {
         await buildClaimBulkConfirmDataHandler(
             { handler: 'x', params: { claimType: 'return', status: 'approved', ids: [31, 34], rows: ROWS } },
@@ -227,6 +230,7 @@ describe('완료 전이 — 곧바로 실행하지 않고 모달을 연다 (D26)
         expect(lastBodyTo(PREVIEW_URL).create_refund_request).toBe(false);
     });
 
+    /** @effects settings_seed_initial_choice_only */
     it('설정이 없으면 계약 기본값(둘 다 접수·복구)으로 시드된다', async () => {
         await buildClaimBulkConfirmDataHandler(
             { handler: 'x', params: { claimType: 'return', status: 'completed', ids: [31], rows: ROWS } },
@@ -285,6 +289,7 @@ describe('완료 전이 — 곧바로 실행하지 않고 모달을 연다 (D26)
         expect(mockG7Core.api.post.mock.calls.filter((call) => call[0] === PREVIEW_URL)).toHaveLength(1);
     });
 
+    /** @effects completion_rows_use_item_summary */
     it('상품 요약이 모달 행의 표기가 된다', async () => {
         await buildClaimBulkConfirmDataHandler(
             { handler: 'x', params: { claimType: 'return', status: 'completed', ids: [31], rows: ROWS } },
@@ -502,6 +507,7 @@ describe('완료 실행 — 페이로드 계약 (D26)', () => {
         expect(lastBodyTo(BULK_STATUS_URL).ids).toEqual([31]);
     });
 
+    /** @effects completion_success_clears_state_and_refetches */
     it('실행 후 모달 상태를 비우고 목록을 다시 부른다', async () => {
         await openAndExecute(true);
 
@@ -535,6 +541,7 @@ describe('일괄 전이 실행 — 부분 성공 계약', () => {
         };
     });
 
+    /** @effects bulk_transition_payload_and_error_contract */
     it('요청 본문은 유형·대상·상태 셋만 싣는다', async () => {
         mockG7Core.api.post.mockResolvedValue({
             success: true,
@@ -587,6 +594,7 @@ describe('일괄 전이 실행 — 부분 성공 계약', () => {
         );
     });
 
+    /** @effects bulk_transition_payload_and_error_contract */
     it('실패 시 서버 사유를 그대로 보여준다', async () => {
         mockG7Core.api.post.mockRejectedValue({
             response: { data: { message: '해당 신청서를 찾을 수 없습니다.' } },
@@ -596,6 +604,7 @@ describe('일괄 전이 실행 — 부분 성공 계약', () => {
         expect(mockG7Core.toast.error).toHaveBeenCalledWith('해당 신청서를 찾을 수 없습니다.');
     });
 
+    /** @effects bulk_confirmation_requires_selection_and_status */
     it('확인 데이터가 없으면 요청을 만들지 않는다', async () => {
         mockGlobalState = {};
 
@@ -627,6 +636,7 @@ describe('미리보기 실패 — 화면이 예고하는 것과 실행하는 것
         );
     }
 
+    /** @effects preview_failure_restores_displayed_choice */
     it('재고 체크를 끈 뒤 미리보기가 실패하면 선택이 화면 값으로 되돌아온다', async () => {
         await openModalWithPreview();
         expect(mockGlobalState.claimCompleteRows[0].restore).toBe(true);
@@ -644,6 +654,7 @@ describe('미리보기 실패 — 화면이 예고하는 것과 실행하는 것
         expect(mockGlobalState.claimCompleteRestore['31']).toBe(true);
     });
 
+    /** @effects preview_failure_restores_displayed_choice */
     it('헤더 일괄 체크도 미리보기가 실패하면 되돌아온다', async () => {
         await openModalWithPreview();
 
@@ -657,6 +668,7 @@ describe('미리보기 실패 — 화면이 예고하는 것과 실행하는 것
         expect(mockGlobalState.claimCompleteRestore['31']).toBe(true);
     });
 
+    /** @effects preview_failure_restores_displayed_choice */
     it('환불신청서 선택을 바꾼 뒤 미리보기가 실패하면 그 선택도 되돌아온다', async () => {
         await openModalWithPreview();
         expect(mockGlobalState.claimCompleteCreateRefundRequest).toBe(true);
@@ -673,6 +685,7 @@ describe('미리보기 실패 — 화면이 예고하는 것과 실행하는 것
         expect(mockGlobalState.claimCompleteCreateRefundRequest).toBe(true);
     });
 
+    /** @effects preview_success_updates_displayed_choice */
     it('미리보기가 성공하면 화면과 실행값이 새 선택으로 함께 바뀐다', async () => {
         await openModalWithPreview();
 
@@ -761,6 +774,53 @@ describe('완료 처리 모달 — 미리보기 응답 경합 (4차 F1)', () => 
         expect(mockGlobalState.claimCompleteRestore['31']).toBe(true);
         expect(mockGlobalState.claimCompleteRows[0].restore).toBe(true);
         expect(mockGlobalState.claimCompletePreview.claims[0].stock_restore_count).toBe(1);
+    });
+
+    /**
+     * 다음 요청 예약 중에는 이전 요청의 성공/실패가 실행 잠금을 풀지 못한다.
+     *
+     * @effects pending_preview_reservation_keeps_execution_blocked
+     */
+    it.each(['item', 'all', 'refund'].flatMap(kind => [false, true].flatMap(oldFails =>
+        [false, true].map(latestFails => ({ kind, oldFails, latestFails })),
+    )))('예약 경합 $kind (이전 실패=$oldFails, 최신 실패=$latestFails)', async ({ kind, oldFails, latestFails }) => {
+        vi.useFakeTimers();
+        try {
+            await openModalWithPreview();
+            mockG7Core.api.post.mockClear();
+            let resolveOld!: (value: any) => void;
+            let rejectOld!: (error: any) => void;
+            mockG7Core.api.post.mockReturnValueOnce(new Promise((resolve, reject) => {
+                resolveOld = resolve;
+                rejectOld = reject;
+            }));
+            const select = (value: boolean) => kind === 'refund'
+                ? setClaimCompleteRefundRequestHandler({ handler: 'x', params: { value } }, mockContext)
+                : kind === 'all'
+                    ? toggleClaimCompleteStockAllHandler({ handler: 'x', params: { restore: value } }, mockContext)
+                    : toggleClaimCompleteStockHandler({ handler: 'x', params: { claimId: 31, restore: value } }, mockContext);
+            const old = select(false);
+            await vi.advanceTimersByTimeAsync(200);
+            const latest = select(true);
+            if (oldFails) rejectOld(new Error('이전 요청 실패'));
+            else resolveOld(previewFor(false));
+            await old;
+            expect(mockGlobalState.claimCompletePreviewLoading).toBe(true);
+            expect(mockGlobalState.claimCompleteRows[0].restore).toBe(true);
+            expect(mockGlobalState.claimCompleteCreateRefundRequest).toBe(true);
+            await executeClaimCompletionHandler({ handler: 'x' }, mockContext);
+            expect(mockG7Core.api.post).toHaveBeenCalledTimes(1);
+            if (latestFails) mockG7Core.api.post.mockRejectedValueOnce(new Error('최신 요청 실패'));
+            else mockG7Core.api.post.mockResolvedValueOnce(previewFor(true));
+            await vi.advanceTimersByTimeAsync(200);
+            await latest;
+            expect(mockGlobalState.claimCompletePreviewLoading).toBe(false);
+            expect(mockGlobalState.claimCompleteRestore['31']).toBe(true);
+            expect(mockGlobalState.claimCompleteRows[0].restore).toBe(true);
+        } finally {
+            clearClaimCompleteTimersHandler();
+            vi.useRealTimers();
+        }
     });
 
     /**
@@ -929,6 +989,7 @@ describe('환불 대상이 0 건인 완료 처리 — 고를 수 없는 기본�
         );
     }
 
+    /** @effects refund_request_follows_applicable_targets */
     it('환불 대상이 하나도 없으면 설정 기본값이 켜져 있어도 접수하지 않음으로 내려간다', async () => {
         mockG7Core.api.post.mockResolvedValue(previewWithoutRefundTarget());
 
@@ -938,6 +999,7 @@ describe('환불 대상이 0 건인 완료 처리 — 고를 수 없는 기본�
         expect(mockGlobalState.claimCompleteAppliedRefundRequest).toBe(false);
     });
 
+    /** @effects refund_request_follows_applicable_targets */
     it('그 상태로 제출해도 서버에는 접수하지 않음이 실린다 (422 회피)', async () => {
         mockG7Core.api.post.mockResolvedValue(previewWithoutRefundTarget());
 
@@ -947,6 +1009,7 @@ describe('환불 대상이 0 건인 완료 처리 — 고를 수 없는 기본�
         expect(lastBodyTo(BULK_STATUS_URL).completion.create_refund_request).toBe(false);
     });
 
+    /** @effects refund_request_follows_applicable_targets */
     it('한 건이라도 환불 대상이면 선택을 건드리지 않는다', async () => {
         await openModal(true);
 

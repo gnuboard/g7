@@ -50,6 +50,18 @@ exclusions:
   - { claim_type: cancel, completion_choice: file_later, reason: "동일" }
 
 effects:
+  # 기존 핸들러 검증의 목적도 개별 테스트에 역매핑한다.
+  - bulk_confirmation_requires_selection_and_status
+  - noncomplete_transition_uses_confirmation
+  - completion_rows_use_item_summary
+  - completion_success_clears_state_and_refetches
+  - bulk_transition_payload_and_error_contract
+  - preview_failure_restores_displayed_choice
+  - preview_success_updates_displayed_choice
+  - refund_request_follows_applicable_targets
+  # 이전 응답이 다음 200ms 예약 중 도착: 단건/전체 재고·환불 선택 × 이전 성공/실패 × 최신 성공/실패.
+  # 다음 요청 완료 전 실행 금지, 최신 실패 시 마지막 표시값 복원, 닫기는 예약 취소를 유지한다.
+  - pending_preview_reservation_keeps_execution_blocked
   # 셸 배선 (본체가 자리표시를 대체한다)
   - list_body_replaces_placeholder
   - subtabs_render_above_filter_card
@@ -116,6 +128,7 @@ effects:
   - defer_translation_only_inside_repeat_context
 
 test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-pending-feedback.spec.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBody.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBodyRender.test.tsx
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimHandlers.test.ts

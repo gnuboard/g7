@@ -1018,7 +1018,22 @@
                         "className": "btn btn-primary",
                         "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingAmounts === true}}"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.save",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.isSavingAmounts}}",
+                          "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm mr-1"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.save"
+                        }
+                      ],
                       "actions": [
                         {
                           "comment": "금액 수정 게이트는 `claims.update-amounts` 다 (D18) — 버튼 활성 조건을 상태 전이 권한으로 잡으면 그 권한만 가진 운영자에게 버튼은 살아 있고 저장만 403 이 된다. 청구가 0 이던 신청서의 배송비를 올릴 때는 청구 방식을 함께 보내야 하며, 빠지면 서버가 `claim_charge_method_required` 로 거절한다.",
@@ -1974,7 +1989,22 @@
                             "className": "btn btn-outline",
                             "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingAmounts === true}}"
                           },
-                          "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.save",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "if": "{{_local.isSavingAmounts}}",
+                              "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm mr-1"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.save"
+                            }
+                          ],
                           "actions": [
                             {
                               "comment": "저장과 실행은 다른 처리다 — 승인 직후 금액만 고쳐 두고 실행은 나중에 하는 운영이 성립한다. 게이트도 다르다(`claims.update-amounts` vs `claims.execute-refund`).",

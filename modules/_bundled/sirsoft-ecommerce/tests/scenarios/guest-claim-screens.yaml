@@ -56,6 +56,11 @@ exclusions:
   - { screen: order_section, entry: [without_token, expired_token], claim_type: [return, refund, cancel], reason: "같은 근거 — 토큰 처분은 목록 유형과 무관하다" }
 
 effects:
+  - guest_claim_detail_loads_order_after_claim_response
+  - guest_claim_routes_allow_guest_and_use_claim_number
+  - guest_claim_cards_keep_shared_values
+  - guest_claim_empty_list_returns_to_guest_shop
+  - guest_claim_tab_uses_shell_path
   # ① 주문 스코프 — 토큰의 짝인 주문번호가 주소를 만든다
   - guest_order_number_is_published_alongside_the_token
   - guest_order_number_is_cleared_with_the_token

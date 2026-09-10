@@ -62,6 +62,65 @@ test.describe('회원 주문상세 클레임 섹션', () => {
   });
 
   // @scenario surface=member, has_image=no
+  // @effects claim_page_keeps_scroll_and_focus_without_order_refetch
+  test('페이지 이동은 주문을 다시 조회하지 않고 보고 있던 위치를 유지한다', async ({ page }) => {
+    await page.route(`**${API}/user/orders/*/claims?**`, async route => {
+      const current = Number(new URL(route.request().url()).searchParams.get('page') || 1);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {
+        data: [claimRow({ claim_number: `EX-PAGE-${current}` })],
+        claim_type: 'exchange', counts: { exchange: 21 },
+        pagination: { current_page: current, per_page: 20, total: 21, last_page: 2 },
+      } }) });
+    });
+    await openOrderDetail(page, 'EX-PAGE-1');
+    const second = page.getByRole('button', { name: '페이지 2', exact: true });
+    await second.scrollIntoViewIfNeeded();
+    await second.focus();
+    const before = await page.evaluate(() => ({ y: scrollY, origin: performance.timeOrigin }));
+    const requests: string[] = [];
+    page.on('request', request => { if (request.url().includes('/user/orders/')) requests.push(request.url()); });
+    await second.click();
+    await expect(page.getByText('EX-PAGE-2', { exact: true })).toBeVisible();
+    expect(new URL(page.url()).searchParams.get('page')).toBe('2');
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(before.origin);
+    expect(await page.evaluate(() => scrollY)).toBeCloseTo(before.y, 0);
+    await expect(second).toBeFocused();
+    expect(requests.every(url => new URL(url).pathname.endsWith('/claims'))).toBe(true);
+  });
+
+  // @scenario surface=member, has_image=no
+  // @effects claim_async_buttons_show_spinner_and_block_duplicate_requests
+  test('탭 조회 중 스피너와 중복 클릭 차단이 유지되고 실패 후 다시 누를 수 있다', async ({ page }) => {
+    await mockOrderClaimList(page, { exchange: [claimRow({ claim_number: 'EX-PENDING' })] });
+    await openOrderDetail(page, 'EX-PENDING');
+    let release!: () => void;
+    const held = new Promise<void>(resolve => { release = resolve; });
+    let count = 0;
+    await page.route(`**${API}/user/orders/*/claims?type=return&page=1`, async route => {
+      count++;
+      await held;
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ success: false, message: 'test failure' }) });
+    });
+    const tab = page.getByRole('button', { name: '반품', exact: true });
+    await tab.scrollIntoViewIfNeeded();
+    await tab.focus();
+    const element = await tab.elementHandle();
+    try {
+      await element!.evaluate((button: HTMLButtonElement) => button.click());
+      await expect.poll(() => count).toBe(1);
+      expect(await element!.evaluate(button => button.querySelectorAll('.animate-spin').length)).toBe(1);
+      expect(await element!.getAttribute('aria-disabled')).toBe('true');
+      await element!.evaluate((button: HTMLButtonElement) => button.click());
+      expect(count).toBe(1);
+    } finally {
+      release();
+    }
+    await expect.poll(() => element!.getAttribute('aria-disabled')).toBe('false');
+    expect(await element!.evaluate(button => button.querySelectorAll('.animate-spin').length)).toBe(0);
+    expect(await element!.evaluate(button => document.activeElement === button)).toBe(true);
+  });
+
+  // @scenario surface=member, has_image=no
   // @effects member_order_detail_number_opens_detail_in_new_window, order_claim_section_thumbnail_placeholder_when_missing
   test('신청번호가 새 창으로 그 신청서 상세를 열고, 이미지 없는 상품은 자리표시가 선다', async ({ page }) => {
     await mockOrderClaimList(page, {
@@ -139,7 +198,7 @@ test.describe('회원 주문상세 클레임 섹션', () => {
   });
 
   // @scenario surface=member, has_image=yes
-  // @effects member_order_detail_claim_list_is_paginated_by_type
+  // @effects member_order_detail_claim_list_is_paginated_by_type, claim_tab_keeps_scroll_and_focus_without_order_refetch
   test('서브탭 전환이 주문 스코프 목록을 그 유형으로 다시 부른다', async ({ page }) => {
     const requested = await mockOrderClaimList(page, {
       exchange: [claimRow({ claim_number: 'EX20260902-0910' })],
@@ -156,7 +215,13 @@ test.describe('회원 주문상세 클레임 섹션', () => {
 
     await openOrderDetail(page, 'EX20260902-0910');
 
-    await page.getByRole('button', { name: '반품', exact: true }).click();
+    const tab = page.getByRole('button', { name: '반품', exact: true });
+    await tab.scrollIntoViewIfNeeded();
+    await tab.focus();
+    const before = await page.evaluate(() => ({ y: scrollY, origin: performance.timeOrigin }));
+    const requests: string[] = [];
+    page.on('request', request => { if (request.url().includes(API)) requests.push(request.url()); });
+    await tab.click();
 
     await expect
       .poll(() => new URL(page.url()).searchParams.get('type'), { timeout: 15_000 })
@@ -170,6 +235,10 @@ test.describe('회원 주문상세 클레임 섹션', () => {
     expect(requested.some((u) => !u.searchParams.get('type'))).toBe(true);
     expect(requested.some((u) => u.searchParams.get('type') === 'return')).toBe(true);
     expect(requested.every((u) => u.pathname.endsWith(`/user/orders/${MOCK_ORDER.id}/claims`))).toBe(true);
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(before.origin);
+    expect(await page.evaluate(() => scrollY)).toBeCloseTo(before.y, 0);
+    await expect(tab).toBeFocused();
+    expect(requests.filter(url => url.includes('/user/orders/')).every(url => new URL(url).pathname.endsWith('/claims'))).toBe(true);
 
     // 이미지가 있는 상품은 썸네일이 선다
     await expect(page.locator('img[src="https://example.test/bag.jpg"]')).toHaveCount(1);

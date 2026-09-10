@@ -566,11 +566,12 @@ HTTP/1.1 200
 | order_settings.pending_order_expire_minutes | body | integer | 아니오 | min 0, max 20160 | 결제 미완료 주문 만료 기준(분). 결제창까지 갔으나 결제가 성립하지 않은 주문을 이 시간 경과 후 자동 취소. `0` 이면 그 부류를 정리하지 않음 |
 | order_settings.cart_expiry_days | body | integer | 아니오 | min 1, max 365 | 장바구니 보관기간(일). 경과 시 담긴 상품 자동 삭제 |
 | order_settings.stock_restore_on_cancel | body | boolean | 아니오 | — | 주문 취소 시 차감된 재고 자동 복구 여부 (반품/교환에도 적용) |
+| order_settings.cancellable_statuses | body | array | 아니오 | — | 즉시취소 가능한 주문상품 상태의 기준 설정. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed`. 빈 배열은 즉시취소 비활성화, `null`은 422. 회원·비회원 주문 취소와 클레임 신청 자격이 같은 값을 사용 |
 | order_settings.confirmable_statuses | body | array | 아니오 | — | 사용자가 구매확정할 수 있는 주문 옵션 상태 목록 (`payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered` 중 선택) |
 | claim | body | array | 아니오 | — | 클레임 설정 섹션 (정책 스칼라 + 사유 카탈로그 3종. 카탈로그는 DB 동기화 대상으로 분리 저장) |
 | claim.exchange_requestable_statuses | body | array | 아니오 | — | 교환을 신청할 수 있는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `delivered`, `confirmed`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.return_requestable_statuses | body | array | 아니오 | — | 반품을 신청할 수 있는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `delivered`, `confirmed`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
-| claim.instant_cancel_statuses | body | array | 아니오 | — | 환불신청서를 만들지 않고 즉시 취소되는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready` (기본 `payment_complete`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.instant_cancel_statuses | body | array | 아니오 | — | `order_settings.cancellable_statuses`의 호환 별칭. 허용 상태·빈 배열 의미가 동일하며 어느 설정 탭에서 저장해도 두 키가 함께 갱신됨. 두 키를 동시에 다르게 보내면 주문 설정이 우선. 읽기 시 저장값을 변경하지 않음 |
 | claim.refund_request_statuses | body | array | 아니오 | — | 환불신청서로 접수되는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping` (기본 `preparing`, `shipping_ready`, `shipping`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.allowed_charge_methods | body | array | 아니오 | — | 고객이 신청서에서 고를 수 있는 청구 방식. 허용 `pay_on_request`·`pay_on_approval`·`deduct_from_refund`. 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.charge_payment_methods | body | array | 아니오 | — | 클레임 추가결제에 쓸 수 있는 결제수단 (기본 `card`, `point`). 허용값은 기본 결제수단 + 결제 플러그인이 등록한 확장 결제수단 ID — 일반 주문의 결제수단 목록과 같은 출처다. 키를 보내면 값이 있어야 한다(`null` 은 422) |
@@ -1260,11 +1261,13 @@ HTTP/1.1 200
 
 **섹션은 통째로 교체됩니다 (부분 병합 아님)** 저장 범위를 정하는 것은 **payload 에 실린 섹션 키**입니다 — `_tab` 은 저장 대상을 고르지 않으며(검증된 카테고리 목록에서 제외되고 저장 단계에서도 `_` 로 시작하는 키는 건너뜁니다) 화면이 어느 탭에서 보냈는지를 기록하는 메타 값입니다. 그리고 보낸 섹션 안에서는 **보낸 키만 남습니다**. 저장은 카테고리 단위 JSON 파일 쓰기이며 기존 저장본과 키 단위로 병합하지 않으므로, 요청에서 빠진 키는 저장 파일에서 사라지고 조회 시 `defaults.json` 의 기본값으로 되돌아갑니다. 응답은 **200** 이고 오류도 경고도 없습니다.
 
-- 예: `{"_tab":"claim","claim":{"max_images":10}}` 로 저장하면 운영자가 앞서 지정한 `instant_cancel_statuses`·`allowed_charge_methods`·`auto_approve_*` 등 나머지 클레임 축이 모두 기본값으로 되돌아갑니다
+- 예: `{"_tab":"claim","claim":{"max_images":10}}` 로 저장하면 운영자가 앞서 지정한 `allowed_charge_methods`·`auto_approve_*` 등 나머지 클레임 축이 기본값으로 되돌아갑니다. `instant_cancel_statuses`는 주문 취소 설정의 별칭이므로 주문 설정을 따릅니다
 - `{"_tab":"claim","claim":{…},"shipping":{…}}` 처럼 두 섹션을 함께 보내면 **둘 다 저장됩니다**. `_tab` 이 `claim` 이라고 해서 shipping 이 무시되지 않으며, 그 shipping 섹션도 보낸 키만 남아 나머지는 기본값으로 되돌아갑니다
 - 따라서 클라이언트는 **그 섹션 전체를 다시 실어 보내야 합니다**. 관리자 화면은 조회 응답을 폼 상태로 들고 있다가 섹션 전체를 전송합니다
 - 파라미터 표의 `필수` 열이 "아니오" 인 것은 *그 섹션을 저장하지 않을 때 생략 가능* 하다는 뜻이지, 보낸 섹션 안에서 개별 키를 생략해도 보존된다는 뜻이 아닙니다
 - DB 관리 대상(`shipping.carriers`·`shipping.types` 와 클레임 사유 카탈로그 3종)은 이 규칙 밖입니다 — 키 자체를 보내지 않으면 동기화가 일어나지 않아 기존 목록이 유지됩니다. 다만 **빈 배열을 보내면 "전부 삭제" 요청**으로 해석되므로, 조회 응답에 그 키가 없다고 해서 `[]` 로 채워 보내면 안 됩니다
+
+**취소 정책 별칭의 예외** `order_settings.cancellable_statuses` 또는 `claim.instant_cancel_statuses`를 저장하면 두 카테고리의 다른 저장값을 보존하면서 두 키를 함께 갱신합니다. 별칭 없는 일반 섹션 저장은 위의 교체 규칙을 따릅니다. 내부 개별 설정 메서드(`updateSetting`, 현재 HTTP 라우트 없음)도 같은 값 검증·숫자 정규화를 거치며 DB 카탈로그는 전체 저장의 동기화와 사용 중 삭제 검사를 공유합니다.
 
 **숫자 필드 정규화** 검증 규칙에 `integer` / `numeric` 이 선언된 모든 필드는 검증 직전에 숫자 타입으로 캐스트되어 저장됩니다(중첩 배열의 와일드카드 경로 포함 — 예: `mileage.currency_rules.*.use_unit`). HTML `number` 입력의 값은 문자열(`"5"`)로 전송되고 Laravel 의 `integer` 규칙은 숫자 문자열을 통과시키되 캐스트하지 않으므로, 정규화가 없으면 문자열이 그대로 설정 파일에 영속되어 이후 날짜/수치 연산에서 타입 오류를 유발합니다.
 
@@ -1738,7 +1741,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 단일 설정 카테고리만 골라 조회합니다. `permission:sirsoft-ecommerce.settings.read` 권한이 필요하며, path 의 `category`(예 `basic_info`)로 `EcommerceSettingsService::getSettings()`를 호출해 해당 섹션만 반환합니다. 전체 설정을 내려받는 index 와 달리 특정 탭 데이터만 필요할 때 사용하며, 응답은 `category`·`settings`·`abilities.can_update` 를 포함합니다.
+**설명** 관리자가 단일 설정 카테고리만 골라 조회합니다. `permission:sirsoft-ecommerce.settings.read` 권한이 필요하며, path의 `category`(예 `basic_info`)에 해당하는 섹션을 반환합니다. 전체 조회와 동일하게 DB의 배송사·배송유형·클레임 사유 및 알림 채널을 보강합니다. 따라서 `claim` 응답에도 사유 카탈로그 3종이 포함됩니다. 응답은 `category`·`settings`·`abilities.can_update`를 포함합니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/settings/checkout
@@ -2153,5 +2156,3 @@ HTTP/1.1 200
 확장 결제수단(간편결제)은 코어의 `card` 로 치환되지 않고 자기 ID 그대로 저장·조회된다.
 주문 생성 시 `payment_method` 로 확장 ID 를 그대로 보내면 되며, 서버는 이 카탈로그를 화이트리스트로
 사용해 검증한다.
-
-

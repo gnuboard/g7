@@ -37,6 +37,11 @@ axes:
   reason_type: [exchange, return, refund]
 
 effects:
+  # 설정 경로 후속: 전체/카테고리/내부 개별 읽기·쓰기의 결과와 정규화가 같아야 한다.
+  - settings_all_categories_match_full_response
+  - settings_single_catalog_writes_database_and_reads_same_catalog
+  - settings_single_value_normalizes_and_rejects_invalid_status
+  - settings_claim_seeder_preserves_used_and_removes_unused_reasons
   # 탭 구성
   - settings_claim_tab_composes_policy_and_three_catalogs
   - settings_claim_policy_exposes_every_scalar_axis

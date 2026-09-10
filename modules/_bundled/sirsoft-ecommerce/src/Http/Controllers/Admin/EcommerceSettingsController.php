@@ -39,6 +39,14 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingTypeService;
  */
 class EcommerceSettingsController extends AdminBaseController
 {
+    /**
+     * 설정과 DB 카탈로그를 관리하는 서비스를 주입합니다.
+     *
+     * @param  EcommerceSettingsService  $settingsService  설정 저장·조회 서비스
+     * @param  ShippingCarrierService  $carrierService  배송사 서비스
+     * @param  ShippingTypeService  $shippingTypeService  배송 유형 서비스
+     * @param  ClaimReasonService  $claimReasonService  클레임 사유 서비스
+     */
     public function __construct(
         private EcommerceSettingsService $settingsService,
         private ShippingCarrierService $carrierService,
@@ -54,12 +62,7 @@ class EcommerceSettingsController extends AdminBaseController
     public function index(): JsonResponse
     {
         try {
-            $settings = $this->settingsService->getAllSettings();
-            $settings = $this->appendCarriersToSettings($settings);
-            $settings = $this->appendShippingTypesToSettings($settings);
-            $settings = $this->appendShippingApiRequestFieldsToSettings($settings);
-            $settings = $this->appendClaimReasonsToSettings($settings);
-            $settings = $this->appendMileageNotificationChannelsToSettings($settings);
+            $settings = $this->settingsWithCatalogs();
             $settings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
             // 현금영수증 발급 프로바이더 후보 — 결제 플러그인이 훅으로 자신을 등록한다.
             // 발급 PG 와 결제 PG 는 독립 선택이므로 목록도 별도로 내린다 (KG 결제 + 토스 발급 등).
@@ -98,7 +101,7 @@ class EcommerceSettingsController extends AdminBaseController
     public function show(string $category): JsonResponse
     {
         try {
-            $settings = $this->settingsService->getSettings($category);
+            $settings = $this->settingsWithCatalogs()[$category] ?? [];
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -128,9 +131,18 @@ class EcommerceSettingsController extends AdminBaseController
      */
     public function store(StoreEcommerceSettingsRequest $request): JsonResponse
     {
-        try {
-            $settings = $request->validatedSettings();
+        return $this->saveValidatedSettings($request->validatedSettings());
+    }
 
+    /**
+     * 검증된 전체·개별 설정을 같은 JSON/DB 저장 경로로 처리합니다.
+     *
+     * @param  array  $settings  저장할 카테고리 데이터
+     * @return JsonResponse 저장 결과
+     */
+    private function saveValidatedSettings(array $settings): JsonResponse
+    {
+        try {
             // shipping.carriers·shipping.types 는 DB 관리 대상 — JSON 저장에서 제외.
             // 규칙이 nullable 이라 null 로도 도착한다. isset() 으로만 분기하면 null 이 걸러지지
             // 않아 두 가지가 한꺼번에 깨진다 — ① 카탈로그와 같은 이름의 죽은 키가 shipping.json 에
@@ -244,12 +256,7 @@ class EcommerceSettingsController extends AdminBaseController
                 HookManager::doAction('core.module_settings.after_save', 'sirsoft-ecommerce', $settings, $result);
 
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
-                $updatedSettings = $this->settingsService->getAllSettings();
-                $updatedSettings = $this->appendCarriersToSettings($updatedSettings);
-                $updatedSettings = $this->appendShippingTypesToSettings($updatedSettings);
-                $updatedSettings = $this->appendShippingApiRequestFieldsToSettings($updatedSettings);
-                $updatedSettings = $this->appendClaimReasonsToSettings($updatedSettings);
-                $updatedSettings = $this->appendMileageNotificationChannelsToSettings($updatedSettings);
+                $updatedSettings = $this->settingsWithCatalogs();
                 $updatedSettings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
                 $updatedSettings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
                 // 공개 자산 디스크 선택지 — 저장 응답에도 재부착 (관리자 UI 상태 갱신용)
@@ -362,7 +369,7 @@ class EcommerceSettingsController extends AdminBaseController
         try {
             $key = $request->validated('key');
 
-            $value = $this->settingsService->getSetting($key);
+            $value = Arr::get($this->settingsWithCatalogs(), $key);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -392,6 +399,23 @@ class EcommerceSettingsController extends AdminBaseController
         try {
             $key = $request->validated('key');
             $value = $request->validated('value');
+
+            // DB 카탈로그를 포함한 개별 저장은 전체 저장의 사용 중 삭제 검사·DB 동기화를 공유한다.
+            // 스칼라만 저장하는 기존 경로는 setSetting의 부분 갱신 계약을 유지한다.
+            $payload = [];
+            Arr::set($payload, $key, $value);
+            if ($this->containsCatalogSettings($payload)) {
+                $response = $this->saveValidatedSettings($payload);
+                if ($response->getStatusCode() >= 400) {
+                    return $response;
+                }
+
+                return ResponseHelper::moduleSuccess(
+                    'sirsoft-ecommerce',
+                    'messages.settings.update_success',
+                    ['updated' => true]
+                );
+            }
 
             $result = $this->settingsService->setSetting($key, $value);
 
@@ -543,6 +567,50 @@ class EcommerceSettingsController extends AdminBaseController
         return is_array($rows) ? $rows : null;
     }
 
+    /**
+     * 전체·카테고리·개별 조회가 공유하는 DB 카탈로그 포함 설정입니다.
+     *
+     * @return array 설정과 DB 카탈로그
+     */
+    private function settingsWithCatalogs(): array
+    {
+        $settings = $this->settingsService->getAllSettings();
+        $settings = $this->appendCarriersToSettings($settings);
+        $settings = $this->appendShippingTypesToSettings($settings);
+        $settings = $this->appendShippingApiRequestFieldsToSettings($settings);
+        $settings = $this->appendClaimReasonsToSettings($settings);
+
+        return $this->appendMileageNotificationChannelsToSettings($settings);
+    }
+
+    /**
+     * JSON 파일에 저장해서는 안 되는 DB 카탈로그가 포함되어 있는지 판정합니다.
+     *
+     * @param  array  $settings  개별 설정 키를 펼친 데이터
+     * @return bool 카탈로그 저장 경로 필요 여부
+     */
+    private function containsCatalogSettings(array $settings): bool
+    {
+        foreach (['carriers', 'types'] as $key) {
+            if (array_key_exists($key, $settings['shipping'] ?? [])) {
+                return true;
+            }
+        }
+        foreach (ClaimReasonTypeEnum::cases() as $type) {
+            if (array_key_exists($type->value.'_reasons', $settings['claim'] ?? [])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 설정 응답에 DB 배송사 카탈로그를 덧붙입니다.
+     *
+     * @param  array  $settings  원본 설정
+     * @return array 배송사 목록이 포함된 설정
+     */
     private function appendCarriersToSettings(array $settings): array
     {
         $carriers = $this->carrierService->getAllCarriers();

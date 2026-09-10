@@ -84,7 +84,7 @@ describe('목록 컨텍스트 왕복 — 같은 목록 안의 이동만 상태�
   // @scenario claim_type=exchange, screen=list, entry=none
   // @effects claim_list_tab_switch_does_not_inherit_the_previous_page, claim_list_type_tabs_follow_the_query
   it('유형 서브탭 전환은 앞 유형의 페이지를 물려받지 않는다', () => {
-    const tabNavigate = actionsWith(listPartial, 'navigate').find(
+    const tabNavigate = actionsWith(listPartial, 'replaceUrl').find(
       (a) => a.params?.query?.type === '{{tab.id}}'
     );
 
@@ -101,7 +101,7 @@ describe('목록 컨텍스트 왕복 — 같은 목록 안의 이동만 상태�
   it('페이지 이동과 상세 진입은 서브탭·페이지를 그대로 물려준다', () => {
     const navigates = actionsWith(listPartial, 'navigate');
 
-    const pager = navigates.find((a) => a.params?.query?.page === '{{$args[0]}}');
+    const pager = actionsWith(listPartial, 'replaceUrl').find((a) => a.params?.query?.page === '{{$args[0]}}');
     expect(pager).toBeTruthy();
     expect(pager.params.mergeQuery).toBe(true);
 

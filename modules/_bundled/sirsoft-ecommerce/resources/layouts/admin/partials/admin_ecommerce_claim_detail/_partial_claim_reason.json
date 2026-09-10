@@ -381,7 +381,22 @@
                     "className": "btn btn-primary",
                     "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingMemo === true}}"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.memo.save",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{_local.isSavingMemo}}",
+                      "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm mr-1"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.claim.detail.memo.save"
+                    }
+                  ],
                   "actions": [
                     {
                       "comment": "메모는 금액 수정 엔드포인트(D18)가 함께 받는 축이라 게이트도 `claims.update-amounts` 다 — 버튼 활성 조건을 상태 전이 권한으로 잡으면 그 권한만 가진 운영자에게 버튼은 살아 있고 저장만 403 이 된다.",

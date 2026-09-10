@@ -149,7 +149,22 @@
                     "className": "btn btn-primary",
                     "disabled": "{{claim?.data?.abilities?.can_update_status !== true || _local.isSavingCollection === true}}"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.save",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{_local.isSavingCollection}}",
+                      "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm mr-1"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.save"
+                    }
+                  ],
                   "actions": [
                     {
                       "comment": "회수준비중이면 저장이 회수중 전이를 함께 일으킨다 — 그래서 저장 후 상세를 다시 읽어 진행단계와 상태 뱃지를 맞춘다.",
@@ -360,7 +375,10 @@
                     "className": "btn btn-primary",
                     "disabled": "{{claim?.data?.abilities?.can_update_status !== true || _local.isSavingRedelivery === true}}"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.save",
+                  "children": [
+                    { "type": "basic", "name": "Icon", "if": "{{_local.isSavingRedelivery}}", "props": { "name": "spinner", "className": "spinner-sm mr-1" } },
+                    { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.save" }
+                  ],
                   "actions": [
                     {
                       "type": "click",

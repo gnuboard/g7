@@ -7,7 +7,6 @@
     "_comment_claim_list": "'이 주문의 클레임' 섹션을 이 화면이 소유한다 — 비회원 주문 상세(shop/guest_order_show)와 **같은 partial**(partials/mypage/claims/_list.json)을 무수정으로 쓴다. 신청번호는 새 창 상세 링크(claimDetailLinkMode: new_window)이고 유형 서브탭·페이지는 이 화면의 주소에 ?type=·?page= 로 실린다. 목록 데이터소스(claims)는 회원 클레임 API 가 주문 ID 를 받으므로 order 응답 뒤에 claimable 과 같은 체인으로 부른다.",
     "initLocal": {
         "useClaimActions": true,
-        "claimOrderId": null,
         "isGuest": false,
         "withdrawRefreshDataSourceId": "claims",
         "claimDetailLinkMode": "new_window",
@@ -58,7 +57,7 @@
             "cache": false,
             "refetchOnMount": true,
             "initLocal": {
-                "claimOrderId": "data.id"
+                "claimOrderId": "id"
             },
             "onSuccess": [
                 {
@@ -117,8 +116,8 @@
             "auth_required": true,
             "cache": false,
             "params": {
-                "type": "{{query.type ?? ''}}",
-                "page": "{{query.page ?? 1}}"
+                "type": "{{_local.claimsType ?? query.type ?? ''}}",
+                "page": "{{_local.claimsPage ?? query.page ?? 1}}"
             }
         },
         {
@@ -250,18 +249,6 @@
                                         "partial": "partials/mypage/orders/_items.json"
                                     },
                                     {
-                                        "partial": "partials/mypage/orders/_orderer.json"
-                                    },
-                                    {
-                                        "partial": "partials/mypage/orders/_shipping.json"
-                                    },
-                                    {
-                                        "partial": "partials/mypage/orders/_payment.json"
-                                    },
-                                    {
-                                        "partial": "partials/mypage/orders/_history.json"
-                                    },
-                                    {
                                         "comment": "클레임 신청 버튼 3종 — 체크한 상품에 그 유형이 열려 있을 때만 활성이다. 열린 유형은 서버(claimable-options)가 상품마다 판정하므로 화면이 상태를 다시 해석하지 않는다. 열린 상품이 하나도 없으면 이 줄 자체가 나타나지 않는다.",
                                         "type": "basic",
                                         "name": "Div",
@@ -282,7 +269,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                                    "className": "px-5 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                                                     "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('refund'))}}"
                                                 },
                                                 "actions": [
@@ -306,7 +293,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                                    "className": "px-5 py-2.5 bg-orange-600 dark:bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                                                     "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('return'))}}"
                                                 },
                                                 "actions": [
@@ -330,7 +317,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                                    "className": "px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                                                     "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('exchange'))}}"
                                                 },
                                                 "actions": [
@@ -350,6 +337,18 @@
                                                 "text": "$t:claim.apply.entry_exchange"
                                             }
                                         ]
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_orderer.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_shipping.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_payment.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_history.json"
                                     },
                                     {
                                         "id": "order_claim_section",

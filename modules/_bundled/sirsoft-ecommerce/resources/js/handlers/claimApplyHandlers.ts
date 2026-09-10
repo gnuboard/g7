@@ -1259,6 +1259,7 @@ export async function openClaimChangeProductHandler(
     if (index < 0) return;
 
     const local = G7Core.state.getLocal();
+    if (local.changeProductLoading === true) return;
     const target: ClaimApplyItem | undefined = (local.claimItems ?? [])[index];
 
     if (!target) return;
@@ -1620,6 +1621,7 @@ export async function submitClaimHandler(
 
     const local = G7Core.state.getLocal();
     const claimType = String(local.claimType ?? '');
+    if (local.isSubmittingClaim === true || local.removingClaimImageId != null) return;
     const suffix = claimStoreSuffix(claimType);
     const items = buildClaimItemsPayload(local.claimItems ?? []);
 
@@ -1833,7 +1835,7 @@ export async function saveClaimEditHandler(
     if (!editBase || !claimNumber) return;
     // 더블클릭으로 두 번 나가면 두 번째는 첫 저장이 만든 상태를 다시 고치려다 거절된다 —
     // 성공한 저장 뒤에 실패 안내가 뜬다.
-    if (local.claimEditSaving === true) return;
+    if (local.claimEditSaving === true || local.removingClaimImageId != null) return;
 
     if (!local.claimReason) {
         G7Core.toast?.warning?.(

@@ -4,6 +4,10 @@
 
 ## 레이아웃
 
+클레임의 비동기 저장 버튼은 로컬 pending 상태에 따라 `Icon` 스피너와 `disabled`를 함께 표시한다. 핸들러에서도 중복 실행을 막고 `finally`에서 상태를 해제한다. 완료 요약 재계산 중에는 `claimCompletePreviewLoading`으로 확정을 막으며 최신 계산 요청만 대기 상태를 해제한다.
+
+완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
+
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 레이아웃 228개 (루트: `resources/layouts`).
 
