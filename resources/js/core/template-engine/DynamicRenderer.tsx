@@ -3519,7 +3519,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * - name prop 존재
      * - 부모 FormContext의 dataKey/setState 존재
      * - props.autoBinding !== false
-     * - 매니페스트 metadata.autoBinding !== false (engine-v1.66.1+)
+     * - 매니페스트 metadata.autoBinding !== false (engine-v1.68.1+)
      */
     useEffect(() => {
       const name = stableResolvedProps?.name;
@@ -3529,7 +3529,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
       const fullPath = `${parentFormContext.dataKey}.${name}`;
       // 지역명은 `pathRegistry` — 컴포넌트 레지스트리 prop(`registry`)과 이름이 겹치면
-      // 같은 블록에서 prop 을 읽는 순간 TDZ 로 죽는다(engine-v1.66.1 에서 실제로 밟은 자리).
+      // 같은 블록에서 prop 을 읽는 순간 TDZ 로 죽는다(engine-v1.68.1 에서 실제로 밟은 자리).
       const pathRegistry: Map<string, number> =
         ((window as any).__g7AutoBindingPaths as Map<string, number> | undefined)
         ?? new Map<string, number>();
@@ -3567,7 +3567,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         return propsWithoutFormConfig;
       }
 
-      // --- 자동 바인딩 대상 제한 (engine-v1.66.1) ---
+      // --- 자동 바인딩 대상 제한 (engine-v1.68.1) ---
       // `name` 이 폼 필드명이 아닌 컴포넌트(Icon 의 글리프 이름, Avatar/UserInfo 의 표시 이름 등)는
       // 매니페스트가 `autoBinding: false` 로 선언한다. 이 선언이 없으면 종전대로 자동 바인딩 대상이다.
       // 선언 없이 이름이 겹치면 폼 필드 값이 `value` 로 주입돼 배열/객체 필드가 DOM 에
@@ -3860,7 +3860,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         const { layout, columns, gap, className, ...restProps } = effectiveComponentDef.props || {};
 
         /**
-         * 호스트 `<div>` 에는 **DOM 표준 속성만** 남긴다 (engine-v1.66.1+)
+         * 호스트 `<div>` 에는 **DOM 표준 속성만** 남긴다 (engine-v1.68.1+)
          *
          * extension_point 의 props 는 통째로 **주입된 자식의** 페이로드다 — 백엔드가
          * `LayoutExtensionService` 에서 이 props 를 주입 컴포넌트의 `extensionPointProps`

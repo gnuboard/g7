@@ -106,6 +106,8 @@ exclusions:
   - { compile_unit: decompile, source_health: invalid, reason: "역변환은 컴파일 산출 JSON(항상 valid)을 입력받아 .g7.html 로 되돌린다 — 잘못된 소스 개념이 없음" }
 
 effects:
+  # 11차 develop 병합 유입(7.0.11) — 공개 서빙 캐시 키는 서버 현재 버전으로만 조립한다(클라이언트 ?v 는 HTTP 캐시 우회용).
+  - serving_cache_key_uses_server_current_version
   # --- S1 토큰 방출
   - start_tag_carries_name_attributes_and_source_position
   - end_tag_and_text_and_comment_tokens_are_emitted_in_authoring_order
@@ -1040,6 +1042,9 @@ test_files:
   # 미리보기 서빙(무인증 토큰)도 있고, 그쪽은 분기가 둘이라 진입점 한 자리에서 제거한다.
   # 한 소비자에서 초록이 나면 나머지가 보이지 않는다 — 그래서 소비자마다 표본을 둔다.
   - tests/Feature/Api/Public/LayoutPreviewControllerTest.php
+  # 11차 develop 병합 유입(7.0.11 · #670 계열) — develop 라인이 만든 서빙 캐시 키 회귀 테스트. 이 트랙 산출물이 아니지만
+  # 클래스명이 S21.1 게이트 필터 `LayoutServing` 에 걸려 게이트에서 돌므로 등재한다(소유는 develop, 이 트랙 변경은 사례 번호 재번호뿐).
+  - tests/Feature/Api/Public/LayoutServingStaleClientVersionKeyTest.php
   # S21.4 — 같은 명제의 **세 번째 파일 종류**: 상속원(베이스 레이아웃).
   # 이 단락이 `_admin_base` 에 26건을 넣었고 그것은 관리자 전 화면이 상속하는 자리다. 베이스 주석이
   # 제거를 지나치면 한 파일의 문제가 아니라 **모든 관리자 화면 응답**의 문제가 된다.

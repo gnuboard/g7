@@ -421,8 +421,11 @@ Every verification point — signup, password reset, sensitive operations, the m
 git clone https://github.com/gnuboard/g7.git
 cd g7
 
-# 2. Install PHP dependencies
-composer install
+# 2. (Optional) Install PHP dependencies — you can skip this step:
+#    the setup wizard installs them automatically with the production
+#    configuration when vendor/ is absent. Do not use a plain composer
+#    install on a production site; it pulls in development packages.
+composer install --no-dev --optimize-autoloader
 
 # 3. Copy the environment file
 cp .env.example .env
@@ -587,6 +590,7 @@ Thanks to everyone who reported an issue or suggested a feature that shipped —
   <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
   <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
   <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>
+  <a href="https://github.com/keidichoi-gif" title="keidichoi-gif"><img src="https://github.com/keidichoi-gif.png" width="48" alt="keidichoi-gif"></a>
   <a href="https://github.com/kitrio" title="kitrio"><img src="https://github.com/kitrio.png" width="48" alt="kitrio"></a>
   <a href="https://github.com/yks118" title="yks118"><img src="https://github.com/yks118.png" width="48" alt="yks118"></a>
   <a href="https://github.com/movielee2020" title="movielee2020"><img src="https://github.com/movielee2020.png" width="48" alt="movielee2020"></a>

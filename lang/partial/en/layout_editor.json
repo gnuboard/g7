@@ -320,6 +320,8 @@
     "blocked_inactive_extension": "Cannot save — newly added components belong to a deactivated extension",
     "network_error_title": "Network error while saving",
     "guard_no_document": "No layout document loaded — nothing to save",
+    "guard_extension_reassembly_title": "Not saved — extension content could not be mapped back",
+    "guard_extension_reassembly": "{count} element(s) injected by this extension could not be traced to their original slot. Saving would drop them, so the save was blocked. Reload the page and try again.",
     "concurrent": {
       "title": "Another user saved first",
       "message": "This layout was saved by another administrator. Load the latest version?",
@@ -343,6 +345,9 @@
       "mode_tile": "Tile",
       "upload_failed": "Image upload failed"
     },
+    "number": {
+      "placeholder": "Enter a number"
+    },
     "dimension": {
       "placeholder": "e.g. 320px, 50%, 24rem, auto"
     },
@@ -356,6 +361,11 @@
       "right": "Right",
       "bottom": "Bottom",
       "left": "Left"
+    },
+    "bound_value": {
+      "notice": "Bound to data (filled automatically)",
+      "replace": "Replace with a fixed value",
+      "restore": "Restore the data binding"
     }
   },
   "recipe": {
@@ -1300,6 +1310,14 @@
     "login": {
       "label": "Handle login",
       "param_body": "Login info"
+    },
+    "login_two_factor": {
+      "label": "Verify code",
+      "param_body": "Verification info"
+    },
+    "login_two_factor_resend": {
+      "label": "Resend code",
+      "param_body": "Challenge info"
     },
     "logout": {
       "label": "Handle logout",

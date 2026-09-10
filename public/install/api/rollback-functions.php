@@ -482,7 +482,10 @@ function getManualCommands(string $taskId, ?string $target = null): array
 
     switch ($taskId) {
         case 'composer_install':
-            $commands[] = "{$composer} install --no-interaction --prefer-dist --optimize-autoloader";
+            // --no-dev 는 마법사가 실제로 실행하는 명령(task-runner.php)과 같아야 한다. 이 안내를
+            // 옵션 없이 따라 하면 개발용(require-dev) 패키지가 섞인 vendor 가 만들어지고, 그 상태는
+            // 이후 코어 업데이트가 vendor 를 교체할 때 이전 패키지 매니페스트와 어긋나 부팅을 깨뜨린다.
+            $commands[] = "{$composer} install --no-interaction --no-dev --prefer-dist --optimize-autoloader";
             break;
 
         case 'env_create':

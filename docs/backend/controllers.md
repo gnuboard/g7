@@ -1,6 +1,6 @@
 # 컨트롤러 계층 구조
 
-> **관련 문서**: [index.md](index.md) | [service-repository.md](service-repository.md) | [validation.md](validation.md)
+> **관련 문서**: [README.md](README.md) | [service-repository.md](service-repository.md) | [validation.md](validation.md)
 
 ---
 
@@ -313,7 +313,7 @@ public function show(int $id): JsonResponse
 
 ## 관련 문서
 
-- [index.md](index.md) - 백엔드 가이드 인덱스
+- [README.md](README.md) - 백엔드 가이드 인덱스
 - [service-repository.md](service-repository.md) - Service-Repository 패턴
 - [validation.md](validation.md) - 검증 로직 구현 원칙
 - [response-helper.md](response-helper.md) - API 응답 규칙

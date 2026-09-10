@@ -19,6 +19,14 @@
         },
         "children": [
           {
+            "id": "e2e_sandbox_header",
+            "type": "composite",
+            "name": "Header",
+            "props": {
+              "siteName": "E2E 샌드박스"
+            }
+          },
+          {
             "id": "e2e_sandbox_root",
             "type": "basic",
             "name": "Div",

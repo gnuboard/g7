@@ -5,6 +5,7 @@ namespace Tests\Unit\Repositories;
 use App\Models\LayoutExtension;
 use App\Models\Template;
 use App\Models\TemplateLayoutExtensionVersion;
+use App\Models\User;
 use App\Repositories\LayoutExtensionVersionRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -211,5 +212,38 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
     {
         $this->assertSame([], $this->repository->getCurrentVersionsByExtensionIds([]));
         $this->assertSame([], $this->repository->getCurrentVersionsByExtensionIds([$this->extension->id]));
+    }
+
+    /**
+     * saveVersion 은 인증 사용자를 created_by 로 기록한다(레이아웃 본체와 동형).
+     */
+    public function test_save_version_records_authenticated_user_as_creator(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $version = $this->repository->saveVersion($this->extension->id, ['extension_point' => 'header', 'components' => []]);
+
+        $this->assertSame($user->id, $version->created_by);
+    }
+
+    /**
+     * restoreVersion 은 확장 lock_version 을 올린다(레이아웃 본체와 동형).
+     */
+    public function test_restore_version_increments_extension_lock_version(): void
+    {
+        $oldContent = ['extension_point' => 'header', 'components' => [['type' => 'basic', 'name' => 'Span']]];
+        $this->extension->forceFill(['lock_version' => 2, 'content' => ['extension_point' => 'footer']])->save();
+        $target = TemplateLayoutExtensionVersion::factory()->create([
+            'extension_id' => $this->extension->id,
+            'version' => 1,
+            'content' => $oldContent,
+        ]);
+
+        $this->repository->restoreVersion($this->extension->id, $target->id);
+
+        $this->extension->refresh();
+        $this->assertSame(3, (int) $this->extension->lock_version);
+        $this->assertEquals($oldContent, $this->extension->content);
     }
 }

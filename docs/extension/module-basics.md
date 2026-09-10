@@ -873,7 +873,7 @@ public function seoVariables(): array
 
 ## 관련 문서
 
-- [index.md](./index.md) - 확장 시스템 개요
+- [README.md](./README.md) - 확장 시스템 개요
 - [hooks.md](./hooks.md) - 훅 시스템
 - [module-routing.md](./module-routing.md) - 모듈 라우트 규칙
 - [module-layouts.md](./module-layouts.md) - 모듈 레이아웃 시스템

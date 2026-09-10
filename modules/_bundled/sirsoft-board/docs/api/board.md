@@ -103,7 +103,7 @@ _단건 응답: `data` 객체의 필드. FileUploader 컴포넌트 호환을 위
 | data.stored_filename | string | `—` | 스토리지에 실제 저장된 파일명 (충돌 방지용 내부 파일명) |
 | data.mime_type | string | `image/png` | 업로드 파일의 MIME 타입 |
 | data.size | integer | `2048` | 파일 크기 (바이트) |
-| data.url | string | `/api/modules/sirsoft-board/boards/apidoc-sample-board/attachment/apidocsmpl1` | 첨부파일 접근 URL (`AttachmentService::getUrl()` 산물) |
+| data.url | string | `/api/modules/sirsoft-board/boards/apidoc-sample-board/attachment/apidocsmpl1` | 첨부파일 접근 URL (`AttachmentService::getUrl()` 산물 — 비밀글·삭제글 게이트가 걸린 다운로드 서빙 URL. 공개 자산 디스크를 켜도 직접 URL 로 바뀌지 않는다, 7.0.11+) |
 | data.order | integer | `0` | 첨부파일 표시 순서 (0 부터 오름차순) |
 | data.created_at | string | `2026-07-08 10:41:34` | 업로드(생성) 일시 |
 

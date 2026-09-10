@@ -37,6 +37,10 @@ Repositories (RepositoryInterface 경유, 정렬 화이트리스트·컬럼 프�
 Models (SoftDeletes 적용 — Post/Comment/Attachment/Report)
 ```
 
+첨부 URL 은 `AttachmentService::getUrl()` 이 비밀글·삭제글 게이트가 걸린 다운로드 서빙 URL(리소스의
+`download_url`)을 돌려줍니다 — 공개 자산 디스크(CDN 직접 URL)를 켜도 게시판 첨부는 직접 URL 로 바뀌지
+않습니다. 직접 URL 로 내보내면 그 게이트가 통째로 우회되기 때문입니다(7.0.11).
+
 Listeners(`src/Listeners/`)는 이 흐름과 별도 레인입니다 — Service 가 발행한 훅을 받아 카운트
 동기화(`*CountSyncListener`)·활동 로그·SEO 캐시·검색 색인·알림 데이터 추출을 수행하며, Service
 자신은 이 부가효과를 알지 못합니다. 이 분리 덕분에 새 부가효과(예: 신규 카운트 컬럼 동기화)는

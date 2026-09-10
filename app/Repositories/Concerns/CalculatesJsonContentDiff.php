@@ -135,10 +135,17 @@ trait CalculatesJsonContentDiff
     /**
      * 라인 배열 두 개의 LCS diff — 추가/삭제 라인 "수"를 반환한다.
      *
-     * 공통 prefix/suffix 를 먼저 트리밍해 LCS DP 입력을 변경 영역으로 축소한다(큰
-     * content 의 작은 변경도 빠르게 처리). 라인 원문은 누적하지 않고 카운트만 세므로
-     * 메모리도 절약된다(저장 대상은 카운트뿐). 프론트 computeLineDiff 와 동일 전략이라
-     * added/removed 카운트가 일치한다.
+     * 공통 prefix/suffix 를 먼저 트리밍해 LCS 입력을 변경 영역으로 축소한다(큰 content 의
+     * 작은 변경도 빠르게 처리). 카운트는 LCS **길이**만으로 결정된다 — 추가 = 새 줄 수 − LCS,
+     * 삭제 = 옛 줄 수 − LCS — 이므로 표 전체를 만들어 되짚을 필요가 없고, 두 행만 쓰는
+     * 길이 계산으로 메모리를 변경 영역 줄 수에 비례하게 묶는다. 프론트 computeLineDiff 는
+     * 실제 diff 줄을 그려야 해서 전체 표를 쓰지만 같은 LCS 규칙이므로 added/removed 카운트가
+     * 일치한다.
+     *
+     * 트리밍은 양끝이 동시에 바뀌면 무력하다 — 편집기는 저장 시 `comment` 키를 떼어내므로
+     * 큰 공통 레이아웃의 첫 편집기 저장은 변경 영역이 파일 전체(2,000줄 이상)가 된다.
+     * 종전의 (줄 수)² PHP 배열은 그 경우 약 150MB 를 써서 PHP 기본 memory_limit(128M)
+     * 서버에서 저장이 500 으로 끝났다(개발 머신은 512M 이라 드러나지 않았다).
      *
      * @param  array<string>  $a  이전 라인
      * @param  array<string>  $b  새 라인
@@ -172,43 +179,50 @@ trait CalculatesJsonContentDiff
         $nb = count($midB);
 
         // 안전 가드 — 변경 영역이 과대하면 LCS 를 생략하고 라인 집합 차집합으로 근사한다.
-        // 프론트 lineDiff.ts 의 DIFF_MAX_LINES(4000) 와 동일 임계. 인접 버전 비교는 변경
-        // 영역이 작아 이 경로를 타지 않으며, 비정상적으로 큰 변경에서만 O(n·m) DP 를 회피한다.
+        // 프론트 lineDiff.ts 의 DIFF_MAX_LINES(4000) 와 동일 임계. 시간 O(n·m) 의 상한이며,
+        // 아래 길이 계산은 메모리가 두 행뿐이라 이 임계 안에서는 memory_limit 과 무관하다.
         if ($na > self::DIFF_MAX_LINES || $nb > self::DIFF_MAX_LINES) {
             return $this->approximateLineCounts($midA, $midB);
         }
 
-        // LCS DP
-        $dp = array_fill(0, $na + 1, array_fill(0, $nb + 1, 0));
+        $lcs = $this->lcsLength($midA, $midB);
+
+        return [$nb - $lcs, $na - $lcs];
+    }
+
+    /**
+     * 두 라인 배열의 LCS(최장 공통 부분수열) 길이 — 두 행만 쓰는 DP.
+     *
+     * 전체 표(종전 `$dp[$i][$j]`)와 같은 점화식(`a[i] === b[j] ? next[j+1] + 1 : max(next[j],
+     * cur[j+1])`)을 행 단위로 굴려 마지막 행의 첫 칸만 남긴다. 되짚기(backtrack)가 필요한
+     * 프론트 diff 뷰와 달리 여기서는 길이만 쓰므로 카운트가 종전과 정확히 같다.
+     *
+     * @param  array<int, string>  $a  이전 라인 (0 부터 연속 인덱스)
+     * @param  array<int, string>  $b  새 라인 (0 부터 연속 인덱스)
+     * @return int LCS 길이
+     */
+    private function lcsLength(array $a, array $b): int
+    {
+        $na = count($a);
+        $nb = count($b);
+
+        if ($na === 0 || $nb === 0) {
+            return 0;
+        }
+
+        $next = array_fill(0, $nb + 1, 0);
         for ($i = $na - 1; $i >= 0; $i--) {
+            $cur = array_fill(0, $nb + 1, 0);
+            $line = $a[$i];
             for ($j = $nb - 1; $j >= 0; $j--) {
-                $dp[$i][$j] = $midA[$i] === $midB[$j]
-                    ? $dp[$i + 1][$j + 1] + 1
-                    : max($dp[$i + 1][$j], $dp[$i][$j + 1]);
+                $cur[$j] = $line === $b[$j]
+                    ? $next[$j + 1] + 1
+                    : max($next[$j], $cur[$j + 1]);
             }
+            $next = $cur;
         }
 
-        // backtrack — 삭제/추가 라인 수만 카운트
-        $added = 0;
-        $removed = 0;
-        $i = 0;
-        $j = 0;
-        while ($i < $na && $j < $nb) {
-            if ($midA[$i] === $midB[$j]) {
-                $i++;
-                $j++;
-            } elseif ($dp[$i + 1][$j] >= $dp[$i][$j + 1]) {
-                $removed++;
-                $i++;
-            } else {
-                $added++;
-                $j++;
-            }
-        }
-        $removed += $na - $i;
-        $added += $nb - $j;
-
-        return [$added, $removed];
+        return $next[0];
     }
 
     /**

@@ -44,7 +44,7 @@ final class ActionHandlerManifest
         // nav
         'navigate', 'navigateBack', 'navigateForward', 'openWindow', 'replaceUrl',
         // api / auth / data source
-        'apiCall', 'login', 'logout', 'refetchDataSource', 'appendDataSource', 'updateDataSource',
+        'apiCall', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'logout', 'refetchDataSource', 'appendDataSource', 'updateDataSource',
         'ensureIdentityVerified', 'resolveIdentityChallenge',
         // state
         'setState', 'setError', 'updateProductField', 'updateOptionField',
@@ -77,7 +77,7 @@ final class ActionHandlerManifest
      * @var array<int, string>
      */
     private const TARGET_TOP_LEVEL_HANDLERS = [
-        'apiCall', 'openModal', 'closeModal', 'setLocale', 'login', 'logout',
+        'apiCall', 'openModal', 'closeModal', 'setLocale', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'logout',
     ];
 
     /**
@@ -105,7 +105,7 @@ final class ActionHandlerManifest
      * `condition`(=if 오기)·`trigger` 는 결함 키라 넣지 않는다(속성으로 쓰면 NodeCompiler 와 같은
      * "노드/액션 키를 속성으로" 거부에 걸리게 둔다 — 결함 인벤토리 S16).
      *
-     * `stopPropagation` 은 **결함 키에서 정식 표면으로 승격됐다** — engine-v1.66.0 이 진입점 액션에서
+     * `stopPropagation` 은 **결함 키에서 정식 표면으로 승격됐다** — engine-v1.68.0 이 진입점 액션에서
      * 이 키를 실제로 소비하므로 아래 목록에 있다. 승격 이전 기준으로 이 문장을 되돌리지 말 것.
      *
      * `key`(keydown/keypress 필터)도 여기 없다 — 그것은 핸들러 인자가 아니라 **트리거 한정자**라
@@ -118,7 +118,7 @@ final class ActionHandlerManifest
     private const UNIVERSAL_TOP_LEVEL_KEYS = [
         'if', 'confirm', 'auth_mode', 'auth_required', 'identity_target',
         'resultTo', 'debounce', 'actionRef', 'render', 'onLoad',
-        // engine-v1.66.0 — 진입점 액션에서 `event.stopPropagation()` 을 부른다.
+        // engine-v1.68.0 — 진입점 액션에서 `event.stopPropagation()` 을 부른다.
         // 종전에는 엔진 소비처가 없어 죽은 키였고(S16 F4), 그래서 매니페스트에도 없었다.
         'stopPropagation',
     ];

@@ -221,26 +221,31 @@ Route::prefix('identity')->group(function () {
     // Challenge 요청 / 검증 / 취소는 로그인 상태와 비로그인 상태(Mode B 가입) 모두 허용 — guest 역할에 IDV 권한 부여
     // verify/cancel 은 로그인 사용자에 한해 PermissionMiddleware 의 scope=self 가드가 challenge.user_id 일치 여부 자동 검증
     // request 한도는 정상 회원가입 흐름(모달 만료 후 재전송 / 같은 NAT IP 게스트 다회 가입 시도)을 차단하지 않도록
-    // verify(10) 보다 넉넉히 두고 cancel/show(30) 와 동일 수준 적용 — 게스트 IP 단일 키 공유 환경 대응
-    Route::middleware(['throttle:30,1', 'optional.sanctum', 'permission:user,core.identity.request'])
+    // verify(10) 보다 넉넉히 두고 cancel/show(30) 와 동일 수준 적용.
+    // throttle 의 세 번째 인자(접두사)는 필수다 — 접두사 없는 `throttle:N,1` 은 비로그인 키를 `sha1(domain|ip)`
+    // 하나로 만들어 경로와 무관하게 **모든** 접두사 없는 throttle 라우트와 횟수를 공유한다(`api/user/*` 600/분 등).
+    // 그래서 화면 로드가 올린 횟수가 verify(10)의 상한을 앞질러 넘겨 인증번호 확인이 429 로 막혔다
+    // (2단계 인증 E2E 직렬 실행에서 403 대신 429 로 재현). 라우트마다 자기 접두사를 둬 각자 자기 횟수만 센다 —
+    // 회귀 가드: tests/Feature/Identity/IdentityVerifyThrottleIsolationTest.php
+    Route::middleware(['throttle:30,1,identity_request', 'optional.sanctum', 'permission:user,core.identity.request'])
         ->post('challenges', [IdentityVerificationController::class, 'request'])
         ->name('api.identity.challenges.request');
 
-    Route::middleware(['throttle:10,1', 'optional.sanctum', 'permission:user,core.identity.verify'])
+    Route::middleware(['throttle:10,1,identity_verify', 'optional.sanctum', 'permission:user,core.identity.verify'])
         ->post('challenges/{challenge}/verify', [IdentityVerificationController::class, 'verify'])
         ->name('api.identity.challenges.verify');
 
-    Route::middleware(['throttle:30,1', 'optional.sanctum', 'permission:user,core.identity.cancel'])
+    Route::middleware(['throttle:30,1,identity_cancel', 'optional.sanctum', 'permission:user,core.identity.cancel'])
         ->post('challenges/{challenge}/cancel', [IdentityVerificationController::class, 'cancel'])
         ->name('api.identity.challenges.cancel');
 
     // 비동기 검증 인프라 (engine-v1.46.0+) — Stripe Identity / 토스인증 push / 외부 redirect 콜백 지원
     // 폴링 엔드포인트는 권한 가드 없음 (공개 안전 필드만 노출 — Service::getStatus 참조)
-    Route::middleware(['throttle:30,1', 'optional.sanctum'])
+    Route::middleware(['throttle:30,1,identity_show', 'optional.sanctum'])
         ->get('challenges/{challenge}', [IdentityVerificationController::class, 'show'])
         ->name('api.identity.challenges.show');
 
-    Route::middleware(['throttle:30,1', 'optional.sanctum'])
+    Route::middleware(['throttle:30,1,identity_callback', 'optional.sanctum'])
         ->post('callback/{providerId}', [IdentityVerificationController::class, 'callback'])
         ->name('api.identity.callback');
 });
@@ -256,6 +261,9 @@ Route::prefix('auth')->group(function () {
         // 로그인과 같은 제한을 적용해 코드 대입 시도를 함께 억제한다.
         Route::post('login/two-factor', [UserAuthController::class, 'verifyTwoFactor'])
             ->name('api.auth.login.two-factor');
+        // 인증번호 재발송 — 기존 challenge 를 취소하고 새로 발행한다.
+        Route::post('login/two-factor/resend', [UserAuthController::class, 'resendTwoFactor'])
+            ->name('api.auth.login.two-factor.resend');
     });
 
     // 공개 인증 라우트 (세션 불필요)
@@ -280,6 +288,13 @@ Route::prefix('auth')->group(function () {
         Route::post('login', [AdminAuthController::class, 'login'])
             ->middleware(['throttle:auth-login', 'start.api.session'])
             ->name('api.auth.admin.login');
+        // 관리자 2단계 인증 확인·재발송 — 사용자 경로와 같은 제한을 적용한다.
+        Route::post('login/two-factor', [AdminAuthController::class, 'verifyTwoFactor'])
+            ->middleware(['throttle:auth-login', 'start.api.session'])
+            ->name('api.auth.admin.login.two-factor');
+        Route::post('login/two-factor/resend', [AdminAuthController::class, 'resendTwoFactor'])
+            ->middleware(['throttle:auth-login', 'start.api.session'])
+            ->name('api.auth.admin.login.two-factor.resend');
     });
 });
 

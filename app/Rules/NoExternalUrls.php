@@ -2,6 +2,7 @@
 
 namespace App\Rules;
 
+use App\Support\SiteAssetHosts;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
@@ -20,9 +21,22 @@ use Illuminate\Contracts\Validation\ValidationRule;
  * 차단합니다. 반면 state/computed 는 데이터 값이며, 실제 위험은 그 값이 바인딩되는
  * sink(컴포넌트 prop = img src 등)에서 발생하고 그 sink 는 이미 여기서 검사됩니다 —
  * 예시/안내용 URL 을 담는 정당한 용례를 깨지 않기 위해 데이터 계층은 재차단하지 않습니다.
+ *
+ * 외부의 기준: 사이트 자기 host(`app.url`)와 운영자가 선언한 공개 자산 디스크의 host
+ * (`SiteAssetHosts`)는 외부가 아닙니다. 레이아웃 첨부 API 가 스스로 발급하는 주소(프록시
+ * 서빙 URL·직접 URL)가 그 host 를 쓰므로, 여기서 차단하면 image 위젯으로 올린 파일이
+ * 업로드는 되고 저장은 422 가 됩니다. 판정은 정규화 뒤 host 등가 비교이며 protocol-relative
+ * 와 http/https 밖의 스킴은 host 가 같아도 종전대로 차단합니다.
  */
 class NoExternalUrls implements ValidationRule
 {
+    /**
+     * 사이트 자산 host 목록 (검증 1회당 1회 해석 후 캐시)
+     *
+     * @var array<int, string>|null
+     */
+    private ?array $siteAssetHosts = null;
+
     /**
      * 차단할 위험 URI 스킴 목록
      */
@@ -203,6 +217,12 @@ class NoExternalUrls implements ValidationRule
      */
     private function checkForDangerousUrl(string $value, string $path, Closure $fail): void
     {
+        // 사이트 자기 host·선언된 공개 자산 디스크 host 의 http(s) 절대 URL 은 외부가 아니다.
+        // 위험 스킴·protocol-relative 는 이 판정의 대상이 아니므로 아래 검사가 그대로 적용된다.
+        if (SiteAssetHosts::isSiteAssetUrl($value, $this->siteAssetHosts())) {
+            return;
+        }
+
         $lowerValue = strtolower(trim($value));
 
         foreach (self::DANGEROUS_SCHEMES as $scheme) {
@@ -223,6 +243,16 @@ class NoExternalUrls implements ValidationRule
 
             return;
         }
+    }
+
+    /**
+     * 사이트 자산 host 목록을 반환합니다 (검증 1회당 1회 해석 후 캐시).
+     *
+     * @return array<int, string> 소문자 host 목록
+     */
+    private function siteAssetHosts(): array
+    {
+        return $this->siteAssetHosts ??= SiteAssetHosts::hosts();
     }
 
     /**

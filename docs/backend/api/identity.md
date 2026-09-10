@@ -16,6 +16,25 @@
 
 ---
 
+## 공개 본인인증 엔드포인트의 요청 제한
+
+`/api/identity/*` 의 공개 엔드포인트는 분당 요청 횟수를 제한하며, **엔드포인트마다 자기 횟수만 셉니다**.
+
+| 엔드포인트 | 상한 (분당) | 비고 |
+| --- | --- | --- |
+| `POST /api/identity/challenges` (요청) | 30 | 회원가입 흐름의 재전송·같은 NAT 아래 다수 게스트를 막지 않도록 확인보다 넉넉히 둔다 |
+| `POST /api/identity/challenges/{challenge}/verify` (확인) | 10 | 인증번호 대입 방어 |
+| `POST /api/identity/challenges/{challenge}/cancel` (취소) | 30 | |
+| `GET /api/identity/challenges/{challenge}` (상태 조회) | 30 | 비동기 제공자 폴링 |
+| `POST /api/identity/callback/{providerId}` (콜백) | 30 | |
+
+비로그인 요청의 제한 키는 라우트별 접두사 + IP 이고, 로그인 요청은 접두사 + 회원 식별자입니다. 접두사가 없으면
+Laravel 의 기본 키가 경로와 무관하게 `sha1(domain|ip)` 하나로 만들어져 다른 공개 API(`/api/user/*` 등)의 호출과
+횟수를 공유하고, 화면 로드 몇 번 뒤 확인 요청이 429 로 막힙니다(7.1.0 에서 분리). 상한을 넘기면 `429` 와
+`X-RateLimit-Limit` 헤더로 응답합니다.
+
+---
+
 
 ### GET /api/admin/identity/logs
 <!-- @generated:start:api.admin.identity.logs.index -->
@@ -2518,13 +2537,13 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | Bearer 토큰을 보냈으나 만료/무효인 경우 (비회원은 헤더 생략 가능) |
-| 403 | Forbidden | 요구 권한(`core.identity.cancel`)이 없는 경우, 또는 scope=self 가드가 본인 challenge 가 아니라고 판정한 경우 |
+| 403 | Forbidden | 요구 권한(`core.identity.cancel`)이 없는 경우, scope=self 가드가 본인 challenge 가 아니라고 판정한 경우, 또는 challenge 의 `purpose` 가 `login` 인 경우 (`identity.errors.purpose_not_allowed` — `errors.failure_code = PURPOSE_NOT_ALLOWED`) |
 | 404 | Not Found | path 의 challenge 를 찾을 수 없거나 취소 처리에 실패한 경우 (`유효하지 않은 인증 요청입니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
-**설명** 진행 중인 challenge 를 취소합니다. `auth:sanctum` + `core.identity.cancel` 권한이 필요합니다. 라우트 모델 바인딩 + PermissionMiddleware 의 scope=self 가드로 로그인 사용자는 본인 challenge 만 취소할 수 있으며, 비로그인 게스트는 guest 역할 권한으로 진입합니다(모달 취소 시 audit trail 정합용). `IdentityVerificationService::cancel` 이 처리하고 대상 challenge 가 없으면 404 를 반환합니다. 사용자가 인증 모달을 닫을 때 서버 상태를 cancelled 로 남겨 이력 정합성을 맞추는 데 사용합니다.
+**설명** 진행 중인 challenge 를 취소합니다. **로그인 2단계 인증 challenge(`purpose = login`)는 이 경로로 취소할 수 없습니다** — 취소되면 그 challenge 로는 더 이상 로그인을 마칠 수 없게 되어, 사용자가 자기 로그인을 스스로 막는 상태가 됩니다(자기 DoS). 로그인 흐름은 `POST /api/auth/login/two-factor` · `.../resend` 만 사용합니다. `auth:sanctum` + `core.identity.cancel` 권한이 필요합니다. 라우트 모델 바인딩 + PermissionMiddleware 의 scope=self 가드로 로그인 사용자는 본인 challenge 만 취소할 수 있으며, 비로그인 게스트는 guest 역할 권한으로 진입합니다(모달 취소 시 audit trail 정합용). `IdentityVerificationService::cancel` 이 처리하고 대상 challenge 가 없으면 404 를 반환합니다. 사용자가 인증 모달을 닫을 때 서버 상태를 cancelled 로 남겨 이력 정합성을 맞추는 데 사용합니다.
 
 
 ### POST /api/identity/challenges/{challenge}/verify
@@ -2593,13 +2612,13 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | Bearer 토큰을 보냈으나 만료/무효인 경우 (비회원은 헤더 생략 가능) |
-| 403 | Forbidden | 요구 권한(`core.identity.verify`)이 없는 경우, 또는 scope=self 가드가 본인 challenge 가 아니라고 판정한 경우 |
+| 403 | Forbidden | 요구 권한(`core.identity.verify`)이 없는 경우, scope=self 가드가 본인 challenge 가 아니라고 판정한 경우, 또는 challenge 의 `purpose` 가 `login` 인 경우 (`identity.errors.purpose_not_allowed` — `errors.failure_code = PURPOSE_NOT_ALLOWED`) |
 | 404 | Not Found | path 파라미터에 해당하는 challenge 가 없는 경우 |
 | 422 | Unprocessable Entity | 검증 실패 — 응답 `error` 에 `failure_code`(예: `INVALID_CODE`/`EXPIRED`/`MAX_ATTEMPTS`) 와 서버 기준 `attempts`/`max_attempts` 를 함께 반환. 메시지는 `identity.errors.*` (`인증 코드가 올바르지 않습니다.` / `인증 시간이 만료되었습니다. 다시 시도해주세요.` / `시도 횟수를 초과했습니다. 다시 요청해주세요.` 등) |
 
 <!-- @generated:end -->
 
-**설명** challenge 를 검증(인증 완료) 합니다. `auth:sanctum` + `core.identity.verify` 권한이 필요합니다. 라우트 모델 바인딩 + PermissionMiddleware 의 scope=self 가드로 로그인 사용자는 본인 challenge 만 검증하며, 비로그인 게스트는 guest 역할 권한으로 진입합니다(Mode B 가입 흐름). `code`(text_code 흐름) 또는 `token`(link/redirect 흐름) 을 전달하고 `IdentityVerificationService::verify` 가 처리합니다. 실패 시 422 로 `failure_code` 와 서버 기준 `attempts`/`max_attempts` 를 함께 내려 클라이언트의 "남은 시도 횟수" UI 를 서버와 동기화하며, 성공 시 후속 민감 작업에 제출할 `verification_token` 을 반환합니다. 확장은 `core.identity.verify_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다.
+**설명** challenge 를 검증(인증 완료) 합니다. **로그인 2단계 인증 challenge(`purpose = login`)는 이 경로로 검증할 수 없습니다** — 여기서 검증되면 바로 뒤의 `POST /api/auth/login/two-factor` 가 「이미 처리된 요청」으로 거절해 그 challenge 로는 영영 로그인할 수 없게 됩니다. 게이트는 상태를 전혀 바꾸지 않으므로, 거부된 뒤에도 로그인 경로로 정상 완료할 수 있습니다. `auth:sanctum` + `core.identity.verify` 권한이 필요합니다. 라우트 모델 바인딩 + PermissionMiddleware 의 scope=self 가드로 로그인 사용자는 본인 challenge 만 검증하며, 비로그인 게스트는 guest 역할 권한으로 진입합니다(Mode B 가입 흐름). `code`(text_code 흐름) 또는 `token`(link/redirect 흐름) 을 전달하고 `IdentityVerificationService::verify` 가 처리합니다. 실패 시 422 로 `failure_code` 와 서버 기준 `attempts`/`max_attempts` 를 함께 내려 클라이언트의 "남은 시도 횟수" UI 를 서버와 동기화하며, 성공 시 후속 민감 작업에 제출할 `verification_token` 을 반환합니다. 확장은 `core.identity.verify_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다.
 
 
 ### GET /api/identity/policies/resolve

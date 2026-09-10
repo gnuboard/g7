@@ -2,6 +2,8 @@
 <layout name="auth/login" version="1.0.0" extends="_user_base">
   <meta title="$t:auth.login" :guest_only="true"/>
   <init>
+    <!-- 2단계 인증 단계 상태는 전역이라 화면을 떠나도 남는다 — 진입할 때마다 1단계로 되돌린다. -->
+    <set-state target="global" :twoFactor="null"/>
     <toast if="{{query?.reason === 'session_expired'}}" type="warning" message="$t:auth.session_expired_toast"/>
   </init>
   <slot name="content">

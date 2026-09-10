@@ -87,7 +87,7 @@
 | `onError` | array | ❌ | 실패 시 실행할 후속 액션 (단일 또는 배열) |
 | `confirm` | string | ❌ | 실행 전 확인 대화상자 메시지 |
 | `key` | string | ❌ | 키보드 이벤트 필터 (Enter, Escape 등) |
-| `stopPropagation` | boolean | ❌ | 진입점 액션 한정 이벤트 전파 차단 (engine-v1.66.0+). 핸들러가 아니라 **액션 키** — 상세: [이벤트 전파 제어](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550) |
+| `stopPropagation` | boolean | ❌ | 진입점 액션 한정 이벤트 전파 차단 (engine-v1.68.0+). 핸들러가 아니라 **액션 키** — 상세: [이벤트 전파 제어](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550) |
 | `cases` | object | ❌ | switch 핸들러용 케이스별 액션 정의 |
 | `if` | string | ❌ | 조건부 실행 (`{{expression}}` 형식, truthy일 때만 실행) |
 | `debounce` | number \| object | ❌ | 연속 호출 제어 (300 또는 { delay, leading, trailing }) |
@@ -426,6 +426,8 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `navigateForward` | 브라우저 앞으로가기 | - | - |
 | `apiCall` | API 호출 | 엔드포인트 URL | method, body, headers |
 | `login` | 로그인 (토큰 저장) | 인증 타입 (admin/user) | body (email, password) |
+| `loginTwoFactor` | 2단계 인증번호 확인 → 로그인 완료 (토큰 저장, engine-v1.65.0+) | 인증 타입 (admin/user) | body (challenge_id, code) |
+| `loginTwoFactorResend` | 인증번호 재발송 (기존 challenge 취소 후 새로 발행, engine-v1.65.0+) | 인증 타입 (admin/user) | body (challenge_id) |
 | `logout` | 로그아웃 | - | - |
 | `setState` | 상태 변경 | - | target (global/local), 상태 값들 |
 | `setError` | 에러 상태 설정 | 에러 메시지 | - |
@@ -472,7 +474,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 ---
 
-## 이벤트 전파 제어 — 액션 키 `stopPropagation` (engine-v1.66.0)
+## 이벤트 전파 제어 — 액션 키 `stopPropagation` (engine-v1.68.0)
 
 `stopPropagation`·`preventDefault` 는 **핸들러가 아니다**. `registerHandler` 등록도 `ActionType` 유니온 항목도 없어 엔진 소비처가 0이다 — `handler: "stopPropagation"` / `handler: "preventDefault"` 로 적으면 미등록 핸들러라 무동작한다.
 

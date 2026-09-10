@@ -5,7 +5,10 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
-## [engine-v1.67.1] - 2026-08-21
+## [engine-v1.69.1] - 2026-08-21
+
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.67.1` 였다. develop 이 같은 번호대(1.65.0~1.66.1)를 다른 내용으로
+> 먼저 발행해 11차 병합(2026-09-09)에서 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
 
 ### Fixed
 
@@ -15,10 +18,10 @@
 - 툴바에 저장 동작을 넘길 때 `void` 로 완료 시점을 버려서, 툴바가 "저장 중" 을 알 방법이 없던 것이 원인이다. 완료 시점을 그대로 넘기도록 고쳤다.
 - 단위 테스트는 완료 시점을 직접 주입해 검사하고 있어 이 결함을 볼 수 없었다 — 브라우저 회귀 가드를 함께 추가했다.
 
-## [engine-v1.67.0] - 2026-07-30
+## [engine-v1.69.0] - 2026-07-30
 
-> 이 릴리스는 issue476 브랜치에서 `engine-v1.56.0` 였다. develop 이 같은 번호를 다른 내용으로
-> 먼저 발행해 병합 시 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.56.0` 였다. develop 이 같은 번호를 다른 내용으로 먼저 발행해
+> 병합 시 `engine-v1.67.0` 으로, 11차 병합(2026-09-09)에서 다시 `engine-v1.69.0` 으로 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
 
 ### Changed
 
@@ -27,10 +30,10 @@
 - 좌측 라우트 트리의 경로 보조 줄이 `.json` 을 붙여 표시하고 있었다. 그 파일은 사람이 여는 것이 아니다 — 짝 `.json` 은 기계 산출물이고 마크업은 `.g7.html` 로 한다. 표기를 따라간 개발자가 산출물을 손으로 고치면 그 수정은 다음 굽기에서 지워진다.
 - 이제 `layouts/home.g7.html` · `sirsoft-board · resources/layouts/admin/admin_board_index.g7.html` 처럼 **소스 파일 경로**를 보여준다. 출처별 디렉토리 prefix 규약은 그대로다.
 
-## [engine-v1.66.1] - 2026-07-28
+## [engine-v1.68.1] - 2026-07-28
 
-> 이 릴리스는 issue476 브랜치에서 `engine-v1.55.1` 였다. develop 이 같은 번호를 다른 내용으로
-> 먼저 발행해 병합 시 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.55.1` 였다. develop 이 같은 번호를 다른 내용으로 먼저 발행해
+> 병합 시 `engine-v1.66.1` 으로, 11차 병합(2026-09-09)에서 다시 `engine-v1.68.1` 으로 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
 
 ### Fixed
 
@@ -50,10 +53,10 @@
 
 - 자동바인딩 경로 레지스트리(`__g7AutoBindingPaths`) 등록도 위 제외 선언을 따른다 — 번들 코퍼스 기준 폼 스코프 안의 Icon 220개가 등록·`onChange` 주입 대상에서 빠진다.
 
-## [engine-v1.66.0] - 2026-07-24
+## [engine-v1.68.0] - 2026-07-24
 
-> 이 릴리스는 issue476 브랜치에서 `engine-v1.55.0` 였다. develop 이 같은 번호를 다른 내용으로
-> 먼저 발행해 병합 시 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.55.0` 였다. develop 이 같은 번호를 다른 내용으로 먼저 발행해
+> 병합 시 `engine-v1.66.0` 으로, 11차 병합(2026-09-09)에서 다시 `engine-v1.68.0` 으로 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
 
 ### Added
 
@@ -63,10 +66,10 @@
 - 레이아웃은 예전부터 이 키를 적어 왔으나 **엔진에 소비처가 없어 한 번도 동작한 적이 없었다** — 고시 목록의 활성 토글을 누르면 행 선택까지 함께 일어나던 것이 그 결과다. 같은 목적의 `handler: "stopPropagation"` 형태도 코퍼스에 있었지만 그런 핸들러는 등록된 적이 없어 마찬가지로 무동작이었고, 표면을 하나로 모으기 위해 키 형태만 지원한다.
 - `true` 일 때만 동작하는 opt-in 이라 키가 없던 기존 액션의 동작은 그대로다. `change` 이벤트에서 `preventDefault` 를 부르지 않는 기존 규칙도 유지된다 — 토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋나기 때문이다.
 
-## [engine-v1.65.0] - 2026-07-17
+## [engine-v1.67.0] - 2026-07-17
 
-> 이 릴리스는 issue476 브랜치에서 `engine-v1.54.0` 였다. develop 이 같은 번호를 다른 내용으로
-> 먼저 발행해 병합 시 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.54.0` 였다. develop 이 같은 번호를 다른 내용으로 먼저 발행해
+> 병합 시 `engine-v1.65.0` 으로, 11차 병합(2026-09-09)에서 다시 `engine-v1.67.0` 으로 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
 
 ### Added
 
@@ -100,6 +103,79 @@
 
 - `GeneratesComponentManifest`(PHP) — `module:build`/`plugin:build` 가 확장의 컴포넌트 소스를 스캔해 매니페스트를 만든다. `for/{템플릿식별자}/` 하위는 같은 이름의 다른 구현이므로 컴포넌트 목록에 중복 등재하지 않고 `for` 맵에만 싣는다.
 - 컴포넌트 소스의 `{이름}Props` 선언에서 prop 메타데이터(타입·필수 여부·설명)를 추출한다. 종전에는 빈 객체라 편집기가 확장 컴포넌트의 prop 을 편집할 방법이 없었다. 추출 결과는 부분 목록이다 — 상속된 표준 속성은 선언에 나타나지 않으며, 컴파일러도 이 선언을 화이트리스트가 아니라 타입 판정 힌트로만 쓴다.
+
+## [engine-v1.66.1] - 2026-09-09
+
+### Fixed
+
+#### 확장 편집 모드 저장 — overlay injections 보존
+- 호스트 병합 모드에서 추출한 확장 노드에 `__injectionIndex` 가 없어 `reassembleContent` 가 전부 버리고 `injections[].components: []` 를 PUT 하던 결함 수정 — 백엔드가 `__source.injectionIndex` 로 실어 주는 순번을 읽고, 없으면 원본 injection 의 노드 id 로 되돌린다 (useExtensionDocument.ts `reassembleOverlayContent`)
+- 되돌리지 못한 노드가 있고 원본에 잃을 컴포넌트가 있으면 PUT 하지 않고 `guard_extension_reassembly` 를 돌려준다 — `SaveFeedbackBanner` 가 자동 dismiss 없는 오류 배너로 표시 (`g7le-save-banner-guard-extension-reassembly`)
+- `NodeSource.injectionIndex` 타입 추가 (layoutTreeUtils.ts)
+
+#### 409 배너 버전 표기
+- 서버(`ResponseHelper::error`)가 `errors` 아래에 싣는 `current_version`/`your_version` 을 읽지 못해 「최신 버전: -1」 로 표시되던 결함 수정 — `utils/conflictVersion.ts` `readConflictVersion` 단일 판독(`errors.{key}` 우선, 최상위 폴백)을 레이아웃 저장·확장 저장·inject_props 교차 저장 세 경로가 공유
+
+### Notes
+- 편집기 재로드 stale(부팅 시점 `cache_version` 키)은 서버 `PublicLayoutController::serve` 캐시 키를 서버 현재 버전으로 고정해 해소 — 클라이언트 nonce 규약(`?v={cacheVersion}.{nonce}`)은 그대로다
+
+## [engine-v1.66.0] - 2026-09-08
+
+### Added
+
+#### `number` 위젯 — 숫자 prop 편집
+- `number` 위젯을 코어 레지스트리에 등록 — 종전 미등록이라 `widget:"number"` 컨트롤이 속성 모달에서 「지원하지 않는 컨트롤」로 폴백해 편집 자체가 불가했다 (registerCoreWidgets.ts)
+- `NumberWidget` 신설 — blur/Enter 커밋, `0` 은 유효값이라 삭제되지 않고, 비숫자는 미방출(저장본 무손실), 바인딩 문자열은 읽기전용 디그레이드 (StyleControlWidgets.tsx)
+- `EditorControlSpec` 에 `min`/`max`/`step` 명시 선언 (specTypes.ts)
+
+#### `nodeKey` apply 프리미티브 — 노드 최상위 구조키 패치
+- `applyRecipe`/`reverseResolve` 에 `nodeKey` 분기 구현 — `coreProps` 가 선언만 하고 엔진 switch 에 case 가 없어 무음 no-op 이던 것을 실동작으로 (recipeEngine.ts)
+- 예약 노드키(`children`/`props`/`type` 등) 가드 — 템플릿이 그 키를 선언해도 노드가 파괴되지 않는다 (recipeEngine.ts)
+- 전용 UI 소유 키(`isolatedState`/`isolatedScopeId`)를 `resolveCorePropKeys` 렌더 목록에서 제외 — 같은 노드 키를 두 UI 가 쓰는 이중 경로 차단 (coreProps.ts)
+
+### Fixed
+
+#### `image` 위젯 값이 `[object Object]` 로 기록되던 문제
+- 단일 값 슬롯(`propValue`/`cssVar`/단일 `styleProp`)에 이미지 값 객체가 통째로 기록되던 문제 — 공용 헬퍼 `scalarizeImageValue` 로 url 만 축약한다. 게이트는 위젯 이름이며 값 형태 sniffing 이 아니다(`{position:'left'}` 같은 정당한 객체 prop 오인 삭제 방지) (recipeEngine.ts)
+- 축약 저장된 문자열을 위젯이 읽지 못하던 문제 — `propValue` 역해석이 `{url}` 로 되감는다. 표현식 문자열도 감싸 빈 피커로 보이지 않게 한다 (recipeEngine.ts)
+- 단일 값 슬롯 컨트롤에서 표시모드(채움/맞춤/타일) 버튼이 저장되지 않는데도 눌리던 문제 — 컨테이너째 미렌더하고 미리보기는 `contain` 으로 고정한다(저장되지 않는 값을 흉내내는 거짓 미리보기 제거) (ImagePickerControl.tsx)
+- 데이터 연결 값이 빈 피커로 보여 업로드 1클릭에 표현식이 소실되던 문제 — 원문 배지 표시 + 파괴적 조작 잠금 + 「직접 지정으로 바꾸기」 해제 경로 (ImagePickerControl.tsx)
+
+#### 레이아웃 편집기가 열린 직후 백지가 되던 문제
+- 편집기 모드에서 `updateTemplateData` 가 빈 레이아웃(`components: []`)으로 재렌더해 같은 reactRoot 에 빈 트리를 커밋, `LayoutEditorChrome` 을 통째로 제거하던 문제 — 편집기 모드면 데이터 병합 후 렌더만 건너뛴다. `renderTemplate` 의 편집기 분기가 비동기라 부팅 중 `setGlobalState` 가 그 커밋 뒤에 도착할 때만 발현하는 경합이었다 (template-engine.ts)
+
+#### 데이터 연결 값이 조작 한 번에 소실되던 문제
+- prop 자리에 저장된 `{{...}}`·설정 참조를 위젯이 해석하지 못해 빈 컨트롤로 보이고, 조작 시 그 연결이 사라지던 문제 — `ControlRenderer` 단일 게이트에서 원문 배지로 디그레이드하고 「직접 지정으로 바꾸기」로만 연다. 위젯마다 구현하지 않으므로 신규 위젯에도 자동 적용된다 (ControlRenderer.tsx, boundValueGuard.tsx)
+- 「직접 지정으로 바꾸기」가 편도라 원문을 되찾을 수 없던 문제 — 「되돌리기」 추가(해제 직후엔 취소, 값을 넣은 뒤엔 원문 복구)
+- `image` 위젯에서 업로드·제거·썸네일만 잠기고 「이미지 관리」 진입이 열려 있어, 그 창의 「배경」 버튼이 같은 값을 덮어쓰던 문제 — 진입 자체를 함께 잠근다 (ImagePickerControl.tsx)
+- `number` 위젯의 자체 바인딩 분기가 공용 해제 경로를 막던 문제 — 위젯 자체 분기를 제거하고 공용 게이트로 일원화 (StyleControlWidgets.tsx)
+
+#### 공통·확장 레이아웃 노드를 편집해도 저장되지 않던 문제
+- 라우트 편집 모드에서 상속(base)·주입(extension) 노드 중 바인딩을 가진 것이 `data_bound`(편집 허용)로 분류되던 문제 — 출처 잠금이 항상 우선하도록 판정 순서를 통일했다. 저장 시 마스킹이 그 노드를 통째로 폐기하므로 편집분이 오류도 경고도 없이 사라졌다 (useElementSelection.ts)
+- 잠긴 노드의 드래그·인라인 편집·복제·`Delete` 키·잘라내기가 무방비이던 문제 — 단일 판정 헬퍼 `isEditableLockKind` 로 전 표면 게이트 (EditorCanvasOverlay.tsx, useCanvasDnd.ts, DndCanvasLayer.tsx)
+- 거부된 드래그가 `activeDragPath` 를 남겨 「옮길 수 있다」는 거짓 어포던스를 주던 문제 (useCanvasDnd.ts)
+- 조상 산출 구현이 두 벌로 갈라져 잠금 판정 입력이 어긋날 수 있던 문제 — `collectAncestors` 로 승격 (layoutTreeUtils.ts)
+
+## [engine-v1.65.0] - 2026-09-07
+
+### Added
+
+#### 2단계 인증 로그인 단계 지원
+- 로그인 응답을 `LoginResult` 판별 유니온으로 표현 — 정상 로그인과 인증번호 요구(challenge)를 타입으로 구분 (AuthManager.ts)
+- `completeTwoFactor()` / `resendTwoFactor()` 추가 — 인증번호 확인·재발송 (AuthManager.ts)
+- `AuthConfig` 에 `twoFactorEndpoint` / `twoFactorResendEndpoint` 추가 (AuthManager.ts)
+- 액션 핸들러 `loginTwoFactor` / `loginTwoFactorResend` 추가 — 레이아웃에서 인증번호 확인·재발송 (ActionDispatcher.ts)
+- `login` 핸들러 반환에 `two_factor_required` / `challenge_id` / `provider_id` / `expires_at` 추가 (기존 `user` 필드 유지) (ActionDispatcher.ts)
+- 레이아웃 편집기 [화면 동작] 탭에 두 핸들러 등록 (coreActionRecipes.ts, ActionAddPicker.tsx)
+
+### Fixed
+
+#### 2단계 인증이 켜진 사이트에서 로그인 화면이 영문 오류로 멈추던 문제
+- 로그인 응답 형태를 하나로 가정해 인증번호 요구 응답에서 `TypeError` 원문이 오류 박스에 노출되던 문제 (AuthManager.ts)
+- 문자열이 아닌 토큰이 저장되어 이후 모든 요청이 401 로 튕기던 문제 (ApiClient.ts)
+- `updateConfig({ loginEndpoint })` 로 지정한 엔드포인트가 무시되던 문제 (AuthManager.ts)
+- axios 네트워크 오류가 네트워크 실패로 판정되지 않아 영문 원문이 노출되던 문제 (networkResilience.ts, ActionDispatcher.ts)
+- 다국어 파라미터 값의 파이프 필터(`$t:key|until={{x | datetime}}`)가 평가되지 않아 문장에서 값만 사라지던 문제 (TranslationEngine.ts)
 
 ## [engine-v1.64.7] - 2026-09-04
 

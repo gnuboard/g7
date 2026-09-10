@@ -319,3 +319,36 @@ describe('useLayoutDocument — 중첩 경로 layoutName PUT URL 슬래시 보�
     expect(putUrl).not.toContain('auth%2Fforgot_password');
   });
 });
+
+describe('useLayoutDocument — 409 본문이 errors 아래에 버전을 담는 실제 서버 형식', () => {
+  beforeEach(() => {
+    const fetchMock = vi.fn();
+    fetchMock.mockResolvedValueOnce(initialLoadResponse as any).mockResolvedValueOnce(
+      mockStatus(409, {
+        success: false,
+        message: '다른 사용자가 먼저 저장했습니다. (리소스: template_layouts:1, 현재 버전: 9, 보낸 버전: 7)',
+        errors: { error: 'concurrent_modification', current_version: 9, your_version: 7 },
+      })
+    );
+    (globalThis as any).fetch = fetchMock;
+  });
+
+  afterEach(() => {
+    delete (globalThis as any).fetch;
+  });
+
+  it('ResponseHelper 형식(errors.current_version) 에서도 최신/내 버전을 읽는다 — 종전 배너 「최신 버전: -1」', async () => {
+    const { result } = renderHook(() => useLayoutDocument(), { wrapper });
+    await waitFor(() => expect(result.current.document).not.toBeNull());
+
+    let saveResult: any;
+    await act(async () => {
+      saveResult = await result.current.save();
+    });
+    expect(saveResult).toEqual({
+      kind: 'concurrent_modification',
+      currentVersion: 9,
+      yourVersion: 7,
+    });
+  });
+});

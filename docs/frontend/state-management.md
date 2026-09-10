@@ -1,7 +1,7 @@
 # 전역 상태 관리
 
 > **버전**: engine-v1.1.0+
-> **관련 문서**: [components.md](components.md) | [data-binding.md](data-binding.md) | [index.md](index.md)
+> **관련 문서**: [components.md](components.md) | [data-binding.md](data-binding.md) | [README.md](README.md)
 
 ---
 

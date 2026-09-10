@@ -22,6 +22,8 @@
 14. [ensureIdentityVerified / resolveIdentityChallenge](#ensureidentityverified--resolveidentitychallenge)
 15. [실전 예시](#실전-예시)
 
+> `login` 절에 `loginTwoFactor` · `loginTwoFactorResend` 가 함께 설명되어 있습니다.
+
 ---
 
 ## login / logout
@@ -70,6 +72,148 @@
 |----|------|
 | `admin` | 관리자 인증 |
 | `user` | 사용자 인증 |
+
+### login 의 반환값 — 2단계 인증이 켜진 사이트
+
+서버는 보안 환경설정에 따라 **두 가지 형태의 200** 을 돌려줍니다. `onSuccess` 는 두 형태 모두에서
+실행되므로, 후속 액션은 `response.two_factor_required` 로 분기해야 합니다.
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `user` | object \| null | 로그인한 사용자. 인증번호 확인이 남았으면 `null` |
+| `two_factor_required` | boolean | `true` 면 아직 로그인이 끝나지 않았습니다 |
+| `challenge_id` | string | 인증번호 확인에 그대로 전달할 식별자 |
+| `provider_id` | string | 인증번호를 보낸 프로바이더 |
+| `expires_at` | string \| null | 인증 요청 만료 시각 (ISO8601) |
+
+분기를 두지 않으면 인증이 끝나기 전에 홈으로 이동하거나, 빈 사용자 정보가 상태에 실립니다.
+
+```html
+<on type="submit">
+  <login target="user">
+    <success>
+      <set-state if="{{response.two_factor_required}}" target="global">
+        <field name="twoFactor">
+          <field name="required" :value="true"/>
+          <field name="challenge_id" value="{{response.challenge_id}}"/>
+          <field name="expires_at" value="{{response.expires_at}}"/>
+          <field name="code" value=""/>
+        </field>
+      </set-state>
+      <navigate if="{{!response.two_factor_required}}" path="/"/>
+    </success>
+    <body email="{{form.email}}" password="{{form.password}}"/>
+  </login>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "login",
+  "target": "user",
+  "params": { "body": { "email": "{{form.email}}", "password": "{{form.password}}" } },
+  "onSuccess": [
+    {
+      "handler": "setState",
+      "if": "{{response.two_factor_required}}",
+      "params": {
+        "target": "global",
+        "twoFactor": {
+          "required": true,
+          "challenge_id": "{{response.challenge_id}}",
+          "expires_at": "{{response.expires_at}}",
+          "code": ""
+        }
+      }
+    },
+    {
+      "handler": "navigate",
+      "if": "{{!response.two_factor_required}}",
+      "params": { "path": "/" }
+    }
+  ]
+}
+```
+
+같은 시퀀스·`onSuccess` 안에서는 방금 저장한 상태(`_global.twoFactor.*`)를 다시 읽지 않습니다 —
+그 자리의 상태는 아직 갱신 전이므로 `{{response.*}}` 만 사용합니다.
+
+### loginTwoFactor
+
+인증번호를 확인해 로그인을 완료합니다. 성공 시 토큰이 발급되고 `{ user }` 를 돌려줍니다.
+
+```html
+<on type="submit">
+  <action handler="loginTwoFactor" target="user">
+    <success>
+      <set-state target="global" currentUser="{{response.user}}" :twoFactor="null"/>
+      <navigate path="/"/>
+    </success>
+    <fail>
+      <set-state target="global" twoFactor.error="{{error.message}}"/>
+    </fail>
+    <body challenge_id="{{_global.twoFactor?.challenge_id}}" code="{{_global.twoFactor?.code}}"/>
+  </action>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "loginTwoFactor",
+  "target": "user",
+  "params": {
+    "body": {
+      "challenge_id": "{{_global.twoFactor?.challenge_id}}",
+      "code": "{{_global.twoFactor?.code}}"
+    }
+  },
+  "onSuccess": [
+    { "handler": "setState", "params": { "target": "global", "currentUser": "{{response.user}}", "twoFactor": null } },
+    { "handler": "navigate", "params": { "path": "/" } }
+  ],
+  "onError": [
+    { "handler": "setState", "params": { "target": "global", "twoFactor.error": "{{error.message}}" } }
+  ]
+}
+```
+
+`params.body` 의 `challenge_id` 와 `code` 는 필수입니다. `target` 은 `login` 과 같은 값을 씁니다
+(`user` / `admin`) — 관리자 대상은 관리자 전용 엔드포인트를 호출하고, 관리자가 아니면 `403` 이 됩니다.
+
+### loginTwoFactorResend
+
+인증번호를 다시 보냅니다. 서버가 **기존 인증 요청을 취소하고 새로 발행**하므로, 반환된
+`challenge_id` 로 반드시 교체하고 입력란을 비워야 합니다 — 앞서 받은 번호는 더 이상 통하지 않습니다.
+
+```json
+{
+  "handler": "loginTwoFactorResend",
+  "target": "user",
+  "params": { "body": { "challenge_id": "{{_global.twoFactor?.challenge_id}}" } },
+  "onSuccess": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "global",
+        "twoFactor": {
+          "required": true,
+          "challenge_id": "{{response.challenge_id}}",
+          "expires_at": "{{response.expires_at}}",
+          "code": "",
+          "error": null,
+          "resent": true
+        }
+      }
+    }
+  ]
+}
+```
+
+반환값은 `{ two_factor_required, challenge_id, provider_id, expires_at }` 입니다.
 
 ### logout
 

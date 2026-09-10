@@ -320,6 +320,8 @@
     "blocked_inactive_extension": "비활성화된 확장 컴포넌트가 새로 추가되어 저장할 수 없습니다",
     "network_error_title": "저장 중 네트워크 오류가 발생했습니다",
     "guard_no_document": "저장할 레이아웃 문서가 로드되지 않았습니다",
+    "guard_extension_reassembly_title": "확장 내용을 되돌릴 수 없어 저장하지 않았습니다",
+    "guard_extension_reassembly": "이 확장이 끼워 넣은 요소 {count}개가 어느 자리에서 왔는지 확인되지 않습니다. 그대로 저장하면 그 요소가 사라지므로 저장을 막았습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
     "concurrent": {
       "title": "다른 사용자가 먼저 저장했습니다",
       "message": "이 레이아웃은 다른 관리자가 먼저 저장했습니다. 최신 버전을 불러오시겠습니까?",
@@ -343,6 +345,9 @@
       "mode_tile": "타일",
       "upload_failed": "이미지 업로드에 실패했습니다"
     },
+    "number": {
+      "placeholder": "숫자 입력"
+    },
     "dimension": {
       "placeholder": "예: 320px, 50%, 24rem, auto"
     },
@@ -356,6 +361,11 @@
       "right": "오른쪽",
       "bottom": "아래",
       "left": "왼쪽"
+    },
+    "bound_value": {
+      "notice": "데이터 연결 값입니다(자동으로 채워집니다)",
+      "replace": "직접 지정으로 바꾸기",
+      "restore": "데이터 연결로 되돌리기"
     }
   },
   "recipe": {
@@ -1300,6 +1310,14 @@
     "login": {
       "label": "로그인 처리",
       "param_body": "로그인 정보"
+    },
+    "login_two_factor": {
+      "label": "인증번호 확인",
+      "param_body": "인증 정보"
+    },
+    "login_two_factor_resend": {
+      "label": "인증번호 다시 받기",
+      "param_body": "인증 요청 정보"
     },
     "logout": {
       "label": "로그아웃 처리",

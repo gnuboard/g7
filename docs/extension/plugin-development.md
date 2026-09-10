@@ -1,6 +1,6 @@
 # 플러그인 개발 가이드
 
-> **관련 문서**: [index.md](index.md) | [extension-manager.md](extension-manager.md) | [hooks.md](hooks.md)
+> **관련 문서**: [README.md](README.md) | [extension-manager.md](extension-manager.md) | [hooks.md](hooks.md)
 
 ---
 
@@ -1443,7 +1443,7 @@ G7Core.state.setLocal(
 
 ## 관련 문서
 
-- [index.md](index.md) - 확장 시스템 전체 개요
+- [README.md](README.md) - 확장 시스템 전체 개요
 - [extension-manager.md](extension-manager.md) - Composer 오토로드 관리
 - [hooks.md](hooks.md) - 훅 시스템 및 리스너 구현
 - [활동 로그 시스템](../backend/activity-log.md) - 활동 로그 Listener, Per-Item Bulk 로깅 규칙

@@ -9,6 +9,8 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\TemplateComposer;
 use App\Support\AssetCssUrlRewriter;
 use App\Support\AssetUrl;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -48,6 +50,21 @@ class ExtensionBundleService
      * pid 는 재사용되므로 "그 pid 가 살아 있는가" 로는 진행 중 여부를 판정할 수 없다.
      */
     private const TEMP_BUNDLE_STALE_SECONDS = 600;
+
+    /**
+     * 캐시 미스 빌드를 (type, kind, version) 단위로 수렴시키는 잠금 키 접두사.
+     */
+    private const BUILD_LOCK_PREFIX = 'ext-bundles.build.';
+
+    /**
+     * 빌드 잠금의 보유 상한 (초). 좀비 잠금 방지용이며 실제 빌드는 밀리초 단위다.
+     */
+    private const BUILD_LOCK_TTL_SECONDS = 30;
+
+    /**
+     * 다른 프로세스의 빌드를 기다리는 상한 (초). 초과하면 잠금 없이 각자 빌드한다.
+     */
+    private const BUILD_LOCK_WAIT_SECONDS = 5;
 
     /**
      * 서비스 주입
@@ -137,39 +154,7 @@ class ExtensionBundleService
      */
     public function buildJsBundle(string $type): string
     {
-        $ordered = $this->getOrderedGlobalAssetPaths($type);
-        $isProduction = app()->environment('production');
-        $segments = [];
-
-        foreach ($ordered as $identifier => $paths) {
-            if (empty($paths['jsAbsPath'])) {
-                continue;
-            }
-
-            try {
-                $content = @file_get_contents($paths['jsAbsPath']);
-
-                if ($content === false) {
-                    Log::warning('확장 JS 번들 병합: 파일 읽기 실패, 해당 확장 skip', [
-                        'type' => $type,
-                        'identifier' => $identifier,
-                        'path' => $paths['jsAbsPath'],
-                    ]);
-
-                    continue;
-                }
-
-                $segments[] = $this->processJsSourceMap($content, $type, $identifier, $isProduction);
-            } catch (\Throwable $e) {
-                Log::warning('확장 JS 번들 병합 중 오류, 해당 확장 skip', [
-                    'type' => $type,
-                    'identifier' => $identifier,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        return implode("\n;\n", $segments);
+        return $this->mergeBundle($type, 'js')['content'];
     }
 
     /**
@@ -187,11 +172,264 @@ class ExtensionBundleService
      */
     public function buildCssBundle(string $type): string
     {
+        return $this->mergeBundle($type, 'css')['content'];
+    }
+
+    /**
+     * 캐시된 번들 파일의 절대 경로를 반환합니다(없으면 build → 원자적 write).
+     *
+     * 파일명에 version 을 포함(`{type}.{version}.{js|css}`)하므로 활성 조합이
+     * 바뀌어 version 이 bump 되면 새 파일명으로 자연 무효화된다. 프로덕션에서만
+     * 디스크 캐시하며, 비프로덕션(dev/watch)에서는 캐시하지 않고 매 요청 build 해
+     * rebuild 를 즉시 반영한다.
+     *
+     * 프로덕션에서 **캐시 존재 확인이 빌드보다 먼저** 온다. 캐시 키는 인자만으로
+     * 계산되므로 빌드가 필요 없는데, 빌드를 앞세우면 캐시가 있어도 요청마다 활성 확장을
+     * 열거하고 산출물을 전부 읽는다. 응답은 정상 200 이라 그 반복은 타이밍 말고는 드러나지
+     * 않고, 원본이 사라지는 순간에는 멀쩡한 캐시를 두고 빈 경로가 반환되어 503 이 된다.
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @param  int  $version  확장 캐시 버전(ClearsTemplateCaches::getExtensionCacheVersion)
+     * @return string 캐시(또는 방금 build 한) 파일의 절대 경로. 캐시할 수 없으면 빈 문자열.
+     */
+    public function getBundleFilePath(string $type, string $kind, int $version): string
+    {
+        $relativeName = $this->bundleFileName($type, $kind, $version);
+
+        // 디스크 캐시는 **최적화**다 — 쓰기 실패가 공개 엔드포인트의 500 이 되면 안 된다.
+        // `ext-bundles` 디스크는 `throw => true` 라 권한 문제(uid 독점 0700 등)에서
+        // `UnableToWriteFile` 이 그대로 올라오고, 그러면 모든 확장의 프론트엔드 JS/CSS 가
+        // 통째로 나가지 못한다. 병합 결과는 이미 메모리에 있으므로 그것을 그대로 응답하면
+        // 화면은 정상이다 (커밋 63a30ab29 의 AbstractCacheDriver fail-soft 와 같은 원칙).
+        try {
+            $storage = $this->bundleStorage();
+
+            // 비프로덕션은 캐시하지 않고 임시 파일로 매번 build → rebuild 즉시 반영
+            if (! app()->environment('production')) {
+                $content = $this->buildBundleContent($type, $kind);
+
+                // 병합할 에셋이 하나도 없으면 파일을 만들지 않는다(호출측이 빈 문자열로 판단).
+                if ($content === '') {
+                    return '';
+                }
+
+                return $this->writeAtomically($storage, $relativeName, $content, cache: false);
+            }
+
+            // 프로덕션: 동일 version 캐시가 있으면 빌드 없이 그대로 사용
+            if ($storage->exists('', $relativeName)) {
+                return $storage->getBasePath('').'/'.$relativeName;
+            }
+
+            return $this->buildAndCacheOnce($storage, $type, $kind, $version, $relativeName);
+        } catch (\Throwable $e) {
+            Log::warning('확장 번들 디스크 캐시 실패 — 메모리 병합 결과로 서빙합니다', [
+                'type' => $type,
+                'kind' => $kind,
+                'version' => $version,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * 캐시 미스에서 한 번만 병합해 캐시 파일을 만들고 그 절대 경로를 반환합니다.
+     *
+     * 같은 (type, kind, version) 의 동시 요청은 잠금으로 하나에 수렴시킨다 — 버전 교체
+     * 직후에는 캐시가 없는 상태로 요청이 몰리고, 각자 병합하면 그 비용이 워커 수만큼 곱해진다.
+     * 잠금은 **최적화**이므로 대기 초과·저장소 장애는 실패로 바꾸지 않고 각자 빌드로 폴백한다
+     * (정적 게시 잠금 `ext-static.publish.{v}` 와 같은 저장소·같은 규율이며 키가 달라 자기
+     * 교착이 없다).
+     *
+     * 병합 결과가 비어 있어도 선언한 산출물이 **전부 존재하면**(또는 선언이 0이면) 0바이트
+     * 캐시 파일을 만든다. 그래야 정적 게시 대상이 되어 방문자가 웹서버에서 직접 받는다 —
+     * 만들지 않으면 그 구성의 모든 페이지 로드가 PHP 를 거친다. 캐시하지 않는 것은 둘이다 —
+     * 선언한 산출물이 **소실**된 경우(호출측의 503 판정을 그대로 유지한다)와 병합 단계에서
+     * 확장을 **건너뛴** 경우(그 상태가 굳지 않도록 매 요청 재시도에 맡긴다).
+     *
+     * @param  CoreStorageDriver  $storage  번들 디스크 스토리지
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @param  int  $version  확장 캐시 버전
+     * @param  string  $relativeName  캐시 파일명
+     * @return string 캐시 파일의 절대 경로 (캐시하지 않았으면 빈 문자열)
+     */
+    private function buildAndCacheOnce(
+        CoreStorageDriver $storage,
+        string $type,
+        string $kind,
+        int $version,
+        string $relativeName
+    ): string {
+        $lock = null;
+        $acquired = false;
+
+        try {
+            $lock = Cache::lock(self::BUILD_LOCK_PREFIX."{$type}.{$kind}.{$version}", self::BUILD_LOCK_TTL_SECONDS);
+            $acquired = (bool) $lock->block(self::BUILD_LOCK_WAIT_SECONDS);
+        } catch (LockTimeoutException $e) {
+            // 대기 초과는 정상적인 경합이다 — 흔적만 남기고 각자 빌드한다.
+            Log::debug('확장 번들 빌드 잠금 대기 초과 — 잠금 없이 병합합니다', [
+                'type' => $type,
+                'kind' => $kind,
+                'version' => $version,
+            ]);
+        } catch (\Throwable $e) {
+            // 저장소가 잠금을 제공하지 못한다(드라이버 미지원, 캐시 디렉토리 권한 등).
+            // 번들 서빙 자체를 막지는 않으므로 사유만 남기고 계속한다.
+            Log::warning('확장 번들 빌드 잠금 획득 불가 — 잠금 없이 병합합니다', [
+                'type' => $type,
+                'kind' => $kind,
+                'version' => $version,
+                'store' => config('cache.default'),
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            // 기다리는 동안 다른 프로세스가 완성했을 수 있다 — 병합 전에 다시 본다.
+            if ($storage->exists('', $relativeName)) {
+                return $storage->getBasePath('').'/'.$relativeName;
+            }
+
+            ['content' => $content, 'skipped' => $skipped] = $this->mergeBundle($type, $kind);
+
+            // 건너뛴 확장이 있으면 캐시하지 않는다 — 파일은 존재·판독 가능한데 읽기·치환이
+            // 실패한 상태가 캐시로 굳으면 버전 bump 전까지 그 확장 자산이 사라진 채 고정된다.
+            // 캐시 없이 돌아가면 호출측이 매 요청 다시 병합하므로 원인이 사라지는 순간 회복한다.
+            // 출하 기본 로그 수준이 error 라 warning 은 기록되지 않는다 — 이 통지가 유일한 흔적이다.
+            if ($skipped !== []) {
+                Log::error('확장 번들 캐시 보류 — 병합 단계에서 건너뛴 확장이 있어 캐시하지 않습니다', [
+                    'type' => $type,
+                    'kind' => $kind,
+                    'version' => $version,
+                    'skipped' => $skipped,
+                ]);
+
+                return '';
+            }
+
+            // 비었는데 선언한 산출물이 소실이면 캐시하지 않는다 — 배포 중 dist 가 잠깐 빈
+            // 장애가 0바이트 캐시로 굳어 정상(빈 200)으로 위장되면 안 된다.
+            if ($content === '' && $this->findMissingDeclaredAssets($type, $kind) !== []) {
+                return '';
+            }
+
+            return $this->writeAtomically($storage, $relativeName, $content, cache: true);
+        } finally {
+            if ($acquired && $lock !== null) {
+                try {
+                    $lock->release();
+                } catch (\Throwable $e) {
+                    // 해제 실패는 TTL 이 정리한다 — 서빙에는 영향이 없다.
+                }
+            }
+        }
+    }
+
+    /**
+     * 번들을 서빙할 때 쓸 병합 결과를 반환합니다 (디스크 캐시 실패 시 메모리 폴백용).
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @return string 병합 결과 (없으면 빈 문자열)
+     */
+    public function buildBundleContent(string $type, string $kind): string
+    {
+        return $this->mergeBundle($type, $kind)['content'];
+    }
+
+    /**
+     * 병합 결과와 함께 **건너뛴 확장**을 돌려줍니다 (캐시 판정용).
+     *
+     * 캐시할지는 결과 문자열만으로 판정할 수 없다 — 파일은 존재·판독 가능한데 읽기나 치환이
+     * 실패해 건너뛴 확장은 결과에서 조용히 빠질 뿐이다. 그 상태가 캐시로 굳으면 버전 bump
+     * 전까지 그 확장 자산이 사라진 채 고정되므로, 캐시 경로는 건너뜀 여부를 함께 받는다.
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @return array{content: string, skipped: list<string>} 병합 결과와 건너뛴 확장 식별자
+     */
+    private function mergeBundle(string $type, string $kind): array
+    {
+        $merged = $kind === 'css' ? $this->mergeCss($type) : $this->mergeJs($type);
+
+        return [
+            'content' => implode($kind === 'css' ? "\n" : "\n;\n", $merged['segments']),
+            'skipped' => $merged['skipped'],
+        ];
+    }
+
+    /**
+     * JS 세그먼트를 priority 순으로 모읍니다.
+     *
+     * 확장별 fine-grained try/catch — 읽기 실패·처리 예외는 그 확장만 건너뛰고(`skipped`
+     * 에 기록) 나머지 병합을 지속한다. 한 확장의 실패가 번들 전체를 붕괴시키지 않는다.
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @return array{segments: list<string>, skipped: list<string>} 세그먼트와 건너뛴 확장 식별자
+     */
+    private function mergeJs(string $type): array
+    {
+        $ordered = $this->getOrderedGlobalAssetPaths($type);
+        $isProduction = app()->environment('production');
+        $segments = [];
+        $skipped = [];
+
+        foreach ($ordered as $identifier => $paths) {
+            if (empty($paths['jsAbsPath'])) {
+                continue;
+            }
+
+            try {
+                $content = $this->readAssetSource($paths['jsAbsPath']);
+
+                if ($content === false) {
+                    Log::warning('확장 JS 번들 병합: 파일 읽기 실패, 해당 확장 skip', [
+                        'type' => $type,
+                        'identifier' => $identifier,
+                        'path' => $paths['jsAbsPath'],
+                    ]);
+                    $skipped[] = (string) $identifier;
+
+                    continue;
+                }
+
+                $segments[] = $this->processJsSourceMap($content, $type, $identifier, $isProduction);
+            } catch (\Throwable $e) {
+                Log::warning('확장 JS 번들 병합 중 오류, 해당 확장 skip', [
+                    'type' => $type,
+                    'identifier' => $identifier,
+                    'error' => $e->getMessage(),
+                ]);
+                $skipped[] = (string) $identifier;
+            }
+        }
+
+        return ['segments' => $segments, 'skipped' => $skipped];
+    }
+
+    /**
+     * CSS 세그먼트를 priority 순으로 모읍니다.
+     *
+     * CSS 안의 상대 `url(...)`·`@import` 참조는 그 확장의 절대 자산 URL 로 치환한다 —
+     * 병합본의 주소는 어느 확장의 dist 디렉토리도 아니라 상대 해석이 반드시 어긋나기 때문이다.
+     * 치환은 개별 자산 서빙(ServesRewritableCssAssets)과 같은 규칙(AssetCssUrlRewriter)을 쓴다.
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @return array{segments: list<string>, skipped: list<string>} 세그먼트와 건너뛴 확장 식별자
+     */
+    private function mergeCss(string $type): array
+    {
         $ordered = $this->getOrderedGlobalAssetPaths($type);
         $isProduction = app()->environment('production');
         $typeSegment = $type === 'plugin' ? 'plugins' : 'modules';
         $version = $this->getCurrentVersion();
         $segments = [];
+        $skipped = [];
 
         foreach ($ordered as $identifier => $paths) {
             if (empty($paths['cssAbsPath'])) {
@@ -199,7 +437,7 @@ class ExtensionBundleService
             }
 
             try {
-                $content = @file_get_contents($paths['cssAbsPath']);
+                $content = $this->readAssetSource($paths['cssAbsPath']);
 
                 if ($content === false) {
                     Log::warning('확장 CSS 번들 병합: 파일 읽기 실패, 해당 확장 skip', [
@@ -207,6 +445,7 @@ class ExtensionBundleService
                         'identifier' => $identifier,
                         'path' => $paths['cssAbsPath'],
                     ]);
+                    $skipped[] = (string) $identifier;
 
                     continue;
                 }
@@ -237,81 +476,26 @@ class ExtensionBundleService
                     'identifier' => $identifier,
                     'error' => $e->getMessage(),
                 ]);
+                $skipped[] = (string) $identifier;
             }
         }
 
-        return implode("\n", $segments);
+        return ['segments' => $segments, 'skipped' => $skipped];
     }
 
     /**
-     * 캐시된 번들 파일의 절대 경로를 반환합니다(없으면 build → 원자적 write).
+     * 확장 자산 원본을 읽습니다.
      *
-     * 파일명에 version 을 포함(`{type}.{version}.{js|css}`)하므로 활성 조합이
-     * 바뀌어 version 이 bump 되면 새 파일명으로 자연 무효화된다. 프로덕션에서만
-     * 디스크 캐시하며, 비프로덕션(dev/watch)에서는 캐시하지 않고 매 요청 build 해
-     * rebuild 를 즉시 반영한다.
+     * 실패는 `false` 로 돌아오고 호출측이 그 확장을 건너뛴다. 별도 메서드인 이유는
+     * "존재·판독 가능한데 읽기가 실패하는" 상태를 테스트가 재현할 수 있어야 하기 때문이다 —
+     * 그 상태가 캐시로 굳는 것이 이 서비스가 막아야 할 결함이다.
      *
-     * @param  string  $type  'module' | 'plugin'
-     * @param  string  $kind  'js' | 'css'
-     * @param  int  $version  확장 캐시 버전(ClearsTemplateCaches::getExtensionCacheVersion)
-     * @return string 캐시(또는 방금 build 한) 파일의 절대 경로. 병합 결과가 빈 문자열이면 빈 문자열.
+     * @param  string  $path  절대 경로
+     * @return string|false 파일 내용 (실패 시 false)
      */
-    public function getBundleFilePath(string $type, string $kind, int $version): string
+    protected function readAssetSource(string $path): string|false
     {
-        $content = $kind === 'css'
-            ? $this->buildCssBundle($type)
-            : $this->buildJsBundle($type);
-
-        // 병합할 에셋이 하나도 없으면 파일을 만들지 않는다(호출측이 빈 문자열로 판단).
-        if ($content === '') {
-            return '';
-        }
-
-        $relativeName = $this->bundleFileName($type, $kind, $version);
-
-        // 디스크 캐시는 **최적화**다 — 쓰기 실패가 공개 엔드포인트의 500 이 되면 안 된다.
-        // `ext-bundles` 디스크는 `throw => true` 라 권한 문제(uid 독점 0700 등)에서
-        // `UnableToWriteFile` 이 그대로 올라오고, 그러면 모든 확장의 프론트엔드 JS/CSS 가
-        // 통째로 나가지 못한다. 병합 결과는 이미 메모리에 있으므로 그것을 그대로 응답하면
-        // 화면은 정상이다 (커밋 63a30ab29 의 AbstractCacheDriver fail-soft 와 같은 원칙).
-        try {
-            $storage = $this->bundleStorage();
-
-            // 비프로덕션은 캐시하지 않고 임시 파일로 매번 build → rebuild 즉시 반영
-            if (! app()->environment('production')) {
-                return $this->writeAtomically($storage, $relativeName, $content, cache: false);
-            }
-
-            // 프로덕션: 동일 version 캐시가 있으면 그대로 사용
-            if ($storage->exists('', $relativeName)) {
-                return $storage->getBasePath('').'/'.$relativeName;
-            }
-
-            return $this->writeAtomically($storage, $relativeName, $content, cache: true);
-        } catch (\Throwable $e) {
-            Log::warning('확장 번들 디스크 캐시 실패 — 메모리 병합 결과로 서빙합니다', [
-                'type' => $type,
-                'kind' => $kind,
-                'version' => $version,
-                'error' => $e->getMessage(),
-            ]);
-
-            return '';
-        }
-    }
-
-    /**
-     * 번들을 서빙할 때 쓸 병합 결과를 반환합니다 (디스크 캐시 실패 시 메모리 폴백용).
-     *
-     * @param  string  $type  'module' | 'plugin'
-     * @param  string  $kind  'js' | 'css'
-     * @return string 병합 결과 (없으면 빈 문자열)
-     */
-    public function buildBundleContent(string $type, string $kind): string
-    {
-        return $kind === 'css'
-            ? $this->buildCssBundle($type)
-            : $this->buildJsBundle($type);
+        return @file_get_contents($path);
     }
 
     /**

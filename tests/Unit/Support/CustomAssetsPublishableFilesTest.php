@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * `CustomAssets::publishableFiles()` — 게시·변경 감지가 공유하는 열거자 테스트 (#651 F7).
+ * [case:cache-19] `CustomAssets::publishableFiles()` — 게시·변경 감지가 공유하는 열거자 테스트 (#651 F7).
  *
  * 정적 게시는 `custom/**` 를 재귀로 복사하고, 변경 감지는 종전에 최상위 css/js 의 mtime 만
  * 서명했다. 두 범위를 서로 다른 코드가 정의하면 어긋나고, 그 어긋남은 "글꼴을 바꿨는데

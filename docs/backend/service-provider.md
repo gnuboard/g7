@@ -1,6 +1,6 @@
 # 서비스 프로바이더 안전성
 
-> **목차**: [index.md](./index.md) | [enum.md](./enum.md) | [controllers.md](./controllers.md) | [service-repository.md](./service-repository.md) | [validation.md](./validation.md) | [exceptions.md](./exceptions.md) | [api-resources.md](./api-resources.md) | [routing.md](./routing.md) | [response-helper.md](./response-helper.md) | [middleware.md](./middleware.md) | [authentication.md](./authentication.md) | **service-provider.md**
+> **목차**: [README.md](./README.md) | [enum.md](./enum.md) | [controllers.md](./controllers.md) | [service-repository.md](./service-repository.md) | [validation.md](./validation.md) | [exceptions.md](./exceptions.md) | [api-resources.md](./api-resources.md) | [routing.md](./routing.md) | [response-helper.md](./response-helper.md) | [middleware.md](./middleware.md) | [authentication.md](./authentication.md) | **service-provider.md**
 
 ---
 
@@ -197,6 +197,9 @@ class TemplateService
 ```
 인스톨러 단계 1: composer install
 ├─ .env 없음 → ModuleRouteServiceProvider 스킵 ✅
+├─ vendor 재사용 분기 (vendor/autoload.php + composer.lock 존재)
+│  ├─ 개발용 패키지 감지 → 경고 카드·설치 로그 (설치는 계속)
+│  └─ 이전 환경의 컴파일 캐시 정리 (packages/services/config)
 └─ package:discover 정상 완료
 
 인스톨러 단계 2: .env 생성
@@ -538,4 +541,4 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 - [middleware.md](./middleware.md) - 미들웨어 등록 규칙
 - [authentication.md](./authentication.md) - 인증 및 세션 처리
-- [index.md](./index.md) - 백엔드 가이드 인덱스
+- [README.md](./README.md) - 백엔드 가이드 인덱스

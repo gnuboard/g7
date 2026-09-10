@@ -945,7 +945,7 @@ generateIdentifier(name)
 - [menus.md](./menus.md) - 메뉴 권한 시스템
 - [hooks.md](./hooks.md) - 훅 권한 시스템
 - [module-basics.md](./module-basics.md) - 모듈 기본 구조
-- [index.md](./index.md) - 확장 시스템 인덱스
+- [README.md](./README.md) - 확장 시스템 인덱스
 - [../backend/core-config.md](../backend/core-config.md#완전-동기화-원칙) - 완전 동기화 원칙
 - [../backend/data-sync-helpers.md](../backend/data-sync-helpers.md) - 데이터 동기화 Helper
 - [../backend/user-overrides.md](../backend/user-overrides.md) - 사용자 수정 보존

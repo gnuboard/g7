@@ -1,7 +1,7 @@
 # 데이터 소스 (Data Sources)
 
 > **중요도**: 매우 중요
-> **관련 문서**: [data-binding.md](data-binding.md) | [layout-json.md](layout-json.md) | [index.md](index.md)
+> **관련 문서**: [data-binding.md](data-binding.md) | [layout-json.md](layout-json.md) | [README.md](README.md)
 
 ---
 

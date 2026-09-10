@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
- * 코어 단건 설정 저장(setSetting)의 부수효과 정합 테스트 (공개 #114 동종, B-3)
+ * [case:cache-18] 코어 단건 설정 저장(setSetting)의 부수효과 정합 테스트 (공개 #114 동종, B-3)
  *
  * 단건 저장은 `PUT /api/admin/settings/{key}` 로 실제 도달 가능한 경로인데, 벌크 저장이
  * 수행하는 부수효과 중 일부를 건너뛰었다:

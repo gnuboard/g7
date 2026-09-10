@@ -1,6 +1,6 @@
 # 미들웨어 등록 규칙
 
-> **참조**: [백엔드 가이드 인덱스](index.md) | [인증 시스템](authentication.md)
+> **참조**: [백엔드 가이드 인덱스](README.md) | [인증 시스템](authentication.md)
 
 ---
 
@@ -490,13 +490,13 @@ if (Auth::check()) {  // ✅ 정상 작동! Sanctum 인증 후이므로
 - [권한 시스템](../extension/permissions.md) - scope_type 시스템 상세, resource_route_key/owner_key 매핑
 - [인증 시스템](authentication.md) - Sanctum 인증 및 세션 처리
 - [서비스 프로바이더 안전성](service-provider.md) - 프로바이더 등록 규칙
-- [백엔드 가이드 인덱스](index.md) - 전체 가이드 목록
+- [백엔드 가이드 인덱스](README.md) - 전체 가이드 목록
 
 ---
 
 ## 참고 이력
 
-- [SetTimezone 미들웨어 리팩토링](../../history/20251127_1402_SetTimezone미들웨어리팩토링.md)
+- [SetTimezone 미들웨어 구현](../../app/Http/Middleware/SetTimezone.php)
 
 ### SEO 미들웨어
 

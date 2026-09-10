@@ -261,6 +261,10 @@ class ExecuteUpgradeStepsCommand extends Command
         if (! $this->option('skip-cache-clear') && ! $isSpawnChild && ! $stepsOnly) {
             $this->info('캐시 정리 (config/route/view/services/packages)');
             $service->clearAllCaches();
+            // 상주 큐 워커는 부팅이 한 번뿐이라 옛 코드를 물고 있다 — 캐시 정리 직후 재시작 신호.
+            // spawn 자식·steps-only 는 이 블록을 스킵하고 부모가 보낸다.
+            $service->signalQueueRestart();
+            $this->info('큐 워커 재시작 신호 전송 (queue:restart)');
             // clearAllCaches() 는 config:clear 만 하므로, 단독 실행 흐름에서는 config 캐시가
             // 비활성 상태로 남는다. 모든 upgrade step + 번들 확장 업데이트가 config 소스를
             // 변경했을 수 있으니, 캐시 정리 세트의 마지막에 config 캐시를 재생성한다.

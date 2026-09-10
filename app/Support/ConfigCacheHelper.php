@@ -4,6 +4,7 @@ namespace App\Support;
 
 use Illuminate\Container\Container;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -62,26 +63,47 @@ class ConfigCacheHelper
     }
 
     /**
-     * 콜백 실행 뒤 전역 컨테이너 인스턴스를 원래 앱으로 되돌립니다.
+     * 콜백 실행 뒤 전역 컨테이너 인스턴스와 파사드 애플리케이션을 원래 앱으로 되돌립니다.
      *
-     * `config:cache` 는 신선한 설정을 얻기 위해 **새 Application 을 부팅**하는데, `Application` 생성자가
-     * `Container::setInstance()` 를 호출하므로 그 순간부터 `app()` 헬퍼가 실행 중인 앱이 아니라 그
-     * 일회용 앱을 가리킨다(파사드는 별도 참조라 그대로다). 같은 프로세스에서 그 뒤에 등록되는
-     * `app()->terminating()` 콜백은 종료되지 않는 앱에 걸려 **영원히 실행되지 않는다** — 설정 저장
-     * 뒤의 확장 캐시 버전 bump 가 예약한 정적 재게시가 그렇게 조용히 사라졌다(#651 F5 실측: 버전은
-     * 올랐는데 게시는 다음 렌더의 자가 치유까지 미뤄짐). 예외도 로그도 없고, 자가 치유가 한 렌더
-     * 뒤에 덮어 주므로 "한 박자 늦게 반영" 으로만 나타난다.
+     * `config:cache` 는 신선한 설정을 얻기 위해 **새 Application 을 부팅**하는데, 그 부팅이 전역 상태를
+     * 두 군데 바꾼다.
+     *
+     * 1. `Application` 생성자의 `Container::setInstance()` — 그 순간부터 `app()` 헬퍼가 실행 중인 앱이
+     *    아니라 일회용 앱을 가리킨다. 같은 프로세스에서 그 뒤에 등록되는 `app()->terminating()` 콜백은
+     *    종료되지 않는 앱에 걸려 **영원히 실행되지 않는다** — 설정 저장 뒤의 확장 캐시 버전 bump 가
+     *    예약한 정적 재게시가 그렇게 조용히 사라졌다(#651 F5 실측: 버전은 올랐는데 게시는 다음 렌더의
+     *    자가 치유까지 미뤄짐).
+     * 2. `registerBaseBindings()` 의 `Facade::clearResolvedInstances()` + `Facade::setFacadeApplication()`
+     *    — 그 순간부터 **모든 파사드**(`Artisan`·`Log`·`DB`·`Cache` …)가 일회용 앱에서 새 인스턴스를
+     *    해석한다. 컨테이너만 되돌리면 이 축이 남는다.
+     *
+     * 2번이 코어 업데이트에서 드러난 형태: Step 11 의 `ConfigCacheHelper::rebuild()` 뒤에 오는
+     * `RouteCacheHelper::rebuild()` 의 `Artisan::call('route:clear')` 가 일회용 앱에서 **새 콘솔 Kernel** 을
+     * 해석하고, 그 Kernel 은 콘솔 Application 을 처음부터 구성하며 등록된 커맨드를 전부 resolve 한다.
+     * 부팅 시점 vendor 가 개발용이었다면 그 목록에 `command.tinker` 같은 require-dev 커맨드가 들어
+     * 있는데, Step 8 이 vendor 를 `--no-dev` 로 이미 교체했으므로 그 클래스가 없어
+     * `Target class [command.tinker] does not exist.` 로 업데이트 전체가 실패·롤백한다
+     * (2026-09-07 7.0.9 → 7.0.11 실측). 프로세스에 이미 등록된 provider 목록은 vendor 교체로 갱신되지
+     * 않으므로, 방어는 "교체 뒤에 콘솔 Application 을 다시 구성하지 않는 것" 이다.
      *
      * @param  callable  $callback  전역 인스턴스를 바꿔 놓을 수 있는 작업
      */
     public static function withPreservedContainer(callable $callback): void
     {
         $app = Container::getInstance();
+        $facadeApp = Facade::getFacadeApplication();
 
         try {
             $callback();
         } finally {
             Container::setInstance($app);
+
+            // 일회용 앱이 남긴 파사드 해석 결과를 버리고 원래 앱으로 되돌린다.
+            // 순서 주의: clear 를 먼저 해야 일회용 앱에서 해석된 인스턴스가 캐시에 남지 않는다.
+            Facade::clearResolvedInstances();
+            if ($facadeApp !== null) {
+                Facade::setFacadeApplication($facadeApp);
+            }
         }
     }
 

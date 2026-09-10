@@ -1,6 +1,6 @@
 # API 응답 규칙 (ResponseHelper)
 
-> **관련 문서**: [index.md](index.md) | [controllers.md](controllers.md) | [api-resources.md](api-resources.md)
+> **관련 문서**: [README.md](README.md) | [controllers.md](controllers.md) | [api-resources.md](api-resources.md)
 
 ---
 
@@ -633,7 +633,7 @@ return response()->json($payload, $status);
 
 ## 관련 문서
 
-- [index.md](index.md) - 백엔드 가이드 인덱스
+- [README.md](README.md) - 백엔드 가이드 인덱스
 - [controllers.md](controllers.md) - 컨트롤러 계층 구조
 - [api-resources.md](api-resources.md) - API 리소스 규칙
 - [routing.md](routing.md) - 라우트 네이밍 및 경로

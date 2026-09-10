@@ -31,6 +31,11 @@ export interface NodeSource {
   extensionIdentifier?: string;
   /** 확장 로케일 표시명(예: `게시판`) — 식별자와 함께 표시 */
   extensionName?: string;
+  /**
+   * overlay 확장 `injections[]` 순번 — 백엔드가 주입 시점에 부여. 확장 편집 모드 저장이 호스트
+   * 병합 트리에서 추출한 노드를 원래 injection 으로 되돌리는 열쇠(extension_point 주입은 없음).
+   */
+  injectionIndex?: number;
 }
 
 /**
@@ -448,6 +453,39 @@ function asChildrenArray(node: EditorNode): EditorNode[] {
 function asResponsiveChildren(node: EditorNode, key: string): EditorNode[] {
   const branch = node.responsive?.[key];
   return branch && Array.isArray(branch.children) ? (branch.children as EditorNode[]) : [];
+}
+
+/**
+ * path 의 조상 노드 배열 (루트의 **자식**부터 부모까지, 자기 자신·루트 제외).
+ *
+ * `classifyLockKind` 의 `ancestors` 입력 SSoT. responsive 세그먼트는 노드를 내리지 않고
+ * childArray 만 분기로 전환하므로 조상 목록에 추가하지 않는다.
+ *
+ * 종전에는 `useCanvasDnd` · `DndCanvasLayer` 가 바이트 동일 사본을 각자 들고 있었다 —
+ * 잠금 판정의 입력이 갈리면 "핸들은 있는데 드래그는 거부" 같은 어긋남이 조용히 생긴다.
+ * (`useElementSelection.resolveAncestors` 는 **루트를 포함**하는 다른 계약이라 별개다.)
+ *
+ * @param root 루트 노드
+ * @param path 대상 노드의 인덱스 경로
+ * @returns 조상 노드 배열 (루트 자식 → 부모 순)
+ */
+export function collectAncestors(root: EditorNode, path: ComponentPath): EditorNode[] {
+  const out: EditorNode[] = [];
+  let current: EditorNode = root;
+  let childArray: EditorNode[] = asChildrenArray(root);
+  for (let i = 0; i < path.length - 1; i++) {
+    const seg = path[i]!;
+    if (isResponsiveSegment(seg)) {
+      childArray = asResponsiveChildren(current, seg.responsive);
+      continue;
+    }
+    const next = childArray[seg] ?? null;
+    if (!next) break;
+    out.push(next);
+    current = next;
+    childArray = asChildrenArray(next);
+  }
+  return out;
 }
 
 /**
