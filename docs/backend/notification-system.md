@@ -379,7 +379,7 @@ public function getNotificationDefinitions(): array
 
 ### 금지 사항
 
-- 모듈/플러그인 측에 별도 `*NotificationDefinitionSeeder.php` 파일을 두면 안 됩니다. 동일 데이터를 두 곳에서 유지하면 SSoT 가 깨지며, 정적 검사가 차단합니다.
+- 모듈/플러그인 측에 별도 `*NotificationDefinitionSeeder.php` 파일을 두면 안 됩니다. 동일 데이터를 두 곳에서 유지하면 SSoT 가 깨집니다.
 - 코어는 `database/seeders/NotificationDefinitionSeeder.php` 가 fresh install 진입점으로 유지되지만, 데이터 자체는 `config/core.php` 가 SSoT 입니다 (시더는 config 를 읽기만 함).
 
 ---
@@ -643,7 +643,7 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 
 키가 없으면 예외도 경고도 없이 원시 키 문자열이 화면 제목으로 그대로 노출된다. 코어 정의를
 추가하는 변경은 반드시 admin 템플릿 라벨(ko·en)과 템플릿 언어팩(ja)을 함께 추가해야 하며,
-코어 정의 전수 ↔ 템플릿 라벨 패리티는 정적 검사(테스트)가 자동 대조한다.
+코어 정의 전수 ↔ 템플릿 라벨 패리티는 테스트가 자동 대조한다.
 
 ## 채널 템플릿을 시드하는 확장의 [기본값 복원] 의무
 

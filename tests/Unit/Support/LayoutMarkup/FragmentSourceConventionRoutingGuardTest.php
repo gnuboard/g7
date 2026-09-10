@@ -82,7 +82,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
             .'(`LayoutCorpus` 는 번들 확장·템플릿 트리만 훑는다). 커맨드는 그 파일을 디코드해 '
             .'시드 DB 행 `content` 에 그대로 싣는 것이 전부라, 소스로 옮겨도 곧바로 같은 배열로 '
             .'되돌려야 한다 — 규약 위반이 아니라 **테스트 자료의 의도된 예외**이며, 등재 목적은 '
-            .'"다음 사람이 이것을 사본으로 오인해 고치지 않게" 다 (PO 판정, 5차 병합 후속).',
+            .'"다음 사람이 이것을 사본으로 오인해 고치지 않게" 다 (설계 판정, 5차 병합 후속).',
         'app/Extension/AbstractPlugin.php' => '`getSettingsLayout()` 의 `plugin_settings.json` 경로 '
             .'하드코딩. AGENTS.md "확장 시스템 빠른 참조" 이 명문화한 **설계**다 — 플러그인 설정 UI 는 DB 설치 레이아웃과 '
             .'달리 파일에서 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다. 규약 위반이 아니라 '
@@ -94,7 +94,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
         // ── S19 ⑦ (D66 ⓒ) 에서 `app/Services/TemplateService.php` 가 이 목록에서 빠졌다.
         //
         // 등재 사유는 "트리 스캔이 `getExtension() !== 'json'` 으로 걸러 마크업 전용 레이아웃이
-        // 트리에 안 보인다" 였고, R1·R16 이 사용자 가시 변경이라 PO 판정 대기 중이었다. D66 ⓒ 가
+        // 트리에 안 보인다" 였고, R1·R16 이 사용자 가시 변경이라 설계 판정 대기 중이었다. D66 ⓒ 가
         // S19 편입으로 확정해 그 전환을 이행했다 — 열거는 재귀로 하되 짝 판별·우선순위·읽기를
         // `mergeLayoutSourcesByPriority()` / `loadFragmentSource()` 에 위임한다.
         //
@@ -309,7 +309,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * `TemplateService::resolveModalPartial()`. 독블록이 스스로 "경로 규약은 레이아웃 partial 해석과
      * 동형" 이라 적어 두고 `.json` 만 읽으며 실패는 조용히 `null` 이다. 다만 이 자리는 **레이아웃
      * 편집기 표면**이고, 계획서 잔여 대장 R1 이 같은 표면의 `.json` 결합을 "사용자 가시 동작 변경"
-     * 으로 분류해 PO 판정(S20 또는 S18 P3)으로 미뤄 둔 상태다. 그래서 이 회차는 고치지 않고
+     * 으로 분류해 설계 판정(S20 또는 S18 P3)으로 미뤄 둔 상태다. 그래서 이 회차는 고치지 않고
      * **늘지 않게 잠근다** — 알려진 부채는 사유와 함께 등재하고, 등재 밖의 새 사본은 red 다.
      *
      * 래칫이 거짓말로 굳지 않도록 등재분이 **실제로 사본 형태인지** 함께 확인한다(고쳐졌으면 목록

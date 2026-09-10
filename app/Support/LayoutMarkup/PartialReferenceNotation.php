@@ -5,7 +5,7 @@ namespace App\Support\LayoutMarkup;
 use App\Extension\Traits\ResolvesLayoutInstallSource;
 
 /**
- * 조각 참조 표기의 **경계 정규화** 한 곳 (S21.2 ⓑ · U-REFEXT 안 B · PO 확정 2026-08-02).
+ * 조각 참조 표기의 **경계 정규화** 한 곳 (S21.2 ⓑ · U-REFEXT 안 B · 설계 결정 2026-08-02).
  *
  * ## 규약
  *

@@ -12,6 +12,7 @@
 3. event: 커스텀 콜백 (CodeEditor, DataGrid) → $args[0]
 4. 핸들러명 정확히: apiCall (❌ api), navigate (❌ goto)
 5. 조합: sequence(순차), parallel(병렬), onSuccess/onError
+6. sequence 안의 연속 setState 는 병합 주의 (같은 경로를 나눠 갱신하면 앞 값이 덮인다)
 ```
 
 ---

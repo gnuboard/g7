@@ -600,7 +600,7 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * 액션의 `params.body`/`params.query` 는 `<body>`/`<query>` 로 나간다 (D41).
      *
      * 속성에 JSON 을 박으면 D2("속성 JSON 추방")를 어기는데, escape 계량은 `<json>` 태그만 세므로
-     * escape-0 판정을 받고도 원시 JSON 이 그대로 남는다 — PO 가 생성물에서 직접 발견한 부류다.
+     * escape-0 판정을 받고도 원시 JSON 이 그대로 남는다 — 검수에서 직접 발견한 부류다.
      *
      * @scenario compile_unit=decompile,source_health=valid
      *
@@ -768,7 +768,7 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 조건부 값(`$switch`)은 `<switch-value>` 로 나간다 (D41 — PO 지적 건).
+     * 조건부 값(`$switch`)은 `<switch-value>` 로 나간다 (D41 — 설계 검토 지적 건).
      *
      * @scenario compile_unit=decompile,source_health=valid
      *
@@ -1054,7 +1054,7 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 사어 키는 이관이 옮기지 않는다 — 탈출구도 타지 않고 그냥 사라진다 (PO 확정 07-20).
+     * 사어 키는 이관이 옮기지 않는다 — 탈출구도 타지 않고 그냥 사라진다 (설계 결정 2026-07-20).
      *
      * `schema`/`pageConfig` 는 plugin_settings 잔재로 프론트 참조 0건(설정 검증은 PHP
      * `getSettingsSchema()` 별도 축), `_comment_*` 변형은 서빙 strip 대상도 아니면서

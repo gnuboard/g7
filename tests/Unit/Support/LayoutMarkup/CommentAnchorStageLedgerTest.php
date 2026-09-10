@@ -42,7 +42,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
     private const CORPUS_MINIMUM = 634;
 
     /**
-     * PO 가 승인한 단락 상한(2026-08-01) — 한 단락에 600건을 넘겨 싣지 않는다.
+     * 승인된 단락 상한(2026-08-01) — 한 단락에 600건을 넘겨 싣지 않는다.
      */
     private const STAGE_CEILING = 600;
 
@@ -318,7 +318,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
     /**
      * 잔여가 0 이 된 단락은 **반드시** 완료 원장에 등재돼 있다 — 위 단언의 역방향.
      *
-     * 61차 `/validate-plan` 이 연 자리다. 60차는 «S21.2 가 원장에 없어 주석 459건이 전부
+     * 61차 계획서 준수 검증 이 연 자리다. 60차는 «S21.2 가 원장에 없어 주석 459건이 전부
      * 지워져도 초록이었다» 를 상수 한 줄로 닫았는데, 그것은 **인스턴스**를 닫은 것이고
      * 재발 경로는 그대로였다 — S21.3 을 완료 선언하면서 상수에 추가하지 않으면 똑같이 초록이다.
      * 등재를 강제하는 검사가 저장소 어디에도 없었기 때문이다(상한 단언의 `REMAINING_FLOOR` 는
@@ -360,7 +360,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * PO 승인 상한(600)을 넘는 단락이 없다.
+     * 승인 상한(600)을 넘는 단락이 없다.
      *
      * 순회는 **전 단락**이다(완료 단락 포함). 완료 단락의 잔여는 0 이라 상한 판정에 영향이 없고,
      * 회귀로 다시 부풀면 여기서도 걸리는 편이 낫다 — 모집단을 좁히는 것이 이 트랙이 네 번 데인
@@ -391,7 +391,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
         }
 
         $this->assertSame([], $over,
-            'PO 승인 상한을 넘는 단락이 있다 — 경계를 다시 쪼개는 것은 PO 전권이므로 보고 대상이다:'
+            '승인 상한을 넘는 단락이 있다 — 경계를 다시 쪼개는 것은 설계 권한이므로 보고 대상이다:'
             .PHP_EOL.implode(PHP_EOL, $over));
 
         if ($pending === []) {

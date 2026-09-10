@@ -26,22 +26,22 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      *
      * 639(㉓ 실측) → **637** — S16 W3 에서 **도달 경로가 0인 사문 레이아웃 2건을 삭제**했다
      * (`overrides/sirsoft-sample/index.json` 대상 모듈 부재 · `admin_language_packs_install_modal.json`
-     * 라우트·참조 0 + `extends` 없는 slots 라 렌더 결과 자체가 없음). 둘 다 PO 승인 삭제다 —
+     * 라우트·참조 0 + `extends` 없는 slots 라 렌더 결과 자체가 없음). 둘 다 승인된 삭제다 —
      * 하한을 내릴 때는 **왜 줄었는지**를 여기 남겨야 한다. 그러지 않으면 다음 사람이 이 숫자를
      * 스캔이 좁아진 신호와 구별할 수 없다.
      *
-     * 637 → **635** — S16 에서 **도달 경로가 0인 고아 레이아웃 2건을 삭제**했다 (PO 승인):
+     * 637 → **635** — S16 에서 **도달 경로가 0인 고아 레이아웃 2건을 삭제**했다 (설계 결정):
      * `partials/shop/_product_purchase_card.json` 은 살아 있는 `partials/shop/detail/_purchase_card.json`
      * 으로 대체돼 include 0 이었고(그 안에만 있던 A25 옵션 수량 한도 검사는 살아 있는 카드로 이식했다),
      * `partials/search/products/_item_list.json` 은 검색 결과가 `ProductCard` 를 쓰게 되면서 include 0 이
      * 됐다(상품명·하이라이트 모두 그쪽이 담당).
      *
-     * 635 → **634** — S16 감사에서 **세 번째 고아**를 확인해 삭제했다 (PO 승인):
+     * 635 → **634** — S16 감사에서 **세 번째 고아**를 확인해 삭제했다 (설계 결정):
      * `partials/admin_ecommerce_order_list/_partial_preset_section.json` 은 결함(F21 미등록
      * `DropdownItem` · 죽은 노드 `iterator`)을 고쳐 두었으나 include 가 끝내 0이었고, 살아 있는
      * `_partial_filter_section.json` 의 `preset_row` 가 같은 기능을 **데이터소스 전량 반복**으로
      * 이미 제공한다(고아 쪽은 정적 퀵프리셋 2개 + `slice(0, 3)` + 더보기 드롭다운이라 설계가 낡았다).
-     * "살아 있는 것 기준, 미사용 건은 삭제" 가 PO 판단이다.
+     * "살아 있는 것 기준, 미사용 건은 삭제" 가 설계 판단이다.
      */
     private const CORPUS_MINIMUM = 634;
 
@@ -108,7 +108,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * 일치하는지까지 단언한다. 이후 웨이브는 이 목록을 확장한다.
      *
      * **W3(sirsoft-admin_basic) 은 전량 이관됐다 (143/143)** — 착수 시 제외했던 16파일은 S16 결함
-     * (F7·F8·F12·F13·F14·F15)을 수정한 뒤 합류시켰고, 사문 2건은 PO 승인대로 삭제했다
+     * (F7·F8·F12·F13·F14·F15)을 수정한 뒤 합류시켰고, 사문 2건은 승인대로 삭제했다
      * (145 → 143 — 대상 모듈이 없는 `overrides/sirsoft-sample` 과 참조처 없는
      * `admin_language_packs_install_modal`). 각 결함의 회귀는
      * `templates/_bundled/sirsoft-admin_basic/__tests__/layouts/s16-defect-fixes.test.tsx` 가 봉인한다.
@@ -776,7 +776,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * 1급 문법이 없어 원시 JSON 으로 남는 자리 (U-RAWJSON — D41 → D42 전면 재집계 → **D42 종료로 비었다**).
      *
      * D41 은 태그 본문(`<params>`/`<fallback>`/`<prop>`/`<props>`)을 "설계된 정본" 으로 보아 계량에서
-     * 뺐으나, PO 지적(3회차)으로 **그 제외를 폐기**했다. 태그 예외 없이 다시 세자 대장은 35 로 늘었고
+     * 뺐으나, 설계 검토 지적(3회차)으로 **그 제외를 폐기**했다. 태그 예외 없이 다시 세자 대장은 35 로 늘었고
      * (늘어난 것은 새 결함이 아니라 원래 있었으나 안 세던 것), D42 문법 신설이 그것을 전부 해소했다:
      *
      *  - 빈 컬렉션 — `[]`·`{}` 는 구조가 없는 값 리터럴이라 계량 대상이 아니다(D42 선행 판정).

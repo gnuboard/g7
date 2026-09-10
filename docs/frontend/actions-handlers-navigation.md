@@ -100,7 +100,7 @@
   "transition_overlay_target": "users_data_grid__body" } }
 ```
 
-정적 검사가 이 조합을 강제한다. 의도적으로 오버레이를 끄려면 키 자체를 지우고, 예외가 필요하면
+자동 검증이 이 조합을 강제한다. 의도적으로 오버레이를 끄려면 키 자체를 지우고, 예외가 필요하면
 액션 노드 `comment` 에 `audit:allow layout-transition-overlay-target-requires-replace <사유>` 를 남긴다.
 
 **DataGrid body 영역 한정 spinner 컨벤션**:
@@ -312,7 +312,6 @@
 }
 ```
 
-자동 차단: 정적 검사 대상 (위반 시 차단). 목록 라우트는 저장소에서 자동 도출하므로 화이트리스트를 관리할 필요가 없다. 도출 근거는 두 가지다.
 
 1. `query` 에 `page` 키가 등장하는 navigate 목적지
 2. 화면이 실제로 페이지네이션 UI(`onPageChange` 액션 / `Pagination` 컴포넌트)를 갖고 있는지 — partial 을 따라 전파한다
@@ -321,9 +320,9 @@
 
 두 번째 근거가 없으면 "이미 규약을 적용한 화면일수록 감시 대상이 된다" 는 순환이 생겨, 아직 고치지 않은 화면이 오히려 탐지에서 빠진다. 네 번째 근거가 없으면 무한스크롤 목록의 검색어가 새로고침에서 조용히 사라지는 결함이 빠진다.
 
-정적 검사는 반대 방향도 본다 — 탭 전환(`onTabChange`)에 `mergeQuery: true` 를 붙이거나, 자기 클러스터와 상하 관계가 전혀 없는 다른 목록 라우트로 나가면서 병합하면 위반으로 잡는다. "병합 누락"만 보면 이 방향이 통째로 사각지대가 된다.
+자동 검증은 반대 방향도 본다 — 탭 전환(`onTabChange`)에 `mergeQuery: true` 를 붙이거나, 자기 클러스터와 상하 관계가 전혀 없는 다른 목록 라우트로 나가면서 병합하면 위반으로 잡는다. "병합 누락"만 보면 이 방향이 통째로 사각지대가 된다.
 
-한계 — 정적 검사는 레이아웃 JSON 만 스캔한다. navigate leg 이 컴포넌트 코드(`.tsx`)에 있으면(예: `ProductCard` 의 카드 클릭) 룰의 시야 밖이다. 목록 항목으로 렌더되는 컴포넌트가 상세로 이동할 때는 컴포넌트가 직접 `mergeQuery` 를 실어야 한다(`ProductCard` 의 `preserveListQuery` prop 참조).
+한계 — 자동 검증은 레이아웃 JSON 만 스캔한다. navigate leg 이 컴포넌트 코드(`.tsx`)에 있으면(예: `ProductCard` 의 카드 클릭) 룰의 시야 밖이다. 목록 항목으로 렌더되는 컴포넌트가 상세로 이동할 때는 컴포넌트가 직접 `mergeQuery` 를 실어야 한다(`ProductCard` 의 `preserveListQuery` prop 참조).
 
 ### 배열 쿼리 파라미터
 

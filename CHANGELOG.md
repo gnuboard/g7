@@ -1324,21 +1324,6 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 
 ### Added
 
-- ActivityLog `description_params` ID→이름 변환 필터 훅 (`core.activity_log.filter_description_params`) — `ActivityLog::getLocalizedDescriptionAttribute()`에서 실행
-- 코어 모델 `$activityLogFields` 정의 — `User`, `Role`, `Menu`, `Schedule`, `MailTemplate` (5개 모델)
-- ActivityLog ChangeDetector 필드 라벨 다국어 키 추가 (`lang/ko/activity_log.php`, `lang/en/activity_log.php` — `fields` 섹션)
-- `module_helpers.php` — `getModuleSetting()` 헬퍼 함수 추가
-- CoreActivityLogListener: bulk_update per-User/per-Schedule 전환 + bulk_delete per-Schedule 전환 (건별 loggable_id 기록)
-- ActivityLogHandler: 삭제된 엔티티용 loggable_type/loggable_id 직접 지정 fallback 지원
-
-### Changed
-
-- ActivityLog 규정 문서 대폭 보강 (`docs/backend/activity-log.md`) — `description_params` 저장 정책, `ActivityLogDescriptionResolver` 패턴, Bulk Update ChangeDetector 패턴, 개발자 체크리스트 추가
-
-## [7.0.0-alpha.17] - 2026-03-26
-
-### Added
-
 - Monolog 기반 ActivityLog 아키텍처: `Log::channel('activity')` → `ActivityLogHandler` → DB (3단계)
 - `ActivityLogChannel` (커스텀 Monolog 채널), `ActivityLogHandler`, `ActivityLogProcessor` 신규
 - ActivityLog i18n 지원: `description_key` + `description_params` 기반 실시간 다국어 번역
@@ -1349,10 +1334,12 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 - `config/logging.php`에 `activity` 채널 추가
 - `config/activity_log.php` 전용 설정 파일 신규
 - `activity_logs` 테이블 복합 인덱스 추가 (`loggable_type`+`loggable_id`+`created_at`, `log_type`+`action`+`created_at`)
-
-### Fixed
-
-- `resolveLogType()` 사용자 역할 기반 → 요청 경로 기반으로 변경: 관리자가 사용자 화면에서 수행한 액션이 `admin`으로 기록되던 문제 수정 (ResolvesActivityLogType)
+- ActivityLog `description_params` ID→이름 변환 필터 훅 (`core.activity_log.filter_description_params`) — `ActivityLog::getLocalizedDescriptionAttribute()`에서 실행
+- 코어 모델 `$activityLogFields` 정의 — `User`, `Role`, `Menu`, `Schedule`, `MailTemplate` (5개 모델)
+- ActivityLog ChangeDetector 필드 라벨 다국어 키 추가 (`lang/ko/activity_log.php`, `lang/en/activity_log.php` — `fields` 섹션)
+- `module_helpers.php` — `getModuleSetting()` 헬퍼 함수 추가
+- CoreActivityLogListener: bulk_update per-User/per-Schedule 전환 + bulk_delete per-Schedule 전환 (건별 loggable_id 기록)
+- ActivityLogHandler: 삭제된 엔티티용 loggable_type/loggable_id 직접 지정 fallback 지원
 
 ### Changed
 
@@ -1360,6 +1347,7 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 - `ActivityLogService`: 기록 메서드 전면 제거 → 조회 전용으로 축소
 - `ActivityLogResource`: `description` → `localized_description` (실시간 번역)
 - 모든 Controller에서 `logAdminActivity()` 호출 전면 제거 → Listener 경로로 전환
+- ActivityLog 규정 문서 대폭 보강 (`docs/backend/activity-log.md`) — `description_params` 저장 정책, `ActivityLogDescriptionResolver` 패턴, Bulk Update ChangeDetector 패턴, 개발자 체크리스트 추가
 
 ### Removed
 
@@ -1371,6 +1359,7 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 
 ### Fixed
 
+- `resolveLogType()` 사용자 역할 기반 → 요청 경로 기반으로 변경: 관리자가 사용자 화면에서 수행한 액션이 `admin`으로 기록되던 문제 수정 (ResolvesActivityLogType)
 - 마이페이지 프로필 저장 시 국가·언어 미선택 상태에서 오류가 발생하던 문제 수정 — 해당 필드를 선택 사항으로 변경
 - 인스톨러 Step 2 .env 복사 명령어 안내 수정 — `.env.example.production` → `.env.example` (functions.php 2곳, installer.js 4곳)
 

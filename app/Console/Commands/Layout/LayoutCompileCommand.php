@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\File;
 /**
  * JSON 레이아웃을 `.g7.html` 소스로 컴파일하는 커맨드 (`layout:decompile` 의 짝).
  *
- * 용어(PO 정의): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
+ * 용어(설계 정의): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
  * 이관(S10~)이 원본 `.json` 을 `.g7.html` 소스 파일로 옮길 때 쓰는 생성 커맨드다.
  *
  * 두 모드다. **컴파일**(기본)은 `.json` 을 짝 `.g7.html` 로 만들어 이관 소스 파일을 산출한다.
@@ -139,6 +139,8 @@ class LayoutCompileCommand extends Command
      *
      * @param  array<string, int>  $budget  탈출 키 → 건수
      * @param  int  $filesWithEscape  탈출을 쓴 파일 수
+     *
+     * @return void
      */
     private function reportBudget(array $budget, int $filesWithEscape): void
     {

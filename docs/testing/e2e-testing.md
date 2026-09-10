@@ -457,7 +457,7 @@ test('unauthenticated_401 × no_token', async ({ page }) => {
 });
 ```
 
-정적 검사가 매니페스트 axes ↔ docblock 매칭을 자동 검증.
+자동 검증이 매니페스트 axes ↔ docblock 매칭을 자동 검증.
 
 ## §8. 회귀 테스트 4단계
 

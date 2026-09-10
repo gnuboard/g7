@@ -360,7 +360,7 @@ class ProductCacheInvalidationListener implements HookListenerInterface
 
 ### Listener 데이터 접근 규정
 
-Listener 는 thin orchestrator 로 동작하며 영속/도메인 책임은 Service / Repository 가 갖는다. 다음 패턴은 정적 검사가 차단한다.
+Listener 는 thin orchestrator 로 동작하며 영속/도메인 책임은 Service / Repository 가 갖는다. 다음 패턴은 자동 검증이 차단한다.
 
 | ❌ 금지 | ✅ 올바른 사용 |
 |--------|---------------|
@@ -412,7 +412,7 @@ $products = $this->productRepository->findByIdsKeyed($ids);
 
 #### 면제 (allowlist)
 
-다음과 같은 의도된 예외는 인라인 주석으로 명시한다 (정적 검사가 해당 라인을 건너뜀).
+다음과 같은 의도된 예외는 인라인 주석으로 명시한다 (자동 검증이 해당 라인을 건너뜀).
 
 ```php
 // audit:allow listener-direct-db-facade reason: 동적 modelClass dispatch (description resolver 의 unified ID→name 변환)

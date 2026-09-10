@@ -12,7 +12,7 @@ description: |
   `effects` 와 `test_files` 가 정본이고, 그 둘과 게이트 필터의 정합은 `GateMembershipGuardTest` 가
   양방향으로 잠근다.
 
-  용어(PO 정의, D38): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
+  용어(설계 정의, D38): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
 
   S10 범위 — 설치 재아키텍처 (ValidatesLayoutFiles·RefreshesLayoutExtensions, D38·D39):
     - 소스 SSoT 는 `.g7.html`. 설치는 `.g7.html` 을 **설치 시점에 메모리로 컴파일**(강검증 포함)해
@@ -483,7 +483,7 @@ effects:
   # 코퍼스 전수 — 27차 실측이 `<include>` 만 세어 `<modal src>` 213건을 빠뜨렸다. 값을 산문에 적는
   # 대신 성질(해석 실패 0 · 소스 있으면 소스 승)을 단언해 재집계를 사람에게서 떼어낸다.
   - corpus_partial_references_resolve_to_authoring_sources
-  # --- S21.2 ⓑ 조각 참조 표기 (U-REFEXT 안 B · PO 확정 2026-08-02) ---
+  # --- S21.2 ⓑ 조각 참조 표기 (U-REFEXT 안 B · 설계 결정 2026-08-02) ---
   # 소스는 소스를 가리키고 산출 JSON 은 `.json` 문법을 100% 유지한다 — 확장자를 바꾸는 일은
   # 컴파일 경계에서만 일어난다. 안 B 는 양방향 매핑을 신설하므로 **역함수성**이 계약이고, 왕복
   # 게이트(JSON→마크업→JSON)가 잡는 것도 그 성질 하나뿐이라 직접 잰다(표본은 코퍼스에서 도출).
@@ -876,6 +876,18 @@ effects:
   - meaningful_edge_whitespace_keeps_the_element_inline
   - text_only_element_stays_on_a_single_line
   - comment_takes_its_own_line_regardless_of_element_shape
+  # S16 결함 봉인 — W3 이관에서 「동작 변경을 수반한다」는 이유로 제외됐던 16파일의 결함이다.
+  # 이관 게이트가 잡지 못하는 종류(F12 는 escape 0 인 채 등록 집합만 바뀐다)거나 화면에 드러나는
+  # 실버그(F15)라, 소스 데이터의 정합을 직접 단언해 되살아나지 않게 못박는다.
+  - dead_if_handler_is_absent_from_every_action
+  - bulk_status_change_routes_through_conditions
+  - lifecycle_actions_carry_no_dom_event_type
+  - admin_base_drops_the_dead_data_binding_key
+  - execution_history_modal_avoids_unregistered_foreach
+  - partial_reference_node_carries_no_redundant_type_or_name
+  - unconsumed_partial_key_is_absent_from_every_layout
+  - deleted_orphan_layouts_stay_deleted
+  - bare_node_partial_declares_meta_is_partial
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #
@@ -907,6 +919,8 @@ sub_flows:
       - keep_strategy_preserves_admin_edits_regardless_of_source_selection
 
 test_files:
+  # S16 결함 봉인 (레이아웃 소스 데이터 단언 — 렌더는 각 화면 테스트가 본다)
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/s16-defect-fixes.test.tsx
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
   - tests/Unit/Support/LayoutMarkup/ComponentRegistryTest.php
   - tests/Unit/Support/LayoutMarkup/ExtensionComponentRegistryTest.php

@@ -89,7 +89,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * 플러그인도 자기 화면(완전 레이아웃)을 가질 수 있다 — 린터는 그것만으로 경고하지 않는다.
      *
      * 종전에는 `plugin_complete_layout` 경고가 있었고 `gdpr_consent_log`·`plugin_settings` 만
-     * allowlist 예외였다. PO 결정(2026-08-01)으로 정책이 뒤집혔다: 원래 금지의 근거였던 위험은
+     * allowlist 예외였다. 설계 결정(2026-08-01)으로 정책이 뒤집혔다: 원래 금지의 근거였던 위험은
      * "화면을 갖는 것" 이 아니라 **모듈/템플릿이 소유한 라우트를 가로채는 것** 이었고, 그것은
      * 레이아웃 JSON 이 아니라 `routes.json` 에서만 판정할 수 있다(정적 검사 쪽에서 담당).
      * 린터에 남겨 두면 허용된 작성을 경고하게 되므로 검사를 걷어냈다.

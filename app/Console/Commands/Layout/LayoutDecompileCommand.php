@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\File;
 /**
  * `.g7.html` 소스 파일을 JSON 레이아웃으로 역변환(decompile)·검증하는 커맨드.
  *
- * 용어(PO 정의): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
+ * 용어(설계 정의): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
  * 설치 경로가 `.g7.html` 을 인메모리로 JSON 화하는 것과 같은 역변환을, 이 커맨드는 오프라인에서
  * 실행해 소스 파일이 올바르게 JSON 으로 풀리는지 확인한다.
  *

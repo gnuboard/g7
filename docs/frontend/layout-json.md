@@ -115,7 +115,7 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 
 의도적으로 재선언해야 하는 예외는 그 객체의 `comment` 에
 `audit:allow layout-json-duplicate-object-key <사유>` 를 남긴다 (JSON 은 주석을 담을 수 없으므로
-표식 자리가 `comment` 값이다). 정적 검사가 차단한다.
+표식 자리가 `comment` 값이다). 자동 검증이 차단한다.
 
 ### layout_name 네이밍 규칙
 
@@ -1218,3 +1218,51 @@ const renderChildren = useMemo(() => {
 마크업 어휘는 템플릿 `components.json` 단독이 아니라 템플릿 + 활성 모듈 + 활성 플러그인 3계통이다. 템플릿이 그 컴포넌트를 오버라이드했더라도 노드 `name` 은 바뀌지 않는다 — 대체는 같은 이름 아래에서 일어난다.
 
 규약 전문: [../extension/extension-components.md](../extension/extension-components.md)
+
+## 레이아웃 구현 규칙 (작성 `.g7.html` / 런타임 계약 `.json`)
+```
+0. 소스 SSoT 는 `.g7.html` 마크업 — 문법은 layout-markup.md, 산출 JSON 키 계약은 layout-json.md
+1. 새로운 기능 사용 전 → 반드시 해당 규정 문서에서 지원 여부 확인
+2. 지원되지 않는 문법 사용 금지 → 추측/가정으로 구현하지 않음
+3. 불확실한 경우 → 기존 레이아웃 패턴 참조
+4. 규정 문서에 없는 기능 → 절대 사용 금지
+```
+
+### 레이아웃 작성 체크리스트
+
+```
+□ 소스(`.g7.html`) 문법이 layout-markup.md 와 일치하는가? (산출 JSON 키 계약은 layout-json.md)
+□ 레이아웃 구조가 layout-json.md 스키마와 일치하는가? (`.json` 직접 편집 또는 컴파일 산출 확인 시)
+□ 사용할 컴포넌트가 3소스 중 하나에 정의되어 있는가?
+  → 템플릿 소유: components.md
+  → 확장 제공: {확장식별자}.{이름} — extension-components.md
+  → 템플릿이 대체한 확장 컴포넌트: 이름은 확장 것 그대로 (마크업 표면 불변)
+□ 컴포넌트 props가 component-props.md에 정의된 것만 사용하는가?
+□ 사용할 핸들러가 actions.md에 정의되어 있는가?
+□ 핸들러의 params 구조가 actions-handlers.md와 일치하는가?
+□ 데이터 바인딩 문법이 data-binding.md에 정의된 형식인가?
+□ 다크 모드 클래스가 dark-mode.md 규칙을 따르는가?
+□ 기존 유사 레이아웃에서 동일 패턴이 사용되고 있는가?
+```
+
+### 주의 사항
+
+```text
+필수: 규정 문서에 정의된 핸들러/props/바인딩 문법만 사용 (API 응답 구조도 확인 후 바인딩)
+필수: Partial은 컴포넌트 치환만 수행 (computed, data_sources, modals, state 미지원)
+필수: data_sources ID 고유성 유지, 조건부 렌더링은 if 속성만 사용 (type: "conditional" 미지원)
+```
+
+### 독립 레이아웃(extends 없음)의 글로벌 호스트 컴포넌트
+
+`toast`, `openModal` 등 글로벌 상태 기반 핸들러(`_global.toasts`, `_global.modal`)는 호스트 컴포넌트(`Toast`, `ModalRoot` 등)가 마운트되어야 화면에 렌더된다. 베이스 레이아웃(`_user_base`, `_admin_base`)은 일반적으로 이들을 마운트하므로 자식 레이아웃은 별도 작업이 필요 없지만, `extends` 없이 정의된 독립 레이아웃(예: `admin_login.g7.html`)은 호스트 컴포넌트가 자동 주입되지 않는다.
+
+```text
+필수: 독립 레이아웃에서 toast/modal 사용 시 components 최상단에 호스트 컴포넌트를 직접 추가
+  - Toast: { type: "composite", name: "Toast", props: { toasts: "{{_global.toasts}}", ... } }
+  - 누락 시 핸들러는 success 로 기록되나 화면에는 미노출 (조용한 실패)
+
+필수: 의심 시 베이스 레이아웃의 호스트 컴포넌트 정의를 그대로 복사
+  - sirsoft-admin_basic: layouts/_admin_base.g7.html 의 global_toast 블록
+  - sirsoft-basic: layouts/_user_base.g7.html 의 토스트 컴포넌트 블록
+```

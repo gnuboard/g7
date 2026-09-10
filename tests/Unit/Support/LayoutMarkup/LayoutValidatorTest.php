@@ -72,7 +72,7 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 외부 URL·위험 스킴은 **이관 검사에서 통과한다** (PO 확정 07-20 — `NoExternalUrls` 제외).
+     * 외부 URL·위험 스킴은 **이관 검사에서 통과한다** (설계 결정 2026-07-20 — `NoExternalUrls` 제외).
      *
      * 번들 결제 플러그인의 PG사 링크가 정상 출하물인데 파사드만 막고 있어 이관이 불가했다.
      * 설치 경로(`ValidatesLayoutFiles`)는 원래 이 규칙을 돌리지 않으므로 `.json` 설치와 패리티다.

@@ -61,6 +61,7 @@ function collectActions(layout: any): any[] {
 }
 
 describe('F15 — 미등록 핸들러 `if` (예약 작업 일괄 상태변경 무동작)', () => {
+    /** @effects dead_if_handler_is_absent_from_every_action */
     it('`if` 는 액션 핸들러가 아니다 — 어떤 액션도 handler:"if" 를 쓰지 않는다', () => {
         // ActionDispatcher 의 ActionType 유니온에 `if` 가 없다. `if` 는 액션의 **키**(조건)이지
         // 핸들러명이 아니므로, handler:"if" 액션은 dispatch 에서 아무 갈래도 타지 못하고 조용히 끝난다.
@@ -69,6 +70,7 @@ describe('F15 — 미등록 핸들러 `if` (예약 작업 일괄 상태변경 �
         expect(offenders).toEqual([]);
     });
 
+    /** @effects bulk_status_change_routes_through_conditions */
     it('일괄 상태변경은 conditions 로 분기해 bulk-status 를 호출한다', () => {
         const conditionActions = collectActions(tabSchedules).filter((a) => a.handler === 'conditions');
         const bulkStatus = conditionActions.find((a) =>
@@ -82,6 +84,7 @@ describe('F15 — 미등록 핸들러 `if` (예약 작업 일괄 상태변경 �
 });
 
 describe('F7 — lifecycle 의 죽은 type:"click"', () => {
+    /** @effects lifecycle_actions_carry_no_dom_event_type */
     it('생명주기 액션에는 DOM 이벤트 타입이 없다', () => {
         const offenders: any[] = [];
 
@@ -100,6 +103,7 @@ describe('F7 — lifecycle 의 죽은 type:"click"', () => {
 });
 
 describe('F8 — 죽은 키·미등록 컴포넌트', () => {
+    /** @effects admin_base_drops_the_dead_data_binding_key */
     it('_admin_base 에 사어 `data_binding` 이 남아 있지 않다', () => {
         const offenders: any[] = [];
 
@@ -110,6 +114,7 @@ describe('F8 — 죽은 키·미등록 컴포넌트', () => {
         expect(offenders).toEqual([]);
     });
 
+    /** @effects execution_history_modal_avoids_unregistered_foreach */
     it('실행 이력 모달이 미등록 컴포넌트 `Foreach` 를 쓰지 않는다', () => {
         const offenders: any[] = [];
 
@@ -122,6 +127,7 @@ describe('F8 — 죽은 키·미등록 컴포넌트', () => {
 });
 
 describe('F13/F14 — partial 참조 키', () => {
+    /** @effects partial_reference_node_carries_no_redundant_type_or_name */
     it.each([
         ['admin_language_pack_list', languagePackList],
         ['_tab_language_packs', tabLanguagePacks],
@@ -138,10 +144,11 @@ describe('F13/F14 — partial 참조 키', () => {
         expect(offenders).toEqual([]);
     });
 
+    /** @effects unconsumed_partial_key_is_absent_from_every_layout */
     it('소비되지 않는 `$partial` 키가 어떤 레이아웃에도 남아 있지 않다', () => {
         // `$partial` 은 `resolveAllPartials`(PHP)도 렌더러(TS)도 읽지 않는 키다. 유일한 사용처였던
         // `admin_language_packs_install_modal` 은 라우트·참조가 0이고 `extends` 없는 slots 라 렌더
-        // 결과 자체가 없어 PO 승인으로 삭제했다 — 같은 키가 다시 들어오면 여기서 잡는다.
+        // 결과 자체가 없어 설계 결정으로 삭제했다 — 같은 키가 다시 들어오면 여기서 잡는다.
         const offenders: string[] = [];
 
         Object.entries(allLayouts).forEach(([path, layout]) => {
@@ -153,6 +160,7 @@ describe('F13/F14 — partial 참조 키', () => {
         expect(offenders).toEqual([]);
     });
 
+    /** @effects deleted_orphan_layouts_stay_deleted */
     it('삭제된 고아 레이아웃이 되살아나지 않는다', () => {
         const revived = Object.keys(allLayouts).filter((p) =>
             p.includes('admin_language_packs_install_modal') || p.includes('overrides/sirsoft-sample'),
@@ -163,6 +171,7 @@ describe('F13/F14 — partial 참조 키', () => {
 });
 
 describe('F12 — bare-node partial 의 meta.is_partial 선언', () => {
+    /** @effects bare_node_partial_declares_meta_is_partial */
     it.each([
         ['_panel_detail', panelDetail],
         ['_panel_form', panelForm],

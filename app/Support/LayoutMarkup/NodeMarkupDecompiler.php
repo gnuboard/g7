@@ -347,6 +347,8 @@ final class NodeMarkupDecompiler
      * @param  array<string, mixed>  $node  노드 JSON
      * @param  array<int, MarkupAttribute>  $attributes  속성 (참조)
      * @param  array<int, MarkupElement>  $children  자식 (참조 — blur 객체형은 구조 자식)
+     *
+     * @return void
      */
     private function applyDirectives(array $node, array &$attributes, array &$children): void
     {
@@ -404,6 +406,8 @@ final class NodeMarkupDecompiler
      * @param  mixed  $blur  blur 값
      * @param  array<int, MarkupAttribute>  $attributes  속성 (참조)
      * @param  array<int, MarkupElement>  $children  자식 (참조)
+     *
+     * @return void
      */
     private function applyBlur(mixed $blur, array &$attributes, array &$children): void
     {
@@ -444,6 +448,8 @@ final class NodeMarkupDecompiler
      *
      * @param  array<string, mixed>  $node  노드 JSON
      * @param  array<int, MarkupElement>  $children  자식 (참조)
+     *
+     * @return void
      */
     private function applyStructural(array $node, array &$children): void
     {
@@ -613,6 +619,8 @@ final class NodeMarkupDecompiler
      * @param  bool  $isVoid  소유 노드가 void 태그인지 (객체 props 를 `<prop>` 대신 타입 속성으로)
      * @param  array<int, MarkupAttribute>  $attributes  속성 (참조)
      * @param  array<int, MarkupElement>  $children  자식 (참조)
+     *
+     * @return void
      */
     private function applyProps(array $props, string $componentName, bool $isVoid, array &$attributes, array &$children): void
     {
@@ -714,7 +722,7 @@ final class NodeMarkupDecompiler
 
         // 조건부 값(`{$switch, $cases, $default}`)은 1급 문법이 있다 — `<switch-value>` 로 되돌린다(D41).
         // 안 되돌리면 `<prop>` 본문에 통짜 JSON 으로 나가는데, `<json>` 태그가 아니라서 escape 계량에
-        // 잡히지도 않는다(PO 가 생성물에서 직접 발견한 자리).
+        // 잡히지도 않는다(검수에서 직접 발견한 자리).
         if ($this->isSwitchValue($value)) {
             $children[] = $this->switchValueElement($key, $value);
 

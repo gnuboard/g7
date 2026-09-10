@@ -47,6 +47,8 @@ final class LayoutValidator
      * @param  string|null  $path  소스 파일 경로 (오류 메시지용)
      *
      * @throws CompileError 검증 위반 시
+     *
+     * @return void
      */
     public function validate(array $json, string $rootKind, ComponentRegistry $registry, CompileContext $context, ?string $path = null): void
     {
@@ -63,7 +65,7 @@ final class LayoutValidator
         // ② 엔드포인트 화이트리스트
         $this->runRule($view, new WhitelistedEndpoint, LayoutMarkupErrorCode::EndpointNotWhitelisted, $path);
 
-        // ③ 외부 URL·위험 스킴 — **이관 검사에서는 돌리지 않는다 (PO 확정 07-20)**.
+        // ③ 외부 URL·위험 스킴 — **이관 검사에서는 돌리지 않는다 (설계 결정 2026-07-20)**.
         //
         // 번들 결제 플러그인이 PG사 공식 주소로 나가는 링크를 정상 기능으로 들고 있다
         // (이니시스·KCP·나이스페이 영수증/파트너 사이트 4건). 설치 경로는 이 규칙을 돌리지
@@ -102,6 +104,8 @@ final class LayoutValidator
      * @param  string|null  $path  소스 파일 경로
      *
      * @throws CompileError 규칙 실패 시
+     *
+     * @return void
      */
     private function runRule(array $value, object $rule, LayoutMarkupErrorCode $code, ?string $path): void
     {
@@ -170,6 +174,8 @@ final class LayoutValidator
      * @param  string|null  $path  소스 파일 경로
      *
      * @throws CompileError 미등록 컴포넌트 name 발견 시
+     *
+     * @return void
      */
     private function assertComponentsExist(array $components, ComponentRegistry $registry, ?string $path): void
     {
@@ -210,6 +216,8 @@ final class LayoutValidator
      * @param  string|null  $path  소스 파일 경로
      *
      * @throws CompileError 완료 불가 데이터소스를 가리키는 경우
+     *
+     * @return void
      */
     private function assertWaitForResolves(array $json, ?string $path): void
     {
@@ -256,6 +264,8 @@ final class LayoutValidator
      * @param  string|null  $path  소스 파일 경로
      *
      * @throws CompileError 허용 목록 밖 호스트·스킴인 경우
+     *
+     * @return void
      */
     private function assertScriptSrcAllowed(array $json, CompileContext $context, ?string $path): void
     {

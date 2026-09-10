@@ -39,5 +39,5 @@ test_files:
 
 validation:
   note: |
-    이 커맨드는 CLI + `G7_PLAYWRIGHT_BYPASS=1` 가드 뒤에 있고 PO 일상 노출 대상이 아니므로
+    이 커맨드는 CLI + `G7_PLAYWRIGHT_BYPASS=1` 가드 뒤에 있고 일상 노출 대상이 아니므로
     개발 대시보드 노출 점검 도구의 제외 목록(`EXCLUDED_COMMANDS`)에 등재돼 있다.
