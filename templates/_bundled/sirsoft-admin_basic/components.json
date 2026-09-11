@@ -2818,7 +2818,7 @@
       {
         "name": "CodeEditor",
         "type": "composite",
-        "description": "JSON code editor (Monaco Editor wrapper)",
+        "description": "JSON/HTML code editor (Monaco Editor wrapper)",
         "path": "src/components/composite/CodeEditor.tsx",
         "props": {
           "value": {
@@ -2854,6 +2854,11 @@
             "required": false,
             "default": "vs-dark",
             "description": "에디터 테마 (vs-dark | vs-light)"
+          },
+          "markers": {
+            "type": "array",
+            "required": false,
+            "description": "서버 컴파일 오류·경고 마커 [{line, column, endLine?, endColumn?, message, severity: 'error'|'warning'}] — 줄에 물결로 표시"
           }
         }
       },

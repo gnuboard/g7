@@ -19,7 +19,7 @@
             "props": {
                 "className": "text-label mb-4"
             },
-            "text": "$t:admin.templates.modals.version_history.description|layout_name={{_global.selectedLayoutName}}"
+            "text": "$t:admin.templates.modals.version_history.description|layout_name={{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}"
         },
         {
             "type": "basic",
@@ -95,7 +95,7 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions/{{version.id}}/restore",
+                                                    "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}/versions/{{version.id}}/restore",
                                                     "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
@@ -116,16 +116,18 @@
                                                             }
                                                         },
                                                         {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "current_layout"
-                                                            }
-                                                        },
-                                                        {
+                                                            "comment": "되돌린 뒤 편집기 버퍼(HTML 정본·JSON 뷰·경고·오류)는 **재조회 응답의 init-global 이 갈아 끼운다**. 종전처럼 여기서\n                         `current_layout?.data?.content` 를 다시 읽어 set-state 하면 그 시점 컨텍스트가 재조회 전 값이라 되돌리기 전 본문을\n                         도로 덮어쓴다(브라우저 실측 2026-09-11 — 복구 뒤 편집기에 옛 글이 남았다).",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "editorContent": "{{current_layout?.data?.content}}"
+                                                                "markupCompileError": null,
+                                                                "jsonViewStale": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "current_layout"
                                                             }
                                                         },
                                                         {

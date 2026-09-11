@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 17개 (정의: `src/handlers/index.ts`).
+핸들러 19개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -26,6 +26,8 @@
 | `toggleSidebar` | (템플릿 전용 — 네임스페이스 없음) |
 | `initSidebar` | (템플릿 전용 — 네임스페이스 없음) |
 | `downloadAttachment` | (템플릿 전용 — 네임스페이스 없음) |
+| `downloadMarkupFile` | (템플릿 전용 — 네임스페이스 없음) |
+| `copyMarkupToClipboard` | (템플릿 전용 — 네임스페이스 없음) |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->

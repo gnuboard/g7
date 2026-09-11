@@ -10,6 +10,7 @@ use App\Extension\PluginManager;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Models\LayoutExtension;
 use App\Models\Template;
+use App\Models\TemplateLayout;
 use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -75,6 +76,8 @@ class TemplateActivationFragmentSourceTest extends TestCase
             'type' => 'admin',
             'status' => ExtensionStatus::Active->value,
         ]);
+        // 붙을 자리가 있는 템플릿에만 등록된다 (C10) — 두 확장점을 가진 호스트 레이아웃을 둔다.
+        $this->createHostWithExtensionPoints($template, ['admin.dashboard.widgets', 'admin.settings.panel']);
 
         $stats = app(LayoutExtensionService::class)->registerAllActiveExtensionsToTemplate($template->id);
 
@@ -111,6 +114,7 @@ class TemplateActivationFragmentSourceTest extends TestCase
             'type' => 'admin',
             'status' => ExtensionStatus::Active->value,
         ]);
+        $this->createHostWithExtensionPoints($template, ['admin.dashboard.widgets']);
 
         app(LayoutExtensionService::class)->registerAllActiveExtensionsToTemplate($template->id);
 
@@ -147,6 +151,28 @@ class TemplateActivationFragmentSourceTest extends TestCase
 
         $this->app->instance(ModuleManager::class, $moduleManager);
         $this->app->instance(PluginManager::class, $pluginManager);
+    }
+
+    /**
+     * 확장점 노드를 가진 호스트 레이아웃을 만듭니다 (적용 필터가 이 자리를 본다).
+     *
+     * @param  Template  $template  템플릿
+     * @param  array<int, string>  $points  확장점 이름
+     */
+    private function createHostWithExtensionPoints(Template $template, array $points): void
+    {
+        TemplateLayout::factory()->create([
+            'template_id' => $template->id,
+            'name' => 'admin_dashboard',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'admin_dashboard',
+                'components' => array_map(
+                    static fn (string $point): array => ['type' => 'extension_point', 'name' => $point],
+                    $points,
+                ),
+            ],
+        ]);
     }
 
     /**

@@ -284,6 +284,9 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 | `height` | `string` | ❌ | `'100%'` | 에디터 높이 |
 | `readOnly` | `boolean` | ❌ | `false` | 읽기 전용 모드 |
 | `theme` | `'vs-dark'` \| `'vs-light'` | ❌ | `'vs-dark'` | 에디터 테마 |
+| `markers` | `Array<{line, column, endLine?, endColumn?, message, severity: 'error' \| 'warning'}>` | ❌ | - | 서버 컴파일 오류·경고 마커 — 해당 줄에 빨간/노란 물결로 표시. 값이 바뀌면 통째로 다시 찍고, 빈 배열이면 지운다 |
+
+> **`language="html"` 로 `.g7.html` 을 편집할 때** Monaco 의 HTML 모드는 커스텀 태그를 검증하지 않는다. 검증은 서버 컴파일러(`markup-compile`·저장 422 의 `compile_error`)가 담당하고, 그 결과를 `markers` 로 넘겨 줄에 표시한다. 레이아웃 코드 편집기(`admin_template_layout_edit`)가 이 관용구의 실사용처다.
 
 ### 레이아웃 JSON 사용 예시
 

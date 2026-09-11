@@ -154,8 +154,8 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | extends | string\|null | `"_user_base"` | 상속할 베이스 레이아웃 이름 (미리보기 서빙 시 이미 병합됨) |
 | slots | object | `{"content": [ ... ]}` | 베이스 레이아웃 슬롯에 삽입할 컴포넌트 배열 (extends 레이아웃) |
 | components | array | `[{"type":"basic","name":"Div", ...}]` | 렌더링할 컴포넌트 트리 (병합·확장 적용 결과) |
-| endpoint | string\|null | `"/api/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
-| data_sources | array | `[{"id":"products","endpoint":"/api/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
+| endpoint | string\|null | `"/api/modules/sirsoft-ecommerce/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
+| data_sources | array | `[{"id":"products","endpoint":"/api/modules/sirsoft-ecommerce/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
 | meta | object | `{"title":"상품 목록","auth_required":false}` | 메타 정보 (title, description, keywords, auth_required, is_base, guest_only, is_error_layout, error_code, seo) |
 | permissions | array\|object | `["core.templates.layouts.edit"]` | 레이아웃 접근에 필요한 권한 (flat 배열=AND, 구조화 객체=OR/AND 중첩) |
 | modals | object | `{}` | 모달 컴포넌트 정의 |
@@ -183,7 +183,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
     "data_sources": [
         {
             "id": "products",
-            "endpoint": "/api/products",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products",
             "method": "GET"
         }
     ],
@@ -328,8 +328,8 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | extends | string\|null | `"_user_base"` | 상속한 베이스 레이아웃 이름 (서빙 시 이미 병합 반영됨) |
 | slots | object | `{"content": [ ... ]}` | 베이스 슬롯에 삽입되는 컴포넌트 배열 (extends 레이아웃) |
 | components | array | `[{"type":"basic","name":"Div", ...}]` | 렌더링할 컴포넌트 트리 (병합·확장·권한 필터 적용 결과) |
-| endpoint | string\|null | `"/api/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
-| data_sources | array | `[{"id":"products","endpoint":"/api/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
+| endpoint | string\|null | `"/api/modules/sirsoft-ecommerce/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
+| data_sources | array | `[{"id":"products","endpoint":"/api/modules/sirsoft-ecommerce/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
 | meta | object | `{"title":"상품 목록","auth_required":false}` | 메타 정보 (title, description, keywords, auth_required, is_base, guest_only, is_error_layout, error_code, seo) |
 | permissions | array\|object | `["core.templates.layouts.edit"]` | 레이아웃 접근에 필요한 권한 (flat 배열=AND, 구조화 객체=OR/AND 중첩) |
 | modals | object | `{}` | 모달 컴포넌트 정의 |
@@ -365,7 +365,7 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
         "data_sources": [
             {
                 "id": "products",
-                "endpoint": "/api/products",
+                "endpoint": "/api/modules/sirsoft-ecommerce/products",
                 "method": "GET"
             }
         ],

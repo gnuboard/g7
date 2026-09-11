@@ -43,7 +43,16 @@ async function openCodeEditor(page: Page, token: string): Promise<void> {
   await page.waitForSelector('#file_list_card', { timeout: 30_000 });
 }
 
+// 동봉 Monaco 첫 로드는 수 MB AMD 청크를 받는다 — 여러 워커가 같은 dev 서버에서 동시에 받으면
+// 마운트 대기(30초)가 기본 테스트 예산(30초)을 그대로 먹어 예산 초과로 끝난다. 대기보다 예산을 크게 둔다.
+test.beforeEach(({}, testInfo) => testInfo.setTimeout(120_000));
+
 test.describe('@sirsoft-admin_basic 코드 편집기 동봉 Monaco', () => {
+  /**
+   * @scenario asset_class=vendored, outcome=loaded
+   *
+   * @effects runtime_asset_served_same_origin
+   */
   test('선언한 버전 경로에서 same-origin 200 으로 로더를 받는다', async ({ page, layoutEditToken }) => {
     const monacoResponses: Array<{ url: string; status: number }> = [];
 
@@ -57,9 +66,14 @@ test.describe('@sirsoft-admin_basic 코드 편집기 동봉 Monaco', () => {
 
     await openCodeEditor(page, layoutEditToken);
 
-    // 편집기는 파일을 고른 뒤에 마운트된다 — 첫 JSON 파일을 연다.
-    await page.locator('#editor_card').getByText(/\.json$/).first().click();
-    await page.waitForTimeout(3_000);
+    // 편집기는 파일을 고른 뒤에 마운트된다 — 첫 파일을 연다(편집기 정본이 `.g7.html` 이다, #476).
+    await page.locator('#editor_card').getByText(/\.g7\.html$/).first().click();
+
+    // 고정 대기(3초)는 동봉 Monaco 첫 로드가 느린 환경에서 "아직 요청 전" 을 "요청 0건" 으로 오판한다 —
+    // 자산 요청이 실제로 잡힐 때까지 기다린다(끝내 0이면 그때가 진짜 실패다).
+    await expect
+      .poll(() => monacoResponses.length, { timeout: 60_000 })
+      .toBeGreaterThan(0);
 
     expect(
       monacoResponses.length,
@@ -86,6 +100,11 @@ test.describe('@sirsoft-admin_basic 코드 편집기 동봉 Monaco', () => {
     ).toBeGreaterThan(0);
   });
 
+  /**
+   * @scenario asset_class=vendored, outcome=loaded
+   *
+   * @effects vendored_editor_mounts_without_fallback
+   */
   test('편집기가 마운트되고 폴백(textarea)으로 떨어지지 않는다', async ({ page, layoutEditToken }) => {
     const consoleErrors: string[] = [];
 
@@ -94,7 +113,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 동봉 Monaco', () => {
     });
 
     await openCodeEditor(page, layoutEditToken);
-    await page.locator('#editor_card').getByText(/\.json$/).first().click();
+    await page.locator('#editor_card').getByText(/\.g7\.html$/).first().click();
 
     // Monaco 가 살아 있으면 자기 DOM(.monaco-editor)을 그린다. 폴백 경로는 textarea 를 남긴다.
     await expect(

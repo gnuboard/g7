@@ -911,6 +911,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 레이아웃 미리보기
         Route::post('{templateName}/layouts/{name}/preview', [AdminLayoutController::class, 'storePreview'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.preview.store')->where('name', '[a-zA-Z0-9_/\.\-]+');
 
+        // 레이아웃 마크업(.g7.html) 변환 — 저장 없음, 코드 편집기 JSON 뷰 갱신용 (권한 read)
+        Route::post('{templateName}/layouts/{name}/markup-compile', [AdminLayoutController::class, 'compileMarkup'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.markup-compile')->where('name', '[a-zA-Z0-9_/\.\-]+');
+
         // 레이아웃 CRUD (범용 {name} 라우트 — 가장 마지막에 등록)
         Route::get('{templateName}/layouts/{name}', [AdminLayoutController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.show')->where('name', '[a-zA-Z0-9_/\.\-]+');
         Route::put('{templateName}/layouts/{name}', [AdminLayoutController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.update')->where('name', '[a-zA-Z0-9_/\.\-]+');
@@ -925,6 +928,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
         // 레이아웃 확장 미리보기
         Route::post('{templateName}/layout-extensions/{extensionId}/preview', [AdminLayoutExtensionController::class, 'storePreview'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.preview.store')->whereNumber('extensionId');
+
+        // 레이아웃 확장 마크업(.g7.html) 변환 — 저장 없음 (권한 read)
+        Route::post('{templateName}/layout-extensions/{extensionId}/markup-compile', [AdminLayoutExtensionController::class, 'compileMarkup'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.markup-compile')->whereNumber('extensionId');
 
         // 레이아웃 확장 CRUD (범용 {extensionId} 라우트 — 마지막에 등록)
         Route::get('{templateName}/layout-extensions/{extensionId}', [AdminLayoutExtensionController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.show')->whereNumber('extensionId');

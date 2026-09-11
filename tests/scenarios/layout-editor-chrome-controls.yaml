@@ -42,9 +42,12 @@ sub_flows:
   - id: code_editor_route_sync
     description: |
       코드편집기(텍스트 화면)의 `?route=` 쿼리 동기화. 진입 경로별로 쿼리를 싣거나 비운다.
-      축: code_editor_entry(from_wysiwyg_with_route·direct_route_query·file_select_in_editor·extension_select_in_editor)
+      축: code_editor_entry(from_wysiwyg_with_route·direct_route_query·no_route_query·stale_selection_from_other_template) ×
+          file_select_in_editor · extension_select_in_editor
     effects:
       - code_editor_restores_layout_from_route_query
+      - code_editor_defaults_to_first_layout_without_route_query
+      - code_editor_clears_selection_left_over_from_another_template
       - code_editor_file_select_syncs_route_query
       - code_editor_extension_select_clears_route_query
   - id: overlay_affordance_placement
@@ -69,6 +72,8 @@ effects:
   - toolbar_exit_navigates_to_template_list_by_type
   - toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route
   - code_editor_restores_layout_from_route_query
+  - code_editor_defaults_to_first_layout_without_route_query
+  - code_editor_clears_selection_left_over_from_another_template
   - code_editor_file_select_syncs_route_query
   - code_editor_extension_select_clears_route_query
   - toolbar_save_shows_spinner_while_pending_then_restores

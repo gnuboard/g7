@@ -499,6 +499,16 @@ final class LayoutMarkupDecompiler
         }
 
         foreach ($initSections as $key => $tag) {
+            // 빈 map 표식({@see EmptyMap})도 **찍는다**. 건너뛰면 마크업에 태그가 없어지고, 컴파일러가
+            // 그 자리를 기본값 `[]` 로 채워 작성자가 적은 `{}` 가 저장 한 번에 `[]` 로 바뀐다
+            // (실측: `sirsoft-basic/mypage/addresses` 의 `initLocal`). 빈 태그는 컴파일러가 다시
+            // 표식으로 되돌린다({@see DocumentCompiler::mergeInitContribution()}).
+            if (isset($json[$key]) && EmptyMap::is($json[$key])) {
+                $children[] = $this->el($tag, [], []);
+
+                continue;
+            }
+
             if (isset($json[$key]) && is_array($json[$key])) {
                 $children[] = $this->el($tag, [], $this->state->fields($json[$key]));
             }
@@ -539,10 +549,18 @@ final class LayoutMarkupDecompiler
         }
 
         foreach ($json['named_actions'] ?? [] as $name => $action) {
+            // 주석은 `<action name>` 래퍼 앞에 한 번만 찍는다 — 컴파일러가 래퍼 주석을
+            // `named_actions[name].comment` 로 싣기 때문이다(DocumentCompiler::withLeadingComment).
+            // 같은 배열을 그대로 본문 빌더에 넘기면 안쪽 핸들러 태그가 같은 주석을 또 달아, 프로덕션
+            // 컴파일의 주석 귀속 검사(`comment_not_attachable`)가 산출을 거부한다 — `dataSource()` 가
+            // `comment` 를 떼고 본문을 짓는 것과 같은 관용구다.
+            $body = is_array($action) ? $action : [];
+            unset($body['comment']);
+
             $children[] = $this->el(
                 'action',
                 [$this->attr('name', (string) $name)],
-                $this->actions->namedActionBody($action),
+                $this->actions->namedActionBody($body),
                 null,
                 $this->sectionComment($action),
             );
@@ -695,6 +713,16 @@ final class LayoutMarkupDecompiler
             : $this->el($tag, [], [], $this->encode($value));
     }
 
+    /**
+     * `data_sources` 항목 하나를 `<data-source>` 요소로 되돌립니다.
+     *
+     * 스칼라는 속성으로, 구조체 값(`data`·`params`·`headers`·`fallback`)은 자식 태그로 나뉜다 —
+     * 컴파일러가 그 넷을 `compileFieldMap` 으로 읽으므로 같은 자리로 되돌아간다. 항목 주석은
+     * 속성이 아니라 요소 **앞**의 `<!-- -->` 이라 먼저 떼어 낸다.
+     *
+     * @param  array<string, mixed>  $source  data_sources 항목 JSON
+     * @return MarkupElement `<data-source>` 요소
+     */
     private function dataSource(array $source): MarkupElement
     {
         $comment = $source['comment'] ?? null;
@@ -926,7 +954,47 @@ final class LayoutMarkupDecompiler
         }
 
         // 인라인 항목의 주석은 컴파일 때 래퍼에서 노드로 올라갔으므로 노드가 그대로 다시 찍는다.
-        return $this->el('modal', [], [$this->nodes->node($modal)]);
+        // `layout_name` 은 설치가 조각을 인라인하며 붙인 이름 — `<modal name>` 으로 되돌리고 노드 빌더에는
+        // 그 키를 뺀 사본을 넘긴다(DocumentCompiler::compileModal 의 역함수. 종전엔 `<json key="layout_name">`).
+        $attributes = [];
+
+        if (isset($modal['layout_name']) && is_scalar($modal['layout_name'])) {
+            $attributes[] = $this->attr('name', (string) $modal['layout_name']);
+            unset($modal['layout_name']);
+        }
+
+        // `data_sources` 는 창이 열릴 때 받는 것 — 본문 루트의 `<data-source>` 자식으로 되돌린다
+        // (DocumentCompiler::compileModal 이 compilePartialNode 로 분리하는 것의 역함수).
+        //
+        // **텍스트 본문에는 얹지 않는다.** `text` 와 자식은 배타라 끼우면 컴파일이 서지 않는다 —
+        // 그런 모달은 키를 그대로 두어 `<json>` 탈출구가 계량하게 한다(조용히 버리면 창이 데이터를 못 받는다).
+        $sources = [];
+
+        if (! isset($modal['text'])
+            && isset($modal['data_sources'])
+            && is_array($modal['data_sources'])
+            && array_is_list($modal['data_sources'])
+            && $modal['data_sources'] !== []) {
+            $sources = $modal['data_sources'];
+            unset($modal['data_sources']);
+        }
+
+        $node = $this->nodes->node($modal);
+
+        if ($sources !== []) {
+            $node = new MarkupElement(
+                $node->name,
+                $node->attributes,
+                array_merge(array_map(fn (array $source): MarkupElement => $this->dataSource($source), $sources), $node->children),
+                $node->text,
+                $node->comment,
+                false,
+                $node->line,
+                $node->column,
+            );
+        }
+
+        return $this->el('modal', $attributes, [$node]);
     }
 
     /**

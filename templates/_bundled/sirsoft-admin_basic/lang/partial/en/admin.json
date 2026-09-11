@@ -2331,7 +2331,19 @@
       "preview_layout_select_title": "Select Preview Layout",
       "preview_layout_select_description": "This extension point is used by multiple layouts. Select a layout to preview.",
       "preview_layout_select_placeholder": "Select a layout",
-      "preview_layout_confirm": "Preview"
+      "preview_layout_confirm": "Preview",
+      "tab_markup": "HTML",
+      "tab_json": "JSON (read-only)",
+      "json_readonly_hint": "JSON is generated from the HTML (read-only). It refreshes 1 second after you stop typing.",
+      "json_stale": "Showing last successful build — compile error",
+      "markup_error_title": "Compile error — saving is blocked",
+      "markup_warning_title": "{{count}} warning(s) — saving still works",
+      "inlined_notice": "You are editing the installed layout — fragments (<include>, <modal src>) are inlined and may differ from repository files. On save the body is replaced with the server canonical form.",
+      "download_markup": "Download .g7.html",
+      "copy_markup": "Copy",
+      "copy_success": "Markup copied to clipboard.",
+      "copy_failed": "Could not copy to clipboard.",
+      "fragment_key_label": "Fragment {{key}}"
     }
   },
   "activity_log": {

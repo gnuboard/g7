@@ -447,6 +447,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `refresh` | 현재 페이지 전체 새로고침 | - | - |
 | `showErrorPage` | 에러 페이지 렌더링 | - | errorCode, target, containerId, layout |
 | `openWindow` | 새 창/탭 열기 | URL | features, name |
+| `redirect` | **같은 탭**으로 외부 주소 이동 (SPA 라우팅 밖) | - | url, replace |
 | `replaceUrl` | refetch 없이 URL 만 치환 | - | path, query, mergeQuery |
 | `scrollIntoView` | 요소로 스크롤 | 대상 요소 ID | behavior, block |
 | `appendDataSource` | 데이터 소스에 항목 추가 | - | dataSourceId, items |

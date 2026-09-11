@@ -151,6 +151,30 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
+     * overlay 대상(`target_layout`)이 이 템플릿에 실재하는지 확인합니다 — 모듈 레이아웃의 논리 이름 포함.
+     *
+     * 모듈·플러그인 레이아웃은 `{모듈}.{layout_name}` 으로 저장되고 overlay 는 `layout_name`(논리 이름)을
+     * 가리키므로, `exists()` 의 정확 일치만 보면 모듈 화면을 겨냥한 조각은 어느 템플릿에서도 "부재" 로
+     * 판정된다(결제 플러그인의 주문 상세 overlay 가 그랬다). 서빙이 overlay 를 content 의 `layout_name`(논리 이름)으로
+     * 맞추므로, 여기서도 정확 일치 또는 `*.{name}` 접미 일치로 본다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  overlay 대상 레이아웃 이름 (논리 이름)
+     * @return bool 존재 여부
+     */
+    public function existsForOverlay(int $templateId, string $name): bool
+    {
+        // `_`·`%` 는 LIKE 와일드카드라 이스케이프한다 (레이아웃 이름에 `_` 가 흔하다).
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $name);
+
+        return TemplateLayout::where('template_id', $templateId)
+            ->where(function ($query) use ($name, $escaped): void {
+                $query->where('name', $name)->orWhere('name', 'like', '%.'.$escaped);
+            })
+            ->exists();
+    }
+
+    /**
      * 특정 템플릿의 레이아웃 중 지정한 확장점(extension_point)을 정의한 것이 있는지 확인
      *
      * 레이아웃 content JSON 트리를 재귀 순회하여 `type: extension_point` 노드의

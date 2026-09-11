@@ -1180,8 +1180,11 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     const globalState = templateApp?.getGlobalState?.() || {};
 
     // 전역 상태를 컨텍스트에 병합 (remount 키 접근을 위해)
+    // `getGlobalState()` 결과가 **곧 `_global` 의 내용물**이다 — 같은 파일 1077행이 그 규약을 쓴다.
+    // 여기에 `._global` 을 한 번 더 붙이면 언제나 `{}` 라, 이 자리는 engine-v1.70.0 이전까지
+    // `_global` 을 통째로 비운 채 넘겼다(`_remountKeys` 도 함께 비어 remount 키가 서지 않는다).
     const mergedContext = {
-      _global: globalState._global || {},
+      _global: globalState,
       _local: globalState._local || {},
       _computed: globalState._computed || {},
       ...itemContext,
@@ -1341,7 +1344,8 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       item: row,
       $item: row,
       _local: mergedLocal,
-      _global: globalState._global || {},
+      // 위 cellChildren 과 같은 이유로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
+      _global: globalState,
       _computed: globalState._computed || {},
       ...resolvedExpandContext,
     };

@@ -1,5 +1,5 @@
 {
-    "comment": "템플릿 레이아웃 원문 편집기(JSON 직접 편집). 화면 전체가 **`selectedNodeKind` 한 값으로 갈린다** —\n  `layout` 이면 레이아웃 파일을, `extension` 이면 확장 주입 조각을 다룬다. 좌측 목록도 그 둘을\n  구역으로 나눠 한 줄에 세워 두었다.\n  두 갈래가 **편집 내용은 전역 `editorContent` 하나를 공유**한다(에디터가 한 벌뿐이라). 그래서 갈래를\n  바꿀 때마다 해당 소스를 다시 받아 그 값을 덮어쓴다 — 안 그러면 이전에 열던 것의 본문이 남는다.\n  저장은 낙관적 잠금이다. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다.\n  미리보기는 서버가 발급한 일회용 토큰 주소를 새 창으로 연다 — 저장하지 않은 본문을 함께 올린다.",
+    "comment": "템플릿 레이아웃 원문 편집기 — **HTML(`.g7.html`) 이 정본**이고 JSON 은 읽기 전용 산출물이다(#476).\n  화면 전체가 **`selectedNodeKind` 한 값으로 갈린다** — `layout` 이면 레이아웃 파일을, `extension` 이면\n  확장 주입 조각을 다룬다. 좌측 목록도 그 둘을 구역으로 나눠 한 줄에 세워 두었다.\n  두 갈래가 **편집 버퍼 전역 두 개를 공유**한다: `editorMarkup`(HTML 탭이 편집하는 정본)과 `editorContent`\n  (JSON 탭이 보여주는 산출물). 서버는 JSON 만 저장하므로 열 때 `?with_markup=1` 로 역변환본을 받고,\n  타이핑이 멈춘 1초 뒤 `markup-compile` 로 JSON 뷰를 갱신하며, 저장·미리보기는 `format=markup` 으로\n  HTML 을 보내 서버가 프로덕션 컴파일한다. 컴파일 오류·경고는 `markupCompileError`·`markupWarnings` 에\n  담겨 편집기 마커와 아래 패널로 나온다. 갈래를 바꿀 때마다 해당 소스를 다시 받아 두 버퍼를 덮어쓴다.\n  저장은 낙관적 잠금이다. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다.\n  미리보기는 서버가 발급한 일회용 토큰 주소를 새 창으로 연다 — 저장하지 않은 본문을 함께 올린다.",
     "version": "1.0.0",
     "layout_name": "admin_template_layout_edit",
     "extends": "_admin_base",
@@ -31,45 +31,58 @@
             "auth_required": true,
             "loading_strategy": "blocking",
             "initGlobal": [
-                "layoutFilesList",
-                {
-                    "key": "selectedLayoutName",
-                    "path": "[0].name"
-                }
+                "layoutFilesList"
             ],
             "fallback": {
                 "data": []
             },
-            "comment": "편집 가능한 레이아웃 파일 목록. 목록 자체를 전역에 올리고 **첫 파일 이름을 선택값 기본으로**\n       함께 심는다 — 그래야 아래 본문 조회가 진입 직후부터 대상을 갖는다.\n       `blocking` 인 이유가 그것이다(목록이 늦으면 열 것이 정해지지 않는다)."
+            "comment": "편집 가능한 레이아웃 파일 목록. 목록 자체를 전역에 올린다 — 선택값은 심지 않는다. 종전에는 첫 파일\n       이름을 `selectedLayoutName` 기본으로 함께 심었는데, 저장 뒤 목록을 **다시 받을 때 그 init-global 이 또\n       실행되어 선택을 첫 파일로 되돌렸다**(브라우저 실측 2026-09-11 — 저장 직후 헤더가 `_admin_base` 로 바뀌고\n       판본 이력·복구가 첫 파일을 겨냥했다). 진입 직후의 대상은 아래 본문 조회의 `|| layoutFilesList[0].name`\n       폴백이 정한다. `blocking` 인 이유는 목록이 늦으면 열 것이 정해지지 않기 때문이다."
         },
         {
             "id": "current_layout",
             "label_key": "$t:editor.data_source.current_layout",
             "type": "api",
-            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}",
+            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}?with_markup=1",
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
-            "initGlobal": {
-                "key": "editorContent",
-                "path": "content"
-            },
+            "initGlobal": [
+                {
+                    "key": "editorContent",
+                    "path": "content"
+                },
+                {
+                    "key": "editorMarkup",
+                    "path": "content_markup"
+                },
+                {
+                    "key": "markupWarnings",
+                    "path": "markup_warnings"
+                },
+                {
+                    "key": "markupCompileError",
+                    "path": "markup_compile_error"
+                }
+            ],
             "fallback": {
                 "data": {
                     "content": "{}",
+                    "content_markup": "",
+                    "markup_warnings": [],
+                    "markup_compile_error": null,
                     "name": "",
                     "description": "",
                     "updated_at": null
                 }
             },
-            "comment": "선택한 레이아웃의 본문. 응답의 `content` 를 전역 `editorContent` 로 올리는 것이 **에디터에\n       값을 넣는 유일한 경로**다(에디터는 그 전역만 본다). 선택이 아직 없으면 목록 첫 파일로 떨어진다."
+            "comment": "선택한 레이아웃의 본문. `?with_markup=1` 로 역변환본(`content_markup`)을 함께 받아 HTML 버퍼\n       `editorMarkup`(정본)과 JSON 뷰 `editorContent` 를 채우는 것이 **에디터에 값을 넣는 유일한 경로**다\n       (에디터는 그 전역만 본다). 되컴파일 경고·오류도 응답에서 바로 받아 첫 표시부터 마커를 찍는다.\n       선택이 아직 없으면 목록 첫 파일로 떨어진다."
         },
         {
             "id": "layout_versions",
             "label_key": "$t:editor.data_source.layout_versions",
             "type": "api",
-            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions?limit={{_global.layoutVersionLimit ?? 100}}",
+            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}/versions?limit={{_global.layoutVersionLimit ?? 100}}",
             "method": "GET",
             "auto_fetch": false,
             "auth_required": true,
@@ -96,18 +109,32 @@
             "id": "current_extension",
             "label_key": "$t:editor.data_source.current_extension",
             "type": "api",
-            "endpoint": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}",
+            "endpoint": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}?with_markup=1",
             "method": "GET",
             "auto_fetch": false,
             "auth_required": true,
-            "initGlobal": {
-                "key": "editorContent",
-                "path": "content"
-            },
+            "initGlobal": [
+                {
+                    "key": "editorContent",
+                    "path": "content"
+                },
+                {
+                    "key": "editorMarkup",
+                    "path": "content_markup"
+                },
+                {
+                    "key": "markupWarnings",
+                    "path": "markup_warnings"
+                },
+                {
+                    "key": "markupCompileError",
+                    "path": "markup_compile_error"
+                }
+            ],
             "fallback": {
                 "data": null
             },
-            "comment": "선택한 확장 조각의 본문. 위 `current_layout` 과 **같은 전역(`editorContent`)에 값을 올린다** —\n       에디터가 한 벌이라 그래야 하고, 그래서 갈래를 바꿀 때 반드시 이쪽을 다시 불러야 한다.\n       확장 갈래로 들어갈 때만 부르므로 자동 조회는 꺼 두었다."
+            "comment": "선택한 확장 조각의 본문. 위 `current_layout` 과 **같은 전역(`editorMarkup`·`editorContent`)에 값을\n       올린다** — 에디터가 한 벌이라 그래야 하고, 그래서 갈래를 바꿀 때 반드시 이쪽을 다시 불러야 한다.\n       확장 갈래로 들어갈 때만 부르므로 자동 조회는 꺼 두었다."
         },
         {
             "id": "extension_versions",
@@ -135,6 +162,27 @@
         ]
     },
     "init_actions": [
+        {
+            "comment": "낡은 선택 씻기 — `selectedLayoutName`·`selectedExtensionId` 는 **템플릿으로 갈리지 않는 전역**이라\n         다른 템플릿의 편집기에서 고른 값이 SPA 이동 뒤에도 그대로 남는다. 그 상태로 본문 조회가 돌면\n         이 템플릿에 없는 파일을 겨냥해 404 가 나고 편집기가 빈 채로 열린다(새로고침해야 풀린다).\n         목록에 있는지로 판정하면 템플릿 전환뿐 아니라 파일이 사라진 경우도 함께 걸린다.\n         종전에는 `layout_files` 의 init-global 이 매번 첫 파일을 심어 이 값을 덮었는데, 그 심기는\n         저장 뒤 목록 재조회에서도 실행돼 선택을 첫 파일로 되돌리는 결함이라 걷어냈다 — 그때 이 씻김까지\n         함께 사라졌다. 여기서는 **선택이 이 템플릿에 없을 때만** 되돌리므로 두 성질이 함께 선다.",
+            "handler": "setState",
+            "if": "{{!!_global.selectedLayoutName && !(layout_files?.data ?? []).some(f => f.name === _global.selectedLayoutName)}}",
+            "params": {
+                "target": "global",
+                "selectedNodeKind": "layout",
+                "selectedLayoutName": "{{layout_files?.data?.[0]?.name}}",
+                "selectedExtensionId": null
+            }
+        },
+        {
+            "handler": "setState",
+            "if": "{{_global.selectedNodeKind === 'extension' && !(layout_extensions?.data ?? []).flatMap(g => g.extensions ?? []).some(e => e.id === _global.selectedExtensionId)}}",
+            "params": {
+                "target": "global",
+                "selectedNodeKind": "layout",
+                "selectedLayoutName": "{{layout_files?.data?.[0]?.name}}",
+                "selectedExtensionId": null
+            }
+        },
         {
             "handler": "setState",
             "if": "{{!!query.route && !!(layout_files?.data ?? []).find(f => f.route_path === query.route)?.name}}",
@@ -188,10 +236,87 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "HTML 버퍼를 `.g7.html` 파일로 내려받는다 — 설치본은 서버에 파일이 없으므로 브라우저가 만든다.\n                 파일명은 레이아웃 이름(확장 갈래면 조각 식별자)이다.",
+                                        "type": "click",
+                                        "handler": "downloadMarkupFile",
+                                        "params": {
+                                            "filename": "{{(_global.selectedNodeKind === 'extension' ? (current_extension?.data?.fragment_key ?? current_extension?.data?.target_name ?? 'extension') : (_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'layout'))}}.g7.html",
+                                            "content": "{{_global.editorMarkup ?? ''}}"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "data-testid": "layout-download-markup"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "fa-solid fa-download",
+                                            "className": "text-base"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "hidden sm:inline"
+                                        },
+                                        "text": "$t:admin.templates.layout_edit.download_markup"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "HTML 버퍼를 클립보드에 담는다 — 위 내려받기와 같은 값을 파일 대신 붙여넣기로 넘기는 자리다.\n                 성공·실패 문구를 둘 다 넘기는 이유는 클립보드 권한이 거부될 수 있어서다(브라우저가 막으면\n                 예외가 아니라 거부로 돌아온다). 그때 조용히 지나가면 복사된 줄 알고 빈 값을 붙여넣게 된다.",
+                                        "type": "click",
+                                        "handler": "copyMarkupToClipboard",
+                                        "params": {
+                                            "content": "{{_global.editorMarkup ?? ''}}",
+                                            "successMessage": "$t:admin.templates.layout_edit.copy_success",
+                                            "failureMessage": "$t:admin.templates.layout_edit.copy_failed"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "data-testid": "layout-copy-markup"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "fa-regular fa-copy",
+                                            "className": "text-base"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "hidden sm:inline"
+                                        },
+                                        "text": "$t:admin.templates.layout_edit.copy_markup"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
                                 "if": "{{_global.selectedNodeKind !== 'extension'}}",
                                 "actions": [
                                     {
-                                        "comment": "레이아웃 미리보기 — **저장하지 않은 편집 본문을 함께 올려** 서버가 일회용 토큰을 내주고,\n                 그 주소를 새 창으로 연다. 저장 없이 확인하는 것이 이 버튼의 목적이다.",
+                                        "comment": "레이아웃 미리보기 — **저장하지 않은 HTML 본문을 `format=markup` 으로 올려** 서버가 컴파일한 뒤\n                 일회용 토큰을 내주고, 그 주소를 새 창으로 연다. 저장 없이 확인하는 것이 이 버튼의 목적이다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -202,7 +327,8 @@
                                                 "params": {
                                                     "method": "POST",
                                                     "body": {
-                                                        "content": "{{_global.editorContent}}"
+                                                        "content": "{{_global.editorMarkup}}",
+                                                        "format": "markup"
                                                     }
                                                 },
                                                 "onSuccess": {
@@ -211,13 +337,22 @@
                                                         "path": "/preview/{{response.data.token}}"
                                                     }
                                                 },
-                                                "onError": {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "markupCompileError": "{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
+                                                        }
                                                     }
-                                                }
+                                                ]
                                             }
                                         ]
                                     }
@@ -267,7 +402,8 @@
                                                             "params": {
                                                                 "method": "POST",
                                                                 "body": {
-                                                                    "content": "{{_global.editorContent}}"
+                                                                    "content": "{{_global.editorMarkup}}",
+                                                                    "format": "markup"
                                                                 }
                                                             },
                                                             "onSuccess": {
@@ -276,13 +412,22 @@
                                                                     "path": "/preview/{{response.data.token}}"
                                                                 }
                                                             },
-                                                            "onError": {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "markupCompileError": "{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
+                                                                    }
                                                                 }
-                                                            }
+                                                            ]
                                                         }
                                                     },
                                                     {
@@ -298,7 +443,8 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "data-testid": "extension-preview"
                                 },
                                 "children": [
                                     {
@@ -325,7 +471,7 @@
                                 "if": "{{_global.selectedNodeKind !== 'extension' && current_layout?.data?.abilities?.can_update !== false}}",
                                 "actions": [
                                     {
-                                        "comment": "레이아웃 저장. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다\n                 (덮어쓰기를 막는 낙관적 잠금). 성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞춘다 —\n                 안 받으면 다음 저장이 낡은 번호로 나가 반드시 실패한다.",
+                                        "comment": "레이아웃 저장 — HTML 버퍼를 `format=markup` 으로 보내 서버가 프로덕션 컴파일한 JSON 을 저장한다.\n                 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다(덮어쓰기를 막는 낙관적\n                 잠금). 성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞추고 **버퍼를 서버 정규형으로 갱신**한다 —\n                 안 받으면 다음 저장이 낡은 번호로 나가 반드시 실패한다. 컴파일 오류(422)는 `compile_error` 를\n                 마커·패널에 올린다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -343,7 +489,8 @@
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": {
-                                                        "content": "{{_global.editorContent}}",
+                                                        "content": "{{_global.editorMarkup}}",
+                                                        "format": "markup",
                                                         "expected_lock_version": "{{current_layout?.data?.lock_version ?? 0}}"
                                                     }
                                                 },
@@ -352,7 +499,10 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "isSaving": false
+                                                            "isSaving": false,
+                                                            "markupCompileError": null,
+                                                            "jsonViewStale": false,
+                                                            "markupWarnings": "{{response.data?.markup_warnings ?? []}}"
                                                         }
                                                     },
                                                     {
@@ -381,7 +531,8 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "isSaving": false
+                                                            "isSaving": false,
+                                                            "markupCompileError": "{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"
                                                         }
                                                     },
                                                     {
@@ -452,7 +603,8 @@
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": {
-                                                        "content": "{{_global.editorContent}}",
+                                                        "content": "{{_global.editorMarkup}}",
+                                                        "format": "markup",
                                                         "expected_lock_version": "{{current_extension?.data?.lock_version ?? 0}}"
                                                     }
                                                 },
@@ -461,7 +613,10 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "isSaving": false
+                                                            "isSaving": false,
+                                                            "markupCompileError": null,
+                                                            "jsonViewStale": false,
+                                                            "markupWarnings": "{{response.data?.markup_warnings ?? []}}"
                                                         }
                                                     },
                                                     {
@@ -489,7 +644,8 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "isSaving": false
+                                                            "isSaving": false,
+                                                            "markupCompileError": "{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"
                                                         }
                                                     },
                                                     {
@@ -506,7 +662,8 @@
                                 ],
                                 "props": {
                                     "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
-                                    "disabled": "{{_global.isSaving}}"
+                                    "disabled": "{{_global.isSaving}}",
+                                    "data-testid": "extension-save"
                                 },
                                 "children": [
                                     {
@@ -682,7 +839,9 @@
                                                                 "params": {
                                                                     "target": "global",
                                                                     "selectedNodeKind": "extension",
-                                                                    "selectedExtensionId": "{{Number($event.target.value.slice(4))}}"
+                                                                    "selectedExtensionId": "{{Number($event.target.value.slice(4))}}",
+                                                                    "markupCompileError": null,
+                                                                    "jsonViewStale": false
                                                                 }
                                                             },
                                                             {
@@ -716,7 +875,9 @@
                                                                 "params": {
                                                                     "target": "global",
                                                                     "selectedNodeKind": "layout",
-                                                                    "selectedLayoutName": "{{$event.target.value.slice(7)}}"
+                                                                    "selectedLayoutName": "{{$event.target.value.slice(7)}}",
+                                                                    "markupCompileError": null,
+                                                                    "jsonViewStale": false
                                                                 }
                                                             },
                                                             {
@@ -873,7 +1034,9 @@
                                                                         "params": {
                                                                             "target": "global",
                                                                             "selectedNodeKind": "layout",
-                                                                            "selectedLayoutName": "{{file.name}}"
+                                                                            "selectedLayoutName": "{{file.name}}",
+                                                                            "markupCompileError": null,
+                                                                            "jsonViewStale": false
                                                                         }
                                                                     },
                                                                     {
@@ -921,7 +1084,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium text-sm break-all"
                                                                         },
-                                                                        "text": "{{file.name}}.json"
+                                                                        "text": "{{file.name}}.g7.html"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1057,7 +1220,9 @@
                                                                                 "params": {
                                                                                     "target": "global",
                                                                                     "selectedNodeKind": "extension",
-                                                                                    "selectedExtensionId": "{{ext.id}}"
+                                                                                    "selectedExtensionId": "{{ext.id}}",
+                                                                                    "markupCompileError": null,
+                                                                                    "jsonViewStale": false
                                                                                 }
                                                                             },
                                                                             {
@@ -1153,7 +1318,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "text-hint mt-1 flex-center gap-2"
+                                                                            "className": "text-hint mt-1 flex-center gap-2 flex-wrap"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1170,6 +1335,16 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "text": "{{ext.size_formatted ?? '0 B'}}"
+                                                                            },
+                                                                            {
+                                                                                "comment": "조각 식별자 — 같은 대상에 조각이 둘일 때(예: 회원 폼의 통화·배송국가 필드) 두 행을 가른다. 대상 이름과 같으면 중복이라 숨긴다.",
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{!!ext.fragment_key && ext.fragment_key !== ext.target_name}}",
+                                                                                "props": {
+                                                                                    "className": "font-mono"
+                                                                                },
+                                                                                "text": "$t:admin.templates.layout_edit.fragment_key_label|key={{ext.fragment_key}}"
                                                                             }
                                                                         ]
                                                                     }
@@ -1239,7 +1414,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "{{_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'main'}}.json"
+                                                                        "text": "{{_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'main'}}.g7.html"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1294,18 +1469,19 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-3"
+                                                            "className": "flex-center gap-3 shrink-0"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-label-subtle"
+                                                                    "className": "text-label-subtle whitespace-nowrap"
                                                                 },
                                                                 "text": "$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}"
                                                             },
                                                             {
+                                                                "comment": "shrink-0·nowrap — 설명이 긴 레이아웃(시드 화면 등)에서 헤더 행이 눌리면 이 버튼 글자가 세로로 한 자씩 꺾였다(1280 실측).",
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "actions": [
@@ -1356,7 +1532,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                                                    "className": "flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0 whitespace-nowrap",
                                                                     "data-testid": "layout-version-history-open"
                                                                 },
                                                                 "children": [
@@ -1382,34 +1558,239 @@
                                         ]
                                     },
                                     {
+                                        "comment": "서브탭 — HTML 이 유일한 편집 경로, JSON 은 읽기 전용 산출물(설계 결정 C2). 기본은 HTML.",
+                                        "id": "editor_format_tabs",
+                                        "type": "composite",
+                                        "name": "TabNavigation",
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "event": "onTabChange",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "editorFormat": "{{$args[0]}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "tabs": "{{[{id: 'markup', label: '$t:admin.templates.layout_edit.tab_markup'}, {id: 'json', label: '$t:admin.templates.layout_edit.tab_json'}]}}",
+                                            "activeTabId": "{{_global.editorFormat ?? 'markup'}}",
+                                            "variant": "default",
+                                            "className": "px-4 pt-2"
+                                        }
+                                    },
+                                    {
+                                        "id": "markup_editor_pane",
                                         "type": "basic",
                                         "name": "Div",
+                                        "if": "{{(_global.editorFormat ?? 'markup') !== 'json'}}",
                                         "props": {
                                             "className": "flex-1"
                                         },
                                         "children": [
                                             {
+                                                "comment": "마커는 오류(빨강)와 경고(노랑)를 합쳐 한 배열로 넘긴다 — `.g7.html` 검증은 Monaco 가 아니라 서버 컴파일러가 하므로 마커의 출처는 언제나 컴파일 응답이다.",
+                                                "id": "markup_editor",
                                                 "type": "composite",
                                                 "name": "CodeEditor",
                                                 "actions": [
                                                     {
-                                                        "comment": "타이핑을 전역 편집 본문에 담는다. 300ms 로 묶는 이유는 이 값이 저장·미리보기가 읽는\n                     한 자리이고, 글자마다 전역을 흔들면 화면 전체가 다시 그려지기 때문이다.",
+                                                        "comment": "타이핑을 HTML 버퍼(정본)에 담는다. 300ms 로 묶는 이유는 이 값이 저장·미리보기가 읽는\n                     한 자리이고, 글자마다 전역을 흔들면 화면 전체가 다시 그려지기 때문이다.",
                                                         "type": "change",
                                                         "event": "onChange",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "editorContent": "{{$event.target.value}}"
+                                                            "editorMarkup": "{{$event.target.value}}"
                                                         },
                                                         "debounce": 300
+                                                    },
+                                                    {
+                                                        "comment": "타이핑이 멈춘 뒤 **1초 유휴**에 서버 변환을 한 번 불러 JSON 뷰를 갱신한다(키 입력마다 호출하지\n                     않는다 — 설계 결정 C7). 성공하면 산출 JSON·경고를, 실패하면 오류 좌표를 마커로 올리고 JSON 뷰는\n                     마지막 성공본을 유지한 채 '오래됨' 배지를 단다. 위 버퍼 갱신과는 별도 `<on>` 이라 서로를 기다리지 않는다.",
+                                                        "type": "change",
+                                                        "event": "onChange",
+                                                        "handler": "apiCall",
+                                                        "target": "{{_global.selectedNodeKind === 'extension' ? ('/api/admin/templates/' + route.identifier + '/layout-extensions/' + _global.selectedExtensionId + '/markup-compile') : ('/api/admin/templates/' + route.identifier + '/layouts/' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name) + '/markup-compile')}}",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": {
+                                                                "markup": "{{$event.target.value}}"
+                                                            }
+                                                        },
+                                                        "debounce": 1000,
+                                                        "onSuccess": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "editorContent": "{{response.data.content}}",
+                                                                "markupWarnings": "{{response.data.warnings ?? []}}",
+                                                                "markupCompileError": null,
+                                                                "jsonViewStale": false
+                                                            }
+                                                        },
+                                                        "onError": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "markupCompileError": "{{error.errors?.compile_error ?? {code: 'request_failed', message: error.message ?? '', line: 0, column: 0}}}",
+                                                                "jsonViewStale": true
+                                                            }
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
+                                                    "value": "{{raw:_global.editorMarkup ?? ''}}",
+                                                    "language": "html",
+                                                    "theme": "vs-dark",
+                                                    "height": "calc(100vh - 420px)",
+                                                    "markers": "{{[...(_global.markupCompileError ? [{line: _global.markupCompileError.line ?? 0, column: _global.markupCompileError.column ?? 0, message: _global.markupCompileError.message ?? '', severity: 'error'}] : []), ...((_global.markupWarnings ?? []).map(w => ({line: w.line ?? 0, column: w.column ?? 0, message: w.message ?? '', severity: 'warning'})))]}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "json_editor_pane",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_global.editorFormat === 'json'}}",
+                                        "props": {
+                                            "className": "flex-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "px-4 py-2 flex-center gap-2 flex-wrap text-label-subtle"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-lock",
+                                                            "className": "text-xs"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.templates.layout_edit.json_readonly_hint"
+                                                    },
+                                                    {
+                                                        "id": "json_stale_badge",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!_global.jsonViewStale}}",
+                                                        "props": {
+                                                            "className": "px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded"
+                                                        },
+                                                        "text": "$t:admin.templates.layout_edit.json_stale"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "json_editor",
+                                                "type": "composite",
+                                                "name": "CodeEditor",
+                                                "props": {
                                                     "value": "{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}",
                                                     "language": "json",
+                                                    "readOnly": true,
                                                     "theme": "vs-dark",
-                                                    "height": "calc(100vh - 340px)"
+                                                    "height": "calc(100vh - 460px)"
                                                 }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "오류·경고 패널 — 마커와 같은 값을 글로도 보여준다(마커는 줄에 가려질 수 있다). 오류는 저장을 막고 경고는 막지 않는다.",
+                                        "id": "markup_error_panel",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{!!_global.markupCompileError}}",
+                                        "props": {
+                                            "role": "alert",
+                                            "className": "mx-4 mt-3 p-3 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "font-medium flex-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-circle-xmark",
+                                                            "className": "text-base"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.templates.layout_edit.markup_error_title"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "font-mono text-xs mt-1 break-all"
+                                                },
+                                                "text": "{{_global.markupCompileError?.line ?? 0}}:{{_global.markupCompileError?.column ?? 0}} · {{_global.markupCompileError?.message ?? ''}} · {{_global.markupCompileError?.code ?? ''}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "markup_warning_panel",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{(_global.markupWarnings?.length ?? 0) > 0}}",
+                                        "props": {
+                                            "className": "mx-4 mt-3 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "font-medium flex-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-triangle-exclamation",
+                                                            "className": "text-base"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.templates.layout_edit.markup_warning_title|count={{_global.markupWarnings?.length ?? 0}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{_global.markupWarnings ?? []}}",
+                                                    "item_var": "warning",
+                                                    "index_var": "warningIdx"
+                                                },
+                                                "props": {
+                                                    "className": "font-mono text-xs mt-1 break-all"
+                                                },
+                                                "text": "{{warning.line ?? 0}}:{{warning.column ?? 0}} · {{warning.message ?? ''}} · {{warning.code ?? ''}}"
                                             }
                                         ]
                                     },
@@ -1417,7 +1798,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "p-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600"
+                                            "className": "p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600"
                                         },
                                         "children": [
                                             {
@@ -1438,7 +1819,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "text": "$t:admin.templates.layout_edit.save_creates_view"
+                                                        "text": "$t:admin.templates.layout_edit.inlined_notice"
                                                     }
                                                 ]
                                             }

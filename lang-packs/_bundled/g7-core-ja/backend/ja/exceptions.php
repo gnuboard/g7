@@ -158,6 +158,7 @@ return [
         'unexpected_document_child' => '<:tag> は <:parent> の中に来ることができません。',
         'partial_root_not_single_node' => '<partial> はルートが1つのノードです。フラグメントのルートコンポーネントは1つだけにしてください。',
         'modal_src_with_body' => '<modal src="..."> はフラグメントを参照するため、本文と一緒に使用できません。インラインモーダルは src なしでノードとして使用してください。',
+        'modal_name_with_src' => '<modal src="..."> には name を指定できません。name はインラインモーダルの layout_name（インストールがフラグメントをインライン化する際に付く名前）なので、本文を持つ <modal name="..."> でのみ意味を持ちます。',
         'modal_src_in_node_position' => '<modal src=":src"> はドキュメントの modals 宣言位置でのみ使用できます。ノード位置では src を読む処理がなく、ダイアログが開きません — ドキュメントエンベロープの直下に移動してください。',
         'modal_inline_not_single_node' => 'インライン <modal> は1つのノードだけを格納します。',
         'fragment_target_conflict' => '<extension> は target-layout と extension-point を一緒に使用できません。特定のレイアウトに注入する場合は target-layout、拡張ポイントに注入する場合は extension-point のどちらか1つだけを使用してください。',

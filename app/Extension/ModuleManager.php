@@ -99,6 +99,19 @@ class ModuleManager implements ModuleManagerInterface
 
     protected string $bundledModulesPath;
 
+    /**
+     * @param  ExtensionManager  $extensionManager  설치·활성 상태 등 확장 공통 관리
+     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 행 조회·저장
+     * @param  PermissionRepositoryInterface  $permissionRepository  권한 행 조회·저장 (설치 시 권한 동기화)
+     * @param  RoleRepositoryInterface  $roleRepository  역할 행 조회·저장 (설치 시 역할 동기화)
+     * @param  MenuRepositoryInterface  $menuRepository  관리자 메뉴 행 조회·저장
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 행 조회·저장
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 행 조회·저장
+     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 행 조회·저장
+     * @param  LayoutExtensionService  $layoutExtensionService  확장 조각 등록·해제 (설치·제거에 동반)
+     * @param  ExtensionRoleSyncHelper  $roleSyncHelper  선언된 역할·권한을 DB 에 반영
+     * @param  ExtensionMenuSyncHelper  $menuSyncHelper  선언된 관리자 메뉴를 DB 에 반영
+     */
     public function __construct(
         protected ExtensionManager $extensionManager,
         protected ModuleRepositoryInterface $moduleRepository,
@@ -147,6 +160,8 @@ class ModuleManager implements ModuleManagerInterface
 
     /**
      * 모든 모듈을 로드하고 초기화합니다.
+     *
+     * @return void
      */
     public function loadModules(): void
     {
@@ -218,6 +233,8 @@ class ModuleManager implements ModuleManagerInterface
      *
      * 클래스 로드 없이 module.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리에 로드된 모듈은 제외합니다.
+     *
+     * @return void
      */
     protected function loadPendingModules(): void
     {
@@ -238,6 +255,8 @@ class ModuleManager implements ModuleManagerInterface
      *
      * 클래스 로드 없이 module.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리 또는 _pending에 로드된 모듈은 제외합니다.
+     *
+     * @return void
      */
     protected function loadBundledModules(): void
     {
@@ -689,6 +708,9 @@ class ModuleManager implements ModuleManagerInterface
             // 모듈 레이아웃 확장 등록
             $this->registerLayoutExtensions($module);
 
+            // 호스트가 나중에 설치된 조각을 메운다 — 전 활성 템플릿에 활성 확장 조각 재등록(멱등).
+            $this->reregisterActiveExtensionsToAllTemplates();
+
             // 모듈 다국어 데이터가 변경되므로 템플릿 언어 캐시 삭제
             $this->clearAllTemplateLanguageCaches();
 
@@ -733,6 +755,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈 재활성화 시 이전에 soft delete된 레이아웃을 복원합니다.
      *
      * @param  string  $moduleIdentifier  모듈 식별자
+     * @return void
      */
     protected function restoreModuleLayouts(string $moduleIdentifier): void
     {
@@ -1444,6 +1467,16 @@ class ModuleManager implements ModuleManagerInterface
         ];
     }
 
+    /**
+     * 아직 설치되지 않은 모듈(pending·bundled)의 표시용 정보를 메타데이터에서 읽습니다.
+     *
+     * 설치 전이라 DB 행이 없으므로 목록 화면은 이 경로로만 이름·버전·설명을 얻는다. 권한·역할·훅
+     * 같은 상세는 PHP 클래스를 임시 로드해야 알 수 있고, 로드가 실패해도 목록이 통째로 비지 않도록
+     * 메타데이터만으로 만든 축소본을 돌려준다.
+     *
+     * @param  string  $moduleName  모듈 식별자
+     * @return array<string, mixed>|null 모듈 정보, pending·bundled 어느 쪽도 아니면 null
+     */
     protected function getModuleInfoFromMetadata(string $moduleName): ?array
     {
         // pending/bundled 메타데이터 확인
@@ -1623,6 +1656,17 @@ class ModuleManager implements ModuleManagerInterface
         return $result;
     }
 
+    /**
+     * 모듈이 선언한 의존성이 모두 충족됐는지 확인하고, 아니면 예외로 세웁니다.
+     *
+     * 선언은 `['modules' => [...], 'plugins' => [...]]` 중첩 구조라 타입별로 순회한다 — 이름만
+     * 보면 같은 식별자를 가진 다른 종류의 확장이 의존성을 충족한 것으로 오판한다.
+     *
+     * @param  ModuleInterface  $module  검사 대상 모듈
+     * @return void
+     *
+     * @throws \Exception 충족되지 않은 의존성이 하나라도 있을 때
+     */
     protected function checkDependencies(ModuleInterface $module): void
     {
         $dependencies = $module->getDependencies();
@@ -1701,6 +1745,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈의 마이그레이션 파일들을 실행합니다.
      *
      * @param  ModuleInterface  $module  마이그레이션을 실행할 모듈 인스턴스
+     * @return void
      */
     protected function runMigrations(ModuleInterface $module): void
     {
@@ -1728,6 +1773,7 @@ class ModuleManager implements ModuleManagerInterface
      * FK 제약 조건으로 인한 DROP TABLE 실패를 방지하기 위해 롤백 전후로 FK 체크를 비활성화/활성화합니다.
      *
      * @param  ModuleInterface  $module  롤백할 모듈 인스턴스
+     * @return void
      */
     protected function rollbackMigrations(ModuleInterface $module): void
     {
@@ -1786,6 +1832,7 @@ class ModuleManager implements ModuleManagerInterface
      * - 모듈: storage/app/modules/{identifier}/settings/{category}.json (카테고리별 파일)
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function initializeModuleSettings(ModuleInterface $module): void
     {
@@ -1876,6 +1923,7 @@ class ModuleManager implements ModuleManagerInterface
      * 삭제 실패 시에도 언인스톨 프로세스는 계속 진행됩니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function cleanupDynamicModuleData(ModuleInterface $module): void
     {
@@ -1925,6 +1973,7 @@ class ModuleManager implements ModuleManagerInterface
      * storage/app/modules/{identifier}/ 하위의 모든 카테고리(settings, attachments, images, cache, temp 등)를 삭제합니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function deleteModuleStorage(ModuleInterface $module): void
     {
@@ -1961,6 +2010,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈 비활성화/삭제 시 해당 모듈의 격리된 캐시를 정리합니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function flushModuleCache(ModuleInterface $module): void
     {
@@ -2046,6 +2096,7 @@ class ModuleManager implements ModuleManagerInterface
      *
      * @param  string  $filePath  마이그레이션 파일 경로
      * @param  string  $moduleIdentifier  모듈 식별자 (로깅용)
+     * @return void
      */
     protected function rollbackSingleMigration(string $filePath, string $moduleIdentifier): void
     {
@@ -2112,6 +2163,7 @@ class ModuleManager implements ModuleManagerInterface
      * 역할을 안전하게 동기화합니다.
      *
      * @param  ModuleInterface  $module  역할을 생성할 모듈 인스턴스
+     * @return void
      */
     protected function createModuleRoles(ModuleInterface $module): void
     {
@@ -2150,6 +2202,7 @@ class ModuleManager implements ModuleManagerInterface
      * 권한을 안전하게 동기화하고, stale 권한을 정리합니다.
      *
      * @param  ModuleInterface  $module  권한을 생성할 모듈 인스턴스
+     * @return void
      */
     protected function createModulePermissions(ModuleInterface $module): void
     {
@@ -2292,6 +2345,7 @@ class ModuleManager implements ModuleManagerInterface
      * 제거된 역할 할당만 해제하고, 사용자 수동 추가 할당은 보존합니다.
      *
      * @param  ModuleInterface  $module  권한을 할당할 모듈 인스턴스
+     * @return void
      */
     protected function assignPermissionsToRoles(ModuleInterface $module): void
     {
@@ -2347,6 +2401,7 @@ class ModuleManager implements ModuleManagerInterface
      * 메뉴를 안전하게 동기화합니다.
      *
      * @param  ModuleInterface  $module  메뉴를 동기화할 모듈 인스턴스
+     * @return void
      */
     protected function createModuleMenus(ModuleInterface $module): void
     {
@@ -2396,6 +2451,7 @@ class ModuleManager implements ModuleManagerInterface
      * 무해 (멱등).
      *
      * @param  ModuleInterface  $module  대상 모듈 인스턴스
+     * @return void
      */
     public function syncDeclarativeArtifacts(ModuleInterface $module): void
     {
@@ -2489,6 +2545,7 @@ class ModuleManager implements ModuleManagerInterface
      * 는 `user_overrides` JSON 으로 보존됩니다.
      *
      * @param  ModuleInterface  $module  IDV 정책을 동기화할 모듈 인스턴스
+     * @return void
      */
     protected function syncModuleIdentityPolicies(ModuleInterface $module): void
     {
@@ -2547,6 +2604,7 @@ class ModuleManager implements ModuleManagerInterface
      * 운영자 user_overrides 보존은 helper 내부 trait 가 처리.
      *
      * @param  ModuleInterface  $module  IDV 메시지를 동기화할 모듈 인스턴스
+     * @return void
      */
     protected function syncModuleIdentityMessages(ModuleInterface $module): void
     {
@@ -2614,6 +2672,7 @@ class ModuleManager implements ModuleManagerInterface
      * 운영자 user_overrides 보존은 helper 내부 trait 가 처리.
      *
      * @param  ModuleInterface  $module  알림 정의를 동기화할 모듈 인스턴스
+     * @return void
      */
     protected function syncModuleNotificationDefinitions(ModuleInterface $module): void
     {
@@ -2668,6 +2727,10 @@ class ModuleManager implements ModuleManagerInterface
 
     /**
      * 해당 source 가 기존에 등록한 IDV 정책이 있는지 확인합니다.
+     *
+     * @param  string  $sourceType
+     * @param  string  $sourceIdentifier
+     * @return bool
      */
     protected function hasExistingIdentityPolicies(string $sourceType, string $sourceIdentifier): bool
     {
@@ -2683,6 +2746,10 @@ class ModuleManager implements ModuleManagerInterface
 
     /**
      * 해당 source 가 기존에 등록한 IDV 메시지 정의가 있는지 확인합니다 (데이터 손실 방어용).
+     *
+     * @param  string  $extensionType
+     * @param  string  $extensionIdentifier
+     * @return bool
      */
     protected function hasExistingIdentityMessageDefinitions(string $extensionType, string $extensionIdentifier): bool
     {
@@ -2698,6 +2765,10 @@ class ModuleManager implements ModuleManagerInterface
 
     /**
      * 해당 source 가 기존에 등록한 알림 정의가 있는지 확인합니다 (데이터 손실 방어용).
+     *
+     * @param  string  $extensionType
+     * @param  string  $extensionIdentifier
+     * @return bool
      */
     protected function hasExistingNotificationDefinitions(string $extensionType, string $extensionIdentifier): bool
     {
@@ -2713,6 +2784,9 @@ class ModuleManager implements ModuleManagerInterface
 
     /**
      * 해당 모듈이 기존에 등록한 메뉴가 있는지 확인합니다 (데이터 손실 방어용).
+     *
+     * @param  string  $moduleIdentifier
+     * @return bool
      */
     protected function hasExistingModuleMenus(string $moduleIdentifier): bool
     {
@@ -2731,6 +2805,9 @@ class ModuleManager implements ModuleManagerInterface
      *
      * `$module` 에서 현재 정의된 식별자/slug 를 수집하여 helper 의 `cleanupStale*` 호출.
      * user_overrides 보존 및 `users.role_id` 참조 역할 삭제 차단은 helper 가 담당.
+     *
+     * @param  ModuleInterface  $module
+     * @return void
      */
     protected function cleanupStaleModuleEntries(ModuleInterface $module): void
     {
@@ -2821,6 +2898,7 @@ class ModuleManager implements ModuleManagerInterface
      * 빈 배열이면 database/seeders/ 디렉토리의 모든 시더를 자동 검색하여 실행합니다. (역호환)
      *
      * @param  ModuleInterface  $module  시더를 실행할 모듈 인스턴스
+     * @return void
      */
     protected function runModuleSeeders(ModuleInterface $module): void
     {
@@ -2963,6 +3041,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈 제거 시 관련 권한과 메뉴를 삭제합니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function removeModulePermissionsAndMenus(ModuleInterface $module): void
     {
@@ -2993,6 +3072,7 @@ class ModuleManager implements ModuleManagerInterface
      * - role에 부여된 permission이 하나도 없어야 삭제
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function removeModuleRoles(ModuleInterface $module): void
     {
@@ -3028,6 +3108,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈의 config 파일을 Laravel config 시스템에 로드합니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function loadModuleConfig(ModuleInterface $module): void
     {
@@ -3063,6 +3144,16 @@ class ModuleManager implements ModuleManagerInterface
         }
     }
 
+    /**
+     * 모듈이 선언한 훅 리스너를 등록합니다.
+     *
+     * 리스너를 등록해 두고 ServiceProvider 가 없으면 훅 발화 시 Repository 바인딩을 찾지 못해
+     * 컨테이너 해석이 실패한다. 테스트에서는 등록 행이 프로세스 간 DB 에 남을 수 있어 "활성"
+     * 판정만으로는 부족하므로 allowlist 를 함께 본다.
+     *
+     * @param  ModuleInterface  $module  대상 모듈
+     * @return void
+     */
     protected function registerModuleHookListeners(ModuleInterface $module): void
     {
         // 모듈이 getHookListeners 메서드를 가지고 있는지 확인
@@ -3162,6 +3253,7 @@ class ModuleManager implements ModuleManagerInterface
      * Broadcast::channel()로 자동 등록합니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function registerModuleChannels(ModuleInterface $module): void
     {
@@ -3384,6 +3476,7 @@ class ModuleManager implements ModuleManagerInterface
      * @param  string  $layoutName  레이아웃 이름
      * @param  array  $layoutData  레이아웃 데이터
      * @param  string  $moduleIdentifier  모듈 식별자
+     * @return void
      */
     protected function registerLayoutToTemplate(Template $template, string $layoutName, array $layoutData, string $moduleIdentifier): void
     {
@@ -3415,6 +3508,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈 레이아웃 관련 캐시를 무효화합니다.
      *
      * @param  string  $moduleIdentifier  모듈 식별자
+     * @return void
      */
     protected function invalidateLayoutCache(string $moduleIdentifier): void
     {
@@ -3642,28 +3736,19 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈의 레이아웃 확장을 등록합니다.
      *
      * 모듈의 resources/extensions 디렉토리에서 fragment 소스를 읽어
-     * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다.
+     * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다 — 템플릿마다 그 템플릿의 표로 컴파일하고 붙을 자리가 있는 곳에만.
      *
      * 소스 선택·읽기는 {@see CollectsFragmentSources::loadFragmentDefinitions()}
      * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 소스(`.g7.html`)을
      * 보지 않았고, 그래서 활성화 경로만 규약 밖에 남아 있었다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function registerLayoutExtensions(ModuleInterface $module): void
     {
         $extensionFiles = $module->getLayoutExtensions();
         $identifier = $module->getIdentifier();
-
-        $definitions = $this->loadFragmentDefinitions(
-            $module->getExtensionsPath(),
-            $extensionFiles,
-            ['module' => $identifier]
-        );
-
-        if (empty($definitions)) {
-            return;
-        }
 
         // 활성화된 모든 템플릿 조회 (admin + user)
         $allTemplates = $this->templateRepository->getActive();
@@ -3674,27 +3759,72 @@ class ModuleManager implements ModuleManagerInterface
             return;
         }
 
-        foreach ($definitions as $definition) {
-            $extensionFile = $definition['path'];
+        // 템플릿마다 **그 템플릿의 표(`components.json`)** 로 조각을 컴파일하고, 붙을 자리(호스트 레이아웃·
+        // 확장점)가 없는 템플릿에는 등록하지 않는다 (C10). 종전엔 한 번 컴파일한 정의를 모든 활성 템플릿에
+        // 무조건 등록해 사용자 템플릿에 관리자 대상 조각(죽은 행)이 쌓였고, 사용자 조각도 관리자 표로 검사됐다.
+        // 호스트가 나중에 설치되는 순서 의존은 호출부가 `registerAllActiveExtensionsToTemplate` 재호출로 메운다.
+        foreach ($allTemplates as $template) {
+            $definitions = $this->loadFragmentDefinitions(
+                $module->getExtensionsPath(),
+                $extensionFiles,
+                ['module' => $identifier, 'template' => $template->identifier],
+                (string) $template->identifier
+            );
 
-            try {
-                // 모든 활성 템플릿에 확장 등록
-                foreach ($allTemplates as $template) {
+            foreach ($definitions as $definition) {
+                $extensionFile = $definition['path'];
+
+                try {
+                    if (! $this->layoutExtensionService->isExtensionApplicableToTemplate($definition['data'], $template->id)) {
+                        Log::info("모듈 레이아웃 확장 등록 건너뜀 (대상 부재): {$extensionFile}", [
+                            'module' => $identifier,
+                            'template' => $template->identifier,
+                        ]);
+
+                        continue;
+                    }
+
                     $this->layoutExtensionService->registerExtension(
                         $definition['data'],
                         LayoutSourceType::Module,
                         $identifier,
-                        $template->id
+                        $template->id,
+                        false,
+                        $definition['key']
                     );
-                }
 
-                Log::info("모듈 레이아웃 확장 등록 완료: {$extensionFile}", [
-                    'module' => $identifier,
-                    'templates_count' => $allTemplates->count(),
-                ]);
-            } catch (\Exception $e) {
-                Log::error("모듈 레이아웃 확장 등록 실패: {$extensionFile}", [
-                    'module' => $identifier,
+                    Log::info("모듈 레이아웃 확장 등록 완료: {$extensionFile}", [
+                        'module' => $identifier,
+                        'template' => $template->identifier,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error("모듈 레이아웃 확장 등록 실패: {$extensionFile}", [
+                        'module' => $identifier,
+                        'template' => $template->identifier,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * 활성 확장 전부의 조각을 모든 활성 템플릿에 다시 등록합니다 (순서 의존 완화, 멱등).
+     *
+     * 적용 필터는 "호스트 레이아웃이 아직 없으면 건너뜀" 이라, 호스트를 가진 확장이 나중에 설치되면 그 호스트를
+     * 겨냥한 다른 확장의 조각이 빠진 채 남는다. 그래서 확장 활성화·업데이트는 자기 등록을 마친 직후 이 메서드로
+     * 전 템플릿을 한 번 더 훑는다 — 등록은 `updateOrCreate` 라 여러 번 불러도 같은 결과다.
+     *
+     * @return void
+     */
+    protected function reregisterActiveExtensionsToAllTemplates(): void
+    {
+        foreach ($this->templateRepository->getActive() as $template) {
+            try {
+                $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($template->id);
+            } catch (\Throwable $e) {
+                Log::error('활성 확장 조각 재등록 실패', [
+                    'template' => $template->identifier,
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -3707,6 +3837,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈 재활성화 시 soft delete된 확장을 복원합니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function restoreLayoutExtensions(ModuleInterface $module): void
     {
@@ -3737,6 +3868,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈 비활성화 시 해당 모듈의 확장을 soft delete합니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function unregisterLayoutExtensions(ModuleInterface $module): void
     {
@@ -3767,6 +3899,7 @@ class ModuleManager implements ModuleManagerInterface
      * 모듈 삭제(uninstall) 시 호출됩니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
+     * @return void
      */
     protected function deleteLayoutExtensions(ModuleInterface $module): void
     {
@@ -3797,6 +3930,8 @@ class ModuleManager implements ModuleManagerInterface
      *
      * @param  string  $moduleName  모듈명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  bool  $force
+     * @return void
      */
     protected function copyFromPendingOrBundled(string $moduleName, ?\Closure $onProgress = null, bool $force = false): void
     {
@@ -3832,6 +3967,7 @@ class ModuleManager implements ModuleManagerInterface
      * _pending/_bundled에서 복사된 후 클래스를 로드하여 $this->modules에 등록합니다.
      *
      * @param  string  $moduleName  모듈명 (identifier)
+     * @return void
      */
     protected function reloadModule(string $moduleName): void
     {
@@ -4162,6 +4298,7 @@ class ModuleManager implements ModuleManagerInterface
      * @param  string  $toVersion  목표 버전 (이 버전 이하)
      * @param  bool  $force  true 시 fromVersion == toVersion이면 해당 버전 스텝도 포함
      * @param  \Closure|null  $onStep  각 step 실행 직전에 호출되는 콜백 (인자: 버전 문자열)
+     * @return void
      *
      * @throws \Exception 스텝 실행 실패 시
      */
@@ -4584,6 +4721,7 @@ class ModuleManager implements ModuleManagerInterface
                 // "사용자 수정본" 을 이미 지워버린다(= keep 전략이 항상 무효화).
                 // 신규 레이아웃 생성은 refreshModuleLayouts 의 created 분기가 담당한다.
                 $this->registerLayoutExtensions($module);
+                $this->reregisterActiveExtensionsToAllTemplates();
                 $this->refreshModuleLayouts($identifier, $preserveModified);
             }
 
@@ -4729,6 +4867,7 @@ class ModuleManager implements ModuleManagerInterface
      * @param  string  $operation  'install' | 'update'
      * @param  VendorMode|null  $previousMode  이전 설치 모드 (update 시 상속용)
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return VendorInstallResult
      *
      * @throws VendorInstallException
      */
@@ -4778,6 +4917,9 @@ class ModuleManager implements ModuleManagerInterface
 
     /**
      * DB에 기록된 이전 vendor 설치 모드를 조회합니다 (update 시 상속용).
+     *
+     * @param  string  $identifier
+     * @return ?VendorMode
      */
     private function getPreviousVendorMode(string $identifier): ?VendorMode
     {

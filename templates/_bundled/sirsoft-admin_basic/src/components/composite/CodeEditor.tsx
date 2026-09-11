@@ -40,6 +40,69 @@ function configureMonacoLoader(): boolean {
 /** 로더 설정은 앱 수명 동안 1회만 유효하다 (초기화 후 변경 불가) */
 let loaderConfigured = false;
 
+/**
+ * 서버 컴파일 마커를 Monaco 모델에 찍습니다 (없으면 지운다).
+ *
+ * 좌표는 1-base 라인·컬럼이다. 끝 좌표가 없으면 그 줄 끝까지 물결을 긋는다 — 서버는 태그의 시작
+ * 좌표만 알고, 한 글자짜리 물결은 눈에 띄지 않는다. 좌표가 0 이면(문서 전체 경고) 1행 1열로 접는다.
+ *
+ * @param editor 편집기 인스턴스 (미마운트면 아무것도 하지 않는다)
+ * @param monacoInstance Monaco 네임스페이스
+ * @param markers 찍을 마커
+ */
+function applyMarkers(
+  editor: monaco.editor.IStandaloneCodeEditor | null,
+  monacoInstance: Monaco | null,
+  markers: CodeEditorMarker[] | undefined,
+): void {
+  const model = editor?.getModel?.();
+
+  if (!editor || !monacoInstance?.editor?.setModelMarkers || !model) {
+    return;
+  }
+
+  const severity = monacoInstance.MarkerSeverity ?? { Error: 8, Warning: 4 };
+
+  monacoInstance.editor.setModelMarkers(
+    model,
+    MARKER_OWNER,
+    (markers ?? []).map((marker) => {
+      const line = Math.max(1, marker.line || 1);
+      const column = Math.max(1, marker.column || 1);
+      const endLine = marker.endLine ?? line;
+      const lineLength = typeof model.getLineMaxColumn === 'function' ? model.getLineMaxColumn(endLine) : column + 1;
+
+      return {
+        startLineNumber: line,
+        startColumn: column,
+        endLineNumber: endLine,
+        endColumn: marker.endColumn ?? Math.max(column + 1, lineLength),
+        message: marker.message,
+        severity: marker.severity === 'error' ? severity.Error : severity.Warning,
+        source: MARKER_OWNER,
+      };
+    }),
+  );
+}
+
+/**
+ * 서버 컴파일이 낸 오류·경고를 편집기 줄에 물결로 찍는 마커.
+ *
+ * `.g7.html` 검증은 Monaco 의 `html` 모드가 아니라 서버 컴파일러가 담당한다 — 커스텀 태그를 브라우저가
+ * 알 수 없으므로 마커는 컴파일 응답(`compile_error`·`markup_warnings`)에서 온다.
+ */
+export interface CodeEditorMarker {
+  line: number;
+  column: number;
+  endLine?: number;
+  endColumn?: number;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+/** 마커 소유자 식별자 — 같은 모델의 다른 마커(JSON 스키마 등)와 구분한다 */
+const MARKER_OWNER = 'g7-markup';
+
 export interface CodeEditorProps {
   value: string;
   onChange?: (event: { target: { value: string } }) => void;
@@ -47,6 +110,8 @@ export interface CodeEditorProps {
   height?: string;
   readOnly?: boolean;
   theme?: 'vs-dark' | 'vs-light';
+  /** 서버 컴파일 오류·경고 마커 (없거나 빈 배열이면 물결을 지운다) */
+  markers?: CodeEditorMarker[];
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -56,8 +121,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   height = '100%',
   readOnly = false,
   theme = 'vs-dark',
+  markers,
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
   const [failed, setFailed] = useState(false);
 
   if (!loaderConfigured) {
@@ -69,7 +136,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     monacoInstance: Monaco
   ) => {
     editorRef.current = editor;
+    monacoRef.current = monacoInstance;
     (window as any)?.G7Core?.assets?.clearFailure?.(FAILURE_ID);
+    applyMarkers(editor, monacoInstance, markers);
 
     // JSON 스키마 검증 설정
     if (language === 'json') {
@@ -121,6 +190,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       editorRef.current.updateOptions({ readOnly });
     }
   }, [readOnly]);
+
+  // 마커는 값이 바뀔 때마다 통째로 다시 찍는다 — 지난 컴파일의 물결이 고친 줄에 남지 않게.
+  useEffect(() => {
+    applyMarkers(editorRef.current, monacoRef.current, markers);
+  }, [markers]);
 
   // Monaco 확보 여부를 직접 확인한다. `<Editor>` 는 로드 실패를 알려주지 않고
   // 로딩 표시에서 멈추므로, 그대로 두면 "영영 불러오는 중" 화면이 남는다.

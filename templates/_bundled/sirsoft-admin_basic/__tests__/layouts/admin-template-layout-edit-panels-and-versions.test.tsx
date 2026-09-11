@@ -84,6 +84,11 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
 }
 
 describe('레이아웃 코드 편집 화면 — 패널 폭 규약', () => {
+    /**
+     * @scenario promise=panel_width, surface=layout_declaration
+     *
+     * @effects file_list_and_editor_keep_their_own_width_rules
+     */
     it('파일 목록과 편집기가 각자 폭 규약을 갖는다 (내용 길이로 폭이 갈리지 않는다)', () => {
         const layout = readLayout(LAYOUT);
 
@@ -105,11 +110,16 @@ describe('레이아웃 코드 편집 화면 — 패널 폭 규약', () => {
         expect(editorClass, 'min-w-0 이 없으면 코드의 긴 줄이 편집기 최소폭을 밀어 올린다').toContain('min-w-0');
     });
 
+    /**
+     * @scenario promise=panel_width, surface=layout_declaration
+     *
+     * @effects long_file_name_wraps_instead_of_widening_the_list
+     */
     it('파일명과 설명이 줄바꿈되어 목록 폭을 넘지 않는다', () => {
         const layout = readLayout(LAYOUT);
 
-        // 파일명 노드 — `{{file.name}}.json`
-        const nameNode = findNode(layout, (n) => typeof n.text === 'string' && n.text.includes('{{file.name}}.json'));
+        // 파일명 노드 — `{{file.name}}.g7.html` (편집기 정본이 HTML 이다, #476)
+        const nameNode = findNode(layout, (n) => typeof n.text === 'string' && n.text.includes('{{file.name}}.g7.html'));
         expect(nameNode, '파일명 노드를 찾지 못했다').toBeTruthy();
         expect(
             String(nameNode.props?.className ?? ''),
@@ -130,6 +140,11 @@ describe('레이아웃 코드 편집 화면 — 패널 폭 규약', () => {
 });
 
 describe('레이아웃 코드 편집 화면 — 저장 후 목록 갱신', () => {
+    /**
+     * @scenario promise=list_refresh_after_save, surface=layout_declaration
+     *
+     * @effects successful_save_refetches_both_detail_and_list
+     */
     it('저장 성공 시 상세와 목록을 모두 다시 부른다', () => {
         const layout = readLayout(LAYOUT);
 
@@ -152,6 +167,11 @@ describe('레이아웃 코드 편집 화면 — 저장 후 목록 갱신', () =>
 });
 
 describe('레이아웃 코드 편집 화면 — 버전 이력 상한', () => {
+    /**
+     * @scenario promise=version_limit, surface=layout_declaration
+     *
+     * @effects version_query_carries_a_limit_and_resets_on_open
+     */
     it('버전 목록 조회에 limit 이 붙고 열 때마다 첫 묶음으로 초기화된다', () => {
         const layout = readLayout(LAYOUT);
 
@@ -171,6 +191,11 @@ describe('레이아웃 코드 편집 화면 — 버전 이력 상한', () => {
         expect(openSequence.some((n) => n.params.layoutVersionLimit === VERSION_PAGE_SIZE)).toBe(true);
     });
 
+    /**
+     * @scenario promise=version_limit, surface=layout_declaration
+     *
+     * @effects load_more_widens_the_limit_one_page_at_a_time_and_stops_at_the_server_cap
+     */
     it('더 보기 버튼이 상한을 한 묶음씩 넓히고 서버 상한에서 멈춘다', () => {
         const modal = readLayout(VERSION_MODAL);
 

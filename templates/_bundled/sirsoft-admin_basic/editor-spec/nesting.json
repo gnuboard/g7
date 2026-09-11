@@ -171,7 +171,10 @@
         "NotificationCenter",
         "ColumnSelector",
         "AdminSidebar",
-        "AdminFooter"
+        "AdminFooter",
+        "CodeEditor",
+        "I",
+        "SlotContainer"
       ]
     },
     "Section": {
@@ -235,7 +238,8 @@
       "accepts": [
         "Span",
         "Img",
-        "Icon"
+        "Icon",
+        "I"
       ]
     },
     "Ul": {

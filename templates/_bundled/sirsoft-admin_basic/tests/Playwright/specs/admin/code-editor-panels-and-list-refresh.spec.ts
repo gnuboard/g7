@@ -37,10 +37,15 @@ async function openCodeEditor(page: Page, token: string): Promise<void> {
   await page.goto('/admin/templates/sirsoft-admin_basic/edit');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   await page.waitForSelector('#file_list_card', { timeout: 30_000 });
-  await expect(page.locator('#editor_card').getByText(/\.json$/).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('#editor_card').getByText(/\.g7\.html$/).first()).toBeVisible({ timeout: 30_000 });
 }
 
 test.describe('@sirsoft-admin_basic 코드 편집기 패널 폭', () => {
+  /**
+   * @scenario promise=panel_width, surface=browser
+   *
+   * @effects editor_pane_is_wider_than_the_file_list_in_the_browser
+   */
   test('편집기가 파일 목록보다 넓고, 긴 파일명이 목록 폭을 넘지 않는다', async ({ page, layoutEditToken }) => {
     await openCodeEditor(page, layoutEditToken);
 
@@ -66,6 +71,11 @@ test.describe('@sirsoft-admin_basic 코드 편집기 패널 폭', () => {
 });
 
 test.describe('@sirsoft-admin_basic 코드 편집기 저장 후 목록 갱신', () => {
+  /**
+   * @scenario promise=list_refresh_after_save, surface=browser
+   *
+   * @effects successful_save_refetches_the_file_list_in_the_browser
+   */
   test('저장이 성공하면 파일 목록을 다시 부른다', async ({ page, layoutEditToken }) => {
     const calls: string[] = [];
 

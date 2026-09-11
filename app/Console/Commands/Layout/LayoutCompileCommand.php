@@ -2,8 +2,11 @@
 
 namespace App\Console\Commands\Layout;
 
+use App\Support\LayoutMarkup\CompileContext;
+use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutCorpus;
+use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\LayoutMarkupDecompiler;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
@@ -16,7 +19,8 @@ use Illuminate\Support\Facades\File;
  * 용어(설계 정의): **compile = JSON → HTML**(소스 산출), **decompile = HTML → JSON**(설치·검증).
  * 이관(S10~)이 원본 `.json` 을 `.g7.html` 소스 파일로 옮길 때 쓰는 생성 커맨드다.
  *
- * 두 모드다. **컴파일**(기본)은 `.json` 을 짝 `.g7.html` 로 만들어 이관 소스 파일을 산출한다.
+ * 두 모드다. **컴파일**(기본)은 `.json` 을 짝 `.g7.html` 로 만들어 이관 소스 파일을 산출한다 — 기록 전에
+ * 산출을 프로덕션 진입점으로 되읽어 실패하면 쓰지 않는다(자기검사).
  * **왕복 검증**(`--roundtrip`)은 산출을 쓰지 않고 `decompile(compile(json)) ≡ json` 을 전량 확인한다 —
  * 계획서 DoD "왕복 불일치 0" 의 기계 오라클이자, 컴파일러·역변환기의 표면 커버리지를 봉인하는 유일한 계량이다.
  *
@@ -112,7 +116,7 @@ class LayoutCompileCommand extends Command
                 continue;
             }
 
-            $result = $harness->verify($json, $registry, $file);
+            $result = $harness->verify($json, $registry, $file, $this->resolveContext($file));
 
             if (! $result['ok']) {
                 $failures[] = ['file' => $file, 'result' => $result];
@@ -139,7 +143,6 @@ class LayoutCompileCommand extends Command
      *
      * @param  array<string, int>  $budget  탈출 키 → 건수
      * @param  int  $filesWithEscape  탈출을 쓴 파일 수
-     *
      * @return void
      */
     private function reportBudget(array $budget, int $filesWithEscape): void
@@ -260,6 +263,19 @@ class LayoutCompileCommand extends Command
 
             $markup = (new LayoutMarkupDecompiler($registry))->decompile($json);
             $out = $this->option('out') ?? preg_replace('/\.json$/i', '.g7.html', $file);
+
+            // 자기검사 — 산출 마크업을 기록하기 전에 **프로덕션 진입점**으로 되읽는다. 설치·편집기가
+            // 거부할 소스를 커맨드가 써 두면 잘못된 방출이 `--check` 까지 잠복한다(named_actions 주석
+            // 중복이 그 형태였다). 실패하면 기록하지 않고 실패로 센다.
+            try {
+                (new LayoutMarkupCompiler($registry))->compile($markup, $out, $this->resolveContext($file));
+            } catch (CompileError $error) {
+                $this->error("자기검사 실패 — 산출을 기록하지 않습니다: {$error->getMessage()}");
+                $failed++;
+
+                continue;
+            }
+
             File::put($out, $markup);
             $this->line("<info>✓</info> {$out}");
         }
@@ -279,6 +295,17 @@ class LayoutCompileCommand extends Command
     private function resolveRegistry(string $file): ?ComponentRegistry
     {
         return $this->resolver->registryFor($file, $this->option('template') ? (string) $this->option('template') : null);
+    }
+
+    /**
+     * 파일 경로에서 검증·lint 문맥을 만듭니다 (왕복 오라클이 프로덕션 진입점을 타므로 필요).
+     *
+     * @param  string  $file  `.json` 경로
+     * @return CompileContext 컴파일 문맥
+     */
+    private function resolveContext(string $file): CompileContext
+    {
+        return $this->resolver->contextFor($file, $this->option('template') ? (string) $this->option('template') : null);
     }
 
     /**

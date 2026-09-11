@@ -50,6 +50,10 @@ final class NodeCompiler
         'data-track-changes' => ['key' => 'trackChanges', 'type' => 'boolean'],
         'data-debounce' => ['key' => 'debounce', 'type' => 'integer'],
         'data-blur-until-loaded' => ['key' => 'blur_until_loaded', 'type' => 'expression'],
+        // 설치가 `<include src>` 조각을 **노드 자리에** 인라인하며 남긴 조각 이름(DB 행에만 있다).
+        // 소스 파일에는 나타나지 않지만 편집기는 설치본을 열므로, 그 문서를 다시 소스로 되돌릴
+        // 자리가 필요하다 — `<modal name>`·`<partial name>` 이 같은 키를 나르는 것과 같은 규율이다.
+        'data-layout-name' => ['key' => 'layout_name', 'type' => 'string'],
     ];
 
     /**
@@ -128,6 +132,7 @@ final class NodeCompiler
         'trackChanges' => 'data-track-changes',
         'debounce' => 'data-debounce',
         'slotOrder' => 'data-slot-order',
+        'layout_name' => 'data-layout-name',
     ];
 
     /**
@@ -250,7 +255,7 @@ final class NodeCompiler
      * @var array<int, string>
      */
     private const KEY_ORDER = [
-        'comment', 'id', 'type', 'name', 'if', 'conditions', 'iteration', 'slot', 'slotOrder',
+        'comment', 'layout_name', 'id', 'type', 'name', 'if', 'conditions', 'iteration', 'slot', 'slotOrder',
         'dataKey', 'trackChanges', 'debounce', 'classMap', 'blur_until_loaded',
         'isolatedState', 'isolatedScopeId', 'sortable', 'itemTemplate', 'component_layout',
         'responsive', 'lifecycle', 'onComponentEvent', 'actions',
@@ -764,6 +769,7 @@ final class NodeCompiler
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  array<string, mixed>  $props  props (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 표기 규칙을 위반한 경우
      */
@@ -843,6 +849,7 @@ final class NodeCompiler
      * @param  int  $line  오류 좌표 라인
      * @param  int  $column  오류 좌표 컬럼
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 같은 자리를 두 표기가 다투는 경우
      */
@@ -877,6 +884,7 @@ final class NodeCompiler
      * @param  bool  $typed  `:` 타입 리터럴 표기 여부
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 지시 속성의 값 표기가 규칙을 벗어난 경우
      */
@@ -931,6 +939,7 @@ final class NodeCompiler
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  array<string, mixed>  $props  props (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 구조 태그 표기가 규칙을 벗어난 경우
      */
@@ -1384,6 +1393,7 @@ final class NodeCompiler
      *
      * @param  MarkupAttribute  $attribute  속성
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 표준 불리언 속성에 리터럴 값을 표기한 경우
      */
@@ -1407,6 +1417,7 @@ final class NodeCompiler
      *
      * @param  MarkupAttribute  $attribute  속성
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 외래 관용구인 경우
      */
@@ -1437,6 +1448,7 @@ final class NodeCompiler
      *
      * @param  MarkupAttribute  $attribute  속성
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 노드 키 이름을 속성으로 쓴 경우
      */
@@ -1457,6 +1469,7 @@ final class NodeCompiler
      *
      * @param  MarkupAttribute  $attribute  속성
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 지원하지 않는 속성인 경우
      */
@@ -1523,6 +1536,7 @@ final class NodeCompiler
      * @param  array<string, mixed>  $node  노드
      * @param  string  $key  노드 키
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 이미 지정된 키인 경우
      */

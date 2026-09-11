@@ -62,14 +62,17 @@ const diagnosticRules: DiagnosticRule[] = [
             return false;
         },
         probability: 0.85,
-        solution: 'G7Core.state.get()._global 사용하여 최신 상태 참조',
+        solution: 'G7Core.state.get() 사용하여 최신 상태 참조 (반환값이 곧 _global 이다 — ._global 을 덧붙이지 말 것)',
         docLink: 'troubleshooting-state.md#stale-closure',
         codeExample: `
 // ❌ 문제: 클로저가 이전 상태 캡처
 "body": { "email": "{{_global.email}}" }
 
-// ✅ 해결: 최신 상태 참조
+// ❌ 함정: get() 결과에 ._global 을 또 붙이면 언제나 undefined
 "body": { "email": "{{G7Core.state.get()._global.email}}" }
+
+// ✅ 해결: get() 반환값이 곧 _global 의 내용물이다
+"body": { "email": "{{G7Core.state.get().email}}" }
         `,
     },
     {

@@ -41,6 +41,21 @@ class LayoutFragmentSourceHelper
     private static array $readCache = [];
 
     /**
+     * fragment 소스 경로에서 조각 식별자(`fragment_key`)를 만듭니다 — 기본 이름에서 `.g7.html`/`.json` 을 뗀 것.
+     *
+     * 같은 확장이 같은 대상(`target_layout`/`extension_point`)에 조각을 둘 보낼 수 있으므로 DB 행은
+     * 대상만으로 갈리지 않는다. 짝(`x.g7.html`·`x.json`)은 같은 논리 조각이라 같은 키다. 파생 규칙은
+     * 이 한 벌뿐이다 — 등록 경로마다 따로 만들면 갈린다.
+     *
+     * @param  string  $path  fragment 소스 경로
+     * @return string 조각 식별자
+     */
+    public static function fragmentKey(string $path): string
+    {
+        return (string) preg_replace('/\.(?:g7\.html|json)$/i', '', basename(str_replace('\\', '/', $path)));
+    }
+
+    /**
      * fragment 정의 파일 하나를 읽습니다.
      *
      * 호출처는 대개 "있으면 쓰고 없으면 아무것도 하지 않는" 자리라, 부재·파싱 실패는 예외 대신
@@ -68,10 +83,26 @@ class LayoutFragmentSourceHelper
      */
     public static function readDirectory(string $extensionsPath): array
     {
-        return array_column(
-            (new self)->loadFragmentDefinitions($extensionsPath, [], ['fragment_dir' => $extensionsPath]),
-            'data'
-        );
+        return array_column(self::readDirectoryKeyed($extensionsPath), 'data');
+    }
+
+    /**
+     * fragment 디렉토리의 정의를 **조각 식별자와 함께** 읽습니다.
+     *
+     * 같은 확장이 같은 대상(`target_layout`/`extension_point`)에 조각을 둘 보낼 수 있어 DB 행은
+     * 대상만으로 갈리지 않는다 — 그래서 `registerExtension()` 은 `fragment_key` 를 받는다. 키 없는
+     * 호출도 호환 경로로 동작하지만(살아 있는 단일 행의 키를 잇는다), 같은 대상에 행이 둘 이상이면
+     * 어느 조각인지 알 수 없어 **아무것도 하지 않는다**. 그 모호성이 생길 수 있는 자리는 파일에서
+     * 바로 키를 얻어 넘기는 편이 옳다.
+     *
+     * `readDirectory()` 는 이 결과에서 `data` 만 뽑은 것이다 — 새로 쓰는 자리는 이쪽을 쓴다.
+     *
+     * @param  string  $extensionsPath  확장 fragment 디렉토리 경로
+     * @return array<int, array{path: string, data: array<string, mixed>, key: string}> 읽기에 성공한 정의만
+     */
+    public static function readDirectoryKeyed(string $extensionsPath): array
+    {
+        return (new self)->loadFragmentDefinitions($extensionsPath, [], ['fragment_dir' => $extensionsPath]);
     }
 
     /**

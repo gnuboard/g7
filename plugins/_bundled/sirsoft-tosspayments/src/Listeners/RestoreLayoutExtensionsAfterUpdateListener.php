@@ -45,6 +45,7 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void
      */
     public function handle(...$args): void {}
 
@@ -52,6 +53,7 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
      * 업데이트된 플러그인이 자신이면 오버레이 확장을 재등록합니다.
      *
      * @param  string  $identifier  업데이트된 플러그인 식별자
+     * @return void
      */
     public function restoreCurrentExtensionsAfterUpdate(string $identifier): void
     {
@@ -61,7 +63,8 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
 
         $service = app(LayoutExtensionService::class);
 
-        foreach ($this->currentOverlayExtensions() as $extensionData) {
+        foreach ($this->currentOverlayExtensions() as $fragment) {
+            $extensionData = $fragment['data'];
             $targetLayout = $extensionData['target_layout'] ?? null;
             if (! is_string($targetLayout) || $targetLayout === '') {
                 continue;
@@ -73,7 +76,8 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
                     LayoutSourceType::Plugin,
                     self::PLUGIN_IDENTIFIER,
                     $templateId,
-                    true
+                    true,
+                    $fragment['key']
                 );
 
                 if ($result !== null) {
@@ -86,17 +90,20 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
     /**
      * resources/extensions 의 오버레이 확장 정의를 모두 읽습니다.
      *
-     * 수집·짝 판별·읽기는 코어가 맡는다 ({@see LayoutFragmentSourceHelper::readDirectory()}) —
+     * 수집·짝 판별·읽기는 코어가 맡는다 ({@see LayoutFragmentSourceHelper::readDirectoryKeyed()}) —
      * 여기서 `glob('*.json')` 하면 소스(`.g7.html`)이 통째로 보이지 않아, 소스만 고친 확장점은
      * 업데이트 복원에서 조용히 빠진다.
      *
-     * @return array<int, array<string, mixed>> 확장 정의 목록
+     * 조각 식별자(`fragment_key`)까지 함께 받는다. 같은 대상에 조각이 둘이면 키 없는 등록은 어느
+     * 행인지 가릴 수 없어 아무것도 하지 않으므로, 파일에서 바로 얻은 키를 그대로 넘긴다.
+     *
+     * @return array<int, array{path: string, data: array<string, mixed>, key: string}> 확장 정의 목록
      */
     private function currentOverlayExtensions(): array
     {
         return array_values(array_filter(
-            LayoutFragmentSourceHelper::readDirectory(dirname(__DIR__, 2).'/resources/extensions'),
-            static fn (array $extensionData): bool => isset($extensionData['target_layout'])
+            LayoutFragmentSourceHelper::readDirectoryKeyed(dirname(__DIR__, 2).'/resources/extensions'),
+            static fn (array $fragment): bool => isset($fragment['data']['target_layout'])
         ));
     }
 

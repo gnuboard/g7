@@ -158,6 +158,30 @@ class LayoutLinterTest extends LayoutMarkupTestCase
         $this->assertNoLint(LayoutMarkupLintCode::NestingViolation, $json, $context);
     }
 
+    /**
+     * 확장점은 컴포넌트가 아니므로 accepts 판정 대상이 아니다.
+     *
+     * `type: extension_point` 노드의 `name` 은 팔레트 컴포넌트명이 아니라 **확장 지점 이름**
+     * (`user_global_overlay`·`html_content` 등)이라 accepts 에 있을 수가 없고, 있어서도 안 된다 —
+     * 확장이 늘 때마다 템플릿의 nesting 목록을 고쳐야 하기 때문이다. 걸러내지 않으면
+     * `Div 는 자식으로 user_global_overlay 를 …` 같은 거짓 경고가 남는다(실측: 번들 전수 14건).
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects extension_point_child_is_not_nesting_checked
+     */
+    public function test_extension_point_child_does_not_warn(): void
+    {
+        $json = ['components' => [
+            ['type' => 'basic', 'name' => 'Div', 'children' => [
+                ['type' => 'extension_point', 'name' => 'user_global_overlay'],
+            ]],
+        ]];
+        $context = new CompileContext(nestingRules: ['Div' => ['Span']]);
+
+        $this->assertNoLint(LayoutMarkupLintCode::NestingViolation, $json, $context);
+    }
+
     // ---------------------------------------------------------------------
     // ④ responsive breakpoint 혼용
     // ---------------------------------------------------------------------

@@ -22,6 +22,8 @@
                   <success>
                     <set-state target="global" :isRestoringExtension="false"/>
                     <toast type="success" message="$t:admin.templates.modals.extension_version_history.restore_success"/>
+                    <!-- 버퍼는 재조회 응답의 init-global 이 갈아 끼운다 — 여기서 `current_extension?.data` 를 재독하면 재조회 전 값이다(레이아웃 판본 복원과 같은 이유). -->
+                    <set-state target="global" :markupCompileError="null" :jsonViewStale="false"/>
                     <refetch-data-source dataSourceId="current_extension"/>
                     <refetch-data-source dataSourceId="extension_versions"/>
                     <refetch-data-source dataSourceId="layout_extensions"/>

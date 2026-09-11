@@ -102,6 +102,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
      */
     private function lintMisplacedActionParams(array $json, ?string $path, array &$warnings): void
     {
@@ -163,6 +164,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
      */
     private function lintUnsupportedHoistProps(array $json, ?string $path, array &$warnings): void
     {
@@ -211,6 +213,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
      */
     private function lintSwitchValuePlacement(array $json, ?string $path, array &$warnings): void
     {
@@ -240,6 +243,7 @@ final class LayoutLinter
      *
      * @param  mixed  $value  순회 대상
      * @param  array<int, array<string, mixed>>  $actions  액션 목록 (참조)
+     * @return void
      */
     private function walkForActions(mixed $value, array &$actions): void
     {
@@ -263,6 +267,7 @@ final class LayoutLinter
      * @param  CompileContext  $context  문맥 (템플릿 등록 핸들러)
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
      */
     private function lintUnregisteredHandlers(array $json, CompileContext $context, ?string $path, array &$warnings): void
     {
@@ -311,6 +316,7 @@ final class LayoutLinter
      * @param  CompileContext  $context  문맥 (nesting 규칙)
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
      */
     private function lintNesting(array $json, CompileContext $context, ?string $path, array &$warnings): void
     {
@@ -331,6 +337,13 @@ final class LayoutLinter
 
             foreach ($node['children'] ?? [] as $child) {
                 $childName = is_array($child) ? ($child['name'] ?? null) : null;
+
+                // 확장점은 컴포넌트가 아니다 — `name` 이 팔레트 컴포넌트명이 아니라 **확장 지점 이름**이라
+                // accepts 에 있을 수가 없다(있어서도 안 된다: 확장이 늘 때마다 템플릿 목록을 고쳐야 한다).
+                // 걸러내지 않으면 `Div 는 자식으로 user_global_overlay 를 …` 같은 거짓 경고가 남는다.
+                if (is_array($child) && ($child['type'] ?? null) === 'extension_point') {
+                    continue;
+                }
 
                 if (is_string($childName) && ! in_array($childName, $accepts, true)) {
                     $key = $parentName.'>'.$childName;
@@ -355,6 +368,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
      */
     private function lintResponsiveMix(array $json, ?string $path, array &$warnings): void
     {
@@ -376,6 +390,7 @@ final class LayoutLinter
      * @param  string  $rootKind  문서 봉투
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
      */
     private function lintStandaloneGlobalHost(array $json, string $rootKind, ?string $path, array &$warnings): void
     {
@@ -436,6 +451,7 @@ final class LayoutLinter
      *
      * @param  mixed  $value  순회 대상
      * @param  array<int, string>  $handlers  handler 목록 (참조)
+     * @return void
      */
     private function walkForHandlers(mixed $value, array &$handlers): void
     {
@@ -471,6 +487,7 @@ final class LayoutLinter
      *
      * @param  mixed  $value  순회 대상
      * @param  array<int, array<string, mixed>>  $nodes  노드 목록 (참조)
+     * @return void
      */
     private function walkForNodes(mixed $value, array &$nodes): void
     {
@@ -492,6 +509,7 @@ final class LayoutLinter
      *
      * @param  mixed  $value  순회 대상
      * @param  array<string, bool>  $breakpoints  breakpoint 키 집합 (참조)
+     * @return void
      */
     private function collectResponsiveBreakpoints(mixed $value, array &$breakpoints): void
     {

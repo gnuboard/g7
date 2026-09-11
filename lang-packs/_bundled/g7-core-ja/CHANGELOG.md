@@ -12,6 +12,8 @@
 
 - 레이아웃 확장 정의 검사 문구 일본어 번역 추가 — overlay 확장에 필요한 항목을 알려 주는 안내입니다.
 
+- 레이아웃 코드 편집기의 HTML 저장·변환에서 쓰는 검사 문구 일본어 번역 추가 — 마크업 컴파일 실패(`validation.layout.content.markup_compile_failed`·`validation.layout_extension.content.markup_compile_failed`), 변환 요청의 `markup` 필수 안내, 그리고 `<modal src>` 에 `name` 을 함께 쓴 경우의 안내(`exceptions.layout_markup.modal_name_with_src`)입니다.
+
 - 화면의 일부 조각을 불러오지 못했을 때의 오류 안내 문구 일본어 번역 추가 (`exceptions.layout.invalid_include_markup`) — 조각 파일이 없거나 내용이 깨졌을 때 어느 조각이 왜 실패했는지 알리는 안내가 일본어 로케일에서 자연스럽게 표시됩니다.
 
 - 확장이 화면에 끼워 넣는 조각(오버레이)의 검증 안내 문구 일본어 번역 갱신 (`validation.layout_extension.contribution_required`) — 종전에는 주입 목록이 반드시 있어야 한다고 안내했으나, 실제로는 모달·데이터·스크립트·초기 동작 중 하나만 있어도 성립합니다. 안내 문구를 그 기준에 맞춰 바로잡았고, 더 이상 쓰이지 않는 옛 안내는 정리했습니다.

@@ -409,6 +409,12 @@ enum LayoutMarkupErrorCode: string
     case ModalSrcWithBody = 'modal_src_with_body';
 
     /**
+     * `<modal src>` 에 `name` 을 함께 씀 — `name` 은 설치가 조각을 인라인할 때 붙는 `layout_name` 의
+     * 표현이라 인라인 본문에만 자리가 있다(참조 항목은 조각 파일이 이름을 갖는다).
+     */
+    case ModalNameWithSrc = 'modal_name_with_src';
+
+    /**
      * 조각 참조(`<include src>`·`<modal src>`)가 소스 확장자(`.g7.html`)를 쓰지 않음.
      *
      * 소스는 소스를 가리키고, 산출 JSON 의 `.json` 표기는 컴파일러가 경계에서 만든다

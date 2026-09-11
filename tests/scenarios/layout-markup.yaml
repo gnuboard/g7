@@ -422,6 +422,8 @@ effects:
   - module_complete_layout_is_not_warned
   - disallowed_child_is_warned
   - empty_accepts_parent_is_not_checked
+  # 확장점은 컴포넌트가 아니라 accepts 판정 대상이 아니다 — 거르지 않으면 번들 전수 14건이 거짓 경고였다.
+  - extension_point_child_is_not_nesting_checked
   - portable_mixed_with_split_presets_is_warned
   - consistent_breakpoints_are_not_warned
   - standalone_layout_firing_toast_without_host_is_warned
@@ -527,6 +529,9 @@ effects:
   - fragment_helper_directory_read_includes_markup_only
   - fragment_helper_directory_read_dedupes_pairs
   - fragment_helper_directory_read_returns_empty_when_absent
+  # #476 C13 — 디렉토리 수집이 조각 식별자를 함께 돌려준다. 확장이 키 없이 등록하면 같은 대상에
+  # 행이 둘일 때 어느 조각인지 가릴 수 없어 아무것도 하지 않으므로, 파일에서 바로 얻은 키를 넘긴다.
+  - fragment_helper_directory_read_carries_fragment_key
   # 사본 재발 가드 — 판정을 표기(후행 슬래시)에 의존하지 않게 넓히고 종료 게이트(--filter=LayoutMarkup)
   # 안으로 옮겼다. 최초 판본은 게이트 밖에 있었고, 디렉토리 단위 사본 3건을 구조적으로 못 봤다.
   - extension_sources_read_fragments_through_core_helper
@@ -868,6 +873,13 @@ effects:
   - empty_map_stays_object_and_empty_list_stays_array
   - extension_badge_injection_is_idempotent_and_scoped
   - overlay_extensions_are_restored_after_plugin_update
+  # #476 C13 — 업데이트 복원이 조각 파일 이름을 식별자로 넘긴다. 설치 경로와 키가 갈리면 같은 대상에
+  # 행이 둘 생기고, 그 뒤로는 키 없는 등록이 어느 행인지 가리지 못해 조용히 멈춘다.
+  - restored_overlay_uses_the_file_derived_fragment_key
+  # 복원 리스너의 배선 자체 — 동기 구독 · 선언 실재 · 남의 업데이트 무시
+  - restore_listener_subscribes_to_plugin_updated_as_sync_action
+  - plugin_declares_the_layout_extension_restore_listener
+  - restore_listener_ignores_other_plugins_updates
   # 소스 정형 — 직렬화기의 inline 규칙을 「텍스트 앞뒤 공백이 의미를 가질 때」로 좁혔다.
   # 종전에는 글자가 있으면 서브트리 전체를 한 줄로 찍어 액션을 실은 버튼 하나가 1,800자를 넘었다.
   # 무손실 근거는 `normalizeText` 가 텍스트 앞뒤의 개행+공백만 걷어낸다는 것이고, 코퍼스 실측으로
@@ -888,6 +900,63 @@ effects:
   - unconsumed_partial_key_is_absent_from_every_layout
   - deleted_orphan_layouts_stay_deleted
   - bare_node_partial_declares_meta_is_partial
+
+  # --- #476 코드 편집기 HTML 기본화가 이 트랙에 얹은 컴파일 축.
+  #
+  # 편집기 정본이 `.g7.html` 이 되면서 **편집기 저장 경로가 이 트랙의 컴파일 파사드를 탄다**.
+  # 그래서 그 경로의 테스트 5파일은 클래스명이 게이트 필터 `LayoutMarkup` 에 걸려 여기서 돌고,
+  # `GateMembershipGuardTest` 의 두 방향(선언→실행 · 실행→선언)이 등재를 요구한다.
+  # 편집기 표면(탭·마커·핸들러·브라우저)의 조합 축은 `tests/scenarios/code-editor-markup-default.yaml`
+  # 이 따로 소유한다 — 그쪽 축은 갈래×입력×동작이고 이 트랙 축(compile_unit×source_health)과 다르다.
+  #
+  # 편집기 API 계약 (LayoutMarkupApiTest)
+  - with_markup_returns_decompiled_markup_and_lint_fields
+  - markup_save_compiles_to_json_and_bumps_lock_version
+  - markup_compile_error_returns_422_with_position
+  - markup_preview_accepts_format_markup
+  - layout_preview_rejects_invalid_markup_with_422
+  - layout_markup_compile_rejects_invalid_markup_with_422
+  - markup_compile_endpoint_returns_json_or_422_and_needs_only_read_permission
+  - extension_markup_save_persists_compiled_json
+  - extension_markup_save_is_symmetric
+  - extension_preview_accepts_format_markup
+  - extension_preview_rejects_invalid_markup_with_422
+  - extension_markup_compile_returns_json_for_valid_fragment
+  - extension_markup_compile_rejects_invalid_fragment_with_422
+  # 저장 왕복이 **본문을 바꾸지 않는다** — 아무것도 고치지 않고 저장만 해도 사라지던 것들.
+  # 주석은 `validated()` 가 규칙 없는 키를 떨궈서, 빈 map 은 Eloquent 캐스트가 `{}`/`[]` 를
+  # 뭉개서 사라졌다. 둘 다 응답 200 이라 화면으로는 보이지 않던 형태다.
+  - markup_save_preserves_global_header_comments_and_order
+  - with_markup_preserves_empty_map_vs_empty_list
+  # 편집기 변환 서비스 (LayoutMarkupService)
+  - installed_json_round_trips_through_markup_with_the_template_registry
+  - unrepresentable_keys_are_reported_as_escapes
+  - compile_error_is_described_with_code_and_position
+  - unknown_template_has_no_registry
+  - resolver_builds_registry_and_context_from_template_identifier
+  # 설치본 점검 커맨드 (layout:check-installed)
+  - installed_rows_that_round_trip_pass_with_exit_zero
+  - row_rejected_by_production_compile_fails_the_gate
+  - round_trip_mismatch_fails_the_gate
+  - inapplicable_registration_fails_the_gate
+  - missing_and_orphan_fragments_fail_the_gate
+  # 조각 등록 정책 (fragment_key · 적용 필터 · 고아 정리)
+  - fragment_is_registered_only_where_its_host_exists
+  - two_fragments_for_the_same_target_keep_two_rows
+  - fragment_is_compiled_with_the_target_templates_registry
+  - late_host_is_filled_by_reregistration_and_orphans_are_removed
+  # layout:compile 자기 점검 (쓰기 전에 프로덕션 컴파일로 되돌려 본다)
+  - compile_command_writes_markup_that_passes_production_compile
+  - compile_command_refuses_to_write_markup_that_production_compile_rejects
+  # `<modal name>` 문법 (C9) · named_actions 주석 귀속
+  - inline_modal_name_compiles_to_layout_name
+  - modal_src_rejects_name_attribute
+  - named_action_comment_is_emitted_once_and_survives_production_compile
+  - inline_modal_layout_name_round_trips_as_modal_name_attribute
+  # 설치가 조각을 인라인하며 남긴 두 키 — 노드 자리 `layout_name` 과 모달 본문 `data_sources`.
+  # 소스 파일에는 없고 DB 행에만 있어 코퍼스 게이트가 구조적으로 보지 못했다(설치본 점검이 잡았다).
+  - inline_modal_data_sources_round_trip_as_body_data_source_children
+  - inlined_node_layout_name_round_trips_as_data_layout_name
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #
@@ -1070,3 +1139,12 @@ test_files:
   # 파일 이름을 `LayoutServing…` 으로 둔 것은 이것이 SEO 설정이 아니라 **레이아웃 서빙 계약**을 재는
   # 시험이기 때문이고, 그래서 기존 게이트 필터(`LayoutServing`)에 그대로 든다.
   - tests/Feature/Seo/LayoutServingSeoInvarianceTest.php
+  # #476 — 편집기 정본이 `.g7.html` 이 되면서 이 트랙 파사드를 타게 된 다섯 파일.
+  # 클래스명이 전부 게이트 필터 `LayoutMarkup` 에 걸려 **이미 게이트에서 돌고 있었는데** 등재가
+  # 없었다(`GateMembershipGuardTest::test_every_gate_resident_test_is_declared_in_manifest` 가 red
+  # 로 잡았다). 편집기 표면의 조합 축은 `code-editor-markup-default.yaml` 이 따로 소유한다.
+  - tests/Feature/Api/Admin/LayoutMarkupApiTest.php
+  - tests/Unit/Services/LayoutMarkupServiceTest.php
+  - tests/Feature/LayoutMarkup/LayoutCheckInstalledCommandTest.php
+  - tests/Feature/LayoutMarkup/FragmentRegistrationPolicyTest.php
+  - tests/Feature/LayoutMarkup/LayoutCompileSelfCheckTest.php

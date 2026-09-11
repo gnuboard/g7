@@ -8,8 +8,8 @@ use App\Enums\MarkupTokenType;
  * 왕복 하네스 — `compile(decompile(json)) ≡ json` 을 검증하는 S9 의 기계 오라클.
  *
  * 역변환기의 정확성은 이 왕복으로만 봉인된다: JSON 을 `.g7.html` 로 되돌리고(decompile→serialize),
- * 그 소스를 다시 컴파일해(tokenize→tree→document) 원본과 **정규화 후 deep-equal** 을 본다. 강검증·lint
- * 는 왕복 구조 검증과 무관하므로 건너뛰고 순수 컴파일 사슬만 태운다.
+ * 그 소스를 **프로덕션 진입점**(LayoutMarkupCompiler — 주석 귀속·강검증·lint 포함)으로 다시 컴파일해
+ * 원본과 **정규화 후 deep-equal** 을 본다. 설치가 거부할 산출을 오라클이 승인하면 게이트가 사각이 된다.
  *
  * **정규화 = 키 순서 무관, 리스트 순서 유지.** 실 레이아웃은 저자 임의 순서라 top-level 키 순서가
  * 컴파일러 KEY_ORDER 와 다르다(예: 손소스 순서 vs `order()`). 객체 키는 재귀 ksort 로 순서를 지우고
@@ -37,29 +37,36 @@ final class LayoutMarkupRoundTrip
     /**
      * JSON 레이아웃 하나의 왕복을 검증합니다.
      *
+     * 되컴파일은 **프로덕션 진입점**({@see LayoutMarkupCompiler::compile()})을 탄다 — 주석 귀속 검사·
+     * 강검증·lint 까지 설치 경로와 같은 사슬이다. 종전에는 `DocumentCompiler` 를 직접 불러 그 셋을
+     * 건너뛰었고, 그래서 역변환기가 같은 주석을 두 자리에 찍는 결함(named_actions)이 코퍼스 16건에서
+     * 초록으로 통과했다 — 오라클이 설치보다 관대하면 게이트는 설치가 거부할 산출을 승인한다.
+     *
      * @param  array<string, mixed>  $json  원본 JSON 레이아웃
      * @param  ComponentRegistry  $registry  대상 레지스트리
      * @param  string|null  $path  경로 (오류 메시지용)
-     * @return array{ok: bool, error: string|null, markup: string|null, source: array<string, mixed>, recompiled: array<string, mixed>|null}
+     * @param  CompileContext|null  $context  검증·lint 문맥 (없으면 기본 문맥 = config 정책만)
+     * @return array{ok: bool, error: string|null, markup: string|null, source: array<string, mixed>, recompiled: array<string, mixed>|null, warnings: array<int, LintWarning>}
      */
-    public function verify(array $json, ComponentRegistry $registry, ?string $path = null): array
+    public function verify(array $json, ComponentRegistry $registry, ?string $path = null, ?CompileContext $context = null): array
     {
         $source = $json;
+        $warnings = [];
 
         try {
             $markup = (new LayoutMarkupDecompiler($registry))->decompile($source);
 
-            $tokens = (new MarkupTokenizer)->tokenize($markup, $path);
-            $roots = (new MarkupTreeBuilder)->build($tokens, $path);
-            $recompiled = (new DocumentCompiler($registry))->compile($roots, $path);
+            $result = (new LayoutMarkupCompiler($registry))->compile($markup, $path, $context ?? new CompileContext);
+            $recompiled = $result->json;
+            $warnings = $result->warnings;
         } catch (\Throwable $error) {
-            return ['ok' => false, 'error' => $error->getMessage(), 'markup' => $markup ?? null, 'source' => $source, 'recompiled' => null];
+            return ['ok' => false, 'error' => $error->getMessage(), 'markup' => $markup ?? null, 'source' => $source, 'recompiled' => null, 'warnings' => []];
         }
 
         $ok = self::encode(self::canonicalize(self::normalize(self::normalizeDocument($source))))
             === self::encode(self::canonicalize(self::normalize(self::normalizeDocument($recompiled))));
 
-        return ['ok' => $ok, 'error' => null, 'markup' => $markup, 'source' => $source, 'recompiled' => $recompiled];
+        return ['ok' => $ok, 'error' => null, 'markup' => $markup, 'source' => $source, 'recompiled' => $recompiled, 'warnings' => $warnings];
     }
 
     /**

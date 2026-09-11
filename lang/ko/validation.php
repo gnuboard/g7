@@ -244,6 +244,11 @@ return [
         'content' => [
             'required' => '레이아웃 content가 필요합니다.',
             'array' => '레이아웃 content는 배열이어야 합니다.',
+            'markup_compile_failed' => '레이아웃 마크업(.g7.html)을 컴파일하지 못했습니다: :detail',
+        ],
+        'markup' => [
+            'required' => '변환할 마크업(.g7.html)이 필요합니다.',
+            'string' => '마크업은 문자열이어야 합니다.',
         ],
         'version' => [
             'required' => '레이아웃 버전이 필요합니다.',
@@ -470,6 +475,7 @@ return [
         'content' => [
             'required' => '확장 콘텐츠는 필수입니다.',
             'array' => '확장 콘텐츠는 배열이어야 합니다.',
+            'markup_compile_failed' => '확장 마크업(.g7.html)을 컴파일하지 못했습니다: :detail',
         ],
         'priority' => [
             'integer' => 'priority는 정수여야 합니다.',

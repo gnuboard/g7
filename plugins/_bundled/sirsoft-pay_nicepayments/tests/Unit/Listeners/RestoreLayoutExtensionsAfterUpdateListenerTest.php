@@ -15,6 +15,13 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
 {
+    /**
+     * 복원은 **동기** 리스너여야 한다 — 큐로 미루면 업데이트 직후 화면이 조각 없는 상태로 먼저 뜬다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects restore_listener_subscribes_to_plugin_updated_as_sync_action
+     */
     public function test_subscribes_to_plugin_updated_as_sync_action(): void
     {
         $hooks = RestoreLayoutExtensionsAfterUpdateListener::getSubscribedHooks();
@@ -24,6 +31,13 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
         $this->assertTrue($hooks['core.plugins.updated']['sync'] ?? false);
     }
 
+    /**
+     * 플러그인이 리스너를 선언하지 않으면 이벤트가 발화해도 아무도 듣지 않아 조각이 조용히 사라진다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects plugin_declares_the_layout_extension_restore_listener
+     */
     public function test_plugin_registers_layout_extension_restore_listener(): void
     {
         $this->assertContains(
@@ -65,6 +79,10 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
             ->targeting('admin_ecommerce_order_list')
             ->create([
                 'template_id' => $template->id,
+                // 조각 식별자는 **파일 이름**이다(#476 C13) — 코어 설치 경로가 그렇게 쓰고, 업데이트
+                // 복원도 같은 키로 자기 행을 찾는다. 팩토리 기본값(무작위)으로 두면 복원이 같은 행을
+                // 못 찾아 새 행을 만든다.
+                'fragment_key' => 'admin_order_list_test_badge',
                 'content' => [
                     'target_layout' => 'admin_ecommerce_order_list',
                     'data_sources' => [],
@@ -85,12 +103,73 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
         $this->assertSame(LayoutSourceType::Plugin, $restored->source_type);
         $this->assertSame('sirsoft-pay_nicepayments', $restored->source_identifier);
         $this->assertSame('admin_ecommerce_order_list', $restored->target_name);
+        $this->assertSame('admin_order_list_test_badge', $restored->fragment_key,
+            '복원은 파일에서 얻은 조각 키로 자기 행을 찾는다 — 키 없이 부르면 같은 대상에 행이 둘일 때 아무것도 하지 않는다');
+        $this->assertSame(
+            1,
+            LayoutExtension::withTrashed()
+                ->where('source_identifier', 'sirsoft-pay_nicepayments')
+                ->where('target_name', 'admin_ecommerce_order_list')
+                ->count(),
+            '기존 행을 되살릴 뿐 새 행을 만들지 않는다',
+        );
 
         $json = json_encode($restored->content, JSON_UNESCAPED_SLASHES);
         $this->assertIsString($json);
         $this->assertStringContainsString('nicepay_test_map', $json);
     }
 
+    /**
+     * 행이 하나도 없는 상태에서 복원하면 **파일 이름**을 조각 식별자로 새 행을 만든다 (#476 C13).
+     *
+     * 키 없이 부르면 호환 경로가 대상 이름(`admin_ecommerce_order_list`)을 키로 삼는데, 코어 설치
+     * 경로는 파일 이름(`admin_order_list_test_badge`)을 쓴다. 둘이 갈리면 다음 재등록이 같은 대상에
+     * **두 번째 행**을 만들고, 그 뒤로는 키 없는 호출이 영구히 모호해져 아무것도 하지 않는다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects restored_overlay_uses_the_file_derived_fragment_key
+     */
+    public function test_restore_creates_row_with_file_derived_fragment_key(): void
+    {
+        $template = Template::factory()->create([
+            'identifier' => 'sirsoft-admin_basic',
+            'type' => 'admin',
+            'status' => 'active',
+        ]);
+
+        TemplateLayout::factory()->create([
+            'template_id' => $template->id,
+            'name' => 'sirsoft-ecommerce.admin_ecommerce_order_list',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-ecommerce',
+            'content' => [
+                'layout_name' => 'admin_ecommerce_order_list',
+                'components' => [],
+                'data_sources' => [],
+            ],
+        ]);
+
+        (new RestoreLayoutExtensionsAfterUpdateListener)
+            ->restoreCurrentExtensionsAfterUpdate('sirsoft-pay_nicepayments');
+
+        $created = LayoutExtension::withTrashed()
+            ->where('source_identifier', 'sirsoft-pay_nicepayments')
+            ->where('target_name', 'admin_ecommerce_order_list')
+            ->get();
+
+        $this->assertCount(1, $created, '대상당 행은 하나다');
+        $this->assertSame('admin_order_list_test_badge', $created->first()->fragment_key,
+            '조각 식별자는 대상 이름이 아니라 파일 이름이다 — 코어 설치 경로와 같은 키여야 다음 재등록이 행을 덧내지 않는다');
+    }
+
+    /**
+     * 다른 플러그인의 업데이트에 반응하면 남의 조각을 자기 것으로 덮어쓴다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects restore_listener_ignores_other_plugins_updates
+     */
     public function test_ignores_other_plugins(): void
     {
         $template = Template::factory()->create(['type' => 'admin']);

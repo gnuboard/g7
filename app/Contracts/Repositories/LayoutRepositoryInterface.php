@@ -69,6 +69,15 @@ interface LayoutRepositoryInterface
     public function exists(int $templateId, string $name): bool;
 
     /**
+     * overlay 대상(`target_layout`)이 이 템플릿에 실재하는지 확인 — 모듈 레이아웃의 논리 이름(`{모듈}.{name}`) 포함
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  overlay 대상 레이아웃 이름 (논리 이름)
+     * @return bool 존재 여부
+     */
+    public function existsForOverlay(int $templateId, string $name): bool;
+
+    /**
      * 특정 템플릿의 레이아웃 중 지정한 확장점(extension_point)을 정의한 것이 있는지 확인
      *
      * 레이아웃 content JSON 트리를 재귀 순회하여 `type: extension_point` 노드의

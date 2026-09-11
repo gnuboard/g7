@@ -121,6 +121,15 @@
                                                             }
                                                         },
                                                         {
+                                                            "comment": "버퍼는 재조회 응답의 init-global 이 갈아 끼운다 — 여기서 `current_extension?.data` 를 재독하면 재조회 전 값이다(레이아웃 판본 복원과 같은 이유).",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "markupCompileError": null,
+                                                                "jsonViewStale": false
+                                                            }
+                                                        },
+                                                        {
                                                             "handler": "refetchDataSource",
                                                             "params": {
                                                                 "dataSourceId": "current_extension"

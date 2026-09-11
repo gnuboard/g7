@@ -634,18 +634,28 @@ templates/_bundled/sirsoft-basic/
 ### 활성화 시
 
 1. `resources/extensions/` 스캔 — `.g7.html` 소스 우선(등록 시점 메모리 컴파일), 짝 마크업이 없는 `.json` 은 직접 읽음
-2. **대상 템플릿 적용 가능 여부 판별** (아래 "템플릿 대상 판정" 참조)
-3. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원)
-4. 레이아웃 캐시 무효화
+2. 활성 템플릿마다 **그 템플릿의 `components.json` 으로 컴파일** — 태그→컴포넌트 표는 템플릿마다 다르므로, 사용자 화면 조각이 관리자 전용 컴포넌트를 쓰면 사용자 템플릿 컴파일에서 거부된다(그 조각만 건너뛰고 로그)
+3. **대상 템플릿 적용 가능 여부 판별** (아래 "템플릿 대상 판정" 참조)
+4. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원) — 행의 고유 키는 대상 5축 + **`fragment_key`**
+5. 활성 확장 전부의 조각을 모든 활성 템플릿에 **다시 등록**(멱등) — 이 확장이 가져온 호스트 레이아웃을 겨냥하던 다른 확장의 조각이 이제 붙는다
+6. 레이아웃 캐시 무효화
+
+### 조각 식별자 `fragment_key`
+
+`fragment_key` 는 조각 소스 파일의 기본 이름에서 `.g7.html`/`.json` 을 뗀 문자열이다(`admin-user-currency-field.g7.html` → `admin-user-currency-field`). 같은 확장이 **같은 대상에 조각을 둘** 보낼 수 있으므로(예: 회원 폼에 통화 필드와 배송 국가 필드) DB 행은 대상만으로 갈리지 않고, 이 키가 행을 가른다. 짝(`x.g7.html`·`x.json`)은 같은 논리 조각이라 같은 키다. 관리자 레이아웃 편집기의 확장 목록은 대상 이름 아래 이 키를 작게 표시해 같은 대상의 두 행을 구분한다.
+
+확장이 `LayoutExtensionService::registerExtension()` 을 직접 부르는 자리(업데이트 뒤 조각을 복원하는 Listener 등)는 여섯 번째 인자로 이 키를 넘긴다. 넘기지 않으면 같은 대상의 기존 행이 하나일 때 그 키를 잇고, 둘 이상이면 어느 조각인지 알 수 없어 처리하지 않는다(경고 로그).
 
 ### 템플릿 대상 판정
 
-모듈/플러그인 확장은 admin·user 등 모든 활성 템플릿에 동기화되지만, 확장이 **대상으로 하는 레이아웃이 실제 존재하는 템플릿에만 등록**된다.
+모듈/플러그인 확장은 admin·user 등 모든 활성 템플릿에 동기화되지만, 확장이 **대상으로 하는 레이아웃이 실제 존재하는 템플릿에만 등록**된다. 확장 활성화·템플릿 활성화·확장 갱신 세 경로가 모두 같은 판정을 거친다.
 
-- **Overlay**: `target_layout` 이 그 템플릿에 레이아웃으로 존재해야 한다.
+- **Overlay**: `target_layout` 이 그 템플릿에 레이아웃으로 존재해야 한다. 모듈 레이아웃은 `{모듈}.{layout_name}` 으로 저장되므로 논리 이름(`layout_name`)으로 대조한다.
 - **Extension Point**: `extension_point`(확장점명)이 그 템플릿의 어느 레이아웃 `content` 에 `type: extension_point` 노드로 정의되어 있어야 한다.
 
-판정은 `RefreshesLayoutExtensions` trait 이 `LayoutExtensionService::isExtensionApplicableToTemplate()` 로 수행한다. 대상이 없는 템플릿(예: admin 레이아웃 대상 확장 ↔ user 템플릿)에는 등록하지 않으며, 과거 무차별 등록으로 잘못 생성된 행은 다음 동기화 시 `removeInapplicableExtension()` 으로 정리(soft delete)된다.
+판정은 `LayoutExtensionService::isExtensionApplicableToTemplate()` 이 수행한다. 대상이 없는 템플릿(예: admin 레이아웃 대상 확장 ↔ user 템플릿)에는 등록하지 않으며, 과거 무차별 등록으로 잘못 생성된 행은 다음 동기화 시 `removeInapplicableExtension()` 으로 정리(soft delete)되고, 소스 디렉토리에서 사라진 조각의 행도 같은 동기화가 정리한다. 호스트 레이아웃이 나중에 설치되는 경우는 확장 활성화·업데이트가 활성 확장 전부의 조각을 전 템플릿에 다시 등록해 메운다.
+
+설치본 전량의 정합성은 `php artisan layout:check-installed` 로 점검한다 — 행마다 역변환→프로덕션 컴파일→왕복 대조에 더해 부적합 등록·소실·고아 조각을 보고하고, 하나라도 있으면 종료 코드 1 이다.
 
 ### 비활성화 시
 

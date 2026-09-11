@@ -5,19 +5,27 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Exceptions\ConcurrentModificationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\LayoutVersionListRequest;
+use App\Http\Requests\Layout\CompileLayoutMarkupRequest;
 use App\Http\Requests\Layout\StoreLayoutPreviewRequest;
 use App\Http\Requests\Layout\UpdateLayoutContentRequest;
 use App\Http\Resources\LayoutListResource;
 use App\Http\Resources\LayoutResource;
 use App\Http\Resources\LayoutVersionResource;
+use App\Services\LayoutMarkupService;
 use App\Services\LayoutPreviewService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
+use App\Support\LayoutMarkup\CompileError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
 class LayoutController extends AdminBaseController
 {
+    /**
+     * @param  LayoutService  $layoutService  레이아웃 조회·저장 (낙관적 잠금 포함)
+     * @param  TemplateService  $templateService  템플릿 식별자 → 템플릿 해석
+     * @param  LayoutPreviewService  $layoutPreviewService  저장하지 않은 본문의 일회용 미리보기 발급
+     */
     public function __construct(
         private LayoutService $layoutService,
         private TemplateService $templateService,
@@ -86,11 +94,128 @@ class LayoutController extends AdminBaseController
             return $this->notFound('common.not_found');
         }
 
-        return $this->success(
-            'common.success',
-            (new LayoutResource($layout))
-                ->withTranslations($this->resolveTemplateTranslations($templateName))
+        $resource = (new LayoutResource($layout))
+            ->withTranslations($this->resolveTemplateTranslations($templateName));
+
+        // `?with_markup=1` — 코드 편집기 HTML 탭용 역변환(JSON→.g7.html). 기본 응답(위지윅 등)은 무변경.
+        if (request()->boolean('with_markup')) {
+            $sourceKind = $layout->source_type?->value ?? null;
+            // 원본 JSON 문자열에서 디코드한다 — Eloquent 의 `array` 캐스트는 `{}` 와 `[]` 를 똑같이
+            // PHP `[]` 로 만들어, 그대로 역변환하면 작성자가 적은 `{}` 가 편집기에 `[]` 로 틀리게 보이고
+            // 그 상태로 저장하면 DB 의 `{}` 가 실제로 `[]` 가 된다.
+            $resource->withMarkup($this->buildMarkupPayload(
+                app(LayoutMarkupService::class)->decodeStoredContent((string) $layout->getRawOriginal('content')),
+                $templateName,
+                $sourceKind,
+                $layout->source_identifier ?? $templateName,
+                "{$name}.g7.html",
+            ));
+        }
+
+        return $this->success('common.success', $resource);
+    }
+
+    /**
+     * 마크업(`.g7.html`)을 저장 없이 프로덕션 컴파일해 JSON·경고를 돌려줍니다 (코드 편집기 JSON 뷰 갱신용).
+     *
+     * @param  CompileLayoutMarkupRequest  $request  변환 요청 (`markup`)
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  레이아웃 이름
+     * @return JsonResponse 200 `{content, warnings}` | 422 `compile_error`
+     */
+    public function compileMarkup(CompileLayoutMarkupRequest $request, string $templateName, string $name): JsonResponse
+    {
+        $template = $this->templateService->findByIdentifier($templateName);
+
+        if (! $template) {
+            return $this->notFound('common.not_found');
+        }
+
+        $layout = $this->layoutService->getLayoutByName($template->id, $name);
+
+        if (! $layout) {
+            return $this->notFound('common.not_found');
+        }
+
+        return $this->compileMarkupResponse(
+            $request->validated('markup'),
+            $templateName,
+            $layout->source_type?->value ?? null,
+            $layout->source_identifier ?? $templateName,
+            "{$name}.g7.html",
         );
+    }
+
+    /**
+     * 마크업 변환 응답을 만듭니다 — 성공 200 `{content(pretty JSON), warnings}`, 컴파일 오류 422 `compile_error`.
+     *
+     * @param  string  $markup  `.g7.html` 소스
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string|null  $sourceKind  행 source_type
+     * @param  string|null  $identifier  행 source_identifier
+     * @param  string  $label  표시용 파일명
+     * @return JsonResponse 변환 응답
+     */
+    private function compileMarkupResponse(string $markup, string $templateName, ?string $sourceKind, ?string $identifier, string $label): JsonResponse
+    {
+        $service = app(LayoutMarkupService::class);
+
+        try {
+            $result = $service->toJson($markup, $templateName, $sourceKind, $identifier, $label);
+        } catch (CompileError $error) {
+            $described = $service->describeError($error);
+
+            // 구조화 오류는 `errors` 안에 — 레이아웃이 `{{error.errors?.compile_error}}` 로 읽는다.
+            $response = $this->error(
+                'validation.layout.content.markup_compile_failed',
+                422,
+                ['markup' => [$error->getDetail()], 'compile_error' => $described],
+                ['detail' => $error->getDetail()],
+            );
+            $payload = $response->getData(true);
+            $payload['compile_error'] = $described;
+
+            return $response->setData($payload);
+        }
+
+        return $this->success('common.success', [
+            'content' => $service->encodeJson($result->json),
+            'warnings' => $service->describeWarnings($result->warnings),
+        ]);
+    }
+
+    /**
+     * `?with_markup=1` 페이로드 — 역변환 결과 + 그 마크업을 되컴파일한 lint 경고(실패면 `markup_compile_error`).
+     *
+     * 되컴파일까지 해 두는 이유: 편집기가 열자마자 "이 행은 저장이 막힌다" 를 알려야 하고(설치본에 남은 옛 결함),
+     * 경고 마커도 첫 표시부터 있어야 한다.
+     *
+     * @param  array<string, mixed>  $json  행 content
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string|null  $sourceKind  행 source_type
+     * @param  string|null  $identifier  행 source_identifier
+     * @param  string  $label  표시용 파일명
+     * @return array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null}
+     */
+    private function buildMarkupPayload(array $json, string $templateName, ?string $sourceKind, ?string $identifier, string $label): array
+    {
+        $service = app(LayoutMarkupService::class);
+        ['markup' => $markup, 'escapes' => $escapes] = $service->toMarkup($json, $templateName);
+        $warnings = [];
+        $compileError = null;
+
+        try {
+            $warnings = $service->describeWarnings($service->toJson($markup, $templateName, $sourceKind, $identifier, $label)->warnings);
+        } catch (CompileError $error) {
+            $compileError = $service->describeError($error);
+        }
+
+        return [
+            'content_markup' => $markup,
+            'markup_escapes' => $escapes,
+            'markup_warnings' => $warnings,
+            'markup_compile_error' => $compileError,
+        ];
     }
 
     /**
@@ -116,11 +241,13 @@ class LayoutController extends AdminBaseController
 
             DB::commit();
 
-            return $this->success(
-                'common.success',
-                (new LayoutResource($layout))
-                    ->withTranslations($this->resolveTemplateTranslations($templateName))
-            );
+            $payload = (new LayoutResource($layout))
+                ->withTranslations($this->resolveTemplateTranslations($templateName))
+                ->resolve();
+            // `format=markup` 저장이 낸 lint 경고 — 편집기가 노란 마커로 보여준다 (JSON 저장이면 빈 배열).
+            $payload['markup_warnings'] = $request->markupWarnings();
+
+            return $this->success('common.success', $payload);
         } catch (ConcurrentModificationException $e) {
             DB::rollBack();
 
@@ -272,6 +399,7 @@ class LayoutController extends AdminBaseController
                     'token' => $preview->token,
                     'preview_url' => '/preview/'.$preview->token,
                     'expires_at' => $preview->expires_at->toIso8601String(),
+                    'markup_warnings' => $request->markupWarnings(),
                 ]
             );
         } catch (\Exception $e) {

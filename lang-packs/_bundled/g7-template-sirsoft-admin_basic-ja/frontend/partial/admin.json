@@ -2335,7 +2335,19 @@
       "preview_layout_select_description": "この拡張ポイントは複数のレイアウトで使用されています。プレビューするレイアウトを選択してください。",
       "preview_layout_select_placeholder": "レイアウトを選択してください",
       "preview_layout_confirm": "プレビュー",
-      "extension_override_badge": "オーバーライド"
+      "extension_override_badge": "オーバーライド",
+      "tab_markup": "HTML",
+      "tab_json": "JSON（読み取り専用）",
+      "json_readonly_hint": "JSON は HTML から生成された成果物です（読み取り専用）。入力が止まってから 1 秒後に更新されます。",
+      "json_stale": "コンパイルエラーのため最後に成功した内容を表示",
+      "markup_error_title": "コンパイルエラー — 保存できません",
+      "markup_warning_title": "警告 {{count}} 件 — 保存は可能です",
+      "inlined_notice": "インストール済みのレイアウトを編集しています — 断片（<include>・<modal src>）はインライン展開された状態で、リポジトリのファイルと異なる場合があります。保存すると本文はサーバーの正規形に更新されます。",
+      "download_markup": ".g7.html をダウンロード",
+      "copy_markup": "コピー",
+      "copy_success": "マークアップをクリップボードにコピーしました。",
+      "copy_failed": "クリップボードへのコピーに失敗しました。",
+      "fragment_key_label": "断片 {{key}}"
     }
   },
   "activity_log": {

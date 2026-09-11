@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.10] - 2026-09-11
+
+### Added
+
+- 레이아웃 코드 편집기의 HTML(`.g7.html`) 기본화에 따른 새 문구(HTML/JSON 서브탭, JSON 읽기 전용 안내와 「오래됨」 배지, 컴파일 오류·경고 패널 제목, 설치본 편집 안내, `.g7.html` 내려받기·복사 버튼과 결과 알림, 조각 식별자 라벨)의 일본어 번역을 추가했습니다.
+
 ## [1.0.9] - 2026-09-09
 
 ### Added

@@ -86,6 +86,7 @@ function findComponent(root: any, predicate: (n: any) => boolean): any | null {
 // ==============================
 
 describe('미리보기 버튼', () => {
+  /** @effects editor_preview_uses_sequence_api_call_then_open_window */
   it('sequence → apiCall → openWindow 패턴을 사용한다', () => {
     // 미리보기 버튼 찾기 (preview 엔드포인트를 호출하는 버튼)
     const previewButton = findComponent(layoutEditJson, (n) => {
@@ -123,7 +124,10 @@ describe('미리보기 버튼', () => {
     expect(openWindowAction.params.path).toContain('response.data.token');
   });
 
-  it('apiCall body에 editorContent를 전달한다', () => {
+  /**
+   * @effects code_editor_saves_markup_format
+   */
+  it('apiCall body에 HTML 버퍼(editorMarkup)를 format=markup 으로 전달한다', () => {
     const previewButton = findComponent(layoutEditJson, (n) => {
       if (!n.actions) return false;
       return asArray(n?.actions).some((a: any) =>
@@ -139,9 +143,12 @@ describe('미리보기 버튼', () => {
     );
 
     expect(apiCallAction.params.body).toBeDefined();
-    expect(JSON.stringify(apiCallAction.params.body)).toContain('editorContent');
+    // 편집기 정본이 HTML 이다 (#476) — 미리보기도 저장과 같은 버퍼를 같은 형식으로 보낸다.
+    expect(JSON.stringify(apiCallAction.params.body)).toContain('editorMarkup');
+    expect(apiCallAction.params.body.format).toBe('markup');
   });
 
+  /** @effects editor_buttons_declare_button_type_so_forms_do_not_submit */
   it('type: "button" prop이 설정되어 있다', () => {
     const previewButton = findComponent(layoutEditJson, (n) => {
       if (!n.actions) return false;
@@ -159,6 +166,7 @@ describe('미리보기 버튼', () => {
 // ==============================
 
 describe('버전 히스토리 버튼', () => {
+  /** @effects version_history_button_branches_layout_and_extension_by_conditions */
   it('conditions 핸들러로 일반/확장 모달을 분기한다', () => {
     // 버전 히스토리 버튼 찾기 (version_history_modal 을 여는 버튼)
     const versionHistoryButton = findComponent(layoutEditJson, (n) => {
@@ -199,6 +207,7 @@ describe('버전 히스토리 버튼', () => {
 // ==============================
 
 describe('버전 히스토리 모달 구조', () => {
+  /** @effects layout_version_modal_has_the_expected_id_and_structure */
   it('올바른 모달 ID와 구조를 가진다', () => {
     expect(versionHistoryModalJson.id).toBe('version_history_modal');
     expect(versionHistoryModalJson.type).toBe('composite');
@@ -206,6 +215,7 @@ describe('버전 히스토리 모달 구조', () => {
     expect(versionHistoryModalJson.props.size).toBe('medium');
   });
 
+  /** @effects layout_version_modal_iterates_layout_versions */
   it('layout_versions 를 반복 렌더링하는 iteration 영역이 있다', () => {
     const iterationNode = findComponent(versionHistoryModalJson, (n) =>
       Boolean(n.iteration?.source?.includes('layout_versions'))
@@ -214,6 +224,7 @@ describe('버전 히스토리 모달 구조', () => {
     expect(iterationNode.iteration.item_var).toBe('version');
   });
 
+  /** @effects newest_layout_version_carries_the_latest_badge */
   it('첫 번째 버전(idx === 0)에 최신 배지가 표시된다', () => {
     const latestBadge = findComponent(versionHistoryModalJson, (n) =>
       n.if === '{{idx === 0}}' &&
@@ -223,6 +234,7 @@ describe('버전 히스토리 모달 구조', () => {
     expect(latestBadge).not.toBeNull();
   });
 
+  /** @effects non_newest_layout_versions_carry_a_restore_button */
   it('첫 번째가 아닌 버전(idx !== 0)에 복원 버튼이 있다', () => {
     const restoreButton = findComponent(versionHistoryModalJson, (n) =>
       n.if === '{{idx !== 0}}' &&
@@ -241,6 +253,7 @@ describe('버전 히스토리 모달 구조', () => {
 // ==============================
 
 describe('modals 섹션', () => {
+  /** @effects version_history_modal_partial_is_registered */
   it('version_history 모달 partial 이 등록되어 있다', () => {
     expect(layoutEditJson.modals).toBeDefined();
     expect(Array.isArray(layoutEditJson.modals)).toBe(true);
@@ -257,6 +270,7 @@ describe('modals 섹션', () => {
 // ==============================
 
 describe('어빌리티 기반 조건부 렌더링', () => {
+  /** @effects save_button_is_gated_by_can_update */
   it('저장 버튼에 can_update 조건이 있다', () => {
     // 저장 버튼: apiCall로 PUT 요청하는 버튼 or save 관련 텍스트
     const saveButton = findComponent(layoutEditJson, (n) => {
@@ -274,6 +288,7 @@ describe('어빌리티 기반 조건부 렌더링', () => {
 // ==============================
 
 describe('레이아웃 확장 데이터 소스', () => {
+  /** @effects extension_branch_declares_its_three_data_sources */
   it('layout_extensions / current_extension / extension_versions 데이터 소스가 정의되어 있다', () => {
     const ids = layoutEditJson.data_sources.map((d: any) => d.id);
     expect(ids).toContain('layout_extensions');
@@ -281,6 +296,7 @@ describe('레이아웃 확장 데이터 소스', () => {
     expect(ids).toContain('extension_versions');
   });
 
+  /** @effects layout_extensions_loads_blocking_on_entry */
   it('layout_extensions 는 auto_fetch + blocking 으로 트리 초기 로드된다', () => {
     const ds = layoutEditJson.data_sources.find((d: any) => d.id === 'layout_extensions');
     expect(ds.auto_fetch).toBe(true);
@@ -288,15 +304,22 @@ describe('레이아웃 확장 데이터 소스', () => {
     expect(ds.endpoint).toContain('/layout-extensions');
   });
 
+  /** @effects transition_overlay_waits_for_layout_extensions */
   it('transition_overlay.wait_for 에 layout_extensions 가 포함된다', () => {
     expect(layoutEditJson.transition_overlay.wait_for).toContain('layout_extensions');
   });
 
-  it('current_extension 은 selectedExtensionId 의존 + editorContent 로 initGlobal 한다', () => {
+  /**
+   * @effects code_editor_opens_with_decompiled_markup_buffer, code_editor_opens_extension_fragments_in_the_markup_tab
+   */
+  it('current_extension 은 selectedExtensionId 의존 + with_markup + editorContent·editorMarkup 로 initGlobal 한다', () => {
     const ds = layoutEditJson.data_sources.find((d: any) => d.id === 'current_extension');
     expect(ds.auto_fetch).toBe(false);
     expect(ds.endpoint).toContain('selectedExtensionId');
-    expect(ds.initGlobal.key).toBe('editorContent');
+    expect(ds.endpoint).toContain('with_markup=1');
+    // 편집기 정본이 HTML 이라 JSON 뷰(editorContent)와 HTML 버퍼(editorMarkup)를 함께 올린다 (#476)
+    const keys = ds.initGlobal.map((m: any) => m.key);
+    expect(keys).toEqual(expect.arrayContaining(['editorContent', 'editorMarkup']));
   });
 });
 
@@ -305,6 +328,7 @@ describe('레이아웃 확장 데이터 소스', () => {
 // ==============================
 
 describe('좌측 트리 확장 섹션', () => {
+  /** @effects extension_section_header_exists_in_the_file_tree */
   it('확장 주입 레이아웃 섹션 헤더가 존재한다', () => {
     const sectionHeader = findComponent(layoutEditJson, (n) =>
       typeof n.text === 'string' && n.text.includes('section_extensions')
@@ -312,6 +336,7 @@ describe('좌측 트리 확장 섹션', () => {
     expect(sectionHeader).not.toBeNull();
   });
 
+  /** @effects extension_tree_groups_by_source */
   it('layout_extensions 를 source 별로 그룹 iteration 한다', () => {
     const groupIteration = findComponent(layoutEditJson, (n) =>
       Boolean(n.iteration?.source?.includes('layout_extensions'))
@@ -320,6 +345,7 @@ describe('좌측 트리 확장 섹션', () => {
     expect(groupIteration.iteration.item_var).toBe('extGroup');
   });
 
+  /** @effects extension_tree_nests_each_group_items */
   it('각 그룹의 extensions 를 ext 로 중첩 iteration 한다', () => {
     const extIteration = findComponent(layoutEditJson, (n) =>
       Boolean(n.iteration?.source?.includes('extGroup.extensions'))
@@ -328,6 +354,7 @@ describe('좌측 트리 확장 섹션', () => {
     expect(extIteration.iteration.item_var).toBe('ext');
   });
 
+  /** @effects clicking_an_extension_switches_the_selected_node_kind */
   it('확장 항목 클릭 시 selectedNodeKind=extension 으로 설정한다', () => {
     const extIteration = findComponent(layoutEditJson, (n) =>
       Boolean(n.iteration?.source?.includes('extGroup.extensions'))
@@ -337,6 +364,7 @@ describe('좌측 트리 확장 섹션', () => {
     expect(JSON.stringify(clickAction)).toContain('selectedExtensionId');
   });
 
+  /** @effects group_header_icon_distinguishes_plugin_from_module */
   it('그룹 헤더 아이콘이 plugin/module 출처를 구분한다', () => {
     // 오버라이드 행도 override_target 의 모듈/플러그인 그룹에 묶이므로
     // 그룹 source_type 은 plugin / module 두 가지.
@@ -351,6 +379,7 @@ describe('좌측 트리 확장 섹션', () => {
     expect(groupIcon.props.name).toContain('fa-puzzle-piece');
   });
 
+  /** @effects override_extension_item_shows_the_override_badge */
   it('오버라이드 확장 항목에 is_override 뱃지를 표시한다', () => {
     // 템플릿 오버라이드 행은 출처 기준으로 묶이되, ext.is_override 로
     // 오버라이드 상황을 별도 뱃지로 구분 표시한다.
@@ -375,6 +404,7 @@ describe('모바일 파일 셀렉터', () => {
     return findComponent(wrapper, (n) => n.name === 'RichSelect');
   }
 
+  /** @effects mobile_selector_lists_both_layouts_and_extensions */
   it('모바일 셀렉터가 일반 레이아웃과 확장을 모두 옵션에 포함한다', () => {
     // 데스크탑 트리(일반 + 확장 2섹션)와 동등하게, 모바일 RichSelect 도
     // layout_files 와 layout_extensions 양쪽을 옵션으로 노출해야 한다.
@@ -386,6 +416,7 @@ describe('모바일 파일 셀렉터', () => {
     expect(options).toContain('flatMap');
   });
 
+  /** @effects mobile_selector_encodes_kind_with_a_value_prefix */
   it('옵션 value 에 layout:/ext: 접두사로 종류를 인코딩한다', () => {
     const richSelect = findMobileSelector();
     const options = richSelect.props.options;
@@ -393,6 +424,7 @@ describe('모바일 파일 셀렉터', () => {
     expect(options).toContain("'ext:'");
   });
 
+  /** @effects mobile_selector_current_value_carries_the_matching_prefix */
   it('현재 선택 value 가 selectedNodeKind 에 따라 접두사를 부여한다', () => {
     const richSelect = findMobileSelector();
     expect(richSelect.props.value).toContain("selectedNodeKind === 'extension'");
@@ -400,6 +432,7 @@ describe('모바일 파일 셀렉터', () => {
     expect(richSelect.props.value).toContain("'layout:'");
   });
 
+  /** @effects mobile_selector_change_branches_by_conditions */
   it('change 액션이 conditions 로 확장/일반을 분기한다', () => {
     const richSelect = findMobileSelector();
     const changeAction = asArray(richSelect?.actions).find((a: any) => a.type === 'change');
@@ -425,6 +458,7 @@ describe('모바일 파일 셀렉터', () => {
     expect(layoutJson).toContain('current_layout');
   });
 
+  /** @effects mobile_selector_item_shows_the_override_badge */
   it('모바일 셀렉터 항목에 is_override 뱃지를 표시한다', () => {
     const wrapper = findComponent(layoutEditJson, (n) => n.id === 'mobile_file_selector');
     const overrideBadge = findComponent(wrapper, (n) =>
@@ -442,12 +476,14 @@ describe('모바일 파일 셀렉터', () => {
 // ==============================
 
 describe('확장 버전 히스토리 모달 구조', () => {
+  /** @effects extension_version_modal_has_the_expected_id_and_structure */
   it('올바른 모달 ID와 구조를 가진다', () => {
     expect(extensionVersionHistoryModalJson.id).toBe('extension_version_history_modal');
     expect(extensionVersionHistoryModalJson.type).toBe('composite');
     expect(extensionVersionHistoryModalJson.name).toBe('Modal');
   });
 
+  /** @effects extension_version_modal_iterates_extension_versions */
   it('extension_versions 를 반복 렌더링하는 iteration 영역이 있다', () => {
     const iterationNode = findComponent(extensionVersionHistoryModalJson, (n) =>
       Boolean(n.iteration?.source?.includes('extension_versions'))
@@ -456,6 +492,7 @@ describe('확장 버전 히스토리 모달 구조', () => {
     expect(iterationNode.iteration.item_var).toBe('version');
   });
 
+  /** @effects extension_version_restore_calls_the_extension_restore_endpoint */
   it('복원 버튼이 확장 버전 restore 엔드포인트를 호출한다', () => {
     const restoreButton = findComponent(extensionVersionHistoryModalJson, (n) =>
       n.if === '{{idx !== 0}}' &&
@@ -473,11 +510,13 @@ describe('확장 버전 히스토리 모달 구조', () => {
 // ==============================
 
 describe('확장 미리보기 레이아웃 선택 모달', () => {
+  /** @effects preview_layout_picker_modal_has_the_expected_id */
   it('올바른 모달 ID를 가진다', () => {
     expect(extensionPreviewLayoutModalJson.id).toBe('extension_preview_layout_modal');
     expect(extensionPreviewLayoutModalJson.name).toBe('Modal');
   });
 
+  /** @effects extension_preview_calls_the_extension_preview_endpoint_with_a_host_layout */
   it('미리보기 버튼이 layout-extensions preview 엔드포인트를 preview_layout 과 함께 호출한다', () => {
     const previewButton = findComponent(extensionPreviewLayoutModalJson, (n) =>
       n.name === 'Button' &&
@@ -495,6 +534,7 @@ describe('확장 미리보기 레이아웃 선택 모달', () => {
 // ==============================
 
 describe('modals 섹션 — 확장 모달', () => {
+  /** @effects extension_version_and_preview_picker_modals_are_registered */
   it('확장 버전 히스토리 / 미리보기 레이아웃 선택 모달이 등록되어 있다', () => {
     const partials = layoutEditJson.modals.map((m: any) => m.partial ?? '');
     expect(partials.some((p: string) => p.includes('_modal_extension_version_history'))).toBe(true);
@@ -507,6 +547,7 @@ describe('modals 섹션 — 확장 모달', () => {
 // ==============================
 
 describe('selectedNodeKind 분기', () => {
+  /** @effects extension_save_calls_the_extension_put_endpoint */
   it('확장 저장 버튼이 layout-extensions PUT 엔드포인트를 호출한다', () => {
     const extSaveButton = findComponent(layoutEditJson, (n) =>
       n.name === 'Button' &&
@@ -528,6 +569,7 @@ describe('selectedNodeKind 분기', () => {
 // ==============================
 
 describe('코드 편집기 ?route= URL 동기화', () => {
+  /** @effects init_actions_restore_the_selected_layout_from_the_route_query */
   it('init_actions 가 query.route 로 selectedLayoutName 을 복원한다', () => {
     const initActions = layoutEditJson.init_actions;
     expect(Array.isArray(initActions)).toBe(true);
@@ -561,6 +603,7 @@ describe('코드 편집기 ?route= URL 동기화', () => {
     expect(replaceUrl.params.query.route).toContain('file.route_path');
   });
 
+  /** @effects mobile_selector_reflects_the_route_path_with_replace_url */
   it('모바일 셀렉터 레이아웃 선택 시 replaceUrl 로 route_path 를 반영한다', () => {
     const wrapper = findComponent(layoutEditJson, (n) => n.id === 'mobile_file_selector');
     const richSelect = findComponent(wrapper, (n) => n.name === 'RichSelect');
