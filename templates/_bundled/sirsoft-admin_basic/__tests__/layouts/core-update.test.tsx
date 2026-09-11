@@ -210,6 +210,29 @@ function findAllInTree(nodes: any[], predicate: (node: any) => boolean): any[] {
   return results;
 }
 
+/**
+ * 액션 체인에서 조건을 만족하는 액션을 찾는다 — `sequence` 의 중첩과 후속(onSuccess·onError)까지 들어간다.
+ *
+ * 진행 표시를 붙이면서 왕복 호출이 `sequence` 안으로 한 겹 들어갔다. `actions[0]` 을
+ * 직접 집으면 그 감싸기 한 번에 테스트가 깨지고, 깨진 자리를 인덱스로 고치면 다음
+ * 감싸기에 또 깨진다.
+ *
+ * @param node 액션 배열 또는 액션 객체
+ * @param predicate 찾을 조건
+ */
+function findAction(node: any, predicate: (action: any) => boolean): any | undefined {
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = findAction(child, predicate);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (!node || typeof node !== 'object') return undefined;
+  if (predicate(node)) return node;
+  return findAction(Object.values(node), predicate);
+}
+
 // ==============================
 // 샘플 데이터
 // ==============================
@@ -423,12 +446,23 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
 
     it('변경사항 보기 버튼에 changelog API 호출 액션이 있다 (closeModal 없이 직접 apiCall)', () => {
       const buttons = findAllInTree(modal.children, (n: any) => n.name === 'Button');
-      const viewChangelogBtn = buttons.find((b: any) => b.text === '$t:admin.settings.info.view_changelog');
+      // 라벨은 버튼의 `text` 이거나, 스피너와 나란히 선 Span 의 `text` 다 — 진행 표시를
+      // 넣으면서 children 으로 내려갔다. 라벨의 자리로 버튼을 찾으면 표시를 넣을 때마다
+      // 이 테스트가 깨지므로, 라벨이 어디에 있든 같은 버튼을 집는다.
+      const labelOf = (button: any): string | undefined =>
+        button.text ?? (button.children ?? []).find((c: any) => c?.text)?.text;
+      const viewChangelogBtn = buttons.find(
+        (b: any) => labelOf(b) === '$t:admin.settings.info.view_changelog'
+      );
       expect(viewChangelogBtn).toBeDefined();
 
-      // closeModal 없이 직접 apiCall (child 모달을 result 모달 위에 겹쳐서 열기)
-      const apiCallAction = viewChangelogBtn.actions[0];
-      expect(apiCallAction.handler).toBe('apiCall');
+      // closeModal 없이 직접 apiCall (child 모달을 result 모달 위에 겹쳐서 열기).
+      // 호출 자체는 진행 플래그를 세우는 sequence 안에 들어 있다.
+      const apiCallAction = findAction(
+        viewChangelogBtn.actions,
+        (a: any) => a.handler === 'apiCall'
+      );
+      expect(apiCallAction).toBeDefined();
       expect(apiCallAction.target).toBe('/api/admin/core-update/changelog');
       expect(apiCallAction.params.method).toBe('GET');
 
@@ -436,6 +470,15 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       const openModalInSuccess = apiCallAction.onSuccess.find((a: any) => a.handler === 'openModal');
       expect(openModalInSuccess).toBeDefined();
       expect(openModalInSuccess.target).toBe('core_changelog_modal');
+
+      // 왕복이 도는 동안 버튼이 잠기고, 잠그는 식이 곧 스피너가 보는 식이다.
+      // 이 모달의 [변경사항 보기]는 정보 탭·업데이트 탭의 같은 버튼과 한 짝이다.
+      expect(viewChangelogBtn.props?.disabled).toBe('{{_local.loadingChangelog}}');
+      const spinner = (viewChangelogBtn.children ?? []).find(
+        (c: any) => c?.name === 'Icon' && c?.props?.name === 'spinner'
+      );
+      expect(spinner, '진행 중임을 알리는 스피너가 없습니다.').toBeDefined();
+      expect(spinner.if).toBe('{{_local.loadingChangelog}}');
     });
 
     it('업데이트 방법 버튼에 openModal 액션이 있다 (closeModal 없이 직접 openModal)', () => {

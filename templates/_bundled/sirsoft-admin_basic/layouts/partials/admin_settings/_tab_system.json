@@ -381,9 +381,19 @@
                       "if": "{{!_computed.isReadOnly && !_local.cronUrl}}",
                       "props": {
                         "type": "button",
-                        "className": "btn btn-secondary whitespace-nowrap"
+                        "className": "btn btn-secondary whitespace-nowrap",
+                        "disabled": "{{_local.cronUrlRevealing}}"
                       },
                       "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.cronUrlRevealing}}",
+                          "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                          }
+                        },
                         {
                           "type": "basic",
                           "name": "Span",
@@ -393,30 +403,52 @@
                       "actions": [
                         {
                           "type": "click",
-                          "handler": "apiCall",
-                          "auth_required": true,
-                          "target": "/api/admin/settings/system/cron-token",
+                          "handler": "sequence",
                           "params": {
-                            "method": "GET"
-                          },
-                          "onSuccess": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "cronUrl": "{{result.data.url}}"
+                            "actions": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "local",
+                                  "cronUrlRevealing": true
+                                }
+                              },
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/settings/system/cron-token",
+                                "params": {
+                                  "method": "GET"
+                                },
+                                "onSuccess": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "local",
+                                      "cronUrlRevealing": false,
+                                      "cronUrl": "{{result.data.url}}"
+                                    }
+                                  }
+                                ],
+                                "onError": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "local",
+                                      "cronUrlRevealing": false
+                                    }
+                                  },
+                                  {
+                                    "handler": "toast",
+                                    "params": {
+                                      "type": "error",
+                                      "message": "{{error.message ?? '$t:admin.settings.system.cron_url_failed'}}"
+                                    }
+                                  }
+                                ]
                               }
-                            }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message ?? '$t:admin.settings.system.cron_url_failed'}}"
-                              }
-                            }
-                          ]
+                            ]
+                          }
                         }
                       ]
                     },
@@ -427,9 +459,19 @@
                       "if": "{{!_computed.isReadOnly}}",
                       "props": {
                         "type": "button",
-                        "className": "btn btn-secondary whitespace-nowrap"
+                        "className": "btn btn-secondary whitespace-nowrap",
+                        "disabled": "{{_local.cronUrlCopying}}"
                       },
                       "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.cronUrlCopying}}",
+                          "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                          }
+                        },
                         {
                           "type": "basic",
                           "name": "Span",
@@ -439,36 +481,64 @@
                       "actions": [
                         {
                           "type": "click",
-                          "handler": "apiCall",
-                          "auth_required": true,
-                          "target": "/api/admin/settings/system/cron-token",
+                          "handler": "sequence",
                           "params": {
-                            "method": "GET"
-                          },
-                          "onSuccess": [
-                            {
-                              "handler": "copyToClipboard",
-                              "params": {
-                                "text": "{{result.data.url}}"
+                            "actions": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "local",
+                                  "cronUrlCopying": true
+                                }
+                              },
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/settings/system/cron-token",
+                                "params": {
+                                  "method": "GET"
+                                },
+                                "onSuccess": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "local",
+                                      "cronUrlCopying": false
+                                    }
+                                  },
+                                  {
+                                    "handler": "copyToClipboard",
+                                    "params": {
+                                      "text": "{{result.data.url}}"
+                                    }
+                                  },
+                                  {
+                                    "handler": "toast",
+                                    "params": {
+                                      "type": "success",
+                                      "message": "$t:admin.settings.system.cron_url_copied"
+                                    }
+                                  }
+                                ],
+                                "onError": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "local",
+                                      "cronUrlCopying": false
+                                    }
+                                  },
+                                  {
+                                    "handler": "toast",
+                                    "params": {
+                                      "type": "error",
+                                      "message": "{{error.message ?? '$t:admin.settings.system.cron_url_failed'}}"
+                                    }
+                                  }
+                                ]
                               }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "$t:admin.settings.system.cron_url_copied"
-                              }
-                            }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message ?? '$t:admin.settings.system.cron_url_failed'}}"
-                              }
-                            }
-                          ]
+                            ]
+                          }
                         }
                       ]
                     },

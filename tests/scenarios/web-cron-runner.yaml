@@ -181,6 +181,7 @@ effects:
   - cron_url_is_fetched_on_demand
   - run_now_executes_the_runner
   - execution_reason_is_shown_on_screen
+  - in_flight_controls_are_blocked_until_the_call_returns
 
 pending_effects:
   # 아직 재는 테스트가 없는 효과 — 지우지 않고 원장으로 보존한다.
@@ -234,6 +235,9 @@ test_files:
   - tests/Feature/Extension/ExtensionScheduleCommandResolutionTest.php
   - tests/Unit/Installer/InstallerQueueConnectionSyncTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-system-tab.test.tsx
+  # 왕복 중 조작 차단은 번호를 다루는 버튼만의 계약이 아니다 — 환경설정 화면의 왕복 버튼
+  # 전수를 한자리에서 잠근다(E2E 가 실제로 눌러 보는 자리는 그중 하나뿐이다).
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-inflight-controls.test.ts
   - tests/Playwright/specs/admin/system-tab-cron-settings.spec.ts
 
 rules_layer_coverage:

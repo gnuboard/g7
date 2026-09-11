@@ -262,44 +262,83 @@
               "type": "basic",
               "name": "Button",
               "if": "{{_local.coreUpdateInfo?.update_available}}",
+              "comment": "진행 표시는 정보 탭의 같은 조회 버튼(`_tab_info.json`)과 같은 `loadingChangelog` 플래그를 쓴다 — 두 버튼은 서로 다른 탭에 있어 동시에 그려지지 않는다.",
               "props": {
                 "type": "button",
-                "className": "btn-secondary"
+                "className": "btn-secondary",
+                "disabled": "{{_local.loadingChangelog}}"
               },
               "actions": [
                 {
                   "type": "click",
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/core-update/changelog",
+                  "handler": "sequence",
                   "params": {
-                    "method": "GET"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "coreChangelog": "{{result.data.changelog ?? []}}"
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "loadingChangelog": true
+                        }
+                      },
+                      {
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "/api/admin/core-update/changelog",
+                        "params": {
+                          "method": "GET"
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "loadingChangelog": false,
+                              "coreChangelog": "{{result.data.changelog ?? []}}"
+                            }
+                          },
+                          {
+                            "handler": "openModal",
+                            "target": "core_changelog_modal"
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "loadingChangelog": false
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "type": "error",
+                              "message": "{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"
+                            }
+                          }
+                        ]
                       }
-                    },
-                    {
-                      "handler": "openModal",
-                      "target": "core_changelog_modal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"
-                      }
-                    }
-                  ]
+                    ]
+                  }
                 }
               ],
-              "text": "$t:admin.settings.core_update.view_changelog"
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.loadingChangelog}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "spinner-sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:admin.settings.core_update.view_changelog"
+                }
+              ]
             }
           ]
         },
@@ -853,10 +892,12 @@
                   "id": "core_update_resume_button",
                   "type": "basic",
                   "name": "Button",
-                  "if": "{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') && _global.coreUpdateBusy !== true}}",
+                  "if": "{{_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back'}}",
+                  "comment": "종전에는 진행 중이면 `if` 로 버튼을 **감췄다**. 사라지는 것은 「눌렸다」는 신호로 읽히지 않는다 — 착수 버튼과 같이 자리를 지킨 채 비활성·스피너로 알린다. 진행 여부는 핸들러가 `publishBusy()` 로 싣는 `_global.coreUpdateBusy` 가 소유한다.",
                   "props": {
                     "type": "button",
-                    "className": "btn-primary"
+                    "className": "btn-primary",
+                    "disabled": "{{_global.coreUpdateBusy === true}}"
                   },
                   "actions": [
                     {
@@ -864,7 +905,22 @@
                       "handler": "resumeCoreUpdate"
                     }
                   ],
-                  "text": "$t:admin.settings.core_update.resume"
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{_global.coreUpdateBusy === true}}",
+                      "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.core_update.resume"
+                    }
+                  ]
                 },
                 {
                   "id": "core_update_guide_button",
@@ -889,17 +945,66 @@
                   "type": "basic",
                   "name": "Button",
                   "if": "{{_computed.coreUpdateRun?.status === 'completed' || _computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}",
+                  "comment": "형제들과 달리 `dismissCoreUpdate` 는 전역 진행 플래그를 싣지 않는다(기록 정리는 업데이트 진행이 아니다). 그래서 진행 표시는 이 버튼의 지역 플래그로 잡고, 커스텀 핸들러도 `onSuccess`/`onError` 를 지원하므로 되돌리는 자리가 있다.",
                   "props": {
                     "type": "button",
-                    "className": "btn-secondary"
+                    "className": "btn-secondary",
+                    "disabled": "{{_local.coreUpdateDismissing}}"
                   },
                   "actions": [
                     {
                       "type": "click",
-                      "handler": "dismissCoreUpdate"
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "coreUpdateDismissing": true
+                            }
+                          },
+                          {
+                            "handler": "dismissCoreUpdate",
+                            "onSuccess": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "local",
+                                  "coreUpdateDismissing": false
+                                }
+                              }
+                            ],
+                            "onError": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "local",
+                                  "coreUpdateDismissing": false
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
                     }
                   ],
-                  "text": "$t:admin.settings.core_update.dismiss"
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{_local.coreUpdateDismissing}}",
+                      "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.core_update.dismiss"
+                    }
+                  ]
                 }
               ]
             },

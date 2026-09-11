@@ -590,12 +590,22 @@
                   "id": "asset_url_mode_detect_button",
                   "type": "basic",
                   "name": "Button",
+                  "comment": "감지는 브라우저가 두 번 왕복하는 조작이다. 아래 안내 문구가 'detecting' 을 이미 그리지만 그것은 필드 밑에 있어 누른 손이 보는 자리가 아니다 — 버튼 자신이 잠기고 돌지 않으면 운영자는 다시 누르고, 그때마다 탐침이 겹쳐 돈다. 플래그는 핸들러가 이미 소유한다(`detectAssetUrlModeHandler` 가 시작에 'detecting', 성공·실패·판정불가 모든 경로에서 다른 값으로 덮는다).",
                   "props": {
                     "type": "button",
                     "className": "btn btn-secondary whitespace-nowrap",
-                    "disabled": "{{_computed.isReadOnly}}"
+                    "disabled": "{{_computed.isReadOnly || _local.asset_url_mode_detect_status === 'detecting'}}"
                   },
                   "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{_local.asset_url_mode_detect_status === 'detecting'}}",
+                      "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm"
+                      }
+                    },
                     {
                       "type": "basic",
                       "name": "Span",

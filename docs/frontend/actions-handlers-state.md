@@ -211,6 +211,71 @@ API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합�
 
 ---
 
+### 버튼에 건 apiCall 의 진행 표시 (필수)
+
+`apiCall`(및 네트워크를 타는 등록 핸들러)을 버튼에 걸면 **왕복이 도는 동안 그 버튼이 잠기고 도는 것을 보여야** 합니다. 화면이 그대로면 사용자는 눌리지 않은 줄 알고 다시 누르고, 그 두 번째 호출이 첫 번째를 무효로 만드는 조작(자격증명 재발급, 결제, 순번 부여)에서는 그 연타가 곧 사고입니다.
+
+진행 플래그 하나를 두고 **셋을 함께** 겁니다.
+
+```json
+{
+  "type": "basic",
+  "name": "Button",
+  "props": {
+    "type": "button",
+    "disabled": "{{_local.rotating}}"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Icon",
+      "if": "{{_local.rotating}}",
+      "props": { "name": "spinner", "className": "spinner-sm" }
+    },
+    { "type": "basic", "name": "Span", "text": "$t:admin.token.rotate" }
+  ],
+  "actions": [
+    {
+      "type": "click",
+      "handler": "sequence",
+      "params": {
+        "actions": [
+          { "handler": "setState", "params": { "target": "local", "rotating": true } },
+          {
+            "handler": "apiCall",
+            "auth_required": true,
+            "target": "/api/admin/token/rotate",
+            "params": { "method": "POST" },
+            "onSuccess": [
+              { "handler": "setState", "params": { "target": "local", "rotating": false } }
+            ],
+            "onError": [
+              { "handler": "setState", "params": { "target": "local", "rotating": false } }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+| 규칙 | 이유 |
+|------|------|
+| `props.disabled` 에 그 플래그를 싣는다 | 연타를 실제로 막는 것은 이것 하나뿐이다. 스피너만 돌면 보이기만 하고 두 번째 호출은 그대로 나간다 |
+| 첫 children 에 `Icon name="spinner"` 를 두고 `if` 에 **같은 식**을 쓴다 | 잠그는 식과 도는 식이 다르면 "잠겼는데 안 돌거나 돌면서 눌리는" 상태가 생겨 화면이 사용자에게 거짓을 말한다 |
+| 플래그를 `onSuccess` **와** `onError` 양쪽에서 되돌린다 | 성공에만 두면 실패한 순간 버튼이 영영 잠긴 채 남고, 새로 고치는 것 말고는 길이 없다 |
+| 라벨은 `text` 대신 `children` 의 `Span` 으로 옮긴다 | 스피너와 라벨이 나란히 서야 한다. `text` 와 `children` 을 함께 두면 `children` 이 이긴다 |
+| 지역 플래그는 레이아웃 `initLocal` 에 `false` 로 선언한다 | 선언이 없으면 첫 렌더의 `undefined` 가 우연히 falsy 로 통과할 뿐이라, 읽는 자리가 늘면 그 우연이 깨진다 |
+
+**진행 중이라고 버튼을 `if` 로 감추지 않습니다.** 사라지는 것은 「눌렸다」가 아니라 「없어졌다」로 읽히고, 같은 자리에 다른 버튼이 있으면 사용자가 그것을 잘못 누릅니다. 자리를 지킨 채 비활성 + 스피너로 알립니다.
+
+플래그를 핸들러가 소유하는 경우(등록 핸들러가 `_global` 진행 상태를 싣거나 자신의 상태 값을 쓰는 경우)에는 `setState` 두 줄이 필요 없습니다 — `disabled` 와 스피너 `if` 가 그 값을 읽기만 하면 됩니다. 되돌리는 책임은 그 핸들러에 있습니다.
+
+`refetchDataSource` 계열은 이 규칙의 대상이 아닙니다 — 그 로딩 표시는 데이터소스 계층(`blur_until_loaded` · 전환 오버레이)이 소유합니다([layout-json-components-loading.md](layout-json-components-loading.md)).
+
+---
+
 ### CSRF 토큰
 
 `apiCall`은 자동으로 CSRF 토큰을 처리합니다:

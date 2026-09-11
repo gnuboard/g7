@@ -59,52 +59,85 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
+                                    "comment": "같은 [변경사항 보기]가 정보 탭·업데이트 탭·이 결과 모달 셋에 있다. 셋 중 하나만 왕복 중에 아무 표시가 없으면 운영자는 그 자리에서만 다시 누른다 — 세 자리 모두 같은 진행 표시를 건다. 이 모달은 포털이라 `target: 'local'` 은 모달 자신의 _local 이고, 플래그도 부모의 같은 이름과 섞이지 않는다.",
                                     "props": {
                                         "type": "button",
-                                        "className": "px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                        "className": "px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors",
+                                        "disabled": "{{_local.loadingChangelog}}"
                                     },
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "apiCall",
-                                            "auth_required": true,
-                                            "target": "/api/admin/core-update/changelog",
+                                            "handler": "sequence",
                                             "params": {
-                                                "method": "GET",
-                                                "query": {
-                                                    "from_version": "{{$parent._local.coreUpdateInfo?.current_version ?? ''}}",
-                                                    "to_version": "{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "coreChangelog": "{{result.data.changelog ?? []}}"
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "loadingChangelog": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "/api/admin/core-update/changelog",
+                                                        "params": {
+                                                            "method": "GET",
+                                                            "query": {
+                                                                "from_version": "{{$parent._local.coreUpdateInfo?.current_version ?? ''}}",
+                                                                "to_version": "{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"
+                                                            }
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "loadingChangelog": false,
+                                                                    "coreChangelog": "{{result.data.changelog ?? []}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "core_changelog_modal"
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "loadingChangelog": false,
+                                                                    "coreChangelog": []
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "core_changelog_modal"
+                                                            }
+                                                        ]
                                                     }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "core_changelog_modal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "coreChangelog": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "core_changelog_modal"
-                                                }
-                                            ]
+                                                ]
+                                            }
                                         }
                                     ],
-                                    "text": "$t:admin.settings.info.view_changelog"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_local.loadingChangelog}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.info.view_changelog"
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",

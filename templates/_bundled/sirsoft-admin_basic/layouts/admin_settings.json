@@ -92,7 +92,10 @@
       "policies",
       "language_packs",
       "sitemap_status",
-      "staticCacheStatus"
+      "staticCacheStatus",
+      "system_status",
+      "core_update_status",
+      "trustedProxy"
     ]
   },
   "data_sources": [
@@ -1054,6 +1057,9 @@
     "coreUpdateInfo": null,
     "coreChangelog": null,
     "loadingChangelog": false,
+    "cronUrlRevealing": false,
+    "cronUrlCopying": false,
+    "coreUpdateDismissing": false,
     "policyForm": null,
     "policyErrors": null,
     "policyIsNew": true,
