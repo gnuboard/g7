@@ -185,6 +185,10 @@
 | processed_by | integer\|null | `1` | 마지막 처리 관리자 ID |
 | requester_name | string\|null | `홍길동` | 신청자 표기 (주문자명) |
 
+상세 표현에는 유저 상세와 같은 **주문금액 비교 블록** `calculation_comparison`(`original` / `recalculated` / `mc_original` /
+`mc_recalculated` / `substituted_items`, 스냅샷이 없는 구형 신청서는 `null`)이 들어 있다 — '이 클레임의 정산' 카드와
+취소 신청서 카드가 그 표를 그린다. 형태는 [claims.md 주문금액 비교 블록](claims.md#claim-resource) 이 정본이다.
+
 **응답**: `200` `data.claim` — 위 구조 / `404` 부재.
 
 ---

@@ -3029,4 +3029,84 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(3000.0, (float) $preview['items'][0]['price_difference']);
         $this->assertSame(3000.0, (float) $exchange->exchangeOptions->first()->price_difference);
     }
+
+    // ================================================================
+    // 주문금액 비교(전/후) — 옵션 치환 2-패스 · 접수 스냅샷 동결 (#599 후속)
+    // ================================================================
+
+    /**
+     * 미리보기의 재계산 스냅샷은 신규 옵션 단가를 반영한다. ("교환 후" 열 — 전 = 후가 아니다)
+     *
+     * @scenario user-claim-exchange-apply
+     *
+     * @effects claim_apply_exchange_after_column_reflects_substitution
+     */
+    public function test_preview_recalculated_snapshot_reflects_new_option_price(): void
+    {
+        $order = $this->deliveredOrder();
+        $newOption = $this->siblingOption($order, 3000);
+        $payload = $this->payload($order, newProductOptionId: $newOption->id);
+
+        $preview = $this->service->previewExchange($order, $payload['items'], 'size_mismatch');
+        $adjustment = $preview['adjustment'];
+
+        $this->assertSame(29000.0, $adjustment->originalSnapshot['subtotal_amount']);
+        $this->assertSame(32000.0, $adjustment->recalculatedSnapshot['subtotal_amount']);
+        $this->assertCount(1, $adjustment->substitutedItems);
+        $this->assertSame((int) $newOption->id, $adjustment->substitutedItems[0]['product_option_id']);
+        $this->assertSame(29000.0, $adjustment->substitutedItems[0]['unit_price']);
+        $this->assertSame(32000.0, $adjustment->substitutedItems[0]['new_unit_price']);
+        // 산식 축은 종전 그대로 — 고가 교환은 환불이 없고 차액은 청구다.
+        $this->assertSame(3000.0, $preview['additional_product_amount']);
+        $this->assertSame(0.0, $adjustment->getTotalRefundAmount());
+    }
+
+    /**
+     * 고가 교환의 표시 스냅샷은 후열이 커지지만 취소 차단으로 읽히지 않는다.
+     *
+     * @scenario user-claim-exchange-apply
+     *
+     * @effects claim_apply_exchange_after_column_reflects_substitution
+     */
+    public function test_preview_cancel_blocked_is_false_for_higher_priced_exchange(): void
+    {
+        $order = $this->deliveredOrder();
+        $newOption = $this->siblingOption($order, 3000);
+        $payload = $this->payload($order, newProductOptionId: $newOption->id);
+
+        $preview = $this->service->previewExchange($order, $payload['items'], 'size_mismatch');
+        $array = $preview['adjustment']->toPreviewArray();
+
+        $this->assertGreaterThan($array['original_snapshot']['total_paid_amount'], $array['recalculated_snapshot']['total_paid_amount']);
+        $this->assertFalse($array['cancel_blocked']);
+        $this->assertNull($array['cancel_blocked_reason']);
+    }
+
+    /**
+     * 접수는 미리보기와 같은 재료로 계산한 전/후 스냅샷을 신청서에 동결한다. (치환 근거 행 포함)
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
+    public function test_request_freezes_calculation_snapshots(): void
+    {
+        $order = $this->deliveredOrder();
+        $newOption = $this->siblingOption($order, 3000);
+
+        $exchange = $this->service->requestExchange(
+            $order,
+            $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST, newProductOptionId: $newOption->id)
+        );
+
+        $this->assertSame(29000.0, (float) $exchange->original_calculation_snapshot['subtotal_amount']);
+        $this->assertSame(32000.0, (float) $exchange->recalculated_snapshot['subtotal_amount']);
+        $this->assertSame('KRW', $exchange->recalculated_snapshot['base_currency']);
+        $this->assertArrayHasKey('formatted', $exchange->recalculated_snapshot);
+
+        $substituted = $exchange->recalculated_snapshot['_substituted_items'];
+        $this->assertCount(1, $substituted);
+        $this->assertSame((int) $newOption->id, $substituted[0]['product_option_id']);
+        $this->assertLessThan(0, $substituted[0]['line_key']);
+    }
 }

@@ -409,3 +409,102 @@ export async function mockOrderClaimList(
 
   return requested;
 }
+
+/** 재계산 전/후 스냅샷 한 벌 — 숫자 + base_currency + 기준 통화 포맷. 값은 응답에만 있고 다른 줄에서 만들 수 없는 것으로 고른다. */
+function comparisonSnapshot(values: Record<string, number>, formatted: Record<string, string>): Record<string, unknown> {
+  return { ...values, base_currency: 'KRW', formatted };
+}
+
+/** 원 주문 스냅샷 (부가세 5,636 은 이 응답에만 있다) */
+export const COMPARISON_ORIGINAL = comparisonSnapshot(
+  {
+    item_count: 5, total_list_price_amount: 86000, subtotal_amount: 70000, total_product_coupon_discount_amount: 0,
+    total_order_coupon_discount_amount: 3000, total_code_discount_amount: 0, shipping_discount_amount: 0,
+    base_shipping_amount: 0, extra_shipping_amount: 0, total_points_used_amount: 0, total_tax_amount: 62000,
+    total_vat_amount: 5636, total_paid_amount: 62000, total_earned_points_amount: 620,
+  },
+  {
+    total_list_price_amount: '86,000원', subtotal_amount: '70,000원', total_product_coupon_discount_amount: '0원',
+    total_order_coupon_discount_amount: '3,000원', total_code_discount_amount: '0원', shipping_discount_amount: '0원',
+    base_shipping_amount: '0원', extra_shipping_amount: '0원', total_points_used_amount: '0원',
+    total_tax_amount: '62,000원', total_vat_amount: '5,636원', total_paid_amount: '62,000원',
+  },
+);
+
+/** 재계산 스냅샷 (부가세 3,091 은 이 응답에만 있다) */
+export const COMPARISON_RECALCULATED = comparisonSnapshot(
+  {
+    item_count: 4, total_list_price_amount: 61000, subtotal_amount: 50000, total_product_coupon_discount_amount: 0,
+    total_order_coupon_discount_amount: 0, total_code_discount_amount: 0, shipping_discount_amount: 0,
+    base_shipping_amount: 0, extra_shipping_amount: 0, total_points_used_amount: 0, total_tax_amount: 45000,
+    total_vat_amount: 3091, total_paid_amount: 45000, total_earned_points_amount: 450,
+  },
+  {
+    total_list_price_amount: '61,000원', subtotal_amount: '50,000원', total_product_coupon_discount_amount: '0원',
+    total_order_coupon_discount_amount: '0원', total_code_discount_amount: '0원', shipping_discount_amount: '0원',
+    base_shipping_amount: '0원', extra_shipping_amount: '0원', total_points_used_amount: '0원',
+    total_tax_amount: '45,000원', total_vat_amount: '3,091원', total_paid_amount: '45,000원',
+  },
+);
+
+/** 접수 시점 동결 비교 블록 — 상세 응답의 `calculation_comparison` 형태 */
+export const FROZEN_COMPARISON = {
+  original: COMPARISON_ORIGINAL,
+  recalculated: COMPARISON_RECALCULATED,
+  mc_original: { mc_total_paid_amount_formatted: { KRW: '62,000원', USD: '$52.70' } },
+  mc_recalculated: { mc_total_paid_amount_formatted: { KRW: '45,000원', USD: '$38.25' } },
+  substituted_items: [],
+};
+
+/**
+ * 주문금액 비교 표가 그려질 재료를 전부 실은 미리보기 응답을 만듭니다. (#599 후속)
+ *
+ * 표의 값은 서버 `formatted` 직독이므로, 응답에만 있고 다른 줄에서 만들 수 없는 값
+ * (부가세 5,636 → 3,091)을 심어 그 글자가 그대로 나오는지로 잰다.
+ *
+ * @param overrides 최상위 필드 덮어쓰기 (claim_type · refund_product_amount …)
+ * @param adjustmentOverrides `adjustment` 덮어쓰기 (cancel_blocked · substituted_items …)
+ * @returns 미리보기 페이로드
+ */
+export function previewWithComparison(
+  overrides: Record<string, unknown> = {},
+  adjustmentOverrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    claim_type: 'refund',
+    requires_payment: false,
+    shipping_fee: { fee: 0, extra_fee: 0, groups: [] },
+    price_difference: 0,
+    additional_product_amount: 0,
+    refund_product_amount: 0,
+    total_charge_amount: 0,
+    refund_before_deduction: 17000,
+    deducted_shipping_fee: 0,
+    items: [],
+    adjustment: {
+      original_snapshot: COMPARISON_ORIGINAL,
+      recalculated_snapshot: COMPARISON_RECALCULATED,
+      mc_original_snapshot: null,
+      mc_recalculated_snapshot: null,
+      original_coupons: [{ name: '첫구매 쿠폰', target_type: 'order_amount', discount_amount: 3000, discount_amount_formatted: '3,000원' }],
+      recalculated_coupons: [],
+      refund_priority: 'pg_first',
+      refund_amount: 17000,
+      refund_points_amount: 0,
+      refund_total: 17000,
+      remaining_pg_balance: 45000,
+      remaining_points_balance: 0,
+      refund_formatted: {
+        base_currency: 'KRW',
+        base: { refund_total: '17,000원', refund_amount: '17,000원', remaining_pg_balance: '45,000원', remaining_points_balance: '0원' },
+        mc: {},
+      },
+      restored_coupons: [{ coupon_name: '첫구매 쿠폰', discount_amount: 3000, discount_amount_formatted: '3,000원' }],
+      cancel_blocked: false,
+      cancel_blocked_reason: null,
+      substituted_items: [],
+      ...adjustmentOverrides,
+    },
+    ...overrides,
+  };
+}

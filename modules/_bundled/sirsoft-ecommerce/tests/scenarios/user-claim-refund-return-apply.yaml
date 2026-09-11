@@ -108,6 +108,13 @@ effects:
   - claim_withdraw_error_channel_splits_by_fixability
   - claim_withdraw_modal_states_consequences
 
+  # 주문금액 비교 섹션 (#599 후속 — 옛 취소 모달 비교표 복구)
+  - claim_apply_comparison_table_renders_sixteen_rows
+  - claim_apply_comparison_highlights_changed_after_values
+  - claim_apply_cancel_blocked_locks_submit_inline
+  - claim_apply_refund_priority_reestimates
+  - claim_apply_restored_coupons_and_remaining_balances_render
+  - claim_apply_comparison_default_open_follows_breakpoint
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderReturnServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentRedirectTest.php

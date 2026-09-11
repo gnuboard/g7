@@ -45,7 +45,7 @@
  *   claim_apply_unmount_clears_estimate_timers,
  *   order_detail_claim_entry_buttons_gated_by_claimable_types,
  *   order_detail_claim_entry_passes_checked_options,
- *   order_detail_cancel_button_hidden_when_claim_actions_enabled,
+ *   order_detail_old_cancel_button_removed,
  *   order_detail_claim_additional_paid_row_present,
  *   claim_apply_summary_amount_rows_all_show_secondary_currency,
  *   claim_apply_total_charge_row_hidden_for_refund,
@@ -159,6 +159,22 @@ describe('apply.json — 작성 셸', () => {
     expect(actions[0].params.claimOrderId).toBe('{{response.data.data.id}}');
     expect(actions[1].handler).toBe('refetchDataSource');
     expect(actions[1].params.dataSourceId).toBe('claimable');
+  });
+
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   * @effects claim_edit_shell_sets_api_base_on_the_order_response
+   */
+  it('order.onSuccess 는 claimApiBase 도 세운다 (수정 진입은 initLocal 이 서지 않아 미리보기가 한 번도 호출되지 않았다)', () => {
+    // 회귀(2026-09-11 브라우저 실측, #599 후속): 수정 진입의 첫 주문 호출은 orders/0 → 404 라
+    // initLocal 의 claimApiBase 가 서지 않고, 번호로 다시 부른 성공 응답에는 initLocal 이 재적용되지
+    // 않는다. 그래서 수정 화면은 사유·재발송지를 바꿔도 claims/preview 를 부르지 않았고(D14 사문),
+    // 주문금액 비교도 "계산됩니다" 자리표시에 머물렀다.
+    const order = apply.data_sources.find((s: any) => s.id === 'order');
+    const setState = order.onSuccess[0].params.actions[0];
+    expect(setState.params.claimApiBase).toBe("{{'/api/modules/sirsoft-ecommerce/user/orders/' + response.data.data.id}}");
+    // 작성 진입(initLocal)과 같은 기준 경로여야 한다 — 두 곳이 갈리면 작성·수정의 미리보기가 다른 주소를 부른다.
+    expect(order.initLocal.claimApiBase).toBe("{{'/api/modules/sirsoft-ecommerce/user/orders/' + data.id}}");
   });
 
   it('claimable.onSuccess 는 응답 페이로드를 액션 파라미터로 넘긴다', () => {
@@ -568,7 +584,7 @@ describe('_modal_change_product.json — 교환상품 변경 모달 (D29)', () =
   it('상태는 페이지 로컬(_local)을 그대로 본다 ($parent._local 은 이 모달 컨텍스트에 없다)', () => {
     // 회귀(2026-08-31 브라우저 실측): $parent._local 로 쓰면 조건이 전부 거짓이 되어 제목과
     // 푸터만 남은 빈 모달이 열린다 — 오류도 경고도 없다. 레이아웃 modals 배열에 등록된 모달의
-    // _local 은 페이지 로컬이며, 형제 모달(_modal_cancel.json)도 같은 형태를 쓴다.
+    // _local 은 페이지 로컬이다.
     expect(JSON.stringify(changeProduct)).not.toContain('$parent');
 
     const bindings = flatten(changeProduct)
@@ -618,19 +634,97 @@ describe('mypage/orders/show.json — 클레임 신청 진입', () => {
     expect(order.onSuccess[0].params.actions[1].params.dataSourceId).toBe('claimable');
   });
 
-  it('클레임 신청 버튼을 쓰는 셸임을 표식으로 남긴다', () => {
-    expect(orderShow.initLocal.useClaimActions).toBe(true);
+  /**
+   * @scenario claim_type=exchange, entry=detail
+   * @effects order_detail_old_cancel_button_removed
+   */
+  it('옛 주문 취소 모달은 더 이상 싣지 않는다 (#599 후속 — 취소는 클레임 진입이 받는다)', () => {
+    const modals: any[] = orderShow.modals ?? [];
+    expect(modals.some((m) => typeof m.partial === 'string' && m.partial.includes('_modal_cancel.json'))).toBe(false);
+    expect(orderShow.initLocal.useClaimActions).toBeUndefined();
+  });
+});
+
+describe('_apply_summary.json / _apply_comparison.json — 주문금액 비교 섹션 구조 (#599 후속)', () => {
+  const summary = load('partials/mypage/claims/_apply_summary.json');
+  const comparison = load('partials/mypage/claims/_apply_comparison.json');
+
+  /**
+   * @scenario claim_type=exchange, price_delta=higher, charge_method=pay_on_request
+   * @effects claim_apply_comparison_partial_mounts_inside_the_summary_card
+   */
+  it('요약 카드는 금액 요약 뒤·분기 안내 앞에 비교 partial 을 싣고, 카드 안에서 스크롤하지 않는다', () => {
+    const children: any[] = summary.children;
+    const mountIndex = children.findIndex((n) => n.partial === 'partials/mypage/claims/_apply_comparison.json');
+    const noticeIndex = children.findIndex((n) => typeof n.comment === 'string' && n.comment.startsWith('취소·환불 분기 안내'));
+    const amountsIndex = children.findIndex((n) => typeof n.comment === 'string' && n.comment.startsWith('금액 요약'));
+
+    expect(mountIndex).toBeGreaterThan(amountsIndex);
+    expect(mountIndex).toBe(noticeIndex - 1);
+    // 요약은 비교표까지 전부 펼쳐 보여야 한다 — 카드 안 스크롤(max-h + overflow-y) 금지 (제품 결정 2026-09-11).
+    expect(summary.props.className).not.toContain('max-h-');
+    expect(summary.props.className).not.toContain('overflow-y-auto');
+  });
+
+  /**
+   * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+   * @effects claim_apply_comparison_default_open_follows_breakpoint
+   */
+  it('토글은 aria-expanded/aria-controls 를 바인딩하고 본문은 접힘 상태에서 렌더하지 않는다 (P6)', () => {
+    const nodes = flatten(comparison);
+    const toggle = nodes.find((n) => n.name === 'Button' && n.actions?.[0]?.handler === 'sirsoft-ecommerce.toggleClaimComparison');
+    expect(toggle.props['aria-expanded']).toBe('{{_local.claimComparisonOpen === true}}');
+    expect(toggle.props['aria-controls']).toBe('claim-comparison-body');
+
+    const body = nodes.find((n) => n.props?.id === 'claim-comparison-body');
+    expect(body.if).toContain('_local.claimComparisonOpen === true');
+    // 16행 — 14 금액행 + 쿠폰 + 교환 치환. `_global.isPortable` 죽은 참조는 쓰지 않는다.
+    const rows = nodes.filter((n) => typeof n.props?.['data-row'] === 'string');
+    expect(rows.map((n) => n.props['data-row'])).toEqual([
+      'item_count', 'total_list_price_amount', 'subtotal_amount', 'total_product_coupon_discount_amount',
+      'total_order_coupon_discount_amount', 'total_code_discount_amount', 'shipping_discount_amount',
+      'base_shipping_amount', 'extra_shipping_amount', 'total_points_used_amount', 'total_tax_amount',
+      'total_vat_amount', 'total_paid_amount', 'total_earned_points_amount', 'coupons', 'substituted',
+    ]);
+    // 주석은 그 죽은 참조를 설명하느라 이름을 인용한다 — 바인딩 식만 검사한다.
+    const withoutComments = JSON.stringify(comparison, (key, value) => (key === 'comment' || key.startsWith('_comment') ? undefined : value));
+    expect(withoutComments).not.toContain('_global.isPortable');
+  });
+
+  /**
+   * @scenario claim_type=refund, refund_branch=refund
+   * @effects claim_apply_cancel_blocked_locks_submit_inline, claim_apply_refund_priority_reestimates
+   */
+  it('제출 버튼은 환불 불가(cancel_blocked)에 잠기고 우선순위 라디오는 미리보기를 다시 부른다', () => {
+    const nodes = flatten(summary);
+    const submit = nodes.find((n) => n.name === 'Button' && n.actions?.[0]?.handler === 'sirsoft-ecommerce.submitClaim');
+    expect(submit.props.disabled).toContain('_local.claimEstimate?.adjustment?.cancel_blocked === true');
+
+    const radios = nodes.filter((n) => n.name === 'Input' && n.props?.name === 'claimRefundPriority');
+    expect(radios.map((n) => n.props.value)).toEqual(['pg_first', 'points_first']);
+    for (const radio of radios) {
+      expect(radio.actions[0].handler).toBe('sirsoft-ecommerce.changeClaimRefundPriority');
+      expect(radio.actions[0].params.claimApiBase).toBe("{{_local.claimApiBase ?? ''}}");
+    }
+    const priorityBlock = nodes.find((n) => n.props?.['data-testid'] === 'claim-refund-priority');
+    // 마일리지를 쓰지 않은 주문에서는 뜻이 없다 — 포인트 사용액으로 가드한다.
+    expect(priorityBlock.if).toContain('total_points_used_amount ?? 0) > 0');
   });
 });
 
 describe('_items.json — 공유 partial (회원/비회원)', () => {
-  it('주문 취소 버튼은 클레임 신청 버튼을 쓰는 셸에서 감춘다', () => {
-    const cancelButton = flatten(orderItems).find(
-      (n) => n.name === 'Button' && n.actions?.[0]?.handler === 'sirsoft-ecommerce.initUserCancelItems'
-    );
-    expect(cancelButton.if).toContain('_local.useClaimActions !== true');
-    // 표식이 없는 셸(비회원)에서는 종전 조건이 그대로 남는다.
-    expect(cancelButton.if).toContain('order.data.abilities?.can_cancel === true');
+  /**
+   * @scenario claim_type=exchange, entry=detail
+   * @effects order_detail_old_cancel_button_removed
+   */
+  it('옛 [주문 취소] 버튼은 남아 있지 않다 — initUserCancelItems 핸들러 참조 0 (#599 후속)', () => {
+    const raw = JSON.stringify(orderItems);
+    expect(raw).not.toContain('initUserCancelItems');
+    expect(raw).not.toContain('useClaimActions');
+    expect(raw).not.toContain('cancel_modal.');
+    // 선택 축(체크박스)은 살아 있다 — 클레임 신청 버튼이 체크한 상품을 넘긴다.
+    expect(raw).toContain('sirsoft-ecommerce.toggleItemSelection');
+    expect(raw).toContain('sirsoft-ecommerce.toggleSelectAllItems');
   });
 
   it('체크박스는 취소 가능하거나 클레임이 열린 상품에서 보인다', () => {

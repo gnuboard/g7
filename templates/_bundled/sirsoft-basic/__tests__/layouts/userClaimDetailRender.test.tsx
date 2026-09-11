@@ -120,9 +120,44 @@ const TRANSLATIONS = {
       reason_detail: '상세 사유',
       reject_reason: '반려 사유',
       images: '첨부 사진',
+      // 접수 시점 주문금액 비교표(#599 후속) — 라벨은 언어팩 원본을 그대로 쓴다(키 누락이 곧 실패).
+      comparison: JSON.parse(
+        fs.readFileSync(path.resolve(__dirname, '../../lang/partial/ko/claim.json'), 'utf-8')
+      ).detail.comparison,
     },
   },
   shop: { count_unit: '개' },
+};
+
+/** 접수 시점에 동결된 비교 스냅샷(전/후) — 값은 응답에만 있고 다른 줄에서 만들 수 없는 것으로 고른다. */
+const CALCULATION_COMPARISON = {
+  original: {
+    item_count: 2, total_list_price_amount: 58000, subtotal_amount: 58000, total_product_coupon_discount_amount: 0,
+    total_order_coupon_discount_amount: 0, total_code_discount_amount: 0, shipping_discount_amount: 0,
+    base_shipping_amount: 0, extra_shipping_amount: 0, total_points_used_amount: 0, total_tax_amount: 58000,
+    total_vat_amount: 5272, total_paid_amount: 58000, total_earned_points_amount: 580, base_currency: 'KRW',
+    formatted: {
+      total_list_price_amount: '58,000원', subtotal_amount: '58,000원', total_product_coupon_discount_amount: '0원',
+      total_order_coupon_discount_amount: '0원', total_code_discount_amount: '0원', shipping_discount_amount: '0원',
+      base_shipping_amount: '0원', extra_shipping_amount: '0원', total_points_used_amount: '0원',
+      total_tax_amount: '58,000원', total_vat_amount: '5,272원', total_paid_amount: '58,000원',
+    },
+  },
+  recalculated: {
+    item_count: 1, total_list_price_amount: 29000, subtotal_amount: 29000, total_product_coupon_discount_amount: 0,
+    total_order_coupon_discount_amount: 0, total_code_discount_amount: 0, shipping_discount_amount: 0,
+    base_shipping_amount: 0, extra_shipping_amount: 0, total_points_used_amount: 0, total_tax_amount: 29000,
+    total_vat_amount: 2636, total_paid_amount: 29000, total_earned_points_amount: 290, base_currency: 'KRW',
+    formatted: {
+      total_list_price_amount: '29,000원', subtotal_amount: '29,000원', total_product_coupon_discount_amount: '0원',
+      total_order_coupon_discount_amount: '0원', total_code_discount_amount: '0원', shipping_discount_amount: '0원',
+      base_shipping_amount: '0원', extra_shipping_amount: '0원', total_points_used_amount: '0원',
+      total_tax_amount: '29,000원', total_vat_amount: '2,636원', total_paid_amount: '29,000원',
+    },
+  },
+  mc_original: { mc_total_paid_amount_formatted: { KRW: '58,000원', USD: '$49.30' } },
+  mc_recalculated: { mc_total_paid_amount_formatted: { KRW: '29,000원', USD: '$24.65' } },
+  substituted_items: [],
 };
 
 function exchangeDetail(overrides: Record<string, any> = {}): Record<string, any> {
@@ -308,6 +343,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(container.querySelector('#claim_progress_steps')).toBeNull();
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_items_show_exchange_target
+   */
   it('신청 상품 — 상품·옵션·수량·금액과 교환 대상이 나온다', async () => {
     const { utils, container } = await renderDetail(['_detail_items.json'], exchangeDetail());
     active = utils;
@@ -323,6 +362,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('$2.25');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_item_status_badge_only_when_different
+   */
   it('상품 단위 상태 배지는 헤더와 다를 때만 선다', async () => {
     // 같을 때 — 배지를 세우면 같은 값이 두 번 보여 어느 쪽이 이 상품의 상태인지 흐려진다.
     const { utils: u1, container: same } = await renderDetail(
@@ -341,6 +384,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(diff.textContent ?? '').toContain('교환반려');
   });
 
+  /**
+   * @scenario claim_type=refund, screen=detail, entry=none
+   * @effects claim_detail_items_show_exchange_target
+   */
   it('환불 유형에는 교환 대상 줄이 서지 않는다', async () => {
     const { utils, container } = await renderDetail(['_detail_items.json'], refundDetail());
     active = utils;
@@ -353,6 +400,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('환불 예정 39,000원');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_shipping_card_absent_for_refund
+   */
   it('배송 — 교환은 회수·재발송이 한 카드에 서고 수정 뱃지가 붙는다', async () => {
     const { utils, container } = await renderDetail(['_detail_shipping.json'], exchangeDetail());
     active = utils;
@@ -372,6 +423,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(container.querySelector('a[href="https://example.test/track/651234567890"]')).not.toBeNull();
   });
 
+  /**
+   * @scenario claim_type=refund, screen=detail, entry=none
+   * @effects claim_detail_shipping_card_absent_for_refund
+   */
   it('배송 — 환불 유형에는 카드 자체가 서지 않는다', async () => {
     const { utils, container } = await renderDetail(['_detail_shipping.json'], refundDetail());
     active = utils;
@@ -379,6 +434,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect((container.textContent ?? '').trim()).toBe('');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_contrast_axis_shows_both_sides
+   */
   it('클레임 정보 — 원 주문과 이 클레임을 나란히 그린다 (대비 축 유지)', async () => {
     const { utils, container } = await renderDetail(['_detail_claim_info.json'], exchangeDetail());
     active = utils;
@@ -395,6 +454,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('$6.75');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_contrast_axis_shows_both_sides
+   */
   it('클레임 정보 — 추가결제 내역과 청구 방식이 나온다', async () => {
     const { utils, container } = await renderDetail(['_detail_claim_info.json'], exchangeDetail());
     active = utils;
@@ -410,6 +473,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).not.toContain('미수납 금액');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_outstanding_payment_has_an_entry_point
+   */
   it('클레임 정보 — 미수납이 남으면 그 줄이 선다', async () => {
     const { utils, container } = await renderDetail(
       ['_detail_claim_info.json'],
@@ -420,6 +487,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(container.textContent ?? '').toContain('미수납 금액');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_outstanding_payment_has_an_entry_point
+   */
   it('클레임 정보 — 미수납만 있고 결제 대기 건이 없으면 결제 버튼을 세우지 않는다', async () => {
     // 낼 것이 없는데 버튼만 있으면 눌러도 거절만 돌아온다 — 승인 시점 결제는 운영자가
     // 승인해야 서버가 결제 대기 건(CP)을 만든다.
@@ -442,6 +513,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     ).toHaveLength(0);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_outstanding_payment_has_an_entry_point
+   */
   it('클레임 정보 — 결제 대기 건이 있으면 결제 진입점이 선다 (없으면 낼 방법이 없다)', async () => {
     const { utils, container } = await renderDetail(
       ['_detail_claim_info.json'],
@@ -476,6 +551,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(button?.getAttribute('disabled')).toBeNull();
   });
 
+  /**
+   * @scenario claim_type=refund, screen=detail, entry=none
+   * @effects claim_detail_refund_account_reads_the_claim_row
+   */
   it('클레임 정보 — 환불 유형은 환불 수단·마일리지 환급·계좌를 그린다', async () => {
     const { utils, container } = await renderDetail(['_detail_claim_info.json'], refundDetail());
     active = utils;
@@ -493,6 +572,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).not.toContain('추가 결제');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_loads_the_relations_the_screen_draws
+   */
   it('신청 사유 — 사유·귀책·상세 사유가 나오고 첨부는 서명 URL 을 그대로 쓴다', async () => {
     const { utils, container } = await renderDetail(['_detail_reason.json'], refundDetail());
     active = utils;
@@ -507,6 +590,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     ).not.toBeNull();
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_reject_reason_leads_the_reason_card
+   */
   it('신청 사유 — 반려 사유가 있으면 카드 맨 위에 선다', async () => {
     const { utils, container } = await renderDetail(
       ['_detail_reason.json'],
@@ -522,6 +609,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text.indexOf('반려 사유')).toBeLessThan(text.indexOf('사이즈가 맞지 않아요'));
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_items_show_exchange_target
+   */
   it('교환 대상 — 차액이 0 이면 보조 통화 줄도 서지 않는다', async () => {
     // 기준 통화 줄(옵션 차액)은 차액이 0 이면 서지 않는다. 보조 통화 iteration 에 같은 게이트가
     // 없으면 "동일 상품으로 교환" 밑에 라벨 없는 `$0.00 ¥0` 만 남는다 — 서버는 교환 행이면
@@ -547,6 +638,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).not.toContain('¥0');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_items_show_exchange_target
+   */
   it('교환 대상 — 차액이 있으면 보조 통화 줄이 선다 (게이트가 값을 삼키지 않는다)', async () => {
     const { utils, container } = await renderDetail(['_detail_items.json'], exchangeDetail());
     active = utils;
@@ -557,6 +652,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('$2.25');
   });
 
+  /**
+   * @scenario claim_type=refund, screen=detail, entry=none
+   * @effects claim_detail_contrast_axis_shows_both_sides
+   */
   it('대비 행 — 환불의 보조 통화는 현금+마일리지 합계(mc_refund_total)를 읽는다', async () => {
     // 기준 줄이 `refund_total_formatted`(39,000원 = 현금 38,000 + 마일리지 1,000) 이므로
     // 보조 통화도 그 합계여야 한다. 현금분만인 `mc_refund_amount` 를 읽으면 두 줄이 서로
@@ -576,6 +675,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).not.toContain('$28.50');
   });
 
+  /**
+   * @scenario claim_type=cancel, screen=detail, entry=none
+   * @effects claim_detail_contrast_axis_shows_both_sides
+   */
   it('대비 행 — 취소도 보조 통화를 병기한다 (합계 키가 없으면 현금분으로 떨어진다)', async () => {
     const claim = refundDetail({
       claim_type: 'cancel',
@@ -595,6 +698,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('$13.50');
   });
 
+  /**
+   * @scenario claim_type=return, screen=detail, entry=none
+   * @effects claim_detail_contrast_axis_shows_both_sides
+   */
   it('대비 행 — 배송비도 보조 통화를 병기한다 (교환·반품은 mc_claim_shipping_fee)', async () => {
     // 대비 행 2(청구·환불)는 병기하는데 대비 행 1(배송비)만 기준 통화로 남아 있었다
     // — 같은 카드의 두 줄이 다통화 상점에서 서로 다른 정보를 그렸다(2026-09-01 4차).
@@ -612,6 +719,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('¥810');
   });
 
+  /**
+   * @scenario claim_type=refund, screen=detail, entry=none
+   * @effects claim_detail_contrast_axis_shows_both_sides
+   */
   it('대비 행 — 환불의 배송비 보조 통화는 mc_refund_shipping_amount 를 읽는다', async () => {
     // 환불 분기의 기준 줄은 `refund_shipping_amount_formatted` 다. 컬럼은 이미 있었고 리소스가
     // 노출하지 않아, 그 자리에서 환불 신청서만 외화가 사라졌다.
@@ -631,6 +742,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).not.toContain('$4.50');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_contrast_axis_shows_both_sides
+   */
   it('추가결제 내역 — 결제 금액에도 보조 통화가 병기된다', async () => {
     // `mc_amount` 는 결제 수단과 무관하게 청구액 전체로 만들어지므로 `total_amount_formatted`
     // 와 같은 값이다. 총 청구액의 보조 통화($6.75)와 구별되는 값을 넣어, 결제 행 **자신이**
@@ -647,6 +762,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('$6.90');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_items_show_exchange_target
+   */
   it('신청 상품 — 소계에도 보조 통화가 병기된다 (목록 카드와 같은 정보다)', async () => {
     // 목록 카드의 같은 상품 행은 소계의 보조 통화를 그린다(3차 ⓕ). 상세만 빠져 있어 같은
     // 상품의 소계가 화면에 따라 외화가 있고 없고가 갈렸다.
@@ -663,6 +782,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('¥3,915');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_items_show_exchange_target
+   */
   it('교환 대상 — 이 교환에 얹은 추가옵션이 이름으로 나온다', async () => {
     // 신청 시점에 이름과 추가금이 동결된다. 예전에는 선택 ID 만 남아 이 자리에 아무것도
     // 그릴 수 없었고, 구매자는 자기가 무엇을 골랐는지 확인할 수 없었다(2026-09-01 4차 실측).
@@ -682,6 +805,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('각인 (G7)');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_items_show_exchange_target
+   */
   it('교환 대상 — 추가옵션이 없으면 그 줄이 서지 않는다', async () => {
     const { utils, container } = await renderDetail(['_detail_items.json'], exchangeDetail());
     active = utils;
@@ -696,6 +823,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(strays).toHaveLength(0);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_items_show_exchange_target
+   */
   it('교환 대상 — 동일상품 교환이라도 추가옵션은 나온다', async () => {
     // 옵션을 바꾸지 않아도 추가옵션은 새로 고를 수 있다 — 그 줄의 게이트는 옵션 변경 여부가
     // 아니라 추가옵션의 유무다.
@@ -716,10 +847,115 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('선물 포장');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_loads_the_relations_the_screen_draws
+   */
   it('신청 사유 — 첨부가 없으면 그 블록이 서지 않는다', async () => {
     const { utils, container } = await renderDetail(['_detail_reason.json'], exchangeDetail());
     active = utils;
 
     expect(container.textContent ?? '').not.toContain('첨부 사진');
+  });
+
+  // ── 접수 시점 주문금액 비교표 (#599 후속 P4) ─────────────────────────
+
+  // @scenario claim_type=exchange, screen=detail, entry=none
+  // @effects claim_detail_comparison_renders_from_frozen_snapshot
+  it('클레임 정보 — 접수 시점 비교표(14 금액행 + 교환 치환행)가 저장 스냅샷 그대로 선다', async () => {
+    const { utils, container } = await renderDetail(['_detail_claim_info.json'], exchangeDetail({
+      calculation_comparison: {
+        ...CALCULATION_COMPARISON,
+        substituted_items: [{
+          order_option_id: 310, quantity: 1, product_option_id: 77, unit_price: 29000, new_unit_price: 32000,
+          line_key: -310, option_label: '블랙 / L', unit_price_formatted: '29,000원', new_unit_price_formatted: '32,000원',
+        }],
+      },
+    }));
+    active = utils;
+
+    const text = container.textContent ?? '';
+    const table = container.querySelector('[data-testid="claim-detail-comparison-table"]');
+    const rows = Array.from(table?.querySelectorAll('[data-row]') ?? []).map((el) => el.getAttribute('data-row'));
+
+    expect(rows).toHaveLength(15);
+    expect(rows[0]).toBe('item_count');
+    expect(rows[rows.length - 1]).toBe('substituted');
+    expect(text).toContain('주문금액 비교');
+    expect(text).toContain('5,272원');
+    expect(text).toContain('2,636원');
+    expect(text).toContain('2개');
+    expect(text).toContain('1개');
+    expect(text).toContain('$49.30');
+    expect(text).toContain('$24.65');
+    expect(text).toContain('블랙 / L');
+    expect(text).toContain('29,000원 → 32,000원');
+    // 열 라벨은 유형 분기 식이라 하네스에서는 키가 난다 — 교환 키가 골라졌는지를 잰다.
+    expect(text).toContain('claim.detail.comparison.col_before_exchange');
+    expect(container.querySelector('[data-testid="claim-detail-comparison-empty"]')).toBeNull();
+    // 기존 3행 대비표(원 주문 ↔ 이 클레임)는 그대로 남는다.
+    expect(text).toContain('원 주문');
+    expect(text).toContain('+9,000원');
+  });
+
+  // @scenario claim_type=exchange, screen=detail, entry=none
+  // @effects claim_detail_comparison_absent_notice_for_legacy_claims
+  it('클레임 정보 — 스냅샷이 없는 구형 신청서는 안내 한 줄만 선다', async () => {
+    const { utils, container } = await renderDetail(['_detail_claim_info.json'], exchangeDetail({ calculation_comparison: null }));
+    active = utils;
+
+    expect(container.querySelector('[data-testid="claim-detail-comparison-empty"]')?.textContent).toBe('접수 시점 비교표가 없습니다');
+    expect(container.querySelector('[data-testid="claim-detail-comparison-table"]')).toBeNull();
+    expect(container.querySelectorAll('[data-row]')).toHaveLength(0);
+  });
+
+  // @scenario claim_type=return, screen=detail, entry=none
+  // @effects claim_detail_comparison_mobile_kv_form
+  it('클레임 정보 — 모바일은 행마다 "원값 → 변경값" kv 형이고 머리글은 숨는다 (구조)', async () => {
+    const partial = loadPartial('_detail_claim_info.json');
+    const nodes: any[] = [];
+    (function walk(n: any) { if (Array.isArray(n)) n.forEach(walk); else if (n && typeof n === 'object') { nodes.push(n); Object.values(n).forEach(walk); } })(partial);
+
+    // `responsive.portable` 도 props 를 들므로 노드 자신(type: basic)만 센다.
+    const rows = nodes.filter((n) => n.type === 'basic' && typeof n.props?.['data-row'] === 'string' && n.props['data-row'] !== 'substituted');
+    expect(rows).toHaveLength(14);
+    for (const row of rows) {
+      // 회귀(2026-09-11 브라우저 실측): 임의값 grid 템플릿(`grid-cols-[1fr_auto_auto]`)은 행마다 내용으로
+      // 열 폭을 정해 "전/후" 열이 행마다 어긋났고, 관리자 템플릿 CSS 는 임의값 자체를 컴파일하지 않아
+      // 표가 세로로 쌓였다. 세 화면 모두 기본 클래스(grid-cols-3)로 같은 격자를 쓴다.
+      expect(row.props.className).toContain('grid-cols-3');
+      expect(row.props.className).not.toContain('grid-cols-[');
+      expect(row.responsive.portable.props.className).toContain('flex');
+      // 화살표는 PC 에서 숨고 모바일에서만 보인다.
+      const arrow = row.children.find((c: any) => c.text === '→');
+      expect(arrow.props.className).toBe('hidden');
+      expect(arrow.responsive.portable.props.className).not.toContain('hidden');
+    }
+    const header = nodes.find((n) => typeof n.comment === 'string' && n.comment.startsWith('표 머리글'));
+    expect(header.responsive.portable.props.className).toBe('hidden');
+
+    // 렌더에서도 화살표가 행마다 하나씩 DOM 에 선다(표시 여부는 뷰포트 규칙이 정한다).
+    const { utils, container } = await renderDetail(['_detail_claim_info.json'], exchangeDetail({ calculation_comparison: CALCULATION_COMPARISON }));
+    active = utils;
+    const arrows = Array.from(container.querySelectorAll('[data-testid="claim-detail-comparison-table"] [data-row] span'))
+      .filter((el) => el.textContent === '→');
+    expect(arrows).toHaveLength(14);
+  });
+
+  // @scenario claim_type=return, entry=with_token, screen=detail
+  // @effects claim_detail_comparison_renders_from_frozen_snapshot
+  it('클레임 정보 — 비회원 상세도 같은 partial 을 실어 같은 표가 선다', async () => {
+    const guestShow = fs.readFileSync(path.resolve(__dirname, '../../layouts/shop/guest_claim_show.json'), 'utf-8');
+    const memberShow = fs.readFileSync(path.resolve(__dirname, '../../layouts/mypage/claims/show.json'), 'utf-8');
+    expect(guestShow).toContain('partials/mypage/claims/_detail_claim_info.json');
+    expect(memberShow).toContain('partials/mypage/claims/_detail_claim_info.json');
+
+    // 비회원 응답은 같은 ClaimResource 라 같은 키(calculation_comparison)를 싣는다 — 회원과 같은 상태로 그리면 행 수가 같다.
+    const { utils, container } = await renderDetail(['_detail_claim_info.json'], exchangeDetail({
+      is_guest_request: true, requested_by: null, calculation_comparison: CALCULATION_COMPARISON,
+    }));
+    active = utils;
+    expect(container.querySelectorAll('[data-testid="claim-detail-comparison-table"] [data-row]')).toHaveLength(14);
+    expect(container.textContent).toContain('5,272원');
   });
 });

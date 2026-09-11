@@ -515,6 +515,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | mc_recalculated_snapshot | object\|null | — | 재계산 후 다중 통화 스냅샷 |
 | original_coupons | array | — | 원 주문에 적용된 쿠폰 상세 (`name`, `target_type`, `discount_amount`) |
 | recalculated_coupons | array | — | 재계산 후 유지되는 쿠폰 상세 |
+| substituted_items | array | `[]` | 교환 미리보기의 옵션 치환 근거 행 — 취소 경로에서는 항상 빈 배열 |
 | cancel_blocked | boolean | `false` | 취소 차단 여부 (부분취소로 쿠폰 조건이 깨져 추가결제가 필요해지는 경우 true) |
 | cancel_blocked_reason | string\|null | `null` | 차단 사유 메시지 (차단이 아니면 `null`) |
 
@@ -570,6 +571,8 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | 500 | Internal Server Error | 환불 예상금액 계산 실패 (`환불 예상금액 계산에 실패했습니다.`) |
 
 <!-- @generated:end -->
+
+**유저 화면 소비처 없음** — 비회원 주문상세의 옛 주문 취소 모달이 삭제되어(sirsoft-basic 1.2.0) 이 라우트를 부르는 화면은 없다. 취소·환불 신청은 [claims/preview](#post-apimodulessirsoft-ecommerceguestordersordernumberclaimspreview)(`type=refund`)가 같은 `AdjustmentResult` 를 `adjustment` 로 싣는다. 라우트·요청 검증·응답 형태는 **API 계약으로 유지**한다.
 
 **설명** 비회원이 취소를 확정하기 전에 특정 옵션(`items`) 취소 시 예상 환불 금액을 미리 계산해 보여줍니다. 조회 토큰(`X-Guest-Order-Token`)으로 주문 소유권이 검증되며, `OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 실제 취소를 수행하지 않고 환불 예상값만 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 비회원 주문 취소 화면에서 "환불 예정 금액"을 미리 안내하는 용도입니다.
 
@@ -871,7 +874,7 @@ Content-Type: application/json
 
 **응답 필드** / **응답 예시**
 
-회원 미리보기와 동일합니다.
+회원 미리보기와 동일합니다 — 교환은 옵션 치환 재계산이라 `adjustment.recalculated_snapshot` 이 "교환 후" 값이고 `adjustment.substituted_items` 에 치환 근거 행이 실립니다(회원 문서 참조).
 
 **오류 응답**
 

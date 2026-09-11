@@ -214,19 +214,11 @@ import {
     clearCancelOrderTimers,
 } from './cancelOrderHandlers';
 
-// 주문 취소 핸들러 (사용자)
+// 주문 상품 선택 핸들러 (회원/비회원 주문상세 공용 — 클레임 신청 진입이 쓴다)
 import {
     toggleItemSelectionHandler,
     toggleSelectAllItemsHandler,
-    initUserCancelItemsHandler,
-    toggleUserCancelItemHandler,
-    toggleUserCancelSelectAllHandler,
-    updateUserCancelQuantityHandler,
-    estimateUserRefundHandler,
-    changeUserRefundPriorityHandler,
-    executeUserCancelOrderHandler,
-    clearUserCancelOrderTimers,
-} from './userCancelOrderHandlers';
+} from './orderItemSelectionHandlers';
 
 // 구매확정 핸들러 (사용자)
 import { confirmOrderOptionHandler } from './userConfirmOrderHandlers';
@@ -258,6 +250,8 @@ import {
     claimApplyOrderMissingHandler,
     initClaimEditHandler,
     saveClaimEditHandler,
+    changeClaimRefundPriorityHandler,
+    toggleClaimComparisonHandler,
 } from './claimApplyHandlers';
 
 // 클레임 첨부 이미지 핸들러 (회원/비회원 공용)
@@ -519,16 +513,6 @@ export const handlerMap = {
     toggleItemSelection: toggleItemSelectionHandler,
     toggleSelectAllItems: toggleSelectAllItemsHandler,
 
-    // ===== 주문 취소 (사용자) =====
-    initUserCancelItems: initUserCancelItemsHandler,
-    toggleUserCancelItem: toggleUserCancelItemHandler,
-    toggleUserCancelSelectAll: toggleUserCancelSelectAllHandler,
-    updateUserCancelQuantity: updateUserCancelQuantityHandler,
-    estimateUserRefund: estimateUserRefundHandler,
-    changeUserRefundPriority: changeUserRefundPriorityHandler,
-    executeUserCancelOrder: executeUserCancelOrderHandler,
-    clearUserCancelOrderTimers: clearUserCancelOrderTimers,
-
     // ===== 구매확정 (사용자) =====
     confirmOrderOption: confirmOrderOptionHandler,
 
@@ -555,6 +539,9 @@ export const handlerMap = {
     estimateClaim: estimateClaimHandler,
     submitClaim: submitClaimHandler,
     clearClaimApplyTimers: clearClaimApplyTimers,
+    // 주문금액 비교 섹션(#599 후속) — 환불 우선순위 전환(미리보기 재호출) · 접기/펼치기
+    changeClaimRefundPriority: changeClaimRefundPriorityHandler,
+    toggleClaimComparison: toggleClaimComparisonHandler,
 
     // ===== 클레임 신청서 수정 (회원/비회원 공용 — 작성 셸의 edit 모드) =====
     claimApplyOrderMissing: claimApplyOrderMissingHandler,

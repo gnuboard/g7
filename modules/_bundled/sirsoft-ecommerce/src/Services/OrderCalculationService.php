@@ -87,6 +87,7 @@ class OrderCalculationService
      * @param  ShippingPolicyRepositoryInterface  $shippingPolicyRepository  배송정책 Repository
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
      * @param  ProductAdditionalOptionValueRepositoryInterface  $additionalOptionValueRepository  추가옵션 선택지 Repository
+     * @param  ShippingPolicyResolver  $shippingPolicyResolver  주문 항목에 적용할 배송정책 해석기
      */
     public function __construct(
         protected CurrencyConversionService $currencyService,
@@ -622,7 +623,7 @@ class OrderCalculationService
                         ? ($discountedItems[$optionId]['quantity'] ?? 1)
                         : 1;
 
-                    $discount = $this->calculateCouponDiscount($coupon, $currentSubtotal, $snapshot, $itemQuantity);
+                    $discount = $this->calculateCouponDiscount($coupon, $currentSubtotal, $this->couponSnapshotForLine($snapshot, $optionId), $itemQuantity);
 
                     $discountedItems[$optionId]['coupon_discount'] = ($discountedItems[$optionId]['coupon_discount'] ?? 0) + $discount;
                     $discountedItems[$optionId]['discounted_subtotal'] = $currentSubtotal - $discount;
@@ -713,7 +714,7 @@ class OrderCalculationService
                     // 상품금액 쿠폰 정액할인: 수량만큼 할인
                     $itemQuantity = $discountedItems[$optionId]['quantity'] ?? 1;
 
-                    $discount = $this->calculateCouponDiscount($coupon, $originalSubtotal, $snapshot, $itemQuantity);
+                    $discount = $this->calculateCouponDiscount($coupon, $originalSubtotal, $this->couponSnapshotForLine($snapshot, $optionId), $itemQuantity);
 
                     $totalDiscount += $discount;
                     $appliedItems[] = [
@@ -1453,7 +1454,22 @@ class OrderCalculationService
     /**
      * 최종 결과를 빌드합니다.
      *
+     * @param  array  $preparedItems  준비된 아이템 배열 [{product_id, product_option_id, quantity, unit_price, …}]
+     * @param  array  $itemSubtotals  옵션별 소계 {옵션ID => {subtotal, …}}
+     * @param  array  $itemsAfterProductDiscount  상품 할인 반영 결과 {옵션ID => {coupon_discount, …}}
+     * @param  array  $itemsAfterOrderDiscount  주문 할인 안분 결과 {옵션ID => {order_discount_share, …}}
+     * @param  array  $pointsPerItem  옵션별 적립 예정 마일리지 {옵션ID => 적립액}
+     * @param  array  $taxClassification  옵션별 과세·면세 분류 {옵션ID => {taxable_amount, tax_free_amount}}
+     * @param  array  $shippingResult  배송비 산정 결과 {shipping_by_option, …}
+     * @param  array  $pointsUsageResult  마일리지 사용 결과 {points_by_option, final_amount, …}
+     * @param  array  $paymentCalculation  결제금액 계산 결과 (합계·차감 내역)
+     * @param  AppliedPromotions  $productPromotions  적용된 상품 프로모션
+     * @param  AppliedPromotions  $orderPromotions  적용된 주문 프로모션
+     * @param  AppliedPromotions  $shippingPromotions  적용된 배송비 프로모션
+     * @param  int  $totalPointsEarning  총 적립 예정 마일리지
+     * @param  array  $validationErrors  검증 오류 목록
      * @param  CalculationInput  $input  계산 입력 데이터 (paymentCurrency 접근용)
+     * @return OrderCalculationResult 반환값
      */
     protected function buildFinalResult(
         array $preparedItems,
@@ -1579,6 +1595,11 @@ class OrderCalculationService
 
     /**
      * 아이템의 최종 금액을 계산합니다.
+     *
+     * @param  int  $optionId  상품 옵션 ID
+     * @param  array  $discountedItems  할인 안분까지 끝난 아이템 배열 {옵션ID => {subtotal, coupon_discount, order_discount_share}}
+     * @param  array  $pointsUsageResult  마일리지 사용 결과 {points_by_option, …}
+     * @return int 반환값
      */
     protected function calculateItemFinalAmount(int $optionId, array $discountedItems, array $pointsUsageResult): int
     {
@@ -1656,6 +1677,8 @@ class OrderCalculationService
      * @param  array  $preparedItems  준비된 아이템 배열
      * @param  bool  $snapshotMode  스냅샷 모드 여부
      * @param  int  $snapshotMinOrderAmount  스냅샷의 최소 주문금액
+     * @param  int|null  $applicableAmountOverride  최소 주문금액 판정에 쓸 적용 대상 금액 (null 이면 이 쿠폰의 대상 합계)
+     * @return ?ValidationError 반환값
      */
     protected function validateCoupon(
         CouponIssue $couponIssue,
@@ -1832,6 +1855,7 @@ class OrderCalculationService
      * @param  Coupon  $coupon  쿠폰
      * @param  int  $amount  적용 대상 금액
      * @param  array|null  $snapshotOverride  스냅샷 오버라이드 [discount_type, discount_value, max_discount_amount]
+     * @param  int  $quantity  정액 할인에 곱할 수량 (상품금액 쿠폰의 줄 수량)
      * @return int 할인액
      */
     protected function calculateCouponDiscount(Coupon $coupon, int $amount, ?array $snapshotOverride = null, int $quantity = 1): int
@@ -1854,6 +1878,29 @@ class OrderCalculationService
         }
 
         return min($discount, $amount);
+    }
+
+    /**
+     * 라인별 상한 오버라이드가 있으면 그 라인의 쿠폰 스냅샷으로 바꿉니다.
+     *
+     * 환불 재계산의 옵션 치환(교환 후 열, `OrderAdjustmentService::applySubstitutions()`)은 한 주문 행을
+     * 원 라인과 치환 라인으로 가른다. 정률+상한 쿠폰은 라인마다 `min(정률, 상한)` 이라 갈린 두 라인에
+     * 상한이 두 번 걸리므로, 치환 쪽이 수량 비례로 나눈 상한을 `max_discount_amount_by_line[라인키]` 로
+     * 싣는다. 그 키가 없으면(주문 생성·일반 재계산 전부) 스냅샷은 그대로다.
+     *
+     * @param  array|null  $snapshot  쿠폰 스냅샷 오버라이드
+     * @param  int|string  $optionId  라인 키 (product_option_id 또는 치환 라인의 음수 키)
+     * @return array|null 라인용 스냅샷
+     */
+    protected function couponSnapshotForLine(?array $snapshot, int|string $optionId): ?array
+    {
+        if ($snapshot === null || ! isset($snapshot['max_discount_amount_by_line'][$optionId])) {
+            return $snapshot;
+        }
+
+        $snapshot['max_discount_amount'] = (int) $snapshot['max_discount_amount_by_line'][$optionId];
+
+        return $snapshot;
     }
 
     /**
@@ -2190,6 +2237,7 @@ class OrderCalculationService
      * @param  string  $message  로그 메시지
      * @param  ShippingPolicyCountrySetting|null  $countrySetting  국가별 설정
      * @param  array  $context  추가 맥락
+     * @return void 반환값 없음
      */
     protected function logZeroShippingFallback(string $message, ?ShippingPolicyCountrySetting $countrySetting, array $context = []): void
     {

@@ -115,6 +115,13 @@ effects:
   # 미수납 추가결제 — 승인 시점 결제의 진입점 (2026-09-01 2차 계획 검증 확정)
   - claim_detail_outstanding_payment_has_an_entry_point
 
+  # 접수 시점 주문금액 비교표 — 저장 스냅샷 (#599 후속 P4)
+  - claim_detail_comparison_renders_from_frozen_snapshot
+  - claim_detail_comparison_absent_notice_for_legacy_claims
+  - claim_detail_comparison_mobile_kv_form
+  # 수정 진입의 첫 미리보기 — 2026-09-11 브라우저 실측이 드러낸 결함 두 개(셸의 기준 경로 · 첫 호출)
+  - claim_edit_entry_runs_the_first_preview
+  - claim_edit_shell_sets_api_base_on_the_order_response
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentRedirectTest.php
@@ -128,6 +135,13 @@ test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/claimPaymentResultBanner.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyExchange.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-list.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimDetailCalculationComparisonTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderReturnServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/CalculationSnapshotPresenterTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/guest-claim.spec.ts
+  # 수정 진입의 첫 미리보기는 작성·수정 공용 핸들러(initClaimApply 의 수정 분기)가 낸다 —
+  # 그 축의 유일한 근거가 이 파일에 있으므로 여기서도 소유한다(2026-09-11 브라우저 실측).
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
 
 notes: |
   **§9-1 의 매니페스트 수가 10 → 11 이 된다.** §7 S15 DoD 가 그 숫자를 인용하므로 함께 정정한다.

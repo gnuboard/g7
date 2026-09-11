@@ -32,12 +32,14 @@ class ExchangeAdjustment extends OrderAdjustment
      * @param  int  $roundTripFee  왕복 교환 배송비 (`ClaimShippingFee::$fee`)
      * @param  int  $priceDifference  옵션 차액 합계 (신규단가 − 원단가) × 수량, 음수면 환불 대상
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식 (청구 0원이면 null)
+     * @param  array  $substitutions  옵션 치환 입력 [order_option_id => {quantity, product_option_id, unit_price, option_snapshot, additional_options_snapshot}] — "교환 후" 열의 표시용 재계산에만 쓰인다
      */
     public function __construct(
         public array $exchangeItems = [],
         public int $roundTripFee = 0,
         public int $priceDifference = 0,
         public ?ClaimChargeMethodEnum $chargeMethod = null,
+        public array $substitutions = [],
     ) {}
 
     /**
@@ -71,6 +73,18 @@ class ExchangeAdjustment extends OrderAdjustment
     public function getClaimItems(): array
     {
         return $this->exchangeItems;
+    }
+
+    /**
+     * 옵션 치환 입력을 반환합니다. (표시용 2-패스 재계산 — 환불 산식은 읽지 않는다)
+     *
+     * 치환 결과를 환불 산식에도 쓰면 옵션 차액이 `getAdditionalCharges()` 와 **두 번** 빠진다.
+     *
+     * @return array<int, array> 주문옵션 ID → 치환 입력
+     */
+    public function getSubstitutions(): array
+    {
+        return $this->substitutions;
     }
 
     /**
@@ -115,6 +129,7 @@ class ExchangeAdjustment extends OrderAdjustment
      * @param  ClaimShippingFee  $shippingFee  `ClaimShippingFeeService::calculate()` 결과 (왕복)
      * @param  int  $priceDifference  옵션 차액 합계 (부호 유지)
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식
+     * @param  array  $substitutions  옵션 치환 입력 (`OrderExchangeService::buildSubstitutionsFromPlans()`)
      * @return self 교환 변경 DTO
      */
     public static function fromShippingFee(
@@ -122,12 +137,14 @@ class ExchangeAdjustment extends OrderAdjustment
         ClaimShippingFee $shippingFee,
         int $priceDifference = 0,
         ?ClaimChargeMethodEnum $chargeMethod = null,
+        array $substitutions = [],
     ): self {
         return new self(
             exchangeItems: $items,
             roundTripFee: $shippingFee->fee,
             priceDifference: $priceDifference,
             chargeMethod: $chargeMethod,
+            substitutions: $substitutions,
         );
     }
 }

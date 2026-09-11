@@ -16,7 +16,7 @@
 
 import { describe, it, expect } from 'vitest';
 import paymentJson from '../../layouts/partials/mypage/orders/_payment.json';
-import cancelModalJson from '../../layouts/partials/mypage/orders/_modal_cancel.json';
+import comparisonJson from '../../layouts/partials/mypage/claims/_apply_comparison.json';
 import listJson from '../../layouts/partials/mypage/orders/_list.json';
 import itemsJson from '../../layouts/partials/mypage/orders/_items.json';
 
@@ -45,11 +45,12 @@ describe('마이페이지 결제 정보 — base 통화 고정 + 결제통화 �
     });
 });
 
-describe('마이페이지 취소 모달 — base 통화 고정 + 환불 결제통화 병기', () => {
-    const s = serialize(cancelModalJson);
+describe('클레임 신청서 주문금액 비교 — base 통화 고정 + 환불 결제통화 병기 (옛 취소 모달 대체)', () => {
+    const s = serialize(comparisonJson);
 
-    it('비교표 primary 는 하드코딩 통화단위가 아니라 base 포맷(formatted)을 바인딩한다', () => {
-        expect(s).not.toMatch(/original_snapshot\?\.total_paid_amount \?\? 0\)\.toLocaleString\(\)\}\}\$t:common\.currency_unit/);
+    it('비교표 primary 는 하드코딩 통화단위가 아니라 base 포맷(formatted)을 직독한다', () => {
+        expect(s).not.toContain('common.currency_unit');
+        expect(s).not.toMatch(/total_paid_amount \?\? 0\)\.toLocaleString\(\)/);
         expect(s).toContain('original_snapshot?.formatted?.total_paid_amount');
         expect(s).toContain('recalculated_snapshot?.formatted?.subtotal_amount');
     });
@@ -58,9 +59,9 @@ describe('마이페이지 취소 모달 — base 통화 고정 + 환불 결제�
         expect(s).toContain('original_snapshot?.base_currency ?? _global.preferredCurrency');
     });
 
-    it('환불 예정액은 base 포맷 + 결제통화 환산(refund_formatted) 병기를 가진다', () => {
+    it('환불 예정액은 base 포맷 + 결제통화 환산(refund_formatted / mc_refund_total) 병기를 가진다', () => {
         expect(s).toContain('refund_formatted?.base?.refund_total');
-        expect(s).toContain('refund_formatted?.mc?.refund_total');
+        expect(s).toContain('claimEstimateFormatted?.mc_refund_total');
     });
 });
 

@@ -2906,4 +2906,28 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $this->assertClaimException('claim_not_editable', fn () => $this->service->updateRequest($approved, ['reason_detail' => 'x']));
     }
+
+    /**
+     * 접수는 미리보기와 같은 재료로 계산한 전/후 스냅샷을 신청서에 동결한다. (#599 후속 — 상세 비교표의 근거)
+     *
+     * 2개 중 1개 반품: 전 58,000 → 후 29,000. 저장값은 미리보기와 같은 형태(`formatted`·`base_currency` 포함)다.
+     *
+     * @scenario user-claim-list-detail-edit
+     *
+     * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     */
+    public function test_request_freezes_calculation_snapshots(): void
+    {
+        $order = $this->deliveredOrder(29000, 2);
+
+        $return = $this->service->requestReturn($order, $this->payload($order, quantity: 1));
+
+        $this->assertSame(58000.0, (float) $return->original_calculation_snapshot['subtotal_amount']);
+        $this->assertSame(2, (int) $return->original_calculation_snapshot['item_count']);
+        $this->assertSame(29000.0, (float) $return->recalculated_snapshot['subtotal_amount']);
+        $this->assertSame(1, (int) $return->recalculated_snapshot['item_count']);
+        $this->assertSame('KRW', $return->recalculated_snapshot['base_currency']);
+        $this->assertArrayHasKey('subtotal_amount', $return->recalculated_snapshot['formatted']);
+        $this->assertArrayNotHasKey('_substituted_items', $return->recalculated_snapshot);
+    }
 }

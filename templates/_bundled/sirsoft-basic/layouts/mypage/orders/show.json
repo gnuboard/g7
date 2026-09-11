@@ -3,10 +3,9 @@
     "layout_name": "mypage/orders/show",
     "permissions": [],
     "extends": "_user_base",
-    "_comment_claim_actions": "클레임(교환/반품/취소·환불) 신청 진입을 이 화면이 소유한다. useClaimActions 는 공유 partial(_items.json)에 '이 셸은 클레임 신청 버튼을 쓴다' 를 알리는 표식이다 — 그 partial 은 비회원 주문상세와 공유하므로, 표식이 없는 셸(비회원)은 종전 [주문 취소] 버튼을 그대로 유지한다. 비회원 진입은 S14 가 같은 표식을 세워 전환한다.",
+    "_comment_claim_actions": "클레임(교환/반품/취소·환불) 신청 진입을 이 화면이 소유한다. 취소는 [취소·환불 신청] 이 통합 입구로 받고 서버가 상품 상태로 즉시취소/환불신청을 분기한다(D2). 옛 주문 취소 모달(_modal_cancel.json)과 그 셸 표식(useClaimActions)은 #599 후속(1.2.0)에서 삭제했다 — 회원·비회원 주문상세 모두 같은 클레임 진입을 쓴다.",
     "_comment_claim_list": "'이 주문의 클레임' 섹션을 이 화면이 소유한다 — 비회원 주문 상세(shop/guest_order_show)와 **같은 partial**(partials/mypage/claims/_list.json)을 무수정으로 쓴다. 신청번호는 새 창 상세 링크(claimDetailLinkMode: new_window)이고 유형 서브탭·페이지는 이 화면의 주소에 ?type=·?page= 로 실린다. 목록 데이터소스(claims)는 회원 클레임 API 가 주문 ID 를 받으므로 order 응답 뒤에 claimable 과 같은 체인으로 부른다.",
     "initLocal": {
-        "useClaimActions": true,
         "isGuest": false,
         "withdrawRefreshDataSourceId": "claims",
         "claimDetailLinkMode": "new_window",
@@ -16,14 +15,6 @@
         "isSubmittingAddress": false,
         "selectedItemIds": [],
         "selectAllItems": false,
-        "showCancelModal": false,
-        "cancelItems": [],
-        "cancelSelectAll": false,
-        "cancelReason": "",
-        "refundEstimate": null,
-        "refundLoading": false,
-        "isCancelling": false,
-        "cancelError": null,
         "confirmTarget": null,
         "isConfirming": false,
         "reviewTarget": null,
@@ -474,9 +465,6 @@
         {
             "comment": "이 주문의 클레임 카드의 [철회] 확인 — 셸 계약값(claimWithdrawApiBase · isGuest · withdrawRefreshDataSourceId)은 initLocal 이 세운다.",
             "partial": "partials/mypage/claims/_modal_withdraw.json"
-        },
-        {
-            "partial": "partials/mypage/orders/_modal_cancel.json"
         },
         {
             "partial": "partials/mypage/orders/_modal_change_address.json"

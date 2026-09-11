@@ -22,6 +22,11 @@ class OrderReturn extends Model
 {
     use HasFactory;
 
+    /**
+     * 모델 팩토리를 돌려줍니다.
+     *
+     * @return OrderReturnFactory 반품 신청서 팩토리
+     */
     protected static function newFactory()
     {
         return OrderReturnFactory::new();
@@ -73,6 +78,8 @@ class OrderReturn extends Model
         'refund_bank_code',
         'refund_bank_account',
         'refund_bank_holder',
+        'original_calculation_snapshot',
+        'recalculated_snapshot',
     ];
 
     /**
@@ -94,6 +101,8 @@ class OrderReturn extends Model
             'mc_total_charge_amount' => 'array',
             'items_snapshot' => 'array',
             'return_address_snapshot' => 'array',
+            'original_calculation_snapshot' => 'array',
+            'recalculated_snapshot' => 'array',
             'collection_completed_at' => 'datetime',
             'is_stock_restored' => 'boolean',
             'approved_at' => 'datetime',

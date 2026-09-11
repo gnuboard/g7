@@ -170,7 +170,6 @@
       "tempOrderNotFoundModal": "注文情報なし案内"
     },
     "mypage_orders": {
-      "modal_cancel_order": "注文キャンセル",
       "changeAddressModal": "配送先変更",
       "modal_confirm_purchase": "購入確定",
       "modal_write_review": "レビュー作成"
@@ -185,6 +184,7 @@
       "apply_redelivery": "再発送先",
       "apply_reason": "申請理由",
       "apply_summary": "申請概要",
+      "apply_comparison": "注文金額の比較",
       "change_product_modal": "交換商品変更",
       "apply_refund_account": "返金口座",
       "withdraw_modal": "申請取消確認",

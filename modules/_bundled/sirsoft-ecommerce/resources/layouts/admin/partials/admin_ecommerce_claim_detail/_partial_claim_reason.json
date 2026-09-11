@@ -270,6 +270,11 @@
           ]
         },
         {
+          "comment": "접수 시점 주문금액 비교(전/후) — #599 후속 P8. 취소는 취소 발 환불 행의 스냅샷을 읽는다.",
+          "_comment_partial_path": "partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다(_partial_claim_items → _partial_claim_reason 과 같은 규약). `partials/…` 로 적으면 서버 병합기가 layouts 루트로 되돌려 찾다 실패해 운영에서 빈 배열로 사라진다.",
+          "partial": "_partial_claim_comparison.json"
+        },
+        {
           "type": "basic",
           "name": "Div",
           "props": {

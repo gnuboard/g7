@@ -7,11 +7,13 @@ use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 
 /**
  * 클레임 신청서 리소스 (교환·반품·환불·취소 공용 — 유저 목록·상세·비회원 공용)
@@ -326,6 +328,12 @@ class ClaimResource extends BaseApiResource
             ];
         }
 
+        // 접수 시점 주문금액 비교(전/후) — 상세에서만 싣는다. 목록의 어느 칸도 이 표를 그리지 않는데
+        // 스냅샷 두 벌은 행마다 수십 줄이라 목록을 통째로 부풀린다. 스냅샷이 없는 구형 신청서는 null.
+        if (! $this->forList) {
+            $data['calculation_comparison'] = $this->calculationComparison($claim, $order);
+        }
+
         if ($this->withAdminFields) {
             $data += [
                 'admin_memo' => $claim->admin_memo ?? null,
@@ -367,6 +375,61 @@ class ClaimResource extends BaseApiResource
         };
 
         return $claim->relationLoaded($relation) ? $claim->{$relation} : [];
+    }
+
+    /**
+     * 접수 시점에 동결한 주문금액 비교 스냅샷(전/후)을 상세 표현으로 만듭니다.
+     *
+     * 출처는 유형별로 자기 컬럼이다 — 환불신청서·반품·교환은 자기 행, 취소는 취소 발 환불 행
+     * (`refund` 관계)이다. 다통화 줄은 저장하지 않으므로 읽을 때 미리보기와 **같은 출처**
+     * (`CalculationSnapshotPresenter`)로 다시 만든다 — 원 열의 정가 합계는 동결값을 넘겨 접수 당시와
+     * 같은 금액이 환산되게 한다. 교환의 치환 근거 행은 재계산 스냅샷 안의 `_substituted_items` 에서
+     * 꺼내고 그 내부 키는 노출하지 않는다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @param  Order|null  $order  주문 (관계가 로드되지 않았으면 null — 다통화 줄만 비운다)
+     * @return array{original: array, recalculated: array, mc_original: array|null, mc_recalculated: array|null, substituted_items: array}|null 비교 블록 (스냅샷이 없으면 null)
+     */
+    protected function calculationComparison(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim, ?Order $order): ?array
+    {
+        $source = $claim instanceof OrderCancel
+            ? ($claim->relationLoaded('refund') ? $claim->refund : null)
+            : $claim;
+
+        $original = $source?->original_calculation_snapshot;
+        $recalculated = $source?->recalculated_snapshot;
+
+        if (! is_array($original) || $original === [] || ! is_array($recalculated) || $recalculated === []) {
+            return null;
+        }
+
+        $substituted = $recalculated['_substituted_items'] ?? [];
+        unset($recalculated['_substituted_items']);
+
+        $presenter = app(CalculationSnapshotPresenter::class);
+        $frozenListPrice = isset($original['total_list_price_amount']) ? (float) $original['total_list_price_amount'] : null;
+        $currency = $this->orderCurrencyCode ?: ($original['base_currency'] ?? null);
+
+        // 치환 근거 행의 단가는 raw 로 저장된다 — 상품 행(`ClaimItemResource`)과 같은 통화 포맷을 함께 싣는다.
+        $substitutedRows = [];
+        foreach (is_array($substituted) ? $substituted : [] as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $substitutedRows[] = $row + [
+                'unit_price_formatted' => $this->formatOrderCurrency((float) ($row['unit_price'] ?? 0), $currency),
+                'new_unit_price_formatted' => $this->formatOrderCurrency((float) ($row['new_unit_price'] ?? 0), $currency),
+            ];
+        }
+
+        return [
+            'original' => $original,
+            'recalculated' => $recalculated,
+            'mc_original' => $order ? $presenter->mcOriginal($order, $frozenListPrice) : null,
+            'mc_recalculated' => $presenter->mcRecalculated($recalculated, $order?->currency_snapshot),
+            'substituted_items' => $substitutedRows,
+        ];
     }
 
     /**

@@ -205,6 +205,7 @@ class OrderExchangeService
             $shippingFee,
             (int) round($priceDifference),
             $chargeMethod,
+            $this->buildSubstitutionsFromPlans($plans),
         );
 
         $result = $this->adjustmentService->preview($order, $adjustment, $refundPriority);
@@ -308,6 +309,21 @@ class OrderExchangeService
 
             $currencySnapshot = $lockedOrder->currency_snapshot ?? [];
 
+            // 접수 시점 주문금액 비교 스냅샷(전/후) — 미리보기와 같은 재료(대상·배송비·차액·청구 방식·치환)로
+            // 한 번 더 계산해 동결한다. `assertChargeMethodUsable()` 의 baseline 은 치환 없이 계산한 뒤
+            // 버려지므로 여기서 다시 낸다. 상세가 나중에 재계산하면 이후 클레임·쿠폰 변경이 섞인다.
+            $frozen = $this->adjustmentService->preview(
+                $lockedOrder,
+                ExchangeAdjustment::fromShippingFee(
+                    $claimItems,
+                    $shippingFee,
+                    (int) round($priceDifference),
+                    $chargeMethod,
+                    $this->buildSubstitutionsFromPlans($plans),
+                ),
+                $refundPriority,
+            );
+
             $created = $this->exchangeRepository->create([
                 'order_id' => $lockedOrder->id,
                 'exchange_number' => $this->sequenceService->generateCode(SequenceType::EXCHANGE),
@@ -329,7 +345,7 @@ class OrderExchangeService
                 'return_address_snapshot' => $this->resolveReturnAddressSnapshot($lockedOrder, $resolved),
                 'redelivery_address_snapshot' => $redelivery,
                 'requested_by' => $requestedBy,
-            ] + $this->refundBankColumns($payload['refund_bank'] ?? null));
+            ] + $this->frozenCalculationSnapshots($frozen) + $this->refundBankColumns($payload['refund_bank'] ?? null));
 
             foreach ($plans as $plan) {
                 $this->createExchangeOption($created, $lockedOrder, $plan, $currencySnapshot);
@@ -447,6 +463,7 @@ class OrderExchangeService
      *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  ExchangeStatusEnum  $target  목표 상태 (반려·철회)
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 앞서 있는 상품이 있을 때
      */
@@ -859,6 +876,7 @@ class OrderExchangeService
      * 차감 가능 여부(deduct) 판정은 신청 시점 검증 소관이라 여기서 반복하지 않는다.
      *
      * @param  ClaimChargeMethodEnum  $chargeMethod  청구 방식
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 허용 목록 밖 방식
      */
@@ -1210,6 +1228,7 @@ class OrderExchangeService
      * 같은 옵션을 두 상품 행이 고르면 합산해 판정한다.
      *
      * @param  array  $plans  신청 계획
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 재고 부족
      */
@@ -1338,6 +1357,7 @@ class OrderExchangeService
      *
      * @param  Order  $order  주문
      * @param  array  $redelivery  재발송지 스냅샷
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 국가가 다를 때
      */
@@ -1382,6 +1402,7 @@ class OrderExchangeService
      * @param  float  $totalCharge  총 청구액
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 청구 방식 부재·불허·차감 불가
      */
@@ -1432,6 +1453,7 @@ class OrderExchangeService
      * 신청 가능 기간을 검증합니다. (배송완료 → 확정 → 마지막 변경 시각 순의 기산점)
      *
      * @param  array<int, array{option: OrderOption, quantity: int}>  $resolved  해석된 대상
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 기간 경과
      */
@@ -1482,6 +1504,7 @@ class OrderExchangeService
      * @param  Order  $order  주문
      * @param  array  $plan  신청 계획 항목
      * @param  array  $currencySnapshot  주문 통화 스냅샷
+     * @return void 반환값 없음
      */
     protected function createExchangeOption(OrderExchange $exchange, Order $order, array $plan, array $currencySnapshot): void
     {
@@ -1754,6 +1777,7 @@ class OrderExchangeService
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  ExchangeStatusEnum  $target  목표 상태
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void 반환값 없음
      */
     protected function syncOptionStatuses(OrderExchange $exchange, ExchangeStatusEnum $target, ?int $processedBy): void
     {
@@ -1789,6 +1813,7 @@ class OrderExchangeService
      * @param  OrderExchangeOption  $item  신청 상품 행
      * @param  ExchangeStatusEnum  $target  목표 상태 (게이트 통과 전제)
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 승인 시 재고 부족
      */
@@ -1832,6 +1857,7 @@ class OrderExchangeService
      *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void 반환값 없음
      */
     protected function syncHeaderFromOptions(OrderExchange $exchange, ?int $processedBy): void
     {
@@ -1963,6 +1989,7 @@ class OrderExchangeService
      * 읽는다 — 여기에 `!== EXCHANGE_IN_PROGRESS` 같은 비교를 새로 넣으면 반품과 판정이 두 벌이 된다.
      *
      * @param  OrderExchangeOption  $item  신청 상품 행
+     * @return void 반환값 없음
      */
     protected function revertOrderOptionFor(OrderExchangeOption $item): void
     {
@@ -1994,6 +2021,7 @@ class OrderExchangeService
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  ExchangeStatusEnum  $previous  직전 상태
      * @param  ExchangeStatusEnum  $target  목표 상태
+     * @return void 반환값 없음
      */
     protected function fireStatusHooks(OrderExchange $exchange, ExchangeStatusEnum $previous, ExchangeStatusEnum $target): void
     {
@@ -2025,6 +2053,7 @@ class OrderExchangeService
      * 재발송할 옵션의 재고를 차감합니다. (승인 시점, 멱등)
      *
      * @param  OrderExchangeOption  $item  신청 상품 행
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 재고 부족
      */
@@ -2075,6 +2104,7 @@ class OrderExchangeService
      *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  OrderExchangeOption  $item  신청 상품 행 (orderOption 로드됨)
+     * @return void 반환값 없음
      */
     protected function ensureNewOrderOption(OrderExchange $exchange, OrderExchangeOption $item): void
     {
@@ -2138,6 +2168,7 @@ class OrderExchangeService
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  OrderOption  $original  원 주문옵션
      * @param  OrderOption  $successor  후속 주문옵션
+     * @return void 반환값 없음
      */
     protected function replicateShippingRow(OrderExchange $exchange, OrderOption $original, OrderOption $successor): void
     {
@@ -2159,6 +2190,7 @@ class OrderExchangeService
      * 후속 주문옵션을 배송완료로 옮깁니다. (재발송도착)
      *
      * @param  OrderExchangeOption  $item  신청 상품 행
+     * @return void 반환값 없음
      */
     protected function markNewOrderOptionDelivered(OrderExchangeOption $item): void
     {
@@ -2238,6 +2270,7 @@ class OrderExchangeService
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  완료 수량
+     * @return void 반환값 없음
      */
     protected function markOrderOptionExchanged(OrderOption $orderOption, int $quantity): void
     {
@@ -2260,6 +2293,7 @@ class OrderExchangeService
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  복구 수량
+     * @return void 반환값 없음
      */
     protected function restoreStockForItem(OrderOption $orderOption, int $quantity): void
     {
@@ -2726,6 +2760,88 @@ class OrderExchangeService
     }
 
     /**
+     * 신청 계획을 재계산 엔진의 옵션 치환 입력으로 바꿉니다. ("교환 후" 열의 표시용 2-패스)
+     *
+     * 옵션을 바꾸는 교환은 신규 옵션 스냅샷(정가·조정액·적립 규칙·옵션값 요약)을, 같은 옵션에서
+     * 커스텀·추가옵션만 바꾸는 교환은 **원 옵션 스냅샷 위에** 커스텀 입력·추가옵션 스냅샷을 얹는다 —
+     * 신규 옵션 스냅샷만 넘기면 후자에서 적립 규칙·정가가 비어 기본값으로 떨어진다.
+     * 단가는 차액 산식이 쓰는 `new_unit_price` 그대로다.
+     *
+     * @param  array  $plans  신청 계획 (`planItems()`)
+     * @return array<int, array{quantity: int, product_option_id: int|null, unit_price: int, option_snapshot: array, additional_options_snapshot: array}> 주문옵션 ID → 치환 입력
+     */
+    protected function buildSubstitutionsFromPlans(array $plans): array
+    {
+        $substitutions = [];
+
+        foreach ($plans as $plan) {
+            $option = $plan['option'];
+            $newSnapshot = $this->buildNewOptionSnapshot($plan) ?? [];
+
+            $substitutions[(int) $option->id] = [
+                'quantity' => (int) $plan['quantity'],
+                'product_option_id' => $plan['is_option_change'] ? (int) $plan['target']->id : null,
+                'unit_price' => (int) round((float) $plan['new_unit_price']),
+                'option_snapshot' => $plan['is_option_change']
+                    ? $newSnapshot
+                    : array_merge($option->option_snapshot ?? [], $newSnapshot),
+                'additional_options_snapshot' => $plan['new_additional_options_snapshot'] ?? [],
+            ];
+        }
+
+        return $substitutions;
+    }
+
+    /**
+     * 접수된 신청 상품 행에서 옵션 치환 입력을 복원합니다. (수정 화면의 스냅샷 갱신용)
+     *
+     * 접수 뒤에는 계획 배열이 없고 `order_exchange_options` 행이 그 사실을 들고 있다 —
+     * `buildSubstitutionsFromPlans()` 와 같은 형태로 되돌린다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서 (`exchangeOptions` 로드)
+     * @param  Order  $order  주문 (`options` 로드)
+     * @return array<int, array> 주문옵션 ID → 치환 입력
+     */
+    protected function buildSubstitutionsFromExchangeOptions(OrderExchange $exchange, Order $order): array
+    {
+        $substitutions = [];
+
+        foreach ($exchange->exchangeOptions as $item) {
+            $orderOption = $order->options->find($item->order_option_id);
+            $newSnapshot = is_array($item->new_option_snapshot) ? $item->new_option_snapshot : [];
+
+            $substitutions[(int) $item->order_option_id] = [
+                'quantity' => (int) $item->exchange_quantity,
+                'product_option_id' => $item->new_product_option_id ? (int) $item->new_product_option_id : null,
+                'unit_price' => (int) round((float) $item->new_unit_price),
+                'option_snapshot' => $item->new_product_option_id
+                    ? $newSnapshot
+                    : array_merge($orderOption?->option_snapshot ?? [], $newSnapshot),
+                'additional_options_snapshot' => $newSnapshot['additional_options_snapshot'] ?? [],
+            ];
+        }
+
+        return $substitutions;
+    }
+
+    /**
+     * 접수 시점에 동결할 주문금액 비교 스냅샷 컬럼을 만듭니다.
+     *
+     * 치환 근거 행(`substituted_items`)은 컬럼을 늘리지 않고 재계산 스냅샷 안에 `_substituted_items` 로
+     * 함께 넣는다 — `ClaimResource` 가 꺼내 `calculation_comparison.substituted_items` 로 내보낸다.
+     *
+     * @param  AdjustmentResult  $result  접수 재료로 계산한 결과
+     * @return array{original_calculation_snapshot: array, recalculated_snapshot: array} 저장 컬럼
+     */
+    protected function frozenCalculationSnapshots(AdjustmentResult $result): array
+    {
+        return [
+            'original_calculation_snapshot' => $result->originalSnapshot,
+            'recalculated_snapshot' => $result->recalculatedSnapshot + ['_substituted_items' => $result->substitutedItems],
+        ];
+    }
+
+    /**
      * 승인 전 신청 내용을 수정합니다. (D13 사유·상세 사유 / D14 재발송지)
      *
      * 수정 가능 경계는 철회 경계와 같다(신청·결제대기·보류). 사유(귀책)나 재발송지(우편번호·국가)가 바뀌면
@@ -2823,6 +2939,19 @@ class OrderExchangeService
 
                 $currencySnapshot = $order->currency_snapshot ?? [];
 
+                // 배송비가 다시 계산됐으므로 접수 시점 비교 스냅샷도 같은 재료로 갱신한다(치환은 신청 상품 행에서 복원).
+                $updates += $this->frozenCalculationSnapshots($this->adjustmentService->preview(
+                    $order,
+                    ExchangeAdjustment::fromShippingFee(
+                        $claimItems,
+                        $shippingFee,
+                        (int) round($priceDifference),
+                        $chargeMethod,
+                        $this->buildSubstitutionsFromExchangeOptions($locked, $order),
+                    ),
+                    RefundPriorityEnum::PG_FIRST,
+                ));
+
                 $updates['shipping_fee_mode'] = $shippingFee->mode;
                 $updates['claim_shipping_fee'] = $shippingFee->fee;
                 $updates['mc_claim_shipping_fee'] = $shippingFee->mcFee ?: null;
@@ -2847,6 +2976,7 @@ class OrderExchangeService
      * 청구 방식이 존재하고 운영자 허용 목록 안에 있는지만 검증합니다. (차감 성립성 제외)
      *
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 부재·불허
      */

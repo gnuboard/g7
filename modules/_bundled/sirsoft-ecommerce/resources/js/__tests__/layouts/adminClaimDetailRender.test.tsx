@@ -16,6 +16,8 @@
  */
 
 import React from 'react';
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   createLayoutTest,
@@ -303,8 +305,75 @@ function resolveText(text: string, row: any): string {
  * @param node 노드
  * @returns 레이아웃 JSON
  */
+const CLAIM_DETAIL_PARTIALS_DIR = path.resolve(__dirname, '../../../layouts/admin/partials/admin_ecommerce_claim_detail');
+
+/**
+ * partial 안의 partial 참조 문자열을 모은다 (배열·객체 재귀).
+ */
+function collectPartialRefs(node: any, out: string[] = []): string[] {
+  if (Array.isArray(node)) node.forEach((child) => collectPartialRefs(child, out));
+  else if (node && typeof node === 'object') {
+    if (typeof node.partial === 'string') out.push(node.partial);
+    Object.values(node).forEach((value) => collectPartialRefs(value, out));
+  }
+  return out;
+}
+
+describe('[case:backend-36] 클레임 상세 partial 안의 partial 참조 — 같은 디렉터리 기준 상대 경로 (서버 병합기 규약)', () => {
+  // 회귀(2026-09-11 관리자 화면 실측, #599 후속): `partials/admin_ecommerce_claim_detail/…` 로 적은 참조는
+  // 서버 병합기(ValidatesLayoutFiles::resolvePartialPath)가 partial 디렉터리 기준으로 못 찾고 layouts 루트
+  // (admin/ 없이)로 되돌려 다시 찾다 실패한다 — 운영(APP_DEBUG=false)에서는 빈 배열로 조용히 사라져
+  // 정산 카드·취소 카드의 주문금액 비교가 한 번도 그려지지 않았다. 최상위 레이아웃의 참조만 `partials/…` 다.
+  /**
+   * @scenario claim_type=exchange, claim_stage=final
+   * @effects admin_claim_detail_nested_partial_refs_are_sibling_relative
+   */
+  it('partial 파일 전건의 partial 참조가 `partials/` 로 시작하지 않고 같은 디렉터리에 실재한다', () => {
+    const files = fs.readdirSync(CLAIM_DETAIL_PARTIALS_DIR).filter((name) => name.endsWith('.json'));
+    expect(files.length).toBeGreaterThan(0);
+
+    for (const name of files) {
+      const json = JSON.parse(fs.readFileSync(path.resolve(CLAIM_DETAIL_PARTIALS_DIR, name), 'utf-8'));
+      for (const ref of collectPartialRefs(json)) {
+        expect(ref, `${name} → ${ref}`).not.toMatch(/^partials[\\/]/);
+        expect(fs.existsSync(path.resolve(CLAIM_DETAIL_PARTIALS_DIR, ref)), `${name} → ${ref} 파일 없음`).toBe(true);
+      }
+    }
+  });
+
+  /**
+   * @scenario claim_type=exchange, claim_stage=final
+   * @effects admin_claim_detail_nested_partial_refs_are_sibling_relative
+   */
+  it('정산 카드와 취소 신청서 카드가 같은 비교표 partial 을 형제 경로로 싣는다', () => {
+    expect(collectPartialRefs(paymentSection)).toContain('_partial_claim_comparison.json');
+    expect(collectPartialRefs(reasonBlock)).toContain('_partial_claim_comparison.json');
+  });
+});
+
+/**
+ * 비교표 partial 참조만 파일에서 읽어 인라인한다 — 하네스는 `{ "partial": … }` 을 해석하지 않는다.
+ * 다른 partial 참조는 종전대로 두어(렌더되지 않음) 기존 단언의 전제를 바꾸지 않는다.
+ */
+function inlinePartials(node: any): any {
+  if (Array.isArray(node)) return node.map(inlinePartials);
+  if (node && typeof node === 'object') {
+    if (typeof node.partial === 'string' && node.partial.endsWith('_partial_claim_comparison.json')) {
+      // partial 안의 partial 은 같은 디렉터리 기준 상대 경로다(서버 병합기 규약) — 참조 문자열이 아니라
+      // 그 디렉터리에서 파일명으로 읽는다.
+      const file = path.resolve(CLAIM_DETAIL_PARTIALS_DIR, path.basename(node.partial));
+      const { meta, ...partialNode } = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      return inlinePartials(partialNode);
+    }
+    const out: Record<string, any> = {};
+    for (const [key, value] of Object.entries(node)) out[key] = inlinePartials(value);
+    return out;
+  }
+  return node;
+}
+
 function probe(node: Node): Node {
-  const { meta, ...rest } = node;
+  const { meta, ...rest } = inlinePartials(node);
 
   return {
     version: '1.0.0',
@@ -1102,5 +1171,132 @@ describe('취소 상세 — 조회 전용 (취소 정보 카드 · 메모 안내
     // 진행단계는 서버가 준 두 칸 그대로
     expect(document.querySelectorAll('[id^="claim_progress_step_"]')).toHaveLength(2);
     items.cleanup();
+  });
+});
+
+describe('접수 시점 주문금액 비교표 — 정산 카드 · 취소 카드 (#599 후속 P8)', () => {
+  /** 접수 시점 비교 스냅샷(전/후) — 값은 응답에만 있고 다른 줄에서 만들 수 없는 것으로 고른다. */
+  const COMPARISON = {
+    original: {
+      item_count: 2, total_list_price_amount: 58000, subtotal_amount: 58000, total_paid_amount: 58000,
+      total_vat_amount: 5272, total_earned_points_amount: 580, base_currency: 'KRW',
+      formatted: { total_list_price_amount: '58,000원', subtotal_amount: '58,000원', total_paid_amount: '58,000원', total_vat_amount: '5,272원' },
+    },
+    recalculated: {
+      item_count: 1, total_list_price_amount: 29000, subtotal_amount: 29000, total_paid_amount: 29000,
+      total_vat_amount: 2636, total_earned_points_amount: 290, base_currency: 'KRW',
+      formatted: { total_list_price_amount: '29,000원', subtotal_amount: '29,000원', total_paid_amount: '29,000원', total_vat_amount: '2,636원' },
+    },
+    mc_original: { mc_total_paid_amount_formatted: { KRW: '58,000원', USD: '$49.30' } },
+    mc_recalculated: { mc_total_paid_amount_formatted: { KRW: '29,000원', USD: '$24.65' } },
+    substituted_items: [],
+  };
+
+  /**
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects admin_claim_detail_comparison_in_settlement_card
+   */
+  it("'이 클레임의 정산' 카드 첫머리에 저장 스냅샷 표가 서고 후열 변화 행만 강조된다", async () => {
+    const utils = await renderProbe(paymentSection as Node, claimResponse({
+      calculation_comparison: {
+        ...COMPARISON,
+        substituted_items: [{ order_option_id: 310, quantity: 1, product_option_id: 77, unit_price: 29000, new_unit_price: 32000, line_key: -310, option_label: '블랙 / L', unit_price_formatted: '29,000원', new_unit_price_formatted: '32,000원' }],
+      },
+    }));
+
+    const card = document.getElementById('claim_settlement_card');
+    const table = card?.querySelector('[data-testid="claim-detail-comparison-table"]');
+    const rows = Array.from(table?.querySelectorAll('[data-row]') ?? []).map((el) => el.getAttribute('data-row'));
+
+    expect(rows).toHaveLength(15);
+    expect(rows[rows.length - 1]).toBe('substituted');
+    expect(table?.textContent).toContain('5,272원');
+    expect(table?.textContent).toContain('2,636원');
+    expect(table?.textContent).toContain('$24.65');
+    expect(table?.textContent).toContain('29,000원 → 32,000원');
+
+    // 후열 값 = 행의 마지막 셀(Div)의 첫 Span (그 아래 보조통화 줄이 더 있을 수 있다).
+    const afterValue = (row: string) => {
+      const cells = table!.querySelectorAll(`[data-row="${row}"] > div`);
+      return cells[cells.length - 1].querySelector('span') as HTMLElement;
+    };
+    expect(afterValue('total_paid_amount').className).toContain('text-red-600');
+    expect(afterValue('base_shipping_amount').className).not.toContain('text-red-600');
+    // 표는 카드 제목 바로 아래 — 정산 숫자의 근거가 먼저 선다. 마운트 Div(유형 가드)를 한 겹 거친다.
+    // 두 단언으로 나눈다 — jsdom 은 `h2 + div#id > div[...]` 처럼 형제+자식 결합자를 이어 붙인 셀렉터를
+    // 스코프 querySelector 에서 놓친다(각각은 매치된다).
+    const mount = card?.querySelector('h2 + div#cst_comparison_mount');
+    expect(mount).not.toBeNull();
+    expect(mount?.querySelector(':scope > div[data-testid="claim-detail-comparison"]')).not.toBeNull();
+    utils.cleanup();
+  });
+
+  /**
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects admin_claim_settlement_card_hides_comparison_for_cancel
+   */
+  it('취소 신청서는 정산 카드에 표를 두지 않는다 (취소 정보 카드가 이미 같은 표를 싣는다)', async () => {
+    // 회귀(2026-09-11 관리자 화면 실측, #599 후속): 두 카드가 같은 표를 무조건 싣자 취소 상세 한 화면에
+    // 같은 비교표가 두 번 섰다. 취소의 표는 취소 정보 카드(_partial_claim_reason)가 소유한다.
+    const utils = await renderProbe(paymentSection as Node, claimResponse({
+      claim_number: 'CN20260902-000009',
+      claim_type: 'cancel',
+      claim_type_label: '취소',
+      status: 'completed',
+      calculation_comparison: COMPARISON,
+    }));
+
+    const card = document.getElementById('claim_settlement_card');
+    expect(card).not.toBeNull();
+    expect(card?.querySelector('[data-testid="claim-detail-comparison"]')).toBeNull();
+    utils.cleanup();
+  });
+
+  /**
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects admin_claim_cancel_card_comparison
+   */
+  it('취소 신청서 카드에도 같은 표가 환불 금액 행 아래에 선다', async () => {
+    const utils = await renderProbe(reasonBlock as Node, claimResponse({
+      claim_number: 'CN20260902-000009',
+      claim_type: 'cancel',
+      claim_type_label: '취소',
+      status: 'completed',
+      status_label: '취소완료',
+      is_final: true,
+      cancel_type_label: '부분취소',
+      refund_status_label: '환불완료',
+      refund_amount_formatted: '29,000원',
+      cancelled_at_formatted: '2026-09-02 20:34',
+      admin_memo: null,
+      items: [{ ...EXCHANGE_ITEMS[1], is_option_change: false }],
+      calculation_comparison: COMPARISON,
+    }, { claim_path_segment: null, carriers: [], progress_steps: [] }));
+
+    const card = document.getElementById('claim_cancel_info_card');
+    const table = card?.querySelector('[data-testid="claim-detail-comparison-table"]');
+
+    expect(table).not.toBeNull();
+    expect(table?.querySelectorAll('[data-row]')).toHaveLength(14);
+    expect(table?.textContent).toContain('claim.detail.comparison.col_before_cancel');
+    // 환불 금액 행 다음, 취소 일시 행 앞.
+    const order = Array.from(card!.querySelectorAll('[id="cc_003_refund_amount"], [data-testid="claim-detail-comparison"], [id="cc_004_cancelled_at"]'))
+      .map((el) => el.getAttribute('data-testid') ?? el.getAttribute('id'));
+    expect(order).toEqual(['cc_003_refund_amount', 'claim-detail-comparison', 'cc_004_cancelled_at']);
+    utils.cleanup();
+  });
+
+  /**
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects admin_claim_detail_comparison_in_settlement_card
+   */
+  it('스냅샷이 없는 구형 신청서는 안내 한 줄만 선다', async () => {
+    const utils = await renderProbe(paymentSection as Node, claimResponse({ calculation_comparison: null }));
+
+    const card = document.getElementById('claim_settlement_card');
+    expect(card?.querySelector('[data-testid="claim-detail-comparison-empty"]')).not.toBeNull();
+    expect(card?.querySelector('[data-testid="claim-detail-comparison-table"]')).toBeNull();
+    expect(card?.querySelectorAll('[data-row]')).toHaveLength(0);
+    utils.cleanup();
   });
 });

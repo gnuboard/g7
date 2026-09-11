@@ -170,7 +170,6 @@
       "tempOrderNotFoundModal": "주문 정보 없음 안내"
     },
     "mypage_orders": {
-      "modal_cancel_order": "주문 취소",
       "changeAddressModal": "배송지 변경",
       "modal_confirm_purchase": "구매 확정",
       "modal_write_review": "리뷰 작성"
@@ -185,6 +184,7 @@
       "apply_redelivery": "재발송지",
       "apply_reason": "신청 사유",
       "apply_summary": "신청 요약",
+      "apply_comparison": "주문금액 비교",
       "apply_refund_account": "환불 계좌",
       "change_product_modal": "교환상품 변경",
       "withdraw_modal": "신청 철회 확인",

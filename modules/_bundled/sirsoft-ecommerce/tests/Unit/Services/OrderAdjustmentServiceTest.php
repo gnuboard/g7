@@ -8,8 +8,13 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationAdjustment;
+use Modules\Sirsoft\Ecommerce\DTO\ClaimShippingFee;
+use Modules\Sirsoft\Ecommerce\DTO\ExchangeAdjustment;
+use Modules\Sirsoft\Ecommerce\DTO\ReturnAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
@@ -7392,5 +7397,402 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
         // 스냅샷 세율 10% 기준 1,000 (현재 세율 25% 였다면 2,200)
         $this->assertSame(1000, (int) $result->orderUpdates['total_vat_amount']);
+    }
+
+    // ================================================================
+    // Z. 교환 옵션 치환 2-패스 — 등가성 픽스처 (#599 후속)
+    // ================================================================
+
+    /**
+     * 등가성 픽스처용 주문 3종을 조립합니다. (취소 · 반품 · 치환 없는 교환)
+     *
+     * 조건부 무료배송(50,000 기준)을 넘는 두 상품 주문에서 한 상품을 부분 제외해
+     * 배송비 전이·안분·정가 합계가 모두 움직이는 조합을 쓴다 — 스냅샷의 어느 줄도
+     * 0 으로 비지 않아야 회귀를 잡는다.
+     *
+     * @return array{0: Order, 1: OrderOption, 2: OrderOption} [주문, A 행, B 행]
+     */
+    protected function buildEquivalenceFixtureOrder(): array
+    {
+        $sp = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::CONDITIONAL_FREE,
+            baseFee: 3000,
+            freeThreshold: 50000,
+        );
+        [$pA, $oA] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, listPrice: 25000);
+        [$pB, $oB] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, listPrice: 12000);
+
+        // 원 주문의 적립예정액은 주문 컬럼에서 읽는다 — 팩토리 기본값이 난수라 고정한다(픽스처 결정성).
+        $order = $this->createOrderFromCalculation(new CalculationInput(items: [
+            new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 2),
+            new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 3),
+        ]), ['total_earned_points_amount' => 700]);
+
+        return [
+            $order,
+            $order->options->firstWhere('product_option_id', $oA->id),
+            $order->options->firstWhere('product_option_id', $oB->id),
+        ];
+    }
+
+    /**
+     * 미리보기 배열에서 실행마다 달라지는 DB 식별자를 서수로 치환합니다.
+     *
+     * `cancelled_items[].order_option_id` 만 자동증가 ID 다(트랜잭션 롤백은 시퀀스를 되돌리지
+     * 않는다). 주문 행 순서(ID 오름차순)의 1-based 서수로 바꾸면 같은 조립은 같은 JSON 이 된다.
+     *
+     * @param  array  $preview  `AdjustmentResult::toPreviewArray()`
+     * @param  Order  $order  주문
+     * @return array 정규화된 배열
+     */
+    protected function normalizePreviewForFixture(array $preview, Order $order): array
+    {
+        $ordinals = [];
+        foreach ($order->options->sortBy('id')->values() as $index => $option) {
+            $ordinals[$option->id] = $index + 1;
+        }
+
+        foreach ($preview['cancelled_items'] ?? [] as $i => $item) {
+            $preview['cancelled_items'][$i]['order_option_id'] = $ordinals[$item['order_option_id']] ?? $item['order_option_id'];
+        }
+
+        // `substituted_items` 는 이 작업이 **추가**한 키라 변경 전 덤프에는 없다. 치환이 없으면 빈 배열이어야
+        // 하고, 그것을 확인한 뒤 비교에서 뺀다 — 나머지 키 전부가 바이트 단위로 같아야 한다는 계약은 그대로다.
+        if (array_key_exists('substituted_items', $preview)) {
+            $this->assertSame([], $preview['substituted_items'], '치환 입력이 없는데 치환 근거 행이 실렸다.');
+            unset($preview['substituted_items']);
+        }
+
+        return $preview;
+    }
+
+    /**
+     * 치환 테스트용 주문을 조립합니다. (상품 A 20,000 × 2 · 정가 25,000)
+     *
+     * @param  ShippingPolicy|null  $policy  배송정책 (없으면 무료)
+     * @param  int  $price  판매가
+     * @param  array  $inputOverrides  CalculationInput 생성자 오버라이드 (itemCoupons 등)
+     * @return array{0: Order, 1: OrderOption, 2: ProductOption} [주문, 주문 행, 상품옵션]
+     */
+    protected function buildSubstitutionOrder(?ShippingPolicy $policy = null, int $price = 20000, array $inputOverrides = []): array
+    {
+        [$product, $productOption] = $this->createProductWithOption(price: $price, shippingPolicy: $policy, listPrice: 25000);
+
+        $input = new CalculationInput(...array_merge([
+            'items' => [new CalculationItem(productId: $product->id, productOptionId: $productOption->id, quantity: 2)],
+        ], $inputOverrides));
+
+        $order = $this->createOrderFromCalculation($input);
+
+        return [$order, $order->options->firstWhere('product_option_id', $productOption->id), $productOption];
+    }
+
+    /**
+     * 같은 상품의 형제 옵션을 만들어 스냅샷을 돌려줍니다.
+     *
+     * @param  ProductOption  $original  원 상품옵션
+     * @param  int  $priceAdjustment  옵션 조정액
+     * @param  array  $overrides  옵션 속성 오버라이드 (list_price · mileage_*)
+     * @return array{0: ProductOption, 1: array} [형제 옵션, 스냅샷]
+     */
+    protected function siblingOptionSnapshot(ProductOption $original, int $priceAdjustment, array $overrides = []): array
+    {
+        $sibling = ProductOptionFactory::new()->forProduct($original->product)->create(array_merge([
+            'price_adjustment' => $priceAdjustment,
+            'stock_quantity' => 100,
+            'is_default' => false,
+            'is_active' => true,
+        ], $overrides));
+
+        return [$sibling, $sibling->toSnapshotArray()];
+    }
+
+    /**
+     * 치환 입력이 있는 교환 DTO 를 만듭니다. (배송비 0 · 환불금 차감)
+     *
+     * @param  OrderOption  $option  대상 주문 행
+     * @param  array  $substitution  치환 입력 (quantity · product_option_id · unit_price · option_snapshot · additional_options_snapshot)
+     * @param  int  $priceDifference  옵션 차액 합계
+     * @return ExchangeAdjustment 교환 DTO
+     */
+    protected function exchangeWith(OrderOption $option, array $substitution, int $priceDifference = 0): ExchangeAdjustment
+    {
+        return ExchangeAdjustment::fromShippingFee(
+            [['order_option_id' => $option->id, 'cancel_quantity' => $substitution['quantity']]],
+            new ClaimShippingFee(fee: 0, claimType: ClaimTypeEnum::EXCHANGE, charged: false),
+            $priceDifference,
+            ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+            [$option->id => $substitution + ['product_option_id' => null, 'additional_options_snapshot' => []]],
+        );
+    }
+
+    /**
+     * 치환 라인은 환불 산식·업데이트 페이로드를 바꾸지 않고 표시 열만 바꾼다. (2-패스 계약)
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchange_preview_two_pass_keeps_refund_math
+     */
+    public function test_substitution_lines_do_not_change_refund_math(): void
+    {
+        [$order, $option, $productOption] = $this->buildSubstitutionOrder();
+        [, $snapshot] = $this->siblingOptionSnapshot($productOption, 5000);
+
+        $substitution = ['quantity' => 1, 'unit_price' => 25000, 'option_snapshot' => $snapshot];
+        $with = $this->adjustmentService->preview($order, $this->exchangeWith($option, $substitution, 5000));
+        $without = $this->adjustmentService->preview($order, ExchangeAdjustment::fromShippingFee(
+            [['order_option_id' => $option->id, 'cancel_quantity' => 1]],
+            new ClaimShippingFee(fee: 0, claimType: ClaimTypeEnum::EXCHANGE, charged: false),
+            5000,
+            ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ));
+
+        // 산식 축 — 전부 패스 A
+        $this->assertSame($without->refundAmount, $with->refundAmount);
+        $this->assertSame($without->refundPointsAmount, $with->refundPointsAmount);
+        $this->assertSame($without->shippingDifference, $with->shippingDifference);
+        $this->assertSame($without->discountDifference, $with->discountDifference);
+        $this->assertSame($without->orderUpdates, $with->orderUpdates);
+        $this->assertSame($without->optionUpdates, $with->optionUpdates);
+        $this->assertSame($without->originalSnapshot, $with->originalSnapshot);
+
+        // 표시 축 — 패스 B: 20,000 × 1 + 25,000 × 1
+        $this->assertSame(40000.0, $with->originalSnapshot['subtotal_amount']);
+        $this->assertSame(45000.0, $with->recalculatedSnapshot['subtotal_amount']);
+        $this->assertSame(2, (int) $with->recalculatedSnapshot['item_count']);
+        $this->assertCount(1, $with->substitutedItems);
+        $this->assertSame(-1 * $option->id, $with->substitutedItems[0]['line_key']);
+        $this->assertSame(25000.0, $with->substitutedItems[0]['new_unit_price']);
+        $this->assertSame([], $without->substitutedItems);
+    }
+
+    /**
+     * 치환 라인은 원 라인의 배송정책 스냅샷을 승계한다 — 조건부 무료가 유지된다.
+     *
+     * 승계하지 않으면 스냅샷 모드는 폴백 없이 그 라인을 배송 그룹에서 빼고, 남은 원 라인만으로
+     * 기준금액을 판정해 배송비가 생긴다.
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchange_substitution_inherits_shipping_policy_and_coupons
+     */
+    public function test_substitution_inherits_shipping_policy_snapshot(): void
+    {
+        $policy = $this->createShippingPolicy(ChargePolicyEnum::CONDITIONAL_FREE, 3000, 50000);
+        [$order, $option, $productOption] = $this->buildSubstitutionOrder($policy, 30000);
+        $this->assertSame(0.0, (float) $order->total_shipping_amount);
+        [, $snapshot] = $this->siblingOptionSnapshot($productOption, -5000);
+
+        // 30,000 × 1 + 25,000 × 1 = 55,000 ≥ 50,000 → 무료 유지
+        $result = $this->adjustmentService->preview($order, $this->exchangeWith($option, [
+            'quantity' => 1, 'unit_price' => 25000, 'option_snapshot' => $snapshot,
+        ], -5000));
+
+        $this->assertSame(55000.0, $result->recalculatedSnapshot['subtotal_amount']);
+        $this->assertSame(0.0, $result->recalculatedSnapshot['total_shipping_amount']);
+    }
+
+    /**
+     * 치환 라인은 원 라인의 상품쿠폰 슬롯을 승계한다. (정액 1,000 × 수량 → 갈려도 합계 불변)
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchange_substitution_inherits_shipping_policy_and_coupons
+     */
+    public function test_substitution_inherits_item_coupons(): void
+    {
+        $issue = $this->createCouponWithIssue(CouponTargetType::PRODUCT_AMOUNT, CouponDiscountType::FIXED, 1000);
+        [$product, $productOption] = $this->createProductWithOption(price: 20000, listPrice: 25000);
+        $order = $this->createOrderFromCalculation(new CalculationInput(
+            items: [new CalculationItem(productId: $product->id, productOptionId: $productOption->id, quantity: 2)],
+            itemCoupons: [$productOption->id => [$issue->id]],
+        ));
+        $option = $order->options->firstWhere('product_option_id', $productOption->id);
+        $this->assertSame(2000.0, (float) $order->total_product_coupon_discount_amount);
+        [, $snapshot] = $this->siblingOptionSnapshot($productOption, 0);
+
+        $result = $this->adjustmentService->preview($order, $this->exchangeWith($option, [
+            'quantity' => 1, 'unit_price' => 20000, 'option_snapshot' => $snapshot,
+        ]));
+
+        $this->assertSame(2000.0, $result->recalculatedSnapshot['total_product_coupon_discount_amount']);
+    }
+
+    /**
+     * 정률+상한 쿠폰은 라인이 갈리면 상한을 수량 비례로 나눠 싣는다 — 상한이 두 번 걸리지 않는다.
+     *
+     * 원 20,000 × 2 = 40,000 · 10% 상한 3,000 → 3,000. 1개 치환(동가) 뒤 라인별 상한 없이 계산하면
+     * 2,000 + 2,000 = 4,000 이 되어 원 주문보다 할인이 커진다. 1,500 + 1,500 으로 3,000 을 유지한다.
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchange_substitution_inherits_shipping_policy_and_coupons
+     */
+    public function test_substitution_splits_percent_coupon_cap_by_quantity(): void
+    {
+        $issue = $this->createCouponWithIssue(CouponTargetType::PRODUCT_AMOUNT, CouponDiscountType::RATE, 10, maxDiscount: 3000);
+        [$product, $productOption] = $this->createProductWithOption(price: 20000, listPrice: 25000);
+        $order = $this->createOrderFromCalculation(new CalculationInput(
+            items: [new CalculationItem(productId: $product->id, productOptionId: $productOption->id, quantity: 2)],
+            itemCoupons: [$productOption->id => [$issue->id]],
+        ));
+        $option = $order->options->firstWhere('product_option_id', $productOption->id);
+        $this->assertSame(3000.0, (float) $order->total_product_coupon_discount_amount);
+        [, $snapshot] = $this->siblingOptionSnapshot($productOption, 0);
+
+        $result = $this->adjustmentService->preview($order, $this->exchangeWith($option, [
+            'quantity' => 1, 'unit_price' => 20000, 'option_snapshot' => $snapshot,
+        ]));
+
+        $this->assertSame(3000.0, $result->recalculatedSnapshot['total_product_coupon_discount_amount']);
+        $this->assertSame(37000.0, $result->recalculatedSnapshot['total_amount']);
+    }
+
+    /**
+     * 옵션 변경 없이 추가옵션만 바꾸는 교환은 원 키와 다른 라인 키를 써야 한다.
+     *
+     * 엔진 맵은 `product_option_id` 키라 같은 키의 두 라인은 나중 것이 조용히 덮어쓴다 — 치환 라인이
+     * 음수 키를 쓰면 원 라인(20,000)과 치환 라인(20,000 + 추가옵션 2,000)이 둘 다 산다.
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchange_preview_two_pass_keeps_refund_math
+     */
+    public function test_substitution_same_option_custom_change_uses_distinct_line_key(): void
+    {
+        [$order, $option] = $this->buildSubstitutionOrder();
+
+        $result = $this->adjustmentService->preview($order, $this->exchangeWith($option, [
+            'quantity' => 1,
+            'unit_price' => 20000,
+            'option_snapshot' => $option->option_snapshot,
+            'additional_options_snapshot' => [['additional_option_id' => 1, 'value_id' => 1, 'price_adjustment' => 2000]],
+        ], 2000));
+
+        $this->assertSame(42000.0, $result->recalculatedSnapshot['subtotal_amount']);
+        $this->assertSame(2, (int) $result->recalculatedSnapshot['item_count']);
+        $this->assertNull($result->substitutedItems[0]['product_option_id']);
+        $this->assertSame(-1 * $option->id, $result->substitutedItems[0]['line_key']);
+    }
+
+    /**
+     * 치환 단가는 동결 상품가가 아니라 `new_unit_price` 다. (현재 상품가 기준 차액 산식과 같은 기준)
+     *
+     * 스냅샷의 조정액(+5,000)대로면 25,000 이지만 신규 단가가 27,000 이면 후열은 27,000 을 쓴다.
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchange_preview_two_pass_keeps_refund_math
+     */
+    public function test_substitution_unit_price_overrides_frozen_product_price(): void
+    {
+        [$order, $option, $productOption] = $this->buildSubstitutionOrder();
+        [, $snapshot] = $this->siblingOptionSnapshot($productOption, 5000);
+
+        $result = $this->adjustmentService->preview($order, $this->exchangeWith($option, [
+            'quantity' => 1, 'unit_price' => 27000, 'option_snapshot' => $snapshot,
+        ], 7000));
+
+        $this->assertSame(47000.0, $result->recalculatedSnapshot['subtotal_amount']);
+        $this->assertSame(27000.0, $result->substitutedItems[0]['new_unit_price']);
+    }
+
+    /**
+     * 후열은 신규 옵션의 정가와 적립 규칙을 반영한다.
+     *
+     * 정가: 25,000 × 1 + 30,000 × 1 = 55,000. 적립: 원 라인 1개 몫 + 신규 옵션 정액 500.
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchange_preview_two_pass_keeps_refund_math
+     */
+    public function test_recalculated_snapshot_reflects_new_list_price_and_points(): void
+    {
+        $this->enableMileageSettings(10);
+        [$order, $option, $productOption] = $this->buildSubstitutionOrder();
+        [, $snapshot] = $this->siblingOptionSnapshot($productOption, 0, [
+            'list_price' => 30000,
+            'mileage_type' => 'fixed',
+            'mileage_value' => 500,
+        ]);
+
+        $without = $this->adjustmentService->preview($order, ExchangeAdjustment::fromShippingFee(
+            [['order_option_id' => $option->id, 'cancel_quantity' => 1]],
+            new ClaimShippingFee(fee: 0, claimType: ClaimTypeEnum::EXCHANGE, charged: false),
+        ));
+        $with = $this->adjustmentService->preview($order, $this->exchangeWith($option, [
+            'quantity' => 1, 'unit_price' => 20000, 'option_snapshot' => $snapshot,
+        ]));
+
+        $this->assertSame(50000.0, $without->recalculatedSnapshot['total_list_price_amount']);
+        $this->assertSame(55000.0, $with->recalculatedSnapshot['total_list_price_amount']);
+        $this->assertSame(
+            $without->recalculatedSnapshot['total_earned_points_amount'] / 2 + 500,
+            $with->recalculatedSnapshot['total_earned_points_amount'],
+        );
+    }
+
+    /**
+     * 픽스처 파일과 미리보기 JSON 이 바이트 단위로 같은지 단언합니다.
+     *
+     * 픽스처가 없으면 `ADJUSTMENT_PREVIEW_FIXTURE_WRITE=1` 일 때만 현재 출력을 기록한다 —
+     * 치환 재계산 도입 **전** 커밋에서 한 번 기록한 뒤에는 읽기 전용이다.
+     *
+     * @param  string  $name  픽스처 이름 (cancel · return · exchange)
+     * @param  array  $preview  정규화된 미리보기 배열
+     */
+    protected function assertPreviewMatchesFixture(string $name, array $preview): void
+    {
+        $dir = dirname(__DIR__, 2).'/Fixtures/adjustment-preview';
+        $path = $dir.'/'.$name.'.json';
+        $json = json_encode($preview, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION)."\n";
+
+        if (! is_file($path)) {
+            if (getenv('ADJUSTMENT_PREVIEW_FIXTURE_WRITE') !== '1') {
+                $this->fail("등가성 픽스처가 없습니다: {$path} — 변경 전 커밋에서 ADJUSTMENT_PREVIEW_FIXTURE_WRITE=1 로 먼저 기록하세요.");
+            }
+
+            if (! is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            file_put_contents($path, $json);
+        }
+
+        $this->assertSame(file_get_contents($path), $json, "미리보기 출력이 변경 전 픽스처({$name})와 다릅니다.");
+    }
+
+    /**
+     * 치환 입력이 비어 있으면 세 유형의 미리보기 출력이 변경 전과 바이트 단위로 같다.
+     *
+     * 패스 B 는 `getSubstitutions() === []` 이면 실행되지 않고 `buildRecalcInput()` 은 한 줄도
+     * 바뀌지 않는다는 계약을 변경 전 덤프로 고정한다(취소 · 회수비 차감 반품 · 치환 없는 교환).
+     *
+     * @scenario mp02-order-cancellation
+     *
+     * @effects cancel_preview_output_unchanged_with_empty_substitutions
+     */
+    public function test_empty_substitutions_preview_is_byte_identical(): void
+    {
+        [$order, $optionA, $optionB] = $this->buildEquivalenceFixtureOrder();
+
+        $cancel = $this->adjustmentService->preview($order, $this->buildCancellation([
+            ['order_option_id' => $optionA->id, 'cancel_quantity' => 1],
+        ]));
+        $this->assertPreviewMatchesFixture('cancel', $this->normalizePreviewForFixture($cancel->toPreviewArray(), $order));
+
+        $return = $this->adjustmentService->preview($order, new ReturnAdjustment(
+            returnItems: [['order_option_id' => $optionB->id, 'cancel_quantity' => 3]],
+            collectionFee: 3000,
+            chargeMethod: ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ), RefundPriorityEnum::PG_FIRST);
+        $this->assertPreviewMatchesFixture('return', $this->normalizePreviewForFixture($return->toPreviewArray(), $order));
+
+        $exchange = $this->adjustmentService->preview($order, ExchangeAdjustment::fromShippingFee(
+            [['order_option_id' => $optionA->id, 'cancel_quantity' => 1]],
+            new ClaimShippingFee(fee: 6000, claimType: ClaimTypeEnum::EXCHANGE, charged: true),
+            -4000,
+            ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ));
+        $this->assertPreviewMatchesFixture('exchange', $this->normalizePreviewForFixture($exchange->toPreviewArray(), $order));
     }
 }

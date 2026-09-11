@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 비회원 결제취소 기록 인증 회귀 테스트 (KVE-2026-2041).
@@ -19,10 +20,9 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 공유하는데, 소유권 검증이 `user_id !== null` 일 때만 수행됐다. 비회원 주문(user_id=null)은
  * 그 분기를 통과해 **주문번호만 아는 익명 요청**이 결제를 cancelled 로 영속 변경할 수 있었다.
  * 보호된 게스트 경로(`guest/orders/*`)와 동일하게 X-Guest-Order-Token 을 요구해야 한다.
- *
- * @group ecommerce
- * @group security
  */
+#[Group('ecommerce')]
+#[Group('security')]
 class GuestCancelPaymentAuthTest extends ModuleTestCase
 {
     private const PASSWORD = 'guest12';

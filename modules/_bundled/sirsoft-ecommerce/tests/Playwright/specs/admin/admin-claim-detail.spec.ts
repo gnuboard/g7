@@ -581,4 +581,49 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     // 원문 다국어 키가 화면에 노출되지 않는다.
     expect(await page.locator('body').innerText()).not.toContain('sirsoft-ecommerce.admin.claim.detail');
   });
+
+  // @scenario claim_type=exchange, claim_stage=in_progress
+  // @effects admin_claim_detail_comparison_in_settlement_card
+  test("'이 클레임의 정산' 카드 첫머리에 접수 시점 주문금액 비교표(또는 구형 안내)가 선다 (#599 후속 P8)", async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaim(request, claimsManageToken);
+    test.skip(claim === null, '교환·반품 신청서가 한 건도 없다 — 클레임 시드 선행');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    const card = page.locator('#claim_settlement_card');
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    const block = card.locator('[data-testid="claim-detail-comparison"]');
+    await expect(block).toHaveCount(1);
+    // 카드 제목 바로 아래가 표다 — 정산 숫자의 근거가 먼저 선다(유형 가드 Div 를 한 겹 거친다).
+    expect(await card.locator('h2 + div#cst_comparison_mount [data-testid="claim-detail-comparison"]').count()).toBe(1);
+
+    const rows = await block.locator('[data-testid="claim-detail-comparison-table"] [data-row]').count();
+    const emptyNotice = await block.locator('[data-testid="claim-detail-comparison-empty"]').count();
+    // 스냅샷을 가진 신청서면 14행 이상(교환은 치환행 +1), 컬럼이 생기기 전 접수된 신청서면 안내 한 줄 — 둘 중 하나여야 한다.
+    expect(rows >= 14 || emptyNotice === 1, `행 ${rows} · 안내 ${emptyNotice}`).toBe(true);
+    if (rows >= 14) {
+      expect(await block.locator('[data-testid="claim-detail-comparison-table"] [data-row="total_paid_amount"]').innerText()).toMatch(/\d/);
+    }
+
+    // 원문 다국어 키가 화면에 노출되지 않는다.
+    expect(await page.locator('body').innerText()).not.toContain('sirsoft-ecommerce.admin.claim.detail.comparison');
+  });
+
+  // @scenario claim_type=cancel, claim_stage=final
+  // @effects admin_claim_settlement_card_hides_comparison_for_cancel
+  test('취소 상세는 같은 비교표를 한 번만 그린다 (취소 정보 카드가 소유)', async ({ page, request, claimsManageToken }) => {
+    // 회귀(2026-09-11 브라우저 실측): 정산 카드와 취소 정보 카드가 같은 표를 무조건 실어 한 화면에 두 번 섰다.
+    const claim = await discoverClaimOfType(request, claimsManageToken, 'cancel');
+    test.skip(claim === null, '취소 신청서가 한 건도 없다 — 클레임 시드 선행');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    await expect(page.locator('[data-testid="claim-detail-comparison"]')).toHaveCount(1);
+    // 그 한 벌은 취소 정보 카드 쪽이다 — 정산 카드에는 없다.
+    expect(await page.locator('#claim_settlement_card [data-testid="claim-detail-comparison"]').count()).toBe(0);
+  });
 });

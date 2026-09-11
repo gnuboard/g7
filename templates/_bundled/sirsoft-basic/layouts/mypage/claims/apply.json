@@ -47,7 +47,9 @@
                                 "handler": "setState",
                                 "params": {
                                     "target": "_local",
-                                    "claimOrderId": "{{response.data.data.id}}"
+                                    "claimOrderId": "{{response.data.data.id}}",
+                                    "_comment_api_base": "#599 후속(1.2.0): 수정 진입은 첫 호출이 orders/0 → 404 라 initLocal 의 claimApiBase 가 서지 않고, 번호로 다시 부른 응답에는 initLocal 이 재적용되지 않는다 — 그러면 수정 화면의 미리보기(사유·재발송지 변경 재계산, 주문금액 비교)가 한 번도 호출되지 않는다. 성공 응답에서 같이 세운다.",
+                                    "claimApiBase": "{{'/api/modules/sirsoft-ecommerce/user/orders/' + response.data.data.id}}"
                                 }
                             },
                             {

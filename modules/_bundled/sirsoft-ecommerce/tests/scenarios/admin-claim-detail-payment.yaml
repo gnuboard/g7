@@ -111,6 +111,12 @@ effects:
   - detail_refund_execute_tab_present_only_for_refund
   - detail_refund_execute_confirm_modal_opens
 
+  # 접수 시점 주문금액 비교표 — '이 클레임의 정산' 카드 · 취소 신청서 카드 (#599 후속 P8)
+  - admin_claim_detail_comparison_in_settlement_card
+  - admin_claim_cancel_card_comparison
+  # 2026-09-11 관리자 화면 실측이 드러낸 두 결함의 고정
+  - admin_claim_settlement_card_hides_comparison_for_cancel
+  - admin_claim_detail_nested_partial_refs_are_sibling_relative
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetail.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx
@@ -120,6 +126,7 @@ test_files:
   # 서버 쪽에서 기대는 유일한 근거인데 목록에 없으면 삭제·약화돼도 커버리지가 줄지 않는다.
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimRefundExecutionTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-detail.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimDetailCalculationComparisonTest.php
 
 notes: |
   **마커와 이 목록은 양방향으로 맞춘다.** 정적 검사는 선언된 effect 에 테스트가 붙었는지만

@@ -1305,6 +1305,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | mc_recalculated_snapshot | object \| null | `{"mc_subtotal_amount":{…},"mc_total_paid_amount":{…}}` | 재계산 다중 통화 스냅샷 |
 | original_coupons | array | `[{"name":"첫구매 무료배송","target_type":"shipping_fee","discount_amount":0}]` | 원 주문에 적용된 쿠폰 상세 |
 | recalculated_coupons | array | `[]` | 재계산 후 유지되는 쿠폰 상세 (조건 미달 시 소멸) |
+| substituted_items | array | `[]` | 교환 미리보기의 옵션 치환 근거 행 — 취소 경로에서는 항상 빈 배열 (형태는 [claims/preview](#post-apimodulessirsoft-ecommerceuserordersidclaimspreview) 참조) |
 | cancel_blocked | boolean | `false` | 취소 차단 여부 (부분취소로 추가결제가 필요해지는 실결제 주문이면 `true`) |
 | cancel_blocked_reason | string \| null | `null` | 차단 사유 문구 (차단이 아니면 `null`) |
 
@@ -2719,6 +2720,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | original_snapshot / recalculated_snapshot | object | `{"total_paid_amount":184000, …}` | 재계산 전/후 금액 스냅샷 |
 | mc_original_snapshot / mc_recalculated_snapshot | object \| null | `{"mc_total_paid_amount":{…}}` | 다중 통화 스냅샷 |
 | original_coupons / recalculated_coupons | array | `[]` | 재계산 전/후 쿠폰 적용 상세 |
+| substituted_items | array | `[]` | 교환 미리보기의 옵션 치환 근거 행 — 취소 경로에서는 항상 빈 배열 |
 | cancel_blocked | boolean | `false` | 취소 차단 여부 (부분취소로 추가결제가 필요해지는 실결제 주문이면 `true`) |
 | cancel_blocked_reason | string \| null | `null` | 차단 사유 문구 (차단이 아니면 `null`) |
 
@@ -2780,6 +2782,8 @@ HTTP/1.1 200
 | 500 | Server Error | 환불 예상금액 계산 중 오류 (`exceptions.order_estimate_refund_failed`) |
 
 <!-- @generated:end -->
+
+**유저 화면 소비처 없음** — 마이페이지의 옛 주문 취소 모달이 삭제되어(sirsoft-basic 1.2.0) 이 라우트를 부르는 유저 화면은 없다. 취소·환불 신청은 [claims/preview](#post-apimodulessirsoft-ecommerceuserordersidclaimspreview)(`type=refund`)가 같은 `AdjustmentResult` 를 `adjustment` 로 싣는다. 관리자 주문상세의 취소 모달만 관리자 `estimate-refund` 를 쓴다. 라우트·요청 검증·응답 형태는 **API 계약으로 유지**한다.
 
 **설명** 회원이 마이페이지에서 본인 주문(`id`)의 선택 옵션(`items`) 취소 시 예상 환불 금액을 실제 취소 없이 미리 계산합니다. `auth:sanctum` + `sirsoft-ecommerce.user-orders.cancel` 권한이 필요하며, `User\OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 환불 예상값을 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 취소 확정 전 "환불 예정 금액"을 회원에게 안내하는 용도입니다.
 
@@ -3537,7 +3541,7 @@ _교환 (`type=exchange`)_
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | shipping_fee | object | — | 배송비 산정 결과 (`fee`, `extra_fee`, `mc_fee`, `mode`, `claim_type`, `fault_type`, `charged`, `reason`, `redelivery_changed`, `groups`) |
-| adjustment | object | — | 교환으로 돌려주는 금액의 재계산 결과 (취소 미리보기와 같은 `AdjustmentResult` 형태) |
+| adjustment | object | — | 교환으로 돌려주는 금액의 재계산 결과 (취소 미리보기와 같은 `AdjustmentResult` 형태). **교환은 옵션 치환 재계산**이다 — `recalculated_snapshot`·`mc_recalculated_snapshot`·`recalculated_coupons`·`total_list_price_amount` 는 대상 상품을 신규 옵션(단가·정가·적립 규칙·추가옵션)으로 바꿔 넣고 쿠폰 재배분·배송비·부가세·적립까지 다시 계산한 "교환 후" 값이며, 환불·청구 산식(`refund_*`·`shipping_difference`·`discount_difference`)은 치환 없이 계산한다(옵션 차액은 `additional_product_amount`/`refund_product_amount` 가 다룬다). `substituted_items` 는 그 치환의 근거 행 `[{order_option_id, quantity, product_option_id|null, unit_price, new_unit_price, line_key, option_label}]` 이고, 고가 교환에서도 `cancel_blocked` 는 `false` 다 |
 | items | array | — | 상품별 교환 계획 (`order_option_id`, `quantity`, `is_option_change`, `new_product_option_id`, `unit_price`, `new_unit_price`, `price_difference`) |
 | price_difference | number | `0` | 옵션 차액 합계 (양수 추가 결제 / 음수 환불) |
 | additional_product_amount | number | `0` | 추가로 받을 상품 금액 |
@@ -3556,7 +3560,7 @@ _반품 (`type=return`)_
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | shipping_fee | object | — | 배송비 산정 결과 (위와 동일 형태) |
-| adjustment | object | — | 반품 환불 금액 재계산 결과 (`refund_amount`, `refund_points_amount`, `refund_total`, `shipping_difference`, `cancelled_items`, `refund_priority` …) |
+| adjustment | object | — | 반품 환불 금액 재계산 결과 (`refund_amount`, `refund_points_amount`, `refund_total`, `shipping_difference`, `cancelled_items`, `refund_priority`, `original_snapshot`/`recalculated_snapshot` + `formatted`, `mc_*_snapshot`, `restored_coupons`, `remaining_*_balance`, `cancel_blocked` …). 신청서 요약 카드의 "주문금액 비교(전/후)" 표와 환불 요약은 이 객체만 읽는다 — `substituted_items` 는 항상 `[]` |
 | fault_type | string | `customer` | 귀책 구분 |
 | charge_method | string\|null | `pay_on_request` | 적용된 청구 방식 |
 | total_charge_amount | number | `3000` | 총 청구액 (반품 배송비) |
@@ -3572,7 +3576,7 @@ _취소·환불 (`type=refund`)_
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | branch | string | `cancel` | 이 상품들로 신청하면 타게 될 분기 (`cancel` 즉시취소 / `refund` 환불신청) |
-| adjustment | object | — | 환불 금액 재계산 결과 (취소 미리보기 `estimate-refund` 와 같은 형태) |
+| adjustment | object | — | 환불 금액 재계산 결과 (취소 미리보기 `estimate-refund` 와 같은 형태 — 전/후 스냅샷·다통화 스냅샷·복원 쿠폰·잔여 잔액·`cancel_blocked` 포함). 신청서의 비교표·환불 우선순위·환불 불가 안내가 전부 이 객체를 읽는다 |
 
 **응답 예시**
 

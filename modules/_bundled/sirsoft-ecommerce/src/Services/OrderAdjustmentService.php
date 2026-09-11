@@ -10,11 +10,14 @@ use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\OrderAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
+use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
@@ -32,11 +35,13 @@ class OrderAdjustmentService
      * @param  OrderCalculationService  $calculationService  주문 계산 서비스
      * @param  CurrencyConversionService  $currencyService  통화 변환 서비스
      * @param  CouponIssueRepositoryInterface  $couponIssueRepository  쿠폰 발급 Repository
+     * @param  CalculationSnapshotPresenter  $snapshotPresenter  비교 스냅샷 표시 재료(정가 합계·다통화 줄) 단일 출처
      */
     public function __construct(
         protected OrderCalculationService $calculationService,
         protected CurrencyConversionService $currencyService,
         protected CouponIssueRepositoryInterface $couponIssueRepository,
+        protected CalculationSnapshotPresenter $snapshotPresenter,
     ) {}
 
     /**
@@ -117,9 +122,25 @@ class OrderAdjustmentService
         $recalculatedDiscount = (float) $recalcResult->summary->totalDiscount;
         $discountDifference = $originalDiscount - $recalculatedDiscount;
 
-        // 7. 재계산 스냅샷
-        $recalculatedSnapshot = $this->captureRecalcSnapshot($recalcResult);
-        $recalculatedSnapshot['total_list_price_amount'] = $this->calculateListPriceTotal($order, $excludedMap);
+        // 7. 재계산 스냅샷 — 패스 B(옵션 치환)
+        //
+        // 교환은 대상 상품이 주문에 남되 다른 옵션으로 바뀌므로 패스 A 의 "후" 는 "전" 과 같다.
+        // 치환 입력이 있으면 원 라인을 줄이고 신규 옵션 라인을 얹은 입력으로 한 번 더 계산해
+        // **표시 열에만** 쓴다(재계산 스냅샷·다통화 스냅샷·재계산 쿠폰·정가 합계·치환 근거 행).
+        // 환불 산식·배송비/할인 차·쿠폰 복원·업데이트 페이로드는 전부 패스 A 결과다 — 치환
+        // 결과를 산식에 쓰면 옵션 차액이 `getAdditionalCharges()` 와 두 번 빠진다.
+        // 치환이 없으면 아무것도 하지 않는다(출력은 종전과 바이트 단위로 같다).
+        $substitutions = $adjustment->getSubstitutions();
+        $displayResult = $recalcResult;
+
+        if ($substitutions !== []) {
+            $displayResult = $this->calculationService->calculate(
+                $this->applySubstitutions($recalcInput, $order, $substitutions)
+            );
+        }
+
+        $recalculatedSnapshot = $this->captureRecalcSnapshot($displayResult);
+        $recalculatedSnapshot['total_list_price_amount'] = $this->calculateListPriceTotal($order, $excludedMap, $substitutions);
 
         // 8. 옵션별 업데이트 정보 생성
         $optionUpdates = $this->buildOptionUpdates($order, $excludedMap, $recalcResult);
@@ -176,7 +197,7 @@ class OrderAdjustmentService
 
         // 16. 쿠폰 상세 (전/후)
         $originalCoupons = $this->extractCouponDetails($order->promotions_applied_snapshot ?? [], $order->currency_snapshot);
-        $recalculatedCoupons = $this->extractCouponDetails($recalcResult->promotions?->toArray() ?? [], $order->currency_snapshot);
+        $recalculatedCoupons = $this->extractCouponDetails($displayResult->promotions?->toArray() ?? [], $order->currency_snapshot);
 
         // 17. 스냅샷 각 줄을 base 통화로 포맷(취소 모달 primary 표기 = base 통화 기호 고정)
         $originalSnapshot = $this->enrichSnapshotWithBaseFormat($originalSnapshot, $order->currency_snapshot);
@@ -218,6 +239,7 @@ class OrderAdjustmentService
             originalCoupons: $originalCoupons,
             recalculatedCoupons: $recalculatedCoupons,
             refundFormatted: $refundFormatted,
+            substitutedItems: $this->buildSubstitutedItems($order, $substitutions),
         );
     }
 
@@ -278,45 +300,231 @@ class OrderAdjustmentService
     }
 
     /**
-     * 주문 옵션의 정가(list_price) 합계를 계산합니다.
-     *
-     * 옵션 스냅샷의 list_price를 우선 사용하고,
-     * 없으면 상품 스냅샷의 list_price + 옵션 price_adjustment로 계산합니다.
+     * 주문 옵션의 정가(list_price) 합계를 계산합니다. (`CalculationSnapshotPresenter::listPriceTotal()` 위임)
      *
      * @param  Order  $order  주문
      * @param  array|null  $excludedMap  제외 맵 (null이면 전체 옵션 대상)
+     * @param  array  $substitutions  옵션 치환 입력 (패스 B 표시 열에만 적용)
      * @return float 정가 합계
      */
-    private function calculateListPriceTotal(Order $order, ?array $excludedMap = null): float
+    private function calculateListPriceTotal(Order $order, ?array $excludedMap = null, array $substitutions = []): float
     {
-        $total = 0;
+        return $this->snapshotPresenter->listPriceTotal($order, $excludedMap, $substitutions);
+    }
 
-        foreach ($order->options as $option) {
-            if ($option->option_status === OrderStatusEnum::CANCELLED) {
+    /**
+     * 옵션 치환을 반영한 표시용 재계산 입력을 만듭니다. (패스 B)
+     *
+     * `buildRecalcInput()` 은 손대지 않고 그 결과를 복제해 바꾼다. 치환 대상 주문 행의 라인은
+     * 수량을 `잔여 − 치환` 으로 줄이고(0 이면 라인 제거), 치환 라인을 **음수 라인키**로 추가한다 —
+     * 엔진의 내부 맵이 전부 `product_option_id` 키라 같은 키를 두 번 넣으면 나중 것이 조용히
+     * 덮어쓰고, 옵션 변경 없이 커스텀·추가옵션만 바꾸는 교환은 원 키와 반드시 충돌하기 때문이다.
+     *
+     * 치환 라인은 원 라인의 배송정책 스냅샷·상품쿠폰 슬롯·주문레벨 상품쿠폰 적용 대상을 승계한다.
+     * 정률+상한 쿠폰은 라인이 갈리면 상한이 두 번 걸리므로 두 라인의 상한을 수량 비례로 나눠
+     * 라인별 오버라이드(`max_discount_amount_by_line`)로 싣는다. 훅 오버라이드 배송비는 옵션 단위
+     * 정액이라 원 라인이 남으면 복제본의 금액을 0 으로 둔다.
+     *
+     * @param  CalculationInput  $base  패스 A 입력
+     * @param  Order  $order  주문
+     * @param  array  $substitutions  옵션 치환 입력 [order_option_id => {quantity, product_option_id, unit_price, option_snapshot, additional_options_snapshot}]
+     * @return CalculationInput 표시용 입력
+     */
+    private function applySubstitutions(CalculationInput $base, Order $order, array $substitutions): CalculationInput
+    {
+        $items = array_map(fn (CalculationItem $item) => clone $item, $base->items);
+        $itemCoupons = $base->itemCoupons;
+        $shippingPolicySnapshots = $base->shippingPolicySnapshots ?? [];
+        $metadata = $base->metadata;
+        $couponSnapshots = $metadata['coupon_snapshots'] ?? [];
+
+        foreach ($substitutions as $orderOptionId => $substitution) {
+            $option = $order->options->find($orderOptionId);
+            $quantity = (int) ($substitution['quantity'] ?? 0);
+
+            if (! $option instanceof OrderOption || $quantity <= 0) {
                 continue;
             }
 
-            $quantity = $option->quantity;
-            if ($excludedMap !== null) {
-                $cancelQty = $excludedMap[$option->id] ?? 0;
-                $quantity -= $cancelQty;
+            $originalKey = (int) $option->product_option_id;
+            $newKey = self::substitutionLineKey((int) $orderOptionId);
+
+            $index = null;
+            foreach ($items as $i => $item) {
+                if ((int) $item->productOptionId === $originalKey) {
+                    $index = $i;
+                    break;
+                }
             }
 
-            if ($quantity <= 0) {
+            if ($index === null) {
                 continue;
             }
 
-            $optionSnapshot = $option->option_snapshot ?? [];
-            $productSnapshot = $option->product_snapshot ?? [];
+            $original = $items[$index];
+            $originalQuantity = (int) $original->quantity;
+            $quantity = min($quantity, $originalQuantity);
+            $remaining = $originalQuantity - $quantity;
+            $productSnapshot = $original->productSnapshot ?? [];
 
-            // 옵션 스냅샷에 list_price가 있으면 사용, 없으면 상품 정가 + 옵션 조정액
-            $listPrice = $optionSnapshot['list_price']
-                ?? (($productSnapshot['list_price'] ?? 0) + ($optionSnapshot['price_adjustment'] ?? 0));
+            // 단가 어댑터 — 엔진 단가는 `product_snapshot.selling_price + option_snapshot.price_adjustment` 다.
+            // 신규 단가(`new_unit_price`, 현재 상품가 기준)와 동결 스냅샷이 어긋날 수 있으므로 조정액을
+            // 덮어써 엔진 단가 == 신규 단가 == 차액 산식 기준으로 맞춘다. 적립 규칙(mileage_*)은 신규 옵션 값 그대로.
+            $optionSnapshot = (array) ($substitution['option_snapshot'] ?? $original->optionSnapshot ?? []);
+            $optionSnapshot['price_adjustment'] = (float) ($substitution['unit_price'] ?? 0) - (float) ($productSnapshot['selling_price'] ?? 0);
 
-            $total += (float) $listPrice * $quantity;
+            $items[] = new CalculationItem(
+                productId: $original->productId,
+                productOptionId: $newKey,
+                quantity: $quantity,
+                productSnapshot: $productSnapshot,
+                optionSnapshot: $optionSnapshot,
+                additionalOptionsSnapshot: (array) ($substitution['additional_options_snapshot'] ?? []),
+            );
+
+            if ($remaining > 0) {
+                $items[$index]->quantity = $remaining;
+            } else {
+                unset($items[$index]);
+            }
+
+            // 배송정책 승계 — 키가 없으면 스냅샷 모드는 폴백 없이 라인을 배송 그룹에서 뺀다.
+            if (isset($shippingPolicySnapshots[$originalKey])) {
+                $inherited = $shippingPolicySnapshots[$originalKey];
+
+                if ($remaining > 0 && ! empty($inherited['hook_overridden']) && isset($inherited['shipping_amount'])) {
+                    $inherited['shipping_amount'] = 0;
+                }
+
+                $shippingPolicySnapshots[$newKey] = $inherited;
+            }
+
+            // 상품쿠폰 승계 — 상품별 슬롯과 주문레벨 상품쿠폰의 적용 대상 둘 다.
+            $touchingCoupons = [];
+
+            if (isset($itemCoupons[$originalKey])) {
+                $itemCoupons[$newKey] = $itemCoupons[$originalKey];
+                $touchingCoupons = array_merge($touchingCoupons, (array) $itemCoupons[$originalKey]);
+            }
+
+            foreach ($couponSnapshots as $couponIssueId => $snapshot) {
+                $applied = $snapshot['applied_items'] ?? null;
+
+                if (! is_array($applied)) {
+                    continue;
+                }
+
+                if (in_array($originalKey, array_map('intval', array_column($applied, 'product_option_id')), true)) {
+                    $couponSnapshots[$couponIssueId]['applied_items'][] = ['product_option_id' => $newKey];
+                    $touchingCoupons[] = $couponIssueId;
+                }
+            }
+
+            // 쿠폰 상한 분배 — 라인이 갈릴 때만(원 잔여 > 0). 전량 치환이면 한 라인이라 분배하지 않는다.
+            // 정액 쿠폰은 수량 비례라 분배가 필요 없다.
+            if ($remaining > 0) {
+                foreach (array_unique($touchingCoupons) as $couponIssueId) {
+                    $snapshot = $couponSnapshots[$couponIssueId] ?? null;
+                    $cap = (int) ($snapshot['max_discount_amount'] ?? 0);
+
+                    if ($snapshot === null || $cap <= 0 || ($snapshot['discount_type'] ?? null) !== CouponDiscountType::RATE->value) {
+                        continue;
+                    }
+
+                    $couponSnapshots[$couponIssueId]['max_discount_amount_by_line'][$originalKey] = (int) round($cap * $remaining / $originalQuantity);
+                    $couponSnapshots[$couponIssueId]['max_discount_amount_by_line'][$newKey] = (int) round($cap * $quantity / $originalQuantity);
+                }
+            }
         }
 
-        return $total;
+        $metadata['coupon_snapshots'] = $couponSnapshots;
+
+        return new CalculationInput(
+            items: array_values($items),
+            couponIssueIds: $base->couponIssueIds,
+            itemCoupons: $itemCoupons,
+            discountCode: $base->discountCode,
+            usePoints: $base->usePoints,
+            shippingAddress: $base->shippingAddress,
+            paymentCurrency: $base->paymentCurrency,
+            metadata: $metadata,
+            shippingPolicySnapshots: $shippingPolicySnapshots,
+            promotionSnapshots: $base->promotionSnapshots,
+            userId: $base->userId,
+            mileagePolicySnapshot: $base->mileagePolicySnapshot,
+        );
+    }
+
+    /**
+     * 치환 라인의 엔진 키를 만듭니다. (주문옵션 ID 의 음수 — 어떤 상품옵션 ID 와도 겹치지 않는다)
+     *
+     * `buildOptionUpdates()` 는 `product_option_id ==` 매칭이라 음수 키는 어느 주문 행과도 맞지 않아
+     * 업데이트 페이로드에서 자연히 빠진다(교환은 어차피 그 페이로드를 DB 에 쓰지 않는다).
+     *
+     * @param  int  $orderOptionId  주문옵션 ID
+     * @return int 라인 키
+     */
+    private static function substitutionLineKey(int $orderOptionId): int
+    {
+        return -1 * $orderOptionId;
+    }
+
+    /**
+     * 치환 근거 행을 만듭니다. (화면의 "교환 대상" 행 — 상품별 old→new)
+     *
+     * @param  Order  $order  주문
+     * @param  array  $substitutions  옵션 치환 입력
+     * @return array [{order_option_id, quantity, product_option_id, unit_price, new_unit_price, line_key, option_label}]
+     */
+    private function buildSubstitutedItems(Order $order, array $substitutions): array
+    {
+        $rows = [];
+
+        foreach ($substitutions as $orderOptionId => $substitution) {
+            $option = $order->options->find($orderOptionId);
+
+            if (! $option instanceof OrderOption) {
+                continue;
+            }
+
+            $optionSnapshot = (array) ($substitution['option_snapshot'] ?? []);
+
+            $rows[] = [
+                'order_option_id' => (int) $orderOptionId,
+                'quantity' => (int) ($substitution['quantity'] ?? 0),
+                'product_option_id' => isset($substitution['product_option_id']) ? (int) $substitution['product_option_id'] : null,
+                'unit_price' => (float) $option->unit_price,
+                'new_unit_price' => (float) ($substitution['unit_price'] ?? 0),
+                'line_key' => self::substitutionLineKey((int) $orderOptionId),
+                'option_label' => $this->localizedText($optionSnapshot['option_value'] ?? null)
+                    ?: $this->localizedText($optionSnapshot['option_name'] ?? null)
+                    ?: $this->localizedText($option->option_value ?? null)
+                    ?: $this->localizedText($option->option_name ?? null),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * 로케일 맵·문자열을 현재 로케일 문자열로 폅니다.
+     *
+     * @param  mixed  $value  로케일 맵 또는 문자열
+     * @return string 표시 문자열 (없으면 빈 문자열)
+     */
+    private function localizedText(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (! is_array($value) || $value === []) {
+            return '';
+        }
+
+        $text = $value[app()->getLocale()] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value);
+
+        return is_string($text) ? $text : '';
     }
 
     /**
@@ -1160,102 +1368,26 @@ class OrderAdjustmentService
     }
 
     /**
-     * 원 주문의 다통화 스냅샷을 생성합니다.
+     * 원 주문의 다통화 스냅샷을 생성합니다. (`CalculationSnapshotPresenter::mcOriginal()` 위임)
      *
      * @param  Order  $order  주문
-     * @return array|null {mc_subtotal_amount, mc_total_paid_amount, mc_subtotal_amount_formatted, mc_total_paid_amount_formatted}
+     * @return array|null {mc_subtotal_amount, mc_total_paid_amount, mc_total_list_price_amount, *_formatted}
      */
     private function buildMcOriginalSnapshot(Order $order): ?array
     {
-        if (! $order->currency_snapshot) {
-            return null;
-        }
-
-        $formattedSubtotal = [];
-        foreach ($order->mc_subtotal_amount ?? [] as $code => $amount) {
-            $formattedSubtotal[$code] = $this->currencyService->formatPrice($amount, $code, $order->currency_snapshot);
-        }
-
-        $formattedTotalPaid = [];
-        foreach ($order->mc_total_paid_amount ?? [] as $code => $amount) {
-            $formattedTotalPaid[$code] = $this->currencyService->formatPrice($amount, $code, $order->currency_snapshot);
-        }
-
-        // 정가 합계 다통화 변환
-        $listPriceTotal = $this->calculateListPriceTotal($order);
-        $convertedListPrice = $this->currencyService->convertMultipleAmountsWithSnapshot(
-            ['mc_total_list_price_amount' => $listPriceTotal],
-            $order->currency_snapshot
-        );
-
-        $mcListPrice = [];
-        $mcListPriceFormatted = [];
-        foreach ($convertedListPrice ?? [] as $currencyCode => $amounts) {
-            if (is_array($amounts) && isset($amounts['mc_total_list_price_amount'])) {
-                $mcListPrice[$currencyCode] = $amounts['mc_total_list_price_amount'];
-                $mcListPriceFormatted[$currencyCode] = $amounts['mc_total_list_price_amount_formatted'] ?? '';
-            }
-        }
-
-        return [
-            'mc_subtotal_amount' => $order->mc_subtotal_amount,
-            'mc_total_paid_amount' => $order->mc_total_paid_amount,
-            'mc_total_list_price_amount' => $mcListPrice,
-            'mc_subtotal_amount_formatted' => $formattedSubtotal,
-            'mc_total_paid_amount_formatted' => $formattedTotalPaid,
-            'mc_total_list_price_amount_formatted' => $mcListPriceFormatted,
-        ];
+        return $this->snapshotPresenter->mcOriginal($order);
     }
 
     /**
-     * 재계산 결과의 다통화 스냅샷을 생성합니다.
+     * 재계산 결과의 다통화 스냅샷을 생성합니다. (`CalculationSnapshotPresenter::mcRecalculated()` 위임)
      *
      * @param  array  $recalcSnapshot  재계산 스냅샷
      * @param  array|null  $currencySnapshot  주문 시점 환율 스냅샷
-     * @return array|null {mc_subtotal_amount, mc_total_paid_amount, mc_subtotal_amount_formatted, mc_total_paid_amount_formatted}
+     * @return array|null {mc_subtotal_amount, mc_total_paid_amount, mc_total_list_price_amount, *_formatted}
      */
     private function buildMcRecalcSnapshot(array $recalcSnapshot, ?array $currencySnapshot): ?array
     {
-        if (! $currencySnapshot) {
-            return null;
-        }
-
-        $converted = $this->currencyService->convertMultipleAmountsWithSnapshot(
-            [
-                'mc_subtotal_amount' => $recalcSnapshot['subtotal_amount'] ?? 0,
-                'mc_total_paid_amount' => $recalcSnapshot['total_paid_amount'] ?? 0,
-                'mc_total_list_price_amount' => $recalcSnapshot['total_list_price_amount'] ?? 0,
-            ],
-            $currencySnapshot
-        );
-
-        if (empty($converted)) {
-            return null;
-        }
-
-        // {통화코드 => {mc_subtotal_amount, mc_total_paid_amount, mc_subtotal_amount_formatted, ...}} →
-        // {mc_subtotal_amount => {통화코드 => 금액}, mc_subtotal_amount_formatted => {통화코드 => 포맷}, ...}
-        $result = [
-            'mc_subtotal_amount' => [],
-            'mc_total_paid_amount' => [],
-            'mc_total_list_price_amount' => [],
-            'mc_subtotal_amount_formatted' => [],
-            'mc_total_paid_amount_formatted' => [],
-            'mc_total_list_price_amount_formatted' => [],
-        ];
-
-        foreach ($converted as $currencyCode => $amounts) {
-            if (is_array($amounts)) {
-                foreach (['mc_subtotal_amount', 'mc_total_paid_amount', 'mc_total_list_price_amount'] as $key) {
-                    if (isset($amounts[$key])) {
-                        $result[$key][$currencyCode] = $amounts[$key];
-                        $result[$key.'_formatted'][$currencyCode] = $amounts[$key.'_formatted'] ?? '';
-                    }
-                }
-            }
-        }
-
-        return $result;
+        return $this->snapshotPresenter->mcRecalculated($recalcSnapshot, $currencySnapshot);
     }
 
     /**

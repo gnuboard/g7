@@ -76,9 +76,120 @@ function loadPartial(file: string): any {
   );
 }
 
+/** partial 참조를 파일에서 읽어 인라인한다 — 하네스는 `{ "partial": … }` 을 해석하지 않는다. */
+function inlinePartials(node: any): any {
+  if (Array.isArray(node)) return node.map(inlinePartials);
+  if (node && typeof node === 'object') {
+    if (typeof node.partial === 'string') {
+      return inlinePartials(
+        JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../layouts/', node.partial), 'utf-8'))
+      );
+    }
+    const out: Record<string, any> = {};
+    for (const [key, value] of Object.entries(node)) out[key] = inlinePartials(value);
+    return out;
+  }
+  return node;
+}
+
 /** partial 하나를 단독 레이아웃으로 감싼다 — 셸은 이 파일의 관심사가 아니다. */
 function asLayout(file: string): any {
-  return { components: [loadPartial(file)] };
+  return { components: [inlinePartials(loadPartial(file))] };
+}
+
+// ── 주문금액 비교 섹션 (#599 후속) ─────────────────────────────
+
+const KO_CLAIM = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '../../lang/partial/ko/claim.json'), 'utf-8')
+);
+const KO_TRANSLATIONS = { claim: KO_CLAIM };
+
+/** 서버 스냅샷 한 벌 — 숫자 + base_currency + 기준 통화 포맷. 값은 응답에만 있고 다른 줄에서 만들 수 없는 것으로 고른다. */
+function snapshotFixture(values: Record<string, number>, formatted: Record<string, string>): Record<string, any> {
+  return { ...values, base_currency: 'KRW', formatted };
+}
+
+const ORIGINAL_SNAPSHOT = snapshotFixture(
+  {
+    item_count: 5, total_list_price_amount: 86000, subtotal_amount: 70000,
+    total_product_coupon_discount_amount: 0, total_order_coupon_discount_amount: 3000, total_code_discount_amount: 0,
+    shipping_discount_amount: 0, base_shipping_amount: 0, extra_shipping_amount: 0, total_points_used_amount: 5000,
+    total_tax_amount: 62000, total_vat_amount: 5636, total_paid_amount: 62000, total_earned_points_amount: 620,
+  },
+  {
+    total_list_price_amount: '86,000원', subtotal_amount: '70,000원', total_product_coupon_discount_amount: '0원',
+    total_order_coupon_discount_amount: '3,000원', total_code_discount_amount: '0원', shipping_discount_amount: '0원',
+    base_shipping_amount: '0원', extra_shipping_amount: '0원', total_points_used_amount: '5,000원',
+    total_tax_amount: '62,000원', total_vat_amount: '5,636원', total_paid_amount: '62,000원',
+  }
+);
+
+const RECALCULATED_SNAPSHOT = snapshotFixture(
+  {
+    item_count: 4, total_list_price_amount: 61000, subtotal_amount: 50000,
+    total_product_coupon_discount_amount: 0, total_order_coupon_discount_amount: 0, total_code_discount_amount: 0,
+    shipping_discount_amount: 0, base_shipping_amount: 0, extra_shipping_amount: 0, total_points_used_amount: 5000,
+    total_tax_amount: 45000, total_vat_amount: 3091, total_paid_amount: 45000, total_earned_points_amount: 450,
+  },
+  {
+    total_list_price_amount: '61,000원', subtotal_amount: '50,000원', total_product_coupon_discount_amount: '0원',
+    total_order_coupon_discount_amount: '0원', total_code_discount_amount: '0원', shipping_discount_amount: '0원',
+    base_shipping_amount: '0원', extra_shipping_amount: '0원', total_points_used_amount: '5,000원',
+    total_tax_amount: '45,000원', total_vat_amount: '3,091원', total_paid_amount: '45,000원',
+  }
+);
+
+function comparisonAdjustment(overrides: Record<string, any> = {}): Record<string, any> {
+  return {
+    original_snapshot: ORIGINAL_SNAPSHOT,
+    recalculated_snapshot: RECALCULATED_SNAPSHOT,
+    mc_original_snapshot: null,
+    mc_recalculated_snapshot: null,
+    original_coupons: [{ name: '첫구매 쿠폰', target_type: 'order_amount', discount_amount: 3000, discount_amount_formatted: '3,000원' }],
+    recalculated_coupons: [],
+    refund_priority: 'pg_first',
+    refund_amount: 17000,
+    refund_points_amount: 0,
+    refund_total: 17000,
+    remaining_pg_balance: 45000,
+    remaining_points_balance: 5000,
+    refund_formatted: {
+      base_currency: 'KRW',
+      base: { refund_total: '17,000원', refund_amount: '17,000원', remaining_pg_balance: '45,000원', remaining_points_balance: '5,000원' },
+      mc: {},
+    },
+    restored_coupons: [],
+    cancel_blocked: false,
+    cancel_blocked_reason: null,
+    substituted_items: [],
+    ...overrides,
+  };
+}
+
+function comparisonState(overrides: Record<string, any> = {}, adjustmentOverrides: Record<string, any> = {}): Record<string, any> {
+  return {
+    claimType: 'refund',
+    claimResolvedBranch: 'cancel',
+    claimApiBase: '/api/x',
+    claimEditMode: false,
+    claimComparisonOpen: true,
+    claimEstimateLoading: false,
+    claimEstimateError: null,
+    claimEstimate: { refund_product_amount: 0, adjustment: comparisonAdjustment(adjustmentOverrides) },
+    claimEstimateFormatted: {
+      refund_cash: '17,000원',
+      refund_points: '0원',
+      remaining_pg_balance: '45,000원',
+      remaining_points_balance: '5,000원',
+      mc_refund_total: [],
+      mc_refund_cash: [],
+      mc_refund_points: [],
+      mc_remaining_pg_balance: [],
+      mc_remaining_points_balance: [],
+      substituted_items: [],
+    },
+    ...overrides,
+  };
 }
 
 /** 요약이 금액을 그리는 데 필요한 최소 상태. 값은 서버 응답 형태를 그대로 흉내낸다. */
@@ -806,5 +917,239 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
 
     expect(buttons.length).toBeGreaterThan(0);
     expect(buttons[buttons.length - 1].disabled).toBe(true);
+  });
+
+  // ── 주문금액 비교 섹션 (#599 후속 — 옛 취소 모달의 비교표 복구) ──────────
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @effects claim_apply_comparison_table_renders_sixteen_rows
+   */
+  it('비교표 — 취소 신청서에서 16행(쿠폰 있음 · 치환 없음 = 15행) 라벨과 금액이 한국어 글자로 난다', async () => {
+    const { utils, container } = await renderPartial('_apply_comparison.json', comparisonState(), KO_TRANSLATIONS);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    const rows = Array.from(container.querySelectorAll('[data-row]')).map((el) => el.getAttribute('data-row'));
+
+    // 14 금액행 + 쿠폰행. 교환 치환행은 취소에서 서지 않는다.
+    expect(rows).toHaveLength(15);
+    expect(rows).not.toContain('substituted');
+    expect(text).toContain('주문금액 비교');
+    // 열 라벨은 유형 분기 식(`$t(...)`) 이라 하네스에서는 키가 그대로 난다 — 취소 분기의 키가 골라졌는지를 잰다.
+    expect(text).toContain('claim.apply.comparison.col_before_cancel');
+    expect(text).toContain('claim.apply.comparison.col_after_cancel');
+    expect(text).not.toContain('col_before_refund');
+    expect(text).toContain('부가세');
+    expect(text).toContain('5,636원');
+    expect(text).toContain('3,091원');
+    expect(text).toContain('5개');
+    expect(text).toContain('4개');
+    expect(text).toContain('620P');
+    expect(text).toContain('첫구매 쿠폰');
+    expect(text).toContain('-3,000원');
+    // `$t:` 접두 라벨은 전부 번역돼야 한다 — 접두가 그대로 새면 키가 언어팩에 없다는 뜻이다.
+    expect(text).not.toContain('$t:');
+    expect(text).not.toContain('row_');
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @effects claim_apply_comparison_highlights_changed_after_values
+   */
+  it('비교표 — 후열은 전열과 다른 행만 강조색이다', async () => {
+    const { utils, container } = await renderPartial('_apply_comparison.json', comparisonState(), KO_TRANSLATIONS);
+    active = utils;
+
+    const lastSpan = (row: string): HTMLElement => {
+      const spans = container.querySelectorAll(`[data-row="${row}"] span`);
+      return spans[spans.length - 1] as HTMLElement;
+    };
+
+    // 62,000 → 45,000 (변함) · 0 → 0 (그대로) · 5,000 → 5,000 (그대로)
+    expect(lastSpan('total_paid_amount').className).toContain('text-red-600');
+    expect(lastSpan('total_vat_amount').className).toContain('text-red-600');
+    expect(lastSpan('base_shipping_amount').className).not.toContain('text-red-600');
+    expect(lastSpan('total_points_used_amount').className).not.toContain('text-red-600');
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @effects claim_apply_comparison_table_renders_sixteen_rows
+   */
+  it('비교표 — 정가·판매가·실결제 3행은 보조통화를 병기한다 (기준 통화는 뺀다)', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_comparison.json',
+      comparisonState({}, {
+        mc_original_snapshot: {
+          mc_total_list_price_amount_formatted: { KRW: '86,000원', USD: '$73.10' },
+          mc_subtotal_amount_formatted: { KRW: '70,000원', USD: '$59.50' },
+          mc_total_paid_amount_formatted: { KRW: '62,000원', USD: '$52.70' },
+        },
+        mc_recalculated_snapshot: {
+          mc_total_list_price_amount_formatted: { KRW: '61,000원', USD: '$51.85' },
+          mc_subtotal_amount_formatted: { KRW: '50,000원', USD: '$42.50' },
+          mc_total_paid_amount_formatted: { KRW: '45,000원', USD: '$38.25' },
+        },
+      }),
+      KO_TRANSLATIONS
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+    for (const usd of ['$73.10', '$59.50', '$52.70', '$51.85', '$42.50', '$38.25']) {
+      expect(text).toContain(usd);
+    }
+    // 기준 통화(KRW)는 보조통화 줄에 반복되지 않는다 — 판매가 70,000원은 본 줄 한 번뿐이다.
+    expect(text.split('70,000원')).toHaveLength(2);
+  });
+
+  /**
+   * @scenario claim_type=exchange, charge_method=pay_on_request, exchange_mode=change
+   * @effects claim_apply_exchange_substituted_rows_render, claim_apply_exchange_after_column_reflects_substitution
+   */
+  it('비교표 — 교환은 열 라벨이 교환 전/후이고 치환 근거 행(상품별 old→new)이 선다', async () => {
+    const substituted = [{ order_option_id: 310, quantity: 1, product_option_id: 77, unit_price: 29000, new_unit_price: 32000, line_key: -310, option_label: '블랙 / L' }];
+    const state = comparisonState(
+      { claimType: 'exchange', claimResolvedBranch: null },
+      { substituted_items: substituted }
+    );
+    state.claimEstimateFormatted.substituted_items = [
+      { ...substituted[0], unit_price_formatted: '29,000원', new_unit_price_formatted: '32,000원' },
+    ];
+    const { utils, container } = await renderPartial('_apply_comparison.json', state, KO_TRANSLATIONS);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('claim.apply.comparison.col_before_exchange');
+    expect(text).toContain('claim.apply.comparison.col_after_exchange');
+    expect(container.querySelector('[data-row="substituted"]')).not.toBeNull();
+    expect(text).toContain('블랙 / L');
+    expect(text).toContain('29,000원 → 32,000원');
+    // 고가 교환(차액 환불 없음)은 환불 요약을 그리지 않는다.
+    expect(container.querySelector('[data-testid="claim-comparison-refund-summary"]')).toBeNull();
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @effects claim_apply_cancel_blocked_locks_submit_inline
+   */
+  it('환불 불가 — 사유와 안내가 표 아래 인라인으로 남고 제출 버튼이 잠긴다 (P3-①)', async () => {
+    const blocked = { cancel_blocked: true, cancel_blocked_reason: '취소 후 결제금액이 늘어나 취소할 수 없습니다.' };
+
+    const inline = await renderPartial('_apply_comparison.json', comparisonState({}, blocked), KO_TRANSLATIONS);
+    active = inline.utils;
+    const block = inline.container.querySelector('[data-testid="claim-comparison-blocked"]');
+    expect(block?.textContent).toContain('취소 후 결제금액이 늘어나 취소할 수 없습니다.');
+    expect(block?.textContent).toContain('0원 아래로 내려가');
+    expect(inline.container.querySelector('[data-testid="claim-comparison-refund-summary"]')).toBeNull();
+    // 표는 그대로 남는다 — 왜 막혔는지 후열이 말한다.
+    expect(inline.container.querySelectorAll('[data-row]').length).toBe(15);
+    inline.utils.cleanup();
+
+    const summary = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimResolvedBranch: 'cancel',
+        claimItems: [{ order_option_id: 410, selected: true }],
+        claimReason: 'changed_mind',
+        claimComparisonOpen: true,
+        claimEstimate: { refund_product_amount: 0, adjustment: comparisonAdjustment(blocked) },
+      }),
+      KO_TRANSLATIONS
+    );
+    active = summary.utils;
+    const submit = summary.container.querySelector('button.w-full.py-3') as HTMLButtonElement | null;
+    expect(submit).not.toBeNull();
+    expect(submit!.disabled).toBe(true);
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @effects claim_apply_refund_priority_reestimates
+   */
+  it('환불 우선순위 라디오 — 마일리지를 쓴 주문에서만 선다 (P3-③)', async () => {
+    const withPoints = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimResolvedBranch: 'cancel',
+        claimRefundPriority: 'pg_first',
+        claimEstimate: { refund_product_amount: 0, adjustment: comparisonAdjustment() },
+      }),
+      KO_TRANSLATIONS
+    );
+    active = withPoints.utils;
+    const radios = withPoints.container.querySelectorAll('input[name="claimRefundPriority"]');
+    expect(radios).toHaveLength(2);
+    expect(withPoints.container.textContent).toContain('PG 우선 환불');
+    expect(withPoints.container.textContent).toContain('마일리지 우선 환불');
+    withPoints.utils.cleanup();
+
+    const noPoints = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimResolvedBranch: 'cancel',
+        claimEstimate: {
+          refund_product_amount: 0,
+          adjustment: comparisonAdjustment({ original_snapshot: { ...ORIGINAL_SNAPSHOT, total_points_used_amount: 0 } }),
+        },
+      }),
+      KO_TRANSLATIONS
+    );
+    active = noPoints.utils;
+    expect(noPoints.container.querySelector('[data-testid="claim-refund-priority"]')).toBeNull();
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @effects claim_apply_restored_coupons_and_remaining_balances_render
+   */
+  it('환불 요약 — 잔여 결제 잔액·잔여 마일리지 2행과 복원 쿠폰 블록이 글자로 난다 (P3-②·④)', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_comparison.json',
+      comparisonState({}, {
+        restored_coupons: [{ coupon_name: '웰컴 쿠폰', discount_amount: 2000, discount_amount_formatted: '2,000원' }],
+      }),
+      KO_TRANSLATIONS
+    );
+    active = utils;
+
+    expect(container.querySelector('[data-line="remaining_pg"]')?.textContent).toContain('45,000원');
+    expect(container.querySelector('[data-line="remaining_points"]')?.textContent).toContain('5,000원');
+    expect(container.querySelector('[data-line="refund_cash"]')?.textContent).toContain('17,000원');
+    // 마일리지 환불분이 0 이면 그 줄은 서지 않는다.
+    expect(container.querySelector('[data-line="refund_points"]')).toBeNull();
+
+    const coupons = container.querySelector('[data-testid="claim-comparison-restored-coupons"]');
+    expect(coupons?.textContent).toContain('웰컴 쿠폰');
+    expect(coupons?.textContent).toContain('2,000원');
+    expect(coupons?.textContent).toContain('쿠폰함으로 복원');
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @effects claim_apply_comparison_default_open_follows_breakpoint
+   */
+  it('접힘 상태 — 본문은 렌더하지 않고 토글만 aria-expanded=false 로 선다 (P6)', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_comparison.json',
+      comparisonState({ claimComparisonOpen: false }),
+      KO_TRANSLATIONS
+    );
+    active = utils;
+
+    expect(container.querySelector('#claim-comparison-body')).toBeNull();
+    expect(container.querySelectorAll('[data-row]')).toHaveLength(0);
+    const toggle = container.querySelector('[data-testid="claim-comparison-toggle"]');
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle?.getAttribute('aria-controls')).toBe('claim-comparison-body');
+    // 토글 문구는 상태 분기 식이라 하네스에서는 키가 난다 — 접힘 상태에서 '펼치기' 쪽 키가 골라진다.
+    expect(toggle?.textContent).toContain('claim.apply.comparison.expand');
+    expect(toggle?.textContent).not.toContain('collapse');
+    // 제목은 접혀 있어도 보인다 — 무엇이 접혀 있는지 알 수 있어야 한다.
+    expect(container.textContent).toContain('주문금액 비교');
   });
 });

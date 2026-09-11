@@ -31,6 +31,7 @@ import {
   mockOrder,
   mockPreview,
   waitForApp,
+  previewWithComparison,
 } from '../../fixtures/claim-screens';
 import type { Page } from '@playwright/test';
 
@@ -128,9 +129,9 @@ async function pickReason(page: Page): Promise<void> {
 }
 
 test.describe('구매자 클레임 신청서 작성 — 교환', () => {
+  // @scenario exchange_mode=same, preview_result=rejected
+  // @effects user_claim_apply_invalid_type_shows_error_page
   test('잘못된 유형으로 들어오면 화면이 선다 (라우트 가드)', async ({ page, memberToken }) => {
-    // @scenario exchange_mode=same, preview_result=rejected
-    // @effects user_claim_apply_invalid_type_shows_error_page
     await grantFunctionalConsent(page);
     await authenticatePage(page, memberToken);
     await page.goto('/mypage/orders/does-not-exist/claims/apply/coupon');
@@ -140,9 +141,9 @@ test.describe('구매자 클레임 신청서 작성 — 교환', () => {
     await expect(page.locator('#claim_apply_items')).toHaveCount(0);
   });
 
+  // @scenario exchange_mode=same, preview_result=ok
+  // @effects user_claim_apply_exchange_renders_per_item_change_button
   test('교환이 열린 상품마다 [교환상품 변경] 버튼이 그려진다 (D29)', async ({ page, memberToken }) => {
-    // @scenario exchange_mode=same, preview_result=ok
-    // @effects user_claim_apply_exchange_renders_per_item_change_button
     await grantFunctionalConsent(page);
     await authenticatePage(page, memberToken);
     await mockOrder(page);
@@ -163,9 +164,9 @@ test.describe('구매자 클레임 신청서 작성 — 교환', () => {
     ).toHaveCount(1);
   });
 
+  // @scenario exchange_mode=same, preview_result=ok
+  // @effects user_claim_apply_preview_runs_once_after_reason_selected
   test('사유를 고른 뒤에야 미리보기가 나간다', async ({ page, memberToken }) => {
-    // @scenario exchange_mode=same, preview_result=ok
-    // @effects user_claim_apply_preview_runs_once_after_reason_selected
     await grantFunctionalConsent(page);
     await authenticatePage(page, memberToken);
     await mockOrder(page);
@@ -198,12 +199,12 @@ test.describe('구매자 클레임 신청서 작성 — 교환', () => {
     expect(calls, '토글마다 요청이 나갔다 (debounce 미동작)').toHaveLength(1);
   });
 
+  // @scenario exchange_mode=change, preview_result=ok
+  // @effects claim_apply_additional_options_reach_the_preview_request
   test('교환 추가옵션은 이름이 상품 줄에 남고 같은 선택이 미리보기에 실린다 (§8-3)', async ({
     page,
     memberToken,
   }) => {
-    // @scenario exchange_mode=change, preview_result=ok
-    // @effects claim_apply_additional_options_reach_the_preview_request
     await grantFunctionalConsent(page);
     await authenticatePage(page, memberToken);
     await mockOrder(page);
@@ -284,12 +285,12 @@ test.describe('구매자 클레임 신청서 작성 — 교환', () => {
       '고른 추가옵션이 미리보기 요청에 실리지 않았다',
     ).toBe(GIFT_WRAP.values[0].id);
   });
+  // @scenario exchange_mode=same, charge_method=pay_on_approval, preview_result=ok
+  // @effects claim_apply_submit_label_matches_payment_timing
   test('승인 후 결제는 지금 결제하지 않으므로 버튼이 결제하기가 아니다 (S17 트랙 A F-6)', async ({
     page,
     memberToken,
   }) => {
-    // @scenario exchange_mode=same, charge_method=pay_on_approval, preview_result=ok
-    // @effects claim_apply_submit_label_matches_payment_timing
     //
     // 서버의 `requires_payment` 는 "상계가 아니다" 라는 도메인 뜻이라 신청 시 결제와 승인 후
     // 결제를 구분하지 않는다. 그 값만 보고 라벨을 정하면 승인 후 결제에서도 "N원 결제하기" 로
@@ -347,12 +348,12 @@ test.describe('구매자 클레임 신청서 작성 — 교환', () => {
       .toBe(false);
   });
 
+  // @scenario exchange_mode=same, preview_result=ok
+  // @effects claim_apply_summary_amount_rows_all_show_secondary_currency
   test('요약의 옵션 차액 줄도 형제 금액 줄과 같이 보조통화를 단다 (S17 트랙 A F-1)', async ({
     page,
     memberToken,
   }) => {
-    // @scenario exchange_mode=same, preview_result=ok
-    // @effects claim_apply_summary_amount_rows_all_show_secondary_currency
     //
     // 차액 줄만 기준 통화 하나로 남으면 위(배송비)·아래(총 청구액) 줄과 표기가 갈리고,
     // 접수 뒤 상세는 같은 값을 병기하므로 구매자가 같은 금액을 화면마다 다르게 본다.
@@ -391,5 +392,44 @@ test.describe('구매자 클레임 신청서 작성 — 교환', () => {
         timeout: 15_000,
       })
       .toBeGreaterThan(1);
+  });
+
+  // @scenario exchange_mode=change, preview_result=ok
+  // @effects claim_apply_exchange_after_column_reflects_substitution, claim_apply_exchange_substituted_rows_render
+  test('교환 후 열은 옵션 치환을 반영한 값이고 교환 대상 행(old→new)이 선다 (#599 후속 P5)', async ({ page, memberToken }) => {
+    await grantFunctionalConsent(page);
+    await authenticatePage(page, memberToken);
+    await mockOrder(page);
+    await mockClaimable(page, [EXCHANGE_ITEM]);
+    const calls = await mockPreview(page, () => previewWithComparison({
+      claim_type: 'exchange',
+      requires_payment: true,
+      shipping_fee: { fee: 6_000, extra_fee: 0, groups: [] },
+      price_difference: 3_000,
+      additional_product_amount: 3_000,
+      total_charge_amount: 9_000,
+      items: [{ order_option_id: EXCHANGE_ITEM.option.id, price_difference: 3_000 }],
+    }, {
+      recalculated_snapshot: { ...(previewWithComparison().adjustment as any).recalculated_snapshot, subtotal_amount: 32000, formatted: { ...(previewWithComparison().adjustment as any).recalculated_snapshot.formatted, subtotal_amount: '32,000원' } },
+      substituted_items: [{ order_option_id: EXCHANGE_ITEM.option.id, quantity: 1, product_option_id: 911, unit_price: 29000, new_unit_price: 32000, line_key: -EXCHANGE_ITEM.option.id, option_label: '사이즈: L' }],
+    }));
+
+    await page.goto(`/mypage/orders/${encodeURIComponent(MOCK_ORDER.number)}/claims/apply/exchange`);
+    await waitForApplyScreen(page);
+    await page.locator('#claim_apply_items input[type="checkbox"]').last().check();
+    await pickReason(page);
+    await expect.poll(() => calls.length, { timeout: 15_000 }).toBeGreaterThan(0);
+
+    const summary = page.locator('#claim_apply_summary');
+    await expect(summary.locator('[data-row="substituted"]')).toBeVisible({ timeout: 15_000 });
+    await expect(summary.locator('[data-row="substituted"]')).toContainText('사이즈: L');
+    await expect(summary.locator('[data-row="substituted"]')).toContainText('29,000원 → 32,000원');
+    await expect(summary.locator('[data-row="subtotal_amount"]')).toContainText('32,000원');
+    // 16행 전부 — 14 금액행 + 쿠폰 + 치환
+    await expect(summary.locator('[data-row]')).toHaveCount(16);
+    const text = ((await summary.innerText()) ?? '').replace(/\s+/g, ' ');
+    expect(text).toMatch(/교환 전.*교환 후/);
+    // 고가 교환(차액 환불 없음)은 환불 요약을 그리지 않는다.
+    await expect(summary.locator('[data-testid="claim-comparison-refund-summary"]')).toHaveCount(0);
   });
 });

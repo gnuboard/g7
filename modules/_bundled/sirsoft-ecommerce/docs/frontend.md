@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 228개 (루트: `resources/layouts`).
+레이아웃 229개 (루트: `resources/layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 228개 |
+| `admin` | 229개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -58,6 +58,7 @@
 | `_panel_view` | `admin` | partial | - |
 | `_modal_claim_refund_execute` | `admin` | partial | - |
 | `_partial_claim_activity_log` | `admin` | partial | - |
+| `_partial_claim_comparison` | `admin` | partial | - |
 | `_partial_claim_items` | `admin` | partial | - |
 | `_partial_claim_payment` | `admin` | partial | - |
 | `_partial_claim_reason` | `admin` | partial | - |
@@ -277,7 +278,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 200개 (정의: `resources/js/handlers/index.ts`).
+핸들러 194개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -441,14 +442,6 @@
 | `clearCancelOrderTimers` | `sirsoft-ecommerce.clearCancelOrderTimers` |
 | `toggleItemSelection` | `sirsoft-ecommerce.toggleItemSelection` |
 | `toggleSelectAllItems` | `sirsoft-ecommerce.toggleSelectAllItems` |
-| `initUserCancelItems` | `sirsoft-ecommerce.initUserCancelItems` |
-| `toggleUserCancelItem` | `sirsoft-ecommerce.toggleUserCancelItem` |
-| `toggleUserCancelSelectAll` | `sirsoft-ecommerce.toggleUserCancelSelectAll` |
-| `updateUserCancelQuantity` | `sirsoft-ecommerce.updateUserCancelQuantity` |
-| `estimateUserRefund` | `sirsoft-ecommerce.estimateUserRefund` |
-| `changeUserRefundPriority` | `sirsoft-ecommerce.changeUserRefundPriority` |
-| `executeUserCancelOrder` | `sirsoft-ecommerce.executeUserCancelOrder` |
-| `clearUserCancelOrderTimers` | `sirsoft-ecommerce.clearUserCancelOrderTimers` |
 | `confirmOrderOption` | `sirsoft-ecommerce.confirmOrderOption` |
 | `changeShippingAddress` | `sirsoft-ecommerce.changeShippingAddress` |
 | `submitReview` | `sirsoft-ecommerce.submitReview` |
@@ -468,6 +461,8 @@
 | `estimateClaim` | `sirsoft-ecommerce.estimateClaim` |
 | `submitClaim` | `sirsoft-ecommerce.submitClaim` |
 | `clearClaimApplyTimers` | `sirsoft-ecommerce.clearClaimApplyTimers` |
+| `changeClaimRefundPriority` | `sirsoft-ecommerce.changeClaimRefundPriority` |
+| `toggleClaimComparison` | `sirsoft-ecommerce.toggleClaimComparison` |
 | `claimApplyOrderMissing` | `sirsoft-ecommerce.claimApplyOrderMissing` |
 | `initClaimEdit` | `sirsoft-ecommerce.initClaimEdit` |
 | `saveClaimEdit` | `sirsoft-ecommerce.saveClaimEdit` |
@@ -485,10 +480,13 @@
 
 <!-- @intent START -->
 핸들러 160개는 레이아웃 JSON 에서 `sirsoft-ecommerce.{이름}` 으로 부릅니다. 관리자 화면 전용이
-아니라 **템플릿의 방문자 화면도 이 핸들러를 씁니다** — `initUserCancelItems` ·
-`toggleUserCancelItem` · `estimateUserRefund` · `submitReview` · `changeShippingAddress` ·
-`confirmOrderOption` 처럼 `User`/`user` 가 붙은 것들이 그 무리입니다. 그래서 이 핸들러들의
-이름·시그니처는 템플릿과의 계약이며, 바꾸면 템플릿 화면이 조용히 무반응이 됩니다.
+아니라 **템플릿의 방문자 화면도 이 핸들러를 씁니다** — `toggleItemSelection` ·
+`toggleSelectAllItems` · `initClaimApply` · `estimateClaim` · `submitClaim` · `submitReview` ·
+`changeShippingAddress` · `confirmOrderOption` 처럼 마이페이지·비회원 화면이 부르는 것들이 그
+무리입니다(옛 주문 취소 모달 핸들러 8종 — `initUserCancelItems` · `estimateUserRefund` 등 — 은
+1.3.0 에서 모달과 함께 삭제됐고, 상품 선택 2종은 `orderItemSelectionHandlers.ts` 로 옮겨 그대로
+제공합니다). 그래서 이 핸들러들의 이름·시그니처는 템플릿과의 계약이며, 바꾸면 템플릿 화면이
+조용히 무반응이 됩니다.
 
 역할별로 네 무리입니다:
 

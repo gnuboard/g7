@@ -27,7 +27,10 @@
  *   claim_apply_refund_branch_cannot_be_mixed,
  *   claim_apply_refund_branch_follows_selection,
  *   claim_apply_return_summary_uses_server_gross_refund,
- *   claim_apply_refund_bank_sent_only_when_filled
+ *   claim_apply_refund_bank_sent_only_when_filled,
+ *   claim_apply_comparison_default_open_follows_breakpoint,
+ *   claim_apply_refund_priority_reestimates,
+ *   claim_apply_cancel_blocked_locks_submit_inline
  *
  * @vitest-environment jsdom
  */
@@ -35,6 +38,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
     applyClaimChangeProductHandler,
+    changeClaimRefundPriorityHandler,
+    toggleClaimComparisonHandler,
     attachClaimItemErrors,
     collectClaimFieldErrors,
     normalizeRefundAccountPrefill,
@@ -950,6 +955,80 @@ describe('claimApplyHandlers', () => {
         expect(row.mc_unit_price).toEqual([{ code: 'USD', formatted: '$41.65' }]);
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     * @effects claim_edit_entry_runs_the_first_preview
+     */
+    it('수정 진입 — 첫 미리보기를 예약한다 (상품·사유가 채워져 들어오므로 바꾸기 전에도 요약·비교표가 서야 한다)', async () => {
+        // 회귀(2026-09-11 브라우저 실측, #599 후속): 수정 화면은 구매자가 사유·재발송지를 바꾸기 전에는
+        // claims/preview 가 한 번도 나가지 않아 요약과 주문금액 비교가 "계산됩니다" 자리표시에 머물렀다.
+        vi.useFakeTimers();
+        mockDataSources = {
+            claimable: claimableResponse,
+            order: { data: { id: 120, base_currency: 'KRW' } },
+        };
+        mockLocalState = {
+            claimEditMode: true,
+            claimEditNumber: 'EX20260911-0001',
+            claimIsGuest: false,
+            claimApiBase: API_BASE,
+            claimEditSnapshot: {
+                claim_type: 'exchange',
+                claim_number: 'EX20260911-0001',
+                reason_code: 'size_mismatch',
+                fault_type: 'customer',
+                charge_method: 'pay_on_request',
+                total_charge_amount: 0,
+                images: [],
+                items: [{
+                    order_option_id: 310,
+                    quantity: 1,
+                    unit_price: 29000,
+                    is_option_change: true,
+                    new_product_option_id: 55,
+                    price_difference: 1000,
+                }],
+            },
+        };
+        mockG7Core.api.post.mockResolvedValue({ data: { shipping_fee: { fee: 0 }, items: [], total_charge_amount: 0 } });
+
+        initClaimApplyHandler({ handler: 'initClaimApply', params: {} }, {} as any);
+
+        // 작성 화면과 같은 debounce 를 탄다 — 즉시 나가면 같은 틱의 다른 예약과 왕복이 겹친다.
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(400);
+
+        expect(mockG7Core.api.post).toHaveBeenCalledTimes(1);
+        const [url, body] = mockG7Core.api.post.mock.calls[0];
+        expect(url).toBe(API_BASE + '/claims/preview');
+        expect(body.type).toBe('exchange');
+        // 자기 신청서가 잡아 둔 수량을 잠금 집계에서 빼야 한다 — 없으면 자기 자신에게 막혀 422 가 된다.
+        expect(body.claim_number).toBe('EX20260911-0001');
+        expect(body.items[0]).toMatchObject({ order_option_id: 310, quantity: 1, new_product_option_id: 55 });
+        vi.useRealTimers();
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     * @effects claim_edit_entry_runs_the_first_preview
+     */
+    it('수정 진입 — 셸이 claimApiBase 를 세우지 못했으면 첫 미리보기는 조용히 나가지 않는다', async () => {
+        vi.useFakeTimers();
+        mockDataSources = { claimable: claimableResponse, order: { data: { id: 120, base_currency: 'KRW' } } };
+        mockLocalState = {
+            claimEditMode: true,
+            claimEditNumber: 'EX20260911-0001',
+            claimEditSnapshot: { claim_type: 'exchange', reason_code: 'size_mismatch', items: [{ order_option_id: 310, quantity: 1 }] },
+        };
+
+        initClaimApplyHandler({ handler: 'initClaimApply', params: {} }, {} as any);
+        await vi.advanceTimersByTimeAsync(400);
+
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+        expect(mockLocalState.claimItems).toHaveLength(1);
+        vi.useRealTimers();
+    });
+
     it('미리보기 — 연타해도 요청은 한 번만 나간다 (debounce)', async () => {
         vi.useFakeTimers();
         seedApplyState();
@@ -1345,5 +1424,102 @@ describe('claimApplyHandlers', () => {
         expect(collectClaimFieldErrors(errors).refund_bank).toBe('은행·계좌번호·예금주를 모두 입력해 주세요.');
         // 그 자리에 섰으므로 요약 카드는 같은 말을 다시 하지 않는다.
         expect(unplacedClaimErrorMessage(errors, [])).toBe('');
+    });
+
+    // ── 주문금액 비교 섹션 (#599 후속) ──────────────────────────────
+
+    /**
+     * 비교 섹션의 기본 펼침 — PC 펼침 · 모바일 접힘 (P6). `_global.isPortable` 이 아니라 ResponsiveManager 를 읽는다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @effects claim_apply_comparison_default_open_follows_breakpoint
+     */
+    it('비교 섹션 — 초기 펼침값은 portable 이면 접힘, 아니면 펼침이다', () => {
+        (mockG7Core as any).ResponsiveManager = { matches: vi.fn((key: string) => key === 'portable') };
+        seedApplyState();
+        expect(mockLocalState.claimComparisonOpen).toBe(false);
+        expect((mockG7Core as any).ResponsiveManager.matches).toHaveBeenCalledWith('portable');
+
+        (mockG7Core as any).ResponsiveManager = { matches: vi.fn(() => false) };
+        mockLocalState = {};
+        seedApplyState();
+        expect(mockLocalState.claimComparisonOpen).toBe(true);
+        // 우선순위 기본값도 함께 선다.
+        expect(mockLocalState.claimRefundPriority).toBe('pg_first');
+
+        delete (mockG7Core as any).ResponsiveManager;
+    });
+
+    /**
+     * 우선순위는 서버 재계산의 입력이다 — 바꾸면 미리보기를 다시 부르고 페이로드에 그 값이 실린다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @effects claim_apply_refund_priority_reestimates
+     */
+    it('비교 섹션 — 환불 우선순위를 바꾸면 미리보기를 다시 부른다 (페이로드 refund_priority)', async () => {
+        vi.useFakeTimers();
+        seedApplyState();
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: { type: 'exchange', adjustment: {} } });
+
+        changeClaimRefundPriorityHandler(
+            { handler: 'changeClaimRefundPriority', params: { value: 'points_first', claimApiBase: API_BASE, isGuest: false } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimRefundPriority).toBe('points_first');
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(500);
+
+        expect(mockG7Core.api.post).toHaveBeenCalledTimes(1);
+        expect(mockG7Core.api.post).toHaveBeenCalledWith(
+            API_BASE + '/claims/preview',
+            expect.objectContaining({ refund_priority: 'points_first' }),
+            undefined
+        );
+
+        // 알 수 없는 값은 pg_first 로 떨어진다 — 서버 검증(in:pg_first,points_first)에 걸리지 않게.
+        changeClaimRefundPriorityHandler(
+            { handler: 'changeClaimRefundPriority', params: { value: 'whatever', claimApiBase: API_BASE } },
+            {} as any
+        );
+        expect(mockLocalState.claimRefundPriority).toBe('pg_first');
+        vi.useRealTimers();
+    });
+
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @effects claim_apply_comparison_default_open_follows_breakpoint
+     */
+    it('비교 섹션 — 토글은 열림 상태를 반전한다', () => {
+        mockLocalState = { claimComparisonOpen: true };
+
+        toggleClaimComparisonHandler({ handler: 'toggleClaimComparison' }, {} as any);
+        expect(mockLocalState.claimComparisonOpen).toBe(false);
+
+        toggleClaimComparisonHandler({ handler: 'toggleClaimComparison' }, {} as any);
+        expect(mockLocalState.claimComparisonOpen).toBe(true);
+    });
+
+    /**
+     * 환불 불가 조합은 버튼 잠금과 별개로 제출 진입에서도 막는다 — 서버가 어차피 거절할 요청을 보내지 않는다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @effects claim_apply_cancel_blocked_locks_submit_inline
+     */
+    it('제출 — 미리보기가 환불 불가(cancel_blocked)면 요청을 보내지 않고 사유를 알린다', async () => {
+        seedApplyState();
+        mockLocalState.claimEstimate = {
+            adjustment: { cancel_blocked: true, cancel_blocked_reason: '취소 후 결제금액이 늘어나 취소할 수 없습니다.' },
+        };
+
+        await submitClaimHandler(
+            { handler: 'submitClaim', params: { claimApiBase: API_BASE, isGuest: false } },
+            {} as any
+        );
+
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+        expect(mockG7Core.toast.warning).toHaveBeenCalledWith('취소 후 결제금액이 늘어나 취소할 수 없습니다.');
+        expect(mockLocalState.isSubmittingClaim).not.toBe(true);
     });
 });

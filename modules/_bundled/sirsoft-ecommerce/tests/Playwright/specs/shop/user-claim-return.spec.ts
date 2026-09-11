@@ -22,6 +22,7 @@ import {
   mockOrder,
   mockPreview,
   waitForApp,
+  previewWithComparison,
 } from '../../fixtures/claim-screens';
 import type { Page } from '@playwright/test';
 
@@ -95,9 +96,9 @@ test.describe('구매자 클레임 신청서 작성 — 반품', () => {
     );
   });
 
+  // @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+  // @effects claim_apply_return_summary_uses_server_gross_refund, claim_apply_return_summary_shows_gross_deduction_and_final
   test('환불금에서 차감하는 반품은 요약이 세 줄이고 세 값 모두 서버가 낸다', async ({ page }) => {
-    // @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
-    // @effects claim_apply_return_summary_uses_server_gross_refund, claim_apply_return_summary_shows_gross_deduction_and_final
     const calls = await mockPreview(page, () => ({
       claim_type: 'return',
       requires_payment: false,
@@ -126,9 +127,9 @@ test.describe('구매자 클레임 신청서 작성 — 반품', () => {
     expect(text, '최종 환불액 줄이 최종 금액(서버값)을 달고 있지 않다').toMatch(/최종 환불액 40,000/);
   });
 
+  // @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
+  // @effects claim_apply_return_summary_uses_server_gross_refund
   test('별도 결제 반품은 차감·최종 줄을 세우지 않는다', async ({ page }) => {
-    // @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
-    // @effects claim_apply_return_summary_uses_server_gross_refund
     const calls = await mockPreview(page, () => ({
       claim_type: 'return',
       requires_payment: true,
@@ -159,8 +160,8 @@ test.describe('구매자 클레임 신청서 작성 — 반품', () => {
     expect(text, '총 청구액 줄이 서버값을 달고 있지 않다').toMatch(/총 청구액 2,500/);
   });
 
+  // @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
   test('미리보기는 사유를 고른 뒤 한 번만 나간다', async ({ page }) => {
-    // @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
     const calls = await mockPreview(page, () => ({
       claim_type: 'return',
       requires_payment: false,
@@ -192,5 +193,41 @@ test.describe('구매자 클레임 신청서 작성 — 반품', () => {
 
     await expect.poll(() => calls.length, { timeout: 15_000 }).toBeGreaterThan(0);
     expect(calls, '토글마다 요청이 나갔다 (debounce 미동작)').toHaveLength(1);
+  });
+
+  // @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+  // @effects claim_apply_comparison_table_renders_sixteen_rows, claim_apply_comparison_highlights_changed_after_values
+  test('요약 카드 안 주문금액 비교표가 서버 formatted 값 그대로 15행으로 선다 (#599 후속)', async ({ page }) => {
+    const calls = await mockPreview(page, () => previewWithComparison({
+      claim_type: 'return',
+      shipping_fee: { fee: DEDUCT.collectionFee, extra_fee: 0, groups: [] },
+      refund_product_amount: DEDUCT.grossRefund,
+      refund_before_deduction: DEDUCT.grossRefund,
+      deducted_shipping_fee: DEDUCT.collectionFee,
+      items: [{ order_option_id: 610, price_difference: 0 }],
+    }));
+
+    await openReturnApply(page);
+    await expect.poll(() => calls.length, { timeout: 15_000 }).toBeGreaterThan(0);
+
+    // PC(1280) 는 펼침으로 열린다 — 14 금액행 + 쿠폰행. 치환행은 반품에 없다.
+    const rows = page.locator('#claim_apply_summary [data-row]');
+    await expect(rows).toHaveCount(15, { timeout: 15_000 });
+    await expect(page.locator('[data-testid="claim-comparison-toggle"]')).toHaveAttribute('aria-expanded', 'true');
+
+    const text = await summaryText(page);
+    expect(text, '열 라벨이 반품 전/후가 아니다').toMatch(/반품 전.*반품 후/);
+    // 응답에만 있는 값이 그대로 난다 — 화면이 포맷하거나 합산했다면 나올 수 없는 수다.
+    expect(text).toContain('5,636원');
+    expect(text).toContain('3,091원');
+    expect(text).toContain('첫구매 쿠폰');
+    expect(text).not.toContain('$t:');
+
+    // 후열은 변한 행만 강조색이다.
+    const paidColor = await page.locator('[data-row="total_paid_amount"] > div').last().locator('span').first()
+      .evaluate((el) => getComputedStyle(el).color);
+    const shippingColor = await page.locator('[data-row="base_shipping_amount"] > div').last().locator('span').first()
+      .evaluate((el) => getComputedStyle(el).color);
+    expect(paidColor, '변한 행(실결제금액)이 강조되지 않았다').not.toBe(shippingColor);
   });
 });

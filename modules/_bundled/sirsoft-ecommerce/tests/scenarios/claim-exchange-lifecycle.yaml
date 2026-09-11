@@ -127,8 +127,14 @@ sub_flows:
       - exchange_update_request_recalculates_the_fee_when_the_reason_changes
       - exchange_update_request_is_blocked_after_approval
 
+  # 교환 옵션 치환 2-패스 재계산 · 접수 스냅샷 동결 (#599 후속 B1·B2)
+  - exchange_preview_two_pass_keeps_refund_math
+  - exchange_request_freezes_calculation_snapshots
+  - exchange_substitution_inherits_shipping_policy_and_coupons
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderExchangeServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/CalculationSnapshotPresenterTest.php
 
 notes: |
   **선언이 만든 칸 넷은 이 세션이 채웠다.** 착수 시점 `OrderExchangeServiceTest` 는 123케이스로

@@ -6,6 +6,7 @@
   },
   "_comment": "금액은 전부 서버 미리보기(claims/preview)가 정한다 — 화면은 표시만 한다. 미리보기가 거절되면(422) 그 사유가 곧 신청이 거절될 사유이므로 금액을 지우고 제출을 잠근 뒤 이 자리에 그대로 보여 준다. 토스트로만 알리면 사라진 뒤에는 왜 제출이 막혔는지 화면에 남지 않는다.",
   "_comment_charge_axes": "청구는 반드시 2축이다(D6). 한 축(라디오 1그룹)으로 접으면 '승인 후 결제 + 마일리지' 조합이 표현 불가해진다. 두 축 모두 운영자 허용 목록만 노출하고, '환불금에서 차감' 은 환불이 발생하는 신청에서만 활성이며 선택 시 축2 는 쓰이지 않으므로 비활성으로 표시한다. 취소·환불 유형은 회수 배송이 없어 청구가 발생하지 않으므로 두 축 모두 미노출이다.",
+  "_comment_overflow": "PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포트보다 길어져도 카드 안에서 스크롤하지 않는다 — 요약은 전부 펼쳐 보여야 한다(제품 결정 2026-09-11). 뷰포트보다 긴 sticky 카드는 페이지 스크롤이 끝에 닿을 때 함께 밀려 제출 버튼까지 닿는다.",
   "type": "basic",
   "name": "Div",
   "id": "claim_apply_summary",
@@ -442,6 +443,10 @@
       ]
     },
     {
+      "comment": "주문금액 비교(전/후) 접이식 섹션 (#599 후속 P1) — 옛 취소 모달의 비교표를 세 유형 신청서로 옮긴 partial. 금액 요약 바로 뒤, 분기 안내 앞.",
+      "partial": "partials/mypage/claims/_apply_comparison.json"
+    },
+    {
       "comment": "취소·환불 분기 안내 (§6-3) — 같은 작성 셸이지만 서버는 두 파이프라인으로 갈린다. 즉시취소는 승인 없이 바로 환불되고 환불신청서는 판매자 확인을 거친다 — 금액은 같아도 언제 돈이 돌아오는지가 다르므로 신청 전에 밝힌다. 분기는 서버 판정(resolved_type)이 아니라 **지금 고른 상품**을 따른다 — 두 분기가 섞인 주문에서 서버 판정은 'mixed' 라, 그 값으로 안내하면 결제완료 상품만 골라 즉시 취소되는데도 판매자 확인을 거친다고 말하게 된다.",
       "type": "basic",
       "name": "Div",
@@ -458,6 +463,106 @@
           "name": "P",
           "props": { "className": "text-xs text-blue-700 dark:text-blue-300 min-w-0" },
           "text": "{{(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}"
+        }
+      ]
+    },
+    {
+      "comment": "환불 우선순위 (#599 후속 P3-③) — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimEstimateLoading !== true && !!_local.claimEstimate && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) && (_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0}}",
+      "props": { "className": "pt-3 border-t border-gray-200 dark:border-gray-700", "data-testid": "claim-refund-priority" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-2" },
+          "text": "$t:claim.apply.refund_priority.title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.claimEditMode !== true}}",
+          "props": { "className": "space-y-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "radio",
+                    "name": "claimRefundPriority",
+                    "value": "pg_first",
+                    "checked": "{{(_local.claimRefundPriority ?? 'pg_first') === 'pg_first'}}",
+                    "className": "text-blue-600"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.changeClaimRefundPriority",
+                      "params": {
+                        "value": "pg_first",
+                        "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+                        "isGuest": "{{_local.isGuest === true}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                  "text": "$t:claim.apply.refund_priority.pg_first"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "radio",
+                    "name": "claimRefundPriority",
+                    "value": "points_first",
+                    "checked": "{{(_local.claimRefundPriority ?? 'pg_first') === 'points_first'}}",
+                    "className": "text-blue-600"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.changeClaimRefundPriority",
+                      "params": {
+                        "value": "points_first",
+                        "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+                        "isGuest": "{{_local.isGuest === true}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                  "text": "$t:claim.apply.refund_priority.points_first"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "if": "{{_local.claimEditMode === true}}",
+          "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+          "text": "{{(_local.claimRefundPriority ?? 'pg_first') === 'points_first' ? $t('claim.apply.refund_priority.points_first') : $t('claim.apply.refund_priority.pg_first')}}"
         }
       ]
     },
@@ -679,7 +784,7 @@
       "props": {
         "type": "button",
         "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-        "disabled": "{{(_local.claimItems ?? []).filter(i => i.selected).length === 0 || !_local.claimReason || _local.claimEstimateLoading === true || !!_local.claimEstimateError || !_local.claimEstimate || _local.isSubmittingClaim === true}}"
+        "disabled": "{{(_local.claimItems ?? []).filter(i => i.selected).length === 0 || !_local.claimReason || _local.claimEstimateLoading === true || !!_local.claimEstimateError || !_local.claimEstimate || _local.claimEstimate?.adjustment?.cancel_blocked === true || _local.isSubmittingClaim === true}}"
       },
       "actions": [
         {

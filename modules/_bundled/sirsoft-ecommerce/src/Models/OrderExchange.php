@@ -22,6 +22,11 @@ class OrderExchange extends Model
 {
     use HasFactory;
 
+    /**
+     * 모델 팩토리를 돌려줍니다.
+     *
+     * @return OrderExchangeFactory 교환 신청서 팩토리
+     */
     protected static function newFactory()
     {
         return OrderExchangeFactory::new();
@@ -78,6 +83,8 @@ class OrderExchange extends Model
         'refund_bank_code',
         'refund_bank_account',
         'refund_bank_holder',
+        'original_calculation_snapshot',
+        'recalculated_snapshot',
     ];
 
     /**
@@ -102,6 +109,8 @@ class OrderExchange extends Model
             'items_snapshot' => 'array',
             'return_address_snapshot' => 'array',
             'redelivery_address_snapshot' => 'array',
+            'original_calculation_snapshot' => 'array',
+            'recalculated_snapshot' => 'array',
             'collection_completed_at' => 'datetime',
             'redelivered_at' => 'datetime',
             'is_stock_restored' => 'boolean',

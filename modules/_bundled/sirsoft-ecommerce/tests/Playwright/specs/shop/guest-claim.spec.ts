@@ -27,6 +27,7 @@ import {
   seedGuestSession,
   shopBase,
   waitForApp,
+  FROZEN_COMPARISON,
 } from '../../fixtures/claim-screens';
 import type { Page, Route } from '@playwright/test';
 
@@ -83,6 +84,8 @@ function guestClaimDetail(claimNumber: string): Record<string, unknown> {
     reason_label: '사이즈가 맞지 않음',
     items: [],
     images: [],
+    // 접수 시점 주문금액 비교(#599 후속) — 회원 상세와 같은 키·같은 partial 이 읽는다.
+    calculation_comparison: FROZEN_COMPARISON,
   };
 }
 
@@ -201,9 +204,9 @@ async function screenText(page: Page): Promise<string> {
 }
 
 test.describe('비회원 클레임 화면', () => {
+  // @scenario screen=detail, entry=without_token, claim_type=exchange
+  // @effects guest_claim_routes_are_token_protected, guest_claim_screens_clear_the_token_and_return_to_lookup
   test('토큰 없이 신청서 상세로 들어가면 조회 폼으로 돌려보낸다', async ({ page }) => {
-    // @scenario screen=detail, entry=without_token, claim_type=exchange
-    // @effects guest_claim_routes_are_token_protected, guest_claim_screens_clear_the_token_and_return_to_lookup
     const base = await resolveShopBase(page);
 
     await page.goto(`${base}/guest/claims/EX20260902-9999`);
@@ -219,9 +222,9 @@ test.describe('비회원 클레임 화면', () => {
     expect(session.orderNumber, '토큰 없이 주문번호만 남았다').toBeNull();
   });
 
+  // @scenario screen=detail, entry=expired_token, claim_type=exchange
+  // @effects guest_order_number_is_cleared_with_the_token, guest_claim_screens_clear_the_token_and_return_to_lookup
   test('만료된 토큰으로 들어가면 토큰과 주문번호를 함께 폐기한다', async ({ page }) => {
-    // @scenario screen=detail, entry=expired_token, claim_type=exchange
-    // @effects guest_order_number_is_cleared_with_the_token, guest_claim_screens_clear_the_token_and_return_to_lookup
     const base = await resolveShopBase(page);
 
     // 만료 시각을 과거로 둔 3키 — 화면 진입 전에 심어야 부모 레이아웃의 init 이 그것을 읽는다.
@@ -242,9 +245,9 @@ test.describe('비회원 클레임 화면', () => {
     expect(session.expiresAt, '만료 시각이 남았다').toBeNull();
   });
 
+  // @scenario screen=order_section, entry=with_token, claim_type=exchange
+  // @effects guest_order_claim_section_reuses_the_member_list_partial, guest_order_claim_list_is_paginated_by_type
   test('주문상세의 클레임 섹션은 회원 목록과 같은 partial 로 선다', async ({ page }) => {
-    // @scenario screen=order_section, entry=with_token, claim_type=exchange
-    // @effects guest_order_claim_section_reuses_the_member_list_partial, guest_order_claim_list_is_paginated_by_type
     const base = await resolveShopBase(page);
     await grantFunctionalConsent(page);
     await seedGuestSession(page);
@@ -277,9 +280,9 @@ test.describe('비회원 클레임 화면', () => {
     await expect(page.getByRole('button', { name: '상세보기' })).toHaveCount(0);
   });
 
+  // @scenario screen=order_section, entry=with_token, claim_type=return
+  // @effects guest_order_detail_sends_no_type_when_address_has_none
   test('주소에 유형이 없으면 접수 건이 있는 유형이 먼저 열린다 — 누르기 전에 (회원 섹션과 같은 규칙)', async ({ page }) => {
-    // @scenario screen=order_section, entry=with_token, claim_type=return
-    // @effects guest_order_detail_sends_no_type_when_address_has_none
     const base = await resolveShopBase(page);
     await grantFunctionalConsent(page);
     await seedGuestSession(page);
@@ -311,9 +314,9 @@ test.describe('비회원 클레임 화면', () => {
     expect(requested.every((u) => !u.searchParams.get('type'))).toBe(true);
   });
 
+  // @scenario screen=apply, entry=with_token, claim_type=exchange
+  // @effects guest_order_detail_offers_the_three_claim_entries, guest_order_claim_section_links_to_the_guest_routes
   test('상품을 고르면 신청 진입 3종이 열리고 비회원 주소로 보낸다', async ({ page }) => {
-    // @scenario screen=apply, entry=with_token, claim_type=exchange
-    // @effects guest_order_detail_offers_the_three_claim_entries, guest_order_claim_section_links_to_the_guest_routes
     const base = await resolveShopBase(page);
     await grantFunctionalConsent(page);
     await seedGuestSession(page);
@@ -347,9 +350,9 @@ test.describe('비회원 클레임 화면', () => {
     ).toBe(String(OPTION_ID));
   });
 
+  // @scenario screen=detail, entry=with_token, claim_type=exchange
+  // @effects guest_claim_shells_declare_the_order_scoped_bases
   test('신청서 상세는 주문 스코프 없는 비회원 주소로 서고 목록으로 돌아간다', async ({ page }) => {
-    // @scenario screen=detail, entry=with_token, claim_type=exchange
-    // @effects guest_claim_shells_declare_the_order_scoped_bases
     const base = await resolveShopBase(page);
     await grantFunctionalConsent(page);
     await seedGuestSession(page);
@@ -376,9 +379,9 @@ test.describe('비회원 클레임 화면', () => {
     const session = await readGuestSession(page);
     expect(session.token, '정상 진입인데 토큰이 폐기됐다').not.toBeNull();
   });
+  // @scenario screen=edit, entry=with_token, claim_type=exchange
+  // @effects guest_claim_edit_entry_reads_global_not_local, guest_claim_shells_reuse_the_member_partials
   test('수정 진입은 주소에 없는 주문 스코프를 토큰의 짝에서 가져온다', async ({ page }) => {
-    // @scenario screen=edit, entry=with_token, claim_type=exchange
-    // @effects guest_claim_edit_entry_reads_global_not_local, guest_claim_shells_reuse_the_member_partials
     const base = await resolveShopBase(page);
     await grantFunctionalConsent(page);
     await seedGuestSession(page);
@@ -408,5 +411,26 @@ test.describe('비회원 클레임 화면', () => {
       claimReads[claimReads.length - 1],
       '수정 진입이 주문 스코프 없는 주소로 신청서를 읽었다',
     ).toBe(`/api/modules/sirsoft-ecommerce/guest/orders/${MOCK_ORDER.number}/claims/EX20260902-0902`);
+  });
+
+  // @scenario screen=detail, entry=with_token, claim_type=exchange
+  // @effects claim_detail_comparison_renders_from_frozen_snapshot
+  test('비회원 신청서 상세도 접수 시점 주문금액 비교표를 회원과 같은 partial 로 그린다 (#599 후속 P4)', async ({ page }) => {
+    const base = await resolveShopBase(page);
+    await grantFunctionalConsent(page);
+    await seedGuestSession(page);
+    await mockGuestOrderScreens(page, [claimRow({ claim_number: 'EX20260902-0902' })]);
+
+    await page.goto(`${base}/guest/claims/EX20260902-0902`);
+    await waitForApp(page);
+
+    const table = page.locator('[data-testid="claim-detail-comparison-table"]');
+    await expect(table).toBeVisible({ timeout: 30_000 });
+    await expect(table.locator('[data-row]')).toHaveCount(14);
+    await expect(table).toContainText('5,636원');
+    await expect(table).toContainText('3,091원');
+    await expect(table).toContainText('$38.25');
+    await expect(page.locator('[data-testid="claim-detail-comparison-empty"]')).toHaveCount(0);
+    expect(await screenText(page)).not.toContain('claim.detail.comparison');
   });
 });

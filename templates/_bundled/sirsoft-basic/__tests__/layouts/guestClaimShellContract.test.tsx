@@ -82,6 +82,7 @@ const SHARED_CLAIM_PARTIALS = [
   '_apply_reason.json',
   '_apply_refund_account.json',
   '_apply_summary.json',
+  '_apply_comparison.json',
   '_modal_change_product.json',
 ];
 
@@ -101,7 +102,7 @@ describe('공유 partial 규율 — 회원/비회원을 스스로 판단하지 �
     }
 
     // 모집단이 비면 red — 파일명이 바뀌었는데 검사만 통과하는 상태를 막는다.
-    expect(SHARED_CLAIM_PARTIALS.length).toBe(14);
+    expect(SHARED_CLAIM_PARTIALS.length).toBe(15);
     expect(offenders).toEqual([]);
   });
 
@@ -122,6 +123,8 @@ describe('공유 partial 규율 — 회원/비회원을 스스로 판단하지 �
         // 주석(`_comment*` / `comment`)은 규율을 설명하느라 그 주소를 인용한다.
         if (!line.includes('/mypage/')) continue;
         if (/"(_comment[^"]*|comment)"\s*:/.test(line)) continue;
+        // partial 참조는 화면 주소가 아니라 레이아웃 파일 경로다 — 공유 partial 이 형제 partial 을 싣는 것은 셸과 무관하다.
+        if (/"partial"\s*:\s*"partials\/mypage\/claims\//.test(line)) continue;
         offenders.push({ file, line: line.trim() });
       }
     }
@@ -240,8 +243,11 @@ describe('셸 계약값 — 비회원은 주문 스코프가 붙는다', () => {
     expect(seeds.claimEmptyCtaPath).not.toContain('/mypage/');
     expect(guestOrder.initLocal.isGuest).toBe(true);
     expect(guestOrder.initLocal.withdrawRefreshDataSourceId).toBe('claims');
-    // 클레임 신청 진입을 쓰는 셸이라는 표식 — 없으면 종전 [주문 취소] 버튼이 그대로 남는다.
-    expect(guestOrder.initLocal.useClaimActions).toBe(true);
+    // 옛 [주문 취소] 버튼과 그 셸 표식은 삭제됐다(#599 후속) — 공유 partial 에 그 핸들러 참조가 없어야 비회원도 클레임 진입만 본다.
+    expect(guestOrder.initLocal.useClaimActions).toBeUndefined();
+    const orderItemsRaw = fs.readFileSync(path.resolve(__dirname, '../../layouts/partials/mypage/orders/_items.json'), 'utf-8');
+    expect(orderItemsRaw).not.toContain('initUserCancelItems');
+    expect((guestOrder.modals ?? []).some((m: any) => String(m.partial ?? '').includes('_modal_cancel.json'))).toBe(false);
     // 번호가 곧 상세 링크인 셸 표식. 비회원은 같은 창이다 — 조회 토큰이 탭(sessionStorage)에 묶여 새 창에 실리지 않는다.
     expect(guestOrder.initLocal.claimDetailLinkMode).toBe('same_window');
   });

@@ -71,41 +71,9 @@
                   "type": "basic",
                   "name": "Span",
                   "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                  "text": "$t:mypage.order_detail.cancel_modal.select_all"
+                  "text": "$t:claim.apply.select_all"
                 }
               ]
-            }
-          ]
-        },
-        {
-          "comment": "우측: 주문 취소 버튼 — 클레임 신청 버튼을 쓰는 셸(useClaimActions)에서는 감춘다. 취소는 [취소·환불 신청] 이 통합 입구로 받고(D2), 서버가 상품 상태로 즉시취소/환불신청을 분기한다. 표식이 없는 셸(비회원 주문상세)은 종전 취소 모달을 그대로 쓴다.",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{order.data.abilities?.can_cancel === true && _local.useClaimActions !== true}}",
-          "props": {
-            "type": "button",
-            "className": "flex items-center gap-1.5 px-3 py-1.5 bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-            "disabled": "{{(_local.selectedItemIds ?? []).length === 0}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sirsoft-ecommerce.initUserCancelItems",
-              "params": {
-                "orderId": "{{order.data.id ?? ''}}"
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "x-circle", "size": "sm" }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:mypage.order_detail.cancel_order"
             }
           ]
         }

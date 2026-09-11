@@ -170,7 +170,6 @@
       "tempOrderNotFoundModal": "Order Not Found"
     },
     "mypage_orders": {
-      "modal_cancel_order": "Cancel Order",
       "changeAddressModal": "Change Address",
       "modal_confirm_purchase": "Confirm Purchase",
       "modal_write_review": "Write Review"
@@ -185,6 +184,7 @@
       "apply_redelivery": "Redelivery address",
       "apply_reason": "Claim reason",
       "apply_summary": "Claim summary",
+      "apply_comparison": "Order amount comparison",
       "apply_refund_account": "Refund account",
       "change_product_modal": "Change exchange option",
       "withdraw_modal": "Withdraw request confirmation",

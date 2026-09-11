@@ -746,6 +746,20 @@
               "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.title"
             },
             {
+              "comment": "접수 시점 주문금액 비교(전/후) — #599 후속 P8. 청구·환불 예정 아래가 아니라 카드 첫머리에 둔다: 이 카드의 숫자가 어느 주문금액에서 나왔는지의 근거다.",
+              "id": "cst_comparison_mount",
+              "type": "basic",
+              "name": "Div",
+              "_comment_partial_path": "partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다 — `partials/…` 로 적으면 서버 병합기가 layouts 루트(admin/ 없이)로 되돌려 찾다 실패하고, 운영(APP_DEBUG=false)에서는 빈 배열로 조용히 사라진다(2026-09-11 관리자 화면 실측). 참조 노드는 병합 시 partial 본문으로 통째로 바뀌므로 조건은 감싸는 Div 에 둔다.",
+              "_comment_not_for_cancel": "취소 신청서는 취소 정보 카드(_partial_claim_reason)가 같은 표를 이미 싣는다 — 정산 카드에도 두면 같은 화면에 두 번 선다(2026-09-11 실측).",
+              "if": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
+              "children": [
+                {
+                  "partial": "_partial_claim_comparison.json"
+                }
+              ]
+            },
+            {
               "id": "cst_charge_block",
               "type": "basic",
               "name": "Div",

@@ -90,6 +90,7 @@ class OrderReturnService
      * @param  OrderRefundOptionRepositoryInterface  $refundOptionRepository  환불 상세 Repository
      * @param  ClaimReasonRepositoryInterface  $claimReasonRepository  클레임 사유 Repository
      * @param  ShippingPolicyClaimAddressRepositoryInterface  $claimAddressRepository  배송정책 회수지 Repository
+     * @param  CurrencyConversionService  $currencyService  통화 변환 서비스 (다통화 금액 병기)
      */
     public function __construct(
         protected OrderAdjustmentService $adjustmentService,
@@ -320,6 +321,14 @@ class OrderReturnService
 
             $this->assertChargeMethodUsable($lockedOrder, $claimItems, $shippingFee, $chargeMethod, $refundPriority);
 
+            // 접수 시점 주문금액 비교 스냅샷(전/후) — 미리보기(`previewReturn`)와 같은 재료로 한 번 더
+            // 계산해 동결한다. 상세가 나중에 재계산하면 이후 클레임·쿠폰 변경이 섞여 접수 당시와 다른 표가 된다.
+            $frozen = $this->adjustmentService->preview(
+                $lockedOrder,
+                new ReturnAdjustment(returnItems: $claimItems, collectionFee: $shippingFee->fee, chargeMethod: $chargeMethod),
+                $refundPriority,
+            );
+
             $return = $this->returnRepository->create([
                 'order_id' => $lockedOrder->id,
                 'return_number' => $this->sequenceService->generateCode(SequenceType::ORDER_RETURN),
@@ -338,6 +347,8 @@ class OrderReturnService
                 'items_snapshot' => $this->buildItemsSnapshot($resolved),
                 'return_address_snapshot' => $this->resolveReturnAddressSnapshot($lockedOrder, $resolved),
                 'requested_by' => $requestedBy,
+                'original_calculation_snapshot' => $frozen->originalSnapshot,
+                'recalculated_snapshot' => $frozen->recalculatedSnapshot,
             ] + $this->refundBankColumns($payload['refund_bank'] ?? null));
 
             foreach ($resolved as $entry) {
@@ -456,6 +467,7 @@ class OrderReturnService
      *
      * @param  OrderReturn  $return  반품 신청서
      * @param  ReturnStatusEnum  $target  목표 상태 (반려·철회)
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 앞서 있는 상품이 있을 때
      */
@@ -830,6 +842,7 @@ class OrderReturnService
      * 차감 가능 여부(deduct) 판정은 신청 시점 검증 소관이라 여기서 반복하지 않는다.
      *
      * @param  ClaimChargeMethodEnum  $chargeMethod  청구 방식
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 허용 목록 밖 방식
      */
@@ -1192,6 +1205,7 @@ class OrderReturnService
      * @param  ClaimShippingFee  $shippingFee  산정된 배송비
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 청구 방식 부재·불허·차감 불가
      */
@@ -1244,6 +1258,7 @@ class OrderReturnService
      * 않는다 — 상세한 이유는 아래 기산점 주석 참조.
      *
      * @param  array<int, array{option: OrderOption, quantity: int}>  $resolved  해석된 대상
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 기간 경과
      */
@@ -1294,6 +1309,7 @@ class OrderReturnService
      * @param  Order  $order  주문
      * @param  OrderOption  $option  원 주문옵션
      * @param  int  $quantity  신청 수량
+     * @return void 반환값 없음
      */
     protected function createReturnOption(OrderReturn $return, Order $order, OrderOption $option, int $quantity): void
     {
@@ -1447,6 +1463,7 @@ class OrderReturnService
      * @param  OrderReturn  $return  반품 신청서
      * @param  ReturnStatusEnum  $target  목표 상태
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void 반환값 없음
      */
     protected function syncOptionStatuses(OrderReturn $return, ReturnStatusEnum $target, ?int $processedBy): void
     {
@@ -1484,6 +1501,7 @@ class OrderReturnService
      *
      * @param  OrderReturn  $return  반품 신청서
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void 반환값 없음
      */
     protected function syncHeaderFromOptions(OrderReturn $return, ?int $processedBy): void
     {
@@ -1617,6 +1635,7 @@ class OrderReturnService
      * 주문옵션이 어긋나는 형태다. 교환도 이 목록을 그대로 쓴다(2026-08-22 확정 ④).
      *
      * @param  OrderReturn  $return  반품 신청서
+     * @return void 반환값 없음
      */
     protected function revertOrderOptions(OrderReturn $return): void
     {
@@ -1638,6 +1657,7 @@ class OrderReturnService
      * 이미 코스를 벗어난 행은 건너뛰므로 신청서 단위 복귀가 뒤따라도 이중 전이가 없다.
      *
      * @param  OrderReturnOption  $item  신청 상품 행
+     * @return void 반환값 없음
      */
     protected function revertOrderOptionFor(OrderReturnOption $item): void
     {
@@ -1687,6 +1707,7 @@ class OrderReturnService
      * @param  OrderReturn  $return  반품 신청서
      * @param  ReturnStatusEnum  $previous  직전 상태
      * @param  ReturnStatusEnum  $target  목표 상태
+     * @return void 반환값 없음
      */
     protected function fireStatusHooks(OrderReturn $return, ReturnStatusEnum $previous, ReturnStatusEnum $target): void
     {
@@ -1719,6 +1740,7 @@ class OrderReturnService
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  완료 수량
+     * @return void 반환값 없음
      */
     protected function markOrderOptionReturned(OrderOption $orderOption, int $quantity): void
     {
@@ -1743,6 +1765,7 @@ class OrderReturnService
      * 근거이므로 두 건이 생기면 한쪽이 집계에서 누락돼 이중 계상이 된다.
      *
      * @param  OrderReturn  $return  판정 대상 신청서 (잠금 안에서는 재조회한 행을 넘긴다)
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 이미 접수된 경우
      */
@@ -1771,6 +1794,7 @@ class OrderReturnService
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  복구 수량
+     * @return void 반환값 없음
      */
     protected function restoreStockForItem(OrderOption $orderOption, int $quantity): void
     {
@@ -1981,6 +2005,15 @@ class OrderReturnService
                 );
 
                 $this->assertChargeMethodUsable($order, $claimItems, $shippingFee, $chargeMethod, RefundPriorityEnum::PG_FIRST);
+
+                // 회수비가 다시 계산됐으므로 접수 시점 비교 스냅샷도 같은 재료로 갱신한다.
+                $frozen = $this->adjustmentService->preview(
+                    $order,
+                    new ReturnAdjustment(returnItems: $claimItems, collectionFee: $shippingFee->fee, chargeMethod: $chargeMethod),
+                    RefundPriorityEnum::PG_FIRST,
+                );
+                $updates['original_calculation_snapshot'] = $frozen->originalSnapshot;
+                $updates['recalculated_snapshot'] = $frozen->recalculatedSnapshot;
 
                 $updates['shipping_fee_mode'] = $shippingFee->mode;
                 $updates['claim_shipping_fee'] = $shippingFee->fee;

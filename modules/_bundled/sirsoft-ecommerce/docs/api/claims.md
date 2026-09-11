@@ -173,6 +173,22 @@
 | pending_payment | object\|null | — | 결제 대기 중인 건 (없으면 `null`) |
 | payment_entry | object\|null | — | 결제 대기 건이 있으면 결제 진입 4키(`requires_pg_payment`, `pg_provider`, `pg_payment_handler`, `pg_payment_data`) — [claim-payments.md](claim-payments.md) 참조 |
 
+**주문금액 비교 블록** (상세 응답 전용 — 목록 행에는 키 자체가 없다)
+
+상세의 "주문금액 비교(전/후)" 표는 **접수 시점**에 동결한 재계산 스냅샷을 그린다. 환불신청서·반품·교환은 자기 행의
+`original_calculation_snapshot`/`recalculated_snapshot` 을, 취소는 취소 발 환불 행의 것을 읽는다. 다통화 줄은 저장하지 않고
+읽을 때 주문의 동결 환율로 다시 만든다(미리보기 `adjustment.mc_*_snapshot` 과 같은 출처). 두 스냅샷이 없는 구형 신청서
+(이 컬럼이 생기기 전에 접수된 반품·교환)는 블록 전체가 `null` 이며 화면은 "접수 시점 비교표가 없습니다" 로 그린다.
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| calculation_comparison | object\|null | — | 아래 다섯 키를 가진 객체. 스냅샷이 없으면 `null` |
+| calculation_comparison.original | object | `{"subtotal_amount":58000,"item_count":2,"base_currency":"KRW","formatted":{"subtotal_amount":"58,000원",…},…}` | 재계산 **전** 주문 금액 스냅샷. 미리보기의 `adjustment.original_snapshot` 과 같은 형태(금액 줄 + `base_currency` + 기준 통화 포맷 `formatted`) |
+| calculation_comparison.recalculated | object | `{"subtotal_amount":29000,"item_count":1,…}` | 재계산 **후** 스냅샷 (같은 형태). 교환은 옵션 치환을 반영한 "교환 후" 값이다 |
+| calculation_comparison.mc_original | object\|null | `{"mc_total_paid_amount_formatted":{"KRW":"58,000원","USD":"$58.00"},…}` | 원 열의 다통화 줄(정가·판매가·실결제). 통화 스냅샷이 없는 주문은 `null` |
+| calculation_comparison.mc_recalculated | object\|null | — | 후 열의 다통화 줄 (같은 형태) |
+| calculation_comparison.substituted_items | array | `[{"order_option_id":310,"quantity":1,"product_option_id":77,"unit_price":29000,"new_unit_price":32000,"line_key":-310,"option_label":"색상: 블랙, 사이즈: L"}]` | 교환의 옵션 치환 근거 행(상품별 old→new). 교환이 아니거나 치환이 없으면 `[]` |
+
 <a id="claim-item-resource"></a>
 
 ### ClaimItemResource (신청 상품 행)

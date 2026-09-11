@@ -284,7 +284,14 @@ export async function initClaimEditHandler(
     // 핸들러가 조립하면 한쪽이 404 가 된다(공유 partial 규율과 같은 근거).
     if (!base || !claimNumber) return;
 
-    G7Core.state.setLocal({ claimEditMode: true, claimEditNumber: claimNumber, claimEditLoading: true });
+    // claimIsGuest — 수정 진입의 첫 미리보기(initClaimApply 의 수정 분기)가 같은 자격으로 부르도록 남긴다.
+    // 그 시점의 액션 파라미터에는 isGuest 가 없다(claimable.onSuccess 는 페이로드만 넘긴다).
+    G7Core.state.setLocal({
+        claimEditMode: true,
+        claimEditNumber: claimNumber,
+        claimEditLoading: true,
+        claimIsGuest: isGuest,
+    });
 
     try {
         const response = await G7Core.api.get(
@@ -779,7 +786,49 @@ export function formatClaimEstimate(estimate: any, currencyCode: string | null):
         mc_additional_product_amount: toSecondaryCurrencyList(estimate?.mc_additional_product_amount, currencyCode),
         mc_refund_product_amount: toSecondaryCurrencyList(estimate?.mc_refund_product_amount, currencyCode),
         mc_deducted_shipping_fee: toSecondaryCurrencyList(estimate?.mc_deducted_shipping_fee, currencyCode),
+        // 주문금액 비교 섹션(#599 후속) — 환불 요약 4줄과 치환 근거 행. 스냅샷 행은 여기서 포맷하지
+        // 않는다(partial 이 서버 `formatted` 를 직독한다). 환불 총액·잔액은 서버 `refund_formatted.base.*`
+        // 를 그대로 옮기고, 마일리지 환불분만 서버 포맷이 없어 같은 통화로 포맷한다(기준 통화 정수 — 환산 없음).
+        refund_cash: estimate?.adjustment?.refund_formatted?.base?.refund_amount ?? fmt(estimate?.adjustment?.refund_amount),
+        refund_points: fmt(estimate?.adjustment?.refund_points_amount),
+        remaining_pg_balance: estimate?.adjustment?.refund_formatted?.base?.remaining_pg_balance
+            ?? fmt(estimate?.adjustment?.remaining_pg_balance),
+        remaining_points_balance: estimate?.adjustment?.refund_formatted?.base?.remaining_points_balance
+            ?? fmt(estimate?.adjustment?.remaining_points_balance),
+        mc_refund_cash: toSecondaryCurrencyList(estimate?.adjustment?.refund_formatted?.mc?.refund_amount, currencyCode),
+        mc_refund_points: toSecondaryCurrencyList(estimate?.adjustment?.mc_refund_points_amount, currencyCode),
+        mc_remaining_pg_balance: toSecondaryCurrencyList(estimate?.adjustment?.refund_formatted?.mc?.remaining_pg_balance, currencyCode),
+        mc_remaining_points_balance: toSecondaryCurrencyList(estimate?.adjustment?.refund_formatted?.mc?.remaining_points_balance, currencyCode),
+        // 교환의 치환 근거 행(상품별 old→new) — 단가는 서버가 raw 로 주므로 상품 줄 단가와 같은 통화로 포맷한다.
+        substituted_items: ((estimate?.adjustment?.substituted_items ?? []) as any[]).map((row: any) => ({
+            ...row,
+            unit_price_formatted: fmt(row?.unit_price),
+            new_unit_price_formatted: fmt(row?.new_unit_price),
+        })),
     };
+}
+
+/**
+ * 비교 섹션의 기본 펼침 상태를 정합니다. — PC 펼침 · 모바일(portable 0~1023px) 접힘 (P6)
+ *
+ * `_global.isPortable` 은 어느 런타임도 세우지 않는 값이라 쓰지 않는다. ResponsiveManager 가 없는
+ * 하네스에서는 matchMedia 로, 그것도 없으면 펼침으로 떨어진다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @returns 펼침이면 true
+ */
+export function defaultClaimComparisonOpen(G7Core: any): boolean {
+    const manager = G7Core?.ResponsiveManager ?? (window as any).G7Core?.ResponsiveManager;
+
+    if (manager && typeof manager.matches === 'function') {
+        return !manager.matches('portable');
+    }
+
+    const media = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 1023px)')
+        : null;
+
+    return !(media?.matches === true);
 }
 
 /**
@@ -839,6 +888,7 @@ function seedClaimEditState(G7Core: any, claim: any, claimable: any, claimType: 
         claimChargeMethod: claim.charge_method ?? '',
         claimPaymentMethod: '',
         claimRefundPriority: 'pg_first',
+        claimComparisonOpen: defaultClaimComparisonOpen(G7Core),
         // 환불계좌는 이 신청서 행의 값이며 서버가 마스킹해 내려준다 — 수정 대상이 아니다
         // (D13 이 여는 것은 사유·상세 사유·첨부와 재발송지뿐이다).
         claimRefundBankCode: '',
@@ -896,6 +946,17 @@ export function initClaimApplyHandler(
     // 정작 신청한 상품이 하나도 서지 않는다.
     if (editSnapshot) {
         seedClaimEditState(G7Core, editSnapshot, claimable, claimType);
+
+        // #599 후속(1.2.0) — 수정 진입의 첫 미리보기. 작성 화면은 상품·사유를 고르는 순간 미리보기가
+        // 돌지만, 수정 화면은 상품·사유가 이미 채워져 들어오므로 구매자가 무언가 바꾸기 전에는 요약과
+        // 주문금액 비교가 "계산됩니다" 자리표시에 머문다(2026-09-11 브라우저 실측). 기준 경로는 셸이
+        // _local.claimApiBase 로 세운 값이다 — 레이아웃 onSuccess 파라미터의 `{{_local.…}}` 은 그 시점에
+        // 비어 도착해 쓸 수 없었다.
+        const seeded = G7Core.state.getLocal?.() ?? {};
+        scheduleClaimEstimate(G7Core, {
+            claimApiBase: String(seeded.claimApiBase ?? ''),
+            isGuest: seeded.claimIsGuest === true,
+        });
 
         return;
     }
@@ -961,6 +1022,8 @@ export function initClaimApplyHandler(
         claimChargeMethod: allowedCharge[0] ?? '',
         claimPaymentMethod: allowedPayment[0] ?? '',
         claimRefundPriority: 'pg_first',
+        // 주문금액 비교 섹션 — PC 펼침 · 모바일 접힘(P6). 토글 뒤에는 화면을 떠날 때까지 유지된다.
+        claimComparisonOpen: defaultClaimComparisonOpen(G7Core),
         // 환불계좌는 주문 시 등록해 둔 계좌가 있으면 채워서 연다(2026-08-31 확정).
         // 채우는 값은 서버가 `refund_account.prefill` 로 실어 준 **원문**이며, 표시용 응답의
         // 마스킹 값(계좌 뒤 4자리·예금주 첫 글자)을 재사용하지 않는다 — 마스킹 값을 채우면
@@ -1176,6 +1239,52 @@ export function setClaimPaymentMethodHandler(
     if (!G7Core?.state) return;
 
     G7Core.state.setLocal({ claimPaymentMethod: String(action.params?.value ?? '') });
+}
+
+/**
+ * 환불 우선순위(PG 우선 / 마일리지 우선) 변경 핸들러 (P3-③)
+ *
+ * 우선순위는 서버 재계산의 입력(`refund_priority`)이라 바꾸면 미리보기를 다시 부른다 —
+ * 수량 변경과 같은 debounce·세대 가드 경로를 탄다.
+ *
+ * @example
+ * { "handler": "sirsoft-ecommerce.changeClaimRefundPriority", "params": { "value": "points_first", "claimApiBase": "...", "isGuest": false } }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function changeClaimRefundPriorityHandler(
+    action: ActionWithParams<{ value?: string; claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const value = action.params?.value === 'points_first' ? 'points_first' : 'pg_first';
+
+    G7Core.state.setLocal({ claimRefundPriority: value });
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 주문금액 비교 섹션 접기/펼치기 핸들러 (P6)
+ *
+ * 토글 뒤 상태는 화면을 떠날 때까지 유지된다 — 새로고침하면 디바이스 기본값으로 돌아간다(설계값).
+ *
+ * @param _action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function toggleClaimComparisonHandler(
+    _action: ActionWithParams,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const local = G7Core.state.getLocal();
+
+    G7Core.state.setLocal({ claimComparisonOpen: local.claimComparisonOpen !== true });
 }
 
 /**
@@ -1643,6 +1752,18 @@ export async function submitClaimHandler(
         return;
     }
 
+    // 환불 불가 조합(P3-①) — 버튼 잠금과 이중 안전. 미리보기가 통과해도 재계산 환불액이 0원 아래면
+    // 서버가 접수를 거절하므로 여기서 먼저 막는다.
+    if (local.claimEstimate?.adjustment?.cancel_blocked === true) {
+        G7Core.toast?.warning?.(
+            local.claimEstimate?.adjustment?.cancel_blocked_reason
+            ?? G7Core.t?.('claim.apply.comparison.blocked_hint')
+            ?? '이 조합은 환불액이 0원 아래로 내려가 신청할 수 없습니다.'
+        );
+
+        return;
+    }
+
     G7Core.state.setLocal({
         isSubmittingClaim: true,
         claimSubmitError: null,
@@ -1723,7 +1844,14 @@ export async function submitClaimHandler(
             throw new Error(response?.message ?? 'Claim request failed');
         }
 
-        G7Core.state.setLocal({ isSubmittingClaim: false, claimImageFiles: [], claimImages: [] });
+        // 접수 뒤 로컬 상태 초기화 — 다시 들어온 신청서가 지난 토글·우선순위를 물려받지 않는다(T5).
+        G7Core.state.setLocal({
+            isSubmittingClaim: false,
+            claimImageFiles: [],
+            claimImages: [],
+            claimComparisonOpen: defaultClaimComparisonOpen(G7Core),
+            claimRefundPriority: 'pg_first',
+        });
         G7Core.toast?.success?.(
             response.message
             ?? G7Core.t?.('claim.apply.submit_success')

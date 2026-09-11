@@ -110,6 +110,7 @@
 | `_list` | `partials` | partial | - |
 | `_my_comments` | `partials` | partial | - |
 | `_my_posts` | `partials` | partial | - |
+| `_apply_comparison` | `partials` | partial | - |
 | `_apply_items` | `partials` | partial | - |
 | `_apply_reason` | `partials` | partial | - |
 | `_apply_redelivery` | `partials` | partial | - |
@@ -130,7 +131,6 @@
 | `_history` | `partials` | partial | - |
 | `_items` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
-| `_modal_cancel` | `partials` | partial | - |
 | `_modal_change_address` | `partials` | partial | - |
 | `_modal_confirm_purchase` | `partials` | partial | - |
 | `_modal_write_review` | `partials` | partial | - |
@@ -232,7 +232,10 @@
 `mypage/claims*` 와 `shop/guest_claim_*` 는 한 클러스터입니다 — 목록·상세·작성/수정 셸이
 `partials/mypage/claims/` 의 같은 조각을 공유하고, 비회원 셸은 데이터소스 endpoint 와 헤더만
 다릅니다. 서브탭·페이지·필터는 `navigate + mergeQuery` URL 왕복이며, 모달 id 는 `modal_claim_*`
-접두사로 고정돼 기존 `modal_cancel_order` 와 겹치지 않습니다.
+접두사로 고정돼 다른 화면의 모달과 겹치지 않습니다. 신청서 요약 카드(`_apply_summary.json`)는
+`_apply_comparison.json`(주문금액 비교 전/후 · 환불 요약 · 환불 불가 안내)을 안에 싣습니다 —
+옛 주문 취소 모달(`_modal_cancel.json`)의 비교표를 세 유형 신청서로 옮긴 것이며, 그 모달은
+1.2.0 에서 삭제됐습니다(취소는 [취소·환불 신청] 이 받습니다).
 <!-- @intent END -->
 
 ## 라우트 매핑
@@ -508,7 +511,6 @@ _user_base.json (베이스 레이아웃)
 │   │       ├── _shipping.json (배송 정보)
 │   │       ├── _payment.json (결제 정보)
 │   │       ├── _history.json (주문 이력)
-│   │       ├── _modal_cancel.json (주문 취소)
 │   │       └── _modal_change_address.json (배송지 변경)
 │   ├── board.json (내 게시글/댓글)
 │   │   └── partials/mypage/board/

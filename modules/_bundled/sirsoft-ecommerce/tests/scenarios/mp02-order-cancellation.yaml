@@ -97,6 +97,8 @@ effects:
   - recalculation_never_reads_coupon_usage_state_in_snapshot_mode # 스냅샷 모드 재계산은 쿠폰 사용 상태를 읽지 않음
   - coupon_restore_on_min_amount_shortfall_unchanged_after_reset_removal # 최소주문금액 미달 쿠폰 복원 동작 불변(회귀 가드)
 
+  # 치환 입력이 없는 취소·반품·교환 미리보기는 변경 전과 바이트 단위로 같다 (#599 후속 등가성 픽스처)
+  - cancel_preview_output_unchanged_with_empty_substitutions
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
@@ -108,5 +110,5 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/OrderEnumsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/OrderResourceFieldsTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/cancelOrderHandlers.test.ts
-  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userCancelOrderHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/orderItemSelectionHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderCancelModalConditionalUi.test.tsx

@@ -61,7 +61,7 @@ effects:
   # 진입 (주문상세)
   - order_detail_claim_entry_buttons_gated_by_claimable_types
   - order_detail_claim_entry_passes_checked_options
-  - order_detail_cancel_button_hidden_when_claim_actions_enabled
+  - order_detail_old_cancel_button_removed
   - order_detail_claim_additional_paid_row_present
   # 작성 셸
   - claim_apply_route_type_guard_404
@@ -112,12 +112,19 @@ effects:
   # 계산하는데, 접수는 성공하므로 어긋난 사실이 어디에도 남지 않는다.
   - claim_apply_additional_options_reach_the_preview_request
 
+  # 주문금액 비교 섹션 — 교환 후 열은 서버가 옵션 치환으로 재계산한 값 (#599 후속 P5)
+  - claim_apply_exchange_after_column_reflects_substitution
+  - claim_apply_exchange_substituted_rows_render
+  # 비교표는 요약 카드 안에 산다 — 카드가 스크롤을 만들지 않는다(2026-09-11 제품 결정)
+  - claim_apply_comparison_partial_mounts_inside_the_summary_card
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimImageHandlers.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyExchange.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyRender.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-exchange.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderExchangeServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimDetailCalculationComparisonTest.php
 
 notes: |
   **반품·취소·환불은 S12 소유다.** 이 세션이 만든 공유 partial 로 이미 그려지지만, 무통장

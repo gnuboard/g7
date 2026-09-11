@@ -6,6 +6,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Modules\Sirsoft\Ecommerce\Upgrades\Upgrade_1_2_0;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -15,10 +16,9 @@ use PHPUnit\Framework\Attributes\Test;
  * - 1.2.0 이전 등록 상품(캐시 null)이 다국어 설명 JSON 의 첫 내부 이미지로 백필된다
  * - 이미 값이 있는 행·text 모드·외부 이미지만 있는 행은 건드리지 않는다
  * - 재실행해도 결과가 동일하다 (멱등)
- *
- * @group ecommerce
- * @group upgrade
  */
+#[Group('ecommerce')]
+#[Group('upgrade')]
 class ProductContentThumbnailBackfillTest extends ModuleTestCase
 {
     protected function setUp(): void
