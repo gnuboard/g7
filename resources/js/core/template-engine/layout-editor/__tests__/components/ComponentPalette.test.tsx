@@ -10,7 +10,9 @@
  *  - defaultNode — components.json props.default 값으로 골격 생성, id 미부여
  *
  * @since engine-v1.50.0
- */
+  *
+ * @effects palette_card_shows_react_component_tag_badge
+*/
 
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';

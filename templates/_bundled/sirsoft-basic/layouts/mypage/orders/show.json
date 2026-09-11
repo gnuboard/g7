@@ -1,8 +1,54 @@
 {
+    "comment": "주문 상세 — 마이페이지 탭이 아니라 목록에서 들어가는 별도 화면이다. 비회원 주문 상세\n     (`shop/guest_order_show`)가 이 화면의 조각 다섯을 그대로 재사용하므로, 조각에는 회원 전용 값을\n     전제하는 코드를 두지 않는다.",
     "version": "1.0.0",
     "layout_name": "mypage/orders/show",
-    "permissions": [],
     "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "order",
+            "label_key": "$t:editor.data_source.order",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "comment": "주문 본체 — 상태·결제·배송·항목이 모두 여기 담겨 온다. 취소·확정·배송지 변경 뒤에는 다시 받는다"
+        },
+        {
+            "id": "userAddresses",
+            "label_key": "$t:editor.data_source.userAddresses",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "comment": "저장된 배송지 — 배송지 변경 창에서 고르기 위해 미리 받아 둔다"
+        },
+        {
+            "id": "refundReasons",
+            "label_key": "$t:editor.data_source.refundReasons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/claim-reasons",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "type": "refund"
+            },
+            "comment": "취소 사유 목록 — 운영자가 관리하는 값이라 화면에 적지 않고 받아서 고르게 한다"
+        },
+        {
+            "id": "reviewSettings",
+            "label_key": "$t:editor.data_source.reviewSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/settings/review",
+            "method": "GET",
+            "auto_fetch": true,
+            "comment": "리뷰 작성 규칙(사진 필수 여부·글자수 등). 로그인 없이도 읽히는 설정이라 인증을 걸지 않는다"
+        }
+    ],
     "initLocal": {
         "isSubmittingAddress": false,
         "selectedItemIds": [],
@@ -24,48 +70,7 @@
         "isSubmittingReview": false,
         "reviewError": null
     },
-    "data_sources": [
-        {
-            "id": "order",
-            "label_key": "$t:editor.data_source.order",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number}}",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive"
-        },
-        {
-            "id": "userAddresses",
-            "label_key": "$t:editor.data_source.userAddresses",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive"
-        },
-        {
-            "id": "refundReasons",
-            "label_key": "$t:editor.data_source.refundReasons",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/user/claim-reasons",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "params": {
-                "type": "refund"
-            }
-        },
-        {
-            "id": "reviewSettings",
-            "label_key": "$t:editor.data_source.reviewSettings",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/settings/review",
-            "method": "GET",
-            "auto_fetch": true
-        }
-    ],
+    "permissions": [],
     "slots": {
         "content": [
             {
@@ -78,9 +83,6 @@
                     {
                         "type": "layout",
                         "name": "Container",
-                        "props": {
-                            "className": "py-8"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -88,14 +90,14 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "py-8"
+                        },
                         "children": [
                             {
                                 "comment": "뒤로가기 헤더",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "flex items-center gap-2 mb-6"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -103,15 +105,16 @@
                                         }
                                     }
                                 },
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "주문 목록으로. 보던 목록 상태를 이고 간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -121,6 +124,9 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -146,15 +152,15 @@
                                 "comment": "주문 상세 카드 컨테이너",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "max-w-3xl mx-auto space-y-4"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "space-y-3"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "max-w-3xl mx-auto space-y-4"
                                 },
                                 "children": [
                                     {
@@ -179,9 +185,6 @@
                                         "comment": "액션 버튼 영역",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "flex flex-row gap-4"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
@@ -189,13 +192,13 @@
                                                 }
                                             }
                                         },
+                                        "props": {
+                                            "className": "flex flex-row gap-4"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
-                                                },
                                                 "actions": [
                                                     {
                                                         "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑 계속하기 — 주문 목록이 아니라 상품 목록으로 나가는 이동이다.",
@@ -206,6 +209,9 @@
                                                         }
                                                     }
                                                 ],
+                                                "props": {
+                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -227,9 +233,6 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "if": "{{order.data.order_status === 'cancelled'}}",
-                                                "props": {
-                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                                                },
                                                 "actions": [
                                                     {
                                                         "comment": "audit:allow layout-list-context-navigate-merge-query 재주문 — 주문서 작성 흐름으로 넘어가는 이동이므로 주문 목록 상태를 물려주지 않는다.",
@@ -240,6 +243,9 @@
                                                         }
                                                     }
                                                 ],
+                                                "props": {
+                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -268,18 +274,23 @@
     },
     "modals": [
         {
+            "comment": "주문 취소 — 전체 취소와 항목별 취소를 한 창이 맡는다",
             "partial": "partials/mypage/orders/_modal_cancel.json"
         },
         {
+            "comment": "배송지 변경 — 배송이 시작되기 전까지만 열린다",
             "partial": "partials/mypage/orders/_modal_change_address.json"
         },
         {
+            "comment": "구매 확정 — 확정하면 취소·반품이 닫히므로 한 번 묻는다",
             "partial": "partials/mypage/orders/_modal_confirm_purchase.json"
         },
         {
+            "comment": "리뷰 작성 — 산 항목별로 따로 쓴다",
             "partial": "partials/mypage/orders/_modal_write_review.json"
         },
         {
+            "comment": "배송지를 새로 저장하려는데 자리가 꽉 찼을 때. 배송지 화면·주문서와 같은 창을 쓴다",
             "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
         }
     ]

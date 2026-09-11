@@ -1,7 +1,7 @@
 /**
  * 체크아웃 결제 금액 요약 레이아웃 테스트
  *
- * _checkout_summary.json partial의 렌더링 및 동작을 테스트합니다.
+ * _checkout_summary.g7.html partial의 렌더링 및 동작을 테스트합니다.
  * - 상품 금액, 할인, 배송비, 최종 결제금액 표시
  * - 접이식 상세 보기 (세금, 할인 상세)
  * - 결제 버튼 및 disabled 조건
@@ -71,7 +71,7 @@ function setupTestRegistry(): ComponentRegistry {
     return registry;
 }
 
-// ========== _checkout_summary.json 기반 레이아웃 ==========
+// ========== _checkout_summary.g7.html 기반 레이아웃 ==========
 
 const checkoutSummaryLayout = {
     version: '1.0.0',
@@ -413,7 +413,7 @@ const mockCheckoutDataFreeShipping = {
 
 // ========== 테스트 ==========
 
-describe('_checkout_summary.json (결제 금액 요약 Partial)', () => {
+describe('_checkout_summary.g7.html (결제 금액 요약 Partial)', () => {
     let testUtils: ReturnType<typeof createLayoutTest>;
     let registry: ComponentRegistry;
 

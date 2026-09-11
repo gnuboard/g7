@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: S4 결제수단·가상계좌·에스크로 명세 SSoT. 8-tuple pairwise 19건을 테스트 docblock @scenario 로 전부 나열하는 것은 실효성이 낮다(테스트는 축별 동작을 격리 검증 — KG security-callback-defense 선례 동일). effects 는 test_files 의 단위/통합 테스트가 @effects 로 실제 매핑·검증한다. 실 PG 결제창(M20·M21)은 실계약 후 Chrome MCP 로 커버.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: S4 결제수단·가상계좌·에스크로 명세 SSoT. 8-tuple pairwise 19건을 테스트 docblock @scenario 로 전부 나열하는 것은 실효성이 낮다(테스트는 축별 동작을 격리 검증 — KG security-callback-defense 선례 동일). effects 는 test_files 의 단위/통합 테스트가 @effects 로 실제 매핑·검증한다. 실 PG 결제창(M20·M21)은 실계약 후 Chrome MCP 로 커버.
 # 시나리오 매니페스트 — 토스 결제수단 동적등록 · 가상계좌 · 웹훅 · 에스크로 (S4)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 계획서 §12-4 / §13-2
 

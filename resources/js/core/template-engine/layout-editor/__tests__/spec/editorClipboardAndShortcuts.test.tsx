@@ -2,8 +2,8 @@
  * editorClipboardAndShortcuts.test.tsx — 클립보드 버퍼 + 단축키 디스패처 + 단축키 맵 모달
  *
  *
- * 축 요약(마커 아님 — 평문): shortcut_clipboard, shortcut_dispatch, shortcut_help_modal.
- * 효과 요약(마커 아님 — 평문): clipboard_session_roundtrip_strips_internal_meta, clipboard_read_returns_fresh_copy, shortcut_dispatch_guards_input_and_modal, shortcut_escape_branches_deselect_vs_exit_by_selection, shortcut_requires_selection_guard, shortcut_help_modal_lists_all_groups_from_ssot, paste_across_layouts_via_session_storage.
+ * @scenario shortcut_clipboard, shortcut_dispatch, shortcut_help_modal
+ * @effects clipboard_session_roundtrip_strips_internal_meta, clipboard_read_returns_fresh_copy, shortcut_dispatch_guards_input_and_modal, shortcut_escape_branches_deselect_vs_exit_by_selection, shortcut_requires_selection_guard, shortcut_help_modal_lists_all_groups_from_ssot, paste_across_layouts_via_session_storage
  * @since engine-v1.50.0
  */
 

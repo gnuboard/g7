@@ -1,191 +1,191 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Shipping Policy Bulk Toggle Status Modal"
-  },
-  "id": "bulk_toggle_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-gray-700 dark:text-gray-300"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.message|count={{(_global.bulkSelectedItems || []).length}}"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-body font-medium"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active_label"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "{{_global.bulkToggleValue === 'true' ? 'px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}}"
-                      },
-                      "text": "{{_global.bulkToggleValue === 'true' ? '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active' : '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_inactive'}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "props": {
-          }
-        }
-      ]
+    "comment": "배송정책 여러 건의 사용 여부를 한꺼번에 바꾸는 확인 창. 대상과 바꿀 값(`bulkToggleValue`)은\n  목록의 일괄 작업 줄이 정해 준다.\n  가운데 배지가 **바뀐 뒤의 상태**를 미리 보여 준다 — 이 창이 사용/중지 어느 쪽으로 가는지는\n  글자가 아니라 그 배지로만 구분된다.\n  `bulkToggleValue` 는 참·거짓이 아니라 **`'true'` 라는 글자**다(선택칸에서 온 값이라 그렇다).\n  성공하면 체크 목록과 함께 그 값도 비운다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Shipping Policy Bulk Toggle Status Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "bulk_toggle_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.title",
+        "size": "medium"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isBulkToggling}}"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.message|count={{(_global.bulkSelectedItems || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body font-medium"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{_global.bulkToggleValue === 'true' ? 'px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}}"
+                                            },
+                                            "text": "{{_global.bulkToggleValue === 'true' ? '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active' : '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_inactive'}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isBulkToggling}}"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isBulkToggling}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isBulkToggling ? '$t:sirsoft-ecommerce.admin.shipping_policy.common.changing' : '$t:sirsoft-ecommerce.admin.shipping_policy.common.change'}}"
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isBulkToggling": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkToggling}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel"
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk-toggle-active",
-                  "params": {
-                    "method": "PATCH",
-                    "body": {
-                      "ids": "{{_global.bulkSelectedItems}}",
-                      "is_active": "{{_global.bulkToggleValue === 'true'}}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isBulkToggling": false,
-                        "bulkSelectedItems": [],
-                        "bulkToggleValue": ""
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "일괄 상태 변경 실행. 성공 갈래가 체크 목록과 선택한 값을 함께 비운다 — 값이 남으면 다음에 이 창이 지난번 방향으로 열린다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isBulkToggling": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk-toggle-active",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PATCH",
+                                        "body": {
+                                            "ids": "{{_global.bulkSelectedItems}}",
+                                            "is_active": "{{_global.bulkToggleValue === 'true'}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkToggling": false,
+                                                "bulkSelectedItems": [],
+                                                "bulkToggleValue": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "shipping_policies"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.bulk_toggled"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkToggling": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkToggling}}"
                     },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "shipping_policies"
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.bulk_toggled"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isBulkToggling": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isBulkToggling}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isBulkToggling ? '$t:sirsoft-ecommerce.admin.shipping_policy.common.changing' : '$t:sirsoft-ecommerce.admin.shipping_policy.common.change'}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -36,7 +36,7 @@ FormRequest (slug 유일성 · 다국어 제목 · 첨부 용량/형식)
         ▼
 Services 3종
         │  ├─ PageService        : CRUD + 발행 + 버전 스냅샷·복원
-        │  ├─ PageAttachmentService : 업로드·순서·삭제 (개수 상한 판정)
+        │  ├─ PageAttachmentService : 업로드·순서·삭제 (개수 상한 판정 · URL 은 만들지 않음 — 리소스의 해시 download_url, 저장소 직접 URL 을 돌려주던 getUrl() 은 7.0.11 에서 제거)
         │  └─ PageSettingsService  : 설정 파일 해석
         │       before_* → filter_*_data → 실행 → after_*
         ▼

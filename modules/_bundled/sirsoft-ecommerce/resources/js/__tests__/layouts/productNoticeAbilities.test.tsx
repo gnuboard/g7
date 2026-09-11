@@ -4,8 +4,8 @@
  *
  * 테스트 대상:
  * - 메인 레이아웃: DS errorHandling, 템플릿 추가 버튼 disabled
- * - _panel_view.json: 편집 버튼 disabled, 삭제 버튼 if
- * - _panel_form.json: 저장 버튼, MultilingualInput, Toggle, DynamicFieldList, 상세정보 참조 버튼 disabled
+ * - _panel_view.g7.html: 편집 버튼 disabled, 삭제 버튼 if
+ * - _panel_form.g7.html: 저장 버튼, MultilingualInput, Toggle, DynamicFieldList, 상세정보 참조 버튼 disabled
  */
 
 import React from 'react';

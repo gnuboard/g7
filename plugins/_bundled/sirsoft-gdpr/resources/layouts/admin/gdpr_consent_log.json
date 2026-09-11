@@ -1,27 +1,11 @@
 {
+    "comment": "GDPR 동의 이력 조회 화면 — 이력은 고치는 것이 아니라 찾는 것이라 이 화면에는 저장이 없고 검색·필터만 있다",
     "version": "1.0.0",
     "layout_name": "gdpr_consent_log",
-    "permissions": [
-        "sirsoft-gdpr.privacy.view"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-gdpr.admin.consent_log.title",
         "description": "$t:sirsoft-gdpr.admin.consent_log.description"
-    },
-    "state": {
-        "filter": {
-            "searchType": "email",
-            "search": "",
-            "consentKeys": [],
-            "actions": [],
-            "sources": []
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "gdprConsentLog"
-        ]
     },
     "data_sources": [
         {
@@ -62,10 +46,10 @@
                         "to": null
                     }
                 }
-            }
+            },
+            "comment": "동의 이력. 검색어·필터·페이지를 URL query 에서 그대로 읽으므로 조회 조건이 주소로 공유된다"
         },
         {
-            "comment": "정책 버전 단건 snapshot — policy_version 컬럼 클릭 시 setState global.viewingPolicyVersion → refetchDataSource 시퀀스로 fetch. plugin_settings 화면과 동일한 data_source/modal 구조 (공유 partial 사용).",
             "id": "gdprPolicyVersionSnapshot",
             "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionSnapshot",
             "type": "api",
@@ -73,14 +57,75 @@
             "method": "GET",
             "auto_fetch": false,
             "auth_required": true,
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "정책 버전 단건 snapshot — policy_version 컬럼 클릭 시 setState global.viewingPolicyVersion → refetchDataSource 시퀀스로 fetch. plugin_settings 화면과 동일한 data_source/modal 구조 (공유 partial 사용)."
         }
     ],
-    "modals": [
-        {
-            "partial": "partials/_shared/_policy_version_snapshot_modal.json"
+    "initLocal": {
+        "filter": {
+            "searchType": "email",
+            "search": "",
+            "consentKeys": [],
+            "actions": [],
+            "sources": []
         }
+    },
+    "permissions": [
+        "sirsoft-gdpr.privacy.view"
     ],
+    "transition_overlay": {
+        "wait_for": [
+            "gdprConsentLog"
+        ]
+    },
+    "named_actions": {
+        "searchConsentLogs": {
+            "comment": "검색 실행 — 필터가 여러 곳(입력·체크박스 3종)에서 호출하므로 명명 액션으로 한 벌만 두고 참조한다",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/plugins/sirsoft-gdpr/consent-log",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "gdpr_consent_log_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "email": "{{_local.filter.searchType === 'email' && _local.filter.search ? _local.filter.search : ''}}",
+                    "session_id": "{{_local.filter.searchType === 'session_id' && _local.filter.search ? _local.filter.search : ''}}",
+                    "consent_keys": "{{_local.filter.consentKeys && _local.filter.consentKeys.length > 0 ? _local.filter.consentKeys : []}}",
+                    "actions": "{{_local.filter.actions && _local.filter.actions.length > 0 ? _local.filter.actions : []}}",
+                    "sources": "{{_local.filter.sources && _local.filter.sources.length > 0 ? _local.filter.sources : []}}"
+                }
+            }
+        },
+        "clearFilters": {
+            "comment": "필터 초기화 — 화면 상태를 되돌린 뒤 같은 검색 액션을 다시 태워 목록까지 맞춘다",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "filter": {
+                            "searchType": "email",
+                            "search": "",
+                            "consentKeys": [],
+                            "actions": [],
+                            "sources": []
+                        }
+                    }
+                },
+                {
+                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색/필터 조건과 페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/plugins/sirsoft-gdpr/consent-log",
+                        "replace": true,
+                        "query": {}
+                    }
+                }
+            ]
+        }
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -96,54 +141,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchConsentLogs": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/plugins/sirsoft-gdpr/consent-log",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": 1,
-                    "email": "{{_local.filter.searchType === 'email' && _local.filter.search ? _local.filter.search : ''}}",
-                    "session_id": "{{_local.filter.searchType === 'session_id' && _local.filter.search ? _local.filter.search : ''}}",
-                    "consent_keys": "{{_local.filter.consentKeys && _local.filter.consentKeys.length > 0 ? _local.filter.consentKeys : []}}",
-                    "actions": "{{_local.filter.actions && _local.filter.actions.length > 0 ? _local.filter.actions : []}}",
-                    "sources": "{{_local.filter.sources && _local.filter.sources.length > 0 ? _local.filter.sources : []}}"
-                },
-                "transition_overlay_target": "gdpr_consent_log_datagrid__body"
-            }
-        },
-        "clearFilters": {
-            "handler": "sequence",
-            "params": {
-                "actions": [
-                    {
-                        "handler": "setState",
-                        "params": {
-                            "target": "local",
-                            "filter": {
-                                "searchType": "email",
-                                "search": "",
-                                "consentKeys": [],
-                                "actions": [],
-                                "sources": []
-                            }
-                        }
-                    },
-                    {
-                        "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색/필터 조건과 페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다",
-                        "handler": "navigate",
-                        "params": {
-                            "path": "/admin/plugins/sirsoft-gdpr/consent-log",
-                            "replace": true,
-                            "query": []
-                        }
-                    }
-                ]
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -195,11 +192,6 @@
                                         "id": "refresh_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn-icon",
-                                            "title": "$t:sirsoft-gdpr.admin.consent_log.refresh"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -209,6 +201,11 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "title": "$t:sirsoft-gdpr.admin.consent_log.refresh"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -248,8 +245,19 @@
                                         },
                                         "children": [
                                             {
-                                                "type": "composite",
+                                                "type": "basic",
                                                 "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "검색 대상 필드(이메일/세션) 전환 — 검색어와 짝이라 실행은 아직 하지 않는다",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter.searchType": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "searchType",
                                                     "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
@@ -264,17 +272,7 @@
                                                             "label": "$t:sirsoft-gdpr.admin.consent_log.search_type.session_id"
                                                         }
                                                     ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "filter.searchType": "{{$event.target.value}}"
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             },
                                             {
                                                 "type": "basic",
@@ -294,15 +292,9 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Input",
-                                                        "props": {
-                                                            "name": "search",
-                                                            "type": "text",
-                                                            "placeholder": "$t:sirsoft-gdpr.admin.consent_log.search_placeholder",
-                                                            "className": "input pl-10",
-                                                            "value": "{{_local.filter.search || ''}}"
-                                                        },
                                                         "actions": [
                                                             {
+                                                                "comment": "검색어 입력 — Enter 로 검색 액션이 실행된다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -315,23 +307,30 @@
                                                                 "key": "Enter",
                                                                 "actionRef": "searchConsentLogs"
                                                             }
-                                                        ]
+                                                        ],
+                                                        "props": {
+                                                            "name": "search",
+                                                            "type": "text",
+                                                            "placeholder": "$t:sirsoft-gdpr.admin.consent_log.search_placeholder",
+                                                            "className": "input pl-10",
+                                                            "value": "{{_local.filter.search || ''}}"
+                                                        }
                                                     }
                                                 ]
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-xl"
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "click",
                                                         "actionRef": "searchConsentLogs"
                                                     }
                                                 ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-xl"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -385,31 +384,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "동의 항목 필터 전체 해제 — 빈 배열이 곧 「전체」다(별도 플래그를 두지 않는다). 필터를 바꾸면 곧바로 검색까지 태운다",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.consentKeys": "{{[]}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{!_local.filter.consentKeys || _local.filter.consentKeys.length === 0}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.consentKeys": "{{[]}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -431,31 +429,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "동의 항목 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_necessary'), 'cookie_necessary'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_necessary')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.consentKeys || []).includes('cookie_necessary')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_necessary'), 'cookie_necessary'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_necessary')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -477,31 +474,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "동의 항목 개별 선택 (위와 같은 형태의 다음 항목)",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_functional'), 'cookie_functional'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_functional')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.consentKeys || []).includes('cookie_functional')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_functional'), 'cookie_functional'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_functional')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -523,31 +519,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "동의 항목 개별 선택 (위와 같은 형태의 다음 항목)",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_analytics'), 'cookie_analytics'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_analytics')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.consentKeys || []).includes('cookie_analytics')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_analytics'), 'cookie_analytics'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_analytics')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -569,31 +564,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "동의 항목 개별 선택 (위와 같은 형태의 마지막 항목)",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_marketing'), 'cookie_marketing'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_marketing')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.consentKeys || []).includes('cookie_marketing')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_marketing'), 'cookie_marketing'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_marketing')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -642,31 +636,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "동작 필터 전체 해제 — 동의 항목 쪽과 같은 규칙(빈 배열 = 전체)",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.actions": "{{[]}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{!_local.filter.actions || _local.filter.actions.length === 0}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.actions": "{{[]}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -688,31 +681,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "동작 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.actions": "{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'granted'), 'granted'] : (_local.filter.actions || []).filter(a => a !== 'granted')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.actions || []).includes('granted')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.actions": "{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'granted'), 'granted'] : (_local.filter.actions || []).filter(a => a !== 'granted')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -734,31 +726,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "동작 개별 선택 (위와 같은 형태의 다음 항목)",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.actions": "{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'revoked'), 'revoked'] : (_local.filter.actions || []).filter(a => a !== 'revoked')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.actions || []).includes('revoked')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.actions": "{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'revoked'), 'revoked'] : (_local.filter.actions || []).filter(a => a !== 'revoked')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -781,31 +772,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "거부 이력 필터. 체크를 켜고 끌 때마다 목록을 다시 부른다. 값을 배열에서 빼고 다시 넣는 식으로 쓰는 것은 같은 값이 두 번 들어가는 것을 막기 위해서다",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.actions": "{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'rejected'), 'rejected'] : (_local.filter.actions || []).filter(a => a !== 'rejected')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.actions || []).includes('rejected')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.actions": "{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'rejected'), 'rejected'] : (_local.filter.actions || []).filter(a => a !== 'rejected')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -854,31 +844,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "수집 경로 필터 전체 해제 — 위 둘과 같은 규칙(빈 배열 = 전체)",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.sources": "{{[]}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{!_local.filter.sources || _local.filter.sources.length === 0}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.sources": "{{[]}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -900,31 +889,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "수집 경로 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'banner'), 'banner'] : (_local.filter.sources || []).filter(s => s !== 'banner')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.sources || []).includes('banner')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'banner'), 'banner'] : (_local.filter.sources || []).filter(s => s !== 'banner')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -946,31 +934,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "수집 경로 개별 선택 (위와 같은 형태의 다음 항목)",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'preference_center'), 'preference_center'] : (_local.filter.sources || []).filter(s => s !== 'preference_center')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.sources || []).includes('preference_center')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'preference_center'), 'preference_center'] : (_local.filter.sources || []).filter(s => s !== 'preference_center')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -992,31 +979,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "수집 경로 개별 선택 (위와 같은 형태의 마지막 항목)",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'mypage'), 'mypage'] : (_local.filter.sources || []).filter(s => s !== 'mypage')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.sources || []).includes('mypage')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'mypage'), 'mypage'] : (_local.filter.sources || []).filter(s => s !== 'mypage')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1038,31 +1024,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "가입 시점에 받은 동의만 추린다. 유입 경로별로 동의를 나눠 보는 것이 이 필터 묶음의 목적이다",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'register'), 'register'] : (_local.filter.sources || []).filter(s => s !== 'register')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.sources || []).includes('register')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'register'), 'register'] : (_local.filter.sources || []).filter(s => s !== 'register')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1084,31 +1069,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "마이페이지에서 전체 재동의를 눌러 들어온 동의만 추린다. 정책 버전을 새로 발행한 뒤 재동의가 실제로 걷혔는지 확인할 때 쓴다",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'mypage_renew_all'), 'mypage_renew_all'] : (_local.filter.sources || []).filter(s => s !== 'mypage_renew_all')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.sources || []).includes('mypage_renew_all')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'mypage_renew_all'), 'mypage_renew_all'] : (_local.filter.sources || []).filter(s => s !== 'mypage_renew_all')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1130,31 +1114,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "회원탈퇴로 자동 철회된 기록만 추린다. 사람이 누른 철회와 시스템이 남긴 철회를 갈라 봐야 탈퇴 정리가 실제로 돌았는지 확인할 수 있다 — 이 출처가 필터에 없으면 그 기록은 어떤 조합으로도 골라낼 수 없었다.",
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'withdraw'), 'withdraw'] : (_local.filter.sources || []).filter(s => s !== 'withdraw')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "actionRef": "searchConsentLogs"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "className": "checkbox",
                                                                     "checked": "{{(_local.filter.sources || []).includes('withdraw')}}"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "sequence",
-                                                                        "params": {
-                                                                            "actions": [
-                                                                                {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "local",
-                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'withdraw'), 'withdraw'] : (_local.filter.sources || []).filter(s => s !== 'withdraw')}}"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "actionRef": "searchConsentLogs"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    }
-                                                                ]
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1182,17 +1165,17 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"
-                                                },
-                                                "text": "$t:sirsoft-gdpr.admin.consent_log.clear_filters",
                                                 "actions": [
                                                     {
                                                         "type": "click",
                                                         "actionRef": "clearFilters"
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"
+                                                },
+                                                "text": "$t:sirsoft-gdpr.admin.consent_log.clear_filters"
                                             }
                                         ]
                                     }
@@ -1204,6 +1187,23 @@
                         "id": "gdpr_consent_log_datagrid",
                         "type": "composite",
                         "name": "DataGrid",
+                        "actions": [
+                            {
+                                "comment": "페이지 이동 — 그리드 본문에만 오버레이를 걸어 필터 영역이 깜빡이지 않게 한다",
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-gdpr/consent-log",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "transition_overlay_target": "gdpr_consent_log_datagrid__body",
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            }
+                        ],
                         "props": {
                             "data": "{{gdprConsentLog?.data?.data}}",
                             "pagination": true,
@@ -1380,15 +1380,10 @@
                                     "width": "260px",
                                     "cellChildren": [
                                         {
+                                            "comment": "회원 row 의 이름·이메일 클릭 시 회원 상세 페이지로 이동 (검토 #26). DPO 가 이상 패턴 발견 시 즉시 회원 상세 조회 가능. 게스트 row 는 user_id 가 없어 분기가 다름.",
                                             "type": "basic",
                                             "name": "Button",
-                                            "comment": "회원 row 의 이름·이메일 클릭 시 회원 상세 페이지로 이동 (검토 #26). DPO 가 이상 패턴 발견 시 즉시 회원 상세 조회 가능. 게스트 row 는 user_id 가 없어 분기가 다름.",
                                             "if": "{{!!row.user_id}}",
-                                            "props": {
-                                                "type": "button",
-                                                "title": "$t:sirsoft-gdpr.admin.consent_log.view_member_tooltip",
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -1398,6 +1393,11 @@
                                                     }
                                                 }
                                             ],
+                                            "props": {
+                                                "type": "button",
+                                                "title": "$t:sirsoft-gdpr.admin.consent_log.view_member_tooltip",
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -1491,13 +1491,9 @@
                                                     "type": "basic",
                                                     "name": "Button",
                                                     "if": "{{row.policy_version}}",
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
-                                                        "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row.policy_version}}"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "그 행이 동의받던 시점의 정책 본문 보기 — 볼 버전을 전역에 심고 스냅샷을 다시 받은 뒤 창을 연다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1521,6 +1517,11 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
+                                                        "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row.policy_version}}"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1550,26 +1551,16 @@
                                     ]
                                 }
                             ]
-                        },
-                        "actions": [
-                            {
-                                "event": "onPageChange",
-                                "type": "change",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin/plugins/sirsoft-gdpr/consent-log",
-                                    "replace": true,
-                                    "mergeQuery": true,
-                                    "query": {
-                                        "page": "{{$args[0]}}"
-                                    },
-                                    "transition_overlay_target": "gdpr_consent_log_datagrid__body"
-                                }
-                            }
-                        ]
+                        }
                     }
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "comment": "정책 버전 스냅샷 창 — 그 시점에 사용자가 실제로 본 약관 본문을 보여 준다(동의 이력의 근거라 다른 화면과 공유한다)",
+            "partial": "partials/_shared/_policy_version_snapshot_modal.json"
+        }
+    ]
 }

@@ -12,6 +12,7 @@ use App\Seo\AbstractSitemapContributor;
 use App\Seo\SitemapFileStore;
 use App\Seo\SitemapGenerator;
 use App\Seo\SitemapManager;
+use App\Seo\SitemapProgress;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
@@ -97,7 +98,7 @@ class SitemapManagerModeTest extends TestCase
             Mockery::spy(ConfigRepositoryInterface::class),
             $this->storage,
             $this->repository,
-            $this->app->make(\App\Seo\SitemapProgress::class),
+            $this->app->make(SitemapProgress::class),
         );
     }
 

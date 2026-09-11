@@ -26,7 +26,7 @@ class UserResource extends BaseApiResource
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
-            'email' => $this->getValue('email'),
+            'email' => $this->canExposeMemberEmail($request, $this->getValue('id')) ? $this->getValue('email') : null,
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
             'language_label' => $this->getValue('language')
@@ -174,7 +174,7 @@ class UserResource extends BaseApiResource
      * 인증 사용자(/api/auth/user, currentUser 출처) 응답용 배열을 반환합니다.
      *
      * 기본 toArray() 에 더해 core.user.filter_resource_data 필터를 적용해
-     * 모듈이 자신의 데이터(결제 통화 등)를 병합할 수 있게 한다. 프론트(_user_base.json)는
+     * 모듈이 자신의 데이터(결제 통화 등)를 병합할 수 있게 한다. 프론트(_user_base.g7.html)는
      * 로그인 유저면 이 값으로 _global.preferredCurrency 를 초기화해
      * "로그인 시 계정 통화로 덮어씀"(D-LOGIN-CUR)을 구조적으로 충족한다.
      *
@@ -299,7 +299,7 @@ class UserResource extends BaseApiResource
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
-            'email' => $this->getValue('email'),
+            'email' => $this->canExposeMemberEmail($request, $this->getValue('id')) ? $this->getValue('email') : null,
             'language' => $language,
             'language_label' => $language ? __('user.language.'.$language) : null,
             'country' => $countryCode,
@@ -346,7 +346,7 @@ class UserResource extends BaseApiResource
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
-            'email' => $this->getValue('email'),
+            'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
             'timezone' => $this->getValue('timezone'),
@@ -396,7 +396,7 @@ class UserResource extends BaseApiResource
         return [
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
-            'email' => $this->getValue('email'),
+            'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
             'modules_count' => $this->getValue('modules_count', 0),
             'plugins_count' => $this->getValue('plugins_count', 0),
             'menus_count' => $this->getValue('menus_count', 0),

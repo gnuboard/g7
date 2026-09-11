@@ -5,9 +5,9 @@ GDPR·개인정보보호법 대응 쿠키 동의 배너와 동의 이력 관리�
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.4-0066FF?style=flat-square" alt="version 1.0.4">
+  <img src="https://img.shields.io/badge/version-1.1.0-0066FF?style=flat-square" alt="version 1.1.0">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.6-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.6">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -69,7 +69,7 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.0.6` |
+| 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -187,7 +187,7 @@ Google Analytics, Facebook Pixel, Kakao Pixel 등)가 시드되어 있고 운영
 <!-- @intent START -->
 `sirsoft-page` 는 소프트 의존(런타임 체크)입니다 — 미설치 시 쿠키 배너의 "자세히" 정책 링크만
 자동으로 숨겨지고 나머지 기능은 정상 동작합니다. `sirsoft-basic` 템플릿은 배너가 주입되는
-지점(`_user_base.json` 의 공용 확장 지점)을 제공해야 하므로, 다른 사용자 템플릿을 쓰려면
+지점(`_user_base.g7.html` 의 공용 확장 지점)을 제공해야 하므로, 다른 사용자 템플릿을 쓰려면
 그 템플릿에도 같은 주입 지점이 있어야 배너가 정상 노출됩니다.
 <!-- @intent END -->
 

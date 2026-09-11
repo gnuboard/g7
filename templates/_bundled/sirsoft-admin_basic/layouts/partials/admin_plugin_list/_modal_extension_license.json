@@ -1,60 +1,72 @@
 {
-  "meta": {
-    "editor_label": "$t:admin.modal_label.admin_plugin_list.plugin_extension_license_modal",
-    "is_partial": true,
-    "description": "플러그인 라이선스 전문 모달"
-  },
-  "id": "plugin_extension_license_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.license.license_text",
-    "size": "large"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex flex-col max-h-[70vh]"
-      },
-      "children": [
+    "comment": "플러그인 라이선스 전문을 손대지 않은 원문 그대로 싣는 창. 상세 창에서 라이선스 이름을 누르면\n  전문을 받아 여기에 담는다.\n  담기는 자리가 **확장 공용**이라 모듈·템플릿 목록에도 같은 모양의 창이 따로 있다 — 창은 셋이지만\n  글을 담는 칸은 하나이므로, 그 칸의 이름을 바꾸려면 세 곳을 함께 봐야 한다.",
+    "meta": {
+        "is_partial": true,
+        "editor_label": "$t:admin.modal_label.admin_plugin_list.plugin_extension_license_modal",
+        "description": "플러그인 라이선스 전문 모달"
+    },
+    "id": "plugin_extension_license_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.license.license_text",
+        "size": "large"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1 overflow-y-auto min-h-0 px-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Pre",
-              "props": {
-                "className": "whitespace-pre-wrap text-body font-mono leading-relaxed"
-              },
-              "text": "{{_global.extensionLicenseContent ?? ''}}"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              },
-              "actions": [{ "type": "click", "handler": "closeModal" }],
-              "children": [{ "type": "basic", "name": "Span", "text": "$t:common.close" }]
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col max-h-[70vh]"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 overflow-y-auto min-h-0 px-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Pre",
+                            "props": {
+                                "className": "whitespace-pre-wrap text-body font-mono leading-relaxed"
+                            },
+                            "text": "{{_global.extensionLicenseContent ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

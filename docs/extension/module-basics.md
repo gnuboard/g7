@@ -498,6 +498,14 @@ php artisan extension:update-autoload
 
 ---
 
+## 화면 컴포넌트 제공
+
+모듈은 자기 화면 컴포넌트를 제공할 수 있다. 소스는 `resources/js/components/{basic,composite,layout}/` 에 두고, 이름은 `{모듈식별자}.{이름}` 으로 등록하며(마크업 태그는 `<sirsoft-ecommerce-product-card>` 처럼 식별자 프리픽스가 붙는다), 등록은 모듈 번들이 스스로 한다.
+
+모듈은 **다른 확장의 컴포넌트를 대체할 수 없다** — 그 권한은 템플릿 전용이다. 자기 컴포넌트를 특정 템플릿에서만 다르게 내려면 `resources/js/components/for/{템플릿식별자}/` 를 쓴다. `resources/js/components/overrides/` 를 두면 audit 이 차단한다.
+
+규약 전문(디렉토리·이름·등록 API·판본 선택·오버라이드 폴백): **[extension-components.md](extension-components.md)**
+
 ## 모듈 디렉토리 구조
 
 ```
@@ -544,7 +552,7 @@ modules/_bundled/sirsoft-ecommerce/
 │   ├── lang/                    # 프론트엔드 다국어 (JSON)
 │   │   ├── ko.json             # 한국어 프론트엔드 다국어
 │   │   └── en.json             # 영어 프론트엔드 다국어
-│   ├── layouts/                 # 레이아웃 JSON
+│   ├── layouts/                 # 레이아웃 소스 SSoT = .g7.html 마크업 (짝 .json 은 런타임 계약)
 │   │   ├── admin/               # admin 템플릿 레이아웃
 │   │   └── user/                # user 템플릿 레이아웃 (선택)
 │   ├── routes/                  # 프론트엔드 라우트 정의
@@ -593,7 +601,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `resources/js/` | 프론트엔드 JS/TS 소스 — 핸들러 정의 등 (에셋 모듈만 해당) |
 | `resources/css/` | CSS 소스 (에셋 모듈만 해당) |
 | `resources/lang/` | 프론트엔드 다국어 (JSON) |
-| `resources/layouts/` | 레이아웃 JSON (admin/, user/ 하위) |
+| `resources/layouts/` | 레이아웃 소스 SSoT `.g7.html` + 짝 런타임 계약 `.json` (admin/, user/ 하위) |
 | `resources/routes/admin.json` | admin 템플릿 전용 프론트엔드 라우트 |
 | `resources/routes/user.json` | user 템플릿 전용 프론트엔드 라우트 (선택) |
 | `src/Http/Controllers/` | 컨트롤러 |
@@ -826,6 +834,19 @@ public function seoVariables(): array
 ### 레이아웃에서 사용
 
 레이아웃 JSON의 `meta.seo.extensions`에 모듈을 선언하면 `seoVariables()`가 자동 호출됩니다.
+
+```html
+<meta>
+  <seo page_type="product">
+    <extensions>
+      <item type="module" id="sirsoft-ecommerce"/>
+    </extensions>
+    <vars product_name="{{product.data.name ?? ''}}" product_description="{{product.data.short_description ?? ''}}"/>
+  </seo>
+</meta>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

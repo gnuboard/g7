@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import adminLogin from '../../layouts/admin_login.json';
 
@@ -45,9 +46,10 @@ function flatten(node: Node | Node[] | undefined): Node[] {
   return [node, ...children];
 }
 
-function flattenActions(actions: Action[] | undefined): Action[] {
+// 컴파일러가 원소 하나짜리 배열을 객체로 접으므로(D67) 배열 모양을 단정하지 않는다 — asArray 로 정규화.
+function flattenActions(actions: Action[] | Action | undefined): Action[] {
   if (!actions) return [];
-  return actions.flatMap((a) => [
+  return asArray<Action>(actions).flatMap((a) => [
     a,
     ...flattenActions(a.actions),
     ...flattenActions(a.onSuccess),
@@ -144,7 +146,7 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
     expect(resendAction?.target).toBe('admin');
     expect(resendAction?.params?.body?.challenge_id).toBe('{{_local.twoFactor?.challenge_id}}');
 
-    const success = resendAction?.onSuccess?.[0];
+    const success = asArray<Action>(resendAction?.onSuccess)[0];
     expect(success?.params?.twoFactor?.challenge_id).toBe('{{response.challenge_id}}');
     expect(success?.params?.twoFactor?.code).toBe('');
     expect(success?.params?.twoFactor?.resent).toBe(true);

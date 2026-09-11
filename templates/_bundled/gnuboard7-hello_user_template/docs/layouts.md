@@ -87,3 +87,18 @@ _오버라이드하는 레이아웃 확장 조각이 없습니다._
 뒤 동작을 확인해야 합니다 — 원본이 핸들러 이름이나 필드 계약을 바꾸면 오버라이드만 옛 계약을
 붙들고 있게 되고, 증상은 "그 자리만 무반응" 으로 나타납니다.
 <!-- @intent END -->
+
+## 소스 파일 (`.g7.html`)
+
+위 「레이아웃 목록」은 이름만 싣는다. 소스 SSoT 는 아래 `.g7.html` 이고 짝 `.json` 은 설치 시 컴파일되는 런타임 계약이다 — 화면을 고칠 때는 이 파일을 편집한다.
+
+```text
+layouts/_user_base.g7.html
+layouts/home.g7.html
+layouts/errors/401.g7.html
+layouts/errors/403.g7.html
+layouts/errors/404.g7.html
+layouts/errors/500.g7.html
+layouts/errors/503.g7.html
+layouts/errors/maintenance.g7.html
+```

@@ -1,0 +1,21 @@
+<!-- 인증이 없거나 만료됐을 때 뜨는 관리자 에러 화면.
+  **여기서 로그인 화면으로 보내지 않는다** — 401 리다이렉트는 코어 `TemplateApp.showRouteError`
+  가드가 맡고, 이 레이아웃은 가드가 보내지 않기로 한 경우(이미 로그인 경로 등)의 표시만 담당한다.
+  에러 6종(401·403·404·500·503·maintenance)은 같은 뼈대를 쓰고 아이콘·색·문구만 다르다. -->
+<layout name="errors/401" version="1.0.0" extends="_admin_base">
+  <meta title="$t:errors.401.title" :is_error_layout="true" :error_code="401"/>
+  <slot name="content">
+    <div data-ref="error_container" class="flex-center flex-col justify-center min-h-[60vh] text-center p-8">
+      <icon data-ref="error_icon" name="lock" class="text-8xl text-yellow-400 dark:text-yellow-500 mb-6"/>
+      <h1 data-ref="error_code" class="text-primary text-6xl font-bold mb-4">401</h1>
+      <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.401.title</h2>
+      <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-8 max-w-md">$t:errors.401.message</p>
+      <button data-ref="back_button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+        <on type="click">
+          <navigate path="/admin"/>
+        </on>
+        $t:errors.back_home
+      </button>
+    </div>
+  </slot>
+</layout>

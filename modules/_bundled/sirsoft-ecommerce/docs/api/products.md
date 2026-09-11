@@ -26,7 +26,7 @@
 | volume | number\|null | cm³ (세제곱센티미터) | 옵션 1개의 부피. 미입력이면 `null` |
 
 단위는 저장 단위 그대로입니다. 배송정책의 구간·단위값은 kg / L 로 입력받으며, 환산은
-배송비를 계산하는 시점에 한 번만 수행됩니다 (`docs/api/shipping-policies.md` 참고).
+배송비를 계산하는 시점에 한 번만 수행됩니다 (`modules/_bundled/sirsoft-ecommerce/docs/api/shipping-policies.md` 참고).
 
 `null` 과 `0` 은 구분됩니다 — `null` 은 미입력, `0` 은 "무게 없음"입니다. 수정 요청은
 전달된 필드만 반영하므로, 편집 화면이 이 값을 받지 못한 채 저장하면 기존 값이 그대로

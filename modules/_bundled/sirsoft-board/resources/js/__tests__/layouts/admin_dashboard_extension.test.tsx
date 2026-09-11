@@ -14,10 +14,17 @@ import { describe, it, expect } from 'vitest';
 
 import quickMenuExt from '../../../extensions/admin_dashboard_quick_menu.json';
 import communityExt from '../../../extensions/admin_dashboard_community.json';
+import { findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 컴포넌트 트리에서 특정 ID 를 가진 노드를 재귀적으로 찾습니다.
  * extension JSON 의 components/children 양쪽을 모두 탐색합니다.
+ *
+ * 반복(iteration) 안의 노드는 id 에 인덱스 보간 접미(`_{{i}}`)가 붙는다 — #421 이
+ * 반복 노드의 정적 id 를 전수 동적화했기 때문이다(같은 리터럴 id 가 행마다 중복돼
+ * React 가 행을 1건으로 합치던 결함). 그래서 리터럴 일치뿐 아니라 **보간 접미 일치**도
+ * 본다. 접미 없이 리터럴만 보면 레이아웃이 정본인데 단언만 낡아 red 가 된다
+ * (admin_basic 은 ㉜ 에서 같은 방식으로 정정했고, 이 모듈 사본만 남아 있었다).
  */
 function findById(node: any, id: string): any | null {
     if (!node) return null;
@@ -30,6 +37,9 @@ function findById(node: any, id: string): any | null {
     }
     if (typeof node !== 'object') return null;
     if (node.id === id) return node;
+    if (typeof node.id === 'string' && /^_\{\{[^}]+\}\}$/.test(node.id.slice(id.length)) && node.id.startsWith(id)) {
+        return node;
+    }
     for (const key of ['components', 'children']) {
         if (node[key] && Array.isArray(node[key])) {
             const found = findById(node[key], id);
@@ -212,7 +222,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         // 따라서 실제 응답은 { success, message, data: [...] } 이고, 바인딩은 data.data 가 아닌 data 다.
         const list = findById(communityExt as any, 'latest_posts_list');
         expect(list.iteration).toBeUndefined();
-        const item = findById(communityExt as any, 'latest_post_item_{{i}}');
+        const item = findByIdPrefix(communityExt as any, 'latest_post_item');
         expect(item.iteration).toBeDefined();
         expect(item.iteration.source).toBe('board_recent_posts?.data');
         expect(item.iteration.item_var).toBe('post');
@@ -222,7 +232,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
     it('미처리 신고 항목(report_item)에 iteration 이 정의된다', () => {
         const list = findById(communityExt as any, 'report_management_list');
         expect(list.iteration).toBeUndefined();
-        const item = findById(communityExt as any, 'report_item_{{i}}');
+        const item = findByIdPrefix(communityExt as any, 'report_item');
         expect(item.iteration).toBeDefined();
         expect(item.iteration.source).toBe('board_pending_reports?.data?.items');
         expect(item.iteration.item_var).toBe('report');
@@ -246,7 +256,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
     });
 
     it('최신 게시글 항목은 클릭 시 게시글 상세로 navigate 한다', () => {
-        const item = findById(communityExt as any, 'latest_post_item_{{i}}');
+        const item = findByIdPrefix(communityExt as any, 'latest_post_item');
         expect(Array.isArray(item.actions)).toBe(true);
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click).toBeDefined();
@@ -254,7 +264,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
     });
 
     it('신고 항목은 클릭 시 신고 상세로 navigate 한다', () => {
-        const item = findById(communityExt as any, 'report_item_{{i}}');
+        const item = findByIdPrefix(communityExt as any, 'report_item');
         expect(Array.isArray(item.actions)).toBe(true);
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click).toBeDefined();
@@ -266,7 +276,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         // 배지는 신고 대상(게시글/댓글)의 상태가 아니라 신고 건 자체의 처리상태(status)를 보여준다.
         // 색상은 신고현황 페이지(admin_board_reports_index 의 status 컬럼) 와 동일한 매핑을 사용한다.
         // 시각 검증 피드백: "대상 상태가 아닌 처리상태가 보여져야 한다" + "처리상태는 게시판 신고현황과 동일한 색상으로".
-        const statusBadge = findById(communityExt as any, 'report_status_badge_{{i}}');
+        const statusBadge = findByIdPrefix(communityExt as any, 'report_status_badge');
         expect(statusBadge).not.toBeNull();
         expect(statusBadge.if).toBe('{{!!report?.status_label}}');
         expect(statusBadge.text).toBe('{{report?.status_label ?? \'\'}}');
@@ -286,7 +296,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
     });
 
     it('신고 카드의 타입 배지(report_target_type_badge)는 댓글/게시글 색상이 다르다', () => {
-        const typeBadge = findById(communityExt as any, 'report_target_type_badge_{{i}}');
+        const typeBadge = findByIdPrefix(communityExt as any, 'report_target_type_badge');
         expect(typeBadge.props.className).toContain("comment");
         expect(typeBadge.props.className).toContain('bg-purple-900');
         expect(typeBadge.props.className).toContain('bg-blue-900');

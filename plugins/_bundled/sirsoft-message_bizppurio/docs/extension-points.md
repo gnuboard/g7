@@ -112,13 +112,13 @@ HookManager::addAction(
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/notification_log_result.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/notification_row_footer.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/notification_tab_board.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/notification_tab_core.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/notification_tab_ecommerce.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/notification_template_form_footer_actions.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/notification_template_form_sections.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/notification_log_result.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_notification_log_list` |
+| `resources/extensions/notification_row_footer.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `notification_definition_row_footer` |
+| `resources/extensions/notification_tab_board.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_board_settings` |
+| `resources/extensions/notification_tab_core.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_settings` |
+| `resources/extensions/notification_tab_ecommerce.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_settings` |
+| `resources/extensions/notification_template_form_footer_actions.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `notification_template_form_footer_actions` |
+| `resources/extensions/notification_template_form_sections.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `notification_template_form_sections` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
@@ -127,11 +127,11 @@ HookManager::addAction(
 
 | 조각 | 들어가는 자리 |
 |---|---|
-| `notification_tab_core.json` · `notification_tab_board.json` · `notification_tab_ecommerce.json` | 코어·게시판·이커머스 알림 설정 화면의 "비즈뿌리오" 탭 |
-| `notification_row_footer.json` | 알림 목록 각 행 하단의 승인 여부·문자 설정 요약 |
-| `notification_template_form_sections.json` | 알림 템플릿 편집 창의 알림톡·문자(SMS) 섹션 |
-| `notification_template_form_footer_actions.json` | 그 편집 창 하단의 [저장] · [저장 후 검수 신청] 등 버튼 |
-| `notification_log_result.json` | 발송 이력 화면의 결과 열 |
+| `notification_tab_core.g7.html` · `notification_tab_board.g7.html` · `notification_tab_ecommerce.g7.html` | 코어·게시판·이커머스 알림 설정 화면의 "비즈뿌리오" 탭 |
+| `notification_row_footer.g7.html` | 알림 목록 각 행 하단의 승인 여부·문자 설정 요약 |
+| `notification_template_form_sections.g7.html` | 알림 템플릿 편집 창의 알림톡·문자(SMS) 섹션 |
+| `notification_template_form_footer_actions.g7.html` | 그 편집 창 하단의 [저장] · [저장 후 검수 신청] 등 버튼 |
+| `notification_log_result.g7.html` | 발송 이력 화면의 결과 열 |
 
 문자·알림톡 설정을 **알림 설정 화면 안에** 두는 것이 이 설계의 핵심입니다. 별도 화면으로
 분리하면 운영자가 알림 하나를 완성하는 데 두 화면을 오가야 하고, 어느 쪽을 저장했는지 헷갈리게

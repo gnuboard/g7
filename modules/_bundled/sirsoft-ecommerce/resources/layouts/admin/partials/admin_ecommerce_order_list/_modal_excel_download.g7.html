@@ -1,0 +1,79 @@
+<!-- 주문 목록 — 엑셀 내려받기 창. 무엇을 받을지 두 갈래다: 지금 걸린 검색조건 전체(화면에 보이는
+  한 쪽이 아니라 조건에 맞는 전건)냐, 체크한 주문만이냐. 그래서 "검색결과" 를 고르면 주문 id 대신
+  필터 값 묶음을 그대로 서버에 보낸다 — 목록 API 와 같은 조건으로 서버가 다시 추려야 페이지를
+  넘겨 가며 받은 것과 같은 집합이 나온다. 체크한 것이 없으면 "선택한 주문" 갈래는 잠긴다.
+
+  다만 **지금 이 창은 동작하지 않는다.** 내려받기가 부르는
+  `POST /api/modules/sirsoft-ecommerce/admin/orders/export-excel` 이 모듈 라우트에 없다(전수 검색
+  결과 이 이름의 라우트·컨트롤러 메서드가 존재하지 않는다). 화면·요청 본문 구성은 위 설명대로
+  서 있으므로, 라우트가 생기면 그대로 붙는다. 상품 목록의 같은 창은 다른 이유로 멎어 있다 —
+  그쪽은 버튼에 `<on>` 자체가 없다. -->
+<partial description="Order List - Excel Download Modal">
+  <modal data-ref="modal_excel_download" size="sm" title="$t:sirsoft-ecommerce.admin.order.excel.title">
+    <div>
+      <div>
+        <p class="text-label">$t:sirsoft-ecommerce.admin.order.excel.description</p>
+        <div>
+          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.excelDownloadType === 'search' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}}">
+            <input type="radio" name="excelDownloadType" value="search" checked="{{_local.excelDownloadType === 'search'}}" class="radio mt-1">
+              <on type="change">
+                <!-- 라디오 두 개가 같은 name 을 쓰지만 무엇이 선택됐는지는 브라우저가 아니라 이 키가 정한다 — 아래 요청 본문이 이 값으로 보낼 것을 가른다. -->
+                <set-state target="_local" excelDownloadType="search"/>
+              </on>
+            </input>
+            <div class="flex-1">
+              <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_search</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc:count={{orders?.data?.total ?? 0}}</span>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.excelDownloadType === 'selected' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}} {{_local.selectedItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}">
+            <input type="radio" name="excelDownloadType" value="selected" checked="{{_local.excelDownloadType === 'selected'}}" disabled="{{_local.selectedItems.length === 0}}" class="radio mt-1">
+              <on type="change">
+                <!-- 체크한 주문이 없으면 이 갈래는 잠긴다(라디오 자체가 disabled). 다만 아래 내려받기가 부르는 `admin/orders/export-excel` 은 모듈 라우트에 없어, 지금은 어느 갈래를 골라도 파일이 나오지 않는다 — 파일 머리 참조. -->
+                <set-state target="_local" excelDownloadType="selected"/>
+              </on>
+            </input>
+            <div class="flex-1">
+              <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_selected</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc:count={{_local.selectedItems.length}}</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+        <on type="click">
+          <!-- 내려받기. 응답이 JSON 이 아니라 blob 이라 성공 처리가 다른 화면과 다르다 — 서버는 파일
+            바이트만 주고 파일명은 이쪽이 붙인다(시각도 서버가 아닌 브라우저 시각이다). 그래서
+            `downloadFile` 이 성공 사슬의 첫 자리에 있고 토스트·창 닫기는 그 뒤다. -->
+          <sequence>
+            <set-state target="global" :isDownloading="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/orders/export-excel" method="POST" responseType="blob">
+              <success>
+                <action handler="downloadFile" blob="{{response}}" filename="orders_{{$date.format('YYYYMMDD_HHmmss')}}.xlsx"/>
+                <set-state target="global" :isDownloading="false"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.order.excel.download_success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isDownloading="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body type="{{_local.excelDownloadType}}" order_ids="{{_local.excelDownloadType === 'selected' ? _local.selectedItems : []}}" filters="{{_local.excelDownloadType === 'search' ? { search_field: _local.filter.searchField, search_keyword: _local.filter.searchKeyword, date_type: _local.filter.dateType, start_date: _local.filter.startDate, end_date: _local.filter.endDate, order_status: _local.filter.orderStatus, claim_refund_status: _local.filter.claimRefundStatus, claim_return_status: _local.filter.claimReturnStatus, claim_exchange_status: _local.filter.claimExchangeStatus, delivery_method: _local.filter.deliveryMethods, payment_method: _local.filter.paymentMethods, category_id: _local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1, min_price: _local.filter.minPrice, max_price: _local.filter.maxPrice, country: _local.filter.countries, device: _local.filter.devices } : {}}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isDownloading}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{!_global.isDownloading}}" name="download" class="text-base"/>
+        <span>{{_global.isDownloading ? '$t:common.downloading' : '$t:sirsoft-ecommerce.admin.order.excel.download'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

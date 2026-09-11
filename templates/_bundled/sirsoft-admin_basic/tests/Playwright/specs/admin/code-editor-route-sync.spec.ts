@@ -1,7 +1,7 @@
 /**
  * sirsoft-admin_basic — 코드 편집기 ?route= URL 동기화
  *
- * 코드 편집기(admin_template_layout_edit.json) 는 위지윅 편집기와 일관되게 `?route=`
+ * 코드 편집기(admin_template_layout_edit.g7.html) 는 위지윅 편집기와 일관되게 `?route=`
  * 쿼리로 레이아웃을 식별한다. 본 spec 은 템플릿 소유 레이아웃의 동작을 검증한다
  * (위지윅 chrome 측 동작은 코어 chrome-controls.spec.ts 가 커버).
  *

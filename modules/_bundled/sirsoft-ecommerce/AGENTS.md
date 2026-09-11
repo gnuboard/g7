@@ -78,7 +78,7 @@
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan module:update sirsoft-ecommerce --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan module:update sirsoft-ecommerce --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->
 
@@ -196,10 +196,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 401개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 140개 | `vitest.config.ts` |
+| PHPUnit | 402개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 142개 | `vitest.config.ts` |
 | Playwright | 42개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 92개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 93개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

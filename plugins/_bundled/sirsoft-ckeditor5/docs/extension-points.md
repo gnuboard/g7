@@ -69,8 +69,8 @@ _훅 리스너가 없습니다._
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/html-content.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/html-editor.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/html-content.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `html_content` |
+| `resources/extensions/html-editor.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `html_editor` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
@@ -78,8 +78,8 @@ _훅 리스너가 없습니다._
 
 | 조각 | 확장점 | 하는 일 |
 |---|---|---|
-| `html-editor.json` | `html_editor` | 동봉 CKEditor 5 UMD 를 로드하고 컨테이너 `onMount` 에서 `initEditor` 실행 |
-| `html-content.json` | `html_content` | 저장된 본문을 읽기 화면에 렌더 |
+| `html-editor.g7.html` | `html_editor` | 동봉 CKEditor 5 UMD 를 로드하고 컨테이너 `onMount` 에서 `initEditor` 실행 |
+| `html-content.g7.html` | `html_content` | 저장된 본문을 읽기 화면에 렌더 |
 
 `html_editor` 를 쓰는 쪽은 `props` 로 `name` · `content` · `multilingual` · `placeholder` ·
 `readOnly` 를 선언합니다. 여기에 **`trackChanges`(기본 `true`)** 가 있습니다 — 이 편집기의 입력을

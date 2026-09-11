@@ -15,6 +15,7 @@ import { describe, it, expect } from 'vitest';
 
 // 레이아웃 JSON 임포트
 import reviewIndex from '../../../layouts/admin/admin_ecommerce_product_review_index.json';
+import { asArray, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 재귀적으로 컴포넌트 트리에서 id로 검색
@@ -161,7 +162,7 @@ describe('관리자 리뷰 관리 목록 레이아웃 기본 속성 (admin_ecomm
     });
 
     describe('state 초기값 검증', () => {
-        const state = layout.state;
+        const state = initStateOf(layout);
 
         it('selectedReviews 초기값이 빈 배열이어야 한다', () => {
             expect(state.selectedReviews).toEqual([]);
@@ -340,7 +341,7 @@ describe('slots.content 구조 검증', () => {
             // 빠른 날짜 버튼은 Div로 구현됨 (sequence 핸들러 사용)
             const allActions: any[] = [];
             const collectActions = (node: any): void => {
-                if (node?.actions) allActions.push(...node.actions);
+                if (node?.actions) allActions.push(...asArray(node?.actions));
                 if (node?.children) node.children.forEach(collectActions);
             };
             collectActions(dateRow);
@@ -381,7 +382,7 @@ describe('slots.content 구조 검증', () => {
                     s.props.value.includes('batchAction'),
             );
             expect(batchSelect).toBeDefined();
-            const action = batchSelect.actions[0];
+            const action = asArray(batchSelect?.actions)[0];
             expect(action.handler).toBe('setState');
         });
 

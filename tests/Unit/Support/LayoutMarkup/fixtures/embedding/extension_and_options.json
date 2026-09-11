@@ -1,0 +1,87 @@
+{
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "form"
+    },
+    "children": [
+        {
+            "id": "content_editor",
+            "type": "extension_point",
+            "name": "html_editor",
+            "props": {
+                "multilingual": true,
+                "name": "content"
+            },
+            "default": [
+                {
+                    "type": "composite",
+                    "name": "HtmlEditor",
+                    "dataKey": "content"
+                }
+            ],
+            "callbacks": {
+                "onAddressSelect": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "zipcode": "{{$event.zipcode}}"
+                    }
+                }
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Select",
+            "dataKey": "search_type",
+            "props": {
+                "options": [
+                    {
+                        "value": "auto",
+                        "label": "$t:admin.search.auto"
+                    },
+                    {
+                        "value": "user_id",
+                        "label": "$t:admin.search.user_id"
+                    },
+                    {
+                        "value": "ip",
+                        "label": "$t:admin.search.ip",
+                        "disabled": true
+                    }
+                ]
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Select",
+            "props": {
+                "multiple": true
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Option",
+                    "props": {
+                        "value": "a"
+                    },
+                    "text": "$t:admin.a"
+                }
+            ]
+        },
+        {
+            "type": "composite",
+            "name": "StatusBadge",
+            "props": {
+                "color": {
+                    "$switch": "{{row.status}}",
+                    "$cases": {
+                        "active": "green",
+                        "pending": "amber"
+                    },
+                    "$default": "gray"
+                }
+            }
+        }
+    ]
+}

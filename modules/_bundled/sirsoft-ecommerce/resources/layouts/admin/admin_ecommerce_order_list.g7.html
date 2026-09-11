@@ -1,0 +1,258 @@
+<!-- 주문 목록 (운영자) — 이 모듈에서 조회 조건이 가장 많은 화면이다. 스물두 개 조건을 전부 URL 쿼리에
+  싣고, 자주 쓰는 조합은 「검색 프리셋」으로 서버에 저장해 두었다가 불러 쓴다. 어떤 필터를 펼쳐
+  둘지와 어떤 열을 보일지는 운영자마다 달라 각각 사용자 설정과 로컬 저장소에서 따로 불러온다. -->
+<layout name="admin_ecommerce_order_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.order.title" description="$t:sirsoft-ecommerce.admin.order.description"/>
+  <!-- 목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 분류는 4단계 중 가장 깊이 고른 것 하나만 서버로 넘긴다 -->
+  <data-source id="orders" label_key="$t:sirsoft-ecommerce.editor.data_source.orders" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" sort_by="{{query.sort_by || 'ordered_at'}}" sort_order="{{query.sort_order || 'desc'}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" date_type="{{query.date_type}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" order_status="{{query['order_status[]']}}" shipping_type="{{query['shipping_type[]']}}" payment_method="{{query['payment_method[]']}}" category_id="{{query.category4 || query.category3 || query.category2 || query.category1}}" min_amount="{{query.min_amount}}" max_amount="{{query.max_amount}}" country_codes="{{query['country_codes[]']}}" order_device="{{query['order_device[]']}}" shipping_policy_id="{{query.shipping_policy_id}}" min_shipping_amount="{{query.min_shipping_amount}}" max_shipping_amount="{{query.max_shipping_amount}}" orderer_uuid="{{query.orderer_uuid}}" member_type="{{query.member_type}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 분류 필터의 4단 선택지. 계층 전체를 한 번에 받아 두고 아래 computed 가 단계별로 잘라 쓴다 — 단계를 고를 때마다 서버를 부르지 않기 위해서다 -->
+  <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params hierarchical="1"/>
+  </data-source>
+  <!-- 국가·결제수단·배송방식 필터의 선택지가 쇼핑몰 설정에서 온다(사용 중인 것만 세운다). 목록 표시를 막지 않도록 뒤늦게 받는다 -->
+  <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
+  <!-- 일괄 운송장 입력에서 고를 택배사 — 목록 조회가 아니라 아래 일괄처리 구획이 쓴다 -->
+  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
+  <!-- 배송정책 필터 선택지 — 사용 중인 것만 받는다 -->
+  <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
+  <!-- 이 화면에 저장해 둔 검색 프리셋. 프리셋은 화면마다 따로 관리되므로 대상 화면을 지정해 받는다 -->
+  <data-source id="presets" label_key="$t:sirsoft-ecommerce.editor.data_source.presets" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/presets" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params target_screen="orders"/>
+  </data-source>
+  <init-local>
+    <field name="showDetailFilter" :value="false"/>
+    <field name="isEditMode" :value="false"/>
+    <field name="filter">
+      <field name="selectedPreset" value=""/>
+      <field name="searchField" value="all"/>
+      <field name="searchKeyword" value=""/>
+      <field name="dateType" value="ordered_at"/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="dateQuick" value=""/>
+      <field name="orderStatus" :value="[]"/>
+      <field name="deliveryMethods" :value="[]"/>
+      <field name="paymentMethods" :value="[]"/>
+      <field name="category1" value=""/>
+      <field name="category2" value=""/>
+      <field name="category3" value=""/>
+      <field name="category4" value=""/>
+      <field name="minPrice" value=""/>
+      <field name="maxPrice" value=""/>
+      <field name="countries" :value="[]"/>
+      <field name="devices" :value="[]"/>
+      <field name="shippingPolicy" value=""/>
+      <field name="minShippingFee" value=""/>
+      <field name="maxShippingFee" value=""/>
+    </field>
+    <field name="ordererSearchResults" :value="[]"/>
+    <field name="selectedItems" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="bulkOrderStatus" value=""/>
+    <field name="bulkCourier" value=""/>
+    <field name="bulkTrackingNumber" value=""/>
+    <field name="sortBy" value="ordered_at_desc"/>
+    <field name="perPage" value="20"/>
+    <field name="currentPage" :value="1"/>
+    <field name="presetName" value=""/>
+    <field name="editingPresetId" :value="null"/>
+    <field name="editingPresetName" value=""/>
+    <field name="deletingPresetId" :value="null"/>
+    <field name="deletingPresetName" value=""/>
+    <field name="savingPresetConditions" :value="null"/>
+    <field name="excelDownloadType" value="search"/>
+    <field name="visibleColumns">
+      <item>ordered_at</item>
+      <item>order_number</item>
+      <item>product</item>
+      <item>order_amount</item>
+      <item>order_status</item>
+      <item>orderer</item>
+      <item>payment_method</item>
+      <item>delivery_method</item>
+      <item>country</item>
+      <item>device</item>
+    </field>
+    <field name="visibleFilters">
+      <item>searchField</item>
+      <item>searchKeyword</item>
+      <item>date</item>
+      <item>orderStatus</item>
+    </field>
+  </init-local>
+  <computed name="filterSearchField">{{_local.filter.searchField ?? query.search_field ?? 'all'}}</computed>
+  <computed name="filterSearchKeyword">{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}</computed>
+  <computed name="filterDateType">{{_local.filter.dateType ?? query.date_type ?? 'ordered_at'}}</computed>
+  <computed name="filterStartDate">{{_local.filter.startDate ?? query.start_date ?? ''}}</computed>
+  <computed name="filterEndDate">{{_local.filter.endDate ?? query.end_date ?? ''}}</computed>
+  <computed name="filterMinPrice">{{_local.filter.minPrice ?? query.min_amount ?? ''}}</computed>
+  <computed name="filterMaxPrice">{{_local.filter.maxPrice ?? query.max_amount ?? ''}}</computed>
+  <computed name="filterCategoryId">{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || query.category4 || query.category3 || query.category2 || query.category1 || ''}}</computed>
+  <computed name="category1Options">{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}</computed>
+  <computed name="category2Options">{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}</computed>
+  <computed name="category3Options">{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}</computed>
+  <computed name="category4Options">{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}</computed>
+  <computed name="availableCountries">{{(ecommerce_settings?.data?.shipping?.available_countries || []).filter(c => c.is_active).map(c => ({ code: c.code.toLowerCase(), name: c.name?.[$locale] ?? c.name?.ko ?? c.code }))}}</computed>
+  <computed name="availablePaymentMethods">{{(ecommerce_settings?.data?.order_settings?.payment_methods || []).filter(m => m.is_active).map(m => ({ id: m.id, name: m._cached_name?.[$locale] ?? m._cached_name?.ko ?? m.id }))}}</computed>
+  <computed name="filterShippingPolicy">{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}</computed>
+  <computed name="shippingPolicyOptions">{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}</computed>
+  <computed name="filterMinShippingFee">{{_local.filter.minShippingFee ?? query.min_shipping_amount ?? ''}}</computed>
+  <computed name="filterMaxShippingFee">{{_local.filter.maxShippingFee ?? query.max_shipping_amount ?? ''}}</computed>
+  <computed name="shippingTypeOptions">{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>orders</wait-for>
+  </transition-overlay>
+  <!-- 필터 적용 — 필터 조각·프리셋 적용·초기화가 이 액션 하나를 공유한다. 빈 값은 null 로 떨어뜨려 주소에 남기지 않고(그래야 프리셋을 갈아탈 때 이전 조건이 안 붙어 있는다), 조건이 바뀌었으니 쪽수는 1로 되돌린다 -->
+  <action name="searchOrders">
+    <navigate path="/admin/ecommerce/orders" :replace="true" :mergeQuery="true" transition_overlay_target="order_datagrid__body">
+      <query :page="1" search_field="{{_local.filter.searchField !== 'all' ? _local.filter.searchField : null}}" search_keyword="{{_local.filter.searchKeyword || null}}" date_type="{{_local.filter.dateType}}" start_date="{{_local.filter.startDate || null}}" end_date="{{_local.filter.endDate || null}}" order_status[]="{{(_local.filter.orderStatus || []).length > 0 ? _local.filter.orderStatus : null}}" shipping_type[]="{{(_local.filter.deliveryMethods || []).length > 0 ? _local.filter.deliveryMethods : null}}" payment_method[]="{{(_local.filter.paymentMethods || []).length > 0 ? _local.filter.paymentMethods : null}}" category1="{{_local.filter.category1 || null}}" category2="{{_local.filter.category2 || null}}" category3="{{_local.filter.category3 || null}}" category4="{{_local.filter.category4 || null}}" min_amount="{{_local.filter.minPrice || null}}" max_amount="{{_local.filter.maxPrice || null}}" country_codes[]="{{(_local.filter.countries || []).length > 0 ? _local.filter.countries : null}}" order_device[]="{{(_local.filter.devices || []).length > 0 ? _local.filter.devices : null}}" shipping_policy_id="{{_local.filter.shippingPolicy || null}}" min_shipping_amount="{{_local.filter.minShippingFee || null}}" max_shipping_amount="{{_local.filter.maxShippingFee || null}}" orderer_uuid="{{_local.filter.ordererUuid || null}}" member_type="{{_local.filter.memberType || null}}"/>
+    </navigate>
+  </action>
+  <init>
+    <load-from-local-storage key="g7_order_visible_columns" stateKey="visibleColumns">
+      <field name="defaultValue">
+        <item>order_date</item>
+        <item>order_number</item>
+        <item>order_status</item>
+        <item>order_amount</item>
+        <item>product</item>
+        <item>orderer</item>
+        <item>payment_method</item>
+        <item>delivery_method</item>
+        <item>country</item>
+      </field>
+    </load-from-local-storage>
+    <set-state target="global">
+      <field name="_local">
+        <field name="filter">
+          <field name="searchField" value="{{query.search_field || 'all'}}"/>
+          <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+          <field name="dateType" value="{{query.date_type || 'ordered_at'}}"/>
+          <field name="startDate" value="{{query.start_date || ''}}"/>
+          <field name="endDate" value="{{query.end_date || ''}}"/>
+          <field name="orderStatus" value="{{query['order_status[]'] || []}}"/>
+          <field name="deliveryMethods" value="{{query['shipping_type[]'] || []}}"/>
+          <field name="paymentMethods" value="{{query['payment_method[]'] || []}}"/>
+          <field name="category1" value="{{query.category1 || ''}}"/>
+          <field name="category2" value="{{query.category2 || ''}}"/>
+          <field name="category3" value="{{query.category3 || ''}}"/>
+          <field name="category4" value="{{query.category4 || ''}}"/>
+          <field name="minPrice" value="{{query.min_amount || ''}}"/>
+          <field name="maxPrice" value="{{query.max_amount || ''}}"/>
+          <field name="countries" value="{{query['country_codes[]'] || []}}"/>
+          <field name="devices" value="{{query['order_device[]'] || []}}"/>
+          <field name="shippingPolicy" value="{{query.shipping_policy_id || ''}}"/>
+          <field name="minShippingFee" value="{{query.min_shipping_amount || ''}}"/>
+          <field name="maxShippingFee" value="{{query.max_shipping_amount || ''}}"/>
+          <field name="selectedPreset" value="{{query.preset_id || ''}}"/>
+          <field name="ordererUuid" value="{{query.orderer_uuid || ''}}"/>
+          <field name="memberType" value="{{query.member_type || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+    <api-call if="{{!!query.orderer_uuid}}" :auth_required="true" target="/api/admin/users/search" method="GET">
+      <success>
+        <set-state target="local" ordererSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+      </success>
+      <query uuid="{{query.orderer_uuid}}"/>
+    </api-call>
+    <action handler="sirsoft-ecommerce.loadVisibleFilters" id="admin_ecommerce_order_filters">
+      <field name="defaultFilters">
+        <item>searchField</item>
+        <item>searchKeyword</item>
+        <item>date</item>
+        <item>orderStatus</item>
+      </field>
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="visibleFilters"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="order_list_content" class="admin-page-content">
+      <!-- H-001 ~ H-004 -->
+      <div data-ref="page_header" class="page-header">
+        <div class="flex-center gap-3">
+          <!-- MB-001 모바일 뒤로가기 버튼 -->
+          <button data-ref="mb_001_back_button" type="button" class="btn btn-ghost btn-square hidden">
+            <responsive on="portable" class="btn btn-ghost btn-square flex"/>
+            <on type="click">
+              <!-- 브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 "back" 을 주면 /back 으로 이동한다 -->
+              <navigate-back/>
+            </on>
+            <icon name="arrow-left" class="text-xl"/>
+          </button>
+          <div>
+            <!-- H-002 -->
+            <h1 data-ref="h_002_page_title" class="page-title">$t:sirsoft-ecommerce.admin.order.title</h1>
+            <!-- H-003 -->
+            <p data-ref="h_003_page_description" class="page-description">$t:sirsoft-ecommerce.admin.order.description</p>
+          </div>
+        </div>
+        <div class="page-actions">
+          <!-- H-004 -->
+          <button data-ref="h_004_refresh_button" type="button" class="btn btn-icon">
+            <on type="click">
+              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 필터 20여 종을 유지한다 (#75). -->
+              <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="refresh-cw" class="text-xl"/>
+          </button>
+        </div>
+      </div>
+      <!-- MB-010, MB-011 -->
+      <div data-ref="mobile_top_actions" class="hidden">
+        <responsive on="portable" class="flex gap-2 mb-4"/>
+        <!-- MB-010 -->
+        <button data-ref="mb_010_search_edit_button" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <set-state target="_local" isEditMode="{{!_local.isEditMode}}"/>
+          </on>
+          <icon name="settings" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.order.search.edit_search</span>
+        </button>
+        <!-- MB-011 -->
+        <button data-ref="mb_011_preset_manage_button" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <open-modal target="modal_preset_manage"/>
+          </on>
+          <icon name="list" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.order.search.preset_manage</span>
+        </button>
+      </div>
+      <include src="partials/admin_ecommerce_order_list/_partial_filter_section.g7.html"/>
+      <div data-ref="data_table_section" class="mt-6">
+        <include src="partials/admin_ecommerce_order_list/_partial_bulk_action_section.g7.html"/>
+        <include src="partials/admin_ecommerce_order_list/_partial_order_datagrid.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 선택한 주문들의 상태·운송장을 한꺼번에 바꾸기 전 확인 -->
+  <modal src="partials/admin_ecommerce_order_list/_modal_bulk_confirm.g7.html"/>
+  <!-- 검색 프리셋 관리 — 저장해 둔 조건 묶음의 목록을 보고 고르거나 지운다 -->
+  <modal src="partials/admin_ecommerce_order_list/_modal_preset_manage.g7.html"/>
+  <!-- 지금 걸린 조건을 새 프리셋으로 저장 -->
+  <modal src="partials/admin_ecommerce_order_list/_modal_preset_save.g7.html"/>
+  <!-- 프리셋 이름 바꾸기 -->
+  <modal src="partials/admin_ecommerce_order_list/_modal_preset_edit.g7.html"/>
+  <!-- 프리셋 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_order_list/_modal_preset_delete_confirm.g7.html"/>
+  <!-- 엑셀 내려받기 — 검색 결과 전체와 선택 건 중 무엇을 뽑을지 고른다 -->
+  <modal src="partials/admin_ecommerce_order_list/_modal_excel_download.g7.html"/>
+</layout>

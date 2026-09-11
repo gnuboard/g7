@@ -25,6 +25,7 @@ import {
     createLayoutTest,
     createMockComponentRegistryWithBasics,
 } from '@core/template-engine/__tests__/utils/layoutTestUtils';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const root = layout as unknown as AnyNode;
 
@@ -226,7 +227,8 @@ describe('plugin_settings.json — 연결 확인 버튼의 hasChanges 초기 상
     const connectionCheckButton = findById(root, 'connection_check_button') as AnyNode & {
         actions: AnyNode[];
     };
-    const clickAction = connectionCheckButton.actions.find((a) => a.handler === 'sequence') as AnyNode;
+    // 굽기는 단일 원소 actions 를 객체로 접으므로 모양에 기대지 않고 헬퍼로 읽는다.
+    const clickAction = actionsOf(connectionCheckButton).find((a) => a.handler === 'sequence') as AnyNode;
 
     function buildProbe() {
         return {

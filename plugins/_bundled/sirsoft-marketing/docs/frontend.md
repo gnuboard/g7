@@ -20,7 +20,7 @@
 관리자 설정 화면(`plugin_settings`) 하나뿐입니다. **이 플러그인의 실제 UI 는 레이아웃이 아니라
 확장 조각 5개**이며, 그것들은 다른 화면 안에 들어갑니다.
 
-`plugin_settings.json` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
+`plugin_settings.g7.html` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
 찾아 설정 화면을 그리므로, 이름을 바꾸면 설정 화면 자체가 사라집니다.
 
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan plugin:update sirsoft-marketing --force`

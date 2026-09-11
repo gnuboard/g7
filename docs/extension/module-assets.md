@@ -60,6 +60,26 @@
 
 ---
 
+## 확장 컴포넌트 등록 (self-register)
+
+확장 번들은 액션 핸들러와 같은 방식으로 자기 화면 컴포넌트를 코어 레지스트리에 직접 등록한다 — 템플릿 컴포넌트처럼 매니페스트 + 전역 변수 경로로 실릴 자리가 확장에는 없기 때문이다.
+
+```ts
+const registry = (window as any).G7Core?.getComponentRegistry?.();
+
+registry?.registerExtensionComponent(
+    `${MODULE_IDENTIFIER}.ProductCard`,
+    ProductCard,
+    { name: `${MODULE_IDENTIFIER}.ProductCard`, type: 'composite' }
+);
+```
+
+**등록 시점은 안전하다.** 코어가 확장 번들 로드를 초기 라우트 처리 전에 기다리므로 이 등록은 첫 렌더보다 먼저 끝난다. 번들 로드가 실패하면 등록이 오지 않고 그 컴포넌트 노드는 화면에서 조용히 사라지며(미발견 컴포넌트는 `null` 렌더), 그 침묵은 `registry.getMissingExtensionComponents(names)` 로 관측한다.
+
+React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품으면 훅 호출이 다른 인스턴스에 걸려 "Invalid hook call" 로 죽는다.
+
+규약 전문(이름 프리픽스·판본 선택·오버라이드 우선순위): **[extension-components.md](extension-components.md)**
+
 ## 에셋 매니페스트 스키마
 
 ### module.json (통합 스키마)
@@ -406,15 +426,23 @@ export const handlerMap: Record<string, ActionHandler> = {
 
 ### 레이아웃에서 핸들러 사용
 
+```html
+<input type="number" value="{{row.stock_quantity}}">
+  <on type="blur">
+    <action handler="sirsoft-ecommerce.updateProductField" productId="{{row.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-    "component": "Input",
-    "props": {
-        "type": "number",
-        "value": "{{row.stock_quantity}}"
-    },
-    "events": {
-        "onBlur": {
+    "type": "basic",
+    "name": "Input",
+    "actions": [
+        {
+            "type": "blur",
             "handler": "sirsoft-ecommerce.updateProductField",
             "params": {
                 "productId": "{{row.id}}",
@@ -422,6 +450,10 @@ export const handlerMap: Record<string, ActionHandler> = {
                 "value": "{{$event.target.value}}"
             }
         }
+    ],
+    "props": {
+        "type": "number",
+        "value": "{{row.stock_quantity}}"
     }
 }
 ```
@@ -709,11 +741,17 @@ AMD 로더나 워커처럼 디렉토리 접두 뒤에 파일명을 이어 붙이
 
 ### 레이아웃 scripts 섹션
 
+```html
+<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js" id="external-lib" :async="true" data-if="{{_global.modules['sirsoft-ecommerce'].useExternalLib}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "scripts": [
         {
-            "src": "https://cdn.example.com/lib.js",
+            "src": "https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js",
             "id": "external-lib",
             "if": "{{_global.modules['sirsoft-ecommerce'].useExternalLib}}",
             "async": true
@@ -866,7 +904,7 @@ API 레퍼런스: [docs/backend/api/extensions.md](../backend/api/extensions.md)
 | 방법 | 판정 |
 |---|---|
 | `dist/css/components.css` 직접 수정 | 다음 빌드·업데이트에 소실된다 |
-| `src/styles/custom.css` + 빌드 | 확장 **저작자**의 방법으로는 유효하다. 운영자에게는 부적합(빌드 필요 + 업데이트 소실) |
+| `src/styles/custom.css` + 빌드 | 확장 **작성자**의 방법으로는 유효하다. 운영자에게는 부적합(빌드 필요 + 업데이트 소실) |
 | `custom/custom.css` 에 파일만 놓기 | 권장 |
 
 ## AbstractModule 에셋 메서드

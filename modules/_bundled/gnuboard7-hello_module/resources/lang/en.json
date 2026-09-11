@@ -3,6 +3,14 @@
         "data_source": {
             "memoData": "Memo Data",
             "memos": "Memos"
+        },
+        "palette": {
+            "group": "Hello Module",
+            "memo_card": {
+                "label": "Memo Card",
+                "sample_title": "Memo title",
+                "sample_body": "The memo body appears here."
+            }
         }
     },
     "admin": {

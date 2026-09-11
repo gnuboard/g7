@@ -216,6 +216,15 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
   - `scripts[].src`·`data_sources[].endpoint` 가 same-origin path-only(`/` 시작)가 아니면 `422` (`validation.layout.external_resource_url`). 단, 활성 확장(모듈·플러그인·템플릿)이 자기 manifest 의 `trusted_script_hosts` 로 선언한 호스트는 예외로 허용됩니다 — 이 목록은 확장 배포물이 정하며 요청으로 바꿀 수 없습니다.
   - 정상 표현식(조건·계산·목록 가공·화살표 함수·템플릿 리터럴·경로 조립)은 통과합니다.
 
+### 회원 이메일 노출 범위
+
+응답에 실리는 회원 이메일(`author.email`, `user.email`, `reporter.email`, `board_managers[].email` 등)은
+**관리자 엔드포인트 응답**과 **본인이 자기 정보를 조회할 때**만 값이 채워집니다. 그 밖의 경로에서는
+필드가 그대로 있고 값만 `null` 입니다 — 필드 자체가 사라지지 않으므로 응답 구조는 변하지 않습니다.
+
+게시글 목록·상세, 댓글 목록, 게시판 상세, 상품평 목록처럼 인증 없이 열람되는 경로가 이에 해당합니다.
+회원 이메일이 필요한 화면은 관리자 엔드포인트를 사용하세요.
+
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->

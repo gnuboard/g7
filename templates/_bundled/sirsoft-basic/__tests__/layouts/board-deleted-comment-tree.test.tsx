@@ -14,6 +14,10 @@
  *
  * 회귀 배경: 과거 일반 조회에서 삭제 부모가 빠지며 자식까지 트리에서 누락 → 자식 동반 실종.
  *   백엔드 복구 + 본 표시 계약 고정으로 방어한다.
+ *
+ * @scenario comment_trigger=cascade
+ * @scenario comment_trigger=user
+ * @effects cascade_comment_content_visible
  */
 
 import { describe, it, expect } from 'vitest';

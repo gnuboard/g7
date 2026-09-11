@@ -61,7 +61,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | locale_name | string | `EN` | 영문 언어명 |
 | locale_native_name | string | `English` | 원어 언어명 |
 | text_direction | string | `ltr` | 텍스트 방향 |
-| version | string | `7.0.6` | 언어팩 버전 |
+| version | string | `7.1.0` | 언어팩 버전 |
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
 | target_version_constraint | null | `null` | 대상 확장 버전 제약 (semver) |
 | target_version_mismatch | boolean | `false` | 대상 버전 불일치 경고 플래그 |
@@ -109,7 +109,7 @@ HTTP/1.1 200
                 "locale_name": "EN",
                 "locale_native_name": "English",
                 "text_direction": "ltr",
-                "version": "7.0.6",
+                "version": "7.1.0",
                 "latest_version": null,
                 "target_version_constraint": null,
                 "target_version_mismatch": false,
@@ -1163,6 +1163,7 @@ _단건 응답: `data` 객체의 필드 (`LanguagePackResource::toDetailArray`).
 | source_meta.installed_by | integer\|null | `1` | 설치를 수행한 사용자 ID |
 | source_meta.latest_version | string\|null | `1.0.6` | 업데이트 확인으로 파악된 최신 버전 |
 | source_meta.directory_path | string\|null | `lang-packs/g7-core-ja` | 프로젝트 루트 기준 설치 디렉토리 경로 (해석 실패 시 `null`) |
+| changelog_entries | array | `[{"version":"1.0.7","date":"2026-08-20","categories":[…]}]` | 언어팩 CHANGELOG.md 파싱 결과 — 항목별 `version`/`date`/`categories[]`(각 항목은 `name` 과 불릿 문자열 배열 `items`) |
 
 **응답 예시**
 
@@ -1173,28 +1174,21 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "언어팩 목록을 조회했습니다.",
+    "message": "언어팩 정보를 조회했습니다.",
     "data": {
+        "id": 1,
         "identifier": "g7-core-ja",
+        "scope": "core",
+        "target_identifier": null,
         "locale": "ja",
-        "version": "1.0.6",
         "status": "active",
-        "manifest": {
-            "identifier": "g7-core-ja",
-            "locale": "ja",
-            "version": "1.0.6"
-        },
-        "validation_summary": {
-            "target_version_mismatch": false,
-            "depends_on_core_locale": null
-        },
-        "source_meta": {
-            "type": "bundled",
-            "url": null,
-            "installed_by": 1,
-            "latest_version": "1.0.6",
-            "directory_path": "lang-packs/g7-core-ja"
-        }
+        "version": "1.0.7",
+        "manifest": { "identifier": "g7-core-ja", "version": "1.0.7", "g7_version": ">=7.1.0" },
+        "validation_summary": { "target_version_mismatch": false, "depends_on_core_locale": null },
+        "source_meta": { "type": "bundled", "url": null, "installed_by": 1, "latest_version": null, "directory_path": "lang-packs/g7-core-ja" },
+        "changelog_entries": [
+            { "version": "1.0.7", "date": "2026-08-20", "categories": [ { "name": "Added", "items": ["레이아웃 소스 파일 검사 문구 일본어 번역 추가"] } ] }
+        ]
     }
 }
 ```
@@ -1381,8 +1375,11 @@ _단건 응답: `data` 객체의 필드. `{id}` 가 정수면 설치된 언어�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | identifier | string | `g7-core-ja` | 대상 언어팩 식별자 |
-| entries | array | `[{"version":"1.0.6","date":"2026-08-12","changes":{"Added":["..."]}}]` | `CHANGELOG.md` 를 파싱한 버전별 항목 목록 (Keep a Changelog 기준). 파일이 없으면 빈 배열 |
-| changelog | string | `"# Changelog\n\n## [1.0.6] - 2026-08-12\n..."` | `CHANGELOG.md` 원문. 파일이 없으면 빈 문자열 |
+| entries | array | `[{"version":"1.0.7","date":"2026-08-20","categories":[…]}]` | `CHANGELOG.md` 를 파싱한 버전별 항목 목록 (Keep a Changelog 기준) — 항목별 `version`/`date`/`categories[]`(각 항목은 `name` 과 불릿 문자열 배열 `items`). 파일이 없으면 빈 배열 |
+| changelog | string | `"# Changelog
+
+## [1.0.7] - 2026-08-20
+..."` | `CHANGELOG.md` 원문. 파일이 없으면 빈 문자열 |
 | has_changelog | boolean | `true` | 표시할 변경 이력이 있는지 여부 (`entries` 가 비어 있지 않거나 원문이 빈 문자열이 아니면 `true`) |
 
 **응답 예시**
@@ -1394,19 +1391,13 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "언어팩 목록을 조회했습니다.",
+    "message": "언어팩 정보를 조회했습니다.",
     "data": {
         "identifier": "g7-core-ja",
         "entries": [
-            {
-                "version": "1.0.6",
-                "date": "2026-08-12",
-                "changes": {
-                    "Added": ["배송지 변경 오류 안내 문구의 일본어 번역을 추가했습니다."]
-                }
-            }
+            { "version": "1.0.7", "date": "2026-08-20", "categories": [ { "name": "Added", "items": ["레이아웃 소스 파일 검사 문구 일본어 번역 추가"] } ] }
         ],
-        "changelog": "# Changelog\n\n## [1.0.6] - 2026-08-12\n\n### Added\n\n- ...\n",
+        "changelog": "# Changelog\n\n## [1.0.7] - 2026-08-20\n\n### Added\n\n- 레이아웃 소스 파일 검사 문구 일본어 번역 추가 …",
         "has_changelog": true
     }
 }

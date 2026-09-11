@@ -70,7 +70,7 @@
 ## 3. 핵심 흐름
 
 <!-- @intent START -->
-**회원가입 시 동의 수집**: 템플릿의 가입 폼이 `user-marketing-register.json` 조각을 그 자리에
+**회원가입 시 동의 수집**: 템플릿의 가입 폼이 `user-marketing-register.g7.html` 조각을 그 자리에
 받아 동의 체크박스를 그림 → 제출 → 코어 가입 흐름에서 `core.auth.register_validation_rules`
 필터가 동의 항목의 검증 규칙을 더함 → 가입 완료 후 `core.auth.register` 액션에서
 `MarketingConsentListener::afterRegister()` 가 동의 값을 `user_marketing_consents` 에 기록하고
@@ -164,7 +164,7 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 5개 | `plugins/_bundled/sirsoft-marketing/tests` |
+| PHPUnit | 6개 | `plugins/_bundled/sirsoft-marketing/tests` |
 | Vitest | 2개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 0개 | — |

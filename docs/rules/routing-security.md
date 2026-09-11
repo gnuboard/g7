@@ -21,7 +21,7 @@
 | 모듈/플러그인에서 `AuthManager.updateConfig()` 호출 | 템플릿 부트스트랩(`initTemplate`)에서만 호출 |
 | `AuthManager.updateConfig({ loginPath: 'https://...' })` (외부 origin) | `loginPath` 는 `/` 로 시작하는 동일 origin path-only |
 | `AuthManager.updateConfig({ loginPath: '//evil.com/...' })` (protocol-relative) | `//` 시작 금지 (open redirect 방지) |
-| 401 에러 페이지(`errors/401.json`)에서 직접 로그인 리다이렉트 구현 | 코어 `TemplateApp.showRouteError` 가드에 위임 (자동 처리) |
+| 401 에러 페이지(`errors/401.g7.html`)에서 직접 로그인 리다이렉트 구현 | 코어 `TemplateApp.showRouteError` 가드에 위임 (자동 처리) |
 
 ## 정적 확장자 라우트 / 자산 URL 생성
 
@@ -103,6 +103,23 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 이 결함군은 예외도 오류도 남기지 않는다 — 약한 경로가 정상 응답을 내보내는 것이 유일한 증상이다. secret 게이트 재적용·hash 서빙 게이트·rank 대칭·URL 판정 3층 동형·정적 bulk 스코프 재적용·가드 선행·형제 메서드 가드 패리티·abilityMap prefix 정합은 의미 판정 영역이라 자동 검증이 일부만 덮으므로, 부모 변경·하위 서빙·등급 경로·URL 검증 지점을 건드릴 때 코드 리뷰에서 대칭성을 확인한다.
 
 > 상세: [validation.md](../backend/validation.md), [service-repository.md](../backend/service-repository.md), [frontend/security.md](../frontend/security.md)
+
+### 공개 응답의 회원 개인 연락처
+
+응답은 화면과 무관하게 나간다. 인증 없이 열람되는 목록·상세·댓글·리뷰에 회원 이메일을 직렬화하면,
+그 화면이 이메일을 그리지 않아도 응답 본문에서 회원 주소록을 통째로 수집할 수 있다.
+"소비 화면이 관리자 전용" 이라는 사실은 방어가 아니다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `'email' => $this->user->email` (게이트 없음) | `'email' => $this->canExposeMemberEmail($request, $this->user_id) ? $this->user->email : null` |
+| 헤더·쿼리 등 클라이언트가 보내는 값으로 노출 판정 | 요청이 도달한 **컨트롤러**(`AdminBaseController` 여부)로 판정 — 클라이언트가 못 바꾼다 |
+| "이 Resource 는 관리자 라우트 전용" 이라 게이트 생략 | 부착 비용 0(관리자 응답은 true) — 다음 사람이 공개 경로에 붙이는 순간 그 전제가 사라진다 |
+| 노출을 막으려고 필드 자체를 제거 | 값만 `null` — 필드를 없애면 응답 구조가 바뀌어 소비처가 깨진다 |
+
+이메일 외의 개인 연락처(휴대폰·주소)를 새로 직렬화할 때도 같은 기준을 적용한다.
+
+> 상세: [api-resources.md "회원 이메일은 공개 응답에 싣지 않는다"](../backend/api-resources.md)
 
 ## 서버가 조건에 따라 다른 형태의 200 을 돌려주는 엔드포인트
 

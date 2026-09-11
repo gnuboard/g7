@@ -3,7 +3,7 @@
  * @description 관리자 대시보드 템플릿 레이아웃 검증 — 코어 stats 카드 제거 및 확장 포인트 위임
  *
  * 이커머스 "오늘" 배지/판매 차트 등 커머스 콘텐츠는 sirsoft-ecommerce 모듈의
- * admin_dashboard_commerce.json 확장으로 주입되며, 해당 검증은 모듈 테스트
+ * admin_dashboard_commerce.g7.html 확장으로 주입되며, 해당 검증은 모듈 테스트
  * (admin_dashboard_commerce_extension.test.tsx) 가 담당한다. 본 템플릿 테스트는
  * 템플릿 JSON 에 실제 존재하는 것(코어 카드 제거 + 확장 포인트 존재)만 검증한다.
  */

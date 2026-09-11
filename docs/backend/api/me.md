@@ -60,7 +60,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 **설명**
 
-현재 로그인한 사용자가 자신의 계정을 탈퇴한다. 프론트의 회원 탈퇴 모달(`_modal_withdraw.json`)이 호출한다. 별도 요청 파라미터 없이 인증 토큰의 사용자를 대상으로 하며, `UserService::withdrawUser()` 가 아바타·토큰 삭제와 개인정보 익명화를 수행한다. 되돌릴 수 없는 작업이므로 호출 전 사용자 확인 절차를 두는 것을 권장한다.
+현재 로그인한 사용자가 자신의 계정을 탈퇴한다. 프론트의 회원 탈퇴 모달(`_modal_withdraw.g7.html`)이 호출한다. 별도 요청 파라미터 없이 인증 토큰의 사용자를 대상으로 하며, `UserService::withdrawUser()` 가 아바타·토큰 삭제와 개인정보 익명화를 수행한다. 되돌릴 수 없는 작업이므로 호출 전 사용자 확인 절차를 두는 것을 권장한다.
 
 탈퇴는 원자적으로 처리된다 — 약관 동의 이력 삭제·토큰 삭제·익명화가 하나의 트랜잭션이며, 어느 단계에서 실패해도 전부 취소된다. 아바타 파일 삭제는 커밋이 확정된 뒤에 수행되고, 파일 삭제가 실패해도 탈퇴는 되돌리지 않는다(참조되지 않는 파일만 남는다).
 
@@ -262,7 +262,7 @@ HTTP/1.1 200
 
 **설명**
 
-현재 로그인한 사용자의 프로필 정보를 조회한다. 프론트의 마이페이지(`mypage/profile.json`)와 프로필 수정 화면(`mypage/profile-edit.json`)이 소비한다. 응답은 `UserResource::toProfileArray()` 산물로, 비밀번호 등 민감 필드는 제외된다. 표의 `notify_*`(게시판 모듈)·`marketing_consent*`/`email_subscription*`/`third_party_consent*`/`info_disclosure*`/`channels`/`consent_histories`(마케팅 플러그인)·`ecommerce_*`(이커머스 모듈) 필드는 코어가 아니라 각 확장이 `core.user.filter_resource_data` 훅으로 병합하는 확장 소유 필드이며, 해당 확장이 비활성인 환경에서는 응답에 나타나지 않는다.
+현재 로그인한 사용자의 프로필 정보를 조회한다. 프론트의 마이페이지(`mypage/profile.g7.html`)와 프로필 수정 화면(`mypage/profile-edit.g7.html`)이 소비한다. 응답은 `UserResource::toProfileArray()` 산물로, 비밀번호 등 민감 필드는 제외된다. 표의 `notify_*`(게시판 모듈)·`marketing_consent*`/`email_subscription*`/`third_party_consent*`/`info_disclosure*`/`channels`/`consent_histories`(마케팅 플러그인)·`ecommerce_*`(이커머스 모듈) 필드는 코어가 아니라 각 확장이 `core.user.filter_resource_data` 훅으로 병합하는 확장 소유 필드이며, 해당 확장이 비활성인 환경에서는 응답에 나타나지 않는다.
 
 
 ### PUT /api/me
@@ -430,6 +430,6 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 
 **설명**
 
-현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.json`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
+현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.g7.html`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
 
 

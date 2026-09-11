@@ -22,7 +22,7 @@
 읽기는 `plugin_setting()`(또는 `PluginSettingsService`)으로 하며, 리스너가 동작 **직전에**
 확인합니다 — 등록 시점에 확인하면 설정을 바꿔도 다음 재부팅까지 반영되지 않습니다.
 
-설정 화면은 `resources/layouts/admin/plugin_settings.json` 이 그립니다. **파일 이름이
+설정 화면은 `resources/layouts/admin/plugin_settings.g7.html` 이 그립니다. **파일 이름이
 계약**이므로 코어가 이 고정 경로를 찾으며, 이름을 바꾸면 설정 화면 자체가 사라집니다.
 <!-- @intent END -->
 
@@ -49,7 +49,7 @@ _등록하는 메뉴가 없습니다._
 등록하지 않습니다. 이 샘플에는 자체 관리 화면이 없습니다.
 
 설정은 코어의 플러그인 목록에서 이 플러그인의 설정으로 들어가는 공통 경로를 씁니다 — 코어가
-`resources/layouts/admin/plugin_settings.json` 을 찾아 그리므로 자체 메뉴가 필요 없습니다.
+`resources/layouts/admin/plugin_settings.g7.html` 을 찾아 그리므로 자체 메뉴가 필요 없습니다.
 
 메뉴를 등록할 때는 권한과 짝을 이뤄야 합니다. 권한만 추가하고 메뉴를 빠뜨리면 화면에 도달할
 길이 없고, 반대면 눌러도 403 입니다.

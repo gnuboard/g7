@@ -28,10 +28,17 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
     {
         $this->assertContains(
             RestoreLayoutExtensionsAfterUpdateListener::class,
-            (new Plugin())->getHookListeners()
+            (new Plugin)->getHookListeners()
         );
     }
 
+    /**
+     * 업데이트로 소프트 삭제된 자기 overlay 확장이 프리픽스 모듈 레이아웃에 다시 등록된다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects overlay_extensions_are_restored_after_plugin_update
+     */
     public function test_restores_soft_deleted_current_extension_for_prefixed_module_layout(): void
     {
         $template = Template::factory()->create([
@@ -67,7 +74,7 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
             ]);
         $extension->delete();
 
-        (new RestoreLayoutExtensionsAfterUpdateListener())
+        (new RestoreLayoutExtensionsAfterUpdateListener)
             ->restoreCurrentExtensionsAfterUpdate('sirsoft-pay_nicepayments');
 
         $restored = LayoutExtension::withTrashed()->findOrFail($extension->id);
@@ -103,7 +110,7 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
             ->create(['template_id' => $template->id]);
         $extension->delete();
 
-        (new RestoreLayoutExtensionsAfterUpdateListener())
+        (new RestoreLayoutExtensionsAfterUpdateListener)
             ->restoreCurrentExtensionsAfterUpdate('sirsoft-pay_nhnkcp');
 
         $this->assertTrue(LayoutExtension::withTrashed()->findOrFail($extension->id)->trashed());

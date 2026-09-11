@@ -1,0 +1,233 @@
+<!-- 쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다
+  필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지
+  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다. -->
+<layout name="admin_ecommerce_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
+  <!-- 전 탭의 설정값을 한 덩어리로 받아 폼에 심는다 — 탭을 옮겨도 다시 부르지 않는 것은 이 한 응답이 열 탭을 모두 덮기 때문이고, 저장 뒤에는 서버가 정규화한 값으로 되맞추려고 다시 받는다 -->
+  <data-source id="settings" label_key="$t:sirsoft-ecommerce.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- SEO 탭에서만 — 생성된 정적 페이지 수·마지막 생성 시각처럼 설정값이 아니라 현재 캐시 상태를 보여 주는 값이다 -->
+  <data-source id="seoStats" label_key="$t:sirsoft-ecommerce.editor.data_source.seoStats" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings/seo-cache-info" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'seo'}}" :auto_fetch="true" :auth_required="true"/>
+  <!-- 배송 탭에서만 — 택배사는 설정 본문이 아니라 별도 목록이라 따로 받는다 -->
+  <data-source id="carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'shipping'}}" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 알림 정의는 코어가 가진 목록이라 확장 식별자로 이 모듈 몫만 걸러 받는다. 마일리지 탭도 자기 알림을 보여 주므로 두 탭이 함께 쓴다 -->
+  <data-source id="ecommerceNotificationDefinitions" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions?extension_type=module&amp;extension_identifier=sirsoft-ecommerce" method="GET" if="{{['notification_definitions', 'mileage'].includes(query.tab || _global.activeEcommerceSettingsTab || 'basic_info')}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" template_channel="{{query.channel ?? 'mail'}}"/>
+    <init-local>
+      <field name="_merge" value="deep"/>
+      <field name="notificationDefinitionCurrentPage" value="pagination.current_page"/>
+      <field name="notificationDefinitionTotalPages" value="pagination.last_page"/>
+      <field name="notificationDefinitionTotalItems" value="pagination.total"/>
+    </init-local>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 알림 탭에서만 — 어떤 발송 수단(메일·SMS 등)을 켤 수 있는지는 설치된 채널에 달려 있어 서버에서 받아 온다 -->
+  <data-source id="availableChannels" label_key="$t:sirsoft-ecommerce.editor.data_source.availableChannels" type="api" endpoint="/api/admin/notification-channels" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="channels" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 본인인증 탭에서만 — 코어 정책 목록에서 이 모듈이 소유한 것만 걸러 받고, 목록 검색·쪽수는 URL 쿼리를 그대로 넘긴다 -->
+  <data-source id="ecommerceIdentityPolicies" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <params source_identifier="sirsoft-ecommerce" source_type="{{query.source_type ?? ''}}" scope="{{query.scope ?? ''}}" purpose="{{query.purpose ?? ''}}" search="{{query.search ?? ''}}" page="{{query.page || 1}}" per_page="{{query.per_page || 10}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="meta" :value="{}"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 정책을 만들 때 고를 인증 목적(주문·환불 등) 선택지 -->
+  <data-source id="ecommerceIdentityPurposes" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 정책에 붙일 인증 제공자 선택지 — 설치·활성된 플러그인에 따라 달라진다 -->
+  <data-source id="identityProviders" label_key="$t:sirsoft-ecommerce.editor.data_source.identityProviders" type="api" endpoint="/api/admin/identity/providers" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="editingDefinition" :value="null"/>
+    <field name="editingTemplate" :value="null"/>
+    <field name="editLang" value="ko"/>
+    <field name="previewData" :value="null"/>
+    <field name="notificationDefinitionFilter">
+      <field name="search" value=""/>
+      <field name="searchType" value="all"/>
+    </field>
+    <field name="expandedNotificationDefinitionIds" :value="[]"/>
+  </init-local>
+  <computed name="isReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="isNotificationReadOnly">{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.settings.read</permission>
+  </permissions>
+  <defines>
+    <define name="currencyToFlag">
+      <field name="KRW" value="kr"/>
+      <field name="USD" value="us"/>
+      <field name="JPY" value="jp"/>
+      <field name="CNY" value="cn"/>
+      <field name="EUR" value="eu"/>
+      <field name="GBP" value="gb"/>
+      <field name="AUD" value="au"/>
+      <field name="CAD" value="ca"/>
+      <field name="CHF" value="ch"/>
+      <field name="HKD" value="hk"/>
+      <field name="SGD" value="sg"/>
+      <field name="THB" value="th"/>
+      <field name="VND" value="vn"/>
+      <field name="TWD" value="tw"/>
+      <field name="INR" value="in"/>
+      <field name="RUB" value="ru"/>
+      <field name="BRL" value="br"/>
+      <field name="MXN" value="mx"/>
+      <field name="ZAR" value="za"/>
+      <field name="NZD" value="nz"/>
+    </define>
+  </defines>
+  <transition-overlay target="ecommerce_settings_tab_content" fallback-target="right_content_area">
+    <wait-for>settings</wait-for>
+    <wait-for>seoStats</wait-for>
+    <wait-for>carriers</wait-for>
+    <wait-for>ecommerceNotificationDefinitions</wait-for>
+    <wait-for>availableChannels</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="_local" notificationDefinitionCurrentPage="{{+(query.page || 1)}}"/>
+  </init>
+  <slot name="content">
+    <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
+      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
+        <icon name="fas fa-lock" class="text-yellow-600 dark:text-yellow-400"/>
+        <span class="text-warning-soft">$t:sirsoft-ecommerce.common.read_only_notice</span>
+      </div>
+      <!-- className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다. -->
+      <tab-navigation data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="sticky-tab-nav-responsive">
+        <prop name="tabs">
+          <item id="basic_info" label="$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"/>
+          <item id="language_currency" label="$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"/>
+          <item id="seo" label="$t:sirsoft-ecommerce.admin.settings.tabs.seo"/>
+          <item id="order_settings" label="$t:sirsoft-ecommerce.admin.settings.tabs.order_settings"/>
+          <item id="claim" label="$t:sirsoft-ecommerce.admin.settings.tabs.claim"/>
+          <item id="shipping" label="$t:sirsoft-ecommerce.admin.settings.tabs.shipping"/>
+          <item id="review_settings" label="$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"/>
+          <item id="notification_definitions" label="$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"/>
+          <item id="identity_policies" label="$t:sirsoft-ecommerce.admin.settings.tabs.identity_policies"/>
+          <item id="mileage" label="$t:sirsoft-ecommerce.admin.settings.tabs.mileage"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <sequence>
+            <set-state target="local" :errors="null"/>
+            <set-state target="global" activeEcommerceSettingsTab="{{$args[0]}}"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+            <navigate path="/admin/ecommerce/settings" :replace="true">
+              <query tab="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
+        </on>
+      </tab-navigation>
+      <div data-ref="ecommerce_settings_tab_content" class="tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+          <div class="flex gap-3">
+            <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-ecommerce.admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{message}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <include src="partials/admin_ecommerce_settings/_tab_basic_info.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_language_currency.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_seo.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_order_settings.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_claim.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_shipping.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_review_settings.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_notification_definitions.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_identity_policies.g7.html"/>
+        <include src="partials/admin_ecommerce_settings/_tab_mileage.g7.html"/>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" data-testid="ecommerce-settings-save" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의
+              값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에
+              걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —
+              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다. -->
+            <sequence>
+              <toast if="{{_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true}}" type="error" message="$t:sirsoft-ecommerce.admin.settings.save_pending_currency"/>
+              <set-state if="{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}" target="local" :isSaving="true" :errors="null"/>
+              <api-call if="{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/settings" method="PUT" body="{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null"/>
+                  <refetch-data-source dataSourceId="settings" :sync="true"/>
+                  <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.save_success"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? $t('sirsoft-ecommerce.admin.settings.save_error')}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+  <!-- 무통장 입금 계좌 관리 (주문 설정 탭) -->
+  <modal src="partials/admin_ecommerce_settings/_bank_management_modal.g7.html"/>
+  <!-- 해외배송 끄기 확인 — 이미 등록된 해외 배송정책·주소가 묶여 있어 되돌리기 전에 묻는다 -->
+  <modal src="partials/admin_ecommerce_settings/_disable_international_shipping_modal.g7.html"/>
+  <!-- 알림 템플릿 편집 — 채널·언어별 제목과 본문을 고친다 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_template_edit.g7.html"/>
+  <!-- 알림 템플릿 미리보기 — 치환 변수를 예시 값으로 채워 실제 발송 모습을 보여 준다 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_template_preview.g7.html"/>
+  <!-- 알림 정의 초기화 확인 — 손댄 템플릿을 모듈 기본값으로 되돌린다 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_definition_reset.g7.html"/>
+  <!-- SEO 캐시 비우기 확인 — 정적 페이지를 지우면 다음 방문부터 다시 생성된다 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_clear_seo_cache.g7.html"/>
+  <!-- 본인인증 정책 등록·수정 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_identity_policy_form.g7.html"/>
+  <!-- 본인인증 정책 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_settings/_modal_identity_policy_delete.g7.html"/>
+</layout>

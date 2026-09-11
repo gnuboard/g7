@@ -1,4 +1,5 @@
 {
+    "comment": "주문 목록에 NHN KCP 테스트 결제·간편결제 표시를 얹는 조각 — 컬럼을 새로 만들지 않고 기존 그리드의 props 에 끼워 넣는다",
     "target_layout": "admin_ecommerce_order_list",
     "priority": 200,
     "data_sources": [
@@ -10,7 +11,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "주문번호 → KCP 테스트 결제 여부 맵. 목록 본체와 별도로 늦게 도착해도 되므로 progressive 다"
         },
         {
             "id": "nhnkcp_easy_pay_display_map",
@@ -20,7 +22,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "주문번호 → 간편결제 수단 표시 맵"
         },
         {
             "id": "nicepay_test_map",
@@ -31,7 +34,8 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
-            "condition": "{{installed_plugins?.['sirsoft-pay_nicepayments']?.is_active === true}}"
+            "condition": "{{installed_plugins?.['sirsoft-pay_nicepayments']?.is_active === true}}",
+            "comment": "나이스페이먼츠 테스트 결제 맵도 함께 읽는다 — 한 목록에 두 PG 주문이 섞이므로 표시 근거를 양쪽 다 갖춰야 한다"
         }
     ],
     "injections": [
@@ -78,12 +82,9 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
-                                "props": {
-                                    "className": "font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-                                },
-                                "text": "{{row.order_number}}",
                                 "actions": [
                                     {
+                                        "comment": "주문번호를 눌러 상세로. 보던 목록의 검색·필터·페이지를 그대로 이고 가므로 상세에서 되돌아왔을 때 같은 자리가 열린다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -92,7 +93,11 @@
                                             "query": {}
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "className": "font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
+                                },
+                                "text": "{{row.order_number}}"
                             }
                         ]
                     },
@@ -113,12 +118,12 @@
                                     {
                                         "type": "basic",
                                         "name": "Img",
+                                        "if": "{{row.first_option?.thumbnail_url}}",
                                         "props": {
                                             "src": "{{row.first_option?.thumbnail_url}}",
                                             "alt": "{{row.first_option?.product_name}}",
                                             "className": "w-10 h-10 rounded object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-700"
-                                        },
-                                        "if": "{{row.first_option?.thumbnail_url}}"
+                                        }
                                     },
                                     {
                                         "type": "basic",
@@ -137,49 +142,49 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "A",
+                                                        "if": "{{row.first_option?.product_code}}",
                                                         "props": {
                                                             "className": "hover:underline hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 cursor-pointer",
                                                             "href": "{{'/admin/ecommerce/products/' + row.first_option?.product_code + '/edit'}}",
                                                             "target": "_blank"
                                                         },
-                                                        "text": "{{row.first_option?.product_name}}",
-                                                        "if": "{{row.first_option?.product_code}}"
+                                                        "text": "{{row.first_option?.product_name}}"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "text": "{{row.first_option?.product_name}}",
-                                                        "if": "{{!row.first_option?.product_code}}"
+                                                        "if": "{{!row.first_option?.product_code}}",
+                                                        "text": "{{row.first_option?.product_name}}"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "if": "{{row.options_count > 1}}",
                                                         "props": {
                                                             "className": "text-gray-500 dark:text-gray-400 font-normal ml-1"
                                                         },
-                                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.options_count - 1}}",
-                                                        "if": "{{row.options_count > 1}}"
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.options_count - 1}}"
                                                     }
                                                 ]
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{row.first_option?.product_option_name}}",
                                                 "props": {
                                                     "className": "text-tertiary"
                                                 },
-                                                "text": "{{row.first_option?.product_option_name}}",
-                                                "if": "{{row.first_option?.product_option_name}}"
+                                                "text": "{{row.first_option?.product_option_name}}"
                                             },
                                             {
                                                 "comment": "추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2)",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{row.first_option?.additional_options_summary}}",
                                                 "props": {
                                                     "className": "text-tertiary text-xs"
                                                 },
-                                                "text": "{{row.first_option?.additional_options_summary?.label}}{{(row.first_option?.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + row.first_option.additional_options_summary.extra_count + '건' : ''}}",
-                                                "if": "{{row.first_option?.additional_options_summary}}"
+                                                "text": "{{row.first_option?.additional_options_summary?.label}}{{(row.first_option?.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + row.first_option.additional_options_summary.extra_count + '건' : ''}}"
                                             }
                                         ]
                                     }
@@ -212,47 +217,47 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "if": "{{row.total_shipping_amount > 0}}",
                                         "props": {
                                             "className": "text-xs text-gray-400 dark:text-gray-500"
                                         },
-                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.shipping_fee_short|amount={{row.total_shipping_amount_formatted}}",
-                                        "if": "{{row.total_shipping_amount > 0}}"
+                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.shipping_fee_short|amount={{row.total_shipping_amount_formatted}}"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "if": "{{row.total_paid_amount > 0}}",
                                         "props": {
                                             "className": "text-xs text-green-600 dark:text-green-400"
                                         },
-                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.paid_short|amount={{row.total_paid_amount_formatted}}",
-                                        "if": "{{row.total_paid_amount > 0}}"
+                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.paid_short|amount={{row.total_paid_amount_formatted}}"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "if": "{{row.total_unpaid_amount > 0}}",
                                         "props": {
                                             "className": "text-xs text-red-600 dark:text-red-400"
                                         },
-                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.unpaid_short|amount={{row.total_unpaid_amount_formatted}}",
-                                        "if": "{{row.total_unpaid_amount > 0}}"
+                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.unpaid_short|amount={{row.total_unpaid_amount_formatted}}"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "if": "{{row.total_points_used_amount > 0}}",
                                         "props": {
                                             "className": "text-xs text-purple-600 dark:text-purple-400"
                                         },
-                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.mileage_used_short|amount={{row.total_points_used_amount_formatted}}",
-                                        "if": "{{row.total_points_used_amount > 0}}"
+                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.mileage_used_short|amount={{row.total_points_used_amount_formatted}}"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "if": "{{row.total_earned_points_amount > 0 && row.order_status !== 'cancelled' && !row.is_partially_cancelled}}",
                                         "props": {
                                             "className": "text-xs text-blue-600 dark:text-blue-400"
                                         },
-                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.points_earned_short|amount={{row.total_earned_points_amount_formatted}}",
-                                        "if": "{{row.total_earned_points_amount > 0 && row.order_status !== 'cancelled' && !row.is_partially_cancelled}}"
+                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.column.points_earned_short|amount={{row.total_earned_points_amount_formatted}}"
                                     }
                                 ]
                             }
@@ -306,16 +311,92 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "if": "{{!row.address?.orderer_name && !row.user?.name}}",
                                 "props": {
                                     "className": "text-gray-500 dark:text-gray-400"
                                 },
-                                "text": "-",
-                                "if": "{{!row.address?.orderer_name && !row.user?.name}}"
+                                "text": "-"
                             },
                             {
                                 "type": "composite",
                                 "name": "ActionMenu",
                                 "if": "{{!!row.address?.orderer_name || !!row.user?.name}}",
+                                "actions": [
+                                    {
+                                        "comment": "주문자 메뉴 분기 — 회원이면 회원 화면을 새 창으로 열고, 회원·비회원 각각 그 주문자로 목록을 다시 거르는 검색을 건다",
+                                        "event": "onItemClick",
+                                        "handler": "switch",
+                                        "cases": {
+                                            "view_member": {
+                                                "handler": "openWindow",
+                                                "params": {
+                                                    "path": "/admin/users/{{row.user?.uuid}}"
+                                                }
+                                            },
+                                            "search_by_orderer_member": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "filter.ordererUuid": "{{row.user?.uuid}}",
+                                                            "filter.searchField": "all",
+                                                            "filter.searchKeyword": "",
+                                                            "ordererSearchResults": "{{[{ uuid: row.user?.uuid, name: row.user?.name || row.address?.orderer_name, email: row.user?.email || '' }]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "이 주문자의 주문만 보기 — 앞선 setState 가 검색어를 비우므로 URL 의 검색 조건도 함께 비운다. 비우지 않으면 화면 입력창은 빈 채로 이전 검색어가 계속 적용된다 (#75).",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/orders",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "order_datagrid__body",
+                                                            "query": {
+                                                                "orderer_uuid": "{{row.user?.uuid}}",
+                                                                "search_field": "",
+                                                                "search_keyword": "",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "search_by_orderer_guest": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "filter.searchField": "orderer_name",
+                                                            "filter.searchKeyword": "{{row.address?.orderer_name || row.user?.name}}",
+                                                            "filter.ordererUuid": ""
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "비회원 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/orders",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "order_datagrid__body",
+                                                            "query": {
+                                                                "search_field": "orderer_name",
+                                                                "search_keyword": "{{row.address?.orderer_name || row.user?.name}}",
+                                                                "orderer_uuid": "",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "position": "right",
                                     "items": [
@@ -382,9 +463,9 @@
                                                         "text": "{{row.address?.orderer_name || row.user?.name}}"
                                                     },
                                                     {
+                                                        "comment": "첫구매 표시",
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "comment": "첫구매 표시",
                                                         "if": "{{row.is_first_order}}",
                                                         "props": {
                                                             "className": "text-xs text-emerald-500 dark:text-emerald-400"
@@ -394,82 +475,6 @@
                                                 ]
                                             }
                                         ]
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "event": "onItemClick",
-                                        "handler": "switch",
-                                        "value": "{{$args[0]}}",
-                                        "cases": {
-                                            "view_member": {
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "/admin/users/{{row.user?.uuid}}"
-                                                }
-                                            },
-                                            "search_by_orderer_member": {
-                                                "handler": "sequence",
-                                                "actions": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "_local",
-                                                            "filter.ordererUuid": "{{row.user?.uuid}}",
-                                                            "filter.searchField": "all",
-                                                            "filter.searchKeyword": "",
-                                                            "ordererSearchResults": "{{[{ uuid: row.user?.uuid, name: row.user?.name || row.address?.orderer_name, email: row.user?.email || '' }]}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "comment": "이 주문자의 주문만 보기 — 앞선 setState 가 검색어를 비우므로 URL 의 검색 조건도 함께 비운다. 비우지 않으면 화면 입력창은 빈 채로 이전 검색어가 계속 적용된다 (#75).",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/orders",
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "orderer_uuid": "{{row.user?.uuid}}",
-                                                                "search_field": "",
-                                                                "search_keyword": "",
-                                                                "page": 1
-                                                            },
-                                                            "replace": true,
-                                                            "transition_overlay_target": "order_datagrid__body"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            "search_by_orderer_guest": {
-                                                "handler": "sequence",
-                                                "actions": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "_local",
-                                                            "filter.searchField": "orderer_name",
-                                                            "filter.searchKeyword": "{{row.address?.orderer_name || row.user?.name}}",
-                                                            "filter.ordererUuid": ""
-                                                        }
-                                                    },
-                                                    {
-                                                        "comment": "비회원 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/orders",
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "search_field": "orderer_name",
-                                                                "search_keyword": "{{row.address?.orderer_name || row.user?.name}}",
-                                                                "orderer_uuid": "",
-                                                                "page": 1
-                                                            },
-                                                            "replace": true,
-                                                            "transition_overlay_target": "order_datagrid__body"
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        }
                                     }
                                 ]
                             }
@@ -547,16 +552,16 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "if": "{{row.address?.recipient_country_code}}",
                                         "props": {
                                             "className": "fi fi-{{row.address?.recipient_country_code?.toLowerCase()}} flex-shrink-0"
-                                        },
-                                        "if": "{{row.address?.recipient_country_code}}"
+                                        }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
-                                        "text": "{{$localized(row.address?.recipient_country_name) ?? row.address?.recipient_country_code}}",
-                                        "if": "{{row.address?.recipient_country_code}}"
+                                        "if": "{{row.address?.recipient_country_code}}",
+                                        "text": "{{$localized(row.address?.recipient_country_name) ?? row.address?.recipient_country_code}}"
                                     }
                                 ]
                             }

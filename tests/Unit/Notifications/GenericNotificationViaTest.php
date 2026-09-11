@@ -4,6 +4,7 @@ namespace Tests\Unit\Notifications;
 
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Models\NotificationDefinition;
+use App\Models\NotificationLog;
 use App\Models\NotificationTemplate;
 use App\Models\User;
 use App\Notifications\GenericNotification;
@@ -71,6 +72,10 @@ class GenericNotificationViaTest extends TestCase
         $templateService->invalidateCache('test_via_check', 'database');
         $templateService->invalidateCache('nonexistent_type_xyz', 'mail');
 
+        // 이 테스트는 RefreshDatabase 를 쓰지 않으므로 남긴 행이 **커밋된 채로** 다음 테스트에
+        // 보인다. `via()` 는 채널을 거를 때 skip 로그를 남기므로 notification_logs 도 함께 지운다 —
+        // 안 지우면 절대 건수를 단언하는 다른 테스트(NotificationLogSeederTest)가 그 잔여를 세게 된다.
+        NotificationLog::whereIn('notification_type', ['test_via_check', 'nonexistent_type_xyz'])->delete();
         NotificationTemplate::where('definition_id', $this->definition->id)->delete();
         $this->definition->delete();
 

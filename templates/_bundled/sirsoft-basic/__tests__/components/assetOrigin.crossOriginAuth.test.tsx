@@ -85,7 +85,8 @@ describe('SortableThumbnailItem 의 공개 자산 URL 처리', () => {
     await waitFor(() => expect(apiGet).toHaveBeenCalledTimes(1));
     expect(apiGet).toHaveBeenCalledWith(
       '/api/modules/sirsoft-ecommerce/product-image/abc',
-      { responseType: 'blob' }
+      // 비밀글 첨부 열람 토큰은 같은 요청에 실린다(secretContentHeaders) — 토큰이 없으면 빈 객체다.
+      { responseType: 'blob', headers: {} }
     );
   });
 

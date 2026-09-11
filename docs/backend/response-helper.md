@@ -140,6 +140,13 @@ return ResponseHelper::success('messages.success', $data);
 
 ## 프론트엔드 바인딩
 
+```html
+<data-source id="admin_menu" endpoint="/api/admin/menus"/>
+<json key="components">[{"props":{"menu":"{{admin_menu.data}}"}}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -227,6 +234,14 @@ class AuthController extends AdminBaseController
 ## 인증 처리
 
 데이터 소스에서 `auth_required: true`로 설정된 경우:
+
+```html
+<partial name="doc_example">
+<json>{"version":"1.0.0","id":"current_user","type":"api","endpoint":"/api/admin/auth/user","auth_required":true,"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -366,6 +381,14 @@ public function index(Request $request): JsonResponse
 ## 라우트/쿼리 파라미터 처리
 
 데이터 소스에서 파라미터 바인딩:
+
+```html
+<json key="id">"product_detail"</json>
+<json key="endpoint">"/api/admin/products/{{route.id}}"</json>
+<json key="params">{"include":"{{query.include}}"}</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

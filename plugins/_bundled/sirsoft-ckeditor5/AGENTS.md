@@ -62,7 +62,7 @@
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-ckeditor5 --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-ckeditor5 --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -71,7 +71,7 @@
 
 <!-- @intent START -->
 **편집기 장착**: 어떤 화면이 `html_editor` 확장점을 열면 → 코어가
-`resources/extensions/html-editor.json` 을 그 자리에 치환 → 조각의 `scripts` 가 동봉된
+`resources/extensions/html-editor.g7.html` 을 그 자리에 치환 → 조각의 `scripts` 가 동봉된
 `ckeditor5.umd.js` 를 same-origin 으로 로드 → 컨테이너 `onMount` 에서
 `sirsoft-ckeditor5.initEditor` 핸들러가 실행되어 편집기를 붙이고
 `form.{name}_mode = 'html'` 을 세웁니다. 화면을 떠날 때 `destroyEditor` 가 인스턴스를
@@ -125,7 +125,7 @@
 레이아웃 미리보기는 자체 보존기간으로 지워지는 사본이라, 소스로 넣으면 "로그가 지워지는 순간
 이미지가 고아가 되는" 역전이 생깁니다. 코어가 그 넷을 명시적으로 제외한 이유입니다.
 
-레이아웃 확장 2개(`html-editor.json` · `html-content.json`)는 코어 확장점을 `replace` 로
+레이아웃 확장 2개(`html-editor.g7.html` · `html-content.g7.html`)는 코어 확장점을 `replace` 로
 차지합니다. 다른 편집기 플러그인이 같은 확장점을 노리면 어느 쪽이 이기는지가 설치 순서에
 좌우되므로, 편집기 플러그인은 하나만 활성화하는 것이 전제입니다.
 
@@ -142,7 +142,7 @@
 - [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 동봉 CKEditor 5 버전을 올렸다면 디렉토리명 · `resources/extensions/html-editor.json` 의 `scripts.src` · 소스 상수 · 테스트 단언을 **한 버전으로** 맞춘다 (하나만 어긋나면 그 자산이 404 인데 빌드·테스트는 통과한다)
+- [ ] 동봉 CKEditor 5 버전을 올렸다면 디렉토리명 · `resources/extensions/html-editor.g7.html` 의 `scripts.src` · 소스 상수 · 테스트 단언을 **한 버전으로** 맞춘다 (하나만 어긋나면 그 자산이 404 인데 빌드·테스트는 통과한다)
 - [ ] `dist/` 는 커밋되는 배포 산출물 — TS 를 고쳤으면 `--production` 재빌드 후 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 참조 소스 목록(코어 6종)을 바꿨다면 로그 사본 테이블이 섞이지 않았는지 확인
 - [ ] 정리 커맨드의 판정 로직을 고쳤다면 fail-open 가드(`hasPotentiallyMissingSources()`)가 여전히 앞에 있는지 확인 — 이 가드가 빠지면 이미지가 조용히 지워진다

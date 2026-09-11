@@ -146,7 +146,7 @@ class PostResource extends BaseApiResource
             'parent_id' => $this->parent_id,
 
             // 작성자 정보
-            'author' => $this->getAuthorInfo(includeIsGuest: true),
+            'author' => $this->getAuthorInfo($request, includeIsGuest: true),
 
             // 타임스탬프
             'created_at' => $this->formatCreatedAt($this->created_at),
@@ -183,7 +183,7 @@ class PostResource extends BaseApiResource
             'category' => $this->category,
 
             // 작성자 정보
-            'author' => $this->getAuthorInfo(includeIsGuest: true),
+            'author' => $this->getAuthorInfo($request, includeIsGuest: true),
 
             // 게시글 속성
             'is_notice' => (bool) $this->is_notice,
@@ -247,21 +247,26 @@ class PostResource extends BaseApiResource
      * - blocked: 기본 정보 + "차단" 상태
      * - withdrawn: 익명화 ("탈퇴한 사용자")
      *
+     * 이메일은 관리자 화면 응답과 본인 열람에만 싣는다 — 목록·상세·댓글은 인증 없이
+     * 열리므로, 이메일을 그대로 실으면 회원 주소록이 응답 본문으로 수집된다.
+     *
+     * @param  Request  $request  HTTP 요청
      * @param  bool  $includeIsGuest  is_guest 필드 포함 여부
      * @return array<string, mixed> 작성자 정보
      */
-    private function getAuthorInfo(bool $includeIsGuest = false): array
+    private function getAuthorInfo(Request $request, bool $includeIsGuest = false): array
     {
         $isGuest = $this->user_id === null;
 
         if ($this->user_id && $this->user) {
             $userStatus = UserStatus::tryFrom($this->user->status);
             $isWithdrawn = $userStatus === UserStatus::Withdrawn;
+            $canExposeEmail = $this->canExposeMemberEmail($request, $this->user_id);
 
             $author = [
                 'uuid' => $this->user->uuid,
                 'name' => $isWithdrawn ? __('user.withdrawn_user') : $this->user->name,
-                'email' => $isWithdrawn ? null : $this->user->email,
+                'email' => ($isWithdrawn || ! $canExposeEmail) ? null : $this->user->email,
                 'avatar' => $isWithdrawn ? null : $this->user->getAvatarUrl(),
                 'status' => $this->user->status,
                 'status_label' => $userStatus?->label() ?? $this->user->status,

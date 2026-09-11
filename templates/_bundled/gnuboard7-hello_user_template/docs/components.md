@@ -5,11 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 8개 (루트: `src/components`).
+컴포넌트 9개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 8개 |
+| `overrides` | 1개 |
 <!-- @generated:components END -->
 
 <!-- @intent START -->

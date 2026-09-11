@@ -157,7 +157,7 @@ class OrderResource extends BaseApiResource
             'user' => $this->whenLoaded('user', fn () => [
                 'uuid' => $this->user->uuid,
                 'name' => $this->user->name,
-                'email' => $this->user->email,
+                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ]),
             'user_id' => $this->user?->uuid,
             'user_login_id' => $this->user?->login_id,

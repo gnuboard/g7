@@ -1,0 +1,151 @@
+<!-- 주문 상세 (운영자) — 주문정보·결제정보·활동로그 세 구획을 한 페이지에 이어 붙이고 탭은 스크롤
+  위치를 따라간다. 배송지 수정·상태 일괄변경·취소/환불·안내 발송이 모두 여기서 일어나므로,
+  화면 상태(_local)는 `<init>` 한 곳에서 전 필드를 미리 깔아 두고 시작한다. -->
+<layout name="admin_ecommerce_order_detail" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.order.detail.title" description="$t:sirsoft-ecommerce.admin.order.detail.description"/>
+  <!-- 주문 본체. `blocking` 인 것은 아래 구획이 전부 이 응답 위에 서기 때문이고, 응답이 오면 배송지 입력값을 폼에 심는다(국내/해외 주소가 서로 다른 필드에 담겨 양쪽을 같이 받는다).
+       환불 계좌 세 필드는 주문 시 입력값을 취소 모달에 프리필해 두는 자리다(운영자가 고칠 수 있다) — cancelOrderHandlers 가 이 _local 키를 읽어 refund_bank 로 보낸다. -->
+  <data-source id="order" label_key="$t:sirsoft-ecommerce.editor.data_source.order" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <init-local>
+      <field name="order_number" value="{{data.order_number ?? ''}}"/>
+      <field name="form.recipient_name" value="{{data.recipient_name ?? ''}}"/>
+      <field name="form.recipient_phone" value="{{data.recipient_phone ?? ''}}"/>
+      <field name="form.recipient_tel" value="{{data.recipient_tel ?? ''}}"/>
+      <field name="form.recipient_zipcode" value="{{data.recipient_zipcode ?? ''}}"/>
+      <field name="form.recipient_address" value="{{data.recipient_address ?? ''}}"/>
+      <field name="form.recipient_detail_address" value="{{data.recipient_detail_address ?? ''}}"/>
+      <field name="form.recipient_country_code" value="{{data.shipping_address?.recipient_country_code ?? 'KR'}}"/>
+      <field name="form.address_line_1" value="{{data.shipping_address?.address_line_1 ?? ''}}"/>
+      <field name="form.address_line_2" value="{{data.shipping_address?.address_line_2 ?? ''}}"/>
+      <field name="form.intl_city" value="{{data.shipping_address?.intl_city ?? ''}}"/>
+      <field name="form.intl_state" value="{{data.shipping_address?.intl_state ?? ''}}"/>
+      <field name="form.intl_postal_code" value="{{data.shipping_address?.intl_postal_code ?? ''}}"/>
+      <field name="form.delivery_memo" value="{{data.delivery_memo ?? ''}}"/>
+      <field name="form.admin_memo" value="{{data.admin_memo ?? ''}}"/>
+      <field name="refundBankCode" value="{{data.payment?.refund_bank_code ?? ''}}"/>
+      <field name="refundBankAccount" value="{{data.payment?.refund_bank_account ?? ''}}"/>
+      <field name="refundBankHolder" value="{{data.payment?.refund_bank_holder ?? ''}}"/>
+    </init-local>
+  </data-source>
+  <!-- 환불 계좌 은행 목록 (order_settings.banks) — 취소 모달의 은행 Select 가 사용한다. 무통장 입금 계좌와 동일한 목록이다. -->
+  <data-source id="paymentSettings" label_key="$t:sirsoft-ecommerce.editor.data_source.paymentSettings" type="api" endpoint="/api/modules/sirsoft-ecommerce/settings/payment" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- 운송장 입력 시 고를 택배사 목록 — 사용 중인 것만 받는다 -->
+  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- 활동로그 구획 전용. 쪽수·정렬을 _local 에서 읽으므로 그 값이 바뀔 때마다 서버에서 다시 받아 온다(클라이언트 정렬이 아니다) -->
+  <data-source id="order_logs" label_key="$t:sirsoft-ecommerce.editor.data_source.order_logs" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/logs" method="GET" :auto_fetch="true" :auth_required="true">
+    <params per_page="{{_local.logsPerPage ?? 10}}" page="{{_local.logsPage ?? 1}}" sort_order="{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"/>
+  </data-source>
+  <!-- 취소/환불 창의 사유 선택지 — 운영자가 관리하는 사유 중 사용 중인 환불 사유만 받는다 -->
+  <data-source id="refundReasons" label_key="$t:sirsoft-ecommerce.editor.data_source.refundReasons" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claim-reasons/active" method="GET" :auto_fetch="true" :auth_required="true">
+    <params type="refund"/>
+  </data-source>
+  <init-local>
+    <field name="selectedProducts" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="batchOrderStatus" value=""/>
+    <field name="batchCarrierId" value=""/>
+    <field name="batchTrackingNumber" value=""/>
+    <field name="activeOrderTab" value="order_info"/>
+    <field name="expandedCashReceiptHistory" :value="[]"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>active_carriers</wait-for>
+    <wait-for>order_logs</wait-for>
+    <wait-for>refundReasons</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local" activeOrderTab="order_info" :selectedProducts="[]" :selectAll="false" batchOrderStatus="" batchCarrierId="" batchTrackingNumber="" :logsPage="1" :logsPerPage="10" logsSort="date_desc" :changeQuantities="[]" smsPhone="" smsMessage="" emailAddress="" emailMessage="" :isSending="false" :emailErrors="null" order_number="" :isSaving="false" :errors="null" :cancelItems="[]" cancelReason="" cancelReasonDetail="" :cancelPg="true" :refundEstimate="null" :refundLoading="false" :isCancelling="false" :cancelError="null">
+      <field name="form">
+        <field name="recipient_name" value=""/>
+        <field name="recipient_phone" value=""/>
+        <field name="recipient_tel" value=""/>
+        <field name="recipient_zipcode" value=""/>
+        <field name="recipient_address" value=""/>
+        <field name="recipient_detail_address" value=""/>
+        <field name="recipient_country_code" value="KR"/>
+        <field name="address_line_1" value=""/>
+        <field name="address_line_2" value=""/>
+        <field name="intl_city" value=""/>
+        <field name="intl_state" value=""/>
+        <field name="intl_postal_code" value=""/>
+        <field name="delivery_memo" value=""/>
+        <field name="admin_memo" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="order_detail_wrapper" class="admin-page-content">
+      <div data-ref="page_header_section" class="mb-6">
+        <div data-ref="page_header" class="page-header-padded">
+          <div>
+            <h1 class="page-title">$t:sirsoft-ecommerce.admin.order.detail.title</h1>
+            <div class="page-description flex-center gap-2 flex-wrap">
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_number:</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.order_number}}</span>
+              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_date:</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.ordered_at_formatted}}</span>
+              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.status:</span>
+              <badge variant="{{order.data.order_status_variant}}">{{order.data.order_status_label}}</badge>
+              <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그) -->
+              <badge data-if="{{order.data.is_partially_cancelled}}" variant="warning">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</badge>
+            </div>
+          </div>
+          <div class="page-actions">
+            <!-- 주문 목록으로. 보던 검색·상태 필터·페이지를 그대로 이고 간다 — 주문 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다 -->
+            <button data-ref="list_button" type="button" class="btn btn-outline">
+              <on type="click">
+                <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.common.list
+            </button>
+          </div>
+        </div>
+        <tab-navigation-scroll data-ref="tab_navigation" activeTabId="{{_local.activeOrderTab ?? 'order_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_">
+          <prop name="tabs">
+            <item id="order_info" label="$t:sirsoft-ecommerce.admin.order.detail.tabs.order_info"/>
+            <item id="payment_info" label="$t:sirsoft-ecommerce.admin.order.detail.tabs.payment_info"/>
+            <item id="activity_log" label="$t:sirsoft-ecommerce.admin.order.detail.tabs.activity_log"/>
+          </prop>
+          <on type="change">
+            <!-- 탭 표시만 옮긴다 — 세 구획은 이미 한 페이지에 다 실려 있고 스크롤 스파이가 반대 방향(스크롤 → 탭)을 맡는다 -->
+            <set-state target="local" activeOrderTab="{{$event.value}}"/>
+          </on>
+        </tab-navigation-scroll>
+      </div>
+      <div data-ref="tab_content_area" class="tab-content">
+        <include src="partials/admin_ecommerce_order_detail/_partial_order_info.g7.html"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_payment_info.g7.html"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_activity_log.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 선택한 주문상품들의 주문상태·운송장을 한꺼번에 바꾸기 전 확인 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.g7.html"/>
+  <!-- 주문자에게 SMS 안내 발송 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_send_sms.g7.html"/>
+  <!-- 주문자에게 메일 안내 발송 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_send_email.g7.html"/>
+  <!-- 취소/환불 — 취소할 옵션과 수량을 고르면 환불 예상액을 서버에서 다시 계산해 보여 준다 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_cancel_order.g7.html"/>
+  <!-- 현금영수증 발급 — 무통장·가상계좌 결제 건에 대해 운영자가 대신 발급한다 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.g7.html"/>
+  <!-- 비회원 주문 조회 비밀번호 재설정 — 주문자가 비밀번호를 잊었을 때 운영자가 열어 준다 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_reset_guest_password.g7.html"/>
+  <!-- 무통장 입금 확인 처리 — 입금 대기 주문을 결제 완료로 넘긴다 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_confirm_deposit.g7.html"/>
+</layout>

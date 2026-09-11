@@ -452,7 +452,7 @@ return [
         'extension_point_invalid' => 'extension_point 필드는 비어있지 않은 문자열이어야 합니다.',
         'target_layout_invalid' => 'target_layout 필드는 비어있지 않은 문자열이어야 합니다.',
         'components_must_be_array' => 'components 필드는 배열이어야 합니다.',
-        'injections_required' => 'overlay 확장은 injections 필드가 필요합니다.',
+        'contribution_required' => 'overlay 확장은 injections·modals·data_sources·scripts·init_actions 중 하나 이상이 필요합니다.',
         'injections_must_be_array' => 'injections 필드는 배열이어야 합니다.',
         'injection_must_be_array' => 'injections[:index]는 배열이어야 합니다.',
         'injection_target_id_required' => 'injections[:index]에 target_id 필드가 필요합니다.',

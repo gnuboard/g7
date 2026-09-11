@@ -21,8 +21,8 @@
 
 <!-- @intent START -->
 관리자 화면 4개뿐이고 **쿠키 배너·마이페이지 동의 탭은 이 표에 없습니다** — 그 둘은
-"레이아웃"이 아니라 "레이아웃 확장 조각"(`resources/extensions/cookie_banner.json`,
-`mypage_privacy_tab.json`, §extension-points.md)으로 다른 확장/템플릿 레이아웃에 주입되는
+"레이아웃"이 아니라 "레이아웃 확장 조각"(`resources/extensions/cookie_banner.g7.html`,
+`mypage_privacy_tab.g7.html`, §extension-points.md)으로 다른 확장/템플릿 레이아웃에 주입되는
 형태라 별도 수집 축에 잡힙니다. 방문자가 실제로 보는 UI를 찾으려면 이 표가 아니라
 확장점 문서를 봐야 합니다.
 <!-- @intent END -->
@@ -52,7 +52,7 @@ iframe·1st-party 저장소 게이팅)은 이 액션 핸들러가 아니라 `dis
 로그도 남지 않으므로 새 설정 키를 노출할 때는 `config/settings/defaults.json` 의
 `frontend_schema` 에 `expose: true` 를 반드시 함께 넣어야 합니다.
 
-판정 함수는 `resources/js/necessaryAllowlist.ts` 한 곳에 있고 인터셉터 둘과 정리기가 그것을
+판정 함수는 `plugins/_bundled/sirsoft-gdpr/resources/js/necessaryAllowlist.ts` 한 곳에 있고 인터셉터 둘과 정리기가 그것을
 공유합니다. 소비자마다 따로 해석하면 저장소 카드는 와일드카드가 되고 쿠키 카드는 정확 일치만
 되는 식으로 갈라집니다.
 <!-- @intent END -->

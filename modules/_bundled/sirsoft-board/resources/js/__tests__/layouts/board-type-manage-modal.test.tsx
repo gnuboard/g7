@@ -11,13 +11,16 @@
 import { describe, it, expect } from 'vitest';
 
 import modal from '../../../layouts/admin/partials/admin_board_form/_board_type_manage_modal.json';
+import { findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * JSON 트리에서 특정 ID를 가진 노드를 재귀적으로 찾습니다.
  */
 function findById(node: any, id: string): any | null {
   if (!node) return null;
-  if (node.id === id) return node;
+  // 반복(iteration) 안의 노드는 행마다 고유해야 하므로 id 에 index_var 접미가 붙는다
+  // (`bt_row` → `bt_row_{{btIdx}}`). 정적 id 는 row 마다 같은 HTML id 를 N 번 출력한다.
+  if (node.id === id || node.id === `${id}_{{btIdx}}`) return node;
 
   if (node.children && Array.isArray(node.children)) {
     for (const child of node.children) {
@@ -181,7 +184,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
 
     it('데이터 행에 iteration이 올바르게 설정되어 있다', () => {
-      const dataRow = findById(modal, 'bt_row');
+      const dataRow = findByIdPrefix(modal, 'bt_row');
       expect(dataRow).not.toBeNull();
       expect(dataRow.if).toBe('{{_global.boardTypesList && _global.boardTypesList.length > 0}}');
       expect(dataRow.iteration).toEqual({
@@ -192,27 +195,32 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
 
     it('데이터 행에 3개 셀이 있다 (slug, name, actions)', () => {
-      const dataRow = findById(modal, 'bt_row');
+      const dataRow = findByIdPrefix(modal, 'bt_row');
       expect(dataRow.children).toHaveLength(3);
     });
   });
 
   describe('테이블 행 데이터 바인딩', () => {
     it('slug 셀이 btItem.slug을 표시한다', () => {
-      const slugCell = findById(modal, 'bt_td_slug');
+      const slugCell = findByIdPrefix(modal, 'bt_td_slug');
       expect(slugCell.text).toBe('{{btItem.slug}}');
     });
 
     it('name 셀이 다국어 fallback 체인으로 표시한다', () => {
-      const nameCell = findById(modal, 'bt_td_name');
+      const nameCell = findByIdPrefix(modal, 'bt_td_name');
       expect(nameCell.text).toContain('btItem.name');
-      expect(nameCell.text).toContain('_global.locale');
+
+      // 엔진은 현재 로케일을 전역 변수 `$locale` 로만 노출한다. `_global.locale` 은 심는 곳이
+      // 없어 항상 undefined 이고, 그러면 뒤의 `?? 'ko'` 가 걸려 **모든 언어에서 한국어**가
+      // 나간다. 같은 폴더의 `board-locale-fallback.test.ts` 가 이미 요구하던 형태다.
+      expect(nameCell.text).toContain('$locale');
+      expect(nameCell.text).not.toContain('_global.locale');
     });
   });
 
   describe('액션 버튼', () => {
     it('수정 버튼이 전역 상태를 폼에 로드한다', () => {
-      const editBtn = findById(modal, 'bt_edit_btn');
+      const editBtn = findByIdPrefix(modal, 'bt_edit_btn');
       expect(editBtn).not.toBeNull();
 
       const editAction = editBtn.actions[0];
@@ -225,7 +233,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
 
     it('삭제 버튼이 sequence로 API 호출 후 목록 갱신한다', () => {
-      const deleteBtn = findById(modal, 'bt_delete_btn');
+      const deleteBtn = findByIdPrefix(modal, 'bt_delete_btn');
       expect(deleteBtn).not.toBeNull();
 
       const clickAction = deleteBtn.actions[0];
@@ -241,15 +249,21 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       expect(apiCall.target).toContain('/api/modules/sirsoft-board/admin/board-types/');
     });
 
-    it('삭제 API 호출에 confirm 확인 메시지가 설정되어 있다', () => {
-      const deleteBtn = findById(modal, 'bt_delete_btn');
-      const apiCall = deleteBtn.actions[0].actions[1];
-      expect(apiCall.confirm).toBe('$t:sirsoft-board.admin.board_types.delete_confirm');
+    it('삭제는 진입점 액션에 confirm 이 걸려 실제로 확인창을 띄운다', () => {
+      const deleteBtn = findByIdPrefix(modal, 'bt_delete_btn');
+      const entry = deleteBtn.actions[0];
+      const apiCall = entry.actions[1];
+
+      // `confirm` 은 진입점 액션에서만 읽힌다 — `handleSequence` 는 `executeAction` 을 부르는데
+      // 그 경로에 검사가 없어, 중첩된 apiCall 에 달면 **확인창 없이 즉시 삭제**된다(S16 F18).
+      // 예전 단언이 중첩 위치를 보고 있어서 이 결함이 green 인 채로 출하됐다.
+      expect(entry.confirm).toBe('$t:sirsoft-board.admin.board_types.delete_confirm');
+      expect(apiCall.confirm).toBeUndefined();
     });
 
     it('삭제 아이콘과 스피너가 조건부 렌더링된다', () => {
-      const deleteIcon = findById(modal, 'bt_delete_icon');
-      const deleteSpinner = findById(modal, 'bt_delete_spinner');
+      const deleteIcon = findByIdPrefix(modal, 'bt_delete_icon');
+      const deleteSpinner = findByIdPrefix(modal, 'bt_delete_spinner');
 
       expect(deleteIcon.if).toBe('{{_global.btDeletingId !== btItem.id}}');
       expect(deleteSpinner.if).toBe('{{_global.btDeletingId === btItem.id}}');
@@ -435,7 +449,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
 
     it('삭제 API 호출의 onError에서 btDeletingId를 null로 설정한다', () => {
-      const deleteBtn = findById(modal, 'bt_delete_btn');
+      const deleteBtn = findByIdPrefix(modal, 'bt_delete_btn');
       const seq = deleteBtn.actions[0];
       const apiCall = seq.actions.find((a: any) => a.handler === 'apiCall');
       expect(apiCall).not.toBeNull();
@@ -487,7 +501,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
 
     it('데이터 행에 다크 모드 호버 효과가 있다', () => {
-      const row = findById(modal, 'bt_row');
+      const row = findByIdPrefix(modal, 'bt_row');
       expect(row.props.className).toContain('dark:hover:bg-gray-700');
     });
 
@@ -499,7 +513,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
 
   describe('모달 UI/UX 개선', () => {
     it('수정 중인 행에 classMap으로 하이라이트 배경이 적용된다', () => {
-      const row = findById(modal, 'bt_row');
+      const row = findByIdPrefix(modal, 'bt_row');
       expect(row.classMap).toBeDefined();
       expect(row.classMap.key).toContain('btEditingItem');
       expect(row.classMap.variants.true).toContain('bg-blue-50');
@@ -606,7 +620,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
 
     it('수정 버튼 클릭 시 에러를 초기화한다', () => {
-      const editBtn = findById(modal, 'bt_edit_btn');
+      const editBtn = findByIdPrefix(modal, 'bt_edit_btn');
       const action = editBtn.actions[0];
       expect(action.params.btFormErrors).toBeNull();
     });

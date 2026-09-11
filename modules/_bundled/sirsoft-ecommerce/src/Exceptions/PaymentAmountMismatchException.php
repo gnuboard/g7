@@ -12,9 +12,9 @@ use Exception;
 class PaymentAmountMismatchException extends Exception
 {
     /**
-     * @param float $expectedAmount 프론트엔드 결제예정금액
-     * @param float $actualAmount 서버 재계산 금액
-     * @param array $context 추가 컨텍스트 정보 (주문번호, 사용자ID 등)
+     * @param  float  $expectedAmount  프론트엔드 결제예정금액
+     * @param  float  $actualAmount  서버 재계산 금액
+     * @param  array  $context  추가 컨텍스트 정보 (주문번호, 사용자ID 등)
      */
     public function __construct(
         private float $expectedAmount,

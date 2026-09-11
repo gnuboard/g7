@@ -17,7 +17,7 @@
   것이 아니라 연쇄를 이룹니다.
 
 **플러그인의 경계**도 구조로 드러납니다. 완전한 페이지 레이아웃을 등록할 수 없고, 설정 화면
-(`plugin_settings.json`)과 `layout_extensions`(다른 화면에 끼워 넣는 조각)만 허용됩니다. 이
+(`plugin_settings.g7.html`)과 `layout_extensions`(다른 화면에 끼워 넣는 조각)만 허용됩니다. 이
 샘플에는 설정 화면 하나가 있고 `layout_extensions` 는 없습니다.
 
 **의도적으로 하지 않는 것**: 모델·테이블·마이그레이션·API 라우트·권한·메뉴. 플러그인이 자기
@@ -39,7 +39,7 @@ plugin.php                       진입 클래스 — 설정 스키마 · 발행
             gnuboard7-hello_module.memo.title.filter 의 값을 가공해 반환
 
 config/settings/defaults.json    설정 기본값
-resources/layouts/admin/plugin_settings.json   설정 화면 (파일 이름이 계약)
+resources/layouts/admin/plugin_settings.g7.html   설정 화면 (파일 이름이 계약)
 src/routes/web.php               web 라우트 — 플러그인도 라우트를 가질 수 있음을 보이는 예시
 resources/lang/{ko,en}.json      프론트 다국어 (백엔드 PHP 다국어는 없음)
 ```
@@ -49,7 +49,7 @@ Controller → Service → Repository → Model 사슬이 필요 없습니다. �
 갖는 것들(결제·GDPR 등)은 그 사슬을 갖지만, 그것은 플러그인의 필수 구조가 아니라 그 도메인의
 필요입니다.
 
-`plugin_settings.json` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
+`plugin_settings.g7.html` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
 찾아 설정 화면을 그리므로, 이름을 바꾸면 설정 화면 자체가 사라집니다.
 <!-- @intent END -->
 

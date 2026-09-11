@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "templateId": "gnuboard7-hello_user_template",
-    "version": "0.1.0-beta.1",
+    "version": "0.2.0",
     "components": {
         "basic": [
             {
@@ -126,5 +126,43 @@
         ],
         "composite": [],
         "layout": []
-    }
+    },
+    "overrides": [
+        {
+            "target": "gnuboard7-hello_module",
+            "targetVersion": "^0.2",
+            "name": "MemoCard",
+            "exportName": "HelloModuleMemoCard",
+            "type": "composite",
+            "description": "Hello 모듈의 MemoCard 를 이 템플릿 서식으로 대체",
+            "path": "src/components/overrides/gnuboard7-hello_module/MemoCard.tsx",
+            "props": {
+                "title": {
+                    "type": "string",
+                    "required": false,
+                    "description": "메모 제목"
+                },
+                "body": {
+                    "type": "string",
+                    "required": false,
+                    "description": "메모 본문"
+                },
+                "highlighted": {
+                    "type": "boolean",
+                    "required": false,
+                    "description": "강조 표시 여부"
+                },
+                "accent": {
+                    "type": "string",
+                    "required": false,
+                    "description": "왼쪽 강조선 색 (이 템플릿 판본 전용 prop)"
+                },
+                "className": {
+                    "type": "string",
+                    "required": false,
+                    "description": "사용자 정의 클래스"
+                }
+            }
+        }
+    ]
 }

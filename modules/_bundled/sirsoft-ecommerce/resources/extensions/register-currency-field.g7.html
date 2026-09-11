@@ -1,0 +1,17 @@
+<!-- 회원가입 폼에 결제 통화 선택을 끼워 넣는 조각. 코어 가입 화면이 열어 둔 자리
+  (`register_extension_fields`)에 붙고, `name` 바인딩으로 가입 폼에 실려 그대로 가입 API 로 넘어간다
+  — 가입 후 따로 저장하는 단계가 없다.
+  초깃값은 지금 이 방문자가 보고 있던 통화를 이어받는다(`_global.preferredCurrency`). 헤더 셀렉터로
+  통화를 바꿔 둔 채 가입하면 그 선택이 계정에 그대로 남는다는 뜻이다.
+  고를 수 있는 통화는 기본 통화이거나 환율이 잡힌 것만이다 — 환율 0 인 통화를 고르면 금액이
+  0 으로 환산된다. -->
+<extension target-layout="auth/register" priority="330">
+  <inject target-id="register_extension_fields" position="append_child">
+    <!-- 가입폼 결제 통화 선택 (A4 / D-LOGIN-CUR — 이커머스 설치 시에만). 기본값=세션 통화(>locale 추정>기본통화). name 바인딩으로 registerForm 에 자동 포함 → /api/auth/register 제출. -->
+    <div data-ref="ext_register_currency" data-if="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies}}">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.auth.register_currency.label</label>
+      <select name="preferred_currency" value="{{_local?.registerForm?.preferred_currency ?? _global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-ecommerce.auth.register_currency.hint</p>
+    </div>
+  </inject>
+</extension>

@@ -341,7 +341,7 @@ class PluginSettingsServiceTest extends TestCase
     public function test_get_layout_returns_layout_for_daum_postcode_plugin(): void
     {
         // Daum 우편번호 플러그인이 설치되어 있는지 확인
-        $pluginPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/settings.json');
+        $pluginPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/admin/plugin_settings.json');
 
         if (! file_exists($pluginPath)) {
             $this->markTestSkipped('Daum postcode plugin layout file not found');

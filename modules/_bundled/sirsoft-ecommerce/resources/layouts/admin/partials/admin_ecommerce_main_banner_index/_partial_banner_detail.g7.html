@@ -1,0 +1,118 @@
+<partial description="Main Banner Detail View Partial">
+  <!-- 노출 조건은 이 조각의 루트가 들고 있다 — 부모의 partial 노드에 형제 키로 적으면 설치 시점에 조각 내용으로 통째 치환되며 함께 사라진다. -->
+  <div data-ref="banner_detail_section" data-if="{{_local.viewMode === 'detail' &amp;&amp; _local.selectedBannerId !== null}}" class="admin-card">
+    <div data-ref="detail_header" class="mb-6">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.main_banner.detail.title</h3>
+    </div>
+    <div data-ref="banner_preview_image" class="mb-6">
+      <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.preview</label>
+      <div class="relative rounded-lg overflow-hidden bg-gradient-to-r from-orange-400 to-red-400 aspect-[3/1]">
+        <div class="absolute inset-0 flex flex-col justify-center p-6">
+          <p class="text-white text-xl font-bold">Winter New Arrivals Up to 50% Off</p>
+          <p class="text-white/80 text-sm mt-1">Special benefits for a warm winter</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="language_tabs" class="mb-6">
+      <div class="flex-center gap-2 mb-4">
+        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
+        <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <on type="click">
+            <!-- 언어 탭 — 아래 항목이 아직 하드코딩이라 탭을 바꿔도 내용이 바뀌지 않는다(시안). 탭 자체는 앱 지원 로케일에서 만들어진다. -->
+            <set-state target="_local" activeLanguageTab="{{loc}}"/>
+          </on>
+          {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+        </button>
+      </div>
+      <div>
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.banner_title</label>
+          <p class="text-sm text-primary py-1">Winter New Arrivals Up to 50% Off</p>
+        </div>
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.banner_content</label>
+          <p class="text-sm text-primary py-1">Special benefits for a warm winter</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="style_settings" class="mb-6">
+      <h4 class="text-heading mb-4">$t:sirsoft-ecommerce.admin.main_banner.detail.field.style_settings</h4>
+      <div>
+        <div class="flex-center gap-4">
+          <span class="text-sm text-secondary w-12">$t:sirsoft-ecommerce.admin.main_banner.detail.field.title_style</span>
+          <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.main_banner.detail.field.show</span>
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.color</span>
+          <span class="w-6 h-6 rounded border border-gray-300 dark:border-gray-600 bg-black"/>
+          <span class="text-sm text-primary">#000000</span>
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position</span>
+          <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_center</span>
+        </div>
+        <div class="flex-center gap-4">
+          <span class="text-sm text-secondary w-12">$t:sirsoft-ecommerce.admin.main_banner.detail.field.content_style</span>
+          <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.main_banner.detail.field.hide</span>
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.color</span>
+          <span class="w-6 h-6 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"/>
+          <span class="text-sm text-primary">#ffffff</span>
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position</span>
+          <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_left</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="link_url_section" class="mb-6">
+      <h4 class="text-heading mb-2">$t:sirsoft-ecommerce.admin.main_banner.detail.field.link_url</h4>
+      <div class="flex-center gap-2">
+        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
+        <span class="text-sm text-blue-600 dark:text-blue-400">/promotion/winter-sale</span>
+      </div>
+    </div>
+    <div data-ref="exposure_period_section" class="mb-6">
+      <h4 class="text-heading mb-2">$t:sirsoft-ecommerce.admin.main_banner.detail.field.exposure_period</h4>
+      <div class="grid-2col">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.start_date</label>
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <span class="text-sm text-primary">2025-01-01</span>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.end_date</label>
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <span class="text-sm text-primary">2025-12-31</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="status_created_section" class="mb-6">
+      <div class="grid-2col">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.status</label>
+          <span class="badge badge-green">$t:sirsoft-ecommerce.admin.main_banner.detail.field.status_active</span>
+        </div>
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.created_at</label>
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <span class="text-sm text-primary">2025-01-01 10:00:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="detail_actions" class="flex-center gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <button type="button" class="btn btn-outline flex-1">
+        <on type="click">
+          <!-- 편집으로 전환 — 모드만 바꾼다. 편집 폼이 상세 값을 넘겨받는 자리가 아직 없어(둘 다 하드코딩) 배선 시 초깃값 주입이 여기 붙는다. -->
+          <set-state target="_local" viewMode="edit"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.main_banner.detail.actions.edit
+      </button>
+      <button type="button" class="btn btn-outline text-red-600 dark:text-red-400 flex-1">
+        <on type="click">
+          <open-modal target="modal_delete_confirm"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.main_banner.detail.actions.delete
+      </button>
+    </div>
+  </div>
+</partial>

@@ -44,14 +44,6 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
   },
   {
     "canonical": null,
-    "greedy": "_global.shopBase}}/checkout?items={{encodeURIComponent(JSON.stringify(_local.selectedItems))",
-    "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/partials/shop/_product_purchase_card.json :: children.5.children.1.actions.0.params.path",
-    ],
-    "value": "{{_global.shopBase}}/checkout?items={{encodeURIComponent(JSON.stringify(_local.selectedItems))}}",
-  },
-  {
-    "canonical": null,
     "greedy": "_global.shopBase}}/guest/orders/{{response.data.order.order_number",
     "sites": [
       "templates/_bundled/sirsoft-basic/layouts/shop/guest_order_form.json :: slots.content.1.children.0.children.0.children.2.actions.0.actions.1.onSuccess.2.params.path",
@@ -69,14 +61,6 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
   },
   {
     "canonical": null,
-    "greedy": "_global.shopBase}}/products/{{product.product_code ?? product.id",
-    "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/partials/search/products/_item_list.json :: actions.0.params.path",
-    ],
-    "value": "{{_global.shopBase}}/products/{{product.product_code ?? product.id}}",
-  },
-  {
-    "canonical": null,
     "greedy": "_global.shopBase}}/reorder/{{order.data.id ?? ''",
     "sites": [
       "templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.json :: slots.content.0.children.0.children.1.children.6.children.1.actions.0.params.path",
@@ -86,7 +70,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `517`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `513`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
@@ -217,9 +201,6 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_posts_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reports_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.json",
-      "modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_post_detail/_comment.json",
-      "modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_post_detail/_post_card_content.json",
-      "modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_post_detail/_reply_card_content.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_post_form/_attachments.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_reports_detail/_card_report_info.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_modal_notification_template_edit.json",
@@ -300,7 +281,6 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/wishlist/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_item.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_option_change.json",
-      "templates/_bundled/sirsoft-basic/layouts/partials/shop/_product_purchase_card.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_card.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_qna.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_reviews.json",

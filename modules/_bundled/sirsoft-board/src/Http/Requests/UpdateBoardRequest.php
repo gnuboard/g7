@@ -166,6 +166,7 @@ class UpdateBoardRequest extends FormRequest
             'use_reply' => ['sometimes', 'required', 'boolean'],
             'use_report' => ['sometimes', 'required', 'boolean'],
             'comment_order' => ['sometimes', 'required', 'in:ASC,DESC'],
+            // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['sometimes', 'nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
 
             // 제목 길이 제한
@@ -187,6 +188,7 @@ class UpdateBoardRequest extends FormRequest
             // 허용 확장자: 첨부 사용 게시판만 최소 1개 필수 (빈 값 저장 시 전 파일 거부되던 버그 방지).
             // 첨부 미사용 게시판은 exclude_if 로 검증 자체에서 배제한다 — 관리자 폼이 조회 응답
             // 전체를 그대로 PUT 하므로 요청에는 항상 이 키가 존재하고, sometimes 는 보호가 되지 않는다.
+            // (StoreBoardRequest 와 동일 규칙.)
             // exclude_if 는 배열 첫 번째여야 한다. 앞선 규칙이 먼저 실패하면 배제되어도 메시지가 남는다.
             'allowed_extensions' => ['exclude_if:use_file_upload,false', 'sometimes', 'required', 'array', 'min:1'],
             'allowed_extensions.*' => ['string', 'max:10'],

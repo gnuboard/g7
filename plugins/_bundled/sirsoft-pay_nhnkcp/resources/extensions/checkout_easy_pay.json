@@ -1,4 +1,5 @@
 {
+    "comment": "주문서에 NHN KCP 간편결제 버튼과 결제 실패 안내 창을 붙이는 조각",
     "target_layout": "shop/checkout",
     "data_sources": [
         {
@@ -7,11 +8,13 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/payments/client-config/nhnkcp",
             "method": "GET",
-            "auto_fetch": true
+            "auto_fetch": true,
+            "comment": "상점에 켜져 있는 간편결제 수단 목록 — 하나도 없으면 버튼 영역 자체가 뜨지 않는다"
         }
     ],
     "modals": [
         {
+            "comment": "결제 실패 안내 창 — PG 가 준 사유가 있으면 함께 보여 준다",
             "id": "nhnkcp_payment_error_modal",
             "type": "composite",
             "name": "Modal",
@@ -65,13 +68,9 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                            },
-                            "text": "$t:common.confirm",
                             "actions": [
                                 {
+                                    "comment": "확인 — 남아 있던 실패 사유를 지우고 창을 닫는다(지우지 않으면 다음에 열 때 옛 사유가 그대로 보인다)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -87,7 +86,12 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            },
+                            "text": "$t:common.confirm"
                         }
                     ]
                 }

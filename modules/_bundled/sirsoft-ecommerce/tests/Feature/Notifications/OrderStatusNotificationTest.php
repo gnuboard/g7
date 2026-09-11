@@ -2,12 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Notifications;
 
+use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Listeners\OrderStatusNotificationListener;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -29,6 +31,12 @@ class OrderStatusNotificationTest extends ModuleTestCase
         parent::setUp();
         $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
         $this->fired = [];
+
+        // 이 모듈의 훅 리스너를 명시 등록한다 — 모듈 리스너는 부트 시점에 붙는데, 프로세스의
+        // **첫 테스트**에서는 아직 붙기 전이라 `order.after_status_change` 가 발화해도 아무도
+        // `order.after_confirm` 으로 매핑하지 않는다. 그래서 클래스의 첫 케이스만 실패하고
+        // 뒤 케이스는 (정적 등록이 남아) 통과하는 순서 의존이 있었다.
+        HookListenerRegistrar::register(OrderStatusNotificationListener::class);
 
         foreach ([
             'sirsoft-ecommerce.order.after_confirm',

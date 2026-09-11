@@ -35,7 +35,7 @@ manifest 가 게시판·이커머스·페이지 모듈과 주소 검색 플러�
 routes.json  (경로 → 레이아웃. 상점 9개는 표현식 — 운영자 설정이 평가되어 들어온다)
      │
      ▼
-layouts/_user_base.json  (헤더 · 푸터 · 모바일 네비 · 토스트/모달 호스트 · 콘텐츠 슬롯)
+layouts/_user_base.g7.html  (헤더 · 푸터 · 모바일 네비 · 토스트/모달 호스트 · 콘텐츠 슬롯)
      │  extends
      ▼
 layouts/{auth,board,shop,mypage,page,search,users,errors}/*.json   화면 42
@@ -79,7 +79,7 @@ src/index.ts               initTemplate() — 핸들러 등록 · IDV launcher �
 | `editor-spec/` | 분할 편집기 스펙 | `php artisan template:update sirsoft-basic --force` |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update sirsoft-basic --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update sirsoft-basic --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

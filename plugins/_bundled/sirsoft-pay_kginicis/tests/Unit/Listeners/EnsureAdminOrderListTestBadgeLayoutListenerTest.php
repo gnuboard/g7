@@ -6,7 +6,19 @@ namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Listeners;
 
 use Plugins\Sirsoft\PayKginicis\Listeners\EnsureAdminOrderListTestBadgeLayoutListener;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
+use Tests\Unit\Support\LayoutMarkup\GateMembershipGuardTest;
 
+/**
+ * 주문 목록 테스트 배지 확장점 주입 리스너 테스트.
+ *
+ * 자매 리스너 테스트 넷은 30차에 `PluginTestCase` 로 전환됐는데 이 파일만 순수
+ * `PHPUnit\Framework\TestCase` 로 남아 있었다. 지금은 이 리스너가 코어 진입점을 쓰지 않아 error
+ * 가 나지 않지만, 쓰게 되는 순간 `config()` 부재로 30차와 같은 실패가 재발하는 자리다.
+ *
+ * **31차까지 드러나지 않은 이유**는 {@see GateMembershipGuardTest} 의 상주 모집단이 손으로 쓴
+ * 디렉토리 2줄이라, 게이트 필터 `EnsureAdminOrder` 에 걸려 실제로 도는 이 파일이 그 목록 밖에
+ * 있었기 때문이다. 모집단을 `phpunit.xml` 도출로 반전하자 즉시 검출됐다.
+ */
 class EnsureAdminOrderListTestBadgeLayoutListenerTest extends PluginTestCase
 {
     public function test_subscribes_to_layout_after_apply_as_filter(): void
@@ -23,6 +35,13 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends PluginTestCase
         );
     }
 
+    /**
+     * 주문 목록 레이아웃에 테스트모드 데이터소스와 배지를 주입한다 (대상 레이아웃 한정).
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects extension_badge_injection_is_idempotent_and_scoped
+     */
     public function test_ensures_kginicis_test_mode_data_source_and_badge_on_order_list(): void
     {
         $listener = new EnsureAdminOrderListTestBadgeLayoutListener;

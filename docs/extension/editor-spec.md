@@ -23,6 +23,14 @@
 - 서빙 엔드포인트: `/api/{templates|modules|plugins}/{id}/editor-spec`
 - 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 fetch 해 네임스페이스 병합한다.
 
+## 확장 컴포넌트의 팔레트 등재
+
+확장이 제공하는 컴포넌트도 `componentPalette.entries` / `componentCapabilities` 에 등재해야 편집기 팔레트에 나타난다. 그 등재는 **그 확장 자신의 editor-spec** 에 둔다 — 편집기 스펙은 이미 확장 것을 병합하므로(모듈 → 플러그인 → 템플릿) 그 경로를 그대로 쓴다. 팔레트에 쓰는 이름은 레지스트리 등록 이름 `{확장식별자}.{이름}` 이고, 확장 스펙이 담을 수 있는 이름은 **자기 식별자가 앞에 붙은 것뿐**이다(템플릿 컴포넌트의 어휘는 아래 「소유」 절대로 템플릿 몫이다). 첫 사례: `modules/_bundled/gnuboard7-hello_module/editor-spec.json`.
+
+prop 컨트롤은 확장 `components.json` 의 `props` 선언에서 나오고, 그 선언은 빌드가 컴포넌트 소스의 `{이름}Props` 인터페이스에서 추출한다 — 인터페이스를 선언하지 않으면 컨트롤이 생기지 않는다.
+
+규약 전문: **[extension-components.md](extension-components.md)**
+
 ## 파일 구조 — manifest + 분할 블록
 
 editor-spec.json 이 커지면(코어 admin 템플릿은 단일 파일 18,000줄을 넘었다) 상위 블록 단위로 분할한다. manifest 에 메타와 소형 설정을 인라인으로 두고, 대형 블록은 `$include` 맵으로 `editor-spec/{block}.json` 을 참조한다.
@@ -73,15 +81,20 @@ editor-spec.json 이 커지면(코어 admin 템플릿은 단일 파일 18,000줄
 
 | 선언할 것 | 자리 |
 |---|---|
-| `componentPalette` · `controls` · `componentCapabilities` · `nesting` | **템플릿** 스펙 |
+| `controls` · `nesting` | **템플릿** 스펙 |
+| `componentPalette` · `componentCapabilities` (템플릿 컴포넌트) | **템플릿** 스펙 |
+| `componentPalette` · `componentCapabilities` (확장 자신의 컴포넌트, 이름이 `{확장식별자}.{이름}`) | 그 컴포넌트를 만든 **모듈·플러그인** 스펙 |
 | `sampleData` · `sampleGlobal` · `states` · `*Recipes` | 그 데이터를 소유한 **모듈·플러그인** 스펙 |
 | 여러 확장이 함께 쓰는 공용 ID(`settings` · `roles` · `me` 등) | **템플릿** 스펙 |
 
 공용 ID 를 확장마다 각자 선언하면 같은 ID 의 샘플이 여러 곳에 생기고, 그것들이 갈라져도
 오류가 나지 않는다 — 어느 것이 쓰이는지가 병합 순서에 좌우된다.
 
-모듈·플러그인이 `componentPalette` 를 선언하면 템플릿 선언과 같은 자리를 두고 다투게
-되므로 두지 않는다. 팔레트에 얹고 싶은 것이 있다면 그것은 활성 템플릿의 스펙으로 간다.
+모듈·플러그인이 템플릿 컴포넌트의 `componentPalette` 를 선언하면 템플릿 선언과 같은 자리를
+두고 다투게 되므로 두지 않는다. 템플릿 컴포넌트를 팔레트에 얹고 싶다면 그것은 활성 템플릿의
+스펙으로 간다. 확장이 **직접 만든** 컴포넌트는 다르다 — 이름이 `{확장식별자}.{이름}` 이라
+템플릿 선언과 겹칠 수 없고, 그 팔레트 항목과 편집 역량은 그 확장만 알므로 확장 자신의 스펙에
+둔다(위 「확장 컴포넌트의 팔레트 등재」).
 
 ### 무엇을 빠뜨렸는지는 증상으로 가른다
 

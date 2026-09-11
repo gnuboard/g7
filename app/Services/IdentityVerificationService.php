@@ -177,7 +177,7 @@ class IdentityVerificationService
      * 반환 필드는 코드 본체·내부 metadata·시도 횟수를 제외한 공개 안전 필드만:
      * - id / status / provider_id / purpose / render_hint / expires_at / max_attempts / public_payload
      *
-     * max_attempts 는 정책 상수라 노출해도 무방하며, 프론트 풀페이지 (`auth/identity_challenge.json`) 가
+     * max_attempts 는 정책 상수라 노출해도 무방하며, 프론트 풀페이지 (`auth/identity_challenge.g7.html`) 가
      * 시도 한도 표시에 사용한다. 누적 시도 횟수(attempts)는 싣지 않는다 — 사유는 반환 지점 주석 참조.
      *
      * @param  string  $challengeId  Challenge UUID

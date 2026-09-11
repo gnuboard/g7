@@ -28,8 +28,8 @@ test('#509 보안검토 - 게스트로 동의 완료 후 미동의 계정으로 
     {
       name: 'gdpr_session',
       value: gdprGuestLoginSeed.guest_session_cookie_value,
+      // `url` 과 `path` 는 함께 줄 수 없다 — 둘 중 하나만 받는다. 경로는 url 에서 도출된다.
       url: page.url(),
-      path: '/',
     },
   ]);
 

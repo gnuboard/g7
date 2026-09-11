@@ -30,7 +30,7 @@
 어긋나면** 설정을 한 번도 저장하지 않은 사이트와 저장한 사이트의 동작이 달라지므로 함께
 고칩니다.
 
-설정 화면은 `resources/layouts/admin/plugin_settings.json` 이 그립니다 — 코어가 플러그인
+설정 화면은 `resources/layouts/admin/plugin_settings.g7.html` 이 그립니다 — 코어가 플러그인
 디렉토리의 이 고정 경로를 찾으므로 파일 이름을 바꾸면 설정 화면 자체가 사라집니다.
 <!-- @intent END -->
 
@@ -57,7 +57,7 @@ _등록하는 메뉴가 없습니다._
 등록하지 않습니다. 자체 관리 화면이 없기 때문입니다.
 
 설정은 코어의 플러그인 목록에서 이 플러그인의 설정으로 들어가는 공통 경로를 씁니다 — 코어가
-`resources/layouts/admin/plugin_settings.json` 을 찾아 그리므로 자체 메뉴가 필요 없습니다.
+`resources/layouts/admin/plugin_settings.g7.html` 을 찾아 그리므로 자체 메뉴가 필요 없습니다.
 <!-- @intent END -->
 
 ## 라우트

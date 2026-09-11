@@ -28,6 +28,12 @@
 
 ### 기본 사용법
 
+```html
+<div data-ref="warning_message" data-if="{{_local.showWarning}}" class="text-orange-500">경고 메시지입니다.</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "warning_message",
@@ -68,6 +74,12 @@
 
 `condition` 속성은 `if`와 동일하게 동작합니다. 컴포넌트 내부 children(예: DataGrid의 `cellChildren`, `footerCells`)에서 관례적으로 사용됩니다.
 
+```html
+<span data-if="{{row.discount_amount > 0}}">-{{row.discount_amount | number}}원</span>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -99,6 +111,12 @@
 
 **✅ 올바른 패턴 (if 속성 사용)**:
 
+```html
+<span data-ref="visible_text" data-if="{{_local.isVisible}}">보임</span>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "visible_text",
@@ -112,6 +130,16 @@
 ### 다중 조건 분기 (if-else 패턴)
 
 여러 조건에 따라 다른 컴포넌트를 표시해야 할 경우, 각 조건에 맞는 `if` 속성을 가진 개별 컴포넌트를 사용합니다:
+
+```html
+<div>
+  <span data-ref="status_active" data-if="{{_local.status === 'active'}}" class="text-green-500">활성</span>
+  <span data-ref="status_inactive" data-if="{{_local.status === 'inactive'}}" class="text-gray-500">비활성</span>
+  <span data-ref="status_pending" data-if="{{_local.status === 'pending'}}" class="text-yellow-500">대기</span>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -149,6 +177,14 @@
 ### iteration과 함께 사용
 
 조건부 렌더링과 반복 렌더링을 함께 사용할 수 있습니다:
+
+```html
+<div data-ref="product_list" data-if="{{products.data?.length > 0}}" data-each="product in products.data">
+  <span>{{product.name}}</span>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -195,6 +231,14 @@
 ```
 
 **✅ 올바른 패턴**: if를 children 내부로 이동
+
+```html
+<div data-each="itemType in {{types}}">
+  <div data-if="{{activeTab === itemType}}"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -264,6 +308,18 @@ type ConditionsProperty = ConditionExpression | ConditionBranch[];
 
 모든 조건이 true일 때만 컴포넌트가 렌더링됩니다.
 
+```html
+<div data-ref="author_info" class="author-info">
+  <all-of>
+    <expr>{{route.id}}</expr>
+    <expr>{{form_data?.data?.author}}</expr>
+  </all-of>
+  작성자: {{form_data.data.author.name}}
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "author_info",
@@ -281,6 +337,18 @@ type ConditionsProperty = ConditionExpression | ConditionBranch[];
 
 하나라도 true면 컴포넌트가 렌더링됩니다.
 
+```html
+<div data-ref="admin_section">
+  <any-of>
+    <expr>{{_global.user?.role === 'admin'}}</expr>
+    <expr>{{_global.user?.role === 'manager'}}</expr>
+  </any-of>
+  관리자 전용 영역
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "admin_section",
@@ -296,6 +364,21 @@ type ConditionsProperty = ConditionExpression | ConditionBranch[];
 ### 중첩 AND/OR 조건
 
 복잡한 조건 로직을 표현할 수 있습니다.
+
+```html
+<div data-ref="sales_dashboard">
+  <any-of>
+    <expr>{{_global.user?.isSuperAdmin}}</expr>
+    <all-of>
+      <expr>{{_global.user?.isAdmin}}</expr>
+      <expr>{{_global.user?.department === 'sales'}}</expr>
+    </all-of>
+  </any-of>
+  영업 대시보드
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -343,6 +426,12 @@ type ConditionsProperty = ConditionExpression | ConditionBranch[];
 
 `if`와 `conditions`가 동시에 있으면 **`if`가 우선**됩니다 (하위 호환).
 
+```html
+<json key="components">[{"id":"test","type":"basic","name":"Div","if":"{{ifCondition}}","conditions":"{{conditionsValue}}","text":"if가 우선됨"}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "test",
@@ -389,6 +478,14 @@ conditions 배열(브랜치)에서 else 브랜치(if 없음)는 컴포넌트 렌
 
 ### 구조
 
+```html
+<ul data-ref="error_list" data-each="item, idx in items.data">
+  <li>{{item.name}}</li>
+</ul>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "error_list",
@@ -420,6 +517,15 @@ conditions 배열(브랜치)에서 else 브랜치(if 없음)는 컴포넌트 렌
 ### 사용 패턴
 
 **✅ 패턴 1**: iteration이 있는 컴포넌트에 children 포함 (wrapper + children)
+
+```html
+<div data-each="item in items.data" class="flex items-center gap-2">
+  <icon name="check"/>
+  <span>{{item.name}}</span>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -454,6 +560,12 @@ conditions 배열(브랜치)에서 else 브랜치(if 없음)는 컴포넌트 렌
 
 **✅ 패턴 2**: iteration이 있는 컴포넌트에 text만 포함 (wrapper + text)
 
+```html
+<li data-each="error in _local.errors">{{error}}</li>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -476,6 +588,12 @@ conditions 배열(브랜치)에서 else 브랜치(if 없음)는 컴포넌트 렌
 ### source 표현식 지원
 
 `source`에는 단순 경로뿐 아니라 JavaScript 표현식도 사용 가능합니다:
+
+```html
+<div data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => messages)">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -510,6 +628,16 @@ iteration 내부 컴포넌트에서도 `_local` 상태에 접근할 수 있습�
 ```
 
 ### 실제 사용 예시: API 에러 메시지 표시
+
+```html
+<div data-ref="validation_error" data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).length > 0}}" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+  <ul data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => messages)" class="list-disc list-inside space-y-1">
+    <li class="text-sm text-red-700">{{message}}</li>
+  </ul>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -627,6 +755,25 @@ onSortEnd에서 setState로 소스 배열을 업데이트해야 정렬 결과가
 ```
 
 ### 기본 구조
+
+```html
+<div>
+  <sortable source="{{_local.form.items}}" item-var="$item" item-key="id" index-var="$index" strategy="verticalList" handle="[data-drag-handle]"/>
+  <item-template>
+    <div>
+      <div :data-drag-handle="true" class="cursor-grab">
+        <icon name="fa-grip-vertical"/>
+      </div>
+      <span textContent="{{$item.name}}"/>
+    </div>
+  </item-template>
+  <on event="onSortEnd">
+    <set-state target="local" form.items="{{$sortedItems}}"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

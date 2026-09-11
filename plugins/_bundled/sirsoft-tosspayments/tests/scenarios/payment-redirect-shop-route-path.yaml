@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 축이 서로 다른 계층에 격리 검증된다 — route_setting 은
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 축이 서로 다른 계층에 격리 검증된다 — route_setting 은
 #   해석기 단위 테스트(플러그인 4종 ShopRedirectUrlTest + 모듈 ShopPathResolverTest)가, stored_value 는
 #   업그레이드 백필 단위 테스트(플러그인 4종 BackfillShopBaseRedirectUrlsTest)가, redirect_kind 는 양쪽이
 #   성공·실패 키를 각각 단언한다. 한 메서드가 3축 조합을 동시에 재현하지 않으므로 cross product 18조합을

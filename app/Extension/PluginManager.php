@@ -17,7 +17,6 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Enums\PermissionType;
-use App\Exceptions\LayoutIncludeException;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
@@ -33,6 +32,7 @@ use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Testing\ExtensionTestAllowlist;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
@@ -2806,42 +2806,15 @@ class PluginManager implements PluginManagerInterface
      *
      * partial 파일(is_partial: true)은 제외합니다.
      *
+     * 집계는 모듈과 **같은 구현**을 쓴다 ({@see ValidatesLayoutFiles::countInstallableLayouts()}) —
+     * 종전에는 두 매니저가 각자 `.json` 만 훑는 사본을 갖고 있어 마크업 전용 확장이 0건으로 보였다.
+     *
      * @param  string  $pluginDirName  플러그인 디렉토리명 (vendor-plugin 형식)
      * @return int 레이아웃 파일 개수
      */
     protected function countPluginLayoutFiles(string $pluginDirName): int
     {
-        $layoutsPath = base_path("plugins/{$pluginDirName}/resources/layouts");
-
-        if (! File::exists($layoutsPath)) {
-            return 0;
-        }
-
-        $count = 0;
-        $layoutFiles = $this->scanLayoutFiles($layoutsPath);
-
-        foreach ($layoutFiles as $layoutFile) {
-            try {
-                $content = File::get($layoutFile);
-                $layoutData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    continue;
-                }
-
-                // is_partial이 true면 제외
-                if (isset($layoutData['meta']['is_partial']) && $layoutData['meta']['is_partial'] === true) {
-                    continue;
-                }
-
-                $count++;
-            } catch (\Exception $e) {
-                // 파일 읽기 실패 시 스킵
-                continue;
-            }
-        }
-
-        return $count;
+        return $this->countInstallableLayouts(base_path("plugins/{$pluginDirName}/resources/layouts"));
     }
 
     /**
@@ -3182,9 +3155,12 @@ class PluginManager implements PluginManagerInterface
      * 플러그인의 레이아웃을 활성화된 admin/user 템플릿에 등록합니다.
      *
      * 레이아웃 파일의 디렉토리 위치에 따라 대상 템플릿 타입이 결정됩니다:
-     * - layouts/admin/*.json → admin 타입 템플릿에 등록
-     * - layouts/user/*.json → user 타입 템플릿에 등록
-     * - layouts/*.json (루트) → 스킵 (경고 로그 출력)
+     * 소스 수집은 `ValidatesLayoutFiles::collectLayoutSources()` 가 담당한다 —
+     * 소스 SSoT `.g7.html` 우선, 짝 없는 `.json` 만 병존 등록.
+     *
+     * - layouts/admin/*.{g7.html,json} → admin 타입 템플릿에 등록
+     * - layouts/user/*.{g7.html,json} → user 타입 템플릿에 등록
+     * - layouts/*.{g7.html,json} (루트) → 스킵 (경고 로그 출력)
      *
      * @param  string  $pluginName  플러그인 디렉토리명 (vendor-plugin 형식)
      * @return int 등록된 레이아웃 개수
@@ -3284,38 +3260,26 @@ class PluginManager implements PluginManagerInterface
         return $registeredCount;
     }
 
-    /**
-     * 레이아웃 디렉토리에서 모든 JSON 파일을 재귀적으로 스캔합니다.
-     *
-     * @param  string  $basePath  스캔할 기본 경로
-     * @return array<string> 레이아웃 파일 경로 배열
-     */
-    protected function scanLayoutFiles(string $basePath): array
-    {
-        $files = [];
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($basePath, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::LEAVES_ONLY
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'json') {
-                $files[] = $file->getPathname();
-            }
-        }
-
-        return $files;
-    }
+    // `.json` 만 훑던 `scanLayoutFiles()` 는 지웠다 — 유일한 호출처였던 `countPluginLayoutFiles()`
+    // 가 설치 경로와 같은 소스 수집 규약(`ValidatesLayoutFiles::countInstallableLayouts()`)으로
+    // 옮겨가 호출처가 0 이 됐다. 소스를 보지 못하는 스캐너를 남겨 두면 다음 사람이 그것을 집어
+    // 쓰게 되고, 그 자리가 다시 `.json` 전용으로 굳는다(같은 이유로 `resolvePartial` 의 침묵
+    // 반환도 함께 지웠다). 재귀 스캔이 필요하면 `ValidatesLayoutFiles::scanLayoutFilesRecursively()`
+    // 를 쓴다 — 두 매니저가 공유하는 한 벌이다.
 
     /**
      * 파일 경로를 기반으로 레이아웃 이름을 생성합니다.
+     *
+     * 이 메서드는 `.json` 확장자만 제거하므로 **런타임 계약(`.json`) 경로 전용**입니다.
+     * 소스 SSoT(`.g7.html`)를 포함한 정본 경로는 {@see ValidatesLayoutFiles::generateLayoutNameFromPath()}
+     * 가 담당하며 두 확장자를 모두 제거합니다. 종전 독블록은 예시 입력을 `.g7.html` 로 적어
+     * 본문 동작과 정반대였고(그 입력을 넣으면 확장자가 남는다), 호출처가 없어 드러나지 않았습니다.
      *
      * 예시: plugins/sirsoft-payment/resources/layouts/admin/index.json
      *       -> sirsoft-payment_admin_index
      *
      * @param  string  $basePath  레이아웃 기본 경로
-     * @param  string  $filePath  레이아웃 파일 경로
+     * @param  string  $filePath  레이아웃 파일 경로 (`.json`)
      * @param  string  $identifier  플러그인 식별자
      * @return string 생성된 레이아웃 이름
      */
@@ -3377,308 +3341,38 @@ class PluginManager implements PluginManagerInterface
         $this->invalidateExtensionLayoutCache($pluginIdentifier, 'plugin');
     }
 
-    /**
-     * partial 순환 참조 방지를 위한 스택
-     */
-    private array $partialStack = [];
-
-    /**
-     * 레이아웃 데이터 내의 모든 partial을 재귀적으로 해석합니다.
-     *
-     * @param  array  $data  레이아웃 데이터
-     * @param  string  $basePath  기준 경로 (현재 레이아웃 파일의 디렉토리)
-     * @param  int  $depth  현재 partial 깊이
-     * @param  array  $dataSources  메인 레이아웃의 data_sources (partial 파일에서 참조 가능)
-     * @return array partial이 모두 해석된 데이터
-     *
-     * @throws LayoutIncludeException
-     */
-    protected function resolveAllPartials(array $data, string $basePath, int $depth = 0, array $dataSources = []): array
-    {
-        // 1. 깊이 제한 검증
-        $maxDepth = config('template.layout.max_inheritance_depth', 10);
-        if ($depth > $maxDepth) {
-            throw new LayoutIncludeException(
-                __('exceptions.layout.max_include_depth_exceeded', ['max' => $maxDepth]),
-                null,
-                $this->partialStack
-            );
-        }
-
-        // 2. partial 키가 있으면 처리 (배열 항목 치환)
-        if (isset($data['partial']) && is_string($data['partial'])) {
-            return $this->resolvePartial($data['partial'], $basePath, $depth, $dataSources);
-        }
-
-        // 3. 배열의 각 요소를 재귀적으로 처리
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $data[$key] = $this->resolveAllPartials($value, $basePath, $depth, $dataSources);
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * 단일 partial을 해석하여 실제 데이터를 반환합니다.
-     *
-     * @param  string  $partialPath  partial 경로
-     * @param  string  $basePath  기준 경로
-     * @param  int  $depth  현재 깊이
-     * @param  array  $dataSources  메인 레이아웃의 data_sources
-     * @return array 로드된 데이터
-     *
-     * @throws LayoutIncludeException
-     */
-    protected function resolvePartial(string $partialPath, string $basePath, int $depth, array $dataSources = []): array
-    {
-        try {
-            // 1. 상대 경로를 절대 경로로 변환
-            $absolutePath = $this->resolvePartialPath($partialPath, $basePath);
-        } catch (LayoutIncludeException $e) {
-            // 경로 해석 실패 시 로그만 남기고 에러 표시 컴포넌트 반환
-            Log::warning('플러그인 Partial 경로 해석 실패', [
-                'partial_path' => $partialPath,
-                'base_path' => $basePath,
-                'error' => $e->getMessage(),
-            ]);
-
-            return $this->createPartialErrorComponent($partialPath, $e->getMessage());
-        }
-
-        // 2. 순환 참조 감지
-        if (in_array($absolutePath, $this->partialStack, true)) {
-            $trace = implode(' → ', $this->partialStack)." → {$absolutePath}";
-            $errorMessage = __('exceptions.layout.circular_include', ['trace' => $trace]);
-
-            Log::warning('플러그인 Partial 순환 참조 감지', [
-                'partial_path' => $partialPath,
-                'trace' => $trace,
-            ]);
-
-            return $this->createPartialErrorComponent($partialPath, $errorMessage);
-        }
-
-        // 3. 파일 존재 여부 확인
-        if (! file_exists($absolutePath)) {
-            $errorMessage = __('exceptions.layout.include_file_not_found', [
-                'path' => $partialPath,
-                'resolved' => $absolutePath,
-            ]);
-
-            Log::warning('플러그인 Partial 파일을 찾을 수 없음', [
-                'partial_path' => $partialPath,
-                'resolved_path' => $absolutePath,
-            ]);
-
-            return $this->createPartialErrorComponent($partialPath, $errorMessage);
-        }
-
-        // 4. 스택에 추가
-        $this->partialStack[] = $absolutePath;
-
-        try {
-            // 5. JSON 파일 로드
-            $json = file_get_contents($absolutePath);
-            $data = json_decode($json, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $errorMessage = __('exceptions.layout.invalid_include_json', [
-                    'path' => $partialPath,
-                    'error' => json_last_error_msg(),
-                ]);
-
-                Log::warning('플러그인 Partial JSON 파싱 실패', [
-                    'partial_path' => $partialPath,
-                    'error' => json_last_error_msg(),
-                ]);
-
-                return $this->createPartialErrorComponent($partialPath, $errorMessage);
-            }
-
-            // 6. 로드된 데이터 내부의 partial도 재귀적으로 처리
-            $newBasePath = dirname($absolutePath);
-            $data = $this->resolveAllPartials($data, $newBasePath, $depth + 1, $dataSources);
-
-            return $data;
-        } finally {
-            array_pop($this->partialStack);
-        }
-    }
-
-    /**
-     * partial 경로를 절대 경로로 변환하고 보안 검증을 수행합니다.
-     *
-     * @param  string  $partialPath  partial 경로
-     * @param  string  $basePath  기준 경로
-     * @return string 절대 경로
-     *
-     * @throws LayoutIncludeException
-     */
-    protected function resolvePartialPath(string $partialPath, string $basePath): string
-    {
-        // 1. 상대 경로 정규화
-        $absolutePath = $basePath.DIRECTORY_SEPARATOR.$partialPath;
-
-        // realpath로 실제 경로 확인
-        $realPath = realpath($absolutePath);
-
-        // 2. realpath 실패 시 수동 정규화
-        if ($realPath === false) {
-            $realPath = $this->normalizePath($absolutePath);
-        }
-
-        // 3. 보안 검증: layouts 디렉토리 내부인지 확인
-        $layoutsDir = $this->getLayoutsDirectory($basePath);
-
-        // Windows/Linux 호환을 위해 경로 정규화
-        $realPathNormalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $realPath);
-        $layoutsDirNormalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $layoutsDir);
-
-        if (! str_starts_with($realPathNormalized, $layoutsDirNormalized)) {
-            throw new LayoutIncludeException(
-                __('exceptions.layout.include_outside_directory', [
-                    'path' => $partialPath,
-                    'allowed_dir' => $layoutsDir,
-                ]),
-                $partialPath,
-                $this->partialStack
-            );
-        }
-
-        return $realPath;
-    }
-
-    /**
-     * 경로를 정규화합니다 (.과 .. 처리).
-     *
-     * @param  string  $path  경로
-     * @return string 정규화된 경로
-     */
-    protected function normalizePath(string $path): string
-    {
-        $parts = [];
-        $segments = explode(DIRECTORY_SEPARATOR, $path);
-
-        foreach ($segments as $segment) {
-            if ($segment === '..' && count($parts) > 0) {
-                array_pop($parts);
-            } elseif ($segment !== '.' && $segment !== '') {
-                $parts[] = $segment;
-            }
-        }
-
-        return implode(DIRECTORY_SEPARATOR, $parts);
-    }
-
-    /**
-     * 허용된 layouts 디렉토리를 추출합니다.
-     *
-     * @param  string  $basePath  기준 경로
-     * @return string layouts 디렉토리 경로
-     */
-    protected function getLayoutsDirectory(string $basePath): string
-    {
-        // layouts 디렉토리 또는 그 하위 디렉토리까지만 허용
-        if (str_contains($basePath, 'plugins')) {
-            // plugins/{name}/resources/layouts
-            if (preg_match('#(.*plugins[\\\\/][^\\\\/]+[\\\\/]resources[\\\\/]layouts)#', $basePath, $matches)) {
-                return $matches[1];
-            }
-        } elseif (str_contains($basePath, 'templates')) {
-            // templates/{name}/layouts
-            if (preg_match('#(.*templates[\\\\/][^\\\\/]+[\\\\/]layouts)#', $basePath, $matches)) {
-                return $matches[1];
-            }
-        }
-
-        return $basePath;
-    }
-
-    /**
-     * Partial 파일 로드 실패 시 화면에 표시할 에러 컴포넌트를 생성합니다.
-     *
-     * @param  string  $partialPath  Partial 경로
-     * @param  string  $errorMessage  에러 메시지
-     * @return array 에러 표시용 컴포넌트 배열
-     */
-    protected function createPartialErrorComponent(string $partialPath, string $errorMessage): array
-    {
-        // 개발 환경에서만 에러 표시
-        if (! config('app.debug', false)) {
-            return []; // 프로덕션에서는 빈 배열 반환 (아무것도 렌더링 안 함)
-        }
-
-        return [
-            'type' => 'basic',
-            'name' => 'Div',
-            'props' => [
-                'className' => 'p-4 my-2 bg-red-50 dark:bg-red-900 border-red-300 dark:border-red-600 rounded-lg',
-            ],
-            'children' => [
-                [
-                    'type' => 'basic',
-                    'name' => 'Div',
-                    'props' => [
-                        'className' => 'flex items-center gap-2 mb-2',
-                    ],
-                    'children' => [
-                        [
-                            'type' => 'basic',
-                            'name' => 'Span',
-                            'props' => [
-                                'className' => 'text-xl',
-                            ],
-                            'text' => '⚠️',
-                        ],
-                        [
-                            'type' => 'basic',
-                            'name' => 'Span',
-                            'props' => [
-                                'className' => 'font-bold text-red-900 dark:text-red-100',
-                            ],
-                            'text' => 'Partial Error',
-                        ],
-                    ],
-                ],
-                [
-                    'type' => 'basic',
-                    'name' => 'P',
-                    'props' => [
-                        'className' => 'text-sm text-red-700 dark:text-red-300 mb-1',
-                    ],
-                    'text' => 'Path: '.$partialPath,
-                ],
-                [
-                    'type' => 'basic',
-                    'name' => 'P',
-                    'props' => [
-                        'className' => 'text-sm text-red-600 dark:text-red-400',
-                    ],
-                    'text' => 'Error: '.$errorMessage,
-                ],
-            ],
-        ];
-    }
+    // partial 해석기(resolveAllPartials·resolvePartial·resolvePartialPath 등)는 이 클래스에
+    // 한 벌 더 있었으나 지웠다 — `Traits\ValidatesLayoutFiles` 와 같은 일을 하는 복제본이었고,
+    // PHP 는 클래스 메서드가 트레이트를 이기므로 트레이트에만 들어간 개선(`partials/…` 를 layouts
+    // 루트 기준으로 폴백)이 플러그인 설치 경로에는 닿지 않았다. 규칙이 확장 유형에 따라 갈리던
+    // 상태라 한 벌로 합쳤다.
 
     /**
      * 플러그인의 레이아웃 확장을 등록합니다.
      *
-     * 플러그인의 resources/extensions 디렉토리에서 JSON 파일을 읽어
+     * 플러그인의 resources/extensions 디렉토리에서 fragment 소스를 읽어
      * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다.
+     *
+     * 소스 선택·읽기는 {@see CollectsFragmentSources::loadFragmentDefinitions()}
+     * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 소스(`.g7.html`)을
+     * 보지 않았고, 그래서 활성화 경로만 규약 밖에 남아 있었다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
      */
     protected function registerLayoutExtensions(PluginInterface $plugin): void
     {
         $extensionFiles = $plugin->getLayoutExtensions();
+        $identifier = $plugin->getIdentifier();
 
-        if (empty($extensionFiles)) {
+        $definitions = $this->loadFragmentDefinitions(
+            $plugin->getExtensionsPath(),
+            $extensionFiles,
+            ['plugin' => $identifier]
+        );
+
+        if (empty($definitions)) {
             return;
         }
-
-        $identifier = $plugin->getIdentifier();
 
         // 활성화된 모든 템플릿 조회 (admin + user)
         $allTemplates = $this->templateRepository->getActive();
@@ -3689,24 +3383,14 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
-        foreach ($extensionFiles as $extensionFile) {
+        foreach ($definitions as $definition) {
+            $extensionFile = $definition['path'];
+
             try {
-                $content = File::get($extensionFile);
-                $extensionData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error("레이아웃 확장 JSON 파싱 실패: {$extensionFile}", [
-                        'plugin' => $identifier,
-                        'error' => json_last_error_msg(),
-                    ]);
-
-                    continue;
-                }
-
                 // 모든 활성 템플릿에 확장 등록
                 foreach ($allTemplates as $template) {
                     $this->layoutExtensionService->registerExtension(
-                        $extensionData,
+                        $definition['data'],
                         LayoutSourceType::Plugin,
                         $identifier,
                         $template->id

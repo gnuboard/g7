@@ -1,41 +1,42 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Brand Detail Panel - View/Form Container"
-  },
-  "id": "detail_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card col-span-2-lg"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "row-stack"
-      },
-      "children": [
+    "comment": "브랜드 화면 오른쪽 패널의 껍데기. 스스로 그리는 것은 아무것도 선택되지 않았을 때의 빈 안내뿐이고,\n  실제 내용인 보기·편집 두 조각을 나란히 끼워 둔다.\n  **셋이 동시에 붙어 있고 각자 자기 조건으로 나타난다** — 여기서 갈라 넣는 것이 아니라 각 조각이\n  `_global.panelMode` 를 보고 스스로 숨는다. 그래서 이 파일에는 조건이 빈 안내 하나뿐이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Brand Detail Panel - View/Form Container"
+    },
+    "id": "detail_panel",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card col-span-2-lg"
+    },
+    "children": [
         {
-          "id": "empty_state_panel",
-          "type": "composite",
-          "name": "EmptyState",
-          "if": "{{!_global.selectedBrandId && _global.panelMode !== 'create' && _global.panelMode !== 'edit'}}",
-          "props": {
-            "icon": "tag",
-            "title": "$t:sirsoft-ecommerce.admin.brand.empty.title",
-            "description": "$t:sirsoft-ecommerce.admin.brand.empty.description",
-            "className": "py-16"
-          }
-        },
-        {
-          "partial": "_panel_view.json"
-        },
-        {
-          "partial": "_panel_form.json"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "id": "empty_state_panel",
+                    "type": "composite",
+                    "name": "EmptyState",
+                    "if": "{{!_global.selectedBrandId && _global.panelMode !== 'create' && _global.panelMode !== 'edit'}}",
+                    "props": {
+                        "icon": "tag",
+                        "title": "$t:sirsoft-ecommerce.admin.brand.empty.title",
+                        "description": "$t:sirsoft-ecommerce.admin.brand.empty.description",
+                        "className": "py-16"
+                    }
+                },
+                {
+                    "partial": "_panel_view.json"
+                },
+                {
+                    "partial": "_panel_form.json"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

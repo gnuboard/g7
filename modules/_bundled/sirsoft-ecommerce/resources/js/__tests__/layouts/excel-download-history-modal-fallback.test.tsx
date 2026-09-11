@@ -51,7 +51,8 @@ describe('_modal_download_history.json — selectedItem 표시 가드', () => {
      * @effects history_modal_display_guarded
      */
     it('부모 레이아웃이 selectedItem 을 null 로만 시드한다 (전제 확인)', () => {
-        const state = (excelDownloadIndex as any).state ?? {};
+        // 굽기(LayoutJsonWriter)는 로컬 시드를 `initLocal` 키로 낸다 — 구 표기 `state` 는 폴백으로만 둔다
+        const state = (excelDownloadIndex as any).initLocal ?? (excelDownloadIndex as any).state ?? {};
         expect(
             Object.prototype.hasOwnProperty.call(state, 'selectedItem'),
             'selectedItem 시드가 사라졌다면 이 테스트의 전제를 재검토할 것'

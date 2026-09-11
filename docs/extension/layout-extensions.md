@@ -100,7 +100,7 @@ modules/
 └── vendor-module/
     └── resources/
         └── extensions/           ← 확장 정의 디렉토리
-            └── *.json            ← 확장 JSON 파일
+            └── *.g7.html         ← 확장 소스 파일 (소스 SSoT · 문서 루트 <extension>)
 ```
 
 ### 플러그인
@@ -110,7 +110,7 @@ plugins/
 └── vendor-plugin/
     └── resources/
         └── extensions/
-            └── *.json
+            └── *.g7.html
 ```
 
 ### 템플릿 오버라이드
@@ -119,9 +119,13 @@ plugins/
 templates/
 └── vendor-template/
     └── extensions/
-        └── {module-identifier}/    ← 오버라이드 대상 모듈
-            └── *.json              ← 오버라이드 JSON
+        └── {module-identifier}/    ← 오버라이드 대상 확장
+            └── *.g7.html           ← 오버라이드 소스 파일 (문서 루트 <extension>)
 ```
+
+확장 주입 fragment 를 템플릿 판본으로 대체하는 것이므로 문서 루트는 원본과 같은 `<extension>` 입니다. `<override>` 는 **레이아웃** 대체(`layouts/overrides/`) 전용 루트입니다 ([layout-markup.md](../frontend/layout-markup.md) §문서 루트).
+
+세 등록 경로(모듈 · 플러그인 · 템플릿 오버라이드)는 모두 같은 소스 선택 규약을 씁니다 — `.g7.html` 소스가 있으면 등록 시점에 메모리로 컴파일하고, 짝 마크업이 없는 `.json` 만 직접 읽습니다(`CollectsFragmentSources`).
 
 ---
 
@@ -130,6 +134,14 @@ templates/
 기존 레이아웃의 특정 컴포넌트를 찾아 UI를 주입합니다.
 
 ### JSON 스키마
+
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append"/>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -203,6 +215,25 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 
 #### inject_props 예시: 탭에 항목 추가
 
+```html
+<extension target-layout="admin_user_detail" priority="100">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_verification" label="$t:admin.users.form.sections.verification_info" iconName="shield"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_verification_content" data-if="{{(_global.activeUserDetailTab || query.tab || 'basic') === 'ext_verification'}}"/>
+  </inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_detail",
@@ -247,6 +278,22 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 - `_append`와 `_merge` 등 여러 전략을 하나의 prop에 혼합 사용할 수 없습니다 (첫 번째 매칭 전략 우선)
 
 ### 예시: 사용자 폼에 알림 설정 추가
+
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append">
+    <div data-ref="section_notification_settings" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
+        <extension-badge type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+      </div>
+      <input type="checkbox" name="notify_post_complete" checked="{{_local.form?.notify_post_complete ?? false}}"/>
+    </div>
+  </inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -330,6 +377,25 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 ### 레이아웃에서 Extension Point 정의
 
+```html
+<layout name="admin_user_form" version="1.0.0">
+  <div data-ref="user_form_container">
+    <extension-point name="user_form_additional_fields">
+      <prop name="readOnlyFields">
+        <item>zipcode</item>
+        <item>address</item>
+      </prop>
+      <default/>
+      <callback name="onAddressSelect">
+        <set-state target="local" form.zipcode="{{$event.zipcode}}"/>
+      </callback>
+    </extension-point>
+  </div>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "layout_name": "admin_user_form",
@@ -381,6 +447,14 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 봇 화면의 노드 문법 지원 범위 전체는 [seo-system.md "SEO 렌더러 지원 노드 키"](../backend/seo-system.md)를, 정화 규칙은 같은 문서의 "봇 화면의 HTML 정화" 를 참조하세요.
 
 ### 모듈에서 Extension Point에 주입
+
+```html
+<extension extension-point="user_form_additional_fields" mode="replace" priority="100">
+  <div data-ref="custom_field_section"/>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -442,6 +516,14 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 **확장 쪽** — 자기 필드를 그 칸에 setState 한다.
 
+```html
+<on type="change">
+  <set-state target="local" checkoutExtraPayload.cash_receipt_requested="{{$event.target.checked}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "change",
@@ -464,7 +546,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 | 칸 이름 | 위치 | 소비처 |
 |---------|------|--------|
-| `_local.checkoutExtraPayload` | `sirsoft-basic` 주문서 (`_checkout_summary.json`) | 주문 생성 `POST /user/orders` |
+| `_local.checkoutExtraPayload` | `sirsoft-basic` 주문서 (`_checkout_summary.g7.html`) | 주문 생성 `POST /user/orders` |
 
 ---
 
@@ -475,19 +557,28 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ### 디렉토리 구조
 
 ```
-templates/_bundled/sirsoft-admin_basic/
+templates/_bundled/sirsoft-basic/
 └── extensions/
-    └── sirsoft-board/                    ← 오버라이드 대상 모듈
-        └── user-notification-settings.json   ← 오버라이드 파일
+    └── sirsoft-daum_postcode/            ← 오버라이드 대상 확장
+        └── user-address-search.g7.html   ← 오버라이드 파일 (소스 SSoT)
 ```
 
-### 오버라이드 파일명 규칙
+### 오버라이드 매칭 규칙
 
-모듈의 원본 확장 파일명과 **동일한 이름**을 사용합니다.
+오버라이드는 **파일명으로 짝지어지지 않습니다**. `registerTemplateOverride()` 가 쓰는 키는 다음 두 가지입니다.
+
+| 키 | 출처 |
+| --- | --- |
+| `override_target` | 상위 **디렉토리명** (= 대상 확장 식별자) |
+| `target_name` | 파일 내용의 `extension_point` 또는 `target_layout` |
+
+파일명은 가독성 관례일 뿐이라 원본과 달라도 됩니다. 소스 SSoT 는 `.g7.html`, 문서 루트는 원본과 같은 `<extension>` 입니다.
 
 ```
-모듈 원본:    modules/_bundled/sirsoft-board/resources/extensions/user-notification-settings.json
-템플릿 오버라이드: templates/_bundled/sirsoft-admin_basic/extensions/sirsoft-board/user-notification-settings.json
+확장 원본:      plugins/_bundled/sirsoft-daum_postcode/resources/extensions/ecommerce-address-search.g7.html
+                (extension_point: address_search_slot, priority 100)
+템플릿 오버라이드: templates/_bundled/sirsoft-basic/extensions/sirsoft-daum_postcode/user-address-search.g7.html
+                (같은 extension_point, priority 50 — 파일명은 다름)
 ```
 
 ### 오버라이드 우선순위
@@ -501,6 +592,16 @@ templates/_bundled/sirsoft-admin_basic/
 ### 오버라이드 예시
 
 모듈의 기본 확장을 템플릿에서 스타일 변경:
+
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append">
+    <div data-ref="section_notification_settings" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-6 mb-6"/>
+  </inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -532,7 +633,7 @@ templates/_bundled/sirsoft-admin_basic/
 
 ### 활성화 시
 
-1. `resources/extensions/*.json` 파일 스캔
+1. `resources/extensions/` 스캔 — `.g7.html` 소스 우선(등록 시점 메모리 컴파일), 짝 마크업이 없는 `.json` 은 직접 읽음
 2. **대상 템플릿 적용 가능 여부 판별** (아래 "템플릿 대상 판정" 참조)
 3. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원)
 4. 레이아웃 캐시 무효화
@@ -574,6 +675,14 @@ sirsoft-board를 오버라이드하는 템플릿 확장도 숨김
 - 낮을수록 먼저 렌더링
 - 같은 위치에 여러 확장이 있을 경우 순서 결정
 
+```html
+<extension target-layout="admin_user_form" priority="50">
+  <inject target-id="target_node" position="append_child">…</inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_form",
@@ -596,6 +705,14 @@ sirsoft-board를 오버라이드하는 템플릿 확장도 숨김
 ## 데이터 소스 병합
 
 확장에서 정의한 `data_sources`는 호스트 레이아웃의 데이터 소스에 병합됩니다.
+
+```html
+<extension target-layout="admin_user_form">
+  <data-source id="notification_settings" type="api" method="GET" endpoint="/api/modules/sirsoft-board/admin/users/{{route.id}}/notification-settings" :auto_fetch="true" :auth_required="true"/>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -628,6 +745,16 @@ Extension Point의 children으로 주입된 인라인 Modal(`show` prop 기반)�
 
 ### Extension JSON에서 modals 정의
 
+```html
+<extension extension-point="shop_checkout_extensions" priority="100">
+  <modal>
+    <modal data-ref="payment_error_modal" title="$t:plugin.payment_error_title" size="small"/>
+  </modal>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "extension_point": "shop_checkout_extensions",
@@ -657,6 +784,14 @@ G7Core?.modal?.open?.('payment_error_modal');
 ```
 
 또는 레이아웃 JSON 액션에서:
+
+```html
+<on type="click">
+  <open-modal target="payment_error_modal"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -698,6 +833,16 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 
 ### 예시: Overlay에서 computed와 state 추가
 
+```html
+<extension target-layout="admin_user_detail" priority="100">
+  <modal>
+    <modal data-ref="ext_verification_modal" title="인증 이력"/>
+  </modal>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_detail",
@@ -705,7 +850,7 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
   "computed": {
     "verificationStatus": "{{user?.data?.identity_verified ? 'verified' : 'pending'}}"
   },
-  "state": {
+  "initLocal": {
     "showVerificationHistory": false
   },
   "modals": [
@@ -734,7 +879,8 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 | 구분 | 레이아웃 오버라이드 | 확장 오버라이드 |
 |------|-------------------|---------------|
 | 대상 | 모듈이 등록한 완전한 레이아웃 | 확장 지점/Overlay로 주입된 UI |
-| 위치 | `templates/{t}/layouts/overrides/{module}/*.json` | `templates/{t}/extensions/{module}/*.json` |
+| 위치 | `templates/{t}/layouts/overrides/{module}/*.g7.html` | `templates/{t}/extensions/{module}/*.g7.html` |
+| 문서 루트 | `<override>` | `<extension>` |
 | DB 테이블 | `template_layouts` | `template_layout_extensions` |
 | 해석 서비스 | `LayoutResolverService` | `LayoutExtensionService` |
 | version_constraint | 지원 | 지원 |
@@ -863,8 +1009,8 @@ php artisan cache:clear
 
 **확인 사항**:
 1. 템플릿 오버라이드 파일 경로 확인
-   - `templates/{template}/extensions/{module-identifier}/{filename}.json`
-2. 파일명이 원본과 동일한지 확인
+   - `templates/{template}/extensions/{module-identifier}/{filename}.{g7.html,json}`
+2. 디렉토리명이 대상 확장 식별자와 일치하는지, 내용의 `extension_point`/`target_layout` 이 원본과 같은지 확인
 3. `template_layout_extensions` 테이블에서 `source_type = 'template'` 레코드 확인
 
 ### 모듈 비활성화 후에도 확장 표시됨

@@ -1,0 +1,25 @@
+<!-- 주문 상세의 클레임 이력 구역 — 환불·반품·교환 세 목록을 담는 껍데기.
+  **아직 시안이다** — 이 파일에는 데이터 바인딩도 액션도 하나 없다. 위쪽 탭 버튼은 `active` 클래스가
+  글자로 박혀 있어 눌러도 바뀌지 않고, 세 조각이 탭으로 갈리는 대신 **세로로 모두 이어 붙어** 있다.
+  배선할 때 탭 상태를 지역 키 하나로 두고 세 구역에 조건을 걸면 지금 구조 그대로 동작한다. -->
+<partial description="Order Detail - Claim History Section">
+  <div data-ref="tab_content_claim_history" class="admin-card mt-6">
+    <h2 data-ref="claim_history_header" class="card-section-title">$t:sirsoft-ecommerce.admin.order.detail.claim_history.title</h2>
+    <div data-ref="claim_tab_navigation" class="tabs w-full mb-6">
+      <button data-ref="tab_refund" type="button" class="tab active flex-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.refund</button>
+      <button data-ref="tab_return" type="button" class="tab flex-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.return</button>
+      <button data-ref="tab_exchange" type="button" class="tab flex-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.exchange</button>
+    </div>
+    <div data-ref="claim_sections_wrapper">
+      <div data-ref="refund_section">
+        <include src="_tab_claim_refund.g7.html"/>
+      </div>
+      <div data-ref="return_section" class="border-t border-gray-200 dark:border-gray-700">
+        <include src="_tab_claim_return.g7.html"/>
+      </div>
+      <div data-ref="exchange_section" class="border-t border-gray-200 dark:border-gray-700">
+        <include src="_tab_claim_exchange.g7.html"/>
+      </div>
+    </div>
+  </div>
+</partial>

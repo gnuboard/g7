@@ -25,7 +25,7 @@ description: |
       판정 후 플래그 전달. 권한 판정은 컨트롤러, Service 는 플래그만 수신(게시판 PostController 패턴).
     - PublicPageResource::withPreview — is_preview 노출. (첨부 URL 컨텍스트 분기는 별건
       page-attachment-serving.yaml 에서 공개 hash 라우트로 단일화되어 제거됨.)
-    - page/show.json(sirsoft-basic) — is_preview=true 일 때 "미발행 페이지 미리보기 중" 배너 노출.
+    - page/show.g7.html(sirsoft-basic) — is_preview=true 일 때 "미발행 페이지 미리보기 중" 배너 노출.
 
   안전:
     - SEO 캐시 오염 없음: 봇(게스트)은 미발행에 여전히 404 → 미리보기 콘텐츠가 봇 캐시에 안 들어감.

@@ -1274,7 +1274,7 @@ export async function initEditorHandler(
     // ActionHandler 시그니처: (action: ActionDefinition, context: ActionContext)
     // action.params에 실제 파라미터가 있음 (ActionDispatcher에서 resolveParams 후 전달)
     const params: InitEditorParams = (action.params as InitEditorParams) ?? {};
-    // 컨테이너 ID: html-editor.json의 props.id와 동일한 패턴으로 계산
+    // 컨테이너 ID: html-editor.g7.html의 props.id와 동일한 패턴으로 계산
     // 동일 페이지에 에디터가 여러 개 있을 때 충돌 방지
     const editorName = (params.name as string) ?? 'content';
     const containerId = `ckeditor5-${editorName}`;

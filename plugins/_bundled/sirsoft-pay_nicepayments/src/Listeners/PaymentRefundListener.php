@@ -14,6 +14,7 @@ use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 class PaymentRefundListener implements HookListenerInterface
 {
     private const PG_PROVIDER_ID = 'nicepayments';
+
     private const MONEY_EPSILON = 0.0001;
 
     /**

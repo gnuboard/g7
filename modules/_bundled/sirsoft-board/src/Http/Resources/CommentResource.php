@@ -45,7 +45,7 @@ class CommentResource extends BaseApiResource
             'content' => $this->getFilteredContent($request, $slug),
 
             // 작성자 정보
-            'author' => $this->getAuthorInfo(),
+            'author' => $this->getAuthorInfo($request),
 
             // 댓글 속성
             'is_secret' => $this->is_secret,
@@ -127,18 +127,23 @@ class CommentResource extends BaseApiResource
      * - blocked: 기본 정보 + "차단" 상태
      * - withdrawn: 익명화 ("탈퇴한 사용자")
      *
+     * 이메일은 관리자 화면 응답과 본인 열람에만 싣는다 — 댓글 목록은 인증 없이 열리므로,
+     * 이메일을 그대로 실으면 회원 주소록이 응답 본문으로 수집된다.
+     *
+     * @param  Request  $request  HTTP 요청
      * @return array<string, mixed> 작성자 정보
      */
-    private function getAuthorInfo(): array
+    private function getAuthorInfo(Request $request): array
     {
         if ($this->user_id && $this->user) {
             $userStatus = UserStatus::tryFrom($this->user->status);
             $isWithdrawn = $userStatus === UserStatus::Withdrawn;
+            $canExposeEmail = $this->canExposeMemberEmail($request, $this->user_id);
 
             return [
                 'uuid' => $this->user?->uuid,
                 'name' => $isWithdrawn ? __('user.withdrawn_user') : $this->user->name,
-                'email' => $isWithdrawn ? null : $this->user->email,
+                'email' => ($isWithdrawn || ! $canExposeEmail) ? null : $this->user->email,
                 'avatar' => $isWithdrawn ? null : $this->user->getAvatarUrl(),
                 'status' => $this->user->status,
                 'status_label' => $userStatus?->label() ?? $this->user->status,

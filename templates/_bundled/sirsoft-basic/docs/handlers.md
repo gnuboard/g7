@@ -172,6 +172,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 테마 값은 액션 **top-level `target`** 으로 넘깁니다. 핸들러는 `params` 를 읽지 않으므로
 `params.theme` 으로 넘기면 콘솔 경고 한 줄만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 
+```html
+<on type="click">
+  <action handler="setTheme" target="dark"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -188,6 +196,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 앱 시작 시 `init_actions`에서 호출합니다. `target` 은 선택이며, 유효한 테마 값이면 그 값을,
 없거나 유효하지 않으면 localStorage 저장값(없으면 `auto`)을 적용합니다.
+
+```html
+<init>
+  <action handler="initTheme"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -209,6 +225,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 장바구니 아이템 선택/해제를 토글합니다.
 
+```html
+<on type="click">
+  <action handler="toggleCartItemSelection" itemId="{{item.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "toggleCartItemSelection",
@@ -222,6 +246,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 모든 장바구니 아이템을 선택/해제합니다.
 
+```html
+<on type="click">
+  <action handler="selectAllCartItems" :selected="true"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "selectAllCartItems",
@@ -234,6 +266,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### setCartOption
 
 장바구니 아이템의 옵션을 변경합니다.
+
+```html
+<on type="click">
+  <action handler="setCartOption" itemId="{{item.id}}" optionId="{{selectedOption.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -249,6 +289,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 장바구니 삭제 확인 모달을 엽니다.
 
+```html
+<on type="click">
+  <action handler="openCartDeleteModal" itemId="{{item.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "openCartDeleteModal",
@@ -262,6 +310,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 장바구니 옵션 변경 모달을 엽니다.
 
+```html
+<on type="click">
+  <action handler="openCartOptionModal" itemId="{{item.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "openCartOptionModal",
@@ -274,6 +330,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### recalculateCart
 
 장바구니 합계를 재계산합니다.
+
+```html
+<on type="click">
+  <action handler="recalculateCart"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -304,6 +368,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 선택한 옵션 값들로 매칭되는 상품 옵션을 찾습니다.
 
+```html
+<on type="click">
+  <action handler="findMatchingOption" options="{{_local.options}}" selection="{{_local.optionSelection}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "findMatchingOption",
@@ -317,6 +389,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### initCartOptionSelection
 
 옵션 변경 모달 초기화 시 현재 선택된 옵션을 설정합니다.
+
+```html
+<on type="click">
+  <action handler="initCartOptionSelection" currentOption="{{item.option}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -339,6 +419,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 모든 옵션 그룹 선택 완료 시 선택 아이템 목록에 자동 추가합니다.
 
+```html
+<on type="click">
+  <action handler="sirsoft-basic.addSelectedItemIfComplete" newGroupName="{{groupName}}" newValue="{{selectedValue}}" optionGroups="{{product?.data?.option_groups}}" options="{{product?.data?.options}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "sirsoft-basic.addSelectedItemIfComplete",
@@ -354,6 +442,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### updateSelectedItemQuantity (sirsoft-basic.updateSelectedItemQuantity)
 
 선택된 아이템의 수량을 변경합니다.
+
+```html
+<on type="click">
+  <action handler="sirsoft-basic.updateSelectedItemQuantity" optionId="{{option.id}}" quantity="{{newQuantity}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -374,6 +470,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 **소스**: `src/handlers/getDisplayPrice.ts`
 
 사용자 선호 통화에 맞는 가격을 반환합니다.
+
+```html
+<on type="click">
+  <action handler="sirsoft-basic.getDisplayPrice" product="{{product.data}}" priceField="selling_price"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -396,6 +500,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 **소스**: `src/handlers/formatCurrency.ts`
 
 숫자 값을 통화 형식 문자열로 변환합니다.
+
+```html
+<on type="click">
+  <action handler="sirsoft-basic.formatCurrency" :value="10000" currencyCode="KRW"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -426,6 +538,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferredCurrency`)에 설정합니다.
 
+```html
+<init>
+  <action handler="sirsoft-basic.loadPreferredCurrency" defaultCurrency="KRW"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -440,6 +560,14 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 #### savePreferredCurrency (sirsoft-basic.savePreferredCurrency)
 
 선호 통화를 localStorage에 저장합니다.
+
+```html
+<on type="click">
+  <action handler="sirsoft-basic.savePreferredCurrency" currencyCode="{{selectedCurrency}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -462,6 +590,14 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 
 장바구니 키를 초기화합니다. localStorage에 있으면 로드, 없으면 API를 통해 발급합니다.
 
+```html
+<init>
+  <action handler="initCartKey"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -471,6 +607,20 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 ```
 
 #### getCartKey / clearCartKey / regenerateCartKey
+
+```html
+<on type="click">
+  <action handler="getCartKey"/>
+</on>
+<on type="click">
+  <action handler="clearCartKey"/>
+</on>
+<on type="click">
+  <action handler="regenerateCartKey"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 { "handler": "getCartKey" }
@@ -482,6 +632,14 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 
 범용 localStorage 저장/로드 핸들러입니다.
 
+```html
+<on type="click">
+  <action handler="saveToStorage" key="g7_some_setting" value="{{_local.settingValue}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "saveToStorage",
@@ -491,6 +649,14 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
   }
 }
 ```
+
+```html
+<on type="click">
+  <action handler="loadFromStorage" key="g7_some_setting" stateKey="savedSetting"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

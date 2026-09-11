@@ -1,91 +1,181 @@
 {
-  "meta": { "is_partial": true, "description": "전체 탭 - 상품 섹션 (최대 5개 + 전체보기)" },
-  "type": "basic",
-  "name": "Div",
-  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" },
-  "children": [
-    {
-      "comment": "섹션 헤더",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50" },
-      "children": [
+    "comment": "상품 결과 묶음(전체 탭) — 다섯 건까지만 보이고 나머지는 상품 탭으로 넘긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "전체 탭 - 상품 섹션 (최대 5개 + 전체보기)"
+    },
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center gap-2" },
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "shopping-bag", "size": "sm", "className": "text-gray-500 dark:text-gray-400" } },
-            { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "$t:search.tabs.products" },
-            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-blue-600 dark:text-blue-400" }, "text": "{{(searchResults?.data?.products_count ?? 0) | number}}" }
-          ]
+            "comment": "섹션 헤더",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "shopping-bag",
+                                "size": "sm",
+                                "className": "text-gray-500 dark:text-gray-400"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "font-medium text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:search.tabs.products"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-blue-600 dark:text-blue-400"
+                            },
+                            "text": "{{(searchResults?.data?.products_count ?? 0) | number}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "전체보기 버튼",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{(searchResults?.data?.products_count ?? 0) > 0}}",
+                    "actions": [
+                        {
+                            "comment": "같은 검색어 안에서 해당 탭 전체 목록으로 넘어가는 이동이라 mergeQuery 로 q 를 승계한다. 탭이 바뀌면 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/search",
+                                "mergeQuery": true,
+                                "query": {
+                                    "type": "products",
+                                    "board_slug": "",
+                                    "page": "",
+                                    "cursor": ""
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:search.view_all"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "chevron-right",
+                                "size": "sm"
+                            }
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "comment": "전체보기 버튼",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{(searchResults?.data?.products_count ?? 0) > 0}}",
-          "props": { "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" },
-          "children": [
-            { "type": "basic", "name": "Span", "text": "$t:search.view_all" },
-            { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "size": "sm" } }
-          ],
-          "actions": [
-            {
-              "comment": "같은 검색어 안에서 해당 탭 전체 목록으로 넘어가는 이동이라 mergeQuery 로 q 를 승계한다. 탭이 바뀌면 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
-              "type": "click",
-              "handler": "navigate",
-              "params": { "path": "/search", "mergeQuery": true, "query": { "type": "products", "board_slug": "", "page": "", "cursor": "" } }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "상품 그리드 (전체 탭: 최대 5개)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{searchResults?.data?.products?.length > 0}}",
-      "props": { "className": "p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "iteration": { "source": "{{searchResults?.data?.products ?? []}}", "item_var": "product" },
-          "children": [
-            { "partial": "partials/search/products/_item_card.json" }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "결과 없음 안내 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(!searchResults?.data?.products || searchResults?.data?.products?.length === 0) && !(searchResults?.data?.categories_failed?.products ?? false)}}",
-      "props": { "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400" },
-      "children": [
-        { "type": "basic", "name": "Span", "text": "$t:search.empty.products_in_all" }
-      ]
-    },
-    {
-      "comment": "검색 실패 안내",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{searchResults?.data?.categories_failed?.products ?? false}}",
-      "props": { "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center justify-center gap-2" },
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "sm", "className": "text-red-500 dark:text-red-400" } },
-            { "type": "basic", "name": "Span", "text": "$t:search.failed.title" }
-          ]
+            "comment": "상품 그리드 (전체 탭: 최대 5개)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{searchResults?.data?.products?.length > 0}}",
+            "props": {
+                "className": "p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{searchResults?.data?.products ?? []}}",
+                        "item_var": "product"
+                    },
+                    "children": [
+                        {
+                            "partial": "partials/search/products/_item_card.json"
+                        }
+                    ]
+                }
+            ]
         },
-        { "type": "basic", "name": "P", "props": { "className": "mt-1 text-xs text-gray-400 dark:text-gray-500" }, "text": "$t:search.failed.suggestion" }
-      ]
-    }
-  ]
+        {
+            "comment": "결과 없음 안내 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(!searchResults?.data?.products || searchResults?.data?.products?.length === 0) && !(searchResults?.data?.categories_failed?.products ?? false)}}",
+            "props": {
+                "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:search.empty.products_in_all"
+                }
+            ]
+        },
+        {
+            "comment": "검색 실패 안내",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{searchResults?.data?.categories_failed?.products ?? false}}",
+            "props": {
+                "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center justify-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "size": "sm",
+                                "className": "text-red-500 dark:text-red-400"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:search.failed.title"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "mt-1 text-xs text-gray-400 dark:text-gray-500"
+                    },
+                    "text": "$t:search.failed.suggestion"
+                }
+            ]
+        }
+    ]
 }

@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file bulkConfirmModalBinding.test.tsx
  * @description A27 — 일괄변경 전체선택 SSoT (구조 검증)
@@ -13,6 +14,7 @@ import productList from '../../../layouts/admin/admin_ecommerce_product_list.jso
 import bulkConfirmModal from '../../../layouts/admin/partials/admin_ecommerce_product_list/_modal_bulk_confirm.json';
 import bulkPriceModal from '../../../layouts/admin/partials/admin_ecommerce_product_list/_modal_bulk_price.json';
 import bulkStockModal from '../../../layouts/admin/partials/admin_ecommerce_product_list/_modal_bulk_stock.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const flat = (obj: unknown) => JSON.stringify(obj);
 
@@ -43,11 +45,11 @@ describe('A27 — 일괄변경 전체선택 SSoT', () => {
         const seq = findNode(productList, (n) =>
             n.handler === 'sequence' &&
             Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.handler === 'sirsoft-ecommerce.buildConfirmData'),
+            actionsOf(n).some((a: any) => a.handler === 'sirsoft-ecommerce.buildConfirmData'),
         );
         expect(seq).toBeTruthy();
 
-        const handlers = seq.actions.map((a: any) => a.handler);
+        const handlers = actionsOf(seq).map((a: any) => a.handler);
         const setStateIdx = handlers.indexOf('setState');
         const buildIdx = handlers.indexOf('sirsoft-ecommerce.buildConfirmData');
         const openIdx = handlers.indexOf('openModal');
@@ -57,7 +59,7 @@ describe('A27 — 일괄변경 전체선택 SSoT', () => {
         expect(buildIdx).toBeLessThan(openIdx);
 
         // setState 가 _local.selected* → _global.bulkSelected* 복사
-        const setStateAction = seq.actions[setStateIdx];
+        const setStateAction = actionsOf(seq)[setStateIdx];
         expect(setStateAction.params.target).toBe('global');
         expect(setStateAction.params.bulkSelectedItems).toBe('{{_local.selectedItems}}');
         expect(setStateAction.params.bulkSelectedOptionIds).toBe('{{_local.selectedOptionIds}}');
@@ -77,10 +79,10 @@ describe('A27 — 일괄변경 전체선택 SSoT', () => {
         const seq = findNode(productList, (n) =>
             n.handler === 'sequence' &&
             Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.handler === 'sirsoft-ecommerce.buildConfirmData'),
+            actionsOf(n).some((a: any) => a.handler === 'sirsoft-ecommerce.buildConfirmData'),
         );
         expect(seq).toBeTruthy();
-        const setStateAction = seq.actions.find((a: any) => a.handler === 'setState');
+        const setStateAction = actionsOf(seq).find((a: any) => a.handler === 'setState');
         expect(setStateAction).toBeTruthy();
 
         // bulkPriceCondition / bulkStockCondition 는 sequence setState 에서 제거되어야 한다

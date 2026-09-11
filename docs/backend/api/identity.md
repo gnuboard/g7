@@ -16,6 +16,25 @@
 
 ---
 
+## 공개 본인인증 엔드포인트의 요청 제한
+
+`/api/identity/*` 의 공개 엔드포인트는 분당 요청 횟수를 제한하며, **엔드포인트마다 자기 횟수만 셉니다**.
+
+| 엔드포인트 | 상한 (분당) | 비고 |
+| --- | --- | --- |
+| `POST /api/identity/challenges` (요청) | 30 | 회원가입 흐름의 재전송·같은 NAT 아래 다수 게스트를 막지 않도록 확인보다 넉넉히 둔다 |
+| `POST /api/identity/challenges/{challenge}/verify` (확인) | 10 | 인증번호 대입 방어 |
+| `POST /api/identity/challenges/{challenge}/cancel` (취소) | 30 | |
+| `GET /api/identity/challenges/{challenge}` (상태 조회) | 30 | 비동기 제공자 폴링 |
+| `POST /api/identity/callback/{providerId}` (콜백) | 30 | |
+
+비로그인 요청의 제한 키는 라우트별 접두사 + IP 이고, 로그인 요청은 접두사 + 회원 식별자입니다. 접두사가 없으면
+Laravel 의 기본 키가 경로와 무관하게 `sha1(domain|ip)` 하나로 만들어져 다른 공개 API(`/api/user/*` 등)의 호출과
+횟수를 공유하고, 화면 로드 몇 번 뒤 확인 요청이 429 로 막힙니다(7.1.0 에서 분리). 상한을 넘기면 `429` 와
+`X-RateLimit-Limit` 헤더로 응답합니다.
+
+---
+
 
 ### GET /api/admin/identity/logs
 <!-- @generated:start:api.admin.identity.logs.index -->

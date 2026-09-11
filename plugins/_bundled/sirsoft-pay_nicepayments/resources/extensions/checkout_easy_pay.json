@@ -1,4 +1,5 @@
 {
+    "comment": "주문서에 나이스페이먼츠 간편결제 버튼을 붙이는 조각 — 버튼마다 수단 코드만 다르고 흐름은 같다",
     "target_layout": "shop/checkout",
     "data_sources": [
         {
@@ -7,7 +8,8 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/payments/client-config/nicepayments",
             "method": "GET",
-            "auto_fetch": true
+            "auto_fetch": true,
+            "comment": "상점에 켜져 있는 간편결제 수단 목록 — 하나도 없으면 버튼 영역 자체가 뜨지 않는다"
         }
     ],
     "injections": [
@@ -20,9 +22,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).length > 0}}",
-                    "props": {
-                        "className": "mt-4 pt-4"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
@@ -30,19 +29,22 @@
                             }
                         }
                     },
+                    "props": {
+                        "className": "mt-4 pt-4"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
-                            "props": {
-                                "className": "text-body font-medium mb-3"
-                            },
                             "responsive": {
                                 "portable": {
                                     "props": {
                                         "className": "text-body font-medium mb-2"
                                     }
                                 }
+                            },
+                            "props": {
+                                "className": "text-body font-medium mb-3"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.easy_pay.section_title"
                         },
@@ -58,11 +60,6 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).includes('NAVERPAY')}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-green-500 text-white hover:opacity-90"
-                                    },
-                                    "text": "네이버페이",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -71,18 +68,18 @@
                                                 "paymentMethod": "nicepay_naverpay"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-green-500 text-white hover:opacity-90"
+                                    },
+                                    "text": "네이버페이"
                                 },
                                 {
                                     "comment": "카카오페이",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).includes('KAKAOPAY')}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-yellow-400 text-gray-900 hover:opacity-90"
-                                    },
-                                    "text": "카카오페이",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -91,18 +88,18 @@
                                                 "paymentMethod": "nicepay_kakaopay"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-yellow-400 text-gray-900 hover:opacity-90"
+                                    },
+                                    "text": "카카오페이"
                                 },
                                 {
                                     "comment": "삼성페이",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).includes('SAMSUNGPAY')}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-blue-700 text-white hover:opacity-90"
-                                    },
-                                    "text": "삼성페이",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -111,18 +108,18 @@
                                                 "paymentMethod": "nicepay_samsungpay"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-blue-700 text-white hover:opacity-90"
+                                    },
+                                    "text": "삼성페이"
                                 },
                                 {
                                     "comment": "애플페이",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).includes('APPLEPAY')}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-gray-900 dark:bg-gray-950 text-white hover:opacity-90"
-                                    },
-                                    "text": "애플페이",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -131,18 +128,18 @@
                                                 "paymentMethod": "nicepay_applepay"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-gray-900 dark:bg-gray-950 text-white hover:opacity-90"
+                                    },
+                                    "text": "애플페이"
                                 },
                                 {
                                     "comment": "PAYCO",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).includes('PAYCO')}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-red-500 text-white hover:opacity-90"
-                                    },
-                                    "text": "PAYCO",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -151,18 +148,18 @@
                                                 "paymentMethod": "nicepay_payco"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-red-500 text-white hover:opacity-90"
+                                    },
+                                    "text": "PAYCO"
                                 },
                                 {
                                     "comment": "11pay (SKpay)",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).includes('SKPAY')}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-orange-500 text-white hover:opacity-90"
-                                    },
-                                    "text": "11pay",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -171,18 +168,18 @@
                                                 "paymentMethod": "nicepay_skpay"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-orange-500 text-white hover:opacity-90"
+                                    },
+                                    "text": "11pay"
                                 },
                                 {
                                     "comment": "SSG페이",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).includes('SSGPAY')}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-red-600 text-white hover:opacity-90"
-                                    },
-                                    "text": "SSG페이",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -191,18 +188,18 @@
                                                 "paymentMethod": "nicepay_ssgpay"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-red-600 text-white hover:opacity-90"
+                                    },
+                                    "text": "SSG페이"
                                 },
                                 {
                                     "comment": "L.pay",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(nicepay_easy_pay_config.data?.enabled_easy_pays ?? []).includes('LPAY')}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-pink-700 text-white hover:opacity-90"
-                                    },
-                                    "text": "L.pay",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -211,7 +208,12 @@
                                                 "paymentMethod": "nicepay_lpay"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 rounded-lg text-sm font-bold bg-pink-700 text-white hover:opacity-90"
+                                    },
+                                    "text": "L.pay"
                                 }
                             ]
                         }

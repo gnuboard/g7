@@ -27,9 +27,9 @@
  * 본 spec 은 다음 사전 작업 완료 후 활성화한다 (data-testid 보강):
  *   1. 마일리지 내역 레이아웃 page_header 에 data-testid="mileage-transactions-page"
  *   2. table_header 카운트 Span 에 data-testid="mileage-transactions-total-count"
- *   3. _transactions_table.json DataGrid 래퍼에 data-testid="mileage-transactions-grid"
+ *   3. _transactions_table.g7.html DataGrid 래퍼에 data-testid="mileage-transactions-grid"
  *   4. 수동 지급/차감 버튼(manual_action_button)에 data-testid="mileage-manual-button"
- *   5. _filters.json 검색 input/버튼에 data-testid="mileage-search-keyword" / "mileage-search-submit"
+ *   5. _filters.g7.html 검색 input/버튼에 data-testid="mileage-search-keyword" / "mileage-search-submit"
  *   6. test.describe.skip → test.describe 변경
  *
  * 매트릭스(시나리오 매니페스트 admin-mileage-transaction-index.yaml 와 1:1):

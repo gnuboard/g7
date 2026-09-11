@@ -36,7 +36,7 @@
 다른 확장들의 훅 등록에 의존하므로 사이트마다 정확도가 다를 수 있고, 잘못 지운 이미지는
 되돌릴 수 없습니다.
 
-설정 화면은 `resources/layouts/admin/plugin_settings.json` 이 그립니다 — 코어가 플러그인
+설정 화면은 `resources/layouts/admin/plugin_settings.g7.html` 이 그립니다 — 코어가 플러그인
 디렉토리의 이 고정 경로를 찾으므로 파일 이름을 바꾸면 설정 화면 자체가 사라집니다.
 <!-- @intent END -->
 
@@ -73,7 +73,7 @@
 갑니다.
 
 설정 화면은 이 메뉴에 없습니다 — 코어의 플러그인 목록에서 이 플러그인의 설정으로 들어가는
-공통 경로를 씁니다. 플러그인 설정은 코어가 `resources/layouts/admin/plugin_settings.json` 을
+공통 경로를 씁니다. 플러그인 설정은 코어가 `resources/layouts/admin/plugin_settings.g7.html` 을
 찾아 그리므로 자체 메뉴가 필요하지 않습니다.
 
 메뉴는 권한과 짝을 이룰 때만 보입니다 — `sirsoft-ckeditor5.uploads.read` 가 없는 역할에는

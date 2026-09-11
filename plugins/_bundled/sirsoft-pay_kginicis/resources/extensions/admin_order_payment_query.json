@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다",
     "target_layout": "admin_ecommerce_order_detail",
     "data_sources": [
         {
@@ -8,7 +9,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/transaction-status",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "이 주문의 KG이니시스 결제 상태 — 테스트 결제 배너의 근거이기도 하다"
         },
         {
             "id": "kginicis_cbt_reconciliation",
@@ -17,7 +19,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "CBT 정산 대사 결과 — 재시도 버튼을 띄울지 여기서 정한다"
         },
         {
             "id": "kginicis_cbt_cvs",
@@ -25,7 +28,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "CBT 편의점 입금 상태 — 재확인·입금통보 모의·만료 처리 버튼의 노출 근거"
         },
         {
             "id": "kginicis_escrow_delivery",
@@ -34,7 +38,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-delivery",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "에스크로 배송 등록 상태 — 등록·수취거부 확정 버튼의 노출 근거"
         }
     ],
     "injections": [
@@ -263,13 +268,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "disabled": "{{_local._kginicisCbtRetrying}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "CBT(국경간 거래) 환불 재시도. 성공·실패 어느 쪽이든 대사 결과를 다시 받는다 — 실패해도 PG 쪽 상태는 움직였을 수 있어 화면을 그대로 두면 다음 판단이 옛 상태 위에서 이뤄진다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -283,8 +284,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation/refund-retry",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
                                                     },
@@ -338,6 +339,11 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{_local._kginicisCbtRetrying}}",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -584,13 +590,13 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{(kginicis_cbt_cvs.data?.notify_history ?? []).length > 0}}",
-                                    "props": {
-                                        "className": "space-y-1"
-                                    },
                                     "iteration": {
                                         "source": "{{kginicis_cbt_cvs.data?.notify_history ?? []}}",
                                         "item_var": "notify",
                                         "index_var": "notifyIdx"
+                                    },
+                                    "props": {
+                                        "className": "space-y-1"
                                     },
                                     "children": [
                                         {
@@ -649,13 +655,9 @@
                                     "id": "kginicis_cbt_cvs_recheck_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "disabled": "{{_local._kginicisCvsRechecking}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "편의점 입금을 PG 에 다시 물어 온다. 입금은 구매자가 오프라인에서 하므로 통보가 유실되면 주문만 미결제로 남는데, 이 버튼이 그 간극을 운영자가 직접 메우는 수단이다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -668,8 +670,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/recheck",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
                                                     },
@@ -721,6 +723,11 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{_local._kginicisCvsRechecking}}",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -759,13 +766,9 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}",
-                                    "props": {
-                                        "type": "button",
-                                        "disabled": "{{_local._kginicisCvsSimulating}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "입금통보 모의 발송. 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다. 성공 시 주문과 결제 상태까지 다시 받는 것은 통보가 그 둘을 함께 바꾸기 때문이다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -778,8 +781,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/simulate-notify",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
                                                     },
@@ -843,6 +846,11 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{_local._kginicisCvsSimulating}}",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -881,13 +889,9 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{kginicis_cbt_cvs.data?.can_mark_expired === true}}",
-                                    "props": {
-                                        "type": "button",
-                                        "disabled": "{{_local._kginicisCvsExpiring}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "기한이 지난 편의점 입금 건을 수동으로 닫는다. 주문 상태도 함께 다시 받는다 — 만료 처리는 결제 대기 주문을 종료시키므로 결제 영역만 갱신하면 주문 머리말이 어긋난 채 남는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -900,8 +904,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/expire",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
                                                     },
@@ -959,6 +963,11 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{_local._kginicisCvsExpiring}}",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1048,13 +1057,13 @@
                             "id": "kginicis_payments_list_{{pIdx}}",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "space-y-3"
-                            },
                             "iteration": {
                                 "source": "{{order.data?.payments?.filter(p => p.transaction_id && p.pg_provider === 'kginicis') ?? []}}",
                                 "item_var": "payment",
                                 "index_var": "pIdx"
+                            },
+                            "props": {
+                                "className": "space-y-3"
                             },
                             "children": [
                                 {
@@ -1099,12 +1108,9 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "disabled": "{{_local._kginicisQuerying && _local._kginicisActiveTid === payment.transaction_id}}",
-                                                        "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1120,38 +1126,38 @@
                                                                 },
                                                                 {
                                                                     "handler": "apiCall",
-                                                                    "auth_required": true,
                                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/transaction/query",
+                                                                    "auth_required": true,
                                                                     "params": {
                                                                         "method": "POST",
                                                                         "body": {
                                                                             "tid": "{{_local._kginicisActiveTid}}"
                                                                         }
                                                                     },
-                                                                    "onSuccess": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "local",
-                                                                                "_kginicisQuerying": false,
-                                                                                "_kginicisResult": "{{response.data}}"
-                                                                            }
+                                                                    "onSuccess": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "_kginicisQuerying": false,
+                                                                            "_kginicisResult": "{{response.data}}"
                                                                         }
-                                                                    ],
-                                                                    "onError": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "local",
-                                                                                "_kginicisQuerying": false,
-                                                                                "_kginicisError": "$t:sirsoft-pay_kginicis.admin.order_verify_error"
-                                                                            }
+                                                                    },
+                                                                    "onError": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "_kginicisQuerying": false,
+                                                                            "_kginicisError": "$t:sirsoft-pay_kginicis.admin.order_verify_error"
                                                                         }
-                                                                    ]
+                                                                    }
                                                                 }
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "disabled": "{{_local._kginicisQuerying && _local._kginicisActiveTid === payment.transaction_id}}",
+                                                        "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -2002,11 +2008,9 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Button",
-                                                            "props": {
-                                                                "className": "flex-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-                                                            },
                                                             "actions": [
                                                                 {
+                                                                    "comment": "거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다",
                                                                     "type": "click",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -2015,6 +2019,9 @@
                                                                     }
                                                                 }
                                                             ],
+                                                            "props": {
+                                                                "className": "flex-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                                                            },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
@@ -2234,13 +2241,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
-                                            "props": {
-                                                "type": "text",
-                                                "placeholder": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder",
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -2248,7 +2251,12 @@
                                                         "_ed_invoice": "{{$event.target.value}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "placeholder": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder",
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
+                                            }
                                         }
                                     ]
                                 },
@@ -2270,11 +2278,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "택배사 — 이니시스가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -2283,6 +2289,9 @@
                                                     }
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -2418,12 +2427,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "disabled": "{{_local._ed_registering}}",
-                                                "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록 — 위에서 입력한 송장번호·택배사를 보내고, 끝나면 등록 상태를 다시 받는다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -2437,8 +2443,8 @@
                                                         },
                                                         {
                                                             "handler": "apiCall",
-                                                            "auth_required": true,
                                                             "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-delivery",
+                                                            "auth_required": true,
                                                             "params": {
                                                                 "method": "POST",
                                                                 "body": {
@@ -2469,20 +2475,22 @@
                                                                     }
                                                                 }
                                                             ],
-                                                            "onError": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "_ed_registering": false,
-                                                                        "_ed_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_delivery_error'}}"
-                                                                    }
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "_ed_registering": false,
+                                                                    "_ed_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_delivery_error'}}"
                                                                 }
-                                                            ]
+                                                            }
                                                         }
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "disabled": "{{_local._ed_registering}}",
+                                                "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -2665,12 +2673,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "disabled": "{{_local._dncf_processing}}",
-                                        "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "수취거부 확정 — 되돌릴 수 없는 처리라 버튼을 잠근 뒤 보내고 결과를 다시 받는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -2684,8 +2689,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-deny-confirm",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST",
                                                         "body": {}
@@ -2712,20 +2717,22 @@
                                                             }
                                                         }
                                                     ],
-                                                    "onError": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "_dncf_processing": false,
-                                                                "_dncf_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"
-                                                            }
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "_dncf_processing": false,
+                                                            "_dncf_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"
                                                         }
-                                                    ]
+                                                    }
                                                 }
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "disabled": "{{_local._dncf_processing}}",
+                                        "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",

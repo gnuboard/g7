@@ -134,7 +134,7 @@ config('core.notification_definitions') 로드
 applyFilters('seed.notifications.translations', $definitions)
     ↓
 LanguagePackSeedInjector::injectNotifications($definitions)
-    ↓ 활성 코어 ja 언어팩의 seed/notifications.json 로드
+    ↓ 활성 코어 ja 언어팩의 seed/notifications.g7.html 로드
     ↓ 각 entry 에 ja 키 병합 (이미 존재하는 ko/en 보존)
     ↓
 NotificationSyncHelper::syncDefinition() — DB upsert

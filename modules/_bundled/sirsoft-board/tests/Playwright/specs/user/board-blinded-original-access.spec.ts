@@ -28,7 +28,7 @@ const BOARD_SLUG = 'notice';
 const BLINDED_POST_URL = `/board/${BOARD_SLUG}/1`;
 
 test.describe.skip('블라인드 원문 접근 차단 — 사용자 페이지 (#413)', () => {
-  // @scenario status=blinded viewer=guest target=post
+  // @scenario status=blinded, viewer=guest, target=post
   // @effects blinded_content_null_for_guest
   test('비로그인 사용자에게 블라인드 게시글 안내는 보이나 원글 보기 버튼은 미노출', async ({ page }) => {
     await page.goto(BLINDED_POST_URL);
@@ -43,7 +43,7 @@ test.describe.skip('블라인드 원문 접근 차단 — 사용자 페이지 (#
     });
   });
 
-  // @scenario status=blinded viewer=manager target=post
+  // @scenario status=blinded, viewer=manager, target=post
   // @effects blinded_content_visible_to_manager
   test('게시판 관리자에게는 원글 보기 버튼이 노출되고 클릭 시 원문이 펼쳐진다', async ({
     page,
@@ -65,7 +65,7 @@ test.describe.skip('블라인드 원문 접근 차단 — 사용자 페이지 (#
     });
   });
 
-  // @scenario status=blinded viewer=guest target=comment
+  // @scenario status=blinded, viewer=guest, target=comment
   // @effects blinded_comment_content_matrix
   test('비로그인 사용자에게 블라인드 댓글 원문 보기 버튼이 미노출', async ({ page }) => {
     await page.goto(BLINDED_POST_URL);

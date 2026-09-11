@@ -1,0 +1,398 @@
+<!-- 플러그인 관리 화면. `admin_module_list` 와 **같은 구조의 쌍둥이**다 — 주소(`/api/admin/plugins`),
+  문구, 전역 키(`selectedPlugin` 등)만 다르고 상태 갈래·409 처리·확인 창 구성은 그대로다.
+  한쪽 배선을 고치면 다른 쪽도 같이 봐야 한다.
+  모듈에 없는 항목이 하나 있다 — 더보기 메뉴의 **설정 화면 이동**. 플러그인은 자기 설정 레이아웃을
+  가질 수 있어서, 그 경로를 서버가 `settings_route` 로 실어 준다. -->
+<layout name="admin_plugin_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.plugins.page_title" description="$t:admin.plugins.page_description"/>
+  <!-- 플러그인 목록. 모듈 화면과 같이 검색·페이지는 URL, 숨김 포함 여부만 화면 상태다. -->
+  <data-source id="plugins" label_key="$t:editor.data_source.plugins" type="api" endpoint="/api/admin/plugins" method="GET" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page}}" per_page="{{query.per_page || 12}}" search="{{query.search}}" status="{{query.status}}" include_hidden="{{_local.showHidden ? 1 : 0}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="12"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 코어 버전이 올라 자동 비활성된 확장 알림. 모듈 화면과 **같은 API** 를 부르고 여기서는
+       응답의 `plugins` 만 읽는다. -->
+  <data-source id="auto_deactivated_banner" label_key="$t:editor.data_source.auto_deactivated_banner" type="api" endpoint="/api/admin/extensions/auto-deactivated" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="items">
+          <field name="plugins" :value="[]"/>
+          <field name="modules" :value="[]"/>
+          <field name="templates" :value="[]"/>
+        </field>
+        <field name="current_core_version" value=""/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="searchQuery" value=""/>
+    <field name="showHidden" :value="false"/>
+  </init-local>
+  <permissions>
+    <permission>core.plugins.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>plugins</wait-for>
+    <wait-for>auto_deactivated_banner</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchQuery" value="{{query.search || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="plugin_list_content" class="admin-page-content-responsive-fluid">
+      <page-header data-ref="page_header" title="$t:admin.plugins.title" description="$t:admin.plugins.description">
+        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <refetch-data-source dataSourceId="plugins"/>
+          </on>
+        </icon-button>
+        <button data-ref="check_updates_button" class="flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCheckingUpdates || plugins?.data?.abilities?.can_install !== true}}" type="button">
+          <responsive on="portable" class="hidden"/>
+          <on type="click">
+            <!-- 업데이트 확인 — 서버가 저장소를 훑어 최신 버전을 갱신하므로 끝나면 목록을 다시 받는다.
+                 발견 건수에 따라 문구가 갈린다(모듈 화면과 같은 형태). -->
+            <sequence>
+              <set-state target="global" :isCheckingUpdates="true"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/check-updates" method="POST">
+                <success>
+                  <set-state target="global" :isCheckingUpdates="false"/>
+                  <refetch-data-source dataSourceId="plugins"/>
+                  <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.updated_count : '$t:admin.plugins.check_updates_no_updates'}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isCheckingUpdates="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{!_global.isCheckingUpdates}}" name="refresh" size="sm"/>
+          <icon data-if="{{_global.isCheckingUpdates}}" name="spinner" size="sm" class="animate-spin"/>
+          <span>$t:admin.plugins.actions.check_updates</span>
+        </button>
+        <button data-ref="manual_install_button" class="flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{plugins?.data?.abilities?.can_install !== true}}">
+          <responsive on="portable" class="hidden"/>
+          <on type="click">
+            <open-modal target="plugin_manual_install_modal"/>
+          </on>
+          <icon name="upload" class="text-xl"/>
+          <span>$t:admin.plugins.manual_install</span>
+        </button>
+        <button data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <responsive on="portable" class="hidden"/>
+          <icon name="globe" class="text-xl"/>
+          <span>$t:admin.plugins.marketplace</span>
+        </button>
+      </page-header>
+      <div data-ref="mobile_action_buttons" class="hidden">
+        <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
+        <button data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{plugins?.data?.abilities?.can_install !== true}}">
+          <on type="click">
+            <open-modal target="plugin_manual_install_modal"/>
+          </on>
+          <icon name="upload" class="text-xl"/>
+          <span>$t:admin.plugins.manual_install</span>
+        </button>
+        <button data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <icon name="globe" class="text-xl"/>
+          <span>$t:admin.plugins.marketplace</span>
+        </button>
+      </div>
+      <div data-ref="auto_deactivated_banner_wrapper" data-if="{{(auto_deactivated_banner?.data?.items?.plugins?.length ?? 0) > 0}}" class="alert-warning" role="alert">
+        <div class="flex-start justify-between gap-4">
+          <div class="flex-start gap-3 flex-1">
+            <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-warning-soft mb-2">$t:extensions.banner.title</p>
+              <div class="row-stack">
+                <div data-each="banner_item in {{auto_deactivated_banner?.data?.items?.plugins ?? []}}" class="flex-between gap-2 text-warning-soft">
+                  <span class="font-mono">{{banner_item.identifier}} — $t:defer:extensions.banner.item_required|required={{banner_item.incompatible_required_version ?? ''}}</span>
+                  <button type="button" class="text-warning-soft hover:underline" aria-label="$t:extensions.banner.dismiss">
+                    <on type="click">
+                      <!-- 배너에서 이 줄만 지운다(플러그인은 비활성 상태 그대로다). -->
+                      <api-call :auth_required="true" target="/api/admin/extensions/plugin/{{banner_item.identifier}}/dismiss" method="POST">
+                        <success>
+                          <refetch-data-source dataSourceId="auto_deactivated_banner"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                    <icon name="times" size="xs"/>
+                  </button>
+                </div>
+              </div>
+              <div class="mt-2">
+                <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer">
+                  <on type="click">
+                    <open-modal target="core_update_guide_modal"/>
+                  </on>
+                  <icon name="arrow-up-circle" size="xs"/>
+                  <span>$t:extensions.banner.guide_link</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="search_bar_wrapper" class="flex-center justify-end gap-4 mb-6">
+        <responsive on="portable" class="mb-6 row-stack"/>
+        <label data-ref="include_hidden_toggle" data-if="{{currentUser?.is_super === true}}" class="flex-center gap-2 text-body cursor-pointer select-none">
+          <input type="checkbox" checked="{{_local.showHidden === true}}" class="w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400">
+            <on type="change">
+              <set-state showHidden="{{!_local.showHidden}}"/>
+            </on>
+            <on type="change">
+              <refetch-data-source dataSourceId="plugins"/>
+            </on>
+          </input>
+          <span>$t:admin.plugins.include_hidden</span>
+        </label>
+        <search-bar data-ref="search_bar" placeholder="$t:admin.plugins.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-64">
+          <responsive on="portable" class="w-full"/>
+          <on type="change">
+            <set-state searchQuery="{{$event.target.value}}"/>
+          </on>
+          <on type="submit">
+            <!-- 검색 실행 — 빈 검색어는 쿼리에서 빼고 페이지를 1로 되돌린다. `mergeQuery` 를 켜지
+                 않아 상태 필터도 함께 떨어진다(모듈 화면과 같다). -->
+            <navigate path="/admin/plugins" :mergeQuery="true">
+              <query search="{{_local.searchQuery || undefined}}" :page="1"/>
+            </navigate>
+          </on>
+        </search-bar>
+      </div>
+      <div data-ref="content_area" class="admin-card">
+        <card-grid data-ref="plugin_card_grid" :data-blur-until-loaded="true" data="{{plugins?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{plugins?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{plugins?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{plugins?.data?.pagination?.has_more_pages ?? false}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
+          <card id="plugin_content">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <icon name="puzzle-piece" class="text-2xl text-gray-600 dark:text-gray-400"/>
+              </div>
+              <div class="flex-1 min-w-0 flex items-start justify-between gap-4">
+                <responsive on="portable" class="flex-1 min-w-0 row-stack"/>
+                <div class="flex-1 min-w-0">
+                  <div class="flex-center gap-2 flex-wrap">
+                    <span class="font-semibold text-gray-900 dark:text-white">{{row.name}}</span>
+                    <span class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">v{{row.version}}</span>
+                    <span data-if="{{row.status === 'active'}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.plugins.status.active</span>
+                    <span data-if="{{row.status == 'inactive'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">$t:admin.plugins.status.inactive</span>
+                    <span data-if="{{row.status == 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">$t:admin.plugins.status.not_installed</span>
+                    <span data-if="{{row.status == 'installing'}}" class="px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded">$t:admin.plugins.status.installing</span>
+                    <span data-if="{{row.status == 'uninstalling'}}" class="px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded">$t:admin.plugins.status.uninstalling</span>
+                    <span data-if="{{row.status == 'updating'}}" class="px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded">$t:admin.plugins.status.updating</span>
+                    <span data-if="{{row.update_available &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.plugins.update_available</span>
+                    <span data-if="{{row.update_available &amp;&amp; row.latest_version &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="text-tertiary">$t:defer:admin.plugins.version_available|version={{row.latest_version ?? ''}}</span>
+                    <span data-if="{{row.is_compatible === false}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded inline-flex items-center gap-1" title="$t:defer:extensions.badges.incompatible_tooltip|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}" aria-describedby="compat_sr_{{row.identifier}}">
+                      <icon name="exclamation-triangle" size="xs"/>
+                      <span>$t:extensions.badges.incompatible</span>
+                    </span>
+                    <span data-if="{{row.is_compatible === false}}" id="compat_sr_{{row.identifier}}" class="sr-only">$t:defer:extensions.badges.incompatible_sr|name={{row.name ?? row.identifier ?? ''}}|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}</span>
+                  </div>
+                  <p class="mt-1 text-label">{{row.description}}</p>
+                  <div class="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+                    <responsive on="portable" class="mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500"/>
+                    <span>$t:defer:admin.plugins.vendor|vendor={{row.vendor}}</span>
+                    <div data-if="{{row.dependencies &amp;&amp; row.dependencies.length > 0}}" class="flex items-center gap-1 flex-wrap">
+                      <span>$t:admin.plugins.dependencies_label</span>
+                      <div data-each="dep, depIndex in {{row.dependencies}}" class="inline">
+                        <span class="inline-flex items-center gap-1">
+                          <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                          <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                          <span>{{dep.name}}</span>
+                        </span>
+                        <span data-if="{{depIndex < row.dependencies.length - 1}}" class="ml-0 mr-1">,</span>
+                      </div>
+                    </div>
+                    <span data-if="{{!row.dependencies || row.dependencies.length === 0}}">$t:admin.plugins.no_dependencies</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                  <button data-if="{{row.status == 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_install !== true}}">
+                    <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"/>
+                    <on type="click">
+                      <!-- 설치 창 열기. 대상 카드를 전역에 먼저 담고 연다 — 창은 그 전역만 본다. -->
+                      <sequence>
+                        <set-state target="global" selectedPlugin="{{row}}"/>
+                        <open-modal target="plugin_install_modal"/>
+                      </sequence>
+                    </on>
+                    <icon name="download" class="text-base"/>
+                    <span>$t:admin.plugins.actions.install</span>
+                  </button>
+                  <button data-ref="update_button" data-if="{{row.update_available &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{row.abilities?.can_install !== true || row.is_compatible === false}}" title="{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}" aria-describedby="{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}">
+                    <on type="click">
+                      <!-- 업데이트 창 열기. 손으로 고친 레이아웃이 있는지와 이번 버전의 변경 이력을 미리 물어 둔다 — 전역값을 먼저 기본으로 되돌리는 것은 직전 플러그인의 결과가 남아 있기 때문이다 -->
+                      <sequence>
+                        <!-- 업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.
+                             전역값을 기본값으로 되돌리고 시작하는 것은 직전 플러그인의 결과가 남아 있기
+                             때문이다. 이력 조회가 실패해도 빈 이력으로 창을 연다(모듈 화면과 같다). -->
+                        <set-state target="global" selectedPlugin="{{row}}" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :modifiedPluginLayoutsCheckFailed="false" :pluginRebuildSearchIndex="false"/>
+                        <api-call :auth_required="true" target="/api/admin/plugins/{{row.identifier}}/check-modified-layouts" method="GET">
+                          <success>
+                            <set-state target="global" hasModifiedPluginLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedPluginLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedPluginLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedPluginLayoutsCheckFailed="false"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :modifiedPluginLayoutsCheckFailed="true"/>
+                          </fail>
+                        </api-call>
+                        <api-call :auth_required="true" target="/api/admin/plugins/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
+                          <success>
+                            <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}"/>
+                            <set-state target="global" :pluginUpdateError="null"/>
+                            <open-modal target="plugin_update_modal"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :updateChangelog="[]" :pluginUpdateError="null"/>
+                            <open-modal target="plugin_update_modal"/>
+                          </fail>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    <icon name="refresh" class="text-base"/>
+                    <span>$t:admin.plugins.actions.update</span>
+                  </button>
+                  <toggle data-if="{{row.status != 'uninstalled'}}" checked="{{row.status == 'active'}}" disabled="{{row.abilities?.can_activate !== true}}" size="sm" class="">
+                    <responsive on="portable" class="absolute right-4 top-1/2 -translate-y-1/2"/>
+                    <on type="change">
+                      <!-- 활성/비활성 토글 — 주소를 스위치 방향으로 가르고, 성공하면 목록·사이드바 메뉴를
+                           함께 다시 받고 프론트의 확장 번들도 갱신한다. 실패해도 목록을 다시 받아
+                           스위치를 서버 값으로 되맞춘다. 409(의존 충돌)는 강제 창으로 넘긴다
+                           — 모듈 화면과 같은 형태다. -->
+                      <api-call :auth_required="true" target="{{$event.target.checked ? '/api/admin/plugins/activate' : '/api/admin/plugins/deactivate'}}" method="POST">
+                        <success>
+                          <parallel>
+                            <toast type="success" message="{{$event.target.checked ? '$t:admin.plugins.activate_success' : '$t:admin.plugins.deactivate_success'}}"/>
+                            <refetch-data-source dataSourceId="plugins"/>
+                            <refetch-data-source dataSourceId="admin_menu"/>
+                            <reload-extensions pluginInfo="{{result}}" action="{{$event.target.checked ? 'add' : 'remove'}}"/>
+                          </parallel>
+                        </success>
+                        <fail>
+                          <sequence>
+                            <toast type="error" message="{{error.message}}"/>
+                            <refetch-data-source dataSourceId="plugins"/>
+                          </sequence>
+                        </fail>
+                        <error-handling>
+                          <on-code code="409">
+                            <set-state target="global" selectedPlugin="{{row}}" deactivateWarningData="{{error.errors?.dependent_templates ? error.errors : null}}" activateWarningData="{{error.errors?.missing_modules || error.errors?.missing_plugins ? error.errors : null}}"/>
+                            <open-modal target="{{error.errors?.dependent_templates || error.errors?.dependent_modules || error.errors?.dependent_plugins ? 'plugin_force_deactivate_modal' : 'plugin_force_activate_modal'}}"/>
+                          </on-code>
+                        </error-handling>
+                        <body plugin_name="{{row.identifier}}"/>
+                      </api-call>
+                    </on>
+                  </toggle>
+                  <div class="">
+                    <responsive on="portable" class="absolute right-0 top-0"/>
+                    <action-menu triggerLabel="">
+                      <prop name="items">
+                        <item id="settings" label="$t:admin.plugins.actions.settings" iconName="cog" disabled="{{!row.has_settings || row.status !== 'active' || row.abilities?.can_activate !== true}}"/>
+                        <item id="refresh_layouts" label="$t:admin.plugins.actions.refresh_layouts" iconName="refresh" disabled="{{row.status !== 'active' || row.abilities?.can_activate !== true}}"/>
+                        <item id="manage_language_packs" label="$t:admin.language_packs.actions.manage" iconName="language" disabled="{{row.status !== 'active'}}"/>
+                        <item id="view_detail" label="$t:admin.plugins.actions.view_detail" iconName="info-circle"/>
+                        <item id="uninstall" label="$t:admin.plugins.actions.uninstall" iconName="trash" variant="danger" disabled="{{row.status == 'uninstalled' || row.status == 'uninstalling' || row.status == 'installing' || row.abilities?.can_uninstall !== true}}"/>
+                      </prop>
+                      <on type="action" event="onItemClick">
+                        <!-- 카드 더보기 메뉴. 모듈 화면과 같되 **설정 이동**이 하나 더 있다 — 목적지는
+                             서버가 실어 준 `settings_route` 를 그대로 쓴다(플러그인마다 다르므로 여기서
+                             조립하지 않는다). 삭제는 창을 먼저 열고 안내 정보를 뒤이어 받는다. -->
+                        <switch>
+                          <case when="settings">
+                            <!-- audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 이동 — 목적지는 각 플러그인이 선언한 임의 경로로, 플러그인 목록 클러스터 밖이다. -->
+                            <navigate path="{{row.settings_route}}"/>
+                          </case>
+                          <case when="refresh_layouts">
+                            <set-state target="global" selectedPlugin="{{row}}"/>
+                            <open-modal target="plugin_refresh_layouts_modal"/>
+                          </case>
+                          <case when="manage_language_packs">
+                            <navigate path="/admin/plugins/{{row.identifier}}/language-packs" :mergeQuery="true">
+                              <query/>
+                            </navigate>
+                          </case>
+                          <case when="view_detail">
+                            <set-state target="global" selectedPlugin="{{row}}"/>
+                            <api-call :auth_required="true" target="/api/admin/plugins/{{row.identifier}}/changelog" method="GET">
+                              <success>
+                                <set-state target="global" pluginChangelog="{{response.data.changelog ?? []}}"/>
+                                <open-modal target="plugin_detail_modal"/>
+                              </success>
+                              <fail>
+                                <set-state target="global" :pluginChangelog="[]"/>
+                                <open-modal target="plugin_detail_modal"/>
+                              </fail>
+                            </api-call>
+                          </case>
+                          <case when="uninstall">
+                            <set-state target="global" selectedPlugin="{{row}}" :deletePluginData="false" :pluginUninstallInfo="null" :pluginUninstallBackups="null"/>
+                            <open-modal target="plugin_uninstall_modal"/>
+                            <api-call :auth_required="true" target="/api/admin/plugins/{{row.identifier}}/uninstall-info" method="GET">
+                              <success>
+                                <set-state target="global" pluginUninstallInfo="{{response.data}}"/>
+                              </success>
+                            </api-call>
+                          </case>
+                        </switch>
+                      </on>
+                    </action-menu>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </card>
+          <on type="change" event="onPageChange">
+            <!-- 페이지 이동 — 검색·상태 필터는 유지한다. -->
+            <navigate path="/admin/plugins" :mergeQuery="true">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </on>
+        </card-grid>
+        <div data-ref="pagination_info" class="mt-4 text-label text-center">
+          <span>$t:admin.plugins.pagination_info|total={{plugins?.data?.pagination?.total ?? 0}}|from={{((plugins?.data?.pagination?.current_page ?? 1) - 1) * (plugins?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.pagination?.current_page ?? 1) * (plugins?.data?.pagination?.per_page ?? 12), plugins?.data?.pagination?.total ?? 0)}}</span>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 상세 보기 창(설명·의존·변경 이력).
+       아래 창들은 모두 전역 `selectedPlugin` 하나를 대상으로 읽는다 — 여는 쪽이 그 값을 채우고 연다.
+       모듈 화면의 같은 이름 조각과 짝을 이루는 별도 파일이다(대상 종류가 달라 사본을 둔다). -->
+  <modal src="partials/admin_plugin_list/_modal_detail.g7.html"/>
+  <!-- 설치 확인 창 — 미설치 카드의 설치 버튼이 연다. -->
+  <modal src="partials/admin_plugin_list/_modal_install.g7.html"/>
+  <!-- 매니페스트 원문을 보는 서랍. 수동 설치 창이 검사한 결과를 펼쳐 보여 준다. -->
+  <modal src="partials/admin_plugin_list/_drawer_manifest_preview.g7.html"/>
+  <!-- 삭제 확인 창. 함께 지워지는 것을 받아 보여 주고 데이터 삭제 여부를 따로 묻는다. -->
+  <modal src="partials/admin_plugin_list/_modal_uninstall.g7.html"/>
+  <!-- 압축 파일로 직접 설치하는 창 — 목록에 없는 플러그인을 들이는 유일한 경로다. -->
+  <modal src="partials/admin_plugin_list/_modal_manual_install.g7.html"/>
+  <!-- 레이아웃 다시 심기 확인 창(활성 플러그인만). -->
+  <modal src="partials/admin_plugin_list/_modal_refresh_layouts.g7.html"/>
+  <!-- 강제 비활성 창 — 이 플러그인에 의존하는 쪽이 있을 때(409) 열린다. -->
+  <modal src="partials/admin_plugin_list/_modal_force_deactivate.g7.html"/>
+  <!-- 강제 활성 창 — 이 플러그인이 필요로 하는 쪽이 없을 때(409) 열린다. 위와 방향이 반대다. -->
+  <modal src="partials/admin_plugin_list/_modal_force_activate.g7.html"/>
+  <!-- 업데이트 창. 변경 이력과 함께, 고친 레이아웃이 있으면 덮어쓸지 남길지 묻는다. -->
+  <modal src="partials/admin_plugin_list/_modal_update.g7.html"/>
+  <!-- 라이선스 고지 창 — 상세 창에서 이어 연다. -->
+  <modal src="partials/admin_plugin_list/_modal_extension_license.g7.html"/>
+  <!-- 코어 업데이트 안내 창. 자동 비활성 배너의 안내 링크가 연다 — 모듈 화면과 **같은 조각을 공유**한다
+       (설정 화면 소유이고, 안내 내용이 확장 종류와 무관하다). -->
+  <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
+</layout>

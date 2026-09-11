@@ -15,7 +15,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 않았습니다.
 
 설정 스키마와 설정 화면 레이아웃의 예시는 함께 제공되는 `gnuboard7-hello_plugin` 에 있습니다 —
-`getSettingsSchema()` 선언과 `resources/layouts/admin/plugin_settings.json` 이 짝을 이루는
+`getSettingsSchema()` 선언과 `resources/layouts/admin/plugin_settings.g7.html` 이 짝을 이루는
 형태입니다.
 <!-- @intent END -->
 

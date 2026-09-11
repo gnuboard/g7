@@ -1,0 +1,73 @@
+<!-- 게시판 활동 탭의 겉틀 — 요약 숫자와 하위 탭 줄만 그리고, 실제 목록은 「내 글」·「내 댓글」 두 조각이 맡는다. -->
+<partial description="마이페이지 게시판 활동 탭">
+  <div class="mt-6">
+    <responsive on="portable" class="mt-4"/>
+    <!-- 페이지 헤더 -->
+    <div class="mb-6">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white">$t:mypage.board_activities.title</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.description</p>
+    </div>
+    <!-- 통계 카드 3개 -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <blur-until-loaded>
+        <item>myActivityStats</item>
+      </blur-until-loaded>
+      <responsive on="portable" class="grid grid-cols-1 gap-3 mb-4"/>
+      <!-- 작성한 게시글 카드 -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center">
+        <icon name="file-text" size="lg" class="mx-auto text-gray-400 dark:text-gray-500 mb-2"/>
+        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{(myActivityStats?.data?.total_posts ?? 0) | number}}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.stats.total_posts</div>
+      </div>
+      <!-- 작성한 댓글 카드 -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center">
+        <icon name="comment" size="lg" class="mx-auto text-gray-400 dark:text-gray-500 mb-2"/>
+        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{(myActivityStats?.data?.total_comments ?? 0) | number}}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.stats.total_comments</div>
+      </div>
+      <!-- 총 조회수 카드 -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center">
+        <icon name="eye" size="lg" class="mx-auto text-gray-400 dark:text-gray-500 mb-2"/>
+        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{(myActivityStats?.data?.total_views ?? 0) | number}}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.stats.total_views</div>
+      </div>
+    </div>
+    <!-- 탭 네비게이션 (2탭: 내가 쓴 글, 내가 쓴 댓글) -->
+    <div class="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
+      <!-- 내가 쓴 글 탭 -->
+      <button class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+        <on type="click">
+          <set-state target="global" boardActivitySubTab="my-posts" :myPostsPage="1"/>
+          <refetch-data-source dataSourceId="myPosts"/>
+        </on>
+        <icon name="file-text" size="sm"/>
+        <span>$t:mypage.board_activities.tabs.my_posts</span>
+        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_posts ?? 0) | number}}</span>
+      </button>
+      <!-- 내가 쓴 댓글 탭 -->
+      <button class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+        <on type="click">
+          <set-state target="global" boardActivitySubTab="my-comments" :myCommentsPage="1"/>
+          <refetch-data-source dataSourceId="myComments"/>
+        </on>
+        <icon name="comment" size="sm"/>
+        <span>$t:mypage.board_activities.tabs.my_comments</span>
+        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_comments ?? 0) | number}}</span>
+      </button>
+    </div>
+    <!-- 내가 쓴 글 콘텐츠 -->
+    <div data-if="{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts'}}">
+      <blur-until-loaded>
+        <item>myPosts</item>
+      </blur-until-loaded>
+      <include src="partials/mypage/board/_my_posts.g7.html"/>
+    </div>
+    <!-- 내가 쓴 댓글 콘텐츠 -->
+    <div data-if="{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments'}}">
+      <blur-until-loaded>
+        <item>myComments</item>
+      </blur-until-loaded>
+      <include src="partials/mypage/board/_my_comments.g7.html"/>
+    </div>
+  </div>
+</partial>

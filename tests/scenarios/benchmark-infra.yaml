@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: cross product 면제 전용. 10축 전개 61,200 조합은 docblock @scenario 1:1 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files 4종(커맨드 표면 + 축 실행기 단위 + 프로파일 VO/Enum 계약 + 확장 선언 통합)으로 커버한다. effects 54건은 전수 @effects 마킹돼 있어 이 면제 줄을 지워도 effects 검사는 통과한다 — 면제가 숨기는 항목 없음.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: cross product 면제 전용. 10축 전개 61,200 조합은 docblock @scenario 1:1 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files 4종(커맨드 표면 + 축 실행기 단위 + 프로파일 VO/Enum 계약 + 확장 선언 통합)으로 커버한다. effects 54건은 전수 @effects 마킹돼 있어 이 면제 줄을 지워도 effects 검사는 통과한다 — 면제가 숨기는 항목 없음.
 
 feature: benchmark_infra
 

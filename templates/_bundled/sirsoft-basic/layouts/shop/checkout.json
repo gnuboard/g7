@@ -1,13 +1,123 @@
 {
+    "comment": "주문서 작성 — 장바구니에서 넘어온 선택분과 바로구매가 같은 화면을 쓴다. 금액은 화면에서 더하지\n     않고 서버가 계산한 것을 그대로 보여 준다(쿠폰·적립금·배송비가 서로 물려 있어 한쪽만 바꿔도 전부\n     달라지기 때문). 회원·비회원 모두 진입하므로 auth_mode 는 optional 이다.",
     "version": "1.0.0",
     "layout_name": "shop/checkout",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "title": "주문서 작성",
         "description": "주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"
     },
-    "_comment_initLocal": "정적 기본값 설정 (데이터소스 initLocal 병합 전 기본값). country_code 는 init_actions 가 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가가 수렴한 값)로 시드한다 — 정적 KR 하드코딩 금지(헤더가 US 여도 KR 로 계산되는 회귀 방지).",
+    "data_sources": [
+        {
+            "id": "checkoutData",
+            "label_key": "$t:editor.data_source.checkoutData",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/checkout",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "params": {
+                "country_code": "{{_local.checkout?.country_code ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+            },
+            "initLocal": {
+                "_merge": "deep",
+                "checkout": {
+                    "item_coupons": "promotions.item_coupons",
+                    "order_coupon_issue_id": "promotions.order_coupon_issue_id",
+                    "shipping_coupon_issue_id": "promotions.shipping_coupon_issue_id",
+                    "use_points": "use_points"
+                },
+                "unavailableModal": {
+                    "items": "unavailable_items",
+                    "hasStockIssue": "has_stock_issue"
+                }
+            },
+            "onSuccess": [
+                {
+                    "comment": "구매불가 상품이 있으면 setState로 데이터 설정 후 모달 표시 (initLocal 머지는 모달 표현식 캐시를 갱신하지 않으므로 setState 필수)",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{(response.data.data.unavailable_items?.length ?? 0) > 0}}",
+                            "then": {
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "unavailableModal": {
+                                                "visible": true,
+                                                "items": "{{response.data.data.unavailable_items ?? []}}",
+                                                "hasStockIssue": "{{response.data.data.has_stock_issue ?? false}}"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "cart_unavailable_modal"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "errorHandling": {
+                "404": {
+                    "handler": "openModal",
+                    "target": "tempOrderNotFoundModal"
+                }
+            },
+            "comment": "장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관."
+        },
+        {
+            "id": "userAddresses",
+            "label_key": "$t:editor.data_source.userAddresses",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "fallback": {
+                "data": {
+                    "addresses": {
+                        "data": []
+                    }
+                }
+            },
+            "errorHandling": {
+                "401": {
+                    "handler": "suppress"
+                },
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "사용자 저장 배송지 목록 (회원 전용). 비회원/토큰만료 시 401 코어 DEFAULT 핸들러가 navigate({{auth.loginPath}}) 를 발동해 'Failed to execute action: navigate' 가 보고됨 — suppress 로 조용히 무시"
+        },
+        {
+            "id": "paymentSettings",
+            "label_key": "$t:editor.data_source.paymentSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/settings/payment",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "comment": "결제 설정 (활성 결제 수단, 은행 목록, 입금 계좌)"
+        },
+        {
+            "id": "shippingSettings",
+            "label_key": "$t:editor.data_source.shippingSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/settings/shipping",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "comment": "배송 설정 (국내/해외 배송 가능 여부 등)"
+        }
+    ],
     "initLocal": {
         "checkout": {
             "item_coupons": {},
@@ -35,6 +145,13 @@
             "hasStockIssue": false
         }
     },
+    "computed": {
+        "comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결) / 서버로 보낼 코어 결제수단(selectedCorePaymentMethod) — 플러그인이 더한 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 고른 결제수단의 core_payment_method(모듈이 병합 때 보존한다)로 옮겨 보낸다. 선언이 없는 것(dbank·KG 등)은 원래 id 를 그대로 쓴다.",
+        "ordererDefaults": "{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}",
+        "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}",
+        "selectedCorePaymentMethod": "{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === (_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'))?.core_payment_method ?? _local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'}}"
+    },
+    "permissions": [],
     "init_actions": [
         {
             "comment": "배송국가 시드 — 주문서 진입 시 _local.checkout.country_code 를 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)로 채운다. 이 값이 checkoutData GET 쿼리(country_code)로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가 Select 를 바꾸면 그 시점 값이 SSoT 로 덮어쓴다(주문서 기준).",
@@ -52,143 +169,32 @@
                     "if": "{{!!query.error}}",
                     "then": {
                         "handler": "sequence",
-                        "params": {
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "orderError": "{{query.error}}",
-                                        "orderErrorMessage": "{{query.message ?? ''}}"
-                                    }
-                                },
-                                {
-                                    "handler": "toast",
-                                    "params": {
-                                        "type": "error",
-                                        "message": "$t:shop.checkout.payment_generic_error"
-                                    }
-                                },
-                                {
-                                    "handler": "replaceUrl",
-                                    "params": {
-                                        "path": "/shop/checkout"
-                                    }
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "orderError": "{{query.error}}",
+                                    "orderErrorMessage": "{{query.message ?? ''}}"
                                 }
-                            ]
-                        }
+                            },
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:shop.checkout.payment_generic_error"
+                                }
+                            },
+                            {
+                                "handler": "replaceUrl",
+                                "params": {
+                                    "path": "/shop/checkout"
+                                }
+                            }
+                        ]
                     }
                 }
             ]
-        }
-    ],
-    "computed": {
-        "_comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결)",
-        "ordererDefaults": "{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}",
-        "_comment_payment": "선택된 결제수단 - _local에 없으면 첫 번째 활성 결제수단을 기본값으로 사용",
-        "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}",
-        "_comment_core_payment": "서버 전송용 코어 결제수단 - 플러그인 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 선택 결제수단의 core_payment_method(모듈이 병합 시 보존)로 번역해 전송한다. 미선언(dbank/KG 등)은 raw id 그대로. IIFE/타 computed 참조를 피하려 선택 id 해석을 인라인 반복한다.",
-        "selectedCorePaymentMethod": "{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === (_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'))?.core_payment_method ?? _local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'}}"
-    },
-    "data_sources": [
-        {
-            "id": "checkoutData",
-            "label_key": "$t:editor.data_source.checkoutData",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/checkout",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_mode": "optional",
-            "loading_strategy": "progressive",
-            "comment": "장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관.",
-            "params": {
-                "country_code": "{{_local.checkout?.country_code ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
-            },
-            "initLocal": {
-                "_merge": "deep",
-                "checkout": {
-                    "item_coupons": "promotions.item_coupons",
-                    "order_coupon_issue_id": "promotions.order_coupon_issue_id",
-                    "shipping_coupon_issue_id": "promotions.shipping_coupon_issue_id",
-                    "use_points": "use_points"
-                },
-                "unavailableModal": {
-                    "items": "unavailable_items",
-                    "hasStockIssue": "has_stock_issue"
-                }
-            },
-            "onSuccess": {
-                "comment": "구매불가 상품이 있으면 setState로 데이터 설정 후 모달 표시 (initLocal 머지는 모달 표현식 캐시를 갱신하지 않으므로 setState 필수)",
-                "handler": "conditions",
-                "conditions": [
-                    {
-                        "if": "{{(response.data.data.unavailable_items?.length ?? 0) > 0}}",
-                        "then": {
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "setState",
-                                        "target": "local",
-                                        "params": {
-                                            "unavailableModal": {
-                                                "visible": true,
-                                                "items": "{{response.data.data.unavailable_items ?? []}}",
-                                                "hasStockIssue": "{{response.data.data.has_stock_issue ?? false}}"
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "handler": "openModal",
-                                        "target": "cart_unavailable_modal"
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                ]
-            },
-            "errorHandling": {
-                "404": {
-                    "handler": "openModal",
-                    "target": "tempOrderNotFoundModal"
-                }
-            }
-        },
-        {
-            "id": "userAddresses",
-            "label_key": "$t:editor.data_source.userAddresses",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_mode": "required",
-            "comment": "사용자 저장 배송지 목록 (회원 전용). 비회원/토큰만료 시 401 코어 DEFAULT 핸들러가 navigate({{auth.loginPath}}) 를 발동해 'Failed to execute action: navigate' 가 보고됨 — suppress 로 조용히 무시",
-            "fallback": { "data": { "addresses": { "data": [] } } },
-            "errorHandling": {
-                "401": { "handler": "suppress" },
-                "403": { "handler": "suppress" }
-            }
-        },
-        {
-            "id": "paymentSettings",
-            "label_key": "$t:editor.data_source.paymentSettings",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/settings/payment",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_mode": "optional",
-            "comment": "결제 설정 (활성 결제 수단, 은행 목록, 입금 계좌)"
-        },
-        {
-            "id": "shippingSettings",
-            "label_key": "$t:editor.data_source.shippingSettings",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/settings/shipping",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_mode": "optional",
-            "comment": "배송 설정 (국내/해외 배송 가능 여부 등)"
         }
     ],
     "slots": {
@@ -197,9 +203,6 @@
                 "type": "layout",
                 "name": "Container",
                 "blur_until_loaded": "{{_local.isSubmittingOrder}}",
-                "props": {
-                    "className": "py-8"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
@@ -207,15 +210,15 @@
                         }
                     }
                 },
+                "props": {
+                    "className": "py-8"
+                },
                 "children": [
                     {
                         "comment": "에러 요약 (페이지 상단)",
                         "type": "basic",
                         "name": "Div",
                         "if": "{{_local.orderError}}",
-                        "props": {
-                            "className": "mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -223,16 +226,24 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                        },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex items-start gap-3" },
+                                "props": {
+                                    "className": "flex items-start gap-3"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
-                                        "props": { "name": "exclamation-circle", "className": "text-xl text-red-500 flex-shrink-0 mt-0.5" }
+                                        "props": {
+                                            "name": "exclamation-circle",
+                                            "className": "text-xl text-red-500 flex-shrink-0 mt-0.5"
+                                        }
                                     },
                                     {
                                         "type": "basic",
@@ -241,14 +252,18 @@
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "text-sm font-medium text-red-800 dark:text-red-200" },
+                                                "props": {
+                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                },
                                                 "text": "{{_local.orderError === 'confirm_failed' ? '$t:shop.checkout.payment_confirm_failed' : _local.orderError === 'amount_mismatch' ? '$t:shop.checkout.payment_amount_mismatch' : _local.orderError === 'order_not_found' ? '$t:shop.checkout.payment_order_not_found' : '$t:shop.checkout.payment_generic_error'}}"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "P",
                                                 "if": "{{_local.orderErrorMessage}}",
-                                                "props": { "className": "text-xs text-red-600 dark:text-red-400 mt-1" },
+                                                "props": {
+                                                    "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+                                                },
                                                 "text": "{{_local.orderErrorMessage}}"
                                             }
                                         ]
@@ -261,9 +276,6 @@
                         "comment": "뒤로가기 + 페이지 제목",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "mb-6"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -271,19 +283,31 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "mb-6"
+                        },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 text-sm cursor-pointer"
                                         }
                                     }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{_global.shopBase}}/cart"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer"
                                 },
                                 "children": [
                                     {
@@ -299,29 +323,20 @@
                                         "name": "Span",
                                         "text": "$t:shop.checkout.back"
                                     }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "{{_global.shopBase}}/cart"
-                                        }
-                                    }
                                 ]
                             },
                             {
                                 "type": "basic",
                                 "name": "H1",
-                                "props": {
-                                    "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "text-xl font-bold text-gray-900 dark:text-white"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 dark:text-white"
                                 },
                                 "text": "$t:shop.checkout.title"
                             }
@@ -331,10 +346,6 @@
                         "comment": "PC: 3컬럼 그리드 (좌측 폼 2칸, 우측 결제금액 1칸)",
                         "type": "layout",
                         "name": "Grid",
-                        "props": {
-                            "cols": 3,
-                            "gap": 6
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -343,20 +354,24 @@
                                 }
                             }
                         },
+                        "props": {
+                            "cols": 3,
+                            "gap": 6
+                        },
                         "children": [
                             {
                                 "comment": "좌측 영역 - 폼 섹션들",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "col-span-2 space-y-6"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "col-span-1 space-y-4"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "col-span-2 space-y-6"
                                 },
                                 "children": [
                                     {
@@ -404,22 +419,29 @@
         ]
     },
     "modals": [
-        { "partial": "partials/shop/_modal_temp_order_not_found.json" },
-        { "partial": "partials/shop/_modal_exclusive_coupon_confirm.json" },
-        { "partial": "partials/shop/_modal_address_manage.json" },
-        { "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json" },
-        { "partial": "partials/shop/_modal_cart_unavailable.json" },
-        { "partial": "partials/shop/_modal_coupon_download.json" }
-    ],
-    "actions": [
         {
-            "id": "selectDbank",
-            "comment": "무통장입금 계좌 선택",
-            "handler": "setState",
-            "params": {
-                "target": "_local.selectedDbank",
-                "value": "{{$params.bank}}"
-            }
+            "comment": "결제 도중 이탈했다가 되돌아왔는데 임시 주문이 이미 만료·정리된 경우 — 장바구니로 되돌린다",
+            "partial": "partials/shop/_modal_temp_order_not_found.json"
+        },
+        {
+            "comment": "중복 사용 불가 쿠폰을 고를 때 — 먼저 걸린 쿠폰이 해제된다는 것을 알리고 확인을 받는다",
+            "partial": "partials/shop/_modal_exclusive_coupon_confirm.json"
+        },
+        {
+            "comment": "저장된 배송지 목록에서 고르기(마이페이지로 나가지 않고 주문서 안에서 처리한다)",
+            "partial": "partials/shop/_modal_address_manage.json"
+        },
+        {
+            "comment": "배송지 저장 자리가 꽉 찼을 때 어느 것을 덮어쓸지 묻는다. 마이페이지 배송지 화면과 같은 창을 쓴다",
+            "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
+        },
+        {
+            "comment": "주문서를 여는 동안 품절·판매중지로 바뀐 항목이 있으면 알린다(장바구니와 같은 창)",
+            "partial": "partials/shop/_modal_cart_unavailable.json"
+        },
+        {
+            "comment": "주문서에서 곧바로 쿠폰을 더 받아 적용할 수 있게 여는 창",
+            "partial": "partials/shop/_modal_coupon_download.json"
         }
     ]
 }

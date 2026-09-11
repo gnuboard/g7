@@ -35,12 +35,24 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 기존에는 이를 처리하기 위해 복잡한 표현식이 필요했습니다:
 
+```html
+<div>{{typeof _global.selectedModule.name === 'string' ? _global.selectedModule.name : _global.selectedModule.name[$locale]}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 기존 방식 (129자)
 "text": "{{typeof _global.selectedModule.name === 'string' ? _global.selectedModule.name : _global.selectedModule.name[$locale]}}"
 ```
 
 ### $localized() 사용법
+
+```html
+<div>{{$localized(_global.selectedModule.name)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 새 방식 (45자)
@@ -70,6 +82,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 **기본 사용**:
 
+```html
+<p>{{$localized(_global.selectedModule.name)}}</p>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -80,6 +98,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 **번역 파라미터와 함께 사용**:
 
+```html
+<div>$t:admin.modules.modals.install_confirm|name={{$localized(_global.selectedModule.name)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "$t:admin.modules.modals.install_confirm|name={{$localized(_global.selectedModule.name)}}"
@@ -88,6 +112,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 **문자열 연결**:
 
+```html
+<div>{{$localized(_global.selectedModule.description) + ' (v' + _global.selectedModule.version + ')'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "{{$localized(_global.selectedModule.description) + ' (v' + _global.selectedModule.version + ')'}}"
@@ -95,6 +125,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 ```
 
 **iteration 컨텍스트에서 사용**:
+
+```html
+<li data-each="menu in _global.selectedModule.admin_menus">{{$localized(menu.name)}}</li>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -110,6 +146,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 **iteration + 문자열 연결**:
 
+```html
+<span data-each="perm in _global.selectedModule.permissions">{{$localized(perm.name) + ' (' + perm.identifier + ')'}}</span>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -123,6 +165,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 ```
 
 ### Optional Chaining과 함께 사용
+
+```html
+<div>{{$localized(_global.selectedModule?.name) || '-'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -181,6 +229,12 @@ $localized()는 API 응답의 다국어 객체 처리용
 
 ### 예시
 
+```html
+<div title="$t:dashboard.title" subtitle="$t:dashboard.subtitle" total="$t:products.total_count|count={{products.total}}">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -192,6 +246,12 @@ $localized()는 API 응답의 다국어 객체 처리용
 ```
 
 ### 파라미터 치환
+
+```html
+<div>$t:products.total_count|count={{products.total}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -205,6 +265,12 @@ $localized()는 API 응답의 다국어 객체 처리용
 ### 파라미터 값에 중첩 $t: 사용 (engine-v1.25.0+)
 
 파라미터 값 자체가 다른 번역 키를 참조해야 할 때, `$t:` 토큰을 파라미터 값으로 사용할 수 있습니다.
+
+```html
+<div>$t:order.status_message|status=$t:enums.order_status.completed</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -227,6 +293,12 @@ $localized()는 API 응답의 다국어 객체 처리용
 #### 다중 파라미터 혼합
 
 `$t:` 중첩 파라미터와 일반 파라미터를 함께 사용할 수 있습니다:
+
+```html
+<div>$t:coupon.status_change|count={{selectedItems.length}}|status=$t:enums.coupon_status.stopped</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -263,6 +335,18 @@ CardGrid, DataGrid 등 **반복 렌더링 컴포넌트**의 `cellChildren` 내�
 | `$t:defer:key` | 지연 번역 | renderItemChildren (iteration 컨텍스트 포함) |
 
 ### 사용 예시
+
+```html
+<card-grid>
+  <prop name="cellChildren">
+    <item type="basic" name="Span" text="$t:defer:admin.modules.vendor|vendor={{row.vendor}}"/>
+    <item type="basic" name="Span" if="{{row.dependencies &amp;&amp; row.dependencies.length > 0}}" text="$t:defer:admin.modules.dependencies|deps={{row.dependencies.join(', ')}}"/>
+    <item type="basic" name="Span" if="{{!row.dependencies || row.dependencies.length === 0}}" text="$t:admin.modules.no_dependencies"/>
+  </prop>
+</card-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -364,6 +448,12 @@ $t:defer:는 renderItemChildren 내부에서만 처리됨
 ```
 
 ### 레이아웃에서 모듈 다국어 사용
+
+```html
+<h1 data-ref="page-title" text="$t:sirsoft-sample.admin.index.title"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -745,6 +835,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
 
 ### 레이아웃 JSON 작성 패턴
 
+```html
+<user-profile data-ref="user_profile" user="{{current_user.data}}" profileText="$t:admin.profile_settings" logoutText="$t:admin.logout"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "user_profile",
@@ -754,12 +850,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
     "user": "{{current_user.data}}",
     "profileText": "$t:admin.profile_settings",  // 다국어 키
     "logoutText": "$t:admin.logout"              // 다국어 키
-  },
-  "data_binding": {
-    "user": "current_user.data"
   }
 }
 ```
+
+> 데이터는 위처럼 props 표현식(`"{{current_user.data}}"`)으로 바인딩한다. 별도의 `data_binding` 매핑 키는 **사어(死語)** 로, 렌더러가 읽지 않고 마크업 태그로도 승격되지 않는다 ([layout-json.md](layout-json.md) 최상위 속성 표).
 
 ### 다국어 파일 구조
 
@@ -841,6 +936,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 ```
 
 ### 레이아웃 JSON에서 사용
+
+```html
+<login-form data-ref="login_form" emailLabel="$t:auth.login.email" passwordLabel="$t:auth.login.password" submitButtonText="$t:auth.login.submit" processingText="$t:auth.login.processing" emailPlaceholder="$t:auth.login.email_placeholder" passwordPlaceholder="$t:auth.login.password_placeholder" forgotPasswordText="$t:auth.login.forgot_password"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -955,6 +1056,12 @@ await G7Core.locale.change('en');
 
 ### 예시
 
+```html
+<span text="{{raw:post.title}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -967,11 +1074,23 @@ await G7Core.locale.change('en');
 
 ### 파이프와 함께 사용
 
+```html
+<div>{{raw:post.title | truncate:50}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 "text": "{{raw:post.title | truncate:50}}"
 ```
 
 ### 복잡한 표현식
+
+```html
+<div>{{raw:post.title ?? '제목 없음'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 "text": "{{raw:post.title ?? '제목 없음'}}"
@@ -980,6 +1099,12 @@ await G7Core.locale.change('en');
 ### 혼합 보간
 
 일반 번역 토큰과 raw 바인딩을 같은 문자열에서 함께 사용할 수 있습니다:
+
+```html
+<div>{{raw:post.title}} - $t:common.by {{post.author}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 "text": "{{raw:post.title}} - $t:common.by {{post.author}}"

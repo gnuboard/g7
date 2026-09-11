@@ -65,13 +65,13 @@
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/cookie_banner.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/mypage_privacy_tab.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/cookie_banner.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `user_global_overlay` |
+| `resources/extensions/mypage_privacy_tab.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-`cookie_banner.json` 은 사이트 전역에 배너를 띄우는 조각(코어/템플릿 공용 확장 지점에 주입)이고,
-`mypage_privacy_tab.json` 은 마이페이지에 "개인정보/동의 관리" 탭을 추가하는 조각입니다. 둘 다
+`cookie_banner.g7.html` 은 사이트 전역에 배너를 띄우는 조각(코어/템플릿 공용 확장 지점에 주입)이고,
+`mypage_privacy_tab.g7.html` 은 마이페이지에 "개인정보/동의 관리" 탭을 추가하는 조각입니다. 둘 다
 `sirsoft-basic` 템플릿의 확장 지점에 의존하므로, 다른 사용자 템플릿을 쓰려면 그 템플릿에도
 같은 지점이 있어야 두 UI 가 정상 노출됩니다(README "다른 확장과의 연동" 참고).
 <!-- @intent END -->

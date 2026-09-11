@@ -43,7 +43,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | items | object | `{"plugins":[],"modules":[],"templates":[]}` | 코어 비호환으로 자동 비활성화된 확장을 타입별(`plugins`/`modules`/`templates`)로 묶은 목록. 각 원소는 식별자(`identifier`), 비호환 요구 버전(`incompatible_required_version`), 비활성화 시각(`deactivated_at`)을 가지며, 사용자가 dismiss했거나 hidden(학습용 샘플) 확장은 제외됨 |
-| current_core_version | string | `7.0.6` | 현재 설치된 코어 버전 |
+| current_core_version | string | `7.1.0` | 현재 설치된 코어 버전 |
 
 **응답 예시**
 
@@ -61,7 +61,7 @@ HTTP/1.1 200
             "modules": [],
             "templates": []
         },
-        "current_core_version": "7.0.6"
+        "current_core_version": "7.1.0"
     }
 }
 ```

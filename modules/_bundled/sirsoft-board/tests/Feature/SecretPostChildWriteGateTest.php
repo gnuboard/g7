@@ -32,7 +32,7 @@ use PHPUnit\Framework\Attributes\Test;
  *
  * 통과해야 하는 주체: 작성자 본인 · 게시판 관리자(manager) · 비밀글 읽기 권한자.
  *
- * @scenario secret-post-child-write-gate
+ * @scenario link=secret-post-child-write-gate
  *
  * @effects secret_post_comment_blocked_for_outsider,
  *          secret_post_reply_comment_blocked_for_outsider,

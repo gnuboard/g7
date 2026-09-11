@@ -3,10 +3,10 @@
  *
  * troubleshooting-components.md, troubleshooting-components-*.md에 기록된 사례의 회귀 테스트입니다.
  *
- * @see docs/frontend/troubleshooting-components.md
- * @see docs/frontend/troubleshooting-components-datagrid.md
- * @see docs/frontend/troubleshooting-components-form.md
- * @see docs/frontend/troubleshooting-components-misc.md
+ * @see 트러블슈팅 가이드 troubleshooting-components.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-datagrid.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-form.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-misc.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -25,7 +25,7 @@ describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
    * `portable`(0~1023) 이면 태블릿에서 불필요하게 줄바꿈된다.
    * 여기서는 그 전제인 스코프 경계와 우선순위를 고정한다.
    *
-   * @see docs/frontend/troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
+   * @see 트러블슈팅 가이드 troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
    */
   describe('[사례 1] responsive 스코프 경계 — mobile(0~767) vs portable(0~1023)', () => {
     it('mobile 은 767px 까지만 매칭되고 768px 부터는 미적용', () => {
@@ -55,7 +55,7 @@ describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
      * 엔진이 `window.innerWidth` 를 본다는 전제가 깨지면(예: matchMedia 로 교체) 규정을 따른
      * 모든 확장이 경계 폭에서 동시에 어긋나므로, 그 전제를 여기서 고정한다.
      *
-     * @see docs/frontend/troubleshooting-components-misc.md "확장 코드의 화면 폭 판정 관련 이슈"
+     * 배경: 내부 트러블슈팅 사례 「확장 코드의 화면 폭 판정 관련 이슈」
      * @see docs/frontend/responsive-layout.md "확장 코드에서 같은 경계를 판정할 때"
      */
     it('엔진은 window.innerWidth 로 현재 폭을 정한다 (matchMedia 아님)', () => {
@@ -1009,7 +1009,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     });
 
     it('외부 SlotProvider가 모든 컴포넌트에 슬롯 컨텍스트를 제공해야 함', () => {
-      // _admin_base.json은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
+      // _admin_base.g7.html은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
       // isRootRenderer=true는 index===0(첫 컴포넌트)에만 적용됨
       // 외부 SlotProvider가 없으면 index>0 컴포넌트(콘텐츠 영역)에서 슬롯 시스템 미동작
 
@@ -1151,7 +1151,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     }
 
     it('_fromBase: true 컴포넌트는 페이지 전환 시 stable key → 보존', () => {
-      // _admin_base.json의 최상위 4개 컴포넌트 시뮬레이션
+      // _admin_base.g7.html의 최상위 4개 컴포넌트 시뮬레이션
       const baseComponents = [
         { id: 'global_toast', _fromBase: true },
         { id: 'page_transition_indicator', _fromBase: true },
@@ -1327,7 +1327,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
 
   describe('[슬롯 사례 5] slot 컴포넌트 포함 페이지 새로고침 시 React Hook 규칙 위반', () => {
     /**
-     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.json을 사용하는 페이지에서
+     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.g7.html을 사용하는 페이지에서
      *       새로고침으로 직접 진입 시 "컴포넌트 로드 실패" 배너 (React error #300 / hook count mismatch)
      *       navigate 진입 시에는 정상 동작
      *
@@ -1608,7 +1608,7 @@ describe('트러블슈팅 회귀 테스트 - DataGrid cellChildren 파이프', (
    * 라우팅되면 안 된다. engine-v1.59.0 의 안전 평가기는 비트 연산자를 거부하므로
    * raw 파이프가 흘러들면 예외가 된다(종전엔 조용한 비트 OR 오답이었다). 라우팅 판정 자체를 고정한다.
    *
-   * @see docs/frontend/troubleshooting-components-datagrid.md "DataGrid cellChildren 파이프 이슈"
+   * 배경: 내부 트러블슈팅 사례 「DataGrid cellChildren 파이프 이슈」
    * @see resources/js/core/template-engine/__tests__/renderItemChildren-pipe.test.ts (렌더 결과 검증)
    */
   describe('[사례 1] 파이프 판정이 복잡 표현식 판정보다 먼저 적용된다', () => {

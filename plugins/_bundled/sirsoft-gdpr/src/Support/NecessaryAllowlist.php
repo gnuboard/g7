@@ -12,8 +12,8 @@ use Plugins\Sirsoft\Gdpr\Plugin;
  * 단일 출처다 — 서버(미들웨어)와 클라이언트(인터셉터 3종)가 같은 규칙을 쓰지 않으면
  * 한쪽에서만 살아 있는 항목이 생기고, 그 어긋남은 예외도 로그도 남기지 않는다.
  *
- * 클라이언트 측 대응 구현은 `resources/js/necessaryAllowlist.ts` 이며 두 구현의 일치는
- * `resources/js/__tests__/necessaryAllowlistCoverage.test.ts` 가 대조한다.
+ * 클라이언트 측 대응 구현은 `plugins/_bundled/sirsoft-gdpr/resources/js/necessaryAllowlist.ts` 이며 두 구현의 일치는
+ * `plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/necessaryAllowlistCoverage.test.ts` 가 대조한다.
  */
 class NecessaryAllowlist
 {

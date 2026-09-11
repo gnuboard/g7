@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 시각 회귀 없는 토큰 동치 시맨틱 자산 치환 — Playwright cross-product 가드 불필요. 자산 정의는 admin_basic main.css SSoT, 호출처는 자산명만 사용. board admin_board_settings.json 은 옵션 B (responsive padding 유지) 결정에 따라 자식 padding 토큰을 root .admin-page-content-responsive 로 흡수 + sticky-section-header → sticky-tab-nav-responsive 변경 — 시각 동일.
+# audit:allow test-scenario-coverage reason: 시각 회귀 없는 토큰 동치 시맨틱 자산 치환 — Playwright cross-product 가드 불필요. 자산 정의는 admin_basic main.css SSoT, 호출처는 자산명만 사용. board admin_board_settings.g7.html 은 옵션 B (responsive padding 유지) 결정에 따라 자식 padding 토큰을 root .admin-page-content-responsive 로 흡수 + sticky-section-header → sticky-tab-nav-responsive 변경 — 시각 동일.
 
 feature: 게시판/이커머스 어드민 페이지 root wrapper 시맨틱 자산 매핑 (#408 보강)
 
@@ -16,13 +16,16 @@ description: |
       + responsive.portable 분기는 .admin-page-content-viewport-compact (신설, p-4 변형)
     - ec admin_ecommerce_mileage_deposit_settings: .admin-page-content 매핑
       (배경 토큰 누락 회귀 정리 — ec 21건 동질)
+      ※ 이 화면은 이후 admin_ecommerce_mileage_settings 를 거쳐 admin_ecommerce_settings
+        탭(_tab_mileage*)으로 통합되어 파일이 존재하지 않는다. 후속 화면은
+        .admin-page-content-responsive 를 쓰므로 본 결정이 그대로 승계되지 않아
+        axes.layout_file 에서 제외한다(삭제된 파일 인용 금지).
 
 axes:
   layout_file:
-    - modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.json
-    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_mileage_deposit_settings.json
-    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_common_info_index.json
-    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_notice_index.json
+    - modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.g7.html
+    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_common_info_index.g7.html
+    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_notice_index.g7.html
   asset_class:
     - admin-page-content
     - admin-page-content-responsive

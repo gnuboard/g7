@@ -20,6 +20,7 @@ import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
 import checkoutSummaryJson from '../../layouts/partials/shop/_checkout_summary.json';
 import checkoutPaymentJson from '../../layouts/partials/shop/_checkout_payment.json';
 import checkoutJson from '../../layouts/shop/checkout.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 객체 트리에서 조건을 만족하는 첫 노드를 깊이우선 탐색 */
 function findNode(node: any, predicate: (n: any) => boolean): any {
@@ -241,7 +242,7 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
         checkoutPaymentJson,
         (n: any) =>
           Array.isArray(n?.actions) &&
-          n.actions.some(
+          actionsOf(n).some(
             (a: any) =>
               a?.type === 'click' &&
               JSON.stringify(a).includes('_local.paymentMethod'),
@@ -249,8 +250,11 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
       );
       expect(methodSelect, '결제수단 선택 액션 노드를 찾지 못했다').toBeDefined();
 
-      const clickAction = methodSelect.actions.find((a: any) => a?.type === 'click');
-      const inner = clickAction?.params?.actions ?? [];
+      const clickAction = actionsOf(methodSelect).find((a: any) => a?.type === 'click');
+      // sequence 의 자식 목록은 두 자리 중 하나에 온다 — 엔진이 그렇게 읽으므로
+      // (`ActionDispatcher`: `action.actions || action.params?.actions`) 굽기도 한쪽으로만 낸다.
+      // 한 자리만 보면 굽기 관례가 바뀌는 순간 이 단언이 조용히 빈 배열을 검사하게 된다.
+      const inner = clickAction?.actions ?? clickAction?.params?.actions ?? [];
       const targets = inner.map((a: any) => a?.params?.target);
 
       // 결제수단 자체는 설정하고

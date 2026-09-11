@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
  * 배송정책 컬렉션 리소스
@@ -33,7 +34,7 @@ class ShippingPolicyCollection extends BaseApiCollection
     /**
      * 배송정책 컬렉션을 배열로 변환합니다.
      *
-     * @param Request $request HTTP 요청 객체
+     * @param  Request  $request  HTTP 요청 객체
      * @return array<int|string, mixed> 변환된 배송정책 컬렉션 배열
      */
     public function toArray(Request $request): array
@@ -63,7 +64,7 @@ class ShippingPolicyCollection extends BaseApiCollection
     /**
      * 통계가 포함된 형태의 배열을 반환합니다.
      *
-     * @param array $statistics 통계 데이터 배열
+     * @param  array  $statistics  통계 데이터 배열
      * @return array<string, mixed> 통계 정보가 포함된 배송정책 컬렉션
      */
     public function withStatistics(array $statistics = []): array
@@ -108,7 +109,7 @@ class ShippingPolicyCollection extends BaseApiCollection
                 $methodLabel = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null) : null;
             } else {
                 $methodLabel = $method
-                    ? \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($method)?->getLocalizedName()
+                    ? ShippingType::getCachedByCode($method)?->getLocalizedName()
                     : null;
             }
 

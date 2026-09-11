@@ -9,14 +9,15 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
+use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use App\Services\LayoutExtensionService;
-use Illuminate\Support\Facades\Log;
 
 /**
  * 플러그인 업데이트 후 레이아웃 확장(오버레이) 복원 리스너
  *
  * 업데이트 과정에서 오버레이 주입이 소실되면 주문상세의 영수증 링크·가상계좌 정보가
- * 조용히 사라진다. 업데이트 완료 훅에서 resources/extensions/*.json 을 다시 등록한다.
+ * 조용히 사라진다. 업데이트 완료 훅에서 resources/extensions 의 확장점 정의를 다시 등록한다
+ * (소스 `.g7.html` 우선 — 짝 판별은 코어가 한다).
  */
 class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterface
 {
@@ -85,61 +86,18 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
     /**
      * resources/extensions 의 오버레이 확장 정의를 모두 읽습니다.
      *
+     * 수집·짝 판별·읽기는 코어가 맡는다 ({@see LayoutFragmentSourceHelper::readDirectory()}) —
+     * 여기서 `glob('*.json')` 하면 소스(`.g7.html`)이 통째로 보이지 않아, 소스만 고친 확장점은
+     * 업데이트 복원에서 조용히 빠진다.
+     *
      * @return array<int, array<string, mixed>> 확장 정의 목록
      */
     private function currentOverlayExtensions(): array
     {
-        $paths = glob($this->extensionsDirectory().'/*.json') ?: [];
-        $extensions = [];
-
-        foreach ($paths as $path) {
-            $extensionData = $this->readExtensionJson($path);
-            if ($extensionData === null || ! isset($extensionData['target_layout'])) {
-                continue;
-            }
-
-            $extensions[] = $extensionData;
-        }
-
-        return $extensions;
-    }
-
-    /**
-     * 확장 정의 디렉토리 경로를 반환합니다.
-     */
-    private function extensionsDirectory(): string
-    {
-        return dirname(__DIR__, 2).'/resources/extensions';
-    }
-
-    /**
-     * 확장 JSON 을 읽어 배열로 반환합니다.
-     *
-     * @param  string  $path  파일 경로
-     * @return array<string, mixed>|null 파싱 결과 (실패 시 null)
-     */
-    private function readExtensionJson(string $path): ?array
-    {
-        $content = file_get_contents($path);
-        if ($content === false) {
-            Log::warning('토스페이먼츠 레이아웃 확장 파일을 읽을 수 없습니다.', [
-                'path' => $path,
-            ]);
-
-            return null;
-        }
-
-        $data = json_decode($content, true);
-        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($data)) {
-            Log::warning('토스페이먼츠 레이아웃 확장 JSON 파싱 실패', [
-                'path' => $path,
-                'error' => json_last_error_msg(),
-            ]);
-
-            return null;
-        }
-
-        return $data;
+        return array_values(array_filter(
+            LayoutFragmentSourceHelper::readDirectory(dirname(__DIR__, 2).'/resources/extensions'),
+            static fn (array $extensionData): bool => isset($extensionData['target_layout'])
+        ));
     }
 
     /**

@@ -125,6 +125,12 @@ test.describe('봇 렌더링 본문 노출', () => {
 
       const body = bodyOf(postHtml);
 
+      // 가려진 글(블라인드/비밀)은 본문 자리에 안내만 나가고 description 은 사이트 기본 설명으로
+      // 채워진다 — "description 이 있다" 만으로는 걸러지지 않으므로 본문 안내로 판정해 건너뛴다.
+      if (/블라인드 처리된|비밀글|삭제된 게시글/.test(body)) {
+        continue;
+      }
+
       // 본문 영역이 빈 껍데기로 나가던 회귀 시그니처
       expect(body, `${path} 의 본문 영역이 비어 있습니다`).not.toContain(EMPTY_INJECTED_BODY);
 

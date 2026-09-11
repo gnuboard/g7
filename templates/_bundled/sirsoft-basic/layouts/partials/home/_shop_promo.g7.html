@@ -1,0 +1,13 @@
+<!-- 쇼핑 안내 카드 — 이커머스가 설치돼 있을 때만 뜻이 있어 부르는 쪽이 조건으로 감싼다. 이동 경로 앞머리는 전역 shopBase 를 쓴다. -->
+<partial description="쇼핑몰 홍보 카드">
+  <button class="block w-full text-left bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-5 text-white hover:shadow-lg transition-shadow cursor-pointer">
+    <on type="click">
+      <navigate path="{{_global.shopBase}}/products"/>
+    </on>
+    <div class="flex items-center gap-2 mb-2">
+      <icon name="shopping-cart" class="text-xl"/>
+      <span class="font-semibold">$t:home.shop</span>
+    </div>
+    <p class="text-sm opacity-90">$t:home.shop_description</p>
+  </button>
+</partial>

@@ -37,8 +37,8 @@
 | `sirsoft-board.board.filter_menu_data` | filter | — | `src/Services/BoardService.php:1053` |
 | `sirsoft-board.board.filter_update_data` | filter | — | `src/Services/BoardService.php:500` |
 | `sirsoft-board.board.posts.before_force_delete` | action | — | `src/Services/BoardService.php:593` |
-| `sirsoft-board.board.store_validation_rules` | filter | — | `src/Http/Requests/StoreBoardRequest.php:225` |
-| `sirsoft-board.board.update_validation_rules` | filter | — | `src/Http/Requests/UpdateBoardRequest.php:228` |
+| `sirsoft-board.board.store_validation_rules` | filter | — | `src/Http/Requests/StoreBoardRequest.php:226` |
+| `sirsoft-board.board.update_validation_rules` | filter | — | `src/Http/Requests/UpdateBoardRequest.php:230` |
 | `sirsoft-board.board_type.after_create` | action | — | `src/Services/BoardTypeService.php:42` |
 | `sirsoft-board.board_type.after_delete` | action | — | `src/Services/BoardTypeService.php:107` |
 | `sirsoft-board.board_type.after_update` | action | — | `src/Services/BoardTypeService.php:70` |
@@ -242,16 +242,16 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/admin-ecommerce-inquiry-settings.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/admin_dashboard_community.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/admin_dashboard_quick_menu.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-notification-detail.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-notification-settings.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/admin-ecommerce-inquiry-settings.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `inquiry_board_setting` |
+| `resources/extensions/admin_dashboard_community.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_dashboard_community` |
+| `resources/extensions/admin_dashboard_quick_menu.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_dashboard_quick_menu` |
+| `resources/extensions/user-notification-detail.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
+| `resources/extensions/user-notification-settings.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_form` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-5개 조각 중 `admin-ecommerce-inquiry-settings.json`·`admin_dashboard_community.json`·
-`admin_dashboard_quick_menu.json` 은 board 자신의 화면이 아니라 **다른 확장(이커머스 문의
+5개 조각 중 `admin-ecommerce-inquiry-settings.g7.html`·`admin_dashboard_community.g7.html`·
+`admin_dashboard_quick_menu.g7.html` 은 board 자신의 화면이 아니라 **다른 확장(이커머스 문의
 설정 화면, 관리자 대시보드)에** 게시판 관련 UI 를 끼워 넣는 조각입니다. 이 모듈이 다른 확장의
 레이아웃을 코드로 알지 못한 채(레이아웃 확장 시스템을 통해서만) UI 를 주입한다는 뜻입니다.
 나머지 2개(`user-notification-*`)는 코어 회원 알림 설정 화면에 board 알림 수신 옵션을

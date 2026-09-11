@@ -1,49 +1,50 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Save Search Preset Modal"
-  },
-  "id": "modal_preset_save",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-secondary text-sm mb-6"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.description"
+    "comment": "지금 걸린 검색 조건을 이름 붙여 저장하는 창.\n  **아직 시안이다** — 이름 입력칸이 어디에도 매이지 않았고 저장 버튼은 창을 닫기만 한다.\n  같은 이름의 창이 주문 목록 화면(`admin_ecommerce_order_list`)에도 있고 그쪽이 배선된 정본이다\n  — 거기서는 저장할 조건 20여 개를 여는 쪽이 전역에 담아 넘긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Save Search Preset Modal"
     },
-    {
-      "type": "basic",
-      "name": "Input",
-      "props": {
-        "type": "text",
-        "placeholder": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder",
-        "className": "input"
-      }
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary w-full"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.save",
-      "actions": [
+    "id": "modal_preset_save",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.title",
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary w-full"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.save"
+            }
+        ]
+    },
+    "children": [
         {
-          "type": "click",
-          "handler": "closeModal"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-secondary text-sm mb-6"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.description"
+        },
+        {
+            "type": "basic",
+            "name": "Input",
+            "props": {
+                "type": "text",
+                "placeholder": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder",
+                "className": "input"
+            }
         }
-      ]
-    }
-  ]
+    ]
 }

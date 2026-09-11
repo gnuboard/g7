@@ -1,222 +1,225 @@
 {
-  "id": "modal_image_preview",
-  "type": "composite",
-  "name": "Modal",
-  "meta": {
-    "is_partial": true
-  },
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title",
-    "width": "90vw",
-    "closeOnBackdropClick": true
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "p-4"
-      },
-      "children": [
+    "comment": "리뷰에 첨부된 사진을 크게 보는 창. 사진만 띄우는 것이 아니라 위쪽에 작성자·별점·날짜·옵션·본문을\n  함께 보여 준다 — 사진만으로는 어떤 리뷰인지 알 수 없기 때문이다.\n  보여줄 리뷰와 지금 몇 번째 사진인지를 스스로 정하지 않고 여는 쪽이 `_global.reviewForModal` ·\n  `_global.reviewImageIndex` 에 담아 준다.\n  좌우 이동은 그 번호를 ±1 하는 것이 전부이고, 양 끝에서는 버튼이 잠긴다 — 범위를 넘으면 사진\n  경로가 비어 빈 상자가 뜬다.\n  옵션 배지에서 '기본: 기본' 조합만 걸러낸다 — 옵션이 없는 상품에 붙는 자리표시라 보여 줄 뜻이 없다.",
+    "meta": {
+        "is_partial": true
+    },
+    "id": "modal_image_preview",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title",
+        "width": "90vw",
+        "closeOnBackdropClick": true
+    },
+    "children": [
         {
-          "comment": "리뷰 정보 영역",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "border-b border-gray-200 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "comment": "이름 + 별점 + 날짜",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-4"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-medium text-sm"
-                  },
-                  "text": "{{_global.reviewForModal?.userName ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2 shrink-0"
-                  },
-                  "children": [
-                    {
-                      "comment": "별점 아이콘",
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-0.5"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "iteration": {
-                            "source": "{{[1,2,3,4,5]}}",
-                            "item_var": "star"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": {
-                                "name": "star",
-                                "size": "sm",
-                                "className": "{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-400 dark:text-yellow-300' : 'text-gray-300 dark:text-gray-600'}}"
-                              }
-                            }
-                          ]
-                        }
-                      ]
+                    "comment": "리뷰 정보 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-b border-gray-200 dark:border-gray-700"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-hint"
-                      },
-                      "text": "{{_global.reviewForModal?.createdAt ?? ''}}"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "comment": "옵션 배지 (있을 때만)",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(_global.reviewForModal?.optionValues ?? []).length > 0}}",
-              "props": {
-                "className": "flex flex-wrap gap-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "iteration": {
-                    "source": "{{_global.reviewForModal?.optionValues ?? []}}",
-                    "item_var": "opt"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{!(opt.key?.ko === '기본' && opt.value?.ko === '기본')}}",
-                      "props": {
-                        "className": "text-secondary inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
-                      },
-                      "text": "{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "comment": "리뷰 내용 (2줄 말줄임)",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-body line-clamp-2"
-                  },
-                  "text": "{{_global.reviewForModal?.content ?? ''}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "이미지 슬라이더 영역",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center flex-col gap-3"
-          },
-          "children": [
-            {
-              "comment": "이미지 + 좌우 버튼",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center relative justify-center w-full px-16"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Img",
-                  "props": {
-                    "src": "{{(_global.reviewForModal?.images ?? [])[Number(_global.reviewImageIndex)]?.download_url ?? ''}}",
-                    "alt": "",
-                    "className": "w-full max-w-full max-h-[500px] object-contain rounded-lg"
-                  }
+                    "children": [
+                        {
+                            "comment": "이름 + 별점 + 날짜",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-primary font-medium text-sm"
+                                    },
+                                    "text": "{{_global.reviewForModal?.userName ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2 shrink-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "별점 아이콘",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{[1,2,3,4,5]}}",
+                                                        "item_var": "star"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "star",
+                                                                "size": "sm",
+                                                                "className": "{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-400 dark:text-yellow-300' : 'text-gray-300 dark:text-gray-600'}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-hint"
+                                            },
+                                            "text": "{{_global.reviewForModal?.createdAt ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "옵션 배지 (있을 때만)",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.reviewForModal?.optionValues ?? []).length > 0}}",
+                            "props": {
+                                "className": "flex flex-wrap gap-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "iteration": {
+                                        "source": "{{_global.reviewForModal?.optionValues ?? []}}",
+                                        "item_var": "opt"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!(opt.key?.ko === '기본' && opt.value?.ko === '기본')}}",
+                                            "props": {
+                                                "className": "text-secondary inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                            },
+                                            "text": "{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "comment": "리뷰 내용 (2줄 말줄임)",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body line-clamp-2"
+                                    },
+                                    "text": "{{_global.reviewForModal?.content ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "flex-center absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed",
-                    "disabled": "{{Number(_global.reviewImageIndex) <= 0}}"
-                  },
-                  "text": "❮",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "reviewImageIndex": "{{Number(_global.reviewImageIndex) - 1}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "flex-center absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed",
-                    "disabled": "{{Number(_global.reviewImageIndex) >= (_global.reviewForModal?.images?.length ?? 1) - 1}}"
-                  },
-                  "text": "❯",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "reviewImageIndex": "{{Number(_global.reviewImageIndex) + 1}}"
-                      }
-                    }
-                  ]
+                    "comment": "이미지 슬라이더 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center flex-col gap-3"
+                    },
+                    "children": [
+                        {
+                            "comment": "이미지 + 좌우 버튼",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center relative justify-center w-full px-16"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "props": {
+                                        "src": "{{(_global.reviewForModal?.images ?? [])[Number(_global.reviewImageIndex)]?.download_url ?? ''}}",
+                                        "alt": "",
+                                        "className": "w-full max-w-full max-h-[500px] object-contain rounded-lg"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "이전 사진 — 번호를 하나 줄인다. 첫 장에서는 버튼이 잠기므로 음수로 내려가지 않는다. `Number()` 로 감싸는 것은 이 값이 글자로 들어올 수 있어 `'0' - 1` 이 아니라 숫자 뺄셈이 되게 하기 위해서다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reviewImageIndex": "{{Number(_global.reviewImageIndex) - 1}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-center absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed",
+                                        "disabled": "{{Number(_global.reviewImageIndex) <= 0}}"
+                                    },
+                                    "text": "❮"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "다음 사진 — 마지막 장에서는 버튼이 잠긴다. 더하기에서 `Number()` 가 없으면 `'0' + 1` 이 `'01'` 이 되어 사진 경로가 깨진다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reviewImageIndex": "{{Number(_global.reviewImageIndex) + 1}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-center absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed",
+                                        "disabled": "{{Number(_global.reviewImageIndex) >= (_global.reviewForModal?.images?.length ?? 1) - 1}}"
+                                    },
+                                    "text": "❯"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "이미지 카운터 (이미지 2장 이상일 때만)",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.reviewForModal?.images?.length ?? 0) > 1}}",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "{{(Number(_global.reviewImageIndex) + 1) + ' / ' + (_global.reviewForModal?.images?.length ?? 1)}}"
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "comment": "이미지 카운터 (이미지 2장 이상일 때만)",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(_global.reviewForModal?.images?.length ?? 0) > 1}}",
-              "props": {
-                "className": "text-label-subtle"
-              },
-              "text": "{{(Number(_global.reviewImageIndex) + 1) + ' / ' + (_global.reviewForModal?.images?.length ?? 1)}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

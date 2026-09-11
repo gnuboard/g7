@@ -4,7 +4,7 @@
  *
  * troubleshooting-state-global.md에 기록된 모든 사례의 회귀 테스트입니다.
  *
- * @see docs/frontend/troubleshooting-state-global.md
+ * @see 트러블슈팅 가이드 troubleshooting-state-global.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

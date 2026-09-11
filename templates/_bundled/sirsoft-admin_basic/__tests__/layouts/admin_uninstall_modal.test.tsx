@@ -3,8 +3,8 @@
  * @description 모듈/플러그인 삭제 모달 레이아웃 테스트
  *
  * 테스트 대상:
- * - templates/.../partials/admin_module_list/_modal_uninstall.json (모듈 삭제 모달)
- * - templates/.../partials/admin_plugin_list/_modal_uninstall.json (플러그인 삭제 모달)
+ * - templates/.../partials/admin_module_list/_modal_uninstall.g7.html (모듈 삭제 모달)
+ * - templates/.../partials/admin_plugin_list/_modal_uninstall.g7.html (플러그인 삭제 모달)
  *
  * 검증 항목:
  * - 모달 구조 및 data_sources 정의

@@ -56,7 +56,7 @@ class ReportController extends AdminBaseController
                 return $this->forbidden('sirsoft-board::messages.reports.permission_denied');
             }
 
-            // filters 배열에서 검색 조건 추출 (admin_user_list.json과 동일한 구조)
+            // filters 배열에서 검색 조건 추출 (admin_user_list.g7.html과 동일한 구조)
             $filtersParam = $request->input('filters', []);
             $searchField = $filtersParam[0]['field'] ?? 'all';
             $searchValue = $filtersParam[0]['value'] ?? null;

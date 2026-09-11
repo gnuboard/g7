@@ -97,6 +97,12 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 | `_global.settings` | 관리자 환경설정 (defaults.json 기반 영속 설정) | `G7Config.settings` → `TemplateApp.loadG7Config()` |
 | `_global.appConfig` | 시스템 설정 (config/frontend.php 기반 정적 config 값) | `G7Config.appConfig` → `TemplateApp.loadG7Config()` |
 
+```html
+<!-- appConfig 활용 예시 - 동적 Select 옵션 (타임존) --><div options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "comment": "appConfig 활용 예시 - 동적 Select 옵션 (타임존)",
@@ -110,6 +116,12 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 > `_global.appConfig.supportedTimezones`는 `[{value: 'Asia/Seoul', label: '(UTC+09:00) Asia/Seoul'}, ...]` 형식의 `{value, label}` 객체 배열입니다(오프셋 오름차순 정렬). 백엔드 `SettingsService::buildTimezoneOptions()`가 매 요청 시점에 UTC 오프셋을 계산하여 라벨을 생성하므로 DST 전환이 자동 반영됩니다. 별도 `.map()` 변환 없이 Select `options`에 직접 바인딩합니다.
 
 ### 기본 사용법
+
+```html
+<div data-if="{{_global.isLoading}}" class="{{_global.sidebarOpen ? 'open' : 'closed'}}" text="{{_global.currentTheme}}">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -265,6 +277,12 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 
 ### 로컬 상태 기본 사용법
 
+```html
+<div data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).length > 0}}" class="{{_local.activeTab === 'basic' ? 'active' : ''}}" value="{{_local.searchQuery}}">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -276,6 +294,14 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 ```
 
 ### setState로 로컬 상태 업데이트
+
+```html
+<on type="click">
+  <set-state target="local" activeTab="settings"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -298,6 +324,21 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 
 API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표시:
 
+```html
+<button data-ref="save_button">
+  <on type="click">
+    <api-call target="/api/users" method="POST">
+      <fail>
+        <set-state target="local" errors="{{response?.errors}}"/>
+      </fail>
+    </api-call>
+  </on>
+  저장
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "save_button",
@@ -315,7 +356,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
           "handler": "setState",
           "params": {
             "target": "local",
-            "errors": "{{$response?.errors}}"
+            "errors": "{{response?.errors}}"
           }
         }
       ]
@@ -325,6 +366,16 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 ```
 
 에러 표시 컴포넌트:
+
+```html
+<div data-ref="validation_error" data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).length > 0}}" class="bg-red-50 border border-red-200 rounded-lg p-4">
+  <ul data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, msgs]) => msgs)">
+    <li>{{message}}</li>
+  </ul>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -420,9 +471,21 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 
 `isolatedState` 속성으로 격리된 상태를 정의합니다:
 
+```html
+<div>
+  <isolated-state scope-id="item-selector">
+    <field name="selectedItems" :value="[]"/>
+    <field name="currentStep" :value="1"/>
+  </isolated-state>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "selectedItems": [],
     "currentStep": 1
@@ -441,6 +504,18 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 
 `setState` 핸들러에서 `target: "isolated"` 사용:
 
+```html
+<on type="click">
+  <set-state target="isolated" :currentStep="2">
+    <field name="selectedItems">
+      <item>{{item.id}}</item>
+    </field>
+  </set-state>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "setState",
@@ -453,6 +528,12 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 ```
 
 ### 바인딩에서 접근
+
+```html
+<div data-if="{{_isolated.currentStep === 2}}" selected="{{_isolated.selectedItems.includes(item.id)}}">{{_isolated.selectedItems.length}}개 선택됨</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -476,9 +557,26 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 
 ### 사용 예시: 카테고리 선택
 
+```html
+<div>
+  <isolated-state>
+    <field name="selectedCategories" :value="[null,null,null,null]"/>
+    <field name="currentLevel" :value="0"/>
+  </isolated-state>
+  <div :level="0" selected="{{_isolated.selectedCategories[0]}}">
+    <on type="click">
+      <set-state target="isolated" selectedCategories="{{[..._isolated.selectedCategories.slice(0, 0), $event.id, null, null, null]}}" :currentLevel="1"/>
+    </on>
+  </div>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "selectedCategories": [null, null, null, null],
     "currentLevel": 0
@@ -486,7 +584,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
   "children": [
     {
       "type": "basic",
-      "name": "CategoryLevel",
+      "name": "Div",
       "props": {
         "level": 0,
         "selected": "{{_isolated.selectedCategories[0]}}"

@@ -205,6 +205,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.allowed_extensions.*' => ['string', 'max:20'],
             'basic_defaults.notify_admin_on_post' => ['nullable', 'boolean'],
             'basic_defaults.notify_author' => ['nullable', 'boolean'],
+            // 하한 기본값 0 = 신규 배지를 붙이지 않음 — 게시판별 값과 같은 범위를 쓴다(한쪽만 좁으면 기본값을 개별 게시판에 못 준다).
             'basic_defaults.new_display_hours' => ['nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
             // default_board_permissions는 flat key 구조 (예: {"posts.read": ["admin","user"], "manager": ["admin"]})
             // Laravel dot notation으로 하위 키를 개별 검증하면 flat key가 중첩 배열로 파싱되어 데이터 유실됨

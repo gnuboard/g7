@@ -29,6 +29,7 @@
 - [테스트 실행 중 발견한 무관 에러 처리](#테스트-실행-중-발견한-무관-에러-처리)
 - [필수 원칙](#필수-원칙)
 - [모듈/플러그인 프론트엔드 테스트 독립성](#모듈플러그인-프론트엔드-테스트-독립성)
+- [DB 를 쓰지 않는 테스트의 커넥션 반납](#db-를-쓰지-않는-테스트의-커넥션-반납)
 - [DDL 트랜잭션 격리 문제](#ddl-트랜잭션-격리-문제)
 - [테스트 작성 패턴](#테스트-작성-패턴)
 - [체크리스트](#체크리스트)
@@ -108,6 +109,29 @@ _bundled 코드 변경 시 module.json 버전 올리기 필수 (업데이트 감
 ```
 
 ---
+
+## DB 를 쓰지 않는 테스트의 커넥션 반납
+
+```
+RefreshDatabase 를 안 쓰는 테스트가 70여 개를 넘기면 SQLSTATE[HY000] [1040] Too many connections
+→ 원인은 테스트 코드가 아니라 커넥션 누수. tearDown 에서 DB::disconnect() 로 반납한다.
+```
+
+DB 를 직접 쓰지 않는 테스트라도 `__()` 다국어 조회 등으로 커넥션이 열린다. `RefreshDatabase` 를 쓰는 테스트는 트레이트가 뒷정리로 `disconnect()` 를 해 주지만, 안 쓰는 테스트는 그 경로가 없어 커넥션이 **테스트당 2개씩**(read/write 분리) 쌓인다. 한 프로세스에서 한도를 넘기는 순간, 그 뒤로 실행되는 **엉뚱한 테스트들이 무더기로** 실패한다 — 실패 지점과 원인 지점이 달라서 원인을 테스트 코드에서 찾으면 시간을 버린다.
+
+증상 판별: 개별 실행은 통과하는데 스위트로 묶으면 `[1040] Too many connections` 가 나고, 실패 건수가 실행 순서 뒷부분에 몰린다.
+
+조치 — 해당 테스트군의 베이스 클래스에서 커넥션을 반납한다:
+
+```php
+protected function tearDown(): void
+{
+    DB::disconnect();
+    parent::tearDown();
+}
+```
+
+`Tests\TestCase` 를 고치지 않는다. 그쪽은 `RefreshDatabase` 테스트와 공유하는데 그 커넥션에는 열린 트랜잭션이 걸려 있어, 뒷정리 순서를 건드리면 롤백이 깨진다. 실제 사례는 `tests/Unit/Support/LayoutMarkup/LayoutMarkupTestCase.php` 참조.
 
 ## 확장 테스트 베이스 클래스
 
@@ -295,6 +319,17 @@ $this->assertSame(20000, $seo['sitemap_urls_per_file']);
 6. 새 모듈/플러그인의 도메인 기능 추가
 
 매니페스트 면제(트리거 외): 단순 리팩토링, 번역 키 추가, 렌더링/스타일 수정, DTO 필드 추가만, 테스트 코드 자체 수정.
+
+### 커버리지 검사 면제는 축 한정으로 적는다
+
+`test-scenario-coverage` 룰은 네 축(`cross_product` · `effects` · `sub_flows` · `test_files`)을 검사한다. 면제가 필요하면 **침묵시킬 축만** 대괄호에 적는다 — 적지 않은 축은 계속 검사된다.
+
+```yaml
+# audit:allow test-scenario-coverage[cross_product] reason: 9축 105,840 조합은 전개가 무의미하고 핵심 회귀는 test_files 가 커버
+feature: ...
+```
+
+대괄호를 생략하면 **네 축 전부**가 침묵한다. 그 형태는 레거시이며 새 매니페스트에서 쓰지 않는다 — 사유에 "핵심 회귀 가드는 `test_files` 의 통과 테스트로 커버" 라고 적으면서 정작 그 `test_files` 존재 검사까지 끄는 자기무효가 되기 때문이다(전면 면제분에서 `test_files` 미존재 34건이 실측됐다). 전면 면제 뒤에 쌓인 결손은 `test-scenario-allow-debt` 가드가 계량·래칫으로 잠그고 있어 더 늘 수 없다.
 
 ### 매니페스트 위치
 
@@ -1567,6 +1602,8 @@ php artisan test
 필수: 버그 수정은 먼저 실패하는 회귀 테스트 → fail 확인 → 수정 → green 4단계
 필수: 테스트 중 발견한 무관 에러도 같은 작업에서 처리 (stale test 또는 로직 수정)
 필수: 릴리스 전 composer test-smoke 통과
+필수: 프론트엔드(레이아웃 .g7.html·.json / 컴포넌트 TSX / 엔진 TS / 핸들러 TS) 변경 = Playwright E2E spec 동반 추가/수정 + npm run test:e2e 실행
+      자동 검증이 차단 / 면제는 변경 파일 헤더 `// e2e:allow <사유>`
 ```
 
 > 상세: [docs/testing-guide.md](testing-guide.md) — 기능 단위 시나리오 매트릭스, 도메인 매트릭스, Pre-release Smoke Suite, 회귀 테스트 4단계, 무관 에러 처리
@@ -1613,15 +1650,17 @@ testUtils.cleanup();
 | `database/migrations/*.php` | 해당 모델/서비스 테스트에서 검증 | 스키마 변경 |
 | `templates/**/src/components/**/*.tsx` | `templates/**/__tests__/*.test.tsx` | 컴포넌트 |
 | `resources/js/core/**/*.ts` | `resources/js/core/__tests__/*.test.ts` | 템플릿 엔진 |
-| `resources/layouts/**/*.json` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 |
-| `modules/**/resources/layouts/**/*.json` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
-| `templates/**/layouts/**/*.json` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
+| `resources/layouts/**/*.{json,g7.html}` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 |
+| `modules/**/resources/layouts/**/*.{json,g7.html}` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
+| `templates/**/layouts/**/*.{json,g7.html}` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
+| `plugins/**/resources/layouts/**/*.{json,g7.html}` | `plugins/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 플러그인 레이아웃 렌더링 |
+| `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` | 해당 확장의 `__tests__/layouts/*.test.tsx` | 확장 주입 fragment 렌더링 |
 
 ### 기능 구현 시 전 계층 테스트
 
 | 작업 유형 | 백엔드 (PHPUnit) | 프론트엔드 (Vitest) | 레이아웃 렌더링 (Vitest) |
 | ---------- | ----------------- | ------------------- | ---------------------- |
-| 새 화면 구현 | API 엔드포인트 테스트 | 컴포넌트 테스트 | 레이아웃 JSON 렌더링 테스트 |
+| 새 화면 구현 | API 엔드포인트 테스트 | 컴포넌트 테스트 | 레이아웃 렌더링 테스트 (`.g7.html` 소스는 컴파일된 JSON 을 렌더 검증) |
 | 기존 화면 수정 | 변경된 API 테스트 | 변경된 컴포넌트 테스트 | 레이아웃 렌더링 회귀 테스트 |
 | 데이터 흐름 변경 | Service/Repository 테스트 | 상태 관리 테스트 | 데이터 바인딩 렌더링 테스트 |
 

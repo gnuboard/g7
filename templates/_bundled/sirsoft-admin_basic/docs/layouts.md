@@ -5,14 +5,13 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 146개 (루트: `layouts`).
+레이아웃 144개 (루트: `layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `(root)` | 27개 |
+| `(root)` | 26개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `overrides` | 1개 |
 | `partials` | 111개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
@@ -24,7 +23,6 @@
 | `admin_identity_logs` | `(root)` | 화면 | `_admin_base` |
 | `admin_language_pack_list` | `(root)` | 화면 | `_admin_base` |
 | `admin_language_packs` | `(root)` | 화면 | `admin_language_pack_list` |
-| `admin_language_packs_install_modal` | `(root)` | 화면 | - |
 | `admin_login` | `(root)` | 화면 | - |
 | `admin_menu_list` | `(root)` | 화면 | `_admin_base` |
 | `admin_module_language_packs` | `(root)` | 화면 | `admin_language_pack_list` |
@@ -50,7 +48,6 @@
 | `500` | `errors` | 화면 | `_admin_base` |
 | `503` | `errors` | 화면 | `_admin_base` |
 | `maintenance` | `errors` | 화면 | `_admin_base` |
-| `index` | `overrides` | 화면 | `_admin_base` |
 | `_identity_challenge_modal` | `partials` | partial | - |
 | `_modal_changelog` | `partials` | partial | - |
 | `_modal_license` | `partials` | partial | - |
@@ -207,10 +204,10 @@
 전역 호스트 컴포넌트가 필요하면 직접 마운트해야 합니다(§코어 AGENTS.md "독립 레이아웃의 글로벌
 호스트 컴포넌트").
 
-### `_admin_base.json` 에 대한 정정
+### `_admin_base.g7.html` 에 대한 정정
 
-과거 버전 문서는 `_admin_base.json` 이 `init_actions: [initTheme, initMenuFromUrl]` 를 갖는다고
-적었으나, 현재 `_admin_base.json` 에는 `init_actions` 키 자체가 없습니다 — 두 핸들러는 현재
+과거 버전 문서는 `_admin_base.g7.html` 이 `init_actions: [initTheme, initMenuFromUrl]` 를 갖는다고
+적었으나, 현재 `_admin_base.g7.html` 에는 `init_actions` 키 자체가 없습니다 — 두 핸들러는 현재
 `_admin_base` 를 상속하지 않는 인증 화면(`admin_login`/`admin_forgot_password`/
 `admin_reset_password`)에서만 호출됩니다. 사이드바 접힘 상태 복원(`initSidebar`)은 레이아웃이
 아니라 템플릿 부트스트랩(`src/index.ts`)에서 직접 호출됩니다. `_admin_base` 를 고칠 때 이
@@ -308,129 +305,128 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 > 이관 시점 그대로 보존하되, 현재 코드와 어긋나는 부분에는 정정 주석을 달았습니다 —
 > 레이아웃·라우트의 SSoT 는 위 「레이아웃 목록」·「라우트 매핑」 블록입니다.
 
+> **마크업 형식**: 아래 파일 트리는 소스 SSoT 인 `.g7.html`([레이아웃 마크업](../../../../docs/frontend/layout-markup.md)) 기준입니다. 설치 시 서버가 각 `.g7.html` 을 메모리로 JSON 컴파일해 DB(`template_layouts`)에 등록합니다. 산출 JSON 키 계약은 [layout-json.md](../../../../docs/frontend/layout-json.md) 가 SSoT 이며 불변입니다. 디스크에는 진단·복구용 짝 `.json` 이 병존합니다.
+
+> **요약**(이관 시점 실측이며 현행 파일 수와 같습니다):
+> 1. 베이스: `_admin_base.g7.html` (사이드바 + 헤더 + 콘텐츠 슬롯)
+> 2. 코어 페이지 25개(layouts 직속, `_admin_base` 제외): 대시보드, 사용자, 역할, 설정, 확장 관리 등
+> 3. Partial 110개: 탭, 모달, 패널, 필터 등
+
 ### 페이지 맵 (트리 구조)
 
 ```text
-_admin_base.json (베이스 레이아웃)
+_admin_base.g7.html (베이스 레이아웃)
 │
-├── admin_dashboard.json (대시보드)
-├── admin_login.json (로그인 — _admin_base 미상속)
+├── admin_dashboard.g7.html (대시보드)
+├── admin_login.g7.html (로그인 — _admin_base 미상속)
 │
 ├── 사용자 관리
-│   ├── admin_user_list.json (목록)
-│   ├── admin_user_form.json (생성/수정)
-│   └── admin_user_detail.json (상세)
+│   ├── admin_user_list.g7.html (목록)
+│   ├── admin_user_form.g7.html (생성/수정)
+│   └── admin_user_detail.g7.html (상세)
 │
 ├── 역할 관리
-│   ├── admin_role_list.json (목록)
-│   │   └── partials/admin_role_list/_modal_delete.json
-│   └── admin_role_form.json (생성/수정)
+│   ├── admin_role_list.g7.html (목록)
+│   │   └── partials/admin_role_list/_modal_delete.g7.html
+│   └── admin_role_form.g7.html (생성/수정)
 │
 ├── 메뉴 관리
-│   └── admin_menu_list.json (3패널 레이아웃)
+│   └── admin_menu_list.g7.html (3패널 레이아웃)
 │       └── partials/admin_menu_list/
-│           ├── _panel_menu_list.json (좌측: 메뉴 트리)
-│           ├── _panel_form.json (중앙: 편집 폼)
-│           ├── _panel_detail.json (중앙: 상세 보기)
-│           ├── _panel_view.json (우측: 미리보기)
-│           └── _modal_delete.json
+│           ├── _panel_menu_list.g7.html (좌측: 메뉴 트리)
+│           ├── _panel_form.g7.html (중앙: 편집 폼)
+│           ├── _panel_detail.g7.html (중앙: 상세 보기)
+│           ├── _panel_view.g7.html (우측: 미리보기)
+│           └── _modal_delete.g7.html
 │
 ├── 환경 설정
-│   └── admin_settings.json (탭 네비게이션)
+│   └── admin_settings.g7.html (탭 네비게이션)
 │       └── partials/admin_settings/
-│           ├── _tab_general.json (일반)
-│           ├── _tab_mail.json (메일 발송 SMTP 설정)
-│           ├── _tab_notification_definitions.json (알림 정의)
-│           ├── _tab_security.json (보안)
-│           ├── _tab_upload.json (업로드)
-│           ├── _tab_drivers.json (드라이버)
-│           ├── _tab_seo.json (SEO)
-│           ├── _tab_advanced.json (고급)
-│           ├── _tab_info.json (시스템 정보)
-│           ├── _modal_cache_delete.json
-│           ├── _modal_core_changelog.json
-│           ├── _modal_core_update_guide.json
-│           ├── _modal_core_update_result.json
-│           ├── _modal_notification_template_form.json
-│           ├── _modal_notification_template_preview.json
-│           └── _modal_password_confirm.json
+│           ├── _tab_general.g7.html (일반)
+│           ├── _tab_mail.g7.html (메일 발송 SMTP 설정)
+│           ├── _tab_notification_definitions.g7.html (알림 정의)
+│           ├── _tab_security.g7.html (보안)
+│           ├── _tab_upload.g7.html (업로드)
+│           ├── _tab_drivers.g7.html (드라이버)
+│           ├── _tab_seo.g7.html (SEO)
+│           ├── _tab_advanced.g7.html (고급)
+│           ├── _tab_info.g7.html (시스템 정보)
+│           ├── _modal_cache_delete.g7.html
+│           ├── _modal_core_changelog.g7.html
+│           ├── _modal_core_update_guide.g7.html
+│           ├── _modal_core_update_result.g7.html
+│           ├── _modal_notification_template_form.g7.html
+│           ├── _modal_notification_template_preview.g7.html
+│           ├── _modal_password_confirm.g7.html
+│           └── _modal_static_cache_republish.g7.html
 │
 ├── 모듈 관리
-│   └── admin_module_list.json
+│   └── admin_module_list.g7.html
 │       └── partials/admin_module_list/
-│           ├── _modal_detail.json
-│           ├── _modal_install.json
-│           ├── _modal_manual_install.json
-│           ├── _modal_uninstall.json
-│           ├── _modal_update.json
-│           ├── _modal_deactivate_warning.json
-│           ├── _modal_force_activate.json
-│           ├── _modal_force_deactivate.json
-│           ├── _modal_extension_license.json
-│           └── _modal_refresh_layouts.json
+│           ├── _modal_detail.g7.html
+│           ├── _modal_install.g7.html
+│           ├── _modal_manual_install.g7.html
+│           ├── _modal_uninstall.g7.html
+│           ├── _modal_update.g7.html
+│           ├── _modal_deactivate_warning.g7.html
+│           ├── _modal_force_activate.g7.html
+│           ├── _modal_force_deactivate.g7.html
+│           ├── _modal_extension_license.g7.html
+│           └── _modal_refresh_layouts.g7.html
 │
 ├── 플러그인 관리
-│   └── admin_plugin_list.json
+│   └── admin_plugin_list.g7.html
 │       └── partials/admin_plugin_list/
 │           ├── (모듈과 동일 구조 — 10개 모달)
 │           └── ...
 │
 ├── 템플릿 관리
-│   ├── admin_template_list.json
+│   ├── admin_template_list.g7.html
 │   │   └── partials/admin_template_list/
-│   │       ├── _tab_admin.json (Admin 템플릿 탭)
-│   │       ├── _tab_user.json (User 템플릿 탭)
-│   │       ├── _modal_detail.json
-│   │       ├── _modal_install.json
-│   │       ├── _modal_manual_install.json
-│   │       ├── _modal_uninstall.json
-│   │       ├── _modal_update.json
-│   │       ├── _modal_activate.json
-│   │       ├── _modal_deactivate.json
-│   │       ├── _modal_force_activate.json
-│   │       ├── _modal_extension_license.json
-│   │       └── _modal_refresh_layouts.json
-│   └── admin_template_layout_edit.json (레이아웃 편집기)
-│       └── partials/admin_template_layout_edit/_modal_version_history.json
+│   │       ├── _tab_admin.g7.html (Admin 템플릿 탭)
+│   │       ├── _tab_user.g7.html (User 템플릿 탭)
+│   │       ├── _modal_detail.g7.html
+│   │       ├── _modal_install.g7.html
+│   │       ├── _modal_manual_install.g7.html
+│   │       ├── _modal_uninstall.g7.html
+│   │       ├── _modal_update.g7.html
+│   │       ├── _modal_activate.g7.html
+│   │       ├── _modal_deactivate.g7.html
+│   │       ├── _modal_force_activate.g7.html
+│   │       ├── _modal_extension_license.g7.html
+│   │       └── _modal_refresh_layouts.g7.html
+│   └── admin_template_layout_edit.g7.html (레이아웃 편집기)
+│       └── partials/admin_template_layout_edit/_modal_version_history.g7.html
 │
 ├── 스케줄 관리
-│   └── admin_schedule_list.json
+│   └── admin_schedule_list.g7.html
 │       └── partials/admin_schedule_list/
-│           ├── _tab_schedules.json
-│           ├── _modal_form.json
-│           ├── _modal_delete.json
-│           ├── _modal_duplicate.json
-│           ├── _modal_history.json
-│           └── _modal_run.json
-│
-├── 메일 발송 로그
-│   └── admin_mail_send_log_list.json
-│       └── partials/admin_mail_send_log_list/
-│           ├── _partial_datagrid.json
-│           └── _partial_filter.json
+│           ├── _tab_schedules.g7.html
+│           ├── _modal_form.g7.html
+│           ├── _modal_delete.g7.html
+│           ├── _modal_duplicate.g7.html
+│           ├── _modal_history.g7.html
+│           └── _modal_run.g7.html
 │
 ├── 공통 Partial
-│   ├── partials/_modal_changelog.json
-│   └── partials/_modal_license.json
+│   ├── partials/_modal_changelog.g7.html
+│   └── partials/_modal_license.g7.html
 │
 ├── 에러 페이지
 │   └── errors/
-│       ├── 401.json (인증 필요)
-│       ├── 403.json (접근 거부)
-│       ├── 404.json (페이지 없음)
-│       ├── 500.json (서버 오류)
-│       ├── 503.json (서비스 불가)
-│       └── maintenance.json (점검 중)
-│
-├── 오버라이드
-│   └── overrides/sirsoft-sample/index.json
+│       ├── 401.g7.html (인증 필요)
+│       ├── 403.g7.html (접근 거부)
+│       ├── 404.g7.html (페이지 없음)
+│       ├── 500.g7.html (서버 오류)
+│       ├── 503.g7.html (서비스 불가)
+│       └── maintenance.g7.html (점검 중)
 │
 └── 테스트
-    └── template_partial_test.json
+    └── template_partial_test.g7.html
         └── partials/template_partial_test/
-            ├── _content_section.json
-            ├── _header_section.json
-            └── _info_card.json
+            ├── _content_section.g7.html
+            ├── _header_section.g7.html
+            └── _info_card.g7.html
 ```
 
 ---
@@ -439,7 +435,7 @@ _admin_base.json (베이스 레이아웃)
 
 #### 목록 페이지 패턴
 
-**대표**: `admin_user_list.json`, `admin_role_list.json`
+**대표**: `admin_user_list.g7.html`, `admin_role_list.g7.html`
 
 **구성**:
 ```text
@@ -452,6 +448,14 @@ slots.content:
 ```
 
 **data_sources**:
+```html
+<data-source id="users" endpoint="/api/admin/users" method="GET" :auto_fetch="true">
+  <params page="{{_local.page ?? 1}}" per_page="{{_local.per_page ?? 15}}"/>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "users",
@@ -473,7 +477,7 @@ slots.content:
 
 #### 상세 페이지 패턴
 
-**대표**: `admin_user_detail.json`
+**대표**: `admin_user_detail.g7.html`
 
 **구성**:
 ```text
@@ -487,6 +491,12 @@ slots.content:
 ```
 
 **data_sources**:
+```html
+<data-source id="user" endpoint="/api/admin/users/{{route.id}}" method="GET" :auto_fetch="true"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "user",
@@ -504,7 +514,7 @@ slots.content:
 
 #### 폼 페이지 패턴
 
-**대표**: `admin_user_form.json`, `admin_role_form.json`
+**대표**: `admin_user_form.g7.html`, `admin_role_form.g7.html`
 
 **구성**:
 ```text
@@ -534,7 +544,7 @@ slots.content:
 
 #### 설정 페이지 패턴
 
-**대표**: `admin_settings.json`
+**대표**: `admin_settings.g7.html`
 
 **구성**:
 ```text
@@ -544,13 +554,13 @@ slots.content:
   └── PageHeader
   └── TabNavigation (tabs)
   └── Div (탭별 partial 조건부 렌더링)
-      ├── if: activeTab === 'general' → partial: _tab_general.json
-      ├── if: activeTab === 'mail' → partial: _tab_mail.json
-      ├── if: activeTab === 'security' → partial: _tab_security.json
+      ├── if: activeTab === 'general' → partial: _tab_general.g7.html
+      ├── if: activeTab === 'mail' → partial: _tab_mail.g7.html
+      ├── if: activeTab === 'security' → partial: _tab_security.g7.html
       └── ...
 ```
 
-**Partial 구조**: `partials/admin_settings/_tab_*.json` (9개 탭)
+**Partial 구조**: `partials/admin_settings/_tab_*.g7.html` (9개 탭)
 
 **핸들러 패턴**:
 - `setState` — 탭 전환
@@ -561,7 +571,7 @@ slots.content:
 
 #### 확장 관리 패턴
 
-**대표**: `admin_module_list.json`, `admin_plugin_list.json`, `admin_template_list.json`
+**대표**: `admin_module_list.g7.html`, `admin_plugin_list.g7.html`, `admin_template_list.g7.html`
 
 **구성**:
 ```text
@@ -574,11 +584,11 @@ slots.content:
       ├── ActionMenu (설치/활성화/비활성화/삭제/업데이트)
       └── ExtensionBadge (모듈 식별)
 modals:
-  ├── _modal_detail.json (상세 정보)
-  ├── _modal_install.json (설치 확인)
-  ├── _modal_uninstall.json (삭제 확인)
-  ├── _modal_update.json (업데이트)
-  └── _modal_force_activate.json 등
+  ├── _modal_detail.g7.html (상세 정보)
+  ├── _modal_install.g7.html (설치 확인)
+  ├── _modal_uninstall.g7.html (삭제 확인)
+  ├── _modal_update.g7.html (업데이트)
+  └── _modal_force_activate.g7.html 등
 ```
 
 **핸들러 패턴**:
@@ -587,14 +597,14 @@ modals:
 - `setState` — 선택된 확장 정보 저장
 
 **특수사항**:
-- 템플릿 관리는 Admin/User 탭 분리 (`_tab_admin.json`, `_tab_user.json`)
-- 레이아웃 편집기 (`admin_template_layout_edit.json`)는 CodeEditor + 실시간 미리보기
+- 템플릿 관리는 Admin/User 탭 분리 (`_tab_admin.g7.html`, `_tab_user.g7.html`)
+- 레이아웃 편집기 (`admin_template_layout_edit.g7.html`)는 CodeEditor + 실시간 미리보기
 
 ---
 
 #### 에러 페이지 패턴
 
-**대표**: `errors/404.json`
+**대표**: `errors/404.g7.html`
 
 **구성**:
 ```text
@@ -614,12 +624,12 @@ components:
 
 ### 베이스 레이아웃 구조
 
-#### _admin_base.json
+#### _admin_base.g7.html
 
 모든 관리자 페이지의 공통 구조를 정의합니다.
 
 ```text
-_admin_base.json
+_admin_base.g7.html
 ├── init_actions: [initTheme, initMenuFromUrl]
 ├── data_sources: [admin_menu, notifications]
 ├── components:

@@ -878,7 +878,7 @@ class ExtensionDocContractTest extends TestCase
                 // getLayoutExtensions() 기본 구현은 위와 같은 디렉토리를 glob() 한 절대경로라
                 // 파일 목록과 100% 중복이다. 정규화 없이 실으면 같은 파일이 두 번(상대·절대) 나오고
                 // 로컬 머신 절대경로가 커밋되는 확장 저장소에 그대로 남는다.
-                // 템플릿은 'layout-extensions' 가 아니라 'template-overrides' 블록(docs/layouts.md)이다
+                // 템플릿은 'layout-extensions' 가 아니라 'template-overrides' 블록(확장 자신의 docs/layouts.md)이다 — dangling:allow 확장 루트 기준 파일명
                 // — 그 개념(오버라이드)이 모듈/플러그인의 발행과 반대 방향이라 문서 자리가 다르다.
                 $blockKey = $record['type'] === ExtensionInventory::TYPE_TEMPLATE ? 'template-overrides' : 'layout-extensions';
                 $block = $scaffolder->renderBlocks($ctx)[$blockKey] ?? '';
@@ -911,7 +911,7 @@ class ExtensionDocContractTest extends TestCase
 
             // getSettingsLayout() 은 getModulePath()/getPluginPath() 기준 절대경로를 돌려준다
             // (§레이아웃 확장과 같은 결함군) — relativeToExtension() 을 거치지 않으면 로컬 머신
-            // 절대경로가 그대로 커밋 문서(docs/settings.md · README.md)에 실린다.
+            // 절대경로가 그대로 커밋 문서(확장 자신의 docs/settings.md · README.md)에 실린다. — dangling:allow 확장 루트 기준 파일명
             $settingsLayout = $ctx['surface']['values']['getSettingsLayout'] ?? null;
             if (is_string($settingsLayout) && $settingsLayout !== '') {
                 $rendered = $scaffolder->renderBlocks($ctx);

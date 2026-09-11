@@ -1,0 +1,222 @@
+<!-- 관리자 로그인 화면. `_admin_base` 를 **상속하지 않는다** — 사이드바·헤더가 없어야 하고, 베이스가
+  거는 인증 데이터소스도 여기서는 부를 수 없기 때문이다. 그 대가로 베이스가 주던 전역 호스트가
+  없으므로 `toast` 를 이 파일이 직접 심는다(빠뜨리면 토스트 액션이 성공으로 기록되면서 화면에는
+  아무것도 안 뜬다). 테마 토글도 같은 이유로 헤더 컴포넌트 대신 여기에 3버튼으로 둔다.
+  로그인 뒤 갈 곳은 `query.redirect` 로 받는다 — 세션이 끊겨 튕겨 온 사람을 원래 화면으로 돌려보낸다. -->
+<layout name="admin_login" version="1.0.0">
+  <meta title="$t:auth.login.title" description="그누보드7 관리자 로그인 페이지" :auth_required="false"/>
+  <init>
+    <action handler="initTheme" target="{{query.theme}}"/>
+    <set-state target="local" :isLoggingIn="false" :loginError="null" :loginErrors="null" :twoFactor="null">
+      <field name="loginForm">
+        <field name="email" value=""/>
+        <field name="password" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <toast data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
+  <div data-ref="login_page_wrapper" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
+    <on event="mount">
+      <!-- 세션 만료로 튕겨 온 경우에만 안내를 띄운다. 직접 로그인 화면에 온 사람에게는 아무 말도 하지
+           않는다 — 사유는 코어가 리다이렉트할 때 쿼리로 실어 준다. -->
+      <toast if="{{query?.reason === 'session_expired'}}" type="warning" message="$t:auth.session_expired_toast"/>
+    </on>
+    <div data-ref="login_card_container" class="max-w-md w-full space-y-8">
+      <div data-ref="login_header" class="text-center">
+        <div data-ref="logo_image_wrapper" data-if="{{_global.settings?.general?.site_logo_url}}" class="mb-4">
+          <img data-ref="logo_image" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? '그누보드7'}}" class="h-16 w-auto max-w-[200px] mx-auto object-contain"/>
+        </div>
+        <h1 data-ref="logo" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary text-4xl font-bold mb-2">
+          <span data-ref="logo_text">{{_global.settings?.general?.site_name ?? '그누보드7'}}</span>
+        </h1>
+        <p data-ref="subtitle" class="text-label">$t:auth.login.subtitle</p>
+      </div>
+      <form data-ref="login_form_component" data-key="loginForm" class="space-y-6 relative">
+        <on type="submit">
+          <!-- 로그인 제출. 진행 표시를 켜면서 지난 오류를 함께 지운다 — 남겨 두면 재시도 중에도 옛
+               실패 문구가 붙어 있다. 실패는 문구(`loginError`)와 필드별 오류(`loginErrors`)를 나눠 받는다.
+               2단계 인증이 켜진 사이트에서는 1단계(`login`)와 2단계(`loginTwoFactor`)가 `if` 로 상호배타이고,
+               1단계 응답이 인증번호를 요구하면 토큰도 사용자도 없이 `twoFactor` 상태만 심어 화면을 2단계로 바꾼다.
+               성공하면 원래 가려던 곳으로, 없으면 대시보드로 보낸다. -->
+          <sequence>
+            <set-state target="local" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
+            <!-- 1·2단계는 상호배타다. if 는 시퀀스 시작 시점 스냅샷으로 평가되므로 한 제출에 정확히 하나만 실행된다 — 이 if 가 빠지면 인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨진다. -->
+            <login target="admin" if="{{!_local.twoFactor?.required}}">
+              <success>
+                <!-- 2단계 인증이 켜진 사이트는 아직 로그인이 끝나지 않았다 — 토큰도 사용자도 없다. -->
+                <set-state if="{{response.two_factor_required}}" target="local" :isLoggingIn="false">
+                  <field name="twoFactor">
+                    <field name="required" :value="true"/>
+                    <field name="challenge_id" value="{{response.challenge_id}}"/>
+                    <field name="provider_id" value="{{response.provider_id}}"/>
+                    <field name="expires_at" value="{{response.expires_at}}"/>
+                    <field name="code" value=""/>
+                    <field name="error" :value="null"/>
+                    <field name="verifying" :value="false"/>
+                    <field name="resending" :value="false"/>
+                    <field name="resent" :value="false"/>
+                  </field>
+                </set-state>
+                <set-state if="{{!response.two_factor_required}}" target="local" :isLoggingIn="false"/>
+                <navigate if="{{!response.two_factor_required}}" path="{{query.redirect ?? '/admin'}}"/>
+              </success>
+              <fail>
+                <set-state target="local" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
+              </fail>
+              <body email="{{_local.loginForm.email}}" password="{{_local.loginForm.password}}"/>
+            </login>
+            <action handler="loginTwoFactor" target="admin" if="{{_local.twoFactor?.required}}">
+              <success>
+                <set-state target="local" :isLoggingIn="false" :twoFactor="null"/>
+                <navigate path="{{query.redirect ?? '/admin'}}"/>
+              </success>
+              <fail>
+                <!-- 423 잠금은 1단계와 같은 문구 규칙을 따르도록 loginErrors 도 함께 싣는다. 403(관리자 아님)도 이 자리에 표시된다. -->
+                <set-state target="local" :isLoggingIn="false" twoFactor.error="{{error.message}}" loginErrors="{{error.errors}}"/>
+              </fail>
+              <body challenge_id="{{_local.twoFactor?.challenge_id}}" code="{{_local.twoFactor?.code}}"/>
+            </action>
+          </sequence>
+        </on>
+        <!-- API 에러 메시지 표시 -->
+        <div data-ref="login_error_message" data-if="{{_local.loginError}}" class="alert-danger">
+          <p data-ref="login_error_text" class="text-sm text-red-600 dark:text-red-400">{{_local.loginError}}</p>
+          <!-- 계정 잠금 해제 시각 — 언제 다시 시도할 수 있는지 알려주지 않으면 계속 눌러 보게 된다 -->
+          <p data-ref="login_error_locked_until" data-if="{{_local.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}</p>
+          <p data-ref="login_error_locked_permanent" data-if="{{_local.loginErrors?.permanent === true}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.login.locked_permanent</p>
+        </div>
+        <!-- 이메일 입력 필드 -->
+        <div data-ref="login_email_field" data-if="{{!_local.twoFactor?.required}}">
+          <label data-ref="login_email_label" for="email" class="form-label">$t:auth.login.email</label>
+          <input data-ref="login_email_input" id="email" type="email" name="email" placeholder="$t:auth.login.email" class="input py-3 {{_local.loginErrors?.email ? 'input-error' : ''}}" :required="true" disabled="{{_local.isLoggingIn}}"/>
+          <!-- 이메일 필드 에러 메시지 -->
+          <p data-ref="login_email_error" data-if="{{_local.loginErrors?.email}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_local.loginErrors?.email) ? _local.loginErrors.email[0] : _local.loginErrors?.email}}</p>
+        </div>
+        <!-- 비밀번호 입력 필드 -->
+        <div data-ref="login_password_field" data-if="{{!_local.twoFactor?.required}}">
+          <label data-ref="login_password_label" for="password" class="form-label">$t:auth.login.password</label>
+          <input data-ref="login_password_input" id="password" type="password" name="password" placeholder="$t:auth.login.password" class="input py-3 {{_local.loginErrors?.password ? 'input-error' : ''}}" :required="true" disabled="{{_local.isLoggingIn}}"/>
+          <!-- 비밀번호 필드 에러 메시지 -->
+          <p data-ref="login_password_error" data-if="{{_local.loginErrors?.password}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_local.loginErrors?.password) ? _local.loginErrors.password[0] : _local.loginErrors?.password}}</p>
+        </div>
+        <!-- 비밀번호 찾기 링크 -->
+        <div data-ref="login_forgot_password" data-if="{{!_local.twoFactor?.required}}" class="flex-center justify-end">
+          <button data-ref="login_forgot_link" type="button" class="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer">
+            <on type="click">
+              <navigate path="/admin/forgot-password"/>
+            </on>
+            $t:auth.login.forgot
+          </button>
+        </div>
+        <!-- 로그인 버튼 -->
+        <button data-ref="login_submit_button" data-if="{{!_local.twoFactor?.required}}" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{_local.isLoggingIn}}">
+          <div data-ref="login_submit_spinner" data-if="{{_local.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+          <span data-ref="login_submit_text" data-if="{{!_local.isLoggingIn}}">$t:auth.login.submit</span>
+          <span data-ref="login_submit_processing" data-if="{{_local.isLoggingIn}}">$t:auth.login.processing</span>
+        </button>
+        <!-- 2단계 인증 — 비밀번호 확인만 통과한 상태다. 인증번호를 확인해야 로그인이 완료된다. -->
+        <div data-ref="login_two_factor_step" data-if="{{_local.twoFactor?.required}}" class="space-y-6">
+          <div data-ref="login_two_factor_notice" class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800" role="status" aria-live="polite">
+            <p data-ref="login_two_factor_notice_sent" data-if="{{!_local.twoFactor?.resent}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.login.two_factor.sent</p>
+            <p data-ref="login_two_factor_notice_resent" data-if="{{_local.twoFactor?.resent}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.login.two_factor.resent</p>
+          </div>
+          <div data-ref="login_two_factor_error" data-if="{{_local.twoFactor?.error}}" class="alert-danger" role="alert">
+            <p data-ref="login_two_factor_error_text" class="text-sm text-red-600 dark:text-red-400">{{_local.twoFactor?.error ?? ''}}</p>
+          </div>
+          <div data-ref="login_two_factor_field">
+            <label data-ref="login_two_factor_label" for="two_factor_code" class="form-label">$t:auth.login.two_factor.code_label</label>
+            <!-- 자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다 -->
+            <input data-ref="login_two_factor_input" id="two_factor_code" type="text" name="two_factor_code" value="{{_local.twoFactor?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" :maxLength="10" placeholder="$t:auth.login.two_factor.code_placeholder" class="input py-3 text-center text-xl tracking-widest font-mono" disabled="{{_local.isLoggingIn}}">
+              <on event="onChange">
+                <set-state target="local" twoFactor.code="{{$event.target.value}}" :twoFactor.error="null"/>
+              </on>
+            </input>
+            <!-- 유효시각 정적 표기 — 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다 -->
+            <p data-ref="login_two_factor_valid_until" data-if="{{_local.twoFactor?.expires_at}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:auth.login.two_factor.valid_until|until={{_local.twoFactor?.expires_at | datetime}}</p>
+          </div>
+          <!-- 인증번호 확인 — submit 이라 Enter 키로도 제출된다 -->
+          <button data-ref="login_two_factor_submit" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}">
+            <div data-ref="login_two_factor_spinner" data-if="{{_local.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+            <span data-ref="login_two_factor_submit_text" data-if="{{!_local.isLoggingIn}}">$t:auth.login.two_factor.verify</span>
+            <span data-ref="login_two_factor_submit_processing" data-if="{{_local.isLoggingIn}}">$t:auth.login.two_factor.verifying</span>
+          </button>
+          <div data-ref="login_two_factor_actions" class="flex flex-col sm:flex-row gap-2">
+            <button data-ref="login_two_factor_resend" type="button" class="flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.twoFactor?.resending || _local.isLoggingIn}}">
+              <on type="click">
+                <!-- 인증번호 다시 받기 — 진행 표시를 켜고 새 challenge 를 발급받는다. 성공하면 응답 값으로 2단계 상태를 통째로 교체해
+                     입력값을 비우고 「다시 보냈다」 안내로 바꾼다(같은 시퀀스 안에서는 상태가 아직 갱신 전이라 응답 값만 읽는다). 실패 문구는 2단계 오류 자리에 싣는다. -->
+                <sequence>
+                  <set-state target="local" :twoFactor.resending="true" :twoFactor.error="null"/>
+                  <action handler="loginTwoFactorResend" target="admin">
+                    <success>
+                      <!-- 같은 시퀀스 안에서는 상태가 아직 갱신 전이므로 응답 값만 읽는다. -->
+                      <set-state target="local">
+                        <field name="twoFactor">
+                          <field name="required" :value="true"/>
+                          <field name="challenge_id" value="{{response.challenge_id}}"/>
+                          <field name="provider_id" value="{{response.provider_id}}"/>
+                          <field name="expires_at" value="{{response.expires_at}}"/>
+                          <field name="code" value=""/>
+                          <field name="error" :value="null"/>
+                          <field name="verifying" :value="false"/>
+                          <field name="resending" :value="false"/>
+                          <field name="resent" :value="true"/>
+                        </field>
+                      </set-state>
+                    </success>
+                    <fail>
+                      <set-state target="local" :twoFactor.resending="false" twoFactor.error="{{error.message}}"/>
+                    </fail>
+                    <body challenge_id="{{_local.twoFactor?.challenge_id}}"/>
+                  </action>
+                </sequence>
+              </on>
+              $t:auth.login.two_factor.resend
+            </button>
+            <button data-ref="login_two_factor_restart" type="button" class="flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.isLoggingIn}}">
+              <on type="click">
+                <!-- 처음부터 — 2단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌린다. -->
+                <set-state target="local" :twoFactor="null" :loginError="null" :loginErrors="null"/>
+              </on>
+              $t:auth.login.two_factor.restart
+            </button>
+          </div>
+        </div>
+      </form>
+      <div data-ref="language_selector_container" class="mt-6">
+        <select data-ref="language_selector" class="block w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" value="{{$locale}}" options="{{$locales ?? []}}">
+          <on type="change">
+            <set-locale target="{{$event.target.value}}"/>
+          </on>
+        </select>
+      </div>
+      <div data-ref="theme_selector_container" class="mt-4 flex justify-center">
+        <div data-ref="theme_segmented_control" class="inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1">
+          <button data-ref="theme_light_button" type="button" class="{{_global.theme === 'light' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.light">
+            <on type="click">
+              <!-- 밝은 테마 고정. 이 화면은 베이스의 테마 토글 컴포넌트를 못 쓰므로 3버튼을 직접 두었고,
+                   핸들러는 관리자 화면 전체와 같은 저장 키를 공유한다. -->
+              <action handler="setTheme" target="light"/>
+            </on>
+            <icon data-ref="theme_light_icon" name="sun" size="sm"/>
+          </button>
+          <button data-ref="theme_dark_button" type="button" class="{{_global.theme === 'dark' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.dark">
+            <on type="click">
+              <!-- 어두운 테마 고정. -->
+              <action handler="setTheme" target="dark"/>
+            </on>
+            <icon data-ref="theme_dark_icon" name="moon" size="sm"/>
+          </button>
+          <button data-ref="theme_auto_button" type="button" class="{{_global.theme === 'auto' || !_global.theme ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}" title="$t:admin.theme.auto">
+            <on type="click">
+              <!-- 시스템 설정 따라가기 — 저장값이 아예 없을 때의 기본 상태이기도 하다(선택 표시가
+                   `theme === 'auto'` 뿐 아니라 미설정도 함께 보는 이유). -->
+              <action handler="setTheme" target="auto"/>
+            </on>
+            <icon data-ref="theme_auto_icon" name="desktop" size="sm"/>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</layout>

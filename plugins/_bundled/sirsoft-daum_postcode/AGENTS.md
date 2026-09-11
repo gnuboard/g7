@@ -51,7 +51,7 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->
 
@@ -61,7 +61,7 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 백엔드 흐름이 없으므로 전부 프론트에서 일어납니다.
 
 **장착**: 어떤 화면이 `address_search_slot` 확장점을 열면 → 코어가
-`resources/extensions/ecommerce-address-search.json` 을 그 자리에 넣음 → 조각의 `scripts` 가
+`resources/extensions/ecommerce-address-search.g7.html` 을 그 자리에 넣음 → 조각의 `scripts` 가
 Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.setFieldReadOnly` 가 대상
 주소 필드를 읽기 전용으로 바꿉니다(검색으로만 채우게 해서 오타를 막습니다). 이 핸들러는
 **SDK 확보를 먼저 확인**하고, 확보하지 못했으면 필드를 편집 가능한 상태로 남깁니다 — 읽기
@@ -107,7 +107,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 `buildingName`(건물명). 발행 위치가 "선언(호출 위치 미확인)" 인 것은 실제 발행이 **프론트
 핸들러**에서 이루어져 PHP 소스 스캔에 잡히지 않기 때문입니다.
 
-레이아웃 조각 하나(`ecommerce-address-search.json`)가 이 플러그인의 UI 전부입니다. 파일
+레이아웃 조각 하나(`ecommerce-address-search.g7.html`)가 이 플러그인의 UI 전부입니다. 파일
 이름에 `ecommerce` 가 붙어 있지만 **확장점 이름(`address_search_slot`)으로 매칭**되므로,
 그 확장점을 여는 화면이면 어디든 붙습니다 — 이커머스 전용이 아닙니다.
 

@@ -29,7 +29,7 @@ class ProductInquiryResource extends BaseApiResource
             'user' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
-                'email' => $this->user->email,
+                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ] : null),
 
             // 상품 정보

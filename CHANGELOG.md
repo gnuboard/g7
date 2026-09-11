@@ -4,6 +4,44 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [7.1.0] - 2026-08-20
+
+### Added
+
+- 공개 API 응답에 회원 이메일이 실리지 않도록 하는 공통 기준을 제공합니다. 이메일은 관리자 화면 응답과 본인이 자기 정보를 조회할 때만 포함되며, 확장이 이 기준을 그대로 사용할 수 있습니다.
+
+#### 레이아웃 마크업 형식
+
+- 화면 레이아웃을 HTML 에 가까운 마크업 형식(`.g7.html`)으로 작성할 수 있습니다. 여닫는 태그로 화면 구조가 눈에 그대로 드러나고, 화면 곳곳에 설명 주석을 남길 수 있습니다. 기본 제공되는 모든 화면이 이 포맷으로 함께 제공됩니다.
+- 기존 JSON 레이아웃은 그대로 유효합니다. `.g7.html` 은 짝이 되는 JSON 과 항상 같은 결과로 변환되므로 화면 동작이 달라지지 않으며, JSON 만 쓰던 환경도 종전과 동일하게 동작합니다.
+- 소스 파일을 저장·설치하는 시점에 문법과 구조를 검증해, 지원되지 않는 표기나 잘못된 중첩을 화면에 반영되기 전에 알려줍니다.
+
+- 화면 동작에 "상위로 전파하지 않음" 을 지정할 수 있습니다. 목록의 각 행 전체가 눌리는 구조에서 행 안의 토글이나 버튼만 반응시켜야 할 때 쓰며, 이 지정이 없던 동안에는 행 안의 컨트롤을 눌러도 행 선택이 함께 일어났습니다.
+
+### Changed
+
+- 레이아웃 편집기 좌측 라우트 목록이 이제 **직접 편집하는 파일 경로**를 보여줍니다. 종전에는 자동 생성물의 경로를 보여 주고 있어서, 그 경로를 따라 파일을 열어 고치면 다음 저장 때 수정이 사라졌습니다.
+
+### Fixed
+
+- 코어 업데이트 대상에서 코드 스타일 설정 파일(`pint.json`)이 빠져 있어 업데이트 후에도 이 파일만 갱신되지 않던 문제를 수정했습니다.
+
+- 확장 기능이 화면에 끼워 넣는 조각에 적어 둔 개발자용 설명이 방문자에게 전달되는 화면 구성 데이터에 그대로 실려 나가던 문제를 수정했습니다. 화면 본문의 설명은 이미 제거되고 있었으나 끼워 넣는 조각은 그 처리 뒤에 합쳐져 빠져나가고 있었으며, 이제 두 경로 모두 제거됩니다.
+
+- 레이아웃 편집기의 미리보기 화면에서도 같은 설명이 그대로 전달되던 문제를 함께 수정했습니다. 미리보기는 주소만 알면 열람할 수 있어 편집 중인 내용의 설명까지 노출될 수 있었습니다.
+
+- 레이아웃 편집기에서 화면을 저장할 때 화면에 적어 둔 설명이 아무 안내 없이 사라지던 문제를 수정했습니다. 저장 검사가 그 항목을 받지 않아 조용히 버려지고 있었습니다.
+
+- 화면의 일부 조각을 불러오지 못했을 때 아무 알림 없이 그 부분만 조용히 사라지던 문제를 수정했습니다. 조각 파일이 없거나 내용이 깨졌거나 서로를 순환 참조하는 경우가 여기에 해당하며, 설치는 성공한 것처럼 끝나 화면 일부가 흔적 없이 빈 채로 남았습니다. 이제 이런 경우 설치 단계에서 어떤 조각이 왜 실패했는지 알려주고 중단하므로, 잘못된 상태가 화면에 반영되지 않습니다.
+
+- 레이아웃 편집기에서 다른 화면을 물려받아 제목이나 초기값만 바꾸는 화면을 저장하면 거부되던 문제를 수정했습니다. 물려받은 화면은 구성 요소를 다시 적지 않아도 되는데도 저장 검사가 이를 요구하고 있었습니다.
+
+- 레이아웃 편집기에서 본인인증·알림·마이페이지·검색 등 일부 화면을 저장할 때 "허용되지 않은 API 주소" 로 거부되던 문제를 수정했습니다. 검사 기준을 실제로 제공 중인 주소 목록에서 직접 확인하도록 바꿔, 앞으로 새 주소가 추가되어도 같은 문제가 생기지 않습니다.
+
+- 확장 기능이 기존 화면에 끼워 넣는 조각을 저장할 때, 끼워 넣을 위치 목록 없이 팝업창만 제공하는 조각이 저장되지 않던 문제를 수정했습니다. 팝업창·데이터·스크립트·초기 동작 중 하나만 갖춘 조각도 정상적으로 동작하며 실제로 그렇게 쓰이고 있었는데, 화면 편집기로 저장할 때만 거부되던 상태였습니다. 저장이 막히던 안내 문구도 실제 기준에 맞게 다듬었습니다.
+
+- 본인인증의 인증번호 확인 요청 횟수 제한이 같은 방문자의 다른 공개 API 호출과 횟수를 함께 세고 있어, 2단계 인증 화면을 몇 번 오간 뒤 인증번호 확인이 「요청이 너무 많습니다」로 막히던 문제를 수정했습니다. 본인인증의 요청·확인·취소·상태 조회·콜백이 각각 자기 횟수만 세도록 분리했습니다.
+
 ## [7.0.11] - 2026-09-09
 
 ### Added
@@ -1286,21 +1324,6 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 
 ### Added
 
-- ActivityLog `description_params` ID→이름 변환 필터 훅 (`core.activity_log.filter_description_params`) — `ActivityLog::getLocalizedDescriptionAttribute()`에서 실행
-- 코어 모델 `$activityLogFields` 정의 — `User`, `Role`, `Menu`, `Schedule`, `MailTemplate` (5개 모델)
-- ActivityLog ChangeDetector 필드 라벨 다국어 키 추가 (`lang/ko/activity_log.php`, `lang/en/activity_log.php` — `fields` 섹션)
-- `module_helpers.php` — `getModuleSetting()` 헬퍼 함수 추가
-- CoreActivityLogListener: bulk_update per-User/per-Schedule 전환 + bulk_delete per-Schedule 전환 (건별 loggable_id 기록)
-- ActivityLogHandler: 삭제된 엔티티용 loggable_type/loggable_id 직접 지정 fallback 지원
-
-### Changed
-
-- ActivityLog 규정 문서 대폭 보강 (`docs/backend/activity-log.md`) — `description_params` 저장 정책, `ActivityLogDescriptionResolver` 패턴, Bulk Update ChangeDetector 패턴, 개발자 체크리스트 추가
-
-## [7.0.0-alpha.17] - 2026-03-26
-
-### Added
-
 - Monolog 기반 ActivityLog 아키텍처: `Log::channel('activity')` → `ActivityLogHandler` → DB (3단계)
 - `ActivityLogChannel` (커스텀 Monolog 채널), `ActivityLogHandler`, `ActivityLogProcessor` 신규
 - ActivityLog i18n 지원: `description_key` + `description_params` 기반 실시간 다국어 번역
@@ -1311,10 +1334,12 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 - `config/logging.php`에 `activity` 채널 추가
 - `config/activity_log.php` 전용 설정 파일 신규
 - `activity_logs` 테이블 복합 인덱스 추가 (`loggable_type`+`loggable_id`+`created_at`, `log_type`+`action`+`created_at`)
-
-### Fixed
-
-- `resolveLogType()` 사용자 역할 기반 → 요청 경로 기반으로 변경: 관리자가 사용자 화면에서 수행한 액션이 `admin`으로 기록되던 문제 수정 (ResolvesActivityLogType)
+- ActivityLog `description_params` ID→이름 변환 필터 훅 (`core.activity_log.filter_description_params`) — `ActivityLog::getLocalizedDescriptionAttribute()`에서 실행
+- 코어 모델 `$activityLogFields` 정의 — `User`, `Role`, `Menu`, `Schedule`, `MailTemplate` (5개 모델)
+- ActivityLog ChangeDetector 필드 라벨 다국어 키 추가 (`lang/ko/activity_log.php`, `lang/en/activity_log.php` — `fields` 섹션)
+- `module_helpers.php` — `getModuleSetting()` 헬퍼 함수 추가
+- CoreActivityLogListener: bulk_update per-User/per-Schedule 전환 + bulk_delete per-Schedule 전환 (건별 loggable_id 기록)
+- ActivityLogHandler: 삭제된 엔티티용 loggable_type/loggable_id 직접 지정 fallback 지원
 
 ### Changed
 
@@ -1322,6 +1347,7 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 - `ActivityLogService`: 기록 메서드 전면 제거 → 조회 전용으로 축소
 - `ActivityLogResource`: `description` → `localized_description` (실시간 번역)
 - 모든 Controller에서 `logAdminActivity()` 호출 전면 제거 → Listener 경로로 전환
+- ActivityLog 규정 문서 대폭 보강 (`docs/backend/activity-log.md`) — `description_params` 저장 정책, `ActivityLogDescriptionResolver` 패턴, Bulk Update ChangeDetector 패턴, 개발자 체크리스트 추가
 
 ### Removed
 
@@ -1333,6 +1359,7 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 
 ### Fixed
 
+- `resolveLogType()` 사용자 역할 기반 → 요청 경로 기반으로 변경: 관리자가 사용자 화면에서 수행한 액션이 `admin`으로 기록되던 문제 수정 (ResolvesActivityLogType)
 - 마이페이지 프로필 저장 시 국가·언어 미선택 상태에서 오류가 발생하던 문제 수정 — 해당 필드를 선택 사항으로 변경
 - 인스톨러 Step 2 .env 복사 명령어 안내 수정 — `.env.example.production` → `.env.example` (functions.php 2곳, installer.js 4곳)
 

@@ -18,6 +18,7 @@ import { describe, it, expect } from 'vitest';
 import identityModal from '../../layouts/partials/_identity_challenge_modal.json';
 import userBase from '../../layouts/_user_base.json';
 import identityChallengePage from '../../layouts/auth/identity_challenge.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 type Node = {
   id?: string;
@@ -63,10 +64,10 @@ function walk(input: Node | Node[] | undefined, visit: (node: Node) => void): vo
 function collectActions(node: Node): Action[] {
   const out: Action[] = [];
   walk(node, (n) => {
-    if (Array.isArray(n.actions)) out.push(...n.actions);
+    if (asArray(n?.actions).length > 0) out.push(...asArray(n?.actions));
     if (n.events) {
       for (const ev of Object.values(n.events)) {
-        if (Array.isArray(ev.actions)) out.push(...ev.actions);
+        if (asArray(ev?.actions).length > 0) out.push(...asArray(ev?.actions));
       }
     }
   });
@@ -74,8 +75,8 @@ function collectActions(node: Node): Action[] {
 }
 
 function flattenSequence(action: Action): Action[] {
-  if (action.handler === 'sequence' && Array.isArray(action.params?.actions)) {
-    return action.params!.actions as Action[];
+  if (action.handler === 'sequence' && callbacksOf(action, 'actions').length > 0) {
+    return callbacksOf(action, 'actions') as Action[];
   }
   return [action];
 }
@@ -86,12 +87,12 @@ function deepFindActions(actions: Action[], predicate: (a: Action) => boolean): 
     if (!list) return;
     for (const a of list) {
       if (predicate(a)) result.push(a);
-      if (a.handler === 'sequence' && Array.isArray(a.params?.actions)) {
-        visit(a.params!.actions as Action[]);
+      if (a.handler === 'sequence' && callbacksOf(a, 'actions').length > 0) {
+        visit(callbacksOf(a, 'actions') as Action[]);
       }
-      if (Array.isArray(a.actions)) visit(a.actions);
-      if (Array.isArray(a.onSuccess)) visit(a.onSuccess);
-      if (Array.isArray(a.onError)) visit(a.onError);
+      if (asArray(a?.actions).length > 0) visit(asArray(a?.actions));
+      if (asArray(a?.onSuccess).length > 0) visit(asArray(a?.onSuccess));
+      if (asArray(a?.onError).length > 0) visit(asArray(a?.onError));
     }
   };
   visit(actions);
@@ -145,7 +146,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       const cores: Node[] = [];
       walk(identityModal as unknown as Node, (n) => {
         if (
-          n.type === 'basic' &&
           n.name === 'Div' &&
           typeof n.if === 'string' &&
           n.if.includes("'text_code'") &&
@@ -164,7 +164,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       const buttonsWithProviderGuard: Node[] = [];
       walk(identityModal as unknown as Node, (n) => {
         if (
-          n.type === 'basic' &&
           n.name === 'Button' &&
           typeof n.if === 'string' &&
           n.if.includes('_global.identityChallenge?.provider_id')
@@ -199,7 +198,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       );
       expect(verifyCall).toBeDefined();
 
-      const resolves = deepFindActions(verifyCall!.onSuccess ?? [], (a) =>
+      const resolves = deepFindActions(callbacksOf(verifyCall, 'onSuccess'), (a) =>
         a.handler === 'resolveIdentityChallenge',
       );
       expect(resolves.length).toBeGreaterThanOrEqual(1);
@@ -212,7 +211,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       const verifyCall = apiCallActions.find((a) =>
         typeof a.target === 'string' && a.target.includes('/verify'),
       );
-      const closes = deepFindActions(verifyCall!.onSuccess ?? [], (a) =>
+      const closes = deepFindActions(callbacksOf(verifyCall, 'onSuccess'), (a) =>
         a.handler === 'closeModal',
       );
       expect(closes.length).toBeGreaterThanOrEqual(1);
@@ -236,7 +235,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     function findCancelSequence(): Action | undefined {
       const sequences = deepFindActions(allActions, (a) => a.handler === 'sequence');
       return sequences.find((seq) => {
-        const inner = (seq.params?.actions ?? []) as Action[];
+        const inner = callbacksOf(seq, 'actions') as Action[];
         return inner.some(
           (a) =>
             a.handler === 'resolveIdentityChallenge' && a.params?.result === 'cancelled',
@@ -252,7 +251,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     it('cancel sequence 의 첫 액션이 서버 cancel API 호출 — audit trail 정합', () => {
       const seq = findCancelSequence();
       expect(seq).toBeDefined();
-      const inner = (seq!.params!.actions ?? []) as Action[];
+      const inner = callbacksOf(seq, 'actions') as Action[];
       const apiCall = inner.find((a) => a.handler === 'apiCall');
       expect(apiCall).toBeDefined();
       // apiCall 표준: target 은 액션 top-level, params 안은 method/body 만
@@ -266,7 +265,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     /** @effects modal_cancel_apiCall_skipped_when_challenge_id_absent */
     it('cancel apiCall 이 challenge 발급된 경우에만 호출 (if 가드)', () => {
       const seq = findCancelSequence();
-      const inner = (seq!.params!.actions ?? []) as Action[];
+      const inner = callbacksOf(seq, 'actions') as Action[];
       const apiCall = inner.find((a) => a.handler === 'apiCall');
       expect((apiCall as any).if).toContain('_global.identityChallenge?.challenge_id');
     });
@@ -274,9 +273,9 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     /** @effects modal_cancel_apiCall_failure_does_not_block_modal_close */
     it('cancel apiCall 실패해도 모달 닫기는 진행 (onError suppress)', () => {
       const seq = findCancelSequence();
-      const inner = (seq!.params!.actions ?? []) as Action[];
+      const inner = callbacksOf(seq, 'actions') as Action[];
       const apiCall = inner.find((a) => a.handler === 'apiCall');
-      const onError = apiCall!.onError ?? [];
+      const onError = callbacksOf(apiCall, 'onError');
       expect(onError.length).toBeGreaterThanOrEqual(1);
       expect(onError[0].handler).toBe('suppress');
     });
@@ -284,7 +283,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     /** @effects modal_cancel_sequence_order_is_apiCall_resolve_close */
     it('cancel sequence 가 [apiCall, resolveIdentityChallenge, closeModal] 순서', () => {
       const seq = findCancelSequence();
-      const inner = (seq!.params!.actions ?? []) as Action[];
+      const inner = callbacksOf(seq, 'actions') as Action[];
       const handlers = inner.map((a) => a.handler);
       expect(handlers).toEqual(['apiCall', 'resolveIdentityChallenge', 'closeModal']);
     });
@@ -345,7 +344,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     });
 
     it('onChange 가 setState(target=global) 로 identityChallenge.code 를 갱신한다', () => {
-      const actions = (codeInput as any).actions ?? [];
+      const actions = asArray((codeInput as any)?.actions);
       const onChange = actions.find((a: Action) => a.event === 'onChange');
       expect(onChange).toBeDefined();
       expect(onChange.handler).toBe('setState');
@@ -395,7 +394,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       );
       expect(verifyCall).toBeDefined();
 
-      const resolves = deepFindActions(verifyCall!.onSuccess ?? [], (a) =>
+      const resolves = deepFindActions(callbacksOf(verifyCall, 'onSuccess'), (a) =>
         a.handler === 'resolveIdentityChallenge' && a.params?.result === 'verified',
       );
       expect(resolves.length).toBeGreaterThanOrEqual(1);

@@ -180,9 +180,9 @@ interface LayoutRepositoryInterface
      * 특정 템플릿의 모든 레이아웃 이름 조회
      *
      * @param  int  $templateId  템플릿 ID
-     * @return \Illuminate\Support\Collection<int, string> 레이아웃 이름 컬렉션
+     * @return SupportCollection<int, string> 레이아웃 이름 컬렉션
      */
-    public function getLayoutNamesByTemplateId(int $templateId): \Illuminate\Support\Collection;
+    public function getLayoutNamesByTemplateId(int $templateId): SupportCollection;
 
     /**
      * 특정 모듈의 모든 레이아웃 조회

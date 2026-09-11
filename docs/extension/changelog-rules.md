@@ -348,11 +348,26 @@ setState(selectedX) → apiCall(changelog)
 
 | 포함 (엔진 코드) | 제외 (비엔진 코드) |
 |------------------|---------------------|
-| `resources/js/core/template-engine/**` | `templates/**/src/components/**` (템플릿 컴포넌트) |
-| `resources/js/core/TemplateApp.ts` | `modules/**/resources/layouts/**` (모듈 레이아웃) |
-| `resources/js/core/G7CoreGlobals.ts` | `resources/layouts/**` (코어 레이아웃 JSON) |
-| `resources/js/core/template-engine.ts` | `docs/**` (규정 문서) |
-| `resources/js/core/types/` (엔진 타입) | 백엔드 PHP 코드 |
+| `resources/js/core/**` (프론트엔드 코어 런타임 **전체**) | `templates/**/src/components/**` (템플릿 컴포넌트) |
+| ├ `template-engine/**` (편집기·DevTools 포함) | `modules/**/resources/layouts/**` (모듈 레이아웃) |
+| ├ `TemplateApp.ts` · `G7CoreGlobals.ts` · `template-engine.ts` | `resources/layouts/**` (코어 레이아웃) |
+| ├ `modules/**` · `auth/**` · `api/**` · `routing/**` | `docs/**` (규정 문서) |
+| ├ `websocket/**` · `devtools/**` · `utils/**` · `error/**` | 백엔드 PHP 코드 (blade 포함 → 루트 CHANGELOG) |
+| └ `types/**` (엔진 타입) | `resources/js/core/**/__tests__/**` (테스트 코드) |
+
+`resources/js/core/**` **전체**가 대상입니다. 종전 표는 `template-engine/`·`TemplateApp.ts` 등
+5개 경로만 열거했으나, 실제 관행은 코어 런타임 전 영역을 기록해 왔습니다 —
+`modules/`(engine-v1.52.0 `loadBundle`, v1.39.0 에셋 병렬화), `auth/`(v1.47.0),
+`api/`(v1.50.0 IDV 428), `routing/`(v1.38.0), `websocket/`(v1.33.1), `devtools/`(v1.51.0).
+열거식 표는 새 디렉토리가 생길 때마다 판단 공백을 만들므로 경로 전체로 규정합니다.
+
+**blade(`resources/views/**`)는 PHP 파일이므로 엔진 CHANGELOG 대상이 아닙니다** —
+루트 `CHANGELOG.md` 에 기록합니다(선례: `[7.0.0-alpha.14]` 의 `seo.blade.php` 항목).
+
+**`__tests__/**` 단독 변경도 대상이 아닙니다.** CHANGELOG 는 런타임 동작의 변화를 알리는 문서인데,
+테스트만 바뀐 변경은 동작을 바꾸지 않습니다. 같은 커밋에서 런타임 코드가 함께 바뀌었다면
+그 런타임 변경을 기준으로 판정합니다. 런타임 파일의 주석·JSDoc 단독 변경도 같습니다 —
+판정 기준은 파일 경로가 아니라 **동작 변화**입니다.
 
 ### 엔진 CHANGELOG 작성 형식
 

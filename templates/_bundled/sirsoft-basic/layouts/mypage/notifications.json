@@ -1,117 +1,119 @@
 {
-  "version": "1.0.0",
-  "layout_name": "mypage/notifications",
-  "extends": "_user_base",
-  "permissions": [],
-  "transition_overlay": {
-    "enabled": true,
-    "style": "spinner",
-    "target": "mypage_tab_content",
-    "fallback_target": "main_content_area",
-    "spinner": {
-      "component": "PageLoading"
-    }
-  },
-  "computed": {
-    "currentTab": "notifications"
-  },
-  "data_sources": [
-    {
-      "id": "userNotifications",
-      "label_key": "$t:editor.data_source.userNotifications",
-      "type": "api",
-      "endpoint": "/api/user/notifications",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive",
-      "params": {
-        "page": "{{_local.notificationsPage ?? 1}}",
-        "sort_order": "desc",
-        "read": "{{_local.userNotificationsUnreadOnly ? 'unread' : 'all'}}"
-      }
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "notificationsPage": 1,
-        "userNotificationsUnreadOnly": false
-      }
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
-        },
-        "children": [
-          {
-            "type": "layout",
-            "name": "Container",
-            "props": {
-              "className": "py-8"
+    "comment": "마이페이지 «알림» 탭. 이커머스가 아니라 **코어 알림**(`/api/user/notifications`)을 읽으므로\n     쇼핑몰 모듈이 없어도 성립하는 유일한 탭이다.",
+    "version": "1.0.0",
+    "layout_name": "mypage/notifications",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "userNotifications",
+            "label_key": "$t:editor.data_source.userNotifications",
+            "type": "api",
+            "endpoint": "/api/user/notifications",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{_local.notificationsPage ?? 1}}",
+                "sort_order": "desc",
+                "read": "{{_local.userNotificationsUnreadOnly ? 'unread' : 'all'}}"
             },
-            "responsive": {
-              "portable": {
-                "props": {
-                  "className": "py-4"
-                }
-              }
-            },
-            "children": [
-              {
-                "comment": "페이지 제목",
+            "comment": "알림 목록. «안 읽음만» 토글과 쪽수가 `_local` 에 있어 이 소스만 다시 받는다"
+        }
+    ],
+    "computed": {
+        "currentTab": "notifications"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "notificationsPage": 1,
+                "userNotificationsUnreadOnly": false
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex items-center gap-2 mb-6"
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "user",
-                      "size": "xl",
-                      "className": "text-gray-900 dark:text-white"
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "comment": "알림",
+                                        "partial": "partials/mypage/notifications/_list.json"
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                    },
-                    "text": "$t:mypage.title"
-                  }
                 ]
-              },
-              {
-                "comment": "탭 네비게이션",
-                "partial": "partials/mypage/_tab_navigation.json"
-              },
-              {
-                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
-                "type": "basic",
-                "name": "Div",
-                "id": "mypage_tab_content",
-                "children": [
-                  {
-                    "comment": "알림",
-                    "partial": "partials/mypage/notifications/_list.json"
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      }
-    ]
-  }
+    }
 }

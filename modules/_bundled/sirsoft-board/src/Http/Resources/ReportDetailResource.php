@@ -171,7 +171,7 @@ class ReportDetailResource extends BaseApiResource
                     ? [
                         'uuid' => $reportable['post']['author']['uuid'] ?? null,
                         'name' => $reportable['post']['author']['name'] ?? null,
-                        'email' => $reportable['post']['author']['email'] ?? null,
+                        'email' => $this->canExposeMemberEmail() ? ($reportable['post']['author']['email'] ?? null) : null,
                     ]
                     : null,
             ];
@@ -242,7 +242,7 @@ class ReportDetailResource extends BaseApiResource
                 ? [
                     'uuid' => $log->reporter->uuid,
                     'name' => $log->reporter->name,
-                    'email' => $log->reporter->email,
+                    'email' => $this->canExposeMemberEmail(null, $log->reporter->id) ? $log->reporter->email : null,
                 ]
                 : null,
             'reason_type' => $log->reason_type?->value ?? null,

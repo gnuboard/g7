@@ -1,0 +1,33 @@
+<!-- 신고 처리 이력 표 — 서버가 준 배열을 그대로 보여줄 뿐이라 정렬·페이지·선택이 전부 꺼져 있다. 행동 종류마다 배지 색과 문구가 따로 있고, 아는 종류가 아니면 서버 라벨(없으면 종류 값)로 떨어져 새 종류가 생겨도 빈칸이 되지 않는다 -->
+<partial description="Histories Card for Admin Report Detail View">
+  <div data-ref="card_history" class="admin-card">
+    <h2 data-ref="history_title" class="card-title">$t:sirsoft-board.admin.reports.detail.histories_title</h2>
+    <div>
+      <data-grid data-ref="history_data_grid" data-if="{{report_detail?.data?.histories &amp;&amp; report_detail?.data?.histories.length > 0}}" class="histories-compact-grid" data="{{report_detail?.data?.histories ?? []}}" :sortable="false" :pagination="false" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-board.admin.reports.detail.no_histories">
+        <column field="created_at" header="$t:sirsoft-board.admin.reports.detail.table.date" :sortable="false" :required="true">
+          <cell>
+            <span class="text-tertiary">{{row.created_at}}</span>
+          </cell>
+        </column>
+        <column field="processor_name" header="$t:sirsoft-board.admin.reports.detail.table.processor" :sortable="false" :required="true">
+          <cell>
+            <span class="text-xs text-gray-900 dark:text-white">{{row.processor_name}}{{row.processor_email ? ' (' + row.processor_email + ')' : ''}}</span>
+          </cell>
+        </column>
+        <column field="type" header="$t:sirsoft-board.admin.reports.detail.table.action" :sortable="false" :required="true">
+          <cell>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{row.type === 'reported' ? 'bg-blue-100 text-blue-800 dark:bg-blue-600 dark:text-white' : row.type === 're_reported' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-600 dark:text-white' : row.type === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-600 dark:text-white' : row.type === 'suspended' ? 'bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-white' : row.type === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-500 dark:text-white' : row.type === 'restored' ? 'bg-green-100 text-green-800 dark:bg-green-600 dark:text-white' : row.type === 'review' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-600 dark:text-white' : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-100'}}">{{row.type === 'reported' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.reported' : row.type === 're_reported' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.re_reported' : row.type === 'rejected' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.rejected' : row.type === 'suspended' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.suspended' : row.type === 'deleted' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.deleted' : row.type === 'restored' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.restored' : row.type === 'review' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.review' : row.action_label ?? row.type}}</span>
+          </cell>
+        </column>
+        <column field="reason" header="$t:sirsoft-board.admin.reports.detail.table.reason" :sortable="false" :required="true">
+          <cell>
+            <div class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line break-words max-w-md">{{row.reason}}</div>
+          </cell>
+        </column>
+      </data-grid>
+    </div>
+    <div data-ref="history_empty" data-if="{{!report_detail?.data?.histories || report_detail?.data?.histories.length === 0}}" class="text-center py-8">
+      <p class="text-label-subtle">$t:sirsoft-board.admin.reports.detail.no_histories</p>
+    </div>
+  </div>
+</partial>

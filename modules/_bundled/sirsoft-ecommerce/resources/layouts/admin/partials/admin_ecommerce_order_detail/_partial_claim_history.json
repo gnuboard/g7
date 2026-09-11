@@ -1,108 +1,107 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Order Detail - Claim History Section"
-  },
-  "id": "tab_content_claim_history",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card mt-6"
-  },
-  "children": [
-    {
-      "id": "claim_history_header",
-      "type": "basic",
-      "name": "H2",
-      "props": {
-        "className": "card-section-title"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.title"
+    "comment": "주문 상세의 클레임 이력 구역 — 환불·반품·교환 세 목록을 담는 껍데기.\n  **아직 시안이다** — 이 파일에는 데이터 바인딩도 액션도 하나 없다. 위쪽 탭 버튼은 `active` 클래스가\n  글자로 박혀 있어 눌러도 바뀌지 않고, 세 조각이 탭으로 갈리는 대신 **세로로 모두 이어 붙어** 있다.\n  배선할 때 탭 상태를 지역 키 하나로 두고 세 구역에 조건을 걸면 지금 구조 그대로 동작한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Order Detail - Claim History Section"
     },
-    {
-      "id": "claim_tab_navigation",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "tabs w-full mb-6"
-      },
-      "children": [
-        {
-          "id": "tab_refund",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "tab active flex-1"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.refund"
-        },
-        {
-          "id": "tab_return",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "tab flex-1"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.return"
-        },
-        {
-          "id": "tab_exchange",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "tab flex-1"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.exchange"
-        }
-      ]
+    "id": "tab_content_claim_history",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mt-6"
     },
-    {
-      "id": "claim_sections_wrapper",
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "children": [
         {
-          "id": "refund_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "partial": "_tab_claim_refund.json"
-            }
-          ]
+            "id": "claim_history_header",
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-section-title"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.title"
         },
         {
-          "id": "return_section",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "border-t border-gray-200 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "partial": "_tab_claim_return.json"
-            }
-          ]
+            "id": "claim_tab_navigation",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "tabs w-full mb-6"
+            },
+            "children": [
+                {
+                    "id": "tab_refund",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "tab active flex-1"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.refund"
+                },
+                {
+                    "id": "tab_return",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "tab flex-1"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.return"
+                },
+                {
+                    "id": "tab_exchange",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "tab flex-1"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.exchange"
+                }
+            ]
         },
         {
-          "id": "exchange_section",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "border-t border-gray-200 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "partial": "_tab_claim_exchange.json"
-            }
-          ]
+            "id": "claim_sections_wrapper",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "id": "refund_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "partial": "_tab_claim_refund.json"
+                        }
+                    ]
+                },
+                {
+                    "id": "return_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "partial": "_tab_claim_return.json"
+                        }
+                    ]
+                },
+                {
+                    "id": "exchange_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "partial": "_tab_claim_exchange.json"
+                        }
+                    ]
+                }
+            ]
         }
-      ],
-      "props": {
-      }
-    }
-  ]
+    ]
 }

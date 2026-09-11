@@ -13,11 +13,14 @@
  * - 버전 히스토리 모달 JSON 구조 (iteration, 복원 버튼)
  * - 저장 버튼에 can_update 어빌리티 조건 존재
  * - modals 섹션에 버전 히스토리 모달 partial 등록
- */
+  *
+ * @effects code_editor_file_select_syncs_route_query, code_editor_extension_select_clears_route_query
+*/
 
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ==============================
 // 레이아웃 JSON 파일 로드
@@ -87,20 +90,20 @@ describe('미리보기 버튼', () => {
     // 미리보기 버튼 찾기 (preview 엔드포인트를 호출하는 버튼)
     const previewButton = findComponent(layoutEditJson, (n) => {
       if (!n.actions) return false;
-      return n.actions.some((a: any) =>
+      return asArray(n?.actions).some((a: any) =>
         a.handler === 'sequence' &&
-        JSON.stringify(a.params?.actions ?? []).includes('/preview')
+        JSON.stringify(callbacksOf(a, 'actions')).includes('/preview')
       );
     });
 
     expect(previewButton).not.toBeNull();
 
-    const sequenceAction = previewButton.actions.find(
+    const sequenceAction = asArray(previewButton?.actions).find(
       (a: any) => a.handler === 'sequence'
     );
     expect(sequenceAction).toBeDefined();
 
-    const actions = sequenceAction.params.actions;
+    const actions = callbacksOf(sequenceAction, 'actions');
     expect(actions).toBeDefined();
     expect(actions.length).toBeGreaterThanOrEqual(1);
 
@@ -113,7 +116,7 @@ describe('미리보기 버튼', () => {
 
     // onSuccess에 openWindow 존재
     expect(apiCallAction.onSuccess).toBeDefined();
-    const openWindowAction = apiCallAction.onSuccess.find(
+    const openWindowAction = asArray(apiCallAction?.onSuccess).find(
       (a: any) => a.handler === 'openWindow'
     );
     expect(openWindowAction).toBeDefined();
@@ -123,15 +126,15 @@ describe('미리보기 버튼', () => {
   it('apiCall body에 editorContent를 전달한다', () => {
     const previewButton = findComponent(layoutEditJson, (n) => {
       if (!n.actions) return false;
-      return n.actions.some((a: any) =>
-        JSON.stringify(a.params?.actions ?? []).includes('/preview')
+      return asArray(n?.actions).some((a: any) =>
+        JSON.stringify(callbacksOf(a, 'actions')).includes('/preview')
       );
     });
 
-    const sequenceAction = previewButton.actions.find(
+    const sequenceAction = asArray(previewButton?.actions).find(
       (a: any) => a.handler === 'sequence'
     );
-    const apiCallAction = sequenceAction.params.actions.find(
+    const apiCallAction = callbacksOf(sequenceAction, 'actions').find(
       (a: any) => a.handler === 'apiCall'
     );
 
@@ -142,8 +145,8 @@ describe('미리보기 버튼', () => {
   it('type: "button" prop이 설정되어 있다', () => {
     const previewButton = findComponent(layoutEditJson, (n) => {
       if (!n.actions) return false;
-      return n.actions.some((a: any) =>
-        JSON.stringify(a.params?.actions ?? []).includes('/preview')
+      return asArray(n?.actions).some((a: any) =>
+        JSON.stringify(callbacksOf(a, 'actions')).includes('/preview')
       );
     });
 
@@ -160,7 +163,7 @@ describe('버전 히스토리 버튼', () => {
     // 버전 히스토리 버튼 찾기 (version_history_modal 을 여는 버튼)
     const versionHistoryButton = findComponent(layoutEditJson, (n) => {
       if (!n.actions) return false;
-      return n.actions.some((a: any) =>
+      return asArray(n?.actions).some((a: any) =>
         JSON.stringify(a).includes('version_history_modal')
       );
     });
@@ -169,14 +172,14 @@ describe('버전 히스토리 버튼', () => {
     expect(versionHistoryButton.name).toBe('Button');
 
     // conditions 핸들러 사용 (selectedNodeKind 에 따라 분기)
-    const conditionsAction = versionHistoryButton.actions.find(
+    const conditionsAction = asArray(versionHistoryButton?.actions).find(
       (a: any) => a.handler === 'conditions'
     );
     expect(conditionsAction).toBeDefined();
-    expect(Array.isArray(conditionsAction.conditions)).toBe(true);
+    expect(asArray(conditionsAction?.conditions).length > 0).toBe(true);
 
     // extension 분기 — extension_version_history_modal
-    const extensionBranch = conditionsAction.conditions.find(
+    const extensionBranch = asArray(conditionsAction?.conditions).find(
       (c: any) => c.if && c.if.includes("'extension'")
     );
     expect(extensionBranch).toBeDefined();
@@ -184,7 +187,7 @@ describe('버전 히스토리 버튼', () => {
     expect(JSON.stringify(extensionBranch.then)).toContain('extension_versions');
 
     // 기본 분기 (if 없음) — version_history_modal
-    const defaultBranch = conditionsAction.conditions.find((c: any) => !c.if);
+    const defaultBranch = asArray(conditionsAction?.conditions).find((c: any) => !c.if);
     expect(defaultBranch).toBeDefined();
     expect(JSON.stringify(defaultBranch.then)).toContain('version_history_modal');
     expect(JSON.stringify(defaultBranch.then)).toContain('layout_versions');
@@ -224,8 +227,8 @@ describe('버전 히스토리 모달 구조', () => {
     const restoreButton = findComponent(versionHistoryModalJson, (n) =>
       n.if === '{{idx !== 0}}' &&
       n.name === 'Button' &&
-      Array.isArray(n.actions) &&
-      n.actions.some((a: any) =>
+      asArray(n?.actions).length > 0 &&
+      asArray(n?.actions).some((a: any) =>
         JSON.stringify(a).includes('/restore')
       )
     );
@@ -329,7 +332,7 @@ describe('좌측 트리 확장 섹션', () => {
     const extIteration = findComponent(layoutEditJson, (n) =>
       Boolean(n.iteration?.source?.includes('extGroup.extensions'))
     );
-    const clickAction = extIteration.actions.find((a: any) => a.type === 'click');
+    const clickAction = asArray(extIteration?.actions).find((a: any) => a.type === 'click');
     expect(JSON.stringify(clickAction)).toContain('"selectedNodeKind":"extension"');
     expect(JSON.stringify(clickAction)).toContain('selectedExtensionId');
   });
@@ -399,11 +402,11 @@ describe('모바일 파일 셀렉터', () => {
 
   it('change 액션이 conditions 로 확장/일반을 분기한다', () => {
     const richSelect = findMobileSelector();
-    const changeAction = richSelect.actions.find((a: any) => a.type === 'change');
+    const changeAction = asArray(richSelect?.actions).find((a: any) => a.type === 'change');
     expect(changeAction.handler).toBe('conditions');
 
     // 확장 분기: ext: 접두사 → selectedNodeKind=extension + current_extension refetch
-    const extBranch = changeAction.conditions.find(
+    const extBranch = asArray(changeAction?.conditions).find(
       (c: any) => typeof c.if === 'string' && c.if.includes("'ext:'")
     );
     expect(extBranch).toBeDefined();
@@ -414,7 +417,7 @@ describe('모바일 파일 셀렉터', () => {
     expect(extJson).toContain('extension_versions');
 
     // 일반 분기(default): selectedNodeKind=layout + current_layout refetch
-    const layoutBranch = changeAction.conditions.find((c: any) => c.if === undefined);
+    const layoutBranch = asArray(changeAction?.conditions).find((c: any) => c.if === undefined);
     expect(layoutBranch).toBeDefined();
     const layoutJson = JSON.stringify(layoutBranch.then);
     expect(layoutJson).toContain('"selectedNodeKind":"layout"');
@@ -457,8 +460,8 @@ describe('확장 버전 히스토리 모달 구조', () => {
     const restoreButton = findComponent(extensionVersionHistoryModalJson, (n) =>
       n.if === '{{idx !== 0}}' &&
       n.name === 'Button' &&
-      Array.isArray(n.actions) &&
-      n.actions.some((a: any) => JSON.stringify(a).includes('/layout-extensions/'))
+      asArray(n?.actions).length > 0 &&
+      asArray(n?.actions).some((a: any) => JSON.stringify(a).includes('/layout-extensions/'))
     );
     expect(restoreButton).not.toBeNull();
     expect(JSON.stringify(restoreButton.actions)).toContain('/restore');
@@ -478,11 +481,11 @@ describe('확장 미리보기 레이아웃 선택 모달', () => {
   it('미리보기 버튼이 layout-extensions preview 엔드포인트를 preview_layout 과 함께 호출한다', () => {
     const previewButton = findComponent(extensionPreviewLayoutModalJson, (n) =>
       n.name === 'Button' &&
-      Array.isArray(n.actions) &&
-      n.actions.some((a: any) => a.handler === 'apiCall' && String(a.target).includes('/preview'))
+      asArray(n?.actions).length > 0 &&
+      asArray(n?.actions).some((a: any) => a.handler === 'apiCall' && String(a.target).includes('/preview'))
     );
     expect(previewButton).not.toBeNull();
-    const apiCall = previewButton.actions.find((a: any) => a.handler === 'apiCall');
+    const apiCall = asArray(previewButton?.actions).find((a: any) => a.handler === 'apiCall');
     expect(JSON.stringify(apiCall.params.body)).toContain('preview_layout');
   });
 });
@@ -509,7 +512,7 @@ describe('selectedNodeKind 분기', () => {
       n.name === 'Button' &&
       typeof n.if === 'string' &&
       n.if.includes("selectedNodeKind === 'extension'") &&
-      Array.isArray(n.actions) &&
+      asArray(n?.actions).length > 0 &&
       JSON.stringify(n.actions).includes('/layout-extensions/') &&
       JSON.stringify(n.actions).includes('"method":"PUT"')
     );
@@ -552,8 +555,8 @@ describe('코드 편집기 ?route= URL 동기화', () => {
     );
     expect(fileIteration).not.toBeNull();
 
-    const clickAction = fileIteration.actions.find((a: any) => a.type === 'click');
-    const replaceUrl = clickAction.actions.find((a: any) => a.handler === 'replaceUrl');
+    const clickAction = asArray(fileIteration?.actions).find((a: any) => a.type === 'click');
+    const replaceUrl = asArray(clickAction?.actions).find((a: any) => a.handler === 'replaceUrl');
     expect(replaceUrl).toBeDefined();
     expect(replaceUrl.params.query.route).toContain('file.route_path');
   });
@@ -561,9 +564,9 @@ describe('코드 편집기 ?route= URL 동기화', () => {
   it('모바일 셀렉터 레이아웃 선택 시 replaceUrl 로 route_path 를 반영한다', () => {
     const wrapper = findComponent(layoutEditJson, (n) => n.id === 'mobile_file_selector');
     const richSelect = findComponent(wrapper, (n) => n.name === 'RichSelect');
-    const changeAction = richSelect.actions.find((a: any) => a.type === 'change');
-    const layoutBranch = changeAction.conditions.find((c: any) => c.if === undefined);
-    const replaceUrl = layoutBranch.then.find((a: any) => a.handler === 'replaceUrl');
+    const changeAction = asArray(richSelect?.actions).find((a: any) => a.type === 'change');
+    const layoutBranch = asArray(changeAction?.conditions).find((c: any) => c.if === undefined);
+    const replaceUrl = asArray(layoutBranch?.then).find((a: any) => a.handler === 'replaceUrl');
     expect(replaceUrl).toBeDefined();
     expect(replaceUrl.params.query.route).toContain('route_path');
   });
@@ -573,8 +576,8 @@ describe('코드 편집기 ?route= URL 동기화', () => {
     const extIteration = findComponent(layoutEditJson, (n) =>
       Boolean(n.iteration?.source?.includes('extGroup.extensions'))
     );
-    const clickAction = extIteration.actions.find((a: any) => a.type === 'click');
-    const replaceUrl = clickAction.actions.find((a: any) => a.handler === 'replaceUrl');
+    const clickAction = asArray(extIteration?.actions).find((a: any) => a.type === 'click');
+    const replaceUrl = asArray(clickAction?.actions).find((a: any) => a.handler === 'replaceUrl');
     expect(replaceUrl).toBeDefined();
     expect(replaceUrl.params.query.route).toBe('');
   });
