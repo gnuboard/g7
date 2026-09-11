@@ -9,7 +9,7 @@
 
 ```text
 1. if: 조건부 렌더링 (type: "conditional" 사용 금지!)
-2. iteration: 배열 반복 (source, item_var, index_var)
+2. iteration: 배열 반복 (source, item_var, index_var) — type: "iterator" 는 사용하지 않고 실제 컴포넌트에 iteration 속성을 붙인다
 2-1. sortable: 드래그앤드롭 정렬 (source, itemKey, strategy, itemTemplate)
 3. blur_until_loaded: 데이터 로딩 중 blur 효과
 4. lifecycle: onMount, onUnmount 핸들러

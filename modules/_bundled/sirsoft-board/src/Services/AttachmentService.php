@@ -890,11 +890,9 @@ class AttachmentService
     /**
      * 첨부파일 URL 조회
      *
-     * 디스크는 **행이 정한다.** 같은 클래스의 서빙 4지점과 정리 2지점은 이미
-     * `storageForRow()` 를 지나는데 이 메서드만 카테고리 기본 디스크로 갔다 — 디스크를
-     * 옮긴 사이트에서 이 값만 다른 디스크의 주소를 가리키고, 그 URL 은 404 가 되거나
-     * (더 나쁘게는) 옛 디스크에 남은 다른 파일을 가리킨다. 오류도 로그도 남지 않는다
-     * (11차 G3 라운드 B11-8).
+     * 게시판 첨부는 비밀글·삭제글 게이트가 걸린 서빙 경로를 통해서만 내보낸다.
+     * 직접 URL(CDN)로 바꾸면 그 게이트가 통째로 우회되므로, 게이트가 살아 있는
+     * 다운로드 서빙 URL 을 돌려준다.
      *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
@@ -904,11 +902,7 @@ class AttachmentService
     {
         $attachment = $this->repository->findById($slug, $id);
 
-        if (! $attachment) {
-            return null;
-        }
-
-        return $this->storageForRow($attachment->disk)->url('attachments', $attachment->path);
+        return $attachment?->download_url;
     }
 
     /**

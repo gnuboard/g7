@@ -72,7 +72,6 @@ effects:
   - download_disposition_is_built_by_the_storage_layer
   - preview_does_not_override_the_storage_filename_declaration
   - serving_follows_the_disk_recorded_on_the_row
-  - attachment_url_is_built_on_the_disk_recorded_on_the_row
   - recorded_size_matches_stored_bytes_after_the_resize_path
 
 test_files:

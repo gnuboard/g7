@@ -165,6 +165,55 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * 캐시 정리 블록과 함께 상주 큐 워커 재시작 신호가 나간다 (7.0.11).
+     *
+     * 큐 워커는 부팅이 한 번뿐이라 코어 코드·config 를 기동 시점 상태로 물고 있다. 업데이트가
+     * 파일을 전부 교체해도 워커는 옛 코드로 잡을 계속 처리하며 그 사실이 오류로 드러나지 않는다.
+     *
+     * @effects core_update_step11_signals_queue_restart
+     */
+    public function test_standalone_post_step_signals_queue_restart(): void
+    {
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldReceive('runMigrations')->once();
+        $service->shouldReceive('reloadCoreConfigAndResync')->once();
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldReceive('updateVersionInEnv')->once();
+        $service->shouldReceive('clearAllCaches')->once();
+        $service->shouldReceive('signalQueueRestart')->once();
+        $service->shouldReceive('collectBundledExtensionUpdates')->once()->andReturn([
+            'modules' => [], 'plugins' => [], 'templates' => [],
+        ]);
+        $langPack->shouldReceive('collectBundledLangPackUpdates')->once()->andReturn([]);
+
+        $this->assertSame(0, $this->runCommand([]));
+    }
+
+    /**
+     * 캐시 정리를 건너뛰는 경로(spawn 자식)에서는 신호도 보내지 않는다 — 부모가 보낸다.
+     *
+     * @effects core_update_step11_signals_queue_restart
+     */
+    public function test_skip_cache_clear_also_skips_queue_restart_signal(): void
+    {
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldReceive('runMigrations')->once();
+        $service->shouldReceive('reloadCoreConfigAndResync')->once();
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldReceive('updateVersionInEnv')->once();
+        $service->shouldNotReceive('clearAllCaches');
+        $service->shouldNotReceive('signalQueueRestart');
+        $service->shouldReceive('collectBundledExtensionUpdates')->once()->andReturn([
+            'modules' => [], 'plugins' => [], 'templates' => [],
+        ]);
+        $langPack->shouldReceive('collectBundledLangPackUpdates')->once()->andReturn([]);
+
+        $this->assertSame(0, $this->runCommand(['--skip-cache-clear' => true]));
+    }
+
     public function test_skip_bundled_updates_option_bypasses_bundled_prompt(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -457,6 +506,9 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         // 종료부의 빈 격리 디렉토리 청소(7.0.10 도입)도 모든 경로에서 호출된다 — 전용 케이스가
         // once() 로 단언하고, 나머지 케이스는 기본 허용.
         $service->shouldReceive('sweepEmptyStagingDirectories')->andReturn(0)->byDefault();
+        // 캐시 정리 블록이 도는 경로에서는 상주 큐 워커 재시작 신호도 함께 나간다 (7.0.11 도입).
+        // 전용 케이스가 once()/never() 로 단언하고, 나머지 케이스는 기본 허용.
+        $service->shouldReceive('signalQueueRestart')->andReturnNull()->byDefault();
         $module = Mockery::mock(ModuleManager::class);
         $plugin = Mockery::mock(PluginManager::class);
         $template = Mockery::mock(TemplateManager::class);

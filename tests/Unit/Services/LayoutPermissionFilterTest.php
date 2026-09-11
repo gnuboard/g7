@@ -329,7 +329,10 @@ class LayoutPermissionFilterTest extends TestCase
     }
 
     /**
-     * defines 내 컴포넌트 필터링.
+     * defines 내 컴포넌트 필터링 — **리스트 형태**(define 객체 목록).
+     *
+     * 권한으로 중간 항목이 빠져도 결과는 구멍 없는 리스트여야 한다. 원래 정수 키를 그대로
+     * 두면 JSON 이 배열이 아니라 객체(`{"1": …}`)로 직렬화된다.
      */
     public function test_defines_are_filtered(): void
     {
@@ -356,6 +359,77 @@ class LayoutPermissionFilterTest extends TestCase
 
         $this->assertCount(1, $result['defines']);
         $this->assertEquals('public_define', $result['defines'][0]['id']);
+        $this->assertTrue(array_is_list($result['defines']), '리스트 입력은 구멍 없는 리스트로 나와야 합니다.');
+    }
+
+    /**
+     * defines 가 **상수 맵**이면 키가 보존된다.
+     *
+     * 저장소의 실제 `defines` 는 전부 이 형태다 — 레이아웃이 `{{_defines.settingsTabs}}` 로
+     * 키를 찍어 참조하므로, 재색인되면 그 표현식이 undefined 를 받고 `?? []` 폴백을 타
+     * 오류 없이 화면 요소만 사라진다.
+     */
+    public function test_defines_map_preserves_its_keys(): void
+    {
+        $layout = [
+            'components' => [],
+            'defines' => [
+                'settingsTabs' => [
+                    ['id' => 'general', 'label' => '일반'],
+                    ['id' => 'mail', 'label' => '메일'],
+                ],
+                'currencyToFlag' => ['KRW' => 'kr'],
+                'maxItems' => 20,
+                'adminOnlyDefine' => [
+                    'permissions' => ['core.dashboard.edit'],
+                    'children' => [
+                        ['type' => 'basic', 'name' => 'Div', 'text' => '관리자'],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
+
+        $this->assertArrayHasKey('settingsTabs', $result['defines']);
+        $this->assertCount(2, $result['defines']['settingsTabs']);
+        $this->assertSame('general', $result['defines']['settingsTabs'][0]['id']);
+
+        // 배열이 아닌 상수와 맵 상수도 그대로 통과한다.
+        $this->assertSame(20, $result['defines']['maxItems']);
+        $this->assertSame(['KRW' => 'kr'], $result['defines']['currencyToFlag']);
+
+        // 권한이 걸린 정의만 빠지고 나머지 키는 그대로다.
+        $this->assertArrayNotHasKey('adminOnlyDefine', $result['defines']);
+    }
+
+    /**
+     * 맵 안의 define 이 권한을 통과하면 그 내부 컴포넌트도 필터링된다.
+     */
+    public function test_defines_map_still_filters_inner_components(): void
+    {
+        $layout = [
+            'components' => [],
+            'defines' => [
+                'sharedPanel' => [
+                    'children' => [
+                        ['type' => 'basic', 'name' => 'Div', 'text' => '공개'],
+                        [
+                            'type' => 'basic',
+                            'name' => 'Div',
+                            'text' => '관리자',
+                            'permissions' => ['core.dashboard.edit'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
+
+        $this->assertArrayHasKey('sharedPanel', $result['defines']);
+        $this->assertCount(1, $result['defines']['sharedPanel']['children']);
+        $this->assertSame('공개', $result['defines']['sharedPanel']['children'][0]['text']);
     }
 
     /**

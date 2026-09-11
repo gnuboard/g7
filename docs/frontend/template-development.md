@@ -653,4 +653,4 @@ cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용�
 - [본인인증 모달 UI 표준 (engine-v1.46.0+)](./identity-verification-ui.md)
 - [본인인증 인터셉터 API 레퍼런스](./identity-guard-interceptor.md)
 - [외부 템플릿 IDV launcher 등록](../extension/template-idv-bootstrap.md)
-- [프론트엔드 가이드 인덱스](./index.md)
+- [프론트엔드 가이드 인덱스](./README.md)

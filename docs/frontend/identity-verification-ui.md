@@ -316,6 +316,17 @@ IDV 모달 파셜 (`_identity_challenge_modal.json`) 및 동일 패턴을 따르
 - code Input 의 `actions[]` 에 `event:"onChange"` + `handler:"setState"` + `target:"global"` 항목이 존재할 것
 - 재전송 setState (resendCooldown=30) 의 params 에 `identityChallenge.code: ""` 가 포함될 것
 
+로그인 2단계 인증 화면도 같은 규칙을 따르며, 회귀 테스트는
+`templates/_bundled/{template}/__tests__/layouts/{admin-,}login-two-factor-step.test.tsx` 가 담당합니다.
+
+### 5. 로그인 challenge 는 이 화면으로 처리하지 않는다
+
+`purpose = login` challenge 는 로그인 전용 엔드포인트(`POST /api/auth/login/two-factor`,
+`.../resend`)만 사용합니다. 공개 본인인증 엔드포인트(`POST /api/identity/challenges/{id}/verify`,
+`.../cancel`)는 이 목적을 `403 PURPOSE_NOT_ALLOWED` 로 거부합니다 — 여기서 검증·취소되면 그
+challenge 로는 더 이상 로그인을 마칠 수 없게 되고(자기 DoS), 이 화면은 로그인 흐름을 모르므로
+되돌릴 방법도 없기 때문입니다.
+
 ## 관련 문서
 
 - [identity-guard-interceptor.md](identity-guard-interceptor.md) — 코어 인터셉터 API 레퍼런스

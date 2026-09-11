@@ -111,6 +111,8 @@ effects:
   - test_bundled_target_overrides_parent_protected_path                    # 4종 확장 전수 (dataProvider)
   - test_target_equal_to_protected_is_still_excluded                       # target==protected 는 여전히 제외 (방어 유지)
   - test_incremental_apply_reflects_changed_bundled_extension_file         # computeApplyList→applyUpdate end-to-end 반영
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - updateVersionInEnv_syncs_process_env_channels_so_config_cache_bakes_new_version
 
 test_files:
   - tests/Unit/Services/CoreUpdateServiceTest.php

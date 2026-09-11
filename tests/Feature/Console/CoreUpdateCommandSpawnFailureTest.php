@@ -39,12 +39,20 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
 
     private ?string $originalEnvVersion = null;
 
+    private ?string $originalUpdateFlag = null;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->failingStepPath = base_path('upgrades/Upgrade_0_0_1_test_spawn_failure_fail.php');
         $this->silentStepPath = base_path('upgrades/Upgrade_0_0_1_test_spawn_failure_silent.php');
+
+        // 업데이트 트리 플래그도 원값을 보관하고 비운다 — env APP_VERSION 우선 판독이 이 플래그로
+        // 게이트되므로, 다른 테스트가 남긴 플래그가 있으면 부모/자식 시나리오 구분이 무너진다.
+        $flag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
+        $this->originalUpdateFlag = ($flag === false || $flag === null) ? null : (string) $flag;
+        $this->setUpdateFlag(false);
 
         // stale 가드는 spawn 자식이 받는 env APP_VERSION 을 먼저 읽는다 (config 캐시가 있으면
         // config('app.version') 은 캐시에 박힌 구버전이라 신뢰할 수 없다 — 7.0.9→7.0.10 실사례).
@@ -63,7 +71,34 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
 
         $this->setEnvVersion($this->originalEnvVersion);
 
+        if ($this->originalUpdateFlag === null) {
+            $this->setUpdateFlag(false);
+        } else {
+            $_ENV['G7_UPDATE_IN_PROGRESS'] = $this->originalUpdateFlag;
+            $_SERVER['G7_UPDATE_IN_PROGRESS'] = $this->originalUpdateFlag;
+            putenv('G7_UPDATE_IN_PROGRESS='.$this->originalUpdateFlag);
+        }
+
         parent::tearDown();
+    }
+
+    /**
+     * 업데이트 트리 플래그를 세 채널($_ENV/$_SERVER/putenv)에 세우거나 지웁니다.
+     *
+     * @param  bool  $enabled  true 면 플래그 설정, false 면 세 채널 모두 제거
+     */
+    private function setUpdateFlag(bool $enabled): void
+    {
+        if (! $enabled) {
+            unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
+            putenv('G7_UPDATE_IN_PROGRESS');
+
+            return;
+        }
+
+        $_ENV['G7_UPDATE_IN_PROGRESS'] = '1';
+        $_SERVER['G7_UPDATE_IN_PROGRESS'] = '1';
+        putenv('G7_UPDATE_IN_PROGRESS=1');
     }
 
     /**
@@ -436,6 +471,10 @@ PHP);
     public function run_upgrade_steps_spawn_자식은_config_캐시가_stale_해도_env_버전으로_가드를_통과한다(): void
     {
         // 자식이 받는 env 는 toVersion, 캐시로 부팅한 config 는 fromVersion.
+        // 실제 spawn 은 `APP_VERSION` 과 `G7_UPDATE_IN_PROGRESS=1` 을 **함께** 넘긴다
+        // (CoreUpdateCommand::spawnUpgradeStepsProcess 의 $env). env 우선 판독은 그 플래그가
+        // 그리는 업데이트 트리 안에서만 켜지므로, 자식 시뮬레이션은 둘 다 세워야 실제와 같다.
+        $this->setUpdateFlag(true);
         $this->setEnvVersion('7.0.10');
         config(['app.version' => '7.0.9']);
         config(['app.update.spawn_failure_mode' => 'abort']);

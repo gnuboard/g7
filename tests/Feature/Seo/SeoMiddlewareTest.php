@@ -5,8 +5,11 @@ namespace Tests\Feature\Seo;
 use App\Seo\BotDetector;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\Contracts\SeoRendererInterface;
+use App\Seo\SeoCacheManager;
+use App\Seo\SeoCacheStatsService;
 use App\Seo\SeoMiddleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 /**
@@ -24,6 +27,8 @@ class SeoMiddlewareTest extends TestCase
 
     private SeoRendererInterface $renderer;
 
+    private SeoCacheStatsService $statsService;
+
     /**
      * 테스트 환경 설정
      */
@@ -34,12 +39,18 @@ class SeoMiddlewareTest extends TestCase
         $this->botDetector = $this->createMock(BotDetector::class);
         $this->cacheManager = $this->createMock(SeoCacheManagerInterface::class);
         $this->renderer = $this->createMock(SeoRendererInterface::class);
+        $this->statsService = $this->createMock(SeoCacheStatsService::class);
 
         $this->middleware = new SeoMiddleware(
             $this->botDetector,
             $this->cacheManager,
             $this->renderer,
+            $this->statsService,
         );
+
+        // 렌더·통계 예산은 IP 단위 카운터다 — 테스트 간 이월되면 순서에 따라 결과가 갈린다.
+        RateLimiter::clear('seo-render:127.0.0.1');
+        RateLimiter::clear('seo-stats:127.0.0.1');
     }
 
     /**
@@ -403,6 +414,7 @@ class SeoMiddlewareTest extends TestCase
             app(BotDetector::class),
             $this->cacheManager,
             $this->renderer,
+            $this->statsService,
         );
 
         $response = $middleware->handle($request, $this->spaNext());
@@ -435,6 +447,7 @@ class SeoMiddlewareTest extends TestCase
             app(BotDetector::class),
             $this->cacheManager,
             $this->renderer,
+            $this->statsService,
         );
 
         $response = $middleware->handle($request, $this->spaNext());
@@ -469,6 +482,7 @@ class SeoMiddlewareTest extends TestCase
             app(BotDetector::class),
             $this->cacheManager,
             $this->renderer,
+            $this->statsService,
         );
 
         $response = $middleware->handle($request, $this->spaNext());
@@ -500,5 +514,258 @@ class SeoMiddlewareTest extends TestCase
             ->with('/products', 'en', $renderedHtml, $this->anything());
 
         $this->middleware->handle($request, $this->spaNext());
+    }
+
+    // ========================================
+    // 캐시 상한 / 렌더 예산 테스트 (KVE-2026-2191 동형)
+    // ========================================
+
+    /**
+     * IP 당 미스 렌더 예산을 넘기면 렌더도 저장도 하지 않고 SPA 를 돌려준다.
+     *
+     * 봇 판정은 User-Agent 문자열뿐이라 위장이 가능하고, 캐시 키에 쿼리가 들어가므로
+     * 값만 바꾼 반복 요청이 매번 미스가 된다. 미스 1건은 레이아웃 병합·표현식 평가·자기
+     * API 루프백 호출을 유발하므로 요청 하나가 워커 여러 개를 묶는다.
+     *
+     * @effects bot_miss_over_limit_gets_spa_bypass
+     */
+    public function test_bot_miss_over_render_limit_gets_spa_bypass_without_render(): void
+    {
+        config([
+            'g7_settings.core.seo.bot_detection_enabled' => true,
+            'core.seo_cache_limits.render_misses_per_minute' => 2,
+        ]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->expects($this->never())->method('render');
+        $this->cacheManager->expects($this->never())->method('putWithLayout');
+
+        RateLimiter::hit('seo-render:127.0.0.1', 60);
+        RateLimiter::hit('seo-render:127.0.0.1', 60);
+
+        $response = $this->middleware->handle(
+            $this->createRequest('/products', 'Googlebot/2.1'),
+            $this->spaNext()
+        );
+
+        $this->assertSame('SPA Fallback', $response->getContent());
+        $this->assertSame('BYPASS', $response->headers->get('X-SEO-Cache'));
+    }
+
+    /**
+     * 예산을 넘긴 IP 라도 **캐시 적중**은 그대로 서빙한다 — 비용이 없기 때문이다.
+     *
+     * @effects bot_hit_served_regardless_of_limit
+     */
+    public function test_cache_hit_is_served_even_when_render_limit_exceeded(): void
+    {
+        config([
+            'g7_settings.core.seo.bot_detection_enabled' => true,
+            'core.seo_cache_limits.render_misses_per_minute' => 1,
+        ]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn('<html>cached</html>');
+
+        RateLimiter::hit('seo-render:127.0.0.1', 60);
+
+        $response = $this->middleware->handle(
+            $this->createRequest('/products', 'Googlebot/2.1'),
+            $this->spaNext()
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('HIT', $response->headers->get('X-SEO-Cache'));
+    }
+
+    /**
+     * `_escaped_fragment_` 는 봇 렌더 요청 표식일 뿐이라 캐시 키를 가르지 않는다.
+     *
+     * @effects system_query_params_excluded_from_key
+     */
+    public function test_escaped_fragment_param_does_not_change_cache_key(): void
+    {
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+
+        $seen = [];
+        $this->cacheManager->method('get')->willReturnCallback(function (string $url) use (&$seen) {
+            $seen[] = $url;
+
+            return '<html>cached</html>';
+        });
+
+        $this->middleware->handle($this->createRequest('/products', 'Googlebot/2.1'), $this->spaNext());
+        $this->middleware->handle(
+            $this->createRequest('/products', 'Googlebot/2.1', ['_escaped_fragment_' => '']),
+            $this->spaNext()
+        );
+
+        $this->assertCount(2, $seen);
+        $this->assertSame($seen[0], $seen[1]);
+    }
+
+    /**
+     * 정규화할 수 없을 만큼 큰 쿼리는 색인 대상이 아니다 — 캐시 조회도 렌더도 하지 않는다.
+     *
+     * @effects oversized_query_bypasses_cache_and_render
+     */
+    public function test_oversized_query_bypasses_cache_and_render(): void
+    {
+        config([
+            'g7_settings.core.seo.bot_detection_enabled' => true,
+            'core.seo_cache_limits.max_query_params' => 10,
+        ]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->expects($this->never())->method('get');
+        $this->renderer->expects($this->never())->method('render');
+
+        $query = [];
+        for ($i = 0; $i < 11; $i++) {
+            $query['p'.$i] = '1';
+        }
+
+        $response = $this->middleware->handle(
+            $this->createRequest('/products', 'Googlebot/2.1', $query),
+            $this->spaNext()
+        );
+
+        $this->assertSame('SPA Fallback', $response->getContent());
+        $this->assertSame('BYPASS', $response->headers->get('X-SEO-Cache'));
+    }
+
+    /**
+     * 캐시 적중·미적중이 통계에 기록된다.
+     *
+     * 기록 호출처가 없으면 `seo:stats` 와 관리자 통계가 항상 0 이라, 공격이 진행돼도
+     * 운영자 화면은 아무것도 달라지지 않는다.
+     *
+     * @effects cache_hit_and_miss_are_recorded_in_stats
+     */
+    public function test_cache_hit_records_stat_hit(): void
+    {
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn('<html>cached</html>');
+
+        $this->statsService->expects($this->once())->method('recordHit');
+        $this->statsService->expects($this->never())->method('recordMiss');
+
+        $this->middleware->handle($this->createRequest('/products', 'Googlebot/2.1'), $this->spaNext());
+    }
+
+    /**
+     * @effects cache_hit_and_miss_are_recorded_in_stats
+     */
+    public function test_cache_miss_records_stat_miss_with_response_time(): void
+    {
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->method('render')->willReturn('<html>rendered</html>');
+
+        $this->statsService->expects($this->once())
+            ->method('recordMiss')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->greaterThanOrEqual(0)
+            );
+
+        $this->middleware->handle($this->createRequest('/products', 'Googlebot/2.1'), $this->spaNext());
+    }
+
+    /**
+     * 통계 기록도 IP 당 상한을 넘기면 멈춘다 — 통계 테이블이 새 증식 축이 되면 안 된다.
+     *
+     * @effects stats_recording_capped_per_ip
+     */
+    public function test_stats_recording_is_capped_per_ip(): void
+    {
+        config([
+            'g7_settings.core.seo.bot_detection_enabled' => true,
+            'core.seo_cache_limits.stats_records_per_minute' => 1,
+        ]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn('<html>cached</html>');
+
+        RateLimiter::hit('seo-stats:127.0.0.1', 60);
+
+        $this->statsService->expects($this->never())->method('recordHit');
+
+        $this->middleware->handle($this->createRequest('/products', 'Googlebot/2.1'), $this->spaNext());
+    }
+
+    /**
+     * 캐시 적중(HIT)은 렌더러를 거치지 않으므로 레이아웃명을 요청 속성에서 얻을 수 없다 —
+     * 캐시 항목에 함께 저장된 레이아웃명으로 통계에 귀속한다. 없으면 화면별 표에서 모든
+     * 화면의 적중이 0 이 되고 'N/A' 행에만 쌓인다.
+     *
+     * @effects cache_hit_carries_layout_name_from_cache_entry
+     */
+    public function test_cache_hit_records_stat_hit_with_layout_from_cache_entry(): void
+    {
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $cacheManager = $this->createMock(SeoCacheManager::class);
+        $cacheManager->method('getEntry')->willReturn(['html' => '<html>cached</html>', 'layout' => 'shop/show']);
+
+        $middleware = new SeoMiddleware($this->botDetector, $cacheManager, $this->renderer, $this->statsService);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->statsService->expects($this->once())
+            ->method('recordHit')
+            ->with('/products', config('app.locale'), 'shop/show');
+
+        $response = $middleware->handle($this->createRequest('/products', 'Googlebot/2.1'), $this->spaNext());
+
+        $this->assertSame('<html>cached</html>', $response->getContent());
+        $this->assertSame('HIT', $response->headers->get('X-SEO-Cache'));
+    }
+
+    /**
+     * 렌더러가 "그릴 게 없음"(null)을 돌려주면 방금 뺀 렌더 예산을 되돌린다 — 미라우트 404 나
+     * SEO 비활성 화면은 캐시에 남지 않아 올 때마다 다시 예산을 쓰므로, 죽은 주소 재크롤이
+     * 정상 페이지의 예산을 태운다.
+     *
+     * @effects null_render_refunds_render_budget
+     */
+    public function test_null_render_refunds_render_budget(): void
+    {
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->method('render')->willReturn(null);
+
+        $this->middleware->handle($this->createRequest('/gone', 'Googlebot/2.1'), $this->spaNext());
+
+        $this->assertSame(0, (int) RateLimiter::attempts('seo-render:127.0.0.1'));
+    }
+
+    /**
+     * 렌더 중 예외는 비용을 이미 치른 것이므로 예산을 되돌리지 않는다 (회귀 가드).
+     *
+     * @effects null_render_refunds_render_budget
+     */
+    public function test_render_exception_keeps_render_budget_charged(): void
+    {
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->method('render')->willThrowException(new \RuntimeException('boom'));
+
+        $this->middleware->handle($this->createRequest('/products', 'Googlebot/2.1'), $this->spaNext());
+
+        $this->assertSame(1, (int) RateLimiter::attempts('seo-render:127.0.0.1'));
     }
 }

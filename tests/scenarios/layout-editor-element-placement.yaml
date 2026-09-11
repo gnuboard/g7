@@ -163,6 +163,17 @@ effects:
   - global_palette_locked_node_inserts_at_anchor_sibling_after
   - added_node_in_locked_area_preserved_as_route_content_on_save
   - none_node_insertion_unchanged_anchor_equals_self
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - route_edit_source_lock_takes_precedence_over_data_bound_classification
+  - route_owned_or_untagged_bound_nodes_stay_data_bound_editable
+  - source_lock_is_judged_on_the_node_itself_not_its_ancestors
+  - lock_kind_editability_and_dnd_denial_share_one_predicate
+  - locked_source_nodes_are_denied_at_drag_start_move_and_end
+  - route_edit_source_lock_blocks_inline_edit_delete_cut_and_duplicate_entry_points
+  - structural_edit_callbacks_guard_locked_nodes_without_trusting_the_caller
+  - route_owned_nodes_keep_inline_edit_delete_cut_and_duplicate
+  - save_conflict_reads_versions_from_response_helper_errors_payload
+  - serving_cache_key_uses_server_current_version_not_client_query_version
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/dnd/nestingRules.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/dnd/dropSlots.test.ts
@@ -192,6 +203,9 @@ test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/utils/overlayZIndex.test.ts
   # 잠긴 영역 요소 추가(+) 복원 (anchor 박스 + 묶음 바깥 삽입) E2E
   - tests/Playwright/specs/layout-editor/locked-area-insertion.spec.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorCanvasOverlay.entryPointGuard.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorCanvasOverlay.sourceLockGuard.test.tsx
+  - tests/Feature/Api/Public/LayoutServingStaleClientVersionKeyTest.php
 notes: |
   - dropZoneResolver/useCanvasDnd/DndCanvasLayer/drag-drop-matrix 등 dnd 본격 동작은 S5b (PR #4b) 에서 추가.
   - link-edit-affordance.test.tsx 는 useElementSelection.test.ts 가 classifyNavAffordance 단위 분기를 커버하며,

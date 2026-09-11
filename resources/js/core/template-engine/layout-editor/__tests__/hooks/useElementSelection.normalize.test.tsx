@@ -433,3 +433,63 @@ describe('useElementSelection — 식별 라벨 (base 파일명 / 데이터소�
     expect(result.current.selectedDataSourceId).toBe('_local');
   });
 });
+
+// ============================================================================
+// route 모드 상속·주입 노드 선택 → 진입 어포던스 배선 (A3)
+//
+// 종전에는 이 노드들이 `data_bound` 로 분류돼 「데이터 영역」 라벨만 뜨고 편집이 열렸다.
+// 이제 출처 잠금으로 분류되어 「🔒 공통 레이아웃 편집」/「🔒 확장 편집」 어포던스가 뜬다.
+// 어포던스 노출의 핵심 게이트는 `selectedBaseLayout` 이므로 그것까지 함께 단언한다.
+// ============================================================================
+describe('useElementSelection — 상속·주입 노드 진입 어포던스 (A3)', () => {
+  const affordanceTree: EditorNode = {
+    children: [
+      // base 출처 + props 바인딩 — 종전 data_bound, 이제 base
+      {
+        name: 'Header',
+        __source: { kind: 'base', layout: '_user_base' },
+        props: { logo: '{{_global.settings?.general?.site_logo_url}}' },
+      },
+      // extension 출처 + 텍스트 바인딩 — 종전 data_bound, 이제 extension
+      {
+        name: 'Span',
+        __source: { kind: 'extension', extensionId: 35 },
+        text: '{{content}}',
+      },
+    ],
+  };
+
+  it('N10 base 출처 + 바인딩 선택 → lockKind=base AND selectedBaseLayout=_user_base', () => {
+    const { result } = renderHook(() =>
+      useElementSelection({ rootNode: affordanceTree, editMode: 'route' }),
+    );
+    act(() => {
+      result.current.handleSelect('', selectByPath('0'));
+    });
+    expect(result.current.selectedLockKind).toBe('base');
+    // 이 값이 「🔒 공통 레이아웃 편집」 버튼 노출의 게이트다.
+    expect(result.current.selectedBaseLayout).toBe('_user_base');
+  });
+
+  it('N11 같은 노드 → 데이터 영역 라벨·반복 진입은 사라진다 (잠금이 이겼으므로)', () => {
+    const { result } = renderHook(() =>
+      useElementSelection({ rootNode: affordanceTree, editMode: 'route' }),
+    );
+    act(() => {
+      result.current.handleSelect('', selectByPath('0'));
+    });
+    expect(result.current.selectedDataSourceId).toBeNull();
+    expect(result.current.selectedIsIteration).toBe(false);
+  });
+
+  it('N12 extension 출처 + 바인딩 선택 → lockKind=extension + 확장 PK 로 진입 가능', () => {
+    const { result } = renderHook(() =>
+      useElementSelection({ rootNode: affordanceTree, editMode: 'route' }),
+    );
+    act(() => {
+      result.current.handleSelect('', selectByPath('1'));
+    });
+    expect(result.current.selectedLockKind).toBe('extension');
+    expect(result.current.selectedNode?.__source?.extensionId).toBe(35);
+  });
+});

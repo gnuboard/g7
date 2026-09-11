@@ -7,7 +7,7 @@
 2. helper: localize_catalog_field($field, $langKey) — 단일 함수 호출
 3. 모듈/플러그인 Service 가 자기 빌드 메서드 안에서 직접 호출
 4. lang key segment 는 settings JSON 의 식별자(id/code/key) 와 동일
-5. 정적 검사가 호출 누락 검출 (경고)
+5. 자동 검증이 호출 누락 검출 (경고)
 ```
 
 ## 사용법
@@ -96,7 +96,7 @@ return [
 ];
 ```
 
-ja/zh 등 다른 locale 은 번들 lang pack 자동 빌드 (`build-language-pack.cjs`).
+ja/zh 등 다른 locale 은 번들 lang pack 에서 자동 빌드한다.
 
 ## 운영자 편집 보존
 
@@ -108,7 +108,7 @@ helper 동작:
 
 운영자가 admin UI 에서 ja 라벨을 직접 입력했다면 보존. 입력 안한 locale 만 lang pack 으로 채움.
 
-## 정적 검사
+## 자동 검증
 
 경고 수준으로 다음을 검출한다:
 

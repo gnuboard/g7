@@ -360,7 +360,7 @@ class ProductCacheInvalidationListener implements HookListenerInterface
 
 ### Listener 데이터 접근 규정
 
-Listener 는 thin orchestrator 로 동작하며 영속/도메인 책임은 Service / Repository 가 갖는다. 다음 패턴은 정적 검사가 차단한다.
+Listener 는 thin orchestrator 로 동작하며 영속/도메인 책임은 Service / Repository 가 갖는다. 다음 패턴은 자동 검증이 차단한다.
 
 | ❌ 금지 | ✅ 올바른 사용 |
 |--------|---------------|
@@ -412,7 +412,7 @@ $products = $this->productRepository->findByIdsKeyed($ids);
 
 #### 면제 (allowlist)
 
-다음과 같은 의도된 예외는 인라인 주석으로 명시한다 (정적 검사가 해당 라인을 건너뜀).
+다음과 같은 의도된 예외는 인라인 주석으로 명시한다 (자동 검증이 해당 라인을 건너뜀).
 
 ```php
 // audit:allow listener-direct-db-facade reason: 동적 modelClass dispatch (description resolver 의 unified ID→name 변환)
@@ -1350,4 +1350,4 @@ public function download(int $id, ?User $user): ?Attachment
 - [Service-Repository 패턴](../backend/service-repository.md) - Service에서 훅 실행 패턴
 - [활동 로그 시스템](../backend/activity-log.md) - 활동 로그 Listener 작성 패턴, Per-Item Bulk 로깅 규칙
 - [권한 시스템](permissions.md) - Permission, Role 체계
-- [확장 시스템 인덱스](index.md) - 전체 확장 시스템 개요
+- [확장 시스템 인덱스](README.md) - 전체 확장 시스템 개요

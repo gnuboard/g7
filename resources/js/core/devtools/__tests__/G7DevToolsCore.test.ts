@@ -43,6 +43,30 @@ describe('G7DevToolsCore', () => {
         global.window = originalWindow;
     });
 
+    describe('인증 진단', () => {
+        it.each([[], {}, null])('빈 사용자 %j를 토큰만으로 인증됐다고 표시하지 않는다', (user) => {
+            (global as any).window.G7Core.api = { getToken: () => 'test-token' };
+            (global as any).window.G7Core.auth = { getUser: () => user, isAuthenticated: () => false };
+            (global as any).window.G7Core.state.get = () => ({ _global: { currentUser: user } });
+            const state = devTools.getAuthDebugInfo().state;
+            expect(state.isAuthenticated).toBe(false);
+            expect(state.user).toBeUndefined();
+        });
+
+        it('AuthManager의 인증 판단을 빈 폴백 데이터보다 우선한다', () => {
+            (global as any).window.G7Core.api = { getToken: () => 'test-token' };
+            (global as any).window.G7Core.auth = { getUser: () => null, isAuthenticated: () => true };
+            expect(devTools.getAuthDebugInfo().state.isAuthenticated).toBe(true);
+        });
+
+        it('실제 사용자 객체를 가진 상태 폴백은 유지한다', () => {
+            (global as any).window.G7Core.api = { getToken: () => 'test-token' };
+            (global as any).window.G7Core.state.get = () => ({ _global: { currentUser: { id: 7, email: 'fixture@example.test' } } });
+            expect(devTools.getAuthDebugInfo().state.user?.id).toBe(7);
+            expect(devTools.getAuthDebugInfo().state.isAuthenticated).toBe(true);
+        });
+    });
+
     describe('싱글톤 패턴', () => {
         it('동일한 인스턴스를 반환해야 한다', () => {
             const instance1 = G7DevToolsCore.getInstance();

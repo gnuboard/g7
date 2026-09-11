@@ -1,7 +1,7 @@
 # 전역 상태 관리
 
 > **버전**: engine-v1.1.0+
-> **관련 문서**: [components.md](components.md) | [data-binding.md](data-binding.md) | [index.md](index.md)
+> **관련 문서**: [components.md](components.md) | [data-binding.md](data-binding.md) | [README.md](README.md)
 
 ---
 
@@ -13,6 +13,8 @@
 3. 격리 상태: _isolated.속성명 (컴포넌트 영역, 성능 최적화용) (engine-v1.14.0+)
 4. 바인딩: {{_global.xxx}}, {{_local.xxx}}, {{_isolated.xxx}}
 5. 변경: setState 핸들러 (target: "global"|"local"|"isolated")
+6. setState params 의 키에 {{}} 사용 금지 — 키는 정적 경로만 (값에만 바인딩)
+7. await 뒤에는 캡처해 둔 상태 값을 쓰지 않는다 → G7Core.state.getLocal() 로 재조회
 ```
 
 ---

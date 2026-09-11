@@ -614,21 +614,6 @@ class PageAttachmentService
     }
 
     /**
-     * 파일 URL을 반환합니다.
-     *
-     * 디스크는 행이 정합니다 — 같은 클래스의 서빙·정리 경로가 모두 `storageForRow()` 를
-     * 쓰는데 URL 조립만 주입 디스크로 가면, 디스크를 옮긴 사이트에서 이 값만 다른
-     * 디스크의 주소를 가리킵니다 (11차 G3 라운드 B11-3 인접).
-     *
-     * @param  PageAttachment  $attachment  첨부파일 모델
-     * @return string|null 파일 URL 또는 null
-     */
-    public function getUrl(PageAttachment $attachment): ?string
-    {
-        return $this->storageForRow($attachment->disk)->url('attachments', $attachment->path);
-    }
-
-    /**
      * 첨부파일 삭제 권한을 확인합니다.
      *
      * @param  PageAttachment  $attachment  첨부파일 모델

@@ -42,9 +42,9 @@ class CoreUpdateSharedMessageChannelTest extends TestCase
      * @var array<string, string>
      */
     private const EXEMPT = [
-        // 코어 업데이트 실패 흐름이 아니라 스토리지 잔여물 정리 안내다. 2026-09-02 PO 결정으로
+        // 코어 업데이트 실패 흐름이 아니라 스토리지 잔여물 정리 안내다. 2026-09-02 설계 결정으로
         // 이번 라운드의 범위는 코어 업데이트 화면 두 곳이며, 이 키는 그 밖이다.
-        'storage_link_backup_accumulated' => '스토리지 정리 안내 — 코어 업데이트 실패 흐름 밖 (PO 범위 결정 2026-09-02)',
+        'storage_link_backup_accumulated' => '스토리지 정리 안내 — 코어 업데이트 실패 흐름 밖 (설계 결정 2026-09-02)',
     ];
 
     /**

@@ -67,6 +67,8 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 잠금 전에 발급된 2단계 인증 challenge 로는 잠긴 계정에 로그인할 수 없다.
+     *
+     * @effects challenge_issued_before_lock_cannot_complete_after_lock, two_factor_complete_rechecks_lock_before_auth_login, blocked_two_factor_attempt_issues_no_token
      */
     #[Test]
     public function a_challenge_issued_before_the_lock_cannot_complete_login_after_the_lock(): void
@@ -101,6 +103,8 @@ class TwoFactorAccountLockTest extends TestCase
      *
      * 로그인 완료 훅이 실패 횟수·잠금 시각을 리셋하므로, 우회가 성공하면 공격의 흔적까지
      * 사라진다. 차단이 훅 이전에 일어나는지를 사후 상태로 확인한다.
+     *
+     * @effects blocked_two_factor_attempt_does_not_reset_failed_attempts, blocked_two_factor_attempt_does_not_reset_locked_until
      */
     #[Test]
     public function a_blocked_two_factor_attempt_does_not_reset_the_lock_state(): void
@@ -132,6 +136,8 @@ class TwoFactorAccountLockTest extends TestCase
      * 423 응답은 정상 로그인 경로와 같은 계약(해제 시각·잔여 시간·영구 여부)을 따른다.
      *
      * 화면은 두 경로를 구분하지 않으므로, 한쪽만 다른 모양이면 안내가 깨진다.
+     *
+     * @effects two_factor_locked_response_status_423, two_factor_locked_response_payload_matches_login_endpoint
      */
     #[Test]
     public function the_locked_response_matches_the_login_endpoint_contract(): void
@@ -159,6 +165,8 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 잠기지 않은 계정의 2단계 인증은 그대로 완료된다 (정상 흐름 회귀 방지).
+     *
+     * @effects unlocked_account_completes_two_factor_normally
      */
     #[Test]
     public function an_unlocked_account_still_completes_two_factor_normally(): void
@@ -176,6 +184,8 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 잠금 검사 설정이 꺼져 있으면 2단계 인증도 잠금을 보지 않는다 (설정 계약 일치).
+     *
+     * @effects two_factor_lock_recheck_honors_login_attempt_enabled_setting
      */
     #[Test]
     public function the_lock_recheck_follows_the_login_attempt_setting(): void
@@ -199,6 +209,8 @@ class TwoFactorAccountLockTest extends TestCase
      *
      * 형제 결함 — `refreshToken` 은 유효한 세션이 전제라 신규 로그인 우회는 아니지만,
      * 관리자가 계정을 잠근 뒤에도 그 세션이 무기한 연장되면 잠금이 실효를 잃는다.
+     *
+     * @effects token_refresh_rejects_locked_account
      */
     #[Test]
     public function a_locked_account_cannot_refresh_its_token(): void
@@ -215,6 +227,8 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 잠기지 않은 계정의 토큰 재발급은 그대로 동작한다 (정상 흐름 회귀 방지).
+     *
+     * @effects token_refresh_still_works_for_unlocked_account
      */
     #[Test]
     public function an_unlocked_account_can_still_refresh_its_token(): void

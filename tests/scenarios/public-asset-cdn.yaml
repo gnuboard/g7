@@ -45,6 +45,8 @@ effects:
   - seo_guard_passes_absolute_cdn_url_unmodified
   - cross_origin_asset_request_omits_session_token
   - s3_credentials_visible_when_public_asset_disk_is_s3
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - api_client_refuses_to_store_non_string_or_empty_tokens
 
 test_files:
   - tests/Unit/Extension/Storage/CoreStorageDriverTest.php

@@ -31,6 +31,7 @@ return [
         'admin_policy_has_no_default' => '관리자가 직접 생성한 정책에는 선언 기본값이 없습니다.',
         'reset_field_failed' => '선언 기본값 복원에 실패했습니다. 필드가 유효한지 확인하세요.',
         'cannot_delete_system_policy' => '시스템이 선언한 정책은 삭제할 수 없습니다. 관리자가 직접 생성한 정책만 삭제할 수 있습니다.',
+        'purpose_not_allowed' => '이 인증 요청은 이 화면에서 처리할 수 없습니다.',
     ],
 
     'messages' => [

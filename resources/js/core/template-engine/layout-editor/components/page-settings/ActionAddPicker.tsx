@@ -58,6 +58,8 @@ const GROUP_OF: Record<string, string> = {
   apiCall: 'data',
   scrollIntoView: 'etc',
   login: 'etc',
+  loginTwoFactor: 'etc',
+  loginTwoFactorResend: 'etc',
   logout: 'etc',
   setLocale: 'locale',
   emitEvent: 'etc',

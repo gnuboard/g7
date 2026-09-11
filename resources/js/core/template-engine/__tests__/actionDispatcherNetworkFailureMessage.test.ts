@@ -33,6 +33,26 @@ describe('resolveActionFailureMessage', () => {
         );
     });
 
+    it('axios 네트워크 오류도 네트워크 계열로 안내한다', () => {
+        // axios 는 TypeError 가 아니라 AxiosError 로 reject 하며 종류는 code 에만 남는다.
+        // TypeError 만 보면 로그인 화면에 영문 원문(Network Error)이 그대로 노출된다.
+        const axiosError: any = new Error('Network Error');
+        axiosError.code = 'ERR_NETWORK';
+
+        expect(resolveActionFailureMessage(axiosError, 'login', undefined)).toBe(
+            '$t:core.errors.network_request_failed'
+        );
+    });
+
+    it('요청 시간 초과도 네트워크 계열로 안내한다', () => {
+        const timeout: any = new Error('timeout of 30000ms exceeded');
+        timeout.code = 'ECONNABORTED';
+
+        expect(resolveActionFailureMessage(timeout, 'login', undefined)).toBe(
+            '$t:core.errors.network_request_failed'
+        );
+    });
+
     it('서버가 메시지를 주면 그대로 쓴다', () => {
         expect(
             resolveActionFailureMessage(new Error('boom'), 'apiCall', '유효하지 않은 레이아웃 전략입니다.')

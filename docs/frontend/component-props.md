@@ -23,7 +23,7 @@
 
 ```
 필수: 레이아웃 JSON 작성 전 이 문서에서 props 확인 (문서에 없는 props 사용 금지)
-필수: 작성 후 /validate-frontend 스킬로 검증
+필수: 작성 후 /validate frontend 스킬로 검증
 ```
 
 ### props 사용 전 확인 체크리스트
@@ -33,7 +33,7 @@
 1. **이 문서에서 해당 컴포넌트의 지원 props 확인**
 2. **props 타입과 기본값 확인**
 3. **레이아웃 JSON 작성**
-4. **`/validate-frontend` 스킬로 검증**
+4. **`/validate frontend` 스킬로 검증**
 
 ---
 

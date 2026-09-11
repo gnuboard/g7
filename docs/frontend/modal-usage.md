@@ -10,6 +10,8 @@
 3. 부모 상태 수정: G7Core.state.setParentLocal() 또는 setState target="$parent._local"
 4. 로딩 상태 등 공유 상태는 _global 사용 권장 (모달 간 공유 필요 시)
 5. 삭제/위험 작업 버튼은 로딩 중 흐림 + 스피너 + 텍스트 변경 필수
+6. $parent._local 은 모달 마운트 시점의 스냅샷 — 모달이 열린 뒤의 부모 변경은 반영되지 않음
+7. closeModal 후 setState 금지 — setState 를 먼저 실행하고 closeModal 을 나중에
 ```
 
 ---
@@ -890,7 +892,7 @@ Footer 버튼은 `children` 배열의 **마지막 요소**로 Div에 감싸서 �
    (모달 자체의 _local 스코프에 쓰기 — 부모 상태는 "$parent._local" 사용)
 ```
 
-> 상세: [layout-extensions.md](../../extension/layout-extensions.md) "지원 위치" 섹션 참조
+> 상세: [layout-extensions.md](../extension/layout-extensions.md) "지원 위치" 섹션 참조
 
 ---
 

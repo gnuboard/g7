@@ -36,6 +36,7 @@ return [
     'account_pending_verification' => '本人認証が完了していないアカウントです。メール認証を完了してください。',
     'account_locked' => 'ログイン試行回数の超過によりアカウントがロックされました。:minutes分後に再度お試しください。',
     'account_locked_permanently' => 'ログイン試行回数の超過によりアカウントがロックされました。管理者にお問い合わせください。',
+    'too_many_attempts' => 'リクエストが多すぎます。:seconds秒後にもう一度お試しください。',
     'account_unlocked' => 'アカウントのロックを解除しました。',
     'reset_token_invalid' => '無効なパスワードリセットトークンです。',
     'reset_token_expired' => 'パスワードリセットトークンが有効期限切れです。再度リクエストしてください。',

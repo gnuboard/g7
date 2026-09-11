@@ -114,10 +114,20 @@ abstract class TestCase extends BaseTestCase
      * 다른 결과를 낸다. 기본 전제는 「링크 있음」(표준 배치)으로 고정하고, 링크 부재 배치를
      * 검증하는 테스트는 `StorageLinkHelper::forcePublicStorageLinkUsable(false)` 로 자기
      * 전제를 명시한다.
+     *
+     * `security.two_factor_auth` 도 같다. 켜 둔 사이트에서는 `/api/auth/login` 이 토큰이
+     * 아니라 인증 요청(challenge)을 돌려주므로, 로그인 성공을 전제한 테스트가 그 환경에서만
+     * 깨진다. 게다가 테스트 메일러로는 인증번호를 보낼 수 없어 503 이 되므로 실패 메시지가
+     * 원인을 가리키지도 않는다. 실제로 이 환경에서 3건이 그렇게 실패했다. 2단계 인증을 켜야
+     * 하는 테스트는 `config(['g7_settings.core.security.two_factor_auth' => true])` 로 자기
+     * 전제를 명시한다 (자식 `setUp()` 은 `parent::setUp()` 뒤에 실행되므로 그 지정이 이긴다).
      */
     private function pinEnvironmentDependentSettings(): void
     {
-        config(['g7_settings.core.general.asset_url_mode' => AssetUrl::MODE_EXTENSION]);
+        config([
+            'g7_settings.core.general.asset_url_mode' => AssetUrl::MODE_EXTENSION,
+            'g7_settings.core.security.two_factor_auth' => false,
+        ]);
         StorageLinkHelper::forcePublicStorageLinkUsable(true);
         // 마운트 접두사 강제값도 프로세스 수명 static 이다 — 앞 케이스가 `forceBasePrefix('/g7')`
         // 를 남기면 뒤 케이스의 모든 주소가 `/g7/…` 로 나가 개별 통과 / 스위트 실패가 된다.

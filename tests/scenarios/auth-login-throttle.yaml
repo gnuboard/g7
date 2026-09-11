@@ -82,6 +82,8 @@ effects:
   - unlocked_account_completes_two_factor_normally
   - token_refresh_rejects_locked_account
   - token_refresh_still_works_for_unlocked_account
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - nonexistent_email_attempt_stores_no_counter
 
 test_files:
   - tests/Feature/Auth/LoginThrottleTest.php

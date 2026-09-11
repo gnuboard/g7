@@ -827,73 +827,57 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_download');
     }
 
+    /**
+     * 업로드 응답의 url 칸이 게이트가 살아 있는 서빙 URL 이어야 합니다.
+     *
+     * 이전에는 비공개 디스크에서 항상 null 이 나가 응답의 url 칸이 늘 비어 있었다.
+     * 게시판 첨부는 비밀글·삭제글 게이트가 걸려 있으므로 직접 URL 로 바꾸지 않고,
+     * 그 게이트를 통과하는 다운로드 서빙 URL 로 채운다.
+     *
+     * @effects board_upload_response_url_uses_gated_route, download_url_falls_back_to_api_path_when_direct_unavailable
+     */
     #[Test]
-    public function test_get_url_returns_url(): void
+    public function test_get_url_returns_gated_serving_url(): void
     {
         // Arrange
         $attachment = new Attachment([
-            'id' => 1,
             'path' => 'notice/2025/01/21/test.jpg',
         ]);
+        $attachment->hash = 'abc123def456';
+        $attachment->setRelation('board', new Board(['slug' => 'notice']));
 
         $this->repository->shouldReceive('findById')
             ->once()
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        $this->storage->shouldReceive('url')
-            ->once()
-            ->with('attachments', 'notice/2025/01/21/test.jpg')
-            ->andReturn('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg');
+        // 직접 URL 은 시도조차 하지 않는다 (게이트 우회 차단)
+        $this->storage->shouldNotReceive('url');
 
         // Act
         $result = $this->service->getUrl('notice', 1);
 
         // Assert
-        $this->assertEquals('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg', $result);
+        $this->assertSame(
+            '/api/modules/sirsoft-board/boards/notice/attachment/abc123def456',
+            $result
+        );
     }
 
     /**
-     * URL 조립도 **행에 기록된 disk** 를 따른다.
+     * 첨부가 없으면 null 이어야 합니다 (기존 계약 유지).
      *
-     * 같은 클래스의 서빙 4지점·정리 2지점은 이미 `storageForRow()` 를 지나는데 이
-     * 메서드만 카테고리 기본 디스크로 갔다 — 디스크를 옮긴 사이트에서 이 값만 다른
-     * 디스크의 주소를 가리키고, 오류도 로그도 남지 않는다 (11차 G3 라운드 B11-8).
+     * @effects board_upload_response_url_uses_gated_route
      */
     #[Test]
-    public function test_get_url_uses_the_disk_recorded_on_the_row(): void
+    public function test_get_url_returns_null_when_attachment_missing(): void
     {
-        $this->registerRowDisk();
-
-        $attachment = new Attachment([
-            'id' => 1,
-            'disk' => self::ROW_DISK,
-            'path' => 'notice/2025/01/21/test.jpg',
-        ]);
-
         $this->repository->shouldReceive('findById')
             ->once()
-            ->with('notice', 1)
-            ->andReturn($attachment);
+            ->with('notice', 99)
+            ->andReturnNull();
 
-        $this->storage->shouldReceive('getDisk')->andReturn('modules');
-
-        $rowStorage = Mockery::mock(StorageInterface::class);
-        $rowStorage->shouldReceive('url')
-            ->once()
-            ->with('attachments', 'notice/2025/01/21/test.jpg')
-            ->andReturn('https://cdn.test/assets/notice/2025/01/21/test.jpg');
-
-        $this->storage->shouldReceive('withDisk')
-            ->once()
-            ->with(self::ROW_DISK)
-            ->andReturn($rowStorage);
-
-        // 주입 스토리지로 새면 그 mock 의 `url` 이 「예상치 못한 호출」로 실패한다.
-        $this->assertSame(
-            'https://cdn.test/assets/notice/2025/01/21/test.jpg',
-            $this->service->getUrl('notice', 1)
-        );
+        $this->assertNull($this->service->getUrl('notice', 99));
     }
 
     /**

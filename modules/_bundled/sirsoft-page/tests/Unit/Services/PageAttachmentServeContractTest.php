@@ -234,32 +234,6 @@ class PageAttachmentServeContractTest extends ModuleTestCase
     }
 
     /**
-     * URL 조립도 행 disk 를 따른다 — 서빙·정리와 어긋나면 그 값만 다른 곳을 가리킨다.
-     *
-     * @effects attachment_url_is_built_on_the_disk_recorded_on_the_row
-     */
-    public function test_url_is_built_on_the_disk_recorded_on_the_row(): void
-    {
-        $attachment = $this->makeRow(self::ROW_DISK);
-
-        $rowStorage = Mockery::mock(StorageInterface::class);
-        $rowStorage->shouldReceive('url')
-            ->once()
-            ->with('attachments', '2026/08/28/stored.bin')
-            ->andReturn('https://cdn.test/assets/2026/08/28/stored.bin');
-
-        $this->storage->shouldReceive('withDisk')
-            ->once()
-            ->with(self::ROW_DISK)
-            ->andReturn($rowStorage);
-
-        $this->assertSame(
-            'https://cdn.test/assets/2026/08/28/stored.bin',
-            $this->service->getUrl($attachment)
-        );
-    }
-
-    /**
      * 축소 경로를 지난 업로드도 행 `size` 가 **실제 저장 바이트**와 같다.
      *
      * 축소는 제자리 덮어쓰기이고 `ImageResizer::resizeInPlace()` 는 쓰기 전에

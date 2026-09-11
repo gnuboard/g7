@@ -398,32 +398,61 @@ export function classifyLockKind(
     return 'extension_point';
   }
 
-  // 별도 편집 모드(extension/base/modal/iteration)에서만 **출처 잠금을 data_bound 보다 우선**
-  // 적용한다. 그 모드들에서는 호스트 본체 노드가 폼 입력
-  // 등으로 data_bound 인 경우가 많은데, data_bound 를 먼저 판정하면 잠겨야 할 호스트 노드가
-  // "텍스트만 잠금(선택/스타일 허용)"으로 새어 편집된다. 그래서 잠긴 노드는 출처로 분류한다.
+  // **출처 잠금이 data_bound 보다 항상 우선**한다 (편집 모드 무관).
   //
-  // route 모드는 **종전 동작을 그대로 보존**한다 — data_bound 를 먼저 판정해,
-  // 확장 주입 영역의 data_bound 노드가 "데이터 영역" 표식을 유지하고, 잠긴 확장/ base 노드는
-  // 아래 출처 분류로 "확장 편집"/"공통 레이아웃 편집" 어포던스를 띄운다. route 동작을 한 줄도
-  // 바꾸지 않아 기존 확장 주입 영역 표식/진입이 그대로 복원된다.
-  if (editMode !== 'route' && isNodeLocked(node, editMode, currentExtensionId)) {
+  // 종전에는 route 모드만 예외로 두어 data_bound 를 먼저 판정했다. 그 결과 상속(base)·
+  // 주입(extension) 노드 중 props 값 하나라도 `{{ }}` 인 것은 `data_bound` 로 분류됐고,
+  // `data_bound` 는 편집 허용이라 속성 모달·드래그·인라인 편집이 모두 열렸다. 그런데 저장
+  // 시 `stripInheritedNode` 가 그 노드를 통째로 폐기하므로 **편집분이 오류도 경고도 없이
+  // 사라진다**(저장은 200 으로 성공하고 history 는 clear 돼 undo 도 불가). 그 "종전 동작
+  // 보존" 은 계약이 아니라 보수성 선언이었고, 그 보수성이 곧 결함이었다.
+  //
+  // `data_bound` 의 **의미는 그대로 두고**(= 편집 가능, 텍스트만 잠금) 어느 노드가
+  // data_bound 로 분류되는가만 좁힌다. `isNodeLocked('route')` 는 `__source.kind` 하나만
+  // 보고 조상은 보지 않으므로, 라우트 소유 노드는 계속 편집 가능하다(회귀 없음).
+  if (isNodeLocked(node, editMode, currentExtensionId)) {
     const src = node.__source?.kind;
     if (src === 'base') return 'base';
     if (src === 'partial') return 'partial';
     if (src === 'extension') return 'extension';
-    // 출처 메타가 없는데 잠금(별도 모드 한정) — 보수적으로 base 취급(선택 차단).
+    // 출처 메타가 없는데 잠금 — 보수적으로 base 취급(선택 차단).
     return 'base';
   }
 
-  // ── 종전 분류 순서 (route 모드 + 별도 모드의 미잠금 노드) ──
+  // ── 미잠금(라우트 소유·신규 삽입) 노드 ──
   if (isDataBoundNode(node, ancestors)) return 'data_bound';
-  if (!isNodeLocked(node, editMode, currentExtensionId)) return 'none';
-  const src = node.__source?.kind;
-  if (src === 'base') return 'base';
-  if (src === 'partial') return 'partial';
-  if (src === 'extension') return 'extension';
   return 'none';
+}
+
+/**
+ * 이 노드가 현재 편집 중인 레이아웃의 **소유 노드**인가 — 즉 저장 마스킹
+ * (`stripInheritedFromLayoutContent`)을 통과해 영속되는가.
+ *
+ * `false` 인 노드(base/partial/extension/extension_point)는 편집해도 저장 시 폐기되므로
+ * 속성·구조·드래그·인라인 편집을 **모두 같은 기준으로** 차단하고 진입 어포던스
+ * (「🔒 공통 레이아웃 편집」 / 「🔒 확장 편집」)로 유도한다.
+ *
+ * 새 편집 진입점을 만들 때 반드시 본 함수를 게이트로 쓸 것 — 조건을 복사하면
+ * 한 곳만 빠져도 같은 소실 결함이 재발한다(이번 결함의 원인이 정확히 그것이다).
+ */
+export function isEditableLockKind(lockKind: SelectionLockKind): boolean {
+  return lockKind === 'none' || lockKind === 'data_bound';
+}
+
+/**
+ * 잠금 종류 → DnD 거부 사유(devtools `EditorDndDecision`). `null` = 허용.
+ *
+ * `isEditableLockKind` 와 같은 판정을 쓰되 거부 사유 문자열까지 단일 지점에서 정한다.
+ * 사유 어휘는 기존 `EditorDndDecision` 그대로다(신설 없음) — base/partial 은
+ * `denied_base_locked`, extension/extension_point 는 `denied_extension_locked`.
+ */
+export function resolveDndDenial(
+  lockKind: SelectionLockKind,
+): 'denied_base_locked' | 'denied_extension_locked' | null {
+  if (isEditableLockKind(lockKind)) return null;
+  return lockKind === 'extension' || lockKind === 'extension_point'
+    ? 'denied_extension_locked'
+    : 'denied_base_locked';
 }
 
 /**
@@ -536,7 +565,8 @@ function normalizeDomPathToExtensionEntry(
  * @returns ⓘ 메뉴를 띄워도 되면 true
  */
 export function isContextMenuAllowed(lockKind: SelectionLockKind): boolean {
-  return lockKind === 'none' || lockKind === 'data_bound';
+  // 판정은 `isEditableLockKind` 단일 지점 — 조건을 복사하면 한 곳만 빠져도 결함이 남는다.
+  return isEditableLockKind(lockKind);
 }
 
 /**
@@ -580,8 +610,8 @@ export function useElementSelection(params: UseElementSelectionParams): UseEleme
       if (!node) return true;
       const ancestors = resolveAncestors(rootNode, path, pathParser);
       const kind = classifyLockKind(node, editMode, currentExtensionId, ancestors);
-      // none = 편집 가능, data_bound = 편집 중 대상의 데이터 영역(선택 허용). 그 외는 잠금 → 차단.
-      return kind === 'none' || kind === 'data_bound';
+      // 판정은 `isEditableLockKind` 단일 지점 — 조건을 복사하면 한 곳만 빠져도 결함이 남는다.
+      return isEditableLockKind(kind);
     },
     [rootNode, pathParser, editMode, currentExtensionId, editableRootPath]
   );

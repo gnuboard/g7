@@ -187,7 +187,7 @@ php artisan extension:update-autoload   # Composer 오토로드 업데이트
 
 ## 관련 문서
 
-- [AGENTS.md](../../../AGENTS.md) - 프로젝트 개발 가이드
+- [AGENTS.md](../../AGENTS.md) - 프로젝트 개발 가이드
 - [backend/](../backend/) - 백엔드 개발 가이드
 - [frontend/](../frontend/) - 프론트엔드 개발 가이드
 - [database-guide.md](../database-guide.md) - 데이터베이스 가이드

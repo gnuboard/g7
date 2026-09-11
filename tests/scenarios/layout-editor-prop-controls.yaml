@@ -94,6 +94,22 @@ effects:
   - single_binding_renders_link_chip_with_change_data_affordance
   - complex_unparseable_expression_stays_readonly_lossless_zero
   - recipe_computed_condition_text_param_without_apply_stays_bare_widget_no_data_chip
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - propvalue_number_roundtrips_through_props_without_string_coercion
+  - propvalue_zero_is_preserved_not_deleted
+  - number_widget_commits_numeric_value_on_blur_or_enter
+  - number_widget_empty_input_emits_undefined_to_delete_the_prop
+  - number_widget_ignores_non_numeric_input_preserving_stored_value
+  - number_widget_zero_is_emitted_as_a_value_not_deletion
+  - number_widget_passes_min_max_step_as_attributes_without_clamping
+  - number_widget_syncs_draft_when_external_value_changes
+  - nodekey_apply_writes_node_top_level_key_not_props
+  - nodekey_apply_empty_or_undefined_removes_the_key
+  - nodekey_reverse_resolve_reads_node_top_level_key
+  - nodekey_apply_refuses_reserved_children_key
+  - nodekey_apply_ignores_device_and_dark_scope
+  - nodekey_apply_keeps_the_input_node_immutable
+  - nodekey_apply_noops_on_non_string_or_empty_key
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/OptionsListControl.test.tsx

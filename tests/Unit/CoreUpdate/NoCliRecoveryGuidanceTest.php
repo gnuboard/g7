@@ -72,8 +72,8 @@ class NoCliRecoveryGuidanceTest extends TestCase
      */
     private const EXEMPT_RECOVERY_PATHS = [
         // 확장 정적 게시 실패 안내 — 코어 업데이트 복구 흐름 밖이다.
-        // 2026-09-02 PO 범위 결정: 이번 라운드는 코어 업데이트 화면 두 곳만 고친다.
-        'alerts.static_publish_failed_parent_not_writable' => '확장 정적 게시 안내 — 코어 업데이트 복구 흐름 밖 (PO 범위 결정 2026-09-02)',
+        // 2026-09-02 설계 결정: 이번 라운드는 코어 업데이트 화면 두 곳만 고친다.
+        'alerts.static_publish_failed_parent_not_writable' => '확장 정적 게시 안내 — 코어 업데이트 복구 흐름 밖 (설계 결정 2026-09-02)',
         // 인스톨러 **로그** 문구다(화면 안내가 아니다). 이미 비-CLI 대안을 앞에 병기한다 —
         // 「이 파일을 직접 지우거나 …」. 리터럴 FTP 가 없을 뿐이다.
         'log_finalize_env_config_cache_delete_failed' => '인스톨러 로그 문구 — 파일 직접 삭제라는 비-CLI 대안을 이미 병기한다',

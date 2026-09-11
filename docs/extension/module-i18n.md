@@ -1,6 +1,6 @@
 # 모듈 다국어 시스템
 
-> **관련 문서**: [index.md](index.md) | [module-basics.md](module-basics.md) | [module-routing.md](module-routing.md)
+> **관련 문서**: [README.md](README.md) | [module-basics.md](module-basics.md) | [module-routing.md](module-routing.md)
 
 ---
 

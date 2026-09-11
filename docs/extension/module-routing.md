@@ -342,4 +342,4 @@ template.routes.{identifier}
 - [모듈 레이아웃](module-layouts.md) - 레이아웃 등록, 오버라이드
 - [모듈 다국어](module-i18n.md) - 백엔드/프론트엔드 다국어
 - [템플릿 라우트](template-routing.md) - 템플릿 라우트 규칙
-- [확장 시스템 개요](index.md) - 전체 인덱스
+- [확장 시스템 개요](README.md) - 전체 인덱스

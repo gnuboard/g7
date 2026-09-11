@@ -289,6 +289,92 @@ export function DimensionWidget({ control, value, onChange, t, freeValueDisabled
 }
 
 /**
+ * Number — 숫자 prop 편집 위젯.
+ *
+ * `propValue` 로 숫자를 기대하는 prop(예 `Header.maxVisibleBoards?: number`)에 연결된다.
+ * `applyPropValue` 는 값을 가공하지 않으므로 **위젯이 직접 `number` 를 내보내야** 한다 —
+ * 문자열을 내면 `"5"` 가 JSON 에 박혀 컴포넌트 타입 계약이 깨진다.
+ *
+ * 정책:
+ *  - 빈 입력 → `onChange(undefined)` → prop 삭제("기본").
+ *  - `0` 은 **유효값**이며 삭제되지 않는다(엔진 빈값 술어는 `''|null|undefined` 만 본다).
+ *  - 비숫자 입력은 **미방출**(draft 만 유지) — "0 으로 강제"나 "삭제"는 조용한 데이터 변조다.
+ *  - **클램프하지 않는다** — `min`/`max`/`step` 은 HTML 속성으로 그대로 전달만 한다.
+ *    사용자가 넣은 값은 보존한다.
+ *  - 매 키 입력마다 커밋하지 않는다 — propValue 패치는 history push 라 blur/Enter 커밋
+ *    (`DimensionWidget` 선례).
+ *  - 저장값이 바인딩 문자열(`{{…}}`)일 때의 보호는 **위젯이 하지 않는다** — `ControlRenderer`
+ *    의 공용 게이트(`boundValueGuard`)가 원문 배지·해제·복구를 담당한다. 위젯마다 복붙하면
+ *    한 곳이 빠져도 오류가 나지 않고 그 한 곳이 우회로가 된다.
+ *
+ * @since engine-v1.66.0
+ */
+export function NumberWidget({ control, value, onChange, t }: WidgetProps): React.ReactElement {
+  const spec = control as unknown as { min?: unknown; max?: unknown; step?: unknown };
+  const currentStr = value === undefined || value === null ? '' : String(value);
+  const [draft, setDraft] = React.useState<string>(currentStr);
+
+  // 외부(역해석/다른 탭)에서 값이 바뀌면 입력칸 동기 — 양방향 동기.
+  React.useEffect(() => {
+    setDraft(currentStr);
+  }, [currentStr]);
+
+  const commit = (raw: string): void => {
+    const s = raw.trim();
+    if (s === '') {
+      onChange(undefined); // → prop 삭제
+      return;
+    }
+    const n = Number(s);
+    // Number.isFinite 가드 — ''→0 오변환·Infinity·NaN 차단. 비숫자는 저장본 보존(무손실).
+    if (!Number.isFinite(n)) return;
+    onChange(n);
+  };
+
+  return (
+    <div className="g7le-widget g7le-widget--number" data-testid="g7le-widget-number" style={dimensionWrap}>
+      <div style={dimensionRow}>
+        <input
+          // `type="number"` 가 아니다 — 그 타입은 비숫자 입력을 브라우저가 `''` 로 보고하므로
+          // blur 시 "빈 입력" 과 구분되지 않아 **prop 이 조용히 삭제**된다(비숫자 미방출 정책
+          // 위반). 원문을 그대로 쥐고 있어야 `Number.isFinite` 가드가 실제로 동작한다.
+          // `DimensionWidget` 도 같은 이유로 text 다.
+          type="text"
+          inputMode="numeric"
+          data-testid="g7le-number-input"
+          value={draft}
+          placeholder={t('layout_editor.control.number.placeholder')}
+          min={typeof spec.min === 'number' ? spec.min : undefined}
+          max={typeof spec.max === 'number' ? spec.max : undefined}
+          step={typeof spec.step === 'number' ? spec.step : undefined}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={(e) => commit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commit((e.target as HTMLInputElement).value);
+            }
+          }}
+          style={dimensionInput}
+        />
+        <button
+          type="button"
+          data-testid="g7le-number-clear"
+          title={t('layout_editor.control.default')}
+          onClick={() => {
+            setDraft('');
+            onChange(undefined);
+          }}
+          style={dimensionClear}
+        >
+          {t('layout_editor.control.default')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Spacing — 여백(안쪽/바깥쪽)의 **측별 독립 크기** 편집 (§항목B 재설계).
  *
  * 종전 `paddingAll`/`marginAll` 은 단일 슬라이더(전 방향 `p-N`)만 지원했고, 1차

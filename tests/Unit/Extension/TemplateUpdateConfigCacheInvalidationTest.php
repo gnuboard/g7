@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 템플릿 업데이트 성공 cleanup 의 config 캐시 무효화 구조 테스트 (#588, 공개 #119)
+ * [case:cache-17] 템플릿 업데이트 성공 cleanup 의 config 캐시 무효화 구조 테스트 (#588, 공개 #119)
  *
  * `template.config.{identifier}` 는 버전 접미사 없는 고정 키라 캐시 버전 bump 로
  * 무효화되지 않는다. updateTemplate() 성공 cleanup 이 clearTemplateCache() 를

@@ -1313,6 +1313,38 @@
             );
         }
 
+        // 9-1. Composer 의존성 구성 카드 (권장 사항, 필수 아님)
+        // failedRequirements.push() 를 하지 않는다 — 개발용 패키지가 섞여 있어도 설치는 진행된다.
+        // vendor 자체가 없으면 마법사가 운영용 구성으로 자동 설치하므로 카드를 그리지 않는다.
+        if (data.vendor_dev_packages && data.vendor_dev_packages.vendor_exists) {
+            const vendorInfo = data.vendor_dev_packages;
+            let vendorStatusClass, vendorStatusText, vendorHint = '';
+            if (vendorInfo.dev === true) {
+                // 단순히 '개발용 포함' 만 보이면 이후 코어 업데이트가 깨진다는 실질이 전달되지 않는다.
+                vendorStatusClass = 'status-warning';
+                // 치환은 lang(key, replace) 한 지점을 지난다 — .replace(문자열) 은 첫 occurrence 만 바꾼다.
+                vendorStatusText = lang('vendor_dev_packages_detected_short', { count: (vendorInfo.packages || []).length });
+                vendorHint = lang('vendor_dev_packages_detected_warning', { count: (vendorInfo.packages || []).length });
+            } else if (vendorInfo.dev === false) {
+                vendorStatusClass = 'status-pass';
+                vendorStatusText = lang('vendor_dev_packages_none_short');
+            } else {
+                // installed.json 부재·형식 불명 — 확인 불가 (경고도 차단도 아님)
+                vendorStatusClass = 'status-pass';
+                vendorStatusText = lang('vendor_dev_packages_unknown');
+            }
+            html += renderSingleItemCard(
+                lang('vendor_dev_packages'),
+                vendorStatusClass,
+                vendorStatusText,
+                '',
+                false
+            );
+            if (vendorHint) {
+                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${vendorHint}</p>`;
+            }
+        }
+
         // 10. 실행 예산(메모리·시간) 카드 (정보 항목, 필수 아님)
         // 값이 화면에 없으면 그 검사는 존재하지 않는 것과 같다 (13차 환경#8). 128M 공유호스팅
         // 에서 in-process 부팅 + migrate + seed 는 죽는데, 종전에는 이 두 값이 요구사항 목록에

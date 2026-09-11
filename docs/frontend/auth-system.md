@@ -98,14 +98,15 @@ private getAuthType(route: Route, pathname: string): AuthType {
 
 ## API 엔드포인트
 
-| 구분 | 로그인 | 사용자 정보 | 로그아웃 | 토큰 갱신 |
-|------|--------|------------|---------|----------|
-| **관리자** | `/auth/login` | `/admin/auth/user` | `/admin/auth/logout` | `/admin/auth/refresh` |
-| **일반사용자** | `/auth/login` | `/user/auth/user` | `/user/auth/logout` | `/user/auth/refresh` |
+| 구분 | 로그인 | 인증번호 확인 | 인증번호 재발송 | 사용자 정보 | 로그아웃 | 토큰 갱신 |
+|------|--------|--------------|----------------|------------|---------|----------|
+| **관리자** | `/auth/admin/login` | `/auth/admin/login/two-factor` | `/auth/admin/login/two-factor/resend` | `/admin/auth/user` | `/admin/auth/logout` | `/admin/auth/refresh` |
+| **일반사용자** | `/auth/login` | `/auth/login/two-factor` | `/auth/login/two-factor/resend` | `/user/auth/user` | `/user/auth/logout` | `/user/auth/refresh` |
 
 **공통**:
 
-- 로그인 엔드포인트는 관리자/일반사용자 동일 (`/auth/login`)
+- 로그인 엔드포인트는 관리자/일반사용자가 다릅니다 (`AuthConfig.loginEndpoint`)
+- `updateConfig({ loginEndpoint })` 로 템플릿이 재정의한 값이 그대로 사용됩니다
 - 인증 후 작업은 각각 분리된 엔드포인트 사용
 - API 인증은 Bearer 토큰 전용 (세션 기반 인증 미사용)
 - 401 응답 시 서버가 세션 쿠키 만료 헤더를 자동 전송 (잔존 쿠키 정리)
@@ -161,11 +162,12 @@ user.language 확인
           UI 즉시 업데이트
 ```
 
-**구현 위치**: `AuthManager.login()`
+**구현 위치**: `AuthManager.establishSession()` — 일반 로그인과 2단계 인증 완료가 같은 후처리를
+공유합니다. 갈라지면 한쪽 경로에서만 로케일 전환이나 이벤트 발행이 빠집니다.
 
 ```typescript
 // 로케일 변경 감지 및 처리
-const userLanguage = response.data.user.language;
+const userLanguage = user.language;
 const currentLocale = localStorage.getItem('g7_locale');
 const localeChanged = userLanguage && userLanguage !== currentLocale;
 
@@ -184,6 +186,51 @@ if (localeChanged && window.__templateApp) {
 - 사용자의 DB `language` 값을 `g7_locale` localStorage에 저장
 - 로케일이 변경된 경우에만 `changeLocale()` 호출 (불필요한 재초기화 방지)
 - SPA 환경에서도 새로고침 없이 즉시 반영
+
+---
+
+## 2단계 인증 로그인 (engine-v1.65.0+)
+
+보안 환경설정의 「2단계 인증」이 켜져 있으면 서버는 비밀번호가 맞아도 토큰을 발급하지 않고
+인증 요청(challenge)만 돌려줍니다. 즉, **로그인 응답은 두 가지 형태의 200** 입니다.
+
+```typescript
+export type LoginResult =
+  | { status: 'authenticated'; user: AuthUser }
+  | { status: 'two_factor_required'; challenge: TwoFactorChallenge };
+```
+
+`AuthManager.login()` 은 이 판별 유니온을 돌려줍니다. 한 형태만 가정하면 challenge 응답에서
+`data.user.*` 접근이 예외가 되고, `data.token`(undefined)을 저장하면 `"undefined"` 문자열이 남아
+이후 모든 요청이 401 로 튕깁니다.
+
+| 메서드 | 하는 일 |
+|--------|---------|
+| `login(type, credentials, options?)` | 비밀번호 확인. `LoginResult` 반환 |
+| `completeTwoFactor(type, { challengeId, code }, options?)` | 인증번호 확인 → 토큰 발급 → `AuthUser` 반환 |
+| `resendTwoFactor(type, { challengeId }, options?)` | 인증번호 재발송 → **새** `TwoFactorChallenge` 반환 |
+
+레이아웃에서는 액션 핸들러 `login` / `loginTwoFactor` / `loginTwoFactorResend` 로 사용합니다
+(→ [actions-handlers-ui.md](actions-handlers-ui.md)).
+
+### 레이아웃 작성 규칙
+
+- 1단계 블록과 2단계 블록의 `if` 는 **상보적**이어야 합니다. 두 블록이 동시에 보이면 인증번호
+  단계에서 이메일·비밀번호가 함께 노출됩니다.
+- 제출 시퀀스의 `login` 과 `loginTwoFactor` 도 상호배타 `if` 를 갖습니다. `if` 가 빠지면 인증번호
+  단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨집니다. `if` 는 시퀀스 시작 시점
+  스냅샷으로 평가되므로 한 번의 제출에 정확히 하나만 실행됩니다.
+- **같은 시퀀스·`onSuccess` 안에서 방금 저장한 상태를 다시 읽지 않습니다.** 그 자리의 상태는 아직
+  갱신 전이므로 `{{response.*}}` 만 사용합니다.
+- 인증번호 입력은 자동바인딩이 아니라 `value` + `onChange` 로 상태가 값을 소유해야 합니다 —
+  재발송 시 입력값을 비워야 하기 때문입니다.
+- 인증 단계 상태는 화면을 떠나도 남으므로, 로그인 화면 진입 시 `init_actions` 에서 초기화합니다.
+
+### 재발송의 계약
+
+서버는 기존 challenge 를 **취소하고 새로 발행**합니다. 유효한 코드를 여러 개 동시에 살려 두면
+대입 시도의 표적이 넓어지기 때문입니다. 따라서 클라이언트는 응답의 `challenge_id` 로 반드시
+교체하고 입력란을 비워야 합니다.
 
 ---
 

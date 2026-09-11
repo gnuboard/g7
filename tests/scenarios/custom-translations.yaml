@@ -151,6 +151,8 @@ effects:
   - manager_live_usage_scans_current_canvas_via_collectReferencedCustomKeys
   - manager_locale_label_shows_language_name_plus_identifier
   - manager_translation_input_is_textarea_auto_grows_with_content
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - translation_param_values_apply_pipe_filters
 
 test_files:
   - tests/Feature/Api/Admin/TemplateCustomTranslationControllerTest.php

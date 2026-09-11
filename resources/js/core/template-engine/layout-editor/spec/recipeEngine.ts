@@ -35,7 +35,7 @@ import {
 } from './styleScope';
 
 /** apply 프리미티브 종류 */
-export type RecipeApplyType = 'classToken' | 'styleProp' | 'propValue' | 'cssVar';
+export type RecipeApplyType = 'classToken' | 'styleProp' | 'propValue' | 'cssVar' | 'nodeKey';
 
 /**
  * 컨트롤/옵션의 `apply` 선언. 컨트롤 자체에 직접 두거나(`color`/`image`/`width`
@@ -65,6 +65,13 @@ export interface RecipeApply {
   propKey?: string;
   /** cssVar — CSS 변수명 (`--brand-color` 등) */
   varName?: string;
+  /**
+   * nodeKey — 노드 **최상위** 키 이름(`dataKey`/`isolatedState` 등).
+   *
+   * `props` 가 아니라 노드 자신에 쓰는 구조키다. `propValue` 로 흘리면
+   * `props.dataKey` 가 되어 런타임 엔진이 영영 읽지 않는다.
+   */
+  nodeKey?: string;
 }
 
 /**
@@ -110,6 +117,16 @@ interface NormalizedControl {
    * 이전 방향 토큰 제거). buildGroupTokenMatcher 의 빈 prefix 전체 매칭은 배제한다.
    */
   groupPrefixes?: string[];
+  /**
+   * 이 컨트롤이 쓰는 위젯 이름(`image`/`text`/`select` …).
+   *
+   * 엔진은 원칙적으로 위젯을 모르지만, **값 형태가 스칼라가 아닌 위젯**은 단일 값
+   * 슬롯(`propValue`/`cssVar`/단일 `styleProp`)에 그대로 기록하면 `[object Object]`
+   * 가 저장된다. 그 축약·역조립의 게이트로 쓰기 위해 위젯 이름을 보존한다.
+   * **값 형태 sniffing 으로 대신할 수 없다** — `isImageValueObject` 는 4키 중 하나만
+   * 있어도 참이라 `{position:'left'}` 같은 정당한 객체 prop 을 이미지로 오인한다.
+   */
+  widget?: string;
 }
 
 /** EditorControlSpec → 정규화 (작성자 자유 필드 보존하되 엔진이 쓰는 키만 추출) */
@@ -117,6 +134,7 @@ function normalize(control: EditorControlSpec): NormalizedControl {
   const gp = (control as { groupPrefixes?: unknown }).groupPrefixes;
   return {
     group: typeof control.group === 'string' ? control.group : undefined,
+    widget: typeof control.widget === 'string' ? control.widget : undefined,
     apply: (control.apply && typeof control.apply === 'object'
       ? (control.apply as unknown as RecipeApply)
       : undefined) as RecipeApply | undefined,
@@ -299,6 +317,34 @@ function isImageBundleProps(props: string[]): boolean {
 }
 
 /**
+ * `image` 위젯 값 객체(`{ url, size, repeat, position }`)를 **단일 값 슬롯**
+ * (`propValue` / `cssVar` / 단일 `styleProp`)에 쓸 스칼라로 축약한다.
+ *
+ * 단일 슬롯은 값을 하나만 담을 수 있으므로 `url` 만 살아남는다(size/repeat/position 은
+ * 저장할 자리가 없다 — `ImagePickerControl` 이 단일 슬롯 컨트롤에서는 애초에 그 3필드를
+ * 만들지 않는다).
+ *
+ * **호출 게이트는 `widget === 'image'` 이며 값 형태 sniffing 이 아니다.**
+ * `isImageValueObject` 는 4키 중 **하나만** 있어도 참이므로, 값만 보고 게이트하면
+ * `props.tooltip = { position: 'left' }` 같은 정당한 객체 prop 을 이미지로 오인해
+ * 삭제한다. 그래서 이 함수 안의 `isImageValueObject` 는 2중 가드일 뿐이고, 1차
+ * 게이트는 호출부의 위젯 판정이다.
+ *
+ * @param value 컨트롤이 만든 값
+ * @param cssContext CSS 값 문맥(styleProp/cssVar)이면 true — `url(...)` 로 다시 감싼다
+ * @return 이미지 값 객체가 아니면 value 그대로, 맞으면 축약된 스칼라
+ */
+function scalarizeImageValue(value: unknown, cssContext: boolean): unknown {
+  if (!isImageValueObject(value)) return value;
+  const raw = (value as Record<string, unknown>).url;
+  // url 부재/빈 문자열/비-문자열 → '' 로 축약해 호출부의 **기존 빈값 삭제 술어**에 위임한다
+  // (새 술어를 신설하지 않는다). "url 없이 모드만" 은 위젯이 표현할 수 없는 상태다.
+  if (typeof raw !== 'string' || raw.trim() === '') return '';
+  const bare = unwrapCssUrl(raw);
+  return cssContext ? wrapCssUrl(bare) : bare;
+}
+
+/**
  * 레거시 손상값 정화 — 과거(수정 이전) 저장본은 각 background 속성에 image 값 객체가
  * 통째로 들어가 있을 수 있다(`backgroundPosition: { url, size, ... }`). 그런 객체/배열은
  * 유효한 CSS 토큰이 아니므로 스칼라(문자열/숫자)만 채택하고, 객체면 해당 객체에서 같은
@@ -342,11 +388,67 @@ function readImageObject(style: Record<string, unknown>): Record<string, unknown
   return out;
 }
 
-/** styleProp 적용 — 단일/다중 CSS 속성 설정 (value=null/undefined 면 제거) */
+/**
+ * `nodeKey` apply 가 절대 건드릴 수 없는 노드 구조키.
+ *
+ * 템플릿이 `nodeKey:"children"` 을 선언하면 노드가 파괴된다. 코어는 메커니즘이고
+ * 방어는 코어 책임이다 — 여기서 막지 않으면 그 파괴는 예외도 경고도 없이 일어난다.
+ */
+const RESERVED_NODE_KEYS: ReadonlySet<string> = new Set([
+  'type',
+  'name',
+  'props',
+  'children',
+  'text',
+  'if',
+  'iteration',
+  'responsive',
+  '__source',
+  '__injectedProps',
+]);
+
+/**
+ * nodeKey 적용 — 노드 **최상위**(`node[key]`)에 값을 쓴다(불변, 새 사본 반환).
+ *
+ * `props`/`style` 컨테이너를 다루지 않으므로 `withScopedProps` 를 경유하지 **않는다** —
+ * 그 함수는 mutator 에 `(props, style)` 만 넘기고 `{...node, props}` 로 재조립하므로
+ * 노드 최상위 임의 키를 만질 방법이 없고, 빈 props 프루닝 로직도 nodeKey 에는 개념이
+ * 없다. `setScopedIf`(styleScope) 가 `node.if` 라는 최상위 키를 별도 함수로 다루는
+ * 선례를 그대로 따른다.
+ *
+ * **디바이스(breakpoint) 축은 무시한다** — 런타임 `DynamicRenderer` 의 responsive 병합은
+ * `props`/`children`/`text`/`if`/`iteration` 5키만 본다. `responsive.mobile.dataKey` 는
+ * 런타임이 영원히 읽지 않는 죽은 데이터이므로 항상 최상위에 쓴다. bp≠base 에서 no-op 으로
+ * 만드는 대안은 "모바일 탭에서 입력했는데 아무 일도 안 일어남" 이라는 또 다른 무음 결함이다.
+ *
+ * @param node 대상 노드 (변경되지 않음)
+ * @param apply nodeKey apply 선언
+ * @param value 쓸 값. 빈값(undefined|null|'')이면 키 삭제
+ * @return 패치된 노드 사본. 예약키/비-문자열 nodeKey 는 no-op(원본 반환)
+ */
+function applyNodeKey(node: EditorNode, apply: RecipeApply, value: unknown): EditorNode {
+  const key = apply.nodeKey;
+  if (typeof key !== 'string' || key === '' || RESERVED_NODE_KEYS.has(key)) return node;
+  const next = { ...node } as EditorNode & Record<string, unknown>;
+  if (value === undefined || value === null || value === '') {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+  return next;
+}
+
+/**
+ * styleProp 적용 — 단일/다중 CSS 속성 설정 (value=null/undefined 면 제거)
+ *
+ * @param imageWidget 컨트롤 위젯이 `image` 인지 — 단일 `apply.prop` 경로에서 값 객체를
+ *                    축약할지 결정한다. 다중 `apply.props`(배경 묶음) 경로는 무영향.
+ */
 function applyStyleProp(
   style: Record<string, unknown>,
   apply: RecipeApply,
   value: unknown,
+  imageWidget = false,
 ): void {
   const setOne = (prop: string, v: unknown): void => {
     if (v === undefined || v === null || v === '') {
@@ -387,14 +489,27 @@ function applyStyleProp(
   }
 
   if (typeof apply.prop === 'string') {
-    setOne(apply.prop, apply.value !== undefined ? apply.value : value);
+    // 단일 값 슬롯 — 고정값(apply.value) 선택 **이후**에 축약한다. 정규화 지점이 한 곳으로
+    // 수렴하고, 작성자가 `apply.value: {url:…}` 를 실수로 선언해도 같은 규칙으로 구제된다.
+    const raw = apply.value !== undefined ? apply.value : value;
+    setOne(apply.prop, imageWidget ? scalarizeImageValue(raw, true) : raw);
   }
 }
 
-/** cssVar 적용 — props.style 에 `--var: value` 설정 */
-function applyCssVar(style: Record<string, unknown>, apply: RecipeApply, value: unknown): void {
+/**
+ * cssVar 적용 — props.style 에 `--var: value` 설정
+ *
+ * @param imageWidget 컨트롤 위젯이 `image` 인지 — 값 객체를 CSS `url(...)` 스칼라로 축약
+ */
+function applyCssVar(
+  style: Record<string, unknown>,
+  apply: RecipeApply,
+  value: unknown,
+  imageWidget = false,
+): void {
   if (typeof apply.varName !== 'string') return;
-  const v = apply.value !== undefined ? apply.value : value;
+  const raw = apply.value !== undefined ? apply.value : value;
+  const v = imageWidget ? scalarizeImageValue(raw, true) : raw;
   if (v === undefined || v === null || v === '') {
     delete style[apply.varName];
   } else {
@@ -402,14 +517,22 @@ function applyCssVar(style: Record<string, unknown>, apply: RecipeApply, value: 
   }
 }
 
-/** propValue 적용 — props[key] 설정 */
+/**
+ * propValue 적용 — props[key] 설정
+ *
+ * @param imageWidget 컨트롤 위젯이 `image` 인지 — 값 객체를 **맨 url 문자열**로 축약한다.
+ *                    이 값은 `<Img src={…}>` 같은 컴포넌트 prop 으로 흐르므로 `url(...)`
+ *                    래핑을 반드시 벗긴다(CSS 문맥이 아니다).
+ */
 function applyPropValue(
   props: Record<string, unknown>,
   apply: RecipeApply,
   value: unknown,
+  imageWidget = false,
 ): void {
   if (typeof apply.propKey !== 'string') return;
-  const v = apply.value !== undefined ? apply.value : value;
+  const raw = apply.value !== undefined ? apply.value : value;
+  const v = imageWidget ? scalarizeImageValue(raw, false) : raw;
   if (v === undefined || v === null || v === '') {
     delete props[apply.propKey];
   } else {
@@ -490,6 +613,12 @@ export function applyRecipe(
     return node;
   }
 
+  // nodeKey — 노드 최상위 구조키. props/style 컨테이너를 다루지 않으므로 withScopedProps
+  // 앞에서 처리한다(scope 컨테이너 개념이 없다). 다크는 위 short-circuit 으로 도달 불가.
+  if (effectiveApply?.type === 'nodeKey') {
+    return applyNodeKey(node, effectiveApply, clearGroup ? undefined : value);
+  }
+
   // B안 className 시드.
   //
   // DynamicRenderer 의 responsive 머지는 props 얕은 머지(`{...base.props, ...override.props}`)
@@ -536,19 +665,22 @@ export function applyRecipe(
         }
       }
     } else if (apply) {
+      // 비-스칼라 값을 내보내는 위젯 — 단일 값 슬롯에 그대로 쓰면 `[object Object]` 가
+      // 저장된다(공개 #135). 게이트는 위젯 이름이며 값 형태 sniffing 이 아니다.
+      const imageWidget = normalized.widget === 'image';
       switch (apply.type) {
         case 'classToken':
           applyClassToken(props, normalized, apply, value, dark);
           break;
         case 'styleProp':
           // 다크는 위 short-circuit 으로 도달 불가 (인라인 no-op)
-          applyStyleProp(style, apply, value);
+          applyStyleProp(style, apply, value, imageWidget);
           break;
         case 'cssVar':
-          applyCssVar(style, apply, value);
+          applyCssVar(style, apply, value, imageWidget);
           break;
         case 'propValue':
-          applyPropValue(props, apply, value);
+          applyPropValue(props, apply, value, imageWidget);
           break;
       }
     }
@@ -720,9 +852,19 @@ function resolveFromContainer(
     case 'propValue': {
       if (!apply.propKey) return { value: undefined, matched: false };
       const v = props[apply.propKey];
-      return v === undefined
-        ? { value: undefined, matched: false }
-        : { value: v, matched: true };
+      if (v === undefined) return { value: undefined, matched: false };
+      // image 위젯은 객체(`{url,…}`)를 이해한다 — 축약 저장된 문자열을 그 형태로 되감아야
+      // 위젯이 현재 값을 읽을 수 있다(쓰기 4.1 과 대칭). `apply.type` 만으로는 판정 불가하고
+      // (propValue 는 text/toggle/icon-picker 가 대부분 쓴다), 값이 평범한 문자열이라 형태
+      // sniffing 도 불가하다 — **widget 이 유일한 신호다.**
+      //
+      // 표현식 문자열(`{{…}}`)도 감싼다. 감싸지 않으면 위젯이 빈 피커로 보이고 운영자가
+      // 업로드 1클릭에 그 표현식을 소리 없이 잃는다. 깨진 미리보기 억제와 실수 덮어쓰기
+      // 방지는 미리보기·업로드 UI 를 소유한 위젯이 맡는다(ImagePickerControl).
+      if (normalized.widget === 'image' && typeof v === 'string') {
+        return { value: { url: unwrapCssUrl(v) }, matched: true };
+      }
+      return { value: v, matched: true };
     }
     case 'classToken': {
       const tokens = scopedClassTokens(props.className, dark);
@@ -788,6 +930,18 @@ export function reverseResolve(
   // 다크 scope + 인라인 컨트롤(classToken 아님) → 읽기전용(D4, 무손실 보존)
   if (dark && !isDarkEditable(normalized.apply) && !normalized.options?.some((o) => isDarkEditable(o.apply))) {
     return { value: undefined, matched: false, darkReadonly: true };
+  }
+
+  // nodeKey — 노드 최상위에서 읽는다(쓰기와 대칭). scope 컨테이너 개념이 없으므로
+  // scopedValue/baseFallback 을 부여하지 않는다 — 디바이스 탭에서 placeholder 흐림이
+  // 생기면 "그 디바이스에만 값이 없다" 는 거짓 정보가 된다.
+  if (normalized.apply?.type === 'nodeKey') {
+    const key = normalized.apply.nodeKey;
+    if (typeof key !== 'string' || key === '' || RESERVED_NODE_KEYS.has(key)) {
+      return { value: undefined, matched: false };
+    }
+    const v = (node as EditorNode & Record<string, unknown>)[key];
+    return v === undefined ? { value: undefined, matched: false } : { value: v, matched: true };
   }
 
   // scope 컨테이너에서 역해석

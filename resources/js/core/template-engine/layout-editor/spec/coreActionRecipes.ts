@@ -285,6 +285,18 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     params: [{ key: 'body', label: `$t:${L}.login.param_body`, widget: 'key-value' }],
     build: { handler: 'login', params: { body: '{{body}}' } },
   },
+  // C18-1 2단계 인증 코드 확인 (로그인 완료)
+  loginTwoFactor: {
+    label: `$t:${L}.login_two_factor.label`,
+    params: [{ key: 'body', label: `$t:${L}.login_two_factor.param_body`, widget: 'key-value' }],
+    build: { handler: 'loginTwoFactor', params: { body: '{{body}}' } },
+  },
+  // C18-2 2단계 인증 코드 재발송
+  loginTwoFactorResend: {
+    label: `$t:${L}.login_two_factor_resend.label`,
+    params: [{ key: 'body', label: `$t:${L}.login_two_factor_resend.param_body`, widget: 'key-value' }],
+    build: { handler: 'loginTwoFactorResend', params: { body: '{{body}}' } },
+  },
   // C19 로그아웃 처리
   logout: {
     label: `$t:${L}.logout.label`,

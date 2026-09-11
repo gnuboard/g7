@@ -224,6 +224,62 @@ class LayoutComponentPermissionTest extends TestCase
     }
 
     /**
+     * `defines` 맵은 **서빙된 응답에서도 키를 유지**한다.
+     *
+     * 레이아웃은 `{{_defines.settingsTabs}}` 처럼 키로 참조한다. 권한 필터가 맵을 리스트로
+     * 재색인하면 그 표현식이 undefined 를 받고 `?? []` 폴백을 타 **오류 없이 화면 요소만
+     * 사라진다** — 환경설정 탭 13개가 0개가 된 실측 경로다. 레이아웃 JSON 만 읽는 프론트
+     * 테스트는 이 구간을 지나지 않으므로, 서빙 응답을 직접 재는 이 테스트가 그 축을 잠근다.
+     */
+    public function test_defines_map_keeps_its_keys_in_the_served_layout(): void
+    {
+        TemplateLayout::create([
+            'template_id' => $this->template->id,
+            'name' => 'test_defines',
+            'content' => [
+                'meta' => ['title' => 'Test Defines'],
+                'data_sources' => [],
+                'defines' => [
+                    'settingsTabs' => [
+                        ['id' => 'general', 'label' => '일반'],
+                        ['id' => 'mail', 'label' => '메일'],
+                    ],
+                    'currencyToFlag' => ['KRW' => 'kr', 'USD' => 'us'],
+                    'maxItems' => 20,
+                    'adminOnlyDefine' => [
+                        'permissions' => ['core.dashboard.edit'],
+                        'children' => [
+                            ['type' => 'basic', 'name' => 'Div', 'text' => '관리자'],
+                        ],
+                    ],
+                ],
+                'components' => [
+                    ['type' => 'basic', 'name' => 'Div', 'id' => 'main'],
+                ],
+            ],
+        ]);
+
+        $response = $this->actingAs($this->regularUser, 'sanctum')
+            ->getJson("/api/layouts/{$this->template->identifier}/test_defines.json");
+
+        $response->assertStatus(200);
+
+        $defines = $response->json('data.defines');
+
+        $this->assertIsArray($defines);
+        $this->assertArrayHasKey('settingsTabs', $defines, 'defines 맵의 키가 서빙에서 사라졌습니다.');
+        $this->assertCount(2, $defines['settingsTabs']);
+        $this->assertSame('general', $defines['settingsTabs'][0]['id']);
+
+        // 값이 배열이 아닌 상수도, 값이 맵인 상수도 그대로 통과한다.
+        $this->assertSame(20, $defines['maxItems']);
+        $this->assertSame(['KRW' => 'kr', 'USD' => 'us'], $defines['currencyToFlag']);
+
+        // 권한이 걸린 정의는 종전대로 제거되고, 남은 항목의 키는 영향을 받지 않는다.
+        $this->assertArrayNotHasKey('adminOnlyDefine', $defines);
+    }
+
+    /**
      * 테스트용 레이아웃 생성 헬퍼
      */
     private function createTestLayout(): TemplateLayout

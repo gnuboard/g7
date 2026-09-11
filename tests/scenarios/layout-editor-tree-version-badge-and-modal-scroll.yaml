@@ -38,6 +38,8 @@ effects:
   - extension_save_response_current_version_syncs_extension_badge
   - extension_restore_new_version_syncs_extension_badge
   - extension_version_list_shows_creator_name
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - restore_version_increments_lock_version_for_layout_and_extension
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/VersionHistoryModal.test.tsx
   - tests/Unit/Repositories/LayoutExtensionVersionRepositoryTest.php

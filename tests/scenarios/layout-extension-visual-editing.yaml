@@ -66,6 +66,10 @@ effects:
   - enter_edit_mode_pushes_edit_query_to_url
   - refresh_with_edit_query_restores_edit_mode
   - back_button_exits_edit_mode_to_route
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - extension_overlay_save_reassembles_nodes_into_their_original_injection
+  - extension_overlay_save_refuses_when_a_node_cannot_be_mapped_to_its_injection
+  - overlay_injected_nodes_carry_injection_index_in_source_meta
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useRouteTree.test.ts
@@ -81,3 +85,4 @@ test_files:
   - tests/Feature/Api/Admin/AdminTemplateAssetControllerTest.php
   - tests/Unit/Services/LayoutExtensionServiceTest.php
   - tests/Playwright/specs/layout-editor/separate-edit-modes.spec.ts
+  - tests/Feature/Api/Public/LayoutOverlayInjectionIndexMetaTest.php

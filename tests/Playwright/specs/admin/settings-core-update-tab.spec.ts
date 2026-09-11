@@ -213,7 +213,7 @@ test.describe('@sirsoft-admin_basic 환경설정 업데이트 탭', () => {
    * @scenario actor=with_permission, run_state=running
    * @effects idle_visits_do_not_consume_the_auto_resume_budget
    */
-  test('유휴 진입을 상한보다 많이 반복해도 진행 중인 실행은 자동으로 이어받는다', async ({ page }) => {
+  test('[case:components-misc-onmount-ignores-false-if] 유휴 진입을 상한보다 많이 반복해도 진행 중인 실행은 자동으로 이어받는다', async ({ page }) => {
     const token = issueToken('core.settings.read', 'core.system.update');
     await authenticatePage(page, token);
 
@@ -465,7 +465,7 @@ test.describe('@sirsoft-admin_basic 환경설정 업데이트 탭', () => {
    * @scenario actor=with_permission, run_state=running
    * @effects registered_core_update_handlers_perform_their_work
    */
-  test('등록된 조작들이 실제로 상태를 읽고·이어가고·정리한다', async ({ page }) => {
+  test('[case:components-misc-handler-first-arg-is-action] 등록된 조작들이 실제로 상태를 읽고·이어가고·정리한다', async ({ page }) => {
     const token = issueToken('core.settings.read', 'core.system.update');
     await authenticatePage(page, token);
 
