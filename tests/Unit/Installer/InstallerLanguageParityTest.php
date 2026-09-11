@@ -279,6 +279,89 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
+     * 사유별 선두 문장으로 갈라진 뒤, **공용 문장이 어느 표에도 남지 않았다** (D1).
+     *
+     * 이름이 접두사로 겹치므로(`web_exposure_unknown_detail` ⊂ `…_detail_probe`) 한쪽 표에
+     * 옛 키가 남으면 parity 검사는 「양쪽에 다 있다」로 초록이 된다 — 남은 키는 아무도 부르지
+     * 않는 문장이라 다음 편집자가 그것을 고쳐도 화면은 바뀌지 않는다. 정확 일치로 잠근다.
+     *
+     * @scenario exposure_probe=unknown
+     *
+     * @effects exposure_unknown_detail_names_its_actual_cause
+     */
+    public function test_shared_unknown_detail_key_is_gone_from_both_tables(): void
+    {
+        $causeKeys = [
+            'web_exposure_unknown_detail_control',
+            'web_exposure_unknown_detail_unmeasured',
+            'web_exposure_unknown_detail_probe',
+            'web_exposure_unknown_detail_shape',
+            'web_exposure_unknown_detail_no_targets',
+            'web_exposure_unknown_detail_mixed',
+        ];
+
+        foreach ($this->localeCodes() as $code) {
+            $table = $this->locale($code);
+
+            $this->assertArrayNotHasKey(
+                'web_exposure_unknown_detail',
+                $table,
+                $code.' 표에 사유를 단정하던 옛 공용 문장이 남아 있다 — 부르는 곳이 없어 고쳐도 화면이 바뀌지 않는다'
+            );
+
+            foreach ($causeKeys as $key) {
+                $this->assertArrayHasKey($key, $table, $code.' 표에 '.$key.' 가 없다 — 그 사유에서 화면에 키 이름이 뜬다');
+            }
+        }
+    }
+
+    /**
+     * 진행 기록 상한·회전·장시간 안내 문구가 두 표에 **자리표시자까지 같게** 있다 (D2).
+     *
+     * 이 셋은 화면이 값을 갈아 끼워 쓰는 문장이다(`:count`·`:name`·`:elapsed`). 한쪽 표에서
+     * 자리표시자가 빠지면 그 로케일에서는 숫자 없는 문장이 나가는데, 그 숫자가 **그 문장의
+     * 유일한 정보**다 — 「오래된 기록을 접었습니다」만으로는 몇 줄이 어디로 갔는지 알 수 없다.
+     * (형제 검사 `test_placeholders_match_across_locales` 가 전 키를 이미 대조하지만, 이
+     * 셋은 값이 빠져도 문장이 자연스러워 눈으로는 드러나지 않으므로 명시적으로 못 박는다.)
+     *
+     * @scenario progress_log_volume=large, task_duration=long_no_feedback
+     *
+     * @effects progress_log_has_a_screen_cap_and_says_so
+     */
+    public function test_progress_log_notices_exist_in_both_locales(): void
+    {
+        $expected = [
+            'log_truncated_notice' => ['count'],
+            'log_rotated_notice' => [],
+            'stepwise_long_task_notice' => ['elapsed', 'name'],
+            'stepwise_task_elapsed' => ['elapsed', 'name'],
+            'stepwise_task_unnamed' => [],
+        ];
+
+        foreach ($this->localeCodes() as $code) {
+            $table = $this->locale($code);
+
+            foreach ($expected as $key => $placeholders) {
+                $this->assertArrayHasKey($key, $table, $code.' 표에 '.$key.' 가 없다 — 그 자리에 키 문자열이 그대로 뜬다');
+                $this->assertSame(
+                    $placeholders,
+                    self::placeholders($table[$key]),
+                    $code.'.'.$key.' 의 자리표시자가 다르다 — 값이 빠진 문장이 나간다'
+                );
+            }
+        }
+
+        // 회전 안내는 **어디로 옮겼는지**가 정보다. 그 이름이 빠지면 기록이 사라진 것과 같다.
+        foreach ($this->localeCodes() as $code) {
+            $this->assertStringContainsString(
+                'installation.log.1',
+                $this->locale($code)['log_rotated_notice'],
+                $code.' 회전 안내가 옮긴 파일 이름을 말하지 않는다'
+            );
+        }
+    }
+
+    /**
      * 이스케이프 시퀀스가 값에 문자 그대로 남아 있지 않은가 (11차 #B18).
      *
      * PHP 홑따옴표 문자열은 `
@@ -409,6 +492,11 @@ class InstallerLanguageParityTest extends TestCase
      * 반대 방향(자리표시자는 있는데 값을 안 넘김)은 화면에 `:error` 토큰을 그대로 노출시키는
      * 알려진 결함군이고, 이 검사는 그 짝을 코드 쪽에서 잡는다.
      */
+    /**
+     * @scenario locale=ko, locale=en
+     *
+     * @effects installer_lang_placeholders_match_across_locales
+     */
     public function test_substitution_arguments_have_a_matching_placeholder(): void
     {
         $defined = $this->locale('ko');
@@ -449,6 +537,11 @@ class InstallerLanguageParityTest extends TestCase
      * 프론트가 그 경로를 따라 내려갈 수 있어야 한다 — 평면 조회만 하면 `fields.db_prefix` 처럼
      * 그룹 안에 사는 키가 통째로 원문 노출된다 (10차).
      */
+    /**
+     * @scenario locale=ko
+     *
+     * @effects installer_lang_literal_references_are_defined
+     */
     public function test_dotted_keys_resolve_through_the_nested_table(): void
     {
         $dotted = array_values(array_filter(
@@ -483,6 +576,11 @@ class InstallerLanguageParityTest extends TestCase
      * `config.php` 를 **require 하지 않는다** — 그 파일은 `BASE_PATH` 를 실 저장소 루트로
      * 박으므로, 같은 프로세스에서 도는 다른 인스톨러 테스트가 temp 격리 안전가드에 걸려
      * 통째로 skip 된다(종료 코드는 0 이라 초록으로 보인다). 상수 선언만 소스에서 읽는다.
+     */
+    /**
+     * @scenario locale=ko, locale=en
+     *
+     * @effects installer_lang_locales_have_identical_keys
      */
     public function test_supported_languages_constant_matches_shipped_lang_files(): void
     {
@@ -519,6 +617,11 @@ class InstallerLanguageParityTest extends TestCase
      * 초록을 준다 — 검사는 통과하는데 화면에는 키가 뜨는 조합이다. 그래서 PHP 채널만
      * 따로 점 없는 키로 좁힌다. (두 층의 조회 규칙 자체를 통일하는 안은 별도 판단 사항이다.)
      */
+    /**
+     * @scenario locale=ko
+     *
+     * @effects installer_lang_literal_references_are_defined
+     */
     public function test_php_lang_calls_do_not_use_dotted_keys(): void
     {
         $dotted = [];
@@ -552,6 +655,11 @@ class InstallerLanguageParityTest extends TestCase
      * 다른 곳(키 표·Enum·판정기)에 선언돼 있는데 lang 과 대조하는 장치가 없었다.
      * 표에 항목을 하나 더 적고 문구를 빠뜨리면 그 화면에만 키 문자열이 나가고,
      * 예외도 경고도 남지 않는다.
+     */
+    /**
+     * @scenario locale=ko
+     *
+     * @effects installer_lang_literal_references_are_defined
      */
     public function test_dynamically_composed_keys_have_definitions(): void
     {
@@ -671,6 +779,11 @@ class InstallerLanguageParityTest extends TestCase
      *
      * 잔존 지점은 이 공정의 소유 밖이므로 **상한(ceiling)** 으로 고정한다: 새로 늘지
      * 않도록 막고, 고쳐서 줄어드는 것은 통과시킨다. 0 이 되면 이 표를 지운다.
+     */
+    /**
+     * @scenario locale=ko, locale=en
+     *
+     * @effects installer_lang_placeholders_match_across_locales
      */
     public function test_placeholder_substitution_goes_through_the_lang_helper(): void
     {

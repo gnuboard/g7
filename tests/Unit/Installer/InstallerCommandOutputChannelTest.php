@@ -136,16 +136,30 @@ class InstallerCommandOutputChannelTest extends TestCase
 
         // 실행 중 경로와 새로고침 복원 경로 **양쪽**이 분류한다 — 한쪽만 하면
         // 「돌 때는 안 보이는데 새로고침하면 보이는」 줄이 생긴다.
+        //
+        // D2 이후 두 경로는 각자 분류하지 않고 **같은 배치 API**(`addLogMessages`)로 들어가고,
+        // 분류는 그 안에 한 번만 있다. 분기가 하나뿐이면 두 경로가 갈릴 수 없으므로 이 계약은
+        // 종전보다 강해진다 — 대신 「각 경로가 그 API 에 도달하는가」를 함께 잠가야 한다.
+        // (배치화의 사유는 installer.js 의 `region:progress-log` 머리말: 한 응답이 몰고 온
+        //  207,699 자를 줄마다 그리다 1,579 ms 동안 화면이 멈췄다.)
         foreach (['function addLogMessage', 'function displayLogs'] as $fn) {
             $at = strpos($js, $fn);
             $this->assertNotFalse($at, $fn.' 을 찾지 못했다');
             $body = substr($js, $at, 1200);
             $this->assertStringContainsString(
-                'commandOutputBody(',
+                'addLogMessages(',
                 $body,
-                $fn.' 이 커맨드 원문을 분류하지 않는다 — 그 경로에서만 진행 기록에 원문이 남는다',
+                $fn.' 이 공용 배치 API 를 지나지 않는다 — 자기 루프로 그리면 분류도 배치도 그 경로에서만 어긋난다',
             );
         }
+
+        $batchAt = strpos($js, 'function addLogMessages');
+        $this->assertNotFalse($batchAt, 'function addLogMessages 를 찾지 못했다 — 두 경로의 공용 분기가 사라졌다');
+        $this->assertStringContainsString(
+            'commandOutputBody(',
+            substr($js, $batchAt, 1200),
+            '공용 배치 API 가 커맨드 원문을 분류하지 않는다 — 그러면 어느 경로로 와도 진행 기록에 원문이 남는다',
+        );
 
         $this->assertStringContainsString('function appendCommandOutput', $js, '접기 영역에 붙이는 함수가 없다');
 

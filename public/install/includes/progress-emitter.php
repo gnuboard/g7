@@ -286,6 +286,34 @@ class BufferEmitter implements ProgressEmitter
         $this->exitIfNotOwner();
     }
 
+    /**
+     * 커맨드 원문 여러 줄을 **한 묶음**으로 낸다 (D2 L6).
+     *
+     * 이 모드의 응답은 태스크가 끝난 뒤 한 번에 나가므로 줄 단위로 쪼갤 이유가 없다.
+     * 그런데 종전에는 줄마다 `emit('log')` 였고, 그러면 두 가지가 줄 수에 비례해 늘었다 —
+     * ① 줄마다 `addLog()` 가 로그 파일을 open/flock/write/fflush/close 한다(공유 호스팅
+     * 디스크에서 줄당 수 ms) ② 응답 JSON 에 이벤트 객체가 줄 수만큼 실린다.
+     *
+     * 실측(2026-09-11): 가장 긴 태스크가 `[cmd]` 3,844 줄을 뱉고 그 응답이 44.0 초 걸렸다.
+     *
+     * 접는 것이 아니라 **묶는** 것이다 — 줄은 하나도 버리지 않는다(heartbeat 과 다른 점).
+     *
+     * @param  array<int, string>  $lines  표식이 이미 붙은 로그 줄
+     */
+    public function emitLogBatch(array $lines): void
+    {
+        if ($lines === []) {
+            return;
+        }
+
+        $this->events[] = ['event' => 'log_batch', 'data' => ['messages' => array_values($lines)]];
+
+        // 파일 쓰기도 한 번이다 — 배치 API 가 잠금을 한 번만 잡고 한 번만 flush 한다.
+        addLogBatch($lines);
+
+        $this->exitIfNotOwner();
+    }
+
     public function isConnectionAborted(): bool
     {
         // 응답은 태스크가 끝난 뒤 한 번에 나간다 — 연결 상태는 진행 판정에 쓰지 않는다.

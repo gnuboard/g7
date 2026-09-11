@@ -52,6 +52,14 @@ axes:
   base_path: [subpath]                                              # 사이트 마운트 위치 — 인스톨러 JS 주소 조립
   script_home: [installer]                                          # 주소를 만드는 스크립트의 거처
   failure_kind: [rate_limited, unexpected_exception, unparsable_body]  # 요구사항 화면이 살아남아야 하는 실패 형태
+  # D2 현장 제보 등재 — 진행 기록의 **양**과 태스크의 **길이**는 서로 다른 축이고,
+  # 무응답은 그 둘이 겹칠 때 난다. 실측(2026-09-11, 수정 전): 한 설치가 13,017 줄
+  # (`[cmd]` 12,798 줄 · 1.1 MB)을 만들고, 가장 긴 태스크 하나가 44.0 초 동안 화면에
+  # 아무것도 주지 않았으며, 그 응답이 도착하는 순간 207,699 자를 한 번에 그리느라
+  # 메인 스레드가 1,579 ms 멈췄다.
+  progress_log_volume: [small, large, rotated]                      # 화면·파일에 쌓이는 진행 기록의 양
+  task_duration: [short, long_no_feedback]                          # 한 요청이 사는 길이 (피드백 부재 구간)
+
   # a11y_axis 는 이름에 숫자가 들어 InstallerScenarioMarkerCoverageTest::declaredAxes() 의
   # `[a-z_]+` 파서가 여기서 멈춘다 — 그 검사의 대조 대상(task)은 위에 이미 있으므로 이 둘은
   # 블록의 마지막에 둔다.
@@ -344,7 +352,25 @@ effects:
   - required_extension_list_matches_public_doc
   - required_extension_count_matches_public_doc
 
+  # D2 현장 제보 등재 — 진행 기록이 화면·서버 양쪽에서 상한과 배치를 갖는다.
+  - progress_log_is_rendered_in_batches_not_per_line
+  - progress_log_has_a_screen_cap_and_says_so
+  - stepwise_command_output_is_written_in_one_batch
+  - stepwise_reports_progress_while_a_task_takes_long
+  - installation_log_rotates_before_it_grows_unbounded
+  # D4 현장 발견 — 상태 파일 원자 교체가 짧은 핸들 경합(Windows)에서 조용히 유실되던 자리.
+  - installer_state_replace_survives_transient_handle_contention
+  # D6 — 중단이 태스크 경계를 기다리는 이유를 화면이 말한다(대기 자체는 13차 안전 설계).
+  - abort_explains_why_it_waits_for_the_running_task
+
 test_files:
+  # D2 현장 제보 — 진행 기록 렌더(화면)·배치 기록(서버)·파일 회전. 세 파일이 한 증상의
+  # 세 표면을 각각 소유한다.
+  - resources/js/installer/__tests__/installer-progress-log-render.test.ts
+  - tests/Unit/Installer/InstallerProgressLogBatchingTest.php
+  - tests/Unit/Installer/InstallerProgressLogRotationTest.php
+  # 상태 저장의 원자 교체 — 재시도로 없앨 수 있는 실패와 없는 실패를 가른다 (D4).
+  - tests/Unit/Installer/InstallerStateAtomicReplaceTest.php
   # 8차 라운드 등재 — `@effects` 마커를 달고도 test_files 에 없어 지워도 조용하던 파일.
   - tests/Unit/Support/PhpProbeMessageKeyDictionaryTest.php
   - tests/Feature/Api/Admin/SettingsControllerTest.php

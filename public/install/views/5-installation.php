@@ -356,6 +356,13 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
                 <?php /* 갱신되는 문단이라 라이브 리전이다 — 선언이 없으면 14단계가 도는 동안
                          화면 판독기에 진행이 한 번도 읽히지 않는다. */ ?>
                 <p id="current-task" class="progress-status" role="status" aria-live="polite"><?= htmlspecialchars(lang('preparing')) ?></p>
+                <?php /* 단계별 실행의 **경과 표시** (D2 L9). 한 요청이 태스크 하나만큼 살고
+                         실측에서 44 초가 걸린 태스크가 있었는데, 그 구간 내내 화면은 한 글자도
+                         바뀌지 않았다 — 사용자에게 그것은 「멈춘 화면」이고 이번 제보의 증상이다.
+                         1초에 한 번 이 한 곳의 텍스트만 바꾼다.
+                         `aria-live` 는 두지 않는다 — 초마다 읽히면 형제 라이브 리전(`current-task`)의
+                         실제 진행 안내가 묻힌다. 값은 눈으로 보는 보조 표시다. */ ?>
+                <p id="task-elapsed" class="progress-elapsed" style="display:none;"></p>
             </div>
 
             <!-- 작업 목록 -->

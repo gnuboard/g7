@@ -38,6 +38,11 @@ axes:
   # 레이아웃 ②는 모든 주소를 앱으로 위임해 「파일 없는 주소」도 200 앱 화면이 된다.
   # 그 형태를 함께 재야 D3 자동 판정이 성립한다(재지 않으면 전 배치가 D21 로 강등).
   exposure_absent_control: [signature, unavailable, empty_body]     # 음성 대조 — 형태 승격 · 재지 못함 · 빈 본문(승격 불가)
+  # D1 현장 제보 등재 — 판정 불능은 **한 상태가 아니라 여섯**이고, 화면 문구가 그 여섯을
+  # 구분해야 한다. 종전에는 선두 문장 하나가 전 사유에 공용이라 사유를 「점검 요청이
+  # 차단되었거나 응답이 없습니다」로 단정했고, 실제로 프로브가 전부 정상 응답을 받고
+  # 준비 실패 하나로 보류된 배치에서 운영자가 그 문장을 근거로 정상을 이상으로 읽었다.
+  exposure_unknown_cause: [control_unreachable, unmeasured_only, probe_failed, shape_unavailable, no_targets, mixed]
   project_root_candidate: [stripped, unstripped]                    # /public 꼬리 판정 (디렉토리 이름 충돌)
   api_validation_client: [xhr, browser]                             # api/* 검증 실패의 응답 형태 (302 금지)
   conditional_request: [none, if_none_match, if_modified_since]     # 조건부 요청 → 304 계약
@@ -413,6 +418,11 @@ effects:
   - installer_web_exposure_pending_verdict_is_in_the_closed_set
   - installer_app_url_host_falls_back_to_server_name
   - installer_control_failed_hint_counts_its_causes
+  # D1 현장 제보 등재 — 판정 불능 안내가 **자기 사유를 말하고**, 판정 기준을 응답 코드가
+  # 아니라 보이는 내용으로 적고, 「정상이 어떻게 보이는가」를 비교용 주소로 함께 띄운다.
+  - exposure_unknown_detail_names_its_actual_cause
+  - exposure_manual_criteria_judges_by_content_not_status
+  - exposure_absent_control_is_shown_as_the_comparison_address
   # 14차 검증 라운드(회차 14 W5) 등재 — 아래 effects 는 테스트 docblock 에 마커가 달려
   # 있었으나 **어느 매니페스트에도 선언되지 않았다.** effects 대조는 「매니페스트가 요구하는
   # 항목이 마커에 있는가」 한 방향만 보므로, 이 상태에서는 그 테스트가 통째로 사라져도
@@ -534,6 +544,9 @@ test_files:
   - tests/Unit/Installer/InstallerEnvironmentJudgmentTest.php
   # Step 2 게이트·판정·프로브의 클라이언트 절반 — 프로덕션 소스 region 평가 (서버↔화면 양끝)
   - resources/js/installer/__tests__/installer-web-exposure-gate.test.ts
+  # 운영자 수동 확인 **기준**이 응답 코드로 적히는 것을 형태로 막는다 (D1 현장 제보).
+  # 문구는 사람이 고치는 자리라 규율만으로는 되돌아온다 — 화면·문서·소스 세 곳을 함께 잰다.
+  - tests/Unit/Installer/InstallerManualVerificationCriteriaTest.php
   # 경고·오류 카드 위 문자(인라인 코드·링크·힌트)의 AA 대비 — 토큰 값을 CSS 에서 파싱해 두 테마를 잰다 (16차 W1)
   - resources/js/installer/__tests__/installer-css-contrast-gate.test.ts
   # 자산 URL 모드 변환의 두 구현(TS 빌더 · blade 인라인 복구기) 드리프트 — 공개 스토리지

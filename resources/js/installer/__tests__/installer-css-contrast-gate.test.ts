@@ -99,18 +99,32 @@ const PAIRS: Array<{ selector: string; background: string; note: string }> = [
   // 18차 A-1 — 오류 카드 위 라벨(`.alert-error .fix-guide-label`)이 형제 힌트·경고 라벨과
   // 같은 축인데 census 에서 빠져 있었다(현재 대비 통과이나 토큰 회귀 시 조용히 초록).
   { selector: '.alert-error .fix-guide-label', background: '--error-light', note: '오류 카드 위 라벨 (18차 A-1)' },
+  // D1 — 판정 불능 카드의 **판정 기준** 한 줄. 경고 배경 위 문자이고 굵기를 올려 강조하는
+  // 자리라 형제(라벨·힌트·링크)와 같은 축이다. 신설과 동시에 모집단에 넣는다 — 나중에
+  // 손 열거를 다시 훑는 일은 17차 E-1·18차 A-1 에서 두 번 다 실패했다.
+  { selector: '.exposure-criteria', background: '--warning-light', note: '판정 불능 카드의 판정 기준 문장 (D1)' },
 ];
 
 // 손 열거 모집단은 비어도 `it.each` 가 0건을 돌려 초록이 된다 (17차 E-1) — 인구조사로 하한을 잠근다.
-const PAIRS_CENSUS_MINIMUM = 7;
+const PAIRS_CENSUS_MINIMUM = 8;
 
 describe('인스톨러 CSS — 경고·오류 카드 위 문자의 AA 대비 (라이트·다크)', () => {
+  /**
+   * @scenario exposure_probe=unknown
+   *
+   * @effects installer_alert_text_meets_aa_contrast_in_both_themes
+   */
   it('모집단 — 토큰 표를 실제로 읽었다', () => {
     const { light, dark } = tables();
     expect(light.size).toBeGreaterThan(50);
     expect(dark.size).toBeGreaterThan(50);
   });
 
+  /**
+   * @scenario exposure_probe=unknown
+   *
+   * @effects installer_alert_text_meets_aa_contrast_in_both_themes
+   */
   it('인구조사 — 잴 쌍 목록이 비지 않는다 (손 열거가 비면 it.each 가 0건으로 초록이 된다)', () => {
     expect(PAIRS.length).toBeGreaterThanOrEqual(PAIRS_CENSUS_MINIMUM);
   });
@@ -144,6 +158,11 @@ describe('인스톨러 CSS — 경고·오류 카드 위 문자의 AA 대비 (�
     ).toBeGreaterThanOrEqual(AA_MINIMUM);
   });
 
+  /**
+   * @scenario exposure_probe=unknown
+   *
+   * @effects installer_alert_text_meets_aa_contrast_in_both_themes
+   */
   it('판정기 자기검증 — 알려진 값을 바르게 잰다', () => {
     expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 5);
     expect(contrast('#ef4444', '#f9fafb')).toBeCloseTo(3.6, 1);

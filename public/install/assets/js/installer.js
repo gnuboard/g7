@@ -413,33 +413,30 @@
             <p class="fix-guide-hint">${escapeHtml(lang('web_exposure_server_guide_' + kind))}</p>`;
     }
 
-    function judgeExposureResults(results, unmeasuredCount, controlResults, absentSignature) {
-        // 노출 확정이 언제나 우선한다 — 기준 주소가 틀렸든 위임이 죽었든, `.env` 가 원문
-        // 그대로 200 이면 그것은 노출이다 (D3).
-        if (results.some((r) => r.exposed)) {
-            return 'exposed';
-        }
-
-        // 양성 대조: **열려야 하는** 주소가 열리지 않으면 이번 측정의 기준틀을 신뢰할 수 없다.
-        // 403/404 를 보호로 읽는 판정은 「막혔다」와 「그 주소에 아무것도 없다」를 구분하지
-        // 못하므로, 위임이 죽은 서버(mod_rewrite 부재)와 기준 주소를 잘못 잡은 배치가 전부
-        // 초록으로 수렴한다. 그 둘을 여기서 함께 잡는다.
-        const controls = Array.isArray(controlResults) ? controlResults : [];
-        if (controls.some((c) => !c.reachable)) {
-            return 'unknown';
-        }
-
+    /**
+     * 음성 대조 승격을 적용한 대상별 판정 여부 — **판정과 안내가 같은 규칙을 쓰게 하는 자리.**
+     *
+     * 이 규칙은 종전에 `judgeExposureResults` 안에 인라인되어 있었다. 그런데 판정 불능의
+     * **사유**를 화면이 말하게 되면서(D1) 같은 물음을 안내 쪽에서도 던져야 했고, 그때 규칙을
+     * 복사하면 두 곳이 갈라진다 — 판정은 「이 대상은 승격됐다」고 보는데 안내는 「프로브가
+     * 실패했다」고 말하는 상태가 조용히 생긴다. 한 함수를 양쪽이 부른다.
+     *
+     * @param {Array<object>} results 프로브 결과
+     * @param {{status: number, length: number}|null} absentSignature 음성 대조 형태
+     * @returns {boolean[]} 대상별 판정 성립 여부
+     */
+    function promotedJudged(results, absentSignature) {
         // 음성 대조로 판정을 되살린다.
         //
         // 403/404 가 아니어도, **파일이 없는 주소와 똑같은 응답**을 받았다면 그 대상 역시
         // 파일이 서빙되지 않은 것이다. 이 승격이 없으면 레이아웃 ②의 정상 배치가 상시
         // 판정 불능이 되어 D3 자동 차단이 모든 배치에서 D21 로 강등된다 (14차 G3 라운드).
         //
-        // 안전 조건은 위에서 이미 섰다 — 노출 확정이 우선하고(마커 일치), 양성 대조가
+        // 안전 조건은 호출부에서 이미 섰다 — 노출 확정이 우선하고(마커 일치), 양성 대조가
         // 실패하면 여기 도달하지 못한다. 그래서 전 주소에 200 로그인 화면을 내리는 인증
         // 가로채기 배치는 이 승격을 타지 못한다(그 배치에서는 인스톨러 자산도 가로채여
         // 양성 대조가 먼저 깨진다).
-        const judged = results.map((r) => {
+        return results.map((r) => {
             if (r.judged) {
                 return true;
             }
@@ -461,6 +458,60 @@
 
             return r.status === absentSignature.status && r.length === absentSignature.length;
         });
+    }
+
+    /**
+     * 판정 불능 카드의 **선두 문장 키**를 사유로 고른다 (D1).
+     *
+     * 종전에는 한 문장(`web_exposure_unknown_detail`)이 전 사유에 공용이었고, 그 문장이
+     * 불능 사유를 「점검 요청이 차단되었거나 응답이 없습니다」로 단정했다. 실제 사유는
+     * 일곱 갈래인데 그중 넷에서 그 문장이 거짓이다 — 특히 프로브가 전부 정상 응답을 받고
+     * 준비 실패(`unmeasured`) 하나로 보류된 현장 사례에서 운영자는 그 문장을 근거로
+     * **정상 배치를 이상으로** 읽었다.
+     *
+     * 사유가 둘 이상이면 어느 하나를 단정하지 않고 `_mixed` 로 간다. 사유가 하나도 잡히지
+     * 않는 상태(판정은 unknown 인데 원인이 없음)는 그 자체가 이상이므로 가장 약한 단정인
+     * `_mixed` 를 쓴다 — 거짓을 말하는 것보다 낫다.
+     *
+     * @param {{control: boolean, unmeasured: boolean, noTargets: boolean, probe: boolean, shape: boolean}} causes
+     * @returns {string} lang 키
+     */
+    function unknownDetailKey(causes) {
+        // 키를 접두사 + 사유로 **조립하지 않는다.** 조립하면 「표에는 있는데 아무도 부르지
+        // 않는 키」와 「부르는데 표에 없는 키」를 정적으로 대조할 수 없어, 문구가 사라져도
+        // 화면에 키 이름이 그대로 뜰 때까지 아무 검사도 붉어지지 않는다.
+        const active = [
+            causes.control && 'web_exposure_unknown_detail_control',
+            causes.unmeasured && 'web_exposure_unknown_detail_unmeasured',
+            causes.noTargets && 'web_exposure_unknown_detail_no_targets',
+            causes.shape && 'web_exposure_unknown_detail_shape',
+            causes.probe && 'web_exposure_unknown_detail_probe',
+        ].filter(Boolean);
+
+        if (active.length !== 1) {
+            return 'web_exposure_unknown_detail_mixed';
+        }
+
+        return active[0];
+    }
+
+    function judgeExposureResults(results, unmeasuredCount, controlResults, absentSignature) {
+        // 노출 확정이 언제나 우선한다 — 기준 주소가 틀렸든 위임이 죽었든, `.env` 가 원문
+        // 그대로 200 이면 그것은 노출이다 (D3).
+        if (results.some((r) => r.exposed)) {
+            return 'exposed';
+        }
+
+        // 양성 대조: **열려야 하는** 주소가 열리지 않으면 이번 측정의 기준틀을 신뢰할 수 없다.
+        // 403/404 를 보호로 읽는 판정은 「막혔다」와 「그 주소에 아무것도 없다」를 구분하지
+        // 못하므로, 위임이 죽은 서버(mod_rewrite 부재)와 기준 주소를 잘못 잡은 배치가 전부
+        // 초록으로 수렴한다. 그 둘을 여기서 함께 잡는다.
+        const controls = Array.isArray(controlResults) ? controlResults : [];
+        if (controls.some((c) => !c.reachable)) {
+            return 'unknown';
+        }
+
+        const judged = promotedJudged(results, absentSignature);
 
         if (results.length === 0 || judged.some((ok) => !ok)) {
             return 'unknown';
@@ -712,7 +763,7 @@
                 </div>` + linkNotice;
         } else if (judgement === 'unknown') {
             // D21: 판정 불능은 노출 확정과 다른 상태다 — 불능 사유 + 직접 열어 확인할 주소
-            // 목록을 펼치고, '모두 접근 불가임을 확인했음' 체크 전까지 [다음 단계] 비활성.
+            // 목록을 펼치고, '파일 내용이 보이는 주소가 없음을 확인했음' 체크 전까지 [다음 단계] 비활성.
             // 대상이 하나도 없으면(서버 항목 부재 등) 목록 블록은 접는다 — 빈 목록을 라벨과
             // 함께 내보내면 확인할 것이 있는 것처럼 읽힌다. 확인 경로 자체는 그대로 연다.
             //
@@ -732,7 +783,7 @@
                 : '';
             // 재지 못한 계열은 「확인할 주소」 목록에 실을 수 없다(주소가 만들어지지 않았다).
             // 그 사실을 이름과 함께 따로 알린다 — 무엇을 재지 못했는지 모르면 운영자가
-            // '모두 접근 불가임을 확인했음' 에 근거 없이 체크하게 된다.
+            // '파일 내용이 보이는 주소가 없음을 확인했음' 에 근거 없이 체크하게 된다.
             // 사유까지 싣는다. 이름만 주면 「못 쟀다」와 「원래 없다」가 구분되지 않는데,
             // 둘은 운영자가 할 일이 다르다 — 예컨대 `.env.example` 의 `missing` 은 파일이
             // 없다는 뜻이 아니라 **그 파일을 `.env` 로 이름을 바꿨다**는 뜻이라(흔한 절차)
@@ -779,6 +830,35 @@
                     <ul class="alert-list exposure-address-list">${controlItems}</ul>
                     <p class="fix-guide-hint">${escapeHtml(lang('web_exposure_control_failed_hint'))}</p>`
                 : '';
+            // 음성 대조 주소를 **비교 기준**으로 함께 띄운다 (D1). 서버는 이미 「이 서버에
+            // 존재하지 않는 주소」를 내려주는데 화면은 그것을 프로브에만 썼다 — 운영자가
+            // 「정상이 어떻게 보이는가」를 눈으로 대조할 길이 없으면, 문서 루트를 바꿀 수 없는
+            // 배치의 정상 응답(설치 안내 200 화면)을 노출로 읽는다(현장 제보).
+            //
+            // 서버 응답에 키가 없는 구판이면 블록을 통째로 접는다 — 빈 라벨은 「확인할 것이
+            // 있는데 주소가 비었다」로 읽힌다.
+            const absentControlBlock = absentControl && absentControl.path
+                ? `
+                    <div class="fix-guide-label">${escapeHtml(lang('web_exposure_absent_control_label'))}</div>
+                    <ul class="alert-list exposure-address-list"><li><a href="${escapeAttribute(root + absentControl.path)}" target="_blank" rel="noopener noreferrer">${escapeHtml(root + absentControl.path)}</a></li></ul>
+                    <p class="fix-guide-hint">${escapeHtml(lang('web_exposure_absent_control_hint'))}</p>`
+                : '';
+            // 불능 **사유**를 갈라 선두 문장을 고른다 (D1). 승격 규칙은 판정이 쓰는 것과 같은
+            // 함수여야 한다 — 사본을 두면 판정은 「승격됐다」고 보는데 안내는 「프로브가
+            // 실패했다」고 말하는 상태가 조용히 생긴다.
+            const promoted = promotedJudged(results, absentSignature);
+            const unpromoted = results.filter((_r, i) => !promoted[i]);
+            // U3d(형태 대조 불가)와 U3a~c(요청이 닿지 못함·3xx·비-200)를 가르는 근거값은
+            // 이미 결과에 실려 있다 — 200 이고 본문 길이를 잰 것은 **응답은 받았고 형태
+            // 대조만 실패한** 것이고, 그 밖은 응답 자체를 못 받았거나 판정할 수 없는 응답이다.
+            const shapeOnly = unpromoted.filter((r) => r.status === 200 && typeof r.length === 'number');
+            const detailKey = unknownDetailKey({
+                control: unreachableControls.length > 0,
+                unmeasured: unmeasured.length > 0,
+                noTargets: targets.length === 0,
+                shape: shapeOnly.length > 0,
+                probe: unpromoted.length > shapeOnly.length,
+            });
             slot.innerHTML = renderSingleItemCard(
                 lang('web_exposure'),
                 'status-warning',
@@ -787,7 +867,8 @@
                 true
             ) + `
                 <div class="alert alert-warning">
-                    <div>${escapeHtml(lang('web_exposure_unknown_detail'))}</div>${controlBlock}${unmeasuredList}${manualList}
+                    <div>${escapeHtml(lang(detailKey))}</div>
+                    <div class="exposure-criteria">${escapeHtml(lang('web_exposure_manual_criteria'))}</div>${controlBlock}${unmeasuredList}${manualList}${absentControlBlock}
                     <p class="fix-guide-hint">${escapeHtml(lang('web_exposure_manual_hint'))}</p>
                     <label class="form-checkbox">
                         <input type="checkbox" id="web-exposure-confirm" class="checkbox-input">
@@ -4378,6 +4459,10 @@
     let renderedLogLineCount = 0;
     let stepwiseToken = null; // 단계별 실행 토큰 (install-process.php 응답 또는 페이지 주입값)
     let lastErrorSkippable = false; // 마지막 실패 단계가 [건너뛰고 계속] 가능한지
+    // 「진행 목록에 없는 단계」 경고를 낸 domId — 같은 단계에 한 번만 경고한다 (D2 L10).
+    const warnedMissingTaskRows = new Set();
+    // 오래 걸리는 태스크 안내를 이미 남긴 태스크명 — 태스크마다 한 번만 남긴다 (D2 L9).
+    const noticedLongTasks = new Set();
 
     /* region:stepwise-token — 이 구간은 회귀 테스트가 소스에서 잘라 **실제로 실행**한다
        (`resources/js/installer/__tests__/installer-token-wiring.test.ts`). installer.js 는
@@ -4826,6 +4911,34 @@
                 },
                 onLog: (message) => {
                     addLogMessage(message);
+                },
+                // 단계별 실행은 한 응답이 태스크 전체의 줄을 싣고 온다 — 배치로 받아 한 번에
+                // 그린다 (D2 L4). 이 콜백이 없으면 모니터가 줄마다 `onLog` 로 떨어뜨리고,
+                // 그 순간 화면이 줄 수만큼 강제 리플로우를 한다.
+                onLogBatch: (messages) => {
+                    addLogMessages(messages);
+                },
+                // 요청이 도는 동안의 경과 표시 (D2 L9) — DOM 텍스트 한 곳만 만진다.
+                // 실측에서 44 초짜리 태스크 구간에 화면이 한 글자도 바뀌지 않았고,
+                // 사용자에게 그것은 「멈춘 화면」이다.
+                onProgressTick: (elapsedSec, taskName) => {
+                    const el = document.getElementById('task-elapsed');
+                    if (!el) return;
+                    el.textContent = lang('stepwise_task_elapsed', {
+                        name: taskName || lang('stepwise_task_unnamed'),
+                        elapsed: String(elapsedSec),
+                    });
+                    el.style.display = '';
+                },
+                // 문턱(60초)을 넘긴 태스크는 진행 기록에 **한 번만** 남긴다 (D2 L9).
+                onLongTask: (elapsedSec, taskName) => {
+                    const key = taskName || '(unnamed)';
+                    if (noticedLongTasks.has(key)) return;
+                    noticedLongTasks.add(key);
+                    addLogMessage(lang('stepwise_long_task_notice', {
+                        name: taskName || lang('stepwise_task_unnamed'),
+                        elapsed: String(elapsedSec),
+                    }));
                 },
                 onComplete: (data) => {
                     installationCompleted = true;
@@ -5293,6 +5406,31 @@
         }
     }
 
+    /* region:progress-log — 진행 기록 렌더 (vitest 가 이 구간을 그대로 평가한다 · 사본 금지)
+
+       이 구간이 하는 일은 하나다: **서버가 보낸 줄을 화면에 그린다.** 그런데 그 양이
+       실측으로 한 설치에 13,017 줄(그중 `[cmd]` 12,798 줄 · 1.1 MB)이라, 「한 줄씩 그린다」는
+       순진한 구현이 곧바로 메인 스레드 블록이 된다. 무CLI 단계별 실행에서는 한 응답이
+       그 태스크의 **모든** 줄을 한꺼번에 싣고 오므로 더 그렇다 — 실측(2026-09-11, 수정 전):
+       한 응답이 207,699 자를 몰고 와 1,579 ms 동안 화면이 멈췄다(최장 long task).
+
+       그래서 이 구간의 규칙은 셋이다.
+         1. 문자열 누적(`textContent +=`) 금지 — n 줄이면 O(n²) 바이트 복사다.
+         2. 한 배치는 `DocumentFragment` 에 모아 **한 번** 붙이고, 스크롤도 **한 번**만 만진다.
+         3. 화면에 쌓이는 줄에는 상한이 있다 — 전체 기록은 서버 로그 파일이 갖는다. */
+
+    /**
+     * 진행 기록·명령 상세가 화면에 유지하는 최대 줄 수.
+     *
+     * 실측 근거(2026-09-11 리허설): 한 설치가 진행 기록 208 줄 + 명령 상세 643,167 자를 만든다.
+     * 상한은 그 진행 기록의 약 10 배로 두어 정상 설치는 한 줄도 접히지 않게 하고, 재시도를
+     * 반복해 누적된 기록이나 대량 주입에서만 앞에서부터 접힌다.
+     */
+    const PROGRESS_LOG_MAX_LINES = 2000;
+
+    /** 자동 스크롤을 따라갈지 정하는 바닥 여유 (px) — 운영자가 위를 읽는 중이면 끌어내리지 않는다. */
+    const PROGRESS_LOG_STICKY_PX = 24;
+
     /**
      * 커맨드 원문 표식 — 서버 `INSTALLER_COMMAND_OUTPUT_PREFIX` 와 같은 리터럴이어야 한다.
      *
@@ -5318,31 +5456,136 @@
     }
 
     /**
+     * 배치를 붙이기 **전에** 그 상자가 바닥에 붙어 있었는지 본다.
+     *
+     * 종전에는 줄마다 무조건 `scrollTop = scrollHeight` 였다. 그것은 두 가지를 한꺼번에
+     * 잘못한다 — 줄 수만큼 **강제 동기 레이아웃**을 일으키고(리플로우), 운영자가 위쪽을
+     * 읽는 중에도 화면을 계속 바닥으로 끌어내린다.
+     *
+     * @param {HTMLElement} el 스크롤 상자
+     * @returns {boolean} 바닥에 붙어 있었으면 true
+     */
+    function progressLogWasAtBottom(el) {
+        return el.scrollHeight - el.scrollTop - el.clientHeight <= PROGRESS_LOG_STICKY_PX;
+    }
+
+    /**
+     * 화면 상한을 적용한다 — 넘친 만큼 **앞에서** 걷어내고, 처음 걷을 때 한 줄로 알린다.
+     *
+     * 전체 기록은 `storage/logs/installation.log` 가 갖는다. 화면이 그것을 통째로 들고 있을
+     * 이유가 없고, 들고 있으면 새로고침 복원에서 그 전량이 한 프레임에 그려진다.
+     *
+     * @param {HTMLElement} container 줄을 담는 상자
+     * @param {string} childSelector 줄 하나를 고르는 선택자
+     */
+    function trimProgressLog(container, childSelector) {
+        // **상한 아래에서는 아무것도 세지 않는다.**
+        //
+        // `childElementCount` 는 O(1) 이고 `querySelectorAll` 은 O(n) 이다. SSE 는 줄이
+        // 하나씩 도착하므로 이 함수가 **줄마다** 불리는데, 그때마다 상자 전체를 훑으면
+        // 배치화로 줄인 비용이 그 모드에서 고스란히 되돌아온다 — 실측(2026-09-11): 그
+        // 상태의 폴링 라운드에서 최장 long task 가 1,541 ms → 5,337 ms 로 **악화**했다.
+        // 자식 수는 줄 + 안내 한 줄 + 플레이스홀더뿐이라 상한 비교의 안전한 상계다.
+        if (container.childElementCount <= PROGRESS_LOG_MAX_LINES) {
+            return;
+        }
+
+        // 안내 줄은 상한 계산에 넣지 않는다 — 자기 자신을 세면 상한이 한 줄씩 밀리고,
+        // 세지 않으면서 걷어내면 다음 배치에서 또 붙어 중복된다. 그래서 안내 줄에는
+        // 줄 선택자(`.log-entry`·`.command-output-line`)를 아예 주지 않는다.
+        const nodes = container.querySelectorAll(childSelector);
+        const excess = nodes.length - PROGRESS_LOG_MAX_LINES;
+        if (excess <= 0) return;
+
+        for (let i = 0; i < excess; i++) {
+            nodes[i].remove();
+        }
+
+        let notice = container.querySelector('.log-truncated-notice');
+        if (!notice) {
+            notice = document.createElement('div');
+            notice.className = 'log-truncated-notice';
+            notice.dataset.count = '0';
+            container.insertBefore(notice, container.firstChild);
+        }
+        notice.dataset.count = String((parseInt(notice.dataset.count, 10) || 0) + excess);
+        notice.textContent = lang('log_truncated_notice', { count: notice.dataset.count });
+    }
+
+    /**
      * 커맨드 원문을 「명령 상세」 접기 영역에 덧붙인다.
      *
      * 영역은 첫 줄이 도착할 때 비로소 드러난다 — 커맨드가 아무것도 뱉지 않은 설치에서
      * 빈 접기 버튼만 남는 것을 막는다.
      *
-     * @param {string} line 표식을 뗀 커맨드 출력 한 줄
+     * **문자열을 누적하지 않는다.** `textContent += …` 는 매 줄마다 상자 전체를 다시 만들고
+     * 다시 파싱한다 — 실측에서 이 영역이 한 설치에 643,167 자까지 자라므로 그 방식은
+     * 줄 수의 제곱에 비례하는 바이트 복사가 된다. 줄마다 텍스트 노드를 하나 만들어
+     * `DocumentFragment` 에 모으고 **한 번** 붙인다.
+     *
+     * @param {string|string[]} lines 표식을 뗀 커맨드 출력 (한 줄 또는 배치)
      */
-    function appendCommandOutput(line) {
+    function appendCommandOutput(lines) {
+        const list = Array.isArray(lines) ? lines : [lines];
+        if (list.length === 0) return;
+
         const section = document.getElementById('command-output-section');
         const logEl = document.getElementById('command-output-log');
         if (!section || !logEl) return;
 
-        logEl.textContent += (logEl.textContent ? '\n' : '') + line;
+        const stick = progressLogWasAtBottom(logEl);
+        const fragment = document.createDocumentFragment();
+        for (const line of list) {
+            const row = document.createElement('div');
+            row.className = 'command-output-line';
+            row.textContent = line;
+            fragment.appendChild(row);
+        }
+        logEl.appendChild(fragment);
+        trimProgressLog(logEl, '.command-output-line');
+
         section.style.display = '';
+        if (stick) {
+            logEl.scrollTop = logEl.scrollHeight;
+        }
     }
 
     /**
-     * 로그 메시지 추가
+     * 로그 메시지 한 줄 추가 — 배치 API 의 1건 호출이다 (호출부 호환).
      */
     function addLogMessage(message) {
-        const commandLine = commandOutputBody(message);
-        if (commandLine !== null) {
-            appendCommandOutput(commandLine);
-            return;
+        addLogMessages([message]);
+    }
+
+    /**
+     * 로그 메시지를 **배치로** 추가한다.
+     *
+     * 단계별 실행은 한 응답이 그 태스크의 모든 `log` 이벤트를 싣고 오고, 새로고침 복원은
+     * 누적 기록 전량을 싣고 온다. 그것을 줄마다 `appendChild` + `scrollTop` 대입으로 그리면
+     * 줄 수만큼 강제 리플로우가 나 화면이 그 시간 동안 통째로 멈춘다(실측: 1,579 ms).
+     * 한 배치는 조립 한 번 · 삽입 한 번 · 스크롤 한 번이다.
+     *
+     * @param {Array<string>} messages 로그 줄 배열
+     */
+    function addLogMessages(messages) {
+        if (!Array.isArray(messages) || messages.length === 0) return;
+
+        // 커맨드 원문은 다른 상자로 간다 — 두 갈래를 먼저 나누고 각자 한 번씩 붙인다.
+        const commandLines = [];
+        const logLines = [];
+        for (const message of messages) {
+            const commandLine = commandOutputBody(message);
+            if (commandLine !== null) {
+                commandLines.push(commandLine);
+            } else if (typeof message === 'string') {
+                logLines.push(message);
+            }
         }
+
+        if (commandLines.length > 0) {
+            appendCommandOutput(commandLines);
+        }
+        if (logLines.length === 0) return;
 
         const logDiv = document.getElementById('install-log');
         if (!logDiv) return;
@@ -5353,13 +5596,20 @@
             placeholder.remove();
         }
 
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.textContent = message;
-        logDiv.appendChild(logEntry);
+        const stick = progressLogWasAtBottom(logDiv);
+        const fragment = document.createDocumentFragment();
+        for (const message of logLines) {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            fragment.appendChild(logEntry);
+        }
+        logDiv.appendChild(fragment);
+        trimProgressLog(logDiv, '.log-entry');
 
-        // 자동 스크롤
-        logDiv.scrollTop = logDiv.scrollHeight;
+        if (stick) {
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
     }
 
     /**
@@ -5384,46 +5634,27 @@
             return;
         }
 
-        // 로그 플레이스홀더 제거
-        const placeholder = logDiv.querySelector('.log-placeholder');
-        if (placeholder) {
-            placeholder.remove();
+        // 새로고침 복원 경로도 실행 중과 **같은 배치 API** 를 지난다. 종전에는 이 자리가
+        // 자기 루프로 줄마다 `appendChild` 했고, 그래서 누적 기록 전량이 한 프레임에
+        // 그려졌다 — 재개가 가장 무거운 렌더인데 가장 순진한 경로를 쓰고 있었다.
+        //
+        // 분류 규칙(커맨드 원문 vs 진행 기록)도 배치 API 안에 하나만 둔다. 두 곳에 두면
+        // 「돌 때는 안 보이는데 새로고침하면 보이는」 줄이 생긴다 (§12.0 W3).
+        const messages = [];
+        for (const log of logs) {
+            if (typeof log === 'string') {
+                messages.push(log);
+            } else if (log && typeof log === 'object' && typeof log.message === 'string') {
+                messages.push(log.message);
+            }
+            // 그 밖은 버린다 — 진행 기록은 사람 말로 쓴다. 원시 JSON 을 찍느니 그 줄을
+            // 버린다 (10차가 이 상자에서 셸 명령을 걷어낸 것과 같은 축 · 11차 #B16).
         }
 
-
-        // 로그 메시지 추가
-        logs.forEach(log => {
-            // 새로고침 복원 경로도 실행 중과 같은 규칙으로 분류한다 — 한쪽만 분류하면
-            // 「돌 때는 안 보이는데 새로고침하면 보이는」 줄이 생긴다 (§12.0 W3).
-            const rawMessage = (typeof log === 'object' && log && typeof log.message === 'string')
-                ? log.message
-                : (typeof log === 'string' ? log : null);
-            const commandLine = commandOutputBody(rawMessage);
-            if (commandLine !== null) {
-                appendCommandOutput(commandLine);
-                return;
-            }
-
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-
-            // 로그가 객체인 경우 message 속성 사용, 문자열인 경우 그대로 사용
-            if (typeof log === 'object' && log.message) {
-                logEntry.textContent = log.message;
-            } else if (typeof log === 'string') {
-                logEntry.textContent = log;
-            } else {
-                // 진행 기록은 사람 말로 쓴다 (§12.0 W3) — 원시 JSON 을 찍느니 그 줄을
-                // 버린다. 10차가 이 상자에서 셸 명령을 걷어낸 것과 같은 축이다 (11차 #B16).
-                return;
-            }
-
-            logDiv.appendChild(logEntry);
-        });
-
-        // 자동 스크롤
-        logDiv.scrollTop = logDiv.scrollHeight;
+        addLogMessages(messages);
     }
+
+    /* endregion:progress-log */
 
     /**
      * 그룹 레이블 번역
@@ -6577,6 +6808,15 @@
             abortBtn.innerHTML = abortButtonMarkup(true);
         }
 
+        // **왜 기다리는지 말한다** (D6).
+        //
+        // 서버는 중단을 즉시 확정하지 않는다 — 되돌리기가 아직 실행 중인 태스크와 겹치지
+        // 않도록 그 태스크가 경계에 닿을 때까지 기다린다(제품 결정 13차, state-management.php).
+        // 그 대기는 태스크 길이만큼이라 실측에서 8.1 초였다. 버튼은 즉시 「중단 중」으로
+        // 바뀌지만 그것만으로는 **왜** 오래 걸리는지 알 수 없고, 사용자에게는 D2 가 고친
+        // 그 무응답과 같은 화면이 된다. 진행 기록에 한 줄 남긴다.
+        addLogMessage(lang('abort_waiting_for_task'));
+
         try {
             // Abort API 호출
             const response = await fetch(getStateApiUrl('abort'), {
@@ -6909,7 +7149,15 @@
             // 조용히 되돌아가면 서버가 도는 단계가 화면에 아예 없다는 사실이 어디에도 남지
             // 않는다 — 그 단계는 실패해도 빨강이 되지 않고 진행률 분모에서도 빠진다
             // (12차 #B24). 목록의 SSoT 는 서버이므로 여기서 고치지 않고 드러내기만 한다.
-            console.warn(`[installer] 진행 목록에 없는 단계입니다: ${domId} (status=${status})`);
+            //
+            // 다만 **같은 단계에 한 번만** 경고한다 (D2 L10). 이 함수는 한 단계에 여러 번
+            // 불리고(단계별은 응답마다 완료 목록 전량을 재적용한다) 상태마다 다시 불린다 —
+            // 상한이 없으면 DevTools 가 열려 있는 환경에서 콘솔 폭주 자체가 프리즈 요인이 된다.
+            // 사실을 드러내는 것이 목적이므로 한 번이면 충분하다.
+            if (!warnedMissingTaskRows.has(domId)) {
+                warnedMissingTaskRows.add(domId);
+                console.warn(`[installer] 진행 목록에 없는 단계입니다: ${domId} (status=${status})`);
+            }
 
             return;
         }

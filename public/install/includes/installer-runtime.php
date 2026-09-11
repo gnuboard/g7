@@ -216,8 +216,25 @@ if (! function_exists('writeInstallerRuntime')) {
             @chmod($tmp, 0600);
         }
 
-        // atomic rename
-        if (! @rename($tmp, INSTALLER_RUNTIME_PATH)) {
+        // atomic rename — 짧은 핸들 경합은 재시도로 넘긴다 (D4).
+        //
+        // 이 지점은 형제(`installer-state.php` 의 상태 저장)와 **같은 모양**이고, 위 주석들이
+        // 이미 세 번 「형제와 같은 규율」이라고 적고 있다. 그 형제만 재시도를 얻으면 그 짝이
+        // 깨진다 — Windows 는 대상 파일을 다른 핸들이 `FILE_SHARE_DELETE` 없이 열고 있으면
+        // `rename()` 이 실패하는데(POSIX 는 성공), runtime.php 는 **모든 요청이 `@include` 로
+        // 읽는** 파일이라 형제보다 열려 있는 시간이 길다.
+        //
+        // 게다가 여기서의 실패는 형제보다 무겁다. 상태 저장은 유실돼도 설치가 계속 굴러갔지만
+        // (그래서 조용했다), 이 파일은 DB 자격증명·APP_KEY·stepwise 토큰을 담아 쓰기 실패가
+        // 곧 그 단계의 실패다. 없앨 수 있는 실패만 걷어낸다 — 없앨 수 없는 실패(권한 소실·
+        // 디스크 풀)는 종전과 똑같이 false 로 남는다.
+        //
+        // 형제 파일을 로드하지 않는 진입 경로에서는 종전 동작 그대로다.
+        $replaced = function_exists('installerReplaceFileWithRetry')
+            ? installerReplaceFileWithRetry($tmp, INSTALLER_RUNTIME_PATH)
+            : @rename($tmp, INSTALLER_RUNTIME_PATH);
+
+        if (! $replaced) {
             @unlink($tmp);
 
             return false;

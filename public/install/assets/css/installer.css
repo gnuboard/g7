@@ -1264,6 +1264,18 @@ hr {
   margin-bottom: 0;
 }
 
+/* 운영자 **판정 기준** 한 줄 (D1) — 사유 문장 바로 아래, 목록보다 위.
+ *
+ * 사유는 여럿이지만 「무엇을 보고 정상/실패를 가르는가」는 하나다. 그 하나를 사유 문장과
+ * 같은 굵기로 흘려보내면 목록 사이에 묻히고, 정작 그 문장이 없어서 운영자가 정상 응답
+ * (문서 루트를 바꿀 수 없는 배치의 설치 안내 화면)을 노출로 읽었다 — 그래서 강조한다.
+ * 흐리게 하지 않는다: 투명도는 대비를 깎고 토큰 검사가 그것을 보지 못한다(#B33 전례). */
+.exposure-criteria {
+  margin-top: var(--spacing-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--warning-text);
+}
+
 .alert-list {
   margin: 0;
   padding-left: var(--spacing-lg);
@@ -1393,6 +1405,14 @@ hr {
   color: var(--text-secondary);
   margin-top: var(--spacing-sm);
   font-style: italic;
+}
+
+/* 단계별 실행의 경과 표시 (D2 L9) — 형제(`progress-status`)보다 한 단계 약하게 둔다.
+   이것은 진행 **사실**이 아니라 「서버가 아직 일하고 있다」는 생존 신호다. */
+.progress-elapsed {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
 }
 
 /* 설치 완료 표시 — 색은 토큰이 정한다 (D16). 인라인 style 로 칠하면 다크 재정의가
@@ -1805,6 +1825,22 @@ hr {
   margin: var(--spacing-sm) 0 0 0;
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
+}
+
+/* 커맨드 원문 한 줄 — 종전에는 `<pre>` 의 textContent 에 문자열로 누적했다. 그 방식은
+   줄마다 상자 전체를 다시 만들어 줄 수의 제곱에 비례하는 복사가 되므로(실측: 한 설치에
+   643,167 자) 줄을 각자의 요소로 둔다. `<pre>` 의 `white-space: pre-wrap` 을 그대로
+   물려받으므로 보이는 모양은 종전과 같다. */
+.command-output-line {
+  margin: 0;
+}
+
+/* 화면 상한(PROGRESS_LOG_MAX_LINES)을 넘겨 앞에서 걷어낸 줄이 있음을 알리는 한 줄.
+   전체 기록은 storage/logs/installation.log 가 갖는다는 사실을 함께 말한다. */
+.log-truncated-notice {
+  color: var(--log-text-muted);
+  font-style: italic;
+  padding-bottom: var(--spacing-sm);
 }
 
 .log-placeholder {

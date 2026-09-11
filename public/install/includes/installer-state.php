@@ -58,6 +58,25 @@ if (! defined('INSTALLER_STATE_TMP_INFIX')) {
     define('INSTALLER_STATE_TMP_INFIX', INSTALLER_TMP_INFIX);
 }
 
+if (! defined('INSTALLER_STATE_RENAME_ATTEMPTS')) {
+    /**
+     * 상태 파일 원자 교체의 재시도 횟수·간격 (D4).
+     *
+     * Windows 는 대상 파일을 다른 핸들이 열고 있으면 `rename()` 이 실패한다(POSIX 는 성공).
+     * 인스톨러는 같은 상태 파일을 여러 진입점이 동시에 읽으므로 그 찰나에 부딪힌다 —
+     * 실측(2026-09-11)에서 44초짜리 태스크 도중 1건 났고, 그 저장이 조용히 유실됐다.
+     *
+     * 경합은 밀리초 단위라 5회 × 20 ms(최대 80 ms 대기)면 덮고도 남는다. 리눅스 공유
+     * 호스팅에서는 첫 시도가 성공하므로 비용이 0 이다. **재시도로 없앨 수 없는 실패**
+     * (권한 소실·디스크 풀·경로 부재)는 이 값과 무관하게 끝까지 false 로 남는다.
+     */
+    define('INSTALLER_STATE_RENAME_ATTEMPTS', 5);
+}
+
+if (! defined('INSTALLER_STATE_RENAME_DELAY_US')) {
+    define('INSTALLER_STATE_RENAME_DELAY_US', 20000);
+}
+
 if (! defined('INSTALLER_STATE_TMP_SUFFIX_PATTERN')) {
     /**
      * 임시 파일 접미사의 **생성 규칙**(16진) — 만드는 쪽과 지우는 쪽이 같은 값을 본다.
@@ -439,7 +458,7 @@ function saveInstallationState(array $state): bool
         @chmod($tmpPath, 0664);
     }
 
-    if (! @rename($tmpPath, STATE_PATH)) {
+    if (! installerReplaceFileWithRetry($tmpPath, STATE_PATH)) {
         $msg = '[installer-state] Failed to rename state tmp file: '.$tmpPath.' → '.STATE_PATH;
         installerErrorLog($msg);
         addLog($msg);
@@ -449,6 +468,57 @@ function saveInstallationState(array $state): bool
     }
 
     return true;
+}
+
+if (! function_exists('installerReplaceFileWithRetry')) {
+    /**
+     * 임시 파일을 최종 이름으로 **원자적으로** 옮긴다 — 짧은 핸들 경합은 재시도로 넘긴다 (D4).
+     *
+     * 배경 (실측 2026-09-11, 단계별 리허설):
+     *   이커머스 모듈 설치(44초짜리 태스크) 도중 `[installer-state] Failed to rename state tmp file`
+     *   이 1건 났다. 설치는 계속 진행돼 정상 완료했지만, **그 시점의 상태 저장은 유실됐다** —
+     *   반환값을 보지 않는 호출부가 셋 있어(`install-process.php:612`·`functions.php`·이 파일의
+     *   진행률 갱신) 그 유실은 어디에도 드러나지 않는다. 그 상태로 새로고침 재개가 걸리면
+     *   재개 지점이 실제 진행보다 뒤로 간다.
+     *
+     * 원인: POSIX `rename()` 은 대상이 열려 있어도 원자적으로 성공하지만, **Windows 는
+     * 대상 파일을 다른 핸들이 `FILE_SHARE_DELETE` 없이 열고 있으면 실패한다.** 인스톨러는
+     * 같은 상태 파일을 여러 진입점이 동시에 읽는다(진행 조회·태스크 실행·세션 초기화) —
+     * 그 읽기가 겹치는 찰나에 rename 이 부딪힌다. 경합은 **밀리초 단위로 끝난다.**
+     *
+     * 그래서 실패를 곧바로 확정하지 않고 짧게 몇 번 다시 시도한다. 이것은 재시도로 **없앨 수
+     * 있는 실패**와 **없앨 수 없는 실패**(권한 소실·디스크 풀·경로 부재)를 가르는 장치이지,
+     * 후자를 감추는 장치가 아니다 — 끝까지 실패하면 종전과 똑같이 false 를 돌려준다.
+     *
+     * 리눅스 공유 호스팅에서는 첫 시도가 성공하므로 이 경로가 비용을 더하지 않는다.
+     *
+     * @param  string  $from  임시 파일
+     * @param  string  $to  최종 경로
+     * @return bool 옮겼으면 true
+     */
+    function installerReplaceFileWithRetry(string $from, string $to): bool
+    {
+        $attempts = defined('INSTALLER_STATE_RENAME_ATTEMPTS') ? max(1, (int) INSTALLER_STATE_RENAME_ATTEMPTS) : 5;
+        $delayUs = defined('INSTALLER_STATE_RENAME_DELAY_US') ? max(0, (int) INSTALLER_STATE_RENAME_DELAY_US) : 20000;
+
+        for ($i = 0; $i < $attempts; $i++) {
+            if (@rename($from, $to)) {
+                return true;
+            }
+
+            // 옮길 원본이 사라졌으면 재시도해도 같다 — 경합이 아니라 다른 실패다.
+            if (! is_file($from)) {
+                return false;
+            }
+
+            // 마지막 시도 뒤에는 기다리지 않는다(설치를 그만큼 늦추지 않는다).
+            if ($i < $attempts - 1 && function_exists('usleep')) {
+                usleep($delayUs);
+            }
+        }
+
+        return false;
+    }
 }
 
 if (! function_exists('installerDiscardCorruptState')) {
@@ -1729,6 +1799,72 @@ function installerNormalizeLogMessage(string $message, bool $isWindows): string
     return installer_utf8_normalize($message);
 }
 
+/**
+ * 진행 기록 파일이 상한을 넘겼으면 `.1` 로 **한 번** 회전한다 (D2 L11).
+ *
+ * 이 파일에는 회전도 상한도 없었다. 새 설치 진입에서만 지워지고(install-process.php)
+ * 재시도·재개는 그대로 이어 쓰므로, 실패한 설치를 반복하면 단조 증가한다. 한 번의 정상
+ * 설치가 이미 1.1 MB(13,017 줄 · `[cmd]` 12,798 줄)를 만든다 — 실측 2026-09-11.
+ *
+ * 파일이 커지면 두 곳이 함께 무거워진다: 서버는 꼬리를 읽어 응답에 싣고, 화면은 재개할 때
+ * 그 전량을 한 프레임에 그린다(화면 상한은 그쪽에서 따로 막는다).
+ *
+ * **최선 노력이다** — 회전에 실패해도 설치를 멈추지 않는다. 로그는 설치의 목적이 아니고,
+ * 여기서 예외를 올리면 쓰기 한 번 실패가 설치 전체를 끝낸다.
+ *
+ * @param  string  $logFile  진행 기록 경로
+ * @return bool 실제로 회전했으면 true
+ */
+function installerRotateProgressLogIfLarge(string $logFile): bool
+{
+    // 8 MB — 정상 설치 1회분(1.1 MB)의 약 7배. 정상 동선에서는 절대 닿지 않고,
+    // 재시도를 여러 번 반복한 뒤에야 걸린다.
+    $limit = defined('INSTALLER_LOG_ROTATE_BYTES') ? (int) INSTALLER_LOG_ROTATE_BYTES : 8 * 1024 * 1024;
+
+    clearstatcache(true, $logFile);
+    if (! is_file($logFile)) {
+        return false;
+    }
+
+    $size = @filesize($logFile);
+    if ($size === false || $size < $limit) {
+        return false;
+    }
+
+    // 기존 `.1` 은 덮어쓴다 — 세대를 늘리면 상한을 둔 의미가 없다.
+    $rotated = $logFile.'.1';
+    if (is_file($rotated) && ! @unlink($rotated)) {
+        installerErrorLog('[installer] progress log rotation could not remove the previous archive: '.$rotated);
+
+        return false;
+    }
+    if (! @rename($logFile, $rotated)) {
+        installerErrorLog('[installer] progress log rotation failed (rename): '.$logFile);
+
+        return false;
+    }
+
+    clearstatcache(true, $logFile);
+
+    // 새 파일의 첫 줄에 회전 사실을 남긴다 — 그러지 않으면 운영자에게는 기록이 **사라진** 것이다.
+    // 여기서 addLogBatch 를 부르면 재귀가 되므로 직접 쓴다.
+    //
+    // **번역에 기대지 않는다.** `addLog()` 는 세션 초기화처럼 번역표가 아직 없는 시점에도
+    // 불리고, 그때 `lang()` 은 키 문자열을 그대로 돌려준다(정의조차 없을 수 있다). 그 상태로
+    // 쓰면 새 파일의 첫 줄이 `log_rotated_notice` 가 되어, 정작 알려야 할 **어디로 옮겼는지**가
+    // 사라진다. 번역이 있으면 그것을 쓰고, 없으면 파일 이름을 직접 적는다.
+    $notice = function_exists('lang') ? lang('log_rotated_notice') : 'log_rotated_notice';
+    if ($notice === 'log_rotated_notice') {
+        $notice = 'Previous progress log was moved to '.basename($rotated).' (this file continues from there)';
+    }
+
+    $microtime = microtime(true);
+    $stamp = date('Y-m-d H:i:s', (int) $microtime).'.'.sprintf('%03d', (int) (($microtime - floor($microtime)) * 1000));
+    @file_put_contents($logFile, "\xEF\xBB\xBF[{$stamp}] {$notice}\n");
+
+    return true;
+}
+
 function addLogBatch(array $messages): bool
 {
     if (empty($messages)) {
@@ -1769,6 +1905,8 @@ function addLogBatch(array $messages): bool
         $timestamp = date('Y-m-d H:i:s', (int) $microtime).'.'.$ms;
         $entries .= "[{$timestamp}] {$message}\n";
     }
+
+    installerRotateProgressLogIfLarge($logFile);
 
     clearstatcache(true, $logFile);
     $isNewFile = ! file_exists($logFile) || filesize($logFile) === 0;
@@ -1877,6 +2015,10 @@ function _addLogInternal(string $message): bool
     $ms = sprintf('%03d', (int) (($microtime - floor($microtime)) * 1000));
     $timestamp = date('Y-m-d H:i:s', (int) $microtime).'.'.$ms;
     $logEntry = "[{$timestamp}] {$message}\n";
+
+    // 상한을 넘겼으면 먼저 회전한다 (D2 L11) — 형제(addLogBatch)와 같은 지점이어야
+    // 한쪽 통로로만 쓰는 모드에서 파일이 조용히 자라지 않는다.
+    installerRotateProgressLogIfLarge($logFile);
 
     // 파일 캐시 초기화 (최신 상태 확인)
     clearstatcache(true, $logFile);

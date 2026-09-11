@@ -53,10 +53,36 @@ if (! function_exists('sendCommandOutputSSE')) {
      */
     function sendCommandOutputSSE(array $output): void
     {
+        $lines = [];
         foreach ($output as $line) {
             if (trim((string) $line) !== '') {
-                sendSSEEvent('log', ['message' => INSTALLER_COMMAND_OUTPUT_PREFIX.$line]);
+                $lines[] = INSTALLER_COMMAND_OUTPUT_PREFIX.$line;
             }
+        }
+
+        if ($lines === []) {
+            return;
+        }
+
+        // 단계별(BufferEmitter) 경로는 **묶어서** 낸다 (D2 L6).
+        //
+        // 그 모드의 응답은 태스크가 끝난 뒤 한 번에 나가므로 줄 단위 실시간성이 없다. 그런데
+        // 종전에는 줄마다 `emit('log')` 였고, 그 안에서 줄마다 `addLog()` 가 파일을
+        // open/flock/write/fflush/close 한다 — 공유 호스팅 디스크에서 줄당 수 ms 다.
+        // 실측(2026-09-11): 한 설치가 `[cmd]` 12,798 줄을 만들고 가장 긴 태스크가 3,844 줄을
+        // 뱉는다. 그 태스크의 응답은 44.0 초가 걸렸고 그 사이 화면은 아무것도 받지 못했다.
+        //
+        // SSE 는 **그대로 둔다** — 그 모드의 존재 이유가 줄 단위 실시간 표시이고, 그쪽 줄은
+        // 시간에 흩어져 도착하므로 같은 부하가 아니다. 폴링은 이미 배치(NullEmitter)다.
+        $emitter = getProgressEmitter();
+        if ($emitter instanceof BufferEmitter) {
+            $emitter->emitLogBatch($lines);
+
+            return;
+        }
+
+        foreach ($lines as $line) {
+            sendSSEEvent('log', ['message' => $line]);
         }
     }
 }

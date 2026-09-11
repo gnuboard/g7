@@ -144,6 +144,32 @@
         }
 
         /**
+         * 로그 줄을 화면으로 넘긴다 — **여러 줄을 한 번에 쥐고 있으면 한 번에** (D2 L4).
+         *
+         * 세 모드가 공유한다. 단계별은 응답 하나가 태스크 전체의 줄을 싣고 오고, 폴링은
+         * 1초치 묶음(`state.logs`)을 싣고 온다 — 둘 다 배열을 손에 쥔 채 줄마다 콜백을
+         * 부르면 화면이 줄 수만큼 DOM 을 만지고 강제 리플로우를 한다. SSE 만은 이벤트가
+         * 하나씩 도착하므로 구조적으로 1건 배치다(그 모드의 존재 이유가 실시간 표시다).
+         *
+         * `onLogBatch` 를 받지 않는 호출부에서는 줄마다 `onLog` 로 떨어진다 — 두 경로의
+         * 결과는 같아야 한다. 다르면 모드마다 화면이 갈린다.
+         *
+         * @param {Array<string>} messages
+         */
+        _emitLogs(messages) {
+            if (!Array.isArray(messages) || messages.length === 0) return;
+
+            if (this.callbacks && typeof this.callbacks.onLogBatch === 'function') {
+                this._invoke('onLogBatch', messages);
+
+                return;
+            }
+            for (const message of messages) {
+                this._invoke('onLog', message);
+            }
+        }
+
+        /**
          * 침묵 타이머를 다시 건다 — 「살아 있다」는 증거가 하나 도착할 때마다 호출한다.
          *
          * @param {string|null} taskId 정지 시점에 돌고 있던 태스크(있으면)
@@ -543,12 +569,16 @@
             //    때마다 그 소비자가 폴링에서만 조용히 발화하지 않는다. 소비자는 멱등이다.
             this._invoke('onState', state);
 
-            // 1. 새 로그 송출
+            // 1. 새 로그 송출 — **한 번에 넘긴다** (D2 L4).
+            //
+            // 폴링은 1초치 줄을 배열로 받는다. 그것을 줄마다 콜백으로 떨어뜨리면 화면이
+            // 줄마다 DOM 을 만지는데, 한 주기에 수백 줄이 오는 구간(마이그레이션·시더)에서는
+            // 그 자체가 메인 스레드 블록이 된다 — 실측(2026-09-11): 줄 단위로 두었을 때
+            // 이 모드의 최장 long task 가 5,337 ms 였다.
             if (Array.isArray(state.logs) && state.logs.length > 0) {
-                for (const log of state.logs) {
-                    const msg = (typeof log === 'object' && log.message) ? log.message : String(log);
-                    this._invoke('onLog', msg);
-                }
+                this._emitLogs(state.logs.map(
+                    (log) => ((typeof log === 'object' && log && log.message) ? log.message : String(log))
+                ));
             }
             if (typeof state.log_total === 'number') {
                 this.lastLogOffset = state.log_total;
@@ -733,6 +763,57 @@
             // 응답이 오지 않는 요청(프록시 hold·태스크 hang)은 fetch 가 스스로 끝나지 않는다 —
             // 그러면 networkFailures 도 오르지 않아 루프가 await 에서 영구 정지한다.
             this.requestTimeoutMs = options.requestTimeoutMs || this.stuckThresholdMs;
+            // 태스크 하나가 끝나고 다음 요청을 보내기까지의 **최소 간격** (D2 L8).
+            // 서버가 즉시 `task_done` 을 되돌리는 상태(빈 태스크가 연달아 있는 구간)에서는
+            // 간격이 0 이라 요청이 폭주한다. 태스크 100개 기준 총 15초를 더하는 값이라
+            // 정상 설치의 체감 밖이면서 폭주는 막는다.
+            this.taskGapMs = Number.isFinite(options.taskGapMs) ? Math.max(0, options.taskGapMs) : 150;
+            // 요청이 도는 동안 경과를 알리는 주기와, 「오래 걸린다」를 한 번 알리는 문턱 (D2 L9).
+            // 실측(2026-09-11): 한 태스크가 44.0 초 걸리는 동안 화면에 아무 변화가 없었다 —
+            // 사용자에게 그 구간은 「멈춘 화면」이고, 그것이 이번 제보의 증상이다.
+            this.progressTickMs = Number.isFinite(options.progressTickMs) ? Math.max(0, options.progressTickMs) : 1000;
+            this.longTaskNoticeMs = Number.isFinite(options.longTaskNoticeMs) ? Math.max(0, options.longTaskNoticeMs) : 60000;
+            this.activeTickHandle = null;
+            this.longTaskNoticeShown = false;
+            this.currentTaskName = null;
+        }
+
+        /**
+         * 요청이 도는 동안 **경과를 화면에 준다** (D2 L9).
+         *
+         * 단계별 실행의 한 요청은 태스크 하나만큼 산다 — 실측에서 44 초짜리 태스크가 있었고,
+         * 그 구간 내내 화면은 한 글자도 바뀌지 않았다. 화면이 멈춘 것과 서버가 일하는 것을
+         * 사용자가 구분할 방법이 없으면 그것은 무응답이다.
+         *
+         * DOM 을 만지는 것은 호출부(화면)이고 여기서는 초 단위 값만 넘긴다 — 1초에 한 번,
+         * 텍스트 한 곳이다.
+         */
+        _startProgressTicker() {
+            this._stopProgressTicker();
+            if (!this.progressTickMs) return;
+
+            const startedAt = Date.now();
+            this.longTaskNoticeShown = false;
+            this.activeTickHandle = setInterval(() => {
+                if (this.stopped) { this._stopProgressTicker(); return; }
+
+                const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+                this._invoke('onProgressTick', elapsed, this.currentTaskName);
+
+                // 문턱을 넘으면 진행 기록에 **한 번만** 남긴다 — 주기마다 남기면 그 자체가
+                // 로그 폭주가 되어 고치려던 것을 다시 만든다.
+                if (!this.longTaskNoticeShown && this.longTaskNoticeMs && (Date.now() - startedAt) >= this.longTaskNoticeMs) {
+                    this.longTaskNoticeShown = true;
+                    this._invoke('onLongTask', elapsed, this.currentTaskName);
+                }
+            }, this.progressTickMs);
+        }
+
+        _stopProgressTicker() {
+            if (this.activeTickHandle) {
+                clearInterval(this.activeTickHandle);
+                this.activeTickHandle = null;
+            }
         }
 
         start() {
@@ -791,6 +872,7 @@
                     : null;
                 this.activeController = controller;
                 this.activeTimeoutHandle = timeoutHandle;
+                this._startProgressTicker();
 
                 try {
                     const res = await fetch(this.runTaskUrl, {
@@ -837,6 +919,7 @@
                     if (timeoutHandle) {
                         clearTimeout(timeoutHandle);
                     }
+                    this._stopProgressTicker();
                     this.activeController = null;
                     this.activeTimeoutHandle = null;
                 }
@@ -852,17 +935,25 @@
                 // busy 로 기다리는 동안 다른 요청이 쓴 진행 기록을 먼저 메운다 — 그 줄들은 이
                 // 창의 events 에 오지 않아, 싣지 않으면 「단계는 초록인데 그 단계의 기록이 없다」가
                 // 된다. 이벤트 재생보다 먼저 넣어야 시간 순서가 맞는다.
-                if (Array.isArray(body && body.logs)) {
-                    for (const log of body.logs) {
-                        const msg = (typeof log === 'object' && log && log.message) ? log.message : String(log);
-                        this._invoke('onLog', msg);
-                    }
+                //
+                // **한 번에 넘긴다** (D2 L4). 줄마다 `onLog` 를 부르면 화면이 줄마다
+                // `appendChild` + 강제 리플로우를 하고, 단계별은 한 응답이 태스크 전체의
+                // 줄을 싣고 오므로 그 순간 화면이 통째로 멈춘다(실측: 207,699 자 · 1,579 ms).
+                if (Array.isArray(body && body.logs) && body.logs.length > 0) {
+                    this._emitLogs(body.logs.map(
+                        (log) => ((typeof log === 'object' && log && log.message) ? log.message : String(log))
+                    ));
                 }
 
                 this._replay(Array.isArray(body && body.events) ? body.events : []);
 
                 // 서버가 알려 준 총 줄 수를 기준으로 다시 잡는다 — 이 창이 그린 수를 스스로
                 // 세면 재시도·재개에서 쉽게 어긋난다.
+                //
+                // 이 값은 **줄어들 수 있다** (D2 L11): 로그 파일이 상한을 넘겨 회전하면 총 줄
+                // 수가 0 부터 다시 센다. 그때 이전 offset 을 그대로 들고 있으면 서버는
+                // 「이미 그 줄까지 봤다」로 읽어 회전 뒤의 줄을 한 줄도 싣지 않는다 — 진행
+                // 기록이 그 시점부터 영영 멈춘 것처럼 보인다. 작아진 값을 그대로 따른다.
                 if (Number.isFinite(body && body.log_total)) {
                     this.logOffset = Math.max(0, body.log_total);
                 }
@@ -878,6 +969,10 @@
                 switch (outcome) {
                     case 'task_done':
                         this._armStuckTimer();
+                        // 다음 요청까지 **최소 간격**을 둔다 (D2 L8). 서버가 즉시 `task_done`
+                        // 을 되돌리는 구간에서 이 대기가 없으면 요청 간격이 0 이 된다.
+                        // `_sleep` 을 쓰므로 [중단] 이 이 대기도 함께 끊는다 (19차 J8).
+                        if (this.taskGapMs) await this._sleep(this.taskGapMs);
                         continue;
 
                     case 'busy':
@@ -934,18 +1029,38 @@
          * 서버가 모아 보낸 이벤트를 SSE 와 같은 콜백으로 재생한다.
          */
         _replay(events) {
+            // 연속한 `log` 이벤트는 **모아서** 한 번에 넘긴다. 이벤트 순서를 지켜야 하므로
+            // 다른 종류의 이벤트를 만나면 그 자리에서 먼저 비운다 — 모아 두었다가 끝에
+            // 몰아 넘기면 진행 기록과 단계 표시의 시간 순서가 뒤집힌다.
+            let pending = [];
+            const flush = () => {
+                if (pending.length === 0) return;
+                this._emitLogs(pending);
+                pending = [];
+            };
+
             for (const entry of events) {
                 const event = entry && entry.event;
                 const data = (entry && entry.data) || {};
+
+                if (event === 'log') {
+                    pending.push(data.message);
+                    continue;
+                }
+                if (event === 'log_batch') {
+                    // 서버가 이미 묶어 보낸 경우 (D2 L6) — 단계별 경로의 정본 형태다.
+                    if (Array.isArray(data.messages)) pending.push(...data.messages);
+                    continue;
+                }
+                flush();
+
                 switch (event) {
                     case 'task_start':
+                        this.currentTaskName = data.name || data.task || null;
                         this._invoke('onTaskStart', data.task, data.name || null, data.target || null);
                         break;
                     case 'task_complete':
                         this._invoke('onTaskComplete', data.task, data.message || null, data.target || null, !!data.skipped);
-                        break;
-                    case 'log':
-                        this._invoke('onLog', data.message);
                         break;
                     case 'rollback_failed':
                         this._invoke('onRollbackFailed', data);
@@ -973,6 +1088,10 @@
                         break;
                 }
             }
+
+            // 마지막 줄 묶음 — 대부분의 응답이 `log` 로 끝나므로 이 비움이 없으면
+            // **그 태스크의 출력 전체**가 조용히 사라진다.
+            flush();
         }
     }
 
