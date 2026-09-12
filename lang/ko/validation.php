@@ -1018,6 +1018,11 @@ return [
         'outbound_proxy_bypass_array' => '프록시 예외 목록은 배열이어야 합니다.',
         'outbound_proxy_bypass_item_string' => '프록시 예외 항목은 문자열이어야 합니다.',
         'outbound_proxy_bypass_item_max' => '프록시 예외 항목은 :max자를 초과할 수 없습니다.',
+        'trusted_proxies_present' => '신뢰할 프록시 목록이 요청에 없습니다.',
+        'trusted_proxies_array' => '신뢰할 프록시 목록은 배열이어야 합니다.',
+        'trusted_proxies_max' => '신뢰할 프록시는 :max개를 초과할 수 없습니다.',
+        'trusted_proxy_address_invalid' => '신뢰할 프록시 주소 형식이 올바르지 않습니다. IP 주소 또는 CIDR 로 입력하세요 (예: 10.0.0.1, 10.0.0.0/24).',
+        'trusted_proxy_address_max' => '신뢰할 프록시 주소는 :max자를 초과할 수 없습니다.',
 
         // 목록 한계값
         'pagination_result_cap_integer' => '총 건수 집계 상한은 숫자여야 합니다.',
@@ -1328,6 +1333,7 @@ return [
         'sql_query_log' => 'SQL 쿼리 로그',
         'outbound_proxy' => '아웃바운드 프록시 주소',
         'outbound_proxy_bypass' => '프록시 예외 목록',
+        'trusted_proxies' => '신뢰할 프록시 목록',
         'core_update_github_url' => '코어 업데이트 GitHub 주소',
         'core_update_github_token' => '코어 업데이트 GitHub 토큰',
         'geoip_enabled' => 'GeoIP 사용',

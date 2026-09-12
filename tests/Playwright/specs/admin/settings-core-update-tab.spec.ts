@@ -17,7 +17,7 @@
  *
  * @scenario core-update-web
  * @axes actor=with_permission, run_state=idle
- * @effects update_tab_is_hidden_without_permission, start_sends_only_safe_options, manual_zip_lives_behind_advanced, the_start_controls_appear_only_when_there_is_something_to_apply
+ * @effects update_tab_is_hidden_without_permission, start_sends_only_safe_options, manual_zip_lives_behind_advanced, the_start_controls_appear_only_when_there_is_something_to_apply, update_tab_buttons_carry_the_button_base_class
  */
 import { test, expect } from '@playwright/test';
 import { issueToken, issueScopedToken, authenticatePage } from '../../fixtures/auth';
@@ -528,5 +528,42 @@ test.describe('@sirsoft-admin_basic 환경설정 업데이트 탭', () => {
     await page.waitForTimeout(600);
     expect(calls, '정리가 요청을 보내지 않았다').toContain('dismiss');
     expect(await runState(), '정리한 뒤에도 실행 기록이 화면에 남았다').toBeNull();
+  });
+
+  // @scenario actor=with_permission, run_state=idle
+  // @effects update_tab_buttons_carry_the_button_base_class
+  test('탭의 버튼이 베이스 외형을 갖는다 (맨 <button> 으로 나가지 않는다)', async ({ page }) => {
+    // 현장 제보 2026-09-12: [업데이트 확인]·[조치 방법 보기] 가 브라우저 기본 버튼으로
+    // 보였다. 원인은 className 이 `btn-secondary` 뿐이어서 — 이 템플릿에서 `.btn` 이
+    // padding·모서리·굵기를 주고 `.btn-*` 는 **색만** 준다.
+    //
+    // 이 결함은 기존 단언(존재·클릭·요청)을 하나도 깨지 않는다. 그래서 **계산된 값**을 잰다.
+    // 클래스 이름만 보면 CSS 계약이 바뀌었을 때 초록인 채로 다시 깨진다.
+    const token = issueToken('core.settings.read', 'core.system.update');
+    await authenticatePage(page, token);
+
+    await page.goto('/admin/settings?tab=update');
+    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+
+    const check = page.locator('#core_update_check_button');
+    await expect(check).toBeVisible({ timeout: 20_000 });
+
+    const box = await check.evaluate((el) => {
+      const cs = getComputedStyle(el);
+
+      return {
+        paddingTop: parseFloat(cs.paddingTop),
+        paddingLeft: parseFloat(cs.paddingLeft),
+        borderRadius: parseFloat(cs.borderTopLeftRadius),
+        fontWeight: Number(cs.fontWeight),
+        hasBase: el.classList.contains('btn'),
+      };
+    });
+
+    expect(box.hasBase, '베이스 클래스 btn 이 빠졌다 — 색 변형만으로는 외형이 없다').toBe(true);
+    expect(box.paddingLeft, '좌우 padding 이 0 이다 (맨 button 모양)').toBeGreaterThan(0);
+    expect(box.paddingTop, '상하 padding 이 0 이다 (맨 button 모양)').toBeGreaterThan(0);
+    expect(box.borderRadius, '모서리가 각지다 (rounded-lg 미적용)').toBeGreaterThan(0);
+    expect(box.fontWeight, '글자 굵기가 기본값이다 (font-medium 미적용)').toBeGreaterThanOrEqual(500);
   });
 });

@@ -15,6 +15,8 @@ use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
 use App\Support\ProcessOutputEncoding;
+use App\Support\TrustedProxyDiagnostic;
+use App\Support\TrustedProxySetting;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +36,14 @@ class SettingsService
     // 않는다 — 트레이트가 고정 `CoreCacheDriver` + 메모이즈 스토어를 쓰는 이유가 그 안에 있다.
     use ClearsTemplateCaches;
 
+    /**
+     * 설정 서비스를 생성합니다.
+     *
+     * @param  ConfigRepositoryInterface  $configRepository  설정 저장소
+     * @param  AttachmentRepositoryInterface  $attachmentRepository  첨부 저장소
+     * @param  CacheInterface  $cache  확장 캐시
+     * @param  AttachmentService  $attachmentService  첨부 서비스
+     */
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
         private AttachmentRepositoryInterface $attachmentRepository,
@@ -48,6 +58,8 @@ class SettingsService
      * config 캐시는 clear 후 즉시 재생성한다(ConfigCacheHelper). config:clear 만
      * 하면 config:cache 가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을
      * 재파싱하는 성능 손실이 발생하기 때문이다.
+     *
+     * @return void
      */
     private function invalidateSettingsCache(): void
     {
@@ -68,6 +80,8 @@ class SettingsService
      * 신호가 없으면 워커가 부팅 시점의 옛 드라이버로 계속 동작한다.
      *
      * 신호 전송 실패가 설정 저장을 되돌리지는 않는다 (경고 로깅 후 계속).
+     *
+     * @return void
      */
     private function restartQueueWorkers(): void
     {
@@ -89,6 +103,8 @@ class SettingsService
      *
      * 캐시 삭제 실패가 설정 저장 자체를 되돌리지는 않는다 — 설정은 이미 저장됐고,
      * 캐시는 TTL 만료나 `seo:clear` 로도 회복 가능한 부수 상태다.
+     *
+     * @return void
      */
     private function clearSeoCacheForAssetUrlMode(): void
     {
@@ -158,7 +174,38 @@ class SettingsService
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
-        return $this->overlayEnvLockedValues($settings);
+        return $this->overlayEnvLockedValues($this->seedTrustedProxiesFromRuntime($settings));
+    }
+
+    /**
+     * 신뢰 프록시 저장값이 비어 있으면 **현재 적용 중인 값**으로 채웁니다.
+     *
+     * 저장값 null 은 "화면에서 한 번도 정한 적 없음" 이고, 그 설치의 실제 권위는
+     * `.env` 의 `TRUSTED_PROXIES` 입니다. 그 상태에서 화면이 「신뢰하지 않음」을 보여주면,
+     * 운영자가 고급 탭의 **무관한** 항목을 저장하는 순간 폼이 그 빈 값을 함께 제출해
+     * 프록시 설정이 사라집니다 — 오류도 로그도 없이 방문자 IP 만 전부 프록시 주소가 됩니다.
+     *
+     * 그래서 화면에는 적용 중인 값을 그대로 보여주고, 그대로 저장되면 값이 같아 동작도
+     * 바뀌지 않습니다. `.env` 로 잠긴 설치는 이 뒤에 도는 잠금 표시값 덮기가 다시 맡습니다.
+     *
+     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
+     * @return array<string, mixed> 유효값이 채워진 설정 배열
+     */
+    private function seedTrustedProxiesFromRuntime(array $settings): array
+    {
+        foreach ($this->resolveFrontendKeyTargets('debug', 'trusted_proxies') as [$targetCategory, $outputKey]) {
+            if (! isset($settings[$targetCategory]) || ! is_array($settings[$targetCategory])) {
+                continue;
+            }
+
+            $stored = $settings[$targetCategory][$outputKey] ?? null;
+
+            $settings[$targetCategory][$outputKey] = $stored === null
+                ? TrustedProxySetting::toList(TrustedProxyDiagnostic::configuredProxies())
+                : TrustedProxySetting::toList($stored);
+        }
+
+        return $settings;
     }
 
     /**
@@ -933,6 +980,7 @@ class SettingsService
      *
      * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
      * @param  string  $label  로그 표기용 설정 이름
+     * @return void
      */
     private function purgeRemovedAttachments(array $removedIds, string $label): void
     {
@@ -996,6 +1044,7 @@ class SettingsService
      * 이미 없는 첨부 id 가 남아 로고가 깨집니다.
      *
      * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
+     * @return void
      */
     private function purgeSiteLogoAttachments(array $removedIds): void
     {
@@ -1164,6 +1213,8 @@ class SettingsService
      * 게시본은 캐시 버전으로 키드되어 있어, 버전이 오르지 않으면 모드를 바꿔도 옛 형태의
      * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다(#651 F5). bump 단일 지점이
      * 번들 재병합과 정적 재게시를 함께 예약한다.
+     *
+     * @return void
      */
     private function bumpExtensionCacheForAssetUrlMode(): void
     {
@@ -1616,6 +1667,7 @@ class SettingsService
         // @ 억제 + numeric 체크 (공개#40, getMemoryUsage 폴백 패턴 재사용).
         // `disable_functions` 축은 호출부의 `safeSystemProbe` 가 `\Throwable` 로 접는다
         // (PHP 8 의 차단 함수 호출은 `Error`). audit 이관 원장의 「조치 불필요」 판정과 같다.
+        // audit:allow hosting-blocked-function-requires-guard reason: 차단 축은 호출부 safeSystemProbe 가 \Throwable 로 접는다 (위 주석 참조 — audit 이관 원장의 「조치 불필요」 판정)
         $totalRaw = @disk_total_space($path);
         $freeRaw = @disk_free_space($path);
         $total = is_numeric($totalRaw) ? (int) $totalRaw : 0;

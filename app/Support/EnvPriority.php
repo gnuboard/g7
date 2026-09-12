@@ -68,6 +68,9 @@ final class EnvPriority
         // --- debug ---
         'debug.mode' => ['env' => ['APP_DEBUG'], 'config' => ['app.debug']],
         'debug.log_level' => ['env' => ['LOG_LEVEL'], 'config' => ['logging.channels.single.level', 'logging.channels.daily.level', 'logging.level']],
+        // 신뢰 프록시는 `debug` 카테고리에 산다 — 화면상 같은 카드에 놓이는 아웃바운드
+        // 프록시(`debug.outbound_proxy`)와 저장 위치를 맞춘 것이고, 디버그 모드와는 무관하다.
+        'debug.trusted_proxies' => ['env' => ['TRUSTED_PROXIES'], 'config' => ['trustedproxy.proxies'], 'display' => 'proxy_list_array'],
 
         // --- drivers ---
         'drivers.cache_driver' => ['env' => ['CACHE_STORE'], 'config' => ['cache.default']],
@@ -353,6 +356,9 @@ final class EnvPriority
             'broadcast_is_reverb' => $value === 'reverb',
             // stack 채널 목록의 첫 항목이 화면의 단일 로그 드라이버 선택값이다.
             'log_stack_first' => is_array($value) ? ($value[0] ?? null) : $value,
+            // `.env` 의 신뢰 프록시는 콤마 문자열이지만 화면 계약은 태그 배열이다.
+            // 여기서 배열로 맞추지 않으면 잠긴 설치에서만 화면이 문자열을 받아 형태가 갈린다.
+            'proxy_list_array' => TrustedProxySetting::toList($value),
             default => $value,
         };
     }

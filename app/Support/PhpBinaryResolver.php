@@ -239,13 +239,33 @@ class PhpBinaryResolver
             $sapi = self::parseSapi($outputStr);
 
             if (version_compare($version, self::MIN_PHP_VERSION, '>=')) {
+                // 이 판정이 재는 것은 **CLI 바이너리**다. 그런데 사이트가 실제로 도는 곳은
+                // 웹 SAPI 이고, 공유 호스팅에서는 둘의 버전이 다를 수 있다 — 현장
+                // (2026-09-12): 웹 8.2.31 / CLI 8.4.21. 그 상태에서 「서버 명령 사용」으로
+                // 돌면 확장 설치·코어 업데이트가 **사이트와 다른 런타임**에서 수행되어
+                // 의존성 제약 해석과 문법 호환성이 갈린다.
+                //
+                // 막지는 않는다 — 어느 쪽을 쓸지는 운영자의 선택이고, 버전이 갈렸다는 것만으로
+                // 실패가 확정되지도 않는다. 다만 **근거에 적는다**: 종전에는 CLI 버전만 보고
+                // 「확인」이라고만 말해, 운영자가 두 런타임이 다르다는 사실을 알 길이 없었다.
+                $webVersion = self::differingWebSapiVersion($version);
+
                 return [
                     'valid' => true,
                     'version' => $version,
                     'sapi' => $sapi,
-                    'message' => "PHP {$version} (최소 요구 버전 ".self::MIN_PHP_VERSION.' 충족)',
-                    'message_key' => 'php_probe_ok',
-                    'message_params' => ['version' => $version, 'min_version' => self::MIN_PHP_VERSION],
+                    'web_version' => $webVersion,
+                    'message' => $webVersion === null
+                        ? "PHP {$version} (최소 요구 버전 ".self::MIN_PHP_VERSION.' 충족)'
+                        : "PHP {$version} (최소 요구 버전 ".self::MIN_PHP_VERSION." 충족) — 웹은 PHP {$webVersion} 로 계열이 다릅니다.",
+                    'message_key' => $webVersion === null ? 'php_probe_ok' : 'php_probe_ok_web_version_differs',
+                    'message_params' => $webVersion === null
+                        ? ['version' => $version, 'min_version' => self::MIN_PHP_VERSION]
+                        : [
+                            'version' => $version,
+                            'min_version' => self::MIN_PHP_VERSION,
+                            'web_version' => $webVersion,
+                        ],
                 ];
             }
 
@@ -295,6 +315,39 @@ class PhpBinaryResolver
      *
      * @param  string  $versionOutput  `{binary} --version` 의 표준출력
      * @return string|null 소문자 SAPI 이름 (파싱 불가 시 null)
+     */
+    /**
+     * 웹 SAPI 의 PHP 가 CLI 와 **다른 계열**이면 그 버전을 돌려줍니다.
+     *
+     * 패치 차이(8.2.15 vs 8.2.31)는 알리지 않는다 — 공유 호스팅에서 흔하고 동작을 가르지
+     * 않는다. 메이저·마이너가 갈릴 때만 본다(8.2 vs 8.4): 그때부터 의존성 제약 해석과
+     * 문법 호환성이 달라져, 서버 명령으로 한 설치가 사이트에서 안 도는 조합이 생긴다.
+     *
+     * @param  string  $cliVersion  프로브가 읽은 CLI 버전
+     * @param  string|null  $webVersion  웹 SAPI 버전 (테스트 주입용 — 기본값은 이 프로세스)
+     * @return string|null 계열이 다르면 웹 버전, 같으면 null
+     */
+    public static function differingWebSapiVersion(string $cliVersion, ?string $webVersion = null): ?string
+    {
+        $web = $webVersion ?? PHP_VERSION;
+
+        $line = static function (string $version): string {
+            $parts = explode('.', $version);
+
+            return implode('.', array_slice($parts, 0, 2));
+        };
+
+        return $line($web) === $line($cliVersion) ? null : $web;
+    }
+
+    /**
+     * `php -v` 출력에서 SAPI 이름을 읽습니다.
+     *
+     * 첫 줄의 괄호 안이 SAPI 다 (`PHP 8.2.15 (cli) (built: ...)`). 못 읽으면 null 을
+     * 돌려주고 호출부가 「모름」으로 다룬다 — 구형·패치 배포판은 이 형식을 벗어난다.
+     *
+     * @param  string  $versionOutput  `php -v` 전체 출력
+     * @return string|null 소문자 SAPI 이름 (예: `cli`, `cgi-fcgi`), 판별 불가면 null
      */
     private static function parseSapi(string $versionOutput): ?string
     {

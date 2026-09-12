@@ -1786,7 +1786,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex-between"
+                "className": "flex-between-responsive"
               },
               "children": [
                 {
@@ -1812,7 +1812,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex-between"
+                "className": "flex-between-responsive"
               },
               "children": [
                 {
@@ -1837,7 +1837,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex-between"
+                "className": "flex-between-responsive"
               },
               "children": [
                 {
@@ -1862,7 +1862,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex-between"
+                "className": "flex-between-responsive"
               },
               "children": [
                 {
@@ -1887,7 +1887,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex-between"
+                "className": "flex-between-responsive"
               },
               "children": [
                 {
@@ -1912,7 +1912,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex-between"
+                "className": "flex-between-responsive"
               },
               "children": [
                 {
@@ -1942,6 +1942,528 @@
                 "className": "form-hint text-amber-600 dark:text-amber-400"
               },
               "text": "$t:admin.settings.advanced.trusted_proxy_same_ip_hint"
+            },
+            {
+              "id": "trusted_proxy_edit",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:admin.settings.advanced.trusted_proxy_scope"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Badge",
+                      "if": "{{_computed.trustedProxyLocked}}",
+                      "props": {
+                        "text": "$t:admin.settings.env_locked_badge",
+                        "variant": "secondary",
+                        "size": "sm",
+                        "className": "ml-2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_scope_desc"
+                },
+                {
+                  "id": "trusted_proxy_modes",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex flex-col gap-1 mt-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "trusted_proxy_mode",
+                            "value": "none",
+                            "checked": "{{_computed.trustedProxyMode === 'none'}}",
+                            "disabled": "{{_computed.isReadOnly || _computed.trustedProxyLocked}}",
+                            "className": "radio mt-0.5"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "hasChanges": true,
+                                "trustedProxyListMode": false,
+                                "form.advanced.trusted_proxies": "{{[]}}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_mode_none"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "text-tertiary"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_mode_none_desc"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "trusted_proxy_mode",
+                            "value": "nearest",
+                            "checked": "{{_computed.trustedProxyMode === 'nearest'}}",
+                            "disabled": "{{_computed.isReadOnly || _computed.trustedProxyLocked}}",
+                            "className": "radio mt-0.5"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "hasChanges": true,
+                                "trustedProxyListMode": false,
+                                "form.advanced.trusted_proxies": "{{['*']}}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_mode_nearest"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "text-tertiary"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_mode_nearest_desc"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "trusted_proxy_mode",
+                            "value": "list",
+                            "checked": "{{_computed.trustedProxyMode === 'list'}}",
+                            "disabled": "{{_computed.isReadOnly || _computed.trustedProxyLocked}}",
+                            "className": "radio mt-0.5"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "hasChanges": true,
+                                "trustedProxyListMode": true,
+                                "form.advanced.trusted_proxies": "{{(_local.form?.advanced?.trusted_proxies ?? []).filter(v => v !== '*')}}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_mode_list"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "text-tertiary"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_mode_list_desc"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "trusted_proxy_list_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_computed.trustedProxyMode === 'list'}}",
+                  "props": {
+                    "className": "mt-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:admin.settings.advanced.trusted_proxy_list_label"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "TagInput",
+                      "props": {
+                        "name": "advanced.trusted_proxies",
+                        "creatable": true,
+                        "placeholder": "$t:admin.settings.advanced.trusted_proxy_list_placeholder",
+                        "className": "w-full",
+                        "defaultVariant": "blue",
+                        "disabled": "{{_computed.isReadOnly || _computed.trustedProxyLocked}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "form-hint"
+                      },
+                      "text": "$t:admin.settings.advanced.trusted_proxy_list_hint"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['advanced.trusted_proxies']}}",
+                  "props": {
+                    "className": "form-error"
+                  },
+                  "text": "{{_local.errors?.['advanced.trusted_proxies']?.[0] ?? ''}}"
+                },
+                {
+                  "id": "trusted_proxy_spoof_warning",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{_computed.trustedProxyMode !== 'none'}}",
+                  "props": {
+                    "className": "form-hint text-amber-600 dark:text-amber-400"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_spoof_warning"
+                },
+                {
+                  "id": "trusted_proxy_env_locked_notice",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{_computed.trustedProxyLocked}}",
+                  "props": {
+                    "className": "form-hint"
+                  },
+                  "text": "$t:admin.settings.advanced.trusted_proxy_env_locked_notice"
+                },
+                {
+                  "id": "trusted_proxy_probe_row",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3 mt-2 flex-wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "btn_probe_trusted_proxy",
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "px-3 py-1.5 bg-gray-700 dark:bg-gray-600 text-white dark:text-white text-xs font-medium rounded-md hover:bg-gray-800 dark:hover:bg-gray-500 transition-colors whitespace-nowrap disabled:opacity-50",
+                        "disabled": "{{_computed.isReadOnly || _local.trustedProxyProbing}}"
+                      },
+                      "text": "$t:admin.settings.advanced.trusted_proxy_probe_button",
+                      "actions": [
+                        {
+                          "event": "click",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "trustedProxyProbing": true
+                          }
+                        },
+                        {
+                          "event": "click",
+                          "handler": "apiCall",
+                          "target": "/api/admin/settings/test-trusted-proxy",
+                          "auth_required": true,
+                          "params": {
+                            "method": "POST",
+                            "body": {
+                              "trusted_proxies": "{{(_local.form?.advanced?.trusted_proxies ?? [])}}"
+                            }
+                          },
+                          "onSuccess": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "trustedProxyProbing": false,
+                                "trustedProxyProbe": "{{response.data}}",
+                                "trustedProxyProbeMessage": "{{response.message}}"
+                              }
+                            }
+                          ],
+                          "onError": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "trustedProxyProbing": false,
+                                "trustedProxyProbe": null,
+                                "trustedProxyProbeMessage": null
+                              }
+                            },
+                            {
+                              "handler": "toast",
+                              "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-hint"
+                      },
+                      "text": "$t:admin.settings.advanced.trusted_proxy_probe_hint"
+                    }
+                  ]
+                },
+                {
+                  "id": "trusted_proxy_probe_result",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.trustedProxyProbe}}",
+                  "props": {
+                    "className": "mt-2 p-3 rounded-md border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-heading mb-2"
+                      },
+                      "text": "$t:admin.settings.advanced.trusted_proxy_probe_title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "row-stack"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-between-responsive"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_probe_client_ip"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "text-right"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{(_local.trustedProxyProbe?.current?.client_ip ?? '-') !== (_local.trustedProxyProbe?.result?.client_ip ?? '-')}}",
+                                  "props": {
+                                    "className": "line-through text-gray-400 dark:text-gray-500 mr-2"
+                                  },
+                                  "text": "{{(_local.trustedProxyProbe?.current?.client_ip ?? '-')}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-heading"
+                                  },
+                                  "text": "{{(_local.trustedProxyProbe?.result?.client_ip ?? '-')}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-between-responsive"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_probe_is_secure"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "text-right"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.current?.is_secure) !== (v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.result?.is_secure)}}",
+                                  "props": {
+                                    "className": "line-through text-gray-400 dark:text-gray-500 mr-2"
+                                  },
+                                  "text": "{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.current?.is_secure)}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-heading"
+                                  },
+                                  "text": "{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.result?.is_secure)}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-between-responsive"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:admin.settings.advanced.trusted_proxy_probe_trusted"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "text-right"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-heading"
+                                  },
+                                  "text": "{{((_local.trustedProxyProbe?.result?.trusted ?? []).length > 0 ? _local.trustedProxyProbe.result.trusted.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none'))}}"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "form-hint mt-2"
+                      },
+                      "text": "{{_local.trustedProxyProbeMessage}}"
+                    }
+                  ]
+                }
+              ]
             },
             {
               "id": "trusted_proxy_doc_hint",

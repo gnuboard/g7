@@ -76,6 +76,12 @@ effects:
   # PHP 바이너리 해석 (php_binary_probe 축의 값을 실제로 만드는 지점)
   - validate_rejects_empty_or_nonexistent_binary_path
   - validate_reports_sapi_for_configured_binary
+  # 설정값을 그대로 따르는 해석 경로 — 바이너리와 composer 커맨드 조립 양쪽.
+  - php_binary_and_composer_paths_follow_configured_values
+  # 현장 2026-09-12 — 이 판정이 재는 것은 CLI 바이너리인데 사이트가 실제로 도는 곳은 웹
+  # SAPI 다. 공유 호스팅에서는 둘의 계열이 갈릴 수 있어(웹 8.2 / CLI 8.4), 그 상태에서
+  # 서버 명령으로 한 설치가 사이트와 다른 런타임에서 수행된다. 막지 않고 근거에 적는다.
+  - php_probe_reports_when_the_web_runtime_is_a_different_line
   - auto_detect_orders_cli_binaries_first
   # 제한 호스팅 내성 — hasFunction 정규화·주입 이음매·러너 블로킹 read (19차 파생, 20차 등재)
   - core_execution_layer_survives_restricted_hosting

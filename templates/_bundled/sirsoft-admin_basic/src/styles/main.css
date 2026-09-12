@@ -1977,6 +1977,21 @@
   .flex-between {
     @apply flex items-center justify-between;
   }
+
+  /*
+   * Flex Between (반응형) — 좁은 폭에서 라벨 위 / 값 아래로 쌓는다.
+   *
+   * `.flex-between` 은 한 줄에 라벨과 값을 양끝으로 민다. 값이 짧으면 문제가 없지만
+   * 「수신 중인 프록시 헤더」처럼 값이 긴 진단 행은 모바일 폭(~358px)에서 값 칸이
+   * 라벨에 밀려 글자 단위로 접히고, 그 상태가 오류로 드러나지 않아 그대로 남는다.
+   *
+   * sm 이상에서는 `.flex-between` 과 완전히 같은 모양이다 — 데스크톱 렌더는 불변.
+   */
+  .flex-between-responsive {
+    @apply flex flex-col gap-0.5;
+    @apply sm:flex-row sm:items-center sm:justify-between sm:gap-3;
+  }
+
   .flex-center {
     @apply flex items-center;
   }

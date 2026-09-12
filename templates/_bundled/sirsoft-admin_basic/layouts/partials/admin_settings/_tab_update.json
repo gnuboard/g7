@@ -183,7 +183,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "btn-secondary",
+                "className": "btn btn-secondary",
                 "disabled": "{{_local.checkingCoreUpdate === true}}"
               },
               "actions": [
@@ -265,7 +265,7 @@
               "comment": "진행 표시는 정보 탭의 같은 조회 버튼(`_tab_info.json`)과 같은 `loadingChangelog` 플래그를 쓴다 — 두 버튼은 서로 다른 탭에 있어 동시에 그려지지 않는다.",
               "props": {
                 "type": "button",
-                "className": "btn-secondary",
+                "className": "btn btn-secondary",
                 "disabled": "{{_local.loadingChangelog}}"
               },
               "actions": [
@@ -541,7 +541,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "btn-primary",
+                "className": "btn btn-primary",
                 "disabled": "{{_global.coreUpdateBusy === true}}"
               },
               "actions": [
@@ -874,7 +874,7 @@
                   "name": "Button",
                   "props": {
                     "type": "button",
-                    "className": "btn-secondary"
+                    "className": "btn btn-secondary"
                   },
                   "actions": [
                     {
@@ -896,7 +896,7 @@
                   "comment": "종전에는 진행 중이면 `if` 로 버튼을 **감췄다**. 사라지는 것은 「눌렸다」는 신호로 읽히지 않는다 — 착수 버튼과 같이 자리를 지킨 채 비활성·스피너로 알린다. 진행 여부는 핸들러가 `publishBusy()` 로 싣는 `_global.coreUpdateBusy` 가 소유한다.",
                   "props": {
                     "type": "button",
-                    "className": "btn-primary",
+                    "className": "btn btn-primary",
                     "disabled": "{{_global.coreUpdateBusy === true}}"
                   },
                   "actions": [
@@ -929,7 +929,7 @@
                   "if": "{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}",
                   "props": {
                     "type": "button",
-                    "className": "btn-secondary"
+                    "className": "btn btn-secondary"
                   },
                   "actions": [
                     {
@@ -948,7 +948,7 @@
                   "comment": "형제들과 달리 `dismissCoreUpdate` 는 전역 진행 플래그를 싣지 않는다(기록 정리는 업데이트 진행이 아니다). 그래서 진행 표시는 이 버튼의 지역 플래그로 잡고, 커스텀 핸들러도 `onSuccess`/`onError` 를 지원하므로 되돌리는 자리가 있다.",
                   "props": {
                     "type": "button",
-                    "className": "btn-secondary",
+                    "className": "btn btn-secondary",
                     "disabled": "{{_local.coreUpdateDismissing}}"
                   },
                   "actions": [
@@ -1173,7 +1173,7 @@
                     "name": "Button",
                     "props": {
                       "type": "button",
-                      "className": "btn-secondary"
+                      "className": "btn btn-secondary"
                     },
                     "actions": [
                       {

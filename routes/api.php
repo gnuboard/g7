@@ -698,6 +698,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('test-mail', [AdminSettingsController::class, 'testMail'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-mail');
         Route::post('test-driver', [AdminSettingsController::class, 'testDriverConnection'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-driver');
         Route::post('test-outbound-proxy', [AdminSettingsController::class, 'testOutboundProxy'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-outbound-proxy');
+        Route::post('test-trusted-proxy', [AdminSettingsController::class, 'testTrustedProxy'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-trusted-proxy');
         Route::post('geoip/update', [AdminGeoIpController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.geoip.update');
         // 실행 방식·예약 작업 (W5) — `{key}` 와일드카드보다 **앞에** 둔다.
         // 뒤에 두면 `system/status` 가 설정 키 `system` 의 조회로 잡힌다.

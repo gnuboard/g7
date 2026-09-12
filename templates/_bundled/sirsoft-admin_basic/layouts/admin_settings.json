@@ -68,6 +68,9 @@
   "computed": {
     "isReadOnly": "{{!!_global.settingsAbilities && !(_global.settingsAbilities?.can_update ?? false)}}",
     "envLocked": "{{_local.form?._meta?.env_locked ?? null}}",
+    "trustedProxyList": "{{_local.form?.advanced?.trusted_proxies ?? []}}",
+    "trustedProxyLocked": "{{(_local.form?._meta?.env_locked ?? {})['advanced.trusted_proxies'] === true}}",
+    "trustedProxyMode": "{{(_local.form?.advanced?.trusted_proxies ?? []).includes('*') ? 'nearest' : ((_local.trustedProxyListMode || (_local.form?.advanced?.trusted_proxies ?? []).length > 0) ? 'list' : 'none')}}",
     "coreUpdateStatus": "{{_global.coreUpdateStatus ?? core_update_status?.data ?? null}}",
     "coreUpdateRun": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.run ?? null}}",
     "coreUpdateSteps": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.steps ?? []}}",

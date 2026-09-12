@@ -5,6 +5,7 @@ namespace App\Http\Requests\Settings;
 use App\Extension\HookManager;
 use App\Models\Attachment;
 use App\Rules\ValidOutboundProxyUrl;
+use App\Rules\ValidTrustedProxyAddress;
 use App\Search\Engines\DatabaseFulltextEngine;
 use App\Services\DriverRegistryService;
 use App\Support\AllowedExtensions;
@@ -80,6 +81,8 @@ class SaveSettingsRequest extends FormRequest
      *
      * site_logo 필드가 Attachment 객체 배열로 전송될 수 있으므로
      * 정수 ID 배열로 변환합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -128,6 +131,8 @@ class SaveSettingsRequest extends FormRequest
      * 운영자가 `https://example.com/g7/` 로 적으면 그 값에 `/path` 를 잇는 소비처마다 `//` 가
      * 생긴다. 소비처에서 걷어내면 한 곳이 빠지고, 저장 경로 진입 전 한 곳에서 걷어내면 그 형태가
      * 설정 파일에 남지 않는다 (16차 G3 라운드 B-4). 문자열이 아닌 값은 검증 규칙이 판정한다.
+     *
+     * @return void
      */
     private function normalizeSiteUrl(): void
     {
@@ -148,6 +153,8 @@ class SaveSettingsRequest extends FormRequest
      * 화면 입력 칸은 콤마로 구분한 한 줄 텍스트라 이 값은 문자열로 들어온다. 문자열 그대로
      * 저장하면 업로드 제한을 적용하는 지점이 그 값을 쓰지 못해, 저장은 성공하는데 제한은
      * 종전 목록으로 남는다. 형태 판정은 저장 경로 진입 전 이 한 곳에서만 수행한다.
+     *
+     * @return void
      */
     private function normalizeAllowedExtensions(): void
     {
@@ -170,6 +177,7 @@ class SaveSettingsRequest extends FormRequest
      * prepareForValidation 단계에서 명시 캐스팅합니다.
      *
      * @param  array<int, string>  $fields  dot-notation 필드 경로 배열
+     * @return void
      */
     private function castAdvancedBooleanFields(array $fields): void
     {
@@ -356,6 +364,10 @@ class SaveSettingsRequest extends FormRequest
             'advanced.outbound_proxy' => ['nullable', 'string', 'max:500', new ValidOutboundProxyUrl],
             'advanced.outbound_proxy_bypass' => ['nullable', 'array'],
             'advanced.outbound_proxy_bypass.*' => ['string', 'max:255'],
+
+            // 신뢰 프록시 (advanced 탭) — 태그 배열. 빈 배열은 「신뢰하지 않음」이라 정상값이다.
+            'advanced.trusted_proxies' => ['nullable', 'array', 'max:50'],
+            'advanced.trusted_proxies.*' => ['string', 'max:60', new ValidTrustedProxyAddress],
 
             // 코어 업데이트 설정 (advanced 탭)
             'advanced.core_update_github_url' => ['nullable', 'url', 'max:500'],
@@ -605,6 +617,7 @@ class SaveSettingsRequest extends FormRequest
      * 임의 깊이의 leaf 값을 재귀 순회하며 string|max:100 으로 검증합니다.
      *
      * @param  Validator  $validator  검증기 인스턴스
+     * @return void
      */
     public function withValidator($validator): void
     {
@@ -635,6 +648,7 @@ class SaveSettingsRequest extends FormRequest
      * @param  array<string, mixed>  $node  검증할 노드 (purpose_providers 또는 중첩 하위)
      * @param  string  $path  현재 노드의 dot-path (에러 키 prefix)
      * @param  Validator  $validator  검증기 인스턴스
+     * @return void
      */
     private function validatePurposeProviderLeaves(array $node, string $path, $validator): void
     {
@@ -846,6 +860,10 @@ class SaveSettingsRequest extends FormRequest
             'advanced.outbound_proxy_bypass.array' => __('validation.settings.outbound_proxy_bypass_array'),
             'advanced.outbound_proxy_bypass.*.string' => __('validation.settings.outbound_proxy_bypass_item_string'),
             'advanced.outbound_proxy_bypass.*.max' => __('validation.settings.outbound_proxy_bypass_item_max'),
+            'advanced.trusted_proxies.array' => __('validation.settings.trusted_proxies_array'),
+            'advanced.trusted_proxies.max' => __('validation.settings.trusted_proxies_max'),
+            'advanced.trusted_proxies.*.string' => __('validation.settings.trusted_proxy_address_invalid'),
+            'advanced.trusted_proxies.*.max' => __('validation.settings.trusted_proxy_address_max'),
 
             // 목록 한계값
             'advanced.pagination_result_cap.integer' => __('validation.settings.pagination_result_cap_integer'),
@@ -1043,6 +1061,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced.sql_query_log' => __('validation.attributes.sql_query_log'),
             'advanced.outbound_proxy' => __('validation.attributes.outbound_proxy'),
             'advanced.outbound_proxy_bypass' => __('validation.attributes.outbound_proxy_bypass'),
+            'advanced.trusted_proxies' => __('validation.attributes.trusted_proxies'),
             'advanced.core_update_github_url' => __('validation.attributes.core_update_github_url'),
             'advanced.core_update_github_token' => __('validation.attributes.core_update_github_token'),
             'advanced.geoip_enabled' => __('validation.attributes.geoip_enabled'),

@@ -19,6 +19,10 @@ class PhpBinaryResolverTest extends TestCase
 {
     /**
      * resolve()는 config('process.php_binary') 값을 반환한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects php_binary_and_composer_paths_follow_configured_values
      */
     public function test_resolve_returns_config_value(): void
     {
@@ -29,6 +33,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * resolve()는 config 값이 빈 문자열이면 'php'를 반환한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects php_binary_and_composer_paths_follow_configured_values
      */
     public function test_resolve_returns_php_when_config_is_empty(): void
     {
@@ -39,6 +47,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * resolve()는 config 값이 null이면 'php'를 반환한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects php_binary_and_composer_paths_follow_configured_values
      */
     public function test_resolve_returns_php_when_config_is_null(): void
     {
@@ -49,6 +61,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * resolveComposer()는 config('process.composer_binary') 값을 반환한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects php_binary_and_composer_paths_follow_configured_values
      */
     public function test_resolve_composer_returns_config_value(): void
     {
@@ -59,6 +75,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * resolveComposer()는 config 값이 빈 문자열이면 빈 문자열을 반환한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects php_binary_and_composer_paths_follow_configured_values
      */
     public function test_resolve_composer_returns_empty_when_config_is_empty(): void
     {
@@ -86,6 +106,10 @@ class PhpBinaryResolverTest extends TestCase
      * `empty()` 로 판정하면 이 값이 가드를 통과해 `file_exists('   ')` 로 내려가고,
      * 운영자에게는 "파일이 존재하지 않습니다:    " 라는 엉뚱한 사유가 기록된다.
      * 빈 문자열 하나만 검사하면 두 판정 방식이 구분되지 않아 회귀가 즉시 재발한다.
+     *
+     * @scenario php_binary_probe=invalid_no_autodetect
+     *
+     * @effects validate_rejects_empty_or_nonexistent_binary_path
      */
     public function test_validate_treats_whitespace_only_path_as_empty(): void
     {
@@ -105,6 +129,10 @@ class PhpBinaryResolverTest extends TestCase
      *
      * 실제로 존재하지 않는 파일이므로 결과는 invalid 지만, 그 **사유**가 달라야 한다.
      * 사유가 "비어있다" 로 나오면 운영자는 자기가 입력한 값이 무시됐다고 읽는다.
+     *
+     * @scenario php_binary_probe=invalid_no_autodetect
+     *
+     * @effects validate_rejects_empty_or_nonexistent_binary_path
      */
     public function test_validate_does_not_treat_zero_path_as_empty(): void
     {
@@ -134,6 +162,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * validate()는 현재 시스템 PHP를 유효하게 판정한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects validate_reports_sapi_for_configured_binary
      */
     public function test_validate_accepts_current_php_binary(): void
     {
@@ -146,6 +178,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * validate()는 'php' (시스템 PATH)를 유효하게 판정한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects validate_reports_sapi_for_configured_binary
      */
     public function test_validate_accepts_system_php(): void
     {
@@ -157,6 +193,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * buildComposerCommand()는 composerBinary가 빈 문자열이면 'composer'를 반환한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects php_binary_and_composer_paths_follow_configured_values
      */
     public function test_build_composer_command_returns_composer_when_no_binary(): void
     {
@@ -167,6 +207,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * buildComposerCommand()는 .phar 파일이면 PHP 바이너리로 실행한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects php_binary_and_composer_paths_follow_configured_values
      */
     public function test_build_composer_command_uses_php_for_phar(): void
     {
@@ -178,6 +222,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * buildComposerCommand()는 일반 바이너리는 직접 실행한다.
+     *
+     * @scenario php_binary_probe=valid
+     *
+     * @effects php_binary_and_composer_paths_follow_configured_values
      */
     public function test_build_composer_command_uses_binary_directly(): void
     {
@@ -190,6 +238,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * autoDetect()는 최소 하나의 PHP 바이너리를 감지한다.
+     *
+     * @scenario php_binary_probe=invalid_with_autodetect
+     *
+     * @effects auto_detect_orders_cli_binaries_first
      */
     public function test_auto_detect_finds_at_least_one_php(): void
     {
@@ -202,6 +254,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * autoDetect() 결과의 모든 항목은 유효한 버전 형식을 가진다.
+     *
+     * @scenario php_binary_probe=invalid_with_autodetect
+     *
+     * @effects auto_detect_orders_cli_binaries_first
      */
     public function test_auto_detect_results_have_valid_version_format(): void
     {
@@ -265,6 +321,10 @@ class PhpBinaryResolverTest extends TestCase
      * 그러면 `$seenNonCli` 가 참이 되는 원소가 없어 단언이 한 번도 평가되지 않고,
      * 정렬을 지우거나 뒤집어도 통과한다(4차 라운드가 vacuous 로 판정한 지점).
      * 순수 함수로 분리한 정렬에 목록을 직접 주입해 그 사각을 닫는다.
+     *
+     * @scenario php_binary_probe=invalid_with_autodetect
+     *
+     * @effects auto_detect_orders_cli_binaries_first
      */
     public function test_sort_cli_first_moves_cli_ahead_and_preserves_order_within_groups(): void
     {
@@ -284,6 +344,10 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * SAPI 를 모르는 후보(구형 결과)는 비-CLI 로 취급하되 목록에서 사라지지 않는다.
+     *
+     * @scenario php_binary_probe=invalid_with_autodetect
+     *
+     * @effects auto_detect_orders_cli_binaries_first
      */
     public function test_sort_cli_first_keeps_unknown_sapi_candidates(): void
     {
@@ -294,5 +358,72 @@ class PhpBinaryResolverTest extends TestCase
 
         $this->assertSame(['/usr/bin/php', '/unknown/php'], array_column($sorted, 'path'));
         $this->assertCount(2, $sorted, '후보를 제거하지 않는다');
+    }
+
+    /**
+     * 서버 명령용 PHP 와 사이트가 도는 PHP 의 **계열**이 다르면 그 사실을 돌려준다.
+     *
+     * 현장(2026-09-12 · 공유 호스팅): 웹 8.2.31 / CLI 8.4.21. 종전 판정은 CLI 만 보고
+     * 「PHP 8.4.21 확인」이라고만 말해, 운영자가 확장 설치·코어 업데이트가 **사이트와 다른
+     * 런타임**에서 돈다는 사실을 알 길이 없었다.
+     *
+     * @effects php_probe_reports_when_the_web_runtime_is_a_different_line
+     */
+    public function test_web_sapi_version_on_a_different_line_is_reported(): void
+    {
+        $this->assertSame(
+            '8.2.31',
+            PhpBinaryResolver::differingWebSapiVersion('8.4.21', '8.2.31'),
+            '메이저·마이너가 갈리면 웹 버전을 알려야 한다'
+        );
+
+        $this->assertSame(
+            '9.0.0',
+            PhpBinaryResolver::differingWebSapiVersion('8.4.21', '9.0.0'),
+            '메이저가 갈리는 경우도 같다'
+        );
+    }
+
+    /**
+     * 패치 차이는 알리지 않는다 — 공유 호스팅에서 흔하고 동작을 가르지 않는다.
+     *
+     * 이 갈래가 없으면 거의 모든 사이트가 경고를 달고 살게 되어, 정작 계열이 갈린
+     * 사이트의 안내가 묻힌다.
+     *
+     * @effects php_probe_reports_when_the_web_runtime_is_a_different_line
+     */
+    public function test_same_line_web_sapi_version_is_not_reported(): void
+    {
+        $this->assertNull(
+            PhpBinaryResolver::differingWebSapiVersion('8.2.15', '8.2.31'),
+            '같은 계열의 패치 차이는 알리지 않는다'
+        );
+
+        $this->assertNull(
+            PhpBinaryResolver::differingWebSapiVersion('8.2.31', '8.2.31'),
+            '완전히 같으면 당연히 알리지 않는다'
+        );
+    }
+
+    /**
+     * 인수를 생략하면 이 프로세스의 버전을 쓴다 — 프로덕션 호출 경로가 그 형태다.
+     *
+     * @effects php_probe_reports_when_the_web_runtime_is_a_different_line
+     */
+    public function test_web_sapi_version_defaults_to_the_running_process(): void
+    {
+        $this->assertNull(
+            PhpBinaryResolver::differingWebSapiVersion(PHP_VERSION),
+            '자기 자신과는 계열이 같다'
+        );
+
+        $parts = explode('.', PHP_VERSION);
+        $otherLine = $parts[0].'.'.((int) $parts[1] + 1).'.0';
+
+        $this->assertSame(
+            PHP_VERSION,
+            PhpBinaryResolver::differingWebSapiVersion($otherLine),
+            '다른 계열을 주면 이 프로세스의 버전을 돌려준다'
+        );
     }
 }

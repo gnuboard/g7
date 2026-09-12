@@ -32,6 +32,9 @@ return [
     'static_cache_status_loaded' => '초기 화면 정적 파일 상태를 불러왔습니다.',
     'static_cache_republished' => '초기 화면 정적 파일을 다시 만들었습니다.',
     'static_cache_republish_failed' => '초기 화면 정적 파일을 다시 만들지 못했습니다. 사이트는 정상 동작합니다.',
+    'trusted_proxy_probe_no_headers' => '앞단 프록시가 감지되지 않아 이 값으로 달라지는 것이 없습니다. 프록시를 쓰지 않는 구성이라면 「신뢰하지 않음」이 올바른 값입니다.',
+    'trusted_proxy_probe_resolves' => '이 값이면 방문자 IP 가 프록시 너머의 실제 주소로 해석됩니다.',
+    'trusted_proxy_probe_unchanged' => '이 값으로도 방문자 IP 가 그대로입니다 — 목록에 앞단 프록시 주소가 빠져 있을 수 있습니다.',
 
     // 앱 키 관련 메시지
     'invalid_password' => '비밀번호가 일치하지 않습니다.',
@@ -63,6 +66,9 @@ return [
     // `message_key` 로 실어 보낸다 — 접두사 없는 키라 소비처가 이 네임스페이스를 붙인다:
     // `__('settings.'.$result['message_key'], $result['message_params'])`).
     'php_probe_ok' => 'PHP :version 확인 (최소 요구 :min_version)',
+    // 서버 명령용 PHP 와 사이트가 도는 PHP 의 계열이 다를 때 (공유 호스팅에서 흔하다).
+    // 막지 않고 사실만 알린다 — 설치·업데이트가 사이트와 다른 런타임에서 수행된다.
+    'php_probe_ok_web_version_differs' => 'PHP :version 확인 (최소 요구 :min_version). 다만 사이트는 PHP :web_version 으로 동작하고 있어 서버 명령은 다른 버전에서 실행됩니다.',
     'php_probe_version_low' => 'PHP :version 은 최소 요구 버전 :min_version 보다 낮습니다.',
     'php_probe_empty_path' => 'PHP 실행 파일 경로가 비어 있습니다.',
     'php_probe_file_missing' => 'PHP 실행 파일을 찾을 수 없습니다: :path',
@@ -383,13 +389,15 @@ return [
     | 신뢰 프록시 진단 (#124)
     |--------------------------------------------------------------------------
     |
-    | 값 편집은 .env 전용이다 — 화면에는 읽기 전용 진단만 노출한다.
+    | 값 편집은 환경설정 > 고급의 같은 카드에서 한다 (#609) — 무CLI 설치에는 `.env` 를
+    | 고칠 통로가 없어 진단만으로는 조치가 끝나지 않는다. `.env` 는 G7_ENV_PRIORITY 로
+    | 잠글 때만 우선한다.
     |
     */
 
     'trusted_proxy' => [
         'alert_title' => '신뢰 프록시가 설정되지 않았습니다',
-        'alert_message' => '프록시 헤더(:headers)를 받고 있으나 신뢰 프록시가 설정되지 않아, 모든 방문자가 같은 주소(:ip)로 기록되고 있습니다. .env 에 TRUSTED_PROXIES 를 지정하세요. 상세: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+        'alert_message' => '프록시 헤더(:headers)를 받고 있으나 신뢰 프록시가 설정되지 않아, 모든 방문자가 같은 주소(:ip)로 기록되고 있습니다. 환경설정 > 고급 > 신뢰 프록시에서 신뢰 범위를 지정하세요. 상세: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
     ],
 
 ];

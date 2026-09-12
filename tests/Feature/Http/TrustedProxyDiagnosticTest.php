@@ -184,11 +184,20 @@ class TrustedProxyDiagnosticTest extends TestCase
         $this->assertNotSame('', $alerts[0]['title']);
         $this->assertStringNotContainsString(':headers', $alerts[0]['message'], '치환 자리가 그대로 남아 있습니다.');
         $this->assertStringNotContainsString(':ip', $alerts[0]['message'], '치환 자리가 그대로 남아 있습니다.');
-        $this->assertStringContainsString('TRUSTED_PROXIES', $alerts[0]['message'], '원인만이 아니라 조치도 담아야 합니다.');
+        // 조치가 빠지면 운영자는 무엇이 잘못됐는지만 알고 무엇을 할지 모른다. 조치 문구는
+        // 무CLI 설치에서도 밟을 수 있는 경로여야 한다 — `.env` 를 고치라는 안내는 그 설치에
+        // 통로가 없어 조치가 아니다 (#609 로 화면 경로로 바꿨다).
+        $this->assertStringContainsString('신뢰 프록시', $alerts[0]['message'], '원인만이 아니라 조치도 담아야 합니다.');
+        $this->assertStringNotContainsString('.env', $alerts[0]['message'], '무CLI 설치가 밟을 수 없는 경로를 조치로 안내하고 있습니다.');
     }
 
     /**
      * 진단 엔드포인트는 값 편집 경로를 제공하지 않습니다 (읽기 전용 계약).
+     *
+     * 값 저장은 설정 저장 엔드포인트(`advanced.trusted_proxies`)가, 저장 전 확인은 별도
+     * 라우트(`settings/test-trusted-proxy`)가 맡는다 — 진단 URI 자체에 쓰기를 얹으면
+     * 「읽기만 하는 자리」라는 계약이 사라지고, 조회 권한만 가진 관리자에게 열린 이 자리가
+     * 쓰기 경로가 된다(조회는 `core.settings.read`, 저장은 `core.settings.update`).
      *
      * @effects diagnostic_endpoint_is_read_only
      */
@@ -206,7 +215,7 @@ class TrustedProxyDiagnosticTest extends TestCase
         $this->assertNotSame([], $names, '진단 엔드포인트가 등록되어 있어야 합니다.');
 
         foreach ($names as $methods) {
-            $this->assertStringNotContainsString('POST', $methods, '신뢰 프록시 값은 .env 전용입니다 — 쓰기 라우트를 두지 않습니다.');
+            $this->assertStringNotContainsString('POST', $methods, '진단 URI 는 조회 권한만으로 열리므로 쓰기 라우트를 얹지 않습니다.');
             $this->assertStringNotContainsString('PUT', $methods);
             $this->assertStringNotContainsString('PATCH', $methods);
             $this->assertStringNotContainsString('DELETE', $methods);

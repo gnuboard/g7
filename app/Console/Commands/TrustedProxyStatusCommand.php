@@ -76,7 +76,9 @@ class TrustedProxyStatusCommand extends Command
         $this->warn('• 신뢰 프록시가 설정되어 있지 않습니다.');
         $this->line('');
         $this->line('  프록시(AWS ALB, CloudFront, Cloudflare, nginx, ngrok) 뒤에서 구동 중이라면');
-        $this->line('  .env 에 TRUSTED_PROXIES 를 지정하세요. 미설정 시 접속 주소·방문자 IP 가');
+        $this->line('  환경설정 > 고급 > 신뢰 프록시에서 신뢰 범위를 지정하세요(저장 전 검사 제공).');
+        $this->line('  화면에 들어갈 수 없는 상태라면 .env 의 TRUSTED_PROXIES 로도 지정할 수 있습니다.');
+        $this->line('  미설정 시 접속 주소·방문자 IP 가');
         $this->line('  프록시 기준으로 인식되어 화면 표시·IP 기록·결제 통보 수신이 어긋납니다.');
         $this->line('  프록시를 쓰지 않는 직접 노출 구성이라면 미설정이 정상입니다.');
         $this->line('  상세: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md');

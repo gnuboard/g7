@@ -266,6 +266,7 @@ HTTP/1.1 200
 | advanced.sql_query_log | body | boolean | 아니오 | — | SQL 쿼리 로그 기록 여부 |
 | advanced.outbound_proxy | body | string | 아니오 | max 500 | 외부 HTTP 호출이 경유할 프록시 주소 (예: `socks5h://127.0.0.1:1080`). 빈 값이면 사용하지 않으며, 디버그 모드가 꺼져 있으면 저장되어도 적용되지 않는다 |
 | advanced.outbound_proxy_bypass | body | array | 아니오 | — | 프록시를 경유하지 않을 호스트 목록 |
+| advanced.trusted_proxies | body | array | 아니오 | 최대 50개 | 신뢰할 리버스 프록시 목록. 빈 배열은 「아무 프록시도 신뢰하지 않음」이라는 **명시적 선택**이며, 키를 보내지 않으면 기존 값이 유지된다 (`.env` 의 `TRUSTED_PROXIES` 권위가 살아 있는 상태) |
 | advanced.core_update_github_url | body | string | 아니오 | max 500 | 코어 업데이트를 확인할 GitHub 저장소 URL |
 | advanced.core_update_github_token | body | string | 아니오 | max 500 | 프라이빗 저장소의 코어/확장 업데이트에 사용할 GitHub 액세스 토큰 (공개 저장소는 비워둘 수 있음) |
 | advanced.geoip_enabled | body | boolean | 아니오 | — | IP 기반 타임존 감지(GeoIP) 사용 여부 |
@@ -312,6 +313,7 @@ HTTP/1.1 200
 | identity.challenge_ttl_minutes | body | integer | 아니오 | min 1, max 1440 | 발급된 인증 코드/링크(challenge)의 유효시간 (분) |
 | identity.max_attempts | body | integer | 아니오 | min 1, max 20 | challenge 최대 시도 횟수 (연속 실패 시 잠금 — 재전송 필요) |
 | advanced.outbound_proxy_bypass.* | body | string | 아니오 | max 255 | 프록시 예외 호스트 |
+| advanced.trusted_proxies.* | body | string | 아니오 | max 60 | 신뢰할 프록시 주소. IPv4/IPv6 또는 CIDR, 혹은 직전 호출 IP 만 신뢰하는 `*` |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.save_validation_rules`, `core.search.engine_drivers`).
 
@@ -1414,7 +1416,9 @@ HTTP/1.1 200
 
 **설명**
 
-리버스 프록시 뒤에서 구동 중인지, 그리고 신뢰할 프록시가 지정되어 있는지를 진단합니다. **읽기 전용이며 대응하는 쓰기 엔드포인트가 없습니다** — 값은 `.env` 의 `TRUSTED_PROXIES` 로만 변경합니다.
+리버스 프록시 뒤에서 구동 중인지, 그리고 신뢰할 프록시가 지정되어 있는지를 진단합니다. 이 엔드포인트는 **읽기 전용**입니다 — 값 저장은 설정 저장 엔드포인트의 `advanced.trusted_proxies` 가 맡고, 저장 전 확인은 [POST /api/admin/settings/test-trusted-proxy](#post-apiadminsettingstest-trusted-proxy) 가 맡습니다.
+
+`configured_proxies` 는 **실제로 적용 중인 값**입니다. 저장값이 있으면 그것이, 없으면 `.env` 의 `TRUSTED_PROXIES` 가 그 자리에 옵니다 — 저장한 적 없는 설치에서 `.env` 설정이 조용히 사문화되지 않도록 한 것입니다.
 
 판정식은 "HTTPS 인식 실패" 가 아니라 `forwarded_headers 가 비어 있지 않음 AND trusted_configured 가 거짓` 입니다. HTTP 전용 사이트가 프록시 뒤에 있는 구성에서는 혼합 콘텐츠 차단이 없어 화면이 정상으로 보이지만, 방문자 IP 기록·통보 IP 화이트리스트·로그인 시도 제한은 그대로 어긋나기 때문입니다.
 
@@ -2218,6 +2222,94 @@ Content-Type: application/json
 검사 대상은 **이번 요청이 제출한 값**입니다. 저장된 설정이나 전역 프록시 옵션을 보지 않으므로, 저장 전에도 그대로 확인할 수 있고 이 호출이 다른 요청의 경로를 바꾸지도 않습니다.
 
 조회 대상은 `config('core.outbound_proxy.egress_lookup_urls')` 가 소유하며 순차 시도합니다. 목록을 비우면 도달성만 확인하고 IP 는 보고하지 않습니다(폐쇄망 대응).
+
+
+### POST /api/admin/settings/test-trusted-proxy
+<!-- @generated:start:api.admin.settings.test-trusted-proxy -->
+- **라우트명**: `api.admin.settings.test-trusted-proxy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@testTrustedProxy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| trusted_proxies | body | array | 예 (키 자체는 필수) | 최대 50개 | 검사할 신뢰 프록시 후보 목록. 빈 배열은 「아무 프록시도 신뢰하지 않음」이라는 정상 선택이므로 `required` 가 아니라 `present` 다 |
+| trusted_proxies.* | body | string | 아니오 | max 60 | IPv4/IPv6 또는 CIDR, 혹은 직전 호출 IP 만 신뢰하는 `*` |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_trusted_proxy_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/test-trusted-proxy HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "trusted_proxies": [
+        "*"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| candidate | array | `["*"]` | 정규화된 후보 목록 (빈 토큰·중복 제거, `**` → `*`) |
+| mode | string | `nearest` | 후보가 해당하는 화면 모드 — `none` · `nearest` · `list` |
+| forwarded_headers | array | `["X-Forwarded-For","X-Forwarded-Proto"]` | 이번 요청이 실제로 수신 중인 전달 헤더 이름 |
+| remote_addr | string\|null | `10.0.0.5` | 직전 호출 IP (`REMOTE_ADDR`) |
+| current.client_ip | string\|null | `10.0.0.5` | **현재 설정**에서 방문자 IP 로 해석되는 값 |
+| current.is_secure | boolean | `false` | 현재 설정에서의 HTTPS 인식 여부 |
+| result.client_ip | string\|null | `203.0.113.9` | **후보값**을 적용했을 때 방문자 IP 로 해석되는 값 |
+| result.is_secure | boolean | `true` | 후보값 적용 시 HTTPS 인식 여부 |
+| result.trusted | array | `["10.0.0.5"]` | 후보값이 실제로 신뢰하게 되는 앞단 주소 목록 (`*` 는 직전 호출 IP 하나로 풀린다) |
+| changed | boolean | `true` | 방문자 IP 또는 HTTPS 인식이 달라지는지 여부 |
+| verdict | string | `resolves` | 판정 — `no_headers`(앞단 미감지) · `resolves`(체인에서 해석됨) · `unchanged`(그대로) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "이 값이면 방문자 IP 가 프록시 너머의 실제 주소로 해석됩니다.",
+    "data": {
+        "candidate": ["*"],
+        "mode": "nearest",
+        "forwarded_headers": ["X-Forwarded-For", "X-Forwarded-Proto"],
+        "remote_addr": "10.0.0.5",
+        "current": { "client_ip": "10.0.0.5", "is_secure": false },
+        "result": { "client_ip": "203.0.113.9", "is_secure": true, "trusted": ["10.0.0.5"] },
+        "changed": true,
+        "verdict": "resolves"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | `trusted_proxies` 키가 없거나, 항목이 IP·CIDR·`*` 가 아닌 경우 |
+
+<!-- @generated:end -->
+
+
+**설명**
+
+저장하지 않고, **이번 요청**에 후보값을 적용했다면 방문자 IP 와 HTTPS 인식이 어떻게 해석될지 돌려줍니다. 이 설정은 틀려도 오류를 내지 않고 방문자 IP 만 조용히 어긋나므로 저장 후에 알아차릴 단서가 없고, HTTPS 종단 구성에서 잘못 저장하면 관리자 화면 자체에 들어가지 못해 되돌릴 통로가 사라집니다. 그 사고를 막는 자리입니다.
+
+판정은 프레임워크의 해석기(`Illuminate\Http\Middleware\TrustProxies`)를 그대로 돌려 얻습니다 — 같은 규칙을 여기서 다시 구현하면 검사 결과와 실제 적용이 갈리고, 그 어긋남은 이 기능이 막으려는 결함과 같은 모양이 됩니다.
+
+검사는 전역 신뢰 상태(`Request::setTrustedProxies()` 는 정적입니다)와 `trustedproxy.proxies` 를 잠시 바꿨다가 반드시 되돌립니다. 호출 전후의 런타임 상태는 같습니다.
+
+`verdict` 가 `unchanged` 면 후보 목록에 앞단 프록시 주소가 빠져 있을 수 있습니다. `no_headers` 는 앞단이 아예 감지되지 않은 상태로, 프록시를 쓰지 않는 직접 노출 구성에서는 정상입니다.
 
 
 ### GET /api/admin/settings/{key}

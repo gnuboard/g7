@@ -32,6 +32,9 @@ return [
     'static_cache_status_loaded' => 'Startup file status loaded.',
     'static_cache_republished' => 'Startup files were rebuilt.',
     'static_cache_republish_failed' => 'Startup files could not be rebuilt. The site keeps working normally.',
+    'trusted_proxy_probe_no_headers' => 'No upstream proxy was detected, so this value changes nothing. If this site is not behind a proxy, "Trust none" is the correct value.',
+    'trusted_proxy_probe_resolves' => 'With this value the visitor IP resolves to the real address beyond the proxy.',
+    'trusted_proxy_probe_unchanged' => 'The visitor IP is unchanged with this value — the upstream proxy address may be missing from the list.',
 
     // App key related messages
     'invalid_password' => 'Password does not match.',
@@ -63,6 +66,9 @@ return [
     // these as `message_key` - the keys carry no namespace, so the consumer prepends one:
     // `__('settings.'.$result['message_key'], $result['message_params'])`).
     'php_probe_ok' => 'PHP :version confirmed (minimum :min_version).',
+    // The CLI PHP used for server commands is on a different line than the site's own PHP
+    // (common on shared hosting). Not a blocker — it only states the fact.
+    'php_probe_ok_web_version_differs' => 'PHP :version verified (minimum :min_version). The site itself runs on PHP :web_version, so server commands execute on a different version.',
     'php_probe_version_low' => 'PHP :version is below the required minimum :min_version.',
     'php_probe_empty_path' => 'The PHP executable path is empty.',
     'php_probe_file_missing' => 'The PHP executable was not found: :path',
@@ -389,7 +395,7 @@ return [
 
     'trusted_proxy' => [
         'alert_title' => 'Trusted proxies are not configured',
-        'alert_message' => 'Proxy headers (:headers) are being received but no trusted proxy is configured, so every visitor is recorded with the same address (:ip). Set TRUSTED_PROXIES in .env. Details: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+        'alert_message' => 'Proxy headers (:headers) are being received but no trusted proxy is configured, so every visitor is recorded with the same address (:ip). Set the trust scope in Settings > Advanced > Trusted proxy. Details: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
     ],
 
 ];

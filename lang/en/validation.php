@@ -931,6 +931,11 @@ return [
         'outbound_proxy_bypass_array' => 'The proxy bypass list must be an array.',
         'outbound_proxy_bypass_item_string' => 'Each proxy bypass entry must be a string.',
         'outbound_proxy_bypass_item_max' => 'Each proxy bypass entry may not be greater than :max characters.',
+        'trusted_proxies_present' => 'The trusted proxy list is missing from the request.',
+        'trusted_proxies_array' => 'The trusted proxy list must be an array.',
+        'trusted_proxies_max' => 'The trusted proxy list may not have more than :max entries.',
+        'trusted_proxy_address_invalid' => 'The trusted proxy address format is invalid. Enter an IP address or CIDR (e.g. 10.0.0.1, 10.0.0.0/24).',
+        'trusted_proxy_address_max' => 'Each trusted proxy address may not be greater than :max characters.',
 
         // List limits
         'pagination_result_cap_integer' => 'The total count cap must be a number.',
@@ -1335,6 +1340,7 @@ return [
         'sql_query_log' => 'SQL query log',
         'outbound_proxy' => 'outbound proxy address',
         'outbound_proxy_bypass' => 'proxy bypass list',
+        'trusted_proxies' => 'trusted proxy list',
         'core_update_github_url' => 'core update GitHub URL',
         'core_update_github_token' => 'core update GitHub token',
         'geoip_enabled' => 'GeoIP',
