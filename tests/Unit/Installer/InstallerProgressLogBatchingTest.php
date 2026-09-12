@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * 단계별 실행의 커맨드 원문이 **한 묶음**으로 기록·전달되는지 (D2 L6).
  *
- * 배경 (PO 현장 제보 2026-09-11 · 「게시판 모듈 설치 단계에서 브라우저 무응답」):
+ * 배경 (현장 제보 2026-09-11 · 「게시판 모듈 설치 단계에서 브라우저 무응답」):
  *   진행 모드마다 로그가 파일에 닿는 단위가 달랐다.
  *     · 폴링(NullEmitter)  — 이미 `addLogBatch` 로 묶어 쓴다
  *     · SSE(SseEmitter)    — 줄 단위. 그 모드의 존재 이유가 실시간 표시라 그대로 둔다
@@ -113,6 +113,7 @@ class InstallerProgressLogBatchingTest extends TestCase
             static fn (string $line): bool => trim($line) !== ''
         ));
     }
+
     /**
      * @scenario progress_log_volume=large, installation_mode=stepwise
      *
@@ -153,6 +154,7 @@ class InstallerProgressLogBatchingTest extends TestCase
         // 파일 쓰기도 한 번이지만, 남는 줄 수는 그대로다.
         $this->assertCount(250, $this->logLines(), '묶어 쓰면서 줄이 사라졌다 — 사후 분석 근거가 없어진다');
     }
+
     /**
      * @scenario progress_log_volume=small, installation_mode=stepwise
      *

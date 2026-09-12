@@ -1194,8 +1194,17 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     // Finalize endpoint guard (round 11 #A1)
     'error_finalize_method_not_allowed' => 'The installation cannot be finalized through this kind of request.',
     'error_finalize_not_completed' => 'The installation has not finished yet, so it cannot be finalized.',
-    // Another window is already installing (round 11 #A2 / #A4)
-    'error_installation_already_running' => 'An installation is already running in another window. Please continue there.',
+    // The installation lock is still within its budget (round 11 #A2 / #A4, wording replaced by D7)
+    //
+    // The old wording asserted "already running in another window", which is only true while the
+    // holder is alive. A fatal exit (disk full, OOM, signal) cannot record the release, so a dead
+    // holder keeps the lock. In the field (2026-09-12) that budget was 600s, so the screen pointed
+    // at a window that no longer existed for ten minutes and the only way out was "Start over".
+    'error_installation_lock_held' => 'A previous run is still marked as in progress. If another window is installing, it continues there. If that window was closed or stopped by an error, this will resume automatically in :seconds seconds.',
+    // Countdown while waiting (D7) — actually counts down the ":seconds" the notice promised
+    'installation_lock_wait_countdown' => 'Resuming automatically in :seconds seconds.',
+    // The wait is over and the screen picks it up again (D7)
+    'installation_lock_wait_resuming' => 'Resuming…',
     // Response could not be built (round 11 #A9) — an empty body makes the screen report a network error instead
     'error_response_encoding_failed' => 'The server could not build a response. Please refresh the installer page.',
     // The task finished but its completion record could not be saved (round 11 #A5)

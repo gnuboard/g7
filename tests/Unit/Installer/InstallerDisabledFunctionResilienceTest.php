@@ -160,6 +160,8 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 종전에는 `glob` 차단 시 빈 목록이었다 — 그러면 「같은 내용 1회」와 「상한 5」 두
      * 가드가 동시에 증발해 폴링마다 마스킹 전 상태 사본이 무제한 증식한다. 형제
      * (`installerListExposureProbeFiles`)와 같은 `scandir` 폴백을 요구한다.
+     *
+     * @effects installer_listing_guards_survive_blocked_glob
      */
     public function test_corrupt_state_copies_are_listed_when_glob_is_blocked(): void
     {
@@ -189,6 +191,8 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 남아 운영자가 잔여물이 없다고 읽는다. 그런데 그 두 갈래 중 **차단 쪽을 재는 검사가
      * 없었다**: `glob` 은 `disable_functions` 로만 막히고, 그 설정은 돌고 있는 프로세스
      * 안에서 만들 수 없다. 그래서 형제 하네스와 같은 방식으로 별도 프로세스에서 잰다.
+     *
+     * @effects installer_listing_guards_survive_blocked_glob
      */
     public function test_cleanup_reports_it_could_not_sweep_when_glob_is_blocked(): void
     {
@@ -319,6 +323,8 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      *
      * 행위 재현이 불가한 갈래(실 디스크에서 false 를 강제할 수 없음)라 소스 계약으로
      * 고정한다 — false 갈래의 반환 배열이 차단 갈래와 같은 3상태 값을 갖는지.
+     *
+     * @effects installer_disk_space_check_reports_unknown_instead_of_blocking
      */
     public function test_disk_probe_failure_branch_matches_blocked_branch(): void
     {
@@ -355,6 +361,11 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
         $this->assertTrue($decoded['session'] ?? false, 'ini_set 이 막혀도 세션 자체는 떠야 한다');
     }
 
+    /**
+     * 「알려진 무가드 지점 없음」이 **손으로 비운 선언**이 아님을 증명한다 (7차 G3 D-13).
+     *
+     * @effects installer_unguarded_call_ledger_is_derived_not_hand_emptied
+     */
     public function test_pending_unguarded_call_sites_still_fatal_and_stay_on_the_ledger(): void
     {
         if (self::PENDING_UNGUARDED === []) {
@@ -443,6 +454,34 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
 
         if (! is_file($path)) {
             return [];
+        }
+
+        // 이 자리의 룰 파일은 **공통 원본으로 위임하는 shim** 일 수 있다. 그 판본에는
+        // `GUARDED_FUNCTIONS` 상수가 없으므로 도출이 언제나 0 이 되고, 아래 비교가 공허해져
+        // 이 검사가 red 로 굳는다 — 하네스 진입점이 생성물로 바뀐 뒤 실제로 그랬다.
+        //
+        // 두 번째 경로를 적어 두는 대신 **위임을 따라간다.** 진입점이 가리키는 곳을 읽으므로
+        // 원본이 어디로 옮겨져도 이 검사가 따라가고, 테스트가 하네스 배치를 알 필요도 없다.
+        for ($hop = 0; $hop < 3; $hop++) {
+            $raw = (string) file_get_contents($path);
+
+            // shim 은 작다(1 KB 미만). 룰 원본은 수십 KB 라 크기로 가른다 — 원본 안의
+            // `require('node:fs')` 같은 호출을 위임으로 오인하지 않기 위한 구분이다.
+            if (strlen($raw) > 4096) {
+                break;
+            }
+
+            if (! preg_match('/require(?:\.resolve)?\(\s*"([^"]+)"\s*\)/', $raw, $m)) {
+                break;
+            }
+
+            $target = realpath(dirname($path).'/'.$m[1]);
+
+            if ($target === false || ! is_file($target)) {
+                break;
+            }
+
+            $path = $target;
         }
 
         // 룰은 JS 다 — 주석 속 `'name'` 이 목록에 섞이지 않도록 JS 규칙으로 주석을 지운다.

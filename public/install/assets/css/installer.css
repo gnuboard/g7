@@ -1827,6 +1827,16 @@ hr {
   color: var(--text-secondary);
 }
 
+/* 점유 해제까지 남은 시간 (D7) — 실패 카드 본문 바로 아래, 형제(`.result-message`)와
+   같은 층이라 같은 토큰을 쓴다. 새 색을 들이지 않는 것이 목적이다: 이 줄은 초마다 바뀌므로
+   눈이 먼저 가는데, 강조 색을 주면 정작 실패 사유보다 세어 주는 숫자가 앞선다. */
+.lock-wait-countdown {
+  margin: var(--spacing-sm) 0 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
 /* 커맨드 원문 한 줄 — 종전에는 `<pre>` 의 textContent 에 문자열로 누적했다. 그 방식은
    줄마다 상자 전체를 다시 만들어 줄 수의 제곱에 비례하는 복사가 되므로(실측: 한 설치에
    643,167 자) 줄을 각자의 요소로 둔다. `<pre>` 의 `white-space: pre-wrap` 을 그대로

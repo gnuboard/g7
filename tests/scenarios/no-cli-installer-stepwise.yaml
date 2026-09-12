@@ -362,6 +362,17 @@ effects:
   - installer_state_replace_survives_transient_handle_contention
   # D6 — 중단이 태스크 경계를 기다리는 이유를 화면이 말한다(대기 자체는 13차 안전 설계).
   - abort_explains_why_it_waits_for_the_running_task
+  # D7 현장 제보 등재 — 치명 종료(디스크 풀)로 죽은 워커의 점유가 남았을 때, 그 사실이
+  # 드러나고(서버) 화면이 존재하지 않는 창을 가리키는 대신 남은 시간을 세어 이어간다(화면).
+  - installer_worker_lock_release_reports_whether_it_persisted
+  - lock_wait_counts_down_and_resumes_once
+  # D7 전수 점검에서 나온 형제 — 파손 상태 사본을 남기지 못한 것도 기록된다. 그 실패의
+  # 가장 흔한 원인(디스크 풀)에서는 이 한 줄이 파손을 만났다는 유일한 근거가 된다.
+  - installer_corrupt_state_copy_failure_is_recorded
+  # D9 — 차단 환경에서도 나열 기반 가드가 살아 있다(사본 상한·정리 스윕), 그리고 무가드
+  # 호출 대장이 「손으로 비운 목록」이 아니라 룰에서 도출된 것임을 검사가 증명한다.
+  - installer_listing_guards_survive_blocked_glob
+  - installer_unguarded_call_ledger_is_derived_not_hand_emptied
 
 test_files:
   # D2 현장 제보 — 진행 기록 렌더(화면)·배치 기록(서버)·파일 회전. 세 파일이 한 증상의
@@ -371,6 +382,10 @@ test_files:
   - tests/Unit/Installer/InstallerProgressLogRotationTest.php
   # 상태 저장의 원자 교체 — 재시도로 없앨 수 있는 실패와 없는 실패를 가른다 (D4).
   - tests/Unit/Installer/InstallerStateAtomicReplaceTest.php
+  # 점유 해제의 성공 여부와 남은 시간 (D7) — 서버 절반.
+  - tests/Unit/Installer/InstallerWorkerLockReleaseTest.php
+  # 그 남은 시간을 세어 한 번 이어가는 화면 절반 (D7).
+  - resources/js/installer/__tests__/installer-lock-wait.test.ts
   # 8차 라운드 등재 — `@effects` 마커를 달고도 test_files 에 없어 지워도 조용하던 파일.
   - tests/Unit/Support/PhpProbeMessageKeyDictionaryTest.php
   - tests/Feature/Api/Admin/SettingsControllerTest.php

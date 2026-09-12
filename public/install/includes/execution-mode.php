@@ -675,12 +675,33 @@ if (! function_exists('installerStartRejection')) {
      * @param  bool  $workerAlive  활성 워커 생존 여부
      * @param  string  $presented  요청이 제시한 토큰
      * @param  string  $expected  runtime.php 가 보관한 토큰
-     * @return array{message_key: string, status: int}|null 거부 사유 (통과면 null)
+     * @param  int  $lockRemaining  점유가 자동으로 풀리기까지 남은 초 (0이면 모름 — 종전 동작)
+     * @return array{message_key: string, status: int, retry_after?: int}|null 거부 사유 (통과면 null)
      */
-    function installerStartRejection(array $state, bool $workerAlive, string $presented, string $expected): ?array
-    {
+    function installerStartRejection(
+        array $state,
+        bool $workerAlive,
+        string $presented,
+        string $expected,
+        int $lockRemaining = 0
+    ): ?array {
         if ($workerAlive) {
-            return ['message_key' => 'error_installation_already_running', 'status' => 409];
+            // 「다른 창에서 진행 중」이라고 **단정하지 않는다** (D7 · 현장 2026-09-12).
+            //
+            // 점유가 살아 있다는 것과 그 창이 존재한다는 것은 다른 사실이다. 치명 종료
+            // (디스크 풀·OOM·시그널)는 해제 기록을 남기지 못하므로, 죽은 워커의 점유가
+            // 예산이 끝날 때까지 남는다 — 현장에서는 그 예산이 600초였고, 그동안 화면은
+            // 존재하지 않는 창을 가리키며 운영자에게 「그 창에서 이어서 하라」고 했다.
+            // 유일한 출구는 [처음부터 다시](전부 폐기)였다.
+            //
+            // 우리가 아는 것은 「아직 예산 안이다」와 「언제 풀린다」뿐이므로 그것만 말한다.
+            // 남은 시간을 함께 주면 화면이 기다렸다가 스스로 이어갈 수 있다.
+            $rejection = ['message_key' => 'error_installation_lock_held', 'status' => 409];
+            if ($lockRemaining > 0) {
+                $rejection['retry_after'] = $lockRemaining;
+            }
+
+            return $rejection;
         }
 
         if (! installerRequiresStepwiseToken($state)) {

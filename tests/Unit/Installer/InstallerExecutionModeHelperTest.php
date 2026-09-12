@@ -49,6 +49,11 @@ class InstallerExecutionModeHelperTest extends TestCase
         }
     }
 
+    /**
+     * @scenario execution_mode_choice=invalid
+     *
+     * @effects installer_execution_mode_explicit_choice_skips_detection
+     */
     public function test_normalize_accepts_known_values_and_falls_back_to_auto(): void
     {
         $this->assertSame('auto', installerNormalizeExecutionMode('auto'));
@@ -61,6 +66,10 @@ class InstallerExecutionModeHelperTest extends TestCase
 
     /**
      * 명시 선택은 감지를 건너뛴다 — source 가 explicit 이고 detection 이 null 이다.
+     *
+     * @scenario execution_mode_choice=subprocess
+     *
+     * @effects installer_execution_mode_explicit_choice_skips_detection
      */
     public function test_explicit_choice_skips_detection(): void
     {
@@ -76,6 +85,10 @@ class InstallerExecutionModeHelperTest extends TestCase
 
     /**
      * auto 는 감지 결과를 따른다 — 일반 개발 환경(함수 가용 + php 실행 가능)은 subprocess.
+     *
+     * @scenario execution_mode_choice=auto
+     *
+     * @effects installer_execution_mode_explicit_choice_skips_detection
      */
     public function test_auto_follows_detection(): void
     {
@@ -93,6 +106,10 @@ class InstallerExecutionModeHelperTest extends TestCase
 
     /**
      * A-4 — inprocess 가 유효하면 Vendor 설치 방식은 bundled 로 고정된다 (auto 포함).
+     *
+     * @scenario vendor_mode_choice=auto
+     *
+     * @effects installer_execution_mode_inprocess_forces_bundled_vendor
      */
     public function test_inprocess_forces_bundled_vendor_mode(): void
     {
@@ -103,6 +120,10 @@ class InstallerExecutionModeHelperTest extends TestCase
 
     /**
      * subprocess 에서는 운영자 선택을 그대로 존중한다 (기본값 불변 — 현행과 동일).
+     *
+     * @scenario vendor_mode_choice=composer
+     *
+     * @effects installer_execution_mode_inprocess_forces_bundled_vendor
      */
     public function test_subprocess_keeps_vendor_mode_choice(): void
     {
@@ -114,6 +135,10 @@ class InstallerExecutionModeHelperTest extends TestCase
 
     /**
      * R1 — 설치 시작 시 state 에 박힌 확정값이 있으면 재판정하지 않는다.
+     *
+     * @scenario execution_mode_resolved=subprocess
+     *
+     * @effects installer_execution_mode_resolved_state_wins_over_redetection
      */
     public function test_resolved_state_wins_over_redetection(): void
     {
@@ -125,6 +150,11 @@ class InstallerExecutionModeHelperTest extends TestCase
         $this->assertSame(ExecutionEnvironment::MODE_INPROCESS, installerEffectiveExecutionMode($state));
     }
 
+    /**
+     * @scenario execution_mode_resolved=absent
+     *
+     * @effects installer_execution_mode_resolved_state_wins_over_redetection
+     */
     public function test_effective_mode_falls_back_to_config_when_not_resolved(): void
     {
         $state = ['config' => ['execution_mode' => 'inprocess']];
@@ -132,6 +162,11 @@ class InstallerExecutionModeHelperTest extends TestCase
         $this->assertSame(ExecutionEnvironment::MODE_INPROCESS, installerEffectiveExecutionMode($state));
     }
 
+    /**
+     * @scenario execution_mode_choice=auto
+     *
+     * @effects installer_execution_mode_explicit_choice_skips_detection
+     */
     public function test_reasons_describe_blocked_functions_or_probe_failure(): void
     {
         // lang() 은 번역이 주입돼 있을 때만 치환한다 — 스텁/실제 구현 모두 같은 계약
@@ -167,6 +202,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * (태스크 실행)에야 드러났다. 판정은 순수 함수라 환경과 무관하게 고정할 수 있다.
      *
      * `auto` 는 감지가 정하므로 성립하지 않는 값이 될 수 없다 — 절대 거부되지 않는다.
+     *
+     * @scenario execution_mode_choice=subprocess
+     *
+     * @effects installer_execution_mode_explicit_choice_skips_detection
      */
     public function test_explicit_execution_mode_is_rejected_when_the_environment_cannot_run_it(): void
     {
@@ -200,6 +239,10 @@ class InstallerExecutionModeHelperTest extends TestCase
 
     /**
      * 거부 사유는 두 로케일에 정의돼 있어야 한다 — 없으면 화면에 키 문자열이 그대로 나간다.
+     *
+     * @scenario execution_mode_choice=inprocess
+     *
+     * @effects installer_execution_mode_explicit_choice_skips_detection
      */
     public function test_execution_mode_rejection_keys_are_defined_in_every_locale(): void
     {
@@ -221,6 +264,10 @@ class InstallerExecutionModeHelperTest extends TestCase
 
     /**
      * D35 — 설치 시작 시 확정하는 PHP 바이너리: 운영자 명시 > 자동 탐색 결과 > 'php'.
+     *
+     * @scenario execution_mode_choice=subprocess
+     *
+     * @effects installer_resolved_php_binary_prefers_explicit_then_detected
      */
     public function test_resolved_php_binary_prefers_explicit_then_detected(): void
     {
@@ -239,6 +286,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * run-task.php 는 인스톨러에서 Artisan 커맨드를 실행하는 유일한 창구이고 이 판정이
      * 그 인증 전부다. 「가드 호출이 지워지지 않았다」를 보는 소스 대조로는 `hash_equals`
      * 를 `==` 로 바꾸거나 비교를 뒤집는 회귀를 잡지 못한다 — 판정 함수를 직접 부른다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_token_rejection_separates_missing_from_mismatch
      */
     public function test_stepwise_token_judgment_accepts_only_the_exact_issued_token(): void
     {
@@ -271,6 +322,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      *
      * 한쪽만 고치면 그 입구가 우회로가 된다. 소스 문자열 검사로는 판정 로직이 뒤집혀도
      * 통과하므로 판정 함수 자체를 부른다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_progress_mode_guards_are_symmetric
      */
     public function test_progress_mode_guards_are_symmetric_between_two_entry_points(): void
     {
@@ -302,6 +357,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * 정상이고, 그 구간은 러너를 거치지 않아 시간 예산이 올라가지도 않는다 — 조합을 허용하면
      * 의존성이 반쯤 설치된 채 요청이 죽는다. 화면이 비활성으로 막지만 저장된 값·직접 요청이
      * 그대로 들어올 수 있으므로 판정은 서버가 다시 적용한다 (R9).
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_stepwise_blocked_when_composer_can_run
      */
     public function test_stepwise_is_blocked_when_composer_can_run(): void
     {
@@ -345,6 +404,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * 스위트가 초록이고, 결과는 inprocess 설치가 한 요청에 전 태스크를 연속 실행하는 것
      * (= A-2 가 피하려던 컨테이너 오염). SSE 워커 쪽 2차 방어도 「stepwise 인가」를 보므로
      * 함께 발화하지 않는다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_installation_mode_forced_to_stepwise_under_inprocess
      */
     public function test_installation_mode_is_forced_to_stepwise_under_inprocess(): void
     {
@@ -376,6 +439,10 @@ class InstallerExecutionModeHelperTest extends TestCase
     /**
      * run-task 는 running 과 completed 만 받는다 — completed 는 complete_flag 직후
      * config_cache 재개용이라 열려 있어야 한다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_progress_mode_guards_are_symmetric
      */
     public function test_stepwise_endpoint_accepts_only_running_and_completed(): void
     {
@@ -405,6 +472,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * 이 판정이 엔드포인트 안에 있던 동안은 어떤 단위·픽스처·소스 대조도 없었다
      * (`detect-execution-mode` 액션 전체가 검사 0). 되돌림 사실을 버리면 위쪽 입력 상자의
      * 빨강과 아래 배지의 파랑이 한 화면에서 서로를 부정한다.
+     *
+     * @scenario execution_mode_choice=auto
+     *
+     * @effects installer_resolved_php_binary_prefers_explicit_then_detected
      */
     public function test_detection_php_binary_reports_when_it_falls_back_to_default(): void
     {
@@ -431,6 +502,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * `outcome` 이 없으면 클라이언트(StepwiseMonitor)는 「알 수 없는 응답」 분기로 떨어지고,
      * 같이 실린 예외 원문을 실패 화면 **본문**으로 그린다 — 8차가 HTTP 상태 표기를 본문에서
      * 진단 상세로 내린 규약(§12.0 W3)이 이 봉투에는 적용되지 않았다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_progress_mode_guards_are_symmetric
      */
     public function test_stepwise_failure_payload_keeps_the_response_contract(): void
     {
@@ -451,6 +526,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * 초록이었고, 그 상태의 결과는 운영자 화면에 `:status` 가 원문으로 나가는 것이다
      * (`error_stepwise_not_running` 은 자리표시자를 가진 키다). 7차 #1·8차 #16 이 두 번 닫은
      * 결함군의 세 번째 재현 통로였다 (12차 M-2).
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_progress_mode_guards_are_symmetric
      */
     public function test_endpoint_rejection_carries_message_params(): void
     {
@@ -481,6 +560,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * 판정 함수(installerStepwiseTokenAccepted)는 행위 테스트가 덮지만, 그 함수를 **부를지
      * 말지** 정하는 조건은 종전에 엔드포인트 안의 if 였다 — 뒤집어도 red 가 되지 않았고,
      * 그 상태의 결과는 stepwise 설치의 [건너뛰고 계속] 이 무인증이 되는 것이다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_token_rejection_separates_missing_from_mismatch
      */
     public function test_skip_requires_the_stepwise_token_only_in_stepwise_mode(): void
     {
@@ -496,6 +579,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * 「보관본이 없다」와 「제시한 값이 틀렸다」는 조치가 정반대다 — 후자는 새로고침으로
      * 복구되지만 전자(runtime.php 소실·판독 실패)는 몇 번을 새로고침해도 같은 403 이다.
      * 종전에는 서버가 그 차이를 알면서 같은 문구로 버렸다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_token_rejection_separates_missing_from_mismatch
      */
     public function test_token_rejection_separates_missing_from_mismatch(): void
     {
@@ -527,6 +614,10 @@ class InstallerExecutionModeHelperTest extends TestCase
      * 지운다 — 인스톨러에서 가장 되돌릴 수 없는 동작인데 진입 조건이 「이미 finalize
      * 됐는가」 하나뿐이었다. 설치 진행 중에 GET 한 번이면 마이그레이션이 반쯤 된 DB +
      * 인스톨러 진입 불가가 남는다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_finalize_rejects_unfinished_or_unauthorized_requests
      */
     public function test_finalize_rejects_wrong_method_unfinished_install_and_bad_token(): void
     {
@@ -569,13 +660,28 @@ class InstallerExecutionModeHelperTest extends TestCase
      * ② 진행 중인 stepwise 설치는 기존 토큰을 요구한다 — 이 엔드포인트가 무인증으로 새
      *    토큰을 발급해 온 탓에 10차가 [중단]·[초기화]·[건너뛰고 계속]에 건 게이트가
      *    요청 하나로 우회 가능했다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_start_rejects_live_worker_and_token_hijack
      */
     public function test_start_rejects_live_worker_and_requires_existing_token_while_running(): void
     {
         $busy = installerStartRejection(['installation_mode' => 'sse'], true, '', '');
         $this->assertNotNull($busy);
         $this->assertSame(409, $busy['status']);
-        $this->assertSame('error_installation_already_running', $busy['message_key']);
+        // 「다른 창에서 진행 중」이라고 단정하지 않는다 (D7) — 점유가 살아 있는 것과 그 창이
+        // 존재하는 것은 다른 사실이다. 치명 종료는 해제 기록을 남기지 못해 죽은 점유가 남는다.
+        $this->assertSame('error_installation_lock_held', $busy['message_key']);
+        $this->assertArrayNotHasKey(
+            'retry_after',
+            $busy,
+            '남은 시간을 모르면(0) 싣지 않는다 — 0초를 세면 화면이 즉시 재시도해 같은 벽에 부딪힌다'
+        );
+
+        // 남은 시간을 받으면 그대로 실어 화면이 기다렸다 이어갈 수 있게 한다 (D7).
+        $counted = installerStartRejection(['installation_mode' => 'sse'], true, '', '', 42);
+        $this->assertSame(42, $counted['retry_after']);
 
         // 첫 발급은 종전대로 무토큰이다 — 아니면 설치를 시작할 방법이 없다.
         $this->assertNull(installerStartRejection([], false, '', ''));

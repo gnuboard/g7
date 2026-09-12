@@ -300,20 +300,32 @@ try {
      * 무인증으로 새 토큰을 발급해 온 탓에, 10차가 [중단]·[초기화]·[건너뛰고 계속]에 건
      * 토큰 게이트가 요청 하나로 우회 가능했다.
      */
+    // 생존 판정과 「남은 시간」은 같은 셈에서 나온다 (D7) — 한 함수가 둘을 낸다.
+    $lockRemaining = installerWorkerLockRemainingSeconds($state, 15);
+
     $startRejection = installerStartRejection(
         $state,
-        installerActiveWorkerIsAlive($state, 15),
+        $lockRemaining > 0,
         (string) ($_SERVER['HTTP_X_INSTALLER_TOKEN'] ?? ($requestBody['token'] ?? '')),
         (string) (readInstallerRuntime()['installer']['stepwise_token'] ?? ''),
+        $lockRemaining,
     );
 
     if ($startRejection !== null) {
         http_response_code($startRejection['status']);
-        echo installer_json_encode([
+        $payload = [
             'success' => false,
-            'message' => lang($startRejection['message_key']),
+            // 남은 시간을 **문구 안에도** 넣는다 (D7). 화면이 `retry_after` 를 쓰지 못하는
+            // 판본(구형 자산 캐시)에서도 운영자가 "얼마나 기다리면 되는가" 를 읽을 수 있어야 한다.
+            'message' => lang($startRejection['message_key'], ['seconds' => (string) $lockRemaining]),
             'message_key' => $startRejection['message_key'],
-        ], JSON_UNESCAPED_UNICODE);
+        ];
+        if (isset($startRejection['retry_after'])) {
+            // 표준 헤더로도 준다 — 프록시·클라이언트가 같은 뜻으로 읽는 값이다.
+            header('Retry-After: '.$startRejection['retry_after']);
+            $payload['retry_after'] = $startRejection['retry_after'];
+        }
+        echo installer_json_encode($payload, JSON_UNESCAPED_UNICODE);
         exit;
     }
 

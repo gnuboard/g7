@@ -4596,6 +4596,26 @@
         return await response.json();
     }
 
+    /**
+     * 이 상태를 **재개**로 이어야 하는가 (시작이 아니라) — 로드 복원과 해제 대기가 공유한다.
+     *
+     * 단계별 + `running` 은 시작 경로(`install-process.php`)가 **토큰 게이트에 403 으로 막힌다**
+     * (10차가 건 게이트 · `installerStartRejection`). 그 상태의 정본 경로는 `run-task.php` 로
+     * 이어가는 재개다.
+     *
+     * 규칙을 한 곳에 둔다 (D7). 사본을 두면 한쪽만 고쳐져 「로드하면 이어지는데 대기 뒤에는
+     * 403 으로 죽는」 상태가 생긴다 — 실제로 D7 의 브라우저 실측이 그 모양을 잡아냈다.
+     *
+     * @param {Object|null} state 서버 상태
+     * @returns {boolean} 재개 경로로 가야 하면 true
+     */
+    function stepwiseResumeApplies(state) {
+        return !!state
+            && state.status === 'running'
+            && state.installation_mode === 'stepwise'
+            && !!getStepwiseToken();
+    }
+
     // 기존 DB 테이블 경고는 **인라인 카드**(아래 onDbBackupConsentChange)가 담당한다.
     // 종전의 모달 3함수(showExistingTablesModal / closeExistingTablesModal / confirmDropTables)는
     // 호출부가 저장소 어디에도 없었고, 그 안에서 갱신하려던 `.db-existing-tables-badge` 도
@@ -4830,6 +4850,14 @@
                         setEnvSetupReason(lang('file_setup_description'));
                         showFileSetupSection(result.missing_files || [], null, null, result.base_path, result.is_windows || false);
                     }
+                    return;
+                }
+                // 점유가 아직 예산 안이라 거절된 경우 (D7) — 막다른 오류로 그리지 않는다.
+                // 서버가 남은 시간을 주면 그만큼 세었다가 한 번 스스로 이어간다.
+                const retryAfter = Number(result.retry_after);
+                if (Number.isFinite(retryAfter) && retryAfter > 0) {
+                    startLockWait(retryAfter, result.message);
+
                     return;
                 }
                 showError(result.message || lang('installation_start_failed'));
@@ -6226,10 +6254,119 @@
         startInstallation();
     }
 
+    /* region:lock-wait — 점유 해제 대기 (vitest 가 이 구간을 그대로 평가한다 · 사본 금지)
+
+       서버가 409 로 「점유가 아직 예산 안이다」를 돌려줄 때의 화면 절반이다 (D7).
+
+       현장(2026-09-12): 디스크가 차서 태스크가 죽었고, 그 죽음은 해제 기록을 남기지 못해
+       점유가 남았다. 운영자가 공간을 비우고 [재시도] 를 눌렀지만 화면은 「다른 창에서 진행
+       중」이라는 **존재하지 않는 창**을 가리켰고, 남은 출구는 [처음부터 다시](전부 폐기)뿐이었다.
+
+       서버는 이제 남은 시간(`retry_after`)을 함께 준다. 그 숫자가 있으면 이 구간이 세어 주고
+       0 에서 **한 번** 스스로 이어간다 — 안내가 「:seconds초 뒤 자동으로 이어서 진행됩니다」라고
+       약속했으므로, 세기만 하고 멈추면 그 약속이 거짓이 된다. */
+
+    /** 진행 중인 해제 대기 타이머 (동시에 하나만) */
+    let lockWaitTimer = null;
+
+    /**
+     * 해제 대기를 그만둔다 — 운영자가 먼저 눌렀거나 화면이 다른 상태로 넘어갈 때.
+     */
+    function cancelLockWait() {
+        if (lockWaitTimer) {
+            clearInterval(lockWaitTimer);
+            lockWaitTimer = null;
+        }
+    }
+
+    /**
+     * 점유가 풀릴 때까지 세었다가 **한 번** 스스로 이어간다 (D7).
+     *
+     * 자동 재시도는 정확히 1회다. 실패를 그대로 다시 받으면 그때는 사람이 판단할 자리이고,
+     * 무한 재시도는 D2 가 고친 그 폭주를 다시 만든다.
+     *
+     * @param {number} seconds 남은 초 (서버 `retry_after`)
+     * @param {string} message 서버가 준 안내 문구
+     */
+    function startLockWait(seconds, message) {
+        cancelLockWait();
+        showError(message || lang('installation_start_failed'));
+
+        const section = document.getElementById('failure-section');
+        if (!section) return;
+
+        let row = document.getElementById('lock-wait-countdown');
+        if (!row) {
+            row = document.createElement('p');
+            row.id = 'lock-wait-countdown';
+            row.className = 'lock-wait-countdown';
+            // 초마다 바뀌는 값이라 라이브 리전으로 두지 않는다 — 화면 판독기가 매초 읽으면
+            // 형제(실패 안내)가 묻힌다. D2 의 경과 표시와 같은 판단이다.
+            const anchor = document.getElementById('failure-message');
+            if (anchor && anchor.parentNode) {
+                anchor.parentNode.insertBefore(row, anchor.nextSibling);
+            } else {
+                section.appendChild(row);
+            }
+        }
+
+        let remaining = Math.max(1, Math.floor(seconds));
+        row.textContent = lang('installation_lock_wait_countdown', { seconds: String(remaining) });
+        row.style.display = '';
+
+        lockWaitTimer = setInterval(() => {
+            remaining -= 1;
+
+            if (remaining > 0) {
+                row.textContent = lang('installation_lock_wait_countdown', { seconds: String(remaining) });
+
+                return;
+            }
+
+            cancelLockWait();
+            row.textContent = lang('installation_lock_wait_resuming');
+            resumeAfterLockWait();
+        }, 1000);
+    }
+
+    /**
+     * 대기가 끝난 뒤 **무엇으로** 이어갈지 고른다.
+     *
+     * 종전 초안은 무조건 `continueInstallation()`(시작 경로)이었다. 브라우저 실측이 그것을
+     * 잡았다 — 현장 상태(단계별 + `running`)에서 그 경로는 토큰 게이트에 **403** 으로 막힌다.
+     * 즉 카운트다운은 도는데 그 끝이 또 막다른 길이었다.
+     *
+     * 그 상태의 정본은 재개다. 판정은 화면 로드가 쓰는 것과 **같은 함수**(`stepwiseResumeApplies`)로
+     * 한다 — 사본을 두면 두 경로가 갈라진다.
+     */
+    async function resumeAfterLockWait() {
+        let state = null;
+        try {
+            state = await fetchInstallationState();
+        } catch (e) {
+            // 상태를 못 읽으면 종전 동작(시작)으로 떨어진다 — 확인하지 못한 것을 근거로
+            // 경로를 바꾸지 않는다.
+            state = null;
+        }
+
+        if (stepwiseResumeApplies(state)) {
+            resumeStepwiseInstallation(state);
+
+            return;
+        }
+
+        continueInstallation();
+    }
+
+    /* endregion:lock-wait */
+
     /**
      * 설치 재시도 (continueInstallation 래퍼)
      */
     function retryInstallation() {
+        // 운영자가 먼저 눌렀으면 타이머가 뒤따라 한 번 더 쏘지 않게 한다 (D7) —
+        // 두 번 나가면 두 번째가 자기 자신의 워커에 막혀 같은 화면으로 되돌아온다.
+        cancelLockWait();
         continueInstallation();
     }
 
@@ -6371,7 +6508,7 @@
             }
 
             // 단계별 실행은 새로고침해도 이어서 진행된다 — 서버 상태를 복원하고 다음 태스크부터 호출 (W3)
-            if (state.status === 'running' && state.installation_mode === 'stepwise' && getStepwiseToken()) {
+            if (stepwiseResumeApplies(state)) {
                 resumeStepwiseInstallation(state);
                 return;
             }

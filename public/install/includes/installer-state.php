@@ -209,7 +209,20 @@ function installerPreserveCorruptState(string $content): void
             @chmod($backup, 0600);
         }
         installerErrorLog('[installer-state] Corrupt state preserved at: '.$backup);
+
+        return;
     }
+
+    // 성공만 적으면 **실패는 아무 데도 남지 않는다** (D7 형제 — 같은 침묵, 같은 원인).
+    //
+    // 이 사본을 못 쓰는 가장 흔한 이유가 디스크 풀이고, 그때는 「파손을 만났다」는 사실조차
+    // 기록이 0 이 된다 — 상태 파일은 이미 못 읽고, 사본도 없고, 이 함수는 조용히 끝난다.
+    // 다음 세션은 원인을 처음부터 찾는다. 그래서 다른 매체(PHP 오류 로그)에 남기고, 원인을
+    // 가르는 값(여유 공간)을 함께 적는다.
+    installerErrorLog(
+        '[installer-state] Corrupt state copy could not be written — this line is the only record of '.
+        'that corruption. target='.$backup.' '.installerFreeSpaceNote()
+    );
 }
 
 /**
@@ -444,7 +457,10 @@ function saveInstallationState(array $state): bool
 
     $result = @file_put_contents($tmpPath, $content, LOCK_EX);
     if ($result === false || $result !== strlen($content)) {
-        $msg = '[installer-state] Failed to write state tmp file: '.$tmpPath;
+        // 여유 공간을 **함께** 적는다 (D7). 이 실패의 현장 사례는 디스크 풀이었는데, 종전
+        // 메시지는 「썼는데 안 됐다」까지만 말해 운영자도 다음 세션도 원인을 알 수 없었다.
+        // 부분 쓰기(`$result !== strlen`)는 특히 디스크 풀의 전형적인 모양이다.
+        $msg = '[installer-state] Failed to write state tmp file: '.$tmpPath.' '.installerFreeSpaceNote();
         installerErrorLog($msg);
         addLog($msg);
         @unlink($tmpPath);
@@ -468,6 +484,36 @@ function saveInstallationState(array $state): bool
     }
 
     return true;
+}
+
+if (! function_exists('installerFreeSpaceNote')) {
+    /**
+     * 저장 실패 진단에 붙일 「남은 공간」 한 조각 (D7).
+     *
+     * 상태 저장이 실패하는 이유는 여럿이지만(권한·경로·풀), 현장에서 실제로 난 것은 **디스크
+     * 풀**이었고 그때 남은 기록은 「썼는데 안 됐다」뿐이었다. 원인을 가르는 값이 한 번의
+     * 호출로 얻어지는데 아무도 적지 않았다.
+     *
+     * `disk_free_space` 는 하드닝 프로필의 차단 대상이라 가드가 필요하다 — 이 함수가 쓰이는
+     * 자리는 **이미 실패 처리 중**이라, 여기서 치명 오류를 내면 진단이 원래 오류를 덮는다.
+     *
+     * @return string `free=12345 bytes` 또는 `free=unknown` (항상 한 조각, 비어 있지 않다)
+     */
+    function installerFreeSpaceNote(): string
+    {
+        if (! installerHasFunction('disk_free_space')) {
+            return 'free=unknown (disk_free_space unavailable)';
+        }
+
+        $base = defined('BASE_PATH') ? (string) BASE_PATH : '.';
+        $free = @disk_free_space($base);
+
+        if ($free === false || ! is_numeric($free)) {
+            return 'free=unknown';
+        }
+
+        return 'free='.number_format((float) $free, 0, '.', '').' bytes';
+    }
 }
 
 if (! function_exists('installerReplaceFileWithRetry')) {
@@ -976,9 +1022,35 @@ if (! function_exists('installerClientFailureFields')) {
  */
 function installerActiveWorkerIsAlive(array $state, int $fallbackStaleSeconds): bool
 {
+    // 「살아 있다」와 「얼마나 남았는가」를 **한 셈에서** 낸다 (D7).
+    //
+    // 종전에는 이 함수만 있었고, 화면 안내가 남은 시간을 말하려면 같은 식을 다시 써야 했다.
+    // 사본을 두면 판정은 「아직 점유 중」인데 안내는 「0초 남음」이라고 말하는 상태가 조용히
+    // 생긴다 — D1 에서 승격 규칙을 한 함수로 뽑은 것과 같은 축이다.
+    return installerWorkerLockRemainingSeconds($state, $fallbackStaleSeconds) > 0;
+}
+
+/**
+ * 점유 중인 lock 이 자동으로 풀리기까지 남은 초 (D7 — 판정과 안내의 공용 SSoT).
+ *
+ * 점유자가 스스로 선언한 유효 시간(`worker_stale_after`)을 존중한다 — 근거는
+ * `installerActiveWorkerIsAlive` 의 설명과 같다.
+ *
+ * **이 값이 왜 필요한가.** 워커가 치명 종료(디스크 풀·OOM·시그널)로 죽으면 해제 기록이
+ * 남지 않아, 점유는 오직 이 시간이 지나야 풀린다. 그동안 화면은 「다른 창에서 진행 중」이라고
+ * 단정했는데 그 창은 없을 수 있다 — 우리가 아는 사실은 「아직 예산 안이다」뿐이다(현장 제보
+ * 2026-09-12, 이 값이 600 이라 10분간 그 단정이 노출됐다). 아는 것만 말하려면 안내가 이
+ * 숫자를 가져야 한다.
+ *
+ * @param  array<string, mixed>  $state  현재 상태
+ * @param  int  $fallbackStaleSeconds  점유자가 선언하지 않았을 때 쓸 기준(초)
+ * @return int 남은 초 (점유자가 없거나 이미 지났으면 0)
+ */
+function installerWorkerLockRemainingSeconds(array $state, int $fallbackStaleSeconds): int
+{
     $activeId = $state['active_worker_id'] ?? null;
     if ($activeId === null) {
-        return false;
+        return 0;
     }
 
     // 구 상태 파일에는 이 키가 없으므로 종전 동작(호출자 기본값)으로 떨어진다.
@@ -989,10 +1061,10 @@ function installerActiveWorkerIsAlive(array $state, int $fallbackStaleSeconds): 
     // — 살아 있는 워커가 하나도 없는데 모든 진입점이 영구 busy 를 받고, 운영자에게는 화면이
     // 멈춘 것으로만 보인다 (13차 환경#19). 미래 heartbeat 는 신뢰할 수 없는 값이므로 stale 로 본다.
     if ($elapsed < 0) {
-        return false;
+        return 0;
     }
 
-    return $elapsed < $staleAfter;
+    return max(0, $staleAfter - $elapsed);
 }
 
 /**
@@ -1079,15 +1151,23 @@ function refreshWorkerHeartbeat(string $workerId): bool
  *
  * 정상 종료 시 호출. 다른 워커가 takeover 했으면 무시 (자기가 점유자가 아니므로).
  *
+ * **해제는 「상태 파일에 쓰기」다.** 그래서 쓸 수 없는 상황(디스크 풀·권한 소실)에서는
+ * 해제도 실패한다 — 그리고 종전에는 이 함수가 `void` 라 그 실패를 **아무도 보지 않았다.**
+ * 현장(2026-09-12): 디스크가 차서 태스크가 죽었고, shutdown 훅이 돌아 이 함수를 불렀지만
+ * 그 쓰기가 함께 실패해 점유가 남았다. 운영자는 공간을 비운 뒤에도 10분 동안
+ * 「다른 창에서 진행 중」을 봤다. 성공 여부를 돌려주어 호출부가 그것을 기록할 수 있게 한다.
+ *
  * @param  string  $workerId  자기 worker_id
+ * @return bool 해제를 **기록까지** 마쳤으면 true (점유자가 아니어서 할 일이 없었으면 true)
  */
-function releaseWorkerLock(string $workerId): void
+function releaseWorkerLock(string $workerId): bool
 {
-    installerWithStateLock(static function () use ($workerId): void {
+    return (bool) installerWithStateLock(static function () use ($workerId): bool {
         $state = getInstallationState();
 
         if (($state['active_worker_id'] ?? null) !== $workerId) {
-            return;
+            // 이미 남이 이어받았다 — 이 요청이 할 일은 없고, 그것은 실패가 아니다.
+            return true;
         }
 
         unset(
@@ -1097,7 +1177,8 @@ function releaseWorkerLock(string $workerId): void
             // 시작 시각도 함께 지운다 — 남기면 다음 점유자의 예산 판정이 남의 시각을 기준으로 돈다.
             $state['worker_started_at'],
         );
-        saveInstallationState($state);
+
+        return saveInstallationState($state);
     });
 }
 
@@ -1461,12 +1542,24 @@ if (! function_exists('installerHandleWorkerShutdown')) {
      * 세 진입점(run-task · install-worker · install-process 폴링)이 같은 함수를 등록한다.
      * 한 곳만 배선하면 그 모드에서만 상태가 `running` 에 고착한다.
      *
+     * **이 훅이 도는 것과 그 결과가 남는 것은 다른 일이다** (D7 · 현장 2026-09-12).
+     * 승격도 해제도 결국 상태 파일 쓰기라, 쓸 수 없어서 죽은 경우(디스크 풀)에는 훅이
+     * 정상으로 돌고도 아무것도 남기지 못한다. 그러면 점유가 남아 다음 시도가 막히는데,
+     * **그 사실을 아는 통로가 하나도 없었다.** 상태 파일은 이미 쓸 수 없으므로 다른 매체
+     * (PHP 오류 로그)에 남기고, 그 순간의 여유 공간을 함께 적어 원인이 곧바로 읽히게 한다.
+     *
      * @param  string  $workerId  이 요청이 점유한 worker_id
      */
     function installerHandleWorkerShutdown(string $workerId): void
     {
         installerPromoteFatalShutdownToFailure(error_get_last());
-        releaseWorkerLock($workerId);
+
+        if (! releaseWorkerLock($workerId)) {
+            installerErrorLog(
+                '[installer-state] worker lock release was not persisted — the next attempt will be rejected '.
+                'until the lock window expires. worker='.$workerId.' '.installerFreeSpaceNote()
+            );
+        }
     }
 }
 
@@ -2270,8 +2363,13 @@ if (! function_exists('installerRecordBusyRejection')) {
         return (bool) installerWithStateLock(static function (): bool {
             $busyState = getInstallationState();
             $busyState['installation_status'] = 'failed';
-            $busyState['error_message_key'] = 'error_installation_already_running';
-            $busyState['error_message_params'] = null;
+            // 「다른 창에서 진행 중」이라고 단정하지 않는다 (D7). 우리가 아는 사실은 점유가
+            // 아직 예산 안이라는 것뿐이고, 그 점유자는 이미 죽었을 수 있다 — 치명 종료는
+            // 해제 기록을 남기지 못한다. 남은 시간을 함께 실어 안내가 할 일을 말하게 한다.
+            $busyState['error_message_key'] = 'error_installation_lock_held';
+            $busyState['error_message_params'] = [
+                'seconds' => installerWorkerLockRemainingSeconds($busyState, 15),
+            ];
 
             return installerSaveStateOrReport($busyState, 'busy_rejection');
         });

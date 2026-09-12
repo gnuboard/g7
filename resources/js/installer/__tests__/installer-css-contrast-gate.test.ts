@@ -87,7 +87,19 @@ function tables() {
  * 배경은 규칙 자신이 아니라 **조상 카드**가 칠한다(`.alert-warning` = `--warning-light`,
  * `.alert-error` = `--error-light`). 인라인 코드만 자기 배경(`--inline-code-bg`)을 갖는다.
  */
-const PAIRS: Array<{ selector: string; background: string; note: string }> = [
+const PAIRS: Array<{
+  selector: string;
+  background: string;
+  note: string;
+  /**
+   * 잴 테마 (기본: 둘 다).
+   *
+   * 한 테마에서만 계산 가능한 표면이 있다 (D7) — 결과 카드 배경은 다크에서 평평한 hex 인데
+   * 라이트에서는 `linear-gradient(...)` 다. 「둘 다 못 잰다」로 통째로 빼면 **잴 수 있는 쪽까지
+   * 잃는다.** 잴 수 있는 테마는 재고, 못 재는 쪽만 아래 UNGATED 에 남긴다.
+   */
+  themes?: ReadonlyArray<'light' | 'dark'>;
+}> = [
   { selector: '.exposure-address-list code', background: '--inline-code-bg', note: '노출 주소 목록의 인라인 코드 (D-1)' },
   { selector: '.missing-files li code', background: '--inline-code-bg', note: '같은 토큰을 쓰는 형제 목록' },
   { selector: '.exposure-address-list a', background: '--warning-light', note: '판정 불능 카드(경고 배경)의 확인 주소 링크 (D-2)' },
@@ -103,10 +115,30 @@ const PAIRS: Array<{ selector: string; background: string; note: string }> = [
   // 자리라 형제(라벨·힌트·링크)와 같은 축이다. 신설과 동시에 모집단에 넣는다 — 나중에
   // 손 열거를 다시 훑는 일은 17차 E-1·18차 A-1 에서 두 번 다 실패했다.
   { selector: '.exposure-criteria', background: '--warning-light', note: '판정 불능 카드의 판정 기준 문장 (D1)' },
+  // D7 — 실패 **결과 카드**(`--result-error-bg`)는 이 모집단에 한 줄도 없었다. 경고·오류
+  // *알림*(`--warning-light`·`--error-light`)만 세고 있었는데, 운영자가 실패를 읽는 자리는
+  // 그 알림이 아니라 이 카드다(현장 제보의 그 화면). 해제 대기 줄을 새로 넣는 김에 **형제
+  // 본문까지** 함께 등재한다 — 17차 E-1·18차 A-1 이 같은 누락을 두 번 냈고 둘 다 원인이
+  // 「나중에 훑자」였다.
+  //
+  // 라이트는 그 배경이 그라디언트라 이 계산기로 잴 수 없다(아래 UNGATED) — 다크만 잰다.
+  { selector: '.result-message', background: '--result-error-bg', note: '실패 결과 카드의 본문 (D7 · 선행 누락)', themes: ['dark'] },
+  { selector: '.lock-wait-countdown', background: '--result-error-bg', note: '실패 카드의 해제 대기 카운트다운 (D7)', themes: ['dark'] },
+];
+
+/**
+ * 이 게이트가 **아직 볼 수 없는** 표면 (D7).
+ *
+ * 결과 카드 배경은 다크에서 평평한 hex 지만 라이트에서는 `linear-gradient(...)` 다. 그라디언트는
+ * 「배경 색」이 하나가 아니라 두 끝 사이의 연속이므로 한쪽 끝만 재고 통과를 선언하면 **거짓
+ * 초록**이 된다. 잴 수 있는 다크는 위 PAIRS 가 재고, 라이트는 여기 남긴다.
+ */
+const UNGATED: ReadonlyArray<{ token: string; theme: 'light' | 'dark'; reason: string }> = [
+  { token: '--result-error-bg', theme: 'light', reason: 'linear-gradient — 두 끝 사이의 연속이라 단일 배경색이 없다' },
 ];
 
 // 손 열거 모집단은 비어도 `it.each` 가 0건을 돌려 초록이 된다 (17차 E-1) — 인구조사로 하한을 잠근다.
-const PAIRS_CENSUS_MINIMUM = 8;
+const PAIRS_CENSUS_MINIMUM = 10;
 
 describe('인스톨러 CSS — 경고·오류 카드 위 문자의 AA 대비 (라이트·다크)', () => {
   /**
@@ -130,6 +162,35 @@ describe('인스톨러 CSS — 경고·오류 카드 위 문자의 AA 대비 (�
   });
 
   /**
+   * 사각으로 **적어 둔** 표면이 여전히 잴 수 없는 값인지 확인한다 (D7).
+   *
+   * 주석만 남기면 그 사각은 잊힌다 — 누군가 `--result-error-bg` 를 평평한 hex 로 바꾸는
+   * 순간 이 게이트는 그 표면을 잴 수 있게 되는데, 아무도 알려 주지 않으면 모집단에
+   * 들어가지 않은 채로 남는다. 잴 수 있게 되면 red 로 알린다.
+   *
+   * @scenario exposure_probe=unknown
+   *
+   * @effects installer_alert_text_meets_aa_contrast_in_both_themes
+   */
+  it('사각 목록 — 아직 계산 불가한 값이다 (평평해지면 모집단에 넣으라고 알린다)', () => {
+    const { light, dark } = tables();
+
+    for (const { token, theme, reason } of UNGATED) {
+      const table = theme === 'dark' ? dark : light;
+      const value = table.get(token) ?? light.get(token);
+      expect(value, `${token} 토큰이 선언되어 있지 않다`).toBeDefined();
+
+      // `var()` 체인을 따라가지 않는다 — 이 검사가 보는 것은 「이 선언이 아직 평평한 색이
+      // 아니다」이고, 체인 끝이 hex 여도 중간이 그라디언트면 여전히 잴 수 없다.
+      expect(
+        /^#[0-9a-f]{6}$/i.test(String(value).trim()),
+        `${token}(${theme}) 가 이제 6자리 hex 다 (사유였던 「${reason}」이 사라졌다) — `
+          + 'PAIRS 의 그 표면 항목에서 themes 제한을 풀어 실제로 재라',
+      ).toBe(false);
+    }
+  });
+
+  /**
    * 노출 확정(오류 카드)·판정 불능(경고 카드) 두 상태의 문자를 라이트·다크에서 각각 잰다.
    *
    * @scenario color_theme=light, color_theme=dark, exposure_probe=exposed, exposure_probe=unknown
@@ -137,10 +198,11 @@ describe('인스톨러 CSS — 경고·오류 카드 위 문자의 AA 대비 (�
    * @effects installer_alert_text_meets_aa_contrast_in_both_themes
    */
   it.each(
-    PAIRS.flatMap((pair) => [
-      [`${pair.note} — 라이트`, pair, 'light'],
-      [`${pair.note} — 다크`, pair, 'dark'],
-    ] as Array<[string, (typeof PAIRS)[number], 'light' | 'dark']>),
+    PAIRS.flatMap((pair) =>
+      (pair.themes ?? ['light', 'dark']).map(
+        (theme) => [`${pair.note} — ${theme === 'dark' ? '다크' : '라이트'}`, pair, theme],
+      ) as Array<[string, (typeof PAIRS)[number], 'light' | 'dark']>,
+    ),
   )('%s ≥ 4.5:1', (_label, pair, themeName) => {
     const { css, light, dark } = tables();
     const theme = themeName === 'dark' ? dark : light;
