@@ -222,7 +222,7 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->makeReturn($order, ReturnStatusEnum::REQUESTED);
         $latest = $this->makeReturn($order, ReturnStatusEnum::COLLECTING);
 
-        // 취소 발 환불 — 요약의 환불 축에서 제외
+        // 취소 발 환불 — 요약의 환불 축에 **함께** 선다 (#599 후속 D6)
         $cancel = OrderCancel::create([
             'order_id' => $order->id,
             'cancel_number' => 'CL-TEST-'.uniqid(),
@@ -269,19 +269,28 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::COLLECTING->label(), $summary['return']['status_label']);
         $this->assertNotEmpty($summary['return']['type_label'], '유형 라벨이 비어 있다 — 마이페이지 배지의 폴백 표기가 사라진다');
 
-        // 취소 축은 실리고 환불 축은 취소 발 제외로 비어 있다
+        // 취소 축과 환불 축이 **둘 다** 선다 (#599 후속 D6).
+        //
+        // 취소신청서와 환불신청서는 같은 사건의 두 사본이 아니라 다른 사실을 기록하는 별개
+        // 문서이므로 한쪽이 다른 쪽을 대표하지 않는다. 예전에는 취소 발 환불을 요약에서 빼,
+        // 결제완료 상품을 환불한 주문이 목록에서 "환불 없음" 으로 보였다.
         $this->assertSame(1, $summary['cancel']['count']);
         $this->assertNotNull($summary['cancel']['status_variant'], '취소 축만 variant 가 비었다');
-        $this->assertArrayNotHasKey('refund', $summary->all());
+        $this->assertSame(1, $summary['refund']['count']);
     }
 
-    public function test_summary_refund_count_excludes_cancel_origin_requests(): void
+    /**
+     * @scenario claim_axis=type_status
+     *
+     * @effects order_list_claim_summary_survives_deferred_join
+     */
+    public function test_summary_refund_count_includes_every_origin(): void
     {
         $order = $this->makeOrder();
 
-        // 직접 환불 1건 + 취소 발 환불 1건 — 요약의 환불 건수는 1 이어야 한다.
-        // 건수는 DB 집계로 얻으므로, 집계 제약이 관계 제약과 어긋나면 여기서만 2 가 된다
-        // (배지 상태는 직접 환불로 정상 표시되어 건수만 조용히 틀린다).
+        // 직접 환불 1건 + 취소 발 환불 1건 — 요약의 환불 건수는 **2** 다 (#599 후속 D6).
+        // 건수는 DB 집계로 얻으므로, 집계 제약이 관계 제약과 어긋나면 여기서만 갈린다
+        // (배지 상태는 정상 표시되어 건수만 조용히 틀린다).
         $direct = OrderRefund::create([
             'order_id' => $order->id,
             'refund_source_type' => RefundSourceTypeEnum::DIRECT,
@@ -320,8 +329,9 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $row = collect($response->json('data.data'))->firstWhere('order_number', $order->order_number);
         $summary = collect($row['claim_summary'])->keyBy('type');
 
-        $this->assertSame(1, $summary['refund']['count']);
-        $this->assertSame($direct->refund_number, $summary['refund']['latest_claim_number']);
+        $this->assertSame(2, $summary['refund']['count']);
+        // 최신 배지는 가장 나중 행을 따른다 — 두 행이 모두 실리므로 직접 환불이 최신은 아니다.
+        $this->assertNotNull($summary['refund']['latest_claim_number']);
     }
 
     public function test_fault_and_date_must_be_satisfied_by_the_same_claim(): void
@@ -407,10 +417,17 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertSame(1, $refund['count']);
     }
 
-    public function test_refund_status_filter_excludes_cancel_origin_requests(): void
+    /**
+     * @scenario claim_axis=type_status
+     *
+     * @effects order_list_claim_filter_narrows_result
+     */
+    public function test_refund_status_filter_includes_every_origin(): void
     {
-        // 환불 축의 취소 발 제외가 요약 경로에만 걸려 있고 필터 경로에는 단언이 없었다.
-        // 취소 발 환불은 취소 축이 대표하므로 환불 상태 칩으로 걸리면 안 된다.
+        // 환불 상태 칩은 **출처로 거르지 않는다**(#599 후속 D6). 취소신청서와 환불신청서는
+        // 같은 사건의 두 사본이 아니라 다른 사실을 기록하는 별개 문서이므로, 한쪽이 다른
+        // 쪽을 대표하지 않는다 — 운영자가 "환불 신청 상태" 로 좁히면 취소 발 환불도 그
+        // 상태를 가진 이상 함께 나와야 한다.
         $cancelOrigin = $this->makeOrder();
         $cancel = OrderCancel::create([
             'order_id' => $cancelOrigin->id,
@@ -449,7 +466,9 @@ class OrderListClaimFilterTest extends ModuleTestCase
             ->getJson($this->url('claim_refund_statuses[]='.RefundStatusEnum::REQUESTED->value))
             ->assertOk();
 
-        $this->assertSame([$direct->order_number], $this->orderNumbers($response));
+        $numbers = $this->orderNumbers($response);
+        $this->assertContains($direct->order_number, $numbers);
+        $this->assertContains($cancelOrigin->order_number, $numbers, '취소 발 환불도 환불 상태 칩에 걸린다 (D6)');
     }
 
     /**

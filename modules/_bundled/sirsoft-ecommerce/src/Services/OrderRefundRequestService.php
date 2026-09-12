@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
-use Modules\Sirsoft\Ecommerce\DTO\CancellationResult;
+use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
@@ -29,15 +30,22 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 /**
  * 취소·환불 신청 분기 서비스 (S5 · D2)
  *
- * 유저의 [취소/환불신청] 은 하나의 신청서 작성 화면이지만 서버에서는 **상품 상태로 자동 분기**한다:
+ * 유저의 [취소/환불신청] 은 하나의 신청서 작성 화면이지만 서버에서는 **상품 상태로 자동 분기**한다.
+ * **두 분기 모두 환불신청서를 만든다** — 다른 것은 전이 방식뿐이다(#599 후속 D1·D2):
  *
- *  - 선택 상품이 전부 `claim.instant_cancel_statuses`(기본 결제완료)에 있으면 **즉시취소** — 기존 취소
- *    파이프라인(`OrderCancellationService::cancelOrderOptions`)을 그대로 실행해 취소신청서·환불을
- *    한 번에 끝낸다(무수정 재사용).
- *  - 전부 `claim.refund_request_statuses`(기본 상품준비~배송중)에 있으면 **환불신청서**(`order_refunds`,
- *    출처 `direct`)를 `REQUESTED` 로 접수하고 운영자 승인 절차(S6b 환불 실행)를 기다린다.
- *  - 두 분기에 걸치면 거절한다(`claim_refund_branch_mixed`) — 한 신청서에 즉시 환불된 상품과 심사 대기
+ *  - 선택 상품이 전부 `claim.instant_cancel_statuses`(기본 미결제 2종 + 결제완료)에 있으면 `auto` —
+ *    환불신청서를 `REQUESTED` 로 접수한 뒤 승인·완료까지 **자동 전이**한다(`autoAdvance()`).
+ *    종착점은 환불수단이 가른다 — PG·마일리지는 완료까지, 계좌(BANK)는 승인에서 멈추고 운영자의
+ *    [환불하기]를 기다린다(D4).
+ *  - 전부 `claim.refund_request_statuses`(기본 상품준비~배송중)에 있으면 `request` — 환불신청서를
+ *    `REQUESTED` 로 접수하고 운영자 승인 절차(S6b 환불 실행)를 기다린다. `claim.auto_approve_refund_request`
+ *    가 켜져 있고 상품 상태가 `claim.auto_approve_refund_statuses` 에 있으면 승인까지 자동(D8).
+ *  - 두 분기에 걸치면 거절한다(`claim_refund_branch_mixed`) — 한 신청서에 자동 완료되는 상품과 심사 대기
  *    상품이 섞이면 고객이 보는 환불 예정액과 실제 환불액이 갈린다.
+ *  - 환불할 돈이 없으면(미결제·0원) 환불신청서를 만들지 않고 취소신청서만 남긴다(D1·D3).
+ *
+ * **취소신청서는 여기서 만들지 않는다.** 환불이 완료되는 순간 `OrderCancellationService::recordCancellation()`
+ * 한 지점이 만든다(D3) — 취소신청서는 "주문에서 금액이 실제로 빠진 사실"의 기록이기 때문이다.
  *
  * 직접 환불신청서는 원 주문옵션을 판매 상태 그대로 둔다(코스 상태 없음). 그래서 그 수량의 이중 신청은
  * `ClaimQuantityGuard` 의 환불 축(`sumActiveDirectQuantityByOrderOption`)이 막고, 승인·환불 실행(S6b)
@@ -45,6 +53,16 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
  */
 class OrderRefundRequestService
 {
+    /**
+     * 분기 — 접수 후 승인·완료까지 자동 전이 (구 `cancel`).
+     */
+    public const BRANCH_AUTO = 'auto';
+
+    /**
+     * 분기 — 접수 후 정지, 운영자 승인 대기 (구 `refund`).
+     */
+    public const BRANCH_REQUEST = 'request';
+
     /**
      * @param  OrderCancellationService  $cancellationService  취소 서비스 (즉시취소 분기·환불 미리보기)
      * @param  ClaimQuantityGuard  $claimQuantityGuard  수량 잠금 가드
@@ -77,7 +95,7 @@ class OrderRefundRequestService
      *
      * @param  Order  $order  주문
      * @param  array  $items  신청 대상 [{order_option_id, quantity}]
-     * @return string 분기 (`cancel` | `refund`)
+     * @return string 분기 (`auto` | `request`)
      *
      * @throws OrderClaimException 대상 부재 / 분기 혼재 / 신청 불가 상태
      */
@@ -130,28 +148,51 @@ class OrderRefundRequestService
      */
     public function refundsToBankAccount(Order $order): bool
     {
-        return $this->refundExecutionService->determineRefundMethod($order) === RefundMethodEnum::BANK;
+        if ($this->refundExecutionService->determineRefundMethod($order) === RefundMethodEnum::BANK) {
+            return true;
+        }
+
+        // PG 환불인데도 계좌를 요구하는 수단이 있다 — **입금완료된 가상계좌**다(P7). PG 는
+        // 카드처럼 원래 자리로 되돌릴 곳이 없어 "어디로 보낼지" 를 함께 받아야 취소를 받아준다.
+        // 이 축이 빠져 있던 동안 신청 화면에는 계좌 입력칸이 서지 않았고, 접수는 되지만 환불
+        // 실행이 **원인 없는 422** 로 막혔다 — 고객도 운영자도 무엇이 부족한지 알 수 없었다.
+        $order->loadMissing('payment');
+        $payment = $order->payment;
+
+        if (! $payment || ! $payment->isVirtualAccount()) {
+            return false;
+        }
+
+        $status = $payment->payment_status;
+
+        // 입금 전이면 PG 가 환불받을 계좌를 요구하지 않는다 — 받은 돈이 없기 때문이다.
+        return $status === null || ! $status->isAwaitingDeposit();
     }
 
     /**
      * 주문옵션 상태 하나의 분기를 돌려줍니다. (신청 대상이 아니면 null)
      *
-     * 두 설정 목록에 같은 상태가 들어 있으면 즉시취소가 이긴다 — 취소 가능 상태는 환불 심사를 거칠
-     * 이유가 없다.
+     * **두 값 모두 환불신청서를 만든다**(D2) — 다른 것은 전이 방식뿐이다.
+     *
+     *  - `auto` — 접수 후 승인·완료까지 자동 전이 (구 `cancel`)
+     *  - `request` — 접수 후 정지, 운영자 승인 대기 (구 `refund`)
+     *
+     * 두 설정 목록에 같은 상태가 들어 있으면 `auto` 가 이긴다 — 자동 전이 대상 상태는 환불 심사를
+     * 거칠 이유가 없다.
      *
      * @param  OrderStatusEnum|string|null  $status  주문옵션 상태
-     * @return string|null `cancel` | `refund` | null
+     * @return string|null `auto` | `request` | null
      */
     public function branchForStatus(OrderStatusEnum|string|null $status): ?string
     {
         $value = $status instanceof OrderStatusEnum ? $status->value : (string) $status;
 
         if (in_array($value, $this->instantCancelStatusValues(), true)) {
-            return 'cancel';
+            return self::BRANCH_AUTO;
         }
 
         if (in_array($value, $this->refundRequestStatusValues(), true)) {
-            return 'refund';
+            return self::BRANCH_REQUEST;
         }
 
         return null;
@@ -198,6 +239,19 @@ class OrderRefundRequestService
     /**
      * 취소·환불을 신청합니다. (D2 자동 분기)
      *
+     * **두 분기 모두 환불신청서를 만든다.** 다른 것은 전이 방식뿐이다 — `auto` 는 승인·완료까지
+     * 자동으로 밀고, `request` 는 접수에서 멈춘다(자동승인 대상이면 승인까지). 취소신청서는
+     * 여기서 만들지 않는다 — 환불이 완료되는 순간 `OrderCancellationService::recordCancellation()`
+     * 이 만든다(D3).
+     *
+     * 예외는 **환불할 돈이 없는 주문**이다(미결제·0원). 환불신청서를 만들면 0원짜리 미지급
+     * 환불 레코드가 영영 `approved` 에 남으므로(P11), 환불 단계를 건너뛰고 취소신청서를 바로
+     * 기록한다(D1·D3).
+     *
+     * 전체가 한 트랜잭션이다 — D15 가 "자동 전이 도중 PG 가 거절하면 전체 롤백" 을 요구하므로
+     * 접수와 자동 전이를 나눌 수 없다. 나누면 PG 거절 시 신청서만 `requested` 로 남아, 고객은
+     * 접수됐다고 보는데 돈은 나가지 않은 상태가 된다.
+     *
      * @param  Order  $order  주문
      * @param  array  $payload  신청 페이로드
      *                          - items: [{order_option_id, quantity}]
@@ -206,53 +260,55 @@ class OrderRefundRequestService
      *                          - requested_by: 신청자 ID (비회원이면 null)
      *                          - refund_priority: RefundPriorityEnum (선택)
      *                          - refund_bank: 환불 계좌 (선택)
-     * @return array{branch: string, cancel: ?CancellationResult, refund: ?OrderRefund} 분기 결과
+     *                          - refund_source_type: RefundSourceTypeEnum (선택 — 관리자 대리 접수는 ADMIN)
+     *                          - auto_advance: bool (선택 — 관리자 [주문취소]의 "환불까지 한 번에" D7)
+     *                          - branch: string (선택 — 분기를 못박는다. 관리자 경로는 고객용 신청 창구로 재지 않는다)
+     *                          - gate_statuses: array<string> (선택 — 자격 판정 상태 목록. 관리자 경로는 취소 가능 상태를 쓴다)
+     *                          - user_selectable_reason_only: bool (선택, 기본 true — 관리자 경로는 false)
+     *                          - pg_already_settled: bool (선택 — PG 환불을 바깥에서 이미 끝낸 경로.
+     *                          결제 플러그인의 가상계좌 환불 화면이 그렇다. 장부·훅·로그는 같은
+     *                          경로로 남기고 PG 왕복만 건너뛴다. 켜면 이중 환불을 막는다)
+     * @return array{branch: string, cancel: ?OrderCancel, refund: ?OrderRefund, adjustment: AdjustmentResult} 분기 결과
      *
      * @throws OrderClaimException 신청 자격·사유 위반
-     * @throws OrderCancellationException 즉시취소 파이프라인 거절
+     * @throws OrderCancellationException 자동 전이 중 PG 환불 거절 (D15 — 전체 롤백)
      */
     public function request(Order $order, array $payload): array
     {
         $items = $payload['items'] ?? [];
-        $reason = $this->resolveReason((string) ($payload['reason_code'] ?? ''));
+        $reason = $this->resolveReason(
+            (string) ($payload['reason_code'] ?? ''),
+            (bool) ($payload['user_selectable_reason_only'] ?? true),
+        );
         $refundPriority = $payload['refund_priority'] ?? RefundPriorityEnum::PG_FIRST;
-        $branch = $this->resolveBranch($order, $items);
+        $sourceType = $payload['refund_source_type'] ?? RefundSourceTypeEnum::DIRECT;
 
-        if ($branch === 'cancel') {
-            // 잠금은 형제 분기와 같은 이유로 잔여 수량을 읽기 전에 잡는다. 이 잠금이 닫는 것은
-            // **즉시취소 ↔ 클레임 신청** 방향이다 — 클레임 신청 쪽은 판정부터 INSERT 까지 같은
-            // 트랜잭션에서 이 행을 쥐고 있으므로, 여기서 그 행을 기다리면 상대의 신청서를 보고 판정한다.
-            //
-            // **즉시취소 ↔ 즉시취소** 방향은 이것으로 닫히지 않는다. 취소의 쓰기는 취소 파이프라인이
-            // 자기 트랜잭션에서 하고 그 안에 PG 환불 호출이 있어(`OrderCancellationService`), 판정부터
-            // 쓰기까지 이 행을 쥐려면 PG 응답을 기다리는 동안 주문 행이 잠긴다. 그 구조 변경은 취소
-            // 파이프라인 소유 세션의 몫이며, 여기서 잠금을 늘려 흉내 내지 않는다.
-            $cancelItems = DB::transaction(function () use ($order, $items) {
-                $lockedOrder = $this->orderRepository->findForUpdate($order->id) ?? $order;
-                $lockedOrder->load(['options', 'shippings', 'payment']);
-
-                return $this->toCancelItems($this->claimQuantityGuard->resolveClaimItems(
-                    $lockedOrder,
-                    $items,
-                    ClaimTypeEnum::CANCEL,
-                    $this->instantCancelStatusValues(),
-                ));
-            });
-
-            $result = $this->cancellationService->cancelOrderOptions(
-                order: $order,
-                cancelItems: $cancelItems,
-                reason: $reason->code,
-                reasonDetail: $payload['reason_detail'] ?? null,
-                cancelledBy: $payload['requested_by'] ?? null,
-                refundPriority: $refundPriority,
-                refundBankInfo: $payload['refund_bank'] ?? null,
-            );
-
-            return ['branch' => 'cancel', 'cancel' => $result, 'refund' => null];
+        // 분기를 호출부가 못박을 수 있다 — **관리자 [주문취소]** 가 그 경로다(§12-B).
+        //
+        // 관리자의 취소 권한은 `order_settings.cancellable_statuses` + `orders.update` 에서
+        // 나오고, 그 판정은 `OrderCancellationService::validateCancellable()` 이 이미 한다.
+        // 여기서 고객용 신청 창구(`claim.instant_cancel_statuses` / `refund_request_statuses`)로
+        // 다시 재면 **운영자가 취소할 수 있던 주문을 취소할 수 없게 된다** — 두 목록에 없는
+        // 상태(배송완료 등)에서 운영자가 아무것도 할 수 없어지고, 그것은 이 계획이 열려고 한
+        // 축과 반대 방향이다.
+        // 대상 상품이 없으면 어떤 창구에서든 접수하지 않는다 — **상품 행 0건 클레임 금지**.
+        //
+        // `resolveBranch()` 안에도 같은 가드가 있지만 분기를 못박은 호출부(운영자·시스템 어댑터)는
+        // 그 함수를 지나지 않아 가드를 건너뛴다. 이미 전량 취소된 주문을 다시 취소하면 어댑터가
+        // 빈 목록을 만들어 넘기고, 그러면 상품 행이 하나도 없는 취소 문서가 생긴다 — 목록의
+        // 뱃지는 1건을 세는데 상세의 상품 표는 비어, 운영자는 그 문서가 무엇인지 알 수 없다.
+        if (empty($items)) {
+            throw OrderClaimException::itemsRequired();
         }
 
-        $refund = DB::transaction(function () use ($order, $items, $reason, $payload, $refundPriority) {
+        $branch = $payload['branch'] ?? $this->resolveBranch($order, $items);
+
+        // 자격 게이트도 같은 이유로 호출부가 넓힐 수 있다. 지정하지 않으면 분기별 목록을 쓴다 —
+        // 합집합으로 열면 자동 전이 대상이 아닌 상태가 `auto` 로 들어가 승인·완료까지 밀린다.
+        $gateStatuses = $payload['gate_statuses']
+            ?? ($branch === self::BRANCH_AUTO ? $this->instantCancelStatusValues() : $this->refundRequestStatusValues());
+
+        $outcome = DB::transaction(function () use ($order, $items, $reason, $payload, $refundPriority, $branch, $sourceType, $gateStatuses) {
             // 잠금은 잔여 수량을 읽기 전에 잡는다 — 읽고 나서 잠그면 이미 두 요청이 같은 값을 봤다.
             $lockedOrder = $this->orderRepository->findForUpdate($order->id) ?? $order;
             $lockedOrder->load(['options', 'shippings', 'payment']);
@@ -261,52 +317,387 @@ class OrderRefundRequestService
                 $lockedOrder,
                 $items,
                 ClaimTypeEnum::REFUND,
-                $this->refundRequestStatusValues(),
+                $gateStatuses,
             );
 
             $cancelItems = $this->toCancelItems($resolved);
             // resolveClaimItems 가 잠금 가드를 이미 통과했다 (미리보기와 같은 이유로 재검사 생략).
             $adjustment = $this->cancellationService->previewRefund($lockedOrder, $cancelItems, $refundPriority, guardClaimLock: false);
-            $currencySnapshot = $lockedOrder->currency_snapshot ?? [];
 
-            $refund = $this->refundRepository->create([
-                'order_id' => $lockedOrder->id,
-                'refund_source_type' => RefundSourceTypeEnum::DIRECT,
-                'refund_source_id' => null,
-                'refund_number' => $this->sequenceService->generateCode(SequenceType::REFUND),
-                'refund_status' => RefundStatusEnum::REQUESTED,
-                'refund_method' => $this->refundExecutionService->determineRefundMethod($lockedOrder),
-                'reason_code' => $reason->code,
-                'reason_detail' => $payload['reason_detail'] ?? null,
-                'fault_type' => $reason->fault_type,
-                'requested_by' => $payload['requested_by'] ?? null,
-                'refund_amount' => max(0, $adjustment->refundAmount),
-                'refund_points_amount' => $adjustment->refundPointsAmount,
-                'refund_shipping_amount' => $adjustment->shippingDifference,
-                'mc_refund_amount' => $adjustment->mcRefundAmount,
-                'mc_refund_points_amount' => $adjustment->mcRefundPointsAmount,
-                'mc_refund_shipping_amount' => $adjustment->mcRefundShippingAmount,
-                'original_calculation_snapshot' => $adjustment->originalSnapshot,
-                'recalculated_snapshot' => $adjustment->recalculatedSnapshot,
-                'refund_bank_code' => $payload['refund_bank']['bank_code'] ?? null,
-                'refund_bank_account' => $payload['refund_bank']['account_number'] ?? null,
-                'refund_bank_holder' => $payload['refund_bank']['holder'] ?? null,
-            ]);
-
-            foreach ($this->refundExecutionService->buildRefundOptionRows($lockedOrder, $cancelItems, $adjustment) as $row) {
-                $this->refundOptionRepository->create(array_merge(['order_refund_id' => $refund->id], $row));
+            // ── 추가결제가 필요해지는 신청은 접수하지 않는다 ──
+            //
+            // 조건부 할인(쿠폰 최소 주문금액 등)이 걸린 주문에서 일부만 빼면 할인이 소멸해
+            // 재계산 결제금액이 원 결제금액을 넘는다 — 환불이 아니라 **추가청구**다. 미리보기는
+            // 이 상황을 `cancel_blocked` 로 이미 알리지만(AdjustmentResult::isCancelBlocked),
+            // 접수 경로에는 판정이 없었다. 구형 관리자 취소만 막고 클레임 접수는 통과시키면
+            // 같은 주문이 창구에 따라 갈리고, 통과한 쪽은 음수 환불액을 든 신청서로 남는다.
+            if ($adjustment->isCancelBlocked()) {
+                throw OrderClaimException::refundRequiresAdditionalPayment();
             }
 
-            return $refund->fresh(['refundOptions']);
+            // ── 부분취소를 지원하지 않는 결제는 사전에 막는다 (P6) ──
+            //
+            // PG 마다 제약이 다르고 어떤 조합은 원천적으로 전액취소만 된다(NICE 가상계좌 등).
+            // 막지 않으면 운영자는 수량을 줄여 접수하고 **원인 없는 PG 거절**을 받는다 — 그때는
+            // 이미 신청서가 만들어진 뒤라 정리할 것도 생긴다. 관리자 화면은 경고 배너를 띄우지만
+            // 화면만 막으면 API 로 들어온 요청이 그대로 통과한다.
+            $this->assertPartialCancelSupported($lockedOrder, $cancelItems);
+
+            // ── 환불할 돈이 없는 주문 — 환불 단계를 건너뛴다 (D1·D3·P11) ──
+            if ($this->hasNothingToRefund($lockedOrder, $adjustment)) {
+                $cancel = $this->cancellationService->recordCancellation(
+                    order: $lockedOrder,
+                    cancelItems: $cancelItems,
+                    adjustment: $adjustment,
+                    refund: null,
+                    reason: $reason->code,
+                    reasonDetail: $payload['reason_detail'] ?? null,
+                    cancelledBy: $payload['requested_by'] ?? null,
+                );
+
+                return ['cancel' => $cancel, 'refund' => null, 'adjustment' => $adjustment];
+            }
+
+            $refund = $this->createRefundRequest($lockedOrder, $cancelItems, $adjustment, $reason, $payload, $sourceType);
+
+            // 자동 전이로 갈 건이면 **접수 알림을 억제**한다 — 자동 전이가 자기 마지막 상태에서
+            // 1건을 보낸다(§4-2 "마지막 상태에서 1건만"). 억제하지 않으면 한 번의 취소로
+            // 접수 + 마지막 상태 **2통**이 나간다: PG·마일리지는 접수+완료, 계좌는 접수+승인.
+            // `autoAdvance()` 가 승인 알림만 끄고 있어 3통이 2통으로 줄었을 뿐이었다.
+            // 활동로그 리스너는 이 플래그를 읽지 않으므로 단계별 기록(D16)은 그대로 남는다.
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.refund.requested',
+                $refund,
+                $lockedOrder->fresh(),
+                ['suppress_notification' => $this->willAdvanceOnIntake($lockedOrder, $refund, $branch, $payload)]
+            );
+
+            $refund = $this->advanceAfterRequest($lockedOrder, $refund, $branch, $payload);
+
+            return ['cancel' => null, 'refund' => $refund, 'adjustment' => $adjustment];
         });
 
-        HookManager::doAction('sirsoft-ecommerce.claim.refund.requested', $refund, $order->fresh());
-
-        if ((bool) $this->settingsService->getSetting('claim.auto_approve_refund_request', false)) {
-            $refund = $this->transition($refund, RefundStatusEnum::APPROVED);
+        // 현금영수증 동기화는 트랜잭션 밖이다 — 재발급 실패 이력이 롤백에 휩쓸리면 안 되고,
+        // 프로바이더 왕복 2회 동안 DB 잠금을 붙들 수 없다(취소 파이프라인과 같은 규율).
+        if ($outcome['cancel'] !== null || $outcome['refund']?->refund_status === RefundStatusEnum::COMPLETED) {
+            $this->cancellationService->syncCashReceiptAfterCancellation($order->fresh(), $reason->code);
         }
 
-        return ['branch' => 'refund', 'cancel' => null, 'refund' => $refund];
+        return [
+            'branch' => $branch,
+            'cancel' => $outcome['cancel'],
+            'refund' => $outcome['refund'],
+            // 재계산 결과 — 복원된 쿠폰 ID 등 "이 취소가 무엇을 되돌렸는가" 를 호출부가 읽는다.
+            'adjustment' => $outcome['adjustment'],
+        ];
+    }
+
+    /**
+     * 이 주문에서 되돌릴 돈이 남아 있지 않은지 판정합니다. (D1 — 환불신청서 생략 조건)
+     *
+     * 두 축이다 — ⓐ 아직 결제 전이라 받은 돈이 없거나, ⓑ 계산된 환불액(PG + 마일리지)이
+     * 0 이거나. ⓑ 를 함께 보지 않으면 0원 주문·전액 쿠폰 주문이 "결제완료" 라는 이유로
+     * 0원짜리 환불신청서를 만들고, 그 행은 송금할 것이 없어 영영 `approved` 에 남는다(P11).
+     *
+     * @param  Order  $order  주문
+     * @param  AdjustmentResult  $adjustment  환불 계산 결과
+     * @return bool 되돌릴 돈이 없으면 true
+     */
+    protected function hasNothingToRefund(Order $order, AdjustmentResult $adjustment): bool
+    {
+        if ($order->order_status->isBeforePayment()) {
+            return true;
+        }
+
+        return ((float) $adjustment->refundAmount + (float) $adjustment->refundPointsAmount) <= 0.0;
+    }
+
+    /**
+     * 환불신청서를 접수 상태(`REQUESTED`)로 만듭니다. (네 경로 공용)
+     *
+     * 고객 신청·관리자 대리 접수·자동 전이 대상이 모두 이 한 지점을 지난다 — 경로마다 따로
+     * 만들면 컬럼 한 개가 빠진 신청서가 생기고(과거 즉시취소가 `requested_by`·`approved_at`
+     * 을 비운 채로 남긴 행이 그것이다), 그 결함은 화면에서 빈칸으로만 드러난다.
+     *
+     * @param  Order  $order  주문 (잠금·로드 완료)
+     * @param  array  $cancelItems  대상 [{order_option_id, cancel_quantity}]
+     * @param  AdjustmentResult  $adjustment  환불 계산 결과
+     * @param  ClaimReason  $reason  해석된 사유
+     * @param  array  $payload  신청 페이로드
+     * @param  RefundSourceTypeEnum  $sourceType  출처 (고객 신청 DIRECT / 운영자 접수 ADMIN)
+     * @return OrderRefund 접수된 환불신청서
+     */
+    protected function createRefundRequest(
+        Order $order,
+        array $cancelItems,
+        AdjustmentResult $adjustment,
+        ClaimReason $reason,
+        array $payload,
+        RefundSourceTypeEnum $sourceType = RefundSourceTypeEnum::DIRECT,
+    ): OrderRefund {
+        $refund = $this->refundRepository->create([
+            'order_id' => $order->id,
+            'refund_source_type' => $sourceType,
+            'refund_source_id' => null,
+            'refund_number' => $this->sequenceService->generateCode(SequenceType::REFUND),
+            'refund_status' => RefundStatusEnum::REQUESTED,
+            'refund_method' => $this->refundExecutionService->determineRefundMethod($order),
+            'reason_code' => $reason->code,
+            'reason_detail' => $payload['reason_detail'] ?? null,
+            'fault_type' => $reason->fault_type,
+            'requested_by' => $payload['requested_by'] ?? null,
+            'refund_amount' => max(0, $adjustment->refundAmount),
+            'refund_points_amount' => $adjustment->refundPointsAmount,
+            'refund_shipping_amount' => $adjustment->shippingDifference,
+            'mc_refund_amount' => $adjustment->mcRefundAmount,
+            'mc_refund_points_amount' => $adjustment->mcRefundPointsAmount,
+            'mc_refund_shipping_amount' => $adjustment->mcRefundShippingAmount,
+            'original_calculation_snapshot' => $adjustment->originalSnapshot,
+            'recalculated_snapshot' => $adjustment->recalculatedSnapshot,
+            'refund_bank_code' => $payload['refund_bank']['bank_code'] ?? null,
+            'refund_bank_account' => $payload['refund_bank']['account_number'] ?? null,
+            'refund_bank_holder' => $payload['refund_bank']['holder'] ?? null,
+        ]);
+
+        foreach ($this->refundExecutionService->buildRefundOptionRows($order, $cancelItems, $adjustment) as $row) {
+            $this->refundOptionRepository->create(array_merge(['order_refund_id' => $refund->id], $row));
+        }
+
+        return $refund->fresh(['refundOptions']);
+    }
+
+    /**
+     * 이 접수가 자동 전이로 이어지는지 판정합니다. (§4-2 알림 1건)
+     *
+     * 접수 훅의 알림 억제와 실제 전이 분기가 **같은 판정**을 써야 한다 — 갈리면 알림이
+     * 0통(억제했는데 전이하지 않음)이거나 2통(억제하지 않았는데 전이함)이 된다.
+     *
+     * @param  string  $branch  분기 (`auto`/`request`)
+     * @param  array<string, mixed>  $payload  접수 페이로드 (auto_advance)
+     * @return bool 자동 전이하면 true
+     */
+    protected function willAutoAdvance(string $branch, array $payload): bool
+    {
+        return $branch === self::BRANCH_AUTO || (bool) ($payload['auto_advance'] ?? false);
+    }
+
+    /**
+     * 이 접수가 자동승인(D8)으로 이어지는지 판정합니다.
+     *
+     * 토글만 보지 않는다 — 대상 상태 목록에 없는 상품의 신청서는 접수에서 멈춘다. 이 술어가
+     * 접수 훅의 알림 억제와 실제 승인 전이 **양쪽의 정본**이다. 두 곳에서 따로 재면 갈린다.
+     *
+     * @param  Order  $order  주문
+     * @param  OrderRefund  $refund  접수된 환불신청서
+     * @return bool 자동승인하면 true
+     */
+    protected function willAutoApprove(Order $order, OrderRefund $refund): bool
+    {
+        if (! (bool) $this->settingsService->getSetting('claim.auto_approve_refund_request', false)) {
+            return false;
+        }
+
+        return $this->allItemsInAutoApproveStatuses($order, $refund);
+    }
+
+    /**
+     * 이 접수가 **접수 그 자리에서** 다음 단계로 넘어가는지 판정합니다. (§4-2 알림 1건)
+     *
+     * 구매자는 한 번 냈는데 시스템이 두 단계를 움직이면 알림이 2통 간다. §4-2 가 못박은 것은
+     * 「마지막 상태에서 1건」이므로, 자동 전이든 자동승인이든 **접수 그 자리에서 더 나아가는
+     * 모든 경우**에 접수 알림을 억제한다. 자동 전이만 보면 자동승인 경로가 그물을 빠져나간다 —
+     * 같은 결함군의 두 경로에 다른 규칙을 적용한 셈이 된다.
+     *
+     * @param  Order  $order  주문
+     * @param  OrderRefund  $refund  접수된 환불신청서
+     * @param  string  $branch  분기 (`auto`/`request`)
+     * @param  array<string, mixed>  $payload  접수 페이로드
+     * @return bool 접수 직후 더 전이하면 true
+     */
+    protected function willAdvanceOnIntake(Order $order, OrderRefund $refund, string $branch, array $payload): bool
+    {
+        return $this->willAutoAdvance($branch, $payload) || $this->willAutoApprove($order, $refund);
+    }
+
+    /**
+     * 접수 직후의 전이 정책을 적용합니다. (D2·D7·D8)
+     *
+     * | 조건 | 전이 |
+     * | --- | --- |
+     * | 분기 `auto` | 승인 → (수단별) 완료까지 자동 |
+     * | 관리자 [주문취소] + `auto_advance` | 위와 같음 |
+     * | 분기 `request` + 자동승인 on + 상태가 대상 목록 | 승인까지 |
+     * | 그 외 | 접수에서 정지 |
+     *
+     * @param  Order  $order  주문
+     * @param  OrderRefund  $refund  접수된 환불신청서
+     * @param  string  $branch  분기 (`auto` | `request`)
+     * @param  array  $payload  신청 페이로드
+     * @return OrderRefund 전이된 환불신청서
+     */
+    protected function advanceAfterRequest(Order $order, OrderRefund $refund, string $branch, array $payload): OrderRefund
+    {
+        $processedBy = $payload['processed_by'] ?? null;
+
+        if ($this->willAutoAdvance($branch, $payload)) {
+            return $this->autoAdvance($refund, [
+                'processed_by' => $processedBy,
+                'pg_already_settled' => (bool) ($payload['pg_already_settled'] ?? false),
+            ]);
+        }
+
+        if (! $this->willAutoApprove($order, $refund)) {
+            return $refund;
+        }
+
+        // 접수 훅이 이미 억제를 걸었으므로 여기서 1통을 보낸다 — 판정은 같은 술어에서 나온다.
+        return $this->transition($refund, RefundStatusEnum::APPROVED, ['processed_by' => $processedBy]);
+    }
+
+    /**
+     * 신청서의 모든 상품이 자동승인 대상 상태인지 판정합니다. (D8)
+     *
+     * 하나라도 대상 밖이면 전건을 사람이 본다 — 섞인 신청서를 부분 승인할 수단이 없으므로,
+     * "대상 상태가 하나라도 있으면 승인" 은 대상 밖 상품까지 함께 승인해 버린다.
+     *
+     * @param  Order  $order  주문
+     * @param  OrderRefund  $refund  환불신청서
+     * @return bool 전건이 대상이면 true
+     */
+    protected function allItemsInAutoApproveStatuses(Order $order, OrderRefund $refund): bool
+    {
+        $allowed = $this->autoApproveRefundStatusValues();
+
+        if ($allowed === []) {
+            return false;
+        }
+
+        $refund->loadMissing('refundOptions');
+        $order->loadMissing('options');
+
+        foreach ($refund->refundOptions as $row) {
+            $option = $order->options->firstWhere('id', (int) $row->order_option_id);
+
+            if (! $option) {
+                return false;
+            }
+
+            $value = $option->option_status instanceof OrderStatusEnum
+                ? $option->option_status->value
+                : (string) $option->option_status;
+
+            if (! in_array($value, $allowed, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 접수된 환불신청서를 승인·완료까지 자동으로 전이시킵니다. (§4-2 · D2·D4·D15·D16)
+     *
+     * **단계를 건너뛰지 않는다.** 한 트랜잭션 안에서 일어나더라도 상태를
+     * `REQUESTED → APPROVED → COMPLETED` 로 실제로 거친다 — 최종 상태를 바로 INSERT 하면
+     * 활동로그가 한 줄만 남아, 운영자는 이 환불이 승인을 거쳤는지 알 수 없다(D16).
+     *
+     * 종착점은 **환불수단**이 가른다(D4):
+     *
+     * | 수단 | 종착점 | 근거 |
+     * | --- | --- | --- |
+     * | `PG` | 완료 | PG API 가 이 트랜잭션 안에서 실제로 환불한다 |
+     * | `POINTS` | 완료 | 같은 트랜잭션의 `restoreMileage()` 가 이미 마일리지를 환급한다 — 돈이 돌아갔는데 상태만 '승인' 이면 운영자가 추가 이체해 이중 환불이 난다(P12) |
+     * | `BANK` | 승인 | 사람이 송금해야 한다. 운영자의 [환불하기]가 곧 송금 완료 선언이다 |
+     *
+     * ## 알림은 묶고 로그는 쪼갠다
+     *
+     * 단계를 밟으면 한 번의 취소로 고객에게 접수·승인·완료 **알림 3건**이 나간다. D16 이
+     * 요구하는 것은 활동로그이지 알림이 아니므로, 중간 전이에는 억제 플래그를 실어 마지막
+     * 상태에서 1건만 보낸다. 활동로그 리스너는 그 플래그를 읽지 않는다.
+     *
+     * @param  OrderRefund  $refund  접수된 환불신청서
+     * @param  array  $context  부가 정보 (processed_by)
+     * @return OrderRefund 전이된 환불신청서
+     *
+     * @throws OrderCancellationException PG 환불 거절 (D15 — 호출부 트랜잭션 전체 롤백)
+     */
+    public function autoAdvance(OrderRefund $refund, array $context = []): OrderRefund
+    {
+        $processedBy = $context['processed_by'] ?? null;
+        $pgAlreadySettled = (bool) ($context['pg_already_settled'] ?? false);
+        $completesHere = $this->autoAdvanceCompletes($refund, $pgAlreadySettled);
+
+        $refund = $this->transition($refund, RefundStatusEnum::APPROVED, [
+            'processed_by' => $processedBy,
+            // 완료까지 갈 건이면 승인 알림을 억제한다 — 마지막 상태에서 1건만 보낸다.
+            'suppress_notification' => $completesHere,
+        ]);
+
+        if (! $completesHere) {
+            return $refund;
+        }
+
+        return $this->executeRefund($refund, [], $processedBy, pgAlreadySettled: $pgAlreadySettled);
+    }
+
+    /**
+     * 이 결제가 부분취소를 지원하는지 확인합니다. (P6)
+     *
+     * 판정 근거는 PG 플러그인의 `payment.supports_partial_cancel` 선언이다 — 제약을 아는 자리는
+     * 플러그인이고, 코어가 수단·PG 조합표를 들면 플러그인이 늘 때마다 그 표가 낡는다. 화면이
+     * 읽는 값(`OrderPaymentResource::supports_partial_cancel`)과 같은 훅이라 안내와 차단이 갈리지
+     * 않는다.
+     *
+     * 전액취소는 막지 않는다 — 제약은 "일부만 취소" 에 걸린다.
+     *
+     * @param  Order  $order  주문 (잠금된 상태)
+     * @param  array  $cancelItems  취소 대상 [{order_option_id, cancel_quantity}]
+     * @return void
+     *
+     * @throws OrderClaimException 부분취소 미지원
+     */
+    protected function assertPartialCancelSupported(Order $order, array $cancelItems): void
+    {
+        if (! $order->payment) {
+            return;
+        }
+
+        if ($this->cancellationService->resolveCancelType($order, $cancelItems) === CancelTypeEnum::FULL) {
+            return;
+        }
+
+        $supported = (bool) HookManager::applyFilters(
+            'sirsoft-ecommerce.payment.supports_partial_cancel',
+            true,
+            $order->payment,
+        );
+
+        if (! $supported) {
+            throw OrderClaimException::partialCancelNotSupported();
+        }
+    }
+
+    /**
+     * 자동 전이가 완료까지 가는 수단인지 판정합니다. (D4)
+     *
+     * **바깥에서 이미 집행된 환불은 수단을 묻지 않고 완료한다.** 돈은 이미 나갔으므로 승인에서
+     * 멈출 이유가 없다 — 멈추면 운영자에게 "송금하세요" 로 보이고, 그대로 이체하면 **이중 환불**이다.
+     *
+     * 이 구분이 필요한 이유는 수단 판정이 PG 리스너의 **존재**에 의존하기 때문이다(P14 폴백:
+     * 리스너가 없으면 `BANK` 로 떨어진다). 결제 플러그인이 자기 API 로 환불을 끝내고 장부만
+     * 맡기는 경로에서는 그 폴백이 정확히 반대로 작동한다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  bool  $pgAlreadySettled  PG 환불이 바깥에서 이미 집행됐는지
+     * @return bool 완료까지 가면 true
+     */
+    protected function autoAdvanceCompletes(OrderRefund $refund, bool $pgAlreadySettled = false): bool
+    {
+        if ($pgAlreadySettled) {
+            return true;
+        }
+
+        return in_array($refund->refund_method, [RefundMethodEnum::PG, RefundMethodEnum::POINTS], true);
     }
 
     /**
@@ -319,7 +710,7 @@ class OrderRefundRequestService
      */
     public function withdraw(OrderRefund $refund): OrderRefund
     {
-        if ($refund->refund_source_type !== RefundSourceTypeEnum::DIRECT || ! $refund->isWithdrawable()) {
+        if (! $refund->refund_source_type?->isBuyerEditable() || ! $refund->isWithdrawable()) {
             throw OrderClaimException::notWithdrawable();
         }
 
@@ -337,7 +728,7 @@ class OrderRefundRequestService
      */
     public function updateRequest(OrderRefund $refund, array $payload): OrderRefund
     {
-        if ($refund->refund_source_type !== RefundSourceTypeEnum::DIRECT || ! $refund->refund_status->isWithdrawable()) {
+        if (! $refund->refund_source_type?->isBuyerEditable() || ! $refund->refund_status->isWithdrawable()) {
             throw OrderClaimException::notEditable();
         }
 
@@ -403,10 +794,6 @@ class OrderRefundRequestService
 
             if (! $refund instanceof OrderRefund) {
                 throw OrderClaimException::claimNotFound();
-            }
-
-            if ($refund->refund_source_type === RefundSourceTypeEnum::CANCEL) {
-                throw OrderClaimException::refundNotExecutable();
             }
 
             if ($refund->refund_status === RefundStatusEnum::PROCESSING || $refund->refund_status->isFinal()) {
@@ -533,20 +920,26 @@ class OrderRefundRequestService
      * @param  OrderRefund  $refund  환불신청서 (승인 상태)
      * @param  array  $overrides  실행 시점 금액 (refund_amount? / refund_points_amount? / refund_method?)
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  bool  $pgAlreadySettled  PG 환불이 바깥에서 이미 집행됐는지 (결제 플러그인의 가상계좌 환불 경로)
      * @return OrderRefund 실행 완료된 환불신청서
      *
      * @throws OrderClaimException 실행 불가 출처·상태 / D19 상한 초과 / 재실행
      * @throws OrderCancellationException PG 환불 실패
      */
-    public function executeRefund(OrderRefund $refund, array $overrides = [], ?int $processedBy = null): OrderRefund
-    {
-        if ($refund->refund_source_type === RefundSourceTypeEnum::CANCEL) {
-            throw OrderClaimException::refundNotExecutable();
-        }
-
+    public function executeRefund(
+        OrderRefund $refund,
+        array $overrides = [],
+        ?int $processedBy = null,
+        bool $pgAlreadySettled = false,
+    ): OrderRefund {
+        // 출처 가드는 두지 않는다(#599 후속 §4-5). 구형 취소 발(`cancel`) 행도 운영자가 완료
+        // 처리할 수 있어야 한다 — 그 행들은 지금 `approved` 에서 멈춰 있고, 막아 두면 완료로
+        // 옮길 API 가 저장소 어디에도 없어 영구 정지한다(P1).
         $refundId = $refund->id;
 
-        $executed = DB::transaction(function () use ($refundId, $overrides, $processedBy) {
+        $completedOptionChanges = [];
+
+        $executed = DB::transaction(function () use ($refundId, $overrides, $processedBy, $pgAlreadySettled, &$completedOptionChanges) {
             // 잠금 후 상태를 다시 판정한다 — 동시 실행 두 건 중 나중 것이 완료 상태를 보고 물러난다.
             $refund = $this->refundRepository->findForUpdate($refundId);
 
@@ -593,7 +986,14 @@ class OrderRefundRequestService
 
             $couponRestore = null;
 
-            if ($refund->refund_source_type === RefundSourceTypeEnum::DIRECT && $items !== []) {
+            // 취소 유형은 **수량을 옮기기 전에** 정한다. 아래 `cancelOptionQuantitiesForClaim()`
+            // 이 수량을 먼저 빼기 때문에, 기록 시점에 다시 재면 남은 수량이 0 이라 부분취소가
+            // 전체취소로 굳는다 — 취소 문서의 유형이 틀리고 주문 축 훅도 전체취소로 나간다.
+            $cancelType = $items !== []
+                ? $this->cancellationService->resolveCancelType($order, $items)
+                : null;
+
+            if ($this->ownsOptionQuantities($refund) && $items !== []) {
                 // 직접 환불신청 — 선점만 하던 수량이 이 시점에 판매 흐름에서 실제로 빠진다.
                 // 재계산은 쿠폰 조건 소멸 복원 대상을 판정하기 위한 것이며, 환불 금액의 정본은
                 // 신청서 저장값(수정 반영분)이다. 잠금 가드 재검사는 끈다 — 이 수량을 잡고 있는
@@ -610,15 +1010,22 @@ class OrderRefundRequestService
             );
 
             // 환불 실행 — PG 훅 + 주문 환불 누적 + 결제행 취소 누적 (클레임 누적의 단일 지점)
+            //
+            // `$pgAlreadySettled` 는 **PG 환불을 바깥에서 이미 끝낸** 경로가 쓴다 — 결제
+            // 플러그인의 가상계좌 환불 화면이 그렇다(PG API 를 자기가 부르고 코어에는 장부만
+            // 맡긴다). 그때 여기서 PG 를 또 부르면 같은 거래를 두 번 취소한다. 장부·훅·로그는
+            // 전부 같은 경로로 남기고 PG 왕복만 건너뛴다.
             $this->refundExecutionService->execute(
                 $order,
                 $refund,
                 $result,
                 $refund->reason_code,
-                executePg: $refund->refund_method === RefundMethodEnum::PG && $amount > 0,
+                executePg: ! $pgAlreadySettled
+                    && $refund->refund_method === RefundMethodEnum::PG
+                    && $amount > 0,
             );
 
-            if ($refund->refund_source_type === RefundSourceTypeEnum::DIRECT && $items !== []) {
+            if ($this->ownsOptionQuantities($refund) && $items !== []) {
                 // D7 — 취소·환불은 즉시 복구 (`stock_restore_on_cancel` 설정 준수는 restoreStock 내부).
                 $this->refundExecutionService->restoreStock($order, $items);
                 $this->refundExecutionService->restoreCoupons($order, $couponRestore);
@@ -638,6 +1045,8 @@ class OrderRefundRequestService
 
             $updated = $this->refundRepository->update($fresh, $finalUpdates);
 
+            $completedOptionChanges = $this->captureOptionStatusChanges($updated->id, RefundOptionStatusEnum::COMPLETED);
+
             $this->refundOptionRepository->bulkUpdateStatus(
                 $updated->id,
                 RefundOptionStatusEnum::COMPLETED->value,
@@ -645,18 +1054,169 @@ class OrderRefundRequestService
                 Carbon::now(),
             );
 
+            // ── 취소신청서 기록 — 환불이 집행된 바로 그 순간이다 (D3) ──
+            //
+            // 상품 상태는 출처가 정한다(D13) — 취소·환불 신청과 관리자 대리 접수는 위
+            // `cancelOptionQuantitiesForClaim()` 이 이미 `CANCELLED` 로 전이시켰으므로 여기서
+            // 다시 전이시키지 않고, 반품·교환은 `returned`·`exchanged` 를 유지한다.
+            //
+            // 금액 재계산 대상도 출처가 가른다. 상품이 주문에서 빠지는 경로만 재계산을 넘긴다 —
+            // 교환 차액 환불은 상품이 주문에 남으므로 재계산하면 고객이 가진 물건의 값이
+            // 주문에서 사라진다. 반품은 회수배송비 청구가 환불액에 섞여 있어 재계산 결과와
+            // 실제 환불액이 갈리므로, 누적 축만 갱신하고 금액은 환불 누적이 말하게 둔다.
+            $cancelAdjustment = $this->ownsOptionQuantities($updated) ? $couponRestore : null;
+
+            $this->cancellationService->recordCancellation(
+                order: $order->fresh(['options', 'payment', 'shippings']),
+                cancelItems: $items,
+                adjustment: $cancelAdjustment,
+                refund: $updated,
+                cancelType: $cancelType,
+                reason: $updated->reason_code,
+                cancelledBy: $updated->requested_by,
+                processedBy: $processedBy ?? $updated->processed_by,
+                transitionOptions: false,
+                // 상품을 여기서 옮기지는 않았지만(위 `cancelOptionQuantitiesForClaim`), 그
+                // 수량은 주문에서 실제로 빠졌다 — 취소·환불 신청과 운영자 대리 접수는 주문
+                // 상태를 파생시켜야 한다. 반품·교환은 상품이 주문에 남으므로 건드리지 않는다.
+                syncOrderStatus: $this->ownsOptionQuantities($updated),
+                // 결제행 취소 누적·주문 환불 누적은 `RefundExecutionService::execute()` 가 이미
+                // 더했다. 여기서 또 더하면 같은 금액이 두 번 빠져 2차 부분환불이 0원이 된다.
+                accumulatePayment: false,
+                recalculatePaidAmount: false,
+                restoreCouponsAndStock: false,
+            );
+
             return $updated->fresh(['refundOptions']);
         });
+
+        if ($completedOptionChanges !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.refund.option_status_changed',
+                $executed,
+                $completedOptionChanges,
+                RefundOptionStatusEnum::COMPLETED->value,
+                $processedBy,
+            );
+        }
 
         HookManager::doAction(
             'sirsoft-ecommerce.claim.refund.status_changed',
             $executed,
             RefundStatusEnum::APPROVED->value,
             RefundStatusEnum::COMPLETED->value,
+            [],
         );
         HookManager::doAction('sirsoft-ecommerce.claim.refund.completed', $executed);
 
+        // 현금영수증 동기화는 **트랜잭션 밖에서만** 돈다 — 재발급 실패 이력이 롤백에 휩쓸리면
+        // 안 되고, 프로바이더 왕복 2회 동안 DB 잠금을 붙들 수 없다.
+        //
+        // 자동 전이(`autoAdvance()`)는 접수와 같은 트랜잭션 안에서 이 메서드를 부르므로, 그때는
+        // 여기서 동기화하지 않고 **접수 경로가 커밋 뒤에** 부른다(`request()` 말미). 중첩 여부를
+        // 보지 않으면 그 경로에서 외부 API 두 번이 열린 트랜잭션 안으로 들어간다.
+        if (DB::transactionLevel() === 0) {
+            $this->cancellationService->syncCashReceiptAfterCancellation(
+                $executed->order()->first() ?? $refund->order,
+                $executed->reason_code,
+            );
+        }
+
         return $executed;
+    }
+
+    /**
+     * 환불 신청상품 행이 **새로 생긴** 사실을 상품 축 활동로그로 남깁니다. (§7-1 C11·C12)
+     *
+     * 반품·교환 완료가 만드는 환불신청서는 헤더 훅(`claim.refund.requested`)만 쏘고 있어,
+     * 그 신청서의 **상품 행 생성**은 어떤 로그도 남기지 않았다 — 운영자는 그 환불이 어떤
+     * 상품 몇 개를 담고 생겼는지 이력에서 되짚을 수 없었다. 이후 완료 전이에서야 상품 축이
+     * 처음 등장했다.
+     *
+     * 신규 행이므로 `previous` 는 null 이다 — 교환 재발송 신규 주문상품(A6)과 같은 표기이며,
+     * 리스너가 그 값을 전/후 표의 "없음 → 접수" 로 그린다.
+     *
+     * @param  OrderRefund  $refund  방금 만들어진 환불신청서
+     * @param  int|null  $processedBy  처리 주체 (운영자 id — 시스템이면 null)
+     * @return void
+     */
+    public function announceRefundOptionsCreated(OrderRefund $refund, ?int $processedBy = null): void
+    {
+        $changes = [];
+
+        foreach ($this->refundOptionRepository->listByRefundId((int) $refund->id) as $row) {
+            $status = $row->option_status instanceof RefundOptionStatusEnum
+                ? $row->option_status->value
+                : (string) $row->option_status;
+
+            $changes[] = [
+                'option_id' => (int) $row->id,
+                'previous' => null,
+                'new' => $status,
+            ];
+        }
+
+        if ($changes === []) {
+            return;
+        }
+
+        HookManager::doAction(
+            'sirsoft-ecommerce.claim.refund.option_status_changed',
+            $refund,
+            $changes,
+            RefundOptionStatusEnum::REQUESTED->value,
+            $processedBy,
+        );
+    }
+
+    /**
+     * 신청상품 행의 상태 전이 내역을 일괄 갱신 **전에** 캡처합니다. (D16 — 전/후)
+     *
+     * 활동로그 화면은 `changes` 에 실린 전/후만 "변경 전 → 변경 후" 표로 그린다. 갱신 뒤에
+     * 읽으면 두 값이 같아져 표가 비고, 오류는 나지 않는다. 이미 목표 상태인 행은 전이가
+     * 아니므로 뺀다 — 재실행·멱등 호출이 없는 전이를 이력에 남기지 않게 한다.
+     *
+     * @param  int  $refundId  환불신청서 ID
+     * @param  RefundOptionStatusEnum  $target  목표 상태
+     * @return array<int, array{option_id: int, previous: string, new: string}> 전이 내역
+     */
+    protected function captureOptionStatusChanges(int $refundId, RefundOptionStatusEnum $target): array
+    {
+        $changes = [];
+
+        foreach ($this->refundOptionRepository->listByRefundId($refundId) as $row) {
+            $previous = $row->option_status instanceof RefundOptionStatusEnum
+                ? $row->option_status->value
+                : (string) $row->option_status;
+
+            if ($previous === $target->value) {
+                continue;
+            }
+
+            $changes[] = [
+                'option_id' => (int) $row->id,
+                'previous' => $previous,
+                'new' => $target->value,
+            ];
+        }
+
+        return $changes;
+    }
+
+    /**
+     * 이 환불신청서가 주문상품 수량을 선점·회수하는 출처인지 판정합니다.
+     *
+     * 고객 신청(`DIRECT`)과 운영자 대리 접수(`ADMIN`)는 접수 시점에 주문상품을 판매 상태로
+     * 두고 수량만 선점하므로, 환불 실행이 그 수량을 취소 상태로 분할·전이시키고 재고·쿠폰을
+     * 복원한다. 반품·교환 발 신청서는 자기 서비스가 이미 상품을 옮겼으므로 여기서 손대면
+     * 같은 수량이 두 번 빠진다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @return bool 수량을 소유하는 출처면 true
+     */
+    protected function ownsOptionQuantities(OrderRefund $refund): bool
+    {
+        return (bool) $refund->refund_source_type?->ownsOptionQuantities();
     }
 
     /**
@@ -777,7 +1337,9 @@ class OrderRefundRequestService
             $updates['processed_by'] = $context['processed_by'];
         }
 
-        $updated = DB::transaction(function () use ($refund, $updates, $target) {
+        $optionChanges = [];
+
+        $updated = DB::transaction(function () use ($refund, $updates, $target, &$optionChanges) {
             $fresh = $this->refundRepository->update($refund, $updates);
 
             // 반려(판매자가 거절)와 철회(구매자가 거둠)는 신청서를 닫는다는 점만 같고 **다른 사실**이다.
@@ -792,6 +1354,10 @@ class OrderRefundRequestService
             };
 
             if ($optionStatus !== null) {
+                // 전/후를 적으려면 일괄 갱신 **전** 상태를 읽어야 한다 — 갱신 뒤에 읽으면
+                // 전·후가 같은 값이 되어 활동로그 표가 "바뀐 것 없음" 으로 보인다.
+                $optionChanges = $this->captureOptionStatusChanges($fresh->id, $optionStatus);
+
                 $this->refundOptionRepository->bulkUpdateStatus(
                     $fresh->id,
                     $optionStatus->value,
@@ -802,7 +1368,20 @@ class OrderRefundRequestService
             return $fresh->fresh(['refundOptions']);
         });
 
-        HookManager::doAction('sirsoft-ecommerce.claim.refund.status_changed', $updated, $current->value, $target->value);
+        if ($optionChanges !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.refund.option_status_changed',
+                $updated,
+                $optionChanges,
+                $optionChanges[0]['new'] ?? null,
+                $updates['processed_by'] ?? null,
+            );
+        }
+
+        // 네 번째 인수 `$context` — 알림 리스너가 `suppress_notification` 를 읽어 자동 전이의
+        // 중간 단계 알림만 끈다. 기존 3인수 구독자는 그대로 둔다(PHP 는 유저 함수에 인수가
+        // 더 넘어와도 오류를 내지 않는다 — 모자랄 때만 ArgumentCountError).
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.status_changed', $updated, $current->value, $target->value, $context);
 
         $specific = match ($target) {
             RefundStatusEnum::APPROVED => 'sirsoft-ecommerce.claim.refund.approved',
@@ -820,7 +1399,10 @@ class OrderRefundRequestService
     }
 
     /**
-     * 즉시취소 가능 주문옵션 상태 값 목록을 반환합니다. (`claim.instant_cancel_statuses`)
+     * 자동 전이 대상 주문옵션 상태 값 목록을 반환합니다. (`claim.instant_cancel_statuses`)
+     *
+     * 설정 키 이름은 유지하되 뜻은 D2 로 바뀌었다 — 이 상태의 상품도 환불신청서를 만들고,
+     * 다른 것은 승인·완료까지 자동으로 진행한다는 점뿐이다.
      *
      * @return array<string> 상태 값 목록
      */
@@ -828,7 +1410,27 @@ class OrderRefundRequestService
     {
         return array_values((array) $this->settingsService->getSetting(
             'claim.instant_cancel_statuses',
-            [OrderStatusEnum::PAYMENT_COMPLETE->value],
+            [
+                OrderStatusEnum::PENDING_ORDER->value,
+                OrderStatusEnum::PENDING_PAYMENT->value,
+                OrderStatusEnum::PAYMENT_COMPLETE->value,
+            ],
+        ));
+    }
+
+    /**
+     * 자동승인 대상 주문옵션 상태 값 목록을 반환합니다. (`claim.auto_approve_refund_statuses` — D8)
+     *
+     * `claim.auto_approve_refund_request` 가 켜져 있을 때만 의미가 있다. 토글만 보고 전건을
+     * 승인하면 "출고 전만 자동승인" 같은 운영을 표현할 수 없다.
+     *
+     * @return array<string> 상태 값 목록
+     */
+    public function autoApproveRefundStatusValues(): array
+    {
+        return array_values((array) $this->settingsService->getSetting(
+            'claim.auto_approve_refund_statuses',
+            [OrderStatusEnum::PAYMENT_COMPLETE->value, OrderStatusEnum::PREPARING->value],
         ));
     }
 
@@ -915,7 +1517,12 @@ class OrderRefundRequestService
         return match ($target) {
             RefundStatusEnum::APPROVED => ['approved_at' => Carbon::now()],
             RefundStatusEnum::ON_HOLD => ['on_hold_at' => Carbon::now()],
-            RefundStatusEnum::REJECTED => ['reject_reason' => $context['reject_reason'] ?? null],
+            // 반려 시각을 함께 찍는다(F4). 예전에는 사유만 남겨, 상세의 "승인·반려·철회 일시"
+            // 자리에서 환불 유형만 영영 빈칸이었다 — 교환·반품에는 있는 값이다.
+            RefundStatusEnum::REJECTED => [
+                'reject_reason' => $context['reject_reason'] ?? null,
+                'rejected_at' => Carbon::now(),
+            ],
             RefundStatusEnum::WITHDRAWN => ['withdrawn_at' => Carbon::now()],
             default => [],
         };

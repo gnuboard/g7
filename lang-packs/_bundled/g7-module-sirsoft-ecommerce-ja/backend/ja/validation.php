@@ -811,6 +811,7 @@ return [
     ],
     'order' => [
         'payment_method_unavailable' => '現在ご利用いただけない決済手段です。他の決済手段を選択してください。',
+        'payment_method_not_selectable' => '選択できない決済手段です。',
         'ids' => [
             'required' => '変更する注文を選択してください。',
             'array' => '注文IDは配列形式である必要があります。',
@@ -867,6 +868,7 @@ return [
         'cash_receipt_identifier_required' => '現金領収証の発行に使用する番号を入力してください。',
         'refund_bank_required_with' => '返金口座は銀行·口座番号·預金者をすべて入力する必要があります。',
         'refund_bank_required_for_vbank' => '入金が完了した仮想口座注文は返金口座が必要です。',
+        'refund_bank_required_for_manual_transfer' => 'この注文の返金は口座への送金が必要です。返金先の口座を入力してください。',
     ],
     'order_bulk' => [
         'ids_required' => '変更する注文を選択してください。',
@@ -1873,6 +1875,7 @@ return [
         ],
         'refund_method' => [
             'in' => '選択された返金手段は使用できません。',
+            'payment_mismatch' => 'この注文の決済手段では :expected による返金のみ可能です。他の返金手段では実際の返金が行われません。',
         ],
         'preview_claims' => [
             'required' => 'プレビューする申請書を選択してください。',

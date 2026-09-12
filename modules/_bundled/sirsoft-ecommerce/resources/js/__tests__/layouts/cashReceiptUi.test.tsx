@@ -556,13 +556,42 @@ describe('W-3 관리자 발급 모달', () => {
 describe('W-4 취소 모달 환불계좌', () => {
     const section = byId(cancelModal, 'cancel_refund_bank_section');
 
-    it('가상계좌·무통장에서만 노출한다 (카드·간편결제는 계좌 불필요)', () => {
-        const ctx = (m: string) => ({ order: { data: { payment: { payment_method: m } } } });
+    /** 수단 × 잔여 환불액 두 축 — 돈이 남아 있는 주문을 기본 문맥으로 쓴다 */
+    const ctx = (m: string, paid = 20000, refunded = 0) => ({
+        order: { data: { total_paid_amount: paid, total_refunded_amount: refunded, payment: { payment_method: m } } },
+    });
 
+    /**
+     * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_requirement=dbank_required
+     *
+     * @effects cancel_refund_bank_visible_only_for_vbank_dbank
+     */
+    it('가상계좌·무통장에서만 노출한다 (카드·간편결제는 계좌 불필요)', () => {
         expect(evalIf(section.if, ctx('vbank'))).toBe(true);
         expect(evalIf(section.if, ctx('dbank'))).toBe(true);
         expect(evalIf(section.if, ctx('card'))).toBe(false);
         expect(evalIf(section.if, ctx('point'))).toBe(false);
+    });
+
+    /**
+     * **돌려줄 돈이 없으면 수단과 무관하게 감춘다.** (브라우저 실측 회귀)
+     *
+     * 예전에는 수단만 봤다. 그래서 아직 입금되지 않은 무통장 주문에도 계좌칸이 서고, 서버는
+     * 그 칸을 필수로 요구해 **운영자가 미입금 주문을 취소할 수 없었다** — 환불 예정액이
+     * 0원인데 존재하지 않는 환불을 위해 계좌를 지어내야 했다. 서버의 같은 판정
+     * (`CancelOrderRequest::hasMoneyToReturn`)과 축을 맞춘다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_requirement=nothing_to_refund_skip
+     *
+     * @effects cancel_refund_bank_hidden_when_nothing_to_refund
+     */
+    it('돌려줄 돈이 없으면 감춘다 (미입금·전액 환불 완료)', () => {
+        // 미입금 무통장 — 받은 돈이 없다
+        expect(evalIf(section.if, ctx('dbank', 0, 0))).toBe(false);
+        // 이미 전액 환불된 가상계좌 — 남은 돈이 없다
+        expect(evalIf(section.if, ctx('vbank', 20000, 20000))).toBe(false);
+        // 일부만 환불된 건은 잔액이 남아 있으므로 계속 노출한다
+        expect(evalIf(section.if, ctx('vbank', 20000, 5000))).toBe(true);
     });
 
     it('3필드가 _local.refundBank* 에 저장된다 (cancelOrderHandlers 가 읽는 키)', () => {
@@ -576,11 +605,29 @@ describe('W-4 취소 모달 환불계좌', () => {
 
     it('가상계좌 입금완료 건에만 필수 안내를 띄운다', () => {
         const hint = flatten(section).find((n: any) => String(n.text ?? '').includes('refund_bank_required_hint'));
-        const ctx = (m: string, s: string) => ({ order: { data: { payment: { payment_method: m, payment_status: s } } } });
+        const hintCtx = (m: string, s: string) => ({ order: { data: { payment: { payment_method: m, payment_status: s } } } });
 
-        expect(evalIf(hint.if, ctx('vbank', 'paid'))).toBe(true);
-        expect(evalIf(hint.if, ctx('vbank', 'waiting_deposit'))).toBe(false);
-        expect(evalIf(hint.if, ctx('dbank', 'paid'))).toBe(false);
+        expect(evalIf(hint.if, hintCtx('vbank', 'paid'))).toBe(true);
+        expect(evalIf(hint.if, hintCtx('vbank', 'waiting_deposit'))).toBe(false);
+        expect(evalIf(hint.if, hintCtx('dbank', 'paid'))).toBe(false);
+    });
+
+    /**
+     * 은행 목록이 비어 있으면 **어디서 등록하는지** 지목한다. (브라우저 실측 회귀)
+     *
+     * 계좌는 필수인데 고를 은행이 하나도 없으면 운영자는 빈 드롭다운과 "계좌를 입력하세요"
+     * 422 만 보게 된다 — 무엇을 어디서 고쳐야 하는지가 화면 어디에도 없는 막다른 길이다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_requirement=dbank_required
+     *
+     * @effects cancel_refund_bank_empty_list_points_to_settings
+     */
+    it('은행 목록이 비면 설정 자리를 지목하는 안내를 띄운다', () => {
+        const hint = flatten(section).find((n: any) => n.id === 'cancel_refund_bank_empty_hint');
+
+        expect(hint).toBeTruthy();
+        expect(evalIf(hint.if, { paymentSettings: { data: { order_settings: { banks: [] } } } })).toBe(true);
+        expect(evalIf(hint.if, { paymentSettings: { data: { order_settings: { banks: [{ code: '004' }] } } } })).toBe(false);
     });
 
     it('3열 → portable 1열로 접힌다', () => {

@@ -21,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -129,7 +130,7 @@ class UserClaimApiTest extends ModuleTestCase
      * 결제수단이 자기 카탈로그에 선언한 환불 수단과 갈리고, 어긋난 쪽은 오류 없이 계좌
      * 입력칸이 없는 계좌 환불이 되거나 쓸모없는 계좌를 요구한다.
      *
-     * @scenario claim_type=refund, charge_method=none, refund_branch=refund
+     * @scenario claim_type=refund, charge_method=none, refund_branch=request
      *
      * @effects claim_refund_account_requirement_declared_by_server
      */
@@ -147,7 +148,7 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 무통장 결제 주문은 환불계좌를 요구하고, 운영자가 등록한 은행 목록을 함께 낸다.
      *
-     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects claim_refund_account_requirement_declared_by_server,
      *   claim_refund_account_banks_come_from_operator_settings
@@ -369,7 +370,7 @@ class UserClaimApiTest extends ModuleTestCase
      * 입력칸에 채우면 구매자가 손대지 않고 제출했을 때 별표가 섞인 계좌번호가 저장된다 —
      * 검증은 통과하고 환불 실행 때가 되어서야 드러난다. 프리필은 이 통로만 쓴다.
      *
-     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects claim_refund_account_prefills_the_registered_account
      */
@@ -395,7 +396,7 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 등록된 계좌가 없으면 프리필은 비어 있다. (대조군 — 화면은 빈 칸을 연다)
      *
-     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects claim_refund_account_prefills_the_registered_account
      */
@@ -424,17 +425,69 @@ class UserClaimApiTest extends ModuleTestCase
         ])->assertNotFound();
     }
 
-    public function test_refund_request_branches_to_instant_cancel_for_paid_items(): void
+    /**
+     * 결제완료 상품은 `auto` 분기다 — **환불신청서를 만들고** 승인·완료까지 자동으로 간다.
+     *
+     * 회귀 잠금(#599): 예전에는 환불신청서 없이 취소 기록만 남았고, 그 환불 행은 목록에서
+     * 배제돼 고객에게 **환불 이력이 아예 보이지 않았다**. 접수 결과가 언제나 환불신청서라야
+     * 화면이 그 경과를 보여 줄 수 있다.
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects cancellation_record_is_created_only_on_refund_completion
+     */
+    public function test_refund_request_branches_to_auto_advance_for_paid_items(): void
     {
         $order = $this->myPaidOrder();
 
         $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/refund-requests", [
             'items' => $this->items($order), 'reason_code' => 'changed_mind',
         ])->assertCreated()
-            ->assertJsonPath('data.branch', 'cancel')
-            ->assertJsonPath('data.claim.claim_type', 'cancel');
+            ->assertJsonPath('data.branch', 'auto')
+            // 접수 결과는 **언제나 환불신청서**다 (D2).
+            ->assertJsonPath('data.claim.claim_type', 'refund')
+            ->assertJsonPath('data.claim.refund_source_type', 'direct');
 
+        // 취소신청서는 환불이 완료되는 순간 함께 생긴다 (D3).
+        $this->assertSame(1, OrderRefund::count());
+        $this->assertSame(1, OrderCancel::where('order_id', $order->id)->count());
         $this->assertSame(OrderStatusEnum::CANCELLED, $order->fresh()->order_status);
+    }
+
+    /**
+     * F7 — 자동 전이 분기에서도 **구매자 첨부가 살아남는다**.
+     *
+     * 예전에는 즉시취소 분기에 귀속할 신청서가 없어 첨부를 말없이 지웠다. 고객이 증빙으로
+     * 올린 사진이 접수 직후 사라지고, 그 사실은 응답에도 로그에도 남지 않았다 — 나중에 분쟁이
+     * 나면 근거가 없다. 새 모델은 자동 전이 분기도 환불신청서를 만들므로 귀속 대상이 있다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects auto_branch_keeps_the_buyer_attachments
+     */
+    public function test_the_auto_branch_keeps_the_buyer_attachments(): void
+    {
+        $order = $this->myPaidOrder();
+        $image = app(ClaimAttachmentService::class)->uploadPending(
+            UploadedFile::fake()->image('evidence.jpg'),
+            $order,
+            $this->user->id,
+        );
+
+        $response = $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/refund-requests", [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'image_ids' => [$image->id],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.branch', 'auto')
+            ->assertJsonPath('data.claim.images.0.id', $image->id);
+
+        // 파일도 귀속도 남아 있어야 한다 — 지워지면 둘 다 사라진다.
+        $fresh = $image->fresh();
+        $this->assertNotNull($fresh, '자동 전이 분기가 구매자 첨부를 지웠다 (F7)');
+        $this->assertSame('refund', $fresh->claimable_type);
     }
 
     public function test_refund_request_files_a_refund_request_for_preparing_items(): void
@@ -446,13 +499,15 @@ class UserClaimApiTest extends ModuleTestCase
         $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/refund-requests", [
             'items' => $this->items($order), 'reason_code' => 'changed_mind', 'reason_detail' => '변심',
         ])->assertCreated()
-            ->assertJsonPath('data.branch', 'refund')
+            ->assertJsonPath('data.branch', 'request')
             ->assertJsonPath('data.claim.claim_type', 'refund')
             ->assertJsonPath('data.claim.status', 'requested')
             ->assertJsonPath('data.claim.refund_source_type', 'direct')
             ->assertJsonPath('data.claim.refund_total', 29000);
 
         $this->assertSame(1, OrderRefund::count());
+        // 승인 대기 중에는 취소신청서가 없다 — 아직 돈이 나가지 않았다 (D3).
+        $this->assertSame(0, OrderCancel::where('order_id', $order->id)->count());
     }
 
     public function test_refund_request_with_a_delivered_item_is_422(): void
@@ -492,6 +547,64 @@ class UserClaimApiTest extends ModuleTestCase
 
         $this->actingAs($this->user)->getJson($this->base().'/claims?type=cancel')->assertOk()->assertJsonCount(0, 'data.data');
         $this->actingAs($this->user)->getJson($this->base().'/claims?type=bogus')->assertStatus(422);
+    }
+
+    /**
+     * 목록이 **서브탭 건수**를 함께 돌려준다. (F12 — 브라우저 실측 회귀)
+     *
+     * 신청내역 화면의 서브탭(교환·반품·환불·취소)은 응답의 `counts` 로 뱃지를 단다. 그런데
+     * 회원 목록만 그 키를 내지 않아 **뱃지가 영영 비어 있었다** — 구매자는 다른 탭에 건이
+     * 있는지 알 수 없어 네 탭을 차례로 눌러 봐야 했다. 화면은 정상으로 보이고 오류도 없다
+     * (주문 스코프 목록·관리자 목록은 같은 키를 이미 내고 있었다).
+     *
+     * 네 유형 전부를 늘 싣는다 — 키 부재를 0 으로 읽으면 "세지 않음" 과 "0건" 이 구분되지 않는다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects user_claim_index_returns_type_counts
+     */
+    public function test_index_returns_subtab_counts_for_every_type(): void
+    {
+        $order = $this->myDeliveredOrder(quantity: 3);
+        $claims = app(UserClaimService::class);
+        $claims->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'size_mismatch', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+
+        // 다른 회원의 건은 세지 않는다 — 뱃지가 남의 건을 포함하면 탭을 눌렀을 때 빈 목록이 나온다.
+        $other = $this->deliveredClaimOrder();
+        $claims->requestReturn($other, ['items' => $this->items($other), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $other->user_id]);
+
+        $this->actingAs($this->user)->getJson($this->base().'/claims?type=return')
+            ->assertOk()
+            ->assertJsonPath('data.counts.return', 1)
+            ->assertJsonPath('data.counts.exchange', 1)
+            ->assertJsonPath('data.counts.refund', 0)
+            ->assertJsonPath('data.counts.cancel', 0)
+            ->assertJsonPath('data.claim_type', 'return');
+    }
+
+    /**
+     * 상태 필터는 **지금 보고 있는 탭**의 뱃지에만 걸린다. (F15 와 같은 규칙)
+     *
+     * 상태는 유형 종속 어휘라 다른 탭에 걸 수 없다 — 반품 상태를 교환 탭 건수에 걸면 그 탭이
+     * 언제나 0 이 된다. 그래서 기간만 전 탭에 걸고 상태는 현재 탭만 다시 센다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects user_claim_index_counts_apply_status_to_current_tab_only
+     */
+    public function test_index_counts_apply_the_status_filter_to_the_current_tab_only(): void
+    {
+        $order = $this->myDeliveredOrder(quantity: 3);
+        $claims = app(UserClaimService::class);
+        $claims->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'size_mismatch', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+
+        // 반품 탭을 '완료' 로 좁힌다 — 접수 상태뿐이므로 반품 뱃지는 0, 교환 뱃지는 그대로 1.
+        $this->actingAs($this->user)->getJson($this->base().'/claims?type=return&status=completed')
+            ->assertOk()
+            ->assertJsonPath('data.counts.return', 0)
+            ->assertJsonPath('data.counts.exchange', 1);
     }
 
     public function test_show_returns_the_detail_with_the_payment_block_and_hides_others(): void
@@ -661,6 +774,11 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_not_editable'));
     }
 
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=request
+     *
+     * @effects claim_edit_saves_the_refund_account
+     */
     public function test_update_saves_the_refund_account_the_buyer_typed(): void
     {
         // 2026-09-01 확정 — 환불 계좌는 수정 화면에서 고칠 수 있다(신청 단계에서만).
@@ -688,6 +806,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertSame('김철수', $fresh->refund_bank_holder);
     }
 
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=request
+     *
+     * @effects claim_edit_keeps_the_recorded_refund_account
+     */
     public function test_update_without_a_refund_account_keeps_the_recorded_one(): void
     {
         // 표시 응답의 계좌는 마스킹된 값이라 화면이 되돌려 보낼 수 없다 — 그래서 수정 화면은
@@ -714,6 +837,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertSame('홍길동', $fresh->refund_bank_holder);
     }
 
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=request
+     *
+     * @effects claim_edit_rejects_a_partly_filled_refund_account
+     */
     public function test_update_rejects_a_partly_filled_refund_account(): void
     {
         // 셋 중 하나만 오면 은행만 바뀌고 계좌번호는 옛 값으로 남아, 운영자가 존재하지 않는
@@ -1350,11 +1478,16 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.claim_type', 'exchange')
             ->assertJsonPath('data.counts', ['exchange' => 0, 'return' => 0, 'refund' => 0, 'cancel' => 0]);
 
-        // 회원 신청내역(주문 횡단 목록)은 요약을 싣지 않는다 — 그 화면은 주소의 유형이 늘 있고 뱃지도 없다
+        // 회원 신청내역(주문 횡단 목록)도 **같은 요약을 싣는다**.
+        //
+        // 예전에는 "그 화면은 주소의 유형이 늘 있고 뱃지도 없다" 를 전제로 싣지 않았는데,
+        // 브라우저 실측이 그 전제를 부정했다 — 신청내역 화면의 서브탭은 `claims.data.counts`
+        // 를 바인딩해 뱃지를 그리고 있었고, 서버가 그 키를 내지 않아 **뱃지가 영영 비어**
+        // 있었다(F12). 구매자는 다른 탭에 건이 있는지 알 수 없어 네 탭을 차례로 눌러 봐야 했다.
         $this->actingAs($this->user)->getJson($this->base().'/claims?type=return')
             ->assertOk()
-            ->assertJsonMissingPath('data.claim_type')
-            ->assertJsonMissingPath('data.counts');
+            ->assertJsonPath('data.claim_type', 'return')
+            ->assertJsonPath('data.counts.return', 1);
     }
 
     /**

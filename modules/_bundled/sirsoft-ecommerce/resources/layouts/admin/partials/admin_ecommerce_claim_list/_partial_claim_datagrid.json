@@ -256,6 +256,16 @@
                           "className": "text-xs text-gray-500 dark:text-gray-400"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.claim.column.guest_badge"
+                      },
+                      {
+                        "comment": "환불 출처 뱃지 (#599 후속 §5-6). 취소 발 환불이 환불 탭에 서게 되면서(D6) `고객 신청`/`운영자 접수`/`반품 발`/`교환 발` 을 구분해야 한다 — 구분이 없으면 운영자가 자기가 건 취소를 고객 신청으로 읽고, 고객이 철회할 수 있다고 오해한다. 고객 신청(direct)은 기본값이라 뱃지를 세우지 않는다(모든 줄에 같은 뱃지가 서면 정보가 되지 않는다).",
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{(row.refund_source_type ?? '') !== '' && row.refund_source_type !== 'direct'}}",
+                        "props": {
+                          "className": "text-xs text-blue-600 dark:text-blue-400"
+                        },
+                        "text": "{{row.refund_source_type_label ?? ''}}"
                       }
                     ]
                   }

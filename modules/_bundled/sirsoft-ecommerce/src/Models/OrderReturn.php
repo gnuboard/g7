@@ -230,7 +230,18 @@ class OrderReturn extends Model
      */
     public function isGuestRequest(): bool
     {
-        return $this->requested_by === null;
+        // 비회원 판정은 **주문의 주인**이 정한다. `requested_by` 는 비회원 신청과 운영자 대리
+        // 접수가 똑같이 null 이라(§4-3-1), 그 값으로 가르면 **회원 주문의 운영자 접수 건이
+        // 「비회원」으로 표시된다** — 운영자는 연락 수단을 잘못 고르게 된다.
+        //
+        // 주문을 읽을 수 없는 예외적인 경우에만 종전 판정으로 떨어진다.
+        $order = $this->relationLoaded('order') ? $this->order : $this->order()->first();
+
+        if ($order === null) {
+            return $this->requested_by === null;
+        }
+
+        return $order->user_id === null;
     }
 
     /**

@@ -404,17 +404,58 @@ export function buildClaimEditImages(claim: any): Array<Record<string, any>> {
 }
 
 /**
- * 취소·환불 신청서에서 지금 선택된 상품이 속한 분기를 돌려줍니다. (`cancel` | `refund` | null)
+ * 취소·환불 신청서에서 지금 선택된 상품이 속한 분기를 돌려줍니다. (`auto` | `request` | null)
  *
- * 취소·환불은 한 화면이지만 서버는 **두 파이프라인**으로 갈린다 — 결제완료 상품은 즉시취소로
- * 바로 환불되고, 배송준비 이후 상품은 환불신청서로 심사를 받는다. 두 분기의 상품을 한 신청서에
- * 섞으면 서버가 422(`claim_refund_branch_mixed`)로 거절한다.
+ * 취소·환불은 한 화면이고 서버도 **한 파이프라인**이다 — 두 분기 모두 환불신청서를 만든다.
+ * 다른 것은 전이 방식뿐이다: `auto` 는 승인·완료까지 자동으로 밀고(결제완료·미결제 상품),
+ * `request` 는 접수에서 멈춰 운영자 승인을 기다린다(배송준비 이후 상품).
+ *
+ * 그래도 두 분기의 상품을 한 신청서에 섞으면 서버가 422(`claim_refund_branch_mixed`)로
+ * 거절한다 — 한쪽은 바로 환불되고 다른 쪽은 심사를 기다리므로, 고객이 보는 환불 예정액과
+ * 실제 환불액이 갈리기 때문이다.
  *
  * 분기는 **선택된 상품**으로 정해진다. 선택이 없으면 아직 정해지지 않은 것이므로 null 이다.
  *
  * @param items 신청 상품 줄
  * @returns 분기 (선택 없음 → null, 두 분기가 섞임 → 'mixed')
  */
+/**
+ * 접수 응답을 보고 이동할 신청내역 탭 주소를 만듭니다. (F8 — 서버 `branch` 가 정본)
+ *
+ * 화면이 만든 `successPath` 는 주문 전체 기준 추측값이라 혼재 주문에서 접수한 탭과 어긋난다.
+ * 응답에 실린 신청서의 `claim_type` 이 "무엇이 접수됐는가" 의 정본이므로, 그 값이 있으면
+ * 쿼리의 `type` 을 그것으로 덮어쓴다. 응답에 없으면(구형 서버·다른 유형) 원 주소를 그대로 쓴다.
+ *
+ * @param fallbackPath 화면이 만든 이동 주소
+ * @param data 접수 응답의 `data` (branch / claim)
+ * @returns 이동할 주소 (만들 수 없으면 원 주소)
+ */
+export function resolveClaimSuccessPath(fallbackPath: unknown, data: any, detailPathBase?: unknown): string {
+    const path = typeof fallbackPath === 'string' ? fallbackPath : '';
+
+    // 1순위 — 방금 만든 신청서 상세. 서버가 신청번호를 실어 준다(F8).
+    //
+    // 목록으로 보내면 구매자는 방금 낸 신청서를 스스로 찾아야 하고, 유형 탭이 어긋나면 아예
+    // 보이지 않는다. 접수 결과가 어느 문서인지는 서버만 알므로 그 번호를 그대로 따른다.
+    const detailBase = typeof detailPathBase === 'string' ? detailPathBase.replace(/\/+$/, '') : '';
+    const claimNumber = data?.claim?.claim_number;
+
+    if (detailBase && typeof claimNumber === 'string' && claimNumber !== '') {
+        return `${detailBase}/${claimNumber}`;
+    }
+
+    // 2순위 — 신청번호를 받지 못했을 때의 대비책. 유형 서브탭을 맞춰 목록으로 보낸다.
+    const claimType = data?.claim?.claim_type;
+
+    if (!path || typeof claimType !== 'string' || claimType === '') return path;
+
+    const [base, query = ''] = path.split('?');
+    const params = new URLSearchParams(query);
+    params.set('type', claimType);
+
+    return `${base}?${params.toString()}`;
+}
+
 export function resolveSelectedRefundBranch(items: ClaimApplyItem[]): string | null {
     const branches = Array.from(
         new Set(
@@ -1869,10 +1910,19 @@ export async function submitClaimHandler(
             return;
         }
 
-        if (action.params?.successPath) {
+        // 접수 후 이동 주소는 **서버가 실어 준 `branch`** 로 만든다(F8).
+        //
+        // 예전에는 클라이언트가 `resolved_type`(주문 **전체** 기준)으로 추측했다. 혼재 주문에서
+        // 그 값은 `mixed` 라 취소 탭으로 보내는데 접수 결과는 환불신청서였고, 그래서 제보된
+        // 화면이 나왔다 — 접수는 됐는데 간 탭에는 아무것도 없다. 새 모델에서 취소·환불 접수는
+        // 언제나 환불신청서이므로 `claim_type` 이 정본이고, `branch` 는 그 신청서가 어디까지
+        // 자동으로 갔는지를 말할 뿐이다.
+        const successPath = resolveClaimSuccessPath(action.params?.successPath, data, action.params?.detailPathBase);
+
+        if (successPath) {
             await G7Core.dispatch?.({
                 handler: 'navigate',
-                params: { path: action.params.successPath },
+                params: { path: successPath },
             });
         }
     } catch (error: any) {

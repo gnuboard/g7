@@ -122,7 +122,7 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
 
         $liveDirectRefunds = $this->model->newQuery()
             ->select('id')
-            ->where('refund_source_type', RefundSourceTypeEnum::DIRECT->value)
+            ->whereIn('refund_source_type', RefundSourceTypeEnum::quantityOwningValues())
             ->whereNotIn('refund_status', $finalValues);
 
         if ($excludeRefundId !== null) {
@@ -165,11 +165,10 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
             // 목록이 직렬화하는 것만 싣는다 (형제 저장소와 같은 근거).
             ->with(['refundOptions.orderOption', 'order']);
 
-        // 취소 발 제외 — 출처 미상(NULL) 행은 직접 환불로 본다 (판정 단일 출처).
-        // 열람자와 무관한 이 유형 고유의 스코프이므로 기준 쿼리가 소유한다 —
-        // 회원 목록에만 걸면 비회원 섹션에서 취소 서브탭과 이중 노출된다.
-        OrderRefund::applyNonCancelOrigin($query);
-
+        // 출처로 거르지 않는다(#599 후속 D6). 취소 발 환불도 환불 탭에 선다 — 취소신청서와
+        // 환불신청서는 **다른 사실**을 기록하는 별개 문서이므로 한쪽이 다른 쪽을 대표하지
+        // 않는다. 예전에는 취소 발을 여기서 뺐고, 그래서 결제완료 상품을 환불한 고객에게
+        // 환불 이력이 아예 보이지 않았다(#599 제보의 그 화면).
         return $query;
     }
 
@@ -195,11 +194,10 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
     public function paginateForAdmin(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         // 환불 헤더에는 `items_snapshot` 이 없어 상품 요약을 상품 행 → 주문옵션에서 만든다.
-        // 취소 발 환불은 유저 목록과 같은 이유로 뺀다 — 취소 서브탭과 이중 노출된다.
+        // 출처로 거르지 않는다(D6) — 목록의 출처 뱃지가 `고객 신청`/`운영자 접수`/`반품 발`
+        // 을 구분해 보여 준다.
         $query = $this->model->newQuery()
             ->with(['order.shippingAddress', 'refundOptions.orderOption']);
-
-        OrderRefund::applyNonCancelOrigin($query);
 
         $this->applyAdminClaimFilters($query, $filters);
 
@@ -217,9 +215,9 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
      */
     public function countForAdmin(array $filters = []): int
     {
+        // 목록(`paginateForAdmin`)과 같은 술어를 쓴다 — 뱃지와 목록이 다른 수를 말하면
+        // 운영자는 어느 쪽이 맞는지 알 수 없다.
         $query = $this->model->newQuery();
-
-        OrderRefund::applyNonCancelOrigin($query);
 
         $this->applyAdminClaimFilters($query, $filters);
 
@@ -283,7 +281,7 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
         // 세면 반품 한 건이 환불 카탈로그의 동명 사유를 잠근다(쓰인 적 없는 사유가 삭제·코드
         // 변경 영구 400). 취소 발은 이 컬럼을 채우지 않아 애초에 기여하지 않는다.
         return $this->model->newQuery()
-            ->where('refund_source_type', RefundSourceTypeEnum::DIRECT->value)
+            ->whereIn('refund_source_type', RefundSourceTypeEnum::quantityOwningValues())
             ->where('reason_code', $reasonCode)
             ->count();
     }

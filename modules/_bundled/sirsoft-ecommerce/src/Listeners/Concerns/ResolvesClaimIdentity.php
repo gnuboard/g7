@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Sirsoft\Ecommerce\Listeners\Concerns;
 
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -22,14 +23,15 @@ trait ResolvesClaimIdentity
     /**
      * 신청서의 클레임 번호를 반환합니다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return string|null 클레임 번호 (미채번 시 null)
      */
-    protected function claimNumberOf(OrderExchange|OrderReturn|OrderRefund $claim): ?string
+    protected function claimNumberOf(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?string
     {
         return match (true) {
             $claim instanceof OrderExchange => $claim->exchange_number,
             $claim instanceof OrderReturn => $claim->return_number,
+            $claim instanceof OrderCancel => $claim->cancel_number,
             default => $claim->refund_number,
         };
     }
@@ -37,14 +39,15 @@ trait ResolvesClaimIdentity
     /**
      * 신청서의 현재 상태 Enum 을 반환합니다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return \BackedEnum|null 상태 Enum
      */
-    protected function claimStatusOf(OrderExchange|OrderReturn|OrderRefund $claim): ?\BackedEnum
+    protected function claimStatusOf(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?\BackedEnum
     {
         $status = match (true) {
             $claim instanceof OrderExchange => $claim->exchange_status,
             $claim instanceof OrderReturn => $claim->return_status,
+            $claim instanceof OrderCancel => $claim->cancel_status,
             default => $claim->refund_status,
         };
 
@@ -54,10 +57,10 @@ trait ResolvesClaimIdentity
     /**
      * 신청서의 현재 상태 값을 반환합니다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return string|null 상태 값
      */
-    protected function claimStatusValue(OrderExchange|OrderReturn|OrderRefund $claim): ?string
+    protected function claimStatusValue(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?string
     {
         $status = $this->claimStatusOf($claim);
 
@@ -67,10 +70,10 @@ trait ResolvesClaimIdentity
     /**
      * 신청서의 현재 상태 라벨(현재 로케일)을 반환합니다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return string 상태 라벨 (해석 불가 시 빈 문자열)
      */
-    protected function claimStatusLabel(OrderExchange|OrderReturn|OrderRefund $claim): string
+    protected function claimStatusLabel(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): string
     {
         $status = $this->claimStatusOf($claim);
 
@@ -78,12 +81,27 @@ trait ResolvesClaimIdentity
     }
 
     /**
+     * 신청서의 사유 코드를 반환합니다.
+     *
+     * 취소신청서만 컬럼 이름이 다르다(`cancel_reason_type`) — 취소는 클레임 3종보다 먼저
+     * 만들어진 테이블이라 어휘가 갈렸다. 소비 지점마다 분기를 적으면 한 곳만 낡아 그
+     * 경로의 사유가 조용히 null 이 된다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return string|null 사유 코드
+     */
+    protected function claimReasonCodeOf(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?string
+    {
+        return $claim instanceof OrderCancel ? $claim->cancel_reason_type : $claim->reason_code;
+    }
+
+    /**
      * 신청서의 클레임 유형을 반환합니다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return ClaimTypeEnum 클레임 유형
      */
-    protected function claimTypeOf(OrderExchange|OrderReturn|OrderRefund $claim): ClaimTypeEnum
+    protected function claimTypeOf(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ClaimTypeEnum
     {
         return $claim->claimType();
     }

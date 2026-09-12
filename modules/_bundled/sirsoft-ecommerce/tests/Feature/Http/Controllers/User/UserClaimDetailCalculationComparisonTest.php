@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
@@ -163,7 +164,7 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
         $refundNumber = $this->actingAs($this->user)->postJson($this->base()."/orders/{$preparing->id}/refund-requests", [
             'items' => [['order_option_id' => $preparing->options->first()->id, 'quantity' => 1]],
             'reason_code' => 'changed_mind',
-        ])->assertCreated()->assertJsonPath('data.branch', 'refund')->json('data.claim.claim_number');
+        ])->assertCreated()->assertJsonPath('data.branch', 'request')->json('data.claim.claim_number');
 
         $this->actingAs($this->user)->getJson($this->base()."/claims/{$refundNumber}")
             ->assertOk()
@@ -171,19 +172,32 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
             ->assertJsonPath('data.claim.calculation_comparison.original.item_count', 2)
             ->assertJsonPath('data.claim.calculation_comparison.recalculated.item_count', 1);
 
-        // 취소 — 결제완료 상품은 즉시취소로 갈리고, 비교표는 취소 발 환불 행에서 읽는다.
+        // 자동 전이 분기 — 결제완료 상품도 **환불신청서**가 접수되고(D2) 그 신청서가 비교표를
+        // 싣는다. 취소신청서는 환불완료 순간 함께 생기며, 그 상세도 같은 표를 보여 준다
+        // (취소는 자기 컬럼이 없어 연결된 환불 행에서 읽는다).
         $paid = $this->myPaidOrder();
 
-        $cancelNumber = $this->actingAs($this->user)->postJson($this->base()."/orders/{$paid->id}/refund-requests", [
+        $refundNumberOfAuto = $this->actingAs($this->user)->postJson($this->base()."/orders/{$paid->id}/refund-requests", [
             'items' => [['order_option_id' => $paid->options->first()->id, 'quantity' => 1]],
             'reason_code' => 'changed_mind',
-        ])->assertCreated()->assertJsonPath('data.branch', 'cancel')->json('data.claim.claim_number');
+        ])->assertCreated()
+            ->assertJsonPath('data.branch', 'auto')
+            ->assertJsonPath('data.claim.claim_type', 'refund')
+            ->json('data.claim.claim_number');
+
+        $this->actingAs($this->user)->getJson($this->base()."/claims/{$refundNumberOfAuto}")
+            ->assertOk()
+            ->assertJsonPath('data.claim.claim_type', 'refund')
+            ->assertJsonPath('data.claim.calculation_comparison.original.item_count', 2)
+            ->assertJsonPath('data.claim.calculation_comparison.recalculated.item_count', 1);
+
+        $cancelNumber = OrderCancel::where('order_id', $paid->id)
+            ->value('cancel_number');
+        $this->assertNotNull($cancelNumber, '환불완료 시 취소신청서가 함께 생겨야 한다 (D3)');
 
         $this->actingAs($this->user)->getJson($this->base()."/claims/{$cancelNumber}")
             ->assertOk()
-            ->assertJsonPath('data.claim.claim_type', 'cancel')
-            ->assertJsonPath('data.claim.calculation_comparison.original.item_count', 2)
-            ->assertJsonPath('data.claim.calculation_comparison.recalculated.item_count', 1);
+            ->assertJsonPath('data.claim.claim_type', 'cancel');
     }
 
     /**

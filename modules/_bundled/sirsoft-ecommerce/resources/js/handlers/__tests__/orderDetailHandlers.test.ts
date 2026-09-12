@@ -288,49 +288,35 @@ describe('orderDetailHandlers', () => {
             expect(mockModalOpen).toHaveBeenCalledWith('modal_batch_change_confirm');
         });
 
-        it('cancelled + cancelPg=false 시 bulkConfirmItems에 저장하고 batch_change_confirm 모달을 열어야 한다', () => {
-            buildOrderDetailBulkConfirmDataHandler(
-                { handler: 'test', params: { selectedProducts: [1, 3], batchOrderStatus: 'cancelled', cancelPg: false } },
-                mockContext
-            );
+        // 취소는 상태 변경이 아니라 장부 행위다 — `cancelPg` 로 "PG 없이 주문 상태만 변경" 경로가
+        // 갈라지던 시절에는 환불신청서도 취소신청서도 없이 상품만 cancelled 로 옮겨져, 재고는
+        // 돌아오는데 돈·결제행·주문 합계는 그대로인 취소가 원장에 근거 없이 남았다.
+        it('cancelled 는 cancelPg 값과 무관하게 언제나 cancel_order 모달을 연다', () => {
+            for (const params of [
+                { selectedProducts: [1], batchOrderStatus: 'cancelled' },
+                { selectedProducts: [1], batchOrderStatus: 'cancelled', cancelPg: false },
+                { selectedProducts: [1], batchOrderStatus: 'cancelled', cancelPg: true },
+            ]) {
+                mockModalOpen.mockClear();
 
-            expect(mockSetLocal).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    bulkConfirmItems: expect.arrayContaining([
-                        expect.objectContaining({ id: 1, product_name: '상품A' }),
-                        expect.objectContaining({ id: 3, product_name: '상품C' }),
-                    ]),
-                    changeQuantities: { 1: 3, 3: 1 },
-                    batchOrderStatus: 'cancelled',
-                })
-            );
-            expect(mockModalOpen).toHaveBeenCalledWith('modal_batch_change_confirm');
+                buildOrderDetailBulkConfirmDataHandler({ handler: 'test', params }, mockContext);
+
+                expect(mockModalOpen).toHaveBeenCalledWith('modal_cancel_order');
+                expect(mockModalOpen).not.toHaveBeenCalledWith('modal_batch_change_confirm');
+            }
         });
 
-        it('cancelled + cancelPg=true 시 cancel_order 모달을 열어야 한다', () => {
-            buildOrderDetailBulkConfirmDataHandler(
-                { handler: 'test', params: { selectedProducts: [1], batchOrderStatus: 'cancelled', cancelPg: true } },
-                mockContext
-            );
-
-            expect(mockSetLocal).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    cancelItems: expect.arrayContaining([
-                        expect.objectContaining({ id: 1 }),
-                    ]),
-                    cancelPg: true,
-                })
-            );
-            expect(mockModalOpen).toHaveBeenCalledWith('modal_cancel_order');
-        });
-
-        it('cancelled + cancelPg 미지정(기본값 true) 시 cancel_order 모달을 열어야 한다', () => {
+        it('cancel_order 모달을 열 때 cancelPg 를 로컬 상태에 싣지 않는다', () => {
             buildOrderDetailBulkConfirmDataHandler(
                 { handler: 'test', params: { selectedProducts: [1], batchOrderStatus: 'cancelled' } },
                 mockContext
             );
 
-            expect(mockModalOpen).toHaveBeenCalledWith('modal_cancel_order');
+            const setLocalCall = mockSetLocal.mock.calls[0][0];
+            expect(setLocalCall.cancelItems).toEqual(
+                expect.arrayContaining([expect.objectContaining({ id: 1 })])
+            );
+            expect(setLocalCall).not.toHaveProperty('cancelPg');
         });
 
         it('cancelled 시 이미 취소된 옵션은 필터링해야 한다', () => {
@@ -345,13 +331,13 @@ describe('orderDetailHandlers', () => {
             mockDataSourceGet.mockReturnValue({ data: orderDataWithCancelled });
 
             buildOrderDetailBulkConfirmDataHandler(
-                { handler: 'test', params: { selectedProducts: [1, 3], batchOrderStatus: 'cancelled', cancelPg: false } },
+                { handler: 'test', params: { selectedProducts: [1, 3], batchOrderStatus: 'cancelled' } },
                 mockContext
             );
 
             const setLocalCall = mockSetLocal.mock.calls[0][0];
-            expect(setLocalCall.bulkConfirmItems).toHaveLength(1);
-            expect(setLocalCall.bulkConfirmItems[0].id).toBe(1);
+            expect(setLocalCall.cancelItems).toHaveLength(1);
+            expect(setLocalCall.cancelItems[0].id).toBe(1);
         });
 
         it('bulkConfirmItems에 썸네일 URL과 원래 가격을 포함해야 한다', () => {

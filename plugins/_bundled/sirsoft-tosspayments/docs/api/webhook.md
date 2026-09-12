@@ -88,8 +88,9 @@ OK
 
 1. **리플레이 방지** — 이미 결제완료된 거래(`transaction_id` 기준)면 아무것도 하지 않고 `OK` 를 반환한다 (멱등).
 2. **secret 대조** — 플러그인 설정 `webhook_secret_verify` 가 켜져 있으면, 본문의 `secret` 을 결제 승인 시 저장해 둔 `payment_meta.toss_secret` 과 대조한다 (`hash_equals`). 불일치 시 401.
-3. **상태 가드** — 결제가 입금대기(`waiting_deposit`) 상태가 아니면 처리하지 않고 `OK` 를 반환한다.
-4. **상태별 처리** — `status=DONE` 이면 결제완료(`completePayment`), `status=CANCELED` 이면 결제실패(`failPayment`) 처리한다.
+3. **취소 주문 가드** — 주문이 이미 `cancelled` 면 처리하지 않고 `OK` 를 반환한다. 고객이 취소한 뒤에 입금해도 통보는 도착하는데, 통과시키면 취소된 주문이 결제완료로 되살아나 재고와 마일리지가 다시 차감된다. 아래 결제상태 가드만으로는 막히지 않는다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이 그 가드를 통과하기 때문이다.
+4. **상태 가드** — 결제가 입금대기(`waiting_deposit`) 상태가 아니면 처리하지 않고 `OK` 를 반환한다.
+5. **상태별 처리** — `status=DONE` 이면 결제완료(`completePayment`), `status=CANCELED` 이면 결제실패(`failPayment`) 처리한다.
 
 주의사항:
 

@@ -1008,6 +1008,27 @@ describe('환불 실행 — 취소 가능 금액과 실행 (D18·D19)', () => {
   });
 
   /**
+   * [환불하기]는 **승인된 건에서만** 눌린다 (F2).
+   *
+   * 권한만 보던 시절에는 `requested`(아직 승인 전)와 `completed`(이미 끝난 건)에서도 버튼이
+   * 살아 있었다. 누르면 서버가 거절하므로 돈이 잘못 나가지는 않지만, 운영자는 눌리는 버튼을
+   * 눌렀다가 원인 모를 오류를 받는다 — 상세에 다른 전이 수단이 없던 때에는 막다른 길이었다(F1).
+   *
+   * 서버측 계약은 `ClaimRefundExecutionTest::test_execute_requires_an_approved_refund` 가 잠근다.
+   * 이 케이스는 **화면이 그 계약을 미리 보여 주는지**를 잰다 — 상태 축을 빼면 red 가 된다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_refund_execute_disabled_unless_approved
+   */
+  it('[환불하기] 가 승인 상태가 아니면 비활성이다 (F2)', () => {
+    const button = byId(paymentSection, 'cre_014_execute_button');
+    const disabled = String(button.props.disabled);
+
+    expect(disabled).toContain('approved');
+    expect(disabled).toContain('status');
+  });
+
+  /**
    * 모달은 부모 화면과 다른 컨텍스트라 `_local` 표현식을 해석하지 못한다 — 그대로 두면
    * 값이 비어 보이는데 오류는 나지 않는다.
    *
@@ -1080,5 +1101,128 @@ describe('다국어 키 — ko/en 도달', () => {
 
     expect(keys.length).toBeGreaterThan(0);
     expect(keys.filter((key) => !hasMessage(messages[locale as 'ko' | 'en'], key))).toEqual([]);
+  });
+});
+
+describe('입력 컴포넌트의 change 이벤트 경로 (브라우저 실측 회귀)', () => {
+  /** 값을 `{ target: { value } }` 로 emit 하는 컴포넌트 — 엔진이 문서화한 합성 이벤트 계약 */
+  const TARGET_VALUE_COMPONENTS = new Set(['Select', 'Input', 'Textarea', 'MultilingualInput']);
+
+  /**
+   * 이 화면의 모든 `change` 액션을 소유 컴포넌트와 함께 모은다.
+   *
+   * @returns [컴포넌트명, 액션] 쌍 배열
+   */
+  function changeActions(): Array<[string, Node]> {
+    const pairs: Array<[string, Node]> = [];
+
+    DETAIL_FILES.forEach(([, node]) => {
+      walk(node, (n) => {
+        if (typeof n.name !== 'string' || !Array.isArray(n.actions)) {
+          return;
+        }
+
+        n.actions.forEach((action: Node) => {
+          if (action?.type === 'change') {
+            pairs.push([n.name as string, action]);
+          }
+        });
+      });
+    });
+
+    return pairs;
+  }
+
+  /**
+   * 모집단이 비면 이 검사가 공전한다 — 먼저 그것부터 막는다.
+   *
+   * @scenario claim_type=refund
+   *
+   * @effects claim_detail_change_actions_population_is_not_empty
+   */
+  it('change 액션을 실제로 수집한다', () => {
+    expect(changeActions().length).toBeGreaterThan(0);
+  });
+
+  /**
+   * `Select`·`Input` 의 change 액션은 **`$event.target.value`** 로 값을 읽는다.
+   *
+   * 브라우저 실측(#599 후속)이 찾은 결함이다. 신청서 상태 변경 바가 `{{$event.value}}` 로
+   * 읽고 있었는데, 합성 컴포넌트는 `{ target: { value } }` 를 emit 하므로 그 경로는 언제나
+   * `undefined` 다. 그러면 `_local.claimBulkStatus` 가 영영 비고, 그 값을 보는 [일괄 적용]
+   * 버튼은 **영구히 비활성**이다 — 운영자는 상태를 고를 수는 있는데 적용할 수 없다.
+   *
+   * 이 실패는 어디에도 흔적을 남기지 않는다. 핸들러는 정상 실행되고(값만 빈다), 콘솔·네트워크
+   * 어디에도 오류가 없으며, 렌더 테스트는 컨트롤이 그려지는 것만 보므로 계속 초록이다.
+   * 엔진도 `ActionDispatcher` 주석에 같은 함정을 적어 두고 있다.
+   *
+   * @scenario claim_type=refund
+   *
+   * @effects claim_detail_change_actions_read_event_target_value
+   */
+  it('Select·Input 의 change 액션은 $event.target.value 로 읽는다', () => {
+    const offenders = changeActions()
+      .filter(([name]) => TARGET_VALUE_COMPONENTS.has(name))
+      .filter(([, action]) => JSON.stringify(action.params ?? {}).includes('$event.value'))
+      .map(([name, action]) => `${name}: ${JSON.stringify(action.params)}`);
+
+    expect(offenders).toEqual([]);
+  });
+
+  /**
+   * 그 액션들이 값을 **실제로 읽고 있는지**도 함께 본다.
+   *
+   * 위 검사만 두면 `$event.value` 를 지우고 리터럴을 넣어도 통과한다 — 그때는 상태가 늘 같은
+   * 값으로 덮여 다른 방향으로 조용히 고장난다.
+   *
+   * @scenario claim_type=refund
+   *
+   * @effects claim_detail_change_actions_bind_a_value
+   */
+  it('Select·Input 의 change 액션이 이벤트 값을 바인딩한다', () => {
+    const bound = changeActions()
+      .filter(([name]) => TARGET_VALUE_COMPONENTS.has(name))
+      .filter(([, action]) => JSON.stringify(action.params ?? {}).includes('$event.target.value'));
+
+    expect(bound.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * 전이 바가 쓰는 상태 키가 **쓰는 쪽과 읽는 쪽에서 같다**.
+   *
+   * 실측에서 이 축이 두 번 어긋났다 — 핸들러 이름(엔진에 없는 `setLocalState`)과 이벤트 경로.
+   * 둘 다 "쓰기만 조용히 실패" 라 읽는 쪽 바인딩은 멀쩡해 보인다. 그래서 키가 양쪽에 실재하는지를
+   * 함께 못박는다.
+   *
+   * @scenario claim_type=refund
+   *
+   * @effects claim_detail_transition_bar_state_key_round_trips
+   */
+  it('전이 바의 상태 키가 쓰기·읽기 양쪽에 있다', () => {
+    const select = byId(itemsSection as Node, 'cts_001_status_select');
+    const apply = byId(itemsSection as Node, 'cts_003_apply');
+
+    expect(JSON.stringify(select.actions)).toContain('claimBulkStatus');
+    expect(JSON.stringify(select.actions)).toContain('$event.target.value');
+    expect(JSON.stringify(select.props)).toContain('_local.claimBulkStatus');
+    expect(JSON.stringify(apply.props)).toContain('_local.claimBulkStatus');
+  });
+
+  /**
+   * 엔진에 없는 핸들러 이름을 쓰지 않는다.
+   *
+   * `setLocalState` 는 레이아웃 편집기 스펙의 **별칭**일 뿐 `ActionDispatcher` 의 핸들러가
+   * 아니다. 레이아웃에 그대로 적으면 커스텀 핸들러 분기로 떨어져 아무 일도 하지 않는다.
+   *
+   * @scenario claim_type=refund
+   *
+   * @effects claim_detail_uses_no_unknown_handler_alias
+   */
+  it('레이아웃이 setLocalState 를 쓰지 않는다', () => {
+    const offenders = DETAIL_FILES.filter(([, node]) => JSON.stringify(node).includes('setLocalState')).map(
+      ([name]) => name,
+    );
+
+    expect(offenders).toEqual([]);
   });
 });

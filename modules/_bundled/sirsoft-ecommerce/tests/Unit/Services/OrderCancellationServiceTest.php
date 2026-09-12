@@ -37,6 +37,7 @@ use Modules\Sirsoft\Ecommerce\Models\Sequence;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -417,7 +418,37 @@ class OrderCancellationServiceTest extends ModuleTestCase
 
         $this->assertNotNull($result->orderRefund);
         $this->assertEquals($originalPaid, (float) $result->orderRefund->refund_amount);
+        // 바깥에서 이미 집행된 환불(`cancelPg: false`)은 완료로 확정한다.
+        //
+        // 돈은 이미 나갔으므로 승인에서 멈출 이유가 없다 — 멈추면 운영자에게 "송금하세요" 로
+        // 보이고, 그대로 이체하면 이중 환불이다. 결제 플러그인의 가상계좌 환불이 이 경로다.
         $this->assertEquals(RefundStatusEnum::COMPLETED, $result->orderRefund->refund_status);
+        $this->assertNotNull($result->orderRefund->refunded_at);
+    }
+
+    /**
+     * P2 회귀 잠금 — **돈이 실제로 나가지 않았으면 환불완료로 찍지 않는다.**
+     *
+     * 예전에는 "PG 없이 장부만 취소" 경로가 있어 `COMPLETED` + `refunded_at` 이 찍혔다 —
+     * **고객 카드는 그대로인데 장부만 환불완료**인 상태다. 그 경로는 없앴고, 지금은 사람이
+     * 송금해야 하는 수단(계좌 환불)이 승인에서 멈춘다. 완료는 운영자의 [환불하기]가 찍는다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects refund_awaiting_a_human_transfer_stops_at_approved
+     */
+    public function test_a_refund_that_needs_a_human_transfer_stops_at_approved(): void
+    {
+        $order = $this->createOrderWithPaymentMethod('dbank');
+
+        $result = $this->cancellationService->cancelOrder(order: $order);
+
+        $this->assertNotNull($result->orderRefund);
+        $this->assertEquals(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        $this->assertNull($result->orderRefund->refunded_at);
+
+        // 취소신청서는 환불이 집행된 순간에만 생긴다(D3·D5) — 아직 없다.
+        $this->assertNull($result->orderCancel);
     }
 
     /**
@@ -444,25 +475,28 @@ class OrderCancellationServiceTest extends ModuleTestCase
         );
 
         $this->assertNotNull($result->orderRefund);
+
+        // 운영자·시스템이 낸 접수는 `admin` 출처다.
+        //
+        // 구형 `cancel` 출처는 더 만들지 않는다 — 그 값은 취소 파이프라인이 환불 행을 직접
+        // 만들던 시절의 흔적이고, 지금은 취소·환불이 클레임 접수 한 입구로 모인다. 고객이
+        // 운영자의 조치를 철회·수정하지 못하게 하는 축도 이 값이 진다(§4-3-1).
         $this->assertEquals(
-            RefundSourceTypeEnum::CANCEL,
+            RefundSourceTypeEnum::ADMIN,
             $result->orderRefund->refund_source_type,
-            '취소 발 환불의 출처 유형은 cancel 로 기록되어야 합니다'
+            '운영자 발 환불신청서의 출처 유형은 admin 이어야 합니다'
         );
-        $this->assertEquals(
-            $result->orderCancel->id,
-            $result->orderRefund->refund_source_id,
-            '출처 ID 는 취소 레코드 ID 여야 합니다'
-        );
+
+        // 두 문서는 서로를 대표하지 않지만 **가리킨다**(N12) — 링크는 환불 쪽 컬럼이 갖는다.
         $this->assertEquals(
             $result->orderCancel->id,
             $result->orderRefund->order_cancel_id,
-            'order_cancel_id 는 하위호환을 위해 함께 기록되어야 합니다 (이중 기록)'
+            '취소신청서와 환불신청서는 order_cancel_id 로 이어져야 합니다'
         );
         $this->assertSame(
-            $result->orderCancel->id,
-            $result->orderRefund->resolveRefundSource()?->id,
-            '출처 해석기가 취소 레코드를 돌려주어야 합니다'
+            $result->orderRefund->id,
+            $result->orderCancel->refund?->id,
+            '취소 상세가 환불 상태·금액을 읽는 관계가 살아 있어야 합니다'
         );
     }
 
@@ -717,8 +751,19 @@ class OrderCancellationServiceTest extends ModuleTestCase
         );
 
         $updatedOrder = $result->order;
-        // 잔여 B(10K)만 남음
-        $this->assertEquals(10000, (int) $updatedOrder->total_paid_amount);
+
+        // 잔여 환불 한도는 `total_paid_amount − total_refunded_amount` 다(§12-B B1).
+        //
+        // 환불이 집행된 경로는 `total_paid_amount` 를 재계산값으로 덮어쓰지 않는다 — 환불 실행이
+        // `total_refunded_amount` 를 이미 누적하는데 취소 기록까지 원금을 깎으면 같은 금액이 두
+        // 번 빠져, 2차 부분환불이 0원으로 실행된다. 그래서 원금은 그대로 두고 누적으로 말한다.
+        $this->assertEquals(30000, (int) $updatedOrder->total_paid_amount);
+        $this->assertEquals(20000, (int) $updatedOrder->total_refunded_amount);
+        $this->assertEquals(
+            10000,
+            (int) $updatedOrder->total_paid_amount - (int) $updatedOrder->total_refunded_amount,
+            '잔여 B(10K)만 환불 가능해야 한다.'
+        );
         $this->assertGreaterThan(0, (float) $updatedOrder->total_cancelled_amount);
     }
 
@@ -1005,6 +1050,36 @@ class OrderCancellationServiceTest extends ModuleTestCase
         $this->cancellationService->cancelOrder(
             order: $order,
             cancelPg: false,
+        );
+    }
+
+    /**
+     * 상품 행 없는 취소 문서는 만들어지지 않는다. (§9-1 구조 가드)
+     *
+     * 운영자·시스템 창구는 분기를 못박아 접수하므로 `resolveBranch()` 의 대상 부재 가드를
+     * 지나지 않는다. 이미 전량 취소된 주문을 다시 취소하면 어댑터가 **빈 목록**을 만들어
+     * 넘기고, 막지 않으면 상품 행이 하나도 없는 취소 문서가 생긴다 — 목록의 뱃지는 1건을
+     * 세는데 상세의 상품 표는 비어, 운영자는 그 문서가 무엇인지 알 수 없다.
+     *
+     * @effects cancel_intake_rejects_empty_items
+     */
+    public function test_cancel_rejects_empty_items(): void
+    {
+        $this->createShippingPolicy();
+        [$pA, $oA] = $this->createProductWithOption(price: 20000);
+
+        $input = new CalculationInput(
+            items: [new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1)],
+        );
+        $order = $this->createOrderFromCalculation($input, [
+            'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ]);
+
+        $this->expectException(\Exception::class);
+
+        $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [],
         );
     }
 
@@ -1883,9 +1958,15 @@ class OrderCancellationServiceTest extends ModuleTestCase
         $this->assertEquals(20000, (int) $refund1Amount);
         $this->assertEquals(20000, (int) $refund2Amount);
 
-        // 최종 주문 잔여 금액: 20,000 (1개 남음)
-        $finalOrder = $result2->order;
-        $this->assertEquals(20000, (int) $finalOrder->total_paid_amount);
+        // 최종 주문 잔여 금액: 20,000 (1개 남음).
+        // 원금은 그대로 두고 누적 환불액으로 잔여를 말한다(§12-B B1 — 위 주석 참조).
+        $finalOrder = $result2->order->fresh();
+        $this->assertEquals(60000, (int) $finalOrder->total_paid_amount);
+        $this->assertEquals(40000, (int) $finalOrder->total_refunded_amount);
+        $this->assertEquals(
+            20000,
+            (int) $finalOrder->total_paid_amount - (int) $finalOrder->total_refunded_amount
+        );
     }
 
     // ================================================================
@@ -2059,8 +2140,13 @@ class OrderCancellationServiceTest extends ModuleTestCase
         $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
 
         $this->assertFalse($hookCalled, '무통장 취소는 PG 환불 훅을 발화하면 안 됩니다');
-        $this->assertEquals(OrderStatusEnum::CANCELLED, $result->order->order_status);
         $this->assertNotNull($result->orderRefund);
+
+        // 무통장은 승인에서 멈춘다 — 운영자가 송금을 마치고 [환불하기]를 눌러야 취소가
+        // 확정된다(D4·D5). 그때까지 주문은 취소되지 않은 상태로 남는 것이 정상이다.
+        $this->assertEquals(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
+        $this->assertNull($result->orderCancel);
     }
 
     /**
@@ -2100,9 +2186,18 @@ class OrderCancellationServiceTest extends ModuleTestCase
 
         $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
 
-        $this->assertEquals(OrderStatusEnum::CANCELLED, $result->order->order_status);
-        $this->assertEquals(PaymentStatusEnum::CANCELLED, $result->order->payment->payment_status);
-        $this->assertGreaterThan(0, (float) $result->order->payment->cancelled_amount);
+        // 무통장은 승인에서 멈춘다(D4·D5) — 송금 전에는 주문도 결제행도 취소로 확정하지 않는다.
+        // 장부를 먼저 닫으면 운영자가 아직 보내지 않은 돈을 나간 것으로 읽는다.
+        $this->assertEquals(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
+
+        // 운영자가 [환불하기]로 송금을 확정하면 그때 주문·결제행이 취소로 닫힌다.
+        app(OrderRefundRequestService::class)->executeRefund($result->orderRefund);
+
+        $settled = $result->order->fresh(['payment']);
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $settled->order_status);
+        $this->assertEquals(PaymentStatusEnum::CANCELLED, $settled->payment->payment_status);
+        $this->assertGreaterThan(0, (float) $settled->payment->cancelled_amount);
     }
 
     /**

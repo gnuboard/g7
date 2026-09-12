@@ -1,0 +1,46 @@
+feature: 환불신청서 출처별 구매자 조작 가능 판정 (#599 후속 F3)
+
+description: |
+  환불신청서에는 **누가 낸 것인가**가 적혀 있다(`refund_source_type`). 구매자가 직접 낸 것,
+  운영자가 대리 접수한 것, 반품·교환·구형 취소에서 이어진 것 — 다섯이다. 그런데 목록·상세
+  리소스의 `is_withdrawable` / `is_editable` 은 **상태만** 보고 그 출처를 보지 않았다.
+
+  서버는 보고 있었다. `withdraw()` 와 `updateRequest()` 는 `isBuyerEditable()` 이 아닌 출처를
+  거절한다. 그래서 어긋남은 화면에만 남았다 — 반품에서 이어진 환불신청서와 운영자가 건 취소에
+  [수정]·[철회] 버튼이 서고, 누르면 **언제나 422** 다. 눌러야만 드러나고, 눌러도 "왜" 가 없다.
+  오류로 보고되지도 않는다: 구매자는 자기가 잘못 눌렀다고 생각하고 그만둔다.
+
+  출처를 여는 쪽의 위험이 더 크다. 운영자 대리 접수를 구매자가 철회할 수 있으면 **운영자의 취소
+  조치가 고객 손에 되돌려진다**. 반품 발 환불만 따로 철회되면 반품은 완료인데 환불은 사라진,
+  어느 화면에서도 설명되지 않는 상태가 남는다.
+
+  출처 Enum 은 서로 **다른 두 축**을 나른다. `ownsOptionQuantities()` 는 "이 신청서가 주문상품
+  수량을 선점·회수하는가" 이고 `isBuyerEditable()` 은 "구매자가 손댈 수 있는가" 다. 운영자 대리
+  접수는 앞은 참이고 뒤는 거짓이다 — 한 축으로 뭉뚱그리면 둘 중 하나가 반드시 틀린다.
+
+# axis 의미:
+#   refund_source — 이 매니페스트의 유일한 축이다. 판정이 갈리는 자리가 출처 하나뿐이기 때문이다
+#                   (상태 축은 기존 `claim_*_lifecycle` 매니페스트가 덮는다). 다섯 값 전부를
+#                   세우는 이유는 "직접/그 외" 로 묶으면 새 출처가 추가될 때 어느 쪽에 붙는지가
+#                   암묵이 되기 때문이다 — 값마다 명시적으로 판정을 적는다.
+axes:
+  refund_source:
+    - direct     # 구매자가 직접 낸 환불신청 → 접수 상태에서 수정·철회 가능
+    - admin      # 운영자 대리 접수 → 구매자 조작 불가 (운영자 조치를 되돌리지 못하게)
+    - cancel     # 구형 취소 발 환불 → 구매자 조작 불가 (취소신청서가 원본이다)
+    - return     # 반품에서 이어진 환불 → 구매자 조작 불가 (반품 신청서가 조작 주체)
+    - exchange   # 교환 차액 환불 → 구매자 조작 불가 (교환 신청서가 조작 주체)
+
+effects:
+  - direct_refund_stays_buyer_editable                          # 비회귀 — 직접 신청은 계속 열려 있다
+  - admin_filed_refund_is_not_buyer_editable                    # 운영자 조치를 고객이 되돌리지 못한다
+  - return_and_exchange_originated_refunds_are_not_buyer_editable  # 원 신청서가 조작 주체다
+  - refund_source_type_axes_are_explicit                        # 수량 축과 조작 축이 어긋나지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimResourceAbilityTest.php
+
+notes: |
+  **서버 거절 자체는 이 매니페스트의 축이 아니다.** `withdraw()`·`updateRequest()` 의 422 는
+  `user-claim-refund-return-apply.yaml` 이 덮는다. 여기서 잠그는 것은 **리소스가 화면에 내려주는
+  판정**이 그 서버 규칙과 같은 축을 보는가 하나다 — 둘이 갈리면 버튼은 서고 실행만 실패한다.

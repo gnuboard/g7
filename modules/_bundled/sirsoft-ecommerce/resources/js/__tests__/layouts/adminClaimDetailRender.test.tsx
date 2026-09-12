@@ -679,6 +679,92 @@ describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
   });
 });
 
+describe('신청서 단위 전이 바 · 진행 일시 (#599 후속 F1·F16)', () => {
+  /**
+   * 상세에 신청서 단위 전이 진입점이 통째로 없던 결함(F1).
+   *
+   * 승인·반려·보류는 **목록의 일괄 바**에서만 가능했다 — 운영자는 상세를 열어 내용을 확인한
+   * 뒤 목록으로 되돌아가 그 줄을 다시 찾아야 했고, 환불 유형은 상세에 어떤 전이 컨트롤도 없어
+   * [환불하기]가 요구하는 `approved` 에 도달할 방법이 그 화면에 없었다(F2 와 겹친 막다른 길).
+   *
+   * @scenario claim_type=refund, claim_stage=in_progress
+   * @effects claim_detail_has_a_status_transition_bar
+   */
+  it('서버가 준 전이 선택지가 있으면 전이 바가 선다', async () => {
+    const utils = await renderProbe(
+      itemsSection as Node,
+      claimResponse(
+        { claim_type: 'refund', claim_type_label: '환불', status: 'requested', status_label: '환불신청' },
+        {
+          claim_path_segment: 'refunds',
+          transition_options: [
+            { value: 'approved', label: '환불승인' },
+            { value: 'rejected', label: '환불반려' },
+          ],
+        }
+      )
+    );
+
+    expect(document.getElementById('claim_status_transition_card')).not.toBeNull();
+    expect(document.getElementById('cts_001_status_select')).not.toBeNull();
+    expect(document.getElementById('cts_003_apply')).not.toBeNull();
+    utils.cleanup();
+  });
+
+  /**
+   * 전이할 곳이 없으면 바를 세우지 않는다 — 취소신청서는 전이 축이 없다(생성이 곧 확정이다).
+   *
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects claim_detail_hides_the_transition_bar_without_targets
+   */
+  it('전이 선택지가 비어 있으면 전이 바가 서지 않는다', async () => {
+    const utils = await renderProbe(
+      itemsSection as Node,
+      claimResponse(
+        { claim_type: 'cancel', claim_type_label: '취소', status: 'completed', status_label: '취소완료' },
+        { claim_path_segment: 'cancels', transition_options: [] }
+      )
+    );
+
+    expect(document.getElementById('claim_status_transition_card')).toBeNull();
+    utils.cleanup();
+  });
+
+  /**
+   * 승인·반려·철회 **일시**가 상세에 보인다 (F16).
+   *
+   * 리소스는 세 값을 처음부터 내보냈는데 어느 화면도 읽지 않아, 운영자는 이 신청서가 **언제**
+   * 승인·반려됐는지 화면 어디에서도 알 수 없었다.
+   *
+   * @scenario claim_type=refund, claim_stage=in_progress
+   * @effects claim_detail_shows_approval_rejection_withdrawal_timestamps
+   */
+  it('승인 일시가 있으면 진행 카드에 표시된다', async () => {
+    const utils = await renderProbe(
+      itemsSection as Node,
+      claimResponse({ approved_at_formatted: '2026-09-11 14:05' })
+    );
+
+    const block = document.getElementById('claim_progress_timestamps');
+    expect(block).not.toBeNull();
+    expect(block?.textContent).toContain('2026-09-11 14:05');
+    utils.cleanup();
+  });
+
+  /**
+   * 값이 하나도 없으면 빈 칸을 세우지 않는다 — 아직 일어나지 않은 일이 '기록 누락' 으로 읽힌다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_detail_omits_empty_progress_timestamps
+   */
+  it('일시가 하나도 없으면 그 블록이 서지 않는다', async () => {
+    const utils = await renderProbe(itemsSection as Node);
+
+    expect(document.getElementById('claim_progress_timestamps')).toBeNull();
+    utils.cleanup();
+  });
+});
+
 describe('사유·관리자 메모 (2단)', () => {
   /**
    * 환불신청서에는 메모 컬럼이 없다 — 입력을 그려 두면 운영자가 적은 내용이 오류 없이 버려진다.
@@ -1235,9 +1321,12 @@ describe('접수 시점 주문금액 비교표 — 정산 카드 · 취소 카�
    * @scenario claim_type=cancel, claim_stage=final
    * @effects admin_claim_settlement_card_hides_comparison_for_cancel
    */
-  it('취소 신청서는 정산 카드에 표를 두지 않는다 (취소 정보 카드가 이미 같은 표를 싣는다)', async () => {
-    // 회귀(2026-09-11 관리자 화면 실측, #599 후속): 두 카드가 같은 표를 무조건 싣자 취소 상세 한 화면에
-    // 같은 비교표가 두 번 섰다. 취소의 표는 취소 정보 카드(_partial_claim_reason)가 소유한다.
+  it('취소 신청서에는 정산 카드가 서지 않는다 (제목만 남은 빈 카드 회귀 — F10)', async () => {
+    // 회귀 둘을 한 자리에서 잠근다.
+    //   ⓐ 2026-09-11 관리자 화면 실측: 두 카드가 같은 비교표를 무조건 싣자 취소 상세 한 화면에
+    //      같은 표가 두 번 섰다. 취소의 표는 취소 정보 카드(_partial_claim_reason)가 소유한다.
+    //   ⓑ #599 후속 F10: 카드 안쪽 블록이 전부 취소를 배제하는데 카드에는 `if` 가 없어,
+    //      **제목만 남은 빈 카드**가 화면에 섰다. 이제 카드째 서지 않는다.
     const utils = await renderProbe(paymentSection as Node, claimResponse({
       claim_number: 'CN20260902-000009',
       claim_type: 'cancel',
@@ -1246,9 +1335,8 @@ describe('접수 시점 주문금액 비교표 — 정산 카드 · 취소 카�
       calculation_comparison: COMPARISON,
     }));
 
-    const card = document.getElementById('claim_settlement_card');
-    expect(card).not.toBeNull();
-    expect(card?.querySelector('[data-testid="claim-detail-comparison"]')).toBeNull();
+    expect(document.getElementById('claim_settlement_card')).toBeNull();
+    expect(document.querySelector('[data-testid="claim-detail-comparison"]')).toBeNull();
     utils.cleanup();
   });
 

@@ -838,7 +838,10 @@ class OrderService
         $previousStatus = $order->order_status?->value;
         $purchaseConfirmed = false;
 
-        $result = DB::transaction(function () use ($order, $option, $previousStatus, &$purchaseConfirmed) {
+        // 변경 전 상품 속성 — 구매확정 줄의 "변경 전 → 변경 후" 표가 읽는 근거다(§7-1 D).
+        $confirmSnapshot = $option->toArray();
+
+        $result = DB::transaction(function () use ($order, $option, $previousStatus, $confirmSnapshot, &$purchaseConfirmed) {
             HookManager::doAction('sirsoft-ecommerce.order-option.before_confirm', $order, $option);
 
             $option->update([
@@ -869,7 +872,8 @@ class OrderService
             }
 
             // 마일리지 적립용 훅 (유지) — 별개 훅
-            HookManager::doAction('sirsoft-ecommerce.order-option.after_confirm', $order, $option);
+            // 변경 전 상품 속성 — 구매확정 줄에 "변경 전 → 변경 후" 표를 세우는 근거다(§7-1 D).
+            HookManager::doAction('sirsoft-ecommerce.order-option.after_confirm', $order, $option, $confirmSnapshot ?? null);
 
             // 주문 전체가 CONFIRMED 로 전이된 경우 구매확정 알림 발화 (A36/D10).
             // 목표 상태(CONFIRMED)를 스칼라로 명시 전달 — 큐 지연 재로드 오매핑 방지 (N1).

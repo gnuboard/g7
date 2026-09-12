@@ -887,6 +887,7 @@ return [
     // Order validation messages (backward compatibility - order.* format)
     'order' => [
         'payment_method_unavailable' => 'This payment method is currently unavailable. Please choose another one.',
+        'payment_method_not_selectable' => 'This payment method cannot be selected.',
         'ids' => [
             'required' => 'Please select orders to update.',
             'array' => 'Order IDs must be an array.',
@@ -944,6 +945,7 @@ return [
         'cash_receipt_identifier_required' => 'Please enter the number to use for the cash receipt.',
         'refund_bank_required_with' => 'The refund account requires the bank, account number, and account holder.',
         'refund_bank_required_for_vbank' => 'A refund account is required for a paid virtual account order.',
+        'refund_bank_required_for_manual_transfer' => 'This refund must be sent by bank transfer. Enter the account to refund to.',
     ],
 
     // Guest order lookup verification validation messages
@@ -2025,6 +2027,7 @@ return [
         ],
         'refund_method' => [
             'in' => 'The selected refund method is not available.',
+            'payment_mismatch' => 'This order can only be refunded via :expected. Other refund methods would not actually move the money.',
         ],
         // Completion modal preview (D26)
         'preview_claims' => [

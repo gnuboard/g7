@@ -905,7 +905,9 @@ class OrderReturnService
 
         $previousStatus = $return->return_status;
 
-        $completed = DB::transaction(function () use ($return, $targets, $options, $processedBy) {
+        $completionChanges = [];
+
+        $completed = DB::transaction(function () use ($return, $targets, $options, $processedBy, &$completionChanges) {
             $order = $this->orderRepository->findForUpdate($return->order_id) ?? $return->order;
             $order->load(['options', 'shippings', 'payment']);
 
@@ -922,6 +924,12 @@ class OrderReturnService
             $restoredAny = false;
 
             foreach ($targets as $item) {
+                $completionChanges[] = [
+                    'option_id' => (int) $item->id,
+                    'previous' => $item->option_status->value,
+                    'new' => ReturnStatusEnum::COMPLETED->value,
+                ];
+
                 $this->returnOptionRepository->update($item, [
                     'option_status' => ReturnStatusEnum::COMPLETED,
                     'completed_at' => now(),
@@ -993,6 +1001,18 @@ class OrderReturnService
 
             return $this->returnRepository->update($return, $updates)->fresh(['returnOptions']);
         });
+
+        // 부분 완료 라운드는 헤더가 움직이지 않는다 — 그때 이 줄이 없으면 **어떤 줄도
+        // 남지 않아** 운영자가 무엇을 완료 처리했는지 흔적이 사라진다(C4).
+        if ($completionChanges !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.return.option_status_changed',
+                $completed,
+                $completionChanges,
+                ReturnStatusEnum::COMPLETED->value,
+                $processedBy,
+            );
+        }
 
         if ($completed->return_status === ReturnStatusEnum::COMPLETED && $previousStatus !== ReturnStatusEnum::COMPLETED) {
             $this->fireStatusHooks($completed, $previousStatus, ReturnStatusEnum::COMPLETED);
@@ -1469,6 +1489,8 @@ class OrderReturnService
     {
         $return->loadMissing('returnOptions');
 
+        $changes = [];
+
         foreach ($return->returnOptions as $item) {
             if ($item->option_status === $target || $item->option_status->isFinal()) {
                 continue;
@@ -1478,10 +1500,29 @@ class OrderReturnService
                 continue;
             }
 
+            $changes[] = [
+                'option_id' => (int) $item->id,
+                'previous' => $item->option_status->value,
+                'new' => $target->value,
+            ];
+
             $this->returnOptionRepository->update($item, [
                 'option_status' => $target,
                 'processed_by' => $processedBy ?? $item->processed_by,
             ]);
+        }
+
+        // 헤더 전이가 끌고 간 상품 전이도 상품 축 훅으로 남긴다(C2). 예전에는
+        // `transitionOption()` 한 경로만 훅을 쏴, 운영자가 신청서 단위로 승인하면 상품 행은
+        // 조용히 함께 옮겨지고 그 사실이 활동로그 어디에도 없었다.
+        if ($changes !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.return.option_status_changed',
+                $return->fresh(['returnOptions']),
+                $changes,
+                $target->value,
+                $processedBy,
+            );
         }
     }
 
@@ -1855,6 +1896,15 @@ class OrderReturnService
                 array_merge(['order_refund_id' => $refund->id], $row)
             );
         }
+
+        // 반품·교환 발 환불신청서도 접수 훅을 쏜다(B8·B9). 예전에는 `OrderRefundRequestService::request()`
+        // 한 곳만 발행해, 완료 처리가 만든 환불신청서는 **어떤 이력도 없이** 목록에 나타났다 —
+        // 운영자는 그 신청서가 언제 어떤 경로로 생겼는지 되짚을 수 없었다.
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.requested', $refund->fresh(), $order->fresh());
+
+        // 신청상품 행 생성도 상품 축에 남긴다(§7-1 C12) — 헤더 줄만 남기면 그 환불이 어떤
+        // 상품 몇 개를 담고 생겼는지 이력에서 되짚을 수 없다.
+        app(OrderRefundRequestService::class)->announceRefundOptionsCreated($refund->fresh());
 
         return $refund->fresh();
     }

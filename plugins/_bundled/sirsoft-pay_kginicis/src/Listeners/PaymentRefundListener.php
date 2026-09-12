@@ -104,6 +104,14 @@ class PaymentRefundListener implements HookListenerInterface
                     $isPartial ? $cancelAmt : null,
                     $cancelMsg,
                     $isPartial ? $totalAmount : null,
+                    // 가상계좌 환불계좌 — 없으면 PG 가 vbank 취소를 거절한다(P5).
+                    // 계좌의 정본은 결제행이며, 신청서에 적힌 계좌는 환불 실행 직전에
+                    // 코어(`AppliesRefundBankAccount`)가 이 행에 반영한다.
+                    $payment->isVirtualAccount() ? [
+                        'bank_code' => $payment->refund_bank_code,
+                        'account_number' => $payment->refund_bank_account,
+                        'holder' => $payment->refund_bank_holder,
+                    ] : null,
                 );
 
             Log::info('KG Inicis: refund success', [

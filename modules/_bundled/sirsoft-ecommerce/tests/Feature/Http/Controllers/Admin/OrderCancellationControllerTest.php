@@ -4,16 +4,24 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\SequenceAlgorithm;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
+use Modules\Sirsoft\Ecommerce\Models\Coupon;
+use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -42,10 +50,21 @@ class OrderCancellationControllerTest extends ModuleTestCase
                 @unlink($file);
             }
         }
-        app(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class)->clearCache();
+        app(EcommerceSettingsService::class)->clearCache();
 
         // g7_settings.modules Config cache 도 제거 (CoreServiceProvider 가 boot 시 로드)
-        \Illuminate\Support\Facades\Config::set('g7_settings.modules.sirsoft-ecommerce', []);
+        Config::set('g7_settings.modules.sirsoft-ecommerce', []);
+
+        // PG 환불 리스너 — 관리자 취소는 환불신청서를 만들고, 자동 전이를 켜면 그 환불이
+        // 실제로 집행된다. 구독자가 하나도 없으면 코어가 "결제 플러그인 없음" 으로 보고 계좌
+        // 환불로 폴백하므로(P14), PG 경로를 검사하려면 리스너가 있어야 한다. 개별 테스트가
+        // 자기 리스너를 우선순위로 덮어쓴다.
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn () => [
+            'success' => true,
+            'transaction_id' => 'TEST_TXN_DEFAULT',
+            'error_code' => null,
+            'error_message' => null,
+        ], 50);
     }
 
     /**
@@ -248,12 +267,12 @@ class OrderCancellationControllerTest extends ModuleTestCase
         );
         $order = $data['order'];
 
-        // When: 전체취소 요청 (PG 연동 없이)
+        // When: 자동 전이를 켜고 전체취소 요청
         $response = $this->actingAs($this->adminUser)
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => false,
+                'auto_advance_refund' => true,
             ]);
 
         // Then: 성공 응답 및 주문 상태 CANCELLED 확인
@@ -295,7 +314,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
                     ],
                 ],
                 'reason' => 'order_mistake',
-                'cancel_pg' => false,
+                'auto_advance_refund' => true,
             ]);
 
         // Then: 성공 응답
@@ -308,8 +327,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * cancel_pg=true로 취소 요청 시 PG 연동 취소가 시도된다.
-     * (테스트 환경에서 PG 리스너 없음 → 훅 반환값 null → PG 미등록 처리로 취소 성공)
+     * 자동 전이를 켜면 PG 환불 훅까지 실제로 진입한다. (#599 후속 D7)
      */
     public function test_admin_cancel_with_pg(): void
     {
@@ -327,18 +345,18 @@ class OrderCancellationControllerTest extends ModuleTestCase
         HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) {
             return [
                 'success' => true,
-                'transaction_id' => 'TEST_TXN_' . time(),
+                'transaction_id' => 'TEST_TXN_'.time(),
                 'error_code' => null,
                 'error_message' => null,
             ];
         }, 10);
 
-        // When: PG 결제 취소 옵션 활성화하여 전체취소 요청
+        // When: 자동 전이를 켜고 전체취소 요청
         $response = $this->actingAs($this->adminUser)
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         // Then: 성공 응답 (PG 환불 훅 성공)
@@ -386,7 +404,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
                 ],
             ]])
         );
-        app(\Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver::class)->flushCache();
+        app(PaymentMethodResolver::class)->flushCache();
 
         $data = $this->createPaidOrderWithOptions(
             optionCount: 1,
@@ -418,7 +436,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertOk()->assertJsonPath('success', true);
@@ -431,7 +449,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * cancel_pg=false로 취소 요청 시 PG 연동 없이 취소가 처리된다.
+     * 자동 전이를 켜면 취소가 한 번에 끝난다. (#599 후속 D7)
      */
     public function test_admin_cancel_without_pg(): void
     {
@@ -445,12 +463,12 @@ class OrderCancellationControllerTest extends ModuleTestCase
         );
         $order = $data['order'];
 
-        // When: PG 결제 취소 옵션 비활성화하여 전체취소 요청
+        // When: 자동 전이를 켜고 전체취소 요청
         $response = $this->actingAs($this->adminUser)
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'admin_cancel',
-                'cancel_pg' => false,
+                'auto_advance_refund' => true,
             ]);
 
         // Then: 성공 응답
@@ -535,7 +553,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
         // Given: 상품준비중(PREPARING) 상태의 주문 + 환경설정에 preparing 추가
         $this->createCancelSequences();
 
-        $settingsService = app(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class);
+        $settingsService = app(EcommerceSettingsService::class);
         $settingsService->saveSettings(['order_settings' => ['cancellable_statuses' => ['payment_complete', 'preparing']]]);
 
         $user = User::factory()->create();
@@ -572,7 +590,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => false,
+                'auto_advance_refund' => true,
             ]);
 
         // Then: 성공 응답 + 주문 상태 CANCELLED
@@ -788,7 +806,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
         $options = $data['options'];
 
         // 쿠폰 발급 레코드 생성
-        $coupon = \Modules\Sirsoft\Ecommerce\Models\Coupon::create([
+        $coupon = Coupon::create([
             'name' => '테스트 쿠폰',
             'target_type' => 'order_amount',
             'discount_type' => 'fixed',
@@ -803,7 +821,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             'is_combinable' => false,
         ]);
 
-        $couponIssue = \Modules\Sirsoft\Ecommerce\Models\CouponIssue::create([
+        $couponIssue = CouponIssue::create([
             'coupon_id' => $coupon->id,
             'user_id' => $order->user_id,
             'coupon_code' => 'TEST-COUPON-001',
@@ -926,7 +944,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => false,
+                'auto_advance_refund' => true,
                 'refund_priority' => 'points_first',
             ]);
 
@@ -956,7 +974,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
         $order = $data['order'];
 
         // 쿠폰 발급 레코드 생성 (USED 상태)
-        $coupon = \Modules\Sirsoft\Ecommerce\Models\Coupon::create([
+        $coupon = Coupon::create([
             'name' => '전체취소 테스트 쿠폰',
             'target_type' => 'order_amount',
             'discount_type' => 'fixed',
@@ -971,7 +989,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             'is_combinable' => false,
         ]);
 
-        $couponIssue = \Modules\Sirsoft\Ecommerce\Models\CouponIssue::create([
+        $couponIssue = CouponIssue::create([
             'coupon_id' => $coupon->id,
             'user_id' => $order->user_id,
             'coupon_code' => 'TEST-CANCEL-001',
@@ -1008,7 +1026,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
 
         // 쿠폰 복원 훅 리스너 등록 (테스트 환경에서 실제 DB 업데이트 시뮬레이션)
         HookManager::addAction('sirsoft-ecommerce.coupon.restore', function ($order, $couponIssueIds) {
-            \Modules\Sirsoft\Ecommerce\Models\CouponIssue::whereIn('id', $couponIssueIds)
+            CouponIssue::whereIn('id', $couponIssueIds)
                 ->update([
                     'status' => CouponIssueRecordStatus::AVAILABLE->value,
                     'used_at' => null,
@@ -1021,7 +1039,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => false,
+                'auto_advance_refund' => true,
             ]);
 
         // Then: 성공 응답 및 쿠폰 상태 AVAILABLE로 복원 확인
@@ -1050,10 +1068,80 @@ class OrderCancellationControllerTest extends ModuleTestCase
         $response = $this->actingAs($this->adminUser)
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
-                'cancel_pg' => false,
+                'auto_advance_refund' => true,
             ]);
 
         // Then: 422 검증 에러
         $response->assertStatus(422);
+    }
+
+    /**
+     * 자동 전이를 끄면 **환불신청서만 만들고 주문은 아직 취소되지 않는다**. (#599 후속 D7)
+     *
+     * 관리자 [주문취소]는 환불신청서를 만들 뿐이고, 금액확인 → 승인 → 환불완료는 운영자가
+     * 하나씩 밟는 것이 기본 운영이다. 취소신청서는 그 환불이 완료되는 순간에 생기므로 이
+     * 시점의 주문은 아직 취소로 확정돼 있지 않다.
+     *
+     * 이 테스트는 `[case:backend-37]` 의 회귀 그물도 겸한다 — 컨트롤러가 리소스를
+     * `array_merge` 로 펼 때 `resolve()` 대신 `toArray()` 를 부르면 미로드 관계가
+     * `MissingValue` 로 남아 이 응답만 500 이 된다.
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects frontend_auto_advance_defaults_to_off
+     */
+    public function test_admin_cancel_only_files_a_refund_request_by_default(): void
+    {
+        $this->createCancelSequences();
+        $data = $this->createPaidOrderWithOptions(
+            optionCount: 1,
+            unitPrice: 20000,
+            quantity: 1,
+            withPayment: true,
+            withShipping: true,
+        );
+        $order = $data['order'];
+
+        $this->actingAs($this->adminUser)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
+                'type' => 'full',
+                'reason' => 'changed_mind',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            // 접수 결과 봉투 — 화면이 "취소됐다" 와 "신청서만 생겼다" 를 가르는 축이다.
+            //
+            // 이 세 단언이 곧 `OrderResource` 직렬화 회귀의 그물이기도 하다. 컨트롤러는
+            // 리소스를 `array_merge` 로 펴서 봉투를 얹는데, `toArray()` 를 직접 부르면
+            // 로드되지 않은 관계가 `MissingValue` 로 남아 중첩 리소스가 응답 직렬화 단계에서
+            // 500 이 된다(트러블슈팅 backend-37). 그 필터는 `resolve()` 안에 있다.
+            ->assertJsonPath('data.claim.branch', 'request')
+            ->assertJsonPath('data.claim.cancelled', false)
+            ->assertJsonStructure(['data' => ['claim' => ['claim_number']]]);
+
+        $refund = OrderRefund::where('order_id', $order->id)->first();
+        $this->assertNotNull($refund, '관리자 취소는 환불신청서를 만든다');
+        $this->assertEquals(
+            RefundSourceTypeEnum::ADMIN,
+            $refund->refund_source_type,
+            '운영자 대리 접수라야 고객이 철회할 수 없다',
+        );
+        $this->assertEquals(
+            RefundStatusEnum::REQUESTED,
+            $refund->refund_status,
+            '자동 전이를 끄면 접수에서 멈춘다',
+        );
+
+        $order->refresh();
+        $this->assertNotEquals(
+            OrderStatusEnum::CANCELLED,
+            $order->order_status,
+            '환불이 완료되기 전에는 주문이 취소로 확정되지 않는다',
+        );
+        $this->assertSame(
+            0,
+            OrderCancel::where('order_id', $order->id)->count(),
+            '취소신청서는 환불완료 순간에 생긴다 (D3)',
+        );
     }
 }

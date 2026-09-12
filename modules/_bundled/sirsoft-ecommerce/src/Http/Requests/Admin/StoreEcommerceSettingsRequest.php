@@ -367,6 +367,13 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'claim.auto_approve_after_payment' => ['sometimes', 'boolean'],
             'claim.auto_approve_refund_request' => ['sometimes', 'boolean'],
 
+            // 자동승인 대상 상태 (D8) — on/off 키와 **둘 다** 유지한다. 토글만 있으면 "출고 전만
+            // 자동승인" 같은 운영을 표현할 수 없어, 운영자가 토글을 끄고 전건을 손으로 승인하거나
+            // 켜고 배송중 건까지 자동승인하는 양자택일이 된다. 배열 축의 `sometimes` 이유는 위
+            // 신청 가능 상태 4축과 같다.
+            'claim.auto_approve_refund_statuses' => ['sometimes', 'array'],
+            'claim.auto_approve_refund_statuses.*' => ['string', Rule::in(self::claimAutoApproveRefundStatuses())],
+
             // 첨부 이미지 / 신청 가능 기간.
             // nullable 금지 — 형제 `order_settings.auto_cancel_days` 와 같은 이유다. null 은
             // min: 을 우회해 저장되는데, getAllSettings() 의 array_merge(defaults, saved) 에서
@@ -1219,13 +1226,23 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
-     * 환불신청서를 만들지 않고 즉시 취소되는 주문옵션 상태의 허용 어휘를 돌려줍니다.
+     * 접수 후 승인·완료까지 자동 전이되는 주문옵션 상태의 허용 어휘를 돌려줍니다.
+     *
+     * 이름은 설정 키(`claim.instant_cancel_statuses`)를 따르지만 뜻은 D2 로 바뀌었다 — 이 상태의
+     * 상품도 환불신청서를 만들고, 다른 것은 승인·완료까지 자동으로 진행한다는 점뿐이다.
+     *
+     * 미결제 2종(`pending_order`·`pending_payment`)이 허용값에 들어 있다(D10). 이 축은
+     * `order_settings.cancellable_statuses` 의 별칭이고, `Order::isCancellable()` 은 미결제를
+     * 목록과 무관하게 **항상** 허용하므로 주문 단위 취소 판정은 달라지지 않는다 — 달라지는 것은
+     * 상품 단위 신청 자격(`branchForStatus`)이며, 그것이 D10 이 여는 축이다.
      *
      * @return array<int, string> 허용 상태 값 목록
      */
     public static function claimInstantCancelStatuses(): array
     {
         return [
+            OrderStatusEnum::PENDING_ORDER->value,
+            OrderStatusEnum::PENDING_PAYMENT->value,
             OrderStatusEnum::PAYMENT_COMPLETE->value,
             OrderStatusEnum::SHIPPING_HOLD->value,
             OrderStatusEnum::PREPARING->value,
@@ -1250,6 +1267,19 @@ class StoreEcommerceSettingsRequest extends FormRequest
             OrderStatusEnum::SHIPPING_READY->value,
             OrderStatusEnum::SHIPPING->value,
         ];
+    }
+
+    /**
+     * 접수된 환불신청서를 자동 승인할 주문옵션 상태의 허용 어휘를 돌려줍니다. (D8)
+     *
+     * 환불신청 가능 상태와 같은 집합이다 — 자동승인은 "접수된 신청서" 에만 걸리므로 접수될 수
+     * 없는 상태를 여기에 허용하면 영영 발동하지 않는 설정이 저장된다.
+     *
+     * @return array<int, string> 허용 상태 값 목록
+     */
+    public static function claimAutoApproveRefundStatuses(): array
+    {
+        return self::claimRefundRequestStatuses();
     }
 
     /**

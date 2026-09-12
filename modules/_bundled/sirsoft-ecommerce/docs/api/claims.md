@@ -12,7 +12,28 @@
 3. 상세·수정·철회는 claim_number 로 찾고, 남의 신청서는 존재 여부를 드러내지 않고 404
 4. 수정(PATCH)은 승인 전(is_editable)에만 — 사유·상세·청구 방식·첨부·재발송지·환불 계좌. 배송비가 바뀌면 차액 결제 건을 새로 만들거나 초과분을 환급한다
 5. 철회는 대기 중인 결제 건을 닫고 이미 낸 추가결제를 환급한다
+6. 취소·환불 접수는 **언제나 환불신청서를 만든다** — 응답의 `branch` 는 그 신청서를 어떻게 전이시킬지만 말한다 (`auto` 자동 완료 / `request` 접수에서 정지)
 ```
+
+## 취소·환불 접수의 결과 계약 (`branch`)
+
+접수 응답(`POST .../orders/{orderNumber}/refund-requests`, 비회원 동일)은 `data.branch` 를 함께 싣는다.
+값은 **두 가지뿐이고, 둘 다 환불신청서를 만든다** — 다른 것은 전이 방식뿐이다.
+
+| `branch` | 뜻 | 접수 직후 상태 |
+| --- | --- | --- |
+| `auto` | 승인·환불완료까지 자동 전이 | 환불수단이 PG·마일리지면 `completed`, 계좌 환불이면 `approved` 에서 정지 |
+| `request` | 접수에서 멈춘다 | `requested` (자동승인 설정 대상이면 `approved`) |
+
+**돈이 수납된 주문은 예외 없이 환불신청서를 거친다.** 환불할 돈이 없는 주문(미결제·0원)만
+환불신청서 없이 취소신청서가 즉시 생기고, 그때는 `data.claim` 이 취소신청서(`CN…`)다.
+
+**취소신청서는 환불이 집행된 순간에만 생긴다.** 계좌 환불처럼 사람이 송금해야 하는 수단은
+운영자가 [환불하기]를 누를 때까지 취소신청서가 없다 — 취소가 안 된 것이 아니라 환불신청서
+단계에 있는 것이며, 진행 상황은 그 신청서가 말한다.
+
+> 구 값 `cancel`/`refund` 는 더 쓰지 않는다. `cancel` 은 "환불신청서 없이 즉시 취소" 를 뜻했고
+> 그 경로 자체가 사라졌다 — 지금의 `auto` 는 **신청서를 만들되 자동으로 전이시킨다**는 뜻이다.
 
 ## 오류 응답의 두 형태 (422)
 
@@ -62,8 +83,8 @@
 | status_variant | string\|null | `info` | 상태 뱃지 variant |
 | status_icon | string\|null | `status-pickup` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) 참조). 상태 Enum 의 `icon()` 단일 출처이며, 토큰을 실제 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다. 상태 뱃지와 진행단계 스텝퍼가 같은 그림을 그린다 |
 | is_final | boolean | `false` | 종결 상태인지 (철회·반려·완료) |
-| is_withdrawable | boolean | `true` | 사용자가 철회할 수 있는 상태인지 (승인 전) |
-| is_editable | boolean | `true` | 사용자가 수정할 수 있는지 — 철회 가능 경계와 같고, 취소(`cancel`)는 항상 `false` |
+| is_withdrawable | boolean | `true` | 구매자가 철회할 수 있는지 — 승인 전 **이고** 출처가 고객 신청(`refund_source_type=direct`)일 때만 `true`. 반품·교환에서 이어진 환불과 운영자가 대리 접수한 건(`admin`)은 `false` 다: 서버가 그 조작을 거절하므로 버튼만 서면 누를 때마다 422 가 된다 |
+| is_editable | boolean | `true` | 구매자가 수정할 수 있는지 — 철회 가능 경계와 같고(출처 축 포함), 취소(`cancel`)는 항상 `false` |
 | reason_code | string\|null | `changed_mind` | 사유 코드 (취소는 `cancel_reason_type`) |
 | reason_label | string\|null | `단순 변심` | 사유 라벨 |
 | reason_detail | string\|null | `사이즈가 작아요` | 사유 상세 (취소는 `cancel_reason`) |
@@ -129,7 +150,7 @@
 
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| refund_source_type | string\|null | `direct` | 환불 발생 출처 (`direct` 직접 신청 / `cancel` / `return` / `exchange`) |
+| refund_source_type | string\|null | `direct` | 환불 발생 출처 — `direct` 고객 신청 / `admin` 운영자 대리 접수 / `return`·`exchange` 반품·교환 발 / `cancel` **구형 취소 파이프라인이 남긴 과거 행**(새로 만들지 않는다). `direct` 만 구매자가 수정·철회할 수 있다 |
 | refund_method | string\|null | `pg` | 환불 수단 (`pg`, `bank`, `points`) |
 | refund_method_label | string\|null | `PG사 환불` | 환불 수단 라벨 |
 | refund_amount | number | `29000` | PG 환불 금액 |
@@ -390,7 +411,7 @@ _목록 응답: `data` 배열의 각 항목은 [ClaimResource](#claim-resource)(
 
 <!-- @generated:end -->
 
-**설명** 마이페이지 신청내역 화면의 유형 서브탭 단위 목록입니다. 한 번에 한 유형만 받고(`type`), 취소 탭은 취소 이력(`OrderCancel`)을 같은 형태로 돌려줍니다 — 취소 이력의 `claim_number` 는 취소번호이고 `is_editable`/`is_withdrawable` 은 항상 `false` 입니다. 환불신청 탭에는 즉시취소로 자동 생성된 환불(`refund_source_type=cancel`)을 뺀 나머지가 실립니다 — 사용자가 직접 낸 환불신청(`direct`)과 반품·교환 처리에서 파생된 환불 건이 함께 보이고, 즉시취소분은 취소 탭에서 봅니다. 목록 항목에는 결제 블록이 없으므로 미수납액·결제 진입은 상세(`GET user/claims/{claimNumber}`)에서 읽습니다.
+**설명** 마이페이지 신청내역 화면의 유형 서브탭 단위 목록입니다. 한 번에 한 유형만 받고(`type`), 취소 탭은 취소 이력(`OrderCancel`)을 같은 형태로 돌려줍니다 — 취소 이력의 `claim_number` 는 취소번호이고 `is_editable`/`is_withdrawable` 은 항상 `false` 입니다. 환불 탭에는 **출처와 무관하게 그 주문의 모든 환불신청서**가 실립니다 — 고객이 직접 낸 신청(`direct`), 운영자가 대리 접수한 건(`admin`), 반품·교환에서 파생된 건, 구형 취소 파이프라인이 만든 건(`cancel`)이 함께 보입니다. 취소신청서와 환불신청서는 같은 사건의 두 사본이 아니라 **다른 사실**을 기록하는 별개 문서이므로 한쪽이 다른 쪽을 대표하지 않습니다 — 그래서 반품 1건이 반품·환불·취소 세 탭에 모두 뜨는 것이 정상입니다. 예전에는 취소 발 환불을 이 목록에서 뺐고, 그래서 결제완료 상품을 환불한 고객에게 환불 이력이 아예 보이지 않았습니다. 목록 항목에는 결제 블록이 없으므로 미수납액·결제 진입은 상세(`GET user/claims/{claimNumber}`)에서 읽습니다.
 
 ---
 

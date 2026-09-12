@@ -371,10 +371,11 @@ return [
 
     // 환불 발생 출처 유형 (RefundSourceTypeEnum 값과 일치)
     'refund_source_type' => [
-        'cancel' => '주문 취소',
-        'return' => '반품',
+        'cancel' => '주문 취소 발',
+        'return' => '반품 발',
         'exchange' => '교환 차액',
-        'direct' => '관리자 직접 환불',
+        'direct' => '고객 신청',
+        'admin' => '운영자 접수',
     ],
 
     // 환불수단 (RefundMethodEnum 값과 일치)

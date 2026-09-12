@@ -96,7 +96,33 @@ class OrderAdjustmentService
         $recalculatedPointsUsed = (float) $recalcResult->summary->pointsUsed;
         $additionalCharges = $adjustment->getAdditionalCharges();
 
-        $totalRefundable = ($originalPaidAmount + $originalPointsUsed)
+        // 기준선은 **이번에 빼는 상품 직전의 주문 금액**이다 — 원 결제금액이 아니다.
+        //
+        // 새 회계는 환불이 나가도 `total_paid_amount` 를 깎지 않는다(§12-B B1 — 깎으면 환불
+        // 누적과 이중으로 빠져 2차 환불이 0원이 된다). 그래서 원 결제금액을 기준으로 재계산
+        // 차액을 구하면 그 값은 **누적** 환불 가능액이 되고, 앞선 회차에서 이미 나간 돈이 다시
+        // 섞여 들어온다 — 3개 중 1개씩 두 번 취소하면 2차가 단가의 두 배를 돌려주어 고객이
+        // 상품 1개를 가진 채 전액을 환불받는다(과다 환불).
+        //
+        // 잔여 한도 상한(아래 `remainingPg`)은 이것을 막지 못한다. 상품이 남는 부분취소에서는
+        // 두 값이 같아져 상한에 걸리지 않고 그대로 통과한다 — 전량 제외 경로에서만 걸린다.
+        //
+        // 그래서 **이미 취소된 상품만 빠진 상태**를 한 번 더 계산해 기준선으로 삼는다. 차액은
+        // "이번에 빠지는 상품의 값" 이 되어 회차마다 정확해진다. 앞선 환불이 없으면 기준선은
+        // 원 결제금액과 같으므로 추가 계산도 하지 않는다(대부분의 신청이 이 경우다).
+        $baselineAmount = $originalPaidAmount + $originalPointsUsed;
+
+        if ((float) $order->total_refunded_amount > 0 || (float) $order->total_refunded_points_amount > 0) {
+            $priorInput = $this->buildRecalcInput($order, []);
+
+            if (! empty($priorInput->items)) {
+                $priorResult = $this->calculationService->calculate($priorInput);
+                $baselineAmount = (float) $priorResult->summary->finalAmount
+                    + (float) $priorResult->summary->pointsUsed;
+            }
+        }
+
+        $totalRefundable = $baselineAmount
             - ($recalculatedPaidAmount + $recalculatedPointsUsed)
             - $additionalCharges;
         $totalRefundable = max(0, $totalRefundable);
@@ -705,21 +731,31 @@ class OrderAdjustmentService
         // 항상 0 이라 이 경로가 그 축을 몰라도 성립했지만, 전량 반품은 가장 흔한 반품이면서
         // 동시에 이 경로를 타므로 빼지 않으면 차감하기로 한 회수배송비가 조용히 사라진다.
         // 추가 비용이 0 이면 아래 식은 종전 값(`refundAmount = 원 결제금액`)과 완전히 같다.
-        $totalRefundable = max(0, ($originalPaidAmount + $originalPointsUsed) - $additionalCharges);
+        // **이미 환불된 몫을 뺀다**(#599 후속 — 새 결함 N1).
+        //
+        // 이 경로는 "남은 상품이 없다" 는 이유로 재계산을 건너뛰고 원 결제금액 전액을 환불 대상으로
+        // 삼는다. 그런데 같은 주문에서 앞서 부분 환불이 있었으면 그 몫이 이미 나갔다 — 빼지 않으면
+        // 환불 대상이 **원 결제금액 전액**으로 부풀고, D19 상한(결제수단 잔여 한도)이 그것을 거절해
+        // **마지막 남은 상품의 정당한 환불이 통째로 막힌다**. 일반 경로(`calculate()`)는 같은 축을
+        // `remainingPg` 로 이미 빼고 있었고, 전량 제외 경로만 그 축을 몰랐다.
+        $remainingPg = max(0.0, $originalPaidAmount - (float) $order->total_refunded_amount);
+        $remainingPoints = max(0.0, $originalPointsUsed - (float) $order->total_refunded_points_amount);
+
+        $totalRefundable = max(0, ($remainingPg + $remainingPoints) - $additionalCharges);
 
         if ($refundPriority === RefundPriorityEnum::POINTS_FIRST) {
-            $refundPointsAmount = min($totalRefundable, max(0, $originalPointsUsed));
+            $refundPointsAmount = min($totalRefundable, $remainingPoints);
             $refundAmount = $totalRefundable - $refundPointsAmount;
         } else {
-            $refundAmount = min($totalRefundable, max(0, $originalPaidAmount));
+            $refundAmount = min($totalRefundable, $remainingPg);
             $refundPointsAmount = $totalRefundable - $refundAmount;
         }
 
         $shippingDifference = (float) $order->total_shipping_amount;
 
         // 잔여 잔액
-        $remainingPgBalance = max(0, $originalPaidAmount - $refundAmount);
-        $remainingPointsBalance = max(0, $originalPointsUsed - $refundPointsAmount);
+        $remainingPgBalance = max(0, $remainingPg - $refundAmount);
+        $remainingPointsBalance = max(0, $remainingPoints - $refundPointsAmount);
 
         // 복원 쿠폰 상세 정보
         $restoredCoupons = $this->buildRestoredCouponsInfo($restoredCouponIds, $order->currency_snapshot);
@@ -1083,6 +1119,18 @@ class OrderAdjustmentService
     private function resolveCashEquivalentAmount(Order $order, int $finalAmount): int
     {
         $order->loadMissing('payment');
+
+        // 카탈로그 선언이 있으면 그것이 먼저다(P16) — 주문 생성 시점과 같은 규칙을 써야
+        // 부분환불 후 재발급액이 잔여 실결제액과 일치한다.
+        $methodId = (string) ($order->payment->payment_method ?? '');
+
+        if ($methodId !== '') {
+            $declared = app(PaymentMethodResolver::class)->declaresCashEquivalent($methodId);
+
+            if ($declared !== null) {
+                return $declared ? max(0, $finalAmount) : 0;
+            }
+        }
 
         // payment_method 는 순수 string (#475 — 확장 결제수단 ID 허용). 코어 enum 에 없는
         // 확장 결제수단은 현금성 0 으로 판정한다 (OrderProcessingService 와 동일 idiom).

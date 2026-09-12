@@ -49,7 +49,7 @@
               "comment": "전체 선택 체크박스 — 취소 가능하거나, 클레임(교환/반품/취소·환불)이 열린 상품이 있을 때 표시한다. claimable 데이터소스는 회원 주문상세 셸만 싣는다 — 비회원 셸에서는 undefined 라 종전과 같이 취소 가능 여부만 본다.",
               "type": "basic",
               "name": "Label",
-              "if": "{{order.data.abilities?.can_cancel === true || (claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}",
+              "if": "{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}",
               "props": { "className": "flex items-center gap-1.5 ml-2 cursor-pointer select-none" },
               "children": [
                 {
@@ -106,7 +106,7 @@
                   "comment": "체크박스 — 취소 가능하거나 이 상품에 클레임이 열려 있을 때. 열린 유형이 없는 상품에 체크를 허용하면 신청 버튼이 활성화되지 않는 이유가 화면에 드러나지 않는다.",
                   "type": "basic",
                   "name": "Div",
-                  "if": "{{item.option_status !== 'cancelled' && (order.data.abilities?.can_cancel === true || (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0)}}",
+                  "if": "{{item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0}}",
                   "props": { "className": "flex items-start pt-5 flex-shrink-0" },
                   "responsive": {
                     "portable": {

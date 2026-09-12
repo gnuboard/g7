@@ -101,7 +101,7 @@ test.describe('회원 주문상세 클레임 섹션', () => {
       await held;
       await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ success: false, message: 'test failure' }) });
     });
-    const tab = page.getByRole('button', { name: '반품', exact: true });
+    const tab = page.getByRole('button', { name: /^반품( \d+)?$/ });
     await tab.scrollIntoViewIfNeeded();
     await tab.focus();
     const element = await tab.elementHandle();
@@ -188,8 +188,8 @@ test.describe('회원 주문상세 클레임 섹션', () => {
     await openOrderDetail(page, 'RT20260902-0920');
 
     // 활성 서브탭은 진한 밑줄(border-gray-900)이다 — 반품만 활성이고 교환은 아니다
-    await expect(page.getByRole('button', { name: '반품', exact: true })).toHaveClass(/border-gray-900/);
-    await expect(page.getByRole('button', { name: '교환', exact: true })).not.toHaveClass(/border-gray-900/);
+    await expect(page.getByRole('button', { name: /^반품( \d+)?$/ })).toHaveClass(/border-gray-900/);
+    await expect(page.getByRole('button', { name: /^교환( \d+)?$/ })).not.toHaveClass(/border-gray-900/);
     expect(new URL(page.url()).searchParams.get('type')).toBeNull();
 
     // 화면이 유형을 정하지 않았다 — 나간 요청의 type 은 전부 비어 있다
@@ -215,7 +215,7 @@ test.describe('회원 주문상세 클레임 섹션', () => {
 
     await openOrderDetail(page, 'EX20260902-0910');
 
-    const tab = page.getByRole('button', { name: '반품', exact: true });
+    const tab = page.getByRole('button', { name: /^반품( \d+)?$/ });
     await tab.scrollIntoViewIfNeeded();
     await tab.focus();
     const before = await page.evaluate(() => ({ y: scrollY, origin: performance.timeOrigin }));

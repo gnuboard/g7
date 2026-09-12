@@ -121,6 +121,14 @@ effects:
   - settings_claim_tab_renders_three_reason_catalogs
   - settings_claim_policy_persists_across_reentry
 
+
+  # ── #599 후속 — 클레임 정책 설정 키 2종 (D8·D10) ─────────────────────────
+  - instant_cancel_statuses_accepts_pending_states          # 미결제 2종을 자동 전이 목록에 지정할 수 있다 (D10)
+  - instant_cancel_statuses_default_includes_pending_states # 기본값에 미결제 2종이 들어 있다
+  - auto_approve_refund_statuses_is_editable                # 자동승인 대상 상태 MultiSelect 가 화면에 있다 (D8)
+  - auto_approve_refund_statuses_is_disabled_when_toggle_off # 토글이 꺼져 있으면 비활성
+  - auto_approve_refund_statuses_rejects_unknown_values      # 허용 어휘 밖 값은 422
+  - instant_cancel_hint_describes_auto_advance               # 문구가 D2 의미(자동 전이)를 말한다
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsClaim.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsClaimRender.test.tsx

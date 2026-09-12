@@ -14,6 +14,7 @@ use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 class PaymentRefundListener implements HookListenerInterface
 {
     private const PG_PROVIDER_ID = 'nicepayments';
+
     private const MONEY_EPSILON = 0.0001;
 
     /**
@@ -29,7 +30,41 @@ class PaymentRefundListener implements HookListenerInterface
                 'type' => 'filter',
                 'priority' => 10,
             ],
+            // 부분취소 지원 여부 선언 (코어 P6). 제약을 아는 자리는 PG 플러그인이다 —
+            // 코어가 수단·PG 조합표를 들고 있으면 플러그인이 늘 때마다 그 표가 낡는다.
+            'sirsoft-ecommerce.payment.supports_partial_cancel' => [
+                'method' => 'supportsPartialCancel',
+                'type' => 'filter',
+                'priority' => 10,
+            ],
         ];
+    }
+
+    /**
+     * 이 결제가 부분취소를 지원하는지 판정합니다. (코어 P6)
+     *
+     * **NICE 가상계좌는 부분취소가 원천적으로 불가능하다.** 코어 취소는 PG 가 항상 거절하고,
+     * 우회 경로인 관리자 가상계좌 환불 API 는 **전액취소 전용**이다 — NICE API 자체의 제약이라
+     * 파라미터를 뚫어 해결할 수 없다(KG이니시스·NHN KCP 의 환불계좌 미전달과는 다른 성격이다).
+     *
+     * 코어가 이 사실을 미리 말하지 않으면 운영자는 수량을 줄여 [취소]를 누르고 **원인 없는
+     * 실패**를 받는다. 그래서 화면이 "전액취소만 가능" 을 먼저 알리도록 false 를 돌려준다.
+     *
+     * @param  bool  $supported  현재까지의 판정
+     * @param  OrderPayment|null  $payment  결제행
+     * @return bool 부분취소 지원 여부
+     */
+    public function supportsPartialCancel(bool $supported, $payment = null): bool
+    {
+        if (! $supported || ! $payment instanceof OrderPayment) {
+            return $supported;
+        }
+
+        if ($payment->pg_provider !== self::PG_PROVIDER_ID) {
+            return $supported;
+        }
+
+        return ! $payment->isVirtualAccount();
     }
 
     /**

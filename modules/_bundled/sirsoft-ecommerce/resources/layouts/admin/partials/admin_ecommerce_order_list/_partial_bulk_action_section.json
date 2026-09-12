@@ -69,10 +69,6 @@
                 "label": "$t:sirsoft-ecommerce.admin.order.status.delivered"
               },
               {
-                "value": "cancelled",
-                "label": "$t:sirsoft-ecommerce.admin.order.status.cancelled"
-              },
-              {
                 "value": "confirmed",
                 "label": "$t:sirsoft-ecommerce.admin.order.status.confirmed"
               }

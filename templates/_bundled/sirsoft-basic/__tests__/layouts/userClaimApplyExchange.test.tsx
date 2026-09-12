@@ -392,8 +392,12 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(successPath).toContain("'?type='");
     expect(successPath).not.toContain('/mypage/');
     expect(successPath).not.toContain('/mypage/orders/');
-    // 취소·환불은 두 분기가 같은 탭에 서지 않는다 — 즉시취소로 갈린 건은 cancel 탭이다.
-    expect(successPath).toContain("'cancel'");
+    // 접수 결과는 **언제나 환불신청서**다(#599 후속 D2) — 분기로 탭을 가르지 않는다.
+    // 정본은 서버 응답의 신청서 유형이며, 핸들러(`resolveClaimSuccessPath`)가 그 값으로
+    // 이 주소의 `type` 을 덮어쓴다. 예전에는 주문 **전체** 기준 값으로 추측해, 분기가 섞인
+    // 주문에서 접수한 탭과 이동한 탭이 갈렸다(F8).
+    expect(successPath).not.toContain("'cancel'");
+    expect(successPath).toContain('_local.claimType');
   });
 
   it('청구는 2축이고 두 축 모두 운영자 허용 목록에서 나온다', () => {
@@ -692,7 +696,7 @@ describe('_apply_summary.json / _apply_comparison.json — 주문금액 비교 �
   });
 
   /**
-   * @scenario claim_type=refund, refund_branch=refund
+   * @scenario claim_type=refund, refund_branch=request
    * @effects claim_apply_cancel_blocked_locks_submit_inline, claim_apply_refund_priority_reestimates
    */
   it('제출 버튼은 환불 불가(cancel_blocked)에 잠기고 우선순위 라디오는 미리보기를 다시 부른다', () => {
@@ -727,12 +731,21 @@ describe('_items.json — 공유 partial (회원/비회원)', () => {
     expect(raw).toContain('sirsoft-ecommerce.toggleSelectAllItems');
   });
 
-  it('체크박스는 취소 가능하거나 클레임이 열린 상품에서 보인다', () => {
+  /**
+   * @scenario exchange_mode=same, preview_result=ok
+   *
+   * @effects order_detail_claim_entry_buttons_gated_by_claimable_types
+   */
+  it('체크박스는 신청 가능한 유형이 있는 상품에서만 보인다 (#599 후속 U-3)', () => {
+    // 회귀: 조건이 `abilities?.can_cancel` 을 함께 보던 시절, 미결제 주문에서는 체크박스만
+    // 서고 **누를 버튼이 없었다** — 취소 버튼은 이미 취소·환불 신청 입구로 통합돼
+    // `claimable_types` 를 보는데 체크박스만 옛 축에 남아 있었기 때문이다.
     const checkboxWrapper = flatten(orderItems).find(
       (n) => typeof n.if === 'string' && n.if.includes('claimable?.data?.options') && n.if.includes('item.id')
     );
     expect(checkboxWrapper).toBeTruthy();
-    expect(checkboxWrapper.if).toContain('can_cancel');
+    expect(checkboxWrapper.if).toContain('claimable_types');
+    expect(checkboxWrapper.if).not.toContain('can_cancel');
   });
 
   it('공유 partial 은 로그인 여부를 스스로 판단하지 않는다', () => {

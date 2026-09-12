@@ -76,6 +76,13 @@ class ClaimController extends AdminBaseController
         try {
             $claims = $this->adminClaimService->paginate($request->claimType(), $request->filters(), $request->perPage());
             $counts = $this->adminClaimService->counts($request->countFilters());
+            // 현재 탭 뱃지만 목록과 같은 필터로 맞춘다 (F13) — 다른 탭은 "그 탭으로 가면 몇
+            // 건인가" 라는 원 의미를 그대로 둔다.
+            $counts = $this->adminClaimService->refreshCurrentTypeCount(
+                $counts,
+                $request->claimType(),
+                $request->filters(),
+            );
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -708,6 +715,10 @@ class ClaimController extends AdminBaseController
             // 결과라 완료 미리보기와 **같은 경로**에서 나온다. 환불신청서는 자기 금액이
             // 헤더 컬럼이라 null 이다.
             'settlement' => $this->adminClaimService->settlementFor($claim),
+            // 상세의 신청서 단위 전이 바 선택지 (F1). 목록 일괄 바에서만 전이할 수 있던
+            // 시절에는 운영자가 상세를 열어 내용을 확인한 뒤 목록으로 되돌아가 그 줄을 다시
+            // 찾아야 했고, 환불 유형은 상세에 어떤 전이 컨트롤도 없었다.
+            'transition_options' => $this->adminClaimService->transitionOptionsFor($claim),
             // 청구 방식 어휘는 운영자 설정(`claim.allowed_charge_methods`)이 정하고 그 조회는
             // `settings.read` 게이트다 — 완료 기본값·택배사와 같은 이유로 봉투가 나른다.
             'charge_methods' => $claim instanceof OrderRefund || $claim instanceof OrderCancel

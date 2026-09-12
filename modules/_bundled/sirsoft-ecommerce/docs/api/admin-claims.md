@@ -13,7 +13,30 @@
 3. 상태 쓰기 어휘는 유형별 adminAssignableValues() — requested/paid/withdrawn 직접 지정 불가 (환불은 approved/on_hold/rejected 만). 미수납 승인은 pay_on_approval 결제 요청 우회 / pay_on_request 422
 4. 완료 전이(status=completed)는 completion 객체 필수 — 모달이 실행 전에 보여줄 값은 claims/completion-preview 가 SSoT (D26)
 5. 금액 수정({claimType}/{id}/amounts)·환불 실행(refunds/{id}/execute)의 상한은 취소 가능 금액(D19) — 초과는 저장·실행 모두 422, 재실행은 409, 근거는 orders/{order}/cancellable-amount 가 같은 식으로 답한다
+6. 관리자 [주문취소](POST /admin/orders/{order}/cancel)는 **환불신청서를 만든다** — 즉시 취소하지 않는다. auto_advance_refund 를 켜야 승인·환불완료까지 한 번에 간다
 ```
+
+## 관리자 [주문취소]의 결과 계약
+
+`POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancel` 은 취소를 **즉시 확정하지 않는다**.
+운영자 대리 접수(`refund_source_type=admin`)로 환불신청서를 만들고, 금액확인 → 승인 → 환불완료를
+운영자가 하나씩 밟는 것이 기본 운영이다.
+
+| 요청 필드 | 기본 | 동작 |
+| --- | --- | --- |
+| `auto_advance_refund` | `false` | 켜면 승인·환불완료까지 자동 전이한다. 끄면 환불신청서만 만들고 멈춘다 |
+
+응답 `data.claim` 이 그 결과를 말한다.
+
+| 키 | 뜻 |
+| --- | --- |
+| `branch` | `auto`(자동 전이) / `request`(접수에서 정지) |
+| `claim_number` | 만들어진 신청서 번호 — 화면은 이 번호로 상세로 이동한다 |
+| `cancelled` | 취소가 **확정**됐는지. 취소신청서는 환불이 집행된 순간에만 생기므로, 계좌 환불처럼 사람이 송금해야 하는 수단은 운영자가 [환불하기]를 누를 때까지 `false` 다 |
+
+> `cancel_pg` 파라미터는 없앴다. 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로
+> 찍혀 **고객 카드는 그대로인데 장부만 환불완료**가 됐다. "PG 없이 장부만" 이 필요하면 환불수단을
+> 계좌 환불로 바꿔 수동 처리한다.
 
 ## 인증·권한
 
@@ -105,7 +128,8 @@
 | charge_method / charge_method_label | string\|null | `pay_on_request` / `신청 시 결제` | 청구 방식 (교환·반품만) |
 | total_charge_amount / _formatted | number / string | `3000` / `3,000원` | 청구액 (교환·반품만) |
 | outstanding_amount / _formatted | number\|null / string\|null | `3000` / `3,000원` | 미수납 청구액 (교환·반품만) — **미수납 판정은 상태 라벨이 아니라 이 값으로 한다** (분할 수납 건은 결제대기 라벨 그대로다) |
-| refund_source_type | string | `direct` | 환불 출처 (환불만) |
+| refund_source_type | string | `direct` | 환불 출처 (환불만) — `direct` 고객 신청 / `admin` 운영자 대리 접수 / `return`·`exchange` 반품·교환 발 / `cancel` 구형 취소 파이프라인 발. `direct` 만 구매자가 수정·철회할 수 있다 |
+| refund_source_type_label | string | `고객 신청` | 목록의 출처 뱃지가 읽는 라벨 (환불만) |
 | refund_total / _formatted | number\|null / string\|null | `29000` / `29,000원` | 환불 합계 (환불·취소 — 취소는 환불 행 로드 시) |
 | cancel_type / cancel_type_label | string\|null | `full` / `전체취소` | 취소 구분 (취소만) |
 | refund_status / refund_status_label | string\|null | `completed` / `환불완료` | 취소 발 환불 상태 (취소만) |
@@ -550,7 +574,7 @@
 함께 실어야 합니다 — 없으면 `422` `claim_charge_method_required` (결제할 수 없는 청구가 남는
 것을 막는다). 반대로 청구액이 0 이 되면 청구 방식은 자동으로 비워집니다.
 
-**본문 파라미터 — 환불신청서** (`refunds` — 취소 발 `refund_source_type=cancel` 은 수정 불가 422)
+**본문 파라미터 — 환불신청서** (`refunds` — 출처 제한 없음: 구형 취소 발 행도 수정·실행할 수 있다)
 
 | 파라미터 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
@@ -588,7 +612,6 @@
 | --- | --- | --- |
 | 404 | `claim_not_found` | 신청서 부재 |
 | 422 | `claim_amounts_not_editable` | 종결(취소·완료·반려·철회) 신청서 / 환불신청서가 `processing` |
-| 422 | `claim_refund_not_executable` | 취소 발(`refund_source_type=cancel`) 환불신청서 — 취소 파이프라인 산출값이라 이 API 로 고칠 수 없다 |
 | 422 | `claim_amount_invalid` | 음수 금액 / 알 수 없는 환불 수단 |
 | 422 | `claim_charge_method_required` | 청구 0원 신청서의 배송비를 올리면서 청구 방식을 함께 보내지 않음 |
 | 422 | `claim_refund_exceeds_cancellable` | 환불액 합이 취소 가능 금액(D19) 초과 |
@@ -699,10 +722,12 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드**
 
-- `counts` — `{exchange, return, refund, cancel}` 유형별 건수. 환불 축은 취소 발
-  (`refund_source_type=cancel`) 신청서만 제외합니다 — 취소 축이 그 건을 대표합니다
-  (관리자 목록·비회원 주문상세 섹션과 같은 규칙). 출처가 기록되지 않은 구형 신청서
-  (`refund_source_type=null`)는 직접 환불로 보아 포함합니다.
+- `counts` — `{exchange, return, refund, cancel}` 유형별 건수. 환불 축은 **출처로 거르지
+  않습니다** — 취소신청서와 환불신청서는 같은 사건의 두 사본이 아니라 다른 사실을 기록하는
+  별개 문서이므로 한쪽이 다른 쪽을 대표하지 않습니다. 그래서 반품 1건이 반품·환불·취소 세
+  탭에 모두 뜨는 것이 정상입니다. **현재 탭의 건수만 목록과 같은 필터로 셉니다** — 다른 탭은
+  "그 탭으로 가면 몇 건인가" 라는 원 의미를 지킵니다(상태·귀책·청구·사유는 유형 종속 어휘라
+  다른 탭에 걸면 그 탭 건수가 언제나 0 이 됩니다).
 - `claims[]` — [claims.md](claims.md#공통-리소스) 의 ClaimResource 상세 표현에 관리자
   확장 필드(`requester_name`·`admin_memo`·`processed_by`)와 아래 두 축을 더한 형태:
   - `detail_url` — [클레임 신청서 조회하기] 새 창 진입 경로 (`/admin/ecommerce/claims/{claim_number}`).
@@ -792,8 +817,11 @@ Authorization: Bearer {YOUR_TOKEN}
 ### POST /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute
 
 승인된 환불신청서의 환불을 실행합니다 ('환불하기' — D18). 본문에 금액이 실려 있으면 저장과
-같은 검증을 거쳐 **화면에 입력된 값으로 실행**합니다(저장 없이 실행 가능). 취소 발
-(`refund_source_type=cancel`) 환불은 취소 파이프라인 소유라 실행 대상이 아닙니다(`422`).
+같은 검증을 거쳐 **화면에 입력된 값으로 실행**합니다(저장 없이 실행 가능).
+
+출처 제한은 없습니다. 구형 취소 파이프라인이 남긴 행(`refund_source_type=cancel`)도 운영자가
+완료 처리할 수 있습니다 — 막아 두면 그 행들을 완료로 옮길 API 가 저장소 어디에도 없어 `approved`
+에서 영구 정지합니다.
 
 한 트랜잭션에서 수행됩니다: (직접 환불신청서) 선점 수량의 취소 분할·전이 + 재고 복원(설정
 준수) + 쿠폰 조건 소멸 복원 → PG 환불 + 주문 환불 누적(`total_refunded_amount`)·결제행 취소
@@ -829,7 +857,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- |
 | `404` | 환불신청서 부재 |
 | `409` | 이미 실행됐거나 실행 중 (`claim_refund_already_executed` — 더블클릭). 화면은 새로고침을 안내한다 |
-| `422` | 승인 전 상태(`claim_transition_not_allowed`) / 취소 발 환불(`claim_refund_not_executable`) / D19 상한 초과(`claim_refund_exceeds_cancellable` — 실행 직전 재계산 가드) / PG 환불 거절(`errors.detail` 에 PG 사유 — 관리자 전용 면의 조치 근거) |
+| `422` | 승인 전 상태(`claim_transition_not_allowed`) / D19 상한 초과(`claim_refund_exceeds_cancellable` — 실행 직전 재계산 가드) / 환불수단이 결제행과 어긋남(`claims.refund_method.payment_mismatch`) / PG 환불 거절(`errors.detail` 에 PG 사유 — 관리자 전용 면의 조치 근거) |
 
 ---
 

@@ -90,7 +90,11 @@ class ClaimAdminListResource extends ClaimResource
             $refundTotal = (float) $claim->refund_amount + (float) $claim->refund_points_amount;
 
             $data += [
+                // 목록의 출처 뱃지가 읽는 값(#599 후속 §5-6). 취소 발 환불이 환불 탭에 서게
+                // 되면서(D6) `고객 신청`/`운영자 접수`/`반품 발` 을 화면에서 구분해야 한다 —
+                // 구분이 없으면 운영자가 자기가 건 취소를 고객 신청으로 읽는다.
                 'refund_source_type' => $claim->refund_source_type?->value,
+                'refund_source_type_label' => $claim->refund_source_type?->label(),
                 'refund_total' => $this->roundToOrderCurrency($refundTotal, $currency),
                 'refund_total_formatted' => $this->formatOrderCurrency($refundTotal, $currency),
             ];

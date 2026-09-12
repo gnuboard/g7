@@ -1,6 +1,273 @@
 {
   "comment": "sirsoft-basic 템플릿 직속 데이터소스(실제 layout data_sources ID 기준 — user/userNotifications/searchResults/profile/userProfile). 게시판/이커머스/페이지 도메인 데이터는 각 모듈 editor-spec 이 SSoT, 본 블록은 모듈 미설치 시 폴백.",
   "byDataSourceId": {
+    "claims": {
+      "data": {
+        "data": [
+          {
+            "id": 1,
+            "claim_number": "RF-20260601-0001",
+            "claim_type": "refund",
+            "claim_type_label": "환불",
+            "claim_path_segment": "refunds",
+            "order_number": "20260601-0042",
+            "status": "requested",
+            "status_label": "접수",
+            "status_variant": "info",
+            "requester_name": "홍길동",
+            "requested_at_formatted": "2026-06-01 19:40",
+            "reason_label": "단순 변심",
+            "fault_type_label": "고객 귀책",
+            "charge_method_label": "환불금에서 차감",
+            "refund_total_formatted": "34,000원",
+            "outstanding_amount_formatted": "0원",
+            "items": [
+              {
+                "id": 1,
+                "order_option_id": 9001,
+                "product_name": "샘플 상품 1",
+                "option_name": "기본 옵션",
+                "product_code": "SAMPLE-001",
+                "thumbnail_url": null,
+                "quantity": 1,
+                "original_quantity": 2,
+                "unit_price": 33000,
+                "unit_price_formatted": "33,000원",
+                "amount": 33000,
+                "amount_formatted": "33,000원",
+                "amount_type": "refund",
+                "subtotal_amount": 33000,
+                "subtotal_amount_formatted": "33,000원",
+                "option_status": "requested",
+                "option_status_label": "접수",
+                "option_status_variant": "info"
+              }
+            ]
+          }
+        ],
+        "claim_type": "refund",
+        "counts": {
+          "exchange": 0,
+          "return": 1,
+          "refund": 2,
+          "cancel": 1
+        },
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "total": 2,
+          "per_page": 20,
+          "has_more_pages": false
+        }
+      }
+    },
+    "claim": {
+      "data": {
+        "claim": {
+          "id": 1,
+          "claim_number": "RF-20260601-0001",
+          "claim_type": "refund",
+          "claim_type_label": "환불",
+          "claim_path_segment": "refunds",
+          "order_number": "20260601-0042",
+          "status": "requested",
+          "status_label": "접수",
+          "status_variant": "info",
+          "status_icon": "file-lines",
+          "is_final": false,
+          "is_editable": true,
+          "is_withdrawable": true,
+          "is_guest_request": false,
+          "requester_name": "홍길동",
+          "requested_at_formatted": "2026-06-01 19:40",
+          "approved_at_formatted": null,
+          "rejected_at_formatted": null,
+          "withdrawn_at_formatted": null,
+          "cancelled_at_formatted": null,
+          "refunded_at_formatted": null,
+          "reject_reason": null,
+          "reason_label": "단순 변심",
+          "reason_detail": "색상이 생각과 달라 환불을 신청합니다.",
+          "fault_type_label": "고객 귀책",
+          "cancel_type_label": "부분 취소",
+          "charge_method_label": "환불금에서 차감",
+          "refund_method_label": "PG 환불",
+          "refund_status_label": "접수",
+          "currency_code": "KRW",
+          "refund_product_amount": 33000,
+          "refund_product_amount_formatted": "33,000원",
+          "refund_shipping_amount": 0,
+          "refund_shipping_amount_formatted": "0원",
+          "refund_points_amount": 1000,
+          "refund_points_amount_formatted": "1,000P",
+          "refund_amount_formatted": "33,000원",
+          "refund_total_formatted": "34,000원",
+          "claim_shipping_fee_formatted": "0원",
+          "additional_product_amount_formatted": "0원",
+          "total_charge_amount": 0,
+          "total_charge_amount_formatted": "0원",
+          "outstanding_amount": 0,
+          "outstanding_amount_formatted": "0원",
+          "pending_payment": null,
+          "payments": [],
+          "images": [],
+          "items": [
+            {
+              "id": 1,
+              "order_option_id": 9001,
+              "product_name": "샘플 상품 1",
+              "option_name": "기본 옵션",
+              "product_code": "SAMPLE-001",
+              "thumbnail_url": null,
+              "quantity": 1,
+              "original_quantity": 2,
+              "unit_price": 33000,
+              "unit_price_formatted": "33,000원",
+              "amount": 33000,
+              "amount_formatted": "33,000원",
+              "amount_type": "refund",
+              "subtotal_amount": 33000,
+              "subtotal_amount_formatted": "33,000원",
+              "option_status": "requested",
+              "option_status_label": "접수",
+              "option_status_variant": "info"
+            }
+          ],
+          "refund_bank_code": null,
+          "refund_bank_name": null,
+          "refund_bank_account": null,
+          "refund_bank_holder": null,
+          "collection_carrier_name": null,
+          "collection_tracking_number": null,
+          "collection_tracking_url": null,
+          "collection_completed_at_formatted": null,
+          "redelivery_carrier_name": null,
+          "redelivery_tracking_number": null,
+          "redelivery_tracking_url": null,
+          "redelivered_at_formatted": null,
+          "redelivery_address_snapshot": null,
+          "return_address_snapshot": null,
+          "shipping_fee_snapshot": null,
+          "mc_claim_shipping_fee": null,
+          "mc_refund_amount": null,
+          "mc_refund_shipping_amount": null,
+          "mc_refund_total": null,
+          "mc_total_charge_amount": null,
+          "calculation_comparison": {
+            "original": {
+              "item_count": 2,
+              "base_currency": "KRW",
+              "total_list_price_amount": 78000,
+              "subtotal_amount": 69000,
+              "total_product_coupon_discount_amount": 3000,
+              "total_order_coupon_discount_amount": 2000,
+              "total_code_discount_amount": 0,
+              "base_shipping_amount": 3000,
+              "extra_shipping_amount": 0,
+              "shipping_discount_amount": 0,
+              "total_points_used_amount": 1000,
+              "total_paid_amount": 66000,
+              "total_tax_amount": 60000,
+              "total_vat_amount": 6000,
+              "total_earned_points_amount": 660,
+              "formatted": {
+                "total_list_price_amount": "78,000원",
+                "subtotal_amount": "69,000원",
+                "total_product_coupon_discount_amount": "3,000원",
+                "total_order_coupon_discount_amount": "2,000원",
+                "total_code_discount_amount": "0원",
+                "base_shipping_amount": "3,000원",
+                "extra_shipping_amount": "0원",
+                "shipping_discount_amount": "0원",
+                "total_points_used_amount": "1,000원",
+                "total_paid_amount": "66,000원",
+                "total_tax_amount": "60,000원",
+                "total_vat_amount": "6,000원",
+                "total_earned_points_amount": "660P"
+              }
+            },
+            "recalculated": {
+              "item_count": 1,
+              "base_currency": "KRW",
+              "total_list_price_amount": 39000,
+              "subtotal_amount": 35000,
+              "total_product_coupon_discount_amount": 3000,
+              "total_order_coupon_discount_amount": 2000,
+              "total_code_discount_amount": 0,
+              "base_shipping_amount": 3000,
+              "extra_shipping_amount": 0,
+              "shipping_discount_amount": 0,
+              "total_points_used_amount": 1000,
+              "total_paid_amount": 33000,
+              "total_tax_amount": 60000,
+              "total_vat_amount": 6000,
+              "total_earned_points_amount": 660,
+              "formatted": {
+                "total_list_price_amount": "39,000원",
+                "subtotal_amount": "35,000원",
+                "total_product_coupon_discount_amount": "3,000원",
+                "total_order_coupon_discount_amount": "2,000원",
+                "total_code_discount_amount": "0원",
+                "base_shipping_amount": "3,000원",
+                "extra_shipping_amount": "0원",
+                "shipping_discount_amount": "0원",
+                "total_points_used_amount": "1,000원",
+                "total_paid_amount": "33,000원",
+                "total_tax_amount": "60,000원",
+                "total_vat_amount": "6,000원",
+                "total_earned_points_amount": "660P"
+              }
+            },
+            "mc_original": null,
+            "mc_recalculated": null
+          }
+        },
+        "progress_steps": [
+          {
+            "value": "requested",
+            "label": "접수",
+            "state": "current",
+            "variant": "info",
+            "icon": "file-lines"
+          },
+          {
+            "value": "approved",
+            "label": "승인",
+            "state": "upcoming",
+            "variant": "primary",
+            "icon": "circle-check"
+          },
+          {
+            "value": "completed",
+            "label": "환불완료",
+            "state": "upcoming",
+            "variant": "success",
+            "icon": "flag-checkered"
+          }
+        ]
+      }
+    },
+    "claimable": {
+      "data": {
+        "options": [
+          {
+            "order_option_id": 9001,
+            "product_name": "샘플 상품 1",
+            "option_name": "기본 옵션",
+            "thumbnail_url": null,
+            "quantity": 2,
+            "claimable_quantity": 2,
+            "unit_price_formatted": "33,000원",
+            "option_status": "payment_complete",
+            "option_status_label": "결제완료",
+            "claimable_types": [
+              "refund"
+            ],
+            "refund_branch": "auto"
+          }
+        ]
+      }
+    },
     "mileage_balance": {
       "comment": "마이페이지 마일리지 잔액 (mypage/mileage.json — {{mileage_balance.data.mileage.available}}).",
       "data": {

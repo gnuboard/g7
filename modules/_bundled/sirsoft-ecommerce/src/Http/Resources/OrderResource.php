@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Enums\TaxInvoiceStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
@@ -92,6 +93,28 @@ class OrderResource extends BaseApiResource
             'depositor_name' => $this->whenLoaded('payment', fn () => $this->payment?->depositor_name),
             'total_cancelled_amount' => $this->roundToOrderCurrency($this->total_cancelled_amount, $orderCurrency),
             'total_cancelled_amount_formatted' => $this->formatOrderCurrency($this->total_cancelled_amount, $orderCurrency),
+            // 취소가 일어났는데 발급 완료 세금계산서가 그대로 남아 있는가 (P15).
+            //
+            // 세금계산서는 취소·부분취소에 반응하지 않는다 — 현금영수증과 달리 취소·재발급
+            // 경로가 없고, 국세청 연동 자동화는 이번 범위 밖이다(§12-A). 그래서 **누락을
+            // 드러내는** 플래그를 낸다: 관리자 주문상세가 이 값으로 경고 배지를 세운다.
+            // 표시가 없으면 운영자는 계산서가 이미 정리된 줄 알고 넘어가고, 어긋남은 신고
+            // 시점에야 드러난다.
+            //
+            // 판정은 **적재된 관계에서만** 한다. Resource 는 행마다 실행되므로 여기서
+            // `taxInvoices()` 를 재쿼리하면 주문 목록 한 페이지가 행 수만큼의 추가 쿼리를
+            // 부른다. 이 값을 읽는 곳은 관리자 주문상세 하나뿐이고 그 경로는 관계를 적재하므로
+            // (`OrderRepository::findWithRelations`), 목록에서는 키 자체가 나오지 않는다 —
+            // 화면은 `=== true` 로 판정하므로 키 부재는 배지 미표시와 같다.
+            'tax_invoice_needs_review' => $this->whenLoaded(
+                'taxInvoices',
+                fn (): bool => (float) $this->total_cancelled_amount > 0
+                    && $this->taxInvoices->contains(
+                        fn ($invoice): bool => ($invoice->invoice_status instanceof TaxInvoiceStatusEnum
+                            ? $invoice->invoice_status->value
+                            : (string) $invoice->invoice_status) === TaxInvoiceStatusEnum::ISSUED->value
+                    ),
+            ),
             'total_refunded_amount' => $this->roundToOrderCurrency($this->total_refunded_amount, $orderCurrency),
             'total_refunded_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_amount, $orderCurrency),
             'total_refunded_points_amount' => $this->roundToOrderCurrency($this->total_refunded_points_amount, $orderCurrency),

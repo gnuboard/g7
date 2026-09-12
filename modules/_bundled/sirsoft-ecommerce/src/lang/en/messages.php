@@ -214,6 +214,7 @@ return [
         'deposit_confirm_failed' => 'Failed to confirm the deposit.',
         'deposit_amount_mismatch' => 'The deposit amount does not match the amount due.',
         'deposit_not_dbank' => 'Only bank transfer (manual deposit) orders can be confirmed.',
+        'deposit_order_cancelled' => 'Cancelled orders cannot be confirmed for deposit.',
         'deposit_not_pending' => 'Only unpaid orders can have their deposit confirmed.',
         'payment_name_summary' => ':name and :count more',
         'deposit' => [
@@ -759,8 +760,6 @@ return [
                     'cancel' => [
                         'title' => 'Cancel Order',
                         'description' => 'Cancel the order for selected products. Please review the estimated refund amount before proceeding.',
-                        'cancel_pg' => 'Cancel PG payment as well',
-                        'cancel_pg_hint' => 'If unchecked, only the order status will be changed without PG cancellation.',
                         'reason' => 'Cancel Reason',
                         'reason_placeholder' => 'Select a cancel reason',
                         'reason_detail' => 'Detailed Reason',

@@ -1028,6 +1028,279 @@ export async function executeClaimItemBulkStatusHandler(
 }
 
 /**
+ * 신청서 **단위** 상태를 전이시킵니다. (상세 화면 전이 바 — #599 후속 F1)
+ *
+ * 예전에는 상세에 신청서 단위 전이 진입점이 통째로 없었다. 승인·반려·보류·결제대기는 **목록의
+ * 일괄 바**에서만 가능했고, 환불 유형은 상품 단위 축조차 없어 상세에서 할 수 있는 전이가
+ * 하나도 없었다 — 운영자는 신청서를 열어 내용을 확인한 뒤 목록으로 되돌아가 그 줄을 찾아
+ * 체크해야 했다. F2([환불하기]가 상태를 보지 않던 결함)와 겹쳐 "상세에서 승인할 수 없는데
+ * 승인 상태에서만 눌리는 버튼" 이라는 막다른 길이 됐다.
+ *
+ * 완료(`completed`)는 이 경로로 보내지 않는다 — 완료는 재고 복구·환불신청서 접수 선택을
+ * 동반하므로 전용 모달(`openClaimDetailComplete`)이 진입점이다.
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId / status / rejectReason)
+ * @param _context 액션 컨텍스트
+ */
+export async function executeClaimStatusTransitionHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimType?: string;
+        claimId?: number | string | null;
+        status?: string;
+        rejectReason?: string | null;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const status = params.status ?? '';
+    const base = claimScopedBase(params);
+
+    if (base === null) {
+        logger.warn('[executeClaimStatusTransition] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    if (!status) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.transition.no_status_selected', '변경할 상태를 선택해주세요.'),
+        );
+
+        return;
+    }
+
+    if (status === 'completed') {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.transition.use_complete_modal', '완료 처리는 완료 모달에서 진행해주세요.'),
+        );
+
+        return;
+    }
+
+    // 반려는 사유가 정본이다 — 없이 보내면 구매자 화면의 반려 사유 칸이 빈 채로 남는다.
+    if (status === 'rejected' && !(params.rejectReason ?? '').trim()) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_required', '반려 사유를 입력해주세요.'),
+        );
+
+        return;
+    }
+
+    if (G7Core.state.getLocal?.()?.isTransitioningClaim === true) return;
+    G7Core.state.setLocal?.({ isTransitioningClaim: true });
+
+    try {
+        const body: Record<string, unknown> = { status };
+
+        if (status === 'rejected') {
+            body.reject_reason = (params.rejectReason ?? '').trim();
+        }
+
+        const response = await G7Core.api.patch(`${base}/status`, body);
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'claim status transition failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message
+            ?? t('sirsoft-ecommerce.admin.claim.detail.transition.success', '신청서 상태를 변경했습니다.'),
+        );
+
+        G7Core.state.setLocal?.({ claimBulkStatus: '', claimRejectReason: '' });
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[executeClaimStatusTransition] 신청서 전이 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.transition.error', '신청서 상태 변경에 실패했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.setLocal?.({ isTransitioningClaim: false });
+    }
+}
+
+/**
+ * 완료된 교환·반품에 환불신청서를 **수동으로** 접수합니다. (정산 카드 — #599 후속 F5)
+ *
+ * 라우트·컨트롤러·서비스는 처음부터 완비돼 있었고 상세는 접수 **불가 사유**까지 보여 주는데,
+ * 정작 접수 버튼만 없었다 — 완료 모달에서 "환불신청서 생성" 을 끈 건은 그 뒤로 환불을 접수할
+ * 경로가 화면 어디에도 없었다.
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId)
+ * @param _context 액션 컨텍스트
+ */
+export async function storeClaimRefundRequestHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimType?: string;
+        claimId?: number | string | null;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const base = claimScopedBase(action.params ?? {});
+
+    if (base === null) {
+        logger.warn('[storeClaimRefundRequest] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    if (G7Core.state.getLocal?.()?.isFilingRefundRequest === true) return;
+    G7Core.state.setLocal?.({ isFilingRefundRequest: true });
+
+    try {
+        const response = await G7Core.api.post(`${base}/refund-request`, {});
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'refund request failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message
+            ?? t('sirsoft-ecommerce.admin.claim.detail.settlement.file_refund_success', '환불신청서를 접수했습니다.'),
+        );
+
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[storeClaimRefundRequest] 환불신청서 접수 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.settlement.file_refund_error', '환불신청서 접수에 실패했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.setLocal?.({ isFilingRefundRequest: false });
+    }
+}
+
+/**
+ * 운영자가 신청서에 첨부를 **대리 업로드**합니다. (사유 카드 — #599 후속 F6)
+ *
+ * 라우트(`POST …/images`)와 서비스는 처음부터 완비돼 있었는데 화면 진입점이 0건이었다 —
+ * 전화로 사진을 받은 운영자는 그 증빙을 신청서에 붙일 방법이 없어 메모에 설명만 적어야 했다.
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId / file)
+ * @param _context 액션 컨텍스트
+ */
+export async function uploadClaimImageHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimType?: string;
+        claimId?: number | string | null;
+        file?: File | null;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const base = claimScopedBase(params);
+    const file = params.file ?? null;
+
+    if (base === null || !file) {
+        logger.warn('[uploadClaimImage] 신청서 식별 축 또는 파일이 없습니다.');
+
+        return;
+    }
+
+    if (G7Core.state.getLocal?.()?.isUploadingClaimImage === true) return;
+    G7Core.state.setLocal?.({ isUploadingClaimImage: true });
+
+    try {
+        const form = new FormData();
+        form.append('image', file);
+
+        const response = await G7Core.api.post(`${base}/images`, form);
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'claim image upload failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message
+            ?? t('sirsoft-ecommerce.admin.claim.detail.reason.image_upload_success', '첨부를 업로드했습니다.'),
+        );
+
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[uploadClaimImage] 첨부 업로드 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.reason.image_upload_error', '첨부 업로드에 실패했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.setLocal?.({ isUploadingClaimImage: false });
+    }
+}
+
+/**
+ * 신청서의 첨부를 **일괄 정리**합니다. (사유 카드 — #599 후속 F6)
+ *
+ * 잘못 올라온 증빙(개인정보가 찍힌 사진 등)을 운영자가 지울 수 있어야 한다 — 라우트는
+ * 있었지만 화면에는 삭제 진입점이 없었다.
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId)
+ * @param _context 액션 컨텍스트
+ */
+export async function clearClaimImagesHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimType?: string;
+        claimId?: number | string | null;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const base = claimScopedBase(action.params ?? {});
+
+    if (base === null) {
+        logger.warn('[clearClaimImages] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    if (G7Core.state.getLocal?.()?.isClearingClaimImages === true) return;
+    G7Core.state.setLocal?.({ isClearingClaimImages: true });
+
+    try {
+        const response = await G7Core.api.delete(`${base}/images`);
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'claim image clear failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message
+            ?? t('sirsoft-ecommerce.admin.claim.detail.reason.image_clear_success', '첨부를 정리했습니다.'),
+        );
+
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[clearClaimImages] 첨부 정리 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.reason.image_clear_error', '첨부 정리에 실패했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.setLocal?.({ isClearingClaimImages: false });
+    }
+}
+
+/**
  * 회수·재발송 운송장을 저장합니다. (상세 화면 배송 정보 섹션)
  *
  * 택배사와 송장번호는 함께 입력해야 한다 — 하나만 보내면 서버가 `claim_tracking_incomplete`

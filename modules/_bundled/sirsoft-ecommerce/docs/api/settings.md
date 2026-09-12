@@ -285,6 +285,8 @@ HTTP/1.1 200
                 "confirmed"
             ],
             "instant_cancel_statuses": [
+                "pending_order",
+                "pending_payment",
                 "payment_complete"
             ],
             "refund_request_statuses": [
@@ -304,6 +306,10 @@ HTTP/1.1 200
             "auto_approve_zero_charge": false,
             "auto_approve_after_payment": false,
             "auto_approve_refund_request": false,
+            "auto_approve_refund_statuses": [
+                "payment_complete",
+                "preparing"
+            ],
             "max_images": 5,
             "image_max_size_kb": 2048,
             "request_period_days": 7,
@@ -559,6 +565,25 @@ HTTP/1.1 200
 | order_settings.cash_receipt_self_issue | body | boolean | 아니오 | — | 현금영수증 자진발급 사용 (구매자가 신청하지 않은 무통장 입금 건도 자동 발급) |
 | order_settings.shipping_fee_tax_policy | body | string | 아니오 | `proportional`, `taxable`, `follow_main_item` | 현금영수증의 배송비 과세 방식 (안분 / 전액 과세 / 주된 재화 기준) |
 | order_settings.payment_methods | body | array | 아니오 | — | 결제수단 목록. 항목별 `id`(필수)·`pg_provider`·`sort_order`(min 1)·`is_active`·`min_order_amount`(min 0)·`stock_deduction_timing`(`order_placed`\|`payment_complete`\|`none`)·`mileage_deduction_timing`(`order_placed`\|`payment_complete`). 최소 1개는 활성이어야 하며, PG 가 필요한 결제수단을 활성화하려면 PG사 지정 필수 |
+
+#### 고객이 고를 수 없는 결제수단 (`customer_selectable: false`)
+
+`point`(마일리지) · `deposit`(예치금) · `free`(무료)는 **코어에 결제 실행 경로가 없다**. 응답의
+결제수단 항목은 `customer_selectable: false` 로 그 사실을 싣고, 관리자 설정 화면은 그 값을 읽어
+활성 토글을 잠근다.
+
+켜 두면 고객 주문서에는 뜨는데 주문 생성이 `422` 로 거절되고(`CreateOrderRequest`), 통과하더라도
+결제를 완료할 방법이 없어 주문이 `pending_order` 에 영구 정박한다 — 오류 없이 주문만 쌓인다.
+
+- **예치금으로 결제받으려면 예치금 플러그인이 필요하다.** 코어는 예치금 **차감** 구현 자체가
+  없어 `total_deposit_used_amount` 가 항상 0 이고, 따라서 환불 분해·복원·한도 축도 없다.
+  그 축은 차감을 소유한 플러그인이 함께 갖는다.
+- **마일리지는 주문의 일부 금액을 상쇄하는 용도로만 쓴다** — 결제수단으로 고르는 것이 아니라
+  주문서에서 사용액을 입력하는 축이다.
+- `free` 는 **0원 주문에서 시스템이 자동으로 고르는 경로**만 남는다.
+
+확장이 `customer_selectable` 을 선언하면 그 값이 우선한다 — 결제 실행을 제공하는 플러그인은
+자기 수단을 선택 가능으로 열 수 있다.
 | order_settings.banks | body | array | 아니오 | — | 무통장입금용 은행 목록. 항목별 `code`(max 10, 필수)·`name`(다국어 배열 — 현재 로케일 이름 필수. 은행 행에는 `id` 가 없어 클레임 사유·배송사 같은 '기존 행 면제' 가 **없다**: 다른 로케일에서 만든 은행이 있으면 그 로케일 이름을 채워야 저장된다) |
 | order_settings.bank_accounts | body | array | 아니오 | — | 무통장 입금 계좌 목록. 항목별 `bank_code`·`account_number`·`account_holder`(모두 필수)·`is_active`·`is_default`. 계좌가 있으면 최소 1건은 사용+기본 상태여야 함 |
 | order_settings.auto_cancel_expired | body | boolean | 아니오 | — | 입금대기 상태 주문의 자동취소 사용 여부 |
@@ -571,13 +596,14 @@ HTTP/1.1 200
 | claim | body | array | 아니오 | — | 클레임 설정 섹션 (정책 스칼라 + 사유 카탈로그 3종. 카탈로그는 DB 동기화 대상으로 분리 저장) |
 | claim.exchange_requestable_statuses | body | array | 아니오 | — | 교환을 신청할 수 있는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `delivered`, `confirmed`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.return_requestable_statuses | body | array | 아니오 | — | 반품을 신청할 수 있는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `delivered`, `confirmed`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
-| claim.instant_cancel_statuses | body | array | 아니오 | — | `order_settings.cancellable_statuses`의 호환 별칭. 허용 상태·빈 배열 의미가 동일하며 어느 설정 탭에서 저장해도 두 키가 함께 갱신됨. 두 키를 동시에 다르게 보내면 주문 설정이 우선. 읽기 시 저장값을 변경하지 않음 |
+| claim.instant_cancel_statuses | body | array | 아니오 | — | **자동 전이 대상 주문옵션(상품) 상태** 목록. 이 상태의 상품도 환불신청서를 만들고, 승인·환불완료까지 자동으로 진행한다(계좌 환불 수단은 승인에서 멈춘다). 허용 `pending_order`·`pending_payment`·`payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `pending_order`, `pending_payment`, `payment_complete`). `order_settings.cancellable_statuses`의 호환 별칭이라 어느 설정 탭에서 저장해도 두 키가 함께 갱신되고, 두 키를 동시에 다르게 보내면 주문 설정이 우선. 읽기 시 저장값을 변경하지 않음 |
 | claim.refund_request_statuses | body | array | 아니오 | — | 환불신청서로 접수되는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping` (기본 `preparing`, `shipping_ready`, `shipping`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.allowed_charge_methods | body | array | 아니오 | — | 고객이 신청서에서 고를 수 있는 청구 방식. 허용 `pay_on_request`·`pay_on_approval`·`deduct_from_refund`. 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.charge_payment_methods | body | array | 아니오 | — | 클레임 추가결제에 쓸 수 있는 결제수단 (기본 `card`, `point`). 허용값은 기본 결제수단 + 결제 플러그인이 등록한 확장 결제수단 ID — 일반 주문의 결제수단 목록과 같은 출처다. 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.auto_approve_zero_charge | body | boolean | 아니오 | — | 추가 청구액이 0원인 교환·반품 신청을 접수 즉시 승인할지 여부 |
 | claim.auto_approve_after_payment | body | boolean | 아니오 | — | 추가결제 완료 시 승인 전이를 자동 수행할지 여부 |
 | claim.auto_approve_refund_request | body | boolean | 아니오 | — | 접수된 환불신청서를 자동 승인할지 여부 (환불 실행은 별도) |
+| claim.auto_approve_refund_statuses | body | array | 아니오 | — | 자동 승인이 켜졌을 때 **어느 상품 상태**를 승인할지. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping` (기본 `payment_complete`, `preparing`). 신청서의 상품이 하나라도 목록 밖이면 전건을 운영자가 승인한다 — 섞인 신청서를 부분 승인할 수단이 없으므로, "하나라도 대상이면 승인" 은 대상 밖 상품까지 함께 승인해 버린다. 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.max_images | body | integer | 아니오 | min 1, max 20 | 신청서 1건당 첨부 가능한 이미지 수 (1~20). 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.image_max_size_kb | body | integer | 아니오 | min 128, max 20480 | 첨부 이미지 1개의 최대 용량(KB, 128~20480). 키를 보내면 값이 있어야 한다(`null` 은 422) |
 | claim.request_period_days | body | integer | 아니오 | min 1, max 365 | 배송완료(또는 구매확정) 후 교환·반품을 신청할 수 있는 기간(일, 1~365). 키를 보내면 값이 있어야 한다(`null` 은 422) |
@@ -719,6 +745,8 @@ Content-Type: application/json
         "confirmed"
     ],
     "claim.instant_cancel_statuses": [
+        "pending_order",
+        "pending_payment",
         "payment_complete"
     ],
     "claim.refund_request_statuses": [
@@ -738,6 +766,10 @@ Content-Type: application/json
     "claim.auto_approve_zero_charge": false,
     "claim.auto_approve_after_payment": false,
     "claim.auto_approve_refund_request": false,
+    "claim.auto_approve_refund_statuses": [
+        "payment_complete",
+        "preparing"
+    ],
     "claim.max_images": 5,
     "claim.image_max_size_kb": 2048,
     "claim.request_period_days": 7,
@@ -1043,6 +1075,8 @@ HTTP/1.1 200
                 "confirmed"
             ],
             "instant_cancel_statuses": [
+                "pending_order",
+                "pending_payment",
                 "payment_complete"
             ],
             "refund_request_statuses": [
@@ -1062,6 +1096,10 @@ HTTP/1.1 200
             "auto_approve_zero_charge": false,
             "auto_approve_after_payment": false,
             "auto_approve_refund_request": false,
+            "auto_approve_refund_statuses": [
+                "payment_complete",
+                "preparing"
+            ],
             "max_images": 5,
             "image_max_size_kb": 2048,
             "request_period_days": 7,

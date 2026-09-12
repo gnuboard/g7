@@ -197,7 +197,7 @@ php artisan plugin:update sirsoft-pay_nhnkcp --force
 ## 사용 방법
 
 <!-- @intent START -->
-**결제 취소/부분취소**: 관리자가 주문 취소를 요청(`cancel_pg=true`)하면 코어가
+**결제 취소/부분취소**: 관리자가 주문 취소를 요청하면 코어가 **환불신청서**를 만들고, 그 환불이 집행되는 시점에
 `sirsoft-ecommerce.payment.refund` 필터 훅을 발화하고, 이 플러그인의 `PaymentRefundListener`
 가 KCP 취소 API를 호출합니다(전액취소는 `isPartial=false`, 부분취소는 `isPartial=true` +
 원래 결제금액). 배송비가 포함된 주문은 전체취소 시 배송비도 함께 환불 레코드에 반영되고,

@@ -295,7 +295,7 @@
       },
       "cancel": {
         "title": "注文キャンセル",
-        "description": "選択した商品の注文をキャンセルします。",
+        "description": "キャンセルしてもすぐに返金されるわけではありません。返金申請書が作成され、承認・返金完了を経て注文キャンセルが確定します。",
         "validation_error_title": "入力値を確認してください",
         "pg_error_title": "PG返金失敗",
         "pg_error_description": "PG返金処理に失敗しました。エラーの内容を確認してから再試行するか、PG管理者画面から直接返金処理を行ってください。",
@@ -303,8 +303,8 @@
         "unit_price_col": "単価",
         "cancel_quantity_col": "キャンセル数量",
         "status_col": "現在のステータス",
-        "cancel_pg": "PG決済も一緒にキャンセルします",
-        "cancel_pg_description": "チェックを外すと、注文ステータスのみが変更され、PG返金は別途行う必要があります。",
+        "auto_advance_refund_label": "返金まで一度に処理",
+        "auto_advance_refund_hint": "チェックすると返金申請書を作成したあと、承認・返金完了まで自動的に進めます。口座へ送金が必要な返金手段は承認で止まり、運営者が送金後に[返金する]で完了します。",
         "cancel_reason_type_label": "キャンセル理由",
         "reason_placeholder": "キャンセル理由を選択してください",
         "reason": {
@@ -357,13 +357,16 @@
         "close_btn": "閉じる",
         "estimate_failed": "返金予想金額の計算に失敗しました。",
         "cancel_success": "注文がキャンセルされました。",
+        "refund_request_created": "返金申請書が受け付けられました。承認・返金完了を経て注文キャンセルが確定します。",
         "cancel_failed": "注文のキャンセルに失敗しました。",
         "refund_bank_label": "返金口座",
         "refund_bank_select": "銀行を選択",
         "refund_bank_account_placeholder": "口座番号 (ハイフンなしで入力)",
         "refund_bank_holder_placeholder": "口座名義人",
         "refund_bank_required_hint": "入金が完了した仮想口座注文は返金口座が必要です。",
-        "refund_bank_partial_notice": "3つのうちいずれかを入力した場合は、残りも入力する必要があります。"
+        "refund_bank_empty_hint": "返金口座に選べる銀行が登録されていません。環境設定 > 注文設定の[銀行管理]で先に登録してください。",
+        "refund_bank_partial_notice": "3つのうちいずれかを入力した場合は、残りも入力する必要があります。",
+        "partial_unsupported": "この注文の決済手段は**全額キャンセルのみ**可能です。一部の商品・数量だけをキャンセルすると決済代行会社が拒否します。"
       },
       "reset_guest_password": {
         "title": "非会員閲覧パスワード再設定",
@@ -426,6 +429,9 @@
       "cancel_failed": "現金領収書の発行キャンセルに失敗しました。",
       "reissue_failed": "再発行失敗",
       "reissue_success": "現金領収書が再発行されました。"
+    },
+    "tax_invoice": {
+      "needs_review": "この注文にはキャンセルが発生していますが、発行済みの税金計算書がそのまま残っています。税金計算書の取消・修正発行は自動処理されないため、国税庁ホームタックスで直接処理してください。"
     }
   },
   "preset": {

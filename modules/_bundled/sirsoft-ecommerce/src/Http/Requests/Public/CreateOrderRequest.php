@@ -78,6 +78,30 @@ class CreateOrderRequest extends FormRequest
                         $fail(__('sirsoft-ecommerce::validation.order.payment_method_unavailable'));
                     }
                 },
+                // 고객이 직접 고를 수 없는 수단 차단 (P10 — `point`/`deposit`/`free`).
+                //
+                // 코어에는 이 수단들의 **결제 실행 경로가 없다**. 실결제액이 0보다 큰 주문에
+                // 고르면 주문은 `PENDING_ORDER` 에 영구 정박한다 — 결제도 취소도 되지 않는
+                // 주문이 남고, 어떤 화면에도 그 이유가 뜨지 않는다. 화이트리스트
+                // (`allValidIds`)는 조이지 않는다: 과거 주문 목록 필터가 같은 목록을 쓰므로
+                // 조이면 예전 수단으로 결제한 주문을 조회할 수 없다.
+                //
+                // `free` 만 예외다 — **결제할 것이 없는 0원 주문**은 시스템이 이 수단을 고르고
+                // 그 경로는 정상 동작한다. 그래서 금액이 0 인 요청에서만 통과시킨다.
+                function (string $attribute, mixed $value, callable $fail) {
+                    if (! is_string($value) || app(PaymentMethodResolver::class)->isCustomerSelectable($value)) {
+                        return;
+                    }
+
+                    $isFreeZeroAmountOrder = $value === PaymentMethodEnum::FREE->value
+                        && (float) $this->input('expected_total_amount', 0) <= 0.0;
+
+                    if ($isFreeZeroAmountOrder) {
+                        return;
+                    }
+
+                    $fail(__('sirsoft-ecommerce::validation.order.payment_method_not_selectable'));
+                },
             ],
             'expected_total_amount' => 'required|numeric|min:0',
 

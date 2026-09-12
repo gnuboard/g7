@@ -124,6 +124,9 @@ class OrderController extends AuthBaseController
                     reasonDetail: $request->getReasonDetail(),
                     cancelledBy: $cancelledBy,
                     refundPriority: $request->getRefundPriority(),
+                    // 구매자 본인 요청 — 고객 축으로 접수한다(출처 DIRECT · 고객 창구 자격 ·
+                    // 화면에 노출되는 사유만). 운영자 축으로 접수되면 본인이 철회·수정할 수 없다.
+                    buyerRequest: true,
                 );
             } else {
                 $result = $this->cancellationService->cancelOrder(
@@ -132,6 +135,9 @@ class OrderController extends AuthBaseController
                     reasonDetail: $request->getReasonDetail(),
                     cancelledBy: $cancelledBy,
                     refundPriority: $request->getRefundPriority(),
+                    // 구매자 본인 요청 — 고객 축으로 접수한다(출처 DIRECT · 고객 창구 자격 ·
+                    // 화면에 노출되는 사유만). 운영자 축으로 접수되면 본인이 철회·수정할 수 없다.
+                    buyerRequest: true,
                 );
             }
 

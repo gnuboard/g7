@@ -1058,7 +1058,23 @@ class RefundExecutionServiceTest extends ModuleTestCase
     // C. 취소 경로와의 경계 — 누적 지점은 하나다
     // ================================================================
 
-    public function test_cancellation_path_does_not_accumulate_total_refunded_amount(): void
+    /**
+     * 누적 지점은 하나다 — 취소 경로도 **환불 누적으로** 장부를 말한다.
+     *
+     * 예전에는 취소가 `total_paid_amount` 를 재계산값으로 덮어써 잔여 한도를 좁혔고, 그래서
+     * `total_refunded_amount` 를 누적하면 같은 금액이 두 번 빠졌다. 지금은 취소·환불이 클레임
+     * 접수 한 경로로 모이면서 원 결제금액을 깎지 않고 누적이 잔여를 말한다(§12-B B1) —
+     * 10만원 주문의 6만원 환불 뒤 잔여가 `4만 − 6만 = 0` 이 되어 2차 부분환불이 0원으로
+     * 실행되던 것이 그 이중 차감이었다.
+     *
+     * 여기서 잠그는 것은 **두 축을 동시에 건드리지 않는다**는 것이다: 원금은 그대로, 잔여는
+     * `total_paid_amount − total_refunded_amount` 로 읽는다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects cancellation_path_reports_remaining_capacity_through_refund_accumulation
+     */
+    public function test_cancellation_path_reports_remaining_capacity_through_refund_accumulation(): void
     {
         $this->stubPgRefundSuccess();
 
@@ -1074,12 +1090,18 @@ class RefundExecutionServiceTest extends ModuleTestCase
             '고객변심'
         );
 
-        // 취소는 total_paid_amount 를 재계산값으로 덮어써 잔여 한도를 이미 좁힌다.
-        // 여기서 total_refunded_amount 까지 누적하면 같은 금액이 두 번 차감된다.
         $fresh = $order->fresh();
-        $this->assertSame(0.0, (float) $fresh->total_refunded_amount);
-        $this->assertSame(10000.0, (float) $fresh->total_paid_amount);
+
+        // 원금은 그대로 두고 누적으로 말한다 — 두 축을 동시에 깎으면 같은 금액이 두 번 빠진다.
+        $this->assertSame(20000.0, (float) $fresh->total_paid_amount);
+        $this->assertSame(10000.0, (float) $fresh->total_refunded_amount);
         $this->assertSame(10000.0, (float) $fresh->total_cancelled_amount);
+
+        // 잔여 환불 한도는 두 값의 차다.
+        $this->assertSame(
+            10000.0,
+            (float) $fresh->total_paid_amount - (float) $fresh->total_refunded_amount
+        );
     }
 
     public function test_cancellation_path_still_accumulates_payment_cancelled_amount(): void

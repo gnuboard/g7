@@ -187,4 +187,32 @@ class OrderStatusWriteGateParityTest extends ModuleTestCase
         // 게이트가 통째로 비어 통과하는 거짓 green 방지 — 지정 가능 상태는 남아 있어야 한다.
         $this->assertContains(OrderStatusEnum::PAYMENT_COMPLETE->value, $assignable);
     }
+
+    /**
+     * 취소는 상태 변경이 아니라 **장부 행위**다 — 일괄 상태변경으로 만들 수 없어야 한다.
+     *
+     * 코스 상태 4종과 같은 이유가 `cancelled` 에도 그대로 적용된다. 관리자 주문 화면의 일괄
+     * 상태변경으로 상품을 `cancelled` 로 옮기면 취소신청서도 환불신청서도 없이 취소 상태만
+     * 남는다 — 그 경로는 `OrderOptionService` 를 지나므로 **재고는 복원되는데** 주문 합계·
+     * `total_cancelled_amount`·`cancellation_count`·결제행은 전혀 갱신되지 않는다. 돈은 그대로
+     * 두고 물건만 돌려받은 상태가 원장 어디에도 근거 없이 생긴다.
+     *
+     * 결제행을 정리하지 않는다는 것은 P4 가 막은 결함도 함께 부활한다는 뜻이다 — 그렇게 취소된
+     * 주문은 이후 입금확인·PG 입금통보로 결제완료로 되살아난다.
+     *
+     * 취소의 입구는 하나다(`POST .../orders/{id}/cancel` → 클레임 접수).
+     */
+    public function test_admin_assignable_values_excludes_cancelled(): void
+    {
+        $assignable = OrderStatusEnum::adminAssignableValues();
+
+        $this->assertNotContains(
+            OrderStatusEnum::CANCELLED->value,
+            $assignable,
+            '취소가 관리자 지정 가능 집합에 있으면 일괄 상태변경이 신청서 없는 취소를 만든다.'
+        );
+
+        // 게이트가 통째로 비어 통과하는 거짓 green 방지.
+        $this->assertContains(OrderStatusEnum::PAYMENT_COMPLETE->value, $assignable);
+    }
 }

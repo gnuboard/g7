@@ -17,7 +17,10 @@
       "refund_execute": "Refund execution"
     },
     "progress": {
-      "title": "Progress"
+      "title": "Progress",
+      "approved_at": "Approved at",
+      "rejected_at": "Rejected at",
+      "withdrawn_at": "Withdrawn at"
     },
     "items": {
       "title": "Requested Items",
@@ -65,7 +68,12 @@
       "fault_type_label": "Fault",
       "reject_reason_label": "Rejection reason",
       "no_detail": "No detailed reason was provided.",
-      "images_label": "Attachments"
+      "images_label": "Attachments",
+      "images_clear": "Delete all attachments",
+      "image_upload_success": "The attachment has been uploaded.",
+      "image_upload_error": "Failed to upload the attachment.",
+      "image_clear_success": "The attachments have been cleared.",
+      "image_clear_error": "Failed to clear the attachments."
     },
     "comparison": {
       "title": "Order amounts at filing (before / after)",
@@ -171,7 +179,10 @@
       "refund_points_amount": "Mileage refund",
       "refund_shipping_amount": "Shipping refund",
       "refund_total": "Refund total",
-      "refunded_at": "Refunded at"
+      "refunded_at": "Refunded at",
+      "file_refund_request": "File refund request",
+      "file_refund_success": "The refund request has been filed.",
+      "file_refund_error": "Failed to file the refund request."
     },
     "refund_execute": {
       "cancellable_title": "Cancellable amount",
@@ -191,6 +202,7 @@
       "exceeds": "The amount exceeds the cancellable limit.",
       "save": "Save amounts",
       "execute": "Refund",
+      "manual_transfer_notice": "No PG integration was found for this payment method, so the refund fell back to a bank transfer. Send the money manually, then press Refund to mark it complete. Reinstalling the PG plugin restores automatic refunds.",
       "executed": "The refund has been executed.",
       "error": "Could not execute the refund.",
       "conflict": "It has already been executed or is in progress. Refresh and check again.",
@@ -203,6 +215,15 @@
       "refund_bank_name": "Refund bank",
       "refund_bank_account": "Refund account",
       "refund_bank_holder": "Account holder"
+    },
+    "transition": {
+      "title": "Change request status",
+      "reject_reason_placeholder": "Enter the rejection reason",
+      "no_status_selected": "Select a status to change to.",
+      "use_complete_modal": "Use the completion modal to complete this request.",
+      "reject_reason_required": "Enter the rejection reason.",
+      "success": "The request status has been changed.",
+      "error": "Failed to change the request status."
     }
   },
   "subtab": {
@@ -366,6 +387,7 @@
     "submit": "Complete {{count}} claim(s)",
     "preview_error": "Could not load the completion summary.",
     "success": "The completion has been applied.",
-    "error": "The completion failed."
+    "error": "The completion failed.",
+    "refund_later_desc_cancellation": "Without a refund request no money leaves this completion, so no cancellation record is created either. You can file one later from the settlement card on the request detail."
   }
 }

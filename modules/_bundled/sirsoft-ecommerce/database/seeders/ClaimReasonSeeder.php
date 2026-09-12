@@ -99,6 +99,17 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
                 'is_active' => true,
                 'sort_order' => 5,
             ],
+            [
+                // 만료 자동취소(`CancelPendingPaymentOrdersCommand`)가 쓰는 코드.
+                // 고객이 고를 사유가 아니므로 신청 화면에는 내지 않는다.
+                'type' => 'refund',
+                'code' => 'auto_cancel_expired',
+                'name' => ['ko' => '입금 기한 만료 자동취소', 'en' => 'Auto-cancelled (payment deadline expired)'],
+                'fault_type' => 'customer',
+                'is_user_selectable' => false,
+                'is_active' => true,
+                'sort_order' => 6,
+            ],
 
             // 기타
             [
@@ -108,7 +119,7 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
                 'fault_type' => 'customer',
                 'is_user_selectable' => true,
                 'is_active' => true,
-                'sort_order' => 6,
+                'sort_order' => 7,
             ],
 
             // 교환 사유

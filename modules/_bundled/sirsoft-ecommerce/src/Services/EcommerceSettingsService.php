@@ -1145,6 +1145,21 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 'needs_pg' => $needsPg,
                 'pg_locked' => $pgLocked,
                 'refund_method' => $refundMethod,
+                // 고객이 결제창에서 고를 수 있는 수단인지 — 정의가 SSoT 다(P8·P10).
+                //
+                // 마일리지·예치금·무료는 코어에 **결제 실행 경로가 없다**. 켜 두면 고객 주문서에는
+                // 뜨는데 주문 생성이 422 로 거절되거나(`CreateOrderRequest`), 통과해도 결제를
+                // 완료할 방법이 없어 `pending_order` 에 영구 정박한다. 화면이 이 값을 읽어 토글을
+                // 잠가야 운영자가 "켰는데 왜 안 되지" 를 겪지 않는다.
+                //
+                // 인스턴스 메서드가 아니라 순수 규칙을 쓴다 — 카탈로그는 바로 이 병합이 만드는
+                // 설정을 읽으므로, 여기서 리졸버를 부르면 무한 재귀가 된다.
+                'customer_selectable' => PaymentMethodResolver::customerSelectableByDeclaration(
+                    $id,
+                    isset($definition['defaults']['customer_selectable'])
+                        ? (bool) $definition['defaults']['customer_selectable']
+                        : null,
+                ),
             ];
 
             // iOS 전용 노출 플래그(애플페이 등) — 정의가 SSoT. 관리자가 편집하는 값이 아니며,

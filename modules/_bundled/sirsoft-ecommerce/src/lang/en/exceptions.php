@@ -83,6 +83,7 @@ return [
     'cancel_option_already_cancelled' => 'This order option has already been cancelled.',
     'cancel_quantity_invalid' => 'Cancel quantity is invalid.',
     'cancel_refund_negative' => 'Cancelling this item changes the applied discount conditions and increases the payment amount, so it cannot be cancelled.',
+    'partial_cancel_not_supported' => 'The payment method for this order does not support partial cancellation. Only a full cancellation is possible.',
     'pg_refund_failed' => 'PG refund processing failed. (:error)',
     'order_cancel_failed' => 'Failed to cancel the order.',
     'order_estimate_refund_failed' => 'Failed to calculate the estimated refund amount.',

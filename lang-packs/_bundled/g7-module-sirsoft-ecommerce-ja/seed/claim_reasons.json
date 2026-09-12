@@ -17,6 +17,9 @@
   "admin_cancel": {
     "name": "管理者キャンセル"
   },
+  "auto_cancel_expired": {
+    "name": "入金期限切れによる自動キャンセル"
+  },
   "etc": {
     "name": "その他"
   },

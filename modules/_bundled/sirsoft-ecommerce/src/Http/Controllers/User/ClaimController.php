@@ -78,8 +78,10 @@ class ClaimController extends AuthBaseController
         try {
             // 유형 미지정이면 접수 건이 있는 첫 유형을 서버가 고른다 — 화면은 응답의 claim_type 으로
             // 활성 서브탭을 세우고 counts 로 뱃지를 단다 (관리자 클레임 내역과 같은 규칙).
-            $counts = $this->claimService->countsForOrder($order);
+            $counts = $this->claimService->countsForOrder($order, $request->filters());
             $type = $this->claimService->resolveOrderListType($request->requestedClaimType(), $counts);
+            // 현재 탭 뱃지만 목록과 같은 필터로 맞춘다 (F15).
+            $counts = $this->claimService->refreshCurrentTypeCount($order, $counts, $type, $request->filters());
             $claims = $this->claimService->listForOrderPaginated(
                 $order,
                 $type,
@@ -160,9 +162,23 @@ class ClaimController extends AuthBaseController
         $this->logApiUsage('user.claims.index');
 
         try {
-            $claims = $this->claimService->listForUser((int) Auth::id(), $request->claimType(), $request->filters(), $request->perPage());
+            $userId = (int) Auth::id();
+            $type = $request->claimType();
 
-            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.list_retrieved', new ClaimCollection($claims));
+            // 서브탭 뱃지도 함께 낸다 (F12). 주문 스코프 목록·관리자 목록은 이미 같은 키를
+            // 내는데 회원 목록만 빠져 있었다 — 뱃지가 영영 비어, 구매자는 다른 탭에 건이
+            // 있는지 알 수 없어 네 탭을 차례로 눌러 봐야 했다.
+            $counts = $this->claimService->countsForUser($userId, $request->filters());
+            // 현재 탭 뱃지만 목록과 같은 필터로 맞춘다 (F15).
+            $counts = $this->claimService->refreshCurrentUserTypeCount($userId, $counts, $type, $request->filters());
+
+            $claims = $this->claimService->listForUser($userId, $type, $request->filters(), $request->perPage());
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.list_retrieved',
+                (new ClaimCollection($claims))->withTypeSummary($type, $counts),
+            );
         } catch (Exception $e) {
             return $this->claimServerError('index', $e);
         }

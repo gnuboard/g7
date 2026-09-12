@@ -12,7 +12,7 @@
  *  - 승인 뒤 철회(409)는 구매자가 이 화면에서 고칠 수 없지만 **왜 안 되는지**는 알아야 한다 —
  *    토스트로만 알리면 사라진 뒤 화면에 남지 않는다(§6-3 P13 과 같은 채널 규약).
  *
- * @scenario claim_type=refund, charge_method=none, refund_branch=refund
+ * @scenario claim_type=refund, charge_method=none, refund_branch=request
  * @effects claim_withdraw_requires_a_target,
  *   claim_withdraw_clears_target_on_close,
  *   claim_withdraw_is_idempotent_against_double_click,

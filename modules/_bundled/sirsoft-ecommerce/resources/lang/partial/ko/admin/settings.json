@@ -162,6 +162,7 @@
       "is_active": "사용여부",
       "orphaned_badge": "플러그인 미설치",
       "orphaned_pg_badge": "지정 PG 삭제됨",
+      "internal_only_badge": "고객 선택 불가",
       "remove_orphaned": "삭제",
       "pg_provider": "PG사",
       "pg_use_default": "기본 PG",
@@ -271,8 +272,8 @@
         "exchange_hint": "이 상태의 상품만 교환 신청 버튼이 노출되고 신청이 접수됩니다.",
         "return_label": "반품 신청 가능 상태",
         "return_hint": "이 상태의 상품만 반품 신청 버튼이 노출되고 신청이 접수됩니다.",
-        "instant_cancel_label": "즉시취소 가능 상태",
-        "instant_cancel_hint": "이 상태의 상품은 환불신청서를 만들지 않고 곧바로 취소됩니다.",
+        "instant_cancel_label": "자동 전이 대상 상태",
+        "instant_cancel_hint": "이 상태의 상품은 환불신청서를 만든 뒤 승인·환불완료까지 자동으로 진행합니다. 계좌 환불 수단은 승인에서 멈추고 운영자가 송금 후 완료합니다.",
         "refund_request_label": "환불신청 가능 상태",
         "refund_request_hint": "이 상태의 상품은 환불신청서로 접수되어 관리자 승인 후 환불됩니다.",
         "request_period_days_label": "신청 가능 기간",
@@ -296,7 +297,9 @@
         "after_payment_label": "추가결제 완료 후 자동 승인",
         "after_payment_hint": "고객이 추가결제를 마치면 승인 전이를 자동으로 수행합니다.",
         "refund_request_label": "환불신청 자동 승인",
-        "refund_request_hint": "접수된 환불신청서를 자동으로 승인 상태로 옮깁니다. 환불 실행은 별도입니다."
+        "refund_request_hint": "접수된 환불신청서를 자동으로 승인 상태로 옮깁니다. 환불 실행은 별도입니다.",
+        "refund_statuses_label": "자동승인 대상 상태",
+        "refund_statuses_hint": "자동 승인이 켜져 있을 때, 어느 상품 상태의 신청서를 자동으로 승인할지 고릅니다. 신청서의 상품이 하나라도 목록 밖이면 전건을 운영자가 승인합니다."
       },
       "attachment": {
         "title": "첨부 이미지",

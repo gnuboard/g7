@@ -887,6 +887,7 @@ return [
     // 주문 검증 메시지 (하위 호환성 - order.* 형식)
     'order' => [
         'payment_method_unavailable' => '현재 사용할 수 없는 결제수단입니다. 다른 결제수단을 선택해주세요.',
+        'payment_method_not_selectable' => '선택할 수 없는 결제수단입니다.',
         'ids' => [
             'required' => '변경할 주문을 선택해주세요.',
             'array' => '주문 ID는 배열 형태여야 합니다.',
@@ -944,6 +945,7 @@ return [
         'cash_receipt_identifier_required' => '현금영수증 발급에 사용할 번호를 입력해주세요.',
         'refund_bank_required_with' => '환불 계좌는 은행·계좌번호·예금주를 모두 입력해야 합니다.',
         'refund_bank_required_for_vbank' => '입금이 완료된 가상계좌 주문은 환불 계좌가 필요합니다.',
+        'refund_bank_required_for_manual_transfer' => '이 주문의 환불은 계좌로 송금해야 합니다. 환불받을 계좌를 입력해 주세요.',
     ],
 
     // 비회원 주문 조회 인증 검증 메시지
@@ -2025,6 +2027,7 @@ return [
         ],
         'refund_method' => [
             'in' => '선택한 환불 수단을 사용할 수 없습니다.',
+            'payment_mismatch' => '이 주문의 결제수단은 :expected 환불만 가능합니다. 다른 환불 수단으로는 실제 환불이 나가지 않습니다.',
         ],
         // 완료 처리 모달 미리보기 (D26)
         'preview_claims' => [

@@ -79,7 +79,7 @@
 본문의 `secret`을 대조(`webhook_secret_verify` 설정이 꺼져 있지 않은 한 강제) → 일치하면
 결제 완료 처리, 불일치하면 경고 로그만 남기고 처리하지 않습니다.
 
-**결제 취소(환불)**: 관리자가 주문 취소(`cancel_pg=true`) → 코어가
+**결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`가 토스 취소 API 호출
 → `before_cancel`/`after_cancel` 훅 발화.
 

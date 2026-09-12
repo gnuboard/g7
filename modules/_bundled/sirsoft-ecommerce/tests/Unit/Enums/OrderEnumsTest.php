@@ -160,10 +160,14 @@ class OrderEnumsTest extends ModuleTestCase
             $this->assertNotContains($claimValue, $assignable);
         }
 
+        // 취소도 제외한다 — 취소는 상태 변경이 아니라 장부 행위이고, 입구는 클레임 접수 하나다.
+        // 일괄 상태변경으로 찍으면 재고만 복원되고 돈·결제행은 그대로인 취소가 남는다.
+        $this->assertNotContains('cancelled', $assignable);
+
         // 그 외 상태는 전부 남아 있어야 한다 (기존 계약 보존).
-        $this->assertCount(10, $assignable);
+        $this->assertCount(9, $assignable);
         $this->assertContains('pending_order', $assignable);
-        $this->assertContains('cancelled', $assignable);
+        $this->assertContains('payment_complete', $assignable);
     }
 
     public function test_claim_course_statuses_are_not_in_progress_or_sales_order(): void

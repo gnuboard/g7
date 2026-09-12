@@ -59,8 +59,14 @@ const TestMultilingualInput: React.FC<any> = ({ value, layout, disabled }) => (
   </span>
 );
 
-const TestTagInput: React.FC<any> = ({ name, value, disabled }) => (
-  <span data-testid="taginput" data-name={name} data-disabled={String(!!disabled)}>
+const TestTagInput: React.FC<any> = ({ name, value, disabled, options }) => (
+  <span
+    data-testid="taginput"
+    data-name={name}
+    data-disabled={String(!!disabled)}
+    /* 선택지도 DOM 에 남긴다 — 화면 선택지와 서버 허용 어휘가 갈리면 한쪽이 우회로가 된다. */
+    data-options={(Array.isArray(options) ? options : []).map((o: any) => o?.value ?? o).join(',')}
+  >
     {(Array.isArray(value) ? value : []).join(',')}
   </span>
 );
@@ -165,13 +171,14 @@ describe('설정 클레임 탭 렌더링', () => {
             claim: {
               exchange_requestable_statuses: ['delivered'],
               return_requestable_statuses: ['delivered', 'confirmed'],
-              instant_cancel_statuses: ['payment_complete'],
+              instant_cancel_statuses: ['pending_order', 'pending_payment', 'payment_complete'],
               refund_request_statuses: ['preparing', 'shipping'],
               allowed_charge_methods: ['pay_on_request'],
               charge_payment_methods: ['card', 'point'],
               auto_approve_zero_charge: true,
               auto_approve_after_payment: false,
               auto_approve_refund_request: false,
+              auto_approve_refund_statuses: ['payment_complete', 'preparing'],
               max_images: 7,
               image_max_size_kb: 3072,
               request_period_days: 14,
@@ -256,6 +263,48 @@ describe('설정 클레임 탭 렌더링', () => {
       (n) => (n as HTMLInputElement).value,
     );
     expect(numbers).toEqual(['14', '7', '3072']);
+  });
+
+  /**
+   * 자동 전이 대상 상태에 **미결제 2종**이 선택지로 있고 저장값이 그대로 그려진다. (#599 후속 D10)
+   *
+   * 화면 선택지와 서버 허용 어휘가 갈리면 한쪽이 우회로가 된다 — 화면에 없으면 운영자가
+   * 고를 수 없고, 서버에 없으면 API 로 보낸 값이 422 가 된다.
+   *
+   * @scenario reason_type=refund
+   *
+   * @effects instant_cancel_statuses_default_includes_pending_states
+   */
+  it('자동 전이 대상 상태에 미결제 2종이 선택지로 있다 (D10)', async () => {
+    const { container } = await testUtils.render();
+
+    const node = container.querySelector('[data-testid="taginput"][data-name="claim.instant_cancel_statuses"]');
+    expect(node).not.toBeNull();
+    expect(node?.textContent).toBe('pending_order,pending_payment,payment_complete');
+
+    const options = node?.getAttribute('data-options') ?? '';
+    expect(options).toContain('pending_order');
+    expect(options).toContain('pending_payment');
+  });
+
+  /**
+   * 자동승인 **대상 상태** 입력이 있고, 토글이 꺼져 있으면 잠긴다. (#599 후속 D8)
+   *
+   * 토글만 있으면 "출고 전만 자동승인" 같은 운영을 표현할 수 없어, 전건 수동 승인과 배송중
+   * 건까지 자동승인의 양자택일이 된다.
+   *
+   * @scenario reason_type=refund
+   *
+   * @effects auto_approve_refund_statuses_is_editable, auto_approve_refund_statuses_is_disabled_when_toggle_off
+   */
+  it('자동승인 대상 상태 입력이 있고 토글이 꺼져 있으면 잠긴다 (D8)', async () => {
+    const { container } = await testUtils.render();
+
+    const node = container.querySelector('[data-testid="taginput"][data-name="claim.auto_approve_refund_statuses"]');
+    expect(node).not.toBeNull();
+    expect(node?.textContent).toBe('payment_complete,preparing');
+    // 픽스처의 `auto_approve_refund_request` 는 false 다 — 켜야 의미가 있는 값이므로 잠긴다.
+    expect(node?.getAttribute('data-disabled')).toBe('true');
   });
 
   it('완료 처리 기본값 토글이 저장된 값을 반영한다 (D26)', async () => {

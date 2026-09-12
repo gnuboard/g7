@@ -50,7 +50,7 @@
 | claim_presence | query | string | 아니오 | `none`, `any`, `active` | 클레임 유무 필터 (D22) — none 클레임 없음 / any 클레임 있음 / active 미종결 클레임 있음. 아래 클레임 축(상태·귀책·신청일)과 조합하면 그 조건의 클레임 기준으로 판정 |
 | claim_exchange_statuses | query | array | 아니오 | ExchangeStatusEnum 값 배열 | 교환 상태 필터 — 해당 상태의 교환 신청서가 있는 주문 (여러 유형의 상태 집합은 OR 로 조합) |
 | claim_return_statuses | query | array | 아니오 | ReturnStatusEnum 값 배열 | 반품 상태 필터 |
-| claim_refund_statuses | query | array | 아니오 | RefundStatusEnum 값 배열 | 환불 상태 필터 — 취소 발(`refund_source_type=cancel`) 신청서만 제외 (취소 축이 대표). 출처가 기록되지 않은 구형 신청서(`refund_source_type=null`)는 직접 환불로 보아 포함 |
+| claim_refund_statuses | query | array | 아니오 | RefundStatusEnum 값 배열 | 환불 상태 필터 — 출처로 거르지 않는다. 취소 발 환불도 환불 탭에 선다(D6) |
 | claim_cancel_types | query | array | 아니오 | `full`, `partial` | 취소 필터 — 어휘는 전이 상태가 아니라 **취소 유형**(전체/부분, CancelTypeEnum)이다. 취소는 즉시 파이프라인이라 상태 2종(신청/완료)이 화면 구분 축이 되지 못한다 |
 | claim_fault_types | query | array | 아니오 | `customer`, `seller`, `carrier` | 귀책 필터 — 같은 클레임 행에 함께 적용. 취소 테이블에는 귀책 축이 없어 귀책 지정 시 취소 유형은 매칭에서 제외 |
 | claim_requested_from | query | date | 아니오 | — | 클레임 신청일 범위 시작 (해당 범위에 접수된 클레임이 있는 주문) |
@@ -765,7 +765,7 @@ HTTP/1.1 200
 | reason | body | string | 예 | — | 취소 사유 코드 (ClaimReason 의 refund·활성 코드) |
 | reason_detail | body | string | 아니오 | max 500 | 취소 사유 상세 (관리자 입력 자유 텍스트) |
 | items | body | array | 아니오 | min 1 | 처리 대상 항목 배열 |
-| cancel_pg | body | boolean | 아니오 | — | PG 결제 취소 동반 여부 (미지정 시 기본 true — 실제 PG 취소 수행) |
+| auto_advance_refund | body | boolean | 아니오 | — | 환불까지 한 번에 처리할지 (미지정 시 **false**). 켜면 환불신청서를 만든 뒤 승인·환불완료까지 자동으로 진행한다 — 계좌 환불 수단은 그래도 승인에서 멈춘다. 종전의 `cancel_pg` 는 **없앴다**: 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로 찍혀 고객 카드는 그대로인데 장부만 환불완료가 됐다. PG 없이 장부만 정리해야 하면 환불 수단을 계좌 환불로 바꿔 수동 처리한다 |
 | refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 (pg_first PG 우선 / points_first 포인트 우선, 기본 pg_first) |
 | refund_bank.bank_code | body | string | 아니오 | max 10 | 환불 계좌 은행코드. 가상계좌 + 입금완료 건은 필수(주문 시 입력된 계좌가 있으면 생략 가능). 세 필드는 전부 입력하거나 전부 비워야 함 |
 | refund_bank.account_number | body | string | 아니오 | max 50 | 환불 계좌번호 |
@@ -787,7 +787,7 @@ Content-Type: application/json
     "items": [
         "예시값"
     ],
-    "cancel_pg": true,
+    "auto_advance_refund": false,
     "refund_priority": "pg_first",
     "refund_bank.bank_code": "예시값",
     "refund_bank.account_number": "예시값",
@@ -863,7 +863,21 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 특정 주문(`order`)을 전체취소 또는 부분취소합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@cancelOrder`가 `items` 유무에 따라 `OrderCancellationService`의 `cancelOrder()`(전체) 또는 `cancelOrderOptions()`(부분)를 호출합니다. 취소자(`cancelledBy`)로 관리자 ID가 기록되고, `cancel_pg`로 PG 결제 취소 동반 여부를, `refund_priority`로 PG/포인트 환불 우선순위를 지정합니다. 취소 후 갱신된 주문을 `OrderResource`로 반환하며, 취소 불가 상태 등 실패 시 422를 반환합니다.
+**설명** 관리자가 특정 주문(`order`)을 전체취소 또는 부분취소합니다. `auth:sanctum` +
+`sirsoft-ecommerce.orders.update` 권한이 필요합니다.
+
+**취소 즉시 환불되지 않습니다.** 이 API 는 **환불신청서**(출처 `admin`)를 만들 뿐이고, 금액확인
+→ 승인 → 환불완료는 운영자가 클레임 상세에서 하나씩 밟습니다. 취소신청서는 그 환불이 완료되는
+순간에 생기므로, 응답 시점의 주문은 아직 취소로 확정돼 있지 않습니다.
+
+`auto_advance_refund` 를 켜면 승인·완료까지 자동으로 밉니다. 계좌 환불 수단은 그래도 승인에서
+멈추고(사람이 송금해야 합니다) 그때는 취소신청서도 아직 생기지 않습니다. 환불할 돈이 없는
+주문(미결제·0원)은 환불신청서 없이 취소신청서가 즉시 생깁니다.
+
+운영자가 접수한 신청서는 **구매자가 철회·수정할 수 없습니다** — 출처가 `admin` 이기 때문입니다.
+`refund_priority` 로 PG/포인트 환불 우선순위를, `refund_bank` 로 송금 계좌를 지정합니다(사람이
+송금해야 하는 수단은 계좌가 필수입니다). 취소 후 갱신된 주문을 `OrderResource` 로 반환하며,
+신청 자격·수량 잠금 위반이나 취소 불가 상태는 422 입니다.
 
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/orders/{order}/cash-receipt
@@ -2483,7 +2497,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 회원이 마이페이지에서 본인 주문(`id`)을 취소합니다. `auth:sanctum` + `sirsoft-ecommerce.user-orders.cancel` 권한이 필요하며, `User\OrderController@cancel`이 `items` 유무에 따라 `OrderCancellationService`의 `cancelOrderOptions()`(부분) 또는 `cancelOrder()`(전체)를 호출합니다. 취소자(`cancelledBy`)로 회원 본인 ID가 기록되고, `refund_priority`로 PG/포인트 환불 우선순위를 지정합니다. 취소 가능 상태의 주문만 취소되며, 취소 후 갱신된 주문을 `OrderResource`로 반환합니다.
+**설명** 회원이 마이페이지에서 본인 주문(`id`)을 취소합니다. `auth:sanctum` + `sirsoft-ecommerce.user-orders.cancel` 권한이 필요하며, `User\OrderController@cancel`이 `items` 유무에 따라 `OrderCancellationService`의 `cancelOrderOptions()`(부분) 또는 `cancelOrder()`(전체)를 호출합니다. 두 메서드는 **클레임 접수 경로**(`OrderRefundRequestService::request()`)로 흐르는 어댑터입니다 — 돈이 수납된 주문은 환불신청서를 거치고, 취소신청서는 환불이 집행된 순간에만 생깁니다. 취소자(`cancelledBy`)로 회원 본인 ID가 기록되고, `refund_priority`로 PG/포인트 환불 우선순위를 지정합니다. 취소 가능 상태의 주문만 취소되며, 취소 후 갱신된 주문을 `OrderResource`로 반환합니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/orders/{id}/cash-receipt
@@ -3345,12 +3359,12 @@ Authorization: Bearer {YOUR_TOKEN}
 | order_id | integer | `120` | 주문 ID |
 | order_number | string | `20260823-1130558472` | 주문번호 |
 | base_currency | string | `KRW` | 이 주문의 금액 표기 기준 통화. 신청서 화면이 보조 통화 목록에서 기준 통화를 걸러 낼 때 쓴다 — 그 기준을 주문 상세 응답에서 따로 읽으면 두 응답의 도착 순서에 따라 기준 통화가 보조 통화 줄에 한 번 더 나열된다. 판정 규칙은 주문 상세의 `base_currency` 와 같다(거래 시점 통화 스냅샷 → 없으면 상점 기본 통화) |
-| resolved_type | string\|null | `null` | 취소·환불 신청이 열리는 상품들의 분기 — 전부 즉시취소면 `cancel`, 전부 환불신청이면 `refund`, 섞여 있으면 `mixed`, 열린 상품이 없으면 `null` |
+| resolved_type | string\|null | `null` | 취소·환불 신청이 열리는 상품들의 분기 — 전부 자동 전이면 `auto`, 전부 운영자 승인 대기면 `request`, 섞여 있으면 `mixed`, 열린 상품이 없으면 `null` |
 | options[].option | object | — | 주문 옵션 (`OrderOptionResource`, 취소된 옵션은 제외) |
 | options[].available_quantity | integer | `1` | 지금 신청할 수 있는 잔여 수량 (옵션 수량 − 진행 중 클레임 점유 수량) |
 | options[].locked_quantity | integer | `0` | 진행 중인 교환·반품·환불신청이 잡아 둔 수량 |
 | options[].claimable_types | string[] | `["exchange","return"]` | 이 옵션에 열린 클레임 유형 (`exchange`, `return`, `refund`). 잔여 수량이 0 이면 빈 배열 |
-| options[].refund_branch | string\|null | `null` | 취소·환불 신청 시 분기 — 즉시취소 상태면 `cancel`, 환불신청 상태면 `refund`, 둘 다 아니면 `null` |
+| options[].refund_branch | string\|null | `null` | 취소·환불 신청 시 분기 — 자동 전이 대상 상태면 `auto`, 운영자 승인 대상 상태면 `request`, 둘 다 아니면 `null`. **두 값 모두 환불신청서를 만든다** — 다른 것은 승인·완료까지 자동으로 진행하는지 여부뿐이다 |
 | reasons.exchange | array | — | 교환 사유 카탈로그 (`ClaimReasonResource`). **`name` 은 다국어 맵**(`{"ko":…,"en":…}`)이고 화면에 그대로 쓸 문자열은 `localized_name` 이다 — `name` 을 라벨에 바인딩하면 객체가 그대로 찍힌다 |
 | reasons.return | array | — | 반품 사유 카탈로그 |
 | reasons.refund | array | — | 취소·환불 사유 카탈로그 |
@@ -3361,7 +3375,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | settings.request_period_days | integer | `7` | 배송완료 후 신청 가능 일수 (`claim.request_period_days`, 0 이면 제한 없음) |
 | settings.exchange_requestable_statuses | string[] | `["delivered","confirmed"]` | 교환 신청이 열리는 주문 옵션 상태 |
 | settings.return_requestable_statuses | string[] | `["delivered","confirmed"]` | 반품 신청이 열리는 주문 옵션 상태 |
-| settings.instant_cancel_statuses | string[] | `["pending_payment","payment_complete"]` | 취소·환불 신청이 즉시취소로 처리되는 상태 (`claim.instant_cancel_statuses`) |
+| settings.instant_cancel_statuses | string[] | `["pending_order","pending_payment","payment_complete"]` | 취소·환불 신청이 **자동 전이**로 처리되는 상태 (`claim.instant_cancel_statuses`). 이 상태의 상품도 환불신청서를 만들고, 승인·환불완료까지 자동으로 진행한다 |
 | settings.refund_request_statuses | string[] | `["preparing","shipping_ready"]` | 취소·환불 신청이 환불신청서(운영자 승인)로 접수되는 상태 (`claim.refund_request_statuses`) |
 | refund_account.required | boolean | `false` | 이 주문의 환불이 **계좌 이체**로 나가는지 (`PaymentMethodResolver::refundMethod()` 판정 = `bank`). 참이면 취소·환불 신청서가 환불 계좌 입력칸을 세운다. 어느 결제수단이 계좌 환불인지는 확장 결제수단이 자기 카탈로그에 선언하므로 화면이 결제수단 코드로 재현하지 않는다 |
 | refund_account.banks | array | `[{"code":"004","name":{"ko":"국민은행"}}]` | 운영자가 주문설정에 등록한 은행 목록 (`order_settings.banks`). `required` 가 거짓이면 빈 배열이다. `name` 은 다국어 맵이라 라벨은 `$localized(name)` 로 푼다 |
@@ -3401,7 +3415,7 @@ Authorization: Bearer {YOUR_TOKEN}
             "request_period_days": 7,
             "exchange_requestable_statuses": ["delivered", "confirmed"],
             "return_requestable_statuses": ["delivered", "confirmed"],
-            "instant_cancel_statuses": ["pending_payment", "payment_complete"],
+            "instant_cancel_statuses": ["pending_order", "pending_payment", "payment_complete"],
             "refund_request_statuses": ["preparing", "shipping_ready"]
         },
         "refund_account": { "required": false, "banks": [], "prefill": null },
@@ -3421,7 +3435,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 <!-- @generated:end -->
 
-**설명** 클레임 신청 화면을 여는 첫 호출입니다. 주문의 각 상품에 어떤 클레임이 열려 있는지(`claimable_types`), 잔여 수량, 취소·환불 신청 시 즉시취소/환불신청 분기, 사유 카탈로그, 화면이 따라야 할 설정값, 작성 중 올려 둔 임시 첨부를 한 번에 돌려줍니다. 교환·반품이 진행 중인 상품은 옵션 상태가 코스 상태(`exchange_in_progress`/`return_in_progress`)라 `claimable_types` 가 비고, 직접 환불신청이 진행 중인 상품은 상태가 그대로라도 `locked_quantity` 만큼 잔여가 줄어듭니다. `resolved_type` 이 `mixed` 면 즉시취소 상품과 환불신청 상품을 한 신청에 섞을 수 없으므로 화면이 상품 선택을 분기별로 나눠야 합니다. `refund_account` 는 그 주문의 환불이 계좌 이체로 나가는지, 그때 고를 은행 목록, 그리고 주문 시 등록해 둔 계좌(`prefill`)입니다 — 화면은 이 값으로만 계좌 입력칸을 세우고 채웁니다. 프리필은 반드시 `prefill` 을 쓰고 표시용 응답의 마스킹된 계좌를 되쓰지 않습니다(마스킹 값을 되보내면 별표가 섞인 계좌가 저장됩니다). 계좌 입력칸은 반품·취소·환불 세 유형에 서고, 교환은 저가 옵션으로 바꿔 **차액이 구매자에게 돌아갈 때만** 섭니다.
+**설명** 클레임 신청 화면을 여는 첫 호출입니다. 주문의 각 상품에 어떤 클레임이 열려 있는지(`claimable_types`), 잔여 수량, 취소·환불 신청 시 즉시취소/환불신청 분기, 사유 카탈로그, 화면이 따라야 할 설정값, 작성 중 올려 둔 임시 첨부를 한 번에 돌려줍니다. 교환·반품이 진행 중인 상품은 옵션 상태가 코스 상태(`exchange_in_progress`/`return_in_progress`)라 `claimable_types` 가 비고, 직접 환불신청이 진행 중인 상품은 상태가 그대로라도 `locked_quantity` 만큼 잔여가 줄어듭니다. `resolved_type` 이 `mixed` 면 자동 전이 상품과 승인 대기 상품을 한 신청에 섞을 수 없으므로 화면이 상품 선택을 분기별로 나눠야 합니다 — 한쪽은 바로 환불되고 다른 쪽은 심사를 기다려, 고객이 보는 환불 예정액과 실제 환불액이 갈리기 때문입니다. `refund_account` 는 그 주문의 환불이 계좌 이체로 나가는지, 그때 고를 은행 목록, 그리고 주문 시 등록해 둔 계좌(`prefill`)입니다 — 화면은 이 값으로만 계좌 입력칸을 세우고 채웁니다. 프리필은 반드시 `prefill` 을 쓰고 표시용 응답의 마스킹된 계좌를 되쓰지 않습니다(마스킹 값을 되보내면 별표가 섞인 계좌가 저장됩니다). 계좌 입력칸은 반품·취소·환불 세 유형에 서고, 교환은 저가 옵션으로 바꿔 **차액이 구매자에게 돌아갈 때만** 섭니다.
 
 ---
 
@@ -3575,7 +3589,7 @@ _취소·환불 (`type=refund`)_
 
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| branch | string | `cancel` | 이 상품들로 신청하면 타게 될 분기 (`cancel` 즉시취소 / `refund` 환불신청) |
+| branch | string | `auto` | 이 상품들로 신청하면 타게 될 분기 (`auto` 접수 후 자동 전이 / `request` 접수 후 운영자 승인 대기) |
 | adjustment | object | — | 환불 금액 재계산 결과 (취소 미리보기 `estimate-refund` 와 같은 형태 — 전/후 스냅샷·다통화 스냅샷·복원 쿠폰·잔여 잔액·`cancel_blocked` 포함). 신청서의 비교표·환불 우선순위·환불 불가 안내가 전부 이 객체를 읽는다 |
 
 **응답 예시**
@@ -3607,7 +3621,7 @@ _취소·환불 (`type=refund`)_
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
 | 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
-| 422 | Unprocessable Entity | 검증 위반, 신청 불가 상태(`claim_option_not_claimable`), 신청 기간 경과(`claim_request_period_expired`), 수량 잠금(`claim_quantity_locked`), 사유 사용 불가(`claim_reason_unavailable`), 청구 방식 불허(`claim_charge_method_not_allowed`), 즉시취소·환불신청 혼재(`claim_refund_branch_mixed`) |
+| 422 | Unprocessable Entity | 검증 위반, 신청 불가 상태(`claim_option_not_claimable`), 신청 기간 경과(`claim_request_period_expired`), 수량 잠금(`claim_quantity_locked`), 사유 사용 불가(`claim_reason_unavailable`), 청구 방식 불허(`claim_charge_method_not_allowed`), 분기 혼재(`claim_refund_branch_mixed`) |
 | 500 | Server Error | 계산 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
@@ -3799,7 +3813,7 @@ Content-Type: application/json
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | id | path | integer | 예 | — | 주문 ID |
-| items | body | array | 예 | min 1, max 200 | 대상 `[{order_option_id, quantity}]` — 전부 같은 분기(즉시취소 또는 환불신청)여야 한다 |
+| items | body | array | 예 | min 1, max 200 | 대상 `[{order_option_id, quantity}]` — 전부 같은 분기(`auto` 또는 `request`)여야 한다 |
 | reason_code | body | string | 예 | `refund` 유형의 활성·사용자 선택 가능 사유 | 취소·환불 사유 |
 | reason_detail | body | string | 아니오 | max 1000 | 사유 상세 |
 | refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 |
@@ -3826,8 +3840,8 @@ Content-Type: application/json
 
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| branch | string | `cancel` | 실제로 탄 분기 — `cancel`(즉시취소 완료) 또는 `refund`(환불신청서 접수, 운영자 승인 대기) |
-| claim | object | — | `branch=cancel` 이면 취소 이력(`claim_type=cancel`), `branch=refund` 면 환불신청서(`claim_type=refund`) — 둘 다 [ClaimResource](claims.md#claim-resource) |
+| branch | string | `auto` | 실제로 탄 분기 — `auto`(접수 후 승인·완료까지 자동 전이) 또는 `request`(접수 후 운영자 승인 대기) |
+| claim | object | — | **언제나 환불신청서**(`claim_type=refund`) — [ClaimResource](claims.md#claim-resource). 예외는 환불할 돈이 없는 주문(미결제·0원)으로, 그때만 취소신청서(`claim_type=cancel`)가 실린다. 화면은 이 값의 `claim_type` 으로 이동할 탭을 정한다 — 분기(`branch`)로 추측하면 분기가 섞인 주문에서 접수한 탭과 어긋난다 |
 
 **응답 예시**
 
@@ -3836,7 +3850,7 @@ Content-Type: application/json
     "success": true,
     "message": "주문이 취소되었습니다.",
     "data": {
-        "branch": "cancel",
+        "branch": "auto",
         "claim": {
             "claim_number": "CN20260823-1421669305",
             "claim_type": "cancel",
@@ -3858,12 +3872,22 @@ Content-Type: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
 | 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
-| 422 | Unprocessable Entity | 검증 위반, 취소·환불 신청 불가 상태(`claim_refund_not_requestable` — 배송완료 이후는 반품으로), 즉시취소·환불신청 상품 혼재(`claim_refund_branch_mixed`), 수량 잠금(`claim_quantity_locked`), 즉시취소 파이프라인의 거절(`order_cancel_failed` — 취소 불가 금액·재고 복원 실패 등) |
+| 422 | Unprocessable Entity | 검증 위반, 취소·환불 신청 불가 상태(`claim_refund_not_requestable` — 배송완료 이후는 반품으로), 분기 혼재(`claim_refund_branch_mixed`), 수량 잠금(`claim_quantity_locked`), 자동 전이 중 PG 환불 거절(`order_cancel_failed` — 이때 접수까지 **전체 롤백**되고 `errors.detail` 에 PG 사유가 실린다) |
 | 500 | Server Error | 접수 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
 
-**설명** 취소·환불 신청을 하나의 입구로 받아 상품 상태로 분기합니다(D2). 대상 상품이 전부 환경설정 `claim.instant_cancel_statuses`(기본 결제 전·결제완료)면 기존 취소 파이프라인으로 **즉시 취소·환불**하고 취소 이력을 돌려주며, 전부 `claim.refund_request_statuses`(기본 상품준비중·배송준비중)면 **환불신청서**(`refund_source_type=direct`)를 접수해 운영자 승인을 기다립니다(환경설정 `claim.auto_approve_refund_request` 가 켜져 있으면 바로 승인). 두 분기 상품이 섞이면 422 이므로 화면은 `claimable-options` 의 `refund_branch` 로 상품을 나눠 보냅니다. 환불신청서는 원 주문 옵션의 상태를 바꾸지 않는 대신 수량을 선점하므로, 같은 상품을 다시 신청하면 `claim_quantity_locked` 가 됩니다.
+**설명** 취소·환불 신청을 하나의 입구로 받아 상품 상태로 분기합니다(D2). **두 분기 모두 환불신청서**(`refund_source_type=direct`)를 만들며, 다른 것은 전이 방식뿐입니다.
+
+- 대상 상품이 전부 `claim.instant_cancel_statuses`(기본 미결제 2종 + 결제완료)면 `auto` — 접수 후 승인·환불완료까지 자동으로 진행합니다. 종착점은 **환불수단**이 가릅니다: PG·마일리지는 완료까지, 계좌 환불은 승인에서 멈추고 운영자의 [환불하기]를 기다립니다.
+- 전부 `claim.refund_request_statuses`(기본 상품준비중~배송중)면 `request` — 접수에서 멈춰 운영자 승인을 기다립니다. `claim.auto_approve_refund_request` 가 켜져 있고 상품 상태가 `claim.auto_approve_refund_statuses` 에 들어 있으면 승인까지 자동으로 갑니다.
+- 두 분기 상품이 섞이면 422 이므로 화면은 `claimable-options` 의 `refund_branch` 로 상품을 나눠 보냅니다.
+
+**취소신청서는 이 API 가 만들지 않습니다.** 환불이 완료되는 순간 서버가 만듭니다 — 취소신청서는 "주문이 취소된 사실" 이 아니라 **"환불이 집행되어 주문에서 금액이 빠진 사실"** 의 기록이기 때문입니다. 그래서 계좌 환불처럼 승인에서 멈추는 건은 운영자가 송금을 마칠 때까지 취소신청서도 생기지 않습니다. 예외는 **환불할 돈이 없는 주문**(미결제·0원)으로, 환불신청서 없이 취소신청서만 즉시 생깁니다.
+
+자동 전이는 단계를 건너뛰지 않습니다 — 한 트랜잭션 안이라도 `요청 → 승인 → 완료` 를 실제로 거치므로 활동 로그가 단계마다 남습니다. 그 도중 PG 가 환불을 거절하면 **접수까지 전체가 롤백**되고 422 의 `errors.detail` 에 사유가 실립니다.
+
+환불신청서는 원 주문 옵션의 상태를 바꾸지 않는 대신 수량을 선점하므로, 같은 상품을 다시 신청하면 `claim_quantity_locked` 가 됩니다.
 
 ---
 

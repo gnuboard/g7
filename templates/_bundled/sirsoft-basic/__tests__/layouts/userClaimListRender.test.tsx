@@ -203,7 +203,8 @@ function refundClaim(overrides: Record<string, any> = {}): Record<string, any> {
 async function renderList(
   claims: Record<string, any>[],
   query: Record<string, string> = {},
-  pagination: Record<string, any> = { current_page: 1, last_page: 1, has_more_pages: false }
+  pagination: Record<string, any> = { current_page: 1, last_page: 1, has_more_pages: false },
+  envelope: Record<string, any> = {}
 ) {
   const utils = createLayoutTest(listLayout(), {
     initialState: { _local: {} },
@@ -213,7 +214,7 @@ async function renderList(
     queryParams: query,
   });
 
-  utils.mockApi('claims', { response: { data: { data: claims, pagination } } });
+  utils.mockApi('claims', { response: { data: { data: claims, pagination, ...envelope } } });
 
   const { container } = await utils.render();
 
@@ -251,6 +252,59 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     );
     expect(active버튼).toHaveLength(1);
     expect(active버튼[0].textContent).toBe('claim.list.tab_return');
+  });
+
+  /**
+   * 서브탭에 **건수 배지**가 선다. (#599 후속 F12)
+   *
+   * 서버는 매 요청 네 유형을 세어 `counts` 로 실어 보내는데 구매자 화면은 그 값을 그리지
+   * 않았다 — 어느 탭에 무엇이 있는지 눌러 보기 전에는 알 수 없었다(관리자 화면에는 있는
+   * 표기다). 0건인 탭에는 세우지 않는다: 0 을 나란히 그리면 "아직 세지 않음" 과 구분되지
+   * 않는다.
+   *
+   * @scenario claim_type=refund, screen=list, entry=none
+   *
+   * @effects claim_list_subtab_badges_render_server_counts
+   */
+  it('서브탭에 0건이 아닌 유형의 건수 배지가 선다 (F12)', async () => {
+    const { utils, container } = await renderList(
+      [exchangeClaim()],
+      { type: 'exchange' },
+      { current_page: 1, last_page: 1, has_more_pages: false },
+      { counts: { exchange: 3, return: 0, refund: 2, cancel: 0 } }
+    );
+    active = utils;
+
+    const tabs = Array.from(container.querySelectorAll('button')).filter((el) =>
+      (el.textContent ?? '').includes('claim.list.tab_')
+    );
+
+    const byLabel = (key: string) =>
+      tabs.find((el) => (el.textContent ?? '').includes(key))?.textContent ?? '';
+
+    expect(byLabel('claim.list.tab_exchange')).toContain('3');
+    expect(byLabel('claim.list.tab_refund')).toContain('2');
+    // 0건 탭에는 숫자를 세우지 않는다.
+    expect(byLabel('claim.list.tab_return')).toBe('claim.list.tab_return');
+    expect(byLabel('claim.list.tab_cancel')).toBe('claim.list.tab_cancel');
+  });
+
+  /**
+   * `counts` 가 없으면 배지도 없다 — 구형 응답에서 숫자 자리가 `0` 으로 서지 않아야 한다.
+   *
+   * @scenario claim_type=refund, screen=list, entry=none
+   *
+   * @effects claim_list_subtab_badges_absent_without_counts
+   */
+  it('counts 가 없으면 배지가 서지 않는다', async () => {
+    const { utils, container } = await renderList([exchangeClaim()], { type: 'exchange' });
+    active = utils;
+
+    const tab = Array.from(container.querySelectorAll('button')).find((el) =>
+      (el.textContent ?? '').includes('claim.list.tab_exchange')
+    );
+
+    expect(tab?.textContent).toBe('claim.list.tab_exchange');
   });
 
   it('주소에 유형이 없으면 교환 탭이 활성이다 (서버 게이트가 유형을 요구한다)', async () => {

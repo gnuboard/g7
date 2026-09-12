@@ -238,7 +238,7 @@ export async function executeCancelOrderHandler(
         cancelItems?: any[];
         cancelReason?: string;
         cancelReasonDetail?: string;
-        cancelPg?: boolean;
+        autoAdvanceRefund?: boolean;
         refundPriority?: string;
     }>,
     _context: ActionContext
@@ -253,7 +253,9 @@ export async function executeCancelOrderHandler(
     const cancelItems = action.params?.cancelItems || local.cancelItems || [];
     const cancelReason = action.params?.cancelReason || local.cancelReason || '';
     const cancelReasonDetail = action.params?.cancelReasonDetail || local.cancelReasonDetail || '';
-    const cancelPg = action.params?.cancelPg ?? local.cancelPg ?? true;
+    // "환불까지 한 번에 처리" — 기본 **꺼짐**(D7). 관리자 [주문취소]는 환불신청서를 만들 뿐이고
+    // 금액확인 → 승인 → 환불완료는 운영자가 하나씩 밟는 것이 기본 운영이다.
+    const autoAdvanceRefund = action.params?.autoAdvanceRefund ?? local.autoAdvanceRefund ?? false;
     const refundPriority = action.params?.refundPriority || local.refundPriority || 'pg_first';
 
     // 선택한 항목을 항상 items(type:partial)로 전송한다. 프론트에서 전체취소를 휴리스틱으로 판단하지 않는다.
@@ -262,7 +264,9 @@ export async function executeCancelOrderHandler(
     // 수량을 줄여도 전량 취소되는 결함이 있었고(MP03 §9 발견#2), 유저 핸들러와도 판정 기준이 어긋났다.
     const body: Record<string, any> = {
         type: 'partial',
-        cancel_pg: cancelPg,
+        // `cancel_pg` 는 없앴다(P2). 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이
+        // 완료로 찍혀 **고객 카드는 그대로인데 장부만 환불완료**가 됐다.
+        auto_advance_refund: autoAdvanceRefund,
         refund_priority: refundPriority,
         items: cancelItems.map((item: any) => ({
             order_option_id: item.id,
@@ -300,9 +304,22 @@ export async function executeCancelOrderHandler(
 
         if (response?.success) {
             G7Core.state.setLocal({ isCancelling: false });
+
+            // 안내 문구는 **실제로 일어난 일**을 말한다.
+            //
+            // 기본 운영(자동 전이 꺼짐)에서는 아무것도 취소되지 않는다 — 환불신청서가 접수될
+            // 뿐이고, 취소는 운영자가 승인·환불완료를 밟은 뒤에 확정된다(D3). 그때도 "주문이
+            // 취소되었습니다" 를 띄우면 운영자는 끝난 줄 알고 화면을 떠나고, 환불신청서는
+            // 아무도 보지 않는 채로 남는다.
+            const claimNumber = response?.data?.claim?.claim_number ?? null;
+            const cancelled = response?.data?.claim?.cancelled === true;
+
             G7Core.toast?.success?.(
-                G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_success')
-                ?? '주문이 취소되었습니다.'
+                cancelled
+                    ? (G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_success')
+                        ?? '주문이 취소되었습니다.')
+                    : (G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_request_created')
+                        ?? '환불신청서가 접수되었습니다. 승인·환불완료를 거쳐야 주문취소가 확정됩니다.')
             );
 
             G7Core.modal?.close?.('modal_cancel_order');
@@ -315,6 +332,18 @@ export async function executeCancelOrderHandler(
                 selectAll: false,
                 batchOrderStatus: '',
             });
+
+            // 만든 환불신청서로 데려간다 (§5-3).
+            //
+            // 접수만 하고 모달만 닫으면 운영자는 방금 만든 신청서를 스스로 찾아가야 한다 —
+            // 클레임 목록에서 주문번호로 뒤지는 길뿐이라, 그 자리에서 승인·환불완료로 이어지지
+            // 않는다. 취소가 확정된 경우(자동 전이)는 주문 화면에 남는 것이 맞다.
+            if (!cancelled && claimNumber) {
+                G7Core.dispatch?.({
+                    handler: 'navigate',
+                    params: { path: `/admin/ecommerce/claims/${claimNumber}` },
+                });
+            }
         } else {
             throw new Error(response?.message || 'Cancel failed');
         }

@@ -204,6 +204,14 @@
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.placeholder",
                     "options": [
                       {
+                        "value": "pending_order",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.pending_order"
+                      },
+                      {
+                        "value": "pending_payment",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.pending_payment"
+                      },
+                      {
                         "value": "payment_complete",
                         "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
                       },
@@ -232,7 +240,7 @@
                         "label": "$t:sirsoft-ecommerce.enums.order_status.confirmed"
                       }
                     ],
-                    "value": "{{_local.form?.claim?.instant_cancel_statuses ?? ['payment_complete']}}",
+                    "value": "{{_local.form?.claim?.instant_cancel_statuses ?? ['pending_order', 'pending_payment', 'payment_complete']}}",
                     "isMulti": true,
                     "isClearable": false,
                     "isSearchable": true,
@@ -688,6 +696,74 @@
                     "value": "{{_local.form?.claim?.auto_approve_refund_request ?? false}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   }
+                }
+              ]
+            },
+            {
+              "comment": "자동승인 대상 상태 (D8) — 토글이 꺼져 있으면 비활성. 토글만 있으면 '출고 전만 자동승인' 같은 운영을 표현할 수 없어, 전건 수동 승인과 배송중 건까지 자동승인의 양자택일이 된다.",
+              "id": "claim_auto_approve_refund_statuses_field",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_statuses_label"
+                },
+                {
+                  "type": "composite",
+                  "name": "TagInput",
+                  "props": {
+                    "name": "claim.auto_approve_refund_statuses",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.placeholder",
+                    "options": [
+                      {
+                        "value": "payment_complete",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
+                      },
+                      {
+                        "value": "shipping_hold",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_hold"
+                      },
+                      {
+                        "value": "preparing",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.preparing"
+                      },
+                      {
+                        "value": "shipping_ready",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_ready"
+                      },
+                      {
+                        "value": "shipping",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping"
+                      }
+                    ],
+                    "value": "{{_local.form?.claim?.auto_approve_refund_statuses ?? ['payment_complete', 'preparing']}}",
+                    "isMulti": true,
+                    "isClearable": false,
+                    "isSearchable": true,
+                    "disabled": "{{_computed.isReadOnly || (_local.form?.claim?.auto_approve_refund_request ?? false) !== true}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint mt-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_statuses_hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{_local.errors?.['claim.auto_approve_refund_statuses']}}",
+                  "props": {
+                    "className": "form-error"
+                  },
+                  "text": "{{_local.errors?.['claim.auto_approve_refund_statuses']?.[0] ?? ''}}"
                 }
               ]
             }

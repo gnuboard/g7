@@ -84,7 +84,7 @@ class OrderClaimHistoryTest extends ModuleTestCase
     {
         $order = OrderFactory::new()->create();
 
-        // 반품 1건 (상품 2행 — 그룹 구조 재료), 취소 1건, 취소 발 환불 1건(제외 대상), 직접 환불 1건
+        // 반품 1건 (상품 2행 — 그룹 구조 재료), 취소 1건, 취소 발 환불 1건, 직접 환불 1건
         $this->makeReturnWithItems($order, 2);
 
         $cancel = OrderCancel::create([
@@ -124,14 +124,19 @@ class OrderClaimHistoryTest extends ModuleTestCase
 
         $response = $this->actingAs($this->admin)->getJson($this->url($order))->assertOk();
 
-        // counts — 취소 발 환불은 환불 축에서 제외
+        // counts — 출처로 거르지 않는다 (#599 후속 D6).
+        //
+        // 취소신청서와 환불신청서는 같은 사건의 두 사본이 아니라 다른 사실을 기록하는 별개
+        // 문서다. 취소신청서는 "무엇이 주문에서 빠졌는가", 환불신청서는 "얼마를 어떤 수단으로
+        // 돌려줬는가" 를 말한다. 한쪽을 이력에서 지우면 운영자는 그 주문의 환불 근거를 이력
+        // 화면에서 볼 수 없고, 금액 분쟁 때 물어볼 문서가 사라진다.
         $response->assertJsonPath('data.counts.exchange', 0)
             ->assertJsonPath('data.counts.return', 1)
-            ->assertJsonPath('data.counts.refund', 1)
+            ->assertJsonPath('data.counts.refund', 2)
             ->assertJsonPath('data.counts.cancel', 1);
 
         $claims = $response->json('data.claims');
-        $this->assertCount(3, $claims);
+        $this->assertCount(4, $claims);
 
         // 그룹 구조 — 신청서가 상품 배열을 품는다 (프론트가 rowspan 계산)
         $return = collect($claims)->firstWhere('claim_type', 'return');
@@ -144,10 +149,17 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $this->assertArrayHasKey('requester_name', $return);
         $this->assertArrayHasKey('reason_label', $return);
 
-        // 취소 발 환불신청서는 claims 목록에도 실리지 않는다
+        // 취소 발 환불신청서도 claims 목록에 선다 (D6)
         $refundNumbers = collect($claims)->where('claim_type', 'refund')->pluck('claim_number');
-        $this->assertCount(1, $refundNumbers);
-        $this->assertStringStartsWith('RF-TEST-DIRECT-', $refundNumbers->first());
+        $this->assertCount(2, $refundNumbers);
+        $this->assertTrue(
+            $refundNumbers->contains(fn (string $number): bool => str_starts_with($number, 'RF-TEST-DIRECT-')),
+            '직접 환불신청서가 이력에 있어야 한다',
+        );
+        $this->assertTrue(
+            $refundNumbers->contains(fn (string $number): bool => str_starts_with($number, 'RF-TEST-CANCEL-')),
+            '취소 발 환불신청서가 이력에 있어야 한다',
+        );
     }
 
     public function test_order_claims_normalizes_item_amounts_by_type(): void

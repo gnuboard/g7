@@ -195,45 +195,6 @@
                 {
                   "type": "basic",
                   "name": "Div",
-                  "if": "{{(_local.batchOrderStatus === 'cancelled') && (order.data?.payment?.requires_pg_cancellation === true)}}",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "id": "batch_cancel_pg_checkbox",
-                        "type": "checkbox",
-                        "checked": "{{_local.cancelPg ?? true}}",
-                        "disabled": "{{order?.data?.abilities?.can_update !== true}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "cancelPg": "{{!(_local.cancelPg ?? true)}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "htmlFor": "batch_cancel_pg_checkbox",
-                        "className": "text-body whitespace-nowrap cursor-pointer select-none"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_pg"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
                   "props": {
                     "className": "flex-1"
                   }
@@ -255,8 +216,7 @@
                         "selectedProducts": "{{_local.selectedProducts ?? []}}",
                         "batchOrderStatus": "{{_local.batchOrderStatus ?? ''}}",
                         "batchCarrierId": "{{_local.batchCarrierId ?? ''}}",
-                        "batchTrackingNumber": "{{_local.batchTrackingNumber ?? ''}}",
-                        "cancelPg": "{{_local.cancelPg ?? true}}"
+                        "batchTrackingNumber": "{{_local.batchTrackingNumber ?? ''}}"
                       }
                     }
                   ]

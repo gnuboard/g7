@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -160,26 +161,57 @@ class ClaimStatusNotificationListener implements HookListenerInterface
     /**
      * 환불 신청 접수 훅을 알림 훅으로 옮깁니다.
      *
+     * ## 자동 전이로 이어지는 접수는 알리지 않는다 (#599 후속 §4-2)
+     *
+     * 접수 직후 자동 전이가 승인·완료까지 밟는 건은 그 **마지막 상태에서 1건**만 보낸다.
+     * 여기서 억제하지 않으면 한 번의 취소로 접수 + 마지막 상태 2통이 나간다.
+     * 반품·교환 완료가 만든 환불신청서는 플래그가 없어 그대로 알린다 — 그 접수는
+     * 자동 전이로 이어지지 않고 운영자의 환불 실행을 기다리는 별개 사건이다.
+     *
      * @param  OrderRefund  $refund  접수된 환불 신청서
+     * @param  Order|null  $order  주문 (훅 2번째 인수 — 이 리스너는 쓰지 않는다)
+     * @param  array<string, mixed>  $context  접수 컨텍스트 (suppress_notification)
+     * @return void
      */
-    public function handleRefundRequested(OrderRefund $refund): void
+    public function handleRefundRequested(OrderRefund $refund, ?Order $order = null, array $context = []): void
     {
+        if ((bool) ($context['suppress_notification'] ?? false)) {
+            return;
+        }
+
         $this->fireNotify(ClaimTypeEnum::REFUND->value, RefundStatusEnum::REQUESTED->value, $refund);
     }
 
     /**
      * 클레임 상태전이를 알림 훅으로 매핑 발화합니다.
      *
+     * ## 자동 전이의 중간 단계는 알리지 않는다 (#599 후속 §4-2)
+     *
+     * 자동 전이(`OrderRefundRequestService::autoAdvance()`)는 한 번의 취소로
+     * `접수 → 승인 → 완료` 세 단계를 실제로 밟는다 — 그래야 활동로그가 단계별로 남는다
+     * (D16). 그런데 그 단계마다 알림을 보내면 고객은 취소 한 번에 **문자 3통**을 받는다.
+     * D16 이 요구한 것은 활동로그이지 알림이 아니므로, 중간 전이는 컨텍스트에 실린
+     * `suppress_notification` 로 끄고 **마지막 상태에서 1건**만 보낸다.
+     *
+     * 이 판정을 알림 리스너에만 두는 것이 요점이다 — 활동로그 리스너는 같은 훅을 우선순위만
+     * 달리해 구독하므로(priority 10 / 20) 플래그를 읽지 않아 세 줄이 그대로 남는다.
+     *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  전이된 신청서
      * @param  string|null  $previous  전이 전 상태 값
      * @param  string|null  $target  전이 시점에 캡처한 목표 상태 값 (매핑 기준)
+     * @param  array<string, mixed>  $context  전이 컨텍스트 (suppress_notification)
      */
     public function handleStatusChange(
         OrderExchange|OrderReturn|OrderRefund $claim,
         ?string $previous = null,
         ?string $target = null,
+        array $context = [],
     ): void {
         if ($target === null || $target === $previous) {
+            return;
+        }
+
+        if ((bool) ($context['suppress_notification'] ?? false)) {
             return;
         }
 

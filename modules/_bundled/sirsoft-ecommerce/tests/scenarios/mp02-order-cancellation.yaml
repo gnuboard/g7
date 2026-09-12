@@ -41,6 +41,19 @@ axes:
     - dbank_paid          # 무통장 입금완료 (PAID)
     - vbank_paid          # 가상계좌 결제완료 (PAID)
     - points_used         # 포인트 일부 사용
+  refund_branch:
+    # #599 후속 D2 — 두 값 모두 환불신청서를 만든다. 다른 것은 전이 방식뿐이다.
+    - auto                # 접수 후 승인·완료까지 자동 전이 (구 cancel)
+    - request             # 접수 후 정지, 운영자 승인 대기 (구 refund)
+    - none                # 취소·환불 신청 축이 아닌 경로 (관리자 취소·만료 자동취소)
+  payment_method:
+    # #599 후속 §7-2 — 수단마다 취소·환불이 다른 경로를 타고 다른 기록을 남긴다.
+    - card                # PG (리스너 있음 / 없음 두 상태)
+    - vbank_settled       # PG · 입금완료 (환불받을 계좌 필수)
+    - vbank_awaiting      # PG · 미입금 (계좌 불필요)
+    - dbank               # BANK — 사람이 송금, 승인에서 멈춘다
+    - point_only          # POINTS — 마일리지 환급이 곧 실지급
+    - zero_amount         # 0원 — 환불신청서를 만들지 않는다
   coupon:
     - none                # 쿠폰 없음
     - min_order_broken    # 최소주문금액 쿠폰(취소 시 조건미달)
@@ -60,6 +73,11 @@ effects:
   - dbank_cancel_updates_order_and_payment       # 주문/결제 상태 갱신
   - card_cancel_fires_pg_hook_and_completes      # 카드 PG 환불 COMPLETED(비회귀)
   - vbank_cancel_fires_pg_hook                   # 가상계좌 PG 가드 통과(비회귀)
+  # 3회차 계획서 검증 §9-1 — 상태 × 결제수단 매트릭스 (구매자 접수 표면)
+  - refund_branch_matrix_covers_every_refund_method      # 수단 모집단을 enum 에서 파생해 전수 검산
+  - refund_branch_matrix_covers_every_configured_status  # 상태 모집단을 설정에서 파생해 전수 검산
+  - refund_branch_terminus_is_decided_by_the_refund_method  # PG·POINTS 완료 / BANK 승인
+  - refund_branch_is_decided_by_the_item_status          # 상품 상태가 auto/request 를 정한다
   # U2/U20② — 0원·미입금 부분취소 허용 (PHPUnit Unit + DTO)
   - partial_cancel_allowed_for_unpaid_order      # 미입금 부분취소 허용
   - partial_cancel_allowed_for_operator_zero_paid # 운영자 0원 결제완료 부분취소 허용
@@ -99,8 +117,51 @@ effects:
 
   # 치환 입력이 없는 취소·반품·교환 미리보기는 변경 전과 바이트 단위로 같다 (#599 후속 등가성 픽스처)
   - cancel_preview_output_unchanged_with_empty_substitutions
+
+  # ── #599 후속 — 취소·환불 프로세스 재설계 ──────────────────────────────
+  # 취소신청서 생성 지점 이동 (D3) + 자동 전이 엔진 (§4-2)
+  - cancellation_record_is_created_only_on_refund_completion     # 환불완료 순간에만 취소신청서 생성
+  - bank_refund_stops_at_approved_without_cancellation_record    # 계좌 환불은 승인에서 멈추고 취소신청서도 없다 (D4·D5)
+  - unpaid_cancel_skips_the_refund_request                       # 미결제·0원은 환불신청서 없음 (D1·P11) + 결제행 정리 (P4)
+  - auto_advance_sends_one_notification_but_logs_every_step      # 알림 1건 · 로그 단계별 (§4-2)
+  - cancellation_record_walks_requested_then_completed           # 취소 문서도 단계를 밟는다 (D16 · B3·B4)
+  - admin_filed_refund_is_not_buyer_withdrawable                 # 운영자 대리 접수는 구매자 철회 불가 (§4-3-1)
+  # 잔여 한도 이중 차감 금지 (§12-B) + 전량 제외 경로의 기존 환불 차감 (새 결함 N1)
+  - second_partial_refund_is_not_zeroed_by_double_deduction
+  # 돈·재고가 어긋나는 결함의 회귀 잠금 (§7-2)
+  - skipping_pg_never_stamps_refund_completed                    # P2 — PG 미호출이면 완료를 찍지 않는다
+  - cancelled_order_is_not_revived_by_a_late_deposit             # P4 — 취소된 주문은 되살아나지 않는다
+  - missing_pg_listener_falls_back_to_bank_refund                # P14 — 플러그인 제거 뒤에도 취소 가능
+  - registered_pg_listener_keeps_pg_refund_method                # P14 비회귀
+  - bank_transfer_cancel_requires_a_refund_account               # P9 — 송금 수단은 계좌 필수
+  - settled_virtual_account_requires_a_refund_account            # P9 — 입금완료 vbank 도 계좌 필수
+  - card_cancel_does_not_require_a_refund_account                # P9 비회귀
+  - auto_cancel_expired_stores_a_reason_code_not_a_sentence      # P17 — 영문 로케일 만료 자동취소
+  - auto_cancel_expired_reason_code_is_locale_independent
+  - auto_cancel_expired_prints_the_real_payment_method
+  # 프런트 계약
+  - frontend_sends_auto_advance_refund_not_cancel_pg             # P2·D7 — 관리자 모달 페이로드
+  - frontend_auto_advance_defaults_to_off                        # D7 — 기본 꺼짐
+  - order_item_checkbox_follows_claimable_types_only             # U-3 — 미결제 주문의 헛 체크박스 제거
+
+  # ── #599 후속 2회차 — 전면 일원화 (§12-D·§12-E) ────────────────────────
+  - second_partial_refund_returns_only_the_remaining_share       # N13 — 이미 돌려준 몫을 다시 세지 않는다 (과다 환불)
+  - order_ledger_is_settled_exactly_once_per_intake              # DoD 2 — 합계 재계산·취소 기록은 한 번
+  - item_status_after_a_refund_is_decided_by_the_source          # D13 — 출처가 상품 상태를 정한다
+  - pg_rejection_rolls_the_whole_intake_back                     # D15 — 접수까지 전체 롤백
+  - refund_awaiting_a_human_transfer_stops_at_approved           # D4·D5 — 송금 전에는 취소가 확정되지 않는다
+  - externally_settled_refund_completes_without_calling_pg       # §12-D B11·B14 — 바깥 집행분은 PG 재호출 없이 완료
+  - partial_cancel_is_rejected_when_the_pg_declares_no_support   # P6 — 코어가 사전에 막는다
+  - full_cancel_passes_even_when_partial_cancel_is_unsupported   # P6 비회귀
+  - cancellation_path_reports_remaining_capacity_through_refund_accumulation # §12-B B1 — 원금은 그대로, 누적이 잔여를 말한다
+  - admin_bulk_status_change_cannot_create_a_cancellation        # N16 — 신청서 없는 취소 차단
+  - cancel_pg_control_is_gone_from_the_bulk_bar                  # P2 — 「PG 없이 장부만」 경로 제거
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimCancellationRecordTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/PaymentMethodRefundPathTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimRefundBranchTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/CancelPendingPaymentOrdersTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderCancellationControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/OrderCancellationControllerTest.php

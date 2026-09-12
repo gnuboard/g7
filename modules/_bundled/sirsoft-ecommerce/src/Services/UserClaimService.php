@@ -10,7 +10,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
@@ -398,20 +397,18 @@ class UserClaimService
      */
     public function requestRefund(Order $order, array $payload, array $imageIds = []): array
     {
-        // 교환·반품과 같은 이유로 선행 검사한다. 즉시취소 분기는 신청서가 생기지 않지만, 그 분기도
-        // 취소 파이프라인을 되돌릴 수는 없으므로 첨부가 잘못된 요청은 파이프라인 전에 걸러야 한다.
+        // 교환·반품과 같은 이유로 선행 검사한다 — 첨부가 잘못된 요청은 접수 전에 걸러야 한다.
         $this->attachmentService->resolveAttachable($order, $imageIds, $payload['requested_by'] ?? null);
 
         $result = $this->refundRequestService->request($order, $payload);
 
+        // 새 모델에서는 자동 전이 분기도 환불신청서를 만든다(D2) — 첨부는 언제나 귀속된다.
+        // 예전에는 즉시취소 분기에 귀속할 신청서가 없어 구매자 첨부를 **말없이 지웠다**(F7):
+        // 고객이 올린 사진이 접수 직후 사라지고, 그 사실은 어디에도 남지 않았다. 환불할 돈이
+        // 없어 취소신청서만 남는 주문(미결제·0원)에서는 귀속 대상이 없으므로 미귀속 상태로
+        // 둔다 — 지우지 않는다. 미귀속 첨부는 만료 정리 경로가 따로 거둔다.
         if ($result['refund'] instanceof OrderRefund) {
             $this->attachmentService->attachPending($order, $imageIds, ClaimTypeEnum::REFUND, $result['refund']->id, $payload['requested_by'] ?? null);
-        } else {
-            foreach ($this->attachmentService->listPendingFor($order) as $image) {
-                if (in_array((int) $image->id, array_map('intval', $imageIds), true)) {
-                    $this->attachmentService->delete($image);
-                }
-            }
         }
 
         return $result;
@@ -601,23 +598,114 @@ class UserClaimService
     ];
 
     /**
-     * 주문의 유형별 접수 건수를 돌려줍니다. (주문상세 섹션의 서브탭 뱃지·기본 유형 판정)
+     * 이 회원의 유형별 접수 건수를 돌려줍니다. (신청내역 서브탭 뱃지 — F12)
      *
-     * 건수는 목록과 같은 저장소 기준 쿼리로 세므로(`countForOrder`) 환불 탭의 취소 발 제외가
-     * 뱃지와 목록에 같은 근거로 걸린다. 네 유형 전부를 늘 돌려준다 — 화면이 키 부재를 0 으로
-     * 읽으면 "세지 않음" 과 "0건" 이 구분되지 않는다.
+     * 주문 스코프 건수(`countsForOrder`)와 같은 규칙이다 — 목록과 같은 저장소 기준 쿼리로 세고,
+     * **상태는 전 탭에 걸지 않는다**(유형 종속 어휘라 다른 탭 건수를 언제나 0 으로 만든다).
+     * 현재 탭만 `refreshCurrentUserTypeCount()` 가 목록과 완전히 같은 필터로 다시 센다.
      *
-     * @param  Order  $order  주문
+     * 네 유형 전부를 늘 돌려준다 — 화면이 키 부재를 0 으로 읽으면 "세지 않음" 과 "0건" 이
+     * 구분되지 않는다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array<string, mixed>  $filters  목록과 같은 필터 (status / from / to)
      * @return array<string, int> 유형 값 => 건수 (네 유형 전부)
      */
-    public function countsForOrder(Order $order): array
+    public function countsForUser(int $userId, array $filters = []): array
     {
+        $shared = array_diff_key($filters, ['status' => null]);
+
         return [
-            ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->countForOrder($order->id),
-            ClaimTypeEnum::RETURN->value => $this->returnRepository->countForOrder($order->id),
-            ClaimTypeEnum::REFUND->value => $this->refundRepository->countForOrder($order->id),
-            ClaimTypeEnum::CANCEL->value => $this->cancelRepository->countForOrder($order->id),
+            ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->countForUser($userId, $shared),
+            ClaimTypeEnum::RETURN->value => $this->returnRepository->countForUser($userId, $shared),
+            ClaimTypeEnum::REFUND->value => $this->refundRepository->countForUser($userId, $shared),
+            ClaimTypeEnum::CANCEL->value => $this->cancelRepository->countForUser($userId, $shared),
         ];
+    }
+
+    /**
+     * 회원 신청내역에서 **현재 탭의 건수만** 목록과 같은 필터로 다시 셉니다. (F15 와 같은 규칙)
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array<string, int>  $counts  `countsForUser()` 결과
+     * @param  ClaimTypeEnum  $currentType  현재 탭의 유형
+     * @param  array<string, mixed>  $filters  목록과 같은 필터
+     * @return array<string, int> 현재 탭 건수가 보정된 결과
+     */
+    public function refreshCurrentUserTypeCount(int $userId, array $counts, ClaimTypeEnum $currentType, array $filters = []): array
+    {
+        if (empty($filters['status'])) {
+            return $counts;
+        }
+
+        $counts[$currentType->value] = match ($currentType) {
+            ClaimTypeEnum::EXCHANGE => $this->exchangeRepository->countForUser($userId, $filters),
+            ClaimTypeEnum::RETURN => $this->returnRepository->countForUser($userId, $filters),
+            ClaimTypeEnum::REFUND => $this->refundRepository->countForUser($userId, $filters),
+            ClaimTypeEnum::CANCEL => $this->cancelRepository->countForUser($userId, $filters),
+        };
+
+        return $counts;
+    }
+
+    /**
+     * 주문의 유형별 접수 건수를 돌려줍니다. (주문상세 섹션의 서브탭 뱃지·기본 유형 판정)
+     *
+     * 건수는 목록과 같은 저장소 기준 쿼리·**같은 필터**로 센다(`countForOrder` — F15).
+     * 필터를 넘기지 않으면 뱃지와 목록이 서로 다른 수를 말한다: 구매자가 기간을 좁히면
+     * 목록은 줄고 뱃지는 그대로여서 어느 쪽이 맞는지 알 수 없었다.
+     *
+     * 네 유형 전부를 늘 돌려준다 — 화면이 키 부재를 0 으로 읽으면 "세지 않음" 과 "0건" 이
+     * 구분되지 않는다.
+     *
+     * @param  Order  $order  주문
+     * @param  array<string, mixed>  $filters  목록과 같은 필터 (status / from / to)
+     * @return array<string, int> 유형 값 => 건수 (네 유형 전부)
+     */
+    public function countsForOrder(Order $order, array $filters = []): array
+    {
+        // 상태는 **유형 종속 어휘**라 다른 탭의 건수에 적용할 수 없다 — 환불 상태를 교환 탭에
+        // 걸면 그 탭 건수가 언제나 0 이 된다. 기간만 전 탭에 걸고, 상태는 현재 탭에만
+        // `refreshCurrentTypeCount()` 가 건다(F15 · 관리자 F13 과 같은 규칙).
+        $shared = array_diff_key($filters, ['status' => null]);
+
+        return [
+            ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->countForOrder($order->id, $shared),
+            ClaimTypeEnum::RETURN->value => $this->returnRepository->countForOrder($order->id, $shared),
+            ClaimTypeEnum::REFUND->value => $this->refundRepository->countForOrder($order->id, $shared),
+            ClaimTypeEnum::CANCEL->value => $this->cancelRepository->countForOrder($order->id, $shared),
+        ];
+    }
+
+    /**
+     * 현재 탭의 건수만 목록과 **완전히 같은 필터**로 다시 셉니다. (F15)
+     *
+     * 다른 탭의 뱃지는 "그 탭으로 가면 몇 건인가" 라는 원 의미를 지키고, 지금 보고 있는 탭의
+     * 뱃지만 화면의 목록과 일치시킨다 — 같은 화면 안에서 뱃지와 목록이 다른 수를 말하는 것이
+     * 구매자가 실제로 겪는 어긋남이기 때문이다.
+     *
+     * @param  Order  $order  주문
+     * @param  array<string, int>  $counts  `countsForOrder()` 결과
+     * @param  ClaimTypeEnum  $currentType  현재 탭의 유형
+     * @param  array<string, mixed>  $filters  목록과 같은 필터
+     * @return array<string, int> 현재 탭 건수가 보정된 결과
+     */
+    public function refreshCurrentTypeCount(Order $order, array $counts, ClaimTypeEnum $currentType, array $filters = []): array
+    {
+        if (! array_key_exists('status', $filters) || ! filled($filters['status'])) {
+            return $counts;
+        }
+
+        $repository = match ($currentType) {
+            ClaimTypeEnum::EXCHANGE => $this->exchangeRepository,
+            ClaimTypeEnum::RETURN => $this->returnRepository,
+            ClaimTypeEnum::REFUND => $this->refundRepository,
+            ClaimTypeEnum::CANCEL => $this->cancelRepository,
+        };
+
+        $counts[$currentType->value] = $repository->countForOrder($order->id, $filters);
+
+        return $counts;
     }
 
     /**
@@ -665,9 +753,10 @@ class UserClaimService
             // 오류 없이 전 행 null 이 된다(`order_number`·회수/재발송 배송사명).
             ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->listByOrderId($order->id, ['exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier', 'redeliveryCarrier']),
             ClaimTypeEnum::RETURN->value => $this->returnRepository->listByOrderId($order->id, ['returnOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier']),
-            ClaimTypeEnum::REFUND->value => $this->refundRepository->listByOrderId($order->id, ['refundOptions.orderOption', 'images', 'order.shippingAddress'])
-                ->filter(fn (OrderRefund $refund) => $refund->refund_source_type !== RefundSourceTypeEnum::CANCEL)
-                ->values(),
+            // 출처로 거르지 않는다(D6) — 취소신청서와 환불신청서는 같은 사건의 두 문서가
+            // 아니라 **다른 사실**을 기록하는 별개 문서다. 반품 1건이 반품·환불·취소 세 탭에
+            // 뜨는 것도 같은 이유로 정상이다(D14).
+            ClaimTypeEnum::REFUND->value => $this->refundRepository->listByOrderId($order->id, ['refundOptions.orderOption', 'images', 'order.shippingAddress']),
             ClaimTypeEnum::CANCEL->value => $this->cancelRepository->listByOrderId($order->id, ['cancelOptions.orderOption', 'refund', 'order.shippingAddress']),
         ];
     }

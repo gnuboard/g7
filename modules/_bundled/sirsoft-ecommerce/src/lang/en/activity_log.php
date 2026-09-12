@@ -38,9 +38,12 @@ return [
         'send_email' => 'Email Sent',
         'set_default' => 'Set as Default',
         'status_change' => 'Status Changed',
+        'sync_status' => 'Status Applied by Sync',
         'status_sync' => 'Status Auto-synced',
         'stock_sync' => 'Stock Synchronized',
         'toggle_active' => 'Active Status Changed',
+        'tax_invoice_stale' => 'Tax Invoice Not Handled',
+        'tracking_update' => 'Tracking Recorded/Corrected',
         'toggle_status' => 'Status Toggled',
         'update' => 'Updated',
         'update_quantity' => 'Quantity Updated',
@@ -93,6 +96,9 @@ return [
         'order_reset_guest_password' => 'Guest lookup password reset (:order_number)',
         'order_option_status_change' => 'Order option status changed (Order: :order_number)',
         'order_option_bulk_status_change' => 'Order option statuses bulk changed (:count items)',
+        'order_option_sync_status' => 'Item status changed by order status sync (:order_number, :count item(s))',
+        'order_shipping_tracking_update' => 'Tracking number recorded/corrected (item ID: :option_id)',
+        'order_tax_invoice_stale' => 'Tax invoice not handled after cancellation (:order_number, :count invoice(s))',
         'order_status_sync' => 'Order status auto-synced from item statuses (:order_number)',
 
         // Coupon management (Admin)
@@ -233,11 +239,15 @@ return [
         'claim_exchange_request' => 'Exchange request received (:claim_number)',
         'claim_return_request' => 'Return request received (:claim_number)',
         'claim_refund_request' => 'Refund request received (:claim_number)',
+        'claim_cancel_request' => 'Cancellation record created (:claim_number)',
         'claim_exchange_status_change' => 'Exchange request status changed (:claim_number)',
         'claim_return_status_change' => 'Return request status changed (:claim_number)',
         'claim_refund_status_change' => 'Refund request status changed (:claim_number)',
+        'claim_cancel_status_change' => 'Cancellation record status changed (:claim_number)',
         'claim_exchange_option_status_change' => 'Exchange request item status changed (:claim_number, :count item(s))',
         'claim_return_option_status_change' => 'Return request item status changed (:claim_number, :count item(s))',
+        'claim_refund_option_status_change' => 'Refund request item status changed (:claim_number, :count item(s))',
+        'claim_cancel_option_status_change' => 'Cancellation record item status changed (:claim_number, :count item(s))',
         'claim_exchange_update_amounts' => 'Exchange request amounts updated (:claim_number)',
         'claim_return_update_amounts' => 'Return request amounts updated (:claim_number)',
         'claim_refund_update_amounts' => 'Refund request amounts updated (:claim_number)',
@@ -329,6 +339,8 @@ return [
 
         // OrderOption
         'option_status' => 'Option Status',
+        'carrier_id' => 'Carrier',
+        'tracking_number' => 'Tracking number',
         'quantity' => 'Quantity',
         'cancelled_quantity' => 'Cancelled Quantity',
 

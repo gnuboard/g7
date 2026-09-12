@@ -231,7 +231,12 @@ class GuestClaimApiTest extends ModuleTestCase
         ], ['X-Guest-Order-Token' => $otherToken])->assertNotFound();
     }
 
-    public function test_guest_refund_request_branches_to_instant_cancel(): void
+    /**
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects cancellation_record_is_created_only_on_refund_completion
+     */
+    public function test_guest_refund_request_branches_to_auto_advance(): void
     {
         [$order, $token] = $this->guestOrderWithToken(OrderStatusEnum::PAYMENT_COMPLETE);
 
@@ -239,7 +244,7 @@ class GuestClaimApiTest extends ModuleTestCase
             'items' => $this->items($order), 'reason_code' => 'changed_mind',
         ], ['X-Guest-Order-Token' => $token])
             ->assertCreated()
-            ->assertJsonPath('data.branch', 'cancel');
+            ->assertJsonPath('data.branch', 'auto');
 
         $this->assertSame(OrderStatusEnum::CANCELLED, $order->fresh()->order_status);
     }
@@ -550,14 +555,17 @@ class GuestClaimApiTest extends ModuleTestCase
             'items' => $this->items($order), 'reason_code' => 'changed_mind',
         ], ['X-Guest-Order-Token' => $token])
             ->assertCreated()
-            ->assertJsonPath('data.branch', 'cancel');
+            ->assertJsonPath('data.branch', 'auto');
 
-        // 미지정 → 취소. 취소 발 환불 행은 환불 탭에 세지 않는다(뱃지와 목록이 같은 근거).
+        // 미지정 → 우선순위상 취소가 먼저 열린다. **환불도 1건**이다(#599 후속 D6) —
+        // 취소신청서와 환불신청서는 같은 사건의 두 사본이 아니라 다른 사실을 기록하는 별개
+        // 문서이므로 한쪽이 다른 쪽을 대표하지 않는다. 예전에는 취소 발 환불을 환불 탭에서
+        // 빼, 결제완료 상품을 환불한 고객에게 환불 이력이 아예 보이지 않았다.
         $this->getJson($this->base($order).'/claims', ['X-Guest-Order-Token' => $token])
             ->assertOk()
             ->assertJsonPath('data.claim_type', 'cancel')
             ->assertJsonPath('data.counts.cancel', 1)
-            ->assertJsonPath('data.counts.refund', 0)
+            ->assertJsonPath('data.counts.refund', 1)
             ->assertJsonPath('data.counts.exchange', 0)
             ->assertJsonPath('data.data.0.claim_type', 'cancel');
 
@@ -566,12 +574,20 @@ class GuestClaimApiTest extends ModuleTestCase
             ->assertOk()
             ->assertJsonPath('data.claim_type', 'cancel');
 
-        // 지정하면 그 유형이다 — 비어 있어도 바꾸지 않고, 건수는 그대로 실린다
+        // 지정하면 그 유형이다 — 지정한 유형을 서버가 바꾸지 않는다. 이 주문의 환불 탭에는
+        // 자동 전이가 만든 환불신청서 1건이 서 있다(D6).
         $this->getJson($this->base($order).'/claims?type=refund', ['X-Guest-Order-Token' => $token])
             ->assertOk()
             ->assertJsonPath('data.claim_type', 'refund')
-            ->assertJsonPath('data.pagination.total', 0)
+            ->assertJsonPath('data.pagination.total', 1)
+            ->assertJsonPath('data.data.0.claim_type', 'refund')
             ->assertJsonPath('data.counts.cancel', 1);
+
+        // 신청이 한 건도 없는 유형은 여전히 비어 있다 — "지정하면 바꾸지 않는다" 의 원 의도다.
+        $this->getJson($this->base($order).'/claims?type=exchange', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->assertJsonPath('data.claim_type', 'exchange')
+            ->assertJsonPath('data.pagination.total', 0);
     }
 
     /**

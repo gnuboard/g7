@@ -99,6 +99,26 @@ class OrderCancel extends Model
     }
 
     /**
+     * 이 취소 문서가 **비회원 주문**의 것인지 반환합니다.
+     *
+     * 판정은 **주문의 주인**이 한다. `cancelled_by` 는 비회원 신청·운영자 대리 접수·자동 취소가
+     * 모두 null 이라(§4-3-1 과 같은 모호성), 그 값으로 가르면 회원 주문의 취소가 「비회원」으로
+     * 표시되고 운영자는 연락 수단을 잘못 고른다. 네 유형이 같은 축을 쓰게 한다.
+     *
+     * @return bool 비회원 주문이면 true
+     */
+    public function isGuestRequest(): bool
+    {
+        $order = $this->relationLoaded('order') ? $this->order : $this->order()->first();
+
+        if ($order === null) {
+            return $this->cancelled_by === null;
+        }
+
+        return $order->user_id === null;
+    }
+
+    /**
      * 전체취소 여부를 반환합니다.
      *
      * @return bool 전체취소이면 true

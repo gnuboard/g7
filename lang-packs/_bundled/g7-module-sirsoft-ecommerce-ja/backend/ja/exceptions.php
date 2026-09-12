@@ -46,6 +46,7 @@ return [
     'cancel_option_already_cancelled' => '既にキャンセルされた注文オプションです。',
     'cancel_quantity_invalid' => 'キャンセル数量が有効ではありません。',
     'cancel_refund_negative' => 'この商品をキャンセルすると適用中の割引条件が変わり決済金額が増えるため、キャンセルできません。',
+    'partial_cancel_not_supported' => 'この注文の決済手段は部分キャンセルに対応していません。全額キャンセルのみ可能です。',
     'pg_refund_failed' => 'PG返金処理に失敗しました。(:error)',
     'unknown_currency' => 'サポートされていない通貨です: :currency',
     'invalid_exchange_rate' => '無効な為替レートです: :currency',

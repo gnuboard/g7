@@ -218,6 +218,7 @@ return [
         'deposit_confirm_failed' => '입금확인 처리에 실패했습니다.',
         'deposit_amount_mismatch' => '입금액이 결제예정금액과 일치하지 않습니다.',
         'deposit_not_dbank' => '무통장입금 주문만 입금확인할 수 있습니다.',
+        'deposit_order_cancelled' => '취소된 주문은 입금확인할 수 없습니다.',
         'deposit_not_pending' => '미결제 상태의 주문만 입금확인할 수 있습니다.',
         'payment_name_summary' => ':name 외 :count건',
         'deposit' => [
@@ -763,8 +764,6 @@ return [
                     'cancel' => [
                         'title' => '주문 취소',
                         'description' => '선택한 상품의 주문을 취소합니다. 환불 예상금액을 확인 후 진행해주세요.',
-                        'cancel_pg' => 'PG 결제도 취소합니다',
-                        'cancel_pg_hint' => '체크 해제 시 PG 취소 없이 주문 상태만 변경합니다.',
                         'reason' => '취소 사유',
                         'reason_placeholder' => '취소 사유를 선택해주세요',
                         'reason_detail' => '상세 사유',

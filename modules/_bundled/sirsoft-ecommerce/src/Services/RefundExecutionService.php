@@ -47,8 +47,9 @@ class RefundExecutionService
     /**
      * 환불을 실행하고 주문·결제의 환불 누적을 반영합니다.
      *
-     * 클레임(교환/반품) 환불의 진입점이다. PG 환불이 필요한 결제수단이면 훅을 실행한 뒤
-     * 주문의 총 환불 누적과 결제행의 취소 누적을 갱신한다.
+     * 클레임(교환/반품/취소·환불) 환불의 진입점이다. 결제행의 취소 누적을 메모리에 먼저 채우고
+     * — PG 리스너가 그 값을 읽어 전액/부분 취소를 가른다 — PG 환불이 필요한 결제수단이면 훅을
+     * 실행한 뒤, 성공했을 때에만 주문의 총 환불 누적과 결제행을 저장한다.
      *
      * 취소(OrderCancellationService)는 이 메서드를 쓰지 않는다 — 취소는 orderUpdates 로
      * total_paid_amount 자체를 재계산값으로 덮어써 잔여 한도를 이미 좁히므로, 여기서
@@ -83,6 +84,25 @@ class RefundExecutionService
         // AppliesRefundBankAccount 독블록에 있다.
         $this->applyRefundBank($order, $this->refundBankInfoOf($refund));
 
+        // 결제행의 취소 누적은 **채우기와 저장을 나눈다**.
+        //
+        // 결제행은 PG 훅의 입력이기도 하다 — 리스너는 이 행을 읽고 "이번이 잔액 전부인가" 를
+        // 판정해 전액취소/부분취소 코드를 고른다(NICE 의 `isPartial` 등). 채우지 않고 부르면
+        // 마지막 잔액을 환불하는데도 취소액이 아직 0 이어서 "남은 돈이 있다" 로 보이고, PG 에는
+        // **부분취소**로 나간다. 카드사는 원거래를 승인 상태로 남기고 장부만 전액환불로 찍혀
+        // 대사가 갈린다.
+        //
+        // 그렇다고 먼저 저장하면 "실패한 환불이 장부를 깎는" 반대쪽 위험이 생긴다. 호출부가
+        // 트랜잭션을 열지 않은 채 부르면 롤백이 없기 때문이다. 그래서 메모리에만 채워 훅에
+        // 보이게 하고, 실제 기록은 PG 가 받아들인 뒤에 한다.
+        $paymentUpdates = $order->payment !== null
+            ? $this->buildCancelledAmountUpdates($order->payment, $result)
+            : [];
+
+        if ($paymentUpdates !== []) {
+            $order->payment->fill($paymentUpdates);
+        }
+
         // PG사 선택이 필요한 결제수단(카드/가상계좌/계좌이체/휴대폰)만 PG 환불 훅에 진입한다.
         // 무통장입금(dbank)·포인트·예치금·무료는 PG 리스너가 인식하지 못해 success=false → 예외.
         if ($executePg && $order->payment && $result->refundAmount > 0
@@ -91,7 +111,10 @@ class RefundExecutionService
         }
 
         $this->accumulateRefundTotals($order, $result);
-        $this->accumulatePaymentCancellation($order, $result);
+
+        if ($paymentUpdates !== []) {
+            $this->orderPaymentRepository->savePendingChanges($order->payment);
+        }
     }
 
     /**
@@ -111,27 +134,6 @@ class RefundExecutionService
             'total_refunded_points_amount' => (float) $order->total_refunded_points_amount
                 + (float) $result->refundPointsAmount,
         ]);
-    }
-
-    /**
-     * 결제행의 취소 누적을 갱신합니다.
-     *
-     * 취소 경로의 updatePayment 와 같은 규칙(buildCancelledAmountUpdates)을 쓰되,
-     * 취소 고유 필드(cancel_history / cancel_reason / payment_status)는 건드리지 않는다.
-     * 클레임 환불은 결제 자체를 취소 상태로 전이시키지 않기 때문이다.
-     *
-     * @param  Order  $order  주문
-     * @param  AdjustmentResult  $result  계산 결과
-     */
-    protected function accumulatePaymentCancellation(Order $order, AdjustmentResult $result): void
-    {
-        $payment = $order->payment;
-
-        if (! $payment) {
-            return;
-        }
-
-        $payment->update($this->buildCancelledAmountUpdates($payment, $result));
     }
 
     /**
@@ -175,7 +177,49 @@ class RefundExecutionService
             return RefundMethodEnum::BANK;
         }
 
-        return $order->payment->refundMethod();
+        $method = $order->payment->refundMethod();
+
+        // 결제 플러그인이 제거된 뒤의 주문 (P14).
+        //
+        // 플러그인을 지우면 `payment.refund` 훅을 구독하던 리스너가 사라진다. 그런데 결제행은
+        // 여전히 "PG 환불" 이라고 말하므로 코어는 PG 경로로 들어가고, 아무도 응답하지 않아
+        // `success=false` → 예외 → 트랜잭션 롤백이 된다. 운영자는 **그 주문의 결제완료 건을
+        // 영영 취소할 수 없고**, 화면에는 원인 없는 오류만 뜬다.
+        //
+        // 리스너가 없으면 계좌 환불로 떨어뜨린다 — 운영자가 손으로 송금하고 [환불하기]로
+        // 완료를 찍는 경로는 살아 있다. 조용히 바꾸지 않고 로그를 남겨 이유가 드러나게 한다.
+        if ($method === RefundMethodEnum::PG && ! $this->hasPgRefundListener($order)) {
+            Log::warning('PG 환불 리스너 없음 — 계좌 환불로 폴백', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'payment_method' => (string) $order->payment->payment_method,
+                'pg_provider' => $order->payment->pg_provider,
+            ]);
+
+            return RefundMethodEnum::BANK;
+        }
+
+        return $method;
+    }
+
+    /**
+     * 이 주문의 PG 환불에 응답할 리스너가 실제로 등록돼 있는지 판정합니다. (P14)
+     *
+     * `payment.refund` 는 필터 훅이라 구독자가 없으면 기본값(`success=false`)이 그대로
+     * 돌아온다 — 실패와 미등록을 결과만으로 구분할 수 없다. 그래서 **부르기 전에** 등록
+     * 여부를 본다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 리스너가 있으면 true
+     */
+    public function hasPgRefundListener(Order $order): bool
+    {
+        // 판정은 **구독자 유무 하나**로 한다. 결제행의 `pg_provider` 가 지금 등록된 제공자
+        // 목록에 있는지까지 보고 싶어지지만, 그러면 거짓 양성이 생긴다 — 제공자 ID 와 리스너
+        // 등록 이름이 다른 플러그인, 여러 수단을 한 리스너로 처리하는 플러그인이 전부 걸린다.
+        // 여기서 잡으려는 것은 "**아무도 응답하지 않는다**" 는 명백한 경우(플러그인 제거)이고,
+        // 그 밖의 실패는 PG 거절로 드러나 사유와 함께 422 로 나간다(P13).
+        return ! empty(HookManager::getFilters()['sirsoft-ecommerce.payment.refund'] ?? []);
     }
 
     /**
@@ -293,7 +337,23 @@ class RefundExecutionService
         AdjustmentResult $result,
         ?string $reason,
     ): void {
+        $previousStatus = $refund->refund_status instanceof RefundStatusEnum
+            ? $refund->refund_status->value
+            : (string) $refund->refund_status;
+
         $refund->update(['refund_status' => RefundStatusEnum::PROCESSING]);
+
+        // 이 전이는 예전에 어떤 줄도 남기지 않았다(B1). PG 왕복 도중 예외로 끊기면 신청서는
+        // `processing` 에 멈추는데, 그 상태로 들어간 경위가 이력에 없어 운영자는 "승인에서
+        // 갑자기 처리중이 된" 신청서를 보게 된다. 알림은 억제한다 — 고객에게는 완료 1건만
+        // 알리는 것이 §4-2 의 규율이고, 처리중은 내부 단계다.
+        HookManager::doAction(
+            'sirsoft-ecommerce.claim.refund.status_changed',
+            $refund->fresh(),
+            $previousStatus,
+            RefundStatusEnum::PROCESSING->value,
+            ['suppress_notification' => true],
+        );
 
         // PG 실환불 금액은 결제 통화(order_currency)여야 한다. base≠결제 통화일 때 base 금액을 그대로
         // 전송하면 PG 가 결제 통화 단위로 오인해 실환불액이 틀어진다(예: base JPY 500 → KRW 500 환불).
@@ -327,9 +387,17 @@ class RefundExecutionService
                 'pg_error_message' => $pgResult['error_message'] ?? null,
             ]);
 
+            // 실패 근거는 **애플리케이션 로그에 남긴다**(P13). 위 `pg_error_code/message` 갱신은
+            // 곧 이어지는 예외가 트랜잭션째 롤백하므로 DB 에 남지 않는다 — 타임아웃이면 돈은
+            // 나갔는데 주문은 정상으로 복구되고, 그 사실을 가리키는 근거가 로그 말고는 없다.
+            // 주문·환불 번호를 함께 적어 운영자가 PG 콘솔과 대조할 수 있게 한다.
             Log::error('PG 환불 실패', [
                 'order_id' => $order->id,
+                'order_number' => $order->order_number,
                 'refund_id' => $refund->id,
+                'refund_number' => $refund->refund_number,
+                'refund_amount_local' => $refundLocal,
+                'currency' => $orderCurrency,
                 'error_code' => $pgResult['error_code'] ?? null,
                 'error_message' => $pgResult['error_message'] ?? null,
             ]);

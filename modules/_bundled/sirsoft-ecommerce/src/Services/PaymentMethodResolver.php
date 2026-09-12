@@ -32,6 +32,15 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 class PaymentMethodResolver
 {
     /**
+     * 고객이 직접 고를 수 없는 builtin 결제수단. (P8·P10)
+     *
+     * 코어에 결제 실행 경로가 없는 수단이다 — 자세한 근거는 `isCustomerSelectable()` 에 있다.
+     *
+     * @var array<int, string>
+     */
+    private const INTERNAL_ONLY_METHOD_IDS = ['point', 'deposit', 'free'];
+
+    /**
      * 요청 내 결제수단 카탈로그 캐시 (id => config). null = 아직 미조회
      *
      * @var array<string, array<string, mixed>>|null
@@ -191,6 +200,72 @@ class PaymentMethodResolver
         }
 
         return ! ($entry['_orphaned'] ?? false) && ! ($entry['_orphaned_pg'] ?? false);
+    }
+
+    /**
+     * 고객이 주문서에서 **직접 고를 수 있는** 결제수단인지 판정합니다. (P8·P10)
+     *
+     * `point`·`deposit`·`free` 는 코어에 **결제 실행 경로 자체가 없다** — 마일리지·예치금을
+     * 차감하는 내부 결제 엔진이 없어, 실결제액이 0보다 큰 주문에 이 수단을 고르면 주문은
+     * `PENDING_ORDER` 에 영구 정박한다. 결제도 취소도 되지 않는 주문이 남는 것이다.
+     * 예치금은 한 걸음 더 나쁘다 — 코어가 `total_deposit_used_amount` 를 항상 0 으로
+     * 고정하므로 환불 분해·복원 어느 축에도 예치금이 없다.
+     *
+     * 그래서 세 수단은 고객 선택 목록에서 뺀다. `free` 만은 예외가 있다 — **0원 주문에서
+     * 시스템이 자동으로 고르는 경로**는 살아 있고 정상 동작한다(그 경로는 결제할 것이 없다).
+     * 그 판정은 이 메서드가 아니라 주문 생성 검증이 한다.
+     *
+     * 확장 결제수단(예치금 플러그인)이 자기 카탈로그에 `customer_selectable=true` 를
+     * 선언하면 그 수단은 다시 열린다 — 플러그인이 결제 실행 경로를 함께 들고 오기 때문이다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @return bool 고객 선택 가능 여부
+     */
+    public function isCustomerSelectable(string $methodId): bool
+    {
+        return self::customerSelectableByDeclaration(
+            $methodId,
+            $this->catalogValue($methodId, 'customer_selectable'),
+        );
+    }
+
+    /**
+     * 선언값과 수단 ID 만으로 고객 선택 가능 여부를 판정합니다. (설정을 읽지 않는 순수 규칙)
+     *
+     * 설정 병합(`EcommerceSettingsService::mergePaymentMethodSettings`)이 이 값을 payload 에
+     * 실어야 화면이 토글을 잠글 수 있는데, 그 자리에서 인스턴스 메서드를 부르면 **무한 재귀**가
+     * 된다 — 카탈로그는 `order_settings.payment_methods` 를 읽고, 그 설정을 만드는 것이 바로
+     * 그 병합이다. 그래서 규칙만 떼어 낸다. 판정은 한 곳(여기)이고 호출자가 둘일 뿐이다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @param  bool|null  $declared  카탈로그·정의의 `customer_selectable` 선언 (미선언이면 null)
+     * @return bool 고객이 고를 수 있으면 true
+     */
+    public static function customerSelectableByDeclaration(string $methodId, ?bool $declared): bool
+    {
+        if ($declared !== null) {
+            return $declared;
+        }
+
+        return ! in_array($methodId, self::INTERNAL_ONLY_METHOD_IDS, true);
+    }
+
+    /**
+     * 이 결제수단의 현금성(현금영수증 발급 대상) 비율 선언을 돌려줍니다. (P16)
+     *
+     * 카탈로그가 `cash_equivalent` 를 선언하면 그 값을 쓰고, 없으면 builtin enum 규칙으로
+     * 떨어진다. 확장 간편결제는 enum case 가 없어 규칙이 **구조적으로 0** 이었다 — 현금으로
+     * 결제되는 간편결제 수단이 있어도 현금영수증 동기화가 언제나 no-op 였고, 그 사실은
+     * 어떤 오류로도 드러나지 않았다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @return bool|null 선언값 (미선언이면 null — 호출부가 enum 규칙으로 떨어진다)
+     */
+    public function declaresCashEquivalent(string $methodId): ?bool
+    {
+        $declared = $this->catalogValue($methodId, 'cash_equivalent');
+
+        return $declared === null ? null : (bool) $declared;
     }
 
     /**

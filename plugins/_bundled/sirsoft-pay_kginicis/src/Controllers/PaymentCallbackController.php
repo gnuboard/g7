@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
@@ -625,6 +626,22 @@ class PaymentCallbackController
 
         if (! $payment) {
             Log::warning('KG Inicis: vbank notify rejected - payment missing', [
+                'source' => $source,
+                'moid' => $order->order_number,
+                'tid' => $notify['tid'],
+            ]);
+
+            return false;
+        }
+
+        // 취소된 주문의 입금통보는 받지 않는다 (코어 P4 와 같은 가드).
+        //
+        // 고객이 취소한 뒤에 입금해도 PG 통보는 도착한다. 통과시키면 `CANCELLED` 주문이
+        // 결제완료로 되살아나 재고·마일리지가 재차감된다. 아래 결제상태 가드만으로는
+        // 부족하다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이
+        // 그 가드를 통과하기 때문이다. 입금된 돈은 환불 절차로 돌려주어야 하는 별개 사건이다.
+        if ($this->enumValue($order->order_status) === OrderStatusEnum::CANCELLED->value) {
+            Log::warning('KG Inicis: vbank notify rejected - order is cancelled', [
                 'source' => $source,
                 'moid' => $order->order_number,
                 'tid' => $notify['tid'],

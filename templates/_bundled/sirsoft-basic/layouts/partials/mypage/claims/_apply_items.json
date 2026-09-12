@@ -220,8 +220,8 @@
                       "type": "basic",
                       "name": "Span",
                       "if": "{{_local.claimType === 'refund' && !!claimItem.refund_branch}}",
-                      "props": { "className": "{{claimItem.refund_branch === 'cancel' ? 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}}" },
-                      "text": "{{claimItem.refund_branch === 'cancel' ? $t('claim.apply.refund_branch_cancel_badge') : $t('claim.apply.refund_branch_refund_badge')}}"
+                      "props": { "className": "{{claimItem.refund_branch === 'auto' ? 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}}" },
+                      "text": "{{claimItem.refund_branch === 'auto' ? $t('claim.apply.refund_branch_cancel_badge') : $t('claim.apply.refund_branch_refund_badge')}}"
                     },
                     {
                       "comment": "단가 표기는 서버가 준 문자열을 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다. 보조통화는 형제 금액 줄과 같은 규약으로 병기한다(§5-4).",

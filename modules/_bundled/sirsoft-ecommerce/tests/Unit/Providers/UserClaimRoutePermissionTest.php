@@ -75,10 +75,11 @@ class UserClaimRoutePermissionTest extends ModuleTestCase
     {
         $routes = $this->claimRoutes();
 
+        // 13 → 14: 신청 수정(`user.claims.update`) 이 열렸다 (#599 후속 D13).
         $this->assertCount(
-            13,
+            14,
             $routes,
-            '회원 클레임 라우트가 13건이 아닙니다(수집: '.count($routes).'). 라우트가 늘었다면 그것이 '
+            '회원 클레임 라우트가 14건이 아닙니다(수집: '.count($routes).'). 라우트가 늘었다면 그것이 '
             .'검사 대상에 들어왔는지 확인하고, 이름 규칙이 바뀌었다면 PREFIXES·ORDER_SCOPED 를 함께 고치십시오 '
             .'— 그러지 않으면 이 테스트는 아무것도 검사하지 못하는 상태로 green 이 됩니다.',
         );

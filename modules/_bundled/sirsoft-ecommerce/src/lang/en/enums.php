@@ -371,10 +371,11 @@ return [
 
     // Refund Source Type (matches RefundSourceTypeEnum values)
     'refund_source_type' => [
-        'cancel' => 'Order Cancellation',
-        'return' => 'Return',
-        'exchange' => 'Exchange Difference',
-        'direct' => 'Direct Refund by Admin',
+        'cancel' => 'From order cancellation',
+        'return' => 'From return',
+        'exchange' => 'Exchange difference',
+        'direct' => 'Customer request',
+        'admin' => 'Filed by operator',
     ],
 
     // Refund Method (matches RefundMethodEnum values)

@@ -30,20 +30,20 @@ import {
 } from '../../fixtures/claim-screens';
 import type { Page } from '@playwright/test';
 
-/** 즉시 취소되는 상품 (결제완료) */
+/** 접수 후 승인·완료까지 자동으로 진행되는 상품 (미결제·결제완료) — 분기 `auto` */
 const CANCEL_ITEM = {
-  option: { id: 710, name: '즉시취소 상품', optionName: '블랙 / L', unitPrice: 31_000 },
+  option: { id: 710, name: '자동 전이 상품', optionName: '블랙 / L', unitPrice: 31_000 },
   availableQuantity: 1,
   types: ['refund'],
-  refundBranch: 'cancel' as const,
+  refundBranch: 'auto' as const,
 };
 
-/** 환불 신청으로 심사를 받는 상품 (배송준비 이후) */
+/** 접수에서 멈춰 운영자 승인을 기다리는 상품 (배송준비 이후) — 분기 `request` */
 const REFUND_ITEM = {
   option: { id: 711, name: '환불신청 상품', optionName: '화이트 / S', unitPrice: 22_000 },
   availableQuantity: 1,
   types: ['refund'],
-  refundBranch: 'refund' as const,
+  refundBranch: 'request' as const,
 };
 
 /**
@@ -94,27 +94,27 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
     }));
   });
 
-  // @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+  // @scenario claim_type=refund, charge_method=none, refund_branch=auto
   // @effects claim_apply_refund_branch_drives_notice_and_submit_label
   test('즉시 취소 상품만 있는 주문은 라벨·안내·버튼이 취소로 선다', async ({ page }) => {
-    await mockClaimable(page, [CANCEL_ITEM], { resolved_type: 'cancel' });
+    await mockClaimable(page, [CANCEL_ITEM], { resolved_type: 'auto' });
     await openRefundApply(page);
 
     await itemCheckbox(page, 0).check();
 
     const text = await screenText(page);
     expect(text, '화면 제목이 주문 취소가 아니다').toContain('주문 취소');
-    expect(text, '즉시 환불 안내가 없다').toContain('판매자 승인을 기다리지 않아도 됩니다');
+    expect(text, '자동 처리 안내가 없다').toContain('승인·환불완료까지 자동으로 진행됩니다');
     await expect(
       page.getByRole('button', { name: '주문 취소하기' }),
       '실행 버튼이 주문 취소하기가 아니다',
     ).toBeVisible();
   });
 
-  // @scenario claim_type=refund, charge_method=none, refund_branch=refund
+  // @scenario claim_type=refund, charge_method=none, refund_branch=request
   // @effects claim_apply_refund_branch_drives_notice_and_submit_label
   test('환불 신청 상품만 있는 주문은 라벨·안내·버튼이 환불 신청으로 선다', async ({ page }) => {
-    await mockClaimable(page, [REFUND_ITEM], { resolved_type: 'refund' });
+    await mockClaimable(page, [REFUND_ITEM], { resolved_type: 'request' });
     await openRefundApply(page);
 
     await itemCheckbox(page, 0).check();
@@ -139,11 +139,11 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
     expect(text, '혼재 안내가 없다').toContain('두 가지는 한 번에 신청할 수 없어');
 
     // 서버 판정이 mixed 인 동안에는 어느 분기 안내도 서지 않는다 — 서면 둘 중 하나는 거짓이다.
-    expect(text, '고르기 전인데 즉시 환불 안내가 섰다').not.toContain('판매자 승인을 기다리지 않아도 됩니다');
+    expect(text, '고르기 전인데 자동 처리 안내가 섰다').not.toContain('승인·환불완료까지 자동으로 진행됩니다');
     expect(text, '고르기 전인데 심사 안내가 섰다').not.toContain('판매자 확인을 거쳐 환불됩니다');
 
     // 상품 줄마다 자기 분기 배지를 단다 — 무엇을 나눠 신청해야 하는지 알려 준다.
-    expect(text, '즉시 취소 배지가 없다').toContain('즉시 취소');
+    expect(text, '자동 처리 배지가 없다').toContain('자동 처리');
     expect(text, '환불 신청 배지가 없다').toContain('환불 신청');
   });
 
@@ -165,8 +165,8 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
 
     // 라벨·안내는 **지금 고른 상품**을 따른다 (서버 판정 mixed 를 따르지 않는다).
     const text = await screenText(page);
-    expect(text, '고른 분기(즉시 취소)의 안내가 서지 않았다').toContain(
-      '판매자 승인을 기다리지 않아도 됩니다',
+    expect(text, '고른 분기(자동 처리)의 안내가 서지 않았다').toContain(
+      '승인·환불완료까지 자동으로 진행됩니다',
     );
     expect(text, '고르지 않은 분기의 안내가 섰다').not.toContain('판매자 확인을 거쳐 환불됩니다');
     await expect(
@@ -195,10 +195,10 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
     ).not.toBeChecked();
   });
 
-  // @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+  // @scenario claim_type=refund, charge_method=none, refund_branch=auto
   // @effects claim_apply_cancel_blocked_locks_submit_inline
   test('환불 불가 조합은 표 아래 인라인 안내가 서고 제출이 잠긴다 (#599 후속 P3-①)', async ({ page }) => {
-    await mockClaimable(page, [CANCEL_ITEM], { resolved_type: 'cancel' });
+    await mockClaimable(page, [CANCEL_ITEM], { resolved_type: 'auto' });
     const calls = await mockPreview(page, () => previewWithComparison({}, {
       cancel_blocked: true,
       cancel_blocked_reason: '취소 후 결제금액이 늘어나 취소할 수 없습니다.',
@@ -225,10 +225,10 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
     await expect(submit).toBeDisabled();
   });
 
-  // @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+  // @scenario claim_type=refund, charge_method=none, refund_branch=auto
   // @effects claim_apply_refund_priority_reestimates, claim_apply_restored_coupons_and_remaining_balances_render
   test('마일리지를 쓴 주문은 환불 우선순위 라디오가 서고 바꾸면 그 값으로 미리보기를 다시 부른다 (#599 후속 P3-③)', async ({ page }) => {
-    await mockClaimable(page, [CANCEL_ITEM], { resolved_type: 'cancel' });
+    await mockClaimable(page, [CANCEL_ITEM], { resolved_type: 'auto' });
     const calls = await mockPreview(page, (body) => previewWithComparison({}, {
       original_snapshot: { ...(previewWithComparison().adjustment as any).original_snapshot, total_points_used_amount: 5000 },
       refund_priority: body.refund_priority ?? 'pg_first',

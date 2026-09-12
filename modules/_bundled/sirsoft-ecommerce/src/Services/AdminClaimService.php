@@ -126,6 +126,84 @@ class AdminClaimService
     }
 
     /**
+     * 현재 탭의 뱃지만 목록과 **완전히 같은 필터**로 다시 셉니다. (F13)
+     *
+     * 뱃지의 원 의미는 "그 탭으로 가면 몇 건인가" 이고(`ClaimListRequest::countFilters()` 에
+     * 명시 결정돼 있다), 그래서 상태·귀책·청구·사유처럼 **유형 종속 어휘**인 필터는 다른 탭의
+     * 건수에 걸지 않는다 — 걸면 그 탭 건수가 언제나 0 이 된다.
+     *
+     * 그러나 **지금 보고 있는 탭**에서는 그 규칙이 오해를 만든다. 운영자가 상태를 좁히면
+     * 목록은 3건인데 뱃지는 17건으로 남아, 어느 쪽이 맞는지 화면만 보고는 알 수 없다.
+     * 그래서 현재 탭만 목록과 같은 필터로 센다 — 의미도 지키고 오해도 없앤다.
+     *
+     * @param  array<string, int>  $counts  `counts()` 결과
+     * @param  ClaimTypeEnum  $currentType  현재 탭의 유형
+     * @param  array<string, mixed>  $filters  목록과 같은 전체 필터
+     * @return array<string, int> 현재 탭 건수가 보정된 결과
+     */
+    public function refreshCurrentTypeCount(array $counts, ClaimTypeEnum $currentType, array $filters = []): array
+    {
+        $repository = match ($currentType) {
+            ClaimTypeEnum::EXCHANGE => $this->exchangeRepository,
+            ClaimTypeEnum::RETURN => $this->returnRepository,
+            ClaimTypeEnum::REFUND => $this->refundRepository,
+            ClaimTypeEnum::CANCEL => $this->cancelRepository,
+        };
+
+        $counts[$currentType->value] = $repository->countForAdmin($filters);
+
+        return $counts;
+    }
+
+    /**
+     * 상세의 신청서 단위 전이 바가 제공할 선택지를 만듭니다. (#599 후속 F1)
+     *
+     * 두 축의 **교집합**이다 — ⓐ 운영자가 직접 지정할 수 있는 상태(`adminAssignableValues()`)와
+     * ⓑ 지금 상태에서 갈 수 있는 상태(`allowedTransitions()`). ⓐ 만 보면 이미 승인된 건에
+     * "승인" 이 남아 눌러도 422 가 되고, ⓑ 만 보면 완료·처리중처럼 **돈이 움직여야 도달하는**
+     * 상태가 목록에 서서 돈 없이 완료를 찍을 수 있게 된다.
+     *
+     * 취소신청서는 전이 축이 없다(생성이 곧 확정이다) — 빈 배열을 돌려주어 화면이 바 자체를
+     * 그리지 않게 한다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return array<int, array{value: string, label: string}> 전이 선택지
+     */
+    public function transitionOptionsFor(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): array
+    {
+        if ($claim instanceof OrderCancel) {
+            return [];
+        }
+
+        $current = match (true) {
+            $claim instanceof OrderExchange => $claim->exchange_status,
+            $claim instanceof OrderReturn => $claim->return_status,
+            default => $claim->refund_status,
+        };
+
+        if (! $current instanceof \BackedEnum || ! method_exists($current, 'allowedTransitions')) {
+            return [];
+        }
+
+        $enumClass = $current::class;
+        $assignable = $enumClass::adminAssignableValues();
+        $options = [];
+
+        foreach ($current->allowedTransitions() as $target) {
+            if (! in_array($target->value, $assignable, true)) {
+                continue;
+            }
+
+            $options[] = [
+                'value' => $target->value,
+                'label' => $target->label(),
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
      * 완료 처리 모달의 초기 선택값을 반환합니다. (D26 — `claim.complete_defaults`)
      *
      * 목록 응답이 이 값을 나른다. 설정 엔드포인트(`admin/settings`)는 `settings.read` 게이트인데

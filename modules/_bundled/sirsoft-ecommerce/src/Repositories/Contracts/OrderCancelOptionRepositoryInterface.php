@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
 
 /**
@@ -30,4 +31,15 @@ interface OrderCancelOptionRepositoryInterface
      * @return int 갱신된 행 수
      */
     public function bulkUpdateStatus(int $cancelId, string $status, ?int $processedBy = null, ?Carbon $completedAt = null): int;
+
+    /**
+     * 취소신청서에 속한 상세 행을 모두 조회합니다.
+     *
+     * 상품 단위 전이 활동로그(D16)가 "무엇이 무엇으로 바뀌었는가" 를 적으려면 일괄 갱신
+     * **전** 상태를 읽어야 한다 — 갱신 뒤에 읽으면 전·후가 같은 값으로 남는다.
+     *
+     * @param  int  $cancelId  취소신청서 ID
+     * @return Collection<int, OrderCancelOption> 상세 행 목록
+     */
+    public function listByCancelId(int $cancelId): Collection;
 }

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
 
@@ -49,5 +50,15 @@ class OrderCancelOptionRepository implements OrderCancelOptionRepositoryInterfac
         return $this->model->newQuery()
             ->where('order_cancel_id', $cancelId)
             ->update($updates);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listByCancelId(int $cancelId): Collection
+    {
+        return $this->model->newQuery()
+            ->where('order_cancel_id', $cancelId)
+            ->get();
     }
 }

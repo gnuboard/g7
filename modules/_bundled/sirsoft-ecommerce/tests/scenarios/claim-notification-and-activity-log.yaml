@@ -120,12 +120,23 @@ effects:
   - payment_completion_hook_sees_the_claim_already_moved_to_paid
   - partial_payment_does_not_fire_the_completion_hook
 
+
+  # ── #599 후속 §7-1 — 전이 활동로그 전수 (D16) ───────────────────────────
+  - every_claim_status_enum_exposes_a_label_key    # 라벨 키가 없으면 로그 잡이 죽고 그 전이만 사라진다
+  - cancel_axis_activity_log_labels_exist          # 취소 축 라벨 3종 (R8 — 훅만 붙이면 문구가 빈다)
+  - auto_advance_logs_every_refund_transition      # 자동 전이가 단계마다 남는다
+  - refund_option_status_transition_is_logged      # 환불 신청상품 축 (C5·C6)
+  - cancel_axis_fires_request_status_and_option_hooks  # 취소 축 3종 (B3·B4·C7·C8)
+  - order_status_sync_logs_the_item_transitions_it_drags  # 주문 상태 동기화가 끌고 간 상품 전이 (A1~A5)
+  - order_cancel_is_registered_in_the_claim_morph_map     # 취소 상세의 활동로그 탭이 비지 않는다 (F9)
+  - auto_advance_sends_one_notification_but_logs_every_step  # 알림은 묶고 로그는 쪼갠다 (§4-2)
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Notifications/ClaimNotificationDefinitionsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/ClaimStatusNotificationTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ClaimNotificationDataListenerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ClaimActivityLogListenerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimActivityLogTest.php
 
 validation:
   audit_rule: test-scenario-coverage

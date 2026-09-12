@@ -143,9 +143,19 @@ interface OrderReturnRepositoryInterface
      * `paginateForOrder()` 와 같은 기준 쿼리를 세므로 유형 고유 스코프가 목록과 같은 근거로 걸린다.
      *
      * @param  int  $orderId  주문 ID
+     * @param  array<string, mixed>  $filters  목록과 같은 필터 (status / from / to)
      * @return int 건수
      */
-    public function countForOrder(int $orderId): int;
+    public function countForOrder(int $orderId, array $filters = []): int;
+
+    /**
+     * 이 회원이 접수한 반품 건수를 셉니다. (신청내역 서브탭 뱃지 — F12)
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array<string, mixed>  $filters  목록과 같은 필터 (status / from / to)
+     * @return int 건수
+     */
+    public function countForUser(int $userId, array $filters = []): int;
 
     /**
      * 관리자 목록을 페이지네이션 조회합니다. (최신순, 전 회원·비회원 대상)

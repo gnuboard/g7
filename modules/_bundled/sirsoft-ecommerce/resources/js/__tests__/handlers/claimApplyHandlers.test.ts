@@ -54,6 +54,7 @@ import {
     isUserFixableClaimError,
     orderShippingAddressAsRedelivery,
     resolveClaimApplyRoute,
+    resolveClaimSuccessPath,
     setClaimChargeMethodHandler,
     setClaimPaymentMethodHandler,
     setClaimReasonHandler,
@@ -1138,14 +1139,14 @@ describe('claimApplyHandlers', () => {
                             available_quantity: 1,
                             locked_quantity: 0,
                             claimable_types: ['refund'],
-                            refund_branch: 'cancel',
+                            refund_branch: 'auto',
                         },
                         {
                             option: { id: 411, product_name: '환불신청 상품', unit_price: 20000, unit_price_formatted: '20,000원' },
                             available_quantity: 1,
                             locked_quantity: 0,
                             claimable_types: ['refund'],
-                            refund_branch: 'refund',
+                            refund_branch: 'request',
                         },
                     ],
                     reasons: { refund: [{ code: 'changed_mind', localized_name: '단순 변심', fault_type: 'customer' }] },
@@ -1174,7 +1175,7 @@ describe('claimApplyHandlers', () => {
         );
 
         expect(mockLocalState.claimItems[0].selected).toBe(true);
-        expect(mockLocalState.claimResolvedBranch).toBe('cancel');
+        expect(mockLocalState.claimResolvedBranch).toBe('auto');
 
         // 다른 분기의 상품 — 잠겨 있어야 한다.
         expect(canSelectClaimItem(mockLocalState.claimItems, 1, 'refund')).toBe(false);
@@ -1187,7 +1188,7 @@ describe('claimApplyHandlers', () => {
         expect(mockLocalState.claimItems[1].selected).toBe(false);
         expect(mockG7Core.toast.warning).toHaveBeenCalled();
         // 분기 판정도 그대로다 — 거절된 선택이 라벨을 흔들면 안 된다.
-        expect(mockLocalState.claimResolvedBranch).toBe('cancel');
+        expect(mockLocalState.claimResolvedBranch).toBe('auto');
     });
 
     it('취소·환불 — 이미 고른 상품은 언제나 해제할 수 있다 (잘못 고른 조합에서 빠져나올 길)', () => {
@@ -1214,7 +1215,7 @@ describe('claimApplyHandlers', () => {
 
         expect(mockLocalState.claimItems[0].selected).toBe(true);
         expect(mockLocalState.claimItems[1].selected).toBe(false);
-        expect(resolveSelectedRefundBranch(mockLocalState.claimItems)).toBe('cancel');
+        expect(resolveSelectedRefundBranch(mockLocalState.claimItems)).toBe('auto');
         // 전건이 선택되지 않았으므로 '전체 선택' 체크도 켜지지 않는다 — 켜면 화면이 거짓말을 한다.
         expect(mockLocalState.claimSelectAll).toBe(false);
     });
@@ -1431,7 +1432,7 @@ describe('claimApplyHandlers', () => {
     /**
      * 비교 섹션의 기본 펼침 — PC 펼침 · 모바일 접힘 (P6). `_global.isPortable` 이 아니라 ResponsiveManager 를 읽는다.
      *
-     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      * @effects claim_apply_comparison_default_open_follows_breakpoint
      */
     it('비교 섹션 — 초기 펼침값은 portable 이면 접힘, 아니면 펼침이다', () => {
@@ -1453,7 +1454,7 @@ describe('claimApplyHandlers', () => {
     /**
      * 우선순위는 서버 재계산의 입력이다 — 바꾸면 미리보기를 다시 부르고 페이로드에 그 값이 실린다.
      *
-     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      * @effects claim_apply_refund_priority_reestimates
      */
     it('비교 섹션 — 환불 우선순위를 바꾸면 미리보기를 다시 부른다 (페이로드 refund_priority)', async () => {
@@ -1488,7 +1489,7 @@ describe('claimApplyHandlers', () => {
     });
 
     /**
-     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      * @effects claim_apply_comparison_default_open_follows_breakpoint
      */
     it('비교 섹션 — 토글은 열림 상태를 반전한다', () => {
@@ -1504,7 +1505,7 @@ describe('claimApplyHandlers', () => {
     /**
      * 환불 불가 조합은 버튼 잠금과 별개로 제출 진입에서도 막는다 — 서버가 어차피 거절할 요청을 보내지 않는다.
      *
-     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      * @effects claim_apply_cancel_blocked_locks_submit_inline
      */
     it('제출 — 미리보기가 환불 불가(cancel_blocked)면 요청을 보내지 않고 사유를 알린다', async () => {
@@ -1521,5 +1522,88 @@ describe('claimApplyHandlers', () => {
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
         expect(mockG7Core.toast.warning).toHaveBeenCalledWith('취소 후 결제금액이 늘어나 취소할 수 없습니다.');
         expect(mockLocalState.isSubmittingClaim).not.toBe(true);
+    });
+});
+
+/**
+ * F8 — 접수 후 이동 주소는 **서버가 실어 준 신청번호**로 만든다.
+ *
+ * 예전에는 클라이언트가 주문 전체 기준으로 추측한 주소를 썼고, 혼재 주문에서는 접수한 탭과
+ * 어긋나 "접수는 됐는데 간 화면에는 아무것도 없다" 가 나왔다. 목록으로 보내는 것도 같은 문제의
+ * 절반만 푼다 — 구매자가 방금 낸 신청서를 스스로 찾아야 한다.
+ *
+ * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+ *
+ * @effects claim_apply_navigates_to_the_created_claim_detail
+ */
+describe('resolveClaimSuccessPath — 접수 후 이동 (F8)', () => {
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     * @effects claim_apply_navigates_to_the_created_claim_detail
+     */
+    it('신청번호가 오면 그 신청서 상세로 간다', () => {
+        const path = resolveClaimSuccessPath(
+            '/mypage/claims?type=exchange',
+            { branch: 'auto', claim: { claim_type: 'refund', claim_number: 'RF20260912001' } },
+            '/mypage/claims'
+        );
+
+        expect(path).toBe('/mypage/claims/RF20260912001');
+    });
+
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     * @effects claim_apply_navigates_to_the_created_claim_detail
+     */
+    it('상세 주소 앞부분의 끝 슬래시를 중복으로 붙이지 않는다', () => {
+        const path = resolveClaimSuccessPath(
+            '/mypage/claims?type=exchange',
+            { claim: { claim_number: 'RF1' } },
+            '/mypage/claims/'
+        );
+
+        expect(path).toBe('/mypage/claims/RF1');
+    });
+
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     * @effects claim_apply_navigates_to_the_created_claim_detail
+     */
+    it('비회원도 자기 셸이 준 상세 주소로 간다', () => {
+        const path = resolveClaimSuccessPath(
+            '/shop/guest/orders/20260912-1/?type=refund',
+            { claim: { claim_type: 'refund', claim_number: 'RF2' } },
+            '/shop/guest/claims'
+        );
+
+        expect(path).toBe('/shop/guest/claims/RF2');
+    });
+
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     * @effects claim_apply_falls_back_to_the_type_tab_without_a_claim_number
+     */
+    it('신청번호가 없으면 유형 탭을 맞춘 목록으로 간다 (대비책)', () => {
+        const path = resolveClaimSuccessPath(
+            '/mypage/claims?type=exchange',
+            { claim: { claim_type: 'refund' } },
+            '/mypage/claims'
+        );
+
+        expect(path).toBe('/mypage/claims?type=refund');
+    });
+
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     * @effects claim_apply_falls_back_to_the_type_tab_without_a_claim_number
+     */
+    it('상세 주소 앞부분을 받지 못하면 기존 목록 동작을 유지한다', () => {
+        const path = resolveClaimSuccessPath(
+            '/mypage/claims?type=exchange',
+            { claim: { claim_type: 'refund', claim_number: 'RF3' } },
+            undefined
+        );
+
+        expect(path).toBe('/mypage/claims?type=refund');
     });
 });

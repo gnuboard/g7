@@ -387,6 +387,17 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
         $payment = $this->createExtensionPaymentOrder();
         $order = $payment->order->load('payment');
 
+        // PG 환불에 응답할 구독자를 세운다.
+        //
+        // `determineRefundMethod()` 는 `payment.refund` 훅에 구독자가 하나도 없으면 결제수단과
+        // 무관하게 계좌 환불로 떨어뜨린다(P14 — 결제 플러그인을 지운 뒤에도 취소는 가능해야
+        // 하므로). 이 테스트가 붙드는 계약은 **확장 결제수단의 수단 매핑**이지 플러그인 설치
+        // 여부가 아니므로, 그 폴백이 판정을 가리지 않도록 구독자를 등록하고 본다.
+        HookManager::addFilter(
+            'sirsoft-ecommerce.payment.refund',
+            static fn (array $result): array => $result,
+        );
+
         $service = app(OrderCancellationService::class);
 
         $method = new \ReflectionMethod($service, 'determineRefundMethod');

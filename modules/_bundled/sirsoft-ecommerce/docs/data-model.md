@@ -31,7 +31,7 @@
 | `OrderExchangeOption` | `ecommerce_order_exchange_options` | 17 | orderExchange→OrderExchange, order→Order, orderOption→OrderOption, newProductOption→ProductOption, newOrderOption→OrderOption, processedByUser→User | - |
 | `OrderOption` | `ecommerce_order_options` | 57 | order→Order, parentOption→self, childOptions→self, splitOptions→self, product→Product, productOption→ProductOption, 외 4개 | - |
 | `OrderPayment` | `ecommerce_order_payments` | 58 | order→Order, taxInvoices→OrderTaxInvoice, cashReceipts→OrderCashReceipt | - |
-| `OrderRefund` | `ecommerce_order_refunds` | 35 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
+| `OrderRefund` | `ecommerce_order_refunds` | 36 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
 | `OrderRefundOption` | `ecommerce_order_refund_options` | 12 | orderRefund→OrderRefund, order→Order, orderOption→OrderOption, processedByUser→User | - |
 | `OrderReturn` | `ecommerce_order_returns` | 35 | order→Order, returnOptions→OrderReturnOption, images→ClaimImage, claimPayments→ClaimPayment, collectionCarrier→ShippingCarrier, refund→OrderRefund, 외 2개 | - |
 | `OrderReturnOption` | `ecommerce_order_return_options` | 11 | orderReturn→OrderReturn, order→Order, orderOption→OrderOption, processedByUser→User | - |
@@ -70,10 +70,52 @@
 |---|---|---|
 | 카탈로그 | `Product` · `ProductOption` · `ProductAdditionalOption(Value)` · `ProductImage` · `Category` · `CategoryImage` · `Brand` · `ProductLabel(Assignment)` · `ProductCommonInfo` · `ProductNotice(Template)` | 판매 단위는 `Product` 가 아니라 **`ProductOption`** 입니다. 재고·가격·주문 연결이 전부 옵션에 걸립니다 |
 | 주문 | `Order` · `OrderOption` · `OrderAddress` · `OrderPayment` · `OrderShipping` · `OrderCashReceipt` · `OrderTaxInvoice` | `Order` fillable 65 · `OrderOption` 57 · `OrderPayment` 58 — 이 셋이 큰 이유는 **주문 시점의 값을 전부 스냅샷으로 복사**하기 때문입니다. 상품명·가격·배송정책·통화 정보가 원본을 참조하지 않고 복제됩니다 |
-| 취소·환불 | `OrderCancel(Option)` · `OrderRefund(Option)` · `ClaimReason` | 단위가 주문이 아니라 **옵션**입니다. `*Option` 쪽이 실제 처리 단위이고 상위는 묶음입니다 |
+| 취소·환불 | `OrderCancel(Option)` · `OrderRefund(Option)` · `ClaimReason` | 단위가 주문이 아니라 **옵션**입니다. `*Option` 쪽이 실제 처리 단위이고 상위는 묶음입니다. 두 신청서는 같은 사건의 두 사본이 아니라 **다른 사실**을 기록합니다 — `OrderRefund` 는 환불의 경과, `OrderCancel` 은 그 환불로 주문에서 금액이 빠진 사실입니다 |
 | 클레임 | `OrderExchange(Option)` · `OrderReturn(Option)` · `ClaimPayment` · `ClaimImage` · `ShippingPolicyClaimAddress` | 교환·반품은 유형별 신청서이고 환불신청서는 `OrderRefund` 를 그대로 씁니다(출처는 `refund_source_type/id`). `ClaimPayment`(추가결제 · `CP` 채번)와 `ClaimImage`(첨부)만 polymorphic 으로 세 유형을 함께 받습니다 |
 | 프로모션·적립 | `Coupon` · `CouponIssue` · `MileageTransaction` · `MileageBalance` | `MileageTransaction` 이 원장(SSoT), `MileageBalance` 는 단방향 파생 캐시입니다 |
 | 배송·회원·기타 | `ShippingPolicy(CountrySetting)` · `ShippingCarrier` · `ShippingType` · `ExtraFeeTemplate` · `UserAddress` · `Cart` · `TempOrder` · `ProductWishlist` · `ProductReview(Image)` · `ProductInquiry` · `SearchPreset` · `Sequence(Code)` · `EcommerceStat` · `EcommerceUserProfile` | `TempOrder` 는 결제창 왕복 동안만 사는 임시 저장소이며 스케줄이 정리합니다 |
+
+### 취소신청서(`ecommerce_order_cancels`)가 만들어지는 시점
+
+`OrderCancel` 은 **환불이 집행되는 순간** 생깁니다. "주문이 취소됐다" 가 아니라 **"환불이
+집행되어 주문에서 금액이 빠졌다"** 를 기록하는 문서이기 때문입니다. 만드는 지점은
+`OrderCancellationService::recordCancellation()` 하나이며, 그 메서드가 주문 장부 확정
+(합계 재계산 · 누적 컬럼 · 상품 상태 전이 · 결제행 정리)까지 함께 맡습니다.
+
+| 출처 | 상품 상태 | 취소신청서 |
+|---|---|---|
+| 취소·환불 신청 · 관리자 주문취소 | `cancelled` 로 전이 | 환불완료 시 생성 |
+| 반품 | `returned` 유지 | 환불완료 시 생성 |
+| 교환(차액 환불) | `exchanged` 유지 | 환불완료 시 생성 |
+| 미결제·0원 취소 | `cancelled` 로 전이 | 즉시 생성 (환불신청서 없음) |
+
+따라오는 성질이 몇 가지 있습니다.
+
+- **계좌 환불은 승인에서 멈추므로 그때는 취소신청서도 없습니다.** 운영자가 송금을 마치고
+  [환불하기]를 눌러야 생깁니다 — 그 전에 만들면 장부는 "돈이 빠졌다" 고 말하는데 실제로는
+  아직 아무것도 나가지 않은 상태가 됩니다.
+- **환불이 반려·철회로 끝나면 취소신청서는 만들어지지 않습니다.** 상품은 선점만 풀립니다.
+- **부분 환불이 여러 번이면 취소신청서도 여러 건**이고 `cancellation_count` 가 그만큼 늡니다.
+- 취소신청서 번호(`CN…`)의 날짜는 신청일이 아니라 **환불완료일**입니다 — 모델의 당연한
+  결과이며 결함이 아닙니다.
+- 취소 문서도 `requested → completed` 로 **전이**합니다. 최종 상태를 바로 기록하면 활동
+  로그가 한 줄만 남아 이 취소가 어떤 경로로 확정됐는지 되짚을 수 없습니다.
+
+### 환불신청서의 출처(`refund_source_type`)
+
+| 값 | 뜻 | 수량 선점 | 구매자 수정·철회 |
+|---|---|---|---|
+| `direct` | 고객이 낸 취소·환불 신청 | O | O |
+| `admin` | 운영자가 대리 접수 | O | **X** |
+| `return` · `exchange` | 반품·교환 완료가 만든 환불 | X | X |
+| `cancel` | 구형 취소 파이프라인이 만든 환불 | X | X |
+
+`admin` 이 따로 있는 이유는 `requested_by` 로 가릴 수 없기 때문입니다 — 비회원 신청도 그
+값이 `null` 이라 "운영자 생성" 과 구분되지 않습니다. 두 값을 합쳐 두면 **고객이 운영자의 취소
+조치를 철회**할 수 있습니다.
+
+`cancel` 은 구형 행 해석용으로만 남습니다. 새 행은 `direct`/`admin` 으로 생기며, 출처와
+무관하게 구매자·운영자 양쪽의 환불 목록에 표시됩니다.
 
 `HasDirectAssetUrl` 은 모델이 아니라 **규약(trait)** 입니다 — 이미지 계열 모델이 저장소 종류에
 관계없이 같은 방식으로 자산 URL 을 내도록 묶습니다. 표에 모델처럼 잡힌 것은 수집기가 클래스
@@ -187,7 +229,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 114개.
+마이그레이션 116개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -305,6 +347,8 @@
 | `2026_08_30_000001_widen_order_shipping_type_column.php` | - | - | ✅ |
 | `2026_08_31_000001_add_refund_bank_to_claim_tables.php` | - | - | ✅ |
 | `2026_09_11_000001_add_calculation_snapshots_to_claim_tables.php` | - | - | ✅ |
+| `2026_09_11_000002_add_rejected_at_to_ecommerce_order_refunds_table.php` | - | - | ✅ |
+| `2026_09_12_000001_ensure_operator_claim_reason_codes_exist.php` | - | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -379,7 +423,7 @@
 | `RefundMethodEnum` | `string` | 3 | `pg`, `bank`, `points` |
 | `RefundOptionStatusEnum` | `string` | 7 | `requested`, `approved`, `processing`, `on_hold`, `completed`, `rejected`, `withdrawn` |
 | `RefundPriorityEnum` | `string` | 2 | `pg_first`, `points_first` |
-| `RefundSourceTypeEnum` | `string` | 4 | `cancel`, `return`, `exchange`, `direct` |
+| `RefundSourceTypeEnum` | `string` | 5 | `cancel`, `return`, `exchange`, `direct`, `admin` |
 | `RefundStatusEnum` | `string` | 7 | `requested`, `approved`, `processing`, `on_hold`, `completed`, `rejected`, `withdrawn` |
 | `ReturnStatusEnum` | `string` | 11 | `requested`, `payment_pending`, `paid`, `approved`, `on_hold`, `rejected`, `collection_ready`, `collecting`, `외 3개` |
 | `ReviewStatus` | `string` | 2 | `visible`, `hidden` |

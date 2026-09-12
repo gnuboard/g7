@@ -162,7 +162,7 @@ https://your-domain.com/plugins/sirsoft-pay_nicepayments/payment/vbank-notify
 ## 사용 방법
 
 <!-- @intent START -->
-**결제 취소/부분취소**: 관리자가 주문 취소를 요청(`cancel_pg=true`)하면 코어가
+**결제 취소/부분취소**: 관리자가 주문 취소를 요청하면 코어가 **환불신청서**를 만들고, 그 환불이 집행되는 시점에
 `sirsoft-ecommerce.payment.refund` 필터 훅을 발화하고, `PaymentRefundListener`가
 나이스페이먼츠 취소 API를 호출합니다(전액취소 `isPartial=0`/부분취소 `isPartial=1`).
 배송비가 포함된 주문은 전체취소 시 배송비도 함께 환불 레코드에 반영되고, 쿠폰이 적용된

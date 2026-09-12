@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -13,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 
 /**
@@ -120,6 +122,25 @@ class ClaimResource extends BaseApiResource
     }
 
     /**
+     * 구매자가 이 신청서를 수정·철회할 수 있는 **출처**인지 판정합니다. (F3)
+     *
+     * 서버 게이트(`OrderRefundRequestService::withdraw()`·`updateRequest()`)와 같은 축을 쓴다 —
+     * 화면만 열려 있으면 버튼이 뜨고 누르면 언제나 422 이고, 그것은 오류로 보고되지도 않는다.
+     * 환불 유형에만 출처 축이 있다(교환·반품은 구매자가 직접 낸 신청서뿐이다).
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return bool 구매자 조작 가능하면 true
+     */
+    protected function buyerMayEdit(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): bool
+    {
+        if (! $claim instanceof OrderRefund) {
+            return true;
+        }
+
+        return (bool) $claim->refund_source_type?->isBuyerEditable();
+    }
+
+    /**
      * 사유 라벨을 해석합니다. (주입 우선 → 없으면 모델 게터)
      *
      * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
@@ -190,9 +211,12 @@ class ClaimResource extends BaseApiResource
             // 상태를 상징하는 아이콘 — 뱃지와 진행단계 스텝퍼가 같은 값을 읽는다 (Enum `icon()` 단일 출처).
             'status_icon' => $status instanceof \BackedEnum && method_exists($status, 'icon') ? $status->icon() : null,
             'is_final' => method_exists($claim, 'isFinal') ? $claim->isFinal() : true,
-            'is_withdrawable' => method_exists($claim, 'isWithdrawable') ? $claim->isWithdrawable() : false,
+            // 출처 축을 함께 본다(F3). 상태만 보면 반품·교환 발 환불신청서와 운영자 대리 접수
+            // 건에도 [수정]/[철회] 버튼이 뜨고, 서버는 `source_type` 으로 거절하므로 **누르면
+            // 언제나 422** 다. 버튼은 서 있는데 언제나 실패하는 경로라 오류로 보이지도 않는다.
+            'is_withdrawable' => $this->buyerMayEdit($claim) && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable(),
             // 수정 가능 경계 = 철회 경계 (D13 — 승인 전)
-            'is_editable' => $type !== ClaimTypeEnum::CANCEL && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable(),
+            'is_editable' => $type !== ClaimTypeEnum::CANCEL && $this->buyerMayEdit($claim) && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable(),
             'reason_code' => $claim->reason_code ?? $claim->cancel_reason_type ?? null,
             'reason_label' => $this->resolveReasonLabel($claim, $type),
             'reason_detail' => $this->forList ? null : ($claim->reason_detail ?? $claim->cancel_reason ?? null),
@@ -282,6 +306,13 @@ class ClaimResource extends BaseApiResource
                 'refund_source_type' => $claim->refund_source_type?->value,
                 'refund_method' => $claim->refund_method?->value,
                 'refund_method_label' => $claim->refund_method?->label(),
+                // PG 플러그인이 사라져 계좌 환불로 떨어진 건인지 (P14).
+                //
+                // 폴백 자체는 운영을 살린다 — 리스너가 없는데 PG 경로로 들어가면 아무도 응답하지
+                // 않아 그 주문은 **영영 취소할 수 없다**. 그런데 화면에 보이는 것이 "계좌 환불" 뿐이면
+                // 운영자는 카드 결제 건에 왜 계좌 송금을 하라는지 알 수 없고, 근거는 애플리케이션
+                // 로그에만 남는다. 그 사실을 그 자리에서 말해 준다.
+                'refund_fell_back_to_manual' => $this->refundFellBackToManual($claim),
                 'refund_amount' => $this->roundToOrderCurrency((float) $claim->refund_amount, $currency),
                 'refund_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount, $currency),
                 'refund_points_amount' => $this->roundToOrderCurrency((float) $claim->refund_points_amount, $currency),
@@ -492,5 +523,32 @@ class ClaimResource extends BaseApiResource
         }
 
         return app(EcommerceSettingsService::class)->resolveBankName($bankCode);
+    }
+
+    /**
+     * 이 환불이 **PG 플러그인 부재로** 계좌 환불로 떨어진 건인지 판정합니다. (P14)
+     *
+     * 결제가 PG 결제창을 쓰는 수단인데 환불수단이 계좌라면, 그것은 운영자가 고른 것이 아니라
+     * 코어가 폴백시킨 것이다 — `payment.refund` 훅에 응답할 리스너가 하나도 없다는 뜻이다.
+     *
+     * 처음부터 계좌 환불인 수단(무통장)은 여기 걸리지 않는다. 그 경우 `needsPgProvider()` 가
+     * false 다.
+     *
+     * @param  OrderRefund  $claim  환불신청서
+     * @return bool 폴백으로 계좌 환불이 된 건이면 true
+     */
+    protected function refundFellBackToManual(OrderRefund $claim): bool
+    {
+        if ($claim->refund_method !== RefundMethodEnum::BANK) {
+            return false;
+        }
+
+        $payment = $claim->order?->payment;
+
+        if (! $payment || ! $payment->needsPgProvider()) {
+            return false;
+        }
+
+        return ! app(RefundExecutionService::class)->hasPgRefundListener($claim->order);
     }
 }

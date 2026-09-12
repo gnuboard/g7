@@ -277,14 +277,28 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(10000.0, (float) $refund->fresh()->order->total_refunded_amount);
     }
 
-    public function test_execute_rejects_a_cancel_sourced_refund(): void
+    /**
+     * 구형 취소 발 환불도 운영자가 **완료 처리할 수 있다**. (#599 후속 P1)
+     *
+     * 예전에는 출처가 `cancel` 이면 422 로 막았다. 그런데 그 행들은 `approved` 에서 멈춰 있고
+     * 완료로 옮길 API 가 저장소 어디에도 없어 **영구 정지**했다 — 운영자는 송금을 마쳐도
+     * 장부를 닫을 방법이 없었다. 막는 것이 아니라 열어 주는 것이 이 결함의 해다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_refund_execute_accepts_a_cancel_sourced_refund
+     */
+    public function test_execute_accepts_a_cancel_sourced_refund(): void
     {
+        $this->fakePgRefund();
         $order = $this->deliveredClaimOrder();
         $refund = $this->makeDirectRefund($order, $order->options->first(), 1, RefundStatusEnum::APPROVED, RefundSourceTypeEnum::CANCEL);
 
         $this->actingAs($this->admin)
             ->postJson($this->base()."/refunds/{$refund->id}/execute")
-            ->assertStatus(422);
+            ->assertStatus(200);
+
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->fresh()->refund_status);
     }
 
     public function test_execute_requires_an_approved_refund(): void

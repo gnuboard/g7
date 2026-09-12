@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Extension\HookManager;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
@@ -36,6 +37,18 @@ class OrderPaymentResource extends BaseApiResource
             // PG 환불(취소)이 필요한 결제수단인지 — 취소 모달의 'PG 함께 취소' 체크박스·'환불 우선순위' 라디오
             // 노출 여부 SSoT(무통장/포인트/예치금/무료는 false → 두 UI 숨김). U1·A28 공유 플래그.
             'requires_pg_cancellation' => $this->payment_method ? $this->needsPgProvider() : false,
+            // 이 결제가 **부분취소를 지원하는가** (P6).
+            //
+            // PG 마다 제약이 다르고, 어떤 조합은 원천적으로 전액취소만 된다 — 예: NICE 가상계좌는
+            // 코어 취소가 항상 거절되고 우회 API 는 전액취소 전용이다. 코어가 그 사실을 미리
+            // 말하지 않으면 운영자는 수량을 줄여 [취소]를 누르고 원인 없는 실패를 받는다.
+            // 판정은 PG 플러그인이 자기 제약을 아는 자리이므로 훅으로 위임한다 — 코어가 수단·PG
+            // 조합표를 들고 있으면 플러그인이 늘 때마다 그 표가 낡는다.
+            'supports_partial_cancel' => (bool) HookManager::applyFilters(
+                'sirsoft-ecommerce.payment.supports_partial_cancel',
+                true,
+                $this->resource,
+            ),
             'pg_provider' => $this->pg_provider,
             'transaction_id' => $this->transaction_id,
             'merchant_order_id' => $this->merchant_order_id,

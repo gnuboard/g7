@@ -72,6 +72,9 @@ effects:
   - claim_list_tab_switch_does_not_inherit_the_previous_page
   - claim_list_page_and_detail_round_trip_keeps_the_list_state
   - claim_list_empty_state_and_pagination
+  # 서브탭 건수 뱃지 (F12) — 서버가 `counts` 를 내고 화면이 그것만 그린다.
+  - claim_list_subtab_badges_render_server_counts
+  - claim_list_subtab_badges_absent_without_counts
   - claim_list_pagination_survives_a_truncated_total
   # 목록 — 유형별 금액 열 (②)
   - claim_list_amount_column_branches_by_type
@@ -104,6 +107,10 @@ effects:
   - claim_edit_seeds_items_from_the_claim
   - claim_edit_preview_excludes_its_own_lock
   - claim_edit_charge_delta_notice_only_when_nonzero
+  # 수정 화면의 환불계좌 (§6-3 — 무통장 원결제)
+  - claim_edit_saves_the_refund_account                # 구매자가 고친 계좌가 신청서에 남는다
+  - claim_edit_keeps_the_recorded_refund_account       # 보내지 않으면 기록된 계좌를 지우지 않는다
+  - claim_edit_rejects_a_partly_filled_refund_account  # 일부만 채운 계좌는 422 (송금 대상이 되지 못한다)
   - claim_edit_locks_items_and_quantity
   - claim_edit_hides_charge_axes_and_shows_the_recorded_method
   - claim_edit_replaces_submit_with_save

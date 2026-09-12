@@ -108,6 +108,17 @@
                   "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge"
+              },
+              {
+                "comment": "고객이 고를 수 없는 수단 — 코어에 결제 실행 경로가 없다(마일리지·예치금·무료). 토글이 잠긴 이유를 그 자리에서 말해 주지 않으면 운영자는 왜 켤 수 없는지 알 수 없다.",
+                "type": "basic",
+                "name": "Span",
+                "if": "{{$method.customer_selectable === false}}",
+                "props": {
+                  "data-testid": "internal-only-badge-{{$method.id}}",
+                  "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.internal_only_badge"
               }
             ]
           },
@@ -342,7 +353,8 @@
             "name": "Toggle",
             "props": {
               "value": "{{$method.is_active}}",
-              "disabled": "{{_computed.isReadOnly || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
+              "_comment_disabled": "고객이 고를 수 없는 수단(customer_selectable === false)은 토글을 잠근다 — 마일리지·예치금·무료는 코어에 결제 실행 경로가 없어 켜면 주문서에는 뜨는데 주문 생성이 422 로 거절된다(P8·P10). 잠그지 않으면 운영자는 '켰는데 왜 안 되지' 를 겪고 원인을 찾을 자리가 없다.",
+              "disabled": "{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
             },
             "actions": [
               {

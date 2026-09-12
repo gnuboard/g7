@@ -462,7 +462,7 @@
           "type": "basic",
           "name": "P",
           "props": { "className": "text-xs text-blue-700 dark:text-blue-300 min-w-0" },
-          "text": "{{(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}"
+          "text": "{{(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}"
         }
       ]
     },
@@ -793,8 +793,9 @@
           "params": {
             "claimApiBase": "{{_local.claimApiBase ?? ''}}",
             "isGuest": "{{_local.isGuest === true}}",
-            "_comment_success_path": "접수 뒤 돌아갈 곳 — 신청내역 목록. 방금 접수한 신청서가 그 목록에 서고, 거기서 상세·수정·철회로 이어진다. 유형 서브탭을 함께 실어 방금 낸 유형의 탭이 열리게 한다(유형마다 서버가 다른 테이블을 읽으므로 탭이 어긋나면 방금 낸 신청서가 보이지 않는다). 취소·환불은 두 분기가 같은 refund 탭에 서지 않는다 — 즉시취소로 갈린 건은 cancel 탭이므로 지금 고른 상품이 정한 분기를 따른다.",
-            "successPath": "{{(_local.claimListPath ?? '') + '?type=' + (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? 'cancel' : 'refund') : (_local.claimType ?? 'exchange'))}}"
+            "_comment_success_path": "접수 뒤 갈 곳 — **방금 만든 신청서 상세**다(F8). 서버가 응답에 신청번호를 실어 주므로 핸들러가 detailPathBase 와 이어 붙인다. 목록으로 보내면 구매자가 방금 낸 신청서를 스스로 찾아야 하고, 유형 탭이 어긋나면 아예 보이지 않는다. successPath 는 신청번호를 받지 못했을 때의 대비책이며, 그때는 유형 서브탭을 실은 목록으로 간다(유형마다 서버가 다른 테이블을 읽는다).",
+            "successPath": "{{(_local.claimListPath ?? '') + '?type=' + (_local.claimType ?? 'exchange')}}",
+            "detailPathBase": "{{_local.claimDetailPathBase ?? ''}}"
           }
         }
       ],
@@ -809,7 +810,7 @@
           "comment": "실행 버튼의 라벨은 **지금 결제창이 뜨는가**를 말한다. 서버의 `requires_payment` 는 `ClaimChargeMethodEnum::requiresPayment()` = '상계가 아니다' 라는 도메인 뜻이라 `신청 시 결제`와 `승인 후 결제`를 구분하지 않는다 — 그 값만 보면 승인 후 결제에서도 'N원 결제하기' 로 예고하는데 실제로는 접수만 되고 결제창이 뜨지 않는다(S17 트랙 A F-6). 결제 시점 축(`charge_method`)을 함께 본다. 결제 시점의 정본은 미리보기 응답의 `charge_method` 이고, 응답이 아직 없으면 사용자가 고른 값으로 떨어진다.",
           "type": "basic",
           "name": "Span",
-          "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : (_local.claimEstimate?.requires_payment === true && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) === 'pay_on_request' ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit')))}}"
+          "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : (_local.claimEstimate?.requires_payment === true && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) === 'pay_on_request' ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit')))}}"
         }
       ]
     },

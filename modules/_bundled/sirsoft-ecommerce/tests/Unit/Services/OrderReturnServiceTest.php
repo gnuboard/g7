@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
@@ -30,6 +31,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyClaimAddress;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimAdjustmentOrders;
@@ -893,19 +895,49 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
-     * @effects return_guest_request_has_no_requester
+     * 비회원 판정은 **주문의 주인**이 정한다 — 신청자 컬럼이 아니다.
+     *
+     * 종전 계약은 `requested_by === null` 이었다. 그런데 그 컬럼은 비회원 신청·운영자 대리 접수·
+     * 시스템 자동 취소가 **모두** null 이다 — 계획서 §4-3-1 이 권한 축에서 지적한 바로 그 모호성이
+     * 표시 축에 남아 있었다. 2026-09-12 실측에서 **회원(`user_id=3345`) 주문의 운영자 대리
+     * 환불신청서가 관리자 목록에 「비회원」으로 표시**됐고, 운영자는 그 고객에게 연락할 방법을
+     * 잘못 고르게 된다(회원 알림 대신 비회원 조회 안내).
+     *
+     * 그래서 두 방향을 함께 잠근다 — 주인이 없는 주문만 비회원이다.
+     *
+     * @effects return_guest_flag_reads_the_order_owner
      */
-    public function test_guest_request_has_no_requester(): void
+    public function test_guest_flag_reads_the_order_owner(): void
     {
-        $order = $this->deliveredOrder();
+        $memberOrder = $this->deliveredOrder();
 
-        $return = $this->service->requestReturn($order, [
-            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+        $this->assertNotNull($memberOrder->user_id, '이 픽스처는 회원 주문이라야 축이 성립한다');
+
+        $memberReturn = $this->service->requestReturn($memberOrder, [
+            'items' => [['order_option_id' => $memberOrder->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'changed_mind',
+            // 운영자 대리 접수는 신청자 컬럼이 비어 있다 — 비회원과 같은 모양이다.
+            'requested_by' => null,
+        ]);
+
+        $this->assertFalse(
+            $memberReturn->fresh('order')->isGuestRequest(),
+            '회원 주문의 신청을 비회원으로 표시하면 운영자가 연락 수단을 잘못 고른다',
+        );
+
+        $guestOrder = $this->deliveredOrder();
+        $guestOrder->forceFill(['user_id' => null])->save();
+
+        $guestReturn = $this->service->requestReturn($guestOrder->fresh(), [
+            'items' => [['order_option_id' => $guestOrder->options->first()->id, 'quantity' => 1]],
             'reason_code' => 'changed_mind',
             'requested_by' => null,
         ]);
 
-        $this->assertTrue($return->isGuestRequest());
+        $this->assertTrue(
+            $guestReturn->fresh('order')->isGuestRequest(),
+            '주인이 없는 주문은 비회원이다 — 이 방향까지 잠가야 판정이 한쪽으로 굳지 않는다',
+        );
     }
 
     // ================================================================
@@ -1495,6 +1527,51 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 완료 → 환불신청서 → 환불완료 → **취소신청서**. 상품 상태는 `returned` 를 유지한다 (D13).
+     *
+     * 반품도 환불 프로세스를 따르므로 환불이 집행되면 취소신청서가 생긴다 — 그것이 "주문에서
+     * 금액이 빠진 사실" 의 주문 단위 기록이기 때문이다. 그렇다고 상품까지 `cancelled` 로
+     * 뒤집으면 **반품 이력이 사라진다**: 고객이 물건을 돌려보낸 것과 주문을 취소한 것은 다른
+     * 사건이고, 반품 탭·통계·재고 판정이 모두 그 구분에 걸려 있다.
+     *
+     * 한 반품이 반품·환불·취소 세 탭에 서는 것이 정상이다(D14) — 문서 셋이 각각 다른 일을
+     * 기록한다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects return_refund_completion_records_a_cancellation
+     */
+    public function test_a_completed_return_records_a_cancellation_while_items_stay_returned(): void
+    {
+        $order = $this->deliveredOrder();
+        $return = $this->advanceTo(
+            $this->service->requestReturn($order, $this->payload($order)),
+            ReturnStatusEnum::COLLECTED
+        );
+
+        $this->service->completeReturn($return, [], $this->completionOptions($return, false, true));
+
+        $refund = OrderRefund::where('order_id', $order->id)->firstOrFail();
+        $this->assertSame(RefundSourceTypeEnum::RETURN, $refund->refund_source_type);
+
+        // 반품 발 환불은 접수에서 멈춘다 — 운영자가 승인하고 [환불하기]를 눌러야 집행된다.
+        $refundService = app(OrderRefundRequestService::class);
+        $refundService->transition($refund, RefundStatusEnum::APPROVED);
+        $refundService->executeRefund($refund->fresh(['refundOptions']));
+
+        $cancel = OrderCancel::where('order_id', $order->id)->first();
+        $this->assertNotNull($cancel, '환불이 집행됐으면 취소신청서가 생긴다 (D3·D13)');
+        $this->assertSame($cancel->id, $refund->fresh()->order_cancel_id);
+
+        // 상품은 반품완료로 남는다 — 취소로 뒤집히지 않는다.
+        $this->assertSame(
+            OrderStatusEnum::RETURNED,
+            $order->options->first()->fresh()->option_status,
+            '반품 상품이 취소로 뒤집히면 반품 이력이 사라진다 (D13)',
+        );
+    }
+
+    /**
      * 완료 시 반품 상품의 적립예정 마일리지를 회수한다 — 상품이 주문에서 빠졌으므로 그 적립도
      * 남으면 안 된다. (교환 축 `OrderExchangeServiceTest` 의 같은 이름 단언과 한 벌)
      *
@@ -1575,6 +1652,64 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
         $this->assertNotNull($completed->refund_id);
+    }
+
+    /**
+     * 반품 발 환불의 **신청상품 행 생성**도 상품 축 활동로그를 남긴다 (§7-1 C12).
+     *
+     * 헤더 훅만 쏘면 "환불신청서가 생겼다" 한 줄로 끝나고, 어느 상품이 얼마나 걸렸는지는 어떤
+     * 줄에도 남지 않는다. DoD 4 는 §7-1 표의 `✕ 없음` 행이 0 이어야 한다고 적었다.
+     * 새로 생기는 행이라 이전 값은 `null` 이다(교환 재발송 신규행과 같은 표기).
+     *
+     * 되돌리면 red — 생성 지점에서 상품 축 훅 발행을 빼면 수집된 배열이 빈다.
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=at_completion
+     *
+     * @effects return_refund_option_rows_announce_their_creation
+     */
+    public function test_complete_refund_announces_the_created_option_rows(): void
+    {
+        $announced = [];
+
+        HookManager::addAction(
+            'sirsoft-ecommerce.claim.refund.option_status_changed',
+            function ($refund, array $changes = []) use (&$announced) {
+                foreach ($changes as $change) {
+                    $announced[] = $change;
+                }
+            },
+        );
+
+        $order = $this->deliveredOrder();
+        $return = $this->advanceTo(
+            $this->service->requestReturn($order, $this->payload($order)),
+            ReturnStatusEnum::COLLECTED
+        );
+
+        $completed = $this->service->completeReturn(
+            $return,
+            [],
+            $this->completionOptions($return, false, true)
+        );
+
+        $this->assertNotEmpty(
+            $announced,
+            '반품 발 환불의 신청상품 행 생성이 상품 축 훅을 발행해야 활동로그가 상품 단위로 남는다',
+        );
+        $this->assertArrayHasKey(
+            'previous',
+            $announced[0],
+            '이전 값 키가 없으면 활동로그가 「무엇에서 무엇으로」를 그릴 수 없다',
+        );
+        $this->assertNull(
+            $announced[0]['previous'],
+            '새로 생기는 행이므로 이전 값은 null 이다',
+        );
+        $this->assertSame(
+            OrderRefundOption::where('order_refund_id', $completed->refund_id)->count(),
+            count($announced),
+            '생성된 신청상품 행 전건이 알려져야 한다 — 일부만 알리면 나머지는 로그에 없다',
+        );
     }
 
     public function test_complete_refund_records_return_as_its_source(): void

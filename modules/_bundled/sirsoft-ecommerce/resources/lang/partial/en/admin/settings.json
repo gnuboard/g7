@@ -162,6 +162,7 @@
       "is_active": "Active",
       "orphaned_badge": "Plugin Not Installed",
       "orphaned_pg_badge": "PG removed",
+      "internal_only_badge": "Not customer-selectable",
       "remove_orphaned": "Remove",
       "pg_provider": "PG Provider",
       "pg_use_default": "Default PG",
@@ -271,8 +272,8 @@
         "exchange_hint": "Only items in these statuses show the exchange request button and can be submitted.",
         "return_label": "Return requestable statuses",
         "return_hint": "Only items in these statuses show the return request button and can be submitted.",
-        "instant_cancel_label": "Instant cancel statuses",
-        "instant_cancel_hint": "Items in these statuses are cancelled immediately without creating a refund request.",
+        "instant_cancel_label": "Auto-advance statuses",
+        "instant_cancel_hint": "Items in these statuses still create a refund request, which is then advanced through approval and completion automatically. Bank-transfer refunds stop at approval and an operator completes them after sending the money.",
         "refund_request_label": "Refund request statuses",
         "refund_request_hint": "Items in these statuses are filed as a refund request and refunded after admin approval.",
         "request_period_days_label": "Request period",
@@ -296,7 +297,9 @@
         "after_payment_label": "Auto-approve after payment",
         "after_payment_hint": "Move the request to approved once the customer completes the additional payment.",
         "refund_request_label": "Auto-approve refund request",
-        "refund_request_hint": "Move filed refund requests to approved automatically. Executing the refund stays a separate step."
+        "refund_request_hint": "Move filed refund requests to approved automatically. Executing the refund stays a separate step.",
+        "refund_statuses_label": "Auto-approval target statuses",
+        "refund_statuses_hint": "When auto-approval is on, choose which item statuses are approved automatically. If any item on a request falls outside the list, an operator approves the whole request."
       },
       "attachment": {
         "title": "Attachments",

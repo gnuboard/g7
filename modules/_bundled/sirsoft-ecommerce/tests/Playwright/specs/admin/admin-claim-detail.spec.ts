@@ -447,6 +447,52 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
   });
 
   /**
+   * 상세에서 신청서 단위 전이를 할 수 있다 (#599 후속 F1).
+   *
+   * 예전에는 이 진입점이 통째로 없었다 — 승인·반려·보류는 **목록의 일괄 바**에서만 가능했고,
+   * 운영자는 상세를 열어 내용을 확인한 뒤 목록으로 되돌아가 그 줄을 다시 찾아야 했다. 환불
+   * 유형은 상세에 어떤 전이 컨트롤도 없어, [환불하기]가 요구하는 `approved` 에 도달할 방법이
+   * 그 화면에 없었다(F2 와 겹친 막다른 길).
+   *
+   * 선택지는 서버가 준다(지금 상태에서 갈 수 있고 운영자가 지정할 수 있는 상태의 교집합)
+   * — 화면이 어휘를 다시 적으면 그 사본이 두 번째 출처가 되므로, 여기서는 **바가 서는지와
+   * 선택지가 비어 있지 않은지**만 본다. 전이를 실제로 실행하지는 않는다(되돌리기 어렵다).
+   */
+  // @scenario claim_type=refund, claim_stage=in_progress
+  // @effects detail_status_transition_bar_is_available
+  test('상세에서 신청서 단위 전이 바가 선다 (F1)', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaim(request, claimsManageToken);
+    test.skip(
+      claim === null,
+      '클레임 신청서가 한 건도 없다 — `playwright:seed-ecommerce` 클레임 시드 선행',
+    );
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    const card = page.locator('#claim_status_transition_card');
+
+    // 종결된 신청서는 갈 곳이 없어 바가 서지 않는다 — 그것도 계약이다.
+    if ((await card.count()) === 0) {
+      return;
+    }
+
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#cts_001_status_select')).toBeVisible();
+    await expect(page.locator('#cts_003_apply')).toBeVisible();
+
+    // 선택지에 placeholder 말고 실제 상태가 하나라도 있어야 누를 것이 생긴다.
+    const optionCount = await page.locator('#cts_001_status_select option').count();
+    expect(optionCount, '전이 선택지가 placeholder 하나뿐이면 바가 있어도 할 수 있는 일이 없다')
+      .toBeGreaterThan(1);
+
+    // 문구가 키 그대로 나오면 언어팩이 빠진 것이다.
+    const cardText = await card.innerText();
+    expect(cardText).not.toContain('sirsoft-ecommerce.admin.claim.detail');
+  });
+
+  /**
    * 환불은 되돌릴 수 없는 처리라 [환불하기]가 곧바로 실행하지 않는다. 확인 모달이 예고하는
    * 값은 지금 입력된 값이어야 한다 — 모달은 부모 화면의 `_local` 을 해석하지 못하므로 여는
    * 핸들러가 전역 문맥으로 넘긴 값을 읽는다.

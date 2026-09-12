@@ -17,7 +17,10 @@
       "refund_execute": "返金実行"
     },
     "progress": {
-      "title": "進行段階"
+      "title": "進行段階",
+      "approved_at": "承認日時",
+      "rejected_at": "却下日時",
+      "withdrawn_at": "取下げ日時"
     },
     "items": {
       "title": "申請商品",
@@ -65,7 +68,12 @@
       "fault_type_label": "帰責",
       "reject_reason_label": "却下理由",
       "no_detail": "詳細な理由は入力されていません。",
-      "images_label": "添付画像"
+      "images_label": "添付画像",
+      "images_clear": "添付をすべて削除",
+      "image_upload_success": "添付をアップロードしました。",
+      "image_upload_error": "添付のアップロードに失敗しました。",
+      "image_clear_success": "添付を整理しました。",
+      "image_clear_error": "添付の整理に失敗しました。"
     },
     "cancel_info": {
       "title": "キャンセル情報",
@@ -142,7 +150,10 @@
       "refunded_at": "返金完了日",
       "fee_basis_no_policy": "配送ポリシーを解析できず、0円で処理しました。配送ポリシー設定を確認してください。",
       "fee_basis_api_fallback": "外部料金APIを使用している店舗のため、基本配送料で算出しました。",
-      "fee_basis_live_policy": "注文時点のスナップショットがないため、現在の料金表で算出しました — 料金表を変更するとこの金額も変わります。"
+      "fee_basis_live_policy": "注文時点のスナップショットがないため、現在の料金表で算出しました — 料金表を変更するとこの金額も変わります。",
+      "file_refund_request": "返金申請書の受付",
+      "file_refund_success": "返金申請書を受け付けました。",
+      "file_refund_error": "返金申請書の受付に失敗しました。"
     },
     "refund_execute": {
       "cancellable_title": "キャンセル可能金額の算定",
@@ -161,6 +172,7 @@
       "exceeds": "キャンセル可能金額を超えました。",
       "save": "金額を保存",
       "execute": "返金する",
+      "manual_transfer_notice": "この決済手段のPG連携が見つからないため、口座返金に切り替わりました。担当者が直接送金した後、[返金する]で完了を記録してください。PGプラグインを再インストールすると自動返金に戻ります。",
       "executed": "返金を実行しました。",
       "error": "返金を実行できませんでした。",
       "conflict": "既に実行されたか実行中です。更新後もう一度ご確認ください。",
@@ -203,6 +215,15 @@
       "row_earned_points": "付与予定ポイント",
       "row_substituted": "交換対象 (オプション変更)",
       "unit_count": "点"
+    },
+    "transition": {
+      "title": "申請書のステータス変更",
+      "reject_reason_placeholder": "却下理由を入力してください",
+      "no_status_selected": "変更するステータスを選択してください。",
+      "use_complete_modal": "完了処理は完了モーダルで行ってください。",
+      "reject_reason_required": "却下理由を入力してください。",
+      "success": "申請書のステータスを変更しました。",
+      "error": "申請書のステータス変更に失敗しました。"
     }
   },
   "subtab": {
@@ -366,6 +387,7 @@
     "submit": "{{count}}件を完了処理",
     "preview_error": "完了処理の要約を読み込めませんでした。",
     "success": "完了処理を反映しました。",
-    "error": "完了処理に失敗しました。"
+    "error": "完了処理に失敗しました。",
+    "refund_later_desc_cancellation": "返金申請書を作成しなければ、この完了ではお金が出ていかないため、キャンセル申請書も作成されません。あとから申請書詳細の精算カードで受け付けられます。"
   }
 }

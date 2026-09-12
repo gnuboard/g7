@@ -152,6 +152,7 @@
       "is_active": "使用有無",
       "orphaned_badge": "プラグイン未インストール",
       "orphaned_pg_badge": "指定PG削除済み",
+      "internal_only_badge": "顧客選択不可",
       "remove_orphaned": "削除",
       "pg_provider": "PG社",
       "pg_use_default": "デフォルトPG",
@@ -303,8 +304,8 @@
         "exchange_hint": "このステータスの商品のみ交換申請ボタンが表示され、申請が受け付けられます。",
         "return_label": "返品申請可能ステータス",
         "return_hint": "このステータスの商品のみ返品申請ボタンが表示され、申請が受け付けられます。",
-        "instant_cancel_label": "即時キャンセル可能ステータス",
-        "instant_cancel_hint": "このステータスの商品は返金申請書を作成せずにすぐにキャンセルされます。",
+        "instant_cancel_label": "自動遷移の対象ステータス",
+        "instant_cancel_hint": "このステータスの商品も返金申請書を作成し、承認・返金完了まで自動的に進めます。口座返金の手段は承認で止まり、運営者が送金後に完了します。",
         "refund_request_label": "返金申請可能ステータス",
         "refund_request_hint": "このステータスの商品は返金申請書で受け付けられ、管理者承認後に返金されます。",
         "request_period_days_label": "申請可能期間",
@@ -328,7 +329,9 @@
         "after_payment_label": "追加決済完了後自動承認",
         "after_payment_hint": "顧客が追加決済を完了すると、自動的に承認ステータスに移行します。",
         "refund_request_label": "返金申請自動承認",
-        "refund_request_hint": "受け付けられた返金申請書を自動的に承認ステータスに移行します。返金実行は別途です。"
+        "refund_request_hint": "受け付けられた返金申請書を自動的に承認ステータスに移行します。返金実行は別途です。",
+        "refund_statuses_label": "自動承認の対象ステータス",
+        "refund_statuses_hint": "自動承認がオンのとき、どの商品ステータスの申請書を自動で承認するかを選びます。申請書の商品が一つでも対象外なら全件を運営者が承認します。"
       },
       "attachment": {
         "title": "添付画像",

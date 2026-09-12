@@ -6,16 +6,21 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use Modules\Sirsoft\Ecommerce\Enums\CancelOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\BuildsEnumFieldChange;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\ResolvesClaimIdentity;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -90,15 +95,23 @@ class ClaimActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.claim.exchange.requested' => ['method' => 'handleExchangeRequested', 'priority' => 20],
             'sirsoft-ecommerce.claim.return.requested' => ['method' => 'handleReturnRequested', 'priority' => 20],
             'sirsoft-ecommerce.claim.refund.requested' => ['method' => 'handleRefundRequested', 'priority' => 20],
+            // 취소 축은 알림 리스너에 등록하지 않는다 — 환불 알림이 이미 그 사건을 대표하므로
+            // 등록하면 한 건에 알림이 두 번 간다.
+            'sirsoft-ecommerce.claim.cancel.requested' => ['method' => 'handleCancelRequested', 'priority' => 20],
 
             // ─── 상태 전이 (전 상태 전수) ───
             'sirsoft-ecommerce.claim.exchange.status_changed' => ['method' => 'handleStatusChanged', 'priority' => 20],
             'sirsoft-ecommerce.claim.return.status_changed' => ['method' => 'handleStatusChanged', 'priority' => 20],
             'sirsoft-ecommerce.claim.refund.status_changed' => ['method' => 'handleStatusChanged', 'priority' => 20],
+            'sirsoft-ecommerce.claim.cancel.status_changed' => ['method' => 'handleStatusChanged', 'priority' => 20],
 
             // ─── 상품 단위 전이 (D25 — 헤더가 따라 움직이지 않는 조합이 있다) ───
             'sirsoft-ecommerce.claim.exchange.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20],
             'sirsoft-ecommerce.claim.return.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20],
+            // 환불·취소 축의 상품 단위 전이 — 예전에는 발행·구독 양쪽에 모두 없어, 환불
+            // 신청상품이 반려·철회·완료로 옮겨 가도 어떤 줄도 남지 않았다(C5·C6·C7·C8).
+            'sirsoft-ecommerce.claim.refund.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20],
+            'sirsoft-ecommerce.claim.cancel.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20],
 
             // ─── 금액 수정 (AdminClaimService — D18) ───
             'sirsoft-ecommerce.claim.exchange.amounts_updated' => ['method' => 'handleAmountsUpdated', 'priority' => 20],
@@ -159,14 +172,30 @@ class ClaimActivityLogListener implements HookListenerInterface
     }
 
     /**
+     * 취소신청서 생성을 기록합니다. (#599 후속 §7-1 해결책 2 — B3)
+     *
+     * 취소신청서는 환불이 완료되는 순간에 생긴다(D3). 그래서 접수와 완료 사이에 사람이
+     * 개입할 틈은 없지만, **두 줄을 모두 남긴다** — 한 줄만 남기면 운영자는 이 취소가
+     * 어떤 경로로 확정됐는지(자동 전이인지 운영자 [환불하기]인지) 되짚을 수 없다.
+     *
+     * @param  OrderCancel  $cancel  생성된 취소신청서
+     * @param  Order|null  $order  주문 (훅 계약상 함께 넘어오지만 로그 본문에는 쓰지 않는다)
+     * @return void
+     */
+    public function handleCancelRequested(OrderCancel $cancel, ?Order $order = null): void
+    {
+        $this->logClaimRequested($cancel);
+    }
+
+    /**
      * 클레임 상태 전이를 기록합니다.
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  전이된 신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  전이된 신청서
      * @param  string|null  $previous  전이 전 상태 값
      * @param  string|null  $target  전이 시점에 캡처한 목표 상태 값
      */
     public function handleStatusChanged(
-        OrderExchange|OrderReturn|OrderRefund $claim,
+        OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim,
         ?string $previous = null,
         ?string $target = null,
     ): void {
@@ -198,13 +227,13 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 헤더가 따라 움직인 회차는 이 줄과 `status_changed` 줄이 함께 남으며, 그것은 이중
      * 기록이 아니라 "상품을 옮겼고 그래서 신청서도 옮겨졌다" 는 두 사실이다.
      *
-     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @param  array<int, array{option_id: int, previous: string, new: string}>  $changes  상품별 전이 내역
      * @param  string|null  $target  전이 목표 상태 값
      * @param  int|null  $processedBy  처리 관리자 ID
      */
     public function handleOptionStatusChanged(
-        OrderExchange|OrderReturn $claim,
+        OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim,
         array $changes = [],
         ?string $target = null,
         ?int $processedBy = null,
@@ -214,7 +243,7 @@ class ClaimActivityLogListener implements HookListenerInterface
         }
 
         $type = $this->claimTypeOf($claim);
-        $enumClass = $this->statusEnumClassFor($type);
+        $enumClass = $this->optionStatusEnumClassFor($type);
 
         // 상품별 전/후 — 코어 일괄 형식(`{모델ID: [항목…]}`)으로 실어야 화면이 상품마다 표를
         // 그린다. 신청 상품 행의 ID 가 키다.
@@ -257,7 +286,27 @@ class ClaimActivityLogListener implements HookListenerInterface
         return match ($type) {
             ClaimTypeEnum::EXCHANGE => ExchangeStatusEnum::class,
             ClaimTypeEnum::RETURN => ReturnStatusEnum::class,
+            ClaimTypeEnum::CANCEL => CancelStatusEnum::class,
             default => RefundStatusEnum::class,
+        };
+    }
+
+    /**
+     * 유형별 **상품 행** 상태 Enum 클래스를 반환합니다. (전/후 라벨 키 해석용)
+     *
+     * 헤더와 상품 행은 상태 어휘가 다르다 — 헤더 Enum 으로 상품 값을 해석하면 라벨 키가
+     * 맞지 않아 활동로그 표의 "변경 전 → 변경 후" 가 빈칸으로 나온다(오류는 나지 않는다).
+     *
+     * @param  ClaimTypeEnum  $type  클레임 유형
+     * @return class-string 상품 행 상태 Enum 클래스
+     */
+    private function optionStatusEnumClassFor(ClaimTypeEnum $type): string
+    {
+        return match ($type) {
+            ClaimTypeEnum::EXCHANGE => ExchangeStatusEnum::class,
+            ClaimTypeEnum::RETURN => ReturnStatusEnum::class,
+            ClaimTypeEnum::CANCEL => CancelOptionStatusEnum::class,
+            default => RefundOptionStatusEnum::class,
         };
     }
 
@@ -437,8 +486,9 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 신청 접수 로그를 남깁니다. (3유형 공용)
      *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  접수된 신청서
+     * @return void
      */
-    private function logClaimRequested(OrderExchange|OrderReturn|OrderRefund $claim): void
+    private function logClaimRequested(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): void
     {
         $type = $this->claimTypeOf($claim);
 
@@ -449,9 +499,11 @@ class ClaimActivityLogListener implements HookListenerInterface
             'properties' => [
                 'claim_type' => $type->value,
                 'status' => $this->claimStatusValue($claim),
-                'reason_code' => $claim->reason_code,
-                'fault_type' => $claim->fault_type?->value,
-                'is_guest_request' => $claim->isGuestRequest(),
+                'reason_code' => $this->claimReasonCodeOf($claim),
+                // 취소신청서에는 귀책 축이 없다 — 취소는 "돈이 빠진 사실" 의 기록이고,
+                // 귀책은 그 취소를 일으킨 환불신청서가 이미 들고 있다.
+                'fault_type' => $claim instanceof OrderCancel ? null : $claim->fault_type?->value,
+                'is_guest_request' => $claim instanceof OrderCancel ? null : $claim->isGuestRequest(),
             ],
         ]);
     }
@@ -479,7 +531,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
      * @return array<string, string> 치환 파라미터
      */
-    private function identityParams(OrderExchange|OrderReturn|OrderRefund $claim): array
+    private function identityParams(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): array
     {
         return ['claim_number' => (string) ($this->claimNumberOf($claim) ?? '')];
     }

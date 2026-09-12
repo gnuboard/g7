@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\PayNhnkcp\Services;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
 
 class NhnKcpApiService
@@ -69,11 +69,10 @@ class NhnKcpApiService
 
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
-    )
-    {
+    ) {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $this->applyCredentials($settings, (bool) ($settings['is_test_mode'] ?? true));
-        $this->binDir = dirname(__DIR__, 2) . '/bin';
+        $this->binDir = dirname(__DIR__, 2).'/bin';
     }
 
     /**
@@ -127,8 +126,8 @@ class NhnKcpApiService
      * 결제 승인/취소 hot path 는 KCP CLI 를 사용하지만, 거래 상태 조회처럼
      * 부수효과가 없는 요청은 HTTP API 로 제공한다.
      *
-     * @param string $tno      KCP 거래번호
-     * @param string $ordrIdxx 주문번호
+     * @param  string  $tno  KCP 거래번호
+     * @param  string  $ordrIdxx  주문번호
      * @return array KCP 거래 조회 응답
      */
     public function getTransaction(string $tno, string $ordrIdxx): array
@@ -143,7 +142,7 @@ class NhnKcpApiService
             $this->siteKey
         );
 
-        $url = $this->apiBaseUrl() . '/v1/payment/trade/' . rawurlencode($tno);
+        $url = $this->apiBaseUrl().'/v1/payment/trade/'.rawurlencode($tno);
 
         $response = Http::withBasicAuth($this->siteCd, $this->siteKey)
             ->withHeaders([
@@ -158,7 +157,7 @@ class NhnKcpApiService
             ]);
 
         if ($response->failed()) {
-            throw new NhnKcpApiException('KCP transaction query HTTP ' . $response->status());
+            throw new NhnKcpApiException('KCP transaction query HTTP '.$response->status());
         }
 
         $json = $response->json();
@@ -192,12 +191,13 @@ class NhnKcpApiService
     /**
      * KCP 결제 취소 (CLI 방식)
      *
-     * @param string $tno       KCP 원거래 거래번호
-     * @param string $ordrIdxx  주문번호
-     * @param int    $cancelAmt 취소 금액
-     * @param string $cancelMsg 취소 사유
-     * @param bool   $isPartial 부분 취소 여부
-     * @param int    $totalAmt  현재 부분취소 가능 금액 (KCP rem_mny)
+     * @param  string  $tno  KCP 원거래 거래번호
+     * @param  string  $ordrIdxx  주문번호
+     * @param  int  $cancelAmt  취소 금액
+     * @param  string  $cancelMsg  취소 사유
+     * @param  bool  $isPartial  부분 취소 여부
+     * @param  int  $totalAmt  현재 부분취소 가능 금액 (KCP rem_mny)
+     * @param  array|null  $refundAccount  가상계좌 환불계좌 {bank_code, account_number, holder}
      * @return array 파싱된 KCP 응답
      */
     public function cancelPayment(
@@ -207,6 +207,7 @@ class NhnKcpApiService
         string $cancelMsg,
         bool $isPartial = false,
         int $totalAmt = 0,
+        ?array $refundAccount = null,
     ): array {
         $modType = $isPartial ? 'RN07' : 'STSC';
 
@@ -215,6 +216,17 @@ class NhnKcpApiService
             'mod_type' => $modType,
             'mod_desc' => $cancelMsg,
         ];
+
+        // 입금완료된 가상계좌는 **환불받을 계좌**가 없으면 KCP 가 취소를 거절한다(P5).
+        // 전달하지 않던 시절에는 입금완료 vbank 주문의 취소가 통째로 막혀 있었고, 운영자는
+        // PG 콘솔에서 손으로 처리해야 했다 — 그 환불은 우리 장부에 남지 않았다.
+        if ($refundAccount !== null
+            && filled($refundAccount['account_number'] ?? null)
+            && filled($refundAccount['bank_code'] ?? null)) {
+            $fields['bank_code'] = (string) $refundAccount['bank_code'];
+            $fields['account'] = (string) $refundAccount['account_number'];
+            $fields['depositor'] = (string) ($refundAccount['holder'] ?? '');
+        }
 
         if ($isPartial && $totalAmt > 0) {
             // KCP rem_mny는 취소 후 잔액이 아니라 현재 부분취소 가능한 금액이다.
@@ -258,7 +270,7 @@ class NhnKcpApiService
      * 에스크로 결제 후 상품을 발송할 때 KCP에 운송장번호를 등록합니다.
      * 에스크로 테스트 결제는 별도 설정값이 있으면 그 site_cd를, 없으면 일반 테스트 site_cd를 사용합니다.
      *
-     * @param  string  $tno       KCP 에스크로 거래번호
+     * @param  string  $tno  KCP 에스크로 거래번호
      * @param  string  $ordrIdxx  주문번호
      * @param  string  $deliNumb  운송장번호
      * @param  string  $deliCorp  택배사코드 (KCP 코드: '04'=CJ대한통운, '05'=한진택배 등)
@@ -318,7 +330,7 @@ class NhnKcpApiService
         }
 
         if ($resData === '') {
-            $resData = 'res_cd=9502' . chr(31) . 'res_msg=연동 모듈 호출 오류';
+            $resData = 'res_cd=9502'.chr(31).'res_msg=연동 모듈 호출 오류';
         }
 
         // KCP Windows CLI는 CP949(EUC-KR)로 한글을 출력 — MySQL UTF-8 저장을 위해 변환
@@ -351,14 +363,14 @@ class NhnKcpApiService
         string $siteCd = '',
     ): string {
         $siteCd = $siteCd !== '' ? $siteCd : $this->siteCd;
-        $keyPath = str_replace('/', DIRECTORY_SEPARATOR, $this->binDir . '/pub.key');
-        $binPath = str_replace('/', DIRECTORY_SEPARATOR, $this->binDir . '/pp_cli_exe.exe');
+        $keyPath = str_replace('/', DIRECTORY_SEPARATOR, $this->binDir.'/pub.key');
+        $binPath = str_replace('/', DIRECTORY_SEPARATOR, $this->binDir.'/pp_cli_exe.exe');
 
         // 실행 권한 자가 복구: plugin:update 후 _bundled 의 0664 권한이 활성 디렉토리에 그대로
         // 회귀해 9502 ("연동 모듈 호출 오류") 가 발생하던 회귀를 결제 hot path 에서 차단.
         // Windows 에서는 chmod 자체는 no-op 에 가깝지만, is_file 가드는 의미 있음.
         $this->ensureCliExecutable($binPath);
-        $planData = 'payx_data=' . ($modxData !== '' ? 'mod_data=' . $modxData : '');
+        $planData = 'payx_data='.($modxData !== '' ? 'mod_data='.$modxData : '');
 
         // Shell injection 방어: CLI args 의 각 값을 사전 검증 후 안전한 값만 사용.
         // 위험 문자(`"`, 제어문자, 개행) 가 포함되면 KCP CLI 인터페이스가 깨지고 cmd.exe
@@ -374,23 +386,23 @@ class NhnKcpApiService
         $this->assertSafeCliValue($keyPath, 'key_path');
         $this->assertSafeCliValue($planData, 'plan_data', allowKcpFieldSeparator: true);
 
-        $args = 'site_cd=' . $siteCd . ','
-            . 'site_key=' . $this->siteKey . ','
-            . 'tx_cd=' . $txCd . ','
-            . 'pa_url=' . $paUrl . ','
-            . 'pa_port=' . self::PA_PORT . ','
-            . 'ordr_idxx=' . $ordrIdxx . ','
-            . 'enc_data=' . $encData . ','
-            . 'enc_info=' . $encInfo . ','
-            . 'trace_no=,'
-            . 'cust_ip=' . $custIp . ','
-            . 'key_path=' . $keyPath . ','
-            . 'log_path=' . self::LOG_DISABLED_PATH . ','
-            . 'log_level=' . self::LOG_LEVEL . ','
-            . 'plan_data=' . $planData;
+        $args = 'site_cd='.$siteCd.','
+            .'site_key='.$this->siteKey.','
+            .'tx_cd='.$txCd.','
+            .'pa_url='.$paUrl.','
+            .'pa_port='.self::PA_PORT.','
+            .'ordr_idxx='.$ordrIdxx.','
+            .'enc_data='.$encData.','
+            .'enc_info='.$encInfo.','
+            .'trace_no=,'
+            .'cust_ip='.$custIp.','
+            .'key_path='.$keyPath.','
+            .'log_path='.self::LOG_DISABLED_PATH.','
+            .'log_level='.self::LOG_LEVEL.','
+            .'plan_data='.$planData;
 
         // escapeshellarg 로 binPath / args 각각을 안전하게 quoting (Windows 는 `"` 제거 + 큰따옴표 래핑).
-        $command = escapeshellarg($binPath) . ' ' . escapeshellarg($args);
+        $command = escapeshellarg($binPath).' '.escapeshellarg($args);
 
         Log::debug('KCP CLI command prepared (Windows)', [
             'bin' => basename($binPath),
@@ -428,8 +440,8 @@ class NhnKcpApiService
     ): string {
         $siteCd = $siteCd !== '' ? $siteCd : $this->siteCd;
         $binExe = PHP_INT_MAX === 2147483647
-            ? $this->binDir . '/pp_cli'
-            : $this->binDir . '/pp_cli_x64';
+            ? $this->binDir.'/pp_cli'
+            : $this->binDir.'/pp_cli_x64';
 
         // 실행 권한 자가 복구: plugin:update 후 _bundled 의 0664 권한이 활성 디렉토리에 그대로
         // 회귀해 exec() 가 빈 결과를 반환 → 9502 ("연동 모듈 호출 오류") 가 발생하던 회귀를
@@ -437,7 +449,7 @@ class NhnKcpApiService
         // 사용자 결제 시점 안전망 역할.
         $this->ensureCliExecutable($binExe);
 
-        $modxArg = $modxData !== '' ? 'mod_data=' . $modxData : '';
+        $modxArg = $modxData !== '' ? 'mod_data='.$modxData : '';
 
         // CLI args 사전 검증 — Linux 도 별도 sanitization 적용해 OS 간 동일한 가드.
         $this->assertSafeCliValue($siteCd, 'site_cd');
@@ -450,23 +462,23 @@ class NhnKcpApiService
         $this->assertSafeCliValue($custIp, 'cust_ip');
         $this->assertSafeCliValue($modxArg, 'modx_data', allowKcpFieldSeparator: true);
 
-        $args = 'home=' . $this->binDir . ','
-            . 'site_cd=' . $siteCd . ','
-            . 'site_key=' . $this->siteKey . ','
-            . 'tx_cd=' . $txCd . ','
-            . 'pa_url=' . $paUrl . ','
-            . 'pa_port=' . self::PA_PORT . ','
-            . 'ordr_idxx=' . $ordrIdxx . ','
-            . 'enc_data=' . $encData . ','
-            . 'enc_info=' . $encInfo . ','
-            . 'trace_no=,'
-            . 'cust_ip=' . $custIp . ','
-            . 'modx_data=' . $modxArg . ','
-            . 'log_path=' . self::LOG_DISABLED_PATH . ','
-            . 'log_level=' . self::LOG_LEVEL . ','
-            . 'opt=';
+        $args = 'home='.$this->binDir.','
+            .'site_cd='.$siteCd.','
+            .'site_key='.$this->siteKey.','
+            .'tx_cd='.$txCd.','
+            .'pa_url='.$paUrl.','
+            .'pa_port='.self::PA_PORT.','
+            .'ordr_idxx='.$ordrIdxx.','
+            .'enc_data='.$encData.','
+            .'enc_info='.$encInfo.','
+            .'trace_no=,'
+            .'cust_ip='.$custIp.','
+            .'modx_data='.$modxArg.','
+            .'log_path='.self::LOG_DISABLED_PATH.','
+            .'log_level='.self::LOG_LEVEL.','
+            .'opt=';
 
-        $command = $binExe . ' ' . escapeshellarg('-h') . ' ' . escapeshellarg($args);
+        $command = $binExe.' '.escapeshellarg('-h').' '.escapeshellarg($args);
 
         return (string) exec($command);
     }
@@ -569,7 +581,7 @@ class NhnKcpApiService
      * 개별 value 에 KCP 필드 구분자(chr(31))나 쉘 인자 위험 문자가 들어가면 먼저
      * 거부한 뒤, 내부 구분자만 포함한 mod_data 를 만든다.
      *
-     * @param array<string, string|int> $fields
+     * @param  array<string, string|int>  $fields
      */
     private function buildModData(array $fields): string
     {
@@ -579,10 +591,10 @@ class NhnKcpApiService
             $value = (string) $value;
             $this->assertSafeCliValue($key, 'mod_data_key');
             $this->assertSafeCliValue($value, $key);
-            $parts[] = $key . '=' . $value;
+            $parts[] = $key.'='.$value;
         }
 
-        return implode(chr(31), $parts) . chr(31);
+        return implode(chr(31), $parts).chr(31);
     }
 
     private function apiBaseUrl(): string
@@ -614,6 +626,6 @@ class NhnKcpApiService
 
     private function buildLiveSiteCd(string $suffix): string
     {
-        return str_starts_with($suffix, self::LIVE_SITE_CD_PREFIX) ? $suffix : self::LIVE_SITE_CD_PREFIX . $suffix;
+        return str_starts_with($suffix, self::LIVE_SITE_CD_PREFIX) ? $suffix : self::LIVE_SITE_CD_PREFIX.$suffix;
     }
 }

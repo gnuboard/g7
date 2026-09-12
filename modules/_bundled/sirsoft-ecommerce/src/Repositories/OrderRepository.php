@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Models\ActivityLog;
 use App\Models\User;
@@ -19,9 +20,9 @@ use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
@@ -197,6 +198,10 @@ class OrderRepository implements OrderRepositoryInterface
                 // 현금영수증 이력 — 주문상세의 발급 카드가 활성 영수증 1건과 전체 이력을 함께 표시한다.
                 // 미로드 시 OrderResource 의 whenLoaded 가드로 응답에 키 자체가 나타나지 않는다.
                 'cashReceipts',
+                // 세금계산서 — 취소 뒤에도 발급 상태로 남은 계산서가 있는지 판정하는 근거(P15).
+                // 상태 컬럼만 있으면 되므로 좁혀 싣는다. 목록 경로는 이 관계를 적재하지 않으므로
+                // 그 응답에는 `tax_invoice_needs_review` 키가 아예 나오지 않는다(N+1 회피).
+                'taxInvoices' => fn ($q) => $q->select(['id', 'order_id', 'invoice_status']),
             ])
             ->find($id);
     }
@@ -396,12 +401,36 @@ class OrderRepository implements OrderRepositoryInterface
     {
         // 취소/환불·클레임 등 별도 라이프사이클 옵션은 동기화에서 제외한다.
         // (취소된 옵션이 결제완료/배송중 등으로 되살아나는 것을 차단 — OrderStatusEnum SSoT)
-        return OrderOption::whereIn('order_id', $ids)
-            ->whereNotIn('option_status', OrderStatusEnum::syncExcludedValues())
-            ->update([
-                'option_status' => $status,
-                'updated_at' => now(),
-            ]);
+        $query = OrderOption::whereIn('order_id', $ids)
+            ->whereNotIn('option_status', OrderStatusEnum::syncExcludedValues());
+
+        // 전/후를 적으려면 갱신 **전** 상태를 읽어야 한다. 이 경로는 관계 빌더의 raw update
+        // 라 `OrderOptionService` 의 어떤 훅도 지나지 않아, 관리자 주문 수정·일괄 상태변경이
+        // 끌고 간 상품 전이가 활동로그에 **한 줄도 남지 않았다**(A1·A2). 주문 헤더 줄만
+        // 남으므로 운영자는 어느 상품이 함께 움직였는지 알 수 없다.
+        $changes = $query->get(['id', 'order_id', 'option_status'])
+            ->map(fn (OrderOption $option): array => [
+                'order_option_id' => (int) $option->id,
+                'order_id' => (int) $option->order_id,
+                'previous' => $option->option_status instanceof OrderStatusEnum
+                    ? $option->option_status->value
+                    : (string) $option->option_status,
+                'new' => $status,
+            ])
+            ->filter(fn (array $change): bool => $change['previous'] !== $change['new'])
+            ->values()
+            ->all();
+
+        $updated = $query->update([
+            'option_status' => $status,
+            'updated_at' => now(),
+        ]);
+
+        if ($changes !== []) {
+            HookManager::doAction('sirsoft-ecommerce.order_option.after_sync_status', $changes, $status, 'bulk_update');
+        }
+
+        return $updated;
     }
 
     /**
@@ -696,10 +725,6 @@ class OrderRepository implements OrderRepositoryInterface
             $sub->whereIn($table.'.'.$statusColumn, $statuses);
         }
 
-        if ($type === 'refund') {
-            OrderRefund::applyNonCancelOrigin($sub, $table);
-        }
-
         if ($type !== 'cancel' && $faults !== []) {
             $sub->whereIn($table.'.fault_type', $faults);
         }
@@ -716,7 +741,7 @@ class OrderRepository implements OrderRepositoryInterface
      * 클레임 요약('클레임' 컬럼 — D22) 표시용 eager load 관계를 반환합니다.
      *
      * 목록 행은 유형별 최신 상태 배지와 건수만 그린다 — 배지가 실제로 읽는 컬럼만
-     * 좁혀 싣는다. 환불 축은 취소 발 신청서를 제외한다 (필터 축과 동일 규칙).
+     * 좁혀 싣는다. 환불 축은 출처로 거르지 않는다(D6) — 취소 발 환불도 환불 문서다.
      *
      * @return array<string, \Closure> 관계명 => 제약 클로저
      */
@@ -725,9 +750,7 @@ class OrderRepository implements OrderRepositoryInterface
         return [
             'exchanges' => fn ($q) => $q->select(['id', 'order_id', 'exchange_number', 'exchange_status', 'created_at'])->orderByDesc('id'),
             'returns' => fn ($q) => $q->select(['id', 'order_id', 'return_number', 'return_status', 'created_at'])->orderByDesc('id'),
-            'refunds' => fn ($q) => OrderRefund::applyNonCancelOrigin(
-                $q->select(['id', 'order_id', 'refund_number', 'refund_status', 'refund_source_type', 'created_at'])
-            )->orderByDesc('id'),
+            'refunds' => fn ($q) => $q->select(['id', 'order_id', 'refund_number', 'refund_status', 'refund_source_type', 'created_at'])->orderByDesc('id'),
             'cancels' => fn ($q) => $q->select(['id', 'order_id', 'cancel_number', 'cancel_status', 'cancel_type', 'created_at'])->orderByDesc('id'),
         ];
     }
@@ -736,7 +759,7 @@ class OrderRepository implements OrderRepositoryInterface
      * 클레임 요약(D22)의 유형별 건수 집계를 반환합니다.
      *
      * 건수는 DB 집계로 얻는다 — 적재된 컬렉션의 길이를 세면 목록 행마다 하위 컬렉션의
-     * 크기에 결과가 묶인다. 환불 축은 관계 제약과 같은 규칙(취소 발 제외)을 쓴다.
+     * 크기에 결과가 묶인다. 환불 축은 관계 제약과 같은 규칙(출처 무관)을 쓴다.
      *
      * @return array<string, \Closure|string> withCount 별칭 => 제약 클로저
      */
@@ -745,7 +768,7 @@ class OrderRepository implements OrderRepositoryInterface
         return [
             'exchanges',
             'returns',
-            'refunds' => fn ($q) => OrderRefund::applyNonCancelOrigin($q),
+            'refunds',
             'cancels',
         ];
     }

@@ -162,6 +162,9 @@ class OrderProcessingService
             $this->assertPaymentCurrencyChargeable($currencySnapshot, $finalAmount);
         }
 
+        // 0원 주문의 결제완료 전 스냅샷 — 트랜잭션 안에서 채워 밖의 훅이 읽는다(§7-1 D).
+        $zeroAmountSnapshot = null;
+
         $order = DB::transaction(function () use (
             $tempOrder,
             $ordererInfo,
@@ -176,7 +179,8 @@ class OrderProcessingService
             $guestLookupPassword,
             $isZeroPayable,
             $cashReceiptInfo,
-            $refundBankInfo
+            $refundBankInfo,
+            &$zeroAmountSnapshot
         ) {
             // 주문 생성
             $order = $this->createOrder($tempOrder, $calculationResult, $initialStatus, $currencySnapshot, $guestLookupPassword, $shippingInfo, $paymentMethod);
@@ -222,6 +226,8 @@ class OrderProcessingService
             // 결제액 0원(전액 비현금 충당: 마일리지/예치금 등): PG/입금 콜백이 없으므로
             // 트랜잭션 내에서 즉시 결제완료 확정. 충당 차감(위 mileage.use 등)과 동일 트랜잭션이라 원자성 보장.
             if ($isZeroPayable) {
+                // 결제완료 전 스냅샷 — 아래 훅이 활동로그의 전/후 표를 세우는 근거다(§7-1 D).
+                $zeroAmountSnapshot = $order->toArray();
                 $this->finalizeZeroAmountPayment($order);
             }
 
@@ -243,7 +249,7 @@ class OrderProcessingService
         // 결제액 0원 주문은 결제완료 훅을 발화해 적립/알림/구매확정 후속을 정상 연결한다.
         // (PG 결제는 별도 콜백에서 completePayment 가 동일 훅을 발화)
         if ($isZeroPayable) {
-            $this->fireZeroAmountPaymentCompleteHooks($order);
+            $this->fireZeroAmountPaymentCompleteHooks($order, $zeroAmountSnapshot ?? null);
         }
 
         return $order;
@@ -300,8 +306,10 @@ class OrderProcessingService
      * completePayment 의 훅 순서를 그대로 따라 적립(mileage.earn)·결제완료·구매확정 후속을 연결한다.
      *
      * @param  Order  $order  대상 주문
+     * @param  array|null  $snapshot  변경 전 주문 속성 스냅샷 (활동로그의 전/후 표가 읽는다)
+     * @return void
      */
-    protected function fireZeroAmountPaymentCompleteHooks(Order $order): void
+    protected function fireZeroAmountPaymentCompleteHooks(Order $order, ?array $snapshot = null): void
     {
         HookManager::doAction('sirsoft-ecommerce.order.before_payment_complete', $order, []);
 
@@ -310,7 +318,11 @@ class OrderProcessingService
             HookManager::doAction('sirsoft-ecommerce.mileage.earn', $order->total_earned_points_amount, $order);
         }
 
-        HookManager::doAction('sirsoft-ecommerce.order.after_payment_complete', $order);
+        // 변경 전 스냅샷 — 활동 로그 화면은 `changes` 에 실린 항목만 "변경 전 → 변경 후" 표로
+        // 그린다(§7-1 D). 줄은 남는데 표가 서지 않으면 운영자는 이 사건으로 **무엇이 바뀌었는지**
+        // 를 로그에서 읽을 수 없다. 인수 추가는 하위호환이다 — 기존 3인수 구독자는 초과 인수를
+        // 그대로 무시한다(PHP 는 유저 함수에 인수가 더 넘어와도 오류를 내지 않는다).
+        HookManager::doAction('sirsoft-ecommerce.order.after_payment_complete', $order, $snapshot);
         HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 
         // 0원 주문은 생성 시점에 발송하지 않으므로 결제완료(즉시 확정) 시점에 관리자 알림 발화
@@ -692,6 +704,17 @@ class OrderProcessingService
      */
     protected function resolveCashEquivalentAmount(?string $paymentMethod, int $finalAmount): int
     {
+        // 카탈로그 선언이 있으면 그것이 먼저다(P16). 확장 간편결제는 enum case 가 없어
+        // 아래 규칙이 구조적으로 0 을 돌려주고, 현금으로 결제되는 수단이어도 현금영수증
+        // 동기화가 언제나 no-op 였다 — 오류도 로그도 남지 않는다.
+        if ($paymentMethod !== null) {
+            $declared = app(PaymentMethodResolver::class)->declaresCashEquivalent($paymentMethod);
+
+            if ($declared !== null) {
+                return $declared ? max(0, $finalAmount) : 0;
+            }
+        }
+
         return PaymentMethodEnum::tryFrom((string) $paymentMethod)
             ?->resolveCashEquivalentAmount($finalAmount)
             ?? 0;
@@ -1649,10 +1672,27 @@ class OrderProcessingService
             return $order->fresh();
         }
 
+        // 취소된 주문은 결제완료로 전이하지 않는다 (P4 — 마지막 방어선).
+        //
+        // 가상계좌 입금통보는 고객이 취소 뒤에 입금해도 도착한다. 막지 않으면 `CANCELLED`
+        // 주문이 `PAYMENT_COMPLETE` 로 되살아나 재고·마일리지가 재차감되고, 이미 복원된
+        // 쿠폰이 다시 소진된다. 입금된 돈은 환불 절차로 돌려주어야 하는 별개의 사건이므로
+        // 여기서 예외를 던지지 않고 조용히 되돌린다 — PG 콜백에 500 을 주면 재시도 폭주가 난다.
+        if ($order->order_status === OrderStatusEnum::CANCELLED) {
+            Log::warning('취소된 주문에 결제완료 시도 — 무시', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ]);
+
+            return $order->fresh();
+        }
+
         // PG 금액이 전달된 경우 금액 검증 (컴포넌트 합산 + PG 금액 일치)
         if ($pgAmount !== null) {
             $this->validatePaymentAmount($order, $pgAmount);
         }
+
+        $beforeSnapshot = $order->toArray();
 
         HookManager::doAction('sirsoft-ecommerce.order.before_payment_complete', $order, $paymentData);
 
@@ -1727,7 +1767,11 @@ class OrderProcessingService
             }
         });
 
-        HookManager::doAction('sirsoft-ecommerce.order.after_payment_complete', $order);
+        // 변경 전 스냅샷 — 활동 로그 화면은 `changes` 에 실린 항목만 "변경 전 → 변경 후" 표로
+        // 그린다(§7-1 D). 줄은 남는데 표가 서지 않으면 운영자는 이 사건으로 **무엇이 바뀌었는지**
+        // 를 로그에서 읽을 수 없다. 인수 추가는 하위호환이다 — 기존 3인수 구독자는 초과 인수를
+        // 그대로 무시한다(PHP 는 유저 함수에 인수가 더 넘어와도 오류를 내지 않는다).
+        HookManager::doAction('sirsoft-ecommerce.order.after_payment_complete', $order, $beforeSnapshot);
 
         // 주문 확인 알림 훅 (결제 완료 = 주문 확인 시점)
         HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
@@ -1971,6 +2015,8 @@ class OrderProcessingService
             return $order;
         }
 
+        $beforeSnapshot = $order->toArray();
+
         DB::transaction(function () use ($order, $errorCode, $errorMessage) {
             // 마일리지 선차감분 복원 (order_placed 타이밍 등으로 결제 전 차감된 경우).
             // 정식 주문취소가 아닌 결제 실패 경로는 OrderCancellationService 를 거치지 않으므로
@@ -2000,7 +2046,11 @@ class OrderProcessingService
             $this->syncOptionStatuses($order, OrderStatusEnum::CANCELLED);
         });
 
-        HookManager::doAction('sirsoft-ecommerce.order.payment_failed', $order->fresh(), $errorCode, $errorMessage);
+        // 변경 전 스냅샷 — 활동 로그 화면은 `changes` 에 실린 항목만 "변경 전 → 변경 후" 표로
+        // 그린다(§7-1 D). 줄은 남는데 표가 서지 않으면 운영자는 이 사건으로 **무엇이 바뀌었는지**
+        // 를 로그에서 읽을 수 없다. 인수 추가는 하위호환이다 — 기존 3인수 구독자는 초과 인수를
+        // 그대로 무시한다(PHP 는 유저 함수에 인수가 더 넘어와도 오류를 내지 않는다).
+        HookManager::doAction('sirsoft-ecommerce.order.payment_failed', $order->fresh(), $errorCode, $errorMessage, $beforeSnapshot);
 
         return $order->fresh();
     }
@@ -2037,12 +2087,38 @@ class OrderProcessingService
      */
     protected function syncOptionStatuses(Order $order, OrderStatusEnum $newStatus): void
     {
-        $order->options()
-            ->whereNotIn('option_status', OrderStatusEnum::syncExcludedValues())
-            ->update([
-                'option_status' => $newStatus->value,
-                'updated_at' => Carbon::now(),
-            ]);
+        $query = $order->options()
+            ->whereNotIn('option_status', OrderStatusEnum::syncExcludedValues());
+
+        // 전/후를 적으려면 갱신 **전** 상태를 읽어야 한다. 이 경로는 관계 빌더의 raw update
+        // 라 `OrderOptionService` 의 어떤 훅도 지나지 않아, 결제완료·0원 주문 확정·결제실패가
+        // 끌고 간 상품 전이가 활동로그에 **한 줄도 남지 않았다**(A3·A4·A5).
+        $changes = $query->get(['id', 'order_id', 'option_status'])
+            ->map(fn ($option): array => [
+                'order_option_id' => (int) $option->id,
+                'order_id' => (int) $option->order_id,
+                'previous' => $option->option_status instanceof OrderStatusEnum
+                    ? $option->option_status->value
+                    : (string) $option->option_status,
+                'new' => $newStatus->value,
+            ])
+            ->filter(fn (array $change): bool => $change['previous'] !== $change['new'])
+            ->values()
+            ->all();
+
+        $query->update([
+            'option_status' => $newStatus->value,
+            'updated_at' => Carbon::now(),
+        ]);
+
+        if ($changes !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.order_option.after_sync_status',
+                $changes,
+                $newStatus->value,
+                'order_status_sync',
+            );
+        }
     }
 
     /**

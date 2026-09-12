@@ -31,7 +31,93 @@ class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
     private const POLICY_PARTIAL = __DIR__.'/../../../resources/layouts/admin/partials/admin_ecommerce_settings/_claim_policy_section.json';
 
     /**
+     * 자동 전이 축의 안내가 **지금 일어나는 일**을 말합니다. (#599 후속 D2)
+     *
+     * 이 축의 이름은 「즉시취소」였고 문구도 "바로 취소된다" 고 말했다. 새 모델에서는 그 상태의
+     * 상품도 **환불신청서를 먼저 만든다** — 다만 승인·환불완료까지 자동으로 밀릴 뿐이고, 계좌로
+     * 송금해야 하는 수단은 승인에서 멈춘다. 옛 문구를 그대로 두면 운영자는 이 축에 담긴 상태를
+     * "서류 없이 끝나는 것" 으로 읽고, 승인 대기에 쌓인 신청서를 오류로 본다.
+     *
+     * 문구는 코드가 아니므로 어긋나도 예외가 없다. 그래서 **세 로케일 전부**를 대조한다 —
+     * ja 는 번들 언어팩이 소유하므로 한쪽만 고쳐진 채 남기 쉽다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects instant_cancel_hint_describes_auto_advance
+     *
+     * @return void
+     */
+    public function test_auto_advance_hint_describes_a_refund_request_not_an_instant_cancel(): void
+    {
+        $required = [
+            'ko' => ['환불신청서', '자동'],
+            'en' => ['refund request', 'automatic'],
+            'ja' => ['返金申請書', '自動'],
+        ];
+        // 옛 어휘 — 이 축이 서류 없이 끝난다고 읽히게 만드는 단어다.
+        $forbidden = [
+            'ko' => ['즉시 취소', '즉시취소'],
+            'en' => ['cancelled immediately', 'immediate cancel'],
+            'ja' => ['即時キャンセル'],
+        ];
+
+        foreach ($this->settingsDictionaries() as $locale => $dictionary) {
+            $hint = $dictionary['claim']['policy']['requestable']['instant_cancel_hint'] ?? null;
+
+            $this->assertIsString($hint, "{$locale} 에 자동 전이 안내 문구가 없습니다 — 모집단이 비면 이 검사가 공전합니다");
+
+            foreach ($required[$locale] as $needle) {
+                $this->assertStringContainsStringIgnoringCase(
+                    $needle,
+                    $hint,
+                    "{$locale} 자동 전이 안내가 '{$needle}' 를 말하지 않습니다 — 이 축도 환불신청서를 만든다는 사실이 드러나야 합니다",
+                );
+            }
+
+            foreach ($forbidden[$locale] as $needle) {
+                $this->assertStringNotContainsStringIgnoringCase(
+                    $needle,
+                    $hint,
+                    "{$locale} 자동 전이 안내가 옛 어휘 '{$needle}' 를 그대로 씁니다 — 서류 없이 끝나는 것으로 읽힙니다",
+                );
+            }
+        }
+    }
+
+    /**
+     * 설정 화면 사전을 로케일별로 읽습니다.
+     *
+     * ja 는 번들 언어팩이 소유하므로 경로가 다르다 — ko/en 만 보면 팩 쪽 문구가 사실과 달라져도
+     * 드러나지 않는다.
+     *
+     * @return array<string, array<string, mixed>> 로케일 => 디코드된 사전
+     */
+    private function settingsDictionaries(): array
+    {
+        $moduleRoot = dirname(__DIR__, 3);
+        $paths = [
+            'ko' => $moduleRoot.'/resources/lang/partial/ko/admin/settings.json',
+            'en' => $moduleRoot.'/resources/lang/partial/en/admin/settings.json',
+            'ja' => dirname($moduleRoot, 3).'/lang-packs/_bundled/g7-module-sirsoft-ecommerce-ja/frontend/partial/admin/settings.json',
+        ];
+
+        $out = [];
+        foreach ($paths as $locale => $path) {
+            $this->assertFileExists($path, "{$locale} 설정 사전을 찾지 못했습니다");
+            $decoded = json_decode((string) file_get_contents($path), true);
+            $this->assertIsArray($decoded, "{$locale} 설정 사전을 파싱하지 못했습니다");
+            $out[$locale] = $decoded;
+        }
+
+        return $out;
+    }
+
+    /**
      * 네 축의 화면 선택지가 서버 게이트와 정확히 일치합니다. (부분집합도 초과집합도 아님)
+     *
+     * @scenario reason_type=exchange
+     *
+     * @effects settings_claim_status_vocabulary_matches_server_gate
      *
      * @return void
      */
@@ -63,11 +149,20 @@ class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
     }
 
     /**
-     * 게이트 어휘가 종결·결제 전 상태를 포함하지 않습니다.
+     * 게이트 어휘가 **종결 상태**를 포함하지 않습니다.
      *
-     * 신청 가능 상태에 취소완료·반품완료·교환완료 같은 종결 상태나 주문대기·결제대기가 섞이면
-     * 이미 끝난(또는 아직 결제되지 않은) 주문옵션이 클레임 분기로 들어간다. 저장은 200 이고
-     * 로그도 남지 않아, 그 조합으로 실제 신청이 들어올 때에야 드러난다.
+     * 신청 가능 상태에 취소완료·반품완료·교환완료 같은 종결 상태가 섞이면 이미 끝난 주문옵션이
+     * 클레임 분기로 들어간다. 저장은 200 이고 로그도 남지 않아, 그 조합으로 실제 신청이 들어올
+     * 때에야 드러난다.
+     *
+     * **미결제 2종은 자동 전이 축에만 허용된다**(#599 후속 D10). 미결제 주문도 취소·환불 신청
+     * 입구로 들어와야 하고 — 그것이 D10 이 여는 축이다 — 돌려줄 돈이 없으므로 환불신청서 없이
+     * 취소신청서만 생긴다. 교환·반품·환불신청 축에는 여전히 허용되지 않는다: 받은 돈이 없는
+     * 주문에 환불 심사를 걸 이유가 없고, 배송되지 않은 상품을 교환·반품할 수도 없다.
+     *
+     * @scenario reason_type=return
+     *
+     * @effects settings_claim_status_vocabulary_matches_server_gate
      *
      * @return void
      */
@@ -75,11 +170,9 @@ class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
     {
         // 백킹값을 손으로 적으면 Enum 이 개명될 때 assertNotContains 가 "없는 문자열을
         // 찾는" 항상-참 단언으로 조용히 바뀐다 — Enum 을 단일 출처로 읽는다.
-        $forbidden = array_map(
+        $terminal = array_map(
             static fn (OrderStatusEnum $status): string => $status->value,
             [
-                OrderStatusEnum::PENDING_ORDER,
-                OrderStatusEnum::PENDING_PAYMENT,
                 OrderStatusEnum::CANCELLED,
                 OrderStatusEnum::EXCHANGE_IN_PROGRESS,
                 OrderStatusEnum::RETURN_IN_PROGRESS,
@@ -87,6 +180,32 @@ class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
                 OrderStatusEnum::RETURNED,
             ],
         );
+
+        $prePayment = array_map(
+            static fn (OrderStatusEnum $status): string => $status->value,
+            [OrderStatusEnum::PENDING_ORDER, OrderStatusEnum::PENDING_PAYMENT],
+        );
+
+        // 자동 전이 축(구 즉시취소)만 미결제를 받는다.
+        foreach ($prePayment as $status) {
+            $this->assertContains(
+                $status,
+                StoreEcommerceSettingsRequest::claimInstantCancelStatuses(),
+                "자동 전이 축이 미결제 상태 '{$status}' 를 허용해야 한다 (D10)",
+            );
+            $this->assertNotContains(
+                $status,
+                StoreEcommerceSettingsRequest::claimRefundRequestStatuses(),
+                "환불신청 축은 미결제 상태 '{$status}' 를 허용하면 안 된다 — 받은 돈이 없다",
+            );
+            $this->assertNotContains(
+                $status,
+                StoreEcommerceSettingsRequest::claimRequestableStatuses(),
+                "교환·반품 축은 미결제 상태 '{$status}' 를 허용하면 안 된다 — 배송되지 않았다",
+            );
+        }
+
+        $forbidden = $terminal;
 
         $axes = [
             'claimRequestableStatuses' => StoreEcommerceSettingsRequest::claimRequestableStatuses(),

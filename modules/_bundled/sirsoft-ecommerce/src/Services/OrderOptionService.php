@@ -309,12 +309,33 @@ class OrderOptionService
             return;
         }
 
+        $previous = $this->orderShippingRepository->findFirstByOrderOptionId($option->id);
+
         $this->orderShippingRepository->updateTrackingByOrderOptionId(
             $option->id,
             [
                 'carrier_id' => $carrierId,
                 'tracking_number' => $trackingNumber,
             ]
+        );
+
+        // 송장 기록·정정 전용 훅 (F11).
+        //
+        // 예전에는 **전이를 동반할 때만** 훅이 발화했다. 그래서 운영자가 이미 배송중인 건의
+        // 송장을 고치면(상태는 그대로) 어떤 줄도 남지 않았고, 고객이 "운송장이 바뀌었다" 고
+        // 물어도 언제 누가 무엇으로 고쳤는지 되짚을 근거가 없었다. 전이와는 다른 층의 사실이라
+        // 상태 전이 훅에 얹지 않고 자기 훅으로 낸다.
+        HookManager::doAction(
+            'sirsoft-ecommerce.order_shipping.tracking_updated',
+            $option,
+            [
+                'carrier_id' => $previous?->carrier_id,
+                'tracking_number' => $previous?->tracking_number,
+            ],
+            [
+                'carrier_id' => $carrierId,
+                'tracking_number' => $trackingNumber,
+            ],
         );
     }
 

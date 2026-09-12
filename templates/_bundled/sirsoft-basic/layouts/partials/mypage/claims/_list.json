@@ -55,7 +55,17 @@
           ],
           "children": [
             { "type": "basic", "name": "Icon", "if": "{{_local.claimsLoading === true && (_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id}}", "props": { "name": "spinner", "className": "text-sm animate-spin mr-1", "aria-hidden": true } },
-            { "type": "basic", "name": "Span", "text": "{{tab.label}}" }
+            { "type": "basic", "name": "Span", "text": "{{tab.label}}" },
+            {
+              "comment": "서브탭 건수 뱃지 (F12). 서버는 매 요청 네 유형을 세어 `counts` 로 실어 보내는데 구매자 화면은 그 값을 그리지 않아, 어느 탭에 무엇이 있는지 눌러 보기 전에는 알 수 없었다(관리자 화면에는 있는 표기다). 0건인 탭에는 세우지 않는다 — 0 을 나란히 그리면 '아직 세지 않음' 과 구분되지 않는다.",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(claims?.data?.counts?.[tab.id] ?? 0) > 0}}",
+              "props": {
+                "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}}"
+              },
+              "text": "{{claims?.data?.counts?.[tab.id] ?? 0}}"
+            }
           ]
         }
       ]

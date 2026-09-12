@@ -128,7 +128,7 @@
                   "props": {
                     "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right"
                   },
-                  "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_before_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_before_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.comparison.col_before_cancel') : $t('claim.apply.comparison.col_before_refund')))}}"
+                  "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_before_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_before_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_before_cancel') : $t('claim.apply.comparison.col_before_refund')))}}"
                 },
                 {
                   "type": "basic",
@@ -136,7 +136,7 @@
                   "props": {
                     "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right"
                   },
-                  "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_after_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_after_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.comparison.col_after_cancel') : $t('claim.apply.comparison.col_after_refund')))}}"
+                  "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_after_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_after_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_after_cancel') : $t('claim.apply.comparison.col_after_refund')))}}"
                 }
               ]
             },

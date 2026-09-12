@@ -110,6 +110,12 @@ sub_flows:
       - return_update_request_is_blocked_after_approval
       - return_update_amounts_moves_the_total_charge_with_the_fee
 
+
+  # ── #599 후속 D13 — 반품 완료 → 환불 → 취소신청서 ───────────────────────
+  - return_refund_completion_records_a_cancellation   # 환불완료 시 취소신청서가 생긴다
+  - returned_items_keep_the_returned_status           # 상품 상태는 `returned` 를 유지한다
+  - return_originated_refund_fires_the_requested_hook # 반품 발 환불신청서도 접수 훅을 쏜다 (B9)
+  - return_originated_refund_is_not_buyer_editable    # 구매자 [수정]/[철회] 가 서지 않는다 (F3)
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderReturnServiceTest.php
 

@@ -39,9 +39,12 @@ return [
         'send_email' => '이메일 발송',
         'set_default' => '기본값 설정',
         'status_change' => '상태 변경',
+        'sync_status' => '상태 자동 반영',
         'status_sync' => '상태 자동 동기화',
         'stock_sync' => '재고 동기화',
         'toggle_active' => '활성 상태 변경',
+        'tax_invoice_stale' => '세금계산서 미처리',
+        'tracking_update' => '운송장 기록·정정',
         'toggle_status' => '상태 전환',
         'update' => '수정',
         'update_quantity' => '수량 변경',
@@ -94,6 +97,9 @@ return [
         'order_reset_guest_password' => '비회원 조회 비밀번호 재설정 (:order_number)',
         'order_option_status_change' => '주문 옵션 상태 변경 (주문: :order_number)',
         'order_option_bulk_status_change' => '주문 옵션 일괄 상태 변경 (:count건)',
+        'order_option_sync_status' => '주문 상태 동기화에 따른 상품 상태 변경 (주문: :order_number · :count건)',
+        'order_shipping_tracking_update' => '운송장 기록·정정 (상품 ID: :option_id)',
+        'order_tax_invoice_stale' => '취소 후 세금계산서 미처리 (주문: :order_number · :count건)',
         'order_status_sync' => '주문 상태 자동 변경 — 상품 상태에 맞춰 (:order_number)',
 
         // 쿠폰 관리 (Admin)
@@ -233,11 +239,15 @@ return [
         'claim_exchange_request' => '교환 신청 접수 (:claim_number)',
         'claim_return_request' => '반품 신청 접수 (:claim_number)',
         'claim_refund_request' => '환불 신청 접수 (:claim_number)',
+        'claim_cancel_request' => '취소신청서 생성 (:claim_number)',
         'claim_exchange_status_change' => '교환 신청서 상태 변경 (:claim_number)',
         'claim_return_status_change' => '반품 신청서 상태 변경 (:claim_number)',
         'claim_refund_status_change' => '환불 신청서 상태 변경 (:claim_number)',
+        'claim_cancel_status_change' => '취소신청서 상태 변경 (:claim_number)',
         'claim_exchange_option_status_change' => '교환 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
         'claim_return_option_status_change' => '반품 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_refund_option_status_change' => '환불 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_cancel_option_status_change' => '취소신청서 상품 단위 상태 변경 (:claim_number · :count건)',
         'claim_exchange_update_amounts' => '교환 신청서 금액 수정 (:claim_number)',
         'claim_return_update_amounts' => '반품 신청서 금액 수정 (:claim_number)',
         'claim_refund_update_amounts' => '환불 신청서 금액 수정 (:claim_number)',
@@ -329,6 +339,8 @@ return [
 
         // OrderOption
         'option_status' => '옵션 상태',
+        'carrier_id' => '택배사',
+        'tracking_number' => '운송장번호',
         'quantity' => '수량',
         'cancelled_quantity' => '취소 수량',
 

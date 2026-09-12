@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempProductImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ReconcileMileageBalanceCommand;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -315,6 +316,10 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
             ClaimTypeEnum::EXCHANGE->value => OrderExchange::class,
             ClaimTypeEnum::RETURN->value => OrderReturn::class,
             ClaimTypeEnum::REFUND->value => OrderRefund::class,
+            // 취소 축도 등록한다(F9). 빠져 있으면 활동로그가 `loggable_type` 을 FQCN 으로
+            // 저장하는데 클레임 상세의 활동로그 탭은 morph 별칭(`cancel`)으로 조회하므로,
+            // 줄은 쌓이는데 화면은 **구조적으로 언제나 빈 표**가 된다.
+            ClaimTypeEnum::CANCEL->value => OrderCancel::class,
         ]);
     }
 }

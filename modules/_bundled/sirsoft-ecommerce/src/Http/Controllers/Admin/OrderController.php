@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
@@ -34,7 +35,9 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderService;
+use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -50,6 +53,7 @@ class OrderController extends AdminBaseController
         private OrderCancellationService $cancellationService,
         private ActivityLogService $activityLogService,
         private OrderProcessingService $orderProcessingService,
+        private UserClaimService $claimService,
     ) {}
 
     /**
@@ -364,7 +368,17 @@ class OrderController extends AdminBaseController
     }
 
     /**
-     * 주문을 취소합니다. (전체취소/부분취소)
+     * 주문을 취소합니다. (전체취소/부분취소 — #599 후속 D7)
+     *
+     * **취소 즉시 환불되지 않는다.** 이 API 는 환불신청서를 만들 뿐이고, 금액확인 → 승인 →
+     * 환불완료는 운영자가 클레임 상세에서 하나씩 밟는다. 취소신청서는 그 환불이 완료되는
+     * 순간에 생긴다(D3) — 그래서 응답 시점의 주문은 아직 취소로 확정돼 있지 않다.
+     *
+     * 모달의 "환불까지 한 번에 처리"(`auto_advance_refund`, 기본 꺼짐)를 켜면 승인·완료까지
+     * 자동으로 민다(§4-2). 계좌 환불 수단은 그래도 승인에서 멈춘다(D4) — 사람이 송금해야
+     * 하기 때문이고, 그때 취소신청서도 아직 생기지 않는다(D5).
+     *
+     * 환불할 돈이 없는 주문(미결제·0원)은 환불신청서 없이 취소신청서가 즉시 생긴다(D1·D3).
      *
      * @param  CancelOrderRequest  $request  주문 취소 요청 데이터
      * @param  Order  $order  대상 주문 모델
@@ -373,38 +387,72 @@ class OrderController extends AdminBaseController
     public function cancelOrder(CancelOrderRequest $request, Order $order): JsonResponse
     {
         try {
-            $cancelledBy = Auth::id();
+            // 운영자의 권한 축은 `order_settings.cancellable_statuses` 다. 환불신청서 접수
+            // 경로는 그 설정을 모르므로 여기서 먼저 지킨다 — 없으면 배송중 주문처럼 설정이
+            // 막아야 하는 상태가 통과한다(§12-B).
+            $this->cancellationService->assertCancellable($order);
 
-            if ($request->isFullCancel()) {
-                $result = $this->cancellationService->cancelOrder(
-                    order: $order,
-                    reason: $request->getReason(),
-                    reasonDetail: $request->getReasonDetail(),
-                    cancelledBy: $cancelledBy,
-                    cancelPg: $request->shouldCancelPg(),
-                    refundPriority: $request->getRefundPriority(),
-                    refundBankInfo: $request->getRefundBankInfo(),
-                );
-            } else {
-                $result = $this->cancellationService->cancelOrderOptions(
-                    order: $order,
-                    cancelItems: $request->getCancelItems(),
-                    reason: $request->getReason(),
-                    reasonDetail: $request->getReasonDetail(),
-                    cancelledBy: $cancelledBy,
-                    cancelPg: $request->shouldCancelPg(),
-                    refundPriority: $request->getRefundPriority(),
-                    refundBankInfo: $request->getRefundBankInfo(),
-                );
-            }
+            $outcome = $this->claimService->requestRefund(
+                $order,
+                [
+                    'items' => $this->toClaimItems($request, $order),
+                    'reason_code' => $request->getReason(),
+                    'reason_detail' => $request->getReasonDetail(),
+                    'requested_by' => null,
+                    'processed_by' => Auth::id(),
+                    'refund_priority' => $request->getRefundPriority(),
+                    'refund_bank' => $request->getRefundBankInfo(),
+                    // 운영자 대리 접수 — 고객이 이 신청서를 철회·수정하지 못하게 하는 축이다(§4-3-1).
+                    'refund_source_type' => RefundSourceTypeEnum::ADMIN,
+                    'auto_advance' => $request->shouldAutoAdvanceRefund(),
+                    // 분기는 운영자의 선택이 정한다 — 고객용 신청 창구로 재지 않는다(§12-B).
+                    // 운영자의 취소 권한은 `order_settings.cancellable_statuses` + `orders.update`
+                    // 에서 나오고 그 판정은 취소 서비스가 이미 한다. 여기서 다시 재면 두 목록에
+                    // 없는 상태(배송완료 등)에서 운영자가 아무것도 할 수 없어진다.
+                    'branch' => $request->shouldAutoAdvanceRefund()
+                        ? OrderRefundRequestService::BRANCH_AUTO
+                        : OrderRefundRequestService::BRANCH_REQUEST,
+                    'gate_statuses' => $this->cancellationService->operatorCancellableStatusValues($order),
+                    // 관리자 경로는 화면에 노출되지 않는 사유(판매자 귀책 전용)도 고를 수 있다.
+                    'user_selectable_reason_only' => false,
+                ],
+            );
 
             // 주문 상세 정보를 새로 로드하여 반환
             $updatedOrder = $this->orderService->getDetail($order->id);
 
+            // 접수 결과를 함께 싣는다 — 기본 운영(자동 전이 꺼짐)에서는 **아무것도 취소되지
+            // 않고** 환불신청서만 생긴다. 화면이 그 사실과 신청서 번호를 모르면 "취소됐습니다"
+            // 를 띄우고 운영자를 주문 화면에 남겨, 방금 만든 신청서는 아무도 보지 않는다.
+            $refund = $outcome['refund'] ?? null;
+            $cancel = $outcome['cancel'] ?? null;
+
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.orders.cancelled',
-                new OrderResource($updatedOrder)
+                array_merge(
+                    // `resolve()` 로 편다 — `toArray()` 를 직접 부르면 로드되지 않은 관계가
+                    // `MissingValue` 로 남고, 그것을 감싼 중첩 리소스가 응답 직렬화 단계에서
+                    // null 을 읽어 500 이 된다. 필터는 `resolve()` 안에 있다.
+                    (new OrderResource($updatedOrder))->resolve($request),
+                    [
+                        'claim' => [
+                            'branch' => $outcome['branch'] ?? null,
+                            'claim_number' => $refund?->refund_number ?? $cancel?->cancel_number,
+                            // 취소 확정 여부 — 취소신청서는 환불이 집행된 순간에만 생긴다(D3).
+                            // 자동 전이가 완료까지 갔으면 환불신청서가 그 문서를 가리킨다(N12).
+                            'cancelled' => $cancel !== null || $refund?->order_cancel_id !== null,
+                        ],
+                    ],
+                )
+            );
+        } catch (OrderClaimException $e) {
+            // 신청 자격·사유·수량 잠금 위반 — 취소 도메인 거절과 같은 422 계약.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.orders.cancel_failed',
+                422,
+                ['detail' => __($e->getMessage())]
             );
         } catch (OrderCancellationException $e) {
             // 취소 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 422.
@@ -431,6 +479,45 @@ class OrderController extends AdminBaseController
                 500
             );
         }
+    }
+
+    /**
+     * 취소 요청을 클레임 신청 아이템 형태로 바꿉니다. (전체취소 = 잔여 활성 상품 전부)
+     *
+     * 전체취소에도 상품 목록을 명시해 넘긴다 — 클레임 신청 경로는 "무엇을 얼마나" 를 반드시
+     * 받아야 수량 잠금·금액 산정이 성립하고, 그 산정이 곧 환불신청서의 금액이 된다.
+     *
+     * @param  CancelOrderRequest  $request  취소 요청
+     * @param  Order  $order  대상 주문
+     * @return array<int, array{order_option_id: int, quantity: int}> 신청 아이템
+     */
+    private function toClaimItems(CancelOrderRequest $request, Order $order): array
+    {
+        if (! $request->isFullCancel()) {
+            return array_map(
+                fn (array $item): array => [
+                    'order_option_id' => (int) $item['order_option_id'],
+                    'quantity' => (int) $item['cancel_quantity'],
+                ],
+                $request->getCancelItems(),
+            );
+        }
+
+        $order->loadMissing('options');
+        $items = [];
+
+        foreach ($order->options as $option) {
+            if ($option->option_status === OrderStatusEnum::CANCELLED) {
+                continue;
+            }
+
+            $items[] = [
+                'order_option_id' => (int) $option->id,
+                'quantity' => (int) $option->quantity,
+            ];
+        }
+
+        return $items;
     }
 
     /**

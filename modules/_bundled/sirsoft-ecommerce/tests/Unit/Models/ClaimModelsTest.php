@@ -110,13 +110,23 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertTrue($completed->isFinal());
     }
 
-    public function test_exchange_guest_request_is_detected_by_null_requester(): void
+    /**
+     * 비회원 판정은 **주문의 주인**이 정한다 — 신청자 컬럼이 아니다(§4-3-1).
+     *
+     * `requested_by` 는 비회원·운영자 대리 접수·시스템 자동 취소가 모두 null 이므로, 그 값으로
+     * 가르면 회원 주문의 운영자 접수 건이 「비회원」으로 표시된다(2026-09-12 실측).
+     */
+    public function test_exchange_guest_request_is_detected_by_the_order_owner(): void
     {
         $guest = OrderExchangeFactory::new()->guest()->create();
-        $this->assertTrue($guest->isGuestRequest());
+        $this->assertTrue($guest->fresh('order')->isGuestRequest());
+
+        // 신청자 컬럼이 비어도 주문에 주인이 있으면 비회원이 아니다.
+        $operatorFiled = OrderExchangeFactory::new()->create(['requested_by' => null]);
+        $this->assertFalse($operatorFiled->fresh('order')->isGuestRequest());
 
         $member = OrderExchangeFactory::new()->create(['requested_by' => $this->createUser()->id]);
-        $this->assertFalse($member->isGuestRequest());
+        $this->assertFalse($member->fresh('order')->isGuestRequest());
     }
 
     public function test_exchange_claim_type_is_exchange(): void

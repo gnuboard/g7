@@ -323,6 +323,15 @@
               "if": "{{_global.claimCompleteCreateRefundRequest === false}}",
               "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
               "text": "$t:sirsoft-ecommerce.admin.claim.complete.refund_later_desc"
+            },
+            {
+              "comment": "환불신청서를 끄면 취소신청서도 생기지 않는다 (#599 후속 §5-5). 취소신청서는 '환불이 집행되어 주문에서 금액이 빠진 사실' 의 기록이라, 돈이 나가지 않으면 만들 것이 없다 — 이 관계를 적지 않으면 운영자는 완료 처리 후 취소 탭이 비어 있는 것을 결함으로 읽는다.",
+              "id": "cc_013_refund_later_cancellation_note",
+              "type": "basic",
+              "name": "P",
+              "if": "{{_global.claimCompleteCreateRefundRequest === false}}",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "$t:sirsoft-ecommerce.admin.claim.complete.refund_later_desc_cancellation"
             }
           ]
         },

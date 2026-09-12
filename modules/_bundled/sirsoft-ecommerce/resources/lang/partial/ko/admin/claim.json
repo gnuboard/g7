@@ -17,7 +17,10 @@
       "refund_execute": "환불 실행"
     },
     "progress": {
-      "title": "진행 단계"
+      "title": "진행 단계",
+      "approved_at": "승인일시",
+      "rejected_at": "반려일시",
+      "withdrawn_at": "철회일시"
     },
     "items": {
       "title": "신청상품",
@@ -65,7 +68,12 @@
       "fault_type_label": "귀책",
       "reject_reason_label": "반려 사유",
       "no_detail": "상세 사유가 입력되지 않았습니다.",
-      "images_label": "첨부 이미지"
+      "images_label": "첨부 이미지",
+      "images_clear": "첨부 전체 삭제",
+      "image_upload_success": "첨부를 업로드했습니다.",
+      "image_upload_error": "첨부 업로드에 실패했습니다.",
+      "image_clear_success": "첨부를 정리했습니다.",
+      "image_clear_error": "첨부 정리에 실패했습니다."
     },
     "comparison": {
       "title": "접수 시점 주문금액 비교",
@@ -171,7 +179,10 @@
       "refund_points_amount": "마일리지 환불액",
       "refund_shipping_amount": "환불 배송비",
       "refund_total": "환불 합계",
-      "refunded_at": "환불 완료일"
+      "refunded_at": "환불 완료일",
+      "file_refund_request": "환불신청서 접수",
+      "file_refund_success": "환불신청서를 접수했습니다.",
+      "file_refund_error": "환불신청서 접수에 실패했습니다."
     },
     "refund_execute": {
       "cancellable_title": "취소 가능 금액 산정",
@@ -191,6 +202,7 @@
       "exceeds": "취소 가능 금액을 초과했습니다.",
       "save": "금액 저장",
       "execute": "환불하기",
+      "manual_transfer_notice": "이 결제수단의 PG 연동을 찾을 수 없어 계좌 환불로 전환됐습니다. 운영자가 직접 송금한 뒤 [환불하기]로 완료를 찍어 주세요. PG 플러그인을 다시 설치하면 자동 환불로 돌아갑니다.",
       "executed": "환불을 실행했습니다.",
       "error": "환불을 실행하지 못했습니다.",
       "conflict": "이미 실행됐거나 실행 중입니다. 새로고침 후 다시 확인해주세요.",
@@ -203,6 +215,15 @@
       "refund_bank_name": "환불 은행",
       "refund_bank_account": "환불 계좌번호",
       "refund_bank_holder": "예금주"
+    },
+    "transition": {
+      "title": "신청서 상태 변경",
+      "reject_reason_placeholder": "반려 사유를 입력하세요",
+      "no_status_selected": "변경할 상태를 선택해주세요.",
+      "use_complete_modal": "완료 처리는 완료 모달에서 진행해주세요.",
+      "reject_reason_required": "반려 사유를 입력해주세요.",
+      "success": "신청서 상태를 변경했습니다.",
+      "error": "신청서 상태 변경에 실패했습니다."
     }
   },
   "subtab": {
@@ -366,6 +387,7 @@
     "submit": "{{count}}건 완료 처리",
     "preview_error": "완료 처리 요약을 불러오지 못했습니다.",
     "success": "완료 처리를 반영했습니다.",
-    "error": "완료 처리에 실패했습니다."
+    "error": "완료 처리에 실패했습니다.",
+    "refund_later_desc_cancellation": "환불신청서를 만들지 않으면 이 완료로는 돈이 나가지 않고, 따라서 취소신청서도 생기지 않습니다. 나중에 신청서 상세의 정산 카드에서 접수할 수 있습니다."
   }
 }

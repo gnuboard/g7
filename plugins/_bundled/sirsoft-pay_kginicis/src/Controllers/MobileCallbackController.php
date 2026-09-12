@@ -280,6 +280,18 @@ class MobileCallbackController
             $approvedTotPrice = $totPrice;
             $embeddedPgProvider = $this->resolveEmbeddedPgProvider($selectedEasyPayMethod);
 
+            // 취소된 주문은 결제완료로 되살리지 않는다 (코어 P4 와 같은 가드).
+            //
+            // 결제창을 띄운 뒤 다른 탭·관리자 화면에서 주문이 취소될 수 있고, 그 사이 PG 승인은
+            // 이미 끝난다. 통과시키면 `CANCELLED` 주문이 결제완료로 되돌아가 재고·마일리지가
+            // 재차감된다. 형제 경로(`CbtCallbackController::assertPayableCbtOrder`)와 같은 판정이며,
+            // 승인된 돈은 붙들지 않고 즉시 PG 취소로 돌려준다.
+            if (! $order->order_status->isBeforePayment()) {
+                $this->autoCancelIfApproved($approvedTid, $moid, $approvedTotPrice, 'order_not_payable');
+
+                return redirect($this->resolveFailUrl(['error' => 'order_not_payable', 'orderId' => $moid]));
+            }
+
             $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'mobile_auth_callback', [
                 'tid' => $tid,
                 'received_amount' => $totPrice,

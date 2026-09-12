@@ -252,7 +252,7 @@
                                                 }
                                             }
                                         },
-                                        "text": "{{_local.claimEditMode === true ? $t('claim.edit.title') : (route.type === 'exchange' ? $t('claim.apply.title_exchange') : (route.type === 'return' ? $t('claim.apply.title_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.title_cancel') : $t('claim.apply.title_refund'))))}}"
+                                        "text": "{{_local.claimEditMode === true ? $t('claim.edit.title') : (route.type === 'exchange' ? $t('claim.apply.title_exchange') : (route.type === 'return' ? $t('claim.apply.title_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.title_cancel') : $t('claim.apply.title_refund'))))}}"
                                     },
                                     {
                                         "type": "basic",

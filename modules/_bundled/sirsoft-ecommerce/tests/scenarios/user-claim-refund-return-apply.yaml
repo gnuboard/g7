@@ -49,7 +49,9 @@ description: |
 #                   결제 방식은 두 줄이다. 교환은 이 축이 금액 구성을 바꾸지 않는다(S11 판단).
 #   환불계좌는 유형 축이 아니다 — 반품·취소·환불 셋 다 구매자에게 돈이 돌아가므로 계좌 환불
 #   주문이면 세 화면 모두 입력칸을 세운다(§6-3). 교환만 서지 않는다(돌려줄 돈이 없다).
-#   refund_branch — 취소·환불의 분기. `mixed` 는 서버가 거절하는 조합이라 화면이 만들 수 없어야
+#   refund_branch — 취소·환불의 분기. 두 값 **모두 환불신청서를 만들고** 전이 방식만 갈린다 —
+#                   `auto`(구 `cancel`)는 승인·환불완료까지 자동, `request`(구 `refund`)는
+#                   접수에서 멈춘다. `mixed` 는 서버가 거절하는 조합이라 화면이 만들 수 없어야
 #                   하므로 값이 아니라 **차단**이 산출물이다. `none` 은 그 축이 걸리지 않는
 #                   유형(반품)을 가리키는 자리표시이며 exclusions 가 그 조합을 잘라낸다.
 #
@@ -60,13 +62,13 @@ description: |
 axes:
   claim_type: [return, refund]
   charge_method: [deduct_from_refund, pay_on_request, none]
-  refund_branch: [cancel, refund, mixed, none]
+  refund_branch: [auto, request, mixed, none]
 
 # 두 축은 서로 다른 유형에 걸린다 — 반품은 분기가 없고, 취소·환불은 회수 배송이 없어 청구가
 # 발생하지 않는다(§6-3). 전 교차곱을 세우면 성립하지 않는 조합이 커버된 것처럼 보이므로 그
 # 조합을 사유와 함께 제외한다. 남는 것은 5 케이스다 — 반품 2(청구 방식) + 취소·환불 3(분기).
 exclusions:
-  - { claim_type: return, refund_branch: [cancel, refund, mixed], reason: "반품은 즉시취소/환불신청으로 갈리지 않는다 — 분기 판정은 취소·환불 유형만의 축이다" }
+  - { claim_type: return, refund_branch: [auto, request, mixed], reason: "반품은 자동 전이/운영자 승인으로 갈리지 않는다 — 분기 판정은 취소·환불 유형만의 축이다" }
   - { claim_type: return, charge_method: none, reason: "반품은 회수 배송비가 있으므로 청구 방식이 언제나 정해진다" }
   - { claim_type: refund, charge_method: [deduct_from_refund, pay_on_request], reason: "취소·환불은 회수 배송이 없어 청구가 발생하지 않는다 — 청구 2축 자체가 미노출이다(§6-3)" }
   - { claim_type: refund, refund_branch: none, reason: "취소·환불은 상품 상태가 언제나 한 분기를 지목한다 — 어느 분기에도 속하지 않는 상품은 이 화면의 줄이 되지 않는다" }
@@ -85,6 +87,9 @@ effects:
   - claim_apply_refund_branch_locks_cross_branch_items
   - claim_apply_refund_branch_drives_notice_and_submit_label
   - claim_apply_refund_branch_unset_shows_no_branch_notice
+  # 접수 후 이동 — 서버가 준 신청번호로 그 신청서 상세로 간다 (F8 · §12-D N22)
+  - claim_apply_navigates_to_the_created_claim_detail
+  - claim_apply_falls_back_to_the_type_tab_without_a_claim_number
   # 환불계좌 (§6-3 — 무통장 원결제)
   - claim_refund_account_requirement_declared_by_server
   - claim_refund_account_banks_come_from_operator_settings

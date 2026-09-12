@@ -278,7 +278,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 194개 (정의: `resources/js/handlers/index.ts`).
+핸들러 198개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -398,6 +398,10 @@
 | `clearClaimCompleteTimers` | `sirsoft-ecommerce.clearClaimCompleteTimers` |
 | `openClaimDetailComplete` | `sirsoft-ecommerce.openClaimDetailComplete` |
 | `executeClaimItemBulkStatus` | `sirsoft-ecommerce.executeClaimItemBulkStatus` |
+| `executeClaimStatusTransition` | `sirsoft-ecommerce.executeClaimStatusTransition` |
+| `storeClaimRefundRequest` | `sirsoft-ecommerce.storeClaimRefundRequest` |
+| `uploadClaimImage` | `sirsoft-ecommerce.uploadClaimImage` |
+| `clearClaimImages` | `sirsoft-ecommerce.clearClaimImages` |
 | `saveClaimTracking` | `sirsoft-ecommerce.saveClaimTracking` |
 | `saveClaimAdminMemo` | `sirsoft-ecommerce.saveClaimAdminMemo` |
 | `saveClaimAmounts` | `sirsoft-ecommerce.saveClaimAmounts` |
@@ -496,7 +500,17 @@
 | 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산 |
 | 취소·환불 | `updateCancelQuantity` · `estimateRefundAmount` · `changeRefundPriority` | 옵션 단위 취소 수량 조정과 예상 환불액 조회 (관리자·구매자 두 벌) |
 | 배송정책·주소 | `testShippingApi` · `updateExtraFeeField` · `changeShippingAddress` | 외부 배송비 API 시험 호출과 주소 변경 |
-| 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |
+| 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(`uploadClaimImage` · `clearClaimImages`), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |
+
+취소·환불 축에서 유의할 계약 둘이 있습니다(#599 후속).
+
+- **접수 후 이동 주소는 서버가 정합니다.** `submitClaim` 은 응답에 실린 신청서의 `claim_type`
+  으로 `successPath` 의 `type` 을 덮어씁니다(`resolveClaimSuccessPath`). 화면이 주문 전체 기준
+  값으로 추측하면 분기가 섞인 주문에서 **접수한 탭과 이동한 탭이 갈립니다** — 접수는 됐는데
+  간 탭에는 아무것도 없는 화면이 그것이었습니다.
+- **관리자 취소 모달은 `auto_advance_refund` 를 보냅니다**(기본 꺼짐). 종전의 `cancelPg` 는
+  없앴습니다 — 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로 찍혀 고객 카드는
+  그대로인데 장부만 환불완료가 됐습니다.
 
 핸들러 TS 를 고치면 **빌드가 필요합니다** — `php artisan module:build` 후
 `module:update --force`. 커밋되는 `dist/` 는 배포 산출물이므로 `--production` 으로 굽고

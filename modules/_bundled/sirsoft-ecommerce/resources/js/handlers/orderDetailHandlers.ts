@@ -247,9 +247,13 @@ export function buildOrderDetailBulkConfirmDataHandler(
         return;
     }
 
-    // 취소 상태 선택 시 → cancelPg 여부에 따라 모달 분기
+    // 취소 상태 선택 시 → 언제나 취소·환불 모달(클레임 접수)로 보낸다.
+    //
+    // 예전에는 `cancelPg` 체크박스로 "PG 없이 주문 상태만 변경" 경로가 갈라졌다. 그 경로는
+    // 환불신청서도 취소신청서도 만들지 않고 상품만 `cancelled` 로 옮겨, 재고는 돌아오는데
+    // 돈·결제행·주문 합계는 그대로인 취소를 원장에 근거 없이 남겼다(그렇게 취소된 주문은
+    // 이후 입금확인·입금통보로 되살아난다). 취소의 입구는 하나다.
     if (batchOrderStatus === 'cancelled') {
-        const cancelPg = params.cancelPg ?? true;
         const orderData = G7Core.dataSource?.get?.('order')?.data;
         const options = orderData?.options || [];
 
@@ -293,8 +297,8 @@ export function buildOrderDetailBulkConfirmDataHandler(
             return;
         }
 
-        if (cancelPg) {
-            // PG 결제 취소 포함 → 취소/환불 모달 (환불예정금액 실시간 표시)
+        {
+            // 취소·환불 모달 (환불예정금액 실시간 표시)
             // 모달 열기 전에 페이지 _local에 모든 취소 관련 상태 초기화
             // (사용자 취소 모달과 동일 패턴 — onMount setState 미사용)
             // 참고: modals 섹션의 isolated scope에서 onMount setState는
@@ -303,7 +307,6 @@ export function buildOrderDetailBulkConfirmDataHandler(
                 cancelItems,
                 cancelReason: '',
                 cancelReasonDetail: '',
-                cancelPg: true,
                 refundPriority: 'pg_first',
                 refundEstimate: null,
                 refundLoading: false,
@@ -321,18 +324,6 @@ export function buildOrderDetailBulkConfirmDataHandler(
                     params: { orderId, cancelItems },
                 });
             }
-        } else {
-            // PG 결제 취소 미포함 → 단순 상태 변경 확인 모달
-            const changeQuantities: Record<number, number> = {};
-            for (const item of cancelItems) {
-                changeQuantities[item.id] = item.quantity;
-            }
-            G7Core.state.setLocal({
-                bulkConfirmItems: cancelItems,
-                changeQuantities,
-                batchOrderStatus,
-            });
-            G7Core.modal?.open?.('modal_batch_change_confirm');
         }
         return;
     }

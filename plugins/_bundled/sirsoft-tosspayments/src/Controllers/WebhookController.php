@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\Tosspayments\Controllers;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
@@ -91,7 +92,21 @@ class WebhookController
                 return $this->plain('UNAUTHORIZED', 401);
             }
 
-            // 3. 저장 컨텍스트 검증 — 입금대기 상태여야 함
+            // 3. 취소된 주문의 입금통보는 받지 않는다 (코어 P4 와 같은 가드).
+            //
+            // 고객이 취소한 뒤에 입금해도 통보는 도착한다. 통과시키면 `CANCELLED` 주문이
+            // 결제완료로 되살아나 재고·마일리지가 재차감된다. 아래 결제상태 가드만으로는
+            // 부족하다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이
+            // 그 가드를 통과한다. 재전송을 멈추도록 200 으로 응답한다.
+            if ($order->order_status === OrderStatusEnum::CANCELLED) {
+                Log::warning('TossPayments: deposit webhook - order is cancelled', [
+                    'orderId' => $orderId,
+                ]);
+
+                return $this->plain('OK');
+            }
+
+            // 4. 저장 컨텍스트 검증 — 입금대기 상태여야 함
             $paymentStatus = $payment->payment_status instanceof PaymentStatusEnum
                 ? $payment->payment_status->value
                 : (string) $payment->payment_status;
@@ -106,7 +121,7 @@ class WebhookController
                 return $this->plain('OK');
             }
 
-            // 4. 상태별 처리 (부수 작업은 completePayment/failPayment 내부 훅에 위임)
+            // 5. 상태별 처리 (부수 작업은 completePayment/failPayment 내부 훅에 위임)
             if ($status === 'DONE') {
                 $this->orderService->completePayment($order, [
                     'transaction_id' => $transactionKey ?: $payment->transaction_id,

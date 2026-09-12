@@ -151,7 +151,7 @@ async function mockGuestOrderScreens(
             available_quantity: 1,
             locked_quantity: 0,
             claimable_types: ['exchange', 'return', 'refund'],
-            refund_branch: 'refund',
+            refund_branch: 'request',
           },
         ],
         reasons: {},
@@ -268,7 +268,7 @@ test.describe('비회원 클레임 화면', () => {
     // 비회원에게는 주문을 가로지르는 신청내역이 없다 — 이 섹션이 곧 그 목록이고 서브탭도 같다.
     for (const label of ['교환', '반품', '환불', '취소']) {
       await expect(
-        page.getByRole('button', { name: label, exact: true }),
+        page.getByRole('button', { name: new RegExp(`^${label}( \\d+)?$`) }),
         `${label} 서브탭이 없다`,
       ).toBeVisible();
     }
@@ -305,8 +305,8 @@ test.describe('비회원 클레임 화면', () => {
       .toBe(true);
 
     // 반품만 활성(진한 밑줄) — 교환 탭의 빈 안내가 먼저 보이지 않는다
-    await expect(page.getByRole('button', { name: '반품', exact: true })).toHaveClass(/border-gray-900/);
-    await expect(page.getByRole('button', { name: '교환', exact: true })).not.toHaveClass(/border-gray-900/);
+    await expect(page.getByRole('button', { name: /^반품( \d+)?$/ })).toHaveClass(/border-gray-900/);
+    await expect(page.getByRole('button', { name: /^교환( \d+)?$/ })).not.toHaveClass(/border-gray-900/);
     expect(new URL(page.url()).searchParams.get('type')).toBeNull();
 
     // 화면이 유형을 정하지 않았다 — 나간 요청의 type 은 전부 비어 있다

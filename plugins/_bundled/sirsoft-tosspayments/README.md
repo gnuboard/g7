@@ -149,7 +149,7 @@ https://your-domain.com/plugins/sirsoft-tosspayments/webhook/deposit
 개별 버튼으로 노출하고 싶다면 `order_sheet_mode`를 켜고 해당 `method_*` 플래그를
 활성화하세요.
 
-**결제 취소/부분취소**: 관리자가 주문 취소를 요청(`cancel_pg=true`)하면 코어가
+**결제 취소/부분취소**: 관리자가 주문 취소를 요청하면 코어가 **환불신청서**를 만들고, 그 환불이 집행되는 시점에
 `sirsoft-ecommerce.payment.refund` 필터 훅을 발화하고, `PaymentRefundListener`가
 토스페이먼츠 취소 API를 호출합니다. `after_cancel`은 취소 API 가 **성공했을 때만**
 발화합니다 — 실패하면 `TossPaymentsApiException`이 던져지고 코어가 이를 받아 취소 요청

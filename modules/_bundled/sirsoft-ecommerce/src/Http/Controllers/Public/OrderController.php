@@ -296,6 +296,10 @@ class OrderController extends PublicBaseController
                     reasonDetail: $request->getReasonDetail(),
                     cancelledBy: null,
                     refundPriority: $request->getRefundPriority(),
+                    // 구매자(비회원) 본인 요청 — 고객 축으로 접수한다. 운영자 축으로 접수되면
+                    // 화면에 노출되지 않는 판매자 귀책 사유가 이 공개 창구로 통과해 배송비
+                    // 부담이 달라진다.
+                    buyerRequest: true,
                 );
             } else {
                 $this->cancellationService->cancelOrder(
@@ -304,6 +308,7 @@ class OrderController extends PublicBaseController
                     reasonDetail: $request->getReasonDetail(),
                     cancelledBy: null,
                     refundPriority: $request->getRefundPriority(),
+                    buyerRequest: true,
                 );
             }
 

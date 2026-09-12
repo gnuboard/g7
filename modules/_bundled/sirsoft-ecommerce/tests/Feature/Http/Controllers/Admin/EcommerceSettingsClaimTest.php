@@ -76,6 +76,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             'auto_approve_zero_charge' => true,
             'auto_approve_after_payment' => true,
             'auto_approve_refund_request' => true,
+            'auto_approve_refund_statuses' => ['preparing', 'shipping'],
             'max_images' => 8,
             'image_max_size_kb' => 4096,
             'request_period_days' => 14,
@@ -223,6 +224,9 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
         $this->assertSame(['card'], $settings->getSetting('claim.charge_payment_methods'));
         $this->assertTrue((bool) $settings->getSetting('claim.auto_approve_zero_charge'));
         $this->assertTrue((bool) $settings->getSetting('claim.auto_approve_refund_request'));
+        // D8 — 토글만으로는 "출고 전만 자동승인" 같은 운영을 표현할 수 없다. 대상 상태 목록이
+        // 저장 경로를 갖지 못하면 그 축이 통째로 닫힌 채 응답만 200 이 된다.
+        $this->assertSame(['preparing', 'shipping'], $settings->getSetting('claim.auto_approve_refund_statuses'));
         $this->assertSame(14, $settings->getSetting('claim.request_period_days'));
         $this->assertFalse((bool) $settings->getSetting('claim.complete_defaults.create_refund_request'));
         $this->assertFalse((bool) $settings->getSetting('claim.complete_defaults.restore_stock'));
@@ -471,6 +475,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             '교환 신청 가능 상태 어휘 밖' => [['exchange_requestable_statuses' => ['not_a_status']], 'claim.exchange_requestable_statuses.0'],
             '반품 신청 가능 상태 어휘 밖' => [['return_requestable_statuses' => ['not_a_status']], 'claim.return_requestable_statuses.0'],
             '즉시취소 가능 상태 어휘 밖' => [['instant_cancel_statuses' => ['cancelled']], 'claim.instant_cancel_statuses.0'],
+            '자동승인 대상 상태 어휘 밖' => [['auto_approve_refund_statuses' => ['delivered']], 'claim.auto_approve_refund_statuses.0'],
             '환불신청 가능 상태 어휘 밖' => [['refund_request_statuses' => ['not_a_status']], 'claim.refund_request_statuses.0'],
             '청구 방식 어휘 밖' => [['allowed_charge_methods' => ['pay_someday']], 'claim.allowed_charge_methods.0'],
             '결제수단 어휘 밖' => [['charge_payment_methods' => ['crypto']], 'claim.charge_payment_methods.0'],
@@ -516,7 +521,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      *
      * @scenario reason_type=refund
      *
-     * @effects settings_claim_invalid_vocabulary_rejected
+     * @effects settings_claim_invalid_vocabulary_rejected, auto_approve_refund_statuses_rejects_unknown_values
      */
     #[Test]
     #[DataProvider('invalidPolicyProvider')]
@@ -1760,5 +1765,52 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ClaimReason::where('type', 'exchange')->where('code', $unused->code)->first(),
             '쓰이지 않는 잔여까지 보존하면 stale 정리가 무의미해진다'
         );
+    }
+
+    /**
+     * 자동 전이 대상 상태에 **미결제 2종**을 지정할 수 있다. (#599 후속 D10)
+     *
+     * 이 축은 `order_settings.cancellable_statuses` 의 별칭이다. `Order::isCancellable()` 은
+     * 미결제를 목록과 무관하게 **항상** 허용하므로 주문 단위 취소 판정은 달라지지 않는다 —
+     * 달라지는 것은 **상품 단위 신청 자격**(`branchForStatus`)이고, 그것이 D10 이 여는 축이다.
+     * 허용 어휘에서 빠져 있으면 화면에서 고를 수 없고 API 로도 422 가 된다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects instant_cancel_statuses_accepts_pending_states
+     */
+    #[Test]
+    public function claim_auto_advance_status_list_accepts_pending_payment_states(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => $this->claimPolicyPayload([
+                'instant_cancel_statuses' => ['pending_order', 'pending_payment', 'payment_complete'],
+            ])])
+            ->assertOk();
+
+        $settings = app(EcommerceSettingsService::class);
+        $settings->clearCache();
+
+        $this->assertSame(
+            ['pending_order', 'pending_payment', 'payment_complete'],
+            $settings->getSetting('claim.instant_cancel_statuses'),
+        );
+    }
+
+    /**
+     * 기본값에 미결제 2종이 들어 있다. (#599 후속 D10)
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects instant_cancel_statuses_default_includes_pending_states
+     */
+    #[Test]
+    public function claim_default_auto_advance_status_list_includes_pending_payment_states(): void
+    {
+        $defaults = app(EcommerceSettingsService::class)->getSetting('claim.instant_cancel_statuses');
+
+        $this->assertContains('pending_order', $defaults);
+        $this->assertContains('pending_payment', $defaults);
+        $this->assertContains('payment_complete', $defaults);
     }
 }

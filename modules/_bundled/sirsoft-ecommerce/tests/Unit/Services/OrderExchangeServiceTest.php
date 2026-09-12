@@ -24,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -40,6 +41,7 @@ use Modules\Sirsoft\Ecommerce\Services\ClaimQuantityGuard;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderAdjustmentService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimAdjustmentOrders;
@@ -638,18 +640,38 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @effects exchange_guest_request_has_no_requester
+     * 비회원 판정은 **주문의 주인**이 정한다 — 신청자 컬럼이 아니다.
+     *
+     * `requested_by` 는 비회원 신청·운영자 대리 접수·시스템 자동 취소가 모두 null 이라(§4-3-1),
+     * 그 값으로 가르면 **회원 주문의 운영자 접수 건이 「비회원」으로 표시된다**(2026-09-12 실측).
+     *
+     * @effects exchange_guest_flag_reads_the_order_owner
      */
-    public function test_guest_request_has_no_requester(): void
+    public function test_guest_flag_reads_the_order_owner(): void
     {
-        $order = $this->deliveredOrder();
-        $payload = $this->payload($order);
+        $memberOrder = $this->deliveredOrder();
+        $payload = $this->payload($memberOrder);
         $payload['requested_by'] = null;
 
-        $exchange = $this->service->requestExchange($order, $payload);
+        $memberExchange = $this->service->requestExchange($memberOrder, $payload);
 
-        $this->assertNull($exchange->requested_by);
-        $this->assertTrue($exchange->isGuestRequest());
+        $this->assertNull($memberExchange->requested_by);
+        $this->assertFalse(
+            $memberExchange->fresh('order')->isGuestRequest(),
+            '회원 주문의 신청을 비회원으로 표시하면 운영자가 연락 수단을 잘못 고른다',
+        );
+
+        $guestOrder = $this->deliveredOrder();
+        $guestOrder->forceFill(['user_id' => null])->save();
+        $guestPayload = $this->payload($guestOrder->fresh());
+        $guestPayload['requested_by'] = null;
+
+        $guestExchange = $this->service->requestExchange($guestOrder->fresh(), $guestPayload);
+
+        $this->assertTrue(
+            $guestExchange->fresh('order')->isGuestRequest(),
+            '주인이 없는 주문은 비회원이다 — 이 방향까지 잠가야 판정이 한쪽으로 굳지 않는다',
+        );
     }
 
     // ================================================================
@@ -2273,6 +2295,58 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
     }
 
+    /**
+     * 교환 차액 환불의 **신청상품 행 생성**도 상품 축 활동로그를 남긴다 (§7-1 C11).
+     *
+     * 헤더 훅만 쏘면 "차액 환불신청서가 생겼다" 한 줄로 끝나고, 어느 상품의 차액인지는 어떤 줄에도
+     * 남지 않는다. DoD 4 는 §7-1 표의 `✕ 없음` 행이 0 이어야 한다고 적었다.
+     * 새로 생기는 행이라 이전 값은 `null` 이다(교환 재발송 신규행과 같은 표기).
+     *
+     * 되돌리면 red — 생성 지점에서 상품 축 훅 발행을 빼면 수집된 배열이 빈다.
+     *
+     * @scenario exchange_mode=change, preview_result=ok
+     *
+     * @effects exchange_refund_option_rows_announce_their_creation
+     */
+    public function test_complete_refund_announces_the_created_option_rows(): void
+    {
+        $announced = [];
+
+        HookManager::addAction(
+            'sirsoft-ecommerce.claim.refund.option_status_changed',
+            function ($refund, array $changes = []) use (&$announced) {
+                foreach ($changes as $change) {
+                    $announced[] = $change;
+                }
+            },
+        );
+
+        [$exchange, $order] = $this->redeliveredExchange(-4000);
+
+        $this->service->completeExchange($exchange, [], $this->completionOptions($exchange, false, true));
+
+        $refund = OrderRefund::where('order_id', $order->id)->firstOrFail();
+
+        $this->assertNotEmpty(
+            $announced,
+            '교환 차액 환불의 신청상품 행 생성이 상품 축 훅을 발행해야 활동로그가 상품 단위로 남는다',
+        );
+        $this->assertArrayHasKey(
+            'previous',
+            $announced[0],
+            '이전 값 키가 없으면 활동로그가 「무엇에서 무엇으로」를 그릴 수 없다',
+        );
+        $this->assertNull(
+            $announced[0]['previous'],
+            '새로 생기는 행이므로 이전 값은 null 이다',
+        );
+        $this->assertSame(
+            OrderRefundOption::where('order_refund_id', $refund->id)->count(),
+            count($announced),
+            '생성된 신청상품 행 전건이 알려져야 한다 — 일부만 알리면 나머지는 로그에 없다',
+        );
+    }
+
     public function test_complete_with_refund_request_creates_exactly_one_refund_for_the_difference(): void
     {
         [$exchange, $order] = $this->redeliveredExchange(-4000);
@@ -2293,6 +2367,45 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertCount(1, $rows);
         $this->assertSame(4000.0, (float) $rows->first()->refund_amount);
         $this->assertSame($exchange->exchangeOptions->first()->order_option_id, $rows->first()->order_option_id);
+    }
+
+    /**
+     * 차액 환불이 집행되면 **취소신청서**가 생기고, 상품 상태는 `exchanged` 를 유지한다 (D13).
+     *
+     * 교환도 환불 프로세스를 따르므로 돈이 빠진 사실은 취소신청서로 남는다. 그렇다고 상품까지
+     * `cancelled` 로 뒤집으면 **교환 이력이 사라진다** — 고객은 물건을 받았고(후속 옵션),
+     * 원 행은 그 사실을 `exchanged` 로 기록한다.
+     *
+     * 금액 축도 다르다. 교환 차액 환불은 상품이 주문에 **남으므로** 취소 기록이 주문 합계를
+     * 재계산하지 않는다 — 재계산하면 고객이 가진 물건의 값이 주문에서 사라진다(§12-B B2).
+     *
+     * @scenario exchange_mode=change, preview_result=ok
+     *
+     * @effects exchange_refund_completion_records_a_cancellation
+     */
+    public function test_a_completed_exchange_refund_records_a_cancellation_while_items_stay_exchanged(): void
+    {
+        [$exchange, $order] = $this->redeliveredExchange(-4000);
+
+        $this->service->completeExchange($exchange, [], $this->completionOptions($exchange, false, true));
+
+        $refund = OrderRefund::where('order_id', $order->id)->firstOrFail();
+
+        // 교환 차액 환불은 접수에서 멈춘다 — 운영자가 승인하고 [환불하기]를 눌러야 집행된다.
+        $refundService = app(OrderRefundRequestService::class);
+        $refundService->transition($refund, RefundStatusEnum::APPROVED);
+        $refundService->executeRefund($refund->fresh(['refundOptions']));
+
+        $cancel = OrderCancel::where('order_id', $order->id)->first();
+        $this->assertNotNull($cancel, '환불이 집행됐으면 취소신청서가 생긴다 (D3·D13)');
+        $this->assertSame($cancel->id, $refund->fresh()->order_cancel_id);
+
+        // 상품은 교환완료로 남는다 — 취소로 뒤집히지 않는다.
+        $this->assertSame(
+            OrderStatusEnum::EXCHANGED,
+            $order->options->first()->fresh()->option_status,
+            '교환 상품이 취소로 뒤집히면 교환 이력이 사라진다 (D13)',
+        );
     }
 
     public function test_complete_refund_deducts_the_round_trip_fee_when_charged_from_the_refund(): void

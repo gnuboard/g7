@@ -83,6 +83,7 @@ return [
     'cancel_option_already_cancelled' => '이미 취소된 주문 옵션입니다.',
     'cancel_quantity_invalid' => '취소 수량이 유효하지 않습니다.',
     'cancel_refund_negative' => '이 상품을 취소하면 적용 중인 할인 조건이 바뀌어 결제금액이 늘어나 취소할 수 없습니다.',
+    'partial_cancel_not_supported' => '이 주문의 결제수단은 부분취소를 지원하지 않습니다. 전액취소만 가능합니다.',
     'pg_refund_failed' => 'PG 환불 처리에 실패했습니다. (:error)',
     'order_cancel_failed' => '주문 취소 처리에 실패했습니다.',
     'order_estimate_refund_failed' => '환불 예상금액 계산에 실패했습니다.',

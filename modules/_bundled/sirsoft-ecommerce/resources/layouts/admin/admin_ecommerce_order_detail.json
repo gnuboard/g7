@@ -196,7 +196,6 @@
         "cancelItems": [],
         "cancelReason": "",
         "cancelReasonDetail": "",
-        "cancelPg": true,
         "refundEstimate": null,
         "refundLoading": false,
         "isCancelling": false,

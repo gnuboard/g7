@@ -106,14 +106,27 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 채번합니다. 상태 흐름은 `pending_order → pending_payment → payment_complete → …`
 (`OrderStatusEnum` 10 케이스)입니다.
 
-**취소·환불**: `Admin\OrderCancelController` / `User\OrderController` → FormRequest →
-`OrderCancellationService`(취소 단위는 주문이 아니라 **옵션**입니다 — `OrderCancel` +
-`OrderCancelOption`) → `OrderAdjustmentService` 가 이미 적용된 쿠폰·마일리지의 안분을 되돌리고
-(`adjustment.filter_restore_promotions` 필터로 그 안분 규칙을 확장할 수 있습니다) →
-`OrderRefund` + `OrderRefundOption` 생성 → 환불 수단(`RefundMethodEnum`: `pg`/`bank`/`points`)
-에 따라 PG 플러그인 또는 마일리지 원장으로 실제 반환이 나갑니다. 쿠폰 복원·마일리지 복원 훅은
-**호출자 트랜잭션과 함께 되돌아가야 하므로 `sync => true` 로 구독**합니다(기본값인 큐 래핑은
-커밋 뒤에 실행되어 예외를 던져도 롤백되지 않습니다).
+**취소·환불**: 입구가 하나이고(`refund-requests`) 서버가 **상품 상태**로 전이 방식을 가릅니다.
+결제된 주문의 취소·환불은 **언제나 환불신청서를 거칩니다** — `OrderRefundRequestService` 가
+`OrderRefund` + `OrderRefundOption` 을 `requested` 로 만들고, 분기가 `auto` 면 `autoAdvance()` 가
+`승인 → 완료` 를 실제로 밟습니다(단계를 건너뛰지 않아 활동 로그가 단계마다 남습니다). 종착점은
+환불 수단(`RefundMethodEnum`: `pg`/`bank`/`points`)이 가릅니다 — PG·마일리지는 완료까지, 계좌는
+승인에서 멈추고 운영자의 [환불하기]를 기다립니다.
+
+**취소신청서(`OrderCancel` + `OrderCancelOption`)는 환불이 집행되는 순간 생깁니다.** 만드는
+지점은 `OrderCancellationService::recordCancellation()` **하나**이며, 그 메서드가 주문 장부
+확정(합계 재계산 · 누적 컬럼 · 상품 상태 전이 · 결제행 정리)까지 함께 맡습니다. 취소 단위는
+주문이 아니라 **옵션**입니다. 환불할 돈이 없는 주문(미결제·0원)만 환불신청서 없이 취소신청서가
+즉시 생깁니다.
+
+금액 계산은 `OrderAdjustmentService` 가 이미 적용된 쿠폰·마일리지의 안분을 되돌립니다
+(`adjustment.filter_restore_promotions` 필터로 그 안분 규칙을 확장할 수 있습니다). 쿠폰 복원·
+마일리지 복원 훅은 **호출자 트랜잭션과 함께 되돌아가야 하므로 `sync => true` 로 구독**합니다
+(기본값인 큐 래핑은 커밋 뒤에 실행되어 예외를 던져도 롤백되지 않습니다).
+
+잔여 환불 한도는 `total_paid_amount − total_refunded_amount` 입니다. 환불이 집행된 경로는
+환불 누적이 그 축을 이미 깎으므로 `recordCancellation()` 이 `total_paid_amount` 를 재계산값으로
+덮어쓰지 않습니다 — 둘 다 쓰면 같은 금액이 두 번 빠져 **2차 부분환불이 0원**이 됩니다.
 
 **상품 저장 → 색인·SEO**: `Admin\ProductController` → `StoreProductRequest`
 (`product.create_validation_rules` 필터로 확장 지점 제공) → `ProductService`
@@ -144,8 +157,8 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 525개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 169개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 발행 훅 | 533개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 176개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 38개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 12개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -171,7 +184,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 결제 직전/취소/입금확인에 본인인증 강제 | `getIdentityPolicies()` 가 선언한 4개 정책의 target 훅 (`checkout.before_payment` · `payment.before_cancel` · `payment.before_approve` · `payment.before_confirm_deposit`) — 기본 `enabled: false` |
 | 상품 문의를 다른 저장소로 | `inquiry.store_validation_rules` · `inquiry.update_validation_rules` + 게시판 측 `sirsoft-board.post.after_*` (`ProductInquiryBoardListener` 가 선례) |
 | 재고 차감/복원 시점 개입 | `stock.*` 4종 |
-| 클레임 신청서의 접수·전이·완료·철회·금액 수정에 개입 | `claim.exchange.*` · `claim.return.*` · `claim.refund.*` (전이는 `status_changed` 한 축 + 승인·반려·철회·완료의 구체 훅이 함께 발화) |
+| 클레임 신청서의 접수·전이·완료·철회·금액 수정에 개입 | `claim.exchange.*` · `claim.return.*` · `claim.refund.*` · `claim.cancel.*` (전이는 `status_changed` 한 축 + 승인·반려·철회·완료의 구체 훅이 함께 발화. `claim.refund.status_changed` 는 4번째 인수로 컨텍스트를 받아 자동 전이의 중간 알림만 억제한다) |
+| 신청서의 상품 단위 전이에 개입 | `claim.{exchange,return,refund,cancel}.option_status_changed` — 헤더가 따라 움직이지 않는 조합이 있어 층이 다른 사실로 따로 낸다 |
+| 주문 상태 동기화가 끌고 간 상품 전이·운송장 정정에 개입 | `order_option.after_sync_status` · `order_shipping.tracking_updated` — 둘 다 전이 훅을 지나지 않는 경로다 |
+| 결제수단의 부분취소 지원 여부 선언 | `payment.supports_partial_cancel` 필터 — 제약을 아는 자리는 PG 플러그인이다 |
 | 새 PG 로 클레임 추가결제(`CP` 채번) 승인·환급 | `claim_payment.approve` · `claim_payment.refund` 필터 — 결제 플러그인이 구현하며 계약의 단일 출처는 `docs/api/claim-payments.md` |
 | 클레임 첨부 파일 검사·후처리 | `claim-image.filter_upload_file` · `claim-image.after_upload` · `claim-image.after_delete` |
 
@@ -220,6 +236,9 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 특정 PG 이름을 이 모듈 코드에 분기로 넣기 (`if ($pg === 'tosspayments')`) | 결제수단 카탈로그 선언(`needs_pg`/`pg_locked`/`pg_provider`)과 `payment.*` 훅 | PG 가 늘 때마다 이 모듈이 커지고, 플러그인만 설치하면 되는 구조가 깨진다 |
 | 주문번호·상품코드를 `max(id)+1` 이나 타임스탬프 조합으로 직접 생성 | `SequenceService::generateCode()` | 채번은 DB UNIQUE 제약과 함께 원자적으로 수행된다 — 직접 생성은 동시 주문에서 중복을 만든다 |
 | 취소·환불을 주문 단위로 처리 | 옵션 단위(`OrderCancelOption`/`OrderRefundOption`) | 부분 취소가 이 도메인의 기본이며, 주문 단위로 처리하면 남은 옵션의 안분 금액이 계산되지 않는다 |
+| `OrderCancel` 을 `recordCancellation()` 밖에서 만들기 | 그 메서드 한 지점 | 만드는 지점이 둘이면 합계 재계산·누적 컬럼 갱신이 경로마다 갈리고, 같은 취소가 경로에 따라 다른 장부를 남긴다 |
+| 최종 상태를 바로 INSERT 해 전이 단계를 건너뛰기 | `transition()` 으로 실제로 거치기 | 활동 로그가 한 줄만 남아 운영자가 승인 경위를 되짚을 수 없다. 한 트랜잭션 안이어도 단계를 밟는다 |
+| PG 를 부르지 않은 취소에 `COMPLETED` + `refunded_at` 찍기 | `APPROVED`(수동 송금 대기) | 고객 카드는 그대로인데 장부만 환불완료가 된다. 완료는 [환불하기]가 찍는다 |
 | 클레임 신청·완료 처리에서 주문 행 잠금 없이 잔여 수량을 읽어 검증 | `ClaimQuantityGuard` + `OrderRepository::findForUpdate()` 를 한 트랜잭션 안에서 | 두 요청이 같은 잔여를 보고 각각 통과해 신청 합계가 잔여 수량을 넘는다 |
 | 취소 가능 금액을 화면이나 서비스에서 따로 계산 | `CancellableAmountCalculator::calculate()` 하나를 표시와 실행 가드가 함께 쓴다 | 화면이 예고한 금액과 실제 실행 상한이 갈리고, 어긋남은 환불이 나간 뒤에야 드러난다 |
 | 완료 처리 옵션(재고 복구 · 환불신청서 접수)의 기본값을 서비스가 설정에서 읽어 채움 | 호출자가 `ClaimCompletionOptions` 를 명시 전달 (`claim.complete_defaults.*` 는 화면 초기 선택값 전용) | "요청에 없으면 설정대로" 가 되면 운영자가 고르지 않은 재고 복구·환불 접수가 조용히 실행된다 |
@@ -231,10 +250,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 476개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 482개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 164개 | `vitest.config.ts` |
 | Playwright | 57개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 113개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 114개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

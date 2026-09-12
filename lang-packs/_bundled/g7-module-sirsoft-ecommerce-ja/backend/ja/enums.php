@@ -348,5 +348,6 @@ return [
         'return' => '返品',
         'exchange' => '交換差額',
         'direct' => '管理者による直接返金',
+        'admin' => '運営者受付',
     ],
 ];

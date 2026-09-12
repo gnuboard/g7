@@ -155,7 +155,7 @@ class CancellableAmountCalculator
             ];
         }
 
-        if ($refund->refund_source_type === RefundSourceTypeEnum::DIRECT && $items !== []) {
+        if ($refund->refund_source_type?->ownsOptionQuantities() && $items !== []) {
             return $this->calculate($order, $items, ClaimTypeEnum::REFUND, null, $excludeClaims, $refundPriority);
         }
 

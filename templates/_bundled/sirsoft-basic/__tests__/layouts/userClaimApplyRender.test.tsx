@@ -169,7 +169,7 @@ function comparisonAdjustment(overrides: Record<string, any> = {}): Record<strin
 function comparisonState(overrides: Record<string, any> = {}, adjustmentOverrides: Record<string, any> = {}): Record<string, any> {
   return {
     claimType: 'refund',
-    claimResolvedBranch: 'cancel',
+    claimResolvedBranch: 'auto',
     claimApiBase: '/api/x',
     claimEditMode: false,
     claimComparisonOpen: true,
@@ -634,7 +634,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_refund_branch_drives_notice_and_submit_label
    */
   it('취소 분기 — 안내 문구가 즉시취소로 나오고 실행 버튼이 주문 취소가 된다 (§6-3)', async () => {
@@ -642,7 +642,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
       '_apply_summary.json',
       estimateState({
         claimType: 'refund',
-        claimResolvedBranch: 'cancel',
+        claimResolvedBranch: 'auto',
         claimItems: [{ order_option_id: 410, selected: true }],
         claimReason: 'changed_mind',
         claimEstimate: { adjustment: { refund_total: 10000 } },
@@ -659,7 +659,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=refund
+   * @scenario claim_type=refund, charge_method=none, refund_branch=request
    * @effects claim_apply_refund_branch_drives_notice_and_submit_label,
    *   claim_apply_refund_account_shown_only_for_bank_refunds,
    *   claim_apply_refund_bank_error_renders_beside_the_card
@@ -669,7 +669,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
       '_apply_summary.json',
       estimateState({
         claimType: 'refund',
-        claimResolvedBranch: 'refund',
+        claimResolvedBranch: 'request',
         claimItems: [{ order_option_id: 411, selected: true }],
         claimReason: 'changed_mind',
         claimEstimate: { adjustment: { refund_total: 20000 } },
@@ -813,7 +813,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
       '_apply_items.json',
       itemState({
         claimType: 'refund',
-        claimResolvedBranch: 'cancel',
+        claimResolvedBranch: 'auto',
         claimableSnapshot: { resolved_type: 'mixed' },
         claimItems: [
           {
@@ -822,7 +822,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
             selected: true,
             quantity: 1,
             available_quantity: 1,
-            refund_branch: 'cancel',
+            refund_branch: 'auto',
             unit_price_formatted: '10,000원',
             mc_unit_price: [],
             validation_error: '',
@@ -833,7 +833,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
             selected: false,
             quantity: 1,
             available_quantity: 1,
-            refund_branch: 'refund',
+            refund_branch: 'request',
             unit_price_formatted: '20,000원',
             mc_unit_price: [],
             validation_error: '',
@@ -922,7 +922,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   // ── 주문금액 비교 섹션 (#599 후속 — 옛 취소 모달의 비교표 복구) ──────────
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_comparison_table_renders_sixteen_rows
    */
   it('비교표 — 취소 신청서에서 16행(쿠폰 있음 · 치환 없음 = 15행) 라벨과 금액이 한국어 글자로 난다', async () => {
@@ -954,7 +954,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_comparison_highlights_changed_after_values
    */
   it('비교표 — 후열은 전열과 다른 행만 강조색이다', async () => {
@@ -974,7 +974,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_comparison_table_renders_sixteen_rows
    */
   it('비교표 — 정가·판매가·실결제 3행은 보조통화를 병기한다 (기준 통화는 뺀다)', async () => {
@@ -1031,7 +1031,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_cancel_blocked_locks_submit_inline
    */
   it('환불 불가 — 사유와 안내가 표 아래 인라인으로 남고 제출 버튼이 잠긴다 (P3-①)', async () => {
@@ -1051,7 +1051,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
       '_apply_summary.json',
       estimateState({
         claimType: 'refund',
-        claimResolvedBranch: 'cancel',
+        claimResolvedBranch: 'auto',
         claimItems: [{ order_option_id: 410, selected: true }],
         claimReason: 'changed_mind',
         claimComparisonOpen: true,
@@ -1066,7 +1066,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_refund_priority_reestimates
    */
   it('환불 우선순위 라디오 — 마일리지를 쓴 주문에서만 선다 (P3-③)', async () => {
@@ -1074,7 +1074,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
       '_apply_summary.json',
       estimateState({
         claimType: 'refund',
-        claimResolvedBranch: 'cancel',
+        claimResolvedBranch: 'auto',
         claimRefundPriority: 'pg_first',
         claimEstimate: { refund_product_amount: 0, adjustment: comparisonAdjustment() },
       }),
@@ -1091,7 +1091,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
       '_apply_summary.json',
       estimateState({
         claimType: 'refund',
-        claimResolvedBranch: 'cancel',
+        claimResolvedBranch: 'auto',
         claimEstimate: {
           refund_product_amount: 0,
           adjustment: comparisonAdjustment({ original_snapshot: { ...ORIGINAL_SNAPSHOT, total_points_used_amount: 0 } }),
@@ -1104,7 +1104,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_restored_coupons_and_remaining_balances_render
    */
   it('환불 요약 — 잔여 결제 잔액·잔여 마일리지 2행과 복원 쿠폰 블록이 글자로 난다 (P3-②·④)', async () => {
@@ -1130,7 +1130,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
-   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_comparison_default_open_follows_breakpoint
    */
   it('접힘 상태 — 본문은 렌더하지 않고 토글만 aria-expanded=false 로 선다 (P6)', async () => {

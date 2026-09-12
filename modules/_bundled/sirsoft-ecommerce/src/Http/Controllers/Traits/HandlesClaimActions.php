@@ -172,6 +172,15 @@ trait HandlesClaimActions
     /**
      * 취소·환불을 신청합니다. (D2 자동 분기)
      *
+     * 접수 결과는 **언제나 환불신청서**다(D2) — `branch` 는 그 신청서가 어디까지 자동으로
+     * 갔는지를 말할 뿐이다(`auto` = 승인·완료까지 자동 / `request` = 접수에서 정지).
+     * 화면은 이 값을 읽어 안내 문구와 이동 주소를 정한다(F8 — 예전에는 클라이언트가
+     * 주문 전체 기준 `resolved_type` 으로 추측해, 혼재 주문에서 접수한 탭과 이동한 탭이
+     * 갈렸다).
+     *
+     * 예외는 **환불할 돈이 없는 주문**(미결제·0원)이다 — 환불신청서 없이 취소신청서만
+     * 생기므로 `claim` 에 취소신청서를 싣고 `claim_type` 으로 구분한다.
+     *
      * @param  StoreRefundRequestRequest  $request  검증된 요청
      * @return JsonResponse 응답
      */
@@ -180,11 +189,11 @@ trait HandlesClaimActions
         try {
             $result = $this->claims()->requestRefund($request->getOrder(), $request->toServicePayload(), $request->imageIds());
 
-            if ($result['branch'] === 'cancel') {
-                $cancel = $result['cancel']->orderCancel->fresh(['cancelOptions.orderOption', 'refund', 'order']);
+            if ($result['refund'] === null) {
+                $cancel = $result['cancel']->fresh(['cancelOptions.orderOption', 'refund', 'order']);
 
                 return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.cancelled_instantly', [
-                    'branch' => 'cancel',
+                    'branch' => $result['branch'],
                     'claim' => $this->claimResource($cancel)->toArray(request()),
                 ], 201);
             }
@@ -192,14 +201,20 @@ trait HandlesClaimActions
             $refund = $result['refund']->fresh(['refundOptions.orderOption', 'images', 'order']);
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.requested', [
-                'branch' => 'refund',
+                'branch' => $result['branch'],
                 'claim' => $this->claimResource($refund)->toArray(request()),
             ], 201);
         } catch (OrderClaimException $e) {
             return $this->claimDomainError($e);
         } catch (OrderCancellationException $e) {
-            // 즉시취소 파이프라인의 거절 — 취소 경로와 같은 422 계약
-            return ResponseHelper::error('sirsoft-ecommerce::exceptions.order_cancel_failed', 422);
+            // 자동 전이 중 PG 환불 거절 — D15 에 따라 접수까지 전체 롤백된 상태다.
+            // 사유를 실어야 고객·운영자가 무엇 때문에 막혔는지 안다(P13).
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.order_cancel_failed',
+                422,
+                ['detail' => $e->getMessage()],
+            );
         } catch (Exception $e) {
             return $this->claimServerError('refund-request', $e);
         }

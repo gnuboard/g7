@@ -70,7 +70,7 @@ KG 이니시스 PG(결제 게이트웨이)를 `sirsoft-ecommerce`에 연결하�
 — 이 지점이 실패하면 "PG 는 승인, 우리는 실패"인 가장 위험한 상태이므로 반드시 오류 로그를
 남깁니다.
 
-**결제 취소(환불)**: 관리자가 주문 취소(`cancel_pg=true`) → 코어가
+**결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → 이 플러그인의 `PaymentRefundListener`
 (우선순위 10)가 먼저 KG 이니시스 취소 API 호출 → `CancelActivityLogListener`(우선순위 20)가
 그 결과(PG 응답 시각·취소 TID)를 활동 로그에 별도 기록. 우선순위 순서가 중요합니다 — 취소가

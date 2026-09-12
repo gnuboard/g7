@@ -45,7 +45,8 @@ export type ClaimableSeed = {
   availableQuantity?: number;
   lockedQuantity?: number;
   types: string[];
-  refundBranch?: 'cancel' | 'refund' | null;
+  /** 취소·환불 분기 — `auto`(접수 후 자동 전이) · `request`(접수 후 승인 대기). 두 값 모두 환불신청서를 만든다(#599 후속 D2). */
+  refundBranch?: 'auto' | 'request' | null;
 };
 
 /**

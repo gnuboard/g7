@@ -197,6 +197,7 @@ return [
         'deposit_confirm_failed' => '入金確認処理に失敗しました。',
         'deposit_amount_mismatch' => '入金額が決済予定金額と一致しません。',
         'deposit_not_dbank' => '銀行振込注文のみ入金確認できます。',
+        'deposit_order_cancelled' => 'キャンセルされた注文は入金確認できません。',
         'deposit_not_pending' => '未決済状態の注文のみ入金確認できます。',
         'payment_name_summary' => ':name ほか :count件',
         'deposit' => [
@@ -648,8 +649,6 @@ return [
                     'cancel' => [
                         'title' => '注文キャンセル',
                         'description' => '選択した商品の注文をキャンセルします。返金予想金額を確認してから進めてください。',
-                        'cancel_pg' => 'PG決済もキャンセルします',
-                        'cancel_pg_hint' => 'チェック解除時はPGキャンセルなしで注文ステータスのみ変更します。',
                         'reason' => 'キャンセル理由',
                         'reason_placeholder' => 'キャンセル理由を選択してください',
                         'reason_detail' => '詳細理由',

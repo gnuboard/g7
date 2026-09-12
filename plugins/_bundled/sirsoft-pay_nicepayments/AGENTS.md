@@ -70,7 +70,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 처리. 결제 요청 시점에 주문의 `total_tax_amount`/`total_vat_amount`/`total_tax_free_amount`
 가 모두 0이 아니면 과세 필드를 폼에 포함합니다(§4 "과세 처리").
 
-**결제 취소(환불)**: 관리자가 주문 취소(`cancel_pg=true`) → 코어가
+**결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`(우선순위 10)가 먼저
 나이스페이먼츠 취소 API 호출(전액취소 `isPartial=0`/부분취소 `isPartial=1`) →
 `CancelActivityLogListener`(우선순위 20)가 결과를 활동 로그에 별도 기록. 가상계좌 입금
@@ -88,7 +88,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 5개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 11개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |

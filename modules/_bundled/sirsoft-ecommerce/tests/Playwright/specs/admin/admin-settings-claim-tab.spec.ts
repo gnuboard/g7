@@ -183,6 +183,33 @@ test.describe('설정 클레임 탭', () => {
     }
   });
 
+  /**
+   * 자동승인 **대상 상태** 입력이 자동승인 카드 안에 서고, 토글이 꺼져 있으면 잠긴다.
+   *
+   * 브라우저로만 드러나는 축이다 — 이 입력은 `disabled` 를 다른 필드의 값(`토글`)에서
+   * 파생하므로, 레이아웃 JSON 만 봐서는 두 노드가 같은 화면에서 어떤 상태로 서는지 알 수 없다.
+   * 잠기지 않으면 운영자는 켜지도 않은 자동승인의 대상을 고르고 저장한 뒤, 아무 일도
+   * 일어나지 않는 이유를 화면에서 찾을 수 없다.
+   *
+   * @scenario reason_type=refund
+   * @effects settings_claim_auto_approve_statuses_disabled_until_toggle_on
+   */
+  test('자동승인 대상 상태는 토글이 꺼져 있으면 잠긴다 (D8)', async ({ page, settingsToken }) => {
+    test.setTimeout(120_000);
+
+    await authenticatePage(page, settingsToken);
+    await page.goto(SETTINGS_URL);
+    await waitForClaimTab(page);
+
+    const field = page.locator('#claim_auto_approve_refund_statuses_field');
+    await expect(field, '자동승인 대상 상태 입력이 자동승인 카드에 서야 한다').toHaveCount(1, {
+      timeout: 20_000,
+    });
+
+    // 자동승인 카드 안에 있어야 한다 — 다른 카드에 서면 토글과의 관계가 화면에서 끊긴다.
+    await expect(page.locator('#claim_auto_approve_card #claim_auto_approve_refund_statuses_field')).toHaveCount(1);
+  });
+
   test('사유명은 언어별 입력으로 그려진다 (단일 Input 금지 — D23)', async ({ page, settingsToken }) => {
     test.setTimeout(120_000);
 

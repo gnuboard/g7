@@ -95,10 +95,13 @@ axes:
     - partial_bank_only       # 은행만
     - partial_missing_holder  # 예금주 누락
 
-  refund_bank_requirement:    # 필수 여부 판정 (D13)
+  refund_bank_requirement:    # 필수 여부 판정 (D13 · #599 후속 P9·N10)
     - vbank_paid_required     # 가상계좌 + 입금완료 → 필수 (미입력 422)
     - vbank_waiting_optional  # 가상계좌 + 입금 전 → 선택
-    - dbank_optional          # 무통장 → 선택 (관리자 수동 이체 참조)
+    - dbank_required          # 무통장 → **필수**. 사람이 송금해야 하므로 계좌 없이 승인되면
+                              # 운영자가 송금 대상을 모르는 환불을 떠안는다 (P9)
+    - nothing_to_refund_skip  # 돌려줄 돈이 없으면 수단과 무관하게 묻지 않는다 — 요구하면
+                              # 미입금 주문을 영영 취소할 수 없다 (N10, 브라우저 실측)
     - card_hidden             # 카드·간편결제 → 필드 자체 숨김
 
   shipping_fee_tax_policy:    # 배송비 과세 3정책 (D3) — 백엔드 Enum 과 값 일치
@@ -182,11 +185,23 @@ effects:
   - cancel_refund_bank_visible_only_for_vbank_dbank
   - cancel_refund_bank_required_for_paid_vbank_422
   - cancel_refund_bank_optional_before_deposit
-  - cancel_refund_bank_optional_for_dbank
+  - cancel_refund_bank_required_for_dbank_with_money   # P9 — 사람이 송금하는 수단은 계좌 필수
+  - cancel_refund_bank_skipped_when_nothing_to_refund  # N10 — 0원이면 묻지 않는다
+  - cancel_refund_bank_hidden_when_nothing_to_refund   # N10 — 화면도 같은 축으로 감춘다
+  - cancel_refund_bank_empty_list_points_to_settings   # N7 — 은행 미등록이면 설정 자리를 지목
   - cancel_refund_bank_partial_input_rejected_422
-  - cancel_refund_bank_persisted_to_payment_row   # 환불 실행 전에 컬럼 갱신
+  - cancel_refund_bank_recorded_on_the_claim_row  # 접수는 **신청서 행**에 적는다 — 결제행은
+                                                 # 환불을 실행하는 시점에 갱신된다(#599 후속).
+                                                 # 접수만으로 결제행을 덮으면 계좌가 다른 두
+                                                 # 신청서 중 나중 접수가 앞선 송금 대상을 바꾼다
   - cancel_refund_bank_omitted_when_untouched     # 미입력 시 키 미전송 → 주문 시 계좌 보존
   - cancel_refund_bank_prefilled_from_order       # 주문 시 입력값 프리필
+
+  # 취소 뒤 세금계산서 (P15) — 취소·재발급 자동화는 범위 밖이라 **누락을 드러내는** 것이 역할이다
+  - order_detail_flags_a_stale_tax_invoice_after_cancellation  # 판정은 적재된 관계에서만 한다
+                                                 # (Resource 재쿼리는 목록에서 행 수만큼의 N+1).
+                                                 # 그래서 상세 조회의 eager load 와 짝이며, 그
+                                                 # 짝이 깨지면 배지만 조용히 사라진다
 
   # 환경설정 (W-5)
   - settings_cash_receipt_provider_persisted      # rules 누락 시 validated() 가 떨궈 저장 무효

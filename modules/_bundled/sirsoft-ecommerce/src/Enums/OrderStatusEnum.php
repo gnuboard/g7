@@ -271,13 +271,23 @@ enum OrderStatusEnum: string
      * 어긋난다(오류 없이 데이터만 어긋나는 결함). 상태 **필터**는 이 목록이 아니라
      * values() 전체를 쓴다 — 조회는 클레임 진행 건도 대상이다.
      *
+     * **취소도 같은 이유로 제외한다.** 취소는 상태 변경이 아니라 장부 행위다 — 취소신청서·
+     * 환불신청서·주문 합계·결제행 정리가 한 묶음으로 일어나야 한다. 일괄 상태변경으로
+     * `cancelled` 를 찍으면 그 경로는 재고만 복원하고 돈은 그대로 두어, 원장 어디에도
+     * 근거 없는 취소가 남는다. 결제행을 정리하지 않으므로 그 주문은 이후 입금확인·입금통보로
+     * **결제완료로 되살아난다**(P4 가 막은 결함이 그 경로로 부활한다).
+     *
+     * 취소의 입구는 하나다 — `POST .../orders/{id}/cancel` 이 클레임 접수로 흐른다.
+     *
      * @return array<self> 관리자 지정 가능 상태 목록
      */
     public static function adminAssignableStatuses(): array
     {
+        $excluded = array_merge(self::claimCourseStatuses(), [self::CANCELLED]);
+
         return array_values(array_filter(
             self::cases(),
-            fn (self $case) => ! in_array($case, self::claimCourseStatuses(), true),
+            fn (self $case) => ! in_array($case, $excluded, true),
         ));
     }
 

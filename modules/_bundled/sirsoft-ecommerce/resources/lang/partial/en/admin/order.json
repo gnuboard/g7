@@ -225,7 +225,7 @@
       },
       "cancel": {
         "title": "Cancel Order",
-        "description": "Cancel the order for selected products.",
+        "description": "Cancelling does not refund immediately. A refund request is created and the cancellation is confirmed only after approval and refund completion.",
         "validation_error_title": "Please check your input",
         "pg_error_title": "PG Refund Failed",
         "pg_error_description": "PG refund processing failed. Please check the error details and try again, or process the refund directly through the PG admin dashboard.",
@@ -233,8 +233,8 @@
         "unit_price_col": "Unit Price",
         "cancel_quantity_col": "Cancel Qty",
         "status_col": "Status",
-        "cancel_pg": "Also cancel PG payment",
-        "cancel_pg_description": "If unchecked, only the order status will be changed and PG refund must be processed separately.",
+        "auto_advance_refund_label": "Process the refund in one step",
+        "auto_advance_refund_hint": "When checked, the refund request is created and advanced through approval and completion automatically. Refunds that require a bank transfer stop at approval; an operator completes them with [Refund] after sending the money.",
         "cancel_reason_type_label": "Cancel Reason",
         "reason_placeholder": "Select cancel reason",
         "reason": {
@@ -287,13 +287,16 @@
         "close_btn": "Close",
         "estimate_failed": "Failed to calculate estimated refund.",
         "cancel_success": "Order has been cancelled.",
+        "refund_request_created": "A refund request has been filed. The cancellation is confirmed once it is approved and the refund completes.",
         "cancel_failed": "Failed to cancel order.",
         "refund_bank_label": "Refund account",
         "refund_bank_select": "Select bank",
         "refund_bank_account_placeholder": "Account number (no hyphens)",
         "refund_bank_holder_placeholder": "Account holder",
         "refund_bank_required_hint": "A refund account is required for a paid virtual account order.",
-        "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required."
+        "refund_bank_empty_hint": "No banks are registered for refund accounts. Register them first under Settings > Order settings > Manage banks.",
+        "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required.",
+        "partial_unsupported": "This payment method supports **full cancellation only**. Cancelling part of the items or quantities will be rejected by the payment gateway."
       }
     },
     "claim_history": {
@@ -426,6 +429,9 @@
       "cancel_failed": "Failed to cancel the cash receipt issuance.",
       "reissue_failed": "Reissue failed",
       "reissue_success": "The cash receipt has been reissued."
+    },
+    "tax_invoice": {
+      "needs_review": "This order has cancellations, but an issued tax invoice remains. Tax invoice cancellation or re-issuance is not automated — handle it directly with the tax authority."
     }
   },
   "preset": {

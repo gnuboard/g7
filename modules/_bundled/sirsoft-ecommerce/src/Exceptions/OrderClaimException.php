@@ -210,9 +210,14 @@ class OrderClaimException extends Exception
     }
 
     /**
-     * 환불 실행 대상이 아닌 환불 레코드일 때 (취소 발 환불 — 취소 파이프라인 소유)
+     * 취소 파이프라인이 만든 환불은 이 화면에서 실행·수정할 수 없습니다.
      *
-     * @return self 예외 인스턴스
+     * **더는 발생시키지 않는다**(#599 후속 §4-5). 취소 발(`refund_source_type=cancel`) 환불도
+     * 운영자가 완료 처리할 수 있어야 한다 — 그 행들은 `approved` 에서 멈춰 있고, 막아 두면
+     * 완료로 옮길 API 가 저장소 어디에도 없어 영구 정지한다(P1). 팩토리와 문구는 남긴다:
+     * 확장이 같은 뜻으로 쓸 수 있는 공개 표면이고, 지우면 그쪽이 조용히 깨진다.
+     *
+     * @return self 예외
      */
     public static function refundNotExecutable(): self
     {
@@ -227,6 +232,41 @@ class OrderClaimException extends Exception
     public static function refundAlreadyExecuted(): self
     {
         return new self('sirsoft-ecommerce::exceptions.claim_refund_already_executed');
+    }
+
+    /**
+     * 부분 취소·환불로 오히려 **고객이 더 내야 하는** 상황일 때
+     *
+     * 쿠폰 최소 주문금액처럼 조건이 걸린 할인은 일부 상품이 빠지면 소멸한다. 그러면 남는
+     * 상품의 재계산 결제금액이 원 결제금액보다 커져 환불액이 음수가 된다 — 돌려줄 돈이 아니라
+     * 받아야 할 돈이다. 청구 수단이 없으므로 접수 자체를 거절한다.
+     *
+     * 구형 취소 파이프라인에만 있던 가드다(그 경로는 클레임 접수로 일원화되며 사라졌다).
+     * 관리자 [주문취소]와 고객 취소·환불 신청이 모두 클레임 접수로 합류한 뒤로는 이 자리에도
+     * 있어야 한다 — 없으면 같은 주문이 창구에 따라 거절되기도 하고 통과하기도 한다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundRequiresAdditionalPayment(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.cancel_refund_negative');
+    }
+
+    /**
+     * 이 결제가 **부분취소를 지원하지 않을** 때 (P6)
+     *
+     * PG 마다 제약이 다르고 어떤 조합은 원천적으로 전액취소만 된다 — NICE 가상계좌는 코어 취소가
+     * 항상 거절되고 우회 API 는 전액취소 전용이다. 코어가 미리 막지 않으면 운영자는 수량을 줄여
+     * [취소]를 누르고 **원인 없는 PG 거절**을 받는다. 화면은 이미 경고 배너를 띄우지만 화면만
+     * 막으면 API 로 들어온 요청이 그대로 통과한다.
+     *
+     * 판정 근거는 PG 플러그인의 `payment.supports_partial_cancel` 선언이다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function partialCancelNotSupported(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.partial_cancel_not_supported');
     }
 
     /**

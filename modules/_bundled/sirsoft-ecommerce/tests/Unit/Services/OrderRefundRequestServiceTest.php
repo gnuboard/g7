@@ -91,18 +91,18 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
     // 분기 판정
     // ================================================================
 
-    public function test_payment_complete_items_resolve_to_the_cancel_branch(): void
+    public function test_payment_complete_items_resolve_to_the_auto_branch(): void
     {
         $order = $this->paidClaimOrder();
 
-        $this->assertSame('cancel', $this->service->resolveBranch($order, $this->payload($order)['items']));
+        $this->assertSame('auto', $this->service->resolveBranch($order, $this->payload($order)['items']));
     }
 
-    public function test_preparing_items_resolve_to_the_refund_branch(): void
+    public function test_preparing_items_resolve_to_the_request_branch(): void
     {
         $order = $this->preparingOrder();
 
-        $this->assertSame('refund', $this->service->resolveBranch($order, $this->payload($order)['items']));
+        $this->assertSame('request', $this->service->resolveBranch($order, $this->payload($order)['items']));
     }
 
     public function test_delivered_items_are_not_refund_requestable(): void
@@ -140,12 +140,12 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_items_required', fn () => $this->service->resolveBranch($order, []));
     }
 
-    public function test_instant_cancel_wins_when_both_lists_contain_the_same_status(): void
+    public function test_auto_branch_wins_when_both_lists_contain_the_same_status(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.refund_request_statuses', [OrderStatusEnum::PAYMENT_COMPLETE->value, OrderStatusEnum::PREPARING->value]);
         $order = $this->paidClaimOrder();
 
-        $this->assertSame('cancel', $this->service->branchForStatus(OrderStatusEnum::PAYMENT_COMPLETE));
+        $this->assertSame('auto', $this->service->branchForStatus(OrderStatusEnum::PAYMENT_COMPLETE));
     }
 
     // ================================================================
@@ -158,7 +158,7 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
 
         $preview = $this->service->previewRefund($order, $this->payload($order)['items']);
 
-        $this->assertSame('refund', $preview['branch']);
+        $this->assertSame('request', $preview['branch']);
         $this->assertSame(29000.0, (float) $preview['adjustment']->getTotalRefundAmount());
         $this->assertSame(0, OrderRefund::count());
     }
@@ -182,26 +182,57 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
             excludeRefundId: $result['refund']->id,
         );
 
-        $this->assertSame('refund', $preview['branch']);
+        $this->assertSame('request', $preview['branch']);
         $this->assertSame(58000.0, (float) $preview['adjustment']->getTotalRefundAmount());
     }
 
     // ================================================================
-    // 즉시취소 분기
+    // 자동 전이 분기 (구 즉시취소 — #599 후속 D1·D2·D3)
     // ================================================================
 
-    public function test_cancel_branch_runs_the_cancellation_pipeline(): void
+    /**
+     * 자동 전이 분기도 **환불신청서를 만든다**. 취소신청서는 그 환불이 완료되는 순간에 생긴다 —
+     * 예전에는 환불신청서 없이 취소 기록만 남아, 결제완료 상품을 환불한 고객에게 환불 이력이
+     * 아예 보이지 않았다(#599 제보).
+     */
+    public function test_auto_branch_files_a_refund_request_and_records_the_cancellation(): void
     {
         $order = $this->paidClaimOrder();
 
         $result = $this->service->request($order, $this->payload($order));
 
-        $this->assertSame('cancel', $result['branch']);
-        $this->assertNull($result['refund']);
-        $this->assertInstanceOf(OrderCancel::class, $result['cancel']->orderCancel);
+        $refund = $result['refund'];
+        $this->assertSame('auto', $result['branch']);
+        $this->assertNotNull($refund);
+        $this->assertSame(RefundSourceTypeEnum::DIRECT, $refund->refund_source_type);
+        $this->assertSame('changed_mind', $refund->reason_code);
+        $this->assertSame($order->user_id, (int) $refund->requested_by);
+        // 신청자·승인 시각이 채워진다 — 즉시취소가 비워 두던 두 칸이다.
+        $this->assertNotNull($refund->approved_at);
+
+        // 취소신청서는 환불완료 시점에 생긴다 (D3).
+        $cancel = OrderCancel::where('order_id', $order->id)->first();
+        $this->assertInstanceOf(OrderCancel::class, $cancel);
+        $this->assertSame('changed_mind', $cancel->cancel_reason_type);
         $this->assertSame(OrderStatusEnum::CANCELLED, $order->fresh()->order_status);
-        $this->assertSame(RefundSourceTypeEnum::CANCEL, $result['cancel']->orderRefund?->refund_source_type);
-        $this->assertSame('changed_mind', $result['cancel']->orderCancel->cancel_reason_type);
+    }
+
+    /**
+     * 단계를 건너뛰지 않는다(D16) — 한 트랜잭션 안이어도 `요청 → 승인 → 완료` 를 실제로 거친다.
+     * 최종 상태를 바로 INSERT 하면 활동로그가 한 줄만 남아 운영자가 승인 경위를 되짚을 수 없다.
+     */
+    public function test_auto_advance_walks_every_status_step(): void
+    {
+        $order = $this->paidClaimOrder();
+        $steps = [];
+        HookManager::addAction('sirsoft-ecommerce.claim.refund.status_changed', function ($refund, $previous = null, $target = null) use (&$steps) {
+            $steps[] = $previous.'->'.$target;
+        });
+
+        $this->service->request($order, $this->payload($order));
+
+        $this->assertContains('requested->approved', $steps);
+        $this->assertContains('approved->completed', $steps);
     }
 
     // ================================================================
@@ -219,7 +250,7 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $result = $this->service->request($order, $this->payload($order));
 
         $refund = $result['refund'];
-        $this->assertSame('refund', $result['branch']);
+        $this->assertSame('request', $result['branch']);
         $this->assertNull($result['cancel']);
         $this->assertSame(RefundSourceTypeEnum::DIRECT, $refund->refund_source_type);
         $this->assertNull($refund->refund_source_id);
@@ -446,6 +477,33 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
             ->pluck('refund_amount', 'id')->map(fn ($v) => (float) $v)->all();
 
         $this->assertSame($before, $after);
+    }
+
+    /**
+     * 상품 행 없는 클레임은 만들어지지 않는다 — 분기를 못박은 창구에서도. (§9-1 구조 가드)
+     *
+     * `resolveBranch()` 에도 같은 가드가 있지만 분기를 못박은 호출부(운영자·시스템 어댑터)는
+     * 그 함수를 지나지 않는다. 이미 전량 취소된 주문을 다시 취소하면 어댑터가 빈 목록을 넘기고,
+     * 그러면 상품 행이 하나도 없는 문서가 생긴다 — 목록 뱃지는 1건을 세는데 상세 표는 빈다.
+     *
+     * @effects claim_intake_rejects_empty_items_even_when_the_branch_is_pinned
+     */
+    public function test_request_rejects_empty_items(): void
+    {
+        $order = $this->paidClaimOrder();
+
+        // 고객 창구 — 분기를 재는 경로
+        $this->assertClaimException('claim_items_required', fn () => $this->service->request($order, [
+            'items' => [],
+            'reason_code' => 'changed_mind',
+        ]));
+
+        // 운영자·시스템 창구 — 분기를 못박아 `resolveBranch()` 를 지나지 않는 경로
+        $this->assertClaimException('claim_items_required', fn () => $this->service->request($order, [
+            'items' => [],
+            'reason_code' => 'changed_mind',
+            'branch' => OrderRefundRequestService::BRANCH_AUTO,
+        ]));
     }
 
     /**

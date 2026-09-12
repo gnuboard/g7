@@ -733,6 +733,8 @@
           "type": "basic",
           "name": "Div",
           "comment": "'이 클레임의 정산' — 원 주문의 결제 정보와 섞지 않는다. 위 카드는 주문이 얼마를 받았는가이고, 이 카드는 이 신청서가 얼마를 청구·환불하는가다. 한 카드에 합치면 두 숫자가 같은 합계에 속한 것처럼 읽힌다.",
+          "_comment_hidden_for_cancel": "취소 유형에는 이 카드가 그릴 내용이 하나도 없다(F10) — 안쪽 블록이 전부 취소를 배제하는데 카드에는 `if` 가 없어, 제목만 남은 빈 카드가 화면에 섰다. 취소신청서의 금액 근거는 취소 정보 카드(_partial_claim_reason)가 이미 싣는다.",
+          "if": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
           "props": {
             "className": "admin-card mt-6"
           },
@@ -1328,6 +1330,39 @@
                     "className": "text-label-subtle"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.preview_title"
+                },
+                {
+                  "comment": "환불신청서 수동 접수 (F5). 라우트·컨트롤러·서비스는 처음부터 완비돼 있었고 상세는 접수 **불가 사유**까지 보여 주는데, 정작 접수 버튼만 없었다 — 완료 모달에서 '환불신청서 생성'을 끈 건은 그 뒤로 환불을 접수할 경로가 화면 어디에도 없었다. 접수 가능한 상태(불가 사유 없음)에서만 선다.",
+                  "id": "cst_007_file_refund_request",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && (claim?.data?.settlement?.blocked_reason ?? '') === ''}}",
+                  "props": {
+                    "className": "flex justify-end"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{claim?.data?.abilities?.can_update_status !== true || _local.isFilingRefundRequest === true}}"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.file_refund_request",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sirsoft-ecommerce.storeClaimRefundRequest",
+                          "params": {
+                            "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                            "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
+                            "claimId": "{{claim?.data?.claim?.id ?? null}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "cst_008_blocked_notice",
@@ -2039,13 +2074,26 @@
                           ]
                         },
                         {
+                          "comment": "PG 플러그인이 사라져 계좌 환불로 떨어진 건 — 운영자가 손으로 송금해야 한다(P14). 폴백 자체는 운영을 살리지만(리스너 없이 PG 경로로 들어가면 그 주문은 영영 취소할 수 없다), 화면에 '계좌 환불' 만 보이면 카드 결제 건에 왜 계좌 송금을 하라는지 알 수 없다.",
+                          "id": "cre_013b_manual_transfer_notice",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{claim?.data?.claim?.refund_fell_back_to_manual === true}}",
+                          "props": {
+                            "data-testid": "refund-manual-transfer-notice",
+                            "className": "mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.manual_transfer_notice"
+                        },
+                        {
+                          "comment": "[환불하기]는 권한과 **상태**를 함께 본다(F2). 권한만 보면 `requested`(422)·`completed`(409) 에서도 눌리는데, 상세에는 승인 컨트롤이 따로 있어 운영자는 그 자리에서 승인한 뒤 다시 누를 수 있다 — 비활성 이유가 화면에 드러나야 막다른 길이 되지 않는다.",
                           "id": "cre_014_execute_button",
                           "type": "basic",
                           "name": "Button",
                           "props": {
                             "type": "button",
                             "className": "btn btn-primary",
-                            "disabled": "{{claim?.data?.abilities?.can_execute_refund !== true || _local.isExecutingRefund === true}}"
+                            "disabled": "{{claim?.data?.abilities?.can_execute_refund !== true || _local.isExecutingRefund === true || (claim?.data?.claim?.status ?? '') !== 'approved'}}"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.execute",
                           "actions": [
