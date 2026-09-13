@@ -185,7 +185,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Input` | 텍스트 입력 | label, error | checkable |
-| `Select` | 선택 박스 | label, error | - |
+| `Select` | 선택 박스. `options` 를 주면 커스텀 드롭다운으로 그리며 펼침 목록은 트리거 폭을 하한으로 항목이 한 줄에 들어갈 만큼 넓어지고(상한 320px·화면 오른쪽 여유), 스크롤바 자리를 미리 확보한다 | label, error, options, searchable | - |
 | `Option` | Select 내부 옵션 | value | - |
 | `Optgroup` | Select 옵션 그룹화 | label | - |
 | `Textarea` | 텍스트 영역 | label, error | - |

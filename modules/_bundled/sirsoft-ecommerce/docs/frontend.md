@@ -267,6 +267,12 @@
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan module:update sirsoft-ecommerce --force`
 로 활성 디렉토리에 반영합니다. 다만 **새로 쓴 Tailwind 클래스가 빌드된 CSS 에 없으면** 그
 스타일만 조용히 빠지므로, 기존 레이아웃에 쓰이지 않던 클래스를 도입할 때는 확인이 필요합니다.
+이 모듈은 자체 Tailwind 빌드가 없고 관리자 템플릿(`sirsoft-admin_basic`)의 `dist/css/components.css`
+에 의존하며, 그 safelist 는 템플릿 자신의 레이아웃만 스캔합니다. 임의값(`min-w-[9rem]`)만이 아니라
+정수 단계 유틸리티도 빠져 있을 수 있습니다 — 예컨대 폭은 `w-36`·`w-40`·`w-48`·`w-52`·`w-56`·`w-64`
+는 있지만 `w-44` 는 없습니다(2026-09-13, 상태 변경 Select 가 `w-44` 를 써서 글자폭으로 수축했던
+사례). 쓰기 전에 `grep -c ".w-44{" templates/_bundled/sirsoft-admin_basic/dist/css/components.css`
+처럼 컴파일 여부를 확인하고, 없으면 있는 단계로 바꾸거나 템플릿 safelist 절차를 밟습니다.
 
 클레임 화면은 관리자 목록·상세(`admin_ecommerce_claim_list` · `admin_ecommerce_claim_detail`)와
 주문상세의 '클레임 내역' 섹션, 환경설정 '클레임' 탭, 배송정책의 회수지·클레임 배송비 항목입니다.

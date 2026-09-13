@@ -1,7 +1,7 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "Claim List - Bulk Action Section (S8b)"
+    "description": "e2e:allow 상태 Select 폭 클래스(w-48)만 변경 — Chrome MCP 매트릭스(이력 20260913_2132)가 대체 커버. Claim List - Bulk Action Section (S8b)"
   },
   "id": "claim_bulk_action_section",
   "type": "basic",
@@ -36,7 +36,7 @@
           "if": "{{(query.type ?? 'exchange') === 'exchange'}}",
           "props": {
             "name": "bulkClaimStatus",
-            "className": "w-44 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
             "value": "{{_local.bulkClaimStatus ?? ''}}",
             "disabled": "{{claims?.data?.abilities?.can_update_status !== true}}",
             "options": [
@@ -72,7 +72,7 @@
           "if": "{{(query.type ?? 'exchange') === 'return'}}",
           "props": {
             "name": "bulkClaimStatus",
-            "className": "w-44 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
             "value": "{{_local.bulkClaimStatus ?? ''}}",
             "disabled": "{{claims?.data?.abilities?.can_update_status !== true}}",
             "options": [
@@ -106,7 +106,7 @@
           "if": "{{(query.type ?? 'exchange') === 'refund'}}",
           "props": {
             "name": "bulkClaimStatus",
-            "className": "w-44 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
             "value": "{{_local.bulkClaimStatus ?? ''}}",
             "disabled": "{{claims?.data?.abilities?.can_update_status !== true}}",
             "options": [

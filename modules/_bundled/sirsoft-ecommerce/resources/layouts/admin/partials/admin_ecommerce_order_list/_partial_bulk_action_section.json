@@ -2,7 +2,7 @@
   "id": "bulk_action_section",
   "type": "basic",
   "name": "Div",
-  "comment": "B-001 ~ B-006 일괄변경 영역",
+  "comment": "e2e:allow 폭 클래스(w-48)·버튼 dark 변형만 변경 — Chrome MCP 매트릭스(이력 20260913_2132)와 admin_basic Select 단위 테스트가 대체 커버. B-001 ~ B-006 일괄변경 영역",
   "props": {
     "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mt-6 mb-4 flex-wrap gap-3"
   },
@@ -31,7 +31,7 @@
           "comment": "B-002, D-030 ~ D-039",
           "props": {
             "name": "bulkOrderStatus",
-            "className": "w-44 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
             "value": "{{_local.bulkOrderStatus || ''}}",
             "disabled": "{{orders?.data?.abilities?.can_update !== true}}",
             "options": [
@@ -169,13 +169,13 @@
       "comment": "B-006",
       "props": {
         "type": "button",
-        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
         "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0 || orders?.data?.abilities?.can_update !== true}}"
       },
       "responsive": {
         "portable": {
           "props": {
-            "className": "w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50"
+            "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50"
           },
           "text": "$t:sirsoft-ecommerce.admin.order.bulk.apply_full"
         }

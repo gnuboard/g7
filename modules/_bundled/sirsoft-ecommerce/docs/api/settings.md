@@ -591,7 +591,7 @@ HTTP/1.1 200
 | order_settings.pending_order_expire_minutes | body | integer | 아니오 | min 0, max 20160 | 결제 미완료 주문 만료 기준(분). 결제창까지 갔으나 결제가 성립하지 않은 주문을 이 시간 경과 후 자동 취소. `0` 이면 그 부류를 정리하지 않음 |
 | order_settings.cart_expiry_days | body | integer | 아니오 | min 1, max 365 | 장바구니 보관기간(일). 경과 시 담긴 상품 자동 삭제 |
 | order_settings.stock_restore_on_cancel | body | boolean | 아니오 | — | 주문 취소 시 차감된 재고 자동 복구 여부 (반품/교환에도 적용) |
-| order_settings.cancellable_statuses | body | array | 아니오 | — | 즉시취소 가능한 주문상품 상태의 기준 설정. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed`. 빈 배열은 즉시취소 비활성화, `null`은 422. 회원·비회원 주문 취소와 클레임 신청 자격이 같은 값을 사용 |
+| order_settings.cancellable_statuses | body | array | 아니오 | — | 자동 전이 대상 주문옵션(상품) 상태 목록 — `claim.instant_cancel_statuses` 와 같은 값의 별칭. 허용 `pending_order`·`pending_payment`·`payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `pending_order`, `pending_payment`, `payment_complete`). 빈 배열은 자동 전이 비활성화, `null`은 422. 회원·비회원 주문 취소와 클레임 신청 자격이 같은 값을 사용하며, 주문 설정 탭과 클레임 정책 탭 어느 쪽에서 저장해도 두 키가 함께 갱신 |
 | order_settings.confirmable_statuses | body | array | 아니오 | — | 사용자가 구매확정할 수 있는 주문 옵션 상태 목록 (`payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered` 중 선택) |
 | claim | body | array | 아니오 | — | 클레임 설정 섹션 (정책 스칼라 + 사유 카탈로그 3종. 카탈로그는 DB 동기화 대상으로 분리 저장) |
 | claim.exchange_requestable_statuses | body | array | 아니오 | — | 교환을 신청할 수 있는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `delivered`, `confirmed`). 키를 보내면 값이 있어야 한다(`null` 은 422) |

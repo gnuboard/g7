@@ -31,6 +31,15 @@ class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
     private const POLICY_PARTIAL = __DIR__.'/../../../resources/layouts/admin/partials/admin_ecommerce_settings/_claim_policy_section.json';
 
     /**
+     * 주문 설정 탭 파셜 — `order_settings.cancellable_statuses` 카드가 여기 있다.
+     *
+     * 이 키는 `claim.instant_cancel_statuses` 의 **별칭**이다(어느 탭에서 저장해도 두 키가 함께
+     * 갱신된다). 같은 값을 두 화면이 보여 주므로 선택지도 같아야 한다 — 한쪽만 늘리면 다른 탭은
+     * 저장값을 원문 키(`pending_order`)로 그대로 노출한다(#599 후속 D10 회귀, 2026-09-13).
+     */
+    private const ORDER_PARTIAL = __DIR__.'/../../../resources/layouts/admin/partials/admin_ecommerce_settings/_tab_order_settings.json';
+
+    /**
      * 자동 전이 축의 안내가 **지금 일어나는 일**을 말합니다. (#599 후속 D2)
      *
      * 이 축의 이름은 「즉시취소」였고 문구도 "바로 취소된다" 고 말했다. 새 모델에서는 그 상태의
@@ -115,6 +124,11 @@ class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
     /**
      * 네 축의 화면 선택지가 서버 게이트와 정확히 일치합니다. (부분집합도 초과집합도 아님)
      *
+     * 자동 전이 축은 **두 탭**에 선다 — 클레임 정책 탭의 `claim.instant_cancel_statuses` 와
+     * 주문 설정 탭의 `order_settings.cancellable_statuses` 는 같은 저장값의 별칭이므로 둘 다
+     * 같은 게이트와 대조한다. 클레임 탭만 D10 을 반영하고 주문 탭을 빠뜨리면, 기본값에 든
+     * 미결제 2종이 주문 탭에서 라벨 없는 원문 키로 노출된다.
+     *
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_status_vocabulary_matches_server_gate
@@ -129,6 +143,7 @@ class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
             'claim.exchange_requestable_statuses' => StoreEcommerceSettingsRequest::claimRequestableStatuses(),
             'claim.return_requestable_statuses' => StoreEcommerceSettingsRequest::claimRequestableStatuses(),
             'claim.instant_cancel_statuses' => StoreEcommerceSettingsRequest::claimInstantCancelStatuses(),
+            'order_settings.cancellable_statuses' => StoreEcommerceSettingsRequest::claimInstantCancelStatuses(),
             'claim.refund_request_statuses' => StoreEcommerceSettingsRequest::claimRefundRequestStatuses(),
         ];
 
@@ -227,35 +242,46 @@ class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
     /**
      * 레이아웃에서 축별 상태 선택지를 모읍니다.
      *
+     * 클레임 정책 파셜의 `claim.*_statuses` 와 주문 설정 파셜의 별칭
+     * `order_settings.cancellable_statuses` 를 함께 모은다.
+     *
      * @return array<string, array<int, string>> `props.name` → 선택지 값 목록
      */
     private function collectStatusOptions(): array
     {
-        $layout = json_decode((string) file_get_contents(self::POLICY_PARTIAL), true);
-        $this->assertIsArray($layout, '클레임 정책 파셜을 읽지 못했습니다.');
+        $partials = [
+            self::POLICY_PARTIAL => '클레임 정책 파셜을 읽지 못했습니다.',
+            self::ORDER_PARTIAL => '주문 설정 파셜을 읽지 못했습니다.',
+        ];
 
         $collected = [];
-        $this->walk($layout, function (array $node) use (&$collected): void {
-            $props = $node['props'] ?? null;
-            if (! is_array($props)) {
-                return;
-            }
+        foreach ($partials as $path => $failure) {
+            $layout = json_decode((string) file_get_contents($path), true);
+            $this->assertIsArray($layout, $failure);
 
-            $name = $props['name'] ?? null;
-            $options = $props['options'] ?? null;
-            if (! is_string($name) || ! is_array($options)) {
-                return;
-            }
+            $this->walk($layout, function (array $node) use (&$collected): void {
+                $props = $node['props'] ?? null;
+                if (! is_array($props)) {
+                    return;
+                }
 
-            if (! str_starts_with($name, 'claim.') || ! str_contains($name, 'statuses')) {
-                return;
-            }
+                $name = $props['name'] ?? null;
+                $options = $props['options'] ?? null;
+                if (! is_string($name) || ! is_array($options)) {
+                    return;
+                }
 
-            $collected[$name] = array_values(array_filter(
-                array_map(static fn ($o) => is_array($o) ? ($o['value'] ?? null) : null, $options),
-                static fn ($v) => is_string($v) && $v !== ''
-            ));
-        });
+                $isClaimAxis = str_starts_with($name, 'claim.') && str_contains($name, 'statuses');
+                if (! $isClaimAxis && $name !== 'order_settings.cancellable_statuses') {
+                    return;
+                }
+
+                $collected[$name] = array_values(array_filter(
+                    array_map(static fn ($o) => is_array($o) ? ($o['value'] ?? null) : null, $options),
+                    static fn ($v) => is_string($v) && $v !== ''
+                ));
+            });
+        }
 
         return $collected;
     }

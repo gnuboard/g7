@@ -1,7 +1,7 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "쇼핑몰 설정 주문설정 탭 콘텐츠"
+    "description": "e2e:allow 취소 가능 상태 선택지·기본값만 추가 — Vitest 레이아웃 테스트(adminEcommerceSettingsOrder 94건)와 PHPUnit ClaimSettingsStatusVocabularyTest 가 대체 커버. 쇼핑몰 설정 주문설정 탭 콘텐츠"
   },
   "id": "tab_content_order_settings",
   "type": "basic",
@@ -776,6 +776,14 @@
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.placeholder",
                     "options": [
                       {
+                        "value": "pending_order",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.pending_order"
+                      },
+                      {
+                        "value": "pending_payment",
+                        "label": "$t:sirsoft-ecommerce.enums.order_status.pending_payment"
+                      },
+                      {
                         "value": "payment_complete",
                         "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
                       },
@@ -804,7 +812,7 @@
                         "label": "$t:sirsoft-ecommerce.enums.order_status.confirmed"
                       }
                     ],
-                    "value": "{{_local.form?.order_settings?.cancellable_statuses ?? ['payment_complete']}}",
+                    "value": "{{_local.form?.order_settings?.cancellable_statuses ?? ['pending_order', 'pending_payment', 'payment_complete']}}",
                     "isMulti": true,
                     "isClearable": false,
                     "isSearchable": true,
