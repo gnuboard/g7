@@ -1,13 +1,20 @@
 <!-- 템플릿 레이아웃 원문 편집기 — **HTML(`.g7.html`) 이 정본**이고 JSON 은 읽기 전용 산출물이다(#476).
   화면 전체가 **`selectedNodeKind` 한 값으로 갈린다** — `layout` 이면 레이아웃 파일을, `extension` 이면
-  확장 주입 조각을 다룬다. 좌측 목록도 그 둘을 구역으로 나눠 한 줄에 세워 두었다.
-  두 갈래가 **편집 버퍼 전역 두 개를 공유**한다: `editorMarkup`(HTML 탭이 편집하는 정본)과 `editorContent`
-  (JSON 탭이 보여주는 산출물). 서버는 JSON 만 저장하므로 열 때 `?with_markup=1` 로 역변환본을 받고,
-  타이핑이 멈춘 1초 뒤 `markup-compile` 로 JSON 뷰를 갱신하며, 저장·미리보기는 `format=markup` 으로
-  HTML 을 보내 서버가 프로덕션 컴파일한다. 컴파일 오류·경고는 `markupCompileError`·`markupWarnings` 에
-  담겨 편집기 마커와 아래 패널로 나온다. 갈래를 바꿀 때마다 해당 소스를 다시 받아 두 버퍼를 덮어쓴다.
-  저장은 낙관적 잠금이다. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다.
-  미리보기는 서버가 발급한 일회용 토큰 주소를 새 창으로 연다 — 저장하지 않은 본문을 함께 올린다. -->
+  확장 주입 조각을 다룬다. 좌측 트리가 그 둘을 구역으로 나눠 보여 준다.
+
+  **편집 버퍼는 파일마다 따로다.** 서버 본문은 `<code-workspace>` 에 `serverValue` prop 으로 들어오기만
+  하고, 편집 중인 값은 그 컴포넌트 안의 `Map<key, buffer>` 가 소유한다. 그래서 파일을 바꿔도 앞 파일의
+  미저장 수정이 남는다 — 종전에는 `editorMarkup` 전역 한 벌을 재조회 응답이 덮어써 **말없이 사라졌다**.
+  전역 `editorMarkup` 은 이제 **활성 버퍼의 사본**일 뿐이고, 저장·미리보기·내려받기·복사가 읽는 자리로만 남는다.
+
+  서버는 JSON 만 저장하므로 열 때 `?with_markup=1` 로 역변환본을 받고, 타이핑이 멈춘 1초 뒤
+  `markup-compile` 로 JSON 뷰(`editorContent`)를 갱신하며, 저장·미리보기는 `format=markup` 으로 HTML 을
+  보내 서버가 프로덕션 컴파일한다. 컴파일 오류·경고는 `markupCompileError`·`markupWarnings` 에 담겨
+  편집기 마커와 아래 패널로 나온다.
+
+  저장·미리보기·판본 이력은 **문서 층 `<action name>` 한 곳**에 정의하고 머리말 버튼과 단축키가 함께
+  참조한다 — 두 경로를 각자 적으면 한쪽만 고쳐진 상태가 남는다. 저장은 낙관적 잠금이다. 받아 둔
+  `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절하고, 그때 편집기 위에 충돌 바가 선다. -->
 <layout name="admin_template_layout_edit" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.templates.layout_edit.title" description="$t:admin.templates.layout_edit.description"/>
   <!-- 편집 중인 템플릿의 메타(이름·버전). 머리말 표시용이라 실패해도 편집은 막지 않는다. -->
@@ -27,10 +34,12 @@
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
-  <!-- 선택한 레이아웃의 본문. `?with_markup=1` 로 역변환본(`content_markup`)을 함께 받아 HTML 버퍼
-       `editorMarkup`(정본)과 JSON 뷰 `editorContent` 를 채우는 것이 **에디터에 값을 넣는 유일한 경로**다
-       (에디터는 그 전역만 본다). 되컴파일 경고·오류도 응답에서 바로 받아 첫 표시부터 마커를 찍는다.
-       선택이 아직 없으면 목록 첫 파일로 떨어진다. -->
+  <!-- 선택한 레이아웃의 본문. `?with_markup=1` 로 역변환본(`content_markup`)을 함께 받는다.
+       **그 값은 더 이상 전역으로 심지 않는다** — `<code-workspace>` 가 `serverValue` prop 으로 직접 읽고,
+       편집 중인 값은 그 컴포넌트 안의 파일별 버퍼가 소유한다(#476 개편). 종전에는 여기서 `editorMarkup`
+       전역을 덮어썼기 때문에, 파일을 바꾸면 앞 파일의 저장하지 않은 수정이 말없이 사라졌다.
+       JSON 뷰(`editorContent`)와 컴파일 경고·오류는 파일 단위 버퍼가 아니라 **지금 열린 파일의 서버 상태**라
+       그대로 전역에 둔다. 선택이 아직 없으면 목록 첫 파일로 떨어진다. -->
   <data-source id="current_layout" label_key="$t:editor.data_source.current_layout" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}?with_markup=1" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <init-global>
       <field name="0">
@@ -38,14 +47,10 @@
         <field name="path" value="content"/>
       </field>
       <field name="1">
-        <field name="key" value="editorMarkup"/>
-        <field name="path" value="content_markup"/>
-      </field>
-      <field name="2">
         <field name="key" value="markupWarnings"/>
         <field name="path" value="markup_warnings"/>
       </field>
-      <field name="3">
+      <field name="2">
         <field name="key" value="markupCompileError"/>
         <field name="path" value="markup_compile_error"/>
       </field>
@@ -61,6 +66,20 @@
         <field name="updated_at" :value="null"/>
       </field>
     </fallback>
+    <!-- 없는 파일을 겨냥했을 때(남이 지웠거나, 오래된 초안이 되살린 유령 탭) 코어의 범용 문구
+         «요청한 리소스를 찾을 수 없습니다» 만 뜨고 끝났다 — 무엇이 없는지도, 무엇을 해야
+         하는지도 없었다(실측 2026-09-12, 운영자 제보). 계획서 §7.7 이 정한 대로 안내하고 목록을
+         다시 받는다. 어느 탭이 «없는 파일» 인지는 `<code-workspace>` 가 `knownKeys`(재조회된
+         목록)와 열린 탭을 대조해 스스로 가른다 — 복원한 편집분을 지우지 않고 새 이름으로 살릴 수
+         있게 남긴다. 여기서 따로 전역에 적어 둘 것은 없다. -->
+    <error-handling>
+      <on-code code="404">
+        <sequence>
+          <toast type="error" message="$t:admin.templates.layout_edit.file.missing_reloading"/>
+          <refetch-data-source dataSourceId="layout_files"/>
+        </sequence>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- limit 는 서버 기본 상한(100)과 같은 값에서 출발해 '더 보기' 마다 한 묶음씩 넓힌다. 서버가 상한 조회만 지원하므로(#518) 이 파라미터가 없으면 100건을 넘는 버전은 이 화면에서 도달할 수 없다. 상한 500 은 서버 LayoutVersionListRequest::MAX_LIMIT 과 같아야 하며, 넘기면 목록 전체가 422 가 된다. -->
   <data-source id="layout_versions" label_key="$t:editor.data_source.layout_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}/versions?limit={{_global.layoutVersionLimit ?? 100}}" method="GET" :auto_fetch="false" :auth_required="true">
@@ -75,8 +94,9 @@
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
-  <!-- 선택한 확장 조각의 본문. 위 `current_layout` 과 **같은 전역(`editorMarkup`·`editorContent`)에 값을
-       올린다** — 에디터가 한 벌이라 그래야 하고, 그래서 갈래를 바꿀 때 반드시 이쪽을 다시 불러야 한다.
+  <!-- 선택한 확장 조각의 본문. 레이아웃 갈래와 **같은 규약**이다 — 마크업은 전역에 심지 않고
+       `<code-workspace>` 가 `serverValue` 로 읽는다. 조각도 트리의 한 노드(`ext:<id>`)이므로 자기 버퍼를
+       갖고, 레이아웃 ↔ 조각을 오가도 양쪽의 미저장분이 서로를 지우지 않는다.
        확장 갈래로 들어갈 때만 부르므로 자동 조회는 꺼 두었다. -->
   <data-source id="current_extension" label_key="$t:editor.data_source.current_extension" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}?with_markup=1" method="GET" :auto_fetch="false" :auth_required="true">
     <init-global>
@@ -85,14 +105,10 @@
         <field name="path" value="content"/>
       </field>
       <field name="1">
-        <field name="key" value="editorMarkup"/>
-        <field name="path" value="content_markup"/>
-      </field>
-      <field name="2">
         <field name="key" value="markupWarnings"/>
         <field name="path" value="markup_warnings"/>
       </field>
-      <field name="3">
+      <field name="2">
         <field name="key" value="markupCompileError"/>
         <field name="path" value="markup_compile_error"/>
       </field>
@@ -105,6 +121,130 @@
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 파일 **내용** 검색. 파일명 검색은 서버를 부르지 않는다 — 트리가 144개 이름을 이미 들고 있어
+       거르기·강조를 즉시 처리한다(왕복 0회). 서버는 클라이언트가 할 수 없는 일, 곧 저장된 본문 안을
+       들여다보는 일만 맡는다. 사용자가 보는 것은 `.g7.html` 마크업이므로 서버도 역변환한 마크업을
+       줄 단위로 훑는다 — 줄 번호가 편집기와 같아야 결과를 눌러 그 줄로 갈 수 있다.
+       역변환은 비싸서 `lock_version` 키로 캐시한다(첫 조회 3.1초 / 캐시 후 92ms 실측). -->
+  <data-source id="layout_search" label_key="$t:editor.data_source.layout_search" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/search?q={{_global.fileSearchQuery}}&amp;scope=content" method="GET" :auto_fetch="false" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 저장 — 머리말 버튼과 `Ctrl+S` 가 **같은 이 정의**를 부른다. 두 경로를 각자 적으면 한쪽만 고쳐진
+       상태가 남는다(저장 성공 후 재조회를 한쪽에만 넣는 식의 결함이 실제로 있었다).
+       레이아웃·확장 조각으로 갈리는 것은 엔드포인트와 잠금 번호의 출처뿐이라 `<conditions>` 한 겹으로 가른다.
+       HTML 버퍼를 `format=markup` 으로 보내 서버가 프로덕션 컴파일한 JSON 을 저장한다. 받아 둔
+       `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다(덮어쓰기를 막는 낙관적 잠금).
+       성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞춘다 — 안 받으면 다음 저장이 낡은 번호로 나가
+       반드시 실패한다. 그때 `<code-workspace>` 의 버퍼는 clean 으로 바뀌며 초안도 지워진다. -->
+  <action name="save_current_file">
+    <conditions>
+      <when if="{{_global.selectedNodeKind === 'extension'}}">
+        <sequence>
+          <set-state target="global" :isSaving="true"/>
+          <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}" method="PUT">
+            <success>
+              <set-state target="global" :isSaving="false" :markupCompileError="null" :jsonViewStale="false" markupWarnings="{{response.data?.markup_warnings ?? []}}"/>
+              <toast type="success" message="$t:admin.templates.layout_edit.extension_save_success"/>
+              <refetch-data-source dataSourceId="current_extension"/>
+              <refetch-data-source dataSourceId="layout_extensions"/>
+            </success>
+            <fail>
+              <set-state target="global" :isSaving="false" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
+              <toast type="error" message="{{error.message}}"/>
+              <!-- 실패해도 현재 본문을 다시 받아 둔다. 낙관적 잠금 충돌(409)일 때 이것이 없으면
+                   `serverRevision` 이 내 기준선에 머물러 **충돌 바가 영영 서지 않는다** — 사용자는
+                   잠깐 뜬 토스트 하나만 보고 파일은 dirty 로 남아, 무엇이 어긋났는지도 [내 것 유지]
+                   /[서버 것으로] 를 고를 방법도 없다(실측 2026-09-12: 409 뒤 충돌 바 0개).
+                   컴파일 오류(422)일 때는 서버 본문도 판본도 그대로라 이 재조회가 아무것도 바꾸지 않는다. -->
+              <refetch-data-source dataSourceId="current_extension"/>
+            </fail>
+            <body content="{{_global.editorMarkup}}" format="markup" expected_lock_version="{{current_extension?.data?.lock_version ?? 0}}"/>
+          </api-call>
+        </sequence>
+      </when>
+      <else>
+        <sequence>
+          <set-state target="global" :isSaving="true"/>
+          <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}" method="PUT">
+            <success>
+              <set-state target="global" :isSaving="false" :markupCompileError="null" :jsonViewStale="false" markupWarnings="{{response.data?.markup_warnings ?? []}}"/>
+              <toast type="success" message="$t:admin.templates.layout_edit.save_success"/>
+              <refetch-data-source dataSourceId="current_layout"/>
+              <!-- 목록도 함께 다시 부른다 — 파일 목록은 저장으로 바뀌는 값(설명·크기·수정일)을 표시하므로, 상세만 갱신하면 방금 저장한 파일의 행이 저장 전 값으로 남는다. 목록 응답이 본문을 싣지 않게 된 뒤로 재조회 비용이 수십 KB 수준이라 매 저장마다 불러도 된다. -->
+              <refetch-data-source dataSourceId="layout_files"/>
+            </success>
+            <fail>
+              <set-state target="global" :isSaving="false" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
+              <toast type="error" message="{{error.message}}"/>
+              <!-- 실패해도 현재 본문을 다시 받아 둔다. 낙관적 잠금 충돌(409)일 때 이것이 없으면
+                   `serverRevision` 이 내 기준선에 머물러 **충돌 바가 영영 서지 않는다** — 사용자는
+                   잠깐 뜬 토스트 하나만 보고 파일은 dirty 로 남아, 무엇이 어긋났는지도 [내 것 유지]
+                   /[서버 것으로] 를 고를 방법도 없다(실측 2026-09-12: 409 뒤 충돌 바 0개).
+                   컴파일 오류(422)일 때는 서버 본문도 판본도 그대로라 이 재조회가 아무것도 바꾸지 않는다. -->
+              <refetch-data-source dataSourceId="current_layout"/>
+            </fail>
+            <body content="{{_global.editorMarkup}}" format="markup" expected_lock_version="{{current_layout?.data?.lock_version ?? 0}}"/>
+          </api-call>
+        </sequence>
+      </else>
+    </conditions>
+  </action>
+  <!-- 미리보기 — **저장하지 않은 HTML 본문을 올려** 서버가 컴파일한 뒤 일회용 토큰을 내주고 그 주소를 새 창으로 연다.
+       확장 조각은 덮어쓰기(overlay)형만 혼자 그려 볼 수 있다 — 주입형은 어느 레이아웃 위에 얹힐지 정해야
+       뜻이 생기므로 대상을 고르는 창으로 넘긴다. -->
+  <action name="preview_current_file">
+    <conditions>
+      <when if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.extension_type === 'overlay'}}">
+        <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview" method="POST">
+          <success>
+            <open-window path="/preview/{{response.data.token}}"/>
+          </success>
+          <fail>
+            <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
+            <toast type="error" message="{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"/>
+          </fail>
+          <body content="{{_global.editorMarkup}}" format="markup"/>
+        </api-call>
+      </when>
+      <when if="{{_global.selectedNodeKind === 'extension'}}">
+        <open-modal target="extension_preview_layout_modal"/>
+      </when>
+      <else>
+        <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview" method="POST">
+          <success>
+            <open-window path="/preview/{{response.data.token}}"/>
+          </success>
+          <fail>
+            <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
+            <toast type="error" message="{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"/>
+          </fail>
+          <body content="{{_global.editorMarkup}}" format="markup"/>
+        </api-call>
+      </else>
+    </conditions>
+  </action>
+  <!-- 판본 이력 열기 — 갈래에 따라 다른 소스·다른 창이다. 두 이력 소스 모두 자동 조회를 꺼 두었으므로
+       **여는 순간 받는다**(안 받으면 지난번 이력이 그대로 뜬다). -->
+  <action name="open_version_history">
+    <conditions>
+      <when if="{{_global.selectedNodeKind === 'extension'}}">
+        <sequence>
+          <refetch-data-source dataSourceId="extension_versions"/>
+          <open-modal target="extension_version_history_modal"/>
+        </sequence>
+      </when>
+      <else>
+        <sequence>
+          <!-- 모달을 열 때마다 조회 상한을 첫 묶음으로 되돌린다. 남겨두면 이전에 넓혀 둔 상한이 다른 레이아웃의 이력 조회에 그대로 이월된다. -->
+          <set-state target="global" :layoutVersionLimit="100"/>
+          <refetch-data-source dataSourceId="layout_versions"/>
+          <open-modal target="version_history_modal"/>
+        </sequence>
+      </else>
+    </conditions>
+  </action>
   <permissions>
     <permission>core.templates.read</permission>
   </permissions>
@@ -127,15 +267,20 @@
     <set-state if="{{!!query.route &amp;&amp; !!(layout_files?.data ?? []).find(f => f.route_path === query.route)?.name}}" target="global" selectedNodeKind="layout" selectedLayoutName="{{(layout_files?.data ?? []).find(f => f.route_path === query.route)?.name}}"/>
   </init>
   <slot name="content">
-    <div data-ref="page_container" class="admin-page-content-responsive">
+    <div data-ref="page_container" class="admin-page-content-responsive pb-24 md:pb-0">
       <page-header data-ref="page_header" title="$t:admin.templates.layout_edit.page_title ({{template_info?.data?.name ?? route.identifier}})" description="$t:admin.templates.layout_edit.page_description">
-        <button data-ref="header_cancel_button" class="btn btn-secondary">
+        <!-- `data-leave-guard` — `<code-workspace>` 가 이 표식이 붙은 요소의 클릭을 가로채, 미저장이
+             있으면 되묻고 없으면 그대로 보낸다(D5). 엔진의 `confirm` 은 진입점에서 무조건 발화해
+             조건부로 물을 수 없으므로, dirty 여부를 아는 쪽이 판단한다. -->
+        <button data-ref="header_cancel_button" class="btn btn-secondary" data-leave-guard="true">
           <on type="click">
             <navigate-back/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-download-markup">
+        <!-- 머리말 버튼은 `md`(768) 이상에서만 펼친다. 모바일에서는 보조 동작(내려받기·복사)을 아래의
+             ⋯ 더보기로 접고, 저장·미리보기는 하단 고정 바로 내린다(계획서 §7.5). -->
+        <button type="button" class="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-download-markup">
           <on type="click">
             <!-- HTML 버퍼를 `.g7.html` 파일로 내려받는다 — 설치본은 서버에 파일이 없으므로 브라우저가 만든다.
                  파일명은 레이아웃 이름(확장 갈래면 조각 식별자)이다. -->
@@ -144,7 +289,7 @@
           <icon name="fa-solid fa-download" class="text-base"/>
           <span class="hidden sm:inline">$t:admin.templates.layout_edit.download_markup</span>
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-copy-markup">
+        <button type="button" class="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-copy-markup">
           <on type="click">
             <!-- HTML 버퍼를 클립보드에 담는다 — 위 내려받기와 같은 값을 파일 대신 붙여넣기로 넘기는 자리다.
                  성공·실패 문구를 둘 다 넘기는 이유는 클립보드 권한이 거부될 수 있어서다(브라우저가 막으면
@@ -154,255 +299,183 @@
           <icon name="fa-regular fa-copy" class="text-base"/>
           <span class="hidden sm:inline">$t:admin.templates.layout_edit.copy_markup</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind !== 'extension'}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <button data-if="{{_global.selectedNodeKind !== 'extension'}}" type="button" class="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-preview">
           <on type="click">
-            <!-- 레이아웃 미리보기 — **저장하지 않은 HTML 본문을 `format=markup` 으로 올려** 서버가 컴파일한 뒤
-                 일회용 토큰을 내주고, 그 주소를 새 창으로 연다. 저장 없이 확인하는 것이 이 버튼의 목적이다. -->
-            <sequence>
-              <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview" method="POST">
-                <success>
-                  <open-window path="/preview/{{response.data.token}}"/>
-                </success>
-                <fail>
-                  <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
-                  <toast type="error" message="{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"/>
-                </fail>
-                <body content="{{_global.editorMarkup}}" format="markup"/>
-              </api-call>
-            </sequence>
+            <action-ref name="preview_current_file"/>
           </on>
           <icon name="fa-regular fa-eye" class="text-base"/>
           <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind === 'extension'}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="extension-preview">
+        <button data-if="{{_global.selectedNodeKind === 'extension'}}" type="button" class="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="extension-preview">
           <on type="click">
-            <!-- 확장 조각 미리보기. **덮어쓰기(overlay) 조각만 혼자 그려 볼 수 있다** — 그것은 대상
-                 레이아웃을 통째로 대신하기 때문이다. 확장점 주입 조각은 어느 레이아웃 위에 얹힐지
-                 정해야 뜻이 생기므로, 곧바로 열지 않고 대상을 고르는 창으로 넘긴다. -->
-            <sequence>
-              <conditions>
-                <when if="{{current_extension?.data?.extension_type === 'overlay'}}">
-                  <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview" method="POST">
-                    <success>
-                      <open-window path="/preview/{{response.data.token}}"/>
-                    </success>
-                    <fail>
-                      <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
-                      <toast type="error" message="{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"/>
-                    </fail>
-                    <body content="{{_global.editorMarkup}}" format="markup"/>
-                  </api-call>
-                </when>
-                <else>
-                  <open-modal target="extension_preview_layout_modal"/>
-                </else>
-              </conditions>
-            </sequence>
+            <action-ref name="preview_current_file"/>
           </on>
           <icon name="fa-regular fa-eye" class="text-base"/>
           <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update !== false}}" type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="layout-save">
+        <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update !== false}}" type="button" class="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="layout-save">
           <on type="click">
-            <!-- 레이아웃 저장 — HTML 버퍼를 `format=markup` 으로 보내 서버가 프로덕션 컴파일한 JSON 을 저장한다.
-                 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다(덮어쓰기를 막는 낙관적
-                 잠금). 성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞추고 **버퍼를 서버 정규형으로 갱신**한다 —
-                 안 받으면 다음 저장이 낡은 번호로 나가 반드시 실패한다. 컴파일 오류(422)는 `compile_error` 를
-                 마커·패널에 올린다. -->
-            <sequence>
-              <set-state target="global" :isSaving="true"/>
-              <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}" method="PUT">
-                <success>
-                  <set-state target="global" :isSaving="false" :markupCompileError="null" :jsonViewStale="false" markupWarnings="{{response.data?.markup_warnings ?? []}}"/>
-                  <toast type="success" message="$t:admin.templates.layout_edit.save_success"/>
-                  <refetch-data-source dataSourceId="current_layout"/>
-                  <!-- 목록도 함께 다시 부른다 — 파일 목록은 저장으로 바뀌는 값(설명·크기·수정일)을 표시하므로, 상세만 갱신하면 방금 저장한 파일의 행이 저장 전 값으로 남는다. 목록 응답이 본문을 싣지 않게 된 뒤로 재조회 비용이 수십 KB 수준이라 매 저장마다 불러도 된다. -->
-                  <refetch-data-source dataSourceId="layout_files"/>
-                </success>
-                <fail>
-                  <set-state target="global" :isSaving="false" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
-                  <toast type="error" message="{{error.message}}"/>
-                </fail>
-                <body content="{{_global.editorMarkup}}" format="markup" expected_lock_version="{{current_layout?.data?.lock_version ?? 0}}"/>
-              </api-call>
-            </sequence>
+            <action-ref name="save_current_file"/>
           </on>
           <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="text-base"/>
           <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
           <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.abilities?.can_update !== false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="extension-save">
+        <button data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.abilities?.can_update !== false}}" class="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="extension-save">
           <on type="click">
-            <!-- 확장 조각 저장 — 레이아웃 저장과 같은 낙관적 잠금이되, 성공 뒤 **목록까지 다시 받는다**.
-                 조각은 "손댐" 표시가 목록 배지로 나오므로 본문만 갱신하면 배지가 옛 상태로 남는다. -->
-            <sequence>
-              <set-state target="global" :isSaving="true"/>
-              <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}" method="PUT">
-                <success>
-                  <set-state target="global" :isSaving="false" :markupCompileError="null" :jsonViewStale="false" markupWarnings="{{response.data?.markup_warnings ?? []}}"/>
-                  <toast type="success" message="$t:admin.templates.layout_edit.extension_save_success"/>
-                  <refetch-data-source dataSourceId="current_extension"/>
-                  <refetch-data-source dataSourceId="layout_extensions"/>
-                </success>
-                <fail>
-                  <set-state target="global" :isSaving="false" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
-                  <toast type="error" message="{{error.message}}"/>
-                </fail>
-                <body content="{{_global.editorMarkup}}" format="markup" expected_lock_version="{{current_extension?.data?.lock_version ?? 0}}"/>
-              </api-call>
-            </sequence>
+            <action-ref name="save_current_file"/>
           </on>
           <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="text-base"/>
           <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
           <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
         </button>
-      </page-header>
-      <div data-ref="mobile_file_selector" class="hidden">
-        <responsive on="portable" class="block mt-6"/>
-        <div class="admin-card">
-          <div class="flex-center gap-2 mb-2">
-            <icon name="fa-regular fa-folder-open" class="text-secondary text-xl"/>
-            <span class="text-primary font-medium">$t:admin.templates.layout_edit.layout_files</span>
-          </div>
-          <rich-select value="{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}" options="{{[...(layout_files?.data ?? []).map(f => ({ value: 'layout:' + f.name, label: f.name, name: f.name, kind: 'layout', size: f.size_formatted, updated_at: f.updated_at, has_update: f.has_update, is_override: false })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ value: 'ext:' + e.id, label: e.target_name, name: e.target_name, kind: 'extension', size: e.source_label, updated_at: e.extension_type, has_update: false, is_override: e.is_override })))]}}" placeholder="$t:admin.templates.layout_edit.select_file">
-            <template slot="item">
-              <div class="flex flex-col w-full">
-                <div class="flex-between">
-                  <span class="text-primary font-medium">{{item.name}}</span>
-                  <span data-if="{{item.has_update}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.update_available</span>
-                  <span data-if="{{item.is_override}}" class="px-2 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded">$t:admin.templates.layout_edit.extension_override_badge</span>
-                </div>
-                <div class="flex-center gap-2 form-hint">
-                  <span>{{item.size}}</span>
-                  <span>•</span>
-                  <span>{{item.updated_at}}</span>
-                </div>
-              </div>
-            </template>
-            <template slot="selected">
-              <span class="truncate">{{item.name}}</span>
-            </template>
-            <on type="change">
-              <!-- 모바일 선택기 — 레이아웃과 확장 조각을 **한 목록에 섞어** 담으므로 값 앞에 붙인
-                   `ext:`/(레이아웃) 접두어로 갈래를 가른다. 어느 쪽이든 대상을 정한 뒤 그 소스를 다시
-                   받아 편집 본문을 갈아끼운다. URL 의 route 표시는 레이아웃일 때만 채우고 확장이면 비운다
-                   (조각은 자기 경로가 없다) — `replace-url` 이라 이력에는 쌓이지 않는다. -->
-              <conditions>
-                <when if="{{$event.target.value.slice(0, 4) === 'ext:'}}">
-                  <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{Number($event.target.value.slice(4))}}" :markupCompileError="null" :jsonViewStale="false"/>
-                  <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
-                  <replace-url :mergeQuery="true">
-                    <query route=""/>
-                  </replace-url>
-                  <refetch-data-source dataSourceId="current_extension"/>
-                  <refetch-data-source dataSourceId="extension_versions"/>
-                </when>
-                <else>
-                  <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{$event.target.value.slice(7)}}" :markupCompileError="null" :jsonViewStale="false"/>
-                  <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
-                  <replace-url :mergeQuery="true">
-                    <query route="{{(layout_files?.data ?? []).find(f => f.name === $event.target.value.slice(7))?.route_path ?? ''}}"/>
-                  </replace-url>
-                  <refetch-data-source dataSourceId="current_layout"/>
-                </else>
-              </conditions>
+        <!-- 모바일 ⋯ 더보기 — 내려받기·복사를 접는다. 같은 동작을 위 버튼과 두 벌로 적는 이유는
+             `<action handler>` 가 문서 층 `<action name>` 으로 올릴 수 없는 인라인 핸들러이기 때문이다. -->
+        <div class="relative md:hidden">
+          <button type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" aria-haspopup="menu" aria-expanded="{{!!_global.headerMoreOpen}}" data-testid="layout-more-menu">
+            <on type="click">
+              <set-state target="global" headerMoreOpen="{{!_global.headerMoreOpen}}"/>
             </on>
-          </rich-select>
+            <icon name="fa-solid fa-ellipsis" class="text-base"/>
+          </button>
+          <div data-if="{{!!_global.headerMoreOpen}}" role="menu" class="absolute right-0 mt-1 w-48 z-40 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1" data-testid="layout-more-menu-items">
+            <button type="button" role="menuitem" class="w-full text-left px-3 py-2 text-sm flex-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" data-testid="layout-download-markup-mobile">
+              <on type="click">
+                <sequence>
+                  <set-state target="global" :headerMoreOpen="false"/>
+                  <action handler="downloadMarkupFile" filename="{{(_global.selectedNodeKind === 'extension' ? (current_extension?.data?.fragment_key ?? current_extension?.data?.target_name ?? 'extension') : (_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'layout'))}}.g7.html" content="{{_global.editorMarkup ?? ''}}"/>
+                </sequence>
+              </on>
+              <icon name="fa-solid fa-download" class="text-base"/>
+              <span>$t:admin.templates.layout_edit.download_markup</span>
+            </button>
+            <button type="button" role="menuitem" class="w-full text-left px-3 py-2 text-sm flex-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" data-testid="layout-copy-markup-mobile">
+              <on type="click">
+                <sequence>
+                  <set-state target="global" :headerMoreOpen="false"/>
+                  <action handler="copyMarkupToClipboard" content="{{_global.editorMarkup ?? ''}}" successMessage="$t:admin.templates.layout_edit.copy_success" failureMessage="$t:admin.templates.layout_edit.copy_failed"/>
+                </sequence>
+              </on>
+              <icon name="fa-regular fa-copy" class="text-base"/>
+              <span>$t:admin.templates.layout_edit.copy_markup</span>
+            </button>
+          </div>
         </div>
+      </page-header>
+      <!-- 모바일 하단 고정 바(계획서 §7.5) — 저장·미리보기만 남긴다. 아래 여백에 safe-area 를 더해
+           홈 인디케이터에 가리지 않게 하고, 페이지 컨테이너는 그만큼 바닥 여백을 둔다. -->
+      <div class="md:hidden fixed bottom-0 inset-x-0 z-30 flex gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700" data-testid="mobile-action-bar">
+        <button type="button" class="flex-1 flex-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="mobile-preview">
+          <on type="click">
+            <action-ref name="preview_current_file"/>
+          </on>
+          <icon name="fa-regular fa-eye" class="text-base"/>
+          <span>$t:admin.templates.layout_edit.preview</span>
+        </button>
+        <button data-if="{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) !== false}}" type="button" class="flex-1 flex-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="mobile-save">
+          <on type="click">
+            <action-ref name="save_current_file"/>
+          </on>
+          <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="text-base"/>
+          <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
+          <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
+        </button>
       </div>
-      <div data-ref="main_grid" class="mt-6 flex flex-row gap-6">
-        <responsive on="portable" class="mt-6 row-stack"/>
-        <!-- 파일 목록은 고정 폭(w-96)이다. 폭 규약이 없으면 flex 가 두 카드의 max-content 비율로 나누는데, 모듈 파티션 레이아웃의 긴 파일명(줄바꿈 지점 없는 80자 이상)이 목록의 max-content 를 900px 이상으로 밀어 올려 편집기가 절반 이하로 눌린다. -->
-        <div data-ref="file_list_card" class="admin-card w-96 shrink-0">
-          <responsive on="portable" class="hidden"/>
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex-center gap-2">
-              <icon name="fa-regular fa-folder-open" class="text-secondary text-xl"/>
-              <span class="text-primary font-medium">$t:admin.templates.layout_edit.layout_files</span>
-            </div>
-            <p class="mt-1 text-label-subtle">$t:admin.templates.layout_edit.select_file_prompt</p>
-          </div>
-          <div class="max-h-[calc(100vh-320px)] overflow-y-auto">
-            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">$t:admin.templates.layout_edit.section_layouts</span>
-            </div>
-            <div class="divider-list">
-              <div data-each="file, fileIdx in {{layout_files?.data ?? []}}" class="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind !== 'extension' &amp;&amp; (_global.selectedLayoutName || layout_files?.data?.[0]?.name) === file.name ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}}">
-                <on type="click">
-                  <!-- 좌측 목록에서 레이아웃 파일 고르기. 갈래를 `layout` 으로 되돌리고 그 파일의
-                       라우트 경로를 URL 에 남긴다(새로고침해도 같은 파일이 열리게).
-                       본문을 다시 받는 것이 편집 내용을 바꾸는 유일한 경로다. -->
-                  <sequence>
-                    <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{file.name}}" :markupCompileError="null" :jsonViewStale="false"/>
-                    <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
-                    <replace-url :mergeQuery="true">
-                      <query route="{{file.route_path ?? ''}}"/>
-                    </replace-url>
-                    <refetch-data-source dataSourceId="current_layout"/>
-                  </sequence>
-                </on>
-                <div class="flex-center gap-2 min-w-0">
-                  <icon name="fa-regular fa-file-code" class="text-base text-gray-400 dark:text-gray-500"/>
-                  <!-- break-all — 모듈 파티션 레이아웃 이름은 공백이 없어 기본 줄바꿈 규칙으로는 끊기지 않는다. 자르지 않고 접어서 전체 이름을 보이게 한다(잘라내면 어느 파티션인지 구분 불가). -->
-                  <span class="text-primary font-medium text-sm break-all">{{file.name}}.g7.html</span>
-                  <span data-if="{{file.has_update}}" class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.updated_badge</span>
-                </div>
-                <!-- 설명이 없는 레이아웃은 이름으로 폴백하므로 파일명과 같은 줄바꿈 규칙이 필요하다. break-all 이 없으면 모듈 파티션 이름이 목록에 가로 스크롤을 만든다. -->
-                <p class="form-hint break-all">{{raw:file.description || file.name}}</p>
-                <div class="text-hint mt-1 flex-center gap-2">
-                  <span>{{file.size_formatted || '0 KB'}}</span>
-                  <span>•</span>
-                  <span>{{file.updated_at}}</span>
-                </div>
-              </div>
-            </div>
-            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-y border-gray-200 dark:border-gray-700">
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">$t:admin.templates.layout_edit.section_extensions</span>
-            </div>
-            <div data-if="{{(layout_extensions?.data?.length ?? 0) === 0}}" class="p-3 text-xs text-gray-400 dark:text-gray-500">$t:admin.templates.layout_edit.no_extensions</div>
-            <div data-each="extGroup, extGroupIdx in {{layout_extensions?.data ?? []}}">
-              <div class="px-3 py-1.5 flex-center gap-1.5 bg-gray-100/60 dark:bg-gray-700/30">
-                <icon name="{{extGroup.source_type === 'plugin' ? 'fa-solid fa-plug' : 'fa-solid fa-puzzle-piece'}}" class="text-sm text-gray-500 dark:text-gray-400"/>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{{extGroup.source_label}}</span>
-              </div>
-              <div class="divider-list">
-                <div data-each="ext, extIdx in {{extGroup.extensions ?? []}}" class="p-3 pl-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind === 'extension' &amp;&amp; _global.selectedExtensionId === ext.id ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}} {{ext.is_active === false ? 'opacity-50' : ''}}">
-                  <on type="click">
-                    <!-- 좌측 목록에서 확장 조각 고르기. 갈래를 `extension` 으로 바꾸고 URL 의 route 는
-                         비운다(조각은 자기 라우트가 없다). 본문과 함께 판본 이력도 미리 받아 둔다 —
-                         이력 버튼이 그 자리에서 곧바로 열리게 하기 위함이다. -->
-                    <sequence>
-                      <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{ext.id}}" :markupCompileError="null" :jsonViewStale="false"/>
-                      <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
-                      <replace-url :mergeQuery="true">
-                        <query route=""/>
-                      </replace-url>
-                      <refetch-data-source dataSourceId="current_extension"/>
-                      <refetch-data-source dataSourceId="extension_versions"/>
-                    </sequence>
-                  </on>
-                  <div class="flex-center gap-2 flex-wrap">
-                    <icon name="fa-solid fa-circle-plus" class="text-sm text-gray-400 dark:text-gray-500"/>
-                    <span class="text-primary font-medium text-sm truncate">{{ext.target_name}}</span>
-                    <span class="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{ext.extension_type === 'overlay' ? '$t:admin.templates.layout_edit.extension_type_overlay' : '$t:admin.templates.layout_edit.extension_type_point'}}</span>
-                    <span data-if="{{ext.is_override}}" class="px-1.5 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded">$t:admin.templates.layout_edit.extension_override_badge</span>
-                    <span data-if="{{ext.is_modified}}" class="px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.extension_modified_badge</span>
-                    <span data-if="{{ext.is_active === false}}" class="px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded">$t:admin.templates.layout_edit.extension_inactive_badge</span>
-                  </div>
-                  <div class="text-hint mt-1 flex-center gap-2 flex-wrap">
-                    <span>$t:admin.templates.layout_edit.extension_priority|priority={{ext.priority ?? 100}}</span>
-                    <span>•</span>
-                    <span>{{ext.size_formatted ?? '0 B'}}</span>
-                    <!-- 조각 식별자 — 같은 대상에 조각이 둘일 때(예: 회원 폼의 통화·배송국가 필드) 두 행을 가른다. 대상 이름과 같으면 중복이라 숨긴다. -->
-                    <span data-if="{{!!ext.fragment_key &amp;&amp; ext.fragment_key !== ext.target_name}}" class="font-mono">$t:admin.templates.layout_edit.fragment_key_label|key={{ext.fragment_key}}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- 편집 영역. 카드가 남는 높이를 전부 가져가고 편집기가 그 안에서 다시 남는 높이를 가져간다 —
+           툴바가 한 줄 늘어도 편집기만 그만큼 줄어들 뿐, 고정 계산식처럼 화면 밖으로 밀리지 않는다(D13).
+           높이 기준은 `dvh` 다 — iOS 에서 주소창이 수축할 때 `vh` 는 어긋난다.
+
+           portable 에서도 **높이를 정해 준다**. `h-auto` 로 두면 카드가 내용 높이가 되고, 그 안에서
+           편집기 칸은 툴바·탭·하단 바가 쓰고 남은 것만 받는다 — 실측 2026-09-12 (390x844): 카드 376px
+           중 툴바 128 · 탭 48 · 하단 105 가 차 편집 칸이 75px, 실제 코드 영역은 **5px** 였다.
+           좁을수록 툴바가 더 감겨 더 나빠지는 방향이라, 여기서만 남는 높이를 주는 것으로는 부족하다.
+           `min-h` 를 함께 둬 툴바가 아무리 감겨도 코드 칸이 접히지 않게 하고, 넘치면 페이지가 스크롤된다. -->
+      <div data-ref="main_grid" class="mt-6 flex flex-row gap-6 items-stretch h-[calc(100dvh-230px)] min-h-[480px]">
+        <responsive on="portable" class="mt-6 row-stack h-[calc(100dvh-264px)] min-h-[420px]"/>
+      <!-- 좌측 파일 트리. 기기 폭에 따라 **인라인 · 서랍 · 시트**로 스스로 갈아입으므로 화면 분기를
+           레이아웃에 두지 않는다(종전에는 데스크톱 목록과 모바일 `rich-select` 두 벌이었고, 모바일 쪽에는
+           검색이 없어 144개를 스크롤해야 했다).
+           `nodes` 는 레이아웃 파일과 확장 주입 조각을 **한 배열**로 합쳐 넘긴다 — 트리 변환·폴더 묶기는
+           컴포넌트가 하므로 백엔드 응답 스키마는 그대로 둔다. -->
+      <file-tree-picker data-ref="file_tree_picker" mode="auto" storageKey="g7le.codeEditor.{{route.identifier}}" class="shrink-0 min-h-0"
+        nodes="{{[...(layout_files?.data ?? []).map(f => ({ key: 'layout:' + f.name, kind: 'layout', path: f.name, meta: { size: f.size_formatted, updatedAt: f.updated_at }, badges: f.has_update ? [{ text: '$t:admin.templates.layout_edit.updated_badge', tone: 'red' }] : [] })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ key: 'ext:' + e.id, kind: 'extension', path: e.target_name, label: e.fragment_key &amp;&amp; e.fragment_key !== e.target_name ? (e.target_name + ' · ' + e.fragment_key) : e.target_name, group: g.source_label, groupKind: g.source_type, meta: { size: e.size_formatted, disabled: e.is_active === false }, badges: [...(e.is_override ? [{ text: '$t:admin.templates.layout_edit.extension_override_badge', tone: 'indigo' }] : []), ...(e.is_modified ? [{ text: '$t:admin.templates.layout_edit.extension_modified_badge', tone: 'amber' }] : []), ...(e.is_active === false ? [{ text: '$t:admin.templates.layout_edit.extension_inactive_badge', tone: 'gray' }] : [])] })))]}}"
+        selectedKey="{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}"
+        dirtyKeys="{{_global.dirtyFileKeys ?? []}}"
+        searchKeyword="{{_global.fileSearchQuery ?? ''}}"
+        contentMatches="{{layout_search?.data ?? []}}"
+        pendingFolders="{{_global.pendingFolders ?? []}}"
+        searchFileCount="{{(_global.fileSearchQuery ?? '').length >= 2 ? (layout_search?.data?.length ?? 0) : 0}}"
+        searchMatchCount="{{(layout_search?.data ?? []).reduce((sum, row) => sum + (row.match_count ?? 0), 0)}}"
+        canManage="{{current_layout?.data?.abilities?.can_update !== false}}"
+        focusSearchNonce="{{_global.fileSearchFocusNonce ?? 0}}"
+        isLoading="{{!layout_files?.data}}">
+        <responsive on="portable" class="w-full"/>
+        <on type="select" event="onSelect">
+          <!-- 트리에서 파일 고르기. 키 접두(`ext:`)로 갈래를 가른다. 본문을 다시 받는 것이 편집기에
+               **서버 상태**를 넣는 경로이고, 편집 중인 값은 `<code-workspace>` 의 파일별 버퍼가 지킨다 —
+               그래서 이 재조회가 앞 파일의 미저장 수정을 덮지 않는다.
+               `jsonViewStale=true` 로 세우는 이유: 응답이 오기 전까지 JSON 탭은 **이전 파일의 산출물**을
+               들고 있다. 종전에는 여기서 false 로 세워 그것이 "최신" 으로 보였다(D17). -->
+          <conditions>
+            <when if="{{String($args[0]).slice(0, 4) === 'ext:'}}">
+              <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{Number(String($args[0]).slice(4))}}" :markupCompileError="null" :jsonViewStale="true" editorRevealAt="{{$args[1] ?? null}}"/>
+              <!-- 편집 대상 레이아웃만 주소에 기록한다 — 조각은 자기 경로가 없다 (#75). -->
+              <replace-url :mergeQuery="true">
+                <query route=""/>
+              </replace-url>
+              <refetch-data-source dataSourceId="current_extension"/>
+              <refetch-data-source dataSourceId="extension_versions"/>
+            </when>
+            <else>
+              <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{String($args[0]).slice(7)}}" :selectedExtensionId="null" :markupCompileError="null" :jsonViewStale="true" editorRevealAt="{{$args[1] ?? null}}"/>
+              <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
+              <replace-url :mergeQuery="true">
+                <query route="{{(layout_files?.data ?? []).find(f => f.name === String($args[0]).slice(7))?.route_path ?? ''}}"/>
+              </replace-url>
+              <refetch-data-source dataSourceId="current_layout"/>
+            </else>
+          </conditions>
+        </on>
+        <on type="search" event="onSearch">
+          <!-- 검색어는 곧바로 전역에 담는다 — 트리의 파일명 거르기·강조가 이 값만 보고 즉시 반응한다.
+               서버(내용 검색)는 2글자 이상일 때만, 그리고 더 긴 유휴 뒤에 부른다. -->
+          <set-state :debounce="200" target="global" fileSearchQuery="{{$args[0]}}"/>
+        </on>
+        <on type="search" event="onSearch">
+          <conditions>
+            <when if="{{String($args[0] ?? '').length >= 2}}">
+              <refetch-data-source :debounce="600" dataSourceId="layout_search"/>
+            </when>
+          </conditions>
+        </on>
+        <on type="createFile" event="onCreateFile">
+          <sequence>
+            <set-state target="global" fileFormMode="create_file" fileFormName="{{$args[0] ? ($args[0] + '/') : ''}}" fileFormContent="" :fileFormError="null"/>
+            <open-modal target="file_form_modal"/>
+          </sequence>
+        </on>
+        <on type="createFolder" event="onCreateFolder">
+          <sequence>
+            <set-state target="global" fileFormMode="create_folder" fileFormName="{{$args[0] ? ($args[0] + '/') : ''}}" :fileFormError="null"/>
+            <open-modal target="file_form_modal"/>
+          </sequence>
+        </on>
+        <on type="rename" event="onRename">
+          <sequence>
+            <set-state target="global" fileFormMode="rename" fileFormTarget="{{String($args[0]).slice(7)}}" fileFormName="{{String($args[0]).slice(7)}}" :fileFormError="null"/>
+            <open-modal target="file_form_modal"/>
+          </sequence>
+        </on>
+        <on type="delete" event="onDelete">
+          <sequence>
+            <set-state target="global" fileDeleteTarget="{{String($args[0]).slice(7)}}" :fileDeleteError="null" :fileDeleteReferences="[]" :fileDeleteRouteRequired="false"/>
+            <open-modal target="file_delete_modal"/>
+          </sequence>
+        </on>
+      </file-tree-picker>
+
         <!-- 편집기는 남는 폭을 전부 가져간다. min-w-0 이 없으면 코드 영역의 긴 줄이 flex 아이템의 최소 폭을 밀어 올려 목록 쪽으로 폭을 되돌려준다. -->
-        <div data-ref="editor_card" class="admin-card flex-1 min-w-0">
+        <div data-ref="editor_card" class="admin-card flex-1 min-w-0 flex flex-col min-h-0">
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex-start justify-between gap-4">
               <responsive on="portable" class="row-stack"/>
@@ -422,20 +495,7 @@
                 <!-- shrink-0·nowrap — 설명이 긴 레이아웃(시드 화면 등)에서 헤더 행이 눌리면 이 버튼 글자가 세로로 한 자씩 꺾였다(1280 실측). -->
                 <button type="button" class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0 whitespace-nowrap" data-testid="layout-version-history-open">
                   <on type="click">
-                    <!-- 판본 이력 열기 — 갈래에 따라 다른 소스·다른 창이다. 두 이력 소스 모두 자동
-                         조회를 꺼 두었으므로 **여는 순간 받는다**(안 받으면 지난번 이력이 그대로 뜬다). -->
-                    <conditions>
-                      <when if="{{_global.selectedNodeKind === 'extension'}}">
-                        <refetch-data-source dataSourceId="extension_versions"/>
-                        <open-modal target="extension_version_history_modal"/>
-                      </when>
-                      <else>
-                        <!-- 모달을 열 때마다 조회 상한을 첫 묶음으로 되돌린다. 남겨두면 이전에 넓혀 둔 상한이 다른 레이아웃의 이력 조회에 그대로 이월된다. -->
-                        <set-state target="global" :layoutVersionLimit="100"/>
-                        <refetch-data-source dataSourceId="layout_versions"/>
-                        <open-modal target="version_history_modal"/>
-                      </else>
-                    </conditions>
+                    <action-ref name="open_version_history"/>
                   </on>
                   <icon name="fa-solid fa-clock-rotate-left" class="text-base"/>
                   <span>$t:admin.templates.layout_edit.version_history_button</span>
@@ -449,18 +509,45 @@
               <set-state target="global" editorFormat="{{$args[0]}}"/>
             </on>
           </tab-navigation>
-          <div data-ref="markup_editor_pane" data-if="{{(_global.editorFormat ?? 'markup') !== 'json'}}" class="flex-1">
+          <!-- HTML 편집 — **파일별 버퍼의 주인**이다. 서버 본문은 `serverValue` 로 들어오기만 하고,
+               편집 중인 값은 `<code-workspace>` 안의 `Map<key, buffer>` 가 소유한다. 그래서 파일을 바꿔도
+               앞 파일의 미저장 수정이 남고(D1·D2·D4), 되돌아오면 커서·스크롤·되돌리기 스택까지 그대로다.
+               탭을 바꿀 때 이 노드를 **언마운트하지 않는다** — `data-if` 로 지우면 버퍼와 Monaco 모델이
+               함께 날아가므로, JSON 탭으로 갈 때는 `hidden` 으로 덮기만 한다.
+
+               `draftNamespace` 는 반드시 `g7le.` 로 시작한다. GDPR 플러그인이 functional 미동의
+               상태에서 strictly-necessary 허용목록 밖의 localStorage 키를 **부팅 때 전부 파기**하는데,
+               그 목록에 `g7le.*` 가 "레이아웃 편집기 작업 상태 — 운영자 편집 동선 유지" 로 이미 올라
+               있다. 접두사를 바꾸면 초안·줄바꿈·트리 폭이 새로고침마다 조용히 사라진다
+               (실측 2026-09-12: `g7.codeEditor.*` 였을 때 문서 시작 38,027자였던 초안을 부팅 1,128ms
+               에 플러그인이 removeItem 으로 지웠다). -->
+          <div data-ref="markup_editor_pane" class="flex-1 min-h-0 flex flex-col {{(_global.editorFormat ?? 'markup') === 'json' ? 'hidden' : ''}}">
             <!-- 마커는 오류(빨강)와 경고(노랑)를 합쳐 한 배열로 넘긴다 — `.g7.html` 검증은 Monaco 가 아니라 서버 컴파일러가 하므로 마커의 출처는 언제나 컴파일 응답이다. -->
-            <code-editor data-ref="markup_editor" value="{{raw:_global.editorMarkup ?? ''}}" language="html" theme="vs-dark" height="calc(100vh - 420px)" markers="{{[...(_global.markupCompileError ? [{line: _global.markupCompileError.line ?? 0, column: _global.markupCompileError.column ?? 0, message: _global.markupCompileError.message ?? '', severity: 'error'}] : []), ...((_global.markupWarnings ?? []).map(w => ({line: w.line ?? 0, column: w.column ?? 0, message: w.message ?? '', severity: 'warning'})))]}}">
+            <code-workspace data-ref="code_workspace" class="flex-1 min-h-0"
+              fileKey="{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}"
+              serverKey="{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.id ? ('ext:' + current_extension.data.id) : '') : (current_layout?.data?.name ? ('layout:' + current_layout.data.name) : '')}}"
+              serverValue="{{raw:_global.selectedNodeKind === 'extension' ? (current_extension?.data?.content_markup ?? '') : (current_layout?.data?.content_markup ?? '')}}"
+              serverRevision="{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.lock_version ?? 0) : (current_layout?.data?.lock_version ?? 0)}}"
+              fileLabel="{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.fragment_key ?? current_extension?.data?.target_name ?? 'extension') : (_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'layout')}}"
+              knownKeys="{{[...(layout_files?.data ?? []).map(f => 'layout:' + f.name), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => 'ext:' + e.id))]}}"
+              language="html"
+              readOnly="{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) === false}}"
+              isLoading="{{!!_global.isSaving}}"
+              draftNamespace="g7le.codeEditor.{{route.identifier}}"
+              revealAt="{{_global.editorRevealAt ?? null}}"
+              markers="{{[...(_global.markupCompileError ? [{line: _global.markupCompileError.line ?? 0, column: _global.markupCompileError.column ?? 0, message: _global.markupCompileError.message ?? '', severity: 'error'}] : []), ...((_global.markupWarnings ?? []).map(w => ({line: w.line ?? 0, column: w.column ?? 0, message: w.message ?? '', severity: 'warning'})))]}}">
               <on type="change" event="onChange">
-                <!-- 타이핑을 HTML 버퍼(정본)에 담는다. 300ms 로 묶는 이유는 이 값이 저장·미리보기가 읽는
-                     한 자리이고, 글자마다 전역을 흔들면 화면 전체가 다시 그려지기 때문이다. -->
+                <!-- 활성 버퍼를 HTML 정본 전역에 담는다. 저장·미리보기·내려받기·복사가 읽는 **그 한 자리**라
+                     계약이 종전과 같다 — 바뀐 것은 그 값을 누가 소유하느냐다. 300ms 로 묶는 이유는 글자마다
+                     전역을 흔들면 화면 전체가 다시 그려지기 때문이다. -->
                 <set-state :debounce="300" target="global" editorMarkup="{{$event.target.value}}"/>
               </on>
-              <on type="change" event="onChange">
+              <on type="userEdit" event="onUserEdit">
                 <!-- 타이핑이 멈춘 뒤 **1초 유휴**에 서버 변환을 한 번 불러 JSON 뷰를 갱신한다(키 입력마다 호출하지
                      않는다 — 설계 결정 C7). 성공하면 산출 JSON·경고를, 실패하면 오류 좌표를 마커로 올리고 JSON 뷰는
-                     마지막 성공본을 유지한 채 '오래됨' 배지를 단다. 위 버퍼 갱신과는 별도 `<on>` 이라 서로를 기다리지 않는다. -->
+                     마지막 성공본을 유지한 채 '오래됨' 배지를 단다.
+                     `onChange` 가 아니라 `onUserEdit` 에 거는 이유: `onChange` 는 파일을 열 때도 한 번 불리므로
+                     여기 걸면 파일 전환마다 서버 변환이 돌고, 본문 도착 전 빈 값으로 먼저 나가 422 가 난다. -->
                 <api-call :debounce="1000" :auth_required="true" target="{{_global.selectedNodeKind === 'extension' ? ('/api/admin/templates/' + route.identifier + '/layout-extensions/' + _global.selectedExtensionId + '/markup-compile') : ('/api/admin/templates/' + route.identifier + '/layouts/' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name) + '/markup-compile')}}" method="POST">
                   <success>
                     <set-state target="global" editorContent="{{response.data.content}}" markupWarnings="{{response.data.warnings ?? []}}" :markupCompileError="null" :jsonViewStale="false"/>
@@ -471,17 +558,98 @@
                   <body markup="{{$event.target.value}}"/>
                 </api-call>
               </on>
-            </code-editor>
+              <on type="dirtyChange" event="onDirtyChange">
+                <!-- 미저장 파일 목록 — 트리의 ● 점과 폴더 개수 배지가 이 값을 읽는다. -->
+                <set-state target="global" dirtyFileKeys="{{$event.target.value}}"/>
+              </on>
+              <on type="requestSelect" event="onRequestSelect">
+                <!-- 탭을 눌러 파일을 옮긴다. 트리에서 고르는 것과 **같은 경로**를 지나야 선택·주소·재조회가
+                     한 벌로 움직인다. -->
+                <conditions>
+                  <when if="{{String($args[0]).slice(0, 4) === 'ext:'}}">
+                    <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{Number(String($args[0]).slice(4))}}" :markupCompileError="null" :jsonViewStale="true"/>
+                    <replace-url :mergeQuery="true">
+                      <query route=""/>
+                    </replace-url>
+                    <refetch-data-source dataSourceId="current_extension"/>
+                    <refetch-data-source dataSourceId="extension_versions"/>
+                  </when>
+                  <when if="{{!(layout_files?.data ?? []).some(f => f.name === String($args[0]).slice(7))}}">
+                    <!-- 목록에 없는 파일 — 지워졌거나 이름이 바뀌었는데 초안·탭만 남은 것이다.
+                         **서버를 부르지 않는다.** 부르면 404 가 나고 화면에는 빈 편집기와 범용
+                         문구만 남았다(실측 2026-09-12, 운영자 제보). `<code-workspace>` 가
+                         `knownKeys` 로 이 키를 «없는 파일» 로 세워 복원분을 읽기 전용으로
+                         보여 주고, 새 이름으로 살리거나 버리게 한다. -->
+                    <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{String($args[0]).slice(7)}}" :selectedExtensionId="null" :markupCompileError="null" :jsonViewStale="true"/>
+                  </when>
+                  <else>
+                    <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{String($args[0]).slice(7)}}" :selectedExtensionId="null" :markupCompileError="null" :jsonViewStale="true"/>
+                    <replace-url :mergeQuery="true">
+                      <query route="{{(layout_files?.data ?? []).find(f => f.name === String($args[0]).slice(7))?.route_path ?? ''}}"/>
+                    </replace-url>
+                    <refetch-data-source dataSourceId="current_layout"/>
+                  </else>
+                </conditions>
+              </on>
+              <on type="saveAs" event="onSaveAs">
+                <!-- 없어진 파일의 복원분을 살린다. 생성 흐름을 그대로 쓰되 본문을 실어 보낸다 —
+                     빈 골격으로 만들면 사용자가 쓴 글이 그 자리에서 사라진다. -->
+                <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="{{$event.target.value}}" :fileFormError="null"/>
+                <open-modal target="file_form_modal"/>
+              </on>
+              <on type="save" event="onSave">
+                <!-- `Ctrl+S` — 머리말의 저장 버튼과 **같은 액션**을 부른다. 두 경로를 각자 적으면
+                     한쪽만 고쳐진 상태가 남으므로 정의는 문서 층 `<action name>` 한 곳에 둔다. -->
+                <action-ref name="save_current_file"/>
+              </on>
+              <on type="saveAll" event="onSaveAll">
+                <!-- 지금은 한 번에 한 파일만 저장한다 — 여러 파일 동시 저장은 각 파일의 잠금 번호를
+                     따로 들고 순차 왕복해야 해서 별개 설계다. 조합은 등록해 두되 동작은 저장과 같다. -->
+                <action-ref name="save_current_file"/>
+              </on>
+              <on type="preview" event="onPreview">
+                <action-ref name="preview_current_file"/>
+              </on>
+              <on type="newFile" event="onNewFile">
+                <sequence>
+                  <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="" :fileFormError="null"/>
+                  <open-modal target="file_form_modal"/>
+                </sequence>
+              </on>
+              <on type="versionHistory" event="onVersionHistory">
+                <action-ref name="open_version_history"/>
+              </on>
+              <on type="quickOpen" event="onQuickOpen">
+                <!-- «파일 빠른 이동»(Ctrl+K)·«내용 검색»(Ctrl+Shift+F) — 둘 다 좌측 검색창에 포커스를 준다.
+                     검색창 하나가 파일명 필터와 내용 검색을 함께 맡으므로 모드가 따로 없다(§4.6-5).
+                     카운터를 1 올리면 `<file-tree-picker>` 가 포커스를 주고, 서랍·시트면 먼저 연다. -->
+                <set-state target="global" fileSearchFocusNonce="{{(_global.fileSearchFocusNonce ?? 0) + 1}}"/>
+              </on>
+              <on type="searchContent" event="onSearchContent">
+                <set-state target="global" fileSearchFocusNonce="{{(_global.fileSearchFocusNonce ?? 0) + 1}}"/>
+              </on>
+              <on type="toggleView" event="onToggleView">
+                <set-state target="global" editorFormat="{{(_global.editorFormat ?? 'markup') === 'json' ? 'markup' : 'json'}}"/>
+              </on>
+              <on type="exit" event="onExit">
+                <!-- 미저장 확인은 **컴포넌트가** 한다(D5). 엔진의 `confirm` 은 진입점에서 무조건 발화하므로
+                     조건부로 물을 수 없고, 저장한 상태에서도 매번 되묻게 된다. dirty 여부를 아는 쪽이
+                     묻는 것이 맞다. -->
+                <navigate-back/>
+              </on>
+            </code-workspace>
           </div>
-          <div data-ref="json_editor_pane" data-if="{{_global.editorFormat === 'json'}}" class="flex-1">
-            <div class="px-4 py-2 flex-center gap-2 flex-wrap text-label-subtle">
+          <!-- JSON 은 읽기 전용 산출물이다(설계 결정 C2). 편집 버퍼를 갖지 않으므로 `<code-editor>` 를 바로 쓴다. -->
+          <div data-ref="json_editor_pane" class="flex-1 min-h-0 flex flex-col {{_global.editorFormat === 'json' ? '' : 'hidden'}}">
+            <div class="px-4 py-2 flex-center gap-2 flex-wrap text-label-subtle shrink-0">
               <icon name="fa-solid fa-lock" class="text-xs"/>
               <span>$t:admin.templates.layout_edit.json_readonly_hint</span>
               <span data-ref="json_stale_badge" data-if="{{!!_global.jsonViewStale}}" class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">$t:admin.templates.layout_edit.json_stale</span>
             </div>
-            <code-editor data-ref="json_editor" value="{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}" language="json" :readOnly="true" theme="vs-dark" height="calc(100vh - 460px)"/>
+            <div class="flex-1 min-h-0 px-4 pb-4">
+              <code-editor data-ref="json_editor" value="{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}" language="json" :readOnly="true" theme="auto" height="100%"/>
+            </div>
           </div>
-          <!-- 오류·경고 패널 — 마커와 같은 값을 글로도 보여준다(마커는 줄에 가려질 수 있다). 오류는 저장을 막고 경고는 막지 않는다. -->
           <div data-ref="markup_error_panel" data-if="{{!!_global.markupCompileError}}" role="alert" class="mx-4 mt-3 p-3 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm">
             <div class="font-medium flex-center gap-2">
               <icon name="fa-solid fa-circle-xmark" class="text-base"/>
@@ -513,4 +681,8 @@
   <!-- 확장점 주입 조각을 미리 볼 때 **어느 레이아웃 위에 얹어 볼지** 고르는 창.
        덮어쓰기 조각은 이 창을 거치지 않고 곧바로 미리보기가 열린다. -->
   <modal src="partials/admin_template_layout_edit/_modal_extension_preview_layout.g7.html"/>
+  <!-- 파일·폴더 이름을 받는 창 — 새 파일 · 새 폴더 · 이름변경이 같은 입력을 쓴다. -->
+  <modal src="partials/admin_template_layout_edit/_modal_file_form.g7.html"/>
+  <!-- 삭제 확인 창 — 서버가 막으면 무엇이 이 파일을 붙들고 있는지 목록으로 보여 준다. -->
+  <modal src="partials/admin_template_layout_edit/_modal_file_delete_confirm.g7.html"/>
 </layout>

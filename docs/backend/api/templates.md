@@ -96304,6 +96304,187 @@ Authorization: Bearer {YOUR_TOKEN}
 **설명** 특정 템플릿의 모든 레이아웃 목록을 조회합니다. 각 레이아웃에 이름 → 라우트 path 매핑을 부착해, 코드 편집기가 파일 선택 시 `?route=` URL 동기화나 위지윅에서 넘어온 라우트로 파일을 복원할 수 있게 합니다(LayoutService::getLayoutListByTemplateId). 응답에는 파일트리가 실제로 그리는 필드(이름·설명·라우트 path·크기·수정일시·업데이트 여부)만 담기고, **레이아웃 본문(`content`)과 파싱된 블록(`components`·`data_sources`·`metadata`)은 제외됩니다** — 목록은 페이지네이션 없이 템플릿의 전 레이아웃을 반환하므로 본문을 함께 실으면 편집기 진입만으로 모든 레이아웃 JSON 전문이 전송됩니다. 설명·크기는 조회 계층이 본문에서 파생값만 뽑아 넘기며 본문 자체는 응답에 남지 않습니다. 본문은 단건 조회(`GET /api/admin/templates/{template}/layouts/{layout}`)가 공급합니다. `core.templates.read` 권한이 필요합니다.
 
 
+### POST /api/admin/templates/{templateName}/layouts
+- **라우트명**: `api.admin.templates.layouts.store`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@store`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 **파일**(= `template_layouts` 행)을 새로 만듭니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
+| name | body | string | 예 | `^[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-]+)*$`, 최대 255자 | 레이아웃 이름. 슬래시는 폴더 구분이며 확장자는 붙이지 않는다 |
+| content | body | string | 아니오 | `.g7.html` 마크업 | 본문. **비우면 서버가 최소 골격을 채운다** |
+
+이름은 **세그먼트 단위**로 판정합니다 — 빈 세그먼트·`.`·`..`·선행/후행 슬래시가 구조적으로
+불가능합니다. 문자열 포함 검사(`str_contains('..')`)는 정상 이름을 막으면서 인코딩된 탈출을
+놓치므로 쓰지 않습니다(`App\Rules\SafeCustomAssetPath` 와 같은 방식).
+
+`content` 를 비우면 **이름과 무관하게** 문서 골격이 들어갑니다. 이름의 `partials/`·선행 `_` 는
+편집기 트리에서 폴더를 만드는 문자열일 뿐이고, DB 행은 언제나 하나의 문서입니다 — `<partial>` 로
+만들면 산출이 노드라 저장 경로의 문서 규칙을 지날 수 없습니다.
+
+```html
+<layout name="{name}" version="1.0.0">
+  <div></div>
+</layout>
+```
+
+빈 문자열을 그대로 저장하지 않는 이유: 빈 본문은 컴파일 오류라 파일을 만들자마자 빨간 줄이 뜹니다.
+골격은 `<slot>` 을 쓰지 않습니다 — 슬롯은 상속 레이아웃이 부모의 자리를 채우는 문법이라 독립
+문서에 쓰면 `components` 가 비어 구조 검증에서 막힙니다.
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/sirsoft-admin_basic/layouts HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{ "name": "partials/admin_user_list/_modal_form" }
+```
+
+**응답**
+
+| 상태 | 조건 |
+| --- | --- |
+| 201 | 생성됨 — `data` 는 `LayoutResource` |
+| 422 | 이름 규칙 위반 (`errors.name`) · 중복 (`errors.reason = layouts.errors.name_taken`) · 마크업 컴파일 오류 (`errors.compile_error`) |
+| 403 | `core.templates.layouts.edit` 미보유 |
+| 404 | 템플릿 없음 |
+
+---
+
+### GET /api/admin/templates/{templateName}/layouts/search
+- **라우트명**: `api.admin.templates.layouts.search`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@search`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+파일명·본문에서 검색어를 찾습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 |
+| q | query | string | 예 | 2~200자 | 검색어 (대소문자 무시, 정규식 미지원) |
+| scope | query | string | 아니오 | `name` \| `content` \| `both` (기본 `both`) | 검색 범위 |
+| limit | query | int | 아니오 | 1~100 (기본 100) | 돌려줄 파일 수 상한 |
+
+**검색 대상은 역변환한 `.g7.html` 마크업입니다.** DB 에는 JSON 만 있지만 사용자가 편집기에서 보는
+것은 마크업이므로, 줄 번호가 편집기와 같은 좌표계여야 결과를 눌러 그 줄로 갈 수 있습니다.
+
+역변환은 비싸므로 `layout:markup:{id}:{lock_version}` 으로 캐시합니다. `lock_version` 이 키에
+들어가므로 **저장하면 그 파일만 자동으로 무효화**되고, 별도 무효화 훅이나 컬럼이 필요 없습니다.
+
+실측(2026-09-12 · `sirsoft-admin_basic` · 레이아웃 82 + 조각 30):
+
+| 조건 | 소요 |
+| --- | --- |
+| `scope=both` 첫 조회(캐시 비움) | 3,136 ms |
+| `scope=both` 캐시 후 | 92 ms |
+| `scope=name` | 14 ms |
+
+그래서 화면은 **파일명 검색을 서버에 맡기지 않습니다** — 트리가 144개 이름을 이미 들고 있어
+거르기·강조를 클라이언트에서 즉시 처리하고, 서버에는 `scope=content` 만 더 긴 debounce 로 보냅니다.
+
+상한: 파일 100건, 파일당 매치 20건, `preview` 200자.
+
+**응답 예시**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "key": "layout:partials/admin_user_list/_modal_form",
+      "kind": "layout",
+      "name": "partials/admin_user_list/_modal_form",
+      "name_matched": false,
+      "match_count": 3,
+      "lines": [{ "line": 42, "column": 11, "preview": "<input name=\"email\" …" }]
+    }
+  ]
+}
+```
+
+| 상태 | 조건 |
+| --- | --- |
+| 200 | 검색 결과 (0건이면 빈 배열) |
+| 422 | `q` 가 2자 미만·200자 초과 · `scope` 가 허용값 밖 |
+| 403 | `core.templates.read` 미보유 |
+
+---
+
+### PATCH /api/admin/templates/{templateName}/layouts/{name}/rename
+- **라우트명**: `api.admin.templates.layouts.rename`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@rename`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 이름을 바꿉니다(= 이동). **새 행을 만들지 않고** 같은 행의 `name` 을 갱신하므로
+판본 이력이 그대로 승계됩니다 — 복사 후 삭제로 구현하면 이력이 이름을 바꾼 지점에서 끊깁니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| name | path | string | 예 | 현재 이름 |
+| new_name | body | string | 예 | 새 이름 (생성과 같은 규칙) |
+| expected_lock_version | body | int | 예 | 받아 둔 `lock_version` — 낙관적 잠금 |
+
+`expected_lock_version` 을 의무화하는 이유: 이름변경은 본문의 `layout_name` 까지 함께 옮기므로
+내용을 건드리는 연산입니다. 다른 창에서 저장이 일어난 뒤 이름을 바꾸면 그 저장분을 못 본 채
+덮어쓰게 됩니다.
+
+**차단 조건**
+
+| 사유 | 상태 | `errors.reason` |
+| --- | --- | --- |
+| 모듈·플러그인이 제공한 원본 | 422 | `layouts.errors.rename_blocked_source_type` |
+| 다른 레이아웃이 `extends`·`partial` 로 참조 | 422 | `layouts.errors.rename_blocked_by_reference` |
+| 대상 이름이 이미 있음 | 409 | `layouts.errors.name_taken` |
+| 잠금 번호 불일치 | 409 | `exceptions.concurrent_modification` |
+
+참조가 걸린 경우 `errors.references` 에 `{name, kind, line}` 목록이 실립니다.
+**참조를 자동으로 고쳐 주지 않습니다** — 표현식 문자열까지 치환하면 되돌릴 수 없는 사고가 됩니다.
+
+---
+
+### DELETE /api/admin/templates/{templateName}/layouts/{name}
+- **라우트명**: `api.admin.templates.layouts.destroy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@destroy`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 파일을 **soft delete** 합니다 — 행은 남고 조회에서만 빠지므로 오삭제를 되돌릴 수 있습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| name | path | string | 예 | 레이아웃 이름 |
+| confirm | query | bool | 조건부 | 라우트가 걸린 레이아웃을 지울 때 필요 |
+
+**차단 조건**
+
+| 사유 | 상태 | `errors.reason` |
+| --- | --- | --- |
+| 모듈·플러그인이 제공한 원본 | 422 | `layouts.errors.delete_blocked_source_type` |
+| 다른 레이아웃이 `extends`·`partial` 로 참조 | 422 | `layouts.errors.delete_blocked_by_reference` |
+| 라우트가 걸려 있고 `confirm` 없음 | 422 | `layouts.errors.delete_requires_confirmation` |
+
+라우트가 걸린 레이아웃은 **막지 않습니다** — 지우는 것이 정당한 경우가 있습니다. 다만 그 화면이
+곧바로 열리지 않게 된다는 사실을 모른 채 지나갈 수는 없게 한 단계를 더 둡니다.
+
+참조 사전 검사는 저장된 JSON 에서 **마지막 세그먼트**로 거릅니다. `json_encode` 기본 동작이
+슬래시를 `\/` 로 이스케이프하므로 경로 전체로 찾으면 언제나 빗나가 차단이 통째로 무력해집니다
+(실측으로 잡힌 결함). 값이 통째로 일치할 때만 참조로 세므로 `_modal_form` 이
+`_modal_form_extra` 를 참조로 오인하지 않습니다.
+
+---
+
 ### GET /api/admin/templates/{templateName}/layouts/{name}
 <!-- @generated:start:api.admin.templates.layouts.show -->
 - **라우트명**: `api.admin.templates.layouts.show`

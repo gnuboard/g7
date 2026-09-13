@@ -90,6 +90,38 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
+     * 본문을 포함해 레이아웃을 **청크 단위로 흘려 읽습니다**.
+     *
+     * 내용 검색·참조 스캔처럼 본문이 꼭 필요한 경로를 위한 것이다. {@see getByTemplateId()} 는
+     * 캐시 무효화용이라 `content` 를 아예 select 하지 않으므로, 그것으로 본문을 읽으면 값이
+     * null 인 채로 조용히 빈 결과가 나온다.
+     *
+     * 한 번에 다 읽지 않는 이유는 {@see getListByTemplateId()} 와 같다 — sirsoft-admin_basic
+     * 기준 102행 합계 17MB 이상이라 전량 적재는 디버그 모드에서 메모리 한계를 넘는다.
+     * 콜백이 `false` 를 돌려주면 순회를 멈춘다(상한에 도달한 검색이 남은 행을 읽지 않게).
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  callable(TemplateLayout): (bool|null)  $callback  행마다 호출 (false 면 중단)
+     * @return void
+     */
+    public function eachWithContent(int $templateId, callable $callback): void
+    {
+        // 순회 커서는 기본키다 — `orderBy('name')` 을 함께 걸면 커서 기준과 정렬이 어긋나
+        // 행이 조용히 누락된다(실측: 102행 중 58행). 표시 정렬이 필요한 호출부가 뒤에서 정렬한다.
+        TemplateLayout::query()
+            ->where('template_id', $templateId)
+            ->chunkById(self::LIST_CHUNK_SIZE, function (Collection $chunk) use ($callback): ?bool {
+                foreach ($chunk as $layout) {
+                    if ($callback($layout) === false) {
+                        return false;
+                    }
+                }
+
+                return null;
+            });
+    }
+
+    /**
      * 특정 레이아웃 조회 (템플릿 ID와 이름으로)
      *
      * @param  int  $templateId  템플릿 ID
@@ -134,6 +166,35 @@ class LayoutRepository implements LayoutRepositoryInterface
     public function findById(int $id): ?TemplateLayout
     {
         return TemplateLayout::find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findWithTrashedByName(int $templateId, string $name): ?TemplateLayout
+    {
+        return TemplateLayout::withTrashed()
+            ->where('template_id', $templateId)
+            ->where('name', $name)
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function restoreTrashed(TemplateLayout $layout): TemplateLayout
+    {
+        $layout->restore();
+
+        return $layout;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function softDelete(TemplateLayout $layout): void
+    {
+        $layout->delete();
     }
 
     /**
@@ -609,6 +670,25 @@ class LayoutRepository implements LayoutRepositoryInterface
         }
 
         return $query->orderBy('name')->get();
+    }
+
+    /**
+     * 레이아웃 1건의 속성을 그대로 적어 넣습니다.
+     *
+     * 휴지통에 있는 행도 대상이다 — 복구 직후의 적재가 이 자리를 지난다.
+     *
+     * @param  int  $id  레이아웃 ID
+     * @param  array<string, mixed>  $attributes  적용할 속성 (열 이름 => 값)
+     * @return TemplateLayout 저장 후 다시 읽은 모델
+     */
+    public function saveAttributes(int $id, array $attributes): TemplateLayout
+    {
+        $layout = TemplateLayout::withTrashed()->findOrFail($id);
+
+        $layout->fill($attributes);
+        $layout->save();
+
+        return $layout->fresh();
     }
 
     /**

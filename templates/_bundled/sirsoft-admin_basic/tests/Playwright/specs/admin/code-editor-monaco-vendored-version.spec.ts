@@ -20,6 +20,9 @@
  * @scenario asset_class=vendored, outcome=loaded
  * @effects vendored_asset_declared_path_exists_on_disk, runtime_asset_served_same_origin,
  *          vendored_editor_mounts_without_fallback, vendored_asset_version_matches_declaration
+ *
+ * 실행: `code-editor-*.spec.ts` 는 `--workers=1` 로 돌린다 — 사유는
+ * `code-editor-file-crud.spec.ts` 헤더 참조(같은 시드 화면을 공유해 병렬에서 서로를 밟는다).
  */
 import { test, expect, authenticatePage } from '../../fixtures/admin-template-auth';
 import type { Page } from '@playwright/test';
@@ -40,7 +43,8 @@ async function openCodeEditor(page: Page, token: string): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/templates/sirsoft-admin_basic/edit');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  await page.waitForSelector('#file_list_card', { timeout: 30_000 });
+  // 좌측 목록은 `role="tree"` 파일 트리다(#476) — 고정 폭 카드가 아니라 트리가 뜨는 것이 진입 신호다.
+  await page.waitForSelector('[role="tree"] [role="treeitem"]', { timeout: 30_000 });
 }
 
 // 동봉 Monaco 첫 로드는 수 MB AMD 청크를 받는다 — 여러 워커가 같은 dev 서버에서 동시에 받으면

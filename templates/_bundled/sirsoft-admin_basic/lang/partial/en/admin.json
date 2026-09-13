@@ -2343,7 +2343,106 @@
       "copy_markup": "Copy",
       "copy_success": "Markup copied to clipboard.",
       "copy_failed": "Could not copy to clipboard.",
-      "fragment_key_label": "Fragment {{key}}"
+      "fragment_key_label": "Fragment {{key}}",
+      "tree": {
+        "aria_label": "Layout files",
+        "unsaved": "Unsaved",
+        "unsaved_count": "{{count}} unsaved file(s)",
+        "pending_folder": "Empty folder",
+        "empty": "No editable layouts yet",
+        "resize": "Resize file list"
+      },
+      "tabs": {
+        "aria_label": "Open files",
+        "close": "Close {{name}}"
+      },
+      "search": {
+        "placeholder": "Search files and contents",
+        "result_summary": "{{matches}} match(es) in {{files}} file(s)",
+        "empty": "No file or content matches '{{keyword}}'",
+        "clear": "Clear search",
+        "goto_line": "Go to line {{line}}"
+      },
+      "file": {
+        "new_file": "New file",
+        "new_folder": "New folder",
+        "new_file_title": "Create a file",
+        "new_folder_title": "Create a folder",
+        "rename": "Rename",
+        "rename_title": "Rename file",
+        "delete": "Delete",
+        "delete_title": "Delete this file?",
+        "delete_description": "Deleted files can be restored, but any screen using this file stops working immediately.",
+        "create": "Create",
+        "name_label": "Name",
+        "name_placeholder": "e.g. partials/admin_user_list/_modal_form",
+        "name_hint": "Use letters, digits, underscore (_) and hyphen (-); separate folders with a slash (/). No file extension.",
+        "created": "File created.",
+        "renamed": "File renamed.",
+        "deleted": "File deleted.",
+        "folder_created": "Folder added. It becomes permanent once a file is saved inside it.",
+        "reference_line": "line {{line}}",
+        "delete_anyway": "Delete anyway",
+        "missing_title": "This file no longer exists",
+        "missing_reloading": "This file could not be found. Refreshing the list.",
+        "missing_draft_notice": "This file no longer exists. The restored edit below cannot be saved — save it under a new name or discard it.",
+        "save_as": "Save as new file",
+        "discard_draft": "Discard",
+        "missing_badge": "missing"
+      },
+      "draft": {
+        "found": "{{count}} unsaved edit(s) found",
+        "restore": "Restore",
+        "discard": "Discard",
+        "leave_warning": "You have unsaved edits.",
+        "leave_confirm": "You have {{count}} unsaved edit(s). Leaving this screen discards them. Continue?",
+        "close_confirm": "{{name}} has unsaved edits. Closing the tab discards them. Continue?",
+        "close_title": "{{name}} has unsaved edits",
+        "close_question": "What would you like to do before closing the tab?",
+        "close_save": "Save and close",
+        "close_discard": "Close without saving",
+        "close_cancel": "Cancel",
+        "close_saving": "Saving… the tab closes once the save finishes. If it fails, this dialog stays.",
+        "restore_warning": "You have {{count}} unsaved edit(s). Restoring a version will raise a conflict notice above the editor."
+      },
+      "conflict": {
+        "title": "The server has a newer version",
+        "description": "This file was saved elsewhere (yours v{{mine}} → server v{{server}})",
+        "keep_mine": "Keep mine",
+        "take_server": "Take server",
+        "view_diff": "View diff",
+        "diff_title": "Difference between the server copy and your edits",
+        "diff_legend": "Left: server v{{server}} · Right: your edits (based on v{{mine}})",
+        "diff_close": "Close"
+      },
+      "wordwrap": {
+        "label": "Wrap",
+        "toggle": "Toggle word wrap (Alt+Z)"
+      },
+      "shortcuts": {
+        "title": "Keyboard shortcuts",
+        "save": "Save",
+        "save_all": "Save all",
+        "preview": "Preview",
+        "version_history": "Version history",
+        "exit": "Exit",
+        "new_file": "New file",
+        "quick_open": "Quick open file",
+        "search_content": "Search contents",
+        "prev_tab": "Previous tab",
+        "next_tab": "Next tab",
+        "close_tab": "Close tab",
+        "toggle_view": "Toggle HTML / JSON",
+        "toggle_word_wrap": "Word wrap",
+        "font_size_up": "Larger text",
+        "font_size_down": "Smaller text",
+        "find_in_file": "Find in file",
+        "help": "Shortcut help",
+        "group_document": "Document",
+        "group_file": "File",
+        "group_view": "View",
+        "group_editor": "Editor"
+      }
     }
   },
   "activity_log": {
@@ -2889,7 +2988,9 @@
     "admin_template_layout_edit": {
       "extension_preview_layout_modal": "Select Preview Layout",
       "extension_version_history_modal": "Extension Version History",
-      "version_history_modal": "Layout Version History"
+      "version_history_modal": "Layout Version History",
+      "file_form_modal": "File name dialog",
+      "file_delete_modal": "File delete confirmation"
     },
     "changelog_modal": "Core Changelog",
     "license_modal": "Core License",

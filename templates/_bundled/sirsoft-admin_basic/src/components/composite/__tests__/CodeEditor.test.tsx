@@ -120,12 +120,42 @@ describe('CodeEditor', () => {
     expect(textarea).toHaveAttribute('data-language', 'json');
   });
 
-  /** @effects code_editor_defaults_theme_to_vs_dark */
-  it('기본값으로 vs-dark 테마를 사용해야 한다', () => {
+  /**
+   * 기본 테마는 **문서를 따라간다**(D8, #476).
+   *
+   * 종전 기본값은 `vs-dark` 하드코딩이라 사이트가 라이트 모드여도 편집기만 검은 판이었다.
+   * 이제 기본값은 `auto` 이고, 루트에 `dark` 클래스가 없으면 `vs-light` 로 해석된다.
+   *
+   * @effects code_editor_defaults_theme_to_document_theme, code_editor_follows_document_theme
+   */
+  it('기본값은 문서 테마를 따른다 — 라이트 문서에서 vs-light', () => {
+    document.documentElement.classList.remove('dark');
+
     render(<CodeEditor value="" />);
 
-    const textarea = screen.getByTestId('editor-textarea');
-    expect(textarea).toHaveAttribute('data-theme', 'vs-dark');
+    expect(screen.getByTestId('editor-textarea')).toHaveAttribute('data-theme', 'vs-light');
+  });
+
+  /** @effects code_editor_follows_dark_class */
+  it('문서가 다크면 vs-dark 로 해석한다', () => {
+    document.documentElement.classList.add('dark');
+
+    try {
+      render(<CodeEditor value="" />);
+
+      expect(screen.getByTestId('editor-textarea')).toHaveAttribute('data-theme', 'vs-dark');
+    } finally {
+      document.documentElement.classList.remove('dark');
+    }
+  });
+
+  /** @effects code_editor_explicit_theme_wins_over_document */
+  it('명시한 테마는 문서 테마를 이긴다', () => {
+    document.documentElement.classList.remove('dark');
+
+    render(<CodeEditor value="" theme="vs-dark" />);
+
+    expect(screen.getByTestId('editor-textarea')).toHaveAttribute('data-theme', 'vs-dark');
   });
 
   /** @effects code_editor_container_carries_the_layout_classes */

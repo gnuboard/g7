@@ -1401,6 +1401,13 @@
     "target_label": "管理対象の拡張",
     "type_template": "テンプレート",
     "type_module": "モジュール",
-    "type_plugin": "プラグイン"
+    "type_plugin": "プラグイン",
+    "discard_confirm": "保存されていない編集 :count件があります。破棄して続行しますか？",
+    "rename": "名前変更",
+    "rename_prompt": "新しいパスを入力してください。拡張子は変更できません。",
+    "search_placeholder": "ファイル名·内容を検索",
+    "no_match": "':keyword' と一致するファイル·内容がありません",
+    "unsaved": "保存されていません",
+    "word_wrap": "改行"
   }
 }

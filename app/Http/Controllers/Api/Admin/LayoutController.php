@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\ConcurrentModificationException;
+use App\Exceptions\LayoutFileOperationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\LayoutVersionListRequest;
 use App\Http\Requests\Layout\CompileLayoutMarkupRequest;
+use App\Http\Requests\Layout\CreateLayoutFileRequest;
+use App\Http\Requests\Layout\RenameLayoutRequest;
+use App\Http\Requests\Layout\SearchLayoutRequest;
 use App\Http\Requests\Layout\StoreLayoutPreviewRequest;
 use App\Http\Requests\Layout\UpdateLayoutContentRequest;
 use App\Http\Resources\LayoutListResource;
 use App\Http\Resources\LayoutResource;
+use App\Http\Resources\LayoutSearchResource;
 use App\Http\Resources\LayoutVersionResource;
+use App\Services\LayoutFileService;
 use App\Services\LayoutMarkupService;
 use App\Services\LayoutPreviewService;
 use App\Services\LayoutService;
@@ -25,11 +31,13 @@ class LayoutController extends AdminBaseController
      * @param  LayoutService  $layoutService  레이아웃 조회·저장 (낙관적 잠금 포함)
      * @param  TemplateService  $templateService  템플릿 식별자 → 템플릿 해석
      * @param  LayoutPreviewService  $layoutPreviewService  저장하지 않은 본문의 일회용 미리보기 발급
+     * @param  LayoutFileService  $layoutFileService  파일 단위 조작 (생성·삭제·이름변경·검색)
      */
     public function __construct(
         private LayoutService $layoutService,
         private TemplateService $templateService,
-        private LayoutPreviewService $layoutPreviewService
+        private LayoutPreviewService $layoutPreviewService,
+        private LayoutFileService $layoutFileService
     ) {
         parent::__construct();
     }
@@ -113,6 +121,231 @@ class LayoutController extends AdminBaseController
         }
 
         return $this->success('common.success', $resource);
+    }
+
+    /**
+     * 레이아웃 파일 생성
+     *
+     * 본문은 `.g7.html` 마크업으로 받는다. 비워 보내면 곧바로 컴파일되는 최소 골격이 대신 들어간다
+     * ({@see LayoutFileService::defaultSkeleton()}).
+     *
+     * @param  CreateLayoutFileRequest  $request  생성 요청 (`name`, 선택 `content`)
+     * @param  string  $templateName  템플릿 identifier
+     * @return JsonResponse 201 생성된 레이아웃 | 422 이름 규칙·중복·컴파일 오류
+     */
+    public function store(CreateLayoutFileRequest $request, string $templateName): JsonResponse
+    {
+        $template = $this->templateService->findByIdentifier($templateName);
+
+        if (! $template) {
+            return $this->notFound('common.not_found');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $layout = $this->layoutFileService->create(
+                $template->id,
+                $templateName,
+                (string) $request->validated('name'),
+                (array) $request->validated('content'),
+                $request->user()?->id,
+            );
+
+            DB::commit();
+        } catch (LayoutFileOperationException $e) {
+            DB::rollBack();
+
+            return $this->layoutFileError($e);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+        }
+
+        $resource = (new LayoutResource($layout))
+            ->withTranslations($this->resolveTemplateTranslations($templateName));
+
+        return $this->success('layouts.messages.created', $resource, 201);
+    }
+
+    /**
+     * 레이아웃 파일 이름변경 (= 이동)
+     *
+     * @param  RenameLayoutRequest  $request  이름변경 요청 (`new_name`, `expected_lock_version`)
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  현재 레이아웃 이름
+     * @return JsonResponse 200 바뀐 레이아웃 | 409 중복·잠금 충돌 | 422 참조 차단
+     */
+    public function rename(RenameLayoutRequest $request, string $templateName, string $name): JsonResponse
+    {
+        $template = $this->templateService->findByIdentifier($templateName);
+
+        if (! $template) {
+            return $this->notFound('common.not_found');
+        }
+
+        $layout = $this->layoutService->getLayoutByName($template->id, $name);
+
+        if (! $layout) {
+            return $this->notFound('common.not_found');
+        }
+
+        // 이름변경은 본문의 `layout_name` 까지 옮기므로 내용을 건드리는 연산이다 — 저장과 같은
+        // 낙관적 잠금을 지나지 않으면 다른 창의 저장분을 못 본 채 덮어쓴다.
+        $expected = (int) $request->validated('expected_lock_version');
+        $current = (int) ($layout->lock_version ?? 0);
+
+        if ($expected !== $current) {
+            return $this->concurrentModificationResponse(new ConcurrentModificationException(
+                currentVersion: $current,
+                expectedVersion: $expected,
+                resource: "template_layouts:{$layout->id}",
+            ));
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $renamed = $this->layoutFileService->rename(
+                $template->id,
+                $name,
+                (string) $request->validated('new_name'),
+                $request->user()?->id,
+            );
+
+            DB::commit();
+        } catch (LayoutFileOperationException $e) {
+            DB::rollBack();
+
+            return $this->layoutFileError($e);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+        }
+
+        $resource = (new LayoutResource($renamed))
+            ->withTranslations($this->resolveTemplateTranslations($templateName));
+
+        return $this->success('layouts.messages.renamed', $resource);
+    }
+
+    /**
+     * 레이아웃 파일 삭제 (soft delete — 되돌릴 수 있다)
+     *
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  레이아웃 이름
+     * @return JsonResponse 200 삭제됨 | 422 참조 차단·확인 필요
+     */
+    public function destroy(string $templateName, string $name): JsonResponse
+    {
+        $template = $this->templateService->findByIdentifier($templateName);
+
+        if (! $template) {
+            return $this->notFound('common.not_found');
+        }
+
+        // 이 레이아웃에 라우트가 걸려 있으면 지운 직후 그 화면이 404 가 된다 — 서비스가 확인
+        // 단계를 한 번 더 요구하도록 경로를 함께 넘긴다(차단은 아니다).
+        $routePath = $this->templateService->getLayoutRoutePathMap($templateName)[$name] ?? null;
+
+        try {
+            DB::beginTransaction();
+
+            $this->layoutFileService->delete(
+                $template->id,
+                $name,
+                request()->boolean('confirm'),
+                $routePath,
+            );
+
+            DB::commit();
+        } catch (LayoutFileOperationException $e) {
+            DB::rollBack();
+
+            return $this->layoutFileError($e);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+        }
+
+        return $this->success('layouts.messages.deleted', ['name' => $name, 'deleted' => true]);
+    }
+
+    /**
+     * 레이아웃 파일명·본문 검색
+     *
+     * 사용자가 보는 것은 `.g7.html` 마크업이므로 검색 대상도 역변환한 마크업이다 — 줄 번호가
+     * 편집기와 같아야 결과를 눌러 그 줄로 이동할 수 있다.
+     *
+     * @param  SearchLayoutRequest  $request  검색 요청 (`q`, `scope`, `limit`)
+     * @param  string  $templateName  템플릿 identifier
+     * @return JsonResponse 200 검색 결과 | 422 `q` 규칙 위반
+     */
+    public function search(SearchLayoutRequest $request, string $templateName): JsonResponse
+    {
+        $template = $this->templateService->findByIdentifier($templateName);
+
+        if (! $template) {
+            return $this->notFound('common.not_found');
+        }
+
+        ['q' => $keyword, 'scope' => $scope, 'limit' => $limit] = $request->criteria();
+
+        $rows = $this->layoutFileService->search($template->id, $templateName, $keyword, $scope, $limit);
+
+        return $this->success('common.success', LayoutSearchResource::collection($rows));
+    }
+
+    /**
+     * 파일 조작 예외를 응답으로 옮깁니다.
+     *
+     * 예외가 들고 온 **메시지 키**를 그대로 넘긴다 — 이미 번역된 문장을 키 자리에 넘기면 키
+     * 해석에 실패해 원문이 화면에 나간다. 차단 근거가 된 참조 목록은 `errors.references` 에
+     * 실어 화면이 "무엇이 이 파일을 붙들고 있는지" 를 보여줄 수 있게 한다.
+     *
+     * @param  LayoutFileOperationException  $e  파일 조작 예외
+     * @return JsonResponse 예외가 정한 상태 코드의 오류 응답
+     */
+    private function layoutFileError(LayoutFileOperationException $e): JsonResponse
+    {
+        $errors = ['reason' => $e->errorKey];
+
+        if ($e->references !== []) {
+            // 화면은 `kind` 토큰(extends·partial·route)을 그대로 보이면 안 된다 — 사람 말 라벨을
+            // 서버가 붙여 준다(`layouts.reference_kinds.*`, 요청 로케일).
+            $errors['references'] = array_map(static function (array $reference): array {
+                $kind = (string) ($reference['kind'] ?? '');
+                $reference['kind_label'] = $kind !== '' ? __('layouts.reference_kinds.'.$kind) : '';
+
+                return $reference;
+            }, $e->references);
+        }
+
+        return $this->error($e->errorKey, $e->status, $errors, $e->params);
+    }
+
+    /**
+     * 낙관적 잠금 충돌 응답을 만듭니다 ({@see update()} 와 같은 형식).
+     *
+     * @param  ConcurrentModificationException  $e  충돌 예외
+     * @return JsonResponse 409 응답
+     */
+    private function concurrentModificationResponse(ConcurrentModificationException $e): JsonResponse
+    {
+        return $this->error(
+            'exceptions.concurrent_modification',
+            409,
+            [
+                'error' => 'concurrent_modification',
+                'current_version' => $e->currentVersion,
+                'your_version' => $e->expectedVersion,
+                'resource' => $e->resource,
+            ],
+            ['resource' => $e->resource, 'current' => $e->currentVersion, 'expected' => $e->expectedVersion],
+        );
     }
 
     /**
@@ -251,17 +484,7 @@ class LayoutController extends AdminBaseController
         } catch (ConcurrentModificationException $e) {
             DB::rollBack();
 
-            return $this->error(
-                'exceptions.concurrent_modification',
-                409,
-                [
-                    'error' => 'concurrent_modification',
-                    'current_version' => $e->currentVersion,
-                    'your_version' => $e->expectedVersion,
-                    'resource' => $e->resource,
-                ],
-                ['resource' => $e->resource, 'current' => $e->currentVersion, 'expected' => $e->expectedVersion],
-            );
+            return $this->concurrentModificationResponse($e);
         } catch (\Exception $e) {
             DB::rollBack();
 

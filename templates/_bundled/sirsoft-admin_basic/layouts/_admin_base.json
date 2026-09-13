@@ -230,6 +230,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
+                                        "data-leave-guard": "true",
                                         "className": "sidebar_logo"
                                     },
                                     "children": [
@@ -408,6 +409,7 @@
                             ]
                         },
                         {
+                            "comment": "`data-leave-guard` — 저장하지 않은 편집을 들고 있는 화면이 **이 클릭을 먼저 받아** 확인을\n           물을 수 있게 표시해 둔다. SPA 이동은 `beforeunload` 를 내지 않으므로 이 표시가 없으면\n           좌측 메뉴로 나가는 순간 편집분이 말없이 사라진다(실측 2026-09-12: 코드 편집기에서 미저장\n           상태로 「사용자 관리」를 누르니 확인 없이 `/admin/users` 로 이동했다).\n           표시 자체는 아무 동작도 하지 않는다 — 읽는 쪽(`CodeWorkspace`)이 없으면 그냥 속성이다.",
                             "id": "admin_sidebar_menu",
                             "type": "basic",
                             "name": "Div",
@@ -419,6 +421,7 @@
                                 }
                             },
                             "props": {
+                                "data-leave-guard": "true",
                                 "className": "admin_sidebar_menu sidebar-scrollbar"
                             },
                             "children": [

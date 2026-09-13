@@ -17,6 +17,7 @@ import type { TranslationEngine, TranslationContext as ITranslationContext } fro
 import { useLayoutEditor, type RouteTreeNode } from '../LayoutEditorContext';
 import { useLayoutDocumentContext } from '../LayoutDocumentContext';
 import { buildEditorUrl, EDITOR_HISTORY_STATE_MARKER } from '../hooks/useEditorMode';
+import { highlightMatch } from '../shared/treeSearch';
 
 // 안정 식별자 — docCtx 부재(Provider 밖 테스트 등) 시 매 렌더 새 Set 생성 회피.
 const EMPTY_DIRTY_SET: ReadonlySet<string> = new Set();
@@ -133,42 +134,6 @@ function resolveNodeLabel(node: RouteTreeNode, ctx: LabelResolveCtx): string {
  */
 function normalizeQuery(raw: string): string {
   return raw.trim().toLocaleLowerCase();
-}
-
-/**
- * 텍스트에서 검색어와 일치하는 부분을 `<mark>` 로 강조한 React 노드 배열을 만든다.
- *
- * 대소문자 무시 매칭. 검색어가 비었거나 매칭이 없으면 원문 텍스트만 반환한다.
- *
- * @param text 표시 텍스트
- * @param query 정규화된 검색어 (소문자)
- * @returns 강조 적용된 React 노드 (또는 원문 문자열)
- * @since engine-v1.50.0
- */
-function highlightMatch(text: string, query: string): React.ReactNode {
-  if (!query) return text;
-  const lower = text.toLocaleLowerCase();
-  const parts: React.ReactNode[] = [];
-  let cursor = 0;
-  let matchIdx = lower.indexOf(query, cursor);
-  if (matchIdx === -1) return text;
-  let segKey = 0;
-  while (matchIdx !== -1) {
-    if (matchIdx > cursor) parts.push(text.slice(cursor, matchIdx));
-    parts.push(
-      <mark
-        key={`m${segKey++}`}
-        className="g7le-route-tree__highlight"
-        style={{ background: '#fde68a', color: 'inherit', borderRadius: 2, padding: '0 1px' }}
-      >
-        {text.slice(matchIdx, matchIdx + query.length)}
-      </mark>,
-    );
-    cursor = matchIdx + query.length;
-    matchIdx = lower.indexOf(query, cursor);
-  }
-  if (cursor < text.length) parts.push(text.slice(cursor));
-  return parts;
 }
 
 /**
@@ -461,7 +426,7 @@ function RouteTreeItem({
             />
           )}
           {/* 그룹 헤더는 검색 강조 대상 아님(항상 표시) — 라우트 라벨만 강조 */}
-          {isGroup ? labelText : highlightMatch(labelText, query)}
+          {isGroup ? labelText : highlightMatch(labelText, query, 'g7le-route-tree__highlight')}
           {typeof layoutVersion === 'number' && (
             <span
               className="g7le-route-tree__version-badge"
@@ -503,7 +468,7 @@ function RouteTreeItem({
               whiteSpace: 'nowrap',
             }}
           >
-            {highlightMatch(layoutPathLabel, query)}
+            {highlightMatch(layoutPathLabel, query, 'g7le-route-tree__highlight')}
           </span>
         )}
       </div>

@@ -1,0 +1,64 @@
+feature: 코드 편집기의 파일별 편집 버퍼
+
+description: |
+  관리자 코드 편집기의 편집 버퍼가 전역 변수 **한 벌**(`_global.editorMarkup`)이었다. 파일을 고르면
+  `refetch-data-source` 응답의 `init-global` 이 그 전역을 무조건 덮었고, 저장하지 않은 수정이
+  **아무 경고 없이 사라졌다**(PO 제보, #476). 예외도 실패한 요청도 없어 화면에서만 드러나는 종류다.
+
+  같은 결함 클래스가 네 갈래에 있었다 — 레이아웃 파일 전환(D1), 커스텀 자산 파일 전환(D2),
+  커스텀 자산 대상 전환(D3), 레이아웃 ↔ 확장 조각 전환(D4).
+
+  고침은 방향을 뒤집는 것이다. 서버 본문은 `serverValue` prop 으로 **들어오기만** 하고, 편집 중인
+  값은 `CodeWorkspace` 안의 `Map<key, buffer>` 가 소유한다. 핵심 명제는 하나 —
+  **버퍼가 dirty 면 serverValue 를 무시한다.**
+
+axes:
+  branch: [layout, extension]
+  buffer_state: [clean, dirty]
+  leave: [file_switch, reload]
+
+axis_notes:
+  branch: >-
+    layout = 레이아웃 편집기(`CodeWorkspace`), extension = 커스텀 자산 모달(코어).
+    같은 결함 클래스의 두 표면이라 같은 명제를 양쪽에서 잰다.
+  buffer_state: dirty 는 «serverValue 를 무시한다», clean 은 «최신본을 받아들인다» 를 가른다.
+  leave: >-
+    file_switch = 같은 화면에서 다른 파일로. reload = 화면을 떠났다 돌아옴(초안 경로).
+    탭 전환은 file_switch 와 같은 경로(같은 `fileKey` 교체)라 축으로 세우지 않는다 —
+    탭 UI 자체는 `FileTabs.test.tsx` 가 따로 잠근다.
+
+effects:
+  - code_workspace_keeps_dirty_buffer_over_server_value   # dirty 버퍼는 재조회 응답에 덮이지 않는다
+  - code_workspace_refreshes_clean_buffer_from_server     # clean 버퍼는 최신본을 받아들인다
+  - code_workspace_raises_conflict_instead_of_overwriting # 판본이 오른 채 dirty 면 충돌 바 (자동 덮어쓰기 0)
+  - code_workspace_clears_dirty_after_save                # 저장 성공 시 clean 전환 + 초안 삭제
+  - code_workspace_evicts_clean_tabs_first                # 탭 상한 초과 시 dirty 탭은 남긴다
+  - code_workspace_uses_one_monaco_model_per_file         # 파일별 모델 — 커서·되돌리기가 섞이지 않는다
+  - code_editor_keeps_unsaved_edits_across_file_switches  # 브라우저에서 파일 왕복 후에도 편집분 유지
+  - code_editor_guards_reload_with_unsaved_edits          # 미저장 상태의 새로고침을 막아 세운다
+  - custom_asset_editor_keeps_unsaved_draft_across_files  # 커스텀 자산 모달도 같은 규칙 (D2)
+  - custom_asset_editor_confirms_before_discarding_on_target_switch # 대상 전환 시 확인 (D3)
+  - custom_asset_editor_indents_with_tab                  # 코드 입력칸의 Tab 은 들여쓰기 (§4.7)
+  - code_workspace_trims_drafts_to_byte_cap_oldest_first  # 초안 전체 상한(2MB) 초과 시 오래된 것부터 버린다 (§9.2)
+  - code_workspace_close_dialog_discards_on_request       # 3지선다 «저장하지 않고 닫기» (§4.3 표 6행)
+  - code_workspace_close_dialog_saves_then_closes         # 3지선다 «저장하고 닫기» — 저장 1회 → clean 뒤 닫힘
+  - code_workspace_conflict_bar_shows_diff                # 충돌 바 [차이 보기] — 서버 본문 ↔ 내 편집 (§7.7 표 7행)
+  - code_workspace_overlays_editor_while_fetching         # 본문 조회 중 오버레이, 편집기는 유지 (§7.7 표 4행)
+  - code_workspace_uses_smaller_font_on_mobile            # <768 이면 13px, 그 외 14px (§7.6)
+  - code_editor_reloads_file_list_on_missing_file_404     # 선언층: 본문 404 → 안내 토스트 + layout_files 재조회 (§7.7 표 5행)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.buffers.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.drafts.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-multi-buffer.spec.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/CustomAssetsModal.test.tsx
+
+validation:
+  note: |
+    단위(`CodeWorkspace.buffers.test.tsx`)가 계획서 §4.3 의 버퍼 수명 표를 1:1 케이스로 잠그고,
+    브라우저 spec 이 **실제 Monaco 와 실제 재조회**를 거쳐도 같은 결과인지를 잰다 — 그 둘 사이
+    (모델 교체·재조회 타이밍)가 이 결함이 살던 자리이기 때문이다.
+
+    커스텀 자산 모달은 같은 결함 클래스의 두 번째 표면이라 코어 단위 테스트가 같은 두 명제
+    (파일 전환 시 초안 보존 · 대상 전환 시 확인)를 잠근다.

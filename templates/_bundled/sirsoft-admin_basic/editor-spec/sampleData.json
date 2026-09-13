@@ -11877,6 +11877,43 @@
         }
       ]
     },
+    "layout_search": {
+      "data": [
+        {
+          "key": "layout:admin_user_list",
+          "kind": "layout",
+          "name": "admin_user_list",
+          "name_matched": false,
+          "match_count": 2,
+          "lines": [
+            {
+              "line": 42,
+              "column": 11,
+              "preview": "<input name=\"email\" class=\"input\"/>"
+            },
+            {
+              "line": 87,
+              "column": 5,
+              "preview": "<span>{{item.email}}</span>"
+            }
+          ]
+        },
+        {
+          "key": "ext:200",
+          "kind": "extension",
+          "name": "html_content",
+          "name_matched": true,
+          "match_count": 1,
+          "lines": [
+            {
+              "line": 3,
+              "column": 7,
+              "preview": "<div class=\"html-content\"></div>"
+            }
+          ]
+        }
+      ]
+    },
     "layout_versions": {
       "data": [
         {

@@ -5,14 +5,15 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 125개 (루트: `src/components`).
+컴포넌트 130개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 80개 |
+| `composite` | 84개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
+| `shared` | 1개 |
 <!-- @generated:components END -->
 
 <!-- @intent START -->
@@ -116,6 +117,187 @@ interface SlotContainerProps {
 ```json
 { "id": "basic_filters_container", "type": "composite", "name": "SlotContainer", "props": { "slotId": "basic_filters" } }
 ```
+
+## 코드 편집기 컴포넌트 상세
+
+관리자 코드 편집 화면(`admin_template_layout_edit`)이 쓰는 네 컴포넌트입니다. 넷이 한 벌로
+움직이므로 함께 읽는 편이 빠릅니다 — `FileTreePicker` 가 `FileTree` 를 담고, `CodeWorkspace` 가
+`FileTabs` 와 `CodeEditor` 를 담습니다.
+
+### 왜 컴포넌트가 상태를 갖는가
+
+이 템플릿의 다른 컴포넌트는 대부분 표시만 하고 상태는 레이아웃의 전역이 쥡니다. 코드 편집기는
+예외입니다 — **편집 버퍼를 전역으로 표현할 수 없기 때문**입니다.
+
+- 파일명에 `.` 과 `/` 가 들어가 전역의 점 표기 키로 쓸 수 없습니다
+  (`_global.buffers.partials/a/_b` 같은 키는 성립하지 않습니다).
+- 전역 한 벌로 두면 파일을 바꿀 때 `refetch-data-source` 응답이 그것을 덮습니다. 실제로 그것이
+  저장하지 않은 수정이 사라지던 원인이었습니다(#476).
+
+그래서 **I/O 는 선언형으로, 버퍼·상호작용은 컴포넌트로** 나눕니다. 조회·저장·생성·삭제는 전부
+레이아웃의 `data-source`/`api-call` 이 하고, 컴포넌트는 `fetch` 를 직접 부르지 않습니다.
+
+### FileTree
+
+평면 파일 목록을 폴더 트리로 세웁니다. **트리 변환은 컴포넌트가 하므로 백엔드 응답 스키마는
+바꾸지 않습니다** — 이름의 `/` 가 곧 폴더이고, 파일이 사라지면 빈 폴더도 함께 사라집니다.
+
+```typescript
+interface FileTreeNode {
+  key: string;                    // 'layout:partials/a/_b' | 'ext:12'
+  kind: 'layout' | 'extension';
+  path: string;                   // 'partials/a/_b'
+  label?: string;                 // 없으면 path 의 마지막 세그먼트
+  group?: string;                 // 확장 조각의 묶음 라벨 (모듈·플러그인 이름)
+  groupKind?: 'module' | 'plugin';
+  badges?: Array<{ text: string; tone?: 'amber' | 'indigo' | 'red' | 'gray' }>;
+  meta?: { size?: string; updatedAt?: string; disabled?: boolean };
+}
+```
+
+| prop | 타입 | 설명 |
+| --- | --- | --- |
+| `nodes` | `FileTreeNode[]` | 평면 파일 목록 |
+| `selectedKey` | `string` | 지금 열려 있는 파일 |
+| `dirtyKeys` | `string[]` | 미저장 파일 — ● 점 + 굵기 + `aria-label` 세 겹 |
+| `searchKeyword` | `string` | 파일명 필터·강조 (**서버를 부르지 않는다**) |
+| `contentMatches` | `Array<{key, count, lines}>` | 서버 내용 검색 결과 |
+| `pendingFolders` | `string[]` | 아직 파일이 없는 가상 폴더 |
+| `rowSize` | `'compact' \| 'touch'` | 행 높이 32 / 44px |
+| `storageKey` | `string` | 접힘 상태를 적어 둘 localStorage 키 |
+| `canManage` | `boolean` | 이름변경·삭제 버튼 노출 (권한) |
+| `onSelect` | `(key, revealAt?) => void` | 파일 선택 — 내용 매치를 누르면 좌표가 함께 온다 |
+
+**접근성** — `role="tree"` 규약을 지키고 `tabindex` 는 roving 입니다(활성 노드 하나만 `0`).
+144개 파일이 전부 `0` 이면 Tab 으로 트리를 빠져나가는 데만 144번을 눌러야 합니다.
+`↑↓` 이동 / `→` 펼침 / `←` 접기·부모 / `Enter`·`Space` 열기 / `Home`·`End`.
+
+### FileTreePicker
+
+같은 트리를 기기 폭에 맞는 그릇에 담습니다. **형태 분기가 컴포넌트 안에 있으므로 레이아웃에는
+트리가 하나만 있습니다** — 종전에는 데스크톱 목록과 모바일 선택기 두 벌이었고, 한쪽에만 검색이
+있었습니다.
+
+| 폭 | 형태 |
+| --- | --- |
+| ≥ 1024 | 인라인 — 좌측 상시 노출, 드래그로 240~480px 조절 후 기억 |
+| 768~1023 | 서랍 — 좌측 오버레이, 파일을 고르면 스스로 닫힘, 포커스 트랩 |
+| < 768 | 시트 — 전체 화면, 행 44px 터치 타깃 |
+
+경계 판정은 `window.innerWidth` 입니다. `matchMedia` 는 devicePixelRatio 가 정수가 아닌 환경에서
+경계 1px 이 어긋나 1023/1024 에서 형태가 뒤집힙니다(`docs/frontend/responsive-layout.md` 실측).
+
+서랍은 왼쪽에서 200ms 슬라이드해 들어오고 시트는 아래에서 올라옵니다(`main.css` 의
+`g7le-drawer-enter`/`g7le-sheet-enter`, 움직임 축소 설정이면 즉시). `focusSearchNonce` 가 오를 때마다
+검색창에 포커스를 줍니다 — 단축키 Ctrl+K(파일 빠른 이동)·Ctrl+Shift+F(내용 검색)가 레이아웃의 전역
+카운터를 1 올려 넘기는 자리이고, 서랍·시트면 먼저 엽니다.
+
+| Prop | 타입 | 설명 |
+| --- | --- | --- |
+| `nodes` · `selectedKey` · `dirtyKeys` · `searchKeyword` · `contentMatches` · `pendingFolders` | `FileTree` 와 동일 | 안쪽 `FileTree` 로 그대로 전달 |
+| `mode` | `'auto' \| 'inline' \| 'drawer' \| 'sheet'` | 기본 `auto` — 창 폭으로 고른다(위 표) |
+| `storageKey` | `string` | 펼침 상태·트리 폭을 적어 둘 localStorage 키 접두 — **`g7le.` 로 시작해야 한다**(GDPR 동의 플러그인 허용 목록 밖 키는 저장되지 않거나 부팅 때 정리된다). `CodeWorkspace.draftNamespace` 도 같은 규약 |
+| `canManage` | `boolean` | 파일 조작 툴바(새 파일·새 폴더)·행 메뉴 노출 여부 |
+| `isLoading` | `boolean` | 목록 로딩 — 트리 자리에 스켈레톤 6행 |
+| `searchFileCount` · `searchMatchCount` | `number` | 내용 검색 요약(«N건 · M파일»). 수치로 받는 이유는 `$t:` 파이프 치환이 리터럴 템플릿에서만 동작하기 때문 |
+| `focusSearchNonce` | `number` | 값이 오를 때마다 검색창 포커스(서랍·시트면 먼저 연다) |
+| `onSelect` | `(key, revealAt?) => void` | 파일·매치 줄 선택 |
+| `onSearch` | `(keyword) => void` | 검색어 변경 |
+| `onCreateFile` · `onCreateFolder` | `(parentPath) => void` | 툴바·행 메뉴의 생성 |
+| `onRename` · `onDelete` | `(key) => void` | 행 메뉴의 이름변경·삭제 |
+| `className` · `id` · `editorAttrs` | — | 공통 |
+
+### FileTabs
+
+열린 파일 탭 줄입니다. 편집기가 한 번에 한 파일만 보여 주더라도 **무엇이 열려 있고 그중 무엇이
+저장되지 않았는지**는 늘 보여야 합니다. 미저장 표시는 트리와 같은 규약(점 + `aria-label`)을 씁니다.
+
+```typescript
+interface FileTabItem {
+  key: string;
+  label: string;
+  title?: string;   // 전체 경로 (툴팁)
+  dirty?: boolean;
+  missing?: boolean; // 서버에 더 이상 없는 파일 — 취소선 + aria-label
+}
+```
+
+| Prop | 타입 | 설명 |
+| --- | --- | --- |
+| `tabs` | `FileTabItem[]` | 열린 파일. 비어 있으면 아무것도 그리지 않는다 |
+| `activeKey` | `string` | 활성 탭 — 바뀌면 그 탭을 시야로 끌어온다 |
+| `size` | `'compact' \| 'touch'` | `h-9` / 터치 `h-10`. 탭 폭은 `max-w-[180px]` + 말줄임 |
+| `onSelect` | `(key) => void` | 탭 클릭·Enter |
+| `onClose` | `(key) => void` | 닫기 버튼(탭 선택을 함께 일으키지 않는다) |
+| `className` · `id` | — | 공통 |
+
+토큰(§7.6): 활성 `bg-white dark:bg-gray-800` + 파랑 2px 밑줄(inset shadow — border 는 탭 높이를 갈리게 한다),
+비활성 `text-gray-600 dark:text-gray-400`, 줄 배경 `bg-gray-50 dark:bg-gray-900`.
+
+### CodeWorkspace
+
+**파일별 편집 버퍼의 주인**입니다. 서버 본문은 `serverValue` prop 으로 들어오기만 하고, 편집 중인
+값은 컴포넌트 안의 `Map<key, buffer>` 가 소유합니다.
+
+| 상황 | 동작 |
+| --- | --- |
+| 처음 들어온 키 | `serverValue` 로 버퍼 생성 (clean) |
+| 재방문 · dirty | **`serverValue` 를 무시하고 버퍼를 보여준다** |
+| 재방문 · clean | `serverValue` 로 갱신 (남이 고친 최신본 반영) |
+| 서버 본문이 내 편집분과 같아짐 | 내 저장이 반영된 것 — 기준선을 옮겨 clean 전환 |
+| `serverRevision` 증가 + 내용도 다름 | 충돌 바 — 자동 덮어쓰기 금지. [내 것 유지] / [서버 것으로] / [차이 보기](서버 본문 ↔ 내 편집을 `DiffEditor` 로 나란히) |
+| 탭 닫기 · dirty | **3지선다** — [저장하고 닫기] / [저장하지 않고 닫기] / [취소]. «저장하고 닫기» 는 그 탭을 활성으로 올려 `onSave` 를 한 번 부르고 clean 이 된 뒤 닫는다. 저장이 실패하면 닫지 않고 창이 남는다 |
+| 본문 미도착 (버퍼 없음 + `serverKey` ≠ `fileKey`) | 편집기 위에 «불러오는 중» 오버레이 — 편집기는 언마운트하지 않는다 |
+| 탭 상한 초과 | 오래된 **clean** 탭부터 해제. dirty 탭은 절대 자동으로 닫지 않는다 |
+| `knownKeys` 에 없는 키 | **없는 파일** — 서버를 부르지 않고 버퍼를 읽기 전용으로 보여 준다 |
+
+| prop | 설명 |
+| --- | --- |
+| `fileKey` | 지금 서버가 준 파일의 키 |
+| `serverValue` / `serverRevision` | 그 파일의 서버 본문과 판본(`lock_version`) |
+| `onChange` | 활성 버퍼가 바뀔 때마다 — **파일을 열 때도 불린다** |
+| `onUserEdit` | **사람이 고쳤을 때만** — 서버 왕복은 여기에 건다 |
+| `onDirtyChange` | 미저장 키 목록 — 트리의 ● 점이 읽는다 |
+| `onRequestSelect` | 탭 클릭 — 레이아웃이 그 파일을 다시 받는다 |
+| `knownKeys` | 지금 서버에 **실제로 있는** 키 전체. 비면 아무것도 «없는 파일» 로 보지 않는다 |
+| `onSaveAs` | 없는 파일의 복원분을 새 이름으로 살릴 때 — 본문을 실어 생성 흐름으로 넘긴다 |
+
+**없는 파일(`knownKeys` 밖의 키).** 초안은 파일보다 오래 삽니다 — 지우거나 이름을 바꾼 뒤에도,
+남이 지운 뒤에도 남습니다. 그래서 복원이 «없는 파일» 의 탭을 세우고, 그 탭을 누르면 404 가 났습니다
+(브라우저 실측 2026-09-12 — 편집기 길이 0, 미저장 ● 없음, 초안은 저장소에 그대로). 지금은 탭에
+취소선과 `aria-label` 을 붙이고, **서버를 부르지 않으며**, 복원분을 읽기 전용으로 보여 준 뒤
+[새 이름으로 저장] / [버리기] 를 줍니다 — 조용히 버리면 사용자가 쓴 글이 사라지기 때문입니다.
+
+**초안 저장소는 공유 자원입니다.** `useFileDrafts` 는 쓸 때마다 `localStorage` 를 다시 읽어
+병합하고, 이 문서가 지운 키만 덜어냅니다. 통째로 덮어쓰면 편집기를 두 탭에 띄웠을 때 한쪽이 다른
+쪽 초안을 말없이 지웁니다. 초안 수명은 **7일**입니다.
+
+`onChange` 와 `onUserEdit` 를 가르는 이유: `onChange` 에 서버 변환을 걸면 파일을 열 때마다 변환이
+돌고, 본문이 도착하기 전 빈 값으로 먼저 나가 422 가 납니다(브라우저 실측 2026-09-12).
+
+단축키 SSoT 는 `src/spec/codeEditorShortcuts.ts` 한 곳이고, 매칭(`useCodeEditorShortcuts`)과
+도움말 오버레이가 같은 배열을 읽습니다 — 단축키 추가 = 한 곳 수정.
+
+**글자 크기.** `Ctrl + =` / `Ctrl + -`(`fontSizeUp`/`fontSizeDown`, Monaco 안에서도 재바인딩)로 12~20px
+사이를 한 단계씩 움직이고, 고른 값은 `<draftNamespace>.fontSize` 에 적혀 기기 기본값(데스크톱 14 / 모바일 13)보다
+우선합니다. 적힌 값이 없을 때만 창 폭에 따라 기본값을 따라갑니다.
+
+### CodeEditor (변경)
+
+Monaco 래퍼입니다. 코드 편집기 개편에서 다섯 prop 이 늘었습니다.
+
+| prop | 설명 |
+| --- | --- |
+| `theme="auto"` (기본) | `<html class="dark">` 를 `MutationObserver` 로 추종. 종전 기본값은 `vs-dark` 하드코딩이라 라이트 모드에서도 편집기만 검은 판이었다 |
+| `wordWrap` | 자동 줄바꿈. 폴백 textarea 의 `wrap` 도 함께 따른다 |
+| `fontSize` | 글자 크기 (12~20) |
+| `modelKey` | 파일별 Monaco 모델 키. `<Editor path>` 로 넘어가 커서·스크롤·되돌리기 스택이 파일별로 보존된다 |
+| `revealAt` | 커서를 옮길 좌표 `{line, column?, nonce?}` |
+| `commands` | 편집기 안에서 잡을 단축키 — Monaco 가 선점하는 조합의 재바인딩 |
+
+> 모델을 직접 만들어 `setModel()` 하지 않습니다. `@monaco-editor/react` 가 자기 모델을 만들어
+> 붙이므로 밖에서 끼운 모델이 곧바로 밀려납니다(실측: 본문 42,523자가 전역에는 있는데 편집기는
+> 빈 화면이었다). 모델 수명은 라이브러리 한 곳이 쥡니다.
 
 ## 이관 원문 상세
 

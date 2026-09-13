@@ -78,7 +78,7 @@
       <responsive on="portable" class="left_sidebar_area_portable {{_global.sidebarOpen ? 'left_sidebar_area_portable_open' : ''}}"/>
       <div data-ref="sidebar_header" class="sidebar_header">
         <responsive on="portable" class="hidden"/>
-        <div data-ref="sidebar_logo" class="sidebar_logo">
+        <div data-ref="sidebar_logo" data-leave-guard="true" class="sidebar_logo">
           <img data-ref="logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? '그누보드7'}}" class="logo_image"/>
           <span data-ref="app_name" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-xl truncate">{{_global.settings?.general?.site_name ?? '그누보드7'}}</span>
         </div>
@@ -117,7 +117,12 @@
         <!-- 통화/배송국가 선택 — 이커머스 모듈 주입 슬롯. id 필수: SlotContainer 는 주입 컴포넌트 root id 를 {id}__{containerId} 로 스코프한다. className 은 block(헤더의 flex items-center 를 쓰면 주입 루트가 콘텐츠 폭으로 줄어든다). 주입 루트가 portable 에서 스스로 w-full 을 갖는다. -->
         <slot-container data-ref="admin_drawer_currency_wrap" slotId="header_currency" class="block"/>
       </div>
-      <div data-ref="admin_sidebar_menu" class="admin_sidebar_menu sidebar-scrollbar">
+      <!-- `data-leave-guard` — 저장하지 않은 편집을 들고 있는 화면이 **이 클릭을 먼저 받아** 확인을
+           물을 수 있게 표시해 둔다. SPA 이동은 `beforeunload` 를 내지 않으므로 이 표시가 없으면
+           좌측 메뉴로 나가는 순간 편집분이 말없이 사라진다(실측 2026-09-12: 코드 편집기에서 미저장
+           상태로 「사용자 관리」를 누르니 확인 없이 `/admin/users` 로 이동했다).
+           표시 자체는 아무 동작도 하지 않는다 — 읽는 쪽(`CodeWorkspace`)이 없으면 그냥 속성이다. -->
+      <div data-ref="admin_sidebar_menu" data-leave-guard="true" class="admin_sidebar_menu sidebar-scrollbar">
         <responsive on="portable" class="admin_sidebar_menu_portable sidebar-scrollbar"/>
         <admin-sidebar data-ref="admin_sidebar" data-if="{{(admin_menu.data ?? []).length > 0}}" menu="{{admin_menu.data}}"/>
         <div data-ref="admin_sidebar_empty" data-if="{{admin_menu.success === true &amp;&amp; (admin_menu.data ?? []).length === 0}}" class="admin_sidebar_empty">

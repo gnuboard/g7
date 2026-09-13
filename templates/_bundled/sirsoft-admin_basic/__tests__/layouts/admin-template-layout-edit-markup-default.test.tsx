@@ -6,8 +6,8 @@
  * - 서브탭 기본값이 HTML(`markup`)이고 JSON 탭은 읽기 전용 편집기다
  * - HTML 편집기는 `language=html` 이며 서버 컴파일 마커(`markers`)를 받는다
  * - 타이핑 후 1초 유휴에 `markup-compile` 을 부르는 api-call 이 있고(debounce 1000), 저장·미리보기는 `format=markup` 으로 HTML 버퍼를 보낸다
- * - 본문 조회 데이터소스가 `?with_markup=1` 로 역변환본을 받아 `editorMarkup` 에 올린다
- * - 파일 목록·선택 파일 헤더 표기가 `.g7.html` 이다
+ * - 본문 조회 데이터소스가 `?with_markup=1` 로 역변환본을 받되 **전역에 심지는 않는다**(#476 개편)
+ * - 선택 파일 헤더 표기가 `.g7.html` 이다
  * - 내려받기·복사 핸들러 버튼이 있다
  * - 판본 복원이 HTML 버퍼까지 갈아 끼운다
  *
@@ -70,7 +70,9 @@ const targetOf = (a: any) => a?.target ?? a?.params?.target;
 describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => {
   const tabs = findAll(layoutJson, (n) => n.name === 'TabNavigation' && n.id === 'editor_format_tabs');
   const editors = findAll(layoutJson, (n) => n.name === 'CodeEditor');
-  const markupEditor = editors.find((e) => e.props?.language === 'html');
+  // HTML 편집은 `<code-workspace>` 가 맡는다 — 파일별 버퍼를 소유해야 하기 때문이다(#476 개편).
+  // JSON 탭은 편집 버퍼가 없는 읽기 전용 산출물이라 `<code-editor>` 를 그대로 쓴다.
+  const markupEditor = findAll(layoutJson, (n) => n.name === 'CodeWorkspace')[0];
   const jsonEditor = editors.find((e) => e.props?.language === 'json');
 
   /**
@@ -86,11 +88,32 @@ describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => 
   /**
    * @effects code_editor_markup_tab_is_default, code_editor_marks_compile_errors_in_monaco_with_g7_markup_owner
    */
-  it('HTML 편집기는 language=html · HTML 버퍼 · 서버 컴파일 마커를 받는다', () => {
+  it('HTML 편집 표면은 서버 본문을 prop 으로 받고 컴파일 마커를 함께 받는다', () => {
     expect(markupEditor).toBeDefined();
-    expect(stringify(markupEditor.props.value)).toContain('_global.editorMarkup');
+    expect(markupEditor.props.language).toBe('html');
+
+    // 서버 본문은 **전역이 아니라** 데이터소스에서 직접 들어온다 — 그래야 전역 덮어쓰기 경로가 없다.
+    const serverValue = stringify(markupEditor.props.serverValue);
+    expect(serverValue).toContain('content_markup');
+    expect(serverValue).not.toContain('_global.editorMarkup');
+
+    // 충돌 판정의 근거 — 서버 판본을 함께 받는다.
+    expect(stringify(markupEditor.props.serverRevision)).toContain('lock_version');
+
     expect(stringify(markupEditor.props.markers)).toContain('markupCompileError');
     expect(stringify(markupEditor.props.markers)).toContain('markupWarnings');
+  });
+
+  /**
+   * 파일 키가 두 갈래를 하나로 묶는다 — 레이아웃과 확장 조각이 같은 버퍼 맵의 다른 키다.
+   *
+   * @effects code_editor_uses_one_buffer_map_for_both_branches
+   */
+  it('파일 키가 레이아웃·확장 조각을 접두로 가른다', () => {
+    const fileKey = stringify(markupEditor.props.fileKey);
+
+    expect(fileKey).toContain("'ext:'");
+    expect(fileKey).toContain("'layout:'");
   });
 
   /**
@@ -112,6 +135,13 @@ describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => 
 
     expect(compile, 'markup-compile api-call').toBeDefined();
     expect(compile.debounce).toBe(1000);
+
+    // 서버 왕복은 **사람이 고쳤을 때만** 돈다. `onChange` 는 파일을 열 때도 불리므로 거기 걸면
+    // 파일 전환마다 변환이 돌고, 본문 도착 전 빈 값으로 먼저 나가 422 가 난다(실측 2026-09-12).
+    const compileBinding = (markupEditor.actions ?? []).find(
+      (a: any) => stringify(a).includes('markup-compile'),
+    );
+    expect(compileBinding?.event).toBe('onUserEdit');
     expect(compile.params.method).toBe('POST');
     expect(stringify(compile.params.body?.markup)).toContain('$event.target.value');
     expect(buffer.debounce).toBe(300);
@@ -126,9 +156,10 @@ describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => 
    * @effects code_editor_saves_markup_format, code_editor_markup_save_persists
    */
   it('저장·미리보기는 HTML 버퍼를 format=markup 으로 보낸다', () => {
-    const calls = findAll(layoutJson, (n) => Array.isArray(n.actions))
-      .flatMap(actionsOf)
-      .filter((a) => a.handler === 'apiCall' && (a.params?.method === 'PUT' || stringify(targetOf(a)).includes('/preview')));
+    // 정의는 문서 층 `named_actions` 한 곳이고 머리말 버튼과 단축키가 함께 참조한다(#476 개편).
+    const named = Object.values(layoutJson.named_actions ?? {});
+    const calls = [...findAll(layoutJson, (n) => Array.isArray(n.actions)).flatMap(actionsOf), ...named.flatMap(flattenActions)]
+      .filter((a: any) => a.handler === 'apiCall' && (a.params?.method === 'PUT' || stringify(targetOf(a)).includes('/preview')));
 
     expect(calls.length).toBeGreaterThanOrEqual(4);
     for (const call of calls) {
@@ -143,24 +174,37 @@ describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => 
   /**
    * @effects code_editor_opens_with_decompiled_markup_buffer
    */
-  it('본문 조회는 with_markup=1 로 역변환본을 받아 editorMarkup 에 올린다', () => {
+  it('본문 조회는 with_markup=1 로 역변환본을 받되 **마크업은 전역에 심지 않는다**', () => {
     for (const id of ['current_layout', 'current_extension']) {
       const source = (layoutJson.data_sources ?? []).find((d: any) => d.id === id);
       expect(source, id).toBeDefined();
       expect(source.endpoint).toContain('with_markup=1');
+
       const keys = (source.initGlobal ?? []).map((m: any) => m.key);
-      expect(keys).toEqual(expect.arrayContaining(['editorContent', 'editorMarkup', 'markupWarnings', 'markupCompileError']));
+      // JSON 뷰·경고·오류는 "지금 열린 파일의 서버 상태" 라 전역이 맞다.
+      expect(keys, id).toEqual(expect.arrayContaining(['editorContent', 'markupWarnings', 'markupCompileError']));
+      // 마크업 버퍼를 여기서 심는 것이 곧 미저장 수정을 덮어쓰는 경로였다(D1/D4).
+      expect(keys, id).not.toContain('editorMarkup');
     }
   });
 
   /**
    * @effects code_editor_shows_g7_html_labels_and_fragment_key
    */
-  it('파일 목록과 선택 파일 헤더는 .g7.html 로 표기한다', () => {
+  it('선택 파일 헤더는 .g7.html 로 표기한다', () => {
     const text = JSON.stringify(layoutJson);
-    expect(text).toContain('{{file.name}}.g7.html');
-    expect(text).not.toContain('{{file.name}}.json');
+
+    // 목록 쪽 표기는 트리 컴포넌트가 소유한다(마지막 세그먼트만 보인다) — 레이아웃에는
+    // 열려 있는 파일의 헤더 표기만 남는다.
     expect(text).toContain("|| 'main'}}.g7.html");
+
+    // 사용자에게 보이는 **파일 이름 문구**가 `.json` 으로 끝나서는 안 된다.
+    // (`modals[].partial` 의 `.json` 은 산출 표기라 정상이다 — 그쪽은 화면에 나오지 않는다.)
+    const labels: string[] = [];
+    walk(layoutJson, (n) => {
+      if (typeof n.text === 'string') labels.push(n.text);
+    });
+    expect(labels.filter((label) => /\.json\s*$/.test(label))).toEqual([]);
   });
 
   /**

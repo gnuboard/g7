@@ -989,13 +989,21 @@ class TemplateManager implements TemplateManagerInterface
                     $latestVersion = $bundledVersion ?? $fileVersion;
                 }
 
+                // 다국어 필드는 DB row(applyExtensionManifests 가 활성 언어팩 ja 등을 주입) 우선,
+                // 미설치 시 template.json 폴백 — 상세 조회(getTemplateDetails)·모듈·플러그인과 같은 규약이다.
+                // 종전에는 이 목록 경로만 디스크 매니페스트를 바로 읽어, 언어팩이 DB 에 넣어 둔 ja 가
+                // 버려졌다(실측 2026-09-12: 같은 응답에서 모듈 description 은 활성 언어팩의 번역으로
+                // 내려가는데 템플릿 description 만 ko 원문이 내려갔다).
+                $nameJson = $record->name ?: $template['name'];
+                $descriptionJson = $record->description ?: ($template['description'] ?? '');
+
                 $installedTemplates[$identifier] = [
                     'identifier' => $template['identifier'],
                     'vendor' => $template['vendor'],
-                    'name' => $this->getLocalizedValue($template['name'], $locale),
+                    'name' => $this->getLocalizedValue($nameJson, $locale),
                     'version' => $record->version,
                     'type' => $template['type'],
-                    'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
+                    'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $template['dependencies'] ?? [],
                     'status' => $record->status,
                     'update_available' => $updateAvailable,

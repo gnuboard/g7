@@ -4,6 +4,16 @@
   — 판본 이름이 없으므로 그 수치가 어느 시점인지 가려내는 단서다. -->
 <partial name="modal_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.version_history_modal">
   <modal data-ref="version_history_modal" size="medium" title="$t:admin.templates.modals.version_history.title">
+    <!-- 되돌리기 전 경고(D6). 지금 편집 중인 미저장분이 있으면, 되돌린 판본이 서버에 실리는 순간
+         내 버퍼와 서버가 어긋난다. 그 자체는 `<code-workspace>` 가 충돌 바로 잡아 주지만 — 자동
+         덮어쓰기는 일어나지 않는다 — **누르기 전에 알고 있는 편이 낫다**. 되돌리기는 새 판본을 만드는
+         일이라 취소해도 흔적이 남기 때문이다. -->
+    <div data-ref="version_restore_dirty_warning" data-if="{{(_global.dirtyFileKeys?.length ?? 0) > 0}}" role="alert" class="mb-3 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm">
+      <div class="flex-center gap-2">
+        <icon name="fa-solid fa-triangle-exclamation" class="text-base"/>
+        <span>$t:admin.templates.layout_edit.draft.restore_warning|count={{_global.dirtyFileKeys?.length ?? 0}}</span>
+      </div>
+    </div>
     <p class="text-label mb-4">$t:admin.templates.modals.version_history.description|layout_name={{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}</p>
     <div class="space-y-3 max-h-96 overflow-y-auto" data-testid="layout-version-history-list">
       <div data-each="version, idx in {{layout_versions?.data ?? []}}" data-blur-until-loaded="{{_global.isRestoring}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4" data-testid="layout-version-row-{{version.version ?? idx}}">
@@ -21,9 +31,10 @@
                   <success>
                     <set-state target="global" :isRestoring="false"/>
                     <toast type="success" message="$t:admin.templates.modals.version_history.restore_success"/>
-                    <!-- 되돌린 뒤 편집기 버퍼(HTML 정본·JSON 뷰·경고·오류)는 **재조회 응답의 init-global 이 갈아 끼운다**. 종전처럼 여기서
-                         `current_layout?.data?.content` 를 다시 읽어 set-state 하면 그 시점 컨텍스트가 재조회 전 값이라 되돌리기 전 본문을
-                         도로 덮어쓴다(브라우저 실측 2026-09-11 — 복구 뒤 편집기에 옛 글이 남았다). -->
+                    <!-- 되돌린 뒤 편집기 본문은 **재조회 응답이 `serverValue` 로 흘러 들어가** 갈아 끼워진다.
+                         그 파일의 버퍼가 clean 이면 그대로 반영되고, 미저장분이 있으면 덮어쓰지 않고 충돌 바가 선다(D6).
+                         여기서 `current_layout?.data?.content` 를 다시 읽어 set-state 하면 그 시점 컨텍스트가 재조회 전
+                         값이라 되돌리기 전 본문을 도로 덮어쓴다(브라우저 실측 2026-09-11 — 복구 뒤 편집기에 옛 글이 남았다). -->
                     <set-state target="global" :markupCompileError="null" :jsonViewStale="false"/>
                     <refetch-data-source dataSourceId="current_layout"/>
                     <refetch-data-source dataSourceId="layout_versions"/>
@@ -36,7 +47,7 @@
                 </api-call>
               </sequence>
             </on>
-            <icon data-if="{{!_global.isRestoring}}" name="refresh" class="text-base"/>
+            <icon data-if="{{!_global.isRestoring}}" name="fa-solid fa-arrows-rotate" class="text-base"/>
             <icon data-if="{{_global.isRestoring}}" name="fa-solid fa-spinner" class="spinner-sm"/>
             <span>{{_global.isRestoring ? '$t:admin.templates.modals.version_history.restoring' : '$t:admin.templates.modals.version_history.restore'}}</span>
           </button>

@@ -2347,7 +2347,106 @@
       "copy_markup": "コピー",
       "copy_success": "マークアップをクリップボードにコピーしました。",
       "copy_failed": "クリップボードへのコピーに失敗しました。",
-      "fragment_key_label": "断片 {{key}}"
+      "fragment_key_label": "断片 {{key}}",
+      "tree": {
+        "aria_label": "レイアウトファイル",
+        "unsaved": "保存されていません",
+        "unsaved_count": "保存されていないファイル {{count}}個",
+        "pending_folder": "空のフォルダ",
+        "empty": "編集可能なレイアウトがありません",
+        "resize": "ファイルリストの幅を調整"
+      },
+      "tabs": {
+        "aria_label": "開いているファイル",
+        "close": "{{name}}を閉じる"
+      },
+      "search": {
+        "placeholder": "ファイル·内容を検索",
+        "result_summary": "検索結果 {{matches}}件 · {{files}}ファイル",
+        "empty": "'{{keyword}}'に一致するファイル·内容がありません",
+        "clear": "検索をクリア",
+        "goto_line": "{{line}}行に移動"
+      },
+      "file": {
+        "new_file": "新しいファイル",
+        "new_folder": "新しいフォルダ",
+        "new_file_title": "新しいファイルを作成",
+        "new_folder_title": "新しいフォルダを作成",
+        "rename": "名前変更",
+        "rename_title": "名前を変更",
+        "delete": "削除",
+        "delete_title": "ファイルを削除しますか?",
+        "delete_description": "削除したファイルは復元できますが、このファイルを使用していた画面はすぐに開かなくなります。",
+        "create": "作成",
+        "name_label": "名前",
+        "name_placeholder": "例：partials/admin_user_list/_modal_form",
+        "name_hint": "英文·数字·アンダースコア(_)·ハイフン(-)を使用し、フォルダはスラッシュ(/)で区切ります。拡張子は付けません。",
+        "created": "ファイルを作成しました。",
+        "renamed": "名前を変更しました。",
+        "deleted": "ファイルを削除しました。",
+        "folder_created": "フォルダを作成しました。この中にファイルを保存すると確定されます。",
+        "reference_line": "{{line}}行",
+        "delete_anyway": "それでも削除",
+        "missing_title": "このファイルが見つかりません",
+        "missing_reloading": "このファイルが見つかりません。一覧を再読み込みします。",
+        "missing_draft_notice": "このファイルはすでに存在しません。以下は復元した編集内容で、保存はできません — 新しい名前で保存するか、破棄してください。",
+        "save_as": "新しい名前で保存",
+        "discard_draft": "破棄",
+        "missing_badge": "存在しないファイル"
+      },
+      "draft": {
+        "found": "保存されていない編集 {{count}}件があります",
+        "restore": "復元",
+        "discard": "破棄",
+        "leave_warning": "保存されていない編集があります。",
+        "leave_confirm": "保存されていない編集 {{count}}件があります。この画面を離れると削除されます。続けますか?",
+        "close_confirm": "{{name}}に保存されていない編集があります。タブを閉じると削除されます。続けますか?",
+        "close_title": "{{name}}に保存されていない編集があります",
+        "close_question": "タブを閉じる前にどうしますか?",
+        "close_save": "保存して閉じる",
+        "close_discard": "保存せずに閉じる",
+        "close_cancel": "キャンセル",
+        "close_saving": "保存中… 保存が終わるとタブが閉じます。失敗した場合はこのダイアログが残ります。",
+        "restore_warning": "保存されていない編集 {{count}}件があります。バージョンを戻すと、エディタの上に競合通知が表示されます。"
+      },
+      "conflict": {
+        "title": "サーバーのほうが新しいです",
+        "description": "別の場所からこのファイルを保存しました (私の基準 v{{mine}} → サーバー v{{server}})",
+        "keep_mine": "自分のものを維持",
+        "take_server": "サーバーのものに",
+        "view_diff": "差分を見る",
+        "diff_title": "サーバー本文と自分の編集の差分",
+        "diff_legend": "左: サーバー v{{server}} · 右: 自分の編集 (基準 v{{mine}})",
+        "diff_close": "閉じる"
+      },
+      "wordwrap": {
+        "label": "改行",
+        "toggle": "自動折り返しをオン/オフにする (Alt+Z)"
+      },
+      "shortcuts": {
+        "title": "ショートカット",
+        "save": "保存",
+        "save_all": "すべて保存",
+        "preview": "プレビュー",
+        "version_history": "バージョン履歴",
+        "exit": "終了",
+        "new_file": "新しいファイル",
+        "quick_open": "ファイルクイックジャンプ",
+        "search_content": "内容を検索",
+        "prev_tab": "前のタブ",
+        "next_tab": "次のタブ",
+        "close_tab": "タブを閉じる",
+        "toggle_view": "HTML / JSON 切り替え",
+        "toggle_word_wrap": "自動折り返し",
+        "font_size_up": "文字を大きく",
+        "font_size_down": "文字を小さく",
+        "find_in_file": "ファイル内検索",
+        "help": "ショートカットヘルプ",
+        "group_document": "ドキュメント",
+        "group_file": "ファイル",
+        "group_view": "表示",
+        "group_editor": "エディタ"
+      }
     }
   },
   "activity_log": {
@@ -2893,7 +2992,9 @@
     "admin_template_layout_edit": {
       "extension_preview_layout_modal": "プレビューレイアウト選択",
       "extension_version_history_modal": "拡張バージョン履歴",
-      "version_history_modal": "レイアウトバージョン履歴"
+      "version_history_modal": "レイアウトバージョン履歴",
+      "file_form_modal": "ファイル名入力ウィンドウ",
+      "file_delete_modal": "ファイル削除確認ウィンドウ"
     },
     "changelog_modal": "コア変更履歴",
     "license_modal": "コアライセンス",

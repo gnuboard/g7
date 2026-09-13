@@ -474,6 +474,95 @@ fonts
 **설명** 폰트·이미지 등 바이너리를 포함한 파일을 올립니다. 파일명은 안전한 문자(`A-Z a-z 0-9 . _ -`)로 정규화되며, 허용 확장자는 자산 서빙 화이트리스트(`AllowedTemplateFileType`)와 동일합니다 — 여기만 넓히면 올릴 수는 있는데 서빙되지 않는 파일이 생기고, 여기만 좁히면 서빙 규칙이 사문화됩니다.
 
 
+### POST /api/admin/extensions/{type}/{identifier}/custom-assets/rename
+- **라우트명**: `api.admin.extensions.custom-assets.rename`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController@rename`
+- **인증/권한**: `auth:sanctum` + `permission:core.extensions.custom_assets.manage`
+
+`custom/` 안의 파일 이름을 바꿉니다(= 이동).
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| type | path | string | 예 | `module` \| `plugin` \| `template` |
+| identifier | path | string | 예 | 확장 식별자 |
+| from | body | string | 예 | 현재 `custom/` 기준 상대 경로 |
+| to | body | string | 예 | 새 상대 경로 (`from` 과 달라야 한다) |
+
+두 경로 모두 `App\Rules\SafeCustomAssetPath` 를 지납니다 — 한쪽만 검사하면 안전한 원본을
+`../` 대상으로 옮기는 경로가 열립니다.
+
+**요청 예시**
+
+```http
+POST /api/admin/extensions/template/sirsoft-admin_basic/custom-assets/rename HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{ "from": "10-overrides.css", "to": "css/10-overrides.css" }
+```
+
+**응답**
+
+| 상태 | 조건 |
+| --- | --- |
+| 200 | 바뀐 파일 정보 (`data.path`, `data.previous_path`, `data.size`, `data.modified_at`) |
+| 409 | 대상 경로에 이미 파일이 있음 (`custom_assets.errors.rename_target_exists`) |
+| 422 | 경로 무효 · 확장자가 바뀜 (`custom_assets.errors.rename_extension_changed`) |
+| 403 | `core.extensions.custom_assets.manage` 미보유 |
+
+대상이 이미 있으면 **덮어쓰지 않고 막습니다**. PHP `rename()` 은 대상이 있어도 조용히 덮어쓰므로,
+그대로 두면 운영자가 올린 다른 파일이 경고 없이 사라집니다. 입력 오류가 아니라 상태 충돌이라
+409 로 가릅니다 — 화면이 "덮어쓸까요?" 를 물을지 "경로를 고치세요" 를 말할지 판단할 수 있습니다.
+
+확장자를 바꾸는 이름변경도 막습니다. `style.css` → `style.txt` 는 그 파일이 더 이상 서빙되지
+않는다는 뜻인데 화면에는 그대로 보이므로, 운영자는 "고쳤는데 반영이 안 된다" 만 겪습니다.
+
+---
+
+### GET /api/admin/extensions/{type}/{identifier}/custom-assets/search
+- **라우트명**: `api.admin.extensions.custom-assets.search`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController@search`
+- **인증/권한**: `auth:sanctum` + `permission:core.extensions.custom_assets.manage`
+
+파일명·본문에서 검색어를 찾습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| q | query | string | 예 | 2~200자 | 검색어 |
+
+본문을 여는 대상은 `CustomAssetService::EDITABLE_EXTENSIONS`(`css`·`js`·`mjs`·`json`)뿐이고
+`MAX_TEXT_BYTES`(512KB) 이하 파일만 읽습니다 — 폰트·이미지를 텍스트로 훑으면 바이너리가 우연히
+검색어와 일치해 쓸모없는 결과가 섞이고, 큰 파일을 통째로 메모리에 올립니다.
+파일명 매칭은 확장자와 무관하게 모든 파일이 대상입니다.
+
+**응답 예시**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "path": "css/theme.css",
+      "name_matched": false,
+      "match_count": 2,
+      "lines": [{ "line": 12, "column": 3, "preview": ".brand { color: red; }" }]
+    }
+  ]
+}
+```
+
+| 상태 | 조건 |
+| --- | --- |
+| 200 | 검색 결과 (0건이면 빈 배열) |
+| 422 | `q` 가 2자 미만 |
+| 403 | 권한 미보유 |
+
+---
+
 ### DELETE /api/admin/extensions/{type}/{identifier}/custom-assets
 <!-- @generated:start:api.admin.extensions.custom-assets.destroy -->
 - **라우트명**: `api.admin.extensions.custom-assets.destroy`
