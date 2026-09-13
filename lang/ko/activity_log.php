@@ -32,6 +32,7 @@ return [
         'create' => '생성',
         'updated' => '수정',
         'update' => '수정',
+        'rename' => '이름변경',
         'deleted' => '삭제',
         'delete' => '삭제',
         'login' => '로그인',
@@ -186,6 +187,9 @@ return [
         'layout_versions_index' => '레이아웃 버전 목록 조회 (:layout_path)',
         'layout_version_show' => '레이아웃 버전 상세 조회 (:layout_path)',
         'layout_version_restore' => '레이아웃 버전 복원 (:layout_path)',
+        'layout_create' => '레이아웃 파일 생성 (:layout_path)',
+        'layout_rename' => '레이아웃 파일 이름변경 (:layout_path → :new_path)',
+        'layout_delete' => '레이아웃 파일 삭제 (:layout_path)',
 
         // 메일 템플릿 관리
         'mail_template_update' => '메일 템플릿 수정 (:template_name)',
@@ -247,6 +251,7 @@ return [
         'custom_asset_save' => '커스텀 자산 저장 (:identifier — :path)',
         'custom_asset_upload' => '커스텀 자산 업로드 (:identifier — :path)',
         'custom_asset_delete' => '커스텀 자산 삭제 (:identifier — :path)',
+        'custom_asset_rename' => '커스텀 자산 이름변경 (:identifier — :path)',
 
         // 코어 업데이트
         'core_update_check' => '코어 업데이트 확인',

@@ -245,6 +245,11 @@ return [
         'content' => [
             'required' => 'The layout content is required.',
             'array' => 'The layout content must be an array.',
+            'markup_compile_failed' => 'The layout markup (.g7.html) could not be compiled: :detail',
+        ],
+        'markup' => [
+            'required' => 'The markup (.g7.html) to compile is required.',
+            'string' => 'The markup must be a string.',
         ],
         'version' => [
             'required' => 'The layout version is required.',
@@ -471,6 +476,7 @@ return [
         'content' => [
             'required' => 'Extension content is required.',
             'array' => 'Extension content must be an array.',
+            'markup_compile_failed' => 'The extension markup (.g7.html) could not be compiled: :detail',
         ],
         'priority' => [
             'integer' => 'priority must be an integer.',

@@ -334,5 +334,13 @@
   "core.language_packs.update": {
     "name": "言語パックアップデート",
     "description": "インストールされた言語パックのアップデートを確認して実行できます。"
+  },
+  "core.system": {
+    "name": "システム管理",
+    "description": "コア自体の保守権限"
+  },
+  "core.system.update": {
+    "name": "コアアップデート",
+    "description": "GNU Board 7 のコアを新しいバージョンに更新できます。"
   }
 }

@@ -658,6 +658,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->where('type', 'plugin|module|template')
             ->middleware('permission:admin,core.extensions.custom_assets.manage')
             ->name('api.admin.extensions.custom-assets.upload');
+        Route::post('{type}/{identifier}/custom-assets/rename', [AdminExtensionCustomAssetController::class, 'rename'])
+            ->where('type', 'plugin|module|template')
+            ->middleware('permission:admin,core.extensions.custom_assets.manage')
+            ->name('api.admin.extensions.custom-assets.rename');
+        Route::get('{type}/{identifier}/custom-assets/search', [AdminExtensionCustomAssetController::class, 'search'])
+            ->where('type', 'plugin|module|template')
+            ->middleware('permission:admin,core.extensions.custom_assets.manage')
+            ->name('api.admin.extensions.custom-assets.search');
         Route::delete('{type}/{identifier}/custom-assets', [AdminExtensionCustomAssetController::class, 'destroy'])
             ->where('type', 'plugin|module|template')
             ->middleware('permission:admin,core.extensions.custom_assets.manage')
@@ -903,6 +911,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 레이아웃 관리
         Route::get('{templateName}/layouts', [AdminLayoutController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.index');
 
+        // 레이아웃 파일 생성 — 이름은 FormRequest 가 세그먼트 규칙으로 검증한다(경로 파라미터가 아니다)
+        Route::post('{templateName}/layouts', [AdminLayoutController::class, 'store'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.store');
+
+        // 레이아웃 파일명·본문 검색 ({name} 범용보다 먼저 — 안 그러면 'search' 가 레이아웃 이름으로 잡힌다)
+        Route::get('{templateName}/layouts/search', [AdminLayoutController::class, 'search'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.search');
+
         // 레이아웃 버전 관리 (show보다 먼저 등록 — {name}의 / 허용으로 인한 라우트 충돌 방지)
         Route::get('{templateName}/layouts/{name}/versions', [AdminLayoutController::class, 'versions'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.versions.index')->where('name', '[a-zA-Z0-9_/\.\-]+');
         Route::get('{templateName}/layouts/{name}/versions/{version}', [AdminLayoutController::class, 'showVersion'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.versions.show')->where('name', '[a-zA-Z0-9_/\.\-]+');
@@ -911,9 +925,16 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 레이아웃 미리보기
         Route::post('{templateName}/layouts/{name}/preview', [AdminLayoutController::class, 'storePreview'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.preview.store')->where('name', '[a-zA-Z0-9_/\.\-]+');
 
+        // 레이아웃 마크업(.g7.html) 변환 — 저장 없음, 코드 편집기 JSON 뷰 갱신용 (권한 read)
+        Route::post('{templateName}/layouts/{name}/markup-compile', [AdminLayoutController::class, 'compileMarkup'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.markup-compile')->where('name', '[a-zA-Z0-9_/\.\-]+');
+
+        // 레이아웃 이름변경 (범용 {name} 보다 먼저 — 'x/rename' 이 레이아웃 이름으로 잡히지 않게)
+        Route::patch('{templateName}/layouts/{name}/rename', [AdminLayoutController::class, 'rename'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.rename')->where('name', '[a-zA-Z0-9_/\.\-]+');
+
         // 레이아웃 CRUD (범용 {name} 라우트 — 가장 마지막에 등록)
         Route::get('{templateName}/layouts/{name}', [AdminLayoutController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.show')->where('name', '[a-zA-Z0-9_/\.\-]+');
         Route::put('{templateName}/layouts/{name}', [AdminLayoutController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.update')->where('name', '[a-zA-Z0-9_/\.\-]+');
+        Route::delete('{templateName}/layouts/{name}', [AdminLayoutController::class, 'destroy'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.destroy')->where('name', '[a-zA-Z0-9_/\.\-]+');
 
         // 레이아웃 확장 관리 (별도 prefix — 일반 레이아웃 {name} 정규식 충돌 회피)
         Route::get('{templateName}/layout-extensions', [AdminLayoutExtensionController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.index');
@@ -925,6 +946,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
         // 레이아웃 확장 미리보기
         Route::post('{templateName}/layout-extensions/{extensionId}/preview', [AdminLayoutExtensionController::class, 'storePreview'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.preview.store')->whereNumber('extensionId');
+
+        // 레이아웃 확장 마크업(.g7.html) 변환 — 저장 없음 (권한 read)
+        Route::post('{templateName}/layout-extensions/{extensionId}/markup-compile', [AdminLayoutExtensionController::class, 'compileMarkup'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.markup-compile')->whereNumber('extensionId');
 
         // 레이아웃 확장 CRUD (범용 {extensionId} 라우트 — 마지막에 등록)
         Route::get('{templateName}/layout-extensions/{extensionId}', [AdminLayoutExtensionController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.show')->whereNumber('extensionId');

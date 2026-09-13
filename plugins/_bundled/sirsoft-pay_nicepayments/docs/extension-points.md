@@ -112,6 +112,13 @@
 `user_order_complete_receipt.g7.html`이 별도 파일인 것은 두 화면의 컴포넌트 트리와 데이터
 소스가 다르기 때문입니다(§AGENTS.md "설계 원칙" — 상태는 이커머스 소유이므로 화면마다
 필요한 조회 방식이 다를 수 있습니다).
+
+조각의 **고유 키는 파일 이름**입니다(`fragment_key` — 확장자를 뗀 기본 이름). 같은 확장이 같은 대상
+화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치 경로와
+`RestoreLayoutExtensionsAfterUpdateListener` 가 **같은 키**를 써야 하므로, 리스너는
+`LayoutFragmentSourceHelper::readDirectoryKeyed()` 로 파일에서 키를 얻어 그대로 넘깁니다. 키 없이
+등록하면 대상 화면 이름이 키가 되어 두 경로가 갈리고, 그 뒤로는 같은 대상에 행이 둘 생겨 복원이
+어느 행인지 가리지 못한 채 조용히 멈춥니다.
 <!-- @intent END -->
 
 ## 미들웨어

@@ -258,5 +258,41 @@
   "sirsoft-ecommerce.user-reviews.write": {
     "name": "レビュー作成",
     "description": "商品レビュー作成"
+  },
+  "sirsoft-ecommerce.dashboard": {
+    "name": "ダッシュボード",
+    "description": "管理者ダッシュボードのeコマース領域の閲覧権限"
+  },
+  "sirsoft-ecommerce.dashboard.view": {
+    "name": "ダッシュボード閲覧",
+    "description": "管理者ダッシュボードのeコマース売上状況・レビュー・問い合わせウィジェットの閲覧"
+  },
+  "sirsoft-ecommerce.mileage": {
+    "name": "マイレージ管理",
+    "description": "マイレージ履歴の閲覧および手動付与・減算の権限"
+  },
+  "sirsoft-ecommerce.mileage.read": {
+    "name": "マイレージ履歴閲覧",
+    "description": "マイレージ履歴の一覧および詳細の閲覧"
+  },
+  "sirsoft-ecommerce.mileage.manage": {
+    "name": "マイレージ手動処理",
+    "description": "マイレージの手動付与・減算および有効期限の一括延長"
+  },
+  "sirsoft-ecommerce.user-currency": {
+    "name": "会員決済通貨管理",
+    "description": "管理者が会員ごとの決済通貨を変更する権限"
+  },
+  "sirsoft-ecommerce.user-currency.manage": {
+    "name": "会員決済通貨変更",
+    "description": "会員ごとの決済通貨の変更"
+  },
+  "sirsoft-ecommerce.user-shipping-country": {
+    "name": "会員配送国管理",
+    "description": "管理者が会員ごとの配送国を変更する権限"
+  },
+  "sirsoft-ecommerce.user-shipping-country.manage": {
+    "name": "会員配送国変更",
+    "description": "会員ごとの配送国の変更"
   }
 }

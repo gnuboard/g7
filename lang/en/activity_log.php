@@ -32,6 +32,7 @@ return [
         'create' => 'Created',
         'updated' => 'Updated',
         'update' => 'Updated',
+        'rename' => 'Renamed',
         'deleted' => 'Deleted',
         'delete' => 'Deleted',
         'login' => 'Login',
@@ -186,6 +187,9 @@ return [
         'layout_versions_index' => 'Layout versions viewed (:layout_path)',
         'layout_version_show' => 'Layout version viewed (:layout_path)',
         'layout_version_restore' => 'Layout version restored (:layout_path)',
+        'layout_create' => 'Layout file created (:layout_path)',
+        'layout_rename' => 'Layout file renamed (:layout_path → :new_path)',
+        'layout_delete' => 'Layout file deleted (:layout_path)',
 
         // Mail template management
         'mail_template_update' => 'Mail template updated (:template_name)',
@@ -247,6 +251,7 @@ return [
         'custom_asset_save' => 'Custom asset saved (:identifier — :path)',
         'custom_asset_upload' => 'Custom asset uploaded (:identifier — :path)',
         'custom_asset_delete' => 'Custom asset deleted (:identifier — :path)',
+        'custom_asset_rename' => 'Custom asset renamed (:identifier — :path)',
 
         // Core update
         'core_update_check' => 'Core update checked',

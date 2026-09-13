@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-09-12
+
+### Added
+
+- 메뉴 시드를 신설해 `sirsoft-ckeditor5-uploads`(에디터 업로드 이미지)의 일본어 번역을 추가했습니다 — 종전에는 플러그인 언어팩의 메뉴 시드가 적용 대상에서 제외돼 있어 이 항목만 번역 경로가 없었습니다.
+
 ## [1.0.2] - 2026-09-06
 
 ### Added

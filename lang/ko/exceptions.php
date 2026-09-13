@@ -157,6 +157,7 @@ return [
         'unexpected_document_child' => '<:tag> 는 <:parent> 안에 올 수 없습니다.',
         'partial_root_not_single_node' => '<partial> 은 루트가 노드 하나입니다. 조각의 루트 컴포넌트를 하나만 두세요.',
         'modal_src_with_body' => '<modal src="..."> 는 조각을 참조하므로 본문을 함께 쓸 수 없습니다. 인라인 모달은 src 없이 노드로 쓰세요.',
+        'modal_name_with_src' => '<modal src="..."> 에는 name 을 쓸 수 없습니다. name 은 인라인 모달의 layout_name(설치가 조각을 인라인할 때 붙는 이름)이라 본문이 있는 <modal name="..."> 에서만 뜻이 있습니다.',
         'partial_src_not_authoring' => '<:tag src=":src"> 는 소스를 가리켜야 합니다: src=":suggestion" 처럼 .g7.html 로 쓰세요. 산출 JSON 의 .json 표기는 컴파일러가 만듭니다.',
         'modal_src_in_node_position' => '<modal src=":src"> 는 문서의 modals 선언 자리에서만 쓸 수 있습니다. 노드 자리에서는 src 를 아무도 읽지 않아 창이 뜨지 않습니다 — 문서 봉투 직속으로 옮기세요.',
         'modal_inline_not_single_node' => '인라인 <modal> 은 노드 하나만 담습니다.',

@@ -109,6 +109,7 @@ describe('CustomAssetsModal', () => {
     expect(screen.queryByTestId('g7le-custom-assets-error')).toBeNull();
   });
 
+  // @scenario branch=extension, buffer_state=clean, leave=file_switch
   it('목록을 읽어 파일 행을 그린다', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, listBody));
 
@@ -211,6 +212,7 @@ describe('CustomAssetsModal', () => {
   });
 
   /** @effects custom_asset_manage_all_extension_types_parity */
+  // @scenario branch=extension, buffer_state=clean, leave=reload
   it('대상을 바꾸면 그 확장의 경로로 다시 읽는다', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, listBody));
 
@@ -235,6 +237,299 @@ describe('CustomAssetsModal', () => {
    *
    * @effects custom_asset_manage_all_extension_types_parity
    */
+  /**
+   * **D2 회귀 잠금** — 파일을 바꿔도 앞 파일의 미저장 초안이 남는다.
+   *
+   * 종전에는 초안이 `draft` 문자열 **한 벌**이라 `openFile` 이 서버 본문으로 무조건 덮었다.
+   * 레이아웃 편집기가 고친 것과 같은 결함 클래스이고, 같은 원칙으로 막는다 —
+   * **버퍼가 dirty 면 서버 본문을 무시한다.**
+   *
+   * @effects custom_asset_editor_keeps_unsaved_draft_across_files
+   */
+  // @scenario branch=extension, buffer_state=dirty, leave=file_switch
+  it('파일을 바꿨다 돌아와도 저장하지 않은 편집이 남는다', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/content?')) {
+        return Promise.resolve(jsonResponse(200, { data: { content: 'SERVER BODY' } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+    });
+
+    // A 를 열고 고친다.
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+    await waitFor(() => {
+      expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('SERVER BODY');
+    });
+
+    fireEvent.change(screen.getByTestId('g7le-custom-assets-content'), { target: { value: 'MY EDIT' } });
+
+    // 편집 중인 파일에 미저장 표시가 선다.
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('g7le-custom-asset-row-10-overrides.css').getAttribute('data-dirty'),
+      ).toBe('true');
+    });
+
+    // B(편집 불가 파일)로 갔다가
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-fonts/brand.woff2'));
+
+    // A 로 돌아온다 — 서버는 같은 본문을 또 주지만 내 편집분이 이겨야 한다.
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+
+    await waitFor(() => {
+      expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('MY EDIT');
+    });
+  });
+
+  /**
+   * **D3 회귀 잠금** — 대상(확장)을 바꿀 때 미저장 편집이 있으면 **되묻는다**.
+   *
+   * 버퍼를 비우는 것 자체는 맞다(A 확장의 본문을 B 확장에 저장하면 경로만 맞으면 서버는 200 으로
+   * 받아들인다). 다만 **버릴지 말지는 사용자가 정한다** — 종전에는 아무 말 없이 버렸다.
+   *
+   * @effects custom_asset_editor_confirms_before_discarding_on_target_switch
+   */
+  // @scenario branch=extension, buffer_state=dirty, leave=reload
+  it('미저장 편집이 있으면 대상 전환 전에 확인을 받고, 취소하면 그대로 둔다', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/content?')) {
+        return Promise.resolve(jsonResponse(200, { data: { content: 'SERVER BODY' } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    try {
+      render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+      });
+
+      fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+      await waitFor(() => {
+        expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('SERVER BODY');
+      });
+
+      fireEvent.change(screen.getByTestId('g7le-custom-assets-content'), { target: { value: 'MY EDIT' } });
+
+      const select = screen.getByTestId('g7le-custom-assets-target') as HTMLSelectElement;
+      fireEvent.change(select, { target: { value: 'plugin:sirsoft-gdpr' } });
+
+      expect(confirmSpy).toHaveBeenCalled();
+      // 취소했으므로 대상도 편집분도 그대로다.
+      expect(select.value).toBe('template:sirsoft-basic');
+      expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('MY EDIT');
+    } finally {
+      confirmSpy.mockRestore();
+    }
+  });
+
+  /** @effects custom_asset_editor_shows_a_file_tree */
+  it('경로의 슬래시로 폴더를 만든다', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, listBody));
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-asset-folder-fonts')).toBeTruthy();
+    });
+  });
+
+  /** @effects custom_asset_editor_filters_by_name */
+  it('검색어로 파일명을 거른다 (2자 미만은 서버를 부르지 않는다)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, listBody));
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByTestId('g7le-custom-assets-search'), { target: { value: 'overrides' } });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('g7le-custom-asset-folder-fonts')).toBeNull();
+      expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+    });
+
+    // 1자로는 내용 검색을 부르지 않는다.
+    fireEvent.change(screen.getByTestId('g7le-custom-assets-search'), { target: { value: 'o' } });
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/search'))).toHaveLength(0);
+    });
+  });
+
+  /**
+   * 계획 §4.7 — 내용 검색에서 **이미 열려 있는 파일은 클라이언트가** 찾는다. 서버는 저장본만 보므로
+   * 저장하지 않은 편집분은 이 경로가 없으면 영영 검색되지 않는다.
+   *
+   * @effects custom_asset_editor_searches_open_buffers_locally
+   */
+  it('열린 파일의 저장하지 않은 본문은 서버를 거치지 않고 바로 검색된다', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/content?')) {
+        return Promise.resolve(jsonResponse(200, { data: { content: 'body { color: red; }' } }));
+      }
+      // 서버는 저장본만 본다 — 편집 중인 문자열은 저장본에 없으므로 빈 결과다.
+      if (String(url).includes('/search')) {
+        return Promise.resolve(jsonResponse(200, { data: [] }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+    await waitFor(() => {
+      expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('body { color: red; }');
+    });
+
+    fireEvent.change(screen.getByTestId('g7le-custom-assets-content'), {
+      target: { value: 'body { color: red; }\n.zzneedle { margin: 0; }' },
+    });
+    fireEvent.change(screen.getByTestId('g7le-custom-assets-search'), { target: { value: 'zzneedle' } });
+
+    // 2행에서 찾은 매치가 서버 왕복 없이 트리에 얹힌다 (좌표는 편집기 줄 번호와 같다).
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-asset-hit-10-overrides.css-2')).toBeTruthy();
+    });
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/search'))).toHaveLength(0);
+  });
+
+  /**
+   * 계획 §4.7 — 코드 입력칸에서 Tab 은 들여쓰기다. 종전에는 포커스가 다음 요소로 넘어가 코드 편집에
+   * 쓸 수 없었다(계획서는 «이미 있음» 으로 잘못 전제했다).
+   *
+   * @effects custom_asset_editor_indents_with_tab
+   */
+  it('Tab 은 두 칸 들여쓰고 Shift+Tab 은 그 줄 머리의 두 칸을 거둔다', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/content?')) {
+        return Promise.resolve(jsonResponse(200, { data: { content: 'a {}\nb {}' } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+
+    const textarea = () => screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement;
+    await waitFor(() => {
+      expect(textarea().value).toBe('a {}\nb {}');
+    });
+
+    // 둘째 줄 머리에 커서를 두고 Tab — 포커스가 옮겨 가지 않고 두 칸이 들어간다.
+    textarea().setSelectionRange(5, 5);
+    fireEvent.keyDown(textarea(), { key: 'Tab' });
+    await waitFor(() => {
+      expect(textarea().value).toBe('a {}\n  b {}');
+    });
+
+    // Shift+Tab 은 그 줄 머리의 두 칸을 거둔다.
+    textarea().setSelectionRange(7, 7);
+    fireEvent.keyDown(textarea(), { key: 'Tab', shiftKey: true });
+    await waitFor(() => {
+      expect(textarea().value).toBe('a {}\nb {}');
+    });
+  });
+
+  /** @effects custom_asset_editor_renames_through_the_api */
+  it('이름변경은 rename API 로 나가고 성공 후 목록을 다시 읽는다', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (String(url).includes('/rename')) {
+        return Promise.resolve(jsonResponse(200, { data: { path: 'renamed.css' } }));
+      }
+
+      if (String(url).includes('/content?')) {
+        return Promise.resolve(jsonResponse(200, { data: { content: 'SERVER BODY' } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('renamed.css');
+
+    try {
+      render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+      });
+
+      fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+      await waitFor(() => {
+        expect(screen.getByTestId('g7le-custom-assets-rename')).toBeTruthy();
+      });
+
+      fireEvent.click(screen.getByTestId('g7le-custom-assets-rename'));
+
+      await waitFor(() => {
+        const call = fetchMock.mock.calls.find(([url]) => String(url).includes('/rename'));
+        expect(call).toBeTruthy();
+        expect(JSON.parse(String((call![1] as RequestInit).body))).toEqual({
+          from: '10-overrides.css',
+          to: 'renamed.css',
+        });
+      });
+    } finally {
+      promptSpy.mockRestore();
+    }
+  });
+
+  /** @effects custom_asset_editor_saves_with_ctrl_s */
+  it('Ctrl+S 로 저장한다', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/content?')) {
+        return Promise.resolve(jsonResponse(200, { data: { content: 'SERVER BODY' } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+    await waitFor(() => {
+      expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('SERVER BODY');
+    });
+
+    fireEvent.change(screen.getByTestId('g7le-custom-assets-content'), { target: { value: 'MY EDIT' } });
+
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === 'PUT');
+      expect(put).toBeTruthy();
+      expect(JSON.parse(String((put![1] as RequestInit).body)).content).toBe('MY EDIT');
+    });
+  });
+
+  /** @effects custom_asset_editor_confirms_before_discarding_on_target_switch */
   it('대상을 바꾸면 선택과 초안을 버린다', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, listBody));
 
@@ -263,6 +558,7 @@ describe('CustomAssetsModal', () => {
 });
 
 describe('EditorToolbar — 커스텀 자산 (D32·D33)', () => {
+  /** @effects custom_asset_editor_filters_by_name */
   it('관리 버튼은 핸들러 미제공 시 disabled', () => {
     render(wrapToolbar(<EditorToolbar />));
 
@@ -271,6 +567,7 @@ describe('EditorToolbar — 커스텀 자산 (D32·D33)', () => {
     );
   });
 
+  /** @effects custom_asset_editor_filters_by_name */
   it('관리 버튼 클릭이 핸들러를 호출한다', () => {
     const onManage = vi.fn();
     render(wrapToolbar(<EditorToolbar onManageCustomAssets={onManage} />));

@@ -81,7 +81,7 @@
 | `globalHeaders` | `<global-headers><match pattern="*">…</match></global-headers>` |
 | `transition_overlay` | `<transition-overlay>` (bool은 `:enabled`) |
 | `scripts` | `<script src="…" id="…" :async data-if="…"/>` (반복, src 화이트리스트) |
-| `modals` | `<modal src="partials/_modal_delete.g7.html"/>` 또는 인라인 `<modal>노드</modal>` — 소스는 **소스를 가리킨다**(§3.1). 산출 JSON 은 `partial: "partials/_modal_delete.json"` 으로 나가고, 실제 소스는 해석기가 고른다: 짝 `.g7.html` 소스가 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전) |
+| `modals` | `<modal src="partials/_modal_delete.g7.html"/>` 또는 인라인 `<modal>노드</modal>`(인라인 항목의 `layout_name` 은 `<modal name="partials/_modal_delete">` — 설치가 `<modal src>` 조각을 인라인할 때 붙이는 이름의 표현이라 편집기가 연 설치본에서 나타난다. `src` 와 `name` 은 함께 쓸 수 없다. 인라인 항목의 `data_sources`(창이 열릴 때 받는 것)는 본문 루트의 `<data-source>` 자식으로 적는다 — 조각 루트와 같은 규약이다) — 소스는 **소스를 가리킨다**(§3.1). 산출 JSON 은 `partial: "partials/_modal_delete.json"` 으로 나가고, 실제 소스는 해석기가 고른다: 짝 `.g7.html` 소스가 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전) |
 
 ### 3.1 조각 참조 표기 — 소스는 소스를 가리킨다
 
@@ -259,6 +259,7 @@
 | `component_layout` | `<template slot="item">…</template>` |
 | `default`/`callbacks`(extension_point) | `<default>…</default>`/`<callback name="…">` |
 | `partial`(노드 전체 치환) | `<include src="….g7.html"/>` — 소스는 소스를 가리키고 산출 JSON 은 `.json` 을 적는다(`<modal src>` 와 같은 규약, §3.1). 실제 소스는 해석기가 고른다: 짝 `.g7.html` 소스가 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다 |
+| `layout_name`(노드 자리) | `data-layout-name="…"` — 설치가 `<include src>` 조각을 **노드 자리에 인라인**하며 남긴 조각 이름이다. 소스 파일에는 나타나지 않고 설치본(DB 행)에만 있으며, 편집기가 그 행을 열었을 때 다시 소스로 되돌릴 자리다. 문서 루트는 `<layout name>`, 조각 루트는 `<partial name>`, 모달은 `<modal name>` 이 같은 키를 나른다 |
 | `comment` | `<!-- … -->` |
 
 > `data-if`/`data-each`/`data-key` 등 지시 키를 **무접두 속성**(`if=`·`each=`·`condition=`·`iteration=`)으로 쓰면 `foreign_idiom`/`node_key_as_attribute` 에러가 정확한 형태를 제안한다. AI·인간 작성 실측(S8)에서 자연 성향이 무접두 `if=` 였으나 이 에러가 1스텝 교정한다.
@@ -739,6 +740,23 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 ```
 
 > S9 실측으로 드러난 문법 갭 3건(void `<input>`/`<img>` 액션·노드 permissions·노드 meta)은 **D36 으로 문법 신설해 해소**됐다 — 이제 첫 급부로 작성되며 `<json>` 방출 대상이 아니다.
+
+---
+
+## 11.5 편집기 — 설치본을 HTML 로 편집한다 (#476)
+
+관리자 레이아웃 코드 편집기(`/admin/templates/{템플릿}/edit`)의 정본은 **HTML(`.g7.html`) 탭**이고 JSON 탭은 읽기 전용 산출물이다. DB 는 종전대로 JSON 만 둔다.
+
+| 시점 | 경로 | 하는 일 |
+|---|---|---|
+| 열 때 | `GET …/layouts/{name}?with_markup=1` · `GET …/layout-extensions/{id}?with_markup=1` | DB 행(JSON)을 붙어 있는 템플릿의 표로 **역변환**해 `content_markup` 을 싣는다. 같은 소스를 되컴파일한 lint 경고(`markup_warnings`)와, 거부되면 `markup_compile_error` 도 함께 온다 |
+| 타이핑이 멈춘 1초 뒤 | `POST …/markup-compile {markup}` | 저장 없이 **프로덕션 컴파일** — 200 이면 JSON 탭을 갱신, 422 면 `compile_error {code,message,line,column}` 로 마커·오류 패널을 찍고 JSON 탭은 마지막 성공본에 '오래됨' 배지 |
+| 저장·미리보기 | `PUT …/layouts/{name}` · `POST …/preview` 에 `format=markup` + `content=<HTML>` | 서버가 검증 전에 컴파일해 JSON 으로 바꾼 뒤 **기존 규칙 그대로** 검증·저장한다. 컴파일 오류는 422 + `compile_error`, 저장되지 않는다 |
+
+- 편집기가 여는 것은 **설치본**이라 저장소 파일과 다르다 — 설치가 `<include src>`·`<modal src>` 조각을 인라인한 평탄 문서이고, 인라인 모달의 원래 이름은 `<modal name>` 으로 남는다. 저장하면 본문이 서버 정규형(역변환 산출)으로 갱신되므로 손으로 맞춘 줄바꿈·들여쓰기는 유지되지 않는다.
+- 변환은 설치·게이트와 **같은 클래스**(`LayoutMarkupDecompiler`·`LayoutMarkupCompiler`)를 탄다. 왕복 오라클(`layout:compile --roundtrip`)도 같은 진입점이라 "게이트는 초록인데 편집기 저장은 거부" 가 생기지 않는다.
+- 설치본 전량의 정합성은 `php artisan layout:check-installed` 로 점검한다(행마다 역변환→프로덕션 컴파일→왕복 대조 + 조각 등록 정합성).
+- `.g7.html` 내려받기·복사 버튼은 HTML 버퍼를 그대로 파일·클립보드로 옮긴다 — 저장소로 되가져올 때 위 인라인 상태를 감안한다.
 
 ---
 

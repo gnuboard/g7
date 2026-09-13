@@ -155,6 +155,48 @@ class LayoutFragmentSourceHelperTest extends TestCase
     }
 
     /**
+     * 디렉토리 수집은 조각 식별자(`fragment_key`)를 함께 돌려준다 — 같은 대상에 조각이 둘일 때
+     * 확장이 키 없이 등록하면 어느 행인지 가릴 수 없어 아무것도 하지 않기 때문이다(#476 C13).
+     *
+     * 짝(`x.g7.html`·`x.json`)은 같은 논리 조각이라 같은 키다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects fragment_helper_directory_read_carries_fragment_key
+     */
+    public function test_read_directory_keyed_carries_fragment_key(): void
+    {
+        $this->writeMarkup('admin_order_payment', 'order_payment');
+        $this->writeJson('admin_order_query', 'order_query');
+
+        $keyed = LayoutFragmentSourceHelper::readDirectoryKeyed($this->tmp);
+
+        $byKey = [];
+        foreach ($keyed as $fragment) {
+            $byKey[$fragment['key']] = $fragment['data']['extension_point'] ?? null;
+        }
+
+        $this->assertSame(
+            ['admin_order_payment' => 'order_payment', 'admin_order_query' => 'order_query'],
+            $byKey,
+            '키는 확장자를 뗀 기본 이름이고, 소스·짝 어느 쪽이든 같은 키다',
+        );
+
+        // 기대값은 **이 테스트가 디스크에 쓴 것**에서 직접 적는다. 종전에는
+        // `array_column($keyed, 'data')` 와 비교했는데, `readDirectory()` 가 바로 그 식으로
+        // 구현돼 있어 **어느 소스가 이겨도 양변이 같아지는 항등식**이었다 — 실패할 수 없는 단언이다
+        // (`OracleIndependenceGuardTest` 가 잡았다).
+        $this->assertSame(
+            ['order_payment', 'order_query'],
+            array_map(
+                fn (array $definition): ?string => $definition['extension_point'] ?? null,
+                LayoutFragmentSourceHelper::readDirectory($this->tmp),
+            ),
+            'readDirectory 는 키 없이 정의만, 수집 순서 그대로 돌려준다',
+        );
+    }
+
+    /**
      * 디렉토리가 없으면 빈 배열 — 호출처가 존재 확인을 중복하지 않게 한다.
      *
      * @scenario compile_unit=install,source_health=invalid

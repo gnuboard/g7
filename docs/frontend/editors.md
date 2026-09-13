@@ -8,7 +8,7 @@
 
 ```text
 1. HtmlEditor: HTML/텍스트 편집, 게시판/상품 설명 등 사용
-2. CodeEditor: JSON/코드 편집, Monaco Editor 기반
+2. CodeEditor: JSON/코드 편집, Monaco Editor 기반 — `theme="auto"`·`wordWrap`·`modelKey`(파일별 모델)
 3. RichTextEditor: 미구현 상태 (사용 금지)
 4. 보안: DOMPurify로 XSS 방지 필수 (HtmlEditor 내장)
 5. 폼 바인딩: name, onChange props로 자동 연동
@@ -272,7 +272,9 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 - 문법 강조 (Syntax Highlighting)
 - 자동 포맷팅
 - IntelliSense 지원
-- 라이트/다크 테마
+- 문서 테마 추종 (`theme="auto"`)
+- 자동 줄바꿈 토글
+- **파일별 모델** — 커서·스크롤·되돌리기 스택이 파일마다 따로 산다
 
 ### Props 레퍼런스
 
@@ -283,14 +285,32 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 | `language` | `string` | ❌ | `'json'` | 언어 (json, javascript, html, css, typescript 등) |
 | `height` | `string` | ❌ | `'100%'` | 에디터 높이 |
 | `readOnly` | `boolean` | ❌ | `false` | 읽기 전용 모드 |
-| `theme` | `'vs-dark'` \| `'vs-light'` | ❌ | `'vs-dark'` | 에디터 테마 |
+| `theme` | `'auto'` \| `'vs-dark'` \| `'vs-light'` | ❌ | `'auto'` | 에디터 테마. `auto` 는 `<html class="dark">` 를 따라간다 |
+| `markers` | `Array<{line, column, endLine?, endColumn?, message, severity: 'error' \| 'warning'}>` | ❌ | - | 서버 컴파일 오류·경고 마커 — 해당 줄에 빨간/노란 물결로 표시. 값이 바뀌면 통째로 다시 찍고, 빈 배열이면 지운다 |
+| `wordWrap` | `boolean` | ❌ | `false` | 자동 줄바꿈. 폴백 textarea 의 `wrap` 도 함께 따른다 |
+| `fontSize` | `number` | ❌ | `14` | 글자 크기 (12~20) |
+| `modelKey` | `string` | ❌ | - | 파일별 모델 키. 주면 커서·스크롤·되돌리기 스택·접힘 상태가 **파일별로 보존**된다 |
+| `revealAt` | `{line, column?, nonce?}` | ❌ | - | 커서를 옮길 좌표 (1-base). 같은 좌표를 다시 지목하려면 `nonce` 를 바꾼다 |
+| `commands` | `Array<{key, mod?, shift?, alt?, run}>` | ❌ | - | 편집기 **안에서도** 잡을 단축키. Monaco 가 선점하는 조합(`mod+p`·`mod+k`)의 재바인딩용 |
+| `onReady` | `function` | ❌ | - | 편집기 준비 완료 콜백 |
+
+> **`theme="auto"` 가 기본값인 이유.** 종전 기본값은 `vs-dark` 하드코딩이라 사이트가 라이트
+> 모드여도 편집기만 검은 판이었다(#476 D8). `auto` 는 마운트 시점의 `dark` 클래스를 곧바로
+> 반영하고, 이후 전환은 `MutationObserver` 로 따라간다 — 부모 재렌더 없이도 함께 바뀐다.
+
+> **`modelKey` 는 `<Editor path>` 로 넘어간다.** 모델을 직접 만들어 `setModel()` 하지 않는다 —
+> `@monaco-editor/react` 가 자기 모델을 만들어 붙이므로 밖에서 끼운 모델이 곧바로 밀려난다
+> (실측 2026-09-12: 본문 42,523자가 전역에는 있는데 편집기는 빈 화면이었다). 모델 수명은
+> 라이브러리 한 곳이 쥐고, 우리는 키만 준다. 그 대가로 뷰 상태(커서·스크롤) 보존도 따라온다.
+
+> **`language="html"` 로 `.g7.html` 을 편집할 때** Monaco 의 HTML 모드는 커스텀 태그를 검증하지 않는다. 검증은 서버 컴파일러(`markup-compile`·저장 422 의 `compile_error`)가 담당하고, 그 결과를 `markers` 로 넘겨 줄에 표시한다. 레이아웃 코드 편집기(`admin_template_layout_edit`)가 이 관용구의 실사용처다.
 
 ### 레이아웃 JSON 사용 예시
 
 #### JSON 편집기
 
 ```html
-<code-editor data-ref="json_editor" value="{{_local.jsonContent ?? '{}'}}" language="json" height="400px" theme="vs-dark">
+<code-editor data-ref="json_editor" value="{{_local.jsonContent ?? '{}'}}" language="json" height="400px">
   <on type="change" event="onChange">
     <set-state target="local" jsonContent="{{$args[0]}}"/>
   </on>

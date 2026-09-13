@@ -165,14 +165,17 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.custom_assets.after_change` | `handleCustomAssetAfterChange` | `custom_asset.{save\|upload\|delete}` | Admin | 운영자 CSS·JS 는 사이트 전 화면에서 실행되므로 변경 이력이 남아야 한다 |
+| `core.custom_assets.after_change` | `handleCustomAssetAfterChange` | `custom_asset.{save\|upload\|delete\|rename}` | Admin | 운영자 CSS·JS 는 사이트 전 화면에서 실행되므로 변경 이력이 남아야 한다 |
 
-### Layout (2훅)
+### Layout (5훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
 | `core.layout.after_update` | `handleLayoutAfterUpdate` | `layout.update` | Admin | - |
 | `core.layout.after_version_restore` | `handleLayoutAfterVersionRestore` | `layout.version_restore` | Admin | - |
+| `core.layout.after_create` | `handleLayoutAfterCreate` | `layout.create` | Admin | TemplateLayout |
+| `core.layout.after_rename` | `handleLayoutAfterRename` | `layout.rename` | Admin | TemplateLayout — `properties.from/to` |
+| `core.layout.after_delete` | `handleLayoutAfterDelete` | `layout.delete` | Admin | TemplateLayout(soft delete 라 행은 남는다) — 파괴적 연산의 되돌림 근거 |
 
 ### Module Settings (2훅)
 

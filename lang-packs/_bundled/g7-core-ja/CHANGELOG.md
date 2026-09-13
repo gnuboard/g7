@@ -8,9 +8,21 @@
 
 ### Added
 
+- 코어 권한 2건(`core.system`·`core.system.update`)의 일본어 번역을 추가했습니다 — 일본어 로케일의 역할 수정 화면에서 「시스템 관리」·「코어 업데이트」가 한국어로 남아 있었습니다.
+
+- 레이아웃 파일 생성·삭제·이름변경 안내 문구 일본어 번역 추가 (`layouts.messages.*`·`layouts.errors.*`·`layouts.reference_kinds.*`) — 코드 편집기에서 화면 파일을 직접 만들고 지우고 옮길 수 있게 되면서 새로 생긴 안내입니다. 쓸 수 없는 이름(`invalid_name`)·이미 있는 이름(`name_taken`) 같은 입력 오류와, 지우거나 옮길 수 없는 사유 — 모듈·플러그인이 제공한 원본이라서(`delete_blocked_source_type`·`rename_blocked_source_type`), 다른 화면이 상속·조각으로 참조하고 있어서(`delete_blocked_by_reference`·`rename_blocked_by_reference`) — 그리고 라우트가 연결된 화면을 지울 때 한 번 더 묻는 안내(`delete_requires_confirmation`)가 일본어 로케일에서 자연스럽게 표시됩니다. 참조 목록에 붙는 갈래 이름(상속·조각 참조·라우트 연결)도 함께 번역했습니다.
+
+- 커스텀 자산 파일 이름변경 안내 문구 일본어 번역 추가 (`custom_assets.*`) — 확장의 CSS·JS 파일을 편집기에서 옮기고 이름을 바꿀 수 있게 되면서 생긴 안내입니다. 같은 이름이 이미 있을 때(`rename_target_exists`), 확장자를 바꾸려 했을 때(`rename_extension_changed` — 확장자가 바뀌면 그 파일이 더 이상 같은 방식으로 서빙되지 않습니다), 현재와 같은 경로를 넣었을 때(`rename_same_path`)의 안내와 성공 알림입니다.
+
+- 커스텀 자산 편집 모달의 새 문구 일본어 번역 추가 (`layout_editor.custom_assets.*`) — 파일을 경로별 트리로 보여 주고 파일명·내용을 검색할 수 있게 되면서 생긴 문구입니다. 검색 입력 안내와 결과 없음 안내, 미저장 표시, 이름변경 버튼과 입력 안내, 대상을 바꿀 때 미저장 편집을 버릴지 묻는 확인, 자동 줄바꿈 토글 라벨입니다.
+
+- 활동 로그 문구 4건 일본어 번역 추가 (`activity_log.description.layout_create`·`layout_rename`·`layout_delete`·`custom_asset_rename`) — 레이아웃 파일 생성·이름변경·삭제와 커스텀 자산 이름변경이 활동 로그에 남게 되면서 생긴 문구입니다(생성기 대신 수작업으로 넣었습니다 — 키로 재생성하면 덮어써도 됩니다).
+
 - 레이아웃 소스 파일 검사 문구 일본어 번역 추가 — 태그·속성·주석·중첩 규칙 위반을 알려 주는 안내가 줄·열 위치와 함께 일본어로 표시됩니다.
 
 - 레이아웃 확장 정의 검사 문구 일본어 번역 추가 — overlay 확장에 필요한 항목을 알려 주는 안내입니다.
+
+- 레이아웃 코드 편집기의 HTML 저장·변환에서 쓰는 검사 문구 일본어 번역 추가 — 마크업 컴파일 실패(`validation.layout.content.markup_compile_failed`·`validation.layout_extension.content.markup_compile_failed`), 변환 요청의 `markup` 필수 안내, 그리고 `<modal src>` 에 `name` 을 함께 쓴 경우의 안내(`exceptions.layout_markup.modal_name_with_src`)입니다.
 
 - 화면의 일부 조각을 불러오지 못했을 때의 오류 안내 문구 일본어 번역 추가 (`exceptions.layout.invalid_include_markup`) — 조각 파일이 없거나 내용이 깨졌을 때 어느 조각이 왜 실패했는지 알리는 안내가 일본어 로케일에서 자연스럽게 표시됩니다.
 

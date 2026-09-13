@@ -65,6 +65,42 @@ final class MarkupCompileContextResolver
     }
 
     /**
+     * 템플릿 식별자로 컴포넌트 레지스트리를 만듭니다 — 설치본(DB 행)처럼 파일 경로가 없는 문서용.
+     *
+     * 규칙은 {@see registryFor()} 와 같다(설치 디렉토리 → `_bundled` 폴백). 두 메서드가 같은 후보 목록을
+     * 쓰도록 안쪽 루프를 공유해 규칙이 갈리지 않게 한다.
+     *
+     * @param  string  $templateId  템플릿 식별자
+     * @return ComponentRegistry|null 레지스트리, 매니페스트가 없으면 null
+     */
+    public function registryForTemplate(string $templateId): ?ComponentRegistry
+    {
+        return $this->registryFor('', $templateId);
+    }
+
+    /**
+     * 설치본(DB 행) 문서의 검증·lint 문맥을 만듭니다 — 파일 경로 없이 소속 정보를 직접 받는다.
+     *
+     * 편집기·점검 커맨드가 `template_layouts`·`template_layout_extensions` 행을 프로덕션 컴파일할 때 쓴다.
+     * 소스 종류·식별자는 행의 `source_type`·`source_identifier` 에서 오고, 핸들러·nesting 규칙은
+     * {@see contextFor()} 와 같은 함수로 대상 템플릿에서 읽는다.
+     *
+     * @param  string  $templateId  대상 템플릿 식별자
+     * @param  string|null  $sourceKind  소유 소스 종류 (`template`·`module`·`plugin`·null)
+     * @param  string|null  $identifier  소유 확장·템플릿 식별자
+     * @return CompileContext 컴파일 문맥
+     */
+    public function contextForInstalled(string $templateId, ?string $sourceKind, ?string $identifier): CompileContext
+    {
+        return new CompileContext(
+            sourceKind: $sourceKind,
+            identifier: $identifier,
+            templateHandlers: $this->scanTemplateHandlers($templateId),
+            nestingRules: $this->loadNestingRules($templateId),
+        );
+    }
+
+    /**
      * 대상 템플릿 식별자를 결정합니다 (`--template` 우선, 없으면 admin/·user/ 디렉토리로 판별).
      *
      * @param  string  $file  `.g7.html` 경로

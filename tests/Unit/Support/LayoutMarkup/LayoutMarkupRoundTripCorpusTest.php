@@ -90,7 +90,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
                 continue;
             }
 
-            $result = $harness->verify($json, $registry, $file);
+            // 프로덕션 진입점 문맥 — 설치가 보는 것과 같은 검증·lint 로 되컴파일한다.
+            $result = $harness->verify($json, $registry, $file, $resolver->contextFor($file));
 
             if (! $result['ok']) {
                 $failures[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file).($result['error'] !== null ? " ({$result['error']})" : '');

@@ -90,7 +90,7 @@
 | `meta` | object | ❌ | 메타 정보 (title, description) |
 | `data_sources` | array | ✅ | API 데이터 소스 정의 (각 항목에 `label_key` `$t:` 키 — 편집기 데이터 연결 피커 친화 명칭) |
 | `init_actions` | array | ❌ | 초기화 액션 (레이아웃 로드 시 실행) |
-| `modals` | array | ❌ | 모달 컴포넌트 정의 |
+| `modals` | array | ❌ | 모달 컴포넌트 정의. 인라인 항목에 `layout_name` 이 있으면 설치가 `partial` 참조 조각을 인라인하며 남긴 조각 이름이다(마크업 `<modal name>`) |
 | `scripts` | array | ❌ | 외부 스크립트 동적 로드 (engine-v1.8.0+) |
 | `errorHandling` | object | ❌ | 레이아웃 레벨 에러 핸들링 설정 (engine-v1.6.0+) |
 | `permissions` | string[] | ❌ | 레이아웃 접근 권한 식별자 배열 (engine-v1.15.0+) |

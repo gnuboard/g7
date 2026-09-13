@@ -6,6 +6,8 @@ import { saveMultilingualTagHandler, cancelMultilingualTagHandler, updateMultili
 import { setDateRangeHandler } from './setDateRangeHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 import { downloadAttachmentHandler } from './downloadAttachment';
+import { downloadMarkupFileHandler } from './downloadMarkupFile';
+import { copyMarkupToClipboardHandler } from './copyMarkupToClipboard';
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
 /**
  * 핸들러 맵
@@ -33,4 +35,6 @@ export declare const handlerMap: {
     readonly toggleSidebar: typeof toggleSidebarHandler;
     readonly initSidebar: typeof initSidebarHandler;
     readonly downloadAttachment: typeof downloadAttachmentHandler;
+    readonly downloadMarkupFile: typeof downloadMarkupFileHandler;
+    readonly copyMarkupToClipboard: typeof copyMarkupToClipboardHandler;
 };

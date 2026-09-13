@@ -223,6 +223,11 @@ return [
         'content' => [
             'required' => 'レイアウトcontentが必要です。',
             'array' => 'レイアウトcontentは配列である必要があります。',
+            'markup_compile_failed' => 'レイアウトマークアップ(.g7.html)をコンパイルできませんでした: :detail',
+        ],
+        'markup' => [
+            'required' => '変換するマークアップ(.g7.html)が必要です。',
+            'string' => 'マークアップは文字列である必要があります。',
         ],
         'version' => [
             'required' => 'レイアウトバージョンが必要です。',
@@ -444,6 +449,7 @@ return [
         'content' => [
             'required' => '拡張コンテンツは必須です。',
             'array' => '拡張コンテンツは配列である必要があります。',
+            'markup_compile_failed' => '拡張マークアップ(.g7.html)をコンパイルできませんでした: :detail',
         ],
         'priority' => [
             'integer' => 'priority は整数である必要があります。',

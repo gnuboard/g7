@@ -29,14 +29,14 @@
     <api-call target="/api/identity/challenges/{{query.challenge_id}}" if="{{!!query.challenge_id}}" method="GET">
       <success>
         <set-state target="local" render_hint="{{response.data.render_hint ?? _local.render_hint}}" purpose="{{response.data.purpose ?? _local.purpose}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" maxAttempts="{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"/>
-        <action handler="redirect" if="{{(response.data.render_hint ?? _local.render_hint) === 'external_redirect' &amp;&amp; _local.redirect_url}}" url="{{_local.redirect_url}}"/>
+        <redirect if="{{(response.data.render_hint ?? _local.render_hint) === 'external_redirect' &amp;&amp; _local.redirect_url}}" url="{{_local.redirect_url}}"/>
       </success>
       <fail>
         <suppress/>
       </fail>
     </api-call>
     <!-- 외부 redirect 콜백 후 challenge_id 없이 진입한 경우 (render_hint=external_redirect 가 query 에서 직접 들어옴) — apiCall 우회 경로 보강. -->
-    <action handler="redirect" if="{{!query.challenge_id &amp;&amp; _local.render_hint === 'external_redirect' &amp;&amp; _local.redirect_url}}" url="{{_local.redirect_url}}"/>
+    <redirect if="{{!query.challenge_id &amp;&amp; _local.render_hint === 'external_redirect' &amp;&amp; _local.redirect_url}}" url="{{_local.redirect_url}}"/>
     <start-interval id="identity_challenge_tick" :intervalMs="1000">
       <actions>
         <set-state target="local" remainingSeconds="{{_local.expiresAt ? Math.max(0, Math.floor((new Date(_local.expiresAt).getTime() - Date.now()) / 1000)) : 0}}" resendCooldown="{{Math.max(0, (_local.resendCooldown ?? 0) - 1)}}"/>

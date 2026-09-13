@@ -42,7 +42,7 @@ final class ActionHandlerManifest
      */
     private const CORE_HANDLERS = [
         // nav
-        'navigate', 'navigateBack', 'navigateForward', 'openWindow', 'replaceUrl',
+        'navigate', 'navigateBack', 'navigateForward', 'openWindow', 'replaceUrl', 'redirect',
         // api / auth / data source
         'apiCall', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'logout', 'refetchDataSource', 'appendDataSource', 'updateDataSource',
         'ensureIdentityVerified', 'resolveIdentityChallenge',
@@ -168,6 +168,13 @@ final class ActionHandlerManifest
     /** @var array<string, string> camel 핸들러명 → kebab 태그 (역변환·제안용) */
     private array $handlerToTag;
 
+    /**
+     * 태그 ↔ 핸들러 두 방향 표를 `CORE_HANDLERS` 에서 **도출**합니다.
+     *
+     * 표를 손으로 적지 않는 이유는 그 목록이 낡기 때문이다 — 핸들러를 하나 더하면 두 표가 함께
+     * 따라와야 하는데, 손유지 표는 한쪽만 갱신돼 "태그는 있는데 해석이 안 되는" 상태를 만든다.
+     * 제어 핸들러는 전용 자식 문법을 가져 단순 태그 해석 대상이 아니므로 역방향 표에서만 뺀다.
+     */
     public function __construct()
     {
         $this->tagToHandler = [];
@@ -195,7 +202,7 @@ final class ActionHandlerManifest
     }
 
     /**
-     * 이름이 내장 44종 핸들러인지 판정합니다 (범용 `<action handler>` 검증용).
+     * 이름이 내장 47종 핸들러인지 판정합니다 (범용 `<action handler>` 검증용).
      *
      * @param  string  $handler  camel 핸들러명
      * @return bool 내장 핸들러이면 true

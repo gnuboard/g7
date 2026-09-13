@@ -1293,6 +1293,190 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * named action 의 `comment` 는 `<action name>` 래퍼 앞에 **한 번만** 찍히고, 프로덕션 컴파일이 받는다.
+     *
+     * [case:layout-markup-named-action-comment-duplicate] 종전에는 래퍼와 안쪽 핸들러 태그가 같은 배열을 읽어 같은 주석을 두 번 달았고,
+     * `DocumentCompiler` 를 직접 부르던 왕복 오라클은 통과시켰지만 설치·편집기가 타는 프로덕션 진입점
+     * (`LayoutMarkupCompiler`)은 `comment_not_attachable` 로 거부했다 — 코퍼스 12파일이 HTML 탭에서
+     * 저장 불가였다. 세 형태(단일 핸들러·sequence·actionRef) 모두 주석 1회 + 프로덕션 왕복을 잠근다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects named_action_comment_is_emitted_once_and_survives_production_compile
+     */
+    #[DataProvider('commentedNamedActionProvider')]
+    public function test_named_action_comment_is_emitted_once_and_round_trips_in_production(array $action): void
+    {
+        $json = [
+            'layout_name' => 'named_comment',
+            'version' => '1.0.0',
+            'named_actions' => [
+                'other' => ['handler' => 'setState', 'params' => ['target' => 'local', 'z' => '1']],
+                'probe' => $action,
+            ],
+            'components' => [['type' => 'basic', 'name' => 'Div']],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertSame(1, substr_count($markup, $action['comment']), "주석이 한 번만 찍혀야 합니다:
+{$markup}");
+        $this->assertStringNotContainsString('<json', $markup);
+
+        // 오라클도 프로덕션 진입점이다 — 주석 귀속 검사·강검증·lint 를 지난 뒤의 왕복 동등을 본다.
+        $result = (new LayoutMarkupRoundTrip)->verify($json, $this->registry);
+
+        $this->assertNull($result['error'], (string) $result['error']);
+        $this->assertTrue($result['ok'], "프로덕션 왕복 불일치:
+{$markup}");
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public static function commentedNamedActionProvider(): array
+    {
+        return [
+            'single handler' => [[
+                'comment' => '검색 실행 — 페이지는 1로',
+                'handler' => 'setState',
+                'params' => ['target' => 'local', 'page' => 1],
+            ]],
+            'sequence' => [[
+                'comment' => '검색 진입점 — 펼침 상태를 먼저 비운다',
+                'handler' => 'sequence',
+                'actions' => [
+                    ['handler' => 'setState', 'params' => ['target' => 'local', 'a' => '1']],
+                    ['handler' => 'setState', 'params' => ['target' => 'local', 'b' => '2']],
+                ],
+            ]],
+            'actionRef' => [[
+                'comment' => '다른 이름 액션으로 위임',
+                'actionRef' => 'other',
+            ]],
+        ];
+    }
+
+    /**
+     * 인라인 모달의 `layout_name`(설치가 조각을 인라인하며 붙인 이름)은 `<modal name>` 으로 되돌아간다 —
+     * 종전엔 `<json key="layout_name">` 탈출구였다(DB 6문서·10건).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects inline_modal_layout_name_round_trips_as_modal_name_attribute
+     */
+    public function test_inline_modal_layout_name_round_trips_as_name_attribute(): void
+    {
+        $json = [
+            'layout_name' => 'modal_name',
+            'version' => '1.0.0',
+            'components' => [['type' => 'basic', 'name' => 'Div']],
+            'modals' => [[
+                'comment' => '삭제 확인',
+                'layout_name' => 'partials/_confirm',
+                'id' => 'confirm',
+                'type' => 'composite',
+                'name' => 'Modal',
+                'props' => ['title' => '확인'],
+            ]],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString('<modal name="partials/_confirm">', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+
+        $result = (new LayoutMarkupRoundTrip)->verify($json, $this->registry);
+
+        $this->assertNull($result['error'], (string) $result['error']);
+        $this->assertTrue($result['ok'], "프로덕션 왕복 불일치:
+{$markup}");
+    }
+
+    /**
+     * 인라인 모달 본문의 `data_sources`(창이 열릴 때 받는 것)는 본문 루트의 `<data-source>` 자식으로
+     * 되돌아간다 — 종전엔 `<json key="data_sources">` 탈출구였다(설치본 7건).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects inline_modal_data_sources_round_trip_as_body_data_source_children
+     */
+    public function test_inline_modal_data_sources_round_trip_as_data_source_children(): void
+    {
+        $json = [
+            'layout_name' => 'modal_sources',
+            'version' => '1.0.0',
+            'components' => [['type' => 'basic', 'name' => 'Div']],
+            'modals' => [[
+                'comment' => '상세 창 — 열릴 때 단건을 받는다',
+                'layout_name' => 'partials/_detail',
+                'data_sources' => [[
+                    'id' => 'moduleDetail',
+                    'type' => 'api',
+                    'endpoint' => '/api/admin/modules/{{_global.selected.identifier}}',
+                    'auth_required' => true,
+                    'initGlobal' => 'selected',
+                ]],
+                'id' => 'detail',
+                'type' => 'composite',
+                'name' => 'Modal',
+                'props' => ['title' => '상세'],
+                'children' => [['type' => 'basic', 'name' => 'Div', 'text' => '본문']],
+            ]],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString('<modal name="partials/_detail">', $markup);
+        $this->assertStringContainsString('<data-source id="moduleDetail"', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+
+        $result = (new LayoutMarkupRoundTrip)->verify($json, $this->registry);
+
+        $this->assertNull($result['error'], (string) $result['error']);
+        $this->assertTrue($result['ok'], "프로덕션 왕복 불일치:\n{$markup}");
+    }
+
+    /**
+     * 설치가 조각을 **노드 자리에** 인라인하며 남긴 `layout_name` 은 `data-layout-name` 으로 되돌아간다 —
+     * 종전엔 `<json key="layout_name">` 탈출구였다(설치본 7건).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects inlined_node_layout_name_round_trips_as_data_layout_name
+     */
+    public function test_inlined_node_layout_name_round_trips_as_directive(): void
+    {
+        $json = [
+            'layout_name' => 'host',
+            'version' => '1.0.0',
+            'components' => [[
+                'type' => 'basic',
+                'name' => 'Div',
+                'children' => [[
+                    'comment' => '왼쪽 패널 — 설치가 조각을 여기에 펼쳤다',
+                    'layout_name' => 'panel_menu_list',
+                    'meta' => ['is_partial' => true],
+                    'id' => 'panel',
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'props' => ['className' => 'admin-card'],
+                ]],
+            ]],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString('data-layout-name="panel_menu_list"', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+
+        $result = (new LayoutMarkupRoundTrip)->verify($json, $this->registry);
+
+        $this->assertNull($result['error'], (string) $result['error']);
+        $this->assertTrue($result['ok'], "프로덕션 왕복 불일치:\n{$markup}");
+    }
+
+    /**
      * JSON 레이아웃이 `compile(decompile(json))` 후 (정규화 기준) 동일함을 단언합니다.
      *
      * @param  array<string, mixed>  $json  원본 JSON

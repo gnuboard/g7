@@ -95630,6 +95630,7 @@ _목록 응답: `data` 는 출처(모듈/플러그인)별 그룹 배열입니다
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | extensionId | path | string | 예 | — | 대상 extension의 식별자 |
+| with_markup | query | boolean | 아니오 | `1` | 코드 편집기 HTML 탭용 — `content` 를 `.g7.html` 로 역변환한 `content_markup`·`markup_escapes`·`markup_warnings`·`markup_compile_error` 를 함께 싣는다 |
 
 **요청 예시**
 
@@ -95650,6 +95651,7 @@ _단건 응답: `data` 객체의 필드 (LayoutExtensionResource + `host_layouts
 | template_id | integer | `1` | 소속 템플릿 ID |
 | extension_type | string | `overlay` | 확장 방식 (`overlay` \| `extension_point`) |
 | target_name | string | `main` | 대상 레이아웃명 또는 확장점 이름 |
+| fragment_key | string\|null | `admin-user-currency-field` | 조각 식별자 (소스 파일 기본 이름) — 같은 대상에 조각이 둘일 때 행을 가른다 |
 | source_type | string | `module` | 출처 종류 (`module` \| `plugin` \| `template`) |
 | source_identifier | string | `sirsoft-ecommerce` | 출처 확장 식별자 |
 | source_label | string | `sirsoft-ecommerce` | 출처 표시명 (index 응답과 달리 라벨 미부착 시 식별자로 폴백) |
@@ -95731,7 +95733,8 @@ _단건 응답: `data` 객체의 필드 (LayoutExtensionResource + `host_layouts
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | extensionId | path | string | 예 | — | 대상 extension의 식별자 |
 | expected_lock_version | body | integer | 예 | min 0 | 낙관적 잠금 버전 (동시 편집 충돌 감지) |
-| content | body | array | 예 | — | 본문 내용 |
+| format | body | string | 아니오 | `json`, `markup` | 본문 형식. `markup` 이면 `content` 는 `.g7.html` 문자열이고 서버가 검증 전에 프로덕션 컴파일해 JSON 으로 바꾼다 (기본 `json`) |
+| content | body | array | 예 | — | 본문 내용 (`format=markup` 이면 `.g7.html` 문자열) |
 | priority | body | integer | 아니오 | min 0, max 9999 | 우선순위 (작을수록 우선) |
 | content.priority | body | integer | 아니오 | min 0, max 9999 | 우선순위 (작을수록 우선) |
 | content.data_sources | body | array | 아니오 | — | API 데이터 소스 정의 배열 (id/endpoint/method) |
@@ -95850,6 +95853,7 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutExtensionResource)._
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | extensionId | path | string | 예 | — | 대상 extension의 식별자 |
+| format | body | string | 아니오 | `json`, `markup` | 본문 형식 (`markup` 이면 `content` 는 `.g7.html` 문자열 — 검증 전 프로덕션 컴파일) |
 | content | body | array | 예 | — | 본문 내용 |
 | preview_layout | body | string | 아니오 | max 255 | 미리보기에 사용할 대표 레이아웃명 (extension_point 타입 시 필수, overlay 타입은 target_layout 자체가 대표라 생략 가능) |
 
@@ -95881,6 +95885,7 @@ _단건 응답: `data` 객체의 필드._
 | token | string | `9f2c1a4e8b7d…` | 미리보기 토큰 (임시 저장된 확장 content 를 식별) |
 | preview_url | string | `/preview/9f2c1a4e8b7d…` | 미리보기 페이지 경로 (새 탭으로 열어 확인) |
 | expires_at | string | `2026-07-14T11:00:00+09:00` | 미리보기 만료 일시 (ISO 8601) |
+| markup_warnings | array | `[]` | `format=markup` 컴파일이 낸 lint 경고 `[{code,message,line,column}]` (JSON 본문이면 빈 배열) |
 
 **응답 예시**
 
@@ -95891,7 +95896,8 @@ _단건 응답: `data` 객체의 필드._
     "data": {
         "token": "9f2c1a4e8b7d3c5f",
         "preview_url": "/preview/9f2c1a4e8b7d3c5f",
-        "expires_at": "2026-07-14T11:00:00+09:00"
+        "expires_at": "2026-07-14T11:00:00+09:00",
+        "markup_warnings": []
     }
 }
 ```
@@ -95909,6 +95915,70 @@ _단건 응답: `data` 객체의 필드._
 <!-- @generated:end -->
 
 **설명** 편집 중인 레이아웃 확장 content를 임시 저장하고 대표 레이아웃에 적용한 미리보기 URL/토큰을 반환합니다. overlay 타입은 target_name이, extension_point 타입은 `preview_layout` 파라미터가 대표 레이아웃이 되며, 미지정 시 422를 반환합니다(LayoutPreviewService::createExtensionPreview). `core.templates.read` 권한이 필요합니다.
+
+
+### POST /api/admin/templates/{templateName}/layout-extensions/{extensionId}/markup-compile
+<!-- @generated:start:api.admin.templates.layout-extensions.markup-compile -->
+- **라우트명**: `api.admin.templates.layout-extensions.markup-compile`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutExtensionController@compileMarkup`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
+| extensionId | path | string | 예 | — | 대상 extension의 식별자 (소속 정보로 lint 문맥을 정한다) |
+| markup | body | string | 예 | — | 변환할 `.g7.html` 소스 (`<extension>` 문서) |
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/{templateName}/layout-extensions/{extensionId}/markup-compile HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "markup": "<extension target-layout=\"main\">\n  <inject target-id=\"root\" position=\"append_child\">\n    <div/>\n  </inject>\n</extension>\n"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| content | string | `"{\n    \"target_layout\": \"main\"\n}"` | 프로덕션 컴파일 산출 JSON (pretty-print 문자열) |
+| warnings | array | `[]` | lint 경고 `[{code,message,line,column}]` |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "content": "{\n    \"target_layout\": \"main\",\n    \"injections\": []\n}",
+        "warnings": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 404 | Not Found | 템플릿/확장이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
+| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치 |
+
+<!-- @generated:end -->
+
+**설명** 확장 조각의 HTML 탭 소스를 저장 없이 프로덕션 컴파일합니다. 레이아웃 쪽 `markup-compile` 과 대칭이며, 조각은 붙어 있는 템플릿의 `components.json` 으로 컴파일됩니다.
 
 
 ### GET /api/admin/templates/{templateName}/layout-extensions/{extensionId}/versions
@@ -96234,6 +96304,187 @@ Authorization: Bearer {YOUR_TOKEN}
 **설명** 특정 템플릿의 모든 레이아웃 목록을 조회합니다. 각 레이아웃에 이름 → 라우트 path 매핑을 부착해, 코드 편집기가 파일 선택 시 `?route=` URL 동기화나 위지윅에서 넘어온 라우트로 파일을 복원할 수 있게 합니다(LayoutService::getLayoutListByTemplateId). 응답에는 파일트리가 실제로 그리는 필드(이름·설명·라우트 path·크기·수정일시·업데이트 여부)만 담기고, **레이아웃 본문(`content`)과 파싱된 블록(`components`·`data_sources`·`metadata`)은 제외됩니다** — 목록은 페이지네이션 없이 템플릿의 전 레이아웃을 반환하므로 본문을 함께 실으면 편집기 진입만으로 모든 레이아웃 JSON 전문이 전송됩니다. 설명·크기는 조회 계층이 본문에서 파생값만 뽑아 넘기며 본문 자체는 응답에 남지 않습니다. 본문은 단건 조회(`GET /api/admin/templates/{template}/layouts/{layout}`)가 공급합니다. `core.templates.read` 권한이 필요합니다.
 
 
+### POST /api/admin/templates/{templateName}/layouts
+- **라우트명**: `api.admin.templates.layouts.store`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@store`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 **파일**(= `template_layouts` 행)을 새로 만듭니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
+| name | body | string | 예 | `^[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-]+)*$`, 최대 255자 | 레이아웃 이름. 슬래시는 폴더 구분이며 확장자는 붙이지 않는다 |
+| content | body | string | 아니오 | `.g7.html` 마크업 | 본문. **비우면 서버가 최소 골격을 채운다** |
+
+이름은 **세그먼트 단위**로 판정합니다 — 빈 세그먼트·`.`·`..`·선행/후행 슬래시가 구조적으로
+불가능합니다. 문자열 포함 검사(`str_contains('..')`)는 정상 이름을 막으면서 인코딩된 탈출을
+놓치므로 쓰지 않습니다(`App\Rules\SafeCustomAssetPath` 와 같은 방식).
+
+`content` 를 비우면 **이름과 무관하게** 문서 골격이 들어갑니다. 이름의 `partials/`·선행 `_` 는
+편집기 트리에서 폴더를 만드는 문자열일 뿐이고, DB 행은 언제나 하나의 문서입니다 — `<partial>` 로
+만들면 산출이 노드라 저장 경로의 문서 규칙을 지날 수 없습니다.
+
+```html
+<layout name="{name}" version="1.0.0">
+  <div></div>
+</layout>
+```
+
+빈 문자열을 그대로 저장하지 않는 이유: 빈 본문은 컴파일 오류라 파일을 만들자마자 빨간 줄이 뜹니다.
+골격은 `<slot>` 을 쓰지 않습니다 — 슬롯은 상속 레이아웃이 부모의 자리를 채우는 문법이라 독립
+문서에 쓰면 `components` 가 비어 구조 검증에서 막힙니다.
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/sirsoft-admin_basic/layouts HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{ "name": "partials/admin_user_list/_modal_form" }
+```
+
+**응답**
+
+| 상태 | 조건 |
+| --- | --- |
+| 201 | 생성됨 — `data` 는 `LayoutResource` |
+| 422 | 이름 규칙 위반 (`errors.name`) · 중복 (`errors.reason = layouts.errors.name_taken`) · 마크업 컴파일 오류 (`errors.compile_error`) |
+| 403 | `core.templates.layouts.edit` 미보유 |
+| 404 | 템플릿 없음 |
+
+---
+
+### GET /api/admin/templates/{templateName}/layouts/search
+- **라우트명**: `api.admin.templates.layouts.search`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@search`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+파일명·본문에서 검색어를 찾습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 |
+| q | query | string | 예 | 2~200자 | 검색어 (대소문자 무시, 정규식 미지원) |
+| scope | query | string | 아니오 | `name` \| `content` \| `both` (기본 `both`) | 검색 범위 |
+| limit | query | int | 아니오 | 1~100 (기본 100) | 돌려줄 파일 수 상한 |
+
+**검색 대상은 역변환한 `.g7.html` 마크업입니다.** DB 에는 JSON 만 있지만 사용자가 편집기에서 보는
+것은 마크업이므로, 줄 번호가 편집기와 같은 좌표계여야 결과를 눌러 그 줄로 갈 수 있습니다.
+
+역변환은 비싸므로 `layout:markup:{id}:{lock_version}` 으로 캐시합니다. `lock_version` 이 키에
+들어가므로 **저장하면 그 파일만 자동으로 무효화**되고, 별도 무효화 훅이나 컬럼이 필요 없습니다.
+
+실측(2026-09-12 · `sirsoft-admin_basic` · 레이아웃 82 + 조각 30):
+
+| 조건 | 소요 |
+| --- | --- |
+| `scope=both` 첫 조회(캐시 비움) | 3,136 ms |
+| `scope=both` 캐시 후 | 92 ms |
+| `scope=name` | 14 ms |
+
+그래서 화면은 **파일명 검색을 서버에 맡기지 않습니다** — 트리가 144개 이름을 이미 들고 있어
+거르기·강조를 클라이언트에서 즉시 처리하고, 서버에는 `scope=content` 만 더 긴 debounce 로 보냅니다.
+
+상한: 파일 100건, 파일당 매치 20건, `preview` 200자.
+
+**응답 예시**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "key": "layout:partials/admin_user_list/_modal_form",
+      "kind": "layout",
+      "name": "partials/admin_user_list/_modal_form",
+      "name_matched": false,
+      "match_count": 3,
+      "lines": [{ "line": 42, "column": 11, "preview": "<input name=\"email\" …" }]
+    }
+  ]
+}
+```
+
+| 상태 | 조건 |
+| --- | --- |
+| 200 | 검색 결과 (0건이면 빈 배열) |
+| 422 | `q` 가 2자 미만·200자 초과 · `scope` 가 허용값 밖 |
+| 403 | `core.templates.read` 미보유 |
+
+---
+
+### PATCH /api/admin/templates/{templateName}/layouts/{name}/rename
+- **라우트명**: `api.admin.templates.layouts.rename`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@rename`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 이름을 바꿉니다(= 이동). **새 행을 만들지 않고** 같은 행의 `name` 을 갱신하므로
+판본 이력이 그대로 승계됩니다 — 복사 후 삭제로 구현하면 이력이 이름을 바꾼 지점에서 끊깁니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| name | path | string | 예 | 현재 이름 |
+| new_name | body | string | 예 | 새 이름 (생성과 같은 규칙) |
+| expected_lock_version | body | int | 예 | 받아 둔 `lock_version` — 낙관적 잠금 |
+
+`expected_lock_version` 을 의무화하는 이유: 이름변경은 본문의 `layout_name` 까지 함께 옮기므로
+내용을 건드리는 연산입니다. 다른 창에서 저장이 일어난 뒤 이름을 바꾸면 그 저장분을 못 본 채
+덮어쓰게 됩니다.
+
+**차단 조건**
+
+| 사유 | 상태 | `errors.reason` |
+| --- | --- | --- |
+| 모듈·플러그인이 제공한 원본 | 422 | `layouts.errors.rename_blocked_source_type` |
+| 다른 레이아웃이 `extends`·`partial` 로 참조 | 422 | `layouts.errors.rename_blocked_by_reference` |
+| 대상 이름이 이미 있음 | 409 | `layouts.errors.name_taken` |
+| 잠금 번호 불일치 | 409 | `exceptions.concurrent_modification` |
+
+참조가 걸린 경우 `errors.references` 에 `{name, kind, line}` 목록이 실립니다.
+**참조를 자동으로 고쳐 주지 않습니다** — 표현식 문자열까지 치환하면 되돌릴 수 없는 사고가 됩니다.
+
+---
+
+### DELETE /api/admin/templates/{templateName}/layouts/{name}
+- **라우트명**: `api.admin.templates.layouts.destroy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@destroy`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 파일을 **soft delete** 합니다 — 행은 남고 조회에서만 빠지므로 오삭제를 되돌릴 수 있습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| name | path | string | 예 | 레이아웃 이름 |
+| confirm | query | bool | 조건부 | 라우트가 걸린 레이아웃을 지울 때 필요 |
+
+**차단 조건**
+
+| 사유 | 상태 | `errors.reason` |
+| --- | --- | --- |
+| 모듈·플러그인이 제공한 원본 | 422 | `layouts.errors.delete_blocked_source_type` |
+| 다른 레이아웃이 `extends`·`partial` 로 참조 | 422 | `layouts.errors.delete_blocked_by_reference` |
+| 라우트가 걸려 있고 `confirm` 없음 | 422 | `layouts.errors.delete_requires_confirmation` |
+
+라우트가 걸린 레이아웃은 **막지 않습니다** — 지우는 것이 정당한 경우가 있습니다. 다만 그 화면이
+곧바로 열리지 않게 된다는 사실을 모른 채 지나갈 수는 없게 한 단계를 더 둡니다.
+
+참조 사전 검사는 저장된 JSON 에서 **마지막 세그먼트**로 거릅니다. `json_encode` 기본 동작이
+슬래시를 `\/` 로 이스케이프하므로 경로 전체로 찾으면 언제나 빗나가 차단이 통째로 무력해집니다
+(실측으로 잡힌 결함). 값이 통째로 일치할 때만 참조로 세므로 `_modal_form` 이
+`_modal_form_extra` 를 참조로 오인하지 않습니다.
+
+---
+
 ### GET /api/admin/templates/{templateName}/layouts/{name}
 <!-- @generated:start:api.admin.templates.layouts.show -->
 - **라우트명**: `api.admin.templates.layouts.show`
@@ -96246,6 +96497,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | name | path | string | 예 | — | 대상의 이름/명칭 |
+| with_markup | query | boolean | 아니오 | `1` | 코드 편집기 HTML 탭용 — `content` 를 `.g7.html` 로 역변환한 `content_markup`·`markup_escapes`·`markup_warnings`·`markup_compile_error` 를 함께 싣는다. 생략 시 기본 응답 무변경 |
 
 **요청 예시**
 
@@ -96277,6 +96529,10 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | has_update | boolean | `false` | 템플릿 파일 대비 갱신 필요 여부 (현재 항상 false) |
 | lock_version | integer | `0` | 낙관적 잠금 버전 |
 | current_version | integer\|null | `null` | 현재 저장 버전 번호 (상세 응답에서는 null) |
+| content_markup | string | `"<layout name=\"main\" version=\"1.0.0\">\n  <div/>\n</layout>\n"` | (`with_markup=1`) content 를 역변환한 `.g7.html` 소스 — 코드 편집기 HTML 탭의 정본 |
+| markup_escapes | array | `[]` | (`with_markup=1`) 첫 급부 문법이 표현하지 못해 `<json>` 탈출구로 나간 키 목록 |
+| markup_warnings | array | `[{"code":"unregistered_handler","message":"…","line":12,"column":3}]` | (`with_markup=1`) 역변환 소스를 되컴파일했을 때의 lint 경고 (편집기 노란 마커) |
+| markup_compile_error | object\|null | `null` | (`with_markup=1`) 되컴파일이 거부되면 `{code,message,line,column}` — 이 행은 HTML 탭에서 고치기 전엔 저장이 막힌다 |
 | created_at | string | `2026-07-14T10:00:00+09:00` | 생성 일시 |
 | updated_at | string | `2026-07-14T10:00:00+09:00` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true}` | 현재 사용자의 수행 가능 작업 맵 |
@@ -96339,7 +96595,8 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | name | path | string | 예 | — | 대상의 이름/명칭 |
 | expected_lock_version | body | integer | 예 | min 0 | 낙관적 잠금 버전 (동시 편집 충돌 감지) |
-| content | body | array | 예 | — | 본문 내용 |
+| format | body | string | 아니오 | `json`, `markup` | 본문 형식. `markup` 이면 `content` 는 `.g7.html` 문자열이고 서버가 검증 전에 프로덕션 컴파일해 JSON 으로 바꾼다 (기본 `json`) |
+| content | body | array | 예 | — | 본문 내용 (`format=markup` 이면 `.g7.html` 문자열) |
 | content.version | body | string | 예 | — | 레이아웃 JSON 스키마 버전 (예: `1.0`) |
 | content.layout_name | body | string | 예 | max 255 | content.layout 이름 (식별자) |
 | content.extends | body | string | 아니오 | — | 상속할 베이스 레이아웃 이름 |
@@ -96628,6 +96885,7 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutResource)._
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | name | path | string | 예 | — | 대상의 이름/명칭 |
+| format | body | string | 아니오 | `json`, `markup` | 본문 형식 (`markup` 이면 `content` 는 `.g7.html` 문자열 — 검증 전 프로덕션 컴파일) |
 | content | body | array | 예 | — | 본문 내용 |
 
 **요청 예시**
@@ -96655,6 +96913,7 @@ _단건 응답: `data` 객체의 필드._
 | token | string | `9f2c1a4e8b7d3c5f` | 미리보기 토큰 (임시 저장된 레이아웃 content 를 식별) |
 | preview_url | string | `/preview/9f2c1a4e8b7d3c5f` | 미리보기 페이지 경로 (새 탭으로 열어 확인) |
 | expires_at | string | `2026-07-14T11:00:00+09:00` | 미리보기 만료 일시 (ISO 8601) |
+| markup_warnings | array | `[]` | `format=markup` 컴파일이 낸 lint 경고 `[{code,message,line,column}]` (JSON 본문이면 빈 배열) |
 
 **응답 예시**
 
@@ -96665,7 +96924,8 @@ _단건 응답: `data` 객체의 필드._
     "data": {
         "token": "9f2c1a4e8b7d3c5f",
         "preview_url": "/preview/9f2c1a4e8b7d3c5f",
-        "expires_at": "2026-07-14T11:00:00+09:00"
+        "expires_at": "2026-07-14T11:00:00+09:00",
+        "markup_warnings": []
     }
 }
 ```
@@ -96677,12 +96937,76 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `format=markup` 컴파일 실패면 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 이 함께 실린다 |
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
 
 **설명** 편집 중인 레이아웃 content를 임시 저장하고 미리보기 URL/토큰을 반환합니다(LayoutPreviewService::createPreview). 토큰은 만료 시각을 함께 반환합니다. `core.templates.read` 권한이 필요합니다.
+
+
+### POST /api/admin/templates/{templateName}/layouts/{name}/markup-compile
+<!-- @generated:start:api.admin.templates.layouts.markup-compile -->
+- **라우트명**: `api.admin.templates.layouts.markup-compile`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@compileMarkup`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
+| name | path | string | 예 | — | 대상 레이아웃 이름 (소속 정보로 lint 문맥을 정한다) |
+| markup | body | string | 예 | — | 변환할 `.g7.html` 소스 |
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/{templateName}/layouts/{name}/markup-compile HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "markup": "<layout name=\"main\" version=\"1.0.0\">\n  <div/>\n</layout>\n"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| content | string | `"{\n    \"layout_name\": \"main\"\n}"` | 프로덕션 컴파일 산출 JSON (pretty-print 문자열) — 코드 편집기 JSON 읽기 전용 탭 본문 |
+| warnings | array | `[]` | lint 경고 `[{code,message,line,column}]` (컴파일을 막지 않는다) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "content": "{\n    \"layout_name\": \"main\",\n    \"version\": \"1.0.0\",\n    \"components\": [\n        {\n            \"type\": \"basic\",\n            \"name\": \"Div\"\n        }\n    ]\n}",
+        "warnings": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 404 | Not Found | 대상 템플릿 또는 해당 이름의 레이아웃이 없는 경우 |
+| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치 |
+
+<!-- @generated:end -->
+
+**설명** 코드 편집기 HTML 탭의 소스를 저장 없이 프로덕션 컴파일합니다(LayoutMarkupService::toJson — 설치·저장과 같은 사슬). 타이핑이 멈춘 뒤 1초 유휴에 호출해 JSON 읽기 전용 탭을 갱신하며, 오류·경고는 편집기 마커로 표시됩니다. DB 를 건드리지 않으므로 `core.templates.read` 권한으로 충분합니다.
 
 
 ### GET /api/admin/templates/{templateName}/layouts/{name}/versions

@@ -100,4 +100,39 @@ class LayoutMarkupCompilerTest extends LayoutMarkupTestCase
 
         $this->assertSame([], $result->warnings);
     }
+
+    /**
+     * `<modal name>` 은 인라인 모달의 `layout_name` 이다 — 설치가 조각을 인라인하며 붙이는 이름의 표현.
+     *
+     * @scenario compile_unit=facade,source_health=valid
+     *
+     * @effects inline_modal_name_compiles_to_layout_name
+     */
+    public function test_inline_modal_name_compiles_to_layout_name(): void
+    {
+        $result = $this->compiler->compile(
+            '<layout name="m" version="1.0.0"><div class="x"/><modal name="partials/_confirm"><modal data-ref="confirm" title="확인"/></modal></layout>',
+        );
+
+        $this->assertSame('partials/_confirm', $result->json['modals'][0]['layout_name']);
+        $this->assertSame('Modal', $result->json['modals'][0]['name']);
+        $this->assertArrayNotHasKey('layout_name', $result->json['modals'][0]['meta'] ?? []);
+    }
+
+    /**
+     * @scenario compile_unit=facade,source_health=invalid
+     *
+     * @effects modal_src_rejects_name_attribute
+     */
+    public function test_modal_src_with_name_is_rejected(): void
+    {
+        try {
+            $this->compiler->compile(
+                '<layout name="m" version="1.0.0"><div class="x"/><modal src="partials/_confirm.g7.html" name="partials/_confirm"/></layout>',
+            );
+            $this->fail('CompileError 를 기대했으나 통과했습니다.');
+        } catch (CompileError $error) {
+            $this->assertSame(LayoutMarkupErrorCode::ModalNameWithSrc, $error->getErrorCode());
+        }
+    }
 }

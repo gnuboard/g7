@@ -26,13 +26,14 @@ final class ActionMarkupDecompiler
     private const CONTROL_HANDLERS = ['switch', 'conditions', 'sequence', 'parallel'];
 
     /**
-     * 코어 단순 핸들러 40종 → kebab 태그. 이 목록 밖(템플릿·확장·점 네임스페이스)은 `<action handler>`.
+     * 코어 단순 핸들러 41종 → kebab 태그. 이 목록 밖(템플릿·확장·점 네임스페이스)은 `<action handler>`.
      *
      * @var array<string, string>
      */
     private const HANDLER_TAGS = [
         'navigate' => 'navigate', 'navigateBack' => 'navigate-back', 'navigateForward' => 'navigate-forward',
-        'openWindow' => 'open-window', 'replaceUrl' => 'replace-url', 'apiCall' => 'api-call',
+        'openWindow' => 'open-window', 'replaceUrl' => 'replace-url', 'redirect' => 'redirect',
+        'apiCall' => 'api-call',
         'login' => 'login', 'logout' => 'logout', 'refetchDataSource' => 'refetch-data-source',
         'appendDataSource' => 'append-data-source', 'updateDataSource' => 'update-data-source',
         'ensureIdentityVerified' => 'ensure-identity-verified', 'resolveIdentityChallenge' => 'resolve-identity-challenge',

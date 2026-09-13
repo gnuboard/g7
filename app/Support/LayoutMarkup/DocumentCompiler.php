@@ -145,6 +145,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $root  `<layout>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 알 수 없는 속성인 경우
      */
@@ -169,6 +170,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $child  직속 자식
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -377,6 +379,7 @@ final class DocumentCompiler
      * @param  string  $tag  태그명 (오류 메시지용)
      * @param  array<string, mixed>  $source  data_sources 항목 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -404,6 +407,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $child  자식 요소
      * @param  array<string, mixed>  $source  data_sources 항목 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -484,6 +488,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $child  `<init-*>` 요소
      * @param  array<string, mixed>  $source  data_sources 항목 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -504,6 +509,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  `<computed>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 이름이 없거나 중복인 경우
      */
@@ -524,6 +530,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  `<init-*>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -588,6 +595,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  `<action name>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 이름이 없거나 중복이거나 표기 규칙을 벗어난 경우
      */
@@ -831,6 +839,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  `<slot name>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 이름이 없거나 중복인 경우
      */
@@ -849,7 +858,10 @@ final class DocumentCompiler
     }
 
     /**
-     * `<modal src>` 를 modals 참조로, `<modal>` 본문을 인라인 노드로 컴파일합니다.
+     * `<modal src>` 를 modals 참조로, `<modal [name]>` 본문을 인라인 노드(+`layout_name`·`data_sources`)로 컴파일합니다.
+     *
+     * 본문 루트의 `<data-source>` 자식은 노드가 아니라 모달의 `data_sources` 키가 된다 — 조각 루트와
+     * 같은 규약이라 분리기({@see compilePartialNode()})를 공유한다.
      *
      * @param  MarkupElement  $element  `<modal>` 요소
      * @param  string|null  $path  소스 파일 경로
@@ -860,10 +872,16 @@ final class DocumentCompiler
     private function compileModal(MarkupElement $element, ?string $path): array
     {
         $src = $element->attribute('src');
+        $name = $element->attribute('name');
 
         if ($src !== null) {
             if ($element->children !== []) {
                 throw $this->error($element, LayoutMarkupErrorCode::ModalSrcWithBody, $path);
+            }
+
+            // `name` 은 인라인 항목의 `layout_name` 표현이다 — 참조 항목은 조각 파일이 이름을 갖는다.
+            if ($name !== null) {
+                throw $this->error($element, LayoutMarkupErrorCode::ModalNameWithSrc, $path);
             }
 
             $reference = (string) $src->value;
@@ -887,13 +905,27 @@ final class DocumentCompiler
             throw $this->error($element, LayoutMarkupErrorCode::ModalInlineNotSingleNode, $path);
         }
 
-        $node = $this->nodes->compile($element->children[0], $path);
+        // 모달 본문 루트는 `<data-source>`(창이 열릴 때 받는 것)를 얹을 수 있다 — 조각 루트와 같은
+        // 규약이라 같은 분리기를 쓴다. 설치가 `<modal src>` 조각을 인라인하면 그 조각의 data_sources 가
+        // 이 자리로 내려오므로(DB 행), 편집기가 연 문서를 소스로 되돌릴 자리가 필요하다.
+        [$node, $dataSources] = $this->compilePartialNode($element->children[0], $path);
 
         // 인라인 항목은 래퍼와 안쪽 노드가 같은 하나의 모달이라, 래퍼에 달린 주석을 노드로 올린다
         // (문서 봉투 주석을 루트 노드로 올리는 것과 같은 관용구). 둘 다 달렸으면 올릴 자리가 없고,
         // 그 경우는 파사드의 주석 귀속 검사가 거부한다 — 여기서 조용히 하나를 버리지 않는다.
         if ($element->comment !== null && ! isset($node['comment'])) {
             $node = ['comment' => $element->comment] + $node;
+        }
+
+        // `<modal name>` 은 인라인 항목의 `layout_name` 이다 — 설치가 `<modal src>` 조각을 인라인할 때
+        // 그 조각의 이름을 이 키로 남기므로(DB 행), 편집기가 연 문서를 다시 소스로 되돌릴 자리가 있어야
+        // 한다. `<partial name>` 이 최상위 `layout_name` 으로 접히는 것과 같은 규율이고 meta 로 흘리지 않는다.
+        if ($name !== null) {
+            $node['layout_name'] = (string) $name->value;
+        }
+
+        if ($dataSources !== []) {
+            $node['data_sources'] = $dataSources;
         }
 
         return $node;
@@ -1056,6 +1088,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $root  `<extension>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 알 수 없는 속성인 경우
      */
@@ -1376,6 +1409,18 @@ final class DocumentCompiler
         return $this->values->attributeMap($element, $path);
     }
 
+    /**
+     * 요소 본문에 적힌 JSON 리터럴을 값으로 읽습니다 (`<json>` 계열 탈출구).
+     *
+     * 파싱 실패는 **예외로 세운다** — 조용히 `null` 을 돌려주면 그 자리가 빈 채로 컴파일돼
+     * 화면에서야 값이 없는 것을 알게 된다. 본문이 문자 그대로 `null` 인 경우만 정상 통과다.
+     *
+     * @param  MarkupElement  $element  본문에 JSON 을 담은 요소
+     * @param  string|null  $path  소스 파일 경로 (오류 메시지용)
+     * @return mixed 파싱된 값
+     *
+     * @throws CompileError 본문이 올바른 JSON 이 아닐 때
+     */
     private function decodeJsonBody(MarkupElement $element, ?string $path): mixed
     {
         $body = trim((string) ($element->text ?? ''));
@@ -1444,6 +1489,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  섹션 요소
      * @param  array<string, mixed>  $doc  문서
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 이미 온 섹션인 경우
      */
@@ -1469,6 +1515,7 @@ final class DocumentCompiler
      * @param  array<string, mixed>  $source  data_sources 항목
      * @param  string  $key  data_sources 키
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 이미 채워진 키인 경우
      */

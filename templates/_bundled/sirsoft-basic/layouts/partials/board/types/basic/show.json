@@ -545,7 +545,7 @@
                             },
                             "children": [
                                 {
-                                    "comment": "블라인드 사유 - trigger_type에 따라 동적 표시",
+                                    "comment": "블라인드 사유 - trigger_type에 따라 동적 표시.\n               안쪽은 `<span>` 이다 — `<p>` 안의 `<p>` 는 브라우저가 바깥 문단을 **자동으로 닫아** 아이콘과\n               문구가 형제 문단으로 갈라진다(클래스가 통째로 복제돼 있던 것이 복붙 흔적). 바깥 문단이\n               이미 같은 클래스를 갖고 있어 안쪽에서 되풀이할 것도 없다.",
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
@@ -562,10 +562,7 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "P",
-                                            "props": {
-                                                "className": "text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2"
-                                            },
+                                            "name": "Span",
                                             "text": "$t:board.blinded_post"
                                         }
                                     ]

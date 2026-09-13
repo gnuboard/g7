@@ -22,6 +22,10 @@ final class NodeMarkupDecompiler
     private const DIRECTIVE_ATTRS = [
         'id' => 'data-ref', 'slot' => 'data-slot', 'slotOrder' => 'data-slot-order',
         'dataKey' => 'data-key', 'debounce' => 'data-debounce',
+        // 설치가 조각을 노드 자리에 인라인하며 남긴 이름. 문서 루트(`<layout name>`)·조각 루트
+        // (`<partial name>`)·모달(`<modal name>`)은 각자의 봉투가 먼저 이 키를 걷어 가므로,
+        // 여기 닿는 것은 **인라인된 노드**뿐이다.
+        'layout_name' => 'data-layout-name',
     ];
 
     /** props 키 별칭 (JSON props → 마크업 속성명) */
@@ -35,7 +39,7 @@ final class NodeMarkupDecompiler
     private const RESERVED_PROP_NAMES = [
         'condition', 'conditions', 'iteration', 'comment', 'classMap', 'blur_until_loaded',
         'isolatedState', 'isolatedScopeId', 'dataKey', 'trackChanges', 'debounce', 'slotOrder',
-        'is', 'if', 'each', 'ref',
+        'layout_name', 'is', 'if', 'each', 'ref',
     ];
 
     /** props 임베딩 hoist 키 → 노드 배열 래퍼 태그 (자식이 노드 배열) */
@@ -347,7 +351,6 @@ final class NodeMarkupDecompiler
      * @param  array<string, mixed>  $node  노드 JSON
      * @param  array<int, MarkupAttribute>  $attributes  속성 (참조)
      * @param  array<int, MarkupElement>  $children  자식 (참조 — blur 객체형은 구조 자식)
-     *
      * @return void
      */
     private function applyDirectives(array $node, array &$attributes, array &$children): void
@@ -406,7 +409,6 @@ final class NodeMarkupDecompiler
      * @param  mixed  $blur  blur 값
      * @param  array<int, MarkupAttribute>  $attributes  속성 (참조)
      * @param  array<int, MarkupElement>  $children  자식 (참조)
-     *
      * @return void
      */
     private function applyBlur(mixed $blur, array &$attributes, array &$children): void
@@ -448,7 +450,6 @@ final class NodeMarkupDecompiler
      *
      * @param  array<string, mixed>  $node  노드 JSON
      * @param  array<int, MarkupElement>  $children  자식 (참조)
-     *
      * @return void
      */
     private function applyStructural(array $node, array &$children): void
@@ -619,7 +620,6 @@ final class NodeMarkupDecompiler
      * @param  bool  $isVoid  소유 노드가 void 태그인지 (객체 props 를 `<prop>` 대신 타입 속성으로)
      * @param  array<int, MarkupAttribute>  $attributes  속성 (참조)
      * @param  array<int, MarkupElement>  $children  자식 (참조)
-     *
      * @return void
      */
     private function applyProps(array $props, string $componentName, bool $isVoid, array &$attributes, array &$children): void
