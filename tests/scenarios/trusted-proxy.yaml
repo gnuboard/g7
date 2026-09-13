@@ -101,6 +101,7 @@ test_files:
   - tests/Unit/Support/TrustedProxySettingTest.php
   - tests/Feature/Settings/TrustedProxySettingsTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-trusted-proxy-edit.test.ts
+  - tests/Playwright/specs/admin/settings-trusted-proxy-edit.spec.ts
 
 notes: |
   `**` 는 Laravel 내장 TrustProxies 에서 `*` 과 **같은 코드 경로**를 탄다

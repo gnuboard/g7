@@ -118,6 +118,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
 | 왕복(`apiCall`·네트워크를 타는 등록 핸들러)이 걸린 버튼을 진행 표시 없이 둠 | 진행 플래그 하나를 두고 **셋을 함께** 건다 — `props.disabled`, 첫 children 에 `Icon name="spinner"`(`if` = 그 플래그), 액션 체인의 `setState … true` → `onSuccess`/`onError` **양쪽**에서 `false` | 왕복 중 화면이 그대로면 운영자는 눌리지 않은 줄 알고 다시 누른다. 되돌릴 수 없는 조작에서는 그 연타가 곧 사고다(번호 재발급이 두 번 돌면 방금 등록한 주소가 그 자리에서 무효가 된다). 등록 핸들러도 `onSuccess`/`onError` 를 받으므로 플래그를 되돌릴 자리가 있다 |
 | 진행 중에 버튼을 `if` 로 **감춰서** 진행을 알림 | 자리를 지킨 채 비활성·스피너로 알린다 | 사라지는 것은 「눌렸다」가 아니라 「없어졌다」로 읽힌다 — 같은 자리에 다른 버튼이 있으면 그것을 잘못 누른다 |
+| 폼 안에서 값을 `setState` 로 직접 쓰는 라디오 묶음에 `props.name` 만 주고 `autoBinding` 을 켜 둠 | `name` 은 유지하고 `"autoBinding": false` 를 함께 준다 — `checked` 는 표현식으로 통제한다 ([트러블슈팅 사례 4](../../../.agents/docs/frontend/troubleshooting-components-form.md#사례-4-datakey-자동-바인딩이-라디오체크박스의-value를-덮어쓰는-문제-engine-v1176-해결)) | 자동바인딩이 켜져 있으면 그 키의 폼 값을 읽어 **형제 라디오의 `value` 까지 같은 값으로 덮는다.** `checked` 는 맞게 붙고 화면도 정상이라 눈으로 드러나지 않는다 (실측 2026-09-12: 신뢰 프록시 모드 `none/nearest/list` → 클릭 후 셋 다 `nearest`). `name` 을 빼는 우회는 native 라디오 그룹(방향키 이동·그룹 낭독)을 잃는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

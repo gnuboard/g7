@@ -757,7 +757,6 @@ return [
     'ip_allow_list' => [
         'invalid' => '":value" は有効な IP アドレスまたは範囲の表記ではありません。1 行に 1 件ずつ、またはカンマで区切って入力してください。',
     ],
-
     'setting' => [
         'value' => [
             'present' => 'リクエストに設定値(value)項目が含まれている必要があります。',
@@ -912,11 +911,6 @@ return [
         'outbound_proxy_bypass_array' => 'プロキシ除外リストは配列である必要があります。',
         'outbound_proxy_bypass_item_string' => 'プロキシ除外項目は文字列である必要があります。',
         'outbound_proxy_bypass_item_max' => 'プロキシ除外項目は:max文字を超えることはできません。',
-        'trusted_proxies_present' => '信頼するプロキシの一覧がリクエストに含まれていません。',
-        'trusted_proxies_array' => '信頼するプロキシの一覧は配列である必要があります。',
-        'trusted_proxies_max' => '信頼するプロキシは:max個を超えることはできません。',
-        'trusted_proxy_address_invalid' => '信頼するプロキシアドレスの形式が正しくありません。IP アドレスまたは CIDR で入力してください (例: 10.0.0.1, 10.0.0.0/24)。',
-        'trusted_proxy_address_max' => '信頼するプロキシアドレスは:max文字を超えることはできません。',
         'core_update_github_url_invalid' => 'GitHubリポジトリURLの形式が正しくありません。',
         'core_update_github_url_max' => 'GitHubリポジトリURLは500字を超えることはできません。',
         'core_update_github_token_max' => 'GitHubアクセストークンは500字を超えることはできません。',
@@ -1018,6 +1012,11 @@ return [
         'orphan_retention_days_integer' => '孤立した添付ファイルの保持期間は整数である必要があります。',
         'orphan_retention_days_min' => '孤立した添付ファイルの保持期間は1日以上である必要があります。',
         'orphan_retention_days_max' => '孤立した添付ファイルの保持期間は3650日を超えることはできません。',
+        'trusted_proxies_present' => '信頼できるプロキシリストがリクエストに含まれていません。',
+        'trusted_proxies_array' => '信頼できるプロキシリストは配列である必要があります。',
+        'trusted_proxies_max' => '信頼できるプロキシは :max 個を超えることはできません。',
+        'trusted_proxy_address_invalid' => '信頼できるプロキシアドレスの形式が正しくありません。IPアドレスまたはCIDRで入力してください（例：10.0.0.1、10.0.0.0/24）。',
+        'trusted_proxy_address_max' => '信頼できるプロキシアドレスは :max 文字を超えることはできません。',
     ],
     'identity_policy' => [
         'key_required' => 'ポリシーキーを入力してください。',
@@ -1188,7 +1187,6 @@ return [
         'sql_query_log' => 'SQL クエリログ',
         'outbound_proxy' => 'アウトバウンドプロキシアドレス',
         'outbound_proxy_bypass' => 'プロキシ除外リスト',
-        'trusted_proxies' => '信頼するプロキシの一覧',
         'core_update_github_url' => 'コア更新 GitHub アドレス',
         'core_update_github_token' => 'コア更新 GitHub トークン',
         'geoip_enabled' => 'GeoIP の使用',
@@ -1209,6 +1207,7 @@ return [
         'public_asset_disk' => '公開アセットディスク',
         'orphan_cleanup_enabled' => '孤立した添付ファイルの自動クリーンアップ',
         'orphan_retention_days' => '孤立した添付ファイルの保持期間',
+        'trusted_proxies' => '信頼できるプロキシリスト',
     ],
     'layout_version' => [
         'limit' => [

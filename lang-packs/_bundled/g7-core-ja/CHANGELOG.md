@@ -8,6 +8,7 @@
 
 ### Added
 
+- 신뢰 프록시 사전 검사 안내와 PHP 실행 파일 확인 문구의 일본어 번역을 번역 빌더 산출물로 교체했습니다 (`settings.trusted_proxy_probe_*`, `settings.php_probe_ok_web_version_differs`, `validation.settings.trusted_prox*` 등 10건). 용어가 패키지 글로서리를 따릅니다.
 - PHP 실행 파일 확인 결과에서 서버 명령과 사이트가 서로 다른 PHP 계열로 도는 경우를 알리는 문구의 일본어 번역을 추가했습니다 (`settings.php_probe_ok_web_version_differs`).
 - 신뢰 프록시(리버스 프록시) 설정을 화면에서 고를 때의 사전 검사 결과 안내 문구 일본어 번역을 추가했습니다 (`settings.trusted_proxy_probe_*` 3건).
 - 실행 모드(자동 판단·항상 CLI 사용·항상 CLI 없이) 라벨과 외부 프로세스 실행 불가 안내의 일본어 번역을 추가했습니다 (`settings.execution_mode.*`, `exceptions.execution.*`).

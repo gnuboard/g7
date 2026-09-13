@@ -138,6 +138,38 @@ describe('환경설정 > 고급 — 신뢰 프록시 편집 블록', () => {
   });
 
   /**
+   * 폼 안의 라디오에 `name` 만 있고 `autoBinding: false` 가 없으면 엔진의 폼 자동바인딩이
+   * `value` 를 폼 값으로 되쓴다 — 세 라디오가 같은 값을 읽어 **전부 클릭한 모드의 value 가
+   * 된다**(실측 2026-09-12: 초기 none/nearest/list → 클릭 후 셋 다 nearest). 화면은 멀쩡해
+   * 보이고 checked 도 맞게 붙어서 눈으로는 드러나지 않는다.
+   *
+   * 해법은 트러블슈팅 사례 4(engine-v1.17.6)의 선례대로 `autoBinding: false` 다. `name` 을
+   * 빼는 우회는 native 라디오 그룹(방향키 이동·스크린리더의 「3개 중 1」)을 잃는다.
+   *
+   * @scenario proxies_setting=star
+   *
+   * @effects mode_choice_writes_the_saved_list
+   */
+  it('모드 라디오는 이름으로 묶이되 폼 자동바인딩은 꺼져 있다', () => {
+    const radios = collect(
+      findById('trusted_proxy_modes'),
+      (n) => (n.props as { type?: string } | undefined)?.type === 'radio'
+    );
+
+    expect(radios).toHaveLength(3);
+
+    for (const r of radios) {
+      const props = r.props as { name?: string; value?: string; autoBinding?: unknown; checked?: unknown };
+
+      expect(props.autoBinding, `라디오(${props.value})의 자동바인딩이 켜져 있으면 value 가 폼 값으로 덮인다`).toBe(false);
+      expect(props.name, 'native 라디오 그룹이 사라지면 방향키 이동·그룹 낭독을 잃는다').toBe('trusted_proxy_mode');
+      expect(String(props.checked)).toContain('_computed.trustedProxyMode');
+    }
+
+    expect(radios.map((r) => (r.props as { value?: string }).value)).toEqual(['none', 'nearest', 'list']);
+  });
+
+  /**
    * @scenario proxies_setting=cidr
    *
    * @effects saved_list_is_normalized_to_a_config_value

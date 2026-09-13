@@ -2007,6 +2007,7 @@
                             "name": "trusted_proxy_mode",
                             "value": "none",
                             "checked": "{{_computed.trustedProxyMode === 'none'}}",
+                            "autoBinding": false,
                             "disabled": "{{_computed.isReadOnly || _computed.trustedProxyLocked}}",
                             "className": "radio mt-0.5"
                           },
@@ -2062,6 +2063,7 @@
                             "name": "trusted_proxy_mode",
                             "value": "nearest",
                             "checked": "{{_computed.trustedProxyMode === 'nearest'}}",
+                            "autoBinding": false,
                             "disabled": "{{_computed.isReadOnly || _computed.trustedProxyLocked}}",
                             "className": "radio mt-0.5"
                           },
@@ -2117,6 +2119,7 @@
                             "name": "trusted_proxy_mode",
                             "value": "list",
                             "checked": "{{_computed.trustedProxyMode === 'list'}}",
+                            "autoBinding": false,
                             "disabled": "{{_computed.isReadOnly || _computed.trustedProxyLocked}}",
                             "className": "radio mt-0.5"
                           },

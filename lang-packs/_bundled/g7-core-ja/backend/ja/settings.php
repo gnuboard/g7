@@ -300,9 +300,6 @@ return [
     'static_cache_status_loaded' => 'ホーム画面の静的ファイルの状態を読み込みました。',
     'static_cache_republished' => 'ホーム画面の静的ファイルを再作成しました。',
     'static_cache_republish_failed' => 'ホーム画面の静的ファイルを再作成できませんでした。サイトは正常に動作しています。',
-    'trusted_proxy_probe_no_headers' => '前段のプロキシが検出されなかったため、この値では何も変わりません。プロキシを使用しない構成であれば「信頼しない」が正しい値です。',
-    'trusted_proxy_probe_resolves' => 'この値であれば、訪問者 IP がプロキシの向こう側にある実際のアドレスとして解決されます。',
-    'trusted_proxy_probe_unchanged' => 'この値でも訪問者 IP は変わりません — 一覧に前段プロキシのアドレスが抜けている可能性があります。',
     'execution' => [
         'fetch_success' => '実行方式の情報を取得しました。',
         'fetch_failed' => '実行方式の情報の取得に失敗しました。',
@@ -314,5 +311,8 @@ return [
         'subprocess' => '常にCLIを使用',
         'inprocess' => '常にCLIなし',
     ],
-    'php_probe_ok_web_version_differs' => 'PHP :version を確認してください (最小要件 :min_version)。ただし、サイトは PHP :web_version で動作しており、サーバーコマンドは異なるバージョンで実行されます。',
+    'trusted_proxy_probe_no_headers' => 'フロントエンドプロキシが検出されないため、この値では何も変わりません。プロキシを使用しない構成の場合、「信頼しない」が正しい値です。',
+    'trusted_proxy_probe_resolves' => 'この値を使用すると、訪問者のIPはプロキシの背後にある実際のアドレスとして解釈されます。',
+    'trusted_proxy_probe_unchanged' => 'この値でも訪問者のIPはそのままです — ホワイトリストにフロントエンドプロキシのアドレスが不足している可能性があります。',
+    'php_probe_ok_web_version_differs' => 'PHP :version を確認します(最小要件 :min_version)。ただし、サイトはPHP :web_version で動作しており、サーバーコマンドは異なるバージョンで実行されます。',
 ];
