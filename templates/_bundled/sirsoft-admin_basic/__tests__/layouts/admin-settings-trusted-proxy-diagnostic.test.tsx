@@ -2,16 +2,19 @@
  * @file admin-settings-trusted-proxy-diagnostic.test.tsx
  * @description 환경설정 > 고급 의 리버스 프록시 진단 블록 (#124 W8 ②)
  *
- * 이 블록은 **읽기 전용**이다. 값 편집을 화면에 두지 않는 이유는 둘이다 —
- * ① 프록시 뒤에서는 관리자 화면 자체가 뜨지 않는 것이 이 결함이므로 정작 필요한
- *    순간에 그 화면에 도달할 수 없다(잠금 역설),
- * ② 웹에서 편집 가능해지면 관리자 계정 탈취가 곧 X-Forwarded-For 위조 경로가 된다.
+ * 진단 행은 **읽기 전용**이다. 값 자체는 서버 진단(App\Support\TrustedProxyDiagnostic)이
+ * 유일한 판정자이므로 화면은 그것을 표시만 한다 — 화면에서 조건을 다시 쓰면 서버와 다른
+ * 답을 내놓게 된다. 그래서 진단 행에 입력 컨트롤이 0개라는 사실이 계약이고, 이 테스트가
+ * 그것을 잠근다.
  *
- * 그래서 입력 컨트롤이 0개라는 사실이 계약이고, 이 테스트가 그것을 잠근다. 값 자체는
- * 서버 진단(App\Support\TrustedProxyDiagnostic)이 유일한 판정자이므로 화면은 그것을
- * 표시만 한다 — 화면에서 조건을 다시 쓰면 서버와 다른 답을 내놓게 된다.
+ * 같은 카드 아래의 편집 블록(`#trusted_proxy_edit`, #609)은 이 계약의 대상이 아니다 —
+ * 그쪽 배선은 `admin-settings-trusted-proxy-edit.test.ts` 가 소유한다. 여기서는 그 블록
+ * **밖**에 입력이 없다는 것만 본다.
  *
  * 합성 레이아웃이 아니라 **실제 _tab_advanced.json** 을 읽는다.
+ *
+ * @scenario proxies_setting=unset, proxies_setting=star, forwarded_proto=absent
+ * @effects diagnostic_endpoint_is_read_only, forwarded_without_config_is_warning, configured_proxy_is_ok
  */
 
 import React from 'react';
@@ -20,6 +23,8 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+// 상태 배지는 실제 자산으로 렌더한다 — 스텁으로 색을 흉내 내면 자산이 바뀌어도 이 테스트가 모른다.
+import { StatusBadge } from '../../src/components/composite/StatusBadge';
 
 const advancedPartial = JSON.parse(
   readFileSync(resolve(__dirname, '../../layouts/partials/admin_settings/_tab_advanced.json'), 'utf-8')
@@ -74,6 +79,7 @@ function setupTestRegistry(): ComponentRegistry {
     Button: { component: TestButton, metadata: { name: 'Button', type: 'basic' } },
     A: { component: TestA, metadata: { name: 'A', type: 'basic' } },
     Fragment: { component: TestFragment, metadata: { name: 'Fragment', type: 'layout' } },
+    StatusBadge: { component: StatusBadge, metadata: { name: 'StatusBadge', type: 'composite' } },
   };
 
   return registry;
@@ -141,6 +147,20 @@ function renderCard(diagnostic: Record<string, unknown>) {
   return testUtils;
 }
 
+/**
+ * 편집 블록 밖에 있는 입력 컨트롤을 모읍니다.
+ *
+ * 편집 블록(`#trusted_proxy_edit`)은 라디오·태그 입력을 **가지는 것이 맞다** — 그 안까지
+ * 세면 편집 기능이 들어온 뒤로 읽기 전용 계약이 항상 깨진 것으로 보인다.
+ *
+ * @returns 진단 행 쪽에 남아 있는 입력 요소 목록
+ */
+function inputsOutsideEditBlock(): Element[] {
+  return Array.from(document.querySelectorAll('input, select, textarea')).filter(
+    (el) => el.closest('#trusted_proxy_edit') === null,
+  );
+}
+
 /** 프록시 헤더는 받는데 신뢰 설정이 없는 상태 (조치 필요) */
 const WARNING = {
   forwarded_headers: ['X-Forwarded-For', 'X-Forwarded-Proto'],
@@ -174,7 +194,9 @@ describe('환경설정 고급 — 리버스 프록시 진단 블록', () => {
     (registry as any).registry = {};
   });
 
-  it('입력 컨트롤을 하나도 렌더하지 않는다 (읽기 전용 계약)', async () => {
+  // @scenario proxies_setting=unset, forwarded_proto=absent
+  // @effects diagnostic_endpoint_is_read_only
+  it('진단 행에는 입력 컨트롤이 없다 (읽기 전용 계약)', async () => {
     const testUtils = renderCard(WARNING);
     await testUtils.render();
 
@@ -182,13 +204,15 @@ describe('환경설정 고급 — 리버스 프록시 진단 블록', () => {
     expect(document.querySelector('#trusted_proxy_status_badge')).not.toBeNull();
 
     expect(
-      document.querySelectorAll('input, select, textarea').length,
-      '값 편집은 .env 전용입니다 — 화면에 편집 컨트롤을 두지 않습니다'
+      inputsOutsideEditBlock().length,
+      '진단 값은 서버가 판정한 것을 표시만 합니다 — 편집은 #trusted_proxy_edit 안에만 둡니다'
     ).toBe(0);
 
     testUtils.cleanup();
   });
 
+  // @scenario proxies_setting=unset, forwarded_proto=absent
+  // @effects diagnostic_endpoint_is_read_only
   it('문서 안내가 실제로 클릭 가능한 GitHub 링크다', async () => {
     const testUtils = renderCard(WARNING);
     await testUtils.render();
@@ -203,11 +227,13 @@ describe('환경설정 고급 — 리버스 프록시 진단 블록', () => {
     expect(link!.getAttribute('rel')).toBe('noopener noreferrer');
 
     // 링크는 읽기 전용 계약을 깨지 않는다 (입력 컨트롤이 아니다)
-    expect(document.querySelectorAll('input, select, textarea').length).toBe(0);
+    expect(inputsOutsideEditBlock().length).toBe(0);
 
     testUtils.cleanup();
   });
 
+  // @scenario proxies_setting=unset, forwarded_for=single
+  // @effects forwarded_without_config_is_warning
   it('경고 상태에서는 방문자 IP 와 직전 호출 IP 를 나란히 보여 준다', async () => {
     const testUtils = renderCard(WARNING);
     await testUtils.render();
@@ -222,6 +248,8 @@ describe('환경설정 고급 — 리버스 프록시 진단 블록', () => {
     testUtils.cleanup();
   });
 
+  // @scenario proxies_setting=star, forwarded_proto=https
+  // @effects configured_proxy_is_ok
   it('정상 상태에서는 설정값을 보여 주고 동일 IP 안내를 감춘다', async () => {
     const testUtils = renderCard(OK);
     await testUtils.render();
@@ -234,17 +262,21 @@ describe('환경설정 고급 — 리버스 프록시 진단 블록', () => {
     testUtils.cleanup();
   });
 
+  // @scenario proxies_setting=unset, proxies_setting=star
+  // @effects forwarded_without_config_is_warning, configured_proxy_is_ok
   it('상태 배지는 서버가 준 status 를 그대로 따른다', async () => {
+    // 배지는 `StatusBadge` 자산이 그린다 — 손으로 조립한 span 은 다른 화면의 배지와 모양이 어긋난다.
+    // 그래서 색 토큰이 아니라 자산의 상태 계열(warning=yellow, success=green)을 본다.
     const warning = renderCard(WARNING);
     await warning.render();
     const warningClass = document.querySelector('#trusted_proxy_status_badge')?.getAttribute('class') ?? '';
-    expect(warningClass).toContain('bg-amber-100');
+    expect(warningClass).toContain('text-yellow-700');
     warning.cleanup();
 
     const ok = renderCard(OK);
     await ok.render();
     const okClass = document.querySelector('#trusted_proxy_status_badge')?.getAttribute('class') ?? '';
-    expect(okClass).toContain('bg-green-100');
+    expect(okClass).toContain('text-green-700');
     ok.cleanup();
   });
 });

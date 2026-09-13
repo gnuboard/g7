@@ -124,6 +124,10 @@ const PAIRS: Array<{
   // 라이트는 그 배경이 그라디언트라 이 계산기로 잴 수 없다(아래 UNGATED) — 다크만 잰다.
   { selector: '.result-message', background: '--result-error-bg', note: '실패 결과 카드의 본문 (D7 · 선행 누락)', themes: ['dark'] },
   { selector: '.lock-wait-countdown', background: '--result-error-bg', note: '실패 카드의 해제 대기 카운트다운 (D7)', themes: ['dark'] },
+  // 에셋 서빙 방식 카드의 판정 사유가 카드 **본문**으로 들어가면서(종전에는 카드 뒤에 떠 있었다)
+  // 경고 표면(`--warning-surface`) 위 문자가 하나 늘었다. 다크의 그 표면은 알파가 있는 rgba 라
+  // 밑에 깔리는 색에 따라 달라져 잴 수 없다(아래 UNGATED) — 라이트만 잰다.
+  { selector: '.requirement-card--warning .fix-guide-hint', background: '--warning-surface', note: '경고 요구사항 카드 본문의 힌트 (에셋 서빙 방식 판정 사유)', themes: ['light'] },
 ];
 
 /**
@@ -135,6 +139,7 @@ const PAIRS: Array<{
  */
 const UNGATED: ReadonlyArray<{ token: string; theme: 'light' | 'dark'; reason: string }> = [
   { token: '--result-error-bg', theme: 'light', reason: 'linear-gradient — 두 끝 사이의 연속이라 단일 배경색이 없다' },
+  { token: '--warning-surface', theme: 'dark', reason: 'rgba — 알파가 있어 밑에 깔리는 색에 따라 실제 배경이 달라진다' },
 ];
 
 // 손 열거 모집단은 비어도 `it.each` 가 0건을 돌려 초록이 된다 (17차 E-1) — 인구조사로 하한을 잠근다.

@@ -123,15 +123,15 @@ test.describe('@sirsoft-admin_basic 환경설정 업데이트 탭', () => {
     await page.goto('/admin/settings?tab=update');
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    // 「접혀 있다」의 판정은 **접기 컴포넌트가 노출하는 상태**로 한다. 내용 블록의 가시성으로
-    // 재면 안 된다 — 이 컴포넌트는 감싼 영역의 높이를 0 으로 접을 뿐이라 안쪽 요소의 박스는
-    // 그대로 남고, 그 차이가 브라우저 실측에서 드러났다.
+    // 「접혀 있다」의 판정은 **트리거가 노출하는 상태**로 한다. 접기 카드는 이 템플릿의
+    // `admin-card-accordion` 자산이라 접힌 동안 본문을 그리지 않는다 — 그래서 접힌 상태에서는
+    // 수동 ZIP 블록이 DOM 에 없어야 하고, 펼친 뒤에는 접기 영역 **안**에 있어야 한다
+    // (밖에 있으면 착수 화면 배치가 밀린다).
     const trigger = page.getByRole('button', { name: '고급' });
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
-    // 수동 ZIP 은 그 접기 영역 **안**에 있어야 한다 — 밖에 있으면 착수 화면 배치가 밀린다.
     const manualZip = page.locator('#core_update_advanced_content #core_update_manual_zip');
-    await expect(manualZip).toHaveCount(1);
+    await expect(manualZip).toHaveCount(0);
 
     await trigger.click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true', { timeout: 10_000 });

@@ -2620,6 +2620,17 @@ hr {
   color: var(--fix-guide-hint-on-alert-text);
 }
 
+/* 경고 요구사항 카드의 본문 힌트(에셋 서빙 방식 판정 사유) — 카드 배경이 경고 표면이라
+   위와 같은 이유로 기본 힌트색은 AA 미달이다. 본문 첫 문단은 위 여백을 두지 않는다
+   (카드 본문 padding 이 이미 있다). */
+.requirement-card--warning .fix-guide-hint {
+  color: var(--fix-guide-hint-on-alert-text);
+}
+
+.requirement-card-body > .fix-guide-hint:first-child {
+  margin-top: 0;
+}
+
 /* 코드 박스 (명령어 표시용) */
 
 /* Step 5: 필수 파일 생성 안내 */
@@ -3332,6 +3343,13 @@ hr {
   .requirement-extension-grid,
   .directory-grid {
     gap: var(--spacing-xs);
+  }
+
+  /* 디렉토리 권한 목록은 한 칸이 「경로 + 소유자 + 권한」 세 토막이라 폰 폭에서 두 열이면
+     경로가 잘리고 오른쪽 열이 카드 밖으로 밀린다 (실측 390px: `storage/app/core_pending` 뒤의
+     둘째 열이 보이지 않았다). 확장 모듈 목록은 이름이 짧아 두 열을 유지한다. */
+  .directory-grid {
+    grid-template-columns: 1fr;
   }
 
   .requirement-card-header {

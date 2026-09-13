@@ -101,6 +101,9 @@ test_files:
   - tests/Unit/Support/TrustedProxySettingTest.php
   - tests/Feature/Settings/TrustedProxySettingsTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-trusted-proxy-edit.test.ts
+  # 진단 행(읽기 전용)의 렌더 계약 — #124 시절 파일. 편집 블록이 같은 카드에 들어온 뒤(#609)
+  # "입력 0개" 단언은 진단 행에만 걸린다.
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-trusted-proxy-diagnostic.test.tsx
   - tests/Playwright/specs/admin/settings-trusted-proxy-edit.spec.ts
 
 notes: |

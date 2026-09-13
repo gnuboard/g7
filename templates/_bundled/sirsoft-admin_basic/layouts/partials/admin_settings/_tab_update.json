@@ -1029,40 +1029,67 @@
       "type": "basic",
       "name": "Div",
       "if": "{{!_computed.coreUpdateRun}}",
+      "comment": "접기 카드는 이 템플릿의 `.admin-card-accordion` 자산(이커머스 상품 폼 13곳과 같은 모양)을 쓴다. `Accordion` 컴포넌트를 `admin-card` 안에 넣으면 카드 안에 테두리 상자가 한 번 더 그려지고, trigger 를 직접 넘기는 순간 컴포넌트가 꺾쇠를 그리지 않아 접힌다는 신호가 사라진다(실측 2026-09-13).",
       "props": {
-        "className": "admin-card"
+        "className": "admin-card-accordion"
       },
       "children": [
         {
-          "type": "composite",
-          "name": "Accordion",
+          "id": "core_update_advanced_trigger",
+          "type": "basic",
+          "name": "Div",
           "props": {
-            "defaultOpen": false
+            "className": "card-header",
+            "role": "button",
+            "tabIndex": 0,
+            "aria-expanded": "{{(_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true}}",
+            "aria-controls": "core_update_advanced_content"
           },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "coreUpdateAdvancedOpen": "{{!((_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true)}}"
+              }
+            }
+          ],
           "children": [
             {
-              "id": "core_update_advanced_trigger",
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-heading"
+                "className": "card-title"
               },
               "text": "$t:admin.settings.core_update.advanced_title"
             },
             {
-              "id": "core_update_advanced_content",
               "type": "basic",
-              "name": "Div",
+              "name": "Icon",
               "props": {
-                "className": "pt-3"
-              },
-              "children": [
+                "name": "chevron-down",
+                "className": "admin-card-accordion-icon {{(_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true ? 'open' : ''}}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "core_update_advanced_content",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true}}",
+          "comment": "올려 둔 ZIP 이 있으면 처음부터 펼친다 — FTP 로 파일을 올리고 온 운영자가 접힌 카드만 보면 자기 파일이 인식됐는지부터 확인할 길이 없다.",
+          "props": {
+            "className": "row-stack"
+          },
+          "children": [
               {
                 "id": "core_update_manual_zip",
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "space-y-2 mb-4"
+                  "className": "space-y-2"
                 },
                 "children": [
                   {
@@ -1097,7 +1124,6 @@
                     "name": "Select",
                     "if": "{{(_computed.coreUpdateManualSources ?? []).length > 0}}",
                     "props": {
-                      "className": "input-field",
                       "value": "{{_local.coreUpdateZipFile ?? ''}}"
                     },
                     "actions": [
@@ -1186,8 +1212,6 @@
                   }
                 ]
               }
-              ]
-            }
           ]
         }
       ]

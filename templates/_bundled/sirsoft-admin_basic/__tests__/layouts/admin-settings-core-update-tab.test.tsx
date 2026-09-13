@@ -41,6 +41,8 @@ const updateTabSource = JSON.stringify(updateTab);
 const settingsSource = JSON.stringify(settings);
 
 describe('환경설정 업데이트 탭 — 배선', () => {
+  // @scenario actor=with_permission, run_state=idle
+  // @effects update_tab_is_hidden_without_permission
   it('탭 목록·콘텐츠 partial 이 함께 배선된다', () => {
     const tabs = ((settings as Json).defines as Json)?.settingsTabs as Json[] | undefined;
 
@@ -72,6 +74,8 @@ describe('환경설정 업데이트 탭 — 배선', () => {
     expect((updateTab as Json).if as string).toContain("=== 'update'");
   });
 
+  // @scenario actor=with_permission, run_state=idle
+  // @effects the_start_controls_appear_only_when_there_is_something_to_apply
   it('저장 버튼이 업데이트 탭에서 숨는다', () => {
     const footer = collect(settings, (obj) => obj.id === 'footer_buttons')[0];
 
@@ -140,6 +144,8 @@ describe('환경설정 업데이트 탭 — 안전 기본값 (D27)', () => {
 });
 
 describe('환경설정 업데이트 탭 — 진행·실패 표시', () => {
+  // @scenario actor=with_permission, run_state=running
+  // @effects an_interrupted_run_continues_without_operator_action
   it('진행 중에는 중단 버튼이 없다', () => {
     // 파일 교체 중에 사람이 멈추면 반쪽 상태가 남는다 — 실패 판정과 되돌리기는 시스템이 한다 (W6).
     //
@@ -157,6 +163,8 @@ describe('환경설정 업데이트 탭 — 진행·실패 표시', () => {
     expect(used.filter((handler) => !allowed.includes(handler))).toEqual([]);
   });
 
+  // @scenario actor=with_permission, run_state=finished, rollback_outcome=restored
+  // @effects the_failure_screen_offers_a_way_forward
   it('되돌리기 결과가 실패와 분리된 초록 영역으로 표시된다', () => {
     const rolledBack = collect(updateTab, (obj) => obj.id === 'core_update_rolled_back_alert')[0];
 
@@ -165,6 +173,8 @@ describe('환경설정 업데이트 탭 — 진행·실패 표시', () => {
     expect(rolledBack.if as string).toContain('rollback?.restored');
   });
 
+  // @scenario actor=with_permission, run_state=finished, rollback_outcome=restore_failed
+  // @effects a_failed_rollback_opens_the_manual_recovery_guidance
   it('되돌리기까지 실패한 경우 수동 복구 안내가 열린다', () => {
     const failed = collect(updateTab, (obj) => obj.id === 'core_update_rollback_failed_alert')[0];
 
@@ -172,6 +182,8 @@ describe('환경설정 업데이트 탭 — 진행·실패 표시', () => {
     expect(failed.if as string).toContain('rollback_failed');
   });
 
+  // @scenario actor=with_permission, run_state=running
+  // @effects status_returns_the_shape_the_screen_needs
   it('진행 단계 목록이 서버가 준 단계를 그린다 (화면이 목록을 따로 갖지 않는다)', () => {
     const list = collect(updateTab, (obj) => obj.id === 'core_update_step_list')[0];
 
@@ -282,6 +294,8 @@ describe('환경설정 업데이트 탭 — W6 상태 분리·진단·이어받�
     expect((list.iteration as Json).source as string).toContain('notices');
   });
 
+  // @scenario actor=with_permission, source=manual_zip, run_state=idle
+  // @effects manual_zip_lives_behind_advanced
   it('고급 접기의 명령어 안내가 공용 안내 키를 쓴다', () => {
     const guide = collect(updateTab, (obj) => obj.id === 'core_update_cli_guide')[0];
 
@@ -292,6 +306,36 @@ describe('환경설정 업데이트 탭 — W6 상태 분리·진단·이어받�
     // 리터럴을 새로 두면 같은 안내가 두 벌이 되고, 문구가 바뀔 때 한쪽만 낡는다.
     expect(source).not.toContain('php artisan core:update');
     expect(source).toContain('admin.settings.info.update_guide_cmd');
+  });
+
+  // @scenario actor=with_permission, source=manual_zip, run_state=idle
+  // @effects manual_zip_lives_behind_advanced
+  it('고급 접기가 이 템플릿의 아코디언 카드 자산을 쓴다 (꺾쇠·여백·단일 테두리)', () => {
+    const card = collect(updateTab, (obj) => obj.id === 'card_core_update_advanced')[0];
+
+    expect(card).toBeDefined();
+
+    // `admin-card` 안에 Accordion 컴포넌트를 넣으면 테두리 상자가 겹치고, trigger 를 직접 넘기면
+    // 컴포넌트가 꺾쇠를 그리지 않아 접힌다는 신호가 사라진다 (실측 2026-09-13).
+    expect(collect(card, (obj) => obj.name === 'Accordion')).toHaveLength(0);
+    expect(String((card.props as Json).className)).toContain('admin-card-accordion');
+
+    const trigger = collect(card, (obj) => obj.id === 'core_update_advanced_trigger')[0];
+    expect(String((trigger.props as Json).className)).toContain('card-header');
+
+    const chevron = collect(
+      trigger,
+      (obj) => obj.name === 'Icon' && (obj.props as Json | undefined)?.name === 'chevron-down'
+    )[0];
+    expect(chevron, '접힌다는 신호(꺾쇠)가 없다').toBeDefined();
+    expect(String((chevron.props as Json).className)).toContain('admin-card-accordion-icon');
+
+    const content = collect(card, (obj) => obj.id === 'core_update_advanced_content')[0];
+    expect(String((content.props as Json).className)).toContain('row-stack');
+
+    // 트리거가 쓰는 상태 이름과 본문이 보는 상태 이름이 같아야 눌렀을 때 열린다.
+    expect(JSON.stringify(trigger.actions)).toContain('coreUpdateAdvancedOpen');
+    expect(String(content.if)).toContain('coreUpdateAdvancedOpen');
   });
 });
 
@@ -311,10 +355,14 @@ describe('환경설정 업데이트 탭 — 다국어', () => {
       .reduce<unknown>((acc, part) => (acc && typeof acc === 'object' ? (acc as Json)[part] : undefined), source);
   }
 
+  // @scenario actor=with_permission, run_state=idle
+  // @effects every_step_has_a_translated_label
   it('화면이 쓰는 키를 하나 이상 수집한다', () => {
     expect(usedKeys.length).toBeGreaterThan(10);
   });
 
+  // @scenario actor=with_permission, run_state=idle
+  // @effects every_step_has_a_translated_label
   it.each(['ko', 'en', 'ja'])('%s 다국어에 화면이 쓰는 키가 모두 있다', (locale) => {
     const packs: Record<string, unknown> = { ko: koAdmin, en: enAdmin, ja: jaAdmin };
     const source = packs[locale] as Json;
@@ -323,6 +371,8 @@ describe('환경설정 업데이트 탭 — 다국어', () => {
     expect(missing, `${locale} 에 없는 키: ${missing.join(', ')}`).toEqual([]);
   });
 
+  // @scenario actor=with_permission, run_state=idle
+  // @effects every_step_has_a_translated_label
   it('탭 이름이 세 로케일 모두에 있다', () => {
     [koAdmin, enAdmin, jaAdmin].forEach((pack) => {
       expect(lookup(pack as unknown as Json, 'settings.tabs.update')).toBeTruthy();

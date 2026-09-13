@@ -1775,8 +1775,12 @@
 
     /**
      * 단일 항목 카드 렌더링 (PHP 버전, 디스크 공간, HTTPS)
+     *
+     * @param {string} [bodyHtml] 헤더 아래 본문 — 판정의 사유처럼 한 줄 값으로 다 못 담는 설명.
+     *   카드 **안**에 그린다. 카드 뒤에 붙이면 문단이 두 카드 사이에 떠서 어느 항목의 설명인지
+     *   알 수 없다(에셋 서빙 방식 카드, 실측 2026-09-13).
      */
-    function renderSingleItemCard(title, statusClass, currentValue, requiredValue, isRequired) {
+    function renderSingleItemCard(title, statusClass, currentValue, requiredValue, isRequired, bodyHtml = '') {
         const statusIcon = getStatusIcon(statusClass);
         const badgeText = isRequired ? lang('badge_required') : lang('badge_optional');
         const badgeClass = isRequired ? 'badge-required' : 'badge-optional';
@@ -1787,9 +1791,13 @@
             ? ' requirement-card--warning'
             : (statusClass === 'status-fail' ? ' requirement-card--fail' : '');
 
+        // 본문이 있으면 헤더 하단선을 살린다 — header-single 은 "헤더뿐인 카드" 의 선 제거다.
+        const headerModifier = bodyHtml ? '' : ' header-single';
+        const body = bodyHtml ? `<div class="requirement-card-body">${bodyHtml}</div>` : '';
+
         return `
             <div class="requirement-card${cardModifier}">
-                <div class="requirement-card-header header-single">
+                <div class="requirement-card-header${headerModifier}">
                     <div class="header-left">
                         ${statusIcon}
                         <h3 class="requirement-card-title">${title}</h3>
@@ -1802,6 +1810,7 @@
                         <div class="requirement-badge ${badgeClass}">${badgeText}</div>
                     </div>
                 </div>
+                ${body}
             </div>
         `;
     }
@@ -2881,12 +2890,14 @@
         } else if (detected === '') {
             note = lang('asset_url_mode_detected_unavailable');
         }
+        // 설명은 카드 본문으로 들어간다 — 카드 뒤에 이어 붙이면 문단이 이 카드와 다음 카드
+        // 사이에 떠서 어느 항목의 설명인지 알 수 없다.
         const noteHtml = note ? `<p class="fix-guide-hint">${note}</p>` : '';
 
         // 카드 내부를 부분 수정하지 않고 통째로 다시 그린다 — 아이콘·수식자 클래스가
         // renderSingleItemCard 안에서 statusClass 로 함께 결정되므로, 밖에서 일부만
         // 건드리면 아이콘과 카드 색이 어긋난다.
-        slot.innerHTML = renderSingleItemCard(lang('asset_url_mode'), statusClass, label, '', false) + noteHtml;
+        slot.innerHTML = renderSingleItemCard(lang('asset_url_mode'), statusClass, label, '', false, noteHtml);
     }
 
     async function detectAssetUrlMode() {
