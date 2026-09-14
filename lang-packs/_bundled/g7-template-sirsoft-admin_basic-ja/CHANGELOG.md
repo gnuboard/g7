@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.10] - 2026-09-14
+
+### Added
+
+- 권한이 없는 작업을 시도했을 때 표시되는 안내 문구의 일본어 번역을 추가했습니다.
+
 ## [1.0.9] - 2026-09-09
 
 ### Added

@@ -73,6 +73,40 @@ const diagnosticRules: DiagnosticRule[] = [
         `,
     },
     {
+        id: 'spa-local-leak',
+        name: 'SPA 이동 후 이전 페이지 _local 잔존',
+        category: 'state',
+        symptoms: [
+            '페이지 전환 후 목록이 깨짐',
+            '다른 목록으로 이동하면 컬럼이 사라짐',
+            '체크박스만 남음',
+            '이전 페이지 키가 남아 있음',
+            '페이지 이동 후 상태 잔존',
+            'visibleColumns 가 이전 화면 값',
+        ],
+        detector: (ctx) => {
+            // 최근 액션 이력에 navigate 가 있고, 그 뒤 setState 가 {{$args[0]}} 로 visibleColumns/visibleFilters 를
+            // 되쓴 흔적(자식 마운트 콜백)이 이어지면 보존 컴포넌트 저장소 A 병합 경로를 의심한다.
+            const recent = ctx.actionHistory.slice(-30);
+            const navIndex = recent.findIndex(a => a.type === 'navigate');
+            if (navIndex < 0) return false;
+            const after = recent.slice(navIndex + 1);
+            return after.some(a => {
+                if (a.type !== 'setState') return false;
+                const raw = JSON.stringify(a.params ?? {});
+                return raw.includes('$args[0]') && /visibleColumns|visibleFilters/.test(raw);
+            });
+        },
+        probability: 0.7,
+        solution: 'g7-state 로 _local 을 읽어 현재 레이아웃 state 에 없는 키(이전 화면 전용 키)가 남았는지 확인. 남았다면 _fromBase 보존 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백이 되쓴 경로 — 엔진 engine-v1.66.2 의 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인하고 시크릿 창(목록 컬럼 저장값 없음)에서 재현',
+        docLink: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1662',
+        codeExample: `
+// 진단: 쿠폰 목록인데 _local 에 주문 목록 키가 남고 visibleColumns 가 주문 컬럼
+// g7-state _local → { bulkCourier, ordererSearchResults, visibleColumns: ['ordered_at', ...] }
+// 원인: DynamicRenderer 보존(_fromBase) 루트의 저장소 A 초기화가 첫 렌더보다 늦음 (engine-v1.66.2 에서 렌더 단계로 이동)
+        `,
+    },
+    {
         id: 'sequence-merge',
         name: 'Sequence setState 병합 충돌',
         category: 'state',

@@ -89,6 +89,18 @@
             }
         }
     ],
+    "init_actions": [
+        {
+            "comment": "생성 모드: 회원 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_user_form)이라 엔진이 `_local` 을 비우지 않아 직전 회원의 form(이메일·이름 등)이 등록 폼에 남는다. form=null 로 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 이 레이아웃은 `state.form` 기본값이 없으므로 다시 쓸 기본값도 없다.",
+            "if": "{{!route?.id}}",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "form": null,
+                "hasChanges": false
+            }
+        }
+    ],
     "defines": {
         "countryList": [
             {

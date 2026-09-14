@@ -29,7 +29,8 @@
       "policies",
       "language_packs",
       "sitemap_status",
-      "staticCacheStatus"
+      "staticCacheStatus",
+      "trustedProxy"
     ]
   },
   "data_sources": [

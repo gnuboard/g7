@@ -1,0 +1,32 @@
+feature: 같은 레이아웃 수정 → 등록 SPA 전환 시 등록 폼 잔존 없음 (관리자 폼 6종, 브라우저)
+
+description: |
+  extends 기반 관리자 폼은 수정 라우트와 등록 라우트가 한 레이아웃을 공유한다. 엔진은 layout_name
+  이 바뀔 때만 _local 을 비우므로 수정 화면에서 등록 화면으로 SPA 이동하면 직전 레코드의 form 이
+  등록 폼에 남았다(역할·상품·배송정책·게시글·게시판 — 2026-09-14 실측). 각 레이아웃이 생성 모드
+  init_actions 에서 form 을 비우고(데이터소스가 폼을 채우는 화면은 initLocal 을 replace 맵으로)
+  등록 폼이 등록 화면 직접 진입과 같아지도록 대응했다.
+
+  이 spec 은 실제 base 레이아웃·실제 데이터소스·실제 init_actions 경로를 거쳐 "SPA 도착 등록 폼 =
+  직접 진입 등록 폼" 이 화면과 전역 상태에서 성립하는지를 본다. page.goto 로 두 화면을 따로 열면
+  전역 상태가 통째로 비워져 결함이 나타나지 않으므로, 메뉴 클릭과 같은 경로인 라우터 navigate 로
+  이동한다.
+
+axes:
+  form: [role, user, product, shipping_policy, board_post, board]
+
+effects:
+  - spa_create_form_has_no_previous_record   # 도착 form 에 직전 레코드 id·코드·이름 없음
+  - spa_create_form_matches_direct_entry     # form 키 집합·값이 있는 입력칸 수가 직접 진입과 동일
+  - copy_payload_survives_clear              # 상품 복사 진입: 복사 페이로드는 살고 직전 id 는 없음
+  - no_page_errors
+
+test_files:
+  - tests/Playwright/specs/admin/same-layout-create-form-reset.spec.ts
+
+validation:
+  manual: |
+    관리자에서 역할 하나를 수정 화면으로 열고 사이드바 「역할 등록」(또는 등록 버튼)으로 이동한다.
+    등록 폼의 식별자·이름 칸이 비어 있어야 하고, g7-state 의 _local.form 에 id 가 없어야 한다.
+    상품·배송정책·게시글·게시판 폼도 같다. 새로고침으로 왕복하면 결함이 재현되지 않으므로
+    반드시 SPA 이동으로 본다.
