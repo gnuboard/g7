@@ -10,7 +10,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
@@ -171,6 +170,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 환불 실행 — 직접 환불신청서
     // ================================================================
 
+    /**
+     * @effects execute_completes_an_approved_direct_refund_and_cancels_the_option_quantity
+     */
     public function test_execute_completes_an_approved_direct_refund_and_cancels_the_option_quantity(): void
     {
         $this->fakePgRefund($calls);
@@ -186,7 +188,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertNotNull($refund->refunded_at);
         $this->assertNotNull($refund->pg_transaction_id);
         $this->assertSame(
-            RefundOptionStatusEnum::COMPLETED,
+            RefundStatusEnum::COMPLETED,
             $refund->refundOptions()->first()->option_status,
         );
 
@@ -301,6 +303,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(RefundStatusEnum::COMPLETED, $refund->fresh()->refund_status);
     }
 
+    /**
+     * @effects execute_requires_an_approved_refund
+     */
     public function test_execute_requires_an_approved_refund(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -311,6 +316,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * @effects execute_requires_the_execute_refund_permission
+     */
     public function test_execute_requires_the_execute_refund_permission(): void
     {
         [, $refund] = $this->approvedDirectRefund(10000);
@@ -322,6 +330,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ->assertStatus(403);
     }
 
+    /**
+     * @effects execute_refunds_used_mileage_with_the_refund_idempotency_axis
+     */
     public function test_execute_refunds_used_mileage_with_the_refund_idempotency_axis(): void
     {
         [$order, $refund] = $this->approvedDirectRefund(0, 3000, [
@@ -391,6 +402,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 취소 가능 금액 (D19)
     // ================================================================
 
+    /**
+     * @effects cancellable_amount_returns_the_three_axes_with_methods
+     */
     public function test_cancellable_amount_returns_the_three_axes_with_methods(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -408,6 +422,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame([], $response->json('data.cancellable.reserved_claims'));
     }
 
+    /**
+     * @effects cancellable_amount_reserves_other_pending_refunds
+     */
     public function test_cancellable_amount_reserves_other_pending_refunds(): void
     {
         $order = $this->deliveredClaimOrder(quantity: 2);
@@ -421,6 +438,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(5000.0, (float) $response->json('data.cancellable.reserved'));
     }
 
+    /**
+     * @effects cancellable_amount_with_refund_context_excludes_itself_from_the_reserve
+     */
     public function test_cancellable_amount_with_refund_context_excludes_itself_from_the_reserve(): void
     {
         [, $refund] = $this->approvedDirectRefund(10000);
@@ -435,6 +455,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertGreaterThanOrEqual(10000.0, (float) $response->json('data.cancellable.amount'));
     }
 
+    /**
+     * @effects cancellable_amount_for_an_exchange_sourced_refund_excludes_its_own_filing
+     */
     public function test_cancellable_amount_for_an_exchange_sourced_refund_excludes_its_own_filing(): void
     {
         [$order, $exchange, $refund] = $this->approvedExchangeRefund();
@@ -456,6 +479,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertGreaterThanOrEqual($filed, (float) $response->json('data.cancellable.amount'));
     }
 
+    /**
+     * @effects execute_of_an_exchange_sourced_refund_accumulates_without_touching_options
+     */
     public function test_execute_of_an_exchange_sourced_refund_accumulates_without_touching_options(): void
     {
         $this->fakePgRefund($calls);
@@ -477,6 +503,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame($expectedAmount, (float) $calls[0]['amount']);
     }
 
+    /**
+     * @effects cancellable_amount_is_404_for_a_refund_of_another_order
+     */
     public function test_cancellable_amount_is_404_for_a_refund_of_another_order(): void
     {
         [, $refund] = $this->approvedDirectRefund(10000);
@@ -491,6 +520,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 금액 수정 (D18) — 환불 축
     // ================================================================
 
+    /**
+     * @effects amounts_updates_the_refund_amounts_within_the_cancellable_limit
+     */
     public function test_amounts_updates_the_refund_amounts_within_the_cancellable_limit(): void
     {
         [, $refund] = $this->approvedDirectRefund(10000);
@@ -515,6 +547,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * 신청서 행만 잠그면 같은 주문의 서로 다른 두 신청서가 서로 다른 행을 잠그고 나란히
      * 통과해 합계가 D19 를 넘긴 채로 저장된다 — 형제 `executeRefund()` · 접수 경로와 같은
      * 직렬화 지점(주문 행)을 쓰는지가 이 축의 유일한 관측 가능 신호다.
+     *
+     * @effects amounts_locks_the_order_row_for_the_cancellable_aggregate
      */
     public function test_amounts_locks_the_order_row_for_the_cancellable_aggregate(): void
     {
@@ -542,6 +576,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects amounts_rejects_a_refund_amount_exceeding_the_cancellable_limit
+     */
     public function test_amounts_rejects_a_refund_amount_exceeding_the_cancellable_limit(): void
     {
         [, $refund] = $this->approvedDirectRefund(10000);
@@ -553,6 +590,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(10000.0, (float) $refund->fresh()->refund_amount);
     }
 
+    /**
+     * @effects amounts_rejects_mileage_refunds_for_guest_orders
+     */
     public function test_amounts_rejects_mileage_refunds_for_guest_orders(): void
     {
         [$order, $refund] = $this->approvedDirectRefund(10000);
@@ -569,6 +609,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * 저장과 실행은 같은 정규화기를 지나지만 저장 축만 단언돼 있었다. 실행이 본문 금액을
      * 다른 경로로 받게 되면 그 순간 장부만 정산되는 결함이 회귀 없이 지나간다 —
      * 마일리지 원장은 회원 전용이라 환급 대상 자체가 없다.
+     *
+     * @effects execute_rejects_mileage_refunds_for_guest_orders
      */
     public function test_execute_rejects_mileage_refunds_for_guest_orders(): void
     {
@@ -583,6 +625,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
     }
 
+    /**
+     * @effects amounts_prohibits_shipping_fee_fields_on_the_refund_type
+     */
     public function test_amounts_prohibits_shipping_fee_fields_on_the_refund_type(): void
     {
         [, $refund] = $this->approvedDirectRefund(10000);
@@ -592,6 +637,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * @effects amounts_requires_the_update_amounts_permission
+     */
     public function test_amounts_requires_the_update_amounts_permission(): void
     {
         [, $refund] = $this->approvedDirectRefund(10000);
@@ -607,6 +655,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 취소 미리보기 비대칭 해소 (S3 2차 확정 ②)
     // ================================================================
 
+    /**
+     * @effects estimate_refund_is_422_for_items_locked_by_a_claim_course
+     */
     public function test_estimate_refund_is_422_for_items_locked_by_a_claim_course(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -631,6 +682,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 취소 가능 금액 — 다통화 · 권한 · 문맥 배타 · 한도 축 (3차 계획 검증 보강)
     // ================================================================
 
+    /**
+     * @effects cancellable_amount_reports_the_payment_currency_remaining_separately_from_the_base
+     */
     public function test_cancellable_amount_reports_the_payment_currency_remaining_separately_from_the_base(): void
     {
         $order = $this->foreignPaidClaimOrder(rate: 0.001, paidLocal: 50);
@@ -655,6 +709,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame('KRW', $response->json('data.cancellable.currency'));
     }
 
+    /**
+     * @effects cancellable_amount_requires_the_claims_read_permission
+     */
     public function test_cancellable_amount_requires_the_claims_read_permission(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -667,6 +724,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ->assertStatus(403);
     }
 
+    /**
+     * @effects cancellable_amount_rejects_the_refund_context_together_with_items
+     */
     public function test_cancellable_amount_rejects_the_refund_context_together_with_items(): void
     {
         [$order, $refund] = $this->approvedDirectRefund(10000);
@@ -680,6 +740,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ->assertJsonValidationErrors('refund_id');
     }
 
+    /**
+     * @effects cancellable_amount_accepts_items_when_the_refund_context_is_blank
+     */
     public function test_cancellable_amount_accepts_items_when_the_refund_context_is_blank(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -692,6 +755,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ->assertStatus(200);
     }
 
+    /**
+     * @effects cancellable_amount_scopes_the_requested_items_to_the_order
+     */
     public function test_cancellable_amount_scopes_the_requested_items_to_the_order(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -712,6 +778,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * 예전에는 이 축이 한도를 0 으로 잘라, 결제 잔여가 충분한데도 승인조차 되지 않은 남의
      * 신청서 때문에 정당한 환불이 막혔다(S17 B5 — 실측 3회 재현). 응답은 근거로서 예정액과
      * 그 내역을 계속 싣되, `binding` 은 ①·② 두 강제 축만 가리킨다.
+     *
+     * @effects cancellable_amount_reports_the_reserved_axis_but_does_not_bind_on_it
      */
     public function test_cancellable_amount_reports_the_reserved_axis_but_does_not_bind_on_it(): void
     {
@@ -729,6 +797,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertGreaterThan(0.0, (float) $response->json('data.cancellable.amount'));
     }
 
+    /**
+     * @effects cancellable_amount_reports_the_payment_axis_as_binding
+     */
     public function test_cancellable_amount_reports_the_payment_axis_as_binding(): void
     {
         // 결제 잔여가 도메인 환불 대상보다 작으면 ② 축이 한도를 정한다.
@@ -742,6 +813,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(100.0, (float) $response->json('data.cancellable.amount'));
     }
 
+    /**
+     * @effects cancellable_amount_answers_a_fully_cancelled_order_with_the_base_currency
+     */
     public function test_cancellable_amount_answers_a_fully_cancelled_order_with_the_base_currency(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -761,6 +835,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 환불 실행 — 혼합 수단 · 처리자 보존 · 원장 연결 (3차 계획 검증 보강)
     // ================================================================
 
+    /**
+     * @effects execute_splits_a_mixed_pg_and_mileage_refund
+     */
     public function test_execute_splits_a_mixed_pg_and_mileage_refund(): void
     {
         $this->fakePgRefund($calls);
@@ -790,6 +867,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(3000.0, (float) $order->total_refunded_points_amount);
     }
 
+    /**
+     * @effects execute_links_the_mileage_restore_to_the_original_usage_transaction
+     */
     public function test_execute_links_the_mileage_restore_to_the_original_usage_transaction(): void
     {
         [$order, $refund] = $this->approvedDirectRefund(0, 3000, [
@@ -824,6 +904,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects execute_preserves_the_option_processed_by_when_none_is_given
+     */
     public function test_execute_preserves_the_option_processed_by_when_none_is_given(): void
     {
         $this->fakePgRefund();
@@ -844,6 +927,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 금액 수정 — 상태 게이트 2분기 (3차 계획 검증 보강)
     // ================================================================
 
+    /**
+     * @effects amounts_rejects_a_cancel_sourced_refund
+     */
     public function test_amounts_rejects_a_cancel_sourced_refund(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -863,6 +949,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(0.0, (float) $refund->fresh()->refund_amount);
     }
 
+    /**
+     * @effects amounts_rejects_a_processing_refund
+     */
     public function test_amounts_rejects_a_processing_refund(): void
     {
         [, $refund] = $this->approvedDirectRefund(10000);
@@ -880,6 +969,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 취소 미리보기 — 사유 전달 · 수량 잠금 (3차 계획 검증 보강)
     // ================================================================
 
+    /**
+     * @effects estimate_refund_reports_the_reason_detail_for_admins
+     */
     public function test_estimate_refund_reports_the_reason_detail_for_admins(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -901,6 +993,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertNotEmpty($response->json('errors.detail'));
     }
 
+    /**
+     * @effects estimate_refund_is_422_for_items_locked_by_a_pending_refund_quantity
+     */
     public function test_estimate_refund_is_422_for_items_locked_by_a_pending_refund_quantity(): void
     {
         $order = $this->deliveredClaimOrder(quantity: 2);

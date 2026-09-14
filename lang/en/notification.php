@@ -56,6 +56,12 @@ return [
         'unknown' => 'Channel configuration is incomplete.',
     ],
 
+    // Skipped delivery reasons
+    'skipped' => [
+        'no_recipient_resolved' => 'No recipient matched the recipient rules (:rules), so nothing was sent.',
+        'guest_email_empty' => 'The guest recipient has no email address, so nothing was sent. (Recipient rules: :rules)',
+    ],
+
     // User notifications
     'user' => [
         'list_success' => 'Notifications loaded successfully.',
@@ -74,6 +80,12 @@ return [
     ],
 
     // Notification channel metadata (referenced by config/notification.php default_channels)
+    'validation' => [
+        // 역할 수신자는 다중 선택이 되면서 값이 배열일 수 있다. 객체·숫자가 섞이면
+        // 저장은 되고 발송 시점에 수신자 0명으로만 드러나므로 여기서 세운다.
+        'role_value_shape' => 'A role recipient value must be an identifier string or an array of identifier strings.',
+    ],
+
     'channels' => [
         'core_default' => 'Core default channel',
         'mail' => [

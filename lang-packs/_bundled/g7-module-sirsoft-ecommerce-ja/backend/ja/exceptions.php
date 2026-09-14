@@ -136,4 +136,5 @@ return [
     'claim_image_limit_exceeded' => '添付画像は最大:max枚までアップロードできます。',
     'claim_image_not_found' => '添付画像が見つかりません。',
     'claim_payment_currency_unavailable' => '注文の決済通貨情報を確認できないため、決済を進めることができません。管理者にお問い合わせください。',
+    'claim_item_not_splittable' => 'この商品は数量を分けて処理することができません。全体数量で処理してください。',
 ];

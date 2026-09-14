@@ -19,6 +19,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
     openClaimDetailCompleteHandler,
     executeClaimItemBulkStatusHandler,
+    openClaimItemQuantityConfirmHandler,
+    syncClaimItemSelectionHandler,
+    updateClaimItemQuantityHandler,
     saveClaimTrackingHandler,
     saveClaimAdminMemoHandler,
     saveClaimAmountsHandler,
@@ -77,7 +80,9 @@ const mockG7Core = {
         }),
         setLocal: vi.fn(),
     },
-    toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
+    // `info` 까지 둔다 — 핸들러가 `toast?.info?.()` 로 부르므로 목에 없으면 분할 안내가
+    // **한 번도 실행되지 않은 채** 테스트가 조용히 통과한다.
+    toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn(), info: vi.fn() },
     modal: { open: vi.fn(), close: vi.fn() },
     t: vi.fn((key: string) => key),
     api: {
@@ -93,8 +98,28 @@ const mockContext = {} as any;
 
 /** 상세 화면의 신청 상품 두 행 */
 const ITEM_ROWS = [
-    { id: 55, product_name: '프리미엄 코튼 티셔츠', option_name: '차콜 / M', quantity: 1 },
-    { id: 56, product_name: '소프트 터치 니트', option_name: '아이보리 / L', quantity: 1 },
+    {
+        id: 55,
+        product_name: '프리미엄 코튼 티셔츠',
+        option_name: '차콜 / M',
+        quantity: 3,
+        is_splittable: true,
+        transition_options: [
+            { value: 'approved', label: '교환승인' },
+            { value: 'rejected', label: '교환반려' },
+        ],
+    },
+    {
+        id: 56,
+        product_name: '소프트 터치 니트',
+        option_name: '아이보리 / L',
+        quantity: 1,
+        is_splittable: true,
+        transition_options: [
+            { value: 'rejected', label: '교환반려' },
+            { value: 'collection_ready', label: '교환회수준비중' },
+        ],
+    },
 ];
 
 /** 상세 화면이 넘기는 공통 식별 축 (세그먼트는 서버가 준 값) */
@@ -145,7 +170,7 @@ describe('상품 단위 일괄 전이 (D25)', () => {
 
         const [url, body] = lastCall('patch');
         expect(url).toBe(`${BASE}/exchanges/31/options/bulk-status`);
-        expect(body).toEqual({ items: [55], status: 'collecting' });
+        expect(body).toEqual({ items: [{ id: 55 }], status: 'collecting' });
     });
 
     /**
@@ -198,12 +223,12 @@ describe('상품 단위 일괄 전이 (D25)', () => {
     });
 
     /**
-     * 환불에는 상품 단위 전이 축이 없다 — 라우트 자체가 교환·반품 스코프다.
+     * 환불에도 상품 단위 전이 축이 열렸다 (§4) — 예전에는 화면이 이 유형을 거절했다.
      *
      * @scenario claim_type=refund, claim_stage=in_progress
-     * @effects claim_item_bulk_status_rejects_refund
+     * @effects claim_item_bulk_status_accepts_refund
      */
-    it('환불 유형에서는 상품 단위 전이를 시도하지 않는다', async () => {
+    it('환불 유형도 상품 단위 전이를 보낸다', async () => {
         await executeClaimItemBulkStatusHandler(
             {
                 handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
@@ -219,8 +244,130 @@ describe('상품 단위 일괄 전이 (D25)', () => {
             mockContext,
         );
 
+        const [url, body] = lastCall('patch');
+        expect(url).toBe(`${BASE}/refunds/44/options/bulk-status`);
+        expect(body).toEqual({ items: [{ id: 70 }], status: 'approved' });
+    });
+
+    /**
+     * 취소신청서만 이 축이 없다 — 생성이 곧 확정이라 옮길 상태가 없다.
+     *
+     * @scenario claim_type=cancel, claim_stage=final
+     * @effects claim_item_bulk_status_rejects_cancel
+     */
+    it('취소 유형에서는 상품 단위 전이를 시도하지 않는다', async () => {
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: {
+                    pathSegment: 'cancels',
+                    claimType: 'cancel',
+                    claimId: 44,
+                    itemIds: [70],
+                    status: 'approved',
+                    rows: [],
+                },
+            },
+            mockContext,
+        );
+
         expect(mockG7Core.api.patch).not.toHaveBeenCalled();
         expect(mockG7Core.toast.warning).toHaveBeenCalled();
+    });
+
+    /**
+     * 수량을 실으면 그 행만 갈린다 — 싣지 않은 행은 전량이다.
+     *
+     * @effects claim_item_bulk_status_sends_per_row_quantities
+     */
+    it('행별 수량이 본문에 실린다', async () => {
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: {
+                    ...DETAIL_TARGET,
+                    itemIds: [55, 56],
+                    itemQuantities: { 55: 2 },
+                    status: 'rejected',
+                    rows: ITEM_ROWS,
+                },
+            },
+            mockContext,
+        );
+
+        const [, body] = lastCall('patch');
+        expect(body).toEqual({ items: [{ id: 55, quantity: 2 }, { id: 56 }], status: 'rejected' });
+    });
+
+    /**
+     * 분할이 일어나면 **남은 수량을 말로 알린다.**
+     *
+     * 표가 한 줄 늘어난 것을 운영자가 스스로 해석하게 두면 "내가 뭘 잘못 눌렀나" 가 된다.
+     * 서버는 `split` 로 몇 개를 처리하고 몇 개를 남겼는지 답하고, 화면은 그 숫자를 그대로 읽는다.
+     *
+     * @effects claim_item_split_reports_remainder
+     */
+    it('분할이 일어나면 남은 수량을 안내한다', async () => {
+        mockG7Core.api.patch.mockResolvedValueOnce({
+            success: true,
+            data: {
+                succeeded: [55],
+                skipped: [],
+                split: [{ id: 55, quantity: 2, remainder_id: 91, remainder_quantity: 1 }],
+            },
+        });
+
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: {
+                    ...DETAIL_TARGET,
+                    itemIds: [55],
+                    itemQuantities: { 55: 2 },
+                    status: 'approved',
+                    rows: ITEM_ROWS,
+                },
+            },
+            mockContext,
+        );
+
+        const notice = mockG7Core.toast.info.mock.calls.at(-1)?.[0] ?? '';
+        expect(notice).toContain('2');
+        expect(notice).toContain('1');
+    });
+
+    /**
+     * 네트워크가 끊겼을 때 운영자가 읽는 것은 **번역된 안내**여야 한다.
+     *
+     * 실측(§9 T4)에서 전이 요청만 끊었더니 토스트에 영문 원문 `Network Error` 가 그대로 떴다.
+     * 그 문자열은 axios 가 전송 실패에 붙이는 내부 값이라 번역도 사이트 문구도 아니다 —
+     * 코어가 로그인 경로에서 같은 결함을 이미 한 번 고쳤고(7.0.11), 같은 부류가 클레임 전이
+     * 경로에 남아 있었다.
+     *
+     * @scenario claim_type=exchange, network=offline
+     * @effects claim_item_transition_network_error_shows_localized_message
+     */
+    it('네트워크 오류는 영문 원문 대신 번역된 안내로 뜬다', async () => {
+        // axios 전송 실패의 모양 그대로 — `response` 가 없고 `message` 가 내부 문자열이다.
+        const transportError: any = new Error('Network Error');
+        transportError.isAxiosError = true;
+        transportError.code = 'ERR_NETWORK';
+        mockG7Core.api.patch.mockRejectedValueOnce(transportError);
+
+        await expect(
+            executeClaimItemBulkStatusHandler(
+                {
+                    handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                    params: { ...DETAIL_TARGET, itemIds: [55], status: 'approved', rows: ITEM_ROWS },
+                },
+                mockContext,
+            ),
+        ).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.error).toHaveBeenCalled();
+        const shown = mockG7Core.toast.error.mock.calls.at(-1)?.[0] ?? '';
+        expect(shown).not.toBe('Network Error');
+        expect(shown).toContain('신청 상품 상태 변경에 실패했습니다');
     });
 
     /**
@@ -243,7 +390,7 @@ describe('상품 단위 일괄 전이 (D25)', () => {
         expect(mockGlobalState.claimCompleteContext.execute).toMatchObject({
             url: `${BASE}/exchanges/31/options/bulk-status`,
             method: 'PATCH',
-            body: { items: [55] },
+            body: { items: [{ id: 55 }] },
             refetch: ['claim', 'claim_logs'],
         });
     });
@@ -997,5 +1144,140 @@ describe('환불 실행 (D18·D19)', () => {
 
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
         expect(mockG7Core.toast.error).toHaveBeenCalled();
+    });
+});
+
+describe('선택 교집합과 수량 확인 모달 (§4-4·§4-6)', () => {
+    /**
+     * 어휘는 서버가 행마다 실어 준다 — 화면이 상태 목록을 리터럴로 들면 전이표가 바뀔 때
+     * 화면과 서버가 갈린다.
+     *
+     * @effects claim_item_selection_intersects_server_vocabulary
+     */
+    it('선택된 행들의 전이 어휘 교집합을 깐다', () => {
+        syncClaimItemSelectionHandler(
+            {
+                handler: 'sirsoft-ecommerce.syncClaimItemSelection',
+                params: { selectedIds: [55, 56], rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith(
+            expect.objectContaining({
+                selectedClaimItems: [55, 56],
+                itemTransitionOptions: [{ value: 'rejected', label: '교환반려' }],
+            }),
+        );
+    });
+
+    /**
+     * 선택이 바뀌어 이미 고른 상태가 교집합 밖이면 비운다 — 남겨 두면 화면엔 값이 있는데
+     * [적용] 이 422 다.
+     *
+     * @effects claim_item_selection_drops_a_status_outside_the_intersection
+     */
+    it('교집합 밖이 된 상태는 비운다', () => {
+        mockG7Core.state.getLocal = () => ({ itemBulkStatus: 'approved' });
+
+        syncClaimItemSelectionHandler(
+            {
+                handler: 'sirsoft-ecommerce.syncClaimItemSelection',
+                params: { selectedIds: [55, 56], rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith(
+            expect.objectContaining({ itemBulkStatus: '' }),
+        );
+
+        mockG7Core.state.getLocal = () => ({});
+    });
+
+    /**
+     * @effects claim_item_apply_opens_the_quantity_confirm_modal
+     */
+    it('[적용] 은 수량 확인 모달을 연다', async () => {
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'rejected', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockG7Core.api.patch).not.toHaveBeenCalled();
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_item_quantity_confirm');
+        expect(mockGlobalState.claimItemQuantityContext).toMatchObject({
+            status: 'rejected',
+            itemIds: [55],
+            quantities: { 55: 3 },
+        });
+        expect(mockGlobalState.claimItemQuantityContext.rows[0]).toMatchObject({ id: 55, quantity: 3, splittable: true });
+    });
+
+    /**
+     * 완료는 이 모달을 거치지 않는다 — 완료 처리 모달이 재고 복구까지 함께 묻는다 (D26).
+     *
+     * @effects claim_item_apply_skips_the_quantity_modal_for_completion
+     */
+    it('완료 전이는 완료 처리 모달로 곧장 간다', async () => {
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'completed', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_complete');
+    });
+
+    /**
+     * 수량 1 인 행은 나눌 것이 없다 — 입력을 열어 두면 0 이나 2 를 넣고 422 를 본다.
+     *
+     * @effects claim_item_quantity_modal_locks_unsplittable_rows
+     */
+    it('나눌 수 없는 행은 잠긴 것으로 표시한다', async () => {
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: { ...DETAIL_TARGET, itemIds: [56], status: 'rejected', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimItemQuantityContext.rows[0]).toMatchObject({ id: 56, splittable: false });
+    });
+
+    /**
+     * @effects claim_item_quantity_input_is_clamped_to_the_row
+     */
+    it('수량 입력을 1~현재수량으로 클램프한다', async () => {
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'rejected', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        const update = (value: unknown) => updateClaimItemQuantityHandler(
+            { handler: 'sirsoft-ecommerce.updateClaimItemQuantity', params: { itemId: 55, value: value as any } },
+            mockContext,
+        );
+
+        update(9);
+        expect(mockGlobalState.claimItemQuantityContext.quantities['55']).toBe(3);
+
+        update(0);
+        expect(mockGlobalState.claimItemQuantityContext.quantities['55']).toBe(1);
+
+        update('');
+        expect(mockGlobalState.claimItemQuantityContext.quantities['55']).toBe(1);
+
+        update(2);
+        expect(mockGlobalState.claimItemQuantityContext.quantities['55']).toBe(2);
     });
 });

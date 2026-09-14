@@ -388,6 +388,7 @@
       "onClick": "클릭하면",
       "onHover": "마우스 올리면",
       "onChange": "값이 바뀌면",
+      "onSearch": "검색어를 입력하면",
       "onSubmit": "제출하면",
       "onClose": "닫으면",
       "onFilesChange": "파일이 바뀌면",

@@ -134,44 +134,138 @@
               "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_label"
             },
             {
+              "comment": "상한 안내는 서버 봉투(attachment_settings)를 읽는다. 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈리고, 사용자에게는 이유 없는 422 만 남는다.",
+              "id": "cr_005b_images_hint",
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex flex-wrap gap-2"
+                "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_hint|max={{claim?.data?.attachment_settings?.max_images ?? 0}}&size={{Math.round((claim?.data?.attachment_settings?.image_max_size_kb ?? 0) / 1024 * 100) / 100 + 'MB'}}&types={{(claim?.data?.attachment_settings?.allowed_extensions ?? []).join(', ')}}"
+            },
+            {
+              "comment": "구매자 신청 화면과 같은 공용 업로더를 쓴다 — 드롭존·다중 선택·미리보기·진행률·상한 안내·개별 삭제가 한 벌로 온다. `reorder` 는 빈 문자열로 명시해야 한다: 기본값은 코어 첨부 순서 API 라, 드래그 한 번이 **남의 첨부 순서**를 바꾸고 이 화면에는 오류가 뜨지 않는다. `maxConcurrentUploads` 를 1 로 낮추는 것은 서버가 개수 상한을 잠금 없이 판정하기 때문이다(병렬이면 상한을 넘겨 저장된다).",
+              "id": "cr_006_images_uploader",
+              "type": "composite",
+              "name": "FileUploader",
+              "props": {
+                "collection": "claim",
+                "autoUpload": true,
+                "maxConcurrentUploads": 1,
+                "maxFiles": "{{claim?.data?.attachment_settings?.max_images ?? 5}}",
+                "maxSize": "{{Math.round((claim?.data?.attachment_settings?.image_max_size_kb ?? 0) / 1024 * 100) / 100}}",
+                "accept": "{{claim?.data?.attachment_settings?.accept ?? ''}}",
+                "initialFiles": "{{claim?.data?.claim?.images ?? []}}",
+                "confirmBeforeRemove": true,
+                "confirmRemoveTitle": "$t:sirsoft-ecommerce.admin.claim.detail.reason.confirm_remove_image_title",
+                "confirmRemoveMessage": "$t:sirsoft-ecommerce.admin.claim.detail.reason.confirm_remove_image_message",
+                "apiEndpoints": {
+                  "upload": "{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images'}}",
+                  "delete": "{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images/:id'}}",
+                  "reorder": ""
+                },
+                "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}"
+              },
+              "actions": [
+                {
+                  "comment": "올린 것과 지운 것은 다른 사건이라 안내 문구가 다르다 — 한 핸들러가 둘을 받으므로 어느 쪽인지 알려 준다.",
+                  "event": "onUploadComplete",
+                  "handler": "sirsoft-ecommerce.refreshClaimAttachments",
+                  "params": {
+                    "event": "upload"
+                  }
+                },
+                {
+                  "event": "onRemove",
+                  "handler": "sirsoft-ecommerce.refreshClaimAttachments",
+                  "params": {
+                    "event": "remove"
+                  }
+                },
+                {
+                  "comment": "오류 문구는 컴포넌트가 개수·용량·확장자별로 이미 사람이 읽는 문장을 만든다 — 핸들러를 거치면 그 문장을 다시 만들어야 한다.",
+                  "event": "onUploadError",
+                  "handler": "toast",
+                  "params": {
+                    "type": "error",
+                    "message": "{{$args[0]}}"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "출처 구분 스트립. 뱃지를 썸네일 안에 넣으려면 공유 템플릿(FileList·SortableThumbnailItem)을 고쳐야 하는데, 모듈이 '이 템플릿 ≥ X 버전' 의존을 선언할 수단이 없어 구버전에서 오류 없이 뱃지만 사라진다. 그래서 모듈이 소유한 스트립으로 낸다. `unknown` 은 뱃지를 그리지 않는다 — 조용한 거짓 대신 공백이 낫다. 삭제 버튼은 두지 않는다(액션은 업로더가 단독 소유).",
+              "id": "cr_007_images_origin_list",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(claim?.data?.claim?.images ?? []).length > 0}}",
+              "props": {
+                "className": "mt-3 space-y-1"
               },
               "children": [
                 {
-                  "id": "cr_006_image_{{imageIdx}}",
                   "type": "basic",
-                  "name": "A",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_origin_title"
+                },
+                {
+                  "id": "cr_007_image_origin_{{originIdx}}",
+                  "type": "basic",
+                  "name": "Div",
                   "iteration": {
                     "source": "{{claim?.data?.claim?.images ?? []}}",
-                    "item_var": "image",
-                    "index_var": "imageIdx"
+                    "item_var": "originImage",
+                    "index_var": "originIdx"
                   },
-                  "comment": "첨부는 한시 서명 URL 로만 서빙된다 — 새 창으로 열어 상세 화면을 잃지 않게 한다.",
                   "props": {
-                    "href": "{{image.download_url}}",
-                    "target": "_blank",
-                    "rel": "noopener noreferrer",
-                    "className": "block"
+                    "className": "flex items-center flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-300"
                   },
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Img",
+                      "name": "Badge",
+                      "if": "{{!!originImage.uploader_type_label}}",
                       "props": {
-                        "src": "{{image.download_url}}",
-                        "alt": "{{image.original_name ?? ''}}",
-                        "className": "w-20 h-20 rounded object-cover border border-gray-200 dark:border-gray-700"
+                        "color": "{{originImage.uploader_type === 'admin' ? 'purple' : 'blue'}}",
+                        "size": "sm",
+                        "text": "{{originImage.uploader_type_label ?? ''}}"
                       }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium"
+                      },
+                      "text": "{{originImage.original_name ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!!originImage.uploader_name}}",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "{{originImage.uploader_name ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!!originImage.created_at}}",
+                      "props": {
+                        "className": "text-gray-400 dark:text-gray-500"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.image_origin_uploaded_at|at={{originImage.created_at ?? ''}}"
                     }
                   ]
                 }
               ]
             },
             {
-              "comment": "운영자 대리 첨부 업로드·일괄 정리 (F6). 라우트와 서비스는 처음부터 완비돼 있었는데 화면 진입점이 0건이었다 — 전화로 사진을 받은 운영자는 그 증빙을 신청서에 붙일 방법이 없어 메모에 설명만 적어야 했고, 잘못 올라온 증빙(개인정보가 찍힌 사진)을 지울 수도 없었다.",
+              "comment": "첨부 일괄 정리 (F6). 개별 삭제는 업로더가 하고, 이 버튼은 반려·종결 건을 한 번에 비울 때 쓴다.",
               "id": "cr_007_image_admin_actions",
               "type": "basic",
               "name": "Div",
@@ -179,29 +273,6 @@
                 "className": "flex items-center flex-wrap gap-2 mt-3"
               },
               "children": [
-                {
-                  "id": "cr_007_image_upload",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "file",
-                    "accept": "image/*",
-                    "className": "text-sm file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-gray-100 dark:file:bg-gray-700 file:text-gray-700 dark:file:text-gray-200",
-                    "disabled": "{{claim?.data?.abilities?.can_update_status !== true || _local.isUploadingClaimImage === true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "sirsoft-ecommerce.uploadClaimImage",
-                      "params": {
-                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
-                        "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
-                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
-                        "file": "{{$event.files?.[0] ?? null}}"
-                      }
-                    }
-                  ]
-                },
                 {
                   "id": "cr_007_image_clear",
                   "type": "basic",

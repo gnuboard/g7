@@ -257,10 +257,37 @@ class BaseApiResource extends JsonResource
     /**
      * 현재 요청의 타임존을 가져옵니다.
      * SetTimezone 미들웨어에서 설정한 값을 사용하며, 미설정 시 기본값을 반환합니다.
+     *
+     * @return string
      */
     protected function getUserTimezone(): string
     {
         return TimezoneHelper::getUserTimezone();
+    }
+
+    /**
+     * 파일 크기를 사람이 읽는 형식으로 바꿉니다.
+     *
+     * 파일을 싣는 리소스가 늘 때마다 같은 변환을 복제하면 단위·자릿수 규칙이 화면마다
+     * 갈린다 — 같은 파일이 상품에서는 `1.5 MB`, 클레임에서는 `1.46MB` 로 보이는 식이다.
+     *
+     * @param  int|null  $bytes  바이트 크기
+     * @return string 사람이 읽는 크기 (예: `1.5 MB`)
+     */
+    protected function formatFileSize(?int $bytes): string
+    {
+        if ($bytes === null || $bytes === 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $index = 0;
+        while ($bytes >= 1024 && $index < count($units) - 1) {
+            $bytes /= 1024;
+            $index++;
+        }
+
+        return round($bytes, 2).' '.$units[$index];
     }
 
     /**

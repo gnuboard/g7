@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Modules\Sirsoft\Ecommerce\Enums\ProductImageCollection;
@@ -27,7 +28,7 @@ class UploadProductImageRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙을 반환합니다.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
@@ -37,7 +38,11 @@ class UploadProductImageRequest extends FormRequest
                 'file',
                 'image',
                 'mimes:jpeg,png,jpg,gif,webp',
-                'max:10240', // 10MB
+                // 상한은 **운영자 설정**이 정한다(환경설정 > 업로드의 MB → config 의 KB 변환은
+                // `SettingsServiceProvider` 단 한 곳). 리터럴로 두면 같은 화면에서 코어 첨부는
+                // 설정을 따르는데 상품 이미지만 10MB 에 묶여, 설정을 올려도 반영되지 않는다.
+                // 폴백 값은 종전 리터럴 그대로라 설정이 없는 환경의 동작이 바뀌지 않는다.
+                'max:'.(int) config('attachment.max_file_size', 10240),
             ],
             'temp_key' => [
                 'nullable',

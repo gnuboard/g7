@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
+use Modules\Sirsoft\Page\Http\Requests\UploadPageAttachmentRequest;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -26,6 +27,10 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class PageAttachmentService
 {
+    /**
+     * @param  PageAttachmentRepositoryInterface  $attachmentRepository  첨부 Repository
+     * @param  StorageInterface  $storage  스토리지 (attachments 카테고리 디스크 주입)
+     */
     public function __construct(
         private PageAttachmentRepositoryInterface $attachmentRepository,
         private StorageInterface $storage,
@@ -41,6 +46,7 @@ class PageAttachmentService
      * @param  int|null  $pageId  페이지 ID (신규 작성 중이면 null)
      * @param  int  $additional  이번에 추가하려는 첨부 개수
      * @param  string|null  $tempKey  임시 업로드 키 (신규 작성 시 기존 임시첨부 합산용)
+     * @return void
      *
      * @throws AttachmentLimitExceededException 상한 초과 시
      */
@@ -67,6 +73,68 @@ class PageAttachmentService
         if ($total > $limit) {
             throw new AttachmentLimitExceededException($limit, $total);
         }
+    }
+
+    /**
+     * 화면이 상한 안내·입력 제약에 쓰는 공개 설정을 반환합니다.
+     *
+     * 상한·허용 형식을 화면이 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가
+     * 갈린다 — 사용자에게는 "왜 갑자기 안 되는지" 만 남는다.
+     *
+     * MIME → 확장자 변환도 **서버에서 한 번만** 한다. 화면이 변환하면 같은 매핑이 화면마다
+     * 생기고, 형식을 추가할 때 한쪽만 늘어난다.
+     *
+     * @return array<string, mixed> 공개 설정
+     */
+    public function publicLimits(): array
+    {
+        $maxCount = (int) g7_module_settings('sirsoft-page', 'attachment.max_count', 0);
+        $maxSizeMb = max(1, (int) g7_module_settings('sirsoft-page', 'attachment.max_size_mb', 10));
+
+        $allowedTypes = g7_module_settings('sirsoft-page', 'attachment.allowed_types', null);
+        if (! is_array($allowedTypes)) {
+            $allowedTypes = UploadPageAttachmentRequest::FALLBACK_ALLOWED_TYPES;
+        }
+        $allowedTypes = array_values(array_filter(array_map('strval', $allowedTypes)));
+
+        return [
+            // 0 이하는 "제한 없음" 이다(서버 판정과 같은 뜻) — 화면은 컴포넌트 기본값을 쓴다.
+            'max_count' => $maxCount > 0 ? $maxCount : null,
+            'max_size_mb' => $maxSizeMb,
+            'allowed_types' => $allowedTypes,
+            'accept' => $this->acceptFromMimeTypes($allowedTypes),
+        ];
+    }
+
+    /**
+     * MIME 목록을 파일 선택창 필터 문자열로 바꿉니다.
+     *
+     * 매핑에 없는 MIME 은 그대로 실어 보낸다 — 브라우저가 MIME 자체도 `accept` 값으로
+     * 받아 주므로, 모르는 형식을 조용히 버려 고를 수 없게 만드는 것보다 낫다.
+     *
+     * @param  array<int, string>  $mimeTypes  허용 MIME 목록
+     * @return string `accept` 문자열
+     */
+    private function acceptFromMimeTypes(array $mimeTypes): string
+    {
+        $map = [
+            'image/jpeg' => ['.jpg', '.jpeg'],
+            'image/png' => ['.png'],
+            'image/gif' => ['.gif'],
+            'image/webp' => ['.webp'],
+            'application/pdf' => ['.pdf'],
+            'application/zip' => ['.zip'],
+            'application/x-zip-compressed' => ['.zip'],
+        ];
+
+        $extensions = [];
+        foreach ($mimeTypes as $mimeType) {
+            foreach ($map[$mimeType] ?? [$mimeType] as $extension) {
+                $extensions[$extension] = true;
+            }
+        }
+
+        return implode(',', array_keys($extensions));
     }
 
     /**
@@ -269,6 +337,7 @@ class PageAttachmentService
      * 빠졌거나 파일 삭제에 실패한 경우 등) 삭제하지 않습니다.
      *
      * @param  Collection  $attachments  이번 회차에 처리한 첨부 목록
+     * @return void
      */
     private function removeEmptyTempDirectories(Collection $attachments): void
     {
@@ -347,6 +416,7 @@ class PageAttachmentService
      * owner_key 가 페이지의 `created_by` 이기 때문이다.
      *
      * @param  PageAttachment  $attachment  대상 첨부
+     * @return void
      *
      * @throws AccessDeniedHttpException 부모 페이지가 스코프 밖인 경우
      */
@@ -368,6 +438,7 @@ class PageAttachmentService
      * 걸러내지 않고 전량 거부한다(코어 첨부/메뉴 순서 변경과 같은 의미론).
      *
      * @param  array<int, array{id: int, order: int}>  $orders  순서 데이터
+     * @return void
      *
      * @throws AccessDeniedHttpException 스코프 밖 첨부가 하나라도 포함된 경우
      */

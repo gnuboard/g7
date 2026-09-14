@@ -16,7 +16,7 @@ class UploadPageAttachmentRequest extends FormRequest
      *
      * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
-    private const FALLBACK_ALLOWED_TYPES = [
+    public const FALLBACK_ALLOWED_TYPES = [
         'image/jpeg',
         'image/png',
         'image/gif',
@@ -37,6 +37,8 @@ class UploadPageAttachmentRequest extends FormRequest
 
     /**
      * query string 파라미터를 body로 병합합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {

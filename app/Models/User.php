@@ -198,6 +198,8 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 모델 부팅 시 UUID 자동 생성을 등록합니다.
+     *
+     * @return void
      */
     protected static function boot(): void
     {
@@ -212,6 +214,8 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 사용자의 약관 동의 이력들과의 관계를 정의합니다.
+     *
+     * @return HasMany 약관 동의 이력 관계
      */
     public function consents(): HasMany
     {
@@ -240,6 +244,8 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 사용자가 가진 역할들과의 관계를 정의합니다.
+     *
+     * @return BelongsToMany 역할 관계
      */
     public function roles(): BelongsToMany
     {
@@ -252,6 +258,8 @@ class User extends Authenticatable implements HasLocalePreference
      * 사용자의 개별 메뉴 권한들과의 관계를 정의합니다.
      *
      * @deprecated role_menus 피벗 테이블 사용. 역할 기반 권한을 사용하세요.
+     *
+     * @return HasMany 메뉴 권한 관계
      */
     public function menuPermissions(): HasMany
     {
@@ -263,6 +271,7 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * @param  string  $permission  권한 식별자
      * @param  PermissionType|null  $type  권한 타입 (null이면 타입 구분 없이 체크)
+     * @return bool 권한 보유 여부
      */
     public function hasPermission(string $permission, ?PermissionType $type = null): bool
     {
@@ -300,7 +309,15 @@ class User extends Authenticatable implements HasLocalePreference
 
         $grants = [];
 
-        foreach ($this->roles()->with('permissions')->get() as $role) {
+        // 이미 eager load 된 관계가 있으면 그것을 쓴다. `roles()` 쿼리를 다시 돌리면, 사용자
+        // 여럿을 한 번에 판정하는 경로(알림 수신자 루프)에서 쿼리가 **사람 수에 비례해** 늘어난다.
+        // 적재되지 않았으면 종전대로 조회하므로 단건 판정의 동작은 그대로다.
+        $roles = $this->relationLoaded('roles')
+            && $this->roles->every(static fn (Role $role): bool => $role->relationLoaded('permissions'))
+            ? $this->roles
+            : $this->roles()->with('permissions')->get();
+
+        foreach ($roles as $role) {
             foreach ($role->permissions as $permission) {
                 $grants[$permission->identifier][] = [
                     'type' => $this->enumValue($permission->type),
@@ -334,6 +351,8 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * 같은 인스턴스에서 역할을 바꾼 직후 다시 판정해야 하는 경우에 호출합니다.
      * (역할 동기화 서비스가 호출하며, 일반 조회 경로에서는 필요하지 않습니다)
+     *
+     * @return void
      */
     public function flushPermissionCaches(): void
     {
@@ -347,6 +366,7 @@ class User extends Authenticatable implements HasLocalePreference
      * @param  array  $permissions  권한 식별자 배열
      * @param  bool  $requireAll  모든 권한이 필요한지 여부 (true: AND, false: OR)
      * @param  PermissionType|null  $type  권한 타입 (null이면 타입 구분 없이 체크)
+     * @return bool 권한 보유 여부
      */
     public function hasPermissions(array $permissions, bool $requireAll = true, ?PermissionType $type = null): bool
     {
@@ -406,6 +426,7 @@ class User extends Authenticatable implements HasLocalePreference
      * 특정 역할을 가지고 있는지 확인합니다.
      *
      * @param  string  $role  역할 식별자
+     * @return bool 역할 보유 여부
      */
     public function hasRole(string $role): bool
     {
@@ -417,6 +438,7 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * @param  array  $roles  역할 식별자 배열
      * @param  bool  $requireAll  모든 역할이 필요한지 여부 (true: AND, false: OR)
+     * @return bool 역할 보유 여부
      */
     public function hasRoles(array $roles, bool $requireAll = true): bool
     {
@@ -476,6 +498,7 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * @param  int  $menuId  메뉴 ID
      * @param  MenuPermissionType|string  $permissionType  권한 유형 (read, write, delete)
+     * @return bool 메뉴 권한 보유 여부
      */
     public function hasMenuPermission(int $menuId, MenuPermissionType|string $permissionType = 'read'): bool
     {
@@ -528,6 +551,8 @@ class User extends Authenticatable implements HasLocalePreference
     /**
      * 사용자의 시간대를 반환합니다.
      * 설정되지 않은 경우 기본 사용자 시간대를 반환합니다.
+     *
+     * @return string 시간대 식별자
      */
     public function getTimezone(): string
     {
@@ -539,6 +564,8 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * attachments 테이블의 다형성 관계를 사용합니다.
      * collection='avatar'로 아바타 전용 첨부파일을 구분합니다.
+     *
+     * @return MorphOne 아바타 첨부 관계
      */
     public function avatarAttachment(): MorphOne
     {
@@ -572,6 +599,9 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 활성화된 사용자만 조회합니다.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return void
      */
     public function scopeActive(Builder $query): void
     {
@@ -581,6 +611,9 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 탈퇴한 사용자만 조회합니다.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return void
      */
     public function scopeWithdrawn(Builder $query): void
     {

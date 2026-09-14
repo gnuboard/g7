@@ -74,6 +74,40 @@ class RoleRepository implements RoleRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function getUsersByIdentifiers(array $identifiers): Collection
+    {
+        $identifiers = array_values(array_filter(array_map(
+            static fn ($identifier) => is_string($identifier) ? trim($identifier) : '',
+            $identifiers,
+        ), static fn (string $identifier): bool => $identifier !== ''));
+
+        if ($identifiers === []) {
+            return new Collection;
+        }
+
+        // 권한까지 함께 싣는다 — 알림 수신자 루프는 사람마다 "이 화면을 열 수 있는가" 를 한 번씩
+        // 묻고(링크 승격 판정), 그 판정이 각자 역할·권한을 다시 조회하면 쿼리가 **수신자 수에
+        // 비례해** 늘어난다. 느려질 뿐 오류가 없어 드러나지도 않는다.
+        $roles = Role::whereIn('identifier', $identifiers)->with('users.roles.permissions')->get();
+
+        // `flatMap()` 을 쓰지 않는다 — Eloquent 컬렉션의 `collapse()` 가 **베이스 컬렉션**을
+        // 돌려주어 이 메서드의 반환 타입과 어긋나고, 그 TypeError 를 수신자 해석의 try/catch 가
+        // 삼켜 **수신자 0명**이 된다(화면에도 응답에도 흔적이 없다).
+        $users = new Collection;
+
+        foreach ($roles as $role) {
+            foreach ($role->users as $user) {
+                $users->push($user);
+            }
+        }
+
+        // 두 역할에 함께 속한 사용자를 한 번만 담는다 — 그대로 두면 같은 사람에게 두 통이 간다.
+        return $users->unique('id')->values();
+    }
+
+    /**
      * 새로운 역할을 생성합니다.
      *
      * @param  array  $data  역할 생성 데이터
@@ -158,6 +192,7 @@ class RoleRepository implements RoleRepositoryInterface
      * @param  Role  $role  역할 모델
      * @param  int  $permissionId  권한 ID
      * @param  array  $pivotData  피벗 테이블에 저장할 추가 데이터
+     * @return void 반환값 없음
      */
     public function attachPermission(Role $role, int $permissionId, array $pivotData = []): void
     {

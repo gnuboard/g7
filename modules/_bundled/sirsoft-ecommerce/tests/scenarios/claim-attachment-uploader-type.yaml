@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(귀속 상태 × 업로더)의 조합은 백필 판정 규칙 그 자체라 케이스 표가 곧 effects 다 —
+#   조합마다 별도 @scenario 마킹을 두면 같은 것을 두 번 적는다. effects 축은 면제하지 않는다.
+feature: claim_attachment_uploader_type
+
+description: |
+  클레임 첨부의 **업로드 주체**를 기록하고, 화면이 그것을 근거로 출처를 구분해 보이게 한다.
+
+  핵심 동작:
+    - 분쟁 시 "어느 쪽이 낸 증거인가" 가 판정을 가른다. `created_by` 는 업로더의 회원 ID 일
+      뿐이라 주체를 가르지 못한다(비회원도 NULL, 운영자 대리도 그냥 id).
+    - 기본값은 `customer` 가 아니라 `unknown` 이다 — 채우지 않는 경로가 생겼을 때
+      `customer` 기본값은 **운영자가 올린 사진을 고객 증빙으로 위조**한다.
+    - 서비스는 주체를 **인자로 강제**한다(기본값 없음). 기본값을 두면 나중에 회원 경로가
+      붙었을 때 조용히 운영자로 찍힌다.
+    - 기존 행은 마이그레이션 `up()` 안에서 백필한다(클레임 미공개 — 업그레이드 스텝 없음).
+      단정할 수 있는 규칙만 쓰고 나머지는 `unknown` 으로 둔다.
+    - 첨부 한 장 삭제는 **그 신청서의 첨부인지**를 따로 검사한다 — 권한 게이트는 "클레임을
+      다룰 수 있다" 만 말한다.
+
+axes:
+  claimable_state:
+    - pending
+    - attached
+    - orphan
+  uploader:
+    - none
+    - requester
+    - staff
+
+exclusions:
+  - { claimable_state: pending, uploader: requester, reason: "미귀속 업로드 경로는 신청 화면뿐이라 업로더 구분이 판정을 바꾸지 않는다" }
+  - { claimable_state: pending, uploader: staff, reason: "같은 사유 — 운영자는 미귀속 경로로 올리지 않는다" }
+  - { claimable_state: orphan, uploader: none, reason: "귀속 신청서를 못 찾으면 업로더와 무관하게 unknown 이다" }
+  - { claimable_state: orphan, uploader: requester, reason: "같은 사유" }
+
+effects:
+  - pending_upload_is_backfilled_as_customer
+  - upload_without_a_member_id_is_backfilled_as_customer
+  - upload_by_the_requester_is_backfilled_as_customer
+  - upload_by_someone_other_than_the_requester_is_backfilled_as_admin
+  - orphan_attachment_stays_unknown
+  - backfill_is_idempotent
+  # 롤백이 컬럼을 못 지우면 재배포가 「이미 존재하는 컬럼」으로 멈춘다.
+  - uploader_type_migration_survives_a_rollback_roundtrip
+  - admin_upload_is_recorded_as_a_staff_upload
+  - admin_upload_accepts_the_shared_uploader_field_name
+  - admin_deletes_a_single_attachment
+  - deleting_an_attachment_of_another_claim_is_404
+  - claim_detail_carries_attachment_settings
+  # 관리자·사용자가 같은 리소스·봉투를 쓴다 — 관리자만 보고 배포하면 신청 화면이 조용히 빈다.
+  - user_claim_attachment_keeps_its_legacy_keys
+  - user_claim_settings_keep_the_limit_key_names
+  # 삭제는 파일까지 지우고 되돌릴 수 없다 — 주체가 로그에 없으면 분쟁 근거가 사후에 사라진다.
+  - attachment_log_carries_the_uploader_type
+  # 화면 — 이 축들은 렌더에서만 드러난다(블록이 통째로 빠지거나, 잠기지 않거나, 두 주체가 같은 모양)
+  - claim_attachment_block_absent_for_cancel_render
+  - claim_attachment_uploader_stands_even_with_no_images_render
+  - claim_attachment_uploader_disabled_without_permission_render
+  - claim_attachment_origin_badges_differ_by_uploader_render
+  # 주체 미상에 뱃지가 서면 「고객이 낸 증거」로 거짓 표시된다(R17 의 렌더 축).
+  - claim_attachment_unknown_origin_renders_no_badge
+  - claim_attachment_hint_live_measurement
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Database/Migrations/ClaimImageUploaderTypeBackfillTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimAttachmentContractTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimAttachmentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx
+  # 상한 안내의 값 치환은 화면에서만 드러난다 — 자리표시자가 남아도 예외가 없다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-attachment-hint-measure.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-09-14
+
+### Changed
+
+- 페이지 첨부 화면이 첨부 개수·용량 상한과 허용 형식을 **설정에서 읽어** 적용합니다. 종전에는 화면이 「5개 · 10MB · jpg/png/gif/webp/pdf/zip」을 글자 그대로 들고 있어, 운영자가 설정을 바꿔도 화면은 옛 값으로 남았고 파일을 고른 뒤 저장할 때에야 서버가 거절했습니다.
+
 ## [1.1.2] - 2026-09-09
 
 ### Changed

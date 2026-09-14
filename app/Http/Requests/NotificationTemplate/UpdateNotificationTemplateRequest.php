@@ -5,6 +5,7 @@ namespace App\Http\Requests\NotificationTemplate;
 use App\Extension\HookManager;
 use App\Rules\LocaleRequiredTranslatable;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateNotificationTemplateRequest extends FormRequest
 {
@@ -33,17 +34,86 @@ class UpdateNotificationTemplateRequest extends FormRequest
             'click_url' => ['nullable', 'string', 'max:500'],
             'recipients' => ['sometimes', 'nullable', 'array'],
             'recipients.*.type' => ['required', 'string', 'in:trigger_user,related_user,role,specific_users'],
+            // 값의 모양은 타입이 정한다. `nullable` 하나만 두면 역할 칸에 객체가, 사용자 칸에
+            // 문자열이 들어와도 그대로 저장되고 **발송 시점에 수신자 0명**으로만 드러난다 —
+            // 예외도 로그도 화면에 남지 않는다.
             'recipients.*.value' => ['nullable'],
             'recipients.*.relation' => ['nullable', 'string', 'max:100'],
             'recipients.*.exclude_trigger_user' => ['nullable', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
         ];
 
+        foreach ((array) $this->input('recipients', []) as $index => $rule) {
+            $rules["recipients.{$index}.value"] = $this->valueRulesFor(is_array($rule) ? ($rule['type'] ?? null) : null);
+
+            if (is_array($rule) && ($rule['type'] ?? null) === 'specific_users') {
+                $rules["recipients.{$index}.value.*"] = ['string', 'max:64'];
+            }
+
+            if (is_array($rule) && ($rule['type'] ?? null) === 'role') {
+                $rules["recipients.{$index}.value.*"] = ['string', 'max:100'];
+            }
+
+            if (is_array($rule) && ($rule['type'] ?? null) === 'related_user') {
+                $rules["recipients.{$index}.relation"] = ['required', 'string', 'max:100', Rule::in($this->declaredRelations())];
+            }
+        }
+
         return HookManager::applyFilters(
             'core.notification_template.update_validation_rules',
             $rules,
             $this->route('template')
         );
+    }
+
+    /**
+     * 이 템플릿이 속한 정의가 선언한 relation 키 목록을 반환합니다.
+     *
+     * 선언 밖의 키를 저장하면 발송 시점에 **수신자 0명**이 되고 예외도 로그도 남지 않는다.
+     * 선언이 비어 있으면 어떤 키도 통과시키지 않는다 — 화면도 그 타입을 감춘다.
+     *
+     * @return array<int, string> 선언된 relation 키
+     */
+    private function declaredRelations(): array
+    {
+        $template = $this->route('template');
+        $relations = $template?->definition?->relations ?? [];
+
+        return is_array($relations) ? array_values(array_filter($relations, 'is_string')) : [];
+    }
+
+    /**
+     * 수신자 타입별 `value` 규칙을 반환합니다.
+     *
+     * - `role`: 식별자 문자열 **또는** 문자열 배열(다중 선택). 기존 저장값이 문자열이라
+     *   둘 다 받는다 — 배열만 받으면 손대지 않은 8행이 저장 시점에 422 가 된다.
+     * - `specific_users`: UUID 배열.
+     * - 그 외(`trigger_user`·`related_user`): 값 축이 없다.
+     *
+     * @param  mixed  $type  수신자 타입
+     * @return array<int, mixed> 검증 규칙
+     */
+    private function valueRulesFor(mixed $type): array
+    {
+        if ($type === 'specific_users') {
+            return ['nullable', 'array'];
+        }
+
+        if ($type !== 'role') {
+            return ['nullable'];
+        }
+
+        return ['nullable', function (string $attribute, mixed $value, callable $fail): void {
+            if ($value === null || is_string($value)) {
+                return;
+            }
+
+            if (is_array($value) && count($value) === count(array_filter($value, 'is_string'))) {
+                return;
+            }
+
+            $fail(__('notification.validation.role_value_shape'));
+        }];
     }
 
     /**

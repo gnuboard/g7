@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimImageFactory;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 
 /**
@@ -32,6 +33,11 @@ class ClaimImage extends Model
      */
     public const PENDING_CLAIMABLE_TYPE = 'pending';
 
+    /**
+     * 모델 팩토리를 반환합니다.
+     *
+     * @return ClaimImageFactory 첨부 이미지 팩토리
+     */
     protected static function newFactory()
     {
         return ClaimImageFactory::new();
@@ -62,6 +68,7 @@ class ClaimImage extends Model
         'height',
         'sort_order',
         'created_by',
+        'uploader_type',
     ];
 
     /**
@@ -77,11 +84,14 @@ class ClaimImage extends Model
             'width' => 'integer',
             'height' => 'integer',
             'sort_order' => 'integer',
+            'uploader_type' => ClaimImageUploaderTypeEnum::class,
         ];
     }
 
     /**
      * 모델 부트 메서드
+     *
+     * @return void
      */
     protected static function boot(): void
     {

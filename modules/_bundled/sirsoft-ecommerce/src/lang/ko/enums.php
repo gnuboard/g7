@@ -297,6 +297,13 @@ return [
         'cancel' => '취소',
     ],
 
+    // 클레임 첨부 업로드 주체 (ClaimImageUploaderTypeEnum 값과 일치)
+    'claim_image_uploader_type' => [
+        'customer' => '고객',
+        'admin' => '운영자',
+        'unknown' => '미상',
+    ],
+
     // 클레임 청구 방식 (ClaimChargeMethodEnum 값과 일치)
     'claim_charge_method' => [
         'pay_on_request' => '신청 시 결제',
@@ -389,17 +396,6 @@ return [
     'refund_priority' => [
         'pg_first' => '결제수단(PG) 먼저 환불',
         'points_first' => '포인트 먼저 환불',
-    ],
-
-    // 환불옵션상태 (RefundOptionStatusEnum 값과 일치)
-    'refund_option_status' => [
-        'requested' => '환불신청',
-        'approved' => '환불승인',
-        'processing' => '환불처리중',
-        'on_hold' => '환불보류',
-        'completed' => '처리완료',
-        'rejected' => '환불반려',
-        'withdrawn' => '환불철회',
     ],
 
     // 리뷰 상태 (ReviewStatus 값과 일치)

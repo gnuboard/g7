@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-09-14
+
+### Added
+
+- 페이지 첨부 설정 조회 결과 안내 문구와, 화면 편집기의 데이터 출처 「첨부 설정」 이름의 일본어 번역을 추가했습니다. 페이지 작성 화면이 첨부 개수·용량 상한과 허용 형식을 설정에서 읽어 오면서 생긴 문구입니다.
+
 ## [1.0.2] - 2026-08-10
 
 ### Added

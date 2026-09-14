@@ -348,6 +348,8 @@ public function getNotificationDefinitions(): array
             'description' => ['ko' => '...', 'en' => '...'],
             'channels' => ['mail', 'database'],
             'hooks' => ['sirsoft-ecommerce.order.after_confirm'],
+            'audience' => 'customer',          // 'customer' | 'staff' — 아래 표 참조
+            'relations' => ['author'],         // 선택. 「관련 사용자」로 고를 수 있는 관계 키
             'variables' => [['key' => 'order_number', 'description' => '주문번호']],
             'templates' => [
                 [
@@ -361,6 +363,25 @@ public function getNotificationDefinitions(): array
     ];
 }
 ```
+
+#### `audience` — 이 알림이 누구를 향하는가
+
+| 값 | 뜻 | 수신자 규칙이 따라야 하는 형태 |
+| --- | --- | --- |
+| `customer` | 고객이 받는 알림 | `trigger_user` · `related_user` 중심 |
+| `staff` | 운영자가 받는 알림 | `role` 규칙으로 **그 권한의 주인 역할을 전부** 나열 |
+
+DB 컬럼이 늘지 않는다 — `NotificationSyncHelper` 가 저장 필드를 화이트리스트로 고르므로 `audience` 는 **선언 계층에만** 남고, 계약 테스트가 이 값을 읽어 수신자 규칙과의 정합을 검사한다.
+
+**`staff` 로 선언하면 역할을 빠짐없이 적어야 한다.** 권한 하나를 여러 역할이 나눠 갖는 구조라 역할 하나를 빠뜨리면 그 역할의 운영자는 **알림을 한 건도 받지 못하고**, 화면 어디에도 그 사실이 드러나지 않는다. 모듈이 권한 선언에 적어 둔 `roles` 목록을 그대로 옮긴다.
+
+#### `relations` — 「관련 사용자」로 고를 수 있는 관계
+
+리스너가 `context.related_users` 에 실어 주는 키 목록이다. 관리자 화면의 수신자 타입 「관련 사용자」는 **이 선언에서만** 선택지를 만든다.
+
+- 선언이 비면 타입 드롭다운에서 「관련 사용자」 자체가 **표시되지 않는다**. 관계를 주지 않는 알림에서 그 타입을 고르면 수신자가 0명이 되고 로그도 남지 않기 때문이다.
+- 서버는 저장 시 `relation` 값이 이 목록 안에 있는지 검증한다 — 오타가 발송 시점이 아니라 저장 시점에 드러난다.
+- 리스너가 실제로 그 키를 공급하는지는 선언과 별개다. 선언만 하고 공급하지 않으면 같은 「조용한 0명」이 된다.
 
 ### 코어 config 블록
 
@@ -636,8 +657,13 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 | `tab_channels` | string[] | 이 채널의 탭이 대표하는 채널 id 목록. 목록 중 하나라도 활성 저장이면 탭을 노출한다(여러 채널을 하나의 탭으로 묶을 때) |
 | `tab_label_key` | string | 탭 라벨용 프론트 lang 키(`$t` 해석). 카드 라벨(`name_key`)과 분리 |
 | `hidden_template_editor` | bool | 알림 템플릿 [편집] 모달에서 코어의 언어탭·제목·본문·클릭 URL·변수 안내·[미리보기]·코어 [저장]을 숨긴다. 그 채널의 본문 규격이 코어 템플릿과 달라 확장이 편집기와 저장을 대신할 때 선언한다. 수신자 규칙·[취소]는 남는다 |
+| `template_editor` | `'rich'\|'plain'\|'none'` | 본문 편집기의 **종류**를 채널이 정한다. `rich` 는 `extension_point` `html_editor` 슬롯(CKEditor 등이 채운다, 없으면 평문으로 폴백) · `plain` 은 평문 입력 · `none` 은 `hidden_template_editor` 와 같다. 코어 기본값은 **mail=`rich` · database=`plain`** 이고 미선언 채널은 `plain` 이다 |
 
-`hidden_template_editor` 를 선언한 확장은 편집 모달의 확장 지점 두 곳에 자기 UI 를 주입한다(3면 공통 이름 — extension_point 파일 1본으로 세 화면에 주입된다).
+**`template_editor` 를 반드시 선언해야 하는 이유** — 본문이 실제로 어떻게 그려지는지는 채널마다 다르다. 사이트내 알림(database)은 사용자 알림센터가 본문을 **평문으로** 그리므로, 편집기만 서식 편집기로 열어 두면 운영자가 넣은 태그가 사용자 화면에 **글자 그대로** 보인다. 관리자 [미리보기]도 이 값을 따르므로, 값을 잘못 선언하면 운영자가 본 것과 사용자가 받는 것이 갈린다.
+
+`hidden_template_editor: true` 는 `template_editor: 'none'` 으로 해석되어 **하위호환이 유지된다** — 기존 확장은 고치지 않아도 된다.
+
+`none`(또는 `hidden_template_editor`)을 선언한 확장은 편집 모달의 확장 지점 두 곳에 자기 UI 를 주입한다(3면 공통 이름 — extension_point 파일 1본으로 세 화면에 주입된다).
 
 | extension_point | 위치 | props |
 | --- | --- | --- |

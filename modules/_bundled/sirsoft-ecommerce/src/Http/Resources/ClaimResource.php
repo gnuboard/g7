@@ -226,8 +226,16 @@ class ClaimResource extends BaseApiResource
             'requested_by' => $claim->requested_by ?? $claim->cancelled_by ?? null,
             'is_guest_request' => method_exists($claim, 'isGuestRequest') ? $claim->isGuestRequest() : ($claim->cancelled_by === null),
             'currency_code' => $currency,
+            // 행별 전이 선택지는 **관리자 상세**에서만 실린다 — 목록은 50행 × 200상품마다
+            // 전이표를 계산하게 되고, 유저 응답은 그 어휘를 쓰지 않는다.
             'items' => ClaimItemResource::collection($items)->each(
-                fn ($r) => $r->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)
+                function ($r) use ($currency, $snapshot) {
+                    $r->withOrderCurrency($currency)->withCurrencySnapshot($snapshot);
+
+                    if ($this->withAdminFields && ! $this->forList) {
+                        $r->forAdminTransitions();
+                    }
+                }
             ),
             // 목록은 첨부를 그리지 않는다 — 사진은 상세의 사유 카드에서만 보인다. 저장소도
             // 목록에서 이 관계를 싣지 않으므로 값은 어차피 빈 배열이지만, 표현 쪽에서도

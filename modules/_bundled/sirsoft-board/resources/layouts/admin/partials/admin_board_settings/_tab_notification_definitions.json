@@ -439,7 +439,7 @@
                                     {
                                       "type": "basic",
                                       "name": "Span",
-                                      "text": "{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + rcpt.relation + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + (rcpt.display_name ?? rcpt.value ?? '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}"
+                                      "text": "{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + rcpt.relation + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}"
                                     },
                                     {
                                       "type": "basic",
@@ -649,8 +649,9 @@
                           "type": "composite",
                           "name": "HtmlContent",
                           "props": {
+                            "comment": "미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다.",
                             "content": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}",
-                            "isHtml": true,
+                            "isHtml": "{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}",
                             "className": "prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto dark:text-white"
                           }
                         }

@@ -122,6 +122,8 @@ class Plugin extends AbstractPlugin
      * 초기화), 코어를 수정하지 않고 이 캐시를 조작하기 위해 리플렉션을 사용한다. 실패해도
      * (리플렉션 예외 등) 치명적이지 않으므로 조용히 무시한다 — 최악의 경우 이번 재활성화만
      * 채널 재시딩이 안 붙고, 운영자가 다시 활성화하면 정상화된다.
+     *
+     * @return void
      */
     private function forgetSeedChannelTemplatesListenerRegistration(): void
     {
@@ -174,6 +176,8 @@ class Plugin extends AbstractPlugin
      * 우리 채널" 만으로 남길 목록을 계산할 수 있다. template 삭제는 코어 공개 메서드
      * NotificationSyncHelper::cleanupStaleTemplates() 를 그대로 사용해 로깅·모델 이벤트 등
      * 코어 도메인 규칙을 그대로 따른다.
+     *
+     * @return void
      */
     private function cleanupChannelContributions(): void
     {
@@ -378,6 +382,7 @@ class Plugin extends AbstractPlugin
             [
                 'type' => 'bizppurio_balance_low',
                 'hook_prefix' => 'sirsoft-message_bizppurio',
+                'audience' => 'staff',
                 'name' => [
                     'ko' => '비즈뿌리오 잔액 부족',
                     'en' => 'Bizppurio Balance Low',
@@ -404,9 +409,12 @@ class Plugin extends AbstractPlugin
                             'ko' => '[{app_name}] 비즈뿌리오 잔액이 부족합니다',
                             'en' => '[{app_name}] Bizppurio balance is insufficient',
                         ],
+                        // 메일 수신자는 `click_url` 을 볼 수 없다(그 키는 알림센터 전용)
+                        // — 본문에 갈 곳을 함께 적지 않으면 "충전하라" 는 말만 받고 어디서
+                        // 충전하는지는 스스로 찾아야 한다.
                         'body' => [
-                            'ko' => '{name}님, 비즈뿌리오 지갑 잔액이 부족하여 {channel_label} 발송이 실패했습니다 (코드: {result_code}). 충전 후 발송이 정상화됩니다.',
-                            'en' => 'Dear {name}, a {channel_label} message failed due to insufficient Bizppurio balance (code: {result_code}). Delivery resumes after recharging.',
+                            'ko' => '{name}님, 비즈뿌리오 지갑 잔액이 부족하여 {channel_label} 발송이 실패했습니다 (코드: {result_code}). 충전 후 발송이 정상화됩니다. 설정 화면: {settings_url}',
+                            'en' => 'Dear {name}, a {channel_label} message failed due to insufficient Bizppurio balance (code: {result_code}). Delivery resumes after recharging. Settings: {settings_url}',
                         ],
                     ],
                     [
@@ -420,6 +428,8 @@ class Plugin extends AbstractPlugin
                             'ko' => '비즈뿌리오 잔액 부족으로 {channel_label} 발송이 실패했습니다 (코드: {result_code}).',
                             'en' => 'A {channel_label} message failed due to insufficient Bizppurio balance (code: {result_code}).',
                         ],
+                        // 알림센터에서 눌렀을 때 갈 곳 — 없으면 눌러도 아무 일도 일어나지 않는다.
+                        'click_url' => '{settings_url}',
                     ],
                 ],
             ],

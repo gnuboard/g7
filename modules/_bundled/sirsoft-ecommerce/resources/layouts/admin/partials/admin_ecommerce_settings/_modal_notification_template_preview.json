@@ -53,9 +53,10 @@
             {
               "type": "composite",
               "name": "HtmlContent",
+              "comment": "미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 운영자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다. 채널은 지금 편집 중인 템플릿의 것을 먼저 보고, 없으면 목록 탭과 같은 기준(주소의 channel)으로 떨어진다.",
               "props": {
                 "content": "{{_global.ecommerce_notification_template_form_modal?.preview?.body ?? ''}}",
-                "isHtml": true,
+                "isHtml": "{{((availableChannels?.data?.channels ?? []).find(c => c.id === (_global.ecommerce_notification_template_form_modal?.template?.channel ?? query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}",
                 "className": "prose dark:prose-invert prose-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"
               }
             }

@@ -36,6 +36,7 @@ return [
         'delete_success' => '첨부파일이 삭제되었습니다.',
         'delete_failed' => '첨부파일 삭제에 실패했습니다.',
         'reorder_success' => '첨부파일 순서가 변경되었습니다.',
+        'settings_success' => '첨부 설정을 조회했습니다.',
         'reorder_failed' => '첨부파일 순서 변경에 실패했습니다.',
     ],
 

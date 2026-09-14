@@ -58,6 +58,19 @@ class Module extends AbstractModule
     use LocalizesSeoValues;
 
     /**
+     * 운영자에게도 통보하는 클레임 상태 키.
+     *
+     * **운영자 조작이 일으킨 전이는 여기 들어오지 않는다** — 자기가 방금 누른 결과를
+     * 자기에게 메일로 되돌려 보내는 알림은 소음이다. 고객·결제가 일으킨 사건만 고른다.
+     *
+     * - `requested` : 고객이 신청했다 → 운영자가 심사해야 한다
+     * - `payment_completed` : 추가결제가 들어왔다 → 운영자가 다음 공정을 시작해야 한다
+     *
+     * @var array<int, string>
+     */
+    private const STAFF_NOTIFIED_CLAIM_KEYS = ['requested', 'payment_completed'];
+
+    /**
      * 모듈 역할 정의
      * 모듈 설치 시 자동 생성됨
      */
@@ -1414,10 +1427,35 @@ class Module extends AbstractModule
             $this->orderCompletedDefinition(),
             $this->orderCancelledDefinition(),
             $this->newOrderAdminDefinition(),
+            $this->orderConfirmedAdminDefinition(),
+            $this->orderCompletedAdminDefinition(),
             $this->inquiryReceivedDefinition(),
             $this->inquiryRepliedDefinition(),
             $this->mileageExpiringSoonDefinition(),
         ], $this->claimNotificationDefinitions());
+    }
+
+    /**
+     * 운영자 수신 알림의 수신자 규칙을 반환합니다.
+     *
+     * **역할 기준이 알림 인프라의 설계다.** 이 모듈은 주문·클레임·문의 권한의 주인을
+     * `['admin', 'manager', 'sirsoft-ecommerce.manager']` 로 이미 선언해 두었고(권한 선언부),
+     * 수신자는 그 선언을 그대로 따른다.
+     *
+     * `role:admin` 하나만 적으면 **모듈 설치 시 만들어지는 이커머스 관리자 역할이 빠진다** —
+     * 그 사람은 클레임 4종 권한을 다 가졌는데 새 주문도 상품문의도 통보받지 못한다.
+     *
+     * 같은 사람이 두 역할에 속해도 중복 제거가 전 규칙 적용 뒤에 돌아 한 통만 간다.
+     *
+     * @return array<int, array<string, mixed>> 수신자 규칙 배열
+     */
+    private function staffNotificationRecipients(): array
+    {
+        return [
+            ['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true],
+            ['type' => 'role', 'value' => 'manager', 'exclude_trigger_user' => true],
+            ['type' => 'role', 'value' => 'sirsoft-ecommerce.manager', 'exclude_trigger_user' => true],
+        ];
     }
 
     /**
@@ -1515,6 +1553,7 @@ class Module extends AbstractModule
         return [
             'type' => 'order_pending_deposit',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => ['ko' => '무통장 입금 안내', 'en' => 'Bank Transfer Payment Guide'],
             'description' => ['ko' => '무통장입금 주문 접수 시 입금 계좌·금액을 고객에게 안내', 'en' => 'Sent to customer with deposit account and amount when a bank-transfer order is placed'],
             'channels' => ['mail', 'database'],
@@ -1599,6 +1638,7 @@ class Module extends AbstractModule
         return [
             'type' => 'mileage_expiring_soon',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => ['ko' => '마일리지 소멸 예정', 'en' => 'Mileage Expiring Soon'],
             'description' => ['ko' => '마일리지 소멸이 임박한 회원에게 발송', 'en' => 'Sent to members whose mileage is about to expire'],
             'channels' => ['mail', 'database'],
@@ -1672,6 +1712,7 @@ class Module extends AbstractModule
         return [
             'type' => 'order_confirmed',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => ['ko' => '결제 완료', 'en' => 'Payment Completed'],
             'description' => ['ko' => '결제 완료 시 고객에게 발송', 'en' => 'Sent to customer when payment is completed'],
             'channels' => ['mail', 'database'],
@@ -1747,6 +1788,7 @@ class Module extends AbstractModule
         return [
             'type' => 'order_shipped',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => ['ko' => '배송 시작', 'en' => 'Order Shipped'],
             'description' => ['ko' => '배송 시작 시 고객에게 발송', 'en' => 'Sent to customer when order is shipped'],
             'channels' => ['mail', 'database'],
@@ -1819,6 +1861,7 @@ class Module extends AbstractModule
         return [
             'type' => 'order_delivered',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => ['ko' => '배송 완료', 'en' => 'Order Delivered'],
             'description' => ['ko' => '배송 완료 시 고객에게 발송', 'en' => 'Sent to customer when order is delivered'],
             'channels' => ['mail', 'database'],
@@ -1891,6 +1934,7 @@ class Module extends AbstractModule
         return [
             'type' => 'order_completed',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => ['ko' => '구매 확정', 'en' => 'Order Completed'],
             'description' => ['ko' => '구매 확정 시 고객에게 발송', 'en' => 'Sent to customer when order is completed'],
             'channels' => ['mail', 'database'],
@@ -1957,6 +2001,7 @@ class Module extends AbstractModule
         return [
             'type' => 'order_cancelled',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => ['ko' => '주문 취소', 'en' => 'Order Cancelled'],
             'description' => ['ko' => '주문 취소 시 고객에게 발송', 'en' => 'Sent to customer when order is cancelled'],
             'channels' => ['mail', 'database'],
@@ -2016,13 +2061,146 @@ class Module extends AbstractModule
     }
 
     /**
+     * 주문 결제완료 도달(운영자 수신) 알림 정의.
+     *
+     * 무통장 주문은 **입금이 확인되는 순간**이 운영자가 움직여야 하는 시점이다. 신규 주문
+     * 알림은 접수 시점이라 그 뒤의 입금 확인을 알려 주지 못한다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function orderConfirmedAdminDefinition(): array
+    {
+        return $this->orderStaffNotificationDefinition(
+            type: 'order_confirmed_admin',
+            hook: 'sirsoft-ecommerce.order.after_confirm',
+            name: ['ko' => '주문 결제완료 관리자 알림', 'en' => 'Order Payment Completed (Staff)'],
+            description: [
+                'ko' => '주문이 결제완료에 도달하면 운영자에게 발송(무통장 입금 확인 포함)',
+                'en' => 'Sent to staff when an order reaches payment completed (including bank deposit confirmation)',
+            ],
+            heading: ['ko' => '주문 결제가 완료되었습니다', 'en' => 'An order has been paid'],
+            lead: [
+                'ko' => '{name}님, 주문 결제가 완료되었습니다. 배송 준비를 진행해 주세요.',
+                'en' => 'Dear {name}, an order has been paid. Please proceed with fulfillment.',
+            ],
+            summary: [
+                'ko' => '{customer_name}님의 주문({order_number}) 결제가 완료되었습니다. 결제금액 {total_amount}.',
+                'en' => 'Payment completed for {customer_name}\'s order ({order_number}), total {total_amount}.',
+            ],
+        );
+    }
+
+    /**
+     * 구매확정(운영자 수신) 알림 정의.
+     *
+     * 구매확정은 정산·후기 요청 같은 후속 작업이 시작되는 지점이다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function orderCompletedAdminDefinition(): array
+    {
+        return $this->orderStaffNotificationDefinition(
+            type: 'order_completed_admin',
+            hook: 'sirsoft-ecommerce.order.after_complete',
+            name: ['ko' => '구매확정 관리자 알림', 'en' => 'Order Confirmed by Customer (Staff)'],
+            description: [
+                'ko' => '고객이 구매확정하면 운영자에게 발송',
+                'en' => 'Sent to staff when a customer confirms the purchase',
+            ],
+            heading: ['ko' => '고객이 구매를 확정했습니다', 'en' => 'A customer confirmed their purchase'],
+            lead: [
+                'ko' => '{name}님, 고객이 구매를 확정했습니다.',
+                'en' => 'Dear {name}, a customer has confirmed their purchase.',
+            ],
+            summary: [
+                'ko' => '{customer_name}님이 주문({order_number})을 구매확정했습니다.',
+                'en' => '{customer_name} confirmed order {order_number}.',
+            ],
+        );
+    }
+
+    /**
+     * 주문 축의 운영자 수신 알림 정의를 만듭니다.
+     *
+     * 두 정의가 본문 구조·변수·수신자를 공유하므로 문구만 인자로 받는다 — 복제하면
+     * 한쪽만 고쳐졌을 때 운영자가 보는 두 메일의 형태가 갈린다.
+     *
+     * @param  string  $type  알림 유형
+     * @param  string  $hook  구독 훅
+     * @param  array{ko: string, en: string}  $name  정의 이름
+     * @param  array{ko: string, en: string}  $description  정의 설명
+     * @param  array{ko: string, en: string}  $heading  메일 제목·본문 머리
+     * @param  array{ko: string, en: string}  $lead  메일 본문 도입부
+     * @param  array{ko: string, en: string}  $summary  알림센터 본문
+     * @return array<string, mixed> 알림 정의
+     */
+    private function orderStaffNotificationDefinition(
+        string $type,
+        string $hook,
+        array $name,
+        array $description,
+        array $heading,
+        array $lead,
+        array $summary,
+    ): array {
+        $rows = [
+            ['ko' => '주문번호', 'en' => 'Order No.', 'var' => 'order_number'],
+            ['ko' => '주문자', 'en' => 'Customer', 'var' => 'customer_name'],
+            ['ko' => '결제금액', 'en' => 'Total Amount', 'var' => 'total_amount'],
+        ];
+
+        return [
+            'type' => $type,
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'staff',
+            'name' => $name,
+            'description' => $description,
+            'channels' => ['mail', 'database'],
+            'hooks' => [$hook],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자(운영자) 이름'],
+                ['key' => 'app_name', 'description' => '사이트 이름'],
+                ['key' => 'order_number', 'description' => '주문번호'],
+                ['key' => 'customer_name', 'description' => '주문자 이름'],
+                ['key' => 'total_amount', 'description' => '결제 금액'],
+                ['key' => 'order_url', 'description' => '주문 화면 URL (운영자에게는 관리자 주소로 치환)'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => $this->staffNotificationRecipients(),
+                    'subject' => [
+                        'ko' => '[{app_name}] '.$heading['ko'].' (주문번호: {order_number})',
+                        'en' => '[{app_name}] '.$heading['en'].' (Order #{order_number})',
+                    ],
+                    'body' => [
+                        'ko' => $this->claimNotificationMailBody('ko', $heading['ko'], $lead['ko'], $rows, '주문 관리 바로가기', '{order_url}'),
+                        'en' => $this->claimNotificationMailBody('en', $heading['en'], $lead['en'], $rows, 'Go to Order Management', '{order_url}'),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => $this->staffNotificationRecipients(),
+                    'subject' => $heading,
+                    'body' => $summary,
+                    'click_url' => '{order_url}',
+                ],
+            ],
+        ];
+    }
+
+    /**
      * 관리자 신규 주문 알림 정의.
+     *
+     * @return array<string, mixed> 알림 정의
      */
     private function newOrderAdminDefinition(): array
     {
         return [
             'type' => 'new_order_admin',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'staff',
             'name' => ['ko' => '신규 주문 관리자 알림', 'en' => 'New Order Admin Notification'],
             'description' => ['ko' => '신규 주문 접수 시 관리자에게 발송', 'en' => 'Sent to admin when a new order is placed'],
             'channels' => ['mail', 'database'],
@@ -2043,7 +2221,7 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true]],
+                    'recipients' => $this->staffNotificationRecipients(),
                     'subject' => [
                         'ko' => '[{app_name}] 신규 주문이 접수되었습니다 (주문번호: {order_number})',
                         'en' => '[{app_name}] New order received (Order #{order_number})',
@@ -2079,7 +2257,7 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true]],
+                    'recipients' => $this->staffNotificationRecipients(),
                     'subject' => ['ko' => '새로운 주문이 접수되었습니다', 'en' => 'New order received'],
                     'body' => ['ko' => '{customer_name}님이 주문번호 {order_number} (결제금액: {total_amount})을 접수했습니다.', 'en' => '{customer_name} placed order {order_number} (total: {total_amount}).'],
                     'click_url' => '{order_url}',
@@ -2096,6 +2274,7 @@ class Module extends AbstractModule
         return [
             'type' => 'inquiry_received',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'staff',
             'name' => ['ko' => '상품 문의 접수', 'en' => 'Inquiry Received'],
             'description' => ['ko' => '상품 문의 접수 시 관리자에게 발송', 'en' => 'Sent to admin when a product inquiry is received'],
             'channels' => ['mail', 'database'],
@@ -2112,7 +2291,7 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true]],
+                    'recipients' => $this->staffNotificationRecipients(),
                     'subject' => [
                         'ko' => '[{app_name}] 새로운 상품 문의가 접수되었습니다',
                         'en' => '[{app_name}] New product inquiry received',
@@ -2148,7 +2327,7 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true]],
+                    'recipients' => $this->staffNotificationRecipients(),
                     'subject' => ['ko' => '새로운 상품 문의가 접수되었습니다', 'en' => 'New product inquiry received'],
                     'body' => ['ko' => '{customer_name}님이 "{product_name}" 상품에 문의를 남겼습니다.', 'en' => '{customer_name} left an inquiry on "{product_name}".'],
                     'click_url' => '{inquiry_url}',
@@ -2165,6 +2344,7 @@ class Module extends AbstractModule
         return [
             'type' => 'inquiry_replied',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => ['ko' => '문의 답변 완료', 'en' => 'Inquiry Replied'],
             'description' => ['ko' => '문의 답변 시 고객에게 발송', 'en' => 'Sent to customer when inquiry is replied'],
             'channels' => ['mail', 'database'],
@@ -2249,10 +2429,18 @@ class Module extends AbstractModule
         foreach ($this->claimNotificationTypeWords() as $claimType => $words) {
             foreach (ClaimStatusNotificationListener::notifiableStatuses()[$claimType] as $key) {
                 $definitions[] = $this->claimNotificationDefinition($claimType, $key, $words, $phrases[$key]);
+
+                // 운영자에게도 알려야 하는 사건은 **별도 정의**다 — 관리자 본문("고객이 교환을
+                // 신청했습니다")과 고객 본문("신청이 접수되었습니다")은 한 템플릿에 담기지
+                // 않는다. 같은 훅을 공유하므로 한 사건에 고객 1통 + 운영자 1통이 나간다.
+                if (in_array($key, self::STAFF_NOTIFIED_CLAIM_KEYS, true)) {
+                    $definitions[] = $this->claimStaffNotificationDefinition($claimType, $key, $words);
+                }
             }
         }
 
         $definitions[] = $this->claimWithdrawnDefinition();
+        $definitions[] = $this->claimPartiallyProcessedDefinition();
 
         return $definitions;
     }
@@ -2524,6 +2712,11 @@ class Module extends AbstractModule
             'refund_amount' => '환불 금액',
             'refund_method_label' => '환불 수단',
             'requester_name' => '신청자 이름',
+            // 부분 처리 안내용. 여기 없으면 `claimNotificationVariables()` 의 `?? $key` 폴백이
+            // 걸려 운영자의 변수 도움말에 영문 키가 그대로 뜬다.
+            'processed_count' => '이번에 처리된 상품 수',
+            'remaining_count' => '아직 처리되지 않은 상품 수',
+            'item_lines' => '이번에 처리된 상품 목록(줄바꿈 구분)',
         ];
     }
 
@@ -2549,6 +2742,7 @@ class Module extends AbstractModule
         return [
             'type' => $claimType.'_'.$key,
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
             'name' => $this->claimNotificationText($phrase['name'], $words),
             'description' => $this->claimNotificationText($phrase['description'], $words),
             'channels' => ['mail', 'database'],
@@ -2591,6 +2785,168 @@ class Module extends AbstractModule
     }
 
     /**
+     * 클레임 사건의 **운영자 수신** 알림 정의를 만듭니다.
+     *
+     * 고객 정의와 같은 훅을 구독한다 — 한 사건에 고객 1통 + 운영자 1통. 본문은 고객용과
+     * 다르다("고객이 …했습니다" vs "귀하의 신청이 …되었습니다"). 링크는 고객 링크를 기본값으로
+     * 두고, 수신자가 클레임 화면을 열 수 있으면 `personalize_data` 가 관리자 주소로 올린다.
+     *
+     * @param  string  $claimType  클레임 유형 값
+     * @param  string  $key  상태 키 (requested|payment_completed)
+     * @param  array{ko: string, en: string, en_lower: string}  $words  유형 낱말
+     * @return array<string, mixed> 알림 정의
+     */
+    private function claimStaffNotificationDefinition(string $claimType, string $key, array $words): array
+    {
+        $rows = [
+            ['ko' => '신청번호', 'en' => 'Claim No.', 'var' => 'claim_number'],
+            ['ko' => '주문번호', 'en' => 'Order No.', 'var' => 'order_number'],
+            ['ko' => '신청자', 'en' => 'Requester', 'var' => 'requester_name'],
+            ['ko' => '진행 상태', 'en' => 'Status', 'var' => 'status_label'],
+        ];
+
+        if ($key === 'requested') {
+            $rows[] = ['ko' => '신청 사유', 'en' => 'Reason', 'var' => 'reason_label'];
+            $headingKo = '고객이 '.$words['ko'].'을(를) 신청했습니다';
+            $headingEn = 'A customer requested a '.$words['en_lower'];
+            $leadKo = '{name}님, 고객이 '.$words['ko'].' 신청을 냈습니다. 신청 내용을 확인하고 처리해 주세요.';
+            $leadEn = 'Dear {name}, a customer has submitted a '.$words['en_lower'].' request. Please review and process it.';
+            $summaryKo = '{requester_name}님이 '.$words['ko'].'을(를) 신청했습니다({claim_number}).';
+            $summaryEn = '{requester_name} requested a '.$words['en_lower'].' ({claim_number}).';
+            $nameKo = $words['ko'].' 신청 접수 관리자 알림';
+            $nameEn = $words['en'].' Request Received (Staff)';
+            $descKo = '고객이 '.$words['ko'].'을(를) 신청하면 운영자에게 발송';
+            $descEn = 'Sent to staff when a customer submits a '.$words['en_lower'].' request';
+        } else {
+            $rows[] = ['ko' => '결제 금액', 'en' => 'Paid Amount', 'var' => 'paid_amount'];
+            $headingKo = $words['ko'].' 추가결제가 완료되었습니다';
+            $headingEn = 'Additional payment completed for a '.$words['en_lower'];
+            $leadKo = '{name}님, 고객이 '.$words['ko'].' 추가금을 결제했습니다. 다음 처리를 진행해 주세요.';
+            $leadEn = 'Dear {name}, the customer has paid the additional amount for their '.$words['en_lower'].'. Please continue processing.';
+            $summaryKo = '{requester_name}님의 '.$words['ko'].' 추가결제가 완료되었습니다({claim_number}).';
+            $summaryEn = 'Additional payment completed for {requester_name}\'s '.$words['en_lower'].' ({claim_number}).';
+            $nameKo = $words['ko'].' 추가결제 완료 관리자 알림';
+            $nameEn = $words['en'].' Additional Payment Completed (Staff)';
+            $descKo = '고객이 '.$words['ko'].' 추가금을 결제하면 운영자에게 발송';
+            $descEn = 'Sent to staff when a customer pays the additional amount for a '.$words['en_lower'];
+        }
+
+        return [
+            'type' => $claimType.'_'.$key.'_admin',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'staff',
+            'name' => ['ko' => $nameKo, 'en' => $nameEn],
+            'description' => ['ko' => $descKo, 'en' => $descEn],
+            'channels' => ['mail', 'database'],
+            'hooks' => [ClaimStatusNotificationListener::NOTIFY_HOOK_PREFIX.$claimType.'.notify_'.$key],
+            'variables' => $this->claimNotificationVariables($rows),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => $this->staffNotificationRecipients(),
+                    'subject' => [
+                        'ko' => '[{app_name}] '.$headingKo.' (신청번호: {claim_number})',
+                        'en' => '[{app_name}] '.$headingEn.' (Claim #{claim_number})',
+                    ],
+                    'body' => [
+                        'ko' => $this->claimNotificationMailBody('ko', $headingKo, $leadKo, $rows, '클레임 관리 바로가기'),
+                        'en' => $this->claimNotificationMailBody('en', $headingEn, $leadEn, $rows, 'Go to Claim Management'),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => $this->staffNotificationRecipients(),
+                    'subject' => ['ko' => $headingKo, 'en' => $headingEn],
+                    'body' => ['ko' => $summaryKo, 'en' => $summaryEn],
+                    'click_url' => '{claim_url}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 부분 처리 안내(고객 수신) 알림 정의를 만듭니다.
+     *
+     * 운영자가 신청 상품 중 **일부만** 승인·반려했을 때 나간다. 헤더 상태는 그대로여서
+     * 기존 상태 알림이 발화하지 않으므로, 이것이 없으면 고객은 자기 신청이 어떻게 갈렸는지
+     * 알 방법이 없다.
+     *
+     * 발화 단위는 **운영자의 [일괄 적용] 1회**다 — 상품마다 보내면 3건 처리에 메일 3통이 된다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function claimPartiallyProcessedDefinition(): array
+    {
+        $rows = [
+            ['ko' => '신청번호', 'en' => 'Claim No.', 'var' => 'claim_number'],
+            ['ko' => '클레임 유형', 'en' => 'Claim Type', 'var' => 'claim_type_label'],
+            ['ko' => '주문번호', 'en' => 'Order No.', 'var' => 'order_number'],
+            ['ko' => '이번에 처리된 상품', 'en' => 'Items Processed', 'var' => 'processed_count'],
+            ['ko' => '남은 상품', 'en' => 'Items Remaining', 'var' => 'remaining_count'],
+            ['ko' => '처리된 상품 목록', 'en' => 'Processed Items', 'var' => 'item_lines'],
+        ];
+
+        $variables = array_merge($this->claimNotificationVariables($rows), [
+            ['key' => 'total_count', 'description' => '신청한 상품 수'],
+            ['key' => 'approved_count', 'description' => '이번에 승인된 상품 수'],
+            ['key' => 'rejected_count', 'description' => '이번에 반려된 상품 수'],
+            ['key' => 'decision_label', 'description' => '이번 처리의 결정 표기'],
+            // `item_lines` 를 여기 다시 적지 않는다 — 위 $rows 가 이미 싣고 있어
+            // 운영자의 변수 목록에 같은 키가 두 줄로 뜬다.
+        ]);
+
+        return [
+            'type' => 'claim_partially_processed',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => ['ko' => '클레임 부분 처리 안내', 'en' => 'Claim Partially Processed'],
+            'description' => [
+                'ko' => '신청 상품 중 일부만 처리되면 고객에게 발송',
+                'en' => 'Sent to the customer when only some of the requested items are processed',
+            ],
+            'channels' => ['mail', 'database'],
+            'hooks' => [ClaimStatusNotificationListener::PARTIALLY_PROCESSED_HOOK],
+            'variables' => $variables,
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 신청하신 상품 중 일부가 처리되었습니다 (신청번호: {claim_number})',
+                        'en' => '[{app_name}] Some of your requested items have been processed (Claim #{claim_number})',
+                    ],
+                    'body' => [
+                        'ko' => $this->claimNotificationMailBody(
+                            'ko',
+                            '신청 상품 중 일부가 처리되었습니다',
+                            '{name}님, 신청하신 {total_count}개 상품 중 {processed_count}개가 {decision_label} 처리되었습니다. 남은 {remaining_count}개는 계속 검토 중입니다.',
+                            $rows,
+                            '신청 내역 보기'
+                        ),
+                        'en' => $this->claimNotificationMailBody(
+                            'en',
+                            'Some of Your Requested Items Have Been Processed',
+                            'Dear {name}, {processed_count} of your {total_count} requested items were {decision_label}. The remaining {remaining_count} are still under review.',
+                            $rows,
+                            'View Claim Details'
+                        ),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '신청 상품 일부 처리', 'en' => 'Some requested items processed'],
+                    'body' => [
+                        'ko' => '{name}님, 신청({claim_number}) {total_count}개 중 {processed_count}개가 {decision_label} 처리되었습니다. 남은 {remaining_count}개는 검토 중입니다.'."\n".'{item_lines}',
+                        'en' => '{name}, {processed_count} of {total_count} items in claim {claim_number} were {decision_label}. {remaining_count} remain under review.'."\n".'{item_lines}',
+                    ],
+                    'click_url' => '{claim_url}',
+                ],
+            ],
+        ];
+    }
+
+    /**
      * 클레임 철회 관리자 알림 정의를 만듭니다.
      *
      * 신청자가 스스로 철회한 사실을 그 신청자에게 되돌려 보낼 이유가 없다 — 알아야 하는
@@ -2610,6 +2966,7 @@ class Module extends AbstractModule
         return [
             'type' => 'claim_withdrawn',
             'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'staff',
             'name' => ['ko' => '클레임 철회 알림', 'en' => 'Claim Withdrawn Notification'],
             'description' => ['ko' => '고객이 교환·반품·환불 신청을 철회하면 관리자에게 발송', 'en' => 'Sent to admins when a customer withdraws an exchange, return, or refund request'],
             'channels' => ['mail', 'database'],
@@ -2618,7 +2975,7 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true]],
+                    'recipients' => $this->staffNotificationRecipients(),
                     'subject' => [
                         'ko' => '[{app_name}] 클레임 신청이 철회되었습니다 (신청번호: {claim_number})',
                         'en' => '[{app_name}] A claim request has been withdrawn (Claim #{claim_number})',
@@ -2642,7 +2999,7 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true]],
+                    'recipients' => $this->staffNotificationRecipients(),
                     'subject' => ['ko' => '클레임 신청 철회', 'en' => 'Claim Request Withdrawn'],
                     'body' => [
                         'ko' => '{requester_name}님이 {claim_type_label} 신청({claim_number})을 철회했습니다.',
@@ -2709,15 +3066,23 @@ class Module extends AbstractModule
      * @param  string  $buttonText  CTA 버튼 문구
      * @return string 메일 본문 HTML
      */
-    private function claimNotificationMailBody(string $locale, string $heading, string $lead, array $rows, string $buttonText): string
-    {
+    private function claimNotificationMailBody(
+        string $locale,
+        string $heading,
+        string $lead,
+        array $rows,
+        string $buttonText,
+        string $buttonUrl = '{claim_url}',
+    ): string {
         $isKo = $locale === 'ko';
         $fontFamily = $isKo ? '\'Malgun Gothic\',sans-serif' : 'Arial,sans-serif';
 
         $rowsHtml = '';
         foreach ($rows as $row) {
             $label = $isKo ? $row['ko'] : $row['en'];
-            $rowsHtml .= '<p style="margin:5px 0"><strong>'.$label.':</strong> {'.$row['var'].'}</p>';
+            // 값이 여러 줄일 수 있다(`item_lines` 는 상품마다 한 줄) — `pre-line` 이 없으면
+            // 줄바꿈이 공백으로 접혀 "A × 2 B × 1" 한 줄로 붙는다.
+            $rowsHtml .= '<p style="margin:5px 0;white-space:pre-line"><strong>'.$label.':</strong> {'.$row['var'].'}</p>';
         }
 
         return '<div style="font-family:'.$fontFamily.';max-width:600px;margin:0 auto;padding:20px">'
@@ -2726,7 +3091,7 @@ class Module extends AbstractModule
             .'<div style="background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0">'
             .$rowsHtml
             .'</div>'
-            .$this->notificationButton($buttonText, '{claim_url}')
+            .$this->notificationButton($buttonText, $buttonUrl)
             .'<hr style="border:none;border-top:1px solid #eee;margin:20px 0">'
             .'<p style="color:#999;font-size:12px">'
             .($isKo ? '본 메일은 {app_name}에서 발송되었습니다.' : 'This email was sent from {app_name}.')

@@ -1,0 +1,41 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(수신자 × 알림 유형)의 조합마다 테스트를 두지 않는다 — 커버리지 단위는 **정의 전수
+#   순회**이고 한 테스트가 그 전수를 한 번에 돈다. effects 축은 면제하지 않는다.
+feature: board_notification_link_policy
+
+description: |
+  게시판 알림의 링크와 유발자 제외 정책.
+
+  핵심 동작:
+    - 새 글 관리자 통보(`new_post_admin`)의 링크는 수신자가 게시판 화면을 열 수 있으면
+      관리자 게시글 상세로 올라간다. 공개 글 주소는 **블라인드 글에서 아무것도 보여 주지
+      못해** 통보를 받고 들어간 운영자가 할 수 있는 일이 없다.
+    - 승격 판정은 역할 이름이 아니라 권한(`sirsoft-board.boards.read`)이다 — 게시판마다
+      관리자 역할이 동적으로 생기므로 역할 열거는 곧 낡는다.
+    - 답글·댓글 알림은 수신자가 글쓴이 본인이라 승격 대상이 아니다.
+    - 게시판 알림 정의 전수가 `exclude_trigger_user` 를 선언한다 — 관리자가 자기 글을
+      직권 처리하고 자기가 통보받는 일이 없게.
+
+axes:
+  recipient:
+    - staff_with_board_permission
+    - member
+    - guest
+  notification_type:
+    - new_post_admin
+    - other
+
+exclusions:
+  - { recipient: member, notification_type: other, reason: "승격 대상이 아닌 수신자에게는 유형이 링크를 가르지 않는다" }
+  - { recipient: guest, notification_type: other, reason: "같은 사유" }
+
+effects:
+  - new_post_admin_link_follows_the_recipient
+  - only_the_admin_notification_type_is_promoted
+  - every_board_definition_excludes_the_trigger_user
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Notifications/BoardNotificationLinkPolicyTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

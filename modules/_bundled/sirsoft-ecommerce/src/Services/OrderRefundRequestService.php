@@ -4,13 +4,13 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -22,10 +22,12 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
 /**
  * 취소·환불 신청 분기 서비스 (S5 · D2)
@@ -66,6 +68,7 @@ class OrderRefundRequestService
     /**
      * @param  OrderCancellationService  $cancellationService  취소 서비스 (즉시취소 분기·환불 미리보기)
      * @param  ClaimQuantityGuard  $claimQuantityGuard  수량 잠금 가드
+     * @param  ClaimItemSplitter  $claimItemSplitter  신청 상품 수량 분할기
      * @param  RefundExecutionService  $refundExecutionService  환불 실행 공용 서비스 (수단·안분 규칙)
      * @param  CancellableAmountCalculator  $cancellableCalculator  취소 가능 금액 산정기 (D19 — 저장·실행 가드)
      * @param  SequenceService  $sequenceService  채번 서비스
@@ -79,6 +82,7 @@ class OrderRefundRequestService
     public function __construct(
         protected OrderCancellationService $cancellationService,
         protected ClaimQuantityGuard $claimQuantityGuard,
+        protected ClaimItemSplitter $claimItemSplitter,
         protected RefundExecutionService $refundExecutionService,
         protected CancellableAmountCalculator $cancellableCalculator,
         protected SequenceService $sequenceService,
@@ -853,6 +857,7 @@ class OrderRefundRequestService
      * @param  int  $refundId  환불신청서 ID
      * @param  float  $previousAmount  수정 전 헤더 환불액
      * @param  float  $currentAmount  수정 후 헤더 환불액
+     * @return void
      */
     protected function applyAmountRatioToOptions(int $refundId, float $previousAmount, float $currentAmount): void
     {
@@ -860,7 +865,24 @@ class OrderRefundRequestService
             return;
         }
 
-        $options = $this->refundOptionRepository->listByRefundId($refundId);
+        $all = $this->refundOptionRepository->listByRefundId($refundId);
+
+        if ($all->isEmpty()) {
+            return;
+        }
+
+        // 목표 총액은 **전건** 기준으로 잡고(비율의 분모가 지금 행 합계여야 헤더 비율이
+        // 한 번만 적용된다), 배분 대상에서만 반려·철회 행을 뺀다. 가중치에 남겨 두면 반려
+        // 행이 새 환불액의 몫을 받아 가고, 그 몫은 아무에게도 지급되지 않는다.
+        $currentTotal = (float) $all->sum(fn ($option) => (float) $option->refund_amount);
+
+        $options = $all->reject(fn ($option) => in_array(
+            $option->option_status instanceof RefundStatusEnum
+                ? $option->option_status->value
+                : (string) $option->option_status,
+            [RefundStatusEnum::REJECTED->value, RefundStatusEnum::WITHDRAWN->value],
+            true
+        ))->values();
 
         if ($options->isEmpty()) {
             return;
@@ -868,9 +890,10 @@ class OrderRefundRequestService
 
         $weights = $options->map(fn ($option) => max(0.0, (float) $option->refund_amount))->all();
         $weightTotal = array_sum($weights);
-        $currentTotal = (float) $options->sum(fn ($option) => (float) $option->refund_amount);
 
         if ($weightTotal <= 0) {
+            // 폴백에도 같은 제외가 들어간다 — 여기서만 전건으로 돌아가면 행 금액이 모두 0 인
+            // 신청서에서 반려 행이 수량만큼 돈을 받아 간다.
             $weights = $options->map(fn ($option) => max(1.0, (float) $option->quantity))->all();
             $weightTotal = array_sum($weights);
         }
@@ -976,8 +999,13 @@ class OrderRefundRequestService
 
             $refund->loadMissing('refundOptions');
 
+            // **헤더 금액이 덮는 행만** 취소·재고복원 대상이다. 반려·철회 행을 포함하면
+            // 금액은 재계산된 값으로 나가는데 수량은 전건이 움직여, **돈과 수량이 어긋난 채
+            // 정상 종료한다.** 판단이 없는 행은 헤더 승인이 이미 덮고 있으므로 그대로 간다.
+            $executionTargets = $refund->refundOptionsForAmount();
+
             $items = [];
-            foreach ($refund->refundOptions as $option) {
+            foreach ($executionTargets as $option) {
                 $items[] = [
                     'order_option_id' => $option->order_option_id,
                     'cancel_quantity' => (int) $option->quantity,
@@ -1045,13 +1073,25 @@ class OrderRefundRequestService
 
             $updated = $this->refundRepository->update($fresh, $finalUpdates);
 
-            $completedOptionChanges = $this->captureOptionStatusChanges($updated->id, RefundOptionStatusEnum::COMPLETED);
+            $executionTargetIds = $executionTargets->pluck('id')->map(fn ($id) => (int) $id)->all();
 
+            // 활동로그의 전/후도 **같은 대상**으로 좁힌다. 전건으로 캡처하면 반려 행이
+            // "반려 → 환불완료" 로 기록되는데 실제로는 바뀌지 않아, 로그와 데이터가
+            // 어긋난 채 둘 다 정상으로 보인다.
+            $completedOptionChanges = $this->captureOptionStatusChanges(
+                $updated->id,
+                RefundStatusEnum::COMPLETED,
+                $executionTargetIds,
+            );
+
+            // 완료로 올리는 대상도 **덮는 행에 한정**한다. 전건을 덮으면 반려 안내를 받은
+            // 상품이 고객 화면에 환불완료로 보인다 — 오류도 로그도 남지 않는다.
             $this->refundOptionRepository->bulkUpdateStatus(
                 $updated->id,
-                RefundOptionStatusEnum::COMPLETED->value,
+                RefundStatusEnum::COMPLETED->value,
                 $processedBy,
                 Carbon::now(),
+                $executionTargetIds,
             );
 
             // ── 취소신청서 기록 — 환불이 집행된 바로 그 순간이다 (D3) ──
@@ -1095,7 +1135,7 @@ class OrderRefundRequestService
                 'sirsoft-ecommerce.claim.refund.option_status_changed',
                 $executed,
                 $completedOptionChanges,
-                RefundOptionStatusEnum::COMPLETED->value,
+                RefundStatusEnum::COMPLETED->value,
                 $processedBy,
             );
         }
@@ -1145,7 +1185,7 @@ class OrderRefundRequestService
         $changes = [];
 
         foreach ($this->refundOptionRepository->listByRefundId((int) $refund->id) as $row) {
-            $status = $row->option_status instanceof RefundOptionStatusEnum
+            $status = $row->option_status instanceof RefundStatusEnum
                 ? $row->option_status->value
                 : (string) $row->option_status;
 
@@ -1164,7 +1204,7 @@ class OrderRefundRequestService
             'sirsoft-ecommerce.claim.refund.option_status_changed',
             $refund,
             $changes,
-            RefundOptionStatusEnum::REQUESTED->value,
+            RefundStatusEnum::REQUESTED->value,
             $processedBy,
         );
     }
@@ -1177,15 +1217,20 @@ class OrderRefundRequestService
      * 아니므로 뺀다 — 재실행·멱등 호출이 없는 전이를 이력에 남기지 않게 한다.
      *
      * @param  int  $refundId  환불신청서 ID
-     * @param  RefundOptionStatusEnum  $target  목표 상태
+     * @param  RefundStatusEnum  $target  목표 상태
+     * @param  array<int, int>  $optionIds  대상 행 ID (빈 배열이면 신청서 전건)
      * @return array<int, array{option_id: int, previous: string, new: string}> 전이 내역
      */
-    protected function captureOptionStatusChanges(int $refundId, RefundOptionStatusEnum $target): array
+    protected function captureOptionStatusChanges(int $refundId, RefundStatusEnum $target, array $optionIds = []): array
     {
         $changes = [];
 
         foreach ($this->refundOptionRepository->listByRefundId($refundId) as $row) {
-            $previous = $row->option_status instanceof RefundOptionStatusEnum
+            if ($optionIds !== [] && ! in_array((int) $row->id, $optionIds, true)) {
+                continue;
+            }
+
+            $previous = $row->option_status instanceof RefundStatusEnum
                 ? $row->option_status->value
                 : (string) $row->option_status;
 
@@ -1291,6 +1336,7 @@ class OrderRefundRequestService
      * @param  Order  $order  주문
      * @param  OrderRefund  $refund  환불신청서 (선점 집계에서 자기 자신 제외)
      * @param  float  $requested  요청 환불 총액 (PG + 마일리지, 기본 통화)
+     * @return void
      *
      * @throws OrderClaimException D19 상한 초과
      */
@@ -1348,8 +1394,8 @@ class OrderRefundRequestService
             // 라 같은 카드 안에서 두 상태가 어긋나며, 정상 서식이라 오류도 로그도 남지 않는다.
             // 반품·교환 옵션은 이미 각 상태 Enum 의 `WITHDRAWN` 을 쓴다 — 환불만 어긋나 있었다.
             $optionStatus = match ($target) {
-                RefundStatusEnum::REJECTED => RefundOptionStatusEnum::REJECTED,
-                RefundStatusEnum::WITHDRAWN => RefundOptionStatusEnum::WITHDRAWN,
+                RefundStatusEnum::REJECTED => RefundStatusEnum::REJECTED,
+                RefundStatusEnum::WITHDRAWN => RefundStatusEnum::WITHDRAWN,
                 default => null,
             };
 
@@ -1378,10 +1424,34 @@ class OrderRefundRequestService
             );
         }
 
+        $this->fireStatusHooks($updated, $current, $target, $context);
+
+        return $updated;
+    }
+
+    /**
+     * 신청서 상태 전이 훅을 발화합니다. (헤더 직접 전이·상품 단위 전이 공용)
+     *
+     * 교환·반품과 같은 형태로 뽑아 둔다 — 상품 단위 전이가 헤더를 따라 옮길 때
+     * (`syncHeaderFromOptions`) 같은 훅이 같은 순서로 나가야 알림·활동로그가 두 경로에서
+     * 갈리지 않는다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  RefundStatusEnum  $previous  직전 상태
+     * @param  RefundStatusEnum  $target  목표 상태
+     * @param  array  $context  부가 정보 (알림 억제 플래그 등)
+     * @return void 반환값 없음
+     */
+    protected function fireStatusHooks(
+        OrderRefund $refund,
+        RefundStatusEnum $previous,
+        RefundStatusEnum $target,
+        array $context = [],
+    ): void {
         // 네 번째 인수 `$context` — 알림 리스너가 `suppress_notification` 를 읽어 자동 전이의
         // 중간 단계 알림만 끈다. 기존 3인수 구독자는 그대로 둔다(PHP 는 유저 함수에 인수가
         // 더 넘어와도 오류를 내지 않는다 — 모자랄 때만 ArgumentCountError).
-        HookManager::doAction('sirsoft-ecommerce.claim.refund.status_changed', $updated, $current->value, $target->value, $context);
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.status_changed', $refund, $previous->value, $target->value, $context);
 
         $specific = match ($target) {
             RefundStatusEnum::APPROVED => 'sirsoft-ecommerce.claim.refund.approved',
@@ -1392,10 +1462,396 @@ class OrderRefundRequestService
         };
 
         if ($specific !== null) {
-            HookManager::doAction($specific, $updated);
+            HookManager::doAction($specific, $refund);
+        }
+    }
+
+    /**
+     * 신청 상품 단위로 상태를 전이합니다. (교환·반품과 같은 계약 — D25)
+     *
+     * 헤더 상태는 **살아 있는 상품이 모두 같은 상태에 도달했을 때만** 따라간다
+     * (`syncHeaderFromOptions`). 수량을 실은 지시(`[{id, quantity}]`)는 그 행을 갈라서
+     * 지정 수량만 전이하고, 잔여는 새 행으로 남아 신청 상태를 유지한다.
+     *
+     * **환불에는 원 주문옵션 복귀가 없다.** 교환·반품은 접수 시점에 상품을 코스 상태로
+     * 옮기지만, 직접 환불신청은 상품을 판매 상태 그대로 두고 수량만 선점한다 — 되돌릴
+     * 상태가 없고, 반려로 선점이 풀리는 것은 수량 잠금 쿼리가 종결 행을 빼면서 일어난다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  array<int, int|array{id: int, quantity?: int|null}>  $items  전이 지시 (빈 배열이면 전체)
+     * @param  RefundStatusEnum  $target  목표 상태
+     * @param  array  $context  부가 정보 (processed_by)
+     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>, split: array<int, array{id: int, quantity: int, remainder_id: int, remainder_quantity: int}>} 전이 결과
+     *
+     * @throws OrderClaimException 완료 전이를 시도한 경우
+     */
+    public function transitionOption(
+        OrderRefund $refund,
+        array $items,
+        RefundStatusEnum $target,
+        array $context = [],
+    ): array {
+        // 완료는 환불 실행(RefundExecutionService)만이 진입점이다 — 상품 단위로 열어 두면
+        // 돈이 나가지 않은 채 그 상품만 환불완료로 보인다.
+        if ($target === RefundStatusEnum::COMPLETED) {
+            throw OrderClaimException::completionRequiresCompletionFlow();
         }
 
-        return $updated;
+        $processedBy = $context['processed_by'] ?? null;
+        $specs = ClaimItemSpecs::normalize($items);
+        $quantities = ClaimItemSpecs::quantities($specs);
+        $rows = $this->resolveItems($refund, ClaimItemSpecs::ids($specs));
+
+        $succeeded = [];
+        $skipped = [];
+        $changes = [];
+        $split = [];
+
+        DB::transaction(function () use ($rows, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+            foreach ($rows as $item) {
+                $current = $item->option_status instanceof RefundStatusEnum
+                    ? $item->option_status
+                    : RefundStatusEnum::from((string) $item->option_status);
+
+                // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나
+                // 참이라 이미 반려된 상품에 반려를 다시 지시하면 처리자·상태가 다시 쓰인다.
+                if ($current->isFinal() || ! $current->canTransitionTo($target)) {
+                    $skipped[] = [
+                        'id' => $item->id,
+                        'message' => __('sirsoft-ecommerce::exceptions.claim_transition_not_allowed', [
+                            'from' => $current->label(),
+                            'to' => $target->label(),
+                        ]),
+                    ];
+
+                    continue;
+                }
+
+                $previousQuantity = (int) $item->quantity;
+
+                try {
+                    $remainder = $this->transitionItem($item, $target, $processedBy, $quantities[$item->id] ?? null);
+                } catch (OrderClaimException $e) {
+                    $skipped[] = ['id' => $item->id, 'message' => $e->getMessage()];
+
+                    continue;
+                }
+
+                $change = [
+                    'option_id' => $item->id,
+                    'previous' => $current->value,
+                    'new' => $target->value,
+                ];
+
+                if ($remainder !== null) {
+                    $change['quantity'] = (int) $item->fresh()->quantity;
+                    $change['remainder_option_id'] = $remainder->id;
+
+                    $split[] = [
+                        'id' => $item->id,
+                        'quantity' => $change['quantity'],
+                        'remainder_id' => $remainder->id,
+                        'remainder_quantity' => $previousQuantity - $change['quantity'],
+                    ];
+                }
+
+                $changes[] = $change;
+
+                $succeeded[] = $item->id;
+            }
+        });
+
+        $fresh = $refund->fresh(['refundOptions']);
+
+        // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
+        // 않으므로, 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다.
+        if ($changes !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.refund.option_status_changed',
+                $fresh,
+                $changes,
+                $target->value,
+                $processedBy,
+            );
+        }
+
+        $this->syncHeaderFromOptions($fresh, $processedBy);
+
+        return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
+    }
+
+    /**
+     * 신청 상품 한 건의 상태를 바꿉니다. (상품별 저장점)
+     *
+     * 순서가 계약이다 — `split()` → `option_status` 갱신. 분할이 이 저장점 **안**에 있어야
+     * 전이가 실패했을 때 분할도 함께 되돌아간다.
+     *
+     * @param  OrderRefundOption  $item  신청 상품 행
+     * @param  RefundStatusEnum  $target  목표 상태 (게이트 통과 전제)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  int|null  $quantity  이번에 전이할 수량 (null 이면 전량)
+     * @return OrderRefundOption|null 분할로 생긴 잔여 행 (분할하지 않았으면 null)
+     *
+     * @throws OrderClaimException 나눌 수 없는 행 / 수량 범위 밖
+     */
+    protected function transitionItem(
+        OrderRefundOption $item,
+        RefundStatusEnum $target,
+        ?int $processedBy,
+        ?int $quantity = null,
+    ): ?OrderRefundOption {
+        return DB::transaction(function () use ($item, $target, $processedBy, $quantity) {
+            $remainder = null;
+
+            if ($quantity !== null) {
+                ['remainder' => $remainder] = $this->claimItemSplitter->split($item, $quantity);
+                $item->refresh();
+            }
+
+            $this->refundOptionRepository->update($item, [
+                'option_status' => $target,
+                'processed_by' => $processedBy ?? $item->processed_by,
+            ]);
+
+            return $remainder;
+        });
+    }
+
+    /**
+     * 살아 있는 신청 상품이 모두 같은 상태에 도달했으면 헤더를 그 상태로 옮깁니다.
+     *
+     * 판정 규칙은 교환·반품과 같다 — 끝난 상품은 빼고, 살아 있는 상품이 없으면 끝난 상태가
+     * 하나로 모일 때 그것을 따라가며, 한 단계 이상 앞서 있으면 건너뛴 중간 단계를 차례로
+     * 거친다(`headerPathTo`).
+     *
+     * **`processing`·`completed` 는 헤더가 따라가지 않는다.** 둘 다 환불 실행이 소유하는
+     * 상태라, 상품 행이 그 값에 모였다고 헤더를 옮기면 **돈이 움직이지 않았는데** 신청서가
+     * 처리중·완료로 보인다. 교환·반품은 완료만 빼면 되지만(그쪽엔 처리중이 없다) 환불은
+     * 둘 다 빼야 한다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void 반환값 없음
+     */
+    protected function syncHeaderFromOptions(OrderRefund $refund, ?int $processedBy): void
+    {
+        $refund->loadMissing('refundOptions');
+
+        $rows = $refund->refundOptions;
+
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $living = $rows->reject(fn (OrderRefundOption $item) => $this->optionStatusOf($item)->isFinal());
+
+        $statuses = ($living->isEmpty() ? $rows : $living)
+            ->map(fn (OrderRefundOption $item) => $this->optionStatusOf($item)->value)
+            ->unique()
+            ->values();
+
+        if ($statuses->count() !== 1) {
+            return;
+        }
+
+        $target = RefundStatusEnum::from($statuses->first());
+
+        if (
+            $target === $refund->refund_status
+            || $target === RefundStatusEnum::COMPLETED
+            || $target === RefundStatusEnum::PROCESSING
+        ) {
+            return;
+        }
+
+        $path = $this->headerPathTo($refund->refund_status, $target);
+
+        if ($path === []) {
+            return;
+        }
+
+        $current = $refund;
+
+        foreach ($path as $step) {
+            $previous = $current->refund_status;
+            $updates = ['refund_status' => $step] + $this->stampFor($step, []);
+
+            if ($processedBy !== null) {
+                $updates['processed_by'] = $processedBy;
+            }
+
+            $current = $this->refundRepository->update($current, $updates);
+
+            $this->fireStatusHooks($current, $previous, $step);
+        }
+    }
+
+    /**
+     * 헤더가 현재 상태에서 목표 상태까지 거쳐야 할 단계 목록을 전이 게이트로 찾습니다. (BFS)
+     *
+     * 돈이 움직여야 도달하는 상태(`processing`·`completed`)는 경유지로도 쓰지 않는다 —
+     * 경유만 해도 그 단계의 훅이 발화해 알림이 나간다.
+     *
+     * @param  RefundStatusEnum  $from  현재 헤더 상태
+     * @param  RefundStatusEnum  $to  상품들이 모인 상태
+     * @return array<int, RefundStatusEnum> 거쳐야 할 상태 목록 (목표 포함, 현재 제외)
+     */
+    protected function headerPathTo(RefundStatusEnum $from, RefundStatusEnum $to): array
+    {
+        if ($from === $to) {
+            return [];
+        }
+
+        $forbidden = [RefundStatusEnum::PROCESSING, RefundStatusEnum::COMPLETED];
+        $queue = [[$from, []]];
+        $visited = [$from->value => true];
+
+        while ($queue !== []) {
+            [$node, $path] = array_shift($queue);
+
+            foreach ($node->allowedTransitions() as $next) {
+                if (isset($visited[$next->value]) || in_array($next, $forbidden, true)) {
+                    continue;
+                }
+
+                $nextPath = [...$path, $next];
+
+                if ($next === $to) {
+                    return $nextPath;
+                }
+
+                $visited[$next->value] = true;
+                $queue[] = [$next, $nextPath];
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * 신청 상품 행을 해석합니다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  array<int, int>  $itemIds  신청 상품 행 ID 목록 (빈 배열이면 전체)
+     * @return array<int, OrderRefundOption> 신청 상품 행 목록
+     */
+    protected function resolveItems(OrderRefund $refund, array $itemIds): array
+    {
+        $refund->loadMissing('refundOptions');
+
+        if ($itemIds === []) {
+            return $refund->refundOptions->all();
+        }
+
+        $ids = array_map('intval', $itemIds);
+
+        return $refund->refundOptions
+            ->filter(fn (OrderRefundOption $item) => in_array($item->id, $ids, true))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 상품 행 상태를 Enum 으로 읽습니다. (캐스트 여부와 무관하게)
+     *
+     * @param  OrderRefundOption  $item  신청 상품 행
+     * @return RefundStatusEnum 상품 행 상태
+     */
+    protected function optionStatusOf(OrderRefundOption $item): RefundStatusEnum
+    {
+        return $item->option_status instanceof RefundStatusEnum
+            ? $item->option_status
+            : RefundStatusEnum::from((string) $item->option_status);
+    }
+
+    /**
+     * 상품 단위 판단이 갈린 뒤 신청서 환불액을 승인 범위에 맞춰 다시 계산합니다. (§4-5 · A1)
+     *
+     * **새로 쓰는 것은 "얼마가 빠졌는가" 하나뿐이고 나머지는 전부 기존 계약이다** — 실제
+     * 반영은 `updateAmounts()` 가 한다. 그래서 전/후 스냅샷과 `claim.refund.amounts_updated`
+     * 훅(활동로그 리스너가 이미 구독), D19 상한 가드, 다통화 환산, 행 금액 동기화, 잠금
+     * 순서, 종결·처리중 거절이 코드 추가 없이 그대로 붙는다.
+     *
+     * 비율의 분모는 "이번 전이 **직전에** 돈이 덮고 있던 행" 이다(`$decidedIds` 가 그 경계를
+     * 알려 준다). 분모를 전건으로 두면 앞 라운드에서 이미 빠진 몫을 **두 번 빼서** 남은
+     * 상품의 환불액이 라운드마다 줄어든다 — 합계는 언제나 맞아떨어져 드러나지 않는다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  array<int, int>  $decidedIds  이번 전이에서 판단이 내려진 행 ID
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return OrderRefund 재계산된 환불신청서 (변화가 없으면 원본)
+     */
+    public function recalculateAmountForApprovedItems(
+        OrderRefund $refund,
+        array $decidedIds = [],
+        ?int $processedBy = null,
+    ): OrderRefund {
+        $refund->loadMissing('refundOptions');
+
+        $covered = $refund->refundOptionsForAmount();
+        $dropped = $refund->rejectedRefundOptions();
+
+        if ($dropped->isEmpty()) {
+            return $refund;
+        }
+
+        $ratio = $this->coverageRatio($covered, $dropped, $decidedIds);
+
+        if ($ratio < 1.0) {
+            $refund = $this->updateAmounts($refund, [
+                'refund_amount' => round((float) $refund->refund_amount * $ratio, 2),
+                'refund_points_amount' => round((float) $refund->refund_points_amount * $ratio, 2),
+            ], $processedBy);
+        }
+
+        // 반려 행의 환불액을 0 으로 내린다. 안분(`applyAmountRatioToOptions`)이 이미 그 행을
+        // 가중치에서 뺐으므로 값이 **그대로 남아 있고**, 남겨 두면 D19 선점액 집계가 그것을
+        // 계속 센다 — 헤더 합계는 맞아서 어디에도 드러나지 않는다.
+        foreach ($dropped as $option) {
+            if ((float) $option->refund_amount !== 0.0) {
+                $this->refundOptionRepository->updateRefundAmount($option, 0.0);
+            }
+        }
+
+        return $refund->fresh(['refundOptions']) ?? $refund;
+    }
+
+    /**
+     * 이번 판단으로 헤더 금액이 남겨야 할 비율을 구합니다.
+     *
+     * 가중치는 행 환불액이고, 그 합이 0 이면(배송비만 환불하는 신청서 등) 수량으로 나눈다.
+     * 분모는 **덮고 있던 행 + 이번에 빠진 행** 이다 — 앞 라운드에서 이미 0 으로 내려간 행을
+     * 분모에 넣으면 같은 몫이 두 번 빠진다.
+     *
+     * @param  Collection<int, OrderRefundOption>  $covered  아직 덮는 행
+     * @param  Collection<int, OrderRefundOption>  $dropped  반려·철회 행
+     * @param  array<int, int>  $decidedIds  이번 전이에서 판단이 내려진 행 ID
+     * @return float 남길 비율 (0.0 ~ 1.0)
+     */
+    protected function coverageRatio(Collection $covered, Collection $dropped, array $decidedIds): float
+    {
+        $decided = array_map('intval', $decidedIds);
+        $justDropped = $dropped->filter(
+            fn (OrderRefundOption $option): bool => $decided === [] || in_array((int) $option->id, $decided, true)
+        );
+
+        $money = fn (OrderRefundOption $option): float => max(0.0, (float) $option->refund_amount);
+        $coveredMoney = (float) $covered->sum($money);
+        $droppedMoney = (float) $justDropped->sum($money);
+
+        if ($coveredMoney + $droppedMoney > 0) {
+            return $coveredMoney / ($coveredMoney + $droppedMoney);
+        }
+
+        $quantity = fn (OrderRefundOption $option): float => max(0.0, (float) $option->quantity);
+        $coveredQuantity = (float) $covered->sum($quantity);
+        $droppedQuantity = (float) $justDropped->sum($quantity);
+
+        if ($coveredQuantity + $droppedQuantity <= 0) {
+            return 1.0;
+        }
+
+        return $coveredQuantity / ($coveredQuantity + $droppedQuantity);
     }
 
     /**

@@ -23,6 +23,7 @@ import {
     setClaimCompleteRefundRequestHandler,
     executeClaimCompletionHandler,
     clearClaimCompleteTimersHandler,
+    refreshClaimAttachmentsHandler,
 } from '../../handlers/claimHandlers';
 
 const PREVIEW_URL = '/api/modules/sirsoft-ecommerce/admin/claims/completion-preview';
@@ -1014,5 +1015,62 @@ describe('환불 대상이 0 건인 완료 처리 — 고를 수 없는 기본�
         await openModal(true);
 
         expect(mockGlobalState.claimCompleteCreateRefundRequest).toBe(true);
+    });
+});
+
+describe('첨부 새로고침', () => {
+    /**
+     * 업로드·삭제는 공용 업로더가 한다 — 핸들러는 그 결과를 화면 나머지에 반영할 뿐이다.
+     *
+     * 종전에는 이 핸들러가 직접 FormData 를 만들어 올렸고, 그래서 진행률·다중 선택·상한
+     * 안내·개별 삭제를 화면마다 다시 구현해야 했다.
+     *
+     * @effects refresh_claim_attachments_refetches_detail_and_logs
+     */
+    it('상세와 활동 로그를 다시 읽는다', async () => {
+        await refreshClaimAttachmentsHandler();
+
+        const refetched = mockG7Core.dispatch.mock.calls
+            .filter((call) => call[0]?.handler === 'refetchDataSource')
+            .map((call) => call[0].params.dataSourceId);
+
+        expect(refetched).toEqual(['claim', 'claim_logs']);
+    });
+
+    /**
+     * 결과를 말로도 알린다 — 업로더는 자기 격자만 갱신하므로, 안내가 없으면 운영자는
+     * 출처 스트립·활동 로그가 바뀐 것을 알 방법이 없다.
+     *
+     * 올린 것과 지운 것은 다른 사건이라 문구가 갈린다.
+     *
+     * @effects refresh_claim_attachments_announces_the_result
+     */
+    it('업로드와 삭제에 각각 다른 안내를 띄운다', async () => {
+        await refreshClaimAttachmentsHandler({
+            handler: 'sirsoft-ecommerce.refreshClaimAttachments',
+            params: { event: 'upload' },
+        } as any);
+        const afterUpload = mockG7Core.toast.success.mock.calls.at(-1)?.[0] ?? '';
+
+        await refreshClaimAttachmentsHandler({
+            handler: 'sirsoft-ecommerce.refreshClaimAttachments',
+            params: { event: 'remove' },
+        } as any);
+        const afterRemove = mockG7Core.toast.success.mock.calls.at(-1)?.[0] ?? '';
+
+        expect(afterUpload).not.toBe('');
+        expect(afterRemove).not.toBe('');
+        expect(afterUpload).not.toBe(afterRemove);
+    });
+
+    /**
+     * 파일을 직접 올리지 않는다 — 업로드 왕복이 두 곳에서 일어나면 상한 판정이 두 벌이 된다.
+     *
+     * @effects refresh_claim_attachments_does_not_upload
+     */
+    it('스스로 업로드 요청을 보내지 않는다', async () => {
+        await refreshClaimAttachmentsHandler();
+
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
     });
 });

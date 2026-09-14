@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
@@ -258,6 +259,109 @@ class OrderRefund extends Model
     public function refundOptions(): HasMany
     {
         return $this->hasMany(OrderRefundOption::class, 'order_refund_id');
+    }
+
+    /**
+     * 운영자가 **받아 주기로 한** 상품 행만 반환합니다.
+     *
+     * 돈이 덮는 범위(`refundOptionsForAmount()`)보다 좁다 — 미판단분을 빼기 때문이다. 그래서
+     * 이 술어는 "얼마가 나갈 수 있는가" 가 아니라 **"운영자가 무엇을 받아 줬는가"** 를 묻는
+     * 자리에서만 쓴다(부분 처리 안내·집계).
+     *
+     * `PROCESSING`·`COMPLETED` 를 포함하는 이유: 운영자가 여러 라운드로 나눠 처리하면 앞
+     * 라운드가 이미 그 상태로 가 있다. 빼면 다음 라운드의 계산에서 앞 라운드 몫이 사라진다.
+     *
+     * @return Collection<int, OrderRefundOption> 승인 계열 상품 행
+     */
+    public function approvedRefundOptions(): Collection
+    {
+        $included = [
+            RefundStatusEnum::APPROVED->value,
+            RefundStatusEnum::PROCESSING->value,
+            RefundStatusEnum::COMPLETED->value,
+        ];
+
+        return $this->refundOptions
+            ->filter(fn (OrderRefundOption $option): bool => in_array(
+                $this->optionStatusValue($option),
+                $included,
+                true
+            ))
+            ->values();
+    }
+
+    /**
+     * 금액 산정·환불 실행이 대상으로 삼을 상품 행을 반환합니다. (= 헤더 금액이 덮는 행)
+     *
+     * **빠지는 것은 반려·철회분뿐이다.** 그 둘은 "이 상품에는 돈이 나가지 않는다" 는 확정이고,
+     * 계속 세면 취소 가능 금액(D19)이 그만큼 넓어져 **과다 환불이 가드를 통과해** 집행된다.
+     *
+     * 아직 판단이 없는 행(`requested`·`on_hold`)은 **그대로 센다.** 승인분만 세면 세 가지가
+     * 동시에 어긋난다:
+     *
+     *  1. 상한이 승인분으로 좁혀진 순간, 헤더에 남아 있는 미판단분이 상한을 넘겨 **저장·실행이
+     *     422 로 막힌다** — 운영자는 아무 금액도 건드리지 않았는데 막힌다.
+     *  2. 미판단 행의 금액을 0 으로 내리면, 나중에 그 행을 승인할 때 **되살릴 근거가 없다**.
+     *     비율 안분의 가중치가 이미 0 이기 때문이다.
+     *  3. 헤더가 판단 순서에 따라 줄었다 늘었다 해서, 활동로그의 전/후가 실제 결정과 무관한
+     *     숫자를 말한다.
+     *
+     * 그래서 이 술어는 **단조**다 — 반려가 쌓이는 만큼만 좁아진다.
+     *
+     * @return Collection<int, OrderRefundOption> 금액 대상 상품 행
+     */
+    public function refundOptionsForAmount(): Collection
+    {
+        $excluded = [
+            RefundStatusEnum::REJECTED->value,
+            RefundStatusEnum::WITHDRAWN->value,
+        ];
+
+        return $this->refundOptions
+            ->reject(fn (OrderRefundOption $option): bool => in_array(
+                $this->optionStatusValue($option),
+                $excluded,
+                true
+            ))
+            ->values();
+    }
+
+    /**
+     * 반려·철회로 환불 대상에서 빠진 상품 행을 반환합니다.
+     *
+     * `refundOptionsForAmount()` 의 여집합이다. 재계산이 이 행들의 환불액을 0 으로 내린다 —
+     * 남겨 두면 헤더 합계는 맞는데 **반려 행이 돈을 들고 있고**, D19 의 선점액 집계가 그것을
+     * 계속 센다(오류도 로그도 없다).
+     *
+     * @return Collection<int, OrderRefundOption> 환불 대상에서 빠진 상품 행
+     */
+    public function rejectedRefundOptions(): Collection
+    {
+        $excluded = [
+            RefundStatusEnum::REJECTED->value,
+            RefundStatusEnum::WITHDRAWN->value,
+        ];
+
+        return $this->refundOptions
+            ->filter(fn (OrderRefundOption $option): bool => in_array(
+                $this->optionStatusValue($option),
+                $excluded,
+                true
+            ))
+            ->values();
+    }
+
+    /**
+     * 상품 행 상태의 문자열 값을 반환합니다 (캐스트 여부와 무관하게).
+     *
+     * @param  OrderRefundOption  $option  상품 행
+     * @return string 상태 값
+     */
+    private function optionStatusValue(OrderRefundOption $option): string
+    {
+        return $option->option_status instanceof RefundStatusEnum
+            ? $option->option_status->value
+            : (string) $option->option_status;
     }
 
     /**

@@ -10,7 +10,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
@@ -201,6 +200,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
     // ① 도메인 환불 대상 축
     // ================================================================
 
+    /**
+     * @effects domain_axis_binds_when_it_is_the_smallest
+     */
     public function test_domain_axis_binds_when_it_is_the_smallest(): void
     {
         // 30,000원 3개 주문(90,000 결제) 중 1개만 반품 → 도메인 30,000 < 결제 한도 90,000
@@ -219,6 +221,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(CancellableAmount::BINDING_DOMAIN, $result->binding);
     }
 
+    /**
+     * @effects domain_axis_binds_on_a_tie
+     */
     public function test_domain_axis_binds_on_a_tie(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 40000);
@@ -234,6 +239,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(CancellableAmount::BINDING_DOMAIN, $result->binding);
     }
 
+    /**
+     * @effects collection_fee_narrows_the_domain_axis
+     */
     public function test_collection_fee_narrows_the_domain_axis(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 40000);
@@ -255,6 +263,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
     /**
      * 교환은 상품 금액을 돌려주지 않으므로 도메인 축이 0 이다.
+     *
+     * @effects exchange_without_price_difference_has_zero_domain_axis
      */
     public function test_exchange_without_price_difference_has_zero_domain_axis(): void
     {
@@ -270,6 +280,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(0.0, $result->amount);
     }
 
+    /**
+     * @effects downgrade_exchange_domain_axis_is_the_price_difference
+     */
     public function test_downgrade_exchange_domain_axis_is_the_price_difference(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 29000);
@@ -289,6 +302,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(5000.0, $result->amount);
     }
 
+    /**
+     * @effects cancel_type_uses_the_cancellation_adjustment
+     */
     public function test_cancel_type_uses_the_cancellation_adjustment(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 25000);
@@ -302,6 +318,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(25000.0, $result->domainRefundable);
     }
 
+    /**
+     * @effects refund_type_uses_the_cancellation_adjustment
+     */
     public function test_refund_type_uses_the_cancellation_adjustment(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 25000);
@@ -319,6 +338,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
     // ② 결제수단 잔여 한도 축
     // ================================================================
 
+    /**
+     * @effects payment_axis_binds_when_capacity_is_already_consumed
+     */
     public function test_payment_axis_binds_when_capacity_is_already_consumed(): void
     {
         $order = $this->createSingleItemClaimOrder(
@@ -341,6 +363,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(CancellableAmount::BINDING_PAYMENT, $result->binding);
     }
 
+    /**
+     * @effects fully_cancelled_payment_leaves_no_capacity
+     */
     public function test_fully_cancelled_payment_leaves_no_capacity(): void
     {
         $order = $this->createSingleItemClaimOrder(
@@ -363,6 +388,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
     /**
      * 입금 대기 결제는 돈이 들어오지 않았으므로 잔여 한도가 없다.
+     *
+     * @effects waiting_deposit_payment_has_no_capacity
      */
     public function test_waiting_deposit_payment_has_no_capacity(): void
     {
@@ -381,6 +408,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(0.0, $result->amount);
     }
 
+    /**
+     * @effects methods_list_reports_the_payment_row
+     */
     public function test_methods_list_reports_the_payment_row(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -400,6 +430,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
     /**
      * 복수 결제수단 — PG 결제행과 마일리지가 각각 항목으로 잡히고 합계가 한도가 된다.
+     *
+     * @effects multiple_payment_methods_are_summed_and_listed
      */
     public function test_multiple_payment_methods_are_summed_and_listed(): void
     {
@@ -423,6 +455,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertContains(CancellableAmount::METHOD_MILEAGE, $types);
     }
 
+    /**
+     * @effects accumulated_mileage_refund_narrows_the_mileage_remainder
+     */
     public function test_accumulated_mileage_refund_narrows_the_mileage_remainder(): void
     {
         $order = $this->createSingleItemClaimOrder(
@@ -446,6 +481,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(6000.0, $mileage['remaining_base']);
     }
 
+    /**
+     * @effects order_without_mileage_lists_no_mileage_method
+     */
     public function test_order_without_mileage_lists_no_mileage_method(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -464,6 +502,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
      *
      * 환산하지 않으면 71 USD 가 71원으로 읽혀 한도가 통째로 무너진다 — 값은 맞고
      * 단위만 틀린 형태라 오류가 남지 않는다.
+     *
+     * @effects payment_capacity_is_converted_from_payment_currency_to_base
      */
     public function test_payment_capacity_is_converted_from_payment_currency_to_base(): void
     {
@@ -484,6 +524,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame('USD', $result->methods[0]['currency']);
     }
 
+    /**
+     * @effects multi_currency_amount_is_reported_with_snapshot_rates
+     */
     public function test_multi_currency_amount_is_reported_with_snapshot_rates(): void
     {
         $order = $this->createSingleItemClaimOrder(
@@ -502,6 +545,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame('KRW', $result->currency);
     }
 
+    /**
+     * @effects missing_exchange_rate_falls_back_to_the_local_amount
+     */
     public function test_missing_exchange_rate_falls_back_to_the_local_amount(): void
     {
         $snapshot = $this->multiCurrencySnapshot();
@@ -532,6 +578,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
      *
      * 실지급 가능액은 ②(결제수단 잔여)가 이미 실제 취소 누적을 뺀 값이다. 여기서 예정액까지
      * 빼면 승인조차 되지 않은 남의 신청서가 이 건의 정당한 환불을 0 원으로 막는다.
+     *
+     * @effects pending_refund_is_reported_but_does_not_reduce_the_amount
      */
     public function test_pending_refund_is_reported_but_does_not_reduce_the_amount(): void
     {
@@ -551,6 +599,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
     /**
      * 예정액이 아무리 커도 `binding` 은 ①·② 두 강제 축만 가리킨다. (S17 B5)
+     *
+     * @effects binding_never_reports_the_reserved_axis
      */
     public function test_binding_never_reports_the_reserved_axis(): void
     {
@@ -571,6 +621,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects reserved_includes_mileage_portion_of_a_pending_refund
+     */
     public function test_reserved_includes_mileage_portion_of_a_pending_refund(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -586,6 +639,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
     }
 
     #[DataProvider('terminalRefundStatusProvider')]
+    /**
+     * @effects terminal_refund_does_not_reserve
+     */
     public function test_terminal_refund_does_not_reserve(RefundStatusEnum $status): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -610,6 +666,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * @effects reserved_entries_carry_the_claim_identity
+     */
     public function test_reserved_entries_carry_the_claim_identity(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -630,6 +689,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
     /**
      * 환불신청서가 아직 없는 진행 중 반품은 같은 재계산기로 예정액을 추정해 선점한다.
+     *
+     * @effects pending_return_reserves_its_estimated_refund
      */
     public function test_pending_return_reserves_its_estimated_refund(): void
     {
@@ -655,6 +716,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
      * 한 건씩 따로 재계산해 더하면 배송비 환급처럼 공유되는 몫이 건마다 중복으로 잡혀
      * 예정액 합계가 결제 총액을 넘는다 — 실측에서 결제 13,000 원 주문의 예정액이
      * 16,000 원으로 잡혔다.
+     *
+     * @effects multiple_pending_returns_are_estimated_jointly
      */
     public function test_multiple_pending_returns_are_estimated_jointly(): void
     {
@@ -678,6 +741,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
     /**
      * 목록에 실린 건별 예정액의 합은 언제나 총액과 같다. (S17 B6)
+     *
+     * @effects reserved_entries_sum_to_the_reserved_total
      */
     public function test_reserved_entries_sum_to_the_reserved_total(): void
     {
@@ -699,6 +764,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects pending_return_reserve_accounts_for_its_deducted_collection_fee
+     */
     public function test_pending_return_reserve_accounts_for_its_deducted_collection_fee(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 30000, quantity: 3);
@@ -720,6 +788,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(27000.0, $result->reserved);
     }
 
+    /**
+     * @effects return_with_a_refund_row_is_not_double_counted
+     */
     public function test_return_with_a_refund_row_is_not_double_counted(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 30000, quantity: 3);
@@ -742,6 +813,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
     }
 
     #[DataProvider('terminalReturnStatusProvider')]
+    /**
+     * @effects terminal_return_does_not_reserve
+     */
     public function test_terminal_return_does_not_reserve(ReturnStatusEnum $status): void
     {
         $order = $this->createSingleItemClaimOrder(price: 30000, quantity: 3);
@@ -769,6 +843,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
     /**
      * 교환은 저가 교환 차액 환불분만 선점한다 — 청구액은 받는 돈이라 선점 대상이 아니다.
+     *
+     * @effects pending_exchange_reserves_only_its_refundable_difference
      */
     public function test_pending_exchange_reserves_only_its_refundable_difference(): void
     {
@@ -794,6 +870,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(50000.0, $result->amount);
     }
 
+    /**
+     * @effects pending_exchange_without_refundable_difference_reserves_nothing
+     */
     public function test_pending_exchange_without_refundable_difference_reserves_nothing(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -820,6 +899,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
      *
      * 교환은 완료 라운드마다 환불신청서를 접수할 수 있어, 진행 중 교환과 그 교환에서 난
      * 환불신청서가 동시에 존재한다. 둘을 각각 전액 세면 같은 차액이 두 번 선점된다.
+     *
+     * @effects pending_exchange_reservation_excludes_refund_requests_already_filed
      */
     public function test_pending_exchange_reservation_excludes_refund_requests_already_filed(): void
     {
@@ -840,6 +921,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertCount(2, $result->reservedClaims);
     }
 
+    /**
+     * @effects rejected_exchange_refund_request_does_not_reduce_the_exchange_reservation
+     */
     public function test_rejected_exchange_refund_request_does_not_reduce_the_exchange_reservation(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -857,6 +941,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertCount(1, $result->reservedClaims);
     }
 
+    /**
+     * @effects completed_exchange_refund_is_subtracted_from_the_exchange_reservation
+     */
     public function test_completed_exchange_refund_is_subtracted_from_the_exchange_reservation(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -874,6 +961,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
     }
 
     #[DataProvider('terminalExchangeStatusProvider')]
+    /**
+     * @effects terminal_exchange_does_not_reserve
+     */
     public function test_terminal_exchange_does_not_reserve(ExchangeStatusEnum $status): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -902,6 +992,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * @effects reserved_from_a_different_order_is_ignored
+     */
     public function test_reserved_from_a_different_order_is_ignored(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -922,6 +1015,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
      * 자기 자신 제외 — 실행 직전 가드는 실행 대상 클레임을 선점 목록에서 빼야 한다.
      *
      * 빼지 않으면 자기 금액을 스스로 차감해 한도가 0 이 되고 정당한 환불이 막힌다.
+     *
+     * @effects excluded_claim_does_not_reserve_against_itself
      */
     public function test_excluded_claim_does_not_reserve_against_itself(): void
     {
@@ -950,6 +1045,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(50000.0, $withExclusion->amount);
     }
 
+    /**
+     * @effects exclusion_of_a_pending_return_removes_its_reserve
+     */
     public function test_exclusion_of_a_pending_return_removes_its_reserve(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 30000, quantity: 3);
@@ -979,6 +1077,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
      *
      * 예전에는 이 상황이 0 원으로 잘렸다. 그 결과 결제 잔여가 충분한데도 남의 신청서 때문에
      * 정당한 환불이 막혔다 — 실측에서 3회 재현된 결함이라 계약을 바꿨다.
+     *
+     * @effects reserved_exceeding_the_ceiling_does_not_clamp_the_amount
      */
     public function test_reserved_exceeding_the_ceiling_does_not_clamp_the_amount(): void
     {
@@ -999,6 +1099,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
     /**
      * 두 강제 축은 그대로 한도를 강제한다 — 예정액 축을 참고로 돌린 것이 한도 자체를
      * 없앤 것으로 번지지 않았음을 고정한다.
+     *
+     * @effects amount_is_never_negative_when_capacity_is_exhausted
      */
     public function test_amount_is_never_negative_when_capacity_is_exhausted(): void
     {
@@ -1017,6 +1119,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertSame(CancellableAmount::BINDING_PAYMENT, $result->binding);
     }
 
+    /**
+     * @effects allows_accepts_amounts_within_the_limit
+     */
     public function test_allows_accepts_amounts_within_the_limit(): void
     {
         $result = new CancellableAmount(amount: 30000);
@@ -1026,6 +1131,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         $this->assertFalse($result->allows(30001));
     }
 
+    /**
+     * @effects binding_label_key_points_at_a_defined_translation
+     */
     public function test_binding_label_key_points_at_a_defined_translation(): void
     {
         foreach ([
@@ -1039,6 +1147,9 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
         }
     }
 
+    /**
+     * @effects to_array_exposes_every_axis
+     */
     public function test_to_array_exposes_every_axis(): void
     {
         $order = $this->createSingleItemClaimOrder(price: 50000);
@@ -1062,6 +1173,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
     /**
      * 화면 표시와 실행 가드가 같은 메서드를 쓰므로, 같은 입력은 같은 값을 내야 한다.
+     *
+     * @effects repeated_calculation_is_stable
      */
     public function test_repeated_calculation_is_stable(): void
     {
@@ -1088,6 +1201,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
      * 그래서 교환 경로가 쓰는 "음수분 되더하기" 를 두 유형 공통 식으로 끌어올리면 반품에서만
      * 회수비만큼 한도가 부풀어, 운영자가 회수비까지 돌려주는 금액을 실행할 수 있게 된다.
      * 이 결함은 예외도 로그도 남기지 않는다 — 한도 숫자만 달라진다.
+     *
+     * @effects return_sourced_refund_ignores_the_shipping_amount_column
      */
     public function test_return_sourced_refund_ignores_the_shipping_amount_column(): void
     {
@@ -1123,6 +1238,8 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
      * 교환 차액은 재계산 산출물이 아니라 신청 시점 동결값(`refund_product_amount`)이라, 이미
      * 접수된 몫을 **차감 전 총액**으로 되돌려야 잔여가 맞는다. 되더하기를 빼면 회수비만큼
      * 잔여가 커져 같은 회수비를 두 번 돌려주게 된다 — 위 반품 축과 정확히 반대 방향이다.
+     *
+     * @effects exchange_sourced_refund_restores_the_fee_from_the_shipping_amount_column
      */
     public function test_exchange_sourced_refund_restores_the_fee_from_the_shipping_amount_column(): void
     {
@@ -1181,7 +1298,7 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
             'order_refund_id' => $refund->id,
             'order_id' => $order->id,
             'order_option_id' => $option->id,
-            'option_status' => RefundOptionStatusEnum::REQUESTED,
+            'option_status' => RefundStatusEnum::REQUESTED,
             'quantity' => 1,
             'unit_price' => (float) $option->unit_price,
             'subtotal_amount' => (float) $option->unit_price,

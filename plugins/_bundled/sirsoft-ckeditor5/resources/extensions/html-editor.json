@@ -29,7 +29,9 @@
               "imageUpload": "{{_global.plugins['sirsoft-ckeditor5']?.imageUpload ?? false}}",
               "height": "{{_global.plugins['sirsoft-ckeditor5']?.editorHeight ?? 400}}",
               "toolbar": "{{_global.plugins['sirsoft-ckeditor5']?.toolbar ?? 'standard'}}",
-              "trackChanges": "{{extensionPointProps.trackChanges ?? true}}"
+              "trackChanges": "{{extensionPointProps.trackChanges ?? true}}",
+              "writeScope": "{{extensionPointProps.writeScope ?? 'local'}}",
+              "writePath": "{{extensionPointProps.writePath ?? ''}}"
             }
           }
         ],

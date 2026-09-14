@@ -4,9 +4,11 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Helpers\PermissionHelper;
+use App\Models\ActivityLog;
 use Illuminate\Http\UploadedFile;
 use Mockery;
 use Mockery\MockInterface;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -68,6 +70,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         return UploadedFile::fake()->image($name, 640, 480);
     }
 
+    /**
+     * @effects pending_upload_is_bound_to_the_order
+     */
     public function test_pending_upload_is_bound_to_the_order(): void
     {
         $user = $this->createUser();
@@ -82,6 +87,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertStringStartsWith('claims/pending/'.$order->id.'/', $image->path);
     }
 
+    /**
+     * @effects pending_upload_respects_the_max_images_setting
+     */
     public function test_pending_upload_respects_the_max_images_setting(): void
     {
         $order = Order::factory()->forGuest()->create();
@@ -94,6 +102,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_image_limit_exceeded', fn () => $this->service->uploadPending($this->image('over.jpg'), $order, null));
     }
 
+    /**
+     * @effects attach_pending_binds_images_to_the_claim
+     */
     public function test_attach_pending_binds_images_to_the_claim(): void
     {
         $user = $this->createUser();
@@ -113,6 +124,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertCount(2, $this->service->listFor(ClaimTypeEnum::EXCHANGE, $exchange->id));
     }
 
+    /**
+     * @effects attach_pending_rejects_images_of_another_order
+     */
     public function test_attach_pending_rejects_images_of_another_order(): void
     {
         $user = $this->createUser();
@@ -128,6 +142,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertSame(ClaimImage::PENDING_CLAIMABLE_TYPE, $foreign->fresh()->claimable_type);
     }
 
+    /**
+     * @effects attach_pending_rejects_images_uploaded_by_another_member
+     */
     public function test_attach_pending_rejects_images_uploaded_by_another_member(): void
     {
         $owner = $this->createUser();
@@ -142,6 +159,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @effects attach_pending_rejects_unknown_ids_and_already_attached_images
+     */
     public function test_attach_pending_rejects_unknown_ids_and_already_attached_images(): void
     {
         $user = $this->createUser();
@@ -155,6 +175,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_image_not_found', fn () => $this->service->attachPending($order, [$image->id], ClaimTypeEnum::EXCHANGE, $exchange->id, $user->id));
     }
 
+    /**
+     * @effects attach_pending_with_no_ids_is_a_no_op
+     */
     public function test_attach_pending_with_no_ids_is_a_no_op(): void
     {
         $user = $this->createUser();
@@ -164,6 +187,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertCount(0, $this->service->attachPending($order, [], ClaimTypeEnum::EXCHANGE, $exchange->id, $user->id));
     }
 
+    /**
+     * @effects guest_pending_images_attach_with_the_order_token_alone
+     */
     public function test_guest_pending_images_attach_with_the_order_token_alone(): void
     {
         $order = Order::factory()->forGuest()->create();
@@ -176,6 +202,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertNull($attached->first()->created_by);
     }
 
+    /**
+     * @effects owned_by_judges_pending_by_uploader_and_attached_by_requester
+     */
     public function test_owned_by_judges_pending_by_uploader_and_attached_by_requester(): void
     {
         $owner = $this->createUser();
@@ -188,7 +217,7 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertFalse($this->service->ownedBy($pending, $stranger->id));
         $this->assertFalse($this->service->ownedBy($pending, null));
 
-        $attached = $this->service->uploadFor($this->image('a.jpg'), ClaimTypeEnum::EXCHANGE, $exchange->id, $owner->id);
+        $attached = $this->service->uploadFor($this->image('a.jpg'), ClaimTypeEnum::EXCHANGE, $exchange->id, $owner->id, ClaimImageUploaderTypeEnum::ADMIN);
         $this->assertTrue($this->service->ownedBy($attached, $owner->id));
         $this->assertFalse($this->service->ownedBy($attached, $stranger->id));
 
@@ -199,6 +228,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertFalse($this->service->ownedBy($guestPending, null, $order));
     }
 
+    /**
+     * @effects download_gate_blocks_strangers_and_allows_owner_or_signature
+     */
     public function test_download_gate_blocks_strangers_and_allows_owner_or_signature(): void
     {
         $owner = $this->createUser();
@@ -215,6 +247,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertNull($this->service->download('000000000000', true, null));
     }
 
+    /**
+     * @effects download_gate_lets_an_operator_with_claims_read_through_without_a_signature
+     */
     public function test_download_gate_lets_an_operator_with_claims_read_through_without_a_signature(): void
     {
         // 게이트 3축 중 운영자 축만 단언이 없었다 — 형제 케이스의 '제3자' 는 권한도 없는 회원이라
@@ -248,6 +283,9 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $property->setValue(null, []);
     }
 
+    /**
+     * @effects delete_removes_the_file_and_the_row
+     */
     public function test_delete_removes_the_file_and_the_row(): void
     {
         $user = $this->createUser();
@@ -260,18 +298,73 @@ class ClaimAttachmentServiceTest extends ModuleTestCase
         $this->assertNull(ClaimImage::find($image->id));
     }
 
+    /**
+     * 업로드·삭제 로그가 업로드 주체를 함께 남기는가 (R27)
+     *
+     * 개별 삭제는 파일까지 즉시 지우고 되돌릴 수 없다. 지워진 사진이 고객이 낸 증빙이었는지
+     * 운영자가 대리로 올린 것이었는지가 로그에 없으면, 행이 이미 사라진 뒤에는 분쟁 판정의
+     * 근거를 어디서도 되찾을 수 없다.
+     *
+     * @effects attachment_log_carries_the_uploader_type
+     */
+    public function test_attachment_logs_carry_the_uploader_type(): void
+    {
+        $user = $this->createUser();
+        $order = Order::factory()->forUser($user)->create();
+        $exchange = OrderExchange::factory()->create(['order_id' => $order->id, 'requested_by' => $user->id]);
+
+        $image = $this->service->uploadFor(
+            $this->image('evidence.jpg'),
+            ClaimTypeEnum::EXCHANGE,
+            $exchange->id,
+            $user->id,
+            ClaimImageUploaderTypeEnum::ADMIN
+        );
+
+        $uploaded = ActivityLog::query()
+            ->where('action', 'claim_image.upload')
+            ->where('loggable_id', $image->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            ClaimImageUploaderTypeEnum::ADMIN->value,
+            data_get($uploaded->properties, 'uploader_type'),
+            '업로드 로그가 업로드 주체를 남기지 않았다'
+        );
+
+        $this->assertTrue($this->service->delete($image));
+
+        $deleted = ActivityLog::query()
+            ->where('action', 'claim_image.delete')
+            ->where('loggable_id', $image->id)
+            ->firstOrFail();
+
+        // 삭제 로그는 행이 이미 없으므로 properties 스냅샷이 유일한 출처다.
+        $this->assertSame(
+            ClaimImageUploaderTypeEnum::ADMIN->value,
+            data_get($deleted->properties, 'uploader_type'),
+            '삭제 로그가 업로드 주체를 남기지 않았다'
+        );
+    }
+
+    /**
+     * @effects delete_for_claimable_removes_every_attachment_of_the_claim
+     */
     public function test_delete_for_claimable_removes_every_attachment_of_the_claim(): void
     {
         $user = $this->createUser();
         $order = Order::factory()->forUser($user)->create();
         $exchange = OrderExchange::factory()->create(['order_id' => $order->id, 'requested_by' => $user->id]);
-        $this->service->uploadFor($this->image('a.jpg'), ClaimTypeEnum::EXCHANGE, $exchange->id, $user->id);
-        $this->service->uploadFor($this->image('b.jpg'), ClaimTypeEnum::EXCHANGE, $exchange->id, $user->id);
+        $this->service->uploadFor($this->image('a.jpg'), ClaimTypeEnum::EXCHANGE, $exchange->id, $user->id, ClaimImageUploaderTypeEnum::ADMIN);
+        $this->service->uploadFor($this->image('b.jpg'), ClaimTypeEnum::EXCHANGE, $exchange->id, $user->id, ClaimImageUploaderTypeEnum::ADMIN);
 
         $this->assertSame(2, $this->service->deleteFor(ClaimTypeEnum::EXCHANGE, $exchange->id));
         $this->assertCount(0, $this->service->listFor(ClaimTypeEnum::EXCHANGE, $exchange->id));
     }
 
+    /**
+     * @effects deleting_an_order_leaves_no_orphan_claim_rows_or_attachments
+     */
     public function test_deleting_an_order_leaves_no_orphan_claim_rows_or_attachments(): void
     {
         // 주문은 soft-delete 인데 주문옵션은 하드 삭제라, 클레임 계열을 CASCADE 에 맡기면 교환·반품의

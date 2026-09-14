@@ -36,6 +36,7 @@ return [
         'delete_success' => 'Attachment has been deleted.',
         'delete_failed' => 'Failed to delete attachment.',
         'reorder_success' => 'Attachment order has been changed.',
+        'settings_success' => 'Attachment settings loaded.',
         'reorder_failed' => 'Failed to change attachment order.',
     ],
 

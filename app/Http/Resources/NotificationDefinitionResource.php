@@ -39,6 +39,8 @@ class NotificationDefinitionResource extends BaseApiResource
             'variables' => $this->getValue('variables'),
             'channels' => $this->getValue('channels'),
             'hooks' => $this->getValue('hooks'),
+            // 「관련 사용자」 선택지의 출처. 비면 화면이 그 타입을 감춘다.
+            'relations' => $this->getValue('relations') ?? [],
             'is_active' => (bool) $this->getValue('is_active'),
             'is_default' => (bool) $this->getValue('is_default'),
             'templates' => $this->whenLoaded(

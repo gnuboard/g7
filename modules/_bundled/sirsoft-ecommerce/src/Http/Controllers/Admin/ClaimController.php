@@ -8,6 +8,7 @@ use App\Http\Resources\ActivityLogResource;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
@@ -264,10 +265,17 @@ class ClaimController extends AdminBaseController
     }
 
     /**
-     * 신청 상품 단위로 상태를 일괄 전이합니다. (D25)
+     * 신청 상품 단위로 상태를 일괄 전이합니다. (D25 · §4-3)
+     *
+     * 지시는 `items: [{id, quantity?}]` 한 모양이다 — 수량을 실으면 그 행을 갈라서 지정
+     * 수량만 전이하고 잔여는 신청 상태로 남는다. 응답의 `split` 이 그 결과를 돌려준다.
+     *
+     * 취소신청서는 전이 축이 없다(생성이 곧 확정이다). 라우트 어휘에도 없지만
+     * (`adminPathSegment()` 가 null), 유형 해석이 기본값으로 떨어지는 경로가 생겨도
+     * 여기서 404 로 세운다 — 전이 축 없는 신청서를 전이 경로에 태우지 않는다.
      *
      * @param  BulkClaimOptionStatusRequest  $request  상품 단위 전이 요청
-     * @param  string  $claimType  유형 세그먼트 (exchanges/returns)
+     * @param  string  $claimType  유형 세그먼트 (exchanges/returns/refunds)
      * @param  int  $id  신청서 ID
      * @return JsonResponse 전이 결과 응답
      */
@@ -276,14 +284,14 @@ class ClaimController extends AdminBaseController
         $type = $this->claimTypeOf($claimType);
         $claim = $this->adminClaimService->findForTransition($type, $id);
 
-        if (! $claim instanceof OrderExchange && ! $claim instanceof OrderReturn) {
+        if ($claim === null || $claim instanceof OrderCancel) {
             return $this->claimNotFound();
         }
 
         try {
             $result = $this->adminClaimService->transitionOptions(
                 $claim,
-                $request->itemIds(),
+                $request->itemSpecs(),
                 $request->statusValue(),
                 $request->context(Auth::id()),
                 $request->completionOptions(),
@@ -613,12 +621,26 @@ class ClaimController extends AdminBaseController
         }
 
         try {
-            $image = $this->attachmentService->uploadFor($request->file('image'), $type, $id, Auth::id());
+            $image = $this->attachmentService->uploadFor(
+                $request->uploadedImage(),
+                $type,
+                $id,
+                Auth::id(),
+                ClaimImageUploaderTypeEnum::ADMIN
+            );
+
+            $resource = new ClaimImageResource($image);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.claims.image_uploaded',
-                ['image' => new ClaimImageResource($image)],
+                // 공용 업로더는 응답 본문을 `data.data ?? data` 로 읽어 **첨부 하나**로 해석한다.
+                // 첨부를 `image` 키로 감싸면 그 해석이 실패해 격자에 아무것도 뜨지 않는다.
+                // 기존 호출부를 위해 `image` 별칭을 한 마이너 동안 함께 싣는다.
+                array_merge(
+                    $resource->toArray($request),
+                    ['image' => $resource->toArray($request)]
+                ),
                 201
             );
         } catch (OrderClaimException $e) {
@@ -627,6 +649,47 @@ class ClaimController extends AdminBaseController
             return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return $this->claimServerError('admin-store-image', $e);
+        }
+    }
+
+    /**
+     * 첨부 한 장을 삭제합니다. (운영자)
+     *
+     * 전체 삭제만 있으면 개인정보가 담긴 사진 한 장을 지우려고 정상 증빙까지 전부 지워야 한다.
+     *
+     * @param  string  $claimType  유형 세그먼트 (exchanges/returns/refunds)
+     * @param  int  $id  신청서 ID
+     * @param  int  $image  첨부 ID
+     * @return JsonResponse 삭제 결과 응답
+     */
+    public function destroyImage(string $claimType, int $id, int $image): JsonResponse
+    {
+        $type = $this->claimTypeOf($claimType);
+
+        if (! $this->adminClaimService->findForTransition($type, $id)) {
+            return $this->claimNotFound();
+        }
+
+        $target = $this->attachmentService->find($image);
+
+        // 권한 게이트는 "클레임을 다룰 수 있다" 만 말한다. 이 첨부가 **이 신청서의 것**인지는
+        // 따로 물어야 한다 — 아니면 아무 신청서 상세에서나 남의 첨부 id 를 넣어 지울 수 있다.
+        if ($target === null || ! $this->attachmentService->belongsToClaim($target, $type, $id)) {
+            return $this->claimNotFound('exceptions.claim_image_not_found');
+        }
+
+        try {
+            $this->attachmentService->delete($target);
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.image_deleted',
+                ['deleted' => 1]
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-destroy-image', $e);
         }
     }
 
@@ -734,6 +797,12 @@ class ClaimController extends AdminBaseController
             'cancellable' => $claim instanceof OrderRefund && $claim->order
                 ? $this->cancellablePayloadForRefund($claim)
                 : null,
+            // 첨부 상한·허용 확장자. 화면이 리터럴로 적으면 운영자가 설정을 바꾼 순간
+            // 화면과 서버가 갈리고, 사용자에게는 이유 없는 422 만 남는다. 취소신청서는
+            // 첨부 축 자체가 없으므로 null 이다(그리지 않는 값을 싣지 않는다).
+            'attachment_settings' => $claim instanceof OrderCancel
+                ? null
+                : $this->attachmentService->publicLimits(),
         ];
     }
 

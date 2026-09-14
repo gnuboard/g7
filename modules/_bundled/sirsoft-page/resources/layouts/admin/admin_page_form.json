@@ -40,6 +40,19 @@
             "fallback": {
                 "data": null
             }
+        },
+        {
+            "id": "attachmentSettings",
+            "label_key": "$t:sirsoft-page.editor.data_source.attachmentSettings",
+            "comment": "첨부 상한·허용 형식. 신규 작성 화면에는 읽을 상세가 없어 이 조회가 유일한 출처다 — 화면이 리터럴로 적으면 운영자가 설정을 바꿔도 화면만 옛 값으로 남고, 서버가 거절할 때까지 아무 안내가 없다.",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/attachments/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": null
+            }
         }
     ],
     "init_actions": [
@@ -710,9 +723,9 @@
                                 "name": "FileUploader",
                                 "props": {
                                     "collection": "page_attachments",
-                                    "maxFiles": 5,
-                                    "maxSize": 10,
-                                    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip",
+                                    "maxFiles": "{{attachmentSettings?.data?.max_count ?? 5}}",
+                                    "maxSize": "{{attachmentSettings?.data?.max_size_mb ?? 10}}",
+                                    "accept": "{{attachmentSettings?.data?.accept ?? '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}",
                                     "initialFiles": "{{_local.form?.attachments ?? []}}",
                                     "autoUpload": false,
                                     "uploadTriggerEvent": "upload:page_attachments",

@@ -1,0 +1,116 @@
+<?php
+
+namespace Modules\Sirsoft\Ecommerce\Support;
+
+use BackedEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+
+/**
+ * 클레임 상태 전이 어휘의 단일 출처 (헤더 바 · 상품 행 · FormRequest 공용)
+ *
+ * 선택지는 두 축의 **교집합**이다 — ⓐ 운영자가 직접 지정할 수 있는 상태
+ * (`adminAssignableValues()`)와 ⓑ 지금 상태에서 갈 수 있는 상태(`allowedTransitions()`).
+ * ⓐ 만 보면 이미 승인된 건에 "승인" 이 남아 눌러도 422 가 되고, ⓑ 만 보면 완료·처리중처럼
+ * **돈이 움직여야 도달하는** 상태가 목록에 서서 돈 없이 완료를 찍을 수 있게 된다.
+ *
+ * ## 왜 화면이 아니라 서버가 만드는가
+ *
+ * 같은 교집합을 레이아웃 JSON 이 리터럴로 들고 있으면, 전이표가 바뀔 때 화면과 서버가
+ * 갈린다 — 화면엔 값이 남았는데 서버는 422 를 주고, 그 사이 운영자는 "가끔 안 되는 버튼" 을
+ * 본다. 세 소비자(헤더 바·상품 행 리소스·FormRequest)가 이 한 메서드를 부른다.
+ *
+ * ## 결제대기를 상품 축에서 빼는 이유
+ *
+ * 결제는 **신청서 단위** 축이다(청구액은 신청서 하나에 하나뿐이다). 상품 행에 결제대기가
+ * 서면 그 행만 결제를 기다리는 상태가 되어 청구·수납 어느 쪽과도 대응되지 않는다.
+ */
+class ClaimTransitionVocabulary
+{
+    /**
+     * 결제대기 상태 값 — 상품 단위 어휘에서 제외한다.
+     */
+    protected const PAYMENT_PENDING = 'payment_pending';
+
+    /**
+     * 현재 상태에서 제시할 전이 선택지를 만듭니다.
+     *
+     * @param  BackedEnum|null  $current  현재 상태 (전이표를 가진 상태 Enum)
+     * @param  bool  $excludePaymentPending  결제대기를 뺄지 (상품 행 축이면 true)
+     * @return array<int, array{value: string, label: string}> 전이 선택지
+     */
+    public static function optionsFrom(?BackedEnum $current, bool $excludePaymentPending = false): array
+    {
+        if ($current === null || ! method_exists($current, 'allowedTransitions')) {
+            return [];
+        }
+
+        $enumClass = $current::class;
+
+        if (! method_exists($enumClass, 'adminAssignableValues')) {
+            return [];
+        }
+
+        $assignable = $enumClass::adminAssignableValues();
+        $options = [];
+
+        foreach ($current->allowedTransitions() as $target) {
+            if (! in_array($target->value, $assignable, true)) {
+                continue;
+            }
+
+            if ($excludePaymentPending && $target->value === self::PAYMENT_PENDING) {
+                continue;
+            }
+
+            $options[] = [
+                'value' => $target->value,
+                'label' => method_exists($target, 'label') ? $target->label() : $target->value,
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
+     * 전이 선택지의 값만 반환합니다.
+     *
+     * @param  BackedEnum|null  $current  현재 상태
+     * @param  bool  $excludePaymentPending  결제대기를 뺄지
+     * @return array<int, string> 전이 가능 상태 값
+     */
+    public static function valuesFrom(?BackedEnum $current, bool $excludePaymentPending = false): array
+    {
+        return array_column(self::optionsFrom($current, $excludePaymentPending), 'value');
+    }
+
+    /**
+     * 유형별로 운영자가 지정할 수 있는 상태 값을 반환합니다. (FormRequest 의 `Rule::in`)
+     *
+     * FormRequest 는 **행마다 다른** 현재 상태를 알 수 없다 — 한 번의 지시가 서로 다른
+     * 상태의 행을 함께 담기 때문이다. 그래서 여기서는 유형 축만 검사하고, 행별 전이 가능
+     * 여부는 서비스가 행마다 판정해 `skipped` 로 보고한다. 대신 **결제대기 제외**는 여기서도
+     * 적용된다 — 그 값은 상품 행에 애초에 의미가 없어 통과시키면 전건이 조용히 탈락한다.
+     *
+     * @param  ClaimTypeEnum|null  $type  클레임 유형
+     * @param  bool  $excludePaymentPending  결제대기를 뺄지 (상품 행 축이면 true)
+     * @return array<int, string> 지정 가능 상태 값
+     */
+    public static function assignableValuesFor(?ClaimTypeEnum $type, bool $excludePaymentPending = false): array
+    {
+        $values = match ($type) {
+            ClaimTypeEnum::EXCHANGE => ExchangeStatusEnum::adminAssignableValues(),
+            ClaimTypeEnum::RETURN => ReturnStatusEnum::adminAssignableValues(),
+            ClaimTypeEnum::REFUND => RefundStatusEnum::adminAssignableValues(),
+            default => [],
+        };
+
+        if ($excludePaymentPending) {
+            $values = array_diff($values, [self::PAYMENT_PENDING]);
+        }
+
+        return array_values($values);
+    }
+}

@@ -388,6 +388,7 @@
       "onClick": "When clicked",
       "onHover": "When hovered",
       "onChange": "When value changes",
+      "onSearch": "When a search term is typed",
       "onSubmit": "When submitted",
       "onClose": "When closed",
       "onFilesChange": "When files change",

@@ -57,13 +57,18 @@ class NotificationRecipientResolver
         foreach ($rules as $rule) {
             $type = $rule['type'] ?? null;
 
+            // 규칙마다 별도 바구니에 담는다 — exclude_trigger_user 는 **그 규칙이 뽑은 사람에게만**
+            // 적용되어야 한다. 전체 수신자에 적용하면 `[{role:admin, exclude:true},{trigger_user}]`
+            // 같은 혼합 규칙에서 고객까지 지워지고, 그 사실이 어디에도 드러나지 않는다.
+            $ruleRecipients = collect();
+
             try {
                 match ($type) {
-                    'trigger_user' => $this->addTriggerUser($recipients, $context),
-                    'related_user' => $this->addRelatedUser($recipients, $context, $rule),
-                    'role' => $this->addByRole($recipients, $rule),
-                    'permission' => $this->addByPermission($recipients, $rule),
-                    'specific_users' => $this->addSpecificUsers($recipients, $rule),
+                    'trigger_user' => $this->addTriggerUser($ruleRecipients, $context),
+                    'related_user' => $this->addRelatedUser($ruleRecipients, $context, $rule),
+                    'role' => $this->addByRole($ruleRecipients, $rule),
+                    'permission' => $this->addByPermission($ruleRecipients, $rule),
+                    'specific_users' => $this->addSpecificUsers($ruleRecipients, $rule),
                     default => Log::warning('NotificationRecipientResolver: 알 수 없는 수신자 타입', [
                         'type' => $type,
                     ]),
@@ -74,16 +79,15 @@ class NotificationRecipientResolver
                     'error' => $e->getMessage(),
                 ]);
             }
-        }
 
-        // exclude_trigger_user 규칙 적용 (회원 유발자 기준 — 게스트는 user_id 가 없어 자연 비대상)
-        if ($triggerUserId) {
-            $shouldExclude = collect($rules)->contains(fn ($rule) => ! empty($rule['exclude_trigger_user']));
-            if ($shouldExclude) {
-                $recipients = $recipients->reject(
+            // exclude_trigger_user 적용 (회원 유발자 기준 — 게스트는 user_id 가 없어 자연 비대상)
+            if ($triggerUserId && ! empty($rule['exclude_trigger_user'])) {
+                $ruleRecipients = $ruleRecipients->reject(
                     fn (object $recipient) => isset($recipient->id) && $recipient->id === $triggerUserId
                 );
             }
+
+            $recipients = $recipients->concat($ruleRecipients);
         }
 
         // 중복 제거: 회원(user:{id})과 비회원(guest:{hash}) 키 네임스페이스를 분리해
@@ -118,6 +122,7 @@ class NotificationRecipientResolver
      *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $context  컨텍스트
+     * @return void
      */
     private function addTriggerUser(Collection $recipients, array $context): void
     {
@@ -127,9 +132,13 @@ class NotificationRecipientResolver
             $user = $context['trigger_user'] ?? $this->userRepository->findById($triggerUserId);
             if ($user) {
                 $recipients->push($user);
+
+                return;
             }
 
-            return;
+            // 계정이 사라진 경우(탈퇴 회원)는 여기서 끝내지 않고 게스트 폴백으로 낙하한다.
+            // 확장이 guest_recipient 를 실었으면 주문 스냅샷 연락처로 갈 수 있고, 안 실었으면
+            // 종전과 같이 0명이다 — **발송 여부의 정책은 코어가 정하지 않는다.**
         }
 
         // 비회원 폴백: user_id 가 없으면 표준 guest_recipient 키로 1급 게스트 수신자 생성
@@ -145,6 +154,7 @@ class NotificationRecipientResolver
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $context  컨텍스트
      * @param  array  $rule  수신자 규칙 (relation 키 필요)
+     * @return void
      */
     private function addRelatedUser(Collection $recipients, array $context, array $rule): void
     {
@@ -168,15 +178,27 @@ class NotificationRecipientResolver
      *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $rule  수신자 규칙 (value = role identifier)
+     * @return void
      */
     private function addByRole(Collection $recipients, array $rule): void
     {
-        $roleIdentifier = $rule['value'] ?? null;
-        if (! $roleIdentifier) {
+        // 값은 문자열 하나일 수도, 여러 개일 수도 있다. 저장된 기존 규칙은 **문자열**이고
+        // 화면이 역할 다중 선택을 열면서 배열이 섞인다 — 여기서 스칼라만 받으면 배열이 들어온
+        // 순간 TypeError 가 나고, `resolve()` 의 try/catch 가 그것을 삼켜 **수신자 0명**이 된다.
+        // 화면에도 응답에도 아무 흔적이 없다(로그 한 줄뿐). 그래서 읽기에서 두 모양을 모두 받는다.
+        $identifiers = array_filter(
+            array_map(
+                static fn ($value) => is_string($value) ? trim($value) : '',
+                is_array($rule['value'] ?? null) ? $rule['value'] : [$rule['value'] ?? null],
+            ),
+            static fn (string $identifier): bool => $identifier !== '',
+        );
+
+        if ($identifiers === []) {
             return;
         }
 
-        $roleUsers = $this->roleRepository->getUsersByIdentifier($roleIdentifier);
+        $roleUsers = $this->roleRepository->getUsersByIdentifiers(array_values($identifiers));
 
         // 역할 사용자가 없으면 superAdmin 폴백
         if ($roleUsers->isEmpty()) {
@@ -198,6 +220,7 @@ class NotificationRecipientResolver
      *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $rule  수신자 규칙 (value = permission identifier)
+     * @return void
      */
     private function addByPermission(Collection $recipients, array $rule): void
     {
@@ -215,6 +238,7 @@ class NotificationRecipientResolver
      *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $rule  수신자 규칙 (value = user UUID 배열)
+     * @return void
      */
     private function addSpecificUsers(Collection $recipients, array $rule): void
     {

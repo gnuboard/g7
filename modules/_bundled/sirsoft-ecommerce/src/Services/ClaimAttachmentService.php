@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
@@ -53,6 +54,17 @@ class ClaimAttachmentService
     use ResolvesStoredExtension;
 
     /**
+     * 허용 확장자의 SSoT.
+     *
+     * 화면의 `accept` 와 두 FormRequest 의 `mimes:` 가 **이 하나를 읽는다.** 종전에는 화면이
+     * `image/*` 라 bmp·svg·heic 를 고를 수 있었고, 고르면 서버가 무조건 422 로 거절했다 —
+     * 사용자에게는 "왜 안 되는지" 가 아무 데도 보이지 않았다.
+     *
+     * @var array<int, string>
+     */
+    public const ALLOWED_EXTENSIONS = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
+
+    /**
      * @param  StorageInterface  $storage  스토리지 (images 카테고리 디스크 주입)
      * @param  EcommerceSettingsService  $settingsService  설정 서비스
      * @param  ClaimImageRepositoryInterface  $repository  첨부 Repository
@@ -87,22 +99,39 @@ class ClaimAttachmentService
             throw OrderClaimException::imageLimitExceeded($this->maxImages());
         }
 
-        return $this->store($file, ClaimImage::PENDING_CLAIMABLE_TYPE, $order->id, $userId, (int) ($pending->max('sort_order') ?? 0) + 1);
+        // 미귀속 업로드 경로는 회원·비회원 신청 화면뿐이다 — 언제나 고객이 올린 것이다.
+        return $this->store(
+            $file,
+            ClaimImage::PENDING_CLAIMABLE_TYPE,
+            $order->id,
+            $userId,
+            (int) ($pending->max('sort_order') ?? 0) + 1,
+            ClaimImageUploaderTypeEnum::CUSTOMER
+        );
     }
 
     /**
      * 신청서에 이미지를 직접 업로드합니다. (수정 화면 — 이미 귀속된 신청서에 추가)
      *
+     * **업로드 주체는 인자로 받는다(기본값 없음).** 기본값을 두면 나중에 회원 경로가 이
+     * 메서드를 쓰게 될 때 조용히 운영자로 찍히고, 그 표기로 분쟁 판정이 뒤집힌다.
+     *
      * @param  UploadedFile  $file  업로드 파일
      * @param  ClaimTypeEnum  $type  클레임 유형
      * @param  int  $claimId  신청서 ID
      * @param  int|null  $userId  업로더 회원 ID
+     * @param  ClaimImageUploaderTypeEnum  $uploaderType  업로드 주체
      * @return ClaimImage 저장된 첨부
      *
      * @throws OrderClaimException 장수 초과
      */
-    public function uploadFor(UploadedFile $file, ClaimTypeEnum $type, int $claimId, ?int $userId = null): ClaimImage
-    {
+    public function uploadFor(
+        UploadedFile $file,
+        ClaimTypeEnum $type,
+        int $claimId,
+        ?int $userId,
+        ClaimImageUploaderTypeEnum $uploaderType,
+    ): ClaimImage {
         $current = $this->repository->countByClaimable($type->value, $claimId);
 
         if ($current >= $this->maxImages()) {
@@ -111,7 +140,54 @@ class ClaimAttachmentService
 
         $maxSort = (int) ($this->repository->listByClaimable($type->value, $claimId)->max('sort_order') ?? 0);
 
-        return $this->store($file, $type->value, $claimId, $userId, $maxSort + 1);
+        return $this->store($file, $type->value, $claimId, $userId, $maxSort + 1, $uploaderType);
+    }
+
+    /**
+     * 첨부가 그 신청서의 것인지 확인합니다.
+     *
+     * 권한 게이트는 "이 사람이 클레임을 다룰 수 있다" 만 말하지 "이 첨부가 이 신청서의
+     * 것이다" 를 말하지 않는다. 이 검사가 없으면 **아무 신청서 상세에서나 남의 첨부 id 를
+     * 넣어 지울 수 있다.**
+     *
+     * `ownedBy()` 는 재사용할 수 없다 — 그것은 "열람자가 신청자 본인인가" 라서 운영자에겐
+     * 언제나 false 다. 묻는 질문 자체가 다르다.
+     *
+     * @param  ClaimImage  $image  첨부
+     * @param  ClaimTypeEnum  $type  클레임 유형
+     * @param  int  $claimId  신청서 ID
+     * @return bool 그 신청서의 첨부면 true
+     */
+    public function belongsToClaim(ClaimImage $image, ClaimTypeEnum $type, int $claimId): bool
+    {
+        return (string) $image->claimable_type === $type->value
+            && (int) $image->claimable_id === $claimId;
+    }
+
+    /**
+     * 화면이 상한 안내·입력 제약에 쓰는 공개 설정을 반환합니다.
+     *
+     * 상한을 화면마다 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈린다 —
+     * 사용자에게는 "왜 갑자기 안 되는지" 만 남는다. **한 출처에서 내려 준다.**
+     *
+     * > ⚠️ 키 이름은 바꾸지 않는다. 사용자 신청 화면의 상한 가드가 이 키를 읽고, 값이 0 이면
+     * > 가드가 꺼져 서버가 거절할 때까지 아무 안내도 없다.
+     *
+     * @return array<string, mixed> 공개 설정
+     */
+    public function publicLimits(): array
+    {
+        return [
+            'max_images' => $this->maxImages(),
+            'image_max_size_kb' => $this->maxSizeKb(),
+            'allowed_extensions' => self::ALLOWED_EXTENSIONS,
+            // 화면 파일 선택창이 그대로 쓰는 문자열 — `image/*` 로 두면 서버가 받지 않는
+            // 확장자를 고를 수 있고, 고르면 이유 없이 422 가 된다.
+            'accept' => implode(',', array_map(
+                static fn (string $extension): string => '.'.$extension,
+                self::ALLOWED_EXTENSIONS
+            )),
+        ];
     }
 
     /**
@@ -502,10 +578,17 @@ class ClaimAttachmentService
      * @param  int  $claimableId  귀속 ID
      * @param  int|null  $userId  업로더 회원 ID
      * @param  int  $sortOrder  정렬 순서
+     * @param  ClaimImageUploaderTypeEnum  $uploaderType  업로드 주체
      * @return ClaimImage 저장된 첨부
      */
-    protected function store(UploadedFile $file, string $claimableType, int $claimableId, ?int $userId, int $sortOrder): ClaimImage
-    {
+    protected function store(
+        UploadedFile $file,
+        string $claimableType,
+        int $claimableId,
+        ?int $userId,
+        int $sortOrder,
+        ClaimImageUploaderTypeEnum $uploaderType,
+    ): ClaimImage {
         $file = HookManager::applyFilters('sirsoft-ecommerce.claim-image.filter_upload_file', $file);
 
         // 확장자는 클라이언트가 준 값이 아니라 검증이 실제로 본 값(내용)에서 정한다 — 상세는
@@ -544,6 +627,7 @@ class ClaimAttachmentService
                 'height' => $height,
                 'sort_order' => $sortOrder,
                 'created_by' => $userId,
+                'uploader_type' => $uploaderType->value,
             ]);
         } catch (Throwable $e) {
             // 행을 못 만들면 방금 올린 파일을 되돌린다 — 그러지 않으면 어떤 조회 경로에서도 닿을 수

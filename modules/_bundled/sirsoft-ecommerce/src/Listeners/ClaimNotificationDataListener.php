@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Services\NotificationRecipientCapability;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\ResolvesClaimIdentity;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
@@ -46,6 +47,14 @@ class ClaimNotificationDataListener implements HookListenerInterface
     use ResolvesClaimIdentity;
 
     /**
+     * 클레임 링크를 관리자 주소로 올려도 되는지 가르는 권한.
+     *
+     * 역할 이름이 아니라 권한으로 판정한다 — 상점이 새 역할을 만들 때마다 리스너를
+     * 고쳐야 하는 일이 없고, 그 화면을 못 여는 사람에게 관리자 주소를 주지 않는다.
+     */
+    private const ADMIN_CLAIM_PERMISSION = 'sirsoft-ecommerce.claims.read';
+
+    /**
      * @param  CurrencyConversionService  $currencyConversionService  알림 금액의 결제 통화 환산
      * @param  ClaimPaymentService  $claimPaymentService  미수납 청구액 산정 (SSoT)
      */
@@ -70,6 +79,11 @@ class ClaimNotificationDataListener implements HookListenerInterface
                 'priority' => 25,
                 'type' => 'filter',
             ],
+            'sirsoft-ecommerce.notification.personalize_data' => [
+                'method' => 'personalizeClaimData',
+                'priority' => 25,
+                'type' => 'filter',
+            ],
         ];
     }
 
@@ -77,6 +91,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
      * 훅 이벤트를 처리합니다. (필터 매핑을 사용하므로 미사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void
      */
     public function handle(...$args): void {}
 
@@ -85,7 +100,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
      *
      * @param  array  $default  앞선 필터까지의 extract_data 구조
      * @param  string  $type  알림 정의 유형
-     * @param  array  $args  훅 인수 [$claim]
+     * @param  array  $args  훅 인수 [$claim] (부분 처리 안내는 [$claim, $summary])
      * @return array{notifiable: mixed, notifiables: mixed, data: array, context: array} 추출 결과
      */
     public function extractData(array $default, string $type, array $args): array
@@ -100,14 +115,59 @@ class ClaimNotificationDataListener implements HookListenerInterface
             return $default;
         }
 
-        $isAdminNotification = $type === 'claim_withdrawn';
+        // 부분 처리 안내는 신청서만으로 만들 수 없는 값(이번 회차의 건수·결정 표기)을 두
+        // 번째 훅 인자로 받는다. 신청서에서 다시 세면 큐가 잡을 때의 상태를 읽게 되어
+        // **과거 사건의 안내에 지금 숫자가 실린다**(R24 와 같은 이유).
+        $summary = $type === 'claim_partially_processed' && is_array($args[1] ?? null)
+            ? array_map(fn ($value) => is_scalar($value) ? (string) $value : '', $args[1])
+            : [];
 
         return [
             'notifiable' => null,
             'notifiables' => null,
-            'data' => $this->buildClaimData($claim, $isAdminNotification),
-            'context' => $this->buildClaimContext($claim, $isAdminNotification),
+            'data' => array_merge($this->buildClaimData($claim), $summary),
+            'context' => $this->buildClaimContext($claim),
         ];
+    }
+
+    /**
+     * 수신자가 운영자면 클레임 링크를 관리자 화면 주소로 올립니다.
+     *
+     * **유형 이름으로 관리자 여부를 판정하지 않습니다.** 운영자는 관리자 화면에서 어떤
+     * 알림의 수신자든 바꿀 수 있어(`claim_withdrawn` 을 `trigger_user` 로 바꾸는 등),
+     * 유형으로 가르면 고객에게 `/admin/...` 주소를 보내게 됩니다 — 예외도 404 도 없이
+     * 빈 화면이 열립니다. 그래서 **그 수신자가 실제로 그 화면을 열 수 있는지**로 가릅니다.
+     *
+     * > 큐 재로드 시점 오염을 막기 위해 `$context` 의 스칼라만 읽습니다 — `$args` 의
+     * > 모델을 다시 읽으면 과거 사건의 알림에 "지금" 상태가 실립니다.
+     *
+     * @param  array  $data  앞선 필터까지의 알림 데이터
+     * @param  object  $notifiable  수신자 (User 또는 GuestNotifiable)
+     * @param  string  $type  알림 정의 유형
+     * @param  array  $context  extract_data 가 실은 컨텍스트
+     * @param  array  $args  원래 훅 인자 (읽지 않는다)
+     * @return array 수신자별로 치환된 알림 데이터
+     */
+    public function personalizeClaimData(
+        array $data,
+        object $notifiable,
+        string $type,
+        array $context,
+        array $args = [],
+    ): array {
+        if (! $this->isClaimNotificationType($type)) {
+            return $data;
+        }
+
+        if (! app(NotificationRecipientCapability::class)->can($notifiable, self::ADMIN_CLAIM_PERMISSION)) {
+            return $data;
+        }
+
+        $claimNumber = (string) ($context['claim_number'] ?? '');
+        $data['claim_url'] = (string) config('app.url')
+            .($claimNumber === '' ? ClaimUrl::ADMIN_LIST : ClaimUrl::adminDetail($claimNumber));
+
+        return $data;
     }
 
     /**
@@ -122,13 +182,17 @@ class ClaimNotificationDataListener implements HookListenerInterface
      */
     private function isClaimNotificationType(string $type): bool
     {
-        if ($type === 'claim_withdrawn') {
+        if ($type === 'claim_withdrawn' || $type === 'claim_partially_processed') {
             return true;
         }
 
+        // 운영자 수신 정의는 같은 사건에 `_admin` 접미로 나란히 선다 — 고객 본문과 관리자
+        // 본문은 한 템플릿에 담기지 않기 때문이다. 변수 집합은 고객 정의와 같다.
+        $base = str_ends_with($type, '_admin') ? substr($type, 0, -strlen('_admin')) : $type;
+
         foreach (ClaimStatusNotificationListener::notifiableStatuses() as $claimType => $keys) {
             foreach ($keys as $key) {
-                if ($type === $claimType.'_'.$key) {
+                if ($base === $claimType.'_'.$key) {
                     return true;
                 }
             }
@@ -141,13 +205,10 @@ class ClaimNotificationDataListener implements HookListenerInterface
      * 클레임 알림 치환 변수를 만듭니다. (29종 공용 키 집합)
      *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
-     * @param  bool  $isAdminNotification  관리자 수신 알림 여부
      * @return array<string, string> 치환 변수
      */
-    private function buildClaimData(
-        OrderExchange|OrderReturn|OrderRefund $claim,
-        bool $isAdminNotification,
-    ): array {
+    private function buildClaimData(OrderExchange|OrderReturn|OrderRefund $claim): array
+    {
         $claim->loadMissing(['order']);
 
         $order = $claim->order;
@@ -157,8 +218,10 @@ class ClaimNotificationDataListener implements HookListenerInterface
         $isGuest = $claim->isGuestRequest();
 
         return array_merge([
-            // 관리자 알림은 수신자마다 이름이 다르므로 코어가 치환한다(주문 관리자 알림과 동일).
-            'name' => $isAdminNotification ? '{recipient_name}' : $this->resolveRequesterName($claim, $order),
+            // 이름은 **언제나** 수신자 이름이다 — 코어가 수신자마다 치환한다.
+            // 고객 수신 시 신청자 == 수신자이므로 종전과 같은 값이 되고, 신청자 이름이
+            // 따로 필요한 본문은 `requester_name` 을 쓴다.
+            'name' => '{recipient_name}',
             'app_name' => (string) config('app.name'),
             'claim_number' => $claimNumber,
             'claim_type_label' => $type->label(),
@@ -168,7 +231,9 @@ class ClaimNotificationDataListener implements HookListenerInterface
             'reject_reason' => (string) ($claim->reject_reason ?? ''),
             'admin_memo' => (string) ($claim->admin_memo ?? ''),
             'requester_name' => $this->resolveRequesterName($claim, $order),
-            'claim_url' => $baseUrl.$this->resolveClaimPath($claimNumber, $isGuest, $isAdminNotification),
+            // 기본값은 **가장 안전한 쪽**(고객 링크)이다. 운영자에게 보낼 관리자 주소는
+            // 수신자가 정해진 뒤 personalize 가 올린다.
+            'claim_url' => $baseUrl.$this->resolveClaimPath($claimNumber, $isGuest),
             'site_url' => $baseUrl,
         ], $this->buildAmountData($claim, $order), $this->buildShippingData($claim));
     }
@@ -178,17 +243,12 @@ class ClaimNotificationDataListener implements HookListenerInterface
      *
      * @param  string  $claimNumber  클레임 번호
      * @param  bool  $isGuest  비회원 신청 여부
-     * @param  bool  $isAdminNotification  관리자 수신 알림 여부
      * @return string 앱 내 경로
      */
-    private function resolveClaimPath(string $claimNumber, bool $isGuest, bool $isAdminNotification): string
+    private function resolveClaimPath(string $claimNumber, bool $isGuest): string
     {
         if ($claimNumber === '') {
             return $isGuest ? ClaimUrl::guestLookup() : ClaimUrl::MEMBER_LIST;
-        }
-
-        if ($isAdminNotification) {
-            return ClaimUrl::adminDetail($claimNumber);
         }
 
         return $isGuest ? ClaimUrl::guestLookup() : ClaimUrl::memberDetail($claimNumber);
@@ -328,27 +388,41 @@ class ClaimNotificationDataListener implements HookListenerInterface
      * 관리자 수신 알림도 같은 컨텍스트를 싣는다 — `exclude_trigger_user` 규칙이 신청자를
      * 관리자 목록에서 빼려면 그가 누구인지 알아야 한다.
      *
+     * **"누가 이 알림을 받아야 하는가" 는 알림의 관심사이고, 답은 언제나 주문의 주인이다.**
+     * 신청자 컬럼(`requested_by`)은 "누가 신청했는가" 라는 도메인 값이라 운영자 대리 접수와
+     * 비회원 신청이 똑같이 null 인 것이 의도된 계약이다(`OrderRefund` 참조). 그 값을 그대로
+     * 수신자로 쓰면 **운영자가 회원 주문을 대리 취소했을 때 고객이 환불 알림을 못 받는다** —
+     * 그래서 수신자 축에서만 주문 주인으로 폴백한다(도메인 값은 건드리지 않는다).
+     *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
-     * @param  bool  $isAdminNotification  관리자 수신 알림 여부
      * @return array<string, mixed> 수신자 컨텍스트
      */
-    private function buildClaimContext(
-        OrderExchange|OrderReturn|OrderRefund $claim,
-        bool $isAdminNotification,
-    ): array {
+    private function buildClaimContext(OrderExchange|OrderReturn|OrderRefund $claim): array
+    {
         $claim->loadMissing(['order', 'requestedByUser']);
 
         $order = $claim->order;
 
         $context = [
-            'trigger_user_id' => $claim->requested_by,
-            'trigger_user' => $claim->requestedByUser,
+            'trigger_user_id' => $claim->requested_by ?? $order?->user_id,
+            'trigger_user' => $claim->requestedByUser ?? $order?->user,
             'claim_type' => $this->claimTypeOf($claim)->value,
             'claim_number' => $this->claimNumberOf($claim),
         ];
 
-        if ($claim->isGuestRequest() && ! $isAdminNotification) {
+        $isGuestClaim = $claim->isGuestRequest();
+
+        if ($isGuestClaim) {
             $context['is_guest_claim'] = true;
+        }
+
+        // 게스트 재료는 **관리자 알림에도** 싣는다 — 운영자가 수신자 규칙을 바꾸면 같은 정의로
+        // 고객도 받을 수 있고, 그때 재료가 없으면 조용히 0명이 된다.
+        //
+        // 회원 주문인데 그 계정이 사라진 경우(탈퇴)도 같은 재료를 싣는다 — 코어의 trigger_user
+        // 규칙이 계정을 못 찾으면 게스트 폴백으로 낙하하므로, 주문 스냅샷의 연락처로 갈 수 있다.
+        // 재료를 싣지 않으면 종전과 같이 0명이 되므로 되돌리기는 이 조건 한 줄이다.
+        if ($isGuestClaim || $this->triggerUserAccountIsGone($context)) {
             $context['guest_recipient'] = [
                 'email' => (string) ($order?->getOrdererEmail() ?? ''),
                 'name' => (string) ($order?->getOrdererName() ?? ''),
@@ -357,5 +431,19 @@ class ClaimNotificationDataListener implements HookListenerInterface
         }
 
         return $context;
+    }
+
+    /**
+     * 수신자로 지목된 회원 계정이 이미 사라졌는지 판정합니다.
+     *
+     * `trigger_user_id` 는 있는데 그 계정을 읽을 수 없으면(탈퇴·삭제) 알림이 아무에게도
+     * 가지 않습니다. 이 판정이 참이면 주문 스냅샷 연락처를 게스트 재료로 싣습니다.
+     *
+     * @param  array<string, mixed>  $context  수신자 컨텍스트
+     * @return bool 계정이 사라졌으면 true
+     */
+    private function triggerUserAccountIsGone(array $context): bool
+    {
+        return ! empty($context['trigger_user_id']) && ($context['trigger_user'] ?? null) === null;
     }
 }

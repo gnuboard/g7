@@ -32,7 +32,7 @@ class NotificationChannelService
 
         // name_key / description_key / source_label_key 를 활성 locale 기준으로 해석하여
         // name / description / source_label 키로 반환 (registry payload name_key 계약).
-        return array_map(static function (array $channel): array {
+        return array_map(function (array $channel): array {
             foreach (['name', 'description', 'source_label'] as $field) {
                 $resolved = localized_payload($channel, $field);
                 if ($resolved !== '') {
@@ -40,8 +40,38 @@ class NotificationChannelService
                 }
             }
 
+            $channel['template_editor'] = $this->resolveTemplateEditor($channel);
+
             return $channel;
         }, $channels);
+    }
+
+    /**
+     * 채널이 요구하는 템플릿 편집기 종류를 정규화합니다. (`rich` | `plain` | `none`)
+     *
+     * 화면이 이 한 값만 읽으면 되도록 **서버에서** 정규화한다 — 화면마다 "선언이 있으면 그
+     * 값, 없으면 hidden 플래그, 그것도 없으면 기본" 을 다시 쓰면 그 판정이 3벌(코어·게시판·
+     * 이커머스 모달)이 되고, 한쪽만 고쳐졌을 때 그 화면만 다른 편집기를 그린다.
+     *
+     * 종전 플래그 `hidden_template_editor: true` 는 `none` 과 같은 뜻이다 — 그 플래그로
+     * 이미 편집기를 감추고 있는 채널(외부 발송 채널)이 이 변경으로 기본 편집기를 다시
+     * 드러내면 안 된다.
+     *
+     * 알 수 없는 값은 `plain` 으로 떨어뜨린다. 리치로 떨어뜨리면 평문으로 그려지는 채널의
+     * 본문에 HTML 태그가 섞여 사용자 화면에 **태그가 글자 그대로** 보인다.
+     *
+     * @param  array<string, mixed>  $channel  채널 메타
+     * @return string 편집기 종류
+     */
+    private function resolveTemplateEditor(array $channel): string
+    {
+        if (($channel['hidden_template_editor'] ?? false) === true) {
+            return 'none';
+        }
+
+        $declared = $channel['template_editor'] ?? null;
+
+        return in_array($declared, ['rich', 'plain', 'none'], true) ? $declared : 'plain';
     }
 
     /**
@@ -135,6 +165,8 @@ class NotificationChannelService
 
     /**
      * 메모이제이션 캐시를 초기화합니다. (테스트 및 설정 변경 후 사용)
+     *
+     * @return void 반환값 없음
      */
     public function clearChannelEnabledCache(): void
     {
@@ -143,6 +175,10 @@ class NotificationChannelService
 
     /**
      * 확장 타입별 notifications.channels 배열을 조회합니다.
+     *
+     * @param  string  $extensionType  확장 타입 (`core` / `module` / `plugin`)
+     * @param  string|null  $extensionIdentifier  확장 식별자 (core 는 불필요)
+     * @return array 채널 설정 배열 (조회 실패·미설정이면 빈 배열)
      */
     private function resolveExtensionChannels(string $extensionType, ?string $extensionIdentifier): array
     {
@@ -184,6 +220,10 @@ class NotificationChannelService
      * notifications.channels 배열에서 특정 채널의 is_active 값을 추출합니다.
      *
      * 엔트리가 없으면 true(기본 활성)를 반환합니다.
+     *
+     * @param  array  $channels  채널 설정 배열
+     * @param  string  $channelId  채널 식별자
+     * @return bool 활성 여부
      */
     private function extractChannelActive(array $channels, string $channelId): bool
     {

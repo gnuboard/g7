@@ -102,6 +102,7 @@ return [
     'claim_option_not_found' => 'The requested order item could not be found.',
     'claim_option_not_claimable' => 'A :type request is not available for an item in the :status state.',
     'claim_quantity_invalid' => 'The requested quantity is invalid.',
+    'claim_item_not_splittable' => 'This item cannot be processed in partial quantities. Please process the full quantity.',
     'claim_quantity_locked' => 'Another request is already in progress, so :requested item(s) cannot be requested. (Available: :available)',
     'claim_reason_unavailable' => 'The selected reason is unavailable. Please choose another reason.',
     'claim_charge_method_required' => 'A charge method must be selected because a charge applies.',

@@ -81,13 +81,19 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   }, [value]);
 
   // 검색어로 옵션 필터링
+  //
+  // 라벨·설명을 **문자열로 좁혀서** 비교한다. 옵션은 화면마다 다른 곳에서 온다 — 검색 API,
+  // 현재 선택값 시드, 확장이 주입한 목록. 그중 하나가 문자열이 아닌 값을 흘리면 종전에는
+  // `opt.label.toLowerCase is not a function` 이 나면서 **드롭다운 전체가 언마운트**됐다
+  // (실측 §9 T-D2: 알림 템플릿 수정 창의 역할 칸이 검색어 첫 글자에 사라졌다).
+  // 한 항목이 이상한 것과 그 화면을 못 쓰게 되는 것은 대가가 다르다.
   const filteredOptions = useMemo(() => {
     if (!searchTerm.trim()) return options;
     const term = searchTerm.toLowerCase();
     return options.filter(
       opt =>
-        opt.label.toLowerCase().includes(term) ||
-        opt.description?.toLowerCase().includes(term)
+        String(opt.label ?? '').toLowerCase().includes(term) ||
+        String(opt.description ?? '').toLowerCase().includes(term)
     );
   }, [options, searchTerm]);
 

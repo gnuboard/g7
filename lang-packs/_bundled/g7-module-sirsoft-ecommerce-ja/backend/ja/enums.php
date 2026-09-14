@@ -230,15 +230,6 @@ return [
         'pg_first' => '決済手段（PG）優先返金',
         'points_first' => 'ポイント優先返金',
     ],
-    'refund_option_status' => [
-        'requested' => '返金申請',
-        'approved' => '返金承認',
-        'processing' => '返金処理中',
-        'on_hold' => '返金保留',
-        'completed' => '処理完了',
-        'rejected' => '返金却下',
-        'withdrawn' => '返金取消',
-    ],
     'review_status' => [
         'visible' => '表示中',
         'hidden' => '非表示',
@@ -349,5 +340,10 @@ return [
         'exchange' => '交換差額',
         'direct' => '管理者による直接返金',
         'admin' => '運営者受付',
+    ],
+    'claim_image_uploader_type' => [
+        'customer' => '顧客',
+        'admin' => '運営者',
+        'unknown' => '不明',
     ],
 ];

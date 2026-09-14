@@ -2016,6 +2016,8 @@ return [
             'custom_options_array' => 'Custom option inputs must be an array.',
             'id_integer' => 'The claim item row ID must be a number.',
             'not_in_claim' => 'The request contains an item that does not belong to this claim.',
+            'entry_object' => 'Each claim item must be an object of the form {id, quantity}.',
+            'duplicate_id' => 'The same item was listed twice. Send each item on a single row.',
             'not_in_order' => 'The request contains an item that does not belong to this order.',
             'prohibited_with_refund' => 'The refund-request context and the selected-item context cannot be used together. Send only one of them.',
         ],

@@ -30,8 +30,33 @@ class OrderRefundOptionRepository implements OrderRefundOptionRepositoryInterfac
     /**
      * {@inheritDoc}
      */
-    public function bulkUpdateStatus(int $refundId, string $status, ?int $processedBy = null, ?Carbon $completedAt = null): int
+    public function update(OrderRefundOption $option, array $data): OrderRefundOption
     {
+        $option->update($data);
+
+        return $option->refresh();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function save(OrderRefundOption $option): OrderRefundOption
+    {
+        $option->save();
+
+        return $option;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function bulkUpdateStatus(
+        int $refundId,
+        string $status,
+        ?int $processedBy = null,
+        ?Carbon $completedAt = null,
+        array $optionIds = []
+    ): int {
         $updates = [
             'option_status' => $status,
             'updated_at' => now(),
@@ -49,6 +74,9 @@ class OrderRefundOptionRepository implements OrderRefundOptionRepositoryInterfac
 
         return $this->model->newQuery()
             ->where('order_refund_id', $refundId)
+            // 대상이 주어지면 그 행만 바꾼다 — 상품 단위로 판단이 갈린 신청서에서 전건을
+            // 덮으면 반려 안내를 받은 상품이 고객 화면에 환불완료로 보인다.
+            ->when($optionIds !== [], fn ($query) => $query->whereIn('id', $optionIds))
             ->update($updates);
     }
 

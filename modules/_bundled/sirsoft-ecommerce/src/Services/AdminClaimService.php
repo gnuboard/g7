@@ -24,7 +24,10 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
+use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
 use Modules\Sirsoft\Ecommerce\Support\ClaimProgressSteps;
+use Modules\Sirsoft\Ecommerce\Support\ClaimTransitionVocabulary;
 
 /**
  * 관리자 클레임 오케스트레이션 서비스 (S6a)
@@ -181,26 +184,11 @@ class AdminClaimService
             default => $claim->refund_status,
         };
 
-        if (! $current instanceof \BackedEnum || ! method_exists($current, 'allowedTransitions')) {
-            return [];
-        }
-
-        $enumClass = $current::class;
-        $assignable = $enumClass::adminAssignableValues();
-        $options = [];
-
-        foreach ($current->allowedTransitions() as $target) {
-            if (! in_array($target->value, $assignable, true)) {
-                continue;
-            }
-
-            $options[] = [
-                'value' => $target->value,
-                'label' => $target->label(),
-            ];
-        }
-
-        return $options;
+        // 교집합 계산은 `ClaimTransitionVocabulary` 가 단독 소유한다 — 헤더 바·상품 행 리소스·
+        // FormRequest 세 곳이 같은 어휘를 읽어야 화면에 선 값이 서버에서 422 가 되지 않는다.
+        return ClaimTransitionVocabulary::optionsFrom(
+            $current instanceof \BackedEnum ? $current : null
+        );
     }
 
     /**
@@ -515,26 +503,54 @@ class AdminClaimService
      * 우회한다 — `transitionOption()` 은 완료를 거절하고, 완료에는 재고·환불신청서 선택
      * (`ClaimCompletionOptions`)이 필요하기 때문이다.
      *
-     * @param  OrderExchange|OrderReturn  $claim  신청서
-     * @param  array<int, int>  $itemIds  신청 상품 행 ID 목록
+     * 환불신청서의 완료는 환불 실행(S6b)의 소유라 여기서 거절한다 — 열어 두면 돈이
+     * 나가지 않은 채 상품 행만 환불완료로 보인다. 승인·반려가 갈린 뒤에는 신청서 환불액을
+     * 승인 범위에 맞춰 다시 계산한다(§4-5).
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array<int, int|array{id: int, quantity?: int|null}>  $items  전이 지시
      * @param  string  $target  목표 상태 값
      * @param  array  $context  부가 정보 (processed_by)
      * @param  ClaimCompletionOptions|null  $completion  완료 처리 옵션 (완료 전이일 때만)
-     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>} 전이 결과
+     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>, split?: array<int, array{id: int, quantity: int, remainder_id: int, remainder_quantity: int}>} 전이 결과
      *
-     * @throws OrderClaimException 완료 가능 상품 부재 등
+     * @throws OrderClaimException 완료 가능 상품 부재 / 환불 완료 지시 등
      */
     public function transitionOptions(
-        OrderExchange|OrderReturn $claim,
-        array $itemIds,
+        OrderExchange|OrderReturn|OrderRefund $claim,
+        array $items,
         string $target,
         array $context = [],
         ?ClaimCompletionOptions $completion = null,
     ): array {
+        if ($claim instanceof OrderRefund) {
+            if ($target === 'completed') {
+                throw OrderClaimException::completionRequiresCompletionFlow();
+            }
+
+            $result = $this->refundRequestService->transitionOption(
+                $claim,
+                $items,
+                RefundStatusEnum::from($target),
+                $context,
+            );
+
+            $result = $this->recalculateRefundAmounts($claim, $result, $context['processed_by'] ?? null);
+            $this->announceItemsTransitioned($claim, $result, $target);
+
+            return $result;
+        }
+
+        $itemIds = ClaimItemSpecs::ids(ClaimItemSpecs::normalize($items));
+
         if ($target !== 'completed') {
-            return $claim instanceof OrderExchange
-                ? $this->exchangeService->transitionOption($claim, $itemIds, ExchangeStatusEnum::from($target), $context)
-                : $this->returnService->transitionOption($claim, $itemIds, ReturnStatusEnum::from($target), $context);
+            $result = $claim instanceof OrderExchange
+                ? $this->exchangeService->transitionOption($claim, $items, ExchangeStatusEnum::from($target), $context)
+                : $this->returnService->transitionOption($claim, $items, ReturnStatusEnum::from($target), $context);
+
+            $this->announceItemsTransitioned($claim, $result, $target);
+
+            return $result;
         }
 
         // 완료는 서비스가 대상 상품을 스스로 거르므로(전이 불가·종결 상품 제외) 실제로
@@ -571,7 +587,92 @@ class AdminClaimService
             ];
         }
 
-        return ['succeeded' => $succeeded, 'skipped' => $skipped];
+        $result = ['succeeded' => $succeeded, 'skipped' => $skipped];
+
+        $this->announceItemsTransitioned($claim, $result, $target);
+
+        return $result;
+    }
+
+    /**
+     * 신청 상품 중 **일부만** 처리됐으면 고객에게 그 사실을 알립니다. (§5-5)
+     *
+     * 헤더 상태는 살아 있는 상품이 한 상태로 모일 때만 움직인다 — 갈린 채로 두면 기존 상태
+     * 알림이 발화하지 않아 **고객은 자기 신청이 어떻게 갈렸는지 알 방법이 없다.** 그 구멍을
+     * 이 한 통이 메운다.
+     *
+     * 발화 단위는 **운영자의 [일괄 적용] 1회**다 — 상품마다 보내면 3건 처리에 3통이 된다.
+     * 전건이 같은 결정으로 모였으면 보내지 않는다: 그때는 헤더가 따라 움직였고 기존 상태
+     * 알림이 같은 사실을 이미 말한다(두 통이 된다).
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>}  $result  전이 결과
+     * @param  string  $target  목표 상태 값
+     * @return void 반환값 없음
+     */
+    /**
+     * 상품 단위 전이가 끝났다는 **사실**을 알립니다.
+     *
+     * 여기서 「고객에게 알릴 것인가」를 정하지 않는다. 그 판정은 알림 축
+     * (`ClaimStatusNotificationListener`)이 단독으로 한다 — 서비스가 함께 정하면 발화 규칙이
+     * 두 곳에 생기고, 「전건이 같은 결정이면 보내지 않는다」 같은 규칙이 바뀔 때 한쪽만
+     * 고쳐진 채 남는다. 서비스는 무슨 일이 있었는지만 말한다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array{succeeded?: array<int, int>, skipped?: array<int, mixed>}  $result  전이 결과
+     * @param  string  $target  이번 라운드의 목표 상태
+     * @return void
+     */
+    protected function announceItemsTransitioned(
+        OrderExchange|OrderReturn|OrderRefund $claim,
+        array $result,
+        string $target,
+    ): void {
+        HookManager::doAction(ClaimNotificationHooks::ITEMS_TRANSITIONED, $claim, $result, $target);
+    }
+
+    /**
+     * 상품 단위 판단 뒤 환불신청서 금액을 다시 계산합니다.
+     *
+     * 승인분 기준으로 자동 재계산하되, 승인 이후에도 운영자가 금액을 고쳐 실제 환불을
+     * 집행할 수 있어야 하므로 기존 `PUT .../amounts` 경로는 그대로 둔다.
+     *
+     * **헤더가 종결·처리중이면 건드리지 않는다.** 종결은 이미 끝난 사실이고, 처리중은 PG 에
+     * 요청이 나가 있는 구간이라 금액이 바뀌면 요청액과 기록액이 갈린다. 둘 다 `updateAmounts()`
+     * 가 스스로 거절하지만, 거기까지 가면 **전이는 성공했는데 응답이 422** 가 되어 운영자는
+     * 무엇이 반영됐는지 알 수 없다.
+     *
+     * 재계산 자체는 기존 저장 경로(`updateAmounts()`)를 그대로 타므로 전/후 스냅샷·활동로그·
+     * D19 가드·다통화 환산이 코드 추가 없이 붙는다.
+     *
+     * @param  OrderRefund  $claim  환불신청서
+     * @param  array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>, split: array<int, array<string, int>>}  $result  전이 결과
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>, split: array<int, array<string, int>>} 전이 결과 (그대로)
+     */
+    protected function recalculateRefundAmounts(OrderRefund $claim, array $result, ?int $processedBy): array
+    {
+        if ($result['succeeded'] === []) {
+            return $result;
+        }
+
+        $fresh = $claim->fresh(['refundOptions']);
+
+        if (! $fresh instanceof OrderRefund) {
+            return $result;
+        }
+
+        if ($fresh->refund_status === RefundStatusEnum::PROCESSING || $fresh->refund_status->isFinal()) {
+            return $result;
+        }
+
+        $this->refundRequestService->recalculateAmountForApprovedItems(
+            $fresh,
+            $result['succeeded'],
+            $processedBy,
+        );
+
+        return $result;
     }
 
     /**
@@ -1270,19 +1371,23 @@ class AdminClaimService
     /**
      * 상품 행 상태 값의 라벨을 반환합니다. (skip 리포트 문구용)
      *
-     * @param  OrderExchange|OrderReturn  $claim  신청서 (유형 판정용)
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서 (유형 판정용)
      * @param  string|null  $statusValue  상태 값
      * @return string 라벨 (해석 불가 시 원시 값)
      */
-    protected function optionStatusLabel(OrderExchange|OrderReturn $claim, ?string $statusValue): string
-    {
+    protected function optionStatusLabel(
+        OrderExchange|OrderReturn|OrderRefund $claim,
+        ?string $statusValue,
+    ): string {
         if ($statusValue === null) {
             return '';
         }
 
-        $status = $claim instanceof OrderExchange
-            ? ExchangeStatusEnum::tryFrom($statusValue)
-            : ReturnStatusEnum::tryFrom($statusValue);
+        $status = match (true) {
+            $claim instanceof OrderExchange => ExchangeStatusEnum::tryFrom($statusValue),
+            $claim instanceof OrderReturn => ReturnStatusEnum::tryFrom($statusValue),
+            default => RefundStatusEnum::tryFrom($statusValue),
+        };
 
         return $status?->label() ?? $statusValue;
     }

@@ -272,8 +272,9 @@ class UserClaimService
         return [
             'allowed_charge_methods' => $this->statusValues('claim.allowed_charge_methods', ClaimChargeMethodEnum::values()),
             'charge_payment_methods' => $chargePaymentMethods,
-            'max_images' => $this->attachmentService->maxImages(),
-            'image_max_size_kb' => $this->attachmentService->maxSizeKb(),
+            // 첨부 상한·허용 확장자는 한 출처에서 온다 — 키 이름은 종전 그대로이고
+            // `accept` 가 덤으로 붙으므로 기존 화면·핸들러는 무영향이다.
+            ...$this->attachmentService->publicLimits(),
             'request_period_days' => (int) $this->settingsService->getSetting('claim.request_period_days', 7),
             'exchange_requestable_statuses' => $this->statusValues('claim.exchange_requestable_statuses', [OrderStatusEnum::DELIVERED->value, OrderStatusEnum::CONFIRMED->value]),
             'return_requestable_statuses' => $this->statusValues('claim.return_requestable_statuses', [OrderStatusEnum::DELIVERED->value, OrderStatusEnum::CONFIRMED->value]),

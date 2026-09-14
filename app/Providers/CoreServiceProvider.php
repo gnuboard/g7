@@ -94,6 +94,7 @@ use App\Repositories\UserRepository;
 use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
+use App\Services\NotificationRecipientCapability;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
@@ -118,6 +119,8 @@ class CoreServiceProvider extends ServiceProvider
 
     /**
      * 코어 서비스들을 등록합니다.
+     *
+     * @return void
      */
     public function register(): void
     {
@@ -135,6 +138,8 @@ class CoreServiceProvider extends ServiceProvider
      *
      * 축이 늘어날 때 `g7:bench` 커맨드를 고치지 않고 여기에 실행기만 추가하면 되도록
      * 태그로 묶어 주입합니다. 실행기는 CLI 계측 시점에만 해석되므로 웹 요청 비용은 없습니다.
+     *
+     * @return void
      */
     private function registerBenchmarkAxes(): void
     {
@@ -155,6 +160,8 @@ class CoreServiceProvider extends ServiceProvider
      *
      * index.php 또는 artisan에서 이미 등록된 경우 스킵합니다.
      * 진입점에서 등록되지 않은 경우(예: queue worker)에만 실행됩니다.
+     *
+     * @return void
      */
     private function registerExtensionAutoload(): void
     {
@@ -217,6 +224,8 @@ class CoreServiceProvider extends ServiceProvider
 
     /**
      * Repository 인터페이스 바인딩을 등록합니다.
+     *
+     * @return void
      */
     private function registerRepositoryBindings(): void
     {
@@ -289,10 +298,15 @@ class CoreServiceProvider extends ServiceProvider
 
         // 확장 선언 미들웨어 self-gate 인덱스 (요청 내 인덱스 1회 빌드 → singleton)
         $this->app->singleton(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
+
+        // 알림 수신자 권한 판정 (수신자 수만큼 같은 권한을 재조회하지 않도록 요청 수명 메모 → singleton)
+        $this->app->singleton(NotificationRecipientCapability::class);
     }
 
     /**
      * 확장 매니저들을 등록합니다.
+     *
+     * @return void
      */
     private function registerExtensionManagers(): void
     {
@@ -359,6 +373,8 @@ class CoreServiceProvider extends ServiceProvider
 
     /**
      * 코어 서비스들을 부트스트랩합니다.
+     *
+     * @return void
      */
     public function boot(): void
     {
@@ -434,6 +450,10 @@ class CoreServiceProvider extends ServiceProvider
      * `IdentityVerificationManager` 에 일괄 등록합니다.
      *
      * DB 에 저장되지 않으며, 매 요청 부팅 시 수집됩니다 (코드 계약).
+     *
+     * @param  ModuleManager  $moduleManager  활성 모듈 조회용 매니저
+     * @param  PluginManager  $pluginManager  활성 플러그인 조회용 매니저
+     * @return void
      */
     private function collectDeclaredIdentityPurposes(ModuleManager $moduleManager, PluginManager $pluginManager): void
     {
@@ -508,6 +528,7 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param  ModuleManager|PluginManager  $manager  확장 매니저
      * @param  string  $type  확장 타입 (modules, plugins)
+     * @return void
      */
     protected function validateAndDeactivateIncompatibleExtensions($manager, string $type): void
     {
@@ -584,6 +605,7 @@ class CoreServiceProvider extends ServiceProvider
      * `ExtensionCompatibilityAlertListener` 가 대시보드 알림으로 표시합니다.
      *
      * @param  string  $type  확장 타입 (modules|plugins|templates)
+     * @return void
      */
     protected function detectRecoveredExtensions(string $type): void
     {
@@ -649,6 +671,7 @@ class CoreServiceProvider extends ServiceProvider
      * 자동으로 비활성화하고 로그를 기록합니다.
      *
      * @param  TemplateManager  $templateManager  템플릿 매니저
+     * @return void
      */
     protected function validateAndDeactivateIncompatibleTemplates(TemplateManager $templateManager): void
     {
@@ -715,6 +738,7 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param  string  $type  확장 타입 (modules, plugins, templates)
      * @param  array  $deactivated  비활성화된 확장 목록
+     * @return void
      */
     protected function storeDeactivatedExtensionsAlert(string $type, array $deactivated): void
     {
@@ -735,6 +759,7 @@ class CoreServiceProvider extends ServiceProvider
      * getAllSettings()를 호출하여 g7_settings.modules.{identifier}에 저장합니다.
      *
      * @param  ModuleManager  $moduleManager  모듈 매니저
+     * @return void
      */
     protected function loadModuleSettingsToConfig(ModuleManager $moduleManager): void
     {
@@ -749,6 +774,7 @@ class CoreServiceProvider extends ServiceProvider
      * g7_settings.plugins.{identifier}에 저장합니다.
      *
      * @param  PluginManager  $pluginManager  플러그인 매니저
+     * @return void
      */
     protected function loadPluginSettingsToConfig(PluginManager $pluginManager): void
     {
@@ -766,6 +792,8 @@ class CoreServiceProvider extends ServiceProvider
      *
      * SettingsServiceProvider::register()에서 코어 드라이버 Config은 이미 적용된 상태이므로,
      * 여기서는 플러그인 드라이버만 처리합니다.
+     *
+     * @return void
      */
     protected function applyExtensionDriverConfigs(): void
     {
@@ -823,6 +851,14 @@ class CoreServiceProvider extends ServiceProvider
 
     // registerActivityLogManager() 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
 
+    /**
+     * 코어 훅 리스너를 자동 발견해 등록합니다.
+     *
+     * 캐시(`bootstrap/cache/hooks.php`)가 있으면 스캔·리플렉션 없이 등록하고,
+     * 테스트 환경에서는 격리를 위해 항상 스캔합니다.
+     *
+     * @return void
+     */
     private function registerCoreHookListeners(): void
     {
         // 캐시 우선: bootstrap/cache/hooks.php 가 있으면 스캔·리플렉션 없이 등록.
@@ -908,6 +944,7 @@ class CoreServiceProvider extends ServiceProvider
      * 단일 코어 리스너를 HookManager에 등록합니다.
      *
      * @param  string  $listenerClass  리스너 클래스명
+     * @return void
      */
     private function registerCoreHookListener(string $listenerClass): void
     {
@@ -931,6 +968,8 @@ class CoreServiceProvider extends ServiceProvider
      * registerDynamicHooks() 메서드를 가진 리스너들의 동적 훅을 일괄 등록합니다.
      *
      * DB 접근이 필요하므로 boot() 후반부(DB 유효성 검증 후)에서 호출됩니다.
+     *
+     * @return void
      */
     private function registerDeferredDynamicHooks(): void
     {
@@ -954,6 +993,8 @@ class CoreServiceProvider extends ServiceProvider
      *
      * core.routes.filter_merged 필터를 통해 프리뷰 등 코어 시스템 라우트를
      * 모든 템플릿의 routes.json 응답에 자동 주입합니다.
+     *
+     * @return void
      */
     private function registerSystemRouteFilters(): void
     {

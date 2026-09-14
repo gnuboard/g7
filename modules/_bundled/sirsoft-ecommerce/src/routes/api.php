@@ -1546,7 +1546,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // PUT    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts - 금액 수정 (D18)
     // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 운영자 대리 첨부
     // DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 첨부 일괄 정리
-    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status - 상품 단위 일괄 전이 (교환·반품)
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status - 상품 단위 일괄 전이 (교환·반품·환불)
     // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request - 환불신청서 수동 접수 (교환·반품, D26)
     // PUT    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking - 회수 송장 (교환·반품)
     // PUT    /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking - 재발송 송장 (교환)
@@ -1611,17 +1611,29 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
                 ->whereNumber('id')
                 ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
                 ->name('admin.claims.images.clear');
-        });
 
-    // 상품 단위 전이·회수 송장은 교환·반품 축에만 있다 (환불은 상품 회수·개별 상품 전이가 없음).
-    Route::whereIn('claimType', ['exchanges', 'returns'])
-        ->prefix('{claimType}')
-        ->group(function () {
+            // 첨부 한 장 삭제. 전체 삭제와 세그먼트 수가 달라 충돌하지 않는다.
+            // 권한은 업로드·일괄삭제와 **같은** 식별자다 — 새 식별자를 만들면 기존 역할이
+            // 자동으로 못 쓰게 되고 선언형 권한 동기화까지 딸려온다.
+            Route::delete('/{id}/images/{image}', [AdminClaimController::class, 'destroyImage'])
+                ->whereNumber('id')
+                ->whereNumber('image')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.images.destroy');
+
+            // 상품 단위 전이는 세 유형 모두에 있다 — 취소는 `adminPathSegment()` 가 null 이라
+            // 이 스코프 어휘에 애초에 없다(리터럴 배열로 다시 적지 않는 이유다). 컨트롤러가
+            // 취소 신청서를 한 번 더 404 로 세운다.
             Route::patch('/{id}/options/bulk-status', [AdminClaimController::class, 'bulkOptionStatus'])
                 ->whereNumber('id')
                 ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
                 ->name('admin.claims.options.bulk-status');
+        });
 
+    // 회수 송장은 교환·반품 축에만 있다 (환불은 상품 회수가 없음).
+    Route::whereIn('claimType', ['exchanges', 'returns'])
+        ->prefix('{claimType}')
+        ->group(function () {
             Route::put('/{id}/collection-tracking', [AdminClaimController::class, 'updateCollectionTracking'])
                 ->whereNumber('id')
                 ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')

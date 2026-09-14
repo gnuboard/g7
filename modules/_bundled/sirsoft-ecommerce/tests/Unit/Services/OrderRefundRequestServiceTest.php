@@ -6,7 +6,6 @@ use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -91,6 +90,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
     // 분기 판정
     // ================================================================
 
+    /**
+     * @effects payment_complete_items_resolve_to_the_auto_branch
+     */
     public function test_payment_complete_items_resolve_to_the_auto_branch(): void
     {
         $order = $this->paidClaimOrder();
@@ -98,6 +100,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertSame('auto', $this->service->resolveBranch($order, $this->payload($order)['items']));
     }
 
+    /**
+     * @effects preparing_items_resolve_to_the_request_branch
+     */
     public function test_preparing_items_resolve_to_the_request_branch(): void
     {
         $order = $this->preparingOrder();
@@ -105,6 +110,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertSame('request', $this->service->resolveBranch($order, $this->payload($order)['items']));
     }
 
+    /**
+     * @effects delivered_items_are_not_refund_requestable
+     */
     public function test_delivered_items_are_not_refund_requestable(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -112,6 +120,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_refund_not_requestable', fn () => $this->service->resolveBranch($order, $this->payload($order)['items']));
     }
 
+    /**
+     * @effects mixed_branches_are_rejected
+     */
     public function test_mixed_branches_are_rejected(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -132,6 +143,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * @effects an_unknown_option_is_rejected
+     */
     public function test_an_unknown_option_is_rejected(): void
     {
         $order = $this->paidClaimOrder();
@@ -140,6 +154,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_items_required', fn () => $this->service->resolveBranch($order, []));
     }
 
+    /**
+     * @effects auto_branch_wins_when_both_lists_contain_the_same_status
+     */
     public function test_auto_branch_wins_when_both_lists_contain_the_same_status(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.refund_request_statuses', [OrderStatusEnum::PAYMENT_COMPLETE->value, OrderStatusEnum::PREPARING->value]);
@@ -152,6 +169,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
     // 미리보기
     // ================================================================
 
+    /**
+     * @effects preview_returns_the_branch_and_the_refund_calculation
+     */
     public function test_preview_returns_the_branch_and_the_refund_calculation(): void
     {
         $order = $this->preparingOrder();
@@ -163,6 +183,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertSame(0, OrderRefund::count());
     }
 
+    /**
+     * @effects preview_applies_the_quantity_lock_like_the_request
+     */
     public function test_preview_applies_the_quantity_lock_like_the_request(): void
     {
         $order = $this->preparingOrder(2);
@@ -171,6 +194,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_quantity_locked', fn () => $this->service->previewRefund($order->fresh(['options']), $this->payload($order, 1)['items']));
     }
 
+    /**
+     * @effects preview_excludes_the_refund_request_being_edited_from_the_lock
+     */
     public function test_preview_excludes_the_refund_request_being_edited_from_the_lock(): void
     {
         $order = $this->preparingOrder(2);
@@ -194,6 +220,8 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
      * 자동 전이 분기도 **환불신청서를 만든다**. 취소신청서는 그 환불이 완료되는 순간에 생긴다 —
      * 예전에는 환불신청서 없이 취소 기록만 남아, 결제완료 상품을 환불한 고객에게 환불 이력이
      * 아예 보이지 않았다(#599 제보).
+     *
+     * @effects auto_branch_files_a_refund_request_and_records_the_cancellation
      */
     public function test_auto_branch_files_a_refund_request_and_records_the_cancellation(): void
     {
@@ -220,6 +248,8 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
     /**
      * 단계를 건너뛰지 않는다(D16) — 한 트랜잭션 안이어도 `요청 → 승인 → 완료` 를 실제로 거친다.
      * 최종 상태를 바로 INSERT 하면 활동로그가 한 줄만 남아 운영자가 승인 경위를 되짚을 수 없다.
+     *
+     * @effects auto_advance_walks_every_status_step
      */
     public function test_auto_advance_walks_every_status_step(): void
     {
@@ -239,6 +269,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
     // 환불신청서 분기
     // ================================================================
 
+    /**
+     * @effects refund_branch_files_a_direct_refund_request
+     */
     public function test_refund_branch_files_a_direct_refund_request(): void
     {
         $order = $this->preparingOrder();
@@ -260,13 +293,16 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertSame($order->user_id, (int) $refund->requested_by);
         $this->assertSame(29000.0, (float) $refund->refund_amount);
         $this->assertCount(1, $refund->refundOptions);
-        $this->assertSame(RefundOptionStatusEnum::REQUESTED, $refund->refundOptions->first()->option_status);
+        $this->assertSame(RefundStatusEnum::REQUESTED, $refund->refundOptions->first()->option_status);
         $this->assertSame(1, (int) $refund->refundOptions->first()->quantity);
         $this->assertSame([$refund->refund_number], $fired);
         // 원 주문옵션은 판매 상태 그대로다 — 코스 상태가 없다.
         $this->assertSame(OrderStatusEnum::PREPARING, $order->fresh()->options->first()->option_status);
     }
 
+    /**
+     * @effects refund_branch_locks_the_quantity_against_a_second_request
+     */
     public function test_refund_branch_locks_the_quantity_against_a_second_request(): void
     {
         $order = $this->preparingOrder(2);
@@ -279,6 +315,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
     }
 
+    /**
+     * @effects refund_branch_can_auto_approve_by_setting
+     */
     public function test_refund_branch_can_auto_approve_by_setting(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_refund_request', true);
@@ -295,6 +334,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertSame(1, $approved);
     }
 
+    /**
+     * @effects refund_branch_stores_the_refund_bank_when_given
+     */
     public function test_refund_branch_stores_the_refund_bank_when_given(): void
     {
         $order = $this->preparingOrder();
@@ -308,6 +350,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertSame('홍길동', $result['refund']->refund_bank_holder);
     }
 
+    /**
+     * @effects request_rejects_an_inactive_reason
+     */
     public function test_request_rejects_an_inactive_reason(): void
     {
         $order = $this->preparingOrder();
@@ -319,6 +364,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
     // 철회 / 수정 / 전이
     // ================================================================
 
+    /**
+     * @effects withdraw_closes_the_request_and_releases_the_quantity
+     */
     public function test_withdraw_closes_the_request_and_releases_the_quantity(): void
     {
         $order = $this->preparingOrder();
@@ -335,7 +383,7 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         // 상품 행도 **철회**로 남는다 — 반려(판매자가 거절)와 철회(구매자가 거둠)는 다른 사실이고,
         // 화면의 상품 뱃지가 이 값을 그대로 읽으므로 반려로 적으면 구매자가 자기 철회를
         // "판매자가 반려함" 으로 읽는다. 반품·교환 옵션은 이미 `withdrawn` 을 쓴다(S17 트랙 A F-4).
-        $this->assertSame(RefundOptionStatusEnum::WITHDRAWN, $withdrawn->refundOptions->first()->option_status);
+        $this->assertSame(RefundStatusEnum::WITHDRAWN, $withdrawn->refundOptions->first()->option_status);
         $this->assertSame(1, $fired);
         // 잠금이 풀려 같은 수량을 다시 신청할 수 있다.
         $again = $this->service->request($order->fresh(['options']), $this->payload($order));
@@ -344,6 +392,8 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
 
     /**
      * 반려는 그대로 반려로 남는다 — 철회 분기를 더하면서 반려까지 옮겨 가면 안 된다.
+     *
+     * @effects reject_keeps_the_option_rows_rejected
      */
     public function test_reject_keeps_the_option_rows_rejected(): void
     {
@@ -353,9 +403,12 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $rejected = $this->service->transition($refund, RefundStatusEnum::REJECTED, ['reject_reason' => '재고 없음']);
 
         $this->assertSame(RefundStatusEnum::REJECTED, $rejected->refund_status);
-        $this->assertSame(RefundOptionStatusEnum::REJECTED, $rejected->refundOptions->first()->option_status);
+        $this->assertSame(RefundStatusEnum::REJECTED, $rejected->refundOptions->first()->option_status);
     }
 
+    /**
+     * @effects withdraw_is_blocked_after_approval
+     */
     public function test_withdraw_is_blocked_after_approval(): void
     {
         $order = $this->preparingOrder();
@@ -365,6 +418,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_not_withdrawable', fn () => $this->service->withdraw($refund->fresh()));
     }
 
+    /**
+     * @effects update_changes_the_reason_before_approval_only
+     */
     public function test_update_changes_the_reason_before_approval_only(): void
     {
         $order = $this->preparingOrder();
@@ -380,6 +436,9 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_not_editable', fn () => $this->service->updateRequest($updated->fresh(), ['reason_detail' => 'x']));
     }
 
+    /**
+     * @effects transition_follows_the_refund_gate_and_refuses_completion
+     */
     public function test_transition_follows_the_refund_gate_and_refuses_completion(): void
     {
         $order = $this->preparingOrder();
@@ -408,6 +467,8 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
      *
      * 행 금액은 접수 시점 1회만 기록되므로, 헤더만 고치면 상세가 접수 당시 금액을 계속
      * 말한다 — 실측에서 신청서 155,000 원 ↔ 상품행 합계 151,000 원으로 갈렸다.
+     *
+     * @effects amount_reduction_reaches_the_option_rows
      */
     public function test_amount_reduction_reaches_the_option_rows(): void
     {
@@ -424,6 +485,8 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
 
     /**
      * 증액도 같은 경로를 탄다 — 감액만 내려가면 되돌린 뒤 행이 낮은 값에 고착된다.
+     *
+     * @effects amount_change_tracks_the_option_rows_in_both_directions
      */
     public function test_amount_change_tracks_the_option_rows_in_both_directions(): void
     {
@@ -442,6 +505,8 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
      * 헤더 합계와 행 합계가 애초에 다른 신청서(반품 발 — 헤더에 배송비 환급이 섞인다)도
      * 감액 **비율**만큼 행이 줄어든다. 차액을 그대로 빼면 상품에 귀속되지 않는 몫까지
      * 행에서 빠져 0 원으로 잘린다(실데이터에서 확인).
+     *
+     * @effects reduction_scales_option_rows_when_header_exceeds_their_sum
      */
     public function test_reduction_scales_option_rows_when_header_exceeds_their_sum(): void
     {
@@ -463,6 +528,8 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
     /**
      * 금액을 건드리지 않는 수정(메모 등)은 행을 손대지 않는다 — 무관한 저장이 행을 재배분하면
      * 접수 시점 근거가 이유 없이 흔들린다.
+     *
+     * @effects non_amount_update_leaves_the_option_rows_untouched
      */
     public function test_non_amount_update_leaves_the_option_rows_untouched(): void
     {

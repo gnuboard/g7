@@ -2016,6 +2016,8 @@ return [
             'custom_options_array' => '커스텀 옵션 입력값은 배열 형태여야 합니다.',
             'id_integer' => '신청 상품 행 ID 는 숫자여야 합니다.',
             'not_in_claim' => '이 신청서에 속하지 않은 상품이 포함되어 있습니다.',
+            'entry_object' => '신청 상품 항목은 {id, quantity} 형태여야 합니다.',
+            'duplicate_id' => '같은 상품을 두 번 지정했습니다. 한 상품은 한 줄로 보내 주세요.',
             'not_in_order' => '이 주문에 속하지 않은 상품이 포함되어 있습니다.',
             'prohibited_with_refund' => '환불신청서 기준과 상품 선택 기준은 함께 지정할 수 없습니다. 하나만 보내 주세요.',
         ],

@@ -147,8 +147,14 @@ class CancellableAmountCalculator
 
         $excludeClaims = [ClaimTypeEnum::REFUND->value => [$refund->id]];
 
+        // **헤더 금액이 덮는 행만** 센다 — 빠지는 것은 반려·철회분뿐이다. 반려 행을
+        // 포함하면 취소 가능 금액(D19)이 반려분만큼 넓어져 **과다 환불이 가드를 통과해**
+        // 집행된다 — 저장·실행 양쪽이 같은 방향으로 느슨해지므로 어느 쪽에서도 예외가
+        // 나지 않는다. 아직 판단이 없는 행은 헤더가 여전히 덮으므로 센다(모델이 그 술어를
+        // 단독 소유한다 — 여기서 좁히면 상한과 저장 금액이 갈려 운영자가 아무것도 건드리지
+        // 않았는데 저장이 422 로 막힌다).
         $items = [];
-        foreach ($refund->refundOptions as $option) {
+        foreach ($refund->refundOptionsForAmount() as $option) {
             $items[] = [
                 'order_option_id' => $option->order_option_id,
                 'cancel_quantity' => (int) $option->quantity,
@@ -717,6 +723,14 @@ class CancellableAmountCalculator
         return is_array($snapshot) && $snapshot !== [] ? $snapshot : null;
     }
 
+    /**
+     * 주문의 기준 통화 코드를 반환합니다.
+     *
+     * 거래 시점에 동결된 스냅샷이 정본이고, 없으면 상점 기본 통화로 떨어집니다.
+     *
+     * @param  Order  $order  주문
+     * @return string 기준 통화 코드
+     */
     protected function resolveBaseCurrency(Order $order): string
     {
         $snapshot = $order->currency_snapshot ?? [];

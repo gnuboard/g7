@@ -44,7 +44,7 @@ class UploadClaimImageRequest extends FormRequest
             //
             // 저장 경로의 확장자 방어는 이 룰이 아니라 저장 지점이 맡는다
             // (`ClaimAttachmentService` 의 `storedExtension()` — 내용 기준으로 정한다).
-            'image' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:'.$this->maxSizeKb()],
+            'image' => ['required', 'file', 'image', 'mimes:'.implode(',', ClaimAttachmentService::ALLOWED_EXTENSIONS), 'max:'.$this->maxSizeKb()],
         ];
     }
 
@@ -68,6 +68,7 @@ class UploadClaimImageRequest extends FormRequest
      * 추가 검증 로직 — 주문 존재·소유권
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     protected function withValidator(Validator $validator): void
     {
@@ -80,6 +81,7 @@ class UploadClaimImageRequest extends FormRequest
      * 검증 실패 시 응답 커스터마이징
      *
      * @param  Validator  $validator  검증기
+     * @return void
      *
      * @throws ValidationException
      */

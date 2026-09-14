@@ -389,8 +389,8 @@
           "id": "claim_item_bulk_bar",
           "type": "basic",
           "name": "Div",
-          "comment": "상품 단위 일괄 변경 바 (D24·D25). 행마다 셀렉트+[적용] 을 두지 않는다 — 주문상세 `bulk_action_bar` 와 같은 형태다. 환불에는 상품 단위 전이 축이 없어(회수·개별 상품 전이 없음) 그리지 않는다. 송장은 여기에 두지 않는다 — 회수·재발송 송장은 신청서 단위 값이라 배송 정보 섹션이 소유한다.",
-          "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
+          "comment": "상품 단위 일괄 변경 바 (D24·D25·§4-6). 행마다 셀렉트+[적용] 을 두지 않는다 — 주문상세 `bulk_action_bar` 와 같은 형태다. 취소신청서만 제외한다: 생성이 곧 확정이라 옮길 상태가 없다(환불은 §4 에서 이 축이 열렸다). 조건 문자열을 배송 섹션과 공유하지 않는 이유는 구조 테스트가 그 동일성을 단언하기 때문이다 — 여기에 맞추려고 배송 조건을 바꾸면 **환불 상세에 배송 섹션이 생긴다**. 송장은 여기에 두지 않는다 — 회수·재발송 송장은 신청서 단위 값이라 배송 정보 섹션이 소유한다.",
+          "if": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
           "props": {
             "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
           },
@@ -412,29 +412,18 @@
               },
               "children": [
                 {
-                  "id": "ci_002_item_status_exchange",
+                  "id": "ci_002_item_status",
                   "type": "basic",
                   "name": "Select",
-                  "comment": "상품 단위 어휘는 신청서 단위 어휘에서 `payment_pending` 을 뺀 것이다 — 결제는 신청서 축이라 상품 행에 지정할 수 없고, 보내면 요청 전체가 422 가 된다.",
-                  "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange'}}",
+                  "comment": "선택지는 **서버가 행마다 실어 준 어휘**(`transition_options`)의 교집합이다 — 핸들러가 계산해 `_local.itemTransitionOptions` 에 깐다. 화면이 상태 목록을 리터럴로 들면 전이표가 바뀔 때 화면과 서버가 갈리고, 그 사이 운영자는 '가끔 안 되는 버튼' 을 본다. 결제대기는 서버가 상품 축에서 이미 뺀다(결제는 신청서 단위 축이다).",
+                  "if": "{{(_local.itemTransitionOptions ?? []).length > 0}}",
                   "props": {
                     "name": "itemBulkStatus",
                     "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                     "value": "{{_local.itemBulkStatus ?? ''}}",
                     "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}",
-                    "options": [
-                      { "value": "", "label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder", "disabled": true },
-                      { "value": "approved", "label": "$t:sirsoft-ecommerce.enums.exchange_status.approved" },
-                      { "value": "on_hold", "label": "$t:sirsoft-ecommerce.enums.exchange_status.on_hold" },
-                      { "value": "rejected", "label": "$t:sirsoft-ecommerce.enums.exchange_status.rejected" },
-                      { "value": "collection_ready", "label": "$t:sirsoft-ecommerce.enums.exchange_status.collection_ready" },
-                      { "value": "collecting", "label": "$t:sirsoft-ecommerce.enums.exchange_status.collecting" },
-                      { "value": "collected", "label": "$t:sirsoft-ecommerce.enums.exchange_status.collected" },
-                      { "value": "redelivery_ready", "label": "$t:sirsoft-ecommerce.enums.exchange_status.redelivery_ready" },
-                      { "value": "redelivering", "label": "$t:sirsoft-ecommerce.enums.exchange_status.redelivering" },
-                      { "value": "redelivered", "label": "$t:sirsoft-ecommerce.enums.exchange_status.redelivered" },
-                      { "value": "completed", "label": "$t:sirsoft-ecommerce.enums.exchange_status.completed" }
-                    ]
+                    "placeholder": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
+                    "options": "{{_local.itemTransitionOptions ?? []}}"
                   },
                   "actions": [
                     {
@@ -448,36 +437,15 @@
                   ]
                 },
                 {
-                  "id": "ci_003_item_status_return",
+                  "id": "ci_003_no_common_transition",
                   "type": "basic",
-                  "name": "Select",
-                  "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'return'}}",
+                  "name": "Span",
+                  "comment": "교집합이 0건이면 셀렉트를 감추고 이유를 적는다 — 빈 셀렉트만 두면 운영자는 화면이 덜 그려진 줄 안다.",
+                  "if": "{{(_local.selectedClaimItems ?? []).length > 0 && (_local.itemTransitionOptions ?? []).length === 0}}",
                   "props": {
-                    "name": "itemBulkStatus",
-                    "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
-                    "value": "{{_local.itemBulkStatus ?? ''}}",
-                    "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}",
-                    "options": [
-                      { "value": "", "label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder", "disabled": true },
-                      { "value": "approved", "label": "$t:sirsoft-ecommerce.enums.return_status.approved" },
-                      { "value": "on_hold", "label": "$t:sirsoft-ecommerce.enums.return_status.on_hold" },
-                      { "value": "rejected", "label": "$t:sirsoft-ecommerce.enums.return_status.rejected" },
-                      { "value": "collection_ready", "label": "$t:sirsoft-ecommerce.enums.return_status.collection_ready" },
-                      { "value": "collecting", "label": "$t:sirsoft-ecommerce.enums.return_status.collecting" },
-                      { "value": "collected", "label": "$t:sirsoft-ecommerce.enums.return_status.collected" },
-                      { "value": "completed", "label": "$t:sirsoft-ecommerce.enums.return_status.completed" }
-                    ]
+                    "className": "text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap"
                   },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "itemBulkStatus": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
+                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.no_common_transition"
                 }
               ]
             },
@@ -527,9 +495,9 @@
               ],
               "actions": [
                 {
-                  "comment": "완료 전이는 곧바로 실행하지 않고 완료 처리 모달을 연다 (D26) — 분기는 핸들러가 한다. 경로 세그먼트는 서버가 준 값을 그대로 쓴다: 화면이 `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 된다.",
+                  "comment": "수량 확인 모달을 연다 (§4-6) — 수량 입력을 이 바에 두면 행이 여럿일 때 수량이 하나뿐이라 '3 중 2, 5 중 1' 을 표현할 수 없다. 완료 전이는 그 모달을 건너뛰고 완료 처리 모달로 간다 (D26) — 분기는 핸들러가 한다. 경로 세그먼트는 서버가 준 값을 그대로 쓴다: 화면이 `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 된다.",
                   "type": "click",
-                  "handler": "sirsoft-ecommerce.executeClaimItemBulkStatus",
+                  "handler": "sirsoft-ecommerce.openClaimItemQuantityConfirm",
                   "onError": [
                     { "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.", "handler": "suppress" }
                   ],
@@ -557,7 +525,7 @@
           "props": {
             "data": "{{claim?.data?.claim?.items ?? []}}",
             "idField": "id",
-            "selectable": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
+            "selectable": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
             "selectionScope": "page",
             "selectedIds": "{{_local.selectedClaimItems ?? []}}",
             "pagination": false,
@@ -718,11 +686,12 @@
           },
           "actions": [
             {
+              "comment": "선택지 교집합·기본 수량·고른 상태의 유효성까지 한 번에 정한다 (§4-4). `setState` 로 선택만 담으면, 선택이 바뀌어 교집합 밖이 된 상태가 화면에 남아 [적용] 이 422 가 된다.",
               "event": "onSelectionChange",
-              "handler": "setState",
+              "handler": "sirsoft-ecommerce.syncClaimItemSelection",
               "params": {
-                "target": "_local",
-                "selectedClaimItems": "{{$args[0]}}"
+                "selectedIds": "{{$args[0]}}",
+                "rows": "{{claim?.data?.claim?.items ?? []}}"
               }
             }
           ]

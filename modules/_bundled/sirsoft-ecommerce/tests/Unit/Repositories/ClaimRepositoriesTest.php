@@ -19,7 +19,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
@@ -46,6 +45,9 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class ClaimRepositoriesTest extends ModuleTestCase
 {
+    /**
+     * @effects all_claim_repository_interfaces_are_bound
+     */
     public function test_all_claim_repository_interfaces_are_bound(): void
     {
         $interfaces = [
@@ -67,6 +69,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // OrderExchangeRepository
     // ========================================
 
+    /**
+     * @effects exchange_repository_crud_and_lookup
+     */
     public function test_exchange_repository_crud_and_lookup(): void
     {
         $repo = app(OrderExchangeRepositoryInterface::class);
@@ -84,6 +89,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame('검수 메모', $updated->admin_memo);
     }
 
+    /**
+     * @effects exchange_repository_lists_by_order_newest_first
+     */
     public function test_exchange_repository_lists_by_order_newest_first(): void
     {
         $repo = app(OrderExchangeRepositoryInterface::class);
@@ -99,6 +107,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertEquals($first->id, $list->last()->id);
     }
 
+    /**
+     * @effects exchange_repository_active_quantity_excludes_terminal_states
+     */
     public function test_exchange_repository_active_quantity_excludes_terminal_states(): void
     {
         $repo = app(OrderExchangeRepositoryInterface::class);
@@ -130,6 +141,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(0, $repo->sumActiveQuantityByOrderOption($orderOption->id, $active->id));
     }
 
+    /**
+     * @effects exchange_repository_counts_by_reason_code
+     */
     public function test_exchange_repository_counts_by_reason_code(): void
     {
         $repo = app(OrderExchangeRepositoryInterface::class);
@@ -154,6 +168,8 @@ class ClaimRepositoriesTest extends ModuleTestCase
      * 같은 저장소의 형제 메서드도 `DIRECT` 로 좁혀 센다.
      *
      * 되돌리면(스코프 제거) 아래 두 단언이 붉어진다.
+     *
+     * @effects refund_repository_counts_only_direct_refunds_by_reason_code
      */
     public function test_refund_repository_counts_only_direct_refunds_by_reason_code(): void
     {
@@ -190,6 +206,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(0, $repo->countByReasonCode('changed_mind'));
     }
 
+    /**
+     * @effects exchange_option_repository_bulk_status_update_scopes_to_exchange
+     */
     public function test_exchange_option_repository_bulk_status_update_scopes_to_exchange(): void
     {
         $repo = app(OrderExchangeOptionRepositoryInterface::class);
@@ -215,6 +234,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::REQUESTED, $untouched->refresh()->option_status);
     }
 
+    /**
+     * @effects exchange_option_repository_bulk_status_update_can_target_subset
+     */
     public function test_exchange_option_repository_bulk_status_update_can_target_subset(): void
     {
         $repo = app(OrderExchangeOptionRepositoryInterface::class);
@@ -229,6 +251,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::REQUESTED, $second->refresh()->option_status);
     }
 
+    /**
+     * @effects exchange_option_repository_deletes_by_exchange
+     */
     public function test_exchange_option_repository_deletes_by_exchange(): void
     {
         $repo = app(OrderExchangeOptionRepositoryInterface::class);
@@ -243,6 +268,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // OrderReturnRepository
     // ========================================
 
+    /**
+     * @effects return_repository_crud_and_lookup
+     */
     public function test_return_repository_crud_and_lookup(): void
     {
         $repo = app(OrderReturnRepositoryInterface::class);
@@ -257,6 +285,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame('보류 사유 확인', $repo->update($return, ['admin_memo' => '보류 사유 확인'])->admin_memo);
     }
 
+    /**
+     * @effects return_repository_active_quantity_excludes_terminal_states
+     */
     public function test_return_repository_active_quantity_excludes_terminal_states(): void
     {
         $repo = app(OrderReturnRepositoryInterface::class);
@@ -285,6 +316,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(0, $repo->sumActiveQuantityByOrderOption($orderOption->id, $active->id));
     }
 
+    /**
+     * @effects return_option_repository_bulk_update_and_delete
+     */
     public function test_return_option_repository_bulk_update_and_delete(): void
     {
         $repo = app(OrderReturnOptionRepositoryInterface::class);
@@ -303,6 +337,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // ClaimImageRepository
     // ========================================
 
+    /**
+     * @effects claim_image_repository_scopes_by_claimable
+     */
     public function test_claim_image_repository_scopes_by_claimable(): void
     {
         $repo = app(ClaimImageRepositoryInterface::class);
@@ -317,6 +354,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(1, $repo->countByClaimable(ClaimTypeEnum::RETURN->value, $return->id));
     }
 
+    /**
+     * @effects claim_image_repository_finds_by_hash_and_deletes
+     */
     public function test_claim_image_repository_finds_by_hash_and_deletes(): void
     {
         $repo = app(ClaimImageRepositoryInterface::class);
@@ -327,6 +367,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertNull($repo->findById($image->id));
     }
 
+    /**
+     * @effects claim_image_repository_delete_by_claimable_leaves_others
+     */
     public function test_claim_image_repository_delete_by_claimable_leaves_others(): void
     {
         $repo = app(ClaimImageRepositoryInterface::class);
@@ -343,6 +386,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // ClaimPaymentRepository
     // ========================================
 
+    /**
+     * @effects claim_payment_repository_lookup_by_number_and_transaction
+     */
     public function test_claim_payment_repository_lookup_by_number_and_transaction(): void
     {
         $repo = app(ClaimPaymentRepositoryInterface::class);
@@ -353,6 +399,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertNull($repo->findByTransactionId('never-issued'));
     }
 
+    /**
+     * @effects claim_payment_repository_sums_only_paid_amounts
+     */
     public function test_claim_payment_repository_sums_only_paid_amounts(): void
     {
         $repo = app(ClaimPaymentRepositoryInterface::class);
@@ -377,6 +426,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects claim_payment_repository_sum_is_zero_when_none_paid
+     */
     public function test_claim_payment_repository_sum_is_zero_when_none_paid(): void
     {
         $repo = app(ClaimPaymentRepositoryInterface::class);
@@ -392,6 +444,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // ShippingPolicyClaimAddressRepository
     // ========================================
 
+    /**
+     * @effects claim_address_repository_upsert_is_idempotent_per_type
+     */
     public function test_claim_address_repository_upsert_is_idempotent_per_type(): void
     {
         $repo = app(ShippingPolicyClaimAddressRepositoryInterface::class);
@@ -408,6 +463,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects claim_address_repository_delete_scopes_to_type
+     */
     public function test_claim_address_repository_delete_scopes_to_type(): void
     {
         $repo = app(ShippingPolicyClaimAddressRepositoryInterface::class);
@@ -424,6 +482,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // 취소·환불 옵션 저장소 (S6b 신설 — 저장소 우회 해소분)
     // ========================================
 
+    /**
+     * @effects cancel_option_repository_bulk_status_update_records_completion
+     */
     public function test_cancel_option_repository_bulk_status_update_records_completion(): void
     {
         $repo = app(OrderCancelOptionRepositoryInterface::class);
@@ -491,6 +552,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(CancelOptionStatusEnum::REQUESTED, $untouched->refresh()->option_status);
     }
 
+    /**
+     * @effects refund_option_repository_bulk_status_update_sets_completed_at_only_when_given
+     */
     public function test_refund_option_repository_bulk_status_update_sets_completed_at_only_when_given(): void
     {
         $repo = app(OrderRefundOptionRepositoryInterface::class);
@@ -512,7 +576,7 @@ class ClaimRepositoriesTest extends ModuleTestCase
             'order_refund_id' => $refund->id,
             'order_id' => $order->id,
             'order_option_id' => $orderOption->id,
-            'option_status' => RefundOptionStatusEnum::REQUESTED,
+            'option_status' => RefundStatusEnum::REQUESTED,
             'quantity' => 1,
             'unit_price' => 1000,
             'subtotal_amount' => 1000,
@@ -524,7 +588,7 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $option->update(['processed_by' => $operator->id]);
 
         // 처리자·완료 시각 미전달(반려·철회 경로) — 기존 값을 지우지 않는다.
-        $this->assertSame(1, $repo->bulkUpdateStatus($refund->id, RefundOptionStatusEnum::REJECTED->value));
+        $this->assertSame(1, $repo->bulkUpdateStatus($refund->id, RefundStatusEnum::REJECTED->value));
         $option->refresh();
         $this->assertNull($option->completed_at);
         $this->assertSame((int) $operator->id, (int) $option->processed_by);
@@ -533,13 +597,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $another = User::factory()->create();
         $this->assertSame(1, $repo->bulkUpdateStatus(
             $refund->id,
-            RefundOptionStatusEnum::COMPLETED->value,
+            RefundStatusEnum::COMPLETED->value,
             $another->id,
             Carbon::now(),
         ));
 
         $option->refresh();
-        $this->assertSame(RefundOptionStatusEnum::COMPLETED, $option->option_status);
+        $this->assertSame(RefundStatusEnum::COMPLETED, $option->option_status);
         $this->assertSame((int) $another->id, (int) $option->processed_by);
         $this->assertNotNull($option->completed_at);
     }
@@ -548,6 +612,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // 완료 미리보기 다건 스코프용 묶음 조회 (S6b 3차 보강)
     // ========================================
 
+    /**
+     * @effects exchange_option_repository_lists_option_ids_grouped_by_claim
+     */
     public function test_exchange_option_repository_lists_option_ids_grouped_by_claim(): void
     {
         $repo = app(OrderExchangeOptionRepositoryInterface::class);
@@ -570,6 +637,9 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame([], $repo->listOptionIdsByExchangeIds([]));
     }
 
+    /**
+     * @effects return_option_repository_lists_option_ids_grouped_by_claim
+     */
     public function test_return_option_repository_lists_option_ids_grouped_by_claim(): void
     {
         $repo = app(OrderReturnOptionRepositoryInterface::class);

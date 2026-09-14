@@ -34,9 +34,13 @@
       },
       "bulk_no_selection": "Select the items to change.",
       "bulk_no_status_selected": "Select the status to change to.",
-      "bulk_not_supported": "This claim type does not support per-item status changes.",
       "bulk_success": "Item status changes have been processed.",
-      "bulk_error": "Failed to change item statuses."
+      "bulk_error": "Failed to change item statuses.",
+      "no_common_transition": "The selected items have no status they can all move to. Select items that share the same status.",
+      "quantity_confirm_title": "Confirm quantities",
+      "quantity_confirm_description": "The selected items will be moved to {{status}}. Reduce a quantity to process only part of it.",
+      "quantity_not_splittable": "An exchange item whose redelivery item already exists cannot be split. It will be processed in full.",
+      "bulk_split_notice": "Processed {{kept}} item(s); {{remaining}} left in the requested state."
     },
     "completion": {
       "title": "Completion",
@@ -73,7 +77,13 @@
       "image_upload_success": "The attachment has been uploaded.",
       "image_upload_error": "Failed to upload the attachment.",
       "image_clear_success": "The attachments have been cleared.",
-      "image_clear_error": "Failed to clear the attachments."
+      "image_clear_error": "Failed to clear the attachments.",
+      "images_hint": "Up to {{max}} files · {{size}} each · {{types}}",
+      "images_origin_title": "Attachment sources",
+      "image_origin_uploaded_at": "Uploaded {{at}}",
+      "confirm_remove_image_title": "Delete this attachment?",
+      "confirm_remove_image_message": "The image and its file are deleted together. This cannot be undone.",
+      "image_delete_success": "The attachment has been deleted."
     },
     "comparison": {
       "title": "Order amounts at filing (before / after)",

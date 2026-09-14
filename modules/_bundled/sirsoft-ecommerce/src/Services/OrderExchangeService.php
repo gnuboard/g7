@@ -16,7 +16,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -45,6 +44,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressR
 use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesAdditionalOptions;
+use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
 /**
  * 교환 클레임 서비스
@@ -108,6 +108,7 @@ class OrderExchangeService
      * @param  OrderAdjustmentService  $adjustmentService  금액 재계산 서비스 (미리보기·청구 방식 검증)
      * @param  ClaimShippingFeeService  $claimShippingFeeService  클레임 배송비 산정 서비스
      * @param  ClaimQuantityGuard  $claimQuantityGuard  클레임 수량 잠금 가드 (D15)
+     * @param  ClaimItemSplitter  $claimItemSplitter  신청 상품 수량 분할기
      * @param  OrderOptionService  $orderOptionService  주문 옵션 서비스 (코스 상태 전이·수량 분할)
      * @param  RefundExecutionService  $refundExecutionService  환불 실행 서비스 (환불수단 판정)
      * @param  UserMileageService  $mileageService  마일리지 서비스 (적립 회수)
@@ -131,6 +132,7 @@ class OrderExchangeService
         protected OrderAdjustmentService $adjustmentService,
         protected ClaimShippingFeeService $claimShippingFeeService,
         protected ClaimQuantityGuard $claimQuantityGuard,
+        protected ClaimItemSplitter $claimItemSplitter,
         protected OrderOptionService $orderOptionService,
         protected RefundExecutionService $refundExecutionService,
         protected UserMileageService $mileageService,
@@ -569,17 +571,21 @@ class OrderExchangeService
      * 반려·철회로 전이된 상품은 그 자리에서 원 주문옵션을 되돌리고, 승인·재발송 단계의
      * 부수효과(재고 차감·후속 옵션 생성·도착 처리)도 상품마다 그 자리에서 일어난다.
      *
+     * 수량을 실은 지시(`[{id, quantity}]`)는 그 행을 **갈라서** 지정 수량만 전이한다 —
+     * 잔여는 새 행으로 남아 신청 상태를 유지한다(`ClaimItemSplitter`). 수량을 싣지 않은
+     * 지시는 종전대로 전량이다.
+     *
      * @param  OrderExchange  $exchange  교환 신청서
-     * @param  array<int, int>  $itemIds  신청 상품 행 ID 목록 (빈 배열이면 전체)
+     * @param  array<int, int|array{id: int, quantity?: int|null}>  $items  전이 지시 (빈 배열이면 전체)
      * @param  ExchangeStatusEnum  $target  목표 상태
      * @param  array  $context  부가 정보 (processed_by)
-     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>} 전이 결과
+     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>, split: array<int, array{id: int, quantity: int, remainder_id: int, remainder_quantity: int}>} 전이 결과
      *
      * @throws OrderClaimException 완료 전이를 시도한 경우
      */
     public function transitionOption(
         OrderExchange $exchange,
-        array $itemIds,
+        array $items,
         ExchangeStatusEnum $target,
         array $context = [],
     ): array {
@@ -588,13 +594,16 @@ class OrderExchangeService
         }
 
         $processedBy = $context['processed_by'] ?? null;
-        $items = $this->resolveItems($exchange, $itemIds);
+        $specs = ClaimItemSpecs::normalize($items);
+        $quantities = ClaimItemSpecs::quantities($specs);
+        $items = $this->resolveItems($exchange, ClaimItemSpecs::ids($specs));
 
         $succeeded = [];
         $skipped = [];
         $changes = [];
+        $split = [];
 
-        DB::transaction(function () use ($exchange, $items, $target, $processedBy, &$succeeded, &$skipped, &$changes) {
+        DB::transaction(function () use ($exchange, $items, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
             foreach ($items as $item) {
                 // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
                 // 이미 반려된 상품에 반려를 다시 지시하면 그 상품의 부수효과가 한 번 더 돈다.
@@ -624,9 +633,10 @@ class OrderExchangeService
                 }
 
                 $previousStatus = $item->option_status;
+                $previousQuantity = (int) $item->exchange_quantity;
 
                 try {
-                    $this->transitionItem($exchange, $item, $target, $processedBy);
+                    $remainder = $this->transitionItem($exchange, $item, $target, $processedBy, $quantities[$item->id] ?? null);
                 } catch (OrderClaimException $e) {
                     // 재고 부족 같은 상품 단위 실패는 그 상품만 건너뛴다 — 같은 TX 안의 다른
                     // 상품은 전이 자체엔 문제가 없고, 저장점(savepoint)이 실패분만 되돌린다.
@@ -635,11 +645,28 @@ class OrderExchangeService
                     continue;
                 }
 
-                $changes[] = [
+                $change = [
                     'option_id' => $item->id,
                     'previous' => $previousStatus->value,
                     'new' => $target->value,
                 ];
+
+                if ($remainder !== null) {
+                    // 분할 사실은 계보 컬럼이 아니라 활동로그가 나른다 — 전/후 상태만으로는
+                    // "3개 중 2개" 가 어디에도 남지 않아, 표가 한 줄 늘어난 것을 운영자가
+                    // 스스로 해석해야 한다.
+                    $change['quantity'] = (int) $item->fresh()->exchange_quantity;
+                    $change['remainder_option_id'] = $remainder->id;
+
+                    $split[] = [
+                        'id' => $item->id,
+                        'quantity' => $change['quantity'],
+                        'remainder_id' => $remainder->id,
+                        'remainder_quantity' => $previousQuantity - $change['quantity'],
+                    ];
+                }
+
+                $changes[] = $change;
 
                 $succeeded[] = $item->id;
             }
@@ -663,7 +690,7 @@ class OrderExchangeService
 
         $this->syncHeaderFromOptions($fresh, $processedBy);
 
-        return ['succeeded' => $succeeded, 'skipped' => $skipped];
+        return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
     }
 
     // ───────────────────────────────────────────────
@@ -1853,21 +1880,35 @@ class OrderExchangeService
      *  - 재발송중: 후속 주문옵션을 만든다(멱등).
      *  - 재발송도착: 후속 주문옵션을 배송완료로 옮긴다.
      *
+     *  - 수량 분할: 지시에 수량이 실려 있으면 **맨 앞에서** 행을 가른다. 순서가 계약이다 —
+     *    분할이 먼저여야 승인의 재고 차감이 줄어든 수량만 차감하고, 반려의 원 주문옵션 복귀가
+     *    전이분만 되돌린다. 분할은 이 저장점 안에서 일어나므로, 전이가 실패하면 분할도 함께
+     *    되돌아간다(밖에서 나누면 "갈라졌는데 전이는 실패한" 행이 남는다).
+     *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  OrderExchangeOption  $item  신청 상품 행
      * @param  ExchangeStatusEnum  $target  목표 상태 (게이트 통과 전제)
      * @param  int|null  $processedBy  처리 관리자 ID
-     * @return void 반환값 없음
+     * @param  int|null  $quantity  이번에 전이할 수량 (null 이면 전량)
+     * @return OrderExchangeOption|null 분할로 생긴 잔여 행 (분할하지 않았으면 null)
      *
-     * @throws OrderClaimException 승인 시 재고 부족
+     * @throws OrderClaimException 승인 시 재고 부족 / 나눌 수 없는 행
      */
     protected function transitionItem(
         OrderExchange $exchange,
         OrderExchangeOption $item,
         ExchangeStatusEnum $target,
         ?int $processedBy,
-    ): void {
-        DB::transaction(function () use ($exchange, $item, $target, $processedBy) {
+        ?int $quantity = null,
+    ): ?OrderExchangeOption {
+        return DB::transaction(function () use ($exchange, $item, $target, $processedBy, $quantity) {
+            $remainder = null;
+
+            if ($quantity !== null) {
+                ['remainder' => $remainder] = $this->claimItemSplitter->split($item, $quantity);
+                $item->refresh();
+            }
+
             if ($target === ExchangeStatusEnum::APPROVED) {
                 $this->deductNewOptionStock($item);
             }
@@ -1878,7 +1919,7 @@ class OrderExchangeService
             ]);
 
             if ($this->revertsOrderOptions($target)) {
-                $this->revertOrderOptionFor($updated->loadMissing('orderOption'));
+                $this->revertOrderOptionFor($updated->loadMissing('orderOption'), (int) $updated->exchange_quantity);
             }
 
             if ($target === ExchangeStatusEnum::REDELIVERING) {
@@ -1889,6 +1930,8 @@ class OrderExchangeService
                 $this->ensureNewOrderOption($exchange, $updated->loadMissing('orderOption'));
                 $this->markNewOrderOptionDelivered($updated->fresh());
             }
+
+            return $remainder;
         });
     }
 
@@ -2033,9 +2076,10 @@ class OrderExchangeService
      * 읽는다 — 여기에 `!== EXCHANGE_IN_PROGRESS` 같은 비교를 새로 넣으면 반품과 판정이 두 벌이 된다.
      *
      * @param  OrderExchangeOption  $item  신청 상품 행
+     * @param  int|null  $quantity  되돌릴 수량 (null 이면 그 주문옵션 전량)
      * @return void 반환값 없음
      */
-    protected function revertOrderOptionFor(OrderExchangeOption $item): void
+    protected function revertOrderOptionFor(OrderExchangeOption $item, ?int $quantity = null): void
     {
         $orderOption = $item->orderOption;
 
@@ -2049,10 +2093,15 @@ class OrderExchangeService
             return;
         }
 
+        // 상품 단위 반려·철회는 **그 행의 수량만** 되돌린다. 전량으로 되돌리면 같은 주문옵션에
+        // 남아 있는 다른 진행분까지 코스 밖으로 빠져나가고, 그 수량은 이후 취소가 코스 가드를
+        // 통과해 **같은 상품이 두 번 환불된다**. 주문옵션 수량으로 클램프하는 것은 분할 이후
+        // 행 수량이 주문옵션 수량보다 클 수 없기 때문이 아니라, 커질 수 있는 경로(잔여 병합·
+        // 데이터 보정)가 생겼을 때 조용히 초과 전이하지 않게 하기 위해서다.
         $this->orderOptionService->changeStatusWithQuantity(
             $orderOption,
             $target,
-            (int) $orderOption->quantity,
+            min($quantity ?? (int) $orderOption->quantity, (int) $orderOption->quantity),
             [],
             restoreStockOnCancel: false,
             mergeSiblings: false,
@@ -2694,7 +2743,7 @@ class OrderExchangeService
                 'order_refund_id' => $refund->id,
                 'order_id' => $order->id,
                 'order_option_id' => $item->order_option_id,
-                'option_status' => RefundOptionStatusEnum::REQUESTED,
+                'option_status' => RefundStatusEnum::REQUESTED,
                 'quantity' => (int) $item->exchange_quantity,
                 'unit_price' => (float) $item->unit_price,
                 'subtotal_amount' => (float) $item->unit_price * (int) $item->exchange_quantity,

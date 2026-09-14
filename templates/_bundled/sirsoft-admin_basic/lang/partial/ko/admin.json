@@ -1958,7 +1958,8 @@
         "no_recipients": "수신자 미설정",
         "role_search_placeholder": "역할을 검색하세요",
         "users_placeholder": "사용자를 검색하세요",
-        "users_no_options": "검색 결과가 없습니다"
+        "users_no_options": "검색 결과가 없습니다",
+        "role_no_options": "일치하는 역할이 없습니다"
       },
       "preview_modal": {
         "title": "알림 미리보기",

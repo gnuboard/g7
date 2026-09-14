@@ -12,7 +12,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\BuildsEnumFieldChange;
@@ -138,6 +137,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 기본 핸들러 (method 매핑을 사용하므로 미사용).
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void
      */
     public function handle(...$args): void {}
 
@@ -145,6 +145,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 교환 신청 접수를 기록합니다.
      *
      * @param  OrderExchange  $exchange  접수된 교환 신청서
+     * @return void
      */
     public function handleExchangeRequested(OrderExchange $exchange): void
     {
@@ -155,6 +156,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 반품 신청 접수를 기록합니다.
      *
      * @param  OrderReturn  $return  접수된 반품 신청서
+     * @return void
      */
     public function handleReturnRequested(OrderReturn $return): void
     {
@@ -165,6 +167,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 환불 신청 접수를 기록합니다.
      *
      * @param  OrderRefund  $refund  접수된 환불 신청서
+     * @return void
      */
     public function handleRefundRequested(OrderRefund $refund): void
     {
@@ -193,6 +196,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  전이된 신청서
      * @param  string|null  $previous  전이 전 상태 값
      * @param  string|null  $target  전이 시점에 캡처한 목표 상태 값
+     * @return void
      */
     public function handleStatusChanged(
         OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim,
@@ -231,6 +235,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * @param  array<int, array{option_id: int, previous: string, new: string}>  $changes  상품별 전이 내역
      * @param  string|null  $target  전이 목표 상태 값
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void
      */
     public function handleOptionStatusChanged(
         OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim,
@@ -249,7 +254,7 @@ class ClaimActivityLogListener implements HookListenerInterface
         // 그린다. 신청 상품 행의 ID 가 키다.
         $bulkChanges = [];
         foreach ($changes as $change) {
-            $bulkChanges[(int) ($change['option_id'] ?? 0)] = [
+            $rows = [
                 $this->enumFieldChange(
                     'option_status',
                     self::FIELD_LABEL_PREFIX.'option_status',
@@ -258,6 +263,21 @@ class ClaimActivityLogListener implements HookListenerInterface
                     $change['new'] ?? null,
                 ),
             ];
+
+            // 수량 분할이 일어난 회차는 "3 → 2" 한 줄을 더 남긴다. 분할 사실을 계보 컬럼으로
+            // 두지 않기로 했으므로(계보는 주문옵션 + 신청서 FK 로 이미 닫혀 있다) 이 줄이
+            // 유일한 흔적이다 — 없으면 운영자는 표가 한 줄 늘어난 것을 스스로 해석해야 한다.
+            if (isset($change['quantity'], $change['remainder_option_id'])) {
+                $rows[] = [
+                    'field' => 'quantity',
+                    'label_key' => self::FIELD_LABEL_PREFIX.'quantity',
+                    'old' => (string) ((int) $change['quantity'] + $this->remainderQuantityOf($claim, (int) $change['remainder_option_id'])),
+                    'new' => (string) (int) $change['quantity'],
+                    'type' => 'number',
+                ];
+            }
+
+            $bulkChanges[(int) ($change['option_id'] ?? 0)] = $rows;
         }
 
         $this->logActivity($this->actionFor($type, 'option_status_change'), [
@@ -273,6 +293,42 @@ class ClaimActivityLogListener implements HookListenerInterface
             ],
             'changes' => $bulkChanges !== [] ? $bulkChanges : null,
         ]);
+    }
+
+    /**
+     * 분할로 생긴 잔여 행의 수량을 읽습니다. (전/후 표의 "전" 을 복원하기 위해)
+     *
+     * 잔여 행을 못 찾으면 0 을 돌려준다 — 그러면 전/후가 같아져 그 줄이 그려지지 않을 뿐,
+     * 상태 전이 줄은 그대로 남는다(로그 전체가 사라지지 않게 하는 것이 여기서의 우선순위다).
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @param  int  $remainderId  잔여 행 ID
+     * @return int 잔여 수량
+     */
+    private function remainderQuantityOf(
+        OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim,
+        int $remainderId,
+    ): int {
+        $relation = match (true) {
+            $claim instanceof OrderExchange => 'exchangeOptions',
+            $claim instanceof OrderReturn => 'returnOptions',
+            $claim instanceof OrderRefund => 'refundOptions',
+            default => null,
+        };
+
+        if ($relation === null) {
+            return 0;
+        }
+
+        $claim->loadMissing($relation);
+
+        $row = $claim->{$relation}->firstWhere('id', $remainderId);
+
+        if ($row === null) {
+            return 0;
+        }
+
+        return (int) ($row->exchange_quantity ?? $row->return_quantity ?? $row->quantity ?? 0);
     }
 
     /**
@@ -306,7 +362,7 @@ class ClaimActivityLogListener implements HookListenerInterface
             ClaimTypeEnum::EXCHANGE => ExchangeStatusEnum::class,
             ClaimTypeEnum::RETURN => ReturnStatusEnum::class,
             ClaimTypeEnum::CANCEL => CancelOptionStatusEnum::class,
-            default => RefundOptionStatusEnum::class,
+            default => RefundStatusEnum::class,
         };
     }
 
@@ -321,6 +377,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * @param  ClaimPayment  $payment  취소된 결제 건
      * @param  OrderExchange|OrderReturn|null  $claim  신청서 (해석 불가 시 null)
      * @param  string|null  $reason  취소 사유 (`ClaimPaymentService::CANCEL_REASON_*`)
+     * @return void
      */
     public function handlePaymentCancelled(
         ClaimPayment $payment,
@@ -349,6 +406,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * @param  array<string, mixed>  $before  수정 전 금액 스냅샷
      * @param  array<string, mixed>  $after  수정 후 금액 스냅샷
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void
      */
     public function handleAmountsUpdated(
         OrderExchange|OrderReturn|OrderRefund $claim,
@@ -377,6 +435,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 항목은 전이가 아니라 **실행 결과**(실제 환불액·PG 거래번호)를 남기는 자리다.
      *
      * @param  OrderRefund  $refund  실행된 환불신청서
+     * @return void
      */
     public function handleRefundExecuted(OrderRefund $refund): void
     {
@@ -400,6 +459,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      *
      * @param  OrderExchange|OrderReturn  $claim  신청서
      * @param  ClaimPayment  $payment  확정된 결제 건
+     * @return void
      */
     public function handlePaymentCompleted(OrderExchange|OrderReturn $claim, ClaimPayment $payment): void
     {
@@ -427,6 +487,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * @param  OrderExchange|OrderReturn  $claim  신청서
      * @param  ClaimPayment  $payment  환급된 결제 건
      * @param  float  $refundAmount  이번에 환급한 금액
+     * @return void
      */
     public function handlePaymentRefunded(
         OrderExchange|OrderReturn $claim,
@@ -452,6 +513,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 클레임 첨부 업로드를 기록합니다.
      *
      * @param  ClaimImage  $image  업로드된 첨부
+     * @return void
      */
     public function handleImageUploaded(ClaimImage $image): void
     {
@@ -470,6 +532,7 @@ class ClaimActivityLogListener implements HookListenerInterface
      * 나중에 loggable 을 되찾지 못해도 무엇이 지워졌는지 읽을 수 있어야 한다.
      *
      * @param  ClaimImage  $image  삭제된 첨부
+     * @return void
      */
     public function handleImageDeleted(ClaimImage $image): void
     {
@@ -522,6 +585,10 @@ class ClaimActivityLogListener implements HookListenerInterface
             'claimable_id' => $image->claimable_id,
             'original_name' => $image->original_name,
             'size' => $image->size,
+            // 개별 삭제는 파일까지 즉시 지우고 되돌릴 수 없다 — 지워진 사진이 고객이 낸
+            // 증빙이었는지 운영자가 대리로 올린 것이었는지를 여기 남기지 않으면 분쟁 판정의
+            // 근거가 사후에 사라진다(행이 이미 없어 loggable 로도 되찾지 못한다).
+            'uploader_type' => $image->uploader_type?->value,
         ];
     }
 

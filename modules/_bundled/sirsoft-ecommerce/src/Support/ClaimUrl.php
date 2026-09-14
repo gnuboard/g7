@@ -45,6 +45,9 @@ final class ClaimUrl
     /** 관리자 신청서 상세 경로 템플릿 (앱 내 경로 — origin 은 소비 지점이 정한다) */
     public const ADMIN_DETAIL = '/admin/ecommerce/claims/{claimNumber}';
 
+    /** 관리자 신청서 목록 경로 (번호 해석 불가 시 폴백 — 운영자는 목록에서 찾아 들어간다) */
+    public const ADMIN_LIST = '/admin/ecommerce/claims';
+
     /**
      * 회원 신청서 상세 경로를 반환합니다.
      *

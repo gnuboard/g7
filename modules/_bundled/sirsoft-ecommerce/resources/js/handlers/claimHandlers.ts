@@ -233,13 +233,23 @@ function t(key: string, fallback: string, params?: Record<string, unknown>): str
  * axios 는 `error.message` 에 "Request failed with status code 422" 같은 원문만 담으므로,
  * 실제 사유가 들어 있는 응답 본문의 `message` 를 먼저 본다.
  *
+ * **전송 자체가 실패한 경우(네트워크 끊김·타임아웃)는 null 을 돌려준다.** 그때 axios 가
+ * 넣는 값은 `Network Error` 같은 내부 문자열이라 번역도 사이트 문구도 아니다 — 그대로
+ * 띄우면 운영자는 영문 원문을 본다(실측 §9 T4 에서 실제로 그랬다). 부르는 쪽이 가진
+ * 번역된 기본 문구로 넘긴다. 우리 코드가 서버 메시지를 담아 던진 `Error` 는 응답이 없어도
+ * 전송 실패가 아니므로 그대로 쓴다.
+ *
  * @param error 오류 객체
  * @returns 사유 문구 (없으면 null)
  */
 function serverMessageOf(error: any): string | null {
     const data = error?.response?.data ?? error?.data ?? {};
+    if (typeof data?.message === 'string' && data.message !== '') return data.message;
 
-    return data?.message ?? error?.message ?? null;
+    const isTransportFailure = error?.isAxiosError === true && !error?.response;
+    if (isTransportFailure) return null;
+
+    return error?.message ?? null;
 }
 
 /**
@@ -900,6 +910,269 @@ export async function openClaimDetailCompleteHandler(
     });
 }
 
+/** 수량 확인 모달이 그리는 행 한 줄 */
+interface ClaimItemQuantityRow {
+    id: number;
+    label: string;
+    quantity: number;
+    splittable: boolean;
+}
+
+/** 수량 확인 모달이 읽는 문맥 — 모달은 부모 화면의 `_local` 을 해석하지 못한다 */
+interface ClaimItemQuantityContext {
+    pathSegment: string;
+    claimType: string;
+    claimId: number;
+    claimNumber: string;
+    requesterName: string;
+    status: string;
+    statusLabel: string;
+    itemIds: number[];
+    rows: ClaimItemQuantityRow[];
+    quantities: Record<string, number>;
+    completeDefaults: ClaimCompleteDefaults;
+    detailRows: ClaimDetailItemRow[];
+}
+
+/**
+ * 전이 지시 본문을 만듭니다. (`items: [{id, quantity?}]`)
+ *
+ * 서버는 이 한 모양만 받는다 — 스칼라 배열을 함께 허용하면 상위 스코프 검사가 두 벌이 되어
+ * 다른 신청서의 행이 통과하는 결함이 되살아난다. 수량을 싣지 않은 행은 전량이다.
+ *
+ * @param itemIds 대상 상품 행 ID
+ * @param quantities 행별 전이 수량 (없으면 전량)
+ * @returns 요청 본문의 `items`
+ */
+function claimItemPayload(
+    itemIds: number[],
+    quantities?: Record<string, number | string | null>,
+): Array<{ id: number; quantity?: number }> {
+    return itemIds.map((id) => {
+        const raw = Number(quantities?.[String(id)]);
+
+        return Number.isFinite(raw) && raw > 0 ? { id, quantity: raw } : { id };
+    });
+}
+
+/**
+ * 선택된 행들이 **함께** 갈 수 있는 상태의 교집합을 만듭니다.
+ *
+ * 어휘는 서버가 행마다 실어 준다(`transition_options`) — 화면이 상태 목록을 리터럴로 들면
+ * 전이표가 바뀔 때 화면과 서버가 갈리고, 그 사이 운영자는 "가끔 안 되는 버튼" 을 본다.
+ *
+ * 교집합을 쓰는 이유: 선택한 행들의 현재 상태가 서로 다를 수 있고, 한 행만 갈 수 있는 상태를
+ * 목록에 세우면 나머지는 **건너뛰기로 보고되며 조용히 아무 일도 일어나지 않는다.**
+ *
+ * @param rows 상세 상품 행 (서버 응답 그대로)
+ * @param selectedIds 체크된 행 ID
+ * @returns 교집합 선택지 (등장 순서 유지)
+ */
+function commonTransitionOptions(
+    rows: ClaimDetailItemRow[],
+    selectedIds: number[],
+): Array<{ value: string; label: string }> {
+    const selected = rows.filter((row) => selectedIds.includes(Number(row.id)));
+
+    if (selected.length === 0) return [];
+
+    const first = (selected[0] as any).transition_options ?? [];
+
+    return first.filter((option: { value: string }) => selected.every(
+        (row) => ((row as any).transition_options ?? []).some(
+            (candidate: { value: string }) => candidate.value === option.value,
+        ),
+    ));
+}
+
+/**
+ * 선택이 바뀔 때 일괄 바가 읽는 상태를 한 번에 깝니다. (§4-4)
+ *
+ * 레이아웃 인라인 식으로 교집합을 내지 않는 이유는 두 가지다. 구조 테스트가 `if` 를 단일
+ * 바인딩으로 못박고 있고(`claim_detail_if_conditions_are_single_bindings`), **선택이 바뀌면
+ * 이미 고른 상태가 새 교집합에 없을 수 있어** 그 판정이 갈리면 화면엔 값이 남았는데 서버는
+ * 422 를 준다. 그래서 선택지와 고른 값을 같은 자리에서 함께 정한다.
+ *
+ * @param action 액션 객체 (params: selectedIds / rows)
+ * @param _context 액션 컨텍스트
+ */
+export function syncClaimItemSelectionHandler(
+    action: ActionWithParams<{ selectedIds?: Array<number | string>; rows?: ClaimDetailItemRow[] }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const selectedIds = (params.selectedIds ?? []).map((id) => Number(id));
+    const rows = params.rows ?? [];
+    const options = commonTransitionOptions(rows, selectedIds);
+    const current = G7Core.state.getLocal?.()?.itemBulkStatus ?? '';
+
+    G7Core.state.setLocal?.({
+        selectedClaimItems: selectedIds,
+        itemTransitionOptions: options,
+        // 고른 상태가 새 교집합 밖이면 비운다 — 남겨 두면 화면엔 값이 보이는데 [적용] 이 422 다.
+        itemBulkStatus: options.some((option) => option.value === current) ? current : '',
+    });
+}
+
+/**
+ * 수량 확인 모달을 엽니다. (§4-6 — 일괄 바 [적용] 의 진입점)
+ *
+ * 수량 입력을 일괄 바에 두면 행이 여럿일 때 수량이 하나뿐이라 "3 중 2, 5 중 1" 을 표현할 수
+ * 없고, 행 인라인에 두면 선택과 무관하게 살아 있어 "체크하지 않은 행의 수량을 바꿔 둔"
+ * 상태가 생긴다. 주문상세 선례도 확인 모달이다.
+ *
+ * 완료(`completed`)는 이 모달을 거치지 않는다 — 완료 처리 모달(D26)이 재고 복구·환불신청서
+ * 접수를 함께 물으며, 완료의 수량 분할은 이번 범위 밖이다(전량 완료만).
+ *
+ * @param action 액션 객체 (params)
+ * @param context 액션 컨텍스트
+ */
+export async function openClaimItemQuantityConfirmHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimType?: string;
+        claimId?: number | string | null;
+        claimNumber?: string | null;
+        requesterName?: string | null;
+        itemIds?: Array<number | string>;
+        status?: string;
+        rows?: ClaimDetailItemRow[];
+        completeDefaults?: ClaimCompleteDefaults;
+    }>,
+    context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const status = params.status ?? '';
+    const itemIds = (params.itemIds ?? []).map((id) => Number(id));
+    const rows = params.rows ?? [];
+
+    if (itemIds.length === 0) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_no_selection', '변경할 상품을 선택해주세요.'),
+        );
+
+        return;
+    }
+
+    if (!status) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_no_status_selected', '변경할 상태를 선택해주세요.'),
+        );
+
+        return;
+    }
+
+    if (status === 'completed') {
+        await executeClaimItemBulkStatusHandler(action as any, context);
+
+        return;
+    }
+
+    const selected = rows.filter((row) => itemIds.includes(Number(row.id)));
+    const modalRows: ClaimItemQuantityRow[] = selected.map((row) => ({
+        id: Number(row.id),
+        label: [row.product_name ?? '', row.option_name ?? ''].filter(Boolean).join(' / '),
+        quantity: Number(row.quantity ?? 1),
+        // 서버가 실어 준 판정을 그대로 쓴다 — 화면이 조건을 복제하면 교환 후속 옵션 규칙이
+        // 두 벌이 되고, 한쪽만 고쳐졌을 때 운영자는 입력해 놓고 [확인] 에서야 422 를 본다.
+        splittable: (row as any).is_splittable === true && Number(row.quantity ?? 1) > 1,
+    }));
+
+    const quantities: Record<string, number> = {};
+    modalRows.forEach((row) => {
+        quantities[String(row.id)] = row.quantity;
+    });
+
+    const prefix = STATUS_LABEL_PREFIX[params.claimType ?? ''] ?? '';
+
+    const modalContext: ClaimItemQuantityContext = {
+        pathSegment: params.pathSegment ?? '',
+        claimType: params.claimType ?? '',
+        claimId: Number(params.claimId),
+        claimNumber: params.claimNumber ?? '',
+        requesterName: params.requesterName ?? '',
+        status,
+        statusLabel: prefix ? t(`${prefix}${status}`, status) : status,
+        itemIds,
+        rows: modalRows,
+        quantities,
+        completeDefaults: params.completeDefaults ?? {},
+        detailRows: rows,
+    };
+
+    G7Core.state.set({ claimItemQuantityContext: modalContext });
+    G7Core.modal?.open?.('modal_claim_item_quantity_confirm');
+}
+
+/**
+ * 확인 모달의 수량 입력을 클램프해 문맥에 씁니다.
+ *
+ * 주문상세의 수량 핸들러를 공유하지 않는다 — 그쪽은 `_local.changeQuantities` 라는 주문상세
+ * 전용 키에 쓰므로, 공유하면 탭을 갔다 온 뒤 두 화면의 수량이 섞인다.
+ *
+ * @param action 액션 객체 (params: itemId / value)
+ * @param _context 액션 컨텍스트
+ */
+export function updateClaimItemQuantityHandler(
+    action: ActionWithParams<{ itemId?: number | string; value?: number | string }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const itemId = Number(params.itemId);
+    const context: ClaimItemQuantityContext | null = G7Core.state.get()?.claimItemQuantityContext ?? null;
+
+    if (!context || !Number.isFinite(itemId)) return;
+
+    const row = context.rows.find((candidate) => candidate.id === itemId);
+
+    if (!row) return;
+
+    const raw = Number(params.value);
+    // 빈 입력·문자 입력은 1 로 본다 — NaN 을 그대로 두면 본문에 실려 422 가 된다.
+    const clamped = Number.isFinite(raw) ? Math.min(Math.max(Math.trunc(raw), 1), row.quantity) : 1;
+
+    G7Core.state.set({
+        claimItemQuantityContext: {
+            ...context,
+            quantities: { ...context.quantities, [String(itemId)]: clamped },
+        },
+    });
+}
+
+/**
+ * 분할이 일어난 행을 운영자에게 알립니다.
+ *
+ * 표가 한 줄 늘어난 것을 스스로 해석하게 두지 않는다 — "2개 처리, 1개 신청 상태로 남음".
+ *
+ * @param data 전이 응답 데이터
+ */
+function reportClaimItemSplits(data: any): void {
+    const G7Core = core();
+    const splits = data?.split ?? [];
+
+    if (!G7Core || splits.length === 0) return;
+
+    const kept = splits.reduce((sum: number, entry: any) => sum + Number(entry?.quantity ?? 0), 0);
+    const remaining = splits.reduce((sum: number, entry: any) => sum + Number(entry?.remainder_quantity ?? 0), 0);
+
+    G7Core.toast?.info?.(
+        t(
+            'sirsoft-ecommerce.admin.claim.detail.items.bulk_split_notice',
+            `${kept}개를 처리하고 ${remaining}개는 신청 상태로 남겼습니다.`,
+            { kept, remaining },
+        ),
+    );
+}
+
 /**
  * 신청 상품 단위 일괄 전이를 실행합니다. (D25 — 상세 화면 신청상품 일괄 변경 바)
  *
@@ -920,6 +1193,7 @@ export async function executeClaimItemBulkStatusHandler(
         claimNumber?: string | null;
         requesterName?: string | null;
         itemIds?: Array<number | string>;
+        itemQuantities?: Record<string, number | string | null>;
         status?: string;
         rows?: ClaimDetailItemRow[];
         completeDefaults?: ClaimCompleteDefaults;
@@ -942,10 +1216,11 @@ export async function executeClaimItemBulkStatusHandler(
         return;
     }
 
-    // 상품 단위 전이는 교환·반품에만 있다 — 환불에는 상품 회수·개별 상품 전이 축이 없다.
-    if (claimType !== 'exchange' && claimType !== 'return') {
+    // 취소신청서만 상품 단위 전이 축이 없다 — 생성이 곧 확정이라 옮길 상태가 없다.
+    // 환불은 §4 에서 이 축이 열렸다(승인·보류·반려를 상품마다 가를 수 있다).
+    if (claimType === 'cancel') {
         G7Core.toast?.warning?.(
-            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_not_supported', '이 유형은 상품 단위 상태 변경을 지원하지 않습니다.'),
+            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_no_selection', '변경할 상품을 선택해주세요.'),
         );
 
         return;
@@ -981,9 +1256,11 @@ export async function executeClaimItemBulkStatusHandler(
             execute: {
                 url: `${base}/options/bulk-status`,
                 method: 'PATCH',
-                body: { items: itemIds },
+                // 완료는 전량만이다 — 완료 모달은 재고 복구를 **행 단위**로 물으므로 거기에
+                // 수량 축까지 얹으면 "2개는 복구, 1개는 폐기" 같은 답이 필요해진다.
+                body: { items: claimItemPayload(itemIds) },
                 refetch: DETAIL_REFETCH_SOURCES,
-                clearLocal: { selectedClaimItems: [], itemBulkStatus: '' },
+                clearLocal: { selectedClaimItems: [], itemBulkStatus: '', itemTransitionOptions: [] },
             },
         });
 
@@ -995,7 +1272,7 @@ export async function executeClaimItemBulkStatusHandler(
 
     try {
         const response = await G7Core.api.patch(`${base}/options/bulk-status`, {
-            items: itemIds,
+            items: claimItemPayload(itemIds, params.itemQuantities),
             status,
         });
 
@@ -1012,8 +1289,11 @@ export async function executeClaimItemBulkStatusHandler(
             }),
         );
         reportBulkSkips(data);
+        reportClaimItemSplits(data);
 
-        G7Core.state.setLocal?.({ selectedClaimItems: [], itemBulkStatus: '' });
+        G7Core.modal?.close?.('modal_claim_item_quantity_confirm');
+        G7Core.state.set?.({ claimItemQuantityContext: null });
+        G7Core.state.setLocal?.({ selectedClaimItems: [], itemBulkStatus: '', itemTransitionOptions: [] });
         refetchSources(DETAIL_REFETCH_SOURCES);
     } catch (error: any) {
         logger.error('[executeClaimItemBulkStatus] 상품 단위 전이 실패:', error);
@@ -1183,65 +1463,39 @@ export async function storeClaimRefundRequestHandler(
 }
 
 /**
- * 운영자가 신청서에 첨부를 **대리 업로드**합니다. (사유 카드 — #599 후속 F6)
+ * 첨부가 늘거나 줄어든 뒤 상세를 다시 읽습니다. (사유 카드 — #599 후속)
  *
- * 라우트(`POST …/images`)와 서비스는 처음부터 완비돼 있었는데 화면 진입점이 0건이었다 —
- * 전화로 사진을 받은 운영자는 그 증빙을 신청서에 붙일 방법이 없어 메모에 설명만 적어야 했다.
+ * **업로드·삭제는 공용 업로더 컴포넌트가 한다.** 이 핸들러가 하는 일은 그 결과를 화면의
+ * 나머지(첨부 출처 스트립·활동 로그)에 반영하는 것뿐이다 — 업로드와 삭제가 같은 일을
+ * 하므로 두 콜백이 이 하나를 쓴다.
  *
- * @param action 액션 객체 (params: pathSegment / claimId / file)
+ * 종전에는 핸들러가 직접 `FormData` 를 만들어 올렸다. 그러면 진행률·다중 선택·상한 안내·
+ * 개별 삭제를 이 핸들러가 다시 구현해야 하고, 그 구현은 구매자 화면과 갈린다.
+ *
+ * 결과를 **말로도 알린다.** 업로더는 자기 격자만 갱신하므로, 안내가 없으면 운영자는
+ * 출처 스트립과 활동 로그가 왜 바뀌었는지(또는 바뀌긴 했는지) 알 수 없다. 올린 것과 지운
+ * 것은 다른 사건이라 문구도 나눈다.
+ *
+ * @param action 액션 객체 (params.event: `upload` | `remove`)
  * @param _context 액션 컨텍스트
  */
-export async function uploadClaimImageHandler(
-    action: ActionWithParams<{
-        pathSegment?: string;
-        claimType?: string;
-        claimId?: number | string | null;
-        file?: File | null;
-    }>,
+export async function refreshClaimAttachmentsHandler(
+    action?: ActionWithParams<{ event?: string }>,
     _context?: ActionContext,
 ): Promise<void> {
     const G7Core = core();
+
+    refetchSources(DETAIL_REFETCH_SOURCES);
+
     if (!G7Core) return;
 
-    const params = action.params ?? {};
-    const base = claimScopedBase(params);
-    const file = params.file ?? null;
+    const removed = (action?.params?.event ?? '') === 'remove';
 
-    if (base === null || !file) {
-        logger.warn('[uploadClaimImage] 신청서 식별 축 또는 파일이 없습니다.');
-
-        return;
-    }
-
-    if (G7Core.state.getLocal?.()?.isUploadingClaimImage === true) return;
-    G7Core.state.setLocal?.({ isUploadingClaimImage: true });
-
-    try {
-        const form = new FormData();
-        form.append('image', file);
-
-        const response = await G7Core.api.post(`${base}/images`, form);
-
-        if (response?.success === false) {
-            throw new Error(response?.message ?? 'claim image upload failed');
-        }
-
-        G7Core.toast?.success?.(
-            response?.message
-            ?? t('sirsoft-ecommerce.admin.claim.detail.reason.image_upload_success', '첨부를 업로드했습니다.'),
-        );
-
-        refetchSources(DETAIL_REFETCH_SOURCES);
-    } catch (error: any) {
-        logger.error('[uploadClaimImage] 첨부 업로드 실패:', error);
-        G7Core.toast?.error?.(
-            serverMessageOf(error)
-            ?? t('sirsoft-ecommerce.admin.claim.detail.reason.image_upload_error', '첨부 업로드에 실패했습니다.'),
-        );
-        throw error;
-    } finally {
-        G7Core.state.setLocal?.({ isUploadingClaimImage: false });
-    }
+    G7Core.toast?.success?.(
+        removed
+            ? t('sirsoft-ecommerce.admin.claim.detail.reason.image_delete_success', '첨부를 삭제했습니다.')
+            : t('sirsoft-ecommerce.admin.claim.detail.reason.image_upload_success', '첨부를 등록했습니다.'),
+    );
 }
 
 /**

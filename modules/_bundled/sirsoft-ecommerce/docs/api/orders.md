@@ -3372,6 +3372,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | settings.charge_payment_methods | string[] | `["card","point"]` | 추가결제에 쓸 수 있는 결제 수단 (환경설정 `claim.charge_payment_methods`) |
 | settings.max_images | integer | `5` | 신청서당 첨부 이미지 상한 (`claim.max_images`) |
 | settings.image_max_size_kb | integer | `5120` | 첨부 1장 크기 상한 KB (`claim.image_max_size_kb`) |
+| settings.allowed_extensions | string[] | `["jpeg","jpg","png","gif","webp"]` | 서버가 받는 확장자 전수. 화면의 파일 선택창 필터와 서버 검증이 이 하나를 읽는다 |
+| settings.accept | string | `.jpeg,.jpg,.png,.gif,.webp` | 파일 선택창에 그대로 넣는 필터 문자열. `image/*` 로 두면 서버가 받지 않는 확장자를 고를 수 있고, 고르면 이유 없이 422 가 된다 |
 | settings.request_period_days | integer | `7` | 배송완료 후 신청 가능 일수 (`claim.request_period_days`, 0 이면 제한 없음) |
 | settings.exchange_requestable_statuses | string[] | `["delivered","confirmed"]` | 교환 신청이 열리는 주문 옵션 상태 |
 | settings.return_requestable_statuses | string[] | `["delivered","confirmed"]` | 반품 신청이 열리는 주문 옵션 상태 |
@@ -3412,6 +3414,8 @@ Authorization: Bearer {YOUR_TOKEN}
             "charge_payment_methods": ["card", "point"],
             "max_images": 5,
             "image_max_size_kb": 5120,
+            "allowed_extensions": ["jpeg", "jpg", "png", "gif", "webp"],
+            "accept": ".jpeg,.jpg,.png,.gif,.webp",
             "request_period_days": 7,
             "exchange_requestable_statuses": ["delivered", "confirmed"],
             "return_requestable_statuses": ["delivered", "confirmed"],

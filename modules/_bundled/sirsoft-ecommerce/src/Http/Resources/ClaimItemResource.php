@@ -5,6 +5,11 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
+use Modules\Sirsoft\Ecommerce\Services\ClaimItemSplitter;
+use Modules\Sirsoft\Ecommerce\Support\ClaimTransitionVocabulary;
 
 /**
  * 클레임 신청 상품 행 리소스 (교환·반품·환불·취소 공용)
@@ -17,6 +22,27 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 class ClaimItemResource extends BaseApiResource
 {
     use HasMultiCurrencyPrices;
+
+    /**
+     * 관리자 상세의 전이 선택지를 함께 실을지 여부
+     */
+    protected bool $forAdminTransitions = false;
+
+    /**
+     * 행별 전이 선택지를 싣도록 표시합니다. (관리자 **상세** 응답 전용)
+     *
+     * 목록에는 싣지 않는다 — 50행 × 200상품마다 Enum 전이표를 계산하게 된다. 유저 응답에도
+     * 싣지 않는다: `withAdminFields()` 가 규정한 "유저 응답의 기존 키는 바꾸지 않고 추가만
+     * 한다" 축을 상세·관리자 두 조건이 함께 지킨다.
+     *
+     * @return static 자기 자신
+     */
+    public function forAdminTransitions(): static
+    {
+        $this->forAdminTransitions = true;
+
+        return $this;
+    }
 
     /**
      * 리소스를 배열로 변환
@@ -61,6 +87,28 @@ class ClaimItemResource extends BaseApiResource
             'product_option_id' => $orderOption?->product_option_id,
             'completed_at' => $this->formatDateTimeStringForUser($this->completed_at ?? null),
         ];
+
+        // 수량 분할 가능 여부 — 화면이 이 값으로 그 행의 수량 입력을 잠근다. 판정은 서버가
+        // 단독 소유한다(`ClaimItemSplitter`): 화면에 조건을 복제하면 교환 후속 옵션 규칙이
+        // 두 벌이 되고, 한쪽만 고쳐졌을 때 운영자는 입력해 놓고 [확인] 에서야 422 를 본다.
+        // 취소신청서 행에는 싣지 않는다 — 전이 축 자체가 없다.
+        if (
+            $this->resource instanceof OrderExchangeOption
+            || $this->resource instanceof OrderReturnOption
+            || $this->resource instanceof OrderRefundOption
+        ) {
+            $row['is_splittable'] = ClaimItemSplitter::isSplittable($this->resource);
+
+            // 행이 읽는 값은 행에 싣는다(`status_label`·`status_variant` 와 같은 규율) —
+            // 봉투 별도 키(맵)로 두면 DataGrid `cellChildren` 안에서 행↔맵 조인이 필요하고,
+            // 그 조인이 어긋나면 어떤 행은 남의 선택지를 그린다.
+            if ($this->forAdminTransitions) {
+                $row['transition_options'] = ClaimTransitionVocabulary::optionsFrom(
+                    $status instanceof \BackedEnum ? $status : null,
+                    true
+                );
+            }
+        }
 
         // 별칭 존재 판정은 `array_key_exists` 단독이어야 한다 — 값이 NULL 인 행에서 `!== null` 을
         // 앞에 두면 키가 통째로 사라져 "그 컬럼을 싣지 않는 유형" 과 구분되지 않는다(아래 블록이 표준형).

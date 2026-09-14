@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
@@ -36,7 +37,30 @@ class ClaimImageFactory extends Factory
             'height' => 800,
             'sort_order' => 0,
             'created_by' => null,
+            // 기본값은 `unknown` 이다 — 주체를 단정할 근거가 없는 픽스처가 "고객 증빙" 으로
+            // 보이면 그 표기를 믿는 테스트가 생긴다. 주체가 필요하면 state 로 명시한다.
+            'uploader_type' => ClaimImageUploaderTypeEnum::UNKNOWN->value,
         ];
+    }
+
+    /**
+     * 고객이 올린 첨부로 설정합니다.
+     *
+     * @return static
+     */
+    public function byCustomer(): static
+    {
+        return $this->state(fn () => ['uploader_type' => ClaimImageUploaderTypeEnum::CUSTOMER->value]);
+    }
+
+    /**
+     * 운영자가 대리로 올린 첨부로 설정합니다.
+     *
+     * @return static
+     */
+    public function byAdmin(): static
+    {
+        return $this->state(fn () => ['uploader_type' => ClaimImageUploaderTypeEnum::ADMIN->value]);
     }
 
     /**

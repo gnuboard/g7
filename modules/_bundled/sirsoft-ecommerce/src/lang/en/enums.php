@@ -297,6 +297,13 @@ return [
         'cancel' => 'Cancel',
     ],
 
+    // Claim attachment uploader (matches ClaimImageUploaderTypeEnum values)
+    'claim_image_uploader_type' => [
+        'customer' => 'Customer',
+        'admin' => 'Staff',
+        'unknown' => 'Unknown',
+    ],
+
     // Claim Charge Method (matches ClaimChargeMethodEnum values)
     'claim_charge_method' => [
         'pay_on_request' => 'Pay on Request',
@@ -389,17 +396,6 @@ return [
     'refund_priority' => [
         'pg_first' => 'Refund payment method (PG) first',
         'points_first' => 'Refund points first',
-    ],
-
-    // Refund Option Status (matches RefundOptionStatusEnum values)
-    'refund_option_status' => [
-        'requested' => 'Refund Requested',
-        'approved' => 'Refund Approved',
-        'processing' => 'Refund Processing',
-        'on_hold' => 'Refund On Hold',
-        'completed' => 'Completed',
-        'rejected' => 'Refund Rejected',
-        'withdrawn' => 'Refund Withdrawn',
     ],
 
     // Review Status (ReviewStatus values)

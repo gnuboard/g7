@@ -102,6 +102,7 @@ return [
     'claim_option_not_found' => '신청 대상 주문 상품을 찾을 수 없습니다.',
     'claim_option_not_claimable' => '현재 상품 상태(:status)에서는 :type 을(를) 신청할 수 없습니다.',
     'claim_quantity_invalid' => '신청 수량이 유효하지 않습니다.',
+    'claim_item_not_splittable' => '이 상품은 수량을 나눠 처리할 수 없습니다. 전체 수량으로 처리해 주세요.',
     'claim_quantity_locked' => '이미 진행 중인 신청 건이 있어 :requested개를 신청할 수 없습니다. (신청 가능 수량: :available개)',
     'claim_reason_unavailable' => '선택한 사유를 사용할 수 없습니다. 사유를 다시 선택해 주세요.',
     'claim_charge_method_required' => '청구 금액이 있어 청구 방식을 선택해야 합니다.',

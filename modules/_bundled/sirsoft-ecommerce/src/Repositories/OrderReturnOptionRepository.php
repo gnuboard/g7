@@ -39,6 +39,16 @@ class OrderReturnOptionRepository implements OrderReturnOptionRepositoryInterfac
     /**
      * {@inheritDoc}
      */
+    public function save(OrderReturnOption $option): OrderReturnOption
+    {
+        $option->save();
+
+        return $option;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function findById(int $id, array $relations = []): ?OrderReturnOption
     {
         return $this->model->newQuery()

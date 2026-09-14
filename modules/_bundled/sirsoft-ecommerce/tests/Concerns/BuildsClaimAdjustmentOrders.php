@@ -11,7 +11,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -333,7 +332,7 @@ trait BuildsClaimAdjustmentOrders
             'order_refund_id' => $refund->id,
             'order_id' => $order->id,
             'order_option_id' => $option->id,
-            'option_status' => RefundOptionStatusEnum::REQUESTED,
+            'option_status' => RefundStatusEnum::REQUESTED,
             'quantity' => $quantity,
             'unit_price' => (float) $option->unit_price,
             'subtotal_amount' => (float) $option->unit_price * $quantity,

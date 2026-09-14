@@ -39,6 +39,16 @@ class OrderExchangeOptionRepository implements OrderExchangeOptionRepositoryInte
     /**
      * {@inheritDoc}
      */
+    public function save(OrderExchangeOption $option): OrderExchangeOption
+    {
+        $option->save();
+
+        return $option;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function findById(int $id, array $relations = []): ?OrderExchangeOption
     {
         return $this->model->newQuery()

@@ -28,6 +28,7 @@ return [
         'delete_failed' => '添付ファイルの削除に失敗しました。',
         'reorder_success' => '添付ファイルの順序が変更されました。',
         'reorder_failed' => '添付ファイルの順序の変更に失敗しました。',
+        'settings_success' => '添付ファイル設定を閲覧しました。',
     ],
     'errors' => [
         'not_found' => 'ページが見つかりません。',

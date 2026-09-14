@@ -119,6 +119,42 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 업로드 정책(최대 개수 · 최대 용량 · 허용 형식)은 모듈 환경설정 `attachment.*` 가 SSoT 입니다. 용량은 `attachment.max_size_mb`(MB), 형식은 `attachment.allowed_types`(MIME 목록)로 판정하며, 형식 목록을 비우면 형식을 제한하지 않습니다(설정 키 자체가 없으면 모듈 기본 목록으로 폴백). 개수는 `attachment.max_count` 를 기준으로 **직접 업로드 · 임시 업로드(`temp_key`) 연결 · 이미 연결된 첨부** 를 합산해 판정하며, 초과 시 `422`(`errors.code = attachment_limit_exceeded`)를 반환하며, 안내 문구(`message`)는 허용 개수와 시도한 개수를 담아 응답 시점의 언어로 만들어집니다. 이 판정은 업로드 엔드포인트뿐 아니라 페이지 생성·수정 저장 시점에도 동일하게 적용됩니다. `max_count` 가 0 이면 개수를 제한하지 않습니다.
 
 
+### GET /api/modules/sirsoft-page/admin/attachments/settings
+
+- **라우트명**: `api.modules.sirsoft-page.admin.attachments.settings`
+- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageAttachmentController@settings`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.read`
+
+첨부 상한·허용 형식을 반환합니다. **신규 작성 화면에는 읽을 페이지 상세가 없어** 상한을
+실어 줄 봉투가 없으므로, 그 화면이 이 조회를 씁니다. 화면이 상한을 리터럴로 적으면 운영자가
+설정을 바꿔도 화면만 옛 값으로 남고, 서버가 거절할 때까지 아무 안내가 없습니다.
+
+요청 파라미터는 없습니다.
+
+**응답 필드**
+
+| 이름 | 타입 | 예시값 | 용도 |
+| --- | --- | --- | --- |
+| data.max_count | integer\|null | `5` | 첨부 개수 상한. `null` 이면 제한하지 않습니다(`attachment.max_count` 가 0 이하) |
+| data.max_size_mb | integer | `10` | 파일 1개 크기 상한 (MB) |
+| data.allowed_types | string[] | `["image/jpeg", "application/pdf"]` | 허용 MIME 목록. 서버 검증이 쓰는 값 그대로입니다 |
+| data.accept | string | `.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip` | 파일 선택창 필터 문자열. MIME → 확장자 변환은 **서버에서 한 번만** 합니다 |
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "첨부 설정을 조회했습니다.",
+  "data": {
+    "max_count": 5,
+    "max_size_mb": 10,
+    "allowed_types": ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "application/zip"],
+    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip"
+  }
+}
+```
+
 ### PATCH /api/modules/sirsoft-page/admin/attachments/reorder
 <!-- @generated:start:api.modules.sirsoft-page.admin.attachments.reorder -->
 - **라우트명**: `api.modules.sirsoft-page.admin.attachments.reorder`

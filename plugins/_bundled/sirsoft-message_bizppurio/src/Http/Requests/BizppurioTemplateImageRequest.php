@@ -16,11 +16,16 @@ use Illuminate\Validation\Validator;
  */
 class BizppurioTemplateImageRequest extends FormRequest
 {
-    /** 최대 파일 크기 (KB) — kapi 제약 500KB */
-    private const MAX_KILOBYTES = 500;
+    /**
+     * 최대 파일 크기 (KB) — **kapi 고정 제약**이다.
+     *
+     * 운영자 설정으로 내리면 "설정을 올리면 더 큰 파일이 된다" 는 거짓 여지를 만든다.
+     * 화면 안내 문구가 이 값을 인용하므로 공개한다(드리프트 테스트가 두 값을 맞춘다).
+     */
+    public const MAX_KILOBYTES = 500;
 
-    /** 최소 가로 픽셀 — kapi 제약 500px */
-    private const MIN_WIDTH = 500;
+    /** 최소 가로 픽셀 — kapi 고정 제약. 화면 안내 문구가 인용한다. */
+    public const MIN_WIDTH = 500;
 
     /**
      * 권한은 라우트 미들웨어(messaging.manage)에서 처리한다.
@@ -54,6 +59,7 @@ class BizppurioTemplateImageRequest extends FormRequest
      * 가로:세로 = 2:1 비율을 after 훅으로 검증합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {

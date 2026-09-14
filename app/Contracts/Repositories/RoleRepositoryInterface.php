@@ -48,6 +48,18 @@ interface RoleRepositoryInterface
     public function getUsersByIdentifier(string $identifier): Collection;
 
     /**
+     * 여러 역할 식별자에 속한 사용자를 한 번에 조회합니다. (중복 제거)
+     *
+     * 알림 수신자 규칙 하나가 역할을 **여러 개** 가리킬 수 있게 되면서 필요해졌습니다.
+     * 단수 메서드를 반복 호출하면 역할 수만큼 쿼리가 늘고, 두 역할에 함께 속한 사용자가
+     * 두 번 담겨 같은 사람에게 알림이 두 통 갑니다.
+     *
+     * @param  array<int, string>  $identifiers  역할 식별자 목록
+     * @return Collection 해당 역할들의 사용자 (중복 제거)
+     */
+    public function getUsersByIdentifiers(array $identifiers): Collection;
+
+    /**
      * 새로운 역할을 생성합니다.
      *
      * @param  array  $data  역할 생성 데이터
@@ -108,6 +120,7 @@ interface RoleRepositoryInterface
      * @param  Role  $role  역할 모델
      * @param  int  $permissionId  권한 ID
      * @param  array  $pivotData  피벗 테이블에 저장할 추가 데이터
+     * @return void 반환값 없음
      */
     public function attachPermission(Role $role, int $permissionId, array $pivotData = []): void;
 

@@ -9,8 +9,10 @@ use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -22,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
@@ -108,6 +111,25 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 직접 환불신청서를 서비스 경로로 접수합니다. (상품준비중 — 환불신청 분기)
+     */
+    protected function makeRefundRequest(?Order $order = null): OrderRefund
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order ??= $this->moveOrderTo(
+            $this->attachPolicyShippings($this->createSingleItemClaimOrder(29000, 1, $policy), $policy),
+            OrderStatusEnum::PREPARING
+        );
+
+        return app(OrderRefundRequestService::class)->request($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'changed_mind',
+            'reason_detail' => '단순 변심',
+            'requested_by' => $order->user_id,
+        ])['refund'];
+    }
+
+    /**
      * 반품 신청서를 회수도착까지 진행시킵니다. (완료 직전 상태)
      */
     protected function moveReturnToCollected(OrderReturn $return): OrderReturn
@@ -124,6 +146,9 @@ class ClaimControllerTest extends ModuleTestCase
     // 목록
     // ================================================================
 
+    /**
+     * @effects list_returns_subtab_rows_with_counts_and_pagination
+     */
     public function test_list_returns_subtab_rows_with_counts_and_pagination(): void
     {
         $return = $this->makeReturn();
@@ -149,6 +174,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertArrayNotHasKey('images', $response->json('data.data.0'));
     }
 
+    /**
+     * @effects list_defaults_to_the_exchange_subtab
+     */
     public function test_list_defaults_to_the_exchange_subtab(): void
     {
         $exchange = $this->makeExchange();
@@ -160,6 +188,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.data.0.claim_number', $exchange->exchange_number);
     }
 
+    /**
+     * @effects list_filters_by_status_array_and_gates_vocabulary_per_type
+     */
     public function test_list_filters_by_status_array_and_gates_vocabulary_per_type(): void
     {
         $approved = $this->makeReturn();
@@ -176,6 +207,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * @effects list_searches_by_claim_number
+     */
     public function test_list_searches_by_claim_number(): void
     {
         $target = $this->makeReturn();
@@ -188,6 +222,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.data.0.id', $target->id);
     }
 
+    /**
+     * @effects list_prohibits_type_foreign_filter_axes
+     */
     public function test_list_prohibits_type_foreign_filter_axes(): void
     {
         // 취소에는 귀책 축이 없다 — 조용히 무시하면 필터가 안 걸린 목록이 필터 결과로 보인다.
@@ -225,6 +262,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * @effects refund_amount_range_sums_pg_and_mileage
+     */
     public function test_refund_amount_range_sums_pg_and_mileage(): void
     {
         // 환불은 '환불액 + 환불 마일리지' 가 목록 금액이다 — 한쪽만 보면 합계로 거른 결과와 어긋난다.
@@ -250,6 +290,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonCount(0, 'data.data');
     }
 
+    /**
+     * @effects cancel_amount_range_reads_the_linked_refund
+     */
     public function test_cancel_amount_range_reads_the_linked_refund(): void
     {
         // 취소는 자기 테이블에 금액이 없다 — 목록과 같은 근거(연결된 환불)로 걸러야 한다.
@@ -447,6 +490,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.data.0.claim_number', $exchange->exchange_number);
     }
 
+    /**
+     * @effects list_filters_by_charge_payment_method
+     */
     public function test_list_filters_by_charge_payment_method(): void
     {
         $paid = $this->makeExchange();
@@ -478,6 +524,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * @effects cancel_subtab_reports_is_final_from_the_cancel_status
+     */
     public function test_cancel_subtab_reports_is_final_from_the_cancel_status(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -499,6 +548,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.data.0.is_final', false);
     }
 
+    /**
+     * @effects list_requires_the_claims_read_permission
+     */
     public function test_list_requires_the_claims_read_permission(): void
     {
         $noPermission = $this->createAdminUser([]);
@@ -584,6 +636,9 @@ class ClaimControllerTest extends ModuleTestCase
     // 상세
     // ================================================================
 
+    /**
+     * @effects show_returns_admin_fields_and_payment_block
+     */
     public function test_show_returns_admin_fields_and_payment_block(): void
     {
         $return = $this->makeReturn();
@@ -603,6 +658,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertArrayHasKey('items', $claim);
     }
 
+    /**
+     * @effects show_is_404_for_a_missing_claim
+     */
     public function test_show_is_404_for_a_missing_claim(): void
     {
         $this->actingAs($this->admin)->getJson($this->base().'/returns/999999')->assertNotFound();
@@ -612,6 +670,9 @@ class ClaimControllerTest extends ModuleTestCase
     // 단건 전이 — 승인·결제 상호작용
     // ================================================================
 
+    /**
+     * @effects status_approves_a_claim_without_outstanding_charge
+     */
     public function test_status_approves_a_claim_without_outstanding_charge(): void
     {
         $return = $this->makeReturn();
@@ -626,6 +687,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertSame($this->admin->id, $return->fresh()->processed_by);
     }
 
+    /**
+     * @effects status_approve_with_pay_on_approval_outstanding_routes_to_payment_request
+     */
     public function test_status_approve_with_pay_on_approval_outstanding_routes_to_payment_request(): void
     {
         $return = $this->makeReturn(chargeMethod: ClaimChargeMethodEnum::PAY_ON_APPROVAL);
@@ -647,6 +711,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertNull($return->fresh()->approved_at);
     }
 
+    /**
+     * @effects status_approve_with_pay_on_request_outstanding_is_rejected
+     */
     public function test_status_approve_with_pay_on_request_outstanding_is_rejected(): void
     {
         // 신청 시점 결제 미수납 건 — 승인하면 청구액이 회수되지 않은 채 진행되므로 거절한다.
@@ -667,6 +734,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::PAYMENT_PENDING, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects status_payment_pending_without_charge_is_payment_not_required
+     */
     public function test_status_payment_pending_without_charge_is_payment_not_required(): void
     {
         // 환불금 차감 신청서에는 결제할 청구가 없다 — 결제 요청은 paymentNotRequired 로 거절된다.
@@ -680,6 +750,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects status_write_gate_rejects_owned_path_statuses
+     */
     public function test_status_write_gate_rejects_owned_path_statuses(): void
     {
         $return = $this->makeReturn();
@@ -694,6 +767,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects status_transition_gate_rejects_an_impossible_jump
+     */
     public function test_status_transition_gate_rejects_an_impossible_jump(): void
     {
         $return = $this->makeReturn();
@@ -707,6 +783,9 @@ class ClaimControllerTest extends ModuleTestCase
             ]));
     }
 
+    /**
+     * @effects status_rejection_stores_the_reject_reason
+     */
     public function test_status_rejection_stores_the_reject_reason(): void
     {
         $return = $this->makeReturn();
@@ -724,6 +803,9 @@ class ClaimControllerTest extends ModuleTestCase
     // 완료 처리 (D26)
     // ================================================================
 
+    /**
+     * @effects status_completed_requires_the_completion_payload
+     */
     public function test_status_completed_requires_the_completion_payload(): void
     {
         $return = $this->moveReturnToCollected($this->makeReturn());
@@ -735,6 +817,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::COLLECTED, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects status_completed_without_refund_request_creates_no_order_refund
+     */
     public function test_status_completed_without_refund_request_creates_no_order_refund(): void
     {
         $return = $this->moveReturnToCollected($this->makeReturn());
@@ -753,6 +838,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertNull($return->fresh()->refund_id);
     }
 
+    /**
+     * @effects status_completed_with_refund_request_creates_the_order_refund
+     */
     public function test_status_completed_with_refund_request_creates_the_order_refund(): void
     {
         $return = $this->moveReturnToCollected($this->makeReturn());
@@ -776,6 +864,9 @@ class ClaimControllerTest extends ModuleTestCase
     // 일괄 전이 — 부분 성공 계약
     // ================================================================
 
+    /**
+     * @effects bulk_status_reports_partial_success_with_skip_reasons
+     */
     public function test_bulk_status_reports_partial_success_with_skip_reasons(): void
     {
         $approvable = $this->makeReturn();
@@ -803,6 +894,9 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REJECTED, $rejected->fresh()->return_status);
     }
 
+    /**
+     * @effects bulk_status_requires_the_update_permission
+     */
     public function test_bulk_status_requires_the_update_permission(): void
     {
         $readOnly = $this->createAdminUser(['sirsoft-ecommerce.claims.read']);
@@ -818,6 +912,9 @@ class ClaimControllerTest extends ModuleTestCase
     // 상품 단위 일괄 전이 (D25)
     // ================================================================
 
+    /**
+     * @effects option_bulk_rejects_items_of_another_claim_with_422
+     */
     public function test_option_bulk_rejects_items_of_another_claim_with_422(): void
     {
         $mine = $this->makeReturn();
@@ -826,12 +923,15 @@ class ClaimControllerTest extends ModuleTestCase
 
         // 다른 신청서의 상품 행은 서비스의 무음 탈락("0건 처리됨")에 닿기 전에 422 로 드러난다.
         $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$mine->id}/options/bulk-status", [
-            'items' => [$foreignItem->id],
+            'items' => [['id' => $foreignItem->id]],
             'status' => 'approved',
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['items.0']);
+            ->assertJsonValidationErrors(['items.0.id']);
     }
 
+    /**
+     * @effects option_bulk_transitions_items_and_syncs_the_header
+     */
     public function test_option_bulk_transitions_items_and_syncs_the_header(): void
     {
         $return = $this->makeReturn();
@@ -839,7 +939,7 @@ class ClaimControllerTest extends ModuleTestCase
         $item = $return->fresh('returnOptions')->returnOptions->first();
 
         $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/bulk-status", [
-            'items' => [$item->id],
+            'items' => [['id' => $item->id]],
             'status' => 'collection_ready',
         ])->assertOk()
             ->assertJsonPath('data.succeeded.0', $item->id)
@@ -849,13 +949,16 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::COLLECTION_READY, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects option_bulk_completed_completes_the_selected_items
+     */
     public function test_option_bulk_completed_completes_the_selected_items(): void
     {
         $return = $this->moveReturnToCollected($this->makeReturn());
         $item = $return->fresh('returnOptions')->returnOptions->first();
 
         $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/bulk-status", [
-            'items' => [$item->id],
+            'items' => [['id' => $item->id]],
             'status' => 'completed',
             'completion' => [
                 'restore_stock_by_item' => [$item->id => false],
@@ -869,6 +972,187 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertSame(0, OrderRefund::query()->where('order_id', $return->order_id)->count());
     }
 
+    /**
+     * 스칼라 배열은 422 다 — 하위호환으로 받으면 스코프 분기가 둘이 되고, 배포 중 두 형태가
+     * 섞여도 아무 데도 드러나지 않는다.
+     *
+     * @effects option_bulk_rejects_a_scalar_item_array_with_422
+     */
+    public function test_option_bulk_rejects_a_scalar_item_array_with_422(): void
+    {
+        $return = $this->makeReturn();
+        $item = $return->fresh('returnOptions')->returnOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/bulk-status", [
+            'items' => [$item->id],
+            'status' => 'approved',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['items.0']);
+    }
+
+    /**
+     * 같은 행을 두 줄로 보내면 각 줄이 따로 잔여를 보고 통과한 뒤 합계가 넘는다.
+     *
+     * @effects option_bulk_rejects_duplicate_item_ids_with_422
+     */
+    public function test_option_bulk_rejects_duplicate_item_ids_with_422(): void
+    {
+        $return = $this->makeReturn();
+        $item = $return->fresh('returnOptions')->returnOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/bulk-status", [
+            'items' => [['id' => $item->id, 'quantity' => 1], ['id' => $item->id, 'quantity' => 1]],
+            'status' => 'approved',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['items']);
+    }
+
+    /**
+     * 환불신청서도 상품 단위 전이를 받는다 — 스코프는 환불 상품 테이블이다.
+     *
+     * 3항 연산자로 두 유형만 갈라내던 시절 환불은 **반품 테이블로 떨어져** 항상 422 이거나,
+     * 우연히 같은 ID 가 있으면 남의 행을 통과시켰다.
+     *
+     * @effects option_bulk_transitions_refund_items_in_their_own_scope
+     */
+    public function test_option_bulk_transitions_refund_items_in_their_own_scope(): void
+    {
+        $refund = $this->makeRefundRequest();
+        $item = $refund->fresh('refundOptions')->refundOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/refunds/{$refund->id}/options/bulk-status", [
+            'items' => [['id' => $item->id]],
+            'status' => 'approved',
+        ])->assertOk()
+            ->assertJsonPath('data.succeeded.0', $item->id);
+
+        $this->assertSame('approved', $item->fresh()->option_status->value);
+    }
+
+    /**
+     * @effects option_bulk_rejects_refund_items_of_another_claim_with_422
+     */
+    public function test_option_bulk_rejects_refund_items_of_another_claim_with_422(): void
+    {
+        $mine = $this->makeRefundRequest();
+        $other = $this->makeRefundRequest();
+        $foreignItem = $other->fresh('refundOptions')->refundOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/refunds/{$mine->id}/options/bulk-status", [
+            'items' => [['id' => $foreignItem->id]],
+            'status' => 'approved',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['items.0.id']);
+    }
+
+    /**
+     * 수량을 실으면 그 행이 갈라지고, 응답이 `split` 로 갈린 결과를 돌려준다.
+     *
+     * @effects option_bulk_splits_an_item_by_quantity
+     */
+    public function test_option_bulk_splits_an_item_by_quantity(): void
+    {
+        $order = $this->deliveredClaimOrder(29000, 3);
+        $return = app(OrderReturnService::class)->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 3]],
+            'reason_code' => 'changed_mind',
+            'charge_method' => ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ]);
+        $item = $return->fresh('returnOptions')->returnOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/bulk-status", [
+            'items' => [['id' => $item->id, 'quantity' => 2]],
+            'status' => 'rejected',
+        ])->assertOk()
+            ->assertJsonPath('data.succeeded.0', $item->id)
+            ->assertJsonPath('data.split.0.quantity', 2)
+            ->assertJsonPath('data.split.0.remainder_quantity', 1);
+    }
+
+    /**
+     * 교환신청서도 수량을 실어 상품 단위로 가른다.
+     *
+     * 교환은 `new_order_option_id`(재발송 주문옵션) 가드와 재고 승계가 붙은 **가장 복잡한
+     * 유형**인데 API 층의 수량 지정 경로가 반품·환불로만 잠겨 있었다. 세 유형을 같은 형태로
+     * 잠가 두지 않으면 한 유형에서만 스코프가 깨져도 드러나지 않는다.
+     *
+     * @effects option_bulk_splits_an_exchange_item_by_quantity
+     */
+    public function test_option_bulk_splits_an_exchange_item_by_quantity(): void
+    {
+        $order = $this->deliveredClaimOrder(29000, 3);
+        $exchange = app(OrderExchangeService::class)->requestExchange($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 3]],
+            'reason_code' => 'size_mismatch',
+            'charge_method' => ClaimChargeMethodEnum::PAY_ON_APPROVAL,
+        ]);
+        $item = $exchange->fresh('exchangeOptions')->exchangeOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/exchanges/{$exchange->id}/options/bulk-status", [
+            'items' => [['id' => $item->id, 'quantity' => 2]],
+            'status' => 'rejected',
+        ])->assertOk()
+            ->assertJsonPath('data.succeeded.0', $item->id)
+            ->assertJsonPath('data.split.0.quantity', 2)
+            ->assertJsonPath('data.split.0.remainder_quantity', 1);
+    }
+
+    /**
+     * 교환 축에서도 다른 신청서의 상품 행은 422 다.
+     *
+     * 스코프 분기는 유형마다 따로 서므로 한 유형에서 통과한 것이 다른 유형을 보증하지 않는다.
+     *
+     * @effects option_bulk_rejects_exchange_items_of_another_claim_with_422
+     */
+    public function test_option_bulk_rejects_exchange_items_of_another_claim_with_422(): void
+    {
+        $mine = $this->makeExchange();
+        $other = $this->makeExchange();
+        $foreignItem = $other->fresh('exchangeOptions')->exchangeOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/exchanges/{$mine->id}/options/bulk-status", [
+            'items' => [['id' => $foreignItem->id]],
+            'status' => 'rejected',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['items.0.id']);
+    }
+
+    /**
+     * 취소신청서는 전이 축이 없다 — 라우트 어휘에도 없지만 컨트롤러가 한 번 더 세운다.
+     *
+     * @effects option_bulk_is_not_available_for_cancel_claims
+     */
+    public function test_option_bulk_is_not_available_for_cancel_claims(): void
+    {
+        $this->actingAs($this->admin)->patchJson($this->base().'/cancels/1/options/bulk-status', [
+            'items' => [['id' => 1]],
+            'status' => 'approved',
+        ])->assertStatus(404);
+    }
+
+    /**
+     * 상품 행 리소스가 **행별** 전이 선택지를 싣는다 — 화면이 상태 어휘를 리터럴로 들지 않게.
+     *
+     * @effects claim_detail_items_carry_their_own_transition_options
+     */
+    public function test_claim_detail_items_carry_their_own_transition_options(): void
+    {
+        $return = $this->makeReturn();
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/returns/{$return->id}")
+            ->assertOk();
+
+        $options = $response->json('data.claim.items.0.transition_options');
+
+        $this->assertIsArray($options);
+        $this->assertNotSame([], $options);
+        $this->assertContains('approved', array_column($options, 'value'));
+        // 결제대기는 신청서 단위 축이라 상품 행 어휘에 서지 않는다.
+        $this->assertNotContains('payment_pending', array_column($options, 'value'));
+        $this->assertTrue($response->json('data.claim.items.0.is_splittable'));
+    }
+
     // ================================================================
     // 완료 페이로드(`completion`) 계약 — 3진입점 동형 (D26)
     // ================================================================
@@ -879,6 +1163,8 @@ class ClaimControllerTest extends ModuleTestCase
      * D26 은 "세 진입점이 모두 같은 모달을 연다" 가 핵심이라 셋이 **하나의 계약**을 써야 한다.
      * 단건(`status`)과 상품 단위(`options/bulk-status`)만 단언돼 있어 일괄(`claims/bulk-status`)의
      * 완료 축이 빠져도 전 스위트가 green 이었다 — 그 경로만 페이로드를 무시해도 드러나지 않는다.
+     *
+     * @effects bulk_status_completed_honors_the_same_completion_payload
      */
     public function test_bulk_status_completed_honors_the_same_completion_payload(): void
     {
@@ -905,6 +1191,8 @@ class ClaimControllerTest extends ModuleTestCase
 
     /**
      * 일괄 전이도 '접수하지 않음' 을 그대로 존중한다 (자동 접수 금지 — D26).
+     *
+     * @effects bulk_status_completed_without_refund_request_creates_no_order_refund
      */
     public function test_bulk_status_completed_without_refund_request_creates_no_order_refund(): void
     {
@@ -931,6 +1219,8 @@ class ClaimControllerTest extends ModuleTestCase
      *
      * 기본값 하드코딩 금지(D26)의 계약면이다 — 한 경로만 옵션을 임의 기본값으로 채우면
      * 운영자가 고르지 않은 재고 복구·환불 접수가 조용히 실행된다.
+     *
+     * @effects every_completion_entry_point_requires_the_completion_payload
      */
     public function test_every_completion_entry_point_requires_the_completion_payload(): void
     {
@@ -950,7 +1240,7 @@ class ClaimControllerTest extends ModuleTestCase
         ])->assertStatus(422);
 
         $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$option->id}/options/bulk-status", [
-            'items' => [$optionItem->id],
+            'items' => [['id' => $optionItem->id]],
             'status' => 'completed',
         ])->assertStatus(422);
 
@@ -964,6 +1254,9 @@ class ClaimControllerTest extends ModuleTestCase
     // 송장
     // ================================================================
 
+    /**
+     * @effects collection_tracking_registers_and_moves_to_collecting
+     */
     public function test_collection_tracking_registers_and_moves_to_collecting(): void
     {
         $return = $this->makeReturn();
@@ -985,6 +1278,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.claim.collection_tracking_number', '1234567890');
     }
 
+    /**
+     * @effects redelivery_tracking_registers_and_moves_to_redelivering
+     */
     public function test_redelivery_tracking_registers_and_moves_to_redelivering(): void
     {
         // 왕복 배송비 0원 교환 — 미수납 청구 없이 승인부터 재발송준비중까지 진행시킨다.
@@ -1021,6 +1317,9 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.claim.redelivery_tracking_number', '9876543210');
     }
 
+    /**
+     * @effects collection_tracking_rejects_an_incomplete_pair
+     */
     public function test_collection_tracking_rejects_an_incomplete_pair(): void
     {
         $return = $this->makeReturn();
@@ -1035,6 +1334,9 @@ class ClaimControllerTest extends ModuleTestCase
     // 운영자 대리 첨부 / 첨부 일괄 정리
     // ================================================================
 
+    /**
+     * @effects admin_uploads_and_clears_claim_attachments
+     */
     public function test_admin_uploads_and_clears_claim_attachments(): void
     {
         $return = $this->makeReturn();
@@ -1056,10 +1358,124 @@ class ClaimControllerTest extends ModuleTestCase
         $this->assertCount(0, app(ClaimAttachmentService::class)->listFor(ClaimTypeEnum::RETURN, $return->id));
     }
 
+    /**
+     * @effects image_upload_is_404_for_a_missing_claim
+     */
     public function test_image_upload_is_404_for_a_missing_claim(): void
     {
         $this->actingAs($this->admin)->post($this->base().'/returns/999999/images', [
             'image' => UploadedFile::fake()->image('evidence.jpg'),
         ])->assertNotFound();
+    }
+
+    /**
+     * 공용 업로더는 파일을 `file` 로 보낸다 — 종전 계약(`image`)만 받으면 무조건 422 다.
+     *
+     * @effects admin_upload_accepts_the_shared_uploader_field_name
+     */
+    public function test_admin_upload_accepts_the_shared_uploader_field_name(): void
+    {
+        $return = $this->makeReturn();
+
+        $this->actingAs($this->admin)->post($this->base()."/returns/{$return->id}/images", [
+            'file' => UploadedFile::fake()->image('evidence.jpg'),
+        ])
+            ->assertCreated()
+            // 업로더는 응답을 `data.data ?? data` 로 읽어 **첨부 하나**로 해석한다.
+            ->assertJsonPath('data.claimable_type', 'return')
+            ->assertJsonPath('data.original_filename', 'evidence.jpg')
+            // 기존 호출부를 위한 별칭도 한 마이너 동안 함께 실린다.
+            ->assertJsonPath('data.image.claimable_type', 'return');
+    }
+
+    /**
+     * 운영자가 올린 첨부는 **운영자 업로드**로 기록된다.
+     *
+     * @effects admin_upload_is_recorded_as_a_staff_upload
+     */
+    public function test_admin_upload_is_recorded_as_a_staff_upload(): void
+    {
+        $return = $this->makeReturn();
+
+        $this->actingAs($this->admin)->post($this->base()."/returns/{$return->id}/images", [
+            'file' => UploadedFile::fake()->image('evidence.jpg'),
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.uploader_type', ClaimImageUploaderTypeEnum::ADMIN->value)
+            ->assertJsonPath('data.uploader_type_label', ClaimImageUploaderTypeEnum::ADMIN->label());
+    }
+
+    /**
+     * 첨부 한 장만 지운다 — 전체 삭제만 있으면 개인정보 사진 하나를 지우려고 정상 증빙까지 잃는다.
+     *
+     * @effects admin_deletes_a_single_attachment
+     */
+    public function test_admin_deletes_a_single_attachment(): void
+    {
+        $return = $this->makeReturn();
+        $service = app(ClaimAttachmentService::class);
+
+        $first = $service->uploadFor(
+            UploadedFile::fake()->image('a.jpg'), ClaimTypeEnum::RETURN, $return->id, $this->admin->id, ClaimImageUploaderTypeEnum::ADMIN
+        );
+        $service->uploadFor(
+            UploadedFile::fake()->image('b.jpg'), ClaimTypeEnum::RETURN, $return->id, $this->admin->id, ClaimImageUploaderTypeEnum::ADMIN
+        );
+
+        $this->actingAs($this->admin)
+            ->deleteJson($this->base()."/returns/{$return->id}/images/{$first->id}")
+            ->assertOk()
+            ->assertJsonPath('data.deleted', 1);
+
+        $this->assertCount(1, $service->listFor(ClaimTypeEnum::RETURN, $return->id));
+    }
+
+    /**
+     * 다른 신청서의 첨부 id 를 넣으면 404 다.
+     *
+     * 권한 게이트는 "클레임을 다룰 수 있다" 만 말한다 — 소유권을 따로 묻지 않으면 아무
+     * 신청서 상세에서나 남의 첨부를 지울 수 있다.
+     *
+     * @effects deleting_an_attachment_of_another_claim_is_404
+     */
+    public function test_deleting_an_attachment_of_another_claim_is_404(): void
+    {
+        $mine = $this->makeReturn();
+        $other = $this->makeReturn();
+        $service = app(ClaimAttachmentService::class);
+
+        $foreign = $service->uploadFor(
+            UploadedFile::fake()->image('a.jpg'), ClaimTypeEnum::RETURN, $other->id, $this->admin->id, ClaimImageUploaderTypeEnum::ADMIN
+        );
+
+        $this->actingAs($this->admin)
+            ->deleteJson($this->base()."/returns/{$mine->id}/images/{$foreign->id}")
+            ->assertNotFound();
+
+        $this->assertCount(1, $service->listFor(ClaimTypeEnum::RETURN, $other->id));
+    }
+
+    /**
+     * 상세 봉투가 첨부 상한·허용 확장자를 싣는다 — 화면이 리터럴로 적으면 설정을 바꾼
+     * 순간 화면과 서버가 갈린다.
+     *
+     * @effects claim_detail_carries_attachment_settings
+     */
+    public function test_claim_detail_carries_attachment_settings(): void
+    {
+        $return = $this->makeReturn();
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/returns/{$return->id}")
+            ->assertOk();
+
+        $settings = $response->json('data.attachment_settings');
+
+        $this->assertIsArray($settings);
+        $this->assertSame(app(ClaimAttachmentService::class)->maxImages(), $settings['max_images']);
+        $this->assertSame(app(ClaimAttachmentService::class)->maxSizeKb(), $settings['image_max_size_kb']);
+        $this->assertSame(ClaimAttachmentService::ALLOWED_EXTENSIONS, $settings['allowed_extensions']);
+        $this->assertStringContainsString('.jpg', (string) $settings['accept']);
+        $this->assertStringNotContainsString('image/*', (string) $settings['accept']);
     }
 }

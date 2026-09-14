@@ -686,6 +686,7 @@ return [
     'notification_definitions' => [
         'welcome' => [
             'hook_prefix' => 'core.auth',
+            'audience' => 'customer',
             'name' => ['ko' => '회원가입 환영', 'en' => 'Welcome'],
             'description' => ['ko' => '회원가입 완료 시 발송되는 환영 알림', 'en' => 'Welcome notification sent upon registration'],
             'channels' => ['mail', 'database'],
@@ -728,6 +729,7 @@ return [
         ],
         'reset_password' => [
             'hook_prefix' => 'core.auth',
+            'audience' => 'customer',
             'name' => ['ko' => '비밀번호 재설정', 'en' => 'Password Reset'],
             'description' => ['ko' => '비밀번호 재설정 요청 시 발송되는 알림', 'en' => 'Notification sent when password reset is requested'],
             'channels' => ['mail', 'database'],
@@ -773,6 +775,7 @@ return [
         ],
         'password_changed' => [
             'hook_prefix' => 'core.auth',
+            'audience' => 'customer',
             'name' => ['ko' => '비밀번호 변경', 'en' => 'Password Changed'],
             'description' => ['ko' => '비밀번호 변경 완료 시 발송되는 알림', 'en' => 'Notification sent when password is changed'],
             'channels' => ['mail', 'database'],
@@ -819,6 +822,7 @@ return [
         // 기본 활성 채널은 database(앱 내 알림)만. mail 템플릿은 존재하되 비활성(운영자가 필요 시 활성화).
         'sitemap_regenerated' => [
             'hook_prefix' => 'core.seo',
+            'audience' => 'staff',
             'name' => ['ko' => '사이트맵 재생성 완료', 'en' => 'Sitemap Regeneration Complete'],
             'description' => ['ko' => '관리자가 수동으로 실행한 사이트맵 재생성이 완료되면 실행한 관리자에게 발송되는 알림', 'en' => 'Notification sent to the admin who manually triggered sitemap regeneration when it completes'],
             'channels' => ['database'],
@@ -865,6 +869,7 @@ return [
         // 사이트맵 재생성 실패 — 관리자 수동 재생성이 실패하면 실행한 관리자에게 발송.
         'sitemap_regenerate_failed' => [
             'hook_prefix' => 'core.seo',
+            'audience' => 'staff',
             'name' => ['ko' => '사이트맵 재생성 실패', 'en' => 'Sitemap Regeneration Failed'],
             'description' => ['ko' => '관리자가 수동으로 실행한 사이트맵 재생성이 최종 실패(재시도 소진)하면 실행한 관리자에게 발송되는 알림', 'en' => 'Notification sent to the admin who manually triggered sitemap regeneration when it finally fails after retries'],
             'channels' => ['database'],

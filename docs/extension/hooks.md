@@ -900,6 +900,31 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 
 ---
 
+### 수신자별 알림 값 — `{prefix}.notification.personalize_data`
+
+코어가 알림 한 건을 만들 때 데이터는 **수신자를 알기 전에 한 벌만** 만들어진다. 그래서 같은 알림을 관리자와 구매자가 함께 받으면 링크도 한 벌이고, 관리자가 자기 화면 대신 마이페이지로 가게 된다.
+
+코어는 수신자 루프 **안에서** 아래 필터를 발행한다(`NotificationHookListener::personalize()`). 구독자가 없으면 값이 그대로이므로 비용은 0이다.
+
+```php
+// 발행: 수신자 한 사람마다 1회
+HookManager::applyFilters("{$prefix}.notification.personalize_data", $data, $notifiable, $definition, $context, $args);
+```
+
+| 인자 | 무엇인가 |
+|------|----------|
+| `$data` | 이 수신자에게 나갈 치환 값 배열 (반환값이 그대로 쓰인다) |
+| `$notifiable` | 이번 수신자 — `User` 또는 게스트 |
+| `$definition` | 알림 정의 |
+| `$context` | 발행 측이 실어 둔 **스칼라** 컨텍스트 |
+| `$args` | 원래 훅 인자 |
+
+**규약 — `personalize` 는 `$context` 의 스칼라만 읽는다.** `$args` 의 모델을 다시 읽으면 안 된다. 알림은 큐를 타고 나중에 실행되므로 그 시점의 모델은 **"지금" 상태**다. 과거 사건을 알리는 알림에 현재 상태가 실리고, 오류도 로그도 남지 않는다. 필요한 값은 발행 시점에 `$context` 에 스칼라로 실어 둔다.
+
+**링크 승격은 역할 이름이 아니라 권한으로 가른다.** "이 사람에게 관리자 주소를 줘도 되는가" 는 그 사람이 실제로 그 화면을 열 수 있는지(`NotificationRecipientCapability::can()`)로 판정한다. 역할 이름을 리스너에 박으면 상점이 새 역할을 만들 때마다 리스너를 고쳐야 하고, 권한 없는 사람에게 관리자 주소가 간다.
+
+---
+
 ## 필터 훅 리스너 예시
 
 ### `type` 필드 사용법

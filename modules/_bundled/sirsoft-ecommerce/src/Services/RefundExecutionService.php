@@ -7,7 +7,6 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -66,6 +65,7 @@ class RefundExecutionService
      * @param  AdjustmentResult  $result  계산 결과
      * @param  string|null  $reason  사유
      * @param  bool  $executePg  PG 환불 훅 실행 여부 (운영자 수동 환불이면 false)
+     * @return void
      *
      * @throws \Exception PG 환불 실패 시
      */
@@ -126,6 +126,7 @@ class RefundExecutionService
      *
      * @param  Order  $order  주문
      * @param  AdjustmentResult  $result  계산 결과
+     * @return void
      */
     protected function accumulateRefundTotals(Order $order, AdjustmentResult $result): void
     {
@@ -267,7 +268,7 @@ class RefundExecutionService
             $rows[] = [
                 'order_id' => $order->id,
                 'order_option_id' => $option->id,
-                'option_status' => RefundOptionStatusEnum::REQUESTED,
+                'option_status' => RefundStatusEnum::REQUESTED,
                 'quantity' => $quantity,
                 'unit_price' => (float) $option->unit_price,
                 'subtotal_amount' => $subtotalAmount,
@@ -328,6 +329,7 @@ class RefundExecutionService
      * @param  OrderRefund  $refund  환불 레코드
      * @param  AdjustmentResult  $result  계산 결과
      * @param  string|null  $reason  사유
+     * @return void
      *
      * @throws \Exception PG 환불 실패 시
      */
@@ -413,6 +415,7 @@ class RefundExecutionService
      *
      * @param  Order  $order  주문
      * @param  AdjustmentResult  $result  계산 결과
+     * @return void
      */
     public function restoreCoupons(Order $order, AdjustmentResult $result): void
     {
@@ -444,6 +447,7 @@ class RefundExecutionService
      * @param  AdjustmentResult  $result  계산 결과
      * @param  OrderCancel|null  $orderCancel  취소 레코드 (취소 발 복원 멱등 기준)
      * @param  OrderRefund|null  $orderRefund  환불 레코드 (클레임 환불 실행 멱등 기준)
+     * @return void
      */
     public function restoreMileage(
         Order $order,
@@ -482,6 +486,7 @@ class RefundExecutionService
      *
      * @param  Order  $order  주문
      * @param  array  $cancelItems  복원 대상 (order_option_id / cancel_quantity)
+     * @return void
      */
     public function restoreStock(Order $order, array $cancelItems): void
     {
@@ -535,6 +540,7 @@ class RefundExecutionService
      *
      * @param  Order  $order  환불이 반영된 주문
      * @param  string|null  $reason  사유
+     * @return void
      */
     public function syncCashReceipt(Order $order, ?string $reason): void
     {

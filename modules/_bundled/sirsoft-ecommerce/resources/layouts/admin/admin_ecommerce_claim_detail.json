@@ -110,6 +110,7 @@
                 "activeClaimTab": "claim_info",
                 "selectedClaimItems": [],
                 "itemBulkStatus": "",
+                "itemTransitionOptions": [],
                 "isSavingMemo": false,
                 "isSavingCollection": false,
                 "isSavingRedelivery": false,
@@ -129,6 +130,10 @@
         {
             "comment": "환불 실행 확인 모달 (D18). 실행은 되돌릴 수 없는 처리라 화면이 예고한 값과 실행값이 같아야 한다 — 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 여는 핸들러가 지금 입력된 값을 `_global.claimRefundExecuteContext` 로 넘기고, 모달 표시와 실행 본문이 그 하나를 함께 읽는다(모달이 제 사본을 들면 그 둘이 갈린다).",
             "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_refund_execute.json"
+        },
+        {
+            "comment": "상품 단위 전이의 수량 확인 모달 (§4-6). 일괄 바 [적용] 이 연다 — 수량은 행마다 다르므로 바에 입력을 둘 수 없고, 행 인라인에 두면 체크하지 않은 행의 수량이 남는다. 문맥은 `_global.claimItemQuantityContext` 하나이고 모달 표시와 실행 본문이 그것을 함께 읽는다.",
+            "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.json"
         }
     ],
     "slots": {

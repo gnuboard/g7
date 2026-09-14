@@ -1383,7 +1383,7 @@
                     {
                       "type": "basic",
                       "name": "P",
-                      "text": "$t:sirsoft-message_bizppurio.template.form.image_hint",
+                      "text": "$t:sirsoft-message_bizppurio.template.form.image_hint|max=500&width=500",
                       "props": {
                         "className": "text-xs text-gray-400 dark:text-gray-500"
                       }

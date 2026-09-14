@@ -84,6 +84,8 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * @effects member_claim_routes_to_trigger_user_and_links_to_mypage_detail
+     *
+     * @return void
      */
     public function test_a_member_claim_routes_to_the_requester_and_links_to_the_mypage_detail(): void
     {
@@ -102,6 +104,8 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * @effects guest_claim_uses_core_guest_recipient_key_and_lookup_screen
+     *
+     * @return void
      */
     public function test_a_guest_claim_uses_the_core_guest_recipient_key_and_the_lookup_screen(): void
     {
@@ -130,6 +134,8 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * @effects payment_request_data_carries_charge_and_outstanding_amounts
+     *
+     * @return void
      */
     public function test_payment_request_data_carries_the_charge_and_outstanding_amounts(): void
     {
@@ -143,18 +149,56 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
-     * @effects admin_withdrawal_data_links_to_admin_screen_and_defers_recipient_name
+     * 운영자가 회원 주문을 대리 접수하면 `requested_by` 가 null 이다.
+     *
+     * 그 값을 그대로 수신자로 쓰면 **고객이 자기 주문의 환불 알림을 한 통도 못 받는다** —
+     * 로그도 없이 조용하다. 수신자 축에서만 주문 주인으로 폴백해야 한다(도메인 값은 그대로).
+     *
+     * @effects staff_filed_claim_still_notifies_the_order_owner
+     *
+     * @return void
      */
-    public function test_admin_withdrawal_data_links_to_the_admin_screen_and_defers_the_recipient_name(): void
+    public function test_a_staff_filed_claim_still_notifies_the_order_owner(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $return = $this->requestedReturn($order);
+
+        // 운영자 대리 접수 재현 — 신청자 컬럼은 비고, 주문 주인은 그대로다.
+        $return->forceFill(['requested_by' => null])->save();
+        $return->refresh();
+
+        $result = $this->listener->extractData($this->emptyResult(), 'return_requested', [$return->fresh()]);
+
+        $this->assertSame(
+            $order->user_id,
+            $result['context']['trigger_user_id'],
+            '대리 접수여도 "이 알림을 받아야 하는 사람" 은 주문의 주인입니다.'
+        );
+        $this->assertNull($return->fresh()->requested_by, '도메인 값(누가 신청했는가)은 건드리지 않습니다.');
+    }
+
+    /**
+     * 추출 단계의 기본 링크는 **언제나 고객 링크**여야 한다.
+     *
+     * 관리자 주소는 수신자가 정해진 뒤 personalize 가 올린다. 추출 단계에서 유형 이름으로
+     * 관리자 여부를 단정하면, 운영자가 그 알림의 수신자를 「주문자」로 바꾸는 순간
+     * **고객에게 `/admin/...` 주소가 간다** — 예외도 404 도 없이 빈 화면이 열린다.
+     *
+     * @effects extracted_claim_link_defaults_to_the_customer_screen
+     *
+     * @return void
+     */
+    public function test_extracted_claim_link_defaults_to_the_customer_screen(): void
     {
         $return = $this->requestedReturn();
 
         $result = $this->listener->extractData($this->emptyResult(), 'claim_withdrawn', [$return]);
 
-        $this->assertSame('{recipient_name}', $result['data']['name'], '관리자 알림 이름은 수신자마다 코어가 치환한다.');
-        $this->assertStringEndsWith('/admin/ecommerce/claims/'.$return->return_number, $result['data']['claim_url']);
+        $this->assertSame('{recipient_name}', $result['data']['name'], '이름은 수신자마다 코어가 치환한다.');
+        $this->assertStringEndsWith('/mypage/claims/'.$return->return_number, $result['data']['claim_url']);
+        $this->assertStringNotContainsString('/admin/', $result['data']['claim_url']);
         $this->assertNotSame('', $result['data']['requester_name']);
-        $this->assertArrayNotHasKey('guest_recipient', $result['context']);
+        $this->assertSame($return->return_number, $result['context']['claim_number']);
     }
 
     /**
@@ -166,6 +210,10 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
      * (`OrderExchangeService`). 그래서 이 컬럼을 더하면 유형마다 반대 방향으로 어긋난다 —
      * 교환은 실제보다 적게, 반품·취소는 많게 알린다. 화면(`ClaimResource::refund_total`)은
      * 현금 + 마일리지만 더하므로 같은 신청서를 두 곳이 다른 금액으로 말한다.
+     *
+     * @return void
+     *
+     * @effects refund_notification_amount_matches_what_the_screen_reports
      */
     public function test_refund_notification_amount_matches_what_the_screen_reports(): void
     {
@@ -216,6 +264,8 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * @effects non_claim_notification_types_pass_through_untouched
+     *
+     * @return void
      */
     public function test_non_claim_types_pass_through_untouched(): void
     {
@@ -226,6 +276,9 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         $this->assertSame($default, $result, '주문 축 리스너가 만든 결과를 덮으면 주문 알림이 조용히 비게 됩니다.');
     }
 
+    /**
+     * @effects a_claim_type_without_a_claim_argument_passes_through
+     */
     public function test_a_claim_type_without_a_claim_argument_passes_through(): void
     {
         $default = $this->emptyResult();

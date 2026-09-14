@@ -261,27 +261,11 @@
                                     {
                                       "type": "composite",
                                       "name": "Select",
+                                      "comment": "선언된 relation 이 없는 정의에서 「관련 사용자」를 고르면 수신자가 **0명**이 되고 로그도 남지 않는다 — 그 정의가 지원하는 relation 키를 서버가 실어 줄 때만 이 선택지를 세운다 (E4).",
                                       "props": {
                                         "value": "{{rcpt.type ?? ''}}",
                                         "className": "w-full text-sm",
-                                        "options": [
-                                          {
-                                            "value": "trigger_user",
-                                            "label": "$t:admin.settings.notification_definitions.recipients.types.trigger_user"
-                                          },
-                                          {
-                                            "value": "related_user",
-                                            "label": "$t:admin.settings.notification_definitions.recipients.types.related_user"
-                                          },
-                                          {
-                                            "value": "role",
-                                            "label": "$t:admin.settings.notification_definitions.recipients.types.role"
-                                          },
-                                          {
-                                            "value": "specific_users",
-                                            "label": "$t:admin.settings.notification_definitions.recipients.types.specific_users"
-                                          }
-                                        ]
+                                        "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}"
                                       },
                                       "actions": [
                                         {
@@ -315,12 +299,24 @@
                                   "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
                                 },
                                 {
-                                  "type": "basic",
-                                  "name": "Span",
+                                  "type": "composite",
+                                  "name": "Select",
+                                  "comment": "예전에는 읽기 전용 막대였다 — 「관련 사용자」를 골라도 관계를 지정할 방법이 없어 수신자가 0명이 됐다. 선택지는 그 정의가 선언한 relation 키다(리스너가 `context.related_users` 에 실제로 넣어 주는 키).",
                                   "props": {
-                                    "className": "text-label-subtle block w-full px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md"
+                                    "value": "{{rcpt.relation ?? ''}}",
+                                    "className": "w-full text-sm",
+                                    "options": "{{(_global.notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: r }))}}"
                                   },
-                                  "text": "{{rcpt.relation ?? ''}}"
+                                  "actions": [
+                                    {
+                                      "type": "change",
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "global",
+                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, relation: $event.target.value} : r)}}"
+                                      }
+                                    }
+                                  ]
                                 }
                               ]
                             },
@@ -343,11 +339,13 @@
                                 {
                                   "type": "composite",
                                   "name": "SearchableDropdown",
+                                  "comment": "역할은 여러 개를 고를 수 있다 (E3). 서버가 `value` 를 언제나 배열로 실어 주므로(문자열로 저장된 기존 규칙도 읽을 때 배열이 된다) 화면은 사용자 칸과 같은 모양을 쓴다 — 화면에서 문자열/배열을 가르면 그 판정이 두 벌이 되고, 한쪽만 고쳐졌을 때 값이 조용히 덮인다. 선택값이 비어 있을 때 `.map` 을 그냥 돌리지 않고 길이를 먼저 본다 — 실측(§9 T-D2)에서 빈 선택값이 라벨이 배열인 유령 항목 하나를 만들었고, 운영자가 검색어 첫 글자를 치는 순간 드롭다운이 통째로 사라졌다. 라벨을 문자열로 좁히는 것은 그 두 번째 방어선이다.",
                                   "props": {
-                                    "value": "{{rcpt.value ?? ''}}",
-                                    "options": "{{[...(_global.notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}",
+                                    "multiple": true,
+                                    "value": "{{rcpt.value ?? []}}",
+                                    "options": "{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((rid, i) => ({ value: rid, label: String((rcpt.display_names ?? [])[i] ?? rid), description: String(rid) })) : []), ...(_global.notification_template_form_modal?.roleSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
                                     "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
-                                    "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
+                                    "noResultsText": "$t:admin.settings.notification_definitions.recipients.role_no_options",
                                     "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
                                     "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
                                     "className": "w-full"
@@ -420,7 +418,7 @@
                                   "props": {
                                     "multiple": true,
                                     "value": "{{rcpt.value ?? []}}",
-                                    "options": "{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
+                                    "options": "{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
                                     "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
                                     "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
                                     "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
@@ -535,7 +533,7 @@
             },
             {
               "id": "template_form_sections_ext",
-              "comment": "알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 hidden_template_editor=true 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다.",
+              "comment": "알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다.",
               "type": "extension_point",
               "name": "notification_template_form_sections",
               "props": {
@@ -580,7 +578,7 @@
                   ]
                 }
               ],
-              "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}"
+              "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}"
             },
             {
               "id": "template_subject_input",
@@ -638,7 +636,7 @@
                   ]
                 }
               ],
-              "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}"
+              "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}"
             },
             {
               "id": "template_body_input",
@@ -675,35 +673,81 @@
                       ]
                     },
                     {
-                      "type": "composite",
-                      "name": "HtmlEditor",
-                      "props": {
-                        "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                        "isHtml": true,
-                        "showHtmlModeToggle": false,
-                        "className": "min-h-[200px]"
-                      },
-                      "actions": [
+                      "comment": "본문 편집기는 **채널이 정한다** (E2). 메일 본문은 HTML 로 나가고 사이트내 알림은 평문으로 그려지므로, 한 편집기로 두 채널을 다루면 관리자 미리보기와 사용자 화면이 서로 다른 문자열을 보여 준다. 리치는 확장 슬롯이라 CKEditor 가 없으면 기존 입력으로 폴백한다 — 슬롯을 직접 `composite/HtmlEditor` 로 부르면 CKEditor 가 영영 붙지 않는다.",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "notification_template_form_modal.template.body": "{{Object.assign({}, _global.notification_template_form_modal?.template?.body, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
-                          }
+                          "id": "template_body_rich_{{_global.notification_template_form_modal?.editLang ?? $locale}}",
+                          "comment": "언어 탭을 바꾸면 id 가 바뀌어 편집기가 다시 선다 — 쓰기 경로에 활성 언어가 박혀 있어, 같은 인스턴스를 유지하면 언어를 바꾼 뒤 입력이 **이전 언어** 로 저장된다.",
+                          "type": "extension_point",
+                          "name": "html_editor",
+                          "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'rich'}}",
+                          "props": {
+                            "name": "notification_template_body",
+                            "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                            "multilingual": false,
+                            "trackChanges": false,
+                            "writeScope": "global",
+                            "writePath": "notification_template_form_modal.template.body.{{_global.notification_template_form_modal?.editLang ?? $locale}}"
+                          },
+                          "default": [
+                            {
+                              "type": "composite",
+                              "name": "HtmlEditor",
+                              "props": {
+                                "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                                "isHtml": true,
+                                "showHtmlModeToggle": false,
+                                "className": "min-h-[200px]"
+                              },
+                              "actions": [
+                                {
+                                  "type": "change",
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "notification_template_form_modal.template.body": "{{Object.assign({}, _global.notification_template_form_modal?.template?.body, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "template_body_plain",
+                          "type": "composite",
+                          "name": "HtmlEditor",
+                          "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor !== 'rich'}}",
+                          "props": {
+                            "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                            "isHtml": false,
+                            "showHtmlModeToggle": false,
+                            "className": "min-h-[200px]"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "notification_template_form_modal.template.body": "{{Object.assign({}, _global.notification_template_form_modal?.template?.body, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
                   ]
                 }
               ],
-              "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}"
+              "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}"
             },
             {
               "id": "template_click_url_input",
               "type": "basic",
               "name": "Div",
-              "if": "{{(_global.notification_template_form_modal?.template?.channel === 'database') && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+              "if": "{{(_global.notification_template_form_modal?.template?.channel === 'database') && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
               "props": {
                 "className": "row-stack"
               },
@@ -756,7 +800,7 @@
               "id": "template_variables_info",
               "type": "basic",
               "name": "Div",
-              "if": "{{((_global.notification_template_form_modal?.definition?.variables ?? []).length > 0) && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+              "if": "{{((_global.notification_template_form_modal?.definition?.variables ?? []).length > 0) && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
               "props": {
                 "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
               },
@@ -884,7 +928,7 @@
                       ]
                     }
                   ],
-                  "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}"
+                  "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}"
                 }
               ]
             },
@@ -914,7 +958,7 @@
                 },
                 {
                   "id": "template_form_footer_ext",
-                  "comment": "편집 모달 푸터 확장 슬롯(범용). hidden_template_editor 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
+                  "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
                   "type": "extension_point",
                   "name": "notification_template_form_footer_actions",
                   "props": {
@@ -1027,7 +1071,7 @@
                       }
                     }
                   ],
-                  "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}"
+                  "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}"
                 }
               ]
             }

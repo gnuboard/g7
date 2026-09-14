@@ -36,7 +36,12 @@
       "bulk_no_status_selected": "変更する状態を選択してください。",
       "bulk_not_supported": "この種類は商品単位の状態変更に対応していません。",
       "bulk_success": "申請商品の状態変更を処理しました。",
-      "bulk_error": "申請商品の状態変更に失敗しました。"
+      "bulk_error": "申請商品の状態変更に失敗しました。",
+      "no_common_transition": "選択した商品を一緒に処理できる状態がありません。ステータスが同じ商品を選択してください。",
+      "quantity_confirm_title": "処理数量確認",
+      "quantity_confirm_description": "選択した商品を{{status}}ステータスで処理します。一部の数量のみ処理する場合は、数量を減らしてください。",
+      "quantity_not_splittable": "再発送商品としてすでに作成された交換商品は数量を分割できません。全数量で処理されます。",
+      "bulk_split_notice": "{{kept}}個を処理し、{{remaining}}個は申請状態のままにしました。"
     },
     "completion": {
       "title": "完了処理",
@@ -73,7 +78,13 @@
       "image_upload_success": "添付をアップロードしました。",
       "image_upload_error": "添付のアップロードに失敗しました。",
       "image_clear_success": "添付を整理しました。",
-      "image_clear_error": "添付の整理に失敗しました。"
+      "image_clear_error": "添付の整理に失敗しました。",
+      "images_origin_title": "添付ファイル出典",
+      "confirm_remove_image_title": "添付ファイルを削除しますか？",
+      "confirm_remove_image_message": "この写真とファイルが一緒に削除されます。元に戻すことはできません。",
+      "image_delete_success": "添付ファイルを削除しました。",
+      "images_hint": "最大 {{max}}枚 · 1枚あたり {{size}} · {{types}}",
+      "image_origin_uploaded_at": "アップロード {{at}}"
     },
     "cancel_info": {
       "title": "キャンセル情報",

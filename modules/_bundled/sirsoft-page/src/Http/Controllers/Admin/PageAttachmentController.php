@@ -19,6 +19,9 @@ use Modules\Sirsoft\Page\Services\PageAttachmentService;
  */
 class PageAttachmentController extends AdminBaseController
 {
+    /**
+     * @param  PageAttachmentService  $attachmentService  첨부 업로드·삭제·순서 서비스
+     */
     public function __construct(
         private PageAttachmentService $attachmentService,
     ) {
@@ -108,5 +111,24 @@ class PageAttachmentController extends AdminBaseController
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.attachment.reorder_failed', 500, $e->getMessage());
         }
+    }
+
+    /**
+     * 첨부 상한·허용 형식을 반환합니다. (화면 전용 경량 조회)
+     *
+     * 페이지 작성 화면은 **신규 작성 시 읽을 상세가 없어** 상한을 실어 줄 봉투가 없다.
+     * 그래서 화면이 리터럴로 적고 있었고, 운영자가 설정을 바꾸면 화면만 옛 값으로 남아
+     * 서버가 거절할 때까지 아무 안내도 없었다.
+     *
+     * 별도 FormRequest 를 두지 않는다 — 파라미터가 없고 본문도 없다.
+     *
+     * @return JsonResponse 공개 설정
+     */
+    public function settings(): JsonResponse
+    {
+        return $this->success(
+            'sirsoft-page::messages.attachment.settings_success',
+            $this->attachmentService->publicLimits()
+        );
     }
 }

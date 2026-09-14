@@ -56,7 +56,7 @@ test('모바일 상태 변경 버튼이 긴 라벨과 처리 스피너를 함께
   await page.setViewportSize({ width: 375, height: 812 });
   await authenticatePage(page, claimsManageToken);
   await page.route(`**${API}/claims/EX-FEEDBACK`, route => route.fulfill({ json: { success: true, data: {
-    claim: { id: 31, claim_number: 'EX-FEEDBACK', claim_type: 'exchange', path_segment: 'exchanges', status: 'requested', items: [{ id: 55, product_name: '검증 상품', quantity: 1, status: 'requested' }] },
+    claim: { id: 31, claim_number: 'EX-FEEDBACK', claim_type: 'exchange', path_segment: 'exchanges', status: 'requested', items: [{ id: 55, product_name: '검증 상품', quantity: 1, status: 'requested', is_splittable: false, transition_options: [{ value: 'approved', label: '교환승인' }] }] },
     claim_path_segment: 'exchanges', abilities: { can_update_status: true }, progress_steps: [], carriers: [], complete_defaults: {},
   } } }));
   await page.route(`**${API}/claims/EX-FEEDBACK/logs**`, route => route.fulfill({ json: { success: true, data: { data: [], pagination: { current_page: 1, last_page: 1, total: 0 } } } }));
@@ -72,15 +72,21 @@ test('모바일 상태 변경 버튼이 긴 라벨과 처리 스피너를 함께
   const button = page.getByRole('button', { name: /선택 항목 일괄 적용$/ });
   await expect(button).toBeVisible();
   await page.getByRole('checkbox').first().check();
-  await page.locator('#ci_002_item_status_exchange button').first().click();
+  // 선택지는 서버가 행마다 실어 준 어휘의 교집합이다 (§4-4) — 셀렉트 id 가 유형별로 갈리지 않는다.
+  await page.locator('#ci_002_item_status button').first().click();
   await page.getByRole('option', { name: '교환승인', exact: true }).click();
   await button.click();
+
+  // [적용] 은 곧바로 실행하지 않고 수량 확인 모달을 연다 (§4-6).
+  const confirm = page.locator('#ciq_005_confirm');
+  await expect(confirm).toBeVisible();
+  await confirm.click();
   try {
     await expect.poll(() => writes).toBe(1);
-    await expect(button).toBeDisabled();
-    await expect(button.locator('.spinner-sm')).toBeVisible();
+    await expect(confirm).toBeDisabled();
+    await expect(confirm.locator('.spinner-sm')).toBeVisible();
   } finally {
     release();
   }
-  await expect(button.locator('.spinner-sm')).toHaveCount(0);
+  await expect(confirm.locator('.spinner-sm')).toHaveCount(0);
 });

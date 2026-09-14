@@ -7,80 +7,124 @@ use Modules\Sirsoft\Ecommerce\Listeners\ClaimStatusNotificationListener;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 클레임 알림 정의 29종 계약 테스트 (S7 / §4-8)
+ * 클레임 알림 정의 계약 테스트
  *
  * 검증 축:
- * - 고객 가시 상태 전수 29종이 정의로 존재한다(유형별 13/10/5 + 철회 관리자 1)
- * - 정의의 `hooks` 집합과 `ClaimStatusNotificationListener` 의 매핑이 **양방향 1:1** 이다
+ * - 고객 가시 상태 전수에 **고객 정의가 하나씩** 있다(수는 리터럴이 아니라 매핑에서 센다 —
+ *   상태가 늘면 기대값도 같이 늘어야 그물이 낡지 않는다)
+ * - 정의의 `hooks` 집합과 `ClaimStatusNotificationListener` 의 매핑이 **양방향으로 덮인다**
  *   — 한쪽만 늘면 발화되는데 정의가 없거나(무음) 정의만 있고 아무도 발화하지 않는다(사문)
+ * - 한 훅에 같은 수신자군(audience)의 정의가 둘이면 그 사람에게 두 통이 간다
  * - 채널·템플릿·치환 변수 계약(mail+database, ko/en, 본문에 쓴 변수는 variables 에 선언)
+ * - **운영자 수신 정의는 이 상점의 운영 역할 셋을 전부 나열한다** — 하나라도 빠지면 그
+ *   역할의 사람이 자기 일을 통보받지 못한다(이커머스 관리자 누락의 재발 방지 그물)
  */
 class ClaimNotificationDefinitionsTest extends ModuleTestCase
 {
     /**
-     * 유형별 기대 알림 수 (§4-8 — 교환 13 / 반품 10 / 환불 5).
+     * 운영자 수신 알림이 나열해야 하는 역할.
      *
-     * @var array<string, int>
+     * 모듈이 주문·클레임·문의 권한의 주인으로 선언한 역할과 같아야 한다.
+     *
+     * @var array<int, string>
      */
-    private array $expectedCounts = [
-        'exchange' => 13,
-        'return' => 10,
-        'refund' => 5,
-    ];
+    private array $staffRoles = ['admin', 'manager', 'sirsoft-ecommerce.manager'];
 
     /**
+     * 고객 가시 상태 전수에 고객 정의가 하나씩 있다.
+     *
      * @effects twenty_nine_claim_notification_definitions_exist
      */
-    public function test_module_declares_twenty_nine_claim_notification_definitions(): void
+    public function test_every_customer_visible_status_has_exactly_one_customer_definition(): void
     {
-        $claimDefinitions = $this->claimDefinitions();
-
-        $this->assertCount(29, $claimDefinitions, '§4-8 이 정한 고객 가시 상태 전수는 29종입니다.');
-
-        foreach ($this->expectedCounts as $claimType => $expected) {
-            $ofType = array_filter(
-                $claimDefinitions,
-                fn (array $def) => str_starts_with($def['type'], $claimType.'_')
-            );
-
-            $this->assertCount($expected, $ofType, "{$claimType} 알림 정의 수가 어긋납니다.");
+        $expected = [];
+        foreach (ClaimStatusNotificationListener::notifiableStatuses() as $claimType => $keys) {
+            foreach ($keys as $key) {
+                $expected[] = $claimType.'_'.$key;
+            }
         }
+        sort($expected);
 
-        $types = array_column($claimDefinitions, 'type');
-        $this->assertContains('claim_withdrawn', $types, '철회(관리자 수신) 알림 정의가 없습니다.');
+        $actual = array_values(array_map(
+            fn (array $definition) => $definition['type'],
+            array_filter(
+                $this->claimDefinitions(),
+                fn (array $definition) => ($definition['audience'] ?? null) === 'customer'
+                    && ! in_array($definition['type'], ['claim_partially_processed'], true)
+            )
+        ));
+        sort($actual);
+
+        $this->assertSame(
+            $expected,
+            $actual,
+            '고객 가시 상태와 고객 알림 정의는 1:1 이어야 합니다 — 수를 리터럴로 적으면 상태가 늘 때 그물이 낡습니다.'
+        );
     }
 
     /**
+     * 발화되는 훅과 정의가 묶인 훅이 서로를 덮는다.
+     *
      * @effects definition_hooks_match_listener_mapping_one_to_one
      */
-    public function test_definition_hooks_and_listener_mapping_are_one_to_one(): void
+    public function test_definition_hooks_and_listener_mapping_cover_each_other(): void
     {
         $definedHooks = [];
-        foreach ($this->claimDefinitions() as $def) {
-            foreach ($def['hooks'] as $hook) {
+        foreach ($this->claimDefinitions() as $definition) {
+            foreach ($definition['hooks'] as $hook) {
                 $definedHooks[] = $hook;
             }
         }
 
-        $mappedHooks = [ClaimStatusNotificationListener::WITHDRAWN_HOOK];
+        $mappedHooks = [
+            ClaimStatusNotificationListener::WITHDRAWN_HOOK,
+            ClaimStatusNotificationListener::PARTIALLY_PROCESSED_HOOK,
+        ];
         foreach (ClaimStatusNotificationListener::notifiableStatuses() as $claimType => $keys) {
             foreach ($keys as $status => $key) {
                 $mappedHooks[] = ClaimStatusNotificationListener::notifyHookFor($claimType, $status);
             }
         }
 
-        sort($definedHooks);
+        $definedUnique = array_values(array_unique($definedHooks));
+        sort($definedUnique);
         sort($mappedHooks);
 
         $this->assertSame(
             $mappedHooks,
-            $definedHooks,
+            $definedUnique,
             '발화되는 훅과 정의가 묶인 훅이 어긋나면, 발화되는데 정의가 없는 무음 상태 또는 아무도 발화하지 않는 사문 정의가 생깁니다.'
         );
+    }
+
+    /**
+     * 한 훅에 같은 수신자군의 정의가 둘이면 그 사람에게 두 통이 간다.
+     *
+     * 고객 정의와 운영자 정의가 **같은 훅을 공유하는 것은 정상**이다 — 한 사건에 고객 1통 +
+     * 운영자 1통이며, 관리자 본문과 고객 본문은 한 템플릿에 담기지 않는다.
+     *
+     * @effects one_definition_per_hook_and_audience
+     */
+    public function test_a_hook_has_at_most_one_definition_per_audience(): void
+    {
+        $seen = [];
+        $duplicates = [];
+
+        foreach ($this->claimDefinitions() as $definition) {
+            $audience = $definition['audience'] ?? '(미선언)';
+            foreach ($definition['hooks'] as $hook) {
+                $key = $hook.'|'.$audience;
+                if (isset($seen[$key])) {
+                    $duplicates[] = "{$hook} ({$audience}): {$seen[$key]} + {$definition['type']}";
+                }
+                $seen[$key] = $definition['type'];
+            }
+        }
+
         $this->assertSame(
-            count($definedHooks),
-            count(array_unique($definedHooks)),
-            '한 훅에 정의가 둘이면 그 상태에서 알림이 두 통 나갑니다.'
+            [],
+            $duplicates,
+            "같은 훅·같은 수신자군에 정의가 둘이면 그 사람에게 두 통이 갑니다:\n - ".implode("\n - ", $duplicates)
         );
     }
 
@@ -145,21 +189,69 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
     }
 
     /**
+     * 수신자 규칙이 선언한 수신자군(`audience`)과 맞는다.
+     *
+     * 유형 이름으로 "이건 관리자 알림" 을 단정하지 않는다 — 그 가정이 결함과 같은 뿌리이고,
+     * 관리자 수신 정의가 늘어도 그물에 걸리지 않게 만든다.
+     *
      * @effects customer_notifications_target_trigger_user_and_withdrawal_targets_admins
      */
-    public function test_customer_notifications_go_to_the_requester_and_withdrawal_goes_to_admins(): void
+    public function test_recipient_rules_match_the_declared_audience(): void
     {
         foreach ($this->claimDefinitions() as $def) {
-            $expected = $def['type'] === 'claim_withdrawn' ? 'role' : 'trigger_user';
+            $audience = $def['audience'] ?? null;
+            $this->assertContains($audience, ['customer', 'staff'], "{$def['type']}: audience 미선언");
+
+            $expected = $audience === 'staff' ? 'role' : 'trigger_user';
 
             foreach ($def['templates'] as $template) {
                 $this->assertSame(
                     $expected,
                     $template['recipients'][0]['type'] ?? null,
-                    "{$def['type']}({$template['channel']}): 수신자 규칙이 어긋납니다."
+                    "{$def['type']}({$template['channel']}): 수신자 규칙이 선언한 audience 와 어긋납니다."
                 );
             }
         }
+    }
+
+    /**
+     * 운영자 수신 정의는 이 상점의 운영 역할 셋을 전부 나열한다.
+     *
+     * `role:admin` 하나만 적히면 **모듈 설치 시 만들어지는 이커머스 관리자 역할이 빠진다** —
+     * 그 사람은 클레임 권한을 다 가졌는데 접수도 철회도 통보받지 못한다. 이 단언이 그
+     * 누락의 재발을 막는 그물이다.
+     *
+     * @effects staff_definitions_list_every_operational_role
+     */
+    public function test_staff_definitions_list_every_operational_role(): void
+    {
+        $missing = [];
+
+        foreach ($this->claimDefinitions() as $def) {
+            if (($def['audience'] ?? null) !== 'staff') {
+                continue;
+            }
+
+            foreach ($def['templates'] as $template) {
+                $roles = array_column(
+                    array_filter($template['recipients'] ?? [], fn (array $rule) => ($rule['type'] ?? null) === 'role'),
+                    'value'
+                );
+
+                foreach ($this->staffRoles as $role) {
+                    if (! in_array($role, $roles, true)) {
+                        $missing[] = "{$def['type']}({$template['channel']}): {$role}";
+                    }
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $missing,
+            "운영자 수신 알림에서 빠진 역할은 그 역할의 사람이 자기 일을 통보받지 못한다는 뜻입니다:\n - "
+            .implode("\n - ", $missing)
+        );
     }
 
     /**
@@ -172,12 +264,12 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
         $module = app(ModuleManager::class)->getModule('sirsoft-ecommerce');
         $this->assertNotNull($module, '이커머스 모듈 로드 실패');
 
-        $claimTypes = array_keys($this->expectedCounts);
+        $claimTypes = array_keys(ClaimStatusNotificationListener::notifiableStatuses());
 
         return array_values(array_filter(
             $module->getNotificationDefinitions(),
             function (array $def) use ($claimTypes) {
-                if ($def['type'] === 'claim_withdrawn') {
+                if (str_starts_with($def['type'], 'claim_')) {
                     return true;
                 }
 

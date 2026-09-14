@@ -74,6 +74,21 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 신청 상품 행을 수량으로 나눌 수 없을 때 (상품·수량 단위 전이)
+     *
+     * 두 경우다. ⓐ 교환이고 후속 주문옵션(`new_order_option_id`)이 이미 만들어진 행 —
+     * 그 옵션은 `quantity = exchange_quantity` 로 1:1 산출된 것이라, 두 조각이 같은 후속
+     * 옵션을 가리키면 **재발송 수량이 오류 없이 어긋난다.** ⓑ 이미 종결된 행 — 나눌 수량이
+     * 더는 움직이지 않으므로 조각만 늘어난다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function claimItemNotSplittable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_item_not_splittable');
+    }
+
+    /**
      * 진행 중인 다른 클레임이 그 수량을 이미 잡고 있을 때 (D15 수량 잠금)
      *
      * @param  int  $requested  요청 수량

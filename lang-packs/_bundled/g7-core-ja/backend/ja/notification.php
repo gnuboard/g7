@@ -68,4 +68,11 @@ return [
             'description' => 'サイト内通知センターに表示',
         ],
     ],
+    'skipped' => [
+        'no_recipient_resolved' => '受信者ルール(:rules)で受取人が見つからなかったため、発送しませんでした。',
+        'guest_email_empty' => '非会員受信者のメールアドレスがないため、発送しませんでした。(受信者ルール: :rules)',
+    ],
+    'validation' => [
+        'role_value_shape' => 'ロール受信者の値は識別子文字列または文字列配列である必要があります。',
+    ],
 ];

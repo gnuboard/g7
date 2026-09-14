@@ -9,7 +9,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -96,7 +95,7 @@ class ClaimActivityLogTest extends ModuleTestCase
     {
         $enums = [
             RefundStatusEnum::class,
-            RefundOptionStatusEnum::class,
+            RefundStatusEnum::class,
             CancelStatusEnum::class,
             CancelOptionStatusEnum::class,
             ExchangeStatusEnum::class,
@@ -199,7 +198,7 @@ class ClaimActivityLogTest extends ModuleTestCase
         $this->service->request($order, $this->payload($order));
 
         $this->assertNotEmpty($optionChanges, '환불 신청상품 전이가 훅으로 남아야 한다 (C6)');
-        $this->assertSame(RefundOptionStatusEnum::COMPLETED->value, $optionChanges[0]['target']);
+        $this->assertSame(RefundStatusEnum::COMPLETED->value, $optionChanges[0]['target']);
         $this->assertGreaterThan(0, $optionChanges[0]['count']);
     }
 

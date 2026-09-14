@@ -34,9 +34,13 @@
       },
       "bulk_no_selection": "변경할 상품을 선택해주세요.",
       "bulk_no_status_selected": "변경할 상태를 선택해주세요.",
-      "bulk_not_supported": "이 유형은 상품 단위 상태 변경을 지원하지 않습니다.",
       "bulk_success": "신청 상품 상태 변경을 처리했습니다.",
-      "bulk_error": "신청 상품 상태 변경에 실패했습니다."
+      "bulk_error": "신청 상품 상태 변경에 실패했습니다.",
+      "no_common_transition": "선택한 상품들이 함께 갈 수 있는 상태가 없습니다. 상태가 같은 상품끼리 선택해 주세요.",
+      "quantity_confirm_title": "처리 수량 확인",
+      "quantity_confirm_description": "선택한 상품을 {{status}} 상태로 처리합니다. 일부 수량만 처리하려면 수량을 줄여 주세요.",
+      "quantity_not_splittable": "재발송 상품이 이미 만들어진 교환 상품은 수량을 나눌 수 없습니다. 전체 수량으로 처리됩니다.",
+      "bulk_split_notice": "{{kept}}개를 처리하고 {{remaining}}개는 신청 상태로 남겼습니다."
     },
     "completion": {
       "title": "완료 처리",
@@ -73,7 +77,13 @@
       "image_upload_success": "첨부를 업로드했습니다.",
       "image_upload_error": "첨부 업로드에 실패했습니다.",
       "image_clear_success": "첨부를 정리했습니다.",
-      "image_clear_error": "첨부 정리에 실패했습니다."
+      "image_clear_error": "첨부 정리에 실패했습니다.",
+      "images_hint": "최대 {{max}}장 · 1장당 {{size}} · {{types}}",
+      "images_origin_title": "첨부 출처",
+      "image_origin_uploaded_at": "업로드 {{at}}",
+      "confirm_remove_image_title": "첨부를 삭제할까요?",
+      "confirm_remove_image_message": "이 사진과 파일이 함께 삭제됩니다. 되돌릴 수 없습니다.",
+      "image_delete_success": "첨부를 삭제했습니다."
     },
     "comparison": {
       "title": "접수 시점 주문금액 비교",

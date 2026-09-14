@@ -6,6 +6,21 @@
   "sampleData": {
     "comment": "페이지 모듈이 도메인 SSoT. 사용자 페이지 상세 + 약관/개인정보 모달 트리거 데이터.",
     "byDataSourceId": {
+      "attachmentSettings": {
+        "data": {
+          "max_count": 5,
+          "max_size_mb": 10,
+          "allowed_types": [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "application/pdf",
+            "application/zip"
+          ],
+          "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip"
+        }
+      },
       "pages": {
         "data": {
           "data": [

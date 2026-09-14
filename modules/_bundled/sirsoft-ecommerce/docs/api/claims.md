@@ -235,6 +235,7 @@
 | product_id | integer\|null | `12` | 상품 ID |
 | product_option_id | integer\|null | `55` | 상품 옵션 ID |
 | completed_at | string\|null | `null` | 상품 행 완료 일시 |
+| is_splittable | boolean | `true` | 이 행을 **수량으로 나눠** 일부만 전이할 수 있는지. `false` 면 화면이 그 행의 수량 입력을 잠근다 — 종결된 행이거나, 교환에서 후속 주문옵션이 이미 만들어진 행이다(후속 옵션은 `quantity = exchange_quantity` 1:1 산출물이라 두 조각이 같은 것을 가리키면 재발송 수량이 어긋난다). 취소 행에는 전이 축이 없어 **키가 나오지 않는다** |
 | refund_amount | number | `29000` | (환불신청 행 전용) 행 단위 환불 금액 — 취소 행에는 이 컬럼이 없어 두 키가 **응답에 나오지 않는다**. 취소의 환불액은 헤더 `refund_amount` 를 읽는다 |
 | refund_amount_formatted | string | `29,000원` | 행 환불 금액 표기 |
 | is_option_change | boolean | `true` | (교환 행) 다른 옵션으로의 교환인지 |
@@ -302,11 +303,18 @@
 | claimable_type | string | `return` | 귀속 대상 (`pending` 은 신청서 작성 중 임시 업로드, 그 밖에 `exchange`, `return`, `refund`) |
 | claimable_id | integer | `31` | 귀속 대상 ID (`pending` 이면 주문 ID) |
 | original_name | string\|null | `defect.jpg` | 원본 파일명 |
+| original_filename | string\|null | `defect.jpg` | `original_name` 의 별칭 (공용 업로더 컴포넌트가 읽는 이름) |
 | mime_type | string\|null | `image/jpeg` | MIME 타입 |
 | size | integer\|null | `183204` | 바이트 크기 |
+| size_formatted | string | `178.91 KB` | 사람이 읽는 크기 |
+| is_image | boolean | `true` | 이미지 파일 여부 |
 | width | integer\|null | `800` | 가로 픽셀 |
 | height | integer\|null | `600` | 세로 픽셀 |
 | sort_order | integer | `1` | 정렬 순서 |
+| order | integer | `1` | `sort_order` 의 별칭 (공용 업로더 호환) |
+| uploader_type | string\|null | `customer` | 업로드 주체 (`customer` 고객 / `admin` 운영자 / `unknown` 미상). 분쟁 시 어느 쪽이 낸 증거인지를 가른다 |
+| uploader_type_label | string\|null | `고객` | 주체 표시 라벨. `unknown` 이면 `null` — 화면은 뱃지를 그리지 않는다(조용한 거짓 대신 공백) |
+| uploader_name | string\|null | `홍길동` | 업로더 이름. 관계를 함께 읽은 응답에만 실린다 |
 | download_url | string | `/api/modules/sirsoft-ecommerce/claim-image/a1B2c3D4e5F6?expires=…&signature=…` | 한시 서명 URL (30분) — [claim-image.md](claim-image.md) |
 | created_at | string\|null | `2026-08-23 13:39` | 업로드 일시 |
 

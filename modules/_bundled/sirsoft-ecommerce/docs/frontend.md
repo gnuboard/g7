@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 229개 (루트: `resources/layouts`).
+레이아웃 230개 (루트: `resources/layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 229개 |
+| `admin` | 230개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -56,6 +56,7 @@
 | `_panel_detail` | `admin` | partial | - |
 | `_panel_form` | `admin` | partial | - |
 | `_panel_view` | `admin` | partial | - |
+| `_modal_claim_item_quantity_confirm` | `admin` | partial | - |
 | `_modal_claim_refund_execute` | `admin` | partial | - |
 | `_partial_claim_activity_log` | `admin` | partial | - |
 | `_partial_claim_comparison` | `admin` | partial | - |
@@ -284,7 +285,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 198개 (정의: `resources/js/handlers/index.ts`).
+핸들러 201개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -403,10 +404,13 @@
 | `executeClaimCompletion` | `sirsoft-ecommerce.executeClaimCompletion` |
 | `clearClaimCompleteTimers` | `sirsoft-ecommerce.clearClaimCompleteTimers` |
 | `openClaimDetailComplete` | `sirsoft-ecommerce.openClaimDetailComplete` |
+| `syncClaimItemSelection` | `sirsoft-ecommerce.syncClaimItemSelection` |
+| `openClaimItemQuantityConfirm` | `sirsoft-ecommerce.openClaimItemQuantityConfirm` |
+| `updateClaimItemQuantity` | `sirsoft-ecommerce.updateClaimItemQuantity` |
 | `executeClaimItemBulkStatus` | `sirsoft-ecommerce.executeClaimItemBulkStatus` |
 | `executeClaimStatusTransition` | `sirsoft-ecommerce.executeClaimStatusTransition` |
 | `storeClaimRefundRequest` | `sirsoft-ecommerce.storeClaimRefundRequest` |
-| `uploadClaimImage` | `sirsoft-ecommerce.uploadClaimImage` |
+| `refreshClaimAttachments` | `sirsoft-ecommerce.refreshClaimAttachments` |
 | `clearClaimImages` | `sirsoft-ecommerce.clearClaimImages` |
 | `saveClaimTracking` | `sirsoft-ecommerce.saveClaimTracking` |
 | `saveClaimAdminMemo` | `sirsoft-ecommerce.saveClaimAdminMemo` |
@@ -506,7 +510,7 @@
 | 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산 |
 | 취소·환불 | `updateCancelQuantity` · `estimateRefundAmount` · `changeRefundPriority` | 옵션 단위 취소 수량 조정과 예상 환불액 조회 (관리자·구매자 두 벌) |
 | 배송정책·주소 | `testShippingApi` · `updateExtraFeeField` · `changeShippingAddress` | 외부 배송비 API 시험 호출과 주소 변경 |
-| 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(`uploadClaimImage` · `clearClaimImages`), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |
+| 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(업로드는 `composite/FileUploader` 가 직접 하고 핸들러는 `refreshClaimAttachments` · `clearClaimImages` 로 목록만 되읽는다), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |
 
 취소·환불 축에서 유의할 계약 둘이 있습니다(#599 후속).
 

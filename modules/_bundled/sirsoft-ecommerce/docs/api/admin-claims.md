@@ -63,7 +63,8 @@
 | PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/status | `api.modules.sirsoft-ecommerce.admin.claims.status` |
 | POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images | `api.modules.sirsoft-ecommerce.admin.claims.images.store` |
 | DELETE | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images | `api.modules.sirsoft-ecommerce.admin.claims.images.clear` |
-| PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status | `api.modules.sirsoft-ecommerce.admin.claims.options.bulk-status` (교환·반품만) |
+| DELETE | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images/{image} | `api.modules.sirsoft-ecommerce.admin.claims.images.destroy` |
+| PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status | `api.modules.sirsoft-ecommerce.admin.claims.options.bulk-status` (교환·반품·환불) |
 | PUT | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking | `api.modules.sirsoft-ecommerce.admin.claims.collection-tracking` (교환·반품만) |
 | PUT | /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking | `api.modules.sirsoft-ecommerce.admin.claims.redelivery-tracking` (교환만) |
 | PUT | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts | `api.modules.sirsoft-ecommerce.admin.claims.amounts` |
@@ -253,6 +254,7 @@
 | charge_methods | array | `[{"value": "pay_on_request", "label": "신청 시 결제"}]` | 청구 방식 선택지 (D18). 허용 목록은 설정 `claim.allowed_charge_methods` 가 정하고 그 조회는 `settings.read` 게이트다. 환불신청서는 빈 배열 |
 | refund_methods | array | `[{"value": "pg", "label": "PG사 환불"}]` | 환불 수단 선택지 (`RefundMethodEnum`). 환불신청서에만 있고 그 밖은 빈 배열 |
 | cancellable | object\|null | — | 취소 가능 금액 산정 결과 (D19). 환불신청서에만 있으며 **그 신청서 문맥**(자기 자신을 선점 집계에서 제외)으로 계산한다. 형태는 [cancellable-amount](#get-apimodulessirsoft-ecommerceadminordersordercancellable-amount) 응답의 `cancellable` 과 동일하다 — 두 응답이 같은 지점에서 만들어진다 |
+| attachment_settings | object\|null | `{"max_images": 5, "image_max_size_kb": 2048, "allowed_extensions": ["jpeg","jpg","png","gif","webp"], "accept": ".jpeg,.jpg,.png,.gif,.webp"}` | 첨부 상한·허용 확장자. 화면이 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈려 이유 없는 `422` 만 남는다. 취소신청서는 첨부 축이 없어 `null` |
 
 **order 축** (`data.order`)
 
@@ -456,7 +458,8 @@
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status
 
-신청 상품 단위로 상태를 일괄 전이합니다 (D25 — 체크한 상품 배열). 교환·반품만.
+신청 상품 단위로 상태를 일괄 전이합니다 (D25 — 체크한 상품 배열). 교환·반품·환불.
+취소신청서는 이 축이 없습니다(생성이 곧 확정이라 옮길 상태가 없습니다) — `404`.
 
 **권한**: `sirsoft-ecommerce.claims.update-status`
 
@@ -464,12 +467,27 @@
 
 | 파라미터 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
-| items[] | integer[] | 예 | 신청 상품 행 ID 목록 (1~200건) — **이 신청서에 속한 행만** 통과(다른 신청서의 행은 422 `errors`) |
+| items[] | object[] | 예 | 전이 지시 (1~200건). **`{id, quantity?}` 한 모양만 받습니다** — 스칼라 배열(`[55, 56]`)은 `422` 입니다 |
+| items[].id | integer | 예 | 신청 상품 행 ID — **이 신청서에 속한 행만** 통과(다른 신청서의 행은 422 `errors`). 같은 id 를 두 줄로 보내도 `422` |
+| items[].quantity | integer | 아니오 | 이번에 전이할 수량 (min 1, 생략하면 전량). 행 수량보다 적으면 **그 행이 갈라져** 전이분이 원래 행에 남고 잔여가 새 행으로 나갑니다 |
 | status | string | 예 | 목표 상태 — 유형별 관리자 어휘에서 `payment_pending` 제외 (결제는 신청서 단위 축) |
-| completion | object | `status=completed` 일 때 필수 | 단건 전이와 동일 계약 (선택 상품만 이번 라운드에 완료 — 부분 완료) |
+| completion | object | `status=completed` 일 때 필수 | 단건 전이와 동일 계약 (선택 상품만 이번 라운드에 완료 — 부분 완료). 환불신청서의 완료는 환불 실행의 소유라 `422` 입니다 |
+
+**스칼라 배열을 하위호환으로 남기지 않은 이유**: 두 모양을 받으면 `items` 의 상위 스코프
+검사가 둘로 갈라져 "다른 신청서의 행이 통과" 하는 결함이 되살아나고, 배포 중 두 형태가
+섞여도 아무 데도 드러나지 않습니다. 스칼라가 오면 `422` 로 드러나야 합니다.
 
 상품 단위 전이에는 메모·반려 사유 파라미터가 없습니다 — 상품 행에는 저장 지점이 없고,
 신청서(헤더) 메모는 단건 전이(`{id}/status`)가 담당합니다.
+
+**요청 예시**
+
+```json
+{
+  "items": [{"id": 55, "quantity": 2}, {"id": 56}],
+  "status": "rejected"
+}
+```
 
 **응답 예시 (200)**
 
@@ -480,12 +498,22 @@
   "data": {
     "succeeded": [55],
     "skipped": [{"id": 56, "message": "반품반려 에서 반품회수중 로는 상태를 변경할 수 없습니다."}],
+    "split": [{"id": 55, "quantity": 2, "remainder_id": 91, "remainder_quantity": 1}],
     "claim": { "id": 31, "status": "collecting", "...": "ClaimResource 전체" }
   }
 }
 ```
 
+`split` 은 이번 지시로 **갈라진 행**입니다 — 없으면 운영자는 표가 한 줄 늘어난 것을 스스로
+해석해야 합니다. `id` 는 전이된 쪽(운영자가 체크한 행 ID 그대로), `remainder_id` 는 신청
+상태로 남은 새 행입니다.
+
 헤더 상태는 살아 있는 상품이 모두 같은 상태에 도달했을 때 따라갑니다(`claim` 으로 확인).
+환불신청서의 헤더는 `processing`·`completed` 로는 따라가지 않습니다 — 둘 다 환불 실행이
+소유하는 상태라, 따라가면 돈이 움직이지 않았는데 신청서가 처리중으로 보입니다.
+
+환불신청서에서 상품이 반려되면 신청서 환불액이 **반려분만큼** 다시 계산되고(D18 저장 경로를
+그대로 탑니다 — 활동로그에 전/후가 남습니다), 반려 행의 `refund_amount` 는 0 이 됩니다.
 
 ---
 
@@ -523,16 +551,35 @@
 
 | 파라미터 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
-| image | file | 예 | 이미지 파일 (`jpeg`/`png`/`jpg`/`gif`/`webp`, 최대 용량 `claim.image_max_size_kb` 설정) |
+| file | file | 예 | 이미지 파일. 허용 확장자·최대 용량은 상세 응답의 `attachment_settings` 가 알려 줍니다 |
+| image | file | — | `file` 의 별칭 (종전 계약). 둘 중 하나만 보냅니다 |
+
+업로드된 첨부는 **운영자 업로드**(`uploader_type = "admin"`)로 기록됩니다 — 분쟁 시 어느 쪽이
+낸 증거인지가 판정을 가르기 때문입니다.
 
 **응답 예시 (201)**
+
+첨부 하나를 `data` 에 그대로 싣습니다. `data.image` 는 종전 계약을 위한 별칭입니다.
 
 ```json
 {
   "success": true,
   "message": "이미지를 첨부했습니다.",
   "data": {
-    "image": {"id": 12, "hash": "a1b2c3d4e5f6", "claimable_type": "return", "claimable_id": 31, "original_name": "evidence.jpg", "download_url": "/api/modules/sirsoft-ecommerce/claim-image/a1b2c3d4e5f6?...signature=..."}
+    "id": 12,
+    "hash": "a1b2c3d4e5f6",
+    "claimable_type": "return",
+    "claimable_id": 31,
+    "original_name": "evidence.jpg",
+    "original_filename": "evidence.jpg",
+    "size": 184320,
+    "size_formatted": "180 KB",
+    "is_image": true,
+    "order": 1,
+    "uploader_type": "admin",
+    "uploader_type_label": "운영자",
+    "download_url": "/api/modules/sirsoft-ecommerce/claim-image/a1b2c3d4e5f6?...signature=...",
+    "image": {"id": 12, "hash": "a1b2c3d4e5f6", "claimable_type": "return", "claimable_id": 31}
   }
 }
 ```
@@ -552,6 +599,29 @@
 ```
 
 **오류**: `404` 신청서 부재.
+
+### DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images/{image}
+
+첨부 **한 장**을 파일까지 삭제합니다. 개인정보가 찍힌 사진 한 장을 지우려고 정상 증빙까지
+함께 잃지 않게 합니다. 되돌릴 수 없습니다.
+
+**권한**: `sirsoft-ecommerce.claims.update-status`
+
+**경로 파라미터**
+
+| 파라미터 | 타입 | 설명 |
+| --- | --- | --- |
+| image | int | 첨부 ID. **그 신청서에 귀속된 첨부**여야 합니다 |
+
+**응답 예시 (200)**
+
+```json
+{"success": true, "message": "첨부 이미지를 삭제했습니다.", "data": {"deleted": 1}}
+```
+
+**오류**: `404` 신청서 부재 / 그 신청서의 첨부가 아님(`claim_image_not_found`).
+권한 게이트는 "클레임을 다룰 수 있다" 만 말하므로 소유권을 따로 검사합니다 — 그러지 않으면
+아무 신청서 상세에서나 남의 첨부 id 를 넣어 지울 수 있습니다.
 
 ---
 

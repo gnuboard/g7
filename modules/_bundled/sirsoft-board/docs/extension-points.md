@@ -162,6 +162,7 @@
 | `sirsoft-board.comment.after_update` | action (미선언) | `BoardActivityLogListener` | `handleCommentAfterUpdate` | 20 |
 | `sirsoft-board.notification.channels` | filter | `BoardNotificationChannelListener` | `filterChannels` | 10 |
 | `sirsoft-board.notification.extract_data` | filter | `BoardNotificationDataListener` | `extractData` | 20 |
+| `sirsoft-board.notification.personalize_data` | filter | `BoardNotificationDataListener` | `personalizeBoardData` | 20 |
 | `sirsoft-board.post.after_blind` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterBlind` | 20 |
 | `sirsoft-board.post.after_create` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterCreate` | 20 |
 | `sirsoft-board.post.after_create` | action (미선언) | `BoardPostsCountSyncListener` | `syncPostsCount` | 10 |
@@ -215,7 +216,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | `BoardActivityLogListener` | 30개 | 명시 등록 | ✅ | `src/Listeners/BoardActivityLogListener.php` |
 | `BoardCommentsCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardCommentsCountSyncListener.php` |
 | `BoardNotificationChannelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationChannelListener.php` |
-| `BoardNotificationDataListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationDataListener.php` |
+| `BoardNotificationDataListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationDataListener.php` |
 | `BoardPostsCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardPostsCountSyncListener.php` |
 | `Ckeditor5ReferenceSourcesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Ckeditor5ReferenceSourcesListener.php` |
 | `CommentReplySyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/CommentReplySyncListener.php` |

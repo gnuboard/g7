@@ -11,7 +11,7 @@
 | `Cart` | `ecommerce_carts` | 6 | user→User, product→Product, productOption→ProductOption | - |
 | `Category` | `ecommerce_categories` | 10 | parent→self, children→self, descendants→self, images→CategoryImage, products→Product | 검색 색인 |
 | `CategoryImage` | `ecommerce_category_images` | 15 | category→Category, creator→User | SoftDeletes |
-| `ClaimImage` | `ecommerce_claim_images` | 12 | claimable→?, creator→User | - |
+| `ClaimImage` | `ecommerce_claim_images` | 13 | claimable→?, creator→User | - |
 | `ClaimPayment` | `ecommerce_claim_payments` | 18 | payable→?, order→Order, mileageTransactions→MileageTransaction | - |
 | `ClaimReason` | `ecommerce_claim_reasons` | 10 | creator→User, updater→User | HasUserOverrides |
 | `Coupon` | `ecommerce_promotion_coupons` | 22 | issues→CouponIssue, products→Product, includedProducts→Product, excludedProducts→Product, categories→Category, includedCategories→Category, 외 2개 | SoftDeletes, 검색 색인 |
@@ -229,7 +229,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 116개.
+마이그레이션 118개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -349,6 +349,8 @@
 | `2026_09_11_000001_add_calculation_snapshots_to_claim_tables.php` | - | - | ✅ |
 | `2026_09_11_000002_add_rejected_at_to_ecommerce_order_refunds_table.php` | - | - | ✅ |
 | `2026_09_12_000001_ensure_operator_claim_reason_codes_exist.php` | - | - | ✅ |
+| `2026_09_14_000001_add_uploader_type_to_ecommerce_claim_images_table.php` | - | `ecommerce_claim_images` | ✅ |
+| `2026_09_14_000002_add_option_status_index_to_ecommerce_order_refund_options_table.php` | - | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -392,6 +394,7 @@
 | `CashReceiptType` | `string` | 2 | `income`, `expense` |
 | `ChargePolicyEnum` | `string` | 14 | `free`, `fixed`, `conditional_free`, `range_amount`, `range_quantity`, `range_weight`, `range_volume`, `range_volume_weight`, `외 6개` |
 | `ClaimChargeMethodEnum` | `string` | 3 | `pay_on_request`, `pay_on_approval`, `deduct_from_refund` |
+| `ClaimImageUploaderTypeEnum` | `string` | 3 | `customer`, `admin`, `unknown` |
 | `ClaimPaymentStatusEnum` | `string` | 5 | `pending`, `paid`, `failed`, `cancelled`, `refunded` |
 | `ClaimReasonFaultTypeEnum` | `string` | 3 | `customer`, `seller`, `carrier` |
 | `ClaimReasonTypeEnum` | `string` | 3 | `refund`, `exchange`, `return` |
@@ -421,7 +424,6 @@
 | `ProductSalesStatus` | `string` | 4 | `on_sale`, `suspended`, `sold_out`, `coming_soon` |
 | `ProductTaxStatus` | `string` | 2 | `taxable`, `tax_free` |
 | `RefundMethodEnum` | `string` | 3 | `pg`, `bank`, `points` |
-| `RefundOptionStatusEnum` | `string` | 7 | `requested`, `approved`, `processing`, `on_hold`, `completed`, `rejected`, `withdrawn` |
 | `RefundPriorityEnum` | `string` | 2 | `pg_first`, `points_first` |
 | `RefundSourceTypeEnum` | `string` | 5 | `cancel`, `return`, `exchange`, `direct`, `admin` |
 | `RefundStatusEnum` | `string` | 7 | `requested`, `approved`, `processing`, `on_hold`, `completed`, `rejected`, `withdrawn` |

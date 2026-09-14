@@ -1958,7 +1958,8 @@
         "no_recipients": "受信者未設定",
         "role_search_placeholder": "ロールを検索してください",
         "users_placeholder": "ユーザーを検索してください",
-        "users_no_options": "検索結果がありません"
+        "users_no_options": "検索結果がありません",
+        "role_no_options": "一致するロールがありません"
       },
       "preview_modal": {
         "title": "通知プレビュー",

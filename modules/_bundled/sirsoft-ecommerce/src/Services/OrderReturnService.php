@@ -33,6 +33,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepository
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
 /**
  * 반품 클레임 서비스
@@ -76,6 +77,7 @@ class OrderReturnService
      * @param  OrderAdjustmentService  $adjustmentService  환불금액 재계산 서비스
      * @param  ClaimShippingFeeService  $claimShippingFeeService  클레임 배송비 산정 서비스
      * @param  ClaimQuantityGuard  $claimQuantityGuard  클레임 수량 잠금 가드 (D15)
+     * @param  ClaimItemSplitter  $claimItemSplitter  신청 상품 수량 분할기
      * @param  OrderOptionService  $orderOptionService  주문 옵션 서비스 (코스 상태 전이·수량 분할)
      * @param  RefundExecutionService  $refundExecutionService  환불 실행 서비스 (환불수단·상세행·쿠폰 복원)
      * @param  UserMileageService  $mileageService  마일리지 서비스 (적립 회수)
@@ -96,6 +98,7 @@ class OrderReturnService
         protected OrderAdjustmentService $adjustmentService,
         protected ClaimShippingFeeService $claimShippingFeeService,
         protected ClaimQuantityGuard $claimQuantityGuard,
+        protected ClaimItemSplitter $claimItemSplitter,
         protected OrderOptionService $orderOptionService,
         protected RefundExecutionService $refundExecutionService,
         protected UserMileageService $mileageService,
@@ -585,17 +588,21 @@ class OrderReturnService
      * 반려·철회로 전이된 상품은 그 자리에서 원 주문옵션을 신청 직전 상태로 되돌린다 —
      * 신청서 단위 반려가 하는 일과 같으며, 미루면 그 상품이 반품 코스에 갇힌다.
      *
+     * 수량을 실은 지시(`[{id, quantity}]`)는 그 행을 **갈라서** 지정 수량만 전이한다 —
+     * 잔여는 새 행으로 남아 신청 상태를 유지한다(`ClaimItemSplitter`). 수량을 싣지 않은
+     * 지시는 종전대로 전량이다.
+     *
      * @param  OrderReturn  $return  반품 신청서
-     * @param  array<int, int>  $itemIds  신청 상품 행 ID 목록 (빈 배열이면 전체)
+     * @param  array<int, int|array{id: int, quantity?: int|null}>  $items  전이 지시 (빈 배열이면 전체)
      * @param  ReturnStatusEnum  $target  목표 상태
      * @param  array  $context  부가 정보 (processed_by)
-     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>} 전이 결과
+     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>, split: array<int, array{id: int, quantity: int, remainder_id: int, remainder_quantity: int}>} 전이 결과
      *
      * @throws OrderClaimException 완료 전이를 시도한 경우
      */
     public function transitionOption(
         OrderReturn $return,
-        array $itemIds,
+        array $items,
         ReturnStatusEnum $target,
         array $context = [],
     ): array {
@@ -604,13 +611,16 @@ class OrderReturnService
         }
 
         $processedBy = $context['processed_by'] ?? null;
-        $items = $this->resolveItems($return, $itemIds);
+        $specs = ClaimItemSpecs::normalize($items);
+        $quantities = ClaimItemSpecs::quantities($specs);
+        $items = $this->resolveItems($return, ClaimItemSpecs::ids($specs));
 
         $succeeded = [];
         $skipped = [];
         $changes = [];
+        $split = [];
 
-        DB::transaction(function () use ($items, $target, $processedBy, &$succeeded, &$skipped, &$changes) {
+        DB::transaction(function () use ($items, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
             foreach ($items as $item) {
                 // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
                 // 이미 반려된 상품에 반려를 다시 지시하면 상태·처리자가 다시 쓰인다. 건너뛰고 보고한다
@@ -640,25 +650,39 @@ class OrderReturnService
                 }
 
                 $previousStatus = $item->option_status;
+                $previousQuantity = (int) $item->return_quantity;
 
-                $updatedItem = $this->returnOptionRepository->update($item, [
-                    'option_status' => $target,
-                    'processed_by' => $processedBy ?? $item->processed_by,
-                ]);
+                try {
+                    $remainder = $this->transitionItem($item, $target, $processedBy, $quantities[$item->id] ?? null);
+                } catch (OrderClaimException $e) {
+                    // 나눌 수 없는 행 같은 상품 단위 실패는 그 상품만 건너뛴다 — 저장점이
+                    // 실패분만 되돌리고 같은 TX 안의 다른 상품은 그대로 간다(교환과 같은 규칙).
+                    $skipped[] = ['id' => $item->id, 'message' => $e->getMessage()];
 
-                $changes[] = [
+                    continue;
+                }
+
+                $change = [
                     'option_id' => $item->id,
                     'previous' => $previousStatus->value,
                     'new' => $target->value,
                 ];
 
-                // 반려·철회된 상품은 그 즉시 원 주문옵션을 되돌린다 — 신청서 단위 반려가
-                // 하는 일을 상품 단위로 적용하는 것이다(2026-08-22 확정 ⑤). 미루면 그
-                // 상품은 어디로도 못 간다: 취소·관리자 상태 변경은 클레임 가드가 막고,
-                // 되돌려 줄 신청서는 이미 종결이라 복귀를 부를 경로가 남지 않는다.
-                if ($this->revertsOrderOptions($target)) {
-                    $this->revertOrderOptionFor($updatedItem->loadMissing('orderOption'));
+                if ($remainder !== null) {
+                    // 분할 사실은 계보 컬럼이 아니라 활동로그가 나른다 — 전/후 상태만으로는
+                    // "3개 중 2개" 가 어디에도 남지 않는다.
+                    $change['quantity'] = (int) $item->fresh()->return_quantity;
+                    $change['remainder_option_id'] = $remainder->id;
+
+                    $split[] = [
+                        'id' => $item->id,
+                        'quantity' => $change['quantity'],
+                        'remainder_id' => $remainder->id,
+                        'remainder_quantity' => $previousQuantity - $change['quantity'],
+                    ];
                 }
+
+                $changes[] = $change;
 
                 $succeeded[] = $item->id;
             }
@@ -682,7 +706,55 @@ class OrderReturnService
 
         $this->syncHeaderFromOptions($fresh, $processedBy);
 
-        return ['succeeded' => $succeeded, 'skipped' => $skipped];
+        return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
+    }
+
+    /**
+     * 신청 상품 한 건의 상태를 바꾸고 그 상태의 부수효과를 수행합니다.
+     *
+     * 교환(`OrderExchangeService::transitionItem`)과 같은 형태다 — 상품별 **저장점**이 되어,
+     * 분할·전이·부수효과 중 하나가 실패하면 그 상품만 통째로 되돌아간다.
+     *
+     *  - 수량 분할: 지시에 수량이 실려 있으면 **맨 앞에서** 행을 가른다. 순서가 계약이다 —
+     *    분할이 먼저여야 반려의 원 주문옵션 복귀가 전이분만 되돌린다.
+     *  - 반려·철회: 원 주문옵션을 신청 직전 상태로 그 수량만큼 되돌린다. 신청서 단위 반려가
+     *    하는 일을 상품 단위로 적용하는 것이다(2026-08-22 확정 ⑤). 미루면 그 상품은 어디로도
+     *    못 간다: 취소·관리자 상태 변경은 클레임 가드가 막고, 되돌려 줄 신청서는 이미
+     *    종결이라 복귀를 부를 경로가 남지 않는다.
+     *
+     * @param  OrderReturnOption  $item  신청 상품 행
+     * @param  ReturnStatusEnum  $target  목표 상태 (게이트 통과 전제)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  int|null  $quantity  이번에 전이할 수량 (null 이면 전량)
+     * @return OrderReturnOption|null 분할로 생긴 잔여 행 (분할하지 않았으면 null)
+     *
+     * @throws OrderClaimException 나눌 수 없는 행
+     */
+    protected function transitionItem(
+        OrderReturnOption $item,
+        ReturnStatusEnum $target,
+        ?int $processedBy,
+        ?int $quantity = null,
+    ): ?OrderReturnOption {
+        return DB::transaction(function () use ($item, $target, $processedBy, $quantity) {
+            $remainder = null;
+
+            if ($quantity !== null) {
+                ['remainder' => $remainder] = $this->claimItemSplitter->split($item, $quantity);
+                $item->refresh();
+            }
+
+            $updated = $this->returnOptionRepository->update($item, [
+                'option_status' => $target,
+                'processed_by' => $processedBy ?? $item->processed_by,
+            ]);
+
+            if ($this->revertsOrderOptions($target)) {
+                $this->revertOrderOptionFor($updated->loadMissing('orderOption'), (int) $updated->return_quantity);
+            }
+
+            return $remainder;
+        });
     }
 
     // ───────────────────────────────────────────────
@@ -1698,9 +1770,10 @@ class OrderReturnService
      * 이미 코스를 벗어난 행은 건너뛰므로 신청서 단위 복귀가 뒤따라도 이중 전이가 없다.
      *
      * @param  OrderReturnOption  $item  신청 상품 행
+     * @param  int|null  $quantity  되돌릴 수량 (null 이면 그 주문옵션 전량)
      * @return void 반환값 없음
      */
-    protected function revertOrderOptionFor(OrderReturnOption $item): void
+    protected function revertOrderOptionFor(OrderReturnOption $item, ?int $quantity = null): void
     {
         $orderOption = $item->orderOption;
 
@@ -1714,10 +1787,15 @@ class OrderReturnService
             return;
         }
 
+        // 상품 단위 반려·철회는 **그 행의 수량만** 되돌린다. 전량으로 되돌리면 같은 주문옵션에
+        // 남아 있는 다른 진행분까지 코스 밖으로 빠져나가고, 그 수량은 이후 취소가 코스 가드를
+        // 통과해 **같은 상품이 두 번 환불된다**. 주문옵션 수량으로 클램프하는 것은 분할 이후
+        // 행 수량이 주문옵션 수량보다 클 수 없기 때문이 아니라, 커질 수 있는 경로(잔여 병합·
+        // 데이터 보정)가 생겼을 때 조용히 초과 전이하지 않게 하기 위해서다.
         $this->orderOptionService->changeStatusWithQuantity(
             $orderOption,
             $target,
-            (int) $orderOption->quantity,
+            min($quantity ?? (int) $orderOption->quantity, (int) $orderOption->quantity),
             [],
             restoreStockOnCancel: false,
             mergeSiblings: false,

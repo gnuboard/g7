@@ -37,6 +37,17 @@ interface OrderReturnOptionRepositoryInterface
     public function findById(int $id, array $relations = []): ?OrderReturnOption;
 
     /**
+     * 신청 상품 행을 저장합니다. (수량 분할이 만든 잔여 행)
+     *
+     * 잔여 행은 원본을 `replicate()` 한 **모델**이라 캐스트가 이미 적용된 상태다 —
+     * 원시 속성 배열로 다시 만들면 JSON 캐스트 컬럼이 두 번 인코딩된다.
+     *
+     * @param  OrderReturnOption  $option  신청 상품 행
+     * @return OrderReturnOption 저장된 신청 상품 행
+     */
+    public function save(OrderReturnOption $option): OrderReturnOption;
+
+    /**
      * 반품 신청서의 신청 상품 목록을 조회합니다.
      *
      * @param  int  $returnId  반품 신청서 ID

@@ -132,6 +132,10 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
         return (int) OrderRefundOption::query()
             ->where('order_option_id', $orderOptionId)
             ->whereIn('order_refund_id', $liveDirectRefunds)
+            // **행 단위 종결분도 뺀다.** 헤더가 아직 열려 있어도 그 안의 어떤 상품은 이미
+            // 반려·철회로 끝났을 수 있다(상품 단위 판단). 그 수량을 계속 세면 고객은
+            // "신청 가능 수량 부족" 만 보고, 왜 부족한지는 화면 어디에도 드러나지 않는다.
+            ->whereNotIn('option_status', $finalValues)
             ->sum('quantity');
     }
 

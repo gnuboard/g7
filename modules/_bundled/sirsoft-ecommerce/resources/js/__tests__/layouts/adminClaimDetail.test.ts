@@ -33,6 +33,7 @@ import shippingSection from '../../../layouts/admin/partials/admin_ecommerce_cla
 import reasonBlock from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_reason.json';
 import paymentSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_payment.json';
 import refundExecuteModal from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_refund_execute.json';
+import quantityModal from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.json';
 import activityLog from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_activity_log.json';
 import adminRoutes from '../../../routes/admin.json';
 
@@ -48,6 +49,7 @@ const DETAIL_FILES: Array<[string, Node]> = [
   ['reason', reasonBlock as Node],
   ['payment', paymentSection as Node],
   ['refund_execute_modal', refundExecuteModal as Node],
+  ['quantity_confirm_modal', quantityModal as Node],
   ['activity_log', activityLog as Node],
 ];
 
@@ -56,6 +58,16 @@ const SHIPPING_CONDITION = "['exchange', 'return'].includes(claim?.data?.claim?.
 
 /** 환불 실행 축의 분기 조건 — 배송 축과 같은 규율 (D17-①) */
 const REFUND_CONDITION = "(claim?.data?.claim?.claim_type ?? '') === 'refund'";
+
+/**
+ * 상품 단위 전이 축의 분기 조건.
+ *
+ * **배송 축과 이름부터 분리한다.** 두 조건은 한때 문자열이 같았지만 뜻이 다르다 — 배송은
+ * 교환·반품에만 있고, 상품 단위 전이는 취소만 빼고 모두 있다(§4). 상수를 공유한 채 이쪽만
+ * 고치면 배송 동일성 단언이 깨지고, 그것을 맞추려고 배송 조건까지 바꾸면 **환불 상세에
+ * 배송 섹션이 생긴다.**
+ */
+const ITEM_BULK_CONDITION = "(claim?.data?.claim?.claim_type ?? '') !== 'cancel'";
 
 /**
  * 서브트리의 모든 노드를 훑는다. (children 뿐 아니라 props/actions 안쪽까지)
@@ -280,6 +292,9 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
       'partials/admin_ecommerce_claim_list/_modal_claim_complete.json',
       // 환불 실행 확인 모달은 이 화면만 여는 진입점이라 상세가 소유한다 (D18).
       'partials/admin_ecommerce_claim_detail/_modal_claim_refund_execute.json',
+      // 수량 확인 모달도 같은 이유로 상세 소유다 (§4-6) — 주문상세 모달을 복제하지 않는다:
+      // 그 파일은 주문 상태 어휘·`_local.changeQuantities` 키·`confirmItems` 계약에 묶여 있다.
+      'partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.json',
     ]);
     expect(
       fs.existsSync(
@@ -291,6 +306,7 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
     ).toBe(false);
   });
 
+  /** @effects claim_detail_tab_content_loads_four_partials_in_order */
   it('탭 콘텐츠 영역이 네 partial 을 순서대로 싣는다', () => {
     expect((byId(shell, 'claim_tab_content_area').children as Node[]).map((n) => n.partial)).toEqual([
       'partials/admin_ecommerce_claim_detail/_partial_claim_items.json',
@@ -484,22 +500,44 @@ describe('배송 정보 — 회수·재발송 통합 (D17-② · D14)', () => {
 
 describe('신청상품 — 일괄 변경 바와 표 (D24·D25)', () => {
   /**
-   * 어휘가 부분집합이면 지정할 수 있어야 할 상태가 화면에서 사라지고, 초과집합이면 그 값을
-   * 고르는 순간 요청 전체가 422 가 된다 — 표는 그대로 남아 실패가 안 보인다.
+   * 어휘를 화면이 들지 않는다 — 서버가 **행마다** 실어 준 전이 선택지의 교집합을 핸들러가
+   * 계산해 `_local.itemTransitionOptions` 에 깐다. 화면이 상태 목록을 리터럴로 들면 전이표가
+   * 바뀔 때 화면과 서버가 갈리고, 그 사이 운영자는 "가끔 안 되는 버튼" 을 본다.
    *
    * @scenario claim_type=exchange, claim_stage=in_progress
-   * @effects claim_item_status_vocabulary_matches_gate
+   * @effects claim_item_status_vocabulary_comes_from_the_server
    */
-  it.each([
-    ['exchange', 'ci_002_item_status_exchange'],
-    ['return', 'ci_003_item_status_return'],
-  ])('%s 상품 단위 셀렉트 어휘가 게이트와 같은 집합이다', (claimType, nodeId) => {
-    const options = (byId(itemsSection, nodeId).props.options as Node[])
-      .map((o) => o.value)
-      .filter((v: string) => v !== '');
+  it('상품 단위 셀렉트가 서버 어휘를 그대로 읽는다', () => {
+    const select = byId(itemsSection, 'ci_002_item_status');
 
-    expect(options).toEqual(optionAssignableValues(claimType));
-    expect(options).not.toContain('payment_pending');
+    expect(select.props.options).toBe('{{_local.itemTransitionOptions ?? []}}');
+    expect(JSON.stringify(select.props.options)).not.toContain('approved');
+  });
+
+  /**
+   * 레이아웃 어디에도 상태 값 리터럴이 남지 않아야 한다 — 한 곳이라도 남으면 그것이 어휘의
+   * 두 번째 출처가 된다.
+   *
+   * @effects claim_item_bar_has_no_status_literals
+   */
+  it('일괄 바에 상태 리터럴이 없다', () => {
+    const bar = JSON.stringify(byId(itemsSection, 'claim_item_bulk_bar'));
+
+    ['collection_ready', 'redelivering', 'redelivered', 'on_hold'].forEach((value) => {
+      expect(bar).not.toContain(`"${value}"`);
+    });
+  });
+
+  /**
+   * 교집합이 0건이면 셀렉트 대신 이유를 적는다 — 빈 셀렉트만 두면 운영자는 화면이 덜 그려진
+   * 줄 안다.
+   *
+   * @effects claim_item_bar_explains_an_empty_intersection
+   */
+  it('교집합 0건 안내가 선택이 있을 때만 선다', () => {
+    expect(byId(itemsSection, 'ci_003_no_common_transition').if).toBe(
+      "{{(_local.selectedClaimItems ?? []).length > 0 && (_local.itemTransitionOptions ?? []).length === 0}}",
+    );
   });
 
   /**
@@ -512,16 +550,80 @@ describe('신청상품 — 일괄 변경 바와 표 (D24·D25)', () => {
 
     expect(grid.props.selectionScope).toBe('page');
     expect(grid.actions?.[0]?.event).toBe('onSelectionChange');
+    // 선택만 담는 `setState` 로는 교집합·고른 상태의 유효성이 갱신되지 않는다 (§4-4).
+    expect(grid.actions?.[0]?.handler).toBe('sirsoft-ecommerce.syncClaimItemSelection');
   });
 
   /**
-   * 환불에는 상품 단위 전이 축이 없다 — 바를 그리면 누를 수 있는 버튼이 언제나 실패다.
+   * 취소만 빼고 그린다 — 취소는 생성이 곧 확정이라 옮길 상태가 없다. 배송 축과 **다른**
+   * 상수를 쓰는 것이 이 단언의 요점이다(R9): 두 축은 뜻이 달라 한쪽을 고칠 때 다른 쪽이
+   * 딸려가면 안 된다.
    *
    * @scenario claim_type=refund, claim_stage=in_progress
-   * @effects claim_item_bulk_bar_absent_for_refund
+   * @effects claim_item_bulk_bar_absent_only_for_cancel
    */
-  it('상품 단위 일괄 바가 교환·반품에서만 그려진다', () => {
-    expect(byId(itemsSection, 'claim_item_bulk_bar').if).toBe(`{{${SHIPPING_CONDITION}}}`);
+  it('상품 단위 일괄 바가 취소에서만 빠진다', () => {
+    expect(byId(itemsSection, 'claim_item_bulk_bar').if).toBe(`{{${ITEM_BULK_CONDITION}}}`);
+    expect(byId(itemsSection, 'claim_items_datagrid').props.selectable).toBe(`{{${ITEM_BULK_CONDITION}}}`);
+    // 배송 축은 그대로다 — 같이 바꾸면 환불 상세에 배송 섹션이 생긴다.
+    expect(ITEM_BULK_CONDITION).not.toBe(SHIPPING_CONDITION);
+  });
+
+  /**
+   * 수량 행은 **`iteration` 선언**으로 반복한다.
+   *
+   * `forEach` 는 엔진이 읽지 않는 키다 — 그대로 두면 행이 **한 번만** 그려지고 `item` 이
+   * 미해석이라 수량 입력이 비활성·빈 값으로 선다. 라이브 실측에서 그 형태로 드러났다
+   * (`inputMax:"" · inputValue:"" · inputDisabled:true`).
+   *
+   * @effects claim_item_quantity_modal_iterates_rows_declaratively
+   */
+  it('수량 확인 모달이 iteration 선언으로 행을 반복한다', () => {
+    const rows = byId(quantityModal, 'ciq_002_rows');
+    const repeated = (rows.children as Node[])[0];
+
+    expect(repeated.iteration?.source).toBe('{{_global.claimItemQuantityContext?.rows ?? []}}');
+    expect(repeated.iteration?.item_var).toBe('qtyRow');
+    expect(JSON.stringify(quantityModal)).not.toContain('"forEach"');
+  });
+
+  /**
+   * 수량 확인 모달은 **자기 파일 · 자기 상태 키**를 쓴다 (§4-6).
+   *
+   * 주문상세 모달을 복제하면 그 파일이 묶여 있는 `_local.changeQuantities` 키를 함께 들고 와,
+   * 주문상세 탭을 갔다 온 뒤 클레임 수량이 섞인다. 반대로 모달을 상품 partial 안에 인라인하면
+   * 상세를 여는 것만으로 모달 트리가 매번 다시 만들어진다. 둘 다 예외가 없어 드러나지 않는다.
+   *
+   * @effects claim_item_quantity_modal_is_a_separate_partial
+   */
+  it('수량 확인 모달이 별도 partial 이고 주문상세 상태 키를 쓰지 않는다', () => {
+    // ① 셸이 파일로 참조한다 — 상품 partial 안에 인라인되어 있지 않다.
+    expect(((shell as Node).modals as Node[]).map((m) => m.partial)).toContain(
+      'partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.json',
+    );
+    expect(JSON.stringify(itemsSection)).not.toContain('ciq_002_rows');
+
+    // ② 주문상세 전용 상태 키·계약을 물려받지 않는다.
+    //    `comment` 는 "왜 복제하지 않는가" 를 적느라 그 이름들을 인용하므로 빼고 본다 —
+    //    설명을 지웠다고 초록이 되거나, 설명을 적었다고 빨개지면 잰 것이 계약이 아니다.
+    const serialized = JSON.stringify(quantityModal, (key, value) => (key === 'comment' ? undefined : value));
+
+    expect(serialized).not.toContain('changeQuantities');
+    expect(serialized).not.toContain('confirmItems');
+
+    // ③ 자기 핸들러를 쓴다 — 주문 핸들러를 공유하면 ① 의 키 충돌로 되돌아간다.
+    expect(serialized).toContain('sirsoft-ecommerce.updateClaimItemQuantity');
+  });
+
+  /**
+   * [적용] 은 곧바로 실행하지 않는다 — 수량은 행마다 다르므로 확인 모달이 받는다 (§4-6).
+   *
+   * @effects claim_item_apply_routes_through_the_quantity_modal
+   */
+  it('[적용] 이 수량 확인 모달 핸들러를 부른다', () => {
+    const action = (byId(itemsSection, 'ci_004_item_bulk_apply').actions as Node[])[0];
+
+    expect(action.handler).toBe('sirsoft-ecommerce.openClaimItemQuantityConfirm');
   });
 
   /**
@@ -1072,6 +1174,7 @@ describe('다국어 키 — ko/en 도달', () => {
     ),
   ].map((key) => key.replace(/\.$/, ''));
 
+  /** @effects claim_detail_message_key_collection_is_not_empty */
   it('레이아웃이 쓰는 키를 최소 60종 이상 수집한다', () => {
     expect(usedKeys.length).toBeGreaterThanOrEqual(60);
   });
@@ -1224,5 +1327,130 @@ describe('입력 컴포넌트의 change 이벤트 경로 (브라우저 실측 �
     );
 
     expect(offenders).toEqual([]);
+  });
+
+  /**
+   * 첨부 업로더가 **순서 변경 엔드포인트를 비워 둔다**.
+   *
+   * 비우지 않으면 기본값인 코어 첨부 순서 API(`/api/admin/attachments/reorder`)로 나간다 —
+   * 드래그 한 번이 **남의 첨부 순서**를 바꾸고, 이 화면에는 오류가 뜨지 않는다. 피해는
+   * 상품·페이지 화면에서 나중에 발견된다.
+   *
+   * @effects claim_attachment_uploader_blocks_the_core_reorder_endpoint
+   */
+  it('첨부 업로더가 코어 첨부 API 로 새지 않는다', () => {
+    const uploader = byId(reasonBlock as Node, 'cr_006_images_uploader');
+    const endpoints = uploader.props?.apiEndpoints ?? {};
+
+    expect(Object.keys(endpoints).sort()).toEqual(['delete', 'reorder', 'upload']);
+    expect(endpoints.reorder).toBe('');
+    expect(endpoints.upload).toContain('/api/modules/sirsoft-ecommerce/admin/');
+    expect(endpoints.delete).toContain('/images/:id');
+    expect(JSON.stringify(reasonBlock)).not.toContain('/api/admin/attachments');
+  });
+
+  /**
+   * 업로더의 콜백이 **`event` 로 선언**된다.
+   *
+   * 관리자 템플릿의 액션 타입 표에는 `onXxx` 별칭이 없다 — `"type": "change"` 만 쓰면
+   * 어느 콜백에도 붙지 않고, 화면에는 아무 증상이 없다.
+   *
+   * @effects claim_attachment_uploader_actions_declare_event_names
+   */
+  it('첨부 업로더의 액션이 event 이름을 명시한다', () => {
+    const uploader = byId(reasonBlock as Node, 'cr_006_images_uploader');
+    const actions = uploader.actions ?? [];
+
+    expect(actions.length).toBeGreaterThan(0);
+    for (const action of actions) {
+      expect(typeof action.event).toBe('string');
+      expect(action.event.startsWith('on')).toBe(true);
+      expect(action.type).toBeUndefined();
+    }
+  });
+
+  /**
+   * 업로더가 **병렬 업로드를 막는다**.
+   *
+   * 서버는 개수 상한을 "조회 → 판정 → 저장" 으로 잠금 없이 판정한다 — 병렬이면 상한을
+   * 넘겨 저장되고 정렬값이 겹치는데, 그 어느 쪽도 422 를 내지 않는다.
+   *
+   * @effects claim_attachment_uploader_serializes_uploads
+   */
+  it('첨부 업로더가 한 번에 한 건만 올린다', () => {
+    const uploader = byId(reasonBlock as Node, 'cr_006_images_uploader');
+
+    expect(uploader.props?.maxConcurrentUploads).toBe(1);
+    expect(uploader.props?.autoUpload).toBe(true);
+  });
+
+  /**
+   * 상한·허용 확장자를 **화면이 리터럴로 적지 않는다**.
+   *
+   * 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈리고, 사용자에게는 이유 없는 422 만
+   * 남는다. 특히 `image/*` 는 서버가 받지 않는 확장자를 고를 수 있게 한다.
+   *
+   * @effects claim_attachment_limits_come_from_the_server
+   */
+  it('첨부 상한·확장자를 서버 봉투에서 읽는다', () => {
+    const uploader = byId(reasonBlock as Node, 'cr_006_images_uploader');
+    const hint = byId(reasonBlock as Node, 'cr_005b_images_hint');
+
+    for (const value of [uploader.props?.maxFiles, uploader.props?.maxSize, uploader.props?.accept]) {
+      expect(String(value)).toContain('attachment_settings');
+    }
+
+    expect(JSON.stringify(hint)).toContain('attachment_settings');
+    expect(JSON.stringify(reasonBlock)).not.toContain('image/*');
+  });
+
+  /**
+   * 업로드는 컴포넌트가 한다 — 옛 핸들러 참조가 남지 않는다.
+   *
+   * @effects claim_attachment_upload_handler_is_gone
+   */
+  it('레이아웃에 uploadClaimImage 참조가 없다', () => {
+    expect(JSON.stringify(reasonBlock)).not.toContain('uploadClaimImage');
+    expect(JSON.stringify(reasonBlock)).not.toContain('isUploadingClaimImage');
+  });
+
+  /**
+   * 첨부 출처 스트립이 **주체 미상(`unknown`)에는 뱃지를 그리지 않는다**.
+   *
+   * 라벨은 서버가 `unknown` 이면 null 로 내려 주고, 화면은 그 null 로 그리기를 멈춘다 —
+   * 조용한 거짓("고객 첨부")보다 조용한 공백이 낫다.
+   *
+   * @effects claim_attachment_origin_strip_hides_unknown_badges
+   */
+  it('출처 스트립이 라벨 없는 첨부에는 뱃지를 그리지 않는다', () => {
+    const strip = byId(reasonBlock as Node, 'cr_007_images_origin_list');
+    const badges = collect(strip, (n) => n.name === 'Badge');
+
+    expect(badges.length).toBeGreaterThan(0);
+    for (const badge of badges) {
+      expect(String(badge.if ?? '')).toContain('uploader_type_label');
+    }
+  });
+
+  /**
+   * 새로 쓴 첨부 문구가 ko/en 양쪽에 실재한다.
+   *
+   * @effects claim_attachment_messages_exist_in_both_locales
+   */
+  it('첨부 문구가 ko/en 양쪽에 있다', () => {
+    const keys = [
+      'admin.claim.detail.reason.images_hint',
+      'admin.claim.detail.reason.images_origin_title',
+      'admin.claim.detail.reason.image_origin_uploaded_at',
+      'admin.claim.detail.reason.confirm_remove_image_title',
+      'admin.claim.detail.reason.confirm_remove_image_message',
+    ];
+
+    for (const locale of ['ko', 'en']) {
+      const messages = loadMessages(locale);
+      for (const key of keys) {
+        expect(hasMessage(messages, key), `${locale}: ${key}`).toBe(true);
+      }
+    }
   });
 });

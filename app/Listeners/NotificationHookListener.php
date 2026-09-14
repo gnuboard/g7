@@ -8,6 +8,7 @@ use App\Extension\HookManager;
 use App\Models\NotificationDefinition;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationDefinitionService;
+use App\Services\NotificationLogService;
 use App\Services\NotificationRecipientResolver;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -19,6 +20,9 @@ use Illuminate\Support\Facades\Schema;
  */
 class NotificationHookListener implements HookListenerInterface
 {
+    /**
+     * @param  NotificationDefinitionService  $definitionService  활성 알림 정의 조회 서비스
+     */
     public function __construct(
         private readonly NotificationDefinitionService $definitionService,
     ) {}
@@ -40,6 +44,7 @@ class NotificationHookListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 동적 핸들러에서 처리).
      *
      * @param  mixed  ...$args
+     * @return void
      */
     public function handle(...$args): void {}
 
@@ -47,6 +52,8 @@ class NotificationHookListener implements HookListenerInterface
      * notification_definitions에서 정의된 훅을 동적으로 구독합니다.
      *
      * ServiceProvider boot() 시점에 호출됩니다.
+     *
+     * @return void
      */
     public function registerDynamicHooks(): void
     {
@@ -95,6 +102,7 @@ class NotificationHookListener implements HookListenerInterface
      *
      * @param  NotificationDefinition  $definition  알림 정의 (큐 직렬화 후 PK 로 복원됨)
      * @param  mixed  ...$hookArgs  원래 훅 발화 시 전달된 인자들
+     * @return void
      */
     public function dispatchForDefinition(NotificationDefinition $definition, ...$hookArgs): void
     {
@@ -111,6 +119,7 @@ class NotificationHookListener implements HookListenerInterface
      *
      * @param  NotificationDefinition  $definition  알림 정의
      * @param  array  $args  훅 파라미터
+     * @return void
      */
     private function dispatch(NotificationDefinition $definition, array $args): void
     {
@@ -158,15 +167,16 @@ class NotificationHookListener implements HookListenerInterface
             }
 
             if ($notifiables->isEmpty()) {
+                // 수신자 0명은 "조용히" 사라지면 안 된다 — 운영자가 발송 이력 화면에서
+                // 왜 안 갔는지를 볼 수 있게 skipped 로 남긴다.
+                $this->logNoRecipient($definition, $template->channel, $recipientRules, $context);
+
                 continue;
             }
 
             foreach ($notifiables as $notifiable) {
                 try {
-                    $notifiableData = $data;
-                    if (isset($notifiableData['name']) && $notifiableData['name'] === '{recipient_name}') {
-                        $notifiableData['name'] = $notifiable->name ?? '';
-                    }
+                    $notifiableData = $this->personalize($data, $notifiable, $definition, $context, $args);
 
                     $notification = new GenericNotification(
                         type: $definition->type,
@@ -179,7 +189,9 @@ class NotificationHookListener implements HookListenerInterface
 
                     $notifiable->notify($notification);
 
-                    HookManager::doAction('core.notification.after_send', $notifiable, $definition, $data);
+                    // 실제로 나간 값(수신자별 치환 결과)을 넘긴다 — 원본 $data 를 넘기면
+                    // 로그 연결 리스너가 수신자가 받은 것과 다른 값을 본다.
+                    HookManager::doAction('core.notification.after_send', $notifiable, $definition, $notifiableData);
                 } catch (\Throwable $e) {
                     Log::error('NotificationHookListener: 알림 발송 실패', [
                         'type' => $definition->type,
@@ -190,5 +202,148 @@ class NotificationHookListener implements HookListenerInterface
                 }
             }
         }
+    }
+
+    /**
+     * 수신자별로 알림 데이터를 개인화합니다.
+     *
+     * 코어는 `{recipient_name}` 치환 하나만 소유하고, 그 밖의 수신자별 값
+     * (예: 수신자가 운영자면 관리자 화면 링크)은 확장이
+     * `{hook_prefix}.notification.personalize_data` 필터로 채웁니다.
+     *
+     * **구독자가 없으면 비용이 0 입니다** — `applyFilters` 가 즉시 원본을 돌려줍니다.
+     *
+     * > ⚠️ 구독자 계약: 이 필터는 **큐 워커에서** 돌 수 있으므로 `$context` 의 스칼라만
+     * > 읽어야 합니다. `$args` 의 모델을 다시 읽으면 과거 사건의 알림에 "지금" 상태가 실립니다.
+     *
+     * @param  array  $data  원본 알림 데이터
+     * @param  object  $notifiable  수신자 (User 또는 GuestNotifiable)
+     * @param  NotificationDefinition  $definition  알림 정의
+     * @param  array  $context  extract_data 가 실은 컨텍스트
+     * @param  array  $args  원래 훅 인자
+     * @return array 수신자별로 치환된 알림 데이터
+     */
+    private function personalize(
+        array $data,
+        object $notifiable,
+        NotificationDefinition $definition,
+        array $context,
+        array $args,
+    ): array {
+        if (isset($data['name']) && $data['name'] === '{recipient_name}') {
+            $data['name'] = $notifiable->name ?? '';
+        }
+
+        $personalized = HookManager::applyFilters(
+            "{$definition->hook_prefix}.notification.personalize_data",
+            $data,
+            $notifiable,
+            $definition->type,
+            $context,
+            $args
+        );
+
+        return is_array($personalized) ? $personalized : $data;
+    }
+
+    /**
+     * 수신자 0명을 발송 이력에 skipped 로 기록합니다.
+     *
+     * 빈 이메일·유발자 제외로 수신자가 사라지는 것은 의도된 의미일 수 있지만,
+     * **조용한 것은 의도가 아닙니다.** 운영자가 "왜 안 왔지" 를 이력에서 답할 수 있게 합니다.
+     *
+     * @param  NotificationDefinition  $definition  알림 정의
+     * @param  string  $channel  채널
+     * @param  array  $recipientRules  적용된 수신자 규칙 (요약만 남긴다)
+     * @param  array  $context  extract_data 가 실은 컨텍스트 (사유 판정용)
+     * @return void
+     */
+    private function logNoRecipient(
+        NotificationDefinition $definition,
+        string $channel,
+        array $recipientRules,
+        array $context,
+    ): void {
+        try {
+            app(NotificationLogService::class)->logSkipped([
+                'channel' => $channel,
+                'notification_type' => $definition->type,
+                'extension_type' => $definition->extension_type,
+                'extension_identifier' => $definition->extension_identifier,
+                'recipient_identifier' => '',
+                'error_message' => __(
+                    'notification.skipped.'.$this->resolveNoRecipientReason($recipientRules, $context),
+                    ['rules' => $this->summarizeRecipientRules($recipientRules)]
+                ),
+                'source' => 'notification',
+                'sent_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('NotificationHookListener: 수신자 0명 로그 기록 실패', [
+                'type' => $definition->type,
+                'channel' => $channel,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 수신자 0명의 사유 키를 고릅니다.
+     *
+     * 비회원 수신자 경로에서 이메일이 비어 있는 것(`guest_email_empty`)과, 규칙이 아무도
+     * 뽑지 못한 것(`no_recipient_resolved`)은 운영자가 취할 조치가 다릅니다 — 전자는 주문의
+     * 연락처를, 후자는 템플릿의 수신자 규칙을 봐야 합니다.
+     *
+     * @param  array  $recipientRules  수신자 규칙 배열
+     * @param  array  $context  컨텍스트
+     * @return string 사유 키 (`notification.skipped.*` 하위)
+     */
+    private function resolveNoRecipientReason(array $recipientRules, array $context): string
+    {
+        $hasTriggerUserRule = collect($recipientRules)
+            ->contains(fn ($rule) => ($rule['type'] ?? null) === 'trigger_user');
+
+        if (! $hasTriggerUserRule || ! empty($context['trigger_user_id'])) {
+            return 'no_recipient_resolved';
+        }
+
+        $guest = $context['guest_recipient'] ?? null;
+        if (is_array($guest) && trim((string) ($guest['email'] ?? '')) === '') {
+            return 'guest_email_empty';
+        }
+
+        return 'no_recipient_resolved';
+    }
+
+    /**
+     * 수신자 규칙을 한 줄 요약으로 만듭니다 (개인정보는 싣지 않는다).
+     *
+     * @param  array  $recipientRules  수신자 규칙 배열
+     * @return string 예: `role:admin, trigger_user`
+     */
+    private function summarizeRecipientRules(array $recipientRules): string
+    {
+        if (empty($recipientRules)) {
+            return 'legacy_notifiables';
+        }
+
+        $summary = [];
+        foreach ($recipientRules as $rule) {
+            $type = (string) ($rule['type'] ?? 'unknown');
+            $value = $rule['value'] ?? null;
+
+            // specific_users 의 UUID 목록은 개인 식별자이므로 개수만 남긴다.
+            if ($type === 'specific_users') {
+                $summary[] = $type.':'.(is_array($value) ? count($value) : 0);
+
+                continue;
+            }
+
+            $summary[] = is_array($value)
+                ? $type.':'.implode('|', array_map('strval', $value))
+                : ($value === null || $value === '' ? $type : $type.':'.$value);
+        }
+
+        return implode(', ', $summary);
     }
 }

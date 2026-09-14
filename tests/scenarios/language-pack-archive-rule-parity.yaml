@@ -1,0 +1,38 @@
+feature: language_pack_archive_rule_parity
+
+description: |
+  언어팩 ZIP 을 받는 두 경로(**설치 전 미리보기**·**설치**)가 같은 파일 규칙을 쓴다.
+
+  배경:
+    - 두 경로는 운영자가 고른 **같은 파일 하나**를 받는다. 그런데 규칙이 갈려 있었다 —
+      미리보기는 5MB·`mimes:zip`, 설치는 10MB·`mimetypes:…`.
+    - 그래서 **5~10MB 언어팩은 설치는 되는데 미리보기만 422** 였다. 운영자에게는
+      "설치는 되는데 내용을 미리 볼 수 없는 팩" 으로만 보이고, 어느 쪽이 옳은지 화면이
+      말해 주지 않는다.
+    - 브라우저·OS 에 따라 zip 이 `application/x-zip-compressed`·`application/octet-stream`
+      으로 올라오므로 `mimes:zip` 은 반대 방향으로도 갈린다.
+    - 정렬 방향은 **설치 규칙 쪽**이다. 미리보기가 더 좁으면 설치할 수 있는 팩의 내용을
+      확인할 수 없고, 그것은 정의상 버그다.
+
+  규칙을 `ValidatesLanguagePackArchive` trait 한 곳에 뒀으므로, 두 경로가 다시 갈리는
+  순간 이 시나리오가 빨개진다.
+
+axes:
+  # 「두 경로가 같은 판정을 내리는가」는 축이 아니라 이 시나리오의 효과 자체다 —
+  # 케이스마다 미리보기·설치 **양쪽**을 함께 돌려 비교한다. 축은 파일의 모양뿐이다.
+  archive_shape:
+    - within_limit
+    - over_limit
+    - octet_stream_mime
+
+effects:
+  - language_pack_preview_and_install_share_one_file_rule
+  - language_pack_seven_megabyte_archive_passes_both_paths
+  - language_pack_oversized_archive_fails_both_paths
+  - language_pack_octet_stream_archive_passes_both_paths
+
+test_files:
+  - tests/Unit/Requests/LanguagePackArchiveRuleParityTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

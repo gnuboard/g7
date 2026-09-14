@@ -27,6 +27,7 @@ import {
 } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 
 import itemsSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_items.json';
+import reasonSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_reason.json';
 import shippingSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_shipping.json';
 import reasonBlock from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_reason.json';
 import paymentSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_payment.json';
@@ -207,11 +208,23 @@ beforeEach(() => {
     )
   );
 
+  // 첨부 업로더 — 이 테스트가 보는 축은 '섰는가 · 잠겼는가 · 몇 장을 받았는가' 뿐이다.
+  registry.register('composite', 'FileUploader', ({ id, disabled, initialFiles }: any) =>
+    React.createElement('div', {
+      id,
+      'data-testid': 'claim-file-uploader',
+      'data-disabled': String(!!disabled),
+      'data-initial-count': String((initialFiles ?? []).length),
+    })
+  );
+
   // 뱃지는 '어떤 뱃지가 켜졌는가' 만 보므로 레이아웃 id 를 그대로 내보낸다.
-  registry.register('composite', 'Badge', ({ id, variant, text, children }: any) =>
+  registry.register('composite', 'Badge', ({ id, variant, color, text, children }: any) =>
     React.createElement(
       'span',
-      { id, 'data-testid': 'claim-badge', 'data-variant': variant },
+      // `color` 는 Badge 가 `variant` 보다 **먼저** 적용하는 prop 이다 — 둘 중 하나만
+      // 내보내면 그 쪽을 안 쓰는 화면의 뱃지가 전부 같은 모양으로 측정된다.
+      { id, 'data-testid': 'claim-badge', 'data-variant': variant, 'data-color': color },
       text ?? children
     )
   );
@@ -372,12 +385,17 @@ function inlinePartials(node: any): any {
   return node;
 }
 
-function probe(node: Node): Node {
+function probe(node: Node, localState: Record<string, unknown> = {}): Node {
   const { meta, ...rest } = inlinePartials(node);
 
   return {
     version: '1.0.0',
     layout_name: 'test/admin-claim-detail',
+    // 셸이 하는 것과 같은 방식으로 `_local` 을 깐다 — 선택 상태에만 나타나는 분기
+    // (교집합 0건 안내 등)는 이 씨앗 없이는 렌더 축에서 잴 수 없다.
+    ...(Object.keys(localState).length > 0
+      ? { init_actions: [{ handler: 'setState', params: { target: '_local', ...localState } }] }
+      : {}),
     data_sources: [
       {
         id: 'claim',
@@ -398,8 +416,12 @@ function probe(node: Node): Node {
  * @param response 상세 응답
  * @returns 테스트 유틸
  */
-async function renderProbe(node: Node, response: Record<string, unknown> = claimResponse()) {
-  const utils = createLayoutTest(probe(node) as any, {
+async function renderProbe(
+  node: Node,
+  response: Record<string, unknown> = claimResponse(),
+  localState: Record<string, unknown> = {}
+) {
+  const utils = createLayoutTest(probe(node, localState) as any, {
     componentRegistry: registry as any,
     locale: 'ko',
   });
@@ -649,19 +671,61 @@ describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
   });
 
   /**
-   * 환불에는 상품 단위 전이 축이 없다.
+   * 환불에도 상품 단위 전이 축이 열렸다 (§4) — 승인·보류·반려를 상품마다 가를 수 있다.
    *
    * @scenario claim_type=refund, claim_stage=in_progress
-   * @effects claim_item_bulk_bar_absent_for_refund_render
+   * @effects claim_item_bulk_bar_present_for_refund_render
    */
-  it('환불 유형에서는 상품 단위 일괄 바가 사라진다', async () => {
+  it('환불 유형에도 상품 단위 일괄 바가 선다', async () => {
     const utils = await renderProbe(
       itemsSection as Node,
       claimResponse({ claim_type: 'refund' }, { claim_path_segment: 'refunds' })
     );
 
+    expect(document.getElementById('claim_item_bulk_bar')).not.toBeNull();
+    expect(screen.getByTestId('claim-items-grid').getAttribute('data-selectable')).toBe('true');
+    utils.cleanup();
+  });
+
+  /**
+   * 취소만 빠진다 — 생성이 곧 확정이라 옮길 상태가 없다.
+   *
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects claim_item_bulk_bar_absent_for_cancel_render
+   */
+  it('취소 유형에서는 상품 단위 일괄 바가 사라진다', async () => {
+    const utils = await renderProbe(
+      itemsSection as Node,
+      claimResponse({ claim_type: 'cancel' }, { claim_path_segment: '' })
+    );
+
     expect(document.getElementById('claim_item_bulk_bar')).toBeNull();
     expect(screen.getByTestId('claim-items-grid').getAttribute('data-selectable')).toBe('false');
+    utils.cleanup();
+  });
+
+  /**
+   * 고른 상품들이 **함께 갈 수 있는 상태가 하나도 없으면** 셀렉트를 감추고 이유를 적는다.
+   *
+   * 빈 셀렉트만 남기면 운영자는 화면이 덜 그려진 줄 알고 새로고침을 반복한다. 구조만 맞고
+   * 렌더가 비면 아무 글자도 나오지 않으므로, 이 축은 렌더에서 재야 한다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_item_no_common_transition_notice_render
+   */
+  it('교집합이 0건이면 상태 셀렉트 대신 안내가 선다', async () => {
+    const utils = await renderProbe(itemsSection as Node, claimResponse(), {
+      selectedClaimItems: [101, 102],
+      itemTransitionOptions: [],
+    });
+
+    expect(document.getElementById('ci_002_item_status')).toBeNull();
+
+    // 안내는 실제로 그려진다(빈 노드가 아니다). 프로브는 모듈 언어팩을 싣지 않으므로
+    // 문구 자체가 아니라 **노드가 서는지**를 잰다 — 문구의 ko/en 실재는 구조 테스트가 맡는다.
+    const notice = document.getElementById('ci_003_no_common_transition');
+    expect(notice).not.toBeNull();
+    expect(notice!.textContent?.trim()).not.toBe('');
     utils.cleanup();
   });
 
@@ -1385,6 +1449,170 @@ describe('접수 시점 주문금액 비교표 — 정산 카드 · 취소 카�
     expect(card?.querySelector('[data-testid="claim-detail-comparison-empty"]')).not.toBeNull();
     expect(card?.querySelector('[data-testid="claim-detail-comparison-table"]')).toBeNull();
     expect(card?.querySelectorAll('[data-row]')).toHaveLength(0);
+    utils.cleanup();
+  });
+});
+
+describe('첨부 — 사유 카드의 업로더·출처 스트립 (§6-3 · §6-4)', () => {
+  /** 첨부 두 장(고객 1 · 운영자 1)을 실은 상세 응답. */
+  const withImages = () =>
+    claimResponse(
+      {
+        images: [
+          {
+            id: 11,
+            original_name: 'customer.jpg',
+            original_filename: 'customer.jpg',
+            url: '/storage/a.jpg',
+            size: 10240,
+            size_formatted: '10 KB',
+            sort_order: 0,
+            order: 0,
+            is_image: true,
+            uploader_type: 'customer',
+            uploader_type_label: '고객',
+            uploader_name: '김지은',
+            created_at: '2026-09-14 10:00',
+          },
+          {
+            id: 12,
+            original_name: 'admin.png',
+            original_filename: 'admin.png',
+            url: '/storage/b.png',
+            size: 20480,
+            size_formatted: '20 KB',
+            sort_order: 1,
+            order: 1,
+            is_image: true,
+            uploader_type: 'admin',
+            uploader_type_label: '운영자',
+            uploader_name: '관리자',
+            created_at: '2026-09-14 11:00',
+          },
+        ],
+      },
+      { attachment_settings: { max_images: 5, image_max_size_kb: 2048, allowed_extensions: ['jpg', 'png'], accept: '.jpg,.png' } }
+    );
+
+  /**
+   * 취소 신청서에는 증빙 첨부 축이 없다 — 블록이 남으면 올릴 수 없는 입력이 선다.
+   *
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects claim_attachment_block_absent_for_cancel_render
+   */
+  it('취소 유형에서는 첨부 블록이 렌더되지 않는다', async () => {
+    const utils = await renderProbe(
+      reasonSection as Node,
+      claimResponse({ claim_type: 'cancel' }, { claim_path_segment: '', attachment_settings: null })
+    );
+
+    expect(document.getElementById('cr_005_images_block')).toBeNull();
+    expect(screen.queryByTestId('claim-file-uploader')).toBeNull();
+    utils.cleanup();
+  });
+
+  /**
+   * 사진이 한 장도 없어도 **업로더는 서 있어야** 운영자가 첫 장을 올릴 수 있다.
+   *
+   * 목록이 비었다고 블록째 감추면 "증빙을 넣을 자리가 없는 화면" 이 된다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_attachment_uploader_stands_even_with_no_images_render
+   */
+  it('첨부가 0장이어도 블록과 업로더는 선다', async () => {
+    const utils = await renderProbe(reasonSection as Node);
+
+    expect(document.getElementById('cr_005_images_block')).not.toBeNull();
+    const uploader = screen.getByTestId('claim-file-uploader');
+    expect(uploader.getAttribute('data-initial-count')).toBe('0');
+    utils.cleanup();
+  });
+
+  /**
+   * 전이 권한이 없으면 업로더가 잠긴다 — 열어 두면 올린 뒤 서버가 403 으로 거절한다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_attachment_uploader_disabled_without_permission_render
+   */
+  it('can_update_status 가 false 면 업로더가 비활성이다', async () => {
+    const utils = await renderProbe(
+      reasonSection as Node,
+      claimResponse({}, { abilities: { can_update_status: false, can_update_amounts: false, can_execute_refund: false } })
+    );
+
+    expect(screen.getByTestId('claim-file-uploader').getAttribute('data-disabled')).toBe('true');
+    utils.cleanup();
+  });
+
+  /**
+   * 출처 스트립이 고객·운영자를 **다른 뱃지로** 가른다.
+   *
+   * 분쟁에서 "누가 낸 증거인가" 가 판정을 가르므로 두 주체가 같은 모양으로 보이면 안 된다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_attachment_origin_badges_differ_by_uploader_render
+   */
+  it('출처 스트립이 고객·운영자 뱃지를 구분해 그린다', async () => {
+    const utils = await renderProbe(reasonSection as Node, withImages());
+
+    const strip = document.getElementById('cr_007_images_origin_list');
+    expect(strip).not.toBeNull();
+
+    const badges = Array.from(strip!.querySelectorAll('[data-testid="claim-badge"]'));
+
+    // 첨부마다 한 줄 — 반복 선언이 실제로 돌아야 두 줄이 선다.
+    expect(badges).toHaveLength(2);
+
+    // 두 주체가 **다른 모양**이어야 한다. 같은 색이면 분쟁에서 "누가 낸 증거인가" 를 화면이
+    // 말해 주지 못한다. 어느 prop 으로 색을 주든(색상명 또는 의미 토큰) 달라야 한다.
+    const looks = badges.map((el) => `${el.getAttribute('data-color') ?? ''}/${el.getAttribute('data-variant') ?? ''}`);
+    expect(new Set(looks).size).toBe(2);
+    expect(badges.map((el) => el.textContent)).toEqual(['고객', '운영자']);
+    utils.cleanup();
+  });
+
+  /**
+   * 주체 미상(`unknown`)이면 뱃지를 **그리지 않는다** — 조용한 거짓 대신 조용한 공백이다.
+   *
+   * 백필이 단정하지 못한 첨부에 아무 뱃지나 붙으면, 운영자가 올린 사진이 「고객이 낸 증거」로
+   * 읽혀 분쟁 판정이 뒤집힌다. 서버는 `uploader_type_label` 을 null 로 보내고 화면은 그 줄의
+   * 뱃지만 비운다 — 줄 자체는 남아야 파일이 목록에서 사라지지 않는다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_attachment_unknown_origin_renders_no_badge
+   */
+  it('주체 미상 첨부에는 출처 뱃지를 그리지 않는다', async () => {
+    const utils = await renderProbe(
+      reasonSection as Node,
+      claimResponse({
+        images: [
+          {
+            id: 13,
+            original_name: 'legacy.jpg',
+            original_filename: 'legacy.jpg',
+            url: '/storage/c.jpg',
+            size: 30720,
+            size_formatted: '30 KB',
+            sort_order: 0,
+            order: 0,
+            is_image: true,
+            uploader_type: 'unknown',
+            uploader_type_label: null,
+            uploader_name: null,
+            created_at: '2026-09-14 12:00',
+          },
+        ],
+      })
+    );
+
+    const strip = document.getElementById('cr_007_images_origin_list');
+    expect(strip).not.toBeNull();
+
+    // 파일은 목록에 남는다.
+    expect(strip!.textContent).toContain('legacy.jpg');
+
+    // 다만 뱃지는 한 개도 서지 않는다.
+    expect(strip!.querySelectorAll('[data-testid="claim-badge"]')).toHaveLength(0);
     utils.cleanup();
   });
 });
