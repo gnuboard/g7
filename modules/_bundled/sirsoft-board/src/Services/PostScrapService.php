@@ -18,6 +18,12 @@ use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
  */
 class PostScrapService
 {
+    /**
+     * PostScrapService 생성자
+     *
+     * @param  PostScrapRepositoryInterface  $repository  스크랩 리포지토리
+     * @param  PostRepositoryInterface  $postRepository  게시글 리포지토리
+     */
     public function __construct(
         protected PostScrapRepositoryInterface $repository,
         protected PostRepositoryInterface $postRepository

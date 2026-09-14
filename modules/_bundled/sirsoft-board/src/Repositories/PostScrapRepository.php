@@ -11,6 +11,11 @@ use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
  */
 class PostScrapRepository implements PostScrapRepositoryInterface
 {
+    /**
+     * PostScrapRepository 생성자
+     *
+     * @param  PostScrap  $model  스크랩 모델
+     */
     public function __construct(
         protected PostScrap $model
     ) {}

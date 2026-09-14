@@ -292,4 +292,15 @@ return [
     'dashboard' => [
         'fetch_success' => 'ダッシュボードデータを閲覧しました。',
     ],
+    'scrap' => [
+        'added' => '投稿をスクラップしました。',
+        'removed' => 'スクラップを解除しました。',
+        'toggle_failed' => 'スクラップ処理に失敗しました。',
+        'retrieved' => 'スクラップ一覧を閲覧しました。',
+        'retrieve_failed' => 'スクラップ一覧の閲覧に失敗しました。',
+        'delete_failed' => 'スクラップの削除に失敗しました。',
+        'not_found' => 'スクラップが見つかりません。',
+        'scrap_disabled' => 'この掲示板はスクラップ機能が無効化されています。',
+        'post_not_found' => '投稿が見つかりません。',
+    ],
 ];

@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 90종 / 호출 지점 91곳. 이 중 90종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
+발행 훅 92종 / 호출 지점 94곳. 이 중 92종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -37,8 +37,8 @@
 | `sirsoft-board.board.filter_menu_data` | filter | — | `src/Services/BoardService.php:1053` |
 | `sirsoft-board.board.filter_update_data` | filter | — | `src/Services/BoardService.php:500` |
 | `sirsoft-board.board.posts.before_force_delete` | action | — | `src/Services/BoardService.php:593` |
-| `sirsoft-board.board.store_validation_rules` | filter | — | `src/Http/Requests/StoreBoardRequest.php:226` |
-| `sirsoft-board.board.update_validation_rules` | filter | — | `src/Http/Requests/UpdateBoardRequest.php:230` |
+| `sirsoft-board.board.store_validation_rules` | filter | — | `src/Http/Requests/StoreBoardRequest.php:227` |
+| `sirsoft-board.board.update_validation_rules` | filter | — | `src/Http/Requests/UpdateBoardRequest.php:231` |
 | `sirsoft-board.board_type.after_create` | action | — | `src/Services/BoardTypeService.php:42` |
 | `sirsoft-board.board_type.after_delete` | action | — | `src/Services/BoardTypeService.php:107` |
 | `sirsoft-board.board_type.after_update` | action | — | `src/Services/BoardTypeService.php:70` |
@@ -74,7 +74,7 @@
 | `sirsoft-board.post.before_delete` | action | — | `src/Services/PostService.php:436` |
 | `sirsoft-board.post.before_restore` | action | — | `src/Services/PostService.php:543` |
 | `sirsoft-board.post.before_update` | action | — | `src/Services/PostService.php:334` |
-| `sirsoft-board.post.filter_content_thumbnail` | filter | — | `src/Models/Post.php:138` |
+| `sirsoft-board.post.filter_content_thumbnail` | filter | — | `src/Models/Post.php:140` |
 | `sirsoft-board.post.filter_create_data` | filter | — | `src/Services/PostService.php:263` |
 | `sirsoft-board.post.filter_update_data` | filter | — | `src/Services/PostService.php:339` |
 | `sirsoft-board.post.store_validation_rules` | filter | — | `src/Http/Requests/StorePostRequest.php:120` |
@@ -93,7 +93,9 @@
 | `sirsoft-board.report.filter_create_data` | filter | — | `src/Services/ReportService.php:232` |
 | `sirsoft-board.roles.after_create` | action | — | `src/Services/BoardService.php:411` |
 | `sirsoft-board.roles.after_delete` | action | — | `src/Services/BoardService.php:604` |
-| `sirsoft-board.search.post.index_should_update` | filter | — | `src/Models/Post.php:280` |
+| `sirsoft-board.scrap.after_toggle` | action | — | `src/Services/PostScrapService.php:58` 외 1곳 |
+| `sirsoft-board.scrap.before_toggle` | action | — | `src/Services/PostScrapService.php:46` |
+| `sirsoft-board.search.post.index_should_update` | filter | — | `src/Models/Post.php:282` |
 | `sirsoft-board.settings.after_bulk_apply` | action | — | `src/Services/BoardService.php:1368` |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | action | — | `src/Services/BoardService.php:1359` |
 | `sirsoft-board.settings.before_bulk_apply` | action | — | `src/Services/BoardService.php:1263` |
@@ -183,6 +185,7 @@
 | `sirsoft-board.report.after_delete_content` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterDeleteContent` | 20 |
 | `sirsoft-board.report.after_restore_content` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterRestoreContent` | 20 |
 | `sirsoft-board.report.after_update_status` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterUpdateStatus` | 20 |
+| `sirsoft-board.scrap.after_toggle` | action (미선언) | `BoardActivityLogListener` | `handleScrapAfterToggle` | 20 |
 | `sirsoft-board.settings.after_bulk_apply` | action (미선언) | `BoardActivityLogListener` | `handleSettingsAfterBulkApply` | 20 |
 | `sirsoft-board.settings.after_bulk_apply` | action (미선언) | `SeoBoardSettingsCacheListener` | `onBulkApply` | 20 |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | action (미선언) | `BoardActivityLogListener` | `handleSettingsAfterBulkApplyAborted` | 20 |
@@ -212,7 +215,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `ActivityLogDescriptionResolver` | 1개 | 명시 등록 | ✅ | `src/Listeners/ActivityLogDescriptionResolver.php` |
-| `BoardActivityLogListener` | 30개 | 명시 등록 | ✅ | `src/Listeners/BoardActivityLogListener.php` |
+| `BoardActivityLogListener` | 31개 | 명시 등록 | ✅ | `src/Listeners/BoardActivityLogListener.php` |
 | `BoardCommentsCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardCommentsCountSyncListener.php` |
 | `BoardNotificationChannelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationChannelListener.php` |
 | `BoardNotificationDataListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationDataListener.php` |
