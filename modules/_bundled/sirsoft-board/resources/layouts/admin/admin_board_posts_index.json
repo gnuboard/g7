@@ -1,5 +1,5 @@
 {
-    "comment": "게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다",
+    "comment": "게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다",
     "version": "1.0.0",
     "layout_name": "admin_board_posts_index",
     "extends": "_admin_base",
@@ -926,6 +926,7 @@
                             }
                         ],
                         "props": {
+                            "selectedCountText": "",
                             "rowClassName": "{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}",
                             "data": "{{posts?.data?.data}}",
                             "sortable": true,

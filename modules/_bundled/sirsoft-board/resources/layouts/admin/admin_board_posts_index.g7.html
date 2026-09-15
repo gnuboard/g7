@@ -1,4 +1,5 @@
-<!-- 게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다 -->
+<!-- 게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다
+  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=""` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다 -->
 <layout name="admin_board_posts_index" version="1.0.0" extends="_admin_base">
   <meta title="{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title" description="{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"/>
   <!-- 목록 본체 — 검색은 `filters[0][*]` 세 칸(대상 필드·값·연산자)으로 보낸다. 422 만 토스트로 흘리고 403·500 은 화면 자리에 오류 페이지를 세운다 — 앞은 조건이 틀린 것이고 뒤는 화면을 세울 수 없는 것이다 -->
@@ -235,7 +236,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-ref="posts_data_grid" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
+      <data-grid selectedCountText="" data-ref="posts_data_grid" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
         <column field="number" header="$t:sirsoft-board.admin.posts.columns.number" :sortable="false" :required="true">
           <cell>
             <span data-if="{{row.row_type === 'notice'}}" class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">{{row.number ?? '-'}}</span>

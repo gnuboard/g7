@@ -416,6 +416,20 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `StatusBadge` | 상태 뱃지 (아이콘 포함) | status, label, showIcon, iconName, style |
 | `StatCard` | 통계 카드 (값, 라벨, 추이 표시) | value, label, change, changeLabel, iconName, ... |
 | `EmptyState` | 데이터 없음 상태 표시 | title, description, iconName, illustrationSrc, ... |
+
+> **선택 건수는 한 곳에서만 그린다 — `selectedCountText=""`**
+>
+> `DataGrid` 는 `selectable` 이 켜지고 선택된 행이 있으면 목록 위에 「N개 선택됨」을 **스스로**
+> 그린다. 그런데 관리자 목록 화면은 대개 일괄 처리 바(`bulk-actions-bar`)를 따로 두고 거기에도
+> 같은 문장을 적는다 — 그대로 두면 화면에 두 번 뜬다(PO 제보 2026-09-15).
+>
+> 일괄 바에 건수를 적는 화면은 `<data-grid selectedCountText="">` 로 내장 줄을 끈다. 빈 문자열이면
+> `selectedCountText ?? t(...)` 의 `??` 가 폴백하지 않아 카드형·표형 두 렌더 지점의
+> `&& resolvedSelectedCountText` 가드가 함께 꺼진다. 반대로 일괄 바가 없는 화면은 이 prop 을
+> 두지 않아 내장 줄이 유일한 표기가 되게 둔다.
+>
+> 저장소 전역 정합은 `resources/js/core/template-engine/__tests__/DataGrid.selectedCountParity.test.ts`
+> 가 모집단을 저작본에서 파생해 강제한다.
 | `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, isHtml, purifyConfig, text |
 
 #### 폼/입력

@@ -1525,6 +1525,7 @@
                 }
             ],
             "props": {
+                "selectedCountText": "",
                 "data": "{{schedules?.data?.data}}",
                 "pagination": true,
                 "serverSidePagination": true,

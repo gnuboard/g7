@@ -1,5 +1,5 @@
 {
-    "comment": "상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지\n  않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).\n  조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를\n  검색 입력값으로 되돌려 담는다.",
+    "comment": "상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다\n  않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).\n  조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를\n  검색 입력값으로 되돌려 담는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_review_index",
     "extends": "_admin_base",
@@ -1641,6 +1641,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "selectedCountText": "",
                                     "data": "{{reviews.data?.data ?? []}}",
                                     "idField": "id",
                                     "selectable": true,

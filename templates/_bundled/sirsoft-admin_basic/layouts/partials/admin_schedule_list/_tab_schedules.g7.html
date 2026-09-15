@@ -380,7 +380,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+    <data-grid selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
       <column field="name" header="$t:admin.schedules.columns.name" :sortable="false">
         <cell>
           <div>
