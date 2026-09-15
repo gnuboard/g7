@@ -949,5 +949,9 @@ ini_set(\'zlib.output_compression\', \'off\');
     'required_files_fix_guide_combined' => '.env 파일 생성 및 권한 설정이 필요합니다. 아래 명령어를 실행해주세요:',
 
     // 상대경로 병기 안내
+    'storage_windows_readonly' => 'Storage 폴더에 읽기 전용(ReadOnly) 속성이 걸려 있습니다.',
+    'storage_windows_readonly_message' => '이 속성은 ACL(접근 권한)이 아니라 파일 속성이라 icacls 명령으로는 해제되지 않습니다. 아래 attrib 명령으로 읽기 전용 속성을 먼저 해제하세요.',
+    'permission_readonly_fix_guide' => '읽기 전용 속성을 해제하려면 아래 명령을 실행하세요:',
+    'permission_readonly_hint' => '※ 압축 해제·백업 복원·동기화 도구가 ReadOnly 속성을 남기는 경우가 많습니다. 속성 해제 후에도 실패하면 이어서 icacls 로 권한을 부여하세요.',
     'or_relative_path' => '또는 그누보드7 루트 디렉토리에서:',
 ];

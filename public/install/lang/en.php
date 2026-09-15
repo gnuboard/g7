@@ -949,5 +949,9 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'required_files_fix_guide_combined' => '.env file creation and permission setup required. Run the following command:',
 
     // Relative path alternative
+    'storage_windows_readonly' => 'The storage folder has the ReadOnly attribute set.',
+    'storage_windows_readonly_message' => 'This is a file attribute, not an ACL, so icacls cannot clear it. Remove the ReadOnly attribute with the attrib command below first.',
+    'permission_readonly_fix_guide' => 'Run the command below to clear the ReadOnly attribute:',
+    'permission_readonly_hint' => '* Extracting archives, restoring backups, or sync tools often leave the ReadOnly attribute behind. If it still fails afterwards, follow up with icacls to grant permissions.',
     'or_relative_path' => 'Or from the G7 root directory:',
 ];

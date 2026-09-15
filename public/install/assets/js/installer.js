@@ -254,6 +254,9 @@
         const notExistsPaths = []; // mkdir 대상 (not_exists)
         const failedDirRelPaths = []; // 상대경로
         const notExistsRelPaths = []; // 상대경로 (not_exists)
+        // Windows ReadOnly 속성이 원인인 경로가 하나라도 있으면 attrib -R 안내를 함께 노출한다.
+        // (ReadOnly 는 ACL 이 아니라 파일 속성이라 icacls 로는 해소되지 않는다)
+        let hasWindowsReadOnly = false;
         if (!allDirsPassed) {
             // 계층적 디렉토리 에러 메시지 생성
             let dirErrorHtml = `${lang('error_directory_permissions')}<ul style="margin-top: 0.5rem;">`;
@@ -278,6 +281,19 @@
                         // not_writable, not_readable, subdirectory_issues 등 모두 chmod 대상
                         failedDirPaths.push(fullPath);
                         failedDirRelPaths.push(relPath);
+
+                        if (info.error_type === 'windows_readonly') {
+                            hasWindowsReadOnly = true;
+                        }
+                    }
+
+                    // 하위 디렉토리 중 ReadOnly 속성이 원인인 항목이 있는지 확인
+                    if (Array.isArray(info.failed_subdirectories)) {
+                        info.failed_subdirectories.forEach(subdir => {
+                            if (subdir && typeof subdir === 'object' && subdir.windows_readonly) {
+                                hasWindowsReadOnly = true;
+                            }
+                        });
                     }
                     dirErrorHtml += `<li>${path}`;
 
@@ -632,6 +648,19 @@
                 if (isWindows) {
                     const winDirPaths = failedDirPaths.map(p => p.replace(/\//g, '\\'));
                     const winDirCommands = winDirPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
+
+                    // ReadOnly 속성이 원인이면 icacls 로는 해소되지 않는다(ACL 이 아니라 파일 속성).
+                    // attrib -R 안내를 먼저 노출한다.
+                    if (hasWindowsReadOnly) {
+                        const winRoCommands = winDirPaths.map(p => `attrib -R "${p}" /D /S`);
+                        html += `<p class="fix-guide-label">${lang('permission_readonly_fix_guide')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(winRoCommands.join('\n'))}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        html += `<p class="fix-guide-hint">${lang('permission_readonly_hint')}</p>`;
+                    }
+
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirCommands.join('\n'))}</pre>`;

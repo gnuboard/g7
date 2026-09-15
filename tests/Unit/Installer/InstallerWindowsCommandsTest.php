@@ -59,6 +59,10 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * isWindows() 함수가 현재 OS를 정확히 감지하는지 확인합니다.
+     *
+     * @scenario os_command_kind=env_copy
+     *
+     * @effects platform_detection_returns_boolean
      */
     public function test_is_windows_returns_bool(): void
     {
@@ -75,6 +79,10 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * getEnvCopyCommand()가 Windows에서 올바른 명령어를 반환하는지 확인합니다.
+     *
+     * @scenario os_command_kind=env_copy
+     *
+     * @effects env_copy_command_matches_platform, env_copy_command_honors_base_path
      */
     public function test_get_env_copy_command_with_base_path(): void
     {
@@ -94,6 +102,10 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * getEnvCopyCommand()가 빈 경로에서도 동작하는지 확인합니다.
+     *
+     * @scenario os_command_kind=env_copy
+     *
+     * @effects env_copy_command_matches_platform
      */
     public function test_get_env_copy_command_without_base_path(): void
     {
@@ -114,6 +126,10 @@ class InstallerWindowsCommandsTest extends TestCase
      *
      * 현재 시그니처: getPermissionFixCommand(string $pathList, string $mode = 'ownership')
      * (이전 (owner, path, mode) 3-arg 에서 리팩토링되어 owner 인자 제거됨)
+     *
+     * @scenario os_command_kind=permission_fix, permission_failure_cause=acl_only
+     *
+     * @effects permission_fix_command_ownership_mode
      */
     public function test_get_permission_fix_command_ownership_mode(): void
     {
@@ -130,7 +146,70 @@ class InstallerWindowsCommandsTest extends TestCase
     }
 
     /**
+     * getPermissionFixCommand()가 windows_readonly 모드에서 attrib -R 을 반환하는지 확인합니다.
+     *
+     * ReadOnly 는 ACL 이 아니라 파일 속성이므로 icacls 로는 해제되지 않는다.
+     * 이 모드는 icacls 대신 attrib -R 을 안내해야 한다 (재발 방지).
+     *
+     * @scenario permission_failure_cause=readonly_attribute
+     *
+     * @effects readonly_mode_returns_attrib_command, readonly_mode_does_not_return_icacls
+     */
+    public function test_get_permission_fix_command_windows_readonly_mode(): void
+    {
+        if (! isWindows()) {
+            $this->markTestSkipped('Windows 전용 경로입니다.');
+        }
+
+        $command = getPermissionFixCommand('/var/www/storage', 'windows_readonly');
+
+        $this->assertStringContainsString('attrib -R', $command);
+        $this->assertStringContainsString('/D', $command);
+        $this->assertStringContainsString('/S', $command);
+        $this->assertStringNotContainsString('icacls', $command);
+    }
+
+    /**
+     * ReadOnly 속성이 걸린 디렉토리를 hasWindowsReadOnlyAttribute()가 탐지하는지 확인합니다.
+     *
+     * 정상 디렉토리를 ReadOnly 로 오진하면 엉뚱한 명령을 안내하게 되므로 음성 케이스도 함께 검증한다.
+     *
+     * @scenario permission_failure_cause=readonly_attribute
+     *
+     * @effects readonly_directory_is_detected, normal_directory_is_not_misdiagnosed_as_readonly
+     */
+    public function test_has_windows_readonly_attribute_detects_readonly_directory(): void
+    {
+        if (! isWindows()) {
+            $this->markTestSkipped('Windows 전용 경로입니다.');
+        }
+
+        $base = sys_get_temp_dir().'/g7_ro_'.uniqid();
+        $readOnlyDir = $base.'/readonly';
+        $normalDir = $base.'/normal';
+        mkdir($readOnlyDir, 0777, true);
+        mkdir($normalDir, 0777, true);
+
+        @exec('attrib +R '.escapeshellarg($readOnlyDir).' /D');
+
+        try {
+            clearstatcache(true);
+            $this->assertTrue(hasWindowsReadOnlyAttribute($readOnlyDir), 'ReadOnly 디렉토리를 탐지해야 합니다.');
+            $this->assertFalse(hasWindowsReadOnlyAttribute($normalDir), '정상 디렉토리를 ReadOnly 로 오진하면 안 됩니다.');
+        } finally {
+            @exec('attrib -R '.escapeshellarg($readOnlyDir).' /D /S');
+            @rmdir($readOnlyDir);
+            @rmdir($normalDir);
+            @rmdir($base);
+        }
+    }
+
+    /**
      * getPermissionFixCommand()가 file 모드에서 올바른 명령어를 반환하는지 확인합니다.
+     *
+     * @scenario os_command_kind=permission_fix, permission_failure_cause=acl_only
+     *
+     * @effects permission_fix_command_file_mode
      */
     public function test_get_permission_fix_command_file_mode(): void
     {
@@ -147,6 +226,10 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * getPermissionFixCommand()가 Windows에서 경로 구분자를 백슬래시로 변환하는지 확인합니다.
+     *
+     * @scenario os_command_kind=permission_fix, permission_failure_cause=acl_only
+     *
+     * @effects permission_fix_command_uses_windows_path_separator
      */
     public function test_get_permission_fix_command_windows_path_separator(): void
     {
@@ -161,6 +244,10 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * getEnvCopyCommand()가 Windows에서 경로 구분자를 백슬래시로 변환하는지 확인합니다.
+     *
+     * @scenario os_command_kind=env_copy
+     *
+     * @effects env_copy_command_uses_windows_path_separator
      */
     public function test_get_env_copy_command_windows_path_separator(): void
     {
@@ -175,6 +262,10 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * 다국어 파일에 permission_windows_hint 키가 존재하는지 확인합니다.
+     *
+     * @scenario os_command_kind=translation_keys
+     *
+     * @effects permission_translation_keys_exist
      */
     public function test_translation_keys_exist(): void
     {
@@ -189,6 +280,10 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * 다국어 파일에 directory_create_guide 키가 존재하는지 확인합니다.
+     *
+     * @scenario os_command_kind=translation_keys
+     *
+     * @effects directory_create_guide_translation_keys_exist
      */
     public function test_directory_create_guide_translation_keys_exist(): void
     {

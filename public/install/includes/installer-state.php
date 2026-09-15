@@ -409,6 +409,61 @@ function releaseWorkerLock(string $workerId): void
     saveInstallationState($state);
 }
 
+/**
+ * db_cleanup 으로 무효화되는 task 인지 판정한다.
+ *
+ * db_cleanup 은 db_prefix 로 시작하는 테이블을 전부 DROP 한다. 따라서 "효과가 DB 행으로만
+ * 남는" task 는 마커가 completed 로 남아 있어도 실제 결과물이 사라진 상태가 된다. 재개 시
+ * runInstallationTasks() 는 completed 마커만 보고 건너뛰므로, 마커를 함께 제거하지 않으면
+ * 그 확장은 파일만 있고 DB 등록은 없는 유령 상태로 설치가 끝난다.
+ *
+ * 회귀 (이슈 #599 후속): 1차 시도에서 sirsoft-board 가 db_cleanup 보다 먼저 설치·활성화된 뒤
+ * 사용자가 재시도하면서 drop_tables 를 선택 → g7_modules 가 DROP 되어 board 행이 소멸.
+ * 그러나 module_install:sirsoft-board 마커는 살아남아 재설치가 스킵됨 → 뒤이은 사용자 템플릿
+ * 설치가 "필수 의존성 sirsoft-board (module)이 충족되지 않았습니다" 로 실패.
+ *
+ * 무효화 대상:
+ *  - db_cleanup / db_migrate / db_seed — 스키마·시드 자체
+ *  - {module,plugin,template,user_template}_{install,activate} — 확장 등록 행
+ *  - language_pack_install — 언어팩 등록 행
+ *  - create_settings_json / complete_flag / config_cache / static_publish — DB 상태를 읽어
+ *    산출물을 만드는 마무리 단계
+ *
+ * 보존 대상 (파일시스템·환경 효과라 DROP 과 무관):
+ *  - composer_check / composer_install / env_update / key_generate / dependency_precheck
+ *
+ * @param  string  $task  completed_tasks 항목 ("id" 또는 "id:target")
+ */
+function isTaskInvalidatedByDbCleanup(string $task): bool
+{
+    // "module_install:sirsoft-board" → "module_install"
+    $taskId = strstr($task, ':', true);
+    if ($taskId === false) {
+        $taskId = $task;
+    }
+
+    static $invalidated = [
+        'db_cleanup' => true,
+        'db_migrate' => true,
+        'db_seed' => true,
+        'template_install' => true,
+        'template_activate' => true,
+        'module_install' => true,
+        'module_activate' => true,
+        'plugin_install' => true,
+        'plugin_activate' => true,
+        'user_template_install' => true,
+        'user_template_activate' => true,
+        'language_pack_install' => true,
+        'create_settings_json' => true,
+        'complete_flag' => true,
+        'config_cache' => true,
+        'static_publish' => true,
+    ];
+
+    return isset($invalidated[$taskId]);
+}
+
 function applyExistingDbActionStateGuard(array $state, string $newAction): array
 {
     // 다른 워커가 활성 진행 중이면 state 변경 금지 — race 회피.
@@ -425,10 +480,9 @@ function applyExistingDbActionStateGuard(array $state, string $newAction): array
         // drop_tables 는 "처음부터 다시" — DB 관련 task 마커 일괄 제거.
         // SSE 가 cleanup + migrate 일부 진행 후 끊긴 상태에서 폴링 재진입 케이스를
         // 커버하려면 이전 액션이 drop_tables 였더라도 다시 reset 해야 한다.
-        $resetTasks = ['db_cleanup', 'db_migrate', 'db_seed'];
         $state['completed_tasks'] = array_values(array_filter(
             $state['completed_tasks'] ?? [],
-            fn ($t) => ! in_array($t, $resetTasks, true)
+            fn ($t) => ! isTaskInvalidatedByDbCleanup((string) $t)
         ));
     } else {
         // 키 정규화 — completed_tasks 가 부재인 경우 빈 배열 보장
