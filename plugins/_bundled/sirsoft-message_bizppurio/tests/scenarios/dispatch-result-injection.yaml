@@ -9,7 +9,7 @@
 #     - 결과 조회 API(권한·검증·성공/실패/잔액부족/미매칭): DispatchResultEndpointTest.
 #     - overlay 결과 컬럼 실제 렌더(성공/잔액부족/대체발송/빈셀 조건부 렌더): notification_log_result.test.tsx.
 #   e2e_* 축(브라우저 왕복: 코어 이력 화면 진입→결과 컬럼 확인→회원 링크/배지)은 실제 발송·webhook
-#   왕복 결과가 필요해, 계획서 §9 방침대로 PO 직접 수행하는 실연동 검증 단계에서 Playwright spec 을
+#   왕복 결과가 필요해, 계획서 §9 방침대로 직접 수행하는 실연동 검증 단계에서 Playwright spec 을
 #   그때 @scenario/@effects 로 이 매니페스트에 매핑한다. Vitest 렌더 테스트가 프론트 overlay 컬럼
 #   주입·조건부 렌더를 가드하므로 이번 단계는 spec 미도입
 #   (frontend-change-requires-e2e 는 이 매니페스트의 e2e axis + Vitest 렌더 커버로 충족).

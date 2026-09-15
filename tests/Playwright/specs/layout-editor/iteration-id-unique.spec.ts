@@ -14,12 +14,13 @@
  * 본 spec 은 실제 브라우저 DOM 에서 중복 id 0 + 미보간 리터럴 0 을 잠근다(단위/시뮬레이션은
  * 보간 부재로 인한 reconciliation 합쳐짐을 포착하지 못해 실측이 필수 — feedback #238 계열).
  *
- * @scenario admin_dashboard_render + layout_editor_core_id_chip
- * @effects html_id_unique_no_duplicates + no_uninterpolated_literal_id + core_id_chip_affordance
+ * 축 요약(마커 아님 — 평문): admin_dashboard_render, layout_editor_core_id_chip.
+ * 효과 요약(마커 아님 — 평문): html_id_unique_no_duplicates, no_uninterpolated_literal_id, core_id_chip_affordance.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
 test.describe('@layout-editor iteration id 유일성', () => {
+  /** @effects html_id_unique_no_duplicates, no_uninterpolated_literal_id */
   test('관리자 대시보드 렌더 시 HTML id 중복 0 + 미보간 리터럴 0', async ({ page }) => {
     const token = issueToken(
       'core.dashboard.read',
@@ -67,6 +68,7 @@ test.describe('@layout-editor iteration id 유일성', () => {
     expect(report.duplicates, `중복 HTML id: ${report.duplicates.join(', ')}`).toEqual([]);
   });
 
+  /** @effects core_id_chip_affordance */
   test('레이아웃 편집기 요소 ID 칸에 데이터 칩 진입점(BindingChipTextInput) 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

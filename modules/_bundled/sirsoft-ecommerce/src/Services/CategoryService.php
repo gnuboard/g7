@@ -18,7 +18,8 @@ class CategoryService
 {
     public function __construct(
         protected CategoryRepositoryInterface $repository,
-        protected CategoryImageRepositoryInterface $imageRepository
+        protected CategoryImageRepositoryInterface $imageRepository,
+        protected CategoryImageService $categoryImageService
     ) {}
 
     /**
@@ -274,7 +275,9 @@ class CategoryService
 
         DB::transaction(function () use ($category) {
             // 카테고리 이미지 삭제 (명시적 삭제 - CASCADE 의존 금지)
-            $category->images()->delete();
+            // 물리 파일 → 행 순으로 정리한다. 행만 지우면 파일이 디스크에 영구 잔존한다
+            // (상품 삭제와 동일한 순서 — ProductService::delete 선례).
+            $this->categoryImageService->deleteByCategoryId($category->id);
 
             // 카테고리 삭제
             $this->repository->delete($category->id);

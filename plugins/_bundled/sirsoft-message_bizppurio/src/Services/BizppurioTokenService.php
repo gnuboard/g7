@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
 
@@ -15,7 +16,7 @@ use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
  *
  * `/v1/token` 을 Basic 인증(계정:암호 Base64)으로 호출해 Bearer 토큰을 발급받고,
  * 확장 도메인 캐시(CacheInterface)에 저장한다. 토큰 유효 시간은 24시간이나, 만료
- * 경계 재발급 리스크를 피하기 위해 23시간 TTL 로 캐시한다(PO 결정, 계획서 §5).
+ * 경계 재발급 리스크를 피하기 위해 23시간 TTL 로 캐시한다(제품 결정, 계획서 §5).
  *
  * 발송 응답이 3002(토큰무효)/3005(인증정보무효)를 반환하면 캐시를 forget 하고
  * 1회 재발급한다(BizppurioApiClient 가 재시도 트리거). CacheInterface 는
@@ -167,10 +168,10 @@ class BizppurioTokenService
      * 비밀번호 오류인지 서버 오류인지 즉시 구분할 수 있게 한다(고정 문구만으로는
      * 원인 추적이 불가능했던 문제 대응).
      *
-     * @param  \Illuminate\Http\Client\Response  $response  실패한 HTTP 응답
+     * @param  Response  $response  실패한 HTTP 응답
      * @return string 사용자에게 보여줄 실패 메시지
      */
-    private function describeFailure(\Illuminate\Http\Client\Response $response): string
+    private function describeFailure(Response $response): string
     {
         $description = (string) ($response->json('description') ?? '');
 

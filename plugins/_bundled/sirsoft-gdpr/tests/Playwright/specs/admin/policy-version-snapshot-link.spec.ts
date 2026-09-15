@@ -1,6 +1,6 @@
 /**
  * E2E: 관리자 환경설정 > 쿠키 배너 > 정책 버전 > 보기 — 본문 페이지 링크 (#509 체크리스트 12번)
- * + 관리자 환경설정 카드 제목 색상 회귀 가드 (PO 스크린샷 발견)
+ * + 관리자 환경설정 카드 제목 색상 회귀 가드 (브라우저 스크린샷으로 발견)
  * + 정책 버전 이력 토글 sequence handler 회귀 가드
  *
  * @scenario admin_gdpr_policy_version_snapshot_open_policy_page_link
@@ -13,11 +13,11 @@
  * 모달의 본문 페이지 링크 href 를 검증할 수 있다.
  *
  * 또한 카드 제목(H3)이 에러/경고 전용 시맨틱(text-error-strong, red 계열)을 오용해
- * "운영 주체" 등 일반 카드 제목이 빨간색으로 표시되던 결함을 PO 가 스크린샷으로 발견해
+ * "운영 주체" 등 일반 카드 제목이 빨간색으로 표시되던 결함을 브라우저 스크린샷으로 발견해
  * section-heading-md(중립 톤)로 수정 — 실제 렌더링된 색상을 브라우저에서 검증한다.
  *
  * 정책 버전 이력 토글 버튼의 sequence handler 가 actions 를 params 안에 잘못 중첩하고
- * 있던 결함(CLAUDE.md 절대 금지 패턴)도 함께 발견 — 엔진이 두 위치 모두 인식하는
+ * 있던 결함(레이아웃 JSON 금지 패턴)도 함께 발견 — 엔진이 두 위치 모두 인식하는
  * fallback을 갖고 있어 동작 자체는 정상이었으나 정석 위치(top-level)로 바로잡았다.
  * 실제 클릭 시 이력 표가 펼쳐지는지(=sequence 의 setState 가 실행됐는지)를 검증한다.
  *
@@ -76,13 +76,25 @@ test('#509 - 관리자 환경설정 카드 제목이 에러 색상(빨간색)으
   const header = page.locator(CARD_OPERATOR_HEADER);
   await expect(header).toBeVisible({ timeout: 10_000 });
 
-  const color = await header.evaluate((el) => getComputedStyle(el).color);
-  // text-error-strong(text-red-800/dark:text-red-200) 이 남아있다면 rgb 값의 R 채널이
-  // G/B 채널보다 뚜렷이 높은 붉은 계열로 계산된다. 정상(중립 톤)은 R≈G≈B.
-  const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  expect(rgbMatch).not.toBeNull();
-  const [, r, g, b] = rgbMatch as unknown as [string, string, string, string];
-  expect(Number(r) - Math.max(Number(g), Number(b))).toBeLessThan(40);
+  // text-error-strong(text-red-800/dark:text-red-200) 이 남아있다면 R 채널이 G/B 보다
+  // 뚜렷이 높은 붉은 계열로 계산된다. 정상(중립 톤)은 R≈G≈B.
+  //
+  // 계산값을 문자열로 파싱하지 않는다 — 브라우저는 색 공간에 따라 `rgb()` 대신
+  // `oklch()` 로도 돌려주며, 그때 정규식 파싱은 무조건 실패해 색과 무관하게 red 가 된다.
+  // 1×1 캔버스에 칠해 실제 화면 픽셀값을 읽으면 표기 형식과 무관하게 판정할 수 있다.
+  const channels = await header.evaluate((el) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d') as CanvasRenderingContext2D;
+    context.fillStyle = getComputedStyle(el).color;
+    context.fillRect(0, 0, 1, 1);
+    const [r, g, b] = Array.from(context.getImageData(0, 0, 1, 1).data);
+
+    return { r, g, b };
+  });
+
+  expect(channels.r - Math.max(channels.g, channels.b)).toBeLessThan(40);
 });
 
 // @scenario tab=card_cookie_banner, permitted=yes

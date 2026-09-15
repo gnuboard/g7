@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Helpers\EditorSpecAssembler;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Services\ExtensionStaticCacheService;
 use App\Services\PermissionService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
@@ -88,8 +88,10 @@ class AdminTemplateAssetController extends AdminBaseController
             );
         }
 
-        $extensionCacheVersion = (int) app(CacheInterface::class)->get('ext.cache_version', 0);
-        $version = $extensionCacheVersion > 0 ? $extensionCacheVersion : null;
+        // 확장 캐시 버전은 트레이트 게터로만 읽는다 — 원시 키 읽기는 `cache:clear` 직후 0 을
+        // 돌려주어 버전 없는 URL 을 만들고, 컨테이너 바인딩은 확장 네임스페이스로 누수될 수 있다.
+        // 게터는 키 부재 시 재생성하므로 항상 유효 버전이다 (`AssetUrl::staticExtBase` 와 동형).
+        $version = ExtensionStaticCacheService::getExtensionCacheVersion();
 
         return $this->success(
             __('templates.messages.editor_assets_retrieved'),
@@ -228,7 +230,7 @@ class AdminTemplateAssetController extends AdminBaseController
         // 바인딩은 확장 컨텍스트로 누수될 수 있어(메모리 feedback_core_cache_no_container_binding)
         // 코어 캐시 store 를 빗나갈 수 있다.
         $cache = new CoreCacheDriver;
-        $cacheVersion = (int) $cache->get('ext.cache_version', 0);
+        $cacheVersion = ExtensionStaticCacheService::getExtensionCacheVersion();
         // 캐시 키 — 템플릿 + 확장 캐시 버전 + 파일 mtime(빌드 변경 즉시 무효화).
         $mtime = (int) @filemtime($cssPath);
         $cacheKey = "template.editor_css.{$identifier}.v{$cacheVersion}.m{$mtime}";

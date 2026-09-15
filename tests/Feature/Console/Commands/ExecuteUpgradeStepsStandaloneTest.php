@@ -30,9 +30,22 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
 {
     private array $createdPaths = [];
 
+    /**
+     * 테스트 진입 전의 spawn 플래그 상태 (없으면 false) — tearDown 에서 되돌린다.
+     */
+    private string|false $originalSpawnFlag = false;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 이 클래스의 절반은 "spawn 플래그가 없는 단독 실행" 을 전제한다. 그런데 같은 프로세스에서
+        // 앞서 돈 테스트가 `core:update`(CoreUpdateCommand::handle) 를 한 번이라도 거치면 그 플래그가
+        // 프로세스 env 에 남아 여기 도착한다 — 부모 커맨드는 "프로세스 종료와 함께 소멸" 을 전제로
+        // 정리하지 않기 때문이다. 실행 순서에 따라 결과가 갈리지 않도록 진입 시 비우고 종료 시 되돌린다.
+        $this->originalSpawnFlag = getenv('G7_UPDATE_IN_PROGRESS');
+        putenv('G7_UPDATE_IN_PROGRESS');
+        unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
 
         // 빈 upgrade step 디렉토리 보장 — 본 테스트는 step 자체가 아닌 사전/사후 단계만 검증.
         // 임시 dummy step 파일을 작성해 from < to 비교가 ">=" 조건을 통과하도록 한다.
@@ -49,6 +62,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->createdPaths = [];
 
         Mockery::close();
+
+        if ($this->originalSpawnFlag === false) {
+            putenv('G7_UPDATE_IN_PROGRESS');
+            unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
+        } else {
+            putenv('G7_UPDATE_IN_PROGRESS='.$this->originalSpawnFlag);
+            $_ENV['G7_UPDATE_IN_PROGRESS'] = $this->originalSpawnFlag;
+            $_SERVER['G7_UPDATE_IN_PROGRESS'] = $this->originalSpawnFlag;
+        }
 
         parent::tearDown();
     }
@@ -143,6 +165,55 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * 캐시 정리 블록과 함께 상주 큐 워커 재시작 신호가 나간다 (7.0.11).
+     *
+     * 큐 워커는 부팅이 한 번뿐이라 코어 코드·config 를 기동 시점 상태로 물고 있다. 업데이트가
+     * 파일을 전부 교체해도 워커는 옛 코드로 잡을 계속 처리하며 그 사실이 오류로 드러나지 않는다.
+     *
+     * @effects core_update_step11_signals_queue_restart
+     */
+    public function test_standalone_post_step_signals_queue_restart(): void
+    {
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldReceive('runMigrations')->once();
+        $service->shouldReceive('reloadCoreConfigAndResync')->once();
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldReceive('updateVersionInEnv')->once();
+        $service->shouldReceive('clearAllCaches')->once();
+        $service->shouldReceive('signalQueueRestart')->once();
+        $service->shouldReceive('collectBundledExtensionUpdates')->once()->andReturn([
+            'modules' => [], 'plugins' => [], 'templates' => [],
+        ]);
+        $langPack->shouldReceive('collectBundledLangPackUpdates')->once()->andReturn([]);
+
+        $this->assertSame(0, $this->runCommand([]));
+    }
+
+    /**
+     * 캐시 정리를 건너뛰는 경로(spawn 자식)에서는 신호도 보내지 않는다 — 부모가 보낸다.
+     *
+     * @effects core_update_step11_signals_queue_restart
+     */
+    public function test_skip_cache_clear_also_skips_queue_restart_signal(): void
+    {
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldReceive('runMigrations')->once();
+        $service->shouldReceive('reloadCoreConfigAndResync')->once();
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldReceive('updateVersionInEnv')->once();
+        $service->shouldNotReceive('clearAllCaches');
+        $service->shouldNotReceive('signalQueueRestart');
+        $service->shouldReceive('collectBundledExtensionUpdates')->once()->andReturn([
+            'modules' => [], 'plugins' => [], 'templates' => [],
+        ]);
+        $langPack->shouldReceive('collectBundledLangPackUpdates')->once()->andReturn([]);
+
+        $this->assertSame(0, $this->runCommand(['--skip-cache-clear' => true]));
+    }
+
     public function test_skip_bundled_updates_option_bypasses_bundled_prompt(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -181,6 +252,93 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
             '--skip-bundled-updates' => true,
         ]);
         $this->assertSame(0, $exitCode);
+    }
+
+    /**
+     * 부모(구버전 코드)의 정리 단계가 남긴 빈 격리 디렉토리(`core_{ts}/extracted` 껍데기)는
+     * 신버전 코드로 도는 이 자식이 치운다. spawn 자식 모드에서도, 단독 실행에서도 호출된다 —
+     * 구버전 부모에서 올라오는 업데이트(7.0.9→7.0.10)를 덮는 유일한 자리이기 때문이다.
+     *
+     * @effects ExecuteUpgradeStepsCommand_sweeps_empty_staging_directories_left_by_parent
+     */
+    public function test_스텝_완료_후_빈_격리_디렉토리를_청소한다(): void
+    {
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldReceive('sweepEmptyStagingDirectories')->once()->andReturn(1);
+
+        putenv('G7_UPDATE_IN_PROGRESS=1');
+        $_ENV['G7_UPDATE_IN_PROGRESS'] = '1';
+        $_SERVER['G7_UPDATE_IN_PROGRESS'] = '1';
+
+        try {
+            $exitCode = $this->runCommand([]);
+        } finally {
+            putenv('G7_UPDATE_IN_PROGRESS');
+            unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
+        }
+
+        $this->assertSame(0, $exitCode);
+    }
+
+    /**
+     * 자식이 이전 버전 config 캐시로 부팅했으면(구버전 부모는 spawn 전에 캐시를 비우지 않는다)
+     * `config('app.update.restore_ownership_group_writable')` 은 옛 목록이다. 이때는 디스크의
+     * `config/app.php` 를 직접 읽어 신버전이 추가한 디렉토리까지 권한 정상화 대상에 넣는다
+     * (7.0.9→7.0.10 서버 실측: `public/build/ext` 누락).
+     *
+     * @effects execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
+     */
+    public function test_config_캐시로_부팅한_자식은_쓰기권한_목록을_디스크_config_에서_읽는다(): void
+    {
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        config(['app.update.restore_ownership_group_writable' => ['stale/only']]);
+
+        $service->shouldReceive('freshDiskUpdateConfig')
+            ->once()
+            ->with('restore_ownership_group_writable', [])
+            ->andReturn(['fresh/dir']);
+        $service->shouldReceive('ensureWritableDirectories')
+            ->once()
+            ->withArgs(fn (array $paths) => $paths === ['fresh/dir']);
+        $service->shouldReceive('runUpgradeSteps')->once();
+
+        // 상대 경로 — Application::normalizeCachePath 는 `/`·`\` 로 시작하지 않는 값을 basePath 기준으로
+        // 해석하므로 Windows 절대 경로는 어긋난다.
+        $relativeCachePath = 'storage/framework/testing/child-config-cache-'.uniqid().'.php';
+        $cachePath = base_path($relativeCachePath);
+        File::ensureDirectoryExists(dirname($cachePath));
+        File::put($cachePath, "<?php return [];\n");
+
+        $originalCacheEnv = $_ENV['APP_CONFIG_CACHE'] ?? null;
+        $_ENV['APP_CONFIG_CACHE'] = $relativeCachePath;
+        $_SERVER['APP_CONFIG_CACHE'] = $relativeCachePath;
+        putenv('APP_CONFIG_CACHE='.$relativeCachePath);
+        $originalEnv = getenv('G7_UPDATE_IN_PROGRESS');
+        putenv('G7_UPDATE_IN_PROGRESS=1');
+
+        try {
+            $this->assertSame($cachePath, $this->app->getCachedConfigPath(), '전제: APP_CONFIG_CACHE 가 캐시 경로를 정한다');
+            $this->assertFileExists($cachePath, '전제: 자식 시점에 config 캐시 파일이 존재한다');
+            $this->assertSame(0, $this->runCommand([]));
+        } finally {
+            if ($originalEnv === false) {
+                putenv('G7_UPDATE_IN_PROGRESS');
+            } else {
+                putenv('G7_UPDATE_IN_PROGRESS='.$originalEnv);
+            }
+            if ($originalCacheEnv === null) {
+                unset($_ENV['APP_CONFIG_CACHE'], $_SERVER['APP_CONFIG_CACHE']);
+                putenv('APP_CONFIG_CACHE');
+            } else {
+                $_ENV['APP_CONFIG_CACHE'] = $originalCacheEnv;
+                $_SERVER['APP_CONFIG_CACHE'] = $originalCacheEnv;
+                putenv('APP_CONFIG_CACHE='.$originalCacheEnv);
+            }
+            File::delete($cachePath);
+        }
     }
 
     public function test_spawn_child_env_bypasses_all_pre_and_post_steps_without_skip_options(): void
@@ -342,6 +500,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
     private function bindMocks(): array
     {
         $service = Mockery::mock(CoreUpdateService::class);
+        // 종료부의 root 산출물 소유권 정상화(#615 도입)는 모든 경로에서 호출되며 본 테스트의 관심사가
+        // 아니다 — 기본 허용으로 두어 각 케이스가 자기 단계만 단언하게 한다.
+        $service->shouldReceive('normalizeRuntimeOwnershipAfterRootRun')->andReturnNull()->byDefault();
+        // 종료부의 빈 격리 디렉토리 청소(7.0.10 도입)도 모든 경로에서 호출된다 — 전용 케이스가
+        // once() 로 단언하고, 나머지 케이스는 기본 허용.
+        $service->shouldReceive('sweepEmptyStagingDirectories')->andReturn(0)->byDefault();
+        // 캐시 정리 블록이 도는 경로에서는 상주 큐 워커 재시작 신호도 함께 나간다 (7.0.11 도입).
+        // 전용 케이스가 once()/never() 로 단언하고, 나머지 케이스는 기본 허용.
+        $service->shouldReceive('signalQueueRestart')->andReturnNull()->byDefault();
         $module = Mockery::mock(ModuleManager::class);
         $plugin = Mockery::mock(PluginManager::class);
         $template = Mockery::mock(TemplateManager::class);
@@ -353,6 +520,7 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $module->shouldReceive('loadModules')->andReturnNull()->byDefault();
         $plugin->shouldReceive('loadPlugins')->andReturnNull()->byDefault();
         $template->shouldReceive('loadTemplates')->andReturnNull()->byDefault();
+        $template->shouldReceive('ensureLoaded')->andReturnNull()->byDefault();
 
         $this->app->instance(CoreUpdateService::class, $service);
         $this->app->instance(ModuleManager::class, $module);

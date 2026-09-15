@@ -6,14 +6,14 @@ namespace Plugins\Sirsoft\MessageBizppurio\Providers;
 
 use App\Extension\BasePluginServiceProvider;
 use Illuminate\Notifications\ChannelManager;
+use Plugins\Sirsoft\MessageBizppurio\Console\SyncTemplateStatusCommand;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\BizppurioDispatchRepository;
-use Plugins\Sirsoft\MessageBizppurio\Repositories\BizppurioNotificationBindingRepository;
+use Plugins\Sirsoft\MessageBizppurio\Repositories\BizppurioTemplateRepository;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioDispatchRepositoryInterface;
-use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioNotificationBindingRepositoryInterface;
+use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkChannelDriver;
 use Plugins\Sirsoft\MessageBizppurio\Services\BizppurioTokenService;
 use Plugins\Sirsoft\MessageBizppurio\Services\DispatchLinkContext;
-use Plugins\Sirsoft\MessageBizppurio\Services\KakaoTemplateContentResolver;
 use Plugins\Sirsoft\MessageBizppurio\Services\SmsChannelDriver;
 use Plugins\Sirsoft\MessageBizppurio\Services\WebhookReportService;
 
@@ -31,13 +31,14 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
     /**
      * Repository 인터페이스 ↔ 구현체 매핑.
      *
-     * Phase 4 에서 발송 이력·이벤트 연동 Repository 를 등록한다.
+     * - BizppurioDispatchRepository: 발송 이력
+     * - BizppurioTemplateRepository: 알림 템플릿 라이프사이클(#597 — bindings 대체)
      *
      * @var array<class-string, class-string>
      */
     protected array $repositories = [
         BizppurioDispatchRepositoryInterface::class => BizppurioDispatchRepository::class,
-        BizppurioNotificationBindingRepositoryInterface::class => BizppurioNotificationBindingRepository::class,
+        BizppurioTemplateRepositoryInterface::class => BizppurioTemplateRepository::class,
     ];
 
     /**
@@ -51,7 +52,6 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
     protected array $cacheServices = [
         BizppurioTokenService::class,
         WebhookReportService::class,
-        KakaoTemplateContentResolver::class,
     ];
 
     /**
@@ -60,12 +60,21 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
      * DispatchLinkContext 는 한 발송 사이클(HTTP 요청/큐 잡) 안에서 refkey↔코어 로그 연결을
      * 잇기 위해 상태를 공유해야 하므로 scoped(요청 단위 싱글턴)로 바인딩한다. 채널 드라이버와
      * LinkNotificationLogListener 가 같은 인스턴스를 주입받아 refkey 를 주고받는다(A-2).
+     *
+     * 콘솔 커맨드(bizppurio:sync-template-status)는 plugin.php::getSchedules() 가 30분
+     * 주기로 스케줄한다(#597 §3.4).
      */
     public function register(): void
     {
         parent::register();
 
         $this->app->scoped(DispatchLinkContext::class);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SyncTemplateStatusCommand::class,
+            ]);
+        }
     }
 
     /**

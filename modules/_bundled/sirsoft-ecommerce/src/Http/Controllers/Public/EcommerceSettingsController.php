@@ -132,7 +132,7 @@ class EcommerceSettingsController extends PublicBaseController
             $this->logApiUsage('settings.checkout');
 
             $shippingSettings = $this->settingsService->getSettings('shipping');
-            $orderSettings = $this->settingsService->getSettings('order_settings');
+            $orderSettings = $this->settingsService->getPublicPaymentSettings();
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',

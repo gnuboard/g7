@@ -75,6 +75,32 @@ class AdminEscrowControllerTest extends PluginTestCase
             ->assertJsonPath('success', false);
     }
 
+    /**
+     * TID 상한(30자) 초과는 EscrowDeliveryRegisterRequest 가 표준 422 로 차단하고
+     * PG 배송등록 API 는 호출되지 않아야 한다 (나이스페이먼츠 TID 는 30자).
+     */
+    public function test_register_delivery_rejects_overlong_tid(): void
+    {
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $this->createPaidEscrowPayment();
+
+        $apiServiceMock = $this->createMock(NicePaymentsApiService::class);
+        $apiServiceMock->expects($this->never())->method('useStoredCredentials');
+        $apiServiceMock->expects($this->never())->method('registerEscrowDelivery');
+        $this->app->instance(NicePaymentsApiService::class, $apiServiceMock);
+
+        $response = $this->actingAs($admin)->postJson('/api/plugins/sirsoft-pay_nicepayments/admin/escrow/register-delivery', [
+            'tid' => str_repeat('T', 31),
+            'delivery_name' => 'CJ대한통운',
+            'tracking_number' => 'TRACK123456',
+            'buyer_address' => '서울시 테스트구 1',
+            'register_name' => '운영자',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['tid']);
+    }
+
     private function createPaidEscrowPayment(): void
     {
         $order = OrderFactory::new()->create([

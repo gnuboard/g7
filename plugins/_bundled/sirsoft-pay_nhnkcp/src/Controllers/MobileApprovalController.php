@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
+
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
@@ -8,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
 use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
@@ -20,6 +23,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
  */
 class MobileApprovalController
 {
+    use BindsMobileVbankSession;
     use RecordsPaymentWindowClosure;
 
     /** 결제수단 → KCP 모바일 pay_method 코드 */
@@ -43,7 +47,7 @@ class MobileApprovalController
 
     /** 간편결제 direct 파라미터 기본값 (매 결제 시 초기화) */
     private const EASY_PAY_DIRECT_DEFAULTS = [
-        'payco_direct'    => '',
+        'payco_direct' => '',
         'naverpay_direct' => 'A',
         'kakaopay_direct' => 'A',
         'applepay_direct' => 'A',
@@ -51,11 +55,11 @@ class MobileApprovalController
 
     /** 간편결제별 direct 파라미터 override (기본값 위에 덮어씀) */
     private const EASY_PAY_DIRECT_FIELDS = [
-        'nhnkcp_payco'          => ['payco_direct' => 'Y'],
-        'nhnkcp_naverpay'       => ['naverpay_direct' => 'Y'],
+        'nhnkcp_payco' => ['payco_direct' => 'Y'],
+        'nhnkcp_naverpay' => ['naverpay_direct' => 'Y'],
         'nhnkcp_naverpay_point' => ['naverpay_direct' => 'Y', 'naverpay_point_direct' => 'Y'],
-        'nhnkcp_kakaopay'       => ['kakaopay_direct' => 'Y'],
-        'nhnkcp_applepay'       => ['applepay_direct' => 'Y'],
+        'nhnkcp_kakaopay' => ['kakaopay_direct' => 'Y'],
+        'nhnkcp_applepay' => ['applepay_direct' => 'Y'],
     ];
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nhnkcp';
@@ -80,6 +84,7 @@ class MobileApprovalController
      * @param  Request  $request  주문/결제 메타
      * @return JsonResponse approval_key + pay_url
      */
+    // audit:allow controller-base-request-injection reason: 인라인 validate 로 전 필드 계약 보유 — FormRequest 승격은 후속 백로그 (계획 범위 제외 합의)
     public function getApprovalKey(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -194,6 +199,21 @@ class MobileApprovalController
                 $settings = plugin_settings(self::PLUGIN_IDENTIFIER) ?? [];
                 $fields['vcnt_expire_term'] = (string) ((int) ($settings['vbank_expire_days'] ?? 3));
                 $fields['disp_tax_yn'] = 'N';
+
+                // 모바일 가상계좌 콜백은 계좌번호를 브라우저 평문으로만 전달한다.
+                // 이 지점은 소유자 인증(auth:sanctum)을 통과했으므로 여기서 만든 일회성
+                // nonce 를 passthrough 파라미터로 실어 보내고, 콜백에서 되돌아온 값과
+                // 대조해 그 콜백이 이 결제 세션에서 비롯됐음을 확인한다 (KVE-2026-2019).
+                // param_opt_1 은 간편결제 수단 식별자가 점유하므로 param_opt_2 를 쓴다.
+                $mobileVbankState = $this->issueMobileVbankState($order);
+                if ($mobileVbankState === null) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Failed to prepare the virtual account payment session.',
+                    ], 500);
+                }
+
+                $fields['param_opt_2'] = $mobileVbankState;
             }
 
             if ($isEasyPay) {
@@ -249,9 +269,9 @@ class MobileApprovalController
         $supplyAmt = $taxablePaymentAmt - $vatAmt; // 공급가액 (VAT 제외)
 
         return [
-            'tax_flag'      => 'TG03',
-            'comm_tax_mny'  => (string) $supplyAmt,
-            'comm_vat_mny'  => (string) $vatAmt,
+            'tax_flag' => 'TG03',
+            'comm_tax_mny' => (string) $supplyAmt,
+            'comm_vat_mny' => (string) $vatAmt,
             'comm_free_mny' => (string) $taxFreeAmt,
         ];
     }

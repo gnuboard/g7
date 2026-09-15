@@ -16,6 +16,27 @@
 
 ---
 
+## 옵션의 무게·부피 (`options[].weight` / `options[].volume`)
+
+옵션 리소스(`ProductOptionResource`)는 배송비 계산에 쓰이는 물성 두 개를 함께 내려보냅니다.
+
+| 필드 | 타입 | 단위 | 설명 |
+| --- | --- | --- | --- |
+| weight | number\|null | g (그램) | 옵션 1개의 무게. 미입력이면 `null` |
+| volume | number\|null | cm³ (세제곱센티미터) | 옵션 1개의 부피. 미입력이면 `null` |
+
+단위는 저장 단위 그대로입니다. 배송정책의 구간·단위값은 kg / L 로 입력받으며, 환산은
+배송비를 계산하는 시점에 한 번만 수행됩니다 (`modules/_bundled/sirsoft-ecommerce/docs/api/shipping-policies.md` 참고).
+
+`null` 과 `0` 은 구분됩니다 — `null` 은 미입력, `0` 은 "무게 없음"입니다. 수정 요청은
+전달된 필드만 반영하므로, 편집 화면이 이 값을 받지 못한 채 저장하면 기존 값이 그대로
+유지되지만 화면에 `0` 으로 그려 놓고 저장하면 실측값이 0 으로 덮어써집니다.
+
+주문 생성 시 이 값은 주문 옵션(`unit_weight`/`unit_volume`)에 g / cm³ 그대로 복사되고,
+주문의 `total_weight`/`total_volume` 은 옵션 소계의 합입니다.
+
+---
+
 ## 목록 응답의 총 건수와 페이지 이동
 
 상품 목록(관리자·공개 양쪽)은 총 건수를 상한까지만 셉니다. 상한을 넘으면 응답의
@@ -102,7 +123,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -392,7 +413,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource`). 성공 시 HTTP 201
 | hs_code | string | `null` | HS 코드 (수출입 관세 분류 코드) |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL |
+| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -401,7 +422,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource`). 성공 시 HTTP 201
 | has_options | boolean | `false` | 옵션 사용 여부 |
 | option_groups | array | `[]` | 옵션 그룹 정의 (예: `[{"name":"색상","values":["빨강","파랑"]}]`) |
 | options | array | `[]` | 생성된 옵션(SKU) 목록 (`ProductOptionResource`) |
-| additional_options | array | `[]` | 추가옵션 그룹 목록 |
+| additional_options | array | `[]` | 추가옵션 그룹 목록. 각 그룹의 `values[]` 는 `id`, `name`, `price_adjustment`(기본 통화 기준 추가금), `price_adjustment_formatted`, `multi_currency_price_adjustment`(통화별 추가금 — 기본 통화가 아닌 통화로 표시할 때 사용), `is_default`, `allow_custom_text` 를 가집니다 |
 | created_at | string | `2026-07-08 10:44:49` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:44:49` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 상품에 수행 가능한 작업 불리언 맵 |
@@ -846,11 +867,34 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| (ProductResource) | object | `{"id":201,"product_code":"P-201", …}` | 상품 상세 1건. 필드 구성은 `GET /admin/products/{identifier}` 와 동일하며, 목록·옵션·이미지·상품고시·공통정보·추가옵션을 포함합니다 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "상품을 조회했습니다.",
+    "data": {
+        "id": 201,
+        "product_code": "P-201",
+        "name": { "ko": "티셔츠", "en": "T-Shirt" },
+        "selling_price": 19000,
+        "selling_price_formatted": "19,000원",
+        "sales_status": "on_sale",
+        "display_status": "visible",
+        "options": [],
+        "images": [],
+        "additional_options": []
+    }
+}
+```
 
 **에러 응답**
 
@@ -1040,7 +1084,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | hs_code | string | `null` | HS 코드 |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL |
+| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -1049,7 +1093,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | has_options | boolean | `false` | 옵션 사용 여부 |
 | option_groups | array | `[]` | 옵션 그룹 정의 |
 | options | array | `[]` | 옵션(SKU) 목록 (`ProductOptionResource`) |
-| additional_options | array | `[]` | 추가옵션 그룹 목록 |
+| additional_options | array | `[]` | 추가옵션 그룹 목록. 각 그룹의 `values[]` 는 `id`, `name`, `price_adjustment`(기본 통화 기준 추가금), `price_adjustment_formatted`, `multi_currency_price_adjustment`(통화별 추가금 — 기본 통화가 아닌 통화로 표시할 때 사용), `is_default`, `allow_custom_text` 를 가집니다 |
 | created_at | string | `2026-07-08 10:44:49` | 생성 일시 |
 | updated_at | string | `2026-07-08 11:02:13` | 최종 수정 일시 (이번 수정 시각으로 갱신) |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 상품에 수행 가능한 작업 불리언 맵 |
@@ -1298,6 +1342,7 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 상품 이미지 개수 상한 초과 (`ProductImageUploadLimitException`) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1360,6 +1405,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1413,6 +1459,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | `id` 에 해당하는 이미지가 없는 경우 (`messages.product_images.not_found`) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1442,11 +1489,41 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-422 — 응답 필드는 사람이 작성하세요. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| options | object | `{"201":[{"id":1086, …}]}` | 상품 ID(문자열 키) ⇒ 해당 상품의 옵션 목록(ProductOptionResource 배열). 조회 결과가 없어도 JSON 객체(`{}`)로 나갑니다 |
+| product_ids | array | `[201, 202]` | 요청한 상품 ID 목록 (응답의 `options` 키 순서 기준) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "상품 옵션을 조회했습니다.",
+    "data": {
+        "options": {
+            "201": [
+                {
+                    "id": 1086,
+                    "option_code": "OPT-1086",
+                    "option_name": "색상/사이즈",
+                    "option_name_localized": "색상/사이즈",
+                    "selling_price": 19000,
+                    "selling_price_formatted": "19,000원",
+                    "stock_quantity": 30,
+                    "is_active": true
+                }
+            ],
+            "202": []
+        },
+        "product_ids": [201, 202]
+    }
+}
+```
 
 **에러 응답**
 
@@ -1488,11 +1565,34 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| (ProductResource) | object | `{"id":201,"product_code":"P-201", …}` | 상품 상세 1건. 필드 구성은 `GET /admin/products/{identifier}` 와 동일하며, 목록·옵션·이미지·상품고시·공통정보·추가옵션을 포함합니다 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "상품을 조회했습니다.",
+    "data": {
+        "id": 201,
+        "product_code": "P-201",
+        "name": { "ko": "티셔츠", "en": "T-Shirt" },
+        "selling_price": 19000,
+        "selling_price_formatted": "19,000원",
+        "sales_status": "on_sale",
+        "display_status": "visible",
+        "options": [],
+        "images": [],
+        "additional_options": []
+    }
+}
+```
 
 **에러 응답**
 
@@ -1618,6 +1718,7 @@ HTTP/1.1 201
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 상품 이미지 개수 상한 초과 (`ProductImageUploadLimitException`) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1672,6 +1773,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1701,11 +1803,25 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-409 — 응답 필드는 사람이 작성하세요. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted | boolean | `true` | 삭제 성공 여부. 주문 이력이 있는 상품은 삭제되지 않고 409 로 차단됩니다 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-409 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "상품이 삭제되었습니다.",
+    "data": {
+        "deleted": true
+    }
+}
+```
 
 **에러 응답**
 
@@ -1895,7 +2011,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | hs_code | string | `null` | HS 코드 |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL |
+| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -1904,7 +2020,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | has_options | boolean | `false` | 옵션 사용 여부 |
 | option_groups | array | `[]` | 옵션 그룹 정의 |
 | options | array | `[]` | 옵션(SKU) 목록 (`ProductOptionResource`) |
-| additional_options | array | `[]` | 추가옵션 그룹 목록 |
+| additional_options | array | `[]` | 추가옵션 그룹 목록. 각 그룹의 `values[]` 는 `id`, `name`, `price_adjustment`(기본 통화 기준 추가금), `price_adjustment_formatted`, `multi_currency_price_adjustment`(통화별 추가금 — 기본 통화가 아닌 통화로 표시할 때 사용), `is_default`, `allow_custom_text` 를 가집니다 |
 | created_at | string | `2026-07-08 10:44:49` | 생성 일시 |
 | updated_at | string | `2026-07-08 11:02:13` | 최종 수정 일시 (이번 수정 시각으로 갱신) |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 상품에 수행 가능한 작업 불리언 맵 |
@@ -2133,7 +2249,7 @@ _단건 응답: `data` 객체의 필드._
 | seo_sync_description | boolean | `true` | SEO 설명 동기화 여부 (1: 상품 설명으로 자동 채움, 0: 직접 입력 보존) |
 | barcode | null | `null` | 바코드 |
 | hs_code | null | `null` | HS 코드 (관세 분류) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | categories | array | `[{"id":29,"name":{"ko":"의류","en":"Clothing"},"name_locali…` | 소속 카테고리 목록 (breadcrumb 포함 — 복사 폼의 카테고리 표시용) |
 
 **응답 예시**
@@ -2520,7 +2636,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -2650,7 +2766,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -2797,7 +2913,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | name_localized | string | `프리미엄 브이넥 티셔츠 #5` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `4R5OG8VYO0JKG1WQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `TS-0005` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `34000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `34,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `27000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -2946,7 +3062,7 @@ _목록 응답: `data[]` 배열 항목의 필드 (`ProductListResource` — `GET
 | name_localized | string | `eum et quia` | `name` 의 현재 로케일 해석 값 |
 | product_code | string | `PROD-GJUX-1484` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `SKU-MRAD-9306` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 대표 이미지 URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 대표 이미지 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `112594` | 정가 (기본통화 자릿수로 정규화) |
 | list_price_formatted | string | `112,594원` | `list_price` 의 표시용 통화 포맷 문자열 |
 | selling_price | integer | `88949` | 판매가 (기본통화 자릿수로 정규화) |
@@ -3070,7 +3186,7 @@ _단건 응답: `data` 객체의 필드._
 | description_localized | string | `<p>부드러운 면 100% 손수건 3매 세트입니다.</p>` | `description` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | description_mode | string | `text` | 설명 모드: text(텍스트), html(HTML) |
 | images | array | `[{"id":7,"hash":"7df7761cdf16","original_filename":"produ…` | 상품 이미지 목록 (각 항목: hash·url·alt_text·is_thumbnail·sort_order 등, images 관계 로드 시) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | null | `null` | SEO 제목 (다국어 JSON) |
 | meta_description | object | `{"ko":"면 손수건 3매입 #1 의 직접 입력 SEO 설명입니다.","en":"Custom SEO …` | SEO 설명 (다국어 JSON) |
 | meta_keywords | null | `null` | SEO 키워드 (배열) |
@@ -3302,7 +3418,7 @@ HTTP/1.1 200
 | product | path | string | 예 | — | 대상 product의 식별자 |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
-| exclude_secret | query | boolean | 아니오 | — | <!-- TODO: 용도 --> |
+| exclude_secret | query | boolean | 아니오 | — | 비밀글 제외 여부 (기본 `false` — 포함). `true` 면 비밀 문의를 목록에서 제외합니다. 쿼리 문자열 `"true"`/`"false"` 도 해석되며, 해석할 수 없는 값은 그대로 검증되어 422 가 됩니다. **보안 경계가 아니라 단순 표시 필터입니다** — 비밀 문의의 노출/마스킹은 이 값과 무관하게 서버가 요청자 신원으로 결정합니다 |
 
 **요청 예시**
 
@@ -3405,7 +3521,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 상품의 1:1 문의 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductInquiryService::getProductInquiries()`가 게시판 모듈과 연동된 문의 글을 페이지네이션해 `items`와 `board_settings`(비밀글 모드·카테고리 등) 메타를 반환합니다. `per_page`/`page`/`exclude_secret` 쿼리로 조회 범위를 조정하며, 비밀 문의는 설정과 열람 권한에 따라 마스킹됩니다. 상품 상세의 문의 탭에 사용됩니다.
+**설명** 상품의 1:1 문의 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductInquiryService::getProductInquiries()`가 게시판 모듈과 연동된 문의 글을 페이지네이션해 `items`와 `board_settings`(비밀글 모드·카테고리 등) 메타를 반환합니다. `per_page`/`page`/`exclude_secret` 쿼리로 조회 범위를 조정합니다. 비밀 문의는 요청자 신원(작성자 본인·게시판 비밀글 열람 권한)에 따라 서버가 마스킹하며, 열람 권한이 없으면 `title`은 "비밀글" 플레이스홀더로 치환되고 `content`·`reply`는 `null`, `attachments`는 빈 배열로 내려갑니다(`is_secret`·작성자·답변 여부 등 메타는 유지). 이 마스킹은 게시판 모듈이 실어 보내는 권위 플래그(`can_view_secret`)를 신뢰하며, 플래그가 없으면 fail-closed 로 마스킹합니다. `exclude_secret` 쿼리는 표시 필터일 뿐 이 판정에 관여하지 않습니다. 상품 상세의 문의 탭에 사용됩니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/products/{product}/inquiries
@@ -3475,11 +3591,11 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 도메인 규칙 위반(비밀글 비허용 등, `RuntimeException` → `messages.inquiries.create_failed`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 도메인 규칙 위반(문의 게시판 미설정·게시판 모듈 불가 등, `ProductInquiryOperationException` → `messages.inquiries.operation_failed_reason` 에 사유가 담김) |
 
 <!-- @generated:end -->
 
-**설명** 상품에 1:1 문의를 작성합니다. `optional.sanctum` + `sirsoft-ecommerce.user-products.read` 권한이 적용되며(선택적 인증 표면이지만 실제 작성은 인증 사용자를 전제), `ProductInquiryService::createInquiry()`가 게시판 모듈과 연동해 문의 글을 생성하고 성공 시 201과 생성된 `id`를 반환합니다. `content`는 필수, `title`/`category`/`is_secret`은 선택이며, 첨부는 사전 업로드한 `temp_key`로 연결됩니다. 도메인 규칙 위반(비밀글 비허용 등)은 `RuntimeException`으로 422를 반환합니다.
+**설명** 상품에 1:1 문의를 작성합니다. `optional.sanctum` + `sirsoft-ecommerce.user-products.read` 권한이 적용되며(선택적 인증 표면이지만 실제 작성은 인증 사용자를 전제), `ProductInquiryService::createInquiry()`가 게시판 모듈과 연동해 문의 글을 생성하고 성공 시 201과 생성된 `id`를 반환합니다. `content`는 필수, `title`/`category`/`is_secret`은 선택이며, 첨부는 사전 업로드한 `temp_key`로 연결됩니다. 도메인 규칙 위반(문의 게시판 미설정·게시판 모듈 불가 등)은 `ProductInquiryOperationException` 으로 422 를 반환하며, 예외가 들고 있는 다국어 키로 해석한 사유가 응답 문구에 포함됩니다. 그 밖의 예외는 서버 결함으로 보아 500 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/{product}/reviews

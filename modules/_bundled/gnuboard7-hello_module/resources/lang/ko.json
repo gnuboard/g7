@@ -3,6 +3,14 @@
         "data_source": {
             "memoData": "메모 데이터",
             "memos": "메모 목록"
+        },
+        "palette": {
+            "group": "Hello 모듈",
+            "memo_card": {
+                "label": "메모 카드",
+                "sample_title": "메모 제목",
+                "sample_body": "메모 본문이 여기에 표시됩니다."
+            }
         }
     },
     "admin": {

@@ -19,6 +19,14 @@
         },
         "children": [
           {
+            "id": "e2e_sandbox_header",
+            "type": "composite",
+            "name": "Header",
+            "props": {
+              "siteName": "E2E 샌드박스"
+            }
+          },
+          {
             "id": "e2e_sandbox_root",
             "type": "basic",
             "name": "Div",
@@ -41,6 +49,15 @@
                   "className": "mt-1 text-sm text-gray-500 dark:text-gray-400"
                 },
                 "text": "레이아웃 편집기 E2E 가 컴포넌트를 넣고 저장하는 전용 화면입니다."
+              },
+              {
+                "id": "e2e_sandbox_i18n",
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "mt-2 block text-xs text-gray-400 dark:text-gray-500"
+                },
+                "text": "i18n probe"
               },
               {
                 "id": "e2e_sandbox_slot",

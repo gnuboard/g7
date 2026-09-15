@@ -1,5 +1,10 @@
 {
-    "meta": { "is_partial": true, "description": "코어 변경사항 모달", "editor_label": "$t:admin.modal_label.admin_settings.core_changelog_modal" },
+    "comment": "코어 변경 이력 창(정보 탭). 이력은 이 창이 받지 않고 **부모 화면이 받아 둔 것을 `$parent` 로 읽는다**\n  — 조각이 자기 데이터소스를 갖지 않는 대신 여는 쪽의 상태를 빌리는 형태다.",
+    "meta": {
+        "is_partial": true,
+        "description": "코어 변경사항 모달",
+        "editor_label": "$t:admin.modal_label.admin_settings.core_changelog_modal"
+    },
     "id": "core_changelog_modal",
     "type": "composite",
     "name": "Modal",
@@ -12,14 +17,18 @@
             "type": "basic",
             "name": "Div",
             "if": "{{!$parent._local.coreChangelog || $parent._local.coreChangelog.length === 0}}",
-            "props": { "className": "text-center py-8 text-gray-500 dark:text-gray-400" },
+            "props": {
+                "className": "text-center py-8 text-gray-500 dark:text-gray-400"
+            },
             "text": "$t:admin.settings.info.no_changelog"
         },
         {
             "type": "basic",
             "name": "Div",
             "if": "{{$parent._local.coreChangelog && $parent._local.coreChangelog.length > 0}}",
-            "props": { "className": "max-h-96 overflow-y-auto space-y-4" },
+            "props": {
+                "className": "max-h-96 overflow-y-auto space-y-4"
+            },
             "children": [
                 {
                     "type": "basic",
@@ -29,24 +38,32 @@
                         "item_var": "entry",
                         "index_var": "entryIdx"
                     },
-                    "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4" },
+                    "props": {
+                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex-center gap-2 mb-3" },
+                            "props": {
+                                "className": "flex-center gap-2 mb-3"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary text-sm font-bold" },
+                                    "props": {
+                                        "className": "text-primary text-sm font-bold"
+                                    },
                                     "text": "v{{entry.version}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{entry.date}}",
-                                    "props": { "className": "text-tertiary" },
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
                                     "text": "{{entry.date}}"
                                 }
                             ]
@@ -59,18 +76,24 @@
                                 "item_var": "category",
                                 "index_var": "catIdx"
                             },
-                            "props": { "className": "mb-2" },
+                            "props": {
+                                "className": "mb-2"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase" },
+                                    "props": {
+                                        "className": "text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase"
+                                    },
                                     "text": "{{category.name}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Ul",
-                                    "props": { "className": "mt-1 list-disc list-inside space-y-0.5" },
+                                    "props": {
+                                        "className": "mt-1 list-disc list-inside space-y-0.5"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -80,7 +103,9 @@
                                                 "item_var": "changeItem",
                                                 "index_var": "itemIdx"
                                             },
-                                            "props": { "className": "text-label" },
+                                            "props": {
+                                                "className": "text-label"
+                                            },
                                             "text": "{{changeItem}}"
                                         }
                                     ]

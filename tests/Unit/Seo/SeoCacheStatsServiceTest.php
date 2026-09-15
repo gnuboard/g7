@@ -281,4 +281,22 @@ class SeoCacheStatsServiceTest extends TestCase
         $this->assertDatabaseHas('seo_cache_stats', ['url' => '/recent/1']);
         $this->assertDatabaseHas('seo_cache_stats', ['url' => '/today/1']);
     }
+
+    /**
+     * 통계의 url 컬럼은 캐시 키 URL(경로 + 정규화 쿼리 최대 512바이트)을 그대로 담을 수 있어야
+     * 한다 — 짧으면 긴 주소의 기록이 조용히 실패한다(예외는 서비스가 삼키고 warning 만 남긴다).
+     *
+     * @effects stats_url_column_fits_normalized_cache_url
+     */
+    public function test_record_persists_url_as_long_as_the_cache_url_bound(): void
+    {
+        $url = '/shop/products?'.str_repeat('filters[a]=0123456789&', 24).'page=2';
+
+        $this->assertGreaterThan(255, strlen($url));
+        $this->assertLessThanOrEqual(768, strlen($url));
+
+        $this->statsService->recordHit($url, 'ko', 'shop/index');
+
+        $this->assertDatabaseHas('seo_cache_stats', ['url' => $url, 'type' => 'hit']);
+    }
 }

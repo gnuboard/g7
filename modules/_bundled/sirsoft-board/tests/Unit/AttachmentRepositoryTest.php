@@ -6,6 +6,7 @@ namespace Modules\Sirsoft\Board\Tests\Unit;
 require_once __DIR__.'/../ModuleTestCase.php';
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
@@ -222,7 +223,7 @@ class AttachmentRepositoryTest extends ModuleTestCase
     public function test_get_by_temp_key_returns_temp_attachments(): void
     {
         // Given: 고유 temp_key로 임시 첨부파일 2개 생성 (테스트 격리)
-        $tempKey = 'get-temp-test-' . uniqid();
+        $tempKey = 'get-temp-test-'.uniqid();
         $this->createTempAttachment([
             'temp_key' => $tempKey,
             'original_filename' => 'temp1.pdf',
@@ -272,5 +273,22 @@ class AttachmentRepositoryTest extends ModuleTestCase
 
         // Then: 0 반환
         $this->assertEquals(0, $maxOrder);
+    }
+
+    /**
+     * 빈 입력 분기도 선언된 Eloquent 컬렉션이어야 한다.
+     *
+     * `findByIds()` 는 진짜 모델 컬렉션을 반환하므로 Eloquent 선언이 정당한데, 빈 입력
+     * 분기만 `collect()`(Support)를 돌려주면 분기별 타입이 갈려 호출 즉시 TypeError 다.
+     */
+    #[Test]
+    public function test_find_by_ids_returns_eloquent_collection_for_empty_input(): void
+    {
+        // When: 빈 ID 배열로 조회
+        $result = $this->repository->findByIds('attach-repo-test', []);
+
+        // Then: 선언과 동일한 Eloquent 컬렉션
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertTrue($result->isEmpty());
     }
 }

@@ -40,7 +40,7 @@ class CashReceiptController extends PublicBaseController
 
         return ResponseHelper::success('sirsoft-ecommerce::cash_receipt.messages.status_retrieved', [
             'issuable' => $this->cashReceiptService->resolveIssueBlocker($order) === null,
-            'cash_receipt' => $receipt ? new CashReceiptResource($receipt) : null,
+            'cash_receipt' => $receipt ? new CashReceiptResource($receipt->setRelation('order', $order)) : null,
         ]);
     }
 
@@ -82,7 +82,7 @@ class CashReceiptController extends PublicBaseController
 
         return ResponseHelper::success(
             'sirsoft-ecommerce::cash_receipt.messages.issued',
-            new CashReceiptResource($receipt)
+            new CashReceiptResource($receipt->setRelation('order', $order))
         );
     }
 }

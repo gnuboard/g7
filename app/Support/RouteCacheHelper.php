@@ -52,7 +52,12 @@ class RouteCacheHelper
         }
 
         try {
-            Artisan::call('route:cache');
+            // `route:cache` 도 새 Application 을 부팅하며 전역 Container 인스턴스를 그 일회용 앱으로
+            // 바꿔 놓는다(`config:cache` 와 동일). 되돌리지 않으면 이 뒤에 등록되는
+            // `app()->terminating()` 이 종료되지 않는 앱에 걸려 실행되지 않는다 — 단독 실행
+            // `core:execute-upgrade-steps` 가 라우트 재생성 뒤에 확장 캐시 버전을 올리므로 그
+            // 재게시 예약이 그렇게 사라졌다 (2026-09-06 전수조사).
+            ConfigCacheHelper::withPreservedContainer(static fn () => Artisan::call('route:cache'));
         } catch (\Throwable $e) {
             Log::warning('라우트 캐시 재생성 실패 (route:clear 로 stale 은 제거됨 — 다음 요청은 비캐시 부팅)', [
                 'error' => $e->getMessage(),

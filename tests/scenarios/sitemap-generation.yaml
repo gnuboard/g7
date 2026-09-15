@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
 
 feature: sitemap_generation
 

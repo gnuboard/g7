@@ -551,4 +551,99 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
         $this->assertTrue($payment->needsPgProvider());
         $this->assertFalse($payment->isCardPayment());
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // 죽은 PG 차단(A2) 과의 비회귀 — 살아있는 확장 수단은 걸리지 않아야 한다
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * 살아있는 확장 결제수단은 죽은-PG 판정에 걸리지 않는다. (비회귀 pin)
+     *
+     * 죽은 PG 를 가리키는 결제수단을 주문서에서 걷어내는 가드가 들어왔다. 그 판정이
+     * 헐거우면 정상 등록된 간편결제 수단까지 함께 사라지는데, 이때 오류도 경고도
+     * 남지 않는다 — 결제수단 목록에서 조용히 빠질 뿐이다. 이 파일이 지키는
+     * "확장 결제수단 1급 시민" 계약이 그 방향으로 깨지는 것을 막는다.
+     *
+     * @scenario method_kind=extension, pg_provider_state=live
+     *
+     * @effects live_pg_method_remains_visible, extension_method_survives_dead_pg_guard
+     */
+    #[Test]
+    public function live_extension_payment_method_is_not_flagged_as_dead_pg(): void
+    {
+        $settingsService = app(EcommerceSettingsService::class);
+
+        $methods = $settingsService->getAllSettings()['order_settings']['payment_methods'] ?? [];
+        $extensionMethod = collect($methods)->firstWhere('id', self::EXT_METHOD);
+
+        $this->assertNotNull($extensionMethod, '확장 결제수단이 병합 결과에 없습니다.');
+        $this->assertArrayNotHasKey(
+            '_orphaned_pg',
+            $extensionMethod,
+            '살아있는 PG 를 가리키는 확장 결제수단이 죽은-PG 로 표시됐습니다.'
+        );
+
+        $publicMethods = $settingsService->getPublicPaymentSettings()['payment_methods'] ?? [];
+        $this->assertContains(
+            self::EXT_METHOD,
+            array_column($publicMethods, 'id'),
+            '살아있는 확장 결제수단이 공개 응답에서 사라졌습니다 — 주문서에서 결제수단이 통째로 빠집니다.'
+        );
+    }
+
+    /**
+     * `pg_locked` 수단도 죽은-PG 판정에 특례가 없다. (비회귀 pin)
+     *
+     * `pg_locked` 는 저장값이 카탈로그 선언을 덮지 못한다는 뜻이지, 그 선언이 가리키는
+     * PG 가 사라져도 결제 가능하다는 뜻이 아니다. 특례를 두면 그 수단은 결제창 없이
+     * 주문완료로 넘어간다.
+     *
+     * @scenario method_kind=extension, pg_provider_state=dead_own
+     *
+     * @effects dead_pg_method_flagged_for_admin, dead_pg_method_hidden_from_checkout, pg_locked_method_has_no_dead_pg_exemption
+     */
+    #[Test]
+    public function pg_locked_extension_method_has_no_dead_pg_exemption(): void
+    {
+        // 수단 카탈로그는 남아 있으나 그 수단이 지목한 PG 만 레지스트리에서 사라진 상태
+        HookManager::resetAll();
+        HookManager::addFilter(
+            'sirsoft-ecommerce.settings.filter_available_payment_methods',
+            fn (array $methods) => array_merge($methods, [[
+                'id' => self::EXT_METHOD,
+                'name' => ['ko' => '네이버페이', 'en' => 'Naver Pay'],
+                'description' => ['ko' => '', 'en' => ''],
+                'icon' => 'credit-card',
+                'source' => 'plugin:sirsoft-pay_nhnkcp',
+                'defaults' => [
+                    'pg_provider' => self::EXT_PG,
+                    'pg_locked' => true,
+                    'needs_pg' => true,
+                    'refund_method' => 'pg',
+                    'is_active' => true,
+                    'min_order_amount' => 0,
+                    'stock_deduction_timing' => 'payment_complete',
+                    'mileage_deduction_timing' => 'payment_complete',
+                ],
+            ]])
+        );
+
+        $settingsService = app(EcommerceSettingsService::class);
+
+        $methods = $settingsService->getAllSettings()['order_settings']['payment_methods'] ?? [];
+        $extensionMethod = collect($methods)->firstWhere('id', self::EXT_METHOD);
+
+        $this->assertNotNull($extensionMethod, '확장 결제수단이 병합 결과에 없습니다.');
+        $this->assertTrue(
+            $extensionMethod['_orphaned_pg'] ?? false,
+            'pg_locked 수단이 죽은 PG 를 가리키는데 관리자 화면에 표시되지 않습니다.'
+        );
+
+        $publicMethods = $settingsService->getPublicPaymentSettings()['payment_methods'] ?? [];
+        $this->assertNotContains(
+            self::EXT_METHOD,
+            array_column($publicMethods, 'id'),
+            'pg_locked 수단이 죽은 PG 를 가리키는데 주문서에 남았습니다 — 결제창 없이 주문완료로 넘어갑니다.'
+        );
+    }
 }

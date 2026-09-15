@@ -8,8 +8,8 @@
  * 실제 마운트되어 탭 헤더에 +추가/✕삭제/◀▶이동 어포던스를 노출함을 브라우저로 실증한다
  * (확장점이 문서상 확장점이 아니라 실동작 경로임을 증명).
  *
- * @scenario template_registered_canvas_overlay + tabnav_inplace_affordances + add_remove_persist
- * @effects template_registerCanvasOverlay_mounts_in_live_editor, tabnav_header_shows_add_remove_move_affordances, inplace_add_patches_node_props_tabs_same_ssot_as_property_panel
+ * 축 요약(마커 아님 — 평문): template_registered_canvas_overlay, tabnav_inplace_affordances, add_remove_persist.
+ * 효과 요약(마커 아님 — 평문): template_registerCanvasOverlay_mounts_in_live_editor, tabnav_header_shows_add_remove_move_affordances, inplace_add_patches_node_props_tabs_same_ssot_as_property_panel.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -76,6 +76,7 @@ async function selectByPath(page: Page, path: string): Promise<void> {
 }
 
 test.describe('@layout-editor TabNavigation 인플레이스(템플릿 registerCanvasOverlay 레퍼런스)', () => {
+  /** @effects template_registerCanvasOverlay_mounts_in_live_editor, tabnav_header_shows_add_remove_move_affordances, inplace_add_patches_node_props_tabs_same_ssot_as_property_panel */
   test('admin 편집기에서 TabNavigation 선택 시 템플릿 등록 인플레이스 어포던스가 마운트된다', async ({ page }) => {
     await gotoAdminEditor(page);
     const navPath = await addTabNavigation(page);

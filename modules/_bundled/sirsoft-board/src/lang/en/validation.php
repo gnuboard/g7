@@ -227,6 +227,22 @@ return [
 
     // Post validation
     'post' => [
+        'search_field' => [
+            'in' => 'Invalid search target.',
+        ],
+        'bulk' => [
+            'ids' => [
+                'required' => 'Post IDs are required.',
+                'array' => 'Post IDs must be an array.',
+                'min' => 'Select at least one post.',
+                'max' => 'You can select up to :max posts at a time.',
+                'integer' => 'Post ID must be an integer.',
+                'distinct' => 'Post IDs must not be duplicated.',
+            ],
+            'reason' => [
+                'max' => 'Reason cannot exceed :max characters.',
+            ],
+        ],
         'title' => [
             'required' => 'Title is required.',
             'string' => 'Title must be a string.',
@@ -259,10 +275,14 @@ return [
             'not_found' => 'Parent post not found.',
             'blinded' => 'Cannot create reply on blinded post.',
             'deleted' => 'Cannot create reply on deleted post.',
+            'secret' => 'Cannot create reply on a secret post you are not allowed to view.',
             'depth_exceeded' => 'This board allows replies up to :max level(s) only.',
             'notice_not_allowed' => 'Replies cannot be created on notice posts.',
         ],
         'reply_not_allowed' => 'Reply feature is disabled for this board.',
+        'delete' => [
+            'has_replies' => 'Posts with replies cannot be deleted. Please delete the replies first.',
+        ],
         'status' => [
             'in' => 'Invalid post status.',
         ],
@@ -292,6 +312,10 @@ return [
 
     // Field attributes
     'attributes' => [
+        'scrap' => [
+            'ids' => 'Scrap IDs',
+            'search_field' => 'Search target',
+        ],
         'settings' => [
             // basic_defaults
             'basic_defaults.type' => 'Board Type',
@@ -303,6 +327,7 @@ return [
             'basic_defaults.use_comment' => 'Use Comment',
             'basic_defaults.use_reply' => 'Use Reply',
             'basic_defaults.max_reply_depth' => 'Max Reply Depth',
+            'basic_defaults.reply_delete_policy' => 'Reply Delete Policy',
             'basic_defaults.max_comment_depth' => 'Max Comment Depth',
             'basic_defaults.comment_order' => 'Comment Order',
             'basic_defaults.show_view_count' => 'Show View Count',
@@ -396,6 +421,7 @@ return [
             'override_values.per_page' => 'Posts Per Page',
             'override_values.per_page_mobile' => 'Posts Per Page (Mobile)',
             'override_values.max_reply_depth' => 'Max Reply Depth',
+            'override_values.reply_delete_policy' => 'Reply Delete Policy',
             'override_values.max_comment_depth' => 'Max Comment Depth',
             'override_values.min_title_length' => 'Min Title Length',
             'override_values.max_title_length' => 'Max Title Length',
@@ -406,6 +432,10 @@ return [
             'override_values.max_file_size' => 'Max File Size',
             'override_values.max_file_count' => 'Max File Count',
             'override_values.new_display_hours' => 'New Display Hours',
+
+            // attachment_settings
+            'attachment_settings.purge_enabled' => 'Permanent Cleanup Of Deleted Attachments',
+            'attachment_settings.purge_retention_days' => 'Deleted Attachment Retention Period',
         ],
     ],
 
@@ -441,6 +471,7 @@ return [
             'not_found' => 'Post not found.',
             'blinded' => 'Cannot create comment on blinded post.',
             'deleted' => 'Cannot create comment on deleted post.',
+            'secret' => 'Cannot create comment on a secret post you are not allowed to view.',
         ],
         'parent_id' => [
             'exists' => 'Parent comment does not exist.',
@@ -618,5 +649,21 @@ return [
         ],
         'daily_limit_exceeded' => 'You have exceeded the daily report limit (:limit reports).',
         'rejection_limit_exceeded' => 'Reporting is restricted due to :count rejections within the last :days days. Please try again later.',
+    ],
+
+    // Scrap validation messages
+    'scrap' => [
+        'ids' => [
+            'required' => 'Scrap IDs are required.',
+            'array' => 'Scrap IDs must be an array.',
+            'min' => 'Select at least one scrap.',
+            'max' => 'You can select up to :max scraps at a time.',
+            'integer' => 'Scrap ID must be an integer.',
+            'distinct' => 'Scrap IDs must not be duplicated.',
+            'exists' => 'The scrap does not exist.',
+        ],
+        'search_field' => [
+            'in' => 'Invalid search target.',
+        ],
     ],
 ];

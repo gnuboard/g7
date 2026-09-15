@@ -14,6 +14,7 @@ import listLayout from '../../../layouts/admin/admin_ecommerce_shipping_policy_l
 // Partials
 import datagridPartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json';
 import filterPartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_filter.json';
+import { asArray, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ──────────────────────────────────────────────
 // Helper
@@ -73,7 +74,8 @@ describe('메인 레이아웃 (admin_ecommerce_shipping_policy_list)', () => {
 // 2. State 구조
 // ──────────────────────────────────────────────
 describe('State 구조', () => {
-    const { state, initGlobal } = listLayout;
+    const state = initStateOf(listLayout);
+    const { initGlobal } = listLayout;
 
     it('local state에 필터 기본값이 정의되어 있다', () => {
         expect(state.filter).toBeDefined();
@@ -383,7 +385,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
 
     describe('DataGrid 이벤트 액션', () => {
         it('onSelectionChange에서 global bulkSelectedItems를 업데이트한다', () => {
-            const selAction = datagridPartial.actions.find(
+            const selAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onSelectionChange'
             );
             expect(selAction).toBeDefined();
@@ -393,7 +395,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('onRowAction에서 switch로 edit/copy/delete를 분기한다', () => {
-            const rowAction = datagridPartial.actions.find(
+            const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction).toBeDefined();
@@ -404,7 +406,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('edit 액션이 navigate로 수정 페이지로 이동한다', () => {
-            const rowAction = datagridPartial.actions.find(
+            const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction.cases.edit.handler).toBe('navigate');
@@ -412,13 +414,13 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('copy 액션이 sequence(setState → openModal)이다', () => {
-            const rowAction = datagridPartial.actions.find(
+            const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction.cases.copy.handler).toBe('sequence');
             expect(rowAction.cases.copy.actions).toHaveLength(2);
-            expect(rowAction.cases.copy.actions[0].handler).toBe('setState');
-            expect(rowAction.cases.copy.actions[1].handler).toBe('openModal');
+            expect(asArray(rowAction.cases.copy?.actions)[0].handler).toBe('setState');
+            expect(asArray(rowAction.cases.copy?.actions)[1].handler).toBe('openModal');
         });
     });
 });

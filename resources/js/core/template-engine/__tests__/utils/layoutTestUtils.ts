@@ -65,6 +65,8 @@ export interface LayoutJson {
   components?: ComponentDefinition[];
   // 모달 정의
   modals?: ComponentDefinition[];
+  // 재사용 액션 정의 (actionRef 로 참조)
+  named_actions?: Record<string, any>;
   // 데이터 소스
   data_sources?: Array<{
     id: string;
@@ -580,13 +582,26 @@ export function createLayoutTest(
       state._global = { ...state._global, ...updates };
     });
 
+    // 레이아웃 최상위 named_actions 등록 (engine-v1.19.0+)
+    // 미등록 시 actionRef 가 해석되지 않아 named_actions 를 쓰는 레이아웃은
+    // 렌더링 테스트에서 액션이 통째로 무반응이 된다 (경고만 남고 실패하지 않는다).
+    if (layoutJson.named_actions) {
+      actionDispatcher.setNamedActions?.(layoutJson.named_actions);
+    }
+
     // 글로벌 fetch 모킹
     cleanupFetch = setupGlobalFetchMock(mockApiRegistry);
 
     // G7Core 글로벌 객체 모킹
     (window as any).G7Core = {
       state: {
-        get: () => ({ _global: state._global, _local: state._local }),
+        // `G7Core.state.get()` 은 **`_global` 의 내용물을 평평하게** 돌려준다
+        // (`TemplateApp.getGlobalState()` → `{ ...this.globalState }`, `_local` 은 그 안의 한 키다).
+        // 종전 mock 은 `{ _global, _local }` 래퍼를 돌려줬다 — 엔진의 stale-closure 가드가
+        // `state.get()?._global` 로 읽던 시절엔 언제나 undefined 라 가드가 건너뛰어 드러나지 않았다.
+        // engine-v1.70.0 이 그 죽은 가드를 고치자 래퍼가 그대로 `_global` 자리에 덮여
+        // `{{_global.shopBase}}` 가 빈 값이 됐다. 규약을 정본에 맞춘다.
+        get: () => ({ ...state._global, _local: state._local }),
         set: (updates: any) => { state._global = { ...state._global, ...updates }; },
         getLocal: () => state._local,
         setLocal: (updates: any) => { state._local = { ...state._local, ...updates }; },

@@ -98,6 +98,28 @@ describe('ApiClient', () => {
     it('토큰이 없으면 null을 반환해야 함', () => {
       expect(apiClient.getToken()).toBeNull();
     });
+
+    it('문자열이 아닌 토큰은 저장하지 않아야 함', () => {
+      // localStorage 는 무엇을 넣든 문자열로 바꾼다 — undefined 를 넘기면 "undefined" 라는
+      // truthy 문자열이 남아 이후 모든 요청이 Bearer undefined 로 나가고 401 로 튕긴다.
+      apiClient.setToken(undefined as unknown as string);
+
+      expect(localStorage.getItem('auth_token')).toBeNull();
+      expect(apiClient.getToken()).toBeNull();
+    });
+
+    it('빈 문자열 토큰도 저장하지 않아야 함', () => {
+      apiClient.setToken('');
+
+      expect(localStorage.getItem('auth_token')).toBeNull();
+    });
+
+    it('기존 토큰이 있어도 잘못된 값으로 덮어쓰지 않아야 함', () => {
+      apiClient.setToken('valid-token');
+      apiClient.setToken(null as unknown as string);
+
+      expect(apiClient.getToken()).toBe('valid-token');
+    });
   });
 
   describe('HTTP 메서드', () => {
@@ -272,6 +294,81 @@ describe('ApiClient', () => {
         expect.any(Object),
         { email: 'guest@example.com', phone: '01099998888' },
       );
+    });
+  });
+
+  // @scenario consumer=product, disk_setting=fake_cdn, e2e=drivers_tab_card, hook=unregistered, override=follow_core, row_state=new_remote_row
+  // @effects cross_origin_asset_request_omits_session_token
+  describe('교차 출처 요청의 인증 헤더 차단', () => {
+    /**
+     * 요청 인터셉터를 캡처해 임의 config 로 실행합니다.
+     *
+     * @returns 캡처된 요청 인터셉터
+     */
+    function buildClientCapturingRequest(): (config: any) => any {
+      let captured: ((config: any) => any) | null = null;
+      mockedAxios.create.mockReturnValue({
+        interceptors: {
+          request: {
+            use: vi.fn((onFulfilled: any) => {
+              captured = onFulfilled;
+              return 0;
+            }),
+          },
+          response: { use: vi.fn(() => 0) },
+        },
+        get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      });
+      new ApiClient();
+      return captured!;
+    }
+
+    beforeEach(() => {
+      localStorage.setItem('auth_token', 'secret-token');
+    });
+
+    it('동일 출처 상대 경로에는 Authorization 을 첨부한다', () => {
+      const onRequest = buildClientCapturingRequest();
+
+      const config = onRequest({ url: '/api/attachments/abc', headers: {}, baseURL: '/api' });
+
+      expect(config.headers.Authorization).toBe('Bearer secret-token');
+    });
+
+    it('동일 출처 절대 URL 에는 Authorization 을 첨부한다', () => {
+      const onRequest = buildClientCapturingRequest();
+
+      const config = onRequest({
+        url: `${window.location.origin}/api/attachments/abc`,
+        headers: {},
+        baseURL: '/api',
+      });
+
+      expect(config.headers.Authorization).toBe('Bearer secret-token');
+    });
+
+    it('교차 출처 절대 URL(공개 자산 CDN)에는 Authorization 을 첨부하지 않는다', () => {
+      const onRequest = buildClientCapturingRequest();
+
+      const config = onRequest({
+        url: 'https://cdn.example.com/bucket/products/a.png',
+        headers: {},
+        baseURL: '/api',
+      });
+
+      expect(config.headers.Authorization).toBeUndefined();
+    });
+
+    it('프로토콜 상대 URL(//cdn) 도 교차 출처면 Authorization 을 첨부하지 않는다', () => {
+      const onRequest = buildClientCapturingRequest();
+
+      const config = onRequest({
+        url: '//cdn.example.com/bucket/products/a.png',
+        headers: {},
+        baseURL: '/api',
+      });
+
+      expect(config.headers.Authorization).toBeUndefined();
     });
   });
 });

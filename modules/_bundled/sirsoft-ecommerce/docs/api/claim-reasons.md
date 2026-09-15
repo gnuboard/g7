@@ -28,7 +28,7 @@
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | type | query | string | 아니오 | — | 유형 필터 (해당 유형의 항목만 조회) |
-| fault_type | query | string | 아니오 | — | <!-- TODO: 용도 --> |
+| fault_type | query | string | 아니오 | `customer`, `seller`, `carrier` | 귀책 구분 필터 (ClaimReasonFaultTypeEnum — 고객/판매자/배송사 귀책). 미전달 시 전체 |
 | is_active | query | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
 
@@ -313,7 +313,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 클래임 사유 1건을 삭제합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, 대상이 없으면 404 를 반환하고 존재하면 `ClaimReasonService::deleteReason()`이 삭제합니다. 이미 사용 중인 사유 등 삭제 불가 상황에서는 서비스가 던진 예외 메시지를 그대로 사용해 400 으로 응답하므로, 관리자에게 삭제 실패 사유가 노출됩니다.
+**설명** 관리자가 클래임 사유 1건을 삭제합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, 대상이 없으면 404 를 반환하고 존재하면 `ClaimReasonService::deleteReason()`이 삭제합니다. 이미 사용 중인 사유 등 삭제 불가 상황에서는 그 사유에 대응하는 안내 문구를 400 으로 응답합니다 (예외 메시지 원문이 아니라 전용 다국어 키를 사용). 그 밖의 서버 내부 오류는 500 으로 구분됩니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/claim-reasons/{id}
@@ -510,6 +510,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 같은 `type` 내 다른 사유가 동일한 `code` 를 이미 사용 중이면 `code` 필드 검증 실패 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -599,6 +600,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -756,11 +758,27 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: 삭제 결과 요약 (`data` 객체)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| reason_id | integer | `8` | 삭제된 클레임 사유의 기본 키 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "클레임 사유가 삭제되었습니다.",
+    "data": {
+        "reason_id": 8
+    }
+}
+```
 
 **에러 응답**
 
@@ -769,10 +787,11 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 클레임 사유 1건을 삭제합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, 대상이 없으면 404 를 반환하고 존재하면 `ClaimReasonService::deleteReason()`이 삭제합니다. 이미 사용 중인 사유 등 삭제 불가 상황에서는 서비스가 던진 예외 메시지를 그대로 사용해 400 으로 응답하므로, 관리자에게 삭제 실패 사유가 노출됩니다.
+**설명** 관리자가 클레임 사유 1건을 삭제합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, 대상이 없으면 404 를 반환하고 존재하면 `ClaimReasonService::deleteReason()`이 삭제합니다. 이미 사용 중인 사유 등 삭제 불가 상황에서는 그 사유에 대응하는 안내 문구를 400 으로 응답합니다 (예외 메시지 원문이 아니라 전용 다국어 키를 사용). 그 밖의 서버 내부 오류는 500 으로 구분됩니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/claim-reasons/{id}
@@ -798,11 +817,42 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`ClaimReasonResource`). 필드 구성은 이 문서의 **POST /api/modules/sirsoft-ecommerce/admin/claim-reasons (클레임 사유 생성)** 응답 필드 표와 동일합니다._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "클레임 사유 정보를 조회했습니다.",
+    "data": {
+        "id": 8,
+        "type": "refund",
+        "code": "apidoc_sample",
+        "name": {
+            "ko": "API 문서 샘플 사유",
+            "en": "API Doc Sample Reason"
+        },
+        "localized_name": "API 문서 샘플 사유",
+        "fault_type": "customer",
+        "fault_type_label": "고객 귀책",
+        "is_user_selectable": true,
+        "is_active": true,
+        "sort_order": 0,
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-07-08 10:44:49",
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -860,11 +910,42 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`ClaimReasonResource`). 필드 구성은 이 문서의 **POST /api/modules/sirsoft-ecommerce/admin/claim-reasons (클레임 사유 생성)** 응답 필드 표와 동일합니다._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "클레임 사유가 수정되었습니다.",
+    "data": {
+        "id": 8,
+        "type": "refund",
+        "code": "apidoc_sample",
+        "name": {
+            "ko": "API 문서 샘플 사유",
+            "en": "API Doc Sample Reason"
+        },
+        "localized_name": "API 문서 샘플 사유",
+        "fault_type": "customer",
+        "fault_type_label": "고객 귀책",
+        "is_user_selectable": true,
+        "is_active": true,
+        "sort_order": 0,
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-07-08 10:44:49",
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -874,6 +955,7 @@ Content-Type: application/json
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -903,11 +985,42 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`ClaimReasonResource`). 필드 구성은 이 문서의 **POST /api/modules/sirsoft-ecommerce/admin/claim-reasons (클레임 사유 생성)** 응답 필드 표와 동일합니다._ `is_active` 가 반전된 상태로 반환됩니다.
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "클레임 사유 상태가 변경되었습니다.",
+    "data": {
+        "id": 8,
+        "type": "refund",
+        "code": "apidoc_sample",
+        "name": {
+            "ko": "API 문서 샘플 사유",
+            "en": "API Doc Sample Reason"
+        },
+        "localized_name": "API 문서 샘플 사유",
+        "fault_type": "customer",
+        "fault_type_label": "고객 귀책",
+        "is_user_selectable": true,
+        "is_active": true,
+        "sort_order": 0,
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-07-08 10:44:49",
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -916,6 +1029,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 

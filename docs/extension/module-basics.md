@@ -145,6 +145,28 @@
 | `getBenchmarkProfiles()` | `[]` | 성능 계측 대상 선언 (`g7:bench` 가 수집) — 목록/화면/쓰기/배치 4축 ([benchmark.md](../backend/benchmark.md)) |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 모듈은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `ModuleManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
+#### 수명주기 훅이 실패를 알리는 방법
+
+`install()` / `activate()` / `deactivate()` / `uninstall()` 은 bool 만 돌려주므로, 그냥 `false` 를
+반환하면 **왜 거부했는지가 코어에 전달되지 않는다.** 그 결과 운영자는 원인이 빠진 실패 문구만 본다.
+
+사유를 남기려면 `failWith()` 로 반환한다. 코어가 그 사유를 응답 문구의 원인 자리에 싣는다.
+
+```php
+public function activate(): bool
+{
+    if (! extension_loaded('gd')) {
+        return $this->failWith(__('my-module::messages.gd_required'));
+    }
+
+    return true;
+}
+```
+
+- 사유는 **이미 번역된 문장**이어야 한다 — 확장의 언어 파일 키는 코어가 해석할 수 없다.
+- 사유를 남기지 않고 `false` 만 돌려주면 코어가 일반 문구로 대체한다(동작은 그대로).
+- 같은 규칙이 플러그인(`AbstractPlugin`)에도 동일하게 적용된다.
+
 #### 동적 권한/역할/메뉴 보존 규칙
 
 모듈이 런타임에 `Permission::updateOrCreate` / `Role::firstOrCreate` / `Menu::create` 등으로 동적 엔티티를 만드는 경우(예: sirsoft-board 의 게시판 slug 별 권한·역할·메뉴), 업데이트 시 `cleanupStale*` 로직이 **정적 정의에 없다** 는 이유로 전수 삭제되는 회귀가 발생한다. 이를 방지하려면 아래 3개 메서드를 override 해 **현재 DB 에 존재해야 하는 동적 식별자 전체** 를 반환한다.
@@ -476,6 +498,14 @@ php artisan extension:update-autoload
 
 ---
 
+## 화면 컴포넌트 제공
+
+모듈은 자기 화면 컴포넌트를 제공할 수 있다. 소스는 `resources/js/components/{basic,composite,layout}/` 에 두고, 이름은 `{모듈식별자}.{이름}` 으로 등록하며(마크업 태그는 `<sirsoft-ecommerce-product-card>` 처럼 식별자 프리픽스가 붙는다), 등록은 모듈 번들이 스스로 한다.
+
+모듈은 **다른 확장의 컴포넌트를 대체할 수 없다** — 그 권한은 템플릿 전용이다. 자기 컴포넌트를 특정 템플릿에서만 다르게 내려면 `resources/js/components/for/{템플릿식별자}/` 를 쓴다. `resources/js/components/overrides/` 를 두면 audit 이 차단한다.
+
+규약 전문(디렉토리·이름·등록 API·판본 선택·오버라이드 폴백): **[extension-components.md](extension-components.md)**
+
 ## 모듈 디렉토리 구조
 
 ```
@@ -491,7 +521,7 @@ modules/_bundled/sirsoft-ecommerce/
 ├── vite.config.ts               # Vite 빌드 설정 (에셋 모듈만)
 ├── tsconfig.json                # TypeScript 설정 (에셋 모듈만)
 ├── vendor/                      # Composer 의존성 (자동 생성, gitignore 대상)
-├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만, gitignore 대상)
+├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만 — _bundled 은 Git 추적, `*.map` 만 ignore)
 │   ├── js/module.iife.js
 │   └── css/module.css
 ├── upgrades/                    # 버전 업그레이드 스텝 (AbstractUpgradeStep 상속 — g7_version >= 7.0.0-beta.5 모듈 의무)
@@ -522,7 +552,7 @@ modules/_bundled/sirsoft-ecommerce/
 │   ├── lang/                    # 프론트엔드 다국어 (JSON)
 │   │   ├── ko.json             # 한국어 프론트엔드 다국어
 │   │   └── en.json             # 영어 프론트엔드 다국어
-│   ├── layouts/                 # 레이아웃 JSON
+│   ├── layouts/                 # 레이아웃 소스 SSoT = .g7.html 마크업 (짝 .json 은 런타임 계약)
 │   │   ├── admin/               # admin 템플릿 레이아웃
 │   │   └── user/                # user 템플릿 레이아웃 (선택)
 │   ├── routes/                  # 프론트엔드 라우트 정의
@@ -562,7 +592,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `package.json` | npm 패키지 정의 (에셋 모듈만 해당) |
 | `vite.config.ts` | Vite IIFE 빌드 설정 (에셋 모듈만 해당) |
 | `vendor/` | Composer 의존성 디렉토리 (자동 생성, gitignore 대상) |
-| `dist/` | 프론트엔드 빌드 출력 (에셋 모듈만 해당, gitignore 대상) |
+| `dist/` | 프론트엔드 빌드 출력 (에셋 모듈만 해당 — `_bundled` 소스는 Git 추적되는 배포 산출물, `*.map` 만 ignore. 소스 변경 시 `--production` 재빌드 산출물을 함께 커밋한다) |
 | `config/` | 모듈별 설정 파일 |
 | `database/factories/` | 테스트용 Factory (autoload 등록 필수) |
 | `database/migrations/` | 데이터베이스 마이그레이션 |
@@ -571,7 +601,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `resources/js/` | 프론트엔드 JS/TS 소스 — 핸들러 정의 등 (에셋 모듈만 해당) |
 | `resources/css/` | CSS 소스 (에셋 모듈만 해당) |
 | `resources/lang/` | 프론트엔드 다국어 (JSON) |
-| `resources/layouts/` | 레이아웃 JSON (admin/, user/ 하위) |
+| `resources/layouts/` | 레이아웃 소스 SSoT `.g7.html` + 짝 런타임 계약 `.json` (admin/, user/ 하위) |
 | `resources/routes/admin.json` | admin 템플릿 전용 프론트엔드 라우트 |
 | `resources/routes/user.json` | user 템플릿 전용 프론트엔드 라우트 (선택) |
 | `src/Http/Controllers/` | 컨트롤러 |
@@ -805,6 +835,19 @@ public function seoVariables(): array
 
 레이아웃 JSON의 `meta.seo.extensions`에 모듈을 선언하면 `seoVariables()`가 자동 호출됩니다.
 
+```html
+<meta>
+  <seo page_type="product">
+    <extensions>
+      <item type="module" id="sirsoft-ecommerce"/>
+    </extensions>
+    <vars product_name="{{product.data.name ?? ''}}" product_description="{{product.data.short_description ?? ''}}"/>
+  </seo>
+</meta>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "meta": {
@@ -830,7 +873,7 @@ public function seoVariables(): array
 
 ## 관련 문서
 
-- [index.md](./index.md) - 확장 시스템 개요
+- [README.md](./README.md) - 확장 시스템 개요
 - [hooks.md](./hooks.md) - 훅 시스템
 - [module-routing.md](./module-routing.md) - 모듈 라우트 규칙
 - [module-layouts.md](./module-layouts.md) - 모듈 레이아웃 시스템

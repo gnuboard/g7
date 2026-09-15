@@ -300,7 +300,6 @@ $this->logActivity('schedule.auto_run', [
 번들 일본어 언어팩(`lang-packs/_bundled/g7-core-ja/backend/ja/activity_log.php`)도 함께 동기화한다.
 
 ```text
-정적 검사: 코어/모듈/플러그인 ActivityLog 리스너 전 영역에서 키 누락 자동 검출
 ```
 
 ---
@@ -717,6 +716,16 @@ Route::get('products/{product}/logs', [ProductController::class, 'logs']);
 ```
 
 ### 레이아웃 JSON에서 처리로그 탭 구현
+
+```html
+<json key="id">"activity_logs"</json>
+<json key="endpoint">"/api/admin/vendor-module/products/{{route.id}}/logs"</json>
+<json key="method">"GET"</json>
+<json key="autoFetch">false</json>
+<json key="params">{"per_page":10,"page":1}</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

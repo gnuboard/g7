@@ -27,7 +27,7 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| filters | query | array | 아니오 | — | 추가 필터 조건 맵 (필드별 조건) |
+| filters | query | array | 아니오 | — | 검색 조건 배열. 첫 요소만 사용하며 `filters[0][field]`(검색 대상 필드, 미지정 시 `all`) + `filters[0][value]`(검색어) 형태다. 관리자 목록 화면들이 공유하는 표기이며, 배열 2번째 이후 요소는 무시된다 |
 | status | query | string | 아니오 | — | 상태 필터 (해당 상태의 항목만 조회) |
 | target_type | query | string | 아니오 | — | 신고 대상 타입 필터 (`post`/`comment`). 단일 문자열 또는 배열로 여러 타입을 전달할 수 있습니다. |
 | target_status | query | string | 아니오 | — | 신고 대상 콘텐츠의 현재 상태 필터 (게시글/댓글의 status 기준). 단일 문자열 또는 배열로 전달하며 `all`은 무시됩니다. |

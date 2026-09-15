@@ -412,8 +412,9 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
 
         it('computed 속성이 비어있다 (합계는 백엔드 필드 사용)', () => {
             const layout = mainLayout as any;
-            expect(layout.computed).toBeDefined();
-            expect(Object.keys(layout.computed)).toHaveLength(0);
+            // 명제는 "계산값이 없다" 다. 컴파일러 정본은 **빈 컨테이너를 키 자체로 두지 않으므로**
+            // `{}` 를 요구하면 정본에서 red 가 된다 — 부재와 빈 객체를 같은 것으로 본다.
+            expect(Object.keys(layout.computed ?? {})).toHaveLength(0);
         });
 
         it('modals에 등록된 모달 partial 집합이 정확히 일치한다', () => {
@@ -698,6 +699,13 @@ describe('Partial 레이아웃 구조 검증', () => {
 
         // ========== 합계행 백엔드 필드 마이그레이션 검증 ==========
 
+        /**
+         * 합계행(footerCells)이 order.data 백엔드 필드에 바인딩되어 있는지의 구조 검증.
+         * 공개 #98(stale dist) 시나리오 매니페스트 admin-order-detail-footer-totals.yaml 의
+         * 레이아웃 계층 커버를 담당한다 — 서빙 번들 실검은 Playwright spec 이 맡는다.
+         *
+         * @effects order_detail_footer_totals_fields_bound
+         */
         it('합계행(footer)이 computed 대신 order.data 백엔드 필드를 사용한다', () => {
             const json = JSON.stringify(orderInfoPartial);
             // computed 참조가 없어야 함
@@ -779,7 +787,7 @@ describe('Partial 레이아웃 구조 검증', () => {
         it('다통화 표시에 preferredCurrency 필터가 적용된다', () => {
             const json = JSON.stringify(orderInfoPartial);
             // 보조 통화만 표시 (기본 통화 제외)
-            expect(json).toContain("_global.preferredCurrency ?? 'KRW'");
+            expect(json).toContain("_global.preferredCurrency ?? _global.defaultCurrency");
         });
 
         it('다통화 표시에 iteration 패턴이 사용된다 (engine-v1.19.1)', () => {

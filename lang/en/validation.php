@@ -211,6 +211,8 @@ return [
 
         'invalid_json' => 'Invalid JSON format.',
         'must_be_array' => 'Layout data must be an array.',
+        'dangerous_expression' => 'The layout contains a disallowed expression: :snippet',
+        'external_resource_url' => 'External resource URLs are not allowed (same-origin paths only): :url',
         'required_field_missing' => "Required field ':field' is missing.",
         'version_must_be_string' => 'The version field must be a string.',
         'layout_name_must_be_string' => 'The layout_name field must be a string.',
@@ -243,6 +245,11 @@ return [
         'content' => [
             'required' => 'The layout content is required.',
             'array' => 'The layout content must be an array.',
+            'markup_compile_failed' => 'The layout markup (.g7.html) could not be compiled: :detail',
+        ],
+        'markup' => [
+            'required' => 'The markup (.g7.html) to compile is required.',
+            'string' => 'The markup must be a string.',
         ],
         'version' => [
             'required' => 'The layout version is required.',
@@ -451,7 +458,7 @@ return [
         'extension_point_invalid' => 'The extension_point field must be a non-empty string.',
         'target_layout_invalid' => 'The target_layout field must be a non-empty string.',
         'components_must_be_array' => 'The components field must be an array.',
-        'injections_required' => 'An overlay extension requires the injections field.',
+        'contribution_required' => 'An overlay extension requires at least one of injections, modals, data_sources, scripts, or init_actions.',
         'injections_must_be_array' => 'The injections field must be an array.',
         'injection_must_be_array' => 'injections[:index] must be an array.',
         'injection_target_id_required' => 'injections[:index] requires the target_id field.',
@@ -469,6 +476,7 @@ return [
         'content' => [
             'required' => 'Extension content is required.',
             'array' => 'Extension content must be an array.',
+            'markup_compile_failed' => 'The extension markup (.g7.html) could not be compiled: :detail',
         ],
         'priority' => [
             'integer' => 'priority must be an integer.',
@@ -513,6 +521,7 @@ return [
     // Schedule command (shell/Artisan) validation messages — these run on the server
     'schedule_command' => [
         'shell_not_allowed' => 'This shell command is not allowed. Only executables registered on the server may be used, and special characters such as pipes (|) or semicolons (;) are not permitted.',
+        'shell_interpreter_denied' => 'You cannot run inline commands/code through an interpreter or point it at an unsafe path. After an interpreter, specify only an absolute-path script file.',
         'artisan_denied' => 'This Artisan command cannot be run as a schedule for security reasons.',
         'artisan_not_allowlisted' => 'This Artisan command is not allowed to run on a schedule. Only maintenance commands such as cache clearing and queue processing can be registered.',
         'artisan_malformed' => 'The Artisan command format is invalid. Quotes, backslashes, and short options (-v) are not allowed; use "command --option[=value]" only.',
@@ -825,9 +834,13 @@ return [
     // Setting value validation messages
     'setting' => [
         'value' => [
-            'required' => 'Setting value is required.',
-            'string' => 'Setting value must be a string.',
+            'present' => 'The value field must be present in the request.',
+            'boolean' => 'This setting only accepts an on/off value.',
+            'integer' => 'This setting only accepts an integer.',
+            'numeric' => 'This setting only accepts a number.',
+            'type' => 'The setting value has an unsupported format.',
             'max' => 'Setting value may not be greater than :max characters.',
+            'array_max' => 'Setting value may not be larger than :max characters.',
         ],
     ],
 
@@ -906,6 +919,15 @@ return [
         'sql_query_log_required' => 'Please select the SQL query log setting.',
         'sql_query_log_boolean' => 'SQL query log must be true or false.',
 
+        // Outbound HTTP proxy
+        'outbound_proxy_required' => 'Please enter the outbound proxy address.',
+        'outbound_proxy_string' => 'The outbound proxy address must be a string.',
+        'outbound_proxy_max' => 'The outbound proxy address may not be greater than :max characters.',
+        'outbound_proxy_invalid' => 'The outbound proxy address format is invalid. Supported schemes: :schemes (e.g. socks5h://127.0.0.1:1080)',
+        'outbound_proxy_bypass_array' => 'The proxy bypass list must be an array.',
+        'outbound_proxy_bypass_item_string' => 'Each proxy bypass entry must be a string.',
+        'outbound_proxy_bypass_item_max' => 'Each proxy bypass entry may not be greater than :max characters.',
+
         // List limits
         'pagination_result_cap_integer' => 'The total count cap must be a number.',
         'pagination_result_cap_min' => 'The total count cap must be at least :min. (0 = unlimited)',
@@ -954,6 +976,10 @@ return [
         'image_quality_integer' => 'Image quality must be an integer.',
         'image_quality_min' => 'Image quality must be at least 1.',
         'image_quality_max' => 'Image quality may not be greater than 100.',
+        'orphan_cleanup_enabled_boolean' => 'Orphan attachment cleanup must be enabled or disabled.',
+        'orphan_retention_days_integer' => 'Orphan attachment retention period must be an integer.',
+        'orphan_retention_days_min' => 'Orphan attachment retention period must be at least 1 day.',
+        'orphan_retention_days_max' => 'Orphan attachment retention period may not be greater than 3650 days.',
 
         // SEO settings
         'meta_title_suffix_max' => 'Meta title suffix may not be greater than 100 characters.',
@@ -1011,15 +1037,19 @@ return [
         'storage_driver_invalid' => 'Please select a valid storage driver.',
         's3_bucket_required' => 'S3 bucket name is required.',
         's3_bucket_max' => 'S3 bucket name may not be greater than 255 characters.',
-        's3_region_required' => 'Please select an S3 region.',
-        's3_region_invalid' => 'Please select a valid S3 region.',
+        's3_region_invalid' => 'S3 region may only contain lowercase letters, numbers, and hyphens. (e.g. ap-northeast-2, or auto for Cloudflare R2)',
+        's3_region_max' => 'S3 region may not be greater than 64 characters.',
         's3_access_key_required' => 'S3 access key is required.',
         's3_access_key_max' => 'S3 access key may not be greater than 255 characters.',
         's3_secret_key_required' => 'S3 secret key is required.',
         's3_secret_key_max' => 'S3 secret key may not be greater than 255 characters.',
         's3_url_url' => 'S3 URL must be a valid URL.',
         's3_url_invalid' => 'S3 URL is not a valid URL format.',
-        's3_url_max' => 'S3 URL may not be greater than 255 characters.',
+        's3_url_max' => 'S3 URL may not be greater than 500 characters.',
+        's3_endpoint_invalid' => 'S3 endpoint is not a valid URL format.',
+        's3_endpoint_max' => 'S3 endpoint may not be greater than 500 characters.',
+        's3_use_path_style_boolean' => 'Path-style addressing must be true or false.',
+        'driver_unusable' => "The ':driver' driver cannot be used on this server. :reason",
 
         // Driver settings - Cache
         'cache_driver_required' => 'Please select a cache driver.',
@@ -1084,6 +1114,9 @@ return [
         'log_days_min' => 'Log retention days must be at least 1.',
         'log_days_max' => 'Log retention days may not be greater than 365.',
 
+        // Public asset disk settings
+        'public_asset_disk_invalid' => 'Please select a valid public asset disk.',
+
         // Identity verification (IDV) settings
         'identity_default_provider_string' => 'Default provider must be a string.',
         'identity_default_provider_max' => 'Default provider identifier may not be longer than 100 characters.',
@@ -1146,7 +1179,8 @@ return [
 
     // Validation attribute names (validation.attributes)
     'attributes' => [
-        'ids' => 'user ID list',
+        'ids' => 'ID list',
+        'user_ids' => 'user ID list',
         'user_id' => 'user ID',
         'status' => 'status',
         // Settings fields
@@ -1155,7 +1189,8 @@ return [
         'site_description' => 'site description',
         'admin_email' => 'admin email',
         'timezone' => 'timezone',
-        'language' => 'default language',
+        'language' => 'language',
+        'default_language' => 'default language',
         // Identity verification (IDV) fields
         'identity_default_provider' => 'default provider',
         'identity_purpose_providers' => 'purpose-to-provider mapping',
@@ -1173,10 +1208,14 @@ return [
         'identity_policy_fail_mode' => 'fail mode',
         // Mail settings
         'mailer' => 'mailer',
-        'host' => 'SMTP host',
-        'port' => 'SMTP port',
-        'username' => 'SMTP username',
-        'password' => 'SMTP password',
+        'host' => 'host',
+        'port' => 'port',
+        'username' => 'username',
+        'password' => 'password',
+        'smtp_host' => 'SMTP host',
+        'smtp_port' => 'SMTP port',
+        'smtp_username' => 'SMTP username',
+        'smtp_password' => 'SMTP password',
         'encryption' => 'encryption',
         'from_address' => 'sender email',
         'from_name' => 'sender name',
@@ -1186,6 +1225,8 @@ return [
         'image_max_width' => 'max image width',
         'image_max_height' => 'max image height',
         'image_quality' => 'image quality',
+        'orphan_cleanup_enabled' => 'orphan attachment cleanup',
+        'orphan_retention_days' => 'orphan attachment retention period',
         // SEO settings
         'meta_title_suffix' => 'meta title suffix',
         'meta_description' => 'meta description',
@@ -1200,6 +1241,8 @@ return [
         's3_access_key' => 'S3 access key',
         's3_secret_key' => 'S3 secret key',
         's3_url' => 'S3 URL',
+        's3_endpoint' => 'S3 endpoint URL',
+        's3_use_path_style' => 'path-style addressing',
         'cache_driver' => 'cache driver',
         'redis_host' => 'Redis host',
         'redis_port' => 'Redis port',
@@ -1228,11 +1271,14 @@ return [
         'ses_region' => 'SES region',
         'mailgun_endpoint' => 'Mailgun endpoint',
         // General settings (additional)
-        'channels' => 'notification channels',
-        'currency' => 'default currency',
+        'channels' => 'channels',
+        'notification_channels' => 'notification channels',
+        'currency' => 'currency',
+        'default_currency' => 'default currency',
         'maintenance_mode' => 'maintenance mode',
         'asset_url_mode' => 'asset URL mode',
         'site_logo' => 'site logo',
+        'og_image_default' => 'default share image',
         // SEO settings (additional)
         'bot_user_agents' => 'bot user agents',
         'bot_detection_enabled' => 'bot detection',
@@ -1243,7 +1289,8 @@ return [
         'twitter_default_card' => 'Twitter default card type',
         'twitter_default_site' => 'Twitter default account',
         'seo_page_cache_enabled' => 'SEO page cache',
-        'cache_ttl' => 'SEO page cache lifetime',
+        'cache_ttl' => 'cache lifetime',
+        'seo_page_cache_ttl' => 'SEO page cache lifetime',
         'sitemap_enabled' => 'sitemap',
         'sitemap_cache_ttl' => 'sitemap cache lifetime',
         'sitemap_urls_per_file' => 'sitemap URLs per file',
@@ -1276,6 +1323,8 @@ return [
         'seo_sitemap_cache_ttl' => 'SEO sitemap cache lifetime',
         'debug_mode' => 'debug mode',
         'sql_query_log' => 'SQL query log',
+        'outbound_proxy' => 'outbound proxy address',
+        'outbound_proxy_bypass' => 'proxy bypass list',
         'core_update_github_url' => 'core update GitHub URL',
         'core_update_github_token' => 'core update GitHub token',
         'geoip_enabled' => 'GeoIP',
@@ -1294,5 +1343,6 @@ return [
         'log_driver' => 'log driver',
         'log_level' => 'log level',
         'log_days' => 'log retention days',
+        'public_asset_disk' => 'public asset disk',
     ],
 ];

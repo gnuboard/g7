@@ -32,6 +32,7 @@ return [
     'coupon_has_issues' => 'Cannot delete coupon because it has :count issued coupons.',
     'coupon_issue_not_found' => 'Coupon issue record not found.',
     'coupon_issue_not_cancellable' => 'Only unused issued coupons can be cancelled.',
+    'coupon_already_used' => 'This coupon has already been used. Please review your coupons and try again.',
     'label_not_found' => 'Label not found.',
     'product_notice_template_not_found' => 'Product notice template not found.',
     'product_common_info_not_found' => 'Product common information not found.',
@@ -65,6 +66,7 @@ return [
     'order_option_already_cancelled' => 'This order option has already been cancelled.',
     'order_option_already_confirmed' => 'This order option has already been confirmed.',
     'order_option_cannot_confirm' => 'Cannot confirm purchase in current status.',
+    'order_option_not_confirmable' => 'This order option cannot be confirmed in its current status.',
     'cancel_quantity_exceeds' => 'Cancel quantity exceeds current quantity (:max).',
 
     // Order payment related
@@ -85,6 +87,7 @@ return [
     'order_cancel_failed' => 'Failed to cancel the order.',
     'order_estimate_refund_failed' => 'Failed to calculate the estimated refund amount.',
     'order_create_failed' => 'Failed to create the order.',
+    'order_shipping_address_update_failed' => 'Failed to update the shipping address.',
 
     // Currency related
     'unknown_currency' => 'Unsupported currency: :currency',

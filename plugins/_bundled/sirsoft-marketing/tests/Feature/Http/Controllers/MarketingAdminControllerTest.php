@@ -19,10 +19,10 @@ class MarketingAdminControllerTest extends PluginTestCase
      */
     private const EXISTING_CHANNELS = [
         [
-            'key'       => 'email_subscription',
-            'label'     => ['ko' => '광고성 이메일 수신', 'en' => 'Email Marketing'],
+            'key' => 'email_subscription',
+            'label' => ['ko' => '광고성 이메일 수신', 'en' => 'Email Marketing'],
             'page_slug' => '',
-            'enabled'   => true,
+            'enabled' => true,
             'is_system' => true,
         ],
     ];
@@ -35,7 +35,7 @@ class MarketingAdminControllerTest extends PluginTestCase
         $mock->method('get')->willReturnCallback(
             fn (string $id, string $key, mixed $default = null) => match ($key) {
                 'channels' => json_encode(self::EXISTING_CHANNELS),
-                default    => $default,
+                default => $default,
             }
         );
         $this->app->instance(PluginSettingsService::class, $mock);
@@ -54,7 +54,7 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_succeeds_for_admin(): void
     {
-        $admin = $this->createAdminUser();
+        $admin = $this->createAdminUser(['core.plugins.update']);
 
         $response = $this->actingAs($admin)->putJson(
             '/api/plugins/sirsoft-marketing/admin/channels',
@@ -68,14 +68,14 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_saves_new_channel(): void
     {
-        $admin = $this->createAdminUser();
+        $admin = $this->createAdminUser(['core.plugins.update']);
 
         $channels = array_merge(self::EXISTING_CHANNELS, [
             [
-                'key'       => 'sms_subscription',
-                'label'     => ['ko' => '광고성 SMS', 'en' => 'SMS Marketing'],
+                'key' => 'sms_subscription',
+                'label' => ['ko' => '광고성 SMS', 'en' => 'SMS Marketing'],
                 'page_slug' => '',
-                'enabled'   => true,
+                'enabled' => true,
                 'is_system' => false,
             ],
         ]);
@@ -93,7 +93,7 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_rejects_duplicate_keys(): void
     {
-        $admin = $this->createAdminUser();
+        $admin = $this->createAdminUser(['core.plugins.update']);
 
         $channels = [
             ['key' => 'email_subscription', 'label' => ['ko' => 'A', 'en' => 'A'], 'page_slug' => '', 'enabled' => true, 'is_system' => true],
@@ -113,7 +113,7 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_rejects_invalid_key_format(): void
     {
-        $admin = $this->createAdminUser();
+        $admin = $this->createAdminUser(['core.plugins.update']);
 
         $channels = [
             ['key' => 'invalid-key!', 'label' => ['ko' => 'A', 'en' => 'A'], 'page_slug' => '', 'enabled' => true, 'is_system' => false],
@@ -132,7 +132,7 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_rejects_removal_of_system_channel(): void
     {
-        $admin = $this->createAdminUser();
+        $admin = $this->createAdminUser(['core.plugins.update']);
 
         // email_subscription(is_system=true) 없이 제출
         $channels = [
@@ -152,7 +152,7 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_rejects_system_flag_downgrade(): void
     {
-        $admin = $this->createAdminUser();
+        $admin = $this->createAdminUser(['core.plugins.update']);
 
         // email_subscription의 is_system을 false로 위변조
         $channels = [
@@ -172,17 +172,17 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_rejects_deletion_when_consents_exist(): void
     {
-        $admin = $this->createAdminUser();
-        $user  = User::factory()->create();
+        $admin = $this->createAdminUser(['core.plugins.update']);
+        $user = User::factory()->create();
 
         // sms_subscription 채널에 동의 데이터 생성
         MarketingConsent::create([
-            'user_id'       => $user->id,
-            'consent_key'   => 'sms_subscription',
-            'is_consented'  => true,
-            'consented_at'  => now(),
-            'revoked_at'    => null,
-            'last_source'   => 'register',
+            'user_id' => $user->id,
+            'consent_key' => 'sms_subscription',
+            'is_consented' => true,
+            'consented_at' => now(),
+            'revoked_at' => null,
+            'last_source' => 'register',
             'consent_count' => 1,
         ]);
 
@@ -201,17 +201,17 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_rejects_deletion_of_existing_channel_with_consents(): void
     {
-        $admin = $this->createAdminUser();
-        $user  = User::factory()->create();
+        $admin = $this->createAdminUser(['core.plugins.update']);
+        $user = User::factory()->create();
 
         // email_subscription에 동의 데이터 생성
         MarketingConsent::create([
-            'user_id'       => $user->id,
-            'consent_key'   => 'email_subscription',
-            'is_consented'  => true,
-            'consented_at'  => now(),
-            'revoked_at'    => null,
-            'last_source'   => 'register',
+            'user_id' => $user->id,
+            'consent_key' => 'email_subscription',
+            'is_consented' => true,
+            'consented_at' => now(),
+            'revoked_at' => null,
+            'last_source' => 'register',
             'consent_count' => 1,
         ]);
 
@@ -234,7 +234,7 @@ class MarketingAdminControllerTest extends PluginTestCase
 
     public function test_update_channels_rejects_missing_label(): void
     {
-        $admin = $this->createAdminUser();
+        $admin = $this->createAdminUser(['core.plugins.update']);
 
         $channels = [
             ['key' => 'sms_subscription', 'page_slug' => '', 'enabled' => true, 'is_system' => false],

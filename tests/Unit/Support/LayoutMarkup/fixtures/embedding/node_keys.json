@@ -1,0 +1,132 @@
+{
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "options"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.form.options ?? []).length > 0}}",
+            "sortable": {
+                "source": "{{_local.form.options ?? []}}",
+                "itemKey": "id",
+                "strategy": "verticalList",
+                "handle": "[data-drag-handle]",
+                "itemVar": "opt",
+                "indexVar": "i"
+            },
+            "itemTemplate": {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "option-row"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "text": "{{opt.name}}"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "composite",
+            "name": "RichSelect",
+            "component_layout": {
+                "item": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-col"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "font-medium",
+                                    "text": "{{item.name}}"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{item.has_update}}",
+                                "props": {
+                                    "text": "$t:admin.update_available"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "selected": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "truncate",
+                            "text": "{{item.name}}"
+                        }
+                    }
+                ]
+            },
+            "props": {
+                "value": "{{_local.selected}}",
+                "placeholder": "$t:admin.select_file"
+            }
+        },
+        {
+            "type": "composite",
+            "name": "CardGrid",
+            "props": {
+                "data": "{{items}}",
+                "cardColumns": [
+                    {
+                        "id": "board_card",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "card-body"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "text": "{{row.title}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "delete_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "titlePrefix": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "fa-solid fa-triangle-exclamation",
+                            "className": "text-red-500"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\AssignDefaultCurrencyOnRegisterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\AssignDefaultShippingCountryOnRegisterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CategoryActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CategoryTreeCacheListener;
+use Modules\Sirsoft\Ecommerce\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
@@ -39,9 +40,11 @@ use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserCurrencyInfoListener;
+use Modules\Sirsoft\Ecommerce\Listeners\UserEcommerceDataInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageCleanupListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
@@ -779,6 +782,18 @@ class Module extends AbstractModule
                     ],
                     'permissions' => [
                         [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '문의 조회',
+                                'en' => 'Read Inquiries',
+                            ],
+                            'description' => [
+                                'ko' => '전 회원 상품문의 목록 조회',
+                                'en' => 'View product inquiries across all members',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
                             'action' => 'update',
                             'name' => [
                                 'ko' => '문의 처리',
@@ -948,6 +963,126 @@ class Module extends AbstractModule
                     ],
                 ],
 
+                // 찜 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                [
+                    'identifier' => 'wishlists',
+                    'resource_route_key' => 'wishlist',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '찜 관리',
+                        'en' => 'Wishlist Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 찜 조회·삭제 권한',
+                        'en' => 'View and delete wishlists across all members',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '찜 조회',
+                                'en' => 'View Wishlists',
+                            ],
+                            'description' => [
+                                'ko' => '찜 조회',
+                                'en' => 'View Wishlists',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '찜 삭제',
+                                'en' => 'Delete Wishlists',
+                            ],
+                            'description' => [
+                                'ko' => '찜 삭제',
+                                'en' => 'Delete Wishlists',
+                            ],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                    ],
+                ],
+                // 장바구니 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                [
+                    'identifier' => 'carts',
+                    'resource_route_key' => 'cart',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '장바구니 관리',
+                        'en' => 'Cart Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 장바구니 조회·삭제 권한',
+                        'en' => 'View and delete carts across all members',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '장바구니 조회',
+                                'en' => 'View Carts',
+                            ],
+                            'description' => [
+                                'ko' => '장바구니 조회',
+                                'en' => 'View Carts',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '장바구니 삭제',
+                                'en' => 'Delete Carts',
+                            ],
+                            'description' => [
+                                'ko' => '장바구니 삭제',
+                                'en' => 'Delete Carts',
+                            ],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                    ],
+                ],
+                // 회원 배송지 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                [
+                    'identifier' => 'user-addresses',
+                    'resource_route_key' => 'user-address',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '회원 배송지 관리',
+                        'en' => 'Member Address Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 배송지 조회·삭제 권한',
+                        'en' => 'View and delete member addresses',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '배송지 조회',
+                                'en' => 'View Addresses',
+                            ],
+                            'description' => [
+                                'ko' => '배송지 조회',
+                                'en' => 'View Addresses',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '배송지 삭제',
+                                'en' => 'Delete Addresses',
+                            ],
+                            'description' => [
+                                'ko' => '배송지 삭제',
+                                'en' => 'Delete Addresses',
+                            ],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                    ],
+                ],
                 // 마일리지 관리 권한
                 [
                     'identifier' => 'mileage',
@@ -1054,6 +1189,43 @@ class Module extends AbstractModule
         return [
             'sirsoft-ecommerce' => $this->getModulePath().'/config/ecommerce.php',
         ];
+    }
+
+    /**
+     * 완전 공개 자산 스토리지 카테고리 목록
+     *
+     * 이 카테고리들만 공개 자산 디스크 설정을 따른다. 권한 검사가 걸린 자산
+     * (회원 전용/비밀 자료 등)은 직접 URL 이 권한을 우회하므로 포함하지 않는다.
+     * 새 공개 자산 카테고리가 생기면 여기에만 추가하면 된다.
+     *
+     * @var list<string>
+     */
+    private const PUBLIC_ASSET_CATEGORIES = ['images'];
+
+    /**
+     * 카테고리별 스토리지 디스크 이름 반환
+     *
+     * 완전 공개 자산 카테고리만 공개 자산 디스크(모듈 설정 basic_info.public_asset_disk >
+     * 코어 전역 core.storage.public_asset_disk)를 따르고, 설정/캐시 등 나머지
+     * 카테고리는 기본 디스크를 유지합니다. 미설정/고아 디스크는 기본 디스크로
+     * 폴백해 기존 스트리밍 동작을 보존합니다.
+     *
+     * 모듈 설정 조회는 공개 자산 카테고리에서만 수행합니다 — 'settings' 카테고리에서
+     * 조회하면 설정 로드와 재귀 고리가 생깁니다 (AbstractModule 주석 참조).
+     *
+     * @param  string  $category  카테고리
+     * @return string 디스크 이름
+     */
+    public function getStorageDiskFor(string $category): string
+    {
+        if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
+            return $this->getStorageDisk();
+        }
+
+        $override = module_setting('sirsoft-ecommerce', 'basic_info.public_asset_disk', '');
+
+        return $this->resolvePublicAssetDisk(is_string($override) ? $override : '')
+            ?? $this->getStorageDisk();
     }
 
     /**
@@ -2092,8 +2264,10 @@ class Module extends AbstractModule
             SeoCategoryCacheListener::class,
             CategoryTreeCacheListener::class,
             SeoSettingsCacheListener::class,
+            ShippingPolicyCacheListener::class,
             MileageTransactionListener::class,
             UserMileageInfoListener::class,
+            UserEcommerceDataInfoListener::class,
             UserCurrencyInfoListener::class,
             UserShippingCountryInfoListener::class,
             AssignDefaultCurrencyOnRegisterListener::class,
@@ -2104,6 +2278,7 @@ class Module extends AbstractModule
             InjectAppConfigDeviceListener::class,
             IssueCashReceiptOnDepositListener::class,
             PurgeCashReceiptIdentifierListener::class,
+            Ckeditor5ReferenceSourcesListener::class,
         ];
     }
 
@@ -2137,6 +2312,21 @@ class Module extends AbstractModule
                 'schedule' => 'daily',
                 'description' => '보관기간 만료 장바구니 자동 삭제',
                 // cart_expiry_days < 1 시 커맨드 내부 self-guard 로 비활성 (별도 토글 없음)
+                'enabled_config' => null,
+            ],
+            [
+                'command' => 'sirsoft-ecommerce:prune-temp-product-images',
+                'schedule' => 'daily',
+                'description' => '미연결 임시 상품 이미지 자동 삭제',
+                // temp_key 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없다.
+                // 운영 데이터가 아니므로 별도 토글 없이 상시 동작한다 (보존기간은 커맨드 옵션).
+                'enabled_config' => null,
+            ],
+            [
+                'command' => 'sirsoft-ecommerce:prune-temp-orders',
+                'schedule' => 'hourly',
+                'description' => '만료 임시 주문 자동 삭제',
+                // 만료 판정은 임시 주문 자체의 TTL 이 정하므로 별도 토글 없음
                 'enabled_config' => null,
             ],
             [
@@ -2181,8 +2371,13 @@ class Module extends AbstractModule
      *   타게팅(모든 web 요청 = 기존 web 그룹 append 와 동등). InjectAppConfigDeviceListener 가
      *   appConfig.isIos 로 주입(체크아웃 애플페이 iOS 게이팅).
      * - ResolveShippingCountry: 상품/장바구니/체크아웃/주문생성 라우트에만 부착 (배송국가 해석).
-     * - VerifyGuestOrderToken: 비회원 주문 후속 액션 4개 라우트에만 부착 (verify 는 미부착 —
-     *   토큰 발급 전 단계라 개별 지정).
+     * - VerifyGuestOrderToken: 비회원 주문 후속 액션 라우트에 부착 (취소·환불예상·배송지수정·구매확정
+     *   개별 지정 + 현금영수증 하위 전체 glob). `guest.orders.verify` 는 조회 토큰을 **발급**하는
+     *   엔드포인트라 호출 시점에 토큰이 없다 — 부착하면 최초 인증 요청이 404 로 막혀 비회원 조회가
+     *   통째로 죽으므로 제외한다(요청 빈도 제한은 throttle 과 GuestOrderAuthService 의 실패 잠금 담당).
+     *   부착 대상 개수를 이 주석에 적지 않는다 — 개수를 문서에 박는 것이 다음 누락의 씨앗이다
+     *   (실제로 현금영수증 라우트 2건이 추가될 때 targets 갱신이 누락돼 기능이 전면 불능이었다).
+     *   정합성은 `GuestOrderTokenMiddlewareRegistrationTest` 가 라우트 테이블 전수로 강제한다.
      *
      * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}>
      */
@@ -2212,6 +2407,10 @@ class Module extends AbstractModule
                     'api.modules.sirsoft-ecommerce.guest.orders.estimate-refund',
                     'api.modules.sirsoft-ecommerce.guest.orders.update-shipping-address',
                     'api.modules.sirsoft-ecommerce.guest.orders.confirm-option',
+                    // 현금영수증 하위 전체(show/issue/향후 추가분). glob 은 이 서브트리의 기본값을
+                    // '보호' 로 만들어 실패 방향을 안전한 쪽으로 뒤집는다. `cash-receipt` 가 리터럴
+                    // 세그먼트라 구조적으로 `verify` 와 매칭될 수 없다.
+                    'api.modules.sirsoft-ecommerce.guest.orders.cash-receipt.*',
                 ],
             ],
         ];
@@ -2303,13 +2502,11 @@ class Module extends AbstractModule
                 ? (str_starts_with($imageRaw, 'http') ? $imageRaw : url($imageRaw))
                 : '';
 
+            // thumbnail_width/height 는 어떤 Resource 도 방출하지 않는 死키였다 — 값 공급이
+            // 불가능한 축이므로 제거하고 크기 메타는 코어 기본값 폴백에 맡긴다 (공개 #22 부수 정리)
             return array_filter([
                 'type' => 'product',
                 'image' => $image,
-                'image_width' => isset($product['thumbnail_width']) && (int) $product['thumbnail_width'] > 0
-                    ? (int) $product['thumbnail_width'] : null,
-                'image_height' => isset($product['thumbnail_height']) && (int) $product['thumbnail_height'] > 0
-                    ? (int) $product['thumbnail_height'] : null,
                 'image_alt' => $name,
                 'extra' => $extra,
             ], fn ($v) => $v !== null && $v !== '' && $v !== []);
@@ -2598,6 +2795,50 @@ class Module extends AbstractModule
                         'icon' => 'fas fa-coins',
                         'order' => 11,
                         'permission' => 'sirsoft-ecommerce.mileage.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '찜 관리',
+                            'en' => 'Wishlist Management',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-wishlists',
+                        'url' => '/admin/ecommerce/wishlists',
+                        'icon' => 'fas fa-heart',
+                        'order' => 12,
+                        'permission' => 'sirsoft-ecommerce.wishlists.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '장바구니 관리',
+                            'en' => 'Cart Management',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-carts',
+                        'url' => '/admin/ecommerce/carts',
+                        'icon' => 'fas fa-cart-shopping',
+                        'order' => 13,
+                        'permission' => 'sirsoft-ecommerce.carts.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '회원 배송지',
+                            'en' => 'Member Addresses',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-user-addresses',
+                        'url' => '/admin/ecommerce/user-addresses',
+                        'icon' => 'fas fa-map-pin',
+                        'order' => 14,
+                        'permission' => 'sirsoft-ecommerce.user-addresses.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '상품문의 관리',
+                            'en' => 'Inquiry Management',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-inquiries',
+                        'url' => '/admin/ecommerce/inquiries',
+                        'icon' => 'fas fa-comments',
+                        'order' => 15,
+                        'permission' => 'sirsoft-ecommerce.inquiries.read',
                     ],
                 ],
             ],

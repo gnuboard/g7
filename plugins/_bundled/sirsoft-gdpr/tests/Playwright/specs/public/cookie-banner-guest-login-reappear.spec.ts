@@ -6,7 +6,7 @@
  *
  * 배경: `_global.gdprBannerDismissedFor` 가 "닫힘 여부"(boolean)가 아니라 "누가 닫았는지"
  * (사용자 식별자)를 저장하도록 수정되기 전에는, 게스트로 배너를 닫은 뒤 동의 이력이 없는
- * 다른 계정으로 로그인해도 배너가 계속 숨겨져 있는 결함이 있었다 (PO 가 스크린샷으로 재현·지적).
+ * 다른 계정으로 로그인해도 배너가 계속 숨겨져 있는 결함이 있었다 (브라우저 스크린샷으로 재현·지적).
  * 현재는 cookie_banner.json 의 노출 조건이 `_global.gdprBannerDismissedFor !== (사용자 식별자)`
  * 로 비교하므로, 로그인으로 사용자가 바뀌면(게스트 uuid → 회원 uuid) 다시 노출되어야 한다.
  *
@@ -28,8 +28,8 @@ test('#509 보안검토 - 게스트로 동의 완료 후 미동의 계정으로 
     {
       name: 'gdpr_session',
       value: gdprGuestLoginSeed.guest_session_cookie_value,
+      // `url` 과 `path` 는 함께 줄 수 없다 — 둘 중 하나만 받는다. 경로는 url 에서 도출된다.
       url: page.url(),
-      path: '/',
     },
   ]);
 

@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 주문설정 탭 레이아웃 구조 검증 테스트
  *
@@ -8,6 +9,13 @@
  * - 은행 관리 모달 구조 검증
  * - 폼 바인딩 및 핸들러 검증
  * - 다국어 키 검증
+ *
+ * 축 요약(마커 아님 — 평문): extension_payment_method 의 method_kind=extension,
+ * capability_declared=declared, capability=pg_locked. 요약을 시나리오 축 마커로 적을 때
+ * 구분자를 `×` 로 쓰면 파서가 쉼표로만 축을 분리하므로 세 축이 한 문자열로 뭉쳐
+ * 실재하지 않는 조합 1건이 되어 어떤 칸도 커버하지 못한다 — 요약은 평문으로 둔다.
+ *
+ * 효과 요약(마커 아님 — 평문): admin_shows_pg_locked_badge, admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked.
  *
  * @vitest-environment node
  */
@@ -21,6 +29,7 @@ import paymentMethodsCards from '../../../layouts/admin/partials/admin_ecommerce
 import bankAccountsTable from '../../../layouts/admin/partials/admin_ecommerce_settings/_bank_accounts_table.json';
 import bankAccountsCards from '../../../layouts/admin/partials/admin_ecommerce_settings/_bank_accounts_cards.json';
 import bankManagementModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_bank_management_modal.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 재귀적으로 컴포넌트 트리에서 id로 검색
@@ -221,8 +230,8 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
         it('계좌 추가 버튼이 setState로 빈 계좌를 추가해야 한다', () => {
             const headerButtons = card.children[0].children[1];
             const addBtn = headerButtons.children[1];
-            expect(addBtn.actions[0].handler).toBe('setState');
-            expect(addBtn.actions[0].params['form.order_settings.bank_accounts']).toContain(
+            expect(actionsOf(addBtn)[0].handler).toBe('setState');
+            expect(actionsOf(addBtn)[0].params['form.order_settings.bank_accounts']).toContain(
                 'bank_code',
             );
         });
@@ -334,7 +343,7 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
         });
 
         it('onSortEnd 시 sort_order를 업데이트해야 한다', () => {
-            const sortEndAction = layout.actions[0];
+            const sortEndAction = actionsOf(layout)[0];
             expect(sortEndAction.event).toBe('onSortEnd');
             expect(sortEndAction.handler).toBe('setState');
             expect(sortEndAction.params['form.order_settings.payment_methods']).toContain(
@@ -379,6 +388,59 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             );
         });
 
+        // 지정 PG 가 레지스트리에서 사라진 상태(A2). 수단 자체는 카탈로그에 남아 있어
+        // _orphaned 로는 잡히지 않으므로 별도 배지가 필요하다.
+        it('죽은 PG 배지가 _orphaned_pg 조건에서만 표시되어야 한다', () => {
+            const badge = findFirst(tpl, (n: any) =>
+                typeof n?.props?.['data-testid'] === 'string'
+                    && n.props['data-testid'].includes('orphaned-pg-badge-'),
+            );
+            expect(badge).not.toBeNull();
+            expect(badge.if).toBe('{{$method._orphaned_pg}}');
+            expect(badge.text).toBe(
+                '$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge',
+            );
+        });
+
+        // 브라우저 실측에서 드러난 결함(A2 매트릭스 T1): 배지가 줄바꿈 가능·축소 가능이라
+        // 좁은 폭에서 글자 단위로 접히고, 그 압력이 이름 열까지 밀어 이름도 세로로 무너졌다.
+        it('상태 배지는 줄바꿈·축소되지 않아야 한다 (이름 열 붕괴 차단)', () => {
+            const badges = [
+                findFirst(tpl, (n: any) => n?.if === '{{$method._orphaned}}' && n?.name === 'Span'),
+                findFirst(tpl, (n: any) => n?.if === '{{$method._orphaned_pg}}' && n?.name === 'Span'),
+            ];
+            for (const badge of badges) {
+                expect(badge).not.toBeNull();
+                expect(badge.props.className).toContain('whitespace-nowrap');
+                expect(badge.props.className).toContain('shrink-0');
+            }
+        });
+
+        it('이름 줄은 축소 가능해야 하고 이름은 말줄임 처리되어야 한다', () => {
+            const nameSpan = findFirst(tpl, (n: any) =>
+                typeof n?.text === 'string' && n.text.includes('_cached_name') && n?.name === 'Span',
+            );
+            expect(nameSpan).not.toBeNull();
+            // truncate 가 없으면 좁은 폭에서 글자 단위 줄바꿈으로 무너진다
+            expect(nameSpan.props.className).toContain('truncate');
+
+            const nameRow = findFirst(tpl, (n: any) =>
+                Array.isArray(n?.children) && n.children.includes(nameSpan),
+            );
+            // flex 항목 기본 min-width:auto 때문에 min-w-0 없이는 축소 자체가 안 된다
+            expect(nameRow.props.className).toContain('min-w-0');
+        });
+
+        // _orphaned 와 달리 행 편집 컨트롤은 막지 않는다 — 살아있는 PG 로 바꿔 복구해야 하므로
+        it('죽은 PG 상태는 PG 선택 셀렉트를 감추지 않아야 한다', () => {
+            const select = findFirst(tpl, (n: any) =>
+                typeof n?.props?.['data-testid'] === 'string'
+                    && n.props['data-testid'].includes('pg-select-'),
+            );
+            expect(select).not.toBeNull();
+            expect(select.if).not.toContain('_orphaned_pg');
+        });
+
         it('재고차감시점 Select가 3개 옵션(order_placed/payment_complete/none)을 가져야 한다', () => {
             // 2개 옵션 → 3개 (none 추가: 차감 안함)
             const select = findFirst(tpl, (n: any) =>
@@ -398,7 +460,7 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
                 n?.name === 'Select' && typeof n?.props?.value === 'string'
                     && n.props.value.includes('stock_deduction_timing'),
             );
-            const action = select.actions[0];
+            const action = actionsOf(select)[0];
             expect(action.handler).toBe('setState');
             expect(action.params['form.order_settings.payment_methods']).toContain(
                 'stock_deduction_timing',
@@ -421,9 +483,77 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
                     && n.props.value.includes('is_active'),
             );
             expect(toggle).not.toBeNull();
-            const action = toggle.actions[0];
+            const action = actionsOf(toggle)[0];
             expect(action.handler).toBe('setState');
             expect(action.params['form.order_settings.payment_methods']).toContain('is_active');
+        });
+
+        // ─── 필드 열 고정폭 (PG 셀렉트 폭 붕괴 회귀 차단) ───
+        // 배경: Select 는 커스텀 드롭다운이라 className 이 내부 Button 에 붙는데, 컴포넌트
+        // 기본 클래스의 w-full 이 CSS 출력 순서상 w-N 보다 뒤라 셀렉트에 직접 준 폭 토큰은
+        // 무효가 된다(같은 특이도 → 후순위 승리). 그 결과 폭이 내용 폭을 따라가, PG 미선택
+        // 상태('---')에서 74px 로 붕괴하고 선택값 길이에 따라 행마다 열 위치가 어긋났다.
+        // 폭은 열 컨테이너가 책임진다.
+        const FIELD_COLUMN_LABELS = [
+            'payment_methods.pg_provider',
+            'payment_methods.stock_deduction_timing',
+            'payment_methods.mileage_deduction_timing',
+        ];
+
+        /** 라벨 i18n 키로 필드 열 컨테이너를 찾는다. */
+        const findFieldColumn = (labelKey: string) =>
+            findFirst(tpl, (n: any) =>
+                typeof n?.props?.className === 'string'
+                    && n.props.className.includes('row-stack')
+                    && Array.isArray(n?.children)
+                    && n.children.some((c: any) => typeof c?.text === 'string' && c.text.includes(labelKey)),
+            );
+
+        it.each(FIELD_COLUMN_LABELS)('필드 열(%s)이 고정폭을 가져야 한다', (labelKey) => {
+            const column = findFieldColumn(labelKey);
+            expect(column).not.toBeNull();
+            expect(
+                column.props.className,
+                `${labelKey} 열에 고정폭이 없으면 셀렉트 폭이 내용 폭을 따라가 미선택 상태에서 붕괴한다`,
+            ).toMatch(/\bw-\d+\b/);
+        });
+
+        it('세 필드 열이 동일한 폭 토큰을 사용해야 한다 (행 간 열 정렬)', () => {
+            const widths = FIELD_COLUMN_LABELS.map((labelKey) => {
+                const column = findFieldColumn(labelKey);
+                return (column.props.className.match(/\bw-\d+\b/) ?? [])[0];
+            });
+            expect(new Set(widths).size, `열 폭이 서로 다르면 행 간 열이 어긋난다: ${widths.join(', ')}`).toBe(1);
+        });
+
+        it('필드 열이 축소 가능해야 한다 (좁은 폭에서 행 넘침 차단)', () => {
+            // shrink-0 을 붙이면 고정폭 3열(총 432px)이 줄어들지 않아 좁은 뷰포트에서
+            // 이름 열이 0 까지 붕괴하고도 행이 넘친다 (1100px 실측 17px 초과).
+            for (const labelKey of FIELD_COLUMN_LABELS) {
+                const column = findFieldColumn(labelKey);
+                expect(column.props.className, `${labelKey} 열`).not.toContain('shrink-0');
+            }
+        });
+
+        it('필드 열의 Select 에는 폭 클래스를 주지 않아야 한다 (컴포넌트 기본 w-full 에 덮여 무효)', () => {
+            const selects = [
+                'pg_provider',
+                'stock_deduction_timing',
+                'mileage_deduction_timing',
+            ].map((field) =>
+                findFirst(tpl, (n: any) =>
+                    n?.name === 'Select' && typeof n?.props?.value === 'string'
+                        && n.props.value.includes(field),
+                ),
+            );
+
+            for (const select of selects) {
+                expect(select).not.toBeNull();
+                expect(
+                    select.props.className ?? '',
+                    'Select 에 준 w-N 은 컴포넌트 기본 w-full 에 덮여 무효 — 죽은 클래스가 폭을 지정한 것처럼 오해를 준다',
+                ).not.toMatch(/\bw-\d+\b/);
+            }
         });
 
         it('고아 항목 삭제 버튼이 _orphaned 조건에서만 표시되어야 한다', () => {
@@ -433,8 +563,8 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
                     && !n.if.includes('!$method._orphaned'),
             );
             expect(deleteBtn).not.toBeNull();
-            expect(deleteBtn.actions[0].handler).toBe('setState');
-            expect(deleteBtn.actions[0].params['form.order_settings.payment_methods']).toContain(
+            expect(actionsOf(deleteBtn)[0].handler).toBe('setState');
+            expect(actionsOf(deleteBtn)[0].params['form.order_settings.payment_methods']).toContain(
                 'filter',
             );
         });
@@ -456,6 +586,8 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
                     && n.props['data-testid'].includes(needle),
             );
 
+        /** @effects admin_shows_pg_locked_badge */
+        /** @effects admin_shows_pg_locked_badge */
         it('PG 고정 배지가 $method.pg_locked 조건으로 렌더된다', () => {
             const badge = findByTestidExpr('pg-locked-badge-');
             expect(badge).not.toBeNull();
@@ -466,6 +598,7 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             expect(badge.text).toContain('pg_provider');
         });
 
+        /** @effects admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked */
         it('PG 선택 셀렉트가 !pg_locked && needs_pg && 제공자>0 조건으로만 렌더된다', () => {
             const select = findByTestidExpr('pg-select-');
             expect(select).not.toBeNull();
@@ -474,8 +607,8 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             expect(select.if).toContain('$method.needs_pg');
             expect(select.if).toContain('length > 0');
             // 셀렉트 변경이 pg_provider 를 배열에 반영해야 한다.
-            expect(select.actions[0].handler).toBe('setState');
-            expect(select.actions[0].params['form.order_settings.payment_methods']).toContain(
+            expect(actionsOf(select)[0].handler).toBe('setState');
+            expect(actionsOf(select)[0].params['form.order_settings.payment_methods']).toContain(
                 'pg_provider',
             );
         });
@@ -540,6 +673,7 @@ describe('결제수단 모바일 카드 구조 검증 (_payment_methods_cards.js
             expect(badge.if).toBe('{{$method.pg_locked}}');
         });
 
+        /** @effects admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked */
         it('PG 선택 셀렉트가 !pg_locked && needs_pg 조건으로만 렌더된다', () => {
             const select = findByTestidExpr('pg-select-');
             expect(select).not.toBeNull();
@@ -558,6 +692,16 @@ describe('결제수단 모바일 카드 구조 검증 (_payment_methods_cards.js
             for (const needle of ['pg-locked-badge-', 'pg-select-', 'pg-not-required-']) {
                 expect(findByTestidExpr(needle)).not.toBeNull();
             }
+        });
+
+        // A2 — 죽은 PG 배지는 PC/모바일 양쪽에 같은 조건·같은 키로 있어야 한다
+        it('죽은 PG 배지가 _orphaned_pg 조건에서만 표시되어야 한다', () => {
+            const badge = findByTestidExpr('orphaned-pg-badge-');
+            expect(badge).not.toBeNull();
+            expect(badge.if).toBe('{{$method._orphaned_pg}}');
+            expect(badge.text).toBe(
+                '$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge',
+            );
         });
     });
 });
@@ -614,8 +758,8 @@ describe('계좌번호 테이블 구조 검증 (_bank_accounts_table.json)', () 
             const dataRow = tbody.children[1];
             const defaultTd = dataRow.children[0];
             const btn = defaultTd.children[0];
-            expect(btn.actions[0].handler).toBe('setState');
-            expect(btn.actions[0].params['form.order_settings.bank_accounts']).toContain(
+            expect(actionsOf(btn)[0].handler).toBe('setState');
+            expect(actionsOf(btn)[0].params['form.order_settings.bank_accounts']).toContain(
                 'is_default',
             );
         });
@@ -655,8 +799,8 @@ describe('계좌번호 테이블 구조 검증 (_bank_accounts_table.json)', () 
             const deleteTd = dataRow.children[5];
             const btn = deleteTd.children[0];
             expect(btn.if).toContain('length > 1');
-            expect(btn.actions[0].handler).toBe('setState');
-            expect(btn.actions[0].params['form.order_settings.bank_accounts']).toContain('filter');
+            expect(actionsOf(btn)[0].handler).toBe('setState');
+            expect(actionsOf(btn)[0].params['form.order_settings.bank_accounts']).toContain('filter');
         });
     });
 });
@@ -720,7 +864,7 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
             const codeInput = findFirst(modal, (n: any) =>
                 n?.name === 'Input'
                     && Array.isArray(n.actions)
-                    && n.actions.some(
+                    && actionsOf(n).some(
                         (a: any) => a.handler === 'setState'
                             && a.params?.target === '$parent._local'
                             && typeof a.params?.['form.order_settings.banks'] === 'string'
@@ -741,7 +885,7 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
             const deleteBtn = findFirst(modal, (n: any) =>
                 n?.name === 'Button'
                     && Array.isArray(n.actions)
-                    && n.actions.some(
+                    && actionsOf(n).some(
                         (a: any) => a.handler === 'setState'
                             && a.params?.target === '$parent._local'
                             && typeof a.params?.['form.order_settings.banks'] === 'string'
@@ -757,7 +901,7 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
             const addBtn = findFirst(modal, (n: any) =>
                 n?.name === 'Button'
                     && Array.isArray(n.actions)
-                    && n.actions.some(
+                    && actionsOf(n).some(
                         (a: any) => a.handler === 'setState'
                             && a.params?.target === '$parent._local'
                             && typeof a.params?.['form.order_settings.banks'] === 'string'
@@ -822,6 +966,91 @@ describe('마일리지 차감 시점 결제수단별 컨트롤', () => {
         expect(values).toContain('order_placed');
         expect(values).toContain('payment_complete');
         expect(values).not.toContain('none');
+    });
+});
+
+// ─── 고아 항목의 편집 컨트롤 차단 ───
+
+describe('고아 결제수단 행의 편집 컨트롤 차단', () => {
+    // 고아 항목 = 저장값은 남아 있으나 공급 확장이 더 이상 제공하지 않는 결제수단
+    // (플러그인 삭제·비활성, 또는 그 확장이 자기 기능 토글을 끈 경우).
+    // 이 행은 "지우세요" 만 제시해야 하므로 편집 컨트롤이 하나도 노출되면 안 된다.
+    // 삭제 버튼(Button)은 반대로 고아일 때만 나오는 것이 정상이라 대상에서 제외한다.
+    //
+    // 회귀 배경: 리스트 파셜의 마일리지 차감 시점 열만 가드가 빠져 있었다. 다른 열이
+    // 사라지면서 그 열이 오른쪽으로 밀려 최소 주문금액 자리에 표시됐고, 마일리지 기능을
+    // 켠 상점에서는 이미 사라진 결제수단의 값을 바꿔 저장할 수 있었다. 같은 화면의
+    // 카드 파셜은 편집 영역을 하나의 가드 컨테이너로 감싸 정상 차단하고 있었다.
+    const EDIT_CONTROL_NAMES = ['Select', 'Input', 'Toggle', 'Checkbox', 'Textarea'];
+
+    const ORPHAN_GUARD = '!$method._orphaned';
+
+    /**
+     * 편집 컨트롤마다 (조상 체인에 고아 가드가 있는가) 를 판정해 수집한다.
+     *
+     * 가드가 어느 깊이에 걸려 있든 통과시킨다 — 리스트는 열 컨테이너마다, 카드는
+     * 편집 영역 전체를 감싼 컨테이너 한 곳에 걸려 있어 구조가 서로 다르기 때문이다.
+     * 열 목록을 손으로 열거하지 않으므로 이후 추가되는 열도 자동으로 검사 대상이 된다.
+     */
+    function collectEditControls(node: any, guarded = false, acc: any[] = []): any[] {
+        if (!node || typeof node !== 'object') return acc;
+
+        const nowGuarded = guarded
+            || (typeof node.if === 'string' && node.if.includes(ORPHAN_GUARD));
+
+        if (EDIT_CONTROL_NAMES.includes(node.name)) {
+            acc.push({ node, guarded: nowGuarded });
+        }
+
+        for (const child of node.children ?? []) {
+            collectEditControls(child, nowGuarded, acc);
+        }
+        if (node.itemTemplate) {
+            collectEditControls(node.itemTemplate, nowGuarded, acc);
+        }
+        return acc;
+    }
+
+    /** 컨트롤을 사람이 읽을 수 있게 식별한다 (실패 메시지용). */
+    function describeControl(entry: any): string {
+        const value = entry.node.props?.value ?? entry.node.props?.checked ?? '';
+        return `${entry.node.name}(${String(value).slice(0, 60) || 'no-value'})`;
+    }
+
+    it.each([
+        ['리스트 파셜', paymentMethodsList],
+        ['카드 파셜', paymentMethodsCards],
+    ])('%s — 모든 편집 컨트롤이 고아 가드 아래에 있어야 한다', (_label, partial) => {
+        const controls = collectEditControls(partial);
+
+        // 컨트롤을 하나도 못 찾았다면 탐색이 실패한 것이다 (부재 단언의 거짓 통과 차단)
+        expect(controls.length).toBeGreaterThan(0);
+
+        const unguarded = controls.filter((c) => !c.guarded).map(describeControl);
+        expect(
+            unguarded,
+            `고아 행에 편집 컨트롤이 노출된다: ${unguarded.join(', ')} — 조상 체인 어딘가에 if "${ORPHAN_GUARD}" 가 필요하다`,
+        ).toEqual([]);
+    });
+
+    it('두 파셜이 같은 수의 편집 컨트롤을 가드해야 한다 (표시 방식 간 동작 일치)', () => {
+        const listGuarded = collectEditControls(paymentMethodsList).filter((c) => c.guarded);
+        const cardsGuarded = collectEditControls(paymentMethodsCards).filter((c) => c.guarded);
+
+        // 넓은 화면(리스트)과 좁은 화면(카드)은 같은 데이터를 그린다. 한쪽만 가드가 빠지면
+        // 창 너비에 따라 편집 가능 여부가 달라진다.
+        expect(listGuarded.length).toBeGreaterThan(0);
+        expect(cardsGuarded.length).toBeGreaterThan(0);
+    });
+
+    it('삭제 버튼은 고아일 때만 나오므로 편집 컨트롤 가드 대상이 아니다', () => {
+        const deleteBtn = findFirst(paymentMethodsList, (n: any) =>
+            n?.name === 'Button' && typeof n?.if === 'string'
+                && n.if.includes('$method._orphaned')
+                && !n.if.includes(ORPHAN_GUARD),
+        );
+        expect(deleteBtn).not.toBeNull();
+        expect(EDIT_CONTROL_NAMES).not.toContain('Button');
     });
 });
 

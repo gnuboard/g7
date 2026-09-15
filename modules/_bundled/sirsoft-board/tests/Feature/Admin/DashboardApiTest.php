@@ -33,9 +33,8 @@ class DashboardApiTest extends ModuleTestCase
 
         BoardStat::query()->delete();
 
-        // isAdmin() 은 admin 타입 권한 보유 여부로 판정되므로 임의 권한을 부여한다.
-        // 대시보드 라우트는 admin 미들웨어만 사용 (별도 permission 가드 없음).
-        $this->adminUser = $this->createAdminUser(['sirsoft-board.boards.read']);
+        // 대시보드 라우트는 admin 미들웨어 + permission:admin,sirsoft-board.dashboard.view 가드를 사용한다.
+        $this->adminUser = $this->createAdminUser(['sirsoft-board.boards.read', 'sirsoft-board.dashboard.view']);
         $this->normalUser = $this->createUser();
 
         Board::create([
@@ -59,6 +58,11 @@ class DashboardApiTest extends ModuleTestCase
         $this->actingAs($this->normalUser)->getJson(self::BASE.'/overview')->assertStatus(403);
     }
 
+    /**
+     * @scenario case=dashboard_permission_gate
+     *
+     * @effects dashboard_requires_view_permission
+     */
     #[Test]
     public function test_overview_returns_today_counts_for_admin(): void
     {

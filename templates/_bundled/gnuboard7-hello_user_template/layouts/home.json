@@ -1,7 +1,7 @@
 {
+    "comment": "학습용 사용자 첫 화면 — 모듈이 내보낸 공개 API 를 템플릿이 그대로 받아 쓰는 최소 예다",
     "version": "1.0.0",
     "layout_name": "home",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "title": "$t:user.home.page_title",
@@ -10,6 +10,7 @@
     "data_sources": [
         {
             "id": "memos",
+            "label_key": "$t:editor.data_source.memos",
             "type": "api",
             "endpoint": "/api/modules/gnuboard7-hello_module/memos",
             "method": "GET",
@@ -22,9 +23,11 @@
                 "data": {
                     "data": []
                 }
-            }
+            },
+            "comment": "공개 메모 10건. progressive 라 화면을 먼저 그리고 도착하는 대로 채운다 — 첫 화면이 이 목록 때문에 늦어지지 않게"
         }
     ],
+    "permissions": [],
     "slots": {
         "content": [
             {
@@ -141,10 +144,6 @@
                     {
                         "type": "basic",
                         "name": "Button",
-                        "props": {
-                            "className": "px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer",
-                            "data-testid": "home-button"
-                        },
                         "actions": [
                             {
                                 "type": "click",
@@ -154,6 +153,10 @@
                                 }
                             }
                         ],
+                        "props": {
+                            "className": "px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer",
+                            "data-testid": "home-button"
+                        },
                         "text": "$t:user.home.back_to_home"
                     }
                 ]

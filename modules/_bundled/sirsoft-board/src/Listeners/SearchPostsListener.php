@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Helpers\PermissionHelper;
 use App\Search\SearchCategoryPayload;
+use App\Search\SearchHighlighter;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostService;
@@ -120,7 +121,10 @@ class SearchPostsListener implements HookListenerInterface
 
             $results['posts'] = $this->buildSearchResult($boards, $q, $context);
         } catch (\Exception $e) {
-            Log::error('Search posts error', ['message' => $e->getMessage(), 'q' => $q]);
+            // 실패를 카테고리 키 미설정으로 삼키면 화면이 "검색 결과 없음" 을 그린다 —
+            // failed 페이로드로 표면화하고, 원인 추적을 위해 스택을 함께 남긴다 (#103).
+            Log::error('Search posts error', ['message' => $e->getMessage(), 'q' => $q, 'exception' => $e]);
+            $results['posts'] = SearchCategoryPayload::failed(['available_boards' => []]);
         }
 
         return $results;
@@ -210,7 +214,9 @@ class SearchPostsListener implements HookListenerInterface
         $type = $context['type'] ?? 'all';
 
         $boardIds = collect($boards)->pluck('id')->all();
-        $extra = ['available_boards' => $this->boardService->getActiveBoardsListForFilter()];
+        // available_boards(필터 드롭다운)는 검색 결과 필터와 동일하게 읽기 권한을 통과한
+        // 게시판만 담는다 — 권한 없는 게시판이 필터 목록으로 노출되지 않도록 컨텍스트 사용자를 전달.
+        $extra = ['available_boards' => $this->boardService->getActiveBoardsListForFilter($context['user'] ?? null)];
 
         /** 조회 결과 항목을 화면 형태로 가공한다. */
         $format = fn (iterable $items): array => collect($items)
@@ -321,14 +327,9 @@ class SearchPostsListener implements HookListenerInterface
         $contentPreview = $this->extractContentPreview($post->content, $keyword, 150, $contentMode);
         $boardSlug = $post->board?->slug ?? '';
 
-        // 텍스트 모드: 태그 문자열이 그대로 보존되므로 htmlspecialchars로 이스케이프 후 하이라이트
-        // HTML 모드: strip_tags 처리된 평문이므로 바로 하이라이트
-        if ($contentMode === 'text') {
-            $escapedPreview = htmlspecialchars($contentPreview, ENT_QUOTES, 'UTF-8');
-            $contentPreviewHighlighted = $this->highlightKeyword($escapedPreview, $keyword);
-        } else {
-            $contentPreviewHighlighted = $this->highlightKeyword($contentPreview, $keyword);
-        }
+        // 하이라이트 필드는 소비 측이 HTML 로 렌더하므로, 공유 헬퍼가 원문을 이스케이프한 뒤
+        // 검색어만 <mark> 로 감싼다. 텍스트 모드의 리터럴 태그 문자열도 여기서 이스케이프된다.
+        $contentPreviewHighlighted = $this->highlightKeyword($contentPreview, $keyword);
 
         return [
             'id' => $post->id,
@@ -363,13 +364,7 @@ class SearchPostsListener implements HookListenerInterface
      */
     private function highlightKeyword(?string $text, string $keyword): string
     {
-        if (empty($text) || empty($keyword)) {
-            return $text ?? '';
-        }
-
-        $escapedKeyword = preg_quote($keyword, '/');
-
-        return preg_replace('/('.$escapedKeyword.')/iu', '<mark>$1</mark>', $text);
+        return SearchHighlighter::highlight($text, $keyword);
     }
 
     /**
@@ -390,9 +385,10 @@ class SearchPostsListener implements HookListenerInterface
             return '';
         }
 
-        // HTML 모드: 태그 제거 후 평문 추출, 텍스트 모드: 태그 문자열 그대로 보존
+        // HTML 모드: 태그 제거 후 평문 추출(엔티티 디코드를 태그 제거보다 먼저 수행),
+        // 텍스트 모드: 태그 문자열 그대로 보존(하이라이트 시점에 이스케이프됨)
         if ($contentMode === 'html') {
-            $plainText = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($content))));
+            $plainText = SearchHighlighter::toPlainText($content);
         } else {
             $plainText = trim(preg_replace('/\s+/', ' ', $content));
         }

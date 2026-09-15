@@ -227,6 +227,22 @@ return [
 
     // 게시글 검증
     'post' => [
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+        'bulk' => [
+            'ids' => [
+                'required' => '게시글 ID는 필수입니다.',
+                'array' => '게시글 ID는 배열 형식이어야 합니다.',
+                'min' => '최소 1개 이상의 게시글을 선택해야 합니다.',
+                'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+                'integer' => '게시글 ID는 정수여야 합니다.',
+                'distinct' => '게시글 ID가 중복되었습니다.',
+            ],
+            'reason' => [
+                'max' => '사유는 :max자를 초과할 수 없습니다.',
+            ],
+        ],
         'title' => [
             'required' => '제목은 필수입니다.',
             'string' => '제목은 문자열이어야 합니다.',
@@ -259,10 +275,14 @@ return [
             'not_found' => '원글을 찾을 수 없습니다.',
             'blinded' => '블라인드 처리된 게시글에는 답글을 작성할 수 없습니다.',
             'deleted' => '삭제된 게시글에는 답글을 작성할 수 없습니다.',
+            'secret' => '열람 권한이 없는 비밀글에는 답글을 작성할 수 없습니다.',
             'depth_exceeded' => '이 게시판은 답글을 :max단계까지만 허용합니다.',
             'notice_not_allowed' => '공지사항에는 답글을 작성할 수 없습니다.',
         ],
         'reply_not_allowed' => '이 게시판은 답글 기능이 비활성화되어 있습니다.',
+        'delete' => [
+            'has_replies' => '답글이 달린 글은 삭제할 수 없습니다. 답글을 먼저 삭제해 주세요.',
+        ],
         'status' => [
             'in' => '유효하지 않은 게시글 상태입니다.',
         ],
@@ -292,6 +312,10 @@ return [
 
     // 필드 속성명 (attributes)
     'attributes' => [
+        'scrap' => [
+            'ids' => '스크랩 ID',
+            'search_field' => '검색 대상',
+        ],
         'settings' => [
             // basic_defaults
             'basic_defaults.type' => '게시판 유형',
@@ -303,6 +327,7 @@ return [
             'basic_defaults.use_comment' => '댓글 사용 여부',
             'basic_defaults.use_reply' => '답글 사용 여부',
             'basic_defaults.max_reply_depth' => '최대 답글 깊이',
+            'basic_defaults.reply_delete_policy' => '답글 삭제 방식',
             'basic_defaults.max_comment_depth' => '최대 댓글 깊이',
             'basic_defaults.comment_order' => '댓글 정렬',
             'basic_defaults.show_view_count' => '조회수 표시',
@@ -396,6 +421,7 @@ return [
             'override_values.per_page' => '페이지당 게시글 수',
             'override_values.per_page_mobile' => '모바일 페이지당 게시글 수',
             'override_values.max_reply_depth' => '최대 답글 깊이',
+            'override_values.reply_delete_policy' => '답글 삭제 방식',
             'override_values.max_comment_depth' => '최대 댓글 깊이',
             'override_values.min_title_length' => '최소 제목 길이',
             'override_values.max_title_length' => '최대 제목 길이',
@@ -406,6 +432,10 @@ return [
             'override_values.max_file_size' => '최대 파일 크기',
             'override_values.max_file_count' => '최대 파일 개수',
             'override_values.new_display_hours' => '신규 표시 시간',
+
+            // attachment_settings
+            'attachment_settings.purge_enabled' => '삭제 첨부 영구 정리',
+            'attachment_settings.purge_retention_days' => '삭제 첨부 보존기간',
         ],
     ],
 
@@ -441,6 +471,7 @@ return [
             'not_found' => '게시글을 찾을 수 없습니다.',
             'blinded' => '블라인드 처리된 게시글에는 댓글을 작성할 수 없습니다.',
             'deleted' => '삭제된 게시글에는 댓글을 작성할 수 없습니다.',
+            'secret' => '열람 권한이 없는 비밀글에는 댓글을 작성할 수 없습니다.',
         ],
         'parent_id' => [
             'exists' => '존재하지 않는 댓글입니다.',
@@ -618,5 +649,21 @@ return [
         ],
         'daily_limit_exceeded' => '오늘 신고 가능 횟수(:limit회)를 초과하였습니다.',
         'rejection_limit_exceeded' => '최근 :days일간 신고 반려가 :count회 누적되어 신고가 제한되었습니다.',
+    ],
+
+    // 스크랩 검증 메시지
+    'scrap' => [
+        'ids' => [
+            'required' => '스크랩 ID는 필수입니다.',
+            'array' => '스크랩 ID는 배열 형식이어야 합니다.',
+            'min' => '최소 1개 이상의 스크랩을 선택해야 합니다.',
+            'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+            'integer' => '스크랩 ID는 정수여야 합니다.',
+            'distinct' => '스크랩 ID가 중복되었습니다.',
+            'exists' => '존재하지 않는 스크랩입니다.',
+        ],
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
     ],
 ];

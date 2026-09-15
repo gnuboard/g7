@@ -130,6 +130,12 @@ class PublicSearchController extends PublicBaseController
         // 상한에 걸린 숫자가 그 배지에서만 정확한 값처럼 보인다. 코어가 일괄로 붙인다.
         $response['counts_are_exact'] = $this->resolveCategoryAccuracy($results);
 
+        // 카테고리 검색 실패도 같은 이유로 코어가 일괄 조립한다 — 화면은 이 키로
+        // "검색 결과 없음" 과 "검색 중 오류" 를 구분해 그린다. 모듈별 복사에 맡기면
+        // 빠지는 카테고리가 생겨 그 카테고리의 실패만 0건으로 위장된다.
+        $response['categories_failed'] = $this->resolveCategoryFailures($results);
+        $response['search_failed'] = in_array(true, $response['categories_failed'], true);
+
         // 특정 탭 조회 시 total을 해당 탭의 count로 설정
         $type = $context['type'] ?? 'all';
         if ($type !== 'all') {
@@ -178,6 +184,27 @@ class PublicSearchController extends PublicBaseController
         }
 
         return $accuracy;
+    }
+
+    /**
+     * 카테고리별 검색 실패 여부를 모읍니다.
+     *
+     * 실패 카테고리 페이로드(`SearchCategoryPayload::failed()`)의 `failed` 플래그를
+     * 카테고리 전수에 대해 수집합니다. 키가 없는 카테고리는 실패하지 않은 것으로
+     * 봅니다 — 구버전 모듈이 플래그를 싣지 않아도 종전 렌더가 유지되어야 합니다.
+     *
+     * @param  array  $results  Hook에서 반환된 검색 결과
+     * @return array<string, bool> 카테고리 => 실패 여부
+     */
+    private function resolveCategoryFailures(array $results): array
+    {
+        $failures = [];
+
+        foreach ($results as $category => $categoryData) {
+            $failures[$category] = ($categoryData['failed'] ?? false) === true;
+        }
+
+        return $failures;
     }
 
     /**

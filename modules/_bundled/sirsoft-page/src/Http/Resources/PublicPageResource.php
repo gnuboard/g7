@@ -53,15 +53,23 @@ class PublicPageResource extends BaseApiResource
                 ? ($this->content[$locale] ?? $this->content[$fallback] ?? (! empty($this->content) ? array_values($this->content)[0] : ''))
                 : (string) ($this->content ?? ''),
             'content_mode' => $this->content_mode ?? 'html',
+            // 본문 첫 내부 이미지 URL 캐시 — 페이지 표시 레이아웃의 og:image 가 소비 (공개 #22)
+            'content_thumbnail_url' => $this->content_thumbnail_url,
             'is_preview' => $this->preview,
             'published_at' => $this->published_at
                 ? $this->formatDateTimeStringForUser($this->published_at)
                 : null,
             'seo_meta' => $this->seo_meta,
             'current_version' => $this->current_version,
+            // 미발행 페이지는 pages.read 관리자의 미리보기(is_preview)로만 이 리소스에
+            // 도달하므로(공개 게이트가 게스트를 404 차단), 그 화면의 <img> 썸네일용으로
+            // 한시 서명 preview URL 을 직렬화한다. 발행 페이지는 무서명 공개 URL 유지.
             'attachments' => $this->whenLoaded(
                 'attachments',
-                fn () => PageAttachmentResource::collectionFor($this->attachments)
+                fn () => PageAttachmentResource::collectionFor(
+                    $this->attachments,
+                    signedPreview: ! $this->published
+                )
             ),
             'created_at' => $this->created_at
                 ? $this->formatDateTimeStringForUser($this->created_at)

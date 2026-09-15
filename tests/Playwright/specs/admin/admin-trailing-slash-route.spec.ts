@@ -7,11 +7,11 @@
  * 풀린 상태로 `/admin/` 에 접근하면 대시보드 → 로그인 리다이렉트 흐름 대신 404 가
  * 노출됐다. 수정: `Router.match()` 진입 시 끝 슬래시를 정규화한다.
  *
- * 단위 테스트(Router.test.ts)가 매칭 로직을 잠그지만, PO 가 실제로 브라우저에서
+ * 단위 테스트(Router.test.ts)가 매칭 로직을 잠그지만, 실제 브라우저에서
  * 재현한 증상이므로(단위 green + 브라우저 깨짐 방지) 브라우저 레벨로도 잠근다.
  *
- * @scenario admin_trailing_slash_unauthenticated + admin_no_trailing_slash_unauthenticated
- * @effects redirect_to_login_not_404
+ * 축 요약(마커 아님 — 평문): admin_trailing_slash_unauthenticated, admin_no_trailing_slash_unauthenticated.
+ * 효과 요약(마커 아님 — 평문): redirect_to_login_not_404.
  */
 import { test, expect } from '../../fixtures/auth';
 

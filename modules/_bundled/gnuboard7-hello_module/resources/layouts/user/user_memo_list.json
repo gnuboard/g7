@@ -1,4 +1,5 @@
 {
+    "comment": "사용자용 메모 목록 화면 — 관리자 목록과 같은 데이터를 비인증 공개 엔드포인트로 받는다.",
     "version": "1.0.0",
     "layout_name": "user_memo_list",
     "extends": "_user_base",
@@ -28,7 +29,8 @@
                         "total": 0
                     }
                 }
-            }
+            },
+            "comment": "공개 메모 목록(비인증). 페이지·건수를 URL query 에서 받고, 실패 시 fallback 이 빈 목록 + 1페이지 메타를 세운다."
         }
     ],
     "slots": {
@@ -54,13 +56,13 @@
                         "id": "user_memo_items_{{idx}}",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "space-y-3"
-                        },
                         "iteration": {
                             "source": "{{memos?.data?.data ?? []}}",
                             "item_var": "memo",
                             "index_var": "idx"
+                        },
+                        "props": {
+                            "className": "space-y-3"
                         },
                         "children": [
                             {

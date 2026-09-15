@@ -41,29 +41,42 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      */
     public function applySeedFromPack(LanguagePack $pack, array $seedBundle): array
     {
-        $audit = [];
-        $locale = $pack->locale;
+        // 팩 주입은 시딩 컨텍스트다 — 바인딩 없이 저장하면 UserOverridesAwareBuilder 가
+        // 주입 자체를 "사용자 수정"으로 오인해 user_overrides 를 오염시키고, 그 선언이
+        // 이후 시더 재실행의 컬럼 갱신을 영구히 얼린다 (#597 에서 실측·교정).
+        app()->instance('user_overrides.seeding', true);
+        try {
+            $audit = [];
+            $locale = $pack->locale;
 
-        if (! empty($seedBundle['permissions'])) {
-            $this->applyByIdentifier(Permission::class, $pack, $seedBundle['permissions'], $locale, ['name', 'description'], 'identifier', $audit);
-        }
-        if (! empty($seedBundle['roles'])) {
-            $this->applyByIdentifier(Role::class, $pack, $seedBundle['roles'], $locale, ['name', 'description'], 'identifier', $audit);
-        }
-        if (! empty($seedBundle['menus']) && $pack->scope !== LanguagePackScope::Plugin->value) {
-            $this->applyByIdentifier(Menu::class, $pack, $seedBundle['menus'], $locale, ['name'], 'slug', $audit);
-        }
-        if (! empty($seedBundle['notifications'])) {
-            $this->applyNotifications($pack, $seedBundle['notifications'], $locale, $audit);
-        }
-        if (! empty($seedBundle['identity_messages'])) {
-            $this->applyIdentityMessages($pack, $seedBundle['identity_messages'], $locale, $audit);
-        }
-        if (! empty($seedBundle['manifest'])) {
-            $this->applyManifest($pack, $seedBundle['manifest'], $locale, $audit);
-        }
+            if (! empty($seedBundle['permissions'])) {
+                $this->applyByIdentifier(Permission::class, $pack, $seedBundle['permissions'], $locale, ['name', 'description'], 'identifier', $audit);
+            }
+            if (! empty($seedBundle['roles'])) {
+                $this->applyByIdentifier(Role::class, $pack, $seedBundle['roles'], $locale, ['name', 'description'], 'identifier', $audit);
+            }
+            // 플러그인 팩도 메뉴를 시드한다. 종전에는 plugin 스코프만 제외돼 있었는데, 플러그인은
+            // 자기 메뉴를 심을 수 있으므로(실측 2026-09-12: `sirsoft-ckeditor5-uploads`,
+            // `sirsoft-gdpr-consent-log`) 그 행만 영원히 번역 경로가 없었다 — ja 로케일에서
+            // 좌측 메뉴 두 칸만 원문으로 남았다. 제외에 사유 주석이 없었고, 모듈 팩은 같은
+            // 경로로 이미 메뉴를 시드하고 있어 위험도 차이도 없다.
+            if (! empty($seedBundle['menus'])) {
+                $this->applyByIdentifier(Menu::class, $pack, $seedBundle['menus'], $locale, ['name'], 'slug', $audit);
+            }
+            if (! empty($seedBundle['notifications'])) {
+                $this->applyNotifications($pack, $seedBundle['notifications'], $locale, $audit);
+            }
+            if (! empty($seedBundle['identity_messages'])) {
+                $this->applyIdentityMessages($pack, $seedBundle['identity_messages'], $locale, $audit);
+            }
+            if (! empty($seedBundle['manifest'])) {
+                $this->applyManifest($pack, $seedBundle['manifest'], $locale, $audit);
+            }
 
-        return $audit;
+            return $audit;
+        } finally {
+            app()->forgetInstance('user_overrides.seeding');
+        }
     }
 
     /**
@@ -73,6 +86,23 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * @return array<int, array<string, mixed>> 감사 로그 항목
      */
     public function stripLocaleFromPack(LanguagePack $pack): array
+    {
+        // applySeedFromPack 과 동일 — 제거도 시딩 컨텍스트 (user_overrides 오염 차단)
+        app()->instance('user_overrides.seeding', true);
+        try {
+            return $this->stripLocaleFromPackBody($pack);
+        } finally {
+            app()->forgetInstance('user_overrides.seeding');
+        }
+    }
+
+    /**
+     * stripLocaleFromPack 의 본문 (시딩 바인딩 하에서 실행).
+     *
+     * @param  LanguagePack  $pack  비활성화된 언어팩
+     * @return array<int, array<string, mixed>> 감사 로그 항목
+     */
+    private function stripLocaleFromPackBody(LanguagePack $pack): array
     {
         $audit = [];
         $locale = $pack->locale;
@@ -119,10 +149,14 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * 식별자 컬럼 (identifier/slug) 기반 단순 매칭 모델의 JSON 컬럼에 locale 키를 병합합니다.
      *
-     * @param  class-string<Model>  $modelClass
-     * @param  array<string, array<string, mixed>>  $seed
-     * @param  array<int, string>  $columns
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  class-string<Model>  $modelClass  대상 모델 클래스
+     * @param  LanguagePack  $pack  적용할 언어팩
+     * @param  array<string, array<string, mixed>>  $seed  식별자 → 컬럼별 번역 맵
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, string>  $columns  병합 대상 다국어 컬럼
+     * @param  string  $matchColumn  seed 키와 대조할 컬럼 (identifier/slug)
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void
      */
     protected function applyByIdentifier(
         string $modelClass,
@@ -149,8 +183,11 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * 알림 Definition × Template 의 다국어 컬럼을 병합합니다.
      *
-     * @param  array<string, array<string, mixed>>  $seed
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  LanguagePack  $pack  적용할 언어팩
+     * @param  array<string, array<string, mixed>>  $seed  정의 키 → 컬럼별 번역 맵
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void
      */
     protected function applyNotifications(LanguagePack $pack, array $seed, string $locale, array &$audit): void
     {
@@ -207,8 +244,11 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * IDV 메시지 Definition × Template 의 다국어 컬럼을 병합합니다.
      *
-     * @param  array<string, array<string, mixed>>  $seed
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  LanguagePack  $pack  적용할 언어팩
+     * @param  array<string, array<string, mixed>>  $seed  합성 키 → 컬럼별 번역 맵
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void
      */
     protected function applyIdentityMessages(LanguagePack $pack, array $seed, string $locale, array &$audit): void
     {
@@ -262,8 +302,11 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * 확장 manifest 의 name/description JSON 컬럼에 locale 키를 병합합니다.
      *
-     * @param  array<string, mixed>  $seed
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  LanguagePack  $pack  적용할 언어팩
+     * @param  array<string, mixed>  $seed  name/description 평탄 번역 맵
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void
      */
     protected function applyManifest(LanguagePack $pack, array $seed, string $locale, array &$audit): void
     {
@@ -297,7 +340,10 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * 비활성화 시 IDV 메시지 Definition × Template 의 locale 키를 제거합니다.
      *
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  LanguagePack  $pack  비활성화된 언어팩
+     * @param  string  $locale  제거할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void
      */
     protected function stripIdentityMessages(LanguagePack $pack, string $locale, array &$audit): void
     {
@@ -332,6 +378,10 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
 
     /**
      * 쿼리 빌더에 언어팩 scope 별 소유권 필터를 적용합니다.
+     *
+     * @param  Builder  $query  대상 쿼리 빌더
+     * @param  LanguagePack  $pack  소유권 기준이 될 언어팩
+     * @return void
      */
     protected function scopeOwnership(Builder $query, LanguagePack $pack): void
     {
@@ -364,6 +414,9 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * IdentityMessageDefinition 의 provider_id+scope_type+scope_value 를 seed 키 형식으로 합성합니다.
      *
      * LanguagePackSeedInjector::identityMessageCompositeKey 와 동일 규칙.
+     *
+     * @param  IdentityMessageDefinition  $def  대상 정의
+     * @return string|null 합성 키 (합성 불가 시 null)
      */
     protected function identityMessageCompositeKey(IdentityMessageDefinition $def): ?string
     {
@@ -382,9 +435,12 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * 단일 row 의 다국어 컬럼들에 locale 키를 병합하고 audit 항목을 누적합니다.
      *
-     * @param  array<string, mixed>  $entry
-     * @param  array<int, string>  $columns
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  Model  $row  대상 레코드
+     * @param  array<string, mixed>  $entry  컬럼별 번역 값
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, string>  $columns  병합 대상 다국어 컬럼
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void
      */
     protected function mergeLocaleColumns(Model $row, array $entry, string $locale, array $columns, array &$audit): void
     {
@@ -402,7 +458,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
             }
 
             $hasLocaleKey = array_key_exists($locale, $current);
-            $isOverridden = isset($overrides[$column]);
+            $isOverridden = $this->isColumnLocaleOverridden($overrides, $column, $locale);
 
             if ($hasLocaleKey && $isOverridden) {
                 $audit[] = [
@@ -413,6 +469,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                     'locale' => $locale,
                     'reason' => 'user_overrides',
                 ];
+
                 continue;
             }
 
@@ -429,8 +486,11 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * 단일 row 의 다국어 컬럼들에서 locale 키를 제거하고 audit 항목을 누적합니다.
      *
-     * @param  array<int, string>  $columns
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  Model  $row  대상 레코드
+     * @param  string  $locale  제거할 로케일
+     * @param  array<int, string>  $columns  제거 대상 다국어 컬럼
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void
      */
     protected function stripLocaleColumns(Model $row, string $locale, array $columns, array &$audit): void
     {
@@ -443,7 +503,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                 continue;
             }
 
-            if (isset($overrides[$column])) {
+            if ($this->isColumnLocaleOverridden($overrides, $column, $locale)) {
                 $audit[] = [
                     'action' => 'preserved',
                     'table' => $row->getTable(),
@@ -452,6 +512,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                     'locale' => $locale,
                     'reason' => 'user_overrides',
                 ];
+
                 continue;
             }
 
@@ -463,5 +524,28 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
         if ($changed) {
             $row->saveQuietly();
         }
+    }
+
+    /**
+     * 해당 컬럼·로케일이 운영자 수정(user_overrides)으로 보존 대상인지 판정합니다.
+     *
+     * 운영자 수정의 실제 기록 형식은 dot-path 리스트(`"{column}.{locale}"` —
+     * HasUserOverrides 의 updating 이벤트가 기록, beta.4 가 레거시 항목을 dot-path 로
+     * 전환)이므로 그 형식만 본다. 종전의 `isset($overrides[$column])` 판정은 어떤
+     * 생산자도 쓰지 않는 연관 형식을 전제해 항상 false 였고, 그 결과 활성화/비활성화가
+     * 운영자 수정 번역을 오류 없이 덮어쓰거나 제거했다 (#597 에서 발견·교정).
+     *
+     * 컬럼 전체 항목(`"subject"` 등)은 의도적으로 보존 사유로 보지 않는다 — 그 형식은
+     * 시더 재실행(syncFromUpgrade)의 컬럼 보호 선언이며, 팩 병합까지 차단하면 팩
+     * 업데이트가 자기 로케일 번역을 갱신하지 못하게 된다 (종전에도 차단된 적 없음).
+     *
+     * @param  array<int, string>  $overrides  user_overrides 리스트
+     * @param  string  $column  다국어 JSON 컬럼명
+     * @param  string  $locale  대상 로케일
+     * @return bool 보존 대상 여부
+     */
+    protected function isColumnLocaleOverridden(array $overrides, string $column, string $locale): bool
+    {
+        return in_array($column.'.'.$locale, $overrides, true);
     }
 }

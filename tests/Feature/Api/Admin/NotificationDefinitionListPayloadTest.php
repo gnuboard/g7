@@ -20,7 +20,6 @@ use Tests\TestCase;
  *
  * `channel` 필터와 혼동하지 않는다 — `channel` 은 정의 행 자체를 거르고(그 채널을 지원하지
  * 않는 정의가 목록에서 사라진다), `template_channel` 은 행을 남긴 채 템플릿만 좁힌다.
- *
  */
 class NotificationDefinitionListPayloadTest extends TestCase
 {
@@ -117,6 +116,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
+     *
      * @effects notification_list_carries_only_requested_channel_template
      */
     public function test_list_carries_only_the_requested_channel_template(): void
@@ -149,6 +149,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
+     *
      * @effects notification_list_carries_only_requested_channel_template
      */
     public function test_template_channel_does_not_filter_out_rows(): void
@@ -177,6 +178,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
+     *
      * @effects notification_list_without_channel_omits_templates
      */
     public function test_list_without_template_channel_omits_templates(): void
@@ -206,6 +208,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
+     *
      * @effects notification_customized_flag_spans_every_channel
      */
     public function test_customized_flag_spans_every_channel_not_just_the_requested_one(): void
@@ -233,6 +236,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
+     *
      * @effects query_count_does_not_scale_with_row_count
      */
     public function test_template_query_count_does_not_grow_with_definition_count(): void
@@ -276,6 +280,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=notification_definition,endpoint=detail,observation=response_payload
+     *
      * @effects notification_detail_returns_every_channel_template, detail_still_returns_full_payload
      */
     public function test_detail_still_returns_every_channel_template(): void

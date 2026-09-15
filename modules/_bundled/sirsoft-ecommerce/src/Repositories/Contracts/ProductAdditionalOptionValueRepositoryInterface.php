@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
 
 /**
@@ -36,10 +37,15 @@ interface ProductAdditionalOptionValueRepositoryInterface
      * 장바구니·바로구매처럼 항목이 여러 개인 경로에서 상품마다 조회하지 않기 위한
      * 일괄 진입점입니다.
      *
+     * 외곽이 Support 인 이유: 항목이 Model 이 아니라 Collection 인 **중첩 맵**이므로
+     * Eloquent\Collection 의 계약(load/modelKeys/fresh 가 instanceof Model 을 전제)을
+     * 만족할 수 없습니다. 같은 이유로 `Eloquent\Collection::map()` 도 항목이 Model 이
+     * 아니면 toBase() 로 강등합니다. 평면 `id => Model` 맵은 Eloquent 로 둡니다.
+     *
      * @param  array<int, int>  $productIds  상품 ID 목록
-     * @return Collection<int, Collection<int, ProductAdditionalOptionValue>> 상품 ID 키 맵
+     * @return SupportCollection<int, Collection<int, ProductAdditionalOptionValue>> 상품 ID 키 맵
      */
-    public function getActiveByProductIdsKeyed(array $productIds): Collection;
+    public function getActiveByProductIdsKeyed(array $productIds): SupportCollection;
 
     /**
      * 추가옵션 그룹 ID 목록에 속한 모든 선택지를 삭제합니다.

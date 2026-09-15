@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 상품 목록 레이아웃 구조 검증 테스트
  *
@@ -13,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 // 레이아웃 JSON 임포트
 import productList from '../../../layouts/admin/admin_ecommerce_product_list.json';
 import filterSection from '../../../layouts/admin/partials/admin_ecommerce_product_list/_partial_filter_section.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 재귀적으로 JSON 트리에서 특정 조건의 노드를 찾는 유틸리티 */
 function findNodes(node: any, predicate: (n: any) => boolean, results: any[] = []): any[] {
@@ -87,7 +89,7 @@ describe('상품 목록 레이아웃 검색 키워드 Enter 키 검색 검증', 
             (n: any) =>
                 n.name === 'Input' &&
                 Array.isArray(n.actions) &&
-                n.actions.some(
+                actionsOf(n).some(
                     (a: any) =>
                         a.type === 'change' && a.params?.['filter.searchKeyword'],
                 ),
@@ -96,10 +98,10 @@ describe('상품 목록 레이아웃 검색 키워드 Enter 키 검색 검증', 
     it('검색 키워드 Input의 Enter 는 sequence[setState 선행 → searchProducts] 여야 함', () => {
         const searchInput = getSearchInput();
         expect(searchInput).toBeDefined();
-        expect(searchInput.actions.length).toBeGreaterThanOrEqual(1);
+        expect(actionsOf(searchInput).length).toBeGreaterThanOrEqual(1);
 
         // keypress Enter 액션
-        const enterAction = searchInput.actions.find(
+        const enterAction = actionsOf(searchInput).find(
             (a: any) => a.type === 'keypress' && a.key === 'Enter'
         );
         expect(enterAction).toBeDefined();
@@ -109,13 +111,13 @@ describe('상품 목록 레이아웃 검색 키워드 Enter 키 검색 검증', 
         expect(enterAction.handler).toBe('sequence');
         expect(Array.isArray(enterAction.actions)).toBe(true);
 
-        const firstSetState = enterAction.actions[0];
+        const firstSetState = actionsOf(enterAction)[0];
         expect(firstSetState.handler).toBe('setState');
         expect(firstSetState.params?.['filter.searchKeyword']).toContain('$event.target.value');
         // setState 선행은 즉시 반영되어야 하므로 debounce 없음
         expect(firstSetState.debounce).toBeUndefined();
 
-        const navStep = enterAction.actions.find((a: any) => a.actionRef === 'searchProducts');
+        const navStep = actionsOf(enterAction).find((a: any) => a.actionRef === 'searchProducts');
         expect(navStep).toBeDefined();
     });
 
@@ -123,7 +125,7 @@ describe('상품 목록 레이아웃 검색 키워드 Enter 키 검색 검증', 
         const searchInput = getSearchInput();
         expect(searchInput).toBeDefined();
 
-        const changeAction = searchInput.actions.find(
+        const changeAction = actionsOf(searchInput).find(
             (a: any) =>
                 a.type === 'change' &&
                 a.handler === 'setState' &&
@@ -177,7 +179,7 @@ describe('상품 목록 레이아웃 named_actions 검증', () => {
         expect(searchButtons.length).toBeGreaterThanOrEqual(1);
 
         const searchButton = searchButtons[0];
-        const clickAction = searchButton.actions.find((a: any) => a.type === 'click');
+        const clickAction = actionsOf(searchButton).find((a: any) => a.type === 'click');
         expect(clickAction).toBeDefined();
         expect(clickAction.actionRef).toBe('searchProducts');
     });

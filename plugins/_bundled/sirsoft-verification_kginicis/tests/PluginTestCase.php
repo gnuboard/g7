@@ -110,7 +110,7 @@ abstract class PluginTestCase extends TestCase
      * 플러그인 스토리지('plugins' 디스크)를 테스트 전용 임시 디렉토리로 격리한다.
      *
      * 설정 저장 테스트(PluginSettingsService::save)는 코어 'plugins' 디스크
-     * (root = storage_path('app/plugins'))에 setting.json 을 쓴다. 격리하지 않으면
+     * (root = `plugins` 디스크, config/filesystems.php)에 setting.json 을 쓴다. 격리하지 않으면
      * 테스트가 실제 로컬 런타임 설정 파일을 덮어써 라이브 모드/자격증명이 오염된다
      * (RefreshDatabase 는 DB 만 롤백하고 파일시스템은 되돌리지 않음). 디스크 root 를
      * 임시 경로로 바꾸고 resolved 인스턴스를 purge 하여 실제 파일을 원천적으로 못
@@ -195,8 +195,12 @@ abstract class PluginTestCase extends TestCase
                 return;
             }
             $file = $base.str_replace('\\', '/', substr($class, $len)).'.php';
-            if (file_exists($file)) {
-                require $file;
+            if (file_exists($file)
+                && ! class_exists($class, false) && ! interface_exists($class, false)
+                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
+                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
+                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
+                require_once $file;
             }
         });
     }

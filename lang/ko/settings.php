@@ -21,11 +21,15 @@ return [
     'backup_success' => '데이터베이스 백업이 성공적으로 시작되었습니다.',
     'backup_failed' => '데이터베이스 백업에 실패했습니다.',
     'backup_error' => '데이터베이스 백업 중 오류가 발생했습니다.',
+    'database_backup_unavailable' => '데이터베이스 백업 기능은 아직 제공하지 않습니다. 설정 백업은 설정 백업 기능을 이용해 주세요.',
     'backup_path_required' => '백업 경로를 입력해주세요.',
     'restore_success' => '설정이 성공적으로 복원되었습니다.',
     'restore_failed' => '설정 복원에 실패했습니다.',
     'restore_error' => '설정 복원 중 오류가 발생했습니다.',
     'save_individual_failed' => '설정 저장에 실패했습니다: :error',
+    'static_cache_status_loaded' => '초기 화면 정적 파일 상태를 불러왔습니다.',
+    'static_cache_republished' => '초기 화면 정적 파일을 다시 만들었습니다.',
+    'static_cache_republish_failed' => '초기 화면 정적 파일을 다시 만들지 못했습니다. 사이트는 정상 동작합니다.',
 
     // 앱 키 관련 메시지
     'invalid_password' => '비밀번호가 일치하지 않습니다.',
@@ -41,6 +45,11 @@ return [
     'drivers' => [
         'storage' => [
             'local' => '로컬',
+            's3' => 'Amazon S3',
+        ],
+        'public_asset' => [
+            'none' => '사용 안 함 (스트리밍)',
+            'public' => 'Public 디스크',
             's3' => 'Amazon S3',
         ],
         'cache' => [
@@ -69,6 +78,9 @@ return [
             'mailgun' => 'Mailgun',
             'ses' => 'SES (Amazon)',
         ],
+        'search' => [
+            'mysql-fulltext' => 'MySQL 전문검색',
+        ],
     ],
 
     // 드라이버 연결 테스트 메시지
@@ -77,11 +89,18 @@ return [
     'driver_test_error' => '드라이버 연결 테스트 중 오류가 발생했습니다.',
     'unknown_driver' => '알 수 없는 드라이버입니다.',
 
+    // 아웃바운드 프록시 연결 테스트 메시지
+    'outbound_proxy_test_success' => '프록시 연결에 성공했습니다. 외부 서비스에는 이 IP 로 보입니다.',
+    'outbound_proxy_test_failed' => '프록시로 연결하지 못했습니다. 주소와 프록시 서버 상태를 확인해주세요.',
+    'outbound_proxy_test_invalid_url' => '프록시 주소 형식이 올바르지 않습니다.',
+    'outbound_proxy_test_no_lookup_url' => '출발지 IP 조회 대상이 설정되어 있지 않아 확인할 수 없습니다.',
+
     // S3 테스트 메시지
     's3_test_success' => 'S3 버킷에 성공적으로 연결되었습니다.',
     's3_test_failed' => 'S3 버킷 연결에 실패했습니다.',
     's3_missing_config' => 'S3 설정이 누락되었습니다. (버킷, 리전, 액세스 키, 시크릿 키)',
     's3_sdk_missing' => 'AWS SDK가 설치되어 있지 않습니다.',
+    's3_adapter_missing' => 'S3 스토리지 어댑터(league/flysystem-aws-s3-v3)가 설치되어 있지 않습니다.',
     's3_bucket_not_found' => 'S3 버킷을 찾을 수 없습니다.',
     's3_access_denied' => 'S3 버킷에 대한 접근이 거부되었습니다.',
     's3_invalid_credentials' => 'S3 인증 정보가 올바르지 않습니다.',
@@ -103,6 +122,10 @@ return [
     // Websocket 테스트 메시지
     'websocket_test_success' => 'Websocket 서버에 성공적으로 연결되었습니다.',
     'websocket_test_failed' => 'Websocket 서버 연결에 실패했습니다.',
+    'websocket_server_test_failed' => 'Websocket 서버(백엔드 발송용) endpoint 연결에 실패했습니다. 클라이언트 endpoint 는 정상입니다.',
+    'driver_unusable_s3_adapter' => 'S3 스토리지 어댑터(league/flysystem-aws-s3-v3)가 설치되어 있지 않습니다.',
+    'driver_unusable_redis_client' => 'phpredis 확장과 predis 라이브러리가 모두 없습니다.',
+    'driver_unusable_memcached_extension' => 'memcached PHP 확장이 설치되어 있지 않습니다.',
     'websocket_invalid_host' => 'Websocket 호스트 설정이 올바르지 않습니다. 호스트에는 주소만 입력하고 계정 정보(@)나 http/https 이외의 프로토콜은 사용할 수 없습니다.',
     'websocket_connection_refused' => 'Websocket 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.',
 
@@ -147,7 +170,7 @@ return [
 
         // 파일 적용 방식 요약 (Step 7)
         'apply_mode_incremental' => '파일 적용: 코어가 실제 변경한 파일만 적용했습니다 (신규 :added개, 변경 :changed개). 그 외 파일은 현재 상태 그대로 보존되었습니다.',
-        'apply_mode_incremental_prune_hint' => '신 버전에서 제거된 파일을 함께 정리하려면 `--prune` 옵션으로 다시 실행하거나 `php artisan hotfix:rollback-stale-files --prune` 을 사용하세요.',
+        'apply_mode_incremental_prune_hint' => '신 버전에서 제거된 파일을 함께 정리하려면 같은 업데이트를 `--prune` 옵션으로 다시 실행하세요.',
         'apply_mode_prune' => '파일 적용: 전체 덮어쓰기 + 제거된 파일 정리를 수행했습니다 (--prune).',
         'apply_mode_fallback' => '파일 적용: 백업이 없어 증분 적용을 건너뛰고 전체 덮어쓰기를 수행했습니다. 사용자 커스텀 파일 보존을 원하면 다음부터는 백업을 유지한 채 업데이트하세요.',
 
@@ -186,4 +209,19 @@ return [
         'source_vendor_missing' => '소스 디렉토리에 vendor가 없습니다. composer install이 실행되지 않았을 수 있습니다.',
         'composer_failed_with_output' => 'composer install 실행에 실패했습니다.:output',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 신뢰 프록시 진단 (#124)
+    |--------------------------------------------------------------------------
+    |
+    | 값 편집은 .env 전용이다 — 화면에는 읽기 전용 진단만 노출한다.
+    |
+    */
+
+    'trusted_proxy' => [
+        'alert_title' => '신뢰 프록시가 설정되지 않았습니다',
+        'alert_message' => '프록시 헤더(:headers)를 받고 있으나 신뢰 프록시가 설정되지 않아, 모든 방문자가 같은 주소(:ip)로 기록되고 있습니다. .env 에 TRUSTED_PROXIES 를 지정하세요. 상세: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+    ],
+
 ];

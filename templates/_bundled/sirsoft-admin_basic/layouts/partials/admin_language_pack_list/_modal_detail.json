@@ -1,4 +1,5 @@
 {
+    "comment": "언어팩 한 벌의 상세 창. 목록 카드의 메뉴에서 열며, **목록과 다른 데이터소스**를 쓴다 —\n  매니페스트·호환 제약·변경 이력은 목록 응답에 실리지 않아 열 때 따로 받는다. 그래서 값이\n  오기 전 잠깐 「불러오는 중」이 뜨는 갈래가 정상으로 있다.\n  네 구획으로 나뉜다: 기본 정보 · 호환(코어와 대상 확장의 버전 제약, 어긋나면 경고 띠) ·\n  출처(어디서 왔고 언제 깔렸는가) · 변경 이력. 코어에 내장된 팩이면 맨 위에 그 사실을 먼저 알린다.",
     "meta": {
         "is_partial": true,
         "description": "언어팩 상세 정보 모달 — 모듈 detail 모달 패턴(섹션별 구조) 적용",
@@ -57,7 +58,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fas fa-info-circle",
-                                                "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                                             }
                                         },
                                         {
@@ -101,7 +102,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-cog",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -124,10 +125,10 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "if": "{{language_pack_detail?.data?.name}}",
                                                     "props": {
                                                         "className": "col-span-2"
                                                     },
-                                                    "if": "{{language_pack_detail?.data?.name}}",
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -418,7 +419,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-link",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -527,7 +528,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-folder-open",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -697,7 +698,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-clock-rotate-left",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -750,13 +751,13 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
-                                                            "props": {
-                                                                "className": "row-stack"
-                                                            },
                                                             "iteration": {
                                                                 "source": "entry.categories",
                                                                 "item_var": "category",
                                                                 "index_var": "catIdx"
+                                                            },
+                                                            "props": {
+                                                                "className": "row-stack"
                                                             },
                                                             "children": [
                                                                 {
@@ -774,13 +775,13 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
-                                                                            "props": {
-                                                                                "className": "ml-3 space-y-0.5"
-                                                                            },
                                                                             "iteration": {
                                                                                 "source": "category.items",
                                                                                 "item_var": "changeItem",
                                                                                 "index_var": "itemIdx"
+                                                                            },
+                                                                            "props": {
+                                                                                "className": "ml-3 space-y-0.5"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -817,16 +818,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

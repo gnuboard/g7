@@ -1,0 +1,84 @@
+feature: 구동 에셋 자체 제공 + 로드 실패 폴백
+
+description: |
+  브라우저가 화면을 그리기 위해 제3자 CDN 에 도달해야 하는 의존을 없애고(자체 제공),
+  그럼에도 자산을 못 불러온 경우를 사용자가 알고 조치할 수 있게 한다(폴백 + 안내 + 재시도).
+  더불어 운영자가 자기 CSS/JS/정적 파일을 덧붙일 자리(`custom/`)를 규약으로 연다.
+
+  핵심 동작:
+    - 확장·템플릿의 구동 자산을 `dist/vendor/{lib}/{version}/` 에 동봉하고 same-origin 으로 서빙
+    - 레이아웃 scripts / 확장 CSS·JS 로드에 재시도 계층 적용 후 최종 실패를 표면화
+    - CKEditor5·Monaco 확보 실패 시 textarea 폴백, 우편번호 SDK 부재 시 직접 입력 허용
+    - 운영자 `custom/` 자산은 확장 교체(rename 경로 · 제자리 동기화 폴백)에서 보존
+    - 외부 URL 은 확장 manifest 의 사유 선언분 또는 운영자의 `custom/assets.json` 등록분만
+
+coverage_strategy: pairwise
+
+axes:
+  # 자산 이름이 아니라 **동작이 갈리는 부류**를 축으로 둔다 — 이름별 열거는 테스트가
+  # 실제로 하는 일이 아니다(전수 스캔은 전부를 한 번에 보고, 로더는 종류와 무관하다).
+  #   vendored    : 동봉 자산 (실패 시 폴백·안내)
+  #   service_sdk : 자체 제공 불가 (외부 의존 잔존, 직접 입력이 대안)
+  #   translation : 선택적 열화 (실패해도 영어로 동작 — 폴백이 아니라 경고)
+  asset_class: [vendored, service_sdk, translation]
+  outcome: [loaded, failed]
+
+exclusions:
+  - { asset_class: translation, outcome: loaded, reason: "번역은 실패 축만 의미가 있다 — 성공 경로는 vendored 와 같은 코드다" }
+
+effects:
+  - runtime_asset_served_same_origin
+  - no_third_party_request_on_page_load
+  - vendored_asset_survives_rebuild
+  - vendored_asset_declared_path_exists_on_disk
+  - vendored_asset_version_matches_declaration
+  - vendored_editor_mounts_without_fallback
+  - template_external_asset_field_resolves_to_asset_url
+  - template_external_same_origin_ignores_preconnect_and_crossorigin
+  - template_external_invalid_url_is_logged_not_silently_dropped
+  - bot_render_path_uses_same_origin_asset
+  - layout_script_retries_before_failing
+  - layout_script_url_converted_to_current_mode
+  - failed_layout_script_recorded_and_others_continue
+  - failed_asset_shows_retry_notice
+  - failed_asset_falls_back_to_plain_input
+  - retry_recovers_editor
+  - stylesheet_failure_retries_then_surfaces
+  - address_fields_editable_when_sdk_missing
+  - notice_renders_without_host_component_on_standalone_layout
+
+test_files:
+  - tests/Unit/Support/TemplateExternalsTest.php
+  - tests/Feature/View/TemplateExternalsRenderingTest.php
+  - tests/Feature/Extension/BundledExtensionNoExternalAssetTest.php
+  - tests/Feature/Extension/VendoredAssetServingTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/VendoredAssetManifestTest.php
+  - resources/js/core/__tests__/TemplateApp.layoutScripts.test.ts
+  - resources/js/core/__tests__/G7CoreGlobals.test.ts
+  - resources/js/core/__tests__/AssetFailureNotice.test.ts
+  - resources/js/core/modules/__tests__/ModuleAssetLoader.test.ts
+  - resources/js/core/template-engine/__tests__/networkResilience.stylesheet.test.ts
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/html-editor-fallback.test.tsx
+  - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/postcode-fallback.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/CodeEditor.fallback.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-monaco-vendored-version.spec.ts
+  - tests/Playwright/specs/self-hosted-assets.spec.ts
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/editor-fallback.spec.ts
+
+sub_flows:
+  - id: asset_url_mode_variants
+    description: |
+      자산 URL 모드(extension / extensionless)와 정적 게시(on / off)는 환경 토글이라
+      단위 테스트가 조합으로 enumerate 하지 않는다. 전용 테스트(VendoredAssetServingTest
+      "자산 url 은 두 모드 모두 same origin", TemplateApp.layoutScripts "모드 보정")와
+      브라우저 점검 매트릭스가 그 변종을 맡는다.
+  - id: multilingual_editor_fallback
+    description: 다국어 탭 × textarea 폴백 — 탭 전환 시 현재 값 커밋, form.content 는 로케일 맵 유지
+  - id: vendored_version_ssot
+    description: |
+      동봉 자산의 버전은 확장 안 다섯 곳(dist/vendor 디렉토리 · 의존성 핀 · 복사 스크립트
+      경로 · 소스 *_VERSION 상수 · 테스트 어서션)에 중복 기재된다. 조합으로 enumerate 하지
+      않는다 — 어긋남 자체가 결함이라 축이 아니라 불변식이다. 정적 검사가 기재 간 수렴을,
+      브라우저 spec 이 그 버전 경로가 실제로 200 으로 응답하는지를 맡는다.
+  - id: bot_render_path
+    description: seo.blade.php 봇 렌더 경로에서도 자산이 same-origin 이어야 한다

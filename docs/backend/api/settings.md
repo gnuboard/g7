@@ -71,11 +71,16 @@ _단건 응답: `data` 객체의 필드._
 | geoip | object | `{"geoip_enabled":false,"geoip_license_key":null,"geoip_au…` | GeoIP 원본 카테고리 (GeoIP 사용 여부·MaxMind 라이선스 키·DB 자동 갱신 사용). advanced 탭에 병합된 파생 뷰 |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 탭 설정 그룹. channels 는 알림 채널 목록으로 각 원소가 id(채널 식별자)·is_active(활성 여부)·sort_order(표시 순서)를 가짐 |
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
-| available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공 |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | <!-- TODO: 설명 --> |
+| available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 세 필드로 구성 |
+| _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
+| _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
+| _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
+
+<!-- @probed -->
 
 ```http
 HTTP/1.1 200
@@ -120,19 +125,19 @@ HTTP/1.1 200
                 "webp",
                 "... (총 11건 중 5건 표시)"
             ],
-            "image_max_width": "800",
-            "image_max_height": "600",
+            "image_max_width": 2000,
+            "image_max_height": 2000,
             "image_quality": 85
         },
         "seo": {
-            "meta_title_suffix": null,
-            "meta_description": null,
-            "meta_keywords": null,
-            "google_analytics_id": null,
-            "google_site_verification": null,
-            "...": "(24개 키 생략, 총 29개)"
+            "meta_title_suffix": "",
+            "meta_description": "",
+            "meta_keywords": "",
+            "google_analytics_id": "",
+            "google_site_verification": "",
+            "...": "(23개 키 생략, 총 28개)"
         },
-        "...": "(11개 키 생략, 총 16개)"
+        "...": "(12개 키 생략, 총 17개)"
     }
 }
 ```
@@ -148,7 +153,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 통합 환경설정 화면(`admin_settings.json`)이 사용하는 전체 설정 조회 엔드포인트입니다. 각 탭에 해당하는 설정 그룹(general/security/mail/upload/seo/advanced/drivers/geoip/notifications/identity 등)과 드라이버 선택지 카탈로그(`available_drivers`)를 한 번에 반환합니다. 응답은 Eloquent 모델이 아니라 SettingsService 가 여러 설정 소스를 병합해 만든 집계 배열이며, 일부 그룹(cache/debug 등)은 원본 카테고리 값을 별도 키로 함께 노출한 파생 뷰입니다.
+관리자 통합 환경설정 화면(`admin_settings.g7.html`)이 사용하는 전체 설정 조회 엔드포인트입니다. 각 탭에 해당하는 설정 그룹(general/security/mail/upload/seo/advanced/drivers/geoip/notifications/identity 등)과 드라이버 선택지 카탈로그(`available_drivers`)를 한 번에 반환합니다. 응답은 Eloquent 모델이 아니라 SettingsService 가 여러 설정 소스를 병합해 만든 집계 배열이며, 일부 그룹(cache/debug 등)은 원본 카테고리 값을 별도 키로 함께 노출한 파생 뷰입니다.
 
 
 ### POST /api/admin/settings
@@ -200,6 +205,8 @@ HTTP/1.1 200
 | upload.image_max_width | body | integer | 아니오 | min 100, max 10000 | 이미지 리사이즈 최대 너비 (px) |
 | upload.image_max_height | body | integer | 아니오 | min 100, max 10000 | 이미지 리사이즈 최대 높이 (px) |
 | upload.image_quality | body | integer | 아니오 | min 1, max 100 | 이미지 리사이즈 시 압축 품질 (1~100) |
+| upload.orphan_cleanup_enabled | body | boolean | 아니오 | — | 고아 첨부(소유자 없이 남은 첨부) 자동 정리 활성화 여부. **기본 false** — 사용자 파일을 실제로 파기하므로 운영자가 직접 켜야 동작하며, 예약 작업(`attachments:prune-orphans --scheduled`)이 이 값을 false 폴백으로 재확인한다 |
+| upload.orphan_retention_days | body | integer | 아니오 | min 1, max 3650 | 고아 첨부 보존기간(일, 기본 30). 폼 작성 중 이탈을 감안한 유예 기간이다. 하한·상한은 `config('core.settings_limits.upload_orphan_retention_days_*')` 가 정하며 화면 입력도 같은 값을 읽는다 |
 | seo.meta_title_suffix | body | string | 아니오 | max 100 | 모든 페이지 SEO 제목 뒤에 붙는 접미 문구 |
 | seo.meta_description | body | string | 아니오 | max 160 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
 | seo.meta_keywords | body | string | 아니오 | max 255 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
@@ -210,6 +217,7 @@ HTTP/1.1 200
 | seo.bot_detection_enabled | body | boolean | 아니오 | — | 검색엔진 봇 감지 사용 여부 (봇 요청에 SEO 렌더링 적용) |
 | seo.bot_detection_library_enabled | body | boolean | 아니오 | — | 봇 감지 라이브러리 사용 여부 (User-Agent 목록 대신 라이브러리 판정) |
 | seo.og_default_site_name | body | string | 아니오 | max 200 | seo.og default site 이름 (식별자) |
+| seo.og_image_default | body | array | 아니오 | 항목: 존재하는 첨부 ID | 사이트 기본 공유 이미지(og:image) 첨부 ID 배열 — 화면별 og:image 가 없을 때 폴백으로 사용. 화면 제출 형태(첨부 객체 배열)도 수용하며 정수 ID 배열로 정규화된다 (7.0.9+) |
 | seo.og_image_default_width | body | integer | 아니오 | min 0, max 8000 | 기본 Open Graph 이미지 너비 (px) |
 | seo.og_image_default_height | body | integer | 아니오 | min 0, max 8000 | 기본 Open Graph 이미지 높이 (px) |
 | seo.twitter_default_card | body | string | 아니오 | — | 기본 트위터 카드 유형 (summary 등) |
@@ -236,17 +244,23 @@ HTTP/1.1 200
 | advanced.seo_cache_ttl | body | integer | 아니오 | min 0, max 14400 | SEO 캐시 만료 시간 (초, 0 = 만료 없음) |
 | advanced.debug_mode | body | boolean | 아니오 | — | 디버그 모드 사용 여부 (상세 오류 노출) |
 | advanced.sql_query_log | body | boolean | 아니오 | — | SQL 쿼리 로그 기록 여부 |
+| advanced.outbound_proxy | body | string | 아니오 | max 500, 스킴 `http`/`https`/`socks4`/`socks4a`/`socks5`/`socks5h` | 외부 HTTP 호출이 경유할 프록시 주소 (예: `socks5h://127.0.0.1:1080`). 빈 값이면 사용하지 않으며, 디버그 모드가 꺼져 있으면 저장되어도 적용되지 않는다 |
+| advanced.outbound_proxy_bypass | body | array | 아니오 | — | 프록시를 경유하지 않을 호스트 목록 |
+| advanced.outbound_proxy_bypass.* | body | string | 아니오 | max 255 | 프록시 예외 호스트 |
 | advanced.core_update_github_url | body | string | 아니오 | max 500 | 코어 업데이트를 확인할 GitHub 저장소 URL |
 | advanced.core_update_github_token | body | string | 아니오 | max 500 | 프라이빗 저장소의 코어/확장 업데이트에 사용할 GitHub 액세스 토큰 (공개 저장소는 비워둘 수 있음) |
 | advanced.geoip_enabled | body | boolean | 아니오 | — | IP 기반 타임존 감지(GeoIP) 사용 여부 |
 | advanced.geoip_license_key | body | string | 아니오 | max 200 | MaxMind GeoLite2 라이선스 키 |
 | advanced.geoip_auto_update_enabled | body | boolean | 아니오 | — | GeoIP DB 자동 업데이트 사용 여부 (주 1회 자동 재다운로드) |
 | drivers.storage_driver | body | string | 아니오 | — | 스토리지 드라이버 (local/s3) |
+| drivers.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 훅 등록 디스크). 카탈로그(`available_drivers.public_asset`)에 없는 값은 422 |
 | drivers.s3_bucket | body | string | 아니오 | max 255 | S3 버킷명 |
-| drivers.s3_region | body | string | 아니오 | — | S3 리전 |
+| drivers.s3_region | body | string | 아니오 | max 64, 소문자 영숫자·하이픈 (`^[a-z0-9-]+$`) | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`, MinIO 관례는 `us-east-1`) |
 | drivers.s3_access_key | body | string | 아니오 | max 255 | S3 액세스 키 |
 | drivers.s3_secret_key | body | string | 아니오 | max 255 | S3 시크릿 키 |
-| drivers.s3_url | body | string | 아니오 | max 500 | S3 엔드포인트 URL |
+| drivers.s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님) |
+| drivers.s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`) |
+| drivers.s3_use_path_style | body | boolean | 아니오 | — | S3 path-style 주소 사용 여부 — MinIO 등 path-style 전용 스토리지에서 true |
 | drivers.cache_driver | body | string | 아니오 | — | 캐시 드라이버 (file/redis/memcached) |
 | drivers.redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 |
 | drivers.redis_port | body | integer | 아니오 | min 1, max 65535 | Redis 포트 번호 |
@@ -328,6 +342,7 @@ Content-Type: application/json
     "general.language": "예시값",
     "general.currency": "예시값",
     "general.maintenance_mode": true,
+    "general.asset_url_mode": "https://example.com",
     "general.site_logo": [
         "예시값"
     ],
@@ -370,6 +385,11 @@ Content-Type: application/json
     "seo.cache_ttl": 1,
     "seo.sitemap_enabled": true,
     "seo.sitemap_cache_ttl": 1,
+    "seo.sitemap_urls_per_file": 1,
+    "seo.sitemap_gzip": true,
+    "seo.sitemap_serve_stale_on_miss": true,
+    "seo.sitemap_max_urls_per_contributor": 1,
+    "seo.sitemap_hreflang_enabled": true,
     "seo.sitemap_schedule": "예시값",
     "seo.sitemap_schedule_time": "예시값",
     "seo.generator_enabled": true,
@@ -379,6 +399,10 @@ Content-Type: application/json
     "security.auth_token_lifetime": 1,
     "security.max_login_attempts": 1,
     "security.login_lockout_time": 1,
+    "security.password_min_length": 1,
+    "security.require_password_special_char": true,
+    "security.two_factor_auth": true,
+    "security.allow_internal_outbound_urls": true,
     "advanced.cache_enabled": true,
     "advanced.layout_cache_enabled": true,
     "advanced.layout_cache_ttl": 1,
@@ -386,6 +410,7 @@ Content-Type: application/json
     "advanced.stats_cache_ttl": 1,
     "advanced.seo_cache_enabled": true,
     "advanced.seo_cache_ttl": 1,
+    "advanced.seo_sitemap_cache_ttl": 1,
     "advanced.debug_mode": true,
     "advanced.sql_query_log": true,
     "advanced.core_update_github_url": "https://example.com",
@@ -393,12 +418,16 @@ Content-Type: application/json
     "advanced.geoip_enabled": true,
     "advanced.geoip_license_key": "예시값",
     "advanced.geoip_auto_update_enabled": true,
+    "advanced.pagination_result_cap": 1,
+    "advanced.pagination_max_page": 1,
     "drivers.storage_driver": "예시값",
     "drivers.s3_bucket": "예시값",
     "drivers.s3_region": "예시값",
     "drivers.s3_access_key": "예시값",
     "drivers.s3_secret_key": "예시값",
     "drivers.s3_url": "https://example.com",
+    "drivers.s3_endpoint": "예시값",
+    "drivers.s3_use_path_style": true,
     "drivers.cache_driver": "예시값",
     "drivers.redis_host": "예시값",
     "drivers.redis_port": 1,
@@ -490,7 +519,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -528,6 +557,8 @@ _단건 응답: `data` 객체의 필드._
 | app_key | string | `base64:YlAis*************************…` | 현재 애플리케이션 키(`APP_KEY`)를 마스킹한 문자열. 앞부분 일부만 노출하고 나머지는 별표로 가려 전체 원문은 반환하지 않음 |
 
 **응답 예시**
+
+<!-- @probed -->
 
 ```http
 HTTP/1.1 200
@@ -601,7 +632,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 500 | Internal Server Error | 백업 파일 생성에 실패한 경우 (`settings.backup_failed`) |
 
 <!-- @generated:end -->
@@ -632,14 +663,14 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만). 컨트롤러가 `ResponseHelper::success('settings.backup_success')` 를 데이터 없이 호출하므로 `data` 는 `null` 입니다._
+_이 엔드포인트는 성공 응답을 반환하지 않습니다. 데이터베이스 백업 기능이 아직 제공되지 않아 항상 501 로 응답합니다._
 
 **응답 예시**
 
 ```json
 {
-    "success": true,
-    "message": "데이터베이스 백업이 성공적으로 시작되었습니다.",
+    "success": false,
+    "message": "데이터베이스 백업 기능은 아직 제공하지 않습니다. 설정 백업은 설정 백업 기능을 이용해 주세요.",
     "data": null
 }
 ```
@@ -648,16 +679,17 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 400 | Bad Request | 백업이 수행되지 않은 경우 (`settings.backup_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
-| 500 | Internal Server Error | 백업 처리 중 예외가 발생한 경우 (`settings.backup_error`) |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 501 | Not Implemented | 항상 (데이터베이스 백업 미제공, `settings.database_backup_unavailable`) |
 
 <!-- @generated:end -->
 
 **설명**
 
-데이터베이스를 백업합니다. SettingsService 에 위임하며, 성공/실패를 메시지로 반환합니다. 설정 백업(`POST /backup`)이 설정 파일만 다루는 것과 달리, 이 엔드포인트는 DB 데이터를 백업 대상으로 합니다.
+**데이터베이스 백업은 아직 제공하지 않습니다.** 이 엔드포인트는 라우트만 존재하며 호출하면 항상 501(Not Implemented)로 응답합니다. 코어에는 데이터베이스 덤프 수단이 없어 구현된 적이 없으며, 관리자 화면에도 이 기능을 호출하는 지점이 없습니다.
+
+설정 파일 백업이 필요하면 `POST /api/admin/settings/backup` 을 사용하십시오 — 그쪽은 정상 동작하며 생성된 백업 경로를 `data.backup_path` 로 돌려줍니다.
 
 
 ### POST /api/admin/settings/clear-cache
@@ -699,7 +731,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | --- | --- | --- |
 | 400 | Bad Request | 캐시 정리가 수행되지 않은 경우 (`settings.cache_clear_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 500 | Internal Server Error | 캐시 정리 중 예외가 발생한 경우 (`settings.cache_clear_error`) |
 
 <!-- @generated:end -->
@@ -760,7 +792,7 @@ _단건 응답: `data` 객체의 필드 (GeoIpDatabaseService::updateDatabase() 
 | --- | --- | --- |
 | 400 | Bad Request | MaxMind 라이선스 키가 설정되지 않은 경우 (`missing_license_key`) |
 | 401 | Unauthorized | MaxMind 라이선스 키가 유효하지 않은 경우 (`unauthorized`) |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 500 | Internal Server Error | MaxMind 연결 실패(`connection_failed`) 또는 다운로드·압축 해제 실패 |
 
 <!-- @generated:end -->
@@ -795,6 +827,8 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 **응답 예시**
 
+<!-- @probed -->
+
 ```http
 HTTP/1.1 200
 ```
@@ -812,7 +846,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -874,7 +908,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthorized | 본문 `password` 가 요청자 본인의 비밀번호와 일치하지 않는 경우 (`settings.invalid_password`) |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없거나, FormRequest 가 `super_admin` 역할이 아닌 사용자를 거부한 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없거나, FormRequest 가 `super_admin` 역할이 아닌 사용자를 거부한 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | `.env` 기록/config 캐시 재생성 실패 (`settings.app_key_regenerate_failed`) |
 
@@ -933,7 +967,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | --- | --- | --- |
 | 400 | Bad Request | 복원이 수행되지 않은 경우 (`settings.restore_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 백업 파일을 읽을 수 없는 등 복원 중 예외 발생 (`settings.restore_error`) |
 
@@ -973,7 +1007,7 @@ _단건 응답: `data` 객체의 필드._
 | web_server | string | `nginx/1.27.3` | 웹서버 소프트웨어 식별 문자열 (`$_SERVER['SERVER_SOFTWARE']`) |
 | php_version | string | `8.3.26` | 실행 중인 PHP 버전 (`PHP_VERSION`) |
 | mysql_version | string | `Mysql 8.4.3` | 연결된 데이터베이스 서버 종류와 버전 (DB 조회 산물). probe 실패 시 "알 수 없음" 폴백 |
-| g7_version | string | `7.0.6` | G7 코어 버전 (`config('app.version')`) |
+| g7_version | string | `7.1.0` | G7 코어 버전 (`config('app.version')`) |
 | g7_release_year | string | `2026` | G7 릴리즈 연도 (`config('app.release_year')`, 저작권 표기 등에 사용) |
 | laravel_version | string | `12.62.0` | 프레임워크 Laravel 버전 (`app()->version()`) |
 | environment | string | `local` | 현재 실행 환경 (`app()->environment()` — local/production/testing 등) |
@@ -983,7 +1017,7 @@ _단건 응답: `data` 객체의 필드._
 | php_memory_limit | string | `512M` | PHP `memory_limit` ini 값 |
 | max_execution_time | string | `36000초` | PHP `max_execution_time` ini 값 (초 단위 접미사 부착) |
 | upload_max_filesize | string | `2G` | PHP `upload_max_filesize` ini 값 |
-| opcache | object | `{"loaded":true,"enabled":true}` | <!-- TODO: 설명 --> |
+| opcache | object | `{"loaded":true,"enabled":true}` | OPcache 상태 (`OpcacheStatus::probe()`). `loaded` 는 확장 적재 여부, `enabled` 는 `opcache.enable` 지시자 값이며 `ini_get` 이 차단·미정의인 환경에서는 **확인 불가를 뜻하는 `null`** 이 된다 (false 와 구분된다) |
 | install_path | string | `C:\Users\HeuJung\htdocs\g7_2` | 애플리케이션 설치 루트 경로 (`base_path()`) |
 | config_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 설정 파일 저장 경로 (`storage/app/settings`) |
 | log_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 로그 파일 저장 경로 (`storage/logs`) |
@@ -994,6 +1028,8 @@ _단건 응답: `data` 객체의 필드._
 | server_time | string | `2026-08-04 12:53:55` | 서버 현재 시각 (Y-m-d H:i:s) |
 
 **응답 예시**
+
+<!-- @probed -->
 
 ```http
 HTTP/1.1 200
@@ -1008,22 +1044,22 @@ HTTP/1.1 200
         "web_server": "nginx/1.27.3",
         "php_version": "8.3.26",
         "mysql_version": "Mysql 8.4.3",
-        "g7_version": "7.0.6",
+        "g7_version": "7.1.0",
         "g7_release_year": "2026",
         "laravel_version": "12.62.0",
-        "environment": "local",
+        "environment": "production",
         "cpu_info": "Intel(R) Core(TM) Ultra 5 225H",
         "memory_usage": {
             "total": "31.49 GB",
-            "used": "24.31 GB",
-            "free": "7.18 GB",
-            "percentage": 77.2
+            "used": "28.24 GB",
+            "free": "3.25 GB",
+            "percentage": 89.69
         },
         "disk_usage": {
             "total": "474.72 GB",
-            "used": "408.15 GB",
-            "free": "66.57 GB",
-            "percentage": 85.98
+            "used": "375.43 GB",
+            "free": "99.28 GB",
+            "percentage": 79.09
         },
         "php_memory_limit": "512M",
         "max_execution_time": "36000초",
@@ -1032,10 +1068,10 @@ HTTP/1.1 200
             "loaded": true,
             "enabled": true
         },
-        "install_path": "C:\\Users\\HeuJung\\htdocs\\g7_2",
-        "config_path": "C:\\Users\\HeuJung\\htdocs\\g7_2\\storage\\app/settings",
-        "log_path": "C:\\Users\\HeuJung\\htdocs\\g7_2\\storage\\logs",
-        "upload_path": "C:\\Users\\HeuJung\\htdocs\\g7_2\\storage\\app/public",
+        "install_path": "C:\\Users\\HeuJung\\htdocs\\g7",
+        "config_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\app/settings",
+        "log_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\logs",
+        "upload_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\app/public",
         "php_extensions": {
             "required": {
                 "openssl": true,
@@ -1066,13 +1102,13 @@ HTTP/1.1 200
             "write": {
                 "host": "localhost",
                 "port": 3306,
-                "database": "g7_2",
-                "username": "g7_2"
+                "database": "g7",
+                "username": "g7"
             },
             "read": []
         },
         "timezone": "UTC",
-        "server_time": "2026-08-04 12:53:55"
+        "server_time": "2026-08-13 05:00:24"
     }
 }
 ```
@@ -1091,6 +1127,245 @@ HTTP/1.1 200
 서버 실행 환경 정보를 한 번에 조회합니다. OS/웹서버/PHP/DB/Laravel/코어 버전, CPU·메모리·디스크 사용량, PHP 주요 설정값(memory_limit·max_execution_time·upload_max_filesize), 주요 경로, PHP 확장 로드 상태, DB 연결 구성 요약 등을 포함합니다. 관리자 시스템 정보 화면과 요구사항 점검용 진단 데이터로 사용됩니다.
 
 
+### GET /api/admin/settings/static-cache
+<!-- @generated:start:api.admin.settings.static-cache -->
+- **라우트명**: `api.admin.settings.static-cache`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@staticCacheStatus`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/static-cache HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| enabled | boolean | `true` | kill-switch(`G7_STATIC_CACHE`) 상태. `false` 면 게시하지 않고 모든 화면이 API 로 동작한다 |
+| publishable | boolean | `true` | 지금 이 설치에서 게시가 실제로 쓰이는지 — `enabled` 이고 운영 모드(`APP_ENV=production`)일 때만 `true`. 화면의 [지금 다시 만들기] 활성 조건 |
+| environment | string | `production` | 현재 앱 환경 |
+| version | integer | `1788656566` | 현재 확장 캐시 버전 (정적 게시 디렉토리 이름). 키가 없으면 새로 만들어 돌려주므로 항상 유효값 |
+| published | boolean | `true` | 현재 버전의 게시 완료(manifest 존재) 여부 |
+| files | integer | `714` | manifest 에 기록된 게시 파일 수 (미게시면 0) |
+| published_at | string\|null | `2026-09-06T01:02:49+00:00` | 마지막 게시 시각 (ISO 8601, 미게시면 `null`) |
+| tree_writable | boolean | `true` | 게시 트리(`public/build/ext`)에 쓸 수 있는지 — 없으면 부모에 만들 수 있는지 |
+| process_user | string | `www-data` | 웹 프로세스 계정명 (posix 미지원 환경은 `unknown`). 게시 산출물의 소유자가 될 계정 |
+| failure | object\|null | `null` | 최근 게시 실패 마커 `{version, at, reason, count, message}`. `reason` 은 `parent_not_writable` / `write_failed` / `lock_unavailable` |
+| retained_versions | array | `[1788171201,1788656566]` | 게시 루트에 남아 있는 버전 디렉토리 목록 (오름차순). 정상은 현재 + 직전 1개 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "초기 화면 정적 파일 상태를 불러왔습니다.",
+    "data": {
+        "enabled": true,
+        "publishable": true,
+        "environment": "production",
+        "version": 1788656566,
+        "published": true,
+        "files": 714,
+        "published_at": "2026-09-06T01:02:49+00:00",
+        "tree_writable": true,
+        "process_user": "www-data",
+        "failure": null,
+        "retained_versions": [
+            1788171201,
+            1788656566
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+부트스트랩 리소스 정적 게시(초기 화면 정적 파일)의 상태를 돌려줍니다. 판정은 서비스 한 곳이 소유하며 CLI `php artisan ext-static:status` 와 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」 카드가 같은 값을 소비합니다. 읽기 전용이며 입력이 없습니다.
+
+`publishable` 이 `false` 이면 게시가 쓰이지 않는 환경(kill-switch 꺼짐 또는 비프로덕션)이라 화면은 [지금 다시 만들기] 를 비활성으로 두고 그 이유를 안내합니다. `failure` 는 게시가 거듭 실패했을 때만 채워지며, 대시보드 알림과 같은 마커를 읽습니다. 상세: [static-asset-publishing.md](../static-asset-publishing.md) "5-1. 관리자 화면에서의 수동 복구".
+
+
+### POST /api/admin/settings/static-cache/republish
+<!-- @generated:start:api.admin.settings.static-cache.republish -->
+- **라우트명**: `api.admin.settings.static-cache.republish`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@republishStaticCache`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/static-cache/republish HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 — 아래 4개 + `GET /api/admin/settings/static-cache` 의 상태 보고서 필드 전부._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| republished | boolean | `true` | 새 버전 게시가 완료됐는지. `false` 여도 HTTP 200 으로 응답한다 — 게시 실패는 요청 처리 실패가 아니라 진단 결과다 (사이트는 API 폴백으로 정상) |
+| version_changed | boolean | `true` | 캐시 버전이 이전과 달라졌는지. 같은 초에 연속 호출하면 `false` 일 수 있으나 내용은 강제로 다시 만들어진다 |
+| previous_version | integer | `1788656566` | 호출 전 캐시 버전 |
+| reason | string\|null | `null` | `republished=false` 일 때의 사유. `disabled`(kill-switch 꺼짐) / `not_production`(비프로덕션 — 이 둘은 버전을 올리지 않는다) / 실패 마커 사유(`parent_not_writable` · `write_failed` · `lock_unavailable`) / `publish_failed` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "초기 화면 정적 파일을 다시 만들었습니다.",
+    "data": {
+        "republished": true,
+        "version_changed": true,
+        "previous_version": 1788656566,
+        "reason": null,
+        "enabled": true,
+        "publishable": true,
+        "environment": "production",
+        "version": 1788657022,
+        "published": true,
+        "files": 714,
+        "published_at": "2026-09-06T01:10:22+00:00",
+        "tree_writable": true,
+        "process_user": "www-data",
+        "failure": null,
+        "retained_versions": [
+            1788656566,
+            1788657022
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+초기 화면 정적 파일을 지금 다시 만듭니다(관리자 수동 복구). 확장 캐시 버전을 올리고 현재 버전을 **강제** 재게시하므로, 같은 초에 다시 호출해도 내용을 새로 만듭니다. 캐시 버전은 만료로 재생성되지 않으므로(영구 번호) 재게시 트리거가 빠진 상태의 안전망이 이 엔드포인트입니다 — 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기] 와 대시보드 「초기 화면 파일 생성 실패」 알림의 [다시 만들기] 가 호출합니다.
+
+게시가 쓰이지 않는 환경(`publishable=false`)에서는 버전을 올리지 않고 `republished=false` + `reason` 으로 돌아옵니다. 게시 실패도 HTTP 200 으로 돌아오며(연결 테스트·드라이버 테스트와 같은 규약) 실패 마커가 `failure` 에 실립니다.
+
+715파일·40MB 복사와 확장 번들 재병합이 요청 안에서 동기로 수행됩니다. 서버는 실행 시간을 게시 락 TTL(300초)만큼 확보하고 클라이언트가 끊어도 게시를 끝내지만, FPM·nginx 타임아웃이 그보다 짧으면 응답이 먼저 끊길 수 있습니다 — 그 경우에도 게시는 계속되므로 상태 조회로 결과를 확인합니다.
+
+
+### GET /api/admin/settings/trusted-proxy
+<!-- @generated:start:api.admin.settings.trusted-proxy -->
+- **라우트명**: `api.admin.settings.trusted-proxy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@trustedProxy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/trusted-proxy HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| forwarded_headers | array | `["X-Forwarded-For","X-Forwarded-Proto"]` | 이 요청이 수신 중인 `X-Forwarded-*` 계열 헤더 이름 목록. 비어 있으면 앞단에 프록시가 없는 직접 노출 구성이다 |
+| trusted_configured | boolean | `false` | `TRUSTED_PROXIES` 가 지정되어 있는지. 빈 문자열은 미설정과 같게 판정된다 |
+| configured_proxies | string\|null | `null` | 지정된 신뢰 프록시 값 (미설정이면 `null`) |
+| is_secure | boolean\|null | `false` | 요청이 HTTPS 로 인식되었는지. 요청이 없는 맥락에서는 `null` |
+| client_ip | string\|null | `10.0.0.5` | 방문자 IP 로 인식된 값. 신뢰 프록시가 없으면 프록시 자신의 주소가 된다 |
+| remote_addr | string\|null | `10.0.0.5` | 직전 호출 IP(`REMOTE_ADDR`). `client_ip` 와 같으면서 `forwarded_headers` 가 비어 있지 않으면 모든 방문자가 한 사람으로 기록되고 있는 상태다 |
+| status | string | `warning` | 진단 결과. `warning`(프록시 헤더 수신 중 + 신뢰 프록시 미설정) / `ok` / `not_applicable`(요청이 없는 맥락) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "forwarded_headers": [
+            "X-Forwarded-For",
+            "X-Forwarded-Proto"
+        ],
+        "trusted_configured": false,
+        "configured_proxies": null,
+        "is_secure": false,
+        "client_ip": "10.0.0.5",
+        "remote_addr": "10.0.0.5",
+        "status": "warning"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+리버스 프록시 뒤에서 구동 중인지, 그리고 신뢰할 프록시가 지정되어 있는지를 진단합니다. **읽기 전용이며 대응하는 쓰기 엔드포인트가 없습니다** — 값은 `.env` 의 `TRUSTED_PROXIES` 로만 변경합니다.
+
+판정식은 "HTTPS 인식 실패" 가 아니라 `forwarded_headers 가 비어 있지 않음 AND trusted_configured 가 거짓` 입니다. HTTP 전용 사이트가 프록시 뒤에 있는 구성에서는 혼합 콘텐츠 차단이 없어 화면이 정상으로 보이지만, 방문자 IP 기록·통보 IP 화이트리스트·로그인 시도 제한은 그대로 어긋나기 때문입니다.
+
+같은 판정을 관리자 대시보드 알림, 환경설정 > 고급 화면, 설치 마법사, `php artisan trusted-proxy:status` 가 공유합니다. 설정 방법과 도입 시 후속 조치는 [reverse-proxy.md](../reverse-proxy.md) 를 참고하세요.
+
+
 ### POST /api/admin/settings/test-driver
 <!-- @generated:start:api.admin.settings.test-driver -->
 - **라우트명**: `api.admin.settings.test-driver`
@@ -1107,10 +1382,12 @@ HTTP/1.1 200
 | queue_driver | body | string | 아니오 | — | 큐 드라이버 (sync/database/redis) |
 | websocket_enabled | body | boolean | 아니오 | — | WebSocket 사용 여부 |
 | s3_bucket | body | string | 아니오 | max 255 | S3 버킷명 |
-| s3_region | body | string | 아니오 | — | S3 리전 |
+| s3_region | body | string | 아니오 | max 64, 소문자 영숫자·하이픈 (`^[a-z0-9-]+$`) | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`) |
 | s3_access_key | body | string | 아니오 | max 255 | S3 액세스 키 |
 | s3_secret_key | body | string | 아니오 | max 255 | S3 시크릿 키 |
-| s3_url | body | string | 아니오 | max 500 | S3 엔드포인트 URL |
+| s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 연결 테스트에는 사용되지 않음 |
+| s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — 테스트 시 실제 아웃바운드 대상에 반영 (S3 호환 스토리지용) |
+| s3_use_path_style | body | boolean | 아니오 | — | S3 path-style 주소 사용 여부 (MinIO 등) |
 | redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 |
 | redis_port | body | integer | 아니오 | min 1, max 65535 | Redis 포트 번호 |
 | redis_password | body | string | 아니오 | max 255 | Redis 비밀번호 |
@@ -1118,9 +1395,18 @@ HTTP/1.1 200
 | memcached_host | body | string | 아니오 | max 255 | Memcached 호스트 주소 |
 | memcached_port | body | integer | 아니오 | min 1, max 65535 | Memcached 포트 번호 |
 | websocket_app_key | body | string | 아니오 | max 255 | WebSocket 앱 키 |
-| websocket_host | body | string | 아니오 | max 255 | WebSocket 호스트 주소 |
-| websocket_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 포트 번호 |
-| websocket_scheme | body | string | 아니오 | — | WebSocket 스킴 (http/https) |
+| websocket_host | body | string | 아니오 | max 255 | WebSocket 클라이언트(브라우저 접속) 호스트 주소 |
+| websocket_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 클라이언트 포트 번호 |
+| websocket_scheme | body | string | 아니오 | — | WebSocket 클라이언트 스킴 (http/https) |
+| websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버(백엔드 발송용) 호스트 주소 — 미입력 시 클라이언트 값으로 폴백 |
+| websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 — 미입력 시 클라이언트 값으로 폴백 |
+| websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https) — 미입력 시 클라이언트 값으로 폴백 |
+
+> WebSocket 테스트는 클라이언트/서버 양측 endpoint 를 모두 probe 합니다. 백엔드 broadcast 는 서버 endpoint 를 사용하므로, 서버 endpoint 실패 시 별도 메시지(`settings.websocket_server_test_failed`)로 구분 보고됩니다.
+
+> S3 테스트는 Flysystem 어댑터(`league/flysystem-aws-s3-v3`) 존재를 선검사하며, `s3_endpoint`/`s3_use_path_style` 이 실제 아웃바운드 대상에 반영됩니다.
+
+> 사용 불능 드라이버(어댑터 클래스·PHP 확장 부재)는 저장/테스트 모두 422 (`validation.settings.driver_unusable`) 로 거부됩니다.
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_driver_connection_validation_rules`).
 
@@ -1144,6 +1430,8 @@ Content-Type: application/json
     "s3_access_key": "예시값",
     "s3_secret_key": "예시값",
     "s3_url": "https://example.com",
+    "s3_endpoint": "예시값",
+    "s3_use_path_style": true,
     "redis_host": "예시값",
     "redis_port": 1,
     "redis_password": "Password123!",
@@ -1153,7 +1441,10 @@ Content-Type: application/json
     "websocket_app_key": "예시값",
     "websocket_host": "예시값",
     "websocket_port": 1,
-    "websocket_scheme": "예시값"
+    "websocket_scheme": "예시값",
+    "websocket_server_host": "예시값",
+    "websocket_server_port": 1,
+    "websocket_server_scheme": "예시값"
 }
 ```
 
@@ -1194,7 +1485,7 @@ _단건 응답: `data` 객체의 필드 (DriverConnectionTester::testAll() 산�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 테스트 실행 중 예외가 발생한 경우 (`settings.driver_test_error`) |
 
@@ -1203,6 +1494,79 @@ _단건 응답: `data` 객체의 필드 (DriverConnectionTester::testAll() 산�
 **설명**
 
 폼에 입력한 드라이버 접속 정보(S3·Redis·Memcached·Websocket 등)로 실제 연결을 시도해 결과를 반환합니다. 설정을 저장하기 전에 접속 정보가 유효한지 확인하는 용도입니다. 모든 테스트 통과 시 성공 메시지, 일부 실패 시에도 HTTP 성공 응답으로 항목별 결과(`all_passed=false` 포함)를 함께 반환합니다.
+
+
+### POST /api/admin/settings/test-outbound-proxy
+<!-- @generated:start:api.admin.settings.test-outbound-proxy -->
+- **라우트명**: `api.admin.settings.test-outbound-proxy`
+- **컨트롤러**: `AppHttpControllersApiAdminSettingsController@testOutboundProxy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| outbound_proxy | body | string | 예 | max 500, 스킴 `http`/`https`/`socks4`/`socks4a`/`socks5`/`socks5h` | 검사할 프록시 주소 |
+| outbound_proxy_bypass | body | array | 아니오 | — | 프록시를 경유하지 않을 호스트 목록 |
+| outbound_proxy_bypass.* | body | string | 아니오 | max 255 | 프록시 예외 호스트 |
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/test-outbound-proxy HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "outbound_proxy": "socks5h://127.0.0.1:1080",
+    "outbound_proxy_bypass": ["internal.example.com"]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| success | boolean | `true` | 프록시를 거쳐 외부에 도달했는지 여부. `false` 여도 HTTP 200 으로 응답한다 — 연결 실패는 요청 처리 실패가 아니라 진단 결과다 |
+| egress_ip | string|null | `203.0.113.9` | 프록시를 거쳤을 때 상대편에 보이는 출발지 IP. 외부 서비스에 등록할 값이며 실패 시 `null` |
+| elapsed_ms | integer | `512` | 검사에 걸린 시간 (밀리초) |
+| error | string|null | `cURL error 7: Failed to connect` | 실패 시에만 채워지는 원인 원문 (관리자 진단용) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "프록시 연결에 성공했습니다. 외부 서비스에는 이 IP 로 보입니다.",
+    "data": {
+        "success": true,
+        "message_key": "settings.outbound_proxy_test_success",
+        "egress_ip": "203.0.113.9",
+        "elapsed_ms": 512,
+        "error": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+입력한 프록시로 외부에 연결해 보고, 성공하면 그 프록시를 거쳤을 때 상대편에 보이는 출발지 IP 를 함께 반환합니다. 이 IP 는 운영자가 결제사·외부 서비스의 허용 목록에 등록해야 하는 값이라, 설정을 저장하기 전에 확인할 수 있도록 제공합니다.
+
+검사 대상은 **이번 요청이 제출한 값**입니다. 저장된 설정이나 전역 프록시 옵션을 보지 않으므로, 저장 전에도 그대로 확인할 수 있고 이 호출이 다른 요청의 경로를 바꾸지도 않습니다.
+
+조회 대상은 `config('core.outbound_proxy.egress_lookup_urls')` 가 소유하며 순차 시도합니다. 목록을 비우면 도달성만 확인하고 IP 는 보고하지 않습니다(폐쇄망 대응).
 
 
 ### POST /api/admin/settings/test-mail
@@ -1288,7 +1652,7 @@ _단건 응답: `data` 객체의 필드 (발송 성공 시에만 반환)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 발송 실패 시 — `message` 는 `테스트 메일 발송에 실패했습니다.`, `error` 에 원본 예외 메시지(SMTP 인증 실패·연결 거부 등)가 담김 |
 
@@ -1407,7 +1771,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | --- | --- | --- |
 | 400 | Bad Request | 저장이 수행되지 않은 경우 (`settings.update_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 저장 중 예외가 발생한 경우 (`settings.update_error`) |

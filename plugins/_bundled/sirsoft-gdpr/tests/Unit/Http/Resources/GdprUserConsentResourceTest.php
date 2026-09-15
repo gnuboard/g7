@@ -19,7 +19,7 @@ class GdprUserConsentResourceTest extends PluginTestCase
     /**
      * 주어진 동의 레코드를 Resource 배열로 변환합니다.
      *
-     * @param GdprUserConsent $consent 대상 동의 레코드
+     * @param  GdprUserConsent  $consent  대상 동의 레코드
      * @return array<string, mixed>
      */
     private function toArray(GdprUserConsent $consent): array
@@ -66,7 +66,7 @@ class GdprUserConsentResourceTest extends PluginTestCase
 
     public function test_rejected_optional_maps_to_rejected_status_with_no_date_label(): void
     {
-        // PO 결정(2026-07-20) — 날짜/라벨은 "동의한 항목만" 노출. 거부는 상태만 rejected 로 내려주고
+        // 프로젝트 결정(2026-07-20) — 날짜/라벨은 "동의한 항목만" 노출. 거부는 상태만 rejected 로 내려주고
         // status_label·status_at_formatted 는 null (프론트가 날짜 줄을 렌더하지 않음).
         $consent = new GdprUserConsent([
             'consent_key' => 'cookie_analytics',

@@ -39,7 +39,7 @@ class GdprConsentLogResource extends BaseApiResource
                 'id' => $this->user->id,
                 'uuid' => $this->user->uuid,
                 'name' => $this->user->name,
-                'email' => $this->user->email,
+                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ] : null),
         ];
     }

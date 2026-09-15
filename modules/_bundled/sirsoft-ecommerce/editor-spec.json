@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "moduleId": "sirsoft-ecommerce",
   "version": "1.0.0",
-  "description": "레이아웃 편집기 스펙 — 이커머스 모듈 도메인 sampleData/sampleGlobal/states. admin 레이아웃 data_source ID 전수 스캔 기반 도메인 ID 28종(상품·주문·브랜드·쿠폰·배송정책·정산·설정 등) byDataSourceId + 사용자 페이지(템플릿 렌더) byEndpointPattern. 공용 인프라(roles/availableChannels/identityProviders/ecommerceIdentity*/ecommerceNotificationDefinitions)는 admin 템플릿 스펙·코어 프리셋 폴백이 커버.",
+  "description": "이커머스 모듈 레이아웃 편집기 스펙 — 관리자·사용자 상점 화면의 프리뷰 샘플과 페이지 상태. 공용 인프라(roles·availableChannels·identityProviders 등)는 관리자 템플릿 스펙과 코어 기본값이 커버한다.",
   "actionRecipes": {
     "comment": "이커머스 모듈 소유 친화 액션 레시피. 코어 시드 위에 module 단계로 병합(__source:{kind:module,id:sirsoft-ecommerce}, 편집기 〔이커머스〕 배지). 라벨은 모듈 격리 네임스페이스($t:sirsoft-ecommerce.editor.action.*) — 편집기 t()가 모듈 lang 통짜 ko.json/en.json 의 editor.action 을 sirsoft-ecommerce.editor.action 으로 해석한다(코어/템플릿 editor 와 격리). 결제(PG) 진입은 커머스 도메인이라 코어가 아닌 모듈이 소유한다(provider-agnostic — 핸들러명을 백엔드 응답값으로 받음).",
     "requestPgPayment": {
@@ -99,82 +99,238 @@
   "sampleData": {
     "comment": "실제 모듈 레이아웃 data_source ID(admin: products/categories/orders/order/reviews 등) + 사용자 페이지(템플릿이 렌더, /api/modules/sirsoft-ecommerce/* 호출) byEndpointPattern. 계획서 추정과 실제 ID 차이 반영(데이터소스가 SSoT).",
     "byDataSourceId": {
-      "transactions": {
-        "comment": "관리자 마일리지 내역 (admin_ecommerce_mileage_transaction_index.json — {{transactions?.data?.data}} 반복).",
-        "data": {
-          "data": [
-            {
-              "row_number": 1,
-              "id": 100,
-              "user_id": 5,
-              "currency": "KRW",
-              "type": "admin_earn",
-              "type_label": "관리자 지급",
-              "admin_badge_group": "earn",
-              "user_display_category": "적립",
-              "amount": 10000,
-              "amount_formatted": "10,000",
-              "remaining_amount": 10000,
-              "balance_after": 50000,
-              "description": "신규 가입 보너스",
-              "memo": "환영 포인트",
-              "expires_at": "2027-06-03",
-              "expires_at_formatted": "2027-06-03",
-              "created_at": "2026-05-28T14:30:00Z",
-              "created_at_date": "2026-05-28",
-              "is_earning": true,
-              "expired_amount": 0,
-              "expiry_state": "active",
-              "can_edit_expiry": true,
-              "abilities": {
-                "can_manage": true,
-                "can_edit": true
-              }
-            },
-            {
-              "row_number": 2,
-              "id": 99,
-              "user_id": 5,
-              "currency": "KRW",
-              "type": "purchase_use",
-              "type_label": "구매 사용",
-              "admin_badge_group": "use",
-              "user_display_category": "사용",
-              "amount": -3000,
-              "amount_formatted": "-3,000",
-              "remaining_amount": 0,
-              "balance_after": 47000,
-              "description": "주문 결제 사용",
-              "memo": null,
-              "expires_at": null,
-              "expires_at_formatted": null,
-              "created_at": "2026-05-29T09:10:00Z",
-              "created_at_date": "2026-05-29",
-              "is_earning": false,
-              "expired_amount": 0,
-              "expiry_state": "none",
-              "can_edit_expiry": false,
-              "abilities": {
-                "can_manage": true,
-                "can_edit": false
-              }
+        "wishlists": {
+            "data": {
+                "data": [
+                    {
+                        "id": 7001,
+                        "member": {
+                            "uuid": "00000000-0000-4000-8000-000000000101",
+                            "name": "김서연",
+                            "email": "seoyeon@example.com",
+                            "is_withdrawn": false
+                        },
+                        "product": {
+                            "id": 9101,
+                            "name": "무선 블루투스 이어폰",
+                            "display_status": "visible",
+                            "display_status_label": "노출",
+                            "sales_status": "on_sale",
+                            "sales_status_label": "판매중"
+                        },
+                        "created_at": "2026-09-12 11:04"
+                    },
+                    {
+                        "id": 7002,
+                        "member": {
+                            "uuid": "00000000-0000-4000-8000-000000000102",
+                            "name": "박지훈",
+                            "email": "jihun@example.com",
+                            "is_withdrawn": false
+                        },
+                        "product": {
+                            "id": 9102,
+                            "name": "한정판 머그컵",
+                            "display_status": "hidden",
+                            "display_status_label": "숨김",
+                            "sales_status": "on_sale",
+                            "sales_status_label": "판매중"
+                        },
+                        "created_at": "2026-09-11 16:40"
+                    },
+                    {
+                        "id": 7003,
+                        "member": {
+                            "uuid": "00000000-0000-4000-8000-000000000103",
+                            "name": "탈퇴한 회원",
+                            "email": null,
+                            "is_withdrawn": true
+                        },
+                        "product": {
+                            "id": 9103,
+                            "name": "캠핑용 랜턴",
+                            "display_status": "visible",
+                            "display_status_label": "노출",
+                            "sales_status": "suspended",
+                            "sales_status_label": "판매중지"
+                        },
+                        "created_at": "2026-09-02 08:12"
+                    }
+                ],
+                "abilities": {
+                    "can_manage": true
+                },
+                "pagination": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 20,
+                    "total": 3,
+                    "from": 1,
+                    "to": 3,
+                    "has_more_pages": false
+                }
             }
-          ],
-          "pagination": {
-            "current_page": 1,
-            "last_page": 1,
-            "per_page": 20,
-            "total": 2,
-            "from": 1,
-            "to": 2,
-            "has_more_pages": false
-          },
-          "abilities": {
-            "can_manage": true
-          },
-          "currencies": ["KRW"]
-        }
-      },
+        },
+        "carts": {
+            "data": {
+                "data": [
+                    {
+                        "id": 8001,
+                        "member": {
+                            "uuid": "00000000-0000-4000-8000-000000000101",
+                            "name": "김서연",
+                            "email": "seoyeon@example.com",
+                            "is_withdrawn": false
+                        },
+                        "product": {
+                            "id": 9101,
+                            "name": "무선 블루투스 이어폰",
+                            "display_status": "visible",
+                            "display_status_label": "노출",
+                            "sales_status": "on_sale",
+                            "sales_status_label": "판매중"
+                        },
+                        "option_name": "화이트 / 1개",
+                        "quantity": 1,
+                        "owner": "member",
+                        "guest_key": null,
+                        "created_at": "2026-09-13 09:22"
+                    },
+                    {
+                        "id": 8002,
+                        "member": {
+                            "uuid": "00000000-0000-4000-8000-000000000102",
+                            "name": "박지훈",
+                            "email": "jihun@example.com",
+                            "is_withdrawn": false
+                        },
+                        "product": {
+                            "id": 9102,
+                            "name": "한정판 머그컵",
+                            "display_status": "hidden",
+                            "display_status_label": "숨김",
+                            "sales_status": "on_sale",
+                            "sales_status_label": "판매중"
+                        },
+                        "option_name": null,
+                        "quantity": 3,
+                        "owner": "member",
+                        "guest_key": null,
+                        "created_at": "2026-09-12 19:55"
+                    },
+                    {
+                        "id": 8003,
+                        "member": null,
+                        "product": {
+                            "id": 9103,
+                            "name": "캠핑용 랜턴",
+                            "display_status": "visible",
+                            "display_status_label": "노출",
+                            "sales_status": "suspended",
+                            "sales_status_label": "판매중지"
+                        },
+                        "option_name": "블랙 / 2개",
+                        "quantity": 2,
+                        "owner": "guest",
+                        "guest_key": "a3f6b7c1",
+                        "created_at": "2026-09-12 07:31"
+                    }
+                ],
+                "abilities": {
+                    "can_manage": true
+                },
+                "pagination": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 20,
+                    "total": 3,
+                    "from": 1,
+                    "to": 3,
+                    "has_more_pages": false
+                }
+            }
+        },
+        "inquiries": {
+            "data": {
+                "data": [
+                    {
+                        "id": 6001,
+                        "member": {
+                            "uuid": "00000000-0000-4000-8000-000000000101",
+                            "name": "김서연",
+                            "email": "seoyeon@example.com",
+                            "is_withdrawn": false
+                        },
+                        "product": {
+                            "id": 9101,
+                            "name": "무선 블루투스 이어폰",
+                            "display_status": "visible",
+                            "display_status_label": "노출",
+                            "sales_status": "on_sale",
+                            "sales_status_label": "판매중"
+                        },
+                        "content_excerpt": "색상이 사진과 동일한가요? 실물이 더 어둡다는 후기가 있어서요.",
+                        "is_answered": false,
+                        "answered_at": null,
+                        "created_at": "2026-09-13 13:40"
+                    },
+                    {
+                        "id": 6002,
+                        "member": {
+                            "uuid": "00000000-0000-4000-8000-000000000102",
+                            "name": "박지훈",
+                            "email": "jihun@example.com",
+                            "is_withdrawn": false
+                        },
+                        "product": {
+                            "id": 9102,
+                            "name": "한정판 머그컵",
+                            "display_status": "hidden",
+                            "display_status_label": "숨김",
+                            "sales_status": "on_sale",
+                            "sales_status_label": "판매중"
+                        },
+                        "content_excerpt": "재입고 예정이 있는지 궁금합니다.",
+                        "is_answered": true,
+                        "answered_at": "2026-09-12 10:15",
+                        "created_at": "2026-09-11 22:07"
+                    },
+                    {
+                        "id": 6003,
+                        "member": {
+                            "uuid": "00000000-0000-4000-8000-000000000103",
+                            "name": "탈퇴한 회원",
+                            "email": null,
+                            "is_withdrawn": true
+                        },
+                        "product": {
+                            "id": 9103,
+                            "name": "캠핑용 랜턴",
+                            "display_status": "visible",
+                            "display_status_label": "노출",
+                            "sales_status": "suspended",
+                            "sales_status_label": "판매중지"
+                        },
+                        "content_excerpt": null,
+                        "is_answered": false,
+                        "answered_at": null,
+                        "created_at": "2026-09-01 17:26"
+                    }
+                ],
+                "abilities": {
+                    "can_manage": true
+                },
+                "pagination": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 20,
+                    "total": 3,
+                    "from": 1,
+                    "to": 3,
+                    "has_more_pages": false
+                }
+            }
+        },
       "products": {
         "data": {
           "abilities": {

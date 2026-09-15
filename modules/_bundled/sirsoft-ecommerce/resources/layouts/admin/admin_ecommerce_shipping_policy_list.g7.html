@@ -1,0 +1,140 @@
+<!-- 배송정책 목록 (운영자) — 검색·필터·정렬·쪽수를 전부 URL 쿼리에 싣는 목록 화면이다. 화면을 다시
+  열거나 뒤로 가도 같은 조건이 재현되어야 하므로 상태를 _local 에만 두지 않고, 진입 시 `<init>` 이
+  쿼리를 필터 입력값으로 되돌려 담는다. -->
+<layout name="admin_ecommerce_shipping_policy_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.shipping_policy.title"/>
+  <!-- 목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다 — 필터·정렬·쪽수 변경이 모두 navigate 로 처리되는 이유다 -->
+  <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" shipping_methods="{{query['shipping_methods[]']}}" charge_policies="{{query['charge_policies[]']}}" countries="{{query['countries[]']}}" is_active="{{query.is_active}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 쇼핑몰 설정 — 기본 통화·기본 배송정책 같은 표시 기준을 목록이 함께 읽는다 -->
+  <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <init-local>
+    <field name="filter">
+      <field name="searchType" value="name"/>
+      <field name="search" value=""/>
+      <field name="shipping_methods" :value="[]"/>
+      <field name="charge_policies" :value="[]"/>
+      <field name="countries" :value="[]"/>
+      <field name="is_active" value=""/>
+    </field>
+    <field name="selectedItems" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="sortBy" value="created_at_desc"/>
+    <field name="perPage" value="20"/>
+    <field name="bulkToggleValue" value=""/>
+  </init-local>
+  <init-global>
+    <field name="targetPolicy" :value="null"/>
+    <field name="targetDefaultPolicy" :value="null"/>
+    <field name="isDeleting" :value="false"/>
+    <field name="isBulkDeleting" :value="false"/>
+    <field name="isBulkToggling" :value="false"/>
+    <field name="isSettingDefault" :value="false"/>
+    <field name="bulkSelectedItems" :value="[]"/>
+    <field name="bulkToggleValue" value=""/>
+  </init-global>
+  <permissions>
+    <permission>sirsoft-ecommerce.shipping-policies.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>shipping_policies</wait-for>
+    <wait-for>ecommerce_settings</wait-for>
+  </transition-overlay>
+  <!-- 필터 적용 — 검색은 입력칸이 여럿이라 필터 조각·초기화 버튼이 이 액션 하나를 공유한다. 빈 값은 undefined 로 떨어뜨려 주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다 -->
+  <action name="searchShippingPolicies">
+    <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true" :replace="true" transition_overlay_target="shipping_policy_datagrid__body">
+      <query :page="1" search="{{_local.filter.search || undefined}}" shipping_methods[]="{{_local.filter.shipping_methods?.length > 0 ? _local.filter.shipping_methods : undefined}}" charge_policies[]="{{_local.filter.charge_policies?.length > 0 ? _local.filter.charge_policies : undefined}}" countries[]="{{_local.filter.countries?.length > 0 ? _local.filter.countries : undefined}}" is_active="{{_local.filter.is_active || undefined}}"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="filter">
+          <field name="search" value="{{query.search || ''}}"/>
+          <field name="shipping_methods" value="{{query['shipping_methods[]'] || []}}"/>
+          <field name="charge_policies" value="{{query['charge_policies[]'] || []}}"/>
+          <field name="countries" value="{{query['countries[]'] || []}}"/>
+          <field name="is_active" value="{{query.is_active || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="shipping_policy_list_content" class="admin-page-content">
+      <div data-ref="page_header" class="flex-between mb-6">
+        <div>
+          <h1 class="page-title">$t:sirsoft-ecommerce.admin.shipping_policy.title</h1>
+          <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.shipping_policy.description</p>
+        </div>
+        <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{shipping_policies?.data?.abilities?.can_create !== true}}">
+          <on type="click">
+            <!-- 새 배송정책 등록. 등록을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
+            <navigate path="/admin/ecommerce/shipping-policies/create" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="plus" size="sm"/>
+          <span>$t:sirsoft-ecommerce.admin.shipping_policy.add</span>
+        </button>
+      </div>
+      <include src="partials/admin_ecommerce_shipping_policy_list/_partial_filter.g7.html"/>
+      <div data-ref="data_table_section" class="mt-6">
+        <include src="partials/admin_ecommerce_shipping_policy_list/_partial_bulk_actions.g7.html"/>
+        <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+          <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.pagination.total|count={{shipping_policies?.data?.pagination?.total || 0}}</span>
+          <div class="flex-center gap-3">
+            <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+              <options>
+                <option value="created_at_desc">$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_desc</option>
+                <option value="created_at_asc">$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_asc</option>
+                <option value="name_asc">$t:sirsoft-ecommerce.admin.shipping_policy.sort.name_asc</option>
+                <option value="name_desc">$t:sirsoft-ecommerce.admin.shipping_policy.sort.name_desc</option>
+                <option value="sort_order_asc">$t:sirsoft-ecommerce.admin.shipping_policy.sort.sort_order_asc</option>
+              </options>
+              <on type="change">
+                <!-- 선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`created_at_desc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다) -->
+                <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true" :replace="true" transition_overlay_target="shipping_policy_datagrid__body">
+                  <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <select name="perPage" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+              <options>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </options>
+              <on type="change">
+                <!-- 한 쪽에 담는 수가 달라지면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다 -->
+                <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true" :replace="true" transition_overlay_target="shipping_policy_datagrid__body">
+                  <query per_page="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+          </div>
+        </div>
+        <include src="partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 한 건 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_delete.g7.html"/>
+  <!-- 정책 복사 — 같은 조건의 정책을 조금만 바꿔 쓰는 일이 잦아 목록에서 바로 복제한다 -->
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_copy.g7.html"/>
+  <!-- 선택한 여러 건 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_bulk_delete.g7.html"/>
+  <!-- 선택한 여러 건의 사용 여부를 한꺼번에 켜고 끄기 -->
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_bulk_toggle.g7.html"/>
+  <!-- 기본 배송정책 지정 — 한 건만 가질 수 있어 기존 기본값이 함께 풀린다 -->
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_set_default.g7.html"/>
+</layout>

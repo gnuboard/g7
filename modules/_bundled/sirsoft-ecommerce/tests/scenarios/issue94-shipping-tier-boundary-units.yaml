@@ -1,0 +1,84 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   OrderCalculationServiceTest 가 charge_policy × boundary × unit_source 전 조합을,
+#   ShippingPolicyValidationMessageTest 가 저장 검증 매트릭스를 커버하며 green 이고,
+#   Playwright spec 이 관리자 저장 → 상점 장바구니 계산 경로를 종단으로 고정한다.
+feature: 배송비 구간 경계 포함 + 무게/부피 단위 환산 (공개 #94)
+
+description: |
+  구간별 배송비의 종료값은 포함(inclusive)이며, 매칭은 종료값 오름차순 사다리로 수행한다
+  (시작값은 표시 전용). 상품 옵션은 g/cm³ 로 저장되고 배송정책은 kg/L 로 설정되므로,
+  환산은 배송비 계산 지점 한 곳에서만 수행한다. 설정 오류로 계산이 조용히 0원이 되는
+  경우는 저장 시점에 422 로 차단하고, 런타임 잔여 경로는 경고 로그를 남긴다.
+
+axes:
+  charge_policy:
+    - range_quantity
+    - range_amount
+    - range_weight
+    - range_volume
+    - range_volume_weight
+    - per_weight
+    - per_volume
+    - per_volume_weight
+    - api
+    - conditional_free
+  boundary:
+    - below        # 구간 상한 미만
+    - at_max       # 구간 상한 정확히 (공개 #94 재현 지점)
+    - above        # 구간 상한 초과
+    - decimal      # 소수 경계 (2.5kg)
+    - empty_tiers  # 구간 없음
+  unit_source:
+    - g            # 상품 옵션 무게 저장 단위
+    - cm3          # 상품 옵션 부피 저장 단위
+    - quantity     # 수량 (환산 없음)
+    - amount       # 금액 (환산 없음)
+  tier_shape:
+    - inclusive    # 다음 min = max + 1 (관리자 화면 저장 형태)
+    - half_open    # 다음 min = max (기존 저장 데이터 형태)
+  config_validity:
+    - valid
+    - missing_tiers
+    - missing_unit_value
+    - missing_free_threshold
+    - middle_max_unlimited
+    - legacy_max_plus_one_on_continuous
+    - fractional_quantity_boundary
+    - zero_base_fee_on_api
+    - invalid_zipcode_format
+    - zero_unit_value        # 저장 규칙 신설 이전 데이터 / 시더 경로
+    - negative_unit_value
+
+effects:
+  - fee_matches_admin_promise            # 요약 문자열이 약속한 금액과 계산값 일치
+  - boundary_value_charged_not_free      # 상한 경계값이 무료배송으로 새지 않음
+  - unit_converted_kg_l                  # g→kg, cm³→L 환산이 1회만 수행됨
+  - volumetric_weight_compared_in_kg     # 실무게와 부피무게를 같은 단위로 비교
+  - decimal_base_fee_rounded             # 소수 기본배송비 절삭 대신 반올림
+  - extra_fee_multiplied_by_charge_units # 도서산간 곱이 수량이 아닌 배송 단위 수 기준
+  - api_negative_fee_falls_back          # 외부 API 음수 배송비 → 기본 배송비 폴백
+  - invalid_config_rejected_422          # 무음 0원을 만드는 설정은 저장 차단
+  - silent_zero_logged                   # 잔여 0원 경로는 경고 로그
+  - tier_min_derived_from_previous_max   # 화면에서 시작값 자동 파생 (읽기전용)
+  - range_unit_label_displayed           # 구간 입력에 정책별 단위(개/kg/L) 표기
+  - continuous_tier_min_normalized       # 업그레이드 스텝의 표시 정합 보정
+  - order_totals_backfilled              # 주문 총 무게/부피 백필
+  - unit_value_clamped_not_divided_by_zero # 0/음수 단위값이 계산을 죽이거나 금액을 뒤집지 않음
+  - upgrade_is_idempotent
+  - product_option_dimensions_round_trip # 옵션 무게/부피 응답 왕복
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ShippingPolicyEnumsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/ProductOptionResourceDimensionsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Database/Seeders/ShippingPolicySeederTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ShippingPolicyValidationMessageTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Upgrade/ShippingTierAndOrderTotalsBackfillTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/shippingPolicyFormHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicyFormLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/shipping-policy-tier-boundary.spec.ts

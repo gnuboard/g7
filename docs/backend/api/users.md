@@ -204,7 +204,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 사용자 관리 화면(`admin_user_list.json`)의 목록을 제공합니다. `filters` 로 이름/이메일 다중 검색(operator: like, eq, starts_with, ends_with), `date_filter`(all/week/month/custom)와 `start_date`/`end_date` 로 가입 기간 필터, `sort_by`/`sort_order` 로 정렬한다. 응답은 `data.data[]`(항목별 순번 `number` + 요약 필드)와 `data.pagination`(페이지 정보)에 더해 `data.statistics`(통계)와 `data.abilities`(컬렉션 레벨 권한)를 함께 반환한다. 기본값은 `per_page=15`, `page=1`, `sort_by=created_at`, `sort_order=desc`, `date_filter=all` 이다.
+관리자 사용자 관리 화면(`admin_user_list.g7.html`)의 목록을 제공합니다. `filters` 로 이름/이메일 다중 검색(operator: like, eq, starts_with, ends_with), `date_filter`(all/week/month/custom)와 `start_date`/`end_date` 로 가입 기간 필터, `sort_by`/`sort_order` 로 정렬한다. 응답은 `data.data[]`(항목별 순번 `number` + 요약 필드)와 `data.pagination`(페이지 정보)에 더해 `data.statistics`(통계)와 `data.abilities`(컬렉션 레벨 권한)를 함께 반환한다. 기본값은 `per_page=15`, `page=1`, `sort_by=created_at`, `sort_order=desc`, `date_filter=all` 이다.
 
 
 ### POST /api/admin/users
@@ -378,7 +378,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.users.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.users.create`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 사용자 생성 중 예외 발생 (`user.create_failed`, `errors.error` 에 예외 메시지) |
 
@@ -428,6 +428,8 @@ _단건 응답: `data` 객체의 필드 (UserService::bulkUpdateStatus() 반환�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | updated_count | integer | `3` | 실제로 상태가 변경된 사용자 수 (요청자 본인 제외 규칙 적용 후 갱신된 행 수) |
+| failed_count | integer | `1` | 처리하지 못한 사용자 수 (탈퇴 전환에서 관리자·수퍼관리자 등 차단 대상이 섞인 경우). 탈퇴 외 상태 전환은 항상 `0` |
+| failed_reasons | array\<string\> | `["관리자 계정은 탈퇴할 수 없습니다."]` | 처리하지 못한 사유 (중복 제거). 탈퇴 외 상태 전환은 항상 `[]` |
 
 **응답 예시**
 
@@ -440,7 +442,9 @@ HTTP/1.1 200
     "success": true,
     "message": ":count명의 사용자 상태가 변경되었습니다.",
     "data": {
-        "updated_count": 3
+        "updated_count": 3,
+        "failed_count": 0,
+        "failed_reasons": []
     }
 }
 ```
@@ -452,7 +456,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.users.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.users.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — 예: 요청자 본인 UUID 포함 시 `ExcludeCurrentUser` 위반) |
 | 500 | Internal Server Error | 일괄 변경 중 예외 발생 (`user.bulk_update_status_failed`) |
 
@@ -461,6 +465,10 @@ HTTP/1.1 200
 **설명**
 
 여러 사용자의 계정 상태를 한 번에 변경합니다. `ids` 는 대상 사용자 UUID 배열이며, `status` 는 `active`/`inactive`/`blocked`/`withdrawn`/`pending_verification`(UserStatus Enum 값) 중 하나이다. `ExcludeCurrentUser` 규칙으로 요청자 본인은 대상에서 제외된다. 목록 화면의 다중 선택 후 일괄 상태 변경에 사용한다.
+
+`status=withdrawn` 요청은 상태 컬럼만 바꾸지 않고 **건별로 정식 탈퇴 처리**를 수행한다 (익명화 + 연계 데이터 정리 + 탈퇴 훅). 회원이 직접 탈퇴한 경우와 결과가 같다. 관리자 역할을 가진 대상은 건너뛰고 `failed_count` 로 집계되며, 나머지 대상의 처리는 계속된다.
+
+전건이 차단되어도 응답은 200 이다. 소비자는 `updated_count` 와 `failed_count` 를 함께 읽어 결과를 판정해야 한다 — 200 만 보고 성공으로 안내하면 아무 일도 일어나지 않은 요청이 처리된 것으로 표시된다. 사유는 `failed_reasons` 로 전달되므로 그대로 노출하면 된다.
 
 
 ### POST /api/admin/users/check-email
@@ -1003,14 +1011,26 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "사용자가 성공적으로 삭제되었습니다.",
+    "data": null
+}
+```
+
+> 슈퍼 관리자 계정을 대상으로 하면 삭제되지 않고 `422`(`exceptions.cannot_delete_super_admin`)로 거부된다. 삭제는 CASCADE 에 의존하지 않고 연관 데이터를 명시적으로 정리한 뒤 수행되며, 정리 단계에서 실패하면 `422` 와 함께 `error.errors.general[0]` 에 상세 사유가 담긴다.
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.users.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.users.delete`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1019,6 +1039,8 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 **설명**
 
 지정한 사용자(경로 파라미터는 UUID 로 바인딩)를 삭제합니다. 슈퍼관리자 계정은 삭제할 수 없으며 시도 시 422(`exceptions.cannot_delete_super_admin`)를 반환한다. 그 외 삭제 실패 시에는 실패 상세 사유가 담긴 422 를, 나머지 오류는 500 을 반환한다. 삭제는 Service 계층에서 관련 데이터 정리와 훅을 거쳐 처리된다.
+
+삭제는 원자적으로 처리된다 — 역할 연결 해제·약관 동의 이력 삭제·토큰 삭제·계정 삭제가 하나의 트랜잭션이며, 마지막 삭제가 외래키 제약 등으로 실패하면 앞 단계도 전부 취소된다(연결만 끊긴 활성 계정이 남지 않는다). 아바타 파일 삭제는 커밋 후에 수행된다.
 
 
 ### GET /api/admin/users/{user}
@@ -1091,7 +1113,7 @@ _단건 응답: `data` 객체의 필드._
 | withdrawn_at | null | `null` | withdrawn 일시 |
 | blocked_at | null | `null` | blocked 일시 |
 | failed_login_attempts | integer | `0` | 연속 로그인 실패 횟수 |
-| locked_permanently | boolean | `false` | <!-- TODO: 설명 --> |
+| locked_permanently | boolean | `false` | 영구 잠금 여부. true 면 `locked_until` 과 무관하게 잠금이 유지되며, 해제는 성공 로그인 또는 관리자의 잠금 해제로만 이뤄진다 (잠금 시간 설정이 `0`= 무기한일 때 세워진다) |
 | locked_until | null | `null` | 계정 잠금 해제 시각 (NULL = 잠금 없음) |
 | is_locked | boolean | `false` | locked 여부 |
 | notify_post_complete | boolean | `false` | 게시글 작성 완료 알림 수신 여부 (게시판 모듈 알림 설정) |
@@ -1251,7 +1273,7 @@ HTTP/1.1 200
 
 **설명**
 
-특정 사용자의 상세 정보를 조회합니다(경로 파라미터는 UUID 로 바인딩). `withAdminInfo()` 를 통해 기본 필드에 더해 관리자 전용 필드(admin_memo, ip_address, withdrawn_at, blocked_at)와 관계형 데이터(modules, plugins, menus, roles, permissions, consents 및 개수 필드)를 함께 반환한다. `core.user.filter_resource_data` 필터로 확장이 자신의 필드(sirsoft-marketing 의 알림/동의 설정, sirsoft-ecommerce 의 마일리지/선호 통화·배송국 등)를 병합한다. 관리자 사용자 상세/수정 화면(`admin_user_detail.json`/`admin_user_form.json`)이 소비한다.
+특정 사용자의 상세 정보를 조회합니다(경로 파라미터는 UUID 로 바인딩). `withAdminInfo()` 를 통해 기본 필드에 더해 관리자 전용 필드(admin_memo, ip_address, withdrawn_at, blocked_at)와 관계형 데이터(modules, plugins, menus, roles, permissions, consents 및 개수 필드)를 함께 반환한다. `core.user.filter_resource_data` 필터로 확장이 자신의 필드(sirsoft-marketing 의 알림/동의 설정, sirsoft-ecommerce 의 마일리지/선호 통화·배송국 등)를 병합한다. 관리자 사용자 상세/수정 화면(`admin_user_detail.g7.html`/`admin_user_form.g7.html`)이 소비한다.
 
 
 ### PUT /api/admin/users/{user}
@@ -1426,7 +1448,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.users.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.users.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — 마지막 관리자 본인의 admin 역할 제거 시도 시 `user.last_admin_role_cannot_remove` 포함) |
 | 500 | Internal Server Error | 수정 중 예외 발생 (`user.update_failed`, `errors.error` 에 예외 메시지) |
@@ -1632,6 +1654,6 @@ HTTP/1.1 200
 
 **설명**
 
-타인의 공개 프로필을 인증 없이 조회합니다(경로 파라미터는 UUID 로 바인딩, `users/show.json` 이 소비). 사용자 상태에 따라 노출 필드가 달라진다 — active 는 name/avatar/bio/created_at 전체, inactive 는 bio 를 제외, blocked 는 avatar/bio/created_at 를 모두 제외한다. withdrawn 사용자는 이름을 익명 표기로 대체하고 `is_withdrawn=true` 로 반환하며, 미존재 사용자는 404(`user.not_found`)를 반환한다. 게시글 통계는 게시판 모듈 API 로 별도 조회한다.
+타인의 공개 프로필을 인증 없이 조회합니다(경로 파라미터는 UUID 로 바인딩, `users/show.g7.html` 이 소비). 사용자 상태에 따라 노출 필드가 달라진다 — active 는 name/avatar/bio/created_at 전체, inactive 는 bio 를 제외, blocked 는 avatar/bio/created_at 를 모두 제외한다. withdrawn 사용자는 이름을 익명 표기로 대체하고 `is_withdrawn=true` 로 반환하며, 미존재 사용자는 404(`user.not_found`)를 반환한다. 게시글 통계는 게시판 모듈 API 로 별도 조회한다.
 
 

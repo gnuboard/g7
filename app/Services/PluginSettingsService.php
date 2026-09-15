@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Extension\HookManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
+use App\Support\ExtensionSettingsMirror;
 use App\Support\SensitiveSettingMask;
 use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
@@ -150,10 +151,13 @@ class PluginSettingsService
      *
      * @param  string  $identifier  플러그인 식별자
      * @param  array<string, mixed>  $settings  저장할 설정 (검증 통과분)
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return bool 저장 성공 여부
      */
-    public function save(string $identifier, array $settings): bool
+    public function save(string $identifier, array $settings, ?string &$failureReason = null): bool
     {
+        $failureReason = null;
+
         // Before 훅
         HookManager::doAction('core.plugin_settings.before_save', $identifier, $settings);
 
@@ -163,6 +167,8 @@ class PluginSettingsService
         // 플러그인 인스턴스 확인
         $pluginInstance = $this->pluginManager->getPlugin($identifier);
         if (! $pluginInstance) {
+            $failureReason = __('plugins.errors.not_found', ['plugin' => $identifier]);
+
             return false;
         }
 
@@ -186,9 +192,18 @@ class PluginSettingsService
         // 파일에 저장
         $result = $this->saveSettingsToFile($identifier, $mergedSettings);
 
+        if (! $result && $failureReason === null) {
+            // 파일 쓰기 실패 — 스토리지 드라이버가 사유를 돌려주지 않으므로 일반 문구로 대체한다.
+            $failureReason = __('plugins.errors.unknown_error');
+        }
+
         // 캐시 초기화
         if ($result) {
             unset($this->settingsCache[$identifier]);
+
+            // 같은 프로세스의 config 미러도 즉시 다시 채운다 (공개이슈 #109) —
+            // 이 호출이 없으면 상주 프로세스가 저장 후에도 옛 값을 계속 읽는다.
+            app(ExtensionSettingsMirror::class)->refreshPlugin($identifier);
         }
 
         // After 훅
@@ -246,6 +261,10 @@ class PluginSettingsService
 
         // 캐시 초기화
         unset($this->settingsCache[$identifier]);
+
+        // 초기화도 값을 바꾸는 쓰기다 — 미러를 두면 같은 프로세스가 초기화 전 값을
+        // 계속 읽는다 (저장 경로와 동일 결함, 공개이슈 #109).
+        app(ExtensionSettingsMirror::class)->refreshPlugin($identifier);
 
         // After 훅
         HookManager::doAction('core.plugin_settings.after_reset', $identifier);

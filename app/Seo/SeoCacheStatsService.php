@@ -127,6 +127,10 @@ class SeoCacheStatsService
      */
     public function cleanup(int $daysToKeep = 30): int
     {
+        // 보존 기간 하한(1일)은 이 계층이 소유한다 — 파기는 되돌릴 수 없으므로
+        // 호출자마다 다시 막지 않고 실제로 지우는 경로에서 한 번 막는다.
+        $daysToKeep = max(1, $daysToKeep);
+
         $deleted = $this->statRepository->deleteOlderThan(Carbon::now()->subDays($daysToKeep));
 
         Log::info('[SEO] 캐시 통계 정리 완료', [

@@ -1214,7 +1214,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=upload_enabled_extensions_empty
      *
-     * @effects upload_enabled_empty_extensions_fails
+     * @effects upload_enabled_empty_extensions_fails, extensions_still_required_when_upload_enabled
      */
     public function test_update_matrix_upload_enabled_with_empty_extensions_fails(): void
     {
@@ -1255,7 +1255,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=upload_disabled_extensions_empty
      *
-     * @effects upload_disabled_empty_extensions_passes
+     * @effects upload_disabled_empty_extensions_passes, board_stays_editable
      */
     public function test_update_matrix_upload_disabled_with_empty_extensions_passes(): void
     {
@@ -1320,7 +1320,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=upload_disabled_extensions_empty
      *
-     * @effects upload_disabled_extensions_excluded_from_validated
+     * @effects upload_disabled_extensions_excluded_from_validated, extensions_excluded_when_upload_disabled
      */
     public function test_update_matrix_upload_disabled_excludes_extensions_from_validated(): void
     {
@@ -1346,7 +1346,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=new_display_hours_zero
      *
-     * @effects new_display_hours_zero_passes, new_display_hours_out_of_range_fails
+     * @effects new_display_hours_zero_passes, new_display_hours_out_of_range_fails, zero_accepted_on_update, negative_rejected, over_max_rejected
      *
      * @param  mixed  $value  new_display_hours 값
      * @param  bool  $shouldPass  통과 기대 여부
@@ -1386,7 +1386,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=new_display_hours_zero
      *
-     * @effects new_display_hours_zero_passes
+     * @effects new_display_hours_zero_passes, zero_accepted_on_store
      */
     public function test_store_request_new_display_hours_zero_passes(): void
     {
@@ -1503,7 +1503,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=zero_lower_bound_length_fields
      *
-     * @effects zero_lower_bound_length_fields_pass
+     * @effects zero_lower_bound_length_fields_pass, zero_accepted_on_settings
      *
      * @param  string  $field  basic_defaults 하위 필드명
      */

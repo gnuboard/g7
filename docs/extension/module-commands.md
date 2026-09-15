@@ -1,6 +1,6 @@
 # 모듈 Artisan 커맨드
 
-> **관련 문서**: [index.md](index.md) | [module-basics.md](module-basics.md) | [module-routing.md](module-routing.md)
+> **관련 문서**: [README.md](README.md) | [module-basics.md](module-basics.md) | [module-routing.md](module-routing.md)
 
 ---
 

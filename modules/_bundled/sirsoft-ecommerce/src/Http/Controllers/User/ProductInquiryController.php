@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Base\AuthBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateInquiryReplyRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateInquiryRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserInquiryListRequest;
@@ -76,15 +77,19 @@ class ProductInquiryController extends AuthBaseController
             $this->inquiryService->updateInquiry($inquiryId, $request->validated());
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.updated', ['id' => $inquiryId]);
-        } catch (\RuntimeException $e) {
-            // 서비스가 던지는 RuntimeException 은 생성 시점에 __() 로 번역된 사용자 문구다.
-            // 사유를 파라미터로 넘겨 실패 원인이 화면에 그대로 남게 한다.
+        } catch (ProductInquiryOperationException $e) {
+            // 실패 사유(문의 게시판 미설정 등)를 그대로 보여준다 — 일반 문구만 남기면
+            // 서버 기록을 봐야만 원인을 알 수 있다.
+            //
+            // 종전에는 `\RuntimeException` 을 잡았다. 서비스가 도메인 실패를 typed 로
+            // 승격한 뒤로 그 catch 에 남는 것은 인프라 예외뿐이었고, 그것까지 422 +
+            // 예외 원문으로 뭉갰다.
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.inquiries.operation_failed_reason',
                 422,
                 null,
-                ['reason' => $e->getMessage()]
+                ['reason' => __($e->getMessageKey(), $e->getMessageParams())]
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.update_failed', 500);
@@ -114,6 +119,17 @@ class ProductInquiryController extends AuthBaseController
             $this->inquiryService->deleteInquiry($inquiryId);
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.deleted', ['deleted' => true]);
+        } catch (ProductInquiryOperationException $e) {
+            // `deleteInquiry` 도 도메인 실패를 typed 로 던지는데 여기에는 그것을 구분하는
+            // catch 가 없어, 운영자가 고칠 수 있는 사유(문의 게시판 미설정)가 일반 500
+            // 문구로 나갔다. 형제 메서드(수정·답변)와 같은 폭으로 맞춘다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.inquiries.operation_failed_reason',
+                422,
+                null,
+                ['reason' => __($e->getMessageKey(), $e->getMessageParams())]
+            );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.delete_failed', 500);
         }
@@ -144,15 +160,19 @@ class ProductInquiryController extends AuthBaseController
                 ['id' => $inquiry->id, 'is_answered' => $inquiry->is_answered],
                 201
             );
-        } catch (\RuntimeException $e) {
-            // 서비스가 던지는 RuntimeException 은 생성 시점에 __() 로 번역된 사용자 문구다.
-            // 사유를 파라미터로 넘겨 실패 원인이 화면에 그대로 남게 한다.
+        } catch (ProductInquiryOperationException $e) {
+            // 실패 사유(문의 게시판 미설정 등)를 그대로 보여준다 — 일반 문구만 남기면
+            // 서버 기록을 봐야만 원인을 알 수 있다.
+            //
+            // 종전에는 `\RuntimeException` 을 잡았다. 서비스가 도메인 실패를 typed 로
+            // 승격한 뒤로 그 catch 에 남는 것은 인프라 예외뿐이었고, 그것까지 422 +
+            // 예외 원문으로 뭉갰다.
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.inquiries.operation_failed_reason',
                 422,
                 null,
-                ['reason' => $e->getMessage()]
+                ['reason' => __($e->getMessageKey(), $e->getMessageParams())]
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_failed', 500);
@@ -179,15 +199,19 @@ class ProductInquiryController extends AuthBaseController
             $this->inquiryService->updateReply($inquiryId, $request->validated());
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.reply_updated', ['id' => $inquiryId]);
-        } catch (\RuntimeException $e) {
-            // 서비스가 던지는 RuntimeException 은 생성 시점에 __() 로 번역된 사용자 문구다.
-            // 사유를 파라미터로 넘겨 실패 원인이 화면에 그대로 남게 한다.
+        } catch (ProductInquiryOperationException $e) {
+            // 실패 사유(문의 게시판 미설정 등)를 그대로 보여준다 — 일반 문구만 남기면
+            // 서버 기록을 봐야만 원인을 알 수 있다.
+            //
+            // 종전에는 `\RuntimeException` 을 잡았다. 서비스가 도메인 실패를 typed 로
+            // 승격한 뒤로 그 catch 에 남는 것은 인프라 예외뿐이었고, 그것까지 422 +
+            // 예외 원문으로 뭉갰다.
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.inquiries.operation_failed_reason',
                 422,
                 null,
-                ['reason' => $e->getMessage()]
+                ['reason' => __($e->getMessageKey(), $e->getMessageParams())]
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_update_failed', 500);
@@ -213,15 +237,19 @@ class ProductInquiryController extends AuthBaseController
             $this->inquiryService->deleteReply($inquiryId);
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.reply_deleted', ['deleted' => true]);
-        } catch (\RuntimeException $e) {
-            // 서비스가 던지는 RuntimeException 은 생성 시점에 __() 로 번역된 사용자 문구다.
-            // 사유를 파라미터로 넘겨 실패 원인이 화면에 그대로 남게 한다.
+        } catch (ProductInquiryOperationException $e) {
+            // 실패 사유(문의 게시판 미설정 등)를 그대로 보여준다 — 일반 문구만 남기면
+            // 서버 기록을 봐야만 원인을 알 수 있다.
+            //
+            // 종전에는 `\RuntimeException` 을 잡았다. 서비스가 도메인 실패를 typed 로
+            // 승격한 뒤로 그 catch 에 남는 것은 인프라 예외뿐이었고, 그것까지 422 +
+            // 예외 원문으로 뭉갰다.
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.inquiries.operation_failed_reason',
                 422,
                 null,
-                ['reason' => $e->getMessage()]
+                ['reason' => __($e->getMessageKey(), $e->getMessageParams())]
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_delete_failed', 500);

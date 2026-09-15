@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 
 /**
@@ -58,6 +59,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'spam_security.comment_cooldown_seconds',
             'spam_security.report_cooldown_seconds',
             'spam_security.view_count_cache_ttl',
+            'attachment_settings.purge_retention_days',
         ];
 
         $booleanFields = [
@@ -65,6 +67,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.use_reply',
             'basic_defaults.show_view_count',
             'basic_defaults.use_report',
+            'basic_defaults.use_scrap',
             'basic_defaults.use_reaction',
             'basic_defaults.use_file_upload',
             'basic_defaults.notify_admin_on_post',
@@ -74,6 +77,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'seo.seo_boards',
             'seo.seo_board',
             'seo.seo_post_detail',
+            'attachment_settings.purge_enabled',
         ];
 
         $data = $this->all();
@@ -173,10 +177,12 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.use_comment' => ['nullable', 'boolean'],
             'basic_defaults.use_reply' => ['nullable', 'boolean'],
             'basic_defaults.max_reply_depth' => ['nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
+            'basic_defaults.reply_delete_policy' => ['nullable', 'string', Rule::in(ReplyDeletePolicy::values())],
             'basic_defaults.max_comment_depth' => ['nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
             'basic_defaults.comment_order' => ['nullable', 'string', 'in:ASC,DESC'],
             'basic_defaults.show_view_count' => ['nullable', 'boolean'],
             'basic_defaults.use_report' => ['nullable', 'boolean'],
+            'basic_defaults.use_scrap' => ['nullable', 'boolean'],
             'basic_defaults.use_reaction' => ['nullable', 'boolean'],
             'basic_defaults.active_reaction_types' => ['nullable', 'array'],
             'basic_defaults.active_reaction_types.*' => ['string', 'max:50'],
@@ -205,6 +211,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.allowed_extensions.*' => ['string', 'max:20'],
             'basic_defaults.notify_admin_on_post' => ['nullable', 'boolean'],
             'basic_defaults.notify_author' => ['nullable', 'boolean'],
+            // 하한 기본값 0 = 신규 배지를 붙이지 않음 — 게시판별 값과 같은 범위를 쓴다(한쪽만 좁으면 기본값을 개별 게시판에 못 준다).
             'basic_defaults.new_display_hours' => ['nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
             // default_board_permissions는 flat key 구조 (예: {"posts.read": ["admin","user"], "manager": ["admin"]})
             // Laravel dot notation으로 하위 키를 개별 검증하면 flat key가 중첩 배열로 파싱되어 데이터 유실됨
@@ -266,6 +273,11 @@ class StoreBoardSettingsRequest extends FormRequest
             'seo.seo_boards' => ['nullable', 'boolean'],
             'seo.seo_board' => ['nullable', 'boolean'],
             'seo.seo_post_detail' => ['nullable', 'boolean'],
+
+            // 첨부 정리 정책 — 사용자 파일을 파기하므로 보존기간 하한을 서버가 강제한다.
+            // 상한(3650일)은 "사실상 정리하지 않음" 과 구분되지 않는 값을 저장하지 않기 위함이다.
+            'attachment_settings.purge_enabled' => ['nullable', 'boolean'],
+            'attachment_settings.purge_retention_days' => ['nullable', 'integer', 'min:'.$limits['attachment_purge_retention_days_min'], 'max:'.$limits['attachment_purge_retention_days_max']],
         ];
     }
 
@@ -315,7 +327,7 @@ class StoreBoardSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_defaults', 'report_policy', 'spam_security', 'display', 'seo', 'notifications'];
+        $validCategories = ['basic_defaults', 'report_policy', 'spam_security', 'display', 'seo', 'notifications', 'attachment_settings'];
 
         return array_filter(
             $validated,

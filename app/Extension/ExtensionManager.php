@@ -74,8 +74,12 @@ class ExtensionManager
      *
      * 모듈/플러그인 리스너 수집을 위해 각 Manager 를 (재)로드한 뒤 HookCacheManager 에 위임한다.
      * 생성 실패는 부팅 시 스캔 폴백으로 흡수되므로 확장 업데이트 흐름을 중단시키지 않는다.
+     *
+     * 확장 수명주기에서 상태를 되돌린 뒤 다시 부를 수 있도록 public 이다 —
+     * Updating 창 안에서 구워진 훅 캐시는 그 확장의 리스너가 빠진 채 남고,
+     * 훅 캐시 폴백은 파일 부재/손상에만 작동해 stale 한 내용은 조용히 통과하기 때문이다.
      */
-    protected function regenerateHookCache(): void
+    public function regenerateHookCache(): void
     {
         try {
             $moduleManager = app(ModuleManager::class);

@@ -32,6 +32,7 @@ return [
     'coupon_has_issues' => '발급된 쿠폰이 :count건 있어 삭제할 수 없습니다.',
     'coupon_issue_not_found' => '쿠폰 발급 내역을 찾을 수 없습니다.',
     'coupon_issue_not_cancellable' => '미사용 상태의 발급 건만 취소할 수 있습니다.',
+    'coupon_already_used' => '이미 사용된 쿠폰입니다. 쿠폰을 다시 확인한 뒤 주문해 주세요.',
     'label_not_found' => '라벨을 찾을 수 없습니다.',
     'product_notice_template_not_found' => '상품정보제공고시 템플릿을 찾을 수 없습니다.',
     'product_common_info_not_found' => '상품 공통정보를 찾을 수 없습니다.',
@@ -65,15 +66,16 @@ return [
     'order_option_already_cancelled' => '이미 취소된 주문 옵션입니다.',
     'order_option_already_confirmed' => '이미 구매확정된 주문 옵션입니다.',
     'order_option_cannot_confirm' => '현재 상태에서는 구매확정할 수 없습니다.',
+    'order_option_not_confirmable' => '현재 상태에서는 구매확정할 수 없는 주문 옵션입니다.',
     'cancel_quantity_exceeds' => '취소 수량이 현재 수량(:max개)을 초과합니다.',
 
     // 주문 결제 관련
     'insufficient_stock' => '재고가 부족한 상품이 :count개 있습니다.',
-    'payment_amount_mismatch' => '결제 금액이 일치하지 않습니다. (예상: :expected원, 실제: :actual원)',
+    'payment_amount_mismatch' => '결제 금액이 일치하지 않습니다. (예상: :expected, 실제: :actual)',
     'cart_unavailable' => '구매할 수 없는 상품이 있습니다.',
     'purchase_not_allowed' => '구매 권한이 없는 상품입니다.',
     'country_not_shippable' => '선택하신 배송국가로는 배송할 수 없는 상품입니다.',
-    'order_amount_changed' => '주문 금액이 변동되었습니다. 체크아웃 페이지를 새로고침 후 다시 시도해주세요. (이전: :stored원, 현재: :recalculated원)',
+    'order_amount_changed' => '주문 금액이 변동되었습니다. 체크아웃 페이지를 새로고침 후 다시 시도해주세요. (이전: :stored, 현재: :recalculated)',
     'order_calculation_validation_failed' => '주문 계산 검증에 실패했습니다. 쿠폰 만료 또는 재고 변동이 발생했을 수 있습니다.',
 
     // 주문 취소/환불 관련
@@ -85,6 +87,7 @@ return [
     'order_cancel_failed' => '주문 취소 처리에 실패했습니다.',
     'order_estimate_refund_failed' => '환불 예상금액 계산에 실패했습니다.',
     'order_create_failed' => '주문 생성에 실패했습니다.',
+    'order_shipping_address_update_failed' => '배송지 변경 처리 중 오류가 발생했습니다.',
 
     // 통화 관련
     'unknown_currency' => '지원하지 않는 통화입니다: :currency',

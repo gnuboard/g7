@@ -9,8 +9,8 @@
  *  D. 텍스트 정렬 justify 옵션 노출 + 적용 → text-justify.
  *  E. 고급 탭 — 권한 후보가 식별자(key)와 함께 표시되고, 카테고리(부모)는 제외(리프만).
  *
- * @scenario new_style_controls_live_apply + border_color_preset + text_format_toggle + justify_align + permission_identifier_leaf_only
- * @effects box_class_tokens + border_color_token + italic_underline_tokens + text_justify_token + advanced_permission_id_visible
+ * 축 요약(마커 아님 — 평문): new_style_controls_live_apply, border_color_preset, text_format_toggle, justify_align, permission_identifier_leaf_only.
+ * 효과 요약(마커 아님 — 평문): box_class_tokens, border_color_token, italic_underline_tokens, text_justify_token, advanced_permission_id_visible.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { editorPath } from '../../fixtures/layout-editor';
@@ -81,6 +81,7 @@ const tokensOf = (page: import('@playwright/test').Page, path: string) =>
   page.evaluate((p) => (document.querySelector(`[data-editor-path="${p}"]`)?.className ?? '').split(/\s+/).filter(Boolean), path);
 
 test.describe('@layout-editor 신규 스타일 컨트롤', () => {
+  /** @effects box_class_tokens */
   test('A. 컨테이너 박스 컨트롤 — 그림자/라운드/스크롤 select 가 캔버스에 반영', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -121,6 +122,7 @@ test.describe('@layout-editor 신규 스타일 컨트롤', () => {
     await expect.poll(() => tokensOf(page, CARD)).toContain('opacity-50');
   });
 
+  /** @effects border_color_token */
   test('B. 테두리 색 프리셋 → border-{color} 토큰', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -130,6 +132,7 @@ test.describe('@layout-editor 신규 스타일 컨트롤', () => {
     await expect.poll(() => tokensOf(page, CARD)).toContain('border-blue-600');
   });
 
+  /** @effects italic_underline_tokens */
   test('C. 텍스트 서식 — 기울임/밑줄 토글이 제목에 반영', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD_H2);
@@ -141,6 +144,7 @@ test.describe('@layout-editor 신규 스타일 컨트롤', () => {
     await expect.poll(() => tokensOf(page, CARD_H2)).toContain('underline');
   });
 
+  /** @effects text_justify_token */
   test('D. 텍스트 정렬 justify 옵션 적용 → text-justify', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD_H2);
@@ -148,6 +152,7 @@ test.describe('@layout-editor 신규 스타일 컨트롤', () => {
     await expect.poll(() => tokensOf(page, CARD_H2)).toContain('text-justify');
   });
 
+  /** @effects advanced_permission_id_visible */
   test('E. 고급 탭 — 권한 후보에 식별자 표시 + 카테고리(부모) 제외', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);

@@ -324,7 +324,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.menus.create`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -454,7 +454,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 레이아웃 전역 부트스트랩 엔드포인트. `sirsoft-admin_basic/layouts/_admin_base.json` 의 `admin_menu` `data_source`(`/api/admin/menus/active`)가 모든 관리자 페이지 진입 시 자동 호출해, 사이드바 메뉴 트리를 채운다. 인증 사용자의 역할 기준으로 접근 가능한 활성 메뉴만 계층 구조(`children` 중첩)로 반환하며, `data` 는 최상위 메뉴 배열이다. 사용자 정보가 없을 때는 모든 활성 메뉴를 fallback 으로 반환한다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
+관리자 레이아웃 전역 부트스트랩 엔드포인트. `sirsoft-admin_basic/layouts/_admin_base.g7.html` 의 `admin_menu` `data_source`(`/api/admin/menus/active`)가 모든 관리자 페이지 진입 시 자동 호출해, 사이드바 메뉴 트리를 채운다. 인증 사용자의 역할 기준으로 접근 가능한 활성 메뉴만 계층 구조(`children` 중첩)로 반환하며, `data` 는 최상위 메뉴 배열이다. 사용자 정보가 없을 때는 모든 활성 메뉴를 fallback 으로 반환한다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
 
 
 ### GET /api/admin/menus/extension/{type}/{identifier}
@@ -742,7 +742,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.menus.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `moved_items[].new_parent_id` 가 자기 자신·자손을 가리키는 순환 참조인 경우 포함 |
 
 <!-- @generated:end -->
@@ -798,7 +798,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.menus.delete`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1102,7 +1102,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.menus.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1198,7 +1198,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.menus.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 

@@ -1,0 +1,89 @@
+feature: 공개 자산 직접 URL(CDN) 서빙 (공개#100)
+
+description: |
+  StorageInterface::url() 의 public 하드코딩을 완화하고 `core.storage.filter_url`
+  훅을 신설해, 완전 공개 자산(상품/카테고리/리뷰/에디터 이미지)의 직접 URL(CDN)
+  서빙을 옵트인으로 연다. 미설정 시 기존 PHP 스트리밍 100% 보존.
+
+  결정 사슬:
+    - url(): public 디스크 또는 filesystems.disks.{disk}.url 설정 디스크 → 직접 URL,
+      그 외 null. 결과는 디스크 무관 core.storage.filter_url 훅 상시 통과(공급/수정/차단).
+    - 디스크 결정: 확장 개별 설정(public_asset_disk) > 코어 전역
+      (drivers.public_asset_disk → core.storage.public_asset_disk) > 미설정(스트리밍).
+      'none'/고아 디스크는 스트리밍 폴백.
+    - 소비처: 행 disk 로 url() 시도 → null 이면 기존 API 서빙 경로 폴백.
+      서빙/삭제/이동은 행 disk 기준(혼재 운용).
+    - 권한 검사가 걸린 첨부(board/page/코어)는 배선 자체가 없음 — 직접 URL 이
+      권한을 우회하므로 스트리밍 유지가 보안 전제.
+
+coverage_strategy: pairwise
+
+axes:
+  disk_setting: [none, public, fake_cdn, s3_without_url]
+  consumer: [product, category, review, editor]
+  row_state: [legacy_local_row, new_remote_row]
+  override: [follow_core, module_override, none_override]
+  hook: [unregistered, supply, block]
+  e2e: [drivers_tab_card, ecommerce_settings_field, save_roundtrip]
+
+effects:
+  - url_null_for_disk_without_url_config
+  - url_returned_for_public_and_url_configured_disk
+  - blank_url_config_defended
+  - filter_url_hook_always_fires_with_six_context_keys
+  - hook_supply_modify_block_respected
+  - download_url_falls_back_to_api_path_when_direct_unavailable
+  - mixed_rows_resolve_per_row_disk
+  - serve_and_delete_follow_row_disk
+  - orphan_disk_falls_back_to_streaming
+  - none_override_forces_streaming_over_global
+  - settings_catalog_includes_plugin_registered_disks
+  - invalid_disk_rejected_with_422
+  - board_response_strings_unchanged
+  - settings_load_recursion_free
+  - global_setting_injects_core_config_with_none_normalized
+  - seo_guard_passes_absolute_cdn_url_unmodified
+  - cross_origin_asset_request_omits_session_token
+  - s3_credentials_visible_when_public_asset_disk_is_s3
+
+test_files:
+  - tests/Unit/Extension/Storage/CoreStorageDriverTest.php
+  - tests/Unit/Extension/Storage/ModuleStorageDriverTest.php
+  - tests/Unit/Extension/Storage/PluginStorageDriverTest.php
+  - tests/Unit/Extension/Storage/StorageCategoryDiskTest.php
+  - tests/Unit/Services/DriverRegistryServiceTest.php
+  - tests/Unit/Services/DriverExtensionIntegrationTest.php
+  - tests/Unit/Models/AttachmentUrlTest.php
+  - tests/Unit/Seo/ComponentHtmlMapperTest.php
+  - tests/Feature/Api/Admin/SettingsControllerDriverOptionsTest.php
+  - tests/Unit/Providers/SettingsServiceProviderPublicAssetDiskTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/HasDirectAssetUrlTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductImageServiceRowDiskTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CategoryImageServiceRowDiskTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewImageServiceRowDiskTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/StorageDiskRecursionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceDetailImageUrlTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/AttachmentPreviewUrlTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Resources/PostResourceThumbnailUrlTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Repositories/BoardRepositoryPopularAvatarTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/Ckeditor5ImageUploadUrlTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/ImageServeServiceRowDiskTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/StorageDiskRecursionTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/PluginSettingsCatalogAttachTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Requests/StoreEcommerceSettingsRequestPublicAssetDiskTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/PluginSettingsPublicAssetDiskValidationTest.php
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/public-asset-storage.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/public-asset-disk-override.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-public-asset-storage.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsPublicAssetDisk.test.tsx
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/pluginSettingsPublicAssetDisk.test.tsx
+  - resources/js/core/api/__tests__/ApiClient.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/assetOrigin.crossOriginAuth.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/components/assetOrigin.crossOriginAuth.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-drivers-s3-visibility.test.tsx
+
+rules_layer_coverage:
+  - rule: no-storage-disk-direct
+    coverage: 소비처는 StorageInterface 경유 — Storage facade 직접 호출 도입 없음
+  - rule: repository-interface-injection
+    coverage: 서비스 시그니처 무변경 — contextual binding 만 카테고리 디스크로 교체

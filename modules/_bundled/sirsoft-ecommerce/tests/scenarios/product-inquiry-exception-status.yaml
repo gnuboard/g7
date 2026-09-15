@@ -1,0 +1,81 @@
+feature: 상품 문의 액션의 예외 → 상태코드 매핑 (Product Inquiry Exception Status)
+
+description: |
+  마이페이지의 문의 수정·삭제와 답변 등록·수정·삭제가 실패했을 때, 그 원인이
+  "사용자·운영자가 고칠 수 있는 도메인 사유" 인지 "서버 결함·인프라 장애" 인지를
+  응답 상태코드로 구분한다.
+
+  배경:
+    ProductInquiryService 의 도메인 실패 12곳을 ProductInquiryOperationException 으로
+    승격하면서 Public/ProductInquiryController::store 만 typed catch 로 좁혔고,
+    User/ProductInquiryController 4곳은 `catch (\RuntimeException)` 을 유지했다.
+    그 예외는 승격된 도메인 예외의 **부모**라서, 승격 후 그 catch 에 남는 것은
+    인프라 예외뿐인데 그것까지 422 + 예외 원문으로 나갔다 — 공개 #104 가 없애려던
+    형태 그 자체다.
+
+    반대 방향의 짝도 있었다. destroy 는 deleteInquiry 가 던지는 도메인 예외를
+    구분하는 catch 가 없어, 운영자가 고칠 수 있는 사유(문의 게시판 미설정)가
+    일반 500 문구로 나갔다.
+
+  핵심 설계:
+    - typed(ProductInquiryOperationException) → 422 + 해석된 다국어 사유
+    - 그 외 예외 → 500, 응답 본문에 예외 원문 미포함
+    - 사유는 예외가 들고 다니는 키(getMessageKey/getMessageParams)로 조립한다.
+      번역문을 메시지 키 자리에 넘기면 해석에 실패해 원문이 그대로 노출된다.
+
+  인프라 500 축은 서비스 mock 으로만 유발할 수 있어 PHPUnit 이 SSoT 다.
+  브라우저로는 재현할 수 없다(도메인 사유가 먼저 걸린다).
+
+axes:
+  endpoint: [update_inquiry, destroy_inquiry, create_reply, update_reply, destroy_reply]
+  error_class: [domain, infrastructure]
+
+exclusions: []
+
+effects:
+  # 문의 수정
+  - inquiry_update_domain_exception_returns_422
+  - inquiry_update_infrastructure_exception_returns_500_not_422
+  # 문의 삭제 — 도메인 사유가 500 으로 나가던 역방향 짝
+  - inquiry_destroy_domain_exception_returns_422
+  - inquiry_destroy_infrastructure_exception_returns_500_not_422
+  # 답변 등록
+  - inquiry_reply_domain_exception_returns_422
+  - inquiry_reply_infrastructure_exception_returns_500_not_422
+  # 답변 수정
+  - inquiry_update_reply_domain_exception_returns_422
+  - inquiry_update_reply_infrastructure_exception_returns_500_not_422
+  # 답변 삭제
+  - inquiry_destroy_reply_domain_exception_returns_422
+  - inquiry_destroy_reply_infrastructure_exception_returns_500_not_422
+
+scenarios:
+  - id: inquiry_domain_failure_reaches_operator
+    description: 문의 게시판 미설정 상태에서 문의 수정·삭제와 답변 관리를 시도하면, 그 사유가 422 로 해석된 다국어 문구와 함께 전달된다 (키 원문 미노출)
+    effects:
+      - inquiry_update_domain_exception_returns_422
+      - inquiry_destroy_domain_exception_returns_422
+      - inquiry_reply_domain_exception_returns_422
+      - inquiry_update_reply_domain_exception_returns_422
+      - inquiry_destroy_reply_domain_exception_returns_422
+
+  - id: inquiry_infrastructure_failure_is_not_disguised_as_input_error
+    description: DB 장애 등 인프라 예외는 500 으로 구분되고 응답 본문에 예외 원문(SQLSTATE 등)이 포함되지 않는다
+    effects:
+      - inquiry_update_infrastructure_exception_returns_500_not_422
+      - inquiry_destroy_infrastructure_exception_returns_500_not_422
+      - inquiry_reply_infrastructure_exception_returns_500_not_422
+      - inquiry_update_reply_infrastructure_exception_returns_500_not_422
+      - inquiry_destroy_reply_infrastructure_exception_returns_500_not_422
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/InquiryDomainExceptionStatusPairTest.php
+
+notes: |
+  소스 전수 판정(tests/Feature/Http/GenericCatchStatusCodeContractTest.php)은 광역 catch 가
+  4xx 를 반환하지 않는 것까지만 보증한다. 그 계약이 실제 응답까지 도달하는지는
+  FormRequest·미들웨어를 통과해야 알 수 있으므로 이 매니페스트의 런타임 페어가 담당한다.
+
+  그 판정기는 이 결함을 놓치고 있었다 — 광역 catch 를 \Exception/\Throwable 로만 정의해
+  \RuntimeException 을 통과시켰고, 상태코드 추출 정규식이 error($e->getMessage(), 422) 처럼
+  첫 인자에 함수 호출이 있는 형태를 괄호 배제 때문에 읽지 못했다. 둘 다 수정했다.

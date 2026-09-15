@@ -6,13 +6,17 @@ use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
@@ -78,6 +82,9 @@ class PostResource extends BaseApiResource
             // 상세 전용: 신고 여부 (로그인 사용자 + board 관계 로드 시에만)
             'is_already_reported' => $this->getIsAlreadyReported($request),
 
+            // 상세 전용: 스크랩 여부 (로그인 사용자만) + 스크랩 수 (확정 10 — 상세에만 노출)
+            'is_scraped' => $this->getIsScraped($request),
+            'scrap_count' => (int) ($this->scrap_count ?? 0),
             // 상세 전용: 반응 카운트 (활성 유형 전체 항상 포함 — 확정 09, 0도 노출)
             'reaction_counts' => $this->getReactionCountsForResponse(),
 
@@ -150,7 +157,7 @@ class PostResource extends BaseApiResource
             'parent_id' => $this->parent_id,
 
             // 작성자 정보
-            'author' => $this->getAuthorInfo(includeIsGuest: true),
+            'author' => $this->getAuthorInfo($request, includeIsGuest: true),
 
             // 타임스탬프
             'created_at' => $this->formatCreatedAt($this->created_at),
@@ -187,7 +194,7 @@ class PostResource extends BaseApiResource
             'category' => $this->category,
 
             // 작성자 정보
-            'author' => $this->getAuthorInfo(includeIsGuest: true),
+            'author' => $this->getAuthorInfo($request, includeIsGuest: true),
 
             // 게시글 속성
             'is_notice' => (bool) $this->is_notice,
@@ -251,21 +258,26 @@ class PostResource extends BaseApiResource
      * - blocked: 기본 정보 + "차단" 상태
      * - withdrawn: 익명화 ("탈퇴한 사용자")
      *
+     * 이메일은 관리자 화면 응답과 본인 열람에만 싣는다 — 목록·상세·댓글은 인증 없이
+     * 열리므로, 이메일을 그대로 실으면 회원 주소록이 응답 본문으로 수집된다.
+     *
+     * @param  Request  $request  HTTP 요청
      * @param  bool  $includeIsGuest  is_guest 필드 포함 여부
      * @return array<string, mixed> 작성자 정보
      */
-    private function getAuthorInfo(bool $includeIsGuest = false): array
+    private function getAuthorInfo(Request $request, bool $includeIsGuest = false): array
     {
         $isGuest = $this->user_id === null;
 
         if ($this->user_id && $this->user) {
             $userStatus = UserStatus::tryFrom($this->user->status);
             $isWithdrawn = $userStatus === UserStatus::Withdrawn;
+            $canExposeEmail = $this->canExposeMemberEmail($request, $this->user_id);
 
             $author = [
                 'uuid' => $this->user->uuid,
                 'name' => $isWithdrawn ? __('user.withdrawn_user') : $this->user->name,
-                'email' => $isWithdrawn ? null : $this->user->email,
+                'email' => ($isWithdrawn || ! $canExposeEmail) ? null : $this->user->email,
                 'avatar' => $isWithdrawn ? null : $this->user->getAvatarUrl(),
                 'status' => $this->user->status,
                 'status_label' => $userStatus?->label() ?? $this->user->status,
@@ -307,30 +319,39 @@ class PostResource extends BaseApiResource
      * 썸네일 URL을 관계 로딩 상태에 따라 반환합니다.
      *
      * thumbnailAttachment(경량 hasOne) 우선, attachments(전체) fallback.
-     * 둘 다 미로딩 시 null 반환 (lazy loading 방지).
+     * 첨부에서 URL 을 얻지 못한 모든 경우 본문 첫 내부 이미지 캐시
+     * (content_thumbnail_url)로 폴백하고, 그것도 없으면 null (공개 이슈 #22).
      *
      * @return string|null 썸네일 URL
      */
     private function getThumbnailUrlFromRelations(): ?string
     {
+        // 비밀글은 썸네일 URL 자체를 방출하지 않는다 — 서빙은 이미 차단되어 이미지가 보이지는
+        // 않지만, URL 에 실린 첨부 해시가 목록·상세 응답으로 나가 있었다(KVE-2026-1894).
+        // 판정은 첨부 목록과 같은 SecretContentGate(SSoT)를 쓴다. 필드는 남기고 값만 가린다.
+        // 본문 캐시 폴백도 반드시 이 게이트 뒤 — 에디터 이미지는 공개 hash 서빙이라
+        // 첨부와 달리 서빙측 차단이 없어, 이 게이트가 유일한 차단선이다.
+        if ($this->is_secret && ! $this->canViewSecretContent(request())) {
+            return null;
+        }
+
+        $url = null;
+
         // 목록용 경량 관계 우선 — slug를 직접 전달하여 Board::find() N+1 방지
         if ($this->relationLoaded('thumbnailAttachment') && $this->thumbnailAttachment) {
             $attachment = $this->thumbnailAttachment;
             $slug = request()->route('slug') ?? ($this->relationLoaded('board') ? $this->board?->slug : null);
 
             if ($slug && $attachment->hash) {
-                return '/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$attachment->hash.'/preview';
+                $url = $attachment->previewUrlForSlug($slug);
             }
-
-            return null;
+        } elseif ($this->relationLoaded('attachments')) {
+            // 상세 페이지 등에서 attachments가 로딩된 경우 fallback
+            $url = $this->getThumbnailUrl();
         }
 
-        // 상세 페이지 등에서 attachments가 로딩된 경우 fallback
-        if ($this->relationLoaded('attachments')) {
-            return $this->getThumbnailUrl();
-        }
-
-        return null;
+        // 이미지 첨부가 없을 때만 본문 첫 내부 이미지 캐시 폴백 (첨부 우선 정책)
+        return $url ?? ($this->content_thumbnail_url ?: null);
     }
 
     /**
@@ -348,6 +369,7 @@ class PostResource extends BaseApiResource
             'use_comment' => $this->board->use_comment,
             'use_reply' => $this->board->use_reply,
             'use_report' => $this->board->use_report,
+            'use_scrap' => $this->board->use_scrap,
             'use_reaction' => $this->board->use_reaction,
             'reaction_type_options' => BoardResource::buildReactionTypeOptions($this->board->active_reaction_types ?? []),
             'show_view_count' => $this->board->show_view_count,
@@ -490,6 +512,25 @@ class PostResource extends BaseApiResource
     }
 
     /**
+     * 로그인 사용자가 이 게시글을 스크랩했는지 여부를 반환합니다.
+     *
+     * 상세 버튼의 "스크랩/스크랩됨" 상태 판정에 쓰인다. 비로그인은 항상 false.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool 스크랩 여부
+     */
+    private function getIsScraped(Request $request): bool
+    {
+        $user = $request->user();
+        if (! $user) {
+            return false;
+        }
+
+        return app(PostScrapRepositoryInterface::class)
+            ->isScraped($user->id, $this->id);
+    }
+
+    /**
      * 반응 카운트를 응답용으로 반환합니다.
      *
      * 게시판이 켠(활성) 유형 전체를 키로 항상 포함하며, 저장된 카운트가 없는 유형은
@@ -598,6 +639,13 @@ class PostResource extends BaseApiResource
             return null;
         }
 
+        // 비밀글·삭제글 첨부는 무서명 preview 가 서빙 게이트에 차단되므로,
+        // 이 직렬화(게이트 통과가 확인된 응답)에 한해 <img> 렌더 가능한
+        // 한시 서명 preview URL 을 발급한다. 정상글은 무서명 공개 URL 유지.
+        $signedPreviewSlug = ($this->deleted_at || $this->is_secret)
+            ? ($slug ?? $this->getSlug($request))
+            : null;
+
         // 삭제된 게시글: 관리 권한자가 아니면 첨부 목록 미노출.
         // 단, 게시글 삭제로 함께 숨겨진(cascade) 첨부는 사용자가 직접 지운 것이 아니므로
         // 글을 볼 수 있는 사람에게는 노출한다 (cascade 댓글 노출과 일관).
@@ -607,14 +655,14 @@ class PostResource extends BaseApiResource
                     && $attachment->trigger_type === TriggerType::Cascade->value
             )->values();
 
-            return AttachmentResource::collection($cascadeAttachments);
+            return AttachmentResource::collectionFor($cascadeAttachments, $signedPreviewSlug);
         }
 
         if ($this->is_secret && ! $this->canViewSecretContent($request, $slug)) {
             return [];
         }
 
-        return AttachmentResource::collection($this->attachments);
+        return AttachmentResource::collectionFor($this->attachments, $signedPreviewSlug);
     }
 
     // =========================================================================
@@ -716,23 +764,6 @@ class PostResource extends BaseApiResource
     }
 
     /**
-     * Admin 요청 여부를 확인합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return bool Admin 요청 여부
-     */
-    private function isAdminRequest(Request $request): bool
-    {
-        $controller = $request->route()?->getController();
-
-        if (! $controller) {
-            return false;
-        }
-
-        return str_contains(get_class($controller), '\\Admin\\');
-    }
-
-    /**
      * 비밀글 내용 열람 가능 여부를 확인합니다.
      *
      * 열람 가능 조건 (우선순위 순):
@@ -747,30 +778,50 @@ class PostResource extends BaseApiResource
      */
     private function canViewSecretContent(Request $request, ?string $slug = null): bool
     {
-        // 1. 작성자 본인 (회원 게시글)
-        $user = Auth::user();
-        if ($user && $this->user_id && $this->user_id === $user->id) {
-            return true;
-        }
+        $post = $this->resolvePostModel();
 
-        // 2. 비밀번호 검증 완료
-        if ($this->password_verified === true) {
-            return true;
-        }
-
-        // 3-4. 게시판별 권한 체크
-        $slug = $slug ?? $this->getSlug($request);
-        if (! $slug) {
+        if ($post === null) {
+            // 원본 모델을 확인할 수 없으면 열람 불가로 판정한다 (fail-closed)
             return false;
         }
 
-        if ($this->isAdminRequest($request)) {
-            return $this->checkBoardPermission($slug, 'admin.posts.read-secret')
-                || $this->checkBoardPermission($slug, 'admin.manage');
+        // 판정 규칙은 SecretContentGate(SSoT)에 있다 — 리스너·댓글 경로와 규칙을 공유해
+        // 드리프트를 방지한다.
+        return self::canViewSecretForPost($post, $request);
+    }
+
+    /**
+     * 감싸인 원본 게시글 모델을 반환합니다.
+     *
+     * 컬렉션 경로에서는 리소스가 다시 리소스를 감싸고 있을 수 있어, $this->resource 가
+     * 곧 Post 라고 가정하면 타입 오류로 응답 전체가 실패합니다.
+     *
+     * @return Post|null 원본 게시글 모델 (해석 불가 시 null)
+     */
+    private function resolvePostModel(): ?Post
+    {
+        $candidate = $this->resource;
+
+        while ($candidate instanceof JsonResource) {
+            $candidate = $candidate->resource;
         }
 
-        return $this->checkBoardPermission($slug, 'posts.read-secret', PermissionType::User)
-            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+        return $candidate instanceof Post ? $candidate : null;
+    }
+
+    /**
+     * 주어진 게시글의 비밀 원문 열람 권한을 판정합니다 (SSoT 진입점).
+     *
+     * PostResource 외 경로(이커머스 문의 연동 훅, 댓글 목록/리소스, 첨부 서빙)가
+     * 동일 규칙으로 서버측 마스킹을 수행하도록 공유합니다(KVE-2026-1914).
+     *
+     * @param  Post  $post  대상 게시글
+     * @param  Request|null  $request  HTTP 요청 (미지정 시 현재 요청)
+     * @return bool 열람 가능 여부
+     */
+    public static function canViewSecretForPost(Post $post, ?Request $request = null): bool
+    {
+        return app(SecretContentGate::class)->canView($post, $request);
     }
 
     // =========================================================================

@@ -10,10 +10,12 @@
  *  - 항목7: 선택 노드(Button 포함)에 리사이즈 핸들 표시 + 드래그로 px 변화
  *  - 항목8: 툴바 ↺ 초기화 버튼(dirty 시 활성)
  *
- * @scenario property_modal_draggable + dimension_widget + image_manager_toolbar + session_cache_restore + dirty_badge + beforeunload_guard + resize_handle + reset_button
- * @effects modal_draggable + dimension_free_input + image_modal_open + edit_preserved_on_route_switch + tree_dirty_dot + unload_warning + resize_px_change + reset_reverts
+ * 축 요약(마커 아님 — 평문): property_modal_draggable, dimension_widget, image_manager_toolbar, session_cache_restore, dirty_badge, beforeunload_guard, resize_handle, reset_button.
+ * 효과 요약(마커 아님 — 평문): modal_draggable, dimension_free_input, image_modal_open, edit_preserved_on_route_switch, tree_dirty_dot, unload_warning, resize_px_change, reset_reverts.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
+// 경로 줄 표기(소스 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
+import { selectRouteTreeLayout } from '../../fixtures/route-tree';
 
 const EDITOR_URL = '/admin/layout-editor/sirsoft-basic?route=%2F';
 
@@ -83,6 +85,7 @@ async function openPropertyModal(page: import('@playwright/test').Page): Promise
 }
 
 test.describe('@layout-editor S6-2 후속', () => {
+  /** @effects modal_draggable */
   test('항목1 — 속성 편집 모달이 draggable + 백드롭 pointerEvents:none', async ({ page }) => {
     await gotoEditor(page);
     await openPropertyModal(page);
@@ -99,6 +102,7 @@ test.describe('@layout-editor S6-2 후속', () => {
     expect(pe).toBe('none');
   });
 
+  /** @effects dimension_free_input */
   test('항목2 — 스타일 탭 width 컨트롤이 dimension 위젯(자유 입력)으로 렌더', async ({ page }) => {
     await gotoEditor(page);
     await openPropertyModal(page);
@@ -124,6 +128,7 @@ test.describe('@layout-editor S6-2 후속', () => {
     }
   });
 
+  /** @effects image_modal_open */
   test('항목3 — 툴바 🖼 이미지 버튼 → 이미지 관리 모달', async ({ page }) => {
     await gotoEditor(page);
     const imagesBtn = page.getByTestId('g7le-toolbar-images');
@@ -134,6 +139,7 @@ test.describe('@layout-editor S6-2 후속', () => {
     // 툴바 진입은 onSelect 미전달 → "배경으로 사용" 버튼 없음(빈 목록이면 empty 안내)
   });
 
+  /** @effects reset_reverts, tree_dirty_dot */
   test('항목8 — ↺ 초기화 버튼은 dirty 일 때만 활성', async ({ page }) => {
     await gotoEditor(page);
     const resetBtn = page.getByTestId('g7le-toolbar-reset');
@@ -142,6 +148,7 @@ test.describe('@layout-editor S6-2 후속', () => {
     await expect(resetBtn).toBeDisabled();
   });
 
+  /** @effects resize_px_change */
   test('항목7 — 선택 노드에 리사이즈 핸들 표시', async ({ page }) => {
     await gotoEditor(page);
     // 선택 오버레이 등장 후, width/height 컨트롤 보유 노드면 리사이즈 핸들이 보인다.
@@ -151,5 +158,64 @@ test.describe('@layout-editor S6-2 후속', () => {
     if (await handle.count()) {
       await expect(handle).toBeVisible();
     }
+  });
+
+  /**
+   * 항목4 — 다른 화면을 들렀다 돌아와도 편집분이 남아 있어야 한다. 세션 캐시가 라우트별로
+   * 편집 상태를 들고 있는데, 그 복원이 끊기면 운영자는 화면을 한 번 옮겼다는 이유만으로
+   * 작업을 잃는다(저장 전이라 되돌릴 방법도 없다).
+   */
+  /** @effects edit_preserved_on_route_switch */
+  test('항목4 — 다른 화면에 들렀다 돌아오면 저장 전 편집분이 남아 있다', async ({ page }) => {
+    await gotoEditor(page);
+    const countNodes = (): Promise<number> =>
+      page.evaluate(
+        () =>
+          document.querySelector('[data-testid="g7le-preview-frame"]')!.querySelectorAll('[data-editor-path]')
+            .length,
+      );
+
+    const before = await countNodes();
+
+    // 요소 하나 추가 (저장하지 않는다 — 사이트는 그대로 남는다)
+    await page.getByTestId('g7le-toolbar-add-element').click();
+    await page.waitForSelector('[data-testid="g7le-palette-item-Div"]', { timeout: 10_000 });
+    await page.getByTestId('g7le-palette-item-Div').click();
+    await expect.poll(countNodes, { timeout: 10_000 }).toBeGreaterThan(before);
+    const afterAdd = await countNodes();
+
+    // 다른 화면으로 이동 → 되돌아오기
+    await selectRouteTreeLayout(page, 'login');
+    await page.waitForTimeout(1_000);
+    await selectRouteTreeLayout(page, 'home');
+
+    // 편집분이 복원되어야 한다 — 복원이 끊기면 추가 전 개수로 돌아간다.
+    await expect.poll(countNodes, { timeout: 20_000 }).toBe(afterAdd);
+  });
+
+  /**
+   * 항목5 — 저장 전 상태에서 창을 닫거나 새로고침하면 브라우저 경고가 떠야 한다.
+   * 경고가 등록되지 않으면 편집분이 조용히 사라진다.
+   */
+  /** @effects unload_warning */
+  test('항목5 — 저장 전에는 창 닫기 경고가 등록되고, 편집 전에는 등록되지 않는다', async ({ page }) => {
+    await gotoEditor(page);
+
+    const unloadGuarded = (): Promise<boolean> =>
+      page.evaluate(() => {
+        const e = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(e);
+        return e.defaultPrevented;
+      });
+
+    // 편집 전에는 경고가 없어야 한다 — 이 대조가 없으면 "항상 true" 도 통과한다.
+    expect(await unloadGuarded()).toBe(false);
+
+    await page.getByTestId('g7le-toolbar-add-element').click();
+    await page.waitForSelector('[data-testid="g7le-palette-item-Div"]', { timeout: 10_000 });
+    await page.getByTestId('g7le-palette-item-Div').click();
+    await expect(page.getByTestId('g7le-toolbar-reset')).toBeEnabled({ timeout: 10_000 });
+
+    await expect.poll(unloadGuarded, { timeout: 10_000 }).toBe(true);
   });
 });

@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage reason: |
+#   조합·효과 마킹 면제. 룰은 이 매니페스트의 축을 정상 전개한다 — 파서 한계가 아니라
+#   커버 방식이 이유다. 정리 대상 판정은 주문 부류 × 경과 × 결제상태의 곱인데 테스트는
+#   그 곱을 메서드 하나당 한 점씩 찌르는 형태라 조합 단위 @scenario 마킹으로 표현되지
+#   않는다. 본 매니페스트는 "무엇을 반드시 시험해야 하는가" 의 SSoT 로 두고, 실제 커버는
+#   test_files 의 통과 테스트가 담당한다. test_files 실재 검사는 면제 대상이 아니다.
+
+feature: 미결제 주문 만료 자동 정리 (입금기한 부류 + 주문대기 부류)
+
+description: |
+  결제가 성립하지 않은 주문을 정리 배치가 취소로 거두는 계약.
+
+  종전에는 입금 기한이 있는 결제수단(vbank·dbank)만 정리 대상이었다. 결제창까지 갔으나
+  승인되지 않은 주문(PG 카드 등)은 입금 기한이라는 개념이 없어 어떤 정리 주체도 없이 남았고,
+  실무에서는 브라우저 리턴 콜백의 실패 처리가 그 자리를 대신하고 있었다.
+
+  그 콜백 경로는 인증도 서명도 없어 주문번호만 아는 제3자가 남의 주문을 취소시킬 수 있었고,
+  그래서 주문 상태를 바꾸지 않도록 막았다. 그 결과 승인 거절분이 주문대기에 머무르게 되므로,
+  이 정리가 그 부류까지 거두고 **선차감 마일리지 복원**도 함께 책임진다.
+
+  경계: 승인 콜백과 경쟁해 이미 결제가 성립한 주문(paid·입금대기)은 정리하지 않는다.
+  운영자는 만료 기준(분)을 0 으로 두어 주문대기 부류의 정리만 끌 수 있고, 그때도 입금기한
+  부류의 정리는 그대로 동작한다.
+
+axes:
+  order_class:
+    - deposit_due_vbank        # 가상계좌 — vbank_due_at 도과분
+    - deposit_due_dbank        # 무통장입금 — deposit_due_at 도과분
+    - pending_order_never_paid # 결제창까지 갔으나 승인되지 않은 주문 (PG 카드 등)
+  elapsed:
+    - past_threshold           # 기준 경과 → 대상
+    - within_threshold         # 기준 이내 → 구매자가 결제창을 열어 둔 상태일 수 있어 제외
+  payment_status:
+    - ready_or_failed          # 결제 미성립 → 대상
+    - paid                     # 승인 콜백과 경쟁해 이미 성립 → 제외
+    - waiting_deposit          # 입금 대기 → 제외
+  expire_minutes_setting:
+    - positive                 # 주문대기 부류 정리 활성 (기본 1440)
+    - zero                     # 주문대기 부류만 끔 — 입금기한 부류는 계속 정리
+  run_mode:
+    - apply
+    - dry_run
+
+exclusions:
+  - order_class: deposit_due_vbank
+    expire_minutes_setting: zero
+    reason: 만료 기준 설정은 주문대기 부류에만 걸린다 — 입금기한 부류의 동작을 바꾸지 않는다
+  - order_class: deposit_due_dbank
+    expire_minutes_setting: zero
+    reason: 동일
+
+effects:
+  - stale_pending_order_is_cancelled                    # 기준 경과 + 미성립 → 취소
+  - recent_pending_order_is_left_alone                  # 기준 이내 → 무변경 (진행 중 결제 보호)
+  - paid_pending_order_is_left_alone                    # 승인 경쟁 보호
+  - waiting_deposit_pending_order_is_left_alone
+  - expired_vbank_order_is_cancelled
+  - expired_dbank_order_is_cancelled
+  - non_expired_order_is_left_alone
+  - zero_setting_disables_pending_class_only            # 운영자 선택권
+  - deducted_mileage_is_restored_on_cleanup             # 이 정리를 넓힌 이유
+  - dry_run_mutates_nothing
+  - limit_option_is_respected
+  - disabled_toggle_skips_the_whole_run
+  - pending_class_due_display_falls_back_to_ordered_at  # 입금 기한이 없는 부류의 표기 기준
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/CancelPendingPaymentOrdersCommandTest.php
+
+manual_verification:
+  - description: "만료 정리 대상 검출 — 운영 데이터 무변경 확인"
+    steps:
+      - "php artisan sirsoft-ecommerce:cancel-pending-orders --dry-run --limit=5"
+      - "검출 목록에 주문대기 부류가 포함되고, 기한 표기가 주문 시각으로 나오는지 확인"
+      - "dry-run 이므로 어떤 주문도 상태가 바뀌지 않아야 한다"

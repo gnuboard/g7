@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 
 /**
  * 상품 리뷰 리소스
@@ -25,10 +26,12 @@ class ProductReviewResource extends BaseApiResource
             'user_id' => $this->user?->uuid,
 
             // 작성자 정보
+            // 이메일은 관리자 화면 응답과 본인 열람에만 싣는다 — 상품 리뷰 목록은 인증 없이
+            // 열리므로, 이메일을 그대로 실으면 구매자 주소록이 응답 본문으로 수집된다.
             'user' => $this->whenLoaded('user', fn () => [
                 'uuid' => $this->user->uuid,
                 'name' => $this->user->name,
-                'email' => $this->user->email,
+                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ]),
 
             // 상품 정보
@@ -55,8 +58,14 @@ class ProductReviewResource extends BaseApiResource
             'status_label' => $this->status->label(),
             'status_badge_color' => $this->status->badgeColor(),
 
-            // 이미지
-            'images' => ProductReviewImageResource::collection($this->whenLoaded('images')),
+            // 이미지 — 숨김(HIDDEN) 리뷰의 이미지는 한시 서명 download URL 로 직렬화한다.
+            // 숨김 리뷰가 이미지와 함께 직렬화되는 경로는 관리자(권한 미들웨어) 응답뿐이므로
+            // (공개 목록은 VISIBLE 필터, 작성 직후는 이미지 미로드) 서명 발급이 곧
+            // 게이트 통과 자격의 위임이다. 전시중 리뷰는 무서명 공개 URL 유지.
+            'images' => $this->whenLoaded('images', fn () => ProductReviewImageResource::collectionFor(
+                $this->images,
+                signedDownload: $this->status === ReviewStatus::HIDDEN
+            )),
             // 첨부 개수는 목록 쿼리의 DB 집계(`withCount('images as image_count')`)를 우선 쓴다.
             // 관계 기반 계산만 두면, 이미지를 로드하지 않는 목록에서 개수까지 함께 사라진다.
             'image_count' => $this->image_count !== null
@@ -84,7 +93,7 @@ class ProductReviewResource extends BaseApiResource
             'reply_admin' => $this->whenLoaded('replyAdmin', fn () => [
                 'uuid' => $this->replyAdmin->uuid,
                 'name' => $this->replyAdmin->name,
-                'email' => $this->replyAdmin->email,
+                'email' => $this->canExposeMemberEmail($request, $this->replyAdmin->id) ? $this->replyAdmin->email : null,
             ]),
             'replied_at' => $this->formatDateTimeStringForUser($this->replied_at),
             'reply_updated_at' => $this->formatDateTimeStringForUser($this->reply_updated_at),

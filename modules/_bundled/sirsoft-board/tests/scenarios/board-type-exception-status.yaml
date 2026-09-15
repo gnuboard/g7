@@ -1,0 +1,47 @@
+feature: 게시판 유형 삭제의 예외 → 상태코드 매핑 (Board Type Exception Status)
+
+description: |
+  게시판 유형 삭제가 실패했을 때, 그 원인이 "운영자가 고칠 수 있는 도메인 사유"
+  (사용 중인 유형 / 기본 유형)인지 "서버 결함·인프라 장애"인지를 응답 상태코드로 구분한다.
+
+  배경:
+    종전에는 서비스가 `\Exception` 을 던지고 컨트롤러가 그 `getMessage()` 를 응답의
+    메시지 **키 자리**에 넘겼다. 키 해석에 실패해 예외 원문이 그대로 화면에 나갔고,
+    인프라 장애까지 같은 422 로 묶여 도메인 사유처럼 보였다.
+
+  핵심 설계:
+    - `BoardTypeOperationException` 이 번역문이 아니라 **키와 치환 파라미터**를 들고 다닌다
+      (`getMessageKey()` / `getMessageParams()`)
+    - typed 도메인 예외 → **기존 422 유지** (예외 승격이 사용자 계약을 함께 바꾸면 회귀다)
+    - 그 외 예외 → 500
+
+  도메인 축의 단언은 상태코드가 아니라 **문구**다. 상태코드만 보는 단언은 키 자리에
+  원문이 실린 결함을 그대로 통과시킨다 — 종전 테스트가 실제로 그랬다. 그래서 응답
+  `message` 가 해석된 다국어 문구와 일치하고 키 네임스페이스(`sirsoft-board::`)가
+  본문에 남아 있지 않음을 함께 단언한다.
+
+  인프라 500 축은 서비스 mock 으로만 유발할 수 있어 PHPUnit 이 SSoT 다.
+
+axes:
+  error_class: [domain, infrastructure]
+
+exclusions: []
+
+effects:
+  - board_type_delete_domain_exception_returns_422_with_resolved_message
+  - board_type_delete_infrastructure_exception_returns_500
+
+scenarios:
+  - id: board_type_delete_failure_distinguishes_domain_from_infrastructure
+    description: 사용 중인 유형 삭제는 422 와 해석된 안내 문구로, 인프라 장애는 500 으로 구분된다
+    effects:
+      - board_type_delete_domain_exception_returns_422_with_resolved_message
+      - board_type_delete_infrastructure_exception_returns_500
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardTypeManagementTest.php
+
+notes: |
+  이 매니페스트는 5차 감사에서 신설됐다. 두 테스트는 브랜치가 추가했지만
+  `@scenario`/`@effects` 가 없어 어느 매니페스트에도 묶이지 않았고, 선언이 아예 없는
+  effect 는 test-scenario-coverage 의 셀 대상이 아니라 조용히 통과했다.

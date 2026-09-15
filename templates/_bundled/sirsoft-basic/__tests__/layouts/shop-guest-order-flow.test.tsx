@@ -27,6 +27,7 @@ import guestShowJson from '../../layouts/shop/guest_order_show.json';
 import shippingPartialJson from '../../layouts/partials/mypage/orders/_shipping.json';
 import loginJson from '../../layouts/auth/login.json';
 import loginFormJson from '../../layouts/partials/auth/_login_form.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 객체 트리에서 조건을 만족하는 첫 노드를 깊이우선 탐색 */
 function findNode(node: any, predicate: (n: any) => boolean): any {
@@ -148,7 +149,7 @@ describe('_checkout_summary.json — 비회원 자동 verify 분기 ( 그룹 C)'
   });
 
   it('verify onSuccess 가 saveGuestOrderToken 핸들러로 sessionStorage 3개 키(token/orderNumber/expiresAt)와 _global.guestOrderToken 을 동시에 설정해야 한다', () => {
-    const onSuccessActions = verifyCall.onSuccess ?? [];
+    const onSuccessActions = asArray(verifyCall?.onSuccess);
     const saveAction = onSuccessActions.find(
       (a: any) => a.handler === 'saveGuestOrderToken'
     );
@@ -166,8 +167,8 @@ describe('_checkout_summary.json — 비회원 자동 verify 분기 ( 그룹 C)'
       checkoutSummaryJson,
       (n) =>
         n.handler === 'conditions' &&
-        Array.isArray(n.conditions) &&
-        n.conditions.some(
+        asArray(n?.conditions).length > 0 &&
+        asArray(n?.conditions).some(
           (c: any) =>
             c.if === '{{!_global.currentUser?.uuid}}' &&
             findNode(c, (m: any) => m.handler === 'apiCall' && m.target?.endsWith('/guest/orders/verify'))
@@ -206,7 +207,7 @@ describe('order_complete.json — endpoint 표현식 분기 ( 그룹 C)', () => 
       expect(handler, `errorHandling[${status}] missing`).toBeDefined();
       expect(handler.handler, `${status}: errorHandling 은 sequence 핸들러여야 함`).toBe('sequence');
 
-      const actions = handler.params?.actions ?? [];
+      const actions = callbacksOf(handler, 'actions');
 
       // 토스트 — 백엔드 message 우선
       const toastAction = actions.find((a: any) => a.handler === 'toast');
@@ -254,7 +255,7 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     );
     expect(verifyCall).toBeDefined();
 
-    const onSuccessActions = verifyCall.onSuccess ?? [];
+    const onSuccessActions = asArray(verifyCall?.onSuccess);
     const save = onSuccessActions.find((a: any) => a.handler === 'saveGuestOrderToken');
     expect(save, 'saveGuestOrderToken 핸들러 누락 — sessionStorage 토큰/주문번호/만료시각 3개 키 저장 실패').toBeDefined();
     expect(save.params).toMatchObject({
@@ -282,7 +283,7 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
       guestFormJson,
       (n) => n.handler === 'apiCall' && n.target?.endsWith('/guest/orders/verify')
     );
-    const onErrorActions = verifyCall.onError ?? [];
+    const onErrorActions = asArray(verifyCall?.onError);
 
     // setState 가 lookupError: true 를 포함해야 함
     const setStateAction = onErrorActions.find(
@@ -308,7 +309,7 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     );
     expect(submitSequence).toBeDefined();
 
-    const resetAction = (submitSequence.actions ?? []).find(
+    const resetAction = asArray(submitSequence?.actions).find(
       (a: any) => a.handler === 'setState' && a.params?.lookupError === false && a.params?.isSubmitting === true
     );
     expect(resetAction, 'submit 시작 시 lookupError 초기화 누락 — 이전 실패 박스가 그대로 노출됨').toBeDefined();
@@ -356,7 +357,7 @@ describe('_login_form.json — 로그인 성공 시 비회원 토큰 정리', ()
     );
     expect(loginCall).toBeDefined();
 
-    const onSuccessActions = loginCall.onSuccess ?? [];
+    const onSuccessActions = asArray(loginCall?.onSuccess);
 
     const clearToken = onSuccessActions.find((a: any) => a.handler === 'clearGuestOrderToken');
     expect(clearToken, '로그인 onSuccess 에 clearGuestOrderToken 핸들러 누락 — 비회원 sessionStorage 토큰이 회원 세션과 공존하게 됨').toBeDefined();
@@ -450,7 +451,7 @@ describe('guest_order_show.json — 위조/만료 토큰 자동 정리 + 다른 
   it('errorHandling.401 이 clearGuestOrderToken → toast → navigate 순서로 동작해야 한다 (위조 토큰/관리자 비밀번호 재설정 시 sessionStorage 잔존으로 인한 무한 redirect 회귀 차단)', () => {
     const handler = orderSource.errorHandling?.['401'];
     expect(handler?.handler).toBe('sequence');
-    const actions = handler.params?.actions ?? [];
+    const actions = callbacksOf(handler, 'actions');
 
     // clearGuestOrderToken 이 navigate 보다 앞에 와야 함 — 다음 페이지 진입 시 만료 안 된 잔존 토큰이 자동 진입을 또 발화시키는 것을 차단
     const clearIdx = actions.findIndex((a: any) => a.handler === 'clearGuestOrderToken');
@@ -467,7 +468,7 @@ describe('guest_order_show.json — 위조/만료 토큰 자동 정리 + 다른 
   it('errorHandling.404 도 동일하게 clearGuestOrderToken → toast → navigate 순서를 따라야 한다 (회귀 차단)', () => {
     const handler = orderSource.errorHandling?.['404'];
     expect(handler?.handler).toBe('sequence');
-    const actions = handler.params?.actions ?? [];
+    const actions = callbacksOf(handler, 'actions');
 
     const clearIdx = actions.findIndex((a: any) => a.handler === 'clearGuestOrderToken');
     const navIdx = actions.findIndex((a: any) => a.handler === 'navigate');
@@ -512,8 +513,8 @@ describe('비회원 배송지 변경 지원 () — 회원/비회원 공통 + 탭
         Array.isArray(n.children) &&
         n.children.some((c: any) => c.text === '$t:mypage.order_detail.change_shipping_address')
     );
-    const seq = (changeBtn.actions ?? []).find((a: any) => a.handler === 'sequence');
-    const setState = (seq?.actions ?? []).find((a: any) => a.handler === 'setState');
+    const seq = asArray(changeBtn?.actions).find((a: any) => a.handler === 'sequence');
+    const setState = asArray(seq?.actions).find((a: any) => a.handler === 'setState');
     expect(setState, '모달 열기 setState 존재').toBeDefined();
     const mode = String(setState.params?.changeAddressMode);
     // currentUser 면 saved, 아니면 manual (단일 바인딩 삼항)

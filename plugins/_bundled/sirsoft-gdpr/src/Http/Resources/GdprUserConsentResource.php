@@ -19,12 +19,13 @@ use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
  * `needs_renewal_this_item` 은 *선택형 항목 중 정책 버전이 옛 버전인* 행에서 true — 마이페이지
  * 액션 컬럼이 "다시 동의" 대신 "최신 정책으로 갱신" 분기를 표시할 때 사용 (#21).
  */
+// audit:allow api-doc-coverage reason: 이번 변경은 toArray() 주석 문구 정정 1건뿐이다. 응답 필드 구성·값 산출 로직이 그대로라 docs/api/ 의 응답 필드 표에 갱신할 내용이 없다.
 class GdprUserConsentResource extends BaseApiResource
 {
     /**
      * 리소스를 배열로 변환합니다.
      *
-     * @param Request $request HTTP 요청
+     * @param  Request  $request  HTTP 요청
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -53,7 +54,7 @@ class GdprUserConsentResource extends BaseApiResource
         } else {
             $status = 'none';
         }
-        // 표시 날짜/라벨은 "동의한 항목" + "철회 이력이 있는 항목"만 노출한다 (PO 결정, 2026-07-20 / 이슈 #509 16번 갱신).
+        // 표시 날짜/라벨은 "동의한 항목" + "철회 이력이 있는 항목"만 노출한다 (프로젝트 결정, 2026-07-20 / 이슈 #509 16번 갱신).
         // 동의 상태(required·consented)는 동의일 + '동의' 라벨, 철회(revoked)는 철회일 + '철회' 라벨을 내려준다.
         // 거부·신규 미선택은 status_label·status_at_formatted 를 null 로 두어 프론트가 날짜 줄을 렌더하지 않는다.
         // (거부일은 사용자 화면 확인 가치가 낮고, 감사 로그·관리자 화면에서 확인 가능. 철회일은 유저 본인의

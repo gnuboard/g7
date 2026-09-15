@@ -1,6 +1,6 @@
 # 모듈 다국어 시스템
 
-> **관련 문서**: [index.md](index.md) | [module-basics.md](module-basics.md) | [module-routing.md](module-routing.md)
+> **관련 문서**: [README.md](README.md) | [module-basics.md](module-basics.md) | [module-routing.md](module-routing.md)
 
 ---
 
@@ -299,6 +299,12 @@ modules/_bundled/vendor-module/
 
 레이아웃 JSON에서 `$t:` 접두사를 사용하여 다국어 키를 참조합니다:
 
+```html
+<h1 data-ref="page-title" text="$t:sirsoft-sample.admin.index.title"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "page-title",
@@ -322,6 +328,12 @@ $t:sirsoft-sample.messages.save_success
 
 ### 다양한 사용 예시
 
+```html
+<page-header data-ref="page-header" title="$t:sirsoft-sample.admin.index.title" description="$t:sirsoft-sample.admin.index.description"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "page-header",
@@ -333,6 +345,12 @@ $t:sirsoft-sample.messages.save_success
   }
 }
 ```
+
+```html
+<button data-ref="submit-button" text="$t:sirsoft-sample.admin.create.submit" variant="primary"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

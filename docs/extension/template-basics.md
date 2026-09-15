@@ -1,7 +1,7 @@
 # 템플릿 시스템 기초
 
 > **위치**: `docs/extension/template-basics.md`
-> **관련 문서**: [index.md](./index.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
+> **관련 문서**: [README.md](./README.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
 
 ---
 
@@ -43,6 +43,16 @@ G7의 템플릿 시스템은 JSON 기반 레이아웃 정의를 통해 동적으
 - 다국어 및 권한 기반 렌더링
 
 ---
+
+## 확장 컴포넌트 오버라이드
+
+템플릿은 확장(모듈/플러그인)이 제공한 컴포넌트를 자기 구현으로 갈아끼울 수 있다. 구현체는 `src/components/overrides/{확장식별자}/{이름}.tsx` 에 두고 `components.json` 의 `overrides[]` 에 대상·버전 제약을 선언한다 — 디렉토리명이 곧 대상 식별자이며, 레이아웃 오버라이드(`layouts/overrides/{확장식별자}/`)와 같은 규약이다.
+
+대체는 같은 이름 아래에서 일어나므로 **마크업 표면은 바뀌지 않는다** — 레이아웃은 오버라이드가 붙든 떨어지든 그대로다. 버전 제약이 대상과 맞지 않으면 대체본을 폐기하고 **원본이 자리를 지킨다**(화면이 조용히 사라지지 않는다).
+
+이 대체 권한은 템플릿에만 있다. 반대 방향(확장이 템플릿 컴포넌트를 대체)은 열려 있지 않다.
+
+규약 전문: **[extension-components.md](extension-components.md)**
 
 ## 템플릿 타입
 
@@ -228,8 +238,7 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
     {
       "id": "fontawesome",
       "type": "style",
-      "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
-      "preconnect": "https://cdnjs.cloudflare.com"
+      "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
     }
   ]
 }
@@ -249,15 +258,31 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 
 ### 외부 리소스 (externals)
 
-`externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 외부 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.
+`externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.
+
+자산을 가리키는 방법은 `asset`과 `url` 두 가지이며, 항목마다 **하나를 고릅니다**.
+
+- `asset` — 템플릿이 **자체 제공**하는 파일의 `dist/` 이하 경로. 구동 에셋은 자체 제공이 원칙이므로 이쪽이 기본입니다.
+- `url` — 절대 URL. 자체 제공이 불가능한 외부 서비스에만 씁니다.
+
+```json
+{
+    "type": "style",
+    "id": "font-awesome",
+    "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
+}
+```
+
+구동에 필요한 에셋을 제3자 CDN에서 실시간으로 받으면, 그 도달 실패는 예외도 로그도 남기지 않고 화면 기능만 사라집니다. 폐쇄망·방화벽·광고차단기 환경에서 재현되며 자체 서버 로그에 흔적이 없어 운영자가 원인을 특정할 수 없습니다. 라이브러리·웹폰트·아이콘은 `dist/vendor/{lib}/{version}/`에 동봉하고 `asset`으로 가리킵니다.
 
 | 속성 | 타입 | 필수 | 적용 type | 허용값/형식 | 렌더링/동작 |
 |---|---:|---:|---|---|---|
 | `id` | string | 권장 | all | 영문/숫자/`-`/`_` | HTML `id` 속성 |
 | `type` | string | 필수 | all | `style`, `webfont`, `script`, `preconnect`, `dns-prefetch`, `preload`, `modulepreload` | 출력 태그와 위치 결정 |
-| `url` | string | 필수 | all | `https://...` | link 계열은 `href`, script는 `src` |
-| `preconnect` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | `https://cdn.example.com` | 리소스보다 먼저 `<link rel="preconnect">` 출력, 중복 제거 |
-| `crossorigin` | boolean/string | 선택 | `style`, `webfont`, `script`, `preconnect`, `preload`, `modulepreload` | `true`, `anonymous`, `use-credentials` | `true`는 `anonymous`로 정규화 |
+| `asset` | string | `url`과 택일 | `preconnect`·`dns-prefetch` 제외 | `dist/` 이하 상대 경로 (`vendor/font-awesome/6.4.0/css/all.inlined.css`). `/`로 시작 금지, `..` 금지, `A-Za-z0-9._-/`만 허용 | 자산 URL 이중 모드와 정적 게시를 반영한 same-origin URL로 해석. `url`보다 우선하며, 둘 다 선언하면 `url`은 무시되고 경고가 남는다 |
+| `url` | string | `asset`과 택일 | all | `https://...` 또는 `/`로 시작하는 same-origin 경로 | link 계열은 `href`, script는 `src` |
+| `preconnect` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | `https://cdn.example.com` | 리소스보다 먼저 `<link rel="preconnect">` 출력, 중복 제거. **same-origin 항목에서는 무시** |
+| `crossorigin` | boolean/string | 선택 | `style`, `webfont`, `script`, `preconnect`, `preload`, `modulepreload` | `true`, `anonymous`, `use-credentials` | `true`는 `anonymous`로 정규화. **same-origin 항목에서는 무시** |
 | `integrity` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | SRI hash | HTML `integrity` |
 | `referrerpolicy` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | 표준 referrer policy | HTML `referrerpolicy` |
 | `media` | string | 선택 | `style`, `webfont` | CSS media query | stylesheet link의 `media` |
@@ -279,6 +304,8 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 | `modulepreload` | head | `<link rel="modulepreload" href="...">` |
 
 `externals`는 페이지 최초 진입에 항상 필요한 리소스만 선언합니다. 라우트별 조건부 스크립트나 액션 실행 중 동적 로딩은 layout `scripts`와 `loadScript` 책임입니다.
+
+세 경로 모두 **같은 출처 정책**을 받습니다 — same-origin 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 상세: [module-assets.md](module-assets.md#trusted_script_hosts--외부-스크립트-신뢰-호스트) · [frontend/security.md](../frontend/security.md#외부-스크립트-신뢰-출처-허용목록)
 
 ---
 
@@ -313,17 +340,27 @@ templates/_bundled/[vendor-template]/
 ├── seo-config.json             # SEO 컴포넌트→HTML 매핑 설정 (선택)
 ├── LICENSE                     # 라이선스 전문 (MIT) — API 엔드포인트 `GET /api/admin/templates/{identifier}/license`로 제공
 ├── layouts/
-│   ├── dashboard.json        # 일반 레이아웃
-│   ├── _admin_base.json      # 베이스 레이아웃
+│   ├── dashboard.g7.html     # 일반 레이아웃 (소스 SSoT)
+│   ├── _admin_base.g7.html   # 베이스 레이아웃 (소스 SSoT)
 │   └── errors/               # 에러 레이아웃 전용
-│       ├── 404.json
-│       ├── 403.json
-│       └── 500.json
+│       ├── 404.g7.html
+│       ├── 403.g7.html
+│       └── 500.g7.html
 ```
+
+레이아웃 소스 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 아래 예시의 JSON 은 그 산출 런타임 계약 키다 ([layout-json.md](../frontend/layout-json.md)).
 
 ### 에러 레이아웃 구조
 
 에러 레이아웃도 일반 레이아웃과 동일하게 `extends` + `slots` 패턴을 사용합니다:
+
+```html
+<slot name="content">
+  <empty-state icon="alert-triangle" title="$t:errors.404.title" description="$t:errors.404.description"/>
+</slot>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -358,7 +395,7 @@ templates/_bundled/[vendor-template]/
 
 ```
 중요: registerLayouts()는 특정 디렉토리만 스캔
-✅ 포함: layouts/*.json (루트) + layouts/errors/*.json
+✅ 포함: layouts/*.{g7.html,json} (루트) + layouts/errors/*.{g7.html,json}
 ❌ 제외: layouts/partials/ 등 기타 하위 디렉토리
 ```
 
@@ -366,9 +403,9 @@ templates/_bundled/[vendor-template]/
 
 | 디렉토리 | 스캔 여부 | 용도 |
 |----------|----------|------|
-| `layouts/*.json` | ✅ 스캔 | 일반 레이아웃 |
-| `layouts/errors/*.json` | ✅ 스캔 | 에러 페이지 레이아웃 |
-| `layouts/partials/*.json` | ❌ 제외 | extends로 참조되는 부분 레이아웃 |
+| `layouts/*.{g7.html,json}` | ✅ 스캔 | 일반 레이아웃 |
+| `layouts/errors/*.{g7.html,json}` | ✅ 스캔 | 에러 페이지 레이아웃 |
+| `layouts/partials/*.{g7.html,json}` | ❌ 제외 | extends로 참조되는 부분 레이아웃 |
 
 ### 이유
 
@@ -376,26 +413,42 @@ templates/_bundled/[vendor-template]/
 - 직접 라우팅되지 않으므로 DB에 별도 등록 불필요
 - 에러 레이아웃은 `ErrorPageHandler`에서 직접 조회하므로 DB 등록 필요
 
-### TemplateManager.php 구현
+### 구현 위치 — `ValidatesLayoutFiles::collectLayoutSources()`
+
+스캔은 `TemplateManager` 가 직접 하지 않는다. 세 Manager(템플릿·모듈·플러그인)가 공유하는
+`App\Extension\Traits\ValidatesLayoutFiles` 의 `collectLayoutSources()` 가 단일 지점이며,
+**`.g7.html` 소스가 있으면 그것을 우선**하고 짝 마크업이 없는 `.json` 만 직접 읽는다.
 
 ```php
-// 루트 layouts 디렉토리의 JSON 파일만 스캔
-$layoutFiles = File::glob("{$layoutsPath}/*.json");
+// ① 같은 전략으로 두 확장자를 각각 수집 (루트 + errors/)
+$jsonFiles   = File::glob("{$layoutsPath}/*.json");          // + errors/*.json
+$markupFiles = $this->scanMarkupLayoutFiles($layoutsPath, $recursive);  // *.g7.html
 
-// errors/ 디렉토리만 추가 스캔 (에러 페이지 레이아웃용)
-$errorsPath = "{$layoutsPath}/errors";
-if (File::exists($errorsPath)) {
-    $errorLayoutFiles = File::glob("{$errorsPath}/*.json");
-    $layoutFiles = array_merge($layoutFiles, $errorLayoutFiles);
+// ② 마크업이 먼저 소스가 되고, 그 짝 `.json` 경로를 색인해 둔다
+foreach ($markupFiles as $markupFile) {
+    $markupJsonSiblings[preg_replace('/\.g7\.html$/i', '.json', $markupFile)] = true;
+    $sources[] = ['path' => $markupFile, 'markup' => true];
+}
+
+// ③ 짝 `.g7.html` 이 있는 `.json` 은 건너뛴다 (소스 SSoT 가 이긴다)
+foreach ($jsonFiles as $jsonFile) {
+    if (isset($markupJsonSiblings[$jsonFile])) {
+        continue;
+    }
+    $sources[] = ['path' => $jsonFile, 'markup' => false];
 }
 ```
+
+`.g7.html` 은 설치 시점에 **메모리로 컴파일**해 등록 content 를 만들고 디스크에 산출 JSON 을 남기지
+않는다. `--layout-source=json`(`config('template.layout_markup.install_source')`)으로 우선순위를 뒤집을
+수 있으나, 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일된다.
 
 ### 모듈 레이아웃 자동 등록
 
 모듈 활성화 시 레이아웃은 디렉토리 위치에 따라 해당 타입의 템플릿에 등록됩니다:
 
-- `modules/{module}/resources/layouts/admin/*.json` → Admin 타입 템플릿에 등록
-- `modules/{module}/resources/layouts/user/*.json` → User 타입 템플릿에 등록
+- `modules/{module}/resources/layouts/admin/*.{g7.html,json}` → Admin 타입 템플릿에 등록
+- `modules/{module}/resources/layouts/user/*.{g7.html,json}` → User 타입 템플릿에 등록
 
 이 동작은 `ModuleManager::registerModuleLayouts()`에서 처리됩니다.
 
@@ -552,6 +605,27 @@ Body: { "layout_strategy": "apply_new" }
 필수: _bundled 작업 완료 후 반영/검증은 업데이트 프로세스 사용
 ```
 
+### `custom/` 은 운영자 자리입니다 — 작성자가 선점하지 않습니다
+
+`templates/{identifier}/custom/` 은 **사이트 운영자**가 자기 CSS·JS 를 덧붙이는 자리입니다.
+확장 교체(업데이트·재설치)가 이 디렉토리만은 보존하므로, 운영자가 넣은 파일은 템플릿을
+업데이트해도 살아남습니다.
+
+그래서 템플릿 작성자는 `_bundled` 에 `custom/` 을 담아 배포하지 않습니다. 보존 계층은
+"덮어쓰지 않음" 이라, 작성자가 담은 파일은 이미 `custom/` 을 가진 사이트에서 **영영
+반영되지 않는 상태**가 됩니다. 작성자의 기본 스타일은 `src/styles/` 에 두고 빌드에
+포함시킵니다.
+
+| 대상 | 자리 | 빌드 | 업데이트 시 |
+|---|---|---|---|
+| 작성자 기본 스타일 | `src/styles/` | 필요 | 새 배포본으로 교체 |
+| 작성자 동봉 구동 자산 | `dist/vendor/{lib}/{version}/` | 불필요 | 새 배포본으로 교체 |
+| **운영자 추가 CSS·JS** | **`custom/`** | **불필요** | **보존** |
+
+운영자가 `dist/` 를 직접 고치는 것은 방법이 아닙니다 — 다음 빌드와 다음 업데이트에
+사라집니다. 로드 순서·`custom/assets.json` 선언 형식·외부 URL 등록 규칙은
+[module-assets.md 「사용자 추가 에셋」](module-assets.md) 을 참조하세요.
+
 ### 개발 워크플로우
 
 ```text
@@ -642,7 +716,7 @@ SEO 페이지 생성기가 컴포넌트를 HTML로 변환할 때 사용하는 �
 
 ## 관련 문서
 
-- [index.md](./index.md) - 확장 시스템 인덱스
+- [README.md](./README.md) - 확장 시스템 인덱스
 - [template-routing.md](./template-routing.md) - 템플릿 라우트/언어 파일 규칙
 - [template-security.md](./template-security.md) - 템플릿 보안 정책
 - [template-caching.md](./template-caching.md) - 템플릿 캐싱 전략

@@ -334,4 +334,46 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         // Then: false 반환 (guest role에 권한 미할당)
         $this->assertFalse($result);
     }
+
+    /**
+     * Admin 요청 판정(컨트롤러 네임스페이스 스니핑)은 트레이트 단일 지점이어야 한다
+     *
+     * 판정 규칙이 Resource/게이트마다 사설 복제되면 규칙 변경 시 한 곳만 누락되어
+     * 경로별 판정이 갈린다. 모듈 src 전체를 스캔하여 `getController()` 호출이
+     * ChecksBoardPermission 트레이트에만 존재함을 고정한다 (열거가 아닌 조건 스캔).
+     */
+    #[Test]
+    public function admin_요청_판정은_트레이트_단일_지점이다(): void
+    {
+        $srcDir = dirname(__DIR__, 3).'/src';
+        $allowed = str_replace('\\', '/', realpath($srcDir.'/Traits/ChecksBoardPermission.php'));
+        $violations = [];
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($srcDir, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $path = str_replace('\\', '/', $file->getRealPath());
+
+            if ($path === $allowed) {
+                continue;
+            }
+
+            if (str_contains((string) file_get_contents($path), 'getController(')) {
+                $violations[] = $path;
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $violations,
+            'Admin 요청 판정 사설 복제본 발견 — ChecksBoardPermission::isAdminRequest() 를 사용할 것: '
+            .implode(', ', $violations)
+        );
+    }
 }

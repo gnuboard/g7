@@ -117,26 +117,50 @@ class ValidLayoutExtensionStructure implements ValidationRule
             return;
         }
 
-        // injections 검증
-        if (! isset($data['injections'])) {
-            $fail(__('validation.layout_extension.injections_required'));
+        // 기여 검증 — overlay 는 `injections` 뿐 아니라 modals/data_sources/scripts/init_actions
+        // 로도 성립한다. 런타임이 그렇게 병합하고([LayoutExtensionService::255-259](app/Services/LayoutExtensionService.php#L255)),
+        // 번들 결제 플러그인 2종이 modals 만 기여하는 형태로 출하 중이다. `injections` 를
+        // 무조건 요구하면 정상 fragment 가 거부된다(편집기 API 저장까지 함께 막힌다).
+        if (! $this->contributesSomething($data)) {
+            $fail(__('validation.layout_extension.contribution_required'));
 
             return;
         }
 
-        if (! is_array($data['injections'])) {
-            $fail(__('validation.layout_extension.injections_must_be_array'));
+        if (isset($data['injections'])) {
+            if (! is_array($data['injections'])) {
+                $fail(__('validation.layout_extension.injections_must_be_array'));
 
-            return;
-        }
-
-        foreach ($data['injections'] as $index => $injection) {
-            if (! $this->validateInjection($injection, $index, $fail)) {
                 return;
+            }
+
+            foreach ($data['injections'] as $index => $injection) {
+                if (! $this->validateInjection($injection, $index, $fail)) {
+                    return;
+                }
             }
         }
 
         $this->validateOptionalSections($data, $fail);
+    }
+
+    /**
+     * overlay 가 호스트에 병합할 무언가를 실제로 들고 있는지 판정합니다.
+     *
+     * 판정 키는 런타임 병합 목록과 같다 — 한쪽에 키를 늘리면 다른 쪽도 늘려야 한다.
+     *
+     * @param  array  $data  확장 정의
+     * @return bool 기여가 하나라도 있으면 true
+     */
+    private function contributesSomething(array $data): bool
+    {
+        foreach (['injections', 'modals', 'data_sources', 'scripts', 'init_actions', 'initActions'] as $key) {
+            if (! empty($data[$key])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

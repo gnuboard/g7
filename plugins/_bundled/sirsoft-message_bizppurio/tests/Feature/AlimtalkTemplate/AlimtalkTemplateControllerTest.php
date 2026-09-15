@@ -9,16 +9,17 @@ use Mockery;
 use Mockery\MockInterface;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
 use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkTemplateService;
-use Plugins\Sirsoft\MessageBizppurio\Services\NotificationBindingService;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * 알림톡 템플릿 조회 컨트롤러 Feature 테스트 (조회 전용).
+ * 알림톡 작성 모달 참조 조회 컨트롤러 Feature 테스트 (#597).
  *
  * 라우트 → 컨트롤러 → 서비스 경계를 검증한다. kapi 실제 호출 로직은
  * AlimtalkTemplateServiceTest 가 검증하므로, 여기서는 AlimtalkTemplateService 를
- * 컨테이너에 mock 으로 바인딩해 조회 권한 경계(view)·응답 봉투·kapi 실패(예외)의 422
- * 전파·등록 라우트 제거(405)를 격리 검증한다.
+ * 컨테이너에 mock 으로 바인딩해 조회 권한 경계(view)·응답 봉투·kapi 실패(예외)의
+ * 422 전파를 격리 검증한다. 실시간 목록/상세 화면(구 Phase 5)은 DB 기반
+ * 라이프사이클(BizppurioTemplateController)로 대체되어 제거됐다 — 남은 라우트는
+ * categories/profiles 둘뿐이다.
  *
  * @since 1.0.0
  */
@@ -88,169 +89,89 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
     }
 
     /**
-     * @scenario auth=view,service=ok
-     *
-     * @effects list_returns_templates_with_status_badge
+     * view 권한으로 카테고리 전체를 조회한다 (data.categories 봉투).
      */
-    public function test_view권한으로_목록을_조회한다(): void
+    public function test_view권한으로_카테고리를_조회한다(): void
     {
-        $this->mockService()->shouldReceive('list')->once()->andReturn([
-            'templates' => [
-                ['templateCode' => 'TW_1', 'templateName' => '주문완료', 'status_badge' => ['variant' => 'green']],
-            ],
-            'pagination' => ['total' => 1, 'total_page' => 1, 'current_page' => 1, 'per_page' => 20],
+        $this->mockService()->shouldReceive('categories')->once()->andReturn([
+            ['code' => '001001', 'name' => '회원가입', 'groupName' => '회원'],
         ]);
 
         $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.view']))
-            ->getJson(self::BASE);
+            ->getJson(self::BASE.'/categories');
 
         $response->assertStatus(200);
-        $response->assertJsonPath('data.templates.0.templateCode', 'TW_1');
-        $response->assertJsonPath('data.templates.0.status_badge.variant', 'green');
+        $response->assertJsonPath('data.categories.0.code', '001001');
+        $response->assertJsonPath('data.categories.0.groupName', '회원');
     }
 
     /**
-     * @scenario auth=guest
-     *
-     * @effects list_requires_authentication_returns_401
+     * view 권한으로 발신프로필 목록을 조회한다 (data.profiles 봉투).
+     */
+    public function test_view권한으로_발신프로필을_조회한다(): void
+    {
+        $this->mockService()->shouldReceive('senderProfiles')->once()->andReturn([
+            ['senderKey' => 'SK_40', 'name' => '테스트채널', 'status' => 'A'],
+        ]);
+
+        $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.view']))
+            ->getJson(self::BASE.'/profiles');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.profiles.0.senderKey', 'SK_40');
+        $response->assertJsonPath('data.profiles.0.name', '테스트채널');
+    }
+
+    /**
+     * 비인증 요청은 401 이다.
      */
     public function test_비인증은_401(): void
     {
-        $this->getJson(self::BASE)->assertStatus(401);
+        $this->getJson(self::BASE.'/categories')->assertStatus(401);
+        $this->getJson(self::BASE.'/profiles')->assertStatus(401);
     }
 
     /**
-     * @scenario auth=none_of_required,action=index
-     *
-     * @effects list_requires_view_permission_returns_403
+     * view 권한이 없으면 두 라우트 모두 403 이다.
      */
-    public function test_view권한_없으면_목록조회_403(): void
+    public function test_view권한_없으면_403(): void
     {
-        $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.other']))
-            ->getJson(self::BASE);
+        $headers = $this->authHeaders(['sirsoft-message_bizppurio.messaging.other']);
 
-        $response->assertStatus(403);
+        $this->withHeaders($headers)->getJson(self::BASE.'/categories')->assertStatus(403);
+        $this->withHeaders($headers)->getJson(self::BASE.'/profiles')->assertStatus(403);
     }
 
     /**
-     * @scenario auth=view,service=ok
-     *
-     * @effects show_returns_template_detail_with_status_badge
-     */
-    public function test_view권한으로_상세를_조회한다(): void
-    {
-        $this->mockService()->shouldReceive('detail')->once()->with('TW_1')->andReturn([
-            'templateCode' => 'TW_1',
-            'templateName' => '주문완료',
-            'status_badge' => ['variant' => 'green'],
-        ]);
-
-        $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.view']))
-            ->getJson(self::BASE.'/TW_1');
-
-        $response->assertStatus(200);
-        $response->assertJsonPath('data.template.templateCode', 'TW_1');
-        $response->assertJsonPath('data.template.status_badge.variant', 'green');
-    }
-
-    /**
-     * @scenario auth=view,action=store
-     *
-     * @effects store_route_removed_returns_405_read_only
-     */
-    public function test_등록_라우트는_제거되어_조회전용이다(): void
-    {
-        // 조회 전용 전환으로 등록(POST)·상태변경 라우트를 제거했다. manage 미들웨어 블록이
-        // 사라졌으므로 POST 는 라우트 미매칭(405)이 되어야 한다(등록은 비즈뿌리오 콘솔).
-        $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.view']))
-            ->postJson(self::BASE, [
-                'templateName' => 'T',
-                'templateContent' => '본문',
-                'categoryCode' => '001',
-                'templateEmphasizeType' => 'NONE',
-            ]);
-
-        $response->assertStatus(405);
-    }
-
-    /**
-     * @scenario auth=view,service=throws
-     *
-     * @effects kapi_failure_is_surfaced_as_422_with_result_code
+     * kapi 실패는 카카오 사유(message)·결과코드가 담긴 422 로 전파된다 (GuardsKakaoRequests 규약).
      */
     public function test_kapi_실패는_422로_전파된다(): void
     {
-        $this->mockService()->shouldReceive('list')->once()
+        $this->mockService()->shouldReceive('categories')->once()
+            ->andThrow(new BizppurioApiException('접근할 수 없는 IP 입니다.', resultCode: '403'));
+
+        $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.view']))
+            ->getJson(self::BASE.'/categories');
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.bizppurio_message', '접근할 수 없는 IP 입니다.');
+        $response->assertJsonPath('errors.result_code', '403');
+    }
+
+    /**
+     * 발신프로필 조회의 kapi 실패도 동일한 422 규약으로 전파된다.
+     */
+    public function test_발신프로필_kapi_실패도_422로_전파된다(): void
+    {
+        $this->mockService()->shouldReceive('senderProfiles')->once()
             ->andThrow(new BizppurioApiException('발신프로필을 찾을 수 없습니다.', resultCode: '7204'));
 
         $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.view']))
-            ->getJson(self::BASE);
+            ->getJson(self::BASE.'/profiles');
 
         $response->assertStatus(422);
+        $response->assertJsonPath('errors.bizppurio_message', '발신프로필을 찾을 수 없습니다.');
         $response->assertJsonPath('errors.result_code', '7204');
-        $response->assertJsonPath('errors.kakao_message', '발신프로필을 찾을 수 없습니다.');
-    }
-
-    /**
-     * @scenario auth=view,kapi_result=not_found
-     *
-     * @effects list_treats_kapi_508_as_empty_result_not_error
-     */
-    public function test_kapi_508은_에러가_아니라_빈_목록으로_응답한다(): void
-    {
-        $this->mockService()->shouldReceive('list')->once()->andReturn([
-            'templates' => [],
-            'pagination' => ['total' => 0, 'total_page' => 1, 'current_page' => 1, 'per_page' => 20],
-        ]);
-
-        $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.view']))
-            ->getJson(self::BASE.'?keyword=대글');
-
-        $response->assertStatus(200);
-        $response->assertJsonPath('data.templates', []);
-        $response->assertJsonPath('data.pagination.total', 0);
-    }
-
-    /**
-     * @scenario auth=manage,action=clear_cache
-     *
-     * @effects clear_cache_delegates_to_binding_service_and_returns_count
-     */
-    public function test_manage권한으로_발송내용_캐시를_초기화한다(): void
-    {
-        $bindings = Mockery::mock(NotificationBindingService::class);
-        $bindings->shouldReceive('clearTemplateContentCache')->once()->andReturn(3);
-        $this->app->instance(NotificationBindingService::class, $bindings);
-
-        $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.manage']))
-            ->postJson(self::BASE.'/cache/clear');
-
-        $response->assertStatus(200);
-        $response->assertJsonPath('data.cleared', 3);
-    }
-
-    /**
-     * @scenario auth=view_only,action=clear_cache
-     *
-     * @effects clear_cache_requires_manage_permission_returns_403
-     */
-    public function test_캐시초기화는_manage권한이_없으면_403(): void
-    {
-        // 조회(view) 권한만으로는 캐시 초기화(쓰기)를 할 수 없다.
-        $response = $this->withHeaders($this->authHeaders(['sirsoft-message_bizppurio.messaging.view']))
-            ->postJson(self::BASE.'/cache/clear');
-
-        $response->assertStatus(403);
-    }
-
-    /**
-     * @scenario auth=guest,action=clear_cache
-     *
-     * @effects clear_cache_requires_authentication_returns_401
-     */
-    public function test_캐시초기화는_비인증이면_401(): void
-    {
-        $this->postJson(self::BASE.'/cache/clear')->assertStatus(401);
     }
 
     protected function tearDown(): void

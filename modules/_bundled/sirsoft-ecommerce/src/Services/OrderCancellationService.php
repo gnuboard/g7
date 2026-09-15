@@ -32,6 +32,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
@@ -57,6 +58,7 @@ class OrderCancellationService
      * @param  OrderRefundOptionRepositoryInterface  $orderRefundOptionRepository  주문 환불 옵션 Repository
      * @param  CashReceiptService  $cashReceiptService  현금영수증 발급/취소 서비스
      * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository
+     * @param  OrderRepositoryInterface  $orderRepository  주문 Repository
      */
     public function __construct(
         protected OrderAdjustmentService $adjustmentService,
@@ -72,6 +74,7 @@ class OrderCancellationService
         protected OrderRefundOptionRepositoryInterface $orderRefundOptionRepository,
         protected CashReceiptService $cashReceiptService,
         protected OrderPaymentRepositoryInterface $orderPaymentRepository,
+        protected OrderRepositoryInterface $orderRepository,
     ) {}
 
     /**
@@ -314,6 +317,12 @@ class OrderCancellationService
             $cancelledBy, $cancelPg, $adjustmentResult,
             &$orderCancel, &$orderRefund,
         ) {
+            // ③-0. 누적 컬럼 갱신 전 주문·결제 행을 잠그고 커밋된 값으로 되읽는다.
+            // total_cancelled_amount / cancellation_count / cancelled_amount / cancel_history 는
+            // 현재 값을 읽어 더하거나 덧붙이는 컬럼이라, 동시 부분취소 두 건이 같은 값을 읽으면
+            // 후행이 선행을 덮어써 취소 총액이 과소 기록되고 PG 환불 기준이 어긋난다.
+            $this->lockAccumulatorRows($order);
+
             $now = Carbon::now();
             $isFullCancel = $cancelType === CancelTypeEnum::FULL;
             $isPaid = ! $order->order_status->isBeforePayment();
@@ -733,6 +742,32 @@ class OrderCancellationService
     // ───────────────────────────────────────────────
     // ③-e. Order 합계 업데이트
     // ───────────────────────────────────────────────
+
+    /**
+     * 누적 컬럼을 가진 주문·결제 행을 잠그고 커밋된 값으로 되읽습니다.
+     *
+     * 관계(options/shippings 등)는 이 트랜잭션 안에서 이미 사용 중이므로 건드리지 않고,
+     * 누적 판단에 쓰이는 속성만 교체한다. 잠금은 커밋까지 유지되어 뒤따르는 취소 요청이
+     * 앞선 커밋을 본 뒤에 진행한다.
+     *
+     * @param  Order  $order  대상 주문 (속성이 최신 값으로 갱신됨)
+     * @return void
+     */
+    protected function lockAccumulatorRows(Order $order): void
+    {
+        $locked = $this->orderRepository->findByIdForUpdate($order->id);
+
+        if ($locked !== null) {
+            // 관계는 유지한 채 속성만 커밋된 값으로 교체
+            $order->setRawAttributes($locked->getAttributes(), true);
+        }
+
+        $lockedPayment = $this->orderPaymentRepository->findByOrderIdForUpdate($order->id);
+
+        if ($lockedPayment !== null && $order->relationLoaded('payment') && $order->payment !== null) {
+            $order->payment->setRawAttributes($lockedPayment->getAttributes(), true);
+        }
+    }
 
     /**
      * 주문 합계를 재계산 결과에 따라 갱신합니다.

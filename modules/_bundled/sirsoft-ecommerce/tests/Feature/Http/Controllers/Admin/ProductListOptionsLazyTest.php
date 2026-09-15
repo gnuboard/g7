@@ -146,6 +146,7 @@ class ProductListOptionsLazyTest extends ModuleTestCase
 
     /**
      * @scenario row_state=collapsed,option_profile=active_only
+     *
      * @effects list_response_omits_options
      */
     public function test_list_omits_option_array_by_default(): void
@@ -174,6 +175,7 @@ class ProductListOptionsLazyTest extends ModuleTestCase
      * 지연 로딩이 그 분기에서만 되돌아가는 회귀가 가능하다 (mp09).
      *
      * @scenario row_state=collapsed,option_profile=mixed
+     *
      * @effects with_options_opt_in_restores, search_branch_shares_lazy_options
      */
     public function test_with_options_opt_in_includes_option_array(): void
@@ -220,6 +222,7 @@ class ProductListOptionsLazyTest extends ModuleTestCase
 
     /**
      * @scenario row_state=collapsed,option_profile=mixed
+     *
      * @effects options_total_count_matches_all
      */
     public function test_aggregates_count_active_and_total_separately(): void
@@ -248,6 +251,7 @@ class ProductListOptionsLazyTest extends ModuleTestCase
      * 경고 배지가 일제히 뜬다.
      *
      * @scenario row_state=collapsed,option_profile=none
+     *
      * @effects option_stock_sum_is_zero_not_null
      */
     public function test_option_stock_sum_is_zero_not_null_when_product_has_no_options(): void

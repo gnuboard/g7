@@ -16,6 +16,16 @@
 
 ---
 
+## 비밀글 서버측 게이팅 (KVE-2026-1914)
+
+비밀글(`is_secret`)의 원문은 작성자 본인 또는 게시판 관리 권한(`posts.read-secret`/`manager`)을 가진 요청에만 제공됩니다. 판정은 `SecretContentGate`(SSoT)가 담당하며 게시글 상세 외 다음 경로에도 동일하게 적용됩니다.
+
+- **댓글 목록**(`GET .../posts/{postId}/comments`): 부모 게시글이 비밀글이고 열람 권한이 없으면 빈 목록(`200`)을 반환합니다.
+- **첨부 서빙**(`GET .../attachment/{hash}`, `.../attachment/{hash}/preview`): 부모 게시글이 비밀글이고 열람 권한이 없으면 `403`. 첨부 요청은 상세와 분리된 요청이라 비밀번호 검증(`password_verified`)은 적용되지 않으며 작성자/관리 권한만 인정합니다.
+- **상세/목록 응답**: 비열람자에게 `content`·`title`·`reply`·`attachments`가 마스킹됩니다.
+
+---
+
 ## 목록·검색의 총 건수와 답변·댓글 상한
 
 게시판 목록에 `search` 를 얹으면 내부 검색이 수행됩니다. 매칭이 아주 많을 수 있으므로 총
@@ -93,7 +103,7 @@ _단건 응답: `data` 객체의 필드. FileUploader 컴포넌트 호환을 위
 | data.stored_filename | string | `—` | 스토리지에 실제 저장된 파일명 (충돌 방지용 내부 파일명) |
 | data.mime_type | string | `image/png` | 업로드 파일의 MIME 타입 |
 | data.size | integer | `2048` | 파일 크기 (바이트) |
-| data.url | string | `/api/modules/sirsoft-board/boards/apidoc-sample-board/attachment/apidocsmpl1` | 첨부파일 접근 URL (`AttachmentService::getUrl()` 산물) |
+| data.url | string | `/api/modules/sirsoft-board/boards/apidoc-sample-board/attachment/apidocsmpl1` | 첨부파일 접근 URL (`AttachmentService::getUrl()` 산물 — 비밀글·삭제글 게이트가 걸린 다운로드 서빙 URL. 공개 자산 디스크를 켜도 직접 URL 로 바뀌지 않는다, 7.0.11+) |
 | data.order | integer | `0` | 첨부파일 표시 순서 (0 부터 오름차순) |
 | data.created_at | string | `2026-07-08 10:41:34` | 업로드(생성) 일시 |
 
@@ -351,7 +361,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 |
+| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시·본문 이미지 URL 노출 차단 — 필드 자체는 유지) |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -441,6 +451,7 @@ HTTP/1.1 200
                 "use_comment": true,
                 "use_reply": true,
                 "use_report": true,
+                "use_scrap": true,
                 "secret_mode": "{MASKED}",
                 "per_page": 20,
                 "per_page_mobile": 15,
@@ -519,7 +530,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 게시글 수정(PUT
 | reply_count | integer | `0` | 답변글 수 (집계) |
 | attachment_count | integer | `0` | 첨부파일 수 (집계) |
 | has_attachment | boolean | `false` | 첨부파일 보유 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 (없으면 null) |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
 | parent_id | null | `null` | 원글 ID (답변글일 때만 값 존재) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위) |
 | is_reply | boolean | `false` | 답변글 여부 |
@@ -762,6 +773,7 @@ HTTP/1.1 200
             "use_reply": true,
             "max_reply_depth": 5,
             "use_report": true,
+            "use_scrap": true,
             "comment_order": "ASC",
             "max_comment_depth": 10,
             "min_title_length": 2,
@@ -870,7 +882,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -983,10 +995,11 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.posts.write\|sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 게시판의 답글 삭제 정책(`reply_delete_policy`)이 `block` 이고 대상 글에 살아 있는 답글이 있는 경우 (`답글이 달린 글은 삭제할 수 없습니다. 답글을 먼저 삭제해 주세요.` — `sirsoft-board::validation.post.delete.has_replies`) |
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 게시글 1건을 소프트 삭제합니다. `auth:sanctum` + admin 인증이 필요하며, 라우트 권한은 `posts.write` 또는 `manage`입니다. 컨트롤러가 대상 게시글을 조회한 뒤 세분화된 권한 분기를 적용합니다: `admin.manage`는 모든 글(비회원 글 포함)을, `admin.posts.write`는 본인 글만 삭제할 수 있으며 이미 삭제된 글의 재처리는 `admin.manage`가 필요합니다. `PostService::deletePost()`가 'admin' 컨텍스트로 소프트 삭제를 수행합니다.
+**설명** 게시판 관리자가 게시글 1건을 소프트 삭제합니다. `auth:sanctum` + admin 인증이 필요하며, 라우트 권한은 `posts.write` 또는 `manage`입니다. 컨트롤러가 대상 게시글을 조회한 뒤 세분화된 권한 분기를 적용합니다: `admin.manage`는 모든 글(비회원 글 포함)을, `admin.posts.write`는 본인 글만 삭제할 수 있으며 이미 삭제된 글의 재처리는 `admin.manage`가 필요합니다. `PostService::deletePost()`가 'admin' 컨텍스트로 소프트 삭제를 수행합니다. 삭제 동작은 게시판의 답글 삭제 정책(`reply_delete_policy`)을 따릅니다 — `cascade`(기본)에서는 원글 삭제 시 살아 있는 답글 트리(및 그 답글들의 댓글·첨부)가 함께 소프트 삭제되고 이후 원글을 복원하면 연쇄 삭제분(`trigger_type='cascade'`)만 선택 복원되며, `block` 에서는 살아 있는 직계 답글이 있으면 `before_delete` 훅 발화 전에 차단되어(부수효과 없음) 422 를 반환합니다.
 
 
 ### GET /api/modules/sirsoft-board/admin/board/{slug}/posts/{id}
@@ -1031,7 +1044,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 |
+| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시·본문 이미지 URL 노출 차단 — 필드 자체는 유지) |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -1118,6 +1131,7 @@ HTTP/1.1 200
             "use_comment": true,
             "use_reply": true,
             "use_report": true,
+            "use_scrap": true,
             "show_view_count": true,
             "max_reply_depth": 5,
             "max_comment_depth": 10,
@@ -1293,7 +1307,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -1454,7 +1468,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -1622,7 +1636,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 복원된 게시글.
 | reply_count | integer | `0` | 답변글 수 (집계) |
 | attachment_count | integer | `0` | 첨부파일 수 (집계) |
 | has_attachment | boolean | `false` | 첨부파일 보유 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
 | parent_id | null | `null` | 원글 ID (답변글일 때만 값 존재) |
 | depth | integer | `0` | 계층 트리에서의 깊이 |
 | is_reply | boolean | `false` | 답변글 여부 |
@@ -2296,3 +2310,95 @@ HTTP/1.1 200
 **설명** 게시판 관리자가 블라인드 처리된 댓글을 복원합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 게시판의 `use_comment`가 꺼져 있으면 403으로 차단됩니다. 요청 본문의 선택적 `reason`을 사유로 받아 `CommentService::restoreComment()`가 블라인드 상태를 해제해 댓글을 다시 노출합니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다.
 
 
+
+---
+
+## 관리자 게시글 일괄 처리 (삭제 · 블라인드 · 복구)
+
+> 이 절은 **수기 작성**입니다. `api:docgen` 기본 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)로
+> 막혀 있어 위쪽 `@generated` 블록처럼 실측 스캐폴딩을 만들 수 없습니다. 값은 전부 코드에서 옮겼고
+> 근거 위치를 각 항목에 적었습니다 (이슈 #524).
+
+세 엔드포인트는 같은 요청 형태·같은 응답 형태·같은 권한을 쓰고 동작만 다릅니다.
+
+| 메서드 | 경로 | 라우트명 | 동작 |
+| --- | --- | --- | --- |
+| DELETE | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk` | `…admin.board.posts.bulk-destroy` | 선택한 글을 삭제 |
+| PATCH | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-blind` | `…admin.board.posts.bulk-blind` | 선택한 글을 블라인드 |
+| PATCH | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-restore` | `…admin.board.posts.bulk-restore` | 블라인드·삭제된 글을 복구 |
+
+- **컨트롤러**: `Admin\PostController@bulkDestroy` / `@bulkBlind` / `@bulkRestore` (`src/Http/Controllers/Admin/PostController.php:623,635,647`)
+- **미들웨어**: `auth:sanctum` + `admin` + `permission:admin,sirsoft-board.{slug}.admin.manage`
+  셋 다 `admin.manage` 를 요구합니다 — 단건 삭제의 「본인 글이면 `posts.write`」 완화를 일괄에 적용하면
+  한 요청에 남의 글이 섞여 들어갈 수 있기 때문입니다 (`src/routes/api.php:330-344`).
+- **선언 순서**: 세 라우트는 `/{id}` 계열보다 **먼저** 선언됩니다. 뒤에 두면 `bulk` 가 `{id}` 로 잡힙니다.
+
+### 요청 파라미터
+
+`BulkPostActionRequest` (`src/Http/Requests/Admin/BulkPostActionRequest.php:35-37`)
+
+| 이름 | 위치 | 타입 | 필수 | 제한 | 설명 |
+| --- | --- | --- | --- | --- | --- |
+| ids | body | array | 예 | 1~100개 | 대상 게시글 ID 목록 |
+| ids.* | body | integer | 예 | distinct | `exists` 를 두지 않습니다 — 없는 ID·다른 게시판의 ID 는 `skipped` 로만 드러나고 422 가 되지 않습니다 |
+| reason | body | string | 아니오 | 최대 1000자 | 사유. 블라인드·복구 이력에 남습니다(삭제는 사용하지 않음) |
+
+`DELETE /bulk` 도 **본문 JSON** 으로 `ids` 를 받습니다. 레이아웃 엔진은 GET 이 아닌 모든 메서드에 본문을
+실어 보냅니다(`resources/js/core/template-engine/ActionDispatcher.ts`) — 스크랩 일괄 해제와 같은 방식입니다.
+
+### 응답
+
+```json
+{
+    "success": true,
+    "message": "2개의 게시글을 삭제했습니다. (건너뜀 1개)",
+    "data": {
+        "affected_count": 2,
+        "affected_ids": [12, 15],
+        "skipped": [{ "id": 19, "reason": "has_replies" }]
+    }
+}
+```
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| affected_count | integer | 실제로 처리된 건수 |
+| affected_ids | array | 처리된 게시글 ID 목록 |
+| skipped | array | 건너뛴 항목 `{id, reason}` 목록 |
+
+메시지 키는 `sirsoft-board::messages.posts_bulk.{delete,blind,restore}_success` 이며 `:count`·`:skipped`
+를 치환합니다 (`src/lang/{ko,en}/messages.php:311-316`).
+
+### 건너뛰는 사유 (`skipped[].reason`)
+
+`PostService::resolveBulkSkipReason()` (`src/Services/PostService.php:711-738`)
+
+| reason | 동작 | 조건 |
+| --- | --- | --- |
+| `already_deleted` | delete | 이미 삭제 상태이거나 소프트 삭제된 글 |
+| `has_replies` | delete | 게시판의 답글 삭제 정책이 `block` 인데 살아 있는 답글이 있는 글 — 단건 삭제와 같은 판정이라 일괄에서만 규칙이 느슨해지지 않습니다 |
+| `already_blinded` | blind | 이미 블라인드된 글 |
+| `already_published` | restore | 이미 정상 게시 중인 글 |
+| `error` | 공통 | 항목 처리 중 예외. **한 건의 실패가 나머지를 막지 않습니다** — 사유만 남기고 계속합니다 |
+
+### 훅과 본인인증(IDV)
+
+- `sirsoft-board.post.before_bulk_action($slug, $action, $ids, $reason)` — **루프에 들어가기 전 1회**만
+  발화합니다 (`PostService.php:660`). 항목마다 `before_delete`·`before_blind` 를 태우지 않으므로,
+  본인인증이 필요한 상황에서 428 이 루프 **중간**에 터져 일부만 처리되는 일이 없습니다(부수효과 0).
+- `sirsoft-board.post.after_bulk_action($slug, $action, $affectedIds, $skipped)` — 처리 뒤 1회 (`:692`).
+- 본인인증 정책 `sirsoft-board.post.bulk_action` 이 위 `before_bulk_action` 을 대상으로 선언돼 있습니다
+  (`module.php:827-834`, 기본 `enabled=false`). 켜면 미충족 시 **HTTP 428** 과 함께
+  `verification.return_request` 가 내려가고, 프론트 인터셉터가 인증 모달을 연 뒤 원요청을 재전송합니다.
+  컨트롤러는 `catch (\Exception)` 만 잡습니다 — 428 을 일으키는 예외는 `\Error` 를 상속하므로 삼켜지지 않습니다.
+
+### 에러 응답
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | `sirsoft-board.{slug}.admin.manage` 권한이 없는 경우 |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 |
+| 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘거나 정수가 아닌 경우 |
+| 428 | Identity Verification Required | 본인인증 정책이 켜져 있고 미충족인 경우 (아무 항목도 처리되지 않음) |
+| 500 | Internal Server Error | 일괄 처리 실패 (`sirsoft-board::messages.posts_bulk.action_failed`) |

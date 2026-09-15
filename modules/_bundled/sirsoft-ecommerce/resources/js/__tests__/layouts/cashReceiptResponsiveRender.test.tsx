@@ -122,6 +122,9 @@ async function renderAtWidth(width: number) {
         cashReceiptRequested: true,
         cashReceiptType: 'income',
         cashReceiptIdentifierType: 'phone',
+        // 신청 표시는 조각 미러와 확장 병합 칸이 **둘 다** 살아 있을 때만 열린다 —
+        // 결제수단을 바꾸면 템플릿이 이 칸을 비워 표시도 함께 닫히게 하기 위해서다.
+        checkoutExtraPayload: { cash_receipt_requested: true },
       },
     },
   });

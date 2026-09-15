@@ -104,6 +104,9 @@ class PlaywrightSeedLayout extends Command
         }
 
         // ② 명시 옵트인 — 환경변수 없이는 production 호출 실수 차단
+        // 여기의 `env()` 는 config:cache 의 영향을 받지 않는다 — 이 값은 `.env` 파일이 아니라
+        // 호출자가 그 자리에서 넘기는 프로세스 환경변수이고, config 로 캡처할 대상도 아니다.
+        // (`.env` 유래 값을 런타임 `env()` 로 읽는 것은 금지다 — config 로 캡처해야 한다.)
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
             $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
 

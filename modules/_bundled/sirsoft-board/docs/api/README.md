@@ -2,14 +2,19 @@
 
 > **소유**: 모듈 `sirsoft-board` · **생성**: `php artisan api:docgen` (실측 기반).
 > 아래 표는 자동 생성됩니다. 각 문서를 열면 엔드포인트별 파라미터·응답·예시를 볼 수 있습니다.
+>
+> **이슈 #524 주의**: `scraps.md` 행과 `board.md`·총계의 증분은 **손으로 넣었습니다**. `api:docgen` 기본
+> 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)가 막고 있어 이 블록만 다시 굽는 방법이
+> 없는데, 표에 없는 문서는 아무도 찾지 못하기 때문입니다. 가드가 풀려 생성기를 다시 돌리면 이 값들은
+> 생성기 산식으로 덮여도 무방합니다 — `scraps.md` 의 6개 절 중 회원용 2개는 `scrap.md` 와 겹칩니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 10 · **엔드포인트 수**: 80
+- **문서 수**: 12 · **엔드포인트 수**: 92
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
 | [activity-stats.md](activity-stats.md) | `activity-stats` | 1 |
-| [board.md](board.md) | `board` | 18 |
+| [board.md](board.md) | `board` | 21 |
 | [board-activities.md](board-activities.md) | `board-activities` | 1 |
 | [board-types.md](board-types.md) | `board-types` | 4 |
 | [boards.md](boards.md) | `boards` | 37 |
@@ -17,8 +22,38 @@
 | [my-comments.md](my-comments.md) | `my-comments` | 1 |
 | [reaction.md](reaction.md) | `reaction` | 2 |
 | [reports.md](reports.md) | `reports` | 7 |
+| [scrap.md](scrap.md) | `scrap` | 3 |
+| [scraps.md](scraps.md) | `scraps` | 6 |
 | [settings.md](settings.md) | `settings` | 5 |
 | [users.md](users.md) | `users` | 2 |
 
 <!-- @generated:end -->
+
+## 회원 이메일 노출 범위
+
+응답에 실리는 회원 이메일(`author.email`, `user.email`, `reporter.email` 등)은 **관리자
+엔드포인트 응답**과 **본인이 자기 정보를 조회할 때**만 값이 채워집니다. 그 밖의 경로에서는
+필드가 그대로 있고 값만 `null` 이므로 응답 구조는 변하지 않습니다.
+
+인증 없이 열람되는 목록·상세 응답에 회원 이메일을 실으면, 화면이 그 값을 그리지 않더라도
+응답 본문에서 회원 주소록을 수집할 수 있기 때문입니다. 이메일이 필요한 화면은 관리자
+엔드포인트를 사용하세요.
+
+공통 규약: [코어 API 레퍼런스 진입점](../../../../../docs/backend/api/README.md#회원-이메일-노출-범위)
+
+## 공통 요청 헤더
+
+### `X-Board-Secret-View-Token`
+
+비밀글에 딸린 하위 콘텐츠를 만드는 요청(댓글 작성, 대댓글 작성, 답글 작성, 게시글·댓글 신고)은
+부모 게시글의 원문 열람 권한을 다시 확인합니다. 작성자 본인·게시판 관리자·비밀글 읽기 권한자는
+그대로 통과하지만, **비밀번호를 입력해 원문을 연 사용자**는 그 사실이 검증 응답 하나에만
+남기 때문에 이 헤더로 넘겨야 합니다.
+
+- 발급: `POST /boards/{slug}/posts/{id}/verify-password` 응답 최상위 `secret_view_token`
+- 사용: 이후 그 게시글 관련 요청의 `X-Board-Secret-View-Token` 헤더
+- 범위: 발급받은 게시글에만 유효하며 다른 글에는 통하지 않습니다
+- 수명: 소비되지 않고 `secret_view_expires_at` 까지 여러 번 쓸 수 있습니다
+- 미제시: 위 경로에서 `422` 와 함께 "열람 권한이 없는 비밀글" 문구가 반환됩니다.
+  비밀글이 아닌 게시글에서는 이 헤더가 평가되지 않습니다.
 

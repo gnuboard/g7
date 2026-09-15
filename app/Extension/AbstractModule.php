@@ -9,6 +9,9 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\ModuleCacheDriver;
 use App\Extension\Storage\ModuleStorageDriver;
+use App\Extension\Traits\CollectsFragmentSources;
+use App\Extension\Traits\ReportsLifecycleFailure;
+use App\Support\PublicAssetDisk;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -21,6 +24,8 @@ use ReflectionClass;
  */
 abstract class AbstractModule implements CacheableExtensionInterface, ModuleInterface
 {
+    use ReportsLifecycleFailure;
+
     /**
      * 모듈 디렉토리 경로 (캐시)
      */
@@ -928,6 +933,31 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 신뢰하는 외부 스크립트 호스트 목록을 반환합니다.
+     *
+     * module.json 의 `trusted_script_hosts` 배열에서 읽습니다. 이 모듈이 레이아웃
+     * `scripts[].src` 로 로드하는 외부 CDN 호스트를 선언합니다. 코어는 이 목록을
+     * 집계(AbstractModule/AbstractPlugin → TrustedScriptHosts)해 런타임 스크립트 로더·
+     * 저장측 검증·정적 검사가 same-origin 이 아닌 스크립트 중 **선언된 호스트만** 허용하도록
+     * 합니다 (KVE-2026-1915 신뢰 출처 허용목록).
+     *
+     * @return array<int, string> 신뢰 호스트명 목록 (예: ['cdn.example.com'])
+     */
+    public function getTrustedScriptHosts(): array
+    {
+        $hosts = $this->loadManifest()['trusted_script_hosts'] ?? [];
+
+        if (! is_array($hosts)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
+            fn ($host) => $host !== ''
+        ));
+    }
+
+    /**
      * 레이아웃 확장 파일 경로 반환
      *
      * @return string extensions 디렉토리 경로
@@ -939,6 +969,12 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 레이아웃 확장 파일 목록 반환
+     *
+     * **`.json` 만 돌려주는 것이 계약이다** — 소스(`.g7.html`) 판별은 여기가 아니라 **호출처**
+     * ({@see CollectsFragmentSources::collectFragmentSources()}) 소관이다.
+     * 호출처가 이 목록 위에 같은 디렉토리의 `.g7.html` 을 얹어 소스 SSoT 를 우선하고, 짝 마크업이
+     * 없는 `.json` 만 남긴다. 여기서 `.g7.html` 까지 반환하도록 바꾸면 확장 공개 표면이 바뀌어
+     * 번들 확장의 `g7_version` 상향 대상이 되고, 호출처의 짝 판별과 이중으로 겹친다.
      *
      * @return array<string> JSON 파일 경로 목록
      */
@@ -1277,6 +1313,29 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 매니페스트가 **선언한** 프론트엔드 자산의 절대 경로를 반환합니다 (파일 존재 여부 무관).
+     *
+     * `getBuiltAssetAbsolutePaths()` 는 `file_exists()` 게이트라 소실된 산출물이 목록에서
+     * 사라진다. 배포 중 `dist` 가 잠깐 비는 상태를 "선언은 있는데 파일이 없다" 로 세려면
+     * 선언 축을 그대로 돌려주는 통로가 필요하다 — 이 메서드가 그 축이다.
+     *
+     * @return array<string, string> kind('js'|'css') => 절대 경로 (선언된 kind 만)
+     */
+    public function getDeclaredAssetAbsolutePaths(): array
+    {
+        $assets = $this->getAssets();
+        $result = [];
+
+        foreach (['js', 'css'] as $kind) {
+            if (! empty($assets[$kind]['output'])) {
+                $result[$kind] = $this->getModulePath().'/'.$assets[$kind]['output'];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * 모듈 스토리지 드라이버 인스턴스 반환
      *
      * 모듈별로 격리된 파일 저장소를 제공합니다.
@@ -1307,6 +1366,67 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getStorageDisk(): string
     {
         return 'modules';
+    }
+
+    /**
+     * 카테고리별 스토리지 인스턴스 캐시 (디스크명 키 memoize)
+     *
+     * @var array<string, StorageInterface>
+     */
+    private array $storageByDisk = [];
+
+    /**
+     * 카테고리별 스토리지 디스크 이름 반환
+     *
+     * 기본값은 getStorageDisk() 와 동일 (현행 동작 100% 보존).
+     * 특정 카테고리(예: 'images')만 다른 디스크를 쓰려면 모듈이 오버라이드합니다.
+     *
+     * 주의: 오버라이드 구현은 'settings' 카테고리에서 모듈 설정을 조회하면 안 됩니다 —
+     * 모듈 설정 로드가 getStorage()->get('settings', ...) 를 경유하므로 재귀 고리가 생깁니다.
+     * 모듈 설정 조회는 'images' 등 설정 저장과 무관한 카테고리에서만 수행합니다.
+     *
+     * @param  string  $category  카테고리 (settings, attachments, images, cache, temp)
+     * @return string 디스크 이름
+     */
+    public function getStorageDiskFor(string $category): string
+    {
+        return $this->getStorageDisk();
+    }
+
+    /**
+     * 카테고리별 스토리지 드라이버 인스턴스 반환
+     *
+     * getStorageDiskFor() 가 결정한 디스크의 드라이버를 디스크 단위로 memoize 하여 반환합니다.
+     * 기본 디스크와 동일하면 getStorage() 인스턴스를 그대로 재사용합니다.
+     *
+     * @param  string  $category  카테고리
+     * @return StorageInterface 스토리지 드라이버 인스턴스
+     */
+    public function getStorageFor(string $category): StorageInterface
+    {
+        $disk = $this->getStorageDiskFor($category);
+
+        if (! isset($this->storageByDisk[$disk])) {
+            $base = $this->getStorage();
+            $this->storageByDisk[$disk] = ($disk === $base->getDisk()) ? $base : $base->withDisk($disk);
+        }
+
+        return $this->storageByDisk[$disk];
+    }
+
+    /**
+     * 공개 자산 디스크 설정값을 해석합니다.
+     *
+     * 우선순위: 확장 개별 설정(override) > 코어 전역 설정(core.storage.public_asset_disk).
+     * 미설정('')/'none'/config 에 존재하지 않는 디스크(고아 플러그인 디스크)는 null 로
+     * 해석되어 호출측이 기존 디스크(스트리밍)로 폴백합니다.
+     *
+     * @param  string|null  $override  확장 개별 설정값 (''/null 이면 코어 전역 설정 사용)
+     * @return string|null 사용할 디스크 이름 (스트리밍 유지면 null)
+     */
+    protected function resolvePublicAssetDisk(?string $override = null): ?string
+    {
+        return PublicAssetDisk::resolve($override);
     }
 
     /**
@@ -1344,26 +1464,30 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     /**
      * 카테고리별 스토리지 기본 경로 반환
      *
+     * 카테고리가 다른 디스크로 배선돼 있으면(getStorageDiskFor 오버라이드) 그 디스크
+     * 기준 경로를 돌려줍니다. 기본 디스크를 보면 배선한 카테고리의 경로가 어긋납니다.
+     *
      * @param  string  $category  카테고리 (settings, attachments, images, cache, temp)
      * @return string 전체 파일 시스템 경로
      */
     public function getStorageBasePath(string $category): string
     {
-        return $this->getStorage()->getBasePath($category);
+        return $this->getStorageFor($category)->getBasePath($category);
     }
 
     /**
      * 파일의 공개 URL 반환
      *
-     * public disk인 경우 직접 URL을 반환하고,
-     * private disk인 경우 null을 반환합니다 (별도 API 엔드포인트 사용).
+     * 카테고리에 배선된 디스크(getStorageDiskFor)가 직접 URL 을 지원하면 그 URL 을,
+     * 아니면 null 을 반환합니다 (별도 API 엔드포인트 사용). 기본 디스크를 보면
+     * 공개 자산 디스크로 옮긴 카테고리가 항상 null 을 받습니다.
      *
      * @param  string  $category  카테고리
      * @param  string  $path  파일 경로
-     * @return string|null 파일 URL (private disk인 경우 null)
+     * @return string|null 파일 URL (직접 URL 불가 디스크인 경우 null)
      */
     public function getStorageUrl(string $category, string $path): ?string
     {
-        return $this->getStorage()->url($category, $path);
+        return $this->getStorageFor($category)->url($category, $path);
     }
 }

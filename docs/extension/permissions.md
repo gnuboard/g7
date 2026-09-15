@@ -394,6 +394,18 @@ core.users.view
 core.users.manage
 ```
 
+`[entity]` 가 특정 확장 타입이 아니라 `extensions` 인 권한은 **템플릿·모듈·플러그인 세 타입이 공유**한다.
+타입별로 쪼개면 운영자가 같은 성격의 권한을 셋 다 부여해야 하고, "모듈 CSS 는 되는데 템플릿 CSS 는
+안 되는" 상태가 실질적 의미 없이 생긴다.
+
+```text
+core.extensions.custom_assets.manage
+```
+
+이 권한은 그룹 `core.extensions`(확장 공통) 에 속한다. 레이아웃 편집 권한
+(`core.templates.layouts.edit`) 과 분리한 이유는 여기서 올린 스크립트가 레이아웃 한 장이 아니라
+**사이트 전 화면에서 실행**되기 때문이다 — 레이아웃을 고칠 수 있다는 것이 곧 그 권한이 될 수 없다.
+
 ### 모듈 권한
 
 ```text
@@ -482,10 +494,17 @@ G7은 기능 레벨 권한 외에 **리소스 레벨 권한**을 지원합니다
 
 레이아웃 JSON에서 `abilities.can_*` 키로 접근합니다:
 
+```html
+<button data-if="{{item.abilities.can_update}}" text="수정"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "if": "{{item.abilities.can_update}}",
-    "type": "Button",
+    "type": "basic",
+    "name": "Button",
     "props": { "text": "수정" }
 }
 ```
@@ -710,12 +729,24 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 
 ### 상위-하위 중복 선언
 
+```html
+<div>
+  <permissions>
+    <permission>core.users.read</permission>
+  </permissions>
+  <button><permissions><permission>core.users.delete</permission></permissions>삭제</button>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "permissions": ["core.users.read"],
   "children": [
-    { "type": "Button", "permissions": ["core.users.delete"], "text": "삭제" }
+    { "type": "basic", "name": "Button", "permissions": ["core.users.delete"], "text": "삭제" }
   ]
 }
 ```
@@ -914,7 +945,7 @@ generateIdentifier(name)
 - [menus.md](./menus.md) - 메뉴 권한 시스템
 - [hooks.md](./hooks.md) - 훅 권한 시스템
 - [module-basics.md](./module-basics.md) - 모듈 기본 구조
-- [index.md](./index.md) - 확장 시스템 인덱스
+- [README.md](./README.md) - 확장 시스템 인덱스
 - [../backend/core-config.md](../backend/core-config.md#완전-동기화-원칙) - 완전 동기화 원칙
 - [../backend/data-sync-helpers.md](../backend/data-sync-helpers.md) - 데이터 동기화 Helper
 - [../backend/user-overrides.md](../backend/user-overrides.md) - 사용자 수정 보존

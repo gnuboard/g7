@@ -2,14 +2,18 @@
 /**
  * GDPR 플러그인 환경설정 레이아웃 구조 검증
  *
- * 3 카드 (운영자 작업 순서):
+ * 4 카드 (운영자 작업 순서):
  * 1. card_operator (운영 주체 + 정책 페이지)
  * 2. card_cookie_banner (배너 + 카테고리 + 정책버전)
  * 3. card_auto_blocking_policy (자동 차단 정책 — 차단 도메인 관리)
+ * 4. card_necessary_storage (필수 저장 항목 허용목록 — 저장소·쿠키 3 스코프)
  *
  * 마이페이지 동의 관리 카드는 GDPR Art.7(3) 대칭성 의무에 따라 플러그인 활성 시 항상 노출
  * — 운영자가 끌 수 있는 토글이 없으므로 관리자 설정 화면에 카드/필드가 존재하지 않는다.
  * auto_blocking 동작은 banner_enabled (쿠키 배너 노출) 와 단일 토글로 통합되어 별도 토글 없음.
+ *
+ * @scenario scope=sessionStorage, notation=exact, locked=locked_item, settings_state=populated, request=valid_item
+ * @effects layout_renders_three_scope_cards, layout_uses_static_setstate_key_with_object_spread, layout_extracts_value_from_event_target_value, layout_error_key_prefix_matches_scope, layout_locked_chips_read_response_not_form_state, layout_card_not_gated_behind_banner_toggle, layout_i18n_keys_exist_in_ko_and_en
  */
 
 import { describe, it, expect } from 'vitest';
@@ -19,8 +23,9 @@ import snapshotModal from '../../../layouts/admin/partials/_shared/_policy_versi
 import koLang from '../../../lang/ko.json';
 import enLang from '../../../lang/en.json';
 import { findById, type AnyNode } from './helpers';
+import { asArray, findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
-describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / auto_blocking_policy)', () => {
+describe('admin/plugin_settings.json — 4 카드 (operator / cookie_banner / auto_blocking_policy / necessary_storage)', () => {
     const root = layout as unknown as AnyNode;
 
     describe('레이아웃 메타데이터', () => {
@@ -51,10 +56,15 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(nav?.name).toBe('TabNavigationScroll');
         });
 
-        it('3 탭이 정의되어 있다 (operator / cookie_banner / auto_blocking_policy)', () => {
+        it('4 탭이 정의되어 있다 (operator / cookie_banner / auto_blocking_policy / necessary_storage)', () => {
             const tabs = (nav?.props as { tabs?: { id: string }[] })?.tabs ?? [];
             const ids = tabs.map((t) => t.id);
-            expect(ids).toEqual(['card_operator', 'card_cookie_banner', 'card_auto_blocking_policy']);
+            expect(ids).toEqual([
+                'card_operator',
+                'card_cookie_banner',
+                'card_auto_blocking_policy',
+                'card_necessary_storage',
+            ]);
         });
 
         it('enableScrollSpy: true (스크롤 시 활성 탭 자동 갱신)', () => {
@@ -63,15 +73,20 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
     });
 
     describe('카드 구조', () => {
-        const expectedCards = ['card_operator', 'card_cookie_banner', 'card_auto_blocking_policy'];
+        const expectedCards = [
+            'card_operator',
+            'card_cookie_banner',
+            'card_auto_blocking_policy',
+            'card_necessary_storage',
+        ];
 
         it.each(expectedCards)('카드 %s 가 존재한다', (cardId) => {
             expect(findById(root, cardId)).toBeTruthy();
         });
 
-        it('카드는 settings_main_content 의 직계 children 으로 3개 모두 배치', () => {
+        it('카드는 settings_main_content 의 직계 children 으로 4개 모두 배치', () => {
             const main = findById(root, 'settings_main_content');
-            const cardChildren = ((main?.children ?? []) as AnyNode[]).filter((c) =>
+            const cardChildren = (asArray(main?.children) as AnyNode[]).filter((c) =>
                 (c.id ?? '').startsWith('card_')
             );
             const cardIds = cardChildren.map((c) => c.id);
@@ -117,7 +132,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
     describe('card_operator (운영 주체 + 정책 페이지)', () => {
         it('legal_entity_name + data_storage_location + privacy_policy_slug 3 필드 포함', () => {
             const fields = findById(root, 'card_operator_fields');
-            const ids = ((fields?.children ?? []) as AnyNode[]).map((c) => c.id);
+            const ids = (asArray(fields?.children) as AnyNode[]).map((c) => c.id);
             expect(ids).toContain('field_legal_entity_name');
             expect(ids).toContain('field_data_storage_location');
             expect(ids).toContain('field_privacy_policy_slug');
@@ -220,7 +235,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
          * 운영자가 카드에서 required 값을 변경하는 위젯/액션은 존재하지 않는다.
          */
         it('카테고리 카드 영역에 Toggle/setState(required) 위젯이 없다', () => {
-            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
+            const rows = findByIdPrefix(root, 'cookie_categories_rows');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).not.toContain('"name":"Toggle"');
@@ -229,7 +244,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('카테고리 카드 헤더에 「필수」/「선택」 배지가 required 값으로 분기 렌더된다', () => {
-            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
+            const rows = findByIdPrefix(root, 'cookie_categories_rows');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).toContain('category_required_badge');
@@ -247,7 +262,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
          */
         it('Phase 1: cookie_categories 영역에 functional 분기 (아이콘 + scope + tools) 존재', () => {
             // 실제 카테고리 카드는 cookie_categories_rows iteration 노드에 위치 (subsection 헤더 별개)
-            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
+            const rows = findByIdPrefix(root, 'cookie_categories_rows');
             const serialized = JSON.stringify(rows);
 
             // 1. 카테고리 아이콘 분기 (fa-sliders / emerald 색상)
@@ -266,7 +281,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             // 법령 인용 (ePrivacy Art.5(3) / GDPR Art.6(1)(a) 등) 은 운영자 의사결정에 불필요하여
             // 펼치기 영역에서 제거되었다. 정책 버전 snapshot 에 카테고리 본문이 영속되므로
             // 감사 자료는 그쪽에서 확인 가능.
-            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
+            const rows = findByIdPrefix(root, 'cookie_categories_rows');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).not.toContain('cookie_categories.info.necessary.legal_basis');
@@ -277,7 +292,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('Phase 1: 도메인 차단 섹션의 카테고리 아이콘에 functional 분기 존재', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
+            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
             const serialized = JSON.stringify(wrapper);
 
             // functional 카테고리 분기 (sliders 아이콘 + emerald 색상)
@@ -296,7 +311,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
     describe('card_cookie_banner — 섹션 배치 순서 (운영자 의사결정 흐름)', () => {
         it('배너 표시 → 카테고리 순서로 배치된다 (자동 차단 정책은 별도 카드로 이동)', () => {
             const fields = findById(root, 'card_cookie_banner_fields');
-            const childrenIds = ((fields?.children ?? []) as AnyNode[])
+            const childrenIds = (asArray(fields?.children) as AnyNode[])
                 .map((c) => c.id)
                 .filter((id): id is string => typeof id === 'string');
 
@@ -320,7 +335,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         it('off_hint(배너 OFF분기) → subsection_blocked_domains(ON분기) 순서. 토글 노드 없음', () => {
             const fields = findById(root, 'card_auto_blocking_policy_fields');
             expect(fields).toBeTruthy();
-            const childrenIds = ((fields?.children ?? []) as AnyNode[])
+            const childrenIds = (asArray(fields?.children) as AnyNode[])
                 .map((c) => c.id)
                 .filter((id): id is string => typeof id === 'string');
 
@@ -413,7 +428,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('blocked_domains_taginputs iteration 이 cookie_categories 에서 necessary 제외하고 렌더', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
+            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
             expect(wrapper).toBeTruthy();
             expect(wrapper?.iteration?.source).toBe(
                 "(_local.form?.cookie_categories ?? []).filter(c => c?.key !== 'necessary')"
@@ -422,7 +437,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('TagInput 가 카테고리별 도메인 입력으로 사용되며 creatable=true 자유 입력 허용', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
+            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
             const serialized = JSON.stringify(wrapper);
             // TagInput composite 사용
             expect(serialized).toContain('"name":"TagInput"');
@@ -435,7 +450,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('TagInput change 이벤트가 $event.target.value 에서 string 배열을 추출하여 form.blocked_domains 정적 키로 setState', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
+            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
             const serialized = JSON.stringify(wrapper);
             // 정적 setState 키 — form.blocked_domains 만 사용 (CRITICAL 규정 준수)
             expect(serialized).toContain('"form.blocked_domains"');
@@ -450,7 +465,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('카탈로그 도메인 일괄 추가 링크 미존재 — 신규 설치 시 카탈로그가 이미 기본값으로 채워져 있고, 카탈로그 갱신 빈도 낮음. 운영자가 의도적으로 제외한 도메인이 재추가되는 위험 회피 (검토 #9)', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
+            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
             const serialized = JSON.stringify(wrapper);
             // 일괄 추가 링크 라벨/툴팁 키 사용 금지 (lang 키 자체 제거됨)
             expect(serialized).not.toContain('blocked_domains.add_catalog_link');
@@ -474,7 +489,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('422 검증 에러 시 카테고리 카드 외곽이 빨간 테두리로 강조 + 카드 내부에 첫 잘못된 도메인 에러 메시지 Span 노출 (검토 #10 옵션 B — 카테고리 내 어느 인덱스든 매칭)', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
+            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
             const serialized = JSON.stringify(wrapper);
             // 카드 외곽 동적 className — 카테고리 내 *어느 인덱스든* 에러 키가 있으면 true (some)
             expect(serialized).toContain("Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.'))");
@@ -564,7 +579,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
 
         /**
          * sequence handler 구조 회귀 가드 — actions 배열이 params 안에 잘못 중첩되어
-         * (CLAUDE.md 절대 금지 패턴) 있었던 결함. 엔진(ActionDispatcher.handleSequence)이
+         * (레이아웃 JSON 금지 패턴) 있었던 결함. 엔진(ActionDispatcher.handleSequence)이
          * 두 위치를 모두 인식하는 fallback을 갖고 있어 동작 자체는 정상이었지만, 정석
          * 위치(actions가 액션 객체의 top-level)로 바로잡는다.
          */
@@ -792,11 +807,135 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(className).not.toContain('border');
             expect(className).not.toContain('rounded-lg');
             // 자식은 Label + 2개 P (hint + guide_body)
-            const children = (box?.children ?? []) as Array<{ name?: string }>;
+            const children = asArray(box?.children) as Array<{ name?: string }>;
             const names = children.map((c) => c.name);
             expect(names).toContain('Label');
             expect(names.filter((n) => n === 'P')).toHaveLength(2);
         });
+    });
+});
+
+/**
+ * 필수 저장 항목 허용목록 카드 (card_necessary_storage) 회귀 가드.
+ *
+ * 이 화면이 없으면 허용목록은 다시 코드 상수로 돌아간다 — 새 확장이 저장 키를 도입할 때마다
+ * GDPR 플러그인을 함께 고쳐야 하고, 제3자 확장 개발자에게는 그 방법이 없다.
+ *
+ * 결함이 조용한 지점을 잠근다:
+ *   - 스코프 카드 3개 존재 (하나라도 빠지면 그 저장소만 편집 불가)
+ *   - setState 키가 **정적** — 동적 키는 엔진이 해석하지 않는다
+ *   - TagInput 값 추출이 `$event?.target?.value` — `$event` 를 그대로 넣으면 칩이
+ *     `[object Object]` 로 표시된다 (blocked_domains 에서 실제로 났던 회귀)
+ *   - 한 카드 편집이 다른 카드 값을 덮지 않도록 객체 spread 로 재조립
+ *   - 잠금 칩 행이 편집 대상 값(_local.form)이 아니라 응답의 잠금 집합을 읽는다
+ *   - 카드가 banner_enabled 게이트 뒤에 있지 않다 (배너를 꺼도 저장 게이팅은 동작한다)
+ */
+describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 항목 허용목록)', () => {
+    const root = layout as unknown as AnyNode;
+    const SCOPES = ['localStorage', 'sessionStorage', 'cookie'] as const;
+
+    it('카드와 안내 박스가 존재한다', () => {
+        expect(findById(root, 'card_necessary_storage')).toBeTruthy();
+        expect(findById(root, 'necessary_storage_warnings_box')).toBeTruthy();
+    });
+
+    it('저장소별 카드 3개가 순서대로 존재한다', () => {
+        const wrapper = findById(root, 'necessary_storage_scope_cards');
+        expect(wrapper).toBeTruthy();
+        const ids = ((wrapper?.children ?? []) as AnyNode[]).map((c) => c.id);
+        expect(ids).toEqual(SCOPES.map((s) => `necessary_storage_card_${s}`));
+    });
+
+    it.each(SCOPES)('%s 카드의 TagInput 이 그 스코프의 폼 값과 추천 목록을 읽는다', (scope) => {
+        const card = findById(root, `necessary_storage_card_${scope}`);
+        const serialized = JSON.stringify(card);
+
+        expect(serialized).toContain('"name":"TagInput"');
+        expect(serialized).toContain('"creatable":true');
+        expect(serialized).toContain(`_local.form?.necessary_storage_allowlist?.${scope} ?? []`);
+        // 추천 목록은 관리자 응답의 출하 카탈로그에서 온다 (발견 ③ — 이 키가 없으면
+        // 드롭다운에 이미 선택된 칩만 다시 나타나 추천이 동작하는 것처럼 보인다).
+        expect(serialized).toContain(`default_necessary_allowlist_preview?.${scope}`);
+    });
+
+    it.each(SCOPES)('%s 카드의 change 액션이 정적 setState 키 + $event.target.value 를 쓴다', (scope) => {
+        const card = findById(root, `necessary_storage_card_${scope}`);
+        const serialized = JSON.stringify(card);
+
+        // 정적 setState 키 — 동적 키 금지
+        expect(serialized).toContain('"form.necessary_storage_allowlist"');
+        expect(serialized).not.toContain(`"form.necessary_storage_allowlist.${scope}"`);
+        // 다른 스코프 값을 덮지 않도록 객체 spread 로 재조립
+        expect(serialized).toContain('...(_local.form?.necessary_storage_allowlist ?? {})');
+        expect(serialized).toContain(`${scope}: ($event?.target?.value ?? [])`);
+        expect(serialized).toContain('"type":"change"');
+        expect(serialized).toContain('"hasChanges":true');
+    });
+
+    it.each(SCOPES)('%s 카드가 422 에러를 그 스코프 키 접두사로 판정한다', (scope) => {
+        const card = findById(root, `necessary_storage_card_${scope}`);
+        const serialized = JSON.stringify(card);
+
+        expect(serialized).toContain(
+            `Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.${scope}.'))`,
+        );
+        expect(serialized).toContain(
+            `Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('necessary_storage_allowlist.${scope}.'))`,
+        );
+        expect(serialized).toContain('border-red-500');
+        expect(serialized).toContain('"form-error"');
+    });
+
+    it.each(SCOPES)('%s 카드의 잠금 칩 행이 응답의 잠금 집합을 읽고 편집 값에는 넣지 않는다', (scope) => {
+        const lockedRow = findById(root, `necessary_storage_locked_${scope}`);
+        expect(lockedRow).toBeTruthy();
+        const serialized = JSON.stringify(lockedRow);
+
+        // 잠금 집합의 출처는 서버 응답 — _local.form 이 아니다 (폼에 담기면 저장 요청에 실린다).
+        expect(serialized).toContain(`gdprSettings?.data?.settings?.necessary_storage_locked?.${scope}`);
+        expect(serialized).not.toContain('_local.form?.necessary_storage_locked');
+        // 잠금 항목이 없는 스코프에서는 행 자체를 그리지 않는다.
+        expect(serialized).toContain(`(gdprSettings?.data?.settings?.necessary_storage_locked?.${scope} ?? []).length > 0`);
+        // 편집 가능한 칩과 시각적으로 구분되어야 한다 (속성만이 아니라 표현까지).
+        expect(serialized).toContain('cursor-not-allowed');
+        expect(serialized).toContain('opacity-70');
+    });
+
+    it('카드 본문이 banner_enabled 게이트 뒤에 있지 않다 (배너를 꺼도 저장 게이팅은 동작한다)', () => {
+        const card = findById(root, 'card_necessary_storage');
+        const serialized = JSON.stringify(card);
+
+        expect(serialized).not.toContain('banner_enabled');
+    });
+
+    it('카드가 쓰는 모든 $t: 키가 ko/en 양쪽에 존재한다', () => {
+        const card = findById(root, 'card_necessary_storage');
+        const serialized = JSON.stringify(card);
+        const keys = [...serialized.matchAll(/\$t:sirsoft-gdpr\.([A-Za-z0-9_.]+)/g)].map((m) => m[1]);
+
+        expect(keys.length).toBeGreaterThan(10);
+
+        const resolve = (pack: unknown, key: string): unknown =>
+            key.split('.').reduce<unknown>(
+                (acc, part) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[part] : undefined),
+                pack,
+            );
+
+        const missing: string[] = [];
+        for (const key of new Set(keys)) {
+            if (typeof resolve(koLang, key) !== 'string') missing.push(`ko:${key}`);
+            if (typeof resolve(enLang, key) !== 'string') missing.push(`en:${key}`);
+        }
+
+        expect(missing).toEqual([]);
+    });
+
+    it('탭 라벨 키도 ko/en 양쪽에 존재한다', () => {
+        const koNav = (koLang as { settings?: { nav?: Record<string, string> } }).settings?.nav ?? {};
+        const enNav = (enLang as { settings?: { nav?: Record<string, string> } }).settings?.nav ?? {};
+
+        expect(typeof koNav.necessary_storage).toBe('string');
+        expect(typeof enNav.necessary_storage).toBe('string');
     });
 });
 

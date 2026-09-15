@@ -470,10 +470,17 @@ class NhnKcpApiServiceTest extends PluginTestCase
             $reflection->getConstant('LOG_DISABLED_PATH'),
             'gnuboard5 의 검증된 패턴(/home100/kcp) 과 일치해야 함',
         );
-        $this->assertFalse(
-            is_dir($reflection->getConstant('LOG_DISABLED_PATH')),
-            '경로가 실제 시스템에 존재하지 않아야 (로그 작성 silent skip 보장)',
-        );
+        // 존재 여부는 **배포 OS(리눅스)** 기준 계약이다. KCP CLI 는 리눅스 바이너리이고
+        // (`test_cli_args_include_disabled_log_path_constant` 도 같은 이유로 Windows 를 제외한다),
+        // Windows 는 선행 `/` 를 현재 드라이브 기준으로 해석해 `C:\home100\kcp` 를 본다.
+        // 그래서 개발자 PC 에 우연히 그 폴더가 있으면 배포 계약과 무관하게 붉은불이 뜬다.
+        // 계약 자체는 그대로 두고, 그 계약이 성립하는 OS 에서만 파일시스템을 확인한다.
+        if (DIRECTORY_SEPARATOR === '/') {
+            $this->assertFalse(
+                is_dir($reflection->getConstant('LOG_DISABLED_PATH')),
+                '경로가 실제 시스템에 존재하지 않아야 (로그 작성 silent skip 보장)',
+            );
+        }
     }
 
     public function test_log_level_is_minimal_to_prevent_pii_leak(): void

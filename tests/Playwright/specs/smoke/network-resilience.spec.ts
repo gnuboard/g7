@@ -25,15 +25,38 @@ const DEAD_SCREEN = /초기화 실패|페이지 로딩 실패|Unknown action han
 const FALLBACK_UI = /화면을 불러오지 못했습니다|Failed to load the page/;
 
 /**
+ * 자산 URL 이 **이중 모드**라는 사실을 흡수하는 매처 생성기.
+ *
+ * `asset_url_mode` 가 `extensionless` 인 사이트에서는 `.../routes.json` 이
+ * `.../routes` 로, `/api/modules/bundle.js` 가 `/api/modules/bundle/js` 로 나간다
+ * (nginx 정적 최적화 블록 우회 — `partials/asset-url-recovery` 참조).
+ * 확장자 형태만 매칭하면 그 사이트에서는 **한 건도 가로채지 못한 채** 테스트가
+ * "복구 성공" 처럼 조용히 통과하거나 카운터 0 으로 실패한다.
+ *
+ * @param base 확장자 앞까지의 경로 정규식 소스 (예: `\\/api\\/templates\\/[^/]+\\/routes`)
+ * @param ext 확장자 (예: 'json')
+ * @return URL 매처
+ */
+function suffixedPath(base: string, ext: string): (url: URL) => boolean {
+  const withExt = new RegExp(`^${base}\\.${ext}$`);
+  const without = new RegExp(`^${base}$`);
+  const segment = new RegExp(`^${base}\\/${ext}$`);
+  return (url: URL) => withExt.test(url.pathname) || without.test(url.pathname) || segment.test(url.pathname);
+}
+
+/**
  * 지정 패턴의 **첫 요청 1건만** 취소한다 (재시도 요청은 통과).
  *
  * 일시적 커넥션 유실을 모사한다 — 재시도가 실제로 복구하는지 보기 위함.
  *
  * @param page Playwright page
- * @param pattern 취소할 요청 URL glob
+ * @param pattern 취소할 요청 URL glob 또는 매처
  * @return 취소·통과 카운터 (재시도 발동 여부 확인용)
  */
-async function abortFirstRequestOnly(page: Page, pattern: string): Promise<{ hits: () => number }> {
+async function abortFirstRequestOnly(
+  page: Page,
+  pattern: string | ((url: URL) => boolean)
+): Promise<{ hits: () => number }> {
   let hits = 0;
   await page.route(pattern, (route) => {
     hits += 1;
@@ -48,12 +71,26 @@ async function bodyText(page: Page): Promise<string> {
   return page.evaluate(() => document.body.innerText.trim().replace(/\n+/g, ' | '));
 }
 
+/**
+ * 정적 게시(bake, #122) fast path 강제 미스.
+ *
+ * 정적 게시가 완료된 프로덕션 사이트에서는 routes/components/lang/번들이
+ * `/build/ext/{v}/…` 를 먼저 타므로, `/api/**` 패턴 인터셉트가 한 건도 걸리지
+ * 않은 채 이 스펙 전체가 무력화된다 (suffixedPath 3형태 밖의 4번째 URL 형태).
+ * 이 스펙의 검증 대상은 **API 폴백 경로의 복원력**이므로 정적 요청을 404 로
+ * 강제해 앱 자체 폴백(fetchStaticFirst / staticToLegacy)이 API 계층으로
+ * 내려보내게 한다. 미게시 사이트에서는 `/build/ext/**` 요청이 없어 무해하다.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.route('**/build/ext/**', (route) => route.fulfill({ status: 404, body: '' }));
+});
+
 test.describe('네트워크 복원력 — 요청 1건의 일시 실패 (#463)', () => {
   // 각 경로의 첫 요청 1건을 취소해도 재시도로 복구되어 앱이 정상 렌더돼야 한다.
-  const SINGLE_ABORT_PATHS: Array<{ name: string; pattern: string }> = [
-    { name: 'routes.json', pattern: '**/api/templates/*/routes.json*' },
-    { name: 'components.json', pattern: '**/api/templates/*/components.json*' },
-    { name: 'modules/bundle.js', pattern: '**/api/modules/bundle.js*' },
+  const SINGLE_ABORT_PATHS: Array<{ name: string; pattern: string | ((url: URL) => boolean) }> = [
+    { name: 'routes.json', pattern: suffixedPath('\\/api\\/templates\\/[^/]+\\/routes', 'json') },
+    { name: 'components.json', pattern: suffixedPath('\\/api\\/templates\\/[^/]+\\/components', 'json') },
+    { name: 'modules/bundle.js', pattern: suffixedPath('\\/api\\/modules\\/bundle', 'js') },
     { name: 'layouts/*.json', pattern: '**/api/layouts/**' },
   ];
 
@@ -197,6 +234,19 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
       },
     );
 
+    // 게시(bake) 사이트에서는 blade 가 이 번들을 정적 URL 로 방출하고, 그 1회가
+    // MAX_ATTEMPTS 예산의 첫 슬롯을 소비한다 (L2 — 예산 신설 금지, staticToLegacy 는
+    // 남은 예산으로 API 형태에 합류). 정적 시도를 따로 세어 총 예산으로 단언한다.
+    let staticAttempts = 0;
+    await page.route(
+      (url) => /\/build\/ext\/.*components\.iife\.js/.test(url.pathname),
+      (route) => {
+        staticAttempts += 1;
+
+        return route.fulfill({ status: 404, body: '' });
+      },
+    );
+
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     await page.waitForFunction(
@@ -211,8 +261,9 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
     expect(text).toMatch(FALLBACK_UI);
     await expect(page.locator('#app button')).toBeVisible();
 
-    // 재시도 3시도 (초기 1 + 재시도 2)
-    expect(attempts).toBe(3);
+    // 총 3시도 (초기 1 + 재시도 2) — 게시 사이트는 정적 1 + API 2, 미게시는 API 3.
+    // 합산 정확값으로 잠가 과잉 재시도(예산 신설) 회귀를 양쪽 세계에서 차단한다.
+    expect(attempts + staticAttempts).toBe(3);
   });
 
   /**
@@ -221,7 +272,7 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    */
   test('@smoke routes.json 상시 부재 → 명시적 에러 화면 + 새로고침 버튼', async ({ page }) => {
     let attempts = 0;
-    await page.route('**/api/templates/*/routes.json*', (route) => {
+    await page.route(suffixedPath('\\/api\\/templates\\/[^/]+\\/routes', 'json'), (route) => {
       attempts += 1;
       return route.abort('failed');
     });
@@ -251,7 +302,7 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    *   (b) `Unknown action handler: sirsoft-ecommerce.initPreferredCurrency` raw 노출
    */
   test('@smoke 모듈 번들 상시 부재 → 5초 블로킹 없이 렌더 + 내부 식별자 미노출', async ({ page }) => {
-    await page.route('**/api/modules/bundle.js*', (route) => route.abort('failed'));
+    await page.route(suffixedPath('\\/api\\/modules\\/bundle', 'js'), (route) => route.abort('failed'));
 
     // `waitUntil: 'commit'` — 기본값('load')은 취소된 번들의 재시도 체인까지 포함한
     // 모든 서브리소스를 기다리므로, 측정 시작점이 밀려 "렌더까지 걸린 시간" 이 아니라

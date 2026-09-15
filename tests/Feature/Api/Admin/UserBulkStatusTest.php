@@ -53,7 +53,7 @@ class UserBulkStatusTest extends TestCase
                 'description' => json_encode(['ko' => '사용자 정보 수정 권한', 'en' => 'Permission to update users']),
                 'extension_type' => ExtensionOwnerType::Core,
                 'extension_identifier' => 'core',
-                    'type' => 'admin',
+                'type' => 'admin',
             ]
         );
 
@@ -65,7 +65,7 @@ class UserBulkStatusTest extends TestCase
                 'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Administrator']),
                 'extension_type' => ExtensionOwnerType::Core,
                 'extension_identifier' => 'core',
-                    'type' => 'admin',
+                'type' => 'admin',
                 'is_active' => true,
             ]
         );
@@ -132,6 +132,28 @@ class UserBulkStatusTest extends TestCase
                 'status' => 'active',
             ]);
         }
+    }
+
+    /**
+     * 일괄 상태 변경 응답 메시지의 :count 플레이스홀더가 실제 처리 건수로 치환된다.
+     *
+     * 7.0.7 사전점검 브라우저 실측에서 응답 message 가
+     * ":count명의 사용자 상태가 변경되었습니다." 원문 그대로 내려오는 결함 발견 —
+     * 컨트롤러가 메시지 키만 넘기고 치환 파라미터를 생략한 회귀를 고정한다.
+     */
+    public function test_bulk_status_message_substitutes_count_placeholder(): void
+    {
+        $users = User::factory()->count(2)->create(['status' => 'inactive']);
+
+        $response = $this->authRequest()->patchJson('/api/admin/users/bulk-status', [
+            'ids' => $users->pluck('uuid')->toArray(),
+            'status' => 'active',
+        ]);
+
+        $response->assertOk();
+        $message = (string) $response->json('message');
+        $this->assertStringNotContainsString(':count', $message, '응답 메시지에 미치환 플레이스홀더가 남아 있으면 안 됩니다');
+        $this->assertStringContainsString('2', $message, '응답 메시지에 처리 건수가 치환되어야 합니다');
     }
 
     /**
@@ -240,14 +262,14 @@ class UserBulkStatusTest extends TestCase
         $afterHookCalled = false;
 
         // before_bulk_update 훅 등록
-        app(\App\Extension\HookManager::class)->addAction('sirsoft-core.user.before_bulk_update', function ($hookIds, $hookStatus) use (&$beforeHookCalled, $ids) {
+        app(HookManager::class)->addAction('sirsoft-core.user.before_bulk_update', function ($hookIds, $hookStatus) use (&$beforeHookCalled, $ids) {
             $beforeHookCalled = true;
             $this->assertEquals($ids, $hookIds);
             $this->assertEquals('active', $hookStatus);
         });
 
         // after_bulk_update 훅 등록
-        app(\App\Extension\HookManager::class)->addAction('sirsoft-core.user.after_bulk_update', function ($hookIds, $hookStatus, $hookUpdatedCount) use (&$afterHookCalled, $ids) {
+        app(HookManager::class)->addAction('sirsoft-core.user.after_bulk_update', function ($hookIds, $hookStatus, $hookUpdatedCount) use (&$afterHookCalled, $ids) {
             $afterHookCalled = true;
             $this->assertEquals($ids, $hookIds);
             $this->assertEquals('active', $hookStatus);

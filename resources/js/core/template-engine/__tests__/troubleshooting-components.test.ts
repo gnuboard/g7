@@ -3,10 +3,10 @@
  *
  * troubleshooting-components.md, troubleshooting-components-*.md에 기록된 사례의 회귀 테스트입니다.
  *
- * @see docs/frontend/troubleshooting-components.md
- * @see docs/frontend/troubleshooting-components-datagrid.md
- * @see docs/frontend/troubleshooting-components-form.md
- * @see docs/frontend/troubleshooting-components-misc.md
+ * @see 트러블슈팅 가이드 troubleshooting-components.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-datagrid.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-form.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-misc.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -25,7 +25,7 @@ describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
    * `portable`(0~1023) 이면 태블릿에서 불필요하게 줄바꿈된다.
    * 여기서는 그 전제인 스코프 경계와 우선순위를 고정한다.
    *
-   * @see docs/frontend/troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
+   * @see 트러블슈팅 가이드 troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
    */
   describe('[사례 1] responsive 스코프 경계 — mobile(0~767) vs portable(0~1023)', () => {
     it('mobile 은 767px 까지만 매칭되고 768px 부터는 미적용', () => {
@@ -55,7 +55,7 @@ describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
      * 엔진이 `window.innerWidth` 를 본다는 전제가 깨지면(예: matchMedia 로 교체) 규정을 따른
      * 모든 확장이 경계 폭에서 동시에 어긋나므로, 그 전제를 여기서 고정한다.
      *
-     * @see docs/frontend/troubleshooting-components-misc.md "확장 코드의 화면 폭 판정 관련 이슈"
+     * 배경: 내부 트러블슈팅 사례 「확장 코드의 화면 폭 판정 관련 이슈」
      * @see docs/frontend/responsive-layout.md "확장 코드에서 같은 경계를 판정할 때"
      */
     it('엔진은 window.innerWidth 로 현재 폭을 정한다 (matchMedia 아님)', () => {
@@ -923,6 +923,56 @@ describe('트러블슈팅 회귀 테스트 - Form 자동 바인딩 bindingType �
       expect(merged.form.method_samsungpay).toBeNull();
     });
   });
+
+  /**
+   * [사례 7] 자동바인딩 value 쓰기 경로는 e.target.value 를 무변환 저장한다
+   *
+   * troubleshooting-components-form.md 사례 8 회귀 가드 (공개 #97).
+   *
+   * bindingType 미지정(RadioGroup/Select)은 value 바인딩으로 떨어지는데,
+   * 그 쓰기 경로(autoOnChange)는 `eventOrValue?.target?.value !== undefined ?
+   * eventOrValue.target.value : eventOrValue` 로 DOM 문자열을 그대로 저장한다.
+   * DOM 라디오의 value 는 항상 문자열이므로 boolean 필드가 이 경로로 묶이면
+   * 클릭 순간 "true"/"false" 문자열이 되어 서버 boolean 규칙에서 422 가 된다.
+   * 표시 계층은 String === String 느슨 비교가 구제하므로 저장 시점에야 드러난다.
+   */
+  describe('[사례 7] 자동바인딩 value 쓰기 경로의 boolean 문자열화 (공개 #97)', () => {
+    /** DynamicRenderer 의 value 바인딩 autoOnChange 값 추출과 동일 */
+    const calcAutoOnChangeNewValue = (eventOrValue: any): any =>
+      eventOrValue?.target?.value !== undefined ? eventOrValue.target.value : eventOrValue;
+
+    it('라디오 change 이벤트의 e.target.value 는 문자열 그대로 저장된다 (무변환)', () => {
+      // DOM 라디오는 value 를 항상 문자열로 보고한다
+      const domEvent = { target: { value: 'false', name: 'is_combinable', type: 'radio' } };
+
+      const stored = calcAutoOnChangeNewValue(domEvent);
+
+      expect(stored).toBe('false');
+      expect(typeof stored).not.toBe('boolean'); // 이것이 서버 422 의 시작점
+    });
+
+    it('boolean 미지정 컴포넌트(RadioGroup)는 boolean 값도 value 바인딩이라 쓰기 경로가 이 함정을 탄다', () => {
+      // 표시(사례 3)는 value 바인딩으로 구제되지만, 쓰기는 문자열화된다
+      expect(calcIsCheckedBinding(undefined, true)).toBe(false); // value 바인딩 확정
+    });
+
+    it('해결: change 액션의 === "true" 캐스팅은 항상 boolean 을 기록한다', () => {
+      // 레이아웃: "form.is_combinable": "{{$event.target.value === 'true'}}"
+      const castYes = 'true' === 'true';
+      const castNo = ('false' as string) === 'true';
+
+      expect(castYes).toBe(true);
+      expect(castNo).toBe(false);
+      expect(typeof castYes).toBe('boolean');
+      expect(typeof castNo).toBe('boolean');
+    });
+
+    it('해결: 표시 바인딩 String(boolean) 은 옵션 문자열 값과 정확히 매칭된다', () => {
+      // 레이아웃: value: "{{String(_local.form?.is_combinable ?? true)}}"
+      expect(String(true)).toBe('true');
+      expect(String(false)).toBe('false');
+    });
+  });
 });
 
 describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
@@ -959,7 +1009,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     });
 
     it('외부 SlotProvider가 모든 컴포넌트에 슬롯 컨텍스트를 제공해야 함', () => {
-      // _admin_base.json은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
+      // _admin_base.g7.html은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
       // isRootRenderer=true는 index===0(첫 컴포넌트)에만 적용됨
       // 외부 SlotProvider가 없으면 index>0 컴포넌트(콘텐츠 영역)에서 슬롯 시스템 미동작
 
@@ -1101,7 +1151,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     }
 
     it('_fromBase: true 컴포넌트는 페이지 전환 시 stable key → 보존', () => {
-      // _admin_base.json의 최상위 4개 컴포넌트 시뮬레이션
+      // _admin_base.g7.html의 최상위 4개 컴포넌트 시뮬레이션
       const baseComponents = [
         { id: 'global_toast', _fromBase: true },
         { id: 'page_transition_indicator', _fromBase: true },
@@ -1277,7 +1327,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
 
   describe('[슬롯 사례 5] slot 컴포넌트 포함 페이지 새로고침 시 React Hook 규칙 위반', () => {
     /**
-     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.json을 사용하는 페이지에서
+     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.g7.html을 사용하는 페이지에서
      *       새로고침으로 직접 진입 시 "컴포넌트 로드 실패" 배너 (React error #300 / hook count mismatch)
      *       navigate 진입 시에는 정상 동작
      *
@@ -1555,10 +1605,10 @@ describe('트러블슈팅 회귀 테스트 - DataGrid cellChildren 파이프', (
    * 사례: cellChildren 단일 바인딩의 파이프가 적용되지 않아 셀이 비어 보임
    *
    * 단일 바인딩 판정 후 `|` 가 복잡 표현식 문자로 분류되어 evaluateExpression 으로
-   * 라우팅되면 JS 비트 OR 로 평가된다. 인자 있는 파이프는 예외(값 소실),
-   * 인자 없는 파이프는 조용한 오답이 된다. 라우팅 판정 자체를 고정한다.
+   * 라우팅되면 안 된다. engine-v1.59.0 의 안전 평가기는 비트 연산자를 거부하므로
+   * raw 파이프가 흘러들면 예외가 된다(종전엔 조용한 비트 OR 오답이었다). 라우팅 판정 자체를 고정한다.
    *
-   * @see docs/frontend/troubleshooting-components-datagrid.md "DataGrid cellChildren 파이프 이슈"
+   * 배경: 내부 트러블슈팅 사례 「DataGrid cellChildren 파이프 이슈」
    * @see resources/js/core/template-engine/__tests__/renderItemChildren-pipe.test.ts (렌더 결과 검증)
    */
   describe('[사례 1] 파이프 판정이 복잡 표현식 판정보다 먼저 적용된다', () => {
@@ -1574,11 +1624,15 @@ describe('트러블슈팅 회귀 테스트 - DataGrid cellChildren 파이프', (
       expect(hasPipes("row.flag ? '$t:common.badge|count=1' : ''")).toBe(false);
     });
 
-    it('파이프를 evaluateExpression 으로 보내면 비트 OR 오답이 된다 (수정 전 동작 고정)', () => {
+    it('파이프를 evaluateExpression 으로 보내면 거부된다 (라우팅 판정 고정)', () => {
       const engine = new DataBindingEngine();
-      // 인자 없는 파이프: 문자열이 0 으로 붕괴
-      expect(engine.evaluateExpression('row.code | uppercase', { row: { code: 'abc' } })).toBe(0);
-      // 인자 있는 파이프: 함수 호출 실패로 예외
+      // engine-v1.59.0: 표현식은 화이트리스트 AST 평가기로 실행되며 비트 연산자(`|`)를
+      // 거부한다. 종전 `new Function` 기반에서는 인자 없는 파이프가 비트 OR 로 조용히
+      // 0 이 되고 인자 있는 파이프는 예외였다 — 이제 둘 다 명확히 예외로 거부된다.
+      // (파이프는 hasPipes 로 먼저 분리되어야 하며 evaluateExpression 에 raw 로 오면 안 됨)
+      expect(() =>
+        engine.evaluateExpression('row.code | uppercase', { row: { code: 'abc' } })
+      ).toThrow();
       expect(() =>
         engine.evaluateExpression("row.created_at | datetime('YYYY-MM-DD')", {
           row: { created_at: '2024-01-15T14:30:00' },

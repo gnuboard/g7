@@ -236,6 +236,31 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         ? $assetUrlMode
         : '';
 
+    // .env 로 기록되는 사용자 입력의 사전 거부 (KVE-2026-2042)
+    // 직렬화기가 최종 관문이지만, 그 단계의 실패는 설치 진행 중에 예외로 드러나 운영자가
+    // 어느 입력이 문제인지 알기 어렵다. 여기서 필드별로 거부해 화면에 사유를 표시한다.
+    require_once __DIR__.'/env-value.php';
+
+    foreach (['app_name', 'app_url', 'core_update_github_url'] as $envField) {
+        if (! installer_env_value_is_single_line((string) ($formData[$envField] ?? ''))) {
+            $errors[$envField] = lang('error_env_value_line_break');
+        }
+    }
+
+    // URL 필드는 형태까지 확인한다 — 개행이 없어도 스킴이 없는 값이 그대로 기록되면
+    // 배포 후 절대 URL 생성이 어긋난다.
+    foreach (['app_url', 'core_update_github_url'] as $urlField) {
+        $urlValue = trim((string) ($formData[$urlField] ?? ''));
+        if ($urlValue === '' || isset($errors[$urlField])) {
+            continue;
+        }
+
+        $scheme = strtolower((string) parse_url($urlValue, PHP_URL_SCHEME));
+        if (! filter_var($urlValue, FILTER_VALIDATE_URL) || ! in_array($scheme, ['http', 'https'], true)) {
+            $errors[$urlField] = lang('error_env_value_invalid_url', ['value' => $urlValue]);
+        }
+    }
+
     // 코어 업데이트 _pending 경로 검증 (입력된 경우만)
     $corePendingPath = trim($formData['core_update_pending_path'] ?? '');
     if ($corePendingPath !== '') {

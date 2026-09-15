@@ -1,3 +1,4 @@
+// audit:allow extension-dist-source-literal-sync 타입/미소비 상수 중심 모듈 — 타입 소거·tree-shake 로 일부 리터럴이 번들에 남지 않는다 (fresh 빌드로 실측 — stale 아님)
 /**
  * Font Awesome 아이콘 스타일
  */
@@ -5,8 +6,15 @@ export type IconStyle = 'solid' | 'regular' | 'light' | 'duotone' | 'brands';
 
 /**
  * Font Awesome 아이콘 크기
+ *
+ * `Icon` 이 `fa-{size}` 로 그대로 방출하므로 값 집합은 Font Awesome 어휘다(Tailwind 아님).
+ * 상대 스케일 `xs`~`2xl` 과 배수 스케일 `2x`~`5x` 가 함께 있다.
+ *
+ * 이 타입이 레이아웃 작성 `<icon size>` 의 SSoT 이며 audit 레지스트리
+ * (`layout-schema/component-registry.cjs` 의 `Icon.enums.size`)가 이 목록과 대조된다 —
+ * 값을 늘리거나 줄이면 `icon-size-registry-sync` 가드가 두 하네스에서 실패한다.
  */
-export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2x' | '3x' | '4x' | '5x';
+export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '2x' | '3x' | '4x' | '5x';
 
 /**
  * 자주 사용되는 Font Awesome 아이콘 이름

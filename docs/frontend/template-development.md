@@ -105,25 +105,32 @@ export const Card = ({ title }) => (
 
 ### Step 3: 기본 레이아웃 정의
 
-`/layouts/*.json`에 기본 레이아웃 정의:
+`/layouts/*.g7.html`(소스 SSoT)에 기본 레이아웃 정의 — 설치 시 서버가 JSON 으로 컴파일해 DB 등록:
 
-- JSON 스키마 준수
+- 마크업 형식은 `.g7.html` 마크업 ([layout-markup.md](layout-markup.md)). 문서 봉투는 `<layout>` 이고, `name` 은 파일 경로에서 오는 레이아웃 식별자다
 - 데이터 바인딩/다국어 활용
+
+```html
+<layout name="admin_dashboard" version="1.0.0">
+  <page-header title="$t:dashboard.title"/>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
   "version": "1.0.0",
-  "layout": {
-    "name": "AdminLayout",
-    "children": [
-      {
-        "name": "PageHeader",
-        "props": {
-          "title": "$t:dashboard.title"
-        }
+  "layout_name": "admin_dashboard",
+  "components": [
+    {
+      "type": "composite",
+      "name": "PageHeader",
+      "props": {
+        "title": "$t:dashboard.title"
       }
-    ]
-  }
+    }
+  ]
 }
 ```
 
@@ -283,6 +290,14 @@ export type HandlerName = keyof typeof handlerMap;
 
 **init_actions (레이아웃 로드 시)**:
 
+```html
+<init>
+  <action handler="initTheme" target="{{query.theme}}"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -301,10 +316,10 @@ export type HandlerName = keyof typeof handlerMap;
   "id": "my_component",
   "lifecycle": {
     "onMount": [
-      { "type": "click", "handler": "loadData", "target": "{{route.id}}" }
+      { "handler": "loadData", "target": "{{route.id}}" }
     ],
     "onUnmount": [
-      { "type": "click", "handler": "cleanup" }
+      { "handler": "cleanup" }
     ]
   }
 }
@@ -427,6 +442,27 @@ export default defineConfig({
 
 ---
 
+## 4-1. 운영자가 CSS·JS 를 덧붙이는 자리 (`custom/`)
+
+템플릿 소스(`src/styles/`)를 고치고 빌드하는 방법은 **템플릿 작성자**의 방법입니다. 운영자에게는
+부적합합니다 — Node.js 가 필요하고, 그렇게 넣은 파일은 다음 템플릿 업데이트에 사라집니다.
+빌드 산출물(`dist/css/`)을 직접 고치는 것도 다음 빌드에 사라집니다.
+
+운영자는 활성 템플릿 디렉토리의 `custom/` 에 파일을 놓습니다.
+
+```
+templates/{템플릿-식별자}/custom/custom.css
+```
+
+- 빌드하지 않습니다. 파일을 놓으면 다음 요청부터 적용됩니다.
+- 템플릿을 업데이트해도 이 디렉토리는 보존됩니다.
+- 적용 순서는 **템플릿·확장 스타일보다 뒤**라서 재정의가 그대로 반영됩니다.
+- 여러 파일을 놓으면 파일명 오름차순으로 적용됩니다(`10-`, `20-` 접두사로 순서를 정할 수 있습니다).
+- 폰트·이미지 같은 파일도 같은 디렉토리에 두고 CSS 에서 상대 경로로 참조합니다.
+- 순서를 바꾸거나 일부만 싣고 싶으면 `custom/assets.json` 에 선언합니다.
+
+모듈·플러그인도 같은 규약을 씁니다. 상세: [module-assets.md](../extension/module-assets.md) "사용자 추가 에셋".
+
 ## 5. 템플릿 네이밍 규칙
 
 ### 형식
@@ -498,6 +534,12 @@ export default defineConfig({
 ### 동작 방식
 
 **1. 레이아웃 JSON 정의** (사용자):
+
+```html
+<card title="{{user.name}}" onClick="navigate:/users/:id"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -632,4 +674,4 @@ cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용�
 - [본인인증 모달 UI 표준 (engine-v1.46.0+)](./identity-verification-ui.md)
 - [본인인증 인터셉터 API 레퍼런스](./identity-guard-interceptor.md)
 - [외부 템플릿 IDV launcher 등록](../extension/template-idv-bootstrap.md)
-- [프론트엔드 가이드 인덱스](./index.md)
+- [프론트엔드 가이드 인덱스](./README.md)

@@ -1138,7 +1138,8 @@ class ApiDocScaffolder
             // 종료 마커를 표의 끝 경계로 삼는데, 전자는 그 마커를 잘라내고 돌려준다.
             $merged .= $this->applyPreservedErrorTable(
                 $withErrors,
-                $this->exactGeneratedBlock($existing, $key)
+                $this->exactGeneratedBlock($existing, $key),
+                $section
             )."\n";
         }
 
@@ -1252,7 +1253,44 @@ class ApiDocScaffolder
      * @param  string|null  $previous  기존 문서의 같은 엔드포인트 생성 블록
      * @return string 에러 표가 보존된 섹션
      */
-    private function applyPreservedErrorTable(string $section, ?string $previous): string
+    /**
+     * 403 행의 요구 권한 식별자를 이번 재생성 산출값으로 갱신합니다.
+     *
+     * 에러 표 병합은 같은 상태코드에서 기존(사람) 행을 이기게 두는데, 403 의 권한 식별자는
+     * 라우트 정의에서 파생된 사실이라 사람 서술과 같은 취급을 하면 안 된다. 두 행이 모두
+     * 백틱 식별자를 가질 때만 그 부분을 치환하고, 나머지 문구(사람이 덧붙인 도메인 조건)는
+     * 건드리지 않는다. 식별자가 없는 형태(관리자 게이트만 걸린 라우트)는 갱신 대상이 아니다.
+     *
+     * @param  string  $preserved  병합 결과로 살아남은 기존 403 행
+     * @param  string  $generated  이번 재생성이 만든 403 행
+     * @return string 식별자만 갱신된 403 행
+     */
+    private function refreshPermissionIdentifier(string $preserved, string $generated): string
+    {
+        if (! preg_match('/`([^`]+)`/', $generated, $new)) {
+            return $preserved;
+        }
+
+        if (! preg_match('/`([^`]+)`/', $preserved, $old)) {
+            return $preserved;
+        }
+
+        if ($old[1] === $new[1]) {
+            return $preserved;
+        }
+
+        $needle = '`'.$old[1].'`';
+        $pos = strpos($preserved, $needle);
+
+        if ($pos === false) {
+            return $preserved;
+        }
+
+        // preg_replace 는 대체 문자열의 `$`·`\` 를 역참조로 해석하므로 쓰지 않는다.
+        return substr_replace($preserved, '`'.$new[1].'`', $pos, strlen($needle));
+    }
+
+    private function applyPreservedErrorTable(string $section, ?string $previous, ?string $generated = null): string
     {
         if ($previous === null) {
             return $section;
@@ -1285,10 +1323,26 @@ class ApiDocScaffolder
 
         // 상태코드 키로 병합. `+` 는 왼쪽 우선이므로 기존 행을 먼저 둬서, 같은 상태코드면
         // 사람이 쓴 구체적 조건이 자동 문구를 이긴다. 자동 추론에만 있는 상태코드는 새로 편입된다.
-        $merged = $previousRows + $this->errorTableRows($section);
+        $currentRows = $this->errorTableRows($section);
+        $merged = $previousRows + $currentRows;
 
         if ($merged === []) {
             return $section;
+        }
+
+        // 403 행의 권한 식별자만은 예외다 — 그것은 사람 서술이 아니라 라우트에서 파생된
+        // 사실이라, 위 병합 규칙을 그대로 두면 라우트의 요구 권한을 바꿔도 옛 식별자가
+        // 영구히 남아 문서가 조용히 틀린 권한을 안내한다. 사람이 보강한 조건 문구는 그대로
+        // 두고 백틱 식별자만 갱신한다.
+        //
+        // 대조 원본은 반드시 **이번 회차가 생성한 원본 섹션**이어야 한다. 여기 들어오는
+        // $section 은 restoreTableDescriptions 를 이미 거쳐 403 행의 설명 셀이 기존 문서
+        // 값으로 되돌아가 있으므로(에러 표도 상태코드를 행 키로 갖는 표라 그 복원 대상에
+        // 걸린다), 그것을 기준으로 삼으면 갱신이 언제나 no-op 이 된다.
+        $generatedRows = $generated === null ? $currentRows : $this->errorTableRows($generated);
+
+        if (isset($merged['403'], $generatedRows['403'])) {
+            $merged['403'] = $this->refreshPermissionIdentifier($merged['403'], $generatedRows['403']);
         }
 
         ksort($merged, SORT_NUMERIC);

@@ -1,8 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminInquiryController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserAddressController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserCurrencyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserShippingCountryController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminWishlistController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\BrandController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CashReceiptController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController;
@@ -261,7 +265,8 @@ Route::post('user/orders', [PublicOrderController::class, 'store'])
 
 // 비회원 주문 조회 인증 API (주문번호+전화번호+비밀번호 → 조회 토큰 발급)
 // POST /api/modules/sirsoft-ecommerce/guest/orders/verify
-// 실패 잠금은 GuestOrderAuthService 가 담당하고, throttle 로 요청 빈도도 제한한다.
+// 무차별 대입 방어는 라우트 throttle(분당 20회, IP 기준) + 조회 비밀번호 정책(영문+숫자 8자 이상)이
+// 담당한다. 업계 표준·로그인/IDV 일관성을 고려해 별도 N회 잠금은 두지 않는다(#55 결정).
 Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
     ->middleware('throttle:20,1')
     ->name('guest.orders.verify');
@@ -1136,16 +1141,20 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // DELETE /api/modules/sirsoft-ecommerce/admin/presets/{preset} - 프리셋 삭제
     Route::prefix('presets')->group(function () {
         Route::get('/', [SearchPresetController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.products.read')
             ->name('admin.presets.index');
 
         Route::post('/', [SearchPresetController::class, 'store'])
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
             ->name('admin.presets.store');
 
         Route::put('/{preset}', [SearchPresetController::class, 'update'])
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
             ->whereNumber('preset')
             ->name('admin.presets.update');
 
         Route::delete('/{preset}', [SearchPresetController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
             ->whereNumber('preset')
             ->name('admin.presets.destroy');
     });
@@ -1460,7 +1469,71 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // PUT    /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply   - 답변 수정
     // DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply   - 답변 삭제
     // DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}         - 문의 삭제
+    /*
+    |--------------------------------------------------------------------------
+    | 회원 소유 데이터 관리자 목록 (찜 · 장바구니 · 배송지)
+    |--------------------------------------------------------------------------
+    |
+    | 회원이 만든 데이터인데 관리자 표면이 없던 축을 채운다(#524 §4.1). 세 목록 모두
+    | 같은 모양이다 — 조회는 read, 삭제는 manage. `/bulk` 는 `/{id}` 보다 먼저 선언해야
+    | "bulk" 가 id 로 잡히지 않는다.
+    |
+    */
+    Route::prefix('wishlists')->group(function () {
+        Route::delete('/bulk', [AdminWishlistController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.manage')
+            ->name('admin.wishlists.bulk-destroy');
+
+        Route::get('/', [AdminWishlistController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.read')
+            ->name('admin.wishlists.index');
+
+        Route::delete('/{id}', [AdminWishlistController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.manage')
+            ->whereNumber('id')
+            ->name('admin.wishlists.destroy');
+    });
+
+    Route::prefix('carts')->group(function () {
+        Route::delete('/bulk', [AdminCartController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.manage')
+            ->name('admin.carts.bulk-destroy');
+
+        Route::get('/', [AdminCartController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.read')
+            ->name('admin.carts.index');
+
+        Route::delete('/{id}', [AdminCartController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.manage')
+            ->whereNumber('id')
+            ->name('admin.carts.destroy');
+    });
+
+    Route::prefix('user-addresses')->group(function () {
+        Route::delete('/bulk', [AdminUserAddressController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.manage')
+            ->name('admin.user-addresses.bulk-destroy');
+
+        Route::get('/', [AdminUserAddressController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.read')
+            ->name('admin.user-addresses.index');
+
+        Route::delete('/{id}', [AdminUserAddressController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.manage')
+            ->whereNumber('id')
+            ->name('admin.user-addresses.destroy');
+    });
+
     Route::prefix('inquiries')->group(function () {
+        // 목록·일괄 삭제 (#524 §4.1) — `/bulk` 는 `/{inquiryId}` 패턴보다 먼저 선언한다
+        Route::get('/', [AdminInquiryController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.inquiries.read')
+            ->name('admin.inquiries.index');
+
+        Route::delete('/bulk', [AdminInquiryController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.inquiries.delete')
+            ->name('admin.inquiries.bulk-destroy');
+
         Route::post('/{inquiryId}/reply', [AdminProductInquiryController::class, 'reply'])
             ->middleware('permission:admin,sirsoft-ecommerce.inquiries.update')
             ->whereNumber('inquiryId')

@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileReposit
  *
  * 코어 UserResource 의 프로필(/api/me)·관리자 상세 응답에 발화하는 core.user.filter_resource_data
  * 필터 훅을 구독해, 유저의 영속 결제 통화(ecommerce_preferred_currency)를 병합합니다.
- * 프론트(_user_base.json)는 로그인 유저면 이 값으로 _global.preferredCurrency 를 초기화해
+ * 프론트(_user_base.g7.html)는 로그인 유저면 이 값으로 _global.preferredCurrency 를 초기화해
  * "로그인 시 계정 통화로 덮어씀"(D-LOGIN-CUR) 을 구조적으로 충족합니다.
  */
 class UserCurrencyInfoListener implements HookListenerInterface

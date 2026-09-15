@@ -3,9 +3,9 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Rules\LocaleRequiredTranslatable;
+use App\Services\DriverRegistryService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
@@ -206,6 +206,13 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.privacy_officer_email' => ['nullable', 'email', 'max:255'],
             'basic_info.mail_order_number' => ['nullable', 'string', 'max:100'],
             'basic_info.telecom_number' => ['nullable', 'string', 'max:100'],
+            // 공개 자산 디스크 — 빈 값은 코어 공개 자산 디스크 설정을 따른다.
+            // 선택지가 코어 카탈로그 + 플러그인 훅 등록 디스크로 동적이라 정적 in 불가 —
+            // 코어 SaveSettingsRequest 와 동일하게 카탈로그 조회 closure 로 검증한다.
+            // (런타임 resolvePublicAssetDisk() 의 스트리밍 폴백은 최후 안전망이지, 저장
+            //  시점의 오타를 성공 응답으로 통과시켜도 된다는 뜻이 아니다 — 운영자에게는
+            //  "저장됐는데 CDN 이 안 붙는" 무증상 상태로만 보인다.)
+            'basic_info.public_asset_disk' => ['nullable', 'string', 'max:100', $this->publicAssetDiskRule()],
 
             'language_currency' => ['sometimes', 'array'],
             // default_language 제거 (A1-⑤, D-LANG): 사이트 언어는 코어 일반설정으로 일원화. 모듈 orphan 필드.
@@ -279,6 +286,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // sometimes 필수: rules() 는 탭 구분 없이 적용되므로 무조건 required 로 두면
             // 이 키를 보내지 않는 다른 탭(마일리지 등) 저장이 통째로 막힌다. 키가 온 경우에만 필수.
             'order_settings.auto_cancel_days' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.auto_cancel_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.auto_cancel_days_max', 30)],
+            'order_settings.pending_order_expire_minutes' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.pending_order_expire_minutes_min', 0), 'max:'.config('sirsoft-ecommerce.limits.pending_order_expire_minutes_max', 20160)],
             'order_settings.cart_expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.cart_expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.cart_expiry_days_max', 365)],
             'order_settings.stock_restore_on_cancel' => ['nullable', 'boolean'],
             'order_settings.confirmable_statuses' => ['nullable', 'array'],
@@ -362,6 +370,28 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'shipping.types.*.is_active' => ['nullable', 'boolean'],
             'shipping.types.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
+    }
+
+    /**
+     * 공개 자산 디스크 존재 검증 규칙을 만듭니다.
+     *
+     * 선택지는 코어 3종 + 플러그인이 훅으로 등록한 디스크라 런타임에만 확정되므로
+     * 정적 `Rule::in` 을 쓸 수 없습니다. 코어 `SaveSettingsRequest` 와 동일하게
+     * 카탈로그 게터(SSoT)를 조회하는 closure 로 검증해 두 표면의 강도를 맞춥니다.
+     *
+     * @return \Closure 검증 closure
+     */
+    protected function publicAssetDiskRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            if (! app(DriverRegistryService::class)->isDriverAvailable('public_asset', $value)) {
+                $fail(__('sirsoft-ecommerce::validation.public_asset_disk_invalid'));
+            }
+        };
     }
 
     /**
@@ -1184,6 +1214,10 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.auto_cancel_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.integer'),
             'order_settings.auto_cancel_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.min'),
             'order_settings.auto_cancel_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.max'),
+            'order_settings.pending_order_expire_minutes.required' => __('sirsoft-ecommerce::validation.custom.order_settings.pending_order_expire_minutes.required'),
+            'order_settings.pending_order_expire_minutes.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.pending_order_expire_minutes.integer'),
+            'order_settings.pending_order_expire_minutes.min' => __('sirsoft-ecommerce::validation.custom.order_settings.pending_order_expire_minutes.min'),
+            'order_settings.pending_order_expire_minutes.max' => __('sirsoft-ecommerce::validation.custom.order_settings.pending_order_expire_minutes.max'),
             'order_settings.cart_expiry_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.integer'),
             'order_settings.cart_expiry_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.min'),
             'order_settings.cart_expiry_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.max'),

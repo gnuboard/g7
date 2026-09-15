@@ -862,6 +862,7 @@ return [
 
     // 주문 검증 메시지 (하위 호환성 - order.* 형식)
     'order' => [
+        'payment_method_unavailable' => '현재 사용할 수 없는 결제수단입니다. 다른 결제수단을 선택해주세요.',
         'ids' => [
             'required' => '변경할 주문을 선택해주세요.',
             'array' => '주문 ID는 배열 형태여야 합니다.',
@@ -1033,6 +1034,14 @@ return [
             'tier_min_non_negative' => '구간 시작값은 0 이상이어야 합니다.',
             'tier_max_non_negative' => '구간 종료값은 0 이상이어야 합니다.',
             'unit_value_min' => '구간 단위값은 0보다 커야 합니다.',
+            'tiers_required' => '구간별 배송비 정책은 구간을 1개 이상 등록해야 합니다.',
+            'middle_max_required' => '마지막 구간을 제외한 구간에는 종료값을 입력해야 합니다.',
+            'tier_value_integer' => '수량 구간의 시작값과 종료값은 정수여야 합니다.',
+            'unit_value_required' => '단위당 배송비 정책은 단위값을 입력해야 합니다.',
+        ],
+        'free_threshold_required' => '조건부 무료배송 정책은 무료배송 기준금액을 입력해야 합니다.',
+        'extra_fee' => [
+            'zipcode_format' => '우편번호는 "63000", "63000-63999", "63*" 형식 중 하나여야 합니다.',
         ],
         'country_settings' => [
             'required' => '국가별 배송 설정을 1개 이상 추가해주세요.',
@@ -1319,8 +1328,14 @@ return [
         ],
     ],
 
+    // 공개 자산 디스크 (코어 카탈로그 조회 검증)
+    'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
+
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
+        // 공개 자산 스토리지
+        'basic_info.public_asset_disk' => '공개 자산 디스크',
+
         // 배송정책 국가별 설정
         'country_settings' => '국가별 설정',
         'country_settings.*.country_code' => '국가',
@@ -1436,6 +1451,7 @@ return [
         'order_settings.bank_accounts.*.is_default' => '기본 계좌',
         'order_settings.auto_cancel_expired' => '미결제 자동취소',
         'order_settings.auto_cancel_days' => '자동취소 기한(일)',
+        'order_settings.pending_order_expire_minutes' => '결제 미완료 주문 만료 기준(분)',
         'order_settings.cart_expiry_days' => '장바구니 보관기간(일)',
         'order_settings.default_pg_provider' => '기본 PG사',
         'order_settings.payment_methods.*.pg_provider' => 'PG사',
@@ -1765,6 +1781,12 @@ return [
                 'integer' => '자동취소 기한은 정수여야 합니다.',
                 'min' => '자동취소 기한은 1일 이상이어야 합니다.',
                 'max' => '자동취소 기한은 최대 30일까지 설정 가능합니다.',
+            ],
+            'pending_order_expire_minutes' => [
+                'required' => '결제 미완료 주문 만료 기준을 입력해주세요.',
+                'integer' => '결제 미완료 주문 만료 기준은 정수여야 합니다.',
+                'min' => '결제 미완료 주문 만료 기준은 0분 이상이어야 합니다. (0 은 정리하지 않음)',
+                'max' => '결제 미완료 주문 만료 기준은 최대 20160분(14일)까지 설정 가능합니다.',
             ],
             'cart_expiry_days' => [
                 'integer' => '장바구니 보관기간은 정수여야 합니다.',

@@ -402,6 +402,10 @@ describe('buildRouteTree — 라우트↔모달/확장 정적 연결', () => {
     return group?.children?.find((c) => c.path === path);
   }
 
+  /**
+   * @scenario connection_kind=modal, host_match=match, conn_count=many
+   * @effects connected_modals_attached_when_host_layout_equals_route_layout
+   */
   it('모달 host_layout 이 라우트 layout 과 일치하면 "이 화면의 모달" 자식 그룹 부착', () => {
     const tree = buildRouteTree({
       routes: [tplRoute('/admin/users', 'admin_user_list', { title: '회원 목록' })],
@@ -427,6 +431,10 @@ describe('buildRouteTree — 라우트↔모달/확장 정적 연결', () => {
     expect(modalNode.connectedHostRoutePath).toBe('/admin/users');
   });
 
+  /**
+   * @scenario connection_kind=overlay, host_match=match, conn_count=one
+   * @effects connected_overlay_attached_when_target_layout_equals_route_layout, connected_extensions_attached_statically_by_host_layouts_without_canvas_load
+   */
   it('overlay 확장 target_layout 이 라우트 layout 과 일치하면 "주입되는 확장" 자식 그룹 부착', () => {
     const tree = buildRouteTree({
       routes: [tplRoute('/admin/users', 'admin_user_list')],
@@ -448,6 +456,10 @@ describe('buildRouteTree — 라우트↔모달/확장 정적 연결', () => {
     expect(extNode.connectedHostRoutePath).toBe('/admin/users');
   });
 
+  /**
+   * @scenario connection_kind=extension_point, host_match=match, conn_count=one
+   * @effects connected_extension_point_attached_when_host_layout_in_host_layouts
+   */
   it('extension_point 타입도 hostLayouts 가 라우트 layout 과 일치하면 정적 부착 (클릭 불필요)', () => {
     const tree = buildRouteTree({
       // EP 의 hostLayouts=['shop_checkout'] 이 라우트 layout 과 일치 → 정적 부착
@@ -468,6 +480,10 @@ describe('buildRouteTree — 라우트↔모달/확장 정적 연결', () => {
     expect(extNode.connectedHostRoutePath).toBe('/shop/checkout');
   });
 
+  /**
+   * @scenario connection_kind=overlay, host_match=no_match, conn_count=zero
+   * @effects connected_group_omitted_when_zero_matches
+   */
   it('hostLayouts 에 없는 라우트에는 확장 미부착', () => {
     const tree = buildRouteTree({
       // header_ext 슬롯명을 layout 으로 가져도, hostLayouts 매칭이 아니면 부착 안 됨
@@ -483,6 +499,10 @@ describe('buildRouteTree — 라우트↔모달/확장 정적 연결', () => {
     expect(extGroup).toBeUndefined();
   });
 
+  /**
+   * @scenario connection_kind=modal, host_match=no_match, conn_count=zero
+   * @effects connected_group_omitted_when_zero_matches
+   */
   it('연결 모달/확장이 0건이면 연결 자식 그룹 미부착 (노이즈 방지)', () => {
     const tree = buildRouteTree({
       routes: [tplRoute('/admin/orphan', 'orphan_layout')],
@@ -497,6 +517,102 @@ describe('buildRouteTree — 라우트↔모달/확장 정적 연결', () => {
     expect(connGroups).toHaveLength(0);
   });
 
+  /**
+   * 같은 호스트에 overlay 가 여러 개 붙는 경우. 1건 경로만 검증하면 두 번째 확장이
+   * 조용히 누락돼도(첫 항목만 부착) 통과한다.
+   *
+   * @scenario connection_kind=overlay, host_match=match, conn_count=many
+   * @effects connected_overlay_attached_when_target_layout_equals_route_layout
+   */
+  it('같은 라우트에 overlay 확장이 여러 개 매칭되면 모두 부착된다', () => {
+    const tree = buildRouteTree({
+      routes: [tplRoute('/admin/users', 'admin_user_list')],
+      modals: [],
+      baseLayouts: [],
+      extensionGroups: [
+        {
+          sourceIdentifier: 'sirsoft-board',
+          sourceType: 'module' as const,
+          sourceLabel: '게시판',
+          extensions: [
+            { id: 10, extensionType: 'overlay' as const, targetName: 'admin_user_list', isActive: true, isModified: false, hostLayouts: ['admin_user_list'] },
+            { id: 11, extensionType: 'overlay' as const, targetName: 'admin_user_list', isActive: true, isModified: false, hostLayouts: ['admin_user_list'] },
+            { id: 12, extensionType: 'overlay' as const, targetName: 'other_layout', isActive: true, isModified: false, hostLayouts: ['other_layout'] },
+          ],
+        },
+      ],
+      moduleDisplayNames: { 'sirsoft-board': '게시판' },
+      pluginDisplayNames: NO_PLUGINS,
+    });
+    const route = findRouteNode(tree, '/admin/users')!;
+    const extGroup = route.children!.find((c) => c.path.startsWith('__conngroup__/extensions/'))!;
+    expect(extGroup).toBeDefined();
+    expect(extGroup.label).toContain('count=2'); // 매칭 2건만, 무관 확장 제외
+    expect(extGroup.children).toHaveLength(2);
+    expect(extGroup.children!.map((c) => c.extensionId).sort()).toEqual(['10', '11']);
+  });
+
+  /**
+   * @scenario connection_kind=extension_point, host_match=no_match, conn_count=zero
+   * @effects connected_group_omitted_when_zero_matches
+   */
+  it('extension_point 의 hostLayouts 와 라우트 layout 이 불일치하면 미부착', () => {
+    const tree = buildRouteTree({
+      routes: [tplRoute('/admin/orders', 'admin_order_list')],
+      modals: [],
+      baseLayouts: [],
+      extensionGroups: [
+        {
+          sourceIdentifier: 'sirsoft-board',
+          sourceType: 'module' as const,
+          sourceLabel: '게시판',
+          extensions: [
+            { id: 20, extensionType: 'extension_point' as const, targetName: 'header_ext', isActive: true, isModified: false, hostLayouts: ['shop_checkout'] },
+          ],
+        },
+      ],
+      moduleDisplayNames: { 'sirsoft-board': '게시판' },
+      pluginDisplayNames: NO_PLUGINS,
+    });
+    const route = findRouteNode(tree, '/admin/orders')!;
+    const extGroup = route.children?.find((c) => c.path.startsWith('__conngroup__/extensions/'));
+    expect(extGroup).toBeUndefined();
+  });
+
+  /**
+   * @scenario connection_kind=extension_point, host_match=match, conn_count=many
+   * @effects connected_extension_point_attached_when_host_layout_in_host_layouts
+   */
+  it('같은 라우트에 extension_point 가 여러 개 매칭되면 모두 부착된다', () => {
+    const tree = buildRouteTree({
+      routes: [tplRoute('/shop/checkout', 'shop_checkout')],
+      modals: [],
+      baseLayouts: [],
+      extensionGroups: [
+        {
+          sourceIdentifier: 'sirsoft-board',
+          sourceType: 'module' as const,
+          sourceLabel: '게시판',
+          extensions: [
+            { id: 30, extensionType: 'extension_point' as const, targetName: 'header_ext', isActive: true, isModified: false, hostLayouts: ['shop_checkout'] },
+            { id: 31, extensionType: 'extension_point' as const, targetName: 'footer_ext', isActive: true, isModified: false, hostLayouts: ['shop_checkout', 'shop_cart'] },
+          ],
+        },
+      ],
+      moduleDisplayNames: { 'sirsoft-board': '게시판' },
+      pluginDisplayNames: NO_PLUGINS,
+    });
+    const route = findRouteNode(tree, '/shop/checkout')!;
+    const extGroup = route.children!.find((c) => c.path.startsWith('__conngroup__/extensions/'))!;
+    expect(extGroup).toBeDefined();
+    expect(extGroup.label).toContain('count=2');
+    expect(extGroup.children!.map((c) => c.extensionId).sort()).toEqual(['30', '31']);
+  });
+
+  /**
+   * @scenario connection_kind=modal, host_match=match, conn_count=one
+   * @effects connected_modals_attached_when_host_layout_equals_route_layout
+   */
   it('연결 그룹은 children 앞쪽 — 하위 라우트보다 먼저 배치', () => {
     const tree = buildRouteTree({
       routes: [

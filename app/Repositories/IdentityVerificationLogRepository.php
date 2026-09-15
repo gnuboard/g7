@@ -7,6 +7,7 @@ use App\Enums\IdentityVerificationStatus;
 use App\Helpers\TimezoneHelper;
 use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
+use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -19,6 +20,7 @@ use Illuminate\Support\Carbon;
  */
 class IdentityVerificationLogRepository implements IdentityVerificationLogRepositoryInterface
 {
+    use DeletesInBatches;
     use PaginatesWithDeferredJoin;
 
     /**
@@ -87,7 +89,13 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
-     * 미소비된 검증 토큰으로 로그를 조회합니다.
+     * 미소비·미만료 검증 토큰으로 로그를 조회합니다.
+     *
+     * 만료 술어(expires_at > now)는 이 지점이 단일 관문이다. 정책 미들웨어·정책 서비스·
+     * 회원가입/비밀번호재설정 리스너·IdvTokenRule 이 모두 이 메서드를 경유하므로
+     * 호출부마다 만료 검사를 중복해 두지 않는다(한쪽 누락 시 그 경로가 우회로가 된다).
+     * expires_at 이 비어 있는 로그도 반환하지 않는다 — 모든 provider 가 challenge 생성 시
+     * expires_at 을 세팅하므로 NULL 은 정상 발급 산물이 아니다.
      *
      * @param  string  $token  검증 토큰
      * @param  string  $purpose  본인인증 목적
@@ -100,6 +108,7 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
             ->where('purpose', $purpose)
             ->where('status', IdentityVerificationStatus::Verified->value)
             ->whereNull('consumed_at')
+            ->where('expires_at', '>', Carbon::now())
             ->first();
     }
 
@@ -127,9 +136,10 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      */
     public function purgeOlderThan(int $days): int
     {
-        return IdentityVerificationLog::query()
-            ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
-            ->delete();
+        return $this->deleteInBatches(
+            IdentityVerificationLog::query()
+                ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
+        );
     }
 
     /**

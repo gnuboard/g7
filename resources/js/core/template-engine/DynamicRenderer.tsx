@@ -220,6 +220,50 @@ export const deepMergeState = (
 };
 
 /**
+ * 자동바인딩이 `__g7PendingLocalState` 에 실을 스냅샷을 합성합니다.
+ *
+ * 자동바인딩의 base 는 `parentFormContext.state`(= `extendedDataContext._local`)다.
+ * 그 값은 `useMemo` 결과라, memo 가 재계산되지 않은 구간에서는 **입력 이전 스냅샷으로 고정**된다.
+ * `setLocal({ render:false, selfManaged:true })`(CKEditor5 등 자체 DOM 관리 플러그인)이
+ * 저장소 B 에만 쓰면 React 렌더가 0회라 memo 가 갱신되지 않고, 그 뒤 memo deps 와 무관한
+ * 리렌더(폭 변경 등)가 `__g7PendingLocalState` 를 null 로 지우면 base 가 stale 인 채 남는다.
+ *
+ * 그 stale 스냅샷을 그대로 pending 에 실으면, 이어지는 `setLocal` 이
+ * `currentSnapshot = pendingState || baseLocal`(G7CoreGlobals) 로 그것을 채택해
+ * 저장소 B 를 통째 교체한다 — 편집기 본문이 예외도 콘솔 에러도 없이 사라진다.
+ *
+ * 그래서 pending 은 **렌더러가 화면에 쓰는 것과 같은 순서**로 합성한다.
+ * `extendedDataContext._local` 이 `dataContext._local → dynamicState → __g7ForcedLocalFields`
+ * 순으로 합성하는 것과 동형이며, pending 은 `getLocal()` 이 읽는 "화면과 같은 전체 스냅샷"
+ * 이어야 하므로 이 정합이 맞다.
+ *
+ * `__g7ForcedLocalFields` 는 `setLocal` 이 쓴 필드만 담고(engine-v1.17.4 · 사례 11),
+ * 자동바인딩의 매 키입력이 자기 경로로 그것을 갱신하므로 stale 이 되지 않는다.
+ * 방금 입력한 경로만 마지막에 다시 얹어, forced 의 직전 값이 입력을 되돌리지 못하게 한다.
+ *
+ * 저장소 A 경로(`parentFormContext.setState`)에는 적용하지 않는다 — 그쪽 base 를 바꾸는 것이
+ * 2026-04-22 에 로그인 폼 email 손실로 철회된 수정이다(사례 36 이력).
+ *
+ * @param update 저장소 A 기반 전체 스냅샷 (`setNestedValue(parentFormContext.state, path, value)`)
+ * @param forced `__g7ForcedLocalFields` — setLocal 이 소유한 필드만 담긴 오버레이
+ * @param fullPath 방금 입력된 필드 경로 (`${dataKey}.${name}`)
+ * @param newValue 방금 입력된 값
+ * @returns pending 에 실을 스냅샷 (인자를 변이하지 않음)
+ *
+ * @since engine-v1.63.4
+ */
+export const composeAutoBindingPendingSnapshot = (
+  update: Record<string, any>,
+  forced: unknown,
+  fullPath: string,
+  newValue: any
+): Record<string, any> => {
+  if (!forced || typeof forced !== 'object' || Array.isArray(forced)) return update;
+  const merged = deepMergeState(update, forced as Record<string, any>);
+  return setNestedValue(merged, fullPath, newValue);
+};
+
+/**
  * setLocal()이 업데이트한 키를 localDynamicState에서 재귀적으로 제거
  *
  * setLocal()은 dataContext._local을 직접 업데이트하므로,
@@ -828,7 +872,7 @@ export interface ComponentDefinition {
    *
    * @example
    * ```json
-   * // extension_point 정의 (_tab_basic_info.json)
+   * // extension_point 정의 (_tab_basic_info.g7.html)
    * {
    *   "type": "extension_point",
    *   "name": "address_search_slot",
@@ -3475,25 +3519,29 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * - name prop 존재
      * - 부모 FormContext의 dataKey/setState 존재
      * - props.autoBinding !== false
+     * - 매니페스트 metadata.autoBinding !== false (engine-v1.68.1+)
      */
     useEffect(() => {
       const name = stableResolvedProps?.name;
       if (!name || !parentFormContext.dataKey || !parentFormContext.setState) return;
       if (stableResolvedProps?.autoBinding === false) return;
+      if (registry.getMetadata(componentDef.name)?.autoBinding === false) return;
 
       const fullPath = `${parentFormContext.dataKey}.${name}`;
-      const registry: Map<string, number> =
+      // 지역명은 `pathRegistry` — 컴포넌트 레지스트리 prop(`registry`)과 이름이 겹치면
+      // 같은 블록에서 prop 을 읽는 순간 TDZ 로 죽는다(engine-v1.68.1 에서 실제로 밟은 자리).
+      const pathRegistry: Map<string, number> =
         ((window as any).__g7AutoBindingPaths as Map<string, number> | undefined)
         ?? new Map<string, number>();
-      (window as any).__g7AutoBindingPaths = registry;
-      registry.set(fullPath, (registry.get(fullPath) ?? 0) + 1);
+      (window as any).__g7AutoBindingPaths = pathRegistry;
+      pathRegistry.set(fullPath, (pathRegistry.get(fullPath) ?? 0) + 1);
 
       return () => {
-        const count = registry.get(fullPath) ?? 0;
-        if (count <= 1) registry.delete(fullPath);
-        else registry.set(fullPath, count - 1);
+        const count = pathRegistry.get(fullPath) ?? 0;
+        if (count <= 1) pathRegistry.delete(fullPath);
+        else pathRegistry.set(fullPath, count - 1);
       };
-    }, [stableResolvedProps?.name, stableResolvedProps?.autoBinding, parentFormContext.dataKey, parentFormContext.setState]);
+    }, [stableResolvedProps?.name, stableResolvedProps?.autoBinding, parentFormContext.dataKey, parentFormContext.setState, registry, componentDef.name]);
 
     /**
      * 폼 자동 바인딩이 적용된 props
@@ -3516,6 +3564,15 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // 자동 바인딩 조건 체크
       const name = propsWithoutFormConfig.name;
       if (!name || !parentFormContext.dataKey || !parentFormContext.setState) {
+        return propsWithoutFormConfig;
+      }
+
+      // --- 자동 바인딩 대상 제한 (engine-v1.68.1) ---
+      // `name` 이 폼 필드명이 아닌 컴포넌트(Icon 의 글리프 이름, Avatar/UserInfo 의 표시 이름 등)는
+      // 매니페스트가 `autoBinding: false` 로 선언한다. 이 선언이 없으면 종전대로 자동 바인딩 대상이다.
+      // 선언 없이 이름이 겹치면 폼 필드 값이 `value` 로 주입돼 배열/객체 필드가 DOM 에
+      // `[object Object]` 로 새거나 표시가 깨진다.
+      if (registry.getMetadata(componentDef.name)?.autoBinding === false) {
         return propsWithoutFormConfig;
       }
 
@@ -3608,7 +3665,18 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
         // 저장소 A: React setState가 비동기이므로, 액션 핸들러에서 즉시 최신 값을 읽을 수 있도록
         // 전역 캐시(__g7PendingLocalState)에 업데이트된 상태를 저장. G7Core.state.getLocal()이 이 캐시를 우선 사용.
-        (window as any).__g7PendingLocalState = update;
+        //
+        // engine-v1.63.4 (사례 41): `update` 를 그대로 싣지 않는다. base 인 parentFormContext.state 는
+        // 재계산되지 않은 useMemo 결과일 수 있어, selfManaged 플러그인이 저장소 B 에만 쓴 편집분을
+        // 담고 있지 않다. 그 stale 스냅샷이 pending 에 실리면 아래 setLocal 이 그것을 base 로 채택해
+        // (`currentSnapshot = pendingState || baseLocal`) 저장소 B 를 통째 교체한다.
+        // 렌더러와 같은 순서로 __g7ForcedLocalFields 를 얹어 화면과 같은 스냅샷을 싣는다.
+        (window as any).__g7PendingLocalState = composeAutoBindingPendingSnapshot(
+          update,
+          (window as any).__g7ForcedLocalFields,
+          fullPath,
+          newValue
+        );
 
         // 저장소 A: React localDynamicState — 해당 Input 트리 리렌더 (기존 경로, 성능 보존)
         parentFormContext.setState!(update);
@@ -3747,7 +3815,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           onChange: autoOnChange,
         };
       }
-    }, [stableResolvedProps, parentFormContext, parentFormContext.state, parentFormContext.debounce]);
+    }, [stableResolvedProps, parentFormContext, parentFormContext.state, parentFormContext.debounce, registry, componentDef.name]);
 
     /**
      * 메인 렌더링 로직
@@ -3791,6 +3859,37 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       if (effectiveComponentDef.type === 'extension_point') {
         const { layout, columns, gap, className, ...restProps } = effectiveComponentDef.props || {};
 
+        /**
+         * 호스트 `<div>` 에는 **DOM 표준 속성만** 남긴다 (engine-v1.68.1+)
+         *
+         * extension_point 의 props 는 통째로 **주입된 자식의** 페이로드다 — 백엔드가
+         * `LayoutExtensionService` 에서 이 props 를 주입 컴포넌트의 `extensionPointProps`
+         * 로 복사하고, 자식은 `{{extensionPointProps.xxx}}` 로 읽는다(위 참조). 호스트는
+         * 단순 래퍼라 이 페이로드를 실을 이유가 없다.
+         *
+         * 종전에는 남은 props 를 그대로 spread 해서 두 갈래로 샜다:
+         *   - 객체·배열 → `targetfields="[object Object]"` (주소 검색 영역)
+         *   - 원시값   → `content="..."` `ishtml="true"` `rows="10"` (글 편집기 영역).
+         *     React 도 `multilingual`·`disabled` 를 무효 속성으로 경고하던 자리다.
+         *
+         * 그래서 차단 목록이 아니라 **허용 목록**으로 뒤집는다 — 페이로드 키는 확장마다
+         * 늘어나므로 열거할 수 없지만, 호스트가 받아야 할 DOM 속성은 닫힌 집합이다.
+         * 번들 코퍼스 실측(확장점 42노드 / props 키 14종)에 `data-*`·`aria-*` 는 0건이라
+         * 이 전환으로 막히는 정상 사용은 없고, 앞으로의 탈출구만 열어 둔다.
+         */
+        const domSafeRestProps: Record<string, any> = {};
+        for (const [key, value] of Object.entries(restProps)) {
+          const isDomAttribute =
+            key.startsWith('data-')
+            || key.startsWith('aria-')
+            || ['role', 'title', 'lang', 'dir', 'hidden', 'tabIndex', 'style'].includes(key);
+
+          if (!isDomAttribute) {
+            continue;
+          }
+          domSafeRestProps[key] = value;
+        }
+
         // 레이아웃 설정에 따른 컨테이너 스타일 결정
         let containerClass = className || '';
         if (layout === 'grid' && columns) {
@@ -3803,7 +3902,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           <div
             id={resolvedComponentId}
             className={containerClass || undefined}
-            {...restProps}
+            {...domSafeRestProps}
           >
             {renderChildren}
           </div>

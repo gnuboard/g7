@@ -9,6 +9,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { formatAmountInCurrency } from './calculateCurrencyPrices';
 import { reloadExpandedOptions } from './expandedOptionsHandlers';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -757,7 +758,7 @@ export function buildConfirmDataHandler(action: ActionWithParams, context: Actio
             if (optModifiedFields.includes('list_price')) {
                 optChanges.push(
                     G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_list_price', {
-                        price: opt.list_price?.toLocaleString?.() ?? opt.list_price,
+                        price: formatAmountInCurrency(Number(opt.list_price ?? 0)),
                     })
                     || `List price: ${opt.list_price}`
                 );
@@ -830,13 +831,13 @@ export function buildConfirmDataHandler(action: ActionWithParams, context: Actio
                     }
                     if (pModifiedFields.includes('list_price')) {
                         changes.push(
-                            G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_list_price', { price: p.list_price?.toLocaleString?.() || p.list_price })
+                            G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_list_price', { price: formatAmountInCurrency(Number(p.list_price ?? 0)) })
                             || `List price: ${p.list_price?.toLocaleString?.() || p.list_price}`
                         );
                     }
                     if (pModifiedFields.includes('selling_price')) {
                         changes.push(
-                            G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_selling_price', { price: p.selling_price?.toLocaleString?.() || p.selling_price })
+                            G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_selling_price', { price: formatAmountInCurrency(Number(p.selling_price ?? 0)) })
                             || `Selling price: ${p.selling_price?.toLocaleString?.() || p.selling_price}`
                         );
                     }

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
 
 feature: bounded_total_pagination
 

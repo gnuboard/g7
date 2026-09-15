@@ -40,8 +40,11 @@ class MileageTransactionListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
-            'sirsoft-ecommerce.mileage.use' => ['method' => 'handleUse', 'priority' => 10],
-            'sirsoft-ecommerce.mileage.restore' => ['method' => 'handleRestore', 'priority' => 10],
+            // 마일리지 차감/복원은 호출자(주문 생성·취소) 트랜잭션 안에서 실행되어야 한다.
+            // Action 훅 기본값은 큐 작업 래핑 + afterCommit 이라, 그대로 두면 주문이 커밋된
+            // 뒤에 차감이 돌아 잔액 부족으로 실패해도 주문을 되돌릴 수 없다.
+            'sirsoft-ecommerce.mileage.use' => ['method' => 'handleUse', 'priority' => 10, 'sync' => true],
+            'sirsoft-ecommerce.mileage.restore' => ['method' => 'handleRestore', 'priority' => 10, 'sync' => true],
             'sirsoft-ecommerce.order-option.after_confirm' => ['method' => 'handleAfterConfirm', 'priority' => 10],
             'sirsoft-ecommerce.order_option.after_status_change' => ['method' => 'handleAfterStatusChange', 'priority' => 10],
             'sirsoft-ecommerce.order_option.after_bulk_status_change' => ['method' => 'handleAfterBulkStatusChange', 'priority' => 10],

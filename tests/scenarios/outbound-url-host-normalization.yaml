@@ -1,0 +1,102 @@
+# audit:allow test-scenario-coverage reason: 호스트 형태 축은 데이터 프로바이더 행으로 전개되어 메서드 단위 @scenario 마킹으로 표현할 수 없다. 조합 커버는 test_files 의 프로바이더 행이 담당하고, 본 매니페스트는 "무엇을 반드시 담아야 하는가" 의 SSoT 로 둔다.
+
+feature: 아웃바운드 URL 호스트 정규화 (검증 시점 ↔ 연결 시점 동형)
+
+description: |
+  서버가 대신 외부로 요청을 보내는 모든 지점의 호스트 판정 계약.
+
+  근본 결함: 검증기는 `strtolower(trim($host))` 만 하고, 실제로 연결하는 libcurl/libidn2 는
+  IDNA/UTS#46 정규화를 한다. 두 시점이 주소를 다르게 읽으면 검증기가 공개 호스트로 승인한
+  주소가 실제로는 루프백·사설 대역으로 연결된다 (`localhost。` → `localhost`).
+
+  불변조건: **판정하는 문자열과 연결되는 문자열이 같다.** 정규화는
+  `OutboundUrlValidator::normalizeHost()` 단일 지점이 수행하고, 호스트를 보는 모든 경로
+  (`extractSafeHost` / `isPublicHost` / `isPublicHttpUrl` / `isHostAllowed` /
+  `isStructurallySafeUrl`, 그리고 검증기를 경유하지 않는 형제
+  `NicePaymentsApiService::isNicePayUrl`) 가 그 한 곳을 재사용한다. 사본을 두지 않는다.
+
+  경계: IP 리터럴은 정규화 대상이 아니다. 호스트명 문자 집합 검사에 IPv6 의 `:` 가 걸리면
+  사설·예약 대역 판정 코드가 도달 불가가 되어, 정규화가 **공개 IPv6 를 전량 차단**한다.
+  차단 방향의 회귀라 루프백 케이스만 있는 테스트로는 드러나지 않는다.
+
+  축 설계: 판정에 실제로 영향을 주는 입력만 축으로 둔다. 소비자(스케줄·언어팩·배송 API·
+  결제 승인 URL)는 같은 초크포인트를 공유하므로 축이 아니라 통합 지점의 분담이다.
+
+axes:
+  host_form: [ascii, ideographic_dot_u3002, fullwidth_dot_uff0e, halfwidth_dot_uff61, trailing_dot, punycode_a_label, unicode_u_label, ip_literal_v4, ip_literal_v6]
+  target: [loopback_or_private, public]
+  entry_point: [validator_unit, form_request_rule, schedule_url, language_pack_url, shipping_api_url, nicepay_approval_url]
+
+exclusions:
+  - { host_form: ip_literal_v4, entry_point: nicepay_approval_url, reason: "나이스페이먼츠 승인 URL 은 도메인 suffix 비교 — IP 리터럴은 어떤 형태든 거부" }
+  - { host_form: ip_literal_v6, entry_point: nicepay_approval_url, reason: "동일" }
+  - { host_form: punycode_a_label, target: loopback_or_private, reason: "punycode 는 국제화 도메인 표기 — 루프백/사설 대역에 대응하는 A-label 이 없다" }
+  - { host_form: unicode_u_label, target: loopback_or_private, reason: "동일 — U-label 정규화 결과가 루프백이 되는 경우는 점 동등문자 축이 담당" }
+
+effects:
+  # 정규화 SSoT
+  - normalize_host_is_the_single_normalization_point
+  - extract_safe_host_delegates_to_normalize_host
+  - is_public_host_delegates_to_normalize_host
+  - nicepay_is_nicepay_url_reuses_core_normalize_host
+  - no_duplicated_normalization_logic_outside_validator
+
+  # 점 동등 문자 (보고된 우회 경로)
+  - ideographic_full_stop_u3002_maps_to_ascii_dot
+  - fullwidth_full_stop_uff0e_maps_to_ascii_dot
+  - halfwidth_ideographic_stop_uff61_maps_to_ascii_dot
+  - normalized_loopback_is_denied
+  - normalized_private_range_is_denied
+  - mixed_case_variant_is_denied_after_lowercasing
+  - trailing_dot_is_stripped_before_comparison
+
+  # 정상 입력 회귀 방지 (차단 방향 과잉의 안전망)
+  - public_ascii_domain_still_allowed
+  - real_internationalized_domain_still_allowed
+  - punycode_a_label_still_allowed
+  - non_standard_port_public_url_still_allowed
+  - public_ipv4_literal_still_allowed
+  - public_ipv6_literal_still_allowed
+  - public_ipv6_literal_with_port_still_allowed
+  - idn_conversion_failure_denies_instead_of_passing_through
+
+  # 소비자 전파 (초크포인트 하나가 전부를 보호하는지)
+  - schedule_url_rejects_normalized_internal_host
+  - language_pack_install_from_url_rejects_normalized_internal_host
+  - shipping_api_endpoint_rejects_normalized_internal_host
+  - form_request_rule_rejects_normalized_internal_host
+  - userinfo_disguised_host_is_rejected
+  - allow_internal_outbound_setting_keeps_structural_check_only
+
+  # 형제 (검증기 미경유 경로)
+  - nicepay_approval_url_rejects_host_that_only_looks_like_nicepay
+  - nicepay_approval_url_still_accepts_official_hosts
+
+test_files:
+  - tests/Unit/Support/OutboundUrlValidatorTest.php
+  - tests/Feature/Security/OutboundRequestGuardTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Services/NicePaymentsApiServiceTest.php
+
+manual_verification:
+  - description: "앱 계층 우회 실측 — 스케줄 URL 생성"
+    steps:
+      - "관리자로 스케줄 관리 진입 → URL 호출 스케줄 생성"
+      - "주소에 ASCII `http://localhost/` → 422 차단 확인"
+      - "주소에 `http://localhost。/`(U+3002) → 422 차단 확인 (수정 전 201 생성)"
+      - "U+FF0E · U+FF61 변종도 각각 422 확인"
+      - "정상 공개 도메인·국제화 도메인은 그대로 생성되는지 확인"
+  - description: "정상 IPv6 회귀 확인"
+    steps:
+      - "공인 IPv6 리터럴 주소(대괄호 표기)로 스케줄 생성 → 허용"
+      - "루프백 `[::1]` · 사설 `[fc00::1]` → 차단"
+
+notes: |
+  실행 단계(정규화된 호스트로 실제 루프백 연결이 성립하는지)는 호스트 OS 리졸버에 의존한다.
+  앱 계층 결함은 생성 201/422 로 판정되므로 실행 단계 재현은 판정 대상이 아니다.
+
+  관련 코드:
+   - app/Support/OutboundUrlValidator.php (normalizeHost = SSoT)
+   - app/Rules/PublicOutboundUrl.php (FormRequest 게이트)
+   - app/Services/ScheduleService.php · app/Services/LanguagePackService.php
+   - modules/_bundled/sirsoft-ecommerce (배송 API 엔드포인트 검증)
+   - plugins/_bundled/sirsoft-pay_nicepayments/src/Services/NicePaymentsApiService.php (isNicePayUrl)

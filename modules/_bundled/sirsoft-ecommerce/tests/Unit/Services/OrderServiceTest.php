@@ -408,11 +408,13 @@ class OrderServiceTest extends ModuleTestCase
             ->once()
             ->andReturn(5);
 
-        // 전이 알림 발화용 — 스냅샷이 비어(이전 상태 null) 전 주문이 전이 대상 → fresh 조회
+        // 전이 알림 발화용(fresh 조회) + 서비스 진입부의 스코프 재적용 조회 두 곳에서 호출된다.
+        // 일괄 라우트는 라우트 모델이 없어 미들웨어 스코프 검사가 스킵되므로 서비스가 재적용한다.
+        // 상한을 없애지 않고 2회로 좁힌다 — 상한을 지우면 중복 조회 회귀를 못 잡는다.
         $this->mockRepository
             ->shouldReceive('findByIdsKeyed')
             ->with($ids)
-            ->once()
+            ->twice()
             ->andReturn(new Collection);
 
         // When: bulkUpdate 호출
@@ -445,6 +447,13 @@ class OrderServiceTest extends ModuleTestCase
             ->with($ids, 1, '123456789012')
             ->once()
             ->andReturn(2);
+
+        // 서비스 진입부의 스코프 재적용 조회 — 일괄 라우트는 라우트 모델이 없어
+        // PermissionMiddleware 의 스코프 검사가 스킵되므로 서비스가 재적용한다.
+        $this->mockRepository
+            ->shouldReceive('findByIdsKeyed')
+            ->once()
+            ->andReturn(new Collection);
 
         // When: bulkUpdate 호출
         $result = $this->service->bulkUpdate($data);
@@ -633,7 +642,8 @@ class OrderServiceTest extends ModuleTestCase
         $this->mockRepository->shouldReceive('getSnapshotsByIds')->with($ids)->once()->andReturn([]);
         $this->mockRepository->shouldReceive('bulkUpdateStatus')->once()->andReturn(3);
         $this->mockRepository->shouldReceive('bulkUpdateOptionStatus')->once()->andReturn(3);
-        $this->mockRepository->shouldReceive('findByIdsKeyed')->once()->andReturn(new Collection);
+        // 스코프 재적용 조회 + 전이 알림 fresh 조회 = 2회 (상한 유지)
+        $this->mockRepository->shouldReceive('findByIdsKeyed')->twice()->andReturn(new Collection);
 
         $approveCount = 0;
         $cb = function () use (&$approveCount) {

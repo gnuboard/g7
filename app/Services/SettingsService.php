@@ -6,10 +6,14 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Resources\AttachmentResource;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Support\ConfigCacheHelper;
+use App\Support\EnvPriority;
+use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
+use App\Support\ProcessOutputEncoding;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -25,10 +29,15 @@ use Illuminate\Validation\ValidationException;
  */
 class SettingsService
 {
+    // 자산 URL 방식 변경 시 확장 캐시 버전 bump 용. 주입된 `$this->cache` 로 직접 put 하지
+    // 않는다 — 트레이트가 고정 `CoreCacheDriver` + 메모이즈 스토어를 쓰는 이유가 그 안에 있다.
+    use ClearsTemplateCaches;
+
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
         private AttachmentRepositoryInterface $attachmentRepository,
-        private CacheInterface $cache
+        private CacheInterface $cache,
+        private AttachmentService $attachmentService
     ) {}
 
     /**
@@ -43,6 +52,31 @@ class SettingsService
     {
         $this->cache->forget('settings.system');
         ConfigCacheHelper::rebuild();
+
+        // 같은 프로세스의 in-memory 미러도 즉시 다시 채운다 (공개이슈 #109).
+        // 이 호출이 없으면 상주 프로세스(큐 워커·schedule:work·Reverb)는 저장 후에도
+        // 부팅 시점의 옛 값을 영원히 읽는다 — FPM 에서만 드러나지 않는 결함이다.
+        app(ExtensionSettingsMirror::class)->refreshCore();
+    }
+
+    /**
+     * 큐 워커에 정상 종료 후 재시작 신호를 보냅니다.
+     *
+     * drivers 카테고리(queue/broadcasting/cache 등)는 long-running worker 에 영향을 준다.
+     * SettingsServiceProvider 는 worker boot 시점에 한 번만 config 를 적용하므로, 재시작
+     * 신호가 없으면 워커가 부팅 시점의 옛 드라이버로 계속 동작한다.
+     *
+     * 신호 전송 실패가 설정 저장을 되돌리지는 않는다 (경고 로깅 후 계속).
+     */
+    private function restartQueueWorkers(): void
+    {
+        try {
+            Artisan::call('queue:restart');
+        } catch (\Throwable $e) {
+            Log::warning('queue:restart 실행 실패', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -120,7 +154,103 @@ class SettingsService
         // 첨부파일 정보 추가 (general 카테고리에)
         $settings['general']['site_logo'] = $this->getSiteLogoAttachment();
 
+        // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
+        $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
+
+        return $this->overlayEnvLockedValues($settings);
+    }
+
+    /**
+     * `.env` 로 잠긴 키의 표시값을 유효값(런타임 config)으로 덮어씁니다.
+     *
+     * 잠긴 필드에 사문화된 저장값이 남아 있으면 운영자는 적용되지 않는 값을 읽게 됩니다.
+     * 화면이 보여줄 진실은 실제로 적용 중인 값이므로, 그 값으로 대체합니다.
+     *
+     * 민감 키는 제외합니다 — `.env` 의 비밀값을 관리자 화면 응답에 실어 보내지 않기
+     * 위해서입니다(잠금 표시만 하고 값은 저장값 그대로 둡니다).
+     *
+     * 스위치가 꺼져 있으면 아무 것도 하지 않습니다.
+     *
+     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
+     * @return array<string, mixed> 유효값이 덮인 설정 배열
+     */
+    private function overlayEnvLockedValues(array $settings): array
+    {
+        if (! EnvPriority::enabled()) {
+            return $settings;
+        }
+
+        foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
+            if (EnvPriority::isSensitive($storageKey)) {
+                continue;
+            }
+
+            [$category, $key] = explode('.', $storageKey, 2);
+            $value = EnvPriority::effectiveValue($storageKey);
+
+            foreach ($this->resolveFrontendKeyTargets($category, $key) as [$targetCategory, $outputKey]) {
+                if (isset($settings[$targetCategory]) && is_array($settings[$targetCategory])) {
+                    $settings[$targetCategory][$outputKey] = $value;
+                }
+            }
+        }
+
         return $settings;
+    }
+
+    /**
+     * `.env` 로 잠긴 키 목록을 프론트엔드 키 형태로 반환합니다.
+     *
+     * 화면(레이아웃 JSON)이 참조하는 키는 `frontend_key`/`merge_into` 변환을 거친 이름
+     * (예: `advanced.debug_mode`)이므로, 저장소 키(`debug.mode`)를 그대로 내보내면 화면의
+     * 잠금 표시가 조용히 미발동합니다.
+     *
+     * `getAllSettings()` 가 값을 두 위치(병합 대상 + 원본 카테고리)에 싣는 것과 동일하게
+     * 잠금 표시도 두 위치를 모두 담습니다.
+     *
+     * @return array<string, bool> 프론트엔드 키(`카테고리.키`) => true
+     */
+    public function envLockedMeta(): array
+    {
+        $meta = [];
+
+        foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
+            [$category, $key] = explode('.', $storageKey, 2);
+
+            foreach ($this->resolveFrontendKeyTargets($category, $key) as [$targetCategory, $outputKey]) {
+                $meta[$targetCategory.'.'.$outputKey] = true;
+            }
+        }
+
+        return $meta;
+    }
+
+    /**
+     * 저장소 키가 응답에서 실리는 (카테고리, 키) 쌍 목록을 반환합니다.
+     *
+     * `getAllSettings()` 의 변환 규칙과 같은 규칙을 씁니다 — 갈라지면 잠금 표시가 값과
+     * 다른 자리를 가리키게 되고, 그 어긋남은 화면에서 "잠금이 안 걸린 것"과 구분되지 않습니다.
+     *
+     * @param  string  $category  저장소 카테고리명
+     * @param  string  $key  저장소 키
+     * @return array<int, array{0: string, 1: string}> (카테고리, 출력 키) 쌍 목록
+     */
+    private function resolveFrontendKeyTargets(string $category, string $key): array
+    {
+        $schema = $this->configRepository->getFrontendSchema();
+        $categorySchema = $schema[$category] ?? [];
+        $fields = $categorySchema['fields'] ?? [];
+
+        $outputKey = $fields[$key]['frontend_key'] ?? $key;
+        $targetCategory = $categorySchema['frontend_name'] ?? $categorySchema['merge_into'] ?? $category;
+
+        $targets = [[$targetCategory, $outputKey]];
+
+        if ($targetCategory !== $category) {
+            $targets[] = [$category, $outputKey];
+        }
+
+        return $targets;
     }
 
     /**
@@ -410,22 +540,51 @@ class SettingsService
      */
     private function getSiteLogoAttachment(): array
     {
-        // JSON 설정에서 site_logo ID 배열 조회
-        $siteLogoIds = $this->configRepository->get('general.site_logo', []);
+        return $this->getAttachmentListSetting('general.site_logo');
+    }
+
+    /**
+     * 첨부 ID 배열 설정을 첨부 목록(리소스 배열)으로 해석합니다.
+     *
+     * site_logo / og_image_default 처럼 "첨부 ID 배열 + 화면은 첨부 객체" 패턴의
+     * 설정이 공유하는 로드 경로입니다.
+     *
+     * @param  string  $configKey  설정 키 (예: 'general.site_logo')
+     * @return array 첨부 목록 (없으면 빈 배열)
+     */
+    private function getAttachmentListSetting(string $configKey): array
+    {
+        // JSON 설정에서 첨부 ID 배열 조회
+        $ids = $this->configRepository->get($configKey, []);
 
         // 빈 배열이거나 배열이 아닌 경우
-        if (empty($siteLogoIds) || ! is_array($siteLogoIds)) {
+        if (empty($ids) || ! is_array($ids)) {
             return [];
         }
 
         // ID 배열로 첨부파일 조회 (DB order 기준 정렬)
-        $attachments = $this->attachmentRepository->findByIds($siteLogoIds);
+        $attachments = $this->attachmentRepository->findByIds($ids);
 
         if ($attachments->isEmpty()) {
             return [];
         }
 
         return $attachments->map(fn ($attachment) => (new AttachmentResource($attachment))->toListArray())->toArray();
+    }
+
+    /**
+     * 사이트 기본 OG 이미지 URL 을 반환합니다.
+     *
+     * SeoMetaResolver 가 레이아웃 og.image 선언(도메인 캐시 포함)이 빈 값일 때
+     * 마지막 폴백으로 사용합니다 (공개 이슈 #22 — 사이트 기본 공유 이미지).
+     *
+     * @return string|null 첫 번째 이미지 첨부의 다운로드 URL (미설정 시 null)
+     */
+    public function getOgDefaultImageUrl(): ?string
+    {
+        $ids = $this->configRepository->get('seo.og_image_default', []);
+
+        return $this->getFirstImageUrl(is_array($ids) ? $ids : []);
     }
 
     /**
@@ -479,6 +638,13 @@ class SettingsService
             // frontend_key를 원본 키로 역변환
             $tabSettings = $this->reverseFrontendKeys($tabSettings);
 
+            // `.env` 가 소유권을 가져간 키는 저장 대상에서 제거한다. 화면의 disabled 는
+            // 게이트가 아니다 — 저장 API 를 직접 호출하는 경로가 남으므로 실질 차단은 여기다.
+            // (advanced 탭은 아직 카테고리가 갈리지 않았으므로 saveAdvancedSettings 가 분리 후 적용한다.)
+            if ($tab !== 'advanced') {
+                $tabSettings = EnvPriority::rejectLockedForSave($tab, $tabSettings);
+            }
+
             // advanced 탭은 cache와 debug 두 카테고리로 분리
             if ($tab === 'advanced') {
                 $result = $this->saveAdvancedSettings($tabSettings);
@@ -489,9 +655,34 @@ class SettingsService
                 return $result;
             }
 
-            // general 탭인 경우 site_logo 첨부파일 연결
-            if ($tab === 'general') {
-                $tabSettings['site_logo'] = $this->collectSiteLogoIds();
+            // general 탭인 경우 site_logo 첨부파일 연결.
+            // site_logo 를 제출하지 않은 저장(다른 필드만 변경)은 기존 저장값을 그대로 둔다 —
+            // 이때 컬렉션을 다시 훑으면 미참조 첨부가 설정으로 딸려 들어온다.
+            $removedSiteLogoIds = [];
+
+            if ($tab === 'general' && is_array($tabSettings['site_logo'] ?? null)) {
+                // 파기 대상 판정은 저장 **전에** 한다 — 저장 후에는 직전 저장값을 알 수 없다.
+                // 실제 파기는 저장이 성공한 뒤에 수행한다: 저장이 실패했는데 파일만 사라지면
+                // 설정에는 이미 없는 첨부 id 가 남아 로고가 깨진다.
+                $removedSiteLogoIds = $this->resolveRemovedSiteLogoIds($tabSettings['site_logo']);
+
+                $tabSettings['site_logo'] = $this->resolveSiteLogoIds($tabSettings['site_logo']);
+            }
+
+            // 사이트 기본 OG 이미지도 site_logo 와 동형으로 처리 (공개 이슈 #22)
+            $removedOgImageIds = [];
+
+            if ($tab === 'seo' && is_array($tabSettings['og_image_default'] ?? null)) {
+                $removedOgImageIds = $this->resolveRemovedAttachmentIds(
+                    'seo',
+                    'og_image_default',
+                    $tabSettings['og_image_default']
+                );
+
+                $tabSettings['og_image_default'] = $this->resolveSubmittedAttachmentIds(
+                    'og_image_default',
+                    $tabSettings['og_image_default']
+                );
             }
 
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
@@ -510,25 +701,24 @@ class SettingsService
             if ($result) {
                 $this->invalidateSettingsCache();
 
+                // 저장이 확정된 뒤에야 파일을 파기한다 (위 판정 시점 주석 참조).
+                $this->purgeSiteLogoAttachments($removedSiteLogoIds);
+                $this->purgeRemovedAttachments($removedOgImageIds, '기본 OG 이미지');
+
                 // SEO 프리렌더 캐시에는 생성 시점의 자산 URL 이 그대로 구워져 있다.
                 // 모드가 바뀌면 그 URL 들이 전부 어긋나는데, 봇은 JavaScript 를 실행하지
                 // 않아 브라우저 자가 복구가 닿지 않는다 → 캐시를 비워 재생성시킨다.
                 // CLI(`g7:asset-url-mode`)와 동일한 처리 (계획서 §알려진 한계).
                 if ($assetUrlModeChanged) {
                     $this->clearSeoCacheForAssetUrlMode();
+                    $this->bumpExtensionCacheForAssetUrlMode();
                 }
 
                 // drivers 탭은 queue/broadcasting/cache 등 long-running worker에 영향
                 // SettingsServiceProvider는 worker boot 시점에 한 번만 config 적용하므로
                 // 워커가 정상 종료 후 재시작되도록 신호 전송 (cache 기반, 즉시 종료 X)
                 if ($tab === 'drivers') {
-                    try {
-                        Artisan::call('queue:restart');
-                    } catch (\Throwable $e) {
-                        Log::warning('queue:restart 실행 실패', [
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
+                    $this->restartQueueWorkers();
                 }
             }
 
@@ -647,6 +837,10 @@ class SettingsService
 
         // 각 카테고리별 병합 저장
         foreach ($categorized as $category => $categorySettings) {
+            // 고급 탭은 여러 카테고리가 한 폼에 섞여 오므로 잠금 필터를 분리 후에 적용한다
+            // (탭 이름 'advanced' 는 저장소 카테고리가 아니라 매핑이 걸리지 않는다).
+            $categorySettings = EnvPriority::rejectLockedForSave($category, $categorySettings);
+
             if (empty($categorySettings)) {
                 continue;
             }
@@ -664,15 +858,191 @@ class SettingsService
     }
 
     /**
-     * site_logo 컬렉션의 첨부파일 ID 목록을 수집합니다.
+     * 저장할 사이트 로고 첨부 ID 목록을 결정합니다.
      *
-     * @return array<int> 첨부파일 ID 배열
+     * 기준은 **이번 저장 요청이 제출한 목록**입니다. 컬렉션 전체를 다시 훑으면, 저장에 실패했거나
+     * 작성 중 이탈해 남은 미참조 첨부까지 설정에 다시 편입되어(운영자가 올린 적 없는 로고가
+     * 되살아나는) 누적이 발생합니다.
+     *
+     * 제출값에 있더라도 실제로 존재하지 않는 첨부(다른 경로로 이미 삭제된 id)는 걸러냅니다.
+     *
+     * @param  array<int, mixed>  $submitted  제출된 site_logo 값 (첨부 객체 배열 또는 ID 배열)
+     * @return array<int, int> 저장할 첨부파일 ID 배열
      */
-    private function collectSiteLogoIds(): array
+    private function resolveSiteLogoIds(array $submitted): array
     {
-        $attachments = $this->attachmentRepository->getByCollection('site_logo');
+        return $this->resolveSubmittedAttachmentIds('site_logo', $submitted);
+    }
 
-        return $attachments->pluck('id')->toArray();
+    /**
+     * 제출된 첨부 목록에서 해당 컬렉션에 실재하는 첨부 ID 만 남깁니다.
+     *
+     * @param  string  $collection  첨부 컬렉션명 (예: 'site_logo', 'og_image_default')
+     * @param  array  $submitted  제출값 (첨부 객체 배열 또는 ID 배열)
+     * @return array<int, int> 저장할 첨부 ID 목록
+     */
+    private function resolveSubmittedAttachmentIds(string $collection, array $submitted): array
+    {
+        $submittedIds = $this->extractAttachmentIds($submitted);
+
+        if ($submittedIds === []) {
+            return [];
+        }
+
+        $existingIds = $this->attachmentRepository->getByCollection($collection)
+            ->pluck('id')
+            ->all();
+
+        return array_values(array_intersect($submittedIds, $existingIds));
+    }
+
+    /**
+     * 저장 요청에서 빠진(= 운영자가 화면에서 제거한) 첨부 설정 ID 를 가려냅니다.
+     *
+     * 판정 기준·시점 규율은 resolveRemovedSiteLogoIds 와 동일합니다 — 직전 저장값에
+     * 있었는데 이번 제출에서 빠진 id 만 파기 대상이며, 저장으로 값이 덮이기 전에
+     * 판정해야 합니다.
+     *
+     * @param  string  $category  설정 카테고리 (예: 'seo')
+     * @param  string  $key  설정 키 (예: 'og_image_default')
+     * @param  mixed  $submitted  제출값 (미제출이면 null)
+     * @return array<int, int> 파기 대상 첨부 ID 목록
+     */
+    private function resolveRemovedAttachmentIds(string $category, string $key, mixed $submitted): array
+    {
+        if (! is_array($submitted)) {
+            return [];
+        }
+
+        $previousIds = $this->extractAttachmentIds(
+            $this->configRepository->getCategory($category)[$key] ?? []
+        );
+
+        if ($previousIds === []) {
+            return [];
+        }
+
+        $keptIds = $this->extractAttachmentIds($submitted);
+
+        return array_values(array_diff($previousIds, $keptIds));
+    }
+
+    /**
+     * 제거가 확정된 설정 첨부를 파일까지 파기합니다 (저장 성공 후에만 호출).
+     *
+     * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
+     * @param  string  $label  로그 표기용 설정 이름
+     */
+    private function purgeRemovedAttachments(array $removedIds, string $label): void
+    {
+        if ($removedIds === []) {
+            return;
+        }
+
+        foreach ($removedIds as $removedId) {
+            // 설정 저장은 이미 확정된 뒤다 — 파기 실패가 저장 실패(422)로 위장되면
+            // 운영자는 성공한 저장을 실패로 오인한다. 실패 파일은 로그로만 남긴다.
+            try {
+                $this->attachmentService->delete($removedId);
+            } catch (\Exception $e) {
+                Log::warning($label.' 첨부 파기 실패 — 저장은 확정됨', [
+                    'attachment_id' => $removedId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Log::info($label.' 첨부 제거', ['attachment_ids' => $removedIds]);
+    }
+
+    /**
+     * 저장 요청에서 빠진(= 운영자가 화면에서 제거한) 사이트 로고 첨부 ID 를 가려냅니다.
+     *
+     * 판정 기준은 **직전 저장값**입니다. 직전에 저장돼 있었는데 이번 제출에서 빠진 id 만
+     * 운영자가 명시적으로 뺀 것이고, 직전 저장값에도 없던 id 는 이번에 새로 올라온 첨부입니다.
+     * 그래서 이 판정은 저장으로 값이 덮이기 **전에** 수행해야 합니다.
+     *
+     * 저장할 목록 자체는 제출값이 정합니다(resolveSiteLogoIds) — 컬렉션 전체를 훑으면 저장에
+     * 실패했거나 이탈로 남은 미참조 첨부가 설정에 되살아납니다.
+     *
+     * @param  mixed  $submitted  제출된 site_logo 값 (첨부 객체 배열 또는 ID 배열, 미제출이면 null)
+     * @return array<int, int> 파기 대상 첨부 ID 목록
+     */
+    private function resolveRemovedSiteLogoIds(mixed $submitted): array
+    {
+        // site_logo 를 아예 제출하지 않은 저장(다른 필드만 변경)은 판정 대상이 아니다.
+        if (! is_array($submitted)) {
+            return [];
+        }
+
+        $previousIds = $this->extractAttachmentIds(
+            $this->configRepository->getCategory('general')['site_logo'] ?? []
+        );
+
+        if ($previousIds === []) {
+            return [];
+        }
+
+        $keptIds = $this->extractAttachmentIds($submitted);
+
+        return array_values(array_diff($previousIds, $keptIds));
+    }
+
+    /**
+     * 제거가 확정된 사이트 로고 첨부를 파일까지 파기합니다.
+     *
+     * 설정 저장이 성공한 뒤에만 호출합니다 — 저장이 실패했는데 파일이 먼저 사라지면 설정에는
+     * 이미 없는 첨부 id 가 남아 로고가 깨집니다.
+     *
+     * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
+     */
+    private function purgeSiteLogoAttachments(array $removedIds): void
+    {
+        if ($removedIds === []) {
+            return;
+        }
+
+        foreach ($removedIds as $removedId) {
+            // 설정 저장은 이미 확정된 뒤다 — 파기 실패가 저장 실패(422)로 위장되면
+            // 운영자는 성공한 저장을 실패로 오인한다. 실패 파일은 로그로만 남긴다.
+            try {
+                $this->attachmentService->delete($removedId);
+            } catch (\Exception $e) {
+                Log::warning('사이트 로고 첨부 파기 실패 — 저장은 확정됨', [
+                    'attachment_id' => $removedId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Log::info('사이트 로고 첨부 제거', ['attachment_ids' => $removedIds]);
+    }
+
+    /**
+     * 첨부 목록 값에서 첨부 ID 만 추출합니다.
+     *
+     * 저장값은 ID 배열이지만 화면 제출값은 첨부 객체 배열이라 두 형태를 모두 받습니다.
+     *
+     * @param  mixed  $value  첨부 목록 값
+     * @return array<int, int> 첨부 ID 목록
+     */
+    private function extractAttachmentIds(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $ids = [];
+
+        foreach ($value as $item) {
+            $id = is_array($item) ? ($item['id'] ?? null) : $item;
+
+            if (is_numeric($id)) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**
@@ -690,6 +1060,18 @@ class SettingsService
     /**
      * 단일 설정 값을 저장합니다.
      *
+     * 벌크 저장(saveSettings)이 수행하는 부수효과 중 저장 키에 해당하는 것을 함께 수행한다
+     * (공개 #114 동종). 예전에는 값만 쓰고 SEO 프리렌더 캐시 삭제·큐 워커 재시작 신호를
+     * 건너뛰어, 같은 값을 어느 경로로 바꾸느냐에 따라 시스템 상태가 달라졌다.
+     *
+     * 키는 **원본 저장소 키**로 받는다 — 벌크 저장의 `reverseFrontendKeys()`(화면 키 → 저장소
+     * 키 역변환)를 적용하지 않는다. 이 경로의 프로그램 호출자(본인인증 플러그인 설치/삭제의
+     * `identity.purpose_providers.*`)가 저장소 키를 직접 넘기고 있어, 역변환을 끼우면 그
+     * 호출들이 엉뚱한 키에 저장된다.
+     *
+     * 벌크 위임도 하지 않는다 — 벌크의 shallow `array_merge` 로는 깊은 키를 저장할 때
+     * 형제 매핑이 통째로 소실된다.
+     *
      * @param  string  $key  설정 키 (예: 'general.site_name')
      * @param  mixed  $value  저장할 값
      * @return bool 저장 성공 여부
@@ -700,10 +1082,26 @@ class SettingsService
         HookManager::doAction('core.settings.before_set', $key, $value);
 
         try {
+            // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486 동형).
+            // 저장 후에는 이전 값을 알 수 없어 변경 여부를 판별할 수 없다.
+            $assetUrlModeChanged = $key === 'general.asset_url_mode'
+                && $this->configRepository->get($key) !== $value;
+
             $result = $this->configRepository->set($key, $value);
 
             if ($result) {
-                $this->cache->forget('settings.system');
+                // 인라인 무효화 대신 공통 경로를 탄다 — saveSettings/saveAdvancedSettings 와
+                // 같은 처리를 받아야 미러 재채움·디스크 config 캐시 재생성이 빠지지 않는다.
+                $this->invalidateSettingsCache();
+
+                if ($assetUrlModeChanged) {
+                    $this->clearSeoCacheForAssetUrlMode();
+                    $this->bumpExtensionCacheForAssetUrlMode();
+                }
+
+                if (str_starts_with($key, 'drivers.') || $key === 'drivers') {
+                    $this->restartQueueWorkers();
+                }
             }
 
             // After 훅
@@ -735,13 +1133,40 @@ class SettingsService
      */
     public function restoreSettings(string $backupPath): bool
     {
+        // 자산 URL 방식은 복원 **전**에 읽어 둔다 — 복원 뒤에는 이전 값을 알 수 없어
+        // 변경 여부를 판별할 수 없다 (saveSettings/setSetting 과 같은 사유).
+        $previousAssetUrlMode = $this->configRepository->get('general.asset_url_mode');
+
         $result = $this->configRepository->restore($backupPath);
 
         if ($result) {
-            $this->cache->forget('settings.system');
+            // 복원도 설정 전체를 갈아엎는 쓰기다 — 캐시만 비우고 미러를 두면
+            // 같은 프로세스가 복원 전 값을 계속 읽는다 (저장 경로와 동일 결함, 공개이슈 #109).
+            $this->invalidateSettingsCache();
+
+            // 복원으로 자산 URL 방식이 바뀌었으면 두 저장 경로와 동일하게 처리한다 —
+            // SEO 프리렌더와 병합 번들 CSS 양쪽에 구워진 URL 형태가 어긋난다.
+            if ($this->configRepository->get('general.asset_url_mode') !== $previousAssetUrlMode) {
+                $this->clearSeoCacheForAssetUrlMode();
+                $this->bumpExtensionCacheForAssetUrlMode();
+            }
         }
 
         return $result;
+    }
+
+    /**
+     * 자산 URL 방식이 바뀌었을 때 확장 캐시 버전을 올립니다 (정적 게시본 재생성).
+     *
+     * 병합 번들 CSS 는 내부 `url()` 참조가 그 시점의 자산 URL **형태**(확장자 / `?file=`)로
+     * 본문에 구워진다(`ExtensionBundleService` 의 `AssetCssUrlRewriter`). 디스크 번들과 정적
+     * 게시본은 캐시 버전으로 키드되어 있어, 버전이 오르지 않으면 모드를 바꿔도 옛 형태의
+     * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다(#651 F5). bump 단일 지점이
+     * 번들 재병합과 정적 재게시를 함께 예약한다.
+     */
+    private function bumpExtensionCacheForAssetUrlMode(): void
+    {
+        $this->incrementExtensionCacheVersion();
     }
 
     /**
@@ -1008,8 +1433,12 @@ class SettingsService
     public function optimizeSystem(): bool
     {
         try {
-            Artisan::call('config:cache');
-            Artisan::call('route:cache');
+            // config:cache / route:cache 는 새 Application 을 부팅하며 전역 Container 를 바꿔 놓는다.
+            // 보존 래퍼 없이 부르면 이 요청의 후속 `app()->terminating()` 예약이 사라진다.
+            ConfigCacheHelper::withPreservedContainer(static function (): void {
+                Artisan::call('config:cache');
+                Artisan::call('route:cache');
+            });
             Artisan::call('view:cache');
 
             return true;
@@ -1209,7 +1638,10 @@ class SettingsService
         if (PHP_OS_FAMILY === 'Windows') {
             $output = @shell_exec('powershell -NoProfile -NonInteractive -Command "(Get-CimInstance Win32_Processor | Select-Object -First 1).Name" 2>&1');
             if ($output) {
-                $name = trim($output);
+                // 2>&1 로 합쳐진 오류 문장은 시스템 코드페이지(한국어 Windows = CP949)로 출력된다.
+                // 정규화하지 않으면 이 값이 시스템 정보 API 응답에 실려 JsonResponse 직렬화가
+                // Malformed UTF-8 로 500 을 낸다 (gnuboard/g7#62 와 동형).
+                $name = trim(ProcessOutputEncoding::normalize($output));
                 if ($name !== '' && ! str_contains(strtolower($name), 'error')) {
                     return $name;
                 }
@@ -1217,7 +1649,7 @@ class SettingsService
 
             $output = @shell_exec('wmic cpu get name 2>&1');
             if ($output) {
-                $lines = explode("\n", trim($output));
+                $lines = explode("\n", trim(ProcessOutputEncoding::normalize($output)));
                 if (isset($lines[1]) && trim($lines[1]) !== '') {
                     return trim($lines[1]);
                 }

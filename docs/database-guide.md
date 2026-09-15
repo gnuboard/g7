@@ -13,6 +13,7 @@
 4. 다국어 필드: JSON 구조 {"ko": "한글", "en": "English"}
 5. 시더: 콘솔 메시지 필수, truncate() 대신 delete() 사용
 6. 모듈/플러그인 down(): 테이블/컬럼/인덱스 존재 확인 후 삭제 (방어적 코딩 필수)
+7. 삭제는 Service 에서 명시적으로 (DB CASCADE 에 의존한 삭제 금지 — 마이그레이션의 CASCADE 는 안전망)
 ```
 
 ---
@@ -34,6 +35,7 @@
 - enum/boolean은 값 설명 포함
 - 외래키 제약조건 명시
 - down() 메서드 구현
+- 모듈/플러그인의 DB 변경은 마이그레이션만으로 끝나지 않는다 — 업그레이드 스텝(`upgrades/Upgrade_X_Y_Z.php`) 필요 여부를 함께 확인한다 ([extension-update-system.md](extension/extension-update-system.md))
 
 **파일명 네이밍 규칙**:
 
@@ -242,7 +244,7 @@ $table->index(['deleted_at', 'created_at']);
 
 #### `->change()` 패턴의 멱등성
 
-`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. 정적 검사는 `->change()` 라인을 자동 제외하므로 false positive 미발생.
+`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. 자동 검증은 `->change()` 라인을 자동 제외하므로 false positive 미발생.
 
 #### 검증 절차
 

@@ -162,7 +162,10 @@ class TokenCheckEndpointTest extends PluginTestCase
 
         $response->assertStatus(422);
         $response->assertJsonPath('errors.result_code', '3007');
-        $this->assertStringContainsString('invalid password in bizppurio', $response->json('message'));
+        // 원문 사유는 메시지 키 자리가 아니라 관리자 전용 errors 페이로드로 노출된다
+        // (예외→응답 매핑 규정 — GenericCatchStatusCodeContractTest 가 키 자리 원문을 차단).
+        $this->assertStringContainsString('invalid password in bizppurio', $response->json('errors.bizppurio_message'));
+        $this->assertStringNotContainsString('invalid password in bizppurio', (string) $response->json('message'));
     }
 
     public function test_자격증명_미설정시_422를_반환한다(): void

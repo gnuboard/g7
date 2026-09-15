@@ -11,8 +11,8 @@
  * 이라, 본 spec 은 탭 노출/빌더 렌더/조작 결과의 가시 상태만 확인하고 합성 로직 정합성은
  * 단위/RTL(actionRecipeEngine/conditionRecipeEngine/s7-property-controls)이 잠근다.
  *
- * @scenario property_modal_action_tab + property_modal_visibility_tab + flex_editor_section
- * @effects action_tab_visible_when_events + visibility_builder_renders + flex_section_for_container
+ * 축 요약(마커 아님 — 평문): property_modal_action_tab, property_modal_visibility_tab, flex_editor_section.
+ * 효과 요약(마커 아님 — 평문): action_tab_visible_when_events, visibility_builder_renders, flex_section_for_container.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -64,6 +64,7 @@ async function selectNode(page: PwPage, editorPath: string): Promise<boolean> {
 }
 
 test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
+  /** @effects visibility_builder_renders */
   test('요소 선택 → 속성 모달에 표시조건 탭 + 조건 빌더 렌더', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -128,7 +129,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
 
   // ── D-D 회귀 — 컴포넌트 [동작] 탭 ──
   // @scenario property_modal_action_tab
-  // @effects nested_onsuccess_picker_not_empty + action_card_drag_handle_draggable
+  // @effects nested_onsuccess_picker_not_empty, action_card_drag_handle_draggable
 
   /** [동작] 탭을 가진(events capability) 노드를 찾아 동작 탭을 연다. 못 찾으면 null.
    *  Button 등 onClick capability 보유 가능성이 높은 노드를 우선 시도한다(앞쪽 컨테이너는
@@ -163,6 +164,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     return false;
   }
 
+  /** @effects action_tab_visible_when_events */
   test('동작 탭 — apiCall 의 성공 시 동작(중첩) add picker 가 코어 핸들러를 노출(빈 상태 금지)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -212,5 +214,52 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     const handle = page.locator('[data-testid="g7le-action-editor"] [data-testid*="-drag-"]').first();
     await expect(handle).toBeVisible();
     await expect(handle).toHaveAttribute('draggable', 'true');
+  });
+
+  /**
+   * 정렬 박스(flex) 편집은 스타일 탭 상단에 뜨고, **컨테이너 역할**로 판정된 요소여야
+   * 컨테이너 설정(방향/정렬/간격) 묶음이 나온다. 항목(item) 역할로 잘못 판정되면 같은
+   * 요소인데 다른 설정이 뜬다.
+   */
+  /** @effects flex_section_for_container */
+  test('컨테이너 요소의 스타일 탭에 정렬 박스 컨테이너 설정이 노출된다', async ({ page }) => {
+    const token = issueToken('core.templates.layouts.edit');
+    await authenticatePage(page, token);
+    await openFirstNodeModal(page);
+
+    const paths = await visibleNodePaths(page, 12);
+    let found = false;
+    for (const path of paths) {
+      if (!(await selectNode(page, path))) continue;
+      const info = page.getByTestId('g7le-overlay-info-button');
+      if ((await info.count()) === 0) continue;
+      await info.click();
+      const editProps = page.getByTestId('g7le-context-menu-edit-props');
+      if ((await editProps.count()) === 0) continue;
+      await editProps.click();
+      await page.waitForSelector('[data-testid="g7le-property-modal"]', { timeout: 8_000 });
+
+      const styleTab = page.getByTestId('g7le-property-tab-style');
+      if ((await styleTab.count()) > 0) await styleTab.click();
+
+      if ((await page.getByTestId('g7le-flex-editor').count()) > 0) {
+        // 꺼진 상태면 켜서 컨테이너 설정 묶음을 띄운다(운영자가 밟는 순서).
+        if ((await page.getByTestId('g7le-flex-container-section').count()) === 0) {
+          const enable = page.getByTestId('g7le-flex-enable');
+          if ((await enable.count()) === 0) {
+            await page.getByTestId('g7le-property-modal-close').click();
+            continue;
+          }
+          await enable.click();
+        }
+        await expect(page.getByTestId('g7le-flex-container-section')).toBeVisible({ timeout: 10_000 });
+        // 항목(item) 설정이 아니라 컨테이너 설정이어야 한다
+        await expect(page.getByTestId('g7le-flex-empty')).toHaveCount(0);
+        found = true;
+        break;
+      }
+      await page.getByTestId('g7le-property-modal-close').click();
+    }
+    expect(found, '정렬 박스 편집을 지원하는 요소를 찾지 못했다').toBe(true);
   });
 });

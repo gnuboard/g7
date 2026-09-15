@@ -276,6 +276,14 @@
       }
     },
     {
+      "path": "/mypage/scrap",
+      "layout": "mypage/scrap",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.scrap_title"
+      }
+    },
+    {
       "path": "/mypage/inquiries",
       "layout": "mypage/inquiries",
       "auth_required": true,

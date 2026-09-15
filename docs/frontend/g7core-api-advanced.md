@@ -118,12 +118,12 @@ await G7Core.dispatch({
   params: { path: '/users' }
 });
 
-// API 호출
+// API 호출 — 핸들러명은 `apiCall`, URL 은 액션 top-level `target`
 const result = await G7Core.dispatch({
-  handler: 'api',
+  handler: 'apiCall',
+  target: '/api/users',
   params: {
     method: 'POST',
-    endpoint: '/api/users',
     body: { name: 'John' }
   }
 });
@@ -291,10 +291,10 @@ const handleCustomChange = (newValue: string) => {
 const handleFormSubmit = async () => {
   const submitEvent = G7Core.createSubmitEvent(formData);
   await G7Core.dispatch({
-    handler: 'api',
+    handler: 'apiCall',
+    target: '/api/admin/submit',
     params: {
       method: 'POST',
-      endpoint: '/api/submit',
       body: submitEvent.formData
     }
   });
@@ -916,6 +916,28 @@ declare global {
       };
       t: (key: string, params?: Record<string, string | number>) => string;
 
+      // 확장 자산 URL (engine-v1.62.0+)
+      asset: {
+        template: (identifier: string, path: string, version?: number | string | null) => string;
+        templateDir: (identifier: string, path: string) => string;
+        module: (identifier: string, path: string, version?: number | string | null) => string;
+        plugin: (identifier: string, path: string, version?: number | string | null) => string;
+        convertToCurrentMode: (url: string) => string;
+        // 출처 게이트 적용 (engine-v1.64.0+) — 미신뢰 URL 은 reject
+        loadScript: (url: string, attrs?: Record<string, string>, options?: Record<string, unknown>) => Promise<void>;
+        loadStylesheet: (url: string, attrs?: Record<string, string>, options?: Record<string, unknown>) => Promise<void>;
+        // 같은 판정을 직접 물어보는 seam (engine-v1.64.0+)
+        isAllowedScriptSrc: (url: string) => boolean;
+      };
+
+      // 자산 실패 안내 (engine-v1.62.0+)
+      assets: {
+        notifyFailure: (failure: AssetFailure) => void;
+        clearFailure: (id: string) => void;
+        clearAll: () => void;
+        getFailures: () => AssetFailure[];
+        retryAll: () => Promise<void>;
+      };
       // 액션
       dispatch: (action: ActionConfig) => Promise<ActionResult>;
 
@@ -1012,7 +1034,7 @@ declare global {
 
 ## 관련 문서
 
-- [G7Core 기본 API](g7core-api.md) - 상태 관리, 토스트, 모달, 네비게이션, 플러그인/모듈 설정
+- [G7Core 기본 API](g7core-api.md) - 상태 관리, 토스트, 모달, 네비게이션, 플러그인/모듈 설정, 확장 자산
 - [state-management.md](state-management.md) - 전역 상태 관리 상세
 - [components.md](components.md) - 컴포넌트 개발 규칙
 - [data-binding.md](data-binding.md) - 데이터 바인딩 문법

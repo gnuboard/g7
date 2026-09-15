@@ -30,7 +30,6 @@
  *   - g7-computed: Computed 의존성 추적 (재계산 트리거, 의존성 체인, 순환 감지)
  *   - g7-modal-state: 모달 상태 스코프 추적 (격리, 유출 감지, 중첩 모달 관계)
  */
-import 'dotenv/config';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -2834,7 +2833,7 @@ server.tool(
       `| 인증 상태 | ${authIcon} ${state.isAuthenticated ? '인증됨' : '미인증'} |`,
     );
 
-    if (state.user) {
+    if (state.user && !Array.isArray(state.user) && state.user.id != null) {
       sb.push(`| 사용자 ID | ${state.user.id} |`);
       sb.push(`| 이메일 | ${state.user.email} |`);
       if (state.user.name) {
@@ -3018,7 +3017,7 @@ server.tool(
 
     // 이슈 분석
     let issues = styleData.issues || [];
-    let components = styleData.components || [];
+    let components = styleData.componentStyles || [];
 
     // search 필터링
     if (search) {
@@ -4434,7 +4433,7 @@ server.tool(
       '|------|------|-------------------|',
       '| `expandChildren` | DataGrid 행 확장 | `row`, `rowIndex` |',
       '| `cellChildren` | DataGrid 셀 커스텀 렌더링 | `cell`, `row`, `column` |',
-      '| `iteration` | 반복 렌더링 | `item`, `index` (또는 `item_var`, `index_var`) |',
+      '| `iteration` | 반복 렌더링 | `item_var`, `index_var` (정본. `item`/`index` 는 미지원) |',
       '| `modal` | 모달 컴포넌트 | 부모 상태 + 모달 로컬 상태 |',
       '| `slot` | 슬롯/Partial 렌더링 | 부모에서 전달된 props |',
       '',

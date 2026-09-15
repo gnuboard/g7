@@ -2202,6 +2202,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * url 필드가 비어있을 때 download_url로 fallback합니다.
+     *
+     * @effects download_url_falls_back_to_api_path_when_direct_unavailable
      */
     public function test_image_gallery_download_url_fallback(): void
     {
@@ -2242,6 +2244,9 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * url 필드가 존재하면 download_url보다 우선합니다.
+     * (공개 자산 디스크 설정 시 download_url 이 직접 CDN URL 이어도 동일 경로로 소비)
+     *
+     * @effects download_url_falls_back_to_api_path_when_direct_unavailable
      */
     public function test_image_gallery_url_takes_priority(): void
     {
@@ -2271,6 +2276,97 @@ class ComponentHtmlMapperTest extends TestCase
         // url이 있으면 url 사용
         $this->assertStringContainsString('src="https://cdn.example.com/image.jpg"', $html);
         $this->assertStringNotContainsString('product-image/abc123', $html);
+    }
+
+    /**
+     * download_url 이 절대 CDN URL 일 때(공개 자산 디스크 설정) iterate 가드가
+     * url() 이중 접두 없이 그대로 통과시킵니다.
+     *
+     * 공개#100 이후 download_url 은 상대 API 경로만이 아니라 절대 CDN URL 일 수
+     * 있다 — 가드가 http 프리픽스를 오판하면 `http://origin/https://cdn...` 처럼
+     * 깨진 src 가 봇 화면에 나간다.
+     *
+     * @effects seo_guard_passes_absolute_cdn_url_unmodified
+     */
+    public function test_image_gallery_absolute_cdn_download_url_passes_unmodified(): void
+    {
+        $components = [
+            [
+                'name' => 'ProductImageViewer',
+                'props' => [
+                    'images' => '{{product.images}}',
+                ],
+            ],
+        ];
+
+        $context = [
+            'product' => [
+                'images' => [
+                    [
+                        'url' => '',
+                        'download_url' => 'https://cdn.test/assets/sirsoft-ecommerce/images/products/1/a.jpg',
+                        'alt_text_current' => 'CDN 이미지',
+                    ],
+                ],
+            ],
+        ];
+
+        $html = $this->render($components, $context);
+
+        $this->assertStringContainsString(
+            'src="https://cdn.test/assets/sirsoft-ecommerce/images/products/1/a.jpg"',
+            $html,
+        );
+        // url() 이중 접두 회귀 방어 — 절대 URL 앞에 오리진이 덧붙으면 안 된다
+        $this->assertStringNotContainsString('/https://cdn.test/', $html);
+    }
+
+    /**
+     * ProductCard(fields attrs 가드)의 thumbnail_url 이 절대 CDN URL 일 때
+     * 그대로 통과하고, 상대 경로일 때만 절대화됩니다.
+     *
+     * @effects seo_guard_passes_absolute_cdn_url_unmodified
+     */
+    public function test_product_card_thumbnail_absolute_cdn_url_passes_unmodified(): void
+    {
+        $components = [
+            [
+                'type' => 'composite',
+                'name' => 'ProductCard',
+                'props' => ['product' => '{{product}}'],
+            ],
+        ];
+
+        $context = [
+            'product' => [
+                'id' => 7,
+                'name' => 'CDN Thumb',
+                'name_localized' => 'CDN 썸네일 상품',
+                'thumbnail_url' => 'https://cdn.test/assets/sirsoft-ecommerce/images/products/7/t.jpg',
+                'selling_price_formatted' => '1,000원',
+                'list_price_formatted' => '1,000원',
+                'discount_rate' => 0,
+                'primary_category' => '',
+                'brand_name' => '',
+                'sales_status' => '',
+                'sales_status_label' => '',
+                'labels' => [],
+            ],
+        ];
+
+        $html = $this->render($components, $context);
+
+        $this->assertStringContainsString(
+            'src="https://cdn.test/assets/sirsoft-ecommerce/images/products/7/t.jpg"',
+            $html,
+        );
+        $this->assertStringNotContainsString('/https://cdn.test/', $html);
+
+        // 대조군 — 상대 경로는 여전히 절대화된다 (가드의 양방향 동작 고정)
+        $context['product']['thumbnail_url'] = '/storage/products/rel.jpg';
+        $relativeHtml = $this->render($components, $context);
+
+        $this->assertStringContainsString('src="'.url('/storage/products/rel.jpg').'"', $relativeHtml);
     }
 
     /**

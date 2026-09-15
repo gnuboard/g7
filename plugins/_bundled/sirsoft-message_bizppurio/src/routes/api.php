@@ -5,8 +5,8 @@ use App\Http\Middleware\RefreshTokenExpiration;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\AlimtalkTemplateController;
+use Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController;
 use Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\DispatchResultController;
-use Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\NotificationBindingController;
 use Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\TokenCheckController;
 use Plugins\Sirsoft\MessageBizppurio\Controllers\BizppurioWebhookController;
 
@@ -74,50 +74,49 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
 
     /*
     |----------------------------------------------------------------------
-    | 알림톡 템플릿 조회 (Phase 5) — 카카오 관리 API(kapi) 실시간 위임
+    | 알림톡 작성 모달 참조 조회 (#597) — 발신프로필·카테고리
     |----------------------------------------------------------------------
     |
-    | 조회 전용(list/detail/categories/profiles) = messaging.view.
-    | 템플릿 등록·수정·삭제·검수·상태변경은 비즈뿌리오 콘솔로 위임한다(이 화면은 목록·상태·
-    | 내용 조회 + 알림 연결만 담당). 템플릿은 DB 저장 없이 매 요청 실시간 조회하며, 설정
-    | 페이지 알림톡 템플릿 탭이 소비한다.
+    | 알림톡 템플릿 작성 모달의 발신프로필 셀렉트·카테고리 셀렉트가 소비한다.
+    | 실시간 목록/상세 화면(구 Phase 5)은 DB 기반 라이프사이클로 대체되어 제거됐다.
     */
     Route::prefix('alimtalk-templates')->name('alimtalk-templates.')->group(function () {
-        // 발송 템플릿 내용 캐시 초기화(수동 갱신) — 카카오에서 템플릿을 방금 바꿔 즉시 반영이
-        // 필요할 때 관리자가 캐시를 비운다. 쓰기 동작이므로 messaging.manage 권한. 구체 경로를
-        // 먼저 두어 GET /{templateCode} 와 충돌하지 않게 한다.
-        Route::middleware('permission:admin,sirsoft-message_bizppurio.messaging.manage')->group(function () {
-            Route::post('/cache/clear', [AlimtalkTemplateController::class, 'clearCache'])->name('cache.clear');
-        });
-
         Route::middleware('permission:admin,sirsoft-message_bizppurio.messaging.view')->group(function () {
-            Route::get('/', [AlimtalkTemplateController::class, 'index'])->name('index');
             Route::get('/categories', [AlimtalkTemplateController::class, 'categories'])->name('categories');
             Route::get('/profiles', [AlimtalkTemplateController::class, 'profiles'])->name('profiles');
-            Route::get('/{templateCode}', [AlimtalkTemplateController::class, 'show'])->name('show');
         });
     });
 
     /*
     |----------------------------------------------------------------------
-    | 알림↔알림톡 템플릿 연동 (Phase 6 재설계) — 코어 편집 모달 전용 칸이 소비
+    | 비즈뿌리오 알림 템플릿 라이프사이클 (#597 §3.2)
     |----------------------------------------------------------------------
     |
-    | 알림톡 탭은 코어 기본 목록·편집 모달을 그대로 쓴다(⚑⚑ 결정 A). 연결 템플릿·SMS 대체
-    | 입력은 코어 편집 모달에 얹은 전용 칸(플러그인 overlay)에서 하고, 값을 바꾸면 즉시 이 API
-    | 로 저장한다(PO 확정 UX — 별도 저장 버튼 없이 변경 즉시 저장, 코어 저장 버튼 무관 →
-    | 코어 템플릿 무오염).
+    | 시스템 등록(draft) → 검수 신청(requested) → 승인(approved) 후 발송 활성화.
+    | 발송 판정은 DB(bizppurio_templates)가 유일한 근거이며, 카카오 상태 정합은
+    | 스케줄러(bizppurio:sync-template-status)와 수동 sync 가 유지한다.
     |
-    | 조회(index/approved-templates) = messaging.view / 저장(store) = messaging.manage.
+    | 조회(index/map/show) = messaging.view / 그 외 변경 = messaging.manage.
+    | 구체 경로(map/image)를 {id} 보다 먼저 두어 라우트 충돌을 막는다.
     */
-    Route::prefix('notification-bindings')->name('notification-bindings.')->group(function () {
+    Route::prefix('templates')->name('templates.')->group(function () {
         Route::middleware('permission:admin,sirsoft-message_bizppurio.messaging.view')->group(function () {
-            Route::get('/', [NotificationBindingController::class, 'index'])->name('index');
-            Route::get('/approved-templates', [NotificationBindingController::class, 'approvedTemplates'])->name('approved-templates');
+            Route::get('/', [BizppurioTemplateController::class, 'index'])->name('index');
+            Route::get('/map', [BizppurioTemplateController::class, 'map'])->name('map');
+            Route::get('/{id}', [BizppurioTemplateController::class, 'show'])->whereNumber('id')->name('show');
         });
 
         Route::middleware('permission:admin,sirsoft-message_bizppurio.messaging.manage')->group(function () {
-            Route::post('/', [NotificationBindingController::class, 'store'])->name('store');
+            Route::post('/', [BizppurioTemplateController::class, 'store'])->name('store');
+            Route::post('/image', [BizppurioTemplateController::class, 'uploadImage'])->name('image');
+            Route::put('/delivery/{notificationType}', [BizppurioTemplateController::class, 'upsertDelivery'])->name('delivery');
+            Route::put('/{id}', [BizppurioTemplateController::class, 'update'])->whereNumber('id')->name('update');
+            Route::post('/{id}/request', [BizppurioTemplateController::class, 'requestInspection'])->whereNumber('id')->name('request');
+            Route::post('/{id}/cancel-request', [BizppurioTemplateController::class, 'cancelRequest'])->whereNumber('id')->name('cancel-request');
+            Route::post('/{id}/cancel-approval', [BizppurioTemplateController::class, 'cancelApproval'])->whereNumber('id')->name('cancel-approval');
+            Route::post('/{id}/release', [BizppurioTemplateController::class, 'release'])->whereNumber('id')->name('release');
+            Route::post('/{id}/sync', [BizppurioTemplateController::class, 'sync'])->whereNumber('id')->name('sync');
+            Route::delete('/{id}', [BizppurioTemplateController::class, 'destroy'])->whereNumber('id')->name('destroy');
         });
     });
 

@@ -24,6 +24,8 @@ import { setDateRangeHandler } from './setDateRangeHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 // 게시판 첨부 다운로드 핸들러 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
 import { downloadAttachmentHandler } from './downloadAttachment';
+import { downloadMarkupFileHandler } from './downloadMarkupFile';
+import { copyMarkupToClipboardHandler } from './copyMarkupToClipboard';
 // 자산 URL 방식 자동 감지 (이슈 #486) — 브라우저에서 프로브 쌍을 던져 재판정
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
 
@@ -60,4 +62,6 @@ export const handlerMap = {
   initSidebar: initSidebarHandler,
   // 게시판 첨부 다운로드 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
   downloadAttachment: downloadAttachmentHandler,
+  downloadMarkupFile: downloadMarkupFileHandler,
+  copyMarkupToClipboard: copyMarkupToClipboardHandler,
 } as const;

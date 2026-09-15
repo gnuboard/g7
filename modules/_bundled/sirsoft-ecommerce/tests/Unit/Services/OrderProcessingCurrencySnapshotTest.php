@@ -4,9 +4,11 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionMethod;
 
@@ -94,6 +96,80 @@ class OrderProcessingCurrencySnapshotTest extends ModuleTestCase
         // 통화별 base_unit 도 동봉: KRW=1000, JPY=100, USD/EUR=1 (폴백)
         $this->assertSame(1000, $snapshot['exchange_rates']['KRW']['base_unit']);
         $this->assertSame(1, $snapshot['exchange_rates']['USD']['base_unit']);
+    }
+
+    // ──────────────────────────────────────────────
+    // 미등록 통화 방어 (공개 #91) — 삭제 영속화로 처음 열리는 경로
+    // ──────────────────────────────────────────────
+
+    /**
+     * 등록 통화를 KRW 단독으로 축소합니다. (관리자가 나머지를 삭제한 상태)
+     */
+    private function registerOnlyBaseCurrency(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.language_currency', [
+            'default_currency' => 'KRW',
+            'currencies' => [
+                [
+                    'code' => 'KRW',
+                    'name' => ['ko' => 'KRW', 'en' => 'KRW'],
+                    'exchange_rate' => null,
+                    'base_unit' => 1000,
+                    'rounding_unit' => '1',
+                    'rounding_method' => 'floor',
+                    'decimal_places' => 0,
+                    'is_default' => true,
+                ],
+            ],
+        ]);
+
+        CurrencySettingsCache::clear();
+        $this->app->forgetInstance(CurrencyConversionService::class);
+        $this->app->forgetInstance(OrderProcessingService::class);
+    }
+
+    /**
+     * 사용 중지된 통화를 선호 통화로 가진 유저는 기본 통화로 폴백한다.
+     *
+     * 폴백이 없으면 스냅샷 exchange_rates 에 그 코드가 없어 체크아웃이 차단된다.
+     *
+     * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
+     *
+     * @effects unregistered_active_currency_falls_back_to_base
+     */
+    public function test_unregistered_persisted_currency_falls_back_to_base(): void
+    {
+        $user = User::factory()->create();
+        Auth::login($user);
+        app(EcommerceUserProfileRepositoryInterface::class)->setPreferredCurrency($user->id, 'EUR');
+        request()->headers->remove('X-Currency');
+
+        $this->registerOnlyBaseCurrency();
+
+        $snapshot = $this->invokeBuildSnapshot();
+
+        $this->assertSame('KRW', $snapshot['order_currency'], '미등록 선호 통화가 결제 통화로 그대로 채택되었습니다.');
+        $this->assertArrayHasKey('KRW', $snapshot['exchange_rates']);
+        Auth::logout();
+    }
+
+    /**
+     * 사용 중지된 통화가 X-Currency 헤더로 들어와도 기본 통화로 폴백한다.
+     *
+     * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
+     *
+     * @effects unregistered_active_currency_falls_back_to_base
+     */
+    public function test_unregistered_x_currency_header_falls_back_to_base(): void
+    {
+        request()->headers->set('X-Currency', 'JPY');
+
+        $this->registerOnlyBaseCurrency();
+
+        $snapshot = $this->invokeBuildSnapshot();
+
+        $this->assertSame('KRW', $snapshot['order_currency'], '미등록 헤더 통화가 결제 통화로 그대로 채택되었습니다.');
+        request()->headers->remove('X-Currency');
     }
 
     // ──────────────────────────────────────────────

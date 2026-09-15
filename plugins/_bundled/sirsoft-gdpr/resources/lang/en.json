@@ -40,6 +40,16 @@
         "too_long_marketing": "Marketing — Domain cannot exceed 253 characters.",
         "must_be_array": "Each category must be an array of domain strings."
     },
+    "necessary_storage_allowlist": {
+        "invalid_format_local_storage": "Local storage — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)",
+        "invalid_format_session_storage": "Session storage — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)",
+        "invalid_format_cookie": "Cookie — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)",
+        "too_long_local_storage": "Local storage — item cannot exceed 128 characters.",
+        "too_long_session_storage": "Session storage — item cannot exceed 128 characters.",
+        "too_long_cookie": "Cookie — item cannot exceed 128 characters.",
+        "must_be_array": "Each storage scope must be an array of item names.",
+        "invalid_scope": "Unknown storage scope: :scope (only local storage, session storage and cookies are allowed)"
+    },
     "settings": {
         "saved": "Settings have been saved.",
         "title": "GDPR Settings",
@@ -53,12 +63,15 @@
             "cookie_categories": "Cookie Categories",
             "cookie_policy_version": "Cookie Policy Version",
             "auto_blocking": "Auto-blocking Policy",
-            "auto_blocking_desc": "When the cookie banner is shown, external tracking resources matching the blocked-domain lists below are auto-blocked until the user consents."
+            "auto_blocking_desc": "When the cookie banner is shown, external tracking resources matching the blocked-domain lists below are auto-blocked until the user consents.",
+            "necessary_storage": "Strictly Necessary Storage",
+            "necessary_storage_desc": "Manage the items allowed to persist for visitors who have not consented to functional cookies. Anything not listed is cleared on every visit."
         },
         "nav": {
             "operator": "Operator",
             "cookie_banner": "Cookie Banner",
-            "auto_blocking_policy": "Auto-blocking Policy"
+            "auto_blocking_policy": "Auto-blocking Policy",
+            "necessary_storage": "Necessary Storage"
         },
         "status": {
             "enabled": "Enabled",
@@ -113,6 +126,27 @@
                     "marketing": "Marketing — Blocked Domains"
                 }
             },
+            "necessary_storage_allowlist": {
+                "warnings_title": "Notes",
+                "warning_purpose": "Only the items listed here survive without functional consent. Anything else is cleared on every visit, with no error or warning — it surfaces only as a setting that will not save.",
+                "warning_wildcard": "A trailing * matches every name with that prefix. For example g7_filters_* covers g7_filters_orders_1. The * is only allowed at the end.",
+                "warning_discovery": "The item names a newly installed extension writes are listed in that extension documentation, or visible in browser devtools (Application → Storage).",
+                "warning_necessary_only": "List only what the site genuinely needs to work. Adding tracking or analytics items defeats the pre-consent blocking principle.",
+                "locked_label": "Locked items (cannot be removed)",
+                "locked_hint": "The site cannot operate without these. They cannot be removed from the list.",
+                "tag_input_placeholder": "Type an item name and press Enter (e.g., g7_locale, myplugin_*)",
+                "tag_no_options": "No suggestions. Type to add.",
+                "scope": {
+                    "local_storage": "Local storage (localStorage)",
+                    "session_storage": "Session storage (sessionStorage)",
+                    "cookie": "Cookies"
+                },
+                "scope_desc": {
+                    "local_storage": "Persists after the browser is closed. User choices such as language and theme, and admin display preferences, live here.",
+                    "session_storage": "Cleared when the tab closes. Used to restore the original screen when returning from a payment or identity verification window.",
+                    "cookie": "Values the browser sends back to the server. Both server-set and client-written cookies are judged by this list."
+                }
+            },
             "cookie_categories": {
                 "description": "Open each card's [Show details] to see the purpose of the four cookie categories and the blocked-tool examples.",
                 "category_required_badge": "Required",
@@ -124,11 +158,11 @@
                     "scope_label": "Auto-blocking scope",
                     "tools_label": "Common tools",
                     "necessary": {
-                        "scope": "Not auto-blocked. Session/auth tokens, shopping basket identifier, user-selected language preference at registration, and cookie consent records are essential to site operation and always allowed.",
-                        "tools": "Session IDs, authentication tokens, CSRF tokens, shopping basket identifier, language preference, etc. (no configuration required)"
+                        "scope": "Not auto-blocked. Session/auth tokens, shopping basket identifier, user-selected language preference and display theme, and cookie consent records are essential to site operation and always allowed.",
+                        "tools": "Session IDs, authentication tokens, CSRF tokens, shopping basket identifier, language preference, display theme, etc. (no configuration required)"
                     },
                     "functional": {
-                        "scope": "External resources matching the functional blocked-domain list (in the Auto-blocking Policy tab) are auto-blocked until the user consents. User preferences such as dark mode and currency selection are also persisted only after consent.",
+                        "scope": "External resources matching the functional blocked-domain list (in the Auto-blocking Policy tab) are auto-blocked until the user consents. User preferences such as currency selection are also persisted only after consent.",
                         "tools": "Customer support chatbots (Crisp, Intercom, Tawk.to), translation widgets, user-preference synchronization services, etc."
                     },
                     "analytics": {
@@ -238,7 +272,8 @@
                 "preference_center": "Preferences",
                 "mypage": "MyPage",
                 "register": "Sign-up",
-                "mypage_renew_all": "MyPage bulk re-consent"
+                "mypage_renew_all": "MyPage bulk re-consent",
+                "withdraw": "Account withdrawal"
             },
             "col": {
                 "created_at": "Time",

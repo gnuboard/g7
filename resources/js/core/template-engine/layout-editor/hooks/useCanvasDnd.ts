@@ -37,6 +37,7 @@ export interface DropZone {
   index: number;
 }
 import {
+  collectAncestors,
   findNodeByPath,
   isInsideIterationInstance,
   moveNode,
@@ -47,7 +48,12 @@ import {
   type EditorNode,
   type ComponentPath,
 } from '../utils/layoutTreeUtils';
-import { classifyLockKind, parseEditorPath } from './useElementSelection';
+import {
+  classifyLockKind,
+  isEditableLockKind,
+  parseEditorPath,
+  resolveDndDenial,
+} from './useElementSelection';
 import { trackEditorDnd, type EditorDndDecision } from '../devtools/editorTrackers';
 import type { NestingSpec } from '../spec/specTypes';
 
@@ -301,13 +307,15 @@ export function useCanvasDnd(params: UseCanvasDndParams): UseCanvasDndReturn {
         // 단, 편집 대상 iteration/모달(원본 노드 및 그 자손)은 그 모드의 편집 대상이므로
         // data_bound 잠금을 무시하고 컨테이너로 허용한다.
         if (!isInsideEditableRootContainer) {
-          const ancestors = ancestorsOf(rootOf(live.components), path);
+          const ancestors = collectAncestors(rootOf(live.components), path);
           const lockKind = classifyLockKind(
             containerNode,
             live.editMode,
             live.currentExtensionId,
             ancestors
           );
+          // 여기는 의도적으로 `data_bound` 도 거부한다 — 데이터가 결정하는 컨테이너 안에
+          // 정적 노드를 넣으면 반복/바인딩 결과와 어긋난다(`isEditableLockKind` 보다 엄격).
           if (lockKind !== 'none') return false;
         }
 
@@ -497,7 +505,7 @@ export function useCanvasDnd(params: UseCanvasDndParams): UseCanvasDndReturn {
       if (!name || !isDraggableNode(name, live.nesting)) {
         decision = 'denied_no_draggable';
       } else if (node) {
-        const ancestors = ancestorsOf(rootOf(live.components), indexes);
+        const ancestors = collectAncestors(rootOf(live.components), indexes);
         const lockKind = classifyLockKind(node, live.editMode, live.currentExtensionId, ancestors);
         // 편집 루트 confine(modal/iteration_item) — 편집 대상 루트 서브트리 **밖** 노드의 드래그
         // 시작을 거부한다. 선택 자체가 편집 루트로 제한되나(useElementSelection),
@@ -520,9 +528,18 @@ export function useCanvasDnd(params: UseCanvasDndParams): UseCanvasDndReturn {
         }
         // 자신 바인딩 data_bound(상품 이미지 갤러리 등)는 명세상 선택·드래그·구조
         // 편집 허용 — 위치 이동은 정당한 구조 편집이므로 막지 않는다.
-        else if (lockKind === 'base' || lockKind === 'partial') decision = 'denied_base_locked';
-        else if (lockKind === 'extension' || lockKind === 'extension_point')
-          decision = 'denied_extension_locked';
+        // 그 외 잠금 종류의 거부 사유는 `resolveDndDenial` 단일 지점이 정한다(조건 복사 금지).
+        else {
+          const denial = resolveDndDenial(lockKind);
+          if (denial) decision = denial;
+        }
+      }
+
+      // 거부된 드래그는 `activeDragPath` 도 남기지 않는다 — 남으면 DragOverlay 가 잡힌
+      // 노드를 따라다녀 "옮길 수 있다" 는 거짓 어포던스를 준다(종전 결함).
+      // `activeDragName` 은 지우지 않는다 — onDragEnd 가 그것으로 취소 사유를 적재한다.
+      if (decision !== 'allowed') {
+        setActiveDragPath(null);
       }
 
       trackEditorDnd({
@@ -558,7 +575,7 @@ export function useCanvasDnd(params: UseCanvasDndParams): UseCanvasDndReturn {
         setActiveDropZone(null);
         return;
       }
-      const ancestors = ancestorsOf(rootOf(live.components), indexes);
+      const ancestors = collectAncestors(rootOf(live.components), indexes);
       // 편집 루트 confine(modal/iteration_item) — 편집 대상 루트 밖 노드는 드롭존 미계산.
       if (
         live.editableRootSourcePath &&
@@ -574,7 +591,7 @@ export function useCanvasDnd(params: UseCanvasDndParams): UseCanvasDndReturn {
       const insideEditableIter = isInsideEditableIteration(draggedPath, live.editableRootSourcePath);
       if (
         (isInsideIterationInstance(ancestors) && !insideEditableIter) ||
-        (moveLockKind !== 'none' && moveLockKind !== 'data_bound' && !insideEditableIter)
+        (!isEditableLockKind(moveLockKind) && !insideEditableIter)
       ) {
         setActiveDropZone(null);
         return;
@@ -670,6 +687,35 @@ export function useCanvasDnd(params: UseCanvasDndParams): UseCanvasDndReturn {
         return;
       }
 
+      // 드래그 노드 출처 잠금 — commit 직전 최종 가드.
+      //
+      // 종전에는 `zone === null` 에 기댄 간접 방어뿐이라, stale 슬롯이나 유효 zone 이 들어오면
+      // 상속·주입 노드가 그대로 이동 commit 됐다(그리고 저장 시 통째로 폐기됐다).
+      const draggedNodeAtEnd = findNodeByPath(rootOf(live.components), fromPath);
+      const endDenial = draggedNodeAtEnd
+        ? resolveDndDenial(
+            classifyLockKind(
+              draggedNodeAtEnd,
+              live.editMode,
+              live.currentExtensionId,
+              collectAncestors(rootOf(live.components), fromPath),
+            ),
+          )
+        : null;
+      if (endDenial) {
+        trackEditorDnd({
+          source: 'drag',
+          draggedComponentName: draggedName,
+          targetContainerName,
+          targetContainerPath: zone.containerPath || null,
+          decision: endDenial,
+          result: 'denied',
+          timestamp: Date.now(),
+        });
+        finishDrag();
+        return;
+      }
+
       // no-op 가드 — 같은 위치면 변형/이력 생략.
       //
       // zone.index 는 **원본 트리 인덱스**.
@@ -758,28 +804,6 @@ export function useCanvasDnd(params: UseCanvasDndParams): UseCanvasDndReturn {
   };
 }
 
-/** path 의 조상 노드 배열(루트→부모, 자기 자신 제외) — classifyLockKind 의 ancestors 입력 */
-function ancestorsOf(root: EditorNode, path: ComponentPath): EditorNode[] {
-  const out: EditorNode[] = [];
-  let current: EditorNode = root;
-  let childArray: EditorNode[] = Array.isArray(root.children) ? (root.children as EditorNode[]) : [];
-  // 마지막 세그먼트(자기 자신)는 제외. responsive 세그먼트는 노드를 내리지 않고
-  // childArray 만 분기로 전환 — 조상 목록에 추가하지 않는다.
-  for (let i = 0; i < path.length - 1; i++) {
-    const seg = path[i]!;
-    if (isResponsiveSegment(seg)) {
-      const branch = current.responsive?.[seg.responsive];
-      childArray = branch && Array.isArray(branch.children) ? (branch.children as EditorNode[]) : [];
-      continue;
-    }
-    const next = childArray[seg] ?? null;
-    if (!next) break;
-    out.push(next);
-    current = next;
-    childArray = Array.isArray(next.children) ? (next.children as EditorNode[]) : [];
-  }
-  return out;
-}
 
 function pathsEqual(a: ComponentPath, b: ComponentPath): boolean {
   if (a.length !== b.length) return false;

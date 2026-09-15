@@ -21,6 +21,14 @@ trait HasMultiCurrencyPrices
     protected ?string $orderCurrencyCode = null;
 
     /**
+     * 부모 주문 리소스가 주입한 주문 시점 통화 스냅샷 (공개 #91 후속).
+     *
+     * 소수 자릿수를 현재 설정이 아니라 주문 시점 값으로 고정하기 위해 전파한다.
+     * null 이면 현재 설정으로 폴백 — 상품 등 카탈로그 경로는 그것이 정답이다.
+     */
+    protected ?array $currencySnapshot = null;
+
+    /**
      * 주문 시점 기준 통화 코드를 주입합니다 (부모 → 자식 리소스 전파).
      *
      * @param  string|null  $currencyCode  주문 시점 기준 통화 코드
@@ -29,6 +37,23 @@ trait HasMultiCurrencyPrices
     public function withOrderCurrency(?string $currencyCode): static
     {
         $this->orderCurrencyCode = $currencyCode;
+
+        return $this;
+    }
+
+    /**
+     * 주문 시점 통화 스냅샷을 주입합니다 (부모 → 자식 리소스 전파).
+     *
+     * 관리자가 통화를 삭제하면 현재 설정에서 사라져 자릿수가 폴백 2자리로 바뀐다.
+     * 그러면 0자리 통화로 결제된 과거 주문의 표기가 `¥14,835` → `¥14,835.00` 이 되고,
+     * 3자리 이상 통화는 표시 금액이 절사된다. 스냅샷이 있으면 그것을 SSoT 로 삼는다.
+     *
+     * @param  array|null  $snapshot  주문의 `currency_snapshot`
+     * @return $this 메서드 체이닝을 위한 자기 자신
+     */
+    public function withCurrencySnapshot(?array $snapshot): static
+    {
+        $this->currencySnapshot = $snapshot;
 
         return $this;
     }
@@ -87,6 +112,39 @@ trait HasMultiCurrencyPrices
     }
 
     /**
+     * 가감액(추가금)의 다중 통화 정보를 생성합니다.
+     *
+     * 가격과 달리 추가금은 부호를 가지며 화면에 `+3,000원` / `-2,000원` 형태로 표시된다.
+     * 환산은 절대값으로 수행한 뒤 부호를 되돌린다 — 통화별 반올림 규칙이 음수에서
+     * 방향이 뒤집히는 것(예: floor 가 -2,850 을 -2,851 로)을 막기 위함이다.
+     *
+     * 추가옵션 추가금은 기본 통화 기준으로 저장되므로, 기본 통화가 아닌 통화로 보는
+     * 구매자에게는 이 맵이 없으면 환산할 근거가 없다. 상품가·옵션가와 같은 형태로
+     * 내보내 화면이 동일한 방식(`[표시통화].formatted`)으로 읽게 한다.
+     *
+     * @param  float|int  $baseAdjustment  기본 통화 기준 가감액 (음수 가능)
+     * @return array 통화별 가감액 정보 (price 는 부호 있는 값, formatted 는 부호 접두)
+     */
+    protected function buildMultiCurrencyPriceAdjustments(float|int $baseAdjustment): array
+    {
+        $isNegative = $baseAdjustment < 0;
+        $converted = $this->buildMultiCurrencyPrices(abs($baseAdjustment));
+
+        $result = [];
+        foreach ($converted as $code => $entry) {
+            $price = $entry['price'] ?? 0;
+
+            $result[$code] = [
+                ...$entry,
+                'price' => $isNegative ? -$price : $price,
+                'formatted' => ($isNegative ? '-' : '+').$this->formatCurrencyPrice($price, $code),
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * 통화 설정을 조회합니다 (캐시 적용).
      *
      * @return array 통화 설정 배열
@@ -99,11 +157,27 @@ trait HasMultiCurrencyPrices
     /**
      * 기본 통화 코드를 반환합니다.
      *
+     * 기본 통화의 SSoT 는 설정의 `default_currency` 값이고 통화 항목의 `is_default` 는 그 파생입니다.
+     * 표시 계층이 `is_default` 를 먼저 훑으면, 저장본에 없어 defaults 에서 보충된 통화가 옛 플래그를
+     * 달고 들어왔을 때 환산 계층(CurrencyConversionService::getDefaultCurrency)과 서로 다른 통화를
+     * 기본으로 잡습니다. 같은 화면의 금액이 통화별로 어긋나므로 `default_currency` 를 먼저 해석합니다.
+     *
      * @return string 기본 통화 코드 (예: 'KRW')
      */
     protected function getDefaultCurrencyCode(): string
     {
         $currencies = $this->getCurrencySettings();
+        $settings = g7_module_settings('sirsoft-ecommerce', 'language_currency');
+        $declared = $settings['default_currency'] ?? null;
+
+        // 선언된 기본 통화가 통화 목록에 실재할 때만 채택 (삭제된 통화를 가리키는 설정 방어)
+        if ($declared !== null) {
+            foreach ($currencies as $currency) {
+                if (($currency['code'] ?? null) === $declared) {
+                    return $declared;
+                }
+            }
+        }
 
         foreach ($currencies as $currency) {
             if ($currency['is_default'] ?? false) {
@@ -111,10 +185,7 @@ trait HasMultiCurrencyPrices
             }
         }
 
-        // 설정이 없는 경우 모듈 설정에서 직접 조회
-        $settings = g7_module_settings('sirsoft-ecommerce', 'language_currency');
-
-        return $settings['default_currency'] ?? 'KRW';
+        return $declared ?? 'KRW';
     }
 
     /**
@@ -256,11 +327,20 @@ trait HasMultiCurrencyPrices
     /**
      * 통화의 소수 자릿수를 반환합니다.
      *
+     * 주문 시점 스냅샷이 주입돼 있고 그 통화의 자릿수를 박제해 두었으면 그것이 SSoT 다
+     * (공개 #91 후속 — 삭제된 통화가 현재 설정에 없어 폴백 2자리로 바뀌는 것을 막는다).
+     * 스냅샷이 없으면(상품 등 카탈로그 경로) 현재 설정을 그대로 따른다.
+     *
      * @param  string  $code  통화 코드
      * @return int 소수 자릿수 (기본값: 2)
      */
     protected function getDecimalPlacesForCurrency(string $code): int
     {
+        $snapshotPlaces = $this->currencySnapshot['exchange_rates'][$code]['decimal_places'] ?? null;
+        if ($snapshotPlaces !== null) {
+            return (int) $snapshotPlaces;
+        }
+
         $currencies = $this->getCurrencySettings();
 
         foreach ($currencies as $currency) {

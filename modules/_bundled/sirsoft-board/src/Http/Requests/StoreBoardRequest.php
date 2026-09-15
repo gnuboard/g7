@@ -10,6 +10,7 @@ use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
@@ -56,6 +57,7 @@ class StoreBoardRequest extends FormRequest
             'use_reaction' => $settings['use_reaction'] ?? true,
             'active_reaction_types' => $settings['active_reaction_types'] ?? [],
             'max_reply_depth' => $settings['max_reply_depth'] ?? 5,
+            'reply_delete_policy' => $settings['reply_delete_policy'] ?? ReplyDeletePolicy::Cascade->value,
             'max_comment_depth' => $settings['max_comment_depth'] ?? 10,
             'use_file_upload' => $settings['use_file_upload'] ?? false,
             'comment_order' => $settings['comment_order'] ?? 'ASC',
@@ -88,7 +90,7 @@ class StoreBoardRequest extends FormRequest
         // boolean 필드 캐스팅 (Toggle 컴포넌트가 "on"/"off" 문자열을 전송할 수 있음)
         $booleanFields = [
             'is_active', 'use_comment', 'use_reply', 'use_file_upload',
-            'use_report', 'use_reaction', 'show_view_count', 'is_notice',
+            'use_report', 'use_scrap', 'use_reaction', 'show_view_count', 'is_notice',
             'notify_admin_on_post', 'notify_author',
         ];
 
@@ -171,10 +173,12 @@ class StoreBoardRequest extends FormRequest
             'use_comment' => ['required', 'boolean'],
             'use_reply' => ['required', 'boolean'],
             'use_report' => ['required', 'boolean'],
+            'use_scrap' => ['sometimes', 'boolean'],
             'use_reaction' => ['required', 'boolean'],
             'active_reaction_types' => ['sometimes', 'array'],
             'active_reaction_types.*' => ['string'],
             'comment_order' => ['required', 'in:ASC,DESC'],
+            // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
 
             // 제목 길이 제한
@@ -212,6 +216,7 @@ class StoreBoardRequest extends FormRequest
 
             // 답글/대댓글 깊이 제한
             'max_reply_depth' => ['nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
+            'reply_delete_policy' => ['required', 'string', Rule::in(ReplyDeletePolicy::values())],
             'max_comment_depth' => ['nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
 
             // 알림 설정

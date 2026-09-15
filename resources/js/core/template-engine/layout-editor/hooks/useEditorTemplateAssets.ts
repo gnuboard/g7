@@ -32,6 +32,7 @@ import {
 } from '../types/editorErrors';
 import { reseedPendingIntoEngine } from './pendingCustomTranslations';
 import { suffixed } from '../../../support/assetUrl';
+import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
 
 export interface EditorTemplateAssetsState {
   componentRegistry: ComponentRegistry | null;
@@ -119,6 +120,17 @@ function injectScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof document === 'undefined') {
       reject(new Error('document undefined'));
+      return;
+    }
+    // 출처 게이트 — 이 src 는 서버 응답(editor-assets manifest)이 지시하는 값이고,
+    // 붙는 자리는 관리자 document 다. 확장 자산 재로드(reloadModuleHandlers)·프리뷰 캔버스와
+    // 같은 판정을 받는다. 정상 템플릿 자산 URL 은 전부 `/api/...` same-origin 이다.
+    if (!isAllowedScriptSrc(src, getTrustedScriptHosts())) {
+      reject(
+        new Error(
+          `Blocked untrusted script src (same-origin path or declared trusted host required): ${src}`,
+        ),
+      );
       return;
     }
     const existing = document.querySelector(`script[data-g7le-asset="${src}"]`);
@@ -234,6 +246,20 @@ export function useEditorTemplateAssets(
         const componentRegistry = ComponentRegistry.createIsolatedInstance();
         await componentRegistry.loadComponents(templateIdentifier, templateType);
         if (cancelled) return;
+
+        // 4-1. 확장이 제공한 컴포넌트를 이 인스턴스에도 반영.
+        //
+        // 확장 IIFE 는 호스트 페이지 부팅 때 한 번 실행되며 그때 싱글톤에만 등록한다. 이
+        // 격리 인스턴스는 그보다 나중에 만들어지므로, 부르지 않으면 확장 컴포넌트를 쓰는
+        // 노드가 캔버스에서 조용히 사라진다(미발견 컴포넌트는 null 렌더).
+        //
+        // 판본 선택이 호스트와 갈릴 수 있다는 점이 이 호출의 요점이다 — admin 템플릿을 띄운
+        // 채 user 템플릿을 편집하면 호스트는 기본 판본을, 캔버스는 user 전용 판본을 써야
+        // 한다. 그래서 싱글톤의 결과를 복사하지 않고 선언에서 다시 고른다.
+        //
+        // loadComponents 뒤에 두는 이유: 템플릿의 오버라이드 선언을 먼저 알아야 확장의
+        // 원본이 그것을 되덮지 않는다.
+        componentRegistry.applyExtensionComponents();
 
         // 5. 독립 TranslationEngine 인스턴스 + loadTranslations
         //

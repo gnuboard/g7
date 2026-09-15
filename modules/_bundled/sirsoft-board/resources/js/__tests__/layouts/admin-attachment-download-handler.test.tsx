@@ -44,7 +44,8 @@ function collectNodes(node: unknown, predicate: (n: Node) => boolean): Node[] {
 }
 
 function findAttachmentCards(root: unknown): Node[] {
-    return collectNodes(root, (n) => n.id === 'attachment_card');
+    // 반복 안 노드라 id 에 index 접미가 붙는다 (`attachment_card_{{index}}`).
+    return collectNodes(root, (n) => typeof n.id === 'string' && n.id.startsWith('attachment_card'));
 }
 
 // @scenario card=admin_post

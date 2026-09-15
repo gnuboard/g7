@@ -260,6 +260,9 @@ return [
 
     // Cart Messages
     'cart' => [
+        'admin_list_retrieved' => 'Carts retrieved.',
+        'admin_deleted' => 'Cart item deleted.',
+        'admin_bulk_deleted' => ':count cart item(s) deleted.',
         'list_retrieved' => 'Cart items retrieved successfully.',
         'added' => 'Item has been added to cart.',
         'bulk_added' => ':count items have been added to cart.',
@@ -488,6 +491,12 @@ return [
             'per_volume' => ':fee per :unit L',
             'per_volume_weight' => ':fee per :unit kg',
             'per_amount' => ':fee per :unit',
+            // Tier boundary units for range policies (derived from the charge policy, not stored data)
+            'range_unit' => [
+                'quantity' => ' items',
+                'weight' => ' kg',
+                'volume' => ' L',
+            ],
         ],
         'fee_details' => [
             'base_fee' => 'Shipping Fee',
@@ -1151,6 +1160,14 @@ return [
         'can_write_checked' => 'Review eligibility checked.',
         'can_write_check_failed' => 'Failed to check review eligibility.',
         'cannot_write' => 'Cannot write a review. (Reason: :reason)',
+        // 작성 불가 사유 라벨 — :reason 치환자에 원시 식별자 대신 번역문을 싣는다
+        'reasons' => [
+            'order_option_not_found' => 'order item not found',
+            'not_own_order' => 'not your order',
+            'not_confirmed' => 'purchase not confirmed yet',
+            'deadline_passed' => 'review period has ended',
+            'already_written' => 'review already written',
+        ],
         'forbidden' => 'You do not have permission.',
         'deleted' => 'Review has been deleted.',
         'delete_failed' => 'Failed to delete review.',
@@ -1171,6 +1188,9 @@ return [
     ],
 
     'wishlist' => [
+        'admin_list_retrieved' => 'Wishlists retrieved.',
+        'admin_deleted' => 'Wishlist item deleted.',
+        'admin_bulk_deleted' => ':count wishlist item(s) deleted.',
         'added' => 'Product has been added to wishlist.',
         'removed' => 'Product has been removed from wishlist.',
         'retrieved' => 'Wishlist retrieved successfully.',
@@ -1211,6 +1231,7 @@ return [
         'board_changed' => 'The board configuration has changed and the post could not be found. Please contact the administrator.',
         'reply_created' => 'Reply has been submitted.',
         'reply_failed' => 'Failed to submit reply.',
+        'reply_already_exists' => 'A reply has already been registered. Please edit or delete the existing reply before submitting a new one.',
         'reply_updated' => 'Reply has been updated.',
         'reply_update_failed' => 'Failed to update reply.',
         'reply_deleted' => 'Reply has been deleted.',
@@ -1251,6 +1272,19 @@ return [
         'fetched' => 'Shipping country retrieved.',
         'updated' => 'Shipping country updated.',
         'update_failed' => 'Failed to update shipping country.',
+    ],
+
+    // Member-owned data admin lists (#524 §4.1)
+    'user_address' => [
+        'admin_list_retrieved' => 'Member addresses retrieved.',
+        'admin_deleted' => 'Address deleted.',
+        'admin_bulk_deleted' => ':count address(es) deleted.',
+    ],
+
+    'product_inquiry' => [
+        'admin_list_retrieved' => 'Product inquiries retrieved.',
+        'admin_deleted' => 'Product inquiry deleted.',
+        'admin_bulk_deleted' => ':count inquiry(ies) deleted.',
     ],
 
     // Dashboard

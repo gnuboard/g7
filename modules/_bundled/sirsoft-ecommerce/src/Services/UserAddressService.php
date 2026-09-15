@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Modules\Sirsoft\Ecommerce\Exceptions\DuplicateAddressException;
@@ -14,6 +15,11 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterf
  */
 class UserAddressService
 {
+    /**
+     * UserAddressService 생성자
+     *
+     * @param  UserAddressRepositoryInterface  $addressRepository  배송지 리포지토리
+     */
     public function __construct(
         protected UserAddressRepositoryInterface $addressRepository
     ) {}
@@ -264,5 +270,72 @@ class UserAddressService
         } while ($existing);
 
         return $candidateName;
+    }
+
+    /**
+     * 관리자용 전 회원 배송지 목록을 조회합니다.
+     *
+     * @param  array<string, mixed>  $filters  필터 (검색 대상·검색어·회원·기간·정렬)
+     * @param  int  $perPage  페이지당 개수
+     * @return LengthAwarePaginator 페이지네이션된 목록
+     */
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->addressRepository->paginateForAdmin($filters, $perPage);
+    }
+
+    /**
+     * 관리자가 배송지 한 건을 삭제합니다 (소유자 무관).
+     *
+     * @param  int  $id  행 ID
+     * @return bool 삭제 성공 여부
+     */
+    public function deleteByAdmin(int $id): bool
+    {
+        return $this->addressRepository->deleteById($id);
+    }
+
+    /**
+     * 관리자가 배송지를 일괄 삭제합니다 (소유자 무관).
+     *
+     * 훅을 루프 앞뒤로 한 번씩만 발화한다 — 항목마다 발화하면 활동 로그가 폭주하고,
+     * IDV 같은 before 훅 소비자가 루프 중간에 끼어들어 앞부분만 지워진 상태가 된다.
+     *
+     * @param  array<int, int>  $ids  행 ID 목록
+     * @return int 실제로 삭제된 건수
+     */
+    public function bulkDeleteByAdmin(array $ids): int
+    {
+        // 스냅샷은 삭제 «전» 에 뜬다 — 배송지는 소프트 삭제가 아니라 지우고 나면 행이
+        // 사라져 활동 로그에 남은 id 로는 「누구의 무엇」을 되짚을 수 없다.
+        $snapshots = $this->addressRepository->findByIds($ids)
+            ->map(fn ($row) => [
+                'id' => (int) $row->id,
+                'user_id' => $row->user_id !== null ? (int) $row->user_id : null,
+                'user_uuid' => $row->user?->uuid,
+                'user_name' => $row->user?->name,
+                'label' => $row->name,
+                'recipient_name' => $row->recipient_name,
+            ])
+            ->all();
+
+        HookManager::doAction('sirsoft-ecommerce.user_address.before_bulk_delete', $ids);
+
+        $count = $this->addressRepository->bulkDelete($ids);
+
+        HookManager::doAction('sirsoft-ecommerce.user_address.after_bulk_delete', $ids, $count, $snapshots);
+
+        return $count;
+    }
+
+    /**
+     * 회원의 배송지 건수를 조회합니다 (회원 상세 요약용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 건수
+     */
+    public function countByUserForAdmin(int $userId): int
+    {
+        return $this->addressRepository->countByUser($userId);
     }
 }

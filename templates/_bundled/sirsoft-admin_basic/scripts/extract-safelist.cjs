@@ -31,6 +31,10 @@ function findJsonFiles(dir) {
       } else if (item.endsWith('.json')) {
         results.push(fullPath);
       }
+      // `.g7.html` 은 여기서 수집하지 않는다 — 아래 dynamic 추출이 JSON.parse 를 전제하기 때문이다.
+      // 대신 `main.css` 가 `@source "../../layouts/**/*.g7.html"` 로 직접 앵커해 정적 클래스는
+      // Tailwind 스캐너가 잡는다. safelist 는 **동적 생성 클래스**(classMap variants·switch-value 등
+      // 스캐너가 문자열로 못 보는 것)만 담당하므로 두 경로의 역할이 갈린다.
     }
   } catch (e) {
     // 디렉토리 접근 실패 시 무시
@@ -155,9 +159,15 @@ const markerEnd = '/* SAFELIST-END */';
 const startIdx = mainCss.indexOf(markerStart);
 const endIdx = mainCss.indexOf(markerEnd);
 if (startIdx !== -1 && endIdx !== -1) {
+  // 마커 앞뒤의 개행까지 함께 정리한다.
+  //
+  // safelistBlock 은 앞뒤에 개행을 하나씩 달고 들어오는데, 종전 제거 로직은 그 개행을 남겨
+  // 두고 블록만 걷어냈다. 그래서 빌드할 때마다 `SAFELIST-END` 뒤에 빈 줄이 한 줄씩 쌓이며
+  // 매 빌드가 main.css 를 dirty 로 만들었다(CSS 결과물은 동일 — 순수 노이즈).
+  // 앞은 개행을 모두 지우고(블록이 다시 붙인다) 뒤는 한 줄로 접어 빌드를 멱등하게 만든다.
   mainCss =
-    mainCss.slice(0, startIdx).replace(/\s+$/, '') +
-    mainCss.slice(endIdx + markerEnd.length).replace(/^\s+/, '\n\n');
+    mainCss.slice(0, startIdx).replace(/\n+$/, '') +
+    mainCss.slice(endIdx + markerEnd.length).replace(/^\n+/, '\n');
 }
 
 // 새 safelist 삽입 (@source "../../layouts/**/*.json"; 바로 뒤에)

@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 나이스페이먼츠 콜백 보안 매트릭스의 명세 문서. AuthToken Cache 기반 dedupe 와 replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
 
-feature: 콜백 보안 방어 (replay attack / authToken dedupe / post-approve net cancel)
+feature: 콜백 보안 방어 (replay attack / authToken dedupe / post-approve net cancel / 승인 URL 호스트 정규화)
 
 description: |
   나이스페이먼츠 결제 콜백 처리 경로의 3가지 핵심 보안 위협에 대한 방어 매트릭스.
@@ -18,7 +18,7 @@ description: |
 
 axes:
   context: [authorize_card, authorize_vbank, naverpay_callback, kakaopay_callback]
-  threat: [replay_db_long, replay_token_short, post_approve_failure]
+  threat: [replay_db_long, replay_token_short, post_approve_failure, forged_approval_url_host]
   callback_state: [first_arrival, second_arrival_outside_60s, second_arrival_within_60s, domain_succeeds, domain_fails]
 
 exclusions:
@@ -33,6 +33,13 @@ exclusions:
   - { threat: post_approve_failure, callback_state: second_arrival_outside_60s, reason: "post-approve 실패는 도메인 결과 분기" }
   - { threat: post_approve_failure, callback_state: second_arrival_within_60s, reason: "post-approve 실패는 도메인 결과 분기" }
   - { threat: post_approve_failure, context: authorize_vbank, reason: "vbank 는 비동기 입금 — post-approve 단계 없음" }
+  - { threat: forged_approval_url_host, callback_state: first_arrival, reason: "호스트 판정은 도착 차수와 무관하다" }
+  - { threat: forged_approval_url_host, callback_state: second_arrival_outside_60s, reason: "동일" }
+  - { threat: forged_approval_url_host, callback_state: second_arrival_within_60s, reason: "동일" }
+  - { threat: forged_approval_url_host, callback_state: domain_succeeds, reason: "호스트가 거부되면 도메인 처리에 도달하지 못한다" }
+  - { threat: forged_approval_url_host, callback_state: domain_fails, reason: "동일" }
+  - { threat: forged_approval_url_host, context: naverpay_callback, reason: "간편결제 콜백은 승인 URL 을 결제창에서 받지 않는다" }
+  - { threat: forged_approval_url_host, context: kakaopay_callback, reason: "동일" }
 
 effects:
   # DB 영구 replay defense — PreventsReplayCallback trait
@@ -51,6 +58,14 @@ effects:
   - auth_token_blocked_returns_4xx_or_idempotent
   - auth_token_logged_when_dedupe_hit
 
+  # 승인 URL 호스트 정규화 (KVE-2026-2010 형제 — 검증기 미경유 독립 경로)
+  - approval_url_host_check_reuses_core_normalize_host_not_a_copy
+  - host_that_only_looks_like_nicepay_is_rejected
+  - dot_equivalent_characters_cannot_disguise_the_host
+  - url_carrying_userinfo_is_rejected
+  - official_nicepay_hosts_are_still_accepted
+  - rejected_url_never_receives_the_auth_token_or_merchant_id
+
   # Post-approve net cancel
   - post_approve_failure_triggers_send_net_cancel
   - net_cancel_sends_pg_cancel_api_call
@@ -58,7 +73,8 @@ effects:
   - net_cancel_passes_approved_tid
   - net_cancel_passes_full_amount
 
-test_files: []
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Services/NicePaymentsApiServiceTest.php
 
 manual_verification:
   - description: "Replay DB 영구 PoC — authorize_card 재전송"

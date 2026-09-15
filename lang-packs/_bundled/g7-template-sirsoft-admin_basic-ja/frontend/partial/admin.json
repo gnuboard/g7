@@ -208,7 +208,16 @@
       "bulk_block_success": "ユーザーがブロックされました。",
       "bulk_withdraw_title": "ユーザー退会処理",
       "bulk_withdraw_confirm": "{{count}}人のユーザーを退会処理します。この操作は取り消すが難しい場合があります。",
-      "bulk_withdraw_success": "ユーザーが退会処理されました。"
+      "bulk_withdraw_success": "ユーザーが退会処理されました。",
+      "withdraw_confirm_title": "退会処理の確認",
+      "withdraw_confirm_lead": "ステータスを「退会」に保存すると、この会員は実際に退会処理されます。元に戻すことはできません。",
+      "withdraw_confirm_effects_title": "一緒に処理される項目",
+      "withdraw_confirm_effect_anonymize": "メールアドレス·名前·ニックネームが匿名化されます。",
+      "withdraw_confirm_effect_sessions": "この会員のすべてのログインセッションが解除されます。",
+      "withdraw_confirm_effect_linked": "この会員の規約同意履歴·プロフィール画像が削除され、マイレージ·本人認証記録など連携データが整理されます。",
+      "withdraw_confirm_submit": "退会処理",
+      "bulk_withdraw_partial": "{updated}名を退会処理しました。{failed}名は処理できませんでした — {reason}",
+      "bulk_withdraw_all_failed": "退会処理できませんでした — {reason}"
     },
     "form": {
       "page_title_create": "ユーザー登録",
@@ -338,14 +347,20 @@
         "location_info": "位置情報",
         "profile_memo": "プロフィール/メモ",
         "activity_info": "アクティビティ情報",
-        "consent_info": "同意履歴"
+        "consent_info": "同意履歴",
+        "notifications_info": "通知ボックス"
       },
       "unlock": "ロック解除",
       "unlock_success": "アカウントのロックを解除しました。",
       "lock_status": "アカウントロック状態",
       "locked_permanently_value": "ロック中 (無期限 — 管理者による解除が必要)",
       "locked_until_value": "ロック中 ({{until}} まで)",
-      "not_locked_value": "正常"
+      "not_locked_value": "正常",
+      "notifications": {
+        "total": "総通知数",
+        "unread": "未読",
+        "view_inbox": "通知ボックスを表示"
+      }
     },
     "bulk_status_change": "ステータス変更"
   },
@@ -729,7 +744,10 @@
       "no_modified_layouts": "修正されたレイアウトがありません。",
       "modified_layouts_list_title": "保持される修正レイアウト ({{count}}個)",
       "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が保持されます。",
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "モジュール削除完了"
     },
     "tabs": {
       "file_upload": "ファイル アップロード",
@@ -935,7 +953,10 @@
       "no_modified_layouts": "編集されたレイアウトがありません。",
       "modified_layouts_list_title": "維持される編集レイアウト（{{count}}個）",
       "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が維持されます。",
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "プラグイン削除完了"
     },
     "tabs": {
       "file_upload": "ファイルアップロード",
@@ -1296,6 +1317,8 @@
     "page_title": "環境設定",
     "page_description": "システム環境を設定します。",
     "readonly_notice": "この設定は読み取り専用です。編集権限が必要な場合は管理者にお問い合わせください。",
+    "env_locked_badge": ".env で固定",
+    "env_locked_notice": "このサイトは .env 優先モードで運用されています。.env に値が指定されている項目はここでは変更できず、画面には実際に適用されている値が表示されます。変更するにはサーバーの .env を編集したうえで、設定キャッシュを再作成してください。",
     "tabs": {
       "general": "一般",
       "mail": "メール",
@@ -1335,7 +1358,34 @@
       "asset_url_mode_detecting": "アセットファイル配信方式を検出中です...",
       "asset_url_mode_detect_extension": "拡張子を使用できる環境です。",
       "asset_url_mode_detect_extensionless": "静的ファイル最適化ルール(nginx の location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$ ブロックなど)が拡張子アドレスをインターセプトしています。「拡張子を使用しない」に変更してから保存してください。",
-      "asset_url_mode_detect_unavailable": "検出に失敗しました。サーバーが応答しないため、方式を判定できません。"
+      "asset_url_mode_detect_unavailable": "検出に失敗しました。サーバーが応答しないため、方式を判定できません。",
+      "static_cache_title": "初期画面静的ファイル",
+      "static_cache_description": "最初の画面を素早く表示するために、多言語·ルート·コンポーネント·拡張バンドルを静的ファイルとして事前に作成します。拡張機能のインストール·アップデートや設定変更の後、自動的に再作成され、画面が古い内容を表示する場合はここから即座に再作成できます。",
+      "static_cache_status": "ステータス",
+      "static_cache_status_published": "公開",
+      "static_cache_status_unpublished": "非公開",
+      "static_cache_status_disabled": "無効化",
+      "static_cache_status_dev_mode": "開発モード",
+      "static_cache_version": "現在のバージョン",
+      "static_cache_files": "ファイル数",
+      "static_cache_published_at": "最後の公開時刻",
+      "static_cache_never": "まだありません",
+      "static_cache_process_user": "実行アカウント",
+      "static_cache_failure": "最近{{count}}回連続失敗 —",
+      "static_cache_failure_parent_not_writable": "保存フォルダに書き込めません。サーバーでフォルダの所有者·権限を確認してください。",
+      "static_cache_failure_write_failed": "ファイルの書き込みに失敗しました。ディスクの空き容量を確認してください。",
+      "static_cache_failure_lock_unavailable": "キャッシュストレージからロックを取得できませんでした。キャッシュストレージの状態を確認してください。",
+      "static_cache_hint_disabled": "G7_STATIC_CACHE=false でオフになっているため、静的ファイルを作成しません。すべての画面が API で動作します。",
+      "static_cache_hint_dev_mode": "運用モード(APP_ENV=production)でのみ静的ファイルを作成します。現在、すべての画面が API で動作しています。",
+      "static_cache_republish_now": "今すぐ再作成",
+      "static_cache_republish": "再作成",
+      "static_cache_republishing": "再作成中...",
+      "static_cache_republish_confirm_title": "初期画面静的ファイルの再作成",
+      "static_cache_republish_confirm_body": "静的ファイルを新しいバージョンで再作成します。すべての訪問者がアセットを再度ダウンロードします。",
+      "static_cache_republish_confirm_warning": "完了まで少しお時間がかかる場合があります。その間、サイトは正常に動作します。",
+      "static_cache_republished": "初期画面静的ファイルを再作成しました。",
+      "static_cache_republish_not_publishable": "現在の環境では静的ファイルを作成しません(運用モードではないか、オフになっています)。",
+      "static_cache_republish_failed": "初期画面静的ファイルを再作成できませんでした。下記の失敗理由を確認してください。サイトは正常に動作しています。"
     },
     "mail": {
       "smtp_settings": "SMTP設定",
@@ -1383,7 +1433,13 @@
       "image_max_width": "最大幅",
       "image_max_height": "最大高さ",
       "image_quality": "画像品質",
-      "image_quality_hint": "1〜100の値を入力してください。値が大きいほど品質が良くなります。"
+      "image_quality_hint": "1〜100の値を入力してください。値が大きいほど品質が良くなります。",
+      "orphan_cleanup": "孤立した添付ファイルのクリーンアップ",
+      "orphan_cleanup_desc": "フォームを保存せずに離脱して、所有者がいなくなった添付ファイルをクリーンアップします。",
+      "orphan_cleanup_enabled": "孤立した添付ファイルの自動クリーンアップ",
+      "orphan_cleanup_enabled_hint": "デフォルトはオフです — 管理者が直接有効化する必要があります。有効化すると、保持期間を過ぎた孤立した添付ファイルのファイルと記録を毎日削除します。サイトロゴなど現在使用中の添付ファイルは削除しません。",
+      "orphan_retention_days": "孤立した添付ファイルの保持期間（日数）",
+      "orphan_retention_days_hint": "アップロード後この期間が経過した孤立した添付ファイルのみがクリーンアップの対象になります。フォーム作成中の中断を考慮して、余裕を持って設定してください。（1～3650日）"
     },
     "seo": {
       "meta_settings": "メタタグ設定",
@@ -1408,6 +1464,8 @@
       "og_image_default_width": "OG 画像 デフォルト横幅 (px)",
       "og_image_default_height": "OG 画像 デフォルト高さ (px)",
       "og_image_default_size_hint": "サムネイルの実際のサイズが不明な場合のデフォルト値です。Facebookは推奨 1200×630、最小 200×200。",
+      "og_image_default": "既定の共有画像",
+      "og_image_default_desc": "画面ごとの共有画像がない場合に使用するサイト既定の画像です。リンク共有時のプレビューカードに表示されます。",
       "twitter_default_card": "Twitterカード デフォルト タイプ",
       "twitter_default_card_hint": "大きい画像のカードは summary_large_image、小さいカードは summary を推奨します。",
       "twitter_default_site": "Twitter サイト ハンドル",
@@ -1619,7 +1677,9 @@
     },
     "drivers": {
       "common": {
-        "optional": "オプション"
+        "optional": "オプション",
+        "unavailable_saved_value_prefix": "保存された値 ",
+        "unavailable_saved_value_suffix": " は現在使用できません。利用可能な値を選択して保存してください。"
       },
       "storage": {
         "title": "ファイルストレージ",
@@ -1631,17 +1691,21 @@
         },
         "s3_bucket": "S3バケット",
         "s3_region": "S3リージョン",
-        "regions": {
-          "ap_northeast_2": "アジアパシフィック（ソウル）",
-          "ap_northeast_1": "アジアパシフィック（東京）",
-          "us_east_1": "米国東部（バージニア）",
-          "us_west_2": "米国西部（オレゴン）",
-          "eu_west_1": "ヨーロッパ（アイルランド）"
-        },
+        "s3_region_desc": "AWSリージョンコードまたはS3互換ストレージのリージョン値を入力してください。(例: ap-northeast-2、Cloudflare R2 は auto)",
         "s3_access_key": "Access Key",
         "s3_secret_key": "Secret Key",
-        "s3_url": "S3 URL",
-        "s3_url_desc": "カスタムエンドポイントまたはCDN URLを使用する場合のみ入力してください。"
+        "s3_endpoint": "エンドポイントURL",
+        "s3_endpoint_desc": "S3互換ストレージ(Cloudflare R2、MinIOなど)のAPIアドレスです。AWS S3の場合は空欄にしてください。",
+        "s3_use_path_style": "Path-styleアドレスを使用",
+        "s3_use_path_style_desc": "MinIOなどpath-styleアドレス専用ストレージで有効にします。",
+        "s3_url": "S3 URL (公開URL)",
+        "s3_url_desc": "ファイルの公開URL生成に使うCDN/カスタムドメインです。APIリクエストアドレスはエンドポイントURLに入力してください。"
+      },
+      "public_asset": {
+        "title": "公開アセットストレージ",
+        "desc": "完全公開アセット（商品・カテゴリ・レビュー・エディタ画像、レイアウト背景画像など）を直接URLで配信するディスクを設定します。使用しない場合は既存のストリーミング方式で動作します。有効化後にアップロードしたファイルのみ直接URLが発行され、そのアドレスは保存されたレイアウトにそのまま残ります。",
+        "disk": "ディスク",
+        "s3_help": "S3を選択する場合は、上のファイルストレージカードのS3 URL（CDNドメイン）設定が必要です。未設定の場合はストリーミングで動作します。"
       },
       "cache": {
         "title": "キャッシュ",
@@ -1734,9 +1798,6 @@
         "desc": "統合検索および管理者検索に使用する検索エンジンドライバーを設定します。",
         "driver": "検索エンジンドライバー",
         "driver_desc": "デフォルト提供のMySQL FULLTEXT（ngram）エンジンは、追加設定なしで日本語検索をサポートしています。",
-        "options": {
-          "mysql_fulltext": "MySQL FULLTEXT (ngram)"
-        },
         "plugin_notice": "検索エンジンプラグイン（Meilisearch、Elasticsearchなど）をインストールすると、追加ドライバーが表示されます。"
       },
       "test_connection": "接続テスト",
@@ -1768,6 +1829,13 @@
       "dev_dashboard": "開発ダッシュボード",
       "sql_query_log": "SQLクエリログ",
       "sql_query_log_desc": "実行されたSQLクエリをログに記録します。ログファイルの場所: /storage/logs/query.log",
+      "outbound_proxy": "アウトバウンドプロキシアドレス",
+      "outbound_proxy_desc": "サイトが外部に送信するすべてのリクエスト(決済承認、コア更新確認、通知送信など)がこのサーバーを経由します。接続 IP を制限する外部サービスと連携する際に使用します。空欄の場合は使用しません。",
+      "outbound_proxy_placeholder": "socks5h://127.0.0.1:1080",
+      "outbound_proxy_bypass": "プロキシ除外リスト",
+      "outbound_proxy_bypass_desc": "このリストにあるアドレスへのリクエストはプロキシを経由せず直接送信されます。内部ネットワークのアドレスを登録すると不要な迂回を減らせます。",
+      "outbound_proxy_bypass_placeholder": "アドレスを入力して Enter",
+      "outbound_proxy_test": "接続テスト",
       "core_update": "アップデート設定",
       "core_update_desc": "コアおよび拡張（モジュール·プラグイン·テンプレート）アップデートで使用するGitHub認証情報を設定します。",
       "core_update_github_url": "GitHubリポジトリURL",
@@ -1794,7 +1862,24 @@
       "pagination_result_cap": "総件数集計の上限",
       "pagination_result_cap_desc": "この件数までのみ正確に集計します。0の場合は常にすべてを集計します(大規模リストの場合、リストが遅くなる可能性があります)。",
       "pagination_max_page": "ページ番号の上限",
-      "pagination_max_page_desc": "アドレスから直接リクエスト可能な最大ページ番号です。0の場合は制限しません。通常の次ページへの移動はこの値に関わらず引き続き可能です。"
+      "pagination_max_page_desc": "アドレスから直接リクエスト可能な最大ページ番号です。0の場合は制限しません。通常の次ページへの移動はこの値に関わらず引き続き可能です。",
+      "trusted_proxy": "リバースプロキシ (信頼するプロキシ)",
+      "trusted_proxy_desc": "HTTPS を前段で処理する構成 (AWS ALB, CloudFront, Cloudflare, nginx) で、接続アドレスと訪問者 IP を正しく認識するための設定です。値は .env の TRUSTED_PROXIES でのみ変更できます。",
+      "trusted_proxy_status": "診断結果",
+      "trusted_proxy_status_ok": "正常",
+      "trusted_proxy_status_warning": "対応が必要",
+      "trusted_proxy_status_not_applicable": "判定不可",
+      "trusted_proxy_configured": "TRUSTED_PROXIES の設定値",
+      "trusted_proxy_not_configured": "未設定 (どのプロキシも信頼しません)",
+      "trusted_proxy_forwarded_headers": "受信中のプロキシヘッダー",
+      "trusted_proxy_forwarded_headers_none": "なし",
+      "trusted_proxy_is_secure": "HTTPS の認識",
+      "trusted_proxy_is_secure_yes": "HTTPS として認識",
+      "trusted_proxy_is_secure_no": "HTTP として認識",
+      "trusted_proxy_client_ip": "訪問者 IP として認識された値",
+      "trusted_proxy_remote_addr": "直前の呼び出し元 IP (REMOTE_ADDR)",
+      "trusted_proxy_same_ip_hint": "2 つの値が同じでプロキシヘッダーを受信しています — すべての訪問者が同一人物として記録されている状態です。",
+      "trusted_proxy_doc_hint": "設定方法と導入時の後続対応:"
     },
     "notification_definitions": {
       "title": "通知設定",
@@ -1835,7 +1920,9 @@
       "types": {
         "welcome": "会員登録ウェルカム",
         "reset_password": "パスワード再設定",
-        "password_changed": "パスワード変更通知"
+        "password_changed": "パスワード変更通知",
+        "sitemap_regenerated": "サイトマップ再生成完了",
+        "sitemap_regenerate_failed": "サイトマップ再生成失敗"
       },
       "channels_label": "チャネル:",
       "edit_modal": {
@@ -2184,7 +2271,10 @@
         "lines": "行",
         "chars": "文字"
       },
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "テンプレート削除完了"
     },
     "tabs_install": {
       "file_upload": "ファイルアップロード",
@@ -2251,7 +2341,118 @@
       "preview_layout_select_description": "この拡張ポイントは複数のレイアウトで使用されています。プレビューするレイアウトを選択してください。",
       "preview_layout_select_placeholder": "レイアウトを選択してください",
       "preview_layout_confirm": "プレビュー",
-      "extension_override_badge": "オーバーライド"
+      "extension_override_badge": "オーバーライド",
+      "tab_markup": "HTML",
+      "tab_json": "JSON（読み取り専用）",
+      "json_readonly_hint": "JSON は HTML から生成された成果物です（読み取り専用）。入力が止まってから 1 秒後に更新されます。",
+      "json_stale": "コンパイルエラーのため最後に成功した内容を表示",
+      "markup_error_title": "コンパイルエラー — 保存できません",
+      "markup_warning_title": "警告 {{count}} 件 — 保存は可能です",
+      "inlined_notice": "インストール済みのレイアウトを編集しています — 断片（<include>・<modal src>）はインライン展開された状態で、リポジトリのファイルと異なる場合があります。保存すると本文はサーバーの正規形に更新されます。",
+      "download_markup": ".g7.html をダウンロード",
+      "copy_markup": "コピー",
+      "copy_success": "マークアップをクリップボードにコピーしました。",
+      "copy_failed": "クリップボードへのコピーに失敗しました。",
+      "fragment_key_label": "断片 {{key}}",
+      "tree": {
+        "aria_label": "レイアウトファイル",
+        "unsaved": "保存されていません",
+        "unsaved_count": "保存されていないファイル {{count}}個",
+        "pending_folder": "空のフォルダ",
+        "empty": "編集可能なレイアウトがありません",
+        "resize": "ファイルリストの幅を調整"
+      },
+      "tabs": {
+        "aria_label": "開いているファイル",
+        "close": "{{name}}を閉じる"
+      },
+      "search": {
+        "placeholder": "ファイル·内容を検索",
+        "result_summary": "検索結果 {{matches}}件 · {{files}}ファイル",
+        "empty": "'{{keyword}}'に一致するファイル·内容がありません",
+        "clear": "検索をクリア",
+        "goto_line": "{{line}}行に移動"
+      },
+      "file": {
+        "new_file": "新しいファイル",
+        "new_folder": "新しいフォルダ",
+        "new_file_title": "新しいファイルを作成",
+        "new_folder_title": "新しいフォルダを作成",
+        "rename": "名前変更",
+        "rename_title": "名前を変更",
+        "delete": "削除",
+        "delete_title": "ファイルを削除しますか?",
+        "delete_description": "削除したファイルは復元できますが、このファイルを使用していた画面はすぐに開かなくなります。",
+        "create": "作成",
+        "name_label": "名前",
+        "name_placeholder": "例：partials/admin_user_list/_modal_form",
+        "name_hint": "英文·数字·アンダースコア(_)·ハイフン(-)を使用し、フォルダはスラッシュ(/)で区切ります。拡張子は付けません。",
+        "created": "ファイルを作成しました。",
+        "renamed": "名前を変更しました。",
+        "deleted": "ファイルを削除しました。",
+        "folder_created": "フォルダを作成しました。この中にファイルを保存すると確定されます。",
+        "reference_line": "{{line}}行",
+        "delete_anyway": "それでも削除",
+        "missing_title": "このファイルが見つかりません",
+        "missing_reloading": "このファイルが見つかりません。一覧を再読み込みします。",
+        "missing_draft_notice": "このファイルはすでに存在しません。以下は復元した編集内容で、保存はできません — 新しい名前で保存するか、破棄してください。",
+        "save_as": "新しい名前で保存",
+        "discard_draft": "破棄",
+        "missing_badge": "存在しないファイル"
+      },
+      "draft": {
+        "found": "保存されていない編集 {{count}}件があります",
+        "restore": "復元",
+        "discard": "破棄",
+        "leave_warning": "保存されていない編集があります。",
+        "leave_confirm": "保存されていない編集 {{count}}件があります。この画面を離れると削除されます。続けますか?",
+        "close_confirm": "{{name}}に保存されていない編集があります。タブを閉じると削除されます。続けますか?",
+        "close_title": "{{name}}に保存されていない編集があります",
+        "close_question": "タブを閉じる前にどうしますか?",
+        "close_save": "保存して閉じる",
+        "close_discard": "保存せずに閉じる",
+        "close_cancel": "キャンセル",
+        "close_saving": "保存中… 保存が終わるとタブが閉じます。失敗した場合はこのダイアログが残ります。",
+        "restore_warning": "保存されていない編集 {{count}}件があります。バージョンを戻すと、エディタの上に競合通知が表示されます。"
+      },
+      "conflict": {
+        "title": "サーバーのほうが新しいです",
+        "description": "別の場所からこのファイルを保存しました (私の基準 v{{mine}} → サーバー v{{server}})",
+        "keep_mine": "自分のものを維持",
+        "take_server": "サーバーのものに",
+        "view_diff": "差分を見る",
+        "diff_title": "サーバー本文と自分の編集の差分",
+        "diff_legend": "左: サーバー v{{server}} · 右: 自分の編集 (基準 v{{mine}})",
+        "diff_close": "閉じる"
+      },
+      "wordwrap": {
+        "label": "改行",
+        "toggle": "自動折り返しをオン/オフにする (Alt+Z)"
+      },
+      "shortcuts": {
+        "title": "ショートカット",
+        "save": "保存",
+        "save_all": "すべて保存",
+        "preview": "プレビュー",
+        "version_history": "バージョン履歴",
+        "exit": "終了",
+        "new_file": "新しいファイル",
+        "quick_open": "ファイルクイックジャンプ",
+        "search_content": "内容を検索",
+        "prev_tab": "前のタブ",
+        "next_tab": "次のタブ",
+        "close_tab": "タブを閉じる",
+        "toggle_view": "HTML / JSON 切り替え",
+        "toggle_word_wrap": "自動折り返し",
+        "font_size_up": "文字を大きく",
+        "font_size_down": "文字を小さく",
+        "find_in_file": "ファイル内検索",
+        "help": "ショートカットヘルプ",
+        "group_document": "ドキュメント",
+        "group_file": "ファイル",
+        "group_view": "表示",
+        "group_editor": "エディタ"
+      }
     }
   },
   "activity_log": {
@@ -2734,7 +2935,8 @@
       "settings_password_confirm_modal": "アプリキー再生成パスワード確認",
       "core_changelog_modal": "コア変更履歴",
       "core_update_guide_modal": "コアアップデートお知らせ",
-      "core_update_result_modal": "コアアップデート確認結果"
+      "core_update_result_modal": "コアアップデート確認結果",
+      "settings_static_cache_republish_modal": "初期画面静的ファイルの再作成確認"
     },
     "admin_template_list": {
       "template_activate_modal": "テンプレート有効化確認",
@@ -2796,10 +2998,74 @@
     "admin_template_layout_edit": {
       "extension_preview_layout_modal": "プレビューレイアウト選択",
       "extension_version_history_modal": "拡張バージョン履歴",
-      "version_history_modal": "レイアウトバージョン履歴"
+      "version_history_modal": "レイアウトバージョン履歴",
+      "file_form_modal": "ファイル名入力ウィンドウ",
+      "file_delete_modal": "ファイル削除確認ウィンドウ"
     },
     "changelog_modal": "コア変更履歴",
     "license_modal": "コアライセンス",
-    "notification_delete_all_confirm_modal": "通知すべて削除の確認"
+    "notification_delete_all_confirm_modal": "通知すべて削除の確認",
+    "member_notification_list": {
+      "delete_confirm_modal": "会員通知削除確認",
+      "bulk_delete_confirm_modal": "会員通知一括削除確認"
+    }
+  },
+  "member_notification": {
+    "page_title": "会員通知ボックス",
+    "page_description": "会員が受け取った通知（受信ボックス）を確認および削除します。",
+    "search_placeholder": "検索キーワードを入力してください",
+    "total_count": "合計 {{count}} 件",
+    "col_created_at": "受信日時",
+    "col_member": "会員",
+    "col_type": "種類",
+    "col_subject": "件名",
+    "col_read_at": "既読",
+    "deleted_member": "削除された会員",
+    "empty_message": "確認された通知がありません。",
+    "badge": {
+      "read": "既読",
+      "unread": "未読"
+    },
+    "filter": {
+      "search_type_all": "すべて",
+      "search_type_recipient": "受信者",
+      "search_type_subject": "件名",
+      "search_type_body": "本文",
+      "read_label": "既読ステータス",
+      "read_all": "すべて",
+      "read_unread": "未読",
+      "read_read": "既読",
+      "created_label": "受信期間",
+      "member_filter_notice": "特定の会員の通知のみ表示しています。",
+      "member_filter_clear": "会員フィルターを解除",
+      "search_button": "検索",
+      "reset_button": "初期化"
+    },
+    "sort": {
+      "created_at_desc": "最新順",
+      "created_at_asc": "古い順",
+      "read_at_desc": "既読順"
+    },
+    "detail": {
+      "body_label": "本文",
+      "no_body": "本文内容がありません。",
+      "type_label": "通知タイプ:",
+      "url_label": "接続アドレス:"
+    },
+    "action": {
+      "view_member": "会員情報を表示",
+      "filter_by_member": "この会員の通知のみ表示"
+    },
+    "delete": {
+      "button": "削除",
+      "selected_count": "{{count}} 件選択",
+      "bulk_button": "選択削除",
+      "confirm_title": "通知削除",
+      "confirm_message": "選択した通知を削除してもよろしいですか？会員の通知ボックスからも削除され、元に戻すことはできません。",
+      "success": "通知が削除されました。",
+      "bulk_confirm_title": "通知一括削除確認",
+      "bulk_confirm_message": "選択したすべての通知を削除してもよろしいですか？会員の通知ボックスからも削除され、元に戻すことはできません。",
+      "bulk_success": "選択した通知がすべて削除されました。"
+    }
   }
 }

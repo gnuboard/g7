@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 이슈 #492(공개 #74) 깊은 OFFSET 목록 페이지네이션 SSoT. axes cross product(수백 조합 × 26개 호출처)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(트레이트 단위 + 호출 계약 전수 스캔 + 도메인별 저장소 회귀 + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required 룰이 별도 강제(면제 대상 아님) — scale.assert 는 @scale 마킹으로 전수 커버.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 이슈 #492(공개 #74) 깊은 OFFSET 목록 페이지네이션 SSoT. axes cross product(수백 조합 × 26개 호출처)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(트레이트 단위 + 호출 계약 전수 스캔 + 도메인별 저장소 회귀 + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required 룰이 별도 강제(면제 대상 아님) — scale.assert 는 @scale 마킹으로 전수 커버.
 
 feature: deep_offset_pagination
 

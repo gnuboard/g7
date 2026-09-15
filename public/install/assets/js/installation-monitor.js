@@ -160,6 +160,14 @@
      * 1초 간격으로 state를 조회하고 diff 발생 시 콜백을 호출합니다.
      */
     class PollingMonitor extends InstallationMonitor {
+        /**
+         * 응답 파싱 연속 실패 허용 횟수.
+         *
+         * 일시적 오류로 사용자를 놀라게 하지 않을 만큼 크고,
+         * 서버가 계속 빈 본문을 돌려주는 상황에서 사용자를 무한정 기다리게 하지 않을 만큼 작다.
+         */
+        static MAX_PARSE_FAILURES = 5;
+
         constructor(callbacks, options = {}) {
             super(callbacks, options);
             this.stateUrl = options.stateUrl;
@@ -177,6 +185,10 @@
             this.lastUpdatedSeen = null;
             this.lastUpdatedClientMs = Date.now();
             this.stuckEmitted = false;
+            // 응답 파싱 연속 실패 횟수 — 성공 시 0 으로 리셋한다.
+            // 서버가 빈 본문/비 JSON 을 계속 돌려주면 콘솔 경고만 무한히 쌓이고
+            // 화면에는 아무 일도 일어나지 않는다 (gnuboard/g7#62). 임계치에서 사용자에게 알린다.
+            this.parseFailures = 0;
         }
 
         start() {
@@ -203,7 +215,31 @@
                 if (!res.ok) {
                     return; // 일시적인 네트워크 오류는 무시 (다음 tick에서 재시도)
                 }
-                const state = await res.json();
+                const text = await res.text();
+
+                let state;
+                try {
+                    state = JSON.parse(text);
+                } catch (parseError) {
+                    this.parseFailures += 1;
+                    console.warn('[PollingMonitor] poll response was not JSON:', this.parseFailures, parseError);
+
+                    if (this.parseFailures >= PollingMonitor.MAX_PARSE_FAILURES) {
+                        this.stop();
+                        this._invoke('onError', {
+                            message: null,
+                            message_key: 'error_polling_response_invalid',
+                            error: null,
+                            task: null,
+                            target: null,
+                            manual_commands: null,
+                            parse_failures: this.parseFailures,
+                        });
+                    }
+                    return;
+                }
+
+                this.parseFailures = 0;
                 this._diffAndEmit(state);
             } catch (e) {
                 console.warn('[PollingMonitor] poll failed:', e);

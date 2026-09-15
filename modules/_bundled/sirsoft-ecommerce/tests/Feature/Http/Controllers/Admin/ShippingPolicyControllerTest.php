@@ -552,9 +552,9 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'amount',
             'tiers' => [
-                ['min' => 0, 'max' => 29999, 'fee' => 3000, 'unit' => '원'],
-                ['min' => 30000, 'max' => 49999, 'fee' => 2000, 'unit' => '원'],
-                ['min' => 50000, 'max' => null, 'fee' => 0, 'unit' => '원'],
+                ['min' => 0, 'max' => 30000, 'fee' => 3000],
+                ['min' => 30000, 'max' => 50000, 'fee' => 2000],
+                ['min' => 50000, 'max' => null, 'fee' => 0],
             ],
         ];
 
@@ -586,8 +586,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'quantity',
             'tiers' => [
-                ['min' => 0, 'max' => 4, 'fee' => 3000, 'unit' => '개'],
-                ['min' => 5, 'max' => null, 'fee' => 5000, 'unit' => '개'],
+                ['min' => 0, 'max' => 4, 'fee' => 3000],
+                ['min' => 5, 'max' => null, 'fee' => 5000],
             ],
         ];
 
@@ -614,8 +614,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'weight',
             'tiers' => [
-                ['min' => 0, 'max' => 2, 'fee' => 3000, 'unit' => 'kg'],
-                ['min' => 3, 'max' => null, 'fee' => 5000, 'unit' => 'kg'],
+                ['min' => 0, 'max' => 2, 'fee' => 3000],
+                ['min' => 2, 'max' => null, 'fee' => 5000],
             ],
         ];
 
@@ -642,8 +642,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'volume',
             'tiers' => [
-                ['min' => 0, 'max' => 99, 'fee' => 5000, 'unit' => 'cm³'],
-                ['min' => 100, 'max' => null, 'fee' => 10000, 'unit' => 'cm³'],
+                ['min' => 0, 'max' => 100, 'fee' => 5000],
+                ['min' => 100, 'max' => null, 'fee' => 10000],
             ],
         ];
 
@@ -670,8 +670,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'volume_weight',
             'tiers' => [
-                ['min' => 0, 'max' => 4, 'fee' => 5000, 'unit' => 'kg'],
-                ['min' => 5, 'max' => null, 'fee' => 10000, 'unit' => 'kg'],
+                ['min' => 0, 'max' => 5, 'fee' => 5000],
+                ['min' => 5, 'max' => null, 'fee' => 10000],
             ],
         ];
 
@@ -698,7 +698,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $payload = $this->makeStorePayload([], [
             $this->makeKrCountrySetting([
                 'charge_policy' => 'api',
-                'base_fee' => 0,
+                // API 정책의 base_fee 는 외부 API 장애 시 폴백 배송비 (0 금지)
+                'base_fee' => 30000,
                 'api_endpoint' => 'https://api.example.com/shipping/calculate',
                 // 후보 5종(ShippingApiRequestField) SSoT 내 값만 허용 (W3 Rule::in)
                 'api_request_fields' => ['items', 'group_total', 'total_quantity'],
@@ -1034,7 +1035,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
                     'type' => 'amount',
                     'tiers' => [
                         ['min' => 0, 'max' => 50000, 'fee' => 3000],
-                        ['min' => 50001, 'max' => null, 'fee' => 0],
+                        ['min' => 50000, 'max' => null, 'fee' => 0],
                     ],
                 ],
             ]),
@@ -1378,6 +1379,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
      * 배송정책 상세 조회 - country_settings 포함
      *
      * @scenario endpoint=detail,opt_in=default
+     *
      * @effects detail_still_provides_full_country_settings
      */
     #[Test]

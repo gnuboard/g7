@@ -59,6 +59,13 @@
       "telecom_number_placeholder": "부가통신 사업자번호",
       "postcode_plugin_required": "다음 우편번호 플러그인이 설치되지 않았거나 비활성화 상태입니다. 관리자 > 플러그인에서 활성화해주세요."
     },
+    "public_asset_storage": {
+      "title": "공개 자산 스토리지",
+      "description": "상품·카테고리·리뷰 이미지 등 이 모듈의 완전 공개 자산 저장 디스크를 설정합니다.",
+      "disk": "공개 자산 디스크",
+      "follow_core": "코어 설정 따름",
+      "help": "이 모듈만 다른 디스크를 쓰려면 선택합니다. 비우면 코어 환경설정의 공개 자산 스토리지 설정을 따릅니다."
+    },
     "inquiry_settings": {
       "title": "1:1 문의게시판 설정",
       "description": "상품 1:1 문의 기능을 설정합니다.",
@@ -145,6 +152,7 @@
       "min_order_amount": "최소 주문금액",
       "is_active": "사용여부",
       "orphaned_badge": "플러그인 미설치",
+      "orphaned_pg_badge": "지정 PG 삭제됨",
       "remove_orphaned": "삭제",
       "pg_provider": "PG사",
       "pg_use_default": "기본 PG",
@@ -205,7 +213,10 @@
       "toggle_description": "입금대기 상태의 주문을 지정 기간 후 자동으로 취소합니다.",
       "toggle_hint": "비활성화하면 입금대기 주문이 자동 취소되지 않습니다.",
       "days_prefix": "입금대기 상태의 주문건은 주문일 포함",
-      "days_suffix": "일 이후 자동 취소됩니다."
+      "days_suffix": "일 이후 자동 취소됩니다.",
+      "pending_minutes_prefix": "결제창까지 갔으나 결제가 끝나지 않은 주문은",
+      "pending_minutes_suffix": "분 이후 자동 취소됩니다.",
+      "pending_minutes_hint": "0 으로 두면 이 부류는 자동 취소하지 않습니다. 최대 20160분(14일)."
     },
     "cart_expiry": {
       "title": "장바구니 유효기간",

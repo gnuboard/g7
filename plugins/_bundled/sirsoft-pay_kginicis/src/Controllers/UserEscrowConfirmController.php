@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +13,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 /**
@@ -21,9 +25,11 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
  */
 class UserEscrowConfirmController extends Controller
 {
-    private const PC_JS_URL_TEST  = 'https://stgstdpay.inicis.com/stdjs/INIStdPay_escrow_conf.js';
-    private const PC_JS_URL_LIVE  = 'https://stdpay.inicis.com/stdjs/INIStdPay_escrow_conf.js';
-    private const MOBILE_PAY_URL  = 'https://mobile.inicis.com/smart/payment/';
+    private const PC_JS_URL_TEST = 'https://stgstdpay.inicis.com/stdjs/INIStdPay_escrow_conf.js';
+
+    private const PC_JS_URL_LIVE = 'https://stdpay.inicis.com/stdjs/INIStdPay_escrow_conf.js';
+
+    private const MOBILE_PAY_URL = 'https://mobile.inicis.com/smart/payment/';
 
     public function __construct(
         private readonly KgInicisApiService $apiService,
@@ -36,6 +42,7 @@ class UserEscrowConfirmController extends Controller
      * @param  string  $orderNumber
      * @return Response
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — 에스크로 확인 HTML 화면 렌더 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): Response
     {
         $payment = $this->findEscrowPayment($orderNumber, (int) Auth::id());
@@ -59,24 +66,25 @@ class UserEscrowConfirmController extends Controller
      * @param  Request  $request
      * @return Response
      */
+    // audit:allow controller-base-request-injection reason: PG(이니시스)가 POST 하는 콜백 표면 — 필드 구성이 PG 소유라 계약을 닫을 수 없다. 값은 문자열 캐스팅 후 tid 대조를 거쳐 payment_meta 에 영속된다(서명 검증 없는 무인증 콜백이라 기록 위조 여지가 있는 사전 상태 — 표시용 메타이며 금액·상태 전이에는 미사용)
     public function pcReturn(Request $request): Response
     {
         $resultCode = (string) $request->input('ResultCode', '');
-        $tid        = (string) $request->input('tid', '');
+        $tid = (string) $request->input('tid', '');
 
         Log::info('KG Inicis: escrow PC confirm return', [
             'result_code' => $resultCode,
-            'tid'         => $tid,
+            'tid' => $tid,
         ]);
 
         $this->saveConfirmResult($tid, [
-            'type'        => $resultCode === '00' ? 'confirm' : 'deny',
+            'type' => $resultCode === '00' ? 'confirm' : 'deny',
             'result_code' => $resultCode,
-            'cnf_date'    => (string) $request->input('CNF_Date', ''),
-            'cnf_time'    => (string) $request->input('CNF_Time', ''),
-            'dny_date'    => (string) $request->input('DNY_Date', ''),
-            'dny_time'    => (string) $request->input('DNY_Time', ''),
-            'dny_msg'     => (string) $request->input('DNY_DenyMsg', ''),
+            'cnf_date' => (string) $request->input('CNF_Date', ''),
+            'cnf_time' => (string) $request->input('CNF_Time', ''),
+            'dny_date' => (string) $request->input('DNY_Date', ''),
+            'dny_time' => (string) $request->input('DNY_Time', ''),
+            'dny_msg' => (string) $request->input('DNY_DenyMsg', ''),
         ]);
 
         // 팝업 닫기 + 부모 창 새로고침
@@ -101,40 +109,41 @@ class UserEscrowConfirmController extends Controller
      * @param  Request  $request
      * @return RedirectResponse
      */
+    // audit:allow controller-base-request-injection reason: PG(이니시스 모바일)가 POST 하는 콜백 표면 — 필드 구성이 PG 소유라 계약을 닫을 수 없다. 값은 문자열 캐스팅 후 tid 대조를 거쳐 payment_meta 에 영속된다(서명 검증 없는 무인증 콜백이라 기록 위조 여지가 있는 사전 상태 — 표시용 메타이며 금액·상태 전이에는 미사용)
     public function mobileReturn(Request $request): RedirectResponse
     {
-        $status   = (string) $request->input('P_STATUS', '');
-        $tid      = (string) $request->input('P_ESCROW_TID', '');
+        $status = (string) $request->input('P_STATUS', '');
+        $tid = (string) $request->input('P_ESCROW_TID', '');
         $clStatus = (string) $request->input('P_CL_STATUS', '');
-        $rmesg    = (string) $request->input('P_RMESG1', '');
+        $rmesg = (string) $request->input('P_RMESG1', '');
 
         Log::info('KG Inicis: escrow mobile confirm return', [
-            'status'    => $status,
-            'tid'       => $tid,
+            'status' => $status,
+            'tid' => $tid,
             'cl_status' => $clStatus,
         ]);
 
         $orderNumber = $this->saveConfirmResult($tid, [
-            'type'        => $status === '00' ? 'confirm' : 'deny',
+            'type' => $status === '00' ? 'confirm' : 'deny',
             'result_code' => $status,
-            'cl_status'   => $clStatus,
-            'result_msg'  => $rmesg,
+            'cl_status' => $clStatus,
+            'result_msg' => $rmesg,
         ]);
 
-        return redirect($orderNumber ? '/mypage/orders/' . $orderNumber : '/mypage/orders');
+        return redirect($orderNumber ? '/mypage/orders/'.$orderNumber : '/mypage/orders');
     }
 
     // ──────────────────────────── Private ────────────────────────────
 
     private function pcConfirmPage(string $tid): Response
     {
-        $isTest    = $this->apiService->isTestMode();
-        $mid       = $this->apiService->getMid();
-        $mKey      = $this->apiService->getEscrowConfirmMKey();
+        $isTest = $this->apiService->isTestMode();
+        $mid = $this->apiService->getMid();
+        $mKey = $this->apiService->getEscrowConfirmMKey();
         $timestamp = (string) round(microtime(true) * 1000);
-        $jsUrl     = $isTest ? self::PC_JS_URL_TEST : self::PC_JS_URL_LIVE;
+        $jsUrl = $isTest ? self::PC_JS_URL_TEST : self::PC_JS_URL_LIVE;
         $returnUrl = url('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/pc/return');
-        $closeUrl  = url('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/close');
+        $closeUrl = url('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/close');
 
         $html = <<<HTML
         <!DOCTYPE html>
@@ -173,9 +182,9 @@ class UserEscrowConfirmController extends Controller
 
     private function mobileConfirmPage(string $tid): Response
     {
-        $mid     = $this->apiService->getMid();
+        $mid = $this->apiService->getMid();
         $nextUrl = url('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/mobile/return');
-        $payUrl  = self::MOBILE_PAY_URL;
+        $payUrl = self::MOBILE_PAY_URL;
 
         $html = <<<HTML
         <!DOCTYPE html>
@@ -222,8 +231,9 @@ class UserEscrowConfirmController extends Controller
             return null;
         }
 
-        $row = DB::table('ecommerce_order_payments as p')
-            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $row = DB::table((new OrderPayment)->getTable().' as p')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
             ->where('p.transaction_id', $tid)
             ->where('p.pg_provider', 'kginicis')
             ->where('p.is_escrow', true)
@@ -232,6 +242,7 @@ class UserEscrowConfirmController extends Controller
 
         if (! $row) {
             Log::warning('KG Inicis: escrow confirm — payment not found', ['tid' => $tid]);
+
             return null;
         }
 
@@ -241,17 +252,18 @@ class UserEscrowConfirmController extends Controller
             $data,
         );
 
-        DB::table('ecommerce_order_payments')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        DB::table((new OrderPayment)->getTable())
             ->where('id', $row->id)
             ->update([
                 'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                'updated_at'   => now(),
+                'updated_at' => now(),
             ]);
 
         Log::info('KG Inicis: escrow confirm saved', [
             'order_number' => $row->order_number,
-            'tid'          => $tid,
-            'type'         => $data['type'] ?? '',
+            'tid' => $tid,
+            'type' => $data['type'] ?? '',
         ]);
 
         return $row->order_number;
@@ -259,8 +271,9 @@ class UserEscrowConfirmController extends Controller
 
     private function findEscrowPayment(string $orderNumber, int $userId): ?object
     {
-        return DB::table('ecommerce_order_payments as p')
-            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        return DB::table((new OrderPayment)->getTable().' as p')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('o.user_id', $userId)
             ->where('p.pg_provider', 'kginicis')

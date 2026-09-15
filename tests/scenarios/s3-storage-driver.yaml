@@ -1,0 +1,74 @@
+feature: S3 스토리지 드라이버 실동작 (공개 #99 / 내부 #563)
+
+description: |
+  관리자 > 환경설정 > 드라이버의 S3 선택이 실제 파일 저장으로 이어지게 하는 결함 수정.
+
+  핵심 동작:
+    - league/flysystem-aws-s3-v3 / predis 코어 의존성 포함 (해석 시점 즉사 소멸)
+    - s3_endpoint / s3_use_path_style 신설 → filesystems.disks.s3.{endpoint,use_path_style_endpoint} 주입
+      (S3 호환 스토리지 R2/MinIO/NCP 연결 경로)
+    - s3_region 3중 하드코딩 제거 → 형식 검증(regex ^[a-z0-9-]+$, max 64) 완화
+    - 드라이버 가용성 서버 게이트: 어댑터 클래스/PHP 확장 부재 드라이버 저장·테스트 422
+    - 코어 첨부 업로드 디스크: ATTACHMENT_DISK env > storage_driver=s3 → s3 > attachments
+      (기존 행은 행 disk 서빙 — 혼재 안전)
+    - 연결 테스트: 어댑터 선검사 + endpoint/path-style 반영, websocket 은 client/server
+      양측 endpoint probe (백엔드 발송은 server endpoint 사용)
+
+axes:
+  region_shape: [aws_region, auto, custom_minio, invalid_format]
+  endpoint: [absent, custom_url, path_style]
+  driver_usability: [adapter_present, adapter_absent]
+  attachment_disk: [env_override, follow_s3, local_default]
+
+exclusions:
+  - { region_shape: invalid_format, endpoint: custom_url, reason: "리전 검증이 선행 422 — endpoint 축 도달 전 차단" }
+  - { region_shape: invalid_format, endpoint: path_style, reason: "동일" }
+  - { region_shape: invalid_format, attachment_disk: env_override, reason: "저장 실패 시 디스크 전환 미발생" }
+  - { region_shape: invalid_format, attachment_disk: follow_s3, reason: "동일" }
+  - { driver_usability: adapter_absent, endpoint: custom_url, reason: "가용성 게이트가 선행 422 — 어댑터는 코어 필수 의존성이라 부재 상태는 memcached 확장 축으로 대변" }
+  - { driver_usability: adapter_absent, endpoint: path_style, reason: "동일" }
+  - { driver_usability: adapter_absent, attachment_disk: follow_s3, reason: "저장 차단 시 디스크 전환 미발생" }
+  - { driver_usability: adapter_absent, attachment_disk: env_override, reason: "동일" }
+  - { driver_usability: adapter_absent, region_shape: invalid_format, reason: "리전 검증이 선행 422 — 가용성 축 도달 전 차단" }
+  - { driver_usability: adapter_absent, region_shape: auto, reason: "가용성 게이트는 드라이버 ID 만 판정 — 리전 값과 직교, aws_region 대표 조합으로 검증" }
+  - { driver_usability: adapter_absent, region_shape: custom_minio, reason: "동일" }
+  - { attachment_disk: env_override, region_shape: auto, reason: "디스크 전환 판정은 storage_driver 값만 본다 — 리전·endpoint 와 직교, aws_region×absent 대표 조합으로 검증" }
+  - { attachment_disk: env_override, region_shape: custom_minio, reason: "동일" }
+  - { attachment_disk: env_override, endpoint: custom_url, reason: "동일" }
+  - { attachment_disk: env_override, endpoint: path_style, reason: "동일" }
+  - { attachment_disk: follow_s3, region_shape: auto, reason: "디스크 전환 판정은 storage_driver 값만 본다 — aws_region×absent(단위)·custom_minio×path_style(Feature 왕복) 두 대표 조합으로 검증" }
+  - { attachment_disk: follow_s3, endpoint: custom_url, reason: "동일" }
+  - { attachment_disk: follow_s3, region_shape: aws_region, endpoint: path_style, reason: "동일" }
+  - { attachment_disk: follow_s3, region_shape: custom_minio, endpoint: absent, reason: "동일" }
+  - { region_shape: auto, endpoint: absent, reason: "R2 의 auto 리전은 커스텀 endpoint 전제 — endpoint 없는 auto 는 실사용 조합이 아님" }
+  - { region_shape: auto, endpoint: path_style, reason: "R2 는 virtual-host 스타일 — path_style 조합은 custom_minio 축이 대표" }
+  - { region_shape: custom_minio, endpoint: absent, reason: "MinIO 리전 값은 커스텀 endpoint 전제 — endpoint 없는 조합은 실사용이 아님" }
+  - { region_shape: custom_minio, endpoint: custom_url, reason: "MinIO 는 path-style 대표 조합으로 검증 — virtual-host 모드도 endpoint 주입 경로는 동일" }
+
+effects:
+  - s3_disk_resolves
+  - endpoint_injected
+  - attachment_upload_follows_driver
+  - unusable_driver_rejected
+  - invalid_region_rejected
+  - test_covers_server_websocket
+  - unauthenticated_returns_401
+  # E2E/렌더 표면 효과 (Playwright·Vitest 가 마킹)
+  - region_free_input_mounted
+  - endpoint_field_mounted
+  - path_style_toggle_mounted
+  - local_roundtrip_preserves_new_keys
+
+# E2E 표면 명세 (문서화) — 커버리지 집계는 아래 test_files 의 @scenario/@effects 마킹이 담당
+e2e:
+  surfaces: [region_free_input, endpoint_field, path_style_toggle, save_gating]
+
+test_files:
+  - tests/Playwright/specs/admin/settings-drivers-s3-endpoint.spec.ts
+  - tests/Unit/Providers/SettingsServiceProviderS3ConfigTest.php
+  - tests/Unit/Services/DriverConnectionTesterTest.php
+  - tests/Unit/Services/DriverRegistryServiceUsabilityTest.php
+  - tests/Feature/Api/Admin/SettingsControllerS3ValidationTest.php
+  - tests/Feature/Api/Public/AttachmentS3DiskServingTest.php
+  - tests/Unit/Services/TemplateLayoutAttachmentServingTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-drivers-s3-fields.test.tsx

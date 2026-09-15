@@ -214,6 +214,24 @@ interface CommentRepositoryInterface
     public function restoreCascadedByPostId(string $slug, int $postId): int;
 
     /**
+     * 여러 게시글의 살아있는 댓글을 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $postIds  게시글 ID 배열
+     * @return int 삭제된 댓글 수
+     */
+    public function softDeleteByPostIds(string $slug, array $postIds): int;
+
+    /**
+     * 여러 게시글의 cascade 로 지워진 댓글만 일괄 복원합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $postIds  게시글 ID 배열
+     * @return int 복원된 댓글 수
+     */
+    public function restoreCascadedByPostIds(string $slug, array $postIds): int;
+
+    /**
      * 사용자가 작성한 댓글 목록을 페이지네이션하여 조회합니다.
      *
      * @param  int  $userId  사용자 ID

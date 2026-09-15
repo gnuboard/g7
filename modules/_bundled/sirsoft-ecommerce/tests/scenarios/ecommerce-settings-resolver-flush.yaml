@@ -1,0 +1,35 @@
+feature: 설정 저장이 리졸버 캐시에 도달하는 경로 (B-6)
+
+description: |
+  설정을 저장한 뒤 같은 요청 안에서 그 값을 읽는 코드가 있다. 그런데 SettingsService 가
+  컨테이너에 singleton 으로 묶여 있지 않으면, 저장한 인스턴스와 읽는 인스턴스가 서로 다른
+  객체가 된다 — 저장은 성공하고, 바로 뒤의 조회만 옛 값을 돌려준다.
+
+  더 조용한 형태가 captive dependency 다. 생성자에서 SettingsService 를 받아 둔 서비스는
+  컨테이너를 다시 거치지 않으므로, singleton 으로 바꾼 뒤에도 그 서비스만 자기 사본을
+  붙들고 있을 수 있다. 그래서 "컨테이너에서 두 번 꺼내 같은 객체인가" 와 "생성자로 받아 둔
+  객체도 같은가" 를 따로 본다.
+
+  반대 방향의 위험도 있다. 저장 시점에 리졸버를 무조건 깨우면(`app(X)->flush()`), 그 요청에서
+  쓰지도 않을 서비스가 인스턴스화되어 부팅 비용이 늘고 부작용이 생긴다. 아직 해석되지 않은
+  서비스는 건드리지 않아야 한다.
+
+axis_notes:
+  resolution: |
+    저장 시점에 대상 서비스가 어떤 상태였는가. container = 컨테이너에서 해석된 상태.
+    captive_dependency = 다른 서비스의 생성자에 붙들린 사본. not_resolved = 아직 해석되지 않음
+    (건드리지 않아야 하는 케이스).
+    저장 경로(벌크/단건)와 대상 서비스(결제수단/통화)는 조합이 아니라 같은 계약의 반복이라
+    effects 로 판정한다 — 축으로 두면 전개만 늘고 검증 내용은 같아진다.
+
+axes:
+  resolution: [container, captive_dependency, not_resolved]
+
+effects:
+  - settings_service_shared_instance            # 컨테이너 해석분과 주입된 사본이 동일 객체
+  - payment_resolver_reflects_saved_catalog     # 저장 직후 결제수단 리졸버가 새 카탈로그를 본다
+  - currency_service_reflects_saved_settings    # 저장 직후 통화 서비스가 새 설정을 본다
+  - unresolved_services_not_instantiated_on_save  # 해석 안 된 서비스는 저장이 깨우지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SettingsSaveFlushesResolversTest.php

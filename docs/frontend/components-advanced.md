@@ -179,14 +179,13 @@ Pro 버전 아이콘은 라이선스가 필요하므로 사용할 수 없습니�
     {
       "id": "fontawesome",
       "type": "style",
-      "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
-      "preconnect": "https://cdnjs.cloudflare.com"
+      "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
     }
   ]
 }
 ```
 
-Font Awesome은 컴포넌트에서 직접 import하지 않고, admin/user 템플릿의 `template.json` `externals`에 선언해 Blade가 최초 HTML에서 로드합니다.
+Font Awesome은 컴포넌트에서 직접 import하지 않고, admin/user 템플릿의 `template.json` `externals`에 선언해 Blade가 최초 HTML에서 로드합니다. 구동에 필요한 에셋은 자체 제공이 원칙이므로 `dist/vendor/{lib}/{version}/`에 동봉한 파일을 `asset`으로 가리킵니다 — 제3자 CDN에서 실시간으로 받으면 도달 실패가 예외도 로그도 없이 아이콘만 사라집니다.
 
 ### 아이콘 사용 방법
 
@@ -347,6 +346,12 @@ bindingType 미등록 시: boolean 값이 checked로 바인딩되지 않음
 ```
 
 **components.json 등록 형식**:
+
+```html
+<json key="components">[{"name":"ComponentName","type":"composite","description":"컴포넌트 설명","path":"src/components/composite/ComponentName.tsx","bindingType":"checked | checkable | 미지정","props":{"propName":{"type":"string","required":true,"description":"prop 설명"}}}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

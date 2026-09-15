@@ -18,8 +18,10 @@ import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/counter.css';
 import 'yet-another-react-lightbox/plugins/thumbnails.css';
 
+import { secretContentHeaders } from '../../support/secretContentHeaders';
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
+import { isCrossOriginAssetUrl } from './assetOrigin';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
@@ -94,8 +96,11 @@ export interface ImageGalleryProps {
  */
 const downloadAuthenticatedFile = async (url: string, filename: string): Promise<void> => {
   try {
+    // 비밀글 첨부는 서버가 열람 권한을 재확인한다. globalHeaders 는 이 경로에 적용되지
+    // 않으므로 열람 확인 토큰을 여기서 직접 싣는다 (없으면 빈 객체라 영향 없음).
     const blob = await G7Core.api.get(url, {
       responseType: 'blob',
+      headers: secretContentHeaders(),
     });
 
     if (blob) {
@@ -134,7 +139,9 @@ export const executeImageDownload = async (image: GalleryImage): Promise<void> =
   const downloadUrl = image.downloadUrl || image.src;
   const filename = image.filename || image.title || 'image';
 
-  if (image.downloadRequiresAuth) {
+  // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
+  // 인증 XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 일반 링크 다운로드를 쓴다.
+  if (image.downloadRequiresAuth && !isCrossOriginAssetUrl(downloadUrl)) {
     await downloadAuthenticatedFile(downloadUrl, filename);
   } else {
     downloadFile(downloadUrl, filename);

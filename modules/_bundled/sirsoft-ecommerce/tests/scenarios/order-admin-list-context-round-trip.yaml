@@ -22,7 +22,6 @@ effects:
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-admin-list-context-round-trip.spec.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-list-context-round-trip.test.ts
-  - .claude/scripts/audit/__tests__/layout-list-context-navigate-merge-query.test.cjs
 
 validation:
   note: |

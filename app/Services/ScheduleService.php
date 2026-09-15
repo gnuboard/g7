@@ -122,13 +122,16 @@ class ScheduleService
     public function delete(Schedule $schedule): bool
     {
         try {
-            // before_delete 훅 실행
-            HookManager::doAction('core.schedule.before_delete', $schedule);
+            // 이력만 지워지고 스케줄은 남는 상태를 막기 위해 두 단계를 하나로 묶는다.
+            $result = DB::transaction(function () use ($schedule) {
+                // before_delete 훅 실행
+                HookManager::doAction('core.schedule.before_delete', $schedule);
 
-            // 실행 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
-            $schedule->histories()->delete();
+                // 실행 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
+                $schedule->histories()->delete();
 
-            $result = $this->scheduleRepository->delete($schedule);
+                return $this->scheduleRepository->delete($schedule);
+            });
 
             // after_delete 훅 실행
             HookManager::doAction('core.schedule.after_delete', $schedule->id);
@@ -486,6 +489,26 @@ class ScheduleService
         return [
             'deleted_count' => $deletedCount,
         ];
+    }
+
+    /**
+     * 보존 기간이 지난 실행 이력을 정리합니다 (자동 파기).
+     *
+     * 운영자가 고른 ID 를 지우는 bulkDeleteHistory 와 달리 대상을 기간으로 정하고
+     * 사람 없이 예약 실행되므로 별개의 훅을 발행합니다.
+     *
+     * @param  int  $days  보존 기간 (일)
+     * @return int 삭제된 건수
+     */
+    public function pruneHistory(int $days): int
+    {
+        HookManager::doAction('core.schedule.before_prune_history', $days);
+
+        $deletedCount = $this->historyRepository->deleteOlderThan($days);
+
+        HookManager::doAction('core.schedule.after_prune_history', $days, $deletedCount);
+
+        return $deletedCount;
     }
 
     /**

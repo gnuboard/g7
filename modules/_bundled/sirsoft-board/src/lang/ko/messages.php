@@ -44,6 +44,7 @@ return [
         'secret_password_incorrect' => '비밀글 비밀번호가 일치하지 않습니다.',
         // 비밀글 필터링 메시지
         'secret_post_content' => '비밀글입니다. 내용을 보려면 비밀번호를 입력해 주세요.',
+        'secret_post_title' => '비밀글',
         'deleted_post_title' => '삭제된 게시글',
         'deleted_post_content' => '삭제된 게시글입니다.',
         'blinded_post_content' => '관리자에 의해 블라인드 처리된 게시글입니다.',
@@ -122,6 +123,7 @@ return [
         // 댓글 작성 가능 여부
         'post_blinded' => '블라인드 처리된 게시글에는 댓글을 작성할 수 없습니다.',
         'post_deleted' => '삭제된 게시글에는 댓글을 작성할 수 없습니다.',
+        'post_secret' => '열람 권한이 없는 비밀글에는 댓글을 작성할 수 없습니다.',
     ],
 
     // 반응(추천/비추천) 관련 메시지
@@ -239,6 +241,7 @@ return [
         'permission_denied' => '권한이 없습니다.',
         'validation_failed' => '입력값이 올바르지 않습니다.',
         'duplicate_report' => '이미 신고한 내역이 있습니다.',
+        'operation_failed' => '작업 처리 중 오류가 발생했습니다.',
     ],
 
     // 경고 메시지 (Warning)
@@ -294,6 +297,36 @@ return [
         // 모달 안내 메시지
         'blinded_will_be_public' => '블라인드 처리된 게시물 {count}건이 공개로 전환됩니다.',
         'already_reported' => '이미 신고한 게시물입니다.',
+    ],
+
+    // 스크랩(북마크) 작업 메시지
+    'scrap' => [
+        'added' => '게시글을 스크랩했습니다.',
+        'removed' => '스크랩을 해제했습니다.',
+        'toggle_failed' => '스크랩 처리에 실패했습니다.',
+        'retrieved' => '스크랩 목록을 조회했습니다.',
+        'retrieve_failed' => '스크랩 목록 조회에 실패했습니다.',
+        'delete_failed' => '스크랩 삭제에 실패했습니다.',
+        'not_found' => '스크랩을 찾을 수 없습니다.',
+        'scrap_disabled' => '이 게시판은 스크랩 기능이 비활성화되어 있습니다.',
+        'post_not_found' => '게시글을 찾을 수 없습니다.',
+        'bulk_removed' => ':count개의 스크랩을 해제했습니다.',
+        'admin' => [
+            'retrieved' => '스크랩 목록을 조회했습니다.',
+            'retrieve_failed' => '스크랩 목록 조회에 실패했습니다.',
+            'removed' => '스크랩을 삭제했습니다.',
+            'bulk_removed' => ':count개의 스크랩을 삭제했습니다.',
+            'bulk_delete_failed' => '스크랩 일괄 삭제에 실패했습니다.',
+            'permission_denied' => '스크랩 관리 권한이 없습니다.',
+        ],
+    ],
+
+    // 게시글 일괄 처리 메시지
+    'posts_bulk' => [
+        'delete_success' => ':count개의 게시글을 삭제했습니다. (건너뜀 :skipped개)',
+        'blind_success' => ':count개의 게시글을 블라인드 처리했습니다. (건너뜀 :skipped개)',
+        'restore_success' => ':count개의 게시글을 복구했습니다. (건너뜀 :skipped개)',
+        'action_failed' => '게시글 일괄 처리에 실패했습니다.',
     ],
 
     // 게시판 유형 작업 메시지

@@ -1,15 +1,16 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "쇼핑몰 설정 클레임 탭 콘텐츠"
-  },
-  "id": "tab_content_claim",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'claim'}}",
-  "children": [
-    {
-      "partial": "_refund_reason_section.json"
-    }
-  ]
+    "comment": "쇼핑몰 설정 — 클레임(취소·반품·교환) 탭. 기본정보 탭과 같이 폼 자동 바인딩만 쓰므로\n  액션이 없다. 반품 사유 목록은 별도 조각(`_refund_reason_section`)이 맡는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 클레임 탭 콘텐츠"
+    },
+    "id": "tab_content_claim",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'claim'}}",
+    "children": [
+        {
+            "partial": "_refund_reason_section.json"
+        }
+    ]
 }

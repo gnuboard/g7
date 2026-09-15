@@ -1,7 +1,7 @@
 {
+    "comment": "페이지 문서 보기 — 관리자가 만든 정적 문서(이용약관·소개·FAQ 등)를 슬러그로 찾아 보여 준다. 푸터와 드로어의 정보·정책 링크가 모두 이 한 화면으로 온다.",
     "version": "1.0.0",
     "layout_name": "page/show",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "title": "{{page?.data?.seo_meta?.title ?? page?.data?.title ?? '$t:user.page.page_title'}}",
@@ -9,18 +9,22 @@
         "keywords": "{{page?.data?.seo_meta?.keywords ?? ''}}",
         "seo": {
             "enabled": true,
-            "data_sources": ["page"],
             "priority": 0.5,
             "changefreq": "monthly",
+            "data_sources": [
+                "page"
+            ],
             "og": {
                 "type": "website",
                 "title": "{{page.data.title ?? ''}}",
-                "description": "{{page.data.excerpt ?? ''}}"
+                "description": "{{page.data.seo_meta?.description ?? ''}}",
+                "image": "{{page.data.content_thumbnail_url ?? ''}}"
             },
             "structured_data": {
                 "@type": "WebPage",
                 "name": "{{page.data.title ?? ''}}",
-                "description": "{{page.data.excerpt ?? ''}}",
+                "description": "{{page.data.seo_meta?.description ?? ''}}",
+                "image": "{{page.data.content_thumbnail_url ?? ''}}",
                 "datePublished": "{{page.data.created_at ?? ''}}",
                 "dateModified": "{{page.data.updated_at ?? ''}}"
             }
@@ -38,23 +42,25 @@
             "loading_strategy": "blocking",
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "문서 본문 — blocking 이라 이 응답 전에는 아무것도 그리지 않는다(문서 자체가 화면의 전부라 부분 노출이 뜻이 없다). 비로그인도 읽히지만 문서마다 공개 범위가 다를 수 있어 인증은 선택으로 보낸다."
         }
     ],
+    "permissions": [],
     "slots": {
         "content": [
             {
                 "type": "layout",
                 "name": "Container",
-                "props": {
-                    "className": "py-12"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
                             "className": "py-6 px-4"
                         }
                     }
+                },
+                "props": {
+                    "className": "py-12"
                 },
                 "children": [
                     {
@@ -69,15 +75,15 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{page?.data}}",
-                                "props": {
-                                    "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-10"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-5"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-10"
                                 },
                                 "children": [
                                     {
@@ -107,15 +113,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "flex flex-wrap items-center justify-between gap-2 mb-4"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
                                                     "className": "flex flex-wrap items-center justify-between gap-2 mb-3"
                                                 }
                                             }
+                                        },
+                                        "props": {
+                                            "className": "flex flex-wrap items-center justify-between gap-2 mb-4"
                                         },
                                         "children": [
                                             {
@@ -128,15 +134,15 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "H1",
-                                                        "props": {
-                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                                                        },
                                                         "responsive": {
                                                             "portable": {
                                                                 "props": {
                                                                     "className": "text-xl font-bold text-gray-900 dark:text-white"
                                                                 }
                                                             }
+                                                        },
+                                                        "props": {
+                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
                                                         },
                                                         "text": "{{page?.data?.title ?? ''}}"
                                                     },
@@ -182,15 +188,15 @@
                                         "type": "basic",
                                         "name": "P",
                                         "if": "{{page?.data?.published_at}}",
-                                        "props": {
-                                            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
                                                     "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
                                                 }
                                             }
+                                        },
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
                                         },
                                         "text": "$t:user.page.published_at: {{page?.data?.published_at | date}}"
                                     },
@@ -252,13 +258,13 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "space-y-2"
-                                                },
                                                 "iteration": {
                                                     "source": "page?.data?.attachments ?? []",
                                                     "item_var": "att_item",
                                                     "index_var": "att_index"
+                                                },
+                                                "props": {
+                                                    "className": "space-y-2"
                                                 },
                                                 "children": [
                                                     {
@@ -302,7 +308,7 @@
                                                                         "if": "{{!att_item.is_image}}",
                                                                         "props": {
                                                                             "name": "file",
-                                                                            "className": "text-gray-400 text-sm flex-shrink-0"
+                                                                            "className": "text-gray-400 dark:text-gray-500 text-sm flex-shrink-0"
                                                                         }
                                                                     },
                                                                     {
@@ -318,12 +324,9 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Button",
-                                                                "props": {
-                                                                    "type": "button",
-                                                                    "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 bg-transparent border-0 cursor-pointer"
-                                                                },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "첨부 내려받기 — 링크로 열지 않고 핸들러를 거치는 것은 원래 파일명을 되살려 저장하기 위해서다(서버 저장명은 사람이 읽을 수 없다).",
                                                                         "type": "click",
                                                                         "handler": "downloadAttachment",
                                                                         "params": {
@@ -332,6 +335,10 @@
                                                                         }
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 bg-transparent border-0 cursor-pointer"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
@@ -399,10 +406,6 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -412,6 +415,10 @@
                                                         }
                                                     }
                                                 ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -461,9 +468,6 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{page?.data}}",
-                                "props": {
-                                    "className": "mt-8 text-center"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -471,14 +475,13 @@
                                         }
                                     }
                                 },
+                                "props": {
+                                    "className": "mt-8 text-center"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -488,6 +491,10 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",

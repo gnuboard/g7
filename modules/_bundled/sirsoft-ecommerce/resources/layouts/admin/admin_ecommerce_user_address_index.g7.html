@@ -1,0 +1,402 @@
+<!-- 전 회원이 저장해 둔 배송지를 조회하고 정리한다. 조회 조건은 전부 URL 쿼리에 실려 재진입·뒤로가기에서 그대로 재현되고,
+  진입 시 `<init>` 이 그 쿼리를 필터 입력값으로 되돌려 담는다. 회원 상세에서 「목록 보기」로 들어오면
+  `user_uuid` 가 붙고 그때만 상단 배너가 선다 — 전체를 보고 있다고 오해하지 않도록. -->
+<layout name="admin_ecommerce_user_address_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.user_addresses.title" description="$t:sirsoft-ecommerce.admin.user_addresses.description"/>
+  <data-source id="addresses" label_key="$t:sirsoft-ecommerce.editor.data_source.addresses" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/user-addresses" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" sort="{{query.sort || 'created_at_desc'}}" search_field="{{query.search_field || 'member'}}" search_keyword="{{query.search_keyword || ''}}" user_uuid="{{query.user_uuid}}" start_date="{{query.start_date || ''}}" end_date="{{query.end_date || ''}}" is_default="{{query.is_default}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="filter">
+      <field name="searchField" value="member"/>
+      <field name="searchKeyword" value=""/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="isDefault" value=""/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.user-addresses.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>addresses</wait-for>
+  </transition-overlay>
+  <!-- 검색 실행 — 열거한 조건만 URL 로 옮기고 페이지당 개수·정렬은 유지한다. page 는 새 검색이므로 1쪽으로 되돌린다.
+       회원 필터(user_uuid)는 건드리지 않는다 — "이 회원 안에서 검색" 이 자연스럽고 해제는 전용 버튼이 한다 -->
+  <action name="searchadmin_ecommerce_user_address_index">
+    <navigate path="/admin/ecommerce/user-addresses" :mergeQuery="true" :replace="true" transition_overlay_target="addresses_datagrid__body">
+      <query page="" search_field="{{_local.filter.searchField ?? 'member'}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" is_default="{{_local.filter.isDefault ?? ''}}"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="local">
+      <field name="filter">
+        <field name="searchField" value="{{query.search_field || 'member'}}"/>
+        <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+        <field name="startDate" value="{{query.start_date || ''}}"/>
+        <field name="endDate" value="{{query.end_date || ''}}"/>
+        <field name="isDefault" value="{{query.is_default || ''}}"/>
+      </field>
+    </set-state>
+    <!-- 선택은 화면 상태다 — 재진입 시 이전 선택이 남아 있으면 보이지 않는 행이 일괄 삭제에 실린다 -->
+    <set-state target="global" :selectedItems_addresses="[]"/>
+  </init>
+  <slot name="content">
+    <div data-ref="addresses_content" class="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div data-ref="page_header" class="page-header">
+        <div data-ref="page_header_left">
+          <h1 class="page-title">$t:sirsoft-ecommerce.admin.user_addresses.title</h1>
+          <p class="page-description">$t:sirsoft-ecommerce.admin.user_addresses.description</p>
+        </div>
+      </div>
+      <!-- 회원 필터 배너 — 회원 상세에서 건너온 상태를 화면이 말해 주지 않으면 전체 목록으로 읽힌다 -->
+      <div data-ref="member_filter_banner" data-if="{{!!query.user_uuid}}" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 flex items-center gap-2">
+        <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400"/>
+        <span class="text-sm text-blue-700 dark:text-blue-300 flex-1">$t:sirsoft-ecommerce.admin.user_addresses.filters.member_filter_notice</span>
+        <button data-ref="member_filter_clear" type="button" class="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <!-- 회원 한정만 떼고 검색어·기간은 남긴다 — 배너가 말하는 것이 그것뿐이다 -->
+            <navigate path="/admin/ecommerce/user-addresses" :mergeQuery="true" :replace="true" transition_overlay_target="addresses_datagrid__body">
+              <query user_uuid="" page=""/>
+            </navigate>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.user_addresses.filters.member_filter_clear</span>
+        </button>
+      </div>
+      <div data-ref="filter_area" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+        <div data-ref="filter_row" class="flex flex-wrap items-end gap-3">
+          <div data-ref="search_field_group" class="flex flex-col gap-1">
+            <label class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.user_addresses.filters.search_label</label>
+            <select data-ref="search_field_select" class="w-32 text-sm" value="{{_local.filter.searchField ?? 'member'}}">
+              <options>
+                <option value="member">$t:sirsoft-ecommerce.admin.user_addresses.search_fields.member</option>
+                <option value="member_id">$t:sirsoft-ecommerce.admin.user_addresses.search_fields.member_id</option>
+                <option value="email">$t:sirsoft-ecommerce.admin.user_addresses.search_fields.email</option>
+                <option value="recipient">$t:sirsoft-ecommerce.admin.user_addresses.search_fields.recipient</option>
+                <option value="address">$t:sirsoft-ecommerce.admin.user_addresses.search_fields.address</option>
+              </options>
+              <on type="change">
+                <set-state target="local">
+                  <field name="filter">
+                    <field name="searchField" value="{{$event.target.value}}"/>
+                  </field>
+                </set-state>
+              </on>
+            </select>
+          </div>
+          <div data-ref="search_keyword_group" class="flex flex-col gap-1 flex-1 min-w-[200px]">
+            <label class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.user_addresses.filters.keyword_label</label>
+            <input data-ref="search_keyword_input" type="text" class="text-sm" placeholder="$t:sirsoft-ecommerce.admin.user_addresses.filters.keyword_placeholder" value="{{_local.filter.searchKeyword ?? ''}}">
+              <on type="change">
+                <set-state target="local">
+                  <field name="filter">
+                    <field name="searchKeyword" value="{{$event.target.value}}"/>
+                  </field>
+                </set-state>
+              </on>
+              <on type="keypress" key="Enter">
+                <action-ref name="searchadmin_ecommerce_user_address_index"/>
+              </on>
+            </input>
+          </div>
+          <div data-ref="date_range_group" class="flex flex-col gap-1">
+            <label class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.user_addresses.filters.date_label</label>
+            <div class="flex items-center gap-2">
+              <input data-ref="start_date_input" type="date" class="text-sm" value="{{_local.filter.startDate ?? ''}}">
+                <on type="change">
+                  <set-state target="local">
+                    <field name="filter">
+                      <field name="startDate" value="{{$event.target.value}}"/>
+                    </field>
+                  </set-state>
+                </on>
+              </input>
+              <span class="text-gray-400 dark:text-gray-500">~</span>
+              <input data-ref="end_date_input" type="date" class="text-sm" value="{{_local.filter.endDate ?? ''}}">
+                <on type="change">
+                  <set-state target="local">
+                    <field name="filter">
+                      <field name="endDate" value="{{$event.target.value}}"/>
+                    </field>
+                  </set-state>
+                </on>
+              </input>
+            </div>
+          </div>
+          <div data-ref="is_default_filter" class="flex flex-col gap-1">
+            <label class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.user_addresses.filters.is_default_label</label>
+            <select data-ref="is_default_select" class="w-32 text-sm" value="{{_local.filter.isDefault ?? ''}}">
+              <options>
+                <option value="">$t:sirsoft-ecommerce.admin.user_addresses.filters.is_default_all</option>
+                <option value="1">$t:sirsoft-ecommerce.admin.user_addresses.filters.is_default_only</option>
+                <option value="0">$t:sirsoft-ecommerce.admin.user_addresses.filters.is_default_except</option>
+              </options>
+              <on type="change">
+                <set-state target="local">
+                  <field name="filter">
+                    <field name="isDefault" value="{{$event.target.value}}"/>
+                  </field>
+                </set-state>
+              </on>
+            </select>
+          </div>
+          <div data-ref="filter_buttons" class="flex items-center gap-2">
+            <button data-ref="reset_button" type="button" class="px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+              <on type="click">
+                <!-- 초기화 ①  손에 담아 둔 조건과 선택을 먼저 비운다 (URL 만 털면 화면 입력값이 남는다) -->
+                <set-state target="local">
+                  <field name="filter">
+                    <field name="searchField" value="member"/>
+                    <field name="searchKeyword" value=""/>
+                    <field name="startDate" value=""/>
+                    <field name="endDate" value=""/>
+      <field name="isDefault" value=""/>
+                  </field>
+                </set-state>
+              </on>
+              <on type="click">
+                <set-state target="global" :selectedItems_addresses="[]"/>
+              </on>
+              <on type="click">
+                <!-- audit:allow layout-list-context-navigate-merge-query 초기화 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다 -->
+                <navigate path="/admin/ecommerce/user-addresses" :mergeQuery="false"/>
+              </on>
+              <span>$t:sirsoft-ecommerce.admin.user_addresses.filters.reset</span>
+            </button>
+            <button data-ref="search_button" type="button" class="px-4 py-2 text-sm bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 font-medium">
+              <on type="click">
+                <action-ref name="searchadmin_ecommerce_user_address_index"/>
+              </on>
+              <span>$t:sirsoft-ecommerce.admin.user_addresses.filters.search</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div data-ref="bulk_action_bar" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
+        <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.user_addresses.bulk.selected_count|count={{(_global.selectedItems_addresses ?? []).length}}</span>
+        <button data-ref="bulk_delete_button" data-testid="admin-addresses-bulk-delete" type="button" disabled="{{addresses?.data?.abilities?.can_manage !== true || (_global.selectedItems_addresses ?? []).length === 0}}" class="px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <open-modal target="modal_addresses_bulk_delete"/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.user_addresses.bulk.delete</span>
+        </button>
+      </div>
+      <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.user_addresses.table.total_count|count={{addresses?.data?.pagination?.total ?? 0}}</span>
+        <div data-ref="table_header_controls" class="flex items-center gap-3">
+          <select data-ref="sort_select" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+            <options>
+              <option value="created_at_desc">$t:sirsoft-ecommerce.admin.user_addresses.sort.created_at_desc</option>
+              <option value="created_at_asc">$t:sirsoft-ecommerce.admin.user_addresses.sort.created_at_asc</option>
+            </options>
+            <on type="change">
+              <!-- 정렬이 바뀌면 같은 체크가 다른 행을 가리키므로 선택을 먼저 비운다 -->
+              <sequence>
+                <set-state target="global" :selectedItems_addresses="[]"/>
+                <navigate path="/admin/ecommerce/user-addresses" :replace="true" :mergeQuery="true" transition_overlay_target="addresses_datagrid__body">
+                  <query sort="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </sequence>
+            </on>
+          </select>
+          <select data-ref="per_page_select" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+            <options>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </options>
+            <on type="change">
+              <sequence>
+                <set-state target="global" :selectedItems_addresses="[]"/>
+                <navigate path="/admin/ecommerce/user-addresses" :replace="true" :mergeQuery="true" transition_overlay_target="addresses_datagrid__body">
+                  <query per_page="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </sequence>
+            </on>
+          </select>
+        </div>
+      </div>
+      <data-grid data-ref="addresses_datagrid" :data-blur-until-loaded="true" data="{{addresses?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{addresses?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{addresses?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{addresses?.data?.pagination?.has_more_pages ?? false}}" selectable="{{addresses?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_addresses || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.user_addresses.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+        <column field="created_at" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.created_at">
+          <cell>
+            <span class="text-sm text-gray-900 dark:text-white">{{row.created_at}}</span>
+          </cell>
+        </column>
+        <column field="member" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.member">
+          <cell>
+            <div class="flex flex-col">
+              <div class="flex items-center gap-2">
+                <span data-if="{{!!row.member?.uuid}}" class="font-medium text-gray-900 dark:text-white cursor-pointer hover:underline">
+                  <on type="click">
+                    <!-- 회원 이름을 누르면 그 회원 상세로 간다 — 지우기 전에 "누구인가" 를 확인하는 자리다 -->
+                    <navigate path="/admin/users/{{row.member?.uuid}}"/>
+                  </on>
+                  {{row.member?.name}}
+                </span>
+                <span data-if="{{!row.member}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.user_addresses.badges.guest</span>
+                <badge data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.user_addresses.badges.withdrawn</badge>
+              </div>
+              <span data-if="{{row.member?.email}}" class="text-xs text-gray-500 dark:text-gray-400">{{row.member?.email}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="recipient" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.recipient">
+          <cell>
+            <div class="flex flex-col">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-900 dark:text-white">{{row.recipient_name}}</span>
+                <badge data-if="{{row.is_default}}" color="blue" size="sm">$t:sirsoft-ecommerce.admin.user_addresses.badges.is_default</badge>
+              </div>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{row.recipient_phone}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="address_summary" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.address">
+          <cell>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{row.address_summary}}</span>
+          </cell>
+        </column>
+        <prop name="rowActions">
+          <item id="delete" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.delete" iconName="trash"/>
+          <item id="go_to_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="user"/>
+        </prop>
+        <on type="change" event="onSelectionChange">
+          <set-state target="global" selectedItems_addresses="{{$args[0]}}"/>
+        </on>
+        <on type="change" event="onPageChange">
+          <sequence>
+            <!-- 다음 쪽으로 넘어가면 화면에 없는 행이 선택된 채로 일괄 삭제에 실린다 -->
+            <set-state target="global" :selectedItems_addresses="[]"/>
+            <navigate path="/admin/ecommerce/user-addresses" :replace="true" :mergeQuery="true" transition_overlay_target="addresses_datagrid__body">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
+        </on>
+        <on event="onRowAction">
+          <switch>
+            <case when="delete">
+              <sequence>
+                <set-state target="global" deleteTarget_addresses="{{$args[1]}}"/>
+                <open-modal target="modal_addresses_delete"/>
+              </sequence>
+            </case>
+            <case when="go_to_member">
+              <navigate path="/admin/users/{{$args[1]?.member?.uuid}}"/>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+    </div>
+  </slot>
+  <modal>
+    <!-- 단건 삭제 확인 — 지우는 것은 회원이 담아 둔 기록이다. 그 사실을 본문이 분명히 말한다 -->
+    <modal data-ref="modal_addresses_delete" title="$t:sirsoft-ecommerce.admin.user_addresses.modal.delete.title" size="sm">
+      <meta editor_label="$t:sirsoft-ecommerce.admin.user_addresses.modal.delete.title"/>
+      <div class="py-2">
+        <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.user_addresses.modal.delete.message</p>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button type="button" class="px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleting_addresses}}">
+          <on type="click">
+            <set-state target="global" :deleting_addresses="true"/>
+          </on>
+          <on type="click">
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/user-addresses/{{_global.deleteTarget_addresses?.id}}" method="DELETE">
+              <success>
+                <!-- 지운 행이 선택에 남아 있으면 다음 일괄 삭제가 없는 ID 를 싣는다 -->
+                <set-state target="global" :deleting_addresses="false" selectedItems_addresses="{{(_global.selectedItems_addresses || []).filter(v => v !== _global.deleteTarget_addresses?.id)}}"/>
+                <refetch-data-source dataSourceId="addresses"/>
+                <toast type="success" message="{{result.message}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :deleting_addresses="false" errorMessage="{{error.message}}"/>
+                <open-modal target="modal_addresses_error"/>
+              </fail>
+            </api-call>
+          </on>
+          <span>$t:common.confirm</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택 삭제 확인 — 건수를 본문에 싣는다 -->
+    <modal data-ref="modal_addresses_bulk_delete" data-testid="admin-addresses-bulk-delete-modal" title="$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.title" size="sm">
+      <meta editor_label="$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.title"/>
+      <div class="py-2">
+        <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.message|count={{(_global.selectedItems_addresses ?? []).length}}</p>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button type="button" class="px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-testid="admin-addresses-bulk-delete-confirm" type="button" class="px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.bulkDeleting_addresses}}">
+          <on type="click">
+            <!-- 여러 건을 한 요청으로 보낸다 — 응답이 늦는 사이 두 번 눌리면 같은 ID 가 겹쳐 들어간다 -->
+            <set-state target="global" :bulkDeleting_addresses="true"/>
+          </on>
+          <on type="click">
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/user-addresses/bulk" method="DELETE">
+              <success>
+                <set-state target="global" :bulkDeleting_addresses="false" :selectedItems_addresses="[]"/>
+                <refetch-data-source dataSourceId="addresses"/>
+                <toast type="success" message="{{result.message}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :bulkDeleting_addresses="false" errorMessage="{{error.message}}"/>
+                <open-modal target="modal_addresses_error"/>
+              </fail>
+              <body ids="{{_global.selectedItems_addresses}}"/>
+            </api-call>
+          </on>
+          <span data-if="{{!_global.bulkDeleting_addresses}}">$t:common.confirm</span>
+          <span data-if="{{_global.bulkDeleting_addresses}}">$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.deleting</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 삭제 실패 — 서버 문구를 그대로 싣는다. 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다 -->
+    <modal data-ref="modal_addresses_error" title="$t:common.error" size="sm">
+      <div class="py-2">
+        <p class="text-sm text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
+      </div>
+      <div class="flex justify-end mt-6">
+        <button type="button" class="px-4 py-2 text-sm bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

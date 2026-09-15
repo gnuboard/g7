@@ -127,4 +127,12 @@ class ShippingCarrierRepository implements ShippingCarrierRepositoryInterface
 
         return $query->get();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function pluckIds(): array
+    {
+        return $this->model->newQuery()->pluck('id')->all();
+    }
 }

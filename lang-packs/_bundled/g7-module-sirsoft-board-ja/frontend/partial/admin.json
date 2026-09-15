@@ -926,7 +926,7 @@
       "daily_report_limit_hint": "1日(午前0時基準)全体掲示板合わせて通報できる最大回数。0の場合は制限なし。 (0～100)",
       "rejection_limit_count": "却下累積制限 (件数)",
       "rejection_limit_days": "却下累積制限期間 (日)",
-      "rejection_limit_hint": "この期間内に却下件数を超えると通報機能がブロックされます。件数が0の場合は制限なし。 (件数: 0～50、期間: 1～365日)",
+      "rejection_limit_hint": "この期間内の却下件数が設定値に達すると通報機能がブロックされます。件数が0の場合は制限なし。 (件数: 0～50、期間: 1～365日)",
       "report_cooldown_seconds": "連続通報クールタイム (秒)",
       "report_cooldown_seconds_hint": "連続通報の最小間隔。0の場合は制限なし。 (0～3600秒)",
       "notify_author_on_report_action": "通報処理通知",

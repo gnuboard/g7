@@ -1859,7 +1859,7 @@ describe('TemplateApp', () => {
      */
     describe('[TS-UQP-INDEX-1] updateQueryParams id 기반 매핑', () => {
       it('WebSocket 소스가 중간에 있어도 results와 autoFetchDataSources 매핑이 어긋나지 않아야 함', () => {
-        // 시뮬레이션: _admin_base.json (WebSocket 포함) + admin_settings.json 결합 데이터소스
+        // 시뮬레이션: _admin_base.g7.html (WebSocket 포함) + admin_settings.g7.html 결합 데이터소스
         const autoFetchDataSources = [
           { id: 'notifications', type: 'api' },
           { id: 'notification_unread_count', type: 'api' },

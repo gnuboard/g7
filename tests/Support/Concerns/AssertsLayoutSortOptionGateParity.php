@@ -166,6 +166,8 @@ trait AssertsLayoutSortOptionGateParity
      * Partial 레이아웃의 부모 레이아웃에서 엔드포인트를 가져옵니다.
      *
      * 관례상 partial 은 `layouts/**\/partials/{부모레이아웃명}/_partial_*.json` 에 놓인다.
+     * 이 `.json` 은 소스 SSoT `.g7.html` 에서 구워진 런타임 계약이다 — 검사는 산출 JSON 을
+     * 읽지만, 화면을 고칠 때는 짝 `.g7.html` 소스를 수정하고 다시 굽는다.
      *
      * @param  string  $partialFile  partial 절대 경로
      * @return array<int, string> 부모 레이아웃의 엔드포인트 (부모를 찾지 못하면 빈 배열)

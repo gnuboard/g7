@@ -3,8 +3,11 @@
 namespace Modules\Sirsoft\Board\Tests\Feature\User;
 
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
-require_once __DIR__ . '/../../ModuleTestCase.php';
+require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Http\Middleware\PermissionMiddleware;
+use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
@@ -16,7 +19,6 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  */
 class BoardAccessTest extends ModuleTestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,6 +46,11 @@ class BoardAccessTest extends ModuleTestCase
             'slug' => 'inactive',
             'is_active' => false,
         ]);
+
+        // 디렉토리는 호출자 열람 권한 필터를 적용하므로 게스트 읽기 권한을 부여한다
+        $this->grantGuestRead('active-1');
+        $this->grantGuestRead('active-2');
+        $this->grantGuestRead('inactive');
 
         // When: 비로그인 상태에서 게시판 목록 API 호출
         $response = $this->getJson('/api/modules/sirsoft-board/boards');
@@ -83,8 +90,14 @@ class BoardAccessTest extends ModuleTestCase
     public function test_inactive_boards_not_included_in_list(): void
     {
         // Given: 비활성화된 게시판 3개, 활성화된 게시판 1개 생성
-        Board::factory()->count(3)->create(['is_active' => false]);
-        Board::factory()->create(['is_active' => true]);
+        $inactiveBoards = Board::factory()->count(3)->create(['is_active' => false]);
+        $activeBoard = Board::factory()->create(['is_active' => true]);
+
+        // 디렉토리는 호출자 열람 권한 필터를 적용하므로 게스트 읽기 권한을 부여한다
+        foreach ($inactiveBoards as $b) {
+            $this->grantGuestRead($b->slug);
+        }
+        $this->grantGuestRead($activeBoard->slug);
 
         // When: 게시판 목록 조회
         $response = $this->getJson('/api/modules/sirsoft-board/boards');
@@ -107,7 +120,7 @@ class BoardAccessTest extends ModuleTestCase
         ]);
 
         // When: 게시판 상세 조회
-        $response = $this->getJson("/api/modules/sirsoft-board/boards/test-board");
+        $response = $this->getJson('/api/modules/sirsoft-board/boards/test-board');
 
         // Then: 성공 응답, 게시판 정보 반환
         $response->assertStatus(200);
@@ -132,7 +145,7 @@ class BoardAccessTest extends ModuleTestCase
         ]);
 
         // When: 비활성화된 게시판 상세 조회 시도
-        $response = $this->getJson("/api/modules/sirsoft-board/boards/inactive-board");
+        $response = $this->getJson('/api/modules/sirsoft-board/boards/inactive-board');
 
         // Then: 404 응답
         $response->assertStatus(404);
@@ -144,7 +157,7 @@ class BoardAccessTest extends ModuleTestCase
     public function test_accessing_non_existent_board_returns_404(): void
     {
         // When: 존재하지 않는 게시판 조회
-        $response = $this->getJson("/api/modules/sirsoft-board/boards/non-existent");
+        $response = $this->getJson('/api/modules/sirsoft-board/boards/non-existent');
 
         // Then: 404 응답
         $response->assertStatus(404);
@@ -155,8 +168,11 @@ class BoardAccessTest extends ModuleTestCase
      */
     public function test_board_list_response_does_not_include_pagination(): void
     {
-        // Given: 게시판 여러 개 생성
-        Board::factory()->count(5)->create(['is_active' => true]);
+        // Given: 게시판 여러 개 생성 (디렉토리 열람 권한 필터 대응 — 게스트 읽기 권한 부여)
+        $boards = Board::factory()->count(5)->create(['is_active' => true]);
+        foreach ($boards as $b) {
+            $this->grantGuestRead($b->slug);
+        }
 
         // When: 게시판 목록 조회
         $response = $this->getJson('/api/modules/sirsoft-board/boards');
@@ -165,5 +181,29 @@ class BoardAccessTest extends ModuleTestCase
         $response->assertStatus(200);
         $this->assertArrayNotHasKey('pagination', $response->json('data'));
         $this->assertIsArray($response->json('data'));
+    }
+
+    /**
+     * guest 역할에 게시판 읽기 권한을 부여합니다.
+     *
+     * 디렉토리(전체 게시판 목록)는 호출자 열람 권한 필터를 적용하므로,
+     * 게스트 시점 검증용 게시판에는 명시적으로 읽기 권한을 부여한다
+     * (PublicRecentPostsVisibilityTest 와 동일 관례).
+     *
+     * @param  string  $slug  게시판 슬러그
+     */
+    private function grantGuestRead(string $slug): void
+    {
+        $role = Role::where('identifier', 'guest')->first();
+        if (! $role) {
+            return;
+        }
+
+        $perm = Permission::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$slug}.posts.read"],
+            ['name' => ['ko' => 'read', 'en' => 'read'], 'type' => 'user']
+        );
+        $role->permissions()->syncWithoutDetaching([$perm->id]);
+        PermissionMiddleware::clearGuestRoleCache();
     }
 }

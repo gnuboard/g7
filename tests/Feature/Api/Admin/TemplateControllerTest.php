@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\Admin;
 
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Enums\ExtensionOwnerType;
+use App\Exceptions\TemplateOperationException;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Template;
@@ -155,6 +156,7 @@ class TemplateControllerTest extends TestCase
 
         // 기본 동작 설정
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getInstalledTemplatesWithDetails')->andReturn([]);
         $mock->shouldReceive('getUninstalledTemplates')->andReturn([]);
         $mock->shouldReceive('getTemplateInfo')->andReturn(null);
@@ -205,6 +207,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getInstalledTemplatesWithDetails')->andReturn($installedTemplates);
         $mock->shouldReceive('getUninstalledTemplates')->andReturn([]);
         $this->app->instance(TemplateManagerInterface::class, $mock);
@@ -260,6 +263,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getInstalledTemplatesWithDetails')->andReturn($installedTemplates);
         $mock->shouldReceive('getUninstalledTemplates')->andReturn([]);
         $this->app->instance(TemplateManagerInterface::class, $mock);
@@ -301,6 +305,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getInstalledTemplatesWithDetails')->andReturn($installedTemplates);
         $mock->shouldReceive('getUninstalledTemplates')->andReturn([]);
         $this->app->instance(TemplateManagerInterface::class, $mock);
@@ -429,6 +434,7 @@ class TemplateControllerTest extends TestCase
         // Mock 설정
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplateInfo')->andReturn([
             'id' => $template->id,
             'identifier' => $template->identifier,
@@ -520,6 +526,7 @@ class TemplateControllerTest extends TestCase
         // Mock 설정
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplateInfo')->andReturn([
             'id' => $template->id,
             'identifier' => $template->identifier,
@@ -554,6 +561,7 @@ class TemplateControllerTest extends TestCase
         // Mock 설정 — externals 에 정규화 대상(HTTP URL, 중복) 포함
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplateInfo')->andReturn([
             'id' => $template->id,
             'identifier' => $template->identifier,
@@ -611,6 +619,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplateInfo')->andReturn([
             'id' => $template->id,
             'identifier' => $template->identifier,
@@ -647,6 +656,7 @@ class TemplateControllerTest extends TestCase
         // Mock 설정
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplate')->andReturn([
             'identifier' => $template->identifier,
             'vendor' => $template->vendor,
@@ -712,6 +722,7 @@ class TemplateControllerTest extends TestCase
         // Arrange
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('activateTemplate')->andThrow(
             ValidationException::withMessages([
                 'template' => ['No active template found'],
@@ -773,6 +784,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplate')->andReturn([
             'identifier' => $templateIdentifier,
             'vendor' => 'test',
@@ -822,6 +834,7 @@ class TemplateControllerTest extends TestCase
         // Arrange
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplate')->andReturn(null);
         $mock->shouldReceive('installTemplate')->andThrow(
             ValidationException::withMessages([
@@ -1012,12 +1025,12 @@ class TemplateControllerTest extends TestCase
     /**
      * TemplateService에서 RuntimeException 발생 시 422 반환
      */
-    public function test_install_from_file_returns_422_on_runtime_exception(): void
+    public function test_install_from_file_returns_422_on_domain_exception(): void
     {
         $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromZipFile')
             ->once()
-            ->andThrow(new \RuntimeException('template.json을 찾을 수 없습니다.'));
+            ->andThrow(new TemplateOperationException('templates.errors.template_json_not_found'));
         $this->app->instance(TemplateService::class, $templateServiceMock);
 
         $file = UploadedFile::fake()->create('template.zip', 100, 'application/zip');
@@ -1027,7 +1040,7 @@ class TemplateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'template.json을 찾을 수 없습니다.');
+        $response->assertJsonPath('message', __('templates.errors.template_json_not_found'));
     }
 
     /**
@@ -1082,12 +1095,12 @@ class TemplateControllerTest extends TestCase
     /**
      * TemplateService에서 RuntimeException 발생 시 422 반환 (GitHub)
      */
-    public function test_install_from_github_returns_422_on_runtime_exception(): void
+    public function test_install_from_github_returns_422_on_domain_exception(): void
     {
         $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromGithub')
             ->once()
-            ->andThrow(new \RuntimeException('GitHub 저장소를 찾을 수 없습니다.'));
+            ->andThrow(new TemplateOperationException('templates.errors.github_repo_not_found'));
         $this->app->instance(TemplateService::class, $templateServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/templates/install-from-github', [
@@ -1095,7 +1108,7 @@ class TemplateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'GitHub 저장소를 찾을 수 없습니다.');
+        $response->assertJsonPath('message', __('templates.errors.github_repo_not_found'));
     }
 
     /**
@@ -1160,6 +1173,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplate')->andReturn([
             'identifier' => $template->identifier,
         ]);
@@ -1245,6 +1259,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplate')->andReturn([
             'identifier' => $template->identifier,
         ]);
@@ -1299,6 +1314,7 @@ class TemplateControllerTest extends TestCase
         // Arrange
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('deactivateTemplate')->andThrow(
             ValidationException::withMessages([
                 'template' => ['No active template found'],
@@ -1327,6 +1343,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('getTemplate')->andReturn([
             'identifier' => $template->identifier,
         ]);
@@ -1391,6 +1408,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('activateTemplate')
             ->with($template->identifier, false)
             ->andReturn([
@@ -1446,6 +1464,7 @@ class TemplateControllerTest extends TestCase
 
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('activateTemplate')
             ->with($template->identifier, true)
             ->andReturnUsing(function () use ($template) {
@@ -1496,6 +1515,7 @@ class TemplateControllerTest extends TestCase
         // template.json: {"modules": {"sirsoft-board": ">=1.0.0", "sirsoft-ecommerce": ">=1.0.0"}}
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('ensureLoaded')->andReturnNull();
         $mock->shouldReceive('activateTemplate')
             ->with($template->identifier, false)
             ->andReturn([

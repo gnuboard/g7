@@ -2,6 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Repositories\Concerns\FiltersByDateRange;
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Support\Query\PaginationLimits;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as SupportCollection;
@@ -13,6 +18,14 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
  */
 class CartRepository implements CartRepositoryInterface
 {
+    use FiltersByDateRange;
+    use PaginatesWithDeferredJoin;
+
+    /**
+     * CartRepository 생성자
+     *
+     * @param  Cart  $model  장바구니 모델
+     */
     public function __construct(
         protected Cart $model
     ) {}
@@ -52,31 +65,13 @@ class CartRepository implements CartRepositoryInterface
     }
 
     /**
-     * 장바구니 조회의 상품 이미지 eager load 컬럼.
-     *
-     * 장바구니는 상품당 **대표 이미지 1장의 URL** 만 쓴다(BaseOrderItemResource::formatProductInfo).
-     * 대표 지정이 없으면 첫 이미지로 폴백하므로 `thumbnail` 관계로 바꾸면 그 폴백이 깨진다.
-     * 그래서 관계는 그대로 두고 선택 컬럼만 좁힌다 — `download_url` 은 `hash` 만 필요하고,
-     * 폴백 판정에 `is_thumbnail`/`sort_order`, eager load 매칭에 `id`/`product_id` 가 필요하다.
-     * 파일명·경로·용량·크기 등 나머지 컬럼은 장바구니 응답 어디에도 쓰이지 않는다.
-     *
-     * `product.shippingPolicy.countrySettings` 는 응답에 직렬화되지 않지만 의도적으로 유지한다.
-     * 배송비 계산(`OrderCalculationService`)이 이 관계를 읽고, 로드돼 있지 않으면 정책 인스턴스
-     * 마다 `load('countrySettings')` 로 다시 조회한다(`:1884-1891`, `:1953-1955`). 장바구니 항목
-     * 마다 정책 인스턴스가 따로 잡히므로 eager load 를 빼면 페이로드 대신 쿼리 수가 늘어난다 —
-     * 결제 금액 산출 경로라 그 교환은 하지 않는다.
-     *
-     * 활성 설정만 싣는 방식도 검토했으나 계산기의 지연 조회 경로가 `is_active` 를 거르지 않아
-     * (`:1955`) 로드 여부에 따라 배송비가 달라지게 된다. 좁히려면 계산기 쪽 기준을 먼저 통일해야
-     * 하며 그것은 이 변경의 범위 밖이다.
-     */
-    /**
      * {@inheritDoc}
      */
     public function findByUserId(int $userId): Collection
     {
+        // audit:allow query-unbounded-get reason: 한 회원(또는 한 비회원 cart_key)의 장바구니 행만 고른다 — 행 수가 그 사람의 담기 행위에 묶여 데이터 증가에 비례하지 않는다
         return $this->model
-            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -87,8 +82,9 @@ class CartRepository implements CartRepositoryInterface
      */
     public function findByCartKeyWithoutUser(string $cartKey): Collection
     {
+        // audit:allow query-unbounded-get reason: 한 회원(또는 한 비회원 cart_key)의 장바구니 행만 고른다 — 행 수가 그 사람의 담기 행위에 묶여 데이터 증가에 비례하지 않는다
         return $this->model
-            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->where('cart_key', $cartKey)
             ->whereNull('user_id')
             ->orderBy('created_at', 'desc')
@@ -123,6 +119,7 @@ class CartRepository implements CartRepositoryInterface
      */
     public function findAllByUserAndOption(int $userId, int $productOptionId): Collection
     {
+        // audit:allow query-unbounded-get reason: 한 회원(또는 한 비회원 cart_key)의 장바구니 행만 고른다 — 행 수가 그 사람의 담기 행위에 묶여 데이터 증가에 비례하지 않는다
         return $this->model
             ->where('user_id', $userId)
             ->where('product_option_id', $productOptionId)
@@ -160,6 +157,7 @@ class CartRepository implements CartRepositoryInterface
      */
     public function findAllByCartKeyAndOption(string $cartKey, int $productOptionId): Collection
     {
+        // audit:allow query-unbounded-get reason: 한 회원(또는 한 비회원 cart_key)의 장바구니 행만 고른다 — 행 수가 그 사람의 담기 행위에 묶여 데이터 증가에 비례하지 않는다
         return $this->model
             ->where('cart_key', $cartKey)
             ->whereNull('user_id')
@@ -173,7 +171,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByIds(array $ids): Collection
     {
         return $this->model
-            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->whereIn('id', $ids)
             ->get();
     }
@@ -302,5 +300,101 @@ class CartRepository implements CartRepositoryInterface
         }
 
         return $this->deleteByIds($ids);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        $table = $this->model->getTable();
+        $query = $this->model->newQuery();
+
+        if (! empty($filters['user_id'])) {
+            $query->where("{$table}.user_id", (int) $filters['user_id']);
+        }
+
+        // 회원/비회원 구분 — 비회원 장바구니는 user_id 가 없고 cart_key 로만 묶인다.
+        // 회원 검색과 같은 칸에 섞으면 "회원 검색으로 비회원 행이 사라지는" 혼란이 나므로 축을 따로 둔다.
+        $owner = (string) ($filters['owner'] ?? 'all');
+        if ($owner === 'member') {
+            $query->whereNotNull("{$table}.user_id");
+        } elseif ($owner === 'guest') {
+            $query->whereNull("{$table}.user_id");
+        }
+
+        $this->applyDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
+        $this->applyAdminSearch($query, (string) ($filters['search_field'] ?? 'member'), $filters['search_keyword'] ?? null);
+
+        $direction = ($filters['sort'] ?? 'created_at_desc') === 'created_at_asc' ? 'asc' : 'desc';
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ["{$table}.*"],
+            sort: [['column' => 'created_at', 'direction' => $direction]],
+            perPage: $perPage,
+            relations: [
+                'user:id,uuid,name,email,status',
+                'product:id,name,display_status,sales_status',
+                'productOption',
+            ],
+            resultCap: PaginationLimits::resultCap('admin.carts'),
+        );
+    }
+
+    /**
+     * 관리자 목록의 검색 조건을 적용합니다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  string  $field  검색 대상
+     * @param  string|null  $keyword  검색어
+     * @return void
+     */
+    private function applyAdminSearch(Builder $query, string $field, ?string $keyword): void
+    {
+        if ($keyword === null || trim($keyword) === '') {
+            return;
+        }
+
+        $needle = '%'.trim($keyword).'%';
+
+        match ($field) {
+            'member_id' => $query->whereHas('user', fn (Builder $u) => $u->where('uuid', trim($keyword))),
+            'email' => $query->whereHas('user', fn (Builder $u) => $u->where('email', 'like', $needle)),
+            'product' => $query->whereHas('product', function (Builder $p) use ($needle) {
+                $p->where(function (Builder $inner) use ($needle) {
+                    foreach (config('app.translatable_locales', ['ko', 'en']) as $locale) {
+                        $inner->orWhere("name->{$locale}", 'like', $needle);
+                    }
+                });
+            }),
+            default => $query->whereHas('user', fn (Builder $u) => $u->where(
+                fn (Builder $w) => $w->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
+            )),
+        };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteById(int $id): bool
+    {
+        return (bool) $this->model->where('id', $id)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function bulkDelete(array $ids): int
+    {
+        return (int) $this->model->whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByUser(int $userId): int
+    {
+        return (int) $this->model->where('user_id', $userId)->count();
     }
 }

@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Plugins\Sirsoft\PayNicepayments\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
 class AdminEscrowController extends AdminBaseController
@@ -38,12 +41,13 @@ class AdminEscrowController extends AdminBaseController
      */
     public function getEscrowPayments(string $orderNumber): JsonResponse
     {
-        $payments = DB::table('ecommerce_order_payments')
-            ->join('ecommerce_orders', 'ecommerce_orders.id', '=', 'ecommerce_order_payments.order_id')
-            ->where('ecommerce_orders.order_number', $orderNumber)
-            ->where('ecommerce_order_payments.pg_provider', 'nicepayments')
-            ->where('ecommerce_order_payments.is_escrow', 1)
-            ->get(['ecommerce_order_payments.id', 'ecommerce_order_payments.transaction_id', 'ecommerce_order_payments.payment_method', 'ecommerce_order_payments.payment_status']);
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $payments = DB::table((new OrderPayment)->getTable().' as p')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
+            ->where('o.order_number', $orderNumber)
+            ->where('p.pg_provider', 'nicepayments')
+            ->where('p.is_escrow', 1)
+            ->get(['p.id', 'p.transaction_id', 'p.payment_method', 'p.payment_status']);
 
         return ResponseHelper::success('common.success', [
             'escrow_payments' => $payments->map(fn ($p) => [
@@ -66,18 +70,12 @@ class AdminEscrowController extends AdminBaseController
      * NicePay escrow_process.jsp 호출하여 배송 정보(택배사/송장번호/수령인 등)를
      * NicePay 측에 등록. 등록 완료 시 구매자에게 자동으로 구매확정 안내가 발송됨.
      *
-     * @param  Request  $request  배송 정보 폼
+     * @param  EscrowDeliveryRegisterRequest  $request  배송 정보 폼
      * @return JsonResponse 등록 결과 + ResultCode
      */
-    public function registerDelivery(Request $request): JsonResponse
+    public function registerDelivery(EscrowDeliveryRegisterRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'tid' => 'required|string',
-            'delivery_name' => 'required|string|max:100',
-            'tracking_number' => 'required|string|max:100',
-            'buyer_address' => 'required|string|max:200',
-            'register_name' => 'required|string|max:50',
-        ]);
+        $validated = $request->validated();
 
         try {
             $payment = $this->findRegisterableEscrowPayment($validated['tid']);
@@ -105,12 +103,23 @@ class AdminEscrowController extends AdminBaseController
 
             return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
-            return ResponseHelper::error($e->getMessage(), 502, null);
+            // 메시지 키 자리에는 원문 금지 — 키 해석에 실패해 원문이 그대로 나간다.
+            // 단 errors 페이로드는 관리자 전용 면의 진단 통로다(형제 KCP/이니시스
+            // 에스크로와 동형) — 비우면 운영자가 서버 로그 없이는 실패 원인을 모른다.
+            Log::error('NicePayments: escrow delivery registration failed', [
+                'tid' => $validated['tid'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return ResponseHelper::error('common.failed', 502, [
+                'message' => [$e->getMessage()],
+            ]);
         }
     }
 
     private function findRegisterableEscrowPayment(string $tid): ?OrderPayment
     {
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
         return OrderPayment::query()
             ->where('pg_provider', 'nicepayments')
             ->where('is_escrow', true)

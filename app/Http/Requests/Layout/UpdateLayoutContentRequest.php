@@ -2,9 +2,13 @@
 
 namespace App\Http\Requests\Layout;
 
+use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\LayoutSourceType;
 use App\Extension\HookManager;
+use App\Http\Requests\Layout\Concerns\CompilesMarkupContent;
 use App\Rules\NoExternalUrls;
+use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidDataSourceMerge;
 use App\Rules\ValidLayoutStructure;
 use App\Rules\ValidParentLayout;
@@ -25,6 +29,8 @@ use Illuminate\Validation\Rule;
  */
 class UpdateLayoutContentRequest extends FormRequest
 {
+    use CompilesMarkupContent;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -46,9 +52,14 @@ class UpdateLayoutContentRequest extends FormRequest
      *
      * 또한, ValidParentLayout 규칙에서 template_id를 사용하므로
      * 라우트 파라미터에서 templateName을 가져와 template_id로 변환합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
+        // `format=markup` 이면 마크업을 프로덕션 컴파일해 JSON 배열로 바꾼다 — 그 뒤는 기존 규칙 그대로.
+        $this->compileMarkupContentIfRequested();
+
         $content = $this->input('content');
 
         // content가 JSON 문자열인 경우 배열로 변환
@@ -236,6 +247,71 @@ class UpdateLayoutContentRequest extends FormRequest
     }
 
     /**
+     * 검증 통과분을 돌려주되 **보낸 쪽의 키 순서를 되살립니다**.
+     *
+     * Laravel 의 `validated()` 는 규칙을 적힌 순서대로 훑어 결과를 다시 쌓는다. 그래서 하위 키 규칙을
+     * 가진 섹션(`content.meta.seo` 등)은 저장 한 번에 자식 순서가 **규칙 순서로 재배열**되고, 일부
+     * 항목에만 있는 키를 앞에 둔 리스트는 순서가 뒤집혀 JSON 이 배열 대신 객체로 굳는다
+     * (실측: `globalHeaders` 가 `[2,3,0,1]` 로 변해 `{"2":{…}}` 가 됐다).
+     *
+     * 값은 검증 통과분 그대로 두고 **순서만** 원본에 맞춘다 — 규칙 순서에 의존하지 않게 되므로
+     * 새 규칙을 어디에 적든 저장이 문서를 재배열하지 않는다.
+     *
+     * @param  string|null  $key  점 표기 경로 (전체면 null)
+     * @param  mixed  $default  경로가 없을 때 값
+     * @return mixed 검증 통과분
+     */
+    public function validated($key = null, $default = null): mixed
+    {
+        $validated = parent::validated($key, $default);
+
+        if ($key !== null || ! is_array($validated) || ! isset($validated['content']) || ! is_array($validated['content'])) {
+            return $validated;
+        }
+
+        $original = $this->input('content');
+
+        if (is_array($original)) {
+            $validated['content'] = $this->restoreKeyOrder($validated['content'], $original);
+        }
+
+        return $validated;
+    }
+
+    /**
+     * 검증 통과분의 키 순서를 원본 순서로 되돌립니다 (값은 건드리지 않는다).
+     *
+     * 원본에 있던 키를 원본 순서대로 먼저 담고, 원본에 없던 키(규칙이 기본값을 넣은 자리)는 뒤에 붙인다.
+     * 리스트는 원본 인덱스 순으로 정렬한 뒤 다시 0..n 으로 매긴다 — 그래야 JSON 이 배열로 남는다.
+     *
+     * @param  mixed  $validated  검증 통과분
+     * @param  mixed  $original  요청이 보낸 원본
+     * @return mixed 순서를 맞춘 값
+     */
+    private function restoreKeyOrder(mixed $validated, mixed $original): mixed
+    {
+        if (! is_array($validated) || ! is_array($original)) {
+            return $validated;
+        }
+
+        $ordered = [];
+
+        foreach ($original as $k => $v) {
+            if (array_key_exists($k, $validated)) {
+                $ordered[$k] = $this->restoreKeyOrder($validated[$k], $v);
+            }
+        }
+
+        foreach ($validated as $k => $v) {
+            if (! array_key_exists($k, $ordered)) {
+                $ordered[$k] = $v;
+            }
+        }
+
+        return array_is_list($original) ? array_values($ordered) : $ordered;
+    }
+
+    /**
      * 요청에 적용할 검증 규칙
      *
      * extends 레이아웃과 standalone 레이아웃의 구조 차이를 고려합니다:
@@ -255,6 +331,9 @@ class UpdateLayoutContentRequest extends FormRequest
         $isBaseLayout = is_array($content) && isset($content['slots']) && is_array($content['slots']);
 
         $rules = [
+            // 본문 형식 — `json`(기본) | `markup`(`.g7.html` 문자열, 검증 전 컴파일)
+            'format' => ['nullable', 'string', 'in:json,markup'],
+
             // 낙관적 잠금 — 클라이언트가 로드한 시점의 lock_version 필수 전달
             // Service::updateLayout 가 현재 DB lock_version 과 비교해 불일치 시
             // ConcurrentModificationException 으로 409 반환
@@ -265,6 +344,14 @@ class UpdateLayoutContentRequest extends FormRequest
                 'required',
                 'array',
                 new ValidLayoutStructure,
+                // 표현식 샌드박스 우회/원격 스크립트 저장측 차단 (KVE-2026-1915).
+                // content 트리 전체를 재귀 순회해야 하므로 배열 규칙에 부착한다 — 문자열
+                // 필드(endpoint)에 부착하면 is_array 가드로 early-return 되어 무력화된다.
+                new SafeLayoutExpressions,
+                // props·actions·init_actions 의 외부 URL 차단. 편집기 저장 경로이므로
+                // Store/UpdateLayoutRequest 와 동일 강도여야 한다 — 여기 누락 시 다른
+                // 경로에서 막히는 외부 URL 이 편집기 저장으로는 통과한다.
+                new NoExternalUrls,
             ],
 
             // 버전 필드
@@ -303,6 +390,11 @@ class UpdateLayoutContentRequest extends FormRequest
 
             // 메타데이터 (legacy - metadata 키 사용하는 경우)
             'content.metadata' => ['nullable', 'array'],
+
+            // 문서 루트 주석 — 소스 `<layout>` 의 주석이 컴파일 산출의 루트 `comment` 로 남는다.
+            // 미명시였던 동안 편집기 저장이 이 키를 조용히 떨궜다(레이아웃 문서 3건 보유).
+            // S19 ② 의 4벌 대조 게이트가 검출.
+            'content.comment' => ['nullable', 'string'],
 
             // 메타 정보 (title, description, auth_required 등)
             // 주의: content.meta 는 'array' 규칙 + 하위 키 일부 명시 조합이므로 Laravel validated()
@@ -386,10 +478,21 @@ class UpdateLayoutContentRequest extends FormRequest
             'content.permissions' => ['nullable', new ValidPermissionStructure],
 
             // 전역 헤더 (API 호출 시 자동 적용되는 HTTP 헤더)
+            //
+            // 주의: 하위 키를 명시한 **유일한 배열 섹션**이라, 여기 적히지 않은 키는 `validated()` 가
+            // 조용히 떨군다(다른 섹션은 통째 `array` 규칙이라 하위가 그대로 보존된다). `comment` 는
+            // 소스 `<match>` 앞의 `<!-- -->` 이 컴파일된 것으로, 이 줄이 없으면 **코드 편집기에서
+            // 아무것도 고치지 않고 저장만 해도 그 주석이 사라진다**(브라우저 실측 2026-09-11:
+            // `_user_base` 저장 후 주석 101 → 99). 컴파일러·역변환기는 양쪽 다 이 키를 지킨다.
+            // `comment` 규칙은 **반드시 `pattern` 뒤**에 둔다. `validated()` 는 규칙 순서대로 결과 배열을
+            // 쌓으므로, 일부 항목에만 있는 `comment` 를 먼저 두면 그 항목들이 앞으로 끌려와 목록 순서가
+            // 뒤집히고(`[2,3,0,1]`) JSON 이 배열 대신 객체로 굳는다. `pattern` 은 전 항목 필수라 먼저
+            // 돌면 0..n 순서가 잡히고, 뒤따르는 `comment` 는 이미 있는 자리에 얹힌다.
             'content.globalHeaders' => ['nullable', 'array'],
             'content.globalHeaders.*.pattern' => ['required', 'string'],
             'content.globalHeaders.*.headers' => ['required', 'array'],
             'content.globalHeaders.*.headers.*' => ['string'],
+            'content.globalHeaders.*.comment' => ['nullable', 'string'],
 
             // 전환 오버레이 설정 (페이지 전환 시 stale DOM 방지)
             'content.transition_overlay' => ['nullable'],
@@ -426,6 +529,8 @@ class UpdateLayoutContentRequest extends FormRequest
             'string',
             new WhitelistedEndpoint,
             new NoExternalUrls,
+            // SafeLayoutExpressions 는 content 배열 규칙에서 트리 전체를 순회하므로 여기(문자열
+            // endpoint)에는 부착하지 않는다 — 문자열에 부착 시 is_array 가드로 no-op 이 된다.
         ];
 
         if (! $isExtending && ! $isBaseLayout) {
@@ -447,6 +552,7 @@ class UpdateLayoutContentRequest extends FormRequest
      * 의미상 사용자를 차단할 수 없는 background/websocket 데이터소스는 사전에 차단한다.
      *
      * @param  Validator  $validator  Laravel 검증기 인스턴스
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {
@@ -579,5 +685,26 @@ class UpdateLayoutContentRequest extends FormRequest
             'content.transition_overlay.skeleton.iteration_count.min' => __('validation.layout.transition_overlay.skeleton.iteration_count.min'),
             'content.transition_overlay.skeleton.iteration_count.max' => __('validation.layout.transition_overlay.skeleton.iteration_count.max'),
         ];
+    }
+
+    /**
+     * 마크업 컴파일 문맥 — 라우트의 템플릿·레이아웃 행에서 소속 정보를 얻는다.
+     *
+     * @return array{0: string|null, 1: string|null, 2: string|null, 3: string}
+     */
+    protected function markupCompileTarget(): array
+    {
+        $templateName = (string) $this->route('templateName');
+        $name = (string) $this->route('name');
+        $template = $templateName !== '' ? app(TemplateRepositoryInterface::class)->findByIdentifier($templateName) : null;
+
+        if ($template === null) {
+            return [null, null, null, "{$name}.g7.html"];
+        }
+
+        $layout = app(LayoutRepositoryInterface::class)->findByName($template->id, $name);
+        $sourceKind = $layout?->source_type instanceof LayoutSourceType ? $layout->source_type->value : null;
+
+        return [$templateName, $sourceKind, $layout?->source_identifier ?? $templateName, "{$name}.g7.html"];
     }
 }

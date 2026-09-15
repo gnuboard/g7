@@ -403,6 +403,169 @@ class ExtensionPendingHelperTest extends TestCase
         $this->assertEmpty($tempDirs, '임시 디렉토리가 정리되어야 합니다');
     }
 
+    // ========================================================================
+    // Windows 파일 잠금 대응 — rename 실패 시 파일 단위 폴백 (회귀 테스트)
+    //
+    // Windows 에서 디렉토리 rename 은 하위 트리에 열린 핸들(파일 워처의 디렉토리
+    // 핸들, 열린 파일 등)이 하나라도 있으면 실패한다. 프로세스 식별/종료는 신뢰할
+    // 수 없으므로, rename 이 차단되면 파일 단위 연산(잠금의 영향을 받지 않음)으로
+    // 폴백하여 업데이트가 반드시 완료되어야 한다.
+    // ========================================================================
+
+    /**
+     * 기존 활성 디렉토리의 rename(활성 → _old)이 차단될 때
+     * 파일 단위 제자리 동기화로 폴백하여 교체가 완료되는지 확인합니다.
+     */
+    public function test_copy_to_active_syncs_in_place_when_target_rename_is_blocked(): void
+    {
+        $targetPath = $this->modulesPath.'/test-pending-mod';
+        File::ensureDirectoryExists($targetPath);
+        File::put($targetPath.'/module.json', '{"identifier":"test-pending-mod","version":"0.9.0"}');
+        File::put($targetPath.'/old-file.txt', 'stale content');
+
+        $sourcePath = $this->modulesPath.'/_pending/test-pending-mod';
+
+        // File Facade Spy: 활성 디렉토리 자체의 rename 만 차단 (워처의 디렉토리 핸들 잠금 재현)
+        $originalFilesystem = File::getFacadeRoot();
+        $mock = Mockery::mock($originalFilesystem)->makePartial();
+        $mock->shouldReceive('moveDirectory')
+            ->andReturnUsing(function (string $from, string $to, bool $overwrite = false) use ($originalFilesystem, $targetPath) {
+                if (rtrim($from, '/\\') === rtrim($targetPath, '/\\')) {
+                    return false; // 활성 → _old rename 차단
+                }
+
+                return $originalFilesystem->moveDirectory($from, $to, $overwrite);
+            });
+        File::swap($mock);
+
+        try {
+            ExtensionPendingHelper::copyToActive($sourcePath, $targetPath);
+        } finally {
+            File::swap($originalFilesystem);
+        }
+
+        // 새 버전 파일이 제자리에 반영되어야 함
+        $this->assertDirectoryExists($targetPath);
+        $this->assertFileExists($targetPath.'/src/Module.php');
+        $manifest = json_decode(File::get($targetPath.'/module.json'), true);
+        $this->assertEquals('1.0.0', $manifest['version'], '새 버전 manifest 로 교체되어야 함');
+
+        // 새 버전에 없는 잔존 파일은 제거되어야 함
+        $this->assertFileDoesNotExist($targetPath.'/old-file.txt');
+
+        // 임시 디렉토리가 정리되어야 함
+        $this->assertEmpty(glob($this->modulesPath.'/_pending/test-pending-mod_updating_*'));
+    }
+
+    /**
+     * 스테이징 디렉토리의 rename(_updating_ → 활성)이 차단될 때
+     * 파일 단위 복사로 폴백하여 교체가 완료되는지 확인합니다.
+     *
+     * 실사용 로그의 실패 지점: 활성 → _old 는 성공했으나, 방금 복사된 스테이징
+     * 트리를 워처가 이미 열어 _updating_ → 활성 rename 이 차단된 케이스.
+     */
+    public function test_copy_to_active_copies_per_file_when_staging_rename_is_blocked(): void
+    {
+        $targetPath = $this->modulesPath.'/test-pending-mod';
+        File::ensureDirectoryExists($targetPath);
+        File::put($targetPath.'/module.json', '{"identifier":"test-pending-mod","version":"0.9.0"}');
+        File::put($targetPath.'/old-file.txt', 'stale content');
+
+        $sourcePath = $this->modulesPath.'/_pending/test-pending-mod';
+
+        // File Facade Spy: _updating_ → 활성 rename 만 차단
+        $originalFilesystem = File::getFacadeRoot();
+        $mock = Mockery::mock($originalFilesystem)->makePartial();
+        $mock->shouldReceive('moveDirectory')
+            ->andReturnUsing(function (string $from, string $to, bool $overwrite = false) use ($originalFilesystem) {
+                if (str_contains($from, '_updating_')) {
+                    return false; // 스테이징 → 활성 rename 차단
+                }
+
+                return $originalFilesystem->moveDirectory($from, $to, $overwrite);
+            });
+        File::swap($mock);
+
+        try {
+            ExtensionPendingHelper::copyToActive($sourcePath, $targetPath);
+        } finally {
+            File::swap($originalFilesystem);
+        }
+
+        // 새 버전 파일이 반영되어야 함
+        $this->assertDirectoryExists($targetPath);
+        $this->assertFileExists($targetPath.'/src/Module.php');
+        $manifest = json_decode(File::get($targetPath.'/module.json'), true);
+        $this->assertEquals('1.0.0', $manifest['version'], '새 버전 manifest 로 교체되어야 함');
+
+        // 원자적 교체(활성 → _old)를 거쳤으므로 잔존 파일도 없어야 함
+        $this->assertFileDoesNotExist($targetPath.'/old-file.txt');
+
+        // 임시/백업 디렉토리가 정리되어야 함
+        $this->assertEmpty(glob($this->modulesPath.'/_pending/test-pending-mod_updating_*'));
+        $this->assertEmpty(glob($this->modulesPath.'/_pending/test-pending-mod_old_*'));
+    }
+
+    /**
+     * 실제 Windows 파일 잠금(열린 파일 핸들) 상황에서 교체가 완료되는지 확인합니다.
+     *
+     * Windows 는 하위 트리에 열린 파일이 있으면 그 경로의 모든 상위 디렉토리
+     * rename 을 차단한다. 열린 파일이라도 일반적인 공유 모드(read/write 공유)로
+     * 열려 있으면 내용 덮어쓰기는 허용되므로, 파일 단위 폴백은 성공해야 한다.
+     */
+    public function test_copy_to_active_survives_open_file_handle_on_windows(): void
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $this->markTestSkipped('Windows 파일 잠금 동작 검증 전용 테스트');
+        }
+
+        $targetPath = $this->modulesPath.'/test-pending-mod';
+        File::ensureDirectoryExists($targetPath);
+        File::put($targetPath.'/module.json', '{"identifier":"test-pending-mod","version":"0.9.0"}');
+        File::put($targetPath.'/old-file.txt', 'stale content');
+
+        $sourcePath = $this->modulesPath.'/_pending/test-pending-mod';
+
+        // 활성 디렉토리 내 파일에 핸들을 열어 둔 채 교체 시도 (디렉토리 rename 차단 재현)
+        $handle = fopen($targetPath.'/module.json', 'rb');
+        $this->assertIsResource($handle);
+
+        try {
+            ExtensionPendingHelper::copyToActive($sourcePath, $targetPath);
+        } finally {
+            fclose($handle);
+        }
+
+        $this->assertFileExists($targetPath.'/src/Module.php');
+        $manifest = json_decode(File::get($targetPath.'/module.json'), true);
+        $this->assertEquals('1.0.0', $manifest['version'], '핸들이 열린 파일도 내용이 교체되어야 함');
+        $this->assertFileDoesNotExist($targetPath.'/old-file.txt');
+    }
+
+    /**
+     * 이전 실패 실행이 남긴 _updating_/_old_ 잔존 디렉토리가
+     * 다음 교체 시작 시 자동 정리되는지 확인합니다.
+     */
+    public function test_copy_to_active_cleans_leftover_swap_directories(): void
+    {
+        $pendingPath = $this->modulesPath.'/_pending';
+        File::ensureDirectoryExists($pendingPath.'/test-pending-mod_updating_stale123');
+        File::put($pendingPath.'/test-pending-mod_updating_stale123/junk.txt', 'junk');
+        File::ensureDirectoryExists($pendingPath.'/test-pending-mod_old_stale456');
+        File::put($pendingPath.'/test-pending-mod_old_stale456/junk.txt', 'junk');
+
+        $targetPath = $this->modulesPath.'/test-pending-mod';
+        File::ensureDirectoryExists($targetPath);
+        File::put($targetPath.'/module.json', '{"identifier":"test-pending-mod","version":"0.9.0"}');
+
+        $sourcePath = $this->modulesPath.'/_pending/test-pending-mod';
+        ExtensionPendingHelper::copyToActive($sourcePath, $targetPath);
+
+        $this->assertDirectoryDoesNotExist($pendingPath.'/test-pending-mod_updating_stale123');
+        $this->assertDirectoryDoesNotExist($pendingPath.'/test-pending-mod_old_stale456');
+        $this->assertFileExists($targetPath.'/src/Module.php');
+    }
+
     /**
      * EXCLUDED_DIRECTORIES 상수에 node_modules가 포함되어 있는지 확인합니다.
      */

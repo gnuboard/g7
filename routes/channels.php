@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PermissionType;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -35,5 +36,5 @@ Broadcast::channel('core.admin.seo.sitemap', function ($user) {
 // core.user-notifications.read (type=user) 권한 필요
 Broadcast::channel('core.user.notifications.{uuid}', function ($user, $uuid) {
     return $user->uuid === $uuid
-        && $user->hasPermission('core.user-notifications.read', \App\Enums\PermissionType::User);
+        && $user->hasPermission('core.user-notifications.read', PermissionType::User);
 });

@@ -87,6 +87,8 @@ class BoardActivityLogListener implements HookListenerInterface
             'sirsoft-board.report.after_blind_content' => ['method' => 'handleReportAfterBlindContent', 'priority' => 20],
             'sirsoft-board.report.after_delete_content' => ['method' => 'handleReportAfterDeleteContent', 'priority' => 20],
 
+            // ─── Scrap ───
+            'sirsoft-board.scrap.after_toggle' => ['method' => 'handleScrapAfterToggle', 'priority' => 20],
             // ─── Reaction ───
             'sirsoft-board.reaction.after_react' => ['method' => 'handleReactionAfterReact', 'priority' => 20],
         ];
@@ -719,6 +721,38 @@ class BoardActivityLogListener implements HookListenerInterface
             'loggable' => $report,
             'description_key' => 'sirsoft-board::activity_log.description.report_delete_content',
             'description_params' => ['report_id' => $report->id],
+        ]);
+    }
+
+    // ═══════════════════════════════════════════
+    // Scrap 핸들러
+    // ═══════════════════════════════════════════
+
+    /**
+     * 스크랩 토글 후 로그 기록
+     *
+     * $added 값에 따라 등록(scrap.scrap)/해제(scrap.unscrap)를 구분해 기록한다.
+     * 원글이 삭제된 뒤 마이페이지에서 해제하는 경우에도 로그를 남겨야 하므로
+     * Post 모델을 조회하지 않고 loggable_type/loggable_id 를 직접 지정한다
+     * (리스너의 직접 DB 접근 금지 규정 + 삭제된 엔티티 대응).
+     *
+     * @param  int  $userId  스크랩을 토글한 회원 ID
+     * @param  int  $postId  대상 게시글 ID
+     * @param  bool  $added  true=등록, false=해제
+     * @return void
+     */
+    public function handleScrapAfterToggle(int $userId, int $postId, bool $added): void
+    {
+        $action = $added ? 'scrap.scrap' : 'scrap.unscrap';
+        $descriptionKey = $added
+            ? 'sirsoft-board::activity_log.description.scrap_add'
+            : 'sirsoft-board::activity_log.description.scrap_remove';
+
+        $this->logActivity($action, [
+            'loggable_type' => Post::class,
+            'loggable_id' => $postId,
+            'description_key' => $descriptionKey,
+            'description_params' => ['post_id' => $postId],
         ]);
     }
 

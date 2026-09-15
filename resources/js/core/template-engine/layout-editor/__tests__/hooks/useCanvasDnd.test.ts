@@ -802,8 +802,8 @@ describe('useCanvasDnd — 모달 편집 편집루트 confine', () => {
       })
     );
     // 딤 호스트 자식(Span, path 0.children.0) 드래그 시작 시도 — 편집 루트(모달[1]) 밖.
-    // onDragStart 는 activeDragPath 를 항상 설정하나(기존 설계 — 시각 표시), 편집 루트 밖이면
-    // decision='denied_data_bound' 로 적재되고, onDragMove 가 드롭존을 계산하지 않으며,
+    // 편집 루트 밖이면 decision='denied_data_bound' 로 적재되고, 거부된 드래그는
+    // activeDragPath 를 남기지 않으며, onDragMove 가 드롭존을 계산하지 않고
     // onDragEnd 의 commit confine 가 차단한다(실제 이동 불가).
     act(() => result.current.onDragStart(startEvent('0.children.0')));
     const denied = trackSpy.mock.calls.find(
@@ -822,5 +822,115 @@ describe('useCanvasDnd — 모달 편집 편집루트 confine', () => {
       } as any)
     );
     expect(result.current.activeDropZone, '편집 루트 밖 드래그는 드롭존이 없어야 한다').toBeNull();
+  });
+});
+
+// ============================================================================
+// 상속·주입 노드 드래그 차단 — 시작 / 이동 / commit 3층 (A3)
+//
+// 종전에는 route 모드에서 이 노드들이 `data_bound` 로 분류돼 드래그가 열렸고, 옮겨도
+// 저장 시 `stripInheritedNode` 가 통째로 폐기했다. onDragEnd 에는 잠금 재검사가 아예
+// 없어 `zone === null` 에 기댄 간접 방어뿐이었다.
+// ============================================================================
+describe('useCanvasDnd — 상속·주입 노드 드래그 차단 (A3)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.body.innerHTML = '';
+  });
+
+  function scene(components: EditorNode[]) {
+    const patchSpy = vi.fn();
+    const pushSpy = vi.fn();
+    const frame = buildFrame([
+      { path: '0', rect: { left: 0, top: 0, width: 400, height: 100 } },
+      { path: '1', rect: { left: 0, top: 100, width: 400, height: 100 } },
+    ]);
+    const { result } = renderHook(() =>
+      useCanvasDnd({
+        frameEl: frame,
+        nesting: NESTING,
+        editMode: 'route',
+        components,
+        patchLayout: patchSpy,
+        pushHistory: pushSpy,
+      }),
+    );
+    return { result, patchSpy, pushSpy };
+  }
+
+  const BASE_BOUND: EditorNode = {
+    name: 'Div',
+    id: 'a',
+    __source: { kind: 'base' },
+    text: '{{site.title}}',
+  };
+  const EXT_BOUND: EditorNode = {
+    name: 'Div',
+    id: 'a',
+    __source: { kind: 'extension', extensionId: 35 },
+    text: '{{content}}',
+  };
+  const ROUTE_BOUND: EditorNode = {
+    name: 'Div',
+    id: 'b',
+    __source: { kind: 'route' },
+    props: { src: '{{product.image}}' },
+  };
+
+  it('N16 base 출처 → onDragStart 가 denied_base_locked + activeDragPath 미보관', () => {
+    const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
+    const { result } = scene([BASE_BOUND, ROUTE_BOUND]);
+    act(() => result.current.onDragStart(startEvent('0')));
+    const denied = trackSpy.mock.calls.find((c) => c[0].result === 'denied');
+    expect(denied?.[0].decision).toBe('denied_base_locked');
+    // 거부된 드래그가 activeDragPath 를 남기면 DragOverlay 가 따라다녀 거짓 어포던스가 된다.
+    expect(result.current.activeDragPath).toBeNull();
+  });
+
+  it('N17 extension 출처 → denied_extension_locked', () => {
+    const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
+    const { result } = scene([EXT_BOUND, ROUTE_BOUND]);
+    act(() => result.current.onDragStart(startEvent('0')));
+    const denied = trackSpy.mock.calls.find((c) => c[0].result === 'denied');
+    expect(denied?.[0].decision).toBe('denied_extension_locked');
+    expect(result.current.activeDragPath).toBeNull();
+  });
+
+  it('N18 onDragMove — 잠긴 노드는 드롭존을 계산하지 않는다', () => {
+    const { result } = scene([BASE_BOUND, ROUTE_BOUND]);
+    act(() => result.current.onDragStart(startEvent('0')));
+    act(() =>
+      result.current.onDragMove({
+        active: { id: '0' },
+        over: { id: slot('', 1) },
+        activatorEvent: { clientX: 0, clientY: 0 } as PointerEvent,
+        delta: { x: 0, y: 0 },
+      } as any),
+    );
+    expect(result.current.activeDropZone).toBeNull();
+  });
+
+  it('N19 onDragEnd 최종 가드 — 유효 zone 을 강제 주입해도 commit 되지 않는다', () => {
+    const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
+    const { result, patchSpy, pushSpy } = scene([BASE_BOUND, ROUTE_BOUND]);
+    act(() => result.current.onDragStart(startEvent('0')));
+    // stale 슬롯/직접 호출 등으로 유효 zone 이 들어와도 commit 직전 가드가 막아야 한다.
+    act(() => result.current.onDragEnd(endEvent('0', slot('', 2))));
+    expect(patchSpy).not.toHaveBeenCalled();
+    expect(pushSpy).not.toHaveBeenCalled();
+    const denied = trackSpy.mock.calls.find(
+      (c) => c[0].result === 'denied' && c[0].decision === 'denied_base_locked',
+    );
+    expect(denied).toBeTruthy();
+  });
+
+  it('N20 회귀 가드 — route 출처 data_bound 노드는 드래그·이동 모두 허용', () => {
+    const trackSpy = vi.spyOn(trackers, 'trackEditorDnd');
+    const { result, patchSpy } = scene([ROUTE_BOUND, { name: 'Div', id: 'c' }]);
+    act(() => result.current.onDragStart(startEvent('0')));
+    expect(trackSpy.mock.calls.find((c) => c[0].result === 'denied')).toBeUndefined();
+    expect(result.current.activeDragPath).toBe('0');
+    act(() => result.current.onDragEnd(endEvent('0', slot('', 2))));
+    expect(patchSpy).toHaveBeenCalled();
   });
 });

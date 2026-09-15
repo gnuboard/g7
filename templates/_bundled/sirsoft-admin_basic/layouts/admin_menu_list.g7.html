@@ -1,0 +1,103 @@
+<!-- 관리자 메뉴 관리. 좌우 두 판(왼쪽 트리 · 오른쪽 상세/편집)으로 된 화면이라 **별도 등록 화면이 없다** —
+  오른쪽 판이 `panelMode` 한 값으로 보기/등록/수정을 겸한다.
+  선택 상태와 입력값은 전역에 둔다. 두 판이 각각 조각 파일이라 한쪽이 고른 것을 다른 쪽이 읽어야 하고,
+  화면 상태를 조각 사이로 넘길 길이 그것뿐이기 때문이다. -->
+<layout name="admin_menu_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.menus.page_title" description="$t:admin.menus.page_description"/>
+  <!-- 메뉴 트리. 자식까지 계층 그대로 받아 온다 — 프론트에서 부모-자식을 다시 엮지 않는다. -->
+  <data-source id="menus" label_key="$t:editor.data_source.menus" type="api" endpoint="/api/admin/menus" method="GET" :auto_fetch="true" auth_mode="required">
+    <params :with_children="true" :hierarchical="true"/>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 활성 모듈과 **그 모듈이 제공하는 메뉴 항목**(`custom_menus`). 메뉴를 확장 화면에 연결할 때
+       고를 목록이라, 비활성 모듈은 받지 않는다(끌 수 없는 메뉴가 생기지 않게). -->
+  <data-source id="modules" label_key="$t:editor.data_source.modules" type="api" endpoint="/api/admin/modules" method="GET" :auto_fetch="true" auth_mode="required">
+    <params>
+      <field name="status" value="active"/>
+      <field name="with">
+        <item>custom_menus</item>
+      </field>
+    </params>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 활성 역할 목록 — 메뉴를 어느 역할에 보일지 고르는 선택지다. -->
+  <data-source id="roles" label_key="$t:editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" :auto_fetch="true" auth_mode="required">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="selectedMenuId" :value="null"/>
+    <field name="selectedMenu" :value="null"/>
+    <field name="panelMode" value="view"/>
+    <field name="formData">
+      <field name="name">
+        <field name="ko" value=""/>
+        <field name="en" value=""/>
+      </field>
+      <field name="slug" value=""/>
+      <field name="url" value=""/>
+      <field name="icon" value="fas fa-home"/>
+      <field name="parent_id" :value="null"/>
+      <field name="extension_type" :value="null"/>
+      <field name="extension_identifier" :value="null"/>
+      <field name="custom_menu_key" :value="null"/>
+      <field name="is_active" :value="true"/>
+      <field name="roles" :value="[]"/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>core.menus.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>menus</wait-for>
+    <wait-for>modules</wait-for>
+    <wait-for>roles</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="menu_list_content" class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:admin.menus.title" description="$t:admin.menus.description">
+        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <refetch-data-source dataSourceId="menus"/>
+          </on>
+        </icon-button>
+        <button data-ref="add_menu_button" disabled="{{menus?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 새 메뉴 — 오른쪽 판을 등록 모드로 돌리면서 **선택을 비우고 입력값을 전부 초기화한다**.
+                 한 벌뿐인 폼을 수정과 함께 쓰므로, 안 비우면 직전에 보던 메뉴의 값이 새 메뉴에 실린다. -->
+            <set-state target="global" :selectedMenuId="null" :selectedMenu="null" panelMode="create">
+              <field name="formData">
+                <field name="name">
+                  <field name="ko" value=""/>
+                  <field name="en" value=""/>
+                </field>
+                <field name="slug" value=""/>
+                <field name="url" value=""/>
+                <field name="icon" value="fas fa-home"/>
+                <field name="parent_id" :value="null"/>
+                <field name="extension_type" :value="null"/>
+                <field name="extension_identifier" :value="null"/>
+                <field name="custom_menu_key" :value="null"/>
+                <field name="is_active" :value="true"/>
+                <field name="roles" :value="[]"/>
+              </field>
+            </set-state>
+          </on>
+          <icon name="plus" size="md"/>
+          <span>$t:admin.menus.add_menu</span>
+        </button>
+      </page-header>
+      <div data-ref="main_grid" :data-blur-until-loaded="true" class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <include src="partials/admin_menu_list/_panel_menu_list.g7.html"/>
+        <include src="partials/admin_menu_list/_panel_detail.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 메뉴 삭제 확인 창 — 오른쪽 상세 판이 연다. 자식 메뉴가 딸린 경우를 창이 함께 알린다. -->
+  <modal src="partials/admin_menu_list/_modal_delete.g7.html"/>
+</layout>

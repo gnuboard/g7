@@ -25,6 +25,8 @@ return [
         'upload_image_max_height_max' => 10000,
         'upload_image_quality_min' => 1,
         'upload_image_quality_max' => 100,
+        'upload_orphan_retention_days_min' => 1,
+        'upload_orphan_retention_days_max' => 3650,
 
         // SEO
         'seo_og_image_default_width_min' => 0,
@@ -105,6 +107,78 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | 부트스트랩 리소스 정적 게시 (bake)
+    |--------------------------------------------------------------------------
+    | 초기 부트스트랩 리소스(다국어 병합·컴포넌트 정의·라우트·확장 번들·템플릿
+    | dist 에셋)를 캐시 버전 디렉토리(`public/build/ext/{v}/`)에 실파일로 게시해
+    | 웹서버가 rewrite 전에 직접 서빙하는 fast path 의 스위치입니다.
+    |
+    | 끄면(false) 게시가 중단되고 blade 가 정적 URL 을 방출하지 않아 전면 API
+    | 폴백(종전 동작)으로 돌아갑니다. 이미 게시된 파일은 참조되지 않은 채 남습니다.
+    */
+    'static_cache' => [
+        'enabled' => env('G7_STATIC_CACHE', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | SEO 봇 캐시 상한
+    |--------------------------------------------------------------------------
+    | 봇 판정은 User-Agent 문자열뿐이라 위장이 가능하고, 캐시 키에 쿼리가 들어가므로
+    | 물음표 뒤 값만 바꾸면 매 요청이 미스가 됩니다. 미스 1건은 레이아웃 병합·표현식
+    | 평가·자기 API 루프백 호출을 유발하고 그 결과가 캐시에 쌓입니다.
+    |
+    | 아래 값이 그 증식을 막는 상한입니다. 렌더 예산을 넘긴 요청은 오류가 아니라
+    | 일반 SPA 응답을 받습니다(봇에게 오류를 주면 색인에서 URL 이 빠집니다).
+    |
+    | IP 단위 상한(render_misses_per_minute, stats_records_per_minute)은 요청 IP 를
+    | 기준으로 셉니다. 리버스 프록시·CDN 뒤에 두면서 TRUSTED_PROXIES 를 지정하지 않으면
+    | 모든 요청이 프록시 IP 하나로 보여 사이트 전체가 한 예산을 나눠 쓰게 되고, 정상
+    | 검색엔진 봇도 예산 초과 시점부터 SPA 를 받습니다. docs/backend/reverse-proxy.md 참조.
+    */
+    'seo_cache_limits' => [
+        // 캐시 키에 허용하는 쿼리 파라미터 수 (초과 → 캐시·렌더 안 함)
+        'max_query_params' => (int) env('G7_SEO_CACHE_MAX_QUERY_PARAMS', 10),
+
+        // 정규화된 쿼리 문자열 길이 상한 (바이트)
+        'max_query_length' => (int) env('G7_SEO_CACHE_MAX_QUERY_LENGTH', 512),
+
+        // 같은 경로·언어에 대해 저장하는 쿼리 변종 수 상한 (언어별로 따로 센다)
+        'max_variants_per_path' => (int) env('G7_SEO_CACHE_MAX_VARIANTS_PER_PATH', 50),
+
+        // 캐시 인덱스 전체 항목 수 상한
+        'max_entries' => (int) env('G7_SEO_CACHE_MAX_ENTRIES', 20000),
+
+        // IP 당 분당 미스 렌더 수 (초과 → SPA + X-SEO-Cache: BYPASS)
+        'render_misses_per_minute' => (int) env('G7_SEO_RENDER_MISSES_PER_MINUTE', 60),
+
+        // IP 당 분당 통계 기록 수 (통계 테이블이 새 증식 축이 되지 않도록)
+        'stats_records_per_minute' => (int) env('G7_SEO_STATS_RECORDS_PER_MINUTE', 300),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 아웃바운드 프록시 연결 테스트
+    |--------------------------------------------------------------------------
+    | 운영자가 환경설정에 입력한 프록시가 실제로 동작하는지, 그리고 그 프록시를 거쳐
+    | 나갔을 때 상대편에 어떤 IP 로 보이는지 확인하는 데 쓰는 조회 대상입니다.
+    |
+    | 출발지 IP 는 운영자가 결제사·외부 서비스에 등록해야 하는 값이라, 프록시를 켠 상태의
+    | 실제 값을 알려주는 것이 이 테스트의 목적입니다. 목록은 순차 시도하며 먼저 유효한
+    | IP 를 돌려준 곳에서 멈춥니다. 폐쇄망 등 외부 조회가 불가능한 환경에서는 목록을
+    | 비워 두면 도달성만 확인하고 IP 는 보고하지 않습니다.
+    */
+    'outbound_proxy' => [
+        'egress_lookup_urls' => [
+            'https://api.ipify.org',
+            'https://ifconfig.me/ip',
+            'https://icanhazip.com',
+        ],
+        'test_timeout_seconds' => 10,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | 검색 — DBMS 별 부분일치 연산자
     |--------------------------------------------------------------------------
     | 전문검색을 제공하지 않는 DBMS 로 설치된 사이트에서는 부분일치(LIKE)가 정상 검색
@@ -123,6 +197,19 @@ return [
             'pgsql' => 'ilike',
         ],
         'like_operator_default' => 'like',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 스토리지 — 공개 자산 직접 URL 서빙 디스크
+    |--------------------------------------------------------------------------
+    | 완전 공개 자산(상품/카테고리/리뷰/에디터 이미지)의 직접 URL(CDN) 서빙에 쓸
+    | 디스크입니다. 빈 문자열이면 미설정(기존 PHP 스트리밍 유지)이며, 값은 관리자
+    | 환경설정(drivers.public_asset_disk)에서 SettingsServiceProvider 가 주입합니다.
+    | 확장은 개별 설정으로 이 전역값을 오버라이드할 수 있습니다.
+    */
+    'storage' => [
+        'public_asset_disk' => '',
     ],
 
     /*
@@ -218,6 +305,22 @@ return [
                 ],
             ],
             [
+                'identifier' => 'core.extensions',
+                'name' => ['ko' => '확장 공통', 'en' => 'Extension Common'],
+                'description' => ['ko' => '모듈·플러그인·템플릿에 공통으로 적용되는 권한', 'en' => 'Permissions that apply across modules, plugins and templates'],
+                'category' => 'extensions',
+                'order' => 5.5,
+                'type' => 'admin',
+                'permissions' => [
+                    // 확장 타입을 가리지 않는 단일 권한이다. 타입별로 쪼개면 운영자가 셋을 모두
+                    // 부여해야 하고, "모듈 CSS 는 되는데 템플릿 CSS 는 안 되는" 상태가 실질적
+                    // 의미 없이 생긴다. 레이아웃 편집 권한과는 분리한다 — 여기서 올린 스크립트는
+                    // 그 레이아웃 한 장이 아니라 사이트 전 화면에서 실행되므로, 레이아웃을 고칠
+                    // 수 있다는 것이 곧 그 권한이 될 수 없다.
+                    ['identifier' => 'core.extensions.custom_assets.manage', 'type' => 'admin', 'name' => ['ko' => '커스텀 자산 관리', 'en' => 'Manage Custom Assets'], 'description' => ['ko' => '모듈·플러그인·템플릿에 운영자 CSS·JS·폰트·이미지를 추가하거나 수정할 수 있습니다. 추가한 스크립트는 사이트 전체에서 실행되므로 레이아웃 편집과 별도로 부여합니다.', 'en' => 'Can add or edit operator CSS/JS/fonts/images on modules, plugins and templates. Added scripts run across the whole site, so this is granted separately from layout editing.'], 'order' => 1],
+                ],
+            ],
+            [
                 'identifier' => 'core.permissions',
                 'name' => ['ko' => '권한 관리', 'en' => 'Permission Management'],
                 'description' => ['ko' => '역할 및 권한 관리 권한', 'en' => 'Role and permission management permissions'],
@@ -241,6 +344,18 @@ return [
                 'permissions' => [
                     ['identifier' => 'core.notification-logs.read', 'type' => 'admin', 'name' => ['ko' => '발송 이력 조회', 'en' => 'View Notification Logs'], 'description' => ['ko' => '알림 발송 이력을 조회할 수 있습니다.', 'en' => 'Can view notification logs.'], 'order' => 1],
                     ['identifier' => 'core.notification-logs.delete', 'type' => 'admin', 'name' => ['ko' => '발송 이력 삭제', 'en' => 'Delete Notification Logs'], 'description' => ['ko' => '알림 발송 이력을 삭제할 수 있습니다.', 'en' => 'Can delete notification logs.'], 'order' => 2],
+                ],
+            ],
+            [
+                'identifier' => 'core.member-notifications',
+                'name' => ['ko' => '회원 알림함', 'en' => 'Member Notifications'],
+                'description' => ['ko' => '전 회원 in-app 알림함 조회·삭제 권한', 'en' => 'View and delete member in-app notifications'],
+                'category' => 'member-notifications',
+                'order' => 7.7,
+                'type' => 'admin',
+                'permissions' => [
+                    ['identifier' => 'core.member-notifications.read', 'type' => 'admin', 'name' => ['ko' => '회원 알림함 조회', 'en' => 'View Member Notifications'], 'description' => ['ko' => '전 회원이 받은 알림을 조회할 수 있습니다.', 'en' => 'Can view notifications received by all members.'], 'order' => 1],
+                    ['identifier' => 'core.member-notifications.delete', 'type' => 'admin', 'name' => ['ko' => '회원 알림함 삭제', 'en' => 'Delete Member Notifications'], 'description' => ['ko' => '회원이 받은 알림을 삭제할 수 있습니다.', 'en' => 'Can delete notifications received by members.'], 'order' => 2],
                 ],
             ],
             [
@@ -412,6 +527,9 @@ return [
                 'core.activities.read',
                 'core.attachments.create', 'core.attachments.update', 'core.attachments.delete',
                 'core.notification-logs.read',
+                // 스코프를 두지 않는다 — 이 권한의 대상은 «회원이 받은» 알림이라
+                // self 로 좁히면 매니저 본인의 수신함이 되어 버려 화면의 의미가 사라진다.
+                'core.member-notifications.read',
             ],
             // 권한별 스코프 지정 (self: 본인 소유만, role: 같은 역할 범위, 미지정: 전체)
             'permission_scopes' => [
@@ -485,6 +603,15 @@ return [
             'icon' => 'fas fa-bell',
             'parent_id' => null,
             'order' => 3,
+            'is_active' => true,
+        ],
+        [
+            'slug' => 'admin-member-notifications',
+            'name' => ['ko' => '회원 알림함', 'en' => 'Member Notifications'],
+            'url' => '/admin/member-notifications',
+            'icon' => 'fas fa-inbox',
+            'parent_id' => null,
+            'order' => 3.5,
             'is_active' => true,
         ],
         [

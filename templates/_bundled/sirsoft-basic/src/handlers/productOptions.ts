@@ -61,7 +61,15 @@ interface ProductOptionRecord {
 interface AdditionalOptionValue {
   id: number;
   name: string;
+  /** 추가금 (쇼핑몰 **기본 통화** 기준 — KRW 고정이 아니다) */
   price_adjustment: number;
+  /**
+   * 통화별 추가금 (서버 `multi_currency_price_adjustment`).
+   *
+   * 표시통화가 기본통화와 다르면 `price_adjustment` 를 그대로 쓰면 안 된다.
+   * 상품가는 환산되어 오는데 추가금만 기준통화로 남으면 합계에서 통화가 섞인다.
+   */
+  multi_currency_price_adjustment?: Record<string, { price?: number; value?: number; formatted: string }>;
   is_default: boolean;
   /** 직접입력 허용 — 이 선택지 선택 시 자유 텍스트 입력칸 노출(입력 필수) */
   allow_custom_text?: boolean;
@@ -99,8 +107,10 @@ interface SelectedItem {
   additionalOptionSelections?: AdditionalOptionSelections;
   /** 블럭별 추가옵션 직접입력 텍스트 (그룹ID → custom_text). allow_custom_text 선택지 한정 */
   additionalOptionCustomTexts?: Record<number, string>;
-  /** 블럭별 추가옵션 추가금 합계 (KRW 기준, 단위당) */
+  /** 블럭별 추가옵션 추가금 합계 (기본 통화 기준, 단위당) */
   additionalOptionsTotal?: number;
+  /** 블럭별 추가옵션 추가금 합계의 통화별 값 (단위당). 표시통화 합계 계산에 쓴다 */
+  additionalOptionsMultiCurrencyTotal?: Record<string, { value: number }>;
 }
 
 interface AddSelectedItemParams {
@@ -157,68 +167,126 @@ interface ActionDefinition {
 }
 
 /**
- * 통화별 포맷팅 설정
+ * 통화 코드별 소수 자릿수 폴백 (설정에 decimal_places 가 없을 때만 사용).
  */
-const CURRENCY_CONFIGS: Record<string, { locale: string; decimals: number }> = {
-  KRW: { locale: 'ko-KR', decimals: 0 },
-  USD: { locale: 'en-US', decimals: 2 },
-  JPY: { locale: 'ja-JP', decimals: 0 },
-  CNY: { locale: 'zh-CN', decimals: 2 },
-  EUR: { locale: 'de-DE', decimals: 2 },
+const DECIMAL_PLACES_FALLBACK: Record<string, number> = {
+  KRW: 0,
+  JPY: 0,
 };
 
 /**
- * 숫자를 통화 형식으로 포맷팅
+ * 쇼핑몰 설정에 등록된 통화 목록을 전역 상태에서 읽습니다.
+ *
+ * @returns currencies 배열 (읽지 못하면 빈 배열)
  */
-function formatPrice(amount: number, currencyCode: string = 'KRW'): string {
-  if (!Number.isFinite(amount)) return '0';
-  const config = CURRENCY_CONFIGS[currencyCode] || CURRENCY_CONFIGS.KRW;
+function getConfiguredCurrencies(): Array<{ code: string; decimal_places?: number; is_default?: boolean }> {
   try {
-    return new Intl.NumberFormat(config.locale, {
+    const state = (window as any).G7Core?.state?.get?.() || {};
+    const lc = state?.modules?.['sirsoft-ecommerce']?.language_currency;
+
+    return Array.isArray(lc?.currencies) ? lc.currencies : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 숫자를 통화 형식으로 포맷팅
+ *
+ * 통화 목록은 운영자가 관리자에서 추가/삭제하므로 고정 통화표를 두지 않는다. 설정에 없는
+ * 통화를 특정 통화로 폴백시키면(예: GBP 를 원화 자릿수로) 값은 맞고 단위만 틀린 금액이 나간다.
+ * 자릿수는 설정의 decimal_places 를 따르고, 기호·표기 규칙은 Intl 이 통화 코드로 판정한다.
+ *
+ * @param amount 금액
+ * @param currencyCode 통화 코드 (미지정 시 설정의 기본 통화)
+ * @returns 포맷된 금액 문자열
+ */
+function formatPrice(amount: number, currencyCode?: string): string {
+  if (!Number.isFinite(amount)) return '0';
+
+  const currencies = getConfiguredCurrencies();
+  const code = currencyCode || currencies.find((c) => c.is_default)?.code;
+
+  if (!code) {
+    // 통화를 판정할 수 없으면 단위를 임의로 붙이지 않는다.
+    return amount.toLocaleString();
+  }
+
+  const decimals = currencies.find((c) => c.code === code)?.decimal_places
+    ?? DECIMAL_PLACES_FALLBACK[code]
+    ?? 2;
+
+  try {
+    return new Intl.NumberFormat(undefined, {
       style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: config.decimals,
-      maximumFractionDigits: config.decimals,
+      currency: code,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     }).format(amount);
   } catch {
-    return amount.toLocaleString() + (currencyCode === 'KRW' ? '원' : '');
+    return `${amount.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })} ${code}`;
   }
 }
 
 /**
  * 다중 통화 총 가격 재계산
  *
- * 추가옵션 추가금(additionalUnitKrw)이 있으면 KRW 환율 기준으로 환산해 각 통화 단가에 가산한다.
- * 추가옵션은 공개 응답에 다통화 컬럼이 없으므로(plan §245) 기본통화(KRW) 단가 비율로 환산한다.
+ * 추가옵션 추가금은 서버가 통화별로 환산해 내려준 맵(`additionalUnitByCurrency`)에서 읽는다.
+ *
+ * 종전에는 추가금을 KRW 로 간주해 표시통화가 KRW 이면 환산 없이 그대로 더했다. 추가금은
+ * 쇼핑몰 **기본 통화** 기준이라 기본통화가 KRW 인 쇼핑몰에서만 우연히 맞았고, 기본통화가
+ * 다른 쇼핑몰에서는 "환산된 상품가 + 환산 안 된 추가금" 이라는 통화가 섞인 합계가 나왔다.
+ *
+ * 서버 맵이 없는 응답(구버전)에서는 단가 비율로 환산한다. 이때 기준은 **기본 통화**다 —
+ * 종전처럼 KRW 를 기준으로 잡으면 기본통화가 KRW 가 아닌 쇼핑몰에서 어긋난다. 기본 통화를
+ * 판정할 수 없는 형태(내부 `{value, formatted}` 맵)면 마지막 수단으로 KRW 를 기준으로 둔다.
  *
  * @param unitPriceMap 옵션 단가 다통화 맵
  * @param quantity 수량
- * @param additionalUnitKrw 추가옵션 추가금 합계 (KRW 기준, 단위당). 기본 0.
+ * @param additionalUnitByCurrency 통화별 추가옵션 추가금 합계 (단위당)
+ * @param additionalUnitBase 기본 통화 기준 추가금 합계 (단위당, 폴백 환산용)
  */
 function recalcMultiCurrencyTotal(
   unitPriceMap: Record<string, { value: number; formatted: string }> | undefined,
   quantity: number,
-  additionalUnitKrw: number = 0
+  additionalUnitByCurrency?: Record<string, { value: number }>,
+  additionalUnitBase: number = 0
 ): Record<string, { value: number; formatted: string }> | undefined {
   if (!unitPriceMap) return undefined;
 
-  // KRW 단가를 환산 기준으로 사용 (옵션의 KRW 단가 대비 타통화 비율)
-  const krwUnit = (unitPriceMap.KRW as any)?.value ?? (unitPriceMap.KRW as any)?.price ?? 0;
+  const readAmount = (entry: any): number => entry?.value ?? entry?.price ?? 0;
+
+  // 폴백 환산의 기준 통화: is_default 로 표시된 통화 → 없으면 KRW (기존 동작 보존)
+  let pivotCode: string | undefined;
+  for (const [code, data] of Object.entries(unitPriceMap)) {
+    if ((data as any)?.is_default) {
+      pivotCode = code;
+      break;
+    }
+  }
+  pivotCode = pivotCode ?? (unitPriceMap.KRW ? 'KRW' : undefined);
+  const pivotUnit = pivotCode ? readAmount(unitPriceMap[pivotCode]) : 0;
 
   const result: Record<string, { value: number; formatted: string }> = {};
   for (const [code, data] of Object.entries(unitPriceMap)) {
-    // API는 { price, formatted } 형태, 내부는 { value, formatted } 형태 — 둘 다 지원
-    const unitValue = (data as any)?.value ?? (data as any)?.price ?? 0;
-    // 추가금 통화 환산: KRW 기준 추가금 × (해당통화 단가 / KRW 단가). KRW 자신은 그대로.
-    let additionalConverted = 0;
-    if (additionalUnitKrw > 0) {
-      if (code === 'KRW') {
-        additionalConverted = additionalUnitKrw;
-      } else if (krwUnit > 0) {
-        additionalConverted = (additionalUnitKrw * unitValue) / krwUnit;
-      }
+    const unitValue = readAmount(data);
+
+    let additionalValue: number;
+    if (additionalUnitByCurrency) {
+      // 서버가 통화별로 환산해 준 값이 있으면 그것이 정답이다
+      additionalValue = additionalUnitByCurrency[code]?.value ?? 0;
+    } else if (additionalUnitBase > 0 && code === pivotCode) {
+      additionalValue = additionalUnitBase;
+    } else if (additionalUnitBase > 0 && pivotUnit > 0) {
+      additionalValue = (additionalUnitBase * unitValue) / pivotUnit;
+    } else {
+      additionalValue = 0;
     }
-    const total = (unitValue + additionalConverted) * quantity;
+
+    const total = (unitValue + additionalValue) * quantity;
     result[code] = {
       value: total,
       formatted: formatPrice(total, code),
@@ -277,6 +345,50 @@ function computeAdditionalOptionsTotal(
     if (value) total += value.price_adjustment ?? 0;
   }
   return total;
+}
+
+/**
+ * 선택된 추가옵션 추가금의 **통화별** 합계를 계산합니다 (단위당).
+ *
+ * 서버가 선택지마다 내려주는 `multi_currency_price_adjustment` 를 통화코드별로 합산한다.
+ * 그 맵이 없는 선택지(구버전 응답)는 기본통화 값만 있는 셈이므로 합산에서 제외하지 않고
+ * 통화 구분 없이 더하면 통화가 섞이므로, 맵이 있는 선택지만 통화별 합계에 반영한다.
+ *
+ * @param selections 블럭별 추가옵션 선택 (그룹ID → 선택지ID)
+ * @param groups 추가옵션 카탈로그
+ * @returns 통화코드 => { value } 합계 맵 (선택 없음/맵 없음이면 undefined)
+ */
+function computeAdditionalOptionsMultiCurrencyTotal(
+  selections: AdditionalOptionSelections | undefined,
+  groups: AdditionalOptionGroup[] | undefined
+): Record<string, { value: number }> | undefined {
+  if (!selections || !groups?.length) return undefined;
+
+  const totals: Record<string, number> = {};
+  let found = false;
+
+  for (const group of groups) {
+    const valueId = selections[group.id];
+    if (valueId == null) continue;
+
+    const value = group.values?.find(v => v.id === Number(valueId));
+    const map = value?.multi_currency_price_adjustment;
+    if (!map) continue;
+
+    found = true;
+    for (const [code, entry] of Object.entries(map)) {
+      const amount = (entry as any)?.value ?? (entry as any)?.price ?? 0;
+      totals[code] = (totals[code] ?? 0) + amount;
+    }
+  }
+
+  if (!found) return undefined;
+
+  const result: Record<string, { value: number }> = {};
+  for (const [code, value] of Object.entries(totals)) {
+    result[code] = { value };
+  }
+  return result;
 }
 
 /**
@@ -486,6 +598,10 @@ export function addSelectedItemIfCompleteHandler(
     additionalOptionSelections,
     additionalOptionGroups
   );
+  const additionalOptionsMultiCurrencyTotal = computeAdditionalOptionsMultiCurrencyTotal(
+    additionalOptionSelections,
+    additionalOptionGroups
+  );
 
   const blockUnitTotal = unitPrice + additionalOptionsTotal;
 
@@ -507,10 +623,12 @@ export function addSelectedItemIfCompleteHandler(
     multiCurrencyTotalPrice: recalcMultiCurrencyTotal(
       matchedOption.multi_currency_selling_price as any,
       1,
+      additionalOptionsMultiCurrencyTotal,
       additionalOptionsTotal
     ),
     additionalOptionSelections,
     additionalOptionsTotal,
+    additionalOptionsMultiCurrencyTotal,
   };
 
   const nextItems = [...items, newItem];
@@ -553,6 +671,7 @@ export function updateSelectedItemQuantityHandler(
       multiCurrencyTotalPrice: recalcMultiCurrencyTotal(
         item?.multiCurrencyUnitPrice,
         newQuantity,
+        item?.additionalOptionsMultiCurrencyTotal,
         additionalOptionsTotal
       ),
     };
@@ -616,6 +735,10 @@ export function setBlockAdditionalOptionHandler(
     }
 
     const additionalOptionsTotal = computeAdditionalOptionsTotal(selections, additionalOptionGroups);
+    const additionalOptionsMultiCurrencyTotal = computeAdditionalOptionsMultiCurrencyTotal(
+      selections,
+      additionalOptionGroups
+    );
     const unitPrice = item?.unitPrice ?? 0;
     const quantity = item?.quantity ?? 1;
     const totalPrice = (unitPrice + additionalOptionsTotal) * quantity;
@@ -625,11 +748,13 @@ export function setBlockAdditionalOptionHandler(
       additionalOptionSelections: selections,
       additionalOptionCustomTexts: customTexts,
       additionalOptionsTotal,
+      additionalOptionsMultiCurrencyTotal,
       totalPrice,
       totalPriceFormatted: formatPrice(totalPrice, preferredCurrency),
       multiCurrencyTotalPrice: recalcMultiCurrencyTotal(
         item?.multiCurrencyUnitPrice,
         quantity,
+        additionalOptionsMultiCurrencyTotal,
         additionalOptionsTotal
       ),
     };

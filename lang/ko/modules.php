@@ -58,6 +58,7 @@ return [
             'permissions_deleted' => ':count개 권한 삭제됨',
             'menus_deleted' => ':count개 메뉴 삭제됨',
             'layouts_deleted' => ':count개 레이아웃 삭제됨',
+            'custom_preserved' => '운영자 파일(:directory)을 :archive 에 보관했습니다.',
             'confirm_prompt' => '모듈 ":module"을(를) 삭제하시겠습니까?',
             'confirm_details' => [
                 'roles' => '- :count개의 역할이 삭제됩니다.',
@@ -184,6 +185,7 @@ return [
         'layout_validation_json_error' => '레이아웃 파일 :file의 JSON 파싱에 실패했습니다: :error',
         'layout_validation_missing_name' => '레이아웃 파일 :file에 layout_name이 누락되었습니다.',
         'layout_validation_partial_error' => '레이아웃 파일 :file의 partial 처리에 실패했습니다: :error (partial: :partial)',
+        'layout_validation_markup_error' => '레이아웃 파일 :file의 마크업 컴파일에 실패했습니다: :error',
         'layout_validation_validation_failed' => '모듈 :identifier의 레이아웃 검증에 실패했습니다. :count개의 오류가 발견되었습니다: :error',
         'operation_in_progress' => '모듈 ":name"이(가) 현재 :status 상태입니다. 작업이 완료될 때까지 기다려 주세요.',
         'github_api_failed' => 'GitHub API 호출에 실패했습니다: :error',

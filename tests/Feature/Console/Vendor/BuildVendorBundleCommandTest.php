@@ -40,9 +40,19 @@ class BuildVendorBundleCommandTest extends TestCase
      * 의 vendor-bundle.zip 까지 가짜 498-byte zip 으로 덮어쓰는 사고를 방지하기 위해
      * 실제 파일을 snapshot 하고 tearDown 에서 복원한다.
      *
-     * @var array<string, string> path => content (binary-safe)
+     * 스냅샷은 **파일 복사**로 잡는다 — 내용을 PHP 문자열로 들고 있지 않는다.
+     *
+     * 루트 `vendor-bundle.zip` 하나가 15MB 에 육박하는데, 종전 구현은 그것을 `setUp` 마다
+     * 메모리로 통째 읽었다. 이 클래스의 테스트 수(14+)만큼 반복되면서 전량 스위트의
+     * `memory_limit`(1G)을 밀어붙였고, 실제로 이 지점에서 **OOM 으로 스위트가 중단**돼
+     * 그 뒤 결과 전부를 신호로 쓸 수 없게 만들었다.
+     *
+     * @var array<string, string> 원본 경로 => 임시 복사본 경로
      */
     private array $realBundleSnapshots = [];
+
+    /** 스냅샷 복사본을 모아 두는 임시 디렉토리 */
+    private ?string $snapshotDir = null;
 
     protected function setUp(): void
     {
@@ -105,12 +115,18 @@ class BuildVendorBundleCommandTest extends TestCase
      */
     private function snapshotRealBundles(): void
     {
-        $paths = $this->collectRealBundlePaths();
+        $this->snapshotDir = storage_path('framework/testing/vendor_bundle_snapshot_'.uniqid());
+        File::ensureDirectoryExists($this->snapshotDir);
 
-        foreach ($paths as $path) {
-            if (file_exists($path)) {
-                $this->realBundleSnapshots[$path] = (string) file_get_contents($path);
+        foreach ($this->collectRealBundlePaths() as $index => $path) {
+            if (! file_exists($path)) {
+                continue;
             }
+
+            // 내용을 메모리로 읽지 않고 파일 대 파일로 복사한다 (바이너리 안전 + 상수 메모리).
+            $copy = $this->snapshotDir.DIRECTORY_SEPARATOR.$index.'_'.basename($path);
+            copy($path, $copy);
+            $this->realBundleSnapshots[$path] = $copy;
         }
     }
 
@@ -119,9 +135,9 @@ class BuildVendorBundleCommandTest extends TestCase
      */
     private function restoreRealBundles(): void
     {
-        foreach ($this->realBundleSnapshots as $path => $content) {
+        foreach ($this->realBundleSnapshots as $path => $copy) {
             File::ensureDirectoryExists(dirname($path));
-            file_put_contents($path, $content);
+            copy($copy, $path);
         }
 
         // 스냅샷에 없던 파일 (테스트 중 새로 생성된 가짜 파일) 정리
@@ -130,6 +146,13 @@ class BuildVendorBundleCommandTest extends TestCase
                 @unlink($path);
             }
         }
+
+        if ($this->snapshotDir !== null && File::isDirectory($this->snapshotDir)) {
+            File::deleteDirectory($this->snapshotDir);
+        }
+
+        $this->realBundleSnapshots = [];
+        $this->snapshotDir = null;
     }
 
     /**
@@ -215,6 +238,63 @@ class BuildVendorBundleCommandTest extends TestCase
             'identifier' => $this->fakeModuleIdentifier,
             '--check' => true,
         ])->assertExitCode(1);
+    }
+
+    /**
+     * 미설치 확장(활성 디렉토리 없음)도 --check 는 _bundled 의 composer.json 을 기준으로 판정한다.
+     *
+     * 종전에는 활성 디렉토리 부재를 "소스 경로 없음" 으로 보고하고 판정을 건너뛰어, _bundled 에
+     * 외부 의존성이 선언됐는데 번들이 없거나 stale 인 상태가 --check 를 통과했다.
+     */
+    public function test_module_vendor_bundle_check_judges_bundled_when_extension_not_installed(): void
+    {
+        $identifier = 'test-uninstalled-'.uniqid();
+        $bundledPath = base_path('modules/_bundled/'.$identifier);
+        File::ensureDirectoryExists($bundledPath);
+        File::put($bundledPath.'/composer.json', json_encode([
+            'name' => 'test/uninstalled',
+            'require' => ['php' => '^8.2', 'test/lib' => '^1.0'],
+        ]));
+
+        try {
+            $this->assertDirectoryDoesNotExist(base_path('modules/'.$identifier));
+
+            $this->artisan('module:vendor-bundle', [
+                'identifier' => $identifier,
+                '--check' => true,
+            ])
+                ->doesntExpectOutputToContain('소스 경로 없음')
+                ->expectsOutputToContain('STALE')
+                ->assertExitCode(1);
+        } finally {
+            File::deleteDirectory($bundledPath);
+        }
+    }
+
+    /**
+     * 미설치 + 외부 의존성 없음은 종전과 같이 SKIPPED (번들 대상 아님).
+     */
+    public function test_module_vendor_bundle_check_skips_uninstalled_extension_without_external_dependencies(): void
+    {
+        $identifier = 'test-uninstalled-'.uniqid();
+        $bundledPath = base_path('modules/_bundled/'.$identifier);
+        File::ensureDirectoryExists($bundledPath);
+        File::put($bundledPath.'/composer.json', json_encode([
+            'name' => 'test/uninstalled-plain',
+            'require' => ['php' => '^8.2'],
+        ]));
+
+        try {
+            $this->artisan('module:vendor-bundle', [
+                'identifier' => $identifier,
+                '--check' => true,
+            ])
+                ->doesntExpectOutputToContain('소스 경로 없음')
+                ->expectsOutputToContain('SKIPPED (외부 composer 의존성 없음)')
+                ->assertExitCode(0);
+        } finally {
+            File::deleteDirectory($bundledPath);
+        }
     }
 
     public function test_module_vendor_bundle_check_reports_up_to_date_after_build(): void

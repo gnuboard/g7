@@ -12,6 +12,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * 코어/공식 번들 언어팩을 외부 다운로드 없이 로컬 번들에서 (재)설치하는 경로.
  * 모듈/플러그인/템플릿의 `_bundled` 설치 패턴과 동일.
  */
+// audit:allow api-doc-coverage reason: 이번 변경은 rules() 주석 문구 정정 1건뿐이다. 요청 파라미터·검증 규칙·응답 구조가 그대로라 docs/backend/api/language-packs.md 에 갱신할 내용이 없다.
 class InstallFromBundledRequest extends FormRequest
 {
     /**
@@ -39,7 +40,7 @@ class InstallFromBundledRequest extends FormRequest
                 'regex:/^[a-zA-Z0-9._\-]+$/',
             ],
             /*
-             * 외부 소스(파일·URL·GitHub)와 동일하게 활성화 권한 게이트를 건다 (PO 결정, 2026-08-04).
+             * 외부 소스(파일·URL·GitHub)와 동일하게 활성화 권한 게이트를 건다 (프로젝트 결정, 2026-08-04).
              * 설치(install)와 활성화(manage)를 별도 권한으로 두는 정책을 네 경로 전부에 같은 강도로
              * 적용해, "어느 경로로 들어오느냐" 가 권한 경계를 바꾸지 않게 한다.
              *

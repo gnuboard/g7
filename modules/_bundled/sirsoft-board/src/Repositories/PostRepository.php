@@ -62,7 +62,7 @@ class PostRepository implements PostRepositoryInterface
         // 목록 전용 컬럼: content(본문 HTML) 제외 → content_preview로 대체
         $listColumns = [
             'id', 'board_id', 'user_id', 'parent_id', 'category',
-            'title', 'author_name', 'content_mode',
+            'title', 'author_name', 'content_mode', 'content_thumbnail_url',
             'is_notice', 'is_secret', 'status', 'depth',
             'view_count', 'comments_count', 'replies_count', 'attachments_count',
             'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',
@@ -89,6 +89,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건
+     * @return void
      */
     private function applyFilters($query, array $filters): void
     {
@@ -105,6 +106,17 @@ class PostRepository implements PostRepositoryInterface
                 // 코어 헬퍼를 거쳐야 BOOLEAN MODE 연산자(+ - * " 등) 입력이 500 이 되지 않는다.
                 if ($searchField === 'all' || $searchField === 'title_content') {
                     KeywordSearch::apply($q, ['title', 'content'], $rawKeyword, 'or');
+                }
+
+                // 단일 컬럼 검색 (title / content)
+                // board_posts 에는 (title, content) 복합 FULLTEXT 만 있어 단일 컬럼 MATCH 가
+                // 불가능하다 — KeywordSearch 를 단일 컬럼으로 부르면 인덱스를 타지 못하므로 LIKE 를 쓴다.
+                if ($searchField === 'title') {
+                    $q->orWhere('title', 'like', "%{$likeKeyword}%");
+                }
+
+                if ($searchField === 'content') {
+                    $q->orWhere('content', 'like', "%{$likeKeyword}%");
                 }
 
                 // 작성자 검색
@@ -753,6 +765,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  array  $filters  필터 조건 (검색, 상태, 분류 등)
      * @param  int|null  $perPage  페이지당 원글 수 (null이면 전체 조회)
      * @param  int  $currentPage  현재 페이지 번호
+     * @param  Board|null  $board  게시판 모델 (재조회 회피용 공유 인스턴스)
      * @return Collection|LengthAwarePaginator 정렬된 게시글 컬렉션 또는 페이지네이터
      */
     private function buildSortedPostList(
@@ -1064,7 +1077,7 @@ class PostRepository implements PostRepositoryInterface
      * 사용자가 작성한 게시글, 댓글을 단 게시글을 통합하여 반환합니다.
      *
      * @param  int  $userId  사용자 ID
-     * @param  array  $filters  필터 조건 (board_slug, search, activity_type, sort, is_public)
+     * @param  array  $filters  필터 조건 (board_slug, search, activity_type, sort, viewer_id, exclude_board_slugs)
      * @param  int  $perPage  페이지당 항목 수
      * @return LengthAwarePaginator 게시글 활동 목록
      */
@@ -1072,9 +1085,21 @@ class PostRepository implements PostRepositoryInterface
     {
         $boardSlugFilter = $filters['board_slug'] ?? null;
         $search = $filters['search'] ?? null;
+        // 검색 대상 (title_content 기본 / title / content). 모르는 값은 기본값으로 떨어뜨린다 —
+        // 허용값 게이트는 컨트롤러가 담당하고, 저장소는 닫힌 분기만 유지한다.
+        $searchField = $filters['search_field'] ?? 'title_content';
         $activityType = $filters['activity_type'] ?? 'authored';
         $sort = $filters['sort'] ?? 'latest'; // latest, oldest, views
-        $isPublic = $filters['is_public'] ?? false; // 공개 프로필용 필터 (비밀글 제외, 공개 게시글만)
+        // 열람자 관점. 이 값이 대상 사용자와 다르면(비로그인 포함) **타인 관점**이므로
+        // 비밀글·미발행글의 **본문(content_plain)만 비운다** — 행·제목·배지는 목록 화면과
+        // 동일하게 유지한다(제목 공개 정책 2026-02-04, 행 제거가 아니라 본문 마스킹이 의도).
+        //
+        // 종전에는 `is_public` 옵트인 플래그로 이 판정을 했는데, 그 키를 설정하는 코드가
+        // 저장소 어디에도 없어서 필터가 한 번도 적용되지 않았다(사문). 옵트인은 호출부가
+        // 빠뜨리면 조용히 열리는 방향이라, 열람자 신원으로 판정하는 fail-closed 로 뒤집는다 —
+        // viewer_id 가 없으면 자동으로 가장 좁은 가시성이 된다.
+        $viewerId = $filters['viewer_id'] ?? null;
+        $isOwnView = $viewerId !== null && $viewerId === $userId;
         $excludeBoardSlugs = $filters['exclude_board_slugs'] ?? [];
 
         // board_slug 필터용 board_id 조회
@@ -1099,12 +1124,15 @@ class PostRepository implements PostRepositoryInterface
 
         $cachedTotal = $filters['cached_total'] ?? null;
 
-        if ($activityType === 'commented' && ! $isPublic) {
-            return $this->getUserCommentedActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $orderColumn, $orderDirection, $perPage, $cachedTotal);
+        // 분기 선택은 activity_type 만 본다. 가시성은 각 분기 안에서 처리한다 —
+        // 여기서 열람자까지 보고 분기를 바꾸면 `commented` 요청이 조용히 `authored` 결과를
+        // 돌려주게 되어 저장소 계약이 깨진다.
+        if ($activityType === 'commented') {
+            return $this->getUserCommentedActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $orderColumn, $orderDirection, $perPage, $cachedTotal, $viewerId);
         }
 
         // authored (기본값, 공개 프로필 포함)
-        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isPublic, $orderColumn, $orderDirection, $perPage, $cachedTotal);
+        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isOwnView, $orderColumn, $orderDirection, $perPage, $cachedTotal, $searchField);
     }
 
     /**
@@ -1113,21 +1141,26 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $userId  사용자 ID
      * @param  int|null  $boardIdFilter  게시판 ID 필터
      * @param  string|null  $search  검색 키워드
-     * @param  bool  $isPublic  공개 프로필 여부 (비밀글 제외)
+     * @param  bool  $isOwnView  열람자가 대상 본인인지 여부 (아니면 비밀글·미발행글 제외)
      * @param  string  $orderColumn  정렬 컬럼
      * @param  string  $orderDirection  정렬 방향
      * @param  int  $perPage  페이지당 항목 수
+     * @param  int|null  $cachedTotal  캐시된 총 건수
+     * @param  string  $searchField  검색 대상 (title_content|title|content)
+     * @param  array<int, int>  $excludeBoardIds  제외할 게시판 ID 목록
+     * @return LengthAwarePaginator 게시글 활동 목록
      */
     private function getUserAuthoredActivities(
         int $userId,
         ?int $boardIdFilter,
         array $excludeBoardIds,
         ?string $search,
-        bool $isPublic,
+        bool $isOwnView,
         string $orderColumn,
         string $orderDirection,
         int $perPage,
-        ?int $cachedTotal = null
+        ?int $cachedTotal = null,
+        string $searchField = 'title_content'
     ): LengthAwarePaginator {
         // JOIN 대신 whereNotIn으로 비활성 게시판 제외 — idx_board_posts_user_created 인덱스 활용
         $inactiveBoardIds = $this->getInactiveBoardIds();
@@ -1145,16 +1178,17 @@ class PostRepository implements PostRepositoryInterface
             $query->whereNotIn('board_posts.board_id', $allExcludeIds);
         }
 
-        if ($isPublic) {
-            $query->where('board_posts.status', PostStatus::Published->value)
-                ->where('board_posts.is_secret', false);
-        }
-
         if ($search) {
             $keyword = $this->escapeLikeKeyword($search);
-            $query->where(function ($q) use ($keyword) {
-                $q->where('board_posts.title', 'like', "%{$keyword}%")
-                    ->orWhere('board_posts.content', 'like', "%{$keyword}%");
+            $columns = match ($searchField) {
+                'title' => ['board_posts.title'],
+                'content' => ['board_posts.content'],
+                default => ['board_posts.title', 'board_posts.content'],
+            };
+            $query->where(function ($q) use ($columns, $keyword) {
+                foreach ($columns as $column) {
+                    $q->orWhere($column, 'like', "%{$keyword}%");
+                }
             });
         }
 
@@ -1180,7 +1214,15 @@ class PostRepository implements PostRepositoryInterface
         );
 
         // paginate 후 10건에만 PHP 가공 적용 (N+1 아님)
-        $paginator->through(function ($post) {
+        $paginator->through(function ($post) use ($isOwnView) {
+            // 이 목록은 본문 일부(content_plain)를 함께 싣는다. 타인이 볼 때 비밀글·블라인드
+            // 글의 본문이 그대로 나가던 것이 결함이었다 — 행과 제목은 게시판 목록에서 이미
+            // 같은 수준으로 보이므로(PostResource 의 목록 규칙: 제목은 노출, 본문만 차단)
+            // 여기서도 **행은 남기고 본문만** 비운다. 행을 지우면 프로필의 비밀글/블라인드
+            // 배지가 사문이 되어 필요 이상으로 기능이 깎인다.
+            $hideContent = ! $isOwnView
+                && ((bool) $post->is_secret || $post->status === PostStatus::Blinded);
+
             return [
                 'id' => $post->id,
                 'board_slug' => $post->board?->slug,
@@ -1194,9 +1236,11 @@ class PostRepository implements PostRepositoryInterface
                 'comment_count' => (int) ($post->comments_count ?? 0),
                 'created_at' => $this->formatCreatedAt($post->created_at),
                 'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
-                'content_plain' => ($post->content_mode ?? 'text') === 'html'
-                    ? $this->stripHtmlToPlainText($post->content ?? '')
-                    : ($post->content ?? ''),
+                'content_plain' => $hideContent
+                    ? ''
+                    : (($post->content_mode ?? 'text') === 'html'
+                        ? $this->stripHtmlToPlainText($post->content ?? '')
+                        : ($post->content ?? '')),
             ];
         });
 
@@ -1213,6 +1257,9 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $orderColumn  정렬 컬럼
      * @param  string  $orderDirection  정렬 방향
      * @param  int  $perPage  페이지당 항목 수
+     * @param  int|null  $cachedTotal  캐시된 총 건수 (null 이면 COUNT 수행)
+     * @param  int|null  $viewerId  열람자 ID (대상 본인이 아니면 비밀글 본문 마스킹)
+     * @return LengthAwarePaginator 댓글 단 게시글 목록
      */
     private function getUserCommentedActivities(
         int $userId,
@@ -1222,15 +1269,19 @@ class PostRepository implements PostRepositoryInterface
         string $orderColumn,
         string $orderDirection,
         int $perPage,
-        ?int $cachedTotal = null
+        ?int $cachedTotal = null,
+        ?int $viewerId = null
     ): LengthAwarePaginator {
         // 테이블명은 모델에서 얻는다 — 문자열로 박으면 테이블명이 바뀔 때 조용히 깨진다
         $postsTable = (new Post)->getTable();
         $commentsTable = (new Comment)->getTable();
 
-        // 비활성 게시판 제외 — JOIN 없이 인덱스 활용
+        // 비활성 게시판 + 댓글 기능을 끈 게시판 제외 — JOIN 없이 인덱스 활용.
+        // use_comment 를 끈 게시판의 기존 댓글은 더 이상 열람·수정 경로가 없으므로
+        // "내가 댓글 단 글" 집계에도 남기지 않는다 (마이페이지 내 댓글과 같은 기준).
         $inactiveBoardIds = $this->getInactiveBoardIds();
-        $allExcludeIds = array_unique(array_merge($excludeBoardIds, $inactiveBoardIds));
+        $commentDisabledBoardIds = $this->getCommentDisabledBoardIds();
+        $allExcludeIds = array_unique(array_merge($excludeBoardIds, $inactiveBoardIds, $commentDisabledBoardIds));
 
         /**
          * 내가 이 글에 단 댓글 조건 (검색어까지 반영 — 활동 판정 · 건수 집계 공통).
@@ -1308,7 +1359,15 @@ class PostRepository implements PostRepositoryInterface
         );
 
         // paginate 후 10건에만 PHP 가공 적용
-        $paginator->through(function ($post) {
+        $paginator->through(function ($post) use ($viewerId) {
+            // 이 목록은 "내가 댓글 단 글" 이라 **타인이 쓴 비밀글**이 섞인다. 행은 내 활동
+            // 기록이므로 남기되 본문은 내보내지 않는다 — 목록 미리보기를 빈 문자열로 만드는
+            // PostResource::getMaskedContentPreviewForList 와 같은 규칙이다.
+            // (블라인드 글도 동일: 상세·목록 어느 경로에서도 본문이 나가지 않는다.)
+            // 열람자 미상($viewerId === null)이면 비밀글은 전부 가린다(fail-closed).
+            $hideContent = ((bool) $post->is_secret && (int) $post->user_id !== $viewerId)
+                || $post->status === PostStatus::Blinded;
+
             return [
                 'id' => $post->id,
                 'board_slug' => $post->board?->slug,
@@ -1322,9 +1381,11 @@ class PostRepository implements PostRepositoryInterface
                 'comment_count' => (int) ($post->comments_count ?? 0),
                 'created_at' => $this->formatCreatedAt($post->created_at),
                 'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
-                'content_plain' => ($post->content_mode ?? 'text') === 'html'
-                    ? $this->stripHtmlToPlainText($post->content ?? '')
-                    : ($post->content ?? ''),
+                'content_plain' => $hideContent
+                    ? ''
+                    : (($post->content_mode ?? 'text') === 'html'
+                        ? $this->stripHtmlToPlainText($post->content ?? '')
+                        : ($post->content ?? '')),
             ];
         });
 
@@ -1506,6 +1567,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $keyword  검색 키워드
+     * @return void
      */
     private function applyKeywordSearch(Builder $query, string $keyword): void
     {
@@ -1693,6 +1755,208 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * 부모 게시글 ID로 살아있는 답변(자식) 게시글 수를 조회합니다.
+     *
+     * SoftDeletes 전역 스코프가 삭제된 답변을 자동 제외하므로,
+     * "삭제된 답변 후 재등록 허용" 판정의 근거로 사용됩니다.
+     *
+     * @param  int  $parentPostId  부모 게시글 ID
+     * @return int 살아있는 자식 게시글 수
+     */
+    public function countRepliesByParentId(int $parentPostId): int
+    {
+        return Post::where('parent_id', $parentPostId)->count();
+    }
+
+    /**
+     * 게시글에 살아있는 직계 답글이 있는지 확인합니다.
+     *
+     * 답글 삭제 정책(block) 의 차단 판정 기준입니다. 살아있는 자손은 살아있는
+     * 부모 체인이 필요하므로 직계 검사만으로 판정이 완결됩니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return bool 살아있는 직계 답글 존재 여부
+     */
+    public function hasAliveReplies(string $slug, int $postId): bool
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        return Post::where('board_id', $board?->id)
+            ->where('parent_id', $postId)
+            ->exists();
+    }
+
+    /**
+     * 게시글의 전체 자손(답글 트리) ID 를 수집합니다.
+     *
+     * 반복 BFS + 방문 ID 집합 가드로 순환 데이터에서도 유한 종료를 보장합니다(규정).
+     * 삭제된 중간 노드 밑의 자손도 도달해야 하므로 순회는 withTrashed 로 수행합니다
+     * (끊긴 체인 밑 과거 고아 스윕의 전제).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  루트 게시글 ID
+     * @return array<int> 자손 게시글 ID 배열 (루트 미포함)
+     */
+    public function collectDescendantIds(string $slug, int $postId): array
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        if ($board === null) {
+            return [];
+        }
+
+        $visited = [$postId => true];
+        $frontier = [$postId];
+        $descendants = [];
+
+        while ($frontier !== []) {
+            // audit:allow query-unbounded-get reason: 대상은 한 원글의 답글 트리 한 레벨 — 삭제/복원은 트리 전체가 하나의 의사표시라 단일 트랜잭션에서 전량 확보해야 하며(부분 반영 시 원글과 답글 상태가 어긋남), visited 가드가 유한 종료를 보장한다
+            $children = Post::withTrashed()
+                ->where('board_id', $board->id)
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')
+                ->all();
+
+            $next = [];
+            foreach ($children as $childId) {
+                if (isset($visited[$childId])) {
+                    continue;
+                }
+                $visited[$childId] = true;
+                $next[] = $childId;
+                $descendants[] = $childId;
+            }
+
+            $frontier = $next;
+        }
+
+        return $descendants;
+    }
+
+    /**
+     * 게시글의 살아있는 자손 답글 전체를 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * 자손 중 살아있는 것만 단일 UPDATE 로 `status='deleted', trigger_type='cascade',
+     * deleted_at=now()` 마킹합니다 (status 포함: 관리자 삭제 탭 필터가 status 기준).
+     * 이미 trashed 인 자손(trigger 'user' 등)은 기본 스코프 밖이라 변조되지 않습니다.
+     * 작업 이력(action_log)은 부모에만 남깁니다 — 댓글 cascade 와 동일한 규약입니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  부모 게시글 ID
+     * @return array<int> 소프트 삭제된 자손 게시글 ID 배열
+     */
+    public function softDeleteCascadeByParentId(string $slug, int $postId): array
+    {
+        $descendantIds = $this->collectDescendantIds($slug, $postId);
+
+        if ($descendantIds === []) {
+            return [];
+        }
+
+        // 살아있는 자손만 선별 (기본 스코프가 trashed 제외)
+        $aliveIds = Post::whereIn('id', $descendantIds)->pluck('id')->all();
+
+        if ($aliveIds === []) {
+            return [];
+        }
+
+        Post::whereIn('id', $aliveIds)->update([
+            'status' => PostStatus::Deleted->value,
+            'trigger_type' => TriggerType::Cascade->value,
+            'deleted_at' => now(),
+        ]);
+
+        return $aliveIds;
+    }
+
+    /**
+     * 게시글 복원 시, cascade 로 지워진 자손 답글만 top-down 으로 선택 복원합니다.
+     *
+     * 레벨 순회 + 방문 가드: 각 레벨에서 `parent_id ∈ (복원됨 ∪ alive)` 인
+     * cascade-trashed 자손만 복원합니다. 사용자 직접 삭제('user')로 trashed 인
+     * 중간 노드는 복원되지 않고 그 서브트리도 그대로 유지됩니다(고아 재생성 금지).
+     *
+     * 트레이드오프(의도): 삭제 전 blinded 였던 자손도 복원 시 published 가 됩니다 —
+     * 부모 restorePost 의 기존 의미론(updateStatus published)과 동일합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  복원된 부모 게시글 ID
+     * @return array<int> 복원된 자손 게시글 ID 배열
+     */
+    public function restoreCascadedByParentId(string $slug, int $postId): array
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        if ($board === null) {
+            return [];
+        }
+
+        $visited = [$postId => true];
+        $frontier = [$postId];
+        $restored = [];
+
+        while ($frontier !== []) {
+            // 이미 살아있는 자식 — 더 깊은 레벨의 cascade 복원 통로로만 사용
+            $aliveChildren = Post::where('board_id', $board->id)
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')
+                ->all();
+
+            // cascade 로 지워진 자식만 복원 대상
+            $toRestore = Post::onlyTrashed()
+                ->where('board_id', $board->id)
+                ->whereIn('parent_id', $frontier)
+                ->where('trigger_type', TriggerType::Cascade->value)
+                ->pluck('id')
+                ->all();
+
+            if ($toRestore !== []) {
+                Post::onlyTrashed()->whereIn('id', $toRestore)->update([
+                    'status' => PostStatus::Published->value,
+                    'deleted_at' => null,
+                ]);
+                $restored = array_merge($restored, $toRestore);
+            }
+
+            $next = [];
+            foreach (array_merge($aliveChildren, $toRestore) as $childId) {
+                if (isset($visited[$childId])) {
+                    continue;
+                }
+                $visited[$childId] = true;
+                $next[] = $childId;
+            }
+
+            $frontier = $next;
+        }
+
+        return $restored;
+    }
+
+    /**
+     * 게시판의 전체 게시글 ID 를 청크 단위로 순회하며 콜백에 전달합니다.
+     *
+     * 게시판 삭제 벌크 훅(board.posts.before_force_delete)의 페이로드 공급용입니다.
+     * withTrashed 포함(삭제 대상은 trashed 도 물리 제거되므로), chunkById(키셋) 로
+     * OFFSET 밀림 없이 순회합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $size  청크 크기
+     * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
+     * @return void
+     */
+    public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void
+    {
+        Post::withTrashed()
+            ->where('board_id', $boardId)
+            ->select('id')
+            ->chunkById($size, function ($posts) use ($callback) {
+                $callback($posts->pluck('id')->all());
+            });
+    }
+
+    /**
      * 비활성 게시판 ID 목록을 조회합니다.
      *
      * boards 테이블은 소규모(~수십 건)이므로 단순 쿼리로 충분합니다.
@@ -1707,6 +1971,20 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * 댓글 기능을 끈 게시판 ID 목록을 조회합니다.
+     *
+     * 비활성 게시판과 별개의 축이다 — 게시판은 살아 있지만 댓글만 꺼진 상태가 있고,
+     * 그런 게시판의 기존 댓글은 열람·수정 경로가 닫혀 있어 집계 화면에만 남는다.
+     *
+     * @return array<int> 댓글 비활성 게시판 ID 배열
+     */
+    private function getCommentDisabledBoardIds(): array
+    {
+        // audit:allow query-unbounded-get reason: 게시판은 운영자가 만든 수만큼만 존재한다 (글 수와 무관)
+        return Board::where('use_comment', false)->pluck('id')->all();
+    }
+
+    /**
      * 게시글의 comments_count 컬럼을 활성 댓글 수로 재계산해 갱신합니다.
      *
      * @param  int  $postId  게시글 ID
@@ -1718,6 +1996,27 @@ class PostRepository implements PostRepositoryInterface
         Post::where('id', $postId)->update(['comments_count' => $count]);
 
         return $count;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function incrementScrapCount(int $postId): int
+    {
+        Post::where('id', $postId)->increment('scrap_count');
+
+        return (int) (Post::where('id', $postId)->value('scrap_count') ?? 0);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function decrementScrapCount(int $postId): int
+    {
+        // 음수 방지 — 정합성이 깨진 상태(0)에서 해제해도 0 미만으로 내려가지 않게 한다.
+        Post::where('id', $postId)->where('scrap_count', '>', 0)->decrement('scrap_count');
+
+        return (int) (Post::where('id', $postId)->value('scrap_count') ?? 0);
     }
 
     /**
@@ -1780,6 +2079,10 @@ class PostRepository implements PostRepositoryInterface
         return Post::query()
             ->whereNull('deleted_at')
             ->whereNull('parent_id')
+            // 노출 제한 필터 — 미발행(블라인드·삭제)·비활성 게시판 글은 대시보드 최신글에서 제외한다.
+            // 비밀글은 제목 공개 정책(2026-02-04)에 따라 관리자에게 제목을 노출한다(제외하지 않음).
+            ->where('status', PostStatus::Published->value)
+            ->whereHas('board', fn ($q) => $q->where('is_active', true))
             ->with(['board', 'user'])
             ->orderByDesc('created_at')
             ->limit($limit)

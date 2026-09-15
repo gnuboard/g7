@@ -10,6 +10,8 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderModificationException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -17,6 +19,8 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
+use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -1286,6 +1290,10 @@ class OrderControllerTest extends ModuleTestCase
      *
      * 비회원은 저장된 주소(address_id) 없이 직접 입력한 배송지 필드를 전송한다.
      * 회원과 동일한 OrderService::updateShippingAddress 로 처리되며, 응답은 GuestOrderResource.
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
+     *
+     * @effects guest_update_shipping_address_succeeds_with_valid_token
      */
     public function test_비회원_배송지_변경_성공(): void
     {
@@ -1482,5 +1490,362 @@ class OrderControllerTest extends ModuleTestCase
         // 21회째는 throttle 발화 → 429
         $this->postJson('/api/modules/sirsoft-ecommerce/guest/orders/verify', $payload)
             ->assertStatus(429);
+    }
+
+    // ================================================================
+    // 비회원 배송지 국내/해외 조합 정합성 (F3)
+    // ================================================================
+
+    /**
+     * 비회원 배송지: country_code 없이 해외 주소 조합만 보내면 검증으로 차단된다.
+     *
+     * 수정 전에는 검증을 통과해 서비스가 국내 분기로 떨어졌고, NOT NULL 인 zipcode 에
+     * null 을 쓰다 SQL 23000 이 발생해 "배송 전에만 변경 가능" 메시지로 위장됐다.
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=intl_without_country_code, e2e_browser=chromium
+     *
+     * @effects guest_shipping_address_intl_combination_without_country_code_returns_422_validation_errors
+     */
+    public function test_비회원_배송지_해외조합_country_code_누락시_검증차단(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        Order::where('order_number', $orderNumber)
+            ->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $response = $this->putJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/shipping-address",
+            [
+                'recipient_name' => '김해외',
+                'recipient_phone' => '010-9999-8888',
+                'address_line_1' => '1600 Amphitheatre Parkway',
+                'intl_city' => 'Mountain View',
+                'intl_postal_code' => '94043',
+            ],
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['zipcode', 'address']);
+    }
+
+    /**
+     * 비회원 배송지: country_code 를 해외로 명시하면 해외 컬럼이 기록되고 국내 컬럼은 초기화된다.
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=intl, e2e_browser=chromium
+     *
+     * @effects guest_shipping_address_switching_to_intl_clears_domestic_columns
+     */
+    public function test_비회원_배송지_해외전환시_국내컬럼_초기화(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $response = $this->putJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/shipping-address",
+            [
+                'recipient_name' => '김해외',
+                'recipient_phone' => '010-9999-8888',
+                'country_code' => 'US',
+                'address_line_1' => '1600 Amphitheatre Parkway',
+                'intl_city' => 'Mountain View',
+                'intl_state' => 'CA',
+                'intl_postal_code' => '94043',
+            ],
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(200);
+
+        $shipping = $order->refresh()->load('addresses')
+            ->addresses->firstWhere('address_type', 'shipping');
+
+        $this->assertSame('US', $shipping->recipient_country_code);
+        $this->assertSame('1600 Amphitheatre Parkway', $shipping->address_line_1);
+        $this->assertSame('Mountain View', $shipping->intl_city);
+        $this->assertSame('', $shipping->zipcode);
+        $this->assertSame('', $shipping->address);
+    }
+
+    /**
+     * 비회원 배송지: country_code 를 국내로 명시하면 국내 필수값이 강제된다.
+     *
+     * 회원 경로에만 있던 축이다 — F3 의 원 재현 경로가 비회원이었으므로 같은 폭으로 고정한다.
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
+     *
+     * @effects guest_shipping_address_domestic_country_code_requires_zipcode_and_address
+     */
+    public function test_비회원_배송지_국내_country_code_는_zipcode_와_address_를_요구한다(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $response = $this->putJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/shipping-address",
+            [
+                'recipient_name' => '김국내',
+                'recipient_phone' => '010-9999-8888',
+                'country_code' => 'KR',
+                'address_line_1' => '1600 Amphitheatre Parkway',
+            ],
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['zipcode', 'address']);
+    }
+
+    /**
+     * 비회원 배송지: country_code 가 해외인데 해외 필수값이 비면 검증으로 차단된다.
+     *
+     * 국내 방향(위)만 고정하면 게이트가 한쪽으로만 서 있는지 드러나지 않는다.
+     * 회원 경로에는 이 역방향 짝이 있었고 비회원 경로에만 없었다.
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=intl, e2e_browser=chromium
+     *
+     * @effects guest_shipping_address_foreign_country_code_requires_intl_fields
+     */
+    public function test_비회원_배송지_해외_country_code_는_해외_필수값을_요구한다(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $response = $this->putJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/shipping-address",
+            [
+                'recipient_name' => '김해외',
+                'recipient_phone' => '010-9999-8888',
+                'country_code' => 'US',
+            ],
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['address_line_1', 'intl_city', 'intl_postal_code']);
+    }
+
+    /**
+     * 비회원 배송지: 국내 → 해외 → 국내 왕복 시 반대편 컬럼이 매번 초기화된다.
+     *
+     * 한 방향만 검사하면 되돌아온 뒤 해외 컬럼이 잔존해 배송지가 두 벌로 남는 결함을 놓친다.
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=intl, e2e_browser=chromium
+     *
+     * @effects guest_shipping_address_round_trip_between_domestic_and_intl_clears_opposite_columns
+     */
+    public function test_비회원_배송지_국내_해외_왕복시_반대편_컬럼_초기화(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $url = "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/shipping-address";
+        $headers = ['X-Guest-Order-Token' => $token];
+
+        // ① 해외로 전환
+        $this->putJson($url, [
+            'recipient_name' => '김해외',
+            'recipient_phone' => '010-9999-8888',
+            'country_code' => 'US',
+            'address_line_1' => '1600 Amphitheatre Parkway',
+            'intl_city' => 'Mountain View',
+            'intl_state' => 'CA',
+            'intl_postal_code' => '94043',
+        ], $headers)->assertStatus(200);
+
+        // ② 다시 국내로 전환
+        $this->putJson($url, [
+            'recipient_name' => '김국내',
+            'recipient_phone' => '010-1111-2222',
+            'country_code' => 'KR',
+            'zipcode' => '06134',
+            'address' => '서울특별시 강남구 테헤란로 123',
+            'address_detail' => '4층',
+        ], $headers)->assertStatus(200);
+
+        $shipping = $order->refresh()->load('addresses')
+            ->addresses->firstWhere('address_type', 'shipping');
+
+        $this->assertSame('KR', $shipping->recipient_country_code);
+        $this->assertSame('06134', $shipping->zipcode);
+        $this->assertSame('서울특별시 강남구 테헤란로 123', $shipping->address);
+
+        $this->assertNull($shipping->address_line_1, '국내로 돌아오면 해외 주소가 남으면 안 됩니다.');
+        $this->assertNull($shipping->intl_city);
+        $this->assertNull($shipping->intl_state);
+        $this->assertNull($shipping->intl_postal_code);
+    }
+
+    /**
+     * 비회원 배송지 변경: 도메인 예외는 기존 422 + 안내 문구를 유지한다.
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
+     *
+     * @effects guest_update_shipping_address_domain_exception_returns_422_infra_returns_500
+     */
+    public function test_비회원_배송지_도메인예외_422(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $this->mock(OrderService::class, function ($mock) {
+            $mock->shouldReceive('updateShippingAddress')
+                ->andThrow(new OrderModificationException('배송 전 상태에서만 변경 가능'));
+            $mock->shouldReceive()->andReturnNull();
+        });
+
+        $response = $this->putJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/shipping-address",
+            [
+                'recipient_name' => '변경수령인',
+                'recipient_phone' => '010-9999-8888',
+                'zipcode' => '06236',
+                'address' => '서울 강남구 테헤란로 1',
+            ],
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(422);
+        $this->assertSame(
+            __('sirsoft-ecommerce::messages.orders.cannot_modify_address'),
+            $response->json('message')
+        );
+    }
+
+    /**
+     * 비회원 배송지 변경: 인프라 예외는 500 이며 예외 원문을 노출하지 않는다.
+     *
+     * 회원 경로(User\OrderController)와 쌍둥이 코드라 한쪽만 고치면 비회원 화면에서만
+     * 장애가 "배송 전에만 변경 가능" 이라는 엉뚱한 입력 오류로 계속 위장된다.
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
+     *
+     * @effects guest_update_shipping_address_domain_exception_returns_422_infra_returns_500, guest_action_5xx_responses_exclude_exception_message
+     */
+    public function test_비회원_배송지_인프라예외_500(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $this->mock(OrderService::class, function ($mock) {
+            $mock->shouldReceive('updateShippingAddress')
+                ->andThrow(new \RuntimeException('SQLSTATE[23000]: Integrity constraint violation'));
+            $mock->shouldReceive()->andReturnNull();
+        });
+
+        $response = $this->putJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/shipping-address",
+            [
+                'recipient_name' => '변경수령인',
+                'recipient_phone' => '010-9999-8888',
+                'zipcode' => '06236',
+                'address' => '서울 강남구 테헤란로 1',
+            ],
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(500);
+        $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
+    }
+
+    /**
+     * 사용자 선택 가능한 환불 사유 코드를 반환한다.
+     */
+    private function userSelectableRefundReason(): string
+    {
+        $code = ClaimReason::where('type', 'refund')
+            ->where('is_active', true)
+            ->where('is_user_selectable', true)
+            ->value('code');
+
+        if ($code === null) {
+            $this->markTestSkipped('사용자 선택 가능한 환불 사유(ClaimReason) 시드가 없다');
+        }
+
+        return $code;
+    }
+
+    /**
+     * 비회원 주문 취소: 도메인 예외는 기존 422 를 유지한다.
+     *
+     * @effects guest_cancel_domain_exception_returns_422_infra_returns_500
+     */
+    public function test_비회원_주문취소_도메인예외_422(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $this->mock(OrderCancellationService::class, function ($mock) {
+            $mock->shouldReceive('cancelOrder')
+                ->andThrow(new OrderCancellationException('취소 불가'));
+            $mock->shouldReceive()->andReturnNull();
+        });
+
+        $this->postJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/cancel",
+            ['reason' => $this->userSelectableRefundReason()],
+            ['X-Guest-Order-Token' => $token]
+        )->assertStatus(422);
+    }
+
+    /**
+     * 비회원 주문 취소: 인프라 예외는 500 이며 예외 원문을 노출하지 않는다.
+     *
+     * @effects guest_cancel_domain_exception_returns_422_infra_returns_500, guest_action_5xx_responses_exclude_exception_message
+     */
+    public function test_비회원_주문취소_인프라예외_500(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $this->mock(OrderCancellationService::class, function ($mock) {
+            $mock->shouldReceive('cancelOrder')
+                ->andThrow(new \RuntimeException('SQLSTATE[HY000]: General error'));
+            $mock->shouldReceive()->andReturnNull();
+        });
+
+        $response = $this->postJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/cancel",
+            ['reason' => $this->userSelectableRefundReason()],
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(500);
+        $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
+    }
+
+    /**
+     * 비회원 구매확정: typed 도메인 예외가 없으므로 모든 예외가 500 이어야 한다.
+     *
+     * @effects guest_confirm_option_has_no_domain_exception_so_generic_catch_returns_500, guest_action_5xx_responses_exclude_exception_message
+     */
+    public function test_비회원_구매확정_인프라예외_500(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+        $order = Order::where('order_number', $orderNumber)->first();
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+        $option = $order->options()->first();
+
+        $this->mock(OrderService::class, function ($mock) {
+            $mock->shouldReceive('confirmOption')
+                ->andThrow(new \RuntimeException('SQLSTATE[HY000]: General error'));
+            $mock->shouldReceive()->andReturnNull();
+        });
+
+        $response = $this->postJson(
+            "/api/modules/sirsoft-ecommerce/guest/orders/{$orderNumber}/options/{$option->id}/confirm",
+            [],
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(500);
+        $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
     }
 }

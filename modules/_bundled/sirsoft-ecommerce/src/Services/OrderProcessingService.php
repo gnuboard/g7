@@ -386,6 +386,11 @@ class OrderProcessingService
      *
      * 게스트 체크아웃(비로그인)은 유저 컨텍스트 부재 → 헤더/base 로 안전 폴백한다.
      *
+     * 해석 결과가 현재 등록된 통화가 아니면 base 로 폴백한다 (공개 #91). 관리자가 통화를
+     * 삭제해도 유저의 영속 선호 통화와 클라이언트 헤더에는 그 코드가 남아 있는데, 그대로
+     * 채택하면 스냅샷 환율에 코드가 없어 체크아웃이 차단된다. 저장된 선호 값 자체는 지우지
+     * 않는다 — 그 통화가 다시 등록되면 자동으로 복원되는 것이 올바른 동작이다.
+     *
      * @param  string  $baseCurrency  기본 통화(폴백)
      * @return string 결정된 통화 코드
      */
@@ -393,12 +398,15 @@ class OrderProcessingService
     {
         // 1순위: 로그인 유저의 영속 통화 (§A3 user-profile)
         $persisted = $this->resolvePersistedUserCurrency();
-        if ($persisted !== null && $persisted !== '') {
-            return $persisted;
-        }
 
         // 2순위: X-Currency 헤더 (비로그인/세션 표시) → 3순위: base 폴백
-        return request()->header('X-Currency', $baseCurrency) ?: $baseCurrency;
+        $resolved = ($persisted !== null && $persisted !== '')
+            ? $persisted
+            : (request()->header('X-Currency', $baseCurrency) ?: $baseCurrency);
+
+        return $this->currencyConversionService->isSupportedCurrency($resolved)
+            ? $resolved
+            : $baseCurrency;
     }
 
     /**
@@ -794,6 +802,20 @@ class OrderProcessingService
             // productOptionId → OrderOption 매핑 저장
             $createdOptions[$item->productOptionId] = $orderOption;
         }
+
+        // 주문 합계 무게/부피는 옵션 소계의 합이다.
+        // 주문 생성 시점에는 옵션이 없어 0 으로 두었으므로 여기서 실값으로 채운다
+        // (배송사 연동·운임 정산이 이 값을 읽는다).
+        $order->update([
+            'total_weight' => array_sum(array_map(
+                fn (OrderOption $option) => (float) ($option->subtotal_weight ?? 0),
+                $createdOptions
+            )),
+            'total_volume' => array_sum(array_map(
+                fn (OrderOption $option) => (float) ($option->subtotal_volume ?? 0),
+                $createdOptions
+            )),
+        ]);
 
         return $createdOptions;
     }

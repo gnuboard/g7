@@ -8,8 +8,8 @@
  *  E. text 미보유/데이터 결정 노드 → 더블클릭해도 인라인 편집 비활성(편집기 미노출).
  *  F. 속성 모달 [번역] 탭 — 커스텀 키 노드는 로케일별 일괄 편집 폼, 평문은 "키 아님" 안내.
  *
- * @scenario locale_switch_canvas_only + inline_edit_existing_key_to_new_custom_key + inline_edit_real_mouse_via_dnd_handle + canvas_renders_value_not_raw_key + inline_edit_disabled_binding + toolbar_spec_based + translation_tab_bulk_edit
- * @effects locale_switcher_changes_only_canvas_content_locale_not_chrome + inline_edit_plain_text_generates_custom_key_via_post_endpoint + inline_edit_replaces_comp_text_with_t_custom_key + inline_edit_real_mouse_double_click_via_dnd_handle_forward + canvas_rerenders_custom_key_value_after_server_lang_refetch + inline_edit_disabled_for_binding_expression_text + inline_toolbar_buttons_filtered_by_componentCapability_styleControls + inline_toolbar_omits_list_table_image_buttons + translation_field_displays_all_active_locales_in_modal
+ * 축 요약(마커 아님 — 평문): locale_switch_canvas_only, inline_edit_existing_key_to_new_custom_key, inline_edit_real_mouse_via_dnd_handle, canvas_renders_value_not_raw_key, inline_edit_disabled_binding, toolbar_spec_based, translation_tab_bulk_edit.
+ * 효과 요약(마커 아님 — 평문): locale_switcher_changes_only_canvas_content_locale_not_chrome, inline_edit_plain_text_generates_custom_key_via_post_endpoint, inline_edit_replaces_comp_text_with_t_custom_key, inline_edit_real_mouse_double_click_via_dnd_handle_forward, canvas_rerenders_custom_key_value_after_server_lang_refetch, inline_edit_disabled_for_binding_expression_text, inline_toolbar_buttons_filtered_by_componentCapability_styleControls, inline_toolbar_omits_list_table_image_buttons, translation_field_displays_all_active_locales_in_modal.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -67,6 +67,7 @@ async function selectNode(page: Page, editorPath: string): Promise<void> {
 }
 
 test.describe('@layout-editor 다국어 인라인 편집 (Phase 6 S8-2)', () => {
+  /** @effects locale_switcher_changes_only_canvas_content_locale_not_chrome */
   test('A. 로케일 전환 — 캔버스 콘텐츠 로케일만 변경(편집기 chrome 불변)', async ({ page }) => {
     await openEditorLogin(page);
     // 로케일 스위처가 노출되면(활성 로케일 2개 이상) 전환 동작 검증, 1개면 단일 라벨.
@@ -88,6 +89,7 @@ test.describe('@layout-editor 다국어 인라인 편집 (Phase 6 S8-2)', () => 
     }
   });
 
+  /** @effects inline_edit_plain_text_generates_custom_key_via_post_endpoint, inline_edit_replaces_comp_text_with_t_custom_key, inline_edit_real_mouse_double_click_via_dnd_handle_forward, canvas_rerenders_custom_key_value_after_server_lang_refetch */
   test('B+C+D. 기존 $t: 키 텍스트 더블클릭(실제 마우스) → 인라인 편집기 → Enter 확정 → POST 키 생성 → 캔버스가 raw 키가 아닌 입력값 표시', async ({ page }) => {
     await openEditorLogin(page);
 
@@ -126,6 +128,7 @@ test.describe('@layout-editor 다국어 인라인 편집 (Phase 6 S8-2)', () => 
       .toBe('환영 인사 변경');
   });
 
+  /** @effects inline_toolbar_buttons_filtered_by_componentCapability_styleControls, inline_toolbar_omits_list_table_image_buttons */
   test('D. 서식 툴바 — styleControls 기반 버튼만, 목록/표/이미지 버튼 부재', async ({ page }) => {
     await openEditorLogin(page);
     await dblClickNode(page, HEADING);
@@ -140,6 +143,7 @@ test.describe('@layout-editor 다국어 인라인 편집 (Phase 6 S8-2)', () => 
     }
   });
 
+  /** @effects inline_edit_disabled_for_binding_expression_text */
   test('E. 바인딩식/데이터 결정 노드 → 더블클릭해도 인라인 편집 미진입', async ({ page }) => {
     await openEditorLogin(page);
     // 카드 전체(Div, text 없음) 더블클릭 → 편집기 미노출(편집 불가 노드).
@@ -150,6 +154,7 @@ test.describe('@layout-editor 다국어 인라인 편집 (Phase 6 S8-2)', () => 
     await expect(page.getByTestId('g7le-inline-text-editable')).toHaveCount(0);
   });
 
+  /** @effects translation_field_displays_all_active_locales_in_modal */
   test('F. 속성 모달 [번역] 탭 — 평문 노드는 "키 아님" 안내', async ({ page }) => {
     await openEditorLogin(page);
     await selectNode(page, HEADING);

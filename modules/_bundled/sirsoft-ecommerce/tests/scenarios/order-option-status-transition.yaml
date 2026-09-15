@@ -97,7 +97,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ConfirmDepositControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderConfirmDeposit.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/orderReviewButton.test.tsx
-  - tests/Playwright/specs/order-option-status-review.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/order-option-status-review.spec.ts
 
 validation:
   audit_rule: frontend-change-requires-e2e

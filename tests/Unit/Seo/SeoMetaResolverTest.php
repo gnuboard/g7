@@ -4,7 +4,9 @@ namespace Tests\Unit\Seo;
 
 use App\Seo\ExpressionEvaluator;
 use App\Seo\SeoMetaResolver;
+use App\Services\SettingsService;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 /**
@@ -33,6 +35,9 @@ class SeoMetaResolverTest extends TestCase
         Config::set('g7_settings.core.seo.google_analytics_id', 'GA-12345');
         Config::set('g7_settings.core.seo.google_site_verification', '');
         Config::set('g7_settings.core.seo.naver_site_verification', '');
+        // 운영자가 로컬에 저장한 값(storage/app/settings/seo.json)이 부팅 시 config 로
+        // 실려 들어오므로, 미고정 시 og site_name fallback 단언이 환경에 좌우된다.
+        Config::set('g7_settings.core.seo.og_default_site_name', '');
         Config::set('g7_settings.core.general.site_name', '그누보드7 쇼핑몰');
     }
 
@@ -372,6 +377,35 @@ class SeoMetaResolverTest extends TestCase
         $this->assertSame('Product', $jsonLd['@type']);
         $this->assertSame('에어맥스', $jsonLd['name']);
         $this->assertSame('나이키 에어맥스', $jsonLd['description']);
+    }
+
+    /**
+     * JSON-LD 는 `<script type="application/ld+json">` 안에 임베드되므로, 사용자
+     * 제어 값(검색어 등)의 `</script>` 가 스크립트 컨텍스트를 조기 종료해 실행 가능한
+     * script 요소를 재생성하지 못하도록 `<`·`>` 를 유니코드 이스케이프해야 한다.
+     * (봇 렌더는 _escaped_fragment_ 로 일반 UA 도 강제되므로 반사형 XSS 벡터가 된다.)
+     */
+    public function test_structured_data_escapes_script_breakout_in_json_ld(): void
+    {
+        $seoConfig = [
+            'structured_data' => [
+                '@type' => 'SearchResultsPage',
+                'name' => 'G7 - {{query.q}}',
+            ],
+        ];
+
+        $context = ['query' => ['q' => '</script><script>alert(1)</script>']];
+
+        $result = $this->resolver->resolve($seoConfig, $context, null, null, []);
+
+        // 원문 태그가 그대로 실리면 스크립트 컨텍스트가 조기 종료돼 실행 가능한 script 요소가
+        // 재생성된다(반사형 XSS). JSON_HEX_TAG 가 태그 문자를 유니코드 이스케이프하므로 산출물에는
+        // 리터럴 태그 열림/닫힘 문자가 없어야 한다.
+        $this->assertDoesNotMatchRegularExpression('#</?script#', $result['jsonLd']);
+        $this->assertStringContainsString(chr(0x5C).'u003C', $result['jsonLd']);
+        // 이스케이프에도 불구하고 JSON 파싱 시 원래 값이 복원된다(구조화 데이터 의미 보존).
+        $decoded = json_decode($result['jsonLd'], true);
+        $this->assertSame('G7 - </script><script>alert(1)</script>', $decoded['name']);
     }
 
     /**
@@ -1452,6 +1486,88 @@ class SeoMetaResolverTest extends TestCase
         $this->assertStringContainsString('@context', $json);
     }
 
+    // ── og:image 사이트 기본값 폴백 (공개 이슈 #22) ──────────────
+
+    /**
+     * getOgDefaultImageUrl 이 지정 값을 돌려주도록 SettingsService 를 스텁합니다.
+     *
+     * @param  string|null  $url  기본 OG 이미지 URL
+     */
+    private function stubOgDefaultImage(?string $url): void
+    {
+        $mock = \Mockery::mock(SettingsService::class);
+        $mock->shouldReceive('getOgDefaultImageUrl')->andReturn($url);
+        $this->app->instance(SettingsService::class, $mock);
+    }
+
+    /**
+     * 레이아웃 og.image 선언이 있으면 사이트 기본값을 쓰지 않아야 합니다 (선언 우선).
+     *
+     * @scenario image_chain=layout_declared, setting_state=saved
+     *
+     * @effects layout_declaration_wins_over_site_default
+     */
+    public function test_og_image_declaration_wins_over_site_default(): void
+    {
+        $this->stubOgDefaultImage('/storage/settings/site-default.png');
+
+        $result = $this->resolver->resolveOgData(
+            ['og' => ['image' => '/storage/posts/declared.jpg']],
+            [],
+            'Fallback Title',
+            'Fallback Description'
+        );
+
+        $this->assertStringContainsString('/storage/posts/declared.jpg', $result['image']);
+        $this->assertStringNotContainsString('site-default', $result['image']);
+    }
+
+    /**
+     * 선언이 빈 값이면 사이트 기본 OG 이미지로 폴백하고 secure_url 도 파생되어야 합니다.
+     *
+     * @scenario image_chain=site_default, setting_state=saved
+     *
+     * @effects empty_declaration_falls_back_to_site_default
+     */
+    public function test_og_image_falls_back_to_site_default_and_derives_secure_url(): void
+    {
+        // absoluteUrl 은 부팅 시점 URL 루트를 쓰므로 강제 지정으로 고정한다
+        URL::forceRootUrl('https://shop.example.com');
+        URL::forceScheme('https');
+        $this->stubOgDefaultImage('/storage/settings/site-default.png');
+
+        try {
+            $result = $this->resolver->resolveOgData(['og' => []], [], 'T', 'D');
+        } finally {
+            URL::forceRootUrl(null);
+            URL::forceScheme(null);
+        }
+
+        $this->assertSame('https://shop.example.com/storage/settings/site-default.png', $result['image']);
+        $this->assertSame(
+            $result['image'],
+            $result['image_secure_url'],
+            'secure_url 은 폴백 적용 후의 image 를 기준으로 파생되어야 합니다.'
+        );
+    }
+
+    /**
+     * 선언도 기본값도 없으면 image 가 빈 값이어야 합니다 (태그 미출력).
+     *
+     * @scenario image_chain=none, setting_state=absent
+     *
+     * @effects no_image_emits_nothing
+     */
+    public function test_og_image_empty_when_no_declaration_and_no_default(): void
+    {
+        $this->stubOgDefaultImage(null);
+
+        $result = $this->resolver->resolveOgData(['og' => []], [], 'T', 'D');
+
+        $this->assertSame('', $result['image']);
+        $this->assertSame('', $result['image_secure_url']);
+    }
+
     /**
      * 회귀: 코어 설정 site_name 이 다국어 JSON 배열로 저장된 경우에도
      * resolveOgData 가 'Array to string conversion' throw 없이 정상 동작.
@@ -1562,7 +1678,7 @@ class SeoMetaResolverTest extends TestCase
             'page_type' => 'product',
             'vars' => [
                 // 표현식이 다국어 객체를 직접 반환 — substituteVars 까지 array 전달
-                'product_name' => "{{product.data.name}}",
+                'product_name' => '{{product.data.name}}',
                 'commerce_name' => '$module_settings:basic_info.shop_name',
             ],
         ];
@@ -1637,5 +1753,33 @@ class SeoMetaResolverTest extends TestCase
         $this->assertSame('에어맥스', $result['og']['title']);
         $this->assertSame('운동화', $result['og']['description']);
         $this->assertSame('https://e.co/ko.jpg', $result['og']['image']);
+    }
+
+    /**
+     * 접미사 조립: 저장 시 TrimStrings 가 선행 공백을 제거하므로("| 그누보드7"),
+     * 제목이 있으면 공백을 복원해 잇고, 제목이 비면 매달린 구분자를 떼어낸다.
+     * (blade 는 title.titleSuffix 단순 연결 — 조립 규칙은 이 메서드가 SSoT)
+     */
+    public function test_compose_title_suffix_restores_space_between_title_and_trimmed_suffix(): void
+    {
+        $this->assertSame(' | 그누보드7', SeoMetaResolver::composeTitleSuffix('가죽 크로스백', '| 그누보드7'));
+    }
+
+    public function test_compose_title_suffix_keeps_explicit_leading_space_as_is(): void
+    {
+        $this->assertSame(' | 그누보드7', SeoMetaResolver::composeTitleSuffix('가죽 크로스백', ' | 그누보드7'));
+    }
+
+    public function test_compose_title_suffix_strips_dangling_separator_when_title_is_empty(): void
+    {
+        $this->assertSame('그누보드7', SeoMetaResolver::composeTitleSuffix('', '| 그누보드7'));
+        $this->assertSame('그누보드7', SeoMetaResolver::composeTitleSuffix('', ' - 그누보드7'));
+    }
+
+    public function test_compose_title_suffix_returns_empty_when_suffix_is_blank(): void
+    {
+        $this->assertSame('', SeoMetaResolver::composeTitleSuffix('가죽 크로스백', ''));
+        $this->assertSame('', SeoMetaResolver::composeTitleSuffix('', '  '));
+        $this->assertSame('', SeoMetaResolver::composeTitleSuffix('', '| '));
     }
 }

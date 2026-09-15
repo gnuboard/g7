@@ -4,10 +4,14 @@ namespace Plugins\Sirsoft\Gdpr\Tests\Unit\Services;
 
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use PHPUnit\Framework\MockObject\MockObject;
+use Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType;
+use Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion;
 use Plugins\Sirsoft\Gdpr\Models\GdprUserConsent;
 use Plugins\Sirsoft\Gdpr\Models\GdprUserConsentHistory;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentHistoryRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentRepository;
+use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
 use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
@@ -15,7 +19,7 @@ class GdprConsentServiceTest extends PluginTestCase
 {
     private GdprConsentService $service;
 
-    /** @var PluginSettingsService&\PHPUnit\Framework\MockObject\MockObject */
+    /** @var PluginSettingsService&MockObject */
     private PluginSettingsService $pluginSettings;
 
     protected function setUp(): void
@@ -30,10 +34,10 @@ class GdprConsentServiceTest extends PluginTestCase
         );
 
         $this->service = new GdprConsentService(
-            new GdprUserConsentRepository(),
-            new GdprUserConsentHistoryRepository(),
+            new GdprUserConsentRepository,
+            new GdprUserConsentHistoryRepository,
             $this->pluginSettings,
-            new \Plugins\Sirsoft\Gdpr\Services\CookieCategoryService($this->pluginSettings),
+            new CookieCategoryService($this->pluginSettings),
         );
     }
 
@@ -167,9 +171,9 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->service->updateConsent($user->id, null, 'cookie_analytics', true, 'banner');
 
         // 정책 버전이 v2 로 bump — gdpr_policy_versions 에 새 row INSERT
-        \Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion::create([
+        GdprPolicyVersion::create([
             'version' => 2,
-            'change_type' => \Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType::Material->value,
+            'change_type' => GdprPolicyChangeType::Material->value,
             'snapshot' => [],
         ]);
 
@@ -300,9 +304,9 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertSame(1, GdprUserConsentHistory::where('user_id', $user->id)->count());
 
         // 정책 버전 v2 bump
-        \Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion::create([
+        GdprPolicyVersion::create([
             'version' => 2,
-            'change_type' => \Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType::Material->value,
+            'change_type' => GdprPolicyChangeType::Material->value,
             'snapshot' => [],
         ]);
 
@@ -347,6 +351,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * 거부(false)와 일반 미동의(false)를 동일 취급 → is_rejected=true 저장이 누락된다.
      *
      * @scenario entry=reject, subject=member, category=optional
+     *
      * @effects rejection_marks_optional_consent_as_rejected
      */
     public function test_rejection_marks_optional_consent_as_rejected(): void
@@ -376,6 +381,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * 거부 신호가 오면 is_rejected 플래그가 저장되어야 한다.
      *
      * @scenario entry=reject, subject=member, category=optional
+     *
      * @effects rejection_persists_even_when_status_already_false
      */
     public function test_rejection_persists_even_when_status_already_false(): void
@@ -407,6 +413,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * "동의하지 않았는데 동의로 표시"되는 모순이 생기기 때문이다.
      *
      * @scenario entry=reject, subject=member, category=required
+     *
      * @effects required_category_excluded_from_status
      */
     public function test_required_category_is_excluded_from_status_and_history(): void
@@ -436,6 +443,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * history 는 append-only 라 rejected/granted 둘 다 보존.
      *
      * @scenario entry=reject_then_reaccept, subject=member, category=optional
+     *
      * @effects re_consent_clears_rejection_flag_but_keeps_history
      */
     public function test_re_consent_clears_rejection_flag_but_keeps_history(): void
@@ -471,6 +479,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * 게스트 거부는 status 미사용, history 에만 action=rejected 로 기록.
      *
      * @scenario entry=reject, subject=guest, category=optional
+     *
      * @effects guest_rejection_records_history_only
      */
     public function test_guest_rejection_records_history_only(): void
@@ -493,6 +502,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * intent 미전달(기본값 false) 시 기존 동작 회귀 무영향 — 미동의는 revoked 로 기록.
      *
      * @scenario entry=save_selection, subject=member, category=optional
+     *
      * @effects without_rejection_intent_false_is_revoked_not_rejected
      */
     public function test_without_rejection_intent_false_is_revoked_not_rejected(): void
@@ -517,6 +527,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * 이슈 #430 후속 — 필수는 동의 축에서 제외되어 status 에 저장되지 않는다.
      *
      * @scenario entry=reject, subject=member, category=optional
+     *
      * @effects update_consents_batch_applies_rejection_to_optional_only, required_category_excluded_from_status
      */
     public function test_update_consents_batch_applies_rejection_to_optional_only(): void

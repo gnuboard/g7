@@ -10,6 +10,7 @@ use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
@@ -75,7 +76,7 @@ class UpdateBoardRequest extends FormRequest
         // boolean 필드 캐스팅 (Toggle 컴포넌트가 "on"/"off" 문자열을 전송할 수 있음)
         $booleanFields = [
             'is_active', 'use_comment', 'use_reply', 'use_file_upload',
-            'use_report', 'use_reaction', 'show_view_count', 'is_notice',
+            'use_report', 'use_scrap', 'use_reaction', 'show_view_count', 'is_notice',
             'notify_admin_on_post', 'notify_author',
         ];
 
@@ -164,10 +165,12 @@ class UpdateBoardRequest extends FormRequest
             'use_comment' => ['sometimes', 'required', 'boolean'],
             'use_reply' => ['sometimes', 'required', 'boolean'],
             'use_report' => ['sometimes', 'required', 'boolean'],
+            'use_scrap' => ['sometimes', 'required', 'boolean'],
             'use_reaction' => ['sometimes', 'required', 'boolean'],
             'active_reaction_types' => ['sometimes', 'array'],
             'active_reaction_types.*' => ['string'],
             'comment_order' => ['sometimes', 'required', 'in:ASC,DESC'],
+            // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['sometimes', 'nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
 
             // 제목 길이 제한
@@ -189,6 +192,7 @@ class UpdateBoardRequest extends FormRequest
             // 허용 확장자: 첨부 사용 게시판만 최소 1개 필수 (빈 값 저장 시 전 파일 거부되던 버그 방지).
             // 첨부 미사용 게시판은 exclude_if 로 검증 자체에서 배제한다 — 관리자 폼이 조회 응답
             // 전체를 그대로 PUT 하므로 요청에는 항상 이 키가 존재하고, sometimes 는 보호가 되지 않는다.
+            // (StoreBoardRequest 와 동일 규칙.)
             // exclude_if 는 배열 첫 번째여야 한다. 앞선 규칙이 먼저 실패하면 배제되어도 메시지가 남는다.
             'allowed_extensions' => ['exclude_if:use_file_upload,false', 'sometimes', 'required', 'array', 'min:1'],
             'allowed_extensions.*' => ['string', 'max:10'],
@@ -210,6 +214,7 @@ class UpdateBoardRequest extends FormRequest
 
             // 답글/대댓글 깊이 제한
             'max_reply_depth' => ['sometimes', 'nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
+            'reply_delete_policy' => ['sometimes', 'nullable', 'string', Rule::in(ReplyDeletePolicy::values())],
             'max_comment_depth' => ['sometimes', 'nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
 
             // 알림 설정
@@ -264,6 +269,7 @@ class UpdateBoardRequest extends FormRequest
             $settingFieldKeys = [
                 'per_page', 'per_page_mobile', 'order_by', 'order_direction',
                 'secret_mode', 'use_comment', 'use_reply', 'use_report',
+                'use_scrap',
                 'use_reaction', 'active_reaction_types',
                 'comment_order', 'show_view_count',
                 'max_reply_depth', 'max_comment_depth',

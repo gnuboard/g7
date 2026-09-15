@@ -3,7 +3,7 @@
 feature: 회원 목록 일괄 작업 "상태 변경" 라벨 i18n 키화 (공개#45)
 
 description: |
-  sirsoft-admin_basic 회원 목록(admin_user_list.json) 일괄 작업 바의 "상태 변경"
+  sirsoft-admin_basic 회원 목록(admin_user_list.g7.html) 일괄 작업 바의 "상태 변경"
   Span 라벨이 $t: 키 대신 한글 하드코딩이던 결함을 키화하는 시나리오.
 
   배경:

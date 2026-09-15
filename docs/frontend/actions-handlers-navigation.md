@@ -19,6 +19,14 @@
 
 페이지 이동을 처리합니다.
 
+```html
+<on type="click">
+  <navigate path="/admin/users/{{row.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -47,6 +55,16 @@
 `replace: true` 로 탭 전환/페이지네이션 시 `updateQueryParams` 경로에 진입할 때, 레이아웃의 `transition_overlay.target` 대신 **이 호출에 한해** 다른 영역에만 spinner 를 표시하도록 한다.
 
 **주 용도**: 탭 속 서브 탭(환경설정 > 알림 탭 > 채널 탭 등) 클릭 시 서브 탭 콘텐츠 영역에만 spinner 가 표시되어야 할 때.
+
+```html
+<on type="click">
+  <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
+    <query channel="{{ch.id}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -82,12 +100,25 @@
   "transition_overlay_target": "users_data_grid__body" } }
 ```
 
-정적 검사가 이 조합을 강제한다. 의도적으로 오버레이를 끄려면 키 자체를 지우고, 예외가 필요하면
+자동 검증이 이 조합을 강제한다. 의도적으로 오버레이를 끄려면 키 자체를 지우고, 예외가 필요하면
 액션 노드 `comment` 에 `audit:allow layout-transition-overlay-target-requires-replace <사유>` 를 남긴다.
 
 **DataGrid body 영역 한정 spinner 컨벤션**:
 
 목록 페이지 페이지네이션 시 **pagination 영역은 제외하고 그리드 본문만** spinner 를 표시하려면 `transition_overlay_target` 에 DataGrid 의 `${id}__body` suffix 를 사용한다. DataGrid composite 컴포넌트는 root Div 에 `id` 를, 테이블/카드 목록을 감싸는 내부 wrapper Div 에 `${id}__body` 를 자동으로 부여한다 (pagination 은 body wrapper 밖의 형제).
+
+앞은 DataGrid 컴포넌트 정의, 뒤는 그 본문을 오버레이 대상으로 지목하는 페이지네이션 `navigate` 다.
+
+```html
+<data-grid data-ref="users_data_grid"/>
+<on type="click">
+  <navigate path="/admin/users" :replace="true" :mergeQuery="true" transition_overlay_target="users_data_grid__body">
+    <query page="{{$args[0]}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // DataGrid 컴포넌트 정의
@@ -126,6 +157,33 @@
 
 **파라미터 형태**:
 
+순서대로 **①** 미지정(기본값 `openWindow`) · **②** 비활성화(기존 동작 — 미등록 경로 그대로 SPA navigate) ·
+**③** 핸들러명만 지정(string) · **④** 상세 지정(object — `params` 는 `finalPath` 위에 merge) 이다.
+
+```html
+<on type="click">
+  <navigate path="/shop/products"/>
+</on>
+<on type="click">
+  <navigate path="/admin/x" :fallback="false"/>
+</on>
+<on type="click">
+  <navigate path="/shop/products" fallback="openWindow"/>
+</on>
+<on type="click">
+  <navigate path="/shop/products">
+    <field name="fallback">
+      <field name="handler" value="openWindow"/>
+      <field name="params">
+        <field name="target" value="_blank"/>
+      </field>
+    </field>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```jsonc
 // 1. 미지정 (기본값: openWindow)
 { "handler": "navigate", "params": { "path": "/shop/products" } }
@@ -150,6 +208,17 @@
 
 알림센터에서 알림 클릭 시 mark-as-read API 호출과 navigate를 **`parallel`로 묶어** 동시 실행하면, openWindow fallback이 즉시 새 창을 열고 mark-as-read는 백그라운드에서 진행된다. `sequence`로 묶으면 mark-as-read 완료(1~2초)를 기다린 후에야 새 창이 열려 사용자 체감이 나빠진다.
 
+```html
+<on event="onNotificationClick">
+  <parallel>
+    <navigate path="{{$args[0].url ?? '/admin/notification-logs'}}"/>
+    <api-call target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH"/>
+  </parallel>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "event": "onNotificationClick",
@@ -173,6 +242,16 @@
 ### mergeQuery 옵션
 
 기존 쿼리 파라미터를 유지하면서 새 파라미터를 병합합니다.
+
+```html
+<on type="click">
+  <navigate path="/admin/users" :mergeQuery="true">
+    <query page="2"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -233,7 +312,6 @@
 }
 ```
 
-자동 차단: 정적 검사 대상 (위반 시 차단). 목록 라우트는 저장소에서 자동 도출하므로 화이트리스트를 관리할 필요가 없다. 도출 근거는 두 가지다.
 
 1. `query` 에 `page` 키가 등장하는 navigate 목적지
 2. 화면이 실제로 페이지네이션 UI(`onPageChange` 액션 / `Pagination` 컴포넌트)를 갖고 있는지 — partial 을 따라 전파한다
@@ -242,15 +320,25 @@
 
 두 번째 근거가 없으면 "이미 규약을 적용한 화면일수록 감시 대상이 된다" 는 순환이 생겨, 아직 고치지 않은 화면이 오히려 탐지에서 빠진다. 네 번째 근거가 없으면 무한스크롤 목록의 검색어가 새로고침에서 조용히 사라지는 결함이 빠진다.
 
-정적 검사는 반대 방향도 본다 — 탭 전환(`onTabChange`)에 `mergeQuery: true` 를 붙이거나, 자기 클러스터와 상하 관계가 전혀 없는 다른 목록 라우트로 나가면서 병합하면 위반으로 잡는다. "병합 누락"만 보면 이 방향이 통째로 사각지대가 된다.
+자동 검증은 반대 방향도 본다 — 탭 전환(`onTabChange`)에 `mergeQuery: true` 를 붙이거나, 자기 클러스터와 상하 관계가 전혀 없는 다른 목록 라우트로 나가면서 병합하면 위반으로 잡는다. "병합 누락"만 보면 이 방향이 통째로 사각지대가 된다.
 
-한계 — 정적 검사는 레이아웃 JSON 만 스캔한다. navigate leg 이 컴포넌트 코드(`.tsx`)에 있으면(예: `ProductCard` 의 카드 클릭) 룰의 시야 밖이다. 목록 항목으로 렌더되는 컴포넌트가 상세로 이동할 때는 컴포넌트가 직접 `mergeQuery` 를 실어야 한다(`ProductCard` 의 `preserveListQuery` prop 참조).
+한계 — 자동 검증은 레이아웃 JSON 만 스캔한다. navigate leg 이 컴포넌트 코드(`.tsx`)에 있으면(예: `ProductCard` 의 카드 클릭) 룰의 시야 밖이다. 목록 항목으로 렌더되는 컴포넌트가 상세로 이동할 때는 컴포넌트가 직접 `mergeQuery` 를 실어야 한다(`ProductCard` 의 `preserveListQuery` prop 참조).
 
 ### 배열 쿼리 파라미터
 
 > **버전**: engine-v1.10.0+
 
 배열 값은 자동으로 `key[]=value1&key[]=value2` 형태로 변환됩니다.
+
+```html
+<on type="click">
+  <navigate path="/admin/products" :mergeQuery="true">
+    <query sales_status[]="{{_local.salesStatus}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -316,6 +404,16 @@ enum ProductSalesStatus: string
 
 `replace: true`를 사용하면 **컴포넌트 리마운트 없이** URL을 변경하고 데이터를 갱신합니다. 같은 페이지 내에서 검색/필터/정렬/페이지네이션 등의 쿼리 파라미터만 변경할 때 사용합니다.
 
+```html
+<on type="click">
+  <navigate path="/admin/products" :mergeQuery="true" :replace="true">
+    <query page="{{_local.page}}" sort="{{_local.sortField}}" order="{{_local.sortOrder}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -368,6 +466,19 @@ replace: true는 같은 페이지 내에서만 사용
 
 **검색 필터 예시**:
 
+```html
+<button data-ref="search_button">
+  <on type="click">
+    <navigate path="/admin/products" :replace="true" :mergeQuery="true">
+      <query :page="1" search_field="{{_local.filter.searchField}}" search_keyword="{{_local.filter.searchKeyword}}"/>
+    </navigate>
+  </on>
+  $t:common.search
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "search_button",
@@ -394,6 +505,22 @@ replace: true는 같은 페이지 내에서만 사용
 ```
 
 **정렬 드롭다운 예시**:
+
+```html
+<select value="{{query.sort || 'created_at'}}">
+  <options>
+    <option value="created_at">$t:common.sort.created_at</option>
+    <option value="name">$t:common.sort.name</option>
+  </options>
+  <on type="change">
+    <navigate path="/admin/products" :replace="true" :mergeQuery="true">
+      <query sort="{{$event.target.value}}"/>
+    </navigate>
+  </on>
+</select>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -470,6 +597,16 @@ replace: true는 같은 페이지 내에서만 사용
 
 **검색 필터에서 스크롤 유지**:
 
+```html
+<on type="click">
+  <navigate path="/admin/products" :replace="true" :mergeQuery="true" scroll="preserve">
+    <query search_keyword="{{_local.keyword}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -485,6 +622,14 @@ replace: true는 같은 페이지 내에서만 사용
 
 **특정 엘리먼트로 이동 (단축)**:
 
+```html
+<on type="click">
+  <navigate path="/admin/docs" scroll="#section-api"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -496,6 +641,19 @@ replace: true는 같은 페이지 내에서만 사용
 ```
 
 **관리자 템플릿 내부 컨테이너의 Y 좌표로 이동 (확장)**:
+
+```html
+<on type="click">
+  <navigate path="/admin/users">
+    <field name="scroll">
+      <field name="container" value="#right_content_area"/>
+      <field name="to" :value="500"/>
+    </field>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -512,6 +670,19 @@ replace: true는 같은 페이지 내에서만 사용
 
 **sticky 헤더가 있는 페이지에서 섹션으로 이동 (확장)**:
 
+```html
+<on type="click">
+  <navigate path="/admin/docs">
+    <field name="scroll">
+      <field name="to" value="#section-api"/>
+      <field name="offset" :value="80"/>
+    </field>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -526,6 +697,20 @@ replace: true는 같은 페이지 내에서만 사용
 ```
 
 **특정 엘리먼트를 화면 중앙에 위치 (확장)**:
+
+```html
+<on type="click">
+  <navigate path="/admin/report">
+    <field name="scroll">
+      <field name="container" value="#right_content_area"/>
+      <field name="to" value="#chart-revenue"/>
+      <field name="block" value="center"/>
+    </field>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -548,6 +733,14 @@ replace: true는 같은 페이지 내에서만 사용
 > **버전**: engine-v1.19.0+
 
 새 브라우저 탭/창에서 URL을 엽니다. `window.open(path, '_blank')`을 호출합니다.
+
+```html
+<on type="click">
+  <open-window path="/admin/users/{{row.created_by}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -581,6 +774,17 @@ replace: true는 같은 페이지 내에서만 사용
 
 ### 예시: 등록자 정보 새 창으로 보기
 
+```html
+<button variant="ghost" size="sm">
+  <on type="click">
+    <open-window path="/admin/users/{{row.created_by}}"/>
+  </on>
+  $t:common.view_member
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -608,6 +812,14 @@ replace: true는 같은 페이지 내에서만 사용
 
 브라우저 히스토리에서 뒤로 이동합니다. `window.history.back()`을 호출합니다.
 
+```html
+<on type="click">
+  <navigate-back/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -619,6 +831,18 @@ replace: true는 같은 페이지 내에서만 사용
 
 - 상세 페이지에서 목록으로 돌아가기
 - 폼 페이지에서 취소 버튼 클릭 시 이전 페이지로 이동
+
+```html
+<button data-ref="back_button">
+  <on type="click">
+    <navigate-back/>
+  </on>
+  <icon name="arrow-left" class="text-base"/>
+  <span>$t:common.back</span>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -635,7 +859,7 @@ replace: true는 같은 페이지 내에서만 사용
     {
       "type": "basic",
       "name": "Icon",
-      "props": { "name": "arrow-left", "className": "w-4 h-4" }
+      "props": { "name": "arrow-left", "className": "text-base" }
     },
     {
       "type": "basic",
@@ -662,6 +886,14 @@ replace: true는 같은 페이지 내에서만 사용
 4. LayoutLoader 캐시 버전 갱신 및 클리어
 5. TranslationEngine 재로드 — 활성 사전은 원자 교체되어 `$t:` 해석 경합 없음
 
+```html
+<on type="click">
+  <reload-extensions/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "reloadExtensions"
@@ -671,6 +903,14 @@ replace: true는 같은 페이지 내에서만 사용
 ### 선택 파라미터 (모듈/플러그인 에셋 동적 로드/제거)
 
 모듈 또는 플러그인의 JS/CSS 에셋을 동시에 로드/제거하려면 `moduleInfo` 또는 `pluginInfo` 와 `action` 을 전달합니다.
+
+```html
+<on type="click">
+  <reload-extensions moduleInfo="{{result}}" action="add"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -723,6 +963,14 @@ replace: true는 같은 페이지 내에서만 사용
 
 라우트(routes.json)를 다시 로드합니다.
 
+```html
+<on type="click">
+  <reload-routes/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "reloadRoutes"
@@ -739,6 +987,14 @@ replace: true는 같은 페이지 내에서만 사용
 ## refresh
 
 현재 페이지를 새로고침합니다.
+
+```html
+<on type="click">
+  <refresh/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -758,6 +1014,16 @@ replace: true는 같은 페이지 내에서만 사용
 > **버전**: engine-v1.18.0+
 
 URL만 변경하고 데이터소스 refetch나 컴포넌트 리마운트를 수행하지 않습니다. 리스트 항목 선택 시 URL에 상태를 반영할 때 사용합니다.
+
+```html
+<on type="click">
+  <replace-url path="/admin/menus">
+    <query menu="{{$args[0].slug}}" mode="view"/>
+  </replace-url>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -795,6 +1061,16 @@ URL만 변경하고 데이터소스 refetch나 컴포넌트 리마운트를 수�
 ### path 생략 예시
 
 `path`를 생략하면 현재 페이지 경로가 자동으로 사용됩니다.
+
+```html
+<on type="click">
+  <replace-url>
+    <query id="{{$args[0].id}}" mode="view"/>
+  </replace-url>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

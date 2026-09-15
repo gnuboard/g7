@@ -1,13 +1,22 @@
 {
-  "form": {
-    "sections": {
-      "notification_settings": "게시판 알림 설정"
+    "form": {
+        "sections": {
+            "notification_settings": "게시판 알림 설정"
+        },
+        "notifications": {
+            "post_complete": "게시글 완료 알림",
+            "post_reply": "게시글 답변 알림",
+            "comment": "댓글 알림",
+            "reply_comment": "답변 알림"
+        }
     },
-    "notifications": {
-      "post_complete": "게시글 완료 알림",
-      "post_reply": "게시글 답변 알림",
-      "comment": "댓글 알림",
-      "reply_comment": "답변 알림"
+    "scraps": {
+        "tab_label": "스크랩",
+        "title": "게시글 스크랩",
+        "count": "스크랩 수",
+        "count_unit": "{{count}}개",
+        "latest_scrapped_at": "최근 스크랩",
+        "none": "스크랩한 게시글이 없습니다.",
+        "view_list": "이 회원 스크랩 목록 보기"
     }
-  }
 }

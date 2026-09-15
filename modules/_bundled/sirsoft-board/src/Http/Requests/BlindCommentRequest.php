@@ -39,7 +39,7 @@ class BlindCommentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'reason.min' => __('sirsoft-board::validation.blind.reason.min'),
+            // reason 규칙에 min 이 없으므로 min 메시지는 매핑하지 않는다 (死매핑 정리 — lang 키 자체는 유지)
             'reason.max' => __('sirsoft-board::validation.blind.reason.max'),
         ];
     }

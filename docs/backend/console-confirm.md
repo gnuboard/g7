@@ -10,7 +10,7 @@
 1. 콘솔 커맨드의 yes/no 프롬프트는 $this->unifiedConfirm() 사용 — Laravel $this->confirm() 직접 호출 금지
 2. trait: App\Console\Commands\Traits\HasUnifiedConfirm
 3. 입력 규칙: empty=default, yes/y=true, no/n=false, 그 외=재질문 루프
-4. --no-interaction 모드: default 즉시 반환
+4. --no-interaction 또는 콘솔 없는 STDIN: default 즉시 반환 (파괴적 확인의 default 는 false 여야 한다)
 5. upgrade step / Symfony 외부 환경: \App\Console\Helpers\ConsoleConfirm::ask() FQN 직접 호출
 ```
 
@@ -88,9 +88,25 @@ protected function unifiedConfirm(string $question, bool $default = false): bool
 | 환경 | 동작 |
 |------|------|
 | `--no-interaction` 옵션 | `$default` 즉시 반환 |
+| 콘솔 없는 STDIN (CI·스케줄러·에이전트) | `$default` 즉시 반환 |
 | 대화형 + 유효 입력 | 정규화 후 즉시 반환 |
 | 대화형 + 잘못된 입력 | "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문 |
 | 대화형 + empty 입력 | `$default` 반환 |
+
+#### 비TTY 판정을 Symfony 에 맡기지 않는 이유
+
+Symfony 는 `posix_isatty()` 로 비대화 실행을 감지해 `isInteractive()` 를 false 로 내린다.
+그런데 **Windows PHP 에는 posix 확장이 없어 그 감지 분기 자체가 실행되지 않는다.** 결과적으로
+`--no-interaction` 없이 콘솔 없는 곳에서 부르면 `isInteractive()` 가 true 로 남고, 프롬프트는
+버퍼에 갇힌 채 `ask()` 가 오지 않을 응답을 무한히 기다린다. 예외도 로그도 없어 겉으로는
+**"그 커맨드가 느리다"** 로만 보인다 — 실제로는 영영 끝나지 않는다.
+
+그래서 `unifiedConfirm()` 은 `canPromptForAnswer()` 로 한 번 더 판정한다. `stream_isatty()` 는
+posix 확장 없이 Windows 를 포함해 동작하므로 이 판정의 근거로 쓴다. 판정 재료가 없으면
+`true`(질문함)로 떨어진다 — 물어볼 수 있는데 안 묻는 쪽이 더 위험하기 때문이다.
+
+이 가드가 의미를 가지려면 **파괴적 확인의 `$default` 는 반드시 `false`(중단)** 여야 한다.
+콘솔이 없으면 그 기본값이 곧 결정이 되기 때문이다.
 
 ---
 

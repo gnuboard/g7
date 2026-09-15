@@ -67,6 +67,7 @@ class BoardSampleSeeder extends Seeder
             'use_comment'                   => false,
             'use_reply'                     => false,
             'use_report'                    => false,
+            'use_scrap'                     => true,
             'use_file_upload'               => false,
             'show_view_count'               => true,
             'per_page'                      => 15,
@@ -96,6 +97,7 @@ class BoardSampleSeeder extends Seeder
             'use_comment'                   => true,
             'use_reply'                     => false,
             'use_report'                    => true,
+            'use_scrap'                     => true,
             'use_file_upload'               => true,
             'max_file_size'                 => 5, // 5MB
             'max_file_count'                => 5,
@@ -135,6 +137,7 @@ class BoardSampleSeeder extends Seeder
             'use_comment'                   => true,
             'use_reply'                     => false,
             'use_report'                    => true,
+            'use_scrap'                     => true,
             'use_file_upload'               => true,
             'max_file_size'                 => 10, // 10MB
             'max_file_count'                => 10,
@@ -168,6 +171,7 @@ class BoardSampleSeeder extends Seeder
             'use_comment'                   => false,
             'use_reply'                     => false,
             'use_report'                    => false,
+            'use_scrap'                     => false,
             'use_file_upload'               => true,
             'max_file_size'                 => 10, // 10MB
             'max_file_count'                => 5,
@@ -203,6 +207,7 @@ class BoardSampleSeeder extends Seeder
             'max_reply_depth'               => 3,
             'max_comment_depth'             => 5,
             'use_report'                    => true,
+            'use_scrap'                     => true,
             'use_file_upload'               => true,
             'max_file_size'                 => 5, // 5MB
             'max_file_count'                => 3,
@@ -238,6 +243,7 @@ class BoardSampleSeeder extends Seeder
             'max_reply_depth'               => 5,
             'max_comment_depth'             => 10,
             'use_report'                    => true,
+            'use_scrap'                     => true,
             'use_file_upload'               => true,
             'max_file_size'                 => 5, // 5MB
             'max_file_count'                => 5,
@@ -273,6 +279,7 @@ class BoardSampleSeeder extends Seeder
             'max_reply_depth'               => 1,
             'max_comment_depth'             => 1,
             'use_report'                    => false,
+            'use_scrap'                     => false,
             'use_file_upload'               => true,
             'max_file_size'                 => 5, // 5MB
             'max_file_count'                => 3,
@@ -306,6 +313,7 @@ class BoardSampleSeeder extends Seeder
             'use_comment'                   => true,
             'use_reply'                     => false,
             'use_report'                    => false,
+            'use_scrap'                     => true,
             'use_file_upload'               => false,
             'show_view_count'               => true,
             'per_page'                      => 30,

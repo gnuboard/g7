@@ -20,12 +20,13 @@
  *    렌더됐다. 수정: editor-spec sampleGlobal 에 `$locale`/`$locales` 선언 +
  *    PreviewCanvas 가 `$`-prefixed 키를 렌더 컨텍스트 최상위로 lift.
  *
- * @scenario editor_entry_unauthorized + editor_entry_authorized + sample_locales_dropdown
- * @effects access_error_panel_unauthorized + chrome_not_rendered_when_unauthorized + route_tree_source_tagged + locale_dropdown_populated
+ * 축 요약(마커 아님 — 평문): editor_entry_unauthorized, editor_entry_authorized, sample_locales_dropdown.
+ * 효과 요약(마커 아님 — 평문): access_error_panel_unauthorized, chrome_not_rendered_when_unauthorized, route_tree_source_tagged, locale_dropdown_populated.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
 test.describe('@layout-editor 진입 인증 가드', () => {
+  /** @effects access_error_panel_unauthorized, chrome_not_rendered_when_unauthorized */
   test('비로그인(토큰 없음) 진입 시 chrome 미렌더 + unauthorized 안내', async ({ page }) => {
     // authenticatePage 미호출 — localStorage 에 auth_token 없음(세션 만료/로그아웃 상태 모사).
     await page.goto('/admin/layout-editor/sirsoft-admin_basic?route=%2Flogin');
@@ -41,6 +42,7 @@ test.describe('@layout-editor 진입 인증 가드', () => {
     await expect(page.getByTestId('g7le-chrome-header')).toHaveCount(0);
   });
 
+  /** @effects route_tree_source_tagged */
   test('편집 권한 보유 시 정상 진입 (chrome 렌더 + 라우트 트리 source 태깅 정상)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -59,6 +61,7 @@ test.describe('@layout-editor 진입 인증 가드', () => {
 });
 
 test.describe('@layout-editor 샘플 로케일 목록', () => {
+  /** @effects locale_dropdown_populated */
   test('로그인 화면 로케일 선택 드롭다운이 $locales 로 채워진다', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

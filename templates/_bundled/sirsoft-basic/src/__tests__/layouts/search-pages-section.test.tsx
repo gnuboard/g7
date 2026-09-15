@@ -47,7 +47,7 @@ const TestFragment: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
 // ========== 레이아웃 Fixture ==========
 
 /**
- * pages/_section.json 핵심 구조 (Partial이므로 단일 루트 Div)
+ * pages/_section.g7.html 핵심 구조 (Partial이므로 단일 루트 Div)
  */
 const pagesSectionFixture = {
   version: '1.0.0',
@@ -184,7 +184,7 @@ function makeFakePageItem(overrides: Partial<{
 
 // ========== 테스트 케이스 ==========
 
-describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
+describe('partials/search/pages/_section.g7.html 렌더링 (Issue #99)', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {

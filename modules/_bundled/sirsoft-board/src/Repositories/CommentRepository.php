@@ -198,6 +198,7 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  array  &$result  결과 배열 (참조)
      * @param  Collection  $grouped  parent_id로 그룹화된 댓글 컬렉션
      * @param  int  $parentId  부모 댓글 ID
+     * @return void
      */
     private function addRepliesRecursively(array &$result, Collection $grouped, int $parentId): void
     {
@@ -219,6 +220,7 @@ class CommentRepository implements CommentRepositoryInterface
      * 모든 하위 자손(depth 2+)을 포함한 전체 답글 수로 재계산합니다.
      *
      * @param  Collection  $comments  정렬된 댓글 컬렉션
+     * @return void
      */
     private function recalculateDescendantCounts(Collection $comments): void
     {
@@ -701,6 +703,59 @@ class CommentRepository implements CommentRepositoryInterface
     }
 
     /**
+     * 여러 게시글의 살아있는 댓글을 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * 답글 트리 연쇄 삭제(softDeleteCascadeByParentId)로 지워지는 자손 게시글들의
+     * 댓글 정리용입니다. 단건 softDeleteByPostId 와 동일한 쿼리를 whereIn 으로 확장했습니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $postIds  게시글 ID 배열
+     * @return int 삭제된 댓글 수
+     */
+    public function softDeleteByPostIds(string $slug, array $postIds): int
+    {
+        if ($postIds === []) {
+            return 0;
+        }
+
+        $board = Board::where('slug', $slug)->first();
+
+        return Comment::where('board_id', $board?->id)
+            ->whereIn('post_id', $postIds)
+            ->update([
+                'trigger_type' => TriggerType::Cascade->value,
+                'deleted_at' => now(),
+            ]);
+    }
+
+    /**
+     * 여러 게시글의 cascade 로 지워진 댓글만 일괄 복원합니다.
+     *
+     * 답글 트리 연쇄 복원(restoreCascadedByParentId)으로 되살아난 자손 게시글들의
+     * 댓글 복원용입니다. 사용자가 직접 지운 댓글(trigger_type='user')은 유지됩니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $postIds  게시글 ID 배열
+     * @return int 복원된 댓글 수
+     */
+    public function restoreCascadedByPostIds(string $slug, array $postIds): int
+    {
+        if ($postIds === []) {
+            return 0;
+        }
+
+        $board = Board::where('slug', $slug)->first();
+
+        return Comment::onlyTrashed()
+            ->where('board_id', $board?->id)
+            ->whereIn('post_id', $postIds)
+            ->where('trigger_type', TriggerType::Cascade->value)
+            ->update([
+                'deleted_at' => null,
+            ]);
+    }
+
+    /**
      * 사용자가 작성한 댓글 목록을 페이지네이션하여 조회합니다.
      *
      * 댓글과 연결된 게시글(post) 및 게시판(board) 정보를 함께 로드합니다.
@@ -715,14 +770,22 @@ class CommentRepository implements CommentRepositoryInterface
     {
         $boardSlugFilter = $filters['board_slug'] ?? null;
         $search = $filters['search'] ?? null;
+        // 검색 대상 (content 기본 / post_title). 모르는 값은 기본값으로 떨어뜨린다 —
+        // 허용값 게이트는 컨트롤러가 담당하고, 저장소는 닫힌 분기만 유지한다.
+        $searchField = $filters['search_field'] ?? 'content';
         $sort = $filters['sort'] ?? 'latest';
         $cachedTotal = $filters['cached_total'] ?? null;
 
         $orderDirection = $sort === 'oldest' ? 'asc' : 'desc';
 
-        // 비활성 게시판 제외 — JOIN 대신 whereNotIn으로 인덱스 활용
+        // 비활성 게시판 + 댓글 기능을 끈 게시판 제외 — JOIN 대신 whereNotIn으로 인덱스 활용.
+        // use_comment 를 끈 게시판의 기존 댓글은 원글에서 더 이상 보이지 않으므로
+        // 마이페이지 "내 댓글" 에도 남기지 않는다 (게시판 비활성과 같은 기준).
         // audit:allow query-unbounded-get reason: 게시판은 운영자가 만든 수만큼만 존재한다 (글·댓글 수와 무관)
-        $inactiveBoardIds = Board::where('is_active', false)->pluck('id')->all();
+        $excludedBoardIds = Board::where('is_active', false)
+            ->orWhere('use_comment', false)
+            ->pluck('id')
+            ->all();
 
         // 관계/정렬은 지연 조인이 담당한다 (inner 는 키 컬럼만 조회)
         $query = Comment::query()
@@ -735,9 +798,9 @@ class CommentRepository implements CommentRepositoryInterface
                     ->whereNull('board_posts.deleted_at');
             });
 
-        // 비활성 게시판 제외
-        if (! empty($inactiveBoardIds)) {
-            $query->whereNotIn('board_comments.board_id', $inactiveBoardIds);
+        // 비활성·댓글 비활성 게시판 제외
+        if (! empty($excludedBoardIds)) {
+            $query->whereNotIn('board_comments.board_id', $excludedBoardIds);
         }
 
         // 게시판 필터: board_slug → board_id 조회
@@ -748,10 +811,24 @@ class CommentRepository implements CommentRepositoryInterface
             }
         }
 
-        // 검색 (댓글 내용)
+        // 검색 (댓글 내용 / 게시글 제목)
         if ($search) {
             $keyword = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search).'%';
-            $query->where('board_comments.content', 'like', $keyword);
+
+            if ($searchField === 'post_title') {
+                // 원글 제목 매칭. 위의 whereExists 가 이미 삭제글을 걸렀지만, 이 조건은
+                // 별개의 목적(검색)이라 같은 서브쿼리에 얹지 않고 독립 조건으로 둔다 —
+                // 한쪽을 고칠 때 다른 쪽 의미가 딸려 바뀌는 것을 막는다.
+                $query->whereExists(function ($q) use ($keyword) {
+                    $q->select(DB::raw(1))
+                        ->from((new Post)->getTable())
+                        ->whereColumn('board_posts.id', 'board_comments.post_id')
+                        ->whereNull('board_posts.deleted_at')
+                        ->where('board_posts.title', 'like', $keyword);
+                });
+            } else {
+                $query->where('board_comments.content', 'like', $keyword);
+            }
         }
 
         // 캐시된 total 이 있으면 COUNT 를 건너뛴다. 검색/게시판 필터가 걸린 조회는 캐시를

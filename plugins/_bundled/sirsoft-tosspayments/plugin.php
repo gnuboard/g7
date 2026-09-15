@@ -242,7 +242,6 @@ class Plugin extends AbstractPlugin
             Listeners\RegisterPgProviderListener::class,
             Listeners\RegisterTossPaymentMethodsListener::class,
             Listeners\RegisterCashReceiptProviderListener::class,
-            Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
             Listeners\PaymentRefundListener::class,
             Listeners\ValidateTossSettingsListener::class,
             Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,

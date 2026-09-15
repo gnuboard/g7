@@ -283,23 +283,42 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: 삭제 결과 요약 (`BrandService::deleteBrand()` 가 반환한 배열 — Resource 로 감싸지 않는다)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| brand_id | integer | `1` | 삭제된 브랜드의 ID |
+| products_count | integer | `0` | 삭제 시점의 연결 상품 수. **항상 `0`** 이다 — 연결 상품이 하나라도 있으면 삭제 자체가 차단되므로 성공 응답에서는 0 외의 값이 나올 수 없다 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "브랜드가 삭제되었습니다.",
+    "data": {
+        "brand_id": 1,
+        "products_count": 0
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.delete`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.delete`)이 없거나, 대상 브랜드가 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
+| 400 | Bad Request | 해당 `id` 의 브랜드가 없는 경우(`exceptions.brand_not_found`), 연결된 상품이 있어 삭제가 차단된 경우(`exceptions.brand_has_products` — 상품 수 포함), 또는 삭제 처리 중 도메인 규칙 위반 |
+| 404 | Not Found | path 파라미터 형식이 라우트에 매칭되지 않는 경우 |
 
 <!-- @generated:end -->
 
-**설명** 브랜드 1건을 삭제합니다. `auth:sanctum` + `sirsoft-ecommerce.brands.delete` 권한이 필요하며, `BrandService::deleteBrand()`가 삭제 전 연결된 상품 수를 확인합니다. 연결된 상품이 1개 이상이면 예외가 발생해 삭제가 차단되고 400 오류가 반환되므로, 해당 브랜드의 상품을 먼저 정리하거나 다른 브랜드로 이전해야 삭제할 수 있습니다. 대상이 없으면 404를 반환합니다.
+**설명** 브랜드 1건을 삭제합니다. `auth:sanctum` + `sirsoft-ecommerce.brands.delete` 권한이 필요하며, `BrandService::deleteBrand()`가 삭제 전 연결된 상품 수를 확인합니다. 연결된 상품이 1개 이상이면 예외가 발생해 삭제가 차단되고 400 오류가 반환되므로, 해당 브랜드의 상품을 먼저 정리하거나 다른 브랜드로 이전해야 삭제할 수 있습니다. 존재하지 않는 ID 는 400(`brand_not_found`)을 반환하고, 존재하지만 요청자의 스코프 밖인 대상은 403(`auth.scope_denied`)을 반환합니다.
 
 
 ### PUT /api/modules/sirsoft-ecommerce/admin/brands/{brand}
@@ -403,13 +422,13 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.update`)이 없거나, 대상 브랜드가 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
+| 400 | Bad Request | 해당 `brand` 의 브랜드가 없는 경우(`exceptions.brand_not_found`) 또는 수정 처리 중 도메인 규칙 위반 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
-**설명** 기존 브랜드(path의 `brand`)를 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.brands.update` 권한이 필요하며, `BrandService::updateBrand()`가 검증된 데이터로 갱신한 뒤 `BrandResource`를 반환합니다. `name`은 필수이고 `slug`·`website`·`sort_order`·`is_active`는 선택입니다. 대상이 없거나 처리 중 예외가 발생하면 404 또는 400을 반환하며, `sirsoft-ecommerce.brand.update_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다.
+**설명** 기존 브랜드(path의 `brand`)를 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.brands.update` 권한이 필요하며, `BrandService::updateBrand()`가 검증된 데이터로 갱신한 뒤 `BrandResource`를 반환합니다. `name`은 필수이고 `slug`·`website`·`sort_order`·`is_active`는 선택입니다. 존재하지 않는 ID 는 400(`brand_not_found`), 스코프 밖 대상은 403(`auth.scope_denied`)을 반환하며, `sirsoft-ecommerce.brand.update_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/brands/{id}
@@ -435,11 +454,62 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 가 브랜드 하나 (`BrandResource`). 필드 구성은 목록 응답의 `data.data[]` 항목과 동일하되, 목록 전용 순번(`number`)은 없다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `20` | 기본 키 (내부 식별자) |
+| name | object | `{"ko":"ASUS","en":"ASUS"}` | 다국어 원본 이름 (로케일 키 → 값) |
+| localized_name | string | `ASUS` | `name` 의 현재 로케일 해석 값 |
+| slug | string | `asus` | URL 친화 식별자 |
+| url | string | `asus` | SortableMenuItem 표시용 URL (slug 값을 그대로 노출) |
+| website | string \| null | `https://www.asus.com` | 브랜드 공식 웹사이트 URL |
+| sort_order | integer | `20` | 표시 정렬 순서 값 (작을수록 우선) |
+| is_active | boolean | `true` | 사용 여부 |
+| icon | string | `tag` | 아이콘 식별자 (Resource 가 고정값으로 부여) |
+| created_at | string | `2026-07-30 23:35:46` | 생성 일시 |
+| updated_at | string | `2026-07-30 23:35:46` | 최종 수정 일시 |
+| creator | object \| array | `[]` | 생성자 정보 (`id`/`name`) — 관계가 로드된 경우에만 포함 |
+| updater | object \| array | `[]` | 수정자 정보 (`id`/`name`) — 관계가 로드된 경우에만 포함 |
+| products_count | integer | `1` | 이 브랜드에 속한 상품 수 (집계) |
+| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "브랜드를 조회했습니다.",
+    "data": {
+        "id": 20,
+        "name": {
+            "ko": "ASUS",
+            "en": "ASUS"
+        },
+        "localized_name": "ASUS",
+        "slug": "asus",
+        "url": "asus",
+        "website": "https://www.asus.com",
+        "sort_order": 20,
+        "is_active": true,
+        "icon": "tag",
+        "created_at": "2026-07-30 23:35:46",
+        "updated_at": "2026-07-30 23:35:46",
+        "creator": [],
+        "updater": [],
+        "products_count": 1,
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -447,7 +517,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.read`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해당 `id` 의 브랜드가 없는 경우 (`messages.brands.not_found`) |
 
 <!-- @generated:end -->
 
@@ -477,19 +547,64 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 가 토글된 브랜드 (`BrandResource`). 필드 구성은 상세 조회와 동일하며, 실질적으로 달라지는 것은 `is_active` 와 `updated_at` 이다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `20` | 브랜드 기본키 |
+| is_active | boolean | `false` | **토글 후** 의 사용 여부. 화면은 이 값으로 스위치 상태를 갱신한다 |
+| updated_at | string | `2026-08-16 01:30:00` | 토글 시각으로 갱신된 수정 일시 |
+| (그 외) | — | — | `name`·`localized_name`·`slug`·`url`·`website`·`sort_order`·`icon`·`created_at`·`creator`·`updater`·`products_count`·`abilities` — 상세 조회 응답과 동일 |
+
+`message` 는 활성/비활성 구분 없이 `messages.brands.status_changed` 하나다. 현재 상태는 `data.is_active` 로 판정한다.
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+비활성으로 토글된 경우:
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "브랜드 상태가 변경되었습니다.",
+    "data": {
+        "id": 20,
+        "name": {
+            "ko": "ASUS",
+            "en": "ASUS"
+        },
+        "localized_name": "ASUS",
+        "slug": "asus",
+        "url": "asus",
+        "website": "https://www.asus.com",
+        "sort_order": 20,
+        "is_active": false,
+        "icon": "tag",
+        "created_at": "2026-07-30 23:35:46",
+        "updated_at": "2026-08-16 01:30:00",
+        "creator": [],
+        "updater": [],
+        "products_count": 1,
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.update`)이 없거나, 대상 브랜드가 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
+| 400 | Bad Request | 해당 `id` 의 브랜드가 없는 경우(`exceptions.brand_not_found`) 또는 토글 처리 중 도메인 규칙 위반 |
+| 404 | Not Found | path 파라미터 형식이 라우트에 매칭되지 않는 경우 |
 
 <!-- @generated:end -->
 

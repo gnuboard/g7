@@ -14,6 +14,7 @@ use App\Notifications\GuestNotifiable;
 use App\Services\NotificationDefinitionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Tests\Helpers\MocksChannelReadiness;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,7 @@ use Tests\TestCase;
  */
 class NotificationDispatchIntegrationTest extends TestCase
 {
+    use MocksChannelReadiness;
     use RefreshDatabase;
 
     private NotificationHookListener $listener;
@@ -36,6 +38,10 @@ class NotificationDispatchIntegrationTest extends TestCase
         // (기본 테스트 설정은 from_address 가 플레이스홀더라 readiness 가 false 다)
         $this->enableMailChannelReadiness();
         Notification::fake();
+
+        // 수신자 해석·발송 경로가 관심사다 — mail 채널은 SMTP 설정이 비면 not-ready 라
+        // 그 축을 고정하지 않으면 mail 정의를 쓰는 케이스만 환경에 따라 갈린다.
+        $this->mockAllChannelsReady();
         $this->listener = app(NotificationHookListener::class);
     }
 

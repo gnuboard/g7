@@ -5,10 +5,12 @@ namespace Modules\Sirsoft\Board\Models;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\HtmlImageExtractor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
 use Modules\Sirsoft\Board\Enums\PostStatus;
@@ -30,7 +32,7 @@ class Post extends Model implements FulltextSearchable
         'content_mode' => ['label_key' => 'sirsoft-board::activity_log.fields.content_mode', 'type' => 'text'],
         'is_notice' => ['label_key' => 'sirsoft-board::activity_log.fields.is_notice', 'type' => 'boolean'],
         'is_secret' => ['label_key' => 'sirsoft-board::activity_log.fields.is_secret', 'type' => 'boolean'],
-        'status' => ['label_key' => 'sirsoft-board::activity_log.fields.status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\PostStatus::class],
+        'status' => ['label_key' => 'sirsoft-board::activity_log.fields.status', 'type' => 'enum', 'enum' => PostStatus::class],
     ];
 
     /**
@@ -64,6 +66,7 @@ class Post extends Model implements FulltextSearchable
         'title',
         'content',
         'content_mode',
+        'content_thumbnail_url',
         'user_id',
         'author_name',
         'password',
@@ -79,6 +82,7 @@ class Post extends Model implements FulltextSearchable
         'replies_count',
         'comments_count',
         'attachments_count',
+        'scrap_count',
         'reaction_counts',
     ];
 
@@ -100,6 +104,7 @@ class Post extends Model implements FulltextSearchable
             'replies_count' => 'integer',
             'comments_count' => 'integer',
             'attachments_count' => 'integer',
+            'scrap_count' => 'integer',
             // 반응 유형별 개수 (키는 유형 ID 문자열, 예: {"1":18,"2":2})
             'reaction_counts' => 'array',
             'created_at' => 'datetime',
@@ -109,8 +114,50 @@ class Post extends Model implements FulltextSearchable
     }
 
     /**
+     * 모델 이벤트 등록
+     *
+     * 본문 첫 내부 이미지 URL 캐시(content_thumbnail_url)는 저장 시점에만 계산한다 —
+     * 목록 쿼리는 content 를 SELECT 하지 않으므로(컬럼 프루닝) 조회 시점 파싱이 불가하다.
+     * Service 가 아닌 모델 saving 이벤트에 두는 이유: 시더·테스트의 Post::create() 직접
+     * 호출과 이커머스 문의 훅 리스너 경유 경로까지 누락 없이 커버되는 유일 지점이기 때문.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Post $post) {
+            if ($post->exists && ! $post->isDirty('content') && ! $post->isDirty('content_mode')) {
+                return;
+            }
+
+            // text 모드 본문은 이스케이프되어 렌더된다(상세에 이미지 미표시) — 리터럴
+            // img 마크업을 캐시하면 목록 썸네일만 떠서 상세와 어긋나므로 추출하지 않는다.
+            if ($post->content_mode !== 'html') {
+                $post->content_thumbnail_url = null;
+
+                return;
+            }
+
+            $content = (string) $post->content;
+
+            // 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null)할 수 있는 필터 훅.
+            // 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
+            $value = HookManager::applyFilters(
+                'sirsoft-board.post.filter_content_thumbnail',
+                HtmlImageExtractor::firstInternal($content),
+                $post,
+                HtmlImageExtractor::candidates($content)
+            );
+
+            // 필터 반환값 방어 — 비문자열/빈 값/컬럼 상한 초과는 null(후보 없음)로 강등
+            $post->content_thumbnail_url = is_string($value) && $value !== '' && mb_strlen($value) <= 1000
+                ? $value
+                : null;
+        });
+    }
+
+    /**
      * 게시판과의 관계를 정의합니다.
      *
+     * @return BelongsTo 게시판 모델과의 관계
      * @return BelongsTo<Board, Post>
      */
     public function board(): BelongsTo
@@ -121,6 +168,7 @@ class Post extends Model implements FulltextSearchable
     /**
      * 작성자와의 관계를 정의합니다 (회원).
      *
+     * @return BelongsTo 작성자 모델과의 관계
      * @return BelongsTo<User, Post>
      */
     public function user(): BelongsTo
@@ -131,6 +179,7 @@ class Post extends Model implements FulltextSearchable
     /**
      * 부모 게시글과의 관계를 정의합니다 (답글용).
      *
+     * @return BelongsTo 부모 게시글과의 관계
      * @return BelongsTo<Post, Post>
      */
     public function parent(): BelongsTo
@@ -144,6 +193,7 @@ class Post extends Model implements FulltextSearchable
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
      *
+     * @return HasMany 답글 목록과의 관계
      * @return HasMany<Post>
      */
     public function replies(): HasMany
@@ -157,6 +207,7 @@ class Post extends Model implements FulltextSearchable
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
      *
+     * @return HasMany 댓글 목록과의 관계
      * @return HasMany<Comment>
      */
     public function comments(): HasMany
@@ -171,6 +222,7 @@ class Post extends Model implements FulltextSearchable
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
      *
+     * @return HasMany 첨부파일 목록과의 관계
      * @return HasMany<Attachment>
      */
     public function attachments(): HasMany
@@ -184,9 +236,9 @@ class Post extends Model implements FulltextSearchable
      *
      * 전체 attachments를 eager loading하는 대신 이미지 1건만 가져와 성능을 확보합니다.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return HasOne
      */
-    public function thumbnailAttachment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function thumbnailAttachment(): HasOne
     {
         return $this->hasOne(Attachment::class, 'post_id')
             ->where('mime_type', 'like', 'image/%')

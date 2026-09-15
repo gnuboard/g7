@@ -3,7 +3,9 @@
 namespace Modules\Sirsoft\Board\Repositories\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Board\Models\Attachment;
+use Modules\Sirsoft\Board\Models\Post;
 
 /**
  * 게시판 첨부파일 Repository 인터페이스
@@ -38,6 +40,18 @@ interface AttachmentRepositoryInterface
      * @return bool 소속 게시글이 삭제 상태인지 여부
      */
     public function isPostDeleted(string $slug, int $postId): bool;
+
+    /**
+     * 첨부파일이 속한 게시글을 게시판 스코프로 조회합니다(비밀 게이팅용).
+     *
+     * 비밀글 첨부 서빙 시 부모 게시글의 소유자/비밀 여부를 판정하기 위해 사용합니다.
+     * 게시판을 찾을 수 없거나 게시글이 없으면 null 을 반환합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return Post|null 게시글 모델 또는 null
+     */
+    public function findPostForGate(string $slug, int $postId): ?Post;
 
     /**
      * 여러 ID로 첨부파일 조회 (order 정렬)
@@ -175,6 +189,24 @@ interface AttachmentRepositoryInterface
     public function restoreCascadedByPostId(string $slug, int $postId): int;
 
     /**
+     * 여러 게시글의 살아있는 첨부를 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $postIds  게시글 ID 배열
+     * @return int 삭제된 첨부 수
+     */
+    public function softDeleteByPostIds(string $slug, array $postIds): int;
+
+    /**
+     * 여러 게시글의 cascade 로 지워진 첨부만 일괄 복원합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $postIds  게시글 ID 배열
+     * @return int 복원된 첨부 수
+     */
+    public function restoreCascadedByPostIds(string $slug, array $postIds): int;
+
+    /**
      * 게시판 ID 기준으로 첨부파일을 일괄 영구 삭제합니다.
      *
      * 게시판 영구 삭제(deleteBoard) 시 사용합니다. 소프트 삭제와 달리
@@ -185,4 +217,36 @@ interface AttachmentRepositoryInterface
      * @return int 삭제된 첨부파일 수
      */
     public function forceDeleteByBoardId(int $boardId): int;
+
+    /**
+     * 게시글에 연결되지 않은 채 방치된 임시 첨부를 오래된 순으로 조회합니다.
+     *
+     * 글쓰기 폼에서 업로드만 하고 저장 없이 이탈하면 `temp_key` 가 남은 채
+     * `board_id = 0` 인 행과 그 파일이 영구 잔존합니다. 그 회수 대상을 찾습니다.
+     *
+     * @param  Carbon  $threshold  기준 시각 (이 시각 이전 업로드가 대상)
+     * @param  int  $limit  최대 조회 건수
+     * @return Collection 임시 첨부 목록 (created_at 오름차순)
+     */
+    public function findStaleTempAttachments(Carbon $threshold, int $limit): Collection;
+
+    /**
+     * 소프트 삭제된 지 오래된 첨부를 오래된 순으로 조회합니다.
+     *
+     * 첨부 삭제는 소프트 삭제만 수행하므로(휴지통 복원 대비) 물리 파일은 남아 있습니다.
+     * 보존기간이 지난 뒤 파일과 기록을 함께 파기할 대상을 찾습니다.
+     *
+     * @param  Carbon  $threshold  기준 시각 (이 시각 이전 삭제분이 대상)
+     * @param  int  $limit  최대 조회 건수
+     * @return Collection 소프트 삭제 첨부 목록 (deleted_at 오름차순)
+     */
+    public function findSoftDeletedOlderThan(Carbon $threshold, int $limit): Collection;
+
+    /**
+     * 첨부 레코드를 영구 삭제합니다.
+     *
+     * @param  Attachment  $attachment  첨부파일 모델
+     * @return bool 삭제 성공 여부
+     */
+    public function forceDelete(Attachment $attachment): bool;
 }

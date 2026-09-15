@@ -10,7 +10,9 @@
  *  - defaultNode — components.json props.default 값으로 골격 생성, id 미부여
  *
  * @since engine-v1.50.0
- */
+  *
+ * @effects palette_card_shows_react_component_tag_badge
+*/
 
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -144,6 +146,7 @@ describe('ComponentPalette — 폴백 카테고리 (componentPalette 미제공)'
   });
 
   // 결함 8 — 실제 렌더 컴포넌트 태그 배지 (React 컴포넌트명 형식)
+  /** @effects palette_card_shows_react_component_tag_badge */
   it('카드에 React 컴포넌트명 형식의 태그 배지 표시 (<Div>, <Button>)', () => {
     render(
       withTranslation(

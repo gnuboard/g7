@@ -56,7 +56,9 @@ class BoardResource extends BaseApiResource
             'use_comment' => $this->use_comment,
             'use_reply' => $this->use_reply,
             'max_reply_depth' => $this->max_reply_depth,
+            'reply_delete_policy' => $this->reply_delete_policy,
             'use_report' => $this->use_report,
+            'use_scrap' => $this->use_scrap,
             'use_reaction' => $this->use_reaction,
             'active_reaction_types' => $this->active_reaction_types ?? [],
             'reaction_type_options' => self::buildReactionTypeOptions($this->active_reaction_types ?? []),
@@ -88,7 +90,12 @@ class BoardResource extends BaseApiResource
             'new_display_hours' => $this->new_display_hours ?? 24,
 
             // 게시판 관리 인원 (역할 기반, 역할별 1회 조회로 통합)
-            ...self::getBoardRoleData("sirsoft-board.{$this->slug}"),
+            // 이메일은 관리자 화면 응답에만 싣는다 — 게시판 상세는 인증 없이 열리므로
+            // 매니저 이메일을 그대로 실으면 운영진 주소록이 응답 본문으로 수집된다.
+            ...self::getBoardRoleData(
+                "sirsoft-board.{$this->slug}",
+                includeEmail: $this->canExposeMemberEmail($request),
+            ),
 
             // 알림 설정
             'notify_author' => $this->notify_author,
@@ -195,7 +202,9 @@ class BoardResource extends BaseApiResource
                 'use_file_upload' => $this->use_file_upload,
                 'use_comment' => $this->use_comment,
                 'use_reply' => $this->use_reply,
+                'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
+                'use_scrap' => $this->use_scrap,
                 'secret_mode' => $this->secret_mode,
                 'show_view_count' => $this->show_view_count,
                 'per_page' => $this->per_page,
@@ -227,7 +236,9 @@ class BoardResource extends BaseApiResource
                 'use_file_upload' => $this->use_file_upload,
                 'use_comment' => $this->use_comment,
                 'use_reply' => $this->use_reply,
+                'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
+                'use_scrap' => $this->use_scrap,
                 'secret_mode' => $this->secret_mode,
                 'per_page' => $this->per_page,
                 'per_page_mobile' => $this->per_page_mobile ?? $this->per_page,
@@ -327,10 +338,14 @@ class BoardResource extends BaseApiResource
      * 복제(BoardService::copyBoard) 경로와 공유하기 위해 public static 으로 노출한다.
      * (copyBoard 가 동일 산출 구조를 재사용하도록 SSoT 통합)
      *
+     * `$includeEmail` 이 false 면 사용자 항목에서 이메일을 뺀다. 공개 응답에 운영진
+     * 이메일이 실리지 않게 하기 위한 것이며, 복제 등 내부 호출은 기본값(true)을 그대로 쓴다.
+     *
      * @param  string  $rolePrefix  역할 접두사 (예: "sirsoft-board.free")
+     * @param  bool  $includeEmail  사용자 항목에 이메일 포함 여부
      * @return array board_managers, board_steps, board_manager_ids, board_step_ids
      */
-    public static function getBoardRoleData(string $rolePrefix): array
+    public static function getBoardRoleData(string $rolePrefix, bool $includeEmail = true): array
     {
         $result = [
             'board_managers' => [],
@@ -348,7 +363,7 @@ class BoardResource extends BaseApiResource
             $users = $role->users->map(fn ($user) => [
                 'uuid' => $user->uuid,
                 'name' => $user->name,
-                'email' => $user->email,
+                ...($includeEmail ? ['email' => $user->email] : []),
             ])->values()->toArray();
 
             $ids = $role->users->pluck('uuid')->toArray();
@@ -435,7 +450,7 @@ class BoardResource extends BaseApiResource
         /** @var User|null $user */
         $user = Auth::user();
         $slug = $this->getValue('slug');
-        $isAdminRoute = $this->isAdminRoute($request);
+        $isAdminRoute = $this->isAdminRequest($request);
 
         // 컨텍스트에 맞는 permissionMap 구성 (PostResource.resolveAbilities()와 동일 키)
         $permissionMap = $isAdminRoute
@@ -523,24 +538,5 @@ class BoardResource extends BaseApiResource
         }
 
         return $guestRole->permissions()->where('permissions.id', $permission->id)->exists();
-    }
-
-    /**
-     * Admin 라우트 여부를 확인합니다.
-     *
-     * Controller 네임스페이스로 판단합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return bool Admin 라우트 여부
-     */
-    private function isAdminRoute(Request $request): bool
-    {
-        $controller = $request->route()?->getController();
-
-        if (! $controller) {
-            return false;
-        }
-
-        return str_contains(get_class($controller), '\\Admin\\');
     }
 }

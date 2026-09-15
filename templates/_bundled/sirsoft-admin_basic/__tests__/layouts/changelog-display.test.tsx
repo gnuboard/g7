@@ -26,6 +26,7 @@ import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 import * as fs from 'fs';
 import * as path from 'path';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ==============================
 // 레이아웃 JSON 파일 로드 헬퍼
@@ -263,17 +264,17 @@ function findChangelogApiCalls(nodes: any[]): any[] {
       results.push(action);
     }
     if (action.handler === 'sequence' && action.actions) {
-      for (const sub of action.actions) {
+      for (const sub of asArray(action?.actions)) {
         traverseActions(sub);
       }
     }
     if (action.onSuccess) {
-      for (const sub of action.onSuccess) {
+      for (const sub of asArray(action?.onSuccess)) {
         traverseActions(sub);
       }
     }
     if (action.onError) {
-      for (const sub of action.onError) {
+      for (const sub of asArray(action?.onError)) {
         traverseActions(sub);
       }
     }
@@ -288,7 +289,7 @@ function findChangelogApiCalls(nodes: any[]): any[] {
   function traverseComponents(comps: any[]) {
     for (const comp of comps) {
       if (comp.actions) {
-        for (const action of comp.actions) {
+        for (const action of asArray(comp?.actions)) {
           traverseActions(action);
         }
       }

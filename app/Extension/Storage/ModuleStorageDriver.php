@@ -3,7 +3,9 @@
 namespace App\Extension\Storage;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\Storage\Concerns\ResolvesPublicUrl;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 모듈 스토리지 드라이버
@@ -13,6 +15,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class ModuleStorageDriver implements StorageInterface
 {
+    use ResolvesPublicUrl;
+
     /**
      * 모듈 식별자
      */
@@ -119,18 +123,16 @@ class ModuleStorageDriver implements StorageInterface
     }
 
     /**
-     * {@inheritDoc}
+     * `core.storage.filter_url` 훅 컨텍스트의 드라이버별 식별 정보를 반환합니다.
+     *
+     * @return array{scope: string, identifier: ?string} scope + 모듈 식별자
      */
-    public function url(string $category, string $path): ?string
+    protected function urlHookContext(): array
     {
-        // public disk인 경우에만 직접 URL 반환
-        if ($this->disk !== 'public') {
-            return null;
-        }
-
-        $fullPath = $this->resolvePath($category, $path);
-
-        return Storage::disk($this->disk)->url($fullPath);
+        return [
+            'scope' => 'module',
+            'identifier' => $this->identifier,
+        ];
     }
 
     /**
@@ -182,7 +184,7 @@ class ModuleStorageDriver implements StorageInterface
     /**
      * {@inheritDoc}
      */
-    public function response(string $category, string $path, string $filename, array $headers = []): ?\Symfony\Component\HttpFoundation\StreamedResponse
+    public function response(string $category, string $path, string $filename, array $headers = []): ?StreamedResponse
     {
         $fullPath = $this->resolvePath($category, $path);
 
@@ -207,7 +209,7 @@ class ModuleStorageDriver implements StorageInterface
     /**
      * {@inheritDoc}
      */
-    public function download(string $category, string $path, string $filename, array $headers = []): ?\Symfony\Component\HttpFoundation\StreamedResponse
+    public function download(string $category, string $path, string $filename, array $headers = []): ?StreamedResponse
     {
         $fullPath = $this->resolvePath($category, $path);
 

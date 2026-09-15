@@ -22,6 +22,7 @@ import { applyRecipe, reverseResolve } from '../../spec/recipeEngine';
 import { BASE_SCOPE, isDarkEditable, type StyleScope } from '../../spec/styleScope';
 import { I18nTextField } from './I18nTextField';
 import { DataChipValueInput } from '../page-settings/DataChipValueInput';
+import { useBoundValueGuard, BoundValueNotice, BoundValueRestore } from './boundValueGuard';
 
 export interface ControlRendererProps {
   /** 컨트롤 키 (`textAlign` 등) — 라벨 fallback 에 사용 */
@@ -59,6 +60,19 @@ function resolveLabel(controlKey: string, control: EditorControlSpec, t: Control
   }
   return controlKey;
 }
+
+/**
+ * 자체 바인딩 처리를 가진 위젯 — `ControlRenderer` 의 공용 게이트를 타지 않는다.
+ *
+ * 새 위젯을 여기에 넣기 전에 **그 위젯이 실제로 원문 표시·해제·복구 셋을 모두 제공하는지**
+ * 확인한다. 그렇지 않은데 등재하면 공용 보호가 그 위젯에서만 사라진다.
+ */
+const SELF_GUARDED_WIDGETS: ReadonlySet<string> = new Set([
+  'image',      // ImagePickerControl — 배지 + 업로드/제거/갤러리/관리 잠금 + 되돌리기
+  'core-id',    // CoreIdControl — chipEditing 디그레이드(선례)
+  'i18n-text',  // I18nTextField — 표현식 칩 분해가 설계된 처리
+  'text',       // DataChipValueInput — 동일
+]);
 
 export function ControlRenderer({
   controlKey,
@@ -122,6 +136,29 @@ export function ControlRenderer({
     [node, control, onPatch, scope, darkReadonly],
   );
 
+  /**
+   * 데이터 연결 값 보호 — **모든 위젯 공용 단일 게이트**.
+   *
+   * 저장값이 `{{...}}`·설정 참조이면 위젯은 그것을 해석하지 못해 빈 컨트롤로 보이고,
+   * 운영자가 조작하는 순간 **환경설정과의 연결**이 소리 없이 끊긴다. 원문은 화면
+   * 어디에도 남지 않아 되돌릴 수단조차 없다.
+   *
+   * 이 판정을 위젯마다 넣으면 한 곳이 빠져도 오류가 나지 않고 그 한 곳이 우회로가
+   * 된다(공개 #135 후속 실측에서 실제로 「이미지 관리」 진입 하나만 열려 있었다).
+   * 그래서 위젯이 아니라 **여기 한 곳**에서 건다 — 새 위젯을 등록해도 자동 적용된다.
+   */
+  const boundGuard = useBoundValueGuard(resolution.value, handleChange);
+
+  /**
+   * 자체 처리 위젯은 이 게이트를 타지 않는다.
+   *
+   * - `image` — 배지·잠금·복구를 위젯 안에서 더 세밀하게 제공한다(갤러리·업로드까지 잠금)
+   * - `core-id` — `chipEditing` 으로 같은 형태의 디그레이드를 이미 갖는다
+   * - `i18n-text`/`text`(propValue) — 위 분기에서 표현식을 **칩으로 분해해 보여 주는** 것이
+   *   설계된 처리다. 여기서 가리면 그 기능이 통째로 사라진다.
+   */
+  const guardApplies = !SELF_GUARDED_WIDGETS.has(control.widget ?? '');
+
   return (
     <div className="g7le-control-row" data-testid={`g7le-control-${controlKey}`} style={row}>
       <span className="g7le-control-label" style={labelStyle}>
@@ -169,8 +206,26 @@ export function ControlRenderer({
           >
             {t('layout_editor.property_modal.dark_code_only')}
           </span>
+        ) : guardApplies && boundGuard.bound ? (
+          // 데이터 연결 값 — 위젯은 이 문자열을 해석하지 못해 빈 컨트롤로 보이고,
+          // 조작하는 순간 연결이 소리 없이 끊긴다. 원문을 보여 주고 해제 경로로만 연다.
+          <BoundValueNotice
+            expression={String(resolution.value)}
+            t={t}
+            onReplace={boundGuard.beginReplace}
+            testIdPrefix={`g7le-control-${controlKey}`}
+          />
         ) : Widget ? (
-          <Widget control={control} value={resolution.value} onChange={handleChange} t={t} candidates={candidates} bindingCandidates={bindingCandidates} freeValueDisabled={freeValueDisabled} />
+          <>
+            <Widget control={control} value={resolution.value} onChange={handleChange} t={t} candidates={candidates} bindingCandidates={bindingCandidates} freeValueDisabled={freeValueDisabled} />
+            {guardApplies && boundGuard.replacing && boundGuard.original !== null && (
+              <BoundValueRestore
+                t={t}
+                onRestore={boundGuard.restore}
+                testIdPrefix={`g7le-control-${controlKey}`}
+              />
+            )}
+          </>
         ) : (
           <span data-testid={`g7le-control-unsupported-${controlKey}`} style={unsupported}>
             {t('layout_editor.property_modal.unsupported_widget')}

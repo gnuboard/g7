@@ -19,6 +19,7 @@ use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -299,7 +300,7 @@ class CommentService
      * @return bool 댓글 작성 가능 여부
      *
      * @throws ModelNotFoundException 게시글을 찾을 수 없는 경우
-     * @throws PostNotCommentableException 블라인드/삭제된 게시글인 경우
+     * @throws PostNotCommentableException 블라인드/삭제/비열람 비밀 게시글인 경우
      */
     public function validatePostForComment(string $slug, int $postId): bool
     {
@@ -311,6 +312,21 @@ class CommentService
 
         if ($post->status === PostStatus::Deleted || $post->deleted_at) {
             throw PostNotCommentableException::deleted();
+        }
+
+        // 비밀글 하위 쓰기 게이트 (KVE-2026-2044) — 요청 단계 규칙을 우회해도 여기서 막힌다.
+        // 서비스가 최종 관문이므로 판정은 읽기와 같은 SecretContentGate(SSoT)를 쓴다.
+        // 비밀글일 때만 board 를 붙인다: 게이트의 슬러그 해석이 라우트에 없으면 관계로
+        // 폴백하는데, 미로딩이면 fail-closed 라 비-HTTP 호출에서 정상 흐름까지 막힌다.
+        // 비밀글이 아니면 게이트는 언제나 통과하므로 그 조회를 하지 않는다.
+        if ($post->is_secret) {
+            if (! $post->relationLoaded('board')) {
+                $post->load('board');
+            }
+
+            if (! app(SecretContentGate::class)->canWriteChild($post)) {
+                throw PostNotCommentableException::secret();
+            }
         }
 
         return true;
@@ -573,6 +589,51 @@ class CommentService
     public function recordCommentCooldown(string $slug, string|int $identifier, int $seconds): void
     {
         $this->cache->put("comment_cooldown_{$slug}_{$identifier}", true, $seconds);
+    }
+
+    /**
+     * 댓글 비밀번호 검증 토큰을 캐시에 저장하고 만료 시각을 반환합니다.
+     *
+     * 게시글(PostService::storeDeleteVerifyToken)과 동형 — 비회원이 비밀번호를
+     * 확인하면 1회용 토큰을 발급해, 이후 수정/삭제 요청에서 평문 비밀번호 재전송 대신
+     * 이 토큰으로 본인 확인을 대체한다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $commentId  댓글 ID
+     * @param  string  $token  검증 토큰
+     * @return array{token: string, expires_at: string} 토큰 및 만료 시각
+     */
+    public function storeCommentVerifyToken(string $slug, int $commentId, string $token): array
+    {
+        $ttl = (int) g7_core_settings('cache.post_verify_token_ttl', 3600);
+        $expiresAt = now()->addSeconds($ttl);
+        $this->cache->put("board_comment_verify_{$slug}_{$commentId}_{$token}", true, $ttl);
+
+        return [
+            'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ];
+    }
+
+    /**
+     * 댓글 비밀번호 검증 토큰의 유효성을 확인하고 소비합니다.
+     *
+     * 토큰이 유효하면 즉시 삭제하여 재사용을 방지합니다(단일 사용).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $commentId  댓글 ID
+     * @param  string  $token  검증 토큰
+     * @return bool 토큰 유효 여부
+     */
+    public function consumeCommentVerifyToken(string $slug, int $commentId, string $token): bool
+    {
+        $key = "board_comment_verify_{$slug}_{$commentId}_{$token}";
+        if (! $this->cache->has($key)) {
+            return false;
+        }
+        $this->cache->forget($key);
+
+        return true;
     }
 
     /**

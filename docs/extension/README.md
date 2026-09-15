@@ -84,6 +84,13 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | [permissions.md](permissions.md) | Role, Permission, 자동 관리 |
 | [menus.md](menus.md) | 메뉴 권한, 시더 |
 
+### 확장 문서화
+
+| 문서 | 설명 |
+|------|------|
+| [extension-documentation.md](extension-documentation.md) | AGENTS.md/README.md/docs 역할 경계, 자동 생성 블록 규약, `ext:docgen` |
+| [changelog-rules.md](changelog-rules.md) | 버전 상향 시 CHANGELOG 기재 의무 |
+
 ---
 
 ## 확장 타입별 네이밍 규칙
@@ -180,7 +187,7 @@ php artisan extension:update-autoload   # Composer 오토로드 업데이트
 
 ## 관련 문서
 
-- [AGENTS.md](../../../AGENTS.md) - 프로젝트 개발 가이드
+- [AGENTS.md](../../AGENTS.md) - 프로젝트 개발 가이드
 - [backend/](../backend/) - 백엔드 개발 가이드
 - [frontend/](../frontend/) - 프론트엔드 개발 가이드
 - [database-guide.md](../database-guide.md) - 데이터베이스 가이드

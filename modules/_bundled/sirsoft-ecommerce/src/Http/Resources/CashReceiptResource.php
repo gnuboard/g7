@@ -16,6 +16,9 @@ class CashReceiptResource extends BaseApiResource
 {
     use HasMultiCurrencyPrices;
 
+    /** 영수증 금액 표기 통화 (부모가 주입). 미주입 시 기본 통화로 폴백. */
+    protected ?string $receiptCurrencyCode = null;
+
     /**
      * 리소스를 배열로 변환
      *
@@ -24,6 +27,11 @@ class CashReceiptResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
+        // 현금영수증 금액은 구매자가 실제로 낸 금액, 즉 **결제 통화(order_currency)** 기준이다
+        // (CashReceiptService::calculateIssuableAmount 가 그 통화로 산출한다).
+        // base 통화 기호로 포맷하면 값은 맞는데 단위만 틀린 증빙이 화면에 뜬다(¥310 vs 310원).
+        $receiptCurrency = $this->resolveReceiptCurrencyCode();
+
         return [
             'id' => $this->id,
             'provider' => $this->provider,
@@ -32,10 +40,16 @@ class CashReceiptResource extends BaseApiResource
             'transaction_type_label' => $this->transaction_type?->label(),
             'receipt_type' => $this->receipt_type,
             'receipt_type_label' => $this->receipt_type?->label(),
-            'amount' => $this->roundToOrderCurrency($this->amount),
-            'amount_formatted' => $this->formatOrderCurrency($this->amount),
-            'tax_free_amount' => $this->roundToOrderCurrency($this->tax_free_amount),
-            'tax_free_amount_formatted' => $this->formatOrderCurrency($this->tax_free_amount),
+            'amount' => $this->roundToCurrency($this->amount, $receiptCurrency),
+            'amount_formatted' => $this->formatCurrencyPrice(
+                $this->roundToCurrency($this->amount, $receiptCurrency),
+                $receiptCurrency
+            ),
+            'tax_free_amount' => $this->roundToCurrency($this->tax_free_amount, $receiptCurrency),
+            'tax_free_amount_formatted' => $this->formatCurrencyPrice(
+                $this->roundToCurrency($this->tax_free_amount, $receiptCurrency),
+                $receiptCurrency
+            ),
             'identifier_masked' => $this->identifier_masked,
             'receipt_url' => $this->receipt_url,
             'issue_number' => $this->issue_number,
@@ -54,5 +68,46 @@ class CashReceiptResource extends BaseApiResource
             // 이력 표의 시각 열 — 발급 실패 이력은 issued_at 이 null 이므로 기록 시각으로 대체한다.
             'occurred_at_formatted' => $this->formatDateTimeStringForUser($this->issued_at ?? $this->created_at),
         ];
+    }
+
+    /**
+     * 영수증 금액의 표기 통화를 주입합니다.
+     *
+     * 부모 리소스(주문)가 이미 알고 있는 결제 통화를 내려 준다. 영수증마다 order 관계를
+     * 되짚으면 발급 이력 목록에서 N+1 이 된다.
+     *
+     * @param  string|null  $currencyCode  결제 통화 코드
+     * @return static
+     */
+    public function withReceiptCurrency(?string $currencyCode): static
+    {
+        $this->receiptCurrencyCode = $currencyCode;
+
+        return $this;
+    }
+
+    /**
+     * 영수증 금액의 표기 통화를 반환합니다.
+     *
+     * 발급액은 결제 통화 기준으로 산출·저장되므로 표기도 그 통화를 따른다.
+     * 부모가 주입한 base 통화(withOrderCurrency)에 흔들리지 않는다.
+     *
+     * @return string 통화 코드 (미주입 시 기본 통화)
+     */
+    protected function resolveReceiptCurrencyCode(): string
+    {
+        if (is_string($this->receiptCurrencyCode) && $this->receiptCurrencyCode !== '') {
+            return $this->receiptCurrencyCode;
+        }
+
+        // 관계가 이미 로드된 경우에만 참조 (추가 쿼리 금지)
+        if ($this->resource->relationLoaded('order') && $this->resource->order !== null) {
+            $order = $this->resource->order;
+
+            return $order->currency
+                ?: (data_get($order->currency_snapshot, 'order_currency') ?: $this->getDefaultCurrencyCode());
+        }
+
+        return $this->getDefaultCurrencyCode();
     }
 }

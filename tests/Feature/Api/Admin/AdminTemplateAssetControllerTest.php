@@ -617,4 +617,57 @@ class AdminTemplateAssetControllerTest extends TestCase
         $this->assertSame('.dark', $iso['rewrite']);
         $this->assertSame('.g7le-preview-dark', $iso['replace']);
     }
+
+    /**
+     * **짝 `.json` 이 없는 소스만 있어도 편집기 트리에 나타난다** (S19 ⑦ · R16).
+     *
+     * 이 단언이 왜 필요한가 — 종전 트리 스캔은 `getExtension() !== 'json'` 으로 걸러
+     * 마크업 전용 레이아웃을 **구조적으로 보지 못했다**. 그런데 현 코퍼스는 소스 전건이
+     * 짝을 가지므로 **코퍼스만으로는 그 결손이 드러나지 않는다** — 짝이 대표해 화면이 멀쩡해
+     * 보이고, 규약이 지켜져서가 아니라 가려져 있었을 뿐이다.
+     *
+     * 그래서 짝 없는 소스를 **일부러 만들어** 관측한다. 이것이 없으면 이 회차의 수정이
+     * 실제로 무엇을 고쳤는지 아무 테스트도 증명하지 못한다.
+     */
+    public function test_serve_routes_includes_markup_only_layout_without_json_twin(): void
+    {
+        $layoutDir = base_path('templates/sirsoft-basic/layouts');
+        $this->assertDirectoryExists($layoutDir, '활성 템플릿 레이아웃 디렉토리가 있어야 한다');
+
+        $markupOnly = $layoutDir.DIRECTORY_SEPARATOR.'_s19_markup_only_probe.g7.html';
+        $this->assertFileDoesNotExist(
+            str_replace('.g7.html', '.json', $markupOnly),
+            '탐침 소스의 짝이 미리 있으면 이 테스트가 증명하려는 상태가 아니다'
+        );
+
+        // `version` 은 필수이고 `is_base` 는 타입 리터럴(`:attr`)이라야 불리언으로 컴파일된다
+        // — 무접두 `is_base="true"` 는 문자열이라 `=== true` 판정에 걸리지 않는다.
+        file_put_contents($markupOnly, <<<'MARKUP'
+        <layout name="_s19_markup_only_probe" version="1.0.0">
+          <meta :is_base="true" editor_label="S19 마크업 전용 탐침"/>
+          <div class="p-4">
+            <span>probe</span>
+          </div>
+        </layout>
+        MARKUP);
+
+        try {
+            $response = $this->withHeaders([
+                'Authorization' => "Bearer {$this->adminToken}",
+                'Accept' => 'application/json',
+            ])->getJson('/api/admin/templates/sirsoft-basic/editor/routes.json');
+
+            $response->assertStatus(200);
+
+            $baseNames = array_column($response->json('data.base_layouts') ?? [], 'layout_name');
+            $this->assertContains(
+                '_s19_markup_only_probe',
+                $baseNames,
+                '짝 `.json` 없이 소스만 있는 레이아웃이 편집기 트리에 나타나야 한다 '
+                .'(트리 스캔이 소스 SSoT 를 모집단으로 삼는가)'
+            );
+        } finally {
+            @unlink($markupOnly);
+        }
+    }
 }

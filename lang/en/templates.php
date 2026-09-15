@@ -31,6 +31,7 @@ return [
         'layout_validation_json_error' => ':file - JSON parsing error: :error',
         'layout_validation_missing_name' => ':file - Missing layout_name field.',
         'layout_validation_partial_error' => ':file - Partial processing error (:partial): :error',
+        'layout_validation_markup_error' => ':file - Markup compile error: :error',
         'override_layout_registration_failed' => 'Failed to register override layout: :error',
         'file_not_found' => 'File not found.',
         'file_type_not_allowed' => 'File type not allowed.',
@@ -258,6 +259,7 @@ return [
             'confirm_question' => 'Do you want to continue?',
             'layouts_deleted' => ':count layout(s) deleted',
             'versions_deleted' => ':count version(s) deleted',
+            'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'aborted' => 'Uninstall aborted.',
         ],
         'list' => [
@@ -318,6 +320,12 @@ return [
     ],
 
     // Layout attachments (background images, etc.)
+    // Layout install source selection (--layout-source=auto|json)
+    'layout_install_source' => [
+        'invalid' => '❌ --layout-source must be either auto or json. (given: :value)',
+        'json_notice' => '⚠️  Forcing JSON as the layout install source — .g7.html files with a sibling .json will be ignored.',
+    ],
+
     'layout_attachments' => [
         'messages' => [
             'uploaded' => 'Attachment uploaded.',

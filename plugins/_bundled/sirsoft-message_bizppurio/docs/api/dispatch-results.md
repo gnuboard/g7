@@ -51,7 +51,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| results | array | `[]` | <!-- TODO: 설명 --> |
+| results | array | `[]` | 요청한 `notification_log_ids` 각각의 비즈뿌리오 발송 결과. 해당 알림 로그로 발송된 건이 없으면 빈 배열 |
 
 **응답 예시**
 
@@ -152,7 +152,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| results | object | `{"21":{"status":"pending","status_label":"대기","result_cod…` | <!-- TODO: 설명 --> |
+| results | object | `{"21":{"status":"pending","status_label":"대기","result_cod…` | `notification_log_id` 를 키로 하는 결과 맵. 각 값은 `status`(pending/sent/failed) · `status_label`(현재 로케일 라벨) · `result_code`(비즈뿌리오 결과 코드) · 실패 사유를 담는다 |
 
 **응답 예시**
 
@@ -324,6 +324,11 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명**
+
+알림 발송 이력 화면이 최근 발송 건의 비즈뿌리오 결과를 한 번에 받아 결과 컬럼에 주입할 때 사용한다.
+`lookup` 이 지정한 로그 ID 만 조회하는 것과 달리, 이 엔드포인트는 최근 구간을 서버가 정해 돌려주므로
+화면이 조회 대상을 미리 알 필요가 없다. 결과는 `notification_log_id` 를 키로 하는 맵이며,
+비즈뿌리오로 발송되지 않은 알림은 키 자체가 없다 — 화면은 키 부재를 "해당 없음" 으로 그린다.
 
 

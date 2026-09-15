@@ -91,7 +91,7 @@ class BizppurioKakaoApiClient
     /**
      * 카카오 관리 API 의 임의 엔드포인트를 호출합니다.
      *
-     * Phase 5·6 의 템플릿 CRUD·검수·카테고리 조회 등에서 재사용한다. bizId/apiKey 는
+     * 템플릿 CRUD·검수·카테고리 조회 등에서 재사용한다. bizId/apiKey 는
      * 자동으로 주입되므로 도메인 파라미터만 전달한다.
      *
      * @param  string  $path  엔드포인트 경로 (예: '/v3/kakao/template/add')
@@ -103,6 +103,196 @@ class BizppurioKakaoApiClient
     public function request(string $path, array $params = []): array
     {
         return $this->post($path, $params);
+    }
+
+    /**
+     * 알림톡 템플릿을 등록합니다. (`/v3/kakao/template/add`)
+     *
+     * @param  array<string, mixed>  $params  등록 페이로드 (senderKey/templateCode/templateName 등 부록 A-2)
+     * @return array<string, mixed> 응답 배열 (code/message/data)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function addTemplate(array $params): array
+    {
+        return $this->post('/v3/kakao/template/add', $params);
+    }
+
+    /**
+     * 알림톡 템플릿을 수정합니다. (`/v3/kakao/template/update` — status R + REG/REJ 만 가능)
+     *
+     * @param  array<string, mixed>  $params  수정 페이로드 (add 와 동일 + 선택 newTemplateCode)
+     * @return array<string, mixed> 응답 배열 (code/message/data)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function updateTemplate(array $params): array
+    {
+        return $this->post('/v3/kakao/template/update', $params);
+    }
+
+    /**
+     * 알림톡 템플릿을 삭제합니다. (`/v3/kakao/template/delete` — status R + REG/REJ 만 가능)
+     *
+     * @param  string  $senderKey  발신프로필 키
+     * @param  string  $templateCode  템플릿 코드
+     * @return array<string, mixed> 응답 배열 (code/message)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function deleteTemplate(string $senderKey, string $templateCode): array
+    {
+        return $this->post('/v3/kakao/template/delete', [
+            'senderKey' => $senderKey,
+            'templateCode' => $templateCode,
+        ]);
+    }
+
+    /**
+     * 템플릿 코드 중복을 검증합니다. (`/v3/kakao/template/codeCheck`)
+     *
+     * 응답 code `200` = 사용 가능, 그 외(504 중복 등) = 사용 불가(부록 A-4).
+     *
+     * @param  string  $senderKey  발신프로필 키
+     * @param  string  $templateCode  검사할 템플릿 코드
+     * @return array<string, mixed> 응답 배열 (code/message)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function checkTemplateCode(string $senderKey, string $templateCode): array
+    {
+        return $this->post('/v3/kakao/template/codeCheck', [
+            'senderKey' => $senderKey,
+            'templateCode' => $templateCode,
+        ]);
+    }
+
+    /**
+     * 템플릿 검수를 요청합니다. (`/v3/kakao/template/request`)
+     *
+     * @param  string  $senderKey  발신프로필 키
+     * @param  string  $templateCode  템플릿 코드
+     * @param  string  $comment  검수자 전달 의견 (≤500)
+     * @return array<string, mixed> 응답 배열 (code/message)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function requestInspection(string $senderKey, string $templateCode, string $comment = ''): array
+    {
+        $params = [
+            'senderKey' => $senderKey,
+            'templateCode' => $templateCode,
+        ];
+
+        if ($comment !== '') {
+            $params['comment'] = $comment;
+        }
+
+        return $this->post('/v3/kakao/template/request', $params);
+    }
+
+    /**
+     * 템플릿 검수를 취소합니다. (`/v3/kakao/template/cancel_request` — REQ→REG)
+     *
+     * @param  string  $senderKey  발신프로필 키
+     * @param  string  $templateCode  템플릿 코드
+     * @return array<string, mixed> 응답 배열 (code/message)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function cancelInspection(string $senderKey, string $templateCode): array
+    {
+        return $this->post('/v3/kakao/template/cancel_request', [
+            'senderKey' => $senderKey,
+            'templateCode' => $templateCode,
+        ]);
+    }
+
+    /**
+     * 템플릿 승인을 취소합니다. (`/v3/kakao/template/cancel_approval` — 승인→등록 복귀)
+     *
+     * @param  string  $senderKey  발신프로필 키
+     * @param  string  $templateCode  템플릿 코드
+     * @return array<string, mixed> 응답 배열 (code/message)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function cancelApproval(string $senderKey, string $templateCode): array
+    {
+        return $this->post('/v3/kakao/template/cancel_approval', [
+            'senderKey' => $senderKey,
+            'templateCode' => $templateCode,
+        ]);
+    }
+
+    /**
+     * 휴면(DMT) 템플릿을 해제합니다. (`/v3/kakao/template/release`)
+     *
+     * @param  string  $senderKey  발신프로필 키
+     * @param  string  $templateCode  템플릿 코드
+     * @return array<string, mixed> 응답 배열 (code/message)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function releaseDormant(string $senderKey, string $templateCode): array
+    {
+        return $this->post('/v3/kakao/template/release', [
+            'senderKey' => $senderKey,
+            'templateCode' => $templateCode,
+        ]);
+    }
+
+    /**
+     * 이미지형 템플릿용 이미지를 업로드합니다. (`/v3/kakao/image/alimtalk/template`)
+     *
+     * kapi 유일의 비-JSON(multipart) 엔드포인트다(부록 A-7). 필드는 `image`(파일) +
+     * bizId/apiKey 이며 senderKey 는 필요 없다. 응답은 `{code, message, image}` 로
+     * data 봉투가 아니라 최상위 `image` 필드에 업로드된 URL 이 실린다.
+     *
+     * @param  string  $path  업로드할 이미지의 로컬 절대 경로
+     * @param  string  $filename  원본 파일명 (확장자 판정용)
+     * @return array<string, mixed> 응답 배열 (code/message/image)
+     *
+     * @throws BizppurioApiException 자격증명 미설정·HTTP 실패·응답 파싱 실패 시
+     */
+    public function uploadTemplateImage(string $path, string $filename): array
+    {
+        [$bizId, $apiKey] = $this->credentials();
+
+        $stream = fopen($path, 'r');
+        if ($stream === false) {
+            throw new BizppurioApiException(
+                __('sirsoft-message_bizppurio::messages.error.image_unreadable'),
+            );
+        }
+
+        try {
+            $response = $this->http()
+                ->attach('image', $stream, $filename)
+                ->post(self::BASE_URL.'/v3/kakao/image/alimtalk/template', [
+                    'bizId' => $bizId,
+                    'apiKey' => $apiKey,
+                ]);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+
+        if ($response->failed()) {
+            throw $this->failureException($response);
+        }
+
+        $result = $response->json();
+
+        if (! is_array($result)) {
+            throw new BizppurioApiException(
+                __('sirsoft-message_bizppurio::messages.error.invalid_response'),
+                httpStatus: $response->status(),
+            );
+        }
+
+        return $result;
     }
 
     /**

@@ -12,6 +12,7 @@ use App\Exceptions\CircularReferenceException;
 use App\Exceptions\ConcurrentModificationException;
 use App\Exceptions\LayoutIncludeException;
 use App\Extension\HookManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Models\TemplateLayout;
 use App\Models\User;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Log;
 
 class LayoutService
 {
+    use ClearsTemplateCaches;
+
     /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
      */
@@ -1132,7 +1135,9 @@ class LayoutService
         }
 
         $identifier = $template->identifier;
-        $cacheVersion = (int) $this->cache->get('ext.cache_version', 0);
+        // 원시 키 읽기는 `cache:clear` 직후 0 을 돌려주어 `.v0` 키를 지우고 실제 키는 남긴다 —
+        // 트레이트 게터는 부재 시 재생성하므로 실제 서빙 키와 같은 버전을 본다.
+        $cacheVersion = self::getExtensionCacheVersion();
 
         // PublicLayoutController::serve() 가 일반 응답과 편집 모드(`with_source_meta=1`) 응답을
         // 별도 캐시 키로 저장한다 (`.meta` 접미사). 본 PR Phase 3 S5a-1 에서 편집 모드 응답 캐시
@@ -1249,6 +1254,18 @@ class LayoutService
 
         // 모듈/플러그인 Extension 적용 (Overlay, Extension Point)
         $layout = $this->layoutExtensionService->applyExtensions($layout, $template->id, $withSourceMeta);
+
+        // 확장이 **방금 얹은** 조각의 개발자 주석 제거 (편집 모드는 보존).
+        //
+        // `loadAndMergeLayout` 안에서도 같은 제거를 하지만 그것은 병합 시점이라, 그 뒤에 붙는
+        // 확장 주입 조각(`resources/extensions/`)은 지나친다. 이 누출은 주입 단락이 만든 것이
+        // 아니라 이미 있던 것이다 — 공개 릴리스 7.0.5(`origin/main`) 시점에 확장 조각 41개 중
+        // 19파일·도달 지점 주석 110건이 그대로 응답에 실려 나가고 있었다. S21.3 이 이 경로에
+        // 주석을 늘리며 표본이 커져 드러났을 뿐이다.
+        // 두 번 도는 비용보다 「브라우저가 보는 값이 주입 전후로 같다」는 계약이 우선이다.
+        if (! $withSourceMeta) {
+            $layout = $this->stripDeveloperComments($layout);
+        }
 
         // 편집 모드 응답에 자식 레이아웃의 실제 DB lock_version 동봉.
         // PublicLayoutController 가 LayoutResource 를 거치지 않고 머지된 배열을 그대로 반환하므로,
@@ -1470,7 +1487,9 @@ class LayoutService
         // 프론트엔드 브라우저 캐시 무효화를 위해 ext.cache_version 증가
         // PublicLayoutController가 ?v={version} 기반 HTTP 캐시를 사용하므로
         // 버전 변경 시 브라우저가 새 URL로 인식하여 캐시를 우회합니다.
-        $this->cache->put('ext.cache_version', time());
+        // 쓰기는 트레이트 단일 지점(고정 CoreCacheDriver + 메모이즈 스토어) 경유 —
+        // 주입 CacheInterface 직접 put 은 재바인딩/스토어 상이 시 read 와 어긋난다.
+        $this->incrementExtensionCacheVersion();
 
         // After 훅 - 레이아웃 업데이트 후
         HookManager::doAction('core.layout.after_update', $layout, $templateId, $name, $data);
@@ -1579,8 +1598,8 @@ class LayoutService
         // 캐시 무효화
         $this->clearDependentLayoutsCache($templateId, $name);
 
-        // 프론트엔드 브라우저 캐시 무효화
-        $this->cache->put('ext.cache_version', time());
+        // 프론트엔드 브라우저 캐시 무효화 (트레이트 단일 지점 경유)
+        $this->incrementExtensionCacheVersion();
 
         // After 훅 - 버전 복원 후
         HookManager::doAction('core.layout.after_version_restore', $newVersion, $templateId, $name, $versionId);
@@ -1647,10 +1666,14 @@ class LayoutService
      * 공개 서빙 응답에서만 제거하여 전송 크기를 줄이며, 편집 모드(withSourceMeta)에서는
      * 호출하지 않아 보존한다. 배열/객체 노드를 재귀 순회하며 두 키만 unset 한다.
      *
+     * 화면 렌더용 JSON 을 내보내는 소비자는 이 서비스 밖에도 있다(`LayoutPreviewService` 의
+     * 미리보기 서빙). 그 경로도 같은 계약을 지어야 하므로 public 이다 — 각자 재귀 제거를
+     * 새로 짜면 한쪽만 키를 늘렸을 때 조용히 갈린다.
+     *
      * @param  array  $node  정리 대상 레이아웃(또는 하위) 배열
      * @return array comment 필드가 제거된 배열
      */
-    private function stripDeveloperComments(array $node): array
+    public function stripDeveloperComments(array $node): array
     {
         unset($node['comment'], $node['_comment']);
 

@@ -5,10 +5,12 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
@@ -85,39 +87,39 @@ class ProductInquiryService
             $boardSlug
         );
 
-        // 피벗 기준 전체 목록 조회 (페이지네이션 전 — 비밀글 필터 적용 위해)
-        $pivots = $this->repository->findByProductId($productId);
-
         $currentUserId = Auth::id();
 
-        // inquirable_id 목록으로 Post 데이터 일괄 조회
-        $ids = $pivots->pluck('inquirable_id')->all();
-        $posts = [];
-        if (! empty($ids)) {
-            $rawPosts = HookManager::applyFilters(
-                'sirsoft-ecommerce.inquiry.get_by_ids',
-                [],
-                ['ids' => $ids, 'slug' => $boardSlug]
-            );
-            foreach ($rawPosts as $post) {
-                $postId = $post['id'] ?? null;
-                if ($postId) {
-                    $posts[$postId] = $post;
-                }
-            }
-        }
-
-        // 비밀글 제외 필터 적용 (Post의 is_secret 기준)
+        // 비밀글 원문 마스킹은 게시판 훅(getByIds)이 요청자 신원 기준으로 서버측에서
+        // 이미 수행한다(KVE-2026-1914, SecretContentGate SSoT). 아래 exclude_secret 은
+        // 보안 판정이 아니라 단순 "비밀글 행 숨김" 표시 필터일 뿐이며, 노출 여부는
+        // 클라이언트 파라미터와 무관하게 서버가 결정한다.
         if ($excludeSecret) {
+            // 비밀글 판정(is_secret)은 게시판 모듈의 게시글 데이터에만 있어 SQL 로 거를 수
+            // 없다 — 이 경로만 전량 조회 후 PHP 필터가 구조적으로 필요하다. 기본 화면
+            // 경로(exclude_secret=false)는 아래 else 의 쿼리 레벨 페이지네이션을 쓴다.
+            $pivots = $this->repository->findByProductId($productId);
+            $posts = $this->fetchPostsByIds($pivots->pluck('inquirable_id')->all(), $boardSlug);
+
+            // 비밀글 제외 필터 적용 (Post의 is_secret 기준)
             $pivots = $pivots->filter(function ($pivot) use ($posts) {
                 $post = $posts[$pivot->inquirable_id] ?? null;
 
                 return empty($post['is_secret']);
             })->values();
-        }
 
-        $total = $pivots->count();
-        $pagePivots = $pivots->forPage($page, $perPage);
+            $total = $pivots->count();
+            $pagePivots = $pivots->forPage($page, $perPage);
+            $lastPage = (int) ceil($total / $perPage);
+        } else {
+            // 화면 목록은 쿼리 레벨 페이지네이션 — 전량 적재 후 PHP 잘라내기(#102 동형)를
+            // 하지 않는다. 게시글 데이터도 이 페이지 분량만 일괄 조회한다.
+            $paginator = $this->repository->paginateByProductId($productId, $perPage, $page);
+            $pagePivots = collect($paginator->items());
+            $posts = $this->fetchPostsByIds($pagePivots->pluck('inquirable_id')->all(), $boardSlug);
+
+            $total = $paginator->total();
+            $lastPage = $paginator->lastPage();
+        }
 
         // user_id 일괄 조회 (N+1 방지)
         $userIds = $pagePivots->map(fn ($pivot) => $posts[$pivot->inquirable_id]['user_id'] ?? null)
@@ -131,25 +133,39 @@ class ProductInquiryService
             $userId = $post['user_id'] ?? null;
             $name = $userId ? ($userMap[$userId] ?? $post['author_name'] ?? null) : ($post['author_name'] ?? null);
 
+            // 비밀글 이중 방어(KVE-2026-1914): 게시판 훅(getByIds)이 이미 요청자 신원으로
+            // 원문을 마스킹하지만, 훅이 신원 판정만 하고 특정 필드 null 처리를 누락하는 회귀에
+            // 대비해 훅이 실어 보낸 권위 플래그(can_view_secret)로 payload 를 재확정한다.
+            // 자기 권한을 재계산하지 않으므로(플래그만 신뢰) 게이트 강도가 훅과 갈리지 않는다.
+            //
+            // fail-closed: 비밀글인데 권위 플래그가 없으면(훅 미치환·타 확장 치환으로 누락)
+            // 열람 가능으로 가정하지 않고 마스킹한다. 플래그 부재 = 권위 미상 = 안전 측(감춤).
+            // 비밀글이 아니면($isSecret=false) 어느 경우에도 마스킹되지 않으므로 영향 없다.
+            $isSecret = $post['is_secret'] ?? false;
+            $secretMasked = $isSecret && $post !== null && ($post['can_view_secret'] ?? false) === false;
+
             return [
                 'id' => $pivot->id,
                 'post_id' => $pivot->inquirable_id,
                 'user_id' => $userId,
                 'author_name' => $this->maskAuthorName($name),
-                'title' => $post['title'] ?? null,
+                // 비밀글이면 title 도 fail-closed 로 재마스킹한다(KVE-2026-1914 A2b).
+                // 훅이 신원 판정만 하고 title 치환을 누락하는 회귀에 대비 — 플레이스홀더 텍스트
+                // 자체는 게시판 lang 키(post.secret_post_title)가 SSoT 로, 훅의 마스킹 값과 동일하다.
+                'title' => $secretMasked
+                    ? __('sirsoft-board::messages.post.secret_post_title')
+                    : ($post['title'] ?? null),
                 'category' => $post['category'] ?? null,
-                'content' => $post['content'] ?? null,
-                'is_secret' => $post['is_secret'] ?? false,
+                'content' => $secretMasked ? null : ($post['content'] ?? null),
+                'is_secret' => $isSecret,
                 'is_owner' => $isOwner,
                 'is_answered' => $pivot->is_answered ?? false,
                 'answered_at' => $pivot->answered_at?->toIso8601String(),
                 'created_at' => $pivot->created_at?->toIso8601String(),
-                'reply' => $post['reply'] ?? null,
-                'attachments' => $post['attachments'] ?? [],
+                'reply' => $secretMasked ? null : ($post['reply'] ?? null),
+                'attachments' => $secretMasked ? [] : ($post['attachments'] ?? []),
             ];
         })->values()->all();
-
-        $lastPage = (int) ceil($total / $perPage);
 
         return [
             'items' => $items,
@@ -166,6 +182,36 @@ class ProductInquiryService
                 ],
             ],
         ];
+    }
+
+    /**
+     * inquirable_id 목록으로 게시글 데이터를 일괄 조회합니다 (N+1 방지).
+     *
+     * @param  array<int, int>  $ids  게시글 ID 목록
+     * @param  string  $boardSlug  문의 게시판 슬러그
+     * @return array<int, array<string, mixed>> 게시글 ID => 게시글 데이터
+     */
+    private function fetchPostsByIds(array $ids, string $boardSlug): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        $rawPosts = HookManager::applyFilters(
+            'sirsoft-ecommerce.inquiry.get_by_ids',
+            [],
+            ['ids' => $ids, 'slug' => $boardSlug]
+        );
+
+        $posts = [];
+        foreach ($rawPosts as $post) {
+            $postId = $post['id'] ?? null;
+            if ($postId) {
+                $posts[$postId] = $post;
+            }
+        }
+
+        return $posts;
     }
 
     /**
@@ -205,9 +251,7 @@ class ProductInquiryService
         $boardSlug = $this->getInquiryBoardSlug();
 
         if (! $boardSlug) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_not_configured')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.board_not_configured');
         }
 
         $product = $this->productRepository->find($productId);
@@ -223,6 +267,12 @@ class ProductInquiryService
             $data['user_id'] = Auth::id();
         }
 
+        // 클라이언트 IP 를 요청 경계(Service)에서 캡처해 게시판 훅 payload 로 전달한다.
+        // 게시판 Listener 가 request() 를 직접 참조하지 않도록 소유 서비스가 주입한다.
+        if (empty($data['ip_address'])) {
+            $data['ip_address'] = request()->ip() ?? '0.0.0.0';
+        }
+
         $inquiry = DB::transaction(function () use ($productId, $product, $boardSlug, $data) {
             // 게시판 훅으로 Post 생성
             $postResult = HookManager::applyFilters(
@@ -233,9 +283,7 @@ class ProductInquiryService
             );
 
             if (! $postResult || empty($postResult['post_id'])) {
-                throw new \RuntimeException(
-                    __('sirsoft-ecommerce::messages.inquiries.board_unavailable')
-                );
+                throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.board_unavailable');
             }
 
             // 상품명 스냅샷 (다국어) — name은 array cast
@@ -376,17 +424,13 @@ class ProductInquiryService
         $inquiry = $this->repository->findById($inquiryId);
 
         if (! $inquiry) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.not_found')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.not_found');
         }
 
         $boardSlug = $this->getInquiryBoardSlug();
 
         if (! $boardSlug) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_not_configured')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.board_not_configured');
         }
 
         HookManager::applyFilters(
@@ -421,17 +465,13 @@ class ProductInquiryService
         $inquiry = $this->repository->findById($inquiryId);
 
         if (! $inquiry) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.not_found')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.not_found');
         }
 
         $boardSlug = $this->getInquiryBoardSlug();
 
         if (! $boardSlug) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_not_configured')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.board_not_configured');
         }
 
         // ① Post 삭제 — after_delete Action 훅 포함, 트랜잭션 외부에서 실행
@@ -467,17 +507,13 @@ class ProductInquiryService
         $inquiry = $this->repository->findById($inquiryId);
 
         if (! $inquiry) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.not_found')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.not_found');
         }
 
         $boardSlug = $this->getInquiryBoardSlug();
 
         if (! $boardSlug) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_not_configured')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.board_not_configured');
         }
 
         HookManager::applyFilters(
@@ -511,17 +547,13 @@ class ProductInquiryService
         $inquiry = $this->repository->findById($inquiryId);
 
         if (! $inquiry) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.not_found')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.not_found');
         }
 
         $boardSlug = $this->getInquiryBoardSlug();
 
         if (! $boardSlug) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_not_configured')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.board_not_configured');
         }
 
         // ① Reply Post 삭제 — after_delete Action 훅 포함, 트랜잭션 외부에서 실행
@@ -532,11 +564,24 @@ class ProductInquiryService
             $inquiry->inquirable_id
         );
 
-        // ② 피벗 is_answered=false 업데이트
-        $this->repository->unmarkAnswered($inquiry);
+        // ② 잔여 답변이 없을 때만 피벗 is_answered=false 업데이트.
+        // 기설치본에는 과거 결함(#106)으로 답변이 여러 건 쌓인 문의가 있을 수 있다 —
+        // 첫 답변만 지웠는데 무조건 해제하면 "답변이 남았는데 미답변" 표기가 된다.
+        // 기본값 null = 판정 불가: 공급자(board 리스너) 부재 시 0 으로 접혀
+        // 답변완료가 오해제되는 fail-open 을 막는다.
+        $remaining = HookManager::applyFilters(
+            'sirsoft-ecommerce.inquiry.count_replies',
+            null,
+            $inquiry->inquirable_id
+        );
+
+        if (is_numeric($remaining) && (int) $remaining === 0) {
+            $this->repository->unmarkAnswered($inquiry);
+        }
 
         Log::info('상품 문의 답변 삭제 완료', [
             'inquiry_id' => $inquiryId,
+            'remaining_replies' => $remaining,
         ]);
     }
 
@@ -549,6 +594,54 @@ class ProductInquiryService
     public function findById(int $inquiryId): ?ProductInquiry
     {
         return $this->repository->findById($inquiryId);
+    }
+
+    /**
+     * 상품 삭제 시 그 상품의 문의 스레드(질문+답변 Post)와 피벗을 정리합니다.
+     *
+     * 상품이 forceDelete 되면 피벗은 FK 캐스케이드로 하드 소멸하지만, 게시판의
+     * 질문·답변 Post 는 published 로 잔존했다(#107 확대판). 애플리케이션이 먼저
+     * 훅으로 Post 를 소프트 삭제(cascade_replies 로 답변 포함)한 뒤 피벗을
+     * forceDelete 한다 — FK 캐스케이드는 백스톱으로만 유지.
+     *
+     * 문의 게시판이 미설정이면 Post 정리는 건너뛰고 피벗만 정리한다(안전 열화).
+     * 개별 훅 실패는 warning 후 계속 진행한다 — 한 건의 실패가 상품 삭제 전체를
+     * 막으면 안 되고, 남은 고아는 업그레이드 스텝 백필이 재정리한다.
+     *
+     * @param  int  $productId  상품 ID
+     * @return int 정리된 피벗 수
+     */
+    public function deleteInquiriesForProduct(int $productId): int
+    {
+        $boardSlug = $this->getInquiryBoardSlug();
+
+        if ($boardSlug) {
+            // withTrashed 포함 — 소프트 삭제된 문의의 Post 잔존물도 함께 정리
+            $inquiries = $this->repository->findByProductIdWithTrashed($productId);
+
+            foreach ($inquiries as $inquiry) {
+                try {
+                    HookManager::applyFilters(
+                        'sirsoft-ecommerce.inquiry.delete',
+                        null,
+                        $boardSlug,
+                        $inquiry->inquirable_id
+                    );
+                } catch (\Exception $e) {
+                    Log::warning('상품 삭제 시 문의 Post 정리 실패 — 계속 진행', [
+                        'product_id' => $productId,
+                        'inquiry_id' => $inquiry->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        } else {
+            Log::info('문의 게시판 미설정 — 상품 삭제 시 문의 Post 정리 생략', [
+                'product_id' => $productId,
+            ]);
+        }
+
+        return $this->repository->forceDeleteByProductId($productId);
     }
 
     /**
@@ -614,12 +707,27 @@ class ProductInquiryService
         $inquiry = $this->repository->findById($inquiryId);
 
         if (! $inquiry) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.not_found')
-            );
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.not_found');
         }
 
         $boardSlug = $this->getInquiryBoardSlug();
+
+        // update/delete 경로와 동일한 미설정 가드 — 없으면 훅 무응답이 reply_failed 로 위장된다
+        if (! $boardSlug) {
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.board_not_configured');
+        }
+
+        // 1차 방어(피벗 플래그): 이미 답변된 문의에는 재등록 거부 — 단일 답변 정책.
+        // UI 는 `!item.reply` 게이팅으로 이미 차단하므로, 이 가드는 API 직접 호출/동시
+        // 클릭 경로를 막는다. 게시판 실데이터 기준 2차 방어는 리스너(createAndReturn)가 담당.
+        if ($inquiry->is_answered) {
+            throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.reply_already_exists');
+        }
+
+        // 클라이언트 IP 를 요청 경계(Service)에서 캡처해 게시판 훅 payload 로 전달한다.
+        if (empty($data['ip_address'])) {
+            $data['ip_address'] = request()->ip() ?? '0.0.0.0';
+        }
 
         $updated = DB::transaction(function () use ($inquiry, $boardSlug, $data) {
             // 게시판 훅으로 Reply Post 생성 (title은 리스너에서 Re: 부모글제목 형식으로 설정)
@@ -633,10 +741,15 @@ class ProductInquiryService
                 $replyData
             );
 
+            // 2차 방어(리스너, 게시판 실데이터)가 중복을 감지하면 중복 마커를 돌려준다.
+            // 경합 경로(피벗 is_answered 가 아직 false)에서도 사유를 보존해 422 로 안내
+            // — null 과 합치면 "답변 등록에 실패했습니다" 로 위장된다 (운영 실측 제보).
+            if (is_array($postResult) && ! empty($postResult['duplicate'])) {
+                throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.reply_already_exists');
+            }
+
             if (! $postResult || empty($postResult['post_id'])) {
-                throw new \RuntimeException(
-                    __('sirsoft-ecommerce::messages.inquiries.reply_failed')
-                );
+                throw new ProductInquiryOperationException('sirsoft-ecommerce::messages.inquiries.reply_failed');
             }
 
             // 피벗 is_answered 업데이트
@@ -654,5 +767,144 @@ class ProductInquiryService
         HookManager::doAction('sirsoft-ecommerce.product_inquiry.after_reply', $updated);
 
         return $updated;
+    }
+
+    /**
+     * 관리자용 전 회원 상품문의 목록을 조회합니다.
+     *
+     * @param  array<string, mixed>  $filters  필터 (검색 대상·검색어·회원·기간·정렬)
+     * @param  int  $perPage  페이지당 개수
+     * @return LengthAwarePaginator 페이지네이션된 목록
+     */
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->repository->paginateForAdmin($filters, $perPage);
+    }
+
+    /**
+     * 관리자가 상품문의 한 건을 삭제합니다 (소유자 무관).
+     *
+     * 피벗만 지우면 게시판의 질문 글이 살아남아 회원에게 계속 노출된다 —
+     * 반드시 `deleteInquiry()` 를 거쳐 게시판 훅(글 삭제)까지 태운다.
+     *
+     * @param  int  $id  행 ID
+     * @return bool 삭제 성공 여부 (대상이 없으면 false)
+     */
+    public function deleteByAdmin(int $id): bool
+    {
+        return $this->deleteAsAdmin($id, $this->getInquiryBoardSlug());
+    }
+
+    /**
+     * 관리자가 상품문의를 일괄 삭제합니다 (소유자 무관).
+     *
+     * 훅을 루프 **앞뒤로 한 번씩만** 발화한다 — 항목마다 발화하면 활동 로그가 폭주하고,
+     * IDV 같은 before 훅 소비자가 루프 중간에 끼어들어 앞부분만 지워진 상태가 된다.
+     *
+     * 항목 삭제는 단건 경로(`deleteInquiry()`)를 그대로 재사용한다. 저장소의
+     * `bulkDelete()` 로 피벗만 지우면 게시판 질문 글이 남아 관리 목록에서만 사라지고
+     * 회원에게는 계속 보인다 — 단건 삭제와 일괄 삭제의 결과가 달라지는 자리다.
+     *
+     * 한 건이 실패해도 나머지는 계속 지운다. 실패분은 건수에서 빠진다.
+     *
+     * @param  array<int, int>  $ids  행 ID 목록
+     * @return int 실제로 삭제된 건수
+     */
+    public function bulkDeleteByAdmin(array $ids): int
+    {
+        HookManager::doAction('sirsoft-ecommerce.product_inquiry.before_bulk_delete', $ids);
+
+        // 게시판 조회는 루프 밖에서 한 번 — 설정은 루프 도중 바뀌지 않는다.
+        $boardSlug = $this->getInquiryBoardSlug();
+        $count = 0;
+
+        foreach ($ids as $id) {
+            if ($this->deleteAsAdmin((int) $id, $boardSlug)) {
+                $count++;
+            }
+        }
+
+        HookManager::doAction('sirsoft-ecommerce.product_inquiry.after_bulk_delete', $ids, $count);
+
+        return $count;
+    }
+
+    /**
+     * 관리자 삭제 한 건 — 질문 글과 피벗을 함께 지웁니다.
+     *
+     * 게시판이 지정돼 있으면 게시판 훅으로 질문 글을 먼저 지운다. 피벗만 지우면
+     * 관리 목록에서만 사라지고 회원에게는 질문 글이 계속 보인다.
+     *
+     * 게시판 **미지정**이면 지울 글 자체가 없으므로 글 정리를 생략하고 피벗만 지운다 —
+     * 상품 삭제 경로(`deleteInquiriesForProduct()`)와 같은 판단이다. 미지정 상태에서
+     * 막아 버리면 과거에 쌓인 고아 문의를 운영자가 정리할 방법이 없어진다.
+     *
+     * 한 건의 실패가 나머지를 막지 않는다.
+     *
+     * @param  int  $id  행 ID
+     * @param  string|null  $boardSlug  문의 게시판 slug (미지정이면 null)
+     * @return bool 삭제 성공 여부
+     */
+    private function deleteAsAdmin(int $id, ?string $boardSlug): bool
+    {
+        $inquiry = $this->repository->findById($id);
+
+        if (! $inquiry) {
+            return false;
+        }
+
+        if ($boardSlug) {
+            try {
+                HookManager::applyFilters(
+                    'sirsoft-ecommerce.inquiry.delete',
+                    null,
+                    $boardSlug,
+                    $inquiry->inquirable_id
+                );
+            } catch (\Exception $e) {
+                Log::warning('관리자 문의 삭제 — 질문 글 정리 실패, 피벗도 남긴다', [
+                    'inquiry_id' => $id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return false;
+            }
+        } else {
+            Log::info('문의 게시판 미설정 — 관리자 삭제 시 질문 글 정리 생략', [
+                'inquiry_id' => $id,
+            ]);
+        }
+
+        $this->repository->deleteById($id);
+
+        // 성공 판정은 «몇 행을 지웠는가» 가 아니라 «사라졌는가» 다.
+        // 게시판 훅이 질문 글을 지우면서 피벗까지 캐스케이드로 함께 지우는 경로가 있어
+        // 위 deleteById 가 0행을 돌려줄 수 있다 — 그것을 실패로 읽으면 실제로는 지워졌는데
+        // 응답이 «0건 삭제» 로 나간다(2026-09-15 브라우저 실측에서 드러난 자리).
+        return $this->repository->findById($id) === null;
+    }
+
+    /**
+     * 회원의 상품문의 건수를 조회합니다 (회원 상세 요약용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 건수
+     */
+    public function countByUserForAdmin(int $userId): int
+    {
+        return $this->repository->countByUser($userId);
+    }
+
+    /**
+     * 회원의 **미답변** 상품문의 건수를 조회합니다 (회원 상세 요약용).
+     *
+     * 전체 건수만으로는 «지금 답해야 할 것이 있는가» 를 알 수 없어 따로 센다.
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 미답변 건수
+     */
+    public function countPendingByUserForAdmin(int $userId): int
+    {
+        return $this->repository->countPendingByUser($userId);
     }
 }

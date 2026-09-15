@@ -108,6 +108,18 @@ export type { LayoutFileListProps, LayoutFileItem as LayoutFile } from './Layout
 export { CodeEditor } from './CodeEditor';
 export type { CodeEditorProps } from './CodeEditor';
 
+export { CodeWorkspace } from './CodeWorkspace';
+export type { CodeWorkspaceProps } from './CodeWorkspace';
+
+export { FileTree } from './FileTree';
+export type { FileTreeProps, FileTreeNode, FileTreeContentMatch, FileTreeReveal } from './FileTree';
+
+export { FileTreePicker } from './FileTreePicker';
+export type { FileTreePickerProps, FileTreePickerMode } from './FileTreePicker';
+
+export { FileTabs } from './FileTabs';
+export type { FileTabsProps, FileTabItem } from './FileTabs';
+
 export { VersionList } from './VersionList';
 export type { VersionListProps, VersionItem } from './VersionList';
 

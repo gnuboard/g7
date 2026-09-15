@@ -1,0 +1,121 @@
+<!-- 상품정보제공고시 템플릿 관리 (운영자) — 상품 등록 시 불러 쓸 고시 항목 묶음을 여기서 만든다.
+  왼쪽 목록은 무한 스크롤이라 페이지 상태를 전역에 두고, 오른쪽 패널이 조회·수정·등록을 겸한다. -->
+<layout name="admin_ecommerce_product_notice_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.product_notice_template.title" description="$t:sirsoft-ecommerce.admin.product_notice_template.description"/>
+  <!-- 첫 20건만 받고 나머지는 목록 패널의 무한 스크롤이 이어 붙인다. 검색어는 URL 쿼리를 그대로 넘기므로 주소가 바뀌면 처음부터 다시 받는다 -->
+  <data-source id="templates" label_key="$t:sirsoft-ecommerce.editor.data_source.templates" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-notice-templates" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
+    <params search="{{query.search}}" :per_page="20"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <init-local>
+      <field name="form">
+        <field name="name" :value="[]"/>
+        <field name="fields">
+          <item>
+            <field name="name" :value="[]"/>
+            <field name="content" :value="[]"/>
+          </item>
+        </field>
+        <field name="is_active" :value="true"/>
+      </field>
+    </init-local>
+  </data-source>
+  <init-local>
+    <field name="form">
+      <field name="name" :value="[]"/>
+      <field name="fields" :value="[]"/>
+      <field name="is_active" :value="true"/>
+    </field>
+    <field name="isSaving" :value="false"/>
+    <field name="errors" :value="null"/>
+    <field name="deleteModal">
+      <field name="isOpen" :value="false"/>
+      <field name="templateId" :value="null"/>
+      <field name="templateName" value=""/>
+    </field>
+    <field name="editingModal">
+      <field name="isOpen" :value="false"/>
+    </field>
+    <field name="bulkChangeModal">
+      <field name="isOpen" :value="false"/>
+    </field>
+  </init-local>
+  <init-global>
+    <field name="infiniteScroll">
+      <field name="currentPage" :value="1"/>
+      <field name="hasMore" :value="true"/>
+      <field name="isLoadingMore" :value="false"/>
+    </field>
+    <field name="selectedTemplateId" :value="null"/>
+    <field name="selectedTemplate" :value="null"/>
+    <field name="panelMode" value="view"/>
+  </init-global>
+  <permissions>
+    <permission>sirsoft-ecommerce.product-notice-templates.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>templates</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="notice_page_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div data-ref="page_header_left">
+          <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.product_notice_template.title</h1>
+          <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.product_notice_template.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
+          <button data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
+            <on type="click">
+              <!-- 검색어와 쌓인 스크롤 페이지를 함께 떨어뜨린다 — 소스만 다시 태우면 이어 붙인 목록이 남는다 -->
+              <navigate path="/admin/ecommerce/product-notices" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
+          </button>
+          <button data-ref="add_template_button" disabled="{{templates?.data?.abilities?.can_create !== true}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 오른쪽 패널을 등록 모드로 전환. 빈 폼에 항목 한 줄을 미리 넣어 두는 것은 항목이 0개인 템플릿은 저장할 수 없기 때문이다 -->
+              <sequence>
+                <set-state target="global" :selectedTemplateId="null" :selectedTemplate="null" panelMode="create"/>
+                <set-state target="local" :form="null" :errors="null" :isSaving="false"/>
+                <set-state target="local">
+                  <field name="form">
+                    <field name="name" :value="[]"/>
+                    <field name="fields">
+                      <item>
+                        <field name="name" :value="[]"/>
+                        <field name="content" :value="[]"/>
+                      </item>
+                    </field>
+                    <field name="is_active" :value="true"/>
+                  </field>
+                </set-state>
+              </sequence>
+            </on>
+            <icon name="plus" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.product_notice_template.list.add</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="grid-cols-1-lg-3">
+        <include src="partials/admin_ecommerce_product_notice_index/_panel_list.g7.html"/>
+        <include src="partials/admin_ecommerce_product_notice_index/_panel_detail.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 템플릿 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_product_notice_index/_modal_delete_confirm.g7.html"/>
+  <!-- 편집 중 다른 템플릿으로 넘어갈 때 저장하지 않은 입력을 버릴지 묻는다 -->
+  <modal src="partials/admin_ecommerce_product_notice_index/_modal_editing_confirm.g7.html"/>
+  <!-- 이 템플릿을 쓰는 상품들의 고시 내용을 한꺼번에 갈아 끼울지 묻는다 -->
+  <modal src="partials/admin_ecommerce_product_notice_index/_modal_bulk_change.g7.html"/>
+</layout>

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesTimestampFreshness;
+use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtHashDataRequest;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCheckoutTokenService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
@@ -27,22 +28,18 @@ class CbtHashDataController
     /**
      * generate
      *
-     * @param  Request  $request
-     * @return JsonResponse
+     * 형식·길이 검증은 CbtHashDataRequest 가 담당한다 (국내 SignatureRequest 와 동일 강도).
+     * 계약 변경: 빈 checkout_token 은 종전 403(토큰 검증 실패) → 422(필수 검증).
+     *
+     * @param  CbtHashDataRequest  $request  oid/price/timestamp/checkout_token/buyer 정보
+     * @return JsonResponse hash_data 또는 403/404/422
      */
-    public function generate(Request $request): JsonResponse
+    public function generate(CbtHashDataRequest $request): JsonResponse
     {
-        $oid = (string) $request->input('oid', '');
-        $price = (int) $request->input('price', 0);
-        $timestamp = (string) $request->input('timestamp', '');
-        $checkoutToken = (string) $request->input('checkout_token', '');
-
-        if ($oid === '' || $price <= 0 || $timestamp === '') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Missing required parameters: oid, price, timestamp',
-            ], 422);
-        }
+        $oid = (string) $request->validated('oid');
+        $price = (int) $request->validated('price');
+        $timestamp = (string) $request->validated('timestamp');
+        $checkoutToken = (string) $request->validated('checkout_token');
 
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 10)) {
@@ -138,6 +135,6 @@ class CbtHashDataController
 
     private function rateLimitKey(Request $request, string $oid): string
     {
-        return 'sirsoft-pay_kginicis:cbt-hash:' . sha1($request->ip() . '|' . $oid);
+        return 'sirsoft-pay_kginicis:cbt-hash:'.sha1($request->ip().'|'.$oid);
     }
 }

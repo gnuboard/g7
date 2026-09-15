@@ -11,7 +11,7 @@ description: |
     그 키만 게이팅 대상이 되도록 설계했으나, 이는 GDPR 원칙 ("strictly necessary 외 비-필수는
     동의 전 차단") 과 충돌하여 등록 표를 제거하고 4단계 단순화 규칙으로 통합:
 
-      1. strictly necessary allowlist (코드 상수) → 통과
+      1. strictly necessary 허용목록 (운영자 설정 ∪ 잠금 집합) → 통과
       2. functional 동의 → 통과
       3. user-initiated 면제 (WP29 §3.6, 항상 활성) → 통과
       4. 그 외 → 차단
@@ -109,7 +109,7 @@ test_files:
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/functionalCleaner.test.ts
 
 limitations:
-  - "strictly necessary allowlist 는 코드 상수 (운영자 미수정). 추가 시 본 플러그인 소스 수정 + PR 필요. 코어/번들 확장이 신규 1st-party 키 도입 시 allowlist 갱신 의무."
+  - "strictly necessary 허용목록은 **운영자 설정**이다 (necessary_storage_allowlist). 코드 상수는 신규 설치 시드용 출하 카탈로그일 뿐이며, 새 저장 키가 필요하면 운영자가 관리자 화면에서 추가한다 — 이 플러그인 소스 수정은 필요 없다. 상세: necessary-storage-allowlist.yaml"
   - "인터셉터는 신규 쓰기만 차단. 인터셉터 install 이전에 동기 실행된 쓰기는 잡지 못함 — 부팅 시점 cleaner 가 보완."
   - "user-initiated 면제 (WP29 §3.6) 의 500ms 임계값은 휴리스틱 — 일반 SPA 의 click → setState → effect → localStorage 체인 커버 목적."
   - "외부 추적 도메인 (Crisp 등) 의 자동 차단은 별도 영역 — 본 시나리오는 1st-party storage 만 다룸 (blocker-domains.yaml / preblocker.yaml 참조)."

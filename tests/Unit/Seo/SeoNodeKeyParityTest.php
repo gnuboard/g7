@@ -56,6 +56,9 @@ class SeoNodeKeyParityTest extends TestCase
         'id',
         'key',
         'comment',
+        // `_comment` 는 접두사 계열이다 — 저장소 관례상 `_comment_id`·`_comment_hidden` 등
+        // 문맥 이름을 붙인 변형이 통용된다(전수 8종). 정확일치로만 등록하면 새 변형마다
+        // 이 테스트가 red 가 되므로 isCommentKey() 가 접두사로 판정한다.
         '_comment',
         // 설치 시점에 인라인 확장되므로 SEO 렌더 시에는 남지 않는다
         'partial',
@@ -110,7 +113,7 @@ class SeoNodeKeyParityTest extends TestCase
             }
 
             foreach ($this->collectNodeKeys($decoded) as $key) {
-                if (! in_array($key, $known, true)) {
+                if (! in_array($key, $known, true) && ! $this->isCommentKey($key)) {
                     $unknown[$key][] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
                 }
             }
@@ -122,6 +125,21 @@ class SeoNodeKeyParityTest extends TestCase
             'docs/backend/seo-system.md 의 지원 노드 키 표를 함께 갱신하세요.',
             json_encode(array_map(fn ($files) => array_slice(array_unique($files), 0, 3), $unknown), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
         ));
+    }
+
+    /**
+     * `_comment` 접두사 주석 키인지 판정합니다.
+     *
+     * 저장소 관례상 주석 키는 `_comment` 단독 외에 `_comment_id` 처럼 설명 대상을
+     * 접미사로 붙인 변형이 통용된다. React(DynamicRenderer)와 SEO(ComponentHtmlMapper)
+     * 모두 알 수 없는 최상위 키를 무시하므로 렌더 패리티에 영향이 없다.
+     *
+     * @param  string  $key  노드 최상위 키
+     * @return bool 주석 키 여부
+     */
+    private function isCommentKey(string $key): bool
+    {
+        return str_starts_with($key, '_comment');
     }
 
     /**

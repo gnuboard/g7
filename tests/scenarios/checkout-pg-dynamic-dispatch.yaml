@@ -13,7 +13,7 @@ description: |
     - 백엔드(B): ecommerce 모듈이 provider 레지스트리(`registered_pg_providers`)의
       payment_handler 를 읽어 주문 응답에 pg_payment_handler 통로를 연다. provider 미선언
       시 키 부재 → checkout PG 분기 미발화.
-    - 템플릿(C): _checkout_summary.json onSuccess 가 `handler:"{{response.data.pg_payment_handler}}"`
+    - 템플릿(C): _checkout_summary.g7.html onSuccess 가 `handler:"{{response.data.pg_payment_handler}}"`
       로 dispatch, non-PG fallback(비회원 verify→saveGuestOrderToken→navigate) 보존.
     - 편집기(E): "결제 진입" recipe(requestPgPayment) 친화 입력(핸들러·결제 데이터 칩,
       chipContext=response), matchAction placeholder-aware 역매칭(greedy 가드 포함).

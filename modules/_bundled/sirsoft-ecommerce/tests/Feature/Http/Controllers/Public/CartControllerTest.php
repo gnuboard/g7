@@ -10,6 +10,8 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
@@ -262,6 +264,51 @@ class CartControllerTest extends ModuleTestCase
 
         // item_count 확인
         $this->assertEquals(1, $response->json('data.item_count'));
+    }
+
+    /**
+     * 수량 변경 응답은 장바구니 조회 응답과 같은 키 집합이어야 합니다.
+     *
+     * 화면은 수량 변경 응답으로 장바구니 데이터소스를 **통째로 교체**한다(refetch 제거).
+     * 그래서 조회 응답에만 있는 키는 수량을 한 번 바꾸는 순간 사라진다. 특히
+     * `has_unshippable_items` 는 배송 불가 상품이 담겼을 때 주문 버튼을 잠그는 값이라,
+     * 사라지면 그 잠금이 조용히 풀린다 — 오류도 경고도 남지 않는다.
+     */
+    public function test_update_quantity_response_matches_cart_query_shape(): void
+    {
+        // Given: 장바구니에 아이템이 존재
+        $data = $this->createProductWithOption();
+        $cartKey = 'ck_'.str_repeat('e', 32);
+
+        $addResponse = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $data['product']->id,
+            'items' => [
+                ['product_option_id' => $data['option']->id, 'quantity' => 2],
+            ],
+        ], ['X-Cart-Key' => $cartKey]);
+        $addResponse->assertStatus(201);
+        $cartId = $addResponse->json('data.items.0.id');
+
+        // When: 조회와 수량 변경을 각각 호출
+        $queryResponse = $this->getJson('/api/modules/sirsoft-ecommerce/cart', ['X-Cart-Key' => $cartKey]);
+        $quantityResponse = $this->patchJson(
+            "/api/modules/sirsoft-ecommerce/cart/{$cartId}/quantity",
+            ['quantity' => 3],
+            ['X-Cart-Key' => $cartKey]
+        );
+
+        $queryResponse->assertStatus(200);
+        $quantityResponse->assertStatus(200);
+
+        // Then: 조회 응답의 키가 하나도 빠지지 않는다
+        $queryKeys = array_keys($queryResponse->json('data'));
+        $quantityKeys = array_keys($quantityResponse->json('data'));
+
+        $this->assertSame(
+            [],
+            array_values(array_diff($queryKeys, $quantityKeys)),
+            '수량 변경 응답에 장바구니 조회 응답의 키가 빠져 있습니다 — 화면이 데이터소스를 통째로 교체하므로 그 값들이 사라집니다.'
+        );
     }
 
     /**
@@ -774,6 +821,173 @@ class CartControllerTest extends ModuleTestCase
     }
 
     /**
+     * 추가옵션 그룹 + 선택지 1개를 가진 상품을 생성합니다.
+     *
+     * @param  int  $priceAdjustment  선택지 추가금
+     * @param  bool  $allowCustomText  직접입력 허용 여부
+     * @return array{product: Product, option: ProductOption, value: ProductAdditionalOptionValue}
+     */
+    protected function createProductWithAdditionalOption(int $priceAdjustment = 5000, bool $allowCustomText = false): array
+    {
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+            'selling_price' => 10000,
+            'list_price' => 10000,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 100,
+            'price_adjustment' => 0,
+        ]);
+
+        $group = ProductAdditionalOption::create([
+            'product_id' => $product->id,
+            'name' => ['ko' => '포장 방식', 'en' => 'Packaging'],
+            'is_required' => false,
+            'sort_order' => 0,
+        ]);
+
+        $value = ProductAdditionalOptionValue::create([
+            'additional_option_id' => $group->id,
+            'name' => ['ko' => '선물 포장', 'en' => 'Gift Box'],
+            'price_adjustment' => $priceAdjustment,
+            'is_default' => false,
+            'is_active' => true,
+            'allow_custom_text' => $allowCustomText,
+            'sort_order' => 0,
+        ]);
+
+        return ['product' => $product, 'option' => $option, 'value' => $value];
+    }
+
+    /**
+     * 담기 응답의 아이템은 목록 조회와 동일하게 추가옵션·소계를 실어야 한다.
+     *
+     * 회귀: 담기 응답은 `product`/`productOption` 만 적재해 `CartItemResource` 의
+     * `relationLoaded('additionalOptions')` 가드에 걸렸다. 그래서 선택이 저장되었는데도
+     * `additional_options` 가 빈 배열, `additional_options_total` 이 0, `subtotal` 이
+     * 추가금을 뺀 값으로 나갔다. 오류가 아니라 값만 조용히 빠지므로, 담기 응답만 읽는
+     * 소비자는 잘못된 금액을 그대로 표시하게 된다.
+     *
+     * @scenario surface=cart,observation=response_shape
+     *
+     * @effects store_response_matches_index_response, additional_option_amount_is_included_in_subtotal
+     */
+    public function test_store_response_includes_additional_options_and_subtotal(): void
+    {
+        $data = $this->createProductWithAdditionalOption(priceAdjustment: 5000, allowCustomText: true);
+        $cartKey = 'ck_'.str_repeat('j', 32);
+
+        $response = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $data['product']->id,
+            'items' => [[
+                'product_option_id' => $data['option']->id,
+                'quantity' => 2,
+                'additional_option_selections' => [[
+                    'additional_option_id' => $data['value']->additional_option_id,
+                    'value_id' => $data['value']->id,
+                    'custom_text' => '각인 문구',
+                ]],
+            ]],
+        ], ['X-Cart-Key' => $cartKey]);
+
+        $response->assertStatus(201);
+
+        $item = $response->json('data.items.0');
+
+        $this->assertCount(1, $item['additional_options'], '담기 응답에 선택한 추가옵션이 실려야 한다');
+        $this->assertSame($data['value']->id, $item['additional_options'][0]['value_id']);
+        $this->assertSame('각인 문구', $item['additional_options'][0]['custom_text']);
+        $this->assertSame(5000, $item['additional_options_total']);
+
+        // 소계 = (옵션 판매가 10,000 + 추가옵션 5,000) × 수량 2
+        $this->assertSame(30000, $item['subtotal']);
+    }
+
+    /**
+     * 담기 응답의 아이템은 목록 조회 응답과 같은 값을 가져야 한다.
+     *
+     * 위 테스트가 "담기 응답이 맞다" 를 고정한다면, 이 테스트는 두 엔드포인트가 서로
+     * 어긋나지 않음을 고정한다. 한쪽 적재 목록만 바뀌어도 red 가 된다.
+     *
+     * @scenario surface=cart,observation=response_shape
+     *
+     * @effects store_response_matches_index_response
+     */
+    public function test_store_response_item_matches_index_response_item(): void
+    {
+        $data = $this->createProductWithAdditionalOption(priceAdjustment: 3000);
+        $cartKey = 'ck_'.str_repeat('k', 32);
+
+        $storeResponse = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $data['product']->id,
+            'items' => [[
+                'product_option_id' => $data['option']->id,
+                'quantity' => 1,
+                'additional_option_selections' => [[
+                    'additional_option_id' => $data['value']->additional_option_id,
+                    'value_id' => $data['value']->id,
+                ]],
+            ]],
+        ], ['X-Cart-Key' => $cartKey]);
+
+        $storeResponse->assertStatus(201);
+        $stored = $storeResponse->json('data.items.0');
+
+        $indexResponse = $this->getJson('/api/modules/sirsoft-ecommerce/cart', ['X-Cart-Key' => $cartKey]);
+        $indexResponse->assertStatus(200);
+        $listed = $indexResponse->json('data.items.0');
+
+        foreach (['additional_options', 'additional_options_total', 'subtotal', 'product'] as $key) {
+            $this->assertSame(
+                $listed[$key],
+                $stored[$key],
+                "담기 응답과 목록 응답의 `{$key}` 가 어긋나면 안 된다"
+            );
+        }
+    }
+
+    /**
+     * 옵션 변경 응답의 아이템도 추가옵션·소계를 실어야 한다.
+     *
+     * 담기와 같은 원인(적재 목록 누락)이 옵션 변경 응답에도 있었다. 이쪽은 변경된 단건을
+     * 그대로 돌려주는 자리라 소비자가 응답만으로 행을 갱신하면 금액이 어긋난다.
+     *
+     * @scenario surface=cart,observation=response_shape
+     *
+     * @effects change_option_response_carries_additional_options
+     */
+    public function test_change_option_response_includes_additional_options_and_subtotal(): void
+    {
+        $data = $this->createProductWithAdditionalOption(priceAdjustment: 4000);
+        $cartKey = 'ck_'.str_repeat('l', 32);
+
+        $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $data['product']->id,
+            'items' => [['product_option_id' => $data['option']->id, 'quantity' => 1]],
+        ], ['X-Cart-Key' => $cartKey])->assertStatus(201);
+
+        $cartId = Cart::where('cart_key', $cartKey)->value('id');
+
+        $response = $this->putJson("/api/modules/sirsoft-ecommerce/cart/{$cartId}/option", [
+            'product_option_id' => $data['option']->id,
+            'quantity' => 3,
+            'additional_option_selections' => [[
+                'additional_option_id' => $data['value']->additional_option_id,
+                'value_id' => $data['value']->id,
+            ]],
+        ], ['X-Cart-Key' => $cartKey]);
+
+        $response->assertStatus(200);
+
+        $item = $response->json('data.item');
+
+        $this->assertCount(1, $item['additional_options'], '옵션 변경 응답에 추가옵션이 실려야 한다');
+        $this->assertSame(4000, $item['additional_options_total']);
+        $this->assertSame(42000, $item['subtotal']); // (10,000 + 4,000) × 3
+    }
+
+    /**
      * 장바구니 조회는 상품 이미지의 필요한 컬럼만 읽는다.
      *
      * 장바구니는 상품당 대표 이미지 1장의 URL 만 쓰는데, 종전에는 그 상품의 이미지 행을
@@ -781,6 +995,7 @@ class CartControllerTest extends ModuleTestCase
      * 관계는 두고 컬럼만 좁힌다.
      *
      * @scenario surface=cart,observation=query_shape
+     *
      * @effects list_response_shape_is_unchanged, image_columns_stay_sufficient_for_thumbnail_assembly
      */
     public function test_cart_loads_only_needed_product_image_columns(): void

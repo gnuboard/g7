@@ -459,4 +459,4 @@ DB 컬럼: `modules/plugins/templates` 테이블의 `deactivated_reason` (string
 - [플러그인 개발](plugin-development.md) - 플러그인 구조 및 설정
 - [모듈 Artisan 커맨드](module-commands.md) - 모듈 관련 커맨드
 - [확장 업데이트 시스템](extension-update-system.md) - _bundled/_pending 및 업데이트
-- [인덱스](index.md) - 확장 시스템 전체 문서 목록
+- [인덱스](README.md) - 확장 시스템 전체 문서 목록

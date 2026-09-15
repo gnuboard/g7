@@ -1,79 +1,88 @@
 {
-  "version": "1.0.0",
-  "layout_name": "errors/maintenance",
-  "extends": "_user_base",
-  "meta": {
-    "title": "$t:error.maintenance.title",
-    "description": "$t:error.maintenance.description",
-    "is_error_layout": true
-  },
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "min-h-[60vh] flex items-center justify-center"
-        },
-        "children": [
-          {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "text-center px-4 max-w-lg"
-            },
-            "children": [
-              {
+    "comment": "점검 중 — 관리자가 사이트를 내려 둔 동안 모든 방문자에게 대신 나오는 화면이다. 특정 코드에 매이지 않아(error_code 없음) 점검 설정이 켜져 있는 동안 통째로 대체된다.",
+    "version": "1.0.0",
+    "layout_name": "errors/maintenance",
+    "extends": "_user_base",
+    "meta": {
+        "title": "$t:error.maintenance.title",
+        "description": "$t:error.maintenance.description",
+        "is_error_layout": true
+    },
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
-                "name": "Icon",
+                "name": "Div",
                 "props": {
-                  "name": "gear",
-                  "className": "w-24 h-24 mx-auto text-primary-400 dark:text-primary-500 mb-6 animate-spin"
-                }
-              },
-              {
-                "type": "basic",
-                "name": "H1",
-                "props": {
-                  "className": "text-2xl font-bold text-gray-900 dark:text-white mb-4"
+                    "className": "min-h-[60vh] flex items-center justify-center"
                 },
-                "text": "$t:error.maintenance.title"
-              },
-              {
-                "type": "basic",
-                "name": "P",
-                "props": {
-                  "className": "text-gray-600 dark:text-gray-400 mb-8"
-                },
-                "text": "$t:error.maintenance.description"
-              },
-              {
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "className": "inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer"
-                },
-                "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/" } }],
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "home",
-                      "className": "w-5 h-5"
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "text-center px-4 max-w-lg"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "gear",
+                                    "className": "text-8xl mx-auto text-primary-400 dark:text-primary-500 mb-6 animate-spin"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 dark:text-white mb-4"
+                                },
+                                "text": "$t:error.maintenance.title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-gray-600 dark:text-gray-400 mb-8"
+                                },
+                                "text": "$t:error.maintenance.description"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "home",
+                                            "className": "text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:error.maintenance.back_to_home"
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:error.maintenance.back_to_home"
-                  }
                 ]
-              }
-            ]
-          }
+            }
         ]
-      }
-    ]
-  }
+    }
 }

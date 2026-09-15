@@ -79,7 +79,7 @@ php artisan template:activate [vendor-template]
 **기능**:
 - `templates.is_active` 플래그 설정
 - 동일 타입의 기존 활성 템플릿 비활성화
-- 캐시 무효화 (`templates.active.{type}`)
+- 상태 캐시 무효화 (`ext.templates.active_identifiers*` / `ext.templates.installed_identifiers`)
 
 ---
 
@@ -382,4 +382,4 @@ npm run build -- --debug
 - [템플릿 라우트](template-routing.md) - routes.json, 언어 파일
 - [템플릿 보안](template-security.md) - API 서빙, 화이트리스트
 - [템플릿 캐싱](template-caching.md) - 캐시 계층, 무효화
-- [인덱스로 돌아가기](index.md)
+- [인덱스로 돌아가기](README.md)

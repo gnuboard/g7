@@ -4,7 +4,7 @@ namespace Plugins\Sirsoft\VerificationNhnkcp\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Plugins\Sirsoft\VerificationNhnkcp\Http\Requests\KcpCallbackRequest;
 use Plugins\Sirsoft\VerificationNhnkcp\Services\KcpCallbackResolver;
 
 /**
@@ -14,8 +14,9 @@ use Plugins\Sirsoft\VerificationNhnkcp\Services\KcpCallbackResolver;
  * 판정 로직 전체를 KcpCallbackResolver 에 위임하고, 결과를 브리지 페이지로 302 redirect 한다.
  * PII 는 쿼리에 싣지 않는다 (토큰/실패코드만 전달).
  *
- * FormRequest 미사용 사유: 외부 인증기관이 보내는 임의 필드를 strict validation 으로 차단하면
- * 정상 응답까지 거절된다. raw form POST 를 그대로 Resolver 에 전달한다.
+ * 콜백 본문은 KcpCallbackRequest("빈 규칙도 결정" 패턴)로 수신한다 — 외부 인증기관이
+ * 보내는 임의 필드를 strict validation 으로 차단하면 정상 응답까지 거절되므로 규칙은
+ * 비워 두고, 의미 검증은 Resolver 가 담당한다.
  *
  * @since 1.0.0
  */
@@ -33,10 +34,10 @@ class KcpCallbackController extends PublicBaseController
     /**
      * KCP 콜백 수신 + Resolver 위임 + 브리지 페이지로 302 redirect.
      *
-     * @param  Request  $request  KCP 표준창이 form POST 한 body
+     * @param  KcpCallbackRequest  $request  KCP 표준창이 form POST 한 body
      * @return RedirectResponse 브리지 페이지로의 302 응답
      */
-    public function handle(Request $request): RedirectResponse
+    public function handle(KcpCallbackRequest $request): RedirectResponse
     {
         $outcome = $this->resolver->resolve(
             callbackInput: $request->all(),

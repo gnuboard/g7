@@ -84,4 +84,14 @@ interface ShippingTypeRepositoryInterface
      * @return string|null 배송유형 코드 (없으면 null)
      */
     public function getFirstActiveCodeByCategory(string $category): ?string;
+
+    /**
+     * 전체 배송유형의 기본키만 조회합니다.
+     *
+     * 일괄 동기화(syncShippingTypes)에서 payload 에 없는 기존 항목을 가려내는 데 사용합니다.
+     * 모델 전체를 적재하지 않고 기본키만 조회합니다.
+     *
+     * @return array<int, int> 배송유형 ID 배열
+     */
+    public function pluckIds(): array;
 }

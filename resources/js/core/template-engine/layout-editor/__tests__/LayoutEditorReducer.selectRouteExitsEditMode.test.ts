@@ -39,6 +39,7 @@ function baseState(overrides: Partial<LayoutEditorState> = {}): LayoutEditorStat
 }
 
 describe('layoutEditorReducer — SELECT_ROUTE 가 별도 편집 모드를 종료', () => {
+  /** @effects select_route_from_separate_edit_mode_restores_route_mode_and_renders_canvas */
   it('extension 편집 모드 → SELECT_ROUTE → editMode=route 복원 + 라우트 선택', () => {
     const start = baseState({
       editMode: 'extension',

@@ -1,0 +1,42 @@
+<!-- 상품 결과 묶음(전체 탭) — 다섯 건까지만 보이고 나머지는 상품 탭으로 넘긴다. -->
+<partial description="전체 탭 - 상품 섹션 (최대 5개 + 전체보기)">
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <!-- 섹션 헤더 -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+      <div class="flex items-center gap-2">
+        <icon name="shopping-bag" size="sm" class="text-gray-500 dark:text-gray-400"/>
+        <span class="font-medium text-gray-900 dark:text-white">$t:search.tabs.products</span>
+        <span class="text-sm text-blue-600 dark:text-blue-400">{{(searchResults?.data?.products_count ?? 0) | number}}</span>
+      </div>
+      <!-- 전체보기 버튼 -->
+      <button data-if="{{(searchResults?.data?.products_count ?? 0) > 0}}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+        <on type="click">
+          <!-- 같은 검색어 안에서 해당 탭 전체 목록으로 넘어가는 이동이라 mergeQuery 로 q 를 승계한다. 탭이 바뀌면 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다 -->
+          <navigate path="/search" :mergeQuery="true">
+            <query type="products" board_slug="" page="" cursor=""/>
+          </navigate>
+        </on>
+        <span>$t:search.view_all</span>
+        <icon name="chevron-right" size="sm"/>
+      </button>
+    </div>
+    <!-- 상품 그리드 (전체 탭: 최대 5개) -->
+    <div data-if="{{searchResults?.data?.products?.length > 0}}" class="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div data-each="product in {{searchResults?.data?.products ?? []}}">
+        <include src="partials/search/products/_item_card.g7.html"/>
+      </div>
+    </div>
+    <!-- 결과 없음 안내 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지) -->
+    <div data-if="{{(!searchResults?.data?.products || searchResults?.data?.products?.length === 0) &amp;&amp; !(searchResults?.data?.categories_failed?.products ?? false)}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      <span>$t:search.empty.products_in_all</span>
+    </div>
+    <!-- 검색 실패 안내 -->
+    <div data-if="{{searchResults?.data?.categories_failed?.products ?? false}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      <div class="flex items-center justify-center gap-2">
+        <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400"/>
+        <span>$t:search.failed.title</span>
+      </div>
+      <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">$t:search.failed.suggestion</p>
+    </div>
+  </div>
+</partial>

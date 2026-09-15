@@ -1,4 +1,5 @@
 {
+    "comment": "목록 화면의 로딩·오류 자리 — 유형 렌더러 «밖»에 두는 것이 요점이다. 게시판 유형은 응답이 와야 알 수 있어서, 아직 유형을 모르는 이 시점을 유형별 조각 안에 둘 수 없다.",
     "meta": {
         "is_partial": true,
         "description": "게시판 목록 로딩 스켈레톤 및 오류 페이지"
@@ -155,15 +156,15 @@
                             "comment": "새로고침 버튼",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors cursor-pointer"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "refresh"
                                 }
                             ],
+                            "props": {
+                                "className": "inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors cursor-pointer"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

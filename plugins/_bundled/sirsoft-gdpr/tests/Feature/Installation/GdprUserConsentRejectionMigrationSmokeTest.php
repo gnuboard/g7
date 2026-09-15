@@ -2,7 +2,9 @@
 
 namespace Plugins\Sirsoft\Gdpr\Tests\Feature\Installation;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Schema;
+use Plugins\Sirsoft\Gdpr\Models\GdprUserConsent;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
 /**
@@ -18,6 +20,7 @@ class GdprUserConsentRejectionMigrationSmokeTest extends PluginTestCase
 {
     /**
      * @scenario entry=reject, subject=member, category=optional
+     *
      * @effects rejection_columns_exist
      */
     public function test_rejection_columns_exist(): void
@@ -32,13 +35,14 @@ class GdprUserConsentRejectionMigrationSmokeTest extends PluginTestCase
 
     /**
      * @scenario entry=reject, subject=member, category=optional
+     *
      * @effects is_rejected_defaults_to_false
      */
     public function test_is_rejected_defaults_to_false(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
 
-        $consent = \Plugins\Sirsoft\Gdpr\Models\GdprUserConsent::create([
+        $consent = GdprUserConsent::create([
             'user_id' => $user->id,
             'consent_key' => 'cookie_analytics',
             'consent_category' => 'cookie',
@@ -51,6 +55,7 @@ class GdprUserConsentRejectionMigrationSmokeTest extends PluginTestCase
 
     /**
      * @scenario entry=reject, subject=member, category=optional
+     *
      * @effects rejection_migration_is_reversible
      */
     public function test_rejection_migration_is_reversible(): void

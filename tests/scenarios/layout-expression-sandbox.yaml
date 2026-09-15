@@ -1,0 +1,52 @@
+feature: 레이아웃 표현식 평가 샌드박스 (KVE-2026-1915)
+
+description: |
+  레이아웃 표현식은 AST 화이트리스트 인터프리터(SafeExpressionEvaluator)로 평가된다.
+  정상 표현식(삼항·옵셔널체이닝·nullish·화살표함수·스프레드·템플릿리터럴·new Date)은 그대로
+  평가되고, constructor 체인/Function 생성자를 통한 샌드박스 탈출은 코드를 실행하지 못한다.
+
+  단위 테스트가 소스를 잠그지만 사용자가 실행하는 것은 배포 번들이므로, 브라우저에서 배포
+  번들의 공개 API(`G7Core.evaluateCondition`)를 직접 호출해 (a) 정상 회귀 없음 + (b) 익스플로잇
+  미실행(전역 canary `window.__g7jsi` 미설정) 양면을 잠근다.
+
+axes:
+  case: [safe_expression, arrow_template_literal, destructuring_param, constructor_escape, nonstring_key_escape, object_facade_safe]
+
+effects:
+  - same_expression_same_value_across_paths
+  - sandbox_escape_blocked
+  - dangerous_payload_does_not_set_global
+
+# 저장측 외부 URL 차단은 표현식 실행 축(case)과 곱해지지 않는 별개 관심사다 — case 는 "그 식이
+# 실행되는가" 를, URL 축은 "그 값이 외부 origin 을 가리키는가" 를 본다. 축으로 올리면 조합을
+# 관측하는 지점이 없어 어떤 칸도 커버되지 않으므로 sub_flow 로 분리한다.
+sub_flows:
+  - id: external_url_storage_gate
+    description: |
+      레이아웃 저장 시 외부 origin URL 을 거부하는 축. 세 갈래를 함께 잠근다.
+
+      - 순회 대상: props·actions 뿐 아니라 init_actions(로드 시 자동 실행 → 외부 nav/apiCall 이
+        자동 리다이렉트·유출로 이어진다)까지. state/computed 는 데이터 값이라 의도적 제외이며,
+        실제 위험은 바인딩되는 sink(컴포넌트 prop)에서 발생하고 그 sink 는 이미 검사된다.
+      - 값 형태: 규칙이 배열 트리뿐 아니라 **문자열 스칼라**도 처리해야 한다. 문자열 필드에서
+        조기 반환하면 그 부착이 조용한 no-op 이 된다.
+      - 부착 패리티: Store·Update·UpdateContent·UpdateExtensionContent 4 경로가 동일 강도여야
+        한다. 편집기 저장 경로만 빠지면 그 경로가 우회로다.
+    effects:
+      - init_actions_external_url_rejected
+      - same_origin_path_in_init_actions_allowed
+      - plain_string_value_is_inspected_not_skipped
+      - same_origin_plain_string_allowed
+      - rule_attached_to_every_layout_content_form_request
+
+test_files:
+  # 배포 번들 종단 (축·효과 마커 보유)
+  - tests/Playwright/specs/layout-expression-sandbox.spec.ts
+  # 소스 잠금 — 평가기 본체와 소비 싱크(바인딩·computed·scripts[].if·렌더 조건), 그리고
+  # 저장 단계 거부. 축(case)은 배포 번들 E2E 가 커버하고 이 파일들은 효과를 떠받친다.
+  - resources/js/core/template-engine/__tests__/SafeExpressionEvaluator.test.ts
+  - resources/js/core/template-engine/__tests__/ConditionEvaluator.sandbox.test.ts
+  - resources/js/core/__tests__/TemplateApp.safeComputed.test.ts
+  - tests/Feature/Rules/SafeLayoutExpressionsTest.php
+  # sub_flow external_url_storage_gate 를 떠받친다.
+  - tests/Feature/Rules/NoExternalUrlsTest.php

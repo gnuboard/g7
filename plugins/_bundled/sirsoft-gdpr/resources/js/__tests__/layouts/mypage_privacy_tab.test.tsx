@@ -312,7 +312,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
          * @effects mypage_status_date_line_consented_only
          */
         it('이슈 #430/#509 — 동의·철회 이력이 있는 항목만 날짜 줄 노출 (서버가 status_at_formatted 제공)', () => {
-            // PO 결정(2026-07-20) + 이슈 #509 16번 갱신: 날짜는 "동의한 항목" + "철회 이력이 있는 항목".
+            // 프로젝트 결정(2026-07-20) + 이슈 #509 16번 갱신: 날짜는 "동의한 항목" + "철회 이력이 있는 항목".
             // 거부·신규 미설정은 서버가 status_at_formatted 를 null 로 내려주므로 날짜 줄이 렌더되지 않는다.
             // 프론트는 status_label && status_at_formatted 가 둘 다 있을 때만 날짜 줄을 그리며, 값 자체는
             // 서버가 상태별(동의일/철회일)로 계산해 내려주므로 프론트 조건식은 상태 무관 동일하게 유지된다.
@@ -328,7 +328,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
          * @effects mypage_status_date_line_revoked_color_distinction
          */
         it('이슈 #509 16번 — 동의·철회 날짜 줄을 서로 다른 색으로 균형있게 강조 (동의=초록/철회=빨강, 배지·관리자 이력 화면과 동일 톤)', () => {
-            // 철회만 강조되고 동의는 밋밋해 보인다는 PO 피드백 반영 — 동의도 철회와 대등하게 강조한다.
+            // 철회만 강조되고 동의는 밋밋해 보인다는 사용성 피드백 반영 — 동의도 철회와 대등하게 강조한다.
             // status === 'revoked' 면 text-red-600/dark:text-red-400, 그 외(동의)는 text-green-600/dark:text-green-400.
             const text = serializeForSearch(section);
             expect(text).toContain("consent?.status === 'revoked'");

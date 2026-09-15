@@ -3,7 +3,7 @@
  *
  * troubleshooting-state-closure.md에 기록된 모든 사례의 회귀 테스트입니다.
  *
- * @see docs/frontend/troubleshooting-state-closure.md
+ * @see 트러블슈팅 가이드 troubleshooting-state-closure.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -604,7 +604,7 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
      *   따라서 stale closure 방지를 위해서는 sequence 내에서 setState로 최신 상태를 설정한 후
      *   후속 액션을 실행해야 함.
      *
-     * @see templates/sirsoft-basic/layouts/shop/checkout.json
+     * @see templates/sirsoft-basic/layouts/shop/checkout.g7.html
      */
     it('sequence는 context.state를 초기 상태로 사용하고 내부 setState로 갱신해야 함', async () => {
       // G7Core.state mock 설정
@@ -754,7 +754,7 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
      *       currentLocalState(pendingLocalState, 최신)를 덮어씀
      * 해결: v1.19.1 dispatch에서 pendingLocalState를 context.data._local에도 반영
      *
-     * @see docs/frontend/troubleshooting-state-closure.md 사례 7
+     * @see 트러블슈팅 가이드 troubleshooting-state-closure.md 사례 7
      */
     it('dispatch 경로에서 pendingLocalState가 context.data._local보다 우선 적용되어야 함', () => {
       // refetchDataSource의 merge 패턴 시뮬레이션

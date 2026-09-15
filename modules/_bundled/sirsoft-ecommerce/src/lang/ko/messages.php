@@ -264,6 +264,9 @@ return [
 
     // 장바구니 메시지
     'cart' => [
+        'admin_list_retrieved' => '장바구니 목록을 조회했습니다.',
+        'admin_deleted' => '장바구니 항목을 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 장바구니 항목을 삭제했습니다.',
         'list_retrieved' => '장바구니 목록을 조회했습니다.',
         'added' => '장바구니에 상품이 추가되었습니다.',
         'bulk_added' => ':count개 상품이 장바구니에 추가되었습니다.',
@@ -492,6 +495,12 @@ return [
             'per_volume' => ':unitL당 :fee',
             'per_volume_weight' => ':unitkg당 :fee',
             'per_amount' => ':unit당 :fee',
+            // 구간별 정책의 경계값 단위 (부과정책에서 파생 — 저장 데이터에 의존하지 않음)
+            'range_unit' => [
+                'quantity' => '개',
+                'weight' => 'kg',
+                'volume' => 'L',
+            ],
         ],
         'fee_details' => [
             'base_fee' => '배송비',
@@ -1112,8 +1121,8 @@ return [
                 'bulk_summary_sales_status' => '판매상태: :status',
                 'bulk_summary_display_status' => '진열상태: :status',
                 'bulk_summary_name_changed' => '상품명 변경',
-                'bulk_summary_list_price' => '정가: :price원',
-                'bulk_summary_selling_price' => '판매가: :price원',
+                'bulk_summary_list_price' => '정가: :price',
+                'bulk_summary_selling_price' => '판매가: :price',
                 'bulk_summary_inline_modified' => '인라인 수정됨',
                 'bulk_summary_bulk_applied' => '일괄 변경 적용',
                 'bulk_summary_price_adjustment' => '가격 조정: :method :value',
@@ -1140,6 +1149,14 @@ return [
         'can_write_checked' => '리뷰 작성 가능 여부를 확인했습니다.',
         'can_write_check_failed' => '리뷰 작성 가능 여부 확인에 실패했습니다.',
         'cannot_write' => '리뷰를 작성할 수 없습니다. (사유: :reason)',
+        // 작성 불가 사유 라벨 — :reason 치환자에 원시 식별자 대신 번역문을 싣는다
+        'reasons' => [
+            'order_option_not_found' => '주문 내역을 찾을 수 없음',
+            'not_own_order' => '본인 주문이 아님',
+            'not_confirmed' => '구매확정 전',
+            'deadline_passed' => '작성 기한 경과',
+            'already_written' => '이미 작성한 리뷰',
+        ],
         'forbidden' => '권한이 없습니다.',
         'deleted' => '리뷰가 삭제되었습니다.',
         'delete_failed' => '리뷰 삭제에 실패했습니다.',
@@ -1160,6 +1177,9 @@ return [
     ],
 
     'wishlist' => [
+        'admin_list_retrieved' => '찜 목록을 조회했습니다.',
+        'admin_deleted' => '찜을 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 찜을 삭제했습니다.',
         'added' => '상품이 찜 목록에 추가되었습니다.',
         'removed' => '상품이 찜 목록에서 제거되었습니다.',
         'retrieved' => '찜 목록을 불러왔습니다.',
@@ -1200,6 +1220,7 @@ return [
         'board_changed' => '게시판 설정이 변경되어 해당 게시글을 찾을 수 없습니다. 관리자에게 문의하세요.',
         'reply_created' => '답변이 등록되었습니다.',
         'reply_failed' => '답변 등록에 실패했습니다.',
+        'reply_already_exists' => '이미 등록된 답변이 있습니다. 기존 답변을 수정하거나 삭제한 후 다시 등록해주세요.',
         'reply_updated' => '답변이 수정되었습니다.',
         'reply_update_failed' => '답변 수정에 실패했습니다.',
         'reply_deleted' => '답변이 삭제되었습니다.',
@@ -1240,6 +1261,19 @@ return [
         'fetched' => '배송국가를 조회했습니다.',
         'updated' => '배송국가가 변경되었습니다.',
         'update_failed' => '배송국가 변경에 실패했습니다.',
+    ],
+
+    // 회원 소유 데이터 관리자 목록 (#524 §4.1)
+    'user_address' => [
+        'admin_list_retrieved' => '회원 배송지 목록을 조회했습니다.',
+        'admin_deleted' => '배송지를 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 배송지를 삭제했습니다.',
+    ],
+
+    'product_inquiry' => [
+        'admin_list_retrieved' => '상품문의 목록을 조회했습니다.',
+        'admin_deleted' => '상품문의를 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 상품문의를 삭제했습니다.',
     ],
 
     // 대시보드

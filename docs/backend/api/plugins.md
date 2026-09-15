@@ -1166,7 +1166,14 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만)._
+| 이름 | 타입 | 예시 | 용도 |
+| --- | --- | --- | --- |
+| preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
+| preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
+| preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
+
+> 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
+> 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
 
 **응답 예시**
 
@@ -1174,7 +1181,14 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 {
     "success": true,
     "message": "플러그인이 성공적으로 제거되었습니다.",
-    "data": null
+    "data": {
+        "preserved_backups": [
+            {
+                "directory": "custom",
+                "archive": "/var/www/g7/storage/app/extension-custom-backups/sirsoft-gdpr-20260825_231500/custom"
+            }
+        ]
+    }
 }
 ```
 
@@ -1496,7 +1510,7 @@ HTTP/1.1 200
     "success": true,
     "message": "플러그인 정보를 성공적으로 가져왔습니다.",
     "data": {
-        "content": "프로그램 명칭 : 그누보드7용 Daum 우편번호 플러그인 (sirsoft-daum_postcode)\n\n저작자 : (주)에스아이알소프트\n\n----- MIT 라이선스 (한국어 번역) --------------------------------------------------------\n\nMIT 라이선스\n\nCopyright (c) 2026 (주)에스아이알소프트\n\n이 소프트웨어와 관련 문서 파일(이하 \"소프트웨어\")의 복사본을 취득하는 모든 사람에게\n소프트웨어를 제한 없이 사용, 복사, 수정, 병합, 출판, 배포, 서브라이선스 허여 및/또는\n판매할 수 있는 권리를 무상으로 부여합니다. 다만, 소프트웨어를 제공받은 사람은 다음\n조건을 따라야 합니다:\n\n위 저작권 고지와 본 허가 고지는 소프트웨어의 모든 복사본 또는 상당 부분에 포함되어야\n합니다.\n\n소프트웨어는 \"있는 그대로\" 제공되며, 명시적이든 묵시적이든 어떠한 종류의 보증도 하지\n않습니다. 여기에는 상품성, 특정 목적에의 적합성 및 비침해에 대한 보증이 포함되나 이에\n국한되지 않습니다. 어떠한 경우에도 저작자 또는 저작권자는 소프트웨어나 소프트웨어의\n사용 또는 기타 거래로 인해 발생하는 계약, 불법행위 또는 기타 청구, 손해 또는 기타\n책임에 대해 책임을 지지 않습니다.\n\n----- MIT License (English Original) --------------------------------------------------------\n\nThe MIT License (MIT)\n\nCopyright (c) 2026 SIRSOFT\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+        "content": "프로그램 명칭 : 그누보드7용 Daum 우편번호 플러그인 (sirsoft-daum_postcode)\n\n작성자 : (주)에스아이알소프트\n\n----- MIT 라이선스 (한국어 번역) --------------------------------------------------------\n\nMIT 라이선스\n\nCopyright (c) 2026 (주)에스아이알소프트\n\n이 소프트웨어와 관련 문서 파일(이하 \"소프트웨어\")의 복사본을 취득하는 모든 사람에게\n소프트웨어를 제한 없이 사용, 복사, 수정, 병합, 출판, 배포, 서브라이선스 허여 및/또는\n판매할 수 있는 권리를 무상으로 부여합니다. 다만, 소프트웨어를 제공받은 사람은 다음\n조건을 따라야 합니다:\n\n위 저작권 고지와 본 허가 고지는 소프트웨어의 모든 복사본 또는 상당 부분에 포함되어야\n합니다.\n\n소프트웨어는 \"있는 그대로\" 제공되며, 명시적이든 묵시적이든 어떠한 종류의 보증도 하지\n않습니다. 여기에는 상품성, 특정 목적에의 적합성 및 비침해에 대한 보증이 포함되나 이에\n국한되지 않습니다. 어떠한 경우에도 작성자 또는 저작권자는 소프트웨어나 소프트웨어의\n사용 또는 기타 거래로 인해 발생하는 계약, 불법행위 또는 기타 청구, 손해 또는 기타\n책임에 대해 책임을 지지 않습니다.\n\n----- MIT License (English Original) --------------------------------------------------------\n\nThe MIT License (MIT)\n\nCopyright (c) 2026 SIRSOFT\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
     }
 }
 ```
@@ -1581,6 +1595,8 @@ HTTP/1.1 200
 
 **설명** 플러그인의 현재 설정 값을 조회합니다. `core.plugins.read` 권한이 필요합니다. 저장된 설정이 없거나 플러그인을 찾을 수 없으면 404 를 반환합니다. 설정 페이지 진입 시 폼의 현재 값을 채우는 용도이며, 폼 스키마/UI 구성은 별도의 `settings/layout` 엔드포인트에서 조회합니다.
 
+설정 스키마(getSettingsSchema)에 `public_asset_disk` 키를 선언한 플러그인(예: `sirsoft-ckeditor5`)은 응답 `data` 에 공개 자산 디스크 카탈로그 `available_public_asset_disks` 가 함께 부착됩니다 — 각 항목은 `{id, label(로케일별 맵), provider?}` 구조입니다. 설정 화면이 코어 환경설정 API(`core.settings.read`)를 따로 조회하지 않고 이 응답 하나로 선택지를 구성하게 하기 위한 것으로, 이 키는 저장 대상이 아니며 PUT 시 검증 whitelist 에서 걸러집니다.
+
 
 ### PUT /api/admin/plugins/{identifier}/settings
 <!-- @generated:start:api.admin.plugins.settings.update -->
@@ -1641,7 +1657,7 @@ _단건 응답: `data` 는 저장 후 다시 조회한 설정 값 맵입니다. 
 
 <!-- @generated:end -->
 
-**설명** 플러그인의 설정 값을 저장합니다. `core.plugins.update` 권한이 필요합니다. 저장 대상은 검증을 통과한 값뿐이며, 검증 규칙은 해당 플러그인이 선언한 설정 스키마에서 생성됩니다. 스키마에 없는 필드를 요청에 포함해도 저장되지 않습니다. PluginManager 에 등록되지 않은 플러그인은 저장 자체가 수행되지 않아 500 을 반환합니다. 성공 시 갱신된 설정 값을 함께 반환합니다.
+**설명** 플러그인의 설정 값을 저장합니다. `core.plugins.update` 권한이 필요합니다. 저장 대상은 검증을 통과한 값뿐이며, 검증 규칙은 해당 플러그인이 선언한 설정 스키마에서 생성됩니다. 스키마에 없는 필드를 요청에 포함해도 저장되지 않습니다. PluginManager 에 등록되지 않은 플러그인은 저장 자체가 수행되지 않아 500 을 반환합니다. 성공 시 갱신된 설정 값을 함께 반환합니다. 설정 스키마에 `public_asset_disk` 키를 선언한 플러그인은 저장 응답에도 `available_public_asset_disks` 카탈로그가 재부착됩니다 (GET 응답과 동형 — 저장 직후 화면 폼 상태 갱신용).
 
 
 ### GET /api/admin/plugins/{identifier}/settings/layout
@@ -2226,11 +2242,30 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-422 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — `?file=` 쿼리로 받은 경로의 에셋
+파일 원본 바이트를 그대로 서빙합니다 (성공 시 200 또는 304). 파일 경로 미전달
+(`file` 쿼리 부재)은 422 로 응답합니다._
+
+| 응답 헤더 | 예시값 | 용도/설명 |
+| --- | --- | --- |
+| Content-Type | `text/javascript` | 파일 확장자에서 감지한 MIME 타입 |
+| ETag | `"a1b2c3d4…"` | 파일 내용 기반 검증자 (재요청 시 304 판정) |
+| Cache-Control | `public, max-age=31536000` | 1년 캐시 (환경별로 달라짐 — 비프로덕션은 no-cache) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+GET /api/plugins/assets/sirsoft-daum_postcode?file=dist%2Fjs%2Fplugin.iife.js HTTP/1.1
+```
+
+```http
+HTTP/1.1 200
+Content-Type: text/javascript
+Cache-Control: public, max-age=31536000
+ETag: "a1b2c3d4e5f6"
+
+(function(){/* 플러그인 IIFE 번들 원본 바이트 */})();
+```
 
 **에러 응답**
 
@@ -2241,7 +2276,7 @@ Accept: application/json
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 플러그인 에셋 서빙(`GET /api/plugins/assets/{identifier}/{path}`)의 확장자 없는 이중 모드 변형입니다. 파일 경로를 경로 세그먼트 대신 `?file=` 쿼리로 받으며, 검증·에러·캐시 동작은 경로 세그먼트 형태와 동일합니다. `.js`·`.css` 주소를 가로채는 정적 파일 최적화 서버 설정에서 확장자 붙은 주소가 404 가 될 때 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/plugins/assets/{identifier}/{path}
@@ -2347,11 +2382,11 @@ Cache-Control: public, max-age=31536000
 
 **에러 응답**
 
-_에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활성 에셋이 하나도 없는 경우에도 빈 200 을 반환합니다._
+_선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-Control: no-cache, private`) — 배포 중 `dist` 가 잠깐 비었거나 경로가 어긋난 상태입니다. 에셋을 선언한 활성 확장이 없거나, 선언한 산출물이 전부 존재하되 비어 있으면(스타일 규칙이 아직 없는 확장) 정상 빈 200 입니다._
 
 <!-- @generated:end -->
 
-**설명** 활성 플러그인들의 프론트엔드 CSS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 global 플러그인 에셋이 없으면 빈 200(text/css) 응답을 반환하고, 있으면 병합 파일을 ETag·환경별 Cache-Control 과 함께 서빙합니다. 페이지가 플러그인 스타일을 요청 1건으로 로드하도록 합니다.
+**설명** 활성 플러그인들의 프론트엔드 CSS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 판정은 모듈 번들과 같은 단일 지점을 공유합니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/css), 선언한 산출물이 소실·판독 불가면 503, 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙합니다. 페이지가 플러그인 스타일을 요청 1건으로 로드하도록 합니다.
 
 
 ### GET /api/plugins/bundle.js
@@ -2398,11 +2433,11 @@ Cache-Control: public, max-age=31536000
 
 **에러 응답**
 
-_에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활성 에셋이 하나도 없는 경우에도 빈 200 을 반환합니다._
+_선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-Control: no-cache, private`) — 배포 중 `dist` 가 잠깐 비었거나 경로가 어긋난 상태입니다. 에셋을 선언한 활성 확장이 없거나, 선언한 산출물이 전부 존재하되 비어 있으면(스타일 규칙이 아직 없는 확장) 정상 빈 200 입니다._
 
 <!-- @generated:end -->
 
-**설명** 활성 플러그인들의 프론트엔드 IIFE JS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 global 플러그인 에셋이 없으면 빈 200(text/javascript) 응답을 반환하고, 있으면 병합 파일을 ETag·환경별 Cache-Control 과 함께 서빙합니다. 프론트는 `G7Config.bundleUrls` 를 읽어 이 번들을 로드합니다.
+**설명** 활성 플러그인들의 프론트엔드 IIFE JS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 판정은 모듈 번들과 같은 단일 지점을 공유합니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/javascript), 선언한 산출물이 소실·판독 불가면 503, 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙합니다. 프론트는 `G7Config.bundleUrls` 를 읽어 이 번들을 로드합니다.
 
 
 ### GET /api/plugins/bundle/css
@@ -2425,19 +2460,36 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-200 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플러그인 CSS 를 병합한
+텍스트를 그대로 서빙합니다 (성공 시 200 또는 304). `GET /api/plugins/bundle.css`
+와 동일 응답입니다._
+
+| 응답 헤더 | 예시값 | 용도/설명 |
+| --- | --- | --- |
+| Content-Type | `text/css` | 항상 CSS |
+| ETag | `"a1b2c3d4…"` | 병합 파일 내용 기반 검증자 (병합 파일이 있는 경우) |
+| Cache-Control | `public, max-age=31536000` | 1년 캐시 (환경별로 달라짐 — 비프로덕션은 매 요청 재병합) |
+
+활성 global 플러그인 에셋이 하나도 없으면 본문이 빈 200 응답(`text/css`) 입니다.
 
 **응답 예시**
 
-<!-- 실측 제외: http-200 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/css
+Cache-Control: public, max-age=31536000
+
+/* sirsoft-gdpr */
+.g7-gdpr-banner{position:fixed;bottom:0}
+```
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+_에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활성 에셋이 하나도 없는 경우에도 빈 200 을 반환합니다._
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 플러그인 CSS 번들(`GET /api/plugins/bundle.css`)의 확장자 없는 이중 모드 변형입니다. 동작·응답이 확장자 형태와 동일하며, `.css` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/plugins/bundle/js
@@ -2460,19 +2512,37 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-200 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플러그인 IIFE JS 를 병합한
+텍스트를 그대로 서빙합니다 (성공 시 200 또는 304). `GET /api/plugins/bundle.js`
+와 동일 응답입니다._
+
+| 응답 헤더 | 예시값 | 용도/설명 |
+| --- | --- | --- |
+| Content-Type | `text/javascript` | 항상 JavaScript |
+| ETag | `"a1b2c3d4…"` | 병합 파일 내용 기반 검증자 (병합 파일이 있는 경우) |
+| Cache-Control | `public, max-age=31536000` | 1년 캐시 (환경별로 달라짐 — 비프로덕션은 매 요청 재병합) |
+
+활성 global 플러그인 에셋이 하나도 없으면 본문이 빈 200 응답(`text/javascript`) 입니다. 병합 시 각 IIFE 사이는 `\n;\n` 구분자로 연결됩니다.
 
 **응답 예시**
 
-<!-- 실측 제외: http-200 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/javascript
+Cache-Control: public, max-age=31536000
+
+(function(){/* sirsoft-gdpr plugin.iife.js */})();
+;
+(function(){/* sirsoft-ckeditor5 plugin.iife.js */})();
+```
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+_에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활성 에셋이 하나도 없는 경우에도 빈 200 을 반환합니다._
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 플러그인 JS 번들(`GET /api/plugins/bundle.js`)의 확장자 없는 이중 모드 변형입니다. 동작·응답이 확장자 형태와 동일하며, `.js` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/plugins/{identifier}/components
@@ -2497,9 +2567,19 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
+_이 엔드포인트는 `success/message/data` 봉투를 사용하지 않습니다 — 플러그인의
+`components.json` 원문을 그대로 JSON body 로 반환합니다 (`Cache-Control: public,
+max-age=3600`). 파일이 없는 구버전 플러그인은 빈 객체(`{}`) 로 폴백합니다._
 
-
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| $schema | string | `https://json-schema.org/draft/2020-12/schema` | 매니페스트 JSON 스키마 참조 |
+| identifier | string | `sirsoft-daum_postcode` | 이 매니페스트를 소유한 플러그인 식별자 |
+| version | string | `1.0.0` | 매니페스트(플러그인) 버전 |
+| components | object | `{"basic":[],"composite":[],"layout":[]}` | 타입별 컴포넌트 정의 맵 |
+| components.basic | array | `[]` | Basic 컴포넌트 정의 목록 (HTML 래핑 계층) |
+| components.composite | array | `[]` | Composite 컴포넌트 정의 목록 (집합 컴포넌트) |
+| components.layout | array | `[]` | Layout 컴포넌트 정의 목록 |
 
 **응답 예시**
 
@@ -2528,7 +2608,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 플러그인 컴포넌트 매니페스트(`GET /api/plugins/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/plugins/{identifier}/components.json
@@ -2594,7 +2674,7 @@ Cache-Control: public, max-age=3600
 
 <!-- @generated:end -->
 
-**설명** 플러그인의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스 병합하기 위해 fetch 하며, 구버전 플러그인처럼 파일이 없으면 빈 components 로 폴백합니다. 응답은 1시간 캐시됩니다. 플러그인 미존재 시 404.
+**설명** 플러그인의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 구버전 플러그인처럼 파일이 없으면 빈 components 로 폴백합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 플러그인 미존재 시 404. 코어 프론트엔드에는 이 엔드포인트의 호출자가 없습니다 — 런타임 ComponentRegistry 와 레이아웃 편집기는 `/api/templates/{identifier}/components.json` 만 조회하고, 확장 UI 는 매니페스트가 아니라 레이아웃 확장(`extension_point`)으로 주입됩니다. 확장이 자체적으로 소비하거나 제3자 도구가 읽는 공개 표면으로 제공됩니다.
 
 
 ### GET /api/plugins/{identifier}/editor-spec

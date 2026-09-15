@@ -16,6 +16,75 @@
 
 ---
 
+## 관리자 통합 목록 (이슈 #524)
+
+상품 상세 안에서만 다루던 문의를 **전 회원·전 상품 한 화면**에서 보고 정리합니다.
+화면은 `/admin/ecommerce/inquiries`.
+
+**전제 — 문의 게시판 지정**: 상품문의는 `inquiry.board_slug` 설정이 가리키는 게시판 위에서
+돕니다. 미지정이면 작성·수정·삭제·답변이 전부 422 `board_not_configured` 로 막히고, 상품 상세의
+문의 목록은 빈 목록이 되며 마이페이지 문의 탭은 숨습니다. **아래 관리자 목록은 그 게이트 밖입니다** —
+과거에 쌓인 행을 그대로 보여 주어 운영자가 정리할 수 있게 합니다. 삭제도 이때는 질문 글 정리를
+생략하고 피벗만 지웁니다(지울 글 자체가 없으므로 — 상품 삭제 경로와 같은 판단).
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/admin/inquiries
+
+- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.inquiries.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page / per_page | query | integer | 아니오 | per_page max 100 | 페이지네이션 |
+| sort | query | string | 아니오 | `created_at_desc`(기본), `created_at_asc` | 정렬 |
+| search_field | query | string | 아니오 | `member`, `member_id`, `email`, `product`, `content` | 검색 대상 |
+| search_keyword | query | string | 아니오 | max 100 | 검색어 |
+| is_answered | query | boolean | 아니오 | `1`/`0` | 답변 여부. `false` 가 「미답변만」이라 비어 있음과 구분됩니다 |
+| user_id / user_uuid | query | integer / string(uuid) | 아니오 | — | 회원 한정. 없는 uuid 면 빈 결과 |
+| start_date / end_date | query | date | 아니오 | `Y-m-d` | 등록일 범위 |
+
+**응답 필드** (`data.data[]` + `data.abilities` + `data.pagination`)
+
+| 필드 | 타입 | 용도 |
+| --- | --- | --- |
+| id | integer | 식별자 (삭제·답변이 받는 값) |
+| member | object\|null | 회원. 비회원 문의거나 회원이 지워졌으면 `null` |
+| member.uuid / name | string | 회원 식별자·이름 (탈퇴면 익명 표기) |
+| member.email | string\|null | 관리자 응답에만 실립니다 |
+| product | object\|null | 문의 대상 상품 (id · 이름 · 노출/판매 상태 라벨) |
+| content_excerpt | string\|null | 본문 요약 100자. 질문 글 타입을 해석할 수 없으면 `null` |
+| is_answered | boolean | 답변 여부 — 행 배지가 이 값으로 갈립니다 |
+| created_at | string | 등록 시각 (뷰어 시간대) |
+| abilities.can_manage | boolean | 삭제 권한 — 체크 칸·일괄 버튼이 이 값으로 열립니다 |
+
+> **`inquirable` 은 eager load 하지 않습니다.** `inquirable_type` 이 `'board_post'` 별칭인데
+> 게시판 모듈 밖 컨텍스트에서는 morph map 에 없어, 관계를 푸는 순간 목록 전체가 500 이 됩니다.
+> 본문 요약은 Resource 가 `Relation::getMorphedModel()` 로 해석 가능성을 확인한 뒤에만 읽습니다.
+
+---
+
+### DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/bulk
+
+- **권한**: `sirsoft-ecommerce.inquiries.delete`
+- 라우트는 `{inquiryId}` 보다 **먼저** 선언되어 있습니다 — 그러지 않으면 `bulk` 가 id 로 잡힙니다.
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| ids | body | array | 예 | 1~100개 | 삭제할 식별자 |
+| ids.* | body | integer | 예 | 존재하는 행 | 식별자 |
+
+**응답**: `data.deleted_count` — 실제로 지워진 건수. 한 건이 실패해도 나머지는 계속 지우고
+실패분은 건수에서 빠집니다.
+
+> **피벗만 지우지 않습니다.** 항목마다 단건 삭제 경로를 그대로 태워 게시판의 질문 글을 먼저
+> 지웁니다. 피벗만 지우면 관리 목록에서만 사라지고 회원에게는 질문 글이 계속 보입니다 — 단건
+> 삭제와 일괄 삭제의 결과가 달라지는 자리입니다. 훅(`…product_inquiry.before/after_bulk_delete`)은
+> 루프 앞뒤로 한 번씩만 발화해 활동 로그가 폭주하지 않습니다.
+
+---
+
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.inquiries.destroy -->
@@ -65,12 +134,12 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.inquiries.delete`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::deleteInquiry()` 의 `RuntimeException` |
+| 422 | Unprocessable Entity | 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::deleteInquiry()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 삭제 처리 중 예기치 못한 예외 (`문의 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 상품 1:1 문의 1건을 삭제합니다. `sirsoft-ecommerce.inquiries.delete` 권한이 필요하며, `ProductInquiryService::deleteInquiry()` 가 해당 문의를 제거하고 `{deleted: true}` 를 반환합니다. 문의가 존재하지 않는 등 삭제 불가 상황에서는 서비스가 `RuntimeException` 을 던져 422 로 응답합니다. 관리자 문의 관리 화면에서 부적절하거나 중복된 문의를 정리할 때 사용합니다.
+**설명** 관리자가 상품 1:1 문의 1건을 삭제합니다. `sirsoft-ecommerce.inquiries.delete` 권한이 필요하며, `ProductInquiryService::deleteInquiry()` 가 게시판 훅으로 질문 게시글을 소프트 삭제한 뒤 문의 피벗(`product_inquiries`)도 **소프트 삭제**하고 `{deleted: true}` 를 반환합니다. 피벗이 소프트 삭제로 유지되므로, 이후 게시판 관리 화면에서 질문 게시글을 복원하면 문의 피벗도 함께 복원되어 문의 목록에 다시 나타납니다. 문의가 존재하지 않는 등 삭제 불가 상황에서는 서비스가 `ProductInquiryOperationException` 을 던지고, 컨트롤러가 그 예외의 다국어 키로 422 응답을 만듭니다. 관리자 문의 관리 화면에서 부적절하거나 중복된 문의를 정리할 때 사용합니다.
 
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply
@@ -121,12 +190,12 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.inquiries.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::deleteReply()` 의 `RuntimeException` |
+| 422 | Unprocessable Entity | 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::deleteReply()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 답변 삭제 처리 중 예기치 못한 예외 (`답변 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 문의에 등록된 답변을 삭제합니다. `sirsoft-ecommerce.inquiries.update` 권한이 필요하며, `ProductInquiryService::deleteReply()` 가 답변을 제거하고 문의를 미답변 상태로 되돌린 뒤 `{deleted: true}` 를 반환합니다. 문의 자체는 유지되며, 잘못 등록한 답변을 회수할 때 사용합니다.
+**설명** 관리자가 문의에 등록된 답변을 삭제합니다. `sirsoft-ecommerce.inquiries.update` 권한이 필요하며, `ProductInquiryService::deleteReply()` 가 답변을 제거한 뒤 필터 훅 `sirsoft-ecommerce.inquiry.count_replies`(carry: int, 초기값 `0` / 인자: 부모 문의 Post ID / 반환: 살아있는 답변 수)로 잔여 답변 수를 재확인하여, **살아있는 답변이 0건일 때만** 문의를 미답변 상태(`is_answered=false`)로 되돌리고 `{deleted: true}` 를 반환합니다 — 과거 결함으로 답변이 여러 건 쌓인 문의에서 일부만 삭제해도 답변완료 표기가 유지됩니다. 문의 자체는 유지되며, 잘못 등록한 답변을 회수할 때 사용합니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply
@@ -185,12 +254,21 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.inquiries.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 답변 게시글 생성에 실패한 경우(`답변 등록에 실패했습니다.`) — `ProductInquiryService::createReply()` 의 `RuntimeException` |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.` — `board_not_configured`) / 이미 답변이 등록된 문의에 재등록을 시도한 경우(`이미 등록된 답변이 있습니다. 기존 답변을 수정하거나 삭제한 후 다시 등록해주세요.` — `reply_already_exists`) / 답변 게시글 생성에 실패한 경우(`답변 등록에 실패했습니다.`) — `ProductInquiryService::createReply()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 답변 등록 처리 중 예기치 못한 예외 (`답변 등록에 실패했습니다.`) |
+
+**오류 응답 예시** (이미 답변된 문의에 재등록 시 — 422)
+
+```json
+{
+    "success": false,
+    "message": "이미 등록된 답변이 있습니다. 기존 답변을 수정하거나 삭제한 후 다시 등록해주세요."
+}
+```
 
 <!-- @generated:end -->
 
-**설명** 관리자가 상품 문의에 답변을 등록합니다. `sirsoft-ecommerce.inquiries.update` 권한이 필요하며, `ProductInquiryService::createReply()` 가 `content`(1~5000자)로 답변을 저장하고 문의를 답변완료 상태로 전환한 뒤 `{id, is_answered}` 를 201 로 반환합니다. 이미 답변이 있는 등 등록 불가 상황에서는 `RuntimeException` 이 던져져 422 로 응답합니다. 관리자가 고객 문의에 응대할 때 사용합니다.
+**설명** 관리자가 상품 문의에 답변을 등록합니다. `sirsoft-ecommerce.inquiries.update` 권한이 필요하며, `ProductInquiryService::createReply()` 가 `content`(1~5000자)로 답변을 저장하고 문의를 답변완료 상태로 전환한 뒤 `{id, is_answered}` 를 201 로 반환합니다. 문의당 답변은 1건만 유지되는 단일 답변 정책이라, 이미 답변완료(`is_answered=true`)인 문의에 재등록을 시도하면 `reply_already_exists` 사유의 422 로 거절됩니다 — 기존 답변을 수정(PUT)하거나 삭제(DELETE) 후 다시 등록해야 합니다. 문의 게시판이 미설정인 경우에도 `board_not_configured` 사유의 422 가 반환됩니다. 관리자가 고객 문의에 응대할 때 사용합니다.
 
 
 ### PUT /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply
@@ -247,12 +325,12 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.inquiries.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::updateReply()` 의 `RuntimeException` |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::updateReply()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 답변 수정 처리 중 예기치 못한 예외 (`답변 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 문의에 이미 등록된 답변 내용을 수정합니다. `sirsoft-ecommerce.inquiries.update` 권한이 필요하며, `ProductInquiryService::updateReply()` 가 `content`(1~5000자)로 기존 답변을 갱신하고 `{id}` 를 반환합니다. 답변이 없는 문의 등 수정 불가 상황에서는 `RuntimeException` 이 던져져 422 로 응답합니다. 오탈자 정정 등 답변 내용을 고칠 때 사용합니다.
+**설명** 관리자가 문의에 이미 등록된 답변 내용을 수정합니다. `sirsoft-ecommerce.inquiries.update` 권한이 필요하며, `ProductInquiryService::updateReply()` 가 `content`(1~5000자)로 기존 답변을 갱신하고 `{id}` 를 반환합니다. 답변이 없는 문의 등 수정 불가 상황에서는 `ProductInquiryOperationException` 이 던져지고, 컨트롤러가 그 예외의 다국어 키로 422 응답을 만듭니다. 오탈자 정정 등 답변 내용을 고칠 때 사용합니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/inquiries
@@ -453,11 +531,12 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 문의 작성자(`user_id`)가 로그인 사용자와 다른 경우 (`해당 문의에 대한 권한이 없습니다.`) |
 | 404 | Not Found | 해당 ID 의 문의가 존재하지 않는 경우 (`문의를 찾을 수 없습니다.`) |
-| 500 | Internal Server Error | 삭제 처리 중 예기치 못한 예외 (`문의 삭제에 실패했습니다.`) — 문의 게시판 미설정 등 서비스 `RuntimeException` 포함 |
+| 422 | Unprocessable Entity | 삭제할 수 없는 도메인 사유 — 문의 게시판 미설정 등. 응답 `message` 에 사유가 그대로 실린다 (`문의 게시판이 설정되지 않았습니다.`) |
+| 500 | Internal Server Error | 삭제 처리 중 예기치 못한 서버 오류 (`문의 삭제에 실패했습니다.`) — 예외 원문은 응답에 포함되지 않는다 |
 
 <!-- @generated:end -->
 
-**설명** 로그인 회원이 자신이 작성한 문의를 삭제합니다. `auth:sanctum` 인증이 필요하며, 컨트롤러가 문의를 조회해 없으면 404, `inquiry->user_id` 가 로그인 사용자와 다르면 403 을 반환한 뒤 `ProductInquiryService::deleteInquiry()` 로 삭제하고 `{deleted: true}` 를 반환합니다. 마이페이지에서 본인 문의를 취소/삭제할 때 사용합니다.
+**설명** 로그인 회원이 자신이 작성한 문의를 삭제합니다. `auth:sanctum` 인증이 필요하며, 컨트롤러가 문의를 조회해 없으면 404, `inquiry->user_id` 가 로그인 사용자와 다르면 403 을 반환한 뒤 `ProductInquiryService::deleteInquiry()` 로 삭제하고 `{deleted: true}` 를 반환합니다. 관리자 삭제 경로와 마찬가지로 문의 피벗은 **소프트 삭제**되며, 게시판에서 질문 게시글이 복원되면 문의도 함께 복원됩니다. 마이페이지에서 본인 문의를 취소/삭제할 때 사용합니다.
 
 
 ### PUT /api/modules/sirsoft-ecommerce/user/inquiries/{inquiryId}
@@ -522,7 +601,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 문의 작성자(`user_id`)가 로그인 사용자와 다른 경우 (`해당 문의에 대한 권한이 없습니다.`) |
 | 404 | Not Found | 해당 ID 의 문의가 존재하지 않는 경우 (`문의를 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::updateInquiry()` 의 `RuntimeException` |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::updateInquiry()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 수정 처리 중 예기치 못한 예외 (`문의 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -578,12 +657,12 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 답변 권한(`sirsoft-ecommerce.inquiries.update`)이 없는 경우 (`해당 문의에 대한 권한이 없습니다.`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::deleteReply()` 의 `RuntimeException` |
+| 422 | Unprocessable Entity | 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::deleteReply()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 답변 삭제 처리 중 예기치 못한 예외 (`답변 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 사용자 표면에서 문의 답변 권한을 가진 회원이 문의 답변을 삭제합니다. `auth:sanctum` 인증에 더해 컨트롤러가 `PermissionHelper::check('sirsoft-ecommerce.inquiries.update')` 로 답변 권한을 확인(없으면 403)한 뒤 `ProductInquiryService::deleteReply()` 로 답변을 제거하고 `{deleted: true}` 를 반환합니다. 답변 권한을 위임받은 사용자(예: 상담원 역할)가 사용자 화면에서 답변을 회수할 때 사용합니다.
+**설명** 사용자 표면에서 문의 답변 권한을 가진 회원이 문의 답변을 삭제합니다. `auth:sanctum` 인증에 더해 컨트롤러가 `PermissionHelper::check('sirsoft-ecommerce.inquiries.update')` 로 답변 권한을 확인(없으면 403)한 뒤 `ProductInquiryService::deleteReply()` 로 답변을 제거하고 `{deleted: true}` 를 반환합니다. 관리자 경로와 동일하게 필터 훅 `sirsoft-ecommerce.inquiry.count_replies`(carry: int, 초기값 `0` / 인자: 부모 문의 Post ID / 반환: 살아있는 답변 수)로 잔여 답변 수를 재확인해 0건일 때만 미답변 상태로 되돌립니다. 답변 권한을 위임받은 사용자(예: 상담원 역할)가 사용자 화면에서 답변을 회수할 때 사용합니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/user/inquiries/{inquiryId}/reply
@@ -642,12 +721,12 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 답변 권한(`sirsoft-ecommerce.inquiries.update`)이 없는 경우 (`해당 문의에 대한 권한이 없습니다.`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 답변 게시글 생성에 실패한 경우(`답변 등록에 실패했습니다.`) — `ProductInquiryService::createReply()` 의 `RuntimeException` |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.` — `board_not_configured`) / 이미 답변이 등록된 문의에 재등록을 시도한 경우(`이미 등록된 답변이 있습니다. 기존 답변을 수정하거나 삭제한 후 다시 등록해주세요.` — `reply_already_exists`) / 답변 게시글 생성에 실패한 경우(`답변 등록에 실패했습니다.`) — `ProductInquiryService::createReply()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 답변 등록 처리 중 예기치 못한 예외 (`답변 등록에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 사용자 표면에서 문의 답변 권한을 가진 회원이 문의에 답변을 등록합니다. `auth:sanctum` 인증에 더해 컨트롤러가 `PermissionHelper::check('sirsoft-ecommerce.inquiries.update')` 로 답변 권한을 확인(없으면 403)한 뒤 `ProductInquiryService::createReply()` 가 `content`(1~5000자)로 답변을 저장하고 문의를 답변완료로 전환해 `{id, is_answered}` 를 201 로 반환합니다. 관리자 화면이 아닌 사용자 프론트에서 답변을 처리하는 상담원 역할에 사용합니다.
+**설명** 사용자 표면에서 문의 답변 권한을 가진 회원이 문의에 답변을 등록합니다. `auth:sanctum` 인증에 더해 컨트롤러가 `PermissionHelper::check('sirsoft-ecommerce.inquiries.update')` 로 답변 권한을 확인(없으면 403)한 뒤 `ProductInquiryService::createReply()` 가 `content`(1~5000자)로 답변을 저장하고 문의를 답변완료로 전환해 `{id, is_answered}` 를 201 로 반환합니다. 관리자 경로와 동일한 단일 답변 정책이 적용되어, 이미 답변완료인 문의에 재등록하면 `reply_already_exists` 사유의 422, 문의 게시판 미설정이면 `board_not_configured` 사유의 422 로 거절됩니다. 관리자 화면이 아닌 사용자 프론트에서 답변을 처리하는 상담원 역할에 사용합니다.
 
 
 ### PUT /api/modules/sirsoft-ecommerce/user/inquiries/{inquiryId}/reply
@@ -704,7 +783,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 답변 권한(`sirsoft-ecommerce.inquiries.update`)이 없는 경우 (`해당 문의에 대한 권한이 없습니다.`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::updateReply()` 의 `RuntimeException` |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / 문의를 찾을 수 없거나(`문의를 찾을 수 없습니다.`) 문의 게시판이 설정되지 않은 경우(`문의 게시판이 설정되지 않았습니다.`) — `ProductInquiryService::updateReply()` 의 `ProductInquiryOperationException` |
 | 500 | Internal Server Error | 답변 수정 처리 중 예기치 못한 예외 (`답변 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->

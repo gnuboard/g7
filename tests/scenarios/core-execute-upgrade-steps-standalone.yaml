@@ -85,6 +85,8 @@ effects:
   - ExecuteUpgradeStepsCommand_skips_bundled_updates_when_spawn_env_flag_present_without_skip_options
   - ExecuteUpgradeStepsCommand_env_guard_dominates_over_force_flag_for_post_steps
   - ExecuteUpgradeStepsCommand_standalone_invocation_without_env_runs_all_five_steps_intact
+  - execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
+  - ExecuteUpgradeStepsCommand_sweeps_empty_staging_directories_left_by_parent
 
 test_files:
   - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php

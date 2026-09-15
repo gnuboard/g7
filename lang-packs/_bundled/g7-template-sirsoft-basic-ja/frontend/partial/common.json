@@ -1,5 +1,5 @@
 {
-  "loading": "読み込み中...",
+  "loading": "読込中...",
   "error": "エラーが発生しました",
   "error_occurred": "エラーが発生しました",
   "retry": "再試行",
@@ -37,6 +37,7 @@
   "processing": "処理中...",
   "member": "会員",
   "language": "言語",
+  "currency": "通貨",
   "admin_menu": "管理者",
   "theme": {
     "auto": "システム",
@@ -54,12 +55,11 @@
   "validation_error_title": "入力エラー",
   "validation_error_description": "入力項目を確認してください。",
   "reset": "初期化",
-  "currency_unit": "円",
-  "currency": "通貨",
   "pagination": "ページネーション",
   "first_page": "最初のページ",
   "prev_page": "前のページ",
   "next_page": "次のページ",
   "last_page": "最後のページ",
-  "page_n": "ページ {{n}}"
+  "page_n": "ページ {{n}}",
+  "currency_unit": "円"
 }

@@ -59,7 +59,42 @@ class MarketingConsentService
         $raw = $this->pluginSettings->get(self::PLUGIN_ID, 'channels', '[]');
         $channels = json_decode($raw, true);
 
-        return is_array($channels) ? $channels : [];
+        return $this->attachSystemLabelKeys(is_array($channels) ? $channels : []);
+    }
+
+    /**
+     * system 채널의 `label_key` 를 저장값에 다시 붙입니다.
+     *
+     * `label_key` 는 코드가 소유하는 값이다 — 저장된 설정에는 그 시점에 없었을 수도 있고
+     * (구형 저장분), 저장 과정에서 떨어질 수도 있다. 그런데 라벨 해석은 `label_key` 가
+     * SSoT 이므로, 그것이 없으면 저장된 ko/en 맵만 남아 **그 두 로케일 밖에서는 항상
+     * ko 로 떨어진다**. 읽는 시점에 코드 정의로 다시 채워 자가 복구한다.
+     *
+     * @param  array<int, array<string, mixed>>  $channels  저장된 채널 목록
+     * @return array<int, array<string, mixed>> label_key 가 보강된 목록
+     */
+    private function attachSystemLabelKeys(array $channels): array
+    {
+        $systemKeys = [];
+        foreach ($this->getDefaultSystemChannels() as $system) {
+            if (isset($system['key'], $system['label_key'])) {
+                $systemKeys[$system['key']] = $system['label_key'];
+            }
+        }
+
+        if ($systemKeys === []) {
+            return $channels;
+        }
+
+        foreach ($channels as $i => $channel) {
+            $key = $channel['key'] ?? null;
+            if ($key === null || ! empty($channel['label_key']) || ! isset($systemKeys[$key])) {
+                continue;
+            }
+            $channels[$i]['label_key'] = $systemKeys[$key];
+        }
+
+        return $channels;
     }
 
     /**
@@ -71,7 +106,7 @@ class MarketingConsentService
      * 라벨은 lang key 기반으로 선언되어 활성 언어팩으로 자동 보강됩니다.
      * (registry payload name_key 계약 — 7.0.0-beta.4+)
      *
-     * @return array<int, array{key: string, label_key: string, label: array{ko: string, en: string}, page_slug: string, enabled: bool, is_system: bool}>
+     * @return array<int, array{key: string, label_key: string, label: array<string, string>, page_slug: string, enabled: bool, is_system: bool}>
      */
     public function getDefaultSystemChannels(): array
     {
@@ -82,15 +117,41 @@ class MarketingConsentService
                 'key'       => 'email_subscription',
                 'label_key' => $emailLabelKey,
                 // label 은 plugin_settings 저장 시 fallback (lang pack 미설치 환경 보호)
-                'label'     => [
-                    'ko' => __($emailLabelKey, [], 'ko'),
-                    'en' => __($emailLabelKey, [], 'en'),
-                ],
+                'label'     => $this->buildFallbackLabelMap($emailLabelKey),
                 'page_slug' => '',
                 'enabled'   => true,
                 'is_system' => true,
             ],
         ];
+    }
+
+    /**
+     * lang key 를 지원 로케일 전체로 펼쳐 폴백 라벨 맵을 만듭니다.
+     *
+     * 로케일 집합을 ko/en 으로 고정하면, 언어팩이 추가한 로케일(ja 등)에서 이 항목만
+     * ko 로 떨어져 같은 목록 안에서 한 줄만 다른 언어로 남는다. 지원 로케일은
+     * 언어팩 설치/활성화 시 `app.supported_locales` 로 갱신되므로 그 값을 따른다.
+     *
+     * @param  string  $labelKey  라벨 lang key
+     * @return array<string, string> 로케일 → 라벨
+     */
+    private function buildFallbackLabelMap(string $labelKey): array
+    {
+        $locales = array_values(array_unique(array_map(
+            'strval',
+            (array) config('app.supported_locales', ['ko', 'en'])
+        )));
+
+        if ($locales === []) {
+            $locales = ['ko', 'en'];
+        }
+
+        $map = [];
+        foreach ($locales as $locale) {
+            $map[$locale] = __($labelKey, [], $locale);
+        }
+
+        return $map;
     }
 
     /**

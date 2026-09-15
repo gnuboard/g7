@@ -44,6 +44,7 @@ return [
         'secret_password_incorrect' => 'Secret post password is incorrect.',
         // Secret post filtering messages
         'secret_post_content' => 'This is a secret post. Please enter the password to view the content.',
+        'secret_post_title' => 'Secret post',
         'deleted_post_title' => 'Deleted post',
         'deleted_post_content' => 'This post has been deleted.',
         'blinded_post_content' => 'This post has been blinded by administrator.',
@@ -122,6 +123,7 @@ return [
         // Comment availability
         'post_blinded' => 'You cannot comment on a blinded post.',
         'post_deleted' => 'You cannot comment on a deleted post.',
+        'post_secret' => 'You cannot comment on a secret post you are not allowed to view.',
     ],
 
     // Reaction (recommend/not recommend) messages
@@ -239,6 +241,7 @@ return [
         'permission_denied' => 'Permission denied.',
         'validation_failed' => 'Validation failed.',
         'duplicate_report' => 'You have already reported this content.',
+        'operation_failed' => 'An error occurred while processing the operation.',
     ],
 
     // Warning messages
@@ -294,6 +297,36 @@ return [
         // Modal notice messages
         'blinded_will_be_public' => '{count} blinded content(s) will be made public.',
         'already_reported' => 'You have already reported this content.',
+    ],
+
+    // Scrap (bookmark) messages
+    'scrap' => [
+        'added' => 'Post scrapped.',
+        'removed' => 'Scrap removed.',
+        'toggle_failed' => 'Failed to process scrap.',
+        'retrieved' => 'Scrap list retrieved.',
+        'retrieve_failed' => 'Failed to retrieve scrap list.',
+        'delete_failed' => 'Failed to delete scrap.',
+        'not_found' => 'Scrap not found.',
+        'scrap_disabled' => 'Scrap is disabled for this board.',
+        'post_not_found' => 'Post not found.',
+        'bulk_removed' => ':count scrap(s) removed.',
+        'admin' => [
+            'retrieved' => 'Scrap list retrieved.',
+            'retrieve_failed' => 'Failed to retrieve scrap list.',
+            'removed' => 'Scrap deleted.',
+            'bulk_removed' => ':count scrap(s) deleted.',
+            'bulk_delete_failed' => 'Failed to delete scraps in bulk.',
+            'permission_denied' => 'You do not have permission to manage scraps.',
+        ],
+    ],
+
+    // Post bulk action messages
+    'posts_bulk' => [
+        'delete_success' => ':count post(s) deleted. (:skipped skipped)',
+        'blind_success' => ':count post(s) blinded. (:skipped skipped)',
+        'restore_success' => ':count post(s) restored. (:skipped skipped)',
+        'action_failed' => 'Failed to process posts in bulk.',
     ],
 
     // Board type management messages

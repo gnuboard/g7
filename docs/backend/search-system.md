@@ -10,7 +10,8 @@
 ```text
 1. Laravel Scout + DatabaseFulltextEngine: MySQL FULLTEXT + ngram 기반 검색 (기본 드라이버)
 2. FulltextSearchable 인터페이스: searchableColumns() + searchableWeights() 구현 필수
-3. LIKE fallback 자동 적용: FULLTEXT 미지원 DBMS(SQLite, PostgreSQL)에서 자동 전환
+3. LIKE fallback 자동 적용: FULLTEXT 미지원 DBMS(SQLite, PostgreSQL) + 대상 테이블·컬럼
+   조합의 FULLTEXT 인덱스 부재 시 (후자는 설치 결함 신호라 조합당 프로세스 1회 기록)
 4. 확장 포인트: core.search.engine_drivers(엔진) + core.search.index_maintainers(인덱스 점검) 필터 훅
 5. 인덱스 재생성은 언제나 선택 사항 — 자동 트리거 없음 (테이블 잠금·전체 재색인 비용)
 6. AsUnicodeJson 캐스트: JSON 컬럼 FULLTEXT 검색 시 한글 \uXXXX 이스케이프 방지 필수
@@ -126,6 +127,22 @@ ORDER BY _ft_score DESC
 
 LIKE fallback 시 `_ft_score`는 항상 0 (관련성 순위 불가).
 
+### `_ft_score` SELECT 와 ORDER BY 는 불가분
+
+`_ft_score` 는 실제 컬럼이 아니라 **SELECT 별칭**이다. SELECT 에서 빠지면 정렬이 참조할 대상이 사라져 `SQLSTATE[42S22] Unknown column '_ft_score' in 'order clause'` 로 조회가 통째로 실패한다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+| ------- | -------------- |
+| 결과 소비 메서드(`mapIds()`/`map()`/`lazyMap()`/`getTotalCount()`)가 넘겨받은 쿼리에 `select()`/`selectRaw()`/`addSelect()` 를 걸어 SELECT 를 재작성 | 소비 메서드는 실행만 한다. `pluck()` 은 기존 SELECT 를 보존하므로 좁힐 필요가 없다 |
+| 스코어 별칭만 보존해 SELECT 를 재조립 | 재작성 자체를 하지 않는다 — 소비자가 `->query()` 로 얹은 별칭(`withCount()` 의 `*_count` 등)에도 정렬이 걸릴 수 있어 알려진 별칭 하나만 막으면 다른 이름으로 재발한다 |
+| `reorder()` 로 정렬을 지워 회피 | `keys()` 는 Scout 공개 계약상 **관련도 순** 키 목록을 약속한다 — 정렬을 지우면 오류 없이 무순서 키를 돌려주는 무음 회귀가 된다 |
+
+SELECT 를 재작성하는 지점은 엔진이 쿼리를 **조립하는 자리 하나뿐**이며(`applySelect()`), 키만 필요한 경로에서도 스코어를 함께 남긴다. 조립 지점이 남긴 것을 소비 지점이 되돌리면 두 지점이 정면으로 상충한다.
+
+`->query()` 콜백의 `orderBy` 는 Scout `Builder::$orders` 를 채우지 않으므로 엔진이 `_ft_score DESC` 를 항상 tiebreak 으로 덧붙인다. 즉 **검색 쿼리의 ORDER BY 에는 사실상 언제나 `_ft_score` 가 있다** — "이 경로는 스코어 정렬을 안 쓰니 괜찮다" 는 판단은 성립하지 않는다.
+
+자동 검증이 결과 소비 메서드 안의 SELECT·정렬 재작성을 차단한다.
+
 ### 현재 FulltextSearchable 구현 모델
 
 | 모듈 | 모델 | 검색 컬럼 |
@@ -159,6 +176,39 @@ DatabaseFulltextEngine::supportsFulltext();
 // ngram 파서 지원 여부 (MySQL만 true, MariaDB는 false)
 DatabaseFulltextEngine::supportsNgramParser();
 ```
+
+### 인덱스 커버 판정 — MATCH 는 인덱스가 있어야만 조립한다
+
+드라이버가 FULLTEXT 를 지원해도, MySQL 의 `MATCH(a, b)` 는 어떤 FULLTEXT 인덱스의
+컬럼 **집합과 정확히 일치**(순서 무관)해야 실행된다. 복합 `(title, content)` 인덱스는
+`MATCH(title)` 단독을 커버하지 못한다. 인덱스가 없는 채 MATCH 를 실행하면
+`1191 Can't find FULLTEXT index` 가 되고, 그 오류가 소비처의 catch 에 삼켜지면
+화면에는 "검색 결과 0건" 으로만 나타난다 (부분 실패 설치에서 실제 발생 — 공개 #103).
+
+그래서 엔진은 MATCH 조립 전에 `fulltextIndexCoversColumns($table, $columns)` 로
+커버 여부를 판정한다:
+
+- 판정은 컬럼 한정자 제거·소문자·정렬 정규화 후 **집합 동등 비교**다. 순서가 달라도
+  같은 집합이면 커버한다 (`['content','title']` ≡ `['title','content']`).
+- Scout 경로(`performSearch`)는 컬럼마다 단일 `MATCH(col)` 를 조립하므로, **각 컬럼이
+  개별 단일 인덱스로** 커버될 때만 MATCH 를 쓴다. 복합 인덱스만 있는 테이블은 LIKE 로
+  내려간다.
+- `applyAny()` 는 컬럼별 `apply(단일)` 재귀라 게이트도 단일 컬럼으로 판정한다 — 한 OR
+  그룹 안에 MATCH 와 LIKE 가 혼재할 수 있으며, 유효한 SQL 이고 의도된 동작이다.
+- 커버되지 않아 내려가는 폴백은 **설치 결함의 신호**이므로 테이블+컬럼 조합당 프로세스
+  1회 `Log::warning` 을 남긴다 (복구 안내 포함). 드라이버 미지원 폴백은
+  종전대로 무경고다 — 그 DBMS 에서는 부분일치가 정상 경로다.
+- 이 경고의 복구 경로는 **해당 확장의 인덱스 생성 마이그레이션 재실행**이다.
+  `search:index` 를 안내하지 않는다 — 그 점검은 `INFORMATION_SCHEMA` 에 **이미 존재하는**
+  FULLTEXT 인덱스만 열거하고 `--repair` 는 그중 색인이 낡은 것만 재생성하므로, 인덱스가
+  아예 없는 이 상황은 목록에 나타나지도 재생성 대상이 되지도 않는다. 안내가 그쪽을
+  가리키면 운영자는 "이상 없음" 을 보고 원인 추적이 거기서 끊긴다.
+
+인덱스 카탈로그는 `INFORMATION_SCHEMA.STATISTICS` 에서 lazy 적재하는 **프로세스(static)
+캐시**다. 적재 실패(Throwable)는 캐시하지 않고 그 요청만 LIKE 로 내려간다 — 일시 장애가
+워커 수명 내내 강등으로 굳지 않게 하기 위함이다. `addFulltextIndex()` 성공 직후에는
+카탈로그를 무효화해 같은 프로세스에서 바로 반영된다. 그 외의 인덱스 변경(배포 등)은
+FPM 워커 재시작 시점에 반영된다.
 
 ### SCOUT_DRIVER 전환
 
@@ -234,7 +284,7 @@ KeywordSearch::applyAny($query, ['name', 'description'], $keyword, 'and', 'searc
 갈라지면 "엔진이 돌려준 건수" 와 "화면이 보고하는 총 건수" 가 서로 다른 근거를 갖게 됩니다.
 상한에 걸려 잘린 경우 그 이상은 도달 불가이고 총 건수는 "이상" 으로 보고됩니다.
 
-이 의무는 정적 검사로 강제할 수 없습니다 — 외부 엔진 코드는 이 저장소 밖입니다. 코어가 할 수
+이 의무는 자동 검증으로 강제할 수 없습니다 — 외부 엔진 코드는 이 저장소 밖입니다. 코어가 할 수
 있는 것은 **값을 손에 쥐어 주는 것**까지이며, 그 값이 실제로 도달하는지는 계약 테스트가
 고정합니다.
 
@@ -297,7 +347,22 @@ public function boot(): void
 }
 ```
 
-등록 후 `.env`에서 `SCOUT_DRIVER=meilisearch`로 전환하면 해당 엔진이 사용됩니다.
+등록 후 `.env`에서 `SCOUT_DRIVER=meilisearch`로 전환하거나, 관리자 환경설정 > 드라이버의
+검색엔진 항목에서 선택할 수 있습니다. 두 값이 모두 있으면 관리자 환경설정이 이깁니다 —
+`.env` 값을 기준으로 삼으려면 `.env` 우선 모드(`G7_ENV_PRIORITY=true`)를 켭니다
+([admin-settings-access.md](admin-settings-access.md) "env 우선 모드").
+
+#### 드라이버 폴백 가드
+
+검색엔진은 다른 드라이버 카테고리(스토리지·캐시·세션·큐·로그·메일 등)와 같은 폴백 가드를
+받습니다. 저장된 엔진을 제공하던 플러그인이 삭제되면, 부팅 시 그 값이 사용 불가로 판정되어
+기본 엔진(`mysql-fulltext`)으로 되돌아갑니다. 이 가드가 없으면 `scout.driver` 가 죽은 값으로
+남아 공개 검색이 오류로 멈춥니다.
+
+카탈로그 조회는 **두 훅을 함께 읽습니다** — 위의 `core.search.engine_drivers`(Scout 엔진 맵)와
+일반 드라이버 훅 `core.settings.available_search_drivers`(`{id, label}` 목록). 그래서 검색엔진
+플러그인은 Scout 등록 훅 하나만 구현하면 되고, 관리자 화면 선택지에도 자동으로 나타납니다.
+라벨은 `settings.drivers.search.{id}` 다국어 키에서 조회하며, 키가 없으면 ID 를 그대로 씁니다.
 
 ### ScoutServiceProvider 동작 흐름
 

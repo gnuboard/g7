@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console\Commands\Template;
 
 use App\Enums\ExtensionStatus;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\TemplateManager;
 use App\Models\Template;
 use App\Models\TemplateLayout;
@@ -366,19 +367,40 @@ class TemplateArtisanCommandsTest extends TestCase
         $this->artisan('template:list', ['--status' => 'inactive'])
             ->assertExitCode(0);
 
-        // cache-clear 커맨드 (특정 템플릿)
+        // cache-clear 커맨드 (특정 템플릿) — 공개 config 캐시 실소멸까지 검증 (#588, 공개 #119)
+        $coreCache = new CoreCacheDriver(config('cache.default', 'array'));
+        $coreCache->put("template.config.{$identifier}", [
+            'success' => true,
+            'data' => ['version' => '0.0.1-stale'],
+        ], 3600);
+
         $this->artisan('template:cache-clear', ['identifier' => $identifier])
             ->expectsOutput(__('templates.commands.cache_clear.clearing_single', ['template' => $identifier]))
             ->assertExitCode(0);
+
+        $this->assertNull(
+            $coreCache->get("template.config.{$identifier}"),
+            'template:cache-clear(단일) 후 공개 config 캐시가 삭제되어야 합니다.'
+        );
 
         // 활성화하여 cache-clear 전체 테스트
         $this->artisan('template:activate', ['identifier' => $identifier])
             ->assertExitCode(0);
 
-        // cache-clear 커맨드 (전체)
+        // cache-clear 커맨드 (전체) — 전체 모드도 config 캐시 실소멸 검증
+        $coreCache->put("template.config.{$identifier}", [
+            'success' => true,
+            'data' => ['version' => '0.0.1-stale'],
+        ], 3600);
+
         $this->artisan('template:cache-clear')
             ->expectsOutput(__('templates.commands.cache_clear.clearing_all'))
             ->assertExitCode(0);
+
+        $this->assertNull(
+            $coreCache->get("template.config.{$identifier}"),
+            'template:cache-clear(전체) 후 공개 config 캐시가 삭제되어야 합니다.'
+        );
 
         // 비활성화
         $this->artisan('template:deactivate', ['identifier' => $identifier])

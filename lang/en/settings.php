@@ -21,11 +21,15 @@ return [
     'backup_success' => 'Database backup started successfully.',
     'backup_failed' => 'Failed to start database backup.',
     'backup_error' => 'An error occurred while backing up database.',
+    'database_backup_unavailable' => 'Database backup is not available yet. Use the settings backup feature to back up your settings.',
     'backup_path_required' => 'Please enter a backup path.',
     'restore_success' => 'Settings restored successfully.',
     'restore_failed' => 'Failed to restore settings.',
     'restore_error' => 'An error occurred while restoring settings.',
     'save_individual_failed' => 'Settings save failed: :error',
+    'static_cache_status_loaded' => 'Startup file status loaded.',
+    'static_cache_republished' => 'Startup files were rebuilt.',
+    'static_cache_republish_failed' => 'Startup files could not be rebuilt. The site keeps working normally.',
 
     // App key related messages
     'invalid_password' => 'Password does not match.',
@@ -41,6 +45,11 @@ return [
     'drivers' => [
         'storage' => [
             'local' => 'Local',
+            's3' => 'Amazon S3',
+        ],
+        'public_asset' => [
+            'none' => 'Disabled (streaming)',
+            'public' => 'Public disk',
             's3' => 'Amazon S3',
         ],
         'cache' => [
@@ -69,6 +78,9 @@ return [
             'mailgun' => 'Mailgun',
             'ses' => 'SES (Amazon)',
         ],
+        'search' => [
+            'mysql-fulltext' => 'MySQL Full-Text',
+        ],
     ],
 
     // Driver connection test messages
@@ -77,11 +89,18 @@ return [
     'driver_test_error' => 'An error occurred while testing driver connections.',
     'unknown_driver' => 'Unknown driver.',
 
+    // Outbound proxy connection test messages
+    'outbound_proxy_test_success' => 'Connected through the proxy. External services will see this IP address.',
+    'outbound_proxy_test_failed' => 'Could not connect through the proxy. Check the address and the proxy server status.',
+    'outbound_proxy_test_invalid_url' => 'The proxy address format is invalid.',
+    'outbound_proxy_test_no_lookup_url' => 'No egress IP lookup target is configured, so the address could not be determined.',
+
     // S3 test messages
     's3_test_success' => 'Successfully connected to S3 bucket.',
     's3_test_failed' => 'Failed to connect to S3 bucket.',
     's3_missing_config' => 'S3 configuration is missing. (bucket, region, access key, secret key)',
     's3_sdk_missing' => 'AWS SDK is not installed.',
+    's3_adapter_missing' => 'S3 storage adapter (league/flysystem-aws-s3-v3) is not installed.',
     's3_bucket_not_found' => 'S3 bucket not found.',
     's3_access_denied' => 'Access to S3 bucket was denied.',
     's3_invalid_credentials' => 'S3 credentials are invalid.',
@@ -103,6 +122,10 @@ return [
     // Websocket test messages
     'websocket_test_success' => 'Successfully connected to Websocket server.',
     'websocket_test_failed' => 'Failed to connect to Websocket server.',
+    'websocket_server_test_failed' => 'Failed to connect to the Websocket server-side (backend broadcast) endpoint. The client endpoint is reachable.',
+    'driver_unusable_s3_adapter' => 'S3 storage adapter (league/flysystem-aws-s3-v3) is not installed.',
+    'driver_unusable_redis_client' => 'Neither the phpredis extension nor the predis library is available.',
+    'driver_unusable_memcached_extension' => 'The memcached PHP extension is not installed.',
     'websocket_invalid_host' => 'The Websocket host setting is invalid. Enter the address only — credentials (@) and protocols other than http/https are not allowed.',
     'websocket_connection_refused' => 'Could not connect to Websocket server. Please check if the server is running.',
 
@@ -147,7 +170,7 @@ return [
 
         // File apply mode summary (Step 7)
         'apply_mode_incremental' => 'File apply: only files actually changed by the core were applied (:added new, :changed changed). All other files were left untouched as-is.',
-        'apply_mode_incremental_prune_hint' => 'To also remove files deleted in the new version, re-run with the `--prune` option or use `php artisan hotfix:rollback-stale-files --prune`.',
+        'apply_mode_incremental_prune_hint' => 'To also remove files deleted in the new version, re-run the same update with the `--prune` option.',
         'apply_mode_prune' => 'File apply: full overwrite plus cleanup of removed files was performed (--prune).',
         'apply_mode_fallback' => 'File apply: no backup available, so incremental apply was skipped and a full overwrite was performed. To preserve custom files, keep the backup enabled on future updates.',
 
@@ -186,4 +209,19 @@ return [
         'source_vendor_missing' => 'No vendor directory in source. composer install may not have been executed.',
         'composer_failed_with_output' => 'composer install failed.:output',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trusted Proxy Diagnostic (#124)
+    |--------------------------------------------------------------------------
+    |
+    | The value is edited in .env only — the screen shows a read-only diagnostic.
+    |
+    */
+
+    'trusted_proxy' => [
+        'alert_title' => 'Trusted proxies are not configured',
+        'alert_message' => 'Proxy headers (:headers) are being received but no trusted proxy is configured, so every visitor is recorded with the same address (:ip). Set TRUSTED_PROXIES in .env. Details: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+    ],
+
 ];

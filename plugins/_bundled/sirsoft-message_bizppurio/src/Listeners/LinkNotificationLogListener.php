@@ -22,7 +22,7 @@ use Plugins\Sirsoft\MessageBizppurio\Services\DispatchLinkContext;
  *   - core.notification_log.after_log_sent   — 발송 성공 로그 생성 직후(NotificationLog 전달)
  *   - core.notification_log.after_log_failed — 발송 실패 로그 생성 직후(NotificationLog 전달)
  *
- * 매칭 방식(A안, PO 확정): 복합키 근사 매칭이 아니라 발송 사이클 refkey 직접 표식이다.
+ * 매칭 방식(A안, 제품 결정): 복합키 근사 매칭이 아니라 발송 사이클 refkey 직접 표식이다.
  * 같은 채널 발송 한 사이클에서 우리 드라이버 send() 가 dispatch(refkey) 를 먼저 만들고
  * DispatchLinkContext 에 refkey 를 남긴 뒤, 곧바로 이 로그 훅이 발화한다. 여기서 그 refkey 를
  * 꺼내(consume) 그 dispatch 에 방금 만들어진 코어 로그 id 를 기록한다.

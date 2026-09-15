@@ -128,6 +128,69 @@ class AdminVbankRefundControllerTest extends PluginTestCase
         $response->assertForbidden();
     }
 
+    /**
+     * 환불 계좌 형식 위반 4종(계좌번호 17자리 / 은행코드 비숫자 / 예금주 11자 / 취소사유 101자)은
+     * VbankRefundRequest 가 표준 422 로 차단하고 PG 취소 API 는 호출되지 않아야 한다.
+     */
+    public function test_admin_vbank_refund_rejects_malformed_refund_account_fields(): void
+    {
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $order = $this->createPaidVbankOrder();
+
+        $apiServiceMock = $this->createMock(NicePaymentsApiService::class);
+        $apiServiceMock->expects($this->never())->method('useStoredCredentials');
+        $apiServiceMock->expects($this->never())->method('cancelPayment');
+        $this->app->instance(NicePaymentsApiService::class, $apiServiceMock);
+
+        $response = $this->actingAs($admin)->postJson('/api/plugins/sirsoft-pay_nicepayments/admin/vbank-refund', [
+            'tid' => self::TID,
+            'moid' => $order->order_number,
+            'cancel_amt' => 30000,
+            'cancel_msg' => str_repeat('가', 101),
+            'refund_acct_no' => str_repeat('1', 17),
+            'refund_bank_cd' => '00A',
+            'refund_acct_nm' => str_repeat('가', 11),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'cancel_msg',
+                'refund_acct_no',
+                'refund_bank_cd',
+                'refund_acct_nm',
+            ]);
+
+        $order->refresh();
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
+        $this->assertEquals(0.0, (float) $order->payment->cancelled_amount);
+    }
+
+    /**
+     * 배열 주입(`tid[]=x`)은 string 규칙이 422 로 차단해야 한다 — 종전 수동 검사는
+     * 문자열 캐스팅 전제라 배열 입력이 형식 검증을 우회할 수 있었다.
+     */
+    public function test_admin_vbank_refund_rejects_array_injection(): void
+    {
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $order = $this->createPaidVbankOrder();
+
+        $apiServiceMock = $this->createMock(NicePaymentsApiService::class);
+        $apiServiceMock->expects($this->never())->method('cancelPayment');
+        $this->app->instance(NicePaymentsApiService::class, $apiServiceMock);
+
+        $response = $this->actingAs($admin)->postJson('/api/plugins/sirsoft-pay_nicepayments/admin/vbank-refund', [
+            'tid' => ['x'],
+            'moid' => $order->order_number,
+            'cancel_amt' => 30000,
+            'refund_acct_no' => '1234567890',
+            'refund_bank_cd' => '004',
+            'refund_acct_nm' => '홍길동',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['tid']);
+    }
+
     private function createPaidVbankOrder(): Order
     {
         $user = User::factory()->create();

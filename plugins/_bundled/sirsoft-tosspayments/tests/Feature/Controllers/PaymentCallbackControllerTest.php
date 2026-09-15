@@ -345,9 +345,18 @@ class PaymentCallbackControllerTest extends PluginTestCase
     /**
      * 결제 실패 시 주문이 존재하면 failPayment 처리되는지 확인
      */
-    public function test_fail_calls_fail_payment_when_order_exists(): void
+    /**
+     * 실패 콜백은 주문 상태를 바꾸지 않는다.
+     *
+     * 계약 변경(KVE-2026-2018 형제): 이 엔드포인트는 인증도 서명도 없는 GET 이고
+     * `orderId`·`code` 가 전부 쿼리스트링에서 온다. 실패 처리를 수행하면 링크 하나로
+     * 남의 결제대기 주문을 취소시킬 수 있다. 결제 성립은 `success()` 의 서버 confirm 이,
+     * 결제완료 후 취소는 서명 검증된 웹훅이 담당한다.
+     */
+    public function test_fail_does_not_mutate_the_order(): void
     {
         $order = $this->createTestOrder(30000);
+        $statusBefore = $order->order_status;
 
         $response = $this->get('/plugins/sirsoft-tosspayments/payment/fail?'.http_build_query([
             'code' => 'PAY_PROCESS_CANCELED',
@@ -357,13 +366,35 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
         $response->assertRedirect();
 
-        // 주문 상태가 CANCELLED로 변경되었는지 확인
         $order->refresh();
-        $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+        $this->assertEquals($statusBefore, $order->order_status, '비인증 실패 콜백이 주문 상태를 바꿨습니다.');
+        $this->assertNotEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+        $this->assertArrayNotHasKey('payment_failure_code', $order->order_meta ?? []);
+    }
 
-        // 주문 메타에 실패 정보가 저장되었는지 확인
-        $meta = $order->order_meta;
-        $this->assertEquals('PAY_PROCESS_CANCELED', $meta['payment_failure_code']);
+    /**
+     * 제3자가 링크 하나로 타인의 결제대기 주문을 취소할 수 없다 (KVE-2026-2018 형제 회귀).
+     */
+    public function test_unauthenticated_fail_link_cannot_cancel_another_users_order(): void
+    {
+        $victimOrder = $this->createTestOrder(30000);
+
+        // 공격자는 로그인하지 않고 피해자의 주문번호만 실어 이 URL 을 연다.
+        $response = $this->get('/plugins/sirsoft-tosspayments/payment/fail?'.http_build_query([
+            'code' => 'PAY_PROCESS_CANCELED',
+            'message' => 'forged',
+            'orderId' => $victimOrder->order_number,
+        ]));
+
+        $response->assertRedirect();
+
+        $victimOrder->refresh();
+        $this->assertEquals(
+            OrderStatusEnum::PENDING_ORDER,
+            $victimOrder->order_status,
+            '무인증 GET 하나로 피해자의 주문이 취소되었습니다.'
+        );
+        $this->assertNotEquals(PaymentStatusEnum::FAILED, $victimOrder->payment->refresh()->payment_status);
     }
 
     /**

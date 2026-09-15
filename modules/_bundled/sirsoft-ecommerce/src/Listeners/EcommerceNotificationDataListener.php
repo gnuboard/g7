@@ -330,7 +330,12 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'order_number' => $order->order_number,
                 'customer_name' => $order->user?->name ?? $order->getOrdererName() ?? '',
-                'total_amount' => number_format((float) $order->total_paid_amount > 0 ? $order->total_paid_amount : $order->total_amount).'원',
+                // 구매자 알림과 같은 경로로 포맷한다 — 원화를 이어 붙이면 기준통화가
+                // KRW 가 아닌 상점에서 값은 기준통화인데 단위만 원으로 나간다.
+                'total_amount' => $this->formatOrderChargeAmount(
+                    $order,
+                    (float) $order->total_paid_amount > 0 ? (float) $order->total_paid_amount : (float) $order->total_amount
+                ),
                 'order_url' => "{$baseUrl}/admin/ecommerce/orders/{$order->order_number}",
                 'site_url' => $baseUrl,
             ],

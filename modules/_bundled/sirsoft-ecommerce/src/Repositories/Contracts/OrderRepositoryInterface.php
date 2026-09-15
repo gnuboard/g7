@@ -20,6 +20,18 @@ interface OrderRepositoryInterface
     public function find(int $id): ?Order;
 
     /**
+     * ID로 주문을 행 잠금과 함께 조회합니다.
+     *
+     * 취소 총액·취소 횟수처럼 현재 값을 읽어 더하는 컬럼은 두 요청이 같은 값을 읽으면
+     * 후행이 선행을 덮어씁니다. 트랜잭션 안에서 이 메서드로 행을 잠근 뒤 갱신하면
+     * 뒤따르는 요청이 앞선 커밋을 본 뒤에 진행합니다.
+     *
+     * @param  int  $id  주문 ID
+     * @return Order|null 잠긴 주문 모델 (없으면 null)
+     */
+    public function findByIdForUpdate(int $id): ?Order;
+
+    /**
      * 주문이 1건이라도 존재하는지 확인합니다. (A2 base 통화 변경 가드)
      *
      * 소프트삭제된 주문도 과거 base 로 생성된 이력이므로 포함(withTrashed)해 판정한다.
@@ -155,14 +167,20 @@ interface OrderRepositoryInterface
     public function hasOrderByUser(int $userId): bool;
 
     /**
-     * 입금 기한 만료된 결제대기 주문 조회
+     * 기한이 지난 미결제 주문 조회
      *
-     * vbank/dbank 결제의 입금 기한이 지난 주문들을 조회합니다.
+     * 두 부류를 함께 조회합니다.
+     *  - vbank/dbank 결제의 입금 기한이 지난 결제대기 주문
+     *  - 결제창까지 갔으나 결제가 성립하지 않은 주문대기 주문 (PG 카드 등, 경과 시간 기준)
+     *
+     * 후자는 입금 기한이라는 개념이 없어 어떤 정리 주체도 없이 남던 부류다.
+     * `$pendingOrderExpireMinutes` 가 null 이거나 0 이하면 후자는 조회하지 않는다.
      *
      * @param  int  $limit  최대 조회 개수
-     * @return Collection 입금 기한 만료된 결제대기 주문 컬렉션
+     * @param  int|null  $pendingOrderExpireMinutes  주문대기 주문의 만료 기준(분)
+     * @return Collection 기한이 지난 미결제 주문 컬렉션
      */
-    public function getExpiredPendingPaymentOrders(int $limit = 100): Collection;
+    public function getExpiredPendingPaymentOrders(int $limit = 100, ?int $pendingOrderExpireMinutes = null): Collection;
 
     /**
      * ID 목록으로 주문을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).

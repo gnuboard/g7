@@ -58,5 +58,5 @@ export interface AvatarUploaderProps {
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
 }
-export declare function AvatarUploader({ src, fallbackText, size, uploadEndpoint, deleteEndpoint, onUploadSuccess, onUploadError, onDeleteSuccess, onDeleteError, showDeleteButton, accept, maxSize, className, uploadButtonText, deleteButtonText, readOnly, confirmDelete, deleteConfirmMessage, confirmUpload, uploadConfirmMessage, uploadSuccessActions, uploadErrorActions, deleteSuccessActions, deleteErrorActions, id, editorAttrs, }: AvatarUploaderProps): import("react").JSX.Element;
+export declare function AvatarUploader({ src, fallbackText, size, uploadEndpoint, deleteEndpoint, onUploadSuccess, onUploadError, onDeleteSuccess, onDeleteError, showDeleteButton, accept, maxSize, className, uploadButtonText, deleteButtonText, readOnly, confirmDelete, deleteConfirmMessage, confirmUpload, uploadConfirmMessage, uploadSuccessActions, uploadErrorActions, deleteSuccessActions, deleteErrorActions, id, editorAttrs, }: AvatarUploaderProps): import("react/jsx-runtime").JSX.Element;
 export default AvatarUploader;

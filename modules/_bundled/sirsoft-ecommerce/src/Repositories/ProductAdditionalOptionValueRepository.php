@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 
@@ -44,12 +45,12 @@ class ProductAdditionalOptionValueRepository implements ProductAdditionalOptionV
     /**
      * {@inheritDoc}
      */
-    public function getActiveByProductIdsKeyed(array $productIds): Collection
+    public function getActiveByProductIdsKeyed(array $productIds): SupportCollection
     {
         $productIds = array_values(array_unique(array_filter(array_map('intval', $productIds))));
 
         if (empty($productIds)) {
-            return new Collection;
+            return new SupportCollection;
         }
 
         // 상품별로 한 번씩 조회하면 장바구니 항목 수만큼 쿼리가 난다. 한 번에 읽고
@@ -60,6 +61,9 @@ class ProductAdditionalOptionValueRepository implements ProductAdditionalOptionV
             ->whereHas('additionalOption', fn ($query) => $query->whereIn('product_id', $productIds))
             ->get()
             ->groupBy(fn ($value) => (int) $value->additionalOption?->product_id)
+            // 클로저 인자는 Eloquent 가 맞다 — groupBy() 가 `new static` 으로 그룹을 만든다.
+            // 바깥 map() 의 결과 항목은 Model 이 아니므로 반환은 Support 로 강등되며,
+            // 그것이 이 중첩 맵의 올바른 타입이다 (상세는 인터페이스 PHPDoc).
             ->map(fn (Collection $values) => $values->keyBy('id'));
     }
 

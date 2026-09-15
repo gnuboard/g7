@@ -1,0 +1,19 @@
+feature: 페이지 검색 하이라이트 이스케이프 (2026-08 보안 수정)
+
+description: |
+  2026-08 비공개 보안 제보(⑧/N-8) 대응 — SearchPagesListener 가 검색 하이라이트에서
+  원문 마크업을 이스케이프하지 않고, 프리뷰가 strip_tags → html_entity_decode 순서라
+  엔티티 인코딩된 태그가 부활하던 문제. 코어 app/Search/SearchHighlighter(이스케이프 후
+  <mark> 삽입, decode → strip 순서) 위임으로 board/ecommerce 와 동일 SSoT 를 공유한다.
+
+axes:
+  case: [search_highlight_escape, preview_entity_no_resurrect]
+
+exclusions: []
+
+effects:
+  - highlighted_fields_escaped
+  - preview_does_not_resurrect_entities
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Listeners/SearchPagesListenerTest.php

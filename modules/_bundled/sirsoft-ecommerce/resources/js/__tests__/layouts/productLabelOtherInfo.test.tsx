@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file productLabelOtherInfo.test.tsx
  * @description A31 — 기타정보 라벨 CRUD 회귀 (구조 검증)
@@ -13,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import otherInfo from '../../../layouts/admin/partials/admin_ecommerce_product_form/_partial_other_info.json';
 import labelFormModal from '../../../layouts/admin/partials/admin_ecommerce_product_form/_modal_label_form.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const flat = (obj: unknown) => JSON.stringify(obj);
 
@@ -43,13 +45,13 @@ describe('A31 — 기타정보 라벨 CRUD', () => {
         // 권한 가드
         expect(addBtn.if).toContain('can_update');
 
-        const seq = addBtn.actions[0];
+        const seq = actionsOf(addBtn)[0];
         expect(seq.handler).toBe('sequence');
-        const setState = seq.actions.find((a: any) => a.handler === 'setState');
+        const setState = actionsOf(seq).find((a: any) => a.handler === 'setState');
         expect(setState.params.target).toBe('global');
         expect(setState.params.editingLabelId).toBeNull();
         expect(setState.params.labelFormData.color).toBe('#6B7280');
-        const openModal = seq.actions.find((a: any) => a.handler === 'openModal');
+        const openModal = actionsOf(seq).find((a: any) => a.handler === 'openModal');
         expect(openModal.target).toBe('modal_label_form');
     });
 
@@ -58,10 +60,10 @@ describe('A31 — 기타정보 라벨 CRUD', () => {
         expect(unassignBtn).toBeTruthy();
         expect(unassignBtn.text).toContain('labels.unassign');
 
-        const seq = unassignBtn.actions[0];
-        const setState = seq.actions.find((a: any) => a.handler === 'setState');
+        const seq = actionsOf(unassignBtn)[0];
+        const setState = actionsOf(seq).find((a: any) => a.handler === 'setState');
         expect(setState.params.labelToUncheckId).toBeTruthy();
-        const openModal = seq.actions.find((a: any) => a.handler === 'openModal');
+        const openModal = actionsOf(seq).find((a: any) => a.handler === 'openModal');
         expect(openModal.target).toBe('modal_label_uncheck_confirm');
     });
 

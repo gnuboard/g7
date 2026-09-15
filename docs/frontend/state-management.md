@@ -1,7 +1,7 @@
 # 전역 상태 관리
 
 > **버전**: engine-v1.1.0+
-> **관련 문서**: [components.md](components.md) | [data-binding.md](data-binding.md) | [index.md](index.md)
+> **관련 문서**: [components.md](components.md) | [data-binding.md](data-binding.md) | [README.md](README.md)
 
 ---
 
@@ -13,6 +13,8 @@
 3. 격리 상태: _isolated.속성명 (컴포넌트 영역, 성능 최적화용) (engine-v1.14.0+)
 4. 바인딩: {{_global.xxx}}, {{_local.xxx}}, {{_isolated.xxx}}
 5. 변경: setState 핸들러 (target: "global"|"local"|"isolated")
+6. setState params 의 키에 {{}} 사용 금지 — 키는 정적 경로만 (값에만 바인딩)
+7. await 뒤에는 캡처해 둔 상태 값을 쓰지 않는다 → G7Core.state.getLocal() 로 재조회
 ```
 
 ---
@@ -95,6 +97,12 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 | `_global.settings` | 관리자 환경설정 (defaults.json 기반 영속 설정) | `G7Config.settings` → `TemplateApp.loadG7Config()` |
 | `_global.appConfig` | 시스템 설정 (config/frontend.php 기반 정적 config 값) | `G7Config.appConfig` → `TemplateApp.loadG7Config()` |
 
+```html
+<!-- appConfig 활용 예시 - 동적 Select 옵션 (타임존) --><div options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "comment": "appConfig 활용 예시 - 동적 Select 옵션 (타임존)",
@@ -108,6 +116,12 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 > `_global.appConfig.supportedTimezones`는 `[{value: 'Asia/Seoul', label: '(UTC+09:00) Asia/Seoul'}, ...]` 형식의 `{value, label}` 객체 배열입니다(오프셋 오름차순 정렬). 백엔드 `SettingsService::buildTimezoneOptions()`가 매 요청 시점에 UTC 오프셋을 계산하여 라벨을 생성하므로 DST 전환이 자동 반영됩니다. 별도 `.map()` 변환 없이 Select `options`에 직접 바인딩합니다.
 
 ### 기본 사용법
+
+```html
+<div data-if="{{_global.isLoading}}" class="{{_global.sidebarOpen ? 'open' : 'closed'}}" text="{{_global.currentTheme}}">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -161,6 +175,7 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 - **A→B 방향**: 자동바인딩 `performStateUpdate`가 A에 쓸 때 B에도 `setLocal({render:false})`로 동기 기록
 - **B→A 방향**: 자동바인딩 활성 경로를 `__g7AutoBindingPaths: Map<string, number>`에 추적. 플러그인이 `setLocal({render:false})`로 그 경로를 건드리면 엔진이 **자동으로 `render:true`로 승격**
 - **예외**: `selfManaged: true` 명시한 호출은 자동 승격 제외 (CKEditor5 등 자체 DOM 관리 플러그인 전용)
+- **pending 스냅샷**: 자동바인딩은 `__g7PendingLocalState` 에 "지금 화면과 같은 전체 스냅샷" 을 싣는다. 이 값이 뒤이은 `setLocal` 의 base 가 되므로, 저장소 A 스냅샷을 그대로 실으면 B 에만 있던 값(selfManaged 플러그인이 쓴 편집기 본문 등)이 사라진다. 그래서 렌더러가 화면을 만드는 순서(`dataContext._local → dynamicState → __g7ForcedLocalFields`)를 그대로 따라 합성한다 (engine-v1.63.4)
 
 ### 엔진 수정 시 금지 사항 (CRITICAL)
 
@@ -169,6 +184,10 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 ❌ `parentFormContext.setState`를 직접 호출하는 우회 경로 추가 (자동바인딩 내부 API)
 ❌ `__g7AutoBindingPaths` 레지스트리를 건드리지 않고 자동바인딩 변형 구현
 ❌ setLocal의 `render:false` 자동 승격 분기를 임의로 제거하거나 조건 완화
+❌ 자동바인딩의 pending 스냅샷을 저장소 A 값만으로 구성 (B 전용 값이 조용히 사라진다)
+❌ 저장소 A 에만 쓰는 `_local` 쓰기 경로 추가 (`context.setState(payload)` 단독 호출)
+❌ 키가 **존재하는** 것만 확인하고 그 값이 **최신인지** 보지 않기 (존재 ≠ 신선도)
+❌ 하네스에서 `globalState._local` 을 손으로 채워 발산 상황을 위조 (실 writer 를 거치지 않으면 결함이 시험에 등장하지 않는다)
 ❌ 구독 기반 선택적 리렌더 재시도 (과거에 도입 후 롤백된 실패 경로 — 반드시 검토 후 논의)
 ```
 
@@ -177,8 +196,13 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 ```text
 ✅ _local 쓰기 경로 추가 시 A+B 양쪽 동기화 확인
 ✅ 새 `setLocal({render:false})` 사용처가 자동바인딩 경로와 겹치는지 확인 (겹치면 selfManaged 필요)
+✅ pending 에 쓰는 값이 렌더러가 만드는 `_local` 과 같은 합성 순서인지 확인
 ✅ DynamicRenderer의 레지스트리 useEffect 조건 변경 시 iteration/Strict Mode 이중 마운트 영향 검토
 ✅ SPA 네비게이션 시 레지스트리 재초기화 (new Map()) 유지
+✅ 미러는 그 쓰기를 **지배하는 분기 안**에 둔다 (형제 분기의 미러는 이 분기를 면죄하지 않는다)
+✅ 계약 테스트는 경로마다 A→B / B→A **양방향 쌍**으로 둔다 (한 방향만 두면 반대 방향 회귀가 초록으로 통과한다)
+✅ 하네스는 실제 writer(`G7Core.state.setLocal` · 자동바인딩 · `ActionDispatcher`)를 거친다
+✅ `describe.skip` 은 커버리지가 아니다 — 꺼진 시험은 한 번도 돌지 않는다
 ✅ 수정 후 이중 저장소 동기화 관련 회귀 테스트 전수 통과 확인
 ```
 
@@ -253,6 +277,12 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 
 ### 로컬 상태 기본 사용법
 
+```html
+<div data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).length > 0}}" class="{{_local.activeTab === 'basic' ? 'active' : ''}}" value="{{_local.searchQuery}}">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -264,6 +294,14 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 ```
 
 ### setState로 로컬 상태 업데이트
+
+```html
+<on type="click">
+  <set-state target="local" activeTab="settings"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -286,6 +324,21 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 
 API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표시:
 
+```html
+<button data-ref="save_button">
+  <on type="click">
+    <api-call target="/api/users" method="POST">
+      <fail>
+        <set-state target="local" errors="{{response?.errors}}"/>
+      </fail>
+    </api-call>
+  </on>
+  저장
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "save_button",
@@ -303,7 +356,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
           "handler": "setState",
           "params": {
             "target": "local",
-            "errors": "{{$response?.errors}}"
+            "errors": "{{response?.errors}}"
           }
         }
       ]
@@ -313,6 +366,16 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 ```
 
 에러 표시 컴포넌트:
+
+```html
+<div data-ref="validation_error" data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).length > 0}}" class="bg-red-50 border border-red-200 rounded-lg p-4">
+  <ul data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, msgs]) => msgs)">
+    <li>{{message}}</li>
+  </ul>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -408,9 +471,21 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 
 `isolatedState` 속성으로 격리된 상태를 정의합니다:
 
+```html
+<div>
+  <isolated-state scope-id="item-selector">
+    <field name="selectedItems" :value="[]"/>
+    <field name="currentStep" :value="1"/>
+  </isolated-state>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "selectedItems": [],
     "currentStep": 1
@@ -429,6 +504,18 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 
 `setState` 핸들러에서 `target: "isolated"` 사용:
 
+```html
+<on type="click">
+  <set-state target="isolated" :currentStep="2">
+    <field name="selectedItems">
+      <item>{{item.id}}</item>
+    </field>
+  </set-state>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "setState",
@@ -441,6 +528,12 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 ```
 
 ### 바인딩에서 접근
+
+```html
+<div data-if="{{_isolated.currentStep === 2}}" selected="{{_isolated.selectedItems.includes(item.id)}}">{{_isolated.selectedItems.length}}개 선택됨</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -464,9 +557,26 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
 
 ### 사용 예시: 카테고리 선택
 
+```html
+<div>
+  <isolated-state>
+    <field name="selectedCategories" :value="[null,null,null,null]"/>
+    <field name="currentLevel" :value="0"/>
+  </isolated-state>
+  <div :level="0" selected="{{_isolated.selectedCategories[0]}}">
+    <on type="click">
+      <set-state target="isolated" selectedCategories="{{[..._isolated.selectedCategories.slice(0, 0), $event.id, null, null, null]}}" :currentLevel="1"/>
+    </on>
+  </div>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "selectedCategories": [null, null, null, null],
     "currentLevel": 0
@@ -474,7 +584,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
   "children": [
     {
       "type": "basic",
-      "name": "CategoryLevel",
+      "name": "Div",
       "props": {
         "level": 0,
         "selected": "{{_isolated.selectedCategories[0]}}"

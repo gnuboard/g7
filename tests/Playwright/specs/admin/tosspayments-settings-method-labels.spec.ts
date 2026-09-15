@@ -39,14 +39,44 @@ async function gotoSettings(page: import('@playwright/test').Page): Promise<void
   expect(page.url()).not.toMatch(/\/admin\/login/);
 
   // 주문서형 결제가 꺼져 있으면 결제수단 그룹이 if 로 숨겨진다 → 켜서 노출시킨다.
+  //
+  // 체크박스는 저장값이 폼에 시드되기 **전에** 이미 DOM 에 붙는다. 그래서 마운트만 기다린 뒤
+  // 상태를 읽으면 시드 전 기본값(꺼짐)을 보게 되고, 그 판단으로 토글을 누르면 직후 도착한
+  // 시드가 값을 되돌려 조작이 씹힌 것처럼 보인다. 결과가 나타날 때까지 폴링하고, 시드가
+  // 토글을 되돌렸으면 다시 누른다 — 시드 전/후 어느 시점에 진입해도 같은 상태로 수렴한다.
   const orderSheetToggle = page.locator('input[type=checkbox][name="order_sheet_mode"]');
   await expect(orderSheetToggle).toBeAttached({ timeout: 20_000 });
-  if (!(await orderSheetToggle.isChecked())) {
-    // Toggle 컴포넌트는 input 을 시각적으로 감추고 형제 트랙을 노출하므로 force 클릭이 필요하다.
-    await orderSheetToggle.click({ force: true });
-  }
 
-  await expect(page.locator('input[type=checkbox][name="method_card"]')).toBeAttached({ timeout: 10_000 });
+  const methodCard = page.locator('input[type=checkbox][name="method_card"]');
+
+  await expect
+    .poll(
+      async () => {
+        if ((await methodCard.count()) > 0) return true;
+        if (!(await orderSheetToggle.isChecked())) {
+          // Toggle 컴포넌트는 input 을 시각적으로 감추고 형제 트랙을 노출하므로 force 클릭이 필요하다.
+          await orderSheetToggle.click({ force: true });
+        }
+
+        return false;
+      },
+      { message: '주문서형 결제수단 그룹이 끝내 렌더되지 않았다', timeout: 25_000 },
+    )
+    .toBe(true);
+
+  // 그룹이 뜬 뒤에도 한 번 더 안정화를 확인한다 — 시드가 늦게 도착해 값이 한 번 더 바뀌는
+  // 구간에서 상태를 읽으면 토글 방향이 뒤집힌다.
+  await expect
+    .poll(
+      async () => {
+        const first = await methodCard.isChecked();
+        await page.waitForTimeout(400);
+
+        return first === (await methodCard.isChecked());
+      },
+      { message: '결제수단 체크 상태가 계속 흔들린다', timeout: 15_000 },
+    )
+    .toBe(true);
 }
 
 // @scenario order_sheet_mode=on, method_labels=rendered
@@ -97,15 +127,15 @@ test('#454 - 결제수단 저장 페이로드가 boolean 으로 전송된다 (�
 
   await gotoSettings(page);
 
-  // 저장 요청 본문을 가로챈다.
-  // gotoSettings 가 주문서형 토글을 켜면서 별도 저장이 먼저 날 수 있으므로,
-  // 결제수단 키를 담은 요청만 잡는다 (상태 의존 flaky 방지).
-  const savePayload = page.waitForRequest(
-    (req) =>
-      req.method() === 'PUT' &&
-      req.url().includes('/plugins/sirsoft-tosspayments/settings') &&
-      (req.postData() ?? '').includes('method_card'),
-  );
+  // 저장 요청 본문을 모아 둔다. 단일 `waitForRequest` 술어로 잡으면
+  // gotoSettings 가 주문서형 토글을 켜며 먼저 보내는 저장과 순서가 엉켜 놓칠 수 있으므로,
+  // 설정 PUT 을 전부 수집한 뒤 결제수단 키를 담은 것을 고른다 (상태 의존 flaky 방지).
+  const settingsPuts: string[] = [];
+  page.on('request', (req) => {
+    if (req.method() === 'PUT' && req.url().includes('/plugins/sirsoft-tosspayments/settings')) {
+      settingsPuts.push(req.postData() ?? '');
+    }
+  });
 
   // 토글해서 dirty 를 만든다 (값 자체는 무엇이든 boolean 이어야 한다).
   const target = page.locator('input[type=checkbox][name="method_samsungpay"]');
@@ -116,7 +146,14 @@ test('#454 - 결제수단 저장 페이로드가 boolean 으로 전송된다 (�
   await expect(page.locator('#save_button')).toBeEnabled({ timeout: 10_000 });
   await page.locator('#save_button').click();
 
-  const body = JSON.parse((await savePayload).postData() ?? '{}');
+  await expect
+    .poll(() => settingsPuts.filter((payload) => payload.includes('method_card')).length, {
+      message: '결제수단을 담은 설정 저장 요청이 나가지 않았다',
+      timeout: 20_000,
+    })
+    .toBeGreaterThan(0);
+
+  const body = JSON.parse(settingsPuts.find((payload) => payload.includes('method_card')) ?? '{}');
 
   // 회귀: 저장값이 null/미정의였던 항목이 빈 문자열('')로 전송되면 서버가 null 로 저장하고,
   // 그 null 이 기본값(false)을 덮어 화면에서 다시 켤 수 없게 고착된다.

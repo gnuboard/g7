@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 리뷰설정 탭 레이아웃 구조 검증 테스트
  *
@@ -14,6 +15,7 @@ import { describe, it, expect } from 'vitest';
 
 // 레이아웃 JSON 임포트
 import tabReviewSettings from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_review_settings.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 재귀적으로 컴포넌트 트리에서 id로 검색
@@ -182,14 +184,14 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
 
         it('Input onChange가 setState 핸들러를 사용해야 한다', () => {
             const input = writeDeadlineSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             expect(action.handler).toBe('setState');
             expect(action.params.target).toBe('local');
         });
 
         it('Input onChange가 write_deadline_days를 설정해야 한다', () => {
             const input = writeDeadlineSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             const paramKeys = Object.keys(action.params);
             const deadlineKey = paramKeys.find((k) => k.includes('write_deadline_days'));
             expect(deadlineKey).toBeDefined();
@@ -197,7 +199,7 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
 
         it('Input onChange에 hasChanges=true가 포함되어야 한다', () => {
             const input = writeDeadlineSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             expect(action.params.hasChanges).toBe(true);
         });
 
@@ -246,7 +248,7 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
 
         it('Input onChange가 max_images를 설정해야 한다', () => {
             const input = maxImagesSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             expect(action.handler).toBe('setState');
             const paramKeys = Object.keys(action.params);
             const maxImagesKey = paramKeys.find((k) => k.includes('max_images'));
@@ -291,7 +293,7 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
 
         it('Input onChange가 max_image_size_mb를 설정해야 한다', () => {
             const input = maxSizeSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             expect(action.handler).toBe('setState');
             const paramKeys = Object.keys(action.params);
             const sizeKey = paramKeys.find((k) => k.includes('max_image_size_mb'));
@@ -325,14 +327,14 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
         it('모든 Input onChange가 hasChanges=true를 포함해야 한다', () => {
             const inputs = findAllByName(tab, 'Input');
             for (const input of inputs) {
-                expect(input.actions[0].params.hasChanges).toBe(true);
+                expect(actionsOf(input)[0].params.hasChanges).toBe(true);
             }
         });
 
         it('모든 Input onChange가 target=local을 사용해야 한다', () => {
             const inputs = findAllByName(tab, 'Input');
             for (const input of inputs) {
-                expect(input.actions[0].params.target).toBe('local');
+                expect(actionsOf(input)[0].params.target).toBe('local');
             }
         });
     });

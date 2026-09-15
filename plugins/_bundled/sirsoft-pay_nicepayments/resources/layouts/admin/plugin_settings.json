@@ -1,9 +1,7 @@
 {
+    "comment": "나이스페이먼츠 결제 플러그인 환경설정 화면 — 상점 인증정보와 결제수단별 사용 여부를 정한다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-pay_nicepayments.settings.title",
@@ -19,7 +17,8 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         },
         {
             "id": "vbank_info",
@@ -29,8 +28,12 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "initLocal": "vbankInfo"
+            "initLocal": "vbankInfo",
+            "comment": "가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다"
         }
+    ],
+    "permissions": [
+        "core.plugins.update"
     ],
     "slots": {
         "content": [
@@ -95,12 +98,12 @@
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
-                                                },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
                                                 },
                                                 "children": [
                                                     {
@@ -617,11 +620,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "className": "flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap"
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -641,6 +642,9 @@
                                                         ]
                                                     }
                                                 ],
+                                                "props": {
+                                                    "className": "flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -723,10 +727,9 @@
                     },
                     {
                         "id": "easy_pay_section",
-                        "_comment_hidden": "간편결제는 차후 오픈 예정 — 현재는 렌더링 차단. 오픈 시 if 키 제거하면 복원됨.",
-                        "if": "{{false}}",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{false}}",
                         "props": {
                             "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
                         },
@@ -1037,9 +1040,6 @@
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1049,6 +1049,9 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1061,12 +1064,9 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1080,8 +1080,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{_local.form}}"
@@ -1122,7 +1122,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "$t:admin.plugins.settings.save_error"
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
                                                         }
                                                     }
                                                 ]
@@ -1130,6 +1130,10 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",

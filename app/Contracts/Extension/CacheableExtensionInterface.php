@@ -26,6 +26,17 @@ interface CacheableExtensionInterface
     public function getStorage(): StorageInterface;
 
     /**
+     * 카테고리별 스토리지 드라이버를 반환합니다.
+     *
+     * getStorageDiskFor($category) 가 결정한 디스크의 인스턴스를 반환하며,
+     * 기본 구현은 getStorage() 와 동일한 디스크를 사용합니다.
+     *
+     * @param  string  $category  카테고리 (settings, attachments, images, cache, temp)
+     * @return StorageInterface 카테고리 디스크의 스토리지 인스턴스
+     */
+    public function getStorageFor(string $category): StorageInterface;
+
+    /**
      * 확장 도메인에 격리된 캐시 드라이버를 반환합니다.
      *
      * @return CacheInterface 확장 전용 캐시 인스턴스

@@ -94,6 +94,27 @@ class NotificationLogService
     }
 
     /**
+     * 보존 기간이 지난 발송 이력을 정리합니다 (자동 파기).
+     *
+     * 운영자가 고른 ID 를 지우는 bulkDelete 와는 별개의 훅을 발행한다 — 자동 파기는
+     * 대상을 기간으로 정하고 사람 없이 예약 실행되므로, 대화형 가드를 전제한 훅에
+     * 얹으면 예약이 그 가드에 걸린다. 확장은 이 훅으로 자기 처리를 붙인다.
+     *
+     * @param  int  $days  보존 기간 (일)
+     * @return int 삭제된 건수
+     */
+    public function prune(int $days): int
+    {
+        HookManager::doAction('core.notification_log.before_prune', $days);
+
+        $count = $this->repository->deleteOlderThan($days);
+
+        HookManager::doAction('core.notification_log.after_prune', $days, $count);
+
+        return $count;
+    }
+
+    /**
      * 다건 삭제합니다.
      *
      * @param  array<int, int>  $ids  삭제할 로그 ID 목록

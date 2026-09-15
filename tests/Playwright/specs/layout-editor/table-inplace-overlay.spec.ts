@@ -15,8 +15,8 @@
  *  을 검증한다. 변형 정합(span 보정/흡수셀/밴드 이동)은 단위(TableInplaceOverlay.test.tsx /
  *  tableGridModel.test.ts)가 잠그고, 본 E2E 는 인플레이스 라이브 반영·저장을 브라우저로 확인.
  *
- * @scenario table_canvas_inplace_overlay + inplace_add_row_col + inplace_merge + live_persist
- * @effects editorcanvasoverlay_dispatches_canvasoverlay_by_kind_with_measured_cellboxes, table_inplace_overlay_registered_via_registercoreeditors_kind_agnostic, inplace_gutter_add_row_col_shares_tablegridmutations_with_property_panel, inplace_shift_select_merge_sets_origin_span_removes_absorbed, live_inplace_cell_edit_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout
+ * 축 요약(마커 아님 — 평문): table_canvas_inplace_overlay, inplace_add_row_col, inplace_merge, live_persist.
+ * 효과 요약(마커 아님 — 평문): editorcanvasoverlay_dispatches_canvasoverlay_by_kind_with_measured_cellboxes, table_inplace_overlay_registered_via_registercoreeditors_kind_agnostic, inplace_gutter_add_row_col_shares_tablegridmutations_with_property_panel, inplace_shift_select_merge_sets_origin_span_removes_absorbed, live_inplace_cell_edit_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -135,6 +135,7 @@ async function selectFirstCell(page: Page): Promise<boolean> {
 }
 
 test.describe('@layout-editor table 캔버스 인플레이스 오버레이(빌트인)', () => {
+  /** @effects editorcanvasoverlay_dispatches_canvasoverlay_by_kind_with_measured_cellboxes, table_inplace_overlay_registered_via_registercoreeditors_kind_agnostic */
   test('표 선택 시 오버레이 마운트(모서리 추가) + 셀 선택 시 거터/도구 노출', async ({ page }) => {
     await gotoEditor(page);
     const tablePath = await addTable(page);
@@ -179,6 +180,7 @@ test.describe('@layout-editor table 캔버스 인플레이스 오버레이(빌�
     expect(handleGotPointerDown).toBe(true);
   });
 
+  /** @effects inplace_gutter_add_row_col_shares_tablegridmutations_with_property_panel */
   test('선택 셀 행/열 추가 거터 → 캔버스 행/열 증가', async ({ page }) => {
     await gotoEditor(page);
     const tablePath = await addTable(page);
@@ -192,6 +194,7 @@ test.describe('@layout-editor table 캔버스 인플레이스 오버레이(빌�
     expect(await page.locator(`[data-editor-name="Tr"]`).count()).toBeGreaterThan(rowsBefore);
   });
 
+  /** @effects inplace_shift_select_merge_sets_origin_span_removes_absorbed */
   test('선택 셀 오른쪽 병합 → colspan 반영', async ({ page }) => {
     await gotoEditor(page);
     const tablePath = await addTable(page);
@@ -218,6 +221,7 @@ test.describe('@layout-editor table 캔버스 인플레이스 오버레이(빌�
   // 오염 시점과 정확히 같은 크기로 되돌아왔다(편집기가 들고 있던 문서를 통째로 다시 저장).
   // 그래서 원복에 기대지 않고 저장 대상 자체를 시드 화면으로 분리했다. 시드 화면은 globalSetup 이
   // 매 실행 fixture 원본으로 덮어쓰므로 회차 간 누적이 성립하지 않는다.
+  /** @effects live_inplace_cell_edit_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout */
   test('인플레이스 편집 후 저장 → PUT 200', async ({ page }) => {
     await gotoEditor(page, sandboxRouteParam());
     const tablePath = await addTable(page, true);

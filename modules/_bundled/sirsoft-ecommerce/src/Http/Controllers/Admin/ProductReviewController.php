@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateReviewStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductReviewResource;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 리뷰 관리 컨트롤러 (관리자)
@@ -44,6 +45,8 @@ class ProductReviewController extends AdminBaseController
                 'messages.reviews.fetch_success',
                 ProductReviewResource::collection($reviews)->response()->getData(true)
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -69,6 +72,8 @@ class ProductReviewController extends AdminBaseController
                 'messages.reviews.fetch_success',
                 new ProductReviewResource($review)
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -96,6 +101,8 @@ class ProductReviewController extends AdminBaseController
                 'messages.reviews.updated',
                 new ProductReviewResource($updated)
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -123,6 +130,8 @@ class ProductReviewController extends AdminBaseController
                 'messages.reviews.reply_saved',
                 new ProductReviewResource($updated)
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -148,6 +157,8 @@ class ProductReviewController extends AdminBaseController
                 'messages.reviews.reply_deleted',
                 new ProductReviewResource($updated)
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -175,6 +186,8 @@ class ProductReviewController extends AdminBaseController
                 'messages.reviews.deleted',
                 ['deleted' => true]
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -215,6 +228,8 @@ class ProductReviewController extends AdminBaseController
                 'messages.reviews.bulk_updated',
                 ['updated_count' => $count]
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',

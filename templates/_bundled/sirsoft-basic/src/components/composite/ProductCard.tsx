@@ -27,12 +27,15 @@ import type { EditorAttrs } from '../../types';
  * 통화를 바꿔도 카드가 리렌더되지 않았다(상품 리스트/검색/캐러셀 KRW 고정 결함).
  * → 전체 객체에서 `.preferredCurrency` 키로 접근 + state.subscribe 로 리렌더한다.
  *
- * @returns 현재 선호 통화 코드(미설정 시 'KRW')
+ * 표시 통화 미설정 시에는 쇼핑몰 기본 통화로 폴백한다 — 특정 통화를 못 박으면
+ * 그 통화를 쓰지 않는 상점에서 multi_currency 조회가 늘 빗나가 기준통화 폴백이 된다.
+ *
+ * @returns 현재 선호 통화 코드 (없으면 기본 통화, 그것도 없으면 빈 문자열)
  */
 const usePreferredCurrency = (): string => {
   const read = (): string => {
     const state = (window as any).G7Core?.state?.get?.();
-    return (state && state.preferredCurrency) || 'KRW';
+    return (state && (state.preferredCurrency || state.defaultCurrency)) || '';
   };
   const [currency, setCurrency] = useState<string>(read);
 
@@ -42,7 +45,7 @@ const usePreferredCurrency = (): string => {
     setCurrency(read());
     if (typeof subscribe !== 'function') return;
     const unsubscribe = subscribe((state: Record<string, any>) => {
-      setCurrency((state && state.preferredCurrency) || 'KRW');
+      setCurrency((state && (state.preferredCurrency || state.defaultCurrency)) || '');
     });
     return typeof unsubscribe === 'function' ? unsubscribe : undefined;
   }, []);

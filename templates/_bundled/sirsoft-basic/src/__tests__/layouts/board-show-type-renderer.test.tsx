@@ -4,8 +4,8 @@
  *
  * 검증 항목:
  * 1. basic 유형: 게시글 본문(제목, 작성자, 내용) 렌더링
- * 2. gallery 유형: basic과 동일한 show.json 사용 (현재 동일 구현)
- * 3. card 유형: basic과 동일한 show.json 사용 (현재 동일 구현)
+ * 2. gallery 유형: basic과 동일한 show.g7.html 사용 (현재 동일 구현)
+ * 3. card 유형: basic과 동일한 show.g7.html 사용 (현재 동일 구현)
  * 4. 알 수 없는 유형 fallback: basic으로 렌더링
  * 5. 이전글/다음글 네비게이션 버튼 조건부 렌더링
  * 6. 답글 섹션 iteration.source {{ }} 버그 수정 검증 (replies 목록 렌더링)
@@ -505,9 +505,9 @@ describe('board/show _type_renderer 유형별 분기 렌더링', () => {
 
   describe('[6] 답글 iteration.source {{ }} 버그 수정 검증', () => {
     /**
-     * 증상: 원본 show.json line 1252에서 iteration.source가 {{ }} 없이
+     * 증상: 원본 show.g7.html line 1252에서 iteration.source가 {{ }} 없이
      *       "post?.data?.replies ?? []" 로 작성되어 answers 목록이 렌더링되지 않는 버그.
-     * 해결: types/basic/show.json에서 "{{post?.data?.replies ?? []}}" 로 수정.
+     * 해결: types/basic/show.g7.html에서 "{{post?.data?.replies ?? []}}" 로 수정.
      */
     it('replies가 있을 때 iteration으로 각 답글 제목 링크가 렌더링된다', async () => {
       const testUtils = createLayoutTest(repliesIterationLayout as any, { componentRegistry: registry, initialData: repliesIterationInitialData });

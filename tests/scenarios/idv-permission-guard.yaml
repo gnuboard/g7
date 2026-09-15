@@ -14,19 +14,59 @@ description: |
     - 모달 취소 버튼 sequence 가 [apiCall(cancel), resolveIdentityChallenge, closeModal] 호출
     - cancel apiCall 은 challenge_id 가용성 if 가드 + onError suppress
 
+# axis 의미:
+#   가드 판정(통과/403)을 가르는 축은 셋뿐이다 — 누가(actor_role), 어느 엔드포인트(endpoint),
+#   그 challenge 가 누구 것인가(challenge_owner). challenge_status 는 가드를 통과한 *뒤*의
+#   결과(404/422)를 가르고, modal_trigger_state 는 프론트 모달 시퀀스의 축이라
+#   가드 판정과 곱해지지 않는다 → sub_flows 로 분리한다.
 axes:
   actor_role: [guest, user_with_perm, user_without_perm, admin]
   endpoint: [request, verify, cancel]
   challenge_owner: [self, other, none]
-  challenge_status: [sent, verified, expired, cancelled, missing]
-  modal_trigger_state: [challenge_id_present, challenge_id_absent]
 
 exclusions:
   - { challenge_owner: none, endpoint: verify, reason: "verify 는 challenge 모델 바인딩 필요 — none 시 404 (가드 통과 후 모델 미해석)" }
   - { challenge_owner: none, endpoint: cancel, reason: "cancel 도 challenge 모델 바인딩 필요" }
-  - { actor_role: guest, challenge_owner: self, reason: "guest 는 user_id 미보유 — self 매칭 무의미" }
-  - { actor_role: guest, challenge_owner: other, reason: "guest 는 scope 검사 스킵으로 owner 무관" }
-  - { modal_trigger_state: challenge_id_absent, endpoint: cancel, reason: "모달 if 가드로 호출 자체 스킵 — endpoint 액션 미발생" }
+  - { actor_role: guest, challenge_owner: self, reason: "guest 는 user_id 미보유 — self 매칭이 성립하지 않는다 (guest 가 다루는 challenge 는 항상 owner=other 로 표현된다)" }
+  - { endpoint: request, challenge_owner: self, reason: "발급은 대상 challenge 가 아직 없다 — owner 축이 성립하지 않음" }
+  - { endpoint: request, challenge_owner: other, reason: "동일 — 발급 시점에는 소유자 판정 대상이 없다" }
+
+sub_flows:
+  - id: challenge_status_outcomes
+    description: |
+      가드를 통과한 뒤 challenge 상태(sent·verified·expired·cancelled·missing)가 가르는 결과.
+      가드 판정과 곱해지지 않는다 — 권한이 없으면 상태와 무관하게 403 이고,
+      권한이 있으면 상태가 404/422 를 가른다.
+    effects:
+      - missing_challenge_returns_404_after_guard_pass
+      - permission_middleware_resolves_challenge_via_route_model_binding
+  - id: role_permission_seeding
+    description: |
+      역할별 IDV 권한 시딩과 scope 메타. 요청 시점 판정이 아니라 그 판정이 읽는 데이터의 준비 단계다.
+    effects:
+      - role_permission_seeder_syncs_idv_permissions_with_owner_metadata
+      - role_permission_seeder_assigns_self_scope_to_user_role_idv_perms
+      - role_permission_seeder_grants_idv_perms_to_guest_without_scope
+      - guest_role_idv_permission_check_via_guest_role_cache
+  - id: modal_cancel_sequence
+    description: |
+      프론트 모달 취소 버튼의 액션 시퀀스. 축: modal_trigger_state(challenge_id_present·challenge_id_absent).
+      서버 가드와 독립이며, challenge_id 부재 시에는 호출 자체가 스킵되어 엔드포인트에 도달하지 않는다.
+    effects:
+      - modal_cancel_button_calls_server_cancel_api_first
+      - modal_cancel_apiCall_uses_global_identityChallenge_challenge_id
+      - modal_cancel_apiCall_skipped_when_challenge_id_absent
+      - modal_cancel_apiCall_failure_does_not_block_modal_close
+      - modal_cancel_sequence_order_is_apiCall_resolve_close
+      - admin_basic_modal_cancel_flow_matches_basic_template
+  - id: route_contract
+    description: |
+      라우트 계약 — 미들웨어 구성과 확장 지점. 특정 행위자·엔드포인트 조합의 산물이 아니다.
+    effects:
+      - cancel_endpoint_via_permission_middleware_does_not_require_legacy_auth_sanctum
+      - request_challenge_route_validation_rules_extensible_via_hook_filter
+      - verify_challenge_route_validation_rules_extensible_via_hook_filter
+      - cancel_form_request_authorize_returns_true_letting_route_middleware_decide
 
 effects:
   - guest_can_request_challenge
@@ -61,11 +101,14 @@ effects:
 
 test_files:
   - tests/Feature/Api/Identity/PermissionGuardTest.php
+  - tests/Feature/Api/Identity/IdentityPermissionContractTest.php
   - tests/Feature/Api/Identity/IdentityChallengeFlowTest.php
   - tests/Feature/Api/Identity/IdentityChallengeShowTest.php
-  - tests/Feature/Api/Identity/IdentityCallbackTest.php
-  - tests/Feature/Api/Auth/RegisterPolicyDrivenSignupTest.php
-  - tests/Feature/Api/Auth/ForgotPasswordViaIdentityTest.php
-  - tests/Feature/Identity/MailIdentityProviderDispatchTest.php
+
+# 본 매니페스트의 test_files 에서 제외한 인접 테스트와 그 사유:
+#   - IdentityCallbackTest / RegisterPolicyDrivenSignupTest / ForgotPasswordViaIdentityTest /
+#     MailIdentityProviderDispatchTest 는 IDV "흐름"(콜백·가입 정책·비밀번호 재설정·메일 발송)을
+#     검증하며, 본 매니페스트가 선언한 권한 가드 effect 를 단언하지 않는다.
+#     인접하다는 이유로 test_files 에 두면 "이 파일이 가드를 떠받친다" 는 거짓 근거가 된다.
   - templates/_bundled/sirsoft-basic/__tests__/layouts/identity-challenge-modal.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-challenge-modal.test.tsx

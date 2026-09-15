@@ -1,0 +1,52 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   PostService/PostRepository cascade + IndexBoardRequest 게이트를 PHPUnit Feature +
+#   Playwright E2E(admin/board-reply-delete-policy.spec.ts)가 커버하며 green.
+feature: 게시판 답글 삭제 정책 (block/cascade) + 게시판 삭제 벌크 훅
+
+description: |
+  답글이 달린 글의 삭제 방식을 게시판별 설정(reply_delete_policy)으로 선택한다.
+  cascade(기본): 원글 삭제 시 자손 답글 트리 전체가 trigger_type='cascade' 로 소프트
+  삭제되고(그 답글들의 댓글·첨부 포함), 복원 시 cascade 분만 top-down 선택 복원된다.
+  사용자가 직접 지운 답글 서브트리는 복원되지 않는다. block: 살아있는 직계 답글이
+  있으면 422 로 차단(before_delete 훅 발화 전 — 부수효과 0). 훅 경유 삭제
+  (cascade_replies 옵션)는 정책과 무관하게 cascade 고정. 게시판 삭제 시 삭제될 글
+  ID 를 board.posts.before_force_delete 벌크 훅으로 연동 확장에 통지한다.
+  관리자 게시판 목록의 정렬 컬럼·페이지 크기는 닫힌 집합으로만 허용된다.
+
+axes:
+  policy:
+    - block
+    - cascade
+  delete_trigger:
+    - admin
+    - user
+    - ecommerce_hook   # cascade_replies 옵션 — 정책 우회
+    - report           # 신고 조치 삭제 — 정책 적용 유지
+  tree_state:
+    - single_reply
+    - deep_tree            # 깊이 3 이상 중첩
+    - user_predeleted_mid  # 중간 자손이 사용자 직접 삭제됨
+    - orphan_under_trashed # 끊긴 체인 밑 고아 답글
+
+effects:
+  - block_returns_422_with_message      # has_replies 메시지 + DB 무변화
+  - block_allows_when_replies_trashed   # 답글 전부 trashed 면 삭제 허용
+  - cascade_marks_descendants_deleted   # status='deleted' + trigger_type='cascade' + deleted_at
+  - cascade_children_comments_attachments # 자손 답글의 댓글·첨부도 cascade 소프트 삭제
+  - restore_top_down_cascade_only       # 복원은 cascade 마킹분만 top-down
+  - user_predeleted_subtree_stays       # 사용자 선삭제 서브트리는 복원 제외
+  - hook_delete_bypasses_block          # cascade_replies 옵션이 block 정책 우회
+  - board_delete_fires_bulk_hook        # before_force_delete 훅 chunk 발화 (withTrashed 전체)
+  - board_index_sort_whitelisted        # sort_by 화이트리스트 밖 422, per_page 클램프
+  - settings_and_form_expose_policy     # 환경설정/게시판 폼에 정책 Select 노출·저장 왕복
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReplyDeletePolicyTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardIndexSortTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardDeletionTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/FormRequestValidationTest.php
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-reply-delete-policy.spec.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-settings.test.tsx
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-form.test.tsx

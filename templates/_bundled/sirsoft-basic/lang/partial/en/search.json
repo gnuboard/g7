@@ -39,6 +39,10 @@
     "pages_in_all": "No pages found",
     "suggestion": "Try a different search term"
   },
+  "failed": {
+    "title": "An error occurred while searching",
+    "suggestion": "Please try again in a moment"
+  },
   "page_published_at": "Published: {{date}}",
   "view_more": "View more",
   "view_all": "View all",

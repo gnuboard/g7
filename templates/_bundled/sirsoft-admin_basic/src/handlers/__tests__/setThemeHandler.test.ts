@@ -198,6 +198,25 @@ describe('setThemeHandler', () => {
       expect(setAttributeSpy).not.toHaveBeenCalled();
     });
 
+    // 계약 명문화: 이 핸들러가 읽는 것은 action.target 뿐이다.
+    // 레이아웃이 params.theme 로 넘기면(과거 admin_login/forgot/reset 3화면이 그랬다)
+    // 엔진에 상호 폴백이 없어 조용히 no-op 이 된다. 되살아나면 여기가 red 가 된다.
+    it('params.theme 로만 넘기면 경고 후 아무 것도 하지 않아야 함 (target 단일 계약)', async () => {
+      const action = {
+        type: 'click',
+        handler: 'setTheme',
+        params: { theme: 'dark' },
+      };
+
+      await setThemeHandler(action);
+
+      expect(console.warn).toHaveBeenCalledWith('[Handler:SetTheme]', 'Invalid theme:', undefined);
+      expect(setItemSpy).not.toHaveBeenCalled();
+      expect(setAttributeSpy).not.toHaveBeenCalled();
+      expect(classListAddSpy).not.toHaveBeenCalled();
+      expect(classListRemoveSpy).not.toHaveBeenCalled();
+    });
+
     it('localStorage 저장 실패 시 오류를 출력하고 테마를 적용하지 않아야 함', async () => {
       // localStorage.setItem이 실패하도록 모의
       const setItemError = new Error('Storage quota exceeded');

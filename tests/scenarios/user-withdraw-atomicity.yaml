@@ -1,0 +1,80 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 시나리오와 동일 한계). 축 조합은 PHPUnit Feature 테스트
+#   (WithdrawAtomicityTest · AdminWithdrawPathUnificationTest · MultiStepWriteAtomicityTest)와
+#   Vitest 레이아웃 테스트 · Playwright E2E 가 커버하고 green 이다.
+
+feature: 회원 탈퇴 원자성 및 탈퇴 경로 통일 (공개이슈 #112)
+
+description: |
+  회원 탈퇴가 전부 성공하거나 전부 취소되게 하고, 탈퇴에 이르는 모든 경로가
+  같은 처리를 받도록 통일한다.
+
+  배경:
+    - `withdrawUser()` 에 트랜잭션이 없어, 마지막 단계(익명화 저장)가 실패하면
+      약관 동의 이력·토큰·아바타는 이미 지워진 채 계정만 활성으로 남았다.
+    - 익명화 접미사가 날짜(`Ymd`)뿐이라, 같은 이메일로 재가입한 회원이 같은 날
+      다시 탈퇴하면 email unique 위반으로 500 이 났다.
+    - 접미사를 붙이면 컬럼 길이를 넘길 수 있어(이름·이메일·닉네임) 저장이 실패했다.
+    - 관리자의 상태 변경(단건·일괄)은 status 컬럼만 바꿔 익명화와 탈퇴 훅을 건너뛰었다.
+    - 관리자/수퍼관리자 탈퇴 차단이 500 으로 나갔다.
+
+  적용 지점:
+    - 모델: 멱등 가드 + 사용자 ID 를 포함한 유일 접미사 + 컬럼 길이 클램프
+      (길이 상한은 스키마 기본 길이에서 파생 — 리터럴 금지).
+    - 서비스: DB 변경은 트랜잭션, 파일 삭제와 after 훅은 커밋 후.
+    - 관리자 경로: `updateUser` / `bulkUpdateStatus` 의 탈퇴 전환은 `withdrawUser()` 위임.
+    - 화면: 관리자 회원 수정 폼의 '탈퇴' 저장은 확인 창을 거친다.
+
+axes:
+  entry_point:
+    - self_withdraw_api
+    - admin_update_status
+    - admin_bulk_status
+    - admin_form_ui
+  target_account: [normal, admin, super_admin, already_withdrawn]
+  email_state: [unique, reused_same_day]
+  field_length: [within_limit, exceeds_limit]
+  failure_injection: [none, last_write_fails]
+  confirm_action: [not_applicable, cancel, submit]
+
+exclusions:
+  - { entry_point: self_withdraw_api, confirm_action: cancel, reason: "본인 탈퇴 모달은 이번 변경 대상이 아님" }
+  - { entry_point: admin_bulk_status, confirm_action: cancel, reason: "일괄 탈퇴 확인 모달은 기존 구현 유지" }
+  - { target_account: already_withdrawn, failure_injection: last_write_fails, reason: "멱등 가드로 쓰기 자체가 발생하지 않음" }
+
+effects:
+  - withdraw_is_atomic_all_or_nothing
+  - consents_and_tokens_restored_on_failure
+  - avatar_file_kept_on_failure
+  - avatar_file_removed_only_after_commit
+  - same_day_rewithdraw_with_same_email_succeeds
+  - suffix_includes_user_id_for_structural_uniqueness
+  - long_values_truncated_within_column_limits
+  - withdraw_is_idempotent
+  - admin_status_change_runs_full_withdrawal
+  - admin_status_change_fires_withdraw_hooks
+  - admin_status_change_is_atomic_with_profile_update
+  - bulk_status_withdraw_delegates_per_user
+  - bulk_status_reports_failed_count
+  - admin_account_withdraw_blocked_consistently
+  - blocked_withdraw_returns_422_not_500
+  - failed_withdraw_leaves_no_activity_log
+  - admin_form_shows_confirm_dialog_before_destructive_save
+  - admin_form_cancel_leaves_user_untouched
+  - admin_form_non_withdraw_status_saves_without_dialog
+  - create_mode_hides_withdrawn_option
+
+test_files:
+  - tests/Feature/Api/Auth/WithdrawAtomicityTest.php
+  - tests/Feature/Services/AdminWithdrawPathUnificationTest.php
+  - tests/Feature/Services/MultiStepWriteAtomicityTest.php
+  - tests/Feature/Api/Auth/ProfileControllerTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-form-withdraw-confirm.test.tsx
+  - tests/Playwright/specs/admin/user-form-withdraw-confirm.spec.ts
+
+rules_layer_coverage:
+  - rule: service-direct-data-access
+    coverage: 탈퇴/삭제 경로는 Repository 인터페이스 경유 유지
+  - rule: i18n-throw-hardcoded-korean
+    coverage: 차단 문구는 lang/{ko,en}/user.php 의 withdraw_admin_forbidden 키

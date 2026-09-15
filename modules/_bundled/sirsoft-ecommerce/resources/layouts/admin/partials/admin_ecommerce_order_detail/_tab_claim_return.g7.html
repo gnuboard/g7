@@ -1,0 +1,226 @@
+<!-- 클레임 이력 중 반품 목록. 환불 조각(`_tab_claim_refund`)과 같은 형태이고 다루는 대상만 다르다.
+  **아직 시안이다** — 데이터 바인딩·액션 0, 보이는 값은 마크업에 박힌 예시다. -->
+<partial description="Order Detail - Claim History - Return Tab Content">
+  <div data-ref="tab_content_return">
+    <div data-ref="return_toolbar" class="md:flex-row md:items-center md:justify-between mb-4">
+      <button type="button" class="btn btn-outline w-full md:w-auto">
+        <span>$t:sirsoft-ecommerce.admin.order.detail.claim_history.view_return_management</span>
+        <icon name="external-link" class="text-base ml-2"/>
+      </button>
+      <div class="flex-center gap-3">
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.claim_history.sort.label:</span>
+        <select class="select text-sm">
+          <option value="request_date_desc">$t:sirsoft-ecommerce.admin.order.detail.claim_history.sort.request_date_desc</option>
+        </select>
+        <span class="text-gray-300 dark:text-gray-600">|</span>
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.claim_history.per_page:</span>
+        <select class="select text-sm">
+          <option value="10">$t:sirsoft-ecommerce.admin.order.detail.claim_history.items_count|count=10</option>
+        </select>
+      </div>
+    </div>
+    <div data-ref="return_table_container" class="table-container overflow-x-auto">
+      <responsive on="portable" class="row-stack">
+        <div data-ref="return_mobile_card_1" class="excel-card relative">
+          <span class="absolute top-4 right-4 badge badge-blue">$t:sirsoft-ecommerce.admin.order.detail.claim_history.status.return_pickup_in_progress</span>
+          <div class="mb-4 pr-20">
+            <a href="#" class="text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline">RTN-2025-00003</a>
+            <span class="block text-tertiary">ORD-2025-001240</span>
+            <span class="block form-hint">2025-01-24 09:30:15</span>
+          </div>
+          <div class="border-t border-gray-100 dark:border-gray-700 pt-4 mb-4">
+            <div class="flex gap-3">
+              <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0"/>
+              <div class="flex-1">
+                <div class="font-bold text-sm text-gray-900 dark:text-white">블루투스 스피커</div>
+                <div class="text-tertiary">SKU-88990</div>
+                <div class="text-tertiary">$t:sirsoft-ecommerce.admin.order.detail.claim_history.product.color: 레드</div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <span class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.return_request:</span>
+              <span class="font-bold text-gray-900 dark:text-white">89,000원</span>
+            </div>
+            <div>
+              <span class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity:</span>
+              <span class="font-bold text-gray-900 dark:text-white">1개</span>
+            </div>
+            <div>
+              <span class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.expected_refund:</span>
+              <span class="font-bold text-blue-600 dark:text-blue-400">86,500원</span>
+            </div>
+            <div>
+              <span class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_refund:</span>
+              <span class="font-bold text-green-600 dark:text-green-400">-</span>
+            </div>
+          </div>
+          <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-4">
+            <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <span>$t:sirsoft-ecommerce.admin.order.detail.claim_history.delivery.carrier:</span>
+              <span class="font-bold text-gray-900 dark:text-white ml-1">CJ대한통운</span>
+            </div>
+            <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <span>$t:sirsoft-ecommerce.admin.order.detail.claim_history.delivery.tracking_number:</span>
+              <span class="font-bold text-gray-900 dark:text-white ml-1">123456789012</span>
+            </div>
+            <div class="text-xs text-gray-600 dark:text-gray-400">
+              <span>$t:sirsoft-ecommerce.admin.order.detail.claim_history.delivery.pickup_fee:</span>
+              <span class="font-bold text-gray-900 dark:text-white ml-1">2,500원</span>
+            </div>
+          </div>
+          <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+            <div class="flex-center gap-2 mb-2">
+              <span class="bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reason.customer_fault</span>
+              <span class="font-bold text-sm text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reason.simple_change</span>
+            </div>
+            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-label">생각보다 음질이 기대에 미치지 않아 반품 신청합니다.</div>
+          </div>
+        </div>
+        <div data-ref="return_mobile_card_2" class="excel-card relative">
+          <span class="absolute top-4 right-4 badge badge-green">$t:sirsoft-ecommerce.admin.order.detail.claim_history.status.return_completed</span>
+          <div class="mb-4 pr-20">
+            <a href="#" class="text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline">RTN-2025-00002</a>
+            <span class="block text-tertiary">ORD-2025-001235</span>
+            <span class="block form-hint">2025-01-20 14:45:30</span>
+          </div>
+          <div class="border-t border-gray-100 dark:border-gray-700 pt-4 mb-4">
+            <div class="flex gap-3">
+              <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0"/>
+              <div class="flex-1">
+                <div class="font-bold text-sm text-gray-900 dark:text-white">스마트 워치 밴드</div>
+                <div class="text-tertiary">SKU-55667</div>
+                <div class="text-tertiary">$t:sirsoft-ecommerce.admin.order.detail.claim_history.product.size: M</div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <span class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.return_request:</span>
+              <span class="font-bold text-gray-900 dark:text-white">29,000원</span>
+            </div>
+            <div>
+              <span class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity:</span>
+              <span class="font-bold text-gray-900 dark:text-white">2개</span>
+            </div>
+            <div>
+              <span class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.expected_refund:</span>
+              <span class="font-bold text-blue-600 dark:text-blue-400">58,000원</span>
+            </div>
+            <div>
+              <span class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_refund:</span>
+              <span class="font-bold text-green-600 dark:text-green-400">58,000원</span>
+            </div>
+          </div>
+          <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+            <div class="flex-center gap-2 mb-2">
+              <span class="bg-gray-900 text-white px-2 py-0.5 rounded text-xs font-bold dark:bg-gray-700">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reason.seller_fault</span>
+              <span class="font-bold text-sm text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reason.defective_product</span>
+            </div>
+            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-label">밴드 연결 부위에 불량이 있어서 사용이 어렵습니다.</div>
+          </div>
+        </div>
+      </responsive>
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="w-[15%]">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.request_date</th>
+            <th class="w-[15%]">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.return_number</th>
+            <th class="w-[25%]">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.product_info</th>
+            <th class="w-[12%]">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.amount_info</th>
+            <th class="w-[5%] text-center">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity</th>
+            <th class="w-[10%]">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.return_status</th>
+            <th class="w-[28%]">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.return_reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-heading">2025-01-24 09:30:15</td>
+            <td>
+              <a href="#" class="text-blue-600 dark:text-blue-400 font-medium hover:underline">RTN-2025-00003</a>
+              <span class="block text-tertiary">ORD-2025-001240</span>
+            </td>
+            <td>
+              <div class="flex-start gap-3">
+                <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0"/>
+                <div>
+                  <div class="text-primary font-bold text-sm">블루투스 스피커</div>
+                  <div class="text-tertiary">SKU-88990</div>
+                  <div class="text-tertiary">색상: 레드</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-right">
+              <div class="text-primary font-bold">89,000원</div>
+              <div class="text-tertiary">예상: 86,500원</div>
+              <div class="text-tertiary">실환불: -</div>
+            </td>
+            <td class="text-center">
+              <div class="text-primary font-bold">1</div>
+              <div class="text-tertiary">(주문: 1)</div>
+            </td>
+            <td>
+              <span class="badge badge-blue">반품회수중</span>
+              <div class="mt-2 bg-blue-50 dark:bg-blue-900/20 rounded p-2 text-xs">
+                <div class="text-secondary">CJ대한통운</div>
+                <div class="text-primary font-medium">123456789012</div>
+                <div class="text-gray-500 dark:text-gray-400">회수비: 2,500원</div>
+              </div>
+            </td>
+            <td>
+              <div class="flex-center gap-2 mb-2">
+                <span class="bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">고객귀책</span>
+                <span class="text-primary font-bold text-sm">단순변심</span>
+              </div>
+              <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-label">생각보다 음질이 기대에 미치지 않아 반품 신청합니다.</div>
+            </td>
+          </tr>
+          <tr>
+            <td class="text-heading">2025-01-20 14:45:30</td>
+            <td>
+              <a href="#" class="text-blue-600 dark:text-blue-400 font-medium hover:underline">RTN-2025-00002</a>
+              <span class="block text-tertiary">ORD-2025-001235</span>
+            </td>
+            <td>
+              <div class="flex-start gap-3">
+                <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0"/>
+                <div>
+                  <div class="text-primary font-bold text-sm">스마트 워치 밴드</div>
+                  <div class="text-tertiary">SKU-55667</div>
+                  <div class="text-tertiary">사이즈: M</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-right">
+              <div class="text-primary font-bold">29,000원</div>
+              <div class="text-tertiary">예상: 58,000원</div>
+              <div class="text-tertiary">실환불: 58,000원</div>
+            </td>
+            <td class="text-center">
+              <div class="text-primary font-bold">2</div>
+              <div class="text-tertiary">(주문: 2)</div>
+            </td>
+            <td>
+              <span class="badge badge-green">반품완료</span>
+            </td>
+            <td>
+              <div class="flex-center gap-2 mb-2">
+                <span class="bg-gray-900 text-white px-2 py-0.5 rounded text-xs font-bold dark:bg-gray-700">판매자귀책</span>
+                <span class="text-primary font-bold text-sm">상품불량</span>
+              </div>
+              <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-label">밴드 연결 부위에 불량이 있어서 사용이 어렵습니다.</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div data-ref="return_pagination" class="flex-center justify-center gap-2 mt-6">
+      <button type="button" class="flex-center w-8 h-8 justify-center text-gray-400 dark:text-gray-500">«</button>
+      <button type="button" class="flex-center w-8 h-8 justify-center text-gray-400 dark:text-gray-500">‹</button>
+      <div class="flex-center text-primary w-8 h-8 justify-center border border-gray-200 dark:border-gray-700 rounded font-bold bg-white dark:bg-gray-800">1</div>
+      <button type="button" class="flex-center w-8 h-8 justify-center text-gray-400 dark:text-gray-500">›</button>
+      <button type="button" class="flex-center w-8 h-8 justify-center text-gray-400 dark:text-gray-500">»</button>
+    </div>
+  </div>
+</partial>

@@ -19,11 +19,11 @@
  *    폴백)만 골라 보면 통과해 버린다. **ko 값과 다른 국가가 하나라도 있는지** 먼저 확인한
  *    뒤, 그 국가에서 화면값 === en 값을 단언한다.
  *
- * @scenario shipping_country_i18n locale=en|ja × surface=settings_list|add_form
- * @effects country_names_localized_by_active_locale,
- *          country_names_not_pinned_to_ko,
- *          add_form_inputs_follow_installed_locales,
- *          add_button_enabled_by_any_locale_name
+ * 축 요약(마커 아님 — 평문): locale=en|ja, surface=settings_list|add_form. 요약을 시나리오 축 마커
+ * 로 적으면 파서가 쉼표로만 축을 분리하므로 `×` 표기는 첫 축만, 그것도 나머지 전부를 값으로
+ * 삼킨 형태로 집계된다. 실제 커버는 각 test 의 라인 마커가 담당한다.
+ *
+ * 효과 요약(마커 아님 — 평문): country_names_localized_by_active_locale, country_names_not_pinned_to_ko, add_form_inputs_follow_installed_locales, add_button_enabled_by_any_locale_name.
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 import type { Page } from '@playwright/test';
@@ -108,7 +108,7 @@ async function gotoShippingSettings(page: Page, token: string): Promise<void> {
 }
 
 test.describe('@sirsoft-ecommerce 배송국가 다국어', () => {
-  // @scenario shipping_country_i18n:settings_list
+  // @scenario shipping_country_i18n=settings_list
   // @effects country_names_localized_by_active_locale, country_names_not_pinned_to_ko
   test('국가 목록이 활성 로케일 값으로 렌더된다 (ko 고정 회귀 차단)', async ({ page, settingsToken }) => {
     await gotoShippingSettings(page, settingsToken);
@@ -131,7 +131,7 @@ test.describe('@sirsoft-ecommerce 배송국가 다국어', () => {
     }
   });
 
-  // @scenario shipping_country_i18n:header_derivation
+  // @scenario shipping_country_i18n=header_derivation
   // @effects country_names_localized_by_active_locale, country_names_not_pinned_to_ko
   test('헤더 파생 목록도 활성 로케일 값을 쓴다 (ActionDispatcher 경로 $localized)', async ({
     page,
@@ -152,7 +152,7 @@ test.describe('@sirsoft-ecommerce 배송국가 다국어', () => {
     expect(koOnly, `헤더 파생값: ${JSON.stringify(derived)}`).toEqual([]);
   });
 
-  // @scenario shipping_country_i18n:add_form
+  // @scenario shipping_country_i18n=add_form
   // @effects add_form_inputs_follow_installed_locales, add_button_enabled_by_any_locale_name
   test('국가 추가 폼의 이름 입력칸이 설치된 언어 수만큼 생기고, 어느 한 언어만 채워도 추가된다', async ({
     page,
@@ -165,7 +165,7 @@ test.describe('@sirsoft-ecommerce 배송국가 다국어', () => {
     expect(locales.length, '설치된 언어를 못 읽었다').toBeGreaterThan(0);
 
     // "국가 추가" 버튼은 해외배송이 켜져 있을 때만 렌더된다
-    // (_tab_shipping.json: if "...international_shipping_enabled"). 시드 상태에서 꺼져
+    // (_tab_shipping.g7.html: if "...international_shipping_enabled"). 시드 상태에서 꺼져
     // 있을 수 있으므로, 다국어 입력칸 검증이 목적인 이 테스트에서는 해외배송을
     // 로컬 상태로 켠 뒤 진행한다(토글 UI 자체 검증은 별도 spec 소관).
     await page.evaluate(() => {

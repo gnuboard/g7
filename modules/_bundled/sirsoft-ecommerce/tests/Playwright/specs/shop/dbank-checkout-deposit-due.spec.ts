@@ -28,7 +28,8 @@
  * 부작용: ②③ 은 실제 주문을 생성한다(결제 대기 상태). 무통장입금은 외부 PG 를 거치지 않으므로
  * 샌드박스 의존이 없고, 생성된 주문은 설정된 기한이 지나면 미입금 자동취소 대상이 된다.
  *
- * @see .claude/docs/frontend/troubleshooting-backend.md 사례 21
+ * 회귀 배경: 입금기한 일수 설정이 문자열로 영속되면 기한 산정이 Carbon 의 strict 타입 경계에서
+ * TypeError 를 던져 해당 주문 요청이 전부 500 이 되던 결함이 있었다.
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 import type { Page } from '@playwright/test';

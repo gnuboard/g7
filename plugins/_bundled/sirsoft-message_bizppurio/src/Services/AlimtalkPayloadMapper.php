@@ -233,6 +233,21 @@ class AlimtalkPayloadMapper
     }
 
     /**
+     * 임의 텍스트의 카카오 변수(#{key})를 알림 data 로 치환합니다 (공개 진입점).
+     *
+     * 대체 SMS·SMS 단독 본문(bizppurio_templates.sms_body)이 알림톡 본문과 동일한
+     * `#{var}` 표기를 쓰므로(#597 §3.1), 드라이버가 본문 치환에 재사용한다.
+     *
+     * @param  string  $text  치환 대상(#{key} 포함)
+     * @param  array<string, mixed>  $data  변수 치환 소스
+     * @return string 치환된 문자열
+     */
+    public function substituteText(string $text, array $data): string
+    {
+        return $this->substitute($text, $data);
+    }
+
+    /**
      * 카카오 변수(#{key})를 알림 data 값으로 치환합니다.
      *
      * 카카오 템플릿 변수와 코어 알림 data 는 변수명 규칙이 동일하다(표기만 #{} vs {}).

@@ -1,128 +1,129 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Board Form - Notification Tab Content"
-  },
-  "id": "section_notification_card",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
-    {
-      "id": "section_notification",
-      "type": "basic",
-      "name": "H3",
-      "props": {
-        "className": "card-title"
-      },
-      "text": "$t:sirsoft-board.admin.form.tabs.notification"
+    "comment": "게시판 폼 「알림」 탭 — 이 게시판에서 무슨 일이 났을 때 누구에게 알릴지 두 갈래만 정한다(새 글이 올라오면 관리자에게 · 답글·댓글이 달리면 글쓴이에게). 어느 채널로 보낼지는 여기가 아니라 모듈 설정의 알림 정의가 정한다",
+    "meta": {
+        "is_partial": true,
+        "description": "Board Form - Notification Tab Content"
     },
-    {
-      "id": "section_notification_fields",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "row-stack"
-      },
-      "children": [
+    "id": "section_notification_card",
+    "type": "basic",
+    "name": "Div",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "id": "notify_author_toggle",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start justify-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-heading"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.notify_author.label"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.notify_author.description"
-                }
-              ]
+            "id": "section_notification",
+            "type": "basic",
+            "name": "H3",
+            "props": {
+                "className": "card-title"
             },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "notify_author",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-shrink-0 ml-4"
-              }
-            }
-          ]
+            "text": "$t:sirsoft-board.admin.form.tabs.notification"
         },
         {
-          "id": "notify_admin_on_post_toggle",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start justify-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
+            "id": "section_notification_fields",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-heading"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.label"
+                    "id": "notify_author_toggle",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.notify_author.label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.notify_author.description"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "notify_author",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.description"
+                    "id": "notify_admin_on_post_toggle",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.description"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "notify_admin_on_post",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "notify_admin_on_post",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-shrink-0 ml-4"
-              }
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

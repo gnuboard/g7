@@ -56,7 +56,13 @@ interface ToastItem {
 
 #### 레이아웃 JSON 설정 예시
 
-`_admin_base.json`에서 Toast 컴포넌트 바인딩:
+`_admin_base.g7.html`에서 Toast 컴포넌트 바인딩:
+
+```html
+<toast data-ref="global_toast" toasts="{{_global.toasts}}" position="top-right" :duration="5000"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -131,6 +137,16 @@ G7Core.toast.show('메시지', { type: 'info', icon: 'bell', duration: 3000 });
 
 #### 사용 예시
 
+```html
+<button data-ref="activate_button" children="활성화">
+  <on type="click">
+    <open-modal modalId="activate_confirm_modal"/>
+  </on>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "activate_button",
@@ -154,6 +170,14 @@ G7Core.toast.show('메시지', { type: 'info', icon: 'bell', duration: 3000 });
 #### 모달 정의와의 연동
 
 레이아웃 JSON의 `modals` 배열에 정의된 모달은 `activeModal` 값에 따라 자동으로 표시됩니다:
+
+```html
+<modal>
+  <modal data-ref="activate_confirm_modal" title="확인" width="400px"/>
+</modal>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -316,10 +340,10 @@ console.log(window.__g7PendingLocalState);
 {
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "activeModal": "my_modal_id"
       }
     }
@@ -335,6 +359,16 @@ console.log(window.__g7PendingLocalState);
 
 ### 1. 모바일 사이드바 토글
 
+```html
+<button data-ref="mobile_menu_button" class="p-2 hover:bg-gray-100 rounded-lg">
+  <on type="click">
+    <set-state target="global" sidebarOpen="{{!_global.sidebarOpen}}"/>
+  </on>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "mobile_menu_button",
@@ -345,10 +379,10 @@ console.log(window.__g7PendingLocalState);
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": "{{!_global.sidebarOpen}}"
       }
     }
@@ -357,6 +391,16 @@ console.log(window.__g7PendingLocalState);
 ```
 
 ### 2. 오버레이 닫기
+
+```html
+<div data-ref="overlay" data-if="{{_global.sidebarOpen}}" class="fixed inset-0 bg-black bg-opacity-50 z-40">
+  <on type="click">
+    <set-state target="global" :sidebarOpen="false"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -369,10 +413,10 @@ console.log(window.__g7PendingLocalState);
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": false
       }
     }
@@ -381,6 +425,16 @@ console.log(window.__g7PendingLocalState);
 ```
 
 ### 3. 다크모드 토글
+
+```html
+<button data-ref="theme_toggle" class="p-2 rounded-lg">
+  <on type="click">
+    <set-state target="global" theme="{{_global.theme == 'dark' ? 'light' : 'dark'}}"/>
+  </on>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -392,10 +446,10 @@ console.log(window.__g7PendingLocalState);
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "theme": "{{_global.theme == 'dark' ? 'light' : 'dark'}}"
       }
     }
@@ -418,6 +472,16 @@ console.log(window.__g7PendingLocalState);
 
 전역 상태와 `if` 조건을 조합하여 동적 UI를 구현할 수 있습니다.
 
+```html
+<div data-ref="mobile_overlay" data-if="{{_global.sidebarOpen}}" class="fixed inset-0 bg-black bg-opacity-50 z-40">
+  <on type="click">
+    <set-state target="global" :sidebarOpen="false"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "mobile_overlay",
@@ -429,10 +493,10 @@ console.log(window.__g7PendingLocalState);
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": false
       }
     }

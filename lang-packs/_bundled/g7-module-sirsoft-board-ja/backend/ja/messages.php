@@ -34,6 +34,7 @@ return [
         'secret_password_required' => '非公開投稿のパスワードが必要です。',
         'secret_password_incorrect' => '非公開投稿のパスワードが一致しません。',
         'secret_post_content' => '非公開投稿です。内容を表示するにはパスワードを入力してください。',
+        'secret_post_title' => '非公開投稿',
         'deleted_post_title' => '削除された投稿',
         'deleted_post_content' => '削除された投稿です。',
         'blinded_post_content' => '管理者によってブロック処理された投稿です。',
@@ -103,6 +104,7 @@ return [
         'verify_password_failed' => 'パスワードの確認に失敗しました。',
         'post_blinded' => 'ブロック処理された投稿にはコメントを作成できません。',
         'post_deleted' => '削除された投稿にはコメントを作成できません。',
+        'post_secret' => '閲覧権限のない秘密投稿にはコメントを作成できません。',
     ],
     'comments' => [
         'comments_disabled' => 'この掲示板はコメント機能が無効化されています。',
@@ -181,6 +183,7 @@ return [
         'permission_denied' => '権限がありません。',
         'validation_failed' => '入力値が正しくありません。',
         'duplicate_report' => '既に通報された履歴があります。',
+        'operation_failed' => '処理中にエラーが発生しました。',
     ],
     'warnings' => [
         'category_removal_attempted' => '使用中のカテゴリーの削除が試みられました。',
@@ -288,6 +291,32 @@ return [
     ],
     'dashboard' => [
         'fetch_success' => 'ダッシュボードデータを閲覧しました。',
+    ],
+    'scrap' => [
+        'added' => '投稿をスクラップしました。',
+        'removed' => 'スクラップを解除しました。',
+        'toggle_failed' => 'スクラップ処理に失敗しました。',
+        'retrieved' => 'スクラップ一覧を閲覧しました。',
+        'retrieve_failed' => 'スクラップ一覧の閲覧に失敗しました。',
+        'delete_failed' => 'スクラップの削除に失敗しました。',
+        'not_found' => 'スクラップが見つかりません。',
+        'scrap_disabled' => 'この掲示板はスクラップ機能が無効化されています。',
+        'post_not_found' => '投稿が見つかりません。',
+        'bulk_removed' => ':count個のスクラップを解除しました。',
+        'admin' => [
+            'retrieved' => 'スクラップ一覧を閲覧しました。',
+            'retrieve_failed' => 'スクラップ一覧の閲覧に失敗しました。',
+            'removed' => 'スクラップを削除しました。',
+            'bulk_removed' => ':count個のスクラップを削除しました。',
+            'bulk_delete_failed' => 'スクラップ一括削除に失敗しました。',
+            'permission_denied' => 'スクラップ管理の権限がありません。',
+        ],
+    ],
+    'posts_bulk' => [
+        'delete_success' => ':count個の投稿を削除しました。(スキップ :skipped個)',
+        'blind_success' => ':count個の投稿をブラインド処理しました。(スキップ :skipped個)',
+        'restore_success' => ':count個の投稿を復元しました。(スキップ :skipped個)',
+        'action_failed' => '投稿一括処理に失敗しました。',
     ],
     'reaction' => [
         'list_success' => 'リアクションタイプのリストを閲覧しました。',

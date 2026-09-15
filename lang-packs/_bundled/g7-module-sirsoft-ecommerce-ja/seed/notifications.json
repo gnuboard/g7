@@ -110,5 +110,53 @@
         "body": "{name}様、\"{product_name}\"商品の問い合わせに回答が登録されました。"
       }
     }
+  },
+  "order_pending_deposit": {
+    "definition": {
+      "name": "銀行振込案内",
+      "description": "銀行振込注文受け付け時に、振込口座・金額を顧客に案内"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 振込案内 (注文番号: {order_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">振込案内</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご注文ありがとうございます。以下の口座にお振込みいただくと、注文が処理されます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>振込金額:</strong> {deposit_amount}</p><p style=\"margin:5px 0\"><strong>振込先銀行:</strong> {bank_name}</p><p style=\"margin:5px 0\"><strong>口座番号:</strong> {account_number}</p><p style=\"margin:5px 0\"><strong>口座名義人:</strong> {account_holder}</p><p style=\"margin:5px 0\"><strong>振込人名:</strong> {depositor_name}</p><p style=\"margin:5px 0\"><strong>振込期限:</strong> {deposit_due_at}</p></div><p style=\"color:#555;line-height:1.6\">振込期限までにお振込みいただかない場合、注文が自動キャンセルされる可能性があります。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "振込案内",
+        "body": "{name}様、注文番号 {order_number} の振込金額は {deposit_amount} です。({bank_name} {account_number})"
+      }
+    }
+  },
+  "order_delivered": {
+    "definition": {
+      "name": "配送完了",
+      "description": "配送完了時に顧客に発送"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] ご注文の商品が配送完了しました (注文番号: {order_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">配送完了のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご注文の商品の配送が完了いたしました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>配送業者:</strong> {carrier_name}</p><p style=\"margin:5px 0\"><strong>送り状番号:</strong> {tracking_number}</p></div><p style=\"color:#555;line-height:1.6\">商品をご確認いただき、注文詳細で購入確定を進めることができます。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "商品の配送が完了いたしました",
+        "body": "{name}様、注文番号 {order_number} の配送が完了いたしました。"
+      }
+    }
+  },
+  "mileage_expiring_soon": {
+    "definition": {
+      "name": "ポイント失効予定",
+      "description": "ポイント失効が近づいている会員に発送"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {amount}ポイントがまもなく失効します",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">ポイント失効予定のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、保有されているポイントの一部がまもなく失効いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>失効予定ポイント:</strong> {amount}ポイント</p><p style=\"margin:5px 0\"><strong>失効予定日:</strong> {expires_date}</p><p style=\"margin:5px 0\"><strong>現在の残高:</strong> {balance}ポイント</p></div><p style=\"color:#555;line-height:1.6\">失効前にポイントをご利用ください。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{mileage_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">ポイント履歴を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "ポイント失効予定のお知らせ",
+        "body": "{name}様、{amount}ポイントが {expires_date} に失効予定です。"
+      }
+    }
   }
 }

@@ -69,6 +69,16 @@ interface BoardRepositoryInterface
     public function delete(int $id): bool;
 
     /**
+     * 게시판을 영구 삭제합니다.
+     *
+     * @param  int  $id  게시판 ID
+     * @return bool 삭제 성공 여부
+     *
+     * @throws ModelNotFoundException
+     */
+    public function forceDelete(int $id): bool;
+
+    /**
      * 모든 게시판을 조회합니다.
      *
      * @return Collection 게시판 컬렉션

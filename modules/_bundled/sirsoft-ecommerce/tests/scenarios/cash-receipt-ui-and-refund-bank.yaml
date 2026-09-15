@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 14축 full cross product 691만 조합 — 전개 상한 초과.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 14축 full cross product 691만 조합 — 전개 상한 초과.
 #   test_files 실재 검사는 이 면제와 무관하게 항상 수행된다(끄려면 `:test-files` 접미사).
 #   실제 커버는 아래 effects 69건과 test_files 12개가 담당한다. S2 가 이월한 E2E axis 를 본 매니페스트에서 채운다.
 feature: 현금영수증 신청/발급 UI · 환불계좌 수집
@@ -7,11 +7,11 @@ description: |
   S1(인프라)·S2(API·자동발급) 위에 사람이 조작하는 표면을 얹는다. 그 전까지는 구매자가 신청할 곳도,
   관리자가 발급을 볼 곳도 없었다.
 
-  발견한 구조적 구멍(S3 착수 시 실측): 주문 생성 POST body 는 템플릿 소유 파일(_checkout_summary.json)의
+  발견한 구조적 구멍(S3 착수 시 실측): 주문 생성 POST body 는 템플릿 소유 파일(_checkout_summary.g7.html)의
   리터럴 객체다. 슬롯에 주입된 모듈 폼이 _local 에 값을 써도 그 body 에 실릴 방법이 없다 —
   결제 버튼에 id 가 없어 overlay 로 타겟할 수 없고, inject_props 는 컴포넌트 props 전용이라
   actions[].params.body 에 도달하지 못한다. 그대로 두면 구매자가 신청해도 주문에 아무 기록이 남지 않는다.
-  → PO 결정: body 를 통짜 표현식으로 바꾸고 확장 병합 칸(...(_local.checkoutExtraPayload ?? {})) 한 개를 연다.
+  → 프로젝트 결정: body 를 통짜 표현식으로 바꾸고 확장 병합 칸(...(_local.checkoutExtraPayload ?? {})) 한 개를 연다.
     템플릿은 현금영수증을 알지 않고, 모듈은 그 칸에만 쓴다. 확장 미주입 시 payload 는 전환 전과 동일하다.
 
   발견한 사전 결함(본 세션에서 수정):
@@ -19,7 +19,7 @@ description: |
       validated() 가 떨궜다. 관리자가 저장해도 아무 일도 일어나지 않았다.
     · payment 응답에 cash_receipt_provider 가 없어, 주문상세 현금영수증 카드가 영원히 렌더될 수 없었다.
     · payment 응답에 refund_bank_* 4키가 없어, 취소 모달이 주문 시 입력된 계좌를 프리필할 수 없었다.
-    · _payment.json 루트에 id 가 없어 KG 플러그인의 overlay 주입(세금내역·영수증 링크·에스크로 버튼)이
+    · _payment.g7.html 루트에 id 가 없어 KG 플러그인의 overlay 주입(세금내역·영수증 링크·에스크로 버튼)이
       조용히 no-op 이었다. 본 이슈가 부수 복구한다(R1).
 
   실서버(Playwright MCP) 실측에서만 드러난 결함 — 유닛 테스트는 전부 green 이었다:
@@ -29,7 +29,7 @@ description: |
     · 발급 버튼과 재발급 버튼의 노출 조건이 배타적이지 않아 FAILED 상태에서 둘 다 떴다.
     · 이력 표가 원시값을 노출했다 — 취소 행에 "발급 완료", 실패 행 일시 "-"(issued_at null), issue/FAILED.
 
-  환불계좌는 PG·현금영수증 프로바이더와 무관한 순수 주문 정보이므로 템플릿이 직접 소유한다(PO 결정).
+  환불계좌는 PG·현금영수증 프로바이더와 무관한 순수 주문 정보이므로 템플릿이 직접 소유한다(프로젝트 결정).
   취소 시점 갱신은 레이아웃이 아니라 cancelOrderHandlers.ts 가 수행한다 — 취소 POST body 를
   그 핸들러가 조립하기 때문이다.
 
@@ -57,7 +57,8 @@ axes:
     - free
 
   provider_state:             # 발급 프로바이더 설정 상태
-    - configured              # 슬롯/카드 렌더
+    - configured              # 설정값이 있고 그 프로바이더를 제공하는 확장도 살아 있음 → 슬롯/카드 렌더
+    - dead                    # 설정값은 남았으나 제공 확장이 사라짐 → 미설정과 동일 취급 (A3)
     - not_configured          # 슬롯/카드 전체 미렌더 (DOM 카운트 0)
 
   receipt_type:
@@ -157,6 +158,10 @@ effects:
   - checkout_refund_bank_empty_allowed
   - checkout_refund_bank_name_resolved_from_code  # 은행코드 → 은행명 조회 저장
 
+  # 죽은 프로바이더(A3)의 판정·응답 계약은 cash-receipt-dead-provider.yaml 이 소유한다.
+  # 이 매니페스트는 cross product 상한 초과로 effects 검사가 면제되어 있어, 그곳에 두면
+  # 검증되지 않는다. provider_state=dead 축은 UI 렌더 조건으로서 여기 남는다.
+
   # 유저 주문상세 카드 (W-2)
   - mypage_card_hidden_when_not_dbank_or_no_provider
   - mypage_card_state_machine_five_states
@@ -215,7 +220,7 @@ effects:
   - portable_override_applies_below_1024_on_render  # 실렌더: 세로 스택 전환 (F5)
   - portable_override_absent_at_1024_on_render      # 실렌더: 1024px 부터 base 복귀
 
-  # 데이터 위생 (감사 지적 C8, PO 결정 2026-07-10)
+  # 데이터 위생 (감사 지적 C8, 프로젝트 결정 2026-07-10)
   - cash_receipt_request_not_persisted_for_non_dbank  # 발급 불가 주문에 암호문 미보관
 
   # 자진발급 설정 안내 (감사 지적 W-5)

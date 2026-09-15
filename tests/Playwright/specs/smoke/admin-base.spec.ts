@@ -2,7 +2,7 @@
  * Smoke: admin 베이스 레이아웃 + sticky 탭 시맨틱화 회귀 검증
  *   (#399 Phase 1.2 ~ Phase 1.4)
  *
- * - _admin_base.json 의 1회 등장 컴포넌트들이 인라인 Tailwind 토큰에서
+ * - _admin_base.g7.html 의 1회 등장 컴포넌트들이 인라인 Tailwind 토큰에서
  *   id 와 동일한 underscore 클래스로 캡슐화됐다 (Phase 1.2). 캡슐화 후에도
  *   베이스 레이아웃이 정상 마운트되고 핵심 컴포넌트들이 DOM 에 렌더되는지 smoke 검증.
  * - admin_settings 의 sticky 탭 영역과 TabNavigation composite 의 variant 인라인
@@ -29,7 +29,7 @@ test('@smoke #399 Phase 1.2 - _admin_base 캡슐화 클래스가 적용된 채�
   expect(page.url(), '권한 보유 토큰임에도 /admin/login 으로 리다이렉트').not.toMatch(/\/admin\/login/);
 
   // 베이스 핵심 컴포넌트 id 들이 DOM 에 존재해야 한다.
-  // _admin_base.json 의 #admin_layout_root → #left_sidebar_area → #sidebar_header /
+  // _admin_base.g7.html 의 #admin_layout_root → #left_sidebar_area → #sidebar_header /
   // #admin_sidebar_menu / #right_content_wrapper → #main_header / #right_content_area
   // 트리가 정상 마운트되는지 확인.
   await expect(page.locator('#admin_layout_root')).toBeVisible({ timeout: 10_000 });
@@ -80,7 +80,7 @@ test('@smoke #399 Phase 1.3 - admin_settings 진입 시 sticky-tab-nav 시맨틱
 });
 
 test('@smoke #399 Phase 1.4 - admin_board_settings 진입 시 sticky_header 가 sticky-section-header 시맨틱으로 마운트된다', async ({ page }) => {
-  // admin_board_settings.json 의 permissions 는 `sirsoft-board.settings.read` 다.
+  // admin_board_settings.g7.html 의 permissions 는 `sirsoft-board.settings.read` 다.
   // (`...settings.view` 는 존재하지 않는 권한 키라 403 Access Denied 로 떨어진다)
   const token = issueToken('sirsoft-board.settings.read');
   await authenticatePage(page, token);
@@ -195,7 +195,13 @@ test('@smoke #399 Phase 1.8 - admin 페이지 헤더의 refresh 버튼이 .btn-i
 
   // Phase 1.8: page_header 안의 refresh_button 이 인라인 Tailwind 5토큰에서
   // 표준 .btn-icon 시맨틱 자산으로 통합됐는지 확인.
-  await expect(page.locator('#refresh_button').first()).toHaveClass(/btn-icon/);
+  //
+  // 마운트 대기는 형제 검증(Phase 1.7 의 10s, admin-role-list-refresh.spec 의 15s)과 같은
+  // 폭으로 맞춘다 — 기본 5s 로 두면 여러 spec 이 병렬로 도는 실행에서 SPA 마운트가 5s 를
+  // 넘겨 간헐 red 가 난다(클래스 불일치가 아니라 element not found 로 나타나 오진하기 쉽다).
+  const refreshButton = page.locator('#refresh_button').first();
+  await refreshButton.waitFor({ state: 'visible', timeout: 15_000 });
+  await expect(refreshButton).toHaveClass(/btn-icon/);
 
   // Phase 1.9: page_header 의 우측 버튼 묶음 컨테이너가
   // 인라인 'flex items-center gap-2' 가 아닌 기존 시맨틱 .flex-center 를 활용한

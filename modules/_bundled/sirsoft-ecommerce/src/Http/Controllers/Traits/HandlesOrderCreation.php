@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
+use Modules\Sirsoft\Ecommerce\Exceptions\CouponAlreadyUsedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\InsufficientStockException;
 use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
@@ -129,8 +130,8 @@ trait HandlesOrderCreation
         } catch (PaymentAmountMismatchException $e) {
             return ResponseHelper::error(
                 __('sirsoft-ecommerce::exceptions.payment_amount_mismatch', [
-                    'expected' => number_format($e->getExpectedAmount()),
-                    'actual' => number_format($e->getActualAmount()),
+                    'expected' => ecommerce_format_price($e->getExpectedAmount()),
+                    'actual' => ecommerce_format_price($e->getActualAmount()),
                 ]),
                 422
             );
@@ -168,6 +169,22 @@ trait HandlesOrderCreation
                 'has_restriction_issue' => $e->hasRestrictionIssue(),
             ]);
 
+        } catch (CouponAlreadyUsedException $e) {
+            // 주문 확정 시점에 다른 주문이 같은 쿠폰을 선점했다 — 주문 트랜잭션은 롤백된 상태다.
+            // generic 500 이 아닌 409 로 알려 사용자가 쿠폰 소진 없이 재시도할 수 있게 한다.
+            Log::warning('Order create: coupon already taken by another order', [
+                'coupon_issue_id' => $e->getCouponIssueId(),
+            ]);
+
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                409,
+                ['code' => 'coupon_already_used', 'coupon_issue_id' => $e->getCouponIssueId()],
+                $e->getMessageParams()
+            );
+
         } catch (MileageValidationException $e) {
             // 마일리지 사용 정책 위반(한도/단위/최소사용액/잔액) — generic 500 이 아닌 422 명시 차단.
             // 임시주문 생성 이후 설정이 바뀌었거나 임시주문이 조작된 경우 여기로 떨어진다.
@@ -195,6 +212,15 @@ trait HandlesOrderCreation
             );
 
         } catch (Exception $e) {
+            // 위 catch 들이 잡지 못한 예외는 원인을 알 수 없는 실패다 — 반드시 남긴다.
+            // 종전에는 아무것도 기록하지 않고 500 만 돌려줘, 운영에서도 테스트에서도 원인 추적이
+            // 불가능했다 (조사에 실제로 이 침묵이 걸림돌이 됐다).
+            Log::error('Order create: unexpected failure', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.order.create_failed',

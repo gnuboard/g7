@@ -18,7 +18,11 @@
 10. [scrollIntoView](#scrollintoview) ⭐ NEW (engine-v1.11.0+)
 11. [loadScript](#loadscript)
 12. [callExternal](#callexternal)
-13. [실전 예시](#실전-예시)
+13. [startInterval / stopInterval](#startinterval--stopinterval)
+14. [ensureIdentityVerified / resolveIdentityChallenge](#ensureidentityverified--resolveidentitychallenge)
+15. [실전 예시](#실전-예시)
+
+> `login` 절에 `loginTwoFactor` · `loginTwoFactorResend` 가 함께 설명되어 있습니다.
 
 ---
 
@@ -27,6 +31,14 @@
 ### login
 
 로그인을 처리하고 토큰을 저장합니다.
+
+```html
+<partial name="doc_example">
+<json>{"version":"1.0.0","type":"submit","handler":"login","target":"admin","params":{"body":{"email":"{{form.email}}","password":"{{form.password}}"}},"onSuccess":[{"handler":"navigate","params":{"path":"/admin/dashboard"}}],"onError":[{"handler":"setError","target":"{{error.response.message}}"}],"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -61,9 +73,163 @@
 | `admin` | 관리자 인증 |
 | `user` | 사용자 인증 |
 
+### login 의 반환값 — 2단계 인증이 켜진 사이트
+
+서버는 보안 환경설정에 따라 **두 가지 형태의 200** 을 돌려줍니다. `onSuccess` 는 두 형태 모두에서
+실행되므로, 후속 액션은 `response.two_factor_required` 로 분기해야 합니다.
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `user` | object \| null | 로그인한 사용자. 인증번호 확인이 남았으면 `null` |
+| `two_factor_required` | boolean | `true` 면 아직 로그인이 끝나지 않았습니다 |
+| `challenge_id` | string | 인증번호 확인에 그대로 전달할 식별자 |
+| `provider_id` | string | 인증번호를 보낸 프로바이더 |
+| `expires_at` | string \| null | 인증 요청 만료 시각 (ISO8601) |
+
+분기를 두지 않으면 인증이 끝나기 전에 홈으로 이동하거나, 빈 사용자 정보가 상태에 실립니다.
+
+```html
+<on type="submit">
+  <login target="user">
+    <success>
+      <set-state if="{{response.two_factor_required}}" target="global">
+        <field name="twoFactor">
+          <field name="required" :value="true"/>
+          <field name="challenge_id" value="{{response.challenge_id}}"/>
+          <field name="expires_at" value="{{response.expires_at}}"/>
+          <field name="code" value=""/>
+        </field>
+      </set-state>
+      <navigate if="{{!response.two_factor_required}}" path="/"/>
+    </success>
+    <body email="{{form.email}}" password="{{form.password}}"/>
+  </login>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "login",
+  "target": "user",
+  "params": { "body": { "email": "{{form.email}}", "password": "{{form.password}}" } },
+  "onSuccess": [
+    {
+      "handler": "setState",
+      "if": "{{response.two_factor_required}}",
+      "params": {
+        "target": "global",
+        "twoFactor": {
+          "required": true,
+          "challenge_id": "{{response.challenge_id}}",
+          "expires_at": "{{response.expires_at}}",
+          "code": ""
+        }
+      }
+    },
+    {
+      "handler": "navigate",
+      "if": "{{!response.two_factor_required}}",
+      "params": { "path": "/" }
+    }
+  ]
+}
+```
+
+같은 시퀀스·`onSuccess` 안에서는 방금 저장한 상태(`_global.twoFactor.*`)를 다시 읽지 않습니다 —
+그 자리의 상태는 아직 갱신 전이므로 `{{response.*}}` 만 사용합니다.
+
+### loginTwoFactor
+
+인증번호를 확인해 로그인을 완료합니다. 성공 시 토큰이 발급되고 `{ user }` 를 돌려줍니다.
+
+```html
+<on type="submit">
+  <action handler="loginTwoFactor" target="user">
+    <success>
+      <set-state target="global" currentUser="{{response.user}}" :twoFactor="null"/>
+      <navigate path="/"/>
+    </success>
+    <fail>
+      <set-state target="global" twoFactor.error="{{error.message}}"/>
+    </fail>
+    <body challenge_id="{{_global.twoFactor?.challenge_id}}" code="{{_global.twoFactor?.code}}"/>
+  </action>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "loginTwoFactor",
+  "target": "user",
+  "params": {
+    "body": {
+      "challenge_id": "{{_global.twoFactor?.challenge_id}}",
+      "code": "{{_global.twoFactor?.code}}"
+    }
+  },
+  "onSuccess": [
+    { "handler": "setState", "params": { "target": "global", "currentUser": "{{response.user}}", "twoFactor": null } },
+    { "handler": "navigate", "params": { "path": "/" } }
+  ],
+  "onError": [
+    { "handler": "setState", "params": { "target": "global", "twoFactor.error": "{{error.message}}" } }
+  ]
+}
+```
+
+`params.body` 의 `challenge_id` 와 `code` 는 필수입니다. `target` 은 `login` 과 같은 값을 씁니다
+(`user` / `admin`) — 관리자 대상은 관리자 전용 엔드포인트를 호출하고, 관리자가 아니면 `403` 이 됩니다.
+
+### loginTwoFactorResend
+
+인증번호를 다시 보냅니다. 서버가 **기존 인증 요청을 취소하고 새로 발행**하므로, 반환된
+`challenge_id` 로 반드시 교체하고 입력란을 비워야 합니다 — 앞서 받은 번호는 더 이상 통하지 않습니다.
+
+```json
+{
+  "handler": "loginTwoFactorResend",
+  "target": "user",
+  "params": { "body": { "challenge_id": "{{_global.twoFactor?.challenge_id}}" } },
+  "onSuccess": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "global",
+        "twoFactor": {
+          "required": true,
+          "challenge_id": "{{response.challenge_id}}",
+          "expires_at": "{{response.expires_at}}",
+          "code": "",
+          "error": null,
+          "resent": true
+        }
+      }
+    }
+  ]
+}
+```
+
+반환값은 `{ two_factor_required, challenge_id, provider_id, expires_at }` 입니다.
+
 ### logout
 
 로그아웃하고 토큰을 삭제합니다.
+
+```html
+<on type="click">
+  <logout>
+    <success>
+      <navigate path="/admin/login"/>
+    </success>
+  </logout>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -84,6 +250,14 @@
 
 모달을 열거나 닫습니다. **모달 스택**을 사용하여 중첩 모달을 지원합니다 (engine-v1.2.0+).
 
+```html
+<on type="click">
+  <open-modal target="bulk_activate_confirm_modal"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -91,6 +265,14 @@
   "target": "bulk_activate_confirm_modal"
 }
 ```
+
+```html
+<on type="click">
+  <close-modal/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -121,6 +303,14 @@
 
 브라우저 기본 알림(alert)을 표시합니다.
 
+```html
+<partial name="doc_example">
+<json>{"version":"1.0.0","type":"click","handler":"showAlert","target":"$t:messages.confirm_delete","components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -132,6 +322,14 @@
 ### toast
 
 토스트 알림을 스택 형태로 표시합니다.
+
+```html
+<on type="click">
+  <toast type="success" message="$t:admin.users.modals.bulk_activate_success"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -162,6 +360,14 @@
 
 ### 기본 사용법
 
+```html
+<on type="click">
+  <api-call target="/api/admin/items/{{row.id}}" confirm="$t:common.confirm_delete" method="DELETE"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -173,6 +379,14 @@
 ```
 
 ### 커스텀 핸들러와 함께 사용
+
+```html
+<on type="click">
+  <action handler="sirsoft-ecommerce.removeCountrySetting" confirm="$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_remove_confirm" index="{{_local.activeCountryTab ?? 0}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -219,6 +433,14 @@
 
 이벤트 핸들러에서 전달된 인자를 케이스 키로 사용합니다.
 
+```html
+<partial name="doc_example">
+<json>{"version":"1.0.0","event":"onRowAction","type":"action","handler":"switch","cases":{"view":{"type":"click","handler":"navigate","params":{"path":"/admin/users/{{$args[1].id}}"}},"edit":{"type":"click","handler":"navigate","params":{"path":"/admin/users/{{$args[1].id}}/edit"}},"delete":{"type":"click","handler":"openModal","target":"delete_confirm_modal"}},"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "event": "onRowAction",
@@ -248,6 +470,24 @@
 
 `params.value`를 통해 동적으로 케이스 키를 지정할 수 있습니다. 데이터 바인딩을 사용하여 플러그인/모듈 환경설정 값을 케이스 키로 활용할 수 있습니다.
 
+```html
+<on type="click">
+  <switch on="{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}">
+    <case when="popup">
+      <call-external constructor="daum.Postcode" method="open"/>
+    </case>
+    <case when="layer">
+      <call-external-embed constructor="daum.Postcode"/>
+    </case>
+    <default>
+      <call-external-embed constructor="daum.Postcode"/>
+    </default>
+  </switch>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -275,6 +515,24 @@
 ### default 케이스 지원 (engine-v1.9.0+)
 
 매칭되는 케이스가 없을 경우 `default` 케이스가 실행됩니다.
+
+```html
+<on type="click">
+  <switch on="{{_global.theme}}">
+    <case when="dark">
+      <set-state colorScheme="dark"/>
+    </case>
+    <case when="light">
+      <set-state colorScheme="light"/>
+    </case>
+    <default>
+      <set-state colorScheme="auto"/>
+    </default>
+  </switch>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -314,6 +572,24 @@
 조건에 따라 다른 액션을 실행합니다. `switch`의 확장판으로, AND/OR 그룹과 if-else 체인을 지원합니다.
 
 ### 기본 사용법 (if-else 체인)
+
+```html
+<on type="click">
+  <conditions>
+    <when if="{{$args[0] === 'edit'}}">
+      <navigate path="/edit/{{row.id}}"/>
+    </when>
+    <when if="{{$args[0] === 'delete'}}">
+      <open-modal id="delete_confirm_modal"/>
+    </when>
+    <else>
+      <toast message="알 수 없는 액션"/>
+    </else>
+  </conditions>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -361,6 +637,14 @@ interface ConditionBranch {
 
 모든 조건이 true일 때만 해당 브랜치가 실행됩니다.
 
+```html
+<partial name="doc_example">
+<json>{"version":"1.0.0","type":"click","handler":"conditions","conditions":[{"if":{"and":["{{user.isLoggedIn}}","{{user.hasPermission}}"]},"then":{"handler":"navigate","params":{"path":"/premium"}}},{"then":{"handler":"toast","params":{"type":"error","message":"접근 권한 없음"}}}],"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -383,6 +667,14 @@ interface ConditionBranch {
 
 하나라도 true면 해당 브랜치가 실행됩니다.
 
+```html
+<partial name="doc_example">
+<json>{"version":"1.0.0","type":"click","handler":"conditions","conditions":[{"if":{"or":["{{user.isAdmin}}","{{user.isManager}}"]},"then":{"handler":"navigate","params":{"path":"/admin"}}},{"then":{"handler":"navigate","params":{"path":"/user"}}}],"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -404,6 +696,14 @@ interface ConditionBranch {
 ### 중첩 AND/OR 조건
 
 복잡한 조건 로직을 표현할 수 있습니다.
+
+```html
+<partial name="doc_example">
+<json>{"version":"1.0.0","type":"click","handler":"conditions","conditions":[{"if":{"or":["{{user.isSuperAdmin}}",{"and":["{{user.isAdmin}}","{{user.department === 'sales'}}"]}]},"then":{"handler":"navigate","params":{"path":"/sales-dashboard"}}},{"then":{"handler":"navigate","params":{"path":"/home"}}}],"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -431,6 +731,19 @@ interface ConditionBranch {
 ### then 배열 (순차 실행)
 
 `then`이 배열이면 `sequence`처럼 순차적으로 실행됩니다.
+
+```html
+<on type="click">
+  <conditions>
+    <when if="{{$args[0] === 'delete'}}">
+      <set-state target="_local" deleteTargetId="{{row.id}}"/>
+      <open-modal id="delete_confirm_modal"/>
+    </when>
+  </conditions>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -469,6 +782,28 @@ interface ConditionBranch {
 
 ### DataGrid onRowAction 실전 예시
 
+```html
+<on type="action" event="onRowAction">
+  <conditions>
+    <when if="{{$args[0] === 'edit'}}">
+      <navigate path="/products/edit/{{$args[1].id}}"/>
+    </when>
+    <when if="{{$args[0] === 'delete'}}">
+      <set-state target="_local" deleteTargetId="{{$args[1].id}}"/>
+      <open-modal id="delete_confirm_modal"/>
+    </when>
+    <when if="{{$args[0] === 'view'}}">
+      <navigate path="/products/view/{{$args[1].id}}"/>
+    </when>
+    <else>
+      <toast type="warning" message="알 수 없는 액션입니다."/>
+    </else>
+  </conditions>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "event": "onRowAction",
@@ -505,6 +840,15 @@ interface ConditionBranch {
 
 여러 액션을 순차적으로 실행합니다.
 
+```html
+<on type="click">
+  <set-state target="global" selectedModule="{{row}}"/>
+  <open-modal target="module_install_modal"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -533,6 +877,18 @@ interface ConditionBranch {
 ### parallel
 
 여러 액션을 **병렬로** 실행합니다.
+
+```html
+<on type="click">
+  <parallel>
+    <toast type="success" message="완료!"/>
+    <refetch-data-source dataSourceId="modules"/>
+    <refetch-data-source dataSourceId="admin_menu"/>
+  </parallel>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -573,13 +929,22 @@ sequence 내에서 `setState` 실행 후 다음 스텝은 **갱신된 상태**�
 | `$results` | array | **모든** 이전 액션 결과의 배열 |
 | `$results[0]` | any | 첫 번째 액션의 결과 |
 
+```html
+<on type="click">
+  <api-call target="/api/modules/sirsoft-ecommerce/products/{{row.id}}" method="GET"/>
+  <set-state target="local" productName="{{$prev.data.name}}" firstResult="{{$results[0].data.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "sequence",
   "actions": [
     {
       "handler": "apiCall",
-      "target": "/api/products/{{row.id}}",
+      "target": "/api/modules/sirsoft-ecommerce/products/{{row.id}}",
       "params": { "method": "GET" }
     },
     {
@@ -616,6 +981,14 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 다국어 파일을 다시 로드합니다.
 
+```html
+<on type="click">
+  <reload-translations/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "reloadTranslations"
@@ -634,6 +1007,14 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 > **버전**: engine-v1.6.0+
 
 에러 페이지를 렌더링합니다. URL 변경 없이 현재 페이지에서 에러 페이지를 표시합니다.
+
+```html
+<on type="click">
+  <show-error-page :errorCode="403" target="content"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -663,6 +1044,14 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 특정 요소를 화면에 보이도록 스크롤합니다. MutationObserver를 통한 요소 대기와 컨테이너 내 스크롤을 지원합니다.
 
 ### 기본 사용법
+
+```html
+<on type="click">
+  <scroll-into-view selector="#target_element" behavior="smooth" block="center"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -695,6 +1084,14 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 조건부 렌더링(`if`)으로 나타나는 요소를 대기할 때 사용합니다. MutationObserver를 사용하여 DOM에 요소가 추가될 때까지 대기합니다.
 
+```html
+<on type="click">
+  <scroll-into-view selector="#loading_indicator" :waitForElement="true" :timeout="2000" block="end"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "scrollIntoView",
@@ -710,6 +1107,14 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 ### 컨테이너 내 스크롤 (scrollContainer)
 
 특정 스크롤 컨테이너 내에서만 스크롤하고 브라우저 전체 스크롤에 영향을 주지 않으려면 `scrollContainer`를 지정합니다.
+
+```html
+<on type="click">
+  <scroll-into-view selector="#loading_indicator" scrollContainer="#template_list" behavior="smooth" block="end"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -728,6 +1133,30 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 - `scrollContainer` 지정: 해당 컨테이너의 `scrollTop`만 직접 조정 (브라우저 스크롤 유지)
 
 ### 무한스크롤 로딩 인디케이터 예시
+
+```html
+<div data-ref="template_list" class="max-h-[calc(90vh-140px)] overflow-y-auto">
+  <on type="scroll">
+    <sequence :debounce="200">
+      <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.infiniteScroll.hasMore &amp;&amp; !_global.infiniteScroll.isLoadingMore}}">
+        <case when="true">
+          <set-state target="global" :infiniteScroll.isLoadingMore="true"/>
+          <scroll-into-view selector="#loading_indicator" scrollContainer="#template_list" behavior="smooth" block="end" :waitForElement="true" :timeout="2000"/>
+          <api-call target="/api/modules/sirsoft-ecommerce/items" method="GET">
+            <success>
+              <append-data-source dataSourceId="items" dataPath="data" newData="{{response.data}}"/>
+            </success>
+            <query page="{{_global.infiniteScroll.currentPage + 1}}"/>
+          </api-call>
+        </case>
+      </switch>
+    </sequence>
+  </on>
+  <loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:common.loading"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -772,7 +1201,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
                 },
                 {
                   "handler": "apiCall",
-                  "target": "/api/items",
+                  "target": "/api/modules/sirsoft-ecommerce/items",
                   "params": {
                     "method": "GET",
                     "query": { "page": "{{_global.infiniteScroll.currentPage + 1}}" }
@@ -827,6 +1256,23 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 외부 스크립트를 동적으로 로드합니다. 외부 서비스(Daum 우편번호, 결제 SDK 등) 연동 시 사용합니다.
 
+`src` 는 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받습니다 — same-origin 절대 경로(`/` 로 시작)이거나, 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 그 밖의 원격 URL 은 로드 전에 차단되고 액션이 실패합니다(`onError`·`errorHandling` 오류 채널로 전달). 상세: [security.md](security.md#외부-스크립트-신뢰-출처-허용목록)
+
+```html
+<on type="click">
+  <load-script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script">
+    <field name="onLoad">
+      <field name="handler" value="setState"/>
+      <field name="params">
+        <field name="daumPostcodeLoaded" :value="true"/>
+      </field>
+    </field>
+  </load-script>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -855,11 +1301,27 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 스크립트 로드 완료 시 실행할 액션을 `onLoad`에 정의합니다.
 
+```html
+<on type="click">
+  <load-script src="https://example.com/sdk.js">
+    <field name="onLoad">
+      <field name="handler" value="callExternal"/>
+      <field name="params">
+        <field name="constructor" value="ExampleSDK"/>
+        <field name="method" value="init"/>
+      </field>
+    </field>
+  </load-script>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "loadScript",
   "params": {
-    "src": "https://example.com/sdk.js"
+    "src": "/api/plugins/assets/vendor-plugin/dist/vendor/example-sdk/1.0.0/sdk.js"
   },
   "onLoad": {
     "handler": "callExternal",
@@ -875,10 +1337,17 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 동일한 ID의 스크립트가 이미 로드되었거나 DOM에 존재하면 다시 로드하지 않고 `onLoad`만 즉시 실행합니다.
 
+같은 스크립트를 **동시에** 요청하면 태그는 하나만 만들어지고, 두 호출자 모두 그 태그의 로드가 끝난 뒤에 완료됩니다. 로드 중인 스크립트를 "이미 있다"는 이유로 먼저 완료 처리하면, 그 호출자의 `onLoad` 가 SDK 전역이 아직 없는 시점에 실행되어 아무 일도 일어나지 않습니다.
+
 ```text
 ✅ 스크립트 중복 로드 자동 방지
 ✅ 이미 로드된 경우 onLoad 즉시 실행
+✅ 동시 요청은 하나의 태그를 공유하고 각자 onLoad 실행
 ```
+
+### 동의 관리(개인정보 배너)와의 관계
+
+동의 관리 플러그인이 아직 동의받지 않은 스크립트를 차단하고 있으면, 이 액션은 스크립트를 붙이지 않고 **미완료 상태로 끝납니다**(오류가 아니라 "동의 전"이라는 상태이므로 실패로 취급하지 않습니다). `onLoad` 는 실행되지 않고, 캐시에도 기록하지 않으므로 동의 후 다시 호출하면 정상적으로 로드됩니다.
 
 ---
 
@@ -887,6 +1356,18 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 > **버전**: engine-v1.7.0+
 
 외부 스크립트의 생성자나 메서드를 호출합니다. `loadScript`로 로드한 외부 라이브러리를 호출할 때 사용합니다.
+
+```html
+<on type="click">
+  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="open">
+    <field name="args">
+      <field name="oncomplete" :value="true"/>
+    </field>
+  </call-external>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -916,6 +1397,18 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 `args`에서 `true`로 설정된 속성은 콜백 함수로 변환됩니다. 콜백 호출 시 `callbackEvent`로 지정한 이벤트가 발생합니다.
 
+```html
+<on type="click">
+  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete">
+    <field name="args">
+      <field name="oncomplete" :value="true"/>
+    </field>
+  </call-external>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "callExternal",
@@ -943,6 +1436,17 @@ new daum.Postcode({
 
 콜백 결과는 `G7Core.componentEvent`로 전달됩니다. 컴포넌트에서 `onEvent`로 구독할 수 있습니다:
 
+```html
+<div>
+  <on type="action" event="postcode:complete">
+    <set-state zonecode="{{$args[0].zonecode}}" address="{{$args[0].address}}"/>
+  </on>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "actions": [
@@ -963,6 +1467,18 @@ new daum.Postcode({
 
 팝업 대신 특정 요소에 임베드하려면 `embedTarget`을 사용합니다:
 
+```html
+<on type="click">
+  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="embed" embedTarget="#postcode_container">
+    <field name="args">
+      <field name="oncomplete" :value="true"/>
+    </field>
+  </call-external>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "callExternal",
@@ -977,6 +1493,27 @@ new daum.Postcode({
 ```
 
 ### Daum 우편번호 연동 전체 예시
+
+```html
+<button data-ref="search_address_button">
+  <on type="click">
+    <load-script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode"/>
+    <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="open">
+      <field name="args">
+        <field name="oncomplete" :value="true"/>
+      </field>
+    </call-external>
+  </on>
+  $t:common.search_address
+</button>
+<div data-ref="address_form">
+  <on type="action" event="postcode:complete">
+    <set-state zonecode="{{$args[0].zonecode}}" address="{{$args[0].address}}" roadAddress="{{$args[0].roadAddress}}"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1030,9 +1567,123 @@ new daum.Postcode({
 
 ---
 
+## startInterval / stopInterval
+
+주기 실행 액션. `startInterval` 은 `params.actions` 목록을 `params.interval` 밀리초마다 실행하고,
+`stopInterval` 은 같은 `id` 로 등록된 타이머를 해제한다. 작성에서는 실행 목록을 `<actions>` 자식
+블록으로 적는다(문법 G10 — [layout-markup.md](layout-markup.md)).
+
+```html
+<on type="click">
+  <start-interval id="order_poll" :interval="5000">
+    <actions>
+      <refetch-data-source dataSourceId="orders"/>
+    </actions>
+  </start-interval>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "startInterval",
+  "params": {
+    "id": "order_poll",
+    "interval": 5000,
+    "actions": [
+      { "handler": "refetchDataSource", "params": { "dataSourceId": "orders" } }
+    ]
+  }
+}
+```
+
+```html
+<on type="click">
+  <stop-interval id="order_poll"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{ "handler": "stopInterval", "params": { "id": "order_poll" } }
+```
+
+### 필드 설명
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `id` | `string` | ✅ | 타이머 식별자. `stopInterval` 이 같은 값을 받아 해제한다 (미지정 시 경고 후 무동작) |
+| `interval` | `number` | ✅ | 실행 주기 (ms) — `startInterval` 전용 |
+| `actions` | `Action[]` | ✅ | 매 tick 실행할 액션 목록 — `startInterval` 전용 |
+
+### 주의사항
+
+- **stale closure** — `startInterval` 은 등록 시점의 dispatch 컨텍스트를 클로저로 캡처한다.
+  직전 `G7Core.state.set` 이 아직 commit 되지 않은 상태로 매 tick 평가될 수 있으므로, 카운트다운처럼
+  최신 상태가 필요한 흐름은 `window.setInterval` 을 직접 쓰는 것이 권장된다
+  ([identity-verification-ui.md](identity-verification-ui.md)).
+- 페이지 전환 시 코어가 `stopAllIntervals()` 로 일괄 해제하므로 누수는 발생하지 않는다.
+
+---
+
+## ensureIdentityVerified / resolveIdentityChallenge
+
+본인인증(IDV) 선제 가드. 서버가 428 을 돌려주기 전에 흐름 쪽에서 먼저 인증 여부를 확인하고,
+미인증이면 인증 UI 를 띄운 뒤 통과 여부를 boolean 으로 돌려준다
+(응답 후처리 경로는 [identity-guard-interceptor.md](identity-guard-interceptor.md)).
+
+```html
+<on type="click">
+  <ensure-identity-verified purpose="sensitive_action" policy_key="core.account.delete">
+    <success>
+      <api-call target="/api/me/account/delete" method="DELETE"/>
+    </success>
+    <field name="target">
+      <field name="email" value="{{form.email}}"/>
+    </field>
+  </ensure-identity-verified>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "ensureIdentityVerified",
+  "params": {
+    "purpose": "sensitive_action",
+    "policy_key": "core.account.delete",
+    "target": { "email": "{{form.email}}" }
+  },
+  "onSuccess": [{ "handler": "apiCall", "target": "/api/me/account/delete", "params": { "method": "DELETE" } }]
+}
+```
+
+### 필드 설명
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `purpose` | `string` | ❌ | 인증 목적 (기본 `sensitive_action`) |
+| `policy_key` | `string` | ❌ | 적용할 정책 키 |
+| `provider_id` | `string` | ❌ | 인증 수단 지정 (미지정 시 정책 기본값) |
+| `render_hint` | `string` | ❌ | 인증 UI 렌더 힌트 |
+| `target` | `object` | ❌ | 인증 대상 (`{ email, phone }`) — `apiCall` 의 `identity_target` 과 같은 채널 |
+
+`resolveIdentityChallenge` 는 외부 redirect 콜백 이후 challenge 를 해소하는 짝 핸들러다.
+
+---
+
 ## 실전 예시
 
 ### 사용자 일괄 활성화 모달
+
+```html
+<json key="components">[{"id":"bulk_activate_confirm_modal","type":"composite","name":"Modal","props":{"title":"$t:admin.users.modals.bulk_activate_title","size":"small"},"children":[{"type":"basic","name":"P","text":"$t:admin.users.modals.bulk_activate_confirm|count={{(_global.selectedIds || []).length}}"},{"type":"basic","name":"Div","props":{"className":"flex justify-center gap-4 mt-4"},"children":[{"type":"basic","name":"Button","props":{"variant":"secondary"},"text":"$t:common.cancel","actions":[{"type":"click","handler":"closeModal"}]},{"type":"basic","name":"Button","props":{"variant":"primary"},"text":"$t:common.confirm","actions":[{"type":"click","handler":"apiCall","target":"/api/admin/users/bulk-status","params":{"method":"PATCH","body":{"ids":"{{_global.selectedIds}}","status":"active"}},"onSuccess":[{"handler":"closeModal"},{"handler":"setState","params":{"target":"global","selectedIds":[]}},{"handler":"navigate","params":{"path":"/admin/users","mergeQuery":true,"query":[]}},{"handler":"toast","params":{"type":"success","message":"$t:admin.users.modals.bulk_activate_success"}}]}]}]}]}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1096,6 +1747,21 @@ new daum.Postcode({
 ```
 
 ### 검색 필드 (Enter 키 검색)
+
+```html
+<input data-ref="search_input" type="text" placeholder="$t:admin.users.search_placeholder" value="{{_global.searchQuery || query.search || ''}}">
+  <on type="change">
+    <set-state target="global" searchQuery="{{$event.target.value}}"/>
+  </on>
+  <on type="keypress" key="Enter">
+    <navigate path="/admin/users" :mergeQuery="true">
+      <query search="{{_global.searchQuery}}"/>
+    </navigate>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

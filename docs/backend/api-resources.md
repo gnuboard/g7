@@ -61,6 +61,33 @@ class ProductCollection extends BaseApiCollection
 - `deleted_at` - 삭제 시간
 - 비밀번호, 토큰 등 인증 정보
 
+### 회원 이메일은 공개 응답에 싣지 않는다
+
+목록·상세·댓글·리뷰처럼 인증 없이 열람되는 경로에 회원 이메일을 직렬화하면, 화면이 그 값을
+그리지 않더라도 **응답 본문에서 회원 주소록을 그대로 수집**할 수 있다. 화면 소비처가 관리자
+화면뿐이라는 사실은 방어가 아니다 — 응답은 화면과 무관하게 나간다.
+
+판정은 `BaseApiResource::canExposeMemberEmail($request, $ownerId)` 하나로 한다. 근거는 둘뿐이다:
+
+| 조건 | 결과 |
+| --- | --- |
+| 요청이 도달한 컨트롤러가 `AdminBaseController` 하위 | 노출 |
+| 열람자가 그 이메일의 주인(`$ownerId === Auth::id()`) | 노출 |
+| 그 외 (라우트 특정 불가 포함) | **차단** |
+
+```php
+// ❌ 공개 경로에서도 그대로 나간다
+'email' => $this->user->email,
+
+// ✅ 관리자 응답·본인 열람에만
+'email' => $this->canExposeMemberEmail($request, $this->user_id) ? $this->user->email : null,
+```
+
+관리자 라우트는 이미 권한 미들웨어를 통과한 뒤이므로 컨트롤러가 판정 근거로 충분하다.
+헤더·쿼리처럼 **클라이언트가 보내는 값으로 판정하면 그 게이트가 곧 우회로**가 된다.
+
+이메일 외의 개인 연락처(휴대폰·주소 등)를 새로 직렬화할 때도 같은 기준을 적용한다.
+
 ### 관계 데이터 처리
 
 관계 데이터는 `whenLoaded`를 사용하여 조건부로 포함합니다:
@@ -589,7 +616,7 @@ class UserResource extends BaseApiResource
 
 ## 관련 문서
 
-- [index.md](./index.md) - 백엔드 가이드 인덱스
+- [README.md](./README.md) - 백엔드 가이드 인덱스
 - [controllers.md](./controllers.md) - 컨트롤러에서 리소스 사용
 - [response-helper.md](./response-helper.md) - API 응답 규칙
 - [service-repository.md](./service-repository.md) - Eager Loading으로 N+1 방지

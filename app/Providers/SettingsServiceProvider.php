@@ -4,8 +4,12 @@ namespace App\Providers;
 
 use App\Repositories\JsonConfigRepository;
 use App\Support\AllowedExtensions;
+use App\Support\EnvPriority;
+use App\Support\ExtensionSettingsMirror;
+use App\Support\OutboundProxy;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
+use Predis\Client;
 
 /**
  * 설정 서비스 프로바이더
@@ -15,23 +19,8 @@ use Illuminate\Support\ServiceProvider;
  */
 class SettingsServiceProvider extends ServiceProvider
 {
-    /**
-     * 코어 설정 카테고리 목록
-     */
-    private const CORE_CATEGORIES = [
-        'mail',
-        'general',
-        'security',
-        'debug',
-        'drivers',
-        'cache',
-        'upload',
-        'core_update',
-        'geoip',
-        'seo',
-        'identity',
-        'pagination',
-    ];
+    // 코어 설정 카테고리 목록은 ExtensionSettingsMirror::CORE_CATEGORIES 가 단독 소유한다.
+    // 여기에 사본을 두면 미러가 읽는 목록과 갈라져도 아무도 알아채지 못한다.
 
     /**
      * 서비스를 등록합니다.
@@ -40,6 +29,10 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // 미러 채움 소유자를 컨테이너 싱글톤으로 등록한다 — 부팅/저장/테스트가
+        // 같은 인스턴스를 해석해야 교체(스텁 주입)가 모든 경로에 통한다.
+        $this->app->singleton(ExtensionSettingsMirror::class);
+
         // JsonConfigRepository를 직접 인스턴스화 (DI 컨테이너 사용 불가)
         $configRepository = new JsonConfigRepository;
 
@@ -48,7 +41,7 @@ class SettingsServiceProvider extends ServiceProvider
         $this->applyAppConfig($configRepository);
         $this->applyDebugConfig($configRepository);
         $this->applyDriverConfig($configRepository);
-        $this->applyCacheConfig($configRepository);
+        $this->applyPublicAssetDiskConfig($configRepository);
         $this->applyUploadConfig($configRepository);
         $this->applyCoreUpdateConfig($configRepository);
         $this->applyGeoIpConfig($configRepository);
@@ -66,16 +59,9 @@ class SettingsServiceProvider extends ServiceProvider
      */
     private function loadCoreSettingsToConfig(JsonConfigRepository $configRepository): void
     {
-        $coreSettings = [];
-
-        foreach (self::CORE_CATEGORIES as $category) {
-            $settings = $configRepository->getCategory($category);
-            if (! empty($settings)) {
-                $coreSettings[$category] = $settings;
-            }
-        }
-
-        Config::set('g7_settings.core', $coreSettings);
+        // 미러 채움 로직은 ExtensionSettingsMirror 가 단일 소유한다 —
+        // 저장 시점 재채움(공개이슈 #109)과 같은 코드를 써야 부팅과 저장의 결과가 갈리지 않는다.
+        $this->app->make(ExtensionSettingsMirror::class)->refreshCore($configRepository);
     }
 
     /**
@@ -96,6 +82,10 @@ class SettingsServiceProvider extends ServiceProvider
         if (empty($mailSettings)) {
             return;
         }
+
+        // .env 우선 모드에서 `.env` 가 소유권을 가져간 키를 제거한다 — 아래 가드들이
+        // 제거된 키를 자연히 건너뛰므로 지점마다 조건을 심지 않는다 (스위치 OFF 면 무동작).
+        $mailSettings = EnvPriority::filterLocked('mail', $mailSettings);
 
         // 메일러 설정
         if (! empty($mailSettings['mailer'])) {
@@ -123,8 +113,13 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('mail.mailers.smtp.encryption', $mailSettings['encryption'] ?: null);
         }
 
-        // 드라이버별 설정
-        $mailer = $mailSettings['mailer'] ?? '';
+        // 드라이버별 설정 — 마스터 드라이버가 `.env` 로 잠기면 저장값이 이 배열에서 제거되어
+        // 게이트가 빈 문자열이 된다. 그대로 두면 어느 분기에도 들어가지 않아 mailgun/ses 하위
+        // 저장값(도메인·자격증명 등, 각자 잠기지 않았다)이 조용히 주입되지 않는다.
+        // 잠긴 경우에는 유효값(= `.env` 유래 config)으로 게이트를 보정한다.
+        $mailer = EnvPriority::isLocked('mail.mailer')
+            ? (string) config('mail.default')
+            : ($mailSettings['mailer'] ?? '');
 
         if ($mailer === 'mailgun') {
             if (! empty($mailSettings['mailgun_domain'])) {
@@ -133,9 +128,15 @@ class SettingsServiceProvider extends ServiceProvider
             if (! empty($mailSettings['mailgun_secret'])) {
                 Config::set('services.mailgun.secret', $mailSettings['mailgun_secret']);
             }
-            Config::set('services.mailgun.endpoint',
-                ! empty($mailSettings['mailgun_endpoint']) ? $mailSettings['mailgun_endpoint'] : 'api.mailgun.net'
-            );
+            // 저장값이 비어도 기본값을 박는다 — 종전 동작이다. 주입을 건너뛰는 경우는
+            // `.env` 우선 모드가 이 키를 가져간 때뿐이므로 잠금 여부를 직접 묻는다.
+            // 키 존재 여부(`array_key_exists`)로 판정하면 "저장값이 없는 호출"과 "잠겨서 제거된 호출"이
+            // 구분되지 않아, 전자에서도 기본값 주입이 사라진다.
+            if (! EnvPriority::isLocked('mail.mailgun_endpoint')) {
+                Config::set('services.mailgun.endpoint',
+                    ! empty($mailSettings['mailgun_endpoint']) ? $mailSettings['mailgun_endpoint'] : 'api.mailgun.net'
+                );
+            }
         }
 
         if ($mailer === 'ses') {
@@ -145,9 +146,12 @@ class SettingsServiceProvider extends ServiceProvider
             if (! empty($mailSettings['ses_secret'])) {
                 Config::set('services.ses.secret', $mailSettings['ses_secret']);
             }
-            Config::set('services.ses.region',
-                ! empty($mailSettings['ses_region']) ? $mailSettings['ses_region'] : 'ap-northeast-2'
-            );
+            // mailgun_endpoint 와 같은 사유의 가드 (위 주석 참조).
+            if (! EnvPriority::isLocked('mail.ses_region')) {
+                Config::set('services.ses.region',
+                    ! empty($mailSettings['ses_region']) ? $mailSettings['ses_region'] : 'ap-northeast-2'
+                );
+            }
         }
 
         // 발신자 설정
@@ -171,6 +175,9 @@ class SettingsServiceProvider extends ServiceProvider
             return;
         }
 
+        // .env 우선 모드: `.env` 가 소유한 키 제거 (스위치 OFF 면 무동작).
+        $generalSettings = EnvPriority::filterLocked('general', $generalSettings);
+
         if (! empty($generalSettings['site_name'])) {
             // site_name 이 다국어 JSON array 일 수 있으므로 현재/폴백 로케일 string 으로 정규화한다
             // (공개#49). raw array 를 config('app.name') 에 넣으면 app.blade.php 의
@@ -187,6 +194,14 @@ class SettingsServiceProvider extends ServiceProvider
             // 환경설정의 timezone은 사용자 표시용 기본 타임존
             // app.timezone(서버 저장 타임존)은 항상 UTC 유지
             Config::set('app.default_user_timezone', $generalSettings['timezone']);
+
+            // 예약 작업의 시각 해석 기준도 사이트 설정 시간대를 따른다.
+            // Laravel 의 Kernel::scheduleTimezone() 이 이 키를 읽어 Schedule 인스턴스
+            // 전체에 일괄 적용하므로, 코어·확장이 등록한 모든 예약이 같은 기준을 공유한다.
+            // (이벤트마다 ->timezone() 을 붙이는 방식은 나중에 추가되는 예약이
+            //  조용히 UTC 기준으로 돌아가므로 채택하지 않는다.)
+            // 미설정 시에는 Laravel 기본 폴백(app.timezone = UTC)이 그대로 적용된다.
+            Config::set('app.schedule_timezone', $generalSettings['timezone']);
         }
 
         if (! empty($generalSettings['language'])) {
@@ -247,6 +262,10 @@ class SettingsServiceProvider extends ServiceProvider
      */
     private function applyDebugConfig(JsonConfigRepository $configRepository): void
     {
+        // G7_PLAYWRIGHT_BYPASS 는 호출자가 그 프로세스에만 부여하는 프로세스 환경변수다 —
+        // `.env` 파일에 적히지 않으므로 config:cache 로 박제될 대상이 아니고, env() 가
+        // 프로세스 환경을 그대로 읽으므로 config:cache 환경에서도 정상 판별된다.
+        // (`.env` 유래 값의 런타임 env() 판별이 무력해지는 함정과는 다른 축이다.)
         if (app()->environment('testing') || env('G7_PLAYWRIGHT_BYPASS') === '1') {
             return;
         }
@@ -257,14 +276,29 @@ class SettingsServiceProvider extends ServiceProvider
             return;
         }
 
-        $isDebugMode = isset($debugSettings['mode']) && (bool) $debugSettings['mode'];
+        // .env 우선 모드: `.env` 가 소유한 키 제거 (스위치 OFF 면 무동작).
+        $debugSettings = EnvPriority::filterLocked('debug', $debugSettings);
+
+        $modeLocked = EnvPriority::isLocked('debug.mode');
+        $logLevelLocked = EnvPriority::isLocked('debug.log_level');
+
+        // 디버그 모드가 `.env` 로 잠기면 그 유효값은 config('app.debug')(= APP_DEBUG)다.
+        // 저장값을 읽으면 잠금으로 키가 사라져 항상 false 가 되고, 아래 두 2차 효과
+        // (로그 레벨 강제·프록시 게이트)가 운영자 의도와 반대로 동작한다.
+        $isDebugMode = $modeLocked
+            ? (bool) config('app.debug')
+            : (isset($debugSettings['mode']) && (bool) $debugSettings['mode']);
 
         if (isset($debugSettings['mode'])) {
             Config::set('app.debug', $isDebugMode);
         }
 
-        // debug 모드가 true이면 log_level을 debug로 강제 설정
-        if ($isDebugMode) {
+        // debug 모드가 true이면 log_level을 debug로 강제 설정.
+        // 단 로그 레벨이 `.env` 로 잠긴 설치에서는 강제 자체를 하지 않는다 — 그 강제는
+        // 저장값 경로의 편의 규칙이고, 잠긴 키의 권위는 `.env` 에 있다.
+        if ($logLevelLocked) {
+            $logLevel = null;
+        } elseif ($isDebugMode) {
             $logLevel = 'debug';
         } elseif (! empty($debugSettings['log_level'])) {
             $logLevel = $debugSettings['log_level'];
@@ -282,6 +316,14 @@ class SettingsServiceProvider extends ServiceProvider
         if (isset($debugSettings['sql_query_log'])) {
             Config::set('g7.sql_query_log', (bool) $debugSettings['sql_query_log']);
         }
+
+        // 아웃바운드 HTTP 프록시 설정.
+        // 적용 여부 판정은 OutboundProxy 가 단독으로 소유한다 — 디버그 모드가 꺼져 있으면
+        // 저장값이 남아 있어도 null 이 되어 주입되지 않는다.
+        // 게이트 값(mode)은 위에서 구한 유효값으로 보정해 넘긴다 — `+` 는 존재하는 키를
+        // 덮지 않으므로 잠기지 않은 설치에서는 종전과 동일하다. 보정이 없으면 디버그 모드가
+        // `.env` 로 잠긴 설치에서 프록시가 영구 미적용된다 (오류·로그 없이).
+        Config::set('g7.outbound_proxy', OutboundProxy::resolve($debugSettings + ['mode' => $isDebugMode]));
     }
 
     /**
@@ -303,10 +345,17 @@ class SettingsServiceProvider extends ServiceProvider
             return;
         }
 
+        // .env 우선 모드: `.env` 가 소유한 키 제거 (스위치 OFF 면 무동작).
+        // 아래 apply*Config 들은 이 배열을 인자로 받으므로 redis/reverb 처럼 한 설정이
+        // 여러 config 키를 파생시키는 경우도 한 번에 처리된다.
+        $driverSettings = EnvPriority::filterLocked('drivers', $driverSettings);
+
         // testing 환경에서는 drivers.json의 cache/session/queue 오버라이드 차단 — 테스트 격리 보호
         // (storage/app/settings/drivers.json은 shared 파일이므로 dev의 Redis/DB 드라이버가
         //  testing으로 흘러들어가면 dev 캐시를 오염시킴)
-        $isTestingEnv = env('APP_ENV') === 'testing';
+        // env() 직접 호출은 config:cache 환경에서 null 로 고정되어 가드가 무력해지므로
+        // 해석된 환경(app()->environment)으로 판정한다 — applyDebugConfig 와 동일 규약.
+        $isTestingEnv = app()->environment('testing');
 
         // 캐시 드라이버 설정
         if (! $isTestingEnv && ! empty($driverSettings['cache_driver'])) {
@@ -342,6 +391,23 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('filesystems.default', $driverSettings['storage_driver']);
         }
 
+        // 코어 첨부 업로드 디스크: ATTACHMENT_DISK env 명시가 항상 우선하고,
+        // 미설정 시 storage_driver=s3 를 따른다. env() 직접 호출은 config:cache 환경에서
+        // null 로 고정되므로 config 에 태운 attachment.disk_explicit 로 판별한다.
+        // 빈 문자열도 미명시로 취급한다 — `ATTACHMENT_DISK=` 가 복사된 .env 에서
+        // 빈 값을 명시로 읽으면 전환이 영구 미발동한다 (config 정규화의 2차 방어).
+        // 기존 행은 행 disk 로 서빙되므로 신구 디스크 혼재는 안전하다.
+        // storage_driver 가 `.env` 로 잠긴 설치에서는 저장값이 제거되어 있으므로 유효값으로
+        // 판정한다. 보정하지 않으면 `FILESYSTEM_DISK=s3` 를 잠근 운영자의 첨부 업로드만
+        // 로컬 디스크로 되돌아간다 (기존 행은 행 disk 로 서빙되므로 오류 없이 갈라진다).
+        $storageDriver = EnvPriority::isLocked('drivers.storage_driver')
+            ? config('filesystems.default')
+            : ($driverSettings['storage_driver'] ?? null);
+
+        if ($storageDriver === 's3' && in_array(config('attachment.disk_explicit'), [null, ''], true)) {
+            Config::set('attachment.disk', 's3');
+        }
+
         // 웹소켓 설정
         $this->applyWebsocketConfig($driverSettings);
 
@@ -355,10 +421,59 @@ class SettingsServiceProvider extends ServiceProvider
     }
 
     /**
+     * 공개 자산 디스크 설정을 적용합니다.
+     *
+     * testing 환경에서는 dev 공유 drivers.json 값이 테스트로 흘러들지 않도록
+     * 주입을 건너뜁니다 (테스트 격리). 실제 주입/정규화는
+     * injectPublicAssetDiskConfig() 가 담당합니다 — 가드와 분리해 두어야
+     * 정규화 규칙('none' → '')이 테스트에서 단언 가능합니다.
+     */
+    private function applyPublicAssetDiskConfig(JsonConfigRepository $configRepository): void
+    {
+        // env() 직접 호출은 config:cache 환경에서 null 로 고정되어 가드가 무력해진다.
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        $this->injectPublicAssetDiskConfig($configRepository);
+    }
+
+    /**
+     * drivers.public_asset_disk 저장값을 core.storage.public_asset_disk 로 주입합니다.
+     *
+     * 'none'(스트리밍 유지 선택)/빈값은 미설정('')으로 정규화합니다.
+     * 테스트 격리 가드(applyPublicAssetDiskConfig)를 통과한 뒤에만 호출됩니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     */
+    private function injectPublicAssetDiskConfig(JsonConfigRepository $configRepository): void
+    {
+        // audit:allow env-priority-filter-wiring 이 지점이 drivers 에서 읽는 키는
+        // public_asset_disk 하나뿐이고 그 키는 EnvPriority::EXEMPT 다 (env 대응 없음).
+        // 여기서 다른 drivers 키를 추가로 읽게 되면 그 키는 잠금을 우회하므로,
+        // 그때는 이 면제를 걷어내고 filterLocked('drivers', …) 를 배선해야 한다.
+        $driverSettings = $configRepository->getCategory('drivers');
+
+        $disk = (string) ($driverSettings['public_asset_disk'] ?? '');
+
+        Config::set('core.storage.public_asset_disk', $disk === 'none' ? '' : $disk);
+    }
+
+    /**
      * Redis 연결 설정을 적용합니다.
      */
     private function applyRedisConfig(array $driverSettings): void
     {
+        // phpredis 확장이 없는 서버에서 redis 드라이버 선택 시 `Class "Redis" not found` 로
+        // 사이트 전면 다운되는 결함 방어 — 설정된 클라이언트가 phpredis 인데 확장이 없고
+        // predis 가 있으면 predis 로 폴백한다. 확장이 있으면 기존 phpredis 경로 그대로다.
+        // env('REDIS_CLIENT') 미명시 판별은 무효였다: .env.example 이 REDIS_CLIENT=phpredis
+        // 를 활성 배포하므로 표준 설치에서 영구 미발동이었고, env() 직접 호출은
+        // config:cache 환경에서 null 로 고정된다 (A8 disk_explicit 와 동형 함정).
+        if ($this->shouldFallBackToPredis(extension_loaded('redis'))) {
+            Config::set('database.redis.client', 'predis');
+        }
+
         if (! empty($driverSettings['redis_host'])) {
             Config::set('database.redis.default.host', $driverSettings['redis_host']);
             Config::set('database.redis.cache.host', $driverSettings['redis_host']);
@@ -378,6 +493,25 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('database.redis.default.database', (int) $driverSettings['redis_database']);
             Config::set('database.redis.cache.database', (int) $driverSettings['redis_database']);
         }
+    }
+
+    /**
+     * Redis 클라이언트를 predis 로 폴백해야 하는지 판정합니다.
+     *
+     * 설정된 클라이언트(config — env 시점 값이 config:cache 에도 박제됨)가 phpredis 를
+     * 가리키는데 확장이 로드되어 있지 않고 predis 가 존재하면 참. phpredis 명시 설정이라도
+     * 확장이 없으면 어차피 동작 불가이므로 predis 전환이 유일한 동작 경로다 (#99 A2).
+     * 확장 로드 여부는 인자로 받는다 — 확장 설치 머신에서 부재 상태를 재현할 수 없어
+     * 판정 자체를 단위 검증 가능하게 분리한 것 (테스트가 양 분기를 주입 검증).
+     *
+     * @param  bool  $phpredisLoaded  phpredis 확장 로드 여부 (extension_loaded('redis'))
+     * @return bool predis 로 폴백해야 하면 true
+     */
+    private function shouldFallBackToPredis(bool $phpredisLoaded): bool
+    {
+        return config('database.redis.client', 'phpredis') !== 'predis'
+            && ! $phpredisLoaded
+            && class_exists(Client::class);
     }
 
     /**
@@ -418,6 +552,16 @@ class SettingsServiceProvider extends ServiceProvider
         if (! empty($driverSettings['s3_url'])) {
             Config::set('filesystems.disks.s3.url', $driverSettings['s3_url']);
         }
+
+        // S3 호환 스토리지(R2/MinIO/NCP 등)의 API 요청 대상 — s3_url(공개 URL base)과 별개 축이다.
+        // endpoint 미주입 시 SDK 는 AWS 리전 도메인으로만 요청하므로 호환 스토리지 연결이 불가능하다.
+        if (! empty($driverSettings['s3_endpoint'])) {
+            Config::set('filesystems.disks.s3.endpoint', $driverSettings['s3_endpoint']);
+        }
+
+        if (! empty($driverSettings['s3_use_path_style'])) {
+            Config::set('filesystems.disks.s3.use_path_style_endpoint', true);
+        }
     }
 
     /**
@@ -454,6 +598,14 @@ class SettingsServiceProvider extends ServiceProvider
      */
     private function applyWebsocketConfig(array $driverSettings): void
     {
+        // 마스터 토글이 `.env` 로 잠긴 설치에서는 관리자 저장값이 이 배열에서 제거되어
+        // 있으므로 `empty()` 가 참이 된다 — 그대로 두면 OFF 강제 3종이 오발동해
+        // `.env`(BROADCAST_CONNECTION=reverb)로 웹소켓을 켠 운영자에게 강제 OFF 가 걸린다.
+        // 잠긴 경우에는 OFF 강제도 ON 주입도 하지 않고 config 기본값(= `.env` 유래)을 서빙한다.
+        if (EnvPriority::isLocked('drivers.websocket_enabled')) {
+            return;
+        }
+
         if (empty($driverSettings['websocket_enabled'])) {
             Config::set('broadcasting.default', 'null');
             // 프론트(admin/app.blade.php)가 @if(broadcasting.connections.reverb.key)로 연결을
@@ -481,13 +633,16 @@ class SettingsServiceProvider extends ServiceProvider
         $serverHost = $driverSettings['websocket_server_host'] ?? '';
         $serverPort = (int) ($driverSettings['websocket_server_port'] ?? 0);
         $serverScheme = $driverSettings['websocket_server_scheme'] ?? '';
-        if (empty($serverHost)) {
+        // 잠긴 server 키에는 폴백을 태우지 않는다 — 클라이언트 endpoint 는 env 대응이 없는
+        // 관리자 소유 값이라, 폴백을 그대로 두면 그 값이 `.env` 가 소유한 REVERB_HOST/PORT/SCHEME
+        // 자리에 덮여 잠금이 무력해진다. 잠긴 키는 빈 값으로 남아 아래 주입에서 건너뛰어진다.
+        if (empty($serverHost) && ! EnvPriority::isLocked('drivers.websocket_server_host')) {
             $serverHost = $clientHost;
         }
-        if ($serverPort <= 0) {
+        if ($serverPort <= 0 && ! EnvPriority::isLocked('drivers.websocket_server_port')) {
             $serverPort = $clientPort;
         }
-        if (empty($serverScheme)) {
+        if (empty($serverScheme) && ! EnvPriority::isLocked('drivers.websocket_server_scheme')) {
             $serverScheme = $clientScheme;
         }
         $serverUseTLS = $serverScheme === 'https';
@@ -551,6 +706,9 @@ class SettingsServiceProvider extends ServiceProvider
             return;
         }
 
+        // .env 우선 모드: `.env` 가 소유한 키 제거 (스위치 OFF 면 무동작).
+        $settings = EnvPriority::filterLocked('core_update', $settings);
+
         if (! empty($settings['github_url'])) {
             Config::set('app.update.github_url', $settings['github_url']);
         }
@@ -576,6 +734,9 @@ class SettingsServiceProvider extends ServiceProvider
         if (empty($settings)) {
             return;
         }
+
+        // .env 우선 모드: `.env` 가 소유한 키 제거 (스위치 OFF 면 무동작).
+        $settings = EnvPriority::filterLocked('geoip', $settings);
 
         if (isset($settings['feature_enabled'])) {
             Config::set('geoip.enabled', (bool) $settings['feature_enabled']);
@@ -610,6 +771,9 @@ class SettingsServiceProvider extends ServiceProvider
      */
     private function applyIdentityConfig(JsonConfigRepository $configRepository): void
     {
+        // audit:allow env-priority-filter-wiring identity 카테고리는 전 키가 EnvPriority::EXEMPT 다
+        // (env 대응이 없어 잠글 대상이 하나도 없다) — filterLocked 를 걸어도 no-op 이다.
+        // 이 카테고리에 env 대응 키가 생기면 EnvPriorityContractTest 의 맵 패리티가 먼저 red 가 된다.
         $settings = $configRepository->getCategory('identity');
 
         if (empty($settings)) {
@@ -617,26 +781,6 @@ class SettingsServiceProvider extends ServiceProvider
         }
 
         Config::set('settings.identity', $settings);
-    }
-
-    /**
-     * 캐시 설정을 Laravel config에 적용합니다.
-     */
-    private function applyCacheConfig(JsonConfigRepository $configRepository): void
-    {
-        $cacheSettings = $configRepository->getCategory('cache');
-
-        if (empty($cacheSettings)) {
-            return;
-        }
-
-        if (! empty($cacheSettings['driver'])) {
-            Config::set('cache.default', $cacheSettings['driver']);
-        }
-
-        if (! empty($cacheSettings['prefix'])) {
-            Config::set('cache.prefix', $cacheSettings['prefix']);
-        }
     }
 
     /**
@@ -650,9 +794,8 @@ class SettingsServiceProvider extends ServiceProvider
             return;
         }
 
-        if (! empty($uploadSettings['disk'])) {
-            Config::set('filesystems.default', $uploadSettings['disk']);
-        }
+        // .env 우선 모드: `.env` 가 소유한 키 제거 (스위치 OFF 면 무동작).
+        $uploadSettings = EnvPriority::filterLocked('upload', $uploadSettings);
 
         // 관리자 설정은 MB, config/attachment.* 는 KB — 변환은 이 지점 단 한 곳에서만 수행한다.
         // (기존에는 존재하지 않는 키 `max_size` 를 읽어 설정이 어디에도 반영되지 않았다)

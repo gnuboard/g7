@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 부모는 tombstone("삭제된 댓글입니다")으로 유지되어야 한다.
  * 일반 조회(withTrashed=false, del_cmt 토글 OFF)에서만 고아 복구가 적용된다.
  *
- * cross product 의 viewer 축은 각 테스트 메서드 docblock 의 @scenario 로 분담한다.
+ * cross product 의 viewer 축은 각 테스트 메서드 docblock 의 시나리오 마킹으로 분담한다.
  */
 class CommentDeletedParentChildTreeTest extends BoardTestCase
 {
