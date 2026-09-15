@@ -28,8 +28,10 @@
 1. **PG 는 이 모듈이 알지 않는다.** 결제 연동 코드는 전부 플러그인(`pay_kginicis` ·
    `pay_nhnkcp` · `pay_nicepayments` · `tosspayments`)에 있고, 그 플러그인들이 이 모듈에
    의존합니다(역방향 아님). 새 PG 는 이 모듈을 고치지 않고 플러그인 추가만으로 붙습니다 —
-   결제수단 카탈로그에 자기 능력(`needs_pg` / `pg_locked` / `pg_provider`)을 선언하는 것이
-   그 접합면입니다.
+   결제수단 카탈로그에 자기 능력(`needs_pg` / `pg_locked` / `pg_provider` /
+   `auto_approve_refund`)을 선언하는 것이 그 접합면입니다. `auto_approve_refund` 는 "사람의
+   개입 없이 환불이 집행되는가" 이고, 미선언 기본값만 `false` 로 기웁니다 — 자동으로 잘못
+   완료하면 이중 환불이고 멈추면 운영자가 한 번 더 누르면 되기 때문입니다.
 2. **금액은 계산기 하나만 지난다.** `OrderCalculationService` 의 9단계 계산이 상품 상세·
    장바구니·체크아웃·주문 생성·결제 완료 검증·부분 취소 **여섯 지점 전부**의 단일 출처입니다.
    화면마다 금액을 다시 계산하면 같은 장바구니가 화면마다 다른 값을 보이게 되고, 그 어긋남은
@@ -180,7 +182,8 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 |---|---|
 | 금액 계산 단계에 개입 | `calculation.after_item_subtotals` · `calculation.after_final_result` 등 `calculation.*` 18종 (9단계 사이사이) |
 | 취소 시 쿠폰·마일리지 안분 되돌리기 규칙 변경 | `adjustment.filter_restore_promotions` |
-| 새 PG·결제수단 추가 | 결제수단 카탈로그에 능력 선언 + `payment.*` 6종 (이 모듈 수정 불필요) |
+| 새 PG·결제수단 추가 | 결제수단 카탈로그에 능력 선언(`needs_pg`·`pg_locked`·`refund_method`·`auto_approve_refund` 등) + `payment.*` 6종 (이 모듈 수정 불필요) |
+| 그 수단의 환불을 운영자 승인 없이 자동 완료 | 카탈로그 `auto_approve_refund: true` 선언 — 운영자가 클레임 정책 탭에서 최종 결정 (`docs/extension-points.md` "결제수단 능력 선언") |
 | 결제 직전/취소/입금확인에 본인인증 강제 | `getIdentityPolicies()` 가 선언한 4개 정책의 target 훅 (`checkout.before_payment` · `payment.before_cancel` · `payment.before_approve` · `payment.before_confirm_deposit`) — 기본 `enabled: false` |
 | 상품 문의를 다른 저장소로 | `inquiry.store_validation_rules` · `inquiry.update_validation_rules` + 게시판 측 `sirsoft-board.post.after_*` (`ProductInquiryBoardListener` 가 선례) |
 | 재고 차감/복원 시점 개입 | `stock.*` 4종 |
@@ -234,7 +237,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 과거 주문 표시에 현재 통화 설정(`getDecimalPlaces($code)`)을 조회 | 주문의 `currency_snapshot` 을 함께 넘긴다 | 운영자가 그 통화를 삭제하면 폴백(2자리)이 적용되어 `¥14,835` 가 `¥14,835.00` 이 된다. 금액 계산은 스냅샷을 쓰는데 표기만 현재 설정을 따르면 같은 화면 안에서 근거가 갈린다 |
 | 다국어 문구에 `:amount원` / `:amount円` 처럼 통화 기호를 박기 | 문구는 `:amount` 로 중립, 호출부가 `ecommerce_format_price($amount, $currency)` 로 포맷 | UI 언어가 통화를 결정하게 되어 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다 |
 | 쿠폰·마일리지 복원 훅을 기본 설정(큐)으로 구독 | `'sync' => true` | 커밋 뒤 실행이라 예외를 던져도 롤백되지 않는다 — 오류 응답만 나가고 차감된 쿠폰은 그대로 남는다 |
-| 특정 PG 이름을 이 모듈 코드에 분기로 넣기 (`if ($pg === 'tosspayments')`) | 결제수단 카탈로그 선언(`needs_pg`/`pg_locked`/`pg_provider`)과 `payment.*` 훅 | PG 가 늘 때마다 이 모듈이 커지고, 플러그인만 설치하면 되는 구조가 깨진다 |
+| 특정 PG 이름을 이 모듈 코드에 분기로 넣기 (`if ($pg === 'tosspayments')`) | 결제수단 카탈로그 선언(`needs_pg`/`pg_locked`/`pg_provider`/`auto_approve_refund`)과 `payment.*` 훅 | PG 가 늘 때마다 이 모듈이 커지고, 플러그인만 설치하면 되는 구조가 깨진다 |
 | 주문번호·상품코드를 `max(id)+1` 이나 타임스탬프 조합으로 직접 생성 | `SequenceService::generateCode()` | 채번은 DB UNIQUE 제약과 함께 원자적으로 수행된다 — 직접 생성은 동시 주문에서 중복을 만든다 |
 | 취소·환불을 주문 단위로 처리 | 옵션 단위(`OrderCancelOption`/`OrderRefundOption`) | 부분 취소가 이 도메인의 기본이며, 주문 단위로 처리하면 남은 옵션의 안분 금액이 계산되지 않는다 |
 | `OrderCancel` 을 `recordCancellation()` 밖에서 만들기 | 그 메서드 한 지점 | 만드는 지점이 둘이면 합계 재계산·누적 컬럼 갱신이 경로마다 갈리고, 같은 취소가 경로에 따라 다른 장부를 남긴다 |
@@ -251,10 +254,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 488개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 489개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 165개 | `vitest.config.ts` |
 | Playwright | 61개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 120개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 122개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

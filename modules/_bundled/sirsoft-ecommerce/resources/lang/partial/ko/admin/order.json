@@ -334,6 +334,7 @@
         "status_col": "현재상태",
         "auto_advance_refund_label": "환불까지 한 번에 처리",
         "auto_advance_refund_hint": "체크하면 환불신청서를 만든 뒤 승인·환불완료까지 자동으로 진행합니다. 계좌로 송금해야 하는 환불 수단은 승인에서 멈추고, 운영자가 송금 후 [환불하기]로 완료합니다.",
+        "auto_advance_refund_blocked_hint": "이 주문의 결제수단은 사람이 송금해야 환불이 끝나므로, 체크해도 환불신청 상태에서 멈춥니다. 운영자가 승인한 뒤 [환불하기]로 송금을 마쳐 주세요.",
         "cancel_reason_type_label": "취소 사유",
         "reason_placeholder": "취소 사유를 선택하세요",
         "reason": {

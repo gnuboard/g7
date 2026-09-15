@@ -825,6 +825,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     'needs_pg' => $method['needs_pg'] ?? $this->builtinNeedsPg($id),
                     'pg_locked' => $method['pg_locked'] ?? false,
                     'refund_method' => $method['refund_method'] ?? $this->builtinRefundMethod($id),
+                    'auto_approve_refund' => $method['auto_approve_refund'] ?? $this->builtinAutoApproveRefund($id),
                     'is_active' => $method['is_active'] ?? true,
                     'min_order_amount' => $method['min_order_amount'] ?? 0,
                     'stock_deduction_timing' => $method['stock_deduction_timing'] ?? 'payment_complete',
@@ -844,6 +845,35 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     private function builtinNeedsPg(string $id): bool
     {
         return PaymentMethodEnum::tryFrom($id)?->needsPgProvider() ?? true;
+    }
+
+    /**
+     * builtin 결제수단이 **사람의 개입 없이** 환불을 집행할 수 있는지 파생합니다. (P16·P17)
+     *
+     * 자동 승인은 "운영자가 아무것도 하지 않아도 돈이 실제로 돌아가는" 수단에만 허용한다.
+     * `card` 는 PG API 가 그 트랜잭션에서 취소하고, `point` 는 같은 트랜잭션의 마일리지 환급이
+     * 곧 환불이며, `free` 는 돌려줄 돈이 없다. 나머지 builtin(`vbank`·`dbank`·`bank`·`phone`·
+     * `deposit`)은 사람이 계좌로 송금해야 끝난다 — 자동 승인하면 신청서만 `완료` 로 앞서 나가고
+     * 고객에게는 "환불 완료" 알림이 가는데 돈은 아직 나가지 않은 상태가 된다.
+     *
+     * `vbank` 가 여기 드는 것이 비직관적일 수 있으나, PG 가 가상계좌 환불을 집행하려면 고객의
+     * 환불계좌를 받아 넘겨야 하고 그 입력·확인이 사람의 단계다.
+     *
+     * 확장 결제수단(간편결제 등)은 enum case 가 없으므로 플러그인이 카탈로그 항목에
+     * `auto_approve_refund` 를 직접 선언한다. 미선언 확장 수단의 기본값은 false 다 —
+     * 오판의 비용이 비대칭이다(자동으로 잘못 완료하면 이중 환불, 멈추면 운영자가 한 번 더 누른다).
+     *
+     * @param  string  $id  결제수단 ID
+     * @return bool 환불 자동 승인 가능 여부
+     */
+    private function builtinAutoApproveRefund(string $id): bool
+    {
+        return match (PaymentMethodEnum::tryFrom($id)) {
+            PaymentMethodEnum::CARD,
+            PaymentMethodEnum::POINT,
+            PaymentMethodEnum::FREE => true,
+            default => false,
+        };
     }
 
     /**
@@ -1138,6 +1168,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             $needsPg = (bool) ($definition['defaults']['needs_pg'] ?? $this->builtinNeedsPg($id));
             $pgLocked = (bool) ($definition['defaults']['pg_locked'] ?? false);
             $refundMethod = $definition['defaults']['refund_method'] ?? $this->builtinRefundMethod($id);
+            $autoApproveRefund = (bool) ($definition['defaults']['auto_approve_refund'] ?? $this->builtinAutoApproveRefund($id));
 
             // PG 고정 수단(간편결제 등)은 특정 PG 에 종속되므로 관리자가 다른 PG 로 바꿀 수 없다.
             // saved 에 남은 과거 값(예: null)이 있어도 정의의 PG 를 강제한다.
@@ -1145,6 +1176,10 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 'needs_pg' => $needsPg,
                 'pg_locked' => $pgLocked,
                 'refund_method' => $refundMethod,
+                // 사람의 개입 없이 환불을 집행할 수 있는 수단인지 — 정의가 SSoT (P16·P17).
+                // 클레임 정책 탭의 '환불 자동 승인 결제수단' 목록이 이 선언으로 배지를 띄우고,
+                // 새로 설치된 PG 플러그인의 즉시 환불 수단이 목록에 자동 합류하는 근거가 된다.
+                'auto_approve_refund' => $autoApproveRefund,
                 // 고객이 결제창에서 고를 수 있는 수단인지 — 정의가 SSoT 다(P8·P10).
                 //
                 // 마일리지·예치금·무료는 코어에 **결제 실행 경로가 없다**. 켜 두면 고객 주문서에는

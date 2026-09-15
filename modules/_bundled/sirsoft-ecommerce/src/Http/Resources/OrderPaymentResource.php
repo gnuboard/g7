@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
  * 주문 결제 정보 리소스
@@ -37,6 +38,15 @@ class OrderPaymentResource extends BaseApiResource
             // PG 환불(취소)이 필요한 결제수단인지 — 취소 모달의 'PG 함께 취소' 체크박스·'환불 우선순위' 라디오
             // 노출 여부 SSoT(무통장/포인트/예치금/무료는 false → 두 UI 숨김). U1·A28 공유 플래그.
             'requires_pg_cancellation' => $this->payment_method ? $this->needsPgProvider() : false,
+            // 이 결제수단의 환불이 **사람 손 없이** 자동으로 진행되는가 (P16·P17).
+            //
+            // 관리자 [주문취소] 모달의 '자동 전이' 체크박스가 이 값을 읽어, 정지 수단(무통장·
+            // 가상계좌 등) 주문이면 "체크해도 신청에서 멈춘다" 를 미리 알린다. 화면이 규칙을
+            // 다시 유도하지 않고 서버 판정 하나를 읽게 한다 — 레이아웃 표현식에 목록 비교를
+            // 박으면 설정이 바뀌거나 플러그인이 수단을 늘릴 때 안내와 실제 전이가 갈린다.
+            'auto_approves_refund' => $this->payment_method
+                ? app(PaymentMethodResolver::class)->autoApprovesRefund($this->paymentMethodId())
+                : true,
             // 이 결제가 **부분취소를 지원하는가** (P6).
             //
             // PG 마다 제약이 다르고, 어떤 조합은 원천적으로 전액취소만 된다 — 예: NICE 가상계좌는

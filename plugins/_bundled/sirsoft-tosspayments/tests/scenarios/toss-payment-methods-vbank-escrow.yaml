@@ -92,6 +92,8 @@ effects:
   - toss_methods_declare_pg_locked_to_tosspayments
   - locked_pg_id_matches_registered_provider
   - other_plugin_methods_untouched_by_toss_injection
+  # 환불 자동 승인 능력 선언 (코어 P16·P17) — 카드 계열만 true
+  - only_card_backed_methods_declare_auto_approve_refund
   # 코어 결제수단 번역 (본 이슈 수정분)
   - core_payment_method_preserved_through_settings_merge
   - core_payment_method_preserved_through_save_snapshot

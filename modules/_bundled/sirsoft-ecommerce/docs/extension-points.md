@@ -9,7 +9,7 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:256` 외 2곳 |
+| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:271` 외 2곳 |
 | `sirsoft-ecommerce.adjustment.filter_restore_promotions` | filter | — | `src/Services/OrderAdjustmentService.php:641` |
 | `sirsoft-ecommerce.admin.user_currency.changed` | action | — | `src/Services/UserCurrencyService.php:72` |
 | `sirsoft-ecommerce.admin.user_shipping_country.changed` | action | — | `src/Services/UserShippingCountryService.php:74` |
@@ -32,20 +32,20 @@
 | `sirsoft-ecommerce.brand.filter_show_result` | filter | — | `src/Services/BrandService.php:65` |
 | `sirsoft-ecommerce.brand.filter_update_data` | filter | — | `src/Services/BrandService.php:129` |
 | `sirsoft-ecommerce.brand.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateBrandRequest.php:40` |
-| `sirsoft-ecommerce.calculation.after_final_result` | filter | — | `src/Services/OrderCalculationService.php:375` |
+| `sirsoft-ecommerce.calculation.after_final_result` | filter | — | `src/Services/OrderCalculationService.php:376` |
 | `sirsoft-ecommerce.calculation.after_item_subtotals` | filter | — | `src/Services/OrderCalculationService.php:173` |
-| `sirsoft-ecommerce.calculation.after_order_discount` | filter | — | `src/Services/OrderCalculationService.php:276` |
-| `sirsoft-ecommerce.calculation.after_payment_amount` | filter | — | `src/Services/OrderCalculationService.php:299` |
-| `sirsoft-ecommerce.calculation.after_points_earning` | filter | — | `src/Services/OrderCalculationService.php:328` |
-| `sirsoft-ecommerce.calculation.after_points_usage` | filter | — | `src/Services/OrderCalculationService.php:313` |
+| `sirsoft-ecommerce.calculation.after_order_discount` | filter | — | `src/Services/OrderCalculationService.php:277` |
+| `sirsoft-ecommerce.calculation.after_payment_amount` | filter | — | `src/Services/OrderCalculationService.php:300` |
+| `sirsoft-ecommerce.calculation.after_points_earning` | filter | — | `src/Services/OrderCalculationService.php:329` |
+| `sirsoft-ecommerce.calculation.after_points_usage` | filter | — | `src/Services/OrderCalculationService.php:314` |
 | `sirsoft-ecommerce.calculation.after_product_discount` | filter | — | `src/Services/OrderCalculationService.php:197` |
-| `sirsoft-ecommerce.calculation.after_shipping_discount` | filter | — | `src/Services/OrderCalculationService.php:253` |
+| `sirsoft-ecommerce.calculation.after_shipping_discount` | filter | — | `src/Services/OrderCalculationService.php:254` |
 | `sirsoft-ecommerce.calculation.after_shipping_fee` | filter | — | `src/Services/OrderCalculationService.php:232` |
 | `sirsoft-ecommerce.calculation.after_tax_classification` | filter | — | `src/Services/OrderCalculationService.php:207` |
-| `sirsoft-ecommerce.calculation.before_final_result` | filter | — | `src/Services/OrderCalculationService.php:339` |
+| `sirsoft-ecommerce.calculation.before_final_result` | filter | — | `src/Services/OrderCalculationService.php:340` |
 | `sirsoft-ecommerce.calculation.before_item_subtotals` | filter | — | `src/Services/OrderCalculationService.php:166` |
-| `sirsoft-ecommerce.calculation.before_order_discount` | filter | — | `src/Services/OrderCalculationService.php:263` |
-| `sirsoft-ecommerce.calculation.before_payment_amount` | filter | — | `src/Services/OrderCalculationService.php:286` |
+| `sirsoft-ecommerce.calculation.before_order_discount` | filter | — | `src/Services/OrderCalculationService.php:264` |
+| `sirsoft-ecommerce.calculation.before_payment_amount` | filter | — | `src/Services/OrderCalculationService.php:287` |
 | `sirsoft-ecommerce.calculation.before_product_discount` | filter | — | `src/Services/OrderCalculationService.php:182` |
 | `sirsoft-ecommerce.calculation.before_shipping_discount` | filter | — | `src/Services/OrderCalculationService.php:242` |
 | `sirsoft-ecommerce.calculation.before_shipping_fee` | filter | — | `src/Services/OrderCalculationService.php:216` |
@@ -77,7 +77,7 @@
 | `sirsoft-ecommerce.cart.update_quantity_validation_rules` | filter | — | `src/Http/Requests/Public/UpdateCartQuantityRequest.php:37` |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | — | `src/Services/CashReceiptService.php:176` |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | — | `src/Services/CashReceiptService.php:108` |
-| `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | — | `src/Services/EcommerceSettingsService.php:907` |
+| `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | — | `src/Services/EcommerceSettingsService.php:937` |
 | `sirsoft-ecommerce.category-image.after_delete` | action | — | `src/Services/CategoryImageService.php:248` 외 1곳 |
 | `sirsoft-ecommerce.category-image.after_reorder` | action | — | `src/Services/CategoryImageService.php:310` |
 | `sirsoft-ecommerce.category-image.after_update` | action | — | `src/Services/CategoryImageService.php:384` |
@@ -133,10 +133,10 @@
 | `sirsoft-ecommerce.claim.exchange.requested` | action | — | `src/Services/OrderExchangeService.php:359` |
 | `sirsoft-ecommerce.claim.exchange.status_changed` | action | — | `src/Services/OrderExchangeService.php:2121` |
 | `sirsoft-ecommerce.claim.payment_cancelled` | action | — | `src/Services/ClaimPaymentService.php:831` |
-| `sirsoft-ecommerce.claim.refund.completed` | action | — | `src/Services/OrderRefundRequestService.php:1150` |
-| `sirsoft-ecommerce.claim.refund.option_status_changed` | action | — | `src/Services/OrderRefundRequestService.php:1134` 외 3곳 |
+| `sirsoft-ecommerce.claim.refund.completed` | action | — | `src/Services/OrderRefundRequestService.php:1198` |
+| `sirsoft-ecommerce.claim.refund.option_status_changed` | action | — | `src/Services/OrderRefundRequestService.php:1182` 외 3곳 |
 | `sirsoft-ecommerce.claim.refund.requested` | action | — | `src/Services/OrderExchangeService.php:2758` 외 2곳 |
-| `sirsoft-ecommerce.claim.refund.status_changed` | action | — | `src/Services/OrderRefundRequestService.php:1143` 외 2곳 |
+| `sirsoft-ecommerce.claim.refund.status_changed` | action | — | `src/Services/OrderRefundRequestService.php:1191` 외 2곳 |
 | `sirsoft-ecommerce.claim.return.option_status_changed` | action | — | `src/Services/OrderReturnService.php:698` 외 2곳 |
 | `sirsoft-ecommerce.claim.return.requested` | action | — | `src/Services/OrderReturnService.php:364` |
 | `sirsoft-ecommerce.claim.return.status_changed` | action | — | `src/Services/OrderReturnService.php:1833` |
@@ -243,7 +243,7 @@
 | `sirsoft-ecommerce.mileage.notify_expiring` | action | — | `src/Console/Commands/NotifyExpiringMileageCommand.php:88` |
 | `sirsoft-ecommerce.mileage.restore` | action | — | `src/Services/RefundExecutionService.php:467` |
 | `sirsoft-ecommerce.mileage.use` | action | — | `src/Services/OrderProcessingService.php:2070` |
-| `sirsoft-ecommerce.notification.channels` | filter | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:702` |
+| `sirsoft-ecommerce.notification.channels` | filter | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:717` |
 | `sirsoft-ecommerce.option.after_bulk_update` | action | — | `src/Services/ProductOptionService.php:297` |
 | `sirsoft-ecommerce.option.before_bulk_update` | action | — | `src/Services/ProductOptionService.php:197` |
 | `sirsoft-ecommerce.option.bulk_update_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateOptionsRequest.php:72` |
@@ -298,8 +298,8 @@
 | `sirsoft-ecommerce.payment.before_confirm_deposit` | action | — | `src/Services/OrderProcessingService.php:1859` |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | — | `src/Http/Controllers/Shop/PaymentConfigController.php:26` |
 | `sirsoft-ecommerce.payment.refund` | filter | — | `src/Services/RefundExecutionService.php:370` |
-| `sirsoft-ecommerce.payment.registered_pg_providers` | filter | — | `src/Services/EcommerceSettingsService.php:891` |
-| `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | — | `src/Http/Resources/OrderPaymentResource.php:47` 외 1곳 |
+| `sirsoft-ecommerce.payment.registered_pg_providers` | filter | — | `src/Services/EcommerceSettingsService.php:921` |
+| `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | — | `src/Http/Resources/OrderPaymentResource.php:57` 외 1곳 |
 | `sirsoft-ecommerce.preset.after_create` | action | — | `src/Services/SearchPresetService.php:60` |
 | `sirsoft-ecommerce.preset.after_delete` | action | — | `src/Services/SearchPresetService.php:118` |
 | `sirsoft-ecommerce.preset.after_update` | action | — | `src/Services/SearchPresetService.php:93` |
@@ -441,9 +441,9 @@
 | `sirsoft-ecommerce.search_preset.list_validation_rules` | filter | — | `src/Http/Requests/Admin/SearchPresetListRequest.php:40` |
 | `sirsoft-ecommerce.sequence.after_generate` | action | — | `src/Services/SequenceService.php:57` 외 1곳 |
 | `sirsoft-ecommerce.sequence.before_generate` | action | — | `src/Services/SequenceService.php:44` |
-| `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:250` |
-| `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:876` |
-| `sirsoft-ecommerce.shipping.calculate_fee` | filter | — | `src/Services/OrderCalculationService.php:2104` |
+| `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:265` |
+| `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:906` |
+| `sirsoft-ecommerce.shipping.calculate_fee` | filter | — | `src/Services/OrderCalculationService.php:2118` |
 | `sirsoft-ecommerce.shipping_carrier.after_create` | action | — | `src/Services/ShippingCarrierService.php:156` |
 | `sirsoft-ecommerce.shipping_carrier.after_delete` | action | — | `src/Services/ShippingCarrierService.php:343` |
 | `sirsoft-ecommerce.shipping_carrier.after_list` | action | — | `src/Services/ShippingCarrierService.php:73` |
@@ -580,6 +580,34 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 그대로 남깁니다 — 알림 리스너만 그 플래그를 읽고, 활동 로그 리스너는 읽지 않습니다.
 기존 3인수 구독자는 그대로 두어도 됩니다(PHP 는 유저 함수에 인수가 더 넘어와도 오류를 내지
 않습니다 — 모자랄 때만 `ArgumentCountError`).
+
+### 결제수단 능력 선언 — `settings.filter_available_payment_methods`
+
+이 필터로 결제수단을 등록하는 플러그인은 `defaults` 에 **능력 키**를 함께 선언합니다. 코어 builtin
+8종은 `PaymentMethodEnum` 에서 파생하지만 확장 수단은 enum case 가 없어 능력을 물을 곳이 카탈로그
+선언뿐입니다. 능력 질의의 단일 출처는 `PaymentMethodResolver` 이며 폴백은
+`카탈로그 선언 → enum(builtin) → 안전한 기본값` 순입니다.
+
+| 능력 키 | 뜻 | 미선언 시 기본값 |
+|---|---|---|
+| `needs_pg` | PG 결제창이 필요한가 | `true` (오판 비용이 반대 방향에서 더 큼 — #475) |
+| `pg_locked` | 관리자가 다른 PG 로 바꿀 수 없는가 | `false` |
+| `refund_method` | 대응 환불 수단 (`pg` · `bank` · `points`) | PG 필요 여부로 판정 |
+| `customer_selectable` | 고객이 주문서에서 직접 고를 수 있는가 | `point`·`deposit`·`free` 외 `true` |
+| `cash_equivalent` | 현금영수증 발급 대상인가 | enum 규칙 |
+| `auto_approve_refund` | **사람의 개입 없이 환불이 집행되는가** | `false` |
+
+`auto_approve_refund` 의 기본값만 `needs_pg` 와 반대 방향입니다 — 오판의 비용이 비대칭이기
+때문입니다. 자동으로 잘못 완료하면 돈이 나가기 전에 "환불 완료" 가 찍혀 이중 환불로 이어지고,
+반대로 멈추면 운영자가 승인 버튼을 한 번 더 누르면 됩니다. PG 결제취소 API 가 그 자리에서 환불을
+끝내는 수단(카드·간편결제)만 `true` 로 선언하고, 고객 환불계좌를 받아 사람이 송금해야 끝나는
+수단(가상계좌·계좌이체·휴대폰·편의점 등)은 선언하지 않거나 `false` 로 둡니다.
+
+선언한 수단은 관리자 환경설정 > 클레임 정책 탭의 '환불 자동 승인 결제수단' 목록에 `PG 즉시 환불`
+배지와 함께 나타나고, 운영자가 아직 결정한 적 없으면 목록에 자동 합류합니다(`docs/settings.md`
+의 `claim.auto_approve_refund_payment_methods` 참조). 선언하지 않으면 그 수단의 환불은 결제완료
+상품이라도 `requested` 에서 멈춰 운영자 승인을 기다립니다 — 돈이 새지는 않지만 자동 전이가 없으므로,
+즉시 환불이 가능한 수단이라면 반드시 선언합니다.
 
 `claim.cancel.*` 3종은 활동 로그 리스너에만 등록합니다. **알림 리스너에는 등록하지 않습니다** —
 같은 사건을 환불 알림이 이미 대표하므로, 등록하면 한 건에 알림이 두 번 갑니다.

@@ -15,14 +15,16 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * 회원 취소·환불 접수의 **상태 × 결제수단 매트릭스** (#599 후속 §9-1)
  *
  * 계획서 §9-1 이 이 파일에 요구한 것은 "상태 × 결제수단 매트릭스로 접수 결과(환불신청서 +
- * 취소신청서 유무·상태) 검증" 이다. 그 교차곱이 중요한 이유는 새 모델의 **종착점이 환불수단이
- * 정하기** 때문이다(D4·B14) — 상품 상태는 분기(`auto`/`request`)를 정하고, 환불수단은 그 분기가
- * 어디서 멈추는지를 정한다. 두 축을 따로 재면 조합에서만 나타나는 어긋남이 빠진다.
+ * 취소신청서 유무·상태) 검증" 이다. 그 교차곱이 중요한 이유는 새 모델의 **종착점을 결제수단이
+ * 정하기** 때문이다(P16 · B14) — 상품 상태는 분기(`auto`/`request`)를 정하고, 결제수단이 환불을
+ * 사람 손 없이 집행할 수 있는지가 그 분기의 정지 지점을 정한다. 두 축을 따로 재면 조합에서만
+ * 나타나는 어긋남이 빠진다.
  *
  * 실제로 이 회차의 결함 다수가 수단 축에서 터졌다 — 입금완료 가상계좌 취소 불가(P5),
  * 취소 주문 부활(P4), PG 리스너 부재 폴백(P14), 마일리지 전액 환불의 상태 정박(P12).
@@ -76,9 +78,12 @@ class UserClaimRefundBranchTest extends ModuleTestCase
     public static function refundMethodMatrix(): array
     {
         return [
-            '카드 결제 → PG 환불, 완료까지' => ['card', 'testpg', RefundMethodEnum::PG, true],
-            '무통장 → 계좌 환불, 승인에서 멈춤' => ['dbank', '', RefundMethodEnum::BANK, false],
-            '마일리지 전액 → 포인트 환불, 완료까지' => ['point', '', RefundMethodEnum::POINTS, true],
+            '카드 결제 → PG 환불, 완료까지' => ['card', 'testpg', RefundMethodEnum::PG, RefundStatusEnum::COMPLETED],
+            // P16 — 무통장은 사람이 송금해야 끝나므로 **접수에서** 멈춘다. 종전(前D4)에는
+            // `approved` 까지 자동으로 갔으나, 아무도 검토하지 않은 건이 "승인됨" 으로 보이는
+            // 상태를 없앴다. 승인이 사람의 검토, 실행이 사람의 송금이다.
+            '무통장 → 계좌 환불, 접수에서 멈춤' => ['dbank', '', RefundMethodEnum::BANK, RefundStatusEnum::REQUESTED],
+            '마일리지 전액 → 포인트 환불, 완료까지' => ['point', '', RefundMethodEnum::POINTS, RefundStatusEnum::COMPLETED],
         ];
     }
 
@@ -182,19 +187,18 @@ class UserClaimRefundBranchTest extends ModuleTestCase
     // ================================================================
 
     /**
-     * 수단별 종착점과 두 문서의 유무·상태. (D4 · B14 · P12)
-     *
-     * @dataProvider refundMethodMatrix
+     * 수단별 종착점과 두 문서의 유무·상태. (P16 · B14 · P12)
      *
      * @scenario item_selection=single_full, refund_branch=auto, verify_stage=refund_record
      *
      * @effects refund_branch_terminus_is_decided_by_the_refund_method
      */
+    #[DataProvider('refundMethodMatrix')]
     public function test_the_terminus_is_decided_by_the_refund_method(
         string $paymentMethod,
         string $pgProvider,
         RefundMethodEnum $expectedMethod,
-        bool $completes,
+        RefundStatusEnum $expectedStatus,
     ): void {
         $order = $this->myPaidOrder($paymentMethod, $pgProvider);
 
@@ -217,8 +221,9 @@ class UserClaimRefundBranchTest extends ModuleTestCase
         $refund = OrderRefund::where('order_id', $order->id)->firstOrFail();
         $this->assertSame($expectedMethod, $refund->refund_method);
 
-        if ($completes) {
-            $this->assertSame(RefundStatusEnum::COMPLETED, $refund->refund_status);
+        $this->assertSame($expectedStatus, $refund->refund_status);
+
+        if ($expectedStatus === RefundStatusEnum::COMPLETED) {
             $this->assertNotNull($refund->refunded_at);
             // 취소신청서는 환불이 집행된 순간에만 생긴다 (D3).
             $this->assertSame(1, OrderCancel::where('order_id', $order->id)->count());
@@ -226,7 +231,6 @@ class UserClaimRefundBranchTest extends ModuleTestCase
             return;
         }
 
-        $this->assertSame(RefundStatusEnum::APPROVED, $refund->refund_status);
         $this->assertNull($refund->refunded_at);
         // 송금 전에는 취소신청서가 없다 — 취소가 안 된 것이 아니라 환불신청서 단계다 (D5 · B12).
         $this->assertSame(0, OrderCancel::where('order_id', $order->id)->count());
@@ -239,12 +243,11 @@ class UserClaimRefundBranchTest extends ModuleTestCase
     /**
      * 상품 상태가 분기를 정한다. (§4-1)
      *
-     * @dataProvider statusMatrix
-     *
      * @scenario item_selection=single_full, payment_method=card, verify_stage=order_status
      *
      * @effects refund_branch_is_decided_by_the_item_status
      */
+    #[DataProvider('statusMatrix')]
     public function test_the_branch_is_decided_by_the_item_status(
         OrderStatusEnum $status,
         string $expectedBranch,

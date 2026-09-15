@@ -3743,6 +3743,90 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * A-10-5b: 정책 그룹 소멸 시 배송비 쿠폰 재적용 — 최소 주문금액은 상품소계 기준 (P18)
+     *
+     * 구성(계획서 1-A 회차 ② 직후 잔여 = 회차 ③ 의 baseline):
+     *   브이넥 25,000 ×1 (정책1 무료) · 텀블러 25,000 ×1 (정책2 고정 3,000)
+     *   양말 4,000 ×2 (정책3 조건부무료 5만 미만 2,500)
+     *   상품쿠폰 3,000(min 20,000 · 브이넥) · 주문쿠폰 5,000(min 50,000) · 배송비쿠폰 5,000(min 30,000)
+     *   배송비 0 + 3,000 + 2,500 = 5,500 → 배송비쿠폰 min(5,000, 5,500) = 5,000 → 실부담 500
+     *   결제 58,000 − 3,000 − 5,000 + 500 = 50,500
+     *
+     * 텀블러 1개 취소 → 정책2 그룹 소멸:
+     *   상품 33,000 · 주문쿠폰 탈락(33,000 < 50,000) → 복원
+     *   배송비 총액 5,500 → 2,500 · 배송비쿠폰은 상품소계 33,000 ≥ 30,000 이라 유지
+     *     → min(5,000, 2,500) = 2,500 → 실부담 500 → 0
+     *   재계산 33,000 − 3,000 + 0 = 30,000 → 환불 50,500 − 30,000 = 20,500
+     *
+     * 수정 전(배송비 총액과 비교)에는 5,500 < 30,000 으로 배송비쿠폰이 처음부터 미적용이라
+     * 결제 55,500 · 환불 23,000 이었다.
+     *
+     * @scenario basis_case=policy_group_dissolved
+     *
+     * @effects shipping_coupon_survives_policy_group_dissolution, shipping_coupon_discount_capped_by_shipping_total
+     */
+    public function test_shipping_coupon_reapplied_when_policy_group_disappears(): void
+    {
+        $policyFree = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FREE, baseFee: 0);
+        $policyFixed = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FIXED, baseFee: 3000);
+        $policyConditional = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::CONDITIONAL_FREE,
+            baseFee: 2500,
+            freeThreshold: 50000,
+        );
+
+        [$pVneck, $oVneck] = $this->createProductWithOption(price: 25000, shippingPolicy: $policyFree);
+        [$pTumbler, $oTumbler] = $this->createProductWithOption(price: 25000, shippingPolicy: $policyFixed);
+        [$pSocks, $oSocks] = $this->createProductWithOption(price: 4000, shippingPolicy: $policyConditional);
+
+        $productCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::PRODUCT_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 3000,
+            minOrderAmount: 20000,
+        );
+        $orderCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::ORDER_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 5000,
+            minOrderAmount: 50000,
+        );
+        $shippingCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::SHIPPING_FEE,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 5000,
+            minOrderAmount: 30000,
+        );
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pVneck->id, productOptionId: $oVneck->id, quantity: 1),
+                new CalculationItem(productId: $pTumbler->id, productOptionId: $oTumbler->id, quantity: 1),
+                new CalculationItem(productId: $pSocks->id, productOptionId: $oSocks->id, quantity: 2),
+            ],
+            couponIssueIds: [$orderCoupon->id, $shippingCoupon->id],
+            itemCoupons: [$oVneck->id => [$productCoupon->id]],
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+
+        // 배송비 쿠폰이 상품소계(58,000) 기준으로 적용되어 실부담 배송비 500
+        $this->assertEquals(5500, (int) $order->total_shipping_amount);
+        $this->assertEquals(5000, (int) $order->shipping_discount_amount);
+        $this->assertEquals(50500, (int) $order->total_paid_amount);
+
+        $optTumbler = $order->options->firstWhere('product_option_id', $oTumbler->id);
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $optTumbler->id, 'cancel_quantity' => 1],
+        ]));
+
+        // 주문쿠폰만 탈락 복원 · 배송비쿠폰은 잔여 상품소계 33,000 ≥ 30,000 이라 유지
+        $this->assertContains($orderCoupon->id, $result->restoredCouponIssueIds);
+        $this->assertNotContains($shippingCoupon->id, $result->restoredCouponIssueIds);
+        $this->assertEquals(20500, (int) $result->refundAmount);
+    }
+
+    /**
      * A-10-6: 정률 100% 배송비 쿠폰, 부분취소 후 배송비↑ → 증가분도 100% 할인
      */
     public function test_shipping_coupon_100_percent_partial_cancel(): void

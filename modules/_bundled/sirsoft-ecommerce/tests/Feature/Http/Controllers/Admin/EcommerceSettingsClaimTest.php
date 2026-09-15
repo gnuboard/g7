@@ -77,6 +77,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             'auto_approve_after_payment' => true,
             'auto_approve_refund_request' => true,
             'auto_approve_refund_statuses' => ['preparing', 'shipping'],
+            'auto_approve_refund_payment_methods' => ['card', 'point'],
             'max_images' => 8,
             'image_max_size_kb' => 4096,
             'request_period_days' => 14,
@@ -408,6 +409,57 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
+     * 환불 자동 승인 결제수단을 저장하면 **화면이 보여 준 수단 전부**가 결정 이력에 남는다. (P17)
+     *
+     * 이력이 없으면 운영자가 목록에서 뺀 즉시 환불 수단이 다음 조회의 자동 합류로 되살아난다 —
+     * 화면에는 체크가 풀린 채 보이는데 실제 게이트는 열려 있는 상태가 되어, 운영자는 자기가
+     * 뺀 수단이 왜 계속 자동 환불되는지 알 방법이 없다.
+     *
+     * @scenario gate_case=save_records_decision_history
+     *
+     * @effects auto_approve_save_records_operator_decision_history
+     */
+    #[Test]
+    public function saving_the_auto_approve_list_records_the_operator_decision_history(): void
+    {
+        $settings = app(EcommerceSettingsService::class);
+
+        // 저장 전에는 이력이 비어 있다 — 선언 수단은 자동 합류할 수 있는 상태다.
+        $this->assertSame([], $settings->getSetting('claim.auto_approve_refund_payment_methods_decided') ?? []);
+
+        $this->actingAs($this->adminUser)
+            ->putJson($this->apiBase, [
+                '_tab' => 'claim',
+                'claim' => $this->claimPolicyPayload(['auto_approve_refund_payment_methods' => ['card']]),
+            ])
+            ->assertOk();
+
+        $settings->clearCache();
+
+        $this->assertSame(
+            ['card'],
+            $settings->getSetting('claim.auto_approve_refund_payment_methods'),
+            '운영자가 고른 목록이 그대로 저장된다',
+        );
+
+        $decided = $settings->getSetting('claim.auto_approve_refund_payment_methods_decided');
+        $this->assertIsArray($decided);
+        foreach (['card', 'point', 'free'] as $declared) {
+            $this->assertContains(
+                $declared,
+                $decided,
+                "선언 수단 {$declared} 은 저장 시점에 결정 이력으로 남아야 한다 — 빼 둔 것도 결정이다",
+            );
+        }
+
+        // 이력에 남았으므로, 목록 밖인 point·free 는 더 이상 자동 합류하지 않는다.
+        app(PaymentMethodResolver::class)->flushCache();
+        $this->assertTrue(app(PaymentMethodResolver::class)->autoApprovesRefund('card'));
+        $this->assertFalse(app(PaymentMethodResolver::class)->autoApprovesRefund('point'));
+        $this->assertFalse(app(PaymentMethodResolver::class)->autoApprovesRefund('free'));
+    }
+
+    /**
      * 카탈로그에 없는 임의 문자열은 확장 허용 뒤에도 여전히 거절된다.
      *
      * 화이트리스트를 넓히는 것이지 여는 것이 아니다 — `allValidIds()` 는 builtin + 카탈로그 키
@@ -478,6 +530,10 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             '자동승인 대상 상태 어휘 밖' => [['auto_approve_refund_statuses' => ['delivered']], 'claim.auto_approve_refund_statuses.0'],
             '환불신청 가능 상태 어휘 밖' => [['refund_request_statuses' => ['not_a_status']], 'claim.refund_request_statuses.0'],
             '청구 방식 어휘 밖' => [['allowed_charge_methods' => ['pay_someday']], 'claim.allowed_charge_methods.0'],
+            // 환불 자동 승인 결제수단(P16·P17)도 `allValidIds()` 화이트리스트를 지난다. 이 축만
+            // 규칙이 없으면 카탈로그 밖 ID 가 설정에 남고, 게이트는 그 ID 를 그대로 비교하므로
+            // 아무 수단도 매칭되지 않는 목록이 조용히 저장된다.
+            '환불 자동 승인 결제수단 어휘 밖' => [['auto_approve_refund_payment_methods' => ['never_registered_pay']], 'claim.auto_approve_refund_payment_methods.0'],
             '결제수단 어휘 밖' => [['charge_payment_methods' => ['crypto']], 'claim.charge_payment_methods.0'],
             '첨부 장수 상한 초과' => [['max_images' => 999], 'claim.max_images'],
             '첨부 장수 하한 미만' => [['max_images' => 0], 'claim.max_images'],

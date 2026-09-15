@@ -247,7 +247,8 @@ class OrderCalculationService
         [$shippingAfterDiscount, $shippingPromotions, $shippingErrors] = $this->applyShippingCoupon(
             $shippingCalculation,
             $shippingCoupons,
-            $input
+            $input,
+            $itemsAfterProductDiscount
         );
         // After: 배송비 할인 결과 수정 가능
         $shippingAfterDiscount = HookManager::applyFilters(
@@ -1228,10 +1229,15 @@ class OrderCalculationService
      * @param  array  $shippingCalculation  배송비 계산 결과
      * @param  array  $coupons  배송비쿠폰 목록
      * @param  CalculationInput|null  $input  계산 입력 (스냅샷 모드 메타데이터 포함)
+     * @param  array  $discountedItems  상품할인 후 아이템 배열 (최소 주문금액 판정 기준 — 상품소계)
      * @return array [배송비 할인 후 결과, AppliedPromotions, ValidationError[]]
      */
-    protected function applyShippingCoupon(array $shippingCalculation, array $coupons, ?CalculationInput $input = null): array
-    {
+    protected function applyShippingCoupon(
+        array $shippingCalculation,
+        array $coupons,
+        ?CalculationInput $input = null,
+        array $discountedItems = []
+    ): array {
         $shippingResult = $shippingCalculation;
         $appliedPromotions = new AppliedPromotions;
         $validationErrors = [];
@@ -1246,20 +1252,28 @@ class OrderCalculationService
         // 할인 대상은 총 배송비 (기본 + 추가)
         $totalShipping = $shippingCalculation['total_shipping'];
 
+        // 최소 주문금액 판정 기준은 상품소계 — 주문쿠폰(applyShippingCoupon 다음 단계)과 같다.
+        // 배송비 총액과 비교하면 최소금액이 배송비보다 큰 쿠폰은 어떤 주문에도 적용되지 않는다.
+        // 할인 상한만 배송비 총액이 유지한다(calculateCouponDiscount 의 base).
+        $totalOrderAmount = 0;
+        foreach ($discountedItems as $item) {
+            $totalOrderAmount += $item['discounted_subtotal'] ?? $item['subtotal'] ?? 0;
+        }
+
         foreach ($coupons as $couponIssue) {
             $coupon = $couponIssue->coupon;
             $snapshot = $couponSnapshots[$couponIssue->id] ?? null;
 
-            // 최소 주문금액 검증은 배송비 쿠폰에서는 배송비 기준으로 체크
+            // 최소 주문금액 검증 (스냅샷 모드에서는 스냅샷 규칙 사용)
             $minAmount = $snapshotMode && $snapshot
                 ? (int) ($snapshot['min_order_amount'] ?? 0)
                 : (int) $coupon->min_order_amount;
 
-            if ($minAmount > 0 && $totalShipping < $minAmount) {
+            if ($minAmount > 0 && $totalOrderAmount < $minAmount) {
                 $validationErrors[] = ValidationError::minAmountNotMet(
                     $coupon->id,
                     $minAmount,
-                    $totalShipping
+                    $totalOrderAmount
                 );
 
                 continue;

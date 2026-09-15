@@ -305,6 +305,7 @@
         "status_col": "現在のステータス",
         "auto_advance_refund_label": "返金まで一度に処理",
         "auto_advance_refund_hint": "チェックすると返金申請書を作成したあと、承認・返金完了まで自動的に進めます。口座へ送金が必要な返金手段は承認で止まり、運営者が送金後に[返金する]で完了します。",
+        "auto_advance_refund_blocked_hint": "この注文の決済手段は人が送金しないと返金が完了しないため、チェックしても返金申請の状態で止まります。承認したうえで[返金する]で送金を完了してください。",
         "cancel_reason_type_label": "キャンセル理由",
         "reason_placeholder": "キャンセル理由を選択してください",
         "reason": {

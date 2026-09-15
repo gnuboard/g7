@@ -835,6 +835,14 @@
                       "name": "Span",
                       "props": { "className": "text-caption text-gray-500 dark:text-gray-400 block mt-1" },
                       "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_hint"
+                    },
+                    {
+                      "comment": "정지 수단 안내 (P16) — 체크박스는 그대로 두되, 이 주문의 결제수단이 자동 승인 목록 밖이면 체크해도 환불신청에서 멈춘다는 것을 미리 알린다. 판정은 서버가 준 auto_approves_refund 하나를 읽는다 — 레이아웃에서 목록을 다시 비교하면 설정 변경·플러그인 추가 때 안내와 실제 전이가 갈린다.",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{order.data?.payment?.auto_approves_refund === false}}",
+                      "props": { "className": "text-caption text-amber-600 dark:text-amber-400 block mt-1" },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_blocked_hint"
                     }
                   ]
                 }
@@ -2035,7 +2043,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}"
           },
           "actions": [

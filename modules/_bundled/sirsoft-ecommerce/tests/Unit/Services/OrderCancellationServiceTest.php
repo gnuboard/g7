@@ -431,20 +431,21 @@ class OrderCancellationServiceTest extends ModuleTestCase
      *
      * 예전에는 "PG 없이 장부만 취소" 경로가 있어 `COMPLETED` + `refunded_at` 이 찍혔다 —
      * **고객 카드는 그대로인데 장부만 환불완료**인 상태다. 그 경로는 없앴고, 지금은 사람이
-     * 송금해야 하는 수단(계좌 환불)이 승인에서 멈춘다. 완료는 운영자의 [환불하기]가 찍는다.
+     * 송금해야 하는 수단(계좌 환불)이 **접수에서** 멈춘다. 승인은 운영자의 검토가, 완료는
+     * 운영자의 [환불하기]가 찍는다 — P16 이 前D4(계좌 환불은 승인까지 자동)를 대체한다.
      *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
-     * @effects refund_awaiting_a_human_transfer_stops_at_approved
+     * @effects refund_awaiting_a_human_transfer_stops_at_requested
      */
-    public function test_a_refund_that_needs_a_human_transfer_stops_at_approved(): void
+    public function test_a_refund_that_needs_a_human_transfer_stops_at_requested(): void
     {
         $order = $this->createOrderWithPaymentMethod('dbank');
 
         $result = $this->cancellationService->cancelOrder(order: $order);
 
         $this->assertNotNull($result->orderRefund);
-        $this->assertEquals(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        $this->assertEquals(RefundStatusEnum::REQUESTED, $result->orderRefund->refund_status);
         $this->assertNull($result->orderRefund->refunded_at);
 
         // 취소신청서는 환불이 집행된 순간에만 생긴다(D3·D5) — 아직 없다.
@@ -2142,9 +2143,9 @@ class OrderCancellationServiceTest extends ModuleTestCase
         $this->assertFalse($hookCalled, '무통장 취소는 PG 환불 훅을 발화하면 안 됩니다');
         $this->assertNotNull($result->orderRefund);
 
-        // 무통장은 승인에서 멈춘다 — 운영자가 송금을 마치고 [환불하기]를 눌러야 취소가
-        // 확정된다(D4·D5). 그때까지 주문은 취소되지 않은 상태로 남는 것이 정상이다.
-        $this->assertEquals(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        // 무통장은 접수에서 멈춘다 — 운영자가 승인하고 송금을 마친 뒤 [환불하기]를 눌러야
+        // 취소가 확정된다(P16). 그때까지 주문은 취소되지 않은 상태로 남는 것이 정상이다.
+        $this->assertEquals(RefundStatusEnum::REQUESTED, $result->orderRefund->refund_status);
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
         $this->assertNull($result->orderCancel);
     }
@@ -2163,16 +2164,20 @@ class OrderCancellationServiceTest extends ModuleTestCase
     }
 
     /**
-     * 무통장 취소 환불 상태는 APPROVED(수동 송금 대기)이고 refunded_at 은 null 이다.
+     * 무통장 취소 환불 상태는 REQUESTED(운영자 승인 대기)이고 refunded_at 은 null 이다. (P16)
+     *
+     * @scenario payment_method=dbank, verify_stage=refund_record
+     *
+     * @effects dbank_cancel_refund_status_is_requested
      */
-    public function test_dbank_cancel_refund_status_is_approved(): void
+    public function test_dbank_cancel_refund_status_is_requested(): void
     {
         HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => false]);
         $order = $this->createOrderWithPaymentMethod('dbank');
 
         $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
 
-        $this->assertEquals(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        $this->assertEquals(RefundStatusEnum::REQUESTED, $result->orderRefund->refund_status);
         $this->assertNull($result->orderRefund->refunded_at, '수동 송금 전이므로 refunded_at 은 기록되면 안 됩니다');
     }
 
@@ -2186,13 +2191,15 @@ class OrderCancellationServiceTest extends ModuleTestCase
 
         $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
 
-        // 무통장은 승인에서 멈춘다(D4·D5) — 송금 전에는 주문도 결제행도 취소로 확정하지 않는다.
+        // 무통장은 접수에서 멈춘다(P16) — 송금 전에는 주문도 결제행도 취소로 확정하지 않는다.
         // 장부를 먼저 닫으면 운영자가 아직 보내지 않은 돈을 나간 것으로 읽는다.
-        $this->assertEquals(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        $this->assertEquals(RefundStatusEnum::REQUESTED, $result->orderRefund->refund_status);
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
 
-        // 운영자가 [환불하기]로 송금을 확정하면 그때 주문·결제행이 취소로 닫힌다.
-        app(OrderRefundRequestService::class)->executeRefund($result->orderRefund);
+        // 운영자가 승인한 뒤 [환불하기]로 송금을 확정하면 그때 주문·결제행이 취소로 닫힌다.
+        $refundService = app(OrderRefundRequestService::class);
+        $approved = $refundService->transition($result->orderRefund->fresh(), RefundStatusEnum::APPROVED);
+        $refundService->executeRefund($approved->fresh(['refundOptions']));
 
         $settled = $result->order->fresh(['payment']);
         $this->assertEquals(OrderStatusEnum::CANCELLED, $settled->order_status);
@@ -2221,9 +2228,19 @@ class OrderCancellationServiceTest extends ModuleTestCase
     }
 
     /**
-     * 가상계좌(vbank, PG 대상) 취소도 PG 가드를 통과해 PG 훅을 발화한다(비회귀).
+     * 가상계좌(vbank)는 접수에서 멈추고, PG 훅은 **운영자가 실행할 때** 발화한다. (P16)
+     *
+     * 환불 수단은 여전히 PG 다 — 돈은 PG 를 통해 나간다. 다른 것은 그 호출이 언제 일어나는가다:
+     * 가상계좌 환불은 고객의 환불계좌를 받아 PG 에 넘겨야 하고 그 입력·확인이 사람의 단계라,
+     * 접수만으로 PG 를 부르면 아직 받지 못한 계좌로 환불을 시도하게 된다.
+     *
+     * PG 가드 자체는 그대로다(비회귀) — 실행 시점에 훅이 진입하는 것으로 잠근다.
+     *
+     * @scenario payment_method=vbank_settled, verify_stage=refund_record
+     *
+     * @effects vbank_cancel_fires_pg_hook
      */
-    public function test_vbank_cancel_still_fires_pg_hook(): void
+    public function test_vbank_cancel_fires_the_pg_hook_when_the_operator_executes(): void
     {
         $hookCalled = false;
         HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use (&$hookCalled) {
@@ -2233,9 +2250,16 @@ class OrderCancellationServiceTest extends ModuleTestCase
         });
         $order = $this->createOrderWithPaymentMethod('vbank');
 
-        $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
 
-        $this->assertTrue($hookCalled, '가상계좌 취소는 PG 환불 훅을 발화해야 합니다');
+        $this->assertEquals(RefundStatusEnum::REQUESTED, $result->orderRefund->refund_status);
+        $this->assertFalse($hookCalled, '접수만으로는 PG 를 부르지 않는다 — 환불계좌를 아직 받지 못했다');
+
+        $refundService = app(OrderRefundRequestService::class);
+        $approved = $refundService->transition($result->orderRefund->fresh(), RefundStatusEnum::APPROVED);
+        $refundService->executeRefund($approved->fresh(['refundOptions']));
+
+        $this->assertTrue($hookCalled, '운영자의 [환불하기]가 PG 환불 훅을 발화해야 합니다');
     }
 
     // ================================================================

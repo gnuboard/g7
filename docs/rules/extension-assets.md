@@ -181,13 +181,16 @@ Laravel 은 `bootstrap/cache/packages.php` 가 있으면 stale 여부를 검사�
 
 ## 확장 결제수단은 자기 능력을 선언한다
 
-코어 `PaymentMethodEnum` 은 확장 결제수단 ID(`kginicis_naverpay`, `toss_tosspay` 등)를 모른다. 그래서 능력(PG 필요 여부 / PG 고정 / 환불수단)은 **등록하는 확장이 카탈로그에 선언**하고, 관리자 화면과 서버는 그 선언만 읽는다. 미선언 시 안전 기본값(`needs_pg=true`, `pg_locked=false`, `pg_provider=null`)으로 떨어지는데, 그 조합은 "PG 가 필요한데 어느 PG 인지 모른다" 를 뜻해 화면과 실제 결제 경로가 어긋난다.
+코어 `PaymentMethodEnum` 은 확장 결제수단 ID(`kginicis_naverpay`, `toss_tosspay` 등)를 모른다. 그래서 능력(PG 필요 여부 / PG 고정 / 환불수단 / 환불 자동 승인 여부)은 **등록하는 확장이 카탈로그에 선언**하고, 관리자 화면과 서버는 그 선언만 읽는다. 미선언 시 안전 기본값(`needs_pg=true`, `pg_locked=false`, `pg_provider=null`, `auto_approve_refund=false`)으로 떨어지는데, 앞 세 개의 조합은 "PG 가 필요한데 어느 PG 인지 모른다" 를 뜻해 화면과 실제 결제 경로가 어긋난다.
+
+`auto_approve_refund` 는 "사람의 개입 없이 환불이 집행되는가" 이고, 다른 키와 달리 **미선언이 안전한 쪽**이다 — 자동으로 잘못 완료하면 이중 환불이지만 멈추면 운영자가 한 번 더 누르면 된다. 대신 선언을 빠뜨리면 반대 방향의 조용한 손해가 난다: PG 결제취소 API 가 그 자리에서 환불하는 수단(카드·간편결제)의 환불신청서가 전부 운영자 승인 대기로 쌓이고, 운영자에게는 고칠 곳이 보이지 않는다.
 
 | 금지 | 올바른 사용 |
 |--------|---------------|
 | entry `defaults` 에 `pg_provider` 만 두고 능력 키 생략 | `needs_pg` 명시 선언 (PG 결제창을 거치는가) |
 | 자기 PG 전용 수단인데 `pg_provider: null` | `pg_provider: '{자기 provider id}'` + `pg_locked: true` (PG 제공자 등록 리스너의 id 와 동일해야 배지가 이름을 찾는다) |
 | 표시를 고치려고 코어 레이아웃 표현식을 정규식 치환 | 카탈로그 선언만 바꾼다 — 레이아웃이 `pg_locked`/`needs_pg` 로 직접 3분기한다 |
-| 선언을 바꾸고 기설치본은 그대로 | 저장된 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등) |
+| PG 가 즉시 환불하는 수단인데 `auto_approve_refund` 생략 | `auto_approve_refund: true` 선언 (현금으로 받아 사람이 송금해야 끝나는 수단 — 편의점·가상계좌·계좌이체 — 은 선언하지 않는다) |
+| 선언을 바꾸고 기설치본은 그대로 | 저장된 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등) — 단 코어가 정의값으로 덮어쓰는 능력 키(`needs_pg`·`pg_locked`·`refund_method`·`auto_approve_refund`)는 저장값이 이기지 않으므로 스텝이 필요 없다 |
 
 레이아웃 치환 방식은 코어가 그 리터럴을 버리는 순간 조용히 사문화된다 — 합성 입력으로만 검증한 테스트는 계속 통과하므로 사문화가 드러나지 않는다. 자동 검증이 능력 선언 누락을 차단한다.

@@ -76,6 +76,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
      * 기본 핸들러 (미사용).
      *
      * @param  mixed  ...$args
+     * @return void
      */
     public function handle(...$args): void {}
 
@@ -121,6 +122,8 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
                 nameKey: 'sirsoft-pay_kginicis::payment_methods.japan_cvs.name',
                 descriptionKey: 'sirsoft-pay_kginicis::payment_methods.japan_cvs.description',
                 icon: 'store',
+                // 편의점 결제는 고객이 현금으로 낸 돈이라 환불도 사람이 계좌로 송금해야 끝난다.
+                autoApproveRefund: false,
             );
         }
 
@@ -147,6 +150,12 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     /**
      * 국내 간편결제 entry 는 항상 등록해 이커머스 주문설정에서 켜고 끌 수 있게 한다.
      * 기존 플러그인 설정값은 신규 저장값이 없을 때 사용할 기본 활성 상태로만 반영한다.
+     *
+     * @param  string  $id  결제수단 ID
+     * @param  string  $nameKey  표시명 번역 키
+     * @param  string  $descriptionKey  설명 번역 키
+     * @param  string  $icon  아이콘 이름
+     * @return array 결제수단 entry
      */
     private function buildDomesticEntry(string $id, string $nameKey, string $descriptionKey, string $icon): array
     {
@@ -161,6 +170,8 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
 
     /**
      * 브랜드 버튼 옵션은 표시 메타데이터만 바꾸고 결제수단 ID는 유지한다.
+     *
+     * @return array 네이버페이 결제수단 entry
      */
     private function buildNaverPayEntry(): array
     {
@@ -177,6 +188,8 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
 
     /**
      * 간편결제 버튼에 브랜드 중심 설명을 사용할지 반환합니다.
+     *
+     * @return bool 브랜드 중심 설명 사용 여부
      */
     private function usesBrandButton(): bool
     {
@@ -185,6 +198,9 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
 
     /**
      * 기존 플러그인 설정의 국내 간편결제 활성값을 읽습니다.
+     *
+     * @param  string  $id  결제수단 ID
+     * @return bool 활성 여부
      */
     private function domesticMethodEnabled(string $id): bool
     {
@@ -197,6 +213,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
      * KG 이니시스 플러그인 boolean 설정을 조회합니다.
      *
      * @param  string  $key  설정 키
+     * @return bool 설정 활성 여부
      */
     private function settingEnabled(string $key): bool
     {
@@ -209,9 +226,23 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
 
     /**
      * 결제수단 entry 1건 빌더 — EcommerceSettingsService 의 getBuiltinPaymentMethods 와 동일 형식.
+     *
+     * @param  string  $id  결제수단 ID
+     * @param  string  $nameKey  표시명 번역 키
+     * @param  string  $descriptionKey  설명 번역 키
+     * @param  string  $icon  아이콘 이름
+     * @param  bool  $isActive  기본 활성 상태
+     * @param  bool  $autoApproveRefund  사람의 개입 없이 환불이 집행되는 수단인지 (코어 P16·P17 능력 키)
+     * @return array 결제수단 entry
      */
-    private function buildEntry(string $id, string $nameKey, string $descriptionKey, string $icon, bool $isActive = false): array
-    {
+    private function buildEntry(
+        string $id,
+        string $nameKey,
+        string $descriptionKey,
+        string $icon,
+        bool $isActive = false,
+        bool $autoApproveRefund = true
+    ): array {
         $entry = [
             'id' => $id,
             'name' => [
@@ -232,6 +263,10 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
                 'pg_locked' => true,
                 'needs_pg' => true,
                 'refund_method' => 'pg',
+                // 사람의 개입 없이 환불이 집행되는 수단인지 (코어 P16·P17 능력 키).
+                // 간편결제는 KG 결제취소 API 가 그 자리에서 환불한다. 편의점 결제처럼 현금으로
+                // 받은 수단은 고객 계좌로 사람이 송금해야 끝나므로 호출부가 false 를 넘긴다.
+                'auto_approve_refund' => $autoApproveRefund,
                 'is_active' => $isActive,
                 'min_order_amount' => 0,
                 'stock_deduction_timing' => 'payment_complete',

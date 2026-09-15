@@ -299,7 +299,10 @@
         "refund_request_label": "환불신청 자동 승인",
         "refund_request_hint": "접수된 환불신청서를 자동으로 승인 상태로 옮깁니다. 환불 실행은 별도입니다.",
         "refund_statuses_label": "자동승인 대상 상태",
-        "refund_statuses_hint": "자동 승인이 켜져 있을 때, 어느 상품 상태의 신청서를 자동으로 승인할지 고릅니다. 신청서의 상품이 하나라도 목록 밖이면 전건을 운영자가 승인합니다."
+        "refund_statuses_hint": "자동 승인이 켜져 있을 때, 어느 상품 상태의 신청서를 자동으로 승인할지 고릅니다. 신청서의 상품이 하나라도 목록 밖이면 전건을 운영자가 승인합니다.",
+        "refund_payment_methods_label": "환불 자동 승인 결제수단",
+        "refund_payment_methods_hint": "여기서 고른 결제수단의 환불만 사람 손을 거치지 않고 자동으로 진행됩니다. 목록에 없는 결제수단(무통장입금·가상계좌 등)은 결제완료 상품이라도 환불신청 상태에서 멈추고, 운영자가 승인한 뒤 [환불하기]로 송금을 마칩니다. 이 목록은 자동 승인 토글과 무관하게 항상 적용됩니다.",
+        "refund_payment_methods_pg_badge": "PG 즉시 환불"
       },
       "attachment": {
         "title": "첨부 이미지",

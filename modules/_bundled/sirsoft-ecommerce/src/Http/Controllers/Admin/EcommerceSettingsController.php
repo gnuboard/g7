@@ -29,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateSettingRequest;
 use Modules\Sirsoft\Ecommerce\Services\ClaimReasonService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
 use Modules\Sirsoft\Ecommerce\Services\ShippingTypeService;
 
@@ -179,6 +180,20 @@ class EcommerceSettingsController extends AdminBaseController
             // 정책 스칼라 13축이 전부 지워지고 다음 조회에서 기본값으로 되살아난다 —
             // 오류도 로그도 없이 "저장됨" 토스트만 뜬다. 담긴 축이 하나도 없으면 이 섹션은
             // 저장 대상이 아니다(카탈로그의 단일 출처는 DB 다).
+            // 환불 자동 승인 결제수단을 저장하면 **그 화면이 보여 준 수단 전부**를 운영자 결정
+            // 이력에 남긴다(P17). 넣은 것도 뺀 것도 결정이므로, 그 뒤로는 저장값이 플러그인 선언을
+            // 이긴다 — 이력이 없으면 운영자가 일부러 뺀 즉시 환불 수단이 다음 조회의 자동 합류로
+            // 되살아나고, 운영자는 "분명히 뺐는데" 를 반복하게 된다. 반대로 이력을 남기면 나중에
+            // 설치된 PG 플러그인의 새 수단만(이력에 없으므로) 자동 합류한다.
+            if (array_key_exists('auto_approve_refund_payment_methods', $settings['claim'] ?? [])) {
+                $previous = $this->settingsService->getSetting('claim.auto_approve_refund_payment_methods_decided');
+
+                $settings['claim']['auto_approve_refund_payment_methods_decided'] = array_values(array_unique(array_merge(
+                    is_array($previous) ? array_filter($previous, 'is_string') : [],
+                    app(PaymentMethodResolver::class)->declaredAutoApproveRefundIds(),
+                )));
+            }
+
             if (array_key_exists('claim', $settings) && $settings['claim'] === []) {
                 unset($settings['claim']);
             }

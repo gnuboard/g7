@@ -90,9 +90,14 @@ class UserClaimApiTest extends ModuleTestCase
         return $order->fresh(['options', 'shippingAddress']);
     }
 
-    protected function myPaidOrder(): Order
+    /**
+     * 이 회원의 결제완료 주문을 만듭니다.
+     *
+     * @param  array  $paymentOverrides  OrderPayment 오버라이드 (결제수단 게이트 축 — P16)
+     */
+    protected function myPaidOrder(array $paymentOverrides = []): Order
     {
-        $order = $this->paidClaimOrder();
+        $order = $this->paidClaimOrder(paymentOverrides: $paymentOverrides);
         $order->forceFill(['user_id' => $this->user->id])->save();
 
         return $order->fresh(['options']);
@@ -488,6 +493,37 @@ class UserClaimApiTest extends ModuleTestCase
         $fresh = $image->fresh();
         $this->assertNotNull($fresh, '자동 전이 분기가 구매자 첨부를 지웠다 (F7)');
         $this->assertSame('refund', $fresh->claimable_type);
+    }
+
+    /**
+     * 무통장 결제완료 주문은 `auto` 분기지만 **환불신청 상태로 접수된다**. (P16)
+     *
+     * 분기(`auto`)와 종착점(`requested`)이 다르다는 것이 이 축의 핵심이다 — 분기는 "어느 입구로
+     * 들어왔나"(즉시취소 목록 상태)이고, 종착점은 "돈이 사람 손 없이 돌아가나"(결제수단)가
+     * 정한다. 둘을 한 값으로 묶으면 무통장 결제완료 주문에서 선택지가 사라진다: 분기를
+     * `request` 로 바꾸면 화면이 "배송 준비 중이라 신청합니다" 로 잘못 안내하고, 종착점을
+     * `completed` 로 두면 돈이 나가기 전에 환불완료 알림이 간다.
+     *
+     * @scenario gate_case=stopped_method_user_api
+     *
+     * @effects stopped_payment_method_holds_refund_at_requested
+     */
+    public function test_refund_request_of_a_bank_transfer_order_stops_at_requested(): void
+    {
+        $order = $this->myPaidOrder(['payment_method' => 'dbank']);
+
+        $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/refund-requests", [
+            'items' => $this->items($order), 'reason_code' => 'changed_mind',
+        ])->assertCreated()
+            // 입구는 그대로 즉시취소 분기다 — 결제완료 상품이므로.
+            ->assertJsonPath('data.branch', 'auto')
+            ->assertJsonPath('data.claim.claim_type', 'refund')
+            // 그러나 사람이 송금해야 끝나므로 접수에서 멈춘다.
+            ->assertJsonPath('data.claim.status', 'requested');
+
+        $this->assertSame(1, OrderRefund::count());
+        $this->assertSame(0, OrderCancel::where('order_id', $order->id)->count(), '환불 전에는 취소신청서가 없다 (D3)');
+        $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->fresh()->order_status);
     }
 
     public function test_refund_request_files_a_refund_request_for_preparing_items(): void

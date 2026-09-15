@@ -258,6 +258,8 @@
       "auto_approve_after_payment": false,
       "auto_approve_refund_request": false,
       "auto_approve_refund_statuses": ["payment_complete", "preparing"],
+      "auto_approve_refund_payment_methods": ["card", "point", "free"],
+      "auto_approve_refund_payment_methods_decided": [],
       "max_images": 5,
       "image_max_size_kb": 2048,
       "request_period_days": 7,

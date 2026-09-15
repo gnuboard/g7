@@ -302,8 +302,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * 돈이 실제로 나가지 않은 환불은 `APPROVED` 에 머문다.
      *
      * "PG 없이 장부만 취소" 경로가 있던 시절에는 **고객 카드는 그대로인데 장부만 환불완료**인
-     * 상태가 만들어졌다. 그 경로는 없앴고, 사람이 송금해야 하는 수단은 승인에서 멈춘다 —
-     * 완료는 운영자의 [환불하기]가 찍는다.
+     * 상태가 만들어졌다. 그 경로는 없앴고, 사람이 송금해야 하는 수단은 접수에서 멈춘다 —
+     * 승인은 운영자의 검토가, 완료는 운영자의 [환불하기]가 찍는다(P16 이 前D4 를 대체).
      *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
@@ -317,7 +317,7 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
             ->cancelOrder(order: $order);
 
         $this->assertNotNull($result->orderRefund);
-        $this->assertSame(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        $this->assertSame(RefundStatusEnum::REQUESTED, $result->orderRefund->refund_status);
         $this->assertNull($result->orderRefund->refunded_at);
 
         // 취소신청서는 환불이 집행된 순간에만 생긴다 — 아직 없다(D3·D5).

@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -24,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 취소신청서 기록 지점과 자동 전이 엔진 테스트 (#599 후속 §4-2·§4-3)
  *
- * PO 가 주문 상품 하나를 마이페이지에서 환불했는데 **주문취소 기록만 남고 환불신청서가
+ * 구매자가 주문 상품 하나를 마이페이지에서 환불했는데 **주문취소 기록만 남고 환불신청서가
  * 없었다**. 결함이 아니라 설계 기본값이었다 — 즉시취소가 환불 행을 이미 완료 상태로
  * INSERT 하므로 신청→승인→완료 단계가 없었고, 그 행은 "취소 탭과 이중 노출된다" 는 이유로
  * 목록에서 배제돼 화면에 나타나지 않았다.
@@ -33,7 +34,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * - 취소신청서는 **환불이 집행되는 순간** 한 지점(`recordCancellation`)에서만 생긴다
  * - 자동 전이는 단계를 **건너뛰지 않는다**(요청 → 승인 → 완료)
- * - 종착점은 **환불수단**이 가른다(PG·마일리지는 완료, 계좌는 승인)
+ * - 종착점은 **결제수단**이 가른다(PG·마일리지는 완료, 계좌는 접수에서 정지 — P16)
  * - 잔여 한도가 **두 번 깎이지 않는다** — 2차 부분환불이 0원이 되지 않는다
  * - 환불할 돈이 없으면 0원짜리 환불 레코드를 만들지 않는다(P11)
  * - 미결제 취소도 결제행을 정리해 취소된 주문이 되살아나지 않는다(P4)
@@ -148,16 +149,21 @@ class ClaimCancellationRecordTest extends ModuleTestCase
     }
 
     /**
-     * 계좌 환불은 승인에서 멈추고, **그때는 취소신청서도 생기지 않는다**(D4·D5).
+     * 계좌 환불은 **접수(`requested`)에서 멈추고**, 그때는 취소신청서도 생기지 않는다. (P16)
      *
      * 운영자가 송금하기 전에 취소신청서를 만들면 장부는 "돈이 빠졌다" 고 말하는데 실제로는
      * 아직 아무것도 나가지 않은 상태가 된다.
      *
+     * 정지 지점이 바뀌었다 — 종전(前D4)에는 계좌 환불도 `approved` 까지 자동으로 갔고 운영자는
+     * 승인된 건을 송금만 하면 됐다. P16 이 그것을 대체한다: 사람이 개입해야 돈이 나가는 수단은
+     * **승인 자체가 사람의 결정**이므로 자동으로 승인하지 않는다. 자동 승인해 두면 운영자의
+     * 대기열에는 "승인됨" 으로 보이는데 아무도 그 건을 검토한 적이 없다.
+     *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
-     * @effects bank_refund_stops_at_approved_without_cancellation_record
+     * @effects bank_refund_stops_at_requested_without_cancellation_record
      */
-    public function test_a_bank_refund_stops_at_approved_and_records_no_cancellation_yet(): void
+    public function test_a_bank_refund_stops_at_requested_and_records_no_cancellation_yet(): void
     {
         $order = $this->paidClaimOrder();
         $order->payment->forceFill([
@@ -170,12 +176,14 @@ class ClaimCancellationRecordTest extends ModuleTestCase
 
         $refund = $result['refund'];
         $this->assertSame(RefundMethodEnum::BANK, $refund->refund_method);
-        $this->assertSame(RefundStatusEnum::APPROVED, $refund->refund_status);
+        $this->assertSame(RefundStatusEnum::REQUESTED, $refund->refund_status);
         $this->assertNull($refund->refunded_at);
         $this->assertSame(0, OrderCancel::where('order_id', $order->id)->count());
 
-        // 운영자의 [환불하기]가 곧 송금 완료 선언이다 — 그때 취소신청서가 생긴다.
-        $this->service->executeRefund($refund->fresh(['refundOptions']));
+        // 운영자가 **승인한 뒤** [환불하기]로 송금을 선언한다 — 그때 취소신청서가 생긴다.
+        // 두 단계인 것이 P16 의 요지다: 승인이 사람의 검토, 실행이 사람의 송금이다.
+        $approved = $this->service->transition($refund->fresh(), RefundStatusEnum::APPROVED);
+        $this->service->executeRefund($approved->fresh(['refundOptions']));
 
         $this->assertSame(1, OrderCancel::where('order_id', $order->id)->count());
     }
@@ -576,6 +584,151 @@ class ClaimCancellationRecordTest extends ModuleTestCase
             1,
             $notified,
             '자동승인 1회의 고객 알림도 1통이어야 한다 — 접수 알림이 함께 나가면 2통이다',
+        );
+    }
+
+    /**
+     * 사람이 송금해야 끝나는 결제수단(무통장)은 `auto` 분기여도 **접수에서 정지**한다. (P16)
+     *
+     * 결제완료 상품이라 분기는 `auto` 지만, 자동 전이는 "돈이 실제로 돌아갔다" 를 전제한다 —
+     * 무통장은 운영자가 계좌로 보내야 끝나므로 자동으로 완료까지 가면 신청서만 앞서 나가고
+     * 고객에게는 "환불 완료" 알림이 가는데 돈은 아직 나가지 않은 상태가 된다. 취소신청서도
+     * 환불완료 순간에만 생기므로 이 시점에는 없어야 한다(D3).
+     *
+     * 고객 알림은 `refund_requested` 1통이 정상이다 — 자동 전이가 없으니 억제할 것도 없다.
+     *
+     * @scenario gate_case=stopped_method_auto_branch
+     *
+     * @effects stopped_payment_method_holds_refund_at_requested, stopped_payment_method_sends_one_requested_notification
+     */
+    public function test_a_stopped_payment_method_holds_the_refund_at_requested(): void
+    {
+        $order = $this->paidClaimOrder(paymentOverrides: ['payment_method' => 'dbank']);
+
+        $notified = [];
+
+        HookManager::addAction(
+            'sirsoft-ecommerce.claim.refund.requested',
+            function ($refund, $order = null, $context = []) use (&$notified) {
+                if (! (bool) ($context['suppress_notification'] ?? false)) {
+                    $notified[] = 'requested';
+                }
+            },
+        );
+
+        HookManager::addAction(
+            'sirsoft-ecommerce.claim.refund.status_changed',
+            function ($refund, $previous = null, $target = null, $context = []) use (&$notified) {
+                if (! (bool) ($context['suppress_notification'] ?? false)) {
+                    $notified[] = $previous.'->'.$target;
+                }
+            },
+        );
+
+        $result = $this->service->request($order, $this->payload($order));
+
+        $this->assertSame(
+            RefundStatusEnum::REQUESTED,
+            $result['refund']->refund_status,
+            '무통장은 결제완료 상품이라도 환불신청에서 멈춰야 한다 (P16)',
+        );
+        $this->assertSame(
+            0,
+            OrderCancel::where('order_id', $order->id)->count(),
+            '환불이 완료되지 않았으므로 취소신청서는 아직 없다 (D3)',
+        );
+        $this->assertSame(
+            OrderStatusEnum::PAYMENT_COMPLETE,
+            $order->fresh()->order_status,
+            '송금 전에는 주문을 취소로 닫지 않는다',
+        );
+        $this->assertSame(
+            ['requested'],
+            $notified,
+            '자동 전이가 없으므로 접수 알림 1통이 정상이다',
+        );
+    }
+
+    /**
+     * 자동승인 토글(D8)을 켜도 정지 수단 주문은 승인까지 가지 않는다. (P16)
+     *
+     * 세 경로(즉시취소 분기 · 이 토글 · 관리자 [주문취소] 자동 전이)가 같은 결제수단 규칙을
+     * 따라야 한다 — 한 경로만 게이트를 지나가면 운영자는 "어떤 건 멈추고 어떤 건 안 멈추는"
+     * 이유를 알 수 없다.
+     *
+     * @scenario gate_case=stopped_method_auto_approve_toggle
+     *
+     * @effects stopped_payment_method_ignores_auto_approve_toggle
+     */
+    public function test_the_auto_approve_toggle_does_not_advance_a_stopped_payment_method(): void
+    {
+        $settings = app(EcommerceSettingsService::class);
+        $settings->saveSettings(['claim' => ['auto_approve_refund_request' => true]]);
+
+        $order = $this->paidClaimOrder(paymentOverrides: ['payment_method' => 'dbank']);
+        $this->moveOrderTo($order, OrderStatusEnum::PREPARING);
+
+        $result = $this->service->request($order->fresh(), $this->payload($order->fresh()));
+
+        $this->assertSame(
+            RefundStatusEnum::REQUESTED,
+            $result['refund']->refund_status,
+            '자동승인이 켜져 있어도 정지 수단은 접수에서 멈춘다 (P16)',
+        );
+    }
+
+    /**
+     * 자동 승인 목록에 있는 수단(카드)은 종전대로 완료까지 간다. (P16 비회귀)
+     *
+     * 게이트를 넣으면서 자동 전이 전체가 막히지 않았는지 — 같은 술어의 반대 방향을 함께 잠근다.
+     *
+     * @scenario gate_case=allowed_method_auto_branch
+     *
+     * @effects allowed_payment_method_still_auto_completes
+     */
+    public function test_an_allowed_payment_method_still_auto_completes(): void
+    {
+        $order = $this->paidClaimOrder(paymentOverrides: ['payment_method' => 'card']);
+
+        $result = $this->service->request($order, $this->payload($order));
+
+        $this->assertSame(
+            RefundStatusEnum::COMPLETED,
+            $result['refund']->refund_status,
+            '카드는 PG 가 그 자리에서 환불하므로 완료까지 간다',
+        );
+        $this->assertSame(
+            1,
+            OrderCancel::where('order_id', $order->id)->count(),
+            '환불완료 순간에 취소신청서가 생긴다 (D3)',
+        );
+    }
+
+    /**
+     * 운영자가 목록에 넣은 수단은 그 순간부터 자동 전이한다. (P17 — 목록이 판정의 SSoT)
+     *
+     * builtin 파생값이 아니라 **설정 목록**이 게이트를 연다는 것을 잠근다. 파생값만 읽으면
+     * 운영자가 아무리 목록을 고쳐도 무통장은 영원히 멈춘다 — 설정 UI 가 장식이 된다.
+     *
+     * @scenario gate_case=operator_allows_stopped_method
+     *
+     * @effects auto_approve_list_is_the_single_source_of_truth
+     */
+    public function test_the_operator_list_decides_which_methods_auto_advance(): void
+    {
+        app(EcommerceSettingsService::class)->saveSettings([
+            'claim' => ['auto_approve_refund_payment_methods' => ['card', 'point', 'free', 'dbank']],
+        ]);
+        app(PaymentMethodResolver::class)->flushCache();
+
+        $order = $this->paidClaimOrder(paymentOverrides: ['payment_method' => 'dbank']);
+
+        $result = $this->service->request($order, $this->payload($order));
+
+        $this->assertNotSame(
+            RefundStatusEnum::REQUESTED,
+            $result['refund']->refund_status,
+            '운영자가 목록에 넣은 수단은 더 이상 접수에서 멈추지 않는다 (P17)',
         );
     }
 

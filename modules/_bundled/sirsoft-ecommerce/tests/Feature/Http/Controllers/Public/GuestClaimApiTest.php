@@ -75,11 +75,14 @@ class GuestClaimApiTest extends ModuleTestCase
      * @param  OrderStatusEnum  $status  주문 상태
      * @return array{0: Order, 1: string} [주문, 토큰]
      */
-    protected function guestOrderWithToken(OrderStatusEnum $status = OrderStatusEnum::DELIVERED, int $quantity = 1): array
-    {
+    protected function guestOrderWithToken(
+        OrderStatusEnum $status = OrderStatusEnum::DELIVERED,
+        int $quantity = 1,
+        array $paymentOverrides = [],
+    ): array {
         $order = $status === OrderStatusEnum::DELIVERED
-            ? $this->deliveredClaimOrder(quantity: $quantity)
-            : $this->paidClaimOrder(quantity: $quantity);
+            ? $this->deliveredClaimOrder(quantity: $quantity, paymentOverrides: $paymentOverrides)
+            : $this->paidClaimOrder(quantity: $quantity, paymentOverrides: $paymentOverrides);
         $order->forceFill(['user_id' => null, 'guest_lookup_password_hash' => Hash::make(self::PASSWORD)])->save();
         OrderAddress::where('order_id', $order->id)->update(['orderer_phone' => self::PHONE]);
 
@@ -247,6 +250,37 @@ class GuestClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.branch', 'auto');
 
         $this->assertSame(OrderStatusEnum::CANCELLED, $order->fresh()->order_status);
+    }
+
+    /**
+     * 비회원 무통장 결제완료 주문도 `auto` 분기에서 **환불신청 상태로 접수된다**. (P16)
+     *
+     * 비회원 경로가 회원 경로와 같은 술어를 지나는지 잠근다 — 접수 서비스는 하나지만 입구가
+     * 둘이라, 한쪽만 게이트를 지나면 비회원 무통장 주문이 조용히 자동 완료된다.
+     *
+     * @scenario gate_case=stopped_method_guest_api
+     *
+     * @effects stopped_payment_method_holds_refund_at_requested
+     */
+    public function test_guest_refund_request_of_a_bank_transfer_order_stops_at_requested(): void
+    {
+        [$order, $token] = $this->guestOrderWithToken(
+            OrderStatusEnum::PAYMENT_COMPLETE,
+            paymentOverrides: ['payment_method' => 'dbank'],
+        );
+
+        $this->postJson($this->base($order).'/refund-requests', [
+            'items' => $this->items($order), 'reason_code' => 'changed_mind',
+        ], ['X-Guest-Order-Token' => $token])
+            ->assertCreated()
+            ->assertJsonPath('data.branch', 'auto')
+            ->assertJsonPath('data.claim.status', 'requested');
+
+        $this->assertSame(
+            OrderStatusEnum::PAYMENT_COMPLETE,
+            $order->fresh()->order_status,
+            '송금 전에는 주문을 취소로 닫지 않는다',
+        );
     }
 
     public function test_claim_item_rows_carry_the_subtotals_own_multi_currency(): void

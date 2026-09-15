@@ -78,6 +78,7 @@ class OrderRefundRequestService
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불신청서 Repository
      * @param  OrderRefundOptionRepositoryInterface  $refundOptionRepository  환불 상품 행 Repository
      * @param  ClaimReasonRepositoryInterface  $claimReasonRepository  사유 카탈로그 Repository
+     * @param  PaymentMethodResolver  $paymentMethodResolver  결제수단 능력 해석기 (환불 자동 승인 게이트 — P16·P17)
      */
     public function __construct(
         protected OrderCancellationService $cancellationService,
@@ -92,6 +93,7 @@ class OrderRefundRequestService
         protected OrderRefundRepositoryInterface $refundRepository,
         protected OrderRefundOptionRepositoryInterface $refundOptionRepository,
         protected ClaimReasonRepositoryInterface $claimReasonRepository,
+        protected PaymentMethodResolver $paymentMethodResolver,
     ) {}
 
     /**
@@ -476,13 +478,52 @@ class OrderRefundRequestService
      * 접수 훅의 알림 억제와 실제 전이 분기가 **같은 판정**을 써야 한다 — 갈리면 알림이
      * 0통(억제했는데 전이하지 않음)이거나 2통(억제하지 않았는데 전이함)이 된다.
      *
+     * **결제수단 게이트가 이 술어 안에 있다**(P16). 호출부에 두면 알림 억제와 실제 전이가 서로
+     * 다른 판정을 읽어 갈린다 — 억제만 걸고 전이하지 않으면 고객에게 알림이 0통 간다.
+     *
+     * @param  Order  $order  주문 (결제수단 판정용)
      * @param  string  $branch  분기 (`auto`/`request`)
-     * @param  array<string, mixed>  $payload  접수 페이로드 (auto_advance)
+     * @param  array<string, mixed>  $payload  접수 페이로드 (auto_advance · pg_already_settled)
      * @return bool 자동 전이하면 true
      */
-    protected function willAutoAdvance(string $branch, array $payload): bool
+    protected function willAutoAdvance(Order $order, string $branch, array $payload): bool
     {
-        return $branch === self::BRANCH_AUTO || (bool) ($payload['auto_advance'] ?? false);
+        if ($branch !== self::BRANCH_AUTO && ! (bool) ($payload['auto_advance'] ?? false)) {
+            return false;
+        }
+
+        // 바깥에서 이미 집행된 환불은 수단을 묻지 않는다 — 돈은 이미 나갔으므로 멈추면
+        // 운영자에게 "송금하세요" 로 보이고, 그대로 이체하면 이중 환불이다.
+        if ((bool) ($payload['pg_already_settled'] ?? false)) {
+            return true;
+        }
+
+        return $this->paymentMethodAutoApprovesRefund($order);
+    }
+
+    /**
+     * 이 주문의 결제수단이 환불 자동 승인 대상인지 판정합니다. (P16·P17)
+     *
+     * 사람이 계좌로 송금해야 끝나는 수단(무통장·가상계좌 등)은 결제완료 상품이라도 자동으로
+     * 나아가지 않는다. 자동 승인하면 신청서는 `완료` 로 앞서 나가고 고객에게 "환불 완료" 알림이
+     * 가는데 돈은 아직 나가지 않은 상태가 된다.
+     *
+     * 결제행이 없으면(0원·미결제 주문) 막지 않는다 — 돌려줄 돈이 없어 자동 완료가 맞다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 자동 승인 대상이면 true
+     */
+    protected function paymentMethodAutoApprovesRefund(Order $order): bool
+    {
+        $order->loadMissing('payment');
+
+        $methodId = $order->payment?->paymentMethodId() ?? '';
+
+        if ($methodId === '') {
+            return true;
+        }
+
+        return $this->paymentMethodResolver->autoApprovesRefund($methodId);
     }
 
     /**
@@ -498,6 +539,12 @@ class OrderRefundRequestService
     protected function willAutoApprove(Order $order, OrderRefund $refund): bool
     {
         if (! (bool) $this->settingsService->getSetting('claim.auto_approve_refund_request', false)) {
+            return false;
+        }
+
+        // 토글(D8)을 켜도 정지 수단 주문은 승인까지 가지 않는다 — 세 경로(즉시취소 분기 ·
+        // 이 토글 · 관리자 [주문취소] 자동 전이)가 모두 같은 결제수단 규칙을 따른다(P16).
+        if (! $this->paymentMethodAutoApprovesRefund($order)) {
             return false;
         }
 
@@ -520,7 +567,7 @@ class OrderRefundRequestService
      */
     protected function willAdvanceOnIntake(Order $order, OrderRefund $refund, string $branch, array $payload): bool
     {
-        return $this->willAutoAdvance($branch, $payload) || $this->willAutoApprove($order, $refund);
+        return $this->willAutoAdvance($order, $branch, $payload) || $this->willAutoApprove($order, $refund);
     }
 
     /**
@@ -528,9 +575,10 @@ class OrderRefundRequestService
      *
      * | 조건 | 전이 |
      * | --- | --- |
-     * | 분기 `auto` | 승인 → (수단별) 완료까지 자동 |
-     * | 관리자 [주문취소] + `auto_advance` | 위와 같음 |
-     * | 분기 `request` + 자동승인 on + 상태가 대상 목록 | 승인까지 |
+     * | 분기 `auto` + 결제수단이 자동 승인 목록 | 승인 → (수단별) 완료까지 자동 |
+     * | 관리자 [주문취소] + `auto_advance` + 결제수단이 자동 승인 목록 | 위와 같음 |
+     * | 분기 `request` + 자동승인 on + 상태가 대상 목록 + 결제수단이 자동 승인 목록 | 승인까지 |
+     * | **결제수단이 목록 밖**(무통장·가상계좌 등) | 접수에서 정지 — 운영자 승인 → [환불하기] (P16) |
      * | 그 외 | 접수에서 정지 |
      *
      * @param  Order  $order  주문
@@ -543,7 +591,7 @@ class OrderRefundRequestService
     {
         $processedBy = $payload['processed_by'] ?? null;
 
-        if ($this->willAutoAdvance($branch, $payload)) {
+        if ($this->willAutoAdvance($order, $branch, $payload)) {
             return $this->autoAdvance($refund, [
                 'processed_by' => $processedBy,
                 'pg_already_settled' => (bool) ($payload['pg_already_settled'] ?? false),

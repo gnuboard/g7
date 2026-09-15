@@ -299,7 +299,10 @@
         "refund_request_label": "Auto-approve refund request",
         "refund_request_hint": "Move filed refund requests to approved automatically. Executing the refund stays a separate step.",
         "refund_statuses_label": "Auto-approval target statuses",
-        "refund_statuses_hint": "When auto-approval is on, choose which item statuses are approved automatically. If any item on a request falls outside the list, an operator approves the whole request."
+        "refund_statuses_hint": "When auto-approval is on, choose which item statuses are approved automatically. If any item on a request falls outside the list, an operator approves the whole request.",
+        "refund_payment_methods_label": "Payment methods eligible for automatic refunds",
+        "refund_payment_methods_hint": "Only refunds paid with the methods selected here proceed automatically. Methods left out (bank transfer, virtual account, and the like) stop at the requested state even for paid items — an operator approves the request and then completes the transfer with [Refund]. This list applies regardless of the auto-approval toggles.",
+        "refund_payment_methods_pg_badge": "Instant PG refund"
       },
       "attachment": {
         "title": "Attachments",

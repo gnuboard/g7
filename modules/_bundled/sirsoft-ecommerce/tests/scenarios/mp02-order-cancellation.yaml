@@ -69,7 +69,7 @@ effects:
   # U1 — 무통장 PG 환불 스킵 + 환불상태 정상화 (PHPUnit Unit)
   - dbank_cancel_skips_pg_and_succeeds           # 무통장 취소가 PG 훅 없이 성공
   - dbank_cancel_refund_method_is_bank           # 무통장 환불수단 BANK
-  - dbank_cancel_refund_status_is_approved       # 무통장 환불상태 APPROVED(refunded_at null)
+  - dbank_cancel_refund_status_is_requested      # 무통장 환불상태 REQUESTED(운영자 승인 대기 · P16)
   - dbank_cancel_updates_order_and_payment       # 주문/결제 상태 갱신
   - card_cancel_fires_pg_hook_and_completes      # 카드 PG 환불 COMPLETED(비회귀)
   - vbank_cancel_fires_pg_hook                   # 가상계좌 PG 가드 통과(비회귀)
@@ -121,7 +121,7 @@ effects:
   # ── #599 후속 — 취소·환불 프로세스 재설계 ──────────────────────────────
   # 취소신청서 생성 지점 이동 (D3) + 자동 전이 엔진 (§4-2)
   - cancellation_record_is_created_only_on_refund_completion     # 환불완료 순간에만 취소신청서 생성
-  - bank_refund_stops_at_approved_without_cancellation_record    # 계좌 환불은 승인에서 멈추고 취소신청서도 없다 (D4·D5)
+  - bank_refund_stops_at_requested_without_cancellation_record   # 계좌 환불은 접수에서 멈추고 취소신청서도 없다 (P16)
   - unpaid_cancel_skips_the_refund_request                       # 미결제·0원은 환불신청서 없음 (D1·P11) + 결제행 정리 (P4)
   - auto_advance_sends_one_notification_but_logs_every_step      # 알림 1건 · 로그 단계별 (§4-2)
   - cancellation_record_walks_requested_then_completed           # 취소 문서도 단계를 밟는다 (D16 · B3·B4)
@@ -149,7 +149,7 @@ effects:
   - order_ledger_is_settled_exactly_once_per_intake              # DoD 2 — 합계 재계산·취소 기록은 한 번
   - item_status_after_a_refund_is_decided_by_the_source          # D13 — 출처가 상품 상태를 정한다
   - pg_rejection_rolls_the_whole_intake_back                     # D15 — 접수까지 전체 롤백
-  - refund_awaiting_a_human_transfer_stops_at_approved           # D4·D5 — 송금 전에는 취소가 확정되지 않는다
+  - refund_awaiting_a_human_transfer_stops_at_requested          # P16 — 송금 전에는 취소가 확정되지 않는다
   - externally_settled_refund_completes_without_calling_pg       # §12-D B11·B14 — 바깥 집행분은 PG 재호출 없이 완료
   - partial_cancel_is_rejected_when_the_pg_declares_no_support   # P6 — 코어가 사전에 막는다
   - full_cancel_passes_even_when_partial_cancel_is_unsupported   # P6 비회귀

@@ -766,6 +766,53 @@
                   "text": "{{_local.errors?.['claim.auto_approve_refund_statuses']?.[0] ?? ''}}"
                 }
               ]
+            },
+            {
+              "comment": "환불 자동 승인 결제수단 (P16·P17) — 자동승인 토글과 달리 이 목록은 **토글과 무관하게 항상 적용**된다. 즉시취소 분기·자동승인 토글·관리자 [주문취소] 자동 전이 세 경로가 모두 이 목록을 읽으므로 토글이 꺼져 있어도 잠그지 않는다. 선택지는 charge_payment_methods 와 같은 출처(주문 설정 탭 카탈로그)에서 파생하되 is_active 로 거르지 않는다 — 이 축이 판정하는 것은 '앞으로 받을 주문' 이 아니라 '이미 그 수단으로 결제된 주문의 환불' 이라, 지금 꺼 둔 수단의 과거 주문이 목록 밖으로 새면 그 환불이 조용히 자동 완료된다. 공급이 끊긴 항목(_orphaned)만 뺀다. 플러그인이 auto_approve_refund 를 선언한 수단에는 'PG 즉시 환불' 을 라벨에 덧붙여, 운영자가 왜 그 수단이 기본 포함인지 알 수 있게 한다.",
+              "id": "claim_auto_approve_refund_payment_methods_field",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_payment_methods_label"
+                },
+                {
+                  "type": "composite",
+                  "name": "TagInput",
+                  "props": {
+                    "name": "claim.auto_approve_refund_payment_methods",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.payment_methods_placeholder",
+                    "options": "{{(_local.form?.order_settings?.payment_methods ?? []).filter(m => !m._orphaned).map(m => ({ value: m.id, label: ($localized(m._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + (m.id ?? '') + '.name') || m.id) + ((m.auto_approve_refund === true && (m._cached_source ?? 'builtin') !== 'builtin') ? ' · ' + $t('sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_payment_methods_pg_badge') : '') }))}}",
+                    "value": "{{_local.form?.claim?.auto_approve_refund_payment_methods ?? ['card', 'point', 'free']}}",
+                    "isMulti": true,
+                    "isClearable": false,
+                    "isSearchable": true,
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint mt-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_payment_methods_hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{_local.errors?.['claim.auto_approve_refund_payment_methods']}}",
+                  "props": {
+                    "className": "form-error"
+                  },
+                  "text": "{{_local.errors?.['claim.auto_approve_refund_payment_methods']?.[0] ?? ''}}"
+                }
+              ]
             }
           ]
         }

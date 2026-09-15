@@ -50,6 +50,15 @@
 `RegisterCashReceiptProviderListener` 하나가 처리합니다 — PG 선택과 현금영수증 발급사
 선택이 이커머스에서 독립적인 개념이라 별도 등록입니다.
 
+주입하는 `toss_*` 항목은 이커머스의 결제수단 **능력 키**를 함께 선언합니다. 그중
+`auto_approve_refund` 는 "사람의 개입 없이 환불이 집행되는가" 이고, **카드 계열
+(`toss_card` + 간편결제 5종)만 `true`** 입니다 — 토스 결제취소 API 가 그 자리에서 환불을
+끝냅니다. `toss_virtual_account`·`toss_transfer`·`toss_mobile_phone` 은 고객 환불계좌를 받아
+사람이 확인해야 끝나므로 `false` 입니다. `true` 로 잘못 선언하면 코어가 환불신청서를 완료까지
+보내 고객에게 "환불 완료" 알림이 가는데 돈은 아직 나가지 않은 상태가 되고, 반대로 카드 계열에서
+선언을 빠뜨리면 그 수단의 환불이 전부 운영자 승인 대기로 쌓입니다. 계약은 이커머스
+`docs/extension-points.md` "결제수단 능력 선언" 절이 갖습니다.
+
 `sirsoft-ecommerce.claim_payment.approve` / `.refund` 두 필터는 클레임 추가결제(`CP` 채번)의
 승인·환급을 이 플러그인이 맡는 접합면입니다. 콜백 컨트롤러는 결제번호가 `CP` 로 시작하면 주문
 경로를 타지 않고 모듈의 `approvePgPayment()` 에 위임하며, 그 안에서 이 필터가 발화합니다 —

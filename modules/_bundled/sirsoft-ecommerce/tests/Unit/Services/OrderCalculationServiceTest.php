@@ -3393,11 +3393,13 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @param  CouponDiscountType  $discountType  할인 타입
      * @param  float  $discountValue  할인 값
      * @param  float|null  $maxDiscount  최대 할인금액
+     * @param  int  $minOrderAmount  최소 주문금액 (상품소계 기준 — P18)
      */
     protected function createShippingCouponWithIssue(
         CouponDiscountType $discountType,
         float $discountValue,
-        ?float $maxDiscount = null
+        ?float $maxDiscount = null,
+        int $minOrderAmount = 0
     ): CouponIssue {
         $user = User::factory()->create();
 
@@ -3409,7 +3411,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
             'discount_type' => $discountType,
             'discount_value' => $discountValue,
             'max_discount' => $maxDiscount,
-            'min_order_amount' => 0,
+            'min_order_amount' => $minOrderAmount,
             // 정상 조합(배송비쿠폰 + 다른 쿠폰 동시 적용) 검증용 헬퍼 — 중복 허용 명시.
             // 미설정 시 DB 기본값 is_combinable=false 로 not_combinable 위반 → 할인 제외 회귀.
             'is_combinable' => true,
@@ -3548,6 +3550,101 @@ class OrderCalculationServiceTest extends ModuleTestCase
         // Then: 배송비 3,000원 - 쿠폰 1,000원 = 2,000원 할인 후 남은 배송비
         $this->assertEquals(3000, $result->summary->totalShipping);
         $this->assertEquals(1000, $result->summary->shippingDiscount);
+    }
+
+    /**
+     * 테스트 36-P18a: 배송비 쿠폰 최소금액은 상품소계 기준 — 통과
+     *
+     * 쿠폰: shipping_fee, fixed 1,000원, min_order_amount 30,000원
+     * 상품소계 50,000원 · 배송비 3,000원
+     * 기대: 상품소계(50,000) >= 30,000 이므로 적용 → 할인 1,000원
+     * (수정 전에는 배송비 총액 3,000 < 30,000 으로 판정해 할인 0원이었다 — P18)
+     *
+     * @scenario basis_case=subtotal_meets_min
+     *
+     * @effects shipping_coupon_min_compared_to_product_subtotal, shipping_coupon_discount_capped_by_shipping_total
+     */
+    public function test_shipping_coupon_min_order_amount_uses_product_subtotal(): void
+    {
+        // Given: FIXED 정책 (3,000원) · 상품 50,000원
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::FIXED,
+            baseFee: 3000
+        );
+
+        [$product, $option] = $this->createProductWithShippingPolicy(50000, $shippingPolicy);
+
+        // 배송비 쿠폰: 1,000원 정액 할인 · 최소 주문금액 30,000원
+        $couponIssue = $this->createShippingCouponWithIssue(
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 1000,
+            minOrderAmount: 30000
+        );
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(
+                    productId: $product->id,
+                    productOptionId: $option->id,
+                    quantity: 1
+                ),
+            ],
+            couponIssueIds: [$couponIssue->id]
+        );
+
+        // When
+        $result = $this->service->calculate($input);
+
+        // Then: 상품소계 기준으로 통과해 1,000원 할인
+        $this->assertEquals(3000, $result->summary->totalShipping);
+        $this->assertEquals(1000, $result->summary->shippingDiscount);
+    }
+
+    /**
+     * 테스트 36-P18b: 배송비 쿠폰 최소금액은 상품소계 기준 — 미달
+     *
+     * 쿠폰: shipping_fee, fixed 1,000원, min_order_amount 30,000원
+     * 상품소계 20,000원 · 배송비 3,000원
+     * 기대: 상품소계(20,000) < 30,000 이므로 미적용 → 할인 0원
+     *
+     * @scenario basis_case=subtotal_below_min
+     *
+     * @effects shipping_coupon_min_compared_to_product_subtotal
+     */
+    public function test_shipping_coupon_min_order_amount_not_met_by_product_subtotal(): void
+    {
+        // Given: FIXED 정책 (3,000원) · 상품 20,000원
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::FIXED,
+            baseFee: 3000
+        );
+
+        [$product, $option] = $this->createProductWithShippingPolicy(20000, $shippingPolicy);
+
+        // 배송비 쿠폰: 1,000원 정액 할인 · 최소 주문금액 30,000원
+        $couponIssue = $this->createShippingCouponWithIssue(
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 1000,
+            minOrderAmount: 30000
+        );
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(
+                    productId: $product->id,
+                    productOptionId: $option->id,
+                    quantity: 1
+                ),
+            ],
+            couponIssueIds: [$couponIssue->id]
+        );
+
+        // When
+        $result = $this->service->calculate($input);
+
+        // Then: 최소 주문금액 미달로 미적용
+        $this->assertEquals(3000, $result->summary->totalShipping);
+        $this->assertEquals(0, $result->summary->shippingDiscount);
     }
 
     // ========================================

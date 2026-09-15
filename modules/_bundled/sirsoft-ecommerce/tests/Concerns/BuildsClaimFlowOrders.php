@@ -157,12 +157,19 @@ trait BuildsClaimFlowOrders
      *
      * @param  int  $price  판매가
      * @param  int  $quantity  수량
+     * @param  array  $paymentOverrides  OrderPayment 오버라이드 (결제수단 게이트 축 — P16)
      * @return Order 결제완료 주문
      */
-    protected function paidClaimOrder(int $price = 29000, int $quantity = 1): Order
+    protected function paidClaimOrder(int $price = 29000, int $quantity = 1, array $paymentOverrides = []): Order
     {
         $policy = $this->createClaimShippingPolicy();
-        $order = $this->createSingleItemClaimOrder($price, $quantity, $policy, ['currency_snapshot' => $this->krwCurrencySnapshot()]);
+        $order = $this->createSingleItemClaimOrder(
+            $price,
+            $quantity,
+            $policy,
+            ['currency_snapshot' => $this->krwCurrencySnapshot()],
+            $paymentOverrides,
+        );
 
         return $this->moveOrderTo($this->attachPolicyShippings($order, $policy), OrderStatusEnum::PAYMENT_COMPLETE);
     }

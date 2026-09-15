@@ -122,6 +122,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
         int $quantity = 1,
         bool $withPayment = false,
         bool $withShipping = false,
+        array $paymentOverrides = [],
     ): array {
         $user = User::factory()->create();
         $totalAmount = $unitPrice * $quantity * $optionCount;
@@ -173,12 +174,12 @@ class OrderCancellationControllerTest extends ModuleTestCase
 
         $payment = null;
         if ($withPayment) {
-            $payment = OrderPayment::factory()->forOrder($order)->create([
+            $payment = OrderPayment::factory()->forOrder($order)->create(array_merge([
                 'payment_status' => PaymentStatusEnum::PAID,
                 'paid_amount_local' => $totalAmount,
                 'paid_amount_base' => $totalAmount,
                 'paid_at' => now(),
-            ]);
+            ], $paymentOverrides));
         }
 
         $shipping = null;
@@ -397,6 +398,11 @@ class OrderCancellationControllerTest extends ModuleTestCase
                     'pg_locked' => true,
                     'needs_pg' => true,
                     'refund_method' => 'pg',
+                    // 간편결제는 PG 결제취소 API 가 그 자리에서 환불하므로 자동 승인 대상이다
+                    // (P16·P17). 번들 PG 플러그인 4종의 등록 리스너가 실제로 선언하는 값이며,
+                    // 선언하지 않으면 그 수단의 환불은 운영자 승인 대기로 멈춘다 — 돈이 새지는
+                    // 않지만 자동 전이가 없어 아래 PG 훅 진입 단언이 성립하지 않는다.
+                    'auto_approve_refund' => true,
                     'is_active' => true,
                     'min_order_amount' => 0,
                     'stock_deduction_timing' => 'payment_complete',
@@ -404,6 +410,10 @@ class OrderCancellationControllerTest extends ModuleTestCase
                 ],
             ]])
         );
+        // 설정 캐시도 함께 비운다 — 카탈로그는 `order_settings.payment_methods` 조회 결과이고
+        // 그 조회는 서비스가 캐시한다. 리졸버만 비우면 훅 등록 전의 카탈로그를 다시 읽어
+        // 이 수단이 카탈로그에 없는 상태가 된다(능력 질의가 폴백으로만 답한다).
+        app(EcommerceSettingsService::class)->clearCache();
         app(PaymentMethodResolver::class)->flushCache();
 
         $data = $this->createPaidOrderWithOptions(
@@ -1142,6 +1152,92 @@ class OrderCancellationControllerTest extends ModuleTestCase
             0,
             OrderCancel::where('order_id', $order->id)->count(),
             '취소신청서는 환불완료 순간에 생긴다 (D3)',
+        );
+    }
+
+    /**
+     * `auto_advance_refund` 를 켜도 **정지 수단 주문은 접수에서 멈춘다**. (P16)
+     *
+     * 체크박스는 그대로 두되(운영자가 카드·무통장을 가리지 않고 같은 모달을 쓴다) 결제수단이
+     * 목록 밖이면 전이하지 않는다. 술어를 호출부가 아니라 `willAutoAdvance()` 안에 둔 것이
+     * 이 축의 근거다 — 관리자 경로는 따로 게이트를 걸지 않았는데도 같은 술어를 지나므로 막힌다.
+     *
+     * @scenario gate_case=stopped_method_admin_auto_advance
+     *
+     * @effects stopped_payment_method_ignores_admin_auto_advance
+     */
+    public function test_admin_auto_advance_stops_at_requested_for_a_bank_transfer_order(): void
+    {
+        $this->createCancelSequences();
+        $data = $this->createPaidOrderWithOptions(
+            optionCount: 1,
+            unitPrice: 20000,
+            quantity: 1,
+            withPayment: true,
+            withShipping: true,
+            paymentOverrides: ['payment_method' => 'dbank'],
+        );
+        $order = $data['order'];
+
+        $this->actingAs($this->adminUser)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
+                'type' => 'full',
+                'reason' => 'changed_mind',
+                'auto_advance_refund' => true,
+                // 계좌 환불 수단은 환불받을 계좌가 필수다 — 게이트 축과 별개의 기존 검증.
+                'refund_bank' => ['bank_code' => '004', 'account_number' => '1234567890', 'holder' => '홍길동'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.claim.cancelled', false);
+
+        $refund = OrderRefund::where('order_id', $order->id)->first();
+        $this->assertNotNull($refund);
+        $this->assertEquals(
+            RefundStatusEnum::REQUESTED,
+            $refund->refund_status,
+            '무통장은 자동 전이 체크를 해도 접수에서 멈춘다 (P16)',
+        );
+        $this->assertSame(
+            0,
+            OrderCancel::where('order_id', $order->id)->count(),
+            '취소신청서는 환불완료 순간에 생긴다 (D3)',
+        );
+    }
+
+    /**
+     * 자동 승인 목록에 있는 수단(카드)은 `auto_advance_refund` 로 완료까지 간다. (P16 비회귀)
+     *
+     * @scenario gate_case=allowed_method_admin_auto_advance
+     *
+     * @effects allowed_payment_method_still_auto_completes
+     */
+    public function test_admin_auto_advance_completes_for_a_card_order(): void
+    {
+        $this->createCancelSequences();
+        $data = $this->createPaidOrderWithOptions(
+            optionCount: 1,
+            unitPrice: 20000,
+            quantity: 1,
+            withPayment: true,
+            withShipping: true,
+            paymentOverrides: ['payment_method' => 'card'],
+        );
+        $order = $data['order'];
+
+        $this->actingAs($this->adminUser)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
+                'type' => 'full',
+                'reason' => 'changed_mind',
+                'auto_advance_refund' => true,
+            ])
+            ->assertOk();
+
+        $refund = OrderRefund::where('order_id', $order->id)->first();
+        $this->assertNotNull($refund);
+        $this->assertEquals(
+            RefundStatusEnum::COMPLETED,
+            $refund->refund_status,
+            '카드는 PG 가 그 자리에서 환불하므로 완료까지 간다',
         );
     }
 }

@@ -374,6 +374,19 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'claim.auto_approve_refund_statuses' => ['sometimes', 'array'],
             'claim.auto_approve_refund_statuses.*' => ['string', Rule::in(self::claimAutoApproveRefundStatuses())],
 
+            // 환불 자동 승인 결제수단 (P16·P17) — 사람이 송금해야 끝나는 수단(무통장·가상계좌 등)은
+            // 목록 밖이라 결제완료 상품이라도 `requested` 에서 멈춘다. 화이트리스트 출처는 위
+            // charge_payment_methods 와 같은 `allValidIds()` 다. 여기만 builtin Enum 으로 좁히면
+            // 플러그인이 등록한 즉시 환불 간편결제를 운영자가 목록에 넣을 수 없어, 그 수단의
+            // 환불이 전부 승인 대기로 쌓인다.
+            'claim.auto_approve_refund_payment_methods' => ['sometimes', 'array'],
+            'claim.auto_approve_refund_payment_methods.*' => ['string', Rule::in(app(PaymentMethodResolver::class)->allValidIds())],
+
+            // 운영자 결정 이력 (P17) — 화면이 보내지 않고 저장 직전에 서버가 채운다. 규칙을 두는
+            // 것은 클라이언트가 임의 값을 실어 보내도 카탈로그 밖 ID 가 남지 않게 하기 위함이다.
+            'claim.auto_approve_refund_payment_methods_decided' => ['sometimes', 'array'],
+            'claim.auto_approve_refund_payment_methods_decided.*' => ['string', Rule::in(app(PaymentMethodResolver::class)->allValidIds())],
+
             // 첨부 이미지 / 신청 가능 기간.
             // nullable 금지 — 형제 `order_settings.auto_cancel_days` 와 같은 이유다. null 은
             // min: 을 우회해 저장되는데, getAllSettings() 의 array_merge(defaults, saved) 에서
