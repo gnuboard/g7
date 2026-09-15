@@ -1633,6 +1633,7 @@
     "modules": "Modules",
     "notificationChannels": "Notification Channels",
     "notificationDefinitions": "Notification Definitions",
+    "memberNotifications": "Member notifications",
     "notificationLogs": "Notification Logs",
     "notification_unread_count": "Unread Notification Count",
     "notification_ws": "Notifications (Live)",

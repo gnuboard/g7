@@ -6,6 +6,7 @@ use App\Enums\ConsentType;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
+use App\Services\MemberNotificationService;
 use App\Traits\HasCountryAttributes;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -271,6 +272,9 @@ class UserResource extends BaseApiResource
                 : null,
             'is_locked' => (bool) $this->getValue('locked_permanently')
                 || ($this->getValue('locked_until') !== null && $this->resource->locked_until?->isFuture()),
+            // 회원 알림함 요약 — 회원 상세 「알림함」 탭이 읽는다. 단건 상세 응답이라 2쿼리를 허용하되,
+            // 목록(toListArray)에는 넣지 않는다: 목록은 행마다 도므로 같은 집계가 N+1 이 된다.
+            'notifications_summary' => app(MemberNotificationService::class)->summaryForUser((int) $this->resource->id),
         ]);
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합

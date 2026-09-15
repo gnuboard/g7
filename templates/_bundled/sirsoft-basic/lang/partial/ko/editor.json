@@ -1171,6 +1171,7 @@
     "userPosts": "사용자 게시글",
     "userProfile": "사용자 프로필",
     "user_notification_ws": "알림 (실시간)",
-    "wishlist": "위시리스트"
+    "wishlist": "위시리스트",
+    "scrap": "스크랩"
   }
 }

@@ -436,12 +436,32 @@ const PHP_LOCKED = parsePhpScopeMap(
  */
 const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string }> = [
     {
+        site: '`${namespace}${FONT_SIZE_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
+        reason: '코드 편집기 글자 크기 — 키 앞부분(namespace)을 화면이 prop 으로 넘긴다. 편집기를 여러 벌 띄울 수 있어 열거할 수 없다.',
+    },
+    {
+        site: '`${namespace}${WORD_WRAP_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
+        reason: '코드 편집기 줄바꿈 여부 — 위와 같은 이유 (namespace 가 실행 시점에 정해진다).',
+    },
+    {
+        site: '`${storageKey}.treeWidth` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/FileTreePicker.tsx',
+        reason: '파일 트리 폭 — 키 앞부분(storageKey)을 화면이 prop 으로 넘긴다.',
+    },
+    {
         site: 'key ← resources/js/core/template-engine/ActionDispatcher.ts',
         reason: '`saveToLocalStorage` 핸들러 — 키를 레이아웃 액션이 넘긴다. 레이아웃이 임의로 정하는 값이라 목록으로 열거할 수 없다.',
     },
     {
         site: 'key ← templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         reason: '`setLocalStorage` 핸들러 — 위와 같은 이유 (레이아웃이 키를 정한다).',
+    },
+    {
+        site: 'storageKey ← templates/_bundled/sirsoft-admin_basic/src/components/composite/FileTree.tsx',
+        reason: '펼친 폴더 목록 — 키 전체를 화면이 prop 으로 넘긴다(트리마다 다르다).',
+    },
+    {
+        site: 'storageKey ← templates/_bundled/sirsoft-admin_basic/src/hooks/useFileDrafts.ts',
+        reason: '저장 전 편집 초안 — 키를 `${namespace}.drafts` 로 조립한다. namespace 가 실행 시점에 정해진다.',
     },
 ];
 

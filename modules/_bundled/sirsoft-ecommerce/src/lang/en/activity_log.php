@@ -104,6 +104,10 @@ return [
         'shipping_policy_toggle_active' => 'Shipping policy active status changed (:policy_name)',
         'shipping_policy_set_default' => 'Default shipping policy set (:policy_name)',
         'shipping_policy_bulk_delete' => 'Shipping policies bulk deleted (:count items)',
+        'wishlist_bulk_delete' => 'Bulk deleted wishlists (:count)',
+        'cart_bulk_delete' => 'Bulk deleted carts (:count)',
+        'user_address_bulk_delete' => 'Bulk deleted member addresses (:count)',
+        'product_inquiry_bulk_delete' => 'Bulk deleted product inquiries (:count)',
         'shipping_policy_bulk_toggle_active' => 'Shipping policy active statuses bulk changed (:count items)',
 
         // Shipping carrier management (Admin)

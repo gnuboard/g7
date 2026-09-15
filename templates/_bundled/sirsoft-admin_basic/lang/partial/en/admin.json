@@ -344,14 +344,20 @@
         "location_info": "Location",
         "profile_memo": "Profile/Memo",
         "activity_info": "Activity",
-        "consent_info": "Consent"
+        "consent_info": "Consent",
+        "notifications_info": "Inbox"
       },
       "unlock": "Unlock",
       "unlock_success": "The account lock has been released.",
       "lock_status": "Account lock status",
       "locked_permanently_value": "Locked (indefinitely — administrator unlock required)",
       "locked_until_value": "Locked (until {{until}})",
-      "not_locked_value": "Not locked"
+      "not_locked_value": "Not locked",
+      "notifications": {
+        "total": "Total notifications",
+        "unread": "Unread",
+        "view_inbox": "View inbox"
+      }
     }
   },
   "language_packs": {
@@ -2608,6 +2614,64 @@
     "license_text": "License",
     "view_license": "View License"
   },
+  "member_notification": {
+    "page_title": "Member Notifications",
+    "page_description": "View and delete notifications members have received.",
+    "search_placeholder": "Enter a search term",
+    "total_count": "{{count}} total",
+    "col_created_at": "Received",
+    "col_member": "Member",
+    "col_type": "Type",
+    "col_subject": "Subject",
+    "col_read_at": "Read",
+    "deleted_member": "Deleted member",
+    "empty_message": "No notifications found.",
+    "badge": {
+      "read": "Read",
+      "unread": "Unread"
+    },
+    "filter": {
+      "search_type_all": "All",
+      "search_type_recipient": "Recipient",
+      "search_type_subject": "Subject",
+      "search_type_body": "Body",
+      "read_label": "Read state",
+      "read_all": "All",
+      "read_unread": "Unread",
+      "read_read": "Read",
+      "created_label": "Received between",
+      "member_filter_notice": "Showing notifications for a single member only.",
+      "member_filter_clear": "Clear member filter",
+      "search_button": "Search",
+      "reset_button": "Reset"
+    },
+    "sort": {
+      "created_at_desc": "Newest first",
+      "created_at_asc": "Oldest first",
+      "read_at_desc": "Recently read"
+    },
+    "detail": {
+      "body_label": "Body",
+      "no_body": "No body content.",
+      "type_label": "Notification type:",
+      "url_label": "Link:"
+    },
+    "action": {
+      "view_member": "View member",
+      "filter_by_member": "Show only this member"
+    },
+    "delete": {
+      "button": "Delete",
+      "selected_count": "{{count}} selected",
+      "bulk_button": "Delete selected",
+      "confirm_title": "Delete notification",
+      "confirm_message": "Delete the selected notification? It also disappears from the member inbox and cannot be undone.",
+      "success": "Notification deleted.",
+      "bulk_confirm_title": "Delete notifications",
+      "bulk_confirm_message": "Delete all selected notifications? They also disappear from member inboxes and cannot be undone.",
+      "bulk_success": "Selected notifications deleted."
+    }
+  },
   "notification_log": {
     "page_title": "Notification Logs",
     "page_description": "View the history of notifications sent by the system.",
@@ -2941,6 +3005,10 @@
       "template_uninstall_modal": "Uninstall Template",
       "template_update_modal": "Update Template",
       "template_manifest_preview_drawer": "Template Manifest Preview"
+    },
+    "member_notification_list": {
+      "delete_confirm_modal": "Member notification delete confirm",
+      "bulk_delete_confirm_modal": "Member notification bulk delete confirm"
     },
     "notification_log_list": {
       "delete_confirm_modal": "Delete Notification Log",

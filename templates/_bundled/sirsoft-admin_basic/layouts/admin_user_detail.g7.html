@@ -26,46 +26,44 @@
   <slot name="content">
     <div data-ref="user_detail_content" class="admin-page-content">
       <div data-ref="page_header" class="page-header-fullbleed">
-        <div class="flex-between">
-          <div>
-            <h1 class="page-title">$t:admin.users.detail.page_title</h1>
-            <p class="page-description">$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}</p>
-          </div>
-          <div class="flex-center gap-2">
-            <button data-ref="header_back_button" class="flex-center gap-2 btn btn-secondary">
-              <on type="click">
-                <navigate-back/>
-              </on>
-              <icon name="arrow-left" class="text-base"/>
-              <span>$t:common.back</span>
-            </button>
-            <button data-ref="header_edit_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              <on type="click">
-                <!-- 이 회원 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 목록까지 되짚어 나가도 자리가 남는다 -->
-                <navigate path="/admin/users/{{route?.id}}/edit" :mergeQuery="true">
-                  <query/>
-                </navigate>
-              </on>
-              <icon name="pencil" class="text-base"/>
-              <span>$t:admin.users.detail.edit</span>
-            </button>
-            <button data-ref="header_unlock_button" data-if="{{user?.data?.is_locked === true}}" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 btn btn-warning">
-              <on type="click">
-                <!-- 계정 잠금 해제. 로그인 실패가 쌓여 잠긴 계정을 운영자가 푸는 자리이며, 성공하면 회원 정보를 다시 받아 잠금 표시를 내린다 -->
-                <api-call :auth_required="true" target="/api/admin/users/{{route?.id}}/unlock" method="POST">
-                  <success>
-                    <refetch-data-source dataSourceId="user"/>
-                    <toast type="success" message="$t:admin.users.detail.unlock_success"/>
-                  </success>
-                  <fail>
-                    <toast type="error" message="{{error.message}}"/>
-                  </fail>
-                </api-call>
-              </on>
-              <icon name="unlock" class="text-base"/>
-              <span>$t:admin.users.detail.unlock</span>
-            </button>
-          </div>
+        <div>
+          <h1 class="page-title">$t:admin.users.detail.page_title</h1>
+          <p class="page-description">$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}</p>
+        </div>
+        <div class="flex-center gap-2">
+          <button data-ref="header_back_button" class="flex-center gap-2 btn btn-secondary">
+            <on type="click">
+              <navigate-back/>
+            </on>
+            <icon name="arrow-left" class="text-base"/>
+            <span>$t:common.back</span>
+          </button>
+          <button data-ref="header_edit_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 이 회원 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 목록까지 되짚어 나가도 자리가 남는다 -->
+              <navigate path="/admin/users/{{route?.id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="pencil" class="text-base"/>
+            <span>$t:admin.users.detail.edit</span>
+          </button>
+          <button data-ref="header_unlock_button" data-if="{{user?.data?.is_locked === true}}" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 btn btn-warning">
+            <on type="click">
+              <!-- 계정 잠금 해제. 로그인 실패가 쌓여 잠긴 계정을 운영자가 푸는 자리이며, 성공하면 회원 정보를 다시 받아 잠금 표시를 내린다 -->
+              <api-call :auth_required="true" target="/api/admin/users/{{route?.id}}/unlock" method="POST">
+                <success>
+                  <refetch-data-source dataSourceId="user"/>
+                  <toast type="success" message="$t:admin.users.detail.unlock_success"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <icon name="unlock" class="text-base"/>
+            <span>$t:admin.users.detail.unlock</span>
+          </button>
         </div>
       </div>
       <tab-navigation-scroll data-ref="user_detail_tabs" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
@@ -76,6 +74,7 @@
           <item id="profile_memo" label="$t:admin.users.detail.tabs.profile_memo"/>
           <item id="activity_info" label="$t:admin.users.detail.tabs.activity_info"/>
           <item id="consent_info" label="$t:admin.users.detail.tabs.consent_info"/>
+          <item id="notifications_info" label="$t:admin.users.detail.tabs.notifications_info"/>
         </prop>
         <on type="change">
           <!-- 탭 전환 — 내용은 이미 받아 둔 한 응답에서 갈라 보이므로 탭마다 다시 부르지 않는다. -->
@@ -278,6 +277,38 @@
               <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.consent_type.privacy</label>
               <span class="text-primary text-sm">{{user?.data?.privacy_consent?.agreed_at ?? '-'}}</span>
             </div>
+          </div>
+        </div>
+      </div>
+      <!-- 회원 알림함 요약 — 수신함 자체는 화면이 아니라 전용 목록에 있고, 여기서는 "몇 건이 남아
+           있고 몇 건을 안 읽었나" 만 보여 준 뒤 그 회원으로 좁힌 목록으로 넘긴다. 상세 응답이 이미
+           들고 오는 값이라 탭을 눌러도 다시 부르지 않는다. -->
+      <div data-ref="section_notifications_info" id="notifications_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="inbox" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.detail.tabs.notifications_info</h3>
+        </div>
+        <div>
+          <div class="grid-2col-responsive">
+            <div data-ref="field_notifications_total">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.notifications.total</label>
+              <span class="text-primary text-sm">{{user?.data?.notifications_summary?.total ?? 0}}</span>
+            </div>
+            <div data-ref="field_notifications_unread">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.notifications.unread</label>
+              <span class="text-primary text-sm">{{user?.data?.notifications_summary?.unread ?? 0}}</span>
+            </div>
+          </div>
+          <div data-ref="notifications_inbox_link" class="mt-4">
+            <button type="button" class="btn btn-secondary">
+              <on type="click">
+                <!-- 회원 한정으로 알림함을 연다 — 그쪽 화면이 배너로 "이 회원만 보는 중" 임을 알린다. -->
+                <navigate path="/admin/member-notifications">
+                  <query user_uuid="{{user?.data?.uuid}}"/>
+                </navigate>
+              </on>
+              <span>$t:admin.users.detail.notifications.view_inbox</span>
+            </button>
           </div>
         </div>
       </div>

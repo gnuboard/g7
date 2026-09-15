@@ -69,11 +69,14 @@ _`getSettingsSchema()` 선언이 없습니다._
 | `product-labels` | 상품 라벨 관리 | `read`, `create`, `update`, `delete` | - |
 | `identity.policies` | 이커머스 본인인증 정책 | `read`, `update` | - |
 | `reviews` | 리뷰 관리 | `read`, `update`, `delete` | `review` |
-| `inquiries` | 문의 관리 | `update`, `delete` | - |
+| `inquiries` | 문의 관리 | `read`, `update`, `delete` | - |
 | `dashboard` | 대시보드 | `view` | - |
 | `user-products` | 사용자 상품 | `read` | - |
 | `user-orders` | 사용자 주문 | `create`, `cancel`, `confirm` | - |
 | `user-reviews` | 사용자 리뷰 | `write` | - |
+| `wishlists` | 찜 관리 | `read`, `manage` | `wishlist` |
+| `carts` | 장바구니 관리 | `read`, `manage` | `cart` |
+| `user-addresses` | 회원 배송지 관리 | `read`, `manage` | `user-address` |
 | `mileage` | 마일리지 관리 | `read`, `manage` | `mileage-transaction` |
 | `user-currency` | 회원 결제 통화 관리 | `manage` | - |
 | `user-shipping-country` | 회원 배송국가 관리 | `manage` | - |
@@ -105,7 +108,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 <!-- @generated:menus START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 구분 | slug | 이름 | URL | 하위 |
 |---|---|---|---|---|
-| 관리자 | `sirsoft-ecommerce` | 이커머스 | - | 11개 |
+| 관리자 | `sirsoft-ecommerce` | 이커머스 | - | 15개 |
 <!-- @generated:menus END -->
 
 <!-- @intent START -->

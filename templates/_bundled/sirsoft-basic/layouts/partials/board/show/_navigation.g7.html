@@ -24,6 +24,8 @@
       <!-- 이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75). -->
       <button data-if="{{navigation?.data?.prev?.id}}" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer">
         <on type="click">
+          <!-- 이전글로 이동하기 전 스크랩 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 is_scraped 값보다 이전 게시글에서 세팅된 _local.isScraped 가 우선 적용된다 -->
+          <set-state target="local" :isScraped="null" :scrapCount="null" :scrapLoading="null"/>
           <navigate path="/board/{{route.slug}}/{{navigation.data.prev.id}}" :mergeQuery="true">
             <query/>
           </navigate>
@@ -34,6 +36,8 @@
       <!-- 다음글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75). -->
       <button data-if="{{navigation?.data?.next?.id}}" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer">
         <on type="click">
+          <!-- 다음글로 이동하기 전 스크랩 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 is_scraped 값보다 이전 게시글에서 세팅된 _local.isScraped 가 우선 적용된다 -->
+          <set-state target="local" :isScraped="null" :scrapCount="null" :scrapLoading="null"/>
           <navigate path="/board/{{route.slug}}/{{navigation.data.next.id}}" :mergeQuery="true">
             <query/>
           </navigate>

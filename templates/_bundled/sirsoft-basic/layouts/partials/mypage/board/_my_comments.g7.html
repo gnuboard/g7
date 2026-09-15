@@ -24,6 +24,16 @@
       </select>
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">
+        <!-- 검색 대상 — 댓글 내용(기본)과 원글 제목 중 하나. 「어떤 글에 단 댓글인지」로 찾는 쪽이 자연스러운 경우가 많다 -->
+        <select data-ref="my_comments_search_field_select" value="{{_global.myCommentsSearchField ?? 'content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <options>
+            <option value="content">$t:mypage.board_activities.comment_search_fields.content</option>
+            <option value="post_title">$t:mypage.board_activities.comment_search_fields.post_title</option>
+          </options>
+          <on type="change">
+            <set-state target="global" myCommentsSearchField="{{$event.target.value}}"/>
+          </on>
+        </select>
         <input type="text" placeholder="$t:mypage.board_activities.search_placeholder_comments" value="{{_global.myCommentsSearch ?? ''}}" class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
           <on type="change">
             <!-- 댓글 본문 검색어 — 옆 「내 글」 탭과 조건 자리가 갈리므로 이름도 따로다 -->
@@ -44,7 +54,7 @@
           <on type="click">
             <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
             <sequence>
-              <set-state target="global" myCommentsBoard="" myCommentsSearch="" myCommentsSort="latest" :myCommentsPage="1"/>
+              <set-state target="global" myCommentsBoard="" myCommentsSearch="" myCommentsSearchField="content" myCommentsSort="latest" :myCommentsPage="1"/>
               <refetch-data-source dataSourceId="myComments"/>
             </sequence>
           </on>
@@ -64,7 +74,7 @@
         <on type="click">
           <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
           <sequence>
-            <set-state target="global" myCommentsBoard="" myCommentsSearch="" myCommentsSort="latest" :myCommentsPage="1"/>
+            <set-state target="global" myCommentsBoard="" myCommentsSearch="" myCommentsSearchField="content" myCommentsSort="latest" :myCommentsPage="1"/>
             <refetch-data-source dataSourceId="myComments"/>
           </sequence>
         </on>

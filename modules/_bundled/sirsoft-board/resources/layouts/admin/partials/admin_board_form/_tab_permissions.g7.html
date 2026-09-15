@@ -80,9 +80,9 @@
           <icon name="info-circle" size="lg" class="text-blue-500 dark:text-blue-400 flex-shrink-0"/>
           <p class="text-info-soft">$t:sirsoft-board.admin.form.permissions.create_mode_permissions_notice</p>
         </div>
-        <div data-ref="permissions_error_alert" data-if="{{ !!route?.slug &amp;&amp; (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}" class="alert-danger">
+        <div data-ref="permissions_error_alert" data-if="{{ !!route?.slug &amp;&amp; (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}" class="alert-danger items-start mb-6">
           <div class="flex-start gap-3">
-            <icon name="exclamation-circle" size="lg" class="text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <icon name="exclamation-circle" class="text-xl leading-5 text-red-500 dark:text-red-400 flex-shrink-0"/>
             <div>
               <p class="text-error-strong">$t:sirsoft-board.admin.form.permissions.error_title</p>
               <p class="text-error-soft mt-1">{{ _local.errors?.permissions?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_description' }}</p>

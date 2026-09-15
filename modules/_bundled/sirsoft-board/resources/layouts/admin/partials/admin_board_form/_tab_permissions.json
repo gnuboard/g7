@@ -332,7 +332,7 @@
                             "name": "Div",
                             "if": "{{ !!route?.slug && (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}",
                             "props": {
-                                "className": "alert-danger"
+                                "className": "alert-danger items-start mb-6"
                             },
                             "children": [
                                 {
@@ -347,8 +347,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "exclamation-circle",
-                                                "size": "lg",
-                                                "className": "text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                                "className": "text-xl leading-5 text-red-500 dark:text-red-400 flex-shrink-0"
                                             }
                                         },
                                         {

@@ -35,14 +35,14 @@
                             "name": "Div",
                             "if": "{{_global.board_notification_template_form_modal?.errors}}",
                             "props": {
-                                "className": "alert-danger"
+                                "className": "alert-danger items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex gap-3"
+                                        "className": "flex items-start gap-3"
                                     },
                                     "children": [
                                         {
@@ -50,8 +50,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "triangle-exclamation",
-                                                "size": "sm",
-                                                "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                                "className": "text-sm leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
                                             }
                                         },
                                         {

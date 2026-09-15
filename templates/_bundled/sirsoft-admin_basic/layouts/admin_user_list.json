@@ -937,6 +937,7 @@
                             }
                         ],
                         "props": {
+                            "selectedCountText": "",
                             "data": "{{users?.data?.data}}",
                             "sortable": true,
                             "sortField": "{{query.sort_by}}",

@@ -195,6 +195,35 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
+     * use_scrap 수정 + 응답 노출 회귀 테스트 (#524 브라우저 검수)
+     *
+     * BoardResource 에 use_scrap 미노출 시 편집 화면 토글이 DB 값을 못 받고,
+     * UpdateBoardRequest 에 규칙 미정의 시 저장이 누락된다. 두 경로를 함께 방어한다.
+     */
+    public function test_board_use_scrap_can_be_updated_and_is_exposed(): void
+    {
+        // Given: 스크랩 사용 게시판
+        $board = Board::factory()->create(['use_scrap' => true]);
+
+        // 조회 응답에 use_scrap 이 노출되어야 편집 화면 토글이 값을 반영한다.
+        $show = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-board/admin/boards/{$board->id}");
+        $show->assertStatus(200);
+        $this->assertTrue($show->json('data.use_scrap'));
+
+        // When: use_scrap 을 false 로 변경
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-board/admin/boards/{$board->id}", [
+                'use_scrap' => false,
+            ]);
+
+        // Then: 수정 성공, 응답·DB 모두 false
+        $response->assertStatus(200);
+        $this->assertFalse($response->json('data.use_scrap'));
+        $this->assertFalse($board->fresh()->use_scrap);
+    }
+
+    /**
      * is_active 수정 테스트 (false → true)
      */
     public function test_board_is_active_can_be_updated_to_true(): void

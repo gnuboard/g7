@@ -46,6 +46,7 @@
             "params": {
                 "page": "{{query.page ?? 1}}",
                 "search": "{{query.search ?? ''}}",
+                "search_field": "{{query.search_field ?? ''}}",
                 "category": "{{query.category ?? ''}}",
                 "sort_by": "{{query.sort_by ?? ''}}",
                 "sort_order": "{{query.sort_order ?? ''}}",

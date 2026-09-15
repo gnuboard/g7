@@ -1,4 +1,5 @@
-<!-- 게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다 -->
+<!-- 게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다
+  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=""` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다 -->
 <layout name="admin_board_posts_index" version="1.0.0" extends="_admin_base">
   <meta title="{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title" description="{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"/>
   <!-- 목록 본체 — 검색은 `filters[0][*]` 세 칸(대상 필드·값·연산자)으로 보낸다. 422 만 토스트로 흘리고 403·500 은 화면 자리에 오류 페이지를 세운다 — 앞은 조건이 틀린 것이고 뒤는 화면을 세울 수 없는 것이다 -->
@@ -70,6 +71,8 @@
             <options>
               <option value="all">$t:sirsoft-board.admin.posts.search_fields.all</option>
               <option value="title_content">$t:sirsoft-board.admin.posts.search_fields.title_content</option>
+              <option value="title">$t:sirsoft-board.admin.posts.search_fields.title</option>
+              <option value="content">$t:sirsoft-board.admin.posts.search_fields.content</option>
               <option value="author">$t:sirsoft-board.admin.posts.search_fields.author</option>
             </options>
             <on type="change">
@@ -200,7 +203,40 @@
           </on>
         </select>
       </div>
-      <data-grid data-ref="posts_data_grid" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" :selectable="false" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
+      <div data-ref="bulk_actions_area" class="bulk-actions-bar">
+        <span data-ref="selected_count" class="text-body font-medium">$t:sirsoft-board.admin.posts.bulk.selected_count|count={{(_global.selectedIds_board_posts || []).length}}</span>
+        <div data-ref="bulk_buttons" class="flex gap-2 ml-auto">
+          <button data-ref="bulk_delete" data-testid="admin-post-bulk-delete" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
+            <on type="click">
+              <!-- 갈래를 정하고 직전 사유를 비운다(남겨 두면 다른 갈래의 문장이 그대로 이력에 실린다) -->
+              <set-state target="global" bulkPostAction="delete" bulkPostReason="" :bulkPostLoading="false"/>
+            </on>
+            <on type="click">
+              <open-modal target="bulk_post_action_modal"/>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.bulk.delete</span>
+          </button>
+          <button data-ref="bulk_blind" data-testid="admin-post-bulk-blind" class="px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
+            <on type="click">
+              <set-state target="global" bulkPostAction="blind" bulkPostReason="" :bulkPostLoading="false"/>
+            </on>
+            <on type="click">
+              <open-modal target="bulk_post_action_modal"/>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.bulk.blind</span>
+          </button>
+          <button data-ref="bulk_restore" data-testid="admin-post-bulk-restore" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
+            <on type="click">
+              <set-state target="global" bulkPostAction="restore" bulkPostReason="" :bulkPostLoading="false"/>
+            </on>
+            <on type="click">
+              <open-modal target="bulk_post_action_modal"/>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.bulk.restore</span>
+          </button>
+        </div>
+      </div>
+      <data-grid selectedCountText="" data-ref="posts_data_grid" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
         <column field="number" header="$t:sirsoft-board.admin.posts.columns.number" :sortable="false" :required="true">
           <cell>
             <span data-if="{{row.row_type === 'notice'}}" class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">{{row.number ?? '-'}}</span>
@@ -268,11 +304,19 @@
           </cell>
         </column>
         <column field="created_at" header="$t:sirsoft-board.admin.posts.columns.created_at" :sortable="false"/>
+        <on type="change" event="onSelectionChange">
+          <!-- 체크한 행들을 전역에 모은다 — 위 일괄 처리 버튼들이 이 목록을 보고 잠기거나 풀린다 -->
+          <set-state target="global" selectedIds_board_posts="{{$args[0]}}"/>
+        </on>
         <on type="change" event="onPageChange">
           <!-- 페이지 이동 — 표가 넘겨준 번호(`$args[0]`)를 URL 에 올려 두면 데이터소스가 그것을 읽어 다시 채운다. 걸어 둔 검색·필터는 `mergeQuery` 로 그대로 남는다 -->
-          <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
-            <query page="{{$args[0]}}"/>
-          </navigate>
+          <sequence>
+            <!-- 다음 쪽으로 넘어가면 화면에 없는 글이 선택된 채로 일괄 처리에 실린다 — 먼저 비운다 -->
+            <set-state target="global" :selectedIds_board_posts="[]"/>
+            <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
         </on>
       </data-grid>
       <div data-ref="pagination_info" class="mt-4 text-label text-center">
@@ -314,6 +358,114 @@
             </sequence>
           </on>
           <span>{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 일괄 처리 확인 — 제목·본문이 `_global.bulkPostAction` 으로 갈린다. 삭제는 사유가 없고(이력에 남길 문장이 없다), 블라인드·복구는 사유 칸을 둔다.
+         본인인증 정책이 켜져 있으면 확인 클릭이 428 을 받고 엔진 인터셉터가 인증 모달을 연다 — 여기서는 로딩 표시만 내린다 -->
+    <modal data-ref="bulk_post_action_modal" title="{{_global.bulkPostAction === 'delete' ? '$t:sirsoft-board.admin.posts.bulk.modal.delete_title' : _global.bulkPostAction === 'blind' ? '$t:sirsoft-board.admin.posts.bulk.modal.blind_title' : '$t:sirsoft-board.admin.posts.bulk.modal.restore_title'}}" size="sm">
+      <meta editor_label="$t:sirsoft-board.admin.posts.bulk.modal.delete_title"/>
+      <!-- 확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가
+           ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인). -->
+      <div data-testid="admin-post-bulk-modal" class="py-2">
+        <p data-if="{{_global.bulkPostAction === 'delete'}}" class="text-body">$t:sirsoft-board.admin.posts.bulk.modal.delete_confirm|count={{(_global.selectedIds_board_posts || []).length}}</p>
+        <p data-if="{{_global.bulkPostAction === 'delete'}}" class="text-label-subtle mt-1">$t:sirsoft-board.admin.posts.bulk.modal.replies_notice</p>
+        <p data-if="{{_global.bulkPostAction === 'blind'}}" class="text-body">$t:sirsoft-board.admin.posts.bulk.modal.blind_confirm|count={{(_global.selectedIds_board_posts || []).length}}</p>
+        <p data-if="{{_global.bulkPostAction === 'restore'}}" class="text-body">$t:sirsoft-board.admin.posts.bulk.modal.restore_confirm|count={{(_global.selectedIds_board_posts || []).length}}</p>
+        <div data-if="{{_global.bulkPostAction !== 'delete'}}" class="mt-4">
+          <label class="form-label">$t:sirsoft-board.admin.posts.bulk.modal.reason_label</label>
+          <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" :rows="3" placeholder="$t:sirsoft-board.admin.posts.bulk.modal.reason_placeholder" value="{{_global.bulkPostReason || ''}}">
+            <on type="change">
+              <set-state target="global" bulkPostReason="{{$event.target.value}}"/>
+            </on>
+          </textarea>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-testid="admin-post-bulk-confirm" class="px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-800' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'}}" disabled="{{_global.bulkPostLoading}}">
+          <on type="click">
+            <!-- 실행 ①  여러 건을 한 요청으로 처리하므로 응답이 늦다 — 그 사이 두 번 눌리면 같은 요청이 겹친다 -->
+            <set-state target="global" :bulkPostLoading="true"/>
+          </on>
+          <on type="click">
+            <!-- 실행 ②  갈래마다 메서드와 경로가 다르다. 실패는 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다 -->
+            <switch on="{{_global.bulkPostAction}}">
+              <case when="delete">
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk" method="DELETE">
+                  <success>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason=""/>
+                    <refetch-data-source dataSourceId="posts"/>
+                    <toast type="success" message="{{result.message}}"/>
+                    <close-modal/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
+                    <open-modal target="bulk_post_error_modal"/>
+                  </fail>
+                  <body ids="{{_global.selectedIds_board_posts}}" reason="{{_global.bulkPostReason}}"/>
+                </api-call>
+              </case>
+              <case when="blind">
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-blind" method="PATCH">
+                  <success>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason=""/>
+                    <refetch-data-source dataSourceId="posts"/>
+                    <toast type="success" message="{{result.message}}"/>
+                    <close-modal/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
+                    <open-modal target="bulk_post_error_modal"/>
+                  </fail>
+                  <body ids="{{_global.selectedIds_board_posts}}" reason="{{_global.bulkPostReason}}"/>
+                </api-call>
+              </case>
+              <case when="restore">
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-restore" method="PATCH">
+                  <success>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason=""/>
+                    <refetch-data-source dataSourceId="posts"/>
+                    <toast type="success" message="{{result.message}}"/>
+                    <close-modal/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
+                    <open-modal target="bulk_post_error_modal"/>
+                  </fail>
+                  <body ids="{{_global.selectedIds_board_posts}}" reason="{{_global.bulkPostReason}}"/>
+                </api-call>
+              </case>
+            </switch>
+          </on>
+          <span data-if="{{!_global.bulkPostLoading}}">$t:common.confirm</span>
+          <span data-if="{{_global.bulkPostLoading}}" class="flex-center gap-2">
+            <icon name="spinner" class="spinner-sm"/>
+            <span>$t:sirsoft-board.admin.posts.bulk.modal.processing</span>
+          </span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 일괄 처리 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다 -->
+    <modal data-ref="bulk_post_error_modal" title="$t:common.error" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
+      </div>
+      <div class="flex justify-end mt-6">
+        <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
         </button>
       </div>
     </modal>

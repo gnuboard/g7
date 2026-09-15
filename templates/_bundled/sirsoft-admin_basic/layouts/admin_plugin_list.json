@@ -378,10 +378,11 @@
                         },
                         "children": [
                             {
+                                "comment": "`alert-warning` 이 가로 flex 라 w-full 이 없으면 이 줄이 내용 폭으로 줄어\n          닫기 버튼이 본문에 달라붙는다.",
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between gap-4"
+                                    "className": "flex-start justify-between gap-4 w-full"
                                 },
                                 "children": [
                                     {

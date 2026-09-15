@@ -76,7 +76,7 @@ class UpdateBoardRequest extends FormRequest
         // boolean 필드 캐스팅 (Toggle 컴포넌트가 "on"/"off" 문자열을 전송할 수 있음)
         $booleanFields = [
             'is_active', 'use_comment', 'use_reply', 'use_file_upload',
-            'use_report', 'show_view_count', 'is_notice',
+            'use_report', 'use_scrap', 'show_view_count', 'is_notice',
             'notify_admin_on_post', 'notify_author',
         ];
 
@@ -165,6 +165,7 @@ class UpdateBoardRequest extends FormRequest
             'use_comment' => ['sometimes', 'required', 'boolean'],
             'use_reply' => ['sometimes', 'required', 'boolean'],
             'use_report' => ['sometimes', 'required', 'boolean'],
+            'use_scrap' => ['sometimes', 'required', 'boolean'],
             'comment_order' => ['sometimes', 'required', 'in:ASC,DESC'],
             // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['sometimes', 'nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
@@ -265,6 +266,7 @@ class UpdateBoardRequest extends FormRequest
             $settingFieldKeys = [
                 'per_page', 'per_page_mobile', 'order_by', 'order_direction',
                 'secret_mode', 'use_comment', 'use_reply', 'use_report',
+                'use_scrap',
                 'comment_order', 'show_view_count',
                 'max_reply_depth', 'max_comment_depth',
                 'min_title_length', 'max_title_length',

@@ -284,14 +284,14 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "alert-danger"
+                            "className": "alert-danger items-start mb-6"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex gap-3"
+                                    "className": "flex items-start gap-3"
                                 },
                                 "children": [
                                     {
@@ -299,7 +299,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
                                         }
                                     },
                                     {

@@ -1,8 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminInquiryController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserAddressController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserCurrencyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserShippingCountryController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminWishlistController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\BrandController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CashReceiptController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController;
@@ -1465,7 +1469,71 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // PUT    /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply   - 답변 수정
     // DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply   - 답변 삭제
     // DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}         - 문의 삭제
+    /*
+    |--------------------------------------------------------------------------
+    | 회원 소유 데이터 관리자 목록 (찜 · 장바구니 · 배송지)
+    |--------------------------------------------------------------------------
+    |
+    | 회원이 만든 데이터인데 관리자 표면이 없던 축을 채운다(#524 §4.1). 세 목록 모두
+    | 같은 모양이다 — 조회는 read, 삭제는 manage. `/bulk` 는 `/{id}` 보다 먼저 선언해야
+    | "bulk" 가 id 로 잡히지 않는다.
+    |
+    */
+    Route::prefix('wishlists')->group(function () {
+        Route::delete('/bulk', [AdminWishlistController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.manage')
+            ->name('admin.wishlists.bulk-destroy');
+
+        Route::get('/', [AdminWishlistController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.read')
+            ->name('admin.wishlists.index');
+
+        Route::delete('/{id}', [AdminWishlistController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.manage')
+            ->whereNumber('id')
+            ->name('admin.wishlists.destroy');
+    });
+
+    Route::prefix('carts')->group(function () {
+        Route::delete('/bulk', [AdminCartController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.manage')
+            ->name('admin.carts.bulk-destroy');
+
+        Route::get('/', [AdminCartController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.read')
+            ->name('admin.carts.index');
+
+        Route::delete('/{id}', [AdminCartController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.manage')
+            ->whereNumber('id')
+            ->name('admin.carts.destroy');
+    });
+
+    Route::prefix('user-addresses')->group(function () {
+        Route::delete('/bulk', [AdminUserAddressController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.manage')
+            ->name('admin.user-addresses.bulk-destroy');
+
+        Route::get('/', [AdminUserAddressController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.read')
+            ->name('admin.user-addresses.index');
+
+        Route::delete('/{id}', [AdminUserAddressController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.manage')
+            ->whereNumber('id')
+            ->name('admin.user-addresses.destroy');
+    });
+
     Route::prefix('inquiries')->group(function () {
+        // 목록·일괄 삭제 (#524 §4.1) — `/bulk` 는 `/{inquiryId}` 패턴보다 먼저 선언한다
+        Route::get('/', [AdminInquiryController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.inquiries.read')
+            ->name('admin.inquiries.index');
+
+        Route::delete('/bulk', [AdminInquiryController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.inquiries.delete')
+            ->name('admin.inquiries.bulk-destroy');
+
         Route::post('/{inquiryId}/reply', [AdminProductInquiryController::class, 'reply'])
             ->middleware('permission:admin,sirsoft-ecommerce.inquiries.update')
             ->whereNumber('inquiryId')

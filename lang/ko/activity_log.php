@@ -99,6 +99,9 @@ return [
         'user_update_language' => '사용자 언어 설정 변경',
         'user_bulk_update_status' => '사용자 일괄 상태 변경 (:count건)',
 
+        // 회원 알림함 (관리자가 회원 수신함을 지우는 행위)
+        'member_notification_bulk_delete' => '회원 알림함 일괄 삭제 (:count건)',
+
         // 역할 관리
         'role_index' => '역할 목록 조회',
         'role_active' => '활성 역할 목록 조회',

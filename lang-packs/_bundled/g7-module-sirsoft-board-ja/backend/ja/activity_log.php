@@ -18,6 +18,8 @@ return [
         'update' => '編集',
         'update_status' => 'ステータス変更',
         'upload' => 'アップロード',
+        'scrap' => 'スクラップ',
+        'unscrap' => 'スクラップ解除',
     ],
     'description' => [
         'board_index' => '掲示板一覧閲覧',
@@ -57,6 +59,8 @@ return [
         'board_settings_bulk_apply' => '掲示板設定一括適用',
         'board_settings_bulk_apply_aborted' => '掲示板設定一括適用中止(全体ロールバック、失敗掲示板::failed_board_name、:failed_at/:total)',
         'board_type_show' => '掲示板タイプ詳細閲覧 (:type_name)',
+        'scrap_add' => '投稿のスクラップ (ID: :post_id)',
+        'scrap_remove' => '投稿のスクラップ解除 (ID: :post_id)',
     ],
     'fields' => [
         'name' => '掲示板名',
@@ -84,5 +88,6 @@ return [
         'is_secret' => '非公開投稿',
         'status' => 'ステータス',
         'content' => '内容',
+        'use_scrap' => 'スクラップ使用',
     ],
 ];

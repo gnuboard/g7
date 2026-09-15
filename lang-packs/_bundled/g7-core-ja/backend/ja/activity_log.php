@@ -214,6 +214,7 @@ return [
         'custom_asset_upload' => 'カスタム資産アップロード (:identifier — :path)',
         'custom_asset_delete' => 'カスタム資産削除 (:identifier — :path)',
         'custom_asset_rename' => 'カスタム資産の名前変更 (:identifier — :path)',
+        'member_notification_bulk_delete' => '会員通知ボックス一括削除 (:count件)',
     ],
     'fields' => [
         'name' => '名前',

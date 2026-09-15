@@ -3,9 +3,9 @@
   <modal data-ref="modal_board_notification_template_edit" title="$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="board_template_form_container" data-blur-until-loaded="{{_global.board_notification_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
-        <div data-ref="board_template_validation_error" data-if="{{_global.board_notification_template_form_modal?.errors}}" class="alert-danger">
-          <div class="flex gap-3">
-            <icon name="triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div data-ref="board_template_validation_error" data-if="{{_global.board_notification_template_form_modal?.errors}}" class="alert-danger items-start">
+          <div class="flex items-start gap-3">
+            <icon name="triangle-exclamation" class="text-sm leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
             <div>
               <h3 class="text-error-strong">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.validation_error</h3>
               <ul data-if="{{typeof _global.board_notification_template_form_modal?.errors === 'object' &amp;&amp; Object.keys(_global.board_notification_template_form_modal.errors).length > 0}}" data-each="errMsg in Object.entries(_global.board_notification_template_form_modal?.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">

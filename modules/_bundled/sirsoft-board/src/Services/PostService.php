@@ -75,6 +75,7 @@ class PostService
      * @param  AttachmentService  $attachmentService  첨부파일 서비스
      * @param  CommentRepositoryInterface  $commentRepository  댓글 Repository
      * @param  CommentService  $commentService  댓글 서비스
+     * @param  CacheInterface  $cache  모듈 캐시 (목록 총 건수·통계 캐시)
      */
     public function __construct(
         private PostRepositoryInterface $postRepository,
@@ -435,6 +436,25 @@ class PostService
         // 훅: before_delete
         HookManager::doAction('sirsoft-board.post.before_delete', $post, $slug);
 
+        return $this->executeDelete($slug, $id, $options, $triggerType);
+    }
+
+    /**
+     * 게시글 삭제의 실행 본체입니다 (훅 검사·정책 판정 없음).
+     *
+     * 단건 경로(deletePost)와 일괄 경로(bulkAction)가 같은 트랜잭션 짜임을 쓰되,
+     * **항목별 before_delete 는 여기서 발화하지 않는다** — 일괄 처리에서 항목마다
+     * before 훅을 타면 IDV(본인인증) 정책이 루프 중간에 428 을 던져 앞부분만 지워진
+     * 상태로 끝난다. 일괄 경로는 루프 앞에서 일괄 훅을 한 번만 발화한다(신고 일괄 처리 선례).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  array  $options  삭제 옵션 (after_delete 훅으로 전달)
+     * @param  string|null  $triggerType  트리거 유형
+     * @return Post 삭제된 게시글 모델
+     */
+    private function executeDelete(string $slug, int $id, array $options = [], ?string $triggerType = null): Post
+    {
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('delete', null);
 
@@ -500,6 +520,22 @@ class PostService
         // 훅: before_blind
         HookManager::doAction('sirsoft-board.post.before_blind', $post, $reason, $slug);
 
+        return $this->executeBlind($slug, $id, $reason, $triggerType);
+    }
+
+    /**
+     * 게시글 블라인드의 실행 본체입니다 (훅 검사·멱등 판정 없음).
+     *
+     * executeDelete 와 같은 이유로 항목별 before_blind 를 여기서 발화하지 않는다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  string  $reason  블라인드 사유
+     * @param  string|null  $triggerType  트리거 유형
+     * @return Post 블라인드 처리된 게시글 모델
+     */
+    private function executeBlind(string $slug, int $id, string $reason, ?string $triggerType = null): Post
+    {
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('blind', $reason);
 
@@ -542,6 +578,22 @@ class PostService
         // 훅: before_restore
         HookManager::doAction('sirsoft-board.post.before_restore', $post, $reason, $slug);
 
+        return $this->executeRestore($slug, $id, $reason, $triggerType);
+    }
+
+    /**
+     * 게시글 복원의 실행 본체입니다 (훅 검사·멱등 판정 없음).
+     *
+     * executeDelete 와 같은 이유로 항목별 before_restore 를 여기서 발화하지 않는다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  string|null  $reason  복원 사유
+     * @param  string|null  $triggerType  트리거 유형
+     * @return Post 복원된 게시글
+     */
+    private function executeRestore(string $slug, int $id, ?string $reason = null, ?string $triggerType = null): Post
+    {
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('restore', $reason);
 
@@ -574,6 +626,115 @@ class PostService
         HookManager::doAction('sirsoft-board.post.after_restore', $restoredPost, $slug);
 
         return $restoredPost;
+    }
+
+    /**
+     * 선택한 게시글들을 한 번에 삭제·블라인드·복구합니다 (관리자 일괄 처리).
+     *
+     * **훅을 루프 앞에서 한 번만 발화한다.** 항목별 `before_delete`/`before_blind` 를 타면
+     * IDV(본인인증) 정책이 걸린 경우 그 훅에서 428 이 던져지는데, 루프 중간에 터지면
+     * 앞 항목만 처리된 채로 요청이 끝난다. 신고 일괄 처리(`ReportService::bulkUpdateStatus`)가
+     * 같은 이유로 이미 이 모양을 쓰고 있다.
+     *
+     * 처리할 수 없는 항목은 **건너뛰고 사유를 응답에 싣는다** — 하나가 막혔다고 전체를
+     * 되돌리면 운영자는 무엇이 걸렸는지 모른 채 같은 요청을 반복하게 된다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $action  처리 종류 (delete|blind|restore)
+     * @param  array<int, int>  $ids  대상 게시글 ID 목록
+     * @param  string|null  $reason  사유 (블라인드·복구 이력에 남는다)
+     * @return array{affected_count: int, affected_ids: array<int, int>, skipped: array<int, array{id: int, reason: string}>} 처리 결과
+     *
+     * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
+     */
+    public function bulkAction(string $slug, string $action, array $ids, ?string $reason = null): array
+    {
+        $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+
+        if (! $board) {
+            throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
+        }
+
+        // 일괄 훅 1회 — IDV 정책은 이 훅을 대상으로 선언돼 있어, 인증이 필요하면
+        // 아무 항목도 건드리기 전에 428 로 끝난다(부수효과 0).
+        HookManager::doAction('sirsoft-board.post.before_bulk_action', $slug, $action, $ids, $reason);
+
+        $affectedIds = [];
+        $skipped = [];
+
+        foreach ($ids as $rawId) {
+            $id = (int) $rawId;
+
+            try {
+                $post = $this->postRepository->findOrFail($slug, $id);
+
+                $skipReason = $this->resolveBulkSkipReason($post, $slug, $id, $action, $board);
+
+                if ($skipReason !== null) {
+                    $skipped[] = ['id' => $id, 'reason' => $skipReason];
+
+                    continue;
+                }
+
+                match ($action) {
+                    'delete' => $this->executeDelete($slug, $id, ['bulk' => true], 'admin'),
+                    'blind' => $this->executeBlind($slug, $id, (string) ($reason ?? ''), 'admin'),
+                    'restore' => $this->executeRestore($slug, $id, $reason, 'admin'),
+                };
+
+                $affectedIds[] = $id;
+            } catch (\Exception $e) {
+                // 한 건의 실패가 나머지를 막지 않는다 — 사유만 남기고 계속한다.
+                $skipped[] = ['id' => $id, 'reason' => 'error'];
+            }
+        }
+
+        HookManager::doAction('sirsoft-board.post.after_bulk_action', $slug, $action, $affectedIds, $skipped);
+
+        return [
+            'affected_count' => count($affectedIds),
+            'affected_ids' => $affectedIds,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
+     * 일괄 처리에서 이 항목을 건너뛸 사유를 판정합니다 (없으면 null).
+     *
+     * @param  Post  $post  대상 게시글
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  string  $action  처리 종류
+     * @param  mixed  $board  게시판 모델 (답글 삭제 정책 판정용)
+     * @return string|null 건너뛸 사유 (처리 가능하면 null)
+     */
+    private function resolveBulkSkipReason(Post $post, string $slug, int $id, string $action, $board): ?string
+    {
+        if ($action === 'delete') {
+            if ($post->status === PostStatus::Deleted || $post->trashed()) {
+                return 'already_deleted';
+            }
+
+            // 답글 삭제 정책이 block 이면 살아있는 답글이 있는 글은 건너뛴다 —
+            // 단건 삭제와 같은 판정이라 일괄에서만 규칙이 느슨해지지 않는다.
+            $policy = $board->reply_delete_policy ?? ReplyDeletePolicy::Cascade;
+
+            if ($policy === ReplyDeletePolicy::Block && $this->postRepository->hasAliveReplies($slug, $id)) {
+                return 'has_replies';
+            }
+
+            return null;
+        }
+
+        if ($action === 'blind') {
+            return $post->status === PostStatus::Blinded ? 'already_blinded' : null;
+        }
+
+        if ($action === 'restore') {
+            return $post->status === PostStatus::Published && ! $post->trashed() ? 'already_published' : null;
+        }
+
+        return 'unknown_action';
     }
 
     /**
@@ -799,6 +960,7 @@ class PostService
      * 게시판 존재성을 검증합니다.
      *
      * @param  string  $slug  게시판 슬러그
+     * @return void
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
@@ -829,6 +991,7 @@ class PostService
      * @param  string|null  $tempKey  임시 업로드 키
      * @param  array<UploadedFile>  $files  업로드할 파일 배열
      * @param  string  $context  로그 컨텍스트 (생성/수정)
+     * @return void
      */
     private function linkAttachments(
         string $slug,
@@ -921,7 +1084,9 @@ class PostService
             $searchField = $filtersParam[0]['field'] ?? 'all';
         } else {
             $searchValue = $requestParams['search'] ?? null;
-            $searchField = 'all';
+            // 사용자 목록도 검색 대상을 고를 수 있다 (제목+내용 / 제목 / 내용 / 작성자).
+            // 값 검증은 PostIndexRequest 가 닫힌 집합으로 막으므로 여기서는 폴백만 둔다.
+            $searchField = $requestParams['search_field'] ?? 'all';
         }
 
         // 공통 필터 구성
@@ -1337,6 +1502,7 @@ class PostService
      * 게시글 생성/삭제 시 홈페이지 통계 및 최근 게시글 캐시를 무효화합니다.
      *
      * @param  string  $slug  게시판 슬러그
+     * @return void
      */
     private function invalidatePostCaches(string $slug): void
     {
@@ -1355,6 +1521,7 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  string|int  $identifier  사용자 ID 또는 IP
      * @param  int  $seconds  쿨다운 시간 (초)
+     * @return void
      */
     public function recordPostCooldown(string $slug, string|int $identifier, int $seconds): void
     {

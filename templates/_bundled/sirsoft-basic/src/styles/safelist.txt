@@ -537,7 +537,7 @@ sm:text-xs sm:text-sm sm:text-base sm:text-lg sm:text-xl sm:text-2xl sm:text-3xl
 sm:p-0 sm:p-1 sm:p-2 sm:p-3 sm:p-4 sm:p-5 sm:p-6 sm:p-8
 sm:px-0 sm:px-1 sm:px-2 sm:px-3 sm:px-4 sm:px-5 sm:px-6 sm:px-8
 sm:py-0 sm:py-1 sm:py-2 sm:py-3 sm:py-4 sm:py-5 sm:py-6 sm:py-8
-sm:m-0 sm:m-1 sm:m-2 sm:m-3 sm:m-4 sm:m-auto sm:mx-auto sm:my-auto
+sm:m-0 sm:m-1 sm:m-2 sm:m-3 sm:m-4 sm:m-auto sm:mx-auto sm:my-auto sm:ml-auto
 sm:gap-0 sm:gap-1 sm:gap-2 sm:gap-3 sm:gap-4 sm:gap-5 sm:gap-6 sm:gap-8
 sm:space-x-0 sm:space-x-1 sm:space-x-2 sm:space-x-3 sm:space-x-4 sm:space-y-0 sm:space-y-1 sm:space-y-2 sm:space-y-3 sm:space-y-4
 sm:justify-start sm:justify-end sm:justify-center sm:justify-between sm:items-start sm:items-end sm:items-center

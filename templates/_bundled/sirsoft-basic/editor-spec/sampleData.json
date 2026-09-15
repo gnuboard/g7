@@ -1,67 +1,57 @@
 {
   "comment": "sirsoft-basic 템플릿 직속 데이터소스(실제 layout data_sources ID 기준 — user/userNotifications/searchResults/profile/userProfile). 게시판/이커머스/페이지 도메인 데이터는 각 모듈 editor-spec 이 SSoT, 본 블록은 모듈 미설치 시 폴백.",
   "byDataSourceId": {
-    "mileage_balance": {
-      "comment": "마이페이지 마일리지 잔액 (mypage/mileage.json — {{mileage_balance.data.mileage.available}}).",
+    "scrap": {
       "data": {
-        "mileage": {
-          "available": 50000,
-          "total": 75000,
-          "used": 25000
-        }
-      }
-    },
-    "mileage_history": {
-      "comment": "마이페이지 마일리지 내역 (partials/mypage/mileage/_list.json — {{mileage_history?.data?.transactions?.data}} 반복).",
-      "data": {
-        "transactions": {
-          "data": [
-            {
-              "id": 1,
-              "user_id": 1,
-              "currency": "KRW",
-              "type": "purchase_earn",
-              "type_label": "구매적립",
-              "amount": 1000,
-              "amount_formatted": "1,000",
-              "remaining_amount": 800,
-              "balance_after": 50800,
-              "expires_at": "2027-06-03",
-              "expires_at_formatted": "2027-06-03",
-              "created_at": "2026-06-03T10:30:00Z",
-              "is_earning": true,
-              "expiry_state": "active",
-              "abilities": {
-                "can_manage": false
-              }
-            },
-            {
-              "id": 2,
-              "user_id": 1,
-              "currency": "KRW",
-              "type": "purchase_use",
-              "type_label": "구매사용",
-              "amount": -200,
-              "amount_formatted": "-200",
-              "remaining_amount": 0,
-              "balance_after": 50000,
-              "expires_at": null,
-              "expires_at_formatted": null,
-              "created_at": "2026-06-04T11:00:00Z",
-              "is_earning": false,
-              "expiry_state": "none",
-              "abilities": {
-                "can_manage": false
-              }
-            }
-          ],
-          "pagination": {
-            "current_page": 1,
-            "last_page": 1,
-            "per_page": 20,
-            "total": 2
+        "data": [
+          {
+            "id": 501,
+            "post_id": 1201,
+            "board_slug": "free",
+            "board_name": "자유게시판",
+            "is_deleted": false,
+            "scrap_enabled": true,
+            "board_deleted": false,
+            "title": "맛집 추천해요",
+            "author_name": "이도현",
+            "comments_count": 7,
+            "scrapped_at": "2026-09-12 10:22"
           },
-          "currencies": ["KRW"]
+          {
+            "id": 502,
+            "post_id": 1202,
+            "board_slug": "notice",
+            "board_name": "공지사항",
+            "is_deleted": false,
+            "scrap_enabled": false,
+            "board_deleted": false,
+            "title": "[필독] 게시판 이용 규칙 안내",
+            "author_name": "운영자",
+            "comments_count": 0,
+            "scrapped_at": "2026-09-11 18:05"
+          },
+          {
+            "id": 503,
+            "post_id": 1203,
+            "board_slug": null,
+            "board_name": null,
+            "is_deleted": true,
+            "scrap_enabled": false,
+            "board_deleted": true,
+            "title": null,
+            "author_name": null,
+            "comments_count": null,
+            "scrapped_at": "2026-09-03 09:47"
+          }
+        ],
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 20,
+          "total": 3,
+          "from": 1,
+          "to": 3,
+          "has_more_pages": false
         }
       }
     },

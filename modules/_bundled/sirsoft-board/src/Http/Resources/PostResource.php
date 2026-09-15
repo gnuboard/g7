@@ -12,6 +12,7 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
@@ -79,6 +80,10 @@ class PostResource extends BaseApiResource
 
             // 상세 전용: 신고 여부 (로그인 사용자 + board 관계 로드 시에만)
             'is_already_reported' => $this->getIsAlreadyReported($request),
+
+            // 상세 전용: 스크랩 여부 (로그인 사용자만) + 스크랩 수 (확정 10 — 상세에만 노출)
+            'is_scraped' => $this->getIsScraped($request),
+            'scrap_count' => (int) ($this->scrap_count ?? 0),
 
             // 권한 정보 (is_owner + abilities) — 상세 페이지에서만 포함
             ...$this->resourceMeta($request),
@@ -358,6 +363,7 @@ class PostResource extends BaseApiResource
             'use_comment' => $this->board->use_comment,
             'use_reply' => $this->board->use_reply,
             'use_report' => $this->board->use_report,
+            'use_scrap' => $this->board->use_scrap,
             'show_view_count' => $this->board->show_view_count,
             'max_reply_depth' => $this->board->max_reply_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_reply_depth', 5),
             'max_comment_depth' => $this->board->max_comment_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_comment_depth', 10),
@@ -495,6 +501,25 @@ class PostResource extends BaseApiResource
 
         return app(ReportRepositoryInterface::class)
             ->hasUserReported($user->id, $this->board->id, 'post', $this->id);
+    }
+
+    /**
+     * 로그인 사용자가 이 게시글을 스크랩했는지 여부를 반환합니다.
+     *
+     * 상세 버튼의 "스크랩/스크랩됨" 상태 판정에 쓰인다. 비로그인은 항상 false.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool 스크랩 여부
+     */
+    private function getIsScraped(Request $request): bool
+    {
+        $user = $request->user();
+        if (! $user) {
+            return false;
+        }
+
+        return app(PostScrapRepositoryInterface::class)
+            ->isScraped($user->id, $this->id);
     }
 
     // =========================================================================

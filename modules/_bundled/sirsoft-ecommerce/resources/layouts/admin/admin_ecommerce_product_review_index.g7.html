@@ -1,4 +1,5 @@
 <!-- 상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지
+  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=""` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다
   않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).
   조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를
   검색 입력값으로 되돌려 담는다. -->
@@ -533,7 +534,7 @@
         </div>
       </div>
       <div data-ref="table_container" class="overflow-hidden mb-4">
-        <data-grid data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty" loading="{{reviews.$loading ?? false}}">
+        <data-grid selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty" loading="{{reviews.$loading ?? false}}">
           <prop name="expandContext">
             <field name="rowId" value="{{row.id}}"/>
             <field name="rowHasReply" value="{{row.has_reply}}"/>

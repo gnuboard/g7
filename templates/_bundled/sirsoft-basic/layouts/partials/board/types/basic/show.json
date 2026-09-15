@@ -939,7 +939,7 @@
                     "comment": "게시글 액션 버튼 영역 (답변, 신고, 수정, 삭제) - 비회원 글은 항상 표시 (수정/삭제용)",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report)}}",
+                    "if": "{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report) || post?.data?.board?.use_scrap}}",
                     "props": {
                         "className": "flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700"
                     },
@@ -1065,6 +1065,118 @@
                             ]
                         },
                         {
+                            "comment": "스크랩 버튼 — use_scrap 활성 게시판에만 노출. is_scraped 에 따라 아이콘/색/텍스트 전환, 재클릭 시 확인 없이 즉시 토글(확정 09). 비회원은 로그인 유도(확정 §10). scrap_count 표시(확정 10).",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{post?.data?.board?.use_scrap && post?.data?.status !== 'blinded' && !post?.data?.deleted_at}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "comment": "비회원: 로그인 안내 후 원글 복귀용 로그인 페이지 이동",
+                                            "if": "{{!_global.currentUser?.uuid}}",
+                                            "then": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "warning",
+                                                        "message": "$t:board.post.scrap_login_required"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "redirectToLoginWithReturn"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "회원: 낙관적 토글 후 apiCall, 응답으로 상세 데이터소스 갱신",
+                                            "then": [
+                                                {
+                                                    "comment": "낙관적 UI — 아이콘/수치 즉시 반영 + 로딩(중복 클릭 방지)",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "scrapLoading": true,
+                                                        "isScraped": "{{!(_local.isScraped ?? post?.data?.is_scraped)}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/scrap/toggle",
+                                                    "auth_mode": "required",
+                                                    "params": {
+                                                        "method": "POST"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "comment": "하이라이트는 이미 낙관적으로 이동했고, 수치는 서버 응답값으로 확정한다(refetch 없이 오차 0).",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "scrapLoading": false,
+                                                                "isScraped": "{{response.data.added}}",
+                                                                "scrapCount": "{{response.data.scrap_count}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "{{response.data.added ? '$t:board.post.scrap_added' : '$t:board.post.scrap_removed'}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "comment": "실패 시 원래 상태로 복원",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "scrapLoading": false,
+                                                                "isScraped": "{{post?.data?.is_scraped}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "post-scrap-btn",
+                                "type": "button",
+                                "disabled": "{{_local.scrapLoading ?? false}}",
+                                "className": "{{(_local.isScraped ?? post?.data?.is_scraped) ? 'px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}"
+                            },
+                            "children": [
+                                {
+                                    "comment": "로딩 중에는 아이콘만 스피너로 전환(중복 클릭 방지 시각 피드백), 평상시엔 스크랩 상태에 따라 solid/regular 북마크. 회전은 같은 파일 비밀번호 확인 스피너(name=spinner + className=animate-spin)와 동일한 방식. spinner 글리프는 Font Awesome Free 에서 solid(fas) 전용이라, 로딩 중에는 iconStyle 을 solid 로 고정해야 한다 — regular(far) 로 두면 far 에 spinner 가 없어 네모로 깨진다.",
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "{{(_local.scrapLoading ?? false) ? 'spinner' : 'bookmark'}}",
+                                        "iconStyle": "{{(_local.scrapLoading ?? false) ? 'solid' : ((_local.isScraped ?? post?.data?.is_scraped) ? 'solid' : 'regular')}}",
+                                        "className": "{{(_local.scrapLoading ?? false) ? 'text-sm animate-spin' : 'text-sm'}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{(_local.isScraped ?? post?.data?.is_scraped) ? '$t:board.post.scrapped' : '$t:board.post.scrap'}} {{_local.scrapCount ?? post?.data?.scrap_count ?? 0}}"
+                                }
+                            ]
+                        },
+                        {
                             "comment": "수정 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글",
                             "type": "basic",
                             "name": "Button",
@@ -1090,7 +1202,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "pencil",
-                                        "size": "sm"
+                                        "className": "text-sm"
                                     }
                                 },
                                 {
@@ -1139,7 +1251,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "trash",
-                                        "size": "sm"
+                                        "className": "text-sm"
                                     }
                                 },
                                 {

@@ -477,6 +477,82 @@
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            "id": "field_use_scrap",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "「스크랩 사용」을 일괄 적용 대상에 넣었다 뺐다 한다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_scrap') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_scrap') : [...(_local.bulkApplyFields ?? []), 'use_scrap']}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox-aligned",
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_scrap')}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.use_scrap"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-field-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.descriptions.use_scrap"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "basic_defaults.use_scrap",
+                                                "className": "flex-shrink-0",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
                 }

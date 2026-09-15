@@ -1,13 +1,22 @@
 {
-  "form": {
-    "sections": {
-      "notification_settings": "Board Notification Settings"
+    "form": {
+        "sections": {
+            "notification_settings": "Board Notification Settings"
+        },
+        "notifications": {
+            "post_complete": "Post Complete Notification",
+            "post_reply": "Post Reply Notification",
+            "comment": "Comment Notification",
+            "reply_comment": "Reply Comment Notification"
+        }
     },
-    "notifications": {
-      "post_complete": "Post Complete Notification",
-      "post_reply": "Post Reply Notification",
-      "comment": "Comment Notification",
-      "reply_comment": "Reply Comment Notification"
+    "scraps": {
+        "tab_label": "Scraps",
+        "title": "Post scraps",
+        "count": "Scrap count",
+        "count_unit": "{{count}}",
+        "latest_scrapped_at": "Latest scrap",
+        "none": "This member has not scrapped any post.",
+        "view_list": "View this member's scraps"
     }
-  }
 }

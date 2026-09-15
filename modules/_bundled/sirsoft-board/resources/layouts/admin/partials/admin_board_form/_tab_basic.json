@@ -122,7 +122,7 @@
                                 "placeholder": "$t:sirsoft-board.admin.form.placeholders.slug",
                                 "required": true,
                                 "disabled": "{{!!route?.slug || _computed.isReadOnly}}",
-                                "className": "font-mono"
+                                "className": "{{!!route?.slug ? 'input-readonly font-mono border border-gray-200 dark:border-gray-600' : 'font-mono'}}"
                             }
                         },
                         {
@@ -670,6 +670,50 @@
                             "name": "Toggle",
                             "props": {
                                 "name": "use_report",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "field_use_scrap",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.use_scrap"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.descriptions.use_scrap"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "use_scrap",
                                 "disabled": "{{_computed.isReadOnly}}",
                                 "className": "flex-shrink-0 ml-4"
                             }

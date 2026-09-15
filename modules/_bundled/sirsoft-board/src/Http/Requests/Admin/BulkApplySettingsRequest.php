@@ -36,6 +36,7 @@ class BulkApplySettingsRequest extends FormRequest
         'comment_order',
         'show_view_count',
         'use_report',
+        'use_scrap',
         'min_title_length',
         'max_title_length',
         'min_content_length',

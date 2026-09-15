@@ -595,7 +595,13 @@ export function createLayoutTest(
     // G7Core 글로벌 객체 모킹
     (window as any).G7Core = {
       state: {
-        get: () => ({ _global: state._global, _local: state._local }),
+        // `G7Core.state.get()` 은 **`_global` 의 내용물을 평평하게** 돌려준다
+        // (`TemplateApp.getGlobalState()` → `{ ...this.globalState }`, `_local` 은 그 안의 한 키다).
+        // 종전 mock 은 `{ _global, _local }` 래퍼를 돌려줬다 — 엔진의 stale-closure 가드가
+        // `state.get()?._global` 로 읽던 시절엔 언제나 undefined 라 가드가 건너뛰어 드러나지 않았다.
+        // engine-v1.70.0 이 그 죽은 가드를 고치자 래퍼가 그대로 `_global` 자리에 덮여
+        // `{{_global.shopBase}}` 가 빈 값이 됐다. 규약을 정본에 맞춘다.
+        get: () => ({ ...state._global, _local: state._local }),
         set: (updates: any) => { state._global = { ...state._global, ...updates }; },
         getLocal: () => state._local,
         setLocal: (updates: any) => { state._local = { ...state._local, ...updates }; },

@@ -9,5 +9,14 @@
       "comment": "コメント通知",
       "reply_comment": "回答通知"
     }
+  },
+  "scraps": {
+    "tab_label": "スクラップ",
+    "title": "投稿のスクラップ",
+    "count": "スクラップ数",
+    "count_unit": "{{count}}個",
+    "latest_scrapped_at": "最近のスクラップ",
+    "none": "スクラップした投稿がありません。",
+    "view_list": "この会員のスクラップリストを表示"
   }
 }

@@ -17,6 +17,8 @@ return [
         'remove_from_menu' => '메뉴 제거',
         'restore' => '복원',
         'restore_content' => '콘텐츠 복원',
+        'scrap' => '스크랩',
+        'unscrap' => '스크랩 해제',
         'update' => '수정',
         'update_status' => '상태 변경',
         'upload' => '업로드',
@@ -69,6 +71,10 @@ return [
         'report_blind_content' => '신고 콘텐츠 블라인드 (ID: :report_id)',
         'report_delete_content' => '신고 콘텐츠 삭제 (ID: :report_id)',
 
+        // 스크랩
+        'scrap_add' => '게시글 스크랩 (ID: :post_id)',
+        'scrap_remove' => '게시글 스크랩 해제 (ID: :post_id)',
+
         // 게시판 설정
         'board_settings_index' => '게시판 설정 조회',
         'board_settings_bulk_apply' => '게시판 설정 일괄 적용',
@@ -92,6 +98,7 @@ return [
         'max_reply_depth' => '최대 답글 깊이',
         'reply_delete_policy' => '답글 삭제 방식',
         'use_report' => '신고 사용',
+        'use_scrap' => '스크랩 사용',
         'use_file_upload' => '파일 업로드 사용',
         'max_file_size' => '최대 파일 크기',
         'max_file_count' => '최대 파일 수',

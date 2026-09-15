@@ -347,6 +347,18 @@ return [
                 ],
             ],
             [
+                'identifier' => 'core.member-notifications',
+                'name' => ['ko' => '회원 알림함', 'en' => 'Member Notifications'],
+                'description' => ['ko' => '전 회원 in-app 알림함 조회·삭제 권한', 'en' => 'View and delete member in-app notifications'],
+                'category' => 'member-notifications',
+                'order' => 7.7,
+                'type' => 'admin',
+                'permissions' => [
+                    ['identifier' => 'core.member-notifications.read', 'type' => 'admin', 'name' => ['ko' => '회원 알림함 조회', 'en' => 'View Member Notifications'], 'description' => ['ko' => '전 회원이 받은 알림을 조회할 수 있습니다.', 'en' => 'Can view notifications received by all members.'], 'order' => 1],
+                    ['identifier' => 'core.member-notifications.delete', 'type' => 'admin', 'name' => ['ko' => '회원 알림함 삭제', 'en' => 'Delete Member Notifications'], 'description' => ['ko' => '회원이 받은 알림을 삭제할 수 있습니다.', 'en' => 'Can delete notifications received by members.'], 'order' => 2],
+                ],
+            ],
+            [
                 'identifier' => 'core.notifications',
                 'name' => ['ko' => '알림 (관리자)', 'en' => 'Notifications (Admin)'],
                 'description' => ['ko' => '관리자용 알림 관리 권한 (관리자 화면에서 사용)', 'en' => 'Admin notification management permissions (used in admin UI)'],
@@ -515,6 +527,9 @@ return [
                 'core.activities.read',
                 'core.attachments.create', 'core.attachments.update', 'core.attachments.delete',
                 'core.notification-logs.read',
+                // 스코프를 두지 않는다 — 이 권한의 대상은 «회원이 받은» 알림이라
+                // self 로 좁히면 매니저 본인의 수신함이 되어 버려 화면의 의미가 사라진다.
+                'core.member-notifications.read',
             ],
             // 권한별 스코프 지정 (self: 본인 소유만, role: 같은 역할 범위, 미지정: 전체)
             'permission_scopes' => [
@@ -588,6 +603,15 @@ return [
             'icon' => 'fas fa-bell',
             'parent_id' => null,
             'order' => 3,
+            'is_active' => true,
+        ],
+        [
+            'slug' => 'admin-member-notifications',
+            'name' => ['ko' => '회원 알림함', 'en' => 'Member Notifications'],
+            'url' => '/admin/member-notifications',
+            'icon' => 'fas fa-inbox',
+            'parent_id' => null,
+            'order' => 3.5,
             'is_active' => true,
         ],
         [

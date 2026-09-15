@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 46개 (루트: `resources/layouts`).
+레이아웃 47개 (루트: `resources/layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 46개 |
+| `admin` | 47개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -20,6 +20,7 @@
 | `admin_board_posts_index` | `admin` | 화면 | `_admin_base` |
 | `admin_board_reports_detail` | `admin` | 화면 | `_admin_base` |
 | `admin_board_reports_index` | `admin` | 화면 | `_admin_base` |
+| `admin_board_scraps_index` | `admin` | 화면 | `_admin_base` |
 | `admin_board_settings` | `admin` | 화면 | `_admin_base` |
 | `_board_type_manage_modal` | `admin` | partial | - |
 | `_tab_basic` | `admin` | partial | - |

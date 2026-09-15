@@ -20,6 +20,7 @@ use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Http\Requests\User\DestroyPostRequest;
+use Modules\Sirsoft\Board\Http\Requests\User\PostIndexRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\StorePostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\UpdatePostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\VerifyGuestPasswordRequest;
@@ -66,12 +67,11 @@ class PostController extends PublicBaseController
     /**
      * 게시글 목록을 조회합니다.
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  PostIndexRequest  $request  목록 조회 요청 (search_field 검증)
      * @param  string  $slug  게시판 슬러그
      * @return JsonResponse 게시글 목록 응답
      */
-    // audit:allow controller-base-request-injection reason: GET 목록 조회. all()/header() 로 필터·페이징 파라미터만 읽음 (검증 불필요)
-    public function index(Request $request, string $slug): JsonResponse
+    public function index(PostIndexRequest $request, string $slug): JsonResponse
     {
         try {
             // 게시판 조회 및 활성화 확인
@@ -816,6 +816,7 @@ class PostController extends PublicBaseController
      *
      * @param  Post  $parentPost  부모 게시글 모델
      * @param  int  $parentId  부모 게시글 ID (예외 메시지용)
+     * @return void
      *
      * @throws PostNotFoundException 부모글이 블라인드/삭제 상태인 경우
      */
@@ -1050,6 +1051,7 @@ class PostController extends PublicBaseController
      * @param  Board  $board  이미 조회한 게시판 (재조회 방지)
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return void
      */
     private function attachComments(Request $request, Post $post, Board $board, string $slug, int $id): void
     {

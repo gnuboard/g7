@@ -347,14 +347,20 @@
         "location_info": "位置情報",
         "profile_memo": "プロフィール/メモ",
         "activity_info": "アクティビティ情報",
-        "consent_info": "同意履歴"
+        "consent_info": "同意履歴",
+        "notifications_info": "通知ボックス"
       },
       "unlock": "ロック解除",
       "unlock_success": "アカウントのロックを解除しました。",
       "lock_status": "アカウントロック状態",
       "locked_permanently_value": "ロック中 (無期限 — 管理者による解除が必要)",
       "locked_until_value": "ロック中 ({{until}} まで)",
-      "not_locked_value": "正常"
+      "not_locked_value": "正常",
+      "notifications": {
+        "total": "総通知数",
+        "unread": "未読",
+        "view_inbox": "通知ボックスを表示"
+      }
     },
     "bulk_status_change": "ステータス変更"
   },
@@ -2998,6 +3004,68 @@
     },
     "changelog_modal": "コア変更履歴",
     "license_modal": "コアライセンス",
-    "notification_delete_all_confirm_modal": "通知すべて削除の確認"
+    "notification_delete_all_confirm_modal": "通知すべて削除の確認",
+    "member_notification_list": {
+      "delete_confirm_modal": "会員通知削除確認",
+      "bulk_delete_confirm_modal": "会員通知一括削除確認"
+    }
+  },
+  "member_notification": {
+    "page_title": "会員通知ボックス",
+    "page_description": "会員が受け取った通知（受信ボックス）を確認および削除します。",
+    "search_placeholder": "検索キーワードを入力してください",
+    "total_count": "合計 {{count}} 件",
+    "col_created_at": "受信日時",
+    "col_member": "会員",
+    "col_type": "種類",
+    "col_subject": "件名",
+    "col_read_at": "既読",
+    "deleted_member": "削除された会員",
+    "empty_message": "確認された通知がありません。",
+    "badge": {
+      "read": "既読",
+      "unread": "未読"
+    },
+    "filter": {
+      "search_type_all": "すべて",
+      "search_type_recipient": "受信者",
+      "search_type_subject": "件名",
+      "search_type_body": "本文",
+      "read_label": "既読ステータス",
+      "read_all": "すべて",
+      "read_unread": "未読",
+      "read_read": "既読",
+      "created_label": "受信期間",
+      "member_filter_notice": "特定の会員の通知のみ表示しています。",
+      "member_filter_clear": "会員フィルターを解除",
+      "search_button": "検索",
+      "reset_button": "初期化"
+    },
+    "sort": {
+      "created_at_desc": "最新順",
+      "created_at_asc": "古い順",
+      "read_at_desc": "既読順"
+    },
+    "detail": {
+      "body_label": "本文",
+      "no_body": "本文内容がありません。",
+      "type_label": "通知タイプ:",
+      "url_label": "接続アドレス:"
+    },
+    "action": {
+      "view_member": "会員情報を表示",
+      "filter_by_member": "この会員の通知のみ表示"
+    },
+    "delete": {
+      "button": "削除",
+      "selected_count": "{{count}} 件選択",
+      "bulk_button": "選択削除",
+      "confirm_title": "通知削除",
+      "confirm_message": "選択した通知を削除してもよろしいですか？会員の通知ボックスからも削除され、元に戻すことはできません。",
+      "success": "通知が削除されました。",
+      "bulk_confirm_title": "通知一括削除確認",
+      "bulk_confirm_message": "選択したすべての通知を削除してもよろしいですか？会員の通知ボックスからも削除され、元に戻すことはできません。",
+      "bulk_success": "選択した通知がすべて削除されました。"
+    }
   }
 }

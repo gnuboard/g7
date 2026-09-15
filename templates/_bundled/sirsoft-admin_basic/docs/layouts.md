@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 146개 (루트: `layouts`).
+레이아웃 149개 (루트: `layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `(root)` | 26개 |
+| `(root)` | 27개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 113개 |
+| `partials` | 115개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -24,6 +24,7 @@
 | `admin_language_pack_list` | `(root)` | 화면 | `_admin_base` |
 | `admin_language_packs` | `(root)` | 화면 | `admin_language_pack_list` |
 | `admin_login` | `(root)` | 화면 | - |
+| `admin_member_notification_list` | `(root)` | 화면 | `_admin_base` |
 | `admin_menu_list` | `(root)` | 화면 | `_admin_base` |
 | `admin_module_language_packs` | `(root)` | 화면 | `admin_language_pack_list` |
 | `admin_module_list` | `(root)` | 화면 | `_admin_base` |
@@ -68,6 +69,8 @@
 | `_modal_slot_conflict` | `partials` | partial | - |
 | `_modal_uninstall` | `partials` | partial | - |
 | `_modal_update` | `partials` | partial | - |
+| `_partial_datagrid` | `partials` | partial | - |
+| `_partial_filter` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
 | `_panel_detail` | `partials` | partial | - |
 | `_panel_form` | `partials` | partial | - |
@@ -266,6 +269,7 @@
 | `*/admin/templates/:type` | `admin_template_list` | - |
 | `*/admin/template/partial` | `template_partial_test` | - |
 | `*/admin/activity-logs` | `admin_activity_log_list` | - |
+| `*/admin/member-notifications` | `admin_member_notification_list` | - |
 | `*/admin/notification-logs` | `admin_notification_log_list` | - |
 | `*/admin/settings` | `admin_settings` | - |
 | `*/admin/roles` | `admin_role_list` | - |

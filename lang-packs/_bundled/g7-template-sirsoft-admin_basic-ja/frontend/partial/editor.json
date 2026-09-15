@@ -1581,7 +1581,8 @@
     "sitemap_status": "サイトマップ生成ステータス",
     "sitemap_progress_ws": "サイトマップ生成進行中（リアルタイム）",
     "staticCacheStatus": "初期画面静的ファイル状態",
-    "layout_search": "レイアウト コンテンツ検索"
+    "layout_search": "レイアウト コンテンツ検索",
+    "memberNotifications": "会員通知箱"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

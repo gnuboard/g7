@@ -1,0 +1,56 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   cross product 면제는 `cross_product` 축 하나로 한정한다 — effects 커버리지는 계속 강제된다.
+#   이 매니페스트의 축은 화면이 받는 «입력 공간의 서술» 이고, 조합마다 서로 다른 동작이
+#   갈리는 분기가 아니다. 예컨대 표 컬럼 구성을 재는 테스트에 검색 대상·읽음 상태·회원
+#   한정 값을 곱해도 재는 대상이 달라지지 않는다 — 전개하면 인위적인 조합만 늘어난다.
+#   실제 커버리지 계약은 effects 목록이며, 선언한 항목은 모두 테스트가 재고 green 이다.
+
+feature: 게시판 모듈 본인인증(IDV) 정책 선언과 발동
+
+description: |
+  게시판 모듈이 `module.php::getIdentityPolicies()` 로 선언한 정책이 `IdentityPolicySyncHelper`
+  를 거쳐 `identity_policies` 테이블에 그대로 적재되고, 운영자가 손댄 값(enabled·grace_minutes)은
+  재동기화에도 보존되는지를 잰다. 선언에서 빠진 정책은 정리된다.
+
+  발동축은 **누가** 그 동작을 하느냐로 갈린다 — admin 정책은 관리자에게만 428 을 던지고 일반
+  사용자에게는 발동하지 않는다. grace 창 안에 인증 이력이 있으면 다시 묻지 않는다.
+
+  이슈 #524 WP-D 가 여기에 `sirsoft-board.post.bulk_action` 을 더했다. 일괄 처리는 훅을 루프
+  **앞에서 한 번만** 발화하므로 정책도 그 한 번에 걸린다 — 건마다 발화하면 첫 건에서 428 이
+  나 나머지가 처리되지 않는다. 던지는 예외는 `\Error` 계열이라 `catch (\Exception)` 이 삼키지
+  못한다(그래서 컨트롤러가 `\Exception` 만 잡는다).
+
+# 입력 axis
+#  stage : 정책의 생애 단계 (선언→적재 / 재적재 / 발동)
+#  actor : 발동 시점의 주체
+#  policy: 대상 정책 키
+axes:
+  stage: [sync, resync, enforce]
+  actor: [admin, user]
+  policy: [post_delete, post_blind, post_bulk_action, report_bulk_action, report_delete, all_declared]
+
+# 의미 없는 조합 컷:
+#  - 적재·재적재는 선언을 읽는 단계라 주체가 없다
+exclusions:
+  - { stage: sync, actor: admin, reason: "선언 적재 — 발동 주체 없음" }
+  - { stage: sync, actor: user, reason: "선언 적재 — 발동 주체 없음" }
+  - { stage: resync, actor: admin, reason: "재적재 — 발동 주체 없음" }
+  - { stage: resync, actor: user, reason: "재적재 — 발동 주체 없음" }
+
+effects:
+  - board_identity_policies_synced_from_module_declaration
+  - board_identity_policy_user_overrides_preserved
+  - board_identity_stale_policies_removed
+  - board_identity_declares_no_custom_purposes
+  - board_identity_self_policies_declared_for_user_domain
+  - board_identity_post_delete_enforced_for_admin
+  - board_identity_admin_policy_skipped_for_regular_user
+  - board_identity_bulk_action_enforced_for_admin
+  - board_identity_policy_lifecycle_verified_per_policy
+  - board_identity_grace_window_skips_enforcement
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Identity/BoardIdentityPolicyDeclarationTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

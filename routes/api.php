@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackCo
 use App\Http\Controllers\Api\Admin\LayoutController as AdminLayoutController;
 use App\Http\Controllers\Api\Admin\LayoutExtensionController as AdminLayoutExtensionController;
 use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
+use App\Http\Controllers\Api\Admin\MemberNotificationController as AdminMemberNotificationController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
@@ -823,6 +824,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
     // 알림 채널 관리
     Route::get('notification-channels', [AdminNotificationChannelController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-channels.index');
+
+    // 회원 알림함 (in-app 수신함) — 발송 이력(무엇을 보냈나)과 다른 축이다.
+    // `bulk-delete` 는 `{id}` 보다 먼저 선언해야 "bulk-delete" 가 uuid 로 잡히지 않는다.
+    Route::prefix('member-notifications')->group(function () {
+        Route::get('/', [AdminMemberNotificationController::class, 'index'])->middleware('permission:admin,core.member-notifications.read')->name('api.admin.member-notifications.index');
+        Route::post('bulk-delete', [AdminMemberNotificationController::class, 'bulkDestroy'])->middleware('permission:admin,core.member-notifications.delete')->name('api.admin.member-notifications.bulk-destroy');
+        Route::delete('{id}', [AdminMemberNotificationController::class, 'destroy'])->middleware('permission:admin,core.member-notifications.delete')->name('api.admin.member-notifications.destroy');
+    });
 
     // 알림 발송 이력
     Route::prefix('notification-logs')->group(function () {

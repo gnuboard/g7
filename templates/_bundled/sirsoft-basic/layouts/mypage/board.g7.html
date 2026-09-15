@@ -4,16 +4,18 @@
   <!-- 글·댓글·받은 좋아요 요약 숫자. 목록보다 먼저 보이는 값이라 따로 받는다 -->
   <data-source id="myActivityStats" label_key="$t:editor.data_source.myActivityStats" type="api" endpoint="/api/modules/sirsoft-board/me/activity-stats" method="GET" :auto_fetch="true" :auth_required="true" :lazy="true" :blur_until_loaded="true"/>
   <!-- 내가 쓴 글. 첫 하위 탭이라 바로 받는다(`auto_fetch`) -->
-  <data-source id="myPosts" label_key="$t:editor.data_source.myPosts" type="api" endpoint="/api/modules/sirsoft-board/me/board-activities?page={{_global.myPostsPage ?? 1}}&amp;board_slug={{_global.myPostsBoard ?? ''}}&amp;search={{_global.myPostsSearch ?? ''}}&amp;sort={{_global.myPostsSort ?? 'latest'}}&amp;activity_type=authored&amp;per_page=10" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :lazy="true" :blur_until_loaded="true"/>
+  <data-source id="myPosts" label_key="$t:editor.data_source.myPosts" type="api" endpoint="/api/modules/sirsoft-board/me/board-activities?page={{_global.myPostsPage ?? 1}}&amp;board_slug={{_global.myPostsBoard ?? ''}}&amp;search={{_global.myPostsSearch ?? ''}}&amp;search_field={{_global.myPostsSearchField ?? 'title_content'}}&amp;sort={{_global.myPostsSort ?? 'latest'}}&amp;activity_type=authored&amp;per_page=10" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :lazy="true" :blur_until_loaded="true"/>
   <!-- 내가 쓴 댓글 — `auto_fetch=false` 다. 두 번째 하위 탭이라 그 탭을 실제로 열 때 처음 받는다 -->
-  <data-source id="myComments" label_key="$t:editor.data_source.myComments" type="api" endpoint="/api/modules/sirsoft-board/me/my-comments?page={{_global.myCommentsPage ?? 1}}&amp;board_slug={{_global.myCommentsBoard ?? ''}}&amp;search={{_global.myCommentsSearch ?? ''}}&amp;sort={{_global.myCommentsSort ?? 'latest'}}&amp;per_page=10" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive" :lazy="true" :blur_until_loaded="true"/>
+  <data-source id="myComments" label_key="$t:editor.data_source.myComments" type="api" endpoint="/api/modules/sirsoft-board/me/my-comments?page={{_global.myCommentsPage ?? 1}}&amp;board_slug={{_global.myCommentsBoard ?? ''}}&amp;search={{_global.myCommentsSearch ?? ''}}&amp;search_field={{_global.myCommentsSearchField ?? 'content'}}&amp;sort={{_global.myCommentsSort ?? 'latest'}}&amp;per_page=10" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive" :lazy="true" :blur_until_loaded="true"/>
   <init-global>
     <field name="boardActivitySubTab" value="my-posts"/>
     <field name="myPostsPage" :value="1"/>
     <field name="myPostsBoard" value=""/>
     <field name="myPostsSearch" value=""/>
+    <field name="myPostsSearchField" value="title_content"/>
     <field name="myPostsSort" value="latest"/>
     <field name="myCommentsPage" :value="1"/>
+    <field name="myCommentsSearchField" value="content"/>
     <field name="myCommentsBoard" value=""/>
     <field name="myCommentsSearch" value=""/>
     <field name="myCommentsSort" value="latest"/>

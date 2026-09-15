@@ -17,10 +17,11 @@
             },
             "children": [
                 {
+                    "comment": "`card-header` 는 justify 를 걸지 않는 가로 flex 라, 이 줄이 w-full 없이는\n        내용 폭으로 줄어 「추가」 버튼이 제목에 달라붙는다.",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between"
+                        "className": "flex-between w-full"
                     },
                     "children": [
                         {

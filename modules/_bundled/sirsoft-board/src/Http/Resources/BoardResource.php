@@ -58,6 +58,7 @@ class BoardResource extends BaseApiResource
             'max_reply_depth' => $this->max_reply_depth,
             'reply_delete_policy' => $this->reply_delete_policy,
             'use_report' => $this->use_report,
+            'use_scrap' => $this->use_scrap,
             'comment_order' => $this->comment_order,
             'max_comment_depth' => $this->max_comment_depth,
 
@@ -200,6 +201,7 @@ class BoardResource extends BaseApiResource
                 'use_reply' => $this->use_reply,
                 'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
+                'use_scrap' => $this->use_scrap,
                 'secret_mode' => $this->secret_mode,
                 'show_view_count' => $this->show_view_count,
                 'per_page' => $this->per_page,
@@ -233,6 +235,7 @@ class BoardResource extends BaseApiResource
                 'use_reply' => $this->use_reply,
                 'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
+                'use_scrap' => $this->use_scrap,
                 'secret_mode' => $this->secret_mode,
                 'per_page' => $this->per_page,
                 'per_page_mobile' => $this->per_page_mobile ?? $this->per_page,

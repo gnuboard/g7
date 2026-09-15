@@ -131,19 +131,56 @@
                     ]
                 },
                 {
-                    "comment": "검색 바 (오른쪽 정렬)",
+                    "comment": "검색 줄 (오른쪽 정렬) — 검색 대상 셀렉트 + 검색 바. 셀렉트는 담아만 두고(_local.boardSearchField) 제출 시 URL 의 search_field 로 옮긴다. URL 에 값이 있으면 그것이 초기값이라 뒤로가기·링크 공유에서 고른 대상이 그대로 살아난다",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "w-full sm:w-auto sm:ml-auto"
+                        "className": "w-full sm:w-auto sm:ml-auto flex gap-2"
                     },
                     "children": [
+                        {
+                            "id": "board_search_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "boardSearchField": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}",
+                                "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "options": [
+                                    {
+                                        "value": "title_content",
+                                        "label": "$t:board.search_fields.title_content"
+                                    },
+                                    {
+                                        "value": "title",
+                                        "label": "$t:board.search_fields.title"
+                                    },
+                                    {
+                                        "value": "content",
+                                        "label": "$t:board.search_fields.content"
+                                    },
+                                    {
+                                        "value": "author",
+                                        "label": "$t:board.search_fields.author"
+                                    }
+                                ]
+                            }
+                        },
                         {
                             "type": "composite",
                             "name": "SearchBar",
                             "actions": [
                                 {
-                                    "comment": "글 검색 — 다른 조건(분류·삭제글 보기)은 그대로 두고 검색어만 갈아 끼운다. 결과가 줄어들면 보던 페이지 번호가 뜻을 잃으므로 반드시 1페이지로 되돌린다.",
+                                    "comment": "글 검색 — 다른 조건(분류·삭제글 보기)은 그대로 두고 검색어와 검색 대상만 갈아 끼운다. 결과가 줄어들면 보던 페이지 번호가 뜻을 잃으므로 반드시 1페이지로 되돌린다.",
                                     "type": "submit",
                                     "handler": "navigate",
                                     "params": {
@@ -151,6 +188,7 @@
                                         "mergeQuery": true,
                                         "query": {
                                             "search": "{{$event.target.search.value}}",
+                                            "search_field": "{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}",
                                             "page": 1
                                         }
                                     }

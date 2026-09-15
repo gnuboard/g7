@@ -85,12 +85,27 @@
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{route.slug}}/{{navigation.data.prev.id}}",
-                                "mergeQuery": true,
-                                "query": {}
-                            }
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "이전글로 이동하기 전 스크랩 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 is_scraped 값보다 이전 게시글에서 세팅된 _local.isScraped 가 우선 적용된다",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isScraped": null,
+                                        "scrapCount": null,
+                                        "scrapLoading": null
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/board/{{route.slug}}/{{navigation.data.prev.id}}",
+                                        "mergeQuery": true,
+                                        "query": {}
+                                    }
+                                }
+                            ]
                         }
                     ],
                     "props": {
@@ -120,12 +135,27 @@
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{route.slug}}/{{navigation.data.next.id}}",
-                                "mergeQuery": true,
-                                "query": {}
-                            }
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "다음글로 이동하기 전 스크랩 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 is_scraped 값보다 이전 게시글에서 세팅된 _local.isScraped 가 우선 적용된다",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isScraped": null,
+                                        "scrapCount": null,
+                                        "scrapLoading": null
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/board/{{route.slug}}/{{navigation.data.next.id}}",
+                                        "mergeQuery": true,
+                                        "query": {}
+                                    }
+                                }
+                            ]
                         }
                     ],
                     "props": {

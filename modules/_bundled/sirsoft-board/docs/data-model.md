@@ -8,11 +8,12 @@
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
 | `Attachment` | `board_attachments` | 15 | board→Board, post→Post, creator→User | SoftDeletes |
-| `Board` | `boards` | 37 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
+| `Board` | `boards` | 38 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
 | `BoardStat` | `board_stats` | 3 | - | - |
 | `BoardType` | `board_types` | 3 | - | HasUserOverrides |
 | `Comment` | `board_comments` | 14 | board→Board, post→Post, user→User, parent→self, replies→self | SoftDeletes |
-| `Post` | `board_posts` | 21 | board→Board, user→User, parent→self, replies→self, comments→Comment, attachments→Attachment, 외 1개 | SoftDeletes, 검색 색인 |
+| `Post` | `board_posts` | 22 | board→Board, user→User, parent→self, replies→self, comments→Comment, attachments→Attachment, 외 1개 | SoftDeletes, 검색 색인 |
+| `PostScrap` | `board_post_scraps` | 3 | user→User, post→Post, board→Board | - |
 | `Report` | `boards_reports` | 11 | board→Board, author→User, logs→ReportLog, processor→User | SoftDeletes |
 | `ReportLog` | `boards_report_logs` | 6 | report→Report, reporter→User | - |
 | `UserNotificationSetting` | `board_user_notification_settings` | 5 | user→User | - |
@@ -35,6 +36,7 @@
 | `board_attachments` | `Attachment` |
 | `board_comments` | `Comment` |
 | `board_mail_templates` | - |
+| `board_post_scraps` | `PostScrap` |
 | `board_posts` | `Post` |
 | `board_stats` | `BoardStat` |
 | `board_types` | `BoardType` |
@@ -56,7 +58,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 30개.
+마이그레이션 34개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -87,9 +89,13 @@
 | `2026_08_01_000002_add_list_sort_index_to_boards_reports_table.php` | - | - | ✅ |
 | `2026_08_06_000001_update_max_reply_depth_comment_in_boards_table.php` | - | - | ✅ |
 | `2026_08_06_000002_add_view_count_sort_index_to_board_posts_table.php` | - | - | ✅ |
+| `2026_08_10_000001_create_board_post_scraps_table.php` | `board_post_scraps` | `board_post_scraps` | ✅ |
+| `2026_08_10_000002_add_use_scrap_to_boards_table.php` | - | `boards` | ✅ |
+| `2026_08_10_000003_add_scrap_count_to_board_posts_table.php` | - | `board_posts` | ✅ |
 | `2026_08_17_000001_add_reply_delete_policy_to_boards_table.php` | - | `boards` | ✅ |
 | `2026_08_17_000002_modify_trigger_type_in_board_posts_table.php` | - | - | ✅ |
 | `2026_08_22_000001_add_content_thumbnail_url_to_board_posts_table.php` | - | `board_posts` | ✅ |
+| `2026_09_14_000001_add_admin_indexes_to_board_post_scraps_table.php` | - | `board_post_scraps` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -146,6 +152,8 @@
 | `CommentRepositoryInterface` | 인터페이스 | 댓글 Repository 인터페이스 |
 | `PostRepository` | 구현 | 게시글 Repository |
 | `PostRepositoryInterface` | 인터페이스 | 게시글 Repository 인터페이스 |
+| `PostScrapRepository` | 구현 | 게시글 스크랩 Repository 구현체 |
+| `PostScrapRepositoryInterface` | 인터페이스 | 게시글 스크랩 Repository 인터페이스 |
 | `ReportRepository` | 구현 | 신고 Repository |
 | `ReportRepositoryInterface` | 인터페이스 | 신고 Repository 인터페이스 |
 | `UserNotificationSettingRepository` | 구현 | 사용자 알림 설정 Repository |
