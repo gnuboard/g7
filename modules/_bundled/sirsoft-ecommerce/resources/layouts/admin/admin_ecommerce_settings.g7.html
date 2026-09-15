@@ -84,6 +84,8 @@
     <field name="expandedNotificationDefinitionIds" :value="[]"/>
   </init-local>
   <computed name="isReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="activeRateProvider">{{settings?.data?.active_rate_provider ?? null}}</computed>
+  <computed name="managedRateCodes">{{settings?.data?.active_rate_provider?.managed_codes ?? []}}</computed>
   <computed name="isNotificationReadOnly">{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>sirsoft-ecommerce.settings.read</permission>

@@ -1,0 +1,18 @@
+{
+  "sirsoft-koreaexim": {
+    "name": "輸出入銀行 為替レート",
+    "description": "輸出入銀行 為替レート 運用 権限"
+  },
+  "sirsoft-koreaexim.exchange_rate": {
+    "name": "為替レート",
+    "description": "為替レート 設定と実行 履歴"
+  },
+  "sirsoft-koreaexim.exchange_rate.view": {
+    "name": "為替レート 閲覧",
+    "description": "為替レート ステータスと履歴を閲覧します。"
+  },
+  "sirsoft-koreaexim.exchange_rate.manage": {
+    "name": "為替レート 管理",
+    "description": "為替レート 設定を変更し更新します。"
+  }
+}

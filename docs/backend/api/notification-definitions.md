@@ -31,7 +31,7 @@
 | extension_type | query | string | 아니오 | `core`, `module`, `plugin` | 확장 유형 (core/module/plugin/template) |
 | extension_identifier | query | string | 아니오 | max 100 | 확장 식별자 |
 | channel | query | string | 아니오 | max 50 | 채널 필터 — 활성 채널(`channels`) 배열에 이 채널을 포함하는 정의만 조회 (mail, database 등) |
-| template_channel | query | string | 아니오 | max 50 | 목록에 실을 템플릿을 한 채널로 좁힙니다. `channel` 과 달리 정의 행은 그대로 두고 각 행의 `templates` 만 좁힙니다. **지정하지 않으면 `templates` 키 자체가 응답에 없습니다** — 정의 하나당 채널 × 로케일만큼의 제목·본문이 실리는 것을 막기 위한 기본값이며, 전 채널이 필요하면 단건 조회를 이용하세요 |
+| template_channel | query | string | 아니오 | max 50 | 목록에 실을 템플릿을 한 채널로 좁힙니다. `channel` 과 달리 정의 행은 그대로 두고 각 행의 `templates` 만 좁힙니다. **지정하지 않으면 `templates` 키 자체가 응답에 없습니다** — 정의 하나당 채널 × 로케일만큼의 제목·본문이 실리는 것을 막기 위한 기본값입니다. `all` 을 주면 좁히지 않고 전 채널 템플릿을 싣습니다. 켠 채널을 한 목록에 함께 그리는 화면(확장 설정 등)을 위한 값이며, 응답이 커지므로 정의를 좁혀 부르는 호출자만 쓰세요. 정의 한 건의 전 채널 템플릿만 필요하면 단건 조회가 더 낫습니다 |
 | is_active | query | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | sort_by | query | string | 아니오 | `id`, `type`, `extension_type`, `is_active`, `created_at`, `updated_at` | 정렬 기준 필드명 |

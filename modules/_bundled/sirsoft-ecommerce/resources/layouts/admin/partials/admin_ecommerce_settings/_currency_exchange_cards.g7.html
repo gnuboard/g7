@@ -48,7 +48,7 @@
             </on>
             <icon name="pencil" size="sm"/>
           </button>
-          <button type="button" class="{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency)}}">
+          <button type="button" class="{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency)}}">
             <on type="click">
               <!-- 통화 삭제. 기본 통화면 지울 수 없다 — 그 판정이 버튼의 클래스 식에 들어 있다. -->
               <set-state target="local" form.language_currency.currencies="{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).filter((c, i) => i !== currency._idx)}}" :hasChanges="true"/>
@@ -86,9 +86,11 @@
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.exchange_rate</label>
           <div class="flex-center gap-2">
             <span class="text-label-subtle whitespace-nowrap">{{(_local.form?.language_currency?.default_currency) + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency))?.base_unit ?? 1).toLocaleString()) + ' ='}}</span>
-            <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.exchange_rate'}}" value="{{currency.exchange_rate}}" class="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate'] ? 'input flex-1 text-center input-error' : 'input flex-1 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.exchange_rate'}}" value="{{currency.exchange_rate}}" class="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate'] ? 'input flex-1 text-center input-error' : 'input flex-1 text-center'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || _computed.managedRateCodes.includes(currency.code)}}"/>
             <span class="text-label-subtle">{{currency.code}}</span>
           </div>
+              <span data-if="{{_computed.managedRateCodes.includes(currency.code)}}" class="text-label-subtle inline-flex items-center gap-1 whitespace-nowrap shrink-0 mt-1"><icon name="lock"/><span>$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.managed_badge</span></span>
+              <span data-if="{{(_computed.activeRateProvider?.unsupported_codes ?? []).includes(currency.code)}}" class="text-label-subtle inline-flex items-center gap-1 whitespace-nowrap shrink-0 mt-1">$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual_badge</span>
           <span data-if="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate']}}" class="form-error">{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate']?.[0] ?? ''}}</span>
         </div>
         <div class="form-group">

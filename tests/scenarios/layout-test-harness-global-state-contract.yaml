@@ -1,0 +1,26 @@
+feature: 공용 레이아웃 테스트 하네스의 G7Core 전역 상태 목 계약
+
+description: |
+  `createLayoutTest` 가 심는 `window.G7Core.state` 목은 운영 엔진과 **같은 모양**을 돌려줘야 한다.
+  `TemplateApp.getGlobalState()` 가 `{ ...this.globalState }` 를 반환하므로
+  `G7Core.state.get()` 의 반환값이 **곧 `_global` 의 내용물**이고, `_global` 이라는 키는 그 안에 없다.
+
+  목이 engine-v1.70.0 이전 계약(`{ _global, _local }`)을 유지하면 증상이 반쪽으로 나타난다 —
+  `text`·`href` 처럼 **렌더 시점 컨텍스트**로 평가되는 바인딩은 그대로 통과하고, `ActionDispatcher` 의
+  stale-closure 방어를 거치는 **액션 params 안의 `{{_global.*}}`** 만 전부 `undefined` 가 된다.
+  방어가 `_global` 자리에 래퍼를 통째로 꽂기 때문이다. 일부만 깨지므로 목이 아니라 레이아웃을
+  의심하게 되고, 실제로 #675 에서 모듈 레이아웃 테스트 11건 중 4건만 red 였다.
+
+  축은 둘이다 — **읽는 경로**(`get()` 최상위 · `_local` 키)와 **구계약 잔재**(`._global` 키의 부재).
+
+axes:
+  read_path: [top_level_global, nested_local]
+  legacy_wrapper: [absent]
+
+effects:
+  - state_get_returns_global_contents_at_top_level
+  - state_get_exposes_local_under_local_key
+  - state_get_has_no_legacy_global_wrapper_key
+
+test_files:
+  - resources/js/core/template-engine/__tests__/layoutTestUtils.globalStateContract.test.ts

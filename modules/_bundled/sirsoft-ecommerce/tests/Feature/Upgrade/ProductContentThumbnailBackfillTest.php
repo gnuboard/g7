@@ -6,6 +6,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Modules\Sirsoft\Ecommerce\Upgrades\Upgrade_1_2_0;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -15,12 +16,16 @@ use PHPUnit\Framework\Attributes\Test;
  * - 1.2.0 이전 등록 상품(캐시 null)이 다국어 설명 JSON 의 첫 내부 이미지로 백필된다
  * - 이미 값이 있는 행·text 모드·외부 이미지만 있는 행은 건드리지 않는다
  * - 재실행해도 결과가 동일하다 (멱등)
- *
- * @group ecommerce
- * @group upgrade
  */
+#[Group('ecommerce')]
+#[Group('upgrade')]
 class ProductContentThumbnailBackfillTest extends ModuleTestCase
 {
+    /**
+     * 썸네일 백필의 기본 로케일을 한국어로 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -55,6 +60,11 @@ class ProductContentThumbnailBackfillTest extends ModuleTestCase
         ], $attributes));
     }
 
+    /**
+     * 기존 상품 설명을 대상으로 썸네일 백필 스텝을 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function runBackfill(): void
     {
         $context = new UpgradeContext('1.1.2', '1.2.0', '1.2.0', 'extension-upgrade');
@@ -63,9 +73,13 @@ class ProductContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
+     * 다국어 설명의 첫 내부 이미지로 기존 상품 썸네일을 채우는지 검증합니다.
+     *
      * @scenario backfill=legacy_row
      *
      * @effects backfill_fills_legacy_products
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function legacy_rows_are_backfilled_from_multilingual_description(): void
@@ -87,9 +101,13 @@ class ProductContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
+     * 텍스트 모드·기존 썸네일·외부 이미지만 있는 행을 보존하는지 검증합니다.
+     *
      * @scenario backfill=text_mode
      *
      * @effects text_mode_description_never_caches
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function text_mode_and_filled_and_external_rows_are_untouched(): void
@@ -114,9 +132,13 @@ class ProductContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
+     * 백필을 다시 실행해도 저장된 썸네일이 동일한지 검증합니다.
+     *
      * @scenario backfill=idempotent
      *
      * @effects backfill_idempotent_second_run
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function second_run_is_idempotent(): void
@@ -138,6 +160,8 @@ class ProductContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
+     * 상품별 썸네일을 ID 순으로 읽어 재실행 전후를 비교합니다.
+     *
      * @return array<int, array{id: int, content_thumbnail_url: string|null}> 스냅샷
      */
     private function snapshot(): array

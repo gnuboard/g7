@@ -1,0 +1,17 @@
+feature: koreaexim_rate_calculation
+description: 기본 통화·타깃·고시 종류·유효성·반올림 자릿수의 전 조합에서 교차환율과 원값 보존을 검증한다.
+coverage_strategy: full
+axes:
+  base: [KRW, USD, JPY]
+  target: [USD, JPY, KRW, CNY, VND]
+  rate_type: [deal_bas_r, ttb, tts]
+  rate_value: [normal, zero, blank]
+  decimals: [0, 2, 6]
+effects:
+  - every_rate_type_and_invalid_values_preserve_old_rate
+  - rounding_to_zero_and_unsupported_base
+  - cross_rates
+  - preserve_invalid_rates
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Unit/Services/ExchangeRateCalculatorTest.php
+  - plugins/_bundled/sirsoft-koreaexim/tests/fixtures/CalculationCases.php

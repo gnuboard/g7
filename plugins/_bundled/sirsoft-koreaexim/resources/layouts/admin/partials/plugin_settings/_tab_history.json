@@ -1,0 +1,41 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "환율 실행 이력 탭"
+    },
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeTab === 'history'}}",
+    "children": [
+        {
+            "partial": "_history_filter.json"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{koreaeximRuns?.loading === true}}",
+            "props": {
+                "role": "status",
+                "className": "admin-card mb-4 flex items-center gap-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "spinner-sm"
+                    },
+                    "text": ""
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-koreaexim.loading"
+                }
+            ]
+        },
+        {
+            "partial": "_history_grid.json"
+        }
+    ]
+}

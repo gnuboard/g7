@@ -31,6 +31,16 @@ axes:
     - readded                     # 재추가 저장 → 기록 해제·부활
 
 effects:
+  - missing_jpy_is_supplemented_from_defaults
+  - saved_exchange_rate_is_preserved_over_defaults
+  - new_added_currency_is_preserved
+  - default_currency_exchange_rate_stays_null
+  - all_five_defaults_present_when_nothing_saved
+  - currencies_carry_symbol_and_flag_meta
+  - base_unit_is_backfilled_from_defaults_when_missing
+  - saved_base_unit_is_preserved_over_defaults
+  - unknown_currency_base_unit_falls_back_to_one
+  - unknown_currency_symbol_falls_back_to_code
   - missing_currency_supplemented_from_defaults  # array_merge 통째교체로 통화 소실 안 됨
   - saved_exchange_rate_preserved                # 저장본 환율 보존(defaults 로 덮어쓰지 않음)
   - new_added_currency_preserved                 # 저장본에만 있는 신규 통화 보존

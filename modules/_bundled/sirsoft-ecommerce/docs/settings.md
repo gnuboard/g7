@@ -50,6 +50,19 @@ _`getSettingsSchema()` 선언이 없습니다._
 기한(`vbank_due_at`·`deposit_due_at`)이 있는 결제수단만 훑고, 임시주문 정리는 다른 테이블을 봅니다.
 브라우저 리턴 콜백이 주문 상태를 바꾸지 않게 된 뒤로는 승인 거절분도 여기에 머무르므로, 이 정리가
 선차감 마일리지 복원의 최종 안전망입니다.
+
+`language_currency.rate_provider` 는 환율을 자동으로 갱신할 **제공자 선택값**입니다(기본 `null`
+= 운영자 직접 입력). 모듈은 제공자를 구현하지도 자동 선택하지도 않습니다 — 필터 훅
+`sirsoft-ecommerce.currency.registered_rate_providers` 로 등록된 목록을 설정 응답의
+`available_rate_providers` 로 내려보내고, 이 키의 값과 `id` 가 일치하는 항목 하나만
+`active_rate_provider` 로 해석합니다. 선택값이 비었거나 그 `id` 가 목록에 없으면(플러그인 비활성·
+삭제) 활성 제공자는 `null` 이고 전 통화가 다시 수동 편집 가능해집니다 — **저장값 자체는 보존**되어
+플러그인을 다시 켜면 그대로 복구됩니다. 활성 제공자의 `managed_codes` 에 든 통화는 환율 입력이
+잠기고, 그 값을 바꿔 저장하면 422 입니다(비교는 `1e-9` 허용오차 — 화면은 문자열, 저장본은 float).
+제공자가 환율을 쓰는 경로는 `EcommerceSettingsService::applyExchangeRates($ratesByCode, $source)`
+하나뿐이며, `$source` 가 선택된 제공자가 아니면 거부합니다. 적용 후에는
+`sirsoft-ecommerce.currency.after_apply_rates` 액션만 발행합니다(`settings.after_save` 를 쓰면
+구독 플러그인과 무한 재귀합니다).
 <!-- @intent END -->
 
 ## 권한
@@ -167,6 +180,7 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
+| `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
 | `sirsoft-pay_kginicis` | 플러그인 | `>=1.1.0` |
 | `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.1.0` |
 | `sirsoft-pay_nicepayments` | 플러그인 | `>=1.1.0` |

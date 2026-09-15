@@ -52,6 +52,23 @@ use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
 
 class Module extends AbstractModule
 {
+    /**
+     * 환율 제공자 등록과 적용 결과의 공개 훅 계약을 선언합니다.
+     *
+     * @return array 환율 확장 훅 정의
+     */
+    public function getHooks(): array
+    {
+        return [
+            ['name' => 'sirsoft-ecommerce.currency.registered_rate_providers', 'type' => 'filter',
+                'description' => ['ko' => '환율 제공자 목록', 'en' => 'Exchange rate providers'],
+                'parameters' => ['providers' => 'array - 등록할 제공자 목록'], 'return' => 'array'],
+            ['name' => 'sirsoft-ecommerce.currency.after_apply_rates', 'type' => 'action',
+                'description' => ['ko' => '환율 적용 후', 'en' => 'After applying exchange rates'],
+                'parameters' => ['result' => 'array - 환율 적용 결과', 'source' => 'string - 환율 제공자 식별자']],
+        ];
+    }
+
     use LocalizesSeoValues;
 
     /**

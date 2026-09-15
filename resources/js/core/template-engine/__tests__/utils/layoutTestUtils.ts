@@ -595,12 +595,12 @@ export function createLayoutTest(
     // G7Core 글로벌 객체 모킹
     (window as any).G7Core = {
       state: {
-        // `G7Core.state.get()` 은 **`_global` 의 내용물을 평평하게** 돌려준다
-        // (`TemplateApp.getGlobalState()` → `{ ...this.globalState }`, `_local` 은 그 안의 한 키다).
-        // 종전 mock 은 `{ _global, _local }` 래퍼를 돌려줬다 — 엔진의 stale-closure 가드가
-        // `state.get()?._global` 로 읽던 시절엔 언제나 undefined 라 가드가 건너뛰어 드러나지 않았다.
-        // engine-v1.70.0 이 그 죽은 가드를 고치자 래퍼가 그대로 `_global` 자리에 덮여
-        // `{{_global.shopBase}}` 가 빈 값이 됐다. 규약을 정본에 맞춘다.
+        // 운영과 같은 모양으로 돌려준다 — `G7Core.state.get()` 의 반환값이 **곧 `_global` 의 내용물**이고
+        // (`TemplateApp.getGlobalState()` → `{...globalState}`), `_local` 은 그 안의 한 키다.
+        // 종전 `{ _global, _local }` 모양은 engine-v1.70.0 이 `._global` 접미를 떼기 전의 계약이라,
+        // ActionDispatcher 의 stale-closure 방어가 `_global` 자리에 `{_global,_local}` 을 통째로
+        // 꽂아 액션 params 안의 `{{_global.*}}` 가 전부 undefined 로 평가됐다.
+        // 정본: `resources/js/core/devtools/DiagnosticEngine.ts:65` 「반환값이 곧 _global 이다 — ._global 을 덧붙이지 말 것」.
         get: () => ({ ...state._global, _local: state._local }),
         set: (updates: any) => { state._global = { ...state._global, ...updates }; },
         getLocal: () => state._local,

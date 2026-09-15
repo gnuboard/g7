@@ -180,6 +180,8 @@
     },
     "computed": {
         "isReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
+        "activeRateProvider": "{{settings?.data?.active_rate_provider ?? null}}",
+        "managedRateCodes": "{{settings?.data?.active_rate_provider?.managed_codes ?? []}}",
         "isNotificationReadOnly": "{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}"
     },
     "permissions": [

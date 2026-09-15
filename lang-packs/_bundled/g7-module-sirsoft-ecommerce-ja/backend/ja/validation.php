@@ -1209,13 +1209,9 @@ return [
             'min' => '注文金額は 0 以上である必要があります。',
         ],
     ],
-    // 公開アセットディスク (コアカタログ照会による検証)
     'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
-
     'attributes' => [
-        // 公開アセットストレージ
         'basic_info.public_asset_disk' => '公開アセットディスク',
-
         'basic_info' => '基本情報',
         'basic_info.shop_name' => 'ショップ名',
         'basic_info.route_path' => 'ルートパス',
@@ -1477,6 +1473,7 @@ return [
                 'is_default' => [
                     'boolean' => '基本通貨の有無は真偽値である必要があります。',
                 ],
+                'exchange_rate_managed' => ':currency の為替レートは :provider プロバイダーが管理中です。画面を更新してください。',
             ],
             'base_locked_after_data' => '商品または注文が1件以上登録された後は、基本通貨を変更できません。',
         ],
@@ -1814,4 +1811,6 @@ return [
             'item_min' => '商品 ID は1以上である必要があります。',
         ],
     ],
+    'exchange_rate_save_failed' => '為替レート設定を保存できませんでした。',
+    'exchange_rate_provider_unavailable' => '使用できない為替レートプロバイダーです。',
 ];

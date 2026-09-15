@@ -15,6 +15,18 @@
       </div>
     </div>
     <div data-ref="exchange_settings_card" class="admin-card">
+      <div data-ref="exchange_rate_provider_select" data-if="{{(settings?.data?.available_rate_providers ?? []).length > 0}}" class="form-group mb-4">
+        <label class="form-label" htmlFor="exchange_rate_provider">$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.label</label>
+        <select id="exchange_rate_provider" class="{{_local.errors?.['language_currency.rate_provider'] ? 'w-full select-error' : 'w-full'}}" name="language_currency.rate_provider" value="{{_local.form?.language_currency?.rate_provider ?? ''}}" options="{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual')}].concat((settings?.data?.available_rate_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}"/>
+        <span data-if="{{_local.errors?.['language_currency.rate_provider']}}" class="form-error">{{_local.errors?.['language_currency.rate_provider']?.[0] ?? ''}}</span>
+      </div>
+      <div data-ref="exchange_rate_provider_banner" data-if="{{_computed.activeRateProvider !== null}}" role="status" class="alert-info mb-4 flex flex-wrap items-center gap-2">
+        <span>{{$localized(_computed.activeRateProvider?.name)}}</span>
+        <span>$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.last_updated</span>
+        <span>{{_computed.activeRateProvider?.last_updated_at_formatted ?? '-'}}</span>
+        <span data-if="{{_computed.activeRateProvider?.notice_key}}">{{_computed.activeRateProvider.notice_key === 'auth_key_required' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.auth_key_required') : _computed.activeRateProvider.notice_key === 'auto_manage_disabled' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.auto_manage_disabled') : _computed.activeRateProvider.notice_key === 'unsupported_base' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.unsupported_base') : _computed.activeRateProvider.notice_key}}</span>
+        <a href="{{_computed.activeRateProvider?.settings_url}}" class="text-blue-600 dark:text-blue-400 hover:underline">$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.settings</a>
+      </div>
       <div data-ref="exchange_settings_header" class="flex-between mb-6">
         <div>
           <h3 data-ref="exchange_settings_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.title</h3>

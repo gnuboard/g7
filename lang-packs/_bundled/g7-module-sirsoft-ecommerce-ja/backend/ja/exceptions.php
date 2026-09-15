@@ -86,4 +86,5 @@ return [
     'country_not_shippable' => '選択された配送先国には配送できない商品です。',
     'order_shipping_address_update_failed' => '配送先変更処理中にエラーが発生しました。',
     'order_option_not_confirmable' => '現在の状態では購入確定できない注文オプションです。',
+    'exchange_rate_save_failed' => '為替レート設定を保存できませんでした。',
 ];

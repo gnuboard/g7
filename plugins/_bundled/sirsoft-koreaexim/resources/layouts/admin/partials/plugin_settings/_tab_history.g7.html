@@ -1,0 +1,3 @@
+<partial description="환율 실행 이력 탭">
+<div data-if="{{_computed.activeTab === 'history'}}"><include src="_history_filter.g7.html"/><div data-if="{{koreaeximRuns?.loading === true}}" role="status" class="admin-card mb-4 flex items-center gap-2"><span class="spinner-sm"></span><span>$t:sirsoft-koreaexim.loading</span></div><include src="_history_grid.g7.html"/></div>
+</partial>

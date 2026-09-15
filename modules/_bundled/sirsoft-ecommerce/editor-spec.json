@@ -2796,6 +2796,8 @@
       },
       "settings": {
         "data": {
+        "available_rate_providers": [],
+        "active_rate_provider": null,
           "general": {
             "shop_name": "샘플 쇼핑몰",
             "currency": "KRW"
