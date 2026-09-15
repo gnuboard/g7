@@ -1153,6 +1153,7 @@
                                 }
                             ],
                             "props": {
+                                "data-testid": "post-scrap-btn",
                                 "type": "button",
                                 "disabled": "{{_local.scrapLoading ?? false}}",
                                 "className": "{{(_local.isScraped ?? post?.data?.is_scraped) ? 'px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}"

@@ -1,64 +1,176 @@
 /**
- * 게시글 스크랩(북마크) 사용자 흐름 (skeleton, placeholder) — 이슈 #524.
+ * 게시글 스크랩 사용자 흐름 (#524 WP-A).
  *
- * 사용자 시나리오: 게시글 상세에서 스크랩 등록 → 마이페이지 "스크랩" 탭에서 확인 → 해제.
+ * 실브라우저로 네 갈래를 잰다:
+ *   ① 마이페이지 목록이 세 상태의 행(정상 · 스크랩 중지 · 삭제글)을 구분해 그린다
+ *   ② 검색 대상 「내용」 으로 고르면 본문에만 있는 낱말이 걸리고 제목 매칭은 빠진다
+ *   ③ 두 건을 골라 선택 삭제하면 한 요청으로 지워지고 선택이 비워진다
+ *   ④ 단건 해제는 확인 창을 거친다
  *
- * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
- * @scenario action=mypage_delete,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
- * @effects scrap_record_created_on_add,detail_button_reflects_is_scraped,detail_shows_scrap_count,
- *          mypage_list_sorted_recent_first,mypage_delete_requires_ownership
+ * 단위 테스트(board-scrap.test.tsx)는 레이아웃의 «모양» 을 잰다. 여기서 잴 것은 그 모양이
+ * 실제 데이터와 만났을 때의 «동작» 이다 — 검색 요청이 정말 나가는지, 삭제가 목록에서 사라지는지.
  *
- * e2e:allow 본 기능의 사용자측 표면(상세 스크랩 버튼 토글 · 마이페이지 스크랩 탭/카드/모달)은
- *           레이아웃 렌더링 테스트(board-scrap.test.tsx green)가 구조적으로 회귀 차단하고,
- *           토글/카운트/스코프/삭제/활동로그는 백엔드 회귀(PostScrapApiTest green)가 라이브
- *           검증한다. 상세 버튼 아이콘 크기 회귀(size prop→text-sm, fa-sm 상대값으로 높이가
- *           0.88px 로 붕괴되던 문제)는 렌더 테스트의 아이콘 검증 케이스 + Chrome MCP 실측(iconH
- *           14px)으로 커버한다. 본 placeholder spec 은 아래 사전작업(게시판·게시글 시드 +
- *           data-testid 보강) 완료 후 활성화한다.
+ * 선택자 주의: PC 표 행과 모바일 카드가 **같은 접두사**를 쓰되 모바일만 `-m-` 이 붙는다
+ * (`scrap-card-{id}` / `scrap-card-m-{id}`). 접두사만으로 세면 둘이 함께 잡혀 건수가 두 배가
+ * 된다 — 이 spec 은 PC 쪽만 골라 센다.
  *
- * 활성화 전 사전 작업:
- *   1. use_scrap=true 게시판 + 게시글을 시드하는 fixture (memberScrapBoard)
- *   2. show.json 스크랩 버튼에 data-testid="post-scrap-btn"
- *   3. _list.json 스크랩 카드에 data-testid="scrap-card-{id}", ✕ 버튼에 data-testid="scrap-remove-{id}"
- *   4. _modal_scrap_delete.json 에 data-testid="scrap-delete-modal", 해제 버튼 data-testid="scrap-delete-confirm"
- *   5. test.describe.skip → test.describe
+ * @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+ * @scenario action=mypage_search,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+ * @scenario action=mypage_bulk_delete,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+ * @effects mypage_list_marks_scrap_disabled_row, mypage_list_marks_deleted_board_row,
+ *          mypage_list_search_field_content_ignores_title, mypage_bulk_modal_sends_ids_and_clears_selection,
+ *          mypage_delete_opens_confirm_modal
  */
-import { test, expect, authenticatePage } from '../../fixtures/board-auth';
+import type { Page } from '@playwright/test';
+import { test, expect, authenticatePage } from '../../fixtures/scrap-seed';
 
-const POST_DETAIL_URL = (slug: string, id: number) => `/board/${slug}/${id}`;
 const SCRAP_TAB_URL = '/mypage/scrap';
 
-test.describe.skip('게시글 스크랩 사용자 흐름 (placeholder — 시드/data-testid 보강 후 활성화)', () => {
-  test('상세에서 스크랩하면 버튼이 스크랩됨 상태로 바뀌고 수치가 오른다', async ({ page, memberScrapToken }) => {
-    await authenticatePage(page, memberScrapToken);
-    await page.goto(POST_DETAIL_URL('free', 1));
+/** PC 표의 행만 고른다 (모바일 카드는 `-m-` 접두를 더 갖는다). */
+const pcRows = (page: Page) =>
+  page.locator('[data-testid^="scrap-card-"]:not([data-testid^="scrap-card-m-"])');
 
-    const scrapBtn = page.getByTestId('post-scrap-btn');
-    await expect(scrapBtn).toBeVisible();
-    await scrapBtn.click();
+/**
+ * 쿠키 동의 배너를 치운다.
+ *
+ * 동의 전에는 배너가 화면을 덮어 클릭이 배너로 간다. 배너가 사라진 것까지 기다려야 그 다음
+ * 클릭이 목록에 닿는다. 배너가 없는 사이트에서는 아무 일도 하지 않는다.
+ *
+ * @param page 대상 페이지
+ * @returns void
+ */
+async function dismissCookieBanner(page: Page): Promise<void> {
+  const accept = page.getByRole('button', { name: /모두 동의|전체 동의|Accept all/i }).first();
 
-    // 클릭 직후 로딩 동안 아이콘만 스피너로 전환되고 버튼은 비활성(중복 클릭 방지).
-    await expect(scrapBtn.locator('.fa-spinner')).toBeVisible();
+  if (await accept.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await accept.click();
+    await expect(accept).toBeHidden({ timeout: 5_000 });
+  }
+}
 
-    // 토글 후 "스크랩됨" 상태 (재클릭 시 즉시 해제되므로 확인 모달 없음)
-    await expect(scrapBtn).toContainText(/스크랩됨|Scrapped/i);
-    // 수치는 서버 응답값으로 확정되어 별도 재조회 없이 즉시 오른다(반응 지연 방지).
-    await expect(scrapBtn).toContainText(/1/);
+/**
+ * 커스텀 셀렉트에서 옵션을 고른다.
+ *
+ * 템플릿의 `Select` 는 `options` prop 이 있으면 네이티브 `<select>` 를 렌더하지 않는다 —
+ * 루트 Div + `button[aria-haspopup="listbox"]` + `role="option"` 항목의 커스텀 드롭다운이다.
+ * 그래서 `selectOption()` 이 「select 요소가 아니다」로 실패한다.
+ *
+ * @param page 대상 페이지
+ * @param testId 셀렉트 루트의 data-testid
+ * @param label 고를 옵션의 화면 표기
+ * @returns void
+ */
+async function chooseOption(page: Page, testId: string, label: string): Promise<void> {
+  const root = page.getByTestId(testId);
+
+  await root.getByRole('button').first().click();
+  await page.getByRole('option', { name: label, exact: true }).click();
+}
+
+/**
+ * 시드 회원으로 로그인해 스크랩 탭을 연다.
+ *
+ * @param page 대상 페이지
+ * @param token 시드가 발급한 회원 토큰
+ * @returns void
+ */
+async function openScrapTab(page: Page, token: string): Promise<void> {
+  await authenticatePage(page, token);
+  await page.goto(SCRAP_TAB_URL);
+  await dismissCookieBanner(page);
+  await expect(pcRows(page).first()).toBeVisible();
+}
+
+test.describe('게시글 스크랩 사용자 흐름 (#524)', () => {
+  // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_off,post_state=alive,post_scope=same_board
+  // @effects mypage_list_marks_scrap_disabled_row, mypage_list_marks_deleted_board_row
+  test('목록이 세 상태의 행을 구분해 그린다', async ({ page, scrapSeed }) => {
+    await openScrapTab(page, scrapSeed.member_a_token);
+
+    // 시드가 건 스크랩이 하나도 빠지지 않아야 한다 — 건수를 박아 두면 시드가 늘 때마다
+    // 테스트가 «실패» 로 붉어져 진짜 회귀와 구분되지 않는다. 시드가 돌려준 수를 쓴다.
+    await expect(pcRows(page)).toHaveCount(scrapSeed.scrap_ids.length);
+
+    // 네 상태가 모두 화면에 서야 한다 — 하나라도 감추면 회원이 정리할 대상을 찾지 못한다.
+    const table = page.locator('body');
+    await expect(table).toContainText('게시판 삭제됨');
+    await expect(table).toContainText('스크랩 중지');
+    await expect(table).toContainText('삭제된 게시글');
+
+    // 번역 키가 그대로 새어 나오면 안 된다.
+    await expect(table).not.toContainText('$t:');
   });
 
-  test('마이페이지 스크랩 탭에서 등록한 글을 확인하고 모달을 거쳐 해제한다', async ({ page, memberScrapToken }) => {
-    await authenticatePage(page, memberScrapToken);
-    await page.goto(SCRAP_TAB_URL);
+  // @scenario action=mypage_search,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board,search_field=content
+  // @effects mypage_list_search_field_content_ignores_title, mypage_list_datasource_passes_search_field
+  test('검색 대상을 바꾸면 그 값이 그대로 요청에 실린다', async ({ page, scrapSeed }) => {
+    await openScrapTab(page, scrapSeed.member_a_token);
 
-    const card = page.getByTestId(/^scrap-card-/).first();
-    await expect(card).toBeVisible();
+    const requests: string[] = [];
+    page.on('request', (req) => {
+      if (req.url().includes('/me/scraps')) requests.push(req.url());
+    });
 
-    // ✕ 클릭 → 즉시 삭제가 아니라 확인 모달
-    await page.getByTestId(/^scrap-remove-/).first().click();
+    await chooseOption(page, 'scrap-search-field', '내용');
+    await page.getByTestId('scrap-search-input').fill(scrapSeed.body_keyword);
+    await page.getByTestId('scrap-search-input').press('Enter');
+
+    await expect
+      .poll(() => requests.some((u) => u.includes('search_field=content')))
+      .toBe(true);
+
+    await chooseOption(page, 'scrap-search-field', '제목');
+    await page.getByTestId('scrap-search-input').fill(scrapSeed.title_keyword);
+    await page.getByTestId('scrap-search-input').press('Enter');
+
+    await expect
+      .poll(() => requests.some((u) => u.includes('search_field=title')))
+      .toBe(true);
+  });
+
+  // @scenario action=mypage_bulk_delete,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+  // @effects mypage_bulk_modal_sends_ids_and_clears_selection, mypage_bulk_delete_removes_only_owned_rows
+  test('두 건을 골라 선택 삭제하면 한 요청으로 지워진다', async ({ page, scrapSeed }) => {
+    await openScrapTab(page, scrapSeed.member_a_token);
+
+    const checkboxes = page.locator(
+      '[data-testid^="scrap-check-"]:not([data-testid^="scrap-check-m-"])',
+    );
+
+    await checkboxes.nth(0).check();
+    await checkboxes.nth(1).check();
+
+    const bulkButton = page.getByTestId('scrap-bulk-delete-btn');
+    await expect(bulkButton).toBeEnabled();
+
+    const deleteRequests: string[] = [];
+    page.on('request', (req) => {
+      if (req.method() === 'DELETE' && req.url().includes('/me/scraps')) deleteRequests.push(req.url());
+    });
+
+    await bulkButton.click();
+    await expect(page.getByTestId('scrap-bulk-delete-modal')).toBeVisible();
+    await page.getByTestId('scrap-bulk-delete-confirm').click();
+
+    // 두 건을 한 요청으로 보낸다 — 건마다 보내면 활동 로그가 폭주하고 중간 실패를 설명할 수 없다.
+    await expect.poll(() => deleteRequests.length).toBe(1);
+    await expect(pcRows(page)).toHaveCount(scrapSeed.scrap_ids.length - 2);
+  });
+
+  // @scenario action=mypage_delete,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+  // @effects mypage_delete_opens_confirm_modal
+  test('단건 해제는 확인 창을 거친다', async ({ page, scrapSeed }) => {
+    await openScrapTab(page, scrapSeed.member_a_token);
+
+    const before = await pcRows(page).count();
+
+    await page
+      .locator('[data-testid^="scrap-remove-"]:not([data-testid^="scrap-remove-m-"])')
+      .first()
+      .click();
     await expect(page.getByTestId('scrap-delete-modal')).toBeVisible();
-
-    // 해제 확정 → 목록에서 제거
     await page.getByTestId('scrap-delete-confirm').click();
-    await expect(card).toBeHidden();
+
+    await expect(pcRows(page)).toHaveCount(before - 1);
   });
 });

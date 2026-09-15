@@ -99,6 +99,9 @@ return [
         'user_update_language' => 'User language setting changed',
         'user_bulk_update_status' => 'Users status bulk updated (:count items)',
 
+        // Member notification inbox (admin deleting a member's received notifications)
+        'member_notification_bulk_delete' => 'Member notifications bulk deleted (:count items)',
+
         // Role management
         'role_index' => 'Role list viewed',
         'role_active' => 'Active role list viewed',

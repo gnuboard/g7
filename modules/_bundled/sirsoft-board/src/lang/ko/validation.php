@@ -227,6 +227,22 @@ return [
 
     // 게시글 검증
     'post' => [
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+        'bulk' => [
+            'ids' => [
+                'required' => '게시글 ID는 필수입니다.',
+                'array' => '게시글 ID는 배열 형식이어야 합니다.',
+                'min' => '최소 1개 이상의 게시글을 선택해야 합니다.',
+                'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+                'integer' => '게시글 ID는 정수여야 합니다.',
+                'distinct' => '게시글 ID가 중복되었습니다.',
+            ],
+            'reason' => [
+                'max' => '사유는 :max자를 초과할 수 없습니다.',
+            ],
+        ],
         'title' => [
             'required' => '제목은 필수입니다.',
             'string' => '제목은 문자열이어야 합니다.',
@@ -296,6 +312,10 @@ return [
 
     // 필드 속성명 (attributes)
     'attributes' => [
+        'scrap' => [
+            'ids' => '스크랩 ID',
+            'search_field' => '검색 대상',
+        ],
         'settings' => [
             // basic_defaults
             'basic_defaults.type' => '게시판 유형',
@@ -618,5 +638,21 @@ return [
         ],
         'daily_limit_exceeded' => '오늘 신고 가능 횟수(:limit회)를 초과하였습니다.',
         'rejection_limit_exceeded' => '최근 :days일간 신고 반려가 :count회 누적되어 신고가 제한되었습니다.',
+    ],
+
+    // 스크랩 검증 메시지
+    'scrap' => [
+        'ids' => [
+            'required' => '스크랩 ID는 필수입니다.',
+            'array' => '스크랩 ID는 배열 형식이어야 합니다.',
+            'min' => '최소 1개 이상의 스크랩을 선택해야 합니다.',
+            'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+            'integer' => '스크랩 ID는 정수여야 합니다.',
+            'distinct' => '스크랩 ID가 중복되었습니다.',
+            'exists' => '존재하지 않는 스크랩입니다.',
+        ],
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
     ],
 ];

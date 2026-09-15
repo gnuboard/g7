@@ -58,7 +58,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 33개.
+마이그레이션 34개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -95,6 +95,7 @@
 | `2026_08_17_000001_add_reply_delete_policy_to_boards_table.php` | - | `boards` | ✅ |
 | `2026_08_17_000002_modify_trigger_type_in_board_posts_table.php` | - | - | ✅ |
 | `2026_08_22_000001_add_content_thumbnail_url_to_board_posts_table.php` | - | `board_posts` | ✅ |
+| `2026_09_14_000001_add_admin_indexes_to_board_post_scraps_table.php` | - | `board_post_scraps` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->

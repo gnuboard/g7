@@ -47,6 +47,7 @@
 - 위 마크업 형식의 설명(주석) 위치 안내 일본어 번역 추가 (`exceptions.layout_markup.comment_not_attachable`, `exceptions.layout_markup.comment_hint.*`) — 작성한 화면 파일에 남긴 설명이 담길 자리가 없는 위치에 적혀 있으면, 종전에는 아무 안내 없이 사라졌습니다. 이제 그 사실을 알리고 어디로 옮겨 적어야 하는지(동작 설명은 그 동작 바로 앞, 동작이 둘 이상이면 하나로 묶은 뒤 그 앞)를 일본어 로케일에서 자연스럽게 안내합니다.
 
 - 확장 공통 권한 2건(`core.extensions`·`core.extensions.custom_assets.manage`)의 일본어 번역을 추가했습니다 — 모듈·플러그인·템플릿에 운영자 CSS·JS·폰트·이미지를 추가하는 권한으로, 일본어 로케일의 역할 수정 화면에서 한국어로 남아 있었습니다.
+- 회원 알림함 관리 기능의 일본어 번역을 추가했습니다. 관리자가 회원에게 나간 알림을 목록으로 보고 지울 때 뜨는 안내 문구(`member_notification.*` 7건)와, 좌측 메뉴 「회원 알림함」, 권한 3종(`core.member-notifications`·`.read`·`.delete`)이 일본어 로케일에서 자연스럽게 표시됩니다.
 
 ### Removed
 

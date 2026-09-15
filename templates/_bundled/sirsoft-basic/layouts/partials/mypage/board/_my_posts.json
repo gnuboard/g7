@@ -134,6 +134,40 @@
                     },
                     "children": [
                         {
+                            "comment": "검색 대상 — 제목만/내용만을 백엔드가 갈라 준다. 담아만 두고 조회는 검색 버튼이 한다",
+                            "id": "my_posts_search_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myPostsSearchField": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_global.myPostsSearchField ?? 'title_content'}}",
+                                "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "options": [
+                                    {
+                                        "value": "title_content",
+                                        "label": "$t:mypage.board_activities.search_fields.title_content"
+                                    },
+                                    {
+                                        "value": "title",
+                                        "label": "$t:mypage.board_activities.search_fields.title"
+                                    },
+                                    {
+                                        "value": "content",
+                                        "label": "$t:mypage.board_activities.search_fields.content"
+                                    }
+                                ]
+                            }
+                        },
+                        {
                             "type": "basic",
                             "name": "Input",
                             "actions": [
@@ -199,6 +233,7 @@
                                                 "target": "global",
                                                 "myPostsBoard": "",
                                                 "myPostsSearch": "",
+                                                "myPostsSearchField": "title_content",
                                                 "myPostsSort": "latest",
                                                 "myPostsPage": 1
                                             }
@@ -281,6 +316,7 @@
                                         "target": "global",
                                         "myPostsBoard": "",
                                         "myPostsSearch": "",
+                                        "myPostsSearchField": "title_content",
                                         "myPostsSort": "latest",
                                         "myPostsPage": 1
                                     }

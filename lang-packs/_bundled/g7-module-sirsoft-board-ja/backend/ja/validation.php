@@ -248,6 +248,22 @@ return [
             'file_max' => 'ファイルサイズが許可されたサイズを超えています。',
             'mimes' => '許可されていないファイル形式です。',
         ],
+        'search_field' => [
+            'in' => '無効な検索対象です。',
+        ],
+        'bulk' => [
+            'ids' => [
+                'required' => '投稿IDは必須です。',
+                'array' => '投稿IDは配列形式である必要があります。',
+                'min' => '最小1件以上の投稿を選択する必要があります。',
+                'max' => '1回に:max件まで選択できます。',
+                'integer' => '投稿IDは整数である必要があります。',
+                'distinct' => '投稿IDが重複しています。',
+            ],
+            'reason' => [
+                'max' => '理由は:max文字を超えることができません。',
+            ],
+        ],
     ],
     'attributes' => [
         'settings' => [
@@ -357,6 +373,10 @@ return [
             'override_values.new_display_hours' => '新規表示時間',
             'attachment_settings.purge_enabled' => '削除添付の永久クリーンアップ',
             'attachment_settings.purge_retention_days' => '削除添付の保持期間',
+        ],
+        'scrap' => [
+            'ids' => 'スクラップID',
+            'search_field' => '検索対象',
         ],
     ],
     'blind' => [
@@ -534,5 +554,19 @@ return [
         ],
         'daily_limit_exceeded' => '本日の通報可能回数(:limit回)を超過しました。',
         'rejection_limit_exceeded' => '最近 :days 日間の通報却下が :count 回累積され、通報が制限されました。',
+    ],
+    'scrap' => [
+        'ids' => [
+            'required' => 'スクラップIDは必須です。',
+            'array' => 'スクラップIDは配列形式である必要があります。',
+            'min' => '最小1件以上のスクラップを選択する必要があります。',
+            'max' => '1回に:max件まで選択できます。',
+            'integer' => 'スクラップIDは整数である必要があります。',
+            'distinct' => 'スクラップIDが重複しています。',
+            'exists' => '存在しないスクラップです。',
+        ],
+        'search_field' => [
+            'in' => '無効な検索対象です。',
+        ],
     ],
 ];

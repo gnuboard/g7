@@ -37,6 +37,7 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
     private const DECLARED_KEYS = [
         'sirsoft-board.post.delete',
         'sirsoft-board.post.blind',
+        'sirsoft-board.post.bulk_action',
         'sirsoft-board.report.bulk_action',
         'sirsoft-board.report.delete',
         'sirsoft-board.post.user_delete',
@@ -60,6 +61,10 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
      *
      * 공통 어설션은 AssertsIdentityPolicyDeclaration trait 에 위임하고,
      * 게시판 도메인 고유 검사(scope=hook, purpose=sensitive_action) 만 추가로 검증한다.
+     *
+     * @scenario stage=sync, source=module
+     *
+     * @effects board_identity_policies_synced_from_module_declaration
      */
     public function test_identity_policies_are_synced_for_module_source(): void
     {
@@ -80,6 +85,10 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
     /**
      * 운영자가 enabled 토글 시 user_overrides 에 'enabled' 가 기록되고,
      * 모듈 재동기화(updateModule 시뮬레이션) 후에도 운영자 값이 보존된다.
+     *
+     * @scenario stage=resync, source=module
+     *
+     * @effects board_identity_policy_user_overrides_preserved
      */
     public function test_user_overrides_preserved_on_resync(): void
     {
@@ -92,6 +101,10 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
 
     /**
      * cleanupStalePolicies — 모듈이 정책을 1 개 제거하면 (시뮬레이션) 그 정책이 DB 에서 사라진다.
+     *
+     * @scenario stage=resync, source=module
+     *
+     * @effects board_identity_stale_policies_removed
      */
     public function test_stale_policies_are_cleaned_up(): void
     {
@@ -105,6 +118,10 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
 
     /**
      * 게시판은 신규 purpose 를 등록하지 않는다(코어 sensitive_action 재사용).
+     *
+     * @scenario stage=sync, source=module
+     *
+     * @effects board_identity_declares_no_custom_purposes
      */
     public function test_no_custom_purposes_declared(): void
     {
@@ -122,6 +139,10 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
      * 게시판 self 정책은 자기 글 삭제·자기 댓글 삭제·신고 작성·첫 글 작성 4건이며,
      * admin 정책과 같은 훅 (`*.before_delete` / `*.before_create`) 을 공유하나
      * `applies_to=self` 분기로 일반 사용자에게만 강제된다.
+     *
+     * @scenario stage=sync, source=module, scope=self
+     *
+     * @effects board_identity_self_policies_declared_for_user_domain
      */
     public function test_self_policies_are_declared_for_user_domain(): void
     {
@@ -194,7 +215,13 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         return $admin->fresh();
     }
 
-    /** D2 — admin 정책이 enabled+admin 사용자에게 enforce 발동 */
+    /**
+     * D2 — admin 정책이 enabled+admin 사용자에게 enforce 발동
+     *
+     * @scenario stage=enforce, actor=admin, policy=post_delete
+     *
+     * @effects board_identity_post_delete_enforced_for_admin
+     */
     public function test_post_delete_enforces_for_admin(): void
     {
         $policy = $this->enabledPolicy('sirsoft-board.post.delete');
@@ -204,7 +231,13 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         $service->enforce($policy, $this->adminUser(), []);
     }
 
-    /** D10 — admin 정책이 일반 사용자 우회 */
+    /**
+     * D10 — admin 정책이 일반 사용자 우회
+     *
+     * @scenario stage=enforce, actor=user, policy=post_blind
+     *
+     * @effects board_identity_admin_policy_skipped_for_regular_user
+     */
     public function test_post_blind_skips_for_regular_user(): void
     {
         $policy = $this->enabledPolicy('sirsoft-board.post.blind');
@@ -214,6 +247,13 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * D4 — 신고 일괄 처리 정책이 admin 에게 enforce 발동 (게시글 일괄 처리와 같은 짜임)
+     *
+     * @scenario stage=enforce, actor=admin, policy=report_bulk_action
+     *
+     * @effects board_identity_bulk_action_enforced_for_admin
+     */
     public function test_report_bulk_action_enforces_for_admin(): void
     {
         $policy = $this->enabledPolicy('sirsoft-board.report.bulk_action');
@@ -223,6 +263,13 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         $service->enforce($policy, $this->adminUser(), []);
     }
 
+    /**
+     * D5 — admin 정책은 일반 사용자에게 발동하지 않는다
+     *
+     * @scenario stage=enforce, actor=user, policy=report_delete
+     *
+     * @effects board_identity_admin_policy_skipped_for_regular_user
+     */
     public function test_report_delete_skips_for_regular_user(): void
     {
         $policy = $this->enabledPolicy('sirsoft-board.report.delete');
@@ -236,6 +283,10 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
      * 보드 4개 정책 라이프사이클 매트릭스 — Service-level (admin scope, sensitive_action purpose).
      *
      * @dataProvider boardLifecycleProvider
+     *
+     * @scenario stage=enforce, actor=admin, policy=all_declared
+     *
+     * @effects board_identity_policy_lifecycle_verified_per_policy
      */
     public function test_board_policy_full_service_lifecycle(string $policyKey, int $graceMinutes): void
     {
@@ -306,7 +357,13 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         ]);
     }
 
-    /** D12 — post.delete grace=5 윈도우 내 인증 이력이 있으면 enforce skip */
+    /**
+     * D12 — post.delete grace=5 윈도우 내 인증 이력이 있으면 enforce skip
+     *
+     * @scenario stage=enforce, actor=admin, policy=post_delete
+     *
+     * @effects board_identity_grace_window_skips_enforcement
+     */
     public function test_post_delete_grace_window_skips(): void
     {
         $admin = $this->adminUser();

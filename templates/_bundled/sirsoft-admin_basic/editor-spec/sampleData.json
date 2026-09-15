@@ -1,6 +1,70 @@
 {
   "comment": "admin 자체 + 코어 SSoT 도메인. locales/admin_menus/me/installed_modules/active_plugins/users 등. 실제 데이터소스 ID 는 착수 시점 admin 레이아웃 data_sources 로 재검증 — 본 블록은 코어 SSoT/공통 폴백.",
   "byDataSourceId": {
+    "memberNotifications": {
+      "data": {
+        "data": [
+          {
+            "id": "00000000-0000-4000-8000-000000000201",
+            "member": {
+              "uuid": "00000000-0000-4000-8000-000000000101",
+              "name": "김서연",
+              "email": "seoyeon@example.com",
+              "is_withdrawn": false
+            },
+            "type": "App\\\\Notifications\\\\BoardCommentNotification",
+            "type_label": "댓글 알림",
+            "subject": "회원님의 글에 새 댓글이 달렸습니다",
+            "body_excerpt": "맛집 추천해요 — 저도 가봤는데 좋았어요.",
+            "url": "/board/free/1201",
+            "read_at": null,
+            "is_read": false,
+            "created_at": "2026-09-13 14:02"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000202",
+            "member": {
+              "uuid": "00000000-0000-4000-8000-000000000102",
+              "name": "박지훈",
+              "email": "jihun@example.com",
+              "is_withdrawn": false
+            },
+            "type": "App\\\\Notifications\\\\OrderShippedNotification",
+            "type_label": "주문 알림",
+            "subject": "주문하신 상품이 발송되었습니다",
+            "body_excerpt": "송장번호 1234-5678-9012 로 발송되었습니다.",
+            "url": "/mypage/orders/7781",
+            "read_at": "2026-09-13 09:31",
+            "is_read": true,
+            "created_at": "2026-09-12 21:18"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000203",
+            "member": null,
+            "type": "App\\\\Notifications\\\\SystemNoticeNotification",
+            "type_label": "시스템 알림",
+            "subject": "정기 점검 안내",
+            "body_excerpt": null,
+            "url": null,
+            "read_at": null,
+            "is_read": false,
+            "created_at": "2026-09-10 03:00"
+          }
+        ],
+        "abilities": {
+          "can_delete": true
+        },
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 20,
+          "total": 3,
+          "from": 1,
+          "to": 3,
+          "has_more_pages": false
+        }
+      }
+    },
     "trustedProxy": {
       "data": {
         "status": "warning",
@@ -11411,31 +11475,6 @@
           "subtitle": "고객",
           "description": "신규 주문이 접수되었습니다.",
           "time": "2026-05-28T12:10:00+09:00"
-        }
-      ]
-    },
-    "dashboard_recent_notifications": {
-      "comment": "대시보드 최근 발송 알림 (admin_dashboard.json — {{(dashboard_recent_notifications?.data ?? []).length}}).",
-      "data": [
-        {
-          "id": 10,
-          "type": "email",
-          "channel": "email",
-          "recipient": "user@example.com",
-          "subject": "주문 확인",
-          "status": "sent",
-          "time": "3시간 전",
-          "timestamp": "2026-06-03 13:45:00"
-        },
-        {
-          "id": 9,
-          "type": "sms",
-          "channel": "sms",
-          "recipient": "010-1234-5678",
-          "subject": "배송 알림",
-          "status": "failed",
-          "time": "1일 전",
-          "timestamp": "2026-06-02 10:15:00"
         }
       ]
     },

@@ -5,18 +5,20 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 205개 (루트: `resources/layouts`).
+레이아웃 209개 (루트: `resources/layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 205개 |
+| `admin` | 209개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
 | `admin_ecommerce_brand_index` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_cart_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_category_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_deposit_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_excel_download_index` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_inquiry_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_main_banner_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_mileage_transaction_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_order_detail` | `admin` | 화면 | `_admin_base` |
@@ -38,6 +40,8 @@
 | `admin_ecommerce_settings` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_shipping_policy_form` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_shipping_policy_list` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_user_address_index` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_wishlist_index` | `admin` | 화면 | `_admin_base` |
 | `_modal_delete_confirm` | `admin` | partial | - |
 | `_modal_editing_confirm` | `admin` | partial | - |
 | `_panel_brand_list` | `admin` | partial | - |

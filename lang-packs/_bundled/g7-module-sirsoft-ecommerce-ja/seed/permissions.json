@@ -294,5 +294,45 @@
   "sirsoft-ecommerce.user-shipping-country.manage": {
     "name": "会員配送国変更",
     "description": "会員ごとの配送国の変更"
+  },
+  "sirsoft-ecommerce.inquiries.read": {
+    "name": "お問い合わせ閲覧",
+    "description": "全会員商品お問い合わせリスト閲覧"
+  },
+  "sirsoft-ecommerce.wishlists": {
+    "name": "お気に入り管理",
+    "description": "全会員お気に入り閲覧·削除権限"
+  },
+  "sirsoft-ecommerce.wishlists.read": {
+    "name": "お気に入り閲覧",
+    "description": "お気に入り閲覧"
+  },
+  "sirsoft-ecommerce.wishlists.manage": {
+    "name": "お気に入り削除",
+    "description": "お気に入り削除"
+  },
+  "sirsoft-ecommerce.carts": {
+    "name": "カート管理",
+    "description": "全会員カート閲覧·削除権限"
+  },
+  "sirsoft-ecommerce.carts.read": {
+    "name": "カート閲覧",
+    "description": "カート閲覧"
+  },
+  "sirsoft-ecommerce.carts.manage": {
+    "name": "カート削除",
+    "description": "カート削除"
+  },
+  "sirsoft-ecommerce.user-addresses": {
+    "name": "会員配送先管理",
+    "description": "全会員配送先閲覧·削除権限"
+  },
+  "sirsoft-ecommerce.user-addresses.read": {
+    "name": "配送先閲覧",
+    "description": "配送先閲覧"
+  },
+  "sirsoft-ecommerce.user-addresses.manage": {
+    "name": "配送先削除",
+    "description": "配送先削除"
   }
 }

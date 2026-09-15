@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
 use Modules\Sirsoft\Board\Console\Commands\AggregateBoardStatsCommand;
+use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardScrap;
 use Modules\Sirsoft\Board\Console\Commands\PruneAttachmentsCommand;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
 use Modules\Sirsoft\Board\Repositories\BoardRepository;
@@ -92,11 +93,15 @@ class BoardServiceProvider extends BaseModuleServiceProvider
      */
     protected array $commands = [
         AggregateBoardStatsCommand::class,
+        // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
+        PlaywrightSeedBoardScrap::class,
         PruneAttachmentsCommand::class,
     ];
 
     /**
      * 서비스 부트스트랩
+     *
+     * @return void
      */
     public function boot(): void
     {

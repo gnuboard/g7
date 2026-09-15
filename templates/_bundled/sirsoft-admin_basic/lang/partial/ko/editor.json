@@ -1633,6 +1633,7 @@
     "modules": "모듈 목록",
     "notificationChannels": "알림 채널",
     "notificationDefinitions": "알림 정의",
+    "memberNotifications": "회원 알림함",
     "notificationLogs": "알림 로그",
     "notification_unread_count": "읽지 않은 알림 수",
     "notification_ws": "알림 (실시간)",

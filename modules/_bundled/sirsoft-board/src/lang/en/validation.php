@@ -227,6 +227,22 @@ return [
 
     // Post validation
     'post' => [
+        'search_field' => [
+            'in' => 'Invalid search target.',
+        ],
+        'bulk' => [
+            'ids' => [
+                'required' => 'Post IDs are required.',
+                'array' => 'Post IDs must be an array.',
+                'min' => 'Select at least one post.',
+                'max' => 'You can select up to :max posts at a time.',
+                'integer' => 'Post ID must be an integer.',
+                'distinct' => 'Post IDs must not be duplicated.',
+            ],
+            'reason' => [
+                'max' => 'Reason cannot exceed :max characters.',
+            ],
+        ],
         'title' => [
             'required' => 'Title is required.',
             'string' => 'Title must be a string.',
@@ -296,6 +312,10 @@ return [
 
     // Field attributes
     'attributes' => [
+        'scrap' => [
+            'ids' => 'Scrap IDs',
+            'search_field' => 'Search target',
+        ],
         'settings' => [
             // basic_defaults
             'basic_defaults.type' => 'Board Type',
@@ -618,5 +638,21 @@ return [
         ],
         'daily_limit_exceeded' => 'You have exceeded the daily report limit (:limit reports).',
         'rejection_limit_exceeded' => 'Reporting is restricted due to :count rejections within the last :days days. Please try again later.',
+    ],
+
+    // Scrap validation messages
+    'scrap' => [
+        'ids' => [
+            'required' => 'Scrap IDs are required.',
+            'array' => 'Scrap IDs must be an array.',
+            'min' => 'Select at least one scrap.',
+            'max' => 'You can select up to :max scraps at a time.',
+            'integer' => 'Scrap ID must be an integer.',
+            'distinct' => 'Scrap IDs must not be duplicated.',
+            'exists' => 'The scrap does not exist.',
+        ],
+        'search_field' => [
+            'in' => 'Invalid search target.',
+        ],
     ],
 ];

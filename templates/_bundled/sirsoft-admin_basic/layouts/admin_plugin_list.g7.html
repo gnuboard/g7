@@ -113,7 +113,9 @@
         </button>
       </div>
       <div data-ref="auto_deactivated_banner_wrapper" data-if="{{(auto_deactivated_banner?.data?.items?.plugins?.length ?? 0) > 0}}" class="alert-warning" role="alert">
-        <div class="flex-start justify-between gap-4">
+        <!-- `alert-warning` 이 가로 flex 라 w-full 이 없으면 이 줄이 내용 폭으로 줄어
+          닫기 버튼이 본문에 달라붙는다. -->
+        <div class="flex-start justify-between gap-4 w-full">
           <div class="flex-start gap-3 flex-1">
             <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
             <div class="flex-1 min-w-0">

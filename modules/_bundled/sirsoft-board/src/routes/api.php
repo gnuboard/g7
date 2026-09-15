@@ -8,6 +8,7 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\CommentController as AdminCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\PostController as AdminPostController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\PostScrapController as AdminPostScrapController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\ReportController as AdminReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\AttachmentController as UserAttachmentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\BoardController as UserBoardController;
@@ -274,6 +275,36 @@ Route::prefix('admin/reports')->middleware(['auth:sanctum', 'admin', 'throttle:6
 
 /*
 |--------------------------------------------------------------------------
+| Admin Scrap Routes (스크랩 관리)
+|--------------------------------------------------------------------------
+|
+| 최종 URL 예시: /api/modules/sirsoft-board/admin/scraps
+| 최종 Name 예시: api.modules.sirsoft-board.admin.scraps.index
+|
+| 스크랩은 회원 소유 데이터라 게시판 경계를 넘어 조회되므로 게시판별 권한이 아니라
+| 모듈 레벨 권한(sirsoft-board.scraps.*)을 쓴다 (신고 관리와 동형).
+|
+*/
+Route::prefix('admin/scraps')->middleware(['auth:sanctum', 'admin', 'throttle:600,1'])->name('admin.scraps.')->group(function () {
+    // 일괄 삭제 — /{id} 보다 먼저 선언해야 'bulk' 가 id 로 잡히지 않는다
+    Route::delete('/bulk', [AdminPostScrapController::class, 'bulkDestroy'])
+        ->middleware('permission:admin,sirsoft-board.scraps.manage')
+        ->name('bulk-destroy');
+
+    // 전 회원 스크랩 목록
+    Route::get('/', [AdminPostScrapController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.scraps.view')
+        ->name('index');
+
+    // 스크랩 개별 삭제 (소유자 무관)
+    Route::delete('/{id}', [AdminPostScrapController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-board.scraps.manage')
+        ->name('destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Admin Post Routes (게시글 관리)
 |--------------------------------------------------------------------------
 |
@@ -296,6 +327,21 @@ Route::prefix('admin/board/{slug}/posts')->middleware(['auth:sanctum', 'admin', 
     Route::get('/', [AdminPostController::class, 'index'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.posts.read')
         ->name('index');
+
+    // 일괄 처리 3종 — /{id} 라우트들보다 **먼저** 선언해야 'bulk' 가 id 로 잡히지 않는다.
+    // 셋 다 admin.manage 를 요구한다(단건 삭제의 「본인 글이면 posts.write」 완화를 일괄에 적용하면
+    // 한 요청으로 남의 글까지 섞여 들어갈 수 있다).
+    Route::delete('/bulk', [AdminPostController::class, 'bulkDestroy'])
+        ->middleware('permission:admin,sirsoft-board.{slug}.admin.manage')
+        ->name('bulk-destroy');
+
+    Route::patch('/bulk-blind', [AdminPostController::class, 'bulkBlind'])
+        ->middleware('permission:admin,sirsoft-board.{slug}.admin.manage')
+        ->name('bulk-blind');
+
+    Route::patch('/bulk-restore', [AdminPostController::class, 'bulkRestore'])
+        ->middleware('permission:admin,sirsoft-board.{slug}.admin.manage')
+        ->name('bulk-restore');
 
     // 게시글 상세 조회
     Route::get('/{id}', [AdminPostController::class, 'show'])
@@ -530,8 +576,14 @@ Route::get('/me/scraps', [UserPostScrapController::class, 'index'])
     ->middleware(['auth:sanctum', 'throttle:600,1'])
     ->name('me.scraps.index');
 
+// 마이페이지 스크랩 선택 해제 (본문 JSON 의 ids[], 본인 소유만) — /{id} 보다 먼저 선언한다
+Route::delete('/me/scraps', [UserPostScrapController::class, 'bulkDestroy'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.scraps.bulk-destroy');
+
 // 마이페이지 스크랩 개별 삭제 (레코드 ID 기준, 본인 소유만)
 Route::delete('/me/scraps/{id}', [UserPostScrapController::class, 'destroy'])
+    ->whereNumber('id')
     ->middleware(['auth:sanctum', 'throttle:600,1'])
     ->name('me.scraps.destroy');
 

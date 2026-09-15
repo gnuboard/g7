@@ -76,6 +76,11 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.identity.after_verify' => ['method' => 'handleIdentityVerified', 'priority' => 20, 'sync' => true],
             'core.identity.challenge_expired' => ['method' => 'handleIdentityExpired', 'priority' => 20, 'sync' => true],
 
+            // ─── MemberNotification (회원 알림함 — 관리자 조회·삭제) ───
+            // 관리자가 남의 수신함을 지우는 행위다. 무엇이 사라졌는지 남기지 않으면
+            // 회원이 «알림이 없어졌다» 고 물었을 때 되짚을 근거가 없다.
+            'core.member_notification.after_bulk_delete' => ['method' => 'handleMemberNotificationAfterBulkDelete', 'priority' => 20],
+
             // ─── Role ───
             'core.role.after_create' => ['method' => 'handleRoleAfterCreate', 'priority' => 20],
             'core.role.after_update' => ['method' => 'handleRoleAfterUpdate', 'priority' => 20],
@@ -409,6 +414,29 @@ class CoreActivityLogListener implements HookListenerInterface
             'description_key' => 'activity_log.description.auth_record_consents',
             'user_id' => $user->id,
             'ip_address' => $ip,
+        ]);
+    }
+
+    /**
+     * 회원 알림함 일괄 삭제 로그 기록
+     *
+     * 훅은 루프 앞뒤로 한 번씩만 발화하므로 로그도 건당이 아니라 **일괄 1건**이다.
+     * 지운 id 목록을 properties 에 실어 어느 알림이 사라졌는지 되짚을 수 있게 한다.
+     *
+     * @param  array<int, string>  $ids  삭제 요청된 알림 uuid 목록
+     * @param  int  $count  실제로 삭제된 건수
+     * @return void
+     */
+    public function handleMemberNotificationAfterBulkDelete(array $ids, int $count): void
+    {
+        $this->logActivity('member_notification.bulk_delete', [
+            'description_key' => 'activity_log.description.member_notification_bulk_delete',
+            'description_params' => ['count' => $count],
+            'properties' => [
+                'ids' => array_values($ids),
+                'requested_count' => count($ids),
+                'deleted_count' => $count,
+            ],
         ]);
     }
 

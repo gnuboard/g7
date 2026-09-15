@@ -34,5 +34,8 @@
   },
   "admin-schedules": {
     "name": "スケジュール管理"
+  },
+  "admin-member-notifications": {
+    "name": "会員通知ボックス"
   }
 }

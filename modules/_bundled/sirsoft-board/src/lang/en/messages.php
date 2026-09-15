@@ -296,6 +296,23 @@ return [
         'not_found' => 'Scrap not found.',
         'scrap_disabled' => 'Scrap is disabled for this board.',
         'post_not_found' => 'Post not found.',
+        'bulk_removed' => ':count scrap(s) removed.',
+        'admin' => [
+            'retrieved' => 'Scrap list retrieved.',
+            'retrieve_failed' => 'Failed to retrieve scrap list.',
+            'removed' => 'Scrap deleted.',
+            'bulk_removed' => ':count scrap(s) deleted.',
+            'bulk_delete_failed' => 'Failed to delete scraps in bulk.',
+            'permission_denied' => 'You do not have permission to manage scraps.',
+        ],
+    ],
+
+    // Post bulk action messages
+    'posts_bulk' => [
+        'delete_success' => ':count post(s) deleted. (:skipped skipped)',
+        'blind_success' => ':count post(s) blinded. (:skipped skipped)',
+        'restore_success' => ':count post(s) restored. (:skipped skipped)',
+        'action_failed' => 'Failed to process posts in bulk.',
     ],
 
     // Board type management messages

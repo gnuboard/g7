@@ -348,14 +348,20 @@
         "location_info": "위치정보",
         "profile_memo": "프로필/메모",
         "activity_info": "활동정보",
-        "consent_info": "동의이력"
+        "consent_info": "동의이력",
+        "notifications_info": "알림함"
       },
       "unlock": "잠금 해제",
       "unlock_success": "계정 잠금이 해제되었습니다.",
       "lock_status": "계정 잠금 상태",
       "locked_permanently_value": "잠김 (무기한 — 관리자 해제 필요)",
       "locked_until_value": "잠김 ({{until}} 까지)",
-      "not_locked_value": "정상"
+      "not_locked_value": "정상",
+      "notifications": {
+        "total": "총 알림",
+        "unread": "안 읽음",
+        "view_inbox": "알림함 보기"
+      }
     }
   },
   "language_packs": {
@@ -2612,6 +2618,64 @@
     "license_text": "라이선스",
     "view_license": "라이선스 보기"
   },
+  "member_notification": {
+    "page_title": "회원 알림함",
+    "page_description": "회원이 받은 알림(수신함)을 조회하고 삭제합니다.",
+    "search_placeholder": "검색어를 입력하세요",
+    "total_count": "총 {{count}}건",
+    "col_created_at": "수신일시",
+    "col_member": "회원",
+    "col_type": "종류",
+    "col_subject": "제목",
+    "col_read_at": "읽음",
+    "deleted_member": "삭제된 회원",
+    "empty_message": "조회된 알림이 없습니다.",
+    "badge": {
+      "read": "읽음",
+      "unread": "안 읽음"
+    },
+    "filter": {
+      "search_type_all": "전체",
+      "search_type_recipient": "수신자",
+      "search_type_subject": "제목",
+      "search_type_body": "본문",
+      "read_label": "읽음 상태",
+      "read_all": "전체",
+      "read_unread": "안 읽음",
+      "read_read": "읽음",
+      "created_label": "수신 기간",
+      "member_filter_notice": "특정 회원의 알림만 표시하고 있습니다.",
+      "member_filter_clear": "회원 필터 해제",
+      "search_button": "검색",
+      "reset_button": "초기화"
+    },
+    "sort": {
+      "created_at_desc": "최신순",
+      "created_at_asc": "오래된순",
+      "read_at_desc": "읽음순"
+    },
+    "detail": {
+      "body_label": "본문",
+      "no_body": "본문 내용이 없습니다.",
+      "type_label": "알림 타입:",
+      "url_label": "연결 주소:"
+    },
+    "action": {
+      "view_member": "회원 정보 보기",
+      "filter_by_member": "이 회원의 알림만 보기"
+    },
+    "delete": {
+      "button": "삭제",
+      "selected_count": "{{count}}건 선택",
+      "bulk_button": "선택 삭제",
+      "confirm_title": "알림 삭제",
+      "confirm_message": "선택한 알림을 삭제하시겠습니까? 회원의 알림함에서도 사라지며 되돌릴 수 없습니다.",
+      "success": "알림이 삭제되었습니다.",
+      "bulk_confirm_title": "알림 일괄 삭제 확인",
+      "bulk_confirm_message": "선택한 알림을 모두 삭제하시겠습니까? 회원의 알림함에서도 사라지며 되돌릴 수 없습니다.",
+      "bulk_success": "선택한 알림이 모두 삭제되었습니다."
+    }
+  },
   "notification_log": {
     "page_title": "알림 발송 이력",
     "page_description": "시스템에서 발송한 알림의 이력을 확인합니다.",
@@ -2945,6 +3009,10 @@
       "template_uninstall_modal": "템플릿 제거 확인",
       "template_update_modal": "템플릿 업데이트",
       "template_manifest_preview_drawer": "템플릿 매니페스트 미리보기"
+    },
+    "member_notification_list": {
+      "delete_confirm_modal": "회원 알림 삭제 확인",
+      "bulk_delete_confirm_modal": "회원 알림 일괄 삭제 확인"
     },
     "notification_log_list": {
       "delete_confirm_modal": "알림 로그 삭제 확인",

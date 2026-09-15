@@ -7,8 +7,10 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
+use Modules\Sirsoft\Board\Http\Requests\User\BulkDestroyPostScrapRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\IndexPostScrapRequest;
 use Modules\Sirsoft\Board\Http\Resources\PostScrapCollection;
+use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostScrapService;
 
@@ -89,7 +91,8 @@ class PostScrapController extends AuthBaseController
             $validated = $request->validated();
             $perPage = (int) ($validated['per_page'] ?? 20);
             $search = $validated['search'] ?? null;
-            $scraps = $this->scrapService->paginateByUser(Auth::id(), $perPage, $search);
+            $searchField = $validated['search_field'] ?? PostScrapRepositoryInterface::SEARCH_FIELD_DEFAULT;
+            $scraps = $this->scrapService->paginateByUser(Auth::id(), $perPage, $search, $searchField);
 
             return $this->successWithResource(
                 'sirsoft-board::messages.scrap.retrieved',
@@ -118,6 +121,34 @@ class PostScrapController extends AuthBaseController
             }
 
             return $this->success('sirsoft-board::messages.scrap.removed');
+        } catch (Exception $e) {
+            return $this->error('sirsoft-board::messages.scrap.delete_failed');
+        }
+    }
+
+    /**
+     * 선택한 스크랩을 일괄 해제합니다 (마이페이지 선택 삭제, 본인 소유 레코드만).
+     *
+     * 남의 ID·없는 ID 는 서비스의 소유권 필터에서 조용히 빠지며 deleted_count 로만 드러난다
+     * — 422 로 되돌리면 "그 ID 가 존재하는가" 가 남의 스크랩 ID 탐색 통로가 된다.
+     *
+     * @param  BulkDestroyPostScrapRequest  $request  ID 목록 검증 요청
+     * @return JsonResponse 삭제 결과 (deleted_count)
+     */
+    public function bulkDestroy(BulkDestroyPostScrapRequest $request): JsonResponse
+    {
+        try {
+            $this->logApiUsage('scrap.bulk_destroy');
+
+            $ids = array_map('intval', $request->validated()['ids']);
+            $count = $this->scrapService->removeMany($ids, Auth::id());
+
+            return $this->success(
+                'sirsoft-board::messages.scrap.bulk_removed',
+                ['deleted_count' => $count],
+                200,
+                ['count' => $count]
+            );
         } catch (Exception $e) {
             return $this->error('sirsoft-board::messages.scrap.delete_failed');
         }

@@ -2,14 +2,19 @@
 
 > **소유**: 모듈 `sirsoft-board` · **생성**: `php artisan api:docgen` (실측 기반).
 > 아래 표는 자동 생성됩니다. 각 문서를 열면 엔드포인트별 파라미터·응답·예시를 볼 수 있습니다.
+>
+> **이슈 #524 주의**: `scraps.md` 행과 `board.md`·총계의 증분은 **손으로 넣었습니다**. `api:docgen` 기본
+> 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)가 막고 있어 이 블록만 다시 굽는 방법이
+> 없는데, 표에 없는 문서는 아무도 찾지 못하기 때문입니다. 가드가 풀려 생성기를 다시 돌리면 이 값들은
+> 생성기 산식으로 덮여도 무방합니다 — `scraps.md` 의 6개 절 중 회원용 2개는 `scrap.md` 와 겹칩니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 11 · **엔드포인트 수**: 83
+- **문서 수**: 12 · **엔드포인트 수**: 92
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
 | [activity-stats.md](activity-stats.md) | `activity-stats` | 1 |
-| [board.md](board.md) | `board` | 18 |
+| [board.md](board.md) | `board` | 21 |
 | [board-activities.md](board-activities.md) | `board-activities` | 1 |
 | [board-types.md](board-types.md) | `board-types` | 4 |
 | [boards.md](boards.md) | `boards` | 37 |
@@ -17,6 +22,7 @@
 | [my-comments.md](my-comments.md) | `my-comments` | 1 |
 | [reports.md](reports.md) | `reports` | 7 |
 | [scrap.md](scrap.md) | `scrap` | 3 |
+| [scraps.md](scraps.md) | `scraps` | 6 |
 | [settings.md](settings.md) | `settings` | 5 |
 | [users.md](users.md) | `users` | 2 |
 

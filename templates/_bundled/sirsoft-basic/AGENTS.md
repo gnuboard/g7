@@ -95,7 +95,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 79개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 167개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 레이아웃 | 168개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 32개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 1개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -160,7 +160,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 149개 | `vitest.config.ts` |
+| Vitest | 152개 | `vitest.config.ts` |
 | Playwright | 8개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 4개 | `tests/scenarios` |
 

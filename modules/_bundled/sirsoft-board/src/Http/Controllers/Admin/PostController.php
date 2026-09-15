@@ -11,6 +11,7 @@ use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
+use Modules\Sirsoft\Board\Http\Requests\Admin\BulkPostActionRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\PostFormDataRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\PostFormMetaRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\PostIndexRequest;
@@ -610,5 +611,76 @@ class PostController extends AdminBaseController
         }
 
         return $this->forbidden('sirsoft-board::messages.permission.denied');
+    }
+
+    /**
+     * 선택한 게시글을 일괄 삭제합니다.
+     *
+     * @param  BulkPostActionRequest  $request  ID 목록 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @return JsonResponse 처리 결과 (affected_count, skipped)
+     */
+    public function bulkDestroy(BulkPostActionRequest $request, string $slug): JsonResponse
+    {
+        return $this->runBulkAction($request, $slug, 'delete', 'sirsoft-board::messages.posts_bulk.delete_success');
+    }
+
+    /**
+     * 선택한 게시글을 일괄 블라인드 처리합니다.
+     *
+     * @param  BulkPostActionRequest  $request  ID 목록 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @return JsonResponse 처리 결과 (affected_count, skipped)
+     */
+    public function bulkBlind(BulkPostActionRequest $request, string $slug): JsonResponse
+    {
+        return $this->runBulkAction($request, $slug, 'blind', 'sirsoft-board::messages.posts_bulk.blind_success');
+    }
+
+    /**
+     * 선택한 게시글을 일괄 복구합니다.
+     *
+     * @param  BulkPostActionRequest  $request  ID 목록 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @return JsonResponse 처리 결과 (affected_count, skipped)
+     */
+    public function bulkRestore(BulkPostActionRequest $request, string $slug): JsonResponse
+    {
+        return $this->runBulkAction($request, $slug, 'restore', 'sirsoft-board::messages.posts_bulk.restore_success');
+    }
+
+    /**
+     * 일괄 처리 3종의 공통 실행부입니다.
+     *
+     * `catch (\Exception)` 만 잡는다 — 본인인증 요구(IdentityVerificationRequiredException)는
+     * `\Error` 를 상속하므로 여기서 잡히지 않고 그대로 올라가 428 로 나간다. 그것을 삼키면
+     * 프론트 인터셉터가 인증 모달을 열 기회를 잃는다.
+     *
+     * @param  BulkPostActionRequest  $request  ID 목록 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $action  처리 종류 (delete|blind|restore)
+     * @param  string  $messageKey  성공 메시지 키
+     * @return JsonResponse 처리 결과
+     */
+    private function runBulkAction(BulkPostActionRequest $request, string $slug, string $action, string $messageKey): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $ids = array_map('intval', $validated['ids']);
+            $reason = $validated['reason'] ?? null;
+
+            $result = $this->postService->bulkAction($slug, $action, $ids, $reason);
+
+            return $this->success($messageKey, $result, 200, [
+                'count' => $result['affected_count'],
+                'skipped' => count($result['skipped']),
+            ]);
+        } catch (ModelNotFoundException $e) {
+            throw new BoardNotFoundException($slug);
+        } catch (BoardNotFoundException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return $this->error('sirsoft-board::messages.posts_bulk.action_failed', 500, $e->getMessage());
+        }
     }
 }

@@ -302,5 +302,20 @@ return [
         'not_found' => 'スクラップが見つかりません。',
         'scrap_disabled' => 'この掲示板はスクラップ機能が無効化されています。',
         'post_not_found' => '投稿が見つかりません。',
+        'bulk_removed' => ':count個のスクラップを解除しました。',
+        'admin' => [
+            'retrieved' => 'スクラップ一覧を閲覧しました。',
+            'retrieve_failed' => 'スクラップ一覧の閲覧に失敗しました。',
+            'removed' => 'スクラップを削除しました。',
+            'bulk_removed' => ':count個のスクラップを削除しました。',
+            'bulk_delete_failed' => 'スクラップ一括削除に失敗しました。',
+            'permission_denied' => 'スクラップ管理の権限がありません。',
+        ],
+    ],
+    'posts_bulk' => [
+        'delete_success' => ':count個の投稿を削除しました。(スキップ :skipped個)',
+        'blind_success' => ':count個の投稿をブラインド処理しました。(スキップ :skipped個)',
+        'restore_success' => ':count個の投稿を復元しました。(スキップ :skipped個)',
+        'action_failed' => '投稿一括処理に失敗しました。',
     ],
 ];

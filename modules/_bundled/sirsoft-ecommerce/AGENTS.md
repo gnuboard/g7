@@ -119,10 +119,10 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 508개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 142개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 33개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 12개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 516개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 147개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 34개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 13개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 9개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -196,10 +196,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 402개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 142개 | `vitest.config.ts` |
-| Playwright | 42개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 93개 | `tests/scenarios` |
+| PHPUnit | 409개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 147개 | `vitest.config.ts` |
+| Playwright | 43개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 96개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

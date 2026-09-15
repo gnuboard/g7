@@ -102,10 +102,10 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 92개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 78개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 16개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 94개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 79개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 17개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 6개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 2개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -156,10 +156,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 160개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 38개 | `vitest.config.ts` |
-| Playwright | 28개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 38개 | `tests/scenarios` |
+| PHPUnit | 165개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 42개 | `vitest.config.ts` |
+| Playwright | 30개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 44개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

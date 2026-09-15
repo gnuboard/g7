@@ -105,6 +105,10 @@ return [
         'shipping_policy_toggle_active' => '배송정책 활성 상태 변경 (:policy_name)',
         'shipping_policy_set_default' => '기본 배송정책 설정 (:policy_name)',
         'shipping_policy_bulk_delete' => '배송정책 일괄 삭제 (:count건)',
+        'wishlist_bulk_delete' => '찜 일괄 삭제 (:count건)',
+        'cart_bulk_delete' => '장바구니 일괄 삭제 (:count건)',
+        'user_address_bulk_delete' => '회원 배송지 일괄 삭제 (:count건)',
+        'product_inquiry_bulk_delete' => '상품문의 일괄 삭제 (:count건)',
         'shipping_policy_bulk_toggle_active' => '배송정책 일괄 활성 상태 변경 (:count건)',
 
         // 배송업체 관리 (Admin)

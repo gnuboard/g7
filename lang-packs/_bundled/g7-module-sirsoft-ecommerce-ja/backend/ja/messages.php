@@ -285,6 +285,9 @@ return [
         'reorder_failed' => '再注文に失敗しました。',
         'reorder_option_not_found' => '商品オプションはもう存在しません。',
         'unknown_product' => '不明な商品',
+        'admin_list_retrieved' => 'カート一覧を閲覧しました。',
+        'admin_deleted' => 'カート項目を削除しました。',
+        'admin_bulk_deleted' => ':count個のカート項目を削除しました。',
     ],
     'checkout' => [
         'created' => '注文書が作成されました。',
@@ -1044,7 +1047,6 @@ return [
         'can_write_checked' => 'レビュー作成可否を確認しました。',
         'can_write_check_failed' => 'レビュー作成可否の確認に失敗しました。',
         'cannot_write' => 'レビューを作成できません。(理由: :reason)',
-        // 作成不可理由ラベル — :reason 置換子に生の識別子ではなく翻訳文を載せる
         'reasons' => [
             'order_option_not_found' => '注文内容が見つかりません',
             'not_own_order' => 'ご本人の注文ではありません',
@@ -1078,6 +1080,9 @@ return [
         'toggle_failed' => 'お気に入り処理に失敗しました。',
         'retrieve_failed' => 'お気に入り一覧の読み込みに失敗しました。',
         'delete_failed' => 'お気に入り削除に失敗しました。',
+        'admin_list_retrieved' => 'お気に入り一覧を閲覧しました。',
+        'admin_deleted' => 'お気に入りを削除しました。',
+        'admin_bulk_deleted' => ':count個のお気に入りを削除しました。',
     ],
     'extra_fee_template' => [
         'list_retrieved' => '追加配送料テンプレート一覧を閲覧しました。',
@@ -1151,5 +1156,15 @@ return [
         'fetched' => '配送国を照会しました。',
         'updated' => '配送国が変更されました。',
         'update_failed' => '配送国の変更に失敗しました。',
+    ],
+    'user_address' => [
+        'admin_list_retrieved' => '会員配送先一覧を閲覧しました。',
+        'admin_deleted' => '配送先を削除しました。',
+        'admin_bulk_deleted' => ':count個の配送先を削除しました。',
+    ],
+    'product_inquiry' => [
+        'admin_list_retrieved' => '商品問い合わせ一覧を閲覧しました。',
+        'admin_deleted' => '商品問い合わせを削除しました。',
+        'admin_bulk_deleted' => ':count個の商品問い合わせを削除しました。',
     ],
 ];

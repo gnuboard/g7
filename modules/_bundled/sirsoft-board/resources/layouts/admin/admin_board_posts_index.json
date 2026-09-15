@@ -253,6 +253,14 @@
                                                     "label": "$t:sirsoft-board.admin.posts.search_fields.title_content"
                                                 },
                                                 {
+                                                    "value": "title",
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.title"
+                                                },
+                                                {
+                                                    "value": "content",
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.content"
+                                                },
+                                                {
                                                     "value": "author",
                                                     "label": "$t:sirsoft-board.admin.posts.search_fields.author"
                                                 }
@@ -741,25 +749,180 @@
                         ]
                     },
                     {
+                        "id": "bulk_actions_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bulk-actions-bar"
+                        },
+                        "children": [
+                            {
+                                "id": "selected_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-body font-medium"
+                                },
+                                "text": "$t:sirsoft-board.admin.posts.bulk.selected_count|count={{(_global.selectedIds_board_posts || []).length}}"
+                            },
+                            {
+                                "id": "bulk_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-2 ml-auto"
+                                },
+                                "children": [
+                                    {
+                                        "id": "bulk_delete",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "갈래를 정하고 직전 사유를 비운다(남겨 두면 다른 갈래의 문장이 그대로 이력에 실린다)",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostAction": "delete",
+                                                    "bulkPostReason": "",
+                                                    "bulkPostLoading": false
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_action_modal"
+                                            }
+                                        ],
+                                        "props": {
+                                            "data-testid": "admin-post-bulk-delete",
+                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.bulk.delete"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_blind",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostAction": "blind",
+                                                    "bulkPostReason": "",
+                                                    "bulkPostLoading": false
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_action_modal"
+                                            }
+                                        ],
+                                        "props": {
+                                            "data-testid": "admin-post-bulk-blind",
+                                            "className": "px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.bulk.blind"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_restore",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostAction": "restore",
+                                                    "bulkPostReason": "",
+                                                    "bulkPostLoading": false
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_action_modal"
+                                            }
+                                        ],
+                                        "props": {
+                                            "data-testid": "admin-post-bulk-restore",
+                                            "className": "px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.bulk.restore"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
                         "id": "posts_data_grid",
                         "type": "composite",
                         "name": "DataGrid",
                         "blur_until_loaded": true,
                         "actions": [
                             {
+                                "comment": "체크한 행들을 전역에 모은다 — 위 일괄 처리 버튼들이 이 목록을 보고 잠기거나 풀린다",
+                                "type": "change",
+                                "event": "onSelectionChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds_board_posts": "{{$args[0]}}"
+                                }
+                            },
+                            {
                                 "comment": "페이지 이동 — 표가 넘겨준 번호(`$args[0]`)를 URL 에 올려 두면 데이터소스가 그것을 읽어 다시 채운다. 걸어 둔 검색·필터는 `mergeQuery` 로 그대로 남는다",
                                 "type": "change",
                                 "event": "onPageChange",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin/board/{{route.slug}}",
-                                    "mergeQuery": true,
-                                    "replace": true,
-                                    "transition_overlay_target": "posts_data_grid__body",
-                                    "query": {
-                                        "page": "{{$args[0]}}"
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "comment": "다음 쪽으로 넘어가면 화면에 없는 글이 선택된 채로 일괄 처리에 실린다 — 먼저 비운다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedIds_board_posts": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{route.slug}}",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "posts_data_grid__body",
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
                                     }
-                                }
+                                ]
                             }
                         ],
                         "props": {
@@ -773,7 +936,10 @@
                             "serverCurrentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
                             "serverTotalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
                             "serverHasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
-                            "selectable": false,
+                            "selectable": "{{posts?.data?.abilities?.can_manage === true}}",
+                            "selectionScope": "page",
+                            "selectedIds": "{{_global.selectedIds_board_posts || []}}",
+                            "idField": "id",
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
                             "columnSelectorText": "$t:common.column_selector",
@@ -1190,6 +1356,413 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "일괄 처리 확인 — 제목·본문이 `_global.bulkPostAction` 으로 갈린다. 삭제는 사유가 없고(이력에 남길 문장이 없다), 블라인드·복구는 사유 칸을 둔다.\n         본인인증 정책이 켜져 있으면 확인 클릭이 428 을 받고 엔진 인터셉터가 인증 모달을 연다 — 여기서는 로딩 표시만 내린다",
+            "id": "bulk_post_action_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "{{_global.bulkPostAction === 'delete' ? '$t:sirsoft-board.admin.posts.bulk.modal.delete_title' : _global.bulkPostAction === 'blind' ? '$t:sirsoft-board.admin.posts.bulk.modal.blind_title' : '$t:sirsoft-board.admin.posts.bulk.modal.restore_title'}}",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "comment": "확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가\n           ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인).",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "data-testid": "admin-post-bulk-modal",
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.bulkPostAction === 'delete'}}",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.delete_confirm|count={{(_global.selectedIds_board_posts || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.bulkPostAction === 'delete'}}",
+                            "props": {
+                                "className": "text-label-subtle mt-1"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.replies_notice"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.bulkPostAction === 'blind'}}",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.blind_confirm|count={{(_global.selectedIds_board_posts || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.bulkPostAction === 'restore'}}",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.restore_confirm|count={{(_global.selectedIds_board_posts || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.bulkPostAction !== 'delete'}}",
+                            "props": {
+                                "className": "mt-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.posts.bulk.modal.reason_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Textarea",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bulkPostReason": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
+                                        "rows": 3,
+                                        "placeholder": "$t:sirsoft-board.admin.posts.bulk.modal.reason_placeholder",
+                                        "value": "{{_global.bulkPostReason || ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "modal-footer-buttons"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "실행 ①  여러 건을 한 요청으로 처리하므로 응답이 늦다 — 그 사이 두 번 눌리면 같은 요청이 겹친다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkPostLoading": true
+                                    }
+                                },
+                                {
+                                    "comment": "실행 ②  갈래마다 메서드와 경로가 다르다. 실패는 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다",
+                                    "type": "click",
+                                    "handler": "switch",
+                                    "params": {
+                                        "value": "{{_global.bulkPostAction}}"
+                                    },
+                                    "cases": {
+                                        "delete": {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_board_posts}}",
+                                                    "reason": "{{_global.bulkPostReason}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "selectedIds_board_posts": [],
+                                                        "bulkPostReason": ""
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "posts"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{result.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_error_modal"
+                                                }
+                                            ]
+                                        },
+                                        "blind": {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-blind",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_board_posts}}",
+                                                    "reason": "{{_global.bulkPostReason}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "selectedIds_board_posts": [],
+                                                        "bulkPostReason": ""
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "posts"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{result.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_error_modal"
+                                                }
+                                            ]
+                                        },
+                                        "restore": {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-restore",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_board_posts}}",
+                                                    "reason": "{{_global.bulkPostReason}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "selectedIds_board_posts": [],
+                                                        "bulkPostReason": ""
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "posts"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{result.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_error_modal"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "admin-post-bulk-confirm",
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-800' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'}}",
+                                "disabled": "{{_global.bulkPostLoading}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.bulkPostLoading}}",
+                                    "text": "$t:common.confirm"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.bulkPostLoading}}",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.processing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-board.admin.posts.bulk.modal.delete_title"
+            }
+        },
+        {
+            "comment": "일괄 처리 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다",
+            "id": "bulk_post_error_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:common.error",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_global.errorMessage || $t:common.error_occurred}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
                                 }
                             ]
                         }

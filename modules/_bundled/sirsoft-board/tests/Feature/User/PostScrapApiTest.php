@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Enums\UserStatus;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
@@ -67,6 +68,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 회원이 게시글을 스크랩 → added=true, 레코드 생성, scrap_count +1
+     *
+     * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+     *
+     * @effects scrap_record_created_on_add, scrap_count_incremented_on_add
      */
     public function test_authenticated_user_can_scrap_post(): void
     {
@@ -119,6 +124,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 본인 글도 스크랩 가능 (확정 07 — 셀프 어뷰징 우려 없음)
+     *
+     * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+     *
+     * @effects scrap_record_created_on_add
      */
     public function test_user_can_scrap_own_post(): void
     {
@@ -133,6 +142,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 미인증 요청 → 401
+     *
+     * @scenario action=toggle_add,actor=guest,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+     *
+     * @effects guest_toggle_rejected_401
      */
     public function test_unauthenticated_cannot_toggle_scrap(): void
     {
@@ -145,6 +158,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * use_scrap=false 게시판 → 403
+     *
+     * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_off,post_state=alive,post_scope=same_board
+     *
+     * @effects scrap_disabled_board_rejected_403
      */
     public function test_toggle_blocked_when_scrap_disabled(): void
     {
@@ -159,6 +176,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 다른 게시판의 postId 로 toggle 요청 → 404 (스코프 검증, 교차 접근 차단)
+     *
+     * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=other_board
+     *
+     * @effects cross_board_post_rejected_404
      */
     public function test_toggle_rejects_post_from_another_board(): void
     {
@@ -184,6 +205,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 스크랩 등록 시 활동 로그(scrap.scrap) 기록
+     *
+     * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+     *
+     * @effects activity_log_scrap_add_written
      */
     public function test_scrap_add_writes_activity_log(): void
     {
@@ -201,6 +226,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 스크랩 해제 시 활동 로그(scrap.unscrap) 기록
+     *
+     * @scenario action=toggle_remove,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+     *
+     * @effects activity_log_scrap_remove_written
      */
     public function test_scrap_remove_writes_activity_log(): void
     {
@@ -223,6 +252,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 스크랩 목록 조회 → 최근 스크랩순
+     *
+     * @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+     *
+     * @effects mypage_list_sorted_recent_first
      */
     public function test_index_returns_scraps_recent_first(): void
     {
@@ -247,6 +280,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 삭제된 원글의 스크랩도 목록에 포함되며 is_deleted=true
+     *
+     * @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=soft_deleted,post_scope=same_board
+     *
+     * @effects mypage_list_includes_deleted_post
      */
     public function test_index_includes_deleted_post_scrap(): void
     {
@@ -307,7 +344,7 @@ class PostScrapApiTest extends BoardTestCase
 
         $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
 
-        $author->forceFill(['status' => \App\Enums\UserStatus::Withdrawn->value])->save();
+        $author->forceFill(['status' => UserStatus::Withdrawn->value])->save();
 
         $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps');
 
@@ -404,6 +441,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 다른 회원의 스크랩 삭제 시도 → 404 (본인 소유 검증)
+     *
+     * @scenario action=mypage_delete,actor=other_user,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+     *
+     * @effects mypage_delete_requires_ownership
      */
     public function test_user_cannot_delete_others_scrap(): void
     {
@@ -419,6 +460,388 @@ class PostScrapApiTest extends BoardTestCase
         $response->assertStatus(404);
         // 소유자 레코드는 그대로 유지
         $this->assertDatabaseHas('board_post_scraps', ['id' => $scrapId]);
+    }
+
+    // ==========================================
+    // 검색 대상 구분 (search_field)
+    // ==========================================
+
+    /**
+     * search_field=title_content (기본) → 제목 매칭·내용 매칭 모두 잡는다.
+     *
+     * @scenario action=mypage_search,search_field=title_content
+     *
+     * @effects mypage_list_search_field_title_content_matches_title_or_content
+     */
+    public function test_index_search_title_content_matches_title_or_content(): void
+    {
+        $user = $this->createUser();
+        $titleHit = $this->createTestPost(['title' => '알파 제목', 'content' => '무관한 본문']);
+        $contentHit = $this->createTestPost(['title' => '무관한 제목', 'content' => '알파 본문 키워드']);
+        $miss = $this->createTestPost(['title' => '베타 제목', 'content' => '베타 본문']);
+
+        foreach ([$titleHit, $contentHit, $miss] as $postId) {
+            $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+        }
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/modules/sirsoft-board/me/scraps?search='.urlencode('알파').'&search_field=title_content'
+        );
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data.data');
+        $ids = array_column($response->json('data.data'), 'post_id');
+        sort($ids);
+        $expected = [$titleHit, $contentHit];
+        sort($expected);
+        $this->assertSame($expected, $ids);
+    }
+
+    /**
+     * search_field=title → 본문에만 있는 키워드는 잡지 않는다.
+     *
+     * @scenario action=mypage_search,search_field=title
+     *
+     * @effects mypage_list_search_field_title_ignores_content
+     */
+    public function test_index_search_title_ignores_content_match(): void
+    {
+        $user = $this->createUser();
+        $titleHit = $this->createTestPost(['title' => '알파 제목', 'content' => '무관한 본문']);
+        $contentOnly = $this->createTestPost(['title' => '무관한 제목', 'content' => '알파 본문 키워드']);
+
+        foreach ([$titleHit, $contentOnly] as $postId) {
+            $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+        }
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/modules/sirsoft-board/me/scraps?search='.urlencode('알파').'&search_field=title'
+        );
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.post_id', $titleHit);
+    }
+
+    /**
+     * search_field=content → 제목에만 있는 키워드는 잡지 않는다 (제보 ② 의 핵심).
+     *
+     * @scenario action=mypage_search,search_field=content
+     *
+     * @effects mypage_list_search_field_content_ignores_title
+     */
+    public function test_index_search_content_ignores_title_match(): void
+    {
+        $user = $this->createUser();
+        $titleOnly = $this->createTestPost(['title' => '알파 제목', 'content' => '무관한 본문']);
+        $contentHit = $this->createTestPost(['title' => '무관한 제목', 'content' => '알파 본문 키워드']);
+
+        foreach ([$titleOnly, $contentHit] as $postId) {
+            $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+        }
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/modules/sirsoft-board/me/scraps?search='.urlencode('알파').'&search_field=content'
+        );
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.post_id', $contentHit);
+    }
+
+    /**
+     * 허용 목록 밖의 search_field → 422 (닫힌 집합 게이트).
+     *
+     * @scenario action=mypage_search
+     *
+     * @effects mypage_list_rejects_invalid_search_field
+     */
+    public function test_index_rejects_invalid_search_field(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/modules/sirsoft-board/me/scraps?search=x&search_field=author'
+        );
+
+        $response->assertStatus(422);
+    }
+
+    // ==========================================
+    // 스크랩 중지 게시판 (use_scrap / is_active)
+    // ==========================================
+
+    /**
+     * use_scrap=false 로 바뀐 게시판의 기존 스크랩은 목록에 남되 scrap_enabled=false 로 표시된다.
+     *
+     * 제보 ③ 의 처치 — 행을 숨기지 않고 화면이 「스크랩 중지」 배지 + 해제만 허용하도록 구분한다.
+     *
+     * @scenario board_setting=use_scrap_off
+     *
+     * @effects mypage_list_flags_scrap_disabled_board
+     */
+    public function test_index_marks_scrap_disabled_when_board_use_scrap_off(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost(['title' => '스크랩 후 중지될 글']);
+
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+
+        // 스크랩을 담은 뒤 게시판이 스크랩 기능을 끈다
+        $this->updateBoardSettings(['use_scrap' => false]);
+
+        $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.post_id', $postId);
+        $response->assertJsonPath('data.data.0.scrap_enabled', false);
+        $response->assertJsonPath('data.data.0.board_deleted', false);
+    }
+
+    /**
+     * 비활성 게시판(is_active=false)의 스크랩도 같은 분기로 표시된다.
+     *
+     * @scenario board_setting=inactive
+     *
+     * @effects mypage_list_flags_inactive_board
+     */
+    public function test_index_marks_scrap_disabled_when_board_inactive(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost(['title' => '비활성 게시판 글']);
+
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+
+        DB::table('boards')->where('id', $this->board->id)->update(['is_active' => false]);
+
+        $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.scrap_enabled', false);
+    }
+
+    /**
+     * 검색에서는 스크랩이 중지된 게시판의 행을 제외한다 (R4 「검색에서는 제외」).
+     *
+     * @scenario action=mypage_search,board_setting=use_scrap_off
+     *
+     * @effects mypage_list_search_excludes_disabled_board
+     */
+    public function test_index_search_excludes_scrap_disabled_rows(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost(['title' => '알파 제목']);
+
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+        $this->updateBoardSettings(['use_scrap' => false]);
+
+        // 기본 목록에는 남아 있다
+        $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data.data');
+
+        // 검색 결과에서는 빠진다
+        $response = $this->actingAs($user)->getJson(
+            '/api/modules/sirsoft-board/me/scraps?search='.urlencode('알파')
+        );
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0, 'data.data');
+    }
+
+    /**
+     * 게시판이 하드 삭제돼 board_id 가 NULL 이 된 스크랩도 목록에 남고 board_deleted=true 로 표시된다.
+     *
+     * @scenario board_setting=board_deleted
+     *
+     * @effects mypage_list_keeps_scraps_of_deleted_board
+     */
+    public function test_index_keeps_scraps_with_null_board_id_and_flags_board_deleted(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost();
+
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+
+        // 게시판 삭제 시 FK nullOnDelete 가 만드는 상태를 그대로 만든다
+        DB::table('board_post_scraps')->where('user_id', $user->id)->update(['board_id' => null]);
+
+        $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.board_deleted', true);
+        $response->assertJsonPath('data.data.0.scrap_enabled', false);
+        $response->assertJsonPath('data.data.0.board_name', null);
+    }
+
+    /**
+     * 스크랩이 중지된 게시판의 행도 개별 해제는 계속 가능하다 (해제만 허용).
+     *
+     * @scenario board_setting=use_scrap_off
+     *
+     * @effects mypage_single_delete_works_for_disabled_row
+     */
+    public function test_destroy_still_works_for_scrap_disabled_row(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost();
+
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+        $scrapId = (int) DB::table('board_post_scraps')->where('user_id', $user->id)->value('id');
+
+        $this->updateBoardSettings(['use_scrap' => false]);
+
+        $response = $this->actingAs($user)->deleteJson("/api/modules/sirsoft-board/me/scraps/{$scrapId}");
+
+        $response->assertStatus(200);
+        $this->assertDatabaseMissing('board_post_scraps', ['id' => $scrapId]);
+    }
+
+    // ==========================================
+    // 마이페이지 선택 해제 (일괄 삭제)
+    // ==========================================
+
+    /**
+     * 내 스크랩만 지워지고 남의 스크랩은 건드리지 않으며, 실제 삭제 건수만 응답한다.
+     *
+     * @scenario action=mypage_bulk_delete
+     *
+     * @effects mypage_bulk_delete_removes_only_owned_rows
+     */
+    public function test_bulk_destroy_removes_only_owned_scraps_and_reports_count(): void
+    {
+        $owner = $this->createUser();
+        $other = $this->createUser();
+
+        $mine1 = $this->createTestPost(['title' => '내 글 1']);
+        $mine2 = $this->createTestPost(['title' => '내 글 2']);
+        $theirs = $this->createTestPost(['title' => '남의 글']);
+
+        $this->actingAs($owner)->postJson($this->toggleUrl($mine1))->assertStatus(200);
+        $this->actingAs($owner)->postJson($this->toggleUrl($mine2))->assertStatus(200);
+        $this->actingAs($other)->postJson($this->toggleUrl($theirs))->assertStatus(200);
+
+        $mineIds = DB::table('board_post_scraps')->where('user_id', $owner->id)->pluck('id')->all();
+        $theirId = (int) DB::table('board_post_scraps')->where('user_id', $other->id)->value('id');
+
+        $response = $this->actingAs($owner)->deleteJson(
+            '/api/modules/sirsoft-board/me/scraps',
+            ['ids' => array_merge($mineIds, [$theirId])]
+        );
+
+        $response->assertStatus(200);
+        // 남의 ID 는 조용히 건너뛰고 건수로만 드러난다 (ID 탐색 방지)
+        $response->assertJsonPath('data.deleted_count', 2);
+
+        foreach ($mineIds as $id) {
+            $this->assertDatabaseMissing('board_post_scraps', ['id' => $id]);
+        }
+        $this->assertDatabaseHas('board_post_scraps', ['id' => $theirId]);
+    }
+
+    /**
+     * 일괄 해제는 원글마다 scrap_count 를 감소시키고 음수로 내려가지 않는다.
+     *
+     * @scenario action=mypage_bulk_delete
+     *
+     * @effects mypage_bulk_delete_decrements_scrap_count_per_post, scrap_count_never_negative
+     */
+    public function test_bulk_destroy_decrements_scrap_count_per_post(): void
+    {
+        $user = $this->createUser();
+        $first = $this->createTestPost(['title' => '집계 1']);
+        $second = $this->createTestPost(['title' => '집계 2']);
+
+        $this->actingAs($user)->postJson($this->toggleUrl($first))->assertStatus(200);
+        $this->actingAs($user)->postJson($this->toggleUrl($second))->assertStatus(200);
+
+        $this->assertSame(1, (int) DB::table('board_posts')->where('id', $first)->value('scrap_count'));
+        $this->assertSame(1, (int) DB::table('board_posts')->where('id', $second)->value('scrap_count'));
+
+        $ids = DB::table('board_post_scraps')->where('user_id', $user->id)->pluck('id')->all();
+
+        $this->actingAs($user)
+            ->deleteJson('/api/modules/sirsoft-board/me/scraps', ['ids' => $ids])
+            ->assertStatus(200);
+
+        $this->assertSame(0, (int) DB::table('board_posts')->where('id', $first)->value('scrap_count'));
+        $this->assertSame(0, (int) DB::table('board_posts')->where('id', $second)->value('scrap_count'));
+    }
+
+    /**
+     * 일괄 해제는 행마다 활동 로그(scrap.unscrap)를 남긴다 — 단건 해제와 같은 훅 경로.
+     *
+     * @scenario action=mypage_bulk_delete
+     *
+     * @effects mypage_bulk_delete_writes_unscrap_log_per_row
+     */
+    public function test_bulk_destroy_writes_unscrap_activity_log_per_row(): void
+    {
+        $user = $this->createUser();
+        $first = $this->createTestPost(['title' => '로그 1']);
+        $second = $this->createTestPost(['title' => '로그 2']);
+
+        $this->actingAs($user)->postJson($this->toggleUrl($first))->assertStatus(200);
+        $this->actingAs($user)->postJson($this->toggleUrl($second))->assertStatus(200);
+
+        $ids = DB::table('board_post_scraps')->where('user_id', $user->id)->pluck('id')->all();
+
+        $before = (int) DB::table('activity_logs')->where('action', 'scrap.unscrap')->count();
+
+        $this->actingAs($user)
+            ->deleteJson('/api/modules/sirsoft-board/me/scraps', ['ids' => $ids])
+            ->assertStatus(200);
+
+        $after = (int) DB::table('activity_logs')->where('action', 'scrap.unscrap')->count();
+
+        $this->assertSame($before + 2, $after);
+    }
+
+    /**
+     * ids 검증 — 누락·빈 배열·상한 초과·정수 아님은 모두 422.
+     *
+     * @scenario action=mypage_bulk_delete
+     *
+     * @effects mypage_bulk_delete_validates_ids
+     */
+    public function test_bulk_destroy_validates_ids(): void
+    {
+        $user = $this->createUser();
+
+        // 누락
+        $this->actingAs($user)->deleteJson('/api/modules/sirsoft-board/me/scraps', [])
+            ->assertStatus(422);
+
+        // 빈 배열
+        $this->actingAs($user)->deleteJson('/api/modules/sirsoft-board/me/scraps', ['ids' => []])
+            ->assertStatus(422);
+
+        // 상한(100) 초과
+        $this->actingAs($user)->deleteJson(
+            '/api/modules/sirsoft-board/me/scraps',
+            ['ids' => range(1, 101)]
+        )->assertStatus(422);
+
+        // 정수 아님
+        $this->actingAs($user)->deleteJson('/api/modules/sirsoft-board/me/scraps', ['ids' => ['abc']])
+            ->assertStatus(422);
+    }
+
+    /**
+     * 비로그인 일괄 해제 → 401.
+     *
+     * @scenario action=mypage_bulk_delete
+     *
+     * @effects guest_toggle_rejected_401
+     */
+    public function test_bulk_destroy_unauthenticated_401(): void
+    {
+        $response = $this->deleteJson('/api/modules/sirsoft-board/me/scraps', ['ids' => [1]]);
+
+        $response->assertStatus(401);
     }
 
     /**

@@ -126,6 +126,36 @@
                     },
                     "children": [
                         {
+                            "comment": "검색 대상 — 댓글 내용(기본)과 원글 제목 중 하나. 「어떤 글에 단 댓글인지」로 찾는 쪽이 자연스러운 경우가 많다",
+                            "id": "my_comments_search_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myCommentsSearchField": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_global.myCommentsSearchField ?? 'content'}}",
+                                "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "options": [
+                                    {
+                                        "value": "content",
+                                        "label": "$t:mypage.board_activities.comment_search_fields.content"
+                                    },
+                                    {
+                                        "value": "post_title",
+                                        "label": "$t:mypage.board_activities.comment_search_fields.post_title"
+                                    }
+                                ]
+                            }
+                        },
+                        {
                             "type": "basic",
                             "name": "Input",
                             "actions": [
@@ -191,6 +221,7 @@
                                                 "target": "global",
                                                 "myCommentsBoard": "",
                                                 "myCommentsSearch": "",
+                                                "myCommentsSearchField": "content",
                                                 "myCommentsSort": "latest",
                                                 "myCommentsPage": 1
                                             }
@@ -273,6 +304,7 @@
                                         "target": "global",
                                         "myCommentsBoard": "",
                                         "myCommentsSearch": "",
+                                        "myCommentsSearchField": "content",
                                         "myCommentsSort": "latest",
                                         "myCommentsPage": 1
                                     }

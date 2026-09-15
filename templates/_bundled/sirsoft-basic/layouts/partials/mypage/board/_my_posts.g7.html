@@ -26,6 +26,17 @@
       </select>
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">
+        <!-- 검색 대상 — 제목만/내용만을 백엔드가 갈라 준다. 담아만 두고 조회는 검색 버튼이 한다 -->
+        <select data-ref="my_posts_search_field_select" value="{{_global.myPostsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <options>
+            <option value="title_content">$t:mypage.board_activities.search_fields.title_content</option>
+            <option value="title">$t:mypage.board_activities.search_fields.title</option>
+            <option value="content">$t:mypage.board_activities.search_fields.content</option>
+          </options>
+          <on type="change">
+            <set-state target="global" myPostsSearchField="{{$event.target.value}}"/>
+          </on>
+        </select>
         <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myPostsSearch ?? ''}}" class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
           <on type="change">
             <!-- 글 제목·본문 검색어 — 타이핑은 담기만 하고 조회는 옆 검색 버튼이 한다 -->
@@ -46,7 +57,7 @@
           <on type="click">
             <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
             <sequence>
-              <set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSort="latest" :myPostsPage="1"/>
+              <set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSearchField="title_content" myPostsSort="latest" :myPostsPage="1"/>
               <refetch-data-source dataSourceId="myPosts"/>
             </sequence>
           </on>
@@ -66,7 +77,7 @@
         <on type="click">
           <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
           <sequence>
-            <set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSort="latest" :myPostsPage="1"/>
+            <set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSearchField="title_content" myPostsSort="latest" :myPostsPage="1"/>
             <refetch-data-source dataSourceId="myPosts"/>
           </sequence>
         </on>

@@ -44,6 +44,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserCurrencyInfoListener;
+use Modules\Sirsoft\Ecommerce\Listeners\UserEcommerceDataInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageCleanupListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
@@ -781,6 +782,18 @@ class Module extends AbstractModule
                     ],
                     'permissions' => [
                         [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '문의 조회',
+                                'en' => 'Read Inquiries',
+                            ],
+                            'description' => [
+                                'ko' => '전 회원 상품문의 목록 조회',
+                                'en' => 'View product inquiries across all members',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
                             'action' => 'update',
                             'name' => [
                                 'ko' => '문의 처리',
@@ -950,6 +963,126 @@ class Module extends AbstractModule
                     ],
                 ],
 
+                // 찜 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                [
+                    'identifier' => 'wishlists',
+                    'resource_route_key' => 'wishlist',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '찜 관리',
+                        'en' => 'Wishlist Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 찜 조회·삭제 권한',
+                        'en' => 'View and delete wishlists across all members',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '찜 조회',
+                                'en' => 'View Wishlists',
+                            ],
+                            'description' => [
+                                'ko' => '찜 조회',
+                                'en' => 'View Wishlists',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '찜 삭제',
+                                'en' => 'Delete Wishlists',
+                            ],
+                            'description' => [
+                                'ko' => '찜 삭제',
+                                'en' => 'Delete Wishlists',
+                            ],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                    ],
+                ],
+                // 장바구니 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                [
+                    'identifier' => 'carts',
+                    'resource_route_key' => 'cart',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '장바구니 관리',
+                        'en' => 'Cart Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 장바구니 조회·삭제 권한',
+                        'en' => 'View and delete carts across all members',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '장바구니 조회',
+                                'en' => 'View Carts',
+                            ],
+                            'description' => [
+                                'ko' => '장바구니 조회',
+                                'en' => 'View Carts',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '장바구니 삭제',
+                                'en' => 'Delete Carts',
+                            ],
+                            'description' => [
+                                'ko' => '장바구니 삭제',
+                                'en' => 'Delete Carts',
+                            ],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                    ],
+                ],
+                // 회원 배송지 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                [
+                    'identifier' => 'user-addresses',
+                    'resource_route_key' => 'user-address',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '회원 배송지 관리',
+                        'en' => 'Member Address Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 배송지 조회·삭제 권한',
+                        'en' => 'View and delete member addresses',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '배송지 조회',
+                                'en' => 'View Addresses',
+                            ],
+                            'description' => [
+                                'ko' => '배송지 조회',
+                                'en' => 'View Addresses',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '배송지 삭제',
+                                'en' => 'Delete Addresses',
+                            ],
+                            'description' => [
+                                'ko' => '배송지 삭제',
+                                'en' => 'Delete Addresses',
+                            ],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                    ],
+                ],
                 // 마일리지 관리 권한
                 [
                     'identifier' => 'mileage',
@@ -2134,6 +2267,7 @@ class Module extends AbstractModule
             ShippingPolicyCacheListener::class,
             MileageTransactionListener::class,
             UserMileageInfoListener::class,
+            UserEcommerceDataInfoListener::class,
             UserCurrencyInfoListener::class,
             UserShippingCountryInfoListener::class,
             AssignDefaultCurrencyOnRegisterListener::class,
@@ -2661,6 +2795,50 @@ class Module extends AbstractModule
                         'icon' => 'fas fa-coins',
                         'order' => 11,
                         'permission' => 'sirsoft-ecommerce.mileage.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '찜 관리',
+                            'en' => 'Wishlist Management',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-wishlists',
+                        'url' => '/admin/ecommerce/wishlists',
+                        'icon' => 'fas fa-heart',
+                        'order' => 12,
+                        'permission' => 'sirsoft-ecommerce.wishlists.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '장바구니 관리',
+                            'en' => 'Cart Management',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-carts',
+                        'url' => '/admin/ecommerce/carts',
+                        'icon' => 'fas fa-cart-shopping',
+                        'order' => 13,
+                        'permission' => 'sirsoft-ecommerce.carts.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '회원 배송지',
+                            'en' => 'Member Addresses',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-user-addresses',
+                        'url' => '/admin/ecommerce/user-addresses',
+                        'icon' => 'fas fa-map-pin',
+                        'order' => 14,
+                        'permission' => 'sirsoft-ecommerce.user-addresses.read',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '상품문의 관리',
+                            'en' => 'Inquiry Management',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-inquiries',
+                        'url' => '/admin/ecommerce/inquiries',
+                        'icon' => 'fas fa-comments',
+                        'order' => 15,
+                        'permission' => 'sirsoft-ecommerce.inquiries.read',
                     ],
                 ],
             ],

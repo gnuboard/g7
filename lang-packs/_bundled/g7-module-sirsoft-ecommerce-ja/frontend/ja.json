@@ -101,6 +101,277 @@
       "save_button": "保存",
       "saved": "会員の配送国が変更されました。",
       "save_failed": "会員の配送国の変更に失敗しました。"
+    },
+    "wishlists": {
+      "title": "お気に入り管理",
+      "description": "全会員が保存したお気に入りを確認し、整理します。",
+      "search_fields": {
+        "member": "会員",
+        "member_id": "会員ID",
+        "email": "メール",
+        "product": "商品名"
+      },
+      "filters": {
+        "search_label": "検索対象",
+        "keyword_label": "検索キーワード",
+        "keyword_placeholder": "検索キーワードを入力",
+        "date_label": "登録日",
+        "search": "検索",
+        "reset": "初期化",
+        "member_filter_notice": "特定会員のお気に入りのみ表示中",
+        "member_filter_clear": "会員フィルター解除"
+      },
+      "columns": {
+        "created_at": "登録日",
+        "member": "会員",
+        "product": "商品"
+      },
+      "badges": {
+        "withdrawn": "退会",
+        "guest": "非会員"
+      },
+      "actions": {
+        "delete": "削除",
+        "view_member": "会員情報"
+      },
+      "bulk": {
+        "selected_count": "{{count}}個選択されました",
+        "delete": "選択削除"
+      },
+      "sort": {
+        "created_at_desc": "最新順",
+        "created_at_asc": "古い順"
+      },
+      "table": {
+        "total_count": "合計{{count}}件",
+        "empty": "お気に入りはありません。"
+      },
+      "modal": {
+        "delete": {
+          "title": "このお気に入りを削除しますか？",
+          "message": "会員のお気に入り一覧から削除されます。商品自体は削除されません。"
+        },
+        "bulk_delete": {
+          "title": "選択したお気に入りを削除しますか？",
+          "message": "選択した{{count}}個のお気に入りを削除しますか？",
+          "deleting": "削除中..."
+        }
+      }
+    },
+    "carts": {
+      "title": "カート管理",
+      "description": "全会員および非会員セッションのカートを確認し、整理します。",
+      "search_fields": {
+        "member": "会員",
+        "member_id": "会員ID",
+        "email": "メール",
+        "product": "商品名"
+      },
+      "filters": {
+        "search_label": "検索対象",
+        "keyword_label": "検索キーワード",
+        "keyword_placeholder": "検索キーワードを入力",
+        "date_label": "追加日",
+        "search": "検索",
+        "reset": "初期化",
+        "owner_label": "区分",
+        "owner_all": "すべて",
+        "owner_member": "会員",
+        "owner_guest": "非会員",
+        "member_filter_notice": "特定会員のカートのみ表示中",
+        "member_filter_clear": "会員フィルター解除"
+      },
+      "columns": {
+        "created_at": "追加日",
+        "member": "会員",
+        "product": "商品",
+        "option": "オプション",
+        "quantity": "数量"
+      },
+      "badges": {
+        "withdrawn": "退会",
+        "guest": "非会員"
+      },
+      "actions": {
+        "delete": "削除",
+        "view_member": "会員情報"
+      },
+      "bulk": {
+        "selected_count": "{{count}}個選択されました",
+        "delete": "選択削除"
+      },
+      "sort": {
+        "created_at_desc": "最新順",
+        "created_at_asc": "古い順"
+      },
+      "table": {
+        "total_count": "合計{{count}}件",
+        "empty": "カート項目がありません。"
+      },
+      "modal": {
+        "delete": {
+          "title": "このカート項目を削除しますか？",
+          "message": "会員のカートから削除されます。商品自体は削除されません。"
+        },
+        "bulk_delete": {
+          "title": "選択したカート項目を削除しますか？",
+          "message": "選択した{{count}}個の項目を削除しますか？",
+          "deleting": "削除中..."
+        }
+      }
+    },
+    "user_addresses": {
+      "title": "会員配送先",
+      "description": "全会員が保存した配送先を確認し、整理します。",
+      "search_fields": {
+        "member": "会員",
+        "member_id": "会員ID",
+        "email": "メール",
+        "recipient": "受取人",
+        "address": "住所"
+      },
+      "filters": {
+        "search_label": "検索対象",
+        "keyword_label": "検索キーワード",
+        "keyword_placeholder": "検索キーワードを入力",
+        "date_label": "登録日",
+        "search": "検索",
+        "reset": "初期化",
+        "is_default_label": "基本配送先",
+        "is_default_all": "すべて",
+        "is_default_only": "基本のみ",
+        "is_default_except": "基本を除外",
+        "member_filter_notice": "特定ユーザーの配送先のみ表示中",
+        "member_filter_clear": "ユーザーフィルター解除"
+      },
+      "columns": {
+        "created_at": "登録日",
+        "member": "会員",
+        "recipient": "受取人",
+        "address": "住所"
+      },
+      "badges": {
+        "withdrawn": "退会",
+        "guest": "非会員",
+        "is_default": "基本"
+      },
+      "actions": {
+        "delete": "削除",
+        "view_member": "会員情報"
+      },
+      "bulk": {
+        "selected_count": "{{count}}件選択されました",
+        "delete": "選択削除"
+      },
+      "sort": {
+        "created_at_desc": "最新順",
+        "created_at_asc": "古い順"
+      },
+      "table": {
+        "total_count": "合計{{count}}件",
+        "empty": "配送先がありません。"
+      },
+      "modal": {
+        "delete": {
+          "title": "この配送先を削除しますか?",
+          "message": "会員の配送先リストから削除されます。既に受け付けられた注文の配送先には影響を与えません。"
+        },
+        "bulk_delete": {
+          "title": "選択した配送先を削除しますか?",
+          "message": "選択した{{count}}件の配送先を削除しますか?",
+          "deleting": "削除中..."
+        }
+      }
+    },
+    "inquiries": {
+      "title": "商品問い合わせ管理",
+      "description": "全会員の商品問い合わせを照会及び整理します。",
+      "search_fields": {
+        "member": "会員",
+        "member_id": "会員ID",
+        "email": "メールアドレス",
+        "product": "商品名",
+        "content": "問い合わせ内容"
+      },
+      "filters": {
+        "search_label": "検索対象",
+        "keyword_label": "検索キーワード",
+        "keyword_placeholder": "検索キーワードを入力",
+        "date_label": "問い合わせ日",
+        "search": "検索",
+        "reset": "初期化",
+        "is_answered_label": "回答状態",
+        "is_answered_all": "すべて",
+        "is_answered_yes": "回答完了",
+        "is_answered_no": "未回答",
+        "member_filter_notice": "特定ユーザーの問い合わせのみ表示中",
+        "member_filter_clear": "ユーザーフィルター解除"
+      },
+      "columns": {
+        "created_at": "問い合わせ日",
+        "member": "会員",
+        "product": "商品",
+        "content": "問い合わせ内容",
+        "status": "回答状態"
+      },
+      "badges": {
+        "withdrawn": "退会",
+        "guest": "非会員"
+      },
+      "status": {
+        "answered": "回答完了",
+        "pending": "未回答"
+      },
+      "content_unavailable": "本文を読み込むことができません",
+      "actions": {
+        "delete": "削除",
+        "view_member": "会員情報",
+        "reply": "回答"
+      },
+      "bulk": {
+        "selected_count": "{{count}}件選択されました",
+        "delete": "選択削除"
+      },
+      "sort": {
+        "created_at_desc": "最新順",
+        "created_at_asc": "古い順"
+      },
+      "table": {
+        "total_count": "合計{{count}}件",
+        "empty": "商品問い合わせがありません。"
+      },
+      "modal": {
+        "delete": {
+          "title": "この問い合わせを削除しますか?",
+          "message": "問い合わせと回答が一緒に削除されます。"
+        },
+        "bulk_delete": {
+          "title": "選択した問い合わせを削除しますか?",
+          "message": "選択した{{count}}件の問い合わせを削除しますか?",
+          "deleting": "削除中..."
+        },
+        "reply": {
+          "title": "お問い合わせに回答する",
+          "content_label": "回答内容",
+          "content_placeholder": "会員に表示する回答を入力してください(最大5000文字)",
+          "submit": "回答を登録",
+          "already_answered": "既に回答済みのお問い合わせです。登録すると回答が追加されます。"
+        }
+      }
+    },
+    "user_ecommerce_data": {
+      "tab_label": "ショッピングデータ",
+      "title": "会員ショッピングデータ",
+      "count_unit": "{{count}}件",
+      "wishlist": "お気に入り",
+      "cart": "カート",
+      "address": "配送先",
+      "inquiry": "商品問い合わせ",
+      "view_wishlists": "お気に入り一覧",
+      "view_carts": "カート",
+      "view_addresses": "配送先",
+      "view_inquiries": "商品問い合わせ",
+      "inquiry_pending": "未回答 {{count}}件"
     }
   },
   "user": {
@@ -166,7 +437,11 @@
       "settings": "設定",
       "shipping_policies": "配送ポリシー一覧",
       "templates": "テンプレート一覧",
-      "paymentSettings": "決済環境設定"
+      "paymentSettings": "決済環境設定",
+      "wishlists": "お気に入り一覧",
+      "carts": "カート一覧",
+      "addresses": "会員配送先一覧",
+      "inquiries": "商品問い合わせ一覧"
     },
     "action": {
       "request_pg_payment": {

@@ -5,19 +5,19 @@
     },
     "container": {
       "label": "コンテナ",
-      "default_child_text": "ここにコンテンツを配置してください"
+      "default_child_text": "ここにコンテンツを挿入してください"
     },
     "flex": {
-      "label": "Flexボックス"
+      "label": "Flex ボックス"
     },
     "grid": {
-      "label": "Gridボックス"
+      "label": "Grid ボックス"
     },
     "section_layout": {
       "label": "セクションレイアウト"
     },
     "three_column_layout": {
-      "label": "3カラムレイアウト"
+      "label": "3段レイアウト"
     },
     "span": {
       "label": "インラインテキスト",
@@ -40,8 +40,8 @@
       "default_text": "小見出し"
     },
     "h4": {
-      "label": "補見出し (H4)",
-      "default_text": "補見出し"
+      "label": "補助見出し (H4)",
+      "default_text": "補助見出し"
     },
     "a": {
       "label": "リンク",
@@ -80,7 +80,7 @@
     "expandable_content": {
       "label": "折りたたみ/展開",
       "default_title": "タイトル",
-      "default_body": "展開して表示されるコンテンツ"
+      "default_body": "展開して表示される内容"
     },
     "tab_navigation": {
       "label": "タブ",
@@ -93,7 +93,7 @@
     },
     "textarea": {
       "label": "複数行入力",
-      "default_placeholder": "複数行のテキストを入力してください"
+      "default_placeholder": "複数行テキストを入力してください"
     },
     "select": {
       "label": "選択ボックス",
@@ -117,8 +117,8 @@
       "default_label": "ファイルをアップロードしてください"
     },
     "avatar_uploader": {
-      "label": "プロフィール画像アップローダー",
-      "default_label": "プロフィール画像を変更"
+      "label": "プロフィール写真アップローダー",
+      "default_label": "プロフィール写真を変更"
     },
     "html_editor": {
       "label": "HTMLエディター",
@@ -145,7 +145,7 @@
     },
     "search_bar": {
       "label": "検索ボックス",
-      "default_placeholder": "検索キーワードを入力してください"
+      "default_placeholder": "検索語を入力してください"
     },
     "avatar": {
       "label": "アバター",
@@ -156,14 +156,14 @@
       "default_name": "ユーザー名"
     },
     "quantity_selector": {
-      "label": "数量選択器"
+      "label": "数量セレクター"
     },
     "product_image_viewer": {
       "label": "商品画像ビューアー",
       "default_alt": "商品画像"
     },
     "post_reactions": {
-      "label": "投稿への反応"
+      "label": "投稿リアクション"
     },
     "group": {
       "design": "デザイン",

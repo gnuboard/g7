@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 92종 / 호출 지점 94곳. 이 중 92종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
+발행 훅 94종 / 호출 지점 99곳. 이 중 94종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -64,19 +64,21 @@
 | `sirsoft-board.permissions.after_create` | action | — | `src/Services/BoardService.php:431` |
 | `sirsoft-board.permissions.after_delete` | action | — | `src/Services/BoardService.php:600` |
 | `sirsoft-board.permissions.after_update` | action | — | `src/Services/BoardService.php:523` |
-| `sirsoft-board.post.after_blind` | action | — | `src/Services/PostService.php:510` |
-| `sirsoft-board.post.after_create` | action | — | `src/Services/PostService.php:285` |
-| `sirsoft-board.post.after_delete` | action | — | `src/Services/PostService.php:469` |
-| `sirsoft-board.post.after_restore` | action | — | `src/Services/PostService.php:574` |
-| `sirsoft-board.post.after_update` | action | — | `src/Services/PostService.php:361` |
-| `sirsoft-board.post.before_blind` | action | — | `src/Services/PostService.php:501` |
-| `sirsoft-board.post.before_create` | action | — | `src/Services/PostService.php:260` |
-| `sirsoft-board.post.before_delete` | action | — | `src/Services/PostService.php:436` |
-| `sirsoft-board.post.before_restore` | action | — | `src/Services/PostService.php:543` |
-| `sirsoft-board.post.before_update` | action | — | `src/Services/PostService.php:334` |
+| `sirsoft-board.post.after_blind` | action | — | `src/Services/PostService.php:546` |
+| `sirsoft-board.post.after_bulk_action` | action | — | `src/Services/PostService.php:692` |
+| `sirsoft-board.post.after_create` | action | — | `src/Services/PostService.php:286` |
+| `sirsoft-board.post.after_delete` | action | — | `src/Services/PostService.php:489` |
+| `sirsoft-board.post.after_restore` | action | — | `src/Services/PostService.php:626` |
+| `sirsoft-board.post.after_update` | action | — | `src/Services/PostService.php:362` |
+| `sirsoft-board.post.before_blind` | action | — | `src/Services/PostService.php:521` |
+| `sirsoft-board.post.before_bulk_action` | action | — | `src/Services/PostService.php:660` |
+| `sirsoft-board.post.before_create` | action | — | `src/Services/PostService.php:261` |
+| `sirsoft-board.post.before_delete` | action | — | `src/Services/PostService.php:437` |
+| `sirsoft-board.post.before_restore` | action | — | `src/Services/PostService.php:579` |
+| `sirsoft-board.post.before_update` | action | — | `src/Services/PostService.php:335` |
 | `sirsoft-board.post.filter_content_thumbnail` | filter | — | `src/Models/Post.php:140` |
-| `sirsoft-board.post.filter_create_data` | filter | — | `src/Services/PostService.php:263` |
-| `sirsoft-board.post.filter_update_data` | filter | — | `src/Services/PostService.php:339` |
+| `sirsoft-board.post.filter_create_data` | filter | — | `src/Services/PostService.php:264` |
+| `sirsoft-board.post.filter_update_data` | filter | — | `src/Services/PostService.php:340` |
 | `sirsoft-board.post.store_validation_rules` | filter | — | `src/Http/Requests/StorePostRequest.php:120` |
 | `sirsoft-board.post.update_validation_rules` | filter | — | `src/Http/Requests/UpdatePostRequest.php:77` |
 | `sirsoft-board.report.after_blind_content` | action | — | `src/Services/ReportService.php:717` |
@@ -93,8 +95,8 @@
 | `sirsoft-board.report.filter_create_data` | filter | — | `src/Services/ReportService.php:232` |
 | `sirsoft-board.roles.after_create` | action | — | `src/Services/BoardService.php:411` |
 | `sirsoft-board.roles.after_delete` | action | — | `src/Services/BoardService.php:604` |
-| `sirsoft-board.scrap.after_toggle` | action | — | `src/Services/PostScrapService.php:58` 외 1곳 |
-| `sirsoft-board.scrap.before_toggle` | action | — | `src/Services/PostScrapService.php:46` |
+| `sirsoft-board.scrap.after_toggle` | action | — | `src/Services/PostScrapService.php:69` 외 4곳 |
+| `sirsoft-board.scrap.before_toggle` | action | — | `src/Services/PostScrapService.php:57` |
 | `sirsoft-board.search.post.index_should_update` | filter | — | `src/Models/Post.php:282` |
 | `sirsoft-board.settings.after_bulk_apply` | action | — | `src/Services/BoardService.php:1368` |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | action | — | `src/Services/BoardService.php:1359` |
@@ -130,6 +132,7 @@
 | `core.user.create_validation_rules` | filter | `UserNotificationSettingsListener` | `addValidationRules` | 10 |
 | `core.user.filter_create_data` | filter | `UserNotificationSettingsListener` | `filterCreateData` | 10 |
 | `core.user.filter_resource_data` | filter | `UserNotificationSettingsListener` | `filterResourceData` | 10 |
+| `core.user.filter_resource_data` | filter | `UserScrapInfoListener` | `injectScrapSummary` | 30 |
 | `core.user.filter_update_data` | filter | `UserNotificationSettingsListener` | `filterUpdateData` | 10 |
 | `core.user.update_profile_validation_rules` | filter | `UserNotificationSettingsListener` | `addValidationRules` | 10 |
 | `core.user.update_validation_rules` | filter | `UserNotificationSettingsListener` | `addValidationRules` | 10 |
@@ -230,6 +233,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | `SeoBoardCacheListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardCacheListener.php` |
 | `SeoBoardSettingsCacheListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardSettingsCacheListener.php` |
 | `UserNotificationSettingsListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/UserNotificationSettingsListener.php` |
+| `UserScrapInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserScrapInfoListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
@@ -246,6 +250,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | 대상 | 설명 |
 |---|---|
 | `resources/extensions/admin-ecommerce-inquiry-settings.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `inquiry_board_setting` |
+| `resources/extensions/admin-user-scraps-tab.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
 | `resources/extensions/admin_dashboard_community.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_dashboard_community` |
 | `resources/extensions/admin_dashboard_quick_menu.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_dashboard_quick_menu` |
 | `resources/extensions/user-notification-detail.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
