@@ -426,8 +426,8 @@ function releaseWorkerLock(string $workerId): void
  *  - db_cleanup / db_migrate / db_seed — 스키마·시드 자체
  *  - {module,plugin,template,user_template}_{install,activate} — 확장 등록 행
  *  - language_pack_install — 언어팩 등록 행
- *  - create_settings_json / complete_flag / config_cache / static_publish — DB 상태를 읽어
- *    산출물을 만드는 마무리 단계
+ *  - create_settings_json / complete_flag / config_cache / route_cache / static_publish —
+ *    DB 상태를 읽어 산출물을 만드는 마무리 단계
  *
  * 보존 대상 (파일시스템·환경 효과라 DROP 과 무관):
  *  - composer_check / composer_install / env_update / key_generate / dependency_precheck
@@ -458,6 +458,7 @@ function isTaskInvalidatedByDbCleanup(string $task): bool
         'create_settings_json' => true,
         'complete_flag' => true,
         'config_cache' => true,
+        'route_cache' => true,
         'static_publish' => true,
     ];
 

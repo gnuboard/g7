@@ -290,6 +290,7 @@ return [
     'task_create_settings_json' => '설정 파일 생성',
     'task_complete_flag' => '설치 완료 처리',
     'task_config_cache' => '설정 캐시 생성',
+    'task_route_cache' => '라우트 캐시 생성',
     'task_static_publish' => '부트스트랩 리소스 정적 게시',
     'task_unknown' => '알 수 없는 작업',
 
@@ -396,11 +397,13 @@ return [
     // 에러 메시지 - Worker (Cache)
     'error_cache_clear_failed' => '캐시 클리어에 실패했습니다',
     'error_config_cache_failed' => '설정 캐시 생성에 실패했습니다',
+    'error_route_cache_failed' => '라우트 캐시 생성에 실패했습니다 (사이트는 정상 동작하며, 확장을 설치·변경하면 다시 생성됩니다)',
     'error_static_publish_failed' => '부트스트랩 리소스 정적 게시에 실패했습니다 (사이트는 API 경로로 정상 동작합니다)',
 
     // 로그 메시지 - Worker (Cache)
     'log_cache_clear_success' => '캐시 클리어 완료',
     'log_config_cache_success' => '설정 캐시 생성 완료',
+    'log_route_cache_success' => '라우트 캐시 생성 완료',
     'log_static_publish_success' => '부트스트랩 리소스 정적 게시 완료',
 
     // 에러 메시지 - Worker (Settings JSON)
