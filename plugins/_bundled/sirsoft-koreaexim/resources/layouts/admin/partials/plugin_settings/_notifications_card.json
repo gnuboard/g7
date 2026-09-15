@@ -1,0 +1,198 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "환율 실패 알림 채널 선택과 활성화"
+    },
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-4"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H3",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-koreaexim.notifications"
+        },
+        {
+            "type": "basic",
+            "name": "Select",
+            "actions": [
+                {
+                    "type": "change",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/plugins/sirsoft-koreaexim/settings",
+                        "mergeQuery": true,
+                        "query": {
+                            "notification_channel": "{{$event.target.value}}"
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "value": "{{query.notification_channel ?? 'mail'}}",
+                "aria-label": "$t:sirsoft-koreaexim.notifications",
+                "options": [
+                    {
+                        "value": "mail",
+                        "label": "$t:sirsoft-koreaexim.channels.mail"
+                    },
+                    {
+                        "value": "database",
+                        "label": "$t:sirsoft-koreaexim.channels.database"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "iteration": {
+                "source": "{{koreaeximNotificationDefinitions?.data?.data ?? []}}",
+                "item_var": "def"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "text": "{{$localized(def.name)}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{def.templates ?? []}}",
+                        "item_var": "template"
+                    },
+                    "props": {
+                        "className": "flex flex-wrap items-center gap-3 my-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{$t('sirsoft-koreaexim.channels.' + template.channel)}}"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/notification-templates/{{template.id}}/toggle-active",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PATCH"
+                                    },
+                                    "onSuccess": {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "koreaeximNotificationDefinitions"
+                                        }
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "label": "{{$localized(def.name) + ' / ' + $t('sirsoft-koreaexim.channels.' + template.channel)}}",
+                                "checked": "{{template.is_active}}",
+                                "disabled": "{{_computed.isNotificationReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "koreaexim_notification_template_form_modal": {
+                                                    "template": "{{JSON.parse(JSON.stringify(template))}}",
+                                                    "definition": "{{def}}",
+                                                    "recipients": "{{JSON.parse(JSON.stringify(template.recipients ?? []))}}",
+                                                    "editLang": "{{$locale}}",
+                                                    "errors": null,
+                                                    "isSaving": false,
+                                                    "roleSearchResults": [],
+                                                    "userSearchResults": []
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "modal_koreaexim_notification_template_edit"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_computed.isNotificationReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-koreaexim.edit_template"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "resetTargetId": "{{def.id}}",
+                                        "resetTargetName": "{{$localized(def.name)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "modal_koreaexim_notification_definition_reset"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_computed.isNotificationReadOnly}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-koreaexim.reset"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

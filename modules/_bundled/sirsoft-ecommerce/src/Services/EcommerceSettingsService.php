@@ -8,9 +8,11 @@ use App\Support\ExtensionStoragePath;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
+use Modules\Sirsoft\Ecommerce\Exceptions\ExchangeRateSaveException;
 use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 
 /**
@@ -356,6 +358,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      *
      * 생성자 상호 주입은 순환이라 lazy 해석하며, `resolved()` 가드로 아직 필요하지 않은
      * 서비스를 저장이 강제로 인스턴스화하지 않게 한다.
+     *
+     * @return void 반환값 없음
      */
     private function flushResolvedCaches(): void
     {
@@ -851,11 +855,91 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     }
 
     /**
-     * 등록된 PG 제공자 목록을 조회합니다. (플러그인 훅 기반)
+     * 플러그인 훅에 등록된 환율 제공자 목록을 조회합니다.
      *
-     * PG 플러그인이 설치되면 훅을 통해 PG사 정보를 등록합니다.
+     * @return array 환율 제공자의 식별자·표시명·관리 통화 정보
+     */
+    public function getRegisteredRateProviders(): array
+    {
+        return HookManager::applyFilters('sirsoft-ecommerce.currency.registered_rate_providers', []);
+    }
+
+    /** 선택값을 보존하면서 현재 등록된 제공자만 해석합니다.
+     * @param  ?array  $providers  providers 입력값
+     * @return ?array 처리 결과
+     */
+    public function getActiveRateProvider(?array $providers = null): ?array
+    {
+        $selected = $this->getSetting('language_currency.rate_provider');
+        foreach ($providers ?? $this->getRegisteredRateProviders() as $provider) {
+            if ($selected && ($provider['id'] ?? null) === $selected) {
+                return $provider;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 선택된 제공자의 환율을 전체 통화 설정에 병합합니다.
+     * 조회용 이름·국기 보강값은 저장하지 않으며 일반 설정 저장 훅을 재발행하지 않습니다.
      *
-     * @return array PG 제공자 배열 [{id, name, icon, supported_methods}, ...]
+     * @param  array  $ratesByCode  ratesByCode 입력값
+     * @param  string  $source  source 입력값
+     * @return array{applied: array, unchanged: array, skipped: array}
+     */
+    public function applyExchangeRates(array $ratesByCode, string $source): array
+    {
+        $result = ['applied' => [], 'unchanged' => [], 'skipped' => []];
+        if ($source === '' || $this->getSetting('language_currency.rate_provider') !== $source) {
+            Log::warning('Exchange rate provider is not selected.', ['source' => $source]);
+
+            return $result;
+        }
+
+        $saved = $this->loadCategorySettings('language_currency');
+        $defaults = $this->getDefaults()['defaults']['language_currency'] ?? [];
+        $effective = array_merge($defaults, $saved);
+        $currencies = $this->mergeCurrenciesByCode(
+            $defaults['currencies'] ?? [],
+            $saved['currencies'] ?? [],
+            $saved[self::REMOVED_CURRENCIES_KEY] ?? []
+        );
+        $base = $effective['default_currency'] ?? 'KRW';
+        foreach ($currencies as &$currency) {
+            $code = $currency['code'];
+            if (! array_key_exists($code, $ratesByCode)) {
+                continue;
+            }
+            $rate = $ratesByCode[$code];
+            if ($code === $base || ! is_numeric($rate) || ! is_finite((float) $rate) || (float) $rate <= 0) {
+                $result['skipped'][] = $code;
+            } elseif (abs((float) ($currency['exchange_rate'] ?? 0) - (float) $rate) <= 1e-9) {
+                $result['unchanged'][] = $code;
+            } else {
+                $currency['exchange_rate'] = (float) $rate;
+                $result['applied'][] = $code;
+            }
+        }
+        unset($currency);
+
+        if ($result['applied'] !== []) {
+            if (! $this->saveSettings(['language_currency' => array_merge($effective, [
+                'default_currency' => $base,
+                'currencies' => $currencies,
+            ])])) {
+                throw new ExchangeRateSaveException;
+            }
+            HookManager::doAction('sirsoft-ecommerce.currency.after_apply_rates', $result, $source);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 등록된 결제 제공자 목록을 반환합니다.
+     *
+     * @return array 처리 결과
      */
     public function getRegisteredPgProviders(): array
     {
@@ -1245,6 +1329,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      *
      * payment.json이 존재하고 order_settings.json이 없을 때
      * 기존 데이터를 order_settings 구조로 변환합니다.
+     *
+     * @return void 반환값 없음
      */
     private function migratePaymentToOrderSettings(): void
     {
@@ -1298,6 +1384,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
 
     /**
      * 캐시 초기화
+     *
+     * @return void 반환값 없음
      */
     public function clearCache(): void
     {

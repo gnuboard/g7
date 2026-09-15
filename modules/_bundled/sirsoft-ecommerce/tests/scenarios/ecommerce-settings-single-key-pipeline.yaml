@@ -28,6 +28,7 @@ axes:
     - normalize_category_data      # 카테고리 단위 정규화 (은행명 다국어)
 
 effects:
+  - runtime_only_flag_not_persisted
   - read_time_enrichment_not_persisted        # 읽기 시점 보강값이 파일에 눌어붙지 않는다
   - other_category_file_untouched             # 단건 저장이 다른 카테고리 파일을 건드리지 않는다
   - removed_currency_tombstone_preserved      # 삭제 통화 tombstone 보존

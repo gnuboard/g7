@@ -6,6 +6,8 @@
  * Messages used when FormRequest validation fails
  */
 return [
+    'exchange_rate_save_failed' => 'Could not save exchange rates.',
+    'exchange_rate_provider_unavailable' => 'This exchange rate provider is unavailable.',
     // Product 1:1 Inquiry validation messages
     'inquiries' => [
         'content' => [
@@ -1595,6 +1597,7 @@ return [
                 'max' => 'Default currency cannot exceed 10 characters.',
             ],
             'currencies' => [
+                'exchange_rate_managed' => ':currency is managed by :provider. Refresh the page.',
                 'duplicate_code' => 'Duplicate currency code found.',
                 'name_required' => 'Currency name must be entered in at least one language.',
                 'code' => [

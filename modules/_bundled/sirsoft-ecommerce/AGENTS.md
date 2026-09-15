@@ -29,7 +29,19 @@
    `pay_nhnkcp` · `pay_nicepayments` · `tosspayments`)에 있고, 그 플러그인들이 이 모듈에
    의존합니다(역방향 아님). 새 PG 는 이 모듈을 고치지 않고 플러그인 추가만으로 붙습니다 —
    결제수단 카탈로그에 자기 능력(`needs_pg` / `pg_locked` / `pg_provider`)을 선언하는 것이
-   그 접합면입니다.
+   그 접합면입니다. **환율 제공자도 같은 규칙입니다** — 모듈은 필터 훅
+   `sirsoft-ecommerce.currency.registered_rate_providers` 로 등록된 목록만 받고, 운영자가 설정 키
+   `language_currency.rate_provider` 로 고릅니다(모듈이 자동 선택하지 않습니다). 제공자 이름·링크·
+   배지 문구는 전부 훅 페이로드에서 오므로 모듈의 `src`·`resources`·`config` 어디에도 특정 제공자
+   식별자(`koreaexim` 등)를 적지 마세요 — 회귀 테스트가 0건을 단언합니다.
+   접합면은 셋입니다. ⑴ 설정 화면 응답 최상위의 `available_rate_providers`(등록 목록, 항상 존재)와
+   `active_rate_provider`(선택값 해석 결과, 없으면 `null`) — `abilities` 가 아니라 카탈로그입니다.
+   ⑵ 환율을 실제로 쓰는 단 하나의 경로 `EcommerceSettingsService::applyExchangeRates($ratesByCode,
+   $source)` — `$source` 가 선택된 제공자가 아니면 거부하므로 제공자가 둘 켜져 있어도 선택되지 않은
+   쪽은 값을 덮어쓰지 못합니다. 통화 전량과 `default_currency` 를 함께 저장해야 tombstone 이
+   오작동하지 않습니다. ⑶ 적용 직후 발행하는 **새 액션** `sirsoft-ecommerce.currency.after_apply_rates`
+   — `settings.after_save` 를 서비스에서 발행하면 컨트롤러 전용 계약이 깨지고 그 훅을 구독하는
+   제공자 플러그인과 무한 재귀합니다.
 2. **금액은 계산기 하나만 지난다.** `OrderCalculationService` 의 9단계 계산이 상품 상세·
    장바구니·체크아웃·주문 생성·결제 완료 검증·부분 취소 **여섯 지점 전부**의 단일 출처입니다.
    화면마다 금액을 다시 계산하면 같은 장바구니가 화면마다 다른 값을 보이게 되고, 그 어긋남은

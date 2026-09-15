@@ -37,6 +37,7 @@
             "public_asset_disk": ""
         },
         "language_currency": {
+            "rate_provider": null,
             "default_currency": "KRW",
             "currencies": [
                 {
@@ -646,6 +647,9 @@
             "expose": true,
             "_comment": "currencies, default_currency만 admin 상품목록/폼에서 참조",
             "fields": {
+                "rate_provider": {
+                    "expose": false
+                },
                 "default_currency": {
                     "expose": true
                 },

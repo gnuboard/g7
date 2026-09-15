@@ -6,6 +6,7 @@
  * Custom exception messages for the ecommerce module
  */
 return [
+    'exchange_rate_save_failed' => 'Failed to save exchange rate settings.',
     // Mileage validation exceptions
     'mileage' => [
         'insufficient_balance' => 'Insufficient mileage balance available.',

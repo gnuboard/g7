@@ -16,10 +16,23 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
 {
+    /** 기존 테스트 스키마를 사용하고 각 케이스의 변경만 롤백합니다.
+     * @return void 반환값 없음
+     */
+    public function refreshDatabase(): void
+    {
+        $this->beginDatabaseTransaction();
+    }
+
     private EcommerceSettingsService $service;
 
     private string $storagePath;
 
+    /**
+     * 각 테스트의 격리된 설정과 의존 객체를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +46,11 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
         $this->service = new EcommerceSettingsService;
     }
 
+    /**
+     * 테스트가 변경한 설정과 시간을 복구합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->storagePath)) {
@@ -84,6 +102,7 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * 관리자 저장 경로(saveSettings)로 language_currency 를 저장합니다.
      *
      * @param  array  $languageCurrency  language_currency 카테고리 payload
+     * @return void 반환값 없음
      */
     private function save(array $languageCurrency): void
     {
@@ -129,6 +148,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *
      * @effects intentionally_removed_default_currency_stays_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_deleted_default_currency_stays_deleted_after_save(): void
     {
@@ -152,6 +173,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *
      * @effects tombstone_recomputed_server_side_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_tombstone_written_to_saved_file(): void
     {
@@ -174,6 +197,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *
      * @effects base_currency_never_tombstoned
+     *
+     * @return void 반환값 없음
      */
     public function test_default_currency_code_never_tombstoned(): void
     {
@@ -200,6 +225,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=readded
      *
      * @effects intentionally_removed_default_currency_stays_deleted, tombstone_recomputed_server_side_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_readding_currency_clears_tombstone_and_resurrects(): void
     {
@@ -226,6 +253,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *
      * @effects intentionally_removed_default_currency_stays_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_added_currency_still_deletable(): void
     {
@@ -251,6 +280,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *
      * @effects other_category_save_preserves_tombstone
+     *
+     * @return void 반환값 없음
      */
     public function test_other_category_save_preserves_tombstone(): void
     {
@@ -276,6 +307,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *
      * @effects other_category_save_preserves_tombstone
+     *
+     * @return void 반환값 없음
      */
     public function test_language_currency_save_without_currencies_preserves_tombstone(): void
     {
@@ -297,6 +330,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=jpy_missing, deletion_tombstone=none_legacy
      *
      * @effects legacy_file_without_tombstone_keeps_supplement
+     *
+     * @return void 반환값 없음
      */
     public function test_legacy_saved_file_without_tombstone_supplements_defaults(): void
     {
@@ -323,6 +358,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *
      * @effects tombstone_recomputed_server_side_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_client_supplied_tombstone_is_recomputed(): void
     {
@@ -345,6 +382,8 @@ class EcommerceSettingsServiceCurrencyTombstoneTest extends ModuleTestCase
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *
      * @effects tombstone_recomputed_server_side_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_tombstone_not_exposed_in_frontend_settings(): void
     {

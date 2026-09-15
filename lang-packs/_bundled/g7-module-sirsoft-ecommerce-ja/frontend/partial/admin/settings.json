@@ -132,6 +132,17 @@
       "base_unit": "基準単位",
       "base_unit_equals": "単位 =",
       "base_unit_hint": "この通貨が基本通貨の場合、為替レート入力の基準となる単位です。(例: 円 = 1,000 / ドル = 1)"
+    },
+    "rate_provider": {
+      "label": "為替レート提供者",
+      "manual": "直接入力",
+      "managed_badge": "自動管理",
+      "manual_badge": "手動管理",
+      "last_updated": "最終更新",
+      "settings": "提供者設定",
+      "auth_key_required": "認証キーを入力すると自動管理が開始されます。",
+      "unsupported_base": "基本通貨がサポートされていないため、為替レートを直接入力する必要があります。",
+      "auto_manage_disabled": "提供者設定で為替レート自動管理を有効にしてください。"
     }
   },
   "order_settings": {

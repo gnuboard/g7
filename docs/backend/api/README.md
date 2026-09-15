@@ -276,7 +276,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 > 각 확장이 자신의 API 문서를 소유합니다. 아래 표는 자동 생성됩니다.
 
 <!-- @generated:start:api-readme-extensions -->
-- **확장 수**: 14 · **엔드포인트 수**: 428
+- **확장 수**: 15 · **엔드포인트 수**: 432
 
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 | --- | --- | --- | --- |
@@ -286,6 +286,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | `sirsoft-page` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
 | `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
+| `sirsoft-koreaexim` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-koreaexim/docs/api/README.md) | 2 / 4 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
 | `sirsoft-message_bizppurio` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-message_bizppurio/docs/api/README.md) | 6 / 21 |
 | `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 34 |
