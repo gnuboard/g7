@@ -109,8 +109,8 @@
   },
   "read_only": "You have read-only access. Managing settings and updating rates require management permission.",
   "site_time": "Update time in site timezone",
-  "channels": {
-    "mail": "Email",
-    "database": "Site notification"
-  }
+  "notification_channels": "Delivery channels",
+  "save_channels": "Save channels",
+  "cancel": "Cancel",
+  "channel_template_missing": "No template for this channel — nothing will be sent"
 }

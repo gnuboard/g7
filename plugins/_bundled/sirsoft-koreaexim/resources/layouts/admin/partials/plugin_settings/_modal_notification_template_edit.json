@@ -148,7 +148,7 @@
                                     "props": {
                                         "className": "text-sm font-medium text-indigo-600 dark:text-indigo-400"
                                     },
-                                    "text": "{{$t('sirsoft-koreaexim.channels.' + _global.koreaexim_notification_template_form_modal?.template?.channel)}}"
+                                    "text": "{{((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.name ?? _global.koreaexim_notification_template_form_modal?.template?.channel)}}"
                                 }
                             ]
                         },

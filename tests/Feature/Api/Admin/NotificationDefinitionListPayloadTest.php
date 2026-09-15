@@ -29,6 +29,11 @@ class NotificationDefinitionListPayloadTest extends TestCase
 
     private string $token;
 
+    /**
+     * 관리자와 토큰을 만들어 각 시험의 출발 상태를 맞춥니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,7 +44,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
     /**
      * 인증 헤더가 붙은 요청 빌더를 반환합니다.
      *
-     * @return static
+     * @return static 인증 헤더가 붙은 요청 빌더
      */
     private function authRequest(): static
     {
@@ -113,7 +118,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
     /**
      * template_channel 을 주면 그 채널의 템플릿만 실린다.
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
      *
@@ -146,7 +151,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
      *
      * 그 채널 템플릿이 없는 정의도 행은 남아 "채널 미설정" 안내를 띄울 수 있어야 한다.
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
      *
@@ -175,7 +180,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
      * 정의 수 × 채널 × 로케일만큼의 제목·본문이 응답에 실린다. 전 채널이 필요하면 단건
      * 조회가 제공한다.
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
      *
@@ -200,12 +205,45 @@ class NotificationDefinitionListPayloadTest extends TestCase
     }
 
     /**
+     * `template_channel=all` 은 좁히지 않고 전 채널 템플릿을 싣는다.
+     *
+     * 켠 채널을 한 목록에 함께 그리는 화면(확장 설정 등)은 채널을 바꿀 때마다 목록을 다시
+     * 부르지 않는다. 좁히는 기본 동작과 공존해야 하므로 둘을 같은 시험에서 대조한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario resource=notification_definition,endpoint=list,observation=response_payload
+     *
+     * @effects notification_list_all_channel_carries_every_template
+     */
+    public function test_all_template_channel_carries_every_channel_template(): void
+    {
+        $this->makeDefinition('welcome', ['mail', 'sms', 'push']);
+
+        $row = $this->authRequest()
+            ->getJson('/api/admin/notification-definitions?template_channel=all')
+            ->json('data.data.0');
+
+        $this->assertSame(
+            ['mail', 'push', 'sms'],
+            collect($row['templates'])->pluck('channel')->sort()->values()->all(),
+            'all 은 채널을 좁히지 않고 전 채널 템플릿을 싣는다'
+        );
+
+        // 좁히는 기본 동작은 그대로다 — `all` 이 기존 호출자의 응답을 키우지 않는다.
+        $narrowed = $this->authRequest()
+            ->getJson('/api/admin/notification-definitions?template_channel=mail')
+            ->json('data.data.0');
+        $this->assertSame(['mail'], collect($narrowed['templates'])->pluck('channel')->all());
+    }
+
+    /**
      * 커스터마이즈 여부는 요청 채널과 무관하게 정확하다.
      *
      * 되돌리기 버튼 노출 조건이므로, 다른 채널만 수정한 경우에도 참이어야 한다.
      * 템플릿 배열만 훑으면 이 경우를 놓친다.
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
      *
@@ -233,7 +271,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
     /**
      * 템플릿 조회 쿼리 수가 정의 수에 비례하지 않는다 (N+1 부재).
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @scenario resource=notification_definition,endpoint=list,observation=response_payload
      *
@@ -277,7 +315,7 @@ class NotificationDefinitionListPayloadTest extends TestCase
     /**
      * 단건 조회는 전체 템플릿을 그대로 공급한다 (대체 경로 보존).
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @scenario resource=notification_definition,endpoint=detail,observation=response_payload
      *

@@ -80,7 +80,7 @@ class RateRunControllerTest extends PluginTestCase
         $this->postJson(self::PREFIX.'/runs', ['dry_run' => true])->assertStatus(429);
         Http::assertSentCount(1);
         // 연결 테스트는 자기 예산만 쓴다 — 같은 카운터를 공유하면 키를 확인한 직후
-        // 「지금 갱신」이 60초 동안 429 로 막힌다(PO 지적 2026-09-14).
+        // 「지금 갱신」이 60초 동안 429 로 막힌다(지적 2026-09-14).
         $this->assertTrue(RateLimiter::tooManyAttempts('koreaexim:test:cooldown', 1));
         $this->assertFalse(RateLimiter::tooManyAttempts('koreaexim:manual:cooldown', 1));
     }

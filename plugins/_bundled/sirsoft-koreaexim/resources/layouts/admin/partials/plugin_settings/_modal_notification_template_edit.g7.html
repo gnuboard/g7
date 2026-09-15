@@ -31,7 +31,7 @@
           <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.koreaexim_notification_template_form_modal?.definition?.type ?? ''}}</span>
           <span class="text-sm text-gray-400 dark:text-gray-500">·</span>
           <span class="text-label-subtle">$t:sirsoft-koreaexim.notification_definitions.edit_modal.channel_label</span>
-          <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{$t('sirsoft-koreaexim.channels.' + _global.koreaexim_notification_template_form_modal?.template?.channel)}}</span>
+          <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.name ?? _global.koreaexim_notification_template_form_modal?.template?.channel)}}</span>
         </div>
         <div data-ref="koreaexim_template_recipients_section" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3">
           <h4 class="text-sm font-medium text-purple-800 dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>

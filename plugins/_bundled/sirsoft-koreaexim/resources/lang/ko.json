@@ -109,8 +109,8 @@
   },
   "read_only": "조회 권한으로 접속했습니다. 설정 변경과 환율 갱신은 관리 권한이 필요합니다.",
   "site_time": "사이트 시간대 갱신 시각",
-  "channels": {
-    "mail": "메일",
-    "database": "사이트 알림"
-  }
+  "notification_channels": "발송 수단",
+  "save_channels": "발송 수단 저장",
+  "cancel": "취소",
+  "channel_template_missing": "이 수단의 템플릿이 없어 발송되지 않습니다"
 }

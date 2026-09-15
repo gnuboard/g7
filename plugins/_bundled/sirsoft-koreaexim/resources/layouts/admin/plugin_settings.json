@@ -96,6 +96,22 @@
             }
         },
         {
+            "id": "koreaeximNotificationChannels",
+            "if": "{{(query.tab ?? 'settings') === 'settings'}}",
+            "label_key": "$t:sirsoft-koreaexim.notifications",
+            "type": "api",
+            "endpoint": "/api/admin/notification-channels",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "channels": []
+                }
+            }
+        },
+        {
             "id": "koreaeximNotificationDefinitions",
             "if": "{{(query.tab ?? 'settings') === 'settings'}}",
             "label_key": "$t:sirsoft-koreaexim.notifications",
@@ -105,7 +121,7 @@
             "auto_fetch": true,
             "auth_required": true,
             "params": {
-                "template_channel": "{{query.notification_channel ?? 'mail'}}"
+                "template_channel": "all"
             },
             "fallback": {
                 "data": {

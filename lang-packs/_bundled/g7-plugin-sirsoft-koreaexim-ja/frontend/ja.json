@@ -109,8 +109,8 @@
   },
   "read_only": "閲覧権限でアクセスしました。設定変更と為替レート更新は管理権限が必要です。",
   "site_time": "サイト時間帯更新時刻",
-  "channels": {
-    "mail": "メール",
-    "database": "サイト通知"
-  }
+  "notification_channels": "送信手段",
+  "save_channels": "送信手段を保存",
+  "cancel": "キャンセル",
+  "channel_template_missing": "この手段のテンプレートがないため送信されません"
 }

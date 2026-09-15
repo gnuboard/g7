@@ -9,6 +9,7 @@ import notifications from '../../../layouts/admin/partials/plugin_settings/_noti
 import form from '../../../layouts/admin/partials/plugin_settings/_settings_form.json';
 import history from '../../../layouts/admin/partials/plugin_settings/_history_grid.json';
 import statusCard from '../../../layouts/admin/partials/plugin_settings/_status_card.json';
+import tplModal from '../../../layouts/admin/partials/plugin_settings/_modal_notification_template_edit.json';
 import fs from 'node:fs';
 import path from 'node:path';
 import settingsLayout from '../../../layouts/admin/plugin_settings.json';
@@ -19,6 +20,9 @@ import en from '../../../lang/en.json';
 import {Toggle} from '../../../../../../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Toggle';
 
 const pluginRoot=process.cwd();
+// 코어가 /api/admin/notification-channels 로 내려주는 모양 — 확장 채널은 source 가 core 가 아니다.
+const CORE_CHANNELS=[{id:'mail',name:'메일',source:'core'},{id:'database',name:'사이트내 알림',source:'core'}];
+const EXT_CHANNELS=[{id:'sms',name:'SMS',source:'plugin:sirsoft-message_bizppurio',source_label:'문자 플러그인'},{id:'alimtalk',name:'알림톡',source:'plugin:sirsoft-message_bizppurio',source_label:'문자 플러그인'}];
 let utils: ReturnType<typeof createLayoutTest>;
 function nodes(value: any): any[] {
   if (!value || typeof value !== 'object') return [];
@@ -40,13 +44,107 @@ describe('Exchange rate history controls', () => {
    * @effects admin_ui_contract */
   it('실제 Toggle이 알림 이름과 채널을 접근성 이름으로 렌더한다',async()=>{
     (ComponentRegistry.getInstance() as any).registry.Toggle={component:Toggle,metadata:{name:'Toggle',type:'composite'}};
-    const toggle=nodes(notifications).find(n=>n.name==='Toggle');
+    const templateRow=nodes(notifications).find((n:any)=>String(n.id ?? '').startsWith('koreaexim_template_row'));
+    const toggle=nodes(templateRow).find((n:any)=>n.name==='Toggle');
     utils=createLayoutTest({version:'1.0.0',layout_name:'notification_accessible_name',components:[toggle]} as any,{
       translations:{'sirsoft-koreaexim':ko},locale:'ko',
-      initialData:{$templateId:'test-template',$locale:'ko',def:{name:{ko:'환율 갱신 실패'}},template:{channel:'mail',is_active:true},_computed:{isNotificationReadOnly:false}},
+      initialData:{$templateId:'test-template',$locale:'ko',def:{name:{ko:'환율 갱신 실패'}},template:{channel:'mail',is_active:true},_computed:{isNotificationReadOnly:false},koreaeximNotificationChannels:{data:{channels:CORE_CHANNELS}}},
     });
     const {container}=await utils.render();
     expect(container.querySelector('[role=switch]')?.getAttribute('aria-label')).toBe('환율 갱신 실패 / 메일');
+  });
+  /** @scenario flow=channels
+   * @effects admin_ui_contract */
+  it('발송 수단이 코어 목록을 그대로 깔고 복수로 켜진다', async () => {
+    (ComponentRegistry.getInstance() as any).registry.Toggle={component:Toggle,metadata:{name:'Toggle',type:'composite'}};
+    const row=nodes(notifications).find((n:any)=>String(n.id ?? '').startsWith('koreaexim_channel_row'));
+    expect(row).toBeTruthy();
+    utils=createLayoutTest({version:'1.0.0',layout_name:'channel_rows',components:[row]} as any,{
+      initialData:{def:{id:7,channels:['mail']},_computed:{isNotificationReadOnly:false},
+        koreaeximNotificationChannels:{data:{channels:[...CORE_CHANNELS,...EXT_CHANNELS]}}},
+    });
+    const {container}=await utils.render();
+    // 드롭다운 한 칸이 아니라 채널마다 줄이 깔린다 — 확장이 들인 채널까지.
+    expect([...container.querySelectorAll('[role=switch]')]).toHaveLength(4);
+    expect(container.textContent).toContain('SMS');
+    expect(container.textContent).toContain('문자 플러그인');
+    // 정의에 켜진 것만 on 이다.
+    expect([...container.querySelectorAll('[role=switch]')].map(e=>e.getAttribute('aria-checked')))
+      .toEqual(['true','false','false','false']);
+  });
+  /** @scenario flow=channels
+   * @effects admin_ui_contract */
+  it('켠 수단에 템플릿이 없으면 발송되지 않는다고 알린다', async () => {
+    // 코어는 템플릿 없는 채널을 조용히 건너뛴다(로그만 남는다) — 화면이 그 사실을 말해야 한다.
+    const row=nodes(notifications).find((n:any)=>String(n.id ?? '').startsWith('koreaexim_channel_row'));
+    utils=createLayoutTest({version:'1.0.0',layout_name:'channel_missing_template',components:[row]} as any,{
+      translations:{'sirsoft-koreaexim':ko},locale:'ko',
+      initialData:{$templateId:'test-template',$locale:'ko',
+        def:{id:7,channels:['mail','sms'],templates:[{channel:'mail'}]},
+        _computed:{isNotificationReadOnly:false},
+        koreaeximNotificationChannels:{data:{channels:[...CORE_CHANNELS,...EXT_CHANNELS]}}},
+    });
+    const {container}=await utils.render();
+    expect(container.textContent).toContain('이 수단의 템플릿이 없어 발송되지 않습니다');
+  });
+  /** @scenario flow=channels
+   * @effects admin_ui_contract */
+  it('저장은 버튼을 눌러야 하고 한 수단도 없으면 막는다', () => {
+    const save=nodes(notifications).find((n:any)=>String(n.id ?? '').startsWith('koreaexim_save_channels'));
+    expect(save).toBeTruthy();
+    // 고친 것이 없거나 전부 끄면 비활성 — 코어가 min:1 로 거절하기 전에 화면이 막는다.
+    expect(save.props.disabled).toContain('.length === 0');
+    const call=JSON.stringify(save.actions);
+    expect(call).toContain('/api/admin/notification-definitions/');
+    expect(call).toContain('"method":"PUT"');
+    expect(call).toContain('channels');
+    // 토글은 폼만 고친다 — 즉시 저장이 아니다.
+    const toggle=nodes(notifications).find((n:any)=>n.name==='Toggle' && JSON.stringify(n.actions).includes('koreaeximChannels'));
+    expect(JSON.stringify(toggle.actions)).not.toContain('apiCall');
+  });
+  /** @scenario flow=channels
+   * @effects admin_ui_contract */
+  it('저장 버튼이 진행 표시와 완료 후 복귀를 갖춘다', () => {
+    // 누른 버튼에 진행 표시가 없으면 눌렸는지 알 수 없고, 끝난 뒤 폼을 비우지 않으면
+    // 저장했는데도 「저장」·「취소」가 남아 아직 안 된 것처럼 보인다(제보 2026-09-15).
+    const save=nodes(notifications).find((n:any)=>String(n.id ?? '').startsWith('koreaexim_save_channels'));
+    const spinner=nodes(save).find((n:any)=>n.props?.className==='spinner-sm');
+    expect(spinner).toBeTruthy();
+    expect(spinner.if).toContain('koreaeximSavingChannels === def.id');   // 누른 버튼만
+    expect(save.props.disabled).toContain('koreaeximSavingChannels');      // 저장 중 재클릭 금지
+
+    const call=(save.actions[0].actions ?? []).find((a:any)=>a.handler==='apiCall');
+    const okText=JSON.stringify(call.onSuccess);
+    // 진행 표시는 양쪽에서 끈다.
+    expect(okText).toContain('"koreaeximSavingChannels":null');
+    expect(JSON.stringify(call.onError)).toContain('"koreaeximSavingChannels":null');
+    // 성공해도 폼의 임시 값은 **비우지 않는다** — 목록 재조회가 끝나기 전에 비우면 낡은
+    // def.channels 로 되돌아가 방금 끈 스위치가 켜졌다 꺼진다(제보 2026-09-15).
+    expect(okText).not.toContain('"koreaeximChannels"');
+    expect(okText).toContain('refetchDataSource');
+    // 「고칠 것 없음」 판정은 존재 여부가 아니라 저장값과의 비교다 — 재조회가 오면 저절로 가라앉는다.
+    expect(save.props.disabled).toContain('JSON.stringify');
+    expect(save.props.disabled).toContain('def.channels');
+    const cancel=nodes(notifications).find((n:any)=>String(n.id ?? '').startsWith('koreaexim_cancel_channels'));
+    expect(cancel.if).toContain('JSON.stringify');
+  });
+  /** @scenario flow=channels
+   * @effects admin_ui_contract */
+  it('레이아웃이 채널 id·이름을 적어 두지 않는다', () => {
+    // 화면에 채널을 적어 두면 확장이 들인 채널에 도달할 수 없다(제보 2026-09-15).
+    const layouts=[notifications, tplModal, settingsLayout];
+    for (const layout of layouts) {
+      const text=JSON.stringify(layout);
+      expect(text).not.toContain('sirsoft-koreaexim.channels.');
+      expect(text).not.toMatch(/"value"\s*:\s*"(mail|database|sms|alimtalk)"/);
+    }
+    // 대신 코어 채널 목록을 받아 온다.
+    const ds=(settingsLayout as any).data_sources.find((d:any)=>d.endpoint==='/api/admin/notification-channels');
+    expect(ds).toBeTruthy();
+    expect(ds.fallback?.data?.channels).toEqual([]);
+    // 채널을 나눠 그리지 않으므로 템플릿을 전 채널로 받는다 — 채널 전환 때문에 화면을 다시 부르지 않는다.
+    const defs=(settingsLayout as any).data_sources.find((d:any)=>String(d.endpoint).includes('notification-definitions'));
+    expect(defs.params.template_channel).toBe('all');
   });
   /** @scenario flow=filter
    * @effects admin_ui_contract */
@@ -76,12 +174,6 @@ describe('Exchange rate history controls', () => {
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(7);
     expect([...container.querySelectorAll('label')].every(e=>e.textContent?.trim())).toBe(true);
     expect(container.textContent).not.toContain('$t:');
-  });
-  /** @scenario flow=notifications
-   * @effects admin_ui_contract */
-  it('requests the selected notification channel as a scalar', () => {
-    const selector=nodes(notifications).find(n=>n.name==='Select');
-    expect(JSON.stringify(selector.actions)).toContain('$event.target.value');
   });
   /** @scenario flow=tabs
    * @effects admin_ui_contract */
@@ -167,6 +259,28 @@ describe('Exchange rate history controls', () => {
     expect(runs.length).toBeGreaterThan(0);
     expect(runs.some((d:any)=>d.fallback?.data?.pagination)).toBe(true);
     expect(runs.some((d:any)=>d.errorHandling?.['403'])).toBe(true);
+  });
+  /** @scenario flow=buttons
+   * @effects admin_ui_contract */
+  it('진행 표시는 누른 버튼에만 나타난다 — 두 버튼이 한 플래그를 공유하지 않는다', () => {
+    // 연결 테스트와 지금 갱신은 나란히 놓여 항상 둘 다 보인다. 진행 표시가 키 단독 truthy 판정이면
+    // 한쪽을 눌러도 양쪽이 돌아 어느 쪽이 호출됐는지 화면이 거짓말을 한다(제보 2026-09-15).
+    // 함께 disabled 되는 것은 의도다 — 서버가 manual-budget 락 하나를 두 경로가 공유한다.
+    const owners=nodes(statusCard).filter((n:any)=>Array.isArray(n.actions) && n.actions.some((a:any)=>a?.type==='click'));
+    const buttons=owners.filter((n:any)=>nodes(n).some((c:any)=>c.props?.className==='spinner-sm'));
+    expect(buttons.map((b:any)=>b.id).sort()).toEqual(['test_connection','update_now']);
+
+    for (const button of buttons) {
+      const spinner=nodes(button).find((c:any)=>c.props?.className==='spinner-sm');
+      // 자기 것만 본다 — 키 단독 truthy 가 아니라 누가 켰는지 비교해야 한다.
+      expect(spinner.if).toMatch(/_local\.busy\s*===/);
+      expect(spinner.if).toContain(button.id === 'test_connection' ? "'test'" : "'update'");
+      // 잠금은 공유 유지.
+      expect(String(button.props.disabled)).toContain('_local.busy ||');
+    }
+    // 켜는 값이 버튼마다 다르다.
+    const set=nodes(statusCard).filter((n:any)=>n.handler==='setState' && n.params && 'busy' in n.params).map((n:any)=>n.params.busy);
+    expect(set.filter((v:any)=>v!==null).sort()).toEqual(['test','update']);
   });
   /** @scenario flow=tabs
    * @effects admin_ui_contract */

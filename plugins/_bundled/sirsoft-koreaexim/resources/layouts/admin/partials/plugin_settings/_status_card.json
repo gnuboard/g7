@@ -81,7 +81,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "busy": true
+                                                "busy": "test"
                                             }
                                         },
                                         {
@@ -99,7 +99,7 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
-                                                        "busy": false
+                                                        "busy": null
                                                     }
                                                 },
                                                 {
@@ -133,7 +133,7 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
-                                                        "busy": false
+                                                        "busy": null
                                                     }
                                                 },
                                                 {
@@ -157,7 +157,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Icon",
-                                    "if": "{{_local.busy}}",
+                                    "if": "{{_local.busy === 'test'}}",
                                     "props": {
                                         "name": "spinner",
                                         "className": "spinner-sm"
@@ -183,7 +183,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "busy": true
+                                                "busy": "update"
                                             }
                                         },
                                         {
@@ -201,7 +201,7 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
-                                                        "busy": false
+                                                        "busy": null
                                                     }
                                                 },
                                                 {
@@ -235,7 +235,7 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
-                                                        "busy": false
+                                                        "busy": null
                                                     }
                                                 },
                                                 {
@@ -259,7 +259,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Icon",
-                                    "if": "{{_local.busy}}",
+                                    "if": "{{_local.busy === 'update'}}",
                                     "props": {
                                         "name": "spinner",
                                         "className": "spinner-sm"
