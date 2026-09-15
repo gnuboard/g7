@@ -5,7 +5,7 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 149개 (루트: `layouts`).
+레이아웃 149개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -313,10 +313,11 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 
 > **마크업 형식**: 아래 파일 트리는 소스 SSoT 인 `.g7.html`([레이아웃 마크업](../../../../docs/frontend/layout-markup.md)) 기준입니다. 설치 시 서버가 각 `.g7.html` 을 메모리로 JSON 컴파일해 DB(`template_layouts`)에 등록합니다. 산출 JSON 키 계약은 [layout-json.md](../../../../docs/frontend/layout-json.md) 가 SSoT 이며 불변입니다. 디스크에는 진단·복구용 짝 `.json` 이 병존합니다.
 
-> **요약**(이관 시점 실측이며 현행 파일 수와 같습니다):
+> **요약**(현행 디스크 실측 — 총 149개):
 > 1. 베이스: `_admin_base.g7.html` (사이드바 + 헤더 + 콘텐츠 슬롯)
-> 2. 코어 페이지 25개(layouts 직속, `_admin_base` 제외): 대시보드, 사용자, 역할, 설정, 확장 관리 등
-> 3. Partial 110개: 탭, 모달, 패널, 필터 등
+> 2. 코어 페이지 26개(layouts 직속, `_admin_base` 제외): 대시보드, 사용자, 역할, 설정, 확장 관리, 언어팩, 로그, 2단계 인증 등
+> 3. `auth/` 1개 · `errors/` 6개
+> 4. Partial 115개: 탭, 모달, 패널, 필터, 드로어 등
 
 ### 페이지 맵 (트리 구조)
 
@@ -364,7 +365,23 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_notification_template_form.g7.html
 │           ├── _modal_notification_template_preview.g7.html
 │           ├── _modal_password_confirm.g7.html
-│           └── _modal_static_cache_republish.g7.html
+│           ├── _modal_static_cache_republish.g7.html
+│           ├── _tab_identity.g7.html (2단계 인증 — 하위 탭 허브)
+│           ├── _tab_identity_basic.g7.html (기본 정책)
+│           ├── _tab_identity_messages.g7.html (인증 메시지)
+│           ├── _tab_identity_policies.g7.html (인증 정책)
+│           ├── _tab_identity_providers.g7.html (인증 수단)
+│           ├── _tab_language_packs.g7.html (언어팩)
+│           ├── _tab_mail_templates.g7.html (메일 템플릿)
+│           ├── _modal_identity_message_definition_add.g7.html
+│           ├── _modal_identity_message_definition_delete.g7.html
+│           ├── _modal_identity_message_definition_reset.g7.html
+│           ├── _modal_identity_message_template_form.g7.html
+│           ├── _modal_identity_message_template_preview.g7.html
+│           ├── _modal_identity_policy_delete.g7.html
+│           ├── _modal_identity_policy_form.g7.html
+│           ├── _modal_mail_template_form.g7.html
+│           └── _modal_notification_definition_reset.g7.html
 │
 ├── 모듈 관리
 │   └── admin_module_list.g7.html
@@ -400,9 +417,16 @@ _admin_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_deactivate.g7.html
 │   │       ├── _modal_force_activate.g7.html
 │   │       ├── _modal_extension_license.g7.html
-│   │       └── _modal_refresh_layouts.g7.html
+│   │       ├── _modal_refresh_layouts.g7.html
+│   │       ├── _modal_reactivate_language_packs.g7.html
+│   │       └── _drawer_manifest_preview.g7.html
 │   └── admin_template_layout_edit.g7.html (레이아웃 편집기)
-│       └── partials/admin_template_layout_edit/_modal_version_history.g7.html
+│       └── partials/admin_template_layout_edit/
+│           ├── _modal_version_history.g7.html
+│           ├── _modal_extension_preview_layout.g7.html
+│           ├── _modal_extension_version_history.g7.html
+│           ├── _modal_file_delete_confirm.g7.html
+│           └── _modal_file_form.g7.html
 │
 ├── 스케줄 관리
 │   └── admin_schedule_list.g7.html
@@ -414,9 +438,46 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_history.g7.html
 │           └── _modal_run.g7.html
 │
+├── 언어팩 관리
+│   ├── admin_language_pack_list.g7.html (허브 — 아래 3화면이 이것을 extends)
+│   │   └── partials/admin_language_pack_list/
+│   │       ├── _content.g7.html (목록 본문 — extends 화면이 공유)
+│   │       ├── _modal_install_bundled.g7.html
+│   │       ├── _modal_refresh_cache.g7.html
+│   │       └── _modal_slot_conflict.g7.html
+│   ├── admin_language_packs.g7.html (코어 언어팩)
+│   ├── admin_module_language_packs.g7.html (모듈 언어팩)
+│   ├── admin_plugin_language_packs.g7.html (플러그인 언어팩)
+│   └── admin_template_language_packs.g7.html (템플릿 언어팩)
+│       └── partials/admin_extension_language_packs/_content.g7.html
+│
+├── 활동·알림 로그
+│   ├── admin_activity_log_list.g7.html (활동 로그)
+│   │   └── partials/admin_activity_log_list/
+│   │       ├── _partial_datagrid.g7.html
+│   │       └── _partial_filter.g7.html
+│   ├── admin_member_notification_list.g7.html (회원 알림)
+│   │   └── partials/admin_member_notification_list/
+│   │       ├── _partial_datagrid.g7.html
+│   │       └── _partial_filter.g7.html
+│   └── admin_notification_log_list.g7.html (알림 발송 로그)
+│       └── partials/admin_notification_log_list/
+│           ├── _partial_datagrid.g7.html
+│           ├── _partial_filter.g7.html
+│           └── _modal_log_detail.g7.html
+│
+├── 2단계 인증 (#657)
+│   ├── auth/identity_challenge.g7.html (인증 챌린지 화면)
+│   ├── admin_identity_logs.g7.html (인증 로그)
+│   │   └── partials/admin_identity_logs/_modal_purge_confirm.g7.html
+│   ├── admin_forgot_password.g7.html (비밀번호 찾기 — _admin_base 미상속)
+│   └── admin_reset_password.g7.html (비밀번호 재설정 — _admin_base 미상속)
+│
 ├── 공통 Partial
 │   ├── partials/_modal_changelog.g7.html
-│   └── partials/_modal_license.g7.html
+│   ├── partials/_modal_license.g7.html
+│   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
+│   └── partials/_modal_notification_delete_all_confirm.g7.html
 │
 ├── 에러 페이지
 │   └── errors/

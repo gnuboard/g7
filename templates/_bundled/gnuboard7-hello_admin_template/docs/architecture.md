@@ -63,7 +63,7 @@ __tests__/layouts/     createLayoutTest() 기반 렌더링 테스트
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update gnuboard7-hello_admin_template --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update gnuboard7-hello_admin_template --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan template:update gnuboard7-hello_admin_template --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update gnuboard7-hello_admin_template --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |

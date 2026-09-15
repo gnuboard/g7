@@ -23,6 +23,13 @@
       </field>
     </fallback>
   </data-source>
+  <data-source id="reactionTypes" label_key="$t:sirsoft-board.editor.data_source.reactionTypes" type="api" endpoint="/api/modules/sirsoft-board/admin/reaction-types" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="reaction_types" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
   <init-local>
     <field name="activeTab" value="section_basic_card"/>
     <field name="isSaving" :value="false"/>
@@ -108,7 +115,7 @@
               <!-- 저장 — 신규는 POST 후 발급된 slug 의 편집 화면으로 갈아타고(그래야 이어지는 저장이 PUT 이 된다), 편집은 PUT 하고 그 자리에 머문다. 성공하면 변경 표시를 지워 저장 버튼이 다시 잠긴다 -->
               <sequence>
                 <set-state target="local" :isSaving="true"/>
-                <api-call :auth_required="true" target="{{route?.slug ? '/api/modules/sirsoft-board/admin/boards/' + route.slug : '/api/modules/sirsoft-board/admin/boards'}}" method="{{route?.slug ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                <api-call target="{{route?.slug ? '/api/modules/sirsoft-board/admin/boards/' + route.slug : '/api/modules/sirsoft-board/admin/boards'}}" :auth_required="true" method="{{route?.slug ? 'PUT' : 'POST'}}" body="{{_local.form}}">
                   <success>
                     <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
                     <toast type="success" message="{{route?.slug ? '$t:sirsoft-board.admin.board.messages.update_success' : '$t:sirsoft-board.admin.board.messages.create_success'}}"/>
@@ -128,4 +135,5 @@
       </div>
     </div>
   </slot>
+  <json key="state">{"activeTab":"section_basic_card","isSaving":false,"hasChanges":false,"showCancelConfirmModal":false,"form":[],"isDataLoaded":false,"managerSearchResults":[],"stepSearchResults":[]}</json>
 </layout>

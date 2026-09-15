@@ -1,5 +1,5 @@
-<!-- 「기본값」 탭의 첫 구획 — 새 게시판이 물려받을 기본값 넷(유형·비밀글 방식·조회수 표시·신고 사용). 값 옆 체크박스는 값을 끄는 것이 아니라 그 항목을 일괄 적용에 실을지를 고른다. 유형 줄에는 목록 자체를 손보는 관리 창 진입점이 하나 더 붙어 있다 -->
-<partial description="게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)" _e2e_allow="e2e:allow 반응 설정 블록 제거 — 기능 자체가 사라져 검증 대상이 없다. 남은 필드의 렌더·바인딩은 변경 없음.">
+<partial description="게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)" _e2e_allow="e2e:allow 반응 유형 체크박스 시각 스타일(배경 박스·들여쓰기·아이콘·정렬)만 변경, 클릭 동작(setState/hasChanges)은 기존과 동일. 렌더 분기·바인딩은 admin-board-reaction-settings.test.tsx(Vitest 레이아웃 테스트)로 커버, MCP 실브라우저로 시각 회귀 확인.">
+  <!-- 「기본값」 탭의 첫 구획 — 새 게시판이 물려받을 기본값 넷(유형·비밀글 방식·조회수 표시·신고 사용). 값 옆 체크박스는 값을 끄는 것이 아니라 그 항목을 일괄 적용에 실을지를 고른다. 유형 줄에는 목록 자체를 손보는 관리 창 진입점이 하나 더 붙어 있다 -->
   <div data-ref="basic" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
       <variant when="readonly">opacity-60</variant>
@@ -38,7 +38,7 @@
                           <field name="en" value=""/>
                         </field>
                       </set-state>
-                      <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board-types" method="GET">
+                      <api-call target="/api/modules/sirsoft-board/admin/board-types" :auth_required="true" method="GET">
                         <success>
                           <set-state target="global" boardTypesList="{{response.data}}"/>
                           <open-modal target="board_type_manage_modal"/>
@@ -127,6 +127,39 @@
               </div>
             </label>
             <toggle name="basic_defaults.use_scrap" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_use_reaction" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reaction')}}">
+                <on type="change">
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reaction') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reaction') : [...(_local.bulkApplyFields ?? []), 'use_reaction']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_reaction</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_reaction</p>
+              </div>
+            </label>
+            <toggle name="basic_defaults.use_reaction" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+          <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. DB 등록 유형 전체(reactionTypes)를 순회해 체크박스로 basic_defaults.active_reaction_types(code 배열) 를 토글. 좌측 일괄적용 체크박스(bulkApplyFields)와 형태가 같아 혼동되기 쉬우므로, 배경 박스 + 좌측 들여쓰기로 '설정값 입력 영역'임을 시각적으로 분리한다 (PO 피드백). -->
+          <div data-if="{{_local.form?.basic_defaults?.use_reaction === true}}" class="row-content-indent ml-6 mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <p class="text-field-hint mb-2">$t:sirsoft-board.admin.settings.fields.active_reaction_types</p>
+            <div class="flex flex-col gap-2">
+              <div data-each="reactionType, reactionIdx in {{reactionTypes?.data?.reaction_types ?? []}}">
+                <label class="flex-center gap-2 cursor-pointer">
+                  <input type="checkbox" class="checkbox-aligned" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code)}}">
+                    <on type="change">
+                      <set-state target="local" form.basic_defaults.active_reaction_types="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.basic_defaults?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.basic_defaults?.active_reaction_types ?? []), reactionType.code]}}" :hasChanges="true"/>
+                    </on>
+                  </input>
+                  <icon name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
+                  <span>{{reactionType.name ?? reactionType.code}}</span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>

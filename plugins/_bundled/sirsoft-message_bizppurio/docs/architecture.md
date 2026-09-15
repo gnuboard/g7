@@ -84,7 +84,7 @@
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-message_bizppurio --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-message_bizppurio --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-message_bizppurio --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-message_bizppurio --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |

@@ -16,7 +16,7 @@
 | `necessary_storage_allowlist` | `array` | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7_cart_key","g7-devtools-panel","g7_guest_order_token","g7_guest_order_number","g7_guest_order_expires_at","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7le.*","__sirsoftKginicisMobilePaymentReturnPending","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash"],"sessionStorage":["g7:sirsoft-pay_kginicis:pendingClose","g7:sirsoft-pay_nhnkcp:pendingClose","g7:sirsoft-tosspayments:pendingClose","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash","__sirsoftKginicisMobilePaymentReturnPending","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance"]}` | 필수 저장 항목 허용목록 |
 | `cookie_categories` | `json` | `[]` | 쿠키 카테고리 정의 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->

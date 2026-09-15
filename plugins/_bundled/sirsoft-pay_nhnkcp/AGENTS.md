@@ -48,7 +48,7 @@ API 호출)와 달리 **로컬 프로세스 실행**을 최종 승인 수단으�
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-pay_nhnkcp --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-pay_nhnkcp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
@@ -116,7 +116,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-pay_nhnkcp` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] CLI 인자 조립부를 고칠 때 `assertSafeCliValue()` 검증을 모든 인자에 유지 — 인자 하나만 빠져도 그 필드가 injection 통로가 된다

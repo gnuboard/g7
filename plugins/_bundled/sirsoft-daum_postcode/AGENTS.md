@@ -44,7 +44,7 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 |---|---|---|
 | `plugin.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json·composer.json 동기화 |
 | `plugin.php` | 진입 클래스 (선언형 표면 SSoT) | 표면 변경 시 `ext:docgen` 재실행 + 코어 최소 버전 검토 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-daum_postcode --force` |
@@ -119,7 +119,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 - [ ] `_bundled` 에서만 수정하고 `php artisan plugin:update sirsoft-daum_postcode --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 외부 스크립트 호스트를 늘린다면 `trusted_script_hosts` 와 **사유**(`trusted_script_hosts_reason`)를 함께 선언 — 자체 제공이 원칙이고 이 플러그인은 예외 기재의 선례다
 - [ ] SDK 확보 실패 경로(통지·재시도·직접 입력)를 건드렸다면 `resources/js/__tests__/postcode-fallback.test.ts` 를 함께 갱신·실행

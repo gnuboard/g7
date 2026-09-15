@@ -48,7 +48,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `extensions/` | 다른 확장 화면에 주입하는 레이아웃 조각 | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `seo-config.json` | SEO 렌더 설정 | `php artisan template:update sirsoft-basic --force` |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-basic --force` |
@@ -123,7 +123,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update sirsoft-basic --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 새 화면을 추가했다면 `_user_base` 를 상속하는지, `routes.json` 에 경로가 등록됐는지 확인

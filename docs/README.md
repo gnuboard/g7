@@ -34,11 +34,11 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 
 ## 작업 유형별 필수 문서
 
-### 레이아웃 JSON 작성
+### 레이아웃 작성 (.g7.html)
 
 | 순서 | 문서 | TL;DR 핵심 |
 |------|------|----------|
-| 1 | [레이아웃 마크업 (`.g7.html`) 형식](frontend/layout-markup.md) | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 소스 SSoT 이고 설치 시 서버가 컴파일 |
+| 1 | [레이아웃 마크업 (`.g7.html`) 형식](frontend/layout-markup.md) | **작성 SSoT 는 `.g7.html`** — 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출(위지윅 편집기·내부 엔진용). `.json` 만 고치면 다음 굽기에 소실되고 화면에도 반영되지 않는다 |
 | 2 | [레이아웃 JSON 스키마](frontend/layout-json.md) | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
 | 3 | [레이아웃 JSON - 컴포넌트](frontend/layout-json-components.md) | if: 조건부 렌더링 (type: "conditional" 사용 금지!) |
 | 4 | [레이아웃 JSON - 기능](frontend/layout-json-features.md) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
@@ -310,8 +310,8 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 |------|------|--------------|----------------|
 | `gnuboard7-hello_module` | 모듈 | [docs/api/](../modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 7 |
-| `sirsoft-board` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-board/docs/api/README.md) | 11 / 83 |
-| `sirsoft-ecommerce` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 239 |
+| `sirsoft-board` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-board/docs/api/README.md) | 12 / 92 |
+| `sirsoft-ecommerce` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 36 / 248 |
 | `sirsoft-page` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
 | `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
@@ -332,8 +332,8 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | 확장 | 유형 | 에이전트 가이드 | 문서 목차 | 실측 집계 |
 |------|------|----------------|----------|----------|
 | `gnuboard7-hello_module` | 모듈 | [AGENTS.md](../modules/_bundled/gnuboard7-hello_module/AGENTS.md) | [docs/](../modules/_bundled/gnuboard7-hello_module/docs/README.md) | 훅 1 · 라우트 7 · 모델 1 · 레이아웃 4 |
-| `sirsoft-board` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-board/docs/README.md) | 훅 90 · 라우트 80 · 모델 9 · 레이아웃 46 |
-| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 508 · 라우트 239 · 모델 47 · 레이아웃 205 |
+| `sirsoft-board` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-board/docs/README.md) | 훅 96 · 라우트 92 · 모델 12 · 레이아웃 47 |
+| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 516 · 라우트 250 · 모델 47 · 레이아웃 209 |
 | `sirsoft-page` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-page/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-page/docs/README.md) | 훅 21 · 라우트 17 · 모델 3 · 레이아웃 3 |
 | `gnuboard7-hello_plugin` | 플러그인 | [AGENTS.md](../plugins/_bundled/gnuboard7-hello_plugin/AGENTS.md) | [docs/](../plugins/_bundled/gnuboard7-hello_plugin/docs/README.md) | 훅 1 · 라우트 0 · 모델 0 · 레이아웃 1 |
 | `sirsoft-ckeditor5` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-ckeditor5/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-ckeditor5/docs/README.md) | 훅 4 · 라우트 5 · 모델 1 · 레이아웃 2 |
@@ -349,8 +349,8 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 146 |
-| `sirsoft-basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 40 · 모델 0 · 레이아웃 164 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 30 · 모델 0 · 레이아웃 149 |
+| `sirsoft-basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 41 · 모델 0 · 레이아웃 168 |
 
 
 <!-- AUTO-GENERATED-END: docs-readme-full-list -->

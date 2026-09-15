@@ -108,3 +108,8 @@ validation:
     입력 조합 전수(case)는 백엔드/프론트/E2E 테스트가 @scenario/@effects 마킹으로 커버한다.
     브라우저 수준의 등록→전환→해제 사용자 흐름은 board-reaction-flow.spec.ts 가 담당한다
     (PlaywrightIssueToken 발급 가능 환경에서 describe.skip 해제).
+
+    2026-09-15 레이아웃 복원 — develop-7.1.0 병합 시 32afe9530(7.0.6 배포 시기 사유)이 지운
+    반응 레이아웃 5벌을 되돌렸다. UI 계약(태그·바인딩·액션)은 제거 이전과 동일하므로 위
+    spec 의 시나리오도 그대로 유효하며 spec 갱신 없이 이 축이 성립한다. 복원 경로는 소스
+    SSoT 인 `.g7.html` 이고 짝 `.json` 은 layout:decompile --sync 로 다시 구웠다(670건 전건 최신).

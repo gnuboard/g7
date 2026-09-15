@@ -69,7 +69,7 @@ src/index.ts               initTemplate() — 핸들러 등록 · IDV launcher �
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `extensions/` | 다른 확장 화면에 주입하는 레이아웃 조각 | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `seo-config.json` | SEO 렌더 설정 | `php artisan template:update sirsoft-basic --force` |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-basic --force` |

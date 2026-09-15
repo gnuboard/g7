@@ -42,7 +42,7 @@
 | `easy_pay_kakaopay` | `boolean` | `false` | KG이니시스 카카오페이 사용 |
 | `use_credit_point` | `boolean` | `false` | 신용카드 포인트 사용 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->

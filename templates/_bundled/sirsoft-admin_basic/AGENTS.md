@@ -40,7 +40,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-admin_basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `src/handlers/` | 템플릿 전용 액션 핸들러 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
@@ -97,7 +97,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update sirsoft-admin_basic --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
 - [ ] `template.json` 의 `assets` 경로는 실제 산출물을 가리켜야 한다 — 없는 경로를 선언하면 검색엔진용(봇) 화면이 404 를 가리키는 `<link>` 를 싣고, 일반 화면에는 흔적이 남지 않는다
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 컴포넌트가 `localStorage` 에 적는 키는 `g7le.` 접두를 쓴다 — GDPR 동의 플러그인의 strictly-necessary 허용 목록(`plugins/_bundled/sirsoft-gdpr/plugin.php`)이 이 접두만 통과시키고, 밖의 키는 동의 전 쓰기가 조용히 버려지며 부팅 때 정리된다. 쓴 직후 되읽어 성공을 확인한다

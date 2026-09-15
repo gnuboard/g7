@@ -53,7 +53,7 @@ DB 에 쓰지 않고 Cache 에 임시 저장(`inicis:pending_record:` 접두)했
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-verification_kginicis --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-verification_kginicis --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-verification_kginicis --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-verification_kginicis --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-verification_kginicis --force` |
@@ -128,7 +128,7 @@ Cache 에 stash(`inicis:pending_record:{key}`) → 회원가입 완료 → `core
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-verification_kginicis` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] PII 컬럼(이름·생년월일·성별·CI/DI 등)을 다루는 코드 변경 시 GDPR 삭제/탈퇴 정리 리스너(`CleanInicisRecordOnUserDelete`/`CleanInicisRecordOnUserWithdraw`)가 여전히 그 컬럼을 정리하는지 확인

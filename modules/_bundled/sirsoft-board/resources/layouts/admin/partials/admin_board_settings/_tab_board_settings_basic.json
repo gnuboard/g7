@@ -1,10 +1,10 @@
 {
-    "comment": "「기본값」 탭의 첫 구획 — 새 게시판이 물려받을 기본값 넷(유형·비밀글 방식·조회수 표시·신고 사용). 값 옆 체크박스는 값을 끄는 것이 아니라 그 항목을 일괄 적용에 실을지를 고른다. 유형 줄에는 목록 자체를 손보는 관리 창 진입점이 하나 더 붙어 있다",
     "meta": {
         "is_partial": true,
         "description": "게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)",
         "_e2e_allow": "e2e:allow 반응 유형 체크박스 시각 스타일(배경 박스·들여쓰기·아이콘·정렬)만 변경, 클릭 동작(setState/hasChanges)은 기존과 동일. 렌더 분기·바인딩은 admin-board-reaction-settings.test.tsx(Vitest 레이아웃 테스트)로 커버, MCP 실브라우저로 시각 회귀 확인."
     },
+    "comment": "「기본값」 탭의 첫 구획 — 새 게시판이 물려받을 기본값 넷(유형·비밀글 방식·조회수 표시·신고 사용). 값 옆 체크박스는 값을 끄는 것이 아니라 그 항목을 일괄 적용에 실을지를 고른다. 유형 줄에는 목록 자체를 손보는 관리 창 진입점이 하나 더 붙어 있다",
     "id": "basic",
     "type": "basic",
     "name": "Div",
@@ -579,11 +579,6 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
-                                                    "props": {
-                                                        "type": "checkbox",
-                                                        "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_reaction')}}"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "change",
@@ -593,7 +588,12 @@
                                                                 "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_reaction') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reaction') : [...(_local.bulkApplyFields ?? []), 'use_reaction']}}"
                                                             }
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox-aligned",
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_reaction')}}"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
@@ -670,12 +670,6 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Input",
-                                                                    "props": {
-                                                                        "type": "checkbox",
-                                                                        "className": "checkbox-aligned",
-                                                                        "disabled": "{{_computed.isReadOnly}}",
-                                                                        "checked": "{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code)}}"
-                                                                    },
                                                                     "actions": [
                                                                         {
                                                                             "type": "change",
@@ -686,7 +680,13 @@
                                                                                 "hasChanges": true
                                                                             }
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "checkbox",
+                                                                        "className": "checkbox-aligned",
+                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                        "checked": "{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code)}}"
+                                                                    }
                                                                 },
                                                                 {
                                                                     "type": "basic",

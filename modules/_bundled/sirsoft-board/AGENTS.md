@@ -60,7 +60,7 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan module:update sirsoft-board --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan module:update sirsoft-board --force` (빌드 불필요) |
 | `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update sirsoft-board --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-board --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan module:update sirsoft-board --force` |
@@ -131,7 +131,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-board` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 비밀글이 관여하는 새 조회 경로(댓글·첨부·검색 결과 등)를 추가할 때 `SecretContentGate` 재적용 (KVE-2026-1914 — 부모에서 한 번 판정하고 끝나지 않는다)
 - [ ] `boards`/`board_posts`/`board_comments` 의 count 컬럼(`posts_count`/`comments_count`/`replies_count`/`attachments_count`)은 훅 리스너(`*CountSyncListener`)가 갱신 — Service 에서 직접 증감 금지

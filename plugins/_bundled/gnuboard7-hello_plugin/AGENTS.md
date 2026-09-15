@@ -44,7 +44,7 @@ Filter 리스너 하나.
 | `src/Services/` | 비즈니스 로직 | Repository 인터페이스 주입 (구체 클래스 금지) |
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update gnuboard7-hello_plugin --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update gnuboard7-hello_plugin --force` (빌드 불필요) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
@@ -118,7 +118,7 @@ Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. �
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:gnuboard7-hello_plugin` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] Filter 훅을 구독한다면 `'type' => 'filter'` 를 선언했는지 확인 — 누락 시 반환값이 조용히 버려진다
 - [ ] 부가 동작은 설정 토글 뒤에 둔다 (`log_enabled` 가 그 본보기)
 - [ ] `manifest.hidden = true` 를 유지 (복제본에서만 제거)

@@ -29,7 +29,7 @@
 | `use_escrow` | `string` | `off` | 에스크로 사용 |
 | `webhook_secret_verify` | `boolean` | `true` | 웹훅 secret 검증 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->

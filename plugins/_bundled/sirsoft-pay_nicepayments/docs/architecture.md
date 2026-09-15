@@ -46,7 +46,7 @@ API 호출 없이 조기 반환하는 것이 이 플러그인 계층 구조의 �
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-pay_nicepayments --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-pay_nicepayments --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_nicepayments --force` |

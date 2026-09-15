@@ -53,7 +53,7 @@ DB 에 쓰지 않고 임시 보관했다가 가입 완료 시에만 레코드로
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-verification_nhnkcp --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
@@ -125,7 +125,7 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-verification_nhnkcp` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] PII 컬럼을 다루는 코드 변경 시 GDPR 삭제/탈퇴 정리 리스너(`CleanKcpRecordOnUserDelete`/`CleanKcpRecordOnUserWithdraw`)가 여전히 그 컬럼을 정리하는지 확인

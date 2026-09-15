@@ -141,7 +141,12 @@ describe('이슈 #525 — 게시글 상세 반응 버튼 (basic/show.json)', () 
         const apiCall = seq.find((a) => a.handler === 'apiCall')!;
         expect(apiCall).toBeDefined();
         expect(apiCall.target as string).toContain('/react');
-        const onSuccess = apiCall.onSuccess as Node[];
+        // onSuccess 는 단일 액션이면 객체, 복수면 배열이다 — `<success>` 컴파일 규약
+        // (ActionCompiler::compileCallbackActions)이고 엔진도 ActionDispatcher 에서
+        // `Array.isArray(...) ? ... : [...]` 로 정규화한다. 코퍼스에도 객체형이 117건 있다.
+        // 배열만 가정하면 액션이 하나로 줄어드는 순간 이 단언이 깨진다.
+        const onSuccessRaw = apiCall.onSuccess as Node | Node[];
+        const onSuccess = Array.isArray(onSuccessRaw) ? onSuccessRaw : [onSuccessRaw];
         // 성공: refetch 대신 응답값(reaction_counts/my_reaction_type_id)으로 setState
         expect(onSuccess.some((a) => a.handler === 'refetchDataSource')).toBe(false);
         const successSet = onSuccess.find((a) => a.handler === 'setState')!;

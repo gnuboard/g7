@@ -61,7 +61,7 @@ UI 는 다른 화면에 끼워 넣는 조각 하나와 관리자 설정 화면 �
 |---|---|---|
 | `plugin.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json·composer.json 동기화 |
 | `plugin.php` | 진입 클래스 (선언형 표면 SSoT) | 표면 변경 시 `ext:docgen` 재실행 + 코어 최소 버전 검토 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-daum_postcode --force` |
