@@ -53,5 +53,6 @@
   "fileDeleteError": "",
   "fileDeleteReferences": [],
   "fileDeleteRouteRequired": false,
-  "layoutVersionLimit": 100
+  "layoutVersionLimit": 100,
+  "extensionViewMode": "gallery"
 }

@@ -34,5 +34,24 @@
     "rebuild_search_index_title": "検索インデックス",
     "rebuild_search_index_label": "アップデート後、インデックスが未反映の検索インデックスを再生成",
     "rebuild_search_index_desc": "再生成中は対象インデックスがロックされるか再インデックスされます。稼働中のサイトではチェックせず、メンテナンス時間帯に別途実行してください。"
+  },
+  "view_mode": {
+    "toggle_label": "表示方法",
+    "gallery": "ギャラリー表示",
+    "list": "一覧表示",
+    "gallery_aria": "ギャラリーで表示",
+    "list_aria": "一覧で表示"
+  },
+  "card": {
+    "open_detail": "{{name}} 詳細表示"
+  },
+  "icon": {
+    "alt": "{{name}} アイコン",
+    "locale_badge_sr": "{{locale}} 言語パック"
+  },
+  "manifest_preview": {
+    "icon_present": "アイコン含む: {{path}}",
+    "icon_missing": "アイコンがないため、デフォルトアイコンが表示されます。",
+    "icon_invalid": "アイコンが規格に適合していないため、デフォルトアイコンが表示されます。"
   }
 }

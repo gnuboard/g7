@@ -25,9 +25,47 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-700 dark:text-gray-300"
+                        "className": "text-gray-700 dark:text-gray-300 flex items-center gap-2"
                     },
-                    "text": "$t:admin.plugins.modals.uninstall_confirm|name={{_global.selectedPlugin.name}}"
+                    "children": [
+                        {
+                            "id": "plugin_uninstall_icon",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{_global.selectedPlugin?.icon_url}}",
+                                    "props": {
+                                        "src": "{{_global.selectedPlugin.icon_url}}",
+                                        "alt": "",
+                                        "loading": "lazy",
+                                        "decoding": "async",
+                                        "className": "w-5 h-5 object-contain"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_global.selectedPlugin?.icon_url}}",
+                                    "props": {
+                                        "name": "puzzle-piece",
+                                        "className": "text-xs text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.plugins.modals.uninstall_confirm|name={{_global.selectedPlugin.name}}"
+                        }
+                    ]
                 },
                 {
                     "type": "basic",

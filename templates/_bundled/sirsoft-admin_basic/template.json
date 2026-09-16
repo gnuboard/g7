@@ -102,13 +102,6 @@
             "section"
         ]
     },
-    "preview": {
-        "thumbnail": "preview/thumbnail.png",
-        "screenshots": [
-            "preview/screenshot1.png",
-            "preview/screenshot2.png"
-        ]
-    },
     "error_config": {
         "layouts": {
             "401": "errors/401",

@@ -291,6 +291,13 @@ class ExtensionDocScaffolder
         'hooks-subscribed',
     ];
 
+    /**
+     * 문서 종류·확장 유형에 해당하는 섹션 목록을 돌려줍니다.
+     *
+     * @param  string  $doc  문서 종류 (agents|architecture 등)
+     * @param  string  $type  확장 유형 (module|plugin|template)
+     * @return array<int, string> 섹션 키 목록
+     */
     public static function sectionsFor(string $doc, string $type): array
     {
         $meta = self::DOCUMENTS[$doc] ?? null;
@@ -937,6 +944,9 @@ class ExtensionDocScaffolder
             // 확장이 셸로 호출하는 외부 실행파일·인증서·WSDL 자리다(실측 6파일, 결제 플러그인).
             // 비면 그 기능이 죽는데 코드에는 "bin/ 에 복사하세요" 안내만 있고 문서에는 자리가 없었다.
             'bin/' => ['확장이 실행하는 외부 바이너리·인증서', '교체 시 OS별 파일과 권한을 함께 확인 (비면 해당 기능 정지)'],
+            // 확장 아이콘 자리다 — 관리자 목록·상세·확인 창과 설치 마법사가 이 파일을 그린다.
+            // 규격을 어기면 서빙되지 않고 종류별 기본 그림으로 떨어진다(docs/extension/extension-icons.md).
+            'assets/icon.svg' => ['확장 아이콘 (관리자 목록·설치 마법사 카드)', '정사각·100KB 이하·스크립트 없는 SVG — 교체 후 '.$updateCmd],
             'docs/' => ['개발자 문서', '표면 변경 시 `php artisan ext:docgen` 재실행'],
             'lang/' => ['다국어', '키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화'],
             'custom/' => ['운영자 추가 에셋 자리', '작성자는 두지 않는다 (운영자 소유 — 보존 계층이 덮지 않음)'],

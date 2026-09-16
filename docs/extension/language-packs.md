@@ -174,6 +174,7 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 | `requires.depends_on_core_locale` | ✓ | true 일 때 활성화 시 동일 locale 의 코어 언어팩 활성 상태를 강제 |
 | `github_url` | ✓ | GitHub 저장소 URL (없으면 빈 문자열). 비어있지 않으면 GitHub 기반 업데이트 경로 활성화 — 모듈/플러그인 매니페스트와 동일 동작 |
 | `github_changelog_url` | ✓ | GitHub release/CHANGELOG URL (없으면 빈 문자열) |
+| `icon` | — | **선택**. 패키지 루트 기준 아이콘 상대경로. 적지 않으면 대상 확장(또는 코어) 아이콘에 로케일 표시를 얹어 자동 합성합니다 — [확장 아이콘](extension-icons.md) |
 
 ### 콘텐츠 파일
 

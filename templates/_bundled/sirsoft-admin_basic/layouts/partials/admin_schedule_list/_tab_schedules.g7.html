@@ -347,7 +347,7 @@
         </button>
       </div>
       <div data-ref="list_info_right" class="flex-center gap-3 py-3">
-        <span class="text-body font-medium">$t:admin.schedules.total_count|count={{schedules?.data?.total ?? 0}}</span>
+        <span class="text-body font-medium">$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}</span>
         <select name="sort_by" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}">
           <options>
             <option value="created_at_desc">$t:admin.schedules.sort.created_at_desc</option>
@@ -380,7 +380,7 @@
         </select>
       </div>
     </div>
-    <data-grid selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+    <data-grid selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
       <column field="name" header="$t:admin.schedules.columns.name" :sortable="false">
         <cell>
           <div>

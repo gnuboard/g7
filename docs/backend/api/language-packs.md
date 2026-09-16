@@ -80,6 +80,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | files_missing | boolean | `false` | 드리프트 여부 — active 로 기록됐으나 설치본 파일이 부재해 런타임에 조용히 ko 로 폴백하는 상태이면 true |
 | bundled_source_available | boolean | `false` | 번들 소스(`lang-packs/_bundled/{identifier}`)가 실재해 재설치로 복구 가능하면 true. 설치 경로(source_type)와 무관하게 소스 실재 여부로 판정 |
 | target_name | string | `Hello 모듈` | 대상 확장의 표시 이름 (scope+target_identifier 로 해석) |
+| icon_url | string\|null | `/assets/icons/core/g7-core.svg` | 언어팩 아이콘 주소 (없으면 null — 화면은 언어 글리프로 대체). 자기 선언이 없으면 코어 또는 대상 확장의 아이콘을 빌려 쓰고 화면이 로케일 배지를 얹는다 |
+| icon_source | string | `core` | 아이콘 출처 (`manifest` 자기 선언 · `core` 코어 아이콘 · `target` 대상 확장 아이콘 · `none` 없음). `manifest` 가 아니면 화면이 로케일 배지를 합성한다 |
 | installed_at | string | `2026-07-28 22:55:00` | installed 일시 |
 | activated_at | string | `2026-08-01 11:36:31` | activated 일시 |
 | created_at | string | `2026-07-31 22:55:00` | 생성 일시 |
@@ -179,6 +181,15 @@ HTTP/1.1 200
             },
             "... (총 25건 중 2건 표시)"
         ],
+        "pagination": {
+            "current_page": 1,
+            "last_page": 3,
+            "per_page": 25,
+            "total": 57,
+            "from": 1,
+            "to": 25,
+            "has_more_pages": true
+        },
         "meta": {
             "total": 57,
             "active": 15,

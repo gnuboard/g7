@@ -124,9 +124,18 @@
         "label": "$t:editor.action.set_locale.param_target",
         "widget": "select",
         "options": [
-          { "value": "ko", "label": "$t:editor.action.set_locale.target_ko" },
-          { "value": "en", "label": "$t:editor.action.set_locale.target_en" },
-          { "value": "ja", "label": "$t:editor.action.set_locale.target_ja" }
+          {
+            "value": "ko",
+            "label": "$t:editor.action.set_locale.target_ko"
+          },
+          {
+            "value": "en",
+            "label": "$t:editor.action.set_locale.target_en"
+          },
+          {
+            "value": "ja",
+            "label": "$t:editor.action.set_locale.target_ja"
+          }
         ]
       }
     ],
@@ -143,9 +152,18 @@
         "label": "$t:editor.action.set_theme.param_target",
         "widget": "select",
         "options": [
-          { "value": "auto", "label": "$t:editor.action.set_theme.target_auto" },
-          { "value": "light", "label": "$t:editor.action.set_theme.target_light" },
-          { "value": "dark", "label": "$t:editor.action.set_theme.target_dark" }
+          {
+            "value": "auto",
+            "label": "$t:editor.action.set_theme.target_auto"
+          },
+          {
+            "value": "light",
+            "label": "$t:editor.action.set_theme.target_light"
+          },
+          {
+            "value": "dark",
+            "label": "$t:editor.action.set_theme.target_dark"
+          }
         ]
       }
     ],
@@ -178,10 +196,22 @@
         "label": "$t:editor.action.set_date_range.param_preset",
         "widget": "select",
         "options": [
-          { "value": "today", "label": "$t:editor.action.set_date_range.preset_today" },
-          { "value": "week", "label": "$t:editor.action.set_date_range.preset_week" },
-          { "value": "month", "label": "$t:editor.action.set_date_range.preset_month" },
-          { "value": "1year", "label": "$t:editor.action.set_date_range.preset_1year" }
+          {
+            "value": "today",
+            "label": "$t:editor.action.set_date_range.preset_today"
+          },
+          {
+            "value": "week",
+            "label": "$t:editor.action.set_date_range.preset_week"
+          },
+          {
+            "value": "month",
+            "label": "$t:editor.action.set_date_range.preset_month"
+          },
+          {
+            "value": "1year",
+            "label": "$t:editor.action.set_date_range.preset_1year"
+          }
         ]
       }
     ],
@@ -229,9 +259,18 @@
         "label": "$t:editor.action.init_theme.param_target",
         "widget": "select",
         "options": [
-          { "value": "auto", "label": "$t:editor.action.init_theme.target_auto" },
-          { "value": "light", "label": "$t:editor.action.init_theme.target_light" },
-          { "value": "dark", "label": "$t:editor.action.init_theme.target_dark" }
+          {
+            "value": "auto",
+            "label": "$t:editor.action.init_theme.target_auto"
+          },
+          {
+            "value": "light",
+            "label": "$t:editor.action.init_theme.target_light"
+          },
+          {
+            "value": "dark",
+            "label": "$t:editor.action.init_theme.target_dark"
+          }
         ]
       }
     ],
@@ -261,6 +300,56 @@
       "params": {
         "storageKey": "{{storageKey}}"
       }
+    }
+  },
+  "persistViewMode": {
+    "label": "$t:editor.action.persist_view_mode.label",
+    "params": [
+      {
+        "key": "storageKey",
+        "label": "$t:editor.action.persist_view_mode.param_storage_key",
+        "widget": "text"
+      },
+      {
+        "key": "stateKey",
+        "label": "$t:editor.action.persist_view_mode.param_state_key",
+        "widget": "text"
+      },
+      {
+        "key": "value",
+        "label": "$t:editor.action.persist_view_mode.param_value",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "sequence",
+      "actions": [
+        {
+          "handler": "setState",
+          "params": {
+            "target": "global",
+            "{{stateKey}}": "{{value}}"
+          }
+        },
+        {
+          "handler": "saveToLocalStorage",
+          "params": {
+            "key": "{{storageKey}}",
+            "value": "{{value}}"
+          }
+        },
+        {
+          "handler": "loadFromLocalStorage",
+          "params": {
+            "key": "{{storageKey}}",
+            "defaultValue": ""
+          },
+          "resultTo": {
+            "target": "_global",
+            "key": "{{stateKey}}Persisted"
+          }
+        }
+      ]
     }
   }
 }

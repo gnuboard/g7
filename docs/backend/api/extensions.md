@@ -618,3 +618,63 @@ Authorization: Bearer {YOUR_TOKEN}
 **설명** 파일을 삭제합니다. 편집 불가 형식(폰트·이미지)도 삭제 대상입니다 — 삭제까지 편집 확장자로 좁히면 올린 폰트를 지울 방법이 없어집니다. 삭제 후 확장 캐시 버전이 올라 정적 게시본에서도 제거됩니다.
 
 
+
+---
+
+### GET /api/extensions/{type}/{identifier}/icon
+
+- **라우트명**: `api.public.extensions.icon`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicExtensionIconController@show`
+- **인증/권한**: **없음 (공개)**
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- | --- |
+| type | path | string | 필수 | 확장 유형. `module` · `plugin` · `template` · `language-pack` 넷만 라우트에 매칭됩니다 |
+| identifier | path | string | 필수 | 확장 식별자. 언어팩은 `{namespace}-{scope}-{target}-{locale}` 형식, 그 외는 `vendor-name` 형식 |
+| v | query | string | 선택 | 캐시 무효화용 버전 문자열. 값 자체는 응답에 영향을 주지 않고 URL 을 다르게 만들기 위한 것입니다 |
+
+**요청 예시**
+
+```http
+GET /api/extensions/plugin/sirsoft-gdpr/icon?v=1.1.0 HTTP/1.1
+Host: api.example.com
+Accept: image/svg+xml
+```
+
+**응답**
+
+JSON envelope 이 아니라 **이미지 파일 본문**을 그대로 돌려줍니다. 화면은 이 주소를 `<img src>`
+로만 씁니다.
+
+| 헤더 | 값 | 용도 |
+| --- | --- | --- |
+| Content-Type | `image/svg+xml` · `image/png` · `image/webp` | 아이콘 파일 형식 |
+| ETag | 파일 수정 시각·크기 해시 | `If-None-Match` 로 304 판정 |
+| Cache-Control | 운영: `public, max-age=31536000, immutable` / 개발: `no-cache` | 환경별 캐싱 정책 |
+| X-Content-Type-Options | `nosniff` | 브라우저의 MIME 추측 차단 |
+| Content-Security-Policy | `default-src 'none'; style-src 'unsafe-inline'` (SVG 응답에만) | 주소를 직접 열어도 스크립트가 실행되지 않게 하는 이중 방어 |
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 304 | Not Modified | `If-None-Match` 가 현재 ETag 와 같은 경우 |
+| 404 | Not Found | 아이콘 파일이 없거나, 규격을 지키지 않아 서빙 대상이 아닌 경우. 허용 유형 밖의 `type` 도 라우트 매칭 실패로 404 |
+| 422 | Unprocessable Entity | 식별자 형식이 규칙에 맞지 않는 경우 |
+
+**설명** 확장·언어팩에 동봉된 아이콘 파일을 서빙합니다. 규정 원문은
+[확장 아이콘](../../extension/extension-icons.md)입니다.
+
+이 엔드포인트가 **공개**인 이유는 둘입니다. 첫째, 관리자 화면이 이 주소를 `<img src>` 로 부르는데
+관리자 API 는 Bearer 토큰 인증이라 이미지 태그가 쓸 수 없습니다. 둘째, **아직 설치하지 않은 번들
+확장**의 아이콘도 목록에 보여야 하므로 설치 상태·인증을 판정 재료로 삼지 않습니다.
+
+아이콘 파일은 활성 디렉터리 → 대기(`_pending`) → 번들(`_bundled`) 순으로 찾습니다. 기존 확장 자산
+서빙 주소가 활성 디렉터리만 보는 것과 다른 점입니다.
+
+규격(정사각·100KB 이하·스크립트 없는 SVG)을 지키지 않은 파일은 **서빙하지 않고 404** 입니다.
+설치를 막지는 않으며, 그런 확장은 목록에서 종류별 기본 그림으로 표시됩니다.
+
+이 주소는 정적 게시 대상이 아닙니다.

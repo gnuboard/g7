@@ -18,6 +18,24 @@
               <span class="text-primary font-semibold">$t:admin.modules.modals.basic_info</span>
             </div>
             <div class="grid-2col">
+            <div data-ref="detail_ext_icon" class="col-span-2 flex items-center gap-3 mb-4">
+              <!-- 글리프를 늘 깔아 두고 이미지가 그 위를 덮는다 — 로드 전에도 자리가 유지되고,
+                   404·손상이면 그 식별자만 목록에 담아 이미지를 감추면 글리프가 다시 드러난다.
+                   깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 확장까지 전부
+                   아이콘을 잃는다(전례) — 그래서 식별자 목록으로 든다. -->
+              <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+                <icon name="cube" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+                <img data-if="{{_global.selectedModule?.icon_url && !(_local.selectedModuleIconBroken ?? []).includes(_global.selectedModule?.identifier)}}" src="{{_global.selectedModule.icon_url}}" alt="$t:defer:extensions.icon.alt|name={{_global.selectedModule?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
+                  <on event="onError">
+                    <set-state target="local" selectedModuleIconBroken="{{[...(_local.selectedModuleIconBroken ?? []), _global.selectedModule?.identifier]}}"/>
+                  </on>
+                </img>
+              </div>
+              <div class="min-w-0">
+                <p class="text-primary font-semibold truncate">{{_global.selectedModule?.name ?? ''}}</p>
+                <code class="text-label-subtle text-xs">{{_global.selectedModule?.identifier ?? ''}}</code>
+              </div>
+            </div>
               <div>
                 <span class="text-label-subtle">$t:admin.modules.modals.field_name</span>
                 <p class="text-primary font-medium">{{_global.selectedModule.name}}</p>

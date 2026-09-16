@@ -3,6 +3,7 @@
 namespace App\Services\LanguagePack;
 
 use App\Enums\LanguagePackScope;
+use App\Support\ExtensionIcon\ExtensionIconValidator;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -41,6 +42,14 @@ class LanguagePackManifestValidator
     private const KEBAB_IDENTIFIER_PATTERN = '/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/';
 
     /**
+     * 언어팩 식별자 전체 패턴 ({namespace}-{scope}-{target?}-{locale} 조립 결과).
+     *
+     * 대상 확장 식별자가 언더스코어를 가질 수 있어(sirsoft-daum_postcode) 세그먼트
+     * 패턴(KEBAB_IDENTIFIER_PATTERN)보다 넓다. 경로 구분자·상위 탈출·대문자는 막는다.
+     */
+    public const PACK_IDENTIFIER_PATTERN = '/^[a-z][a-z0-9]*([-_][a-z0-9]+)*$/';
+
+    /**
      * manifest 배열을 검증합니다.
      *
      * 검증 실패 시 ValidationException 을 throw 합니다.
@@ -67,6 +76,7 @@ class LanguagePackManifestValidator
         $this->validateIdentifierNaming($manifest, $errors);
         $this->validateG7Version($manifest, $errors);
         $this->validateRequires($manifest, $errors);
+        $this->validateIcon($manifest, $errors);
 
         if (! empty($errors)) {
             throw ValidationException::withMessages($errors);
@@ -240,6 +250,38 @@ class LanguagePackManifestValidator
         $g7 = $manifest['g7_version'] ?? null;
         if ($g7 !== null && $g7 !== '' && ! $this->isSemverConstraint((string) $g7)) {
             $errors['manifest.g7_version'][] = 'g7_version 제약이 올바른 semver 형식이 아닙니다.';
+        }
+    }
+
+    /**
+     * 선택 필드 icon 의 경로 규칙을 검증합니다.
+     *
+     * 규격(정사각·크기·안전성)은 파일을 읽어야 알 수 있어 해석기·미리보기가 맡고,
+     * 여기서는 **경로 문자열만** 본다 — 패키지 밖을 가리키는 선언은 설치 전에 막는다.
+     * 판정은 확장 아이콘 검증기와 같은 것을 쓴다(두 곳이 갈리면 규격이 둘이 된다).
+     *
+     * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @param  array<string, array<int, string>>  $errors  에러 누적 배열
+     * @return void 반환값 없음
+     */
+    private function validateIcon(array $manifest, array &$errors): void
+    {
+        $icon = $manifest['icon'] ?? null;
+
+        if ($icon === null || $icon === '') {
+            return;
+        }
+
+        if (! is_string($icon)) {
+            $errors['manifest.icon'][] = 'icon 은 패키지 루트 기준 상대경로 문자열이어야 합니다.';
+
+            return;
+        }
+
+        $violation = ExtensionIconValidator::manifestPathViolation($icon);
+
+        if ($violation !== null) {
+            $errors['manifest.icon'][] = 'icon 경로가 규칙에 맞지 않습니다 ('.$violation.').';
         }
     }
 

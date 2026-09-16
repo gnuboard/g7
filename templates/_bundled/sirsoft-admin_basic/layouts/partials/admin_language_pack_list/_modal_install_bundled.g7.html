@@ -7,7 +7,7 @@
 <partial description="번들 언어팩 설치 확인 모달 — 모듈/플러그인의 install 모달과 동일한 패턴. 행의 '설치' 버튼이 즉시 apiCall 하지 않고 본 모달을 열어 운영자가 확인 후 진행." editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_install_bundled_modal">
   <modal data-ref="language_pack_install_bundled_modal" title="$t:admin.language_packs.modals.install_bundled_title" size="sm">
     <div class="py-2 space-y-3">
-      <p class="text-gray-700 dark:text-gray-300">$t:admin.language_packs.modals.install_bundled_confirm|identifier={{_global.selectedBundledLanguagePack?.identifier ?? ''}}</p>
+      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="lp_install_bundled_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"><img data-if="{{_global.selectedBundledLanguagePack?.icon_url}}" src="{{_global.selectedBundledLanguagePack.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/><icon data-if="{{!_global.selectedBundledLanguagePack?.icon_url}}" name="fas fa-language" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/></span><span>$t:admin.language_packs.modals.install_bundled_confirm|identifier={{_global.selectedBundledLanguagePack?.identifier ?? ''}}</span></p>
       <div class="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm space-y-1">
         <div class="text-secondary flex justify-between">
           <span>$t:admin.language_packs.columns.scope</span>

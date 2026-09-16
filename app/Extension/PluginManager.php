@@ -17,6 +17,7 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Enums\PermissionType;
+use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
@@ -60,6 +61,7 @@ use Illuminate\Support\Facades\Schema;
 
 class PluginManager implements PluginManagerInterface
 {
+    use ResolvesExtensionIcons;
     use ResolvesExtensionSharedRecords;
     use Traits\CachesPluginStatus;
     use Traits\ClearsTemplateCaches;
@@ -70,6 +72,16 @@ class PluginManager implements PluginManagerInterface
     use Traits\ValidatesLayoutFiles;
     use Traits\ValidatesSeoVariables;
     use Traits\ValidatesTranslationPath;
+
+    /**
+     * 아이콘 해석기에 넘길 확장 유형을 반환합니다.
+     *
+     * @return string 확장 유형 ('plugin')
+     */
+    protected function extensionIconType(): string
+    {
+        return 'plugin';
+    }
 
     /** @var int install 프로그레스바 단계 수 */
     public const INSTALL_STEPS = 8;
@@ -1237,6 +1249,7 @@ class PluginManager implements PluginManagerInterface
                     'is_pending' => false,
                     'is_bundled' => false,
                     'hidden' => $plugin->isHidden(),
+                    ...$this->resolveIconFields($identifier, $plugin->getVersion()),
                     'has_settings' => $plugin->hasSettings(),
                     'settings_route' => $plugin->getSettingsRoute(),
                     'assets' => $assets,
@@ -1258,6 +1271,7 @@ class PluginManager implements PluginManagerInterface
                     'is_pending' => true,
                     'is_bundled' => false,
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
+                    ...$this->resolveIconFields($identifier, $metadata['version'] ?? '0.0.0'),
                     'has_settings' => false,
                     'settings_route' => null,
                     'assets' => null,
@@ -1279,6 +1293,7 @@ class PluginManager implements PluginManagerInterface
                     'is_pending' => false,
                     'is_bundled' => true,
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
+                    ...$this->resolveIconFields($identifier, $metadata['version'] ?? '0.0.0'),
                     'has_settings' => false,
                     'settings_route' => null,
                     'assets' => null,
@@ -1354,6 +1369,7 @@ class PluginManager implements PluginManagerInterface
                     'github_url' => $plugin->getGithubUrl(),
                     'github_changelog_url' => $record->github_changelog_url ?? null,
                     'hidden' => $plugin->isHidden(),
+                    ...$this->resolveIconFields($identifier, $record->version),
                     'has_settings' => $plugin->hasSettings(),
                     'settings_route' => $plugin->getSettingsRoute(),
                     'assets' => $assets,
@@ -1429,6 +1445,7 @@ class PluginManager implements PluginManagerInterface
             'assets' => $assets,
             'created_at' => $pluginRecord?->created_at,
             'updated_at' => $pluginRecord?->updated_at,
+            ...$this->resolveIconFields($identifier, $plugin->getVersion()),
         ];
     }
 
@@ -1484,6 +1501,7 @@ class PluginManager implements PluginManagerInterface
                 'assets' => null,
                 'created_at' => null,
                 'updated_at' => null,
+                ...$this->resolveIconFields($plugin->getIdentifier(), $plugin->getVersion()),
             ];
         }
 
@@ -1511,6 +1529,7 @@ class PluginManager implements PluginManagerInterface
             'assets' => null,
             'created_at' => null,
             'updated_at' => null,
+            ...$this->resolveIconFields($metadata['identifier'] ?? $pluginName, $metadata['version'] ?? '0.0.0'),
         ];
     }
 
