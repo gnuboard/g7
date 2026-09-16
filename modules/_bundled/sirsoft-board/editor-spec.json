@@ -1842,6 +1842,148 @@
           "unread_count": 2
         }
       }
+    ,
+      "reactions": {
+        "data": {
+          "data": [
+            {
+              "id": 701,
+              "reacted_at": "2026-09-14 09:31",
+              "created_at": "2026-09-14 09:31:02",
+              "target_type": "post",
+              "target_type_label": "게시글",
+              "target_id": 1201,
+              "post_id": 1201,
+              "comment_id": null,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "board": {
+                "id": 1,
+                "slug": "free",
+                "name": "자유게시판",
+                "is_active": true,
+                "use_reaction": true,
+                "use_comment_reaction": true
+              },
+              "target_title": "맛집 추천해요",
+              "target_excerpt": null,
+              "target_status": "published",
+              "target_status_label": "게시됨",
+              "is_target_deleted": false,
+              "author_name": "이도현",
+              "reaction_type": {
+                "id": 1,
+                "code": "like",
+                "name": "추천",
+                "icon_name": "fa-thumbs-up",
+                "icon_url": null,
+                "is_active": true
+              },
+              "abilities": {
+                "can_delete": true
+              }
+            },
+            {
+              "id": 702,
+              "reacted_at": "2026-09-13 20:04",
+              "created_at": "2026-09-13 20:04:47",
+              "target_type": "comment",
+              "target_type_label": "댓글",
+              "target_id": 3301,
+              "post_id": 1202,
+              "comment_id": 3301,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "board": {
+                "id": 2,
+                "slug": "notice",
+                "name": "공지사항",
+                "is_active": true,
+                "use_reaction": true,
+                "use_comment_reaction": false
+              },
+              "target_title": "[필독] 게시판 이용 규칙 안내",
+              "target_excerpt": "규칙 잘 봤습니다. 감사합니다.",
+              "target_status": "published",
+              "target_status_label": "게시됨",
+              "is_target_deleted": false,
+              "author_name": "운영자",
+              "reaction_type": {
+                "id": 2,
+                "code": "dislike",
+                "name": "비추천",
+                "icon_name": "fa-thumbs-down",
+                "icon_url": null,
+                "is_active": false
+              },
+              "abilities": {
+                "can_delete": true
+              }
+            }
+          ],
+          "pagination": {
+            "total": 2,
+            "count": 2,
+            "per_page": 20,
+            "current_page": 1,
+            "last_page": 1,
+            "from": 1,
+            "to": 2,
+            "has_more_pages": false
+          },
+          "reaction_types": [
+            {
+              "id": 1,
+              "code": "like",
+              "name": "추천",
+              "icon_name": "fa-thumbs-up",
+              "icon_url": null,
+              "is_active": true
+            },
+            {
+              "id": 2,
+              "code": "dislike",
+              "name": "비추천",
+              "icon_name": "fa-thumbs-down",
+              "icon_url": null,
+              "is_active": false
+            }
+          ],
+          "abilities": {
+            "can_view": true,
+            "can_manage": true
+          }
+        }
+      },
+      "reaction_boards": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "name": "자유게시판",
+              "slug": "free"
+            },
+            {
+              "id": 2,
+              "name": "공지사항",
+              "slug": "notice"
+            },
+            {
+              "id": 3,
+              "name": "임시게시판",
+              "slug": "temp"
+            }
+          ]
+        }
+      }
     },
     "byEndpointPattern": {
       "/api/modules/sirsoft-board/boards/*/posts*": {

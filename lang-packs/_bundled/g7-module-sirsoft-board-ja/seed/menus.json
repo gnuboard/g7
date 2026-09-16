@@ -13,5 +13,8 @@
   },
   "sirsoft-board-scraps": {
     "name": "スクラップ管理"
+  },
+  "sirsoft-board-reactions": {
+    "name": "リアクション管理"
   }
 }

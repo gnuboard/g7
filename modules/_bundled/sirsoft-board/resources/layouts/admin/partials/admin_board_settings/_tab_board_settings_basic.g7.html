@@ -144,21 +144,55 @@
             </label>
             <toggle name="basic_defaults.use_reaction" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
-          <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. DB 등록 유형 전체(reactionTypes)를 순회해 체크박스로 basic_defaults.active_reaction_types(code 배열) 를 토글. 좌측 일괄적용 체크박스(bulkApplyFields)와 형태가 같아 혼동되기 쉬우므로, 배경 박스 + 좌측 들여쓰기로 '설정값 입력 영역'임을 시각적으로 분리한다 (PO 피드백). -->
+          <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. 순회 대상은 아래 편집기가
+            편집 중인 폼 배열(`form.basic_defaults.reaction_types`)이다. 편집기에서 방금 추가한
+            유형을 저장 전에도 여기서 고를 수 있어야 하고, 지운 유형이 선택지에 남으면 안 되기
+            때문이다(그래서 별도 데이터소스를 쓰지 않는다). 비활성 유형은 고를 수 없다 —
+            회원 화면에 어차피 나오지 않는다. 좌측 일괄적용 체크박스(bulkApplyFields)와 형태가
+            같아 혼동되기 쉬우므로, 배경 박스 + 좌측 들여쓰기로 '설정값 입력 영역'임을 시각적으로
+            분리한다 (PO 피드백). -->
           <div data-if="{{_local.form?.basic_defaults?.use_reaction === true}}" class="row-content-indent ml-6 mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
             <p class="text-field-hint mb-2">$t:sirsoft-board.admin.settings.fields.active_reaction_types</p>
+            <p data-testid="reaction-type-none-hint" data-if="{{(_local.form?.basic_defaults?.reaction_types ?? []).length === 0}}" class="text-field-hint">$t:sirsoft-board.admin.settings.reaction_types.none_hint</p>
             <div class="flex flex-col gap-2">
-              <div data-each="reactionType, reactionIdx in {{reactionTypes?.data?.reaction_types ?? []}}">
+              <div data-each="reactionType, reactionIdx in {{_local.form?.basic_defaults?.reaction_types ?? []}}">
                 <label class="flex-center gap-2 cursor-pointer">
-                  <input type="checkbox" class="checkbox-aligned" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code)}}">
+                  <input data-testid="reaction-type-check-{{reactionType.code}}" type="checkbox" class="checkbox-aligned" disabled="{{_computed.isReadOnly || reactionType.is_active === false}}" checked="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code)}}">
                     <on type="change">
                       <set-state target="local" form.basic_defaults.active_reaction_types="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.basic_defaults?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.basic_defaults?.active_reaction_types ?? []), reactionType.code]}}" :hasChanges="true"/>
                     </on>
                   </input>
-                  <icon name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
-                  <span>{{reactionType.name ?? reactionType.code}}</span>
+                  <img data-if="{{!!reactionType.icon_url}}" src="{{reactionType.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
+                  <icon data-if="{{!reactionType.icon_url}}" name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
+                  <span>{{reactionType.name?.[$locale ?? 'ko'] ?? reactionType.name?.ko ?? reactionType.code}}</span>
+                  <badge data-if="{{reactionType.is_active === false}}" color="gray" size="sm">$t:sirsoft-board.admin.settings.reaction_types.badges.inactive</badge>
                 </label>
               </div>
+            </div>
+          </div>
+          <!-- 반응 유형 인라인 편집기 — 유형 자체를 여기서 만들고 지운다. 위 체크박스와 같은
+            폼 배열을 보므로 추가·삭제가 곧바로 선택지에 반영된다. -->
+          <div data-if="{{_local.form?.basic_defaults?.use_reaction === true}}" class="row-content-indent ml-6 mt-2">
+            <include src="_reaction_type_editor.g7.html"/>
+          </div>
+        </div>
+        <!-- 댓글 반응 — 반응 사용의 하위 토글이다. 글 반응을 끄면 댓글 반응만 남을 수 없으므로
+          상위가 꺼져 있으면 이 줄도 잠근다(백엔드도 같은 판정을 한다). -->
+        <div data-ref="field_use_comment_reaction" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction')}}">
+                <on type="change">
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_comment_reaction') : [...(_local.bulkApplyFields ?? []), 'use_comment_reaction']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_comment_reaction</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_comment_reaction</p>
+              </div>
+            </label>
+            <div data-testid="settings-use-comment-reaction" class="flex-shrink-0">
+              <toggle name="basic_defaults.use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.basic_defaults?.use_reaction !== true}}"/>
             </div>
           </div>
         </div>

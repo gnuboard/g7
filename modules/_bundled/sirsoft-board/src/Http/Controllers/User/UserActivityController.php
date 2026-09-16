@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\Base\AuthBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
 
@@ -170,6 +172,12 @@ class UserActivityController extends AuthBaseController
             $userId = Auth::id();
 
             $stats = $this->postService->getUserActivityStats($userId);
+
+            // 마이페이지 게시판 활동 카드가 반응·신고 카운터도 보여준다.
+            $stats['total_reactions'] = app(ReactionRepositoryInterface::class)
+                ->summaryByUser((int) $userId)['count'];
+            $stats['total_reports'] = app(ReportRepositoryInterface::class)
+                ->countLogsByReporter((int) $userId);
 
             return $this->success(
                 'sirsoft-board::messages.user_activities.stats_success',

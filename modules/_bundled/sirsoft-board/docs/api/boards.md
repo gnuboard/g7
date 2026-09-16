@@ -143,6 +143,7 @@ HTTP/1.1 200
 | use_reply | body | boolean | 예 | — | 게시글 답변(원글에 대한 답글) 기능 사용 여부 |
 | use_report | body | boolean | 예 | — | 게시글/댓글 신고 기능 사용 여부 |
 | use_reaction | body | boolean | 예 | — | 게시글 반응(추천/비추천) 기능 사용 여부 |
+| use_comment_reaction | body | boolean | 아니오 | `true` | 댓글 반응 사용 여부. `use_reaction` 의 하위 토글이라 상위가 꺼져 있으면 함께 꺼집니다. |
 | active_reaction_types | body | array | 아니오 | — | 이 게시판에서 켠 반응 유형 code 목록 (문자열 배열, 예: `["like","dislike"]`) |
 | comment_order | body | string | 예 | `ASC`, `DESC` | 댓글 정렬 순서 (ASC 오름차순 / DESC 내림차순) |
 | new_display_hours | body | integer | 아니오 | min 0, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일). `0` 은 NEW 배지를 표시하지 않음 — 아카이브형 게시판이 쓰는 정상 값이며 시더가 실제로 넣는다 |
@@ -410,6 +411,7 @@ _단건 응답: `data` 객체의 필드._
 | show_view_count | boolean | `true` | 조회수 노출 |
 | use_report | boolean | `false` | 게시글/댓글 신고 기능 사용 |
 | use_reaction | boolean | `true` | 게시글 반응(추천/비추천) 기능 사용 |
+| use_comment_reaction | boolean | `true` | 댓글 반응 사용. `use_reaction` 이 꺼져 있으면 값과 무관하게 댓글 반응은 동작하지 않음 |
 | active_reaction_types | array | `["like","dislike"]` | 이 게시판에서 켠 반응 유형 code 목록. 생성 모드에서는 환경설정 기본값(`basic_defaults.active_reaction_types`)이 채워짐 |
 | min_title_length | integer | `2` | 최소 제목 글자 수 |
 | max_title_length | integer | `200` | 최대 제목 글자 수 |
@@ -1274,6 +1276,7 @@ HTTP/1.1 200
 | use_reply | body | boolean | 예 | — | 게시글 답변(원글에 대한 답글) 기능 사용 여부 |
 | use_report | body | boolean | 예 | — | 게시글/댓글 신고 기능 사용 여부 |
 | use_reaction | body | boolean | 예 | — | 게시글 반응(추천/비추천) 기능 사용 여부 |
+| use_comment_reaction | body | boolean | 아니오 | `true` | 댓글 반응 사용 여부. `use_reaction` 의 하위 토글이라 상위가 꺼져 있으면 함께 꺼집니다. |
 | active_reaction_types | body | array | 아니오 | — | 이 게시판에서 켠 반응 유형 code 목록 (문자열 배열, 예: `["like","dislike"]`) |
 | comment_order | body | string | 예 | `ASC`, `DESC` | 댓글 정렬 순서 (ASC 오름차순 / DESC 내림차순) |
 | new_display_hours | body | integer | 아니오 | min 0, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일). `0` 은 NEW 배지를 표시하지 않음 — 아카이브형 게시판이 쓰는 정상 값이며 시더가 실제로 넣는다 |

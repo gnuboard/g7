@@ -25,7 +25,11 @@ class SeedReactionTypes implements DataMigration
     private const TABLE = 'board_reaction_types';
 
     /**
-     * 백필할 기본 반응 유형 (BoardReactionTypeSeeder::getDefaults 와 동일 값).
+     * 백필할 기본 반응 유형 — 1.0.3 시점 값 동결본.
+     *
+     * 현행 SSoT 는 Support\ReactionTypeDefaults 이며, 이 상수는 이미 이 스텝을 실행한 설치본의
+     * 재현성을 위해 그 시점 값 그대로 동결한다(V-1 안전 규약상 모델·시더 참조도 불가).
+     * 두 값의 드리프트는 tests/Unit/Support/ReactionTypeDefaultsTest 가 감시한다.
      *
      * @var array<int, array<string, mixed>>
      */

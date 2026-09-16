@@ -3,8 +3,10 @@
 namespace Modules\Sirsoft\Board\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * 게시판 반응 이력 모델.
@@ -18,8 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $target_id
  * @property int $reaction_type_id
  * @property int|null $board_id
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class Reaction extends Model
 {
@@ -33,6 +35,11 @@ class Reaction extends Model
         'board_id',
     ];
 
+    /**
+     * 속성 캐스팅
+     *
+     * @return array<string, mixed> 캐스팅 정의
+     */
     protected function casts(): array
     {
         return [
@@ -74,12 +81,38 @@ class Reaction extends Model
     }
 
     /**
+     * 게시글 대상과의 관계.
+     *
+     * morph map 없는 폴리모픽이라 target_type 을 보지 않는 단순 BelongsTo 다 —
+     * with('post') 로 일괄 로드하면 댓글 반응까지 board_posts 에서 찾아 잘못된 값을 붙인다.
+     * 목록 경로는 ReactionRepository::hydrateTargets() 가 타입별로 나눠 채운다.
+     *
+     * @return BelongsTo<Post, Reaction>
+     */
+    public function post(): BelongsTo
+    {
+        return $this->belongsTo(Post::class, 'target_id');
+    }
+
+    /**
+     * 댓글 대상과의 관계.
+     *
+     * post() 와 같은 이유로 with() 금지 — hydrateTargets() 를 쓴다.
+     *
+     * @return BelongsTo<Comment, Reaction>
+     */
+    public function comment(): BelongsTo
+    {
+        return $this->belongsTo(Comment::class, 'target_id');
+    }
+
+    /**
      * 특정 대상(타입+ID)의 반응만 조회하는 스코프.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  Builder  $query
      * @param  string  $targetType  대상 타입 (예: post)
      * @param  int  $targetId  대상 ID
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return Builder
      */
     public function scopeByTarget($query, string $targetType, int $targetId)
     {

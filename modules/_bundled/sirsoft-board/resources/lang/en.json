@@ -21,7 +21,9 @@
             "settings": "Board Settings",
             "scraps": "Scrap list",
             "scrap_boards": "Scrap board options",
-            "reactionTypes": "Reaction Types"
+            "reactionTypes": "Reaction Types",
+            "reactions": "Reaction list",
+            "reaction_boards": "Reaction board options"
         }
     },
     "common": {
@@ -42,6 +44,9 @@
         },
         "scraps": {
             "$partial": "partial/en/admin/scraps.json"
+        },
+        "reactions": {
+            "$partial": "partial/en/admin/reactions.json"
         },
         "posts": {
             "$partial": "partial/en/admin/posts.json"

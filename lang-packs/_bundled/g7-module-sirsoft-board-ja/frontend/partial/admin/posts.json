@@ -144,7 +144,8 @@
       "error": "通報受付に失敗しました。",
       "report_target": "通報対象: ",
       "comment_by_author": "{{author}}さんのコメント"
-    }
+    },
+    "reaction_total": "反応 {{count}}"
   },
   "form": {
     "description": "投稿を作成または編集します",
@@ -202,7 +203,8 @@
     "category": "カテゴリー",
     "author": "投稿者",
     "view_count": "閲覧数",
-    "created_at": "作成日"
+    "created_at": "作成日",
+    "reaction_total": "反応"
   },
   "search_fields": {
     "all": "すべて",

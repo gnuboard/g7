@@ -19,7 +19,7 @@ use Illuminate\Http\JsonResponse;
 class ReactionNotAllowedException extends Exception
 {
     /**
-     * @param  string  $reason  거절 사유 (disabled | inactive_type | self_post | secret_denied)
+     * @param  string  $reason  거절 사유 (disabled | inactive_type | self_post | secret_denied | target_unavailable | self_comment)
      * @param  string  $message  사용자에게 보일 메시지
      */
     public function __construct(
@@ -70,9 +70,31 @@ class ReactionNotAllowedException extends Exception
     }
 
     /**
+     * 반응할 수 없는 상태의 대상(블라인드·삭제·미게시)에 대한 예외를 생성합니다.
+     *
+     * @return self 대상 상태 사유 예외
+     */
+    public static function targetUnavailable(): self
+    {
+        return new self('target_unavailable', __('sirsoft-board::messages.reaction.target_unavailable'));
+    }
+
+    /**
+     * 본인 댓글 반응 시도에 대한 예외를 생성합니다.
+     *
+     * 비회원 댓글(user_id NULL)은 본인 판정이 불가능하므로 이 예외로 막지 않는다.
+     *
+     * @return self 본인 댓글 사유 예외
+     */
+    public static function selfComment(): self
+    {
+        return new self('self_comment', __('sirsoft-board::messages.reaction.self_comment'));
+    }
+
+    /**
      * 거절 사유를 반환합니다.
      *
-     * @return string 거절 사유 (disabled | inactive_type | self_post)
+     * @return string 거절 사유 (disabled | inactive_type | self_post | secret_denied | target_unavailable | self_comment)
      */
     public function getReason(): string
     {

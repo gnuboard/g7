@@ -5,7 +5,7 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 168개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 173개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -15,7 +15,7 @@
 | `errors` | 6개 |
 | `mypage` | 12개 |
 | `page` | 1개 |
-| `partials` | 125개 |
+| `partials` | 130개 |
 | `search` | 1개 |
 | `shop` | 9개 |
 | `users` | 2개 |
@@ -104,8 +104,13 @@
 | `_modal_confirm_delete` | `partials` | partial | - |
 | `_modal_confirm_overwrite` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
+| `_modal_reaction_bulk_delete` | `partials` | partial | - |
+| `_modal_reaction_delete` | `partials` | partial | - |
+| `_modal_report_cancel` | `partials` | partial | - |
 | `_my_comments` | `partials` | partial | - |
 | `_my_posts` | `partials` | partial | - |
+| `_my_reactions` | `partials` | partial | - |
+| `_my_reports` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
@@ -690,7 +695,6 @@ show.g7.html:
   └── _type_renderer.g7.html → types/basic/show.g7.html
       ├── 게시글 본문 (HtmlContent)
       ├── _post_attachments.g7.html (첨부파일)
-      ├── PostReactions (리액션)
       ├── _comment_section.g7.html
       │   ├── _comment_input.g7.html (댓글 입력)
       │   └── _comment_item.g7.html (댓글 아이템, iteration)

@@ -1,6 +1,6 @@
 # Reaction API 레퍼런스
 
-> **소유**: module `sirsoft-board` · 게시글 반응(추천/비추천) 관련 엔드포인트 레퍼런스입니다.
+> **소유**: module `sirsoft-board` · 게시글·댓글 반응(추천/비추천) 관련 엔드포인트 레퍼런스입니다.
 
 ---
 
@@ -10,8 +10,9 @@
 1. 게시글 반응(추천/비추천) 등록·전환·해제를 단일 POST 엔드포인트로 처리합니다
 2. 반응은 로그인 회원만 가능하며(auth:sanctum), 본인 글에는 반응할 수 없습니다
 3. 글당 반응 1개 — 같은 유형 재요청은 해제, 다른 유형은 전환(이전 -1·신규 +1)
-4. 관리자 반응 유형 목록 API는 게시판 설정 화면의 유형 체크박스 옵션 소스입니다
-5. 유형 CRUD 는 이번 범위 밖 — 유형은 시더/스크립트로 관리합니다
+4. 댓글 반응도 같은 규칙으로 동작합니다 — 게시판이 `use_reaction` 과 `use_comment_reaction` 을 둘 다 켰을 때만
+5. 관리자 반응 유형 목록 API는 게시판 설정 화면의 유형 체크박스 옵션 소스입니다
+6. 유형 추가·수정·삭제와 아이콘 업로드는 [reaction-types.md](reaction-types.md) 가 다룹니다
 ```
 
 ---
@@ -91,9 +92,67 @@ Content-Type: application/json
 
 ---
 
+## POST /api/modules/sirsoft-board/boards/{slug}/comments/{commentId}/react
+
+댓글에 반응을 남깁니다. 등록·전환·해제 규칙과 응답 모양은 게시글 반응과 같고, 대상만 댓글입니다.
+
+게시판이 `use_reaction` 과 `use_comment_reaction` 을 **둘 다** 켰을 때만 동작합니다 —
+`use_comment_reaction` 은 `use_reaction` 의 하위 토글이라 상위가 꺼져 있으면 함께 꺼집니다.
+활성 유형 목록은 게시글 반응과 같은 `active_reaction_types` 를 공유합니다.
+
+- **라우트명**: `api.modules.sirsoft-board.boards.comments.react`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ReactionController@reactToComment`
+- **인증/권한**: `auth:sanctum` (로그인 회원 전용)
+
+**경로 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| slug | path | string | 예 | 게시판 slug |
+| commentId | path | integer | 예 | 반응 대상 댓글 ID (해당 게시판 소속이어야 함) |
+
+**요청 파라미터**
+
+게시글 반응과 동일합니다 (`reaction_type_id`, body, integer, 필수).
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-board/boards/free/comments/108/react HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+  "reaction_type_id": 1
+}
+```
+
+**동작**
+
+게시글 반응과 같습니다 — 없으면 `add`, 다른 유형이면 `change`, 같은 유형이면 `remove`.
+카운트 캐시는 `board_comments.reaction_counts` 에 유형 ID 키로 적재됩니다.
+
+**응답 필드** (`data` 내부)
+
+게시글 반응과 동일한 3키 (`action`, `my_reaction_type_id`, `reaction_counts`)를 냅니다.
+
+**오류**
+
+| 상태 | 사유 |
+| --- | --- |
+| 401 | 비로그인 요청 |
+| 404 | 댓글이 해당 게시판 소속이 아니거나 존재하지 않음 / 부모 글이 없음 |
+| 422 | 반응 또는 댓글 반응이 꺼진 게시판 / 삭제·블라인드된 댓글 / 본인 댓글 반응 / 비밀글의 댓글에 읽기 권한 없음 / 게시판이 켜지 않은 유형 |
+
+> 비회원이 단 댓글(`user_id` 가 NULL)은 본인 판정이 불가능하므로 반응이 허용됩니다.
+
+---
+
 ## GET /api/modules/sirsoft-board/admin/reaction-types
 
-활성 반응 유형 전체를 `display_order` 순으로 반환합니다. 게시판 설정 화면의 "사용할 반응 유형" 체크박스 옵션 소스입니다. 유형 CRUD 는 제공하지 않습니다.
+활성 반응 유형 전체를 `display_order` 순으로 반환합니다. 게시판 설정 화면의 "사용할 반응 유형" 체크박스 옵션 소스입니다. 유형 추가·수정·삭제와 아이콘 업로드는 [reaction-types.md](reaction-types.md) 를 참조합니다.
 
 - **라우트명**: `api.modules.sirsoft-board.admin.reaction-types.index`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionTypeController@index`

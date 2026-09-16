@@ -118,11 +118,17 @@ effects:
   - member_tab_link_hidden_when_empty
   - member_tab_link_carries_user_uuid
 
+  # 목록 칸 표기 (PO 제보 2026-09-16) — 서버가 두 필드를 다 내므로 «화면이 어느 쪽을 골랐나» 가 축이다
+  - admin_list_shows_absolute_timestamp_with_seconds
+  - admin_list_member_cell_opens_context_menu
+  - admin_list_member_menu_search_scopes_list
+
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostScrapTest.php
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-scraps-index.test.tsx
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-user-scraps-tab.test.tsx
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-scraps-index.spec.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-admin-member-cell-and-timestamp.spec.ts
 
 validation:
   audit_rule: test-scenario-coverage

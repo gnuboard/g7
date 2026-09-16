@@ -129,7 +129,22 @@
         </div>
         <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. DB 등록 유형 전체(reactionTypes)를 순회해 체크박스로 active_reaction_types(code 배열) 를 토글. 게시판 환경설정 화면과 동일하게 배경 박스 + 좌측 들여쓰기로 시각적 구분 (PO 피드백). -->
         <div data-if="{{_local.form?.use_reaction === true}}" class="ml-6 mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
-          <p class="form-hint mb-2">$t:sirsoft-board.admin.form.fields.active_reaction_types</p>
+          <div class="flex-between gap-2 mb-2">
+            <p class="form-hint">$t:sirsoft-board.admin.form.fields.active_reaction_types</p>
+            <!-- 유형 자체(이름·아이콘·순서)는 게시판마다 다르지 않고 사이트 공통이라 환경설정에서
+              고친다. 여기서는 그중 어느 것을 쓸지만 고르므로, 만들거나 고치러 갈 길을 열어 둔다
+              (형제 화면 「게시판 유형」의 관리 버튼과 같은 모양). -->
+            <button data-ref="board_form_btn_manage_reaction_types" data-testid="board-form-manage-reaction-types" type="button" class="inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shrink-0">
+              <on type="click">
+                <!-- audit:allow layout-list-context-navigate-merge-query 목록 왕복이 아니라 **다른 화면**(환경설정)으로 건너가는 이동이다. 게시판 목록의 쪽·검색 조건을 그쪽 주소에 실어 보낼 이유가 없고, 실으면 환경설정이 알지 못하는 조건이 주소에 남는다. 되돌아오는 것은 브라우저 뒤로가기가 맡는다. -->
+                <navigate path="/admin/boards/settings">
+                  <query tab="basic_defaults"/>
+                </navigate>
+              </on>
+              <icon name="gear" size="sm"/>
+              <span>$t:sirsoft-board.admin.form.fields.manage_reaction_types</span>
+            </button>
+          </div>
           <div class="flex flex-col gap-2">
             <div data-each="reactionType, reactionIdx in {{reactionTypes?.data?.reaction_types ?? []}}">
               <label class="flex-center gap-2 cursor-pointer">
@@ -138,10 +153,22 @@
                     <set-state target="local" form.active_reaction_types="{{(_local.form?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.active_reaction_types ?? []), reactionType.code]}}" :hasChanges="true"/>
                   </on>
                 </input>
-                <icon name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
+                <img data-if="{{!!reactionType.icon_url}}" src="{{reactionType.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
+                <icon data-if="{{!reactionType.icon_url}}" name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <span>{{reactionType.name ?? reactionType.code}}</span>
               </label>
             </div>
+          </div>
+        </div>
+        <!-- 댓글 반응 — 글 반응의 하위 토글이다. 글 반응을 끄면 댓글 반응만 남을 수 없으므로
+          상위가 꺼져 있으면 이 줄도 잠근다(백엔드도 같은 판정을 한다). -->
+        <div data-ref="field_use_comment_reaction" class="flex-start justify-between mt-4">
+          <div>
+            <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_comment_reaction</label>
+            <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_comment_reaction</p>
+          </div>
+          <div data-testid="board-form-use-comment-reaction" class="flex-shrink-0 ml-4">
+            <toggle name="use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.use_reaction !== true}}"/>
           </div>
         </div>
       </div>

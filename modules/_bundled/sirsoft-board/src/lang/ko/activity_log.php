@@ -12,6 +12,7 @@ return [
         'bulk_apply' => '일괄 적용',
         'bulk_apply_aborted' => '일괄 적용 중단',
         'bulk_update_status' => '일괄 상태 변경',
+        'cancel' => '취소',
         'create' => '생성',
         'delete' => '삭제',
         'delete_content' => '콘텐츠 삭제',
@@ -73,6 +74,7 @@ return [
         'report_restore_content' => '신고 콘텐츠 복원 (ID: :report_id)',
         'report_blind_content' => '신고 콘텐츠 블라인드 (ID: :report_id)',
         'report_delete_content' => '신고 콘텐츠 삭제 (ID: :report_id)',
+        'report_cancel' => '신고 취소 (ID: :report_id)',
 
         // 스크랩
         'scrap_add' => '게시글 스크랩 (ID: :post_id)',
@@ -81,6 +83,9 @@ return [
         'reaction_add' => '반응 등록 (게시판: :board_name, 제목: :title, 유형: :reaction_type)',
         'reaction_change' => '반응 변경 (게시판: :board_name, 제목: :title, 유형: :reaction_type)',
         'reaction_remove' => '반응 취소 (게시판: :board_name, 제목: :title)',
+        'comment_reaction_add' => '댓글 반응 등록 (게시판: :board_name, 글 ID: :post_id, 댓글 ID: :comment_id, 유형: :reaction_type)',
+        'comment_reaction_change' => '댓글 반응 변경 (게시판: :board_name, 글 ID: :post_id, 댓글 ID: :comment_id, 유형: :reaction_type)',
+        'comment_reaction_remove' => '댓글 반응 취소 (게시판: :board_name, 글 ID: :post_id, 댓글 ID: :comment_id)',
 
         // 게시판 설정
         'board_settings_index' => '게시판 설정 조회',
@@ -106,6 +111,7 @@ return [
         'reply_delete_policy' => '답글 삭제 방식',
         'use_report' => '신고 사용',
         'use_scrap' => '스크랩 사용',
+        'use_comment_reaction' => '댓글 반응 사용',
         'use_file_upload' => '파일 업로드 사용',
         'max_file_size' => '최대 파일 크기',
         'max_file_count' => '최대 파일 수',

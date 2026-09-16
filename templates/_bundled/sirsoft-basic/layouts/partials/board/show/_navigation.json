@@ -88,13 +88,21 @@
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "이전글로 이동하기 전 스크랩 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 is_scraped 값보다 이전 게시글에서 세팅된 _local.isScraped 가 우선 적용된다",
+                                    "comment": "이전글로 이동하기 전 스크랩·반응 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 값(is_scraped·my_reaction_type_id·reaction_counts)보다 이전 게시글에서 세팅된 override 가 우선 적용돼, 옆 글의 반응이 눌린 것처럼 보인다",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
                                         "isScraped": null,
                                         "scrapCount": null,
-                                        "scrapLoading": null
+                                        "scrapLoading": null,
+                                        "reactingTypeId": null,
+                                        "reactionApplied": null,
+                                        "myReactionTypeId": null,
+                                        "reactionCounts": null,
+                                        "commentReacting": null,
+                                        "commentReactionApplied": null,
+                                        "commentMyReaction": null,
+                                        "commentReactionCounts": null
                                     }
                                 },
                                 {
@@ -138,13 +146,21 @@
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "다음글로 이동하기 전 스크랩 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 is_scraped 값보다 이전 게시글에서 세팅된 _local.isScraped 가 우선 적용된다",
+                                    "comment": "다음글로 이동하기 전 스크랩·반응 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 값(is_scraped·my_reaction_type_id·reaction_counts)보다 이전 게시글에서 세팅된 override 가 우선 적용돼, 옆 글의 반응이 눌린 것처럼 보인다",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
                                         "isScraped": null,
                                         "scrapCount": null,
-                                        "scrapLoading": null
+                                        "scrapLoading": null,
+                                        "reactingTypeId": null,
+                                        "reactionApplied": null,
+                                        "myReactionTypeId": null,
+                                        "reactionCounts": null,
+                                        "commentReacting": null,
+                                        "commentReactionApplied": null,
+                                        "commentMyReaction": null,
+                                        "commentReactionCounts": null
                                     }
                                 },
                                 {

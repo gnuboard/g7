@@ -7,6 +7,7 @@ use App\Contracts\Seeder\TranslatableSeederInterface;
 use App\Extension\Helpers\GenericEntitySyncHelper;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Board\Models\ReactionType;
+use Modules\Sirsoft\Board\Support\ReactionTypeDefaults;
 
 /**
  * 게시판 반응 유형 초기 시더.
@@ -37,26 +38,13 @@ class BoardReactionTypeSeeder extends Seeder implements TranslatableSeederInterf
     }
 
     /**
+     * 기본값은 Support\ReactionTypeDefaults 가 단일 원천이다.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function getDefaults(): array
     {
-        return [
-            [
-                'code' => 'like',
-                'name' => ['ko' => '추천', 'en' => 'Recommend', 'ja' => 'おすすめ'],
-                'icon' => 'fas fa-thumbs-up',
-                'display_order' => 1,
-                'is_active' => true,
-            ],
-            [
-                'code' => 'dislike',
-                'name' => ['ko' => '비추천', 'en' => 'Not Recommend', 'ja' => 'ひどい'],
-                'icon' => 'fas fa-thumbs-down',
-                'display_order' => 2,
-                'is_active' => true,
-            ],
-        ];
+        return ReactionTypeDefaults::all();
     }
 
     /**

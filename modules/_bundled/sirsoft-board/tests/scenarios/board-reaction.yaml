@@ -46,6 +46,13 @@ axes:
     - secret_post_react_blocked
     - secret_post_react_allowed_with_permission
     - reaction_area_hidden_on_inaccessible_secret_post
+    - icon_image_priority_post_detail
+    - icon_image_priority_settings
+    - icon_image_priority_board_form
+    - navigation_resets_reaction_overrides
+    # 끈 기능의 정보가 응답 본문에 남지 않는지 (PO 지시 2026-09-16)
+    - use_reaction_off_payload_omits_reaction
+    - deactivated_type_excluded_from_payload
 
 effects:
   # 등록/전환/해제 + 카운트 증감 정합성
@@ -81,6 +88,8 @@ effects:
   # 다국어 (확정 15)
   - reaction_type_name_localized
   - missing_locale_falls_back_to_default
+  # 아이콘 이미지 (이슈 #525 후속)
+  - reaction_type_exposes_icon_url
   # 활동 로그
   - react_logs_add_change_remove_activity
   # 프론트 UX (낙관 하이라이트 + 응답값 개수 + 실패 롤백)
@@ -90,14 +99,32 @@ effects:
   # E2E 흐름
   - detail_register_then_switch_then_remove_updates_ui
 
+  # 아이콘 이미지·형제 글 이동(화면)
+  - reaction_type_exposes_icon_url
+  - post_detail_renders_image_icon_before_font_icon
+  - settings_checkbox_renders_image_icon
+  - board_form_checkbox_renders_image_icon
+  - sibling_navigation_clears_reaction_overrides
+
+  # 응답 게이트 — 화면은 프론트가 한 번 더 가리므로 누출은 응답 본문에서만 보인다
+  - list_omits_reaction_total_when_use_reaction_off
+  - list_total_excludes_deactivated_type_counts
+  - detail_omits_reaction_counts_and_options_when_off
+  - detail_omits_deactivated_type
+  - recent_posts_widget_includes_reaction_total
+  - recent_posts_widget_omits_reaction_total_when_off
 test_files:
   - modules/_bundled/sirsoft-board/tests/Unit/Services/ReactionServiceTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Repositories/ReactionRepositoryTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Database/Seeders/BoardReactionTypeSeederTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/ReactionTypeSeedBackfillTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/User/ReactionApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ReactionPayloadGateTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReactionTypeApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReactionTypeSettingsSyncTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManagementTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-reaction-buttons.test.tsx
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-settings.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/board-reaction-buttons.test.tsx
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-settings.test.tsx
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-reaction-flow.spec.ts

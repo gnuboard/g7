@@ -12,6 +12,7 @@ return [
         'bulk_apply' => 'Bulk Applied',
         'bulk_apply_aborted' => 'Bulk Apply Aborted',
         'bulk_update_status' => 'Bulk Status Changed',
+        'cancel' => 'Cancelled',
         'create' => 'Created',
         'delete' => 'Deleted',
         'delete_content' => 'Content Deleted',
@@ -73,6 +74,7 @@ return [
         'report_restore_content' => 'Report content restored (ID: :report_id)',
         'report_blind_content' => 'Report content blinded (ID: :report_id)',
         'report_delete_content' => 'Report content deleted (ID: :report_id)',
+        'report_cancel' => 'Report cancelled (ID: :report_id)',
 
         // Scrap
         'scrap_add' => 'Post scrapped (ID: :post_id)',
@@ -81,6 +83,9 @@ return [
         'reaction_add' => 'Reaction added (Board: :board_name, Title: :title, Type: :reaction_type)',
         'reaction_change' => 'Reaction changed (Board: :board_name, Title: :title, Type: :reaction_type)',
         'reaction_remove' => 'Reaction removed (Board: :board_name, Title: :title)',
+        'comment_reaction_add' => 'Comment reaction added (Board: :board_name, Post ID: :post_id, Comment ID: :comment_id, Type: :reaction_type)',
+        'comment_reaction_change' => 'Comment reaction changed (Board: :board_name, Post ID: :post_id, Comment ID: :comment_id, Type: :reaction_type)',
+        'comment_reaction_remove' => 'Comment reaction removed (Board: :board_name, Post ID: :post_id, Comment ID: :comment_id)',
 
         // Board settings
         'board_settings_index' => 'Board settings viewed',
@@ -106,6 +111,7 @@ return [
         'reply_delete_policy' => 'Reply Delete Policy',
         'use_report' => 'Use Reports',
         'use_scrap' => 'Use Scrap',
+        'use_comment_reaction' => 'Use Comment Reaction',
         'use_file_upload' => 'Use File Upload',
         'max_file_size' => 'Max File Size',
         'max_file_count' => 'Max File Count',

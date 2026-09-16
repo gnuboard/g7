@@ -779,11 +779,59 @@
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "P",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "form-hint mb-2"
+                                        "className": "flex-between gap-2 mb-2"
                                     },
-                                    "text": "$t:sirsoft-board.admin.form.fields.active_reaction_types"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.fields.active_reaction_types"
+                                        },
+                                        {
+                                            "comment": "유형 자체(이름·아이콘·순서)는 게시판마다 다르지 않고 사이트 공통이라 환경설정에서\n              고친다. 여기서는 그중 어느 것을 쓸지만 고르므로, 만들거나 고치러 갈 길을 열어 둔다\n              (형제 화면 「게시판 유형」의 관리 버튼과 같은 모양).",
+                                            "id": "board_form_btn_manage_reaction_types",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 목록 왕복이 아니라 **다른 화면**(환경설정)으로 건너가는 이동이다. 게시판 목록의 쪽·검색 조건을 그쪽 주소에 실어 보낼 이유가 없고, 실으면 환경설정이 알지 못하는 조건이 주소에 남는다. 되돌아오는 것은 브라우저 뒤로가기가 맡는다.",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/boards/settings",
+                                                        "query": {
+                                                            "tab": "basic_defaults"
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "data-testid": "board-form-manage-reaction-types",
+                                                "type": "button",
+                                                "className": "inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "gear",
+                                                        "size": "sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-board.admin.form.fields.manage_reaction_types"
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -831,7 +879,18 @@
                                                         },
                                                         {
                                                             "type": "basic",
+                                                            "name": "Img",
+                                                            "if": "{{!!reactionType.icon_url}}",
+                                                            "props": {
+                                                                "src": "{{reactionType.icon_url}}",
+                                                                "alt": "",
+                                                                "className": "w-5 h-5 object-contain"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
                                                             "name": "Icon",
+                                                            "if": "{{!reactionType.icon_url}}",
                                                             "props": {
                                                                 "name": "{{reactionType.icon_name ?? 'fa-thumbs-up'}}",
                                                                 "size": "sm"
@@ -845,6 +904,57 @@
                                                     ]
                                                 }
                                             ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "댓글 반응 — 글 반응의 하위 토글이다. 글 반응을 끄면 댓글 반응만 남을 수 없으므로\n          상위가 꺼져 있으면 이 줄도 잠근다(백엔드도 같은 판정을 한다).",
+                            "id": "field_use_comment_reaction",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start justify-between mt-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.fields.use_comment_reaction"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.descriptions.use_comment_reaction"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "data-testid": "board-form-use-comment-reaction",
+                                        "className": "flex-shrink-0 ml-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "use_comment_reaction",
+                                                "disabled": "{{_computed.isReadOnly || _local.form?.use_reaction !== true}}"
+                                            }
                                         }
                                     ]
                                 }

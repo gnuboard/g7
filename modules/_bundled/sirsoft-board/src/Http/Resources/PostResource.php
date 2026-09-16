@@ -210,6 +210,11 @@ class PostResource extends BaseApiResource
             'reply_count' => (int) ($this->replies_count ?? 0),
             'attachment_count' => (int) ($this->attachments_count ?? 0),
             'has_attachment' => ((int) ($this->attachments_count ?? 0)) > 0,
+            // 목록의 반응 표시는 «몇 명이 눌렀나» 한 숫자면 된다 — 유형별로 나눠 보여 줄 자리가
+            // 없다. 캐시 컬럼(board_posts.reaction_counts)의 합이라 목록에서 COUNT 를 돌리지 않는다.
+            // 반응을 끈 게시판에서는 키 자체를 싣지 않는다(PO 결정 2026-09-16) — 캐시 컬럼을
+            // 통째로 더하던 기존 식은 비활성 유형의 잔여 카운트까지 합산해 상세(0)와 어긋났다.
+            ...$this->getReactionTotalForList(),
 
             // 썸네일 이미지 (첫 번째 이미지 첨부파일)
             'thumbnail' => $this->getThumbnailUrlFromRelations(),
@@ -371,7 +376,10 @@ class PostResource extends BaseApiResource
             'use_report' => $this->board->use_report,
             'use_scrap' => $this->board->use_scrap,
             'use_reaction' => $this->board->use_reaction,
-            'reaction_type_options' => BoardResource::buildReactionTypeOptions($this->board->active_reaction_types ?? []),
+            'use_comment_reaction' => $this->board->use_comment_reaction,
+            'reaction_type_options' => BoardResource::reactionsEnabled($this->board)
+                ? BoardResource::buildReactionTypeOptions($this->board->active_reaction_types ?? [])
+                : [],
             'show_view_count' => $this->board->show_view_count,
             'max_reply_depth' => $this->board->max_reply_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_reply_depth', 5),
             'max_comment_depth' => $this->board->max_comment_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_comment_depth', 10),
@@ -531,6 +539,34 @@ class PostResource extends BaseApiResource
     }
 
     /**
+     * 목록용 반응 합계를 스프레드 가능한 형태로 반환합니다.
+     *
+     * 반응을 끈 게시판에서는 **빈 배열**을 반환해 `reaction_total` 키 자체가 응답에
+     * 실리지 않게 한다(PO 결정 2026-09-16 — 0 으로 두지 않고 키를 제거). 켜져 있으면
+     * 게시판이 켠 활성 유형의 카운트만 더한다 — 유형을 비활성으로 돌린 뒤에도 캐시
+     * 컬럼에는 옛 카운트가 남아 있어, 통째로 더하면 상세(활성 유형만 집계)와 어긋난다.
+     *
+     * @return array<string, int> `reaction_total` 한 칸 또는 빈 배열
+     */
+    private function getReactionTotalForList(): array
+    {
+        $board = $this->relationLoaded('board') ? $this->board : null;
+
+        if (! BoardResource::reactionsEnabled($board)) {
+            return [];
+        }
+
+        $stored = $this->reaction_counts ?? [];
+        $total = 0;
+
+        foreach (BoardResource::buildReactionTypeOptions($board->active_reaction_types ?? []) as $option) {
+            $total += (int) ($stored[(string) $option['id']] ?? 0);
+        }
+
+        return ['reaction_total' => $total];
+    }
+
+    /**
      * 반응 카운트를 응답용으로 반환합니다.
      *
      * 게시판이 켠(활성) 유형 전체를 키로 항상 포함하며, 저장된 카운트가 없는 유형은
@@ -545,7 +581,9 @@ class PostResource extends BaseApiResource
      */
     private function getReactionCountsForResponse(): \stdClass
     {
-        if (! $this->relationLoaded('board') || ! $this->board) {
+        // 반응을 끈 게시판은 카운트를 통째로 비운다 — board 관계 로드 여부만 보던
+        // 기존 판정은 «기능은 껐는데 개수는 그대로 나가는» 누출이었다(PO 지시 2026-09-16).
+        if (! $this->relationLoaded('board') || ! BoardResource::reactionsEnabled($this->board)) {
             return new \stdClass;
         }
 
@@ -572,7 +610,7 @@ class PostResource extends BaseApiResource
     private function getMyReactionTypeId(Request $request): ?int
     {
         $user = $request->user();
-        if (! $user || ! $this->relationLoaded('board') || ! $this->board) {
+        if (! $user || ! $this->relationLoaded('board') || ! BoardResource::reactionsEnabled($this->board)) {
             return null;
         }
 
@@ -832,6 +870,7 @@ class PostResource extends BaseApiResource
      * 권한에 따라 필터링된 제목을 반환합니다.
      *
      * @param  string|null  $slug  게시판 슬러그
+     * @param  mixed  $request
      * @return string 필터링된 제목
      */
     private function getFilteredTitle(Request $request, ?string $slug): string

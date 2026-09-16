@@ -388,6 +388,7 @@ class ReportRepository implements ReportRepositoryInterface
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건 (search, search_field 키 사용)
      * @param  array  $extraFields  추가 검색 필드 목록
+     * @return void
      */
     private function applySearchConditions($query, array $filters, array $extraFields = []): void
     {
@@ -698,5 +699,170 @@ class ReportRepository implements ReportRepositoryInterface
         PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
 
         return $query->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateLogsByReporter(int $reporterId, array $filters, int $perPage): LengthAwarePaginator
+    {
+        $query = ReportLog::query()
+            ->where('reporter_id', $reporterId)
+            ->with(['report' => fn ($q) => $q->withTrashed()->with('board:id,slug,name')]);
+
+        // 케이스 기준 필터는 whereHas 로 — 로그는 케이스의 상태·대상을 갖지 않는다.
+        $caseFilters = array_filter([
+            'status' => $filters['status'] ?? null,
+            'target_type' => $filters['target_type'] ?? null,
+            'board_slug' => $filters['board_slug'] ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        if ($caseFilters !== []) {
+            $query->whereHas('report', function (Builder $r) use ($caseFilters) {
+                $r->withTrashed();
+
+                if (isset($caseFilters['status'])) {
+                    $r->where('status', $caseFilters['status']);
+                }
+
+                if (isset($caseFilters['target_type'])) {
+                    $r->where('target_type', $caseFilters['target_type']);
+                }
+
+                if (isset($caseFilters['board_slug'])) {
+                    $r->whereHas('board', fn (Builder $b) => $b->where('slug', $caseFilters['board_slug']));
+                }
+            });
+        }
+
+        $this->applyReporterSearch($query, (string) ($filters['search_field'] ?? 'title_content'), $filters['search'] ?? null);
+
+        $direction = ($filters['sort'] ?? 'latest') === 'oldest' ? 'asc' : 'desc';
+
+        /** @var LengthAwarePaginator $paginator */
+        $paginator = $query
+            ->orderBy('created_at', $direction)
+            ->orderBy('id', $direction)
+            // 목록이 실제로 쓰는 컬럼만 — metadata(IP/UA)는 신고자 화면에 싣지 않으므로
+            // 아예 읽지 않는다. 본인 로그만 보는 화면이라 OFFSET 이 크게 자라지 않는다.
+            ->paginate($perPage, ['id', 'report_id', 'reporter_id', 'snapshot', 'reason_type', 'reason_detail', 'created_at']);
+
+        $this->hydrateReportLogParentPosts($paginator->getCollection());
+
+        return $paginator;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countLogsByReporter(int $reporterId): int
+    {
+        return ReportLog::query()->where('reporter_id', $reporterId)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findLogByIdAndReporter(int $logId, int $reporterId): ?ReportLog
+    {
+        return ReportLog::query()
+            ->where('id', $logId)
+            ->where('reporter_id', $reporterId)
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteLog(int $logId): bool
+    {
+        return (bool) ReportLog::query()->where('id', $logId)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countLogsByReport(int $reportId): int
+    {
+        return ReportLog::query()->where('report_id', $reportId)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function latestLogCreatedAt(int $reportId)
+    {
+        return ReportLog::query()->where('report_id', $reportId)->max('created_at');
+    }
+
+    /**
+     * 댓글 대상 신고 로그의 부모 글 ID 를 일괄 프리로드합니다.
+     *
+     * 댓글 신고는 대상이 댓글이라 "어느 글의 댓글인지" 를 알아야 이동 링크를 만든다 —
+     * 로그마다 조회하면 N+1 이므로 한 번에 맵으로 싣는다.
+     *
+     * @param  \Illuminate\Support\Collection<int, ReportLog>  $logs  신고 로그 목록
+     * @return void
+     */
+    private function hydrateReportLogParentPosts($logs): void
+    {
+        $commentIds = $logs
+            ->filter(fn ($log) => $log->report?->target_type?->value === 'comment')
+            ->map(fn ($log) => (int) $log->report->target_id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($commentIds === []) {
+            return;
+        }
+
+        $postIds = Comment::query()
+            ->withTrashed()
+            ->whereIn('id', $commentIds)
+            ->pluck('post_id', 'id');
+
+        foreach ($logs as $log) {
+            if ($log->report?->target_type?->value !== 'comment') {
+                continue;
+            }
+
+            $log->parent_post_id_preloaded = $postIds[(int) $log->report->target_id] ?? null;
+        }
+    }
+
+    /**
+     * 신고자 목록의 검색 조건을 적용합니다.
+     *
+     * 제목·내용은 신고 시점 스냅샷(JSON)에서 찾는다 — 원본이 수정·삭제돼도 신고자가
+     * "무엇을 신고했는지" 는 스냅샷 기준이어야 목록이 흔들리지 않는다.
+     * FULLTEXT 는 쓰지 않는다(JSON 추출값 대상).
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  string  $field  검색 대상
+     * @param  string|null  $search  검색어
+     * @return void
+     */
+    private function applyReporterSearch(Builder $query, string $field, ?string $search): void
+    {
+        if ($search === null || trim($search) === '') {
+            return;
+        }
+
+        $like = '%'.addcslashes(trim($search), '%_'.chr(92)).'%';
+
+        $query->where(function (Builder $outer) use ($field, $like) {
+            if (in_array($field, ['title', 'title_content'], true)) {
+                $outer->orWhereRaw('JSON_UNQUOTE(JSON_EXTRACT(snapshot, "$.title")) LIKE ?', [$like]);
+            }
+
+            if (in_array($field, ['content', 'title_content'], true)) {
+                $outer->orWhereRaw('JSON_UNQUOTE(JSON_EXTRACT(snapshot, "$.content")) LIKE ?', [$like]);
+            }
+
+            if ($field === 'reason') {
+                $outer->orWhere('reason_detail', 'like', $like);
+            }
+        });
     }
 }

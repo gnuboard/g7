@@ -70,7 +70,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `539`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `562`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
@@ -199,6 +199,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "files": [
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_posts_index.json",
+      "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reactions_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reports_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_scraps_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.json",
@@ -281,6 +282,8 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "templates/_bundled/sirsoft-basic/layouts/partials/board/types/gallery/index.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_comments.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_posts.json",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_reactions.json",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_reports.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/inquiries/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/mileage/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/notifications/_list.json",
@@ -360,6 +363,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "canonical": true,
     "expr": "$args[1]",
     "files": [
+      "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reactions_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reports_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_scraps_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_cart_index.json",
@@ -606,6 +610,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "expr": "query['filters[0][operator]']",
     "files": [
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_posts_index.json",
+      "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reactions_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reports_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_scraps_index.json",
       "modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_list.json",
@@ -626,6 +631,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "expr": "query['filters[0][value]']",
     "files": [
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_posts_index.json",
+      "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reactions_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reports_index.json",
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_scraps_index.json",
       "modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_list.json",

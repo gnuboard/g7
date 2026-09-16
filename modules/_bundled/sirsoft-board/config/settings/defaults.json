@@ -22,6 +22,7 @@
       "use_report": false,
       "use_scrap": true,
       "use_reaction": true,
+      "use_comment_reaction": true,
       "active_reaction_types": ["like"],
       "min_title_length": 2,
       "max_title_length": 200,

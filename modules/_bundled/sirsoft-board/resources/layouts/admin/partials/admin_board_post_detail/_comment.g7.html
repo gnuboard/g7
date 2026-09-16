@@ -1,5 +1,5 @@
 <!-- 댓글 한 줄. 같은 조각이 원댓글과 대댓글 양쪽에 쓰이고 `comment.depth` 로만 갈린다. 본문은 세 갈래 중 하나만 뜬다 — 삭제됨 · 가려짐 · 보통. 앞 둘은 원문을 감춘 채 「원문 보기」로 펼치게 하고 그 버튼은 관리 권한이 있을 때만 눌린다 -->
-<partial description="Admin Board Post Detail - Single Comment Component (Enhanced Design)">
+<partial description="Admin Board Post Detail - Single Comment Component (Enhanced Design)" _e2e_allow="e2e:allow 댓글 반응 수는 읽기 전용 표시 한 줄이다 — 버튼·api-call 이 없어 조작할 동작 자체가 없다(읽기 전용임을 admin-board-post-detail-comment-reactions.test.tsx 가 /react 경로 부재로 잠근다). 노출 3조건·아이콘 2단 폴백·집계 바인딩은 같은 Vitest 레이아웃 테스트 5건이 커버하고, 줄을 지우면 4건이 red 다. 표시할 값이 실제로 내려오는지는 관리자 상세 API 실측으로 확인했다(use_comment_reaction·reaction_type_options·comment.reaction_counts).">
   <div>
     <div data-ref="comment_header" class="flex-start justify-between gap-1">
       <div data-ref="comment_left_section" class="flex-start gap-2 flex-1 min-w-0">
@@ -136,6 +136,15 @@
         <div data-if="{{_local.showBlindedCommentId === comment?.id}}" class="mt-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-label whitespace-pre-line leading-relaxed">{{comment.content}}</div>
       </div>
       <div data-ref="normal_comment_content" data-if="{{comment?.status !== 'blinded' &amp;&amp; (!comment?.deleted_at || comment?.is_cascade_deleted)}}" class="mt-1.5 px-4 text-body whitespace-pre-line leading-relaxed">{{comment.content}}</div>
+      <!-- 댓글 반응 수 — 읽기 전용. 관리자는 집계를 보기만 하고 반응을 남기지 않는다(버튼·api-call 없음). 삭제된 댓글은 집계를 감춘다 -->
+      <div data-testid="comment_reaction_counts" data-if="{{post?.data?.board?.use_comment_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; !comment?.deleted_at}}" class="mt-2 px-4 flex flex-wrap items-center gap-3">
+        <span data-each="rt in {{post?.data?.board?.reaction_type_options ?? []}}" class="text-tertiary inline-flex items-center gap-1 text-xs">
+          <img data-if="{{!!rt.icon_url}}" src="{{rt.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
+          <icon data-if="{{!rt.icon_url}}" name="{{rt.icon_name ?? 'fa-thumbs-up'}}" size="xs"/>
+          <span>{{rt.name}}</span>
+          <span class="font-medium">{{comment?.reaction_counts?.[rt.id] ?? 0}}</span>
+        </span>
+      </div>
     </div>
     <div data-ref="comment_edit_form" data-if="{{_local.editingComment === comment.id}}" class="mt-3 pl-10">
       <textarea value="{{_local.edit_comment_content ?? comment.content}}" :rows="3" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2">

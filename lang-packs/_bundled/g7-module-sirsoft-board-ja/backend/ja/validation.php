@@ -309,6 +309,14 @@ return [
             'spam_security.view_count_cache_ttl' => '閲覧数キャッシュ有効期限(秒)',
             'basic_defaults.use_reaction' => 'リアクション機能を使用',
             'basic_defaults.active_reaction_types' => '使用するリアクションタイプ',
+            'basic_defaults.use_comment_reaction' => 'コメント反応使用',
+            'basic_defaults.reaction_types' => '反応タイプ',
+            'basic_defaults.reaction_types.*.code' => '反応タイプコード',
+            'basic_defaults.reaction_types.*.name' => '反応タイプ名',
+            'basic_defaults.reaction_types.*.name.ko' => '反応タイプ名(韓国語)',
+            'basic_defaults.reaction_types.*.icon_attachment_id' => '反応タイプアイコン',
+            'basic_defaults.reaction_types.*.display_order' => '反応タイプ表示順序',
+            'basic_defaults.reaction_types.*.is_active' => '反応タイプ使用有無',
         ],
         'post' => [
             'title' => 'タイトル',
@@ -382,7 +390,20 @@ return [
         ],
         'reaction' => [
             'reaction_type_id' => 'リアクションタイプ',
+            'ids' => '反応ID',
+            'search_field' => '検索対象',
+            'target_type' => '対象区分',
         ],
+        'report_my' => [
+            'search_field' => '検索対象',
+            'target_type' => '対象区分',
+            'status' => '処理ステータス',
+        ],
+        'reaction_type' => [
+            'id' => '反応タイプ',
+            'icon' => 'アイコン画像',
+        ],
+        'use_comment_reaction' => 'コメント反応使用',
     ],
     'blind' => [
         'reason' => [
@@ -578,6 +599,54 @@ return [
         'reaction_type_id' => [
             'required' => 'リアクションタイプは必須です。',
             'integer' => 'リアクションタイプは整数である必要があります。',
+            'exists' => '存在しない反応タイプです。',
+        ],
+        'ids' => [
+            'required' => '反応IDは必須です。',
+            'array' => '反応IDは配列形式である必要があります。',
+            'min' => '最低1つ以上の反応を選択する必要があります。',
+            'max' => ':max個まで選択できます。',
+            'integer' => '反応IDは整数である必要があります。',
+            'distinct' => '反応IDが重複しています。',
+            'exists' => '存在しない反応です。',
+        ],
+        'search_field' => [
+            'in' => '有効でない検索対象です。',
+        ],
+        'target_type' => [
+            'in' => '有効でない対象区分です。',
+        ],
+    ],
+    'reaction_type' => [
+        'code' => [
+            'regex' => 'コードは英小文字で始まり、英小文字・数字・アンダースコアのみが使用できます(2～50文字)。',
+            'distinct' => '反応タイプコードが重複しています。',
+            'unique' => '既に使用中のコードです。',
+        ],
+        'name' => [
+            'ko' => [
+                'required' => '既定言語(韓国語)の名前を入力してください。',
+            ],
+        ],
+        'icon_attachment_id' => [
+            'exists' => '有効でないアイコン画像です。',
+        ],
+        'icon' => [
+            'required' => 'アイコン画像を選択してください。',
+            'image' => 'アイコンは画像ファイルである必要があります。',
+            'mimes' => 'アイコンはJPG・PNG・GIF・WEBP形式のみアップロード可能です。',
+            'max' => 'アイコン画像は1MB以下である必要があります。',
+        ],
+    ],
+    'report_my' => [
+        'search_field' => [
+            'in' => '有効でない検索対象です。',
+        ],
+        'target_type' => [
+            'in' => '有効でない対象区分です。',
+        ],
+        'status' => [
+            'in' => '有効でない処理ステータスです。',
         ],
     ],
 ];

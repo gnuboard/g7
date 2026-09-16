@@ -1063,7 +1063,9 @@
                                                 }
                                             ],
                                             "props": {
+                                                "data-testid": "post-react-{{reactionType.id}}",
                                                 "type": "button",
+                                                "title": "{{reactionType.name ?? ''}}",
                                                 "disabled": "{{(_local?.reactingTypeId ?? null) !== null}}",
                                                 "aria-pressed": "{{(_local?.reactionApplied ? _local?.myReactionTypeId : post?.data?.my_reaction_type_id) === reactionType.id}}",
                                                 "aria-disabled": "{{(_local?.reactingTypeId ?? null) !== null}}",
@@ -1071,9 +1073,22 @@
                                             },
                                             "children": [
                                                 {
-                                                    "comment": "처리 중인 유형은 스피너, 그 외엔 유형 아이콘",
+                                                    "comment": "올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다",
+                                                    "type": "basic",
+                                                    "name": "Img",
+                                                    "if": "{{!!reactionType.icon_url && (_local?.reactingTypeId ?? null) !== reactionType.id}}",
+                                                    "props": {
+                                                        "data-testid": "post-react-icon-{{reactionType.id}}",
+                                                        "src": "{{reactionType.icon_url}}",
+                                                        "alt": "",
+                                                        "className": "w-5 h-5 object-contain"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "처리 중인 유형은 스피너, 그 외엔 유형 아이콘(이미지가 없을 때의 폴백)",
                                                     "type": "basic",
                                                     "name": "Icon",
+                                                    "if": "{{!reactionType.icon_url || (_local?.reactingTypeId ?? null) === reactionType.id}}",
                                                     "props": {
                                                         "name": "{{(_local?.reactingTypeId ?? null) === reactionType.id ? 'fa-spinner' : (reactionType.icon_name ?? 'fa-thumbs-up')}}",
                                                         "spin": "{{(_local?.reactingTypeId ?? null) === reactionType.id}}",

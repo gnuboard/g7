@@ -25,6 +25,8 @@ class ReactionTypeResource extends BaseApiResource
             'name' => $this->getLocalizedName(),
             'icon' => $this->icon,
             'icon_name' => $this->getIconName(),
+            // 업로드된 아이콘 이미지 URL — 없으면 null 이고 화면은 icon_name 으로 폴백한다.
+            'icon_url' => $this->getIconUrl(),
         ];
     }
 }

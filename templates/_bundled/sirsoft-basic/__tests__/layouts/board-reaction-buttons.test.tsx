@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 
 import basicShow from '../../layouts/partials/board/types/basic/show.json';
+import navigation from '../../layouts/partials/board/show/_navigation.json';
 
 type Node = Record<string, unknown> & { children?: unknown };
 
@@ -111,6 +112,8 @@ describe('이슈 #525 — 게시글 상세 반응 버튼 (basic/show.json)', () 
         expect(counts[0].text as string).toContain('?? 0');
     });
 
+    // @scenario case=guest_react_blocked
+    // @effects guest_react_returns_401
     it('클릭 액션은 비로그인/로그인 분기 — 로그인은 낙관 하이라이트+react API, 비로그인은 안내+로그인 (확정 03·07)', () => {
         const areas = findByComment(basicShow, '반응(추천/비추천) 영역 — 반응 사용 on');
         const buttons = collectNodes(areas[0], (n) => n.name === 'Button');
@@ -244,5 +247,73 @@ describe('이슈 #525 — 게시글 상세 반응 버튼 (basic/show.json)', () 
         expect(activeBranch).toContain('duration-150');
         expect(inactiveBranch).toContain('transition-transform');
         expect(inactiveBranch).toContain('duration-150');
+    });
+});
+
+describe('이슈 #525 — 반응 유형 아이콘 이미지', () => {
+    const showJson = JSON.stringify(basicShow);
+
+    // @scenario case=icon_image_priority_post_detail
+    // @effects post_detail_renders_image_icon_before_font_icon
+    it('올려 둔 아이콘 이미지가 있으면 이미지로, 없으면 글꼴 아이콘으로 그린다', () => {
+        // 두 노드가 배타 조건을 쓰지 않으면 같은 버튼에 아이콘이 둘 뜬다.
+        expect(/!!reactionType\.icon_url/.test(showJson)).toBe(true);
+        expect(/!reactionType\.icon_url/.test(showJson)).toBe(true);
+        expect(/post-react-icon-/.test(showJson)).toBe(true);
+    });
+
+    // @scenario case=icon_image_priority_post_detail
+    // @effects post_detail_renders_image_icon_before_font_icon
+    it('처리 중에는 이미지 대신 스피너가 돈다 — 첫 Icon 노드 계약을 지킨다', () => {
+        // 이미지가 처리 중에도 남으면 스피너 자리가 밀려 기존 계약이 깨진다.
+        expect(/\(_local\?\.reactingTypeId \?\? null\) !== reactionType\.id/.test(showJson)).toBe(true);
+        expect(/'fa-spinner'/.test(showJson)).toBe(true);
+    });
+
+    // @scenario case=icon_image_priority_post_detail
+    // @effects reaction_type_exposes_icon_url
+    it('버튼마다 유형 번호가 붙은 testid 를 단다', () => {
+        expect(/post-react-\{\{reactionType\.id\}\}/.test(showJson)).toBe(true);
+    });
+});
+
+describe('이슈 #525 — 형제 글 이동 시 반응 상태 초기화 (F14)', () => {
+    const navJson = JSON.stringify(navigation);
+
+    // @scenario case=navigation_resets_reaction_overrides
+    // @effects sibling_navigation_clears_reaction_overrides
+    it('이전글·다음글 이동이 반응 override 여덟 칸을 모두 비운다', () => {
+        // 비우지 않으면 새 글의 실제 값보다 이전 글에서 세팅된 override 가 우선해,
+        // 옆 글의 반응이 눌린 것처럼 보인다(스크랩과 같은 선재 결함).
+        const keys = [
+            'reactingTypeId',
+            'reactionApplied',
+            'myReactionTypeId',
+            'reactionCounts',
+            'commentReacting',
+            'commentReactionApplied',
+            'commentMyReaction',
+            'commentReactionCounts',
+        ];
+
+        for (const key of keys) {
+            // 이전글·다음글 두 곳 모두에 있어야 한다 — 한쪽만 고치면 반대 방향에 남는다.
+            // String.raw 로 쓴다 — 보통 템플릿 리터럴에서는 `\s` 가 이스케이프 붕괴로
+            // 리터럴 `s*` 가 되어 "공백"이 아니라 "문자 s 0개 이상"을 뜻하게 된다.
+            const hits = navJson.match(new RegExp(String.raw`"${key}":\s*null`, 'g')) ?? [];
+
+            expect(hits.length, key).toBe(2);
+        }
+    });
+
+    // @scenario case=navigation_resets_reaction_overrides
+    // @effects sibling_navigation_clears_reaction_overrides
+    it('스크랩 override 도 함께 비운다 — 같은 이유의 기존 처리를 유지한다', () => {
+        for (const key of ['isScraped', 'scrapCount', 'scrapLoading']) {
+            // 위와 같은 이유로 String.raw — `\s` 가 리터럴 `s` 로 붕괴하면 안 된다.
+            const hits = navJson.match(new RegExp(String.raw`"${key}":\s*null`, 'g')) ?? [];
+
+            expect(hits.length, key).toBe(2);
+        }
     });
 });

@@ -29,6 +29,10 @@ class ReactionTypeApiTest extends ModuleTestCase
 
     /**
      * 권한 있는 관리자는 활성 유형 목록을 display_order 순으로 조회한다.
+     *
+     * @scenario case=type_list_exposes_icon_url
+     *
+     * @effects reaction_type_exposes_icon_url
      */
     public function test_admin_can_list_active_reaction_types(): void
     {
@@ -52,6 +56,7 @@ class ReactionTypeApiTest extends ModuleTestCase
      * en 로케일에서는 영어 라벨을 반환한다.
      *
      * @scenario case=reaction_type_label_localized
+     *
      * @effects reaction_type_name_localized
      */
     public function test_reaction_type_name_localized_to_en(): void
@@ -69,6 +74,7 @@ class ReactionTypeApiTest extends ModuleTestCase
      * 미입력 언어는 사이트 기본 언어(fallback)로 대체 노출된다 (확정 15).
      *
      * @scenario case=reaction_type_label_falls_back
+     *
      * @effects missing_locale_falls_back_to_default
      */
     public function test_missing_locale_falls_back(): void
@@ -97,6 +103,10 @@ class ReactionTypeApiTest extends ModuleTestCase
 
     /**
      * 권한 없는 사용자는 403 으로 차단된다.
+     *
+     * @scenario case=type_list_exposes_icon_url
+     *
+     * @effects reaction_type_exposes_icon_url
      */
     public function test_user_without_permission_forbidden(): void
     {
@@ -104,5 +114,26 @@ class ReactionTypeApiTest extends ModuleTestCase
 
         $this->actingAs($user)->getJson(self::ENDPOINT)
             ->assertForbidden();
+    }
+
+    /**
+     * 목록 응답은 아이콘 이미지 URL 을 함께 낸다 (없으면 null — 화면은 FA 로 폴백).
+     *
+     * @scenario case=type_list_exposes_icon_url
+     *
+     * @effects reaction_type_exposes_icon_url
+     */
+    public function test_index_exposes_icon_url_null_and_value(): void
+    {
+        $admin = $this->createAdminUser(['sirsoft-board.settings.read']);
+
+        $response = $this->actingAs($admin)->getJson(self::ENDPOINT);
+        $response->assertOk();
+
+        $like = collect($response->json('data.reaction_types'))->firstWhere('code', 'like');
+
+        $this->assertArrayHasKey('icon_url', $like, '아이콘 이미지 URL 필드가 응답에 있어야 합니다.');
+        $this->assertNull($like['icon_url'], '업로드된 이미지가 없으면 null 이어야 합니다.');
+        $this->assertSame('fa-thumbs-up', $like['icon_name'], 'null 이면 화면은 FA 클래스로 폴백합니다.');
     }
 }

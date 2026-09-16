@@ -1206,6 +1206,23 @@
                                     ]
                                 },
                                 {
+                                    "field": "reaction_total",
+                                    "header": "$t:sirsoft-board.admin.posts.columns.reaction_total",
+                                    "sortable": false,
+                                    "if": "{{posts?.data?.board?.settings?.use_reaction}}",
+                                    "cellChildren": [
+                                        {
+                                            "comment": "게시판이 반응을 끄면 백엔드가 reaction_total 키 자체를 빼므로 열도 함께 내려간다",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{row.reaction_total || 0}}"
+                                        }
+                                    ]
+                                },
+                                {
                                     "field": "created_at",
                                     "header": "$t:sirsoft-board.admin.posts.columns.created_at",
                                     "sortable": false

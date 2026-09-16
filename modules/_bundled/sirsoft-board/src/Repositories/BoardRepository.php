@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
@@ -226,7 +227,8 @@ class BoardRepository implements BoardRepositoryInterface
             return [];
         }
 
-        $columns = ['id', 'board_id', 'title', 'author_name', 'created_at', 'view_count', 'is_secret', 'comments_count'];
+        // 반응 합계는 이 캐시 컬럼에서 나온다 — 빼면 위젯에서만 반응이 항상 0/누락된다.
+        $columns = ['id', 'board_id', 'title', 'author_name', 'created_at', 'view_count', 'is_secret', 'comments_count', 'reaction_counts'];
 
         // board_id IN (...) + ORDER BY created_at DESC → 풀스캔 방지
         // 각 board_id별 개별 쿼리(인덱스 활용) 후 UNION ALL로 합침
@@ -255,7 +257,8 @@ class BoardRepository implements BoardRepositoryInterface
             ->pluck('id');
 
         $posts = Post::query()
-            ->with('board:id,slug,name')
+            // 반응 게이트 판정에 use_reaction/active_reaction_types 가 필요하다
+            ->with('board:id,slug,name,use_reaction,active_reaction_types')
             ->select($columns)
             ->whereIn('id', $postIds)
             ->orderBy('created_at', 'desc')
@@ -273,6 +276,7 @@ class BoardRepository implements BoardRepositoryInterface
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count,
             'comment_count' => $post->comments_count ?? 0,
+            ...$this->reactionTotalFor($post, $post->board),
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
         ])->toArray();
@@ -306,6 +310,7 @@ class BoardRepository implements BoardRepositoryInterface
                 'is_notice',
                 'is_secret',
                 'comments_count',
+                'reaction_counts',
             ])
             ->where('board_id', $board->id)
             ->whereNull('deleted_at')
@@ -326,6 +331,7 @@ class BoardRepository implements BoardRepositoryInterface
             'view_count' => $post->view_count,
             'comment_count' => $post->comments_count ?? 0,
             'category' => $post->category,
+            ...$this->reactionTotalFor($post, $board),
             'is_notice' => $post->is_notice,
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
@@ -341,6 +347,9 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getBoardRecentPostsById(int $boardId, int $limit): array
     {
+        // 반응 게이트 판정용 — 설정 두 칸만 읽는다
+        $board = Board::select(['id', 'use_reaction', 'active_reaction_types'])->find($boardId);
+
         $posts = Post::query()
             ->select([
                 'id',
@@ -352,6 +361,7 @@ class BoardRepository implements BoardRepositoryInterface
                 'is_notice',
                 'is_secret',
                 'comments_count',
+                'reaction_counts',
             ])
             ->where('board_id', $boardId)
             ->whereNull('deleted_at')
@@ -372,10 +382,39 @@ class BoardRepository implements BoardRepositoryInterface
             'view_count' => $post->view_count,
             'comment_count' => $post->comments_count ?? 0,
             'category' => $post->category,
+            ...$this->reactionTotalFor($post, $board),
             'is_notice' => $post->is_notice,
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
         ])->toArray();
+    }
+
+    /**
+     * 최신글 위젯 한 줄에 실을 반응 합계를 만듭니다.
+     *
+     * 게시판이 반응을 껐거나 활성 유형이 없으면 **빈 배열**을 돌려 `reaction_total`
+     * 키 자체가 payload 에 실리지 않게 한다(PO 결정 2026-09-16). 켜져 있으면 활성
+     * 유형의 카운트만 더한다 — 비활성으로 돌린 유형의 잔여 카운트는 제외해야
+     * 목록·상세(PostResource)와 같은 수가 나온다.
+     *
+     * @param  Post  $post  게시글
+     * @param  Board|null  $board  게시판 (반응 설정 보유)
+     * @return array<string, int> `reaction_total` 한 칸 또는 빈 배열
+     */
+    private function reactionTotalFor($post, $board): array
+    {
+        if (! BoardResource::reactionsEnabled($board)) {
+            return [];
+        }
+
+        $stored = $post->reaction_counts ?? [];
+        $total = 0;
+
+        foreach (BoardResource::buildReactionTypeOptions($board->active_reaction_types ?? []) as $option) {
+            $total += (int) ($stored[(string) $option['id']] ?? 0);
+        }
+
+        return ['reaction_total' => $total];
     }
 
     /**
@@ -715,5 +754,38 @@ class BoardRepository implements BoardRepositoryInterface
         Board::where('id', $boardId)->update(['comments_count' => $count]);
 
         return $count;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function stripReactionCodes(array $codes): int
+    {
+        if ($codes === []) {
+            return 0;
+        }
+
+        // active_reaction_types 는 JSON 컬럼이 아니라 TEXT + array 캐스트라 JSON 함수로
+        // 거를 수 없다 — LIKE 로 후보를 좁힌 뒤 PHP 에서 정확히 거른다.
+        $query = Board::query()->where(function ($q) use ($codes) {
+            foreach ($codes as $code) {
+                $q->orWhere('active_reaction_types', 'like', '%"'.$code.'"%');
+            }
+        });
+
+        $updated = 0;
+
+        foreach ($query->get() as $board) {
+            $current = $board->active_reaction_types ?? [];
+            $next = array_values(array_diff($current, $codes));
+
+            if ($next !== $current) {
+                $board->active_reaction_types = $next;
+                $board->save();
+                $updated++;
+            }
+        }
+
+        return $updated;
     }
 }

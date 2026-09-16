@@ -177,6 +177,11 @@
             "withdrawModal": "회원 탈퇴 확인"
         },
         "identity_challenge_modal": "본인인증",
-        "notification_delete_all_confirm_modal": "알림 전체 삭제 확인"
+        "notification_delete_all_confirm_modal": "알림 전체 삭제 확인",
+        "mypage_board": {
+            "reactionDeleteModal": "반응 해제 확인",
+            "reactionBulkDeleteModal": "반응 일괄 해제 확인",
+            "reportCancelModal": "신고 취소 확인"
+        }
     }
 }

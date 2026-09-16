@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Tests\Unit\Services;
 
+use App\Contracts\Repositories\UserRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Database\Seeders\BoardReactionTypeSeeder;
@@ -9,7 +10,10 @@ use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\ReactionNotAllowedException;
 use Modules\Sirsoft\Board\Models\Reaction;
 use Modules\Sirsoft\Board\Models\ReactionType;
+use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
@@ -50,6 +54,7 @@ class ReactionServiceTest extends BoardTestCase
      * 반응이 없던 게시글에 반응하면 신규 등록되고 카운트가 +1 된다.
      *
      * @scenario case=register_first_like
+     *
      * @effects register_inserts_row_and_increments_count
      */
     public function test_react_adds_new_reaction_and_increments_count(): void
@@ -76,6 +81,7 @@ class ReactionServiceTest extends BoardTestCase
      * 다른 유형으로 전환하면 이전 유형 -1·신규 유형 +1 이 동시 반영된다 (단일 트랜잭션).
      *
      * @scenario case=switch_like_to_dislike
+     *
      * @effects switch_updates_row_and_adjusts_both_counts, switch_count_atomic_in_single_transaction
      */
     public function test_react_switches_type_and_adjusts_both_counts(): void
@@ -104,6 +110,7 @@ class ReactionServiceTest extends BoardTestCase
      * 같은 유형을 재클릭하면 해제되어 이력 행이 삭제되고 카운트가 -1 된다.
      *
      * @scenario case=remove_same_type
+     *
      * @effects remove_deletes_row_and_decrements_count
      */
     public function test_react_same_type_removes_reaction_and_decrements_count(): void
@@ -129,6 +136,7 @@ class ReactionServiceTest extends BoardTestCase
      * 카운트는 0 미만으로 내려가지 않는다 (해제 시 클램프).
      *
      * @scenario case=count_never_negative_on_over_remove
+     *
      * @effects reaction_count_never_negative
      */
     public function test_reaction_count_never_goes_below_zero(): void
@@ -151,6 +159,7 @@ class ReactionServiceTest extends BoardTestCase
      * 누적시키므로, 실제 COUNT 재집계 방식임을 검증한다.
      *
      * @scenario case=polluted_cache_self_heals_on_next_reaction
+     *
      * @effects reaction_counts_matches_actual_rows_after_recalculation
      */
     public function test_react_recalculates_from_actual_rows_and_heals_polluted_cache(): void
@@ -179,6 +188,7 @@ class ReactionServiceTest extends BoardTestCase
      * use_reaction 이 꺼진 게시판은 반응이 차단된다.
      *
      * @scenario case=use_reaction_off_react_blocked
+     *
      * @effects use_reaction_off_react_returns_422
      */
     public function test_react_blocked_when_use_reaction_off(): void
@@ -197,6 +207,7 @@ class ReactionServiceTest extends BoardTestCase
      * 게시판이 켜지 않은(비활성) 유형은 차단된다.
      *
      * @scenario case=inactive_type_react_blocked
+     *
      * @effects inactive_type_react_returns_422
      */
     public function test_react_blocked_for_inactive_type_on_board(): void
@@ -215,6 +226,7 @@ class ReactionServiceTest extends BoardTestCase
      * 본인 글에는 반응할 수 없다.
      *
      * @scenario case=self_post_react_blocked
+     *
      * @effects self_post_react_returns_422
      */
     public function test_react_blocked_on_own_post(): void
@@ -230,6 +242,7 @@ class ReactionServiceTest extends BoardTestCase
      * 다른 게시판 소속 게시글 ID 로는 반응할 수 없다 (스코프 검증).
      *
      * @scenario case=post_not_in_board
+     *
      * @effects post_not_in_board_returns_404
      */
     public function test_react_blocked_for_post_not_in_board(): void
@@ -250,6 +263,7 @@ class ReactionServiceTest extends BoardTestCase
      * "반응 처리에 실패했습니다"만 보게 되어 게시글이 없다는 실제 원인을 알 수 없다.
      *
      * @scenario case=post_deleted_between_scope_check_and_lock
+     *
      * @effects post_not_in_board_returns_404
      */
     public function test_react_wraps_model_not_found_during_lock_as_post_not_found(): void
@@ -259,15 +273,17 @@ class ReactionServiceTest extends BoardTestCase
         $postId = $this->createTestPost(['user_id' => $author->id]);
 
         $repository = $this->mock(ReactionRepositoryInterface::class);
-        $repository->shouldReceive('lockPostForReaction')
+        $repository->shouldReceive('lockTargetForReaction')
             ->once()
-            ->with($postId)
-            ->andThrow(new ModelNotFoundException());
+            ->with(ReactionService::TARGET_POST, $postId)
+            ->andThrow(new ModelNotFoundException);
 
         $service = new ReactionService(
             $repository,
-            app(\Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface::class),
-            app(\Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface::class),
+            app(ReactionTypeRepositoryInterface::class),
+            app(PostRepositoryInterface::class),
+            app(CommentRepositoryInterface::class),
+            app(UserRepositoryInterface::class),
         );
 
         $this->expectException(PostNotFoundException::class);

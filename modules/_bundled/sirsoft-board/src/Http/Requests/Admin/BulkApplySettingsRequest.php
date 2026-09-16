@@ -38,6 +38,7 @@ class BulkApplySettingsRequest extends FormRequest
         'use_report',
         'use_scrap',
         'use_reaction',
+        'use_comment_reaction',
         'active_reaction_types',
         'min_title_length',
         'max_title_length',

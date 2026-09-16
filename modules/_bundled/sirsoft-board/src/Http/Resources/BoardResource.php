@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -60,8 +61,15 @@ class BoardResource extends BaseApiResource
             'use_report' => $this->use_report,
             'use_scrap' => $this->use_scrap,
             'use_reaction' => $this->use_reaction,
+            'use_comment_reaction' => $this->use_comment_reaction,
+            // 설정 원본(active_reaction_types)은 관리자 폼이 유형을 켜고 끄려면 반응이
+            // 꺼진 상태에서도 읽어야 하므로 그대로 싣는다. 반면 화면이 바로 렌더하는
+            // 옵션 목록은 반응을 끈 게시판에서 빈 배열이다 — 안 쓰기로 한 기능의 유형
+            // 카탈로그가 응답으로 새지 않게 한다(PO 지시 2026-09-16).
             'active_reaction_types' => $this->active_reaction_types ?? [],
-            'reaction_type_options' => self::buildReactionTypeOptions($this->active_reaction_types ?? []),
+            'reaction_type_options' => self::reactionsEnabled($this->resource)
+                ? self::buildReactionTypeOptions($this->active_reaction_types ?? [])
+                : [],
             'comment_order' => $this->comment_order,
             'max_comment_depth' => $this->max_comment_depth,
 
@@ -205,6 +213,8 @@ class BoardResource extends BaseApiResource
                 'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
                 'use_scrap' => $this->use_scrap,
+                'use_reaction' => $this->use_reaction,
+                'use_comment_reaction' => $this->use_comment_reaction,
                 'secret_mode' => $this->secret_mode,
                 'show_view_count' => $this->show_view_count,
                 'per_page' => $this->per_page,
@@ -239,6 +249,8 @@ class BoardResource extends BaseApiResource
                 'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
                 'use_scrap' => $this->use_scrap,
+                'use_reaction' => $this->use_reaction,
+                'use_comment_reaction' => $this->use_comment_reaction,
                 'secret_mode' => $this->secret_mode,
                 'per_page' => $this->per_page,
                 'per_page_mobile' => $this->per_page_mobile ?? $this->per_page,
@@ -281,6 +293,24 @@ class BoardResource extends BaseApiResource
     }
 
     /**
+     * 게시판이 반응 기능을 켜 두었는지 판정합니다.
+     *
+     * 반응을 끈(use_reaction=false) 게시판은 «더 이상 쓰지 않기로 한 기능»이므로
+     * 카운트도 유형 목록도 응답에 실리지 않아야 한다(PO 지시 2026-09-16). 게이트가
+     * 한 곳에만 있으면 표면마다 규약이 갈리므로(목록은 새고 댓글은 막히던 상태)
+     * 모든 반응 표면이 이 한 판정을 공유한다.
+     *
+     * @param  mixed  $board  게시판 모델
+     * @return bool 반응 기능 사용 여부
+     */
+    public static function reactionsEnabled($board): bool
+    {
+        return $board !== null
+            && (bool) $board->use_reaction
+            && ! empty($board->active_reaction_types);
+    }
+
+    /**
      * 게시판이 켠(활성) 반응 유형의 옵션 배열을 만듭니다.
      *
      * DB 컬럼 `active_reaction_types`(code 문자열 배열)와 `board_reaction_types` 를
@@ -298,7 +328,7 @@ class BoardResource extends BaseApiResource
             return [];
         }
 
-        $types = app(\Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface::class)
+        $types = app(ReactionTypeRepositoryInterface::class)
             ->findByCodes($activeCodes);
 
         return $types->map(fn ($type) => [
@@ -308,6 +338,8 @@ class BoardResource extends BaseApiResource
             'icon' => $type->icon,
             // Icon 컴포넌트 name prop 용 — 스타일 접두사(fas/far 등)를 떼고 fa-* 토큰만 추출
             'icon_name' => $type->getIconName(),
+            // 업로드된 아이콘 이미지 URL — 있으면 화면이 이 이미지를 우선 렌더한다.
+            'icon_url' => $type->getIconUrl(),
         ])->values()->all();
     }
 

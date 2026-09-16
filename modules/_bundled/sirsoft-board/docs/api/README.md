@@ -20,7 +20,9 @@
 | [boards.md](boards.md) | `boards` | 37 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
 | [my-comments.md](my-comments.md) | `my-comments` | 1 |
-| [reaction.md](reaction.md) | `reaction` | 2 |
+| [reaction.md](reaction.md) | `reaction` | 3 |
+| [reaction-types.md](reaction-types.md) | `reaction-types` | 3 |
+| [reactions.md](reactions.md) | `reactions` | 6 |
 | [reports.md](reports.md) | `reports` | 7 |
 | [scrap.md](scrap.md) | `scrap` | 3 |
 | [scraps.md](scraps.md) | `scraps` | 6 |

@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 47개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 52개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 47개 |
+| `admin` | 52개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -18,6 +18,7 @@
 | `admin_board_post_detail` | `admin` | 화면 | `_admin_base` |
 | `admin_board_post_form` | `admin` | 화면 | `_admin_base` |
 | `admin_board_posts_index` | `admin` | 화면 | `_admin_base` |
+| `admin_board_reactions_index` | `admin` | 화면 | `_admin_base` |
 | `admin_board_reports_detail` | `admin` | 화면 | `_admin_base` |
 | `admin_board_reports_index` | `admin` | 화면 | `_admin_base` |
 | `admin_board_scraps_index` | `admin` | 화면 | `_admin_base` |
@@ -35,9 +36,11 @@
 | `_attachments` | `admin` | partial | - |
 | `_form_fields` | `admin` | partial | - |
 | `_parent_post` | `admin` | partial | - |
+| `_partial_filter` | `admin` | partial | - |
 | `_alert_status` | `admin` | partial | - |
 | `_card_history` | `admin` | partial | - |
 | `_card_report_info` | `admin` | partial | - |
+| `_partial_filter` | `admin` | partial | - |
 | `_bulk_apply_modal` | `admin` | partial | - |
 | `_modal_identity_policy_delete` | `admin` | partial | - |
 | `_modal_identity_policy_form` | `admin` | partial | - |
@@ -45,6 +48,8 @@
 | `_modal_notification_definition_reset` | `admin` | partial | - |
 | `_modal_notification_template_edit` | `admin` | partial | - |
 | `_modal_notification_template_preview` | `admin` | partial | - |
+| `_reaction_type_cards` | `admin` | partial | - |
+| `_reaction_type_editor` | `admin` | partial | - |
 | `_tab_board_settings_attachment` | `admin` | partial | - |
 | `_tab_board_settings_basic` | `admin` | partial | - |
 | `_tab_board_settings_bulk_apply` | `admin` | partial | - |

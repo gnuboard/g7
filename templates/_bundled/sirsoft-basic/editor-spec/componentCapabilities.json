@@ -815,33 +815,6 @@
       }
     }
   },
-  "PostReactions": {
-    "label": "$t:editor.component.post_reactions",
-    "propControls": [
-      "prUserReaction",
-      "prPostId",
-      "prSize"
-    ],
-    "styleControls": [
-      "marginAll",
-      "width"
-    ],
-    "events": [
-      "onReact"
-    ],
-    "dataProps": [
-      {
-        "propKey": "reactions",
-        "shape": "array",
-        "label": "$t:editor.data_prop.reactions",
-        "itemFields": [
-          "type",
-          "count"
-        ],
-        "required": true
-      }
-    ]
-  },
   "Input": {
     "label": "$t:editor.component.input",
     "propControls": [

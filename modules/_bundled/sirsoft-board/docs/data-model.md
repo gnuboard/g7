@@ -8,14 +8,14 @@
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
 | `Attachment` | `board_attachments` | 15 | board→Board, post→Post, creator→User | SoftDeletes |
-| `Board` | `boards` | 40 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
+| `Board` | `boards` | 41 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
 | `BoardStat` | `board_stats` | 3 | - | - |
 | `BoardType` | `board_types` | 3 | - | HasUserOverrides |
-| `Comment` | `board_comments` | 14 | board→Board, post→Post, user→User, parent→self, replies→self | SoftDeletes |
+| `Comment` | `board_comments` | 15 | board→Board, post→Post, user→User, parent→self, replies→self | SoftDeletes |
 | `Post` | `board_posts` | 23 | board→Board, user→User, parent→self, replies→self, comments→Comment, attachments→Attachment, 외 1개 | SoftDeletes, 검색 색인 |
 | `PostScrap` | `board_post_scraps` | 3 | user→User, post→Post, board→Board | - |
-| `Reaction` | `board_reactions` | 5 | user→User, reactionType→ReactionType, board→Board | - |
-| `ReactionType` | `board_reaction_types` | 6 | - | HasUserOverrides |
+| `Reaction` | `board_reactions` | 5 | user→User, reactionType→ReactionType, board→Board, post→Post, comment→Comment | - |
+| `ReactionType` | `board_reaction_types` | 7 | iconAttachment→Attachment, reactions→Reaction | HasUserOverrides |
 | `Report` | `boards_reports` | 11 | board→Board, author→User, logs→ReportLog, processor→User | SoftDeletes |
 | `ReportLog` | `boards_report_logs` | 6 | report→Report, reporter→User | - |
 | `UserNotificationSetting` | `board_user_notification_settings` | 5 | user→User | - |
@@ -62,7 +62,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 39개.
+마이그레이션 43개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -105,6 +105,10 @@
 | `2026_08_17_000002_modify_trigger_type_in_board_posts_table.php` | - | - | ✅ |
 | `2026_08_22_000001_add_content_thumbnail_url_to_board_posts_table.php` | - | `board_posts` | ✅ |
 | `2026_09_14_000001_add_admin_indexes_to_board_post_scraps_table.php` | - | `board_post_scraps` | ✅ |
+| `2026_09_15_000001_add_icon_attachment_id_to_board_reaction_types_table.php` | - | `board_reaction_types` | ✅ |
+| `2026_09_15_000002_add_reaction_counts_to_board_comments_table.php` | - | `board_comments` | ✅ |
+| `2026_09_15_000003_add_use_comment_reaction_to_boards_table.php` | - | `boards` | ✅ |
+| `2026_09_15_000004_add_admin_indexes_to_board_reactions_table.php` | - | `board_reactions` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
