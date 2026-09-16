@@ -1,0 +1,88 @@
+{
+  "pluginId": "sirsoft-koreaexim",
+  "version": "1.0.0",
+  "description": "환율 설정·상태·이력 데이터소스 프리뷰",
+  "sampleData": {
+    "byDataSourceId": {
+      "settings": {
+        "data": {
+          "auth_key": "••••••••",
+          "auto_manage": false,
+          "update_time": "11:30",
+          "run_days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "retry_max": 3,
+          "rate_type": "deal_bas_r",
+          "rate_decimal_places": 6,
+          "lookback_days": 7,
+          "history_retention_days": 365,
+          "notify_on_failure": true
+        }
+      },
+      "koreaeximStatus": {
+        "data": {
+          "auto_manage": false,
+          "auth_key_set": false,
+          "base_currency": "KRW",
+          "managed_codes": [],
+          "unsupported_codes": [],
+          "last_run": null,
+          "last_success_run": null,
+          "today_request_count": 0,
+          "quota_limit": 1000,
+          "next_run_at": null,
+          "next_run_at_kst": null,
+          "update_time_site": "11:30",
+          "scheduler_hint": "자동 실행에는 서버 스케줄러가 필요합니다.",
+          "abilities": {
+            "can_manage": true
+          }
+        }
+      },
+      "koreaeximRuns": {
+        "data": {
+          "data": [],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 0,
+            "has_more_pages": false
+          }
+        }
+      },
+      "koreaeximRecentRuns": {
+        "data": {
+          "data": [],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 5,
+            "total": 0,
+            "has_more_pages": false
+          }
+        }
+      },
+      "koreaeximNotificationDefinitions": {
+        "data": {
+          "data": [],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 0,
+            "has_more_pages": false
+          },
+          "abilities": {
+            "can_update": true
+          }
+        }
+      }
+    }
+  }
+}

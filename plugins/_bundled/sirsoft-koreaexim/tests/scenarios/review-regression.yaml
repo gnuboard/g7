@@ -1,0 +1,10 @@
+feature: koreaexim_review_regression
+description: 재시도 상태 허용 목록, 연결 테스트의 단일 요청, 실행 락 경합 시 수동 예산 보존을 검증한다.
+axes:
+  review: [regression]
+effects:
+  - retry_status_allowlist
+  - connection_test_one_request
+  - lock_contention_preserves_manual_budget
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Feature/ReviewRegressionTest.php

@@ -1,0 +1,23 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "환율 상태 및 정책 설정 탭"
+    },
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeTab === 'settings'}}",
+    "children": [
+        {
+            "partial": "_status_card.json"
+        },
+        {
+            "partial": "_settings_form.json"
+        },
+        {
+            "partial": "_notifications_card.json"
+        },
+        {
+            "partial": "_recent_runs.json"
+        }
+    ]
+}

@@ -59,6 +59,7 @@ effects:
   # 두 리소스 모두 "제거" 가 아니라 "스코프 축소" 라, 무엇이 남았는지까지 고정해야 한다.
   - notification_list_carries_only_requested_channel_template
   - notification_list_without_channel_omits_templates
+  - notification_list_all_channel_carries_every_template
   - notification_customized_flag_spans_every_channel
   - identity_definition_list_carries_representative_template_only
   - identity_definition_list_reports_total_template_count

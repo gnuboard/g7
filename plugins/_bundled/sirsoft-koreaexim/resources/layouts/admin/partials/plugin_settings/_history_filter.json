@@ -1,0 +1,252 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "실행 이력의 기간·결과·계기 필터"
+    },
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-4"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "grid-2col-responsive"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-koreaexim.date_from"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/plugins/sirsoft-koreaexim/settings",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "tab": "history",
+                                            "page": 1,
+                                            "date_from": "{{$event.target.value}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-koreaexim.date_from",
+                                "type": "date",
+                                "value": "{{query.date_from ?? ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-koreaexim.date_to"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/plugins/sirsoft-koreaexim/settings",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "tab": "history",
+                                            "page": 1,
+                                            "date_to": "{{$event.target.value}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-koreaexim.date_to",
+                                "type": "date",
+                                "value": "{{query.date_to ?? ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-koreaexim.result"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/plugins/sirsoft-koreaexim/settings",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "tab": "history",
+                                            "page": 1,
+                                            "status": "{{$event.target.value}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-koreaexim.result",
+                                "value": "{{query.status ?? ''}}",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:sirsoft-koreaexim.all"
+                                    },
+                                    {
+                                        "value": "success",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.success"
+                                    },
+                                    {
+                                        "value": "partial",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.partial"
+                                    },
+                                    {
+                                        "value": "no_data",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.no_data"
+                                    },
+                                    {
+                                        "value": "skipped",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.skipped"
+                                    },
+                                    {
+                                        "value": "auth_missing",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.auth_missing"
+                                    },
+                                    {
+                                        "value": "auth_error",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.auth_error"
+                                    },
+                                    {
+                                        "value": "quota_exceeded",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.quota_exceeded"
+                                    },
+                                    {
+                                        "value": "network_error",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.network_error"
+                                    },
+                                    {
+                                        "value": "bad_request",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.bad_request"
+                                    },
+                                    {
+                                        "value": "bad_response",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.bad_response"
+                                    },
+                                    {
+                                        "value": "unsupported_base",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.unsupported_base"
+                                    },
+                                    {
+                                        "value": "dry_run",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.dry_run"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-koreaexim.trigger"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/plugins/sirsoft-koreaexim/settings",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "tab": "history",
+                                            "page": 1,
+                                            "trigger": "{{$event.target.value}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-koreaexim.trigger",
+                                "value": "{{query.trigger ?? ''}}",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:sirsoft-koreaexim.all"
+                                    },
+                                    {
+                                        "value": "scheduled",
+                                        "label": "$t:sirsoft-koreaexim.RunTrigger.scheduled"
+                                    },
+                                    {
+                                        "value": "retry",
+                                        "label": "$t:sirsoft-koreaexim.RunTrigger.retry"
+                                    },
+                                    {
+                                        "value": "manual",
+                                        "label": "$t:sirsoft-koreaexim.RunTrigger.manual"
+                                    },
+                                    {
+                                        "value": "dry_run",
+                                        "label": "$t:sirsoft-koreaexim.RunTrigger.dry_run"
+                                    },
+                                    {
+                                        "value": "currency_changed",
+                                        "label": "$t:sirsoft-koreaexim.RunTrigger.currency_changed"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

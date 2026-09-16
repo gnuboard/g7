@@ -716,6 +716,8 @@ _admin_base.g7.html
 
 ### 관련 문서
 
+활동 로그 목록은 `admin_activity_log_list.g7.html`, 본인인증 이력 목록은 `admin_identity_logs.g7.html`에서 필터와 상세 조회를 제공합니다.
+
 - [sirsoft-admin_basic 컴포넌트](components.md)
 - [sirsoft-admin_basic 핸들러](handlers.md)
 - [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md)

@@ -102,6 +102,89 @@
             },
             "children": [
                 {
+                    "id": "exchange_rate_provider_select",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(settings?.data?.available_rate_providers ?? []).length > 0}}",
+                    "props": {
+                        "className": "form-group mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "exchange_rate_provider"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "id": "exchange_rate_provider",
+                                "className": "{{_local.errors?.['language_currency.rate_provider'] ? 'w-full select-error' : 'w-full'}}",
+                                "name": "language_currency.rate_provider",
+                                "value": "{{_local.form?.language_currency?.rate_provider ?? ''}}",
+                                "options": "{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual')}].concat((settings?.data?.available_rate_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['language_currency.rate_provider']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['language_currency.rate_provider']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "exchange_rate_provider_banner",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_computed.activeRateProvider !== null}}",
+                    "props": {
+                        "role": "status",
+                        "className": "alert-info mb-4 flex flex-wrap items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{$localized(_computed.activeRateProvider?.name)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.last_updated"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_computed.activeRateProvider?.last_updated_at_formatted ?? '-'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_computed.activeRateProvider?.notice_key}}",
+                            "text": "{{_computed.activeRateProvider.notice_key === 'auth_key_required' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.auth_key_required') : _computed.activeRateProvider.notice_key === 'auto_manage_disabled' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.auto_manage_disabled') : _computed.activeRateProvider.notice_key === 'unsupported_base' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.unsupported_base') : _computed.activeRateProvider.notice_key}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "A",
+                            "props": {
+                                "href": "{{_computed.activeRateProvider?.settings_url}}",
+                                "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.settings"
+                        }
+                    ]
+                },
+                {
                     "id": "exchange_settings_header",
                     "type": "basic",
                     "name": "Div",

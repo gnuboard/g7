@@ -201,7 +201,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency)}}"
                                     },
                                     "children": [
@@ -391,8 +391,8 @@
                                                 "type": "text",
                                                 "name": "{{'language_currency.currencies.' + currency._idx + '.exchange_rate'}}",
                                                 "value": "{{currency.exchange_rate}}",
-                                                "className": "{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate'] ? 'input flex-1 text-center input-error' : 'input flex-1 text-center'}}",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "className": "{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate'] ? 'input flex-1 text-center input-error' : 'input flex-1 text-center'}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_computed.isReadOnly || _computed.managedRateCodes.includes(currency.code)}}"
                                             }
                                         },
                                         {
@@ -404,6 +404,37 @@
                                             "text": "{{currency.code}}"
                                         }
                                     ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_computed.managedRateCodes.includes(currency.code)}}",
+                                    "props": {
+                                        "className": "text-label-subtle inline-flex items-center gap-1 whitespace-nowrap shrink-0 mt-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "lock"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.managed_badge"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(_computed.activeRateProvider?.unsupported_codes ?? []).includes(currency.code)}}",
+                                    "props": {
+                                        "className": "text-label-subtle inline-flex items-center gap-1 whitespace-nowrap shrink-0 mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual_badge"
                                 },
                                 {
                                     "type": "basic",
