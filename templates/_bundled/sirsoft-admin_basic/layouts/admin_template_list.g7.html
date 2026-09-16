@@ -47,6 +47,15 @@
     <wait-for>auto_deactivated_banner</wait-for>
   </transition-overlay>
   <init>
+    <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
+         저장값이 없거나 깨졌으면 갤러리다(기본 보기). GDPR 허용목록에 등재된 키라
+         functional 미동의 상태에서도 살아남는다. -->
+    <load-from-local-storage key="g7_view_mode_extensions" defaultValue="gallery">
+      <field name="resultTo">
+        <field name="target" value="_global"/>
+        <field name="key" value="extensionViewMode"/>
+      </field>
+    </load-from-local-storage>
     <set-state target="global">
       <field name="_local">
         <field name="searchQuery" value="{{query.search || ''}}"/>

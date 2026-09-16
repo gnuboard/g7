@@ -25,6 +25,8 @@ class ModuleResource extends BaseApiResource
             'dependencies' => $this->getValue('dependencies', []),
             'status' => $this->getValue('status'),
             'assets' => $this->getValue('assets'),
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
@@ -92,6 +94,8 @@ class ModuleResource extends BaseApiResource
             'status' => $this->getValue('status'),
             'is_installed' => $this->getValue('is_installed', false),
             // 상세 정보
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             'permissions' => $this->getValue('permissions', []),
             'roles' => $this->getValue('roles', []),
             'admin_menus' => $this->getValue('admin_menus', []),

@@ -12,6 +12,7 @@ use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
@@ -34,6 +35,7 @@ use Illuminate\Support\Facades\Log;
  */
 class TemplateManager implements TemplateManagerInterface
 {
+    use ResolvesExtensionIcons;
     use Traits\CachesTemplateStatus;
     use Traits\ClearsTemplateCaches;
     use Traits\CollectsFragmentSources;
@@ -41,6 +43,16 @@ class TemplateManager implements TemplateManagerInterface
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
     use Traits\ValidatesLayoutFiles;
+
+    /**
+     * 아이콘 해석기에 넘길 확장 유형을 반환합니다.
+     *
+     * @return string 확장 유형 ('template')
+     */
+    protected function extensionIconType(): string
+    {
+        return 'template';
+    }
 
     /** @var int install 프로그레스바 단계 수 */
     public const INSTALL_STEPS = 4;
@@ -910,6 +922,7 @@ class TemplateManager implements TemplateManagerInterface
                     'status' => 'uninstalled',
                     'source' => 'active',
                     'hidden' => (bool) ($template['hidden'] ?? false),
+                    ...$this->resolveIconFields($template['identifier'], $template['version']),
                 ];
             }
         }
@@ -930,6 +943,7 @@ class TemplateManager implements TemplateManagerInterface
                     'status' => 'uninstalled',
                     'source' => 'pending',
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
+                    ...$this->resolveIconFields($identifier, $metadata['version'] ?? '0.0.0'),
                 ];
             }
         }
@@ -950,6 +964,7 @@ class TemplateManager implements TemplateManagerInterface
                     'status' => 'uninstalled',
                     'source' => 'bundled',
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
+                    ...$this->resolveIconFields($identifier, $metadata['version'] ?? '0.0.0'),
                 ];
             }
         }
@@ -1013,6 +1028,7 @@ class TemplateManager implements TemplateManagerInterface
                     'github_url' => $template['github_url'] ?? ($record->github_url ?? null),
                     'github_changelog_url' => $record->github_changelog_url ?? ($template['github_changelog_url'] ?? null),
                     'hidden' => (bool) ($template['hidden'] ?? false),
+                    ...$this->resolveIconFields($template['identifier'], $record->version),
                     'user_modified_at' => $record->user_modified_at,
                     'created_at' => $record->created_at,
                     'updated_at' => $record->updated_at,
@@ -1081,6 +1097,7 @@ class TemplateManager implements TemplateManagerInterface
             'user_modified_at' => $templateRecord?->user_modified_at,
             'created_at' => $templateRecord?->created_at,
             'updated_at' => $templateRecord?->updated_at,
+            ...$this->resolveIconFields($template['identifier'], $template['version']),
         ];
     }
 
@@ -1129,6 +1146,7 @@ class TemplateManager implements TemplateManagerInterface
             'user_modified_at' => null,
             'created_at' => null,
             'updated_at' => null,
+            ...$this->resolveIconFields($metadata['identifier'] ?? $templateName, $metadata['version'] ?? '0.0.0'),
         ];
     }
 

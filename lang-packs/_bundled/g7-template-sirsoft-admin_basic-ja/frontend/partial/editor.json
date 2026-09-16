@@ -1127,6 +1127,18 @@
     },
     "sh_description": {
       "label": "説明"
+    },
+    "ecg_view_mode": {
+      "label": "表示方法"
+    },
+    "ecg_min_card_width": {
+      "label": "カード最小幅(px)"
+    },
+    "ecg_max_columns": {
+      "label": "最大列数"
+    },
+    "ecg_pagination": {
+      "label": "ページネーション"
     }
   },
   "component": {
@@ -1215,7 +1227,8 @@
     "theme_toggle": "テーマ切り替え",
     "notification_center": "通知センター",
     "column_selector": "列セレクター",
-    "section_header": "セクションヘッダー"
+    "section_header": "セクションヘッダー",
+    "extension_card_grid": "拡張カードグリッド"
   },
   "action": {
     "go_to_page": {
@@ -1292,6 +1305,12 @@
     "init_filter_visibility": {
       "label": "フィルター表示をリセット",
       "param_storage_key": "保存キー"
+    },
+    "persist_view_mode": {
+      "label": "表示方法の保存（保存後の再読込）",
+      "param_storage_key": "ブラウザストレージキー",
+      "param_state_key": "グローバル状態キー",
+      "param_value": "保存する値（リテラル）"
     }
   },
   "condition": {
@@ -1396,7 +1415,9 @@
     "order_detail_default": "通常注文",
     "order_detail_partially_cancelled": "部分キャンセル",
     "admin_base_default": "基本",
-    "sidebar_open": "モバイルメニュー展開"
+    "sidebar_open": "モバイルメニュー展開",
+    "extensions_list_view_gallery": "拡張リスト — ギャラリー表示",
+    "extensions_list_view_list": "拡張リスト — 一覧表示"
   },
   "cell_border": {
     "side_all": "すべて",

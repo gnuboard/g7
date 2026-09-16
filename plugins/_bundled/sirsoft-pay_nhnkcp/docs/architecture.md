@@ -58,6 +58,7 @@ Listener (RegisterPgProviderListener 등)
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
 | `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `bin/` | 확장이 실행하는 외부 바이너리·인증서 | 교체 시 OS별 파일과 권한을 함께 확인 (비면 해당 기능 정지) |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

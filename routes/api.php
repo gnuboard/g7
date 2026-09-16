@@ -53,6 +53,7 @@ use App\Http\Controllers\Api\Public\AssetProbeController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
+use App\Http\Controllers\Api\Public\PublicExtensionIconController;
 use App\Http\Controllers\Api\Public\PublicLayoutController;
 use App\Http\Controllers\Api\Public\PublicModuleController;
 use App\Http\Controllers\Api\Public\PublicPluginController;
@@ -185,6 +186,13 @@ Route::group([], function () {
     // 활성 로케일 목록 — 언어팩 설치/활성화 직후 셀렉터 즉시 갱신용
     Route::get('locales/active', [PublicLocaleController::class, 'active'])
         ->name('api.public.locales.active');
+
+    // 확장 아이콘 서빙 — 미설치 번들 확장도 대상이라 DB 상태·인증을 보지 않는다.
+    // 관리자 API 는 Bearer 토큰이라 <img src> 가 부를 수 없어 공개 lane 이다.
+    // 응답은 <img> 전용(nosniff + SVG CSP). 규격 위반 아이콘은 404 → 화면은 유형 글리프.
+    Route::get('extensions/{type}/{identifier}/icon', [PublicExtensionIconController::class, 'show'])
+        ->where('type', 'module|plugin|template|language-pack')
+        ->name('api.public.extensions.icon');
 
     // 자산 URL 모드 감지 프로브 — 정적 최적화 블록이 확장자 붙은 동적 응답을
     // 가로채는지 쌍으로 판정한다. 매크로 자기적용(확장자 형태 + 대조군).

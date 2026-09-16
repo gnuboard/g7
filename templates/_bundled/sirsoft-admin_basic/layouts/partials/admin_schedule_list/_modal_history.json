@@ -230,7 +230,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{((schedule_history?.data?.last_page ?? 0) > 1) || (schedule_history?.data?.has_more_pages === true) || ((schedule_history?.data?.current_page ?? 1) > 1)}}",
+            "if": "{{((schedule_history?.data?.pagination?.last_page ?? 0) > 1) || (schedule_history?.data?.pagination?.has_more_pages === true) || ((schedule_history?.data?.pagination?.current_page ?? 1) > 1)}}",
             "props": {
                 "className": "mt-4 flex justify-center"
             },
@@ -262,10 +262,10 @@
                         }
                     ],
                     "props": {
-                        "currentPage": "{{schedule_history?.data?.current_page ?? 1}}",
-                        "totalPages": "{{schedule_history?.data?.last_page ?? null}}",
-                        "hasMorePages": "{{schedule_history?.data?.has_more_pages ?? false}}",
-                        "totalItems": "{{schedule_history?.data?.total ?? 0}}",
+                        "currentPage": "{{schedule_history?.data?.pagination?.current_page ?? 1}}",
+                        "totalPages": "{{schedule_history?.data?.pagination?.last_page ?? null}}",
+                        "hasMorePages": "{{schedule_history?.data?.pagination?.has_more_pages ?? false}}",
+                        "totalItems": "{{schedule_history?.data?.pagination?.total ?? 0}}",
                         "perPage": 10,
                         "showAlways": false
                     }

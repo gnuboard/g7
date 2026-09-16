@@ -11,7 +11,7 @@
 |----------|---------|----------|
 | [백엔드](backend/) | 37개 | 정상 |
 | [프론트엔드](frontend/) | 47개 | 정상 |
-| [확장 시스템](extension/) | 33개 | 정상 |
+| [확장 시스템](extension/) | 34개 | 정상 |
 | 공통 | 20개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
@@ -223,7 +223,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [template-handlers.md](frontend/template-handlers.md) | 템플릿 전용 핸들러 |
 | [README.md](frontend/templates/README.md) | 템플릿별 컴포넌트·핸들러·레이아웃 문서 |
 
-### 확장 시스템 (33개)
+### 확장 시스템 (34개)
 
 | 문서 | 제목 |
 |------|------|
@@ -232,6 +232,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [editor-spec.md](extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) |
 | [extension-components.md](extension/extension-components.md) | 확장 컴포넌트 (Extension Components) |
 | [extension-documentation.md](extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) |
+| [extension-icons.md](extension/extension-icons.md) | 확장 아이콘 |
 | [extension-manager.md](extension/extension-manager.md) | ExtensionManager (확장 관리자) |
 | [extension-update-system.md](extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) |
 | [hooks.md](extension/hooks.md) | 훅 시스템 (Hook System) |

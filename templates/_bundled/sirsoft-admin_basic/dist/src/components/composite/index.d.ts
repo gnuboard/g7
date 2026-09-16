@@ -4,6 +4,8 @@ export { DataGrid } from './DataGrid';
 export type { DataGridProps, DataGridColumn } from './DataGrid';
 export { CardGrid } from './CardGrid';
 export type { CardGridProps, CardGridCellChild } from './CardGrid';
+export { ExtensionCardGrid } from './ExtensionCardGrid';
+export type { ExtensionCardGridProps, ExtensionCardItem, ExtensionViewMode, ExtensionBadgeSpec, ExtensionDependency, } from './ExtensionCardGrid';
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
 export { Dropdown } from './Dropdown';

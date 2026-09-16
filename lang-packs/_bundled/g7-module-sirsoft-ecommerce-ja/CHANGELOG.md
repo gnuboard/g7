@@ -8,6 +8,7 @@
 
 ### Added
 
+- 拡張アイコンを同梱しました。管理者の拡張管理画面とインストールウィザードに表示されます。
 - 이커머스 1.3.0 환율 제공자 선택·관리 통화 잠금·저장 오류 문구의 일본어 번역을 추가했습니다.
 - 입금 대기 주문·배송 완료·마일리지 소멸 예정 알림 템플릿의 누락된 일본어 번역을 보완했습니다.
 - 권한 9건과 메뉴 1건의 일본어 번역을 추가했습니다 — 대시보드(`dashboard`·`dashboard.view`), 마일리지 관리(`mileage`·`mileage.read`·`mileage.manage`), 회원 결제 통화 관리(`user-currency`·`user-currency.manage`), 회원 배송국가 관리(`user-shipping-country`·`user-shipping-country.manage`), 그리고 메뉴 `sirsoft-ecommerce-mileage-transactions`(마일리지 내역)입니다. 모듈에 나중에 들어온 기능들이라 시드가 따라가지 못했고, 일본어 로케일의 역할 수정 화면과 좌측 메뉴에 한국어로 남아 있었습니다.

@@ -236,6 +236,12 @@ php artisan module:uninstall gnuboard7-hello_module
 
 ---
 
+## 확장 아이콘
+
+네 샘플은 모두 `assets/icon.svg` 를 담고 있어 **아이콘 관례의 예제**이기도 합니다. 관리자 확장 관리
+화면과 설치 마법사가 이 파일을 찾아 그립니다. 규격과 매니페스트 `icon` 항목은
+[extension-icons.md](extension-icons.md) 를 보세요.
+
 ## hidden 플래그와 관리자 UI
 
 모든 Hello 샘플은 manifest 에 `"hidden": true` 가 설정되어 있습니다:
@@ -286,5 +292,6 @@ GET /api/admin/templates?include_hidden=1
 - [plugin-development.md](plugin-development.md) — 플러그인 기초, hidden 필드
 - [template-workflow.md](template-workflow.md) — 템플릿 워크플로우, hidden 필드
 - [extension-manager.md](extension-manager.md) — 관리자 UI 필터링, `?include_hidden=1`
+- [extension-icons.md](extension-icons.md) — 확장 아이콘 규격 (네 샘플이 담고 있는 `assets/icon.svg`)
 - [hooks.md](hooks.md) — Action/Filter 훅 (Hello 플러그인 학습에 필수)
 - [layout-testing.md](../frontend/layout-testing.md) — 레이아웃 렌더링 테스트 (Hello 템플릿 학습에 필수)

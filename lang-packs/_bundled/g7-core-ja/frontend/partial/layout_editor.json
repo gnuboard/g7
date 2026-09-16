@@ -390,7 +390,10 @@
       "onSelect": "選択したら",
       "onSelectionChange": "選択が変わったら",
       "onToggle": "展開または折りたたんだら",
-      "onComponentEvent": "特定のイベントが発生したら"
+      "onComponentEvent": "特定のイベントが発生したら",
+      "onPrimaryAction": "主ボタンをクリックすると",
+      "onSecondaryAction": "副ボタンをクリックすると",
+      "onAction": "メニューを選択すると"
     },
     "advanced": "詳細",
     "add_search": "アクションを検索…",

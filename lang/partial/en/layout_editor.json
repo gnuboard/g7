@@ -418,7 +418,10 @@
       "onSelect": "When selected",
       "onSelectionChange": "When the selection changes",
       "onToggle": "When toggled",
-      "onComponentEvent": "On a specific event"
+      "onComponentEvent": "On a specific event",
+      "onPrimaryAction": "When the primary button is clicked",
+      "onSecondaryAction": "When the secondary button is clicked",
+      "onAction": "When a menu action is selected"
     },
     "advanced": "Advanced",
     "view_code": "View code",

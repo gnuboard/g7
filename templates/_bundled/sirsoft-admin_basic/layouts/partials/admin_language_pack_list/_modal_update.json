@@ -24,9 +24,47 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-body"
+                        "className": "text-body flex items-center gap-2"
                     },
-                    "text": "$t:admin.language_packs.modal.update.body|current={{_local.updateCurrent}}|latest={{_local.updateLatest}}"
+                    "children": [
+                        {
+                            "id": "lp_update_icon",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{_local.updateIconUrl}}",
+                                    "props": {
+                                        "src": "{{_local.updateIconUrl}}",
+                                        "alt": "",
+                                        "loading": "lazy",
+                                        "decoding": "async",
+                                        "className": "w-5 h-5 object-contain"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_local.updateIconUrl}}",
+                                    "props": {
+                                        "name": "fas fa-language",
+                                        "className": "text-xs text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.modal.update.body|current={{_local.updateCurrent}}|latest={{_local.updateLatest}}"
+                        }
+                    ]
                 },
                 {
                     "type": "basic",

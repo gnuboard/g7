@@ -162,6 +162,11 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 
 두 형태는 **모두 영구 유지**됩니다. 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨집니다.
 
+확장 아이콘 주소(`GET /api/extensions/{type}/{identifier}/icon`)는 이 표에 없습니다 —
+애초에 확장자로 끝나지 않게 설계해 정적 최적화 블록과 무관하기 때문입니다. 확장자는 파일
+내용에서 정해지고 응답의 `Content-Type` 으로만 알립니다. 자산 엔드포인트와 달리 인증이 없고
+설치 전 동봉 확장도 대상이며 정적 게시 lane 밖입니다 — [확장 아이콘](../../extension/extension-icons.md).
+
 #### CSS 응답의 상대 참조 치환
 
 확장 자산 엔드포인트(`/api/{templates|modules|plugins}/assets/…`)가 **CSS 를 서빙할 때**는 본문 안의

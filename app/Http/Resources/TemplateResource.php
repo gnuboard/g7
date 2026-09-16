@@ -35,6 +35,8 @@ class TemplateResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getDependenciesSummary(),
             'dependencies_met' => $this->areDependenciesMet(),
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
@@ -114,6 +116,10 @@ class TemplateResource extends BaseApiResource
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
             // 상세 정보
+            // 상세 응답은 목록이 골라 둔 전역 자리를 통째로 덮는다(상세 창의 initGlobal).
+            // 여기서 빠뜨리면 창이 열린 뒤 아이콘만 사라지므로 목록과 같은 두 필드를 싣는다.
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             'locales' => $this->getValue('locales', []),
             'layouts_count' => $this->getValue('layouts_count', 0),
             'components' => $this->getValue('components', ['basic' => [], 'composite' => []]),

@@ -3,7 +3,7 @@
 <partial description="템플릿 제거 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_uninstall_modal">
   <modal data-ref="template_uninstall_modal" title="{{_global.templateUninstallBackups?.length ? '$t:admin.templates.modals.uninstall_done_title' : '$t:admin.templates.modals.uninstall_title'}}" size="medium">
     <div data-if="{{!(_global.templateUninstallBackups?.length)}}" class="py-2">
-      <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.uninstall_confirm|name={{_global.selectedTemplate.name}}</p>
+      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="template_uninstall_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"><img data-if="{{_global.selectedTemplate?.icon_url}}" src="{{_global.selectedTemplate.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/><icon data-if="{{!_global.selectedTemplate?.icon_url}}" name="{{_global.selectedTemplate?.type === 'admin' ? 'cog' : 'palette'}}" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/></span><span>$t:admin.templates.modals.uninstall_confirm|name={{_global.selectedTemplate.name}}</span></p>
       <p class="mt-2 text-label-subtle">$t:admin.templates.modals.uninstall_warning</p>
     </div>
     <div data-ref="delete_data_option" data-if="{{!(_global.templateUninstallBackups?.length)}}" class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">

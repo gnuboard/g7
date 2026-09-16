@@ -79,10 +79,15 @@
         "updateId": null,
         "updateCurrent": null,
         "updateLatest": null,
+        "updateIconUrl": null,
+        "updateIconSource": null,
+        "updateLocale": null,
         "uninstallId": null,
         "uninstallScope": null,
         "uninstallTarget": null,
         "uninstallLocale": null,
+        "uninstallIconUrl": null,
+        "uninstallIconSource": null,
         "uninstallCascade": false,
         "showInstallModal": false,
         "installTab": "zip",
@@ -102,6 +107,18 @@
         ]
     },
     "init_actions": [
+        {
+            "comment": "확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.\n         저장값이 없거나 깨졌으면 갤러리다(기본 보기). GDPR 허용목록에 등재된 키라\n         functional 미동의 상태에서도 살아남는다.",
+            "handler": "loadFromLocalStorage",
+            "params": {
+                "key": "g7_view_mode_extensions",
+                "defaultValue": "gallery"
+            },
+            "resultTo": {
+                "target": "_global",
+                "key": "extensionViewMode"
+            }
+        },
         {
             "handler": "setState",
             "params": {

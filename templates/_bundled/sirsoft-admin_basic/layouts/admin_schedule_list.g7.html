@@ -9,10 +9,13 @@
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
-        <field name="current_page" :value="1"/>
-        <field name="last_page" :value="1"/>
-        <field name="per_page" :value="20"/>
-        <field name="total" :value="0"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+          <field name="has_more_pages" :value="false"/>
+        </field>
       </field>
     </fallback>
   </data-source>

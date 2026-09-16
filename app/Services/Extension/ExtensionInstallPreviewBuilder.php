@@ -68,6 +68,9 @@ class ExtensionInstallPreviewBuilder
                 'identifier' => $info['identifier'] ?? $identifier,
                 'name' => $info['name'] ?? null,
                 'version' => $info['version'] ?? null,
+                // 설치 확인 창은 목록을 거치지 않고 이 응답만으로 그리므로 아이콘도 함께 낸다.
+                'icon_url' => $info['icon_url'] ?? null,
+                'icon_source' => $info['icon_source'] ?? 'none',
             ],
             'dependencies' => $dependencies,
             'language_packs' => $languagePacks,
@@ -169,6 +172,10 @@ class ExtensionInstallPreviewBuilder
 
             $dependsOn = $matchesSelf ? null : $packTarget;
 
+            // 확인 창은 목록을 거치지 않고 이 응답만으로 그린다 — 언어팩 줄의 아이콘도 함께 낸다.
+            // 판정(자기 선언 → 코어 → 대상 확장 → 없음)은 LanguagePackService 한 곳에 둔다.
+            $this->languagePackService->annotateIcon($pack);
+
             $result[] = [
                 'bundled_identifier' => $pack->identifier,
                 'locale' => $pack->locale,
@@ -178,6 +185,8 @@ class ExtensionInstallPreviewBuilder
                 'depends_on_extension' => $dependsOn,
                 'available' => true,
                 'default_selected' => true,
+                'icon_url' => $pack->icon_url,
+                'icon_source' => $pack->icon_source ?? 'none',
             ];
         }
 

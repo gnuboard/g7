@@ -109,6 +109,8 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 모듈 디렉토리 경로 반환
+     *
+     * @return string 모듈 디렉토리 절대 경로
      */
     protected function getModulePath(): string
     {
@@ -124,6 +126,8 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * 모듈 식별자 반환 (디렉토리명에서 자동 추론)
      *
      * 디렉토리명이 'sirsoft-sample'이면 식별자도 'sirsoft-sample'
+     *
+     * @return string 모듈 식별자
      */
     final public function getIdentifier(): string
     {
@@ -917,6 +921,23 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function isHidden(): bool
     {
         return (bool) ($this->loadManifest()['hidden'] ?? false);
+    }
+
+    /**
+     * 매니페스트에 선언된 아이콘 상대경로 반환
+     *
+     * module.json 의 icon 필드 값을 그대로 돌려줍니다. 경로 규칙(확장 루트 기준 상대경로)과
+     * 규격(정사각·100KB 이하·안전한 SVG) 검증은 ExtensionIconResolver·
+     * ExtensionIconValidator 의 몫이며, 여기서는 선언값만 봅니다.
+     * 선언이 없으면 파일 관례(assets/icon.svg → png → webp)로 해석됩니다.
+     *
+     * @return string|null 아이콘 상대경로 (선언이 없으면 null)
+     */
+    public function getIcon(): ?string
+    {
+        $icon = $this->loadManifest()['icon'] ?? null;
+
+        return is_string($icon) && trim($icon) !== '' ? $icon : null;
     }
 
     /**

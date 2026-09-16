@@ -1292,7 +1292,7 @@
                             "props": {
                                 "className": "text-body font-medium"
                             },
-                            "text": "$t:admin.schedules.total_count|count={{schedules?.data?.total ?? 0}}"
+                            "text": "$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}"
                         },
                         {
                             "type": "basic",
@@ -1529,9 +1529,9 @@
                 "data": "{{schedules?.data?.data}}",
                 "pagination": true,
                 "serverSidePagination": true,
-                "serverCurrentPage": "{{schedules?.data?.current_page ?? 1}}",
-                "serverTotalPages": "{{schedules?.data?.last_page ?? null}}",
-                "serverHasMorePages": "{{schedules?.data?.has_more_pages ?? false}}",
+                "serverCurrentPage": "{{schedules?.data?.pagination?.current_page ?? 1}}",
+                "serverTotalPages": "{{schedules?.data?.pagination?.last_page ?? null}}",
+                "serverHasMorePages": "{{schedules?.data?.pagination?.has_more_pages ?? false}}",
                 "pageSize": "{{+(query.per_page || 20)}}",
                 "alwaysShowPagination": true,
                 "idField": "id",

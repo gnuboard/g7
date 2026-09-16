@@ -49,10 +49,15 @@
     <field name="updateId" :value="null"/>
     <field name="updateCurrent" :value="null"/>
     <field name="updateLatest" :value="null"/>
+    <field name="updateIconUrl" :value="null"/>
+    <field name="updateIconSource" :value="null"/>
+    <field name="updateLocale" :value="null"/>
     <field name="uninstallId" :value="null"/>
     <field name="uninstallScope" :value="null"/>
     <field name="uninstallTarget" :value="null"/>
     <field name="uninstallLocale" :value="null"/>
+    <field name="uninstallIconUrl" :value="null"/>
+    <field name="uninstallIconSource" :value="null"/>
     <field name="uninstallCascade" :value="false"/>
     <field name="showInstallModal" :value="false"/>
     <field name="installTab" value="zip"/>
@@ -70,6 +75,15 @@
     <wait-for>language_packs</wait-for>
   </transition-overlay>
   <init>
+    <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
+         저장값이 없거나 깨졌으면 갤러리다(기본 보기). GDPR 허용목록에 등재된 키라
+         functional 미동의 상태에서도 살아남는다. -->
+    <load-from-local-storage key="g7_view_mode_extensions" defaultValue="gallery">
+      <field name="resultTo">
+        <field name="target" value="_global"/>
+        <field name="key" value="extensionViewMode"/>
+      </field>
+    </load-from-local-storage>
     <set-state target="local" filterScope="{{route.path &amp;&amp; route.path.indexOf('/admin/modules/') === 0 ? 'module' : (route.path &amp;&amp; route.path.indexOf('/admin/plugins/') === 0 ? 'plugin' : (route.path &amp;&amp; route.path.indexOf('/admin/templates/') === 0 ? 'template' : (query.scope || '')))}}" filterTarget="{{route.identifier ?? ''}}" scopeLocked="{{route.identifier ? true : false}}" filterSearch="{{query.search || ''}}" filterStatus="{{query.status || ''}}" filterLocale="{{query.locale || ''}}"/>
   </init>
   <slot name="content">

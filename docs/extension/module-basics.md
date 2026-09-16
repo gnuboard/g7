@@ -99,8 +99,27 @@
 | `getGithubUrl()` | `?string` | `github_url` | `null` |
 | `getAssets()` | `array` | `assets` | `[]` |
 | `getAssetLoadingConfig()` | `array` | `loading` | strategy: global, priority: 100 |
+| `getIcon()` | `?string` | `icon` | `null` |
 
 > **`license` 필드**: `module.json`에 `"license": "MIT"` 등의 라이선스 정보를 포함합니다. 이 값은 API 리소스의 `license` 필드로 노출됩니다. 또한 각 모듈 루트에 `LICENSE` 파일을 포함하여 라이선스 전문을 제공해야 합니다.
+
+### icon 필드 (선택)
+
+패키지에 아이콘을 담으면 관리자 확장 관리 화면과 설치 마법사에 그 그림이 나옵니다.
+보통은 파일만 두면 되고(`assets/icon.svg`), 다른 경로를 쓸 때만 `icon` 을 적습니다.
+
+```json
+{
+  "icon": "assets/brand/mark.svg"
+}
+```
+
+`getIcon()` 은 **적힌 값만** 돌려줍니다 — 경로가 올바른지, 그림이 규격에 맞는지는 코어가
+따로 판정합니다. 선언이 없으면 `null` 이고 파일 관례로 해석됩니다.
+
+규격(정사각·100KB 이하·스크립트 없는 SVG)과 언어팩 합성 규칙은
+[확장 아이콘](extension-icons.md)에 있습니다. 아이콘을 넣지 않아도 되며, 그때는 종류별
+기본 그림으로 표시됩니다.
 
 ### hidden 필드 (선택)
 

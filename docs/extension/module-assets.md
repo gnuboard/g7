@@ -508,6 +508,23 @@ GET /api/modules/assets/{identifier}/{path}
 /api/modules/assets/sirsoft-ecommerce/dist/css/module.css
 ```
 
+### 아이콘 주소는 별도입니다
+
+확장 아이콘(`assets/icon.svg`)은 위 에셋 주소가 아니라 전용 주소로 서빙됩니다.
+
+```
+GET /api/extensions/{type}/{identifier}/icon
+```
+
+에셋 주소와 다른 점이 셋 있습니다.
+
+- **로그인이 필요 없습니다.** 아직 설치하지 않은 동봉 확장도 관리자 목록에 그림이 보여야 합니다.
+- **설치본만 보지 않습니다.** 설치본 → 대기 → 동봉 순으로 찾으므로 설치 전에도 그림이 나옵니다.
+- **정적 게시 대상이 아닙니다.** `?v=` 와 `ETag`(변경 시각·크기 기반, 같으면 304)로 캐시를 다룹니다.
+
+파일이 없거나 규격을 어기면 404 이고, 화면은 종류별 기본 그림으로 표시합니다.
+규격과 선언 방법은 [확장 아이콘](extension-icons.md) 에 있습니다.
+
 ---
 
 ## 서버측 번들 병합 (Server-side Bundle)
