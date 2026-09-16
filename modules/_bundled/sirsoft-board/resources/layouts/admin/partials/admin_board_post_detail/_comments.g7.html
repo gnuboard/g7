@@ -21,7 +21,7 @@
               </prop>
               <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div class="flex-start gap-2 mb-2">
-                  <icon name="turn-up" class="text-sm fa-rotate-90 mt-1 text-gray-500 dark:text-gray-400"/>
+                  <icon name="turn-up" class="text-sm rotate-90 mt-1 text-gray-500 dark:text-gray-400"/>
                   <span class="text-label">$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name}}</span>
                 </div>
                 <textarea value="{{_local.reply_comment_content ?? ''}}" placeholder="$t:sirsoft-board.admin.posts.detail.reply_placeholder" :rows="2" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2 disabled:opacity-50 disabled:cursor-not-allowed">

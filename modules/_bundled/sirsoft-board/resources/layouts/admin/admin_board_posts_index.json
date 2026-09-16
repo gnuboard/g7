@@ -1004,7 +1004,7 @@
                                                     "if": "{{row.is_reply}}",
                                                     "props": {
                                                         "name": "level-up-alt",
-                                                        "className": "text-sm fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"
+                                                        "className": "text-sm rotate-90 mt-1 text-gray-400 dark:text-gray-500"
                                                     }
                                                 },
                                                 {
