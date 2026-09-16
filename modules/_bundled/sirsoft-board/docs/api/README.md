@@ -7,9 +7,13 @@
 > 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)가 막고 있어 이 블록만 다시 굽는 방법이
 > 없는데, 표에 없는 문서는 아무도 찾지 못하기 때문입니다. 가드가 풀려 생성기를 다시 돌리면 이 값들은
 > 생성기 산식으로 덮여도 무방합니다 — `scraps.md` 의 6개 절 중 회원용 2개는 `scrap.md` 와 겹칩니다.
+>
+> **이슈 #525 주의**: `reports.md` 행의 7→9 와 총계의 +2 도 같은 이유로 **손으로 넣었습니다**.
+> 마이페이지 「내 신고」 2개(`GET /me/reports`·`DELETE /me/reports/{reportLogId}`)는 회원 인증과
+> 본인 소유 데이터가 필요해 `api:docgen` 의 실측 대상이 아니라, 생성기가 세지 못합니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 12 · **엔드포인트 수**: 92
+- **문서 수**: 12 · **엔드포인트 수**: 94
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -23,7 +27,7 @@
 | [reaction.md](reaction.md) | `reaction` | 3 |
 | [reaction-types.md](reaction-types.md) | `reaction-types` | 3 |
 | [reactions.md](reactions.md) | `reactions` | 6 |
-| [reports.md](reports.md) | `reports` | 7 |
+| [reports.md](reports.md) | `reports` | 9 |
 | [scrap.md](scrap.md) | `scrap` | 3 |
 | [scraps.md](scraps.md) | `scraps` | 6 |
 | [settings.md](settings.md) | `settings` | 5 |
