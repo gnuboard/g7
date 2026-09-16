@@ -36,6 +36,7 @@ class BoardController extends AdminBaseController
      * BoardController 생성자
      *
      * @param  BoardService  $boardService  게시판 서비스
+     * @param  BoardTypeService  $boardTypeService  게시판 유형 서비스
      */
     public function __construct(
         private BoardService $boardService,

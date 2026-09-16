@@ -31,6 +31,11 @@ class ReactionServiceTest extends BoardTestCase
 
     private int $dislikeId;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +61,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=register_first_like
      *
      * @effects register_inserts_row_and_increments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_react_adds_new_reaction_and_increments_count(): void
     {
@@ -83,6 +90,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=switch_like_to_dislike
      *
      * @effects switch_updates_row_and_adjusts_both_counts, switch_count_atomic_in_single_transaction
+     *
+     * @return void 반환값 없음
      */
     public function test_react_switches_type_and_adjusts_both_counts(): void
     {
@@ -112,6 +121,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=remove_same_type
      *
      * @effects remove_deletes_row_and_decrements_count
+     *
+     * @return void 반환값 없음
      */
     public function test_react_same_type_removes_reaction_and_decrements_count(): void
     {
@@ -138,6 +149,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=count_never_negative_on_over_remove
      *
      * @effects reaction_count_never_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_reaction_count_never_goes_below_zero(): void
     {
@@ -161,6 +174,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=polluted_cache_self_heals_on_next_reaction
      *
      * @effects reaction_counts_matches_actual_rows_after_recalculation
+     *
+     * @return void 반환값 없음
      */
     public function test_react_recalculates_from_actual_rows_and_heals_polluted_cache(): void
     {
@@ -190,6 +205,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=use_reaction_off_react_blocked
      *
      * @effects use_reaction_off_react_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_react_blocked_when_use_reaction_off(): void
     {
@@ -209,6 +226,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=inactive_type_react_blocked
      *
      * @effects inactive_type_react_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_react_blocked_for_inactive_type_on_board(): void
     {
@@ -228,6 +247,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=self_post_react_blocked
      *
      * @effects self_post_react_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_react_blocked_on_own_post(): void
     {
@@ -244,6 +265,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=post_not_in_board
      *
      * @effects post_not_in_board_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_react_blocked_for_post_not_in_board(): void
     {
@@ -265,6 +288,8 @@ class ReactionServiceTest extends BoardTestCase
      * @scenario case=post_deleted_between_scope_check_and_lock
      *
      * @effects post_not_in_board_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_react_wraps_model_not_found_during_lock_as_post_not_found(): void
     {

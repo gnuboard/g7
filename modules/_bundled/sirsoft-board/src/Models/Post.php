@@ -88,6 +88,8 @@ class Post extends Model implements FulltextSearchable
 
     /**
      * 속성 캐스팅
+     *
+     * @return array<string, string> 컬럼별 캐스팅 규칙
      */
     protected function casts(): array
     {
@@ -120,6 +122,8 @@ class Post extends Model implements FulltextSearchable
      * 목록 쿼리는 content 를 SELECT 하지 않으므로(컬럼 프루닝) 조회 시점 파싱이 불가하다.
      * Service 가 아닌 모델 saving 이벤트에 두는 이유: 시더·테스트의 Post::create() 직접
      * 호출과 이커머스 문의 훅 리스너 경유 경로까지 누락 없이 커버되는 유일 지점이기 때문.
+     *
+     * @return void 반환값 없음
      */
     protected static function booted(): void
     {

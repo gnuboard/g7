@@ -31,6 +31,11 @@ class AdminReactionPaginationTest extends BoardTestCase
 
     private int $likeId;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -59,6 +64,7 @@ class AdminReactionPaginationTest extends BoardTestCase
      * 반응 행 N 건을 서로 다른 회원·게시글로 만듭니다.
      *
      * @return array<int, int> 만들어진 반응 ID 목록
+     * @param $count count 값
      */
     private function seedReactions(int $count): array
     {
@@ -91,6 +97,8 @@ class AdminReactionPaginationTest extends BoardTestCase
      * @scenario case=admin_reaction_pagination_covers_all_rows
      *
      * @effects admin_reaction_pages_have_no_duplicate_or_missing_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_paging_covers_every_row_exactly_once(): void
     {
@@ -132,6 +140,8 @@ class AdminReactionPaginationTest extends BoardTestCase
      * @scenario case=admin_reaction_pagination_covers_all_rows
      *
      * @effects admin_reaction_total_matches_row_count
+     *
+     * @return void 반환값 없음
      */
     public function test_total_matches_actual_row_count(): void
     {
@@ -154,6 +164,8 @@ class AdminReactionPaginationTest extends BoardTestCase
      * @scenario case=admin_reaction_pagination_covers_all_rows
      *
      * @effects admin_reaction_rows_carry_user_board_type_and_target
+     *
+     * @return void 반환값 없음
      */
     public function test_rows_carry_eager_loaded_relations_and_target(): void
     {

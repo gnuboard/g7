@@ -34,6 +34,11 @@ class AdminReactionTest extends BoardTestCase
 
     private int $dislikeId;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,6 +69,13 @@ class AdminReactionTest extends BoardTestCase
 
     /**
      * 반응 행을 직접 만듭니다.
+     * @param $userId 회원 ID
+     * @param $targetType 대상 유형
+     * @param $targetId 대상 ID
+     * @param $typeId 유형 ID
+     * @param $boardId 게시판 ID
+     *
+     * @return int 정수 식별자
      */
     private function seedReaction(int $userId, string $targetType, int $targetId, int $typeId, ?int $boardId = null): int
     {
@@ -84,6 +96,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=list_forbidden_without_view_permission
      *
      * @effects index_forbidden_without_view_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_index_forbidden_without_view_permission(): void
     {
@@ -96,6 +110,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=list_all_users_recent_first
      *
      * @effects index_lists_all_users_recent_first
+     *
+     * @return void 반환값 없음
      */
     public function test_index_lists_all_users_recent_first(): void
     {
@@ -125,6 +141,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=filters_user_board_type_target_and_date_range
      *
      * @effects index_filters_by_user_board_type_target_and_date_range
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_user_id_uuid_board_type_target_type_and_date_range(): void
     {
@@ -157,6 +175,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=unknown_user_uuid_returns_empty
      *
      * @effects index_unknown_user_uuid_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_index_unknown_user_uuid_returns_empty(): void
     {
@@ -175,6 +195,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=search_six_fields_like_branches
      *
      * @effects index_search_fields_like_branches
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_fields_like_branches(): void
     {
@@ -213,6 +235,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=row_marks_deleted_target_and_withdrawn_member
      *
      * @effects index_marks_deleted_target_board_off_withdrawn_and_inactive_type
+     *
+     * @return void 반환값 없음
      */
     public function test_index_marks_deleted_target_board_deleted_reaction_off_withdrawn_inactive_type(): void
     {
@@ -236,6 +260,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=response_carries_inactive_types_meta
      *
      * @effects index_response_carries_reaction_types_meta_incl_inactive
+     *
+     * @return void 반환값 없음
      */
     public function test_index_response_carries_reaction_types_meta_incl_inactive(): void
     {
@@ -259,6 +285,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=per_page_over_limit_rejected
      *
      * @effects index_rejects_per_page_over_100
+     *
+     * @return void 반환값 없음
      */
     public function test_index_rejects_per_page_over_100(): void
     {
@@ -271,6 +299,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=destroy_forbidden_with_view_only
      *
      * @effects destroy_forbidden_with_view_only
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_forbidden_with_view_only(): void
     {
@@ -294,6 +324,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=destroy_removes_and_recalculates
      *
      * @effects destroy_removes_other_users_reaction_and_recalculates
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_removes_other_users_reaction_and_recalculates(): void
     {
@@ -325,6 +357,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=destroy_missing_returns_404
      *
      * @effects destroy_returns_404_for_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_returns_404_for_missing(): void
     {
@@ -337,6 +371,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=bulk_destroy_count_and_unknown_ids_rejected
      *
      * @effects bulk_destroy_returns_count_and_rejects_unknown_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_returns_deleted_count_and_rejects_unknown_ids_422(): void
     {
@@ -366,6 +402,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=user_detail_includes_summary_profile_omits
      *
      * @effects admin_user_detail_includes_board_reactions_summary, profile_omits_board_reactions
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_user_detail_includes_board_reactions_summary(): void
     {
@@ -400,6 +438,8 @@ class AdminReactionTest extends BoardTestCase
      * @scenario case=module_declares_permissions_and_menu
      *
      * @effects module_declares_reactions_permissions_and_menu
+     *
+     * @return void 반환값 없음
      */
     public function test_module_declares_reactions_permissions_and_menu(): void
     {

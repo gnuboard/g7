@@ -26,6 +26,11 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
 
     private string $settingsStoragePath;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +52,11 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
         }
     }
 
+    /**
+     * 각 테스트 후 사용한 자원을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->settingsStoragePath)) {
@@ -62,6 +72,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_read_lists_all_types_including_inactive
      *
      * @effects editor_iterates_form_reaction_types
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_read_includes_reaction_types_rows(): void
     {
@@ -98,6 +110,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_create_update_reorder_in_one_save
      *
      * @effects save_payload_carries_reaction_types, sync_before_save_leaves_json_untouched_on_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_creates_updates_reorders_types_and_does_not_persist_rows_into_json(): void
     {
@@ -144,6 +158,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_code_immutable_on_update
      *
      * @effects edit_uses_map_by_index
+     *
+     * @return void 반환값 없음
      */
     public function test_code_is_immutable_on_update(): void
     {
@@ -167,6 +183,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_duplicate_code_rejected
      *
      * @effects add_rejects_duplicate_code, server_422_maps_to_row_error
+     *
+     * @return void 반환값 없음
      */
     public function test_new_row_with_taken_code_returns_422(): void
     {
@@ -188,6 +206,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_invalid_code_rejected
      *
      * @effects add_requires_code_and_default_name
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_code_regex_returns_422(): void
     {
@@ -209,6 +229,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_missing_default_name_rejected
      *
      * @effects add_requires_code_and_default_name
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_default_name_returns_422(): void
     {
@@ -230,6 +252,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_delete_unreferenced_type
      *
      * @effects delete_requires_confirm_and_zero_reactions, delete_removes_code_from_active_types
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_unreferenced_type_hard_deletes_and_strips_board_active_codes(): void
     {
@@ -268,6 +292,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_delete_referenced_type_blocked
      *
      * @effects delete_blocked_shows_count_tooltip, sync_before_save_leaves_json_untouched_on_422
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_referenced_type_returns_422_with_name_and_count_and_saves_nothing(): void
     {
@@ -316,6 +342,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_deactivate_survives_seeder
      *
      * @effects deactivated_type_survives_seeder_resync
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivated_type_survives_seeder_resync(): void
     {
@@ -348,6 +376,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * @scenario case=settings_read_lists_all_types_including_inactive
      *
      * @effects editor_iterates_form_reaction_types
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_show_basic_defaults_appends_rows(): void
     {

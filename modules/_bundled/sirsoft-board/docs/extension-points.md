@@ -76,7 +76,7 @@
 | `sirsoft-board.post.before_delete` | action | — | `src/Services/PostService.php:437` |
 | `sirsoft-board.post.before_restore` | action | — | `src/Services/PostService.php:579` |
 | `sirsoft-board.post.before_update` | action | — | `src/Services/PostService.php:335` |
-| `sirsoft-board.post.filter_content_thumbnail` | filter | — | `src/Models/Post.php:143` |
+| `sirsoft-board.post.filter_content_thumbnail` | filter | — | `src/Models/Post.php:147` |
 | `sirsoft-board.post.filter_create_data` | filter | — | `src/Services/PostService.php:264` |
 | `sirsoft-board.post.filter_update_data` | filter | — | `src/Services/PostService.php:340` |
 | `sirsoft-board.post.store_validation_rules` | filter | — | `src/Http/Requests/StorePostRequest.php:120` |
@@ -101,7 +101,7 @@
 | `sirsoft-board.roles.after_delete` | action | — | `src/Services/BoardService.php:604` |
 | `sirsoft-board.scrap.after_toggle` | action | — | `src/Services/PostScrapService.php:69` 외 4곳 |
 | `sirsoft-board.scrap.before_toggle` | action | — | `src/Services/PostScrapService.php:57` |
-| `sirsoft-board.search.post.index_should_update` | filter | — | `src/Models/Post.php:291` |
+| `sirsoft-board.search.post.index_should_update` | filter | — | `src/Models/Post.php:295` |
 | `sirsoft-board.settings.after_bulk_apply` | action | — | `src/Services/BoardService.php:1368` |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | action | — | `src/Services/BoardService.php:1359` |
 | `sirsoft-board.settings.before_bulk_apply` | action | — | `src/Services/BoardService.php:1263` |

@@ -28,6 +28,11 @@ class ReactionPayloadGateTest extends BoardTestCase
 
     private int $dislikeId;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,6 +56,9 @@ class ReactionPayloadGateTest extends BoardTestCase
      *
      * 반응을 끄거나 유형을 비활성으로 돌려도 캐시 컬럼의 옛 카운트는 그대로 남는다 —
      * 누출은 바로 그 잔여 값이 응답에 실려 나가는 것이므로, 잔여 값을 심어 재현한다.
+     * @param $counts counts 값
+     *
+     * @return int 정수 식별자
      */
     private function createPostWithCounts(array $counts): int
     {
@@ -60,11 +68,23 @@ class ReactionPayloadGateTest extends BoardTestCase
         return $postId;
     }
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @return string 문자열
+     */
     private function listUrl(): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts";
     }
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @param $postId postId 값
+     *
+     * @return string 문자열
+     */
     private function detailUrl(int $postId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}";
@@ -76,6 +96,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      * @scenario case=register_first_like
      *
      * @effects active_types_always_shown_even_zero_count
+     *
+     * @return void 반환값 없음
      */
     public function test_list_includes_reaction_total_when_enabled(): void
     {
@@ -92,6 +114,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      * @scenario case=use_reaction_off_payload_omits_reaction
      *
      * @effects list_omits_reaction_total_when_use_reaction_off
+     *
+     * @return void 반환값 없음
      */
     public function test_list_omits_reaction_total_when_use_reaction_off(): void
     {
@@ -112,6 +136,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      * @scenario case=deactivated_type_excluded_from_payload
      *
      * @effects list_total_excludes_deactivated_type_counts
+     *
+     * @return void 반환값 없음
      */
     public function test_list_total_excludes_deactivated_type_counts(): void
     {
@@ -129,6 +155,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      * @scenario case=use_reaction_off_payload_omits_reaction
      *
      * @effects detail_omits_reaction_counts_and_options_when_off
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_omits_reaction_data_when_use_reaction_off(): void
     {
@@ -148,6 +176,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      * @scenario case=deactivated_type_excluded_from_payload
      *
      * @effects detail_omits_deactivated_type
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_omits_deactivated_type(): void
     {
@@ -169,6 +199,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      * @scenario case=detail_hidden_when_no_active_types
      *
      * @effects reaction_area_hidden_when_no_active_types
+     *
+     * @return void 반환값 없음
      */
     public function test_no_active_types_empties_payload(): void
     {
@@ -190,6 +222,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      * @scenario case=register_first_like
      *
      * @effects recent_posts_widget_includes_reaction_total
+     *
+     * @return void 반환값 없음
      */
     public function test_recent_posts_widget_includes_reaction_total(): void
     {
@@ -210,6 +244,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      * @scenario case=use_reaction_off_payload_omits_reaction
      *
      * @effects recent_posts_widget_omits_reaction_total_when_off
+     *
+     * @return void 반환값 없음
      */
     public function test_recent_posts_widget_omits_reaction_total_when_off(): void
     {

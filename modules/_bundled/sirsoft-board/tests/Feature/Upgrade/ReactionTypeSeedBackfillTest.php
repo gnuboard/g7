@@ -22,6 +22,11 @@ use Modules\Sirsoft\Board\Upgrades\Upgrade_1_0_3;
  */
 class ReactionTypeSeedBackfillTest extends BoardTestCase
 {
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +37,11 @@ class ReactionTypeSeedBackfillTest extends BoardTestCase
         DB::table('board_reaction_types')->delete();
     }
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @return string 문자열
+     */
     protected function getTestBoardSlug(): string
     {
         return 'reaction-seed-backfill';
@@ -43,6 +53,8 @@ class ReactionTypeSeedBackfillTest extends BoardTestCase
      * @scenario case=existing_site_update_backfills_reaction_defaults
      *
      * @effects reaction_types_backfilled_on_update_when_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_default_reaction_types_are_backfilled_when_empty(): void
     {
@@ -71,6 +83,8 @@ class ReactionTypeSeedBackfillTest extends BoardTestCase
      * @scenario case=existing_site_update_backfills_reaction_defaults
      *
      * @effects reaction_type_backfill_preserves_user_edits
+     *
+     * @return void 반환값 없음
      */
     public function test_existing_reaction_type_is_preserved(): void
     {
@@ -102,6 +116,8 @@ class ReactionTypeSeedBackfillTest extends BoardTestCase
      * @scenario case=existing_site_update_backfills_reaction_defaults
      *
      * @effects reaction_types_backfilled_on_update_when_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_backfill_is_idempotent(): void
     {
@@ -115,6 +131,8 @@ class ReactionTypeSeedBackfillTest extends BoardTestCase
 
     /**
      * 1.0.3 업그레이드 스텝을 실행합니다 (data/1.0.3/migrations/ 전체 순차 실행).
+     *
+     * @return void 반환값 없음
      */
     private function runUpgrade(): void
     {

@@ -20,6 +20,11 @@ class CommentReactionApiTest extends BoardTestCase
 
     private int $dislikeId;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,6 +46,9 @@ class CommentReactionApiTest extends BoardTestCase
 
     /**
      * 댓글 반응 API 엔드포인트 URL 을 조립합니다.
+     * @param $commentId commentId 값
+     *
+     * @return string 문자열
      */
     private function reactUrl(int $commentId): string
     {
@@ -53,6 +61,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=member_add_change_remove_on_comment
      *
      * @effects comment_react_inserts_row_and_increments_count, comment_switch_adjusts_both_counts, comment_remove_deletes_row
+     *
+     * @return void 반환값 없음
      */
     public function test_react_to_comment_add_change_remove_updates_comment_counts(): void
     {
@@ -105,6 +115,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=comment_reaction_toggle_off_blocks
      *
      * @effects comment_reaction_off_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_reaction_blocked_when_use_comment_reaction_off(): void
     {
@@ -131,6 +143,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=parent_reaction_toggle_off_blocks
      *
      * @effects comment_reaction_requires_parent_toggle
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_reaction_blocked_when_use_reaction_off(): void
     {
@@ -152,6 +166,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=self_comment_blocked_guest_comment_allowed
      *
      * @effects self_comment_react_returns_422, guest_comment_react_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_self_comment_blocked_guest_comment_allowed(): void
     {
@@ -179,6 +195,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=deleted_or_blinded_comment_blocked
      *
      * @effects unavailable_comment_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_blinded_or_deleted_comment_returns_422(): void
     {
@@ -204,6 +222,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=cross_board_comment_not_found
      *
      * @effects cross_board_comment_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_cross_board_comment_returns_404(): void
     {
@@ -221,6 +241,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=inactive_type_blocked
      *
      * @effects inactive_type_comment_react_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_inactive_type_returns_422(): void
     {
@@ -242,6 +264,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=anonymous_user_unauthorized
      *
      * @effects guest_comment_react_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_returns_401(): void
     {
@@ -258,6 +282,8 @@ class CommentReactionApiTest extends BoardTestCase
      * @scenario case=detail_embeds_counts_and_my_reaction
      *
      * @effects post_detail_embeds_comment_reaction_counts_and_my_reaction
+     *
+     * @return void 반환값 없음
      */
     public function test_post_detail_embeds_comment_reaction_counts_and_my_reaction_type_id(): void
     {

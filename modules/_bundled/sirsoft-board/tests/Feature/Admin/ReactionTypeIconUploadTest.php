@@ -26,6 +26,11 @@ class ReactionTypeIconUploadTest extends BoardTestCase
 
     private User $admin;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,6 +51,8 @@ class ReactionTypeIconUploadTest extends BoardTestCase
      * @scenario case=icon_upload_without_permission_forbidden
      *
      * @effects icon_upload_requires_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_requires_settings_update_permission(): void
     {
@@ -66,6 +73,8 @@ class ReactionTypeIconUploadTest extends BoardTestCase
      * @scenario case=icon_upload_png_returns_uploader_shape
      *
      * @effects icon_upload_uses_module_endpoints, icon_upload_sets_icon_url_and_attachment_id
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_image_returns_file_uploader_shape(): void
     {
@@ -99,6 +108,8 @@ class ReactionTypeIconUploadTest extends BoardTestCase
      * @scenario case=icon_upload_rejects_svg_wrong_mime_and_oversize
      *
      * @effects icon_upload_rejects_svg_and_wrong_mime_422, icon_upload_rejects_oversize_422
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_rejects_svg_non_image_and_oversize(): void
     {
@@ -133,6 +144,8 @@ class ReactionTypeIconUploadTest extends BoardTestCase
      * @scenario case=icon_url_downloadable_by_guest
      *
      * @effects icon_url_public_download
+     *
+     * @return void 반환값 없음
      */
     public function test_icon_url_is_publicly_downloadable_by_guest(): void
     {
@@ -152,6 +165,8 @@ class ReactionTypeIconUploadTest extends BoardTestCase
      * @scenario case=icon_bound_on_save_and_replaced_icon_deleted
      *
      * @effects icon_upload_sets_icon_url_and_attachment_id, icon_remove_clears_icon_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_binds_icon_attachmentable_and_replacing_icon_deletes_old_file(): void
     {
@@ -203,6 +218,8 @@ class ReactionTypeIconUploadTest extends BoardTestCase
      * @scenario case=icon_delete_foreign_collection_rejected
      *
      * @effects icon_delete_rejects_foreign_collection
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_icon_rejects_foreign_collection(): void
     {
@@ -230,6 +247,8 @@ class ReactionTypeIconUploadTest extends BoardTestCase
      * @scenario case=icon_delete_clears_type_reference
      *
      * @effects icon_remove_clears_icon_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_attachment_row_nulls_icon_attachment_id(): void
     {

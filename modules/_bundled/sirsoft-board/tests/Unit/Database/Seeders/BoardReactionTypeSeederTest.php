@@ -15,6 +15,11 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  */
 class BoardReactionTypeSeederTest extends ModuleTestCase
 {
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +33,8 @@ class BoardReactionTypeSeederTest extends ModuleTestCase
      *
      * @scenario case=reaction_type_label_localized
      * @effects reaction_type_name_localized
+     *
+     * @return void 반환값 없음
      */
     public function test_seeder_creates_like_and_dislike_types(): void
     {
@@ -60,6 +67,11 @@ class BoardReactionTypeSeederTest extends ModuleTestCase
 
     /**
      * 시더는 code로 매칭하는 upsert라 재실행해도 중복 생성되지 않는다.
+     *
+     * @scenario case=new_board_seeds_reaction_defaults
+     * @effects new_board_seeds_reaction_defaults_from_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_seeder_is_idempotent(): void
     {
@@ -73,6 +85,11 @@ class BoardReactionTypeSeederTest extends ModuleTestCase
 
     /**
      * 한글이 유니코드 이스케이프 없이 저장된다 (AsUnicodeJson 캐스트).
+     *
+     * @scenario case=reaction_type_label_localized
+     * @effects reaction_type_name_localized
+     *
+     * @return void 반환값 없음
      */
     public function test_name_stored_as_unicode_json(): void
     {

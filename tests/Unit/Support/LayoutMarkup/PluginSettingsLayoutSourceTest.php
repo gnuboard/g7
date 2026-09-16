@@ -57,6 +57,8 @@ class PluginSettingsLayoutSourceTest extends TestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects plugin_settings_layout_compiles_markup_in_memory
+     *
+     * @return void 반환값 없음
      */
     public function test_markup_source_compiles_in_memory(): void
     {
@@ -77,6 +79,8 @@ class PluginSettingsLayoutSourceTest extends TestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects plugin_settings_layout_falls_back_to_json_twin
+     *
+     * @return void 반환값 없음
      */
     public function test_json_twin_yields_the_same_layout(): void
     {
@@ -103,6 +107,8 @@ class PluginSettingsLayoutSourceTest extends TestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects plugin_settings_layout_resolves_markup_source_first
+     *
+     * @return void 반환값 없음
      */
     public function test_get_settings_layout_prefers_markup_source(): void
     {

@@ -26,6 +26,8 @@ class ReactionTypeDefaultsTest extends ModuleTestCase
      * @scenario case=defaults_single_source_and_backfill_no_drift
      *
      * @effects seeder_reads_defaults_from_single_source
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_seeder_uses_defaults(): void
@@ -48,6 +50,8 @@ class ReactionTypeDefaultsTest extends ModuleTestCase
      * @scenario case=defaults_single_source_and_backfill_no_drift
      *
      * @effects backfill_snapshot_does_not_drift_from_defaults
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_v1_0_3_backfill_snapshot_is_subset_of_defaults(): void
@@ -104,6 +108,8 @@ class ReactionTypeDefaultsTest extends ModuleTestCase
      * @scenario case=defaults_single_source_and_backfill_no_drift
      *
      * @effects seeder_reads_defaults_from_single_source
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_codes_matches_all(): void

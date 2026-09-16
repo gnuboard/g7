@@ -26,6 +26,11 @@ class ReactionRepositoryTest extends BoardTestCase
 
     private int $dislikeId;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,6 +51,8 @@ class ReactionRepositoryTest extends BoardTestCase
      *
      * @scenario case=register_first_like
      * @effects register_inserts_row_and_increments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_upsert_inserts_then_updates_single_row(): void
     {
@@ -64,6 +71,11 @@ class ReactionRepositoryTest extends BoardTestCase
 
     /**
      * findByUserAndTarget 은 사용자+대상 유일 키로 조회한다.
+     *
+     * @scenario case=register_first_like
+     * @effects register_inserts_row_and_increments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_find_by_user_and_target(): void
     {
@@ -80,6 +92,11 @@ class ReactionRepositoryTest extends BoardTestCase
 
     /**
      * delete 는 이력 행을 삭제한다.
+     *
+     * @scenario case=remove_same_type
+     * @effects remove_deletes_row_and_decrements_count
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_removes_reaction(): void
     {
@@ -94,6 +111,11 @@ class ReactionRepositoryTest extends BoardTestCase
     /**
      * recalculatePostReactionCounts 는 board_reactions 실제 행 수를 그대로 반영한다
      * (델타 누적이 아닌 COUNT 재집계 — 캐시가 실제 데이터와 항상 일치해야 함).
+     *
+     * @scenario case=polluted_cache_self_heals_on_next_reaction
+     * @effects reaction_counts_matches_actual_rows_after_recalculation
+     *
+     * @return void 반환값 없음
      */
     public function test_recalculate_post_reaction_counts_reflects_actual_rows(): void
     {
@@ -119,6 +141,11 @@ class ReactionRepositoryTest extends BoardTestCase
 
     /**
      * getActive 는 활성 유형을 display_order 순으로 반환한다.
+     *
+     * @scenario case=detail_shows_active_types_even_zero
+     * @effects active_types_always_shown_even_zero_count
+     *
+     * @return void 반환값 없음
      */
     public function test_get_active_returns_ordered_active_types(): void
     {
@@ -129,6 +156,11 @@ class ReactionRepositoryTest extends BoardTestCase
 
     /**
      * findByCodes 는 code 목록으로 활성 유형만 조회한다.
+     *
+     * @scenario case=detail_shows_active_types_even_zero
+     * @effects active_types_always_shown_even_zero_count
+     *
+     * @return void 반환값 없음
      */
     public function test_find_by_codes(): void
     {
@@ -140,6 +172,11 @@ class ReactionRepositoryTest extends BoardTestCase
 
     /**
      * findById / findByIds 로 유형을 조회한다.
+     *
+     * @scenario case=detail_shows_active_types_even_zero
+     * @effects active_types_always_shown_even_zero_count
+     *
+     * @return void 반환값 없음
      */
     public function test_find_by_id_and_ids(): void
     {

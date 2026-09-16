@@ -26,6 +26,11 @@ class MyReactionsApiTest extends BoardTestCase
 
     private User $member;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,6 +54,13 @@ class MyReactionsApiTest extends BoardTestCase
 
     /**
      * 반응 행을 직접 만듭니다 (API 를 거치지 않는 픽스처).
+     * @param $userId 회원 ID
+     * @param $targetType 대상 유형
+     * @param $targetId 대상 ID
+     * @param $typeId 유형 ID
+     * @param $boardId 게시판 ID
+     *
+     * @return int 정수 식별자
      */
     private function seedReaction(int $userId, string $targetType, int $targetId, int $typeId, ?int $boardId = null): int
     {
@@ -69,6 +81,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=list_mixes_post_and_comment_rows
      *
      * @effects list_mixes_post_and_comment_targets, targets_hydrated_without_n_plus_one
+     *
+     * @return void 반환값 없음
      */
     public function test_index_lists_post_and_comment_reactions_with_target_hydration(): void
     {
@@ -106,6 +120,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=filters_target_type_reaction_type_board_and_sort
      *
      * @effects list_filters_target_type_reaction_type_board_and_sort
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_target_type_reaction_type_board_slug_and_sort(): void
     {
@@ -154,6 +170,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=search_title_excludes_deleted_targets
      *
      * @effects search_uses_like_and_excludes_deleted_targets
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_title_content_uses_like_and_excludes_deleted_targets(): void
     {
@@ -177,6 +195,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=invalid_filter_values_rejected
      *
      * @effects invalid_filter_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_index_rejects_invalid_search_field_and_target_type(): void
     {
@@ -195,6 +215,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=row_marks_target_board_deleted_and_reaction_off
      *
      * @effects row_marks_reaction_off_board_deleted_and_target_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_index_marks_reaction_disabled_board_deleted_and_target_deleted(): void
     {
@@ -233,6 +255,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=response_carries_type_meta_and_query_echo
      *
      * @effects response_carries_reaction_types_meta_and_query_echo
+     *
+     * @return void 반환값 없음
      */
     public function test_index_response_carries_reaction_types_meta_and_query_echo(): void
     {
@@ -263,6 +287,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=remove_single_own_only_and_recalculates
      *
      * @effects remove_own_only_and_recalculates_counts
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_own_only_and_recalculates_counts(): void
     {
@@ -306,6 +332,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=bulk_remove_ignores_foreign_ids
      *
      * @effects bulk_remove_ignores_foreign_ids_and_reports_count
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_ignores_foreign_ids_silently_and_reports_count(): void
     {
@@ -334,6 +362,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=bulk_remove_validates_ids
      *
      * @effects bulk_remove_validates_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_validates_ids(): void
     {
@@ -352,6 +382,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=remove_allowed_when_reaction_off
      *
      * @effects remove_allowed_when_board_reaction_off
+     *
+     * @return void 반환값 없음
      */
     public function test_remove_allowed_when_board_use_reaction_off(): void
     {
@@ -374,6 +406,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=remove_tolerates_hard_deleted_target
      *
      * @effects remove_tolerates_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_remove_tolerates_hard_deleted_target(): void
     {
@@ -392,6 +426,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=anonymous_user_unauthorized
      *
      * @effects guest_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_401(): void
     {
@@ -405,6 +441,8 @@ class MyReactionsApiTest extends BoardTestCase
      * @scenario case=activity_stats_include_totals
      *
      * @effects activity_stats_include_reaction_and_report_totals
+     *
+     * @return void 반환값 없음
      */
     public function test_activity_stats_include_total_reactions_and_reports(): void
     {

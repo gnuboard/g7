@@ -17,6 +17,11 @@ class ReactionTypeApiTest extends ModuleTestCase
 {
     private const ENDPOINT = '/api/modules/sirsoft-board/admin/reaction-types';
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +38,8 @@ class ReactionTypeApiTest extends ModuleTestCase
      * @scenario case=type_list_exposes_icon_url
      *
      * @effects reaction_type_exposes_icon_url
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_list_active_reaction_types(): void
     {
@@ -58,6 +65,8 @@ class ReactionTypeApiTest extends ModuleTestCase
      * @scenario case=reaction_type_label_localized
      *
      * @effects reaction_type_name_localized
+     *
+     * @return void 반환값 없음
      */
     public function test_reaction_type_name_localized_to_en(): void
     {
@@ -76,6 +85,8 @@ class ReactionTypeApiTest extends ModuleTestCase
      * @scenario case=reaction_type_label_falls_back
      *
      * @effects missing_locale_falls_back_to_default
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_locale_falls_back(): void
     {
@@ -107,6 +118,8 @@ class ReactionTypeApiTest extends ModuleTestCase
      * @scenario case=type_list_exposes_icon_url
      *
      * @effects reaction_type_exposes_icon_url
+     *
+     * @return void 반환값 없음
      */
     public function test_user_without_permission_forbidden(): void
     {
@@ -122,6 +135,8 @@ class ReactionTypeApiTest extends ModuleTestCase
      * @scenario case=type_list_exposes_icon_url
      *
      * @effects reaction_type_exposes_icon_url
+     *
+     * @return void 반환값 없음
      */
     public function test_index_exposes_icon_url_null_and_value(): void
     {

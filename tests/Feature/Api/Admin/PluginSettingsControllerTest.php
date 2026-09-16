@@ -29,6 +29,11 @@ class PluginSettingsControllerTest extends TestCase
 
     private PluginManager $pluginManager;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,6 +47,8 @@ class PluginSettingsControllerTest extends TestCase
      * 관리자 역할 생성 및 할당
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
+     *
+     * @return User User 인스턴스
      */
     private function createAdminUser(array $permissions = ['core.plugins.read', 'core.plugins.update']): User
     {
@@ -102,6 +109,8 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
+     *
+     * @return static 체이닝용 자기 자신
      */
     private function authRequest(): static
     {
@@ -113,6 +122,9 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 플러그인 생성 (DB 레코드만)
+     * @param $identifier 식별자
+     *
+     * @return Plugin Plugin 인스턴스
      */
     private function createTestPlugin(string $identifier = 'test-settings-plugin'): Plugin
     {
@@ -128,6 +140,10 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 설정 파일 생성
+     * @param $identifier 식별자
+     * @param $settings 설정 배열
+     *
+     * @return void 반환값 없음
      */
     private function createTestSettingsFile(string $identifier, array $settings): void
     {
@@ -143,6 +159,9 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 설정 파일 삭제
+     * @param $identifier 식별자
+     *
+     * @return void 반환값 없음
      */
     private function cleanupTestSettings(string $identifier): void
     {
@@ -162,6 +181,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=show,authentication=none
      *
      * @effects show_without_authentication_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_401_without_authentication(): void
     {
@@ -176,6 +197,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=show,authentication=authenticated,permission=denied
      *
      * @effects show_without_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_403_without_permission(): void
     {
@@ -204,6 +227,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=update,authentication=none
      *
      * @effects update_without_authentication_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_update_returns_401_without_authentication(): void
     {
@@ -220,6 +245,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=update,authentication=authenticated,permission=denied
      *
      * @effects update_without_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_update_returns_403_without_permission(): void
     {
@@ -243,6 +270,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=layout,authentication=none
      *
      * @effects layout_without_authentication_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_returns_401_without_authentication(): void
     {
@@ -261,6 +290,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=show,plugin_existence=nonexistent
      *
      * @effects show_for_nonexistent_plugin_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_404_for_nonexistent_plugin(): void
     {
@@ -276,6 +307,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=show,plugin_existence=installed,permission=granted
      *
      * @effects show_returns_settings_for_installed_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_settings_for_installed_plugin(): void
     {
@@ -312,6 +345,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=update,plugin_existence=nonexistent
      *
      * @effects update_for_nonexistent_plugin_returns_error
+     *
+     * @return void 반환값 없음
      */
     public function test_update_returns_error_for_nonexistent_plugin(): void
     {
@@ -330,6 +365,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=update,plugin_existence=installed,payload_scope=within_schema
      *
      * @effects update_saves_settings_for_installed_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_update_saves_settings_for_installed_plugin(): void
     {
@@ -380,6 +417,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=update,plugin_existence=installed,payload_scope=outside_schema
      *
      * @effects update_ignores_fields_outside_settings_schema
+     *
+     * @return void 반환값 없음
      */
     public function test_update_ignores_fields_outside_settings_schema(): void
     {
@@ -423,6 +462,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=layout,plugin_existence=nonexistent
      *
      * @effects layout_for_nonexistent_plugin_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_returns_404_for_nonexistent_plugin(): void
     {
@@ -438,6 +479,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=layout,plugin_existence=installed,permission=granted
      *
      * @effects layout_returns_layout_for_installed_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_returns_layout_for_daum_postcode_plugin(): void
     {
@@ -485,6 +528,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=show,plugin_existence=installed,permission=granted
      *
      * @effects show_response_has_documented_structure
+     *
+     * @return void 반환값 없음
      */
     public function test_show_response_structure(): void
     {
@@ -519,6 +564,8 @@ class PluginSettingsControllerTest extends TestCase
      * @scenario endpoint=update,plugin_existence=installed,payload_scope=within_schema
      *
      * @effects update_response_includes_updated_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_update_response_includes_updated_settings(): void
     {

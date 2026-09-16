@@ -26,6 +26,11 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
 
     private int $dislikeId;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,13 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
         ]);
     }
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @param $commentId commentId 값
+     *
+     * @return string 문자열
+     */
     private function reactUrl(int $commentId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/comments/{$commentId}/react";
@@ -56,6 +68,8 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
      * @scenario case=secret_post_comment_reaction_denied
      *
      * @effects secret_post_comment_react_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_post_comment_reaction_denied_for_outsider(): void
     {
@@ -81,6 +95,8 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
      * @scenario case=secret_post_comment_reaction_denied
      *
      * @effects secret_comment_react_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_comment_reaction_denied_for_outsider(): void
     {
@@ -106,6 +122,8 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
      * @scenario case=secret_post_comment_reaction_denied
      *
      * @effects secret_post_author_can_react_to_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_post_author_can_react_to_others_comment(): void
     {
@@ -129,6 +147,8 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
      * @scenario case=comment_reaction_counts_recalculated
      *
      * @effects comment_reaction_counts_match_row_count
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_reaction_counts_match_actual_rows_after_remove(): void
     {
@@ -172,6 +192,8 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
      * @scenario case=comment_reaction_counts_recalculated
      *
      * @effects comment_reaction_counts_serialize_as_object
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_reaction_counts_serialize_as_object(): void
     {
@@ -195,6 +217,10 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
 
     /**
      * `board_comments.reaction_counts` 에 캐시된 특정 유형의 값을 읽습니다.
+     * @param $commentId commentId 값
+     * @param $reactionTypeId reactionTypeId 값
+     *
+     * @return int 정수 식별자
      */
     private function cachedCount(int $commentId, int $reactionTypeId): int
     {

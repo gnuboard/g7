@@ -23,6 +23,11 @@ class MyReportsApiTest extends BoardTestCase
 
     private User $reporter;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,7 +38,12 @@ class MyReportsApiTest extends BoardTestCase
     /**
      * 케이스 + 내 신고 로그를 만듭니다.
      *
-     * @return array{0: Report, 1: ReportLog}
+     * @return array{0: Report, 1: ReportLog} array{0: 인스턴스
+     * @param $targetId 대상 ID
+     * @param $targetType 대상 유형
+     * @param $status status 값
+     * @param $reporter reporter 값
+     * @param $snapshot snapshot 값
      */
     private function seedReport(
         int $targetId,
@@ -70,6 +80,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=list_own_logs_only
      *
      * @effects lists_own_logs_with_status_and_can_cancel
+     *
+     * @return void 반환값 없음
      */
     public function test_index_lists_own_logs_only_with_status_labels_and_can_cancel(): void
     {
@@ -100,6 +112,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=list_excludes_processor_and_other_reporters
      *
      * @effects excludes_processor_metadata_and_other_reporters
+     *
+     * @return void 반환값 없음
      */
     public function test_index_excludes_processor_metadata_and_other_reporters(): void
     {
@@ -119,6 +133,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=filters_status_target_board_and_snapshot_search
      *
      * @effects filters_status_target_type_board_and_json_extract_search
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_status_target_type_board_and_json_extract_search(): void
     {
@@ -154,6 +170,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=cancel_pending_last_reporter_force_deletes_case
      *
      * @effects cancel_deletes_log_and_force_deletes_case_when_last
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_pending_deletes_log_and_force_deletes_case_when_last(): void
     {
@@ -175,6 +193,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=cancel_pending_keeps_case_when_others_remain
      *
      * @effects cancel_keeps_case_and_appends_history_when_others_remain
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_pending_keeps_case_and_appends_history_when_others_remain(): void
     {
@@ -205,6 +225,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=cancel_non_pending_forbidden
      *
      * @effects cancel_non_pending_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_non_pending_returns_403(): void
     {
@@ -225,6 +247,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=cancel_foreign_log_not_found
      *
      * @effects cancel_foreign_log_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_foreign_log_returns_404(): void
     {
@@ -244,6 +268,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=re_report_after_cancel_succeeds
      *
      * @effects re_report_after_cancel_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_re_report_after_cancel_succeeds(): void
     {
@@ -273,6 +299,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=anonymous_user_unauthorized
      *
      * @effects guest_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_401(): void
     {
@@ -290,6 +318,8 @@ class MyReportsApiTest extends BoardTestCase
      * @scenario case=cancel_records_activity_log
      *
      * @effects cancel_writes_activity_log_with_explicit_loggable
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_writes_activity_log(): void
     {
