@@ -502,7 +502,12 @@ _user_base.g7.html (베이스 레이아웃)
 │   │   └── partials/mypage/board/
 │   │       ├── _list.g7.html (탭 목록)
 │   │       ├── _my_posts.g7.html (내 게시글)
-│   │       └── _my_comments.g7.html (내 댓글)
+│   │       ├── _my_comments.g7.html (내 댓글)
+│   │       ├── _my_reactions.g7.html (내 반응)
+│   │       ├── _my_reports.g7.html (내 신고)
+│   │       ├── _modal_reaction_delete.g7.html (반응 삭제)
+│   │       ├── _modal_reaction_bulk_delete.g7.html (반응 일괄 삭제)
+│   │       └── _modal_report_cancel.g7.html (신고 취소)
 │   ├── addresses.g7.html (배송지 관리)
 │   │   └── partials/mypage/addresses/
 │   │       ├── _list.g7.html (배송지 목록)
