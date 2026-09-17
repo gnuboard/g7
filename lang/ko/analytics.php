@@ -140,4 +140,76 @@ return [
         'bot_name' => '봇 이름',
         'bot_page' => '봇이 가져간 페이지',
     ],
+
+    // 집계 배치
+    'archive' => [
+        'skipped_locked' => '같은 기간을 이미 집계하고 있어 건너뛰었습니다.',
+        'range_invalid' => '재집계 기간이 올바르지 않습니다.',
+    ],
+
+    // 대시보드 알림
+    'alerts' => [
+        'ledger_limit_title' => '방문자 통계 기록이 많이 쌓였습니다',
+        'ledger_limit_message' => '방문 :visits행, 액션 :actions행이 쌓였습니다. 현재 보존 기간은 :days일입니다 — 보존 기간을 줄이면 오래된 기록이 다음 정리에서 사라집니다.',
+        'ledger_limit_action' => '보존 설정 열기',
+    ],
+
+    // 정보주체 요청
+    'privacy' => [
+        'ip_lookup_limited' => '익명 모드로 모은 구간은 최근 :days일치만 IP 로 찾을 수 있습니다 — 그보다 이전 기록은 주소를 되돌릴 수 없습니다.',
+    ],
+
+    // API 응답 메시지
+    'overview' => [
+        'fetch_success' => '방문자 통계 개요를 불러왔습니다.',
+    ],
+    'report' => [
+        'fetch_success' => '리포트를 불러왔습니다.',
+    ],
+    'series' => [
+        'fetch_success' => '추이를 불러왔습니다.',
+    ],
+    'patterns' => [
+        'fetch_success' => '이용 패턴을 불러왔습니다.',
+    ],
+    'realtime' => [
+        'fetch_success' => '현재 접속자를 불러왔습니다.',
+    ],
+    'diagnostics' => [
+        'fetch_success' => '수집 진단 결과를 불러왔습니다.',
+    ],
+    'collect_failures' => [
+        'fetch_success' => '적재 실패 기록을 불러왔습니다.',
+    ],
+    'archive_runs' => [
+        'fetch_success' => '집계 실행 이력을 불러왔습니다.',
+        'not_found' => '집계 실행 이력을 찾을 수 없습니다.',
+        'queued' => '집계를 시작했습니다.',
+    ],
+    'settings' => [
+        'fetch_success' => '방문자 통계 설정을 불러왔습니다.',
+        'save_success' => '방문자 통계 설정을 저장했습니다.',
+    ],
+    'opt_out' => [
+        'fetch_success' => '수집 제외 상태를 불러왔습니다.',
+        'enabled' => '이 브라우저를 방문자 통계에서 제외했습니다.',
+        'disabled' => '이 브라우저의 수집 제외를 해제했습니다.',
+    ],
+    'data' => [
+        'fetch_success' => '저장 용량 현황을 불러왔습니다.',
+        'purge_success' => '방문자 통계 기록을 모두 삭제했습니다.',
+    ],
+    'cloud_ranges' => [
+        'refresh_success' => '클라우드 IP 대역 목록을 갱신했습니다.',
+        'refresh_failed' => '대역 목록을 받지 못해 기존 목록을 그대로 두었습니다.',
+    ],
+    'visitors' => [
+        'fetch_success' => '방문자 기록을 불러왔습니다.',
+        'index_success' => '방문자 목록을 불러왔습니다.',
+        'anonymous_mode_notice' => '익명 모드에서는 방문자 키가 날마다 바뀝니다 — 같은 사람의 방문은 하루 안에서만 묶입니다.',
+    ],
+    'summary' => [
+        'fetch_success' => '방문자 요약을 불러왔습니다.',
+        'disabled' => '공개 방문자 요약이 꺼져 있습니다.',
+    ],
 ];

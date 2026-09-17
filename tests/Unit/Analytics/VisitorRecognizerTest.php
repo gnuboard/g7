@@ -89,6 +89,20 @@ class VisitorRecognizerTest extends TestCase
 
                 return $deleted;
             }
+
+            /**
+             * 기준일 이전의 솔트 수를 셉니다.
+             *
+             * @param  Carbon  $before  기준 시각
+             * @return int 해당 건수
+             */
+            public function countOlderThan(Carbon $before): int
+            {
+                return count(array_filter(
+                    array_keys($this->salts),
+                    fn (string $date): bool => $date < $before->format('Y-m-d'),
+                ));
+            }
         });
 
         $this->recognizer = app(VisitorRecognizer::class);

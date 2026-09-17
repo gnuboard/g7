@@ -140,4 +140,76 @@ return [
         'bot_name' => 'Bot name',
         'bot_page' => 'Page crawled by bot',
     ],
+
+    // Archiving
+    'archive' => [
+        'skipped_locked' => 'Skipped because the same period is already being archived.',
+        'range_invalid' => 'The re-aggregation period is invalid.',
+    ],
+
+    // Dashboard alerts
+    'alerts' => [
+        'ledger_limit_title' => 'Visitor statistics have grown large',
+        'ledger_limit_message' => ':visits visits and :actions actions are stored. Retention is currently :days days — shortening it removes older records on the next cleanup.',
+        'ledger_limit_action' => 'Open retention settings',
+    ],
+
+    // Data subject requests
+    'privacy' => [
+        'ip_lookup_limited' => 'Records collected in anonymous mode can only be looked up by IP for the last :days days — older entries cannot be matched back to an address.',
+    ],
+
+    // API response messages
+    'overview' => [
+        'fetch_success' => 'Loaded the analytics overview.',
+    ],
+    'report' => [
+        'fetch_success' => 'Loaded the report.',
+    ],
+    'series' => [
+        'fetch_success' => 'Loaded the trend series.',
+    ],
+    'patterns' => [
+        'fetch_success' => 'Loaded the usage patterns.',
+    ],
+    'realtime' => [
+        'fetch_success' => 'Loaded the current visitors.',
+    ],
+    'diagnostics' => [
+        'fetch_success' => 'Loaded the collection diagnostics.',
+    ],
+    'collect_failures' => [
+        'fetch_success' => 'Loaded the collection failure log.',
+    ],
+    'archive_runs' => [
+        'fetch_success' => 'Loaded the archive run history.',
+        'not_found' => 'That archive run was not found.',
+        'queued' => 'Archiving has started.',
+    ],
+    'settings' => [
+        'fetch_success' => 'Loaded the analytics settings.',
+        'save_success' => 'Saved the analytics settings.',
+    ],
+    'opt_out' => [
+        'fetch_success' => 'Loaded the opt-out state.',
+        'enabled' => 'This browser is now excluded from analytics.',
+        'disabled' => 'This browser is no longer excluded from analytics.',
+    ],
+    'data' => [
+        'fetch_success' => 'Loaded the storage overview.',
+        'purge_success' => 'Deleted all analytics records.',
+    ],
+    'cloud_ranges' => [
+        'refresh_success' => 'Refreshed the cloud IP range list.',
+        'refresh_failed' => 'Could not fetch the ranges, so the existing list was kept.',
+    ],
+    'visitors' => [
+        'fetch_success' => 'Loaded the visitor records.',
+        'index_success' => 'Loaded the visitor list.',
+        'anonymous_mode_notice' => 'In anonymous mode the visitor key rotates daily — visits by the same person are only grouped within a single day.',
+    ],
+    'summary' => [
+        'fetch_success' => 'Loaded the visitor summary.',
+        'disabled' => 'The public visitor summary is turned off.',
+    ],
 ];

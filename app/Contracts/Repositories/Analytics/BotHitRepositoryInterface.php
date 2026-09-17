@@ -35,4 +35,25 @@ interface BotHitRepositoryInterface
      * @return int 삭제한 행 수
      */
     public function deleteOlderThanInBatches(Carbon $before, int $chunkSize = 1000): int;
+
+    /**
+     * 기간 안의 봇 기록을 ID 순서로 나눠 읽습니다.
+     *
+     * @param  Carbon  $from  시작 시각 (포함, UTC)
+     * @param  Carbon  $to  끝 시각 (미포함, UTC)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkBetween(Carbon $from, Carbon $to, int $chunkSize, callable $callback): void;
+
+    /**
+     * 기준 시각보다 오래된 봇 기록 수를 셉니다.
+     *
+     * 마른 실행이 「무엇을 얼마나 지울지」를 미리 보이는 데 씁니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countOlderThan(Carbon $before): int;
 }

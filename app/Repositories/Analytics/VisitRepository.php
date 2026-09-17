@@ -175,14 +175,22 @@ class VisitRepository implements VisitRepositoryInterface
             $matched = true;
         }
 
-        if (! empty($subject['ip'])) {
-            $query->where('ip', inet_pton($subject['ip']) ?: null);
-            $matched = true;
-        }
+        $binaryIp = ! empty($subject['ip']) ? (inet_pton($subject['ip']) ?: null) : null;
+        $hashes = array_values(array_filter((array) ($subject['ip_hash'] ?? $subject['ip_hashes'] ?? [])));
 
-        if (! empty($subject['ip_hash'])) {
-            $hashes = (array) $subject['ip_hash'];
-            $query->whereIn('ip_hash', $hashes);
+        // 주소는 모드에 따라 원값으로 저장되기도, 해시로만 남기도 한다. 둘을 AND 로
+        // 묶으면 어느 쪽도 맞지 않아 같은 사람의 기록이 나뉘어 보이지 않는다.
+        if ($binaryIp !== null || $hashes !== []) {
+            $query->where(function (Builder $q) use ($binaryIp, $hashes): void {
+                if ($binaryIp !== null) {
+                    $q->orWhere('ip', $binaryIp);
+                }
+
+                if ($hashes !== []) {
+                    $q->orWhereIn('ip_hash', $hashes);
+                }
+            });
+
             $matched = true;
         }
 
@@ -206,5 +214,196 @@ class VisitRepository implements VisitRepositoryInterface
     public function countAll(): int
     {
         return AnalyticsVisit::query()->count();
+    }
+
+    /**
+     * 그 날짜에 시작한 방문 수를 셉니다.
+     *
+     * @param  string  $date  방문 일자 (Y-m-d, 사이트 표준시 기준)
+     * @return int 방문 수
+     */
+    public function countOnDate(string $date): int
+    {
+        return AnalyticsVisit::query()->where('visit_date', $date)->count();
+    }
+
+    /**
+     * 그 날짜의 방문을 ID 순서로 나눠 읽습니다.
+     *
+     * @param  string  $date  방문 일자 (Y-m-d, 사이트 표준시 기준)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkByDate(string $date, int $chunkSize, callable $callback): void
+    {
+        AnalyticsVisit::query()
+            ->where('visit_date', $date)
+            ->orderBy('id')
+            ->chunkById(max(1, $chunkSize), $callback);
+    }
+
+    /**
+     * 기준 시각보다 오래된 방문 수를 셉니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countOlderThan(Carbon $before): int
+    {
+        return AnalyticsVisit::query()->where('last_action_at', '<', $before)->count();
+    }
+
+    /**
+     * 일자 구간 안의 방문 수를 셉니다.
+     *
+     * @param  string|null  $from  시작일 (Y-m-d)
+     * @param  string|null  $to  종료일 (Y-m-d)
+     * @return int 방문 수
+     */
+    public function countInDateRange(?string $from, ?string $to): int
+    {
+        return $this->dateRangeQuery($from, $to)->count();
+    }
+
+    /**
+     * 일자 구간 안의 방문을 ID 순서로 나눠 읽습니다.
+     *
+     * @param  string|null  $from  시작일 (Y-m-d)
+     * @param  string|null  $to  종료일 (Y-m-d)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkInDateRange(?string $from, ?string $to, int $chunkSize, callable $callback): void
+    {
+        $this->dateRangeQuery($from, $to)->orderBy('id')->chunkById(max(1, $chunkSize), $callback);
+    }
+
+    /**
+     * 모든 방문을 지웁니다.
+     *
+     * @param  int  $chunkSize  한 번에 지울 건수
+     * @return int 삭제한 행 수
+     */
+    public function deleteAllInBatches(int $chunkSize = 1000): int
+    {
+        $deleted = 0;
+
+        do {
+            $count = AnalyticsVisit::query()->limit(max(1, $chunkSize))->delete();
+            $deleted += $count;
+        } while ($count > 0);
+
+        return $deleted;
+    }
+
+    /**
+     * 일자 구간 조건을 붙인 질의를 만듭니다.
+     *
+     * @param  string|null  $from  시작일 (Y-m-d)
+     * @param  string|null  $to  종료일 (Y-m-d)
+     * @return Builder 질의
+     */
+    private function dateRangeQuery(?string $from, ?string $to): Builder
+    {
+        return AnalyticsVisit::query()
+            ->when($from !== null, fn (Builder $q) => $q->where('visit_date', '>=', $from))
+            ->when($to !== null, fn (Builder $q) => $q->where('visit_date', '<=', $to));
+    }
+
+    /**
+     * 최근 활동이 있었던 서로 다른 방문자 수를 셉니다.
+     *
+     * @param  int  $minutes  최근 몇 분 안을 볼지
+     * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
+     * @return int 방문자 수
+     */
+    public function realtimeCount(int $minutes, array $visitorTypes = []): int
+    {
+        return AnalyticsVisit::query()
+            ->where('last_action_at', '>=', now()->subMinutes(max(1, $minutes)))
+            ->when($visitorTypes !== [], fn (Builder $q) => $q->whereIn('visitor_type', $visitorTypes))
+            ->distinct()
+            ->count('visitor_key');
+    }
+
+    /**
+     * 가장 최근에 적재된 방문의 활동 시각을 돌려줍니다.
+     *
+     * @return Carbon|null 마지막 활동 시각 (기록이 없으면 null)
+     */
+    public function lastTrackedAt(): ?Carbon
+    {
+        $value = AnalyticsVisit::query()->max('last_action_at');
+
+        return $value !== null ? Carbon::parse($value) : null;
+    }
+
+    /**
+     * 주어진 방문을 지웁니다.
+     *
+     * @param  array<int, int>  $ids  방문 ID 목록
+     * @return int 삭제한 행 수
+     */
+    public function deleteByIds(array $ids): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+
+        return AnalyticsVisit::query()->whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * 방문자 키별로 묶은 목록을 조회합니다.
+     *
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<string, mixed>  $options  조회 옵션 (search, visitor_type, page, per_page)
+     * @return array{rows: array<int, object>, has_more: bool} 방문자 목록
+     */
+    public function visitorSummaries(string $from, string $to, array $options = []): array
+    {
+        $perPage = max(1, min(100, (int) ($options['per_page'] ?? 25)));
+        $page = max(1, (int) ($options['page'] ?? 1));
+        $search = $options['search'] ?? null;
+        $visitorType = $options['visitor_type'] ?? null;
+
+        $rows = AnalyticsVisit::query()
+            ->selectRaw('visitor_key, MIN(visitor_type) as visitor_type, COUNT(*) as visits, '
+                .'SUM(pageviews_count) as pageviews, MAX(last_action_at) as last_action_at, '
+                .'MIN(country_code) as country_code, MIN(device_type) as device_type, '
+                .'MIN(browser_name) as browser_name, MAX(user_id) as user_id')
+            ->whereBetween('visit_date', [$from, $to])
+            ->when($visitorType !== null, fn (Builder $q) => $q->where('visitor_type', $visitorType))
+            ->when($search !== null && $search !== '', function (Builder $q) use ($search): void {
+                // 운영자는 방문자 키·주소·회원 번호 중 무엇으로 찾을지 미리 고르지 않는다 —
+                // 한 칸에 넣은 값을 셋 모두에 대 본다.
+                $binary = inet_pton((string) $search) ?: null;
+
+                $q->where(function (Builder $inner) use ($search, $binary): void {
+                    $inner->where('visitor_key', 'like', $search.'%');
+
+                    if ($binary !== null) {
+                        $inner->orWhere('ip', $binary);
+                    }
+
+                    if (ctype_digit((string) $search)) {
+                        $inner->orWhere('user_id', (int) $search);
+                    }
+                });
+            })
+            ->groupBy('visitor_key')
+            ->orderByDesc('last_action_at')
+            ->offset(($page - 1) * $perPage)
+            // 다음 쪽이 있는지 알려면 한 건 더 읽어 보는 편이 COUNT 를 한 번 더 도는 것보다 싸다.
+            ->limit($perPage + 1)
+            ->get();
+
+        return [
+            'rows' => $rows->take($perPage)->all(),
+            'has_more' => $rows->count() > $perPage,
+        ];
     }
 }

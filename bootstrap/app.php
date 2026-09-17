@@ -116,6 +116,15 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // Gzip 압축 미들웨어 (웹서버 설정 없이 애플리케이션 레벨에서 압축)
         $middleware->append(GzipEncodeResponse::class);
 
+        // 방문자 통계 수집 제외 표식은 암호화하지 않는다.
+        // 사용자 화면의 트래커가 `document.cookie` 로 이 값을 직접 읽고 보내기 전에 스스로
+        // 멈춘다 — 서버가 암호문으로만 받으면 그 표식을 서버가 되읽지 못해, 트래커를 거치지
+        // 않는 경로(서버 폴백·내부 검색 훅)에서 제외가 무시된다. 담긴 값은 「제외됨」이라는
+        // 사실 하나뿐이라 위조돼도 잃는 것이 자기 방문 통계뿐이다.
+        // 이 지점은 설정이 아직 올라오기 전이라 `config()` 를 쓸 수 없다 — 이름을 그대로 적는다
+        // (`config/analytics.php` 의 `cookies.opt_out` 기본값과 같아야 한다).
+        $middleware->encryptCookies(except: ['g7_analytics_optout']);
+
         // 토큰 만료 시간 슬라이딩 갱신 미들웨어 (API 요청 시 토큰 만료 시간 자동 연장)
         $middleware->appendToGroup('api', [
             RefreshTokenExpiration::class,

@@ -113,4 +113,68 @@ return [
         'bot_name' => 'ボット名',
         'bot_page' => 'ボットが取得したページ',
     ],
+    'archive' => [
+        'skipped_locked' => '同じ期間は既に集計中のためスキップしました。',
+        'range_invalid' => '再集計期間が正しくありません。',
+    ],
+    'alerts' => [
+        'ledger_limit_title' => '訪問者統計の記録が多く蓄積されています',
+        'ledger_limit_message' => ':visits行の訪問、:actions行のアクションが蓄積されました。現在の保存期間は:days日です — 保存期間を短縮すると、古い記録は次のクリーンアップで削除されます。',
+        'ledger_limit_action' => '保存設定を開く',
+    ],
+    'privacy' => [
+        'ip_lookup_limited' => '匿名モードで収集された期間は、最近:days日以内のみIPで検索できます — それより前の記録はアドレスを復元できません。',
+    ],
+    'overview' => [
+        'fetch_success' => '訪問者統計概要を読み込みました。',
+    ],
+    'report' => [
+        'fetch_success' => 'レポートを読み込みました。',
+    ],
+    'series' => [
+        'fetch_success' => 'トレンドを読み込みました。',
+    ],
+    'patterns' => [
+        'fetch_success' => '利用パターンを読み込みました。',
+    ],
+    'realtime' => [
+        'fetch_success' => '現在のアクセスユーザーを読み込みました。',
+    ],
+    'diagnostics' => [
+        'fetch_success' => '収集診断結果を読み込みました。',
+    ],
+    'collect_failures' => [
+        'fetch_success' => '読み込み失敗記録を読み込みました。',
+    ],
+    'archive_runs' => [
+        'fetch_success' => '集計実行履歴を読み込みました。',
+        'not_found' => '集計実行履歴が見つかりません。',
+        'queued' => '集計を開始しました。',
+    ],
+    'settings' => [
+        'fetch_success' => '訪問者統計設定を読み込みました。',
+        'save_success' => '訪問者統計設定を保存しました。',
+    ],
+    'opt_out' => [
+        'fetch_success' => '収集除外ステータスを読み込みました。',
+        'enabled' => 'このブラウザを訪問者統計から除外しました。',
+        'disabled' => 'このブラウザの収集除外を解除しました。',
+    ],
+    'data' => [
+        'fetch_success' => '保存容量の状況を読み込みました。',
+        'purge_success' => '訪問者統計記録をすべて削除しました。',
+    ],
+    'cloud_ranges' => [
+        'refresh_success' => 'クラウドIP帯域リストを更新しました。',
+        'refresh_failed' => '帯域リストを受け取れなかったため、既存リストのままにしました。',
+    ],
+    'visitors' => [
+        'fetch_success' => '訪問者記録を読み込みました。',
+        'index_success' => '訪問者リストを読み込みました。',
+        'anonymous_mode_notice' => '匿名モードでは訪問者キーが毎日変わります — 同じ人の訪問は1日以内にまとめられます。',
+    ],
+    'summary' => [
+        'fetch_success' => '訪問者サマリーを読み込みました。',
+        'disabled' => '公開訪問者サマリーがオフになっています。',
+    ],
 ];

@@ -60,4 +60,33 @@ class BotHitRepository implements BotHitRepositoryInterface
 
         return $deleted;
     }
+
+    /**
+     * 기간 안의 봇 기록을 ID 순서로 나눠 읽습니다.
+     *
+     * @param  Carbon  $from  시작 시각 (포함, UTC)
+     * @param  Carbon  $to  끝 시각 (미포함, UTC)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkBetween(Carbon $from, Carbon $to, int $chunkSize, callable $callback): void
+    {
+        AnalyticsBotHit::query()
+            ->where('occurred_at', '>=', $from)
+            ->where('occurred_at', '<', $to)
+            ->orderBy('id')
+            ->chunkById(max(1, $chunkSize), $callback);
+    }
+
+    /**
+     * 기준 시각보다 오래된 봇 기록 수를 셉니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countOlderThan(Carbon $before): int
+    {
+        return AnalyticsBotHit::query()->where('occurred_at', '<', $before)->count();
+    }
 }

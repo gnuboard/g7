@@ -7,6 +7,7 @@ use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Analytics\ExclusionCounter;
 use App\Analytics\GeoLocator;
+use App\Analytics\NotificationCooldown;
 use App\Analytics\TrackingRequest;
 use App\Analytics\UrlNormalizer;
 use App\Analytics\VisitExclusionPipeline;
@@ -54,6 +55,7 @@ class VisitService
      * @param  PrivacyService  $privacy  개인정보 처리기
      * @param  CollectFailureLogger  $failures  실패 기록기
      * @param  ExclusionCounter  $counter  제외 사유 카운터
+     * @param  NotificationCooldown  $cooldown  알림 쿨다운
      */
     public function __construct(
         private readonly VisitRepositoryInterface $visits,
@@ -65,6 +67,7 @@ class VisitService
         private readonly PrivacyService $privacy,
         private readonly CollectFailureLogger $failures,
         private readonly ExclusionCounter $counter,
+        private readonly NotificationCooldown $cooldown,
     ) {}
 
     /**
@@ -200,12 +203,17 @@ class VisitService
                 $config->ipMaskOctets,
             );
 
-            HookManager::doAction('core.analytics.visit_limit_exceeded', [
-                'visitor_key' => substr($visit->visitor_key, 0, 8),
-                'actions' => $visit->actions_count,
-                'limit' => $config->maxActionsPerVisit,
-                'ip_display' => $visit->ip ?? '-',
-            ]);
+            // 실패 로그는 넘칠 때마다 남기고 알림만 하루 한 번 보낸다 — 이 판정은
+            // 수집 요청마다 돌아, 상한을 넘긴 방문 하나가 계속 비콘을 보내면 같은
+            // 알림이 관리자 알림함을 가득 채운다.
+            if ($this->cooldown->shouldNotify('visit_limit_exceeded')) {
+                HookManager::doAction('core.analytics.visit_limit_exceeded', [
+                    'visitor_key' => substr($visit->visitor_key, 0, 8),
+                    'actions' => $visit->actions_count,
+                    'limit' => $config->maxActionsPerVisit,
+                    'ip_display' => $visit->ip ?? '-',
+                ]);
+            }
 
             return ['visit_id' => $visit->id, 'action_id' => null];
         }

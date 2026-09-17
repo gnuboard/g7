@@ -157,4 +157,34 @@ class ActionRepository implements ActionRepositoryInterface
     {
         return AnalyticsAction::query()->count();
     }
+
+    /**
+     * 여러 방문의 액션을 방문별로 묶어 시간순으로 읽습니다.
+     *
+     * @param  array<int, int>  $visitIds  방문 ID 목록
+     * @return Collection<int|string, Collection<int, AnalyticsAction>> 방문 ID 로 묶인 액션
+     */
+    public function groupedForVisits(array $visitIds): Collection
+    {
+        if ($visitIds === []) {
+            return collect();
+        }
+
+        return AnalyticsAction::query()
+            ->whereIn('visit_id', $visitIds)
+            ->orderBy('occurred_at')
+            ->get()
+            ->groupBy('visit_id');
+    }
+
+    /**
+     * 기준 시각보다 오래된 액션 수를 셉니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countOlderThan(Carbon $before): int
+    {
+        return AnalyticsAction::query()->where('occurred_at', '<', $before)->count();
+    }
 }

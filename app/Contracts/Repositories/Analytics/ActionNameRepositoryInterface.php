@@ -30,4 +30,15 @@ interface ActionNameRepositoryInterface
      * @return array<int, AnalyticsActionName> ID 를 키로 하는 사전 항목 배열
      */
     public function findManyById(array $ids): array;
+
+    /**
+     * 사전을 전부 지웁니다.
+     *
+     * 보존 정리는 사전을 건드리지 않습니다 — 집계가 `action_name_id` 로 이름을
+     * 참조하므로 원장이 지워져도 사전은 남아야 합니다. 전체 삭제에서만 부릅니다.
+     *
+     * @param  int  $chunkSize  한 번에 지울 행 수
+     * @return int 지운 행 수
+     */
+    public function deleteAllInBatches(int $chunkSize = 1000): int;
 }

@@ -99,4 +99,106 @@ interface VisitRepositoryInterface
      * @return int 행 수
      */
     public function countAll(): int;
+
+    /**
+     * 그 날짜에 시작한 방문 수를 셉니다.
+     *
+     * 집계 진행률의 분모입니다.
+     *
+     * @param  string  $date  방문 일자 (Y-m-d, 사이트 표준시 기준)
+     * @return int 방문 수
+     */
+    public function countOnDate(string $date): int;
+
+    /**
+     * 그 날짜의 방문을 ID 순서로 나눠 읽습니다.
+     *
+     * 건너뛰기(OFFSET)가 아니라 마지막 ID 기준으로 나눕니다 — 읽는 도중 행이
+     * 지워지거나 들어와도 건너뛰는 방문이 없습니다.
+     *
+     * @param  string  $date  방문 일자 (Y-m-d, 사이트 표준시 기준)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkByDate(string $date, int $chunkSize, callable $callback): void;
+
+    /**
+     * 기준 시각보다 오래된 방문 수를 셉니다.
+     *
+     * 마른 실행이 「무엇을 얼마나 지울지」를 미리 보이는 데 씁니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countOlderThan(Carbon $before): int;
+
+    /**
+     * 일자 구간 안의 방문 수를 셉니다.
+     *
+     * @param  string|null  $from  시작일 (Y-m-d, 없으면 처음부터)
+     * @param  string|null  $to  종료일 (Y-m-d, 없으면 끝까지)
+     * @return int 방문 수
+     */
+    public function countInDateRange(?string $from, ?string $to): int;
+
+    /**
+     * 일자 구간 안의 방문을 ID 순서로 나눠 읽습니다.
+     *
+     * @param  string|null  $from  시작일 (Y-m-d)
+     * @param  string|null  $to  종료일 (Y-m-d)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkInDateRange(?string $from, ?string $to, int $chunkSize, callable $callback): void;
+
+    /**
+     * 모든 방문을 지웁니다.
+     *
+     * @param  int  $chunkSize  한 번에 지울 건수
+     * @return int 삭제한 행 수
+     */
+    public function deleteAllInBatches(int $chunkSize = 1000): int;
+
+    /**
+     * 최근 활동이 있었던 서로 다른 방문자 수를 셉니다.
+     *
+     * @param  int  $minutes  최근 몇 분 안을 볼지
+     * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
+     * @return int 방문자 수
+     */
+    public function realtimeCount(int $minutes, array $visitorTypes = []): int;
+
+    /**
+     * 가장 최근에 적재된 방문의 활동 시각을 돌려줍니다.
+     *
+     * 진단 화면이 「마지막으로 뭔가 세어진 때」를 보여 주는 값입니다.
+     *
+     * @return Carbon|null 마지막 활동 시각 (기록이 없으면 null)
+     */
+    public function lastTrackedAt(): ?Carbon;
+
+    /**
+     * 주어진 방문을 지웁니다.
+     *
+     * 정보주체 삭제에서 씁니다 — 액션·전환을 먼저 지운 뒤 부릅니다.
+     *
+     * @param  array<int, int>  $ids  방문 ID 목록
+     * @return int 삭제한 행 수
+     */
+    public function deleteByIds(array $ids): int;
+
+    /**
+     * 방문자 키별로 묶은 목록을 조회합니다.
+     *
+     * 방문자 화면의 첫 장입니다 — 방문 하나하나가 아니라 「사람」 단위로 몇 번 왔고
+     * 마지막이 언제였는지를 봅니다.
+     *
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<string, mixed>  $options  조회 옵션 (search, visitor_type, page, per_page)
+     * @return array{rows: array<int, object>, has_more: bool} 방문자 목록
+     */
+    public function visitorSummaries(string $from, string $to, array $options = []): array;
 }

@@ -97,4 +97,17 @@ class SaltRepository implements SaltRepositoryInterface
             ->where('salt_date', '<', $before->toDateString())
             ->delete();
     }
+
+    /**
+     * 기준 시각보다 오래된 솔트 수를 셉니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countOlderThan(Carbon $before): int
+    {
+        return AnalyticsSalt::query()
+            ->where('salt_date', '<', $before->toDateString())
+            ->count();
+    }
 }

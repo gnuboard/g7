@@ -19,8 +19,10 @@ use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface as Analyt
 use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface as AnalyticsBotHitRepositoryInterface;
 use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface as AnalyticsCollectFailureRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface as AnalyticsConversionRepositoryInterface;
+use App\Contracts\Repositories\Analytics\QueueStatsRepositoryInterface as AnalyticsQueueStatsRepositoryInterface;
 use App\Contracts\Repositories\Analytics\SaltRepositoryInterface as AnalyticsSaltRepositoryInterface;
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface as AnalyticsStatsRepositoryInterface;
+use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface as AnalyticsTableStatsRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
@@ -77,8 +79,10 @@ use App\Repositories\Analytics\ArchiveRunRepository as AnalyticsArchiveRunReposi
 use App\Repositories\Analytics\BotHitRepository as AnalyticsBotHitRepository;
 use App\Repositories\Analytics\CollectFailureRepository as AnalyticsCollectFailureRepository;
 use App\Repositories\Analytics\ConversionRepository as AnalyticsConversionRepository;
+use App\Repositories\Analytics\QueueStatsRepository as AnalyticsQueueStatsRepository;
 use App\Repositories\Analytics\SaltRepository as AnalyticsSaltRepository;
 use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
+use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsRepository;
 use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
 use App\Repositories\IdentityMessageDefinitionRepository;
@@ -289,6 +293,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(AnalyticsConversionRepositoryInterface::class, AnalyticsConversionRepository::class);
         $this->app->bind(AnalyticsBotHitRepositoryInterface::class, AnalyticsBotHitRepository::class);
         $this->app->bind(AnalyticsStatsRepositoryInterface::class, AnalyticsStatsRepository::class);
+        $this->app->bind(AnalyticsTableStatsRepositoryInterface::class, AnalyticsTableStatsRepository::class);
+        $this->app->bind(AnalyticsQueueStatsRepositoryInterface::class, AnalyticsQueueStatsRepository::class);
         $this->app->bind(AnalyticsArchiveRunRepositoryInterface::class, AnalyticsArchiveRunRepository::class);
         $this->app->bind(AnalyticsCollectFailureRepositoryInterface::class, AnalyticsCollectFailureRepository::class);
         $this->app->singleton(AnalyticsSaltRepositoryInterface::class, AnalyticsSaltRepository::class);

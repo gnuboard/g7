@@ -8,7 +8,7 @@
  * 특히 이 축은 조용히 깨진다. 트래커가 아예 켜지지 않아도 화면은 멀쩡하고 콘솔에도
  * 아무것도 남지 않는다. 운영자는 「방문자가 0명」이라는 화면을 보고서야 알아차린다.
  *
- * 축 요약(마커 아님 — 평문): user_first_load, user_spa_navigation, admin_screen.
+ * 축 요약(마커 아님 — 평문): 첫 진입·SPA 이동은 게스트 비콘, 관리자 화면은 수집 제외.
  * 효과 요약(마커 아님 — 평문): beacon_reaches_server_with_204,
  *   spa_navigation_sends_another_beacon, admin_template_does_not_track.
  */
@@ -18,7 +18,7 @@ import { authenticatePage, expect, issueToken, test } from '../../fixtures/auth'
 const COLLECT_PATH = '/api/analytics/collect';
 
 test.describe('방문자 통계 비콘', () => {
-  // @scenario user_first_load
+  // @scenario source=beacon, visitor=guest, visit_state=new, exclusion=none
   // @effects beacon_reaches_server_with_204
   test('사용자 화면 첫 진입이 비콘을 보내고 서버가 204 로 받는다', async ({ page }) => {
     const responses: number[] = [];
@@ -39,7 +39,7 @@ test.describe('방문자 통계 비콘', () => {
     expect(responses.every((status) => status === 204)).toBe(true);
   });
 
-  // @scenario user_first_load
+  // @scenario source=beacon, visitor=guest, visit_state=new, exclusion=none
   // @effects beacon_reaches_server_with_204
   test('첫 비콘이 페이지뷰로 init 표식과 함께 나간다', async ({ page }) => {
     const payloads: Record<string, unknown>[] = [];
@@ -65,7 +65,7 @@ test.describe('방문자 통계 비콘', () => {
     expect(typeof first.url).toBe('string');
   });
 
-  // @scenario admin_screen
+  // @scenario source=beacon, visitor=admin, exclusion=disabled
   // @effects admin_template_does_not_track
   test('관리자 화면은 수집하지 않는다', async ({ page }) => {
     const requests: string[] = [];

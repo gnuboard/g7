@@ -1,0 +1,71 @@
+<?php
+
+namespace App\Http\Controllers\Api\Admin\Analytics;
+
+use App\Analytics\AnalyticsConfig;
+use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
+use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Admin\Analytics\CollectFailureIndexRequest;
+use App\Http\Requests\Admin\Analytics\DiagnosticsRequest;
+use App\Services\Analytics\DiagnosticsService;
+use Illuminate\Http\JsonResponse;
+
+/**
+ * 방문자 통계 진단 API
+ *
+ * 「비콘은 정상 응답을 받는데 원장이 비어 있다」의 원인을 한 화면에 모읍니다. 수집
+ * 실패는 전부 조용하므로, 물어볼 곳이 없으면 운영자는 기능이 고장 난 줄만 압니다.
+ */
+class DiagnosticsController extends AdminBaseController
+{
+    /**
+     * 진단 컨트롤러를 생성합니다.
+     *
+     * @param  DiagnosticsService  $diagnostics  진단 서비스
+     * @param  CollectFailureRepositoryInterface  $failures  적재 실패 저장소
+     */
+    public function __construct(
+        private readonly DiagnosticsService $diagnostics,
+        private readonly CollectFailureRepositoryInterface $failures,
+    ) {
+        parent::__construct();
+    }
+
+    /**
+     * 진단 결과를 조회합니다.
+     *
+     * @param  DiagnosticsRequest  $request  진단 요청 (프록시 판정에 쓴다)
+     * @return JsonResponse 진단 응답
+     */
+    public function index(DiagnosticsRequest $request): JsonResponse
+    {
+        return $this->success(
+            'analytics.diagnostics.fetch_success',
+            $this->diagnostics->diagnostics(AnalyticsConfig::fromSettings(), $request),
+        );
+    }
+
+    /**
+     * 적재 실패 목록을 조회합니다.
+     *
+     * @param  CollectFailureIndexRequest  $request  실패 목록 요청
+     * @return JsonResponse 실패 목록 응답
+     */
+    public function failures(CollectFailureIndexRequest $request): JsonResponse
+    {
+        $paginator = $this->failures->getPaginated(
+            array_filter(['reason' => $request->input('reason')]),
+            (int) $request->input('per_page', 20),
+        );
+
+        return $this->success('analytics.collect_failures.fetch_success', [
+            'data' => $paginator->items(),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ]);
+    }
+}

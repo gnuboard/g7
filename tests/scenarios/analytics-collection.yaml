@@ -82,6 +82,7 @@ effects:
   - tracking_failure_is_logged_to_application_log
   - after_track_hook_fires_with_ledger_ids
   - visit_limit_notification_hook_fires
+  - visit_limit_notification_is_sent_once_a_day
   - beacon_cannot_forge_site_search
   # 서버 폴백·봇·검색 경로 (미들웨어·훅이 원장에 닿는 배선)
   - server_fallback_records_html_page_loads_only

@@ -81,6 +81,24 @@ class ActionNameRepository implements ActionNameRepositoryInterface
     }
 
     /**
+     * 사전을 전부 지웁니다.
+     *
+     * @param  int  $chunkSize  한 번에 지울 행 수
+     * @return int 지운 행 수
+     */
+    public function deleteAllInBatches(int $chunkSize = 1000): int
+    {
+        $deleted = 0;
+
+        do {
+            $count = AnalyticsActionName::query()->limit(max(1, $chunkSize))->delete();
+            $deleted += $count;
+        } while ($count > 0);
+
+        return $deleted;
+    }
+
+    /**
      * 종류와 이름으로 사전 해시를 만듭니다.
      *
      * @param  string  $type  이름 종류

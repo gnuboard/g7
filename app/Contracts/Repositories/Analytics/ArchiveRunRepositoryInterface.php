@@ -63,4 +63,21 @@ interface ArchiveRunRepositoryInterface
      * @return int 삭제한 행 수
      */
     public function deleteOlderThanInBatches(Carbon $before, int $chunkSize = 1000): int;
+
+    /**
+     * 기준 시각보다 오래된 집계 실행 이력 수를 셉니다.
+     *
+     * 마른 실행이 「무엇을 얼마나 지울지」를 미리 보이는 데 씁니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countOlderThan(Carbon $before): int;
+
+    /**
+     * 지금 돌고 있는 집계 실행을 찾습니다.
+     *
+     * @return AnalyticsArchiveRun|null 실행 중인 이력 (없으면 null)
+     */
+    public function findRunning(): ?AnalyticsArchiveRun;
 }

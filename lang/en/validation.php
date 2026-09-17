@@ -1186,6 +1186,11 @@ return [
         'url_too_long' => 'The visit URL is too long.',
         'resolution_invalid' => 'The screen resolution format is invalid.',
         'dimensions_too_many' => 'At most 20 dimension values may be sent.',
+        'range_too_long' => 'You can query at most :days days at a time.',
+        'report_unknown' => 'Unknown report.',
+        'subject_required' => 'Specify at least one of IP address, member id or visitor key.',
+        'confirm_required' => 'This cannot be undone — tick the confirmation box to proceed.',
+        'anonymize_target_required' => 'Specify either a mask octet count or hashing.',
     ],
 
     'attributes' => [

@@ -94,6 +94,16 @@ return [
             // 잔존물 정리 — 최신 백업 1개 상시 보존 가드는 커맨드 내부 소유(옵션으로 무력화 불가).
             'storage:prune-leftovers' => ['options' => ['days', 'backup-days', 'dry-run']],
 
+            // 방문자 통계 — 집계·정리·점검은 비파괴이거나 서비스가 하한을 소유한다.
+            // 전체 삭제(analytics:purge)와 소급 익명화(analytics:anonymize)는 되돌릴 수 없어
+            // 예약 대상에서 뺀다 — 무인 실행으로 지워질 값이 아니다.
+            'analytics:archive' => ['options' => ['period', 'from', 'to', 'force', 'dry-run']],
+            'analytics:prune' => ['options' => ['days', 'dry-run']],
+            'analytics:check-volume' => ['options' => []],
+            'analytics:report' => ['options' => ['period']],
+            'analytics:update-cloud-ranges' => ['options' => []],
+            'analytics:broadcast-realtime' => ['options' => []],
+
             // SEO
             'seo:warmup' => ['options' => ['layout']],
             'seo:clear' => ['options' => ['layout']],

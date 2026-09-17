@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Http\Requests\Admin\Analytics;
+
+use App\Extension\HookManager;
+use Illuminate\Foundation\Http\FormRequest;
+
+/**
+ * 방문자 단건 조회 요청
+ *
+ * 누구를 볼지는 경로가 정합니다(`visitors/{visitorKey}`) — 목록에서 고른 그 사람입니다.
+ * 그래서 본문에서 받는 것은 기간뿐입니다.
+ */
+class VisitorShowRequest extends FormRequest
+{
+    /**
+     * 인가는 라우트 미들웨어가 판정합니다.
+     *
+     * @return bool 항상 true
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 검증 규칙을 반환합니다.
+     *
+     * @return array<string, mixed> 검증 규칙
+     */
+    public function rules(): array
+    {
+        $rules = [
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ];
+
+        // 확장이 자기 필드를 이 요청에 얹을 수 있게 규칙을 훅으로 연다.
+        return HookManager::applyFilters('core.analytics.visitor_show_validation_rules', $rules, $this);
+    }
+}

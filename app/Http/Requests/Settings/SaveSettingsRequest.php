@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
 use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Rule;
 
 class SaveSettingsRequest extends FormRequest
 {
+    use HasAnalyticsSettingsRules;
+
     /**
      * 지원되는 메일러 목록
      */
@@ -81,6 +84,8 @@ class SaveSettingsRequest extends FormRequest
      *
      * site_logo 필드가 Attachment 객체 배열로 전송될 수 있으므로
      * 정수 ID 배열로 변환합니다.
+     *
+     * @return void 없음
      */
     protected function prepareForValidation(): void
     {
@@ -128,6 +133,8 @@ class SaveSettingsRequest extends FormRequest
      * 화면 입력 칸은 콤마로 구분한 한 줄 텍스트라 이 값은 문자열로 들어온다. 문자열 그대로
      * 저장하면 업로드 제한을 적용하는 지점이 그 값을 쓰지 못해, 저장은 성공하는데 제한은
      * 종전 목록으로 남는다. 형태 판정은 저장 경로 진입 전 이 한 곳에서만 수행한다.
+     *
+     * @return void 없음
      */
     private function normalizeAllowedExtensions(): void
     {
@@ -150,6 +157,7 @@ class SaveSettingsRequest extends FormRequest
      * prepareForValidation 단계에서 명시 캐스팅합니다.
      *
      * @param  array<int, string>  $fields  dot-notation 필드 경로 배열
+     * @return void 없음
      */
     private function castAdvancedBooleanFields(array $fields): void
     {
@@ -183,7 +191,7 @@ class SaveSettingsRequest extends FormRequest
 
         $rules = [
             // 탭 식별자
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -195,6 +203,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced' => ['sometimes', 'array'],
             'notifications' => ['sometimes', 'array'],
             'identity' => ['sometimes', 'array'],
+            'analytics' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
             'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
@@ -379,6 +388,11 @@ class SaveSettingsRequest extends FormRequest
             'identity.challenge_ttl_minutes' => $this->getTabRules($tab, 'identity', 'integer|min:'.config('core.settings_limits.identity_challenge_ttl_minutes_min', 1).'|max:'.config('core.settings_limits.identity_challenge_ttl_minutes_max', 1440)),
             'identity.max_attempts' => $this->getTabRules($tab, 'identity', 'integer|min:'.config('core.settings_limits.identity_max_attempts_min', 1).'|max:'.config('core.settings_limits.identity_max_attempts_max', 20)),
         ];
+
+        // 방문자 통계 설정은 전용 API 와 이 경로 둘 다로 저장될 수 있다 — 규칙을 한
+        // 곳(트레이트)에 두고 양쪽이 같이 써야 한쪽으로 들어온 값만 검증 없이 통과하는
+        // 일이 생기지 않는다.
+        $rules = array_merge($rules, $this->analyticsSettingsRules('analytics'));
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.settings.save_validation_rules', $rules, $this);
@@ -568,6 +582,7 @@ class SaveSettingsRequest extends FormRequest
      * 임의 깊이의 leaf 값을 재귀 순회하며 string|max:100 으로 검증합니다.
      *
      * @param  Validator  $validator  검증기 인스턴스
+     * @return void 없음
      */
     public function withValidator($validator): void
     {
@@ -598,6 +613,7 @@ class SaveSettingsRequest extends FormRequest
      * @param  array<string, mixed>  $node  검증할 노드 (purpose_providers 또는 중첩 하위)
      * @param  string  $path  현재 노드의 dot-path (에러 키 prefix)
      * @param  Validator  $validator  검증기 인스턴스
+     * @return void 없음
      */
     private function validatePurposeProviderLeaves(array $node, string $path, $validator): void
     {

@@ -501,6 +501,40 @@ class VisitServiceTest extends TestCase
     }
 
     /**
+     * 상한을 계속 넘겨도 알림은 하루 한 번만 나가고 실패 로그는 매번 남는다.
+     *
+     * 이 판정은 수집 요청마다 돈다. 상한을 넘긴 방문 하나가 계속 비콘을 보내면 같은
+     * 알림이 관리자 알림함을 가득 채워, 정작 다른 경고가 묻힌다.
+     *
+     * @scenario visit_state=max_actions
+     *
+     * @effects visit_limit_notification_is_sent_once_a_day
+     *
+     * @return void 없음
+     */
+    public function test_repeated_visit_limit_notifies_once_a_day(): void
+    {
+        config(['g7_settings.core.analytics.max_actions_per_visit' => 1]);
+
+        $fired = 0;
+        HookManager::addAction('core.analytics.visit_limit_exceeded', function () use (&$fired): void {
+            $fired++;
+        });
+
+        $this->service->track($this->request());
+        $this->service->track($this->request(['url' => 'https://example.test/2']));
+        $this->service->track($this->request(['url' => 'https://example.test/3']));
+        $this->service->track($this->request(['url' => 'https://example.test/4']));
+
+        $this->assertSame(1, $fired, '같은 알림이 요청마다 나가면 알림함이 한 방문으로 가득 찬다');
+        $this->assertSame(
+            3,
+            AnalyticsCollectFailure::where('reason', CollectFailureReason::MaxActions->value)->count(),
+            '알림은 줄여도 왜 버렸는지는 매번 남아야 한다',
+        );
+    }
+
+    /**
      * 적재 중 예외는 실패 로그 행과 애플리케이션 경고 로그로 남고 밖으로 나가지 않는다.
      *
      * @scenario source=beacon, exclusion=none

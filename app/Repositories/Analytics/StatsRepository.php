@@ -28,7 +28,10 @@ class StatsRepository implements StatsRepositoryInterface
     private const INSERT_CHUNK = 500;
 
     /**
-     * 지정한 기간·유형의 시간 집계 행을 지우고 새로 넣습니다.
+     * 지정한 시각의 시간 집계 행을 **방문자 유형 구분 없이 전부** 지우고 새로 넣습니다.
+     *
+     * 유형별로 나눠 부르면 안 됩니다 — 첫 호출이 다른 유형 행까지 지웁니다. 자세한
+     * 계약은 인터페이스 쪽 설명을 보세요.
      *
      * @param  string  $hourStart  사이트 표준시 기준 시각 (Y-m-d H:00:00)
      * @param  array<int, array<string, mixed>>  $rows  넣을 행 목록
@@ -129,9 +132,59 @@ class StatsRepository implements StatsRepositoryInterface
             ->when($search !== null && $search !== '', fn (Builder $q) => $q->where('label', 'like', '%'.$search.'%'))
             ->groupBy('label_hash')
             ->orderByDesc($options['sort'] ?? 'visits')
+            // CSV 는 쪽마다 독립 쿼리를 던진다. 정렬 키가 지표 하나뿐이면 동점 구간의
+            // 순서가 쿼리마다 달라져 어떤 라벨은 두 번 실리고 어떤 라벨은 빠진다.
+            // 묶음 키로 순서를 완전히 결정해 둔다.
+            ->orderBy('label_hash')
             ->offset($offset)
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * 라벨별 부가 값(`extra`)을 기간 내내 합산해 조회합니다.
+     *
+     * `extra` 는 JSON 이라 합산 질의의 SUM 으로 묶을 수 없다 — 드라이버마다 JSON 함수가
+     * 달라 SQL 로 풀면 이식성을 잃는다. 대상 라벨이 한 쪽(최대 100건)뿐이므로 그 행들의
+     * 값만 읽어 PHP 에서 키별로 더한다.
+     *
+     * @param  string  $dimension  차원 이름
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<int, string>  $labelHashes  합산할 라벨 묶음 키
+     * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
+     * @return array<string, array<string, int>> 라벨 묶음 키별 부가 값
+     */
+    public function dimensionExtra(string $dimension, string $from, string $to, array $labelHashes, array $visitorTypes = []): array
+    {
+        if ($labelHashes === []) {
+            return [];
+        }
+
+        $totals = [];
+
+        AnalyticsDimensionStat::query()
+            ->select(['label_hash', 'extra'])
+            ->where('dimension', $dimension)
+            ->whereBetween('date', [$from, $to])
+            ->whereIn('label_hash', $labelHashes)
+            ->whereNotNull('extra')
+            ->when($visitorTypes !== [], fn (Builder $q) => $q->whereIn('visitor_type', $visitorTypes))
+            ->each(function ($row) use (&$totals): void {
+                $extra = is_array($row->extra) ? $row->extra : json_decode((string) $row->extra, true);
+
+                if (! is_array($extra)) {
+                    return;
+                }
+
+                $hash = (string) $row->label_hash;
+
+                foreach ($extra as $key => $value) {
+                    $totals[$hash][$key] = ($totals[$hash][$key] ?? 0) + (int) $value;
+                }
+            });
+
+        return $totals;
     }
 
     /**
@@ -219,5 +272,41 @@ class StatsRepository implements StatsRepositoryInterface
         }
 
         return count($rows);
+    }
+
+    /**
+     * 그 날짜의 집계가 확정됐는지 확인합니다.
+     *
+     * @param  string  $date  일자 (Y-m-d)
+     * @return bool 확정된 행이 하나라도 있으면 true
+     */
+    public function isDailyFinal(string $date): bool
+    {
+        return AnalyticsStatsDaily::query()->where('date', $date)->where('is_final', true)->exists();
+    }
+
+    /**
+     * 기준 시각보다 오래된 시간 집계 수를 셉니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countHourlyOlderThan(Carbon $before): int
+    {
+        return AnalyticsStatsHourly::query()
+            ->where('hour_start', '<', $before->format('Y-m-d H:i:s'))
+            ->count();
+    }
+
+    /**
+     * 집계 표 셋을 모두 비웁니다.
+     *
+     * @return int 삭제한 행 수
+     */
+    public function deleteAllStats(): int
+    {
+        return AnalyticsStatsHourly::query()->delete()
+            + AnalyticsStatsDaily::query()->delete()
+            + AnalyticsDimensionStat::query()->delete();
     }
 }

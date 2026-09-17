@@ -91,4 +91,15 @@ class ConversionRepository implements ConversionRepositoryInterface
             ->where('extension_identifier', $extensionIdentifier)
             ->delete();
     }
+
+    /**
+     * 기준 시각보다 오래된 전환 수를 셉니다.
+     *
+     * @param  Carbon  $before  이 시각 이전이 대상
+     * @return int 해당 건수
+     */
+    public function countOlderThan(Carbon $before): int
+    {
+        return AnalyticsConversion::query()->where('occurred_at', '<', $before)->count();
+    }
 }
