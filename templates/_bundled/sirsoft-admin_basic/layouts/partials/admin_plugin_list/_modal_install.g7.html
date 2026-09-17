@@ -11,7 +11,10 @@
     <!-- 무엇이 함께 깔릴지와 각 항목의 기본 선택 여부를 서버가 정해 준다. 응답을 확장 공용 자리에 올려 두어 아래 체크리스트와 요청 본문이 같은 값을 읽게 한다. -->
     <data-source id="pluginInstallPreview" label_key="$t:editor.data_source.pluginInstallPreview" type="api" endpoint="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/install-preview" :auth_required="true" initGlobal="installPreview"/>
     <div class="py-2">
-      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="plugin_install_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"><img data-if="{{_global.selectedPlugin?.icon_url}}" src="{{_global.selectedPlugin.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/><icon data-if="{{!_global.selectedPlugin?.icon_url}}" name="puzzle-piece" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/></span><span>$t:admin.plugins.modals.install_confirm|name={{_global.selectedPlugin.name}}</span></p>
+      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="plugin_install_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <img data-if="{{_global.selectedPlugin?.icon_url}}" src="{{_global.selectedPlugin.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
+        <icon data-if="{{!_global.selectedPlugin?.icon_url}}" name="puzzle-piece" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+      </span><span>$t:admin.plugins.modals.install_confirm|name={{_global.selectedPlugin.name}}</span></p>
       <p class="mt-2 text-label-subtle">$t:admin.plugins.modals.install_description</p>
     </div>
     <div class="mt-4">

@@ -4,7 +4,10 @@
 <partial description="모듈 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_uninstall_modal">
   <modal data-ref="module_uninstall_modal" title="{{_global.moduleUninstallBackups?.length ? '$t:admin.modules.modals.uninstall_done_title' : '$t:admin.modules.modals.uninstall_title'}}" size="medium">
     <div data-if="{{!(_global.moduleUninstallBackups?.length)}}" class="py-2">
-      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="module_uninstall_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"><img data-if="{{_global.selectedModule?.icon_url}}" src="{{_global.selectedModule.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/><icon data-if="{{!_global.selectedModule?.icon_url}}" name="cube" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/></span><span>$t:admin.modules.modals.uninstall_confirm|name={{_global.selectedModule.name}}</span></p>
+      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="module_uninstall_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <img data-if="{{_global.selectedModule?.icon_url}}" src="{{_global.selectedModule.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
+        <icon data-if="{{!_global.selectedModule?.icon_url}}" name="cube" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+      </span><span>$t:admin.modules.modals.uninstall_confirm|name={{_global.selectedModule.name}}</span></p>
       <p class="mt-2 text-label-subtle">$t:admin.modules.modals.uninstall_warning</p>
     </div>
     <div data-ref="delete_data_option" data-if="{{!(_global.moduleUninstallBackups?.length)}}" class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
