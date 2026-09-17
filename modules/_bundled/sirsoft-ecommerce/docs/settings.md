@@ -16,13 +16,15 @@ _`getSettingsSchema()` 선언이 없습니다._
 
 | 키 | 역할 |
 |---|---|
-| `_meta.categories` | 설정 그룹 9개의 목록과 순서 (`basic_info` · `language_currency` · `order_settings` · `shipping` · `seo` · `review_settings` · `inquiry` · `notifications` · `mileage`) |
+| `_meta.categories` | 설정 그룹 10개의 목록과 순서 (`basic_info` · `language_currency` · `order_settings` · `claim` · `shipping` · `seo` · `review_settings` · `inquiry` · `notifications` · `mileage`) |
 | `defaults` | 그룹별 기본값. 설치 시 `storage/app/settings/` 로 동기화되어 `module_setting()` 이 읽는 값이 됩니다 |
 | `frontend_schema` | 관리자 화면이 자동으로 그리는 입력 폼 정의 |
 
-**`frontend_schema` 는 8개 그룹뿐이고 `mileage` 가 없습니다.** 자동 생성 폼으로는 표현할 수 없는
-입력(통화별 적립 규칙 표 등)이 있어서 마일리지 탭만 레이아웃 JSON 으로 직접 그리기 때문입니다
-(`resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage*.json` 6개). 새 그룹을
+**`frontend_schema` 는 8개 그룹뿐이고 `claim` 과 `mileage` 가 없습니다.** 자동 생성 폼으로는
+표현할 수 없는 입력(통화별 적립 규칙 표, 유형별 신청 가능 상태·환불 자동 승인 결제수단 같은
+다중 선택 묶음)이 있어서 이 두 탭만 레이아웃 JSON 으로 직접 그리기 때문입니다
+(`resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage*.json` 6개,
+`_tab_claim.json` 과 `_claim_policy_section.json`). 새 그룹을
 추가할 때는 이 셋 중 어디까지 손댈지를 먼저 정합니다 — `_meta.categories` 에만 넣고 `defaults`
 를 빠뜨리면 그 그룹은 화면에 뜨지만 저장할 값이 없습니다.
 
@@ -106,15 +108,15 @@ _`getSettingsSchema()` 선언이 없습니다._
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
-권한 20종은 세 무리로 갈립니다.
+권한 22종은 세 무리로 갈립니다.
 
-- **관리자 CRUD 12종** (`products` · `orders` · `categories` · `brands` ·
+- **관리자 CRUD 13종** (`products` · `orders` · `claims` · `categories` · `brands` ·
   `product-notice-templates` · `product-common-infos` · `promotion-coupon` ·
   `shipping-policies` · `product-labels` · `reviews` · `inquiries` · `mileage`): 관리자 화면과
   1:1 대응하며, 라우트 키가 있는 것은 그 라우트에 스코프 미들웨어가 걸립니다.
-- **사용자 측 5종** (`user-products` · `user-orders` · `user-reviews` · `user-currency` ·
-  `user-shipping-country`): 구매자가 자기 자원에 대해 갖는 권한입니다. 관리자 권한과 이름이
-  겹치지 않도록 `user-` 접두사를 씁니다.
+- **사용자 측 6종** (`user-products` · `user-orders` · `user-claims` · `user-reviews` ·
+  `user-currency` · `user-shipping-country`): 구매자가 자기 자원에 대해 갖는 권한입니다. 관리자
+  권한과 이름이 겹치지 않도록 `user-` 접두사를 씁니다.
 - **횡단 3종** (`settings` · `dashboard` · `identity.policies`): 화면 하나에 대응합니다.
 
 `orders` 에 `create`/`delete` 가 없는 것은 의도입니다 — 주문은 구매자 결제로 생기고

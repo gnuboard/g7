@@ -297,7 +297,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 ```
 
 - 코어 기본 알림 3종: `welcome`, `reset_password`, `password_changed`
-- 이커머스 모듈 알림 7종: `order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`
+- 이커머스 모듈 알림: 주문·문의 축 7종(`order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`) + 클레임(교환·반품·환불) 상태별 알림 + 마일리지 소멸 예정 알림. 정본은 `module.php::getNotificationDefinitions()`, 클레임 알림의 목록과 훅 이름은 `ClaimStatusNotificationListener::notifiableStatuses()` — 유형 × 고객 가시 상태의 곱이라 여기에 옮겨 적으면 곧 낡음
 - 실시간 브로드캐스트는 Laravel Reverb (WebSocket) 기반. Reverb 미구성 환경에서는 graceful skip 으로 오류 없이 동작
 - `GenericNotification` 단일 클래스가 모든 알림을 처리 — 신규 알림 타입 추가 시 개별 Notification 클래스 작성 불필요
 
@@ -382,7 +382,7 @@ cp .env.example .env
 | 모듈 | 설명 |
 |------|------|
 | **sirsoft-board** | 게시판 — 다중 게시판, 댓글, 파일 첨부 |
-| **sirsoft-ecommerce** | 쇼핑몰 — 상품, 주문, 결제, 배송, 쿠폰, 상품 문의 |
+| **sirsoft-ecommerce** | 쇼핑몰 — 상품, 주문, 결제, 배송, 취소/반품/교환/환불, 쿠폰, 마일리지, 상품 문의 |
 | **sirsoft-page** | 페이지 — 정적 콘텐츠 관리 |
 
 ### 플러그인
@@ -454,7 +454,7 @@ cp .env.example .env
 | 모델 | 설명 | 상태 |
 |------|------|------|
 | **커뮤니티** | 게시판, 댓글, 회원 관리 | 정식 |
-| **커머스** | 상품 등록, 주문, 결제, 배송 관리 | 정식 |
+| **커머스** | 상품 등록, 주문, 결제, 배송, 취소/반품/교환/환불 관리 | 정식 |
 
 ---
 
