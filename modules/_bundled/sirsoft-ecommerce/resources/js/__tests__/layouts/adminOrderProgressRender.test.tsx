@@ -91,6 +91,10 @@ async function renderSteps(steps: Node[]) {
 }
 
 describe('관리자 주문 상세 — 진행단계 스텝퍼', () => {
+  /**
+   * @scenario surface=admin_detail, order_stage=in_progress, viewport=desktop
+   * @effects order_progress_stepper_renders_server_steps, order_progress_steps_seven_stages, order_progress_steps_carry_icon_and_variant, order_progress_chevrons_between_cells_only
+   */
   it('서버 배열의 일곱 칸을 순서·상태·아이콘 그대로 그린다', async () => {
     await renderSteps(PROGRESS_STEPS);
 
@@ -110,6 +114,10 @@ describe('관리자 주문 상세 — 진행단계 스텝퍼', () => {
     expect(document.body.textContent).toContain('진행 단계');
   });
 
+  /**
+   * @scenario surface=admin_detail, order_stage=off_path, viewport=desktop
+   * @effects order_progress_off_path_appends_last_cell
+   */
   it('배송보류는 순서 밖의 이탈 칸으로 마지막에 붙고 순서 안에 현재 칸이 없다', async () => {
     await renderSteps(HOLD_STEPS);
 
@@ -120,6 +128,10 @@ describe('관리자 주문 상세 — 진행단계 스텝퍼', () => {
     expect(hold.querySelector('.rounded-full')!.className).toContain('bg-red-500');
   });
 
+  /**
+   * @scenario surface=admin_detail, order_stage=in_progress, viewport=desktop
+   * @effects order_progress_absent_when_steps_empty
+   */
   it('배열이 비면 카드 자체가 서지 않는다', async () => {
     await renderSteps([]);
 
@@ -128,6 +140,10 @@ describe('관리자 주문 상세 — 진행단계 스텝퍼', () => {
 });
 
 describe('관리자 주문 상세 — 배선', () => {
+  /**
+   * @scenario surface=admin_detail, order_stage=in_progress, viewport=desktop
+   * @effects order_progress_card_mounted_above_tabs
+   */
   it('진행단계 카드는 탭 내비게이션 앞(탭 밖)에 마운트되어 어느 탭에서도 보인다', () => {
     const parent = flatten(detailLayout as Node).find(
       (n) => Array.isArray(n.children) && n.children.some((c: Node) => c.id === 'tab_navigation')
@@ -139,6 +155,10 @@ describe('관리자 주문 상세 — 배선', () => {
     expect(idx).toBeLessThan(tabIdx);
   });
 
+  /**
+   * @scenario surface=admin_detail, order_stage=in_progress, viewport=mobile
+   * @effects order_progress_iteration_reads_server_array_only, order_progress_hidden_is_owned_by_wrapper_div_not_icon
+   */
   it('스텝퍼는 서버 배열만 읽고 Icon 노드에 hidden 을 직접 주지 않는다', () => {
     const nodes = flatten(progressPartial as Node);
     const iteration = nodes.find((n) => n.iteration)!;
@@ -153,6 +173,10 @@ describe('관리자 주문 상세 — 배선', () => {
     expect(chevronNodes.every((n) => n.name === 'Div')).toBe(true);
   });
 
+  /**
+   * @scenario surface=admin_detail, order_stage=in_progress, viewport=desktop
+   * @effects order_status_badge_carries_icon
+   */
   it('상품 행 상태 뱃지가 서버 토큰을 Badge icon 으로 넘긴다', () => {
     const badge = flatten(orderInfoPartial as Node).find(
       (n) => n.name === 'Badge' && n.text === '{{row.option_status_label}}'

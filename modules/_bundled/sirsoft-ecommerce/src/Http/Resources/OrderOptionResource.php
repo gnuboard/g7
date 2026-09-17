@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: private 판정 메서드 4개에 누락됐던 `@return` PHPDoc 만 채운 내부 수정이다. 응답 키·타입·조건 모두 불변이라 docs/api 에 반영할 표면 변화가 없다(`api:docgen --scope=module:sirsoft-ecommerce --check` drift 0 확인).
+
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Helpers\PermissionHelper;
@@ -250,6 +252,8 @@ class OrderOptionResource extends BaseApiResource
 
     /**
      * 구매확정 가능 여부 계산
+     *
+     * @return bool 판정 결과
      */
     private function calculateCanConfirm(): bool
     {
@@ -269,6 +273,8 @@ class OrderOptionResource extends BaseApiResource
      * 마감일 계산은 ProductReviewService::canWrite 와 동일한 기준을 사용한다
      * (confirmed_at + N일 경계 비교, N=0 은 무제한). 버튼 노출과 제출 검증의
      * 판정이 어긋나지 않도록 단일 기준으로 통일.
+     *
+     * @return bool 판정 결과
      */
     private function calculateCanWriteReview(): bool
     {
@@ -292,6 +298,8 @@ class OrderOptionResource extends BaseApiResource
      *
      * 구매확정 + 미작성 상태에서 작성 기한만 지나 리뷰를 쓸 수 없는 경우 true.
      * (리뷰 작성 버튼이 사라진 이유를 사용자에게 안내하기 위한 플래그)
+     *
+     * @return bool 판정 결과
      */
     private function calculateReviewDeadlinePassed(): bool
     {
@@ -311,6 +319,8 @@ class OrderOptionResource extends BaseApiResource
      *
      * 판정 규칙은 ReviewWritePolicy 단일 SSoT 를 따른다 — 화면 표시(이 리소스)와
      * 실제 저장 가능 여부(ProductReviewService::canWrite)가 어긋나지 않도록 한다.
+     *
+     * @return bool 판정 결과
      */
     private function isReviewDeadlinePassed(): bool
     {

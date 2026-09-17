@@ -94,6 +94,10 @@ function findNodes(node: any, match: (n: any) => boolean): any[] {
  *   settings_claim_reason_name_is_multilingual
  */
 describe('설정 클레임 탭 — 구성', () => {
+  /**
+   * @scenario reason_type=exchange
+   * @effects settings_claim_tab_composes_policy_and_three_catalogs
+   */
   it('클레임 탭은 정책 + 교환/반품/환불 사유 4블록을 이 순서로 싣는다', () => {
     const partials = ((tabClaim as any).children ?? []).map((c: any) => c.partial);
 
@@ -105,6 +109,9 @@ describe('설정 클레임 탭 — 구성', () => {
     ]);
   });
 
+  /**
+   * @effects settings_claim_tab_renders_only_on_its_own_tab
+   */
   it('탭은 claim 탭에서만 렌더된다', () => {
     expect((tabClaim as any).if).toContain("=== 'claim'");
   });
@@ -133,6 +140,9 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
   // 파생이 비면 `it.each([])` 는 케이스를 **0개 등록하고 초록**이다 — 오류도 경고도 없다.
   // 같은 describe 의 형제 파생(`COMPLETE_DEFAULT_KEYS`)은 이미 하한을 갖는데 이쪽만 없어
   // 한 블록 안에서 강도가 갈려 있었다. `defaults.json` 경로·구조가 바뀌면 여기서 붉어진다.
+  /**
+   * @effects settings_claim_derivations_are_not_empty
+   */
   it('스칼라 축 파생이 비어 있지 않다 (파생 자체의 건전성)', () => {
     expect(
       POLICY_SCALAR_KEYS.length,
@@ -140,6 +150,9 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
     ).toBeGreaterThanOrEqual(12);
   });
 
+  /**
+   * @effects settings_claim_policy_exposes_every_scalar_axis
+   */
   it.each(POLICY_SCALAR_KEYS)(
     'claim.%s 를 읽고 쓰는 노드가 있다',
     (key) => {
@@ -154,10 +167,16 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
   // 예외를 만든 자리이므로 하위 키도 `defaults.json` 에서 파생시킨다.
   const COMPLETE_DEFAULT_KEYS = Object.keys((defaults as any).defaults.claim.complete_defaults ?? {});
 
+  /**
+   * @effects settings_claim_derivations_are_not_empty
+   */
   it('완료 처리 기본값 파생이 비어 있지 않다 (파생 자체의 건전성)', () => {
     expect(COMPLETE_DEFAULT_KEYS.length, 'defaults.json 의 claim.complete_defaults 를 읽지 못했다').toBeGreaterThanOrEqual(2);
   });
 
+  /**
+   * @effects settings_claim_policy_exposes_every_scalar_axis
+   */
   it.each(COMPLETE_DEFAULT_KEYS)('완료 처리 기본값 %s 도 통로를 갖는다 (D26)', (key) => {
     // 형제 스칼라 루프는 read(`claim?.X`) 와 write(`claim.X`) 를 **둘 다** 본다. 여기만 write
     // 하나면 세 번째 기본값이 생겼을 때(=이 파생이 존재하는 유일한 이유) 그 키의 값 표시
@@ -166,10 +185,16 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
     expect(policyText, `완료 기본값 ${key} 를 쓰는 통로가 없다`).toContain(`claim.complete_defaults.${key}`);
   });
 
+  /**
+   * @effects settings_claim_complete_defaults_declared_as_modal_seed
+   */
   it('완료 처리 기본값은 "모달 초기 선택값" 임을 화면이 밝힌다 (D26)', () => {
     expect(policyText).toContain('claim.policy.complete_defaults.notice');
   });
 
+  /**
+   * @effects settings_claim_policy_limits_come_from_server
+   */
   it('숫자 입력의 경계값은 서버가 내려준 _meta.limits 를 읽는다 (리터럴 재기입 금지)', () => {
     for (const limit of [
       'claim_request_period_days_min',
@@ -183,6 +208,9 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
     }
   });
 
+  /**
+   * @effects settings_claim_inputs_all_locked_for_read_only_operator
+   */
   it('읽기 전용 운영자에게는 모든 입력이 잠긴다', () => {
     // 문자열의 `"disabled":` 개수와 `isReadOnly` 개수를 견주면, disabled 를 아예 안 붙인
     // 입력을 새로 넣어도 두 수가 여전히 같아 통과한다 — 그 필드만 열린 채 남는다.
@@ -234,7 +262,7 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
   });
 
     /**
-     * @effects settings_claim_charge_payment_method_options_derive_from_order_settings
+     * @effects settings_claim_charge_payment_method_options_derive_from_order_settings, settings_charge_payment_method_options_are_not_literal_builtins
      */
     it('추가결제 수단 선택지는 주문 설정의 결제수단에서 파생한다 (리터럴 금지)', () => {
         // 이 축의 서버 허용 어휘는 기본 결제수단 + 결제 플러그인이 등록한 확장 ID 이다.
@@ -277,6 +305,9 @@ describe('사유 카탈로그 3종 — 각자의 상태 키를 읽고 쓴다', (
     ['환불(모바일 카드)', refundCards, 'refund', ['exchange_reasons', 'return_reasons']],
   ];
 
+  /**
+   * @effects settings_claim_reason_catalog_reads_and_writes_own_type
+   */
   it.each(cases)('%s 사유는 claim.%s_reasons 만 읽고 쓴다', (_label, layout, type, forbidden) => {
     const text = JSON.stringify(layout);
 
@@ -288,12 +319,19 @@ describe('사유 카탈로그 3종 — 각자의 상태 키를 읽고 쓴다', (
     }
   });
 
+  /**
+   * @effects settings_claim_reason_catalog_reads_and_writes_own_type
+   */
   it.each(cases)('%s 사유의 다국어 키도 그 유형 것을 쓴다', (_label, layout, type) => {
     const text = JSON.stringify(layout);
 
     expect(text).toContain(`settings.claim.${type}_reasons.`);
   });
 
+  /**
+   * @scenario reason_type=return
+   * @effects settings_claim_reason_name_is_multilingual
+   */
   it.each([
     ['교환', exchangeSection],
     ['반품', returnSection],
@@ -305,6 +343,9 @@ describe('사유 카탈로그 3종 — 각자의 상태 키를 읽고 쓴다', (
     expect(text.includes('"layout":"compact"')).toBe(true);
   });
 
+  /**
+   * @effects settings_claim_reason_name_requires_current_locale
+   */
   it.each([
     ['교환', exchangeSection, 'exchangeReasonForm', 'claim.exchange_reasons'],
     ['반품', returnSection, 'returnReasonForm', 'claim.return_reasons'],
@@ -321,6 +362,10 @@ describe('사유 카탈로그 3종 — 각자의 상태 키를 읽고 쓴다', (
     expect(text.includes(`'${section}.' + reason._idx + '.name.' + (_global.locale ?? 'ko')`)).toBe(true);
   });
 
+  /**
+   * @scenario reason_type=refund
+   * @effects settings_claim_reason_name_is_multilingual
+   */
   it.each([
     ['교환', exchangeCards, 'claim.exchange_reasons'],
     ['반품', returnCards, 'claim.return_reasons'],
@@ -352,6 +397,9 @@ describe('모바일 카드 오류 바인딩 — 반복 변수 이름이 선언�
     ['배송유형', shippingTypeCards],
   ];
 
+  /**
+   * @effects settings_card_error_binding_uses_the_declared_item_var
+   */
   it.each(cases)('%s 카드의 error 바인딩은 iteration.item_var 를 읽는다', (_label, cards) => {
     const iterated = findNode(cards, (n) => typeof n?.iteration?.item_var === 'string');
     expect(iterated, '반복 노드가 없다').toBeTruthy();
@@ -390,6 +438,9 @@ describe('사유 추가 폼 — 코드 형식을 서버와 같은 규칙으로 �
     ['환불', refundSection, 'refund'],
   ];
 
+  /**
+   * @effects settings_claim_reason_code_format_checked_before_add
+   */
   it.each(cases)('%s 추가 버튼의 게이트가 형식 4조건(첫 글자·허용 문자·연속 밑줄·끝 밑줄) + 길이 50 + 기존 코드 중복을 본다', (_label, section, type) => {
     const gate = findNode(section, (n) => typeof n?.if === 'string' && n.if.includes(`_local.${type}ReasonForm?.code`) && n.if.includes('charAt(0)'));
     expect(gate, '형식 게이트가 없다').toBeTruthy();
@@ -431,6 +482,9 @@ describe('사유 행 — 서버가 code 를 거절하면 그 행이 지목된다
     ['환불', refundSection, refundCards, 'refund'],
   ];
 
+  /**
+   * @effects settings_claim_reason_row_code_error_is_pointed_at_the_row
+   */
   it.each(cases)('%s 표와 모바일 카드 모두 행의 code 오류를 그 행에 그린다', (_label, section, cards, type) => {
     const key = `'claim.${type}_reasons.' + reason._idx + '.code'`;
 
@@ -479,6 +533,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
     )
   ).sort();
 
+  /**
+   * @effects settings_claim_derivations_are_not_empty
+   */
   it('설정 화면이 켜는 인라인 추가 플래그가 하나라도 파생되어야 한다 (파생 자체의 건전성)', () => {
     expect(partialSources.length, '설정 파셜 디렉터리를 읽지 못했다 — 파생 원본이 비면 아래 검사가 전부 공전한다').toBeGreaterThanOrEqual(8);
     expect(flags.length).toBeGreaterThanOrEqual(8);
@@ -496,6 +553,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
   // 기대 집합도 손으로 적지 않는다. 각 폼의 확정/취소 액션이 `isAdding*: false` 와 **같은 params
   // 객체**에서 `null` 로 비우는 키가 곧 그 폼의 버퍼다. 새 인라인 폼이 생기면 그 폼의 버퍼가
   // 자동으로 기대 집합에 들어온다.
+  /**
+   * @effects settings_tab_switch_clears_the_same_scope_as_each_form_cancel
+   */
   it('탭 전환 정리가 각 폼의 [취소] 와 같은 범위를 비운다 (버퍼 파생)', () => {
     const buffers = new Map<string, Set<string>>();
 
@@ -560,6 +620,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
 
   // 경고 토스트는 둘이다 — 통화 2축은 `save_pending_currency`, 나머지 인라인 폼은 `save_pending_form`.
   // 어느 쪽이 맡는지는 문구 선택의 문제이므로, 계약은 **둘을 합쳐 파생 집합 전부를 덮는가** 다.
+  /**
+   * @effects settings_save_is_blocked_while_an_inline_add_form_is_open
+   */
   it('인라인 폼 경고 토스트(2종)가 합쳐서 파생된 플래그 전부를 본다', () => {
     const toasts = actions.filter(
       (a) => a.handler === 'toast'
@@ -646,6 +709,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
   // 사전 키의 집합**을 고정하지만, 문장이 인용하는 컨트롤 이름이 화면 버튼과 같은지는 그
   // 단언의 축이 아니다 — 15차 ⓕ 와 같은 형태(안내가 라디오 라벨을 다른 말로 인용)가
   // 이 문구에서는 ko·en·ja 3언어 × 6폼으로 남아 있었다.
+  /**
+   * @effects settings_save_pending_wording_matches_the_real_confirm_button
+   */
   it('저장 차단 안내가 지목하는 컨트롤이 실제 확정 버튼과 같은 말이다', () => {
     const langJa = JSON.parse(
       fs.readFileSync(
@@ -697,6 +763,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
   // 끄면 폼과 [추가] 버튼이 함께 사라지고 플래그를 끄는 유일한 액션(폼 안의 [확정]/[취소])도
   // 함께 사라진다 → 이후 어느 탭에서도 [저장]이 영구히 막힌다(새로고침 외 탈출구가 없고,
   // 새로고침은 다른 탭 편집까지 버린다). 폼이 도달 불가가 되는 지점에서 표시도 함께 내려야 한다.
+  /**
+   * @effects settings_unreachable_inline_form_never_locks_save_forever
+   */
   it('해외배송을 끄는 액션이 배송가능국가 추가 표시를 함께 내린다 (도달 불가 폼이 저장을 잠그지 않게)', () => {
     const shippingText = JSON.stringify(tabShipping);
 
@@ -727,6 +796,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
   // 위 조치는 폼을 내리는 것이 옳지만, 확인 모달을 여는 분기에서는 운영자가 [취소]로 되돌아올
   // 수 있다 — 그 경로는 "끄지 않겠다" 를 고른 것인데 입력 중이던 국가가 이미 버려져 있고
   // 안내도 없다. 확인창을 띄우는 분기만 버퍼를 보관하고 [취소]가 되살린다.
+  /**
+   * @effects settings_disable_intl_modal_stashes_and_restores_the_country_buffer
+   */
   it('확인 모달을 여는 분기는 입력 버퍼를 보관하고 [취소]가 되살린다', () => {
     const stashing = findNodes(
       tabShipping,
@@ -761,6 +833,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
     }
   });
 
+  /**
+   * @effects settings_save_execution_is_gated_by_every_inline_form_flag
+   */
   it('저장 실행(setState·apiCall)은 같은 플래그가 하나라도 켜져 있으면 나가지 않는다', () => {
     const gated = actions.filter((a) => (a.handler === 'setState' || a.handler === 'apiCall') && typeof a.if === 'string' && a.if.startsWith('{{!('));
     expect(gated.length).toBeGreaterThanOrEqual(2);
@@ -820,6 +895,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
       || (value && typeof value === 'object' && 'name' in value)
     );
 
+    /**
+     * @effects settings_claim_derivations_are_not_empty
+     */
     it('이름을 시드하는 지점이 파생된다 (파생 자체의 건전성)', () => {
       expect(
         seeds.length,
@@ -834,6 +912,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
       }
     });
 
+    /**
+     * @effects settings_inline_form_name_seed_derives_from_active_locales
+     */
     it.each(seeds.map((s) => [`${s.flag}/${s.key}`, s]))('%s 의 이름 시드가 $locales 에서 파생된다', (_label, seed: any) => {
       expect(
         typeof seed.value,
@@ -844,6 +925,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
     });
 
     // 시드와 게이트는 같은 로케일 축을 보아야 한다. 한쪽만 바뀐 것이 이 결함의 형태였다.
+    /**
+     * @effects settings_claim_reason_name_required_locale_is_current_locale
+     */
     it('확정 게이트는 현재 로케일의 이름을 요구한다 (시드와 같은 축)', () => {
       const gates = partialSources.flatMap((source) => source.match(/name\?\.\[\(_global\.locale \?\? 'ko'\)\]/g) ?? []);
       expect(gates.length, '확정 게이트가 현재 로케일을 읽지 않는다 — 시드만 넓히면 서버 422 를 화면이 막지 못한다').toBeGreaterThanOrEqual(5);
@@ -856,6 +940,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
     // — 표현식 형태를 고정하는 단언만으로는 그 상태와 정상을 구분하지 못한다.
     // `$locale` 은 편집 모드에서만 주입되고 코어는 `_global.locale` 을 쓰지 않으므로,
     // 이 화면은 주입을 스스로 책임진다.
+    /**
+     * @effects settings_current_locale_is_injected_before_other_init_actions
+     */
     it('현재 로케일을 _global 에 주입하는 지점이 다른 init_actions 보다 먼저 있다', () => {
       const initActions = (settingsShell as any).init_actions ?? [];
       const handlers = initActions.map((a: any) => a?.handler);
@@ -874,6 +961,9 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
     // 읽는 쪽의 모집단은 게이트만이 아니다. 저장 실패 시 서버가 돌려주는 422 키는
     // `...name.{현재로케일}` 이라, 오류 조회 키가 ko 고정이면 비-ko 관리자에게는 필드
     // 오류가 **표시되지 않는다**(토스트만 뜬다). 두 소비처가 같은 축을 보는지 함께 고정한다.
+    /**
+     * @effects settings_server_field_error_keys_follow_the_current_locale
+     */
     it('서버 422 필드 오류 조회 키도 현재 로케일을 쓴다', () => {
       const errorKeys = partialSources.flatMap(
         (source) => source.match(/\.name\.' \+ \(_global\.locale \?\? 'ko'\)/g) ?? []
@@ -925,6 +1015,9 @@ describe('설정 클레임/배송 탭 — 이름 입력칸 안내가 언어명�
   // 모집단도 함께 줄어 조용히 통과한다).
   const OWNERS = Object.keys((langKo as any).claim ?? {}).filter((key) => key.endsWith('_reasons'));
 
+  /**
+   * @effects settings_claim_derivations_are_not_empty
+   */
   it('사유 카탈로그 폼 파생이 비어 있지 않다 (파생 자체의 건전성)', () => {
     expect(
       OWNERS.length,
@@ -936,6 +1029,9 @@ describe('설정 클레임/배송 탭 — 이름 입력칸 안내가 언어명�
   // ja 만 고치고 ko/en 이 남거나 그 반대가 된다.
   const LOCALE_WORDS = /한국어|영어|일본어|Korean|English|Japanese|韓国語|英語|日本語/;
 
+  /**
+   * @effects settings_name_placeholder_never_names_a_language
+   */
   it.each(SETTINGS_LANGS)('%s: 사유 카탈로그 3종의 이름 안내가 언어명이 아니다', (loc, file) => {
     const lang = JSON.parse(fs.readFileSync(file, 'utf-8'));
 
@@ -954,6 +1050,9 @@ describe('설정 클레임/배송 탭 — 이름 입력칸 안내가 언어명�
     }
   });
 
+  /**
+   * @effects settings_name_placeholder_never_names_a_language
+   */
   it.each(SETTINGS_LANGS)('%s: 같은 화면의 배송사·배송유형 안내도 같은 규칙을 지킨다', (loc, file) => {
     const lang = JSON.parse(fs.readFileSync(file, 'utf-8'));
 

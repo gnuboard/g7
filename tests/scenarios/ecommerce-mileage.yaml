@@ -100,6 +100,15 @@ effects:
   - admin_mileage_manual_modal_grant_deduct_with_user_search
   - admin_mileage_row_expand_shows_linked_transactions
   - admin_badge_group_distinguishes_eight_types_in_five_color_groups
+  # ── 거래 유형 · 적립 시점 enum 의 값 계약 (Unit/Enums) ──
+  # 저장된 문자열 값은 ledger 행에 그대로 박히므로 바뀌면 옛 행의 유형이 사라진다.
+  - transaction_type_values_and_case_count_are_stable_with_a_label_for_each
+  # 적립/차감 분류는 잔액 방향의 SSoT 다 — 한 유형이 양쪽에 걸리거나 어느 쪽에도 없으면
+  # 잔액 합산과 요약 집계가 서로 다른 답을 낸다.
+  - earning_and_deducting_classification_is_total_and_mutually_exclusive
+  # 적립 시점 설정값이 어느 타임스탬프 컬럼을 읽을지까지 enum 이 정한다 — 호출부가 컬럼명을
+  # 따로 적으면 설정을 바꿨을 때 한쪽만 따라간다.
+  - earn_trigger_maps_each_case_to_its_timestamp_column
   - user_mileage_history_filters_by_four_display_categories
   - user_display_category_collapses_restore_admin_into_adjust
   - member_balance_injected_into_admin_user_detail_and_mypage_profile_via_resource_hook

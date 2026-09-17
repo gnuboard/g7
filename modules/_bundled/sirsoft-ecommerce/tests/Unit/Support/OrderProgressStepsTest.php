@@ -102,6 +102,8 @@ class OrderProgressStepsTest extends ModuleTestCase
 
     /**
      * 주문대기는 순서 밖이지만 이탈이 아니다 — 첫 칸(결제대기)을 현재로 그린다.
+     *
+     * @effects order_progress_pending_order_is_not_off_path
      */
     public function test_pending_order_renders_first_cell_as_current(): void
     {

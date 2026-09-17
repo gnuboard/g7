@@ -31,6 +31,17 @@ description: |
     - 기존 항목과 `by` 값이 같으면 그 항목에 **shallow 병합**(적지 않은 키는 보존).
     - `by` 값이 기존에 없으면 **끝에 추가**.
     - 손대지 않은 항목은 **그대로**, 순서와 개수도 보존.
+    - 항목 안의 값이 `{"_append": [ … ]}` 이면 그 키를 **덮어쓰지 않고 뒤에 덧붙인다**.
+
+  **왜 `_append` 가 항목 안에도 필요한가**: 위 shallow 병합은 같은 키를 여러 확장이 쓰면
+  마지막 하나만 남긴다. 실제로 결제 플러그인 3종이 「결제수단」 칸의 `cellChildren` 에 각자
+  테스트결제 배지를 달았는데, 우선순위가 가장 높은 하나만 화면에 떴다. 그래서 그 하나가
+  나머지 두 결제사 몫까지 **대신 그려 주는 계단식 우회**가 생겼고, 그 우회는 남의 플러그인이
+  선언한 데이터소스(`nicepay_test_map` 등)를 참조해야 해서 그 플러그인이 없는 사이트에서는
+  미정의 참조가 됐다. 새 결제사가 추가될 때마다 **최고 priority 플러그인을 찾아 고쳐야**
+  하는 구조이기도 했다.
+
+  `_append` 가 있으면 각 확장이 자기 배지만 덧붙이면 되므로 그 의존이 통째로 사라진다.
 
   형식이 어긋나면 **원본 목록을 그대로 둔다.** 잘못 쓴 패치가 목록을 비우면 그 화면이
   통째로 사라지는데, 그것이 바로 이 전략이 막으려던 사고와 같은 크기의 사고다.
@@ -54,6 +65,8 @@ effects:
   - patching_one_item_keeps_every_other_item_of_the_host_list
   # 형식이 깨진 패치는 호스트 목록을 건드리지 않는다 (빈 목록으로 만들지 않는다)
   - malformed_patch_leaves_the_host_list_untouched
+  # 여러 확장이 같은 항목의 같은 키에 _append 하면 전부 살아남는다 (priority 순서 보존)
+  - appending_into_a_patched_item_keeps_every_extensions_contribution
 
 test_files:
   - tests/Unit/Services/LayoutExtensionServiceTest.php

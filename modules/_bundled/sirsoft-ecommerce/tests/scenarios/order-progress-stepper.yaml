@@ -38,6 +38,9 @@ effects:
   - order_progress_steps_seven_stages
   - order_progress_steps_carry_icon_and_variant
   - order_progress_off_path_appends_last_cell
+  # 주문대기는 7단계 순서 밖이지만 **이탈이 아니다** — 칸을 덧붙이지 않고 첫 칸(결제대기)을
+  # 현재로 그린다. 이탈 판정에 함께 묶이면 아직 결제도 하지 않은 주문에 8번째 칸이 선다.
+  - order_progress_pending_order_is_not_off_path
   - order_progress_reached_index_uses_stamps
   # 화면 — 스텝퍼
   - order_progress_stepper_renders_server_steps
@@ -45,6 +48,12 @@ effects:
   - order_progress_cells_uniform_width_with_chevrons
   - order_progress_wraps_on_mobile_without_scroll
   - order_progress_card_mounted_above_tabs
+  # 배열이 비면 스텝퍼 영역(관리자 카드 · 마이페이지 섹션)이 아예 서지 않는다 — 빈 껍데기 금지
+  - order_progress_absent_when_steps_empty
+  # 숨김은 래퍼 Div 가 맡는다 — Icon 에 직접 준 hidden 은 Font Awesome display 규칙에 밀린다 (⑤)
+  - order_progress_hidden_is_owned_by_wrapper_div_not_icon
+  # 배열 출처가 서버 단일 — 반복 source 가 `order.data.progress_steps` 이고 화면이 순서를 다시 적지 않는다
+  - order_progress_iteration_reads_server_array_only
   # 화면 — 목록 상단 건수 칸
   - order_summary_cells_render_server_summary
   - order_summary_selected_cell_highlighted_zero_count_dimmed

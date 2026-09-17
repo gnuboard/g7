@@ -443,6 +443,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-1-1: 단일 옵션 할인없음 → 전체취소
      *
      * 옵션1개(20,000×2) 할인없음 → 전체취소 → refund=40,000
+     *
+     * @effects full_cancel_refunds_the_entire_paid_amount
      */
     public function test_full_cancel_single_option_no_discount(): void
     {
@@ -465,6 +467,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-1-2: 다중 옵션 할인없음 → 전체취소
      *
      * 옵션2개(20,000×1 + 10,000×3) → 전체취소 → refund=50,000
+     *
+     * @effects full_cancel_refunds_the_entire_paid_amount
      */
     public function test_full_cancel_multiple_options_no_discount(): void
     {
@@ -485,6 +489,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-1-3: 쿠폰+배송비 적용된 주문 → 전체취소 → 원래 결제금액 전액 환불
+     *
+     * @effects full_cancel_refunds_the_entire_paid_amount
      */
     public function test_full_cancel_returns_original_paid_amount(): void
     {
@@ -521,6 +527,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-1-4: 마일리지 3,000원 사용 주문 → 전체취소
      *
      * refund = 결제금액, pointsRefund = 3,000
+     *
+     * @effects full_cancel_refunds_the_entire_paid_amount, cancel_splits_the_refund_between_pg_and_points
      */
     public function test_full_cancel_with_mileage_used(): void
     {
@@ -546,6 +554,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-1-5: 전액 쿠폰 결제(paid=0) → 전체취소
+     *
+     * @effects full_cancel_refunds_the_entire_paid_amount, cancel_restores_the_coupon_when_the_minimum_breaks
      */
     public function test_full_cancel_zero_amount_order(): void
     {
@@ -581,6 +591,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-2-1: 2개 옵션 중 1개 취소
      *
      * A(20,000)+B(10,000), A 취소 → refund=20,000
+     *
+     * @effects partial_cancel_refunds_the_difference_against_the_recalculated_total
      */
     public function test_partial_cancel_one_of_two_options(): void
     {
@@ -607,6 +619,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-2-2: 수량 부분 취소
      *
      * A(10,000×5), 수량3 취소 → refund=30,000
+     *
+     * @effects partial_cancel_refunds_the_difference_against_the_recalculated_total
      */
     public function test_partial_cancel_reduces_quantity(): void
     {
@@ -631,6 +645,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-2-3: 모든 옵션 전량 취소 → 전체취소 전환
+     *
+     * @effects all_items_promotes_to_full_cancel
      */
     public function test_partial_cancel_all_quantity_equals_full_cancel(): void
     {
@@ -659,6 +675,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-2-4: 3개 옵션 중 1개만 취소
+     *
+     * @effects partial_cancel_refunds_the_difference_against_the_recalculated_total
      */
     public function test_partial_cancel_single_item_from_three(): void
     {
@@ -686,6 +704,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-2-5: 3개 옵션 중 2개 동시 취소
+     *
+     * @effects partial_cancel_refunds_the_difference_against_the_recalculated_total
      */
     public function test_partial_cancel_multiple_items_simultaneously(): void
     {
@@ -717,6 +737,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-2-6: 다중 옵션 부분 수량 취소
      *
      * A 5개→2개취소, B 3개→1개취소
+     *
+     * @effects partial_cancel_refunds_the_difference_against_the_recalculated_total
      */
     public function test_partial_cancel_partial_quantity_from_multiple(): void
     {
@@ -750,6 +772,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-3-1: FREE 배송비 전체취소
+     *
+     * @effects full_cancel_refunds_the_shipping_fee_that_was_charged
      */
     public function test_full_cancel_free_shipping(): void
     {
@@ -768,6 +792,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-3-2: FIXED 배송비(3,000원) 전체취소 → 배송비 포함 환불
+     *
+     * @effects full_cancel_refunds_the_shipping_fee_that_was_charged
      */
     public function test_full_cancel_fixed_shipping(): void
     {
@@ -787,6 +813,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-3-3: CONDITIONAL_FREE 무료배송 충족 → 전체취소
+     *
+     * @effects full_cancel_refunds_the_shipping_fee_that_was_charged
      */
     public function test_full_cancel_conditional_free_met(): void
     {
@@ -810,6 +838,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-3-4: CONDITIONAL_FREE 미충족 → 전체취소 → 배송비 포함
+     *
+     * @effects full_cancel_refunds_the_shipping_fee_that_was_charged
      */
     public function test_full_cancel_conditional_free_not_met(): void
     {
@@ -836,6 +866,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * ranges: 0~30,000→3,000, 30,000+→1,000
      * 주문 20,000원 → 배송비 3,000원 구간
+     *
+     * @effects full_cancel_refunds_the_shipping_fee_that_was_charged, cancel_recalculation_matches_the_charge_policy_tier
      */
     public function test_full_cancel_range_amount_shipping(): void
     {
@@ -865,6 +897,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-3-6: PER_QUANTITY 수량당 배송비 전체취소
      *
      * unit=5, fee=1,000 → 12개 → ceil(12/5)=3 → 배송비 3,000
+     *
+     * @effects full_cancel_refunds_the_shipping_fee_that_was_charged, cancel_recalculation_matches_the_charge_policy_units
      */
     public function test_full_cancel_per_quantity_shipping(): void
     {
@@ -895,6 +929,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-4-1: 무료배송 유지 (잔여금액 ≥ threshold)
      *
      * 60,000 주문(무료), 5,000 취소 → 잔여 55,000 ≥ 50,000 → refund=5,000
+     *
+     * @effects partial_cancel_keeps_free_shipping_while_the_remainder_meets_the_threshold
      */
     public function test_conditional_free_stays_free_after_partial(): void
     {
@@ -928,6 +964,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * ⭐ 이슈 #29 예시 1: 60,000 주문(무료), 20,000 취소 → 잔여 40,000 < 50,000
      * → 배송비 3,000 발생 → refund = 20,000 - 3,000 = 17,000
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_conditional_free_becomes_paid_after_partial(): void
     {
@@ -962,6 +1000,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-4-3: 경계값 — 정확히 threshold 금액 → 무료배송 유지
+     *
+     * @effects partial_cancel_keeps_free_shipping_while_the_remainder_meets_the_threshold, boundary_value_charged_not_free
      */
     public function test_conditional_free_exact_threshold_stays_free(): void
     {
@@ -994,6 +1034,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 10,000×6개=60,000(무료), 3개 취소→30,000 < 50,000
      * → refund = 30,000 - 3,000 = 27,000
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_conditional_free_partial_qty_triggers_paid(): void
     {
@@ -1029,6 +1071,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * A(20,000)+B(10,000), 상품쿠폰 정액 1,000 ALL → A 취소
      * 재계산: B(10,000) - 쿠폰1,000 = 9,000
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_product_coupon_fixed_partial_cancel(): void
     {
@@ -1068,6 +1112,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-8-2: 상품쿠폰 정률 + 부분취소
      *
      * A(20,000)+B(10,000), 상품쿠폰 정률 10% ALL → A 취소
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_product_coupon_rate_partial_cancel(): void
     {
@@ -1106,6 +1152,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-8-3: 특정상품 쿠폰, 대상 취소 → 쿠폰 할인 소멸
      *
      * A(20,000)+B(10,000), 쿠폰 적용 대상=A → A 취소 → 쿠폰 할인 0
+     *
+     * @effects cancelling_every_coupon_target_drops_the_item_discount
      */
     public function test_product_coupon_target_cancelled_discount_removed(): void
     {
@@ -1152,6 +1200,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 20,000 취소 → 잔여 20,000 < 30,000 → 쿠폰 복원
      * 재계산: 20,000 (할인없음)
      * 환불: 36,000 - 20,000 = 16,000
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks
      */
     public function test_order_coupon_min_order_not_met_coupon_restored(): void
     {
@@ -1195,6 +1245,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 40,000 주문, 주문쿠폰 10%(min30,000) → 36,000 결제
      * 5,000 취소 → 잔여 35,000 ≥ 30,000 → 쿠폰 유지
+     *
+     * @effects partial_cancel_keeps_the_order_coupon_while_the_minimum_holds
      */
     public function test_order_coupon_min_order_still_met(): void
     {
@@ -1236,6 +1288,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 40,000 주문, 주문쿠폰 정액 5,000원(min30,000) → 35,000 결제
      * 15,000 취소 → 잔여 25,000 < 30,000 → 쿠폰 복원
      * 환불: 35,000 - 25,000 = 10,000
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks
      */
     public function test_order_coupon_fixed_min_not_met(): void
     {
@@ -1275,6 +1329,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-9-4: 주문쿠폰 정확히 threshold 경계값
+     *
+     * @effects partial_cancel_keeps_the_order_coupon_while_the_minimum_holds
      */
     public function test_order_coupon_exact_threshold_maintained(): void
     {
@@ -1310,6 +1366,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-9-5: 주문쿠폰 min 없음 (0) → 항상 유지
+     *
+     * @effects partial_cancel_keeps_the_order_coupon_while_the_minimum_holds
      */
     public function test_order_coupon_no_min_always_maintained(): void
     {
@@ -1353,6 +1411,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 마일리지 3,000 사용, A(20,000)+B(10,000) → 27,000 결제
      * A 취소 → 잔여 B 10,000 - 마일리지안분
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_mileage_partial_cancel_single_option(): void
     {
@@ -1383,6 +1443,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-11-2: 마일리지 전액 결제(paid=0) + 부분취소
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_mileage_full_payment_partial_cancel(): void
     {
@@ -1412,6 +1474,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-11-3: 마일리지 + 쿠폰 복합 부분취소
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points, partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_mileage_with_coupon_partial_cancel(): void
     {
@@ -1458,6 +1522,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 10,000×3 + 15,000×2 = 60,000, CONDITIONAL_FREE(50,000, 3,000)
      * 15,000×2 취소(30,000) → 잔여 30,000 < 50,000
      * → refund = 30,000 - 3,000 = 27,000
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_issue_example_1_precise(): void
     {
@@ -1495,6 +1561,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 20,000×1 취소 → 잔여 20,000 < 30,000 → 쿠폰 복원
      * 재계산: 20,000 (할인없음)
      * 환불: 36,000 - 20,000 = 16,000
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks
      */
     public function test_issue_example_2_precise(): void
     {
@@ -1533,6 +1601,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * A(30,000)+B(20,000), 상품쿠폰 10% ALL, CONDITIONAL_FREE(40,000, 3,000)
      * B 취소 → 잔여 A 27,000(할인후) < 40,000 → 배송비 발생
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items, partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_product_coupon_with_shipping_transition(): void
     {
@@ -1573,6 +1643,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-12-4: 마일리지 + CONDITIONAL_FREE 배송비 전환
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold, cancel_splits_the_refund_between_pg_and_points
      */
     public function test_mileage_with_conditional_free_transition(): void
     {
@@ -1608,6 +1680,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-12-5: 전량 부분취소 → 전체취소 전환 검증
      *
      * 2옵션 모두 전량 취소 지정 → full cancel 결과와 동일
+     *
+     * @effects all_items_promotes_to_full_cancel
      */
     public function test_all_items_partial_cancel_equals_full_cancel(): void
     {
@@ -1656,6 +1730,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-12-6: 주문쿠폰 + 배송비쿠폰 + 부분취소
      *
      * 주문쿠폰 10%OFF + 배송비쿠폰, CONDITIONAL_FREE
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks, shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee
      */
     public function test_order_coupon_shipping_coupon_partial_cancel(): void
     {
@@ -1708,6 +1784,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-1: 3개 옵션 안분 합계 = 원래 금액
+     *
+     * @effects apportioned_option_subtotals_sum_back_to_the_order_total
      */
     public function test_apportion_sum_equals_original(): void
     {
@@ -1742,6 +1820,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-2: 부분취소 후 잔여 옵션 재계산 합계 일관성
+     *
+     * @effects apportioned_option_subtotals_sum_back_to_the_order_total
      */
     public function test_apportion_consistency_after_partial_cancel(): void
     {
@@ -1788,6 +1868,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-3: 단일 옵션 → 할인 전액 해당 옵션
+     *
+     * @effects apportioned_option_subtotals_sum_back_to_the_order_total
      */
     public function test_apportion_single_item_gets_all(): void
     {
@@ -1815,6 +1897,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-4: 동일 금액 옵션 균등 안분
+     *
+     * @effects apportioned_option_subtotals_sum_back_to_the_order_total
      */
     public function test_apportion_equal_subtotals_split(): void
     {
@@ -1854,6 +1938,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * ranges: 1~5→2500, 6+→4000
      * 3개×10,000 → 수량3 → 2500원 구간
+     *
+     * @effects cancel_recalculation_matches_the_charge_policy_tier
      */
     public function test_full_cancel_range_quantity_shipping(): void
     {
@@ -1884,6 +1970,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * ranges: 0~500g→2500, 500g+→4000
      * 상품 무게 0.3kg × 1개 = 300g → 2500원 구간
+     *
+     * @effects cancel_recalculation_matches_the_charge_policy_tier, unit_converted_kg_l
      */
     public function test_full_cancel_range_weight_shipping(): void
     {
@@ -1914,6 +2002,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * ranges: 0~1000cm³→3000, 1000+→5000
      * 부피 800cm³ → 3000원 구간
+     *
+     * @effects cancel_recalculation_matches_the_charge_policy_tier, unit_converted_kg_l
      */
     public function test_full_cancel_range_volume_shipping(): void
     {
@@ -1945,6 +2035,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * divisor=6000, 무게=0.5kg, 부피=4200cm³
      * 부피무게=4200/6000=0.7kg → max(0.5, 0.7)=0.7kg=700g
      * ranges: 0~500g→3000, 500g+→5000 → 5000원
+     *
+     * @effects cancel_recalculation_matches_the_charge_policy_tier, volumetric_weight_compared_in_kg
      */
     public function test_full_cancel_range_volume_weight_shipping(): void
     {
@@ -1975,6 +2067,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-3-11: PER_WEIGHT 무게당 배송비 전체취소
      *
      * unit=0.5kg, fee=2000. 무게 1.2kg → ceil(1.2/0.5)=3 → 6,000원
+     *
+     * @effects cancel_recalculation_matches_the_charge_policy_units, unit_converted_kg_l
      */
     public function test_full_cancel_per_weight_shipping(): void
     {
@@ -2000,6 +2094,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-3-12: PER_VOLUME 부피당 배송비 전체취소
      *
      * unit=1000cm³, fee=1500. 부피 2500cm³ → ceil(2500/1000)=3 → 4,500원
+     *
+     * @effects cancel_recalculation_matches_the_charge_policy_units, unit_converted_kg_l
      */
     public function test_full_cancel_per_volume_shipping(): void
     {
@@ -2027,6 +2123,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * divisor=6000, unit=0.5kg, fee=2000
      * 무게=0.3kg, 부피=4200cm³ → 부피무게=0.7kg → max(0.3,0.7)=0.7
      * ceil(0.7/0.5)=2 → 4,000원
+     *
+     * @effects cancel_recalculation_matches_the_charge_policy_units, volumetric_weight_compared_in_kg
      */
     public function test_full_cancel_per_volume_weight_shipping(): void
     {
@@ -2052,6 +2150,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-3-14: PER_AMOUNT 금액당 배송비 전체취소
      *
      * unit=10000, fee=500. 금액 35,000 → ceil(35000/10000)=4 → 2,000원
+     *
+     * @effects cancel_recalculation_matches_the_charge_policy_units
      */
     public function test_full_cancel_per_amount_shipping(): void
     {
@@ -2082,6 +2182,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 70,000→55,000(1차)→45,000(2차)
      * threshold=50,000, fee=3,000
+     *
+     * @effects sequential_partial_cancels_recalculate_from_the_remaining_items
      */
     public function test_conditional_free_multiple_partial_cancels(): void
     {
@@ -2127,6 +2229,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * threshold=100,000, fee=3,000
      * 120,000 주문, 30,000 취소 → 잔여 90,000 < 100,000
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_conditional_free_high_threshold(): void
     {
@@ -2160,6 +2264,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * threshold=50,000, fee=0
      * 60,000→40,000 (유료 전환이지만 fee=0)
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_conditional_free_zero_base_fee(): void
     {
@@ -2196,6 +2302,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 0~20K→3000, 20K~50K→2000, 50K+→0
      * 60K→40K 부분취소 → 배송비 0→2000
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder, cancel_recalculation_matches_the_charge_policy_tier
      */
     public function test_range_amount_upper_to_middle_tier(): void
     {
@@ -2234,6 +2342,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 0~20K→3000, 20K~50K→2000
      * 25K→15K → 배송비 2000→3000
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder
      */
     public function test_range_amount_middle_to_lower_tier(): void
     {
@@ -2269,6 +2379,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-5-3: RANGE_AMOUNT 동일 구간 내 부분취소 → 배송비 변동 없음
+     *
+     * @effects partial_cancel_keeps_the_shipping_fee_inside_the_same_tier
      */
     public function test_range_amount_same_tier_no_shipping_change(): void
     {
@@ -2305,6 +2417,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-5-4: RANGE_QUANTITY 구간 변동 (8개→4개)
      *
      * 1~5→2500, 6~10→4000
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder
      */
     public function test_range_quantity_tier_change(): void
     {
@@ -2337,6 +2451,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-5-5: RANGE_QUANTITY 구간 내 부분취소 (10→8, 동일 구간)
+     *
+     * @effects partial_cancel_keeps_the_shipping_fee_inside_the_same_tier
      */
     public function test_range_quantity_same_tier(): void
     {
@@ -2371,6 +2487,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-5-6: RANGE_WEIGHT 구간 변동 (700g→400g)
      *
      * 0~500g→2500, 500g+→4000
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder, unit_converted_kg_l
      */
     public function test_range_weight_tier_change(): void
     {
@@ -2407,6 +2525,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-5-7: RANGE_VOLUME 구간 변동 (1500→800)
      *
      * 0~1000→3000, 1000+→5000
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder, unit_converted_kg_l
      */
     public function test_range_volume_tier_change(): void
     {
@@ -2448,6 +2568,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 1개 취소 → 무게0.4, 부피3000→부피무게0.5, max(0.4,0.5)=0.5kg=500g
      * tier boundary: 500 >= 0 && 500 < 500 → false (상한 미만) → 500g+ 구간 = 5000원 (변동없음)
      * → 2개 취소로 확실하게 구간 변동 검증
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder, volumetric_weight_compared_in_kg
      */
     public function test_range_volume_weight_tier_change(): void
     {
@@ -2487,6 +2609,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 0~10K→5000, 10K~30K→3000, 30K+→0
      * 50K→5K
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder
      */
     public function test_range_amount_extreme_tier_change(): void
     {
@@ -2522,6 +2646,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-5-10: RANGE_QUANTITY 1개만 남기기 → 최소 구간
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder
      */
     public function test_range_quantity_down_to_one(): void
     {
@@ -2561,6 +2687,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-1: PER_QUANTITY 단위 변동 (12→7개)
      *
      * unit=5, fee=1000. 12→7 → ceil(12/5)=3→ceil(7/5)=2
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee
      */
     public function test_per_quantity_unit_change_12_to_7(): void
     {
@@ -2591,6 +2719,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-2: PER_QUANTITY 큰 단위 변동 (12→5개)
      *
      * unit=5, fee=1000. ceil(12/5)=3 → ceil(5/5)=1
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee
      */
     public function test_per_quantity_unit_change_12_to_5(): void
     {
@@ -2621,6 +2751,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-3: PER_QUANTITY 단위 내 부분취소 (5→3, 동일 단위수)
      *
      * unit=5, fee=1000. ceil(5/5)=1 = ceil(3/5)=1
+     *
+     * @effects partial_cancel_keeps_the_shipping_fee_inside_the_same_tier
      */
     public function test_per_quantity_same_unit_count(): void
     {
@@ -2651,6 +2783,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-4: PER_WEIGHT 무게 단위 변동 (1.2kg→0.8kg)
      *
      * unit=0.5, fee=2000. ceil(1.2/0.5)=3→ceil(0.8/0.5)=2
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee, unit_converted_kg_l
      */
     public function test_per_weight_unit_change(): void
     {
@@ -2684,6 +2818,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-5: PER_WEIGHT 큰 무게 감소 (1.2kg→0.4kg)
      *
      * unit=0.5, fee=2000. ceil(1.2/0.5)=3→ceil(0.4/0.5)=1
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee, unit_converted_kg_l
      */
     public function test_per_weight_large_decrease(): void
     {
@@ -2716,6 +2852,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-6: PER_VOLUME 부피 단위 변동 (2500→1500)
      *
      * unit=1000, fee=1500. ceil(2500/1000)=3→ceil(1500/1000)=2
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee, unit_converted_kg_l
      */
     public function test_per_volume_unit_change(): void
     {
@@ -2749,6 +2887,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-7: PER_AMOUNT 금액당 단위 변동 (35K→20K)
      *
      * unit=10K, fee=500. ceil(35K/10K)=4→ceil(20K/10K)=2
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee
      */
     public function test_per_amount_unit_change(): void
     {
@@ -2782,6 +2922,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-8: PER_AMOUNT 동일 단위 (35K→30K)
      *
      * unit=10K, fee=500. ceil(35K/10K)=4→ceil(30K/10K)=3
+     *
+     * @effects partial_cancel_keeps_the_shipping_fee_inside_the_same_tier
      */
     public function test_per_amount_unit_change_slight(): void
     {
@@ -2819,6 +2961,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * max(0.8,1.0)=1.0 → ceil(1.0/0.5)=2 → 4K
      * 2개 취소 → 무게0.4, 부피3000→부피무게0.5, max(0.4,0.5)=0.5
      * ceil(0.5/0.5)=1 → 2K
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee, volumetric_weight_compared_in_kg
      */
     public function test_per_volume_weight_unit_change(): void
     {
@@ -2849,6 +2993,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-6-10: PER_QUANTITY 건당(unit=1) 배송비
      *
      * unit=1, fee=500. 5→3개 → 배송비 2500→1500
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee
      */
     public function test_per_quantity_per_item(): void
     {
@@ -2883,6 +3029,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-7-1: FIXED + 도서산간 flat extra fee → 전체취소
      *
      * 기본배송 3000 + 도서산간 2500 = 배송비 5500
+     *
+     * @effects full_cancel_refunds_the_shipping_fee_that_was_charged, cancel_recalculates_the_island_extra_fee_with_the_remainder
      */
     public function test_extra_fee_flat_full_cancel(): void
     {
@@ -2917,6 +3065,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 60K 주문(무료배송), 도서산간 2500. 20K 취소 → 40K < 50K → 유료 전환
      * 기본배송비 3000 + 도서산간 2500 = 5500 발생
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold, cancel_recalculates_the_island_extra_fee_with_the_remainder
      */
     public function test_extra_fee_conditional_free_partial_cancel(): void
     {
@@ -2966,6 +3116,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * unit=5, fee=1000, extra=1000×multiply.
      * 12개: 배송비 ceil(12/5)×1K=3K, 도서산간 ceil(12/5)×1K=3K → 총 6K
      * 7개: 배송비 ceil(7/5)×1K=2K, 도서산간 ceil(7/5)×1K=2K → 총 4K
+     *
+     * @effects cancel_recalculates_the_island_extra_fee_with_the_remainder, extra_fee_multiplied_by_charge_units
      */
     public function test_extra_fee_multiply_per_quantity(): void
     {
@@ -3008,6 +3160,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 도서산간 multiply 는 기본 배송비와 같은 배송 단위 수 기준 (수량이 아니다)
      * 3개(1.2kg): 배송 ceil(1.2/0.5)=3단위 × 2K=6K, 도서산간 3단위 × 1.5K=4.5K
      * 1개(0.4kg): 배송 ceil(0.4/0.5)=1단위 × 2K=2K, 도서산간 1단위 × 1.5K=1.5K
+     *
+     * @effects cancel_recalculates_the_island_extra_fee_with_the_remainder, extra_fee_multiplied_by_charge_units
      */
     public function test_extra_fee_multiply_per_weight(): void
     {
@@ -3048,6 +3202,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-7-5: FIXED + no multiply extra fee → 부분취소 시 도서산간 변동 없음
      *
      * 기본배송 3000 + 도서산간 2000 (flat, 1회). 부분취소해도 도서산간 그대로.
+     *
+     * @effects cancel_recalculates_the_island_extra_fee_with_the_remainder
      */
     public function test_extra_fee_no_multiply_fixed(): void
     {
@@ -3090,6 +3246,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-7-6: CONDITIONAL_FREE + extra fee → 무료배송 유지 시 도서산간만 남음
      *
      * 60K(무료배송) + 도서산간 3000. 5K 취소 → 55K ≥ 50K → 무료 유지. 도서산간 그대로.
+     *
+     * @effects cancel_recalculates_the_island_extra_fee_with_the_remainder, partial_cancel_keeps_free_shipping_while_the_remainder_meets_the_threshold
      */
     public function test_extra_fee_with_conditional_free_stays_free(): void
     {
@@ -3135,6 +3293,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-8-3: 정률 10% max=1500, ALL 적용. B(10K) 취소 → A(20K)에만 적용, 10%=2000→cap 1500
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items, item_coupon_discount_stays_within_its_cap_after_recalculation
      */
     public function test_product_coupon_rate_with_max_partial_cancel(): void
     {
@@ -3173,6 +3333,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-8-4: 정액 2000, PRODUCTS [A,B] 적용. A,B,C 중 A 취소 → B만 쿠폰 적용 지속
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_product_coupon_specific_products_partial_cancel(): void
     {
@@ -3215,6 +3377,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-8-6: 정액 1000, CATEGORIES [cat1] 적용. cat1 상품 취소 → 잔여 cat1에만 할인
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_product_coupon_category_partial_cancel(): void
     {
@@ -3261,6 +3425,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-8-7: 정률 20% ALL, 3개 옵션 부분수량 취소 → 잔여 수량 기준 재계산
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_product_coupon_rate_partial_quantity(): void
     {
@@ -3293,6 +3459,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-8-8: 정액 5000, ALL. 1개 옵션(10K)만 남음 → 할인 min(5000,10000) = 5000 적용
+     *
+     * @effects item_coupon_discount_stays_within_its_cap_after_recalculation
      */
     public function test_product_coupon_fixed_high_discount_partial(): void
     {
@@ -3329,6 +3497,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-8-9: 정률 50% ALL, 고율 할인. 부분취소 시 큰 할인 차이 검증
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_product_coupon_high_rate_partial(): void
     {
@@ -3370,6 +3540,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-9-4: 정률 20% max=10000, min=50000. 60K→45K(미달) → 쿠폰복원
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks
      */
     public function test_order_coupon_rate_with_max_min_not_met(): void
     {
@@ -3410,6 +3582,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-9-5: 정률 20% max=10000, min=50000. 60K→55K(충족) → 쿠폰 유지, max 재적용
+     *
+     * @effects partial_cancel_keeps_the_order_coupon_while_the_minimum_holds, item_coupon_discount_stays_within_its_cap_after_recalculation
      */
     public function test_order_coupon_rate_with_max_min_still_met(): void
     {
@@ -3450,6 +3624,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-9-6: 주문쿠폰 안분 검증. A(30K)+B(10K), 정률10%, B 취소 → A 안분 할인만 남음
+     *
+     * @effects order_level_discount_is_reapportioned_over_the_remaining_items
      */
     public function test_order_coupon_apportion_after_cancel(): void
     {
@@ -3487,6 +3663,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-9-7: 정액 3000, min=20000. 3개 옵션 안분, 1개 취소 → 안분 비율 재계산
+     *
+     * @effects order_level_discount_is_reapportioned_over_the_remaining_items
      */
     public function test_order_coupon_fixed_apportion_recalculation(): void
     {
@@ -3531,6 +3709,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 이 테스트는 1회 부분취소 후 재계산만 검증 (서비스가 단일 계산 단위)
      * 실제 연속 취소는 OrderCancellationServiceTest에서 검증
+     *
+     * @effects sequential_partial_cancels_recalculate_from_the_remaining_items
      */
     public function test_order_coupon_sequential_cancel_first(): void
     {
@@ -3574,6 +3754,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-10-1: 정액 3000 배송비 쿠폰, FIXED 배송비 3000. 부분취소 후 배송비 변동 없음 → 쿠폰 유지
+     *
+     * @effects shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee
      */
     public function test_shipping_coupon_fixed_no_change(): void
     {
@@ -3612,6 +3794,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-10-2: 정액 3000 배송비 쿠폰, CONDITIONAL_FREE 무료→유료 전환 시 쿠폰으로 배송비 상쇄
+     *
+     * @effects shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee, partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_shipping_coupon_conditional_free_to_paid(): void
     {
@@ -3655,6 +3839,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-10-3: 정률 50% 배송비 쿠폰, FIXED 배송비 4000. 전체취소
+     *
+     * @effects shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee
      */
     public function test_shipping_coupon_rate_full_cancel(): void
     {
@@ -3682,6 +3868,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-10-4: 정액 2000 배송비 쿠폰, RANGE_AMOUNT 구간 변동 시 배송비↑ + 쿠폰
+     *
+     * @effects shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee, partial_cancel_moves_the_shipping_tier_with_the_remainder
      */
     public function test_shipping_coupon_range_amount_tier_change(): void
     {
@@ -3730,6 +3918,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-10-5: 정액 5000 배송비 쿠폰 > 배송비 3000 → 초과할인 방지 (할인=min(5K,3K)=3K)
+     *
+     * @effects shipping_coupon_discount_capped_by_shipping_total
      */
     public function test_shipping_coupon_exceeds_shipping_fee(): void
     {
@@ -4005,6 +4195,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-10-6: 정률 100% 배송비 쿠폰, 부분취소 후 배송비↑ → 증가분도 100% 할인
+     *
+     * @effects shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee
      */
     public function test_shipping_coupon_100_percent_partial_cancel(): void
     {
@@ -4048,6 +4240,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-10-7: 정액 1000 배송비 쿠폰, PER_QUANTITY 배송비 변동 + 쿠폰
+     *
+     * @effects shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee, partial_cancel_rescales_the_per_unit_shipping_fee
      */
     public function test_shipping_coupon_per_quantity_change(): void
     {
@@ -4087,6 +4281,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-10-8: 정률 30% 배송비 쿠폰, CONDITIONAL_FREE → 유료전환, 배송비×70% 부과
+     *
+     * @effects shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee, partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_shipping_coupon_rate_conditional_free_to_paid(): void
     {
@@ -4134,6 +4330,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-11-4: 마일리지+쿠폰 복합, 부분취소 → 쿠폰 복원 시 마일리지 안분도 재계산
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks, points_usage_is_reapportioned_over_the_remaining_items
      */
     public function test_mileage_with_coupon_restore_recalculation(): void
     {
@@ -4175,6 +4373,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-11-5: 마일리지 10K + CONDITIONAL_FREE 배송비 전환
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold, cancel_splits_the_refund_between_pg_and_points
      */
     public function test_mileage_with_shipping_transition(): void
     {
@@ -4213,6 +4413,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-11-6: 마일리지+주문쿠폰+부분취소 → 쿠폰 복원+마일리지 동시 재계산
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks, points_usage_is_reapportioned_over_the_remaining_items
      */
     public function test_mileage_with_order_coupon_restore(): void
     {
@@ -4257,6 +4459,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-12-5: 마일리지2K+상품쿠폰정액1K, RANGE_AMOUNT 배송비 구간변동
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder, points_usage_is_reapportioned_over_the_remaining_items
      */
     public function test_complex_mileage_product_coupon_range_shipping(): void
     {
@@ -4306,6 +4510,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-12-6: 3중 할인(상품쿠폰+주문쿠폰+마일리지) + 다중 옵션 부분취소
+     *
+     * @effects order_level_discount_is_reapportioned_over_the_remaining_items, points_usage_is_reapportioned_over_the_remaining_items
      */
     public function test_complex_triple_discount_partial_cancel(): void
     {
@@ -4351,6 +4557,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-12-7: 카테고리 쿠폰 + 부분취소 대상이 다른 카테고리 → 쿠폰 영향 없음
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_complex_category_coupon_different_category_cancel(): void
     {
@@ -4396,6 +4604,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-12-8: 카테고리 쿠폰 + 부분취소 대상이 같은 카테고리 → 할인 재계산
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_complex_category_coupon_same_category_cancel(): void
     {
@@ -4440,6 +4650,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-12-9: PER_QUANTITY + 상품쿠폰 + 수량 부분취소 → 배송비+할인 동시 변동
+     *
+     * @effects partial_cancel_rescales_the_per_unit_shipping_fee, partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_complex_per_quantity_coupon_partial_quantity(): void
     {
@@ -4480,6 +4692,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-12-10: RANGE_WEIGHT + 주문쿠폰(min_order) + 마일리지 → 3중 변동
+     *
+     * @effects partial_cancel_moves_the_shipping_tier_with_the_remainder, cancel_restores_the_coupon_when_the_minimum_breaks, points_usage_is_reapportioned_over_the_remaining_items
      */
     public function test_complex_range_weight_order_coupon_mileage(): void
     {
@@ -4537,6 +4751,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-5: 배송비 안분이 옵션 소계 비율과 일치하는지 검증
+     *
+     * @effects apportioned_option_subtotals_sum_back_to_the_order_total
      */
     public function test_shipping_apportion_matches_option_ratio(): void
     {
@@ -4561,6 +4777,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-6: 주문쿠폰 안분이 소계 비율과 일치하는지 검증
+     *
+     * @effects order_level_discount_is_reapportioned_over_the_remaining_items
      */
     public function test_order_coupon_apportion_matches_ratio(): void
     {
@@ -4596,6 +4814,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-7: 마일리지 안분이 비율 일치하는지 검증
+     *
+     * @effects points_usage_is_reapportioned_over_the_remaining_items
      */
     public function test_mileage_apportion_matches_ratio(): void
     {
@@ -4624,6 +4844,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-8: 1차 부분취소 후 잔여 옵션 안분 재검증 (누적 정합성)
+     *
+     * @effects sequential_partial_cancels_recalculate_from_the_remaining_items, apportioned_option_subtotals_sum_back_to_the_order_total
      */
     public function test_multiple_cancel_apportion_reconsistency(): void
     {
@@ -4672,6 +4894,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-4 #29: 무료배송 기준금액 정확히 1원 미달 시 배송비 발생
+     *
+     * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold, boundary_value_charged_not_free
      */
     public function test_conditional_free_drops_below_threshold_by_1(): void
     {
@@ -4709,6 +4933,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-8 #69: 상품쿠폰 2개 동시 적용 (combinable) 복합 할인 재계산
+     *
+     * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_product_coupon_two_combinable(): void
     {
@@ -4752,6 +4978,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-8 #70: 상품쿠폰 대상 상품 취소 시 할인 제거
+     *
+     * @effects cancelling_every_coupon_target_drops_the_item_discount
      */
     public function test_product_coupon_exclude_target_cancel(): void
     {
@@ -4793,6 +5021,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-12 #106: 도서산간 추가배송비 + 배송비쿠폰 + 부분취소
+     *
+     * @effects cancel_recalculates_the_island_extra_fee_with_the_remainder, shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee
      */
     public function test_complex_extra_fee_shipping_coupon(): void
     {
@@ -4851,6 +5081,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * PG 27,000 + 마일리지 3,000 = 30,000원 주문
      * A(20,000) 취소 시 → PG 먼저 환불
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_refund_priority_pg_first(): void
     {
@@ -4887,6 +5119,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-13-2: POINTS_FIRST — 포인트부터 환불
      *
      * 동일 주문에서 POINTS_FIRST 사용 시 포인트 환불이 우선
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_refund_priority_points_first(): void
     {
@@ -4927,6 +5161,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A 취소 → 환불금 ≈ 10,000 (포인트 안분 5,000 + PG 안분 5,000)
      * PG_FIRST: PG 5,000 + 포인트 5,000
      * POINTS_FIRST: 포인트 5,000 + PG 5,000
+     *
+     * @effects refund_priority_changes_the_split_not_the_total
      */
     public function test_refund_priority_total_same_regardless_of_priority(): void
     {
@@ -4964,6 +5200,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * A-13-4: preview()에서 우선순위 전달 확인
+     *
+     * @effects cancel_preview_carries_the_requested_refund_priority
      */
     public function test_preview_respects_refund_priority(): void
     {
@@ -4996,6 +5234,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * 다중통화 스냅샷이 있는 주문의 환불 시 mc_refund_amount가 통화별로 변환됩니다.
+     *
+     * @effects refund_amounts_are_converted_with_the_order_time_currency_snapshot
      */
     public function test_mc_refund_amount_converted_with_currency_snapshot(): void
     {
@@ -5311,6 +5551,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 레거시 주문(다통화 도입 이전에 생성되어 currency_snapshot 이 비어 있는 행)의 취소 경로를
      * 검증한다. OrderFactory 는 기본 스냅샷을 채우므로 여기서는 명시적으로 null 을 주입한다.
+     *
+     * @effects mc_columns_omitted_without_currency_snapshot
      */
     public function test_mc_fields_null_without_currency_snapshot(): void
     {
@@ -5342,6 +5584,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * 마일리지 사용 주문의 다중통화 환불 시 mc_refund_points_amount가 변환됩니다.
+     *
+     * @effects refund_amounts_are_converted_with_the_order_time_currency_snapshot
      */
     public function test_mc_refund_points_amount_converted(): void
     {
@@ -5384,6 +5628,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * 배송비가 있는 주문 전체취소 시 mc_refund_shipping_amount가 변환됩니다.
+     *
+     * @effects refund_amounts_are_converted_with_the_order_time_currency_snapshot
      */
     public function test_mc_refund_shipping_amount_when_shipping_difference_positive(): void
     {
@@ -5431,6 +5677,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * toPreviewArray()에 mc_* 필드가 포함됩니다.
+     *
+     * @effects cancel_preview_array_carries_the_multi_currency_fields
      */
     public function test_preview_array_includes_mc_fields(): void
     {
@@ -5523,6 +5771,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 50,000×2 + 주문쿠폰(FIXED 5000, minOrder=30000)
      * 1개 취소 → 잔여 50,000 >= 30,000 → 쿠폰 유지
+     *
+     * @effects partial_cancel_keeps_the_order_coupon_while_the_minimum_holds
      */
     public function test_coupon_restore_not_detected_when_min_order_still_met(): void
     {
@@ -5558,6 +5808,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 30,000×1 + 주문쿠폰(FIXED 3000, minOrder=30001)
      * 전체취소 → 쿠폰 복원
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks
      */
     public function test_coupon_restore_detected_for_order_coupon_min_amount(): void
     {
@@ -5589,6 +5841,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 20,000×1 + 상품쿠폰(FIXED 2000, targetType=PRODUCT_AMOUNT)
      * 전체취소 → 쿠폰 복원
+     *
+     * @effects cancelling_every_coupon_target_drops_the_item_discount, cancel_restores_the_coupon_when_the_minimum_breaks
      */
     public function test_coupon_restore_detected_for_product_coupon_target_all_cancelled(): void
     {
@@ -5620,6 +5874,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 상품A(50,000×1) + 상품B(30,000×1)
      * 주문쿠폰(FIXED 5000, minOrder=60000) + 상품쿠폰(FIXED 2000)
      * B 취소 → 잔여 50,000 < 60,000 → 주문쿠폰 복원
+     *
+     * @effects cancel_restores_only_the_coupons_that_lost_their_condition
      */
     public function test_coupon_restore_multiple_coupons_partial_restore(): void
     {
@@ -5664,6 +5920,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * B-6: 배송쿠폰 전체취소 시 복원 감지
      *
      * 20,000×1 + 배송쿠폰(SHIPPING_FEE) → 전체취소 → 배송쿠폰 복원
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks
      */
     public function test_coupon_restore_shipping_coupon_when_all_cancelled(): void
     {
@@ -5698,6 +5956,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * B-7: restoredCouponIssueIds에 정확한 쿠폰 발급 ID가 포함되는지 검증
      *
      * 50,000×1 + 주문쿠폰(FIXED 5000, minOrder=30000) → 전체취소
+     *
+     * @effects cancel_reports_the_restored_coupon_issue_ids
      */
     public function test_coupon_restore_ids_populated_in_adjustment_result(): void
     {
@@ -5730,6 +5990,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * B-8: toPreviewArray()에 restored_coupons 키와 쿠폰 정보 포함 확인
      *
      * 50,000×1 + 주문쿠폰(FIXED 5000, minOrder=30000) → 전체취소
+     *
+     * @effects cancel_reports_the_restored_coupon_issue_ids
      */
     public function test_coupon_restore_info_in_preview_array(): void
     {
@@ -5772,6 +6034,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 50,000×2, 포인트 10,000, 1개 취소 → 환불 25,000
      * PG_FIRST: refundAmount=25,000, refundPointsAmount=0
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_refund_priority_pg_first_partial_cancel_pg_only(): void
     {
@@ -5803,6 +6067,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * C-2: PG_FIRST 전체취소 — PG + 포인트 모두 환불
      *
      * 50,000×2, 포인트 10,000, 전체취소 → PG 90,000 + 포인트 10,000 환불
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_refund_priority_pg_first_full_cancel_pg_and_points(): void
     {
@@ -5830,6 +6096,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 10,000×1, 포인트 8,000 → PG 결제 2,000
      * PG_FIRST 전체취소: refundAmount=2,000, refundPointsAmount=8,000
+     *
+     * @effects refund_split_spills_into_the_other_tender_when_the_first_runs_out
      */
     public function test_refund_priority_pg_first_exceeds_pg_balance_spills_to_points(): void
     {
@@ -5857,6 +6125,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 50,000×2, 포인트 30,000, 1개 취소 → 환불 25,000
      * POINTS_FIRST: refundPointsAmount=25,000, refundAmount=0
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_refund_priority_points_first_partial_cancel_points_only(): void
     {
@@ -5887,6 +6157,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * C-5: POINTS_FIRST 전체취소 — 포인트 + PG 모두 환불
      *
      * 50,000×2, 포인트 30,000, 전체취소 → refundPointsAmount=30,000, refundAmount=70,000
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_refund_priority_points_first_full_cancel_points_and_pg(): void
     {
@@ -5914,6 +6186,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 50,000×2, 포인트 10,000, 1개 취소 → 환불 25,000
      * POINTS_FIRST: refundPointsAmount=10,000, refundAmount=15,000
+     *
+     * @effects refund_split_spills_into_the_other_tender_when_the_first_runs_out
      */
     public function test_refund_priority_points_first_exceeds_points_balance_spills_to_pg(): void
     {
@@ -5948,6 +6222,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * C-7: 포인트 미사용 시 우선순위 무관 — 동일 결과
      *
      * 30,000×1, 포인트 없음 → 양 우선순위 모두 refundAmount=30,000, refundPointsAmount=0
+     *
+     * @effects refund_priority_changes_the_split_not_the_total
      */
     public function test_refund_priority_no_points_used_ignores_priority(): void
     {
@@ -5976,6 +6252,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 10,000×1, 포인트 10,000 → PG 0원
      * 양 우선순위: refundAmount=0, refundPointsAmount=10,000
+     *
+     * @effects refund_priority_changes_the_split_not_the_total
      */
     public function test_refund_priority_full_points_payment_always_points(): void
     {
@@ -6006,6 +6284,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 20,000×3, 포인트 10,000 → PG 50,000
      * 1개 취소(PG_FIRST) → remainingPgBalance, remainingPointsBalance 확인
+     *
+     * @effects cancel_reports_the_remaining_pg_and_point_balances
      */
     public function test_refund_priority_sequential_cancel_pg_first_remaining_correct(): void
     {
@@ -6040,6 +6320,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 20,000×3, 포인트 10,000 → PG 50,000
      * 1개 취소(POINTS_FIRST) → remainingPgBalance, remainingPointsBalance 확인
+     *
+     * @effects cancel_reports_the_remaining_pg_and_point_balances
      */
     public function test_refund_priority_sequential_cancel_points_first_remaining_correct(): void
     {
@@ -6070,6 +6352,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * C-11: toPreviewArray()에 remaining_pg_balance, remaining_points_balance 포함 확인
+     *
+     * @effects cancel_reports_the_remaining_pg_and_point_balances
      */
     public function test_refund_priority_remaining_balances_in_preview_array(): void
     {
@@ -6100,6 +6384,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * C-12: 우선순위 미지정 시 기본값 PG_FIRST 확인
+     *
+     * @effects cancel_preview_carries_the_requested_refund_priority
      */
     public function test_refund_priority_default_pg_first_when_not_specified(): void
     {
@@ -6129,6 +6415,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * D-1: 단일 배송그룹 전체취소 시 base_difference 포함
      *
      * 2개 상품 동일 정책(FIXED 3000), 전체취소 → shippingDetails에 base_difference=3000
+     *
+     * @effects cancel_reports_the_shipping_difference_per_policy_group
      */
     public function test_shipping_details_single_group_last_item_includes_base_fee(): void
     {
@@ -6160,6 +6448,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 상품A(정책1 FIXED 3000) + 상품B(정책2 FIXED 5000), 전체취소
      * shippingDetails에 2개 항목
+     *
+     * @effects cancel_reports_the_shipping_difference_per_policy_group
      */
     public function test_shipping_details_multi_group_independent_per_policy(): void
     {
@@ -6216,6 +6506,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 정책(FIXED 3000, extraFee 도서산간 2000), 전체취소
      * shippingDetails에 extra_difference 포함
+     *
+     * @effects cancel_reports_the_shipping_difference_per_policy_group, cancel_recalculates_the_island_extra_fee_with_the_remainder
      */
     public function test_shipping_details_extra_fee_included_on_last_item(): void
     {
@@ -6254,6 +6546,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 50,000×2 + CONDITIONAL_FREE(freeThreshold=30000), 1개 취소
      * 잔여 50,000 >= 30,000 → 배송비 변동 없음 → shippingDetails 비어있음
+     *
+     * @effects cancel_reports_the_shipping_difference_per_policy_group
      */
     public function test_shipping_details_no_change_returns_empty_array(): void
     {
@@ -6290,6 +6584,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * PER_QUANTITY(baseFee=1000/개), 3개 → 1개 취소
      * shippingDetails에 base_difference=1000
+     *
+     * @effects cancel_reports_the_shipping_difference_per_policy_group, partial_cancel_rescales_the_per_unit_shipping_fee
      */
     public function test_shipping_details_per_quantity_partial_qty_recalculation(): void
     {
@@ -6331,6 +6627,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * E-1: 환율 변경 시 주문 시점 스냅샷 환율 사용 검증
      *
      * 스냅샷 환율 USD=0.85로 주문 → mc_refund_amount['USD']는 0.85 기준
+     *
+     * @effects refund_amounts_are_converted_with_the_order_time_currency_snapshot
      */
     public function test_mc_refund_exchange_rate_changed_uses_order_time(): void
     {
@@ -6367,6 +6665,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * E-2: JPY 반올림 규칙(floor) 적용 검증
      *
      * 스냅샷: JPY rounding_unit=1, method=floor
+     *
+     * @effects refund_amounts_are_converted_with_the_order_time_currency_snapshot
      */
     public function test_mc_refund_rounding_rule_changed_uses_order_time(): void
     {
@@ -6403,6 +6703,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * E-3: 배송비 + 포인트 포함 주문의 mc 변환 검증
      *
      * 배송비 3000, 포인트 5000 사용 → 전체취소 시 mc_refund_points_amount, mc_refund_shipping_amount 모두 존재
+     *
+     * @effects refund_amounts_are_converted_with_the_order_time_currency_snapshot
      */
     public function test_mc_refund_points_and_shipping_converted_correctly(): void
     {
@@ -6457,6 +6759,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 50,000×2, CONDITIONAL_FREE(threshold=80000), 주문쿠폰 5000(min=60000)
      * 1개 취소 → 잔여 50,000 < 80,000 → 배송비 추가, < 60,000 → 쿠폰 복원
+     *
+     * @effects cancel_restores_the_coupon_when_the_minimum_breaks, partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_complex_snapshot_price_change_with_coupon_and_shipping_transition(): void
     {
@@ -6510,6 +6814,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 30,000×2, FIXED 3000 + extraFee 2000 + 상품쿠폰 3000 + 포인트 5000
      * 전체취소 → 전액 환불, 쿠폰 복원
+     *
+     * @effects full_cancel_refunds_the_entire_paid_amount, cancel_recalculates_the_island_extra_fee_with_the_remainder
      */
     public function test_complex_snapshot_coupon_expired_with_mileage_and_extra_fee(): void
     {
@@ -6563,6 +6869,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 20,000×3, 포인트 15,000
      * 1개 취소(PG_FIRST) → 환불 배분 확인
+     *
+     * @effects cancel_splits_the_refund_between_pg_and_points
      */
     public function test_complex_snapshot_sequential_cancel_with_priority_change(): void
     {
@@ -6601,6 +6909,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 상품A(정책1 FIXED 3000) + 상품B(정책2 FIXED 5000)
      * 전체취소 → shippingDetails 2개, 합계 8000
+     *
+     * @effects cancel_reports_the_shipping_difference_per_policy_group
      */
     public function test_complex_snapshot_multi_policy_last_item_each_group(): void
     {
@@ -6659,6 +6969,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 50,000×1, 배송비 3000, 주문쿠폰 5000, 포인트 10,000
      * currency_snapshot USD rate=1300
      * 전체취소 → mc_refund_amount, mc_refund_points_amount, mc_refund_shipping_amount 모두 존재
+     *
+     * @effects refund_amounts_are_converted_with_the_order_time_currency_snapshot
      */
     public function test_complex_snapshot_mc_refund_with_all_discounts(): void
     {
@@ -6730,6 +7042,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 상품A(15,000×1) + 상품B(15,000×1) = 30,000
      * 주문쿠폰(FIXED 20,000, minOrder=25,000) → 결제 10,000원
      * B 취소 → 잔여 15,000 < 25,000 → 쿠폰 소멸 → 재계산 15,000 > 원결제 10,000
+     *
+     * @effects partial_cancel_is_blocked_when_losing_the_coupon_raises_the_bill
      */
     public function test_cancel_blocked_when_coupon_lost_increases_payment(): void
     {
@@ -6778,6 +7092,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 상품A(30,000×1) + 상품B(30,000×1) = 60,000
      * 주문쿠폰(FIXED 5,000, minOrder=25,000) → 결제 55,000원
      * B 취소 → 잔여 30,000 >= 25,000 → 쿠폰 유지 → 재계산 25,000 < 원결제 55,000
+     *
+     * @effects partial_cancel_is_blocked_when_losing_the_coupon_raises_the_bill
      */
     public function test_cancel_not_blocked_when_coupon_still_valid(): void
     {
@@ -6816,6 +7132,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * 전체취소 → cancel_blocked = false (전체취소는 항상 허용)
+     *
+     * @effects partial_cancel_is_blocked_when_losing_the_coupon_raises_the_bill
      */
     public function test_cancel_not_blocked_on_full_cancel(): void
     {
@@ -6849,6 +7167,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 상품A(10,000×3) + 상품쿠폰(FIXED 8,000, minOrder=25,000)
      * 원 결제: 30,000 - 24,000(8000×3) = 6,000원
      * 수량 2개 취소 → 잔여 10,000 < 25,000 → 쿠폰 소멸 → 재계산 10,000 > 원결제 6,000
+     *
+     * @effects partial_cancel_is_blocked_when_losing_the_coupon_raises_the_bill
      */
     public function test_cancel_blocked_product_coupon_quantity_loss(): void
     {
@@ -6892,6 +7212,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 상품A(50,000×1) + 상품B(10,000×1), 무료배송 기준 50,000 이상 (배송비 3,000)
      * 원 주문: 60,000원 (배송비 0, 무료배송 충족)
      * B 취소 → 잔여 50,000 >= 50,000 → 무료 유지 → refund_total = 10,000
+     *
+     * @effects refund_total_counts_the_shipping_difference_exactly_once
      */
     public function test_refund_total_equals_refund_plus_points_no_shipping_double_count(): void
     {
@@ -6933,6 +7255,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * B 취소 → 잔여 30,000 < 50,000 → 배송비 3,000 발생
      * 재계산 결제금액 33,000, 환불 = 60,000 - 33,000 = 27,000 (배송비 차이 포함)
      * refund_total = 27,000 (shippingDifference -3,000이 별도 가산되면 안됨)
+     *
+     * @effects refund_total_counts_the_shipping_difference_exactly_once
      */
     public function test_refund_total_with_shipping_threshold_change(): void
     {
@@ -6977,6 +7301,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 상품 10,000 + 배송비 3,000 = 결제 13,000
      * 전체취소 → refund_total = 13,000 (배송비 이중 포함 안됨)
+     *
+     * @effects refund_total_counts_the_shipping_difference_exactly_once
      */
     public function test_refund_total_full_cancel_with_shipping(): void
     {
@@ -7015,6 +7341,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 주문쿠폰 30% 할인 + 배송비쿠폰 적용 시나리오
      * B만 남기고 A 취소 → 쿠폰 소멸 + 배송비 변동
      * refund_total = refundAmount + refundPointsAmount
+     *
+     * @effects refund_total_counts_the_shipping_difference_exactly_once
      */
     public function test_refund_total_coupon_and_shipping_combined(): void
     {
@@ -7074,6 +7402,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 정가 30,000 × 2개 = 60,000
      * 판매가 20,000 × 2개 = 40,000
+     *
+     * @effects cancel_snapshot_carries_the_total_list_price
      */
     public function test_full_cancel_snapshot_includes_total_list_price_amount(): void
     {
@@ -7106,6 +7436,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * → 옵션B 2개 취소
      * → 취소 후: A(50,000×2) + B(30,000×1) = 130,000 (정가)
      * → 취소 후: A(40,000×2) + B(20,000×1) = 100,000 (판매가)
+     *
+     * @effects cancel_snapshot_carries_the_total_list_price
      */
     public function test_partial_cancel_snapshot_total_list_price_amount(): void
     {
@@ -7139,6 +7471,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * L-3: 정가 = 판매가일 때 total_list_price_amount == subtotal_amount
+     *
+     * @effects cancel_snapshot_carries_the_total_list_price
      */
     public function test_list_price_equals_selling_price_same_amounts(): void
     {
@@ -7198,6 +7532,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 재안분값으로 옵션 업데이트에 저장되는지 검증 (PG 우선).
      *
      * 결함: buildOptionUpdates 가 적립액 갱신을 누락하면 취소 상품 몫까지 적립됨.
+     *
+     * @effects partial_cancel_persists_recalculated_subtotal_earned_points_amount_pg_first
      */
     public function test_partial_cancel_recalculates_earned_points_pg_first(): void
     {
@@ -7241,6 +7577,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 예상: 재계산 시 B만 남고 usePoints 3,000 전액이 B(결제금액 10,000)에 적용 →
      *       B earnable = 10,000 − 3,000 = 7,000 → earn = floor(7,000 × 10%) = 700.
      *       적립 재안분값은 환불 우선순위와 무관(우선순위는 refund split 만 변경)하므로 pg_first 와 동일.
+     *
+     * @effects partial_cancel_persists_recalculated_subtotal_earned_points_amount_points_first
      */
     public function test_partial_cancel_recalculates_earned_points_points_first(): void
     {
@@ -7281,6 +7619,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 근거: 적립 재안분은 잔여 옵션 재계산(recalcResult)에서 도출되며, 우선순위는 환불 분배(refund split)에만 작용.
      * 동일 입력(A 20,000 + B 10,000, rate 10%, usePoints 3,000, A 취소)으로 두 우선순위 각각 계산 →
      * 잔여 B 적립액 == 700 으로 동일, 단 refund split(refundAmount/refundPointsAmount)은 상이.
+     *
+     * @effects refund_priority_changes_the_split_not_the_total
      */
     public function test_partial_cancel_earned_points_equal_across_refund_priority(): void
     {
@@ -7336,6 +7676,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 입력: A(20,000)+B(10,000), rate 10%, 사용 없음. 원 적립 합 = 2,000 + 1,000 = 3,000.
      * A 취소 → 잔여 적립(B) = 1,000 < 원 적립 합 3,000 (취소 A 몫 2,000 제외됨).
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points
      */
     public function test_partial_cancel_excludes_cancelled_option_share_from_earned(): void
     {
@@ -7369,6 +7711,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * §6.3 회귀: 부분취소 재계산 시 옵션 레벨 다통화(mc_) 컬럼이 재안분값으로 갱신된다 (정책 확정).
      *
      * 결함: buildOptionUpdates 가 plain subtotal_* 만 갱신하고 mc_subtotal_* 는 부분취소 후 stale.
+     *
+     * @effects mc_columns_track_base_columns_after_partial_cancel
      */
     public function test_partial_cancel_recalculates_option_multi_currency_columns(): void
     {
@@ -7426,6 +7770,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A(20,000) + B(10,000), 상품쿠폰 FIXED 3,000(scope ALL), rate 10%, usePoints 3,000, A 취소.
      * 잔여 B 적립 base = 상품쿠폰 차감 후 금액 − 재안분 마일리지 사용분. 취소 옵션 쿠폰 복원 동반.
      * 정확값은 엔진 재계산 기준으로 고정하고, 취소분 미포함(잔여 적립 < 원 적립 합)을 함께 단언.
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points, partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      */
     public function test_partial_cancel_product_coupon_and_mileage_usage_exact(): void
     {
@@ -7473,6 +7819,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * A(20,000) + B(10,000), 주문쿠폰 ORDER_AMOUNT FIXED 3,000, rate 10%, usePoints 3,000, A 취소.
      * 주문쿠폰은 잔여 옵션 비례 재안분 → 취소 후 B 의 주문쿠폰 안분이 커짐. earnable 재산출 정확값 고정.
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points, order_level_discount_is_reapportioned_over_the_remaining_items
      */
     public function test_partial_cancel_order_coupon_and_mileage_usage_exact(): void
     {
@@ -7534,6 +7882,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 정책 CONDITIONAL_FREE(baseFee 3,000, freeThreshold 25,000). A(20,000)+B(10,000)=30,000 → 무료.
      * A 취소 → 잔여 10,000 < 25,000 → 배송비 3,000 부활(shippingDifference 음수 방향).
      * 배송비 재판정이 상품금액 기준 적립 안분을 오염시키지 않음을 검증.
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points, partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
      */
     public function test_partial_cancel_free_shipping_threshold_breaks_with_mileage_usage(): void
     {
@@ -7583,6 +7933,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 잔여 2옵션 적립 재안분 + 배송비 차이 + 복원 쿠폰 + 환불 split 동시 단언.
      * 적립 재안분값은 두 우선순위에서 동일.
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points, points_usage_is_reapportioned_over_the_remaining_items
      */
     public function test_partial_cancel_coupon_and_shipping_and_mileage_usage_full_composite(): void
     {
@@ -7657,6 +8009,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * A(10,000)×3 + B(10,000)×1, rate 10%, usePoints 3,000. A 수량 2개만 취소(1개 잔존).
      * 잔여 A(1개)+B 기준 적립 재산출 정확값.
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points, partial_cancel_refunds_the_difference_against_the_recalculated_total
      */
     public function test_partial_cancel_composite_reduce_quantity_not_full_option(): void
     {
@@ -7695,6 +8049,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 정책 FIXED 3,000 + 도서산간(zipcode 63* → +3,000). 배송지 제주(63123).
      * A(20,000)+B(10,000), rate 10%, usePoints 3,000, A 취소.
      * 도서산간 추가배송비는 상품금액 기준 적립 base 와 독립 — 적립값이 추가배송비에 오염되지 않음.
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points, cancel_recalculates_the_island_extra_fee_with_the_remainder
      */
     public function test_partial_cancel_island_extra_shipping_fee_with_mileage_usage(): void
     {
@@ -7747,6 +8103,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 옵션 A=정책α(FIXED 3,000), 옵션 B=정책β(CONDITIONAL_FREE freeThreshold 5,000).
      * A(20,000)+B(10,000), rate 10%, usePoints 3,000, A 취소.
      * 잔여 B 는 정책β 기준 배송비 재판정(10,000 >= 5,000 → 무료), B 적립 재안분 정확값.
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points, cancel_reports_the_shipping_difference_per_policy_group
      */
     public function test_partial_cancel_per_product_distinct_shipping_policies_with_mileage(): void
     {
@@ -7789,6 +8147,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 잔여 2옵션 적립 재안분 + 옵션별 배송비 + 도서산간 + 쿠폰 복원 + 환불 split 전 항목 동시 단언.
      * 적립 재안분값은 두 우선순위에서 동일.
+     *
+     * @effects partial_cancel_excludes_cancelled_option_share_from_earned_points, cancel_reports_the_shipping_difference_per_policy_group, points_usage_is_reapportioned_over_the_remaining_items
      */
     public function test_partial_cancel_full_composite_per_product_policy_island_coupon_mileage(): void
     {
@@ -7872,6 +8232,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 부가세를 재산출하지 않으면 취소 후에도 취소 전 부가세가 남아 세금 표기가 실제 결제
      * 금액과 어긋난다.
+     *
+     * @effects partial_cancel_recalculates_the_vat_on_the_remaining_amount
      */
     public function test_partial_cancel_recalculates_vat(): void
     {
@@ -7900,6 +8262,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 상품의 현재 세율을 읽으면, 주문 이후 세율이 바뀐 상품에서 과거 주문의 세금 표기가
      * 소급해 바뀐다.
+     *
+     * @effects partial_cancel_recalculates_the_vat_on_the_remaining_amount, partial_cancel_uses_the_order_time_tax_rate_snapshot
      */
     public function test_partial_cancel_uses_snapshot_tax_rate_not_current_product_rate(): void
     {

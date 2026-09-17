@@ -667,11 +667,23 @@
                 "width": "100px",
                 "sortable": false,
                 "required": false,
+                "comment": "결제 플러그인이 이 칸에 배지(테스트 결제 등)를 덧붙인다. 래퍼 Div 와 결제수단 라벨은 **호스트가 소유**하고, 플러그인은 `columns._patch` → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 — 셋 이상이 함께 설치돼도 서로 지우지 않는다. 라벨 자체를 바꿔야 하는 플러그인(간편결제 표시명 등)은 `children._patch`(by: id)로 `payment_method_label` 노드의 text 만 덮는다(#599). 두 `id` 는 확장이 지목하는 **공개 앵커**이므로 이름을 바꾸지 않는다.",
                 "cellChildren": [
                   {
                     "type": "basic",
-                    "name": "Span",
-                    "text": "{{row.payment?.payment_method_label}}"
+                    "name": "Div",
+                    "id": "payment_method_cell",
+                    "props": {
+                      "className": "row-stack"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "id": "payment_method_label",
+                        "text": "{{row.payment?.payment_method_label}}"
+                      }
+                    ]
                   }
                 ]
               },

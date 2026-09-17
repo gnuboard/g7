@@ -1087,6 +1087,9 @@ class LayoutExtensionService
      * - 기존 항목과 `by` 값이 같으면 그 항목에 **shallow 병합**한다(적은 키만 덮어씀).
      * - `by` 값이 기존에 없으면 **끝에 추가**한다(확장이 새 항목을 더할 수 있다).
      * - 기존 목록의 **순서와 개수는 보존**된다 — 손대지 않은 항목은 그대로 남는다.
+     * - 항목 안의 값이 `{"_append": [ … ]}` 이면 그 키를 덮어쓰지 않고 **기존 배열 뒤에
+     *   덧붙인다.** 여러 확장이 같은 항목의 같은 키(예: `cellChildren`)를 함께 쓸 때
+     *   서로 지우지 않는 유일한 방법이다 — 덮어쓰기면 priority 가 가장 높은 하나만 남는다.
      *
      * @param  array  &$component  대상 컴포넌트 (참조)
      * @param  array  $propsToInject  주입할 Props 정의
@@ -1237,9 +1240,11 @@ class LayoutExtensionService
 
             if (array_key_exists($key, $indexByKey)) {
                 $target = $indexByKey[$key];
-                $existing[$target] = array_merge(
+                $existing[$target] = $this->mergePatchItem(
                     is_array($existing[$target]) ? $existing[$target] : [],
-                    $patchItem
+                    $patchItem,
+                    $componentId,
+                    $propKey
                 );
 
                 continue;
@@ -1251,6 +1256,80 @@ class LayoutExtensionService
         }
 
         return $existing;
+    }
+
+    /**
+     * 패치가 지목한 항목 **하나**를 병합합니다 (`_patch` 의 항목 단위 동작).
+     *
+     * 기본은 shallow 덮어쓰기다 — 적은 키만 바뀌고 나머지는 보존된다. 다만 값이
+     * `{"_append": [ … ]}` 이면 **그 키의 기존 배열 뒤에 덧붙인다.**
+     *
+     * 덧붙이기가 없으면 같은 항목의 같은 키를 여러 확장이 쓸 때 **마지막 하나만 남는다.**
+     * 확장은 priority 순서로 적용되므로 앞선 확장이 넣은 것을 뒤의 확장이 통째로 지운다.
+     * 실제로 결제 플러그인 3종이 주문목록 「결제수단」 칸의 `cellChildren` 에 각자 배지를
+     * 달았는데 우선순위가 가장 높은 하나만 살아남았고, 그래서 그 하나가 나머지 두 결제사
+     * 몫까지 대신 그려 주는 계단식 우회가 생겼다(#599). 그 우회는 남의 플러그인이 선언한
+     * 데이터소스를 참조해야 해서, 그 플러그인이 없는 사이트에서는 미정의 참조가 된다.
+     *
+     * `_append` 가 있으면 각 확장이 **자기 것만** 덧붙이면 되므로 그 의존이 사라진다 —
+     * 새 결제 플러그인이 추가돼도 기존 플러그인을 고칠 일이 없다.
+     *
+     * 값이 `{"_patch": { … }}` 이면 그 키의 목록으로 **한 겹 더 들어간다.** 셀 안의 래퍼
+     * 노드처럼 목록이 중첩된 자리를 위한 것이다 — 호스트가 래퍼를 소유하고 확장은 그 안에만
+     * 덧붙이므로, 확장이 몇 개든 래퍼와 그 className 은 하나로 유지된다.
+     *
+     * ```json
+     * "columns": {
+     *   "_patch": {
+     *     "by": "field",
+     *     "items": [{
+     *       "field": "payment_method",
+     *       "cellChildren": {
+     *         "_patch": {
+     *           "by": "name",
+     *           "items": [{ "name": "Div", "children": { "_append": [ … ] } }]
+     *         }
+     *       }
+     *     }]
+     *   }
+     * }
+     * ```
+     *
+     * @param  array  $target  호스트의 현재 항목
+     * @param  array  $patchItem  확장이 적은 패치 항목
+     * @param  string  $componentId  경고 로그용 컴포넌트 id
+     * @param  string  $propKey  경고 로그용 prop 경로
+     * @return array 병합된 항목
+     */
+    private function mergePatchItem(array $target, array $patchItem, string $componentId, string $propKey): array
+    {
+        foreach ($patchItem as $key => $value) {
+            if (is_array($value) && array_key_exists('_append', $value) && is_array($value['_append'])) {
+                $current = is_array($target[$key] ?? null) ? $target[$key] : [];
+
+                $target[$key] = array_merge($current, $value['_append']);
+
+                continue;
+            }
+
+            // 중첩 `_patch` — 셀 안의 래퍼 노드처럼 한 겹 더 들어가야 닿는 자리를 위한 것이다.
+            // 호스트가 래퍼를 소유하고 확장은 그 안에만 덧붙이므로, 래퍼와 그 className 은
+            // 확장이 몇 개든 하나로 유지된다.
+            if (is_array($value) && array_key_exists('_patch', $value)) {
+                $target[$key] = $this->patchListItems(
+                    is_array($target[$key] ?? null) ? $target[$key] : [],
+                    $value['_patch'],
+                    $componentId,
+                    $propKey.'.'.$key
+                );
+
+                continue;
+            }
+
+            $target[$key] = $value;
+        }
+
+        return $target;
     }
 
     /**

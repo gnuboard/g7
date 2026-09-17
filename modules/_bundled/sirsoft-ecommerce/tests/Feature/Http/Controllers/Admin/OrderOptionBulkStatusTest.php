@@ -48,6 +48,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 전체 수량 상태 변경 ==========
 
+    /**
+     * 전체 수량을 지정하면 행이 쪼개지지 않고 상태만 바뀐다 (split_count=0)
+     *
+     * @effects option_bulk_full_quantity_changes_without_split
+     */
     public function test_can_change_full_quantity_status(): void
     {
         // Given
@@ -81,6 +86,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 부분 수량 변경 → 레코드 분할 ==========
 
+    /**
+     * 부분 수량 변경은 행을 쪼갠다 — 원본이 잔량, 분할 행이 변경분을 갖는다
+     *
+     * @effects option_bulk_partial_quantity_splits_row
+     */
     public function test_can_split_option_on_partial_quantity_change(): void
     {
         // Given
@@ -120,6 +130,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::SHIPPING, $splitOption->option_status);
     }
 
+    /**
+     * 분할 행의 parent_option_id 와 parentOption·splitOptions 관계가 원본을 가리킨다
+     *
+     * @effects split_row_points_to_parent_and_is_marked_split
+     */
     public function test_split_option_has_correct_parent_reference(): void
     {
         // Given
@@ -151,6 +166,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertCount(1, $option->splitOptions);
     }
 
+    /**
+     * 분할 행의 source_type 이 SPLIT 으로 표시된다
+     *
+     * @effects split_row_points_to_parent_and_is_marked_split
+     */
     public function test_split_option_has_correct_source_type(): void
     {
         // Given
@@ -178,6 +198,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 수량 검증 ==========
 
+    /**
+     * 보유 수량을 넘는 수량은 422 로 막힌다
+     *
+     * @effects option_bulk_quantity_out_of_range_rejected
+     */
     public function test_cannot_exceed_available_quantity(): void
     {
         // Given
@@ -200,6 +225,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $response->assertUnprocessable();
     }
 
+    /**
+     * 수량 0 은 422 로 막힌다
+     *
+     * @effects option_bulk_quantity_out_of_range_rejected
+     */
     public function test_cannot_change_with_zero_quantity(): void
     {
         // Given
@@ -224,6 +254,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 일괄 변경 (여러 옵션) ==========
 
+    /**
+     * 한 요청에 부분·전체가 섞여도 각 행이 제 몫대로 쪼개지거나 통째로 바뀐다
+     *
+     * @effects option_bulk_partial_quantity_splits_row, option_bulk_full_quantity_changes_without_split
+     */
     public function test_bulk_change_with_mixed_quantities(): void
     {
         // Given
@@ -272,6 +307,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 권한 검증 ==========
 
+    /**
+     * orders.update 권한이 없으면 403
+     *
+     * @effects option_bulk_requires_orders_update_permission
+     */
     public function test_unauthorized_user_cannot_bulk_change(): void
     {
         // Given
@@ -291,6 +331,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 요청 검증 ==========
 
+    /**
+     * items 가 없으면 422 + items 검증 오류
+     *
+     * @effects option_bulk_requires_items_and_valid_status
+     */
     public function test_requires_items_array(): void
     {
         // Given
@@ -309,6 +354,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 배송 정보 필수 검증 ==========
 
+    /**
+     * 배송중으로 옮길 때 택배사·송장번호가 둘 다 없으면 422
+     *
+     * @effects shipping_status_requires_carrier_and_tracking
+     */
     public function test_shipping_status_requires_carrier_and_tracking(): void
     {
         // Given
@@ -332,6 +382,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
             ->assertJsonValidationErrors(['carrier_id', 'tracking_number']);
     }
 
+    /**
+     * 배송준비중으로 옮길 때 택배사만 있고 송장번호가 없으면 422
+     *
+     * @effects shipping_status_requires_carrier_and_tracking
+     */
     public function test_shipping_status_requires_tracking_number(): void
     {
         // Given
@@ -356,6 +411,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
             ->assertJsonValidationErrors(['tracking_number']);
     }
 
+    /**
+     * 배송 계열이 아닌 상태(준비중)는 택배사·송장번호 없이 통과한다
+     *
+     * @effects shipping_status_requires_carrier_and_tracking
+     */
     public function test_non_shipping_status_does_not_require_carrier(): void
     {
         // Given
@@ -378,6 +438,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $response->assertOk();
     }
 
+    /**
+     * 어휘 밖 상태 문자열은 422 + status 검증 오류
+     *
+     * @effects option_bulk_requires_items_and_valid_status
+     */
     public function test_requires_valid_status(): void
     {
         // Given
@@ -398,6 +463,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 금액 분할 계산 정확성 ==========
 
+    /**
+     * 분할 행과 잔량 행의 소계·할인이 수량 비율로 나뉜다 (5000 × 2/5 = 2000)
+     *
+     * @effects split_row_amounts_are_prorated_by_quantity
+     */
     public function test_split_amount_calculation_is_correct(): void
     {
         // Given: 할인 5000원, 수량 5개
@@ -435,6 +505,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals(30000, $option->subtotal_price); // 10000 × 3
     }
 
+    /**
+     * 분할 후에도 결제액이 소계 − 할인 − 마일리지 − 예치금 항등식을 지킨다
+     *
+     * @effects split_row_amounts_are_prorated_by_quantity
+     */
     public function test_split_subtotal_paid_amount_is_consistent(): void
     {
         // Given
@@ -475,6 +550,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals($expectedOrigPaid, $option->subtotal_paid_amount);
     }
 
+    /**
+     * 분할 행과 잔량 행의 무게·부피가 수량 비율로 나뉜다
+     *
+     * @effects split_row_weight_and_volume_are_prorated
+     */
     public function test_split_weight_and_volume_proportional(): void
     {
         // Given
@@ -503,6 +583,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals(0.06, $option->subtotal_volume); // 0.02 × 3
     }
 
+    /**
+     * 분할 행이 product_id·product_option_id·order_id·sku 를 그대로 승계한다
+     *
+     * @effects split_row_carries_over_product_and_snapshot_columns
+     */
     public function test_split_preserves_product_references(): void
     {
         // Given
@@ -527,6 +612,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals($option->sku, $splitOption->sku);
     }
 
+    /**
+     * 분할 행이 상품·옵션·프로모션 스냅샷을 그대로 승계한다
+     *
+     * @effects split_row_carries_over_product_and_snapshot_columns
+     */
     public function test_split_preserves_snapshot_columns(): void
     {
         // Given
@@ -552,6 +642,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 병합 테스트 ==========
 
+    /**
+     * 잔량까지 같은 상태가 되면 두 행이 한 행으로 합쳐지고 피흡수 행은 사라진다
+     *
+     * @effects same_status_rows_merge_back_into_one
+     */
     public function test_merge_when_remaining_changed_to_same_status(): void
     {
         // Given: qty=3 → 2개 분할(shipping)
@@ -600,6 +695,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertNull(OrderOption::find($option->id));
     }
 
+    /**
+     * 병합 행의 수량·소계·할인이 분할 전 값으로 다시 합산된다
+     *
+     * @effects merged_row_sums_amounts_and_quantity
+     */
     public function test_merge_combines_amounts_correctly(): void
     {
         // Given: 분할 후 금액이 나뉜 상태
@@ -764,6 +864,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 병합 시 피흡수 행의 배송 레코드가 생존 행으로 옮겨진다 (cascade 삭제 방지)
+     *
+     * @effects merge_reassigns_dependent_shipping_and_review_rows
+     */
     public function test_merge_reassigns_shipping_records(): void
     {
         // Given: 분할 후 원본에 배송 레코드 존재
@@ -803,6 +908,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals($splitOption->id, $shipping->order_option_id);
     }
 
+    /**
+     * 병합 시 피흡수 행의 리뷰 레코드가 생존 행으로 옮겨진다
+     *
+     * @effects merge_reassigns_dependent_shipping_and_review_rows
+     */
     public function test_merge_reassigns_review_records(): void
     {
         // Given: 분할 후 원본에 리뷰 레코드 존재
@@ -846,6 +956,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 연속 분할 / 일괄 변경 ==========
 
+    /**
+     * 연속 분할이 서로 다른 상태의 독립한 행으로 쌓인다 (원본 3 · 준비중 1 · 배송중 1)
+     *
+     * @effects sequential_splits_accumulate_independent_rows
+     */
     public function test_multiple_sequential_splits(): void
     {
         // Given: qty=5
@@ -887,6 +1002,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals(1, $shippingSplit->quantity);
     }
 
+    /**
+     * 세 행 모두 전체 수량이면 split_count=0
+     *
+     * @effects option_bulk_full_quantity_changes_without_split
+     */
     public function test_bulk_all_full_quantity_no_split(): void
     {
         // Given: 3개 옵션
@@ -921,6 +1041,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
             ->assertJsonPath('data.split_count', 0);
     }
 
+    /**
+     * 세 행 모두 부분 수량이면 split_count=3
+     *
+     * @effects option_bulk_partial_quantity_splits_row
+     */
     public function test_bulk_all_partial_quantity_all_split(): void
     {
         // Given: 3개 옵션
@@ -955,6 +1080,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
             ->assertJsonPath('data.split_count', 3);
     }
 
+    /**
+     * 분할 뒤 잔량을 다른 상태로 옮겨도 분할 행은 제 상태를 유지한다. 일괄 어휘에 취소는 없다(422)
+     *
+     * @effects option_bulk_cancelled_is_not_in_admin_vocabulary, sequential_splits_accumulate_independent_rows
+     */
     public function test_split_then_full_change_remaining(): void
     {
         // Given: 부분 분할 후 남은 전체 수량을 다른 상태로 변경
@@ -1007,6 +1137,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals(2, $splitOption->quantity);
     }
 
+    /**
+     * 분할이 먼저 난 뒤 부모가 같은 상태가 되면 분할 행 쪽으로 합쳐진다
+     *
+     * @effects same_status_rows_merge_back_into_one, merged_row_sums_amounts_and_quantity
+     */
     public function test_merge_back_into_parent(): void
     {
         // Given: 분할 후 부모를 같은 상태로 변경 시 부모로 병합
@@ -1054,6 +1189,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 배송완료 상태 변경 — 운송장 선택사항 ==========
 
+    /**
+     * 배송완료는 택배사·송장번호 없이도 통과한다
+     *
+     * @effects delivered_status_treats_carrier_and_tracking_as_optional
+     */
     public function test_delivered_status_does_not_require_carrier_and_tracking(): void
     {
         // Given
@@ -1079,6 +1219,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::DELIVERED, $option->option_status);
     }
 
+    /**
+     * 배송완료에 택배사·송장번호를 함께 넣어도 통과한다
+     *
+     * @effects delivered_status_treats_carrier_and_tracking_as_optional
+     */
     public function test_delivered_status_with_optional_carrier_and_tracking(): void
     {
         // Given
@@ -1209,6 +1354,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== 부모 주문 상태 동기화 ==========
 
+    /**
+     * 모든 옵션이 같은 상태가 되면 부모 주문도 그 상태로 따라간다
+     *
+     * @effects parent_order_status_syncs_to_lowest_option_stage
+     */
     public function test_parent_order_syncs_when_all_options_same_status(): void
     {
         // Given: 주문 1개, 옵션 2개 (결제완료)
@@ -1241,6 +1391,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::DELIVERED, $order->order_status);
     }
 
+    /**
+     * 옵션 상태가 섞이면 부모 주문은 가장 낮은 진행 단계를 따른다
+     *
+     * @effects parent_order_status_syncs_to_lowest_option_stage
+     */
     public function test_parent_order_syncs_to_lowest_status_when_mixed(): void
     {
         // Given: 주문 1개, 옵션 2개 (결제완료)
@@ -1274,6 +1429,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== carrier_id 키 정합성 ==========
 
+    /**
+     * 요청 키가 carrier 가 아니라 carrier_id 로 받아진다
+     *
+     * @effects shipping_status_requires_carrier_and_tracking
+     */
     public function test_carrier_id_key_is_accepted_in_request(): void
     {
         // Given
@@ -1300,6 +1460,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
     // ========== results 구조 검증 ==========
 
+    /**
+     * 응답 results 의 각 행에 order_option_id 가 실린다
+     *
+     * @effects option_bulk_response_carries_result_row_ids
+     */
     public function test_results_contain_order_option_id_key(): void
     {
         // Given
@@ -1326,6 +1491,11 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals($option->id, $results[0]['order_option_id']);
     }
 
+    /**
+     * 분할이 난 행의 results 에 split_order_option_id 가 실리고 그 id 로 DB 행을 찾을 수 있다
+     *
+     * @effects option_bulk_response_carries_result_row_ids
+     */
     public function test_split_results_contain_split_order_option_id(): void
     {
         // Given
@@ -1356,6 +1526,9 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
     }
     // ========== 클레임 코스 상태 차단 (D15 후단) ==========
 
+    /**
+     * @effects claim_course_option_status_change_blocked_with_422_guidance
+     */
     public function test_claim_course_item_is_blocked_with_a_guidance_message(): void
     {
         // 화면 경로 — FormRequest 가 items.N.status 에 운영자 안내를 싣는다.
@@ -1381,6 +1554,9 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::RETURN_IN_PROGRESS, $option->fresh()->option_status);
     }
 
+    /**
+     * @effects claim_course_option_status_change_blocked_with_422_guidance
+     */
     public function test_claim_course_block_from_the_service_path_keeps_the_same_guidance(): void
     {
         // FormRequest 를 우회하는 내부·훅 호출이 서비스 2차 방어에 걸린 경우.
@@ -1416,6 +1592,9 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * @effects option_bulk_infrastructure_failure_returns_500
+     */
     public function test_infrastructure_failure_of_bulk_status_still_returns_500(): void
     {
         // 대조군 — 도메인 예외가 아닌 실패는 계속 500 이어야 한다(장애가 입력 오류로 위장되지 않음).

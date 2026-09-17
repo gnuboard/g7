@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: protected 훅 메서드 2개(withValidator·failedValidation)에 누락됐던 `@return` PHPDoc 만 채운 내부 수정이다. 검증 규칙·응답 형태 모두 불변이라 docs/api 에 반영할 표면 변화가 없다(`api:docgen --scope=module:sirsoft-ecommerce --check` drift 0 확인).
+
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\User;
 
 use App\Helpers\ResponseHelper;
@@ -96,6 +98,7 @@ class StoreRefundRequestRequest extends FormRequest
      * 소유권 404 가 상품 소속 422 보다 먼저 나야 하므로 순서를 바꾸지 않는다.
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     protected function withValidator(Validator $validator): void
     {
@@ -198,6 +201,7 @@ class StoreRefundRequestRequest extends FormRequest
      * @param  Validator  $validator  검증기
      *
      * @throws ValidationException
+     * @return void 반환값 없음
      */
     protected function failedValidation(Validator $validator): void
     {

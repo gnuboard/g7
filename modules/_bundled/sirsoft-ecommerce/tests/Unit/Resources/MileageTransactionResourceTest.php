@@ -27,6 +27,8 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * Resource: type_label / 배지 그룹 / 표시분류 + *_formatted 동반.
+     *
+     * @effects row_data_carries_badge_group_display_category_and_formatted_timestamps
      */
     public function test_resource_exposes_badge_and_display_category(): void
     {
@@ -49,6 +51,8 @@ class MileageTransactionResourceTest extends ModuleTestCase
      *
      * `roundToCurrency` 는 자릿수 0인 통화(KRW 등)를 정수로, 자릿수가 있는 통화를 float 로
      * 반환한다. 1000.0 처럼 의미 없는 소수부가 응답에 노출되지 않도록 한 의도된 계약이다.
+     *
+     * @effects row_amounts_are_normalized_to_the_currency_precision_with_formatted_twins
      */
     public function test_resource_amounts_are_normalized_to_currency_precision(): void
     {
@@ -67,6 +71,8 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * Collection: data + abilities(can_manage) 구조.
+     *
+     * @effects collection_wraps_rows_with_the_can_manage_ability
      */
     public function test_collection_structure_with_abilities(): void
     {
@@ -84,6 +90,8 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * 적립계 + 소멸 집계(expired_amount) 기준 expiry_state 계산: active/partial/fully.
+     *
+     * @effects earning_row_exposes_expired_amount_and_state
      */
     public function test_resource_expiry_state_by_expired_amount(): void
     {
@@ -109,6 +117,8 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * 비적립계(사용)는 소멸 집계가 있어도 expiry_state=active (적립계만 의미).
+     *
+     * @effects non_earning_row_stays_active_even_with_an_expired_amount
      */
     public function test_resource_non_earning_expiry_state_is_active(): void
     {
@@ -122,6 +132,8 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * can_edit_expiry: 적립계 + 미소멸 + 잔여>0 일 때만 true.
+     *
+     * @effects row_data_exposes_can_edit_ability
      */
     public function test_resource_can_edit_expiry_flag(): void
     {
@@ -142,6 +154,8 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * adminBadgeGroup 5색 매핑이 Resource 에 정확히 노출.
+     *
+     * @effects row_badge_group_matches_the_five_color_map_for_every_type
      */
     public function test_resource_badge_group_for_each_type(): void
     {

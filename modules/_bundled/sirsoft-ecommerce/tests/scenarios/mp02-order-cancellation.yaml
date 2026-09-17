@@ -156,6 +156,55 @@ effects:
   - cancellation_path_reports_remaining_capacity_through_refund_accumulation # §12-B B1 — 원금은 그대로, 누적이 잔여를 말한다
   - admin_bulk_status_change_cannot_create_a_cancellation        # N16 — 신청서 없는 취소 차단
   - cancel_pg_control_is_gone_from_the_bulk_bar                  # P2 — 「PG 없이 장부만」 경로 제거
+
+  # ── 취소 금액 재계산 — OrderAdjustmentService 가 내놓는 관측 결과 ────────
+  # 이 파일의 axes(item_selection × payment_state × …)는 "누가 어떤 수단으로 취소하는가" 를
+  # 재고, 아래 effects 는 그 결과 **얼마가 돌아가는가**를 잰다. 두 축이 곱해지지 않는 이유는
+  # 재계산이 결제수단·환불 분기와 무관하게 잔여 항목만 보고 도는 순수 계산이기 때문이다.
+  - full_cancel_refunds_the_entire_paid_amount                   # 전체취소는 원 결제금액 전액
+  - full_cancel_refunds_the_shipping_fee_that_was_charged        # 부과됐던 배송비도 함께 돌아간다
+  - partial_cancel_refunds_the_difference_against_the_recalculated_total # 부분취소 환불 = 원결제 − 재계산 결제
+  - sequential_partial_cancels_recalculate_from_the_remaining_items # 2회차 취소는 1회차 잔여를 기준으로 다시 센다
+  - cancel_splits_the_refund_between_pg_and_points               # PG 환불액과 포인트 환급액이 갈린다
+  - refund_priority_changes_the_split_not_the_total              # 우선순위는 배분만 바꾸고 합계는 같다
+  - refund_split_spills_into_the_other_tender_when_the_first_runs_out # 우선 수단 잔액 초과분은 다른 수단으로 넘친다
+  - cancel_reports_the_remaining_pg_and_point_balances           # 취소 후 남은 PG·포인트 잔액을 함께 알린다
+  - cancel_preview_carries_the_requested_refund_priority         # preview 가 요청한 우선순위를 그대로 싣는다
+  - refund_total_counts_the_shipping_difference_exactly_once     # refund_total 에 배송비가 두 번 들어가지 않는다
+  # 쿠폰 — 잔여 금액이 조건을 깨면 되돌리고, 지키면 다시 적용한다
+  - cancel_restores_the_coupon_when_the_minimum_breaks           # 잔여가 최소주문금액에 미달하면 쿠폰 복원
+  - partial_cancel_keeps_the_order_coupon_while_the_minimum_holds # 잔여가 조건을 지키면 쿠폰 유지·재적용
+  - cancel_restores_only_the_coupons_that_lost_their_condition   # 복수 쿠폰 중 조건을 깬 것만 복원
+  - cancel_reports_the_restored_coupon_issue_ids                 # 복원 대상 발급 ID 를 결과·preview 에 싣는다
+  - partial_cancel_reapplies_the_item_coupon_to_the_remaining_items # 상품쿠폰을 잔여 항목에 다시 적용
+  - cancelling_every_coupon_target_drops_the_item_discount       # 쿠폰 대상이 전부 취소되면 그 할인은 사라진다
+  - item_coupon_discount_stays_within_its_cap_after_recalculation # 재계산 후에도 할인 상한(max/소계)을 넘지 않는다
+  - shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee # 배송비 쿠폰은 재계산된 배송비에 다시 걸린다
+  # 배송비 — 조건부 무료의 전이와 정책 그룹별 차액
+  - partial_cancel_keeps_free_shipping_while_the_remainder_meets_the_threshold # 잔여가 기준 이상이면 무료 유지
+  - partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold # 잔여가 기준 미만이면 배송비 발생
+  - cancel_recalculates_the_island_extra_fee_with_the_remainder  # 도서산간 추가배송비도 잔여 기준으로 다시 센다
+  - cancel_reports_the_shipping_difference_per_policy_group      # shippingDetails 가 정책 그룹별로 차액을 나눈다
+  # 안분 — 할인·배송비·마일리지가 옵션별로 어떻게 나뉘는가
+  - apportioned_option_subtotals_sum_back_to_the_order_total     # 옵션 안분 합계가 주문 합계로 되돌아온다
+  - order_level_discount_is_reapportioned_over_the_remaining_items # 주문 단위 할인은 잔여 항목 비율로 다시 나뉜다
+  - points_usage_is_reapportioned_over_the_remaining_items       # 마일리지 사용분도 잔여 항목 비율로 다시 나뉜다
+  # 차단 · 스냅샷 · 세금
+  - partial_cancel_is_blocked_when_losing_the_coupon_raises_the_bill # 쿠폰 소멸로 재계산 결제금액이 늘면 차단
+  - cancel_snapshot_carries_the_total_list_price                 # 스냅샷에 총 정가금액이 실린다
+  - partial_cancel_recalculates_the_vat_on_the_remaining_amount  # 잔여 금액 기준으로 부가세를 다시 낸다
+  - partial_cancel_uses_the_order_time_tax_rate_snapshot         # 세율은 주문 시점 스냅샷을 쓴다(현재 상품값 아님)
+  # 다중통화 — 환산은 주문 시점 스냅샷으로만 한다 (S1-D3·D4)
+  - refund_amounts_are_converted_with_the_order_time_currency_snapshot # 환율·반올림 규칙 모두 주문 시점 값
+  - cancel_preview_array_carries_the_multi_currency_fields       # preview 배열에 mc_* 필드가 실린다
+  - mc_columns_track_base_columns_after_partial_cancel           # 부분취소 orderUpdates 가 mc_* 금액 컬럼도 갱신
+  - mc_columns_zeroed_on_full_cancel                             # 전액취소는 mc_* 금액 컬럼을 0 으로 내린다
+  - full_cancel_zeroes_tax_columns_too                           # 세금·과세표준 컬럼도 함께 0 으로 내린다
+  - mc_columns_omitted_without_currency_snapshot                 # 스냅샷 없는 레거시 주문은 mc_* 갱신을 시도하지 않는다
+  - cancelled_split_row_excluded_from_option_updates             # 닫힌 행에 살아 있는 행의 재계산값을 덮어쓰지 않는다
+  - item_coupon_applied_once_in_recalculation                    # S1-D2 — 상품쿠폰이 재계산에서 두 번 먹지 않는다
+  - item_coupon_applied_once_when_present_in_both_snapshot_keys  # S1-D2 — 운영 스냅샷 형식에서도 한 번만
+  - partial_cancel_refund_equals_line_amount                     # 쿠폰 걸린 라인 부분취소 환불액 = 그 라인 금액
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimCancellationRecordTest.php

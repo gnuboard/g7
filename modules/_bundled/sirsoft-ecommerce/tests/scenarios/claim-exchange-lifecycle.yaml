@@ -82,7 +82,11 @@ effects:
   - exchange_additional_options_of_another_product_are_ignored
   - exchange_preview_and_request_charge_the_same_additional_options
   # 신청 자격 · 신청자 · 재발송지
-  - exchange_guest_request_has_no_requester
+  # 비회원 판정은 주문의 주인(`order.user_id`)이 정한다 — `requested_by` 가 아니다.
+  # 옛 이름(`exchange_guest_request_has_no_requester`)은 "신청자 칸이 비면 비회원" 을 뜻했는데,
+  # 그 칸은 운영자 대리 접수·시스템 자동 처리도 비운다(§4-3-1). 2026-09-12 실측에서 회원 주문의
+  # 운영자 접수 건이 「비회원」으로 표시돼 확정한 이름이다.
+  - exchange_guest_flag_reads_the_order_owner
   - exchange_request_period_is_measured_from_delivery
   - exchange_redelivery_address_defaults_to_the_order_shipping_address
   - exchange_redelivery_address_must_stay_in_the_same_country

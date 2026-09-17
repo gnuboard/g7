@@ -129,6 +129,34 @@ effects:
   - auto_approve_refund_statuses_is_disabled_when_toggle_off # 토글이 꺼져 있으면 비활성
   - auto_approve_refund_statuses_rejects_unknown_values      # 허용 어휘 밖 값은 422
   - instant_cancel_hint_describes_auto_advance               # 문구가 D2 의미(자동 전이)를 말한다
+
+  # ── 구조 검사가 스스로를 지키는 축 ─────────────────────────────────────────
+  # 이 탭의 구조 테스트는 대부분 `defaults.json`·파셜 디렉터리에서 모집단을 **파생**한다.
+  # 파생이 비면 `it.each([])` 는 케이스를 0개 등록하고 초록이다 — 오류도 경고도 없다.
+  # 그래서 파생 자체의 하한이 독립된 계약이다.
+  - settings_claim_derivations_are_not_empty                 # 스칼라 축·완료 기본값·인라인 폼·사유 카탈로그 파생의 하한
+  - settings_claim_tab_renders_only_on_its_own_tab           # 탭 블록의 `if` 가 claim 탭으로 좁혀져 있다
+  - settings_claim_inputs_all_locked_for_read_only_operator  # 7 파셜의 입력형 노드마다 isReadOnly 잠금 표현식
+  # 모바일 카드의 error 바인딩이 선언되지 않은 반복 변수를 읽으면 표현식은 조용히 빈 문자열이 되고,
+  # 모바일에서만 어느 카드가 422 인지 표시되지 않는다 (10차 배송유형 카드 `$type` 오타).
+  - settings_card_error_binding_uses_the_declared_item_var
+  # 탭을 옮겼다 돌아오면 이전 입력이 안내 없이 되살아나던 자리 — 정리 범위가 각 폼의 [취소] 와 같아야 한다.
+  - settings_tab_switch_clears_the_same_scope_as_each_form_cancel
+  # 저장 실행(setState·apiCall) 자체가 같은 플래그 전부에 막힌다 — 경고만 띄우고 나가면 입력이 버려진다.
+  - settings_save_execution_is_gated_by_every_inline_form_flag
+  # 저장 차단 안내가 인용하는 컨트롤 이름이 실제 확정 버튼 라벨과 같다 (ko·en·ja).
+  - settings_save_pending_wording_matches_the_real_confirm_button
+  # 배송가능국가 폼만 자기 플래그 외의 게이트를 갖는다 — 폼이 도달 불가가 되는 지점에서 표시도 함께
+  # 내리지 않으면 이후 어느 탭에서도 [저장]이 영구히 막힌다.
+  - settings_unreachable_inline_form_never_locks_save_forever
+  # 확인 모달을 여는 분기는 입력 버퍼를 보관하고 [취소]·[확인] 양쪽이 비운다.
+  - settings_disable_intl_modal_stashes_and_restores_the_country_buffer
+  # 게이트가 `_global.locale` 을 읽어도 그것을 **쓰는 쪽**이 없으면 값이 언제나 비어 조용히 ko 로 굳는다.
+  - settings_current_locale_is_injected_before_other_init_actions
+  - settings_server_field_error_keys_follow_the_current_locale
+  # 이름 입력칸 placeholder 는 한 폼의 모든 언어 칸이 공유하는 단일 prop 이다 — 어떤 언어명도 값이 될 수 없다.
+  - settings_name_placeholder_never_names_a_language
+  - settings_charge_payment_method_options_are_not_literal_builtins
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsClaim.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsClaimRender.test.tsx

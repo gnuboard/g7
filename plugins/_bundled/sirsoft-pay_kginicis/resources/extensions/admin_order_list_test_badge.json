@@ -24,31 +24,31 @@
                         "items": [
                             {
                                 "field": "payment_method",
-                                "cellChildren": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Div",
-                                        "props": {
-                                            "className": "row-stack"
-                                        },
-                                        "children": [
+                                "comment": "호스트가 래퍼 Div(id: payment_method_cell)와 라벨(id: payment_method_label)을 소유한다 — 이 플러그인은 자기 배지만 덧붙인다. 통째로 교체하면 함께 설치된 다른 결제 플러그인의 배지를 지운다(#599).",
+                                "cellChildren": {
+                                    "_patch": {
+                                        "by": "id",
+                                        "items": [
                                             {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "{{row.payment?.payment_method_label}}"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "if": "{{(nicepay_test_map.data?.[row.order_number] === true) || (kginicis_test_map.data?.[row.order_number] === true) || (nhnkcp_test_map.data?.[row.order_number] === true)}}",
-                                                "props": {
-                                                    "className": "text-xs font-medium text-orange-500 dark:text-orange-400 leading-tight"
-                                                },
-                                                "text": "($t:sirsoft-pay_kginicis.admin.test_mode_badge)"
+                                                "id": "payment_method_cell",
+                                                "children": {
+                                                    "_append": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "comment": "자기 데이터소스만 본다 — 남의 플러그인 맵을 함께 보면 그 플러그인이 없는 사이트에서 미정의 참조가 된다.",
+                                                            "if": "{{kginicis_test_map.data?.[row.order_number] === true}}",
+                                                            "props": {
+                                                                "className": "text-xs font-medium text-orange-500 dark:text-orange-400 leading-tight"
+                                                            },
+                                                            "text": "($t:sirsoft-pay_kginicis.admin.test_mode_badge)"
+                                                        }
+                                                    ]
+                                                }
                                             }
                                         ]
                                     }
-                                ]
+                                }
                             }
                         ]
                     }

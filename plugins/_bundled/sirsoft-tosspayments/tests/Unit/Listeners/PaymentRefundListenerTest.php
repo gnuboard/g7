@@ -69,6 +69,8 @@ class PaymentRefundListenerTest extends PluginTestCase
 
     /**
      * getSubscribedHooks가 올바른 훅 매핑을 반환하는지 확인
+     *
+     * @effects refund_listener_subscribes_to_the_payment_refund_filter_at_its_declared_priority
      */
     public function test_get_subscribed_hooks_returns_correct_hooks(): void
     {
@@ -82,6 +84,8 @@ class PaymentRefundListenerTest extends PluginTestCase
 
     /**
      * pg_provider가 'tosspayments'가 아닌 결제는 스킵하는지 확인
+     *
+     * @effects refund_skips_when_the_payment_belongs_to_another_pg_provider
      */
     public function test_process_refund_skips_non_tosspayments_provider(): void
     {
@@ -101,6 +105,8 @@ class PaymentRefundListenerTest extends PluginTestCase
     /**
      * pg_provider가 'sirsoft-tosspayments'(플러그인 식별자)인 경우 스킵되는지 확인
      * (이전 버그: 플러그인 식별자와 PG provider ID를 혼동하여 항상 스킵됨)
+     *
+     * @effects refund_matches_the_provider_id_not_the_plugin_identifier
      */
     public function test_process_refund_does_not_match_plugin_identifier(): void
     {
@@ -118,6 +124,8 @@ class PaymentRefundListenerTest extends PluginTestCase
 
     /**
      * 결제 키가 없으면 API 를 호출하지 않고 실패를 반환하는지 확인
+     *
+     * @effects refund_without_a_payment_key_fails_before_the_api_call
      */
     public function test_process_refund_fails_without_payment_key(): void
     {
@@ -236,6 +244,10 @@ class PaymentRefundListenerTest extends PluginTestCase
 
     /**
      * R2: 전액 환불 시 면세분 전체를 taxFreeAmount 로 전달하는지 확인
+     *
+     * 안분 비율이 1.0 인 경계 — 같은 식이 전액에서도 성립한다.
+     *
+     * @effects refund_sends_apportioned_tax_free_amount
      */
     public function test_r2_full_refund_sends_entire_tax_free_amount(): void
     {
@@ -253,6 +265,10 @@ class PaymentRefundListenerTest extends PluginTestCase
 
     /**
      * R2: 면세 금액이 없으면(전액 과세) taxFreeAmount 를 전달하지 않는지 확인
+     *
+     * 안분 대상이 0 인 경계 — 0 을 보내는 것과 키 자체를 빼는 것은 다르다.
+     *
+     * @effects refund_sends_apportioned_tax_free_amount
      */
     public function test_r2_omits_tax_free_amount_when_zero(): void
     {
@@ -433,6 +449,8 @@ class PaymentRefundListenerTest extends PluginTestCase
 
     /**
      * R3: 가상계좌가 아니면 환불계좌 없이도 정상 취소되는지 확인
+     *
+     * @effects non_vbank_refund_omits_the_refund_receive_account
      */
     public function test_r3_card_refund_does_not_require_receive_account(): void
     {
@@ -554,6 +572,8 @@ class PaymentRefundListenerTest extends PluginTestCase
 
     /**
      * API 오류 시 실패 결과를 반환하는지 확인
+     *
+     * @effects refund_api_error_returns_a_failure_result_with_the_pg_error_code
      */
     public function test_process_refund_returns_failure_on_api_error(): void
     {

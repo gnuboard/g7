@@ -66,6 +66,10 @@ class CouponDirectIssueTest extends ModuleTestCase
 
     /**
      * #1 회원 2명 지정, 둘 다 issuable → CouponIssue 2건 + issued_count +2 + DR- + 활동로그 2건
+     *
+     * @scenario user_set=multi, eligibility=issuable
+     *
+     * @effects direct_issue_creates_per_user_couponissue, issued_count_incremented_per_success, code_prefix_DR, activity_log_one_per_issue
      */
     public function test_direct_issue_to_two_users_creates_two_records(): void
     {
@@ -99,6 +103,10 @@ class CouponDirectIssueTest extends ModuleTestCase
 
     /**
      * #2 1명 per_user_limit 도달 → 1건 발급 + skip 사유 1건 (전체 롤백 아님)
+     *
+     * @scenario user_set=multi, eligibility=per_user_limit_reached
+     *
+     * @effects ineligible_users_skipped_with_reason, direct_issue_creates_per_user_couponissue
      */
     public function test_direct_issue_skips_user_at_limit(): void
     {
@@ -125,6 +133,10 @@ class CouponDirectIssueTest extends ModuleTestCase
 
     /**
      * #3 user_uuids=[] → 422 (IssueCouponDirectRequest min:1)
+     *
+     * @scenario user_set=empty, eligibility=issuable
+     *
+     * @effects empty_user_ids_rejected
      */
     public function test_direct_issue_empty_user_ids_is_rejected(): void
     {

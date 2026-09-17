@@ -130,6 +130,39 @@ effects:
   # 수정 진입의 첫 미리보기 — 2026-09-11 브라우저 실측이 드러낸 결함 두 개(셸의 기준 경로 · 첫 호출)
   - claim_edit_entry_runs_the_first_preview
   - claim_edit_shell_sets_api_base_on_the_order_response
+
+  # 서버 API 계약 — 구매자 클레임 엔드포인트가 실제로 고정하는 것 (#599 역매핑)
+  # 화면 effects 와 달리 이쪽은 UserClaimApiTest 가 HTTP 로 직접 재는 서버 면이다.
+  - user_claim_index_returns_type_counts                      # 목록이 네 유형 서브탭 건수를 함께 낸다
+  - user_claim_index_counts_apply_status_to_current_tab_only  # 상태 필터는 현재 탭 뱃지에만 걸린다
+  - claimable_options_lists_types_reasons_and_settings        # 신청 가능 옵션·사유·설정 한 묶음
+  - claim_endpoints_scope_to_the_requesting_member            # 남의 주문·신청서·첨부·결제는 404
+  - claim_preview_returns_the_estimate_and_rejects_ineligible_items # 미리보기 추정액과 422 거절
+  - exchange_request_attaches_images_and_enters_payment_pending     # 교환 접수가 첨부를 붙이고 결제대기로 간다
+  - return_request_with_deduct_from_refund_creates_no_payment       # 환불금 차감 반품은 결제 건을 만들지 않는다
+  - claim_request_rejects_items_outside_the_order_with_422          # 다른 주문의 상품을 담으면 422
+  - refund_request_files_a_direct_refund_for_pre_shipping_items     # 배송 전 상품은 환불신청서(request 분기)
+  - refund_request_of_a_delivered_item_is_422                       # 배송완료 상품의 환불신청은 422
+  - user_claim_index_lists_only_my_claims_by_type_with_pagination   # 목록은 내 건만, 유형별로, 페이지네이션과 함께
+  - claim_detail_carries_payment_block_and_hides_other_members      # 상세의 결제 블록과 타인 차단
+  - claim_update_changes_the_reason_before_approval_only            # 승인 전에만 사유 수정, 이후 422
+  - claim_update_rejects_reasons_hidden_from_users                  # 사용자 비노출 사유는 422
+  - claim_update_validates_attachments_before_mutating_anything     # 첨부 상한 초과는 아무것도 바꾸기 전에 422
+  - claim_withdraw_closes_and_refunds_the_paid_charge               # 철회가 신청서를 닫고 결제분을 환불한다
+  - claim_image_upload_delete_round_trip_with_type_gate             # 첨부 업로드·삭제 왕복과 파일 형식 게이트
+  - claim_payment_pay_and_pg_approve_round_trip                     # 마일리지 결제와 PG 승인 콜백
+  - claim_attachment_signed_url_serves_without_session              # 서명 URL 은 세션 없이, 맨 URL 은 열람자 게이트
+  - order_detail_exposes_claim_additional_paid_total                # 주문 상세의 클레임 추가결제 합계
+  - claim_payment_amounts_follow_the_order_currency_snapshot        # 같은 결제행의 표기가 응답 세 자리에서 일치
+  - claim_domain_exception_is_422_infrastructure_is_500             # 도메인 422 · 인프라 500(메시지 미노출)
+  - claim_endpoints_require_authentication                          # 비인증 401
+  - claim_routes_carry_their_user_claims_permission                 # read/request/withdraw/pay 권한 미들웨어
+  - claim_permission_denial_leaves_no_side_effect                   # 403 이 상태·원장을 건드리지 않는다
+  - user_claim_index_status_filter_gated_by_type_vocabulary         # 상태 어휘는 유형 종속(밖이면 422)
+  - user_claim_index_end_date_covers_the_whole_day                  # to 축이 하루 전체를 덮고 해석 불가 값은 422
+  - missing_claim_payment_is_404_with_its_own_message               # 결제 부재는 신청서 부재와 다른 문구
+  - user_estimate_refund_is_422_for_claim_course_items              # 코스에 잠긴 상품의 회원 취소 미리보기 422
+  - user_claim_pagination_meta_contract                             # pagination 7키 계약
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentRedirectTest.php

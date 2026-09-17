@@ -91,6 +91,13 @@ effects:
   - deposit_webhook_preserves_payment_key
   - deposit_canceled_fails_payment
   - non_waiting_deposit_is_noop
+  # 알 수 없는 주문번호는 200 + 본문 FAIL — 토스가 재시도를 멈추도록 수신은 성립시킨다
+  - deposit_for_an_unknown_order_number_answers_fail
+  # status 값 자체가 규격 밖이면 검증에서 422 로 거른다 (분기 진입 전)
+  - deposit_with_an_unknown_status_is_rejected_by_validation
+  # 클레임 추가결제(CP 채번) 상태변경 웹훅은 주문 조회로 내려가지 않는다 — 정상 동작마다
+  # `order not found` warning 이 남으면 운영자 로그에서 결함으로 읽힌다
+  - claim_payment_status_webhook_terminates_without_an_order_lookup
   - non_krw_domestic_method_blocked
   - sdk_method_mapped_from_enabled_methods
   - virtual_account_payload_built

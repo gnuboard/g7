@@ -82,8 +82,14 @@ effects:
   - row_edit_expired_lot_blocks_expiry_allows_memo  # 소멸/전액사용 lot 만료일 거부, memo 허용
   - row_edit_requires_manage_permission_403
   - row_data_exposes_can_edit_ability           # 적립계+권한 → can_edit true, 그 외 false
+  # 행 응답의 표시 재료 (Resource — 화면이 enum 규칙을 다시 적지 않게 서버가 낸다)
+  - row_data_carries_badge_group_display_category_and_formatted_timestamps
+  - row_badge_group_matches_the_five_color_map_for_every_type
+  - row_amounts_are_normalized_to_the_currency_precision_with_formatted_twins
+  - collection_wraps_rows_with_the_can_manage_ability
   # 소멸 집계 표시 (Resource expired_amount/expiry_state)
   - earning_row_exposes_expired_amount_and_state  # 부분/전체 소멸 집계
+  - non_earning_row_stays_active_even_with_an_expired_amount  # 적립계만 소멸 상태를 갖는다
   - expiry_column_shows_partial_vs_full_with_amount  # 일부/전체 구분 + 소멸액 (Vitest 레이아웃)
   # 브라우저 E2E (Playwright — data-testid 보강 후 활성화)
   - admin_can_open_list_and_see_count

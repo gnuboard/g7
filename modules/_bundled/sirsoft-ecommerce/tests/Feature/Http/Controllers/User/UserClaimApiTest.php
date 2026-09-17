@@ -112,6 +112,11 @@ class UserClaimApiTest extends ModuleTestCase
     // 신청 가능 옵션 / 미리보기
     // ================================================================
 
+    /**
+     * 신청 가능 옵션 응답이 유형·사유·설정·대기 첨부를 한 묶음으로 낸다
+     *
+     * @effects claimable_options_lists_types_reasons_and_settings
+     */
     public function test_claimable_options_lists_types_reasons_and_settings(): void
     {
         $order = $this->myDeliveredOrder();
@@ -174,6 +179,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertArrayHasKey('name', $banks[0]);
     }
 
+    /**
+     * 남의 주문의 신청 가능 옵션은 404 (존재 비노출)
+     *
+     * @effects claim_endpoints_scope_to_the_requesting_member
+     */
     public function test_claimable_options_is_404_for_someone_elses_order(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -181,6 +191,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")->assertNotFound();
     }
 
+    /**
+     * 미리보기가 청구액·배송비 추정을 내고, 대상이 아닌 상품은 신청과 같은 사유로 422
+     *
+     * @effects claim_preview_returns_the_estimate_and_rejects_ineligible_items
+     */
     public function test_preview_returns_the_estimate_and_rejects_ineligible_items_with_422(): void
     {
         $order = $this->myDeliveredOrder();
@@ -205,6 +220,11 @@ class UserClaimApiTest extends ModuleTestCase
     // 신청 3종
     // ================================================================
 
+    /**
+     * 교환 접수가 대기 첨부를 신청서에 붙이고 결제대기 + PG 결제 계약을 낸다
+     *
+     * @effects exchange_request_attaches_images_and_enters_payment_pending
+     */
     public function test_exchange_request_attaches_pending_images_and_enters_payment(): void
     {
         $this->registerTestPgProvider();
@@ -234,6 +254,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertStringStartsWith('/api/modules/sirsoft-ecommerce/claim-image/', $response->json('data.claim.images.0.download_url'));
     }
 
+    /**
+     * 환불금 차감 반품은 접수 상태로 서고 결제 건을 만들지 않는다
+     *
+     * @effects return_request_with_deduct_from_refund_creates_no_payment
+     */
     public function test_return_request_with_deduct_from_refund_needs_no_payment(): void
     {
         $order = $this->myDeliveredOrder();
@@ -416,6 +441,11 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.refund_account.prefill', null);
     }
 
+    /**
+     * 다른 주문의 상품을 담으면 422, 남의 주문에 접수하면 404
+     *
+     * @effects claim_request_rejects_items_outside_the_order_with_422, claim_endpoints_scope_to_the_requesting_member
+     */
     public function test_return_request_of_a_foreign_item_is_422_and_someone_elses_order_is_404(): void
     {
         $order = $this->myDeliveredOrder();
@@ -580,6 +610,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
     }
 
+    /**
+     * 배송 전(준비중) 상품은 request 분기의 환불신청서가 되고 승인 전에는 취소신청서가 없다
+     *
+     * @effects refund_request_files_a_direct_refund_for_pre_shipping_items
+     */
     public function test_refund_request_files_a_refund_request_for_preparing_items(): void
     {
         $order = $this->myPaidOrder();
@@ -600,6 +635,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertSame(0, OrderCancel::where('order_id', $order->id)->count());
     }
 
+    /**
+     * 배송완료 상품의 환불신청은 422 + 상태를 밝힌 문구
+     *
+     * @effects refund_request_of_a_delivered_item_is_422
+     */
     public function test_refund_request_with_a_delivered_item_is_422(): void
     {
         $order = $this->myDeliveredOrder();
@@ -614,6 +654,11 @@ class UserClaimApiTest extends ModuleTestCase
     // 목록 / 상세 / 수정 / 철회
     // ================================================================
 
+    /**
+     * 목록이 내 건만 유형별로 페이지네이션해 내고, 어휘 밖 유형은 422
+     *
+     * @effects user_claim_index_lists_only_my_claims_by_type_with_pagination
+     */
     public function test_index_lists_claims_by_type_with_pagination(): void
     {
         $order = $this->myDeliveredOrder(quantity: 3);
@@ -700,6 +745,11 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.counts.exchange', 1);
     }
 
+    /**
+     * 상세가 결제 블록을 싣고 타인·없는 신청번호는 404
+     *
+     * @effects claim_detail_carries_payment_block_and_hides_other_members, claim_endpoints_scope_to_the_requesting_member
+     */
     public function test_show_returns_the_detail_with_the_payment_block_and_hides_others(): void
     {
         $order = $this->myDeliveredOrder();
@@ -847,6 +897,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertNotSame('', $row['product_name']);
     }
 
+    /**
+     * 승인 전에는 사유·귀책·청구액이 다시 계산되고, 승인 뒤 수정은 422
+     *
+     * @effects claim_update_changes_the_reason_before_approval_only
+     */
     public function test_update_changes_the_reason_before_approval_and_is_422_after(): void
     {
         $order = $this->myDeliveredOrder();
@@ -957,6 +1012,9 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertSame('11100022233', $return->fresh()->refund_bank_account);
     }
 
+    /**
+     * @effects claim_update_rejects_reasons_hidden_from_users
+     */
     public function test_update_cannot_pick_a_reason_that_is_hidden_from_users(): void
     {
         // 접수 FormRequest 는 `is_user_selectable=true` 까지 게이트하는데 수정 요청은 신청서 유형을
@@ -994,6 +1052,9 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertEqualsWithDelta((float) $before->claim_shipping_fee, (float) $fresh->claim_shipping_fee, 0.001);
     }
 
+    /**
+     * @effects claim_update_validates_attachments_before_mutating_anything
+     */
     public function test_update_rejects_over_limit_attachments_before_it_changes_anything(): void
     {
         // 첨부 자격을 수정 본문을 쓴 **뒤**에 보면, 사유 변경은 커밋되고 삭제 대상 첨부는 파일까지
@@ -1034,6 +1095,11 @@ class UserClaimApiTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 철회가 신청서를 닫고 결제된 마일리지를 환불하며, 두 번째 철회는 422
+     *
+     * @effects claim_withdraw_closes_and_refunds_the_paid_charge
+     */
     public function test_withdraw_closes_the_claim_and_refunds_the_mileage_payment(): void
     {
         $order = $this->myDeliveredOrder();
@@ -1056,6 +1122,11 @@ class UserClaimApiTest extends ModuleTestCase
     // 첨부 / 추가결제
     // ================================================================
 
+    /**
+     * 첨부 업로드·삭제 왕복 — 이미지 아닌 파일은 422, 남의 첨부 삭제는 404
+     *
+     * @effects claim_image_upload_delete_round_trip_with_type_gate, claim_endpoints_scope_to_the_requesting_member
+     */
     public function test_image_upload_and_delete_round_trip(): void
     {
         $order = $this->myDeliveredOrder();
@@ -1077,6 +1148,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertNull(ClaimImage::find($imageId));
     }
 
+    /**
+     * PG 승인 콜백과 마일리지 결제가 결제행을 paid 로 만들고, 남의 결제 건은 404
+     *
+     * @effects claim_payment_pay_and_pg_approve_round_trip, claim_endpoints_scope_to_the_requesting_member
+     */
     public function test_pay_with_mileage_and_approve_with_the_pg_hook(): void
     {
         $this->registerTestPgProvider();
@@ -1103,6 +1179,9 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.requires_pg_payment', false);
     }
 
+    /**
+     * @effects claim_attachment_signed_url_serves_without_session
+     */
     public function test_signed_attachment_url_serves_the_file_and_the_bare_hash_needs_a_viewer(): void
     {
         // 서빙 라우트 자체를 때리는 테스트가 없어, 라우트를 지워도 스위트가 green 이었다
@@ -1134,6 +1213,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->actingAs($this->user)->get($bare)->assertOk();
     }
 
+    /**
+     * 주문 상세가 클레임 추가결제 합계를 금액·표기 두 키로 낸다
+     *
+     * @effects order_detail_exposes_claim_additional_paid_total
+     */
     public function test_order_detail_exposes_the_claim_additional_paid_total(): void
     {
         $this->grantMileage($this->user->id, 10000);
@@ -1146,6 +1230,9 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.claim_additional_paid_total_formatted', '₩3,000');
     }
 
+    /**
+     * @effects claim_payment_amounts_follow_the_order_currency_snapshot
+     */
     public function test_claim_payment_amounts_use_the_order_currency_snapshot_in_every_response_slot(): void
     {
         // 이 주문은 KRW 를 소수 2자리로 쓰던 시절에 결제됐고, 현재 설정은 0자리다.
@@ -1190,6 +1277,11 @@ class UserClaimApiTest extends ModuleTestCase
     // 예외 → 상태코드 페어
     // ================================================================
 
+    /**
+     * 도메인 예외는 422 + 그 사유 문구
+     *
+     * @effects claim_domain_exception_is_422_infrastructure_is_500
+     */
     public function test_domain_exception_is_422(): void
     {
         $order = $this->myDeliveredOrder();
@@ -1203,6 +1295,9 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     // 라우터가 컨트롤러 인스턴스를 Route 객체에 캐시하므로, 한 테스트 안에서 두 번째 mock 은 첫 요청의 컨트롤러에 닿지 않는다 — 메서드를 나눈다.
+    /**
+     * @effects claim_domain_exception_is_422_infrastructure_is_500
+     */
     public function test_infrastructure_exception_is_500_without_leaking_the_message(): void
     {
         $order = $this->myDeliveredOrder();
@@ -1217,6 +1312,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
     }
 
+    /**
+     * 비인증 요청은 401
+     *
+     * @effects claim_endpoints_require_authentication
+     */
     public function test_unauthenticated_requests_are_rejected(): void
     {
         $order = $this->myDeliveredOrder();
@@ -1269,6 +1369,11 @@ class UserClaimApiTest extends ModuleTestCase
         return $user;
     }
 
+    /**
+     * user-claims.read 가 없으면 목록이 403
+     *
+     * @effects claim_routes_carry_their_user_claims_permission
+     */
     public function test_claim_read_requires_the_read_permission(): void
     {
         $this->actingAs($this->userWithoutClaimPermission('read'))
@@ -1276,6 +1381,11 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertForbidden();
     }
 
+    /**
+     * user-claims.request 가 없으면 미리보기가 403
+     *
+     * @effects claim_routes_carry_their_user_claims_permission
+     */
     public function test_claim_request_requires_the_request_permission(): void
     {
         $order = $this->myDeliveredOrder();
@@ -1289,6 +1399,11 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertForbidden();
     }
 
+    /**
+     * user-claims.withdraw 가 없으면 403 이고 철회가 반영되지 않는다
+     *
+     * @effects claim_routes_carry_their_user_claims_permission, claim_permission_denial_leaves_no_side_effect
+     */
     public function test_claim_withdraw_requires_the_withdraw_permission(): void
     {
         $order = $this->myDeliveredOrder();
@@ -1308,6 +1423,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertNull($return->fresh()->withdrawn_at);
     }
 
+    /**
+     * user-claims.pay 가 없으면 403 이고 결제행·마일리지 원장이 그대로다
+     *
+     * @effects claim_routes_carry_their_user_claims_permission, claim_permission_denial_leaves_no_side_effect
+     */
     public function test_claim_payment_requires_the_pay_permission(): void
     {
         $order = $this->myDeliveredOrder();
@@ -1339,6 +1459,9 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertSame(0, MileageTransaction::where('claim_payment_id', $payment->id)->count());
     }
 
+    /**
+     * @effects user_claim_index_status_filter_gated_by_type_vocabulary
+     */
     public function test_index_status_filter_is_gated_by_the_vocabulary_of_the_requested_type(): void
     {
         // 상태 어휘는 유형마다 다르다 — 게이트가 없으면 다른 유형의 상태값이 그대로 저장소 where 로 흘러
@@ -1359,6 +1482,9 @@ class UserClaimApiTest extends ModuleTestCase
         $this->actingAs($this->user)->getJson($this->base().'/claims?status=processing')->assertStatus(422);
     }
 
+    /**
+     * @effects user_claim_index_end_date_covers_the_whole_day
+     */
     public function test_index_end_date_covers_the_whole_day_even_when_a_time_is_given(): void
     {
         // 기간 두 축은 이 모듈의 목록 요청 관례(`date`)를 따르고, 하루 경계 해석은 저장소가 맡는다.
@@ -1391,6 +1517,9 @@ class UserClaimApiTest extends ModuleTestCase
         $this->actingAs($this->user)->getJson($this->base().'/claims?type=return&to=not-a-date')->assertStatus(422);
     }
 
+    /**
+     * @effects missing_claim_payment_is_404_with_its_own_message
+     */
     public function test_missing_payment_is_404_with_the_payment_specific_message(): void
     {
         // 결제 부재는 신청서 부재와 다른 안내다 — 두 경로가 같은 문구를 쓰면 사용자는 무엇이 없는지 모른다.
@@ -1419,6 +1548,8 @@ class UserClaimApiTest extends ModuleTestCase
      * `previewRefund()` 의 클레임 가드가 기본 적용되면서 회원 면에도 새 422 경로가 생겼다.
      * 관리자 면만 단언하면 이 컨트롤러의 매핑(`OrderCancellationException` → 422)이
      * 끊겨도 회귀가 초록으로 남는다 — 세 면이 각각 다른 메시지 키를 쓰기 때문에 더 그렇다.
+     *
+     * @effects user_estimate_refund_is_422_for_claim_course_items
      */
     public function test_estimate_refund_is_422_for_items_locked_by_a_claim_course(): void
     {
@@ -1449,6 +1580,11 @@ class UserClaimApiTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 목록 pagination 이 7키 계약을 지킨다 (기존 4키 + from/to/has_more_pages)
+     *
+     * @effects user_claim_pagination_meta_contract
+     */
     public function test_claim_list_pagination_carries_the_pagination_meta_contract(): void
     {
         $order = $this->myDeliveredOrder();

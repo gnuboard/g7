@@ -27,6 +27,14 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
  */
 class CartService
 {
+    /**
+     * @param  CartRepositoryInterface  $cartRepository  장바구니 리포지터리
+     * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 리포지터리
+     * @param  OrderCalculationService  $orderCalculationService  주문 금액 계산 서비스
+     * @param  OrderRepositoryInterface  $orderRepository  주문 리포지터리
+     * @param  ProductRepositoryInterface  $productRepository  상품 리포지터리
+     * @param  AdditionalOptionSelectionService  $additionalOptionSelectionService  추가옵션 선택 서비스
+     */
     public function __construct(
         protected CartRepositoryInterface $cartRepository,
         protected ProductOptionRepositoryInterface $productOptionRepository,
@@ -831,6 +839,7 @@ class CartService
      * @param  int  $currentQuantity  현재 장바구니에 담긴 수량 (합산용, 기본값 0)
      *
      * @throws \Exception 재고 초과 시 예외
+     * @return void 반환값 없음
      */
     protected function validateStock(int $productOptionId, int $requestedQuantity, int $currentQuantity = 0): void
     {
@@ -873,6 +882,7 @@ class CartService
      *
      * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품인 경우
      * @throws \Exception 옵션/상품을 찾을 수 없는 경우
+     * @return void 반환값 없음
      */
     protected function validatePurchasable(int $productOptionId): void
     {
@@ -902,6 +912,7 @@ class CartService
      * @param  int  $totalQuantity  검증 후 상품 총수량 (기존 장바구니 + 이번 요청)
      *
      * @throws CartUnavailableException 최소 미달/최대 초과 시
+     * @return void 반환값 없음
      */
     protected function validatePurchaseQuantityLimit(int $productId, int $totalQuantity): void
     {
@@ -942,6 +953,7 @@ class CartService
      * @param  int  $newProductOptionId  변경하려는 옵션 ID
      *
      * @throws \Exception 다른 상품의 옵션으로 변경 시도 시
+     * @return void 반환값 없음
      */
     protected function validateSameProduct(Cart $cart, int $newProductOptionId): void
     {
@@ -1027,6 +1039,7 @@ class CartService
      * @param  int  $totalQuantity  합산 후 라인 수량
      *
      * @throws CartOperationException 상한 초과 시
+     * @return void 반환값 없음
      */
     protected function validateCartQuantityLimit(int $totalQuantity): void
     {

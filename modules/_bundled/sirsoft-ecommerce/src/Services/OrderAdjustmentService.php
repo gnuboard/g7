@@ -40,6 +40,8 @@ class OrderAdjustmentService
      * @param  CurrencyConversionService  $currencyService  통화 변환 서비스
      * @param  CouponIssueRepositoryInterface  $couponIssueRepository  쿠폰 발급 Repository
      * @param  CalculationSnapshotPresenter  $snapshotPresenter  비교 스냅샷 표시 재료(정가 합계·다통화 줄) 단일 출처
+     * @param  OrderExchangeOptionRepositoryInterface  $exchangeOptionRepository  교환 신청상품 Repository (후속 행 회계 단가 판정)
+     * @param  OrderRefundRepositoryInterface  $refundRepository  환불신청서 Repository (교환 차액 환불 여부 판정)
      */
     public function __construct(
         protected OrderCalculationService $calculationService,
@@ -49,6 +51,34 @@ class OrderAdjustmentService
         protected OrderExchangeOptionRepositoryInterface $exchangeOptionRepository,
         protected OrderRefundRepositoryInterface $refundRepository,
     ) {}
+
+    /**
+     * 그 주문의 후속 행 회계 단가 오버라이드를 한 번에 구합니다. (#599 S3-D3)
+     *
+     * 재계산(`buildRecalcInput()`)과 취소 장부(`buildAdjustedItems()`)는 **같은 단가**를 봐야
+     * 한다 — 두 값이 갈라지면 재계산이 본 금액과 장부에 적힌 금액이 어긋나 S3-D3 과 같은 종류의
+     * 금액 오류가 조용히 되살아난다. 종전에는 두 메서드가 후속 행 id 산출식까지 각자 복제해
+     * 갖고 있어 한쪽만 고치면 그대로 갈라지는 구조였고, 주문당 리포지토리 조회도 2회였다.
+     * 그래서 `calculate()` 가 한 번 구해 두 곳에 인자로 넘긴다.
+     *
+     * @param  Order  $order  주문 (options 로드됨)
+     * @return array<int, array{option_snapshot: array, unit_price: float}> 후속 행 id → 오버라이드
+     */
+    private function resolveSuccessorOverrides(Order $order): array
+    {
+        $exchangedSourceIds = $order->options
+            ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
+            ->pluck('id')
+            ->all();
+
+        $successorIds = $order->options
+            ->filter(fn ($option) => $option->isExchanged() && in_array((int) $option->source_option_id, $exchangedSourceIds, true))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return $this->successorAccountingOverrides($order, $successorIds);
+    }
 
     /**
      * 교환 후속 행의 **회계 단가** 오버라이드를 만듭니다. (#599 S3-D3)
@@ -146,8 +176,11 @@ class OrderAdjustmentService
         $excludedItems = $adjustment->getExcludedItems();
         $excludedMap = $this->buildExcludedMap($excludedItems);
 
+        // 후속 행 회계 단가는 여기서 **한 번만** 구해 재계산·취소 장부에 같은 값을 넘긴다(S3-D3).
+        $successorOverrides = $this->resolveSuccessorOverrides($order);
+
         // 3. 잔여 옵션으로 CalculationInput 구성
-        $recalcInput = $this->buildRecalcInput($order, $excludedMap);
+        $recalcInput = $this->buildRecalcInput($order, $excludedMap, $successorOverrides);
 
         // 전량 제외(전체취소)인 경우
         if (empty($recalcInput->items)) {
@@ -191,7 +224,7 @@ class OrderAdjustmentService
         $baselineAmount = $originalPaidAmount + $originalPointsUsed;
 
         if ((float) $order->total_refunded_amount > 0 || (float) $order->total_refunded_points_amount > 0) {
-            $priorInput = $this->buildRecalcInput($order, []);
+            $priorInput = $this->buildRecalcInput($order, [], $successorOverrides);
 
             if (! empty($priorInput->items)) {
                 $priorResult = $this->calculationService->calculate($priorInput);
@@ -252,7 +285,7 @@ class OrderAdjustmentService
         $orderUpdates = $this->buildOrderUpdates($order, $recalcResult);
 
         // 9. 취소 대상 아이템 정보
-        $adjustedItems = $this->buildAdjustedItems($order, $excludedMap);
+        $adjustedItems = $this->buildAdjustedItems($order, $excludedMap, $successorOverrides);
 
         // 10. 쿠폰 복원 대상 확인
         $restoredCouponIssueIds = $this->detectRestoredCoupons($order, $recalcResult);
@@ -661,9 +694,10 @@ class OrderAdjustmentService
      *
      * @param  Order  $order  주문
      * @param  array  $excludedMap  제외 맵
+     * @param  array  $successorOverrides  후속 행 회계 단가 오버라이드 (`resolveSuccessorOverrides()` 가 한 번 구해 넘긴다 — 취소 장부와 같은 값이어야 한다)
      * @return CalculationInput 재계산 입력
      */
-    private function buildRecalcInput(Order $order, array $excludedMap): CalculationInput
+    private function buildRecalcInput(Order $order, array $excludedMap, array $successorOverrides = []): CalculationInput
     {
         $items = [];
         $restoredCoupons = [];
@@ -672,14 +706,6 @@ class OrderAdjustmentService
             ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
             ->pluck('id')
             ->all();
-
-        // 회계 주체가 된 후속 행 — 저가 옵션 교환이면 신규 옵션 단가로 센다(S3-D3).
-        $successorIds = $order->options
-            ->filter(fn ($option) => $option->isExchanged() && in_array((int) $option->source_option_id, $exchangedSourceIds, true))
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-        $successorOverrides = $this->successorAccountingOverrides($order, $successorIds);
 
         foreach ($order->options as $option) {
             // 이미 취소된 옵션은 제외
@@ -1363,23 +1389,12 @@ class OrderAdjustmentService
      *
      * @param  Order  $order  주문
      * @param  array  $excludedMap  제외 맵
+     * @param  array  $successorOverrides  후속 행 회계 단가 오버라이드 (`resolveSuccessorOverrides()` 가 한 번 구해 넘긴다 — 재계산과 같은 값이어야 한다)
      * @return array [{order_option_id, cancel_quantity, cancel_amount}]
      */
-    private function buildAdjustedItems(Order $order, array $excludedMap): array
+    private function buildAdjustedItems(Order $order, array $excludedMap, array $successorOverrides = []): array
     {
         $items = [];
-        $exchangedSourceIds = $order->options
-            ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
-            ->pluck('id')
-            ->all();
-        $successorOverrides = $this->successorAccountingOverrides(
-            $order,
-            $order->options
-                ->filter(fn ($option) => $option->isExchanged() && in_array((int) $option->source_option_id, $exchangedSourceIds, true))
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->all(),
-        );
         foreach ($excludedMap as $optionId => $cancelQty) {
             $option = $order->options->find($optionId);
             if ($option) {

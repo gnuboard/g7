@@ -13,6 +13,8 @@ class MileageEnumsTest extends ModuleTestCase
 {
     /**
      * 거래 유형 값이 올바른지 확인합니다.
+     *
+     * @effects transaction_type_values_and_case_count_are_stable_with_a_label_for_each
      */
     public function test_transaction_type_has_correct_values(): void
     {
@@ -28,6 +30,8 @@ class MileageEnumsTest extends ModuleTestCase
 
     /**
      * isEarning / isDeducting 분류가 올바른지 확인합니다.
+     *
+     * @effects earning_and_deducting_classification_is_total_and_mutually_exclusive
      */
     public function test_earning_and_deducting_classification(): void
     {
@@ -49,6 +53,8 @@ class MileageEnumsTest extends ModuleTestCase
 
     /**
      * 관리자 배지 그룹이 5색으로 매핑되는지 확인합니다.
+     *
+     * @effects admin_badge_group_distinguishes_eight_types_in_five_color_groups
      */
     public function test_admin_badge_group_maps_to_five_color_groups(): void
     {
@@ -117,6 +123,8 @@ class MileageEnumsTest extends ModuleTestCase
 
     /**
      * 적립 시점 enum 기본값 및 컬럼 매핑을 확인합니다.
+     *
+     * @effects earn_trigger_maps_each_case_to_its_timestamp_column
      */
     public function test_earn_trigger_default_and_timestamp_column(): void
     {

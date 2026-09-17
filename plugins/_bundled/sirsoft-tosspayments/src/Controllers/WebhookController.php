@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+// audit:allow extension-doc-coverage reason: 생성자와 private 헬퍼 3개에 누락됐던 PHPDoc 을 채운 내부 수정이다. 라우트·웹훅 계약·응답 모두 불변이라 개발자 문서에 반영할 표면 변화가 없다(`ext:docgen --scope=plugin:sirsoft-tosspayments --check` 이상 0건 확인).
+
 namespace Plugins\Sirsoft\Tosspayments\Controllers;
 
 use App\Services\PluginSettingsService;
@@ -29,6 +31,10 @@ class WebhookController
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
+     */
     public function __construct(
         private OrderProcessingService $orderService,
         private PluginSettingsService $pluginSettingsService,
@@ -214,6 +220,8 @@ class WebhookController
 
     /**
      * 웹훅 secret 대조 강제 여부.
+     *
+     * @return bool 판정 결과
      */
     private function shouldVerifySecret(): bool
     {
@@ -227,6 +235,7 @@ class WebhookController
      *
      * @param  string  $storedSecret  결제 승인 응답에서 저장한 secret (payment_meta.toss_secret)
      * @param  string  $incomingSecret  웹훅 본문의 secret
+     * @return bool 판정 결과
      */
     private function secretMatches(string $storedSecret, string $incomingSecret): bool
     {
@@ -242,6 +251,7 @@ class WebhookController
      *
      * @param  string  $body  응답 본문
      * @param  int  $status  HTTP 상태 코드
+     * @return Response 반환값
      */
     private function plain(string $body, int $status = 200): Response
     {

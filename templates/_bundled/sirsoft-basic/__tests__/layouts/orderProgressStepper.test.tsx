@@ -153,6 +153,10 @@ async function renderDetail(order: Node, files = ['_status_header.json']) {
 }
 
 describe('주문 상세 — 상태 헤더 아래 진행단계 스텝퍼', () => {
+  /**
+   * @scenario surface=mypage_detail, order_stage=in_progress, viewport=desktop
+   * @effects order_progress_stepper_renders_server_steps, order_progress_steps_seven_stages, order_progress_steps_carry_icon_and_variant
+   */
   it('서버 배열의 칸을 순서·상태·아이콘 그대로 그리고 상태 헤더 아이콘도 토큰을 읽는다', async () => {
     await renderDetail(orderData());
 
@@ -180,6 +184,10 @@ describe('주문 상세 — 상태 헤더 아래 진행단계 스텝퍼', () => 
     expect(header?.getAttribute('data-icon')).toBe('status-dispatch');
   });
 
+  /**
+   * @scenario surface=mypage_detail, order_stage=off_path, viewport=desktop
+   * @effects order_progress_off_path_appends_last_cell
+   */
   it('이탈(취소) 주문은 순서 안에 현재 칸이 없고 마지막에 빨간 이탈 칸이 붙는다', async () => {
     await renderDetail(orderData({ order_status: 'cancelled', order_status_label: '주문취소', order_status_variant: 'danger', order_status_icon: 'status-cancelled', progress_steps: CANCELLED_STEPS }));
 
@@ -193,6 +201,10 @@ describe('주문 상세 — 상태 헤더 아래 진행단계 스텝퍼', () => 
     expect(offPath.querySelector('i[data-icon="status-cancelled"]')).not.toBeNull();
   });
 
+  /**
+   * @scenario surface=mypage_detail, order_stage=in_progress, viewport=mobile
+   * @effects order_progress_chevrons_between_cells_only, order_progress_wraps_on_mobile_without_scroll, order_progress_hidden_is_owned_by_wrapper_div_not_icon
+   */
   it('꺾쇠는 마지막 칸을 뺀 칸 사이에만 서고(PC 6 · 모바일 4칸/줄 5) Icon 에 hidden 을 직접 주지 않는다', async () => {
     await renderDetail(orderData());
 
@@ -209,6 +221,10 @@ describe('주문 상세 — 상태 헤더 아래 진행단계 스텝퍼', () => 
     expect(pcChevron.responsive?.portable?.props?.className).toBe('hidden');
   });
 
+  /**
+   * @scenario surface=mypage_detail, order_stage=in_progress, viewport=desktop
+   * @effects order_progress_absent_when_steps_empty
+   */
   it('진행단계 배열이 비어 있으면 스텝퍼 영역 자체가 서지 않는다', async () => {
     await renderDetail(orderData({ progress_steps: [] }));
 
@@ -218,6 +234,10 @@ describe('주문 상세 — 상태 헤더 아래 진행단계 스텝퍼', () => 
 });
 
 describe('주문 상세 — 상품 행 상태 뱃지 아이콘', () => {
+  /**
+   * @scenario surface=mypage_detail, order_stage=in_progress, viewport=desktop
+   * @effects order_status_badge_carries_icon
+   */
   it('상품 행의 상태 뱃지가 서버 토큰 아이콘을 라벨 앞에 그린다', async () => {
     await renderDetail(
       orderData({
@@ -264,6 +284,10 @@ describe('주문 목록 상단 — 상태별 건수 칸', () => {
     return utils;
   }
 
+  /**
+   * @scenario surface=mypage_list, order_stage=in_progress, viewport=mobile
+   * @effects order_summary_cells_render_server_summary, order_summary_wraps_on_mobile_without_scroll
+   */
   it('서버 배열의 여섯 칸을 키·라벨·아이콘·건수 배지로 그린다', async () => {
     await renderList();
 
@@ -286,6 +310,10 @@ describe('주문 목록 상단 — 상태별 건수 칸', () => {
     expect(document.querySelectorAll('[data-step-chevron="mobile"]')).toHaveLength(4);
   });
 
+  /**
+   * @scenario surface=mypage_list, order_stage=in_progress, viewport=desktop
+   * @effects order_summary_selected_cell_highlighted_zero_count_dimmed
+   */
   it('선택된 칸은 현재 칸 스타일, 건수 있는 칸은 채움, 0 건은 회색이다', async () => {
     await renderList({ ordersStatus: 'shipping' });
 
@@ -295,6 +323,10 @@ describe('주문 목록 상단 — 상태별 건수 칸', () => {
     expect(document.querySelector('[data-summary-key="preparing"] .rounded-full.border-2')!.className).toContain('border-gray-300');
   });
 
+  /**
+   * @scenario surface=mypage_list, order_stage=in_progress, viewport=desktop
+   * @effects order_summary_click_filters_by_status
+   */
   it('칸 클릭은 그 상태를 필터로 보내는 목록 안 이동이다 (mergeQuery 유지)', () => {
     const cell = flatten(loadPartial('_list.json')).find((n) => String(n.id ?? '').startsWith('order_summary_step_'))!;
     const click = (cell.actions ?? []).find((a: Node) => a.type === 'click')!;

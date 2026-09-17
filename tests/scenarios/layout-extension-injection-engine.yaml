@@ -1,0 +1,183 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축 6개의 full cross product 는 실제로 성립하지 않는 조합(등록 수명주기 × 주입 위치 등)을 대량 포함한다. 회귀 가드는 effects 전수 매핑으로 유지한다 — effects 축은 면제하지 않는다.
+
+feature: 레이아웃 확장 주입 엔진 — applyExtensions 병합 규칙과 확장 등록 수명주기
+
+description: |
+  `LayoutExtensionService` 가 **DB 에 적재된 확장 행을 호스트 레이아웃 배열에 합쳐
+  최종 레이아웃을 만드는** 규칙, 그리고 그 행이 어떻게 생기고 사라지는지의 수명주기.
+
+  이 매니페스트는 UI 가 아니라 **서버가 돌려주는 레이아웃 배열의 형태**를 계약으로 잡는다.
+  화면의 시각 편집은 `layout-extension-visual-editing.yaml`, 편집/버전/복구 API 는
+  `layout-extension-editing.yaml`, `inject_props` 의 `_patch` 전략은
+  `layout-extension-patch-list-item.yaml` 이 각각 맡는다.
+
+  **왜 이 계약이 따로 필요한가**: 하나의 화면 레이아웃은 호스트 JSON 하나가 아니라
+  호스트 + 활성 확장 N 개의 병합 결과다. 병합 규칙이 한 군데라도 어긋나면 증상은
+  **조용하다** — 콘솔 오류도 500 도 없이 노드나 모달이나 초기화 액션이 그냥 없다.
+  운영자는 레이아웃 JSON 을 열어 봐도 이유를 찾지 못한다(그 JSON 에는 확장의 기여가
+  들어 있지 않기 때문이다). 그래서 병합의 각 갈래를 관측 가능한 결과 단위로 못박는다.
+
+  갈래는 다섯이다.
+
+  1. **주입 지점** — `extension_point` 노드(호스트가 확장에 열어 준 자리)와
+     `overlay` injection(확장이 호스트의 특정 `target_id` 를 지목하는 자리).
+     overlay 의 `position` 은 `append_child` · `prepend` · `replace` · `inject_props` 이고,
+     extension_point 의 `mode` 는 `append`(기본) · `prepend` · `replace` 로 호스트가 적어 둔
+     `default` 를 어떻게 다룰지 정한다. 모달 안의 `extension_point` 도 본문과 동등하게
+     주입돼야 한다 — 결제 플러그인의 주소검색 버튼이 사는 자리가 바로 거기다.
+
+  2. **부수 섹션 병합** — 확장은 컴포넌트만이 아니라 `data_sources` · `modals` ·
+     `computed` · `state` · `init_actions` 도 기여한다. 각각 호스트의 같은 섹션에
+     합쳐지고, 호스트에 그 섹션이 없으면 새로 만든다. 확장이 기여하지 않으면
+     **호스트를 건드리지 않는다**(없던 키를 만들지 않는다).
+
+     `init_actions` 는 deprecated snake 입력도 표준 `initActions` 한 배열로 흡수한다.
+     두 키가 공존하면 엔진의 `initActions || init_actions` OR 단락이 snake 배열을 통째로
+     무시해, 자체 `initActions` 를 가진 화면에서만 확장 초기화가 실행되지 않는다.
+
+  3. **`inject_props`** — 호스트 노드를 지우지 않고 그 노드의 `props` 만 고친다.
+     `_append` · `_prepend`(배열) · `_merge`(객체 shallow) · 스칼라 덮어쓰기가 있고,
+     대상 prop 이 없으면 만들고 `props` 자체가 없어도 만든다. 대상이 표현식 문자열이면
+     배열 연산이 성립하지 않으므로 **값을 바꾸지 않고 경고만 남긴다**. `target_id` 가
+     호스트에 없으면 조용히 넘어가지 않고 경고를 남긴다 — 이 경고가 없으면 확장이
+     "붙었다고 생각하는데 화면에 없는" 상태를 아무도 알아채지 못한다.
+
+  4. **우선순위와 활성 상태** — 확장은 `priority` 오름차순으로 적용되므로 같은 자리에
+     여러 확장이 붙으면 낮은 값이 앞에 오고, 같은 키를 쓰면 나중(높은 값)이 이긴다.
+     `is_active = false` 행은 아예 적용되지 않는다.
+
+  5. **등록 수명주기** — `registerExtension` 은 content 형태(`extension_point` vs
+     `target_layout`)로 타입을 판정해 행을 만들고, `registerTemplateOverride` 는 템플릿이
+     특정 모듈의 확장을 대신하도록 `override_target` 을 남긴다. `unregisterBySource` 는
+     그 출처의 행만 soft delete 하고 남의 출처는 건드리지 않으며, `restoreBySource` 로
+     되살아난다. `registerAllActiveExtensionsToTemplate` 은 새 템플릿을 설치할 때 활성
+     모듈·플러그인의 확장 파일을 훑어 그 템플릿에 적재한다.
+
+  덧붙여 편집기 트리의 확장 출처명(`resolveSourceLabel`)은 DB 레코드의 다국어 `name` 을
+  현재 locale 로 읽는다. 매니페스트 객체는 ko/en 만 갖고 있어 그것을 읽으면 ja locale 에서
+  한국어가 노출된다. DB 행이 없으면 매니페스트로 폴백해 크래시 대신 문자열을 준다.
+
+axes:
+  injection_point: [extension_point, overlay_injection, modal_extension_point]
+  overlay_position: [append_child, prepend, replace, inject_props]
+  extension_point_mode: [append_default, prepend, replace]
+  merged_section: [components, data_sources, modals, computed, state, init_actions]
+  host_section_state: [present, absent]
+  registration_op: [register, register_template_override, unregister_by_source, restore_by_source, register_all_active]
+
+exclusions:
+  - { injection_point: extension_point, overlay_position: append_child, reason: "overlay_position 은 overlay injection 전용 축 — extension_point 는 mode 축으로 정해진다" }
+  - { injection_point: modal_extension_point, overlay_position: inject_props, reason: "모달 안의 확장점은 컴포넌트 주입 자리 — inject_props 는 호스트 노드 props 대상" }
+  - { registration_op: unregister_by_source, merged_section: components, reason: "등록 수명주기는 DB 행의 생성·삭제·복원만 — 병합 결과 축과 교차하지 않는다" }
+
+effects:
+  # --- 주입 지점 ---
+  # extension_point 노드에 확장 컴포넌트가 children 으로 들어간다
+  - extension_point_node_receives_injected_components_as_children
+  # overlay 의 append_child 는 target_id 노드의 기존 자식을 지우지 않고 뒤에 붙인다
+  - overlay_append_child_adds_after_existing_children
+  # overlay 의 prepend 는 target_id 노드 바로 앞에 형제로 끼운다 (앞뒤 형제 보존)
+  - overlay_prepend_inserts_before_target_keeping_siblings
+  # overlay 의 replace 는 target_id 노드를 확장 컴포넌트로 갈아치운다
+  - overlay_replace_swaps_target_node_out
+  # 모달 안의 extension_point 에도 본문과 동등하게 주입된다
+  - modal_extension_point_receives_injected_components
+  # 같은 이름의 확장점이 본문과 모달 양쪽에 있으면 양쪽 모두 주입된다
+  - same_extension_point_injects_into_both_components_and_modals
+  # 확장점의 props 는 주입 컴포넌트에 extensionPointProps 로 전달된다
+  - extension_point_props_forwarded_as_extension_point_props
+  # 확장점의 callbacks 는 extensionPointCallbacks 로 전달된다 (props 와 다른 자리)
+  - extension_point_callbacks_forwarded_as_extension_point_callbacks
+  # callbacks 가 없는 확장점은 extensionPointCallbacks 키를 만들지 않는다
+  - no_extension_point_callbacks_key_when_extension_declares_none
+  # mode=replace 는 호스트가 적어 둔 default 를 제거한다
+  - extension_point_replace_mode_drops_host_default
+  # mode=prepend 는 확장을 default 앞에 둔다 (default 유지)
+  - extension_point_prepend_mode_places_extension_before_default
+  # mode 미지정은 append — default 뒤에 확장이 온다
+  - extension_point_default_mode_appends_after_host_default
+
+  # --- 부수 섹션 병합 ---
+  # 확장의 data_sources 가 호스트 data_sources 에 합쳐진다 (호스트 것 보존)
+  - extension_data_sources_merge_into_host_data_sources
+  # extension_point 의 modals 가 호스트에 없던 modals 를 만든다
+  - extension_modals_create_modals_section_when_host_has_none
+  # 호스트 modals 가 있으면 확장 modals 가 그 뒤에 합쳐진다
+  - extension_modals_merge_with_existing_host_modals
+  # 여러 확장의 modals 가 전부 살아남는다
+  - modals_from_every_extension_survive_the_merge
+  # 확장에 modals 가 없으면 호스트에 modals 키를 만들지 않는다
+  - no_modals_key_created_when_extension_declares_none
+  # overlay 의 computed 가 호스트 computed 에 합쳐진다
+  - overlay_computed_merges_into_host_computed
+  # overlay 의 state 가 호스트 state 에 합쳐진다
+  - overlay_state_merges_into_host_state
+  # overlay 의 modals 가 호스트 modals 에 합쳐진다
+  - overlay_modals_merge_into_host_modals
+  # 호스트에 해당 섹션이 없으면 overlay 가 새로 만든다
+  - overlay_creates_missing_section_on_host
+  # overlay 가 섹션을 기여하지 않으면 호스트 섹션은 그대로다
+  - overlay_without_sections_leaves_host_sections_untouched
+  # 여러 overlay 의 같은 섹션 기여가 순차로 쌓인다
+  - multiple_overlays_accumulate_into_the_same_section
+  # 같은 키를 두 overlay 가 쓰면 priority 가 높은 쪽이 남는다
+  - later_priority_overlay_wins_the_same_section_key
+  # overlay 의 init_actions 가 호스트 initActions 뒤에 순서대로 붙는다
+  - overlay_init_actions_append_after_host_init_actions
+  # deprecated snake init_actions 가 표준 initActions 단일 배열로 흡수된다 (두 키 공존 금지)
+  - snake_init_actions_absorbed_into_single_camel_init_actions
+  # 호스트에 init 이 없어도 확장 기여만으로 initActions 배열이 생긴다
+  - init_actions_array_created_from_extension_only
+
+  # --- inject_props ---
+  # _append 가 기존 배열 prop 뒤에 항목을 더한다 (기존 항목 보존)
+  - inject_props_append_adds_to_existing_array_prop
+  # _prepend 가 기존 배열 prop 앞에 항목을 더한다
+  - inject_props_prepend_adds_before_existing_array_prop
+  # _merge 가 객체 prop 에 shallow 병합된다 (적지 않은 키 보존)
+  - inject_props_merge_shallow_merges_object_prop
+  # 스칼라 값은 덮어쓴다
+  - inject_props_scalar_overwrites_host_value
+  # 대상 prop 이 없으면 만든다
+  - inject_props_creates_the_prop_when_host_lacks_it
+  # props 자체가 없는 컴포넌트에도 props 를 만들어 주입한다
+  - inject_props_creates_props_object_on_a_component_without_one
+  # 표현식 문자열 대상에는 값을 바꾸지 않고 경고만 남긴다
+  - inject_props_on_expression_string_warns_and_keeps_the_value
+  # target_id 가 호스트에 없으면 경고를 남긴다 (조용한 실패 금지)
+  - inject_props_warns_when_the_target_node_is_absent
+  # 깊이 중첩된 노드도 찾아 주입한다
+  - inject_props_reaches_deeply_nested_target_nodes
+  # 같은 prop 에 _append 와 _merge 가 동시에 오면 _append 가 이긴다
+  - inject_props_append_takes_precedence_over_merge_on_the_same_prop
+
+  # --- 우선순위 · 활성 상태 ---
+  # priority 오름차순으로 주입되어 낮은 값이 앞에 온다
+  - extensions_inject_in_ascending_priority_order
+  # 비활성 확장은 적용되지 않는다
+  - inactive_extension_contributes_nothing
+
+  # --- 등록 수명주기 ---
+  # content 형태로 extension_point / overlay 타입을 판정해 행을 만든다
+  - register_extension_derives_type_and_target_from_content
+  # 템플릿 오버라이드는 override_target 과 template 출처로 기록된다
+  - register_template_override_records_override_target
+  # 출처별 제거는 그 출처의 행만 soft delete 한다
+  - unregister_by_source_soft_deletes_only_that_sources_rows
+  # 출처별 복원이 soft delete 된 행을 되살린다
+  - restore_by_source_brings_back_soft_deleted_rows
+  # 활성 모듈·플러그인의 확장 파일이 새 템플릿에 적재된다
+  - register_all_active_loads_module_and_plugin_extension_files
+  # 활성 확장이 없으면 아무 행도 만들지 않는다
+  - register_all_active_creates_nothing_without_active_extensions
+  # 확장 파일이 없는 모듈·플러그인은 건너뛴다
+  - register_all_active_skips_sources_without_extension_files
+
+  # --- 확장 출처명 해석 ---
+  # 출처명은 DB 레코드의 다국어 name 을 현재 locale 로 읽는다 (ja 폴백 금지)
+  - source_label_reads_db_name_for_the_current_locale
+  # DB 행이 없으면 매니페스트 객체로 폴백해 빈 문자열을 주지 않는다
+  - source_label_falls_back_to_manifest_when_no_db_row
+
+test_files:
+  - tests/Unit/Services/LayoutExtensionServiceTest.php

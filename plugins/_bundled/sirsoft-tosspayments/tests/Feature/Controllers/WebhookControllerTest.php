@@ -92,6 +92,13 @@ class WebhookControllerTest extends PluginTestCase
         $this->app->instance(PluginSettingsService::class, $mock);
     }
 
+    /**
+     * 입금통보 DONE 은 결제를 완료로 전이한다.
+     *
+     * @scenario webhook_status=done, webhook_secret=match, replay=first
+     *
+     * @effects deposit_done_completes_payment
+     */
     public function test_deposit_done_completes_payment(): void
     {
         $this->mockPluginSettings();
@@ -152,6 +159,13 @@ class WebhookControllerTest extends PluginTestCase
         );
     }
 
+    /**
+     * 입금통보 CANCELED 는 주문을 취소로 전이한다. (결제 상태는 코어 동작대로 유지)
+     *
+     * @scenario webhook_status=canceled, webhook_secret=match, replay=first
+     *
+     * @effects deposit_canceled_fails_payment
+     */
     public function test_deposit_canceled_fails_payment(): void
     {
         $this->mockPluginSettings();
@@ -169,6 +183,13 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertSame(OrderStatusEnum::CANCELLED, $order->order_status);
     }
 
+    /**
+     * secret 이 어긋나면 401 이고 결제완료로 전이되지 않는다.
+     *
+     * @scenario webhook_status=done, webhook_secret=mismatch, replay=first
+     *
+     * @effects webhook_secret_verified
+     */
     public function test_secret_mismatch_returns_401(): void
     {
         $this->mockPluginSettings();
@@ -186,6 +207,13 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertNotSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
     }
 
+    /**
+     * secret 검증을 끈 상점에서는 어떤 값이 와도 통보가 통과한다.
+     *
+     * @scenario webhook_status=done, webhook_secret=disabled, replay=first
+     *
+     * @effects webhook_secret_verified
+     */
     public function test_secret_verification_can_be_disabled(): void
     {
         $this->mockPluginSettings(['webhook_secret_verify' => false]);
@@ -202,6 +230,13 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
     }
 
+    /**
+     * 이미 PAID 인 거래의 중복 통보는 멱등 200 이고 입금 시각도 바뀌지 않는다.
+     *
+     * @scenario webhook_status=done, webhook_secret=match, replay=duplicate
+     *
+     * @effects webhook_replay_idempotent
+     */
     public function test_replay_after_paid_is_idempotent(): void
     {
         $this->mockPluginSettings();
@@ -232,6 +267,11 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertEquals($paidAt->timestamp, $order->payment->paid_at->timestamp);
     }
 
+    /**
+     * 알 수 없는 주문번호는 200 + 본문 `FAIL` 로 답한다 — 수신 자체는 성립시켜 재시도를 멈춘다.
+     *
+     * @effects deposit_for_an_unknown_order_number_answers_fail
+     */
     public function test_order_not_found_returns_fail(): void
     {
         $this->mockPluginSettings();
@@ -246,6 +286,11 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertSame('FAIL', $response->getContent());
     }
 
+    /**
+     * 규격 밖 status 는 분기에 들어가기 전 검증에서 422 로 걸린다.
+     *
+     * @effects deposit_with_an_unknown_status_is_rejected_by_validation
+     */
     public function test_invalid_status_rejected_by_validation(): void
     {
         $this->mockPluginSettings();
@@ -259,6 +304,11 @@ class WebhookControllerTest extends PluginTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 입금대기가 아닌 결제행에는 통보가 아무 일도 하지 않는다 (200 무해).
+     *
+     * @effects non_waiting_deposit_is_noop
+     */
     public function test_deposit_on_non_waiting_order_is_noop_200(): void
     {
         $this->mockPluginSettings();
@@ -286,6 +336,8 @@ class WebhookControllerTest extends PluginTestCase
      * 토스는 클레임 결제의 승인·취소에도 PAYMENT_STATUS_CHANGED 를 보내는데, `orderId` 가
      * CP 결제번호라 주문 분기를 그대로 태우면 정상 동작마다 `order not found` warning 이
      * 남는다 — 운영자 로그에서 결함으로 읽히므로 CP 는 자기 경로로 종결시킨다.
+     *
+     * @effects claim_payment_status_webhook_terminates_without_an_order_lookup
      */
     public function test_payment_status_webhook_with_a_claim_payment_number_does_not_look_up_an_order(): void
     {

@@ -94,6 +94,7 @@ class OrderCancellationService
      *
      * @param  Order  $order  취소가 반영된 주문
      * @param  string|null  $reason  취소 사유
+     * @return void 반환값 없음
      */
     protected function syncCashReceipt(Order $order, ?string $reason): void
     {
@@ -791,6 +792,7 @@ class OrderCancellationService
      * @param  Order  $order  대상 주문
      *
      * @throws \Exception 취소 불가 시
+     * @return void 반환값 없음
      */
     protected function validateCancellable(Order $order): void
     {
@@ -811,6 +813,7 @@ class OrderCancellationService
      * @param  array  $cancelItems  취소 대상
      *
      * @throws \Exception 유효하지 않은 아이템
+     * @return void 반환값 없음
      */
     protected function validateCancelItems(Order $order, array $cancelItems): void
     {
@@ -846,6 +849,7 @@ class OrderCancellationService
      * @param  array  $cancelItems  취소 대상
      *
      * @throws OrderCancellationException 진행 중인 클레임에 묶인 수량일 때
+     * @return void 반환값 없음
      */
     protected function validateNotLockedByClaim(Order $order, array $cancelItems): void
     {
@@ -1031,6 +1035,7 @@ class OrderCancellationService
      * @param  OrderCancel  $cancel  취소 레코드
      * @param  Order  $order  주문
      * @param  array  $cancelItems  취소 대상
+     * @return void 반환값 없음
      */
     protected function createCancelOptions(OrderCancel $cancel, Order $order, array $cancelItems): void
     {
@@ -1072,6 +1077,7 @@ class OrderCancellationService
      * @param  Order  $order  대상 주문 (options 로드 상태)
      * @param  array  $cancelItems  대상 [{order_option_id, cancel_quantity}]
      * @param  string|null  $reason  취소 사유 코드
+     * @return void 반환값 없음
      */
     public function cancelOptionQuantitiesForClaim(Order $order, array $cancelItems, ?string $reason): void
     {
@@ -1086,6 +1092,7 @@ class OrderCancellationService
      * @param  Order  $order  주문
      * @param  array  $cancelItems  취소 대상
      * @param  string|null  $reason  취소 사유
+     * @return void 반환값 없음
      */
     protected function updateOrderOptions(Order $order, array $cancelItems, ?string $reason): void
     {
@@ -1127,6 +1134,7 @@ class OrderCancellationService
      *
      * @param  Order  $order  주문
      * @param  AdjustmentResult  $result  계산 결과
+     * @return void 반환값 없음
      */
     protected function applyOptionUpdates(Order $order, AdjustmentResult $result): void
     {
@@ -1146,6 +1154,7 @@ class OrderCancellationService
      * 배송비를 재계산 결과에 따라 갱신합니다.
      *
      * @param  AdjustmentResult  $result  계산 결과
+     * @return void 반환값 없음
      */
     protected function updateShippings(AdjustmentResult $result): void
     {
@@ -1206,6 +1215,7 @@ class OrderCancellationService
      * @param  bool  $recalculatePaidAmount  실결제·사용마일리지 재계산값을 덮어쓸지 여부
      * @param  bool  $syncOrderStatus  주문 상태를 이 취소로 파생시킬지 여부 (반품·교환은 false)
      * @param  float|null  $cancelledAmount  누적할 취소액 (null 이면 재계산 결과를 쓴다)
+     * @return void 반환값 없음
      */
     protected function updateOrderTotals(
         Order $order,
@@ -1378,6 +1388,7 @@ class OrderCancellationService
      *
      * @param  Order  $order  주문
      * @param  AdjustmentResult  $result  계산 결과
+     * @return void 반환값 없음
      */
     protected function restoreCoupons(Order $order, AdjustmentResult $result): void
     {
@@ -1389,6 +1400,7 @@ class OrderCancellationService
      *
      * @param  Order  $order  주문
      * @param  array  $cancelItems  취소 대상
+     * @return void 반환값 없음
      */
     protected function restoreStock(Order $order, array $cancelItems): void
     {

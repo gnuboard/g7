@@ -36,6 +36,13 @@ class OrderReorderTest extends ModuleTestCase
         $this->user = User::factory()->create();
     }
 
+    /**
+     * 분할을 겪지 않은 일반 주문 옵션이 장바구니에 담기고 added_count 로 집계된다
+     *
+     * @scenario basis_case=plain_row
+     *
+     * @effects order_options_added_to_cart_with_added_count
+     */
     public function test_reorder_adds_order_options_to_cart(): void
     {
         $product = ProductFactory::new()->create();
@@ -173,6 +180,13 @@ class OrderReorderTest extends ModuleTestCase
         $this->assertNotSame('', $reason);
     }
 
+    /**
+     * 남의 주문을 재주문하면 422 이고 장바구니에는 아무것도 담기지 않는다
+     *
+     * @scenario basis_case=other_users_order
+     *
+     * @effects foreign_or_missing_order_rejected_422
+     */
     public function test_reorder_rejects_other_users_order(): void
     {
         $other = User::factory()->create();
@@ -186,6 +200,13 @@ class OrderReorderTest extends ModuleTestCase
         $this->assertSame(0, Cart::query()->where('user_id', $this->user->id)->count());
     }
 
+    /**
+     * 비로그인 재주문은 401 로 막힌다
+     *
+     * @scenario basis_case=unauthenticated
+     *
+     * @effects reorder_requires_authentication
+     */
     public function test_reorder_requires_authentication(): void
     {
         $order = OrderFactory::new()->paid()->forUser($this->user)->create();
@@ -195,6 +216,13 @@ class OrderReorderTest extends ModuleTestCase
         $response->assertStatus(401);
     }
 
+    /**
+     * 재고 0 행은 skipped 에 남고 재고 있는 행만 담긴다
+     *
+     * @scenario basis_case=out_of_stock_row
+     *
+     * @effects unavailable_rows_reported_in_skipped, order_options_added_to_cart_with_added_count
+     */
     public function test_reorder_skips_out_of_stock_options(): void
     {
         $product = ProductFactory::new()->create();
@@ -237,6 +265,13 @@ class OrderReorderTest extends ModuleTestCase
             ->count());
     }
 
+    /**
+     * 없는 주문 id 로 재주문하면 422
+     *
+     * @scenario basis_case=nonexistent_order
+     *
+     * @effects foreign_or_missing_order_rejected_422
+     */
     public function test_reorder_returns_422_for_nonexistent_order(): void
     {
         $response = $this->actingAs($this->user)
@@ -245,6 +280,13 @@ class OrderReorderTest extends ModuleTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 같은 옵션이 이미 장바구니에 있으면 행이 늘지 않고 수량만 누적된다 (3 + 2 = 5)
+     *
+     * @scenario basis_case=existing_cart_row
+     *
+     * @effects existing_cart_row_quantity_accumulated
+     */
     public function test_reorder_increments_existing_cart_quantity(): void
     {
         $product = ProductFactory::new()->create();
