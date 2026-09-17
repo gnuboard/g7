@@ -288,6 +288,7 @@
                   "params": {
                     "target": "local",
                     "form.claim.exchange_reasons": "{{(_local.form?.claim?.exchange_reasons ?? []).filter((_, i) => i !== reason._idx)}}",
+                    "form.claim.exchange_reasons_deleted": "{{[...(_local.form?.claim?.exchange_reasons_deleted ?? []), ...(reason?.id ? [reason.id] : [])]}}",
                     "hasChanges": true
                   }
                 }

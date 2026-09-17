@@ -68,6 +68,19 @@ interface OrderReturnOptionRepositoryInterface
     public function listOptionIdsByReturnIds(array $returnIds): array;
 
     /**
+     * 한 주문에서 **완료된** 반품 신청 상품 행을 조회합니다. (S2-D5 — 누적 재계산)
+     *
+     * 재계산은 반품완료 행을 잔여로 세므로, 순차 부분반품에서 「이번 회차 몫」만 넘기면
+     * 앞 회차 상품이 여전히 남아 있다고 계산돼 쿠폰 조건이 깨지지 않는다.
+     * 완료 처리가 이 목록으로 **누적 수량**을 만들어 넘긴다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  int|null  $excludeReturnId  제외할 반품 신청서 ID (보통 호출자 자신)
+     * @return Collection 완료된 신청 상품 행
+     */
+    public function listCompletedByOrderId(int $orderId, ?int $excludeReturnId = null): Collection;
+
+    /**
      * 반품 신청서의 신청 상품 상태를 일괄 변경합니다.
      *
      * @param  int  $returnId  반품 신청서 ID

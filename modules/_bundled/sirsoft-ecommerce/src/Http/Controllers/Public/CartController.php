@@ -33,6 +33,11 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
  */
 class CartController extends PublicBaseController
 {
+    /**
+     * 장바구니 서비스를 주입받습니다.
+     *
+     * @param  CartService  $cartService  장바구니 담기·수정·병합 서비스
+     */
     public function __construct(
         private CartService $cartService
     ) {}
@@ -428,7 +433,7 @@ class CartController extends PublicBaseController
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.merged', [
                 'merged_count' => $mergedCount,
                 'adjustments' => $this->cartService->getLastMergeAdjustments(),
-            ]);
+            ], 200, ['count' => $mergedCount]);
         } catch (Exception $e) {
             Log::error('cart.merge failed', ['error' => $e->getMessage()]);
 

@@ -188,13 +188,13 @@
               "text": "$t:claim.apply.images_hint|max={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|size={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_kb ?? 0}}"
             },
             {
+              "comment": "S2-D10 — `maxSize` 는 넘기지 않고 **`maxFiles` 만** 넘긴다. 용량 상한(KB)을 컴포지트에 주면 컴포지트가 초과 파일을 **자기가 먼저 걸러낸 뒤** change 를 쏘므로, 거절된 파일은 change 페이로드에도 DOM `input.files` 에도 없고 핸들러가 아예 호출되지 않는다 — 사용자는 사진을 골랐는데 화면에 아무 변화가 없다(실측: setInputFiles(2.4MB) → 핸들러 0건 · 토스트 0건). 용량 판정은 `setClaimImageFiles` 가 `filterClaimFilesByLimits()` 로 하고 `claim.image.size_exceeded` 토스트로 그 자리에서 안내한다(실측: 「사진 1장은 2048KB 를 넘을 수 없습니다.」). 판정 기준은 화면 안내 문구(위 P)와 **같은 설정값**(`image_max_size_kb`)이라 상한의 정본은 서버 설정 한 곳이다. 장수(`maxFiles`)는 컴포지트가 걸러도 사용자가 「몇 장까지」를 즉시 알 수 있어 그대로 둔다.",
               "type": "composite",
               "name": "FileUploader",
               "props": {
                 "autoUpload": false,
                 "accept": ".jpg,.jpeg,.png,.gif,.webp",
-                "maxFiles": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 5}}",
-                "maxSize": "{{Math.max(1, Math.ceil(((_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_kb ?? 5120) / 1024))}}"
+                "maxFiles": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 5}}"
               },
               "actions": [
                 {

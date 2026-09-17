@@ -130,6 +130,19 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
             return null;
         }
 
+        // 배송 진행 상태·시각은 호출자(상태 전이)가 함께 넘긴다. 송장만 정정하는 호출에는
+        // 들어 있지 않으므로 그때는 상태가 보존된다.
+        if (isset($tracking['shipping_status'])) {
+            $payload['shipping_status'] = $tracking['shipping_status'];
+        }
+
+        // 발생 시각은 최초 1회만 남긴다 — 같은 단계를 다시 지나도 원래 시각을 덮지 않는다.
+        foreach (['shipped_at', 'delivered_at'] as $timestamp) {
+            if (isset($tracking[$timestamp]) && $shipping->{$timestamp} === null) {
+                $payload[$timestamp] = $tracking[$timestamp];
+            }
+        }
+
         $shipping->fill($payload)->save();
 
         return $shipping;

@@ -123,11 +123,18 @@ class WebhookController
 
             // 5. 상태별 처리 (부수 작업은 completePayment/failPayment 내부 훅에 위임)
             if ($status === 'DONE') {
+                // `transaction_id` 는 **취소 API 가 쓰는 paymentKey** 다 — 발급 시점에 저장해 둔
+                // 값을 덮어쓰면 안 된다. 입금통보가 싣고 오는 `transactionKey` 는 거래 회차마다
+                // 달라지는 별개 식별자(`txrd_…`)이고, 그것으로 취소를 부르면 토스가
+                // **「존재하지 않는 결제 정보 입니다」** 로 거절한다(S1-D10 — 실측: 가상계좌 환불이
+                // 승인까지 간 뒤 실행에서만 실패). 발급 때 저장된 값이 없을 때만 폴백으로 쓴다.
                 $this->orderService->completePayment($order, [
-                    'transaction_id' => $transactionKey ?: $payment->transaction_id,
+                    'transaction_id' => $payment->transaction_id ?: ($transactionKey ?: null),
                     'payment_meta' => array_merge($payment->payment_meta ?? [], [
                         'deposit_confirmed_at' => $validated['createdAt'] ?? null,
                         'webhook_status' => 'DONE',
+                        // 입금통보의 거래 식별자는 추적용으로 따로 남긴다.
+                        'deposit_transaction_key' => $transactionKey ?: null,
                     ]),
                 ], (int) $payment->paid_amount_base ?: null);
 

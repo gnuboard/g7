@@ -89,25 +89,74 @@ final class CalculationSnapshotPresenter
     }
 
     /**
+     * 동결된 기준 통화 금액을 주문 환율 스냅샷으로 환산합니다. (S3-D15)
+     *
+     * 「교환 후」 열(`mcRecalculated`)이 이미 같은 방식으로 재계산 스냅샷을 환산한다 — 「교환 전」
+     * 열도 동결값을 받으면 같은 경로를 타야 두 열이 같은 근거 위에 선다.
+     *
+     * @param  float  $amount  기준 통화 금액 (접수 시점 동결값)
+     * @param  string  $key  변환 키 (`mc_subtotal_amount` 등)
+     * @param  array|null  $currencySnapshot  주문 시점 환율 스냅샷
+     * @return array<string, float> 통화 코드 => 금액
+     */
+    private function convertFrozenAmount(float $amount, string $key, ?array $currencySnapshot): array
+    {
+        $converted = $this->currencyService->convertMultipleAmountsWithSnapshot(
+            [$key => $amount],
+            $currencySnapshot
+        );
+
+        $result = [];
+        foreach ($converted ?? [] as $currencyCode => $amounts) {
+            if (is_array($amounts) && isset($amounts[$key])) {
+                $result[$currencyCode] = $amounts[$key];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * 원 주문의 다통화 스냅샷을 생성합니다.
      *
-     * @param  Order  $order  주문
+     * 모든 항목이 **같은 시점**을 가리켜야 한다(S3-D15). 기준 통화 줄은 접수 시점에 동결된
+     * 스냅샷(`original_calculation_snapshot`)을 그리는데, 여기서 주문을 그대로 읽으면
+     * **한 칸 안에서 두 시점이 섞인다** — 접수 뒤 그 주문에 취소·변동이 생기면 기준줄은
+     * 252,000원인데 보조 줄은 224,000원이 된다. 둘 다 정상 서식이라 화면에도 응답에도
+     * 어긋난 흔적이 남지 않는다. 그래서 동결값을 받으면 그것을 SSoT 로 쓴다.
+     *
+     * @param  Order  $order  주문 (환율 스냅샷·통화별 비율의 근거)
      * @param  float|null  $listPriceTotal  정가 합계 (null 이면 주문에서 계산 — 접수 뒤 상세는 동결값을 넘긴다)
+     * @param  float|null  $subtotalTotal  상품금액 합계 동결값 (null 이면 주문의 현재 값)
+     * @param  float|null  $paidTotal  실결제금액 동결값 (null 이면 주문의 현재 값)
      * @return array|null {mc_subtotal_amount, mc_total_paid_amount, mc_total_list_price_amount, *_formatted}
      */
-    public function mcOriginal(Order $order, ?float $listPriceTotal = null): ?array
-    {
+    public function mcOriginal(
+        Order $order,
+        ?float $listPriceTotal = null,
+        ?float $subtotalTotal = null,
+        ?float $paidTotal = null
+    ): ?array {
         if (! $order->currency_snapshot) {
             return null;
         }
 
+        // 동결값이 오면 그것을 환율로 환산한다 — 주문의 현재 맵을 읽으면 기준줄과 시점이 갈린다(S3-D15).
+        $mcSubtotal = $subtotalTotal !== null
+            ? $this->convertFrozenAmount($subtotalTotal, 'mc_subtotal_amount', $order->currency_snapshot)
+            : $order->mc_subtotal_amount;
+
+        $mcTotalPaid = $paidTotal !== null
+            ? $this->convertFrozenAmount($paidTotal, 'mc_total_paid_amount', $order->currency_snapshot)
+            : $order->mc_total_paid_amount;
+
         $formattedSubtotal = [];
-        foreach ($order->mc_subtotal_amount ?? [] as $code => $amount) {
+        foreach ($mcSubtotal ?? [] as $code => $amount) {
             $formattedSubtotal[$code] = $this->currencyService->formatPrice($amount, $code, $order->currency_snapshot);
         }
 
         $formattedTotalPaid = [];
-        foreach ($order->mc_total_paid_amount ?? [] as $code => $amount) {
+        foreach ($mcTotalPaid ?? [] as $code => $amount) {
             $formattedTotalPaid[$code] = $this->currencyService->formatPrice($amount, $code, $order->currency_snapshot);
         }
 
@@ -128,8 +177,8 @@ final class CalculationSnapshotPresenter
         }
 
         return [
-            'mc_subtotal_amount' => $order->mc_subtotal_amount,
-            'mc_total_paid_amount' => $order->mc_total_paid_amount,
+            'mc_subtotal_amount' => $mcSubtotal,
+            'mc_total_paid_amount' => $mcTotalPaid,
             'mc_total_list_price_amount' => $mcListPrice,
             'mc_subtotal_amount_formatted' => $formattedSubtotal,
             'mc_total_paid_amount_formatted' => $formattedTotalPaid,

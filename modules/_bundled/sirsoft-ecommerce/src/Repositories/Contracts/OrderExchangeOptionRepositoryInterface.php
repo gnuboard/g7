@@ -57,6 +57,15 @@ interface OrderExchangeOptionRepositoryInterface
     public function listByExchangeId(int $exchangeId, array $relations = []): Collection;
 
     /**
+     * 후속 주문옵션 id 목록으로 교환 신청 상품 행을 조회합니다. (재계산의 후속 행 회계 단가용)
+     *
+     * @param  array<int, int>  $orderOptionIds  후속 주문옵션 id
+     * @param  array<int, string>  $relations  함께 로드할 관계
+     * @return Collection<int, OrderExchangeOption>
+     */
+    public function listByNewOrderOptionIds(array $orderOptionIds, array $relations = []): Collection;
+
+    /**
      * 여러 교환 신청서의 상품 행 ID 를 신청서별로 묶어 한 번에 조회합니다.
      *
      * 다건 요청(완료 미리보기)의 소속 검증용이다. 행마다 `exists` 를 걸면 신청서 수 ×

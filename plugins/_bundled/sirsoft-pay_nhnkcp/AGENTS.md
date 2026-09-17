@@ -117,6 +117,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-pay_nhnkcp` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] `inject_props` 로 호스트의 **목록형 prop**(`columns`·`tabs` 등)을 손댈 때는 `_patch` 를 쓴다 — 목록 전체를 복사해 넣으면 그 복사본이 작성 시점에 얼어붙어, 호스트가 나중에 더한 항목을 **조용히 지운다**. 실제로 이 확장이 배지 하나를 위해 컬럼 11칸을 복사해 두어 뒤에 추가된 클레임 컬럼이 화면에서 사라졌다(#599 S2-D13). 바꿀 항목만 `_patch.items` 에 적는다
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] CLI 인자 조립부를 고칠 때 `assertSafeCliValue()` 검증을 모든 인자에 유지 — 인자 하나만 빠져도 그 필드가 injection 통로가 된다

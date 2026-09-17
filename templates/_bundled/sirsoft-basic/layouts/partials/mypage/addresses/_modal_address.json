@@ -330,7 +330,10 @@
                       "type": "extension_point",
                       "name": "address_search_slot",
                       "props": {
-                        "readOnlyFields": ["zipcode", "address"],
+                        "readOnlyFields": ["zipcode", "address"]
+                      },
+                      "comment": "콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다",
+                      "callbacks": {
                         "onAddressSelect": {
                           "handler": "setState",
                           "params": {

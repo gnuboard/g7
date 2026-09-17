@@ -19,21 +19,29 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Services\OrderAdjustmentService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -49,6 +57,11 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class OrderAdjustmentServiceTest extends ModuleTestCase
 {
+    // S1-D22 가드가 쓰는 `krwCurrencySnapshot()` 등 클레임 주문 헬퍼는 이 trait 에 있다.
+    // 빠져 있으면 테스트가 `Call to undefined method` 로 **실행 자체가 안 되는데**, 스위트
+    // 전체는 다른 테스트가 통과해 green 으로 보인다 — 가드가 있다고 착각하게 되는 형태다.
+    use BuildsClaimFlowOrders;
+
     protected OrderAdjustmentService $adjustmentService;
 
     protected OrderCalculationService $calculationService;
@@ -3827,6 +3840,170 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * A-10-5c: 상품쿠폰이 걸린 라인을 부분취소해도 상품쿠폰이 두 번 먹지 않는다 (S1-D2)
+     *
+     * 구성(계획서 1-A 회차 ①):
+     *   브이넥 25,000 ×2 (정책1 무료) · 텀블러 25,000 ×1 (정책2 고정 3,000)
+     *   양말 4,000 ×3 (정책3 조건부무료 5만 미만 2,500)
+     *   상품쿠폰 3,000(min 20,000 · 브이넥 · 정액이라 수량 2 → 6,000)
+     *   주문쿠폰 5,000(min 50,000) · 배송비쿠폰 5,000(min 30,000)
+     *   결제 87,000 − 6,000 − 5,000 + 500 = 76,500
+     *
+     * 양말 1개 취소 → 상품 83,000 · 쿠폰 구성 불변(전부 최소금액 유지) → 환불은 양말 단가 4,000.
+     *
+     * 결함: 주문 스냅샷의 `coupon_issue_ids` 는 상품쿠폰까지 **전부** 담는데
+     * (복원·탈락검출의 SSoT 라 그래야 한다) 재계산 입력이 그 목록을 `itemCoupons` 와
+     * **함께** 넘겨, 상품쿠폰이 상품별 슬롯과 주문레벨 슬롯에서 두 번 적용됐다.
+     * 할인이 6,000 → 12,000 으로 부풀어 환불이 4,000 이 아니라 10,000 으로 나갔다.
+     * 주문서 계산은 주문쿠폰·배송비쿠폰만 `couponIssueIds` 에 넘기므로(TempOrderService:377)
+     * 재계산도 같은 계약이어야 한다.
+     *
+     * @scenario basis_case=item_coupon_not_double_applied_on_recalc
+     *
+     * @effects item_coupon_applied_once_in_recalculation, partial_cancel_refund_equals_line_amount
+     */
+    public function test_item_coupon_not_double_applied_on_partial_cancel(): void
+    {
+        $policyFree = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FREE, baseFee: 0);
+        $policyFixed = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FIXED, baseFee: 3000);
+        $policyConditional = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::CONDITIONAL_FREE,
+            baseFee: 2500,
+            freeThreshold: 50000,
+        );
+
+        [$pVneck, $oVneck] = $this->createProductWithOption(price: 25000, shippingPolicy: $policyFree);
+        [$pTumbler, $oTumbler] = $this->createProductWithOption(price: 25000, shippingPolicy: $policyFixed);
+        [$pSocks, $oSocks] = $this->createProductWithOption(price: 4000, shippingPolicy: $policyConditional);
+
+        $productCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::PRODUCT_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 3000,
+            minOrderAmount: 20000,
+        );
+        $orderCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::ORDER_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 5000,
+            minOrderAmount: 50000,
+        );
+        $shippingCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::SHIPPING_FEE,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 5000,
+            minOrderAmount: 30000,
+        );
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pVneck->id, productOptionId: $oVneck->id, quantity: 2),
+                new CalculationItem(productId: $pTumbler->id, productOptionId: $oTumbler->id, quantity: 1),
+                new CalculationItem(productId: $pSocks->id, productOptionId: $oSocks->id, quantity: 3),
+            ],
+            couponIssueIds: [$orderCoupon->id, $shippingCoupon->id],
+            itemCoupons: [$oVneck->id => [$productCoupon->id]],
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+
+        // 주문서 계산은 정상 — 상품쿠폰 정액 × 수량 2 = 6,000
+        $this->assertEquals(76500, (int) $order->total_paid_amount);
+
+        $optSocks = $order->options->firstWhere('product_option_id', $oSocks->id);
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $optSocks->id, 'cancel_quantity' => 1],
+        ]));
+
+        // 쿠폰 구성이 그대로이므로 환불은 양말 단가 그대로 4,000
+        $this->assertEquals([], $result->restoredCouponIssueIds);
+        $this->assertEquals(4000, (int) $result->refundAmount);
+
+        // 재계산 할인이 부풀지 않는다
+        // (상품쿠폰 6,000 + 주문쿠폰 5,000 = 11,000 — 배송비쿠폰 할인은 totalDiscount 가 아니라
+        //  배송비 쪽으로 빠진다)
+        $this->assertEquals(11000, (int) $result->recalculated->summary->totalDiscount);
+    }
+
+    /**
+     * A-10-5d: 운영 스냅샷 형식(coupon_issue_ids 가 상품쿠폰까지 포함)에서도 두 번 먹지 않는다 (S1-D2)
+     *
+     * 위 A-10-5c 는 테스트 헬퍼가 `coupon_issue_ids` 를 **입력값으로 덮어써** 상품쿠폰이 빠진
+     * 목록을 저장하므로 결함이 재현되지 않는다. 운영은 `PromotionsSummary::toArray()` 를 그대로
+     * 저장해(OrderProcessingService::buildPromotionsAppliedSnapshot) 상품쿠폰 발급ID 가
+     * `coupon_issue_ids` 와 `item_coupons` **양쪽에** 들어간다. 이 테스트는 그 형식을 그대로
+     * 심어 재계산이 상품쿠폰을 한 번만 먹는지 잠근다.
+     *
+     * 실측(주문 20260915-0604289654): 양말 1개 취소 미리보기가 `refund_amount=10,000`
+     * (기대 4,000) · 비교표 상품쿠폰 할인 `-6,000 → -12,000`.
+     *
+     * @scenario basis_case=production_snapshot_shape
+     *
+     * @effects item_coupon_applied_once_when_present_in_both_snapshot_keys
+     */
+    public function test_item_coupon_not_double_applied_with_production_snapshot_shape(): void
+    {
+        $policyFree = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FREE, baseFee: 0);
+        $policyFixed = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FIXED, baseFee: 3000);
+        $policyConditional = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::CONDITIONAL_FREE,
+            baseFee: 2500,
+            freeThreshold: 50000,
+        );
+
+        [$pVneck, $oVneck] = $this->createProductWithOption(price: 25000, shippingPolicy: $policyFree);
+        [$pTumbler, $oTumbler] = $this->createProductWithOption(price: 25000, shippingPolicy: $policyFixed);
+        [$pSocks, $oSocks] = $this->createProductWithOption(price: 4000, shippingPolicy: $policyConditional);
+
+        $productCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::PRODUCT_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 3000,
+            minOrderAmount: 20000,
+        );
+        $orderCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::ORDER_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 5000,
+            minOrderAmount: 50000,
+        );
+        $shippingCoupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::SHIPPING_FEE,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 5000,
+            minOrderAmount: 30000,
+        );
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pVneck->id, productOptionId: $oVneck->id, quantity: 2),
+                new CalculationItem(productId: $pTumbler->id, productOptionId: $oTumbler->id, quantity: 1),
+                new CalculationItem(productId: $pSocks->id, productOptionId: $oSocks->id, quantity: 3),
+            ],
+            couponIssueIds: [$orderCoupon->id, $shippingCoupon->id],
+            itemCoupons: [$oVneck->id => [$productCoupon->id]],
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        $this->assertEquals(76500, (int) $order->total_paid_amount);
+
+        // 운영 형식으로 교정 — 상품쿠폰이 coupon_issue_ids 에도 들어간다
+        $snapshot = $order->promotions_applied_snapshot;
+        $snapshot['coupon_issue_ids'] = [$productCoupon->id, $orderCoupon->id, $shippingCoupon->id];
+        $order->promotions_applied_snapshot = $snapshot;
+        $order->save();
+        $order->refresh();
+
+        $optSocks = $order->options->firstWhere('product_option_id', $oSocks->id);
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $optSocks->id, 'cancel_quantity' => 1],
+        ]));
+
+        $this->assertEquals([], $result->restoredCouponIssueIds);
+        $this->assertEquals(4000, (int) $result->refundAmount);
+    }
+
+    /**
      * A-10-6: 정률 100% 배송비 쿠폰, 부분취소 후 배송비↑ → 증가분도 100% 할인
      */
     public function test_shipping_coupon_100_percent_partial_cancel(): void
@@ -4860,6 +5037,273 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
         // USD 변환값 존재
         $this->assertArrayHasKey('USD', $result->mcRefundAmount);
         $this->assertGreaterThan(0, $result->mcRefundAmount['USD']);
+    }
+
+    /**
+     * A-MC-3: 부분취소 orderUpdates 가 mc_* 금액 컬럼도 함께 갱신한다 (S1-D3)
+     *
+     * `buildOrderUpdates()` 는 base 금액 컬럼 17종을 갱신하면서 짝이 되는 `mc_*` 컬럼을
+     * 하나도 갱신하지 않았다. 주문 생성은 16종을 쓰므로(OrderProcessingService:611-627)
+     * 부분취소 뒤 base 와 mc 가 어긋난 채 남고, 비교표 보조통화 줄이 **취소 전 값**을 보여준다.
+     *
+     * 실측(주문 20260915-0604289654 · 회차 ② 화면): 비교표 총 판매가 금액
+     * base `83,000원` 인데 보조통화가 `$87.00 / ¥10,005`(= 87,000 환산) 로 찍혔다.
+     * DB: `subtotal_amount=83000` vs `mc_subtotal_amount.KRW=87000`.
+     *
+     * @scenario basis_case=partial_cancel_updates_mc_columns
+     *
+     * @effects mc_columns_track_base_columns_after_partial_cancel
+     */
+    public function test_order_updates_refresh_mc_amount_columns(): void
+    {
+        [$product, $option] = $this->createProductWithOption(price: 30000);
+
+        $currencySnapshot = [
+            'base_currency' => 'KRW',
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1, 'rounding_unit' => 1, 'rounding_method' => 'round'],
+                'USD' => ['rate' => 0.001, 'rounding_unit' => 0.01, 'rounding_method' => 'round'],
+            ],
+        ];
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 3),
+            ],
+        );
+
+        $order = $this->createOrderFromCalculation($input, [
+            'currency_snapshot' => $currencySnapshot,
+        ]);
+
+        $this->assertEquals(90000, (int) $order->subtotal_amount);
+
+        $opt = $order->options->first();
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $opt->id, 'cancel_quantity' => 1],
+        ]));
+
+        $updates = $result->orderUpdates;
+
+        // base 는 이미 갱신된다
+        $this->assertEquals(60000, (int) $updates['subtotal_amount']);
+
+        // mc_* 도 같은 값으로 갱신돼야 한다
+        $this->assertArrayHasKey('mc_subtotal_amount', $updates);
+        $this->assertEquals(60000, (int) ($updates['mc_subtotal_amount']['KRW'] ?? 0));
+        // 보조통화도 같은 재계산 결과에서 환산된다(환산값 자체는 스냅샷 단위 규칙이 정한다)
+        $this->assertGreaterThan(0, (float) ($updates['mc_subtotal_amount']['USD'] ?? 0));
+
+        $this->assertArrayHasKey('mc_total_amount', $updates);
+        $this->assertEquals(
+            (int) $updates['total_amount'],
+            (int) ($updates['mc_total_amount']['KRW'] ?? 0)
+        );
+
+        $this->assertArrayHasKey('mc_total_tax_amount', $updates);
+        $this->assertEquals(
+            (int) $updates['total_tax_amount'],
+            (int) ($updates['mc_total_tax_amount']['KRW'] ?? 0)
+        );
+
+        $this->assertArrayHasKey('mc_total_shipping_amount', $updates);
+        $this->assertEquals(
+            (int) $updates['total_shipping_amount'],
+            (int) ($updates['mc_total_shipping_amount']['KRW'] ?? 0)
+        );
+    }
+
+    /**
+     * A-MC-5: 닫힌(취소된) 옵션 행에는 살아 있는 행의 재계산 금액을 덮어쓰지 않는다 (S1-D4)
+     *
+     * 수량 분할이 일어나면 닫힌 행과 살아 있는 행이 **같은 `product_option_id`** 를 갖는다.
+     * `buildOptionUpdates()` 가 `product_option_id` 로만 짝을 지어 살아 있는 행의 줄 합계를
+     * 닫힌 행에도 써서, 닫힌 행의 base(`subtotal_price`)와 mc(`mc_subtotal_price`)가 어긋났다.
+     *
+     * 실측(주문 20260915-0604289654 · 양말 3개 줄): base `12,000원`(4,000×3) 인데
+     * `mc_subtotal_price.KRW = 16,000`(4,000×4 — 그 행에 존재한 적 없는 수량) 이라
+     * 주문상세가 **할인가가 원가보다 큰** 줄로 렌더됐다.
+     *
+     * @scenario basis_case=split_row_not_overwritten
+     *
+     * @effects cancelled_split_row_excluded_from_option_updates
+     */
+    public function test_cancelled_split_row_not_overwritten_by_recalc(): void
+    {
+        [$product, $option] = $this->createProductWithOption(price: 4000);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 3),
+            ],
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        $opt = $order->options->first();
+
+        // 닫힌 분할 행을 흉내낸다 — 같은 product_option_id 를 갖는 cancelled 행
+        $closed = $opt->replicate();
+        $closed->option_status = OrderStatusEnum::CANCELLED;
+        $closed->quantity = 1;
+        $closed->subtotal_price = 4000;
+        $closed->source_type = 'split';
+        $closed->save();
+
+        $order->load('options');
+
+        // 남은 행에서 1개를 더 취소 → 재계산 대상은 살아 있는 행뿐
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $opt->id, 'cancel_quantity' => 1],
+        ]));
+
+        // 닫힌 행에는 갱신이 가지 않아야 한다
+        $this->assertArrayNotHasKey($closed->id, $result->optionUpdates);
+    }
+
+    /**
+     * A-MC-3b: 전액취소도 mc_* 금액 컬럼을 0 으로 내린다 (S1-D3)
+     *
+     * 전액취소는 부분취소와 다른 경로(`buildFullCancellation`)를 타는데, base 8종만 0 으로
+     * 내리고 `mc_*` 를 그대로 둬서 주문상세 보조통화 줄이 **직전 회차 금액**을 보여줬다.
+     * 실측(주문 20260915-0604289654 · 회차 ⑤ 뒤): `총 결제금액 0원` 옆에 `$22.00 / ¥2,530`.
+     *
+     * @scenario basis_case=full_cancel_zeroes_mc_columns
+     *
+     * @effects mc_columns_zeroed_on_full_cancel
+     */
+    public function test_full_cancel_zeroes_mc_amount_columns(): void
+    {
+        [$product, $option] = $this->createProductWithOption(price: 30000);
+
+        $currencySnapshot = [
+            'base_currency' => 'KRW',
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1, 'rounding_unit' => 1, 'rounding_method' => 'round'],
+                'USD' => ['rate' => 0.001, 'rounding_unit' => 0.01, 'rounding_method' => 'round'],
+            ],
+        ];
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 2),
+            ],
+        );
+
+        $order = $this->createOrderFromCalculation($input, [
+            'currency_snapshot' => $currencySnapshot,
+        ]);
+
+        $opt = $order->options->first();
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $opt->id, 'cancel_quantity' => 2],
+        ]));
+
+        $updates = $result->orderUpdates;
+
+        // base 는 0
+        $this->assertSame(0, (int) $updates['subtotal_amount']);
+        $this->assertSame(0, (int) $updates['total_amount']);
+
+        // mc_* 도 0 이어야 한다
+        $this->assertArrayHasKey('mc_subtotal_amount', $updates);
+        $this->assertSame(0, (int) ($updates['mc_subtotal_amount']['KRW'] ?? -1));
+        $this->assertArrayHasKey('mc_total_amount', $updates);
+        $this->assertSame(0, (int) ($updates['mc_total_amount']['KRW'] ?? -1));
+
+        // 총 결제액 mc 는 건드리지 않는다 (환불로 깎지 않는 회계 계약)
+        $this->assertArrayNotHasKey('mc_total_paid_amount', $updates);
+    }
+
+    /**
+     * 전액취소는 **과세·부가세 base 컬럼도** 0 으로 내린다 (S1-D22)
+     *
+     * 전액취소 확정 블록은 `total_amount` 를 비롯한 7개 base 컬럼을 0 으로 내리면서
+     * **`total_tax_amount`·`total_vat_amount` 는 빼놓았다.** 그런데 같은 반환값의
+     * `buildZeroMcOrderUpdates()` 는 `mc_total_tax_amount` 를 0 으로 내린다 — 그래서
+     * **한 행 안에서 base 와 mc 가 어긋난다.**
+     *
+     * 실측(#599 통합실측 세션1 · 1-T · 주문 113 `20260915-0651135077` 자동취소):
+     * ```
+     * total_amount          0        ← 취소로 내려감
+     * total_tax_amount      10,500   ← 그대로 남음
+     * total_vat_amount      954      ← 그대로 남음
+     * mc_total_tax_amount   {"KRW":0,...}  ← 같은 행인데 0
+     * ```
+     * 화면에는 `최종 결제금액 0원` 옆에 `과세 금액 10,500원 · 부가세 954원` 이 나란히 선다.
+     * 취소 주문 10건 중 **9건**이 이 상태였다(0 인 1건은 다른 경로로 정리된 건).
+     *
+     * 세금계산서·정산이 이 컬럼을 읽으면 **취소된 주문에 과세 근거가 남아 있는 것으로 읽힌다.**
+     *
+     * @scenario basis_case=full_cancel_zeroes_mc_columns
+     *
+     * @effects full_cancel_zeroes_tax_columns_too
+     */
+    public function test_full_cancel_zeroes_tax_and_vat_base_columns(): void
+    {
+        $currencySnapshot = $this->krwCurrencySnapshot();
+        $order = $this->createSingleItemClaimOrder(29000, 2, $this->createClaimShippingPolicy());
+        $order->forceFill(['currency_snapshot' => $currencySnapshot])->save();
+        $order = $order->fresh(['options']);
+
+        $opt = $order->options->first();
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $opt->id, 'cancel_quantity' => 2],
+        ]));
+
+        $updates = $result->orderUpdates;
+
+        $this->assertSame(0, (int) $updates['total_amount'], '전제: 전액취소로 결제금액이 0 이다');
+
+        $this->assertArrayHasKey('total_tax_amount', $updates);
+        $this->assertSame(
+            0,
+            (int) $updates['total_tax_amount'],
+            '취소된 주문에 과세 금액이 남으면 세금계산서·정산이 과세 근거가 있다고 읽는다'
+        );
+
+        $this->assertArrayHasKey('total_vat_amount', $updates);
+        $this->assertSame(0, (int) $updates['total_vat_amount']);
+
+        // base 와 mc 가 **같은 행 안에서** 어긋나지 않는다
+        $this->assertSame(
+            (int) $updates['total_tax_amount'],
+            (int) ($updates['mc_total_tax_amount']['KRW'] ?? -1),
+            'base 과세금액과 mc 과세금액은 같은 값을 말해야 한다'
+        );
+    }
+
+    /**
+     * A-MC-4: currency_snapshot 이 없는 레거시 주문은 mc_* 갱신을 시도하지 않는다 (S1-D3)
+     *
+     * 다통화 도입 이전에 만들어진 주문은 환율 스냅샷이 없어 환산 근거가 없다. 그런 주문에
+     * `mc_*` 를 억지로 써 넣으면 근거 없는 보조통화 값이 생기므로, 키 자체를 내보내지 않는다
+     * (종전 동작 유지).
+     *
+     * @scenario basis_case=legacy_order_without_currency_snapshot
+     *
+     * @effects mc_columns_omitted_without_currency_snapshot
+     */
+    public function test_order_updates_skip_mc_columns_without_currency_snapshot(): void
+    {
+        [$product, $option] = $this->createProductWithOption(price: 30000);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 3),
+            ],
+        );
+
+        $order = $this->createOrderFromCalculation($input, [
+            'currency_snapshot' => null,
+        ]);
+
+        $opt = $order->options->first();
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $opt->id, 'cancel_quantity' => 1],
+        ]));
+
+        $this->assertEquals(60000, (int) $result->orderUpdates['subtotal_amount']);
+        $this->assertArrayNotHasKey('mc_subtotal_amount', $result->orderUpdates);
     }
 
     /**
@@ -7878,5 +8322,144 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
         ));
         $this->assertPreviewMatchesFixture('exchange', $this->normalizePreviewForFixture($exchange->toPreviewArray(), $order));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 교환 완료 뒤 후속 행의 회계 단가 (#599 S3-D3 재정의 · 2026-09-17 실측)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * 저가 옵션으로 교환 완료된 주문을 만듭니다. (원 행 EXCHANGED · 후속 행 · 차액 환불신청서)
+     *
+     * 후속 행은 설계대로 원 행 단가를 **승계**한다(2026-08-22 판정 1). 차액은 교환 발 환불신청서가
+     * 돌려준다 — 그래서 후속 행에 대해 고객이 실제로 낸 돈은 승계 단가 − 환불된 차액이다.
+     *
+     * @param  int  $aPrice  교환 대상 상품 A 단가
+     * @param  int  $difference  옵션 차액 (음수 = 저가 옵션)
+     * @param  bool  $differenceRefunded  차액 환불신청서를 만들지 (false 면 「접수하지 않음」 완료)
+     * @return array{0: Order, 1: OrderOption, 2: OrderOption, 3: OrderOption} [주문, 원 행 A, 후속 행, 다른 상품 B 행]
+     */
+    protected function buildCompletedExchangeOrder(int $aPrice = 20000, int $difference = -5000, bool $differenceRefunded = true): array
+    {
+        [$productA, $optionA] = $this->createProductWithOption(price: $aPrice);
+        [$productB, $optionB] = $this->createProductWithOption(price: 30000);
+
+        $order = $this->createOrderFromCalculation(new CalculationInput(items: [
+            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 2),
+        ]));
+
+        $rowA = $order->options->firstWhere('product_option_id', $optionA->id);
+        $rowB = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        // 신규 옵션(같은 상품의 형제 · 차액만큼 조정)
+        [$sibling, $siblingSnapshot] = $this->siblingOptionSnapshot($optionA, $difference);
+
+        // 후속 행 — OrderExchangeService::ensureNewOrderOption() 과 같은 모양: 금액 승계 · 정체만 신규
+        $successor = $rowA->replicate(['parent_option_id', 'cancelled_quantity', 'cancel_reason', 'confirmed_at', 'delivered_at']);
+        $successor->option_status = OrderStatusEnum::DELIVERED;
+        $successor->source_type = OrderOptionSourceTypeEnum::EXCHANGE;
+        $successor->source_option_id = $rowA->id;
+        $successor->product_option_id = $sibling->id;
+        $successor->option_snapshot = array_merge($siblingSnapshot, [
+            'price_adjustment' => $rowA->option_snapshot['price_adjustment'] ?? $sibling->price_adjustment,
+            'list_price' => $rowA->option_snapshot['list_price'] ?? $sibling->list_price,
+            'selling_price' => $rowA->option_snapshot['selling_price'] ?? $sibling->selling_price,
+        ]);
+        $successor->save();
+
+        $rowA->update(['option_status' => OrderStatusEnum::EXCHANGED]);
+
+        $exchange = OrderExchange::factory()->create([
+            'order_id' => $order->id,
+            'exchange_status' => ExchangeStatusEnum::COMPLETED,
+        ]);
+        OrderExchangeOption::factory()->create([
+            'order_exchange_id' => $exchange->id,
+            'order_id' => $order->id,
+            'order_option_id' => $rowA->id,
+            'option_status' => ExchangeStatusEnum::COMPLETED,
+            'unit_price' => $aPrice,
+            'new_product_option_id' => $sibling->id,
+            'new_option_snapshot' => $siblingSnapshot,
+            'new_unit_price' => $aPrice + $difference,
+            'price_difference' => $difference,
+            'new_order_option_id' => $successor->id,
+        ]);
+
+        if ($differenceRefunded && $difference < 0) {
+            OrderRefund::create([
+                'order_id' => $order->id,
+                'refund_source_type' => RefundSourceTypeEnum::EXCHANGE,
+                'refund_source_id' => $exchange->id,
+                'refund_number' => 'RF'.uniqid(),
+                'refund_status' => RefundStatusEnum::COMPLETED,
+                'refund_method' => 'bank',
+                'refund_amount' => -$difference,
+            ]);
+            $order->update(['total_refunded_amount' => -$difference]);
+        }
+
+        return [$order->fresh(['options', 'payment']), $rowA->fresh(), $successor->fresh(), $rowB->fresh()];
+    }
+
+    /**
+     * 저가 옵션 교환이 끝난 뒤 그 후속 행을 취소하면 환불액은 **신규 옵션 단가**다. (S3-D3)
+     *
+     * 실측(2026-09-17 주문 1497): 블랙/L 29,000 → 블랙/M 24,000 교환 완료 · 차액 5,000 환불 뒤
+     * 블랙/M 취소 환불액이 **29,000** 으로 나와 차액이 두 번 나갔다. 후속 행이 원 행 단가를 승계하는
+     * 설계는 다른 상품의 부분취소를 정확하게 하려는 것이지, 후속 행 자신의 환불까지 승계 단가로
+     * 하라는 뜻이 아니다 — 고객이 그 행에 실제로 낸 돈은 승계 단가 − 환불된 차액이다.
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchanged_successor_row_refunds_at_new_option_price
+     */
+    public function test_cancelling_the_exchanged_successor_row_refunds_the_new_option_price(): void
+    {
+        [$order, , $successor] = $this->buildCompletedExchangeOrder(aPrice: 20000, difference: -5000);
+
+        $result = $this->adjustmentService->preview($order, $this->buildCancellation([
+            ['order_option_id' => $successor->id, 'cancel_quantity' => 1],
+        ]));
+
+        $this->assertSame(15000.0, (float) $result->refundAmount, '후속 행 환불액은 신규 옵션 단가(20,000 − 5,000)여야 한다 — 승계 단가 20,000 이면 차액이 두 번 나간다');
+        $this->assertSame(15000.0, (float) $result->adjustedItems[0]['cancel_amount']);
+    }
+
+    /**
+     * 같은 주문에서 **다른 상품**을 부분취소하는 환불액은 종전과 같다. (2026-08-22 판정 1 보존 · 회차 ⑤)
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchanged_successor_pricing_keeps_other_item_refunds
+     */
+    public function test_other_item_refund_is_unchanged_after_a_cheaper_exchange(): void
+    {
+        [$order, , , $rowB] = $this->buildCompletedExchangeOrder(aPrice: 20000, difference: -5000);
+
+        $result = $this->adjustmentService->preview($order, $this->buildCancellation([
+            ['order_option_id' => $rowB->id, 'cancel_quantity' => 1],
+        ]));
+
+        $this->assertSame(30000.0, (float) $result->refundAmount, '다른 상품 1개의 환불액은 그 상품 단가 그대로여야 한다');
+    }
+
+    /**
+     * 차액이 환불되지 않은 교환(「접수하지 않음」 완료)의 후속 행은 승계 단가 그대로다. (과잉 적용 방지)
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects exchanged_successor_pricing_requires_a_refunded_difference
+     */
+    public function test_successor_row_keeps_inherited_price_when_the_difference_was_not_refunded(): void
+    {
+        [$order, , $successor] = $this->buildCompletedExchangeOrder(aPrice: 20000, difference: -5000, differenceRefunded: false);
+
+        $result = $this->adjustmentService->preview($order, $this->buildCancellation([
+            ['order_option_id' => $successor->id, 'cancel_quantity' => 1],
+        ]));
+
+        $this->assertSame(20000.0, (float) $result->refundAmount, '차액이 돌아가지 않았으면 후속 행의 환불은 승계 단가 전액이어야 한다');
     }
 }

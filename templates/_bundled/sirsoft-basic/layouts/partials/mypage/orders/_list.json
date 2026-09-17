@@ -35,7 +35,7 @@
           "id": "order_summary_steps",
           "type": "basic",
           "name": "Div",
-          "comment": "상태별 건수 칸. 배열(키·라벨·아이콘 토큰·색·건수)은 서버(`OrderService::getUserStatusSummary`)가 만든다 — 키는 통계·클릭 필터와 같은 어휘라 '상품준비중' 칸은 배송준비완료를 합산한다(필터 규칙과 같은 집합). 칸 폭은 균일하고 모바일은 3칸/줄. 선택된 칸은 현재 칸 스타일, 건수 0 은 회색.",
+          "comment": "상태별 건수 칸. 배열(키·라벨·아이콘 토큰·색·건수)은 서버(`OrderService::getUserStatusSummary`)가 만든다 — 키는 통계·클릭 필터와 같은 어휘라 '상품준비중' 칸은 배송준비중을 합산한다(필터 규칙과 같은 집합). 칸 폭은 균일하고 모바일은 3칸/줄. 선택된 칸은 현재 칸 스타일, 건수 0 은 회색.",
           "props": {
             "className": "grid grid-cols-6 gap-x-2 gap-y-6"
           },

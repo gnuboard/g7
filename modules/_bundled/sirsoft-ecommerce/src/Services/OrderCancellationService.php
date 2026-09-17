@@ -1242,6 +1242,14 @@ class OrderCancellationService
         if ($isFullCancel) {
             // 전체취소는 주문 상태를 CANCELLED 로 확정한다.
             $updateData['order_status'] = OrderStatusEnum::CANCELLED;
+
+            // S1-D17: 취소된 주문은 받을 돈이 없다 — 미수금을 함께 내린다.
+            // `total_due_amount` 를 0 으로 내리는 곳은 종전에 `completePayment()` 뿐이라
+            // (`OrderProcessingService`), **결제 전에 취소된 주문**은 그 경로를 지나지 않아
+            // 결제예정금액이 그대로 남았다. 돌려줄 돈이 없어 환불신청서도 안 생기므로
+            // 재계산 경로도 거치지 않는다 — 주문은 `cancelled` 인데 장부만 계속 「받을 돈이 있다」고
+            // 말하는 상태가 된다(실측: 무통장 미입금 취소 주문만 due 가 남고 나머지 취소 주문은 전부 0).
+            $updateData['total_due_amount'] = 0;
             $updateData['order_meta'] = array_merge($order->order_meta ?? [], [
                 'cancel_reason' => $reason,
                 'previous_status' => $previousStatus->value,

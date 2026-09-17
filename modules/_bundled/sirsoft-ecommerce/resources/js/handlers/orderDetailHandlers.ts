@@ -265,7 +265,13 @@ export function buildOrderDetailBulkConfirmDataHandler(
             .map((optionId: number) => {
                 const opt = options.find((o: { id: number }) => o.id === optionId);
                 if (!opt || opt.option_status === 'cancelled') return null;
-                const quantity = opt.quantity ?? 1;
+                // S1-D16: 수량 상한은 원 수량이 아니라 **진행 중인 클레임을 민 가용 수량**이다.
+                // 서버는 선점을 알고 422 로 거절하므로, 원 수량을 쓰면 운영자가
+                // 고를 수 없는 수를 고르고 제출한 뒤에야 한도를 알게 된다.
+                // 필드가 없는 구버전 응답은 종전대로 원 수량으로 폴백한다.
+                const available = opt.available_quantity ?? opt.quantity ?? 1;
+                if (available <= 0) return null;
+                const quantity = available;
 
                 return {
                     id: opt.id,

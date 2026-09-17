@@ -285,6 +285,31 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 환불액이 **그 수단의** 잔여를 초과할 때 (S3-D21 — 저장·실행 공통 422)
+     *
+     * 합계 한도(`refundExceedsCancellable`)와 다른 축이다. 합계로는 통과하지만 **실제로 나갈
+     * 수단**의 잔여가 모자란 경우를 가른다 — 현금 잔여가 말랐는데 마일리지 여유가 그것을
+     * 가려 주면, 결제행의 취소 누적이 결제액을 넘는다(실측 주문 753: 현금 345,000 결제에
+     * 350,000 환불).
+     *
+     * 문구에 **수단과 두 숫자를 함께 싣는다** — 합계만 알려 주면 운영자가 어느 수단을 얼마나
+     * 줄여야 하는지 알 수 없어 화면에서 고칠 수 없다.
+     *
+     * @param  string  $method  수단 이름 (다국어 라벨)
+     * @param  string  $requested  요청액 (통화 포맷 문자열)
+     * @param  string  $remaining  그 수단의 잔여 (통화 포맷 문자열)
+     * @return self 예외 인스턴스
+     */
+    public static function refundExceedsMethodRemaining(string $method, string $requested, string $remaining): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_exceeds_method_remaining', [
+            'method' => $method,
+            'requested' => $requested,
+            'remaining' => $remaining,
+        ]);
+    }
+
+    /**
      * 환불액이 취소 가능 금액(D19)을 초과할 때 (저장·실행 공통 422)
      *
      * @param  string  $requested  요청 환불액 (통화 포맷 문자열)
@@ -307,6 +332,20 @@ class OrderClaimException extends Exception
     public static function refundPointsRequireMember(): self
     {
         return new self('sirsoft-ecommerce::exceptions.claim_refund_points_requires_member');
+    }
+
+    /**
+     * 이 주문의 결제수단이 지원하지 않는 환불수단을 지정했을 때 (S1-D15)
+     *
+     * 무통장·마일리지·예치금·무료 결제는 PG 거래가 없어 `pg` 로 돌려줄 대상이 없다.
+     * 그런데도 저장을 허용하면 화면은 「PG사 환불」이라고 말하지만 실행은 PG 훅을 건너뛰어
+     * (`RefundExecutionService` 가 결제수단으로 진입을 가른다) 장부와 표시가 어긋난다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundMethodUnavailable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_method_unavailable');
     }
 
     /**

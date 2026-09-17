@@ -29,6 +29,12 @@ class OrderService
 {
     use ReappliesPermissionScope;
 
+    /**
+     * @param  OrderRepositoryInterface  $repository  주문 Repository
+     * @param  UserAddressRepositoryInterface  $userAddressRepository  회원 배송지 Repository
+     * @param  StockService  $stockService  재고 서비스 (취소 복원 · 재활성 재차감)
+     * @param  ClaimAttachmentService  $claimAttachmentService  클레임 첨부 서비스
+     */
     public function __construct(
         protected OrderRepositoryInterface $repository,
         protected UserAddressRepositoryInterface $userAddressRepository,
@@ -64,6 +70,7 @@ class OrderService
      *
      * @param  array  $snapshots  ID 키 스냅샷 맵 (getSnapshotsByIds 결과 — 변경 전 상태 포함)
      * @param  string  $newStatus  일괄 변경 대상 상태 값
+     * @return void
      *
      * @throws InsufficientStockException 재고 부족 시
      */
@@ -128,7 +135,7 @@ class OrderService
      *
      * 칸의 순서·키·건수는 `getUserStatistics()` 가 정한다(클릭 필터도 같은 키를 보낸다). 여기서는
      * 그 키에 아이콘 토큰·색·라벨을 붙여, 화면이 상태 어휘를 다시 적지 않게 한다. 합산 카운터
-     * (상품준비중 + 배송준비완료)는 한 상태의 라벨이 아니므로 그룹 라벨을 쓴다.
+     * (상품준비중 + 배송준비중)는 한 상태의 라벨이 아니므로 그룹 라벨을 쓴다.
      *
      * @param  array<string, int>  $statistics  상태별 주문 건수 (getUserStatistics 결과)
      * @return array<int, array{key: string, label: string, icon: string, variant: string, count: int}> 건수 칸 배열
@@ -306,9 +313,18 @@ class OrderService
         });
 
         // 수취인 정보가 포함된 경우 배송지 주소 업데이트
+        $addressSnapshot = null;
+        $updatedShippingAddress = null;
         if (! empty($recipientData)) {
             $shippingAddress = $order->shippingAddress;
             if ($shippingAddress) {
+                // 변경 전 스냅샷 (활동 로그용) — 위의 $snapshot 은 Order::toArray() 라
+                // 주소 컬럼이 없다. 주소 변경을 전/후로 남기려면 OrderAddress 를 따로 떠야 한다.
+                // 스냅샷은 로그 부가 정보일 뿐이라, 뜨지 못해도 주소 저장 자체를 막지 않는다.
+                $addressSnapshot = method_exists($shippingAddress, 'toArray')
+                    ? $shippingAddress->toArray()
+                    : null;
+
                 // 프론트엔드 필드명 → DB 필드명 매핑
                 $addressData = [];
                 if (array_key_exists('recipient_name', $recipientData)) {
@@ -366,12 +382,28 @@ class OrderService
 
                 if (! empty($addressData)) {
                     $shippingAddress->update($addressData);
+                    $updatedShippingAddress = method_exists($shippingAddress, 'refresh')
+                        ? $shippingAddress->refresh()
+                        : $shippingAddress;
                 }
             }
         }
 
         // 수정 후 훅 (스냅샷 전달 — OrderActivityLogListener가 활동 로그 기록)
         HookManager::doAction('sirsoft-ecommerce.order.after_update', $order, $snapshot);
+
+        // 배송지가 실제로 바뀐 경우에만 전용 훅을 발화한다.
+        // `after_update` 는 Order 스냅샷만 들고 있어 주소 변경을 전혀 못 본다 — 그래서
+        // 관리자 배송지 변경이 "주문 수정" 한 줄로만 남고 전/후값이 사라졌다(S2-D6).
+        // 회원·비회원 경로(updateShippingAddress)와 같은 훅을 써서 로그 모양을 맞춘다.
+        if ($updatedShippingAddress !== null) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.order.after_update_shipping_address',
+                $order,
+                $updatedShippingAddress,
+                $addressSnapshot
+            );
+        }
 
         // 주문 상태 전이 시 단일 전이 훅 발화 → OrderStatusNotificationListener 가
         // 현재 상태(payment_complete/shipping/delivered/confirmed)에 맞는 알림 훅으로 매핑 발화한다 (A35/A36/D9/D10).
@@ -541,6 +573,7 @@ class OrderService
      * @param  array<int>  $ids  대상 주문 ID 배열
      * @param  string  $newStatus  전이된 목표 상태 값
      * @param  array<int, array>  $snapshots  전이 전 스냅샷 (id 키, order_status 포함)
+     * @return void
      */
     private function fireStatusChangeForBulk(array $ids, string $newStatus, array $snapshots): void
     {
@@ -644,6 +677,7 @@ class OrderService
      * @param  Order  $order  주문 모델
      * @param  string  $email  수신자 이메일
      * @param  string  $message  이메일 본문
+     * @return void
      */
     public function sendEmail(Order $order, string $email, string $message): void
     {

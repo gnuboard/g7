@@ -33,6 +33,8 @@ effects:
   - vendored_asset_declared_path_exists_on_disk
   - vendored_asset_version_matches_declaration
   - vendored_editor_mounts_without_fallback
+  # 로더가 두 번 돌아도 먼저 뜬 편집기는 살아 있어 「마운트됨」 축은 green 이다 — 따로 센다.
+  - vendored_amd_loader_runs_exactly_once
   - template_external_asset_field_resolves_to_asset_url
   - template_external_same_origin_ignores_preconnect_and_crossorigin
   - template_external_invalid_url_is_logged_not_silently_dropped

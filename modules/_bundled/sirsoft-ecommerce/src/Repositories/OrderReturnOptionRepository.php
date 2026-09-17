@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
 
@@ -64,6 +65,23 @@ class OrderReturnOptionRepository implements OrderReturnOptionRepositoryInterfac
         return $this->model->newQuery()
             ->with($relations)
             ->where('order_return_id', $returnId)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listCompletedByOrderId(int $orderId, ?int $excludeReturnId = null): Collection
+    {
+        // 신청 상품 행이 `order_id` 를 직접 들고 있어 조인 없이 주문 단위로 모을 수 있다.
+        return $this->model->newQuery()
+            ->where('order_id', $orderId)
+            ->where('option_status', ReturnStatusEnum::COMPLETED)
+            ->when(
+                $excludeReturnId !== null,
+                fn ($query) => $query->where('order_return_id', '!=', $excludeReturnId)
+            )
             ->orderBy('id')
             ->get();
     }

@@ -8,9 +8,12 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimOrder;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 
 /**
@@ -115,8 +118,78 @@ class StoreRefundRequestRequest extends FormRequest
 
             if ($filled !== [] && count($filled) !== 3) {
                 $validator->errors()->add('refund_bank', __('sirsoft-ecommerce::validation.claims.refund_bank.incomplete'));
+
+                return;
             }
+
+            // PG·수단이 환불받을 계좌를 요구하는 주문은 **접수에서** 막는다 (S1-D8).
+            // 막지 않으면 계좌 없이 접수·승인까지 통과한 뒤 마지막 [환불하기] 에서 PG 가
+            // `MISSING_REFUND_ACCOUNT` 로 거절한다 — 그때는 이미 승인된 신청서라 화면에
+            // 계좌를 넣을 자리가 없어 **운영자가 되돌릴 수 없다**.
+            // 판정은 관리자 [주문취소] 와 같은 규칙이다(CancelOrderRequest::requiresRefundBank).
+            $this->validateRefundBankRequired($validator, $order, $bank);
         });
+    }
+
+    /**
+     * 환불받을 계좌가 필요한 주문인데 비어 있으면 접수를 막습니다. (S1-D8)
+     *
+     * **가상계좌(입금 완료)** 에만 건다. 사람이 송금하는 수단(무통장 등)은 계좌가 없어도 접수를
+     * 받고 `requested` 에서 멈춰(P16) 운영자가 승인 전에 계좌를 채운다 — 접수를 막으면 「돈은
+     * 받았는데 환불 신청조차 못 하는」 상태가 된다. 가상계좌는 PG 가 취소 호출 시점에 계좌를
+     * 요구하므로(`MISSING_REFUND_ACCOUNT`) 접수에서 막아야 되돌릴 자리가 남는다.
+     * 주문 시점에 환불계좌를 넣어 둔 주문(`order_payments.refund_bank_code`)은 그것을 쓴다.
+     *
+     * @param  Validator  $validator  검증기
+     * @param  Order  $order  대상 주문
+     * @param  array  $bank  요청에 실린 환불 계좌
+     * @return void
+     */
+    protected function validateRefundBankRequired(Validator $validator, $order, array $bank): void
+    {
+        $payment = $order->payment;
+
+        if (! $payment) {
+            return;
+        }
+
+        // **가상계좌(입금 완료)만** 접수에서 막는다.
+        //
+        // 사람이 송금하는 수단(무통장 등)은 계좌가 없어도 접수는 받는다 — 그 건은 `requested`
+        // 에서 멈추고(P16) 운영자가 승인 전에 계좌를 채워 넣을 수 있다. 접수를 막으면
+        // 「돈은 받았는데 환불 신청 자체를 못 하는」 상태가 된다.
+        // 가상계좌는 다르다 — PG 가 취소 API 호출 시점에 계좌를 요구하므로(`MISSING_REFUND_ACCOUNT`),
+        // 접수를 통과시키면 승인까지 간 뒤 실행에서만 실패하고 되돌릴 자리가 없다.
+        $method = $payment->payment_method instanceof PaymentMethodEnum
+            ? $payment->payment_method
+            : PaymentMethodEnum::tryFrom((string) $payment->payment_method);
+
+        if ($method !== PaymentMethodEnum::VBANK) {
+            return;
+        }
+
+        $status = $payment->payment_status instanceof PaymentStatusEnum
+            ? $payment->payment_status
+            : PaymentStatusEnum::tryFrom((string) $payment->payment_status);
+
+        // 입금 전이면 PG 가 환불받을 계좌를 요구하지 않는다(미입금 취소).
+        if ($status === null || $status->isAwaitingDeposit()) {
+            return;
+        }
+
+        // 주문 시점에 넣어 둔 계좌가 있으면 그것으로 충분하다.
+        if (filled($payment->refund_bank_code)) {
+            return;
+        }
+
+        if (filled($bank['bank_code'] ?? null)) {
+            return;
+        }
+
+        $validator->errors()->add(
+            'refund_bank',
+            __('sirsoft-ecommerce::validation.order.refund_bank_required_for_vbank')
+        );
     }
 
     /**

@@ -504,7 +504,30 @@ class OrderCalculationService
             // subtotal = (원옵션가 + 추가옵션 단위 합계) × 수량 (D6)
             $additionalTotal = (int) ($item['additional_options_total'] ?? 0);
             $subtotal = ($item['unit_price'] + $additionalTotal) * $item['quantity'];
-            $subtotals[$item['product_option_id']] = [
+            $optionId = $item['product_option_id'];
+
+            // 같은 상품옵션이 여러 아이템으로 올 수 있다 — 대입하지 말고 누적한다.
+            //
+            // 한 주문에 같은 상품옵션이 여러 행으로 남는 것은 정상이다: 교환·반품의 수량 분할,
+            // per-line 상태 분할, 같은 옵션 재구매가 모두 그렇게 만든다. 재계산은 살아 있는
+            // 주문행을 그대로 아이템으로 넘기므로 같은 `product_option_id` 가 두 번 온다.
+            //
+            // 종전에는 여기서 대입해 뒤 행이 앞 행을 덮어썼다. 그러면 두 행 중 하나가 통째로
+            // 사라져 **그 행을 빼도 합계가 그대로**이고, 환불 미리보기의 차액이 0이 되어
+            // 정당한 환불이 막혔다(S3-D4 · 실측: 텀블러 28,000 한 행 증발).
+            //
+            // 키 구조(`[product_option_id => …]`)는 그대로 둔다 — 쿠폰 안분·마일리지·과세 분류·
+            // 배송정책 그룹이 이 키로 결과를 되찾는다. 이미 취소·교환으로 닫힌 행은 호출자
+            // (`OrderAdjustmentService::buildRecalcInput()`)가 아이템에서 빼고 넘기므로,
+            // 누적이 닫힌 행까지 더해 과다 계상하는 일은 없다.
+            if (isset($subtotals[$optionId])) {
+                $subtotals[$optionId]['quantity'] += $item['quantity'];
+                $subtotals[$optionId]['subtotal'] += $subtotal;
+
+                continue;
+            }
+
+            $subtotals[$optionId] = [
                 'unit_price' => $item['unit_price'],
                 'additional_options_total' => $additionalTotal,
                 'quantity' => $item['quantity'],

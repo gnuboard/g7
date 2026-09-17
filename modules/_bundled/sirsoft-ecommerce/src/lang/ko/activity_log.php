@@ -209,6 +209,12 @@ return [
         'ecommerce_settings_index' => '이커머스 설정 조회',
         'ecommerce_settings_update' => '이커머스 설정 저장 (:categories)',
 
+        // 클레임 사유 카탈로그
+        'claim_reason_create' => '클레임 사유 생성 (:reason_type · :reason_code)',
+        'claim_reason_update' => '클레임 사유 수정 (:reason_type · :reason_code)',
+        'claim_reason_delete' => '클레임 사유 삭제 (:reason_type · :reason_code)',
+        'claim_reason_toggle_status' => '클레임 사유 활성 전환 (:reason_type · :reason_code)',
+
         // 결제 (Admin)
         'payment_refund' => '결제 환불 (주문: :order_number)',
 

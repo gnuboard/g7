@@ -118,8 +118,17 @@ describe('설정 클레임 탭 — 구성', () => {
  *   settings_claim_complete_defaults_declared_as_modal_seed
  */
 describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통로를 갖는다', () => {
-  /** `complete_defaults` 는 하위 키를 갖는 축이라 아래 전용 루프가 따로 본다 */
-  const POLICY_SCALAR_KEYS = SCALAR_KEYS.filter((k) => k !== 'complete_defaults');
+  /**
+   * `complete_defaults` 는 하위 키를 갖는 축이라 아래 전용 루프가 따로 본다.
+   * `auto_approve_refund_payment_methods_decided` 는 운영자가 편집하는 값이 아니라 **서버가 저장 시
+   * 기록하는 결정 이력**이다(`EcommerceSettingsController::updateSettings` — 운영자가 한 번 뺀 즉시 환불
+   * 수단이 다음 조회의 자동 합류로 되살아나지 않도록 남기는 키, #599 §4-A A-2 · P17). 화면 편집 통로가
+   * 없는 것이 설계이므로 「스칼라 축 전부가 편집 통로를 갖는다」 검사에서 뺀다.
+   */
+  const SERVER_RECORDED_KEYS = ['auto_approve_refund_payment_methods_decided'];
+  const POLICY_SCALAR_KEYS = SCALAR_KEYS.filter(
+    (k) => k !== 'complete_defaults' && !SERVER_RECORDED_KEYS.includes(k),
+  );
 
   // 파생이 비면 `it.each([])` 는 케이스를 **0개 등록하고 초록**이다 — 오류도 경고도 없다.
   // 같은 describe 의 형제 파생(`COMPLETE_DEFAULT_KEYS`)은 이미 하한을 갖는데 이쪽만 없어
@@ -210,8 +219,9 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
     [claimPolicy, exchangeSection, returnSection, refundSection, exchangeCards, returnCards, refundCards].forEach(walk);
 
     // 하한(>14)이면 partial 3개가 통째로 사라져도 통과한다 — 정확값으로 고정한다.
-    // 51 = 종전 50 + 자동승인 대상 상태 MultiSelect 1(#599 후속 D8).
-    expect(found.length, '7 partial 의 입력형 노드 수가 바뀌었다 — 입력을 더했거나 뺐으면 이 수를 함께 고친다').toBe(51);
+    // 52 = 종전 50 + 자동승인 대상 상태 MultiSelect 1(#599 후속 D8)
+    //      + 환불 자동 승인 결제수단 MultiSelect 1(#599 §4-A A-2 · P17 · `591770d69`).
+    expect(found.length, '7 partial 의 입력형 노드 수가 바뀌었다 — 입력을 더했거나 뺐으면 이 수를 함께 고친다').toBe(52);
 
     const open = found.filter(
       (f) => typeof f.disabled !== 'string' || !f.disabled.includes('_computed.isReadOnly')

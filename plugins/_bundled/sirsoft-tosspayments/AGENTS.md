@@ -83,6 +83,17 @@
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`가 토스 취소 API 호출
 → `before_cancel`/`after_cancel` 훅 발화.
 
+부분취소의 **면세분(`taxFreeAmount`)** 은 주문의 면세·과세 합계로 안분하되,
+「**승인 면세액 − 이미 소진한 면세분**」 으로 계산한 잔여 예산을 상한으로 갖습니다.
+주문의 `total_tax_free_amount` / `total_tax_amount` 는 환불이 완료될 때마다 **잔여로 줄어들기**
+때문에, 비율만으로 보내면 회차별 안분분의 합이 승인분을 넘어 토스가
+「취소 할 수 없는 금액 입니다.」로 거부합니다.
+
+예산의 근거는 `payment_meta.pg_raw_response` 다 — `taxFreeAmount`(승인 시 등록된 **불변의 상한**)과
+`cancels[].taxFreeAmount`(이미 소진분). 이 스냅샷은 종전에 승인 시점에만 기록됐으므로,
+취소가 성공할 때마다 응답의 `cancels[]` 로 **장부를 갱신**합니다(승인 금액·승인 면세액은 보존).
+장부는 PG 가 실제로 기록한 값이므로 「우리가 보낸 값」이 아니라 「받아들여진 값」이 쌓입니다.
+
 **설정 저장 검증**: 관리자가 플러그인 설정을 저장 → `core.plugin_settings.before_save`
 (동기 훅, `sync: true`) → `ValidateTossSettingsListener`가 `vbank_valid_hours`(1~2160시간)와
 `use_escrow`(`off`/`on`/`buyer_choice` 3-상태) 범위를 검증 → 위반 시 `ValidationException`으로

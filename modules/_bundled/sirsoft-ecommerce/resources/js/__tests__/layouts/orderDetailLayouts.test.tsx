@@ -830,6 +830,43 @@ describe('Partial 레이아웃 구조 검증', () => {
             expect(json).toContain('earn_status.pending');
         });
 
+        /**
+         * 적립 배지는 **셋** 이다 — 취소된 옵션은 지킬 수 없는 「적립예정」을 말하지 않는다 (S1-D19).
+         *
+         * 실측(#599 통합실측 세션1 · 1-M · 주문 108): 전량 취소되어 76,500원 전액 환불된
+         * 주문의 옵션 3행이 각각 `228P 적립예정` · `160P 적립예정` · `440P 적립예정` 을
+         * 말하고 있었다. 그 주문의 `purchase_earn` 거래는 0건이고 앞으로도 0건이다.
+         *
+         * 조건은 배타적이어야 한다 — pending 조건이 `is_points_earn_cancelled` 를 배제하지
+         * 않으면 취소 옵션에 배지가 **둘** 붙는다.
+         */
+        // @scenario stock_deduction=not_deducted, points_earn=earn_cancelled, non_purchase_tx=none
+        // @effects resource_marks_cancelled_option_as_earn_cancelled
+        it('적립 배지가 완료·예정·없음 셋으로 갈리고 조건이 서로 배타적이다 (S1-D19)', () => {
+            const json = JSON.stringify(orderInfoPartial);
+
+            // 세 번째 배지가 새 상태 필드로 분기한다
+            expect(json).toContain('row.subtotal_earned_points_amount > 0 && row.is_points_earn_cancelled');
+            expect(json).toContain('earn_status.cancelled');
+
+            // 「적립예정」은 취소된 옵션을 배제한다 — 이 배제가 없으면 배지 2개가 동시 노출
+            expect(json).toContain(
+                'row.subtotal_earned_points_amount > 0 && !row.is_points_earned && !row.is_points_earn_cancelled',
+            );
+
+            // 세 조건이 같은 상태에서 동시에 성립하지 않는다 (진리표)
+            const activeBadges = (earned: boolean, earnCancelled: boolean) => [
+                earned,                              // 적립완료
+                !earned && !earnCancelled,           // 적립예정
+                earnCancelled,                       // 적립 없음
+            ].filter(Boolean).length;
+
+            expect(activeBadges(true, false)).toBe(1);   // 지급됨
+            expect(activeBadges(false, false)).toBe(1);  // 아직 — 진행 중인 주문
+            expect(activeBadges(false, true)).toBe(1);   // 취소됨 — 이전엔 「적립예정」이었다
+        });
+
+
         it('재고/적립 배지가 Badge 컴포넌트로 color prop을 사용한다', () => {
             const json = JSON.stringify(orderInfoPartial);
             // Badge 컴포넌트 사용 + color prop (admin Badge 는 color prop 기반)

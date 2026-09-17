@@ -464,6 +464,56 @@ class OrderControllerTest extends ModuleTestCase
     }
 
     /**
+     * T9-b — 면세 상품이 섞인 PG 주문은 결제 페이로드에 면세 금액을 싣는다 (S1-D12).
+     *
+     * 복합 과세 상점은 결제·결제취소·현금영수증 요청에 면세 금액을 **함께** 보내야 한다는 것이
+     * PG 계약이다(토스 「세금 처리」 가이드). 승인에서 빼고 취소에서만 보내면 PG 는 그 결제를
+     * 전액 과세로 등록해 두었다가, 면세분이 실린 취소를 **「취소 할 수 없는 금액 입니다」** 로
+     * 거절한다 — 면세 상품이 섞인 주문의 부분환불이 통째로 막힌다.
+     *
+     * 실측(주문 20260915-0613504830 · 사과 면세 40,000 포함): 사과 1개 환불이
+     * `PG_API_ERROR / 취소 할 수 없는 금액 입니다` 로 거절됐고, 같은 취소를 `taxFreeAmount` 없이
+     * 보내면 즉시 성공했다.
+     *
+     * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
+     *
+     * @effects pg_payment_data_carries_tax_free_amount
+     */
+    public function test_면세_상품이_섞인_주문은_결제_페이로드에_면세금액을_싣는다(): void
+    {
+        $this->registerExtensionEasyPayMethod();
+        $this->createGuestTempOrder();
+
+        $response = $this->postJson(
+            '/api/modules/sirsoft-ecommerce/user/orders',
+            $this->guestOrderPayload([
+                'payment_method' => 'nhnkcp_naverpay',
+                'depositor_name' => null,
+                'dbank' => null,
+            ]),
+            ['X-Cart-Key' => $this->cartKey]
+        );
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.requires_pg_payment', true);
+
+        $order = Order::where('order_number', $response->json('data.order.order_number'))->first();
+        $taxFree = (int) round((float) $order->total_tax_free_amount);
+
+        // 면세분이 있으면 그 값이, 없으면 키가 null 이어야 한다 — 어느 쪽이든 **계산 결과와 일치**해야 한다.
+        $payloadTaxFree = $response->json('data.pg_payment_data.tax_free_amount');
+
+        if ($taxFree > 0) {
+            $this->assertSame($taxFree, (int) $payloadTaxFree, '면세 금액이 결제 페이로드에 실리지 않았다');
+        } else {
+            $this->assertNull($payloadTaxFree, '면세분이 없으면 키를 싣지 않는다');
+        }
+
+        // 키 자체는 항상 존재해야 한다(프론트가 존재 여부로 분기하지 않도록).
+        $this->assertArrayHasKey('tax_free_amount', $response->json('data.pg_payment_data'));
+    }
+
+    /**
      * T10 — 간편결제 주문은 PG 결제 주문이므로 임시주문이 보존되어 재결제가 가능하다 (#475).
      *
      * 이슈의 핵심 증상: 결제 실패 후 재시도하면 "임시주문을 찾을 수 없습니다" 로 재결제가

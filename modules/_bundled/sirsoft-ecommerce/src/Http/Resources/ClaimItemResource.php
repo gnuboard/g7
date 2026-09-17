@@ -69,6 +69,11 @@ class ClaimItemResource extends BaseApiResource
             'status_variant' => $status instanceof \BackedEnum && method_exists($status, 'variant') ? $status->variant() : null,
             'unit_price' => $this->roundToOrderCurrency($unitPrice, $currency),
             'unit_price_formatted' => $this->formatOrderCurrency($unitPrice, $currency),
+            // 단가의 보조 통화. 없으면 화면의 단가 줄이 **다른 필드의 보조 통화로 흘러간다** —
+            // 교환 신청서 수정 화면에서 `28,000원` 줄에 교환 차액(-3,000)의 `$-3.00` 이 붙었다
+            // (2026-09-15 실측). 아래 `mc_subtotal_amount` 가 같은 이유로 추가됐고 단가 자리만
+            // 남아 있었다. 소계와 달리 수량을 곱하지 않는다.
+            'mc_unit_price' => $this->formatStoredMultiCurrency($orderOption?->mc_unit_price),
             'subtotal_amount' => $this->roundToOrderCurrency($unitPrice * $quantity, $currency),
             'subtotal_amount_formatted' => $this->formatOrderCurrency($unitPrice * $quantity, $currency),
             // 소계의 보조 통화. 클레임 수량은 주문 수량과 다를 수 있으므로(부분 반품) 주문옵션의

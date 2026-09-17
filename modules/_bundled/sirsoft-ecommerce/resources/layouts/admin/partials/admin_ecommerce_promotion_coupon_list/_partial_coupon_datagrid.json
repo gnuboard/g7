@@ -664,6 +664,7 @@
                     "directIssueSelectedUsers": [],
                     "directIssueSearchKeyword": "",
                     "directIssueSearchResults": [],
+                    "directIssueSearchResultsKeyword": null,
                     "directIssueSubmitting": false
                   }
                 },
@@ -872,6 +873,7 @@
                                         "directIssueSelectedUsers": [],
                                         "directIssueSearchKeyword": "",
                                         "directIssueSearchResults": [],
+                                        "directIssueSearchResultsKeyword": null,
                                         "directIssueSubmitting": false
                                       }
                                     },

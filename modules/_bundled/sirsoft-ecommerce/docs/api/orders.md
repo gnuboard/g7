@@ -357,7 +357,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 주문이 수정되었습니다.",
+    "message": "2개 주문이 수정되었습니다.",
     "data": {
         "updated_count": 3,
         "requested_count": 3
@@ -1193,6 +1193,15 @@ Content-Type: application/json
 }
 ```
 
+**응답 메시지** — `mark_order_complete` 에 따라 갈립니다 (#599 세션2 S2-D3).
+
+| `mark_order_complete` | 주문 상태 | `message` |
+| --- | --- | --- |
+| `true` | 주문완료까지 전이 | `입금이 확인되어 결제완료 처리되었습니다.` |
+| `false`(기본) | 입금 내역만 기록 | `입금 내역을 기록했습니다. 주문 상태는 결제대기로 유지됩니다.` |
+
+> 종전에는 두 경우 모두 「결제완료 처리되었습니다」로 응답해, **결제완료로 전이하지 않은 건에도 전이했다고 알렸습니다.** 운영자가 실제 상태를 오해할 수 있어 분기했습니다.
+
 **응답 필드** (`data` 내부)
 
 _단건 응답: `data` 객체의 필드. 입금확인 후 재조회한 주문을 `OrderResource` 로 반환하므로 필드 구성은 `GET /admin/orders/{order}` (주문 상세) 의 응답 필드 표와 동일합니다._
@@ -1661,7 +1670,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 옵션의 상태가 변경되었습니다.",
+    "message": "2개 옵션의 상태가 변경되었습니다.",
     "data": {
         "changed_count": 2,
         "split_count": 1,

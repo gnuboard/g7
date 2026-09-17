@@ -8,7 +8,6 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
-use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -68,6 +67,110 @@ class OrderReorderTest extends ModuleTestCase
             ->where('user_id', $this->user->id)
             ->where('product_option_id', $option->id)
             ->value('quantity'));
+    }
+
+    /**
+     * 수량 분할로 생긴 행(`parent_option_id` 가 자기 자신)도 재주문에 담긴다 (S1-D5)
+     *
+     * 부분취소가 행을 분할하면 분할 가족의 머리 행은 `parent_option_id` 에 **자기 id** 를 담는다.
+     * 재주문이 최상위 행을 `parent_option_id === null` 로만 걸러, 분할을 겪은 상품이 통째로
+     * 빠지면서 `skipped` 에도 안 잡혀 **조용히 사라졌다**.
+     *
+     * 실측(주문 20260915-0604289654 · 3상품): 응답 `added_count=1 · skipped=[]` —
+     * 분할된 2상품(브이넥·양말)이 사라지고 분할 안 된 텀블러 1건만 담겼다.
+     *
+     * @scenario basis_case=split_row_self_parent
+     *
+     * @effects split_head_row_included_in_reorder
+     */
+    public function test_reorder_includes_split_head_rows(): void
+    {
+        $product = ProductFactory::new()->create();
+        $optionA = ProductOptionFactory::new()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 100,
+        ]);
+        $optionB = ProductOptionFactory::new()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 100,
+        ]);
+
+        $order = OrderFactory::new()->paid()->forUser($this->user)->create();
+
+        // 분할을 겪지 않은 행
+        OrderOptionFactory::new()->forOrder($order)->create([
+            'product_id' => $product->id,
+            'product_option_id' => $optionA->id,
+            'quantity' => 1,
+        ]);
+
+        // 분할 가족의 머리 행 — parent_option_id 가 자기 자신
+        $split = OrderOptionFactory::new()->forOrder($order)->create([
+            'product_id' => $product->id,
+            'product_option_id' => $optionB->id,
+            'quantity' => 2,
+        ]);
+        $split->parent_option_id = $split->id;
+        $split->source_type = 'split';
+        $split->save();
+
+        $response = $this->actingAs($this->user)
+            ->postJson($this->endpoint($order->id));
+
+        $response->assertStatus(200);
+        // 둘 다 담겨야 한다 (수정 전에는 1)
+        $response->assertJsonPath('data.added_count', 2);
+        $response->assertJsonPath('data.skipped', []);
+
+        $this->assertSame(2, (int) Cart::query()
+            ->where('user_id', $this->user->id)
+            ->where('product_option_id', $optionB->id)
+            ->value('quantity'));
+    }
+
+    /**
+     * 담지 못한 상품의 사유가 구체 문구로 온다 (S1-D7)
+     *
+     * 구매불가 사유는 `CartUnavailableException::getUserMessage()` 가 구체 문구를 만든다
+     * (필수 추가옵션 미선택·재고 부족·구매수량 한도 등). 재주문은 `getMessage()` 만 담아
+     * 전부 일반 문구 「구매할 수 없는 상품이 있습니다.」 로 뭉개져, **왜 못 담았는지 알 수 없었다.**
+     *
+     * 실측(주문 20260915-0604289654): 필수 A/S 보증이 걸린 브이넥이 그 일반 문구로만 표시됐다.
+     *
+     * @scenario basis_case=skip_reason_is_specific
+     *
+     * @effects reorder_skip_reason_uses_user_message
+     */
+    public function test_reorder_skip_reason_is_specific(): void
+    {
+        $product = ProductFactory::new()->create();
+        $option = ProductOptionFactory::new()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 0,   // 재고 0 → stock 사유
+        ]);
+
+        $order = OrderFactory::new()->paid()->forUser($this->user)->create();
+        OrderOptionFactory::new()->forOrder($order)->create([
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 2,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->postJson($this->endpoint($order->id));
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.added_count', 0);
+
+        $reason = (string) ($response->json('data.skipped.0.reason') ?? '');
+
+        // 일반 폴백 문구로 뭉개지지 않아야 한다
+        $this->assertNotSame(
+            __('sirsoft-ecommerce::exceptions.cart_unavailable'),
+            $reason,
+            '구매불가 사유가 일반 문구로 뭉개지면 안 된다'
+        );
+        $this->assertNotSame('', $reason);
     }
 
     public function test_reorder_rejects_other_users_order(): void

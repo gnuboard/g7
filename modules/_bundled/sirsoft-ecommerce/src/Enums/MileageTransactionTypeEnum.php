@@ -91,17 +91,20 @@ enum MileageTransactionTypeEnum: string
     /**
      * 사용자 마이페이지 표시용 4분류를 반환합니다.
      *
-     * 적립/사용/소멸 + 조정(복원·수동·회수 통합). 세부 사유는 description 컬럼으로 안내합니다.
+     * 잔액이 늘어난 거래는 전부 '적립' 에 선다(isEarning() 과 같은 기준) — 요약 카드의
+     * '누적 적립' 이 그 기준으로 세기 때문에, 목록 필터가 관리자 지급·환불 복원·취소 복원을
+     * '조정' 으로 접으면 한 화면이 같은 거래를 두 갈래로 분류하게 된다. '조정' 에는 사용도
+     * 소멸도 아닌 차감(관리자 차감·기적립 회수)만 남는다. 세부 사유는 description 이 말한다.
      *
      * @return string 표시 분류 (earn|use|expire|adjust)
      */
     public function userDisplayCategory(): string
     {
         return match ($this) {
-            self::PURCHASE_EARN => 'earn',
+            self::PURCHASE_EARN, self::ADMIN_EARN, self::REFUND_RESTORE, self::ORDER_CANCEL_RESTORE => 'earn',
             self::ORDER_USE => 'use',
             self::EXPIRED => 'expire',
-            self::ADMIN_EARN, self::ADMIN_DEDUCT, self::REFUND_RESTORE, self::ORDER_CANCEL_RESTORE, self::EARN_CANCEL => 'adjust',
+            self::ADMIN_DEDUCT, self::EARN_CANCEL => 'adjust',
         };
     }
 }

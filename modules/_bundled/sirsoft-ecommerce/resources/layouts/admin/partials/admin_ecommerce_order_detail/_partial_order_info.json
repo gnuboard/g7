@@ -669,12 +669,23 @@
                           {
                             "type": "composite",
                             "name": "Badge",
-                            "if": "{{row.subtotal_earned_points_amount > 0 && !row.is_points_earned}}",
+                            "if": "{{row.subtotal_earned_points_amount > 0 && !row.is_points_earned && !row.is_points_earn_cancelled}}",
                             "props": {
                               "size": "sm",
                               "color": "gray"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.pending"
+                          },
+                          {
+                            "comment": "S1-D19: 취소된 옵션은 다시 적립 대상이 되지 않는다 — 「적립예정」이 아니라 「적립 없음」",
+                            "type": "composite",
+                            "name": "Badge",
+                            "if": "{{row.subtotal_earned_points_amount > 0 && row.is_points_earn_cancelled}}",
+                            "props": {
+                              "size": "sm",
+                              "color": "red"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.cancelled"
                           }
                         ]
                       }
@@ -1840,7 +1851,10 @@
                               "props": {
                                 "readOnlyFields": [
                                   "recipient_zipcode"
-                                ],
+                                ]
+                              },
+                              "comment": "콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다",
+                              "callbacks": {
                                 "onAddressSelect": {
                                   "handler": "setState",
                                   "params": {

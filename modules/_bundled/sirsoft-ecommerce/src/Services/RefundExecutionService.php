@@ -65,6 +65,8 @@ class RefundExecutionService
      * @param  AdjustmentResult  $result  계산 결과
      * @param  string|null  $reason  사유
      * @param  bool  $executePg  PG 환불 훅 실행 여부 (운영자 수동 환불이면 false)
+     * @param  bool  $recordPaymentLedger  결제행의 취소 누적(`cancelled_amount`)을 쌓을지 여부.
+     *                                     그 결제수단에서 **실제로 취소가 일어난** 환불만 true 다 (S1-D24).
      * @return void
      *
      * @throws \Exception PG 환불 실패 시
@@ -75,6 +77,7 @@ class RefundExecutionService
         AdjustmentResult $result,
         ?string $reason = null,
         bool $executePg = true,
+        bool $recordPaymentLedger = true,
     ): void {
         $order->loadMissing('payment');
 
@@ -95,7 +98,26 @@ class RefundExecutionService
         // 그렇다고 먼저 저장하면 "실패한 환불이 장부를 깎는" 반대쪽 위험이 생긴다. 호출부가
         // 트랜잭션을 열지 않은 채 부르면 롤백이 없기 때문이다. 그래서 메모리에만 채워 훅에
         // 보이게 하고, 실제 기록은 PG 가 받아들인 뒤에 한다.
-        $paymentUpdates = $order->payment !== null
+        //
+        // 그리고 그 누적은 **그 결제수단에서 실제로 취소가 일어난 환불에만** 쌓는다 (S1-D24).
+        //
+        // `cancelled_amount` 는 「이 결제수단에서 실제로 취소된 금액」이고, PG 환불가능액을
+        // 되짚는 근거이자 대사의 기준이다. 카드 주문에 `계좌이체` 환불수단을 지정하면 PG
+        // 왕복은 건너뛰는데(bank 이므로 당연) 이 누적만 깎여, 카드사 잔액은 그대로인 채
+        // 장부의 환불가능액만 줄었다 — 이후 정상적인 카드 환불이 한도에 먼저 걸린다
+        // (실측 1-P: 58,000 → 44,000, 토스 잔액은 58,000 그대로).
+        //
+        // 운영자가 카드 주문을 손으로 계좌 송금하는 운영은 막지 않는다(PO 확정 2026-09-16 —
+        // 「허용하되 장부는 건드리지 않음」). 다만 그 송금은 **카드 취소가 아니므로** 카드
+        // 결제행의 취소 누적이 아니다. 돈이 나간 사실은 주문 축(`total_refunded_amount`)과
+        // 환불 레코드가 그대로 기록한다.
+        //
+        // 판정은 **호출부가 내린다**(`$recordPaymentLedger`). 여기서 `refund_method` 로 가르려
+        // 했지만 그 값으로는 두 경우를 구분할 수 없다 — 카드 주문의 `BANK` 는 ① 운영자가 수단을
+        // 계좌로 바꾼 경우이면서, ② PG 리스너가 없어 코어가 계좌로 폴백시킨 경우이기도 하다
+        // (P14, `determineRefundMethod`). ② 는 **정상 취소**라 장부에 남아야 한다.
+        // 호출부만이 자기 경로가 어느 쪽인지 안다.
+        $paymentUpdates = $recordPaymentLedger && $order->payment !== null
             ? $this->buildCancelledAmountUpdates($order->payment, $result)
             : [];
 
@@ -134,7 +156,36 @@ class RefundExecutionService
             'total_refunded_amount' => (float) $order->total_refunded_amount + (float) $result->refundAmount,
             'total_refunded_points_amount' => (float) $order->total_refunded_points_amount
                 + (float) $result->refundPointsAmount,
-        ]);
+        ] + $this->taxColumnUpdates($order, $result));
+    }
+
+    /**
+     * 재계산된 과세·면세·부가세를 주문 헤더에 반영할 갱신값을 만듭니다. (S3-D17)
+     *
+     * **금액 컬럼은 건드리지 않는다** — `total_paid_amount` 를 깎으면 잔여 한도
+     * (`total_paid_amount - total_refunded_amount`)에서 같은 금액을 두 번 차감한다
+     * (execute() 독블록의 그 이유). 여기서 맞추는 것은 **세금 분류 세 컬럼뿐**이다.
+     *
+     * 왜 필요한가: `CashReceiptService::calculateIssuableAmount()` 가 이 컬럼들을 **그대로**
+     * 읽고, 그 주석이 「지금 이 주문이 얼마짜리인가만 읽으면 된다」를 계약으로 명시한다.
+     * 반품·환불 경로가 갱신하지 않으면 **전액 환불된 주문에 현금영수증이 발급 가능하다고
+     * 답한다**(2026-09-16 실측: 주문 964 전액 환불 후에도 `issuable.amount = 62,000`).
+     * 전액취소 경로는 이미 0 으로 내린다(S1-D22) — 반품·환불만 빠져 있었다.
+     *
+     * 재계산값이 없으면(출처 소실·취소 발 등) **아무것도 바꾸지 않는다** — 근거 없이
+     * 세금 컬럼을 0 으로 만들면 멀쩡한 주문의 과세 근거가 사라진다.
+     *
+     * @param  Order  $order  주문
+     * @param  AdjustmentResult  $result  계산 결과
+     * @return array<string, float> 갱신값 (근거가 없으면 빈 배열)
+     */
+    protected function taxColumnUpdates(Order $order, AdjustmentResult $result): array
+    {
+        // **호출부가 이미 컬럼을 골라 실었다** — 여기서 다시 거르지 않는다.
+        // 두 곳에서 각자 목록을 들면 한쪽만 늘렸을 때 조용히 빠진다(실측: 여기 목록이
+        // 세 개뿐이라 `total_cash_equivalent_amount` 가 잘려 발급 가능액이 62,000 으로
+        // 남았다). 목록의 정본은 `OrderRefundRequestService::TAX_SYNC_COLUMNS` 하나다.
+        return $result->orderUpdates;
     }
 
     /**

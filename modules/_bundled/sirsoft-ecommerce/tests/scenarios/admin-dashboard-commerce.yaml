@@ -46,6 +46,7 @@ effects:
   - total_sales_displays_sum_of_7_days
   - net_sales_sums_only_sales_eligible_statuses
   - net_sales_deducts_cancelled_quantity
+  - today_returns_badge_counts_returned_options
   - net_sales_attributed_by_order_ordered_at
   - sales_change_rate_emerald_when_positive
   - sales_change_rate_rose_when_negative

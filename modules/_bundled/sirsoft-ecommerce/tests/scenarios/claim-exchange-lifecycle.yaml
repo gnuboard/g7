@@ -129,6 +129,12 @@ sub_flows:
 
   # 교환 옵션 치환 2-패스 재계산 · 접수 스냅샷 동결 (#599 후속 B1·B2)
   - exchange_preview_two_pass_keeps_refund_math
+  # S3-D3 재정의(2026-09-17 실측 주문 1497): 저가 옵션 교환 완료 뒤 후속 행 취소 환불액이 승계 단가로 나와
+  # 차액이 두 번 나갔다. 재계산에서만 후속 행을 신규 옵션 단가로 본다 — 다른 상품 취소는 종전과 같고,
+  # 차액이 돌아가지 않은 교환(접수하지 않음)은 승계 단가 그대로다.
+  - exchanged_successor_row_refunds_at_new_option_price
+  - exchanged_successor_pricing_keeps_other_item_refunds
+  - exchanged_successor_pricing_requires_a_refunded_difference
   - exchange_request_freezes_calculation_snapshots
   - exchange_substitution_inherits_shipping_policy_and_coupons
 

@@ -90,6 +90,13 @@ class ConfirmDepositControllerTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $fresh->order_status);
         $this->assertEquals('홍길동', $fresh->payment->depositor_name);
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $fresh->options->first()->option_status);
+
+        // 결제완료까지 처리했을 때만 「결제완료」를 말한다 (S2-D3).
+        $this->assertSame(
+            __('sirsoft-ecommerce::messages.orders.deposit_confirmed'),
+            $response->json('message'),
+            'mark_order_complete=true 인데 결제완료 메시지가 아닙니다.'
+        );
     }
 
     /**
@@ -117,6 +124,22 @@ class ConfirmDepositControllerTest extends ModuleTestCase
         $this->assertEquals('홍길동', $fresh->payment->depositor_name);
         // 주문/옵션 상태는 전이되지 않음
         $this->assertNotEquals(OrderStatusEnum::PAYMENT_COMPLETE, $fresh->order_status);
+
+        // S2-D3 회귀: 주문이 결제대기로 남았는데 응답이 「결제완료 처리되었습니다」 라고
+        // 말하면, 응답만 읽는 소비자는 결제되지 않은 주문을 결제완료로 읽는다.
+        // 모달이 안내하는 대로 "입금 내역만 기록했다" 고 말해야 한다.
+        $this->assertSame(
+            __('sirsoft-ecommerce::messages.orders.deposit_recorded'),
+            $response->json('message'),
+            '입금만 기록했는데 응답이 결제완료를 단언합니다. 주문 상태: '
+                .($fresh->order_status->value ?? (string) $fresh->order_status)
+        );
+
+        $this->assertNotSame(
+            __('sirsoft-ecommerce::messages.orders.deposit_confirmed'),
+            $response->json('message'),
+            '입금만 기록한 응답이 결제완료 메시지를 그대로 씁니다.'
+        );
     }
 
     /**
@@ -140,6 +163,123 @@ class ConfirmDepositControllerTest extends ModuleTestCase
 
         $response->assertOk();
         $this->assertEquals(PaymentStatusEnum::PAID, $order->fresh()->payment->payment_status);
+    }
+
+    /**
+     * 반대 방향 불일치: payment 는 PAID 인데 주문 금액이 미결제로 남은 주문 (S2-D4)
+     *
+     * 「입금 내역만 기록」(mark_order_complete 미체크)은 payment 만 PAID 로 만들고
+     * 주문은 결제대기로 남긴다 — 설계대로다. 그러나 운영자가 그 뒤 **일괄 상태바**로
+     * 상품 상태를 결제완료~배송완료까지 올리면, 그 경로는 `order_status` 만 쓰고
+     * `completePayment()` 를 타지 않아 `total_paid_amount` 가 0 인 채로 굳는다.
+     *
+     * 그 상태에서 [입금확인] 은 이미 사라져 있다(payment 가 PAID 라 멱등 반환).
+     * **화면에서 되돌릴 방법이 없다.** 장부상 미결제이므로 이후 모든 환불 계산이
+     * `refund_amount=0` 으로 떨어진다 — 고객이 돈을 돌려받지 못한다.
+     *
+     * 실측(주문 115): 결제행 `paid`/174,500 · 주문헤더 `total_paid_amount=0` ·
+     * `total_due_amount=174,500` · 반품 미리보기 `refund_amount=0`(기대 46,000).
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
+     *
+     * @effects manual_deposit_reconciles_order_totals_when_payment_already_paid
+     */
+    public function test_confirm_deposit_reconciles_order_totals_when_payment_already_paid(): void
+    {
+        $order = $this->makeDbankOrder(30000);
+
+        // 1) 입금 내역만 기록 (mark_order_complete 미전달)
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->url($order), ['amount' => 30000])
+            ->assertOk();
+
+        $stuck = $order->fresh();
+        $this->assertEquals(PaymentStatusEnum::PAID, $stuck->payment->payment_status);
+        $this->assertEquals(
+            0,
+            (int) $stuck->total_paid_amount,
+            '전제 확인: 이 시점에는 주문 금액이 아직 미정합 상태여야 한다.'
+        );
+
+        // 2) 운영자가 [입금확인] 대신 **일괄 상태바**로 상품을 결제완료로 올린다.
+        //    이 시점에 [입금확인] 은 이미 쓸 수 없다 — payment 가 PAID 라 422 로 막힌다.
+        //    따라서 장부를 맞출 기회는 이 전이 경로밖에 없다.
+        $this->actingAs($this->adminUser)
+            ->patchJson(
+                "/api/modules/sirsoft-ecommerce/admin/orders/{$stuck->order_number}/options/bulk-status",
+                [
+                    'items' => $stuck->options->map(fn ($o) => [
+                        'option_id' => $o->id,
+                        'quantity' => $o->quantity,
+                    ])->all(),
+                    'status' => OrderStatusEnum::PAYMENT_COMPLETE->value,
+                ]
+            )
+            ->assertOk();
+
+        $fixed = $order->fresh();
+
+        $this->assertEquals(
+            OrderStatusEnum::PAYMENT_COMPLETE,
+            $fixed->order_status,
+            '전제 확인: 일괄 전이로 주문이 결제완료가 되어야 한다.'
+        );
+
+        $this->assertEquals(
+            30000,
+            (int) $fixed->total_paid_amount,
+            'payment 가 PAID 인데 주문 total_paid_amount 가 0 으로 남았습니다. '
+                .'장부상 미결제라 이후 환불이 전부 0 원으로 계산됩니다.'
+        );
+        $this->assertEquals(
+            0,
+            (int) $fixed->total_due_amount,
+            'total_due_amount 가 남아 있습니다 — 결제된 주문은 미수금이 0 이어야 합니다.'
+        );
+    }
+
+    /**
+     * 결제완료를 **건너뛰는** 일괄 전이(결제대기 → 상품준비중)도 수납액을 동기화한다.
+     *
+     * S2-D4 수정은 「결제완료로 올리는 전이」에서만 맞췄다. 그런데 일괄 상태바는 결제대기 상품을
+     * 곧장 상품준비중으로 올릴 수 있고(전이 규칙 허용), 그 경로는 결제완료를 지나지 않아 같은 구멍이
+     * 그대로 남았다 — 결제행은 PAID 인데 주문 `total_paid_amount=0` · 이후 [입금확인] 422 · 환불 전부 0원
+     * (2026-09-17 실측 주문 1496).
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
+     *
+     * @effects manual_deposit_reconciles_order_totals_when_bulk_status_skips_payment_complete
+     */
+    public function test_bulk_status_that_skips_payment_complete_still_reconciles_order_totals(): void
+    {
+        $order = $this->makeDbankOrder(30000);
+
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->url($order), ['amount' => 30000])
+            ->assertOk();
+
+        $stuck = $order->fresh();
+        $this->assertEquals(PaymentStatusEnum::PAID, $stuck->payment->payment_status);
+        $this->assertEquals(0, (int) $stuck->total_paid_amount);
+
+        $this->actingAs($this->adminUser)
+            ->patchJson(
+                "/api/modules/sirsoft-ecommerce/admin/orders/{$stuck->order_number}/options/bulk-status",
+                [
+                    'items' => $stuck->options->map(fn ($o) => [
+                        'option_id' => $o->id,
+                        'quantity' => $o->quantity,
+                    ])->all(),
+                    'status' => OrderStatusEnum::PREPARING->value,
+                ]
+            )
+            ->assertOk();
+
+        $fixed = $order->fresh();
+
+        $this->assertEquals(OrderStatusEnum::PREPARING, $fixed->order_status);
+        $this->assertEquals(30000, (int) $fixed->total_paid_amount, '결제완료를 건너뛴 일괄 전이 뒤에도 수납액이 주문에 기록되어야 한다.');
+        $this->assertEquals(0, (int) $fixed->total_due_amount);
     }
 
     /**

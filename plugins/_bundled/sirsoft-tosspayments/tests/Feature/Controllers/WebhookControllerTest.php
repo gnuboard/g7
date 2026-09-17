@@ -110,6 +110,48 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertSame(PaymentStatusEnum::PAID->value, $order->payment->payment_status->value);
     }
 
+    /**
+     * 입금통보가 발급 시점의 paymentKey 를 덮어쓰지 않는다. (S1-D10)
+     *
+     * `transaction_id` 는 **취소 API 가 쓰는 paymentKey** 다. 입금통보가 싣고 오는
+     * `transactionKey` 는 거래 회차마다 달라지는 별개 식별자(`txrd_…`)이고, 그것으로 덮어쓰면
+     * 이후 환불이 토스에서 **「존재하지 않는 결제 정보 입니다」** 로 거절된다.
+     *
+     * 실측(주문 20260915-0631411217): 발급 시 `tviva20260915153144ZJqh9` 였던 값이 입금통보 뒤
+     * `txrd_a01m2hx5hqvxk3bb3vy852hfjgx` 로 바뀌어, 환불이 승인까지 간 뒤 실행에서만 실패했다
+     * (`PG_API_ERROR`). 올바른 paymentKey 는 `payment_meta.pg_raw_response` 에 남아 있었다.
+     *
+     * @scenario webhook_case=deposit_done_keeps_payment_key
+     *
+     * @effects deposit_webhook_preserves_payment_key
+     */
+    public function test_deposit_done_keeps_the_original_payment_key(): void
+    {
+        $this->mockPluginSettings();
+        $order = $this->createWaitingDepositOrder();
+        $issuedKey = $order->payment->transaction_id;
+
+        $this->postJson(self::DEPOSIT_URL, [
+            'orderId' => $order->order_number,
+            'status' => 'DONE',
+            'secret' => self::SECRET,
+            'transactionKey' => 'txrd_should_not_overwrite',
+        ])->assertOk();
+
+        $order->refresh();
+
+        $this->assertSame(
+            $issuedKey,
+            $order->payment->transaction_id,
+            '입금통보가 발급 시점 paymentKey 를 덮어썼다 — 이후 취소/환불이 PG 에서 거절된다'
+        );
+        // 입금통보의 거래 식별자는 추적용으로 남는다.
+        $this->assertSame(
+            'txrd_should_not_overwrite',
+            $order->payment->payment_meta['deposit_transaction_key'] ?? null,
+        );
+    }
+
     public function test_deposit_canceled_fails_payment(): void
     {
         $this->mockPluginSettings();

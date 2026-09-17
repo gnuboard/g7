@@ -29,12 +29,24 @@ interface PgPaymentData {
     order_number: string;
     order_name: string;
     amount: number;
+    /** 결제 금액 중 면세분 (복합 과세 상점 계약 — 승인·취소에 함께 실어야 한다) */
+    tax_free_amount?: number | null;
     currency?: string;
     customer_name?: string;
     customer_email?: string;
     customer_phone?: string;
     customer_key?: string | null;
     escrow_products?: EscrowProduct[];
+    // 클레임 추가결제에만 실린다 — 주문 결제에는 없다.
+    //
+    // 이 값이 있으면 이 건은 주문 결제가 아니라 클레임 추가결제이고, `order_number` 가
+    // 가리키는 것도 주문번호가 아니라 결제번호(CP…)다. 사용자가 결제창을 스스로 닫았을 때
+    // 돌아갈 주소는 서버(`ClaimPaymentRedirect`)가 만들어 실어 준다 — 회원/비회원 분기와
+    // 폴백 경로가 그쪽 SSoT 에 있어 프런트가 조립하면 조용히 어긋난다.
+    claim_payment_number?: string;
+    claim_type?: string;
+    claim_number?: string | null;
+    claim_cancel_return_url?: string;
 }
 
 interface RequestPaymentParams {
@@ -193,8 +205,15 @@ async function loadScript(src: string): Promise<void> {
  * 결정한다. 프론트는 결제수단 매핑을 하드코딩하지 않는다 (서버가 SSoT).
  * order_sheet_mode 가 off 이거나 선택 id 를 못 찾으면 통합결제창 카드(CARD)로 처리한다.
  *
+ * 선택 id 는 두 가지로 온다 — 주문서에서 toss_* 항목을 직접 고르면 그 id(`toss_virtual_account`)
+ * 가, 코어 카탈로그의 결제수단(신용카드·가상계좌)을 고르면 **코어 id**(`card`·`vbank`)가
+ * `_local.paymentMethod` 에 담긴다. 코어 id 를 못 찾고 CARD 로 강하하면 **가상계좌 주문에
+ * 카드 결제창이 열린다**(S1-D1). 그래서 toss_* id 를 먼저 찾고, 없으면 core_payment_method
+ * 로 한 번 더 찾는다. 순서가 중요하다 — toss_kakaopay 의 core 는 card 라 코어를 먼저 맞추면
+ * 간편결제 자체창(easyPay)이 사라진다.
+ *
  * @param config 클라이언트 설정 (enabled_methods 포함)
- * @param selectedId 선택된 toss_* 결제수단 id
+ * @param selectedId 선택된 결제수단 id (toss_* 또는 코어 id)
  * @returns SDK method 와 easyPay provider
  */
 function resolveMethod(config: ClientConfig, selectedId?: string): { method: string; easyPay: string | null } {
@@ -202,7 +221,9 @@ function resolveMethod(config: ClientConfig, selectedId?: string): { method: str
         return { method: 'CARD', easyPay: null };
     }
 
-    const entry = (config.enabled_methods ?? []).find((m) => m.id === selectedId);
+    const methods = config.enabled_methods ?? [];
+    const entry = methods.find((m) => m.id === selectedId)
+        ?? methods.find((m) => m.core_payment_method === selectedId);
     if (!entry) {
         return { method: 'CARD', easyPay: null };
     }
@@ -353,6 +374,13 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             customerMobilePhone: pgPaymentData.customer_phone ?? undefined,
         };
 
+        // 복합 과세 상점은 **승인 요청에도** 면세 금액을 실어야 한다 (S1-D12). 승인에서 빼면
+        // PG 가 그 결제를 전액 과세로 등록해 두고, 나중에 면세분이 실린 취소를
+        // 「취소 할 수 없는 금액 입니다」 로 거절한다 — 면세 상품이 섞인 주문의 부분환불이 막힌다.
+        if (typeof pgPaymentData.tax_free_amount === 'number' && pgPaymentData.tax_free_amount > 0) {
+            requestPayload.taxFreeAmount = pgPaymentData.tax_free_amount;
+        }
+
         if (method === 'CARD') {
             requestPayload.card = {
                 flowMode: 'DEFAULT',
@@ -398,6 +426,32 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         // SDK에서 사용자 취소 시 에러가 발생할 수 있음
         if (error?.code === 'USER_CANCEL') {
             console.info('[sirsoft-tosspayments] Payment cancelled by user');
+
+            // 클레임 추가결제는 **주문 결제가 아니다** — 취소 처분이 갈린다.
+            //
+            // 이 핸들러는 주문 체크아웃과 클레임 추가결제가 함께 쓴다. 두 경우의
+            // `pgPaymentData.order_number` 가 가리키는 것이 다르다: 주문은 주문번호지만
+            // 클레임은 **결제번호(CP…)** 다(결제 플러그인의 콜백이 그 값으로 결제 건을
+            // 되찾도록 서버가 그렇게 싣는다). 그래서 종전처럼 주문 취소 경로로 보내면
+            // `orders/CP…/cancel-payment` 가 되어 **404** 가 나고, 아래 catch 가
+            // `console.warn` 으로 삼켜 화면에는 아무 신호도 남지 않았다. 이어지는
+            // 체크아웃 전용 취소 모달도 신청서 화면에는 뜨지 않아, 구매자는 신청서가
+            // 접수된 채 결제만 안 된 상태에서 **무슨 일이 있었는지 알 수 없었다**
+            // (실측 EX20260915-1145077892 · CP20260915-1145087969).
+            //
+            // 클레임은 서버가 복귀 주소 계약을 이미 갖고 있다(`ClaimPaymentRedirect`):
+            // 의도된 중단은 실패가 아니므로 `?claim_payment=cancelled` 로 신청서 상세에
+            // 돌려보내고 화면이 재시도를 열어 준다. 취소 이력 기록 라우트는 클레임 쪽에
+            // 없으므로(있는 것은 pay·approve 뿐) 호출하지 않는다 — 결제 건은
+            // `pending` 그대로 남아 구매자가 다시 낼 수 있다.
+            const claimReturnUrl = pgPaymentData.claim_cancel_return_url;
+
+            if (claimReturnUrl) {
+                G7Core?.state?.setLocal?.({ isSubmittingOrder: false });
+                window.location.href = claimReturnUrl;
+
+                return;
+            }
 
             // 1. 결제 취소 이력 기록 API 호출 (PG사 응답값 전달)
             //

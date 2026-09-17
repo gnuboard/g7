@@ -8478,4 +8478,99 @@ class OrderCalculationServiceTest extends ModuleTestCase
             ->withArgs(fn ($message) => str_contains((string) $message, '음수'))
             ->atLeast()->once();
     }
+
+    // ========== 같은 상품옵션이 여러 행으로 들어오는 경우 (S3-D4 회귀) ==========
+
+    /**
+     * 같은 상품옵션이 두 아이템으로 들어오면 두 몫이 모두 더해져야 한다.
+     *
+     * 한 주문에 같은 상품옵션이 여러 행으로 남는 것은 정상이다 — 교환·반품의 수량 분할,
+     * per-line 상태 분할, 같은 옵션 재구매가 모두 그렇게 만든다. 재계산은 주문의 살아 있는
+     * 행들을 그대로 아이템으로 넘기므로 같은 `product_option_id` 가 두 번 올 수 있다.
+     *
+     * 종전에는 옵션별 소계를 `[product_option_id => …]` 에 **대입**해 뒤 행이 앞 행을
+     * 덮어썼다. 그래서 두 행 중 하나가 통째로 사라졌고, **그 행을 빼도 합계가 그대로**라
+     * 환불 미리보기가 `refund_amount = 0` 을 돌려주었다 — 정당한 환불이 막힌다.
+     *
+     * 실측(주문 106): 살아 있는 4행 252,000 중 텀블러 28,000 한 행이 증발해 219,000.
+     *
+     * @scenario duplicate_shape=two_rows_same_quantity,verify_stage=summed_subtotal
+     *
+     * @effects duplicate_option_rows_are_summed
+     */
+    public function test_it_sums_two_items_sharing_the_same_product_option(): void
+    {
+        [$product, $option] = $this->createProductWithOption(price: 28000, priceAdjustment: 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(
+            56000,
+            $result->summary->subtotal,
+            '같은 상품옵션 두 행이 한 행으로 접혔습니다 — 뒤 행이 앞 행을 덮어씁니다.'
+        );
+    }
+
+    /**
+     * 같은 상품옵션 두 행 중 하나를 빼면 합계가 그 행만큼 줄어야 한다.
+     *
+     * 환불 미리보기는 "뺀 뒤의 합계"와 "빼기 전 합계"의 차액을 환불액으로 삼는다.
+     * 덮어쓰기가 있으면 한 행을 빼도 합계가 변하지 않아 차액이 0이 된다 — 이 테스트가
+     * 그 증상을 직접 잠근다.
+     *
+     * @scenario duplicate_shape=two_rows_same_quantity,verify_stage=removal_delta
+     *
+     * @effects duplicate_option_rows_are_summed
+     */
+    public function test_removing_one_of_two_same_option_rows_reduces_subtotal(): void
+    {
+        [$product, $option] = $this->createProductWithOption(price: 28000, priceAdjustment: 0);
+
+        $two = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $one = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(
+            28000,
+            $two->summary->subtotal - $one->summary->subtotal,
+            '한 행을 빼도 합계가 줄지 않습니다 — 환불 미리보기가 0원을 돌려주는 원인입니다.'
+        );
+    }
+
+    /**
+     * 수량이 다른 두 행도 각각의 수량대로 더해져야 한다.
+     *
+     * 합산을 수량 무시로 구현하면(예: 첫 행 기준으로만 계산) 이 경계가 깨진다.
+     *
+     * @scenario duplicate_shape=two_rows_different_quantity,verify_stage=summed_subtotal
+     *
+     * @effects duplicate_option_rows_are_summed
+     */
+    public function test_it_sums_same_option_rows_with_different_quantities(): void
+    {
+        [$product, $option] = $this->createProductWithOption(price: 10000, priceAdjustment: 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 2),
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 3),
+            ]
+        ));
+
+        $this->assertEquals(50000, $result->summary->subtotal);
+    }
 }

@@ -123,6 +123,16 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->getJson($this->base($order).'/claims', ['X-Guest-Order-Token' => 'invalid-token'])->assertNotFound();
     }
 
+    /**
+     * 토큰이 있으면 작성 화면의 두 진입(신청 가능 상품·미리보기)이 열린다.
+     *
+     * 이 둘은 작성 화면이 그려지기 전에 부르는 유일한 쌍이다 — 한쪽만 살아 있으면 화면은
+     * 상품 목록을 그리고 금액 칸만 빈다.
+     *
+     * @scenario claim_type=return, entry=with_token, screen=apply
+     *
+     * @effects guest_claim_datasources_carry_the_lookup_token
+     */
     public function test_claimable_options_and_preview_work_with_the_token(): void
     {
         [$order, $token] = $this->guestOrderWithToken();
@@ -140,6 +150,16 @@ class GuestClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.requires_payment', false);
     }
 
+    /**
+     * 비회원 반품 접수는 신청자 없이 접수되고, 그 신청서를 비회원이 다시 열고 철회할 수 있다.
+     *
+     * `requested_by` 가 비는 것이 비회원 신청의 정의다 — 회원 경로와 서비스를 공유하므로
+     * 이 자리에 값이 들어가면 남의 신청서가 된다.
+     *
+     * @scenario claim_type=return, entry=with_token, screen=detail
+     *
+     * @effects guest_claim_routes_allow_guest_and_use_claim_number
+     */
     public function test_guest_return_request_is_filed_without_a_requester(): void
     {
         [$order, $token] = $this->guestOrderWithToken();
@@ -180,6 +200,13 @@ class GuestClaimApiTest extends ModuleTestCase
             ->assertOk()->assertJsonPath('data.claim.status', 'withdrawn');
     }
 
+    /**
+     * 비회원 교환 접수는 왕복 배송비 청구로 결제 진입 4키와 함께 `payment_pending` 이 된다.
+     *
+     * @scenario claim_type=exchange, entry=with_token, screen=apply
+     *
+     * @effects guest_claim_routes_allow_guest_and_use_claim_number
+     */
     public function test_guest_exchange_request_enters_payment_pending(): void
     {
         // 비회원 신청 3유형 중 교환만 이 스위트에 없었다 — 라우트를 지워도 전 스위트가 green 인
@@ -204,6 +231,13 @@ class GuestClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.payment.payment_status', 'pending');
     }
 
+    /**
+     * 비회원 추가결제의 승인 콜백이 결제를 확정한다 — 이 라우트가 죽어도 red 가 나지 않던 면.
+     *
+     * @scenario claim_type=exchange, entry=with_token, screen=apply
+     *
+     * @effects guest_claim_payment_result_banner_stands_on_the_lookup_form
+     */
     public function test_guest_pg_approval_confirms_the_claim_payment(): void
     {
         // 비회원 추가결제의 '확정' 경로. 시작(pay)은 실패 케이스만 있었고 승인 콜백은 호출조차
@@ -283,6 +317,16 @@ class GuestClaimApiTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 상품 행이 소계와 단가의 보조 통화를 자기 값으로 들고 온다.
+     *
+     * 두 값 모두 정상 서식이라 옆 필드가 흘러들어도 화면에 흔적이 남지 않는다 —
+     * 소계는 2026-09-01, 단가는 S3-D6 실측에서 각각 드러났다.
+     *
+     * @scenario claim_type=exchange, entry=with_token, screen=edit
+     *
+     * @effects guest_claim_cards_keep_shared_values
+     */
     public function test_claim_item_rows_carry_the_subtotals_own_multi_currency(): void
     {
         // 화면은 상품 행에 소계(`subtotal_amount_formatted`)와 그 보조 통화를 나란히 그린다.
@@ -314,6 +358,27 @@ class GuestClaimApiTest extends ModuleTestCase
             $unitPrices = $orderOption->mc_unit_price ?? [];
             $this->assertNotEmpty($unitPrices, '주문옵션에 통화별 단가가 없으면 이 축의 기대값을 세울 수 없다.');
 
+            // 단가의 보조 통화도 함께 내려야 한다 (S3-D6).
+            //
+            // 화면은 단가 줄 아래에 `claimItem.mc_unit_price` 로 보조 통화를 병기한다. 이 키가
+            // 없으면 그 자리가 **다른 필드의 보조 통화로 흘러간다** — 교환 신청서 수정 화면에서
+            // `28,000원` 줄에 교환 차액(-3,000)의 `$-3.00 / ¥-345` 가 붙었다(실측
+            // EX20260915-0853360266). 서식이 정상이라 화면만 보면 흔적이 남지 않는다.
+            // 바로 위 `mc_subtotal_amount` 가 2026-09-01 에 같은 이유로 추가됐고, 단가 자리만
+            // 남아 있었다.
+            $this->assertArrayHasKey('mc_unit_price', $item, '단가의 보조 통화가 없으면 화면이 다른 필드 값을 그린다.');
+            $this->assertNotSame([], $item['mc_unit_price'], '단가의 보조 통화가 비면 그 줄이 사라지거나 옆 필드로 흘러간다.');
+
+            foreach ($unitPrices as $code => $unitPrice) {
+                $this->assertArrayHasKey($code, $item['mc_unit_price'], "통화 {$code} 의 단가가 빠졌다.");
+                $this->assertEqualsWithDelta(
+                    $unitPrice,
+                    $item['mc_unit_price'][$code]['amount'],
+                    0.01,
+                    "통화 {$code} 의 단가가 주문옵션 단가와 다르다 — 다른 필드 값이 흘러들었을 수 있다."
+                );
+            }
+
             foreach ($unitPrices as $code => $unitPrice) {
                 $this->assertArrayHasKey($code, $item['mc_subtotal_amount'], "통화 {$code} 의 소계가 빠졌다.");
                 $this->assertArrayHasKey('formatted', $item['mc_subtotal_amount'][$code]);
@@ -328,6 +393,13 @@ class GuestClaimApiTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 토큰과 주문번호가 어긋나면 미들웨어가 신청서에 닿기 전에 404 로 막는다.
+     *
+     * @scenario claim_type=return, entry=with_token, screen=detail
+     *
+     * @effects guest_claim_routes_are_token_protected
+     */
     public function test_another_orders_token_cannot_reach_this_orders_claim(): void
     {
         [$order, $token] = $this->guestOrderWithToken();
@@ -342,6 +414,16 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->getJson($this->base($order)."/claims/{$number}", ['X-Guest-Order-Token' => $otherToken])->assertNotFound();
     }
 
+    /**
+     * 첨부는 업로드한 주문의 토큰에만 열리고, 거절된 신청은 신청서를 남기지 않는다.
+     *
+     * 접수가 자체 트랜잭션으로 커밋된 뒤 첨부 귀속에서 거절하면 사용자는 422 를 보는데
+     * 신청서는 살아남아 그 상품의 수량을 잠근다(재신청 불가).
+     *
+     * @scenario claim_type=return, entry=with_token, screen=apply
+     *
+     * @effects guest_claim_image_upload_is_bounded_more_tightly
+     */
     public function test_guest_image_upload_attach_and_delete(): void
     {
         [$order, $token] = $this->guestOrderWithToken();
@@ -370,6 +452,13 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->assertSame('return', ClaimImage::find($imageId)->claimable_type);
     }
 
+    /**
+     * 주문상세의 「이 주문의 클레임」 목록이 상품명을 싣고, 사유 카탈로그를 1회만 읽는다.
+     *
+     * @scenario claim_type=return, entry=with_token, screen=order_section
+     *
+     * @effects guest_order_claim_section_reuses_the_member_list_partial
+     */
     public function test_guest_order_claim_list_carries_product_names_and_reads_reasons_in_one_query(): void
     {
         // 이 목록은 주문상세의 "이 주문의 클레임" 섹션을 그린다. 두 축이 조용히 깨질 수 있다:
@@ -429,6 +518,13 @@ class GuestClaimApiTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 비회원은 마일리지로 추가결제를 낼 수 없고, 거절된 요청은 결제행을 건드리지 않는다.
+     *
+     * @scenario claim_type=return, entry=with_token, screen=apply
+     *
+     * @effects guest_claim_options_hide_the_payment_method_the_server_refuses
+     */
     public function test_guest_cannot_pay_with_mileage(): void
     {
         [$order, $token] = $this->guestOrderWithToken();
@@ -449,6 +545,15 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $fresh->payment_status);
     }
 
+    /**
+     * 마일리지로 낸 비회원 접수는 신청서도 결제행도 남기지 않고 422 로 끝난다.
+     *
+     * 가드가 결제행을 만든 뒤에만 서면 그 결제행은 다시 열리지 않는다.
+     *
+     * @scenario claim_type=return, entry=with_token, screen=apply
+     *
+     * @effects guest_claim_options_hide_the_payment_method_the_server_refuses
+     */
     public function test_a_guest_requesting_with_mileage_leaves_no_claim_and_no_payment_row(): void
     {
         // 마일리지-회원 가드가 결제행을 **만든 뒤**에만 서면, 신청은 422 인데 신청서(수량 잠금)와
@@ -469,6 +574,15 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->assertSame(0, ClaimPayment::query()->count(), '거절된 신청이 결제행을 남기면 그 건은 다시 열리지 않습니다.');
     }
 
+    /**
+     * 비회원 섹션도 회원 목록과 같이 배송사 관계와 주문번호를 싣는다.
+     *
+     * 빠지면 오류 없이 전 행 null 이 되어 배송조회 열만 비고, 응답은 정상으로 보인다.
+     *
+     * @scenario claim_type=return, entry=with_token, screen=order_section
+     *
+     * @effects guest_order_claim_section_reuses_the_member_list_partial
+     */
     public function test_the_order_claim_section_carries_the_carrier_name_and_order_number(): void
     {
         // 회원 목록은 `order`·배송사 관계를 싣는다. 비회원 섹션만 빠지면 오류 없이 그 필드가 전 행
@@ -496,6 +610,15 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->assertSame('https://track.example.test/651234567890', $row['collection_tracking_url']);
     }
 
+    /**
+     * 환불 계좌는 같은 토큰으로 열리는 모든 비회원 경로에서 같은 강도로 가려진다.
+     *
+     * 한 경로만 가리면 나머지가 그대로 우회로가 된다.
+     *
+     * @scenario claim_type=refund, entry=with_token, screen=detail
+     *
+     * @effects guest_claim_cards_keep_shared_values
+     */
     public function test_the_refund_bank_account_is_masked_on_every_guest_facing_path(): void
     {
         // 마스킹은 한 경로만 가려도 다른 경로가 그대로 우회로가 된다 — 같은 토큰으로 열리는
@@ -730,6 +853,13 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->travelBack();
     }
 
+    /**
+     * 없는 결제번호는 결제 전용 문구의 404 다 — 회원 축과 같은 트레이트를 쓰므로 함께 잠근다.
+     *
+     * @scenario claim_type=exchange, entry=with_token, screen=detail
+     *
+     * @effects guest_claim_screens_clear_the_token_and_return_to_lookup
+     */
     public function test_missing_payment_is_404_with_the_payment_specific_message(): void
     {
         // 회원 축과 같은 문구여야 한다 — 두 축이 같은 트레이트를 쓰는데 한쪽만 고쳐지는 일이 실제로 있었다.
@@ -760,6 +890,10 @@ class GuestClaimApiTest extends ModuleTestCase
      * 회원 축과 같은 이유다 — `previewRefund()` 기본 가드가 세 면에 새 422 경로를 만들었는데
      * 비회원 컨트롤러는 관리자와 다른 메시지 키(`order_cancel_failed`)를 쓴다. 이 면을
      * 단언하지 않으면 매핑이 끊겨도 회귀가 초록으로 남는다.
+     *
+     * @scenario claim_type=refund, entry=with_token, screen=apply
+     *
+     * @effects guest_claim_datasources_carry_the_lookup_token
      */
     public function test_estimate_refund_is_422_for_items_locked_by_a_claim_course(): void
     {

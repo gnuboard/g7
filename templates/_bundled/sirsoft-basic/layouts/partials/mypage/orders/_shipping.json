@@ -3,6 +3,7 @@
     "is_partial": true,
     "description": "주문 상세 - 배송지 정보"
   },
+  "_e2e_allow": "e2e:allow S3-D10 — 배송비 표기 통화 선택키에 `order.data.base_currency ??` 한 항을 더한 변경이다(동작·구조 변화 없음). 회귀는 레이아웃 계약 테스트로 1차 차단한다 — __tests__/layouts/mypageOrderBaseCurrencyDisplay.test.tsx (수정 되돌리면 2 failed 대조 확인). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 표시통화 JPY 상태에서 수정 전 「배송완료 ¥287」(기준줄 소실) → 수정 후 「배송완료 2,500원」(헤더 JPY 유지). 통화 선택자 Playwright spec 은 currency-symbol-display.spec.ts 가 data-testid 보강 후 활성화될 때 함께 다룬다.",
   "type": "basic",
   "name": "Div",
   "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
@@ -317,11 +318,11 @@
                       ]
                     },
                     {
-                      "comment": "배송비 금액 — 0원이면 '무료' 라벨(녹색), 그 외 금액 포맷. Number() 캐스팅으로 decimal:2 문자열도 안전 비교 (_payment.json 와 동일 패턴).",
+                      "comment": "배송비 금액 — 0원이면 '무료' 라벨(녹색), 그 외 금액 포맷. Number() 캐스팅으로 decimal:2 문자열도 안전 비교 (_payment.json 와 동일 패턴). 표기 통화는 주문 스냅샷 기준통화를 먼저 키잉한다(_items.json 와 동일) — 주문은 결제된 기록이므로 보는 사람의 표시통화를 따라가면 기준통화 줄이 통째로 사라진다.",
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
-                      "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
+                      "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
                     }
                   ]
                 },

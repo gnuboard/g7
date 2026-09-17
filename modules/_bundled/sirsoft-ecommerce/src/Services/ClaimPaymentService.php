@@ -24,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInter
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\MasksSensitiveResponse;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 
 /**
  * 클레임 추가결제 서비스 (S5)
@@ -174,6 +175,21 @@ class ClaimPaymentService
             return null;
         }
 
+        // 결제대기로 갈 수 있는 자리인지 **결제행을 만들기 전에** 본다.
+        //
+        // 이 메서드는 운영자가 [승인] 을 누른 자리에서 불린다. 승인의 출발점은 접수만이
+        // 아니다 — 보류(`on_hold`)도 승인으로 갈 수 있다(전이표가 그렇게 정한다). 그런데
+        // 보류에서 결제대기로는 갈 수 없어서, 아래 전이가 거절을 던진다. 그때 결제행은 이미
+        // 커밋된 뒤라 **신청서는 보류에 얼어붙고 낼 수 없는 결제행만 남는다**: 다시 승인을
+        // 눌러도 같은 자리에서 같은 거절이 나오므로 운영자에게는 반려·철회밖에 남지 않는다
+        // (실측 EX20260915-0853360266 — 결제행 CP20260915-1004285647 이 그렇게 남았다).
+        //
+        // 그래서 결제대기를 **거치지 않는다**. 이미 청구액을 받아야 하는 건이니 결제행은
+        // 만들되 신청서는 제자리에 두고, 호출부가 결제 요청만 알리게 한다. 결제가 확정되면
+        // `confirm()` 이 그 자리에서 승인으로 잇는다 — 접수에서 온 건과 같은 종착이다.
+        $canEnterPaymentPending = $this->claimStatus($claim) === 'payment_pending'
+            || $this->canTransitionTo($claim, 'payment_pending');
+
         // 신청 시점 결제·차액 정산과 같은 게이트를 탄다 — 허용 목록의 첫 수단을 그대로 쓰면
         // 마일리지를 앞에 둔 상점에서 비회원 신청서의 결제행이 `point` 로 만들어져, 그 건은
         // 수단을 명시하지 않는 한 다시 열리지 않는다. 결제행을 만드는 세 경로가 같은 기준을 써야 한다.
@@ -192,11 +208,27 @@ class ClaimPaymentService
             $payment = $this->createPendingPayment($claim, $method, $outstanding);
         }
 
-        if ($this->claimStatus($claim) !== 'payment_pending') {
+        if ($canEnterPaymentPending && $this->claimStatus($claim) !== 'payment_pending') {
             $this->transitionClaim($claim, 'payment_pending', ['processed_by' => $processedBy]);
         }
 
         return $payment;
+    }
+
+    /**
+     * 신청서가 지금 자리에서 목표 상태로 갈 수 있는지 판정합니다.
+     *
+     * 유형마다 상태 enum 이 다르므로 전이표도 각자 들고 있다 — 여기서는 판정만 빌려 온다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  string  $target  목표 상태 값
+     * @return bool 전이 허용 여부
+     */
+    protected function canTransitionTo(OrderExchange|OrderReturn $claim, string $target): bool
+    {
+        return $claim instanceof OrderExchange
+            ? $claim->exchange_status->canTransitionTo(ExchangeStatusEnum::from($target))
+            : $claim->return_status->canTransitionTo(ReturnStatusEnum::from($target));
     }
 
     // ───────────────────────────────────────────────
@@ -330,6 +362,14 @@ class ClaimPaymentService
                 'claim_payment_number' => $payment->payment_number,
                 'claim_type' => $claim?->claimType()->value,
                 'claim_number' => $claimNumber,
+                // 사용자가 결제창을 스스로 닫았을 때 돌아갈 주소 — **서버가 만들어 준다.**
+                //
+                // 복귀 주소 계약(회원 상세 / 비회원 조회 화면 / 신청서를 못 읽을 때의 폴백)은
+                // `ClaimPaymentRedirect` 가 SSoT 다. 결제 플러그인이 이 주소를 스스로 조립하면
+                // 그 분기를 프런트에 복제하게 되고, 한쪽만 바뀌면 조용히 어긋난다 — 특히
+                // 비회원은 조회 토큰을 전제할 수 없어 목적지가 갈린다. 의도된 중단은 실패가
+                // 아니므로 `?claim_payment=cancelled` 다(`ClaimPaymentRedirect::cancelled()`).
+                'claim_cancel_return_url' => ClaimPaymentRedirect::cancelled($payment),
             ],
         ];
     }
@@ -963,6 +1003,7 @@ class ClaimPaymentService
      * @param  OrderExchange|OrderReturn  $claim  신청서
      * @param  float  $amount  환급할 차액
      * @param  string|null  $reason  환급 사유
+     * @return void
      */
     protected function refundDifference(OrderExchange|OrderReturn $claim, float $amount, ?string $reason): void
     {
@@ -985,6 +1026,7 @@ class ClaimPaymentService
      * @param  ClaimPayment  $payment  결제 완료 건
      * @param  float  $amount  환급액 (기준통화)
      * @param  string|null  $reason  환급 사유
+     * @return void
      *
      * @throws OrderClaimException 연동 부재 / 환급 실패
      */
@@ -1079,6 +1121,7 @@ class ClaimPaymentService
      * `pay()` 주석 참조).
      *
      * @param  Order|null  $order  결제 건이 딸린 주문
+     * @return void
      *
      * @throws OrderClaimException 통화 기준 부재
      */
@@ -1187,6 +1230,7 @@ class ClaimPaymentService
      *
      * @param  string|null  $paymentMethod  요청이 지정한 결제 수단
      * @param  int|null  $userId  신청자 회원 ID (비회원이면 null)
+     * @return void
      *
      * @throws OrderClaimException 불허 수단·비회원의 마일리지 결제
      */
@@ -1237,6 +1281,7 @@ class ClaimPaymentService
      *
      * @param  string  $paymentMethod  확정된 결제 수단
      * @param  int|null  $userId  신청자 회원 ID (비회원이면 null)
+     * @return void
      *
      * @throws OrderClaimException 비회원의 마일리지 결제
      */

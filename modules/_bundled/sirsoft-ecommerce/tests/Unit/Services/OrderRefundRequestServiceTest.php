@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -463,6 +464,126 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * S1-D15: 결제수단이 지원하지 않는 환불수단은 저장되지 않는다.
+     *
+     * 무통장입금(dbank)은 PG 를 거치지 않았으므로 취소할 PG 거래 자체가 없다
+     * (`pg_provider='manual'` · `transaction_id=NULL`). 그런데도 종전에는 어휘 검사만 있어
+     * `refund_method='pg'` 가 **200 으로 저장**됐다.
+     *
+     * 그 다음이 조용하게 어깋난다 — `RefundExecutionService` 는 **결제수단**으로
+     * PG 진입을 가르므로(`$order->payment->needsPgProvider()`), dbank 는 PG 훅을 건너뛰고
+     * 계좌이체처럼 완료된다. 화면에만 「PG사 환불」이 남아 운영자는 PG 로 돌려줊c다고
+     * 읽는다 — 실제로는 사람이 송금해야 끝나는 돈이다.
+     *
+     * 실측(#599 통합실측 세션1 · 주문 20260915-1352103470 · RF43):
+     * 무통장 주문의 환불신청서에 `PG사 환불` 라디오 → [금액 저장] → **200** ·
+     * `refund_method=pg` 가 그대로 박혔고 상세가 「환불 수단: PG사 환불」로 표시됐다.
+     *
+     * 계약: 결제수단이 PG 를 쓰지 않는 주문은 `pg` 를 거절한다.
+     *
+     * @effects refund_method_must_match_payment_capability
+     */
+    public function test_pg_refund_method_is_rejected_when_payment_has_no_pg(): void
+    {
+        $order = $this->preparingOrder();
+        $order->payment->forceFill([
+            'payment_method' => 'dbank',
+            'pg_provider' => 'manual',
+            'transaction_id' => null,
+        ])->save();
+        $order->refresh()->loadMissing('payment');
+
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        $this->assertClaimException(
+            'claim_refund_method_unavailable',
+            fn () => $this->service->updateAmounts($refund, ['refund_method' => 'pg'])
+        );
+
+        // 저장 자체가 일어나지 않아야 한다 — 접수 시 수단이 그대로 남는다.
+        $this->assertNotSame(RefundMethodEnum::PG, $refund->fresh()->refund_method);
+    }
+
+    /**
+     * 같은 주문에서 계좌이체 환불은 그대로 통과한다 — 과잉 차단 방지.
+     *
+     * @effects refund_method_must_match_payment_capability
+     */
+    public function test_bank_refund_method_is_allowed_for_bank_transfer_order(): void
+    {
+        $order = $this->preparingOrder();
+        $order->payment->forceFill([
+            'payment_method' => 'dbank',
+            'pg_provider' => 'manual',
+            'transaction_id' => null,
+        ])->save();
+        $order->refresh()->loadMissing('payment');
+
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+        $updated = $this->service->updateAmounts($refund, ['refund_method' => 'bank']);
+
+        $this->assertSame(RefundMethodEnum::BANK, $updated->refund_method);
+    }
+
+    /**
+     * 카드 주문을 `계좌이체` 로 환불하면 **카드 결제행의 취소 누적은 움직이지 않는다.** (S1-D24)
+     *
+     * `cancelled_amount` 는 「이 결제수단에서 실제로 취소된 금액」이고 PG 환불가능액을 되짚는
+     * 근거다. 운영자가 카드 주문의 환불수단을 계좌로 바꿔 실행하면 PG 왕복은 일어나지 않는데
+     * 이 누적만 깎여, 카드사 잔액은 그대로인 채 **장부의 환불가능액만 줄었다** — 이후 정상적인
+     * 카드 환불이 한도에 먼저 걸린다.
+     *
+     * 실측(#599 세션1 · 1-P · 주문 109 RF 80): 결제 58,000 카드 주문에 bank 수단으로 14,000 을
+     * 실행하니 200 으로 통과하고 `cancelled_amount` 가 14,000 — 환불가능액이 58,000 → 44,000
+     * 으로 줄었다. 토스 잔액은 58,000 그대로였다.
+     *
+     * 방향은 PO 확정(2026-09-16): **허용하되 장부는 건드리지 않는다.** 손으로 계좌 송금하는
+     * 운영은 막지 않고, 다만 그 송금은 카드 취소가 아니므로 카드 결제행의 누적이 아니다.
+     * 돈이 나간 사실은 주문 축(`total_refunded_amount`)이 그대로 기록한다.
+     *
+     * @scenario payment_method=card, refund_method=bank
+     *
+     * @effects non_pg_refund_leaves_payment_cancelled_amount_untouched
+     */
+    public function test_bank_refund_on_card_order_leaves_payment_ledger_untouched(): void
+    {
+        // 배송준비중 = `request` 분기 — 접수 후 운영자가 금액·수단을 고칠 수 있는 상태다.
+        // (`paidClaimOrder` 는 즉시 완료로 올라가 수단 수정이 막힌다.)
+        $order = $this->preparingOrder();
+        $order->payment->forceFill([
+            'payment_method' => 'card',
+            'pg_provider' => 'tosspayments',
+            'transaction_id' => 'TXN-CARD-1',
+            'cancelled_amount' => 0,
+        ])->save();
+        $order->refresh()->loadMissing('payment');
+
+        // PG 리스너를 등록해 둔다 — 없으면 P14 폴백으로 수단이 bank 가 되어 축이 흐려진다.
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn () => [
+            'success' => true,
+            'transaction_id' => 'TXN-REFUND-1',
+            'error_code' => null,
+            'error_message' => null,
+        ]);
+
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        // 운영자가 환불수단을 계좌이체로 바꾼다 — 실측 1-P 과 같은 조작이다.
+        $this->service->updateAmounts($refund, ['refund_method' => 'bank']);
+
+        // `request` 분기는 승인을 거쳐야 실행에 닿는다.
+        $this->service->transition($refund->fresh(), RefundStatusEnum::APPROVED);
+
+        $this->service->executeRefund($refund->fresh(), [], $order->user_id);
+
+        $this->assertSame(
+            0.0,
+            (float) $order->payment->fresh()->cancelled_amount,
+            'PG 를 부르지 않았는데 카드 결제행의 취소 누적이 깎이면 환불가능액이 실제와 어긋난다.'
+        );
+    }
+
+    /**
      * 헤더 감액은 신청상품 행까지 내려간다.
      *
      * 행 금액은 접수 시점 1회만 기록되므로, 헤더만 고치면 상세가 접수 당시 금액을 계속
@@ -571,6 +692,123 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
             'reason_code' => 'changed_mind',
             'branch' => OrderRefundRequestService::BRANCH_AUTO,
         ]));
+    }
+
+    // ================================================================
+    // 전이 동시성 (S1-D21)
+    // ================================================================
+
+    /**
+     * 같은 전이를 두 번 지시해도 훅은 한 번만 돈다. (환불)
+     *
+     * 전이는 「현재 상태를 읽어 → 갈 수 있는지 보고 → 쓴다」 순서다. 판정을 **메모리에 들고
+     * 있는 모델 값**으로 하면 동시에 들어온 두 요청이 둘 다 같은 출발 상태를 보고 둘 다 가드를
+     * 통과한다. 쓰기는 같은 값이라 **상태·시각만 보면 1회처럼 보이는데** 전이 훅이 두 번 돈다.
+     *
+     * 그래서 이 테스트는 상태가 아니라 **「두 번째 호출이 거절되는가」** 를 판정한다 —
+     * 상태는 고쳐지기 전에도 정상으로 보였으므로, 상태를 단언하면 red 가 서지 않는다.
+     *
+     * 세션3 이 교환·반품에서 같은 형태를 찾아 고쳤고(S3-D16 · `ClaimTransitionConcurrencyTest`),
+     * 환불 `transition()` 도 글자 그대로 같은 형태였다. 환불 훅에는 활동로그·알림이 걸려 있어
+     * 두 번 돌면 구매자에게 같은 알림이 2통 간다.
+     *
+     * **판정 축이 「예외가 나는가」가 아니라 「훅이 몇 번 돌았는가」인 이유**: 상태 기계는
+     * 같은 상태로의 재진입을 허용한다(`canTransitionTo` 가 `$this === $target` 를 true 로 낸다).
+     * 그래서 두 번째 호출은 **예외를 던지지 않고 통과**한다 — 예외를 단언하면 고친 뒤에도 red 다.
+     * 실제 피해는 훅 중복이므로 그것을 직접 센다.
+     *
+     * 실측(2026-09-16 00:13:12 · RF 7 · 동시 2요청): 잠금만 넣었을 때 활동로그가
+     * `requested → approved` 1줄 + **`approved → approved` 1줄** 로 두 줄 남았다.
+     *
+     * 되돌림 축: 훅 가드(`$current !== $target`)를 빼면 두 번 돌아 red.
+     * 잠금(`findForUpdate`)을 빼면 동시 쓰기가 막히지 않는다 — **두 겹이 모두 필요하다.**
+     *
+     * @scenario claim_type=refund, concurrency=simultaneous
+     *
+     * @effects duplicate_refund_transition_fires_hooks_once
+     */
+    public function test_repeating_the_same_refund_transition_fires_hooks_once(): void
+    {
+        $order = $this->preparingOrder(2);
+        $refund = $this->service->request($order, $this->payload($order, 1))['refund'];
+
+        $fired = 0;
+        HookManager::addAction(
+            'sirsoft-ecommerce.claim.refund.status_changed',
+            function () use (&$fired): void {
+                $fired++;
+            },
+            10,
+        );
+
+        // 호출층이 **낡은 인스턴스를 그대로 다시 넘기는** 상황이 더블클릭의 실제 형태다.
+        $this->service->transition($refund, RefundStatusEnum::APPROVED);
+        $this->service->transition($refund, RefundStatusEnum::APPROVED);
+
+        $this->assertSame(
+            1,
+            $fired,
+            '같은 전이를 두 번 지시해도 훅은 한 번만 돈다 — 두 번 돌면 알림·활동로그가 2개가 된다'
+        );
+    }
+
+    /**
+     * 잠금을 넣었다고 **정상 순차 전이가 막히면 안 된다.**
+     *
+     * 이 대조군이 없으면 「두 번째를 거절한다」를 과하게 구현해 정상 흐름까지 막아도 green 이다.
+     * 접수 → 승인 → 보류 → 승인이 그대로 진행되어야 한다.
+     *
+     * @scenario claim_type=refund, concurrency=sequential
+     *
+     * @effects sequential_refund_transition_still_succeeds
+     */
+    public function test_sequential_refund_transitions_still_advance(): void
+    {
+        $order = $this->preparingOrder(2);
+        $refund = $this->service->request($order, $this->payload($order, 1))['refund'];
+
+        $approved = $this->service->transition($refund, RefundStatusEnum::APPROVED);
+        $this->assertSame(RefundStatusEnum::APPROVED, $approved->refund_status);
+
+        $held = $this->service->transition($approved, RefundStatusEnum::ON_HOLD);
+        $this->assertSame(RefundStatusEnum::ON_HOLD, $held->refund_status);
+
+        $again = $this->service->transition($held, RefundStatusEnum::APPROVED);
+        $this->assertSame(RefundStatusEnum::APPROVED, $again->refund_status);
+    }
+
+    /**
+     * 전이 뒤 훅이 읽는 **직전 상태**가 잠금 시점 값이어야 한다.
+     *
+     * 잠금 아래 재조회를 넣으면서 호출층 인스턴스를 갱신하지 않으면, 뒤따르는 훅이 낡은 값을
+     * `previous` 로 읽어 **활동로그의 전/후 표가 실제와 어긋난다** — 상태는 맞는데 기록만 틀린다.
+     *
+     * @scenario claim_type=refund, concurrency=sequential
+     *
+     * @effects sequential_refund_transition_still_succeeds
+     */
+    public function test_transition_hook_sees_the_locked_previous_status(): void
+    {
+        $order = $this->preparingOrder(2);
+        $refund = $this->service->request($order, $this->payload($order, 1))['refund'];
+
+        $seen = [];
+        HookManager::addAction(
+            'sirsoft-ecommerce.claim.refund.status_changed',
+            function ($_refund, $previous, $target) use (&$seen): void {
+                $seen[] = [$previous, $target];
+            },
+            10,
+        );
+
+        $this->service->transition($refund, RefundStatusEnum::APPROVED);
+
+        $this->assertNotEmpty($seen, '전이 훅이 발화해야 한다');
+        $this->assertSame(
+            [RefundStatusEnum::REQUESTED->value, RefundStatusEnum::APPROVED->value],
+            $seen[0],
+            '훅의 직전 상태는 잠금 시점 값이어야 한다 — 낡은 값을 읽으면 활동로그 전/후가 어긋난다'
+        );
     }
 
     /**

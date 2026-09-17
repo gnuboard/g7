@@ -235,6 +235,7 @@
 | status_variant | string\|null | `info` | 상태 뱃지 variant |
 | unit_price | number | `29000` | 단가 |
 | unit_price_formatted | string | `29,000원` | 단가 표기 |
+| mc_unit_price | object | `{"USD":{"amount":21.75,"formatted":"$21.75"}}` | 단가의 통화별 표기. **거래 시점에 동결된 통화별 단가**이며 수량을 곱하지 않는다(그건 `mc_subtotal_amount`). 화면은 `unit_price_formatted` 아래에 이 값을 병기하므로 둘은 같은 금액의 다른 표기여야 한다 — 이 키가 없으면 그 자리가 **다른 필드의 보조 통화로 흘러가** 단가 줄에 교환 차액이 찍힌다(2026-09-15 실측: `28,000원` 줄에 `$-3.00`). 주문 옵션이 함께 로드되지 않은 응답에서는 빈 객체 |
 | subtotal_amount | number | `29000` | 단가 × 수량 |
 | subtotal_amount_formatted | string | `29,000원` | 소계 표기 |
 | mc_subtotal_amount | object | `{"USD":{"amount":21.75,"formatted":"$21.75"}}` | 소계의 통화별 표기. **거래 시점에 동결된 통화별 단가 × 클레임 수량**이며 환율을 다시 보지 않는다. 화면은 `subtotal_amount_formatted` 와 이 값을 같은 자리에 나란히 그리므로 둘은 같은 금액의 다른 표기여야 한다 — 차액(`mc_price_difference`)은 교환 행에만 있는 별개 축이다. 주문 옵션이 함께 로드되지 않은 응답에서는 빈 객체 |

@@ -909,13 +909,30 @@ class AdminClaimService
      * 어휘는 `RefundMethodEnum` 이 소유한다 — 화면이 셋을 다시 적으면 수단이 늘어도 화면만
      * 낡은 채로 남는다.
      *
+     * @param  Order|null  $order  주문 (null 이면 종전처럼 전 수단)
      * @return array<int, array{value: string, label: string}> 선택지
      */
-    public function refundMethodOptions(): array
+    public function refundMethodOptions(?Order $order = null): array
     {
+        $cases = RefundMethodEnum::cases();
+
+        // S1-D15: 주문을 받으면 그 결제수단이 쓸 수 없는 수단은 뺀다. 고를 수 있게
+        // 보여 두고 저장에서만 거절하면 운영자는 될 줄 알고 고르다가 뒤늦게 막힌다.
+        // 서버 가드(`OrderRefundRequestService::assertRefundMethodAvailable()`)는 그대로 둔다 —
+        // 화면을 거치지 않는 호출도 같은 거절을 받아야 한다.
+        if ($order !== null) {
+            $order->loadMissing('payment');
+            $hasPg = (bool) $order->payment?->needsPgProvider();
+
+            $cases = array_filter(
+                $cases,
+                fn (RefundMethodEnum $case): bool => $case !== RefundMethodEnum::PG || $hasPg
+            );
+        }
+
         return array_values(array_map(
             fn (RefundMethodEnum $case): array => ['value' => $case->value, 'label' => $case->label()],
-            RefundMethodEnum::cases()
+            $cases
         ));
     }
 

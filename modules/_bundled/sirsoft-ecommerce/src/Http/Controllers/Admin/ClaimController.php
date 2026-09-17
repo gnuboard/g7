@@ -789,7 +789,7 @@ class ClaimController extends AdminBaseController
                 : $this->adminClaimService->chargeMethodOptions(),
             // 환불 수단 어휘 — 환불 실행 섹션의 라디오. 다른 유형에는 그 축이 없다.
             'refund_methods' => $claim instanceof OrderRefund
-                ? $this->adminClaimService->refundMethodOptions()
+                ? $this->adminClaimService->refundMethodOptions($claim->order)
                 : [],
             // 취소 가능 금액 산정 근거 (D19). 별도 엔드포인트(`orders/{order}/cancellable-amount`)
             // 도 같은 값을 주지만 그 조회는 상세 응답의 도착을 기다려야 주문 id 를 알 수 있어,

@@ -26,7 +26,7 @@
         {
           "type": "basic",
           "name": "Icon",
-          "props": { "name": "clock", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" }
+          "props": { "name": "clock", "className": "text-xl text-gray-700 dark:text-gray-300" }
         },
         {
           "type": "basic",
@@ -131,6 +131,37 @@
               "name": "Span",
               "props": { "className": "text-gray-900 dark:text-white" },
               "text": "{{order.data.delivered_at ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "구매확정일시 (구매확정된 경우만)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{order.data.confirmed_at_formatted}}",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.confirmed_at",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{order.data.confirmed_at_formatted ?? ''}}",
               "responsive": {
                 "portable": {
                   "props": { "className": "text-gray-900 dark:text-white text-sm" }

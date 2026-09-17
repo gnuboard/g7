@@ -166,6 +166,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 클레임 공유 partial 에서 `_global.currentUser` 참조 | 인증 차이는 셸(데이터소스 endpoint·헤더)이 흡수하고, partial 은 `claim`·`claims`·`claimable`·`estimate` 컨텍스트만 읽는다 | 회원·비회원이 같은 조각을 쓰므로 한쪽에서만 값이 비어 조용히 깨진다 |
 | 신청서 요약 금액을 화면에서 계산 | 서버 `POST claims/preview` 응답(`estimate`)을 표시만 | 배송비·차액·청구 방식 규칙은 서버가 소유한다 — 화면 계산은 접수 시 서버 값과 어긋난다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| `extension_point` 의 콜백 액션을 `props` 에 선언 | 형제 키 `callbacks` 에 둔다 (`"callbacks": { "onAddressSelect": { … } }`) | 엔진은 `props` 를 **평가해** `extensionPointProps` 로, `callbacks` 를 **그대로** `extensionPointCallbacks` 로 넘기는데 주입된 컴포넌트가 읽는 자리는 후자다. `props` 에 두면 액션이 도달하지 않고, 도달해도 `{{$event.*}}` 가 `$event` 이전에 평가돼 빈 값으로 굳는다 — 확장점 버튼은 정상으로 보이고 자기 일까지 하는데 고른 값만 폼에 안 돌아와, 그 필드가 필수면 저장에 영영 도달하지 못한다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -174,9 +175,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 164개 | `vitest.config.ts` |
-| Playwright | 8개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
+| Vitest | 165개 | `vitest.config.ts` |
+| Playwright | 9개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

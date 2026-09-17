@@ -31,6 +31,7 @@ import reasonSection from '../../../layouts/admin/partials/admin_ecommerce_claim
 import shippingSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_shipping.json';
 import reasonBlock from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_reason.json';
 import paymentSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_payment.json';
+import detailLayout from '../../../layouts/admin/admin_ecommerce_claim_detail.json';
 
 type Node = Record<string, any>;
 
@@ -1613,6 +1614,109 @@ describe('첨부 — 사유 카드의 업로더·출처 스트립 (§6-3 · §6-
 
     // 다만 뱃지는 한 개도 서지 않는다.
     expect(strip!.querySelectorAll('[data-testid="claim-badge"]')).toHaveLength(0);
+    utils.cleanup();
+  });
+});
+
+describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
+  /**
+   * 신청자 이름·뱃지·링크 세 노드가 형제로 놓인 헤더 블록을 꺼낸다.
+   *
+   * 레이아웃 경로를 직접 타는 이유는 이 세 노드가 partial 이 아니라 본문 헤더에 있어서다.
+   * id 로 찾으면 조상 체인의 `if` 가 빠져 실제 화면과 다른 조건에서 재게 된다.
+   *
+   * @returns 세 노드를 담은 부모 Div
+   */
+  function requesterBlock(): Node {
+    const content = (detailLayout as Node).slots.content[0];
+    return content.children[0].children[0].children[0].children[1];
+  }
+
+  /**
+   * 회원 주문이면 이름이 **링크**로 서고 그 회원 화면을 가리킨다.
+   *
+   * 되돌림 축: 링크 노드를 Span 으로 되돌리거나 `requester_user_id` 를 `requested_by` 로
+   * 바꾸면 anchor 가 사라져 red. 실측(2026-09-16) `RT20260916-0302483148` = `/admin/users/853`.
+   *
+   * @scenario claim_request_source_badge
+   * @effects requester_link_targets_the_order_owner_not_the_filer
+   */
+  it('회원 신청은 이름이 링크로 서고 뱃지가 고객 신청이다', async () => {
+    const utils = await renderProbe(
+      requesterBlock(),
+      claimResponse({
+        requester_name: 'MEAS599-S2-M',
+        requester_user_id: 853,
+        request_source: 'customer',
+        request_source_label: '고객 신청',
+      })
+    );
+
+    const link = document.getElementById('cd_008_requester');
+    expect(link).not.toBeNull();
+    expect(link!.tagName).toBe('A');
+    expect(link!.textContent).toContain('MEAS599-S2-M');
+
+    // 평문 이름은 서지 않는다 — 둘이 같이 서면 이름이 두 번 나온다.
+    expect(document.getElementById('cd_008_requester_plain')).toBeNull();
+
+    expect(document.getElementById('cd_008b_request_source')!.textContent).toContain('고객 신청');
+    utils.cleanup();
+  });
+
+  /**
+   * **운영자 대리 접수도 회원 주문이면 링크가 선다** — 접수자가 아니라 주문의 주인이 대상이다.
+   *
+   * 이 축이 핵심이다. `requested_by` 로 걸면 대리 접수 건은 그 값이 null 이라 **회원 주문인데
+   * 링크가 사라진다.** 실측(2026-09-16) `RF20260915-1707536717` = `requested_by` NULL ·
+   * 주문 766 의 `user_id` 3 → `/admin/users/3`.
+   *
+   * @scenario claim_request_source_badge
+   * @effects requester_link_targets_the_order_owner_not_the_filer
+   */
+  it('운영자 대리 접수도 회원 주문이면 링크가 서고 뱃지는 운영자 접수다', async () => {
+    const utils = await renderProbe(
+      requesterBlock(),
+      claimResponse({
+        requester_name: 'MEAS599-S1-M',
+        requester_user_id: 3,
+        request_source: 'admin',
+        request_source_label: '운영자 접수',
+      })
+    );
+
+    const link = document.getElementById('cd_008_requester');
+    expect(link).not.toBeNull();
+    expect(link!.tagName).toBe('A');
+    expect(document.getElementById('cd_008b_request_source')!.textContent).toContain('운영자 접수');
+    utils.cleanup();
+  });
+
+  /**
+   * 비회원 주문은 **평문 이름**이다 — 누를 곳 없는 링크를 보이면 회원이 있다고 오해한다.
+   *
+   * @scenario claim_request_source_badge
+   * @effects requester_link_targets_the_order_owner_not_the_filer
+   */
+  it('비회원 신청은 링크가 아니라 평문 이름으로 서고 뱃지가 비회원 신청이다', async () => {
+    const utils = await renderProbe(
+      requesterBlock(),
+      claimResponse({
+        requester_name: 'MEAS599-S2-R-G',
+        requester_user_id: null,
+        request_source: 'guest',
+        request_source_label: '비회원 신청',
+      })
+    );
+
+    expect(document.getElementById('cd_008_requester')).toBeNull();
+
+    const plain = document.getElementById('cd_008_requester_plain');
+    expect(plain).not.toBeNull();
+    expect(plain!.tagName).toBe('SPAN');
+    expect(plain!.textContent).toContain('MEAS599-S2-R-G');
+
+    expect(document.getElementById('cd_008b_request_source')!.textContent).toContain('비회원 신청');
     utils.cleanup();
   });
 });

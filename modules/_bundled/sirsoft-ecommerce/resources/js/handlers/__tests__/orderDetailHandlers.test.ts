@@ -319,6 +319,50 @@ describe('orderDetailHandlers', () => {
             expect(setLocalCall).not.toHaveProperty('cancelPg');
         });
 
+        it('S1-D16: 수량 상한을 진행 중인 클레임을 민 가용 수량으로 잡는다', () => {
+            // 고객이 3개 중 2개를 먼저 접수해 선점한 상태
+            mockDataSourceGet.mockReturnValue({
+                data: {
+                    ...mockOrderData,
+                    options: [
+                        { ...mockOrderData.options[0], available_quantity: 1, locked_quantity: 2 },
+                        ...mockOrderData.options.slice(1),
+                    ],
+                },
+            });
+
+            buildOrderDetailBulkConfirmDataHandler(
+                { handler: 'test', params: { selectedProducts: [1], batchOrderStatus: 'cancelled' } },
+                mockContext
+            );
+
+            const setLocalCall = mockSetLocal.mock.calls[0][0];
+            // 원 수량 3 이 아니라 가용 1 이어야 한다 — 서버가 422 로 거절할 수를 미리 막는다
+            expect(setLocalCall.cancelItems[0].quantity).toBe(1);
+            expect(setLocalCall.cancelItems[0].cancel_quantity).toBe(1);
+        });
+
+        it('S1-D16: 가용 수량이 0 이면 목록에서 빠진다', () => {
+            mockDataSourceGet.mockReturnValue({
+                data: {
+                    ...mockOrderData,
+                    options: [
+                        { ...mockOrderData.options[0], available_quantity: 0, locked_quantity: 3 },
+                        ...mockOrderData.options.slice(1),
+                    ],
+                },
+            });
+
+            buildOrderDetailBulkConfirmDataHandler(
+                { handler: 'test', params: { selectedProducts: [1, 3], batchOrderStatus: 'cancelled' } },
+                mockContext
+            );
+
+            const setLocalCall = mockSetLocal.mock.calls[0][0];
+            expect(setLocalCall.cancelItems).toHaveLength(1);
+            expect(setLocalCall.cancelItems[0].id).toBe(3);
+        });
+
         it('cancelled 시 이미 취소된 옵션은 필터링해야 한다', () => {
             // option id=3을 이미 cancelled로 변경
             const orderDataWithCancelled = {

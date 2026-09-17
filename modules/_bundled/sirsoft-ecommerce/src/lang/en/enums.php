@@ -393,6 +393,13 @@ return [
     ],
 
     // Refund Priority (matches RefundPriorityEnum values)
+    // Request origin (plan 676 — source badge).
+    'request_source' => [
+        'customer' => 'Customer request',
+        'guest' => 'Guest request',
+        'admin' => 'Filed by operator',
+    ],
+
     'refund_priority' => [
         'pg_first' => 'Refund payment method (PG) first',
         'points_first' => 'Refund points first',

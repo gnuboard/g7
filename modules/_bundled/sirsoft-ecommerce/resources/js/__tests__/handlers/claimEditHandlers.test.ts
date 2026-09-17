@@ -74,6 +74,11 @@ describe('클레임 수정 — 주소 해석', () => {
         (window as any).G7Core = mockG7Core;
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_route_resolves_number_by_position
+     */
     it('회원 수정 주소에서 클레임 번호를 읽는다', () => {
         setPath('/mypage/claims/EX20260901-0001/edit');
 
@@ -81,12 +86,22 @@ describe('클레임 수정 — 주소 해석', () => {
         expect(isClaimEditRoute()).toBe(true);
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_route_resolves_number_by_position
+     */
     it('비회원 수정 주소에서도 같은 위치로 읽는다 (상점 기준 경로가 앞에 붙는다)', () => {
         setPath('/shop/guest/claims/RT20260901-0002/edit');
 
         expect(resolveClaimEditNumber()).toBe('RT20260901-0002');
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_route_resolves_number_by_position
+     */
     it('작성 주소는 수정이 아니다', () => {
         setPath('/mypage/orders/20260812-0000123/claims/apply/exchange');
 
@@ -94,12 +109,22 @@ describe('클레임 수정 — 주소 해석', () => {
         expect(isClaimEditRoute()).toBe(false);
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_route_resolves_number_by_position
+     */
     it('상세 주소도 수정이 아니다 (edit 세그먼트가 없다)', () => {
         setPath('/mypage/claims/EX20260901-0001');
 
         expect(isClaimEditRoute()).toBe(false);
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_route_resolves_number_by_position
+     */
     it('claims 가 아닌 곳의 edit 은 클레임 수정이 아니다', () => {
         // 위치로 읽되 소속까지 본다 — 접두사(EX/RT/…)로 가르면 운영자가 채번 설정을 바꾼
         // 상점에서만 조용히 어긋난다.
@@ -116,6 +141,11 @@ describe('클레임 수정 — 주문 조회 404 의 처분', () => {
         (window as any).G7Core = mockG7Core;
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_order_404_is_a_normal_path
+     */
     it('작성 진입의 404 는 오류 화면을 세운다 (열 수 없는 주문이다)', async () => {
         setPath('/mypage/orders/20260812-0000123/claims/apply/exchange');
 
@@ -126,6 +156,11 @@ describe('클레임 수정 — 주문 조회 404 의 처분', () => {
         );
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_order_404_is_a_normal_path
+     */
     it('수정 진입의 404 는 정상 경로다 (주문번호를 아직 모르는 첫 호출)', async () => {
         setPath('/mypage/claims/EX20260901-0001/edit');
 
@@ -143,6 +178,11 @@ describe('클레임 수정 — 진입', () => {
         setPath('/mypage/claims/EX20260901-0001/edit');
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_shell_sets_api_base_on_the_order_response
+     */
     it('신청서를 읽어 주문번호를 세우고 주문 조회를 잇는다', async () => {
         mockG7Core.api.get.mockResolvedValue({
             success: true,
@@ -167,12 +207,81 @@ describe('클레임 수정 — 진입', () => {
         });
     });
 
+    /**
+     * 마일리지 우선으로 접수한 신청서는 수정 화면도 마일리지 우선으로 연다 (S1-D13)
+     *
+     * 세우지 않으면 `_local.claimRefundPriority` 가 기본값 `pg_first` 로 남아, 수정 화면의
+     * 읽기 전용 라벨과 미리보기 금액 분해(결제수단/마일리지 줄·잔여 마일리지)가 **저장값과
+     * 어긋난다**. 실측(RF20260915-1301303816): 저장은 `PG 4,000 + 마일리지 10,000` 인데
+     * 수정 화면이 `PG 우선 환불 / 결제수단 환불 14,000 / 잔여 마일리지 10,000` 으로 떴다.
+     *
+     * @scenario claim_type=refund, screen=edit, entry=list
+     *
+     * @effects claim_edit_restores_saved_refund_priority
+     */
+    it('마일리지 환불액이 있으면 수정 화면이 마일리지 우선으로 열린다', async () => {
+        mockG7Core.api.get.mockResolvedValue({
+            success: true,
+            data: { claim: {
+                claim_number: 'EX20260901-0001',
+                claim_type: 'refund',
+                order_number: '20260812-0000123',
+                refund_amount: 4000,
+                refund_points_amount: 10000,
+            } },
+        });
+
+        await initClaimEditHandler(
+            { handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE, isGuest: false } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimRefundPriority).toBe('points_first');
+    });
+
+    /**
+     * 마일리지 환불액이 0 이면 PG 우선으로 연다 (S1-D13)
+     *
+     * @scenario claim_type=refund, screen=edit, entry=list
+     *
+     * @effects claim_edit_restores_saved_refund_priority
+     */
+    it('마일리지 환불액이 없으면 수정 화면이 PG 우선으로 열린다', async () => {
+        mockG7Core.api.get.mockResolvedValue({
+            success: true,
+            data: { claim: {
+                claim_number: 'EX20260901-0001',
+                claim_type: 'refund',
+                order_number: '20260812-0000123',
+                refund_amount: 14000,
+                refund_points_amount: 0,
+            } },
+        });
+
+        await initClaimEditHandler(
+            { handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE, isGuest: false } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimRefundPriority).toBe('pg_first');
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_shell_sets_api_base_on_the_order_response
+     */
     it('셸이 주소 앞부분을 주지 않으면 보내지 않는다 (핸들러가 조립하면 한쪽이 404 다)', async () => {
         await initClaimEditHandler({ handler: 'initClaimEdit', params: {} }, {} as any);
 
         expect(mockG7Core.api.get).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_shell_sets_api_base_on_the_order_response
+     */
     it('열 수 없는 신청서는 오류 화면으로 끝낸다 (빈 수정 폼을 세우지 않는다)', async () => {
         mockG7Core.api.get.mockRejectedValue({ response: { status: 404 } });
 
@@ -187,6 +296,11 @@ describe('클레임 수정 — 진입', () => {
         expect(mockLocalState.claimEditSnapshot).toBeUndefined();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_shell_sets_api_base_on_the_order_response
+     */
     it('비회원은 조회 토큰 헤더를 함께 보낸다 (회원 경로는 붙이지 않는다)', async () => {
         // 토큰은 전역 상태에 있다 — 없으면 헤더를 붙일 것이 없으므로 config 자체가 생기지 않고,
         // 그 상태로 비회원 경로를 부르면 서버가 401 로 거절한다.
@@ -207,6 +321,11 @@ describe('클레임 수정 — 진입', () => {
 });
 
 describe('클레임 수정 — 상품·첨부 옮기기', () => {
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_seeds_items_from_the_claim
+     */
     it('상품 줄은 신청한 수량을 그대로 들고, 그 수량이 곧 상한이다', () => {
         const items = buildClaimEditItems(
             {
@@ -242,6 +361,11 @@ describe('클레임 수정 — 상품·첨부 옮기기', () => {
         expect(items[0].new_product_option_id).toBe(77);
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_seeds_items_from_the_claim
+     */
     it('첨부는 귀속 표식을 달고 옮긴다 (그 표식이 삭제 경로를 가른다)', () => {
         const images = buildClaimEditImages({
             images: [{ id: 9, hash: 'abc', original_name: 'a.jpg', download_url: '/x/a.jpg' }],
@@ -260,6 +384,11 @@ describe('클레임 수정 — 귀속된 첨부의 삭제', () => {
         (window as any).G7Core = mockG7Core;
     });
 
+    /**
+     * @scenario claim_type=return, screen=edit, entry=detail
+     *
+     * @effects claim_edit_attached_image_removal_defers_to_save
+     */
     it('귀속된 첨부는 지우지 않고 삭제 목록에 담는다 (저장할 때 함께 넘긴다)', async () => {
         mockLocalState = {
             claimImages: [
@@ -284,6 +413,11 @@ describe('클레임 수정 — 귀속된 첨부의 삭제', () => {
         expect(mockLocalState.claimImages.map((i: any) => i.id)).toEqual([10]);
     });
 
+    /**
+     * @scenario claim_type=return, screen=edit, entry=detail
+     *
+     * @effects claim_edit_attached_image_removal_defers_to_save
+     */
     it('아직 귀속되지 않은 첨부는 그 자리에서 지운다 (신청서에 매이지 않은 파일이다)', async () => {
         mockLocalState = { claimImages: [{ id: 11, original_name: 'c.jpg' }] };
         mockG7Core.api.delete.mockResolvedValue({ success: true });
@@ -322,6 +456,11 @@ describe('클레임 수정 — 저장', () => {
         setPath('/mypage/claims/EX20260901-0001/edit');
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('바꿀 수 있는 것만 보낸다 — 품목·수량·청구 방식은 페이로드에 없다', async () => {
         mockG7Core.api.patch.mockResolvedValue({ success: true, message: 'ok', data: {} });
 
@@ -347,6 +486,11 @@ describe('클레임 수정 — 저장', () => {
         expect(body.payment_method).toBeUndefined();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('교환 재발송지는 구매자가 세운 값이 있을 때만, 그리고 수정 표식과 함께 보낸다', async () => {
         mockLocalState.claimRedelivery = {
             recipient_name: '홍길동',
@@ -367,6 +511,11 @@ describe('클레임 수정 — 저장', () => {
         expect(body.redelivery_address.zipcode).toBe('06236');
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('반품·환불에는 재발송지를 보내지 않는다 (그 유형에는 재발송이 없다)', async () => {
         mockLocalState.claimType = 'return';
         mockLocalState.claimRedelivery = { zipcode: '06236' };
@@ -380,6 +529,11 @@ describe('클레임 수정 — 저장', () => {
         expect(mockG7Core.api.patch.mock.calls[0][1].redelivery_address).toBeUndefined();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('환불 계좌는 세 값이 다 찼을 때만 실린다 (손대지 않은 저장이 계좌를 지우지 않는다)', async () => {
         // 표시 응답의 계좌는 마스킹된 값이라 화면이 되돌려 보낼 수 없다. 그래서 칸은 빈 채로
         // 열리고, 그 빈 값을 그대로 실으면 저장 한 번이 기록된 계좌를 지운다 — 지워진 사실은
@@ -395,6 +549,11 @@ describe('클레임 수정 — 저장', () => {
         expect(mockG7Core.api.patch.mock.calls[0][1].refund_bank).toBeUndefined();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('구매자가 채운 환불 계좌는 접수와 같은 모양으로 실린다', async () => {
         mockLocalState.claimType = 'return';
         mockLocalState.claimRefundBankCode = '004';
@@ -414,6 +573,11 @@ describe('클레임 수정 — 저장', () => {
         });
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('일부만 채운 계좌도 그대로 보낸다 (조용히 버리면 구매자는 바뀐 줄 안다)', async () => {
         mockLocalState.claimType = 'return';
         mockLocalState.claimRefundBankAccount = '11122233344';
@@ -433,6 +597,11 @@ describe('클레임 수정 — 저장', () => {
         });
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('더블클릭으로 두 번 나가지 않는다', async () => {
         mockLocalState.claimEditSaving = true;
 
@@ -444,12 +613,22 @@ describe('클레임 수정 — 저장', () => {
         expect(mockG7Core.api.patch).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('셸이 주소 앞부분을 주지 않으면 보내지 않는다', async () => {
         await saveClaimEditHandler({ handler: 'saveClaimEdit', params: {} }, {} as any);
 
         expect(mockG7Core.api.patch).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('승인 뒤 거절(4xx)은 화면에 남기고 토스트로 띄우지 않는다 (§6-3 P13)', async () => {
         mockG7Core.api.patch.mockRejectedValue({
             response: { status: 409, data: { message: '승인된 신청은 수정할 수 없습니다.' } },
@@ -465,6 +644,11 @@ describe('클레임 수정 — 저장', () => {
         expect(mockG7Core.toast.error).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('서버 장애(5xx)는 토스트로만 알린다 (구매자가 고칠 것이 없다)', async () => {
         mockG7Core.api.patch.mockRejectedValue({
             response: { status: 500, data: { message: 'server error' } },
@@ -479,6 +663,11 @@ describe('클레임 수정 — 저장', () => {
         expect(mockG7Core.toast.error).toHaveBeenCalled();
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('배송비 차액이 결제를 요구하면 서버가 지목한 결제 진입을 그대로 부른다', async () => {
         mockG7Core.api.patch.mockResolvedValue({
             success: true,
@@ -508,6 +697,11 @@ describe('클레임 수정 — 저장', () => {
         );
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('차액이 없으면 저장 뒤 그 신청서 상세로 돌아간다', async () => {
         mockG7Core.api.patch.mockResolvedValue({ success: true, data: {} });
 
@@ -525,6 +719,11 @@ describe('클레임 수정 — 저장', () => {
         });
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
     it('사유를 지운 채로는 저장하지 않는다 (서버가 거절할 것을 미리 막는다)', async () => {
         mockLocalState.claimReason = '';
 
@@ -554,6 +753,11 @@ describe('클레임 수정 — 미리보기 (D14 재발송지 변경)', () => {
         setPath('/mypage/claims/EX20260901-0001/edit');
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_preview_excludes_its_own_lock
+     */
     it('자기 신청서 번호를 실어 보낸다 (자기가 잡아 둔 수량에 자기가 막히지 않게)', async () => {
         mockG7Core.api.post.mockResolvedValue({ data: { total_charge_amount: 12000, items: [] } });
 
@@ -570,6 +774,11 @@ describe('클레임 수정 — 미리보기 (D14 재발송지 변경)', () => {
         expect(body.redelivery_address.zipcode).toBe('63000');
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_preview_excludes_its_own_lock
+     */
     it('접수 시점 청구액과의 차액을 세운다 (얼마가 더 청구되는지 화면이 말한다)', async () => {
         mockG7Core.api.post.mockResolvedValue({ data: { total_charge_amount: 12000, items: [] } });
 
@@ -582,6 +791,11 @@ describe('클레임 수정 — 미리보기 (D14 재발송지 변경)', () => {
         expect(mockLocalState.claimEditChargeDeltaFormatted).not.toBe('');
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_preview_excludes_its_own_lock
+     */
     it('배송비가 그대로면 차액 줄을 세우지 않는다 (0원 안내는 안내가 아니다)', async () => {
         mockG7Core.api.post.mockResolvedValue({ data: { total_charge_amount: 9000, items: [] } });
 
@@ -594,6 +808,11 @@ describe('클레임 수정 — 미리보기 (D14 재발송지 변경)', () => {
         expect(mockLocalState.claimEditChargeDeltaFormatted).toBe('');
     });
 
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_preview_excludes_its_own_lock
+     */
     it('작성 화면은 자기 번호를 싣지 않는다 (제외할 신청서가 없다)', async () => {
         mockLocalState.claimEditMode = false;
         mockLocalState.claimEditNumber = undefined;
@@ -605,5 +824,83 @@ describe('클레임 수정 — 미리보기 (D14 재발송지 변경)', () => {
         );
 
         expect(mockG7Core.api.post.mock.calls[0][1].claim_number).toBeUndefined();
+    });
+});
+
+describe('클레임 수정 — 단가의 보조 통화 (S3-D6 회귀)', () => {
+    /**
+     * 수정 화면의 단가 줄 아래 보조 통화는 **단가**에서 와야 한다.
+     *
+     * 예전에는 매퍼가 `mc_price_difference`(교환 차액)를 `mc_unit_price` 자리에 실었다.
+     * 이름은 단가인데 값이 차액이라 서식은 정상이고 금액만 틀려, 화면에
+     * `28,000원` 줄에 `$-3.00` 이 붙어도 오류가 뜨지 않았다(실측 EX20260915-0853360266).
+     *
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_unit_price_secondary_currency_is_its_own
+     */
+    it('단가의 보조 통화는 차액이 아니라 단가에서 온다', () => {
+        const claim = {
+            items: [
+                {
+                    id: 1,
+                    order_option_id: 10,
+                    quantity: 1,
+                    unit_price: 28000,
+                    unit_price_formatted: '28,000원',
+                    price_difference: -3000,
+                    mc_price_difference: {
+                        USD: { amount: -3, formatted: '$-3.00' },
+                        JPY: { amount: -345, formatted: '¥-345' },
+                    },
+                    mc_unit_price: {
+                        USD: { amount: 28, formatted: '$28.00' },
+                        JPY: { amount: 3220, formatted: '¥3,220' },
+                    },
+                },
+            ],
+        };
+
+        const [item] = buildClaimEditItems(claim as any, 'KRW');
+
+        expect(item.mc_unit_price).toEqual([
+            { code: 'USD', formatted: '$28.00' },
+            { code: 'JPY', formatted: '¥3,220' },
+        ]);
+
+        // 차액은 별개 축이다 — 단가 자리에 섞이면 안 된다.
+        expect(item.mc_unit_price.some((entry) => entry.formatted.includes('-'))).toBe(false);
+        expect(item.price_difference).toBe(-3000);
+    });
+
+    /**
+     * 서버가 단가의 보조 통화를 내려주지 않으면 그 줄은 **빈 채로** 남아야 한다.
+     *
+     * 비어 있을 때 옆 필드로 대신 채우는 것이 바로 이 결함의 시작이었다 — 화면은
+     * 값이 있으니 정상으로 보이고, 그 값이 다른 금액이라는 사실만 드러나지 않는다.
+     *
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_unit_price_secondary_currency_is_its_own
+     */
+    it('단가의 보조 통화가 없으면 빈 배열이다 (다른 필드로 흘리지 않는다)', () => {
+        const claim = {
+            items: [
+                {
+                    id: 1,
+                    order_option_id: 10,
+                    quantity: 1,
+                    unit_price: 28000,
+                    price_difference: -3000,
+                    mc_price_difference: {
+                        USD: { amount: -3, formatted: '$-3.00' },
+                    },
+                },
+            ],
+        };
+
+        const [item] = buildClaimEditItems(claim as any, 'KRW');
+
+        expect(item.mc_unit_price).toEqual([]);
     });
 });

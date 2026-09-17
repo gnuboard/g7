@@ -1,7 +1,7 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "이커머스 알림 템플릿 편집 모달 — _global.ecommerce_ecommerce_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장."
+    "description": "e2e:allow 타입 라벨 바인딩 1곳만 변경 — 랭팩 키 조회($t:…types.{{def.type}})를 서버가 내려주는 로케일 객체($localized(def.name))로 바꿨다(S2-D14). 정의 47종 중 37종이 원문 키로 노출되던 것을 0 으로 만든 표시 전용 수정이며 판정 로직이 없다. Vitest 4건이 랭팩을 비운 채 렌더를 덮고(notificationDefinitionTypeLabels.test.tsx · 변이 red 확인), 2026-09-16 브라우저로 ko·ja 전건 확인했다(이력 §8-AA-1). 이커머스 알림 템플릿 편집 모달 — _global.ecommerce_ecommerce_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장."
   },
   "id": "modal_ecommerce_notification_template_edit",
   "type": "composite",
@@ -115,7 +115,7 @@
                   "props": {
                     "className": "text-primary text-sm font-semibold"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{_global.ecommerce_notification_template_form_modal?.definition?.type ?? ''}}"
+                  "text": "{{$localized(_global.ecommerce_notification_template_form_modal?.definition?.name) || (_global.ecommerce_notification_template_form_modal?.definition?.type ?? '')}}"
                 },
                 {
                   "type": "basic",

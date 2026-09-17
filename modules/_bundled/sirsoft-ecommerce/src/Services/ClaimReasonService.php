@@ -286,16 +286,16 @@ class ClaimReasonService
      *
      * @param  string  $type  사유 유형 (exchange|return|refund)
      * @param  array  $reasonsData  저장하려는 reasons 배열
+     * @param  array<int, int>  $deleteIds  운영자가 휴지통으로 지목한 사유 id 목록
      * @return void 반환값 없음 (판정 결과는 예외로만 통지)
      *
      * @throws ClaimReasonException 사용 중인 사유를 지우거나 그 코드를 바꾸려 할 때
      */
-    public function assertSyncDeletable(string $type, array $reasonsData): void
+    public function assertSyncDeletable(string $type, array $reasonsData, array $deleteIds = []): void
     {
         $existingIds = $this->repository->getIdsByType($type);
-        $incomingIds = array_filter(array_column($reasonsData, 'id'));
 
-        foreach (array_diff($existingIds, $incomingIds) as $id) {
+        foreach ($this->deletableIds($existingIds, $deleteIds) as $id) {
             $reason = $this->repository->findById($id);
 
             if (! $reason) {
@@ -337,23 +337,31 @@ class ClaimReasonService
      * payload에 있는 reasons를 DB와 동기화합니다.
      * - id 있음 → 기존 reason 업데이트
      * - id 없음 → 새 reason 생성
-     * - DB에 있지만 payload에 없음 → 삭제 (그 유형에서 사용 중이면 예외)
+     * - `$deleteIds` 에 지목된 id → 삭제 (그 유형에서 사용 중이면 예외)
+     * - **DB 에 있지만 payload 에 없는 행은 손대지 않는다.** 종전에는 그 행을 삭제로 읽었다 —
+     *   다른 운영자(또는 다른 탭)가 화면을 연 뒤에 만든 사유는 그 화면의 페이로드에 없으므로,
+     *   아무 사유도 건드리지 않은 저장 한 번이 남의 사유를 조용히 지웠다(#599 S0-D2 — 통합 실측
+     *   세션0 이 만든 사유 3건이 그렇게 사라진 것으로 보이나 흔적이 없어 확정하지 못했다).
+     *   삭제는 운영자가 휴지통을 눌러 지목한 id 로만 일어난다.
+     *
+     * 생성·수정·삭제마다 상세 REST 경로와 같은 훅(`claim_reason.after_*`)을 쏜다 — 활동로그가
+     * 그 훅을 듣는다. 종전에는 설정 저장 경로만 훅 없이 리포지토리를 직접 불러, 카탈로그 변경이
+     * 「설정 저장」 한 줄 뒤에 숨었다.
      *
      * @param  string  $type  사유 유형 (exchange|return|refund)
      * @param  array  $reasonsData  reasons 배열
+     * @param  array<int, int>  $deleteIds  운영자가 휴지통으로 지목한 사유 id 목록
      * @return void 반환값 없음 (동기화 결과는 예외로만 통지)
      *
      * @throws ClaimReasonException 사용 중인 사유를 삭제하거나 그 코드를 바꾸려 할 때
      */
-    public function syncReasons(string $type, array $reasonsData): void
+    public function syncReasons(string $type, array $reasonsData, array $deleteIds = []): void
     {
-        DB::transaction(function () use ($type, $reasonsData) {
+        DB::transaction(function () use ($type, $reasonsData, $deleteIds) {
             $existingIds = $this->repository->getIdsByType($type);
-            $incomingIds = array_filter(array_column($reasonsData, 'id'));
 
-            // 삭제: DB에 있지만 payload에 없는 항목
-            $toDeleteIds = array_diff($existingIds, $incomingIds);
-            foreach ($toDeleteIds as $id) {
+            // 삭제: 운영자가 지목한 id 만 (페이로드 부재는 삭제가 아니다)
+            foreach ($this->deletableIds($existingIds, $deleteIds) as $id) {
                 $reason = $this->repository->findById($id);
                 if ($reason) {
                     // 사용량은 그 사유의 **유형에 맞는 표 전수**를 센다 (countUsage 단일 출처).
@@ -364,7 +372,9 @@ class ClaimReasonService
                     if ($usageCount > 0) {
                         throw ClaimReasonException::inUse($usageCount);
                     }
+                    HookManager::doAction('sirsoft-ecommerce.claim_reason.before_delete', $reason);
                     $this->repository->delete($id);
+                    HookManager::doAction('sirsoft-ecommerce.claim_reason.after_delete', $reason->id, $reason);
                 }
             }
 
@@ -394,13 +404,32 @@ class ClaimReasonService
                         }
                     }
 
-                    $this->repository->update((int) $data['id'], $reasonData);
+                    $updated = $this->repository->update((int) $data['id'], $reasonData);
+                    HookManager::doAction('sirsoft-ecommerce.claim_reason.after_update', $updated, $reasonData);
                 } else {
                     $reasonData['created_by'] = Auth::id();
-                    $this->repository->create($reasonData);
+                    $created = $this->repository->create($reasonData);
+                    HookManager::doAction('sirsoft-ecommerce.claim_reason.after_create', $created, $reasonData);
                 }
             }
         });
+    }
+
+    /**
+     * 지목된 삭제 id 가운데 실제로 그 유형에 존재하는 것만 고릅니다.
+     *
+     * 화면은 저장 뒤에도 지목 목록을 들고 있을 수 있어 이미 지워진 id 가 다시 올 수 있다 —
+     * 그것을 오류로 만들면 두 번째 저장이 영영 막힌다. 다른 유형의 id 도 여기서 걸러진다.
+     *
+     * @param  array<int, int>  $existingIds  그 유형의 현재 사유 id
+     * @param  array<int, int>  $deleteIds  지목된 id
+     * @return array<int, int> 삭제할 id
+     */
+    protected function deletableIds(array $existingIds, array $deleteIds): array
+    {
+        $deleteIds = array_map('intval', array_filter($deleteIds, 'is_numeric'));
+
+        return array_values(array_intersect($existingIds, $deleteIds));
     }
 
     /**
@@ -434,7 +463,7 @@ class ClaimReasonService
             $this->repository->delete($reason->id);
         });
 
-        HookManager::doAction('sirsoft-ecommerce.claim_reason.after_delete', $reason->id);
+        HookManager::doAction('sirsoft-ecommerce.claim_reason.after_delete', $reason->id, $reason);
 
         return [
             'reason_id' => $reason->id,

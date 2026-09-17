@@ -88,6 +88,15 @@ effects:
   - cancelled_to_pre_payment_status_blocked         # 취소 → pending_payment 등 결제 전 상태 차단
   # 동기화 일원화 회귀 (PHPUnit Unit)
   - sync_parent_lowest_status_unchanged_after_ssot  # syncParentOrderStatus 혼합 최저단계 선택 불변
+  # 배송 레코드 동기화 (PHPUnit Feature · S3-D2)
+  # 옵션일괄 전이로 송장을 넣으면 배송 레코드(ecommerce_order_shippings)도 따라 옮겨져야 한다.
+  # 회원 주문상세 「배송 현황」 카드가 이 레코드를 읽으므로, pending 에 머물면 배송완료 주문이
+  # 고객에게 「배송대기」로 보인다. 주문목록 일괄 운송장 경로는 처음부터 shipped 를 기록했다.
+  - shipping_record_follows_option_status         # 배송중→shipped(+shipped_at) · 배송완료→delivered(+delivered_at) · 배송준비중→pending 유지
+  # 수량 분할 행의 배송 행 (PHPUnit Feature · S3-D5)
+  # 분할 레코드에 배송 행이 없으면 ClaimShippingFeeService 가 정책을 못 찾아
+  # 고객 귀책 반품·교환인데도 회수비·왕복비가 0원(no_shipping_policy)으로 떨어진다.
+  - split_row_gets_its_own_shipping_record        # 분할 행이 원 행의 배송정책을 승계한 자기 배송 행을 갖는다
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/OrderStatusTransitionTest.php

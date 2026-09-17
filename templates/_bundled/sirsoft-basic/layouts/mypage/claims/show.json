@@ -236,6 +236,14 @@
                                 "text": "{{claim.data?.claim?.claim_type_label ?? ''}}"
                               },
                               {
+                                "comment": "e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 4건이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 2026-09-16 브라우저로 3종 전건 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — **운영자 접수 건에만** 세운다. 자기가 낸 신청서에 「고객 신청」을 붙이면 모든 줄에 같은 뱃지가 서서 정보가 되지 않는다(관리자 목록의 `direct` 무표기와 같은 규칙). 운영자 대리 접수는 [수정]·[철회] 가 서지 않는 유일한 경우라, 뱃지가 없으면 구매자는 버튼이 왜 사라졌는지 알 수 없다.",
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{claim.data?.claim?.request_source === 'admin'}}",
+                                "props": { "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+                                "text": "{{claim.data?.claim?.request_source_label ?? ''}}"
+                              },
+                              {
                                 "type": "basic",
                                 "name": "Span",
                                 "classMap": {

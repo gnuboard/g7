@@ -207,7 +207,7 @@
       "title": "購入確定",
       "option_label": "オプション",
       "earned_points": "積立予定ポイント",
-      "warning": "購入確定後はキャンセル・交換・返金ができません。",
+      "warning": "購入確定後はキャンセル・返金を申請できません。交換・返品はそのまま申請できます。",
       "confirm_button": "購入確定"
     },
     "review_modal": {
@@ -245,7 +245,9 @@
     "cancel_reason": "理由",
     "cancel_reason_detail": "詳細な理由",
     "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求",
-    "claim_additional_paid": "クレーム追加決済"
+    "claim_additional_paid": "クレーム追加決済",
+    "delivered_at": "配送完了日時",
+    "confirmed_at": "購入確定日時"
   },
   "addresses": {
     "title": "配送先管理",

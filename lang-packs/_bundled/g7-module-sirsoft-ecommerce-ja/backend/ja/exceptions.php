@@ -110,6 +110,7 @@ return [
     'claim_amounts_not_editable' => '終結した申請書の金額は修正できません。',
     'claim_refund_not_executable' => 'キャンセル処理で作成された返金はこの画面で実行・修正できません。',
     'claim_refund_already_executed' => '既に返金が実行済みか実行中の申請です。再読み込みして状態を確認してください。',
+    'claim_refund_exceeds_method_remaining' => ':method の返金額(:requested)がその手段の残高(:remaining)を超えています。金額を分けて再度お試しください。',
     'claim_refund_exceeds_cancellable' => '返金額(:requested)がキャンセル可能金額(:cancellable)を超えています。',
     'claim_refund_points_requires_member' => '非会員注文にはマイレージ返金を指定できません。',
     'claim_tracking_incomplete' => '配送業者と送り状番号を一緒に入力してください。',
@@ -137,4 +138,5 @@ return [
     'claim_image_not_found' => '添付画像が見つかりません。',
     'claim_payment_currency_unavailable' => '注文の決済通貨情報を確認できないため、決済を進めることができません。管理者にお問い合わせください。',
     'claim_item_not_splittable' => 'この商品は数量を分けて処理することができません。全体数量で処理してください。',
+    'claim_refund_method_unavailable' => 'この注文の決済方法としては、選択された返金方法は使用できません。',
 ];

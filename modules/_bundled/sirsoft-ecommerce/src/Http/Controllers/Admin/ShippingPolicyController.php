@@ -26,6 +26,12 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class ShippingPolicyController extends AdminBaseController
 {
+    /**
+     * 배송정책 서비스를 주입받습니다.
+     *
+     * @param  ShippingPolicyService  $shippingPolicyService  배송정책 CRUD·클레임 설정 서비스
+     * @param  OrderCalculationService  $calculationService  배송비 계산 API 테스트 호출 서비스
+     */
     public function __construct(
         private ShippingPolicyService $shippingPolicyService,
         private OrderCalculationService $calculationService
@@ -339,7 +345,9 @@ class ShippingPolicyController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.shipping_policy.bulk_deleted',
-                ['deleted_count' => $count]
+                ['deleted_count' => $count],
+                200,
+                ['count' => $count]
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
@@ -371,7 +379,9 @@ class ShippingPolicyController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.shipping_policy.bulk_toggled',
-                ['updated_count' => $count]
+                ['updated_count' => $count],
+                200,
+                ['count' => $count]
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');

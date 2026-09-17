@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Services\ClaimQuantityGuard;
 use Modules\Sirsoft\Ecommerce\Support\ReviewWritePolicy;
 
 /**
@@ -34,6 +35,7 @@ class OrderOptionResource extends BaseApiResource
         $productOptionName = $this->product_option_name;
         $optionName = $this->option_name;
         $locale = app()->getLocale();
+        $available = $this->claimAvailableQuantity();
 
         return [
             'id' => $this->id,
@@ -57,11 +59,28 @@ class OrderOptionResource extends BaseApiResource
             'quantity' => $this->quantity,
             'shipped_quantity' => $this->shipped_quantity,
 
+            // S1-D16: 진행 중인 클레임이 선점한 수량을 뺀 신청 가능 수량.
+            // 관리자 [주문취소] 모달이 수량 상한을 `quantity` 로 묶으면 고객이 먼저
+            // 접수한 분을 모르고 고를 수 없는 수를 제시한다 — 서버는 선점을 알고 422 로
+            // 거절하므로 운영자는 제출하고 나서야 한도를 알게 된다. 사용자 측
+            // `claimable-options` 와 **같은 어휘**를 쓴다 — 두 화면이 다른 이름을 쓰면
+            // 한쪽만 고치는 일이 반복된다.
+            'available_quantity' => $available,
+            'locked_quantity' => max(0, (int) $this->quantity - $available),
+
             // 재고 적용 여부 (재고 차감 완료 시 true)
             'is_stock_deducted' => (bool) $this->is_stock_deducted,
             // 실제 적립 발생 여부 (해당 옵션에 구매 적립 거래가 발행되었으면 true)
             // withExists('purchaseEarnTransactions') 로 로드된 집계 컬럼 사용 (미로드 경로에서는 false)
             'is_points_earned' => (bool) ($this->purchase_earn_transactions_exists ?? false),
+            // S1-D19: 적립이 **끝내 일어나지 않을** 옵션인지.
+            // 적립 여부는 두 값(발행됨/아직)으로 읽히지만 도메인 상태는 셋이다 — 취소된
+            // 옵션은 `MileageTransactionListener` 가 기적립분을 회수하고
+            // `getEarnableOptions` 의 `option_status = 적립트리거` 조건에 영원히 걸리지
+            // 않으므로 **어떤 설정에서도 적립 대상이 아니다**. 그런데 화면은 「적립예정」을
+            // 말한다 — 지켜질 수 없는 예정이다. 세 번째 상태를 화면이 아니라 여기서 판정한다.
+            'is_points_earn_cancelled' => $this->option_status === OrderStatusEnum::CANCELLED
+                && ! (bool) ($this->purchase_earn_transactions_exists ?? false),
             'unit_price' => $this->roundToOrderCurrency($this->unit_price),
             'unit_price_formatted' => $this->formatOrderCurrency($this->unit_price),
             'subtotal_price' => $this->roundToOrderCurrency($this->subtotal_price),
@@ -296,5 +315,18 @@ class OrderOptionResource extends BaseApiResource
     private function isReviewDeadlinePassed(): bool
     {
         return ReviewWritePolicy::isDeadlinePassed($this->confirmed_at);
+    }
+
+    /**
+     * 클레임 선점을 반영한 신청 가능 수량을 반환합니다. (S1-D16)
+     *
+     * 산정은 `ClaimQuantityGuard` 가 소유한다 — 사용자 측 `claimable-options` 와 같은
+     * 계산을 써야 두 화면이 같은 수를 말한다.
+     *
+     * @return int 신청 가능 수량
+     */
+    private function claimAvailableQuantity(): int
+    {
+        return app(ClaimQuantityGuard::class)->availableQuantity($this->resource);
     }
 }

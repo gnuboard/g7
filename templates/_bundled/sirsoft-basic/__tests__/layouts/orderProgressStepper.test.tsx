@@ -66,7 +66,7 @@ const PROGRESS_STEPS = [
   { value: 'pending_payment', label: '결제대기', state: 'done', icon: 'status-payment-pending', variant: 'warning' },
   { value: 'payment_complete', label: '결제완료', state: 'done', icon: 'status-paid', variant: 'info' },
   { value: 'preparing', label: '상품준비중', state: 'done', icon: 'status-preparing', variant: 'info' },
-  { value: 'shipping_ready', label: '배송준비완료', state: 'done', icon: 'status-dispatch-ready', variant: 'info' },
+  { value: 'shipping_ready', label: '배송준비중', state: 'done', icon: 'status-dispatch-ready', variant: 'info' },
   { value: 'shipping', label: '배송중', state: 'current', icon: 'status-dispatch', variant: 'primary' },
   { value: 'delivered', label: '배송완료', state: 'upcoming', icon: 'status-delivered', variant: 'success' },
   { value: 'confirmed', label: '구매확정', state: 'upcoming', icon: 'status-completed', variant: 'success' },

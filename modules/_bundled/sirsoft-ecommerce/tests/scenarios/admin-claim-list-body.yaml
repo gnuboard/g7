@@ -55,6 +55,11 @@ effects:
   - noncomplete_transition_uses_confirmation
   - completion_rows_use_item_summary
   - completion_success_clears_state_and_refetches
+  # 실행이 실패하면 **아무것도 지우지 않는다** — 오류 토스트를 띄우고 대상 줄과 모달을
+  # 그대로 두어 재시도가 가능해야 한다. 실패했는데 상태를 비우고 목록을 다시 부르면
+  # 운영자는 실패를 성공으로 읽고 같은 건을 다시 누르지 않는다 — 완료되지 않은 반품이
+  # 완료된 것처럼 남고 환불이 나가지 않는다(계획서 1031 · 브라우저로는 잴 수 없는 축).
+  - completion_failure_keeps_state_and_reports
   - bulk_transition_payload_and_error_contract
   - preview_failure_restores_displayed_choice
   - preview_success_updates_displayed_choice

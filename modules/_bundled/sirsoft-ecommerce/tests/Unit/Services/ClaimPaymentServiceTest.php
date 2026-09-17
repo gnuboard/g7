@@ -106,6 +106,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // payment_pending 진입
     // ================================================================
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_row_is_created_only_when_the_charge_is_positive
+     */
     public function test_initiate_creates_a_pending_payment_and_moves_the_return_to_payment_pending(): void
     {
         $return = $this->requestedReturn();
@@ -282,6 +287,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_point_payment_requires_member', fn () => $this->service->pay($payment, PaymentMethodEnum::POINT->value, null));
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_pg_approval_is_idempotent_for_a_replayed_callback
+     */
     public function test_pay_rejects_a_payment_that_is_not_pending(): void
     {
         $return = $this->requestedReturn();
@@ -342,6 +352,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_requires_a_readable_currency_snapshot
+     */
     public function test_initiate_for_request_rejects_before_creating_the_payment_row_when_the_currency_snapshot_is_unreadable(): void
     {
         // 거절이 상태 변경 **뒤로** 밀리면 접수는 이미 커밋된 뒤라, 사용자는 422 를 받는데 신청서는
@@ -359,6 +374,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(0, ClaimPayment::query()->count());
     }
 
+    /**
+     * @scenario method=card, timing=on_approval, outcome=approved
+     *
+     * @effects claim_payment_requires_a_readable_currency_snapshot
+     */
     public function test_request_payment_on_approval_rejects_before_creating_the_payment_row_when_the_currency_snapshot_is_unreadable(): void
     {
         // 결제행을 만드는 세 경로(`initiateForRequest`·`requestPaymentOnApproval`·`settleChargeDifference`)는
@@ -376,6 +396,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(0, ClaimPayment::query()->count());
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_requires_a_readable_currency_snapshot
+     */
     public function test_pay_leaves_the_payment_row_untouched_when_the_currency_snapshot_is_unreadable(): void
     {
         // 수단 확정 가드와 같은 규율 — 거절되는 요청이 결제행을 바꿔 놓으면 안 된다.
@@ -396,6 +421,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(PaymentMethodEnum::CARD->value, $payment->fresh()->payment_method);
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_requires_a_readable_currency_snapshot
+     */
     public function test_settle_charge_difference_rejects_instead_of_returning_an_unusable_entry_when_the_snapshot_is_unreadable(): void
     {
         // 수정 경로가 조용히 `pg_payment_data: null` 을 200 으로 돌려주면 화면은 결제창을 열 수 없는데
@@ -414,6 +444,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame('3000.00', (string) $payment->fresh()->amount);
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_requires_a_readable_currency_snapshot
+     */
     public function test_payment_payload_omits_the_pg_entry_when_the_currency_snapshot_is_unreadable(): void
     {
         // 신청서 상세(읽기 경로)는 예외를 던지지 않는다 — 청구는 그대로 남아 있으므로
@@ -609,6 +644,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(0.0, $this->service->outstandingAmount($return->fresh()));
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=refunded
+     *
+     * @effects claim_payment_completion_moves_the_claim_to_paid
+     */
     public function test_paid_claims_are_still_withdrawable_by_the_requester(): void
     {
         // paid 는 승인 전이므로 철회 경계 안이다 — 전이 게이트와 isWithdrawable() 이 갈리면
@@ -936,6 +976,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PAID, $payment->fresh()->payment_status);
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_partial_payment_stays_in_payment_pending
+     */
     public function test_settle_difference_updates_an_unpaid_pending_payment_to_the_new_charge(): void
     {
         $return = $this->requestedReturn();
@@ -991,5 +1036,67 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->service->refundPayment($payment->fresh(), 1000);
 
         $this->assertSame(2000.0, $this->service->paidTotalForOrder($order)['amount']);
+    }
+
+    /**
+     * 보류에서 누른 승인은 결제행을 만들되 신청서를 보류에 그대로 둔다. (S3-D7)
+     *
+     * 승인의 출발점은 접수만이 아니다 — 보류도 승인으로 갈 수 있다(전이표). 그런데 보류에서
+     * 결제대기로는 갈 수 없어서, 결제대기를 거치려 들면 전이가 거절을 던진다. 그때 결제행은
+     * 이미 커밋된 뒤라 **신청서는 보류에 얼어붙고 낼 수 없는 결제행만 남는다** — 다시 승인을
+     * 눌러도 같은 자리에서 같은 거절이라 운영자에게는 반려·철회밖에 남지 않는다
+     * (실측 EX20260915-0853360266).
+     *
+     * @scenario method=card, timing=on_approval, outcome=approved
+     *
+     * @effects claim_payment_on_hold_approval_keeps_the_claim_in_place
+     */
+    public function test_approval_from_on_hold_creates_the_payment_without_moving_the_claim(): void
+    {
+        $exchange = $this->requestedExchange(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $this->exchangeService->transition($exchange, ExchangeStatusEnum::ON_HOLD);
+
+        $payment = $this->service->requestPaymentOnApproval($exchange->fresh(), $this->createAdminUser()->id);
+
+        $this->assertNotNull($payment, '청구액이 남은 건이므로 결제행은 만들어야 한다.');
+        $this->assertSame(6000.0, (float) $payment->getTotalAmount());
+        $this->assertSame(
+            ExchangeStatusEnum::ON_HOLD,
+            $exchange->fresh()->exchange_status,
+            '보류에서 결제대기로 옮기면 전이가 거절돼 신청서가 얼어붙는다.',
+        );
+    }
+
+    /**
+     * 그 결제가 확정되면 보류에서 곧장 승인으로 잇는다. (S3-D7)
+     *
+     * 결제대기를 건너뛰었으니 확정도 그 자리를 지나지 않는다 — `confirm()` 의 `paid` 전이는
+     * 결제대기 건에서만 일어나고, 승인 시점 결제의 자동 승인이 그 뒤를 잇는다. 접수에서 온
+     * 건과 종착이 같아야 한다.
+     *
+     * @scenario method=card, timing=on_approval, outcome=approved
+     *
+     * @effects claim_payment_on_hold_approval_keeps_the_claim_in_place
+     */
+    public function test_paying_that_claim_advances_it_from_on_hold_to_approved(): void
+    {
+        $exchange = $this->requestedExchange(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $this->exchangeService->transition($exchange, ExchangeStatusEnum::ON_HOLD);
+
+        $payment = $this->service->requestPaymentOnApproval($exchange->fresh(), $this->createAdminUser()->id);
+
+        $this->registerTestPgProvider();
+        $this->fakeClaimPaymentApprove(true, ['paid_amount' => 6000]);
+
+        $this->service->approvePgPayment(
+            $payment->fresh(),
+            ['paymentKey' => 'pk_s3d7', 'orderId' => $payment->payment_number, 'amount' => 6000],
+        );
+
+        $this->assertSame(
+            ExchangeStatusEnum::APPROVED,
+            $exchange->fresh()->exchange_status,
+            '결제가 확정됐는데 보류에 남으면 운영자가 손으로 풀어야 한다.',
+        );
     }
 }

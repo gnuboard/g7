@@ -209,6 +209,12 @@ return [
         'ecommerce_settings_index' => 'Ecommerce settings viewed',
         'ecommerce_settings_update' => 'Ecommerce settings saved (:categories)',
 
+        // Claim reason catalog
+        'claim_reason_create' => 'Claim reason created (:reason_type · :reason_code)',
+        'claim_reason_update' => 'Claim reason updated (:reason_type · :reason_code)',
+        'claim_reason_delete' => 'Claim reason deleted (:reason_type · :reason_code)',
+        'claim_reason_toggle_status' => 'Claim reason status toggled (:reason_type · :reason_code)',
+
         // Payment (Admin)
         'payment_refund' => 'Payment refunded (Order: :order_number)',
 

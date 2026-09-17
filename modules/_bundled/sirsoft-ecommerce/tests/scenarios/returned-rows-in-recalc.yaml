@@ -1,0 +1,72 @@
+feature: returned_rows_in_recalc
+
+description: |
+  순차 부분반품의 재계산 기준 — **누적 완료분** (S2-D5 · 수정 완료 2026-09-16)
+
+  **증상**: 상품을 여러 회차로 나눠 전부 반품해도 **쿠폰이 영영 복원되지 않는다.**
+
+  #599 통합실측 세션2 실측(주문 517 · 2026-09-15):
+
+    옵션 6행 전건 returned · 환불 5건 전건 completed · total_refunded 170,500
+    쿠폰 3장(발급 179·180·181) 끝까지 used
+    마지막 회차 recalculated_snapshot: subtotal_amount 158,000 · 쿠폰할인 11,000
+
+  전건 반품인데 재계산은 15.8만이 남았다고 본다 — 쿠폰 탈락이 있을 수 없다.
+  **고객은 전액 환불받고도 쿠폰을 잃는다.**
+
+  **원인**: `OrderAdjustmentService::buildRecalcInput()` 는 재계산 입력에서 종결 행을 뺄 때
+  `CANCELLED` 와 `EXCHANGED` 만 빼고 **`RETURNED` 는 잔여로 센다.** 그것은 실수가 아니라
+  같은 메서드 독블록이 명시한 설계 결정이다:
+
+    > 반품완료(`RETURNED`)는 승계 행이 없으므로 종전대로 잔여로 센다.
+
+  교환은 원 행(`EXCHANGED`)과 후속 행(`source_type=exchange`)이 쌍을 이루므로 둘 중 하나만
+  세야 하지만, 반품은 후속 행이 없으니 원 행을 그대로 둔다는 논리다.
+
+  그래서 완료 처리가 **「이번 회차 몫」만** 재계산에 넘기면, 재계산은 앞 회차에 이미 반품된
+  상품이 여전히 주문에 남아 있다고 본다 — **원 주문 기준 단건 시뮬레이션**이 된다.
+  쿠폰 조건(최소주문금액)이 한 번도 깨지지 않으니 `detectRestoredCoupons()` 의
+  `array_diff(원 스냅샷 쿠폰, 재계산 적용 쿠폰)` 이 **항상 비고**,
+  `RefundExecutionService::restoreCoupons()` 가 `coupon.restore` 훅을 발화하지 못한다.
+
+  **고친 방법 — 선택지 ②(반품 전용 누적)**
+
+  `OrderReturnService::completedClaimItems()` 가 이 신청서의 완료분에 **같은 주문의 다른
+  신청서 완료분**을 합산해 넘긴다. 공용 경로(`buildRecalcInput()`)는 **건드리지 않았다.**
+
+  선택지 ①(`buildRecalcInput()` 제외 목록에 `RETURNED` 추가)을 쓰지 않은 이유:
+  그 메서드는 취소·환불·반품·교환 재계산이 **모두 타는 단일 경로**라 세 세션(환불·반품·교환)의
+  금액이 동시에 움직인다. 반품 안에서 끝내면 같은 결과를 **공용 계약 변경 없이** 얻는다.
+
+  **둘을 동시에 적용하면 안 된다** — 같은 상품이 두 번 제외되어 환불액이 과다 산정된다.
+  그래서 이 매니페스트는 「공용 경로가 여전히 RETURNED 를 잔여로 센다」까지 함께 잠근다.
+
+  **관측된 사실 하나** — 부분 반품은 주문 옵션 행을 **쪼갠다**(`source_type=split`).
+  1회차와 2회차는 서로 다른 `order_option_id` 를 가리키므로, 계약은 「한 줄로 합쳐지는가」가
+  아니라 **「총 반품 수량이 누적되는가」**다. 줄 수로 단언하면 거짓 실패가 난다.
+
+axes:
+  return_round:
+    - single
+    - sequential
+    - incomplete_excluded
+    - shared_path_unchanged
+
+effects:
+  # 순차 회차의 재계산이 앞 회차 완료분을 함께 센다 (본체)
+  - sequential_return_recalc_counts_previously_returned_rows
+  # 증상 종단 — 마지막 회차에서 쿠폰 복원 훅이 실제로 발화한다.
+  # 입력이 맞아도 그 뒤 재계산·detectRestoredCoupons·복원 훅 중 한 곳이 끊기면
+  # 고객은 여전히 쿠폰을 잃는다(계획서준수검증 결함4).
+  - sequential_return_restores_coupons_at_the_final_round
+  # 미완료(접수·철회·반려) 신청서는 누적에 섞이지 않는다 — 섞이면 돌려받지 않은 상품이
+  # 잔여에서 빠져 환불액이 부풀고 쿠폰이 조기 복원된다(돈이 어긋나는 방향).
+  - incomplete_returns_are_not_counted_as_returned
+  # 공용 재계산 경로는 그대로다 — 여기에 RETURNED 제외가 더해지면 이중 제외가 된다.
+  - shared_recalc_path_still_counts_returned_rows
+
+test_files:
+  # 고친 자리 — completedClaimItems() 의 반환값
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ReturnedRowsExcludedFromRecalcTest.php
+  # 증상 종단 — 쿠폰 복원 훅이 실제로 발화하는가
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SequentialReturnRestoresCouponTest.php

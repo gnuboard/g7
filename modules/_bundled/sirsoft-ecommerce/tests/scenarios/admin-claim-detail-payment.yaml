@@ -100,6 +100,13 @@ effects:
   # 서버 계약 (환불 실행 · 금액 저장)
   - claim_refund_execute_uses_request_body_amounts
   - claim_refund_execute_rejects_over_the_cancellable_limit
+  # D19 상한은 **저장·실행 두 지점** 모두에서 판정한다(`UpdateClaimAmountsRequest` 독블록 ·
+  # `OrderRefundRequestService:1318`). 실행만 잠그면 초과값이 신청서에 저장된 채 approved 로
+  # 남아 화면에 승인된 금액처럼 보이고, D19 ③ 축(다른 미실행 클레임의 **저장 금액** 합)이
+  # 그 값을 읽어 **다른 신청서의 상한까지 깎는다**. 대조군(이내 저장 200)이 함께 있어야
+  # 422 가 「상한 판정」인지 「경로가 막힘」인지 갈린다. (#599 세션2 2-M)
+  - claim_refund_save_rejects_over_the_cancellable_limit
+  - claim_refund_save_accepts_within_the_cancellable_limit
   - claim_refund_execute_twice_is_a_conflict
   - claim_refund_execute_accumulates_order_refund_totals
   - claim_settlement_breaks_down_the_expected_refund

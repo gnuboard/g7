@@ -643,6 +643,127 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals($originalTotalDiscount, $splitOption->subtotal_discount_amount);
     }
 
+    /**
+     * 수량 분할로 생긴 레코드도 자기 배송 행을 가져야 한다 (S3-D5 회귀).
+     *
+     * `ClaimShippingFeeService` 는 옵션의 배송 행에서 배송정책을 얻는다. 분할 행에 배송 행이
+     * 없으면 정책 그룹이 비어 `no_shipping_policy` 로 떨어지고, **고객 귀책 반품·교환인데도
+     * 회수비·왕복 배송비가 0원**으로 청구된다. 교환까지 가면 `replicateShippingRow()` 가 원 행의
+     * 배송 행을 못 찾아 건너뛰므로 후속 행도 배송 행 없이 이어진다.
+     *
+     * 실측(주문 106): 분할로 생긴 opt774 와 그 후속 opt775 만 배송 행이 없었고,
+     * 그 행을 교환하자 `shipping_fee.fee = 0` · `reason = "no_shipping_policy"` 가 나왔다
+     * (정책1 고객 귀책 교환이므로 왕복 6,000 이어야 한다).
+     *
+     * @scenario from_status=payment_complete,to_status=preparing,transition_path=option_bulk,classification=forward_adjacent,verify_stage=db_status
+     *
+     * @effects split_row_gets_its_own_shipping_record
+     */
+    public function test_split_option_gets_its_own_shipping_record(): void
+    {
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 2,
+            'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ]);
+        $origin = OrderShipping::create([
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'shipping_status' => 'pending',
+            'shipping_type' => 'parcel',
+            'shipping_policy_id' => 1,
+        ]);
+
+        // 2개 중 1개만 전이 → 행 분할
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [['option_id' => $option->id, 'quantity' => 1]],
+                'status' => OrderStatusEnum::PREPARING->value,
+            ])
+            ->assertOk();
+
+        $split = OrderOption::where('parent_option_id', $option->id)->first();
+        $this->assertNotNull($split, '분할 레코드가 생성되지 않았습니다.');
+
+        $splitShipping = OrderShipping::where('order_option_id', $split->id)->first();
+
+        $this->assertNotNull(
+            $splitShipping,
+            '분할 레코드에 배송 행이 없습니다 — 클레임 배송비가 0원(no_shipping_policy)이 됩니다.'
+        );
+        $this->assertSame(
+            (int) $origin->shipping_policy_id,
+            (int) $splitShipping->shipping_policy_id,
+            '분할 레코드가 원 행의 배송정책을 승계하지 않았습니다.'
+        );
+
+        // 원 행의 배송 행은 그대로 남는다(이전이 아니라 복제).
+        $this->assertNotNull(OrderShipping::where('order_option_id', $option->id)->first());
+    }
+
+    /**
+     * 배송 행 복제가 배송비를 이중 계상하지 않아야 한다 (S3-D5 경계).
+     *
+     * 분할로 배송 행이 하나 늘어나므로, 금액을 배송 행 수로 세는 구현이었다면 주문 배송비가
+     * 두 배가 된다. 배송비는 **옵션 단위 정책 조회**로 쓰일 뿐 행 수로 합산되지 않아야 한다
+     * — 같은 정책·국가의 행은 한 그룹으로 접힌다.
+     *
+     * @scenario from_status=payment_complete,to_status=preparing,transition_path=option_bulk,classification=forward_adjacent,verify_stage=db_status
+     *
+     * @effects split_row_gets_its_own_shipping_record
+     */
+    public function test_split_shipping_replication_does_not_double_count_order_shipping(): void
+    {
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 2,
+            'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ]);
+        OrderShipping::create([
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'shipping_status' => 'pending',
+            'shipping_type' => 'parcel',
+            'shipping_policy_id' => 1,
+            'total_shipping_amount' => 3000,
+        ]);
+
+        $orderShippingBefore = (float) $order->total_shipping_amount;
+
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [['option_id' => $option->id, 'quantity' => 1]],
+                'status' => OrderStatusEnum::PREPARING->value,
+            ])
+            ->assertOk();
+
+        $order->refresh();
+
+        // 주문 헤더의 배송비 총액은 분할로 변하지 않는다 — 분할은 회계 사실이 아니라 상태 분리다.
+        $this->assertEquals(
+            $orderShippingBefore,
+            (float) $order->total_shipping_amount,
+            '분할이 주문 배송비 총액을 바꿨습니다 — 이중 계상 위험.'
+        );
+
+        // 배송 행은 늘지만(정책 조회용) 금액은 원 행에만 남는다 — 복제본은 정책 승계가 목적이다.
+        $originShipping = OrderShipping::where('order_option_id', $option->id)->first();
+        $this->assertEquals(
+            3000.0,
+            (float) $originShipping->total_shipping_amount,
+            '원 행의 배송비가 분할로 바뀌었습니다.'
+        );
+
+        $split = OrderOption::where('parent_option_id', $option->id)->first();
+        $splitShipping = OrderShipping::where('order_option_id', $split->id)->first();
+        $this->assertNotNull($splitShipping);
+        $this->assertSame(
+            (int) $originShipping->shipping_policy_id,
+            (int) $splitShipping->shipping_policy_id,
+            '복제본이 배송정책을 승계하지 않았습니다 — 클레임 배송비 조회가 실패합니다.'
+        );
+    }
+
     public function test_merge_reassigns_shipping_records(): void
     {
         // Given: 분할 후 원본에 배송 레코드 존재
@@ -852,20 +973,32 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
                 'tracking_number' => 'TEST333',
             ]);
 
-        // When: 남은 3개를 cancelled로 전체 변경
+        // When: 남은 3개를 다른 상태로 전체 변경
         $option->refresh();
         $this->assertEquals(3, $option->quantity);
+
+        // 일괄 변경 어휘에는 `cancelled` 가 없다 — 취소는 [주문취소] 모달(환불신청서 경로)만이
+        // 만든다(1-O · U6 · `OrderStatusEnum::adminAssignableStatuses()`). 예전 이 테스트는
+        // 일괄 변경으로 취소를 걸어 200 을 기대했는데, 그 경로가 열려 있으면 환불 없이 상품만
+        // 취소되는 장부 어긋남이 생긴다. 계약을 여기서 못 박는다.
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [['option_id' => $option->id, 'quantity' => 3]],
+                'status' => 'cancelled',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
 
         $response = $this->actingAs($this->adminUser)
             ->patchJson($this->bulkStatusUrl($order->order_number), [
                 'items' => [['option_id' => $option->id, 'quantity' => 3]],
-                'status' => 'cancelled',
+                'status' => 'preparing',
             ]);
 
         // Then
         $response->assertOk();
         $option->refresh();
-        $this->assertEquals(OrderStatusEnum::CANCELLED, $option->option_status);
+        $this->assertEquals(OrderStatusEnum::PREPARING, $option->option_status);
         $this->assertEquals(3, $option->quantity);
 
         // 분할 레코드는 shipping 유지
@@ -1307,5 +1440,135 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
             ]);
 
         $response->assertStatus(500);
+    }
+
+    // ========== 배송 레코드 상태 동기화 (S3-D2 회귀) ==========
+
+    /**
+     * 배송중 전이는 배송 레코드를 `shipped` 로 옮기고 발송 시각을 남겨야 한다.
+     *
+     * 종전에는 택배사·송장번호만 기록하고 `shipping_status` 를 건드리지 않아, 배송이 시작된
+     * 주문의 배송 레코드가 `pending` 에 머물렀다. 회원 주문상세의 「배송 현황」 카드는 이
+     * 레코드를 읽으므로, 운영자가 송장을 넣고 배송중으로 옮겨도 고객 화면에는
+     * 「배송대기」가 계속 보였다.
+     *
+     * 같은 사실을 넣는 다른 경로(주문 목록 일괄 운송장 입력 · `bulkUpdateShipping`)는
+     * 처음부터 `shipped` + `shipped_at` 을 함께 기록하고 있었다 — 두 경로가 갈라져 있었다.
+     *
+     * @scenario from_status=preparing,to_status=shipping,transition_path=option_bulk,classification=forward_jump,verify_stage=db_status
+     *
+     * @effects shipping_record_follows_option_status
+     */
+    public function test_shipping_transition_marks_shipping_record_shipped(): void
+    {
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 1,
+            'option_status' => OrderStatusEnum::PREPARING,
+        ]);
+        $shipping = OrderShipping::create([
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'shipping_status' => 'pending',
+            'shipping_type' => 'parcel',
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [['option_id' => $option->id, 'quantity' => 1]],
+                'status' => OrderStatusEnum::SHIPPING->value,
+                'carrier_id' => $this->carrier->id,
+                'tracking_number' => 'MEASSHIP001',
+            ])
+            ->assertOk();
+
+        $shipping->refresh();
+
+        $this->assertSame(
+            'shipped',
+            $shipping->shipping_status->value,
+            '배송중 전이 후에도 배송 레코드가 pending 입니다 — 고객 배송현황이 「배송대기」로 남습니다.'
+        );
+        $this->assertNotNull($shipping->shipped_at, '발송 시각이 기록되지 않았습니다.');
+        $this->assertSame('MEASSHIP001', $shipping->tracking_number);
+    }
+
+    /**
+     * 배송완료 전이는 배송 레코드를 `delivered` 로 옮기고 도착 시각을 남겨야 한다.
+     *
+     * @scenario from_status=shipping,to_status=delivered,transition_path=option_bulk,classification=forward_adjacent,verify_stage=db_status
+     *
+     * @effects shipping_record_follows_option_status
+     */
+    public function test_delivered_transition_marks_shipping_record_delivered(): void
+    {
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 1,
+            'option_status' => OrderStatusEnum::SHIPPING,
+        ]);
+        $shipping = OrderShipping::create([
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'shipping_status' => 'pending',
+            'shipping_type' => 'parcel',
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [['option_id' => $option->id, 'quantity' => 1]],
+                'status' => OrderStatusEnum::DELIVERED->value,
+                'carrier_id' => $this->carrier->id,
+                'tracking_number' => 'MEASSHIP002',
+            ])
+            ->assertOk();
+
+        $shipping->refresh();
+
+        $this->assertSame(
+            'delivered',
+            $shipping->shipping_status->value,
+            '배송완료 전이 후에도 배송 레코드가 옮겨지지 않았습니다.'
+        );
+        $this->assertNotNull($shipping->delivered_at, '도착 시각이 기록되지 않았습니다.');
+    }
+
+    /**
+     * 배송준비중 전이는 송장을 기록하되 아직 발송이 아니므로 `pending` 을 유지한다.
+     *
+     * 전이를 따라 무조건 앞으로 미는 수정이면 이 경계가 깨진다.
+     *
+     * @scenario from_status=preparing,to_status=shipping_ready,transition_path=option_bulk,classification=forward_adjacent,verify_stage=db_status
+     *
+     * @effects shipping_record_follows_option_status
+     */
+    public function test_shipping_ready_transition_keeps_shipping_record_pending(): void
+    {
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 1,
+            'option_status' => OrderStatusEnum::PREPARING,
+        ]);
+        $shipping = OrderShipping::create([
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'shipping_status' => 'pending',
+            'shipping_type' => 'parcel',
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [['option_id' => $option->id, 'quantity' => 1]],
+                'status' => OrderStatusEnum::SHIPPING_READY->value,
+                'carrier_id' => $this->carrier->id,
+                'tracking_number' => 'MEASSHIP003',
+            ])
+            ->assertOk();
+
+        $shipping->refresh();
+
+        $this->assertSame('pending', $shipping->shipping_status->value);
+        $this->assertNull($shipping->shipped_at);
+        $this->assertSame('MEASSHIP003', $shipping->tracking_number);
     }
 }

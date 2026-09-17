@@ -64,13 +64,21 @@ interface OrderShippingRepositoryInterface
     /**
      * 주문 옵션의 기존 배송 레코드에 택배사·송장번호를 기록합니다.
      *
-     * 배송 관련 상태 전이(배송준비완료/배송중/배송완료) 시 호출되어, 해당 옵션의 배송 레코드에
+     * 배송 관련 상태 전이(배송준비중/배송중/배송완료) 시 호출되어, 해당 옵션의 배송 레코드에
      * 택배사·송장번호를 반영합니다. 배송 레코드는 주문 생성 시점에 옵션 단위로 만들어지므로
      * 여기서는 존재하는 레코드만 갱신하며(생성하지 않음 — shipping_type/shipping_status 등
      * 정책 파생 컬럼을 임의로 정할 수 없음), 레코드가 없으면 갱신을 건너뛰고 null 을 반환한다.
      *
+     * 배송 진행 상태(`shipping_status`)와 발생 시각(`shipped_at`/`delivered_at`)을 함께 넘기면
+     * 그것도 반영한다 — 회원 주문상세 「배송 현황」 카드가 이 레코드를 읽으므로, 송장만 쓰고
+     * 상태를 두면 배송완료 주문이 고객에게 「배송대기」로 보인다. 시각은 **비어 있을 때만**
+     * 기록해 같은 단계를 다시 지나도 최초 시각을 덮지 않는다. 송장만 정정하는 호출은 이 키들을
+     * 넘기지 않으므로 상태가 보존된다.
+     *
      * @param  int  $orderOptionId  주문 옵션 ID
-     * @param  array  $tracking  ['carrier_id' => int, 'tracking_number' => string] 부분 배열
+     * @param  array  $tracking  ['carrier_id' => int, 'tracking_number' => string,
+     *                           'shipping_status' => string, 'shipped_at' => mixed,
+     *                           'delivered_at' => mixed] 부분 배열
      * @return OrderShipping|null 갱신된 배송 레코드 (레코드가 없으면 null)
      */
     public function updateTrackingByOrderOptionId(int $orderOptionId, array $tracking): ?OrderShipping;

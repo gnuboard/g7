@@ -77,6 +77,58 @@ class CancellableAmount
     }
 
     /**
+     * 현금(결제수단)과 마일리지를 **수단별로** 나눈 잔여를 반환합니다. (S3-D21)
+     *
+     * `allows()` 는 두 잔여를 더한 하나와 비교한다 — 그 합계는 "이 주문에서 통틀어 얼마까지
+     * 되돌릴 수 있는가" 로는 맞지만, **어느 수단으로 나가는지는 말해 주지 않는다.** 실제
+     * 지급은 수단별로 일어나므로 합계만 보면 한쪽이 마른 채 다른 쪽 여유로 통과한다.
+     *
+     * 실측(주문 753): 현금 잔여 9,000 · 마일리지 잔여 20,000 인 시점에 **현금 14,000** 요청이
+     * `14,000 ≤ 29,000` 으로 통과해, 결제행의 취소 누적이 결제액을 **5,000 초과**했다
+     * (`cancelled_amount 350,000 > paid_amount_base 345,000`). 마일리지는 20,000 중 10,000 이
+     * 끝내 환급되지 못했다 — 두 수단이 서로 어긋난 채 종료된다.
+     *
+     * @return array{cash: float, mileage: float} 수단별 잔여 (기본 통화)
+     */
+    public function remainingByMethod(): array
+    {
+        $cash = 0.0;
+        $mileage = 0.0;
+
+        foreach ($this->methods as $method) {
+            $amount = (float) ($method['remaining_base'] ?? 0);
+
+            if (($method['type'] ?? null) === self::METHOD_MILEAGE) {
+                $mileage += $amount;
+
+                continue;
+            }
+
+            $cash += $amount;
+        }
+
+        return ['cash' => $cash, 'mileage' => $mileage];
+    }
+
+    /**
+     * 수단별 요청액이 **각 수단의 잔여** 안인지 판정합니다. (S3-D21)
+     *
+     * `allows()` 를 대체하지 않고 **함께** 쓴다 — 도메인 상한(①)은 여전히 합계로 걸러야 하고,
+     * 이 메서드는 그 뒤에서 "그 돈이 실제로 나갈 수 있는 수단인가" 를 본다.
+     *
+     * @param  float  $cash  현금(결제수단) 요청액
+     * @param  float  $mileage  마일리지 요청액
+     * @return bool 두 수단 모두 잔여 이내이면 true
+     */
+    public function allowsByMethod(float $cash, float $mileage): bool
+    {
+        $remaining = $this->remainingByMethod();
+
+        return $cash <= $remaining['cash'] + 0.01
+            && $mileage <= $remaining['mileage'] + 0.01;
+    }
+
+    /**
      * 한도를 정한 축의 다국어 라벨 키를 반환합니다.
      *
      * @return string 다국어 키

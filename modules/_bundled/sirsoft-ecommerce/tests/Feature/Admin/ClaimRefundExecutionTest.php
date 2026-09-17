@@ -1010,4 +1010,68 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             ])
             ->assertStatus(422);
     }
+
+    /**
+     * **저장**도 D19 상한을 막는다 — 실행만 막으면 상한 초과가 장부에 앉는다. (2-M)
+     *
+     * `UpdateClaimAmountsRequest` 의 독블록은 상한을 「서비스가 **저장·실행 두 지점**에서
+     * 같은 식으로 재계산해 검증한다」고 선언하고, `OrderRefundRequestService:1318` 도
+     * 「저장은 최종값으로 한 번, 실행은 반영 후 실행 직전에」로 같은 계약을 적는다.
+     * **그런데 회귀는 실행 지점에만 있었다**(`test_execute_rejects_amounts_exceeding_the_cancellable_limit`).
+     *
+     * 저장 가드가 빠지면 초과값이 **신청서에 저장된 채 approved 로 남는다.** 화면은 그 값을
+     * 그대로 그리므로 운영자는 승인된 금액이라고 읽는다. 실행 단계에서야 422 가 나지만,
+     * 그때는 이미 「저장은 됐는데 실행만 안 되는」 상태라 원인이 금액인지 상태인지 가려지지 않는다.
+     * 게다가 D19 ③ 축(다른 미실행 클레임의 **저장 금액** 합)이 그 초과값을 읽으므로,
+     * **다른 신청서의 상한까지 함께 깎인다.**
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_refund_save_rejects_over_the_cancellable_limit
+     */
+    public function test_save_rejects_amounts_exceeding_the_cancellable_limit(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $before = (float) $refund->refund_amount;
+
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", [
+                'refund_amount' => 999999,
+            ])
+            ->assertStatus(422);
+
+        $this->assertSame(
+            $before,
+            (float) $refund->fresh()->refund_amount,
+            '상한을 넘긴 저장이 거절됐는데도 금액이 바뀌었습니다 — 거절과 쓰기가 갈렸습니다.'
+        );
+    }
+
+    /**
+     * 상한 **이내**의 저장은 통과한다 — 대조군.
+     *
+     * 이 테스트가 없으면 위의 422 가 「상한을 판정해서」인지 「저장 경로가 통째로 막혀서」인지
+     * 가려지지 않는다. 막혀서 나는 422 도 똑같이 초록이라, 대조군 없이는 근거가 서지 않는다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_refund_save_accepts_within_the_cancellable_limit
+     */
+    public function test_save_accepts_amounts_within_the_cancellable_limit(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", [
+                'refund_amount' => 9500,
+            ])
+            ->assertStatus(200);
+
+        $this->assertSame(
+            9500.0,
+            (float) $refund->fresh()->refund_amount,
+            '상한 이내 저장이 200 을 냈는데 금액이 반영되지 않았습니다.'
+        );
+    }
 }

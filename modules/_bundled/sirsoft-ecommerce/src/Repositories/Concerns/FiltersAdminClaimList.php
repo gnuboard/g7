@@ -43,6 +43,7 @@ trait FiltersAdminClaimList
      *
      * @param  Builder  $query  대상 쿼리
      * @param  array  $filters  필터 (statuses / from / to / fault_types / charge_methods / reason_code / requester_type / search_field / search_keyword / min_amount / max_amount / currency_code / charge_payment_methods)
+     * @return void 쿼리를 제자리에서 수정한다
      */
     protected function applyAdminClaimFilters(Builder $query, array $filters): void
     {
@@ -103,6 +104,7 @@ trait FiltersAdminClaimList
      * @param  Builder  $query  대상 쿼리
      * @param  array  $filters  필터
      * @param  array  $columns  컬럼 대응표
+     * @return void 쿼리를 제자리에서 수정한다
      */
     protected function applyAdminClaimAmountRange(Builder $query, array $filters, array $columns): void
     {
@@ -151,6 +153,7 @@ trait FiltersAdminClaimList
      * @param  Builder  $query  대상 쿼리
      * @param  array  $filters  필터
      * @param  array  $columns  컬럼 대응표
+     * @return void 쿼리를 제자리에서 수정한다
      */
     protected function applyAdminClaimCurrency(Builder $query, array $filters, array $columns): void
     {
@@ -173,13 +176,16 @@ trait FiltersAdminClaimList
     /**
      * 검색 드롭다운 4종(클레임번호/주문번호/신청자/상품명 — D27)을 쿼리에 적용합니다.
      *
-     * 신청자 검색은 주문자명(`orders.orderer_name`)을 본다 — 클레임 테이블의 신청자 축은
-     * 회원 ID 뿐이라 비회원 신청 건은 이름 검색 대상이 없어지기 때문이다. 상품명은
+     * 신청자 검색은 주문자명을 본다 — 클레임 테이블의 신청자 축은 회원 ID 뿐이라 비회원
+     * 신청 건은 이름 검색 대상이 없어지기 때문이다. 그 이름은 **주문 헤더가 아니라 배송지
+     * 행**(`OrderAddress.orderer_name`)에 있다(`Order::getOrdererName()` 과 같은 출처) —
+     * `orders` 에 직접 걸면 없는 컬럼을 찾다가 목록 전체가 500 이 된다(S3-D19). 상품명은
      * 신청 상품 행 → 주문옵션 스냅샷(`product_name`)을 whereExists 로 본다(조인 부풀림 없음).
      *
      * @param  Builder  $query  대상 쿼리
      * @param  array  $filters  필터
      * @param  array  $columns  컬럼 대응표
+     * @return void 쿼리를 제자리에서 수정한다
      */
     protected function applyAdminClaimSearch(Builder $query, array $filters, array $columns): void
     {
@@ -193,8 +199,23 @@ trait FiltersAdminClaimList
 
         match ($filters['search_field'] ?? 'claim_number') {
             'order_number' => $query->whereHas('order', fn ($q) => $q->where('order_number', 'like', $like)),
-            'requester' => $query->whereHas('order', fn ($q) => $q->where('orderer_name', 'like', $like)),
-            'product_name' => $query->whereHas($columns['items_relation'].'.orderOption', fn ($q) => $q->where('product_name', 'like', $like)),
+            // 주문자 이름은 주문 헤더가 아니라 **배송지 행**에 있다(`OrderAddress.orderer_name`).
+            // `order` 관계에 직접 걸면 `ecommerce_orders.orderer_name` 을 찾다가 SQL 이 죽어
+            // 목록 전체가 500 이 된다 — 빈 결과가 아니라 화면이 멈춘다(S3-D19).
+            'requester' => $query->whereHas('order.shippingAddress', fn ($q) => $q->where('orderer_name', 'like', $like)),
+            // 상품명은 **다국어 JSON 컬럼**이다. 평문 `like` 로 훑으면 한글이 영원히 안 걸린다 —
+            // MySQL 이 비ASCII 를 유니코드 이스케이프로 저장하므로 원문 바이트와 만나지 않는다
+            // (실측: `텀블러` 0건 · `Tumbler` 44건). 로케일별 `->{locale}` 로 꺼내 비교한다 —
+            // Eloquent 가 `JSON_UNQUOTE(JSON_EXTRACT(...))` 로 컴파일해 이스케이프를 푼다(S3-D20).
+            // 선례: `ProductInquiryRepository::getListWithFilters()` 의 상품명 검색과 같은 형태.
+            'product_name' => $query->whereHas(
+                $columns['items_relation'].'.orderOption',
+                fn ($q) => $q->where(function ($inner) use ($like) {
+                    foreach (config('app.translatable_locales', ['ko', 'en']) as $locale) {
+                        $inner->orWhere("product_name->{$locale}", 'like', $like);
+                    }
+                })
+            ),
             default => $query->where($columns['number'], 'like', $like),
         };
     }

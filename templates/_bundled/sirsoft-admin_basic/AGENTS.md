@@ -118,7 +118,34 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 사이드바 접힘 상태를 레이아웃 `init_actions` 로 매번 복원 | 템플릿 부트스트랩(`src/index.ts`)에서 1회 복원 | `init_actions` 는 화면 진입마다 재실행되어 불필요한 반복 처리가 된다 |
 | `_admin_base` 를 상속하는데 로그인 화면처럼 `initTheme`/메뉴 초기화를 다시 호출 | `_admin_base` 상속 화면은 이미 초기화된 전역 상태를 그대로 사용 | 중복 호출은 낭비이며, 두 초기화 지점의 결과가 어긋나면 화면 간 상태 불일치가 생긴다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| `CodeEditor` 에서 심기(prime)보다 먼저 `<Editor>` 를 렌더하거나 `loader.init()` 호출 | 심기가 끝난 뒤에 렌더·init 한다(`primed` 게이트) | `<Editor>` 는 렌더되자마자 자기 effect 에서 `init()` 을 부른다. 먼저 불리면 라이브러리가 **자기 AMD 로더 스크립트를 따로 주입**해 `_amdLoaderGlobal` 이 두 번 선언되고 그 판의 `require` 가 통째로 죽는다 (S3-D12) |
+| `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
 <!-- @intent END -->
+
+### Monaco 편집기 확보 계약 (S3-D12)
+
+동봉한 Monaco 는 **0.56.0** 이고, `@monaco-editor/loader@1.6.x` 와 **호환되지 않는다.**
+로더는 인스턴스를 `editor.main` 의 `m` 속성에서 꺼내는데 0.56.0 은 `m` 을 내보내지 않는다
+(`e.m=` 출현 0회). 그러면 로더가 `undefined` 로 resolve 하고, React 래퍼가
+
+```js
+m.then(h => (a.current = h) && I(!1))   // h 가 falsy 면 && 단락 → 로딩 해제 안 됨
+```
+
+**할당한 뒤 그 값의 참을 검사**하므로 「편집기를 불러오는 중...」에서 영영 멈춘다.
+
+**이 실패는 조용하다** — AMD 요청은 전부 200 이고 `window.monaco.editor.create` 도 정상
+함수로 존재하며 콘솔 오류도 0건이다. 자산·권한·경로를 아무리 재도 드러나지 않는다.
+관측 가능한 유일한 값은 **`monaco.editor.getModels().length === 0`** 이다.
+
+그래서 `CodeEditor.tsx` 는 **로더보다 먼저** 동봉본을 받아 `window.monaco` 에 심는다 —
+로더의 `init()` 에는 「`window.monaco.editor` 가 이미 있으면 그것을 쓴다」는 경로가 있어,
+그 경로를 타면 `m` 을 읽지 않는다. `m` 을 뒤늦게 채우는 것으로는 고쳐지지 **않는다**
+(`wrapperPromise` 는 1회만 resolve 된다).
+
+Monaco 를 올릴 때는 `tests/Playwright/specs/admin/code-editor-monaco-vendored-version.spec.ts`
+세 축(자산 200 · 마운트 · **로더 1회 실행**)을 함께 확인한다. 마운트만 재면 로더가 두 번
+돌아도 green 이다 — 먼저 뜬 편집기가 살아 있기 때문이다.
 
 ## 7. 테스트 실행
 

@@ -2002,6 +2002,279 @@ class LayoutExtensionServiceTest extends TestCase
         $this->assertEquals('b', $tabs[1]['id']);
     }
 
+    /**
+     * A-11: `_patch` 는 **목록 전체를 복사하지 않고** 한 항목만 바꾼다. (S2-D13 회귀)
+     *
+     * 이것이 없으면 확장은 목록 전체를 복사해야 하고, 그 복사본은 만든 날짜에 얼어붙는다 —
+     * 호스트가 나중에 항목을 더해도 확장의 낡은 복사본이 그것을 **조용히 지운다.**
+     *
+     * 실제 사고(#599 S2-D13): 결제 플러그인 3종이 주문목록에 배지 하나를 달려고 컬럼
+     * 11칸을 통째로 복사했고, 뒤에 추가된 클레임 컬럼이 화면에서 사라졌다. 복사본 11칸 중
+     * 실제로 다른 칸은 **하나뿐**이었고 나머지 10칸은 원본과 완전히 같았다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     */
+    public function test_inject_props_patch_replaces_only_the_named_item(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            ['field' => 'ordered_at', 'header' => '주문일시'],
+                            ['field' => 'payment_method', 'header' => '결제수단'],
+                            // 확장이 만들어진 **뒤에** 호스트가 더한 컬럼.
+                            ['field' => 'claim', 'header' => '클레임'],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            'columns' => [
+                                '_patch' => [
+                                    'by' => 'field',
+                                    'items' => [
+                                        ['field' => 'payment_method', 'header' => '결제수단(배지)'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 999,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $columns = $result['components'][0]['props']['columns'];
+
+        // 개수와 순서가 보존된다 — 손대지 않은 항목은 그대로.
+        $this->assertCount(3, $columns, '패치가 목록의 다른 항목을 지웠습니다.');
+        $this->assertSame(
+            ['ordered_at', 'payment_method', 'claim'],
+            array_column($columns, 'field'),
+            '패치가 순서를 바꾸거나 항목을 잃었습니다.'
+        );
+
+        // 지목한 항목만 바뀐다.
+        $this->assertSame('결제수단(배지)', $columns[1]['header']);
+
+        // **핵심**: 확장이 모르는 뒤늦은 컬럼이 살아남는다.
+        $this->assertSame(
+            '클레임',
+            $columns[2]['header'],
+            '확장이 만들어진 뒤 호스트가 더한 컬럼이 사라졌습니다 — S2-D13 의 증상입니다.'
+        );
+    }
+
+    /**
+     * A-12: `_patch` 는 지목한 항목에 **shallow 병합**한다 (적지 않은 키는 보존).
+     *
+     * 확장이 `cellChildren` 하나만 바꾸려는데 `width`·`sortable` 까지 다시 적어야 한다면
+     * 그것 역시 복사이고 같은 사고를 부른다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     */
+    public function test_inject_props_patch_merges_into_the_item_instead_of_replacing_it(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            ['field' => 'payment_method', 'header' => '결제수단', 'width' => '100px', 'sortable' => false],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            'columns' => [
+                                '_patch' => [
+                                    'by' => 'field',
+                                    'items' => [
+                                        ['field' => 'payment_method', 'cellChildren' => [['type' => 'basic', 'name' => 'Span']]],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 999,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $column = $result['components'][0]['props']['columns'][0];
+
+        $this->assertArrayHasKey('cellChildren', $column, '패치한 키가 들어가지 않았습니다.');
+        $this->assertSame('100px', $column['width'] ?? null, '적지 않은 키가 사라졌습니다.');
+        $this->assertSame('결제수단', $column['header'] ?? null, '적지 않은 키가 사라졌습니다.');
+        $this->assertFalse($column['sortable'] ?? null, '적지 않은 키가 사라졌습니다.');
+    }
+
+    /**
+     * A-13: `by` 값이 기존에 없으면 **새 항목으로 끝에 붙인다.**
+     *
+     * 확장이 항목을 더할 수 있어야 `_append` 없이도 한 전략으로 끝난다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     */
+    public function test_inject_props_patch_appends_when_the_key_is_new(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [['field' => 'ordered_at', 'header' => '주문일시']],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            'columns' => [
+                                '_patch' => [
+                                    'by' => 'field',
+                                    'items' => [['field' => 'pg_status', 'header' => 'PG 상태']],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 999,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $columns = $result['components'][0]['props']['columns'];
+
+        $this->assertCount(2, $columns);
+        $this->assertSame(['ordered_at', 'pg_status'], array_column($columns, 'field'));
+    }
+
+    /**
+     * A-14: `_patch` 형식이 어긋나면 **원본 목록을 그대로 둔다.**
+     *
+     * 잘못 쓴 패치가 목록을 비우면 그 화면이 통째로 사라진다 — 이 전략이 막으려던 사고와
+     * 같은 크기의 사고다. 조용히 빈 배열로 만들지 않는다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects malformed_patch_leaves_the_host_list_untouched
+     */
+    public function test_inject_props_patch_keeps_the_list_when_the_definition_is_malformed(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            ['field' => 'ordered_at', 'header' => '주문일시'],
+                            ['field' => 'claim', 'header' => '클레임'],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            // by 가 없다 — 어느 키로 짝을 지을지 알 수 없다.
+                            'columns' => ['_patch' => ['items' => [['field' => 'ordered_at']]]],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 999,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $columns = $result['components'][0]['props']['columns'];
+
+        $this->assertCount(2, $columns, '형식 오류가 목록을 비웠습니다 — 화면이 통째로 사라집니다.');
+        $this->assertSame(['ordered_at', 'claim'], array_column($columns, 'field'));
+    }
     // =========================================================================
     // Overlay 레이아웃 섹션 병합 단위 테스트 (B-1 ~ B-7)
     // =========================================================================

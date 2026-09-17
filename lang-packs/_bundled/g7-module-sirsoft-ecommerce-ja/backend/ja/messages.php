@@ -194,6 +194,7 @@ return [
         'guest_password_reset_failed' => '非会員照会パスワードのリセットに失敗しました。',
         'guest_password_reset_not_guest' => '非会員注文のみ照会パスワードをリセットできます。',
         'deposit_confirmed' => '入金が確認され決済完了処理されました。',
+        'deposit_recorded' => '入金履歴を記録しました。注文ステータスは入金待ちのまま維持されます。',
         'deposit_confirm_failed' => '入金確認処理に失敗しました。',
         'deposit_amount_mismatch' => '入金額が決済予定金額と一致しません。',
         'deposit_not_dbank' => '銀行振込注文のみ入金確認できます。',
@@ -1186,6 +1187,7 @@ return [
         'refund_request_created' => '返金申請書を受け付けました。',
         'logs_retrieved' => 'アクティビティログを取得しました。',
         'cancellable_method' => [
+            'payment' => '決済手段',
             'mileage' => 'マイレージ',
         ],
     ],

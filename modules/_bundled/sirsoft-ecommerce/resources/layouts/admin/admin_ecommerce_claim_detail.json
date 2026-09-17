@@ -294,13 +294,46 @@
                                                         "text": "$t:sirsoft-ecommerce.admin.claim.detail.requester:"
                                                     },
                                                     {
+                                                        "comment": "e2e:allow 요청자 링크(계획 676) — 운영자가 신청자 이름에서 그 회원 화면으로 바로 간다. 링크 대상은 `requester_user_id`(**주문의 주인**)이다 — 이 칸이 그리는 이름이 주문자명이므로, `requested_by` 로 걸면 운영자 대리 접수 건에서 화면에 보이는 사람과 다른 회원 상세로 간다. 비회원 주문은 null 이라 아래 Span 이 평문으로 서다 — 누를 곳 없는 링크를 보이면 운영자는 회원이 있다고 오해한다. 선례: `admin_ecommerce_product_review_index.json` 의 작성자 칸(A+if / Span+if 한 쌍).",
                                                         "id": "cd_008_requester",
                                                         "type": "basic",
+                                                        "name": "A",
+                                                        "if": "{{!!claim?.data?.claim?.requester_user_id}}",
+                                                        "props": {
+                                                            "href": "#",
+                                                            "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                        },
+                                                        "text": "{{claim?.data?.claim?.requester_name ?? '-'}}",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/users/{{claim?.data?.claim?.requester_user_id}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "cd_008_requester_plain",
+                                                        "type": "basic",
                                                         "name": "Span",
+                                                        "if": "{{!claim?.data?.claim?.requester_user_id}}",
                                                         "props": {
                                                             "className": "font-medium text-gray-900 dark:text-gray-100"
                                                         },
                                                         "text": "{{claim?.data?.claim?.requester_name ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "comment": "e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 4차 라운드 D2 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다.",
+                                                        "id": "cd_008b_request_source",
+                                                        "type": "basic",
+                                                        "name": "Badge",
+                                                        "props": {
+                                                            "variant": "{{claim?.data?.claim?.request_source === 'admin' ? 'warning' : (claim?.data?.claim?.request_source === 'guest' ? 'secondary' : 'info')}}",
+                                                            "size": "sm"
+                                                        },
+                                                        "text": "{{claim?.data?.claim?.request_source_label}}"
                                                     }
                                                 ]
                                             }

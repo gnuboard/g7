@@ -35,7 +35,7 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
         $this->assertSame('refund_restore', $array['type']);
         $this->assertSame('teal', $array['admin_badge_group']);   // 복원계
-        $this->assertSame('adjust', $array['user_display_category']); // 사용자 4분류
+        $this->assertSame('earn', $array['user_display_category']); // 잔액 증가 → '적립'
         $this->assertNotEmpty($array['type_label']);
 
         // *_at 원시 + *_formatted 사용자 타임존 동반

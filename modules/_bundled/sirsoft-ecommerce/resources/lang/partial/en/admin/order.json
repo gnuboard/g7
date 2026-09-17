@@ -62,7 +62,8 @@
       },
       "earn_status": {
         "earned": "Earned",
-        "pending": "Pending"
+        "pending": "Pending",
+        "cancelled": "Not Earned"
       },
       "summary": {
         "total": "Total",
@@ -697,8 +698,8 @@
     }
   },
   "status": {
-    "waiting": "Waiting",
-    "payment_pending": "Payment Pending",
+    "waiting": "Pending Order",
+    "payment_pending": "Pending Payment",
     "payment_complete": "Payment Complete",
     "shipping_hold": "Shipping Hold",
     "preparing": "Preparing",

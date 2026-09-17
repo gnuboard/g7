@@ -860,7 +860,7 @@ class OrderRefundRequestService
             $finalAmount = (float) ($updates['refund_amount'] ?? $refund->refund_amount);
             $finalPoints = (float) ($updates['refund_points_amount'] ?? $refund->refund_points_amount);
 
-            $this->assertWithinCancellable($order, $refund, $finalAmount + $finalPoints);
+            $this->assertWithinCancellable($order, $refund, $finalAmount, $finalPoints);
 
             if ($updates === []) {
                 return $refund;
@@ -1043,7 +1043,7 @@ class OrderRefundRequestService
             $points = (float) $refund->refund_points_amount;
 
             // 실행 직전 D19 재계산 가드 — 저장 시점과 같은 식 (동시 처리 차단)
-            $this->assertWithinCancellable($order, $refund, $amount + $points);
+            $this->assertWithinCancellable($order, $refund, $amount, $points);
 
             $refund->loadMissing('refundOptions');
 
@@ -1081,6 +1081,14 @@ class OrderRefundRequestService
             $result = new AdjustmentResult(
                 refundAmount: $amount,
                 refundPointsAmount: $points,
+                // 재계산이 낸 **세금 분류 세 컬럼**만 실어 보낸다 (S3-D17). 금액 컬럼은 싣지
+                // 않는다 — `total_paid_amount` 를 깎으면 잔여 한도에서 같은 금액이 두 번
+                // 차감된다(`RefundExecutionService::execute()` 독블록).
+                //
+                // 이 값이 없으면 `CashReceiptService` 가 **전액 환불된 주문에도 발급 가능액을
+                // 낸다**(2026-09-16 실측: 주문 964 전액 환불 후 `issuable.amount = 62,000`).
+                // 전액취소 경로는 이미 0 으로 내린다(S1-D22) — 반품·환불만 빠져 있었다.
+                orderUpdates: $this->taxColumnUpdatesFor($order, $items, $couponRestore),
                 restoredCouponIssueIds: $couponRestore?->restoredCouponIssueIds ?? [],
                 mcRefundAmount: $refund->mc_refund_amount ?? [],
             );
@@ -1099,6 +1107,26 @@ class OrderRefundRequestService
                 executePg: ! $pgAlreadySettled
                     && $refund->refund_method === RefundMethodEnum::PG
                     && $amount > 0,
+                // 결제행의 취소 누적은 **그 수단에서 실제로 취소가 일어난 때만** 쌓는다 (S1-D24).
+                //
+                // 카드 주문에 `계좌이체` 환불수단을 지정하면 PG 왕복은 건너뛰면서 이 누적만
+                // 깎였다 — 카드사 잔액은 그대로인데 장부의 환불가능액만 줄어, 이후 정상적인
+                // 카드 환불이 한도에 먼저 걸린다(실측 1-P: 58,000 → 44,000).
+                //
+                // 운영자가 손으로 계좌 송금하는 운영은 막지 않는다(PO 확정 2026-09-16 —
+                // 「허용하되 장부는 건드리지 않음」). 그 송금은 카드 취소가 아니므로 카드
+                // 결제행의 취소 누적이 아닐 뿐이다. 돈이 나간 사실은 주문 축
+                // (`total_refunded_amount`)과 환불 레코드가 그대로 기록한다.
+                //
+                // 기준은 「이 결제수단이 **원래 쓰는** 환불수단인가」다. 무통장(dbank)의 계좌
+                // 환불은 그 수단의 정상 취소이므로 쌓고, 카드의 계좌 환불은 카드 취소가 아니라
+                // 쌓지 않는다. `determineRefundMethod()` 가 그 판정의 SSoT 이고, PG 리스너가
+                // 없어 계좌로 폴백된 카드 주문(P14)도 같은 답을 내어 정상 취소로 남는다.
+                //
+                // `$pgAlreadySettled`(가상계좌 환불 화면·`cancelPg: false`)는 **취소가 실제로
+                // 일어난** 경우라 그대로 쌓는다 — 여기서 빼면 정상 취소의 누적이 사라진다.
+                recordPaymentLedger: $pgAlreadySettled
+                    || $refund->refund_method === $this->refundExecutionService->determineRefundMethod($order),
             );
 
             if ($this->ownsOptionQuantities($refund) && $items !== []) {
@@ -1372,6 +1400,12 @@ class OrderRefundRequestService
                 throw OrderClaimException::amountInvalid();
             }
 
+            // S1-D15: 어휘만 맞으면 통과시키면 결제수단이 지원하지 않는 수단이 저장된다.
+            // 무통장·마일리지·예치금·무료 결제는 PG 거래가 없어 `pg` 로 돌려줄 대상이 없고,
+            // 실행(`RefundExecutionService`)은 **결제수단**으로 PG 진입을 가르므로 훅을 건너뛰고
+            // 조용히 완료된다 — 화면에만 「PG사 환불」이 남아 장부와 표시가 어긋난다.
+            $this->assertRefundMethodAvailable($order, $method);
+
             $updates['refund_method'] = $method;
         }
 
@@ -1379,18 +1413,65 @@ class OrderRefundRequestService
     }
 
     /**
-     * 요청 환불 총액이 취소 가능 금액(D19) 이내인지 검증합니다. (저장·실행 공용 가드)
+     * 이 주문의 결제수단이 지정한 환불수단을 지원하는지 검증합니다. (S1-D15)
+     *
+     * `pg` 는 PG사를 거친 결제에만 쓸 수 있다 — 판정은 실행 경로와 **같은 술어**를 쓴다
+     * (`OrderPayment::needsPgProvider()`). 두 곳이 다른 기준을 쓰면 저장은 되는데 실행은
+     * 다르게 행동하는 틈이 다시 생긴다.
+     *
+     * `bank`·`points` 는 결제수단과 무관하게 사람이 돌려주는 경로라 제한하지 않는다
+     * (마일리지 환급의 회원 제약은 금액 축이 따로 검사한다).
+     *
+     * @param  Order  $order  주문
+     * @param  RefundMethodEnum  $method  지정한 환불수단
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 결제수단이 그 환불수단을 지원하지 않을 때
+     */
+    protected function assertRefundMethodAvailable(Order $order, RefundMethodEnum $method): void
+    {
+        if ($method !== RefundMethodEnum::PG) {
+            return;
+        }
+
+        $order->loadMissing('payment');
+
+        if ($order->payment === null || ! $order->payment->needsPgProvider()) {
+            throw OrderClaimException::refundMethodUnavailable();
+        }
+    }
+
+    /**
+     * 요청 환불액이 취소 가능 금액(D19) 이내인지 검증합니다. (저장·실행 공용 가드)
+     *
+     * **두 겹으로 본다.**
+     *
+     * ① 합계 축(D19) — 도메인상 돌려줘야 할 금액을 넘지 않는가.
+     * ② 수단별 축(S3-D21) — 그 돈이 **실제로 나갈 수단**에 잔여가 있는가.
+     *
+     * ① 만 보면 한쪽 수단이 마른 채 다른 쪽 여유로 통과한다. 취소 가능 금액은 결제수단 잔여와
+     * 마일리지 잔여를 **더한 하나**라, 현금 잔여가 9,000 뿐이어도 마일리지 20,000 이 남아
+     * 있으면 현금 14,000 요청이 `14,000 ≤ 29,000` 으로 통과한다 — 실측 주문 753 이 그렇게
+     * 결제액을 5,000 초과 환불했고(`cancelled_amount 350,000 > paid_amount_base 345,000`),
+     * 마일리지는 20,000 중 10,000 이 끝내 환급되지 못한 채 종료됐다.
+     *
+     * **동시에 떠 있는 다른 신청서까지는 보지 않는다** — 그 축(③ 선점액)은 한도에서 빼지
+     * 않는 것이 이 저장소의 결정이다(`CancellableAmount` 독블록 · S17 B5). 빼면 승인도 되지
+     * 않은 남의 신청서가 이 건의 정당한 환불을 0 원으로 막는다. 두 신청서가 나란히 통과해
+     * 합계가 넘는 경우는 **이 가드가 실행 순간 거절**하고, 어느 건을 줄일지는 운영자가 정한다.
      *
      * @param  Order  $order  주문
      * @param  OrderRefund  $refund  환불신청서 (선점 집계에서 자기 자신 제외)
-     * @param  float  $requested  요청 환불 총액 (PG + 마일리지, 기본 통화)
+     * @param  float  $cash  요청 현금(결제수단) 환불액 (기본 통화)
+     * @param  float  $mileage  요청 마일리지 환불액 (기본 통화)
      * @return void
      *
-     * @throws OrderClaimException D19 상한 초과
+     * @throws OrderClaimException D19 상한 초과 또는 수단별 잔여 초과
      */
-    protected function assertWithinCancellable(Order $order, OrderRefund $refund, float $requested): void
+    protected function assertWithinCancellable(Order $order, OrderRefund $refund, float $cash, float $mileage): void
     {
         $cancellable = $this->cancellableCalculator->calculateForRefund($order, $refund);
+        $requested = $cash + $mileage;
 
         if (! $cancellable->allows($requested)) {
             throw OrderClaimException::refundExceedsCancellable(
@@ -1398,6 +1479,93 @@ class OrderRefundRequestService
                 ecommerce_format_price($cancellable->amount, $cancellable->currency),
             );
         }
+
+        if ($cancellable->allowsByMethod($cash, $mileage)) {
+            return;
+        }
+
+        // 어느 수단이 모자란지 **그 수단의 숫자로** 알린다 — 합계만 알려 주면 운영자가 무엇을
+        // 얼마나 줄여야 하는지 알 수 없어 화면에서 고칠 수 없다.
+        $remaining = $cancellable->remainingByMethod();
+        $overCash = $cash > $remaining['cash'] + 0.01;
+
+        throw OrderClaimException::refundExceedsMethodRemaining(
+            __('sirsoft-ecommerce::messages.claims.cancellable_method.'.($overCash ? 'payment' : 'mileage')),
+            ecommerce_format_price($overCash ? $cash : $mileage, $cancellable->currency),
+            ecommerce_format_price($overCash ? $remaining['cash'] : $remaining['mileage'], $cancellable->currency),
+        );
+    }
+
+    /**
+     * 환불이 주문 헤더에 동기화하는 컬럼 (S3-D17).
+     *
+     * **세금 분류 + 현금성 금액만** 담는다. `total_paid_amount`·`total_amount` 를 넣으면
+     * 잔여 한도(`total_paid_amount - total_refunded_amount`)가 같은 금액을 두 번 차감한다.
+     *
+     * `total_cash_equivalent_amount` 가 함께 있어야 한다 —
+     * `CashReceiptService::calculateIssuableAmount()` 는 이 값을 **먼저** 보고, 0 이 아니면
+     * 세금 분류합이 0 이어도 이 값을 그대로 발급 가능액으로 낸다(폴백). 세금만 0 으로
+     * 내리면 발급 가능액이 62,000 으로 남는다(2026-09-16 실측).
+     *
+     * `mc_*` 두 개는 base 와 짝을 맞춘다 — 한쪽만 내리면 한 행 안에서 어긋난다(S1-D22 전례).
+     */
+    private const TAX_SYNC_COLUMNS = [
+        'total_tax_amount',
+        'total_tax_free_amount',
+        'total_vat_amount',
+        'total_cash_equivalent_amount',
+        'mc_total_tax_amount',
+        'mc_total_tax_free_amount',
+    ];
+
+    /**
+     * 이 환불이 끝난 뒤의 **세금 분류 컬럼**을 재계산합니다. (S3-D17)
+     *
+     * `total_tax_amount`·`total_tax_free_amount`·`total_vat_amount` 세 개만 낸다 —
+     * 금액 컬럼을 함께 실으면 클레임 환불이 `total_paid_amount` 를 깎아 잔여 한도
+     * (`total_paid_amount - total_refunded_amount`)가 같은 금액을 두 번 차감한다
+     * (`RefundExecutionService::execute()` 독블록).
+     *
+     * **재계산을 여기서 다시 구하는 이유**: 직접 환불신청(`ownsOptionQuantities`)만
+     * `previewRefund()` 를 부르고, **반품·교환 발 환불은 부르지 않는다**(실측: RF157·158·146
+     * 모두 `ownsOptionQuantities = false`). 그 경로를 빈손으로 두면 결함이 그대로 남는다.
+     *
+     * 신청 상품이 없으면(출처 소실·취소 발) 빈 배열을 낸다 — 근거 없이 세금 컬럼을 0 으로
+     * 만들면 멀쩡한 주문의 과세 근거가 사라진다.
+     *
+     * @param  Order  $order  주문
+     * @param  array  $items  이 환불이 덜어내는 신청 상품 [{order_option_id, cancel_quantity}]
+     * @param  AdjustmentResult|null  $preview  직접 환불이 이미 구한 재계산 (있으면 재사용)
+     * @return array<string, float> 세금 컬럼 갱신값
+     */
+    protected function taxColumnUpdatesFor(Order $order, array $items, ?AdjustmentResult $preview): array
+    {
+        if ($items === []) {
+            return [];
+        }
+
+        // 직접 환불은 위에서 이미 재계산했다 — 같은 계산을 두 번 돌리지 않는다.
+        $source = $preview ?? $this->cancellationService->previewRefund(
+            $order,
+            $items,
+            RefundPriorityEnum::PG_FIRST,
+            guardClaimLock: false,
+        );
+
+        $updates = [];
+
+        foreach (self::TAX_SYNC_COLUMNS as $column) {
+            if (! array_key_exists($column, $source->orderUpdates)) {
+                continue;
+            }
+
+            $value = $source->orderUpdates[$column];
+
+            // `mc_*` 는 통화별 맵이라 float 캐스팅하면 뭉개진다.
+            $updates[$column] = str_starts_with($column, 'mc_') ? $value : (float) $value;
+        }
+
+        return $updates;
     }
 
     /**
@@ -1419,21 +1587,38 @@ class OrderRefundRequestService
             throw OrderClaimException::completionRequiresCompletionFlow();
         }
 
-        $current = $refund->refund_status;
-
-        if (! $current->canTransitionTo($target)) {
-            throw OrderClaimException::transitionNotAllowed($current->label(), $target->label());
-        }
-
-        $updates = ['refund_status' => $target] + $this->stampFor($target, $context);
-
-        if (($context['processed_by'] ?? null) !== null) {
-            $updates['processed_by'] = $context['processed_by'];
-        }
-
+        // S1-D21: 잠금·판정·쓰기를 **한 트랜잭션**에 묶는다.
+        //
+        // 메모리에 들고 있는 모델 값으로 판정하면 동시에 들어온 두 요청이 **둘 다 같은 출발
+        // 상태를 보고 둘 다 통과**한다. 쓰기는 같은 값이라 상태·시각만 보면 1회처럼 보이는데,
+        // 뒤따르는 전이 훅(활동로그·알림)이 두 번 돈다 — 상태가 멀쩡해 보이는 것이 이 결함을
+        // 숨긴다. 세션3 이 교환·반품에서 같은 형태를 찾아 고쳤고(S3-D16), 환불도 같은 형태였다.
+        //
+        // 판정만 트랜잭션으로 감싸면 **커밋과 함께 잠금이 풀려** 쓰기 전에 두 요청이 다시
+        // 나란히 통과한다(세션3 이 재실측에서 알림 2통 재발로 확인). 잠금이 쓰기까지 유지되도록
+        // 한 트랜잭션에 넣어야 한다.
         $optionChanges = [];
+        $current = null;
+        $updates = [];
 
-        $updated = DB::transaction(function () use ($refund, $updates, $target, &$optionChanges) {
+        $updated = DB::transaction(function () use ($refund, $target, $context, &$optionChanges, &$current, &$updates) {
+            $locked = $this->refundRepository->findForUpdate((int) $refund->getKey());
+            $current = ($locked ?? $refund)->refund_status;
+
+            if (! $current->canTransitionTo($target)) {
+                throw OrderClaimException::transitionNotAllowed($current->label(), $target->label());
+            }
+
+            // 호출층이 들고 있는 인스턴스도 잠금 시점 값으로 맞춘다 — 빼면 뒤따르는 훅이
+            // 낡은 값을 `previous` 로 읽어 활동로그 전/후 표가 실제와 어긋난다.
+            $refund->setAttribute('refund_status', $current);
+
+            $updates = ['refund_status' => $target] + $this->stampFor($target, $context);
+
+            if (($context['processed_by'] ?? null) !== null) {
+                $updates['processed_by'] = $context['processed_by'];
+            }
+
             $fresh = $this->refundRepository->update($refund, $updates);
 
             // 반려(판매자가 거절)와 철회(구매자가 거둠)는 신청서를 닫는다는 점만 같고 **다른 사실**이다.
@@ -1472,7 +1657,16 @@ class OrderRefundRequestService
             );
         }
 
-        $this->fireStatusHooks($updated, $current, $target, $context);
+        // 상태가 **실제로 바뀐 때만** 훅을 돌린다 (S1-D21 · 세션3 S3-D16 과 같은 처리).
+        //
+        // 잠금만으로는 부족하다 — 상태 기계가 **같은 상태로의 재진입을 허용**하기 때문이다
+        // (`canTransitionTo` 가 `$this === $target` 를 true 로 낸다). 잠금이 두 요청을 줄
+        // 세워도 뒤선 요청은 이미 `approved` 인 행을 읽고 `approved → approved` 로 통과해
+        // 훅을 한 번 더 돌린다. 실측(2026-09-16 00:13:12 · RF 7): 활동로그가
+        // `requested → approved` 1줄 + **`approved → approved` 1줄** 로 두 줄 남았다.
+        if ($current !== $target) {
+            $this->fireStatusHooks($updated, $current, $target, $context);
+        }
 
         return $updated;
     }

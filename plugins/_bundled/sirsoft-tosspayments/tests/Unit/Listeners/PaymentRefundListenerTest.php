@@ -268,6 +268,110 @@ class PaymentRefundListenerTest extends PluginTestCase
         Http::assertSent(fn ($request) => ! array_key_exists('taxFreeAmount', $request->data()));
     }
 
+    /**
+     * S1-D14: 순차 부분취소에서 누적 taxFreeAmount 가 승인 면세액을 넘지 않는다
+     *
+     * `resolveTaxFreeAmount()` 는 주문의 `total_tax_free_amount` / `total_tax_amount` 를
+     * 읽는데, 이 값은 환불이 완료될 때마다 **잔여로 줄어든다**. 그러므로
+     * 매 회차 안분한 면세분의 합이 승인 시 등록된 면세액을 초과할 수 있다.
+     * 토스는 누적 면세액이 승인분을 넘으면 「취소 할 수 없는 금액 입니다.」 로 거부한다.
+     *
+     * 실측(#599 통합실측 세션1 · 주문 20260915-1253009416 · 58,000 결제 / 면세 40,000):
+     *
+     *     1회차 사과 x1  classified=68000 cancel=20000 -> taxFree=11765
+     *     2회차 USB  x1  classified=48000 cancel= 4000 -> taxFree= 1667
+     *     3회차 USB  x1  classified=34000 cancel=14000 -> taxFree= 8235
+     *     4회차 사과 x1  classified=20000 cancel=20000 -> taxFree=20000  (누적 41667 > 40000)
+     *
+     * 계약: 이번 회차에 보내는 면세분은 **잔여 면세 예산**(승인 면세액 − 이미 소진분)을
+     * 넘지 않는다. 예산은 불변인 승인 스냅샷과 PG 취소 장부에서 온다 — 줄어드는
+     * 주문 합계가 아니다.
+     *
+     * @effects refund_tax_free_never_exceeds_approved_total
+     */
+    public function test_r2_cumulative_tax_free_never_exceeds_approved_amount(): void
+    {
+        $this->fakeCancelApi();
+
+        // 승인: 58,000 결제 · 면세 40,000 · 이미 3회차까지 38,000 취소(면세 21,667 소진)
+        $order = $this->createTossOrder([
+            'paid_amount_local' => 58000,
+            'cancelled_amount' => 38000,
+            'payment_meta' => [
+                'pg_raw_response' => [
+                    'taxFreeAmount' => 40000,
+                    'totalAmount' => 58000,
+                    'cancels' => [
+                        ['cancelAmount' => 20000, 'taxFreeAmount' => 11765],
+                        ['cancelAmount' => 4000, 'taxFreeAmount' => 1667],
+                        ['cancelAmount' => 14000, 'taxFreeAmount' => 8235],
+                    ],
+                ],
+            ],
+        ]);
+
+        // 환불이 진행된 뒤의 주문 잔여 — 사과 2개(전량 면세)만 남았다
+        $order->update([
+            'total_tax_free_amount' => 20000,
+            'total_tax_amount' => 0,
+        ]);
+        $order = $order->fresh(['payment']);
+
+        (new PaymentRefundListener)->processRefund(
+            ['success' => false], $order, $order->payment, 20000.0, null, $this->createRefund($order, 20000)
+        );
+
+        // 잔여 예산 = 40000 - 21667 = 18333. 이것을 넘으면 토스가 거부한다.
+        Http::assertSent(function ($request) {
+            $sent = $request->data()['taxFreeAmount'] ?? 0;
+
+            return $sent <= 18333;
+        });
+    }
+
+    /**
+     * S1-D14: 취소 성공 시 PG 장부를 승인 스냅샷에 반영한다
+     *
+     * 승인 스냅샷은 결제 시점에 한 번만 기록되고 갱신되지 않았다. 그랬 경우
+     * 다음 회차가 「이미 소진한 면세분」을 알 길이 없어 잔여 예산 상한이 헛돌아간다.
+     *
+     * 승인 금액·승인 면세액은 상한의 근거라 덮어쓰지 않고 장부만 갱신한다.
+     *
+     * @effects refund_tax_free_never_exceeds_approved_total
+     */
+    public function test_r2_cancel_response_updates_snapshot_ledger(): void
+    {
+        Http::fake([
+            'api.tosspayments.com/*' => Http::response([
+                'taxFreeAmount' => 40000,
+                'cancels' => [
+                    ['transactionKey' => 'TXN_CANCEL_1', 'cancelAmount' => 20000, 'taxFreeAmount' => 11765],
+                ],
+            ], 200),
+        ]);
+
+        $order = $this->createTossOrder([
+            'paid_amount_local' => 58000,
+            'payment_meta' => [
+                'pg_raw_response' => ['taxFreeAmount' => 40000, 'totalAmount' => 58000],
+            ],
+        ]);
+        $order->update(['total_tax_free_amount' => 40000, 'total_tax_amount' => 18000]);
+        $order = $order->fresh(['payment']);
+
+        (new PaymentRefundListener)->processRefund(
+            ['success' => false], $order, $order->payment, 20000.0, null, $this->createRefund($order, 20000)
+        );
+
+        $raw = $order->payment->fresh()->payment_meta['pg_raw_response'];
+
+        // 장부가 쌓혀 다음 회차가 소진분을 알 수 있어야 한다
+        $this->assertSame(11765, $raw['cancels'][0]['taxFreeAmount']);
+
+        // 승인 면세액(상한의 근거)은 보존된다
+        $this->assertSame(40000, $raw['taxFreeAmount']);
+    }
+
     // ================================================================
     // R3. 가상계좌 환불은 refundReceiveAccount 가 필수
     // ================================================================

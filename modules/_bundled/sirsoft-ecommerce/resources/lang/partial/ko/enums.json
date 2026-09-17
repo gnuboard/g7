@@ -5,7 +5,7 @@
     "payment_complete": "결제완료",
     "shipping_hold": "배송보류",
     "preparing": "상품준비중",
-    "shipping_ready": "배송준비완료",
+    "shipping_ready": "배송준비중",
     "shipping": "배송중",
     "delivered": "배송완료",
     "confirmed": "구매확정",
@@ -34,7 +34,7 @@
   "shipping_status": {
     "pending": "배송대기",
     "preparing": "상품준비중",
-    "ready": "배송준비완료",
+    "ready": "배송준비중",
     "shipped": "배송중",
     "in_transit": "이동중",
     "out_for_delivery": "배송출발",

@@ -47,6 +47,16 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class OrderController extends AdminBaseController
 {
+    /**
+     * 주문 관리 서비스들을 주입받습니다.
+     *
+     * @param  OrderService  $orderService  주문 조회·수정·일괄변경 서비스
+     * @param  OrderOptionService  $orderOptionService  주문상품(옵션) 상태·수량 서비스
+     * @param  OrderCancellationService  $cancellationService  주문 취소 서비스
+     * @param  ActivityLogService  $activityLogService  활동 로그 서비스
+     * @param  OrderProcessingService  $orderProcessingService  결제·입금 처리 서비스
+     * @param  UserClaimService  $claimService  클레임 신청 가능 판정 서비스
+     */
     public function __construct(
         private OrderService $orderService,
         private OrderOptionService $orderOptionService,
@@ -171,7 +181,9 @@ class OrderController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.orders.bulk_updated',
-                $result
+                $result,
+                200,
+                ['count' => $result['updated_count'] ?? 0]
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -249,7 +261,9 @@ class OrderController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.orders.option_status_changed',
-                $result
+                $result,
+                200,
+                ['count' => $result['changed_count'] ?? 0]
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -533,18 +547,25 @@ class OrderController extends AdminBaseController
     public function confirmDeposit(ConfirmDepositRequest $request, Order $order): JsonResponse
     {
         try {
+            $markComplete = $request->shouldMarkOrderComplete();
+
             $this->orderProcessingService->confirmManualDeposit(
                 $order,
                 $request->getAmount(),
                 $request->getDepositorName(),
-                $request->shouldMarkOrderComplete(),
+                $markComplete,
             );
 
             $updatedOrder = $this->orderService->getDetail($order->id);
 
+            // 「입금 내역만 기록」은 주문을 결제대기로 남겨 둔다(모달이 그렇게 안내한다).
+            // 두 경우에 같은 문장을 돌려주면 응답만 읽는 소비자는 결제되지 않은 주문을
+            // 결제완료로 읽는다 — 운영자가 후속 입금 확인을 건너뛸 수 있다.
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
-                'messages.orders.deposit_confirmed',
+                $markComplete
+                    ? 'messages.orders.deposit_confirmed'
+                    : 'messages.orders.deposit_recorded',
                 new OrderResource($updatedOrder)
             );
         } catch (PaymentAmountMismatchException $e) {

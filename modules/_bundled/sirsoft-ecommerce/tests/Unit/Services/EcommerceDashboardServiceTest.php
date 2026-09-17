@@ -238,6 +238,37 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame(3, $counts['cancellations']);
     }
 
+    /**
+     * #599 통합 실측 P15 ① · S0-D1 — 반품 배지가 0 에 고정돼 있었다.
+     *
+     * 취소 배지가 취소 옵션(cancelled)을 세는 것과 같은 규칙으로, 반품 배지는 반품완료 옵션(returned)을
+     * 센다. 반품 진행 중(return_in_progress)은 아직 돌려받지 않은 상품이라 완료 배지에 넣지 않는다 —
+     * 취소 배지도 취소 신청 중(환불신청)은 세지 않는다. 실측 DB 에서 2026-09-15 반품완료 수량 16 ·
+     * 09-16 22 인데 집계 행의 returns 가 전부 0 이었다.
+     *
+     * @scenario module_state=active, data_state=has_orders, user_role=admin_with_dashboard_permission
+     *
+     * @effects today_returns_badge_counts_returned_options
+     */
+    #[Test]
+    public function test_aggregate_builds_returns_bucket_from_returned_options(): void
+    {
+        $today = CarbonImmutable::today()->toDateString();
+
+        $this->makeOption($today, OrderStatusEnum::RETURNED, 2, 1000);
+        $this->makeOption($today, OrderStatusEnum::RETURNED, 3, 1000);
+        $this->makeOption($today, OrderStatusEnum::RETURN_IN_PROGRESS, 4, 1000);
+        $this->makeOption($today, OrderStatusEnum::CANCELLED, 1, 1000);
+
+        $this->service->aggregateRecentDays(7);
+
+        $counts = EcommerceStat::where('date', $today)->first()->option_status_counts;
+
+        // 방향까지 고정한다 — returned 만 세고 return_in_progress(4) 는 섞이지 않는다.
+        $this->assertSame(5, $counts['returns']);
+        $this->assertSame(1, $counts['cancellations']);
+    }
+
     #[Test]
     public function test_aggregate_recent_days_upserts_only_recent_7_days_preserving_older(): void
     {

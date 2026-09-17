@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
@@ -442,19 +443,38 @@ class OrderReturnService
             throw OrderClaimException::completionRequiresCompletionFlow();
         }
 
-        $current = $return->return_status;
+        // 상태를 **행 잠금 아래에서 다시 읽어** 판정하고, 잠금·판정·쓰기를 **한 트랜잭션**으로
+        // 묶는다(S3-D16). 메모리의 모델 값으로 판정하거나 판정만 잠금하고 밖에서 쓰면,
+        // 더블클릭·재시도로 동시에 들어온 두 요청이 **둘 다 가드를 통과**한다 — 쓰기는 같은
+        // 값이라 상태는 1회처럼 보이지만 `fireStatusHooks()` 가 두 번 돌아 **알림이 채널마다
+        // 2통씩** 나간다. 구매자에게는 같은 메일·SMS 가 두 번 도착한다.
+        [$current, $updated] = DB::transaction(function () use ($return, $target, $context) {
+            // 저장소가 이미 갖고 있는 잠금 조회를 쓴다 — 서비스가 모델을 직접 조회하지 않는다.
+            $locked = $this->returnRepository->findForUpdate((int) $return->getKey());
 
-        if (! $current->canTransitionTo($target)) {
-            throw OrderClaimException::transitionNotAllowed($current->label(), $target->label());
+            $current = ($locked ?? $return)->return_status;
+
+            if (! $current->canTransitionTo($target)) {
+                throw OrderClaimException::transitionNotAllowed($current->label(), $target->label());
+            }
+
+            // 호출층이 들고 있는 인스턴스도 잠금 시점의 값으로 맞춘다.
+            $return->setAttribute('return_status', $current);
+
+            if ($this->revertsOrderOptions($target)) {
+                $this->assertLivingItemsCanTransitionTo($return, $target);
+            }
+
+            return [$current, $this->applyTransition($return, $target, $context)];
+        });
+
+        // 상태가 실제로 바뀜 때만 훅을 돌린다(S3-D16). 상태 기계는 **같은 상태로의
+        // 재진입을 허용**하므로(`canTransitionTo` 가 self 를 true 로 낸다), 더블클릭·재시도로
+        // 같은 전이가 두 번 들어오면 쓰기는 멱등해도 **훅은 두 번 돌아 알림이 채널마다
+        // 2통씩** 나간다. 상태는 정상으로 보이고 응답도 200 이라 화면에는 흔적이 없다.
+        if ($current !== $target) {
+            $this->fireStatusHooks($updated, $current, $target);
         }
-
-        if ($this->revertsOrderOptions($target)) {
-            $this->assertLivingItemsCanTransitionTo($return, $target);
-        }
-
-        $updated = $this->applyTransition($return, $target, $context);
-
-        $this->fireStatusHooks($updated, $current, $target);
 
         return $updated;
     }
@@ -1990,19 +2010,69 @@ class OrderReturnService
     /**
      * 완료된 신청 상품을 계산기 공용 아이템 형태로 반환합니다.
      *
+     * **이 신청서의 완료분 + 같은 주문의 다른 신청서 완료분**을 함께 싣는다(S2-D5).
+     *
+     * 재계산(`OrderAdjustmentService::buildRecalcInput()`)은 **반품완료(`RETURNED`) 행을
+     * 잔여로 센다** — 교환과 달리 승계 행이 없어서 그렇게 설계돼 있고, 그 독블록이 그렇게
+     * 선언한다. 그래서 「이번에 빠지는 것」만 넘기면 재계산은 **원 주문 기준 단건
+     * 시뮬레이션**이 되고, 앞 회차에서 이미 반품된 상품이 여전히 남아 있다고 계산한다.
+     *
+     * 그 결과가 쿠폰이다. 순차 부분반품에서 상품을 전부 반품해도 재계산 소계가 원 주문
+     * 그대로라 **쿠폰 조건이 한 번도 깨지지 않고**, `detectRestoredCoupons()` 의
+     * `array_diff(원 스냅샷, 재계산 적용)` 이 항상 비어 복원 훅이 발화하지 않는다.
+     * 고객은 전액 환불받고도 쿠폰을 잃는다(#599 세션2 2-A 회차 ④·⑤ 실측 — 주문 517 에서
+     * 6행 전건 반품·환불 5건 완료 후에도 쿠폰 3장이 끝까지 `used` 였다).
+     *
+     * **공용 경로를 고치지 않는 이유**: `buildRecalcInput()` 은 취소·환불·반품·교환이 모두
+     * 타는 단일 경로다. 거기서 `RETURNED` 를 빼면 세 세션의 금액이 동시에 움직인다.
+     * 반품이 자기 입력을 누적으로 넘기면 **공용 계약을 건드리지 않고** 같은 결과가 된다.
+     *
      * @param  OrderReturn  $return  반품 신청서
-     * @return array [{order_option_id, cancel_quantity}]
+     * @return array [{order_option_id, cancel_quantity}] 주문 옵션별 누적 완료 수량
      */
     protected function completedClaimItems(OrderReturn $return): array
     {
-        return $return->returnOptions
+        $quantities = [];
+
+        foreach ($this->completedReturnOptionsForOrder($return) as $item) {
+            $optionId = (int) $item->order_option_id;
+            $quantities[$optionId] = ($quantities[$optionId] ?? 0) + (int) $item->return_quantity;
+        }
+
+        $items = [];
+
+        foreach ($quantities as $optionId => $quantity) {
+            $items[] = [
+                'order_option_id' => $optionId,
+                'cancel_quantity' => $quantity,
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * 같은 주문에서 완료된 반품 신청 상품 행을 모읍니다. (이 신청서 + 다른 신청서)
+     *
+     * 다른 신청서 몫은 DB 에서 다시 읽는다 — 이 신청서의 `returnOptions` 만 보면 앞 회차가
+     * 보이지 않는다. 철회·반려된 신청서는 `option_status` 가 `COMPLETED` 가 아니므로
+     * 자연히 빠진다.
+     *
+     * @param  OrderReturn  $return  기준 반품 신청서
+     * @return Collection<int, OrderReturnOption> 완료된 신청 상품 행
+     */
+    protected function completedReturnOptionsForOrder(OrderReturn $return): Collection
+    {
+        $own = $return->returnOptions
             ->filter(fn (OrderReturnOption $item) => $item->option_status === ReturnStatusEnum::COMPLETED)
-            ->map(fn (OrderReturnOption $item) => [
-                'order_option_id' => $item->order_option_id,
-                'cancel_quantity' => (int) $item->return_quantity,
-            ])
-            ->values()
-            ->all();
+            ->values();
+
+        $others = $this->returnOptionRepository->listCompletedByOrderId(
+            (int) $return->order_id,
+            excludeReturnId: (int) $return->id,
+        );
+
+        return $own->concat($others);
     }
 
     /**

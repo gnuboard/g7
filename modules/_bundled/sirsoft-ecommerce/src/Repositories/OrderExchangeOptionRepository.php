@@ -71,6 +71,22 @@ class OrderExchangeOptionRepository implements OrderExchangeOptionRepositoryInte
     /**
      * {@inheritDoc}
      */
+    public function listByNewOrderOptionIds(array $orderOptionIds, array $relations = []): Collection
+    {
+        if ($orderOptionIds === []) {
+            return new Collection;
+        }
+
+        return $this->model->newQuery()
+            ->with($relations)
+            ->whereIn('new_order_option_id', $orderOptionIds)
+            ->orderBy('id')
+            ->get(); // audit:allow query-unbounded-get reason: 한 주문의 후속 주문옵션 수에 묶인다
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function listOptionIdsByExchangeIds(array $exchangeIds): array
     {
         if ($exchangeIds === []) {

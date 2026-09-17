@@ -1328,6 +1328,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
         return [
             $key => ['nullable', 'array'],
+            // 삭제는 휴지통으로 지목한 id 목록으로만 — 페이로드에 없는 행은 삭제가 아니다(S0-D2).
+            // 실재 검사는 걸지 않는다: 화면이 저장 뒤에도 목록을 들고 있어 이미 지워진 id 가
+            // 다시 오면 사유 없이 422 가 되고, 서비스가 그 유형에 실재하는 id 만 고른다.
+            "{$key}_deleted" => ['nullable', 'array'],
+            "{$key}_deleted.*" => ['integer'],
             // `id` 는 아래 이름 규칙의 "기존 행" 판정 근거이자 sync 의 update/create 분기 키다.
             // 실재하지 않는 id(또는 다른 유형의 id)를 통과시키면 이름 면제만 받고 sync 는 else
             // 분기(create)로 흘러 **현재 로케일 이름이 없는 사유가 새로 생긴다**. 유형 스코프까지

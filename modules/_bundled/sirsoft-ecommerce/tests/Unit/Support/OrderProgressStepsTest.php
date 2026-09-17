@@ -96,7 +96,7 @@ class OrderProgressStepsTest extends ModuleTestCase
 
         $this->assertSame('return_in_progress', $steps[7]['value']);
         $this->assertSame('status-return', $steps[7]['icon']);
-        // 결제대기·결제완료·상품준비중·배송준비완료·배송중·배송완료까지 done, 구매확정만 upcoming
+        // 결제대기·결제완료·상품준비중·배송준비중·배송중·배송완료까지 done, 구매확정만 upcoming
         $this->assertSame(['done', 'done', 'done', 'done', 'done', 'done', 'upcoming'], array_column(array_slice($steps, 0, 7), 'state'));
     }
 

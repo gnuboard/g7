@@ -211,6 +211,7 @@ return [
         'guest_password_reset_failed' => 'Failed to reset guest lookup password.',
         'guest_password_reset_not_guest' => 'Only guest orders can have their lookup password reset.',
         'deposit_confirmed' => 'Deposit confirmed and the order has been marked as paid.',
+        'deposit_recorded' => 'The deposit has been recorded. The order remains awaiting payment.',
         'deposit_confirm_failed' => 'Failed to confirm the deposit.',
         'deposit_amount_mismatch' => 'The deposit amount does not match the amount due.',
         'deposit_not_dbank' => 'Only bank transfer (manual deposit) orders can be confirmed.',
@@ -474,6 +475,7 @@ return [
         // Display label for the per-method remaining capacity (D19). Mileage has no payment row —
         // it is an order-column ledger, so it is absent from the payment method vocabulary.
         'cancellable_method' => [
+            'payment' => 'Payment method',
             'mileage' => 'Mileage',
         ],
         'payment_order_name' => ':type additional charge (:number)',

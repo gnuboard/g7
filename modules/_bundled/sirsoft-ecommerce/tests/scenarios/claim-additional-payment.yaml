@@ -73,6 +73,7 @@ effects:
   - claim_payment_completion_moves_the_claim_to_paid
   - claim_payment_on_request_auto_approves_only_when_the_setting_is_on
   - claim_payment_on_approval_always_approves_after_payment
+  - claim_payment_on_hold_approval_keeps_the_claim_in_place   # 보류에서 누른 승인은 결제행만 만들고 신청서를 제자리에 둔다 (S3-D7)
   - claim_payment_completion_hook_sees_the_claim_already_paid
   - claim_payment_completion_fires_the_claim_type_specific_hook
 

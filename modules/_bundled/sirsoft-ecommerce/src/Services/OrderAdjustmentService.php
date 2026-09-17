@@ -14,9 +14,13 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
@@ -42,7 +46,81 @@ class OrderAdjustmentService
         protected CurrencyConversionService $currencyService,
         protected CouponIssueRepositoryInterface $couponIssueRepository,
         protected CalculationSnapshotPresenter $snapshotPresenter,
+        protected OrderExchangeOptionRepositoryInterface $exchangeOptionRepository,
+        protected OrderRefundRepositoryInterface $refundRepository,
     ) {}
+
+    /**
+     * 교환 후속 행의 **회계 단가** 오버라이드를 만듭니다. (#599 S3-D3)
+     *
+     * 후속 행(`source_type=exchange`)은 설계대로 원 행의 금액·스냅샷 가격을 승계한다(2026-08-22 판정 1)
+     * — 그래야 교환 뒤 **다른 상품**의 부분취소가 정확하다. 그런데 저가 옵션으로 바꾼 교환은 차액을
+     * 교환 발 환불신청서로 이미 돌려주므로, 후속 행 **자신**을 취소할 때까지 승계 단가로 세면 그
+     * 차액이 두 번 나간다(2026-09-17 실측 주문 1497: 29,000 → 24,000 교환·5,000 환불 뒤 후속 행 취소
+     * 환불액 29,000). 재계산에서만 후속 행을 신규 옵션 단가로 본다 — 저장 컬럼은 건드리지 않는다.
+     *
+     * 적용 조건은 셋을 모두 만족할 때뿐이다: ① 원 행이 교환완료(회계 주체가 후속 행) ② 옵션 차액이
+     * 음수 ③ 그 차액의 환불신청서가 있고 반려·철회되지 않았다(「접수하지 않음」으로 완료했으면 차액이
+     * 돌아가지 않았으므로 승계 단가가 맞다). 양수 차액(추가결제)은 별도 장부(클레임 결제)라 손대지 않는다.
+     *
+     * @param  Order  $order  주문 (options 로드됨)
+     * @param  array<int, int>  $successorIds  회계 주체인 후속 행 id
+     * @return array<int, array{option_snapshot: array, unit_price: float}> 후속 행 id → 오버라이드
+     */
+    private function successorAccountingOverrides(Order $order, array $successorIds): array
+    {
+        if ($successorIds === []) {
+            return [];
+        }
+
+        $overrides = [];
+        $refundedExchangeIds = [];
+
+        foreach ($this->exchangeOptionRepository->listByNewOrderOptionIds($successorIds) as $exchangeItem) {
+            if ((float) $exchangeItem->price_difference >= 0 || $exchangeItem->new_unit_price === null) {
+                continue;
+            }
+
+            $exchangeId = (int) $exchangeItem->order_exchange_id;
+
+            if (! array_key_exists($exchangeId, $refundedExchangeIds)) {
+                $refundedExchangeIds[$exchangeId] = $this->refundRepository
+                    ->listBySource(RefundSourceTypeEnum::EXCHANGE->value, $exchangeId)
+                    ->contains(fn ($refund) => ! in_array($refund->refund_status, [RefundStatusEnum::REJECTED, RefundStatusEnum::WITHDRAWN], true));
+            }
+
+            if (! $refundedExchangeIds[$exchangeId]) {
+                continue;
+            }
+
+            $successor = $order->options->find((int) $exchangeItem->new_order_option_id);
+
+            if (! $successor) {
+                continue;
+            }
+
+            $newSnapshot = is_array($exchangeItem->new_option_snapshot) ? $exchangeItem->new_option_snapshot : [];
+            $snapshot = $successor->option_snapshot ?? [];
+
+            // 가격 축만 신규 옵션 값으로 — 정체(옵션명·SKU 등)는 후속 행 스냅샷 그대로.
+            foreach (['price_adjustment', 'list_price', 'selling_price'] as $key) {
+                if (array_key_exists($key, $newSnapshot)) {
+                    $snapshot[$key] = $newSnapshot[$key];
+                }
+            }
+
+            if (! array_key_exists('selling_price', $newSnapshot)) {
+                $snapshot['selling_price'] = (float) $exchangeItem->new_unit_price;
+            }
+
+            $overrides[(int) $successor->id] = [
+                'option_snapshot' => $snapshot,
+                'unit_price' => (float) $exchangeItem->new_unit_price,
+            ];
+        }
+
+        return $overrides;
+    }
 
     /**
      * 주문 변경에 따른 금액 차이를 계산합니다.
@@ -595,6 +673,14 @@ class OrderAdjustmentService
             ->pluck('id')
             ->all();
 
+        // 회계 주체가 된 후속 행 — 저가 옵션 교환이면 신규 옵션 단가로 센다(S3-D3).
+        $successorIds = $order->options
+            ->filter(fn ($option) => $option->isExchanged() && in_array((int) $option->source_option_id, $exchangedSourceIds, true))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $successorOverrides = $this->successorAccountingOverrides($order, $successorIds);
+
         foreach ($order->options as $option) {
             // 이미 취소된 옵션은 제외
             if ($option->option_status === OrderStatusEnum::CANCELLED) {
@@ -624,7 +710,7 @@ class OrderAdjustmentService
                 'product_option_id' => $option->product_option_id,
                 'quantity' => $remainingQty,
                 'product_snapshot' => $option->product_snapshot,
-                'option_snapshot' => $option->option_snapshot,
+                'option_snapshot' => $successorOverrides[(int) $optionId]['option_snapshot'] ?? $option->option_snapshot,
                 'additional_options_snapshot' => $option->additional_options_snapshot,
             ]);
         }
@@ -648,6 +734,26 @@ class OrderAdjustmentService
             $couponIssueIds = $promoSnapshot['coupon_issue_ids'] ?? [];
             $itemCoupons = $promoSnapshot['item_coupons'] ?? [];
             $discountCode = $promoSnapshot['discount_code'] ?? null;
+
+            // 상품쿠폰은 `itemCoupons` 슬롯으로만 넘긴다 — 주문 스냅샷의 `coupon_issue_ids` 는
+            // 복원·탈락검출의 SSoT 라 상품쿠폰까지 **전부** 담지만(PromotionsSummary::toArray),
+            // 계산 엔진은 두 슬롯을 각각 적용하므로 그대로 넘기면 상품쿠폰이 두 번 먹는다
+            // (상품별 슬롯 1회 + 주문레벨 슬롯 1회 → 할인 2배 → 과다 환불, S1-D2).
+            // 주문서 계산도 주문·배송비 쿠폰만 `couponIssueIds` 에 넘긴다(TempOrderService:377)
+            // — 재계산이 그 계약을 그대로 따른다.
+            $itemCouponIssueIds = [];
+            foreach ($itemCoupons as $issueIds) {
+                foreach ((array) $issueIds as $issueId) {
+                    $itemCouponIssueIds[(int) $issueId] = true;
+                }
+            }
+
+            if ($itemCouponIssueIds !== []) {
+                $couponIssueIds = array_values(array_filter(
+                    $couponIssueIds,
+                    static fn ($issueId) => ! isset($itemCouponIssueIds[(int) $issueId])
+                ));
+            }
         }
 
         // 배송지 복원
@@ -887,6 +993,19 @@ class OrderAdjustmentService
                 // 전액취소면 남은 현금성 금액도 0 이다. 갱신하지 않으면 CashReceiptService 가
                 // 여전히 발급 대상이 있다고 보고 전체취소 대신 재발급을 시도한다.
                 'total_cash_equivalent_amount' => 0,
+                // 과세·부가세도 함께 내린다 (S1-D22). 이 둘을 빼놓으면 `total_amount` 는 0 인데
+                // `total_tax_amount`·`total_vat_amount` 만 취소 전 값으로 남아, 화면에
+                // `최종 결제금액 0원` 옆에 `과세 금액 10,500원 · 부가세 954원` 이 나란히 선다.
+                // 아래 `buildZeroMcOrderUpdates()` 는 `mc_total_tax_amount` 를 0 으로 내리므로
+                // **한 행 안에서 base 와 mc 가 어긋나기까지 한다.** 세금계산서·정산이 이 컬럼을
+                // 읽으면 취소된 주문에 과세 근거가 남아 있는 것으로 읽는다.
+                'total_tax_amount' => 0,
+                'total_vat_amount' => 0,
+                'total_tax_free_amount' => 0,
+                // base 를 0 으로 내리면서 짝이 되는 mc_* 를 두면 주문상세 보조통화 줄이
+                // **직전 회차 금액**을 계속 보여준다 (S1-D3 — 부분취소 경로와 같은 결함).
+                // 실측: `총 결제금액 0원` 옆에 `$22.00 / ¥2,530`(마지막 회차 환불액) 이 찍혔다.
+                ...$this->buildZeroMcOrderUpdates($order),
             ],
             optionUpdates: [],
             shippingUpdates: [],
@@ -907,6 +1026,44 @@ class OrderAdjustmentService
             recalculatedCoupons: [],
             refundFormatted: $refundFormatted,
         );
+    }
+
+    /**
+     * 전액취소 시 `mc_*` 금액 컬럼을 0 으로 내리는 갱신값을 만듭니다. (S1-D3)
+     *
+     * base 8종을 0 으로 내리는 전액취소 경로가 짝이 되는 `mc_*` 를 두면, 주문상세 보조통화
+     * 줄이 직전 회차 금액을 계속 보여준다. `mc_total_paid_amount` 는 제외한다 —
+     * 총 결제액은 환불로 깎지 않는 것이 회계 계약이다(§12-B B1).
+     *
+     * @param  Order  $order  대상 주문
+     * @return array `mc_*` 컬럼 0 갱신값 (스냅샷 없으면 빈 배열)
+     */
+    private function buildZeroMcOrderUpdates(Order $order): array
+    {
+        $currencySnapshot = $order->currency_snapshot;
+
+        if (empty($currencySnapshot)) {
+            return [];
+        }
+
+        $zero = $this->currencyService->convertToMultiCurrencyWithSnapshot(0, $currencySnapshot);
+
+        return [
+            'mc_subtotal_amount' => $zero,
+            'mc_total_discount_amount' => $zero,
+            'mc_total_product_coupon_discount_amount' => $zero,
+            'mc_total_order_coupon_discount_amount' => $zero,
+            'mc_total_coupon_discount_amount' => $zero,
+            'mc_total_code_discount_amount' => $zero,
+            'mc_base_shipping_amount' => $zero,
+            'mc_extra_shipping_amount' => $zero,
+            'mc_shipping_discount_amount' => $zero,
+            'mc_total_shipping_amount' => $zero,
+            'mc_total_points_used_amount' => $zero,
+            'mc_total_tax_amount' => $zero,
+            'mc_total_tax_free_amount' => $zero,
+            'mc_total_amount' => $zero,
+        ];
     }
 
     /**
@@ -968,6 +1125,20 @@ class OrderAdjustmentService
         foreach ($recalcResult->items as $item) {
             foreach ($order->options as $option) {
                 if ($option->product_option_id == $item->productOptionId) {
+                    // 이미 취소·교환으로 닫힌 행은 재계산 주체가 아니다 — `buildRecalcInput()` 이
+                    // 그 행들을 입력에서 빼므로 재계산 결과에는 **살아 있는 행 몫만** 들어 있다.
+                    // 수량 분할(`source_type=split`)이 일어나면 닫힌 행과 살아 있는 행이 **같은
+                    // `product_option_id`** 를 갖는데, 여기서 걸러 내지 않으면 살아 있는 행의
+                    // 줄 합계가 닫힌 행에도 덮어써진다. 그러면 닫힌 행의 base(`subtotal_price`)와
+                    // mc(`mc_subtotal_price`)가 어긋나, 취소된 줄이 **할인가가 원가보다 큰**
+                    // 모습으로 렌더된다(S1-D4 — 실측: 양말 3개 줄 `12,000원` → `16,000원`).
+                    if (in_array($option->option_status, [
+                        OrderStatusEnum::CANCELLED,
+                        OrderStatusEnum::EXCHANGED,
+                    ], true)) {
+                        continue;
+                    }
+
                     $cancelQty = $excludedMap[$option->id] ?? 0;
                     $remainingQty = $option->quantity - $cancelQty;
 
@@ -1103,6 +1274,54 @@ class OrderAdjustmentService
                 (int) round((float) $recalcResult->summary->finalAmount),
             ),
             'promotions_applied_snapshot' => $promotionsSnapshot,
+        ] + $this->buildMcOrderUpdates($order, $recalcResult);
+    }
+
+    /**
+     * 부분취소 재계산 결과의 `mc_*` 금액 컬럼 갱신값을 만듭니다. (S1-D3)
+     *
+     * base 금액 컬럼만 갱신하고 짝이 되는 `mc_*` 컬럼을 두면, 부분취소 뒤 둘이 어긋난 채 남아
+     * 비교표·주문상세의 보조통화 줄이 **취소 전 금액**을 보여준다(주문 생성은 두 벌을 함께
+     * 쓴다 — `OrderProcessingService::buildOrderMultiCurrency()`).
+     * 환산 규칙은 주문 시점 환율 스냅샷을 그대로 쓴다 — 취소 시점 환율로 바꾸면 같은 주문의
+     * 보조통화 표기가 회차마다 달라진다.
+     *
+     * `currency_snapshot` 이 없는 레거시 주문은 빈 배열을 돌려준다(종전 동작 유지).
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderCalculationResult  $recalcResult  재계산 결과
+     * @return array `mc_*` 컬럼 갱신값 (스냅샷 없으면 빈 배열)
+     */
+    private function buildMcOrderUpdates(Order $order, $recalcResult): array
+    {
+        $currencySnapshot = $order->currency_snapshot;
+
+        if (empty($currencySnapshot)) {
+            return [];
+        }
+
+        $summary = $recalcResult->summary;
+        $convert = fn (float $amount): array => $this->currencyService
+            ->convertToMultiCurrencyWithSnapshot((int) round($amount), $currencySnapshot);
+
+        $productCoupon = (float) ($summary->productCouponDiscount ?? 0);
+        $orderCoupon = (float) ($summary->orderCouponDiscount ?? 0);
+
+        return [
+            'mc_subtotal_amount' => $convert((float) $summary->subtotal),
+            'mc_total_discount_amount' => $convert((float) $summary->totalDiscount),
+            'mc_total_product_coupon_discount_amount' => $convert($productCoupon),
+            'mc_total_order_coupon_discount_amount' => $convert($orderCoupon),
+            'mc_total_coupon_discount_amount' => $convert($productCoupon + $orderCoupon),
+            'mc_total_code_discount_amount' => $convert((float) ($summary->codeDiscount ?? 0)),
+            'mc_base_shipping_amount' => $convert((float) $summary->baseShippingTotal),
+            'mc_extra_shipping_amount' => $convert((float) $summary->extraShippingTotal),
+            'mc_shipping_discount_amount' => $convert((float) $summary->shippingDiscount),
+            'mc_total_shipping_amount' => $convert((float) $summary->totalShipping),
+            'mc_total_points_used_amount' => $convert((float) $summary->pointsUsed),
+            'mc_total_tax_amount' => $convert((float) $summary->taxableAmount),
+            'mc_total_tax_free_amount' => $convert((float) $summary->taxFreeAmount),
+            'mc_total_amount' => $convert((float) $summary->paymentAmount),
         ];
     }
 
@@ -1149,10 +1368,23 @@ class OrderAdjustmentService
     private function buildAdjustedItems(Order $order, array $excludedMap): array
     {
         $items = [];
+        $exchangedSourceIds = $order->options
+            ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
+            ->pluck('id')
+            ->all();
+        $successorOverrides = $this->successorAccountingOverrides(
+            $order,
+            $order->options
+                ->filter(fn ($option) => $option->isExchanged() && in_array((int) $option->source_option_id, $exchangedSourceIds, true))
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all(),
+        );
         foreach ($excludedMap as $optionId => $cancelQty) {
             $option = $order->options->find($optionId);
             if ($option) {
-                $unitPrice = (float) $option->unit_price;
+                // 후속 행은 재계산과 같은 회계 단가로 취소 금액을 적는다(S3-D3).
+                $unitPrice = $successorOverrides[(int) $optionId]['unit_price'] ?? (float) $option->unit_price;
                 $items[] = [
                     'order_option_id' => $optionId,
                     'cancel_quantity' => $cancelQty,

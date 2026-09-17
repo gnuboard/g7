@@ -226,6 +226,11 @@ return [
         'bank' => '銀行振込返金',
         'points' => 'マイレージ返金',
     ],
+    'request_source' => [
+        'customer' => 'お客様申請',
+        'guest' => '非会員申請',
+        'admin' => '運営者受付',
+    ],
     'refund_priority' => [
         'pg_first' => '決済手段（PG）優先返金',
         'points_first' => 'ポイント優先返金',

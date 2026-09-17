@@ -683,7 +683,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     public function reason_code_format_is_strict_for_new_codes_but_exempts_stored_ones(): void
     {
         // 규칙이 좁혀지기 전에 저장된 코드(이중 언더스코어)
-        ClaimReason::create([
+        $legacy = ClaimReason::create([
             'type' => 'exchange',
             'code' => 'legacy__code',
             'name' => ['ko' => '기존 사유', 'en' => 'Legacy reason'],
@@ -695,7 +695,9 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
 
         // ① 그 행을 그대로 되보내는 저장은 통과해야 한다
         $keep = $this->claimPolicyPayload();
-        $keep['exchange_reasons'] = [$this->reasonRow('legacy__code')];
+        // 탭은 기존 행을 id 와 함께 되보낸다 — id 없이 보내면 신규 생성이라 unique 에서 죽는다(S0-D2 이후
+        // 페이로드 부재는 삭제가 아니므로 옛 행이 남는다).
+        $keep['exchange_reasons'] = [$this->reasonRow('legacy__code', ['id' => $legacy->id])];
 
         $this->actingAs($this->adminUser)
             ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => $keep])
@@ -703,7 +705,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
 
         // ② 새 코드는 같은 형식으로 거절된다
         $add = $this->claimPolicyPayload();
-        $add['exchange_reasons'] = [$this->reasonRow('legacy__code'), $this->reasonRow('brand__new')];
+        $add['exchange_reasons'] = [$this->reasonRow('legacy__code', ['id' => $legacy->id]), $this->reasonRow('brand__new')];
 
         $this->actingAs($this->adminUser)
             ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => $add])
@@ -762,17 +764,18 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ->putJson($this->apiBase, [
                 '_tab' => 'claim',
                 'claim' => $this->claimPolicyPayload([
-                    'exchange_reasons' => [$this->reasonRow('size_change')],
-                    'return_reasons' => [$this->reasonRow('changed_mind'), $this->reasonRow('defective', ['fault_type' => 'seller'])],
-                    'refund_reasons' => [$this->reasonRow('order_mistake')],
+                    // 시드된 코드와 겹치지 않는 코드 — 페이로드 부재는 삭제가 아니므로(S0-D2) 시드 행은 남는다.
+                    'exchange_reasons' => [$this->reasonRow('sync_probe_size')],
+                    'return_reasons' => [$this->reasonRow('sync_probe_mind'), $this->reasonRow('sync_probe_defect', ['fault_type' => 'seller'])],
+                    'refund_reasons' => [$this->reasonRow('sync_probe_mistake')],
                 ]),
             ])
             ->assertOk();
 
-        $this->assertDatabaseHas('ecommerce_claim_reasons', ['type' => 'exchange', 'code' => 'size_change']);
-        $this->assertDatabaseHas('ecommerce_claim_reasons', ['type' => 'return', 'code' => 'changed_mind']);
-        $this->assertDatabaseHas('ecommerce_claim_reasons', ['type' => 'return', 'code' => 'defective', 'fault_type' => 'seller']);
-        $this->assertDatabaseHas('ecommerce_claim_reasons', ['type' => 'refund', 'code' => 'order_mistake']);
+        $this->assertDatabaseHas('ecommerce_claim_reasons', ['type' => 'exchange', 'code' => 'sync_probe_size']);
+        $this->assertDatabaseHas('ecommerce_claim_reasons', ['type' => 'return', 'code' => 'sync_probe_mind']);
+        $this->assertDatabaseHas('ecommerce_claim_reasons', ['type' => 'return', 'code' => 'sync_probe_defect', 'fault_type' => 'seller']);
+        $this->assertDatabaseHas('ecommerce_claim_reasons', ['type' => 'refund', 'code' => 'sync_probe_mistake']);
 
         // 카탈로그는 DB 관리 대상이라 JSON 설정에는 남지 않는다 (남으면 두 출처가 갈린다)
         $settings = app(EcommerceSettingsService::class);
@@ -887,12 +890,12 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
         $settings->clearCache();
         $before = $settings->getSetting('claim.max_images');
 
-        // 목록에서 그 사유를 빼고 저장 = 삭제 요청. 스칼라 축도 함께 바꿔 보낸다 —
-        // 거절이 쓰기보다 늦으면 사유는 남고 스칼라만 바뀐 반쪽 상태가 된다.
+        // 휴지통으로 지목한 삭제 요청(S0-D2 이후 페이로드 부재는 삭제가 아니다). 스칼라 축도 함께
+        // 바꿔 보낸다 — 거절이 쓰기보다 늦으면 사유는 남고 스칼라만 바뀐 반쪽 상태가 된다.
         $this->actingAs($this->adminUser)
             ->putJson($this->apiBase, [
                 '_tab' => 'claim',
-                'claim' => ['exchange_reasons' => [], 'max_images' => 17],
+                'claim' => ['exchange_reasons' => [], 'exchange_reasons_deleted' => [$reason->id], 'max_images' => 17],
             ])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
@@ -905,7 +908,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
-     * 아무 데서도 쓰지 않는 사유는 설정 저장으로 지워진다.
+     * 아무 데서도 쓰지 않는 사유는 휴지통으로 지목한 설정 저장으로 지워진다.
      *
      * @scenario reason_type=return
      *
@@ -925,7 +928,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
         ]);
 
         $this->actingAs($this->adminUser)
-            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['return_reasons' => []]])
+            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['return_reasons' => [], 'return_reasons_deleted' => [$reason->id]]])
             ->assertOk();
 
         $this->assertDatabaseMissing('ecommerce_claim_reasons', ['id' => $reason->id]);
@@ -960,7 +963,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
         OrderReturn::factory()->create(['order_id' => $order->id, 'reason_code' => $reason->code]);
 
         $this->actingAs($this->adminUser)
-            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['return_reasons' => []]])
+            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['return_reasons' => [], 'return_reasons_deleted' => [$reason->id]]])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
             ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
@@ -1056,7 +1059,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
         ]);
 
         $this->actingAs($this->adminUser)
-            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['refund_reasons' => []]])
+            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['refund_reasons' => [], 'refund_reasons_deleted' => [$reason->id]]])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
             ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
@@ -1098,7 +1101,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
         ]);
 
         $this->actingAs($this->adminUser)
-            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['refund_reasons' => []]])
+            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['refund_reasons' => [], 'refund_reasons_deleted' => [$reason->id]]])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
             ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
@@ -1144,7 +1147,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
         ]);
 
         $this->actingAs($this->adminUser)
-            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['refund_reasons' => []]])
+            ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['refund_reasons' => [], 'refund_reasons_deleted' => [$reason->id]]])
             ->assertOk();
 
         $this->assertDatabaseMissing('ecommerce_claim_reasons', ['id' => $reason->id]);
@@ -1635,12 +1638,15 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     {
         // 맞바꾸기 거절이 "지워지는 행의 코드 물려받기" 까지 막으면 안 된다 — 삭제가 update 보다 먼저다.
         $a = ClaimReason::create($this->reasonRow('s11_keep', ['type' => 'exchange']));
-        ClaimReason::create($this->reasonRow('s11_gone', ['type' => 'exchange', 'sort_order' => 1]));
+        $gone = ClaimReason::create($this->reasonRow('s11_gone', ['type' => 'exchange', 'sort_order' => 1]));
 
         $this->actingAs($this->adminUser)
             ->putJson($this->apiBase, [
                 '_tab' => 'claim',
-                'claim' => ['exchange_reasons' => [$this->reasonRow('s11_gone', ['id' => $a->id])]],
+                'claim' => [
+                    'exchange_reasons' => [$this->reasonRow('s11_gone', ['id' => $a->id])],
+                    'exchange_reasons_deleted' => [$gone->id],
+                ],
             ])
             ->assertOk();
 

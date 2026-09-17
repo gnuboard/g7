@@ -220,6 +220,8 @@
     "history_title": "주문 이력",
     "ordered_at": "주문일시",
     "paid_at": "결제일시",
+    "delivered_at": "배송완료일시",
+    "confirmed_at": "구매확정일시",
     "cancel_reason_title": "취소 사유",
     "cancel_reason": "사유",
     "cancel_reason_detail": "상세 사유",
@@ -234,7 +236,7 @@
       "title": "구매확정",
       "option_label": "옵션",
       "earned_points": "적립 예정 포인트",
-      "warning": "구매확정 후에는 취소/교환/환불이 불가능합니다.",
+      "warning": "구매확정 후에는 취소·환불을 신청할 수 없습니다. 교환·반품은 그대로 신청할 수 있습니다.",
       "confirm_button": "구매확정"
     },
     "review_modal": {

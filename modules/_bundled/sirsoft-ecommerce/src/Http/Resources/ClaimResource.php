@@ -1,11 +1,14 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 비교표 「교환 전」 열의 보조 통화가 접수시점 동결값이 아니라 현재 주문을 읽던 것을 고쳤다(S3-D15). 응답 키·상태코드·payload 형태 불변 — 값만 기준줄과 같은 시점으로 맞춘다. `api:docgen --scope=module:sirsoft-ecommerce --check` drift 없음 확인.
+
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -141,6 +144,42 @@ class ClaimResource extends BaseApiResource
     }
 
     /**
+     * 신청 출처를 판정합니다. (계획 676 — 출처 뱃지)
+     *
+     * 세 갈래다 — `customer`(고객이 직접 냈다) · `guest`(비회원이 냈다) · `admin`(운영자가
+     * 대리 접수했다). 운영자는 이 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고,
+     * 비회원 건은 주문서에 적힌 연락처뿐이며, 대리 접수 건은 **고객이 철회·수정할 수 없다**.
+     *
+     * **`requested_by` 하나로는 가를 수 없다** — 비회원 신청과 운영자 대리 접수가 똑같이
+     * null 이다(`RefundSourceTypeEnum` 독블록 §4-3-1). 그래서 두 축을 쓴다:
+     *
+     * ① `refund_source_type = admin` 이면 운영자 대리 접수다. 이 값은 관리자 [주문취소]가
+     *    명시적으로 심는 축이고(`Admin\OrderController::cancelOrder()`), 철회·수정 차단이
+     *    이미 같은 값을 읽는다 — 뱃지가 그 판정과 어긋나지 않는다.
+     * ② 나머지는 **주문의 주인**이 가른다(`isGuestRequest()` 와 같은 근거). `requested_by`
+     *    로 가르면 회원 주문의 운영자 접수 건이 「비회원」으로 표시돼 운영자가 연락 수단을
+     *    잘못 고른다 — 그 함정을 `OrderReturn::isGuestRequest()` 가 이미 기록해 두었다.
+     *
+     * 반품·교환에는 대리 접수 경로가 없다(관리자 라우트가 없고 고객·비회원 창구뿐이다) —
+     * 그 유형에서 `admin` 이 나올 수 없으므로 ② 로만 갈린다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return string 출처 코드 (customer|guest|admin)
+     */
+    protected function resolveRequestSource(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): string
+    {
+        if ($claim instanceof OrderRefund && $claim->refund_source_type === RefundSourceTypeEnum::ADMIN) {
+            return 'admin';
+        }
+
+        $isGuest = method_exists($claim, 'isGuestRequest')
+            ? $claim->isGuestRequest()
+            : ($claim->cancelled_by === null);
+
+        return $isGuest ? 'guest' : 'customer';
+    }
+
+    /**
      * 사유 라벨을 해석합니다. (주입 우선 → 없으면 모델 게터)
      *
      * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
@@ -225,6 +264,10 @@ class ClaimResource extends BaseApiResource
             'reject_reason' => $this->forList ? null : ($claim->reject_reason ?? null),
             'requested_by' => $claim->requested_by ?? $claim->cancelled_by ?? null,
             'is_guest_request' => method_exists($claim, 'isGuestRequest') ? $claim->isGuestRequest() : ($claim->cancelled_by === null),
+            // 출처 뱃지(계획 676) — 고객 신청 / 비회원 신청 / 운영자 접수 셋을 가른다.
+            // `is_guest_request` 는 회원·비회원만 갈라 **운영자 대리 접수를 드러내지 못한다**.
+            'request_source' => $this->resolveRequestSource($claim),
+            'request_source_label' => __('sirsoft-ecommerce::enums.request_source.'.$this->resolveRequestSource($claim)),
             'currency_code' => $currency,
             // 행별 전이 선택지는 **관리자 상세**에서만 실린다 — 목록은 50행 × 200상품마다
             // 전이표를 계산하게 되고, 유저 응답은 그 어휘를 쓰지 않는다.
@@ -296,8 +339,13 @@ class ClaimResource extends BaseApiResource
                 // 더한다(추가는 양수분, 환불은 음수분의 절대값) — 헤더의 `additional_product_amount` ·
                 // `refund_product_amount` 가 만들어진 방식과 같다. 화면이 환율을 다시 보지 않게
                 // 서버가 합계까지 만들어 내려보낸다(S17 트랙 A F-1).
-                'mc_additional_product_amount' => $this->sumSignedItemPriceDifferences($claim, true),
-                'mc_refund_product_amount' => $this->sumSignedItemPriceDifferences($claim, false),
+                //
+                // 합산 결과는 **반드시 `formatStoredMultiCurrency()` 를 통과시킨다**(S3-D14). 그 맵은
+                // `{KRW: 3000, USD: 3}` 같은 맨숫자라 `.formatted` 가 없고, 화면은 `[1]?.formatted ?? [1]`
+                // 로 폴백해 **기호도 자릿수도 없는 `3` `345` 를 그대로 그린다** — 형제 줄이
+                // `$6.00 ¥690` 인데 이 줄만 `3 345` 가 되지만, 오류가 아니라 흔적이 남지 않는다.
+                'mc_additional_product_amount' => $this->formatStoredMultiCurrency($this->sumSignedItemPriceDifferences($claim, true)),
+                'mc_refund_product_amount' => $this->formatStoredMultiCurrency($this->sumSignedItemPriceDifferences($claim, false)),
                 'redelivery_address_snapshot' => $this->forList ? null : $claim->redelivery_address_snapshot,
                 'redelivery_carrier_id' => $claim->redelivery_carrier_id,
                 'redelivery_carrier_name' => $this->whenLoaded('redeliveryCarrier', fn () => $this->redeliveryCarrier?->getLocalizedName(), null),
@@ -380,6 +428,11 @@ class ClaimResource extends BaseApiResource
                 // 신청자 표기는 주문자명이다 — 클레임 테이블의 신청자 축은 회원 ID 뿐이라
                 // 비회원 신청 건은 이름을 주문에서만 가져올 수 있다 (목록 검색 축과 동일 근거).
                 'requester_name' => $order?->getOrdererName(),
+                // 그 이름에서 회원 화면으로 가는 링크의 대상. **주문의 주인**이지 `requested_by`
+                // 가 아니다 — 위 이름이 주문자명이므로 둘이 어긋나면 운영자가 화면에서 본 사람과
+                // 다른 회원 상세로 간다(운영자 대리 접수 건은 `requested_by` 가 그 운영자다).
+                // 비회원 주문은 null 이고, 화면은 그때 링크 대신 평문 이름을 그린다.
+                'requester_user_id' => $order?->user_id,
             ];
         }
 
@@ -447,6 +500,11 @@ class ClaimResource extends BaseApiResource
 
         $presenter = app(CalculationSnapshotPresenter::class);
         $frozenListPrice = isset($original['total_list_price_amount']) ? (float) $original['total_list_price_amount'] : null;
+        // 기준줄이 동결 스냅샷을 그리므로 보조 통화도 같은 시점을 가리켜야 한다(S3-D15).
+        // 주문을 그대로 읽으면 접수 뒤 그 주문에 생긴 취소·변동이 보조 줄에만 반영돼
+        // 한 칸 안에서 두 시점이 섞인다 — 둘 다 정상 서식이라 흔적이 남지 않는다.
+        $frozenSubtotal = isset($original['subtotal_amount']) ? (float) $original['subtotal_amount'] : null;
+        $frozenPaid = isset($original['total_paid_amount']) ? (float) $original['total_paid_amount'] : null;
         $currency = $this->orderCurrencyCode ?: ($original['base_currency'] ?? null);
 
         // 치환 근거 행의 단가는 raw 로 저장된다 — 상품 행(`ClaimItemResource`)과 같은 통화 포맷을 함께 싣는다.
@@ -465,7 +523,7 @@ class ClaimResource extends BaseApiResource
         return [
             'original' => $original,
             'recalculated' => $recalculated,
-            'mc_original' => $order ? $presenter->mcOriginal($order, $frozenListPrice) : null,
+            'mc_original' => $order ? $presenter->mcOriginal($order, $frozenListPrice, $frozenSubtotal, $frozenPaid) : null,
             'mc_recalculated' => $presenter->mcRecalculated($recalculated, $order?->currency_snapshot),
             'substituted_items' => $substitutedRows,
         ];
@@ -484,6 +542,7 @@ class ClaimResource extends BaseApiResource
      * @param  OrderExchange  $claim  교환 신청서
      * @param  bool  $positive  true 면 추가 청구분(양수), false 면 환불분(음수의 절대값)
      * @return array<string, float>|null 통화 코드 => 금액 (근거가 없으면 null)
+     *                                   — 호출층이 `formatStoredMultiCurrency()` 로 감싸 `.formatted` 를 입힌다(S3-D14).
      */
     protected function sumSignedItemPriceDifferences(OrderExchange $claim, bool $positive): ?array
     {

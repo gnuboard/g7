@@ -1,0 +1,38 @@
+feature: 주문 활동 로그 리스너의 구독 훅 집합
+
+description: |
+  `OrderActivityLogListener` 는 주문 축 활동 로그를 한 곳에서 남긴다 — 주문 수정·삭제·
+  일괄 변경·상태 동기화·배송지 변경·이메일 발송·비회원 비밀번호 재설정·상품 단위 전이·
+  구매확정·운송장·세금계산서 경고까지. 그 목록이 곧 **"주문에 무슨 일이 생기면 이력이
+  남는가"의 명세**다.
+
+  그래서 이 리스너는 구독 훅의 **개수와 키**를 테스트로 잠근다. 구독이 조용히 빠지면
+  그 사건의 이력이 통째로 사라지는데, 화면에는 "그 줄이 원래 없었던 것"처럼 보여
+  런타임에서 알아채기 어렵다.
+
+  #599 통합실측 세션2 에서 그 잠금 자체가 풀려 있던 것을 발견했다:
+
+    Failed asserting that actual size 25 matches expected size 22.
+
+  구독이 22 → **25** 로 늘었는데 개수 단언이 갱신되지 않아 테스트가 오래 red 였다.
+  늘어난 3건은 `order.tax_invoice_stale_after_cancel` ·
+  `order_option.after_sync_status` · `order_shipping.tracking_updated` 이고,
+  모두 커밋된 변경이 들여온 것이다(실측 세션의 워킹트리 변경 아님 — `git diff` 로 확인).
+
+  개수만 맞추면 **같은 일이 다음 증설에서 그대로 반복된다.** 그래서 늘어난 세 훅의
+  키 확인을 단언 목록에 함께 넣어, 구독이 바뀔 때 **무엇이 늘었는지가 테스트에 남게** 했다.
+
+  계약: 이 매니페스트는 **구독 집합**만 잠근다 — 각 훅을 받은 뒤의 로그 모양
+  (loggable · description_key · 전/후 표)은 같은 파일의 핸들러별 테스트와
+  `order-status-sync-activity-log.yaml` · `admin-order-update-shipping-address-log.yaml` ·
+  `confirm-activity-log-snapshot.yaml` 이 각각 잠그고 있으므로 중복하지 않는다.
+
+axes:
+  listener_subscription:
+    - hook_set
+
+effects:
+  - order_activity_log_listener_subscribes_the_expected_hook_set
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php

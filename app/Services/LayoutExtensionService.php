@@ -79,6 +79,7 @@ class LayoutExtensionService
      *
      * @param  int  $extensionId  확장 ID
      * @param  array  $content  치환할 확장 정의 JSON
+     * @return void 반환값 없음
      */
     public function setPreviewContentOverride(int $extensionId, array $content): void
     {
@@ -87,6 +88,8 @@ class LayoutExtensionService
 
     /**
      * 미리보기 확장 content 오버라이드를 모두 제거합니다.
+     *
+     * @return void 반환값 없음
      */
     public function clearPreviewContentOverrides(): void
     {
@@ -119,6 +122,12 @@ class LayoutExtensionService
      *
      * 순환 의존성 방지를 위해 ModuleManager, PluginManager는 생성자에서 주입받지 않고
      * 필요한 시점에 app() 헬퍼로 가져옵니다.
+     *
+     * @param  LayoutExtensionRepositoryInterface  $repository  확장 리포지터리
+     * @param  LayoutExtensionVersionRepositoryInterface  $versionRepository  확장 버전 리포지터리
+     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 리포지터리
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 리포지터리
+     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지터리
      */
     public function __construct(
         private LayoutExtensionRepositoryInterface $repository,
@@ -424,6 +433,8 @@ class LayoutExtensionService
      * 활성화된 모듈/플러그인 목록 초기화
      *
      * 순환 의존성 방지를 위해 app() 헬퍼로 매니저를 가져옵니다.
+     *
+     * @return void 반환값 없음
      */
     private function initializeActiveExtensions(): void
     {
@@ -505,6 +516,15 @@ class LayoutExtensionService
         return false;
     }
 
+    /**
+     * 레이아웃의 extension_point 노드에 확장 컴포넌트를 주입합니다.
+     *
+     * @param  array  $layout  대상 레이아웃
+     * @param  int  $templateId  템플릿 ID
+     * @param  array  &$scripts  스크립트 배열 (참조)
+     * @param  bool  $withSourceMeta  편집 모드 출처 메타 부여 여부
+     * @return array 확장이 주입된 레이아웃
+     */
     private function applyExtensionPoints(array $layout, int $templateId, array &$scripts, bool $withSourceMeta = false): array
     {
         if (! isset($layout['components'])) {
@@ -556,6 +576,7 @@ class LayoutExtensionService
      * @param  array  &$dataSources  데이터 소스 배열 (참조)
      * @param  array  &$scripts  스크립트 배열 (참조)
      * @param  array  &$modals  모달 배열 (참조)
+     * @param  bool  $withSourceMeta  편집 모드 출처 메타 부여 여부
      * @return array 처리된 컴포넌트 배열
      */
     private function processExtensionPointsRecursive(array $components, int $templateId, array &$dataSources, array &$scripts, array &$modals, bool $withSourceMeta = false): array
@@ -698,6 +719,7 @@ class LayoutExtensionService
      * @param  array<int, string>  $targetNames  overlay 매칭 대상 레이아웃명 목록 (서빙 레이아웃 + 상속 체인 base)
      * @param  array  &$scripts  스크립트 배열 (참조)
      * @param  array  &$modals  모달 배열 (참조)
+     * @param  bool  $withSourceMeta  편집 모드 출처 메타 부여 여부
      * @return array 확장이 적용된 레이아웃
      */
     private function applyOverlays(array $layout, int $templateId, array $targetNames, array &$scripts, array &$modals, bool $withSourceMeta = false): array
@@ -920,6 +942,7 @@ class LayoutExtensionService
      * @param  int  $targetIndex  타겟 인덱스
      * @param  string  $position  주입 위치
      * @param  array  $newComponents  주입할 컴포넌트들
+     * @return void 반환값 없음(참조 인자를 직접 고친다)
      */
     private function injectComponents(
         array &$siblings,
@@ -1039,10 +1062,35 @@ class LayoutExtensionService
      * - _append: 배열 끝에 추가
      * - _prepend: 배열 앞에 추가
      * - _merge: 객체 병합 (shallow)
+     * - _patch: **목록 안의 특정 항목만** 교체 (아래 참고)
      * - (직접 값): 스칼라 덮어쓰기 또는 객체 통째로 대체
+     *
+     * `_patch` 는 「목록 중 한 항목만 바꾸고 싶다」를 위한 것이다. 그것이 없으면 확장은
+     * 목록 **전체를 복사**해야 하고, 그 복사본은 만든 날짜에 얼어붙는다 — 호스트가 나중에
+     * 항목을 더해도 확장의 낡은 복사본이 그것을 덮어써 **조용히 지운다**. 실제로 결제
+     * 플러그인 3종이 주문목록에 배지 하나를 달려고 컬럼 11칸을 통째로 복사했고, 뒤에
+     * 추가된 클레임 컬럼이 화면에서 사라졌다(#599 S2-D13). 그중 실제로 다른 칸은
+     * **하나뿐**이었고 나머지 10칸은 원본과 완전히 같았다.
+     *
+     * 형식 — `_patch.by` 로 항목을 식별할 키를, `_patch.items` 로 바꿀 항목만 적는다:
+     *
+     * ```json
+     * "columns": {
+     *   "_patch": {
+     *     "by": "field",
+     *     "items": [{ "field": "payment_method", "cellChildren": [ … ] }]
+     *   }
+     * }
+     * ```
+     *
+     * 규칙:
+     * - 기존 항목과 `by` 값이 같으면 그 항목에 **shallow 병합**한다(적은 키만 덮어씀).
+     * - `by` 값이 기존에 없으면 **끝에 추가**한다(확장이 새 항목을 더할 수 있다).
+     * - 기존 목록의 **순서와 개수는 보존**된다 — 손대지 않은 항목은 그대로 남는다.
      *
      * @param  array  &$component  대상 컴포넌트 (참조)
      * @param  array  $propsToInject  주입할 Props 정의
+     * @return void 반환값 없음(참조 인자를 직접 고친다)
      */
     private function injectProps(array &$component, array $propsToInject): void
     {
@@ -1104,11 +1152,105 @@ class LayoutExtensionService
                     is_array($existing) ? $existing : [],
                     $propValue['_merge']
                 );
+            } elseif (isset($propValue['_patch'])) {
+                $existing = $component['props'][$propKey] ?? [];
+
+                if (is_string($existing)) {
+                    Log::warning('inject_props _patch 대상이 표현식 문자열', [
+                        'component_id' => $component['id'] ?? 'unknown',
+                        'prop_key' => $propKey,
+                        'existing_value' => $existing,
+                    ]);
+
+                    continue;
+                }
+
+                $component['props'][$propKey] = $this->patchListItems(
+                    is_array($existing) ? $existing : [],
+                    $propValue['_patch'],
+                    $component['id'] ?? 'unknown',
+                    $propKey
+                );
             } else {
                 // 전략 키 없으면 객체 통째로 대체
                 $component['props'][$propKey] = $propValue;
             }
         }
+    }
+
+    /**
+     * 목록에서 **지정한 항목만** 교체합니다 (`_patch` 전략의 실제 동작).
+     *
+     * 확장이 목록 전체를 복사하지 않고 한 항목만 손댈 수 있게 하는 것이 목적이다 —
+     * 복사본은 만든 시점에 얼어붙어 호스트가 나중에 더한 항목을 조용히 지운다(S2-D13).
+     *
+     * 손대지 않은 항목은 **원본 그대로** 남고 순서도 보존한다. `by` 값이 기존에 없으면
+     * 새 항목으로 끝에 붙인다.
+     *
+     * @param  array  $existing  호스트의 현재 목록
+     * @param  mixed  $patch  `{by: string, items: array}` 형태의 패치 정의
+     * @param  string  $componentId  경고 로그용 컴포넌트 id
+     * @param  string  $propKey  경고 로그용 prop 이름
+     * @return array 패치가 적용된 목록
+     */
+    private function patchListItems(array $existing, mixed $patch, string $componentId, string $propKey): array
+    {
+        $by = is_array($patch) ? ($patch['by'] ?? null) : null;
+        $items = is_array($patch) ? ($patch['items'] ?? null) : null;
+
+        // 형식이 어긋나면 **원본을 그대로 돌려준다.** 잘못 쓴 패치가 목록을 비우면
+        // 그 화면이 통째로 사라지는데, 그것이 바로 이 전략이 막으려던 사고다.
+        if (! is_string($by) || $by === '' || ! is_array($items)) {
+            Log::warning('inject_props _patch 형식 오류 — by(문자열)와 items(배열)가 필요합니다', [
+                'component_id' => $componentId,
+                'prop_key' => $propKey,
+            ]);
+
+            return $existing;
+        }
+
+        // 기존 항목의 by 값 → 인덱스 (첫 항목 우선)
+        $indexByKey = [];
+
+        foreach ($existing as $i => $item) {
+            if (is_array($item) && isset($item[$by]) && is_scalar($item[$by])) {
+                $key = (string) $item[$by];
+
+                if (! array_key_exists($key, $indexByKey)) {
+                    $indexByKey[$key] = $i;
+                }
+            }
+        }
+
+        foreach ($items as $patchItem) {
+            if (! is_array($patchItem) || ! isset($patchItem[$by]) || ! is_scalar($patchItem[$by])) {
+                Log::warning('inject_props _patch 항목에 식별 키가 없습니다', [
+                    'component_id' => $componentId,
+                    'prop_key' => $propKey,
+                    'by' => $by,
+                ]);
+
+                continue;
+            }
+
+            $key = (string) $patchItem[$by];
+
+            if (array_key_exists($key, $indexByKey)) {
+                $target = $indexByKey[$key];
+                $existing[$target] = array_merge(
+                    is_array($existing[$target]) ? $existing[$target] : [],
+                    $patchItem
+                );
+
+                continue;
+            }
+
+            // 기존에 없는 키 — 새 항목으로 끝에 붙인다
+            $existing[] = $patchItem;
+            $indexByKey[$key] = array_key_last($existing);
+        }
+
+        return $existing;
     }
 
     /**
@@ -1836,6 +1978,7 @@ class LayoutExtensionService
      * @param  int  $templateId  템플릿 ID
      * @param  string  $targetName  타겟 이름
      * @param  LayoutExtensionType  $type  확장 타입
+     * @return void 반환값 없음
      */
     public function invalidateExtensionCache(int $templateId, string $targetName, LayoutExtensionType $type): void
     {

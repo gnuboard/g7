@@ -62,7 +62,8 @@
       },
       "earn_status": {
         "earned": "적립완료",
-        "pending": "적립예정"
+        "pending": "적립예정",
+        "cancelled": "적립 없음"
       },
       "summary": {
         "total": "합계",
@@ -496,7 +497,7 @@
       "payment_complete": "결제완료",
       "shipping_hold": "배송보류",
       "preparing": "상품준비중",
-      "shipping_ready": "배송준비완료",
+      "shipping_ready": "배송준비중",
       "shipping": "배송중",
       "delivered": "배송완료",
       "cancelled": "주문취소",
@@ -698,9 +699,9 @@
   },
   "status": {
     "waiting": "주문대기",
-    "payment_pending": "입금대기",
+    "payment_pending": "결제대기",
     "payment_complete": "결제완료",
-    "shipping_hold": "발송보류",
+    "shipping_hold": "배송보류",
     "preparing": "상품준비중",
     "shipping_ready": "배송준비중",
     "shipping": "배송중",

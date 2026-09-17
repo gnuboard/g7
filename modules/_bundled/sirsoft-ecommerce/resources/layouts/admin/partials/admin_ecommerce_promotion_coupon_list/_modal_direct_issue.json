@@ -64,10 +64,12 @@
                     },
                     "onSuccess": [
                       {
+                        "comment": "결과를 만든 키워드를 함께 적는다 — 늦게 온 옛 키워드 응답이 목록을 덮어써도 화면이 그것을 그리지 않게 한다",
                         "handler": "setState",
                         "params": {
                           "target": "global",
-                          "directIssueSearchResults": "{{(response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email }))}}"
+                          "directIssueSearchResults": "{{(response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email }))}}",
+                          "directIssueSearchResultsKeyword": "{{$event.target.value}}"
                         }
                       }
                     ],
@@ -86,7 +88,8 @@
                     "if": "{{($event.target.value ?? '').length === 0}}",
                     "params": {
                       "target": "global",
-                      "directIssueSearchResults": []
+                      "directIssueSearchResults": [],
+                      "directIssueSearchResultsKeyword": null
                     }
                   }
                 ]
@@ -97,10 +100,10 @@
       ]
     },
     {
-      "comment": "검색 결과 목록",
+      "comment": "검색 결과 목록 — 지금 입력값이 만든 결과일 때만 그린다 (늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다)",
       "type": "basic",
       "name": "Div",
-      "if": "{{(_global.directIssueSearchResults ?? []).length > 0}}",
+      "if": "{{(_global.directIssueSearchResults ?? []).length > 0 && (_global.directIssueSearchResultsKeyword ?? null) === (_global.directIssueSearchKeyword ?? '')}}",
       "props": {
         "className": "border border-gray-200 dark:border-gray-700 rounded-md max-h-40 overflow-y-auto mb-4 divide-y divide-gray-100 dark:divide-gray-700"
       },

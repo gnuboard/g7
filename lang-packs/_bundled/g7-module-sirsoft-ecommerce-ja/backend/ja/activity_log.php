@@ -189,6 +189,12 @@ return [
         'mileage_adjust' => 'マイレージ加算の編集 (:amount)',
         'product_notice_template_toggle_active' => '商品告示情報テンプレート有効化状態変更 (:template_name)',
         'ecommerce_settings_update' => 'イーコマース設定保存 (:categories)',
+
+        // クレーム理由カタログ
+        'claim_reason_create' => 'クレーム理由 作成 (:reason_type · :reason_code)',
+        'claim_reason_update' => 'クレーム理由 修正 (:reason_type · :reason_code)',
+        'claim_reason_delete' => 'クレーム理由 削除 (:reason_type · :reason_code)',
+        'claim_reason_toggle_status' => 'クレーム理由 有効切替 (:reason_type · :reason_code)',
         'coupon_direct_issue' => 'クーポン直接発行 (:coupon_name → 会員 #:user_id)',
         'coupon_issue_cancel' => 'クーポン発行キャンセル (:coupon_name → 会員 #:user_id)',
         'user_currency_change' => '会員決済通貨変更',

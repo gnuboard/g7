@@ -566,14 +566,14 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 배송정책이 삭제되었습니다.",
+    "message": "2개 배송정책이 삭제되었습니다.",
     "data": {
         "deleted_count": 2
     }
 }
 ```
 
-> 컨트롤러가 `messageParams` 를 넘기지 않으므로 `message` 의 `:count` 자리표시자는 치환되지 않은 채로 내려옵니다.
+> 응답 `message` 의 `:count` 는 `deleted_count` 로 치환됩니다.
 
 **에러 응답**
 
@@ -639,14 +639,14 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 배송정책의 사용여부가 변경되었습니다.",
+    "message": "2개 배송정책의 사용여부가 변경되었습니다.",
     "data": {
         "updated_count": 2
     }
 }
 ```
 
-> 컨트롤러가 `messageParams` 를 넘기지 않으므로 `message` 의 `:count` 자리표시자는 치환되지 않은 채로 내려옵니다.
+> 응답 `message` 의 `:count` 는 `updated_count` 로 치환됩니다.
 
 **에러 응답**
 

@@ -274,6 +274,7 @@
                       "name": "Input",
                       "props": {
                         "type": "number",
+                        "data-testid": "claim-qty-{{claimIdx}}",
                         "min": 1,
                         "max": "{{claimItem.available_quantity ?? 1}}",
                         "value": "{{claimItem.quantity ?? 1}}",

@@ -66,9 +66,13 @@ async function resolveShopBase(page: Page): Promise<string> {
  * 비회원 신청서 상세 응답을 만듭니다.
  *
  * @param claimNumber 신청번호
+ * @param items 신청 상품 행 (수정 화면이 이 행으로 단가 줄을 그린다)
  * @returns 신청서 페이로드
  */
-function guestClaimDetail(claimNumber: string): Record<string, unknown> {
+function guestClaimDetail(
+  claimNumber: string,
+  items: Record<string, unknown>[] = [],
+): Record<string, unknown> {
   return {
     claim_number: claimNumber,
     claim_type: 'exchange',
@@ -82,7 +86,7 @@ function guestClaimDetail(claimNumber: string): Record<string, unknown> {
     is_editable: false,
     is_withdrawable: false,
     reason_label: '사이즈가 맞지 않음',
-    items: [],
+    items,
     images: [],
     // 접수 시점 주문금액 비교(#599 후속) — 회원 상세와 같은 키·같은 partial 이 읽는다.
     calculation_comparison: FROZEN_COMPARISON,
@@ -94,12 +98,15 @@ function guestClaimDetail(claimNumber: string): Record<string, unknown> {
  *
  * @param page Playwright 페이지
  * @param claims '이 주문의 클레임' 목록에 실을 행
+ * @param claimsType 그 행이 속한 유형
+ * @param claimItems 신청서 상세·수정이 그릴 신청 상품 행
  * @returns 완료 Promise
  */
 async function mockGuestOrderScreens(
   page: Page,
   claims: Record<string, unknown>[] = [],
   claimsType: 'exchange' | 'return' | 'refund' | 'cancel' = 'exchange',
+  claimItems: Record<string, unknown>[] = [],
 ): Promise<void> {
   await page.route(`**${API}/user/orders/${MOCK_ORDER.number}*`, async (route) => {
     await fulfillData(route, {
@@ -164,7 +171,9 @@ async function mockGuestOrderScreens(
 
     const detail = url.pathname.match(/\/claims\/([^/]+)$/);
     if (detail) {
-      await fulfillData(route, { claim: guestClaimDetail(decodeURIComponent(detail[1])) });
+      await fulfillData(route, {
+        claim: guestClaimDetail(decodeURIComponent(detail[1]), claimItems),
+      });
 
       return;
     }
@@ -411,6 +420,53 @@ test.describe('비회원 클레임 화면', () => {
       claimReads[claimReads.length - 1],
       '수정 진입이 주문 스코프 없는 주소로 신청서를 읽었다',
     ).toBe(`/api/modules/sirsoft-ecommerce/guest/orders/${MOCK_ORDER.number}/claims/EX20260902-0902`);
+  });
+
+  // @scenario screen=edit, entry=with_token, claim_type=exchange
+  // @effects guest_claim_cards_keep_shared_values
+  test('수정 화면의 단가 줄은 차액이 아니라 자기 보조통화를 단다 (S3-D6)', async ({ page }) => {
+    //
+    // 두 값 모두 정상 서식이라 어긋나도 화면에 흔적이 남지 않는다 — 실측
+    // EX20260915-0853360266 에서 `28,000원` 줄에 교환 차액(-3,000)의 보조통화가 붙었다.
+    // 그래서 목은 단가와 차액을 **부호까지 다르게** 세운다: 둘을 바꿔 읽으면 반드시 깨진다.
+    const base = await resolveShopBase(page);
+    await grantFunctionalConsent(page);
+    await seedGuestSession(page);
+
+    await mockGuestOrderScreens(page, [], 'exchange', [
+      {
+        order_option_id: OPTION_ID,
+        product_name: '반팔 티셔츠',
+        product_option_name: '화이트 / M',
+        quantity: 1,
+        unit_price: 28_000,
+        unit_price_formatted: '28,000원',
+        available_quantity: 1,
+        locked_quantity: 0,
+        mc_unit_price: {
+          USD: { amount: 28, formatted: '$28.00' },
+          JPY: { amount: 3_220, formatted: '¥3,220' },
+        },
+        mc_price_difference: {
+          USD: { amount: -3, formatted: '$-3.00' },
+          JPY: { amount: -345, formatted: '¥-345' },
+        },
+      },
+    ]);
+
+    await page.goto(`${base}/guest/claims/EX20260902-0902/edit`);
+    await waitForApp(page);
+
+    const items = page.locator('#claim_apply_items');
+    await expect(items).toBeVisible({ timeout: 30_000 });
+
+    // 단가 줄의 보조통화는 단가의 것이다.
+    await expect(items).toContainText('28,000원', { timeout: 30_000 });
+    await expect(items).toContainText('$28.00');
+    await expect(items).toContainText('¥3,220');
+
+    // 그리고 차액 값이 그 자리에 흘러들지 않았다 — 이것이 S3-D6 의 red 면이다.
+    expect(await items.innerText(), '단가 줄에 교환 차액의 보조통화가 섰다').not.toContain('$-3.00');
   });
 
   // @scenario screen=detail, entry=with_token, claim_type=exchange

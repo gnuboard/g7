@@ -105,6 +105,7 @@ effects:
   - claim_edit_route_resolves_number_by_position
   - claim_edit_order_404_is_a_normal_path
   - claim_edit_seeds_items_from_the_claim
+  - claim_edit_unit_price_secondary_currency_is_its_own   # 단가 줄의 보조통화는 차액이 아니라 단가에서 온다 (S3-D6)
   - claim_edit_preview_excludes_its_own_lock
   - claim_edit_charge_delta_notice_only_when_nonzero
   # 수정 화면의 환불계좌 (§6-3 — 무통장 원결제)

@@ -115,4 +115,65 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
         $this->assertSame(64000.0, $this->presenter->listPriceTotal($order, null, $substitutions));
         $this->assertSame(35000.0, $this->presenter->listPriceTotal($order, [$option->id => 1], $substitutions));
     }
+
+    /**
+     * 동결값을 넘기면 보조 통화도 **그 시점**을 가리킨다. (S3-D15)
+     *
+     * 기준 통화 줄은 접수 시점에 동결된 `original_calculation_snapshot` 을 그린다. 그런데 보조
+     * 통화가 주문의 현재 맵을 읽으면, 접수 뒤 그 주문에 취소·변동이 생겼을 때 **한 칸 안에서 두
+     * 시점이 섞인다** — 기준줄 252,000원 / 보조줄 224,000원 처럼 갈리는데, 둘 다 정상 서식이라
+     * 화면에도 응답에도 어긋난 흔적이 남지 않는다(2026-09-16 3-H 실측: 그 사이 28,000원짜리
+     * 행이 취소돼 있었다).
+     *
+     * 되돌림 축: 인자를 무시하고 `$order->mc_subtotal_amount` 를 읽으면 주문의 현재 값이 나와 red.
+     *
+     * @scenario user-claim-list-detail-edit
+     *
+     * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     */
+    public function test_mc_original_follows_the_frozen_amounts_not_the_live_order(): void
+    {
+        $order = $this->foreignTwoItemOrder();
+
+        // 접수 뒤 주문이 줄어든 상황을 만든다 — 동결값과 현재 값이 갈리게.
+        $liveSubtotal = (float) $order->subtotal_amount;
+        $frozenSubtotal = $liveSubtotal + 28000;
+        $frozenPaid = (float) $order->total_paid_amount + 28000;
+
+        $mc = $this->presenter->mcOriginal($order, null, $frozenSubtotal, $frozenPaid);
+
+        $this->assertNotNull($mc);
+        $this->assertEqualsWithDelta(
+            $frozenSubtotal,
+            (float) $mc['mc_subtotal_amount']['KRW'],
+            0.001,
+            '보조 통화가 주문의 현재 값을 읽으면 기준줄과 시점이 갈린다.'
+        );
+        $this->assertEqualsWithDelta($frozenPaid, (float) $mc['mc_total_paid_amount']['KRW'], 0.001);
+
+        // 현재 주문값과 **다르다**는 것이 이 테스트의 핵심이다 — 같으면 아무것도 증명하지 못한다.
+        $this->assertNotEqualsWithDelta($liveSubtotal, (float) $mc['mc_subtotal_amount']['KRW'], 0.001);
+
+        // 서식 줄도 같은 근거 위에 선다.
+        $this->assertArrayHasKey('USD', $mc['mc_subtotal_amount_formatted']);
+    }
+
+    /**
+     * 동결값을 넘기지 않으면 종전대로 주문의 현재 값을 읽는다. (접수 시점 경로는 불변)
+     *
+     * 미리보기는 주문과 스냅샷이 같은 시점이라 넘길 동결값이 없다 — 그 경로를 깨지 않는다.
+     *
+     * @scenario claim-exchange-lifecycle
+     *
+     * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     */
+    public function test_mc_original_falls_back_to_the_order_when_no_frozen_amounts_are_given(): void
+    {
+        $order = $this->foreignTwoItemOrder();
+
+        $mc = $this->presenter->mcOriginal($order);
+
+        $this->assertSame($order->mc_subtotal_amount, $mc['mc_subtotal_amount']);
+        $this->assertSame($order->mc_total_paid_amount, $mc['mc_total_paid_amount']);
+    }
 }

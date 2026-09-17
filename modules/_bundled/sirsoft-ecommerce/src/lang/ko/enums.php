@@ -66,7 +66,7 @@ return [
         'payment_complete' => '결제완료',
         'shipping_hold' => '배송보류',
         'preparing' => '상품준비중',
-        'shipping_ready' => '배송준비완료',
+        'shipping_ready' => '배송준비중',
         'shipping' => '배송중',
         'delivered' => '배송완료',
         'confirmed' => '구매확정',
@@ -110,7 +110,7 @@ return [
     'shipping_status' => [
         'pending' => '배송대기',
         'preparing' => '상품준비중',
-        'ready' => '배송준비완료',
+        'ready' => '배송준비중',
         'shipped' => '배송중',
         'in_transit' => '이동중',
         'out_for_delivery' => '배송출발',
@@ -393,6 +393,14 @@ return [
     ],
 
     // 환불 우선순위 (RefundPriorityEnum 값과 일치)
+    // 신청 출처 (계획 676 — 출처 뱃지). 운영자는 셋을 다르게 대한다 — 고객 건은 연락처가
+    // 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다.
+    'request_source' => [
+        'customer' => '고객 신청',
+        'guest' => '비회원 신청',
+        'admin' => '운영자 접수',
+    ],
+
     'refund_priority' => [
         'pg_first' => '결제수단(PG) 먼저 환불',
         'points_first' => '포인트 먼저 환불',

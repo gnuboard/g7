@@ -544,14 +544,14 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 상품이 장바구니로 병합되었습니다.",
+    "message": "2개 상품이 장바구니로 병합되었습니다.",
     "data": {
         "merged_count": 2
     }
 }
 ```
 
-> `messages.cart.merged` 는 `:count` 플레이스홀더를 갖지만 컨트롤러가 messageParams 를 전달하지 않으므로 응답 메시지에는 치환되지 않은 원문이 그대로 실립니다. 화면 표기는 `data.merged_count` 를 사용하십시오.
+> 응답 `message` 의 `:count` 는 `merged_count` 로 치환됩니다.
 
 **에러 응답**
 

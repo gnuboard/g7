@@ -140,10 +140,12 @@
                         },
                         "onSuccess": [
                           {
+                            "comment": "결과를 만든 키워드를 함께 적는다 — 늦게 온 옛 키워드 응답이 목록을 덮어써도 화면이 그것을 그리지 않게 한다",
                             "handler": "setState",
                             "params": {
                               "target": "global",
-                              "mileageManual.memberSearchResults": "{{response?.data ?? []}}"
+                              "mileageManual.memberSearchResults": "{{response?.data ?? []}}",
+                              "mileageManual.memberSearchResultsKeyword": "{{$event.target.value}}"
                             }
                           }
                         ]
@@ -157,7 +159,8 @@
               "id": "member_search_results",
               "type": "basic",
               "name": "Div",
-              "if": "{{(_global.mileageManual?.memberSearchKeyword ?? '').length > 0}}",
+              "comment": "목록은 지금 입력값이 만든 결과일 때만 그린다 — 늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다",
+              "if": "{{(_global.mileageManual?.memberSearchKeyword ?? '').length > 0 && (_global.mileageManual?.memberSearchResultsKeyword ?? null) === (_global.mileageManual?.memberSearchKeyword ?? '')}}",
               "props": {
                 "className": "absolute left-0 right-0 top-full z-50 mt-1 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg divide-y divide-gray-100 dark:divide-gray-700 max-h-60 overflow-y-auto"
               },
@@ -181,6 +184,7 @@
                         "target": "global",
                         "mileageManual.selectedMember": "{{({ uuid: member.uuid, name: member.name, email: member.email, balance: member.ecommerce_mileage?.available ?? null })}}",
                         "mileageManual.memberSearchResults": [],
+                        "mileageManual.memberSearchResultsKeyword": null,
                         "mileageManual.memberSearchKeyword": "",
                         "mileageManual.errors": null
                       }
@@ -666,7 +670,7 @@
           "props": {
             "type": "button",
             "disabled": "{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' && _global.mileageManual?.selectedMember?.balance !== null && Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}",
-            "className": "flex items-center gap-2 btn text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            "className": "flex items-center gap-2 btn text-sm bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
           },
           "actions": [
             {

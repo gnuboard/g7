@@ -438,19 +438,41 @@ class OrderExchangeService
             throw OrderClaimException::completionRequiresCompletionFlow();
         }
 
-        $current = $exchange->exchange_status;
+        // 상태를 **행 잠금 아래에서 다시 읽어** 판정한다(S3-D16). 메모리의 모델 값으로
+        // 판정하면 더블클릭·재시도로 동시에 들어온 두 요청이 **둘 다 가드를 통과**한다 —
+        // 쓰기는 같은 값이라 상태는 1회처럼 보이지만 `fireStatusHooks()` 가 두 번 돌아
+        // **알림이 채널마다 2통씩** 나간다. 구매자에게는 같은 메일·SMS 가 두 번 도착한다.
+        // 잠금·판정·쓰기를 **한 트랜잭션**으로 묶는다(S3-D16). 판정만 잠금하고 밖에서 쓰면
+        // 잠금이 판정 직후 풀려 **두 요청이 다시 나란히 통과**한다 — 쓰기는 같은 값이라
+        // 상태는 1회처럼 보이지만 `fireStatusHooks()` 가 두 번 돌아 **알림이 채널마다 2통씩**
+        // 나간다. 구매자에게는 같은 메일·SMS 가 두 번 도착한다.
+        [$current, $updated] = DB::transaction(function () use ($exchange, $target, $context) {
+            // 저장소가 이미 갖고 있는 잠금 조회를 쓴다 — 서비스가 모델을 직접 조회하지 않는다.
+            $locked = $this->exchangeRepository->findForUpdate((int) $exchange->getKey());
 
-        if (! $current->canTransitionTo($target)) {
-            throw OrderClaimException::transitionNotAllowed($current->label(), $target->label());
+            $current = ($locked ?? $exchange)->exchange_status;
+
+            if (! $current->canTransitionTo($target)) {
+                throw OrderClaimException::transitionNotAllowed($current->label(), $target->label());
+            }
+
+            // 호출층이 들고 있는 인스턴스도 잠금 시점의 값으로 맞춘다.
+            $exchange->setAttribute('exchange_status', $current);
+
+            if ($this->revertsOrderOptions($target)) {
+                $this->assertLivingItemsCanTransitionTo($exchange, $target);
+            }
+
+            return [$current, $this->applyTransition($exchange, $target, $context)];
+        });
+
+        // 상태가 실제로 바뀜 때만 훅을 돌린다(S3-D16). 상태 기계는 **같은 상태로의
+        // 재진입을 허용**하므로(`canTransitionTo` 가 self 를 true 로 낸다), 더블클릭·재시도로
+        // 같은 전이가 두 번 들어오면 쓰기는 멱등해도 **훅은 두 번 돌아 알림이 채널마다
+        // 2통씩** 나간다. 상태는 정상으로 보이고 응답도 200 이라 화면에는 흔적이 없다.
+        if ($current !== $target) {
+            $this->fireStatusHooks($updated, $current, $target);
         }
-
-        if ($this->revertsOrderOptions($target)) {
-            $this->assertLivingItemsCanTransitionTo($exchange, $target);
-        }
-
-        $updated = $this->applyTransition($exchange, $target, $context);
-
-        $this->fireStatusHooks($updated, $current, $target);
 
         return $updated;
     }

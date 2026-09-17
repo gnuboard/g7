@@ -521,6 +521,80 @@ describe('완료 실행 — 페이로드 계약 (D26)', () => {
     });
 
     /**
+     * 실행 요청이 **네트워크에서 실패**하면 오류를 알리고 **아무것도 지우지 않는다.**
+     *
+     * 계획서 1031(「`returns` fetch 스텁 reject → 토스트·재활성·부분 실행 0」) 축이다.
+     * 성공 경로만 잠그면, 실패했는데도 모달 상태를 비우고 목록을 다시 부르는 구현이
+     * 통과한다 — 운영자는 **실패한 완료 처리를 성공으로 읽고** 같은 건을 다시 누르지
+     * 않는다. 돈이 걸린 화면에서 가장 나쁜 침묵이다.
+     *
+     * 브라우저에서는 이 축을 잴 수 없다 — 핸들러가 번들 로드 시점에 `G7Core.api` 를
+     * 붙잡으므로 페이지 안에서 `fetch`·`api.post` 를 나중에 바꿔도 가로채지지 않는다
+     * (#599 세션2 계획서준수검증 결함2 실측 중 확인 · 반품 4건을 쓰고도 재현 실패).
+     * 그래서 계약은 여기서 잠근다.
+     *
+     * @effects completion_failure_keeps_state_and_reports
+     */
+    it('실행이 실패하면 오류를 알리고 모달 상태를 유지한다', async () => {
+        await openAndExecute(true);
+
+        // 성공 1회로 만들어진 컨텍스트를 그대로 두고, 이번에는 실행만 실패시킨다.
+        mockGlobalState = {
+            claimCompleteContext: { execute: { url: BULK_STATUS_URL, method: 'POST' } },
+            claimCompleteRows: [{ id: 31 }],
+        };
+        mockG7Core.dispatch.mockClear();
+        mockG7Core.toast.error.mockClear();
+        // 앞선 성공 1회의 토스트 기록을 지운다 — 지우지 않으면 "성공 토스트 없음" 단언이
+        // 이번 실패가 아니라 그 성공을 보고 깨진다.
+        mockG7Core.toast.success.mockClear();
+        mockG7Core.api.post.mockRejectedValue(new TypeError('Failed to fetch'));
+
+        await expect(
+            executeClaimCompletionHandler({ handler: 'x' }, mockContext)
+        ).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.error, '실패를 알리지 않았습니다 — 운영자가 성공으로 읽습니다').toHaveBeenCalled();
+        expect(mockG7Core.toast.success, '실패했는데 성공 토스트가 떴습니다').not.toHaveBeenCalled();
+
+        // 상태를 비우면 모달이 닫혀 재시도 대상이 사라진다.
+        expect(
+            mockGlobalState.claimCompleteRows,
+            '실패했는데 대상 줄이 비었습니다 — 재시도할 수 없습니다'
+        ).toEqual([{ id: 31 }]);
+
+        // 실패인데 목록을 다시 부르면 화면이 "처리된 것처럼" 갱신된다.
+        expect(
+            mockG7Core.dispatch,
+            '실패했는데 목록 재조회가 나갔습니다 — 화면이 성공처럼 갱신됩니다'
+        ).not.toHaveBeenCalledWith({ handler: 'refetchDataSource', params: { dataSourceId: 'claims' } });
+    });
+
+    /**
+     * 서버가 `success:false` 로 답해도 같은 계약이다.
+     *
+     * HTTP 200 이어도 본문이 실패면 실패다 — 상태 코드만 보면 조용히 지나간다.
+     *
+     * @effects completion_failure_keeps_state_and_reports
+     */
+    it('서버가 success:false 로 답해도 실패로 다룬다', async () => {
+        mockGlobalState = {
+            claimCompleteContext: { execute: { url: BULK_STATUS_URL, method: 'POST' } },
+            claimCompleteRows: [{ id: 31 }],
+        };
+        mockG7Core.toast.error.mockClear();
+        mockG7Core.toast.success.mockClear();
+        mockG7Core.api.post.mockResolvedValue({ success: false, message: '완료 처리에 실패했습니다.' });
+
+        await expect(
+            executeClaimCompletionHandler({ handler: 'x' }, mockContext)
+        ).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.error).toHaveBeenCalled();
+        expect(mockG7Core.toast.success, 'success:false 인데 성공으로 처리했습니다').not.toHaveBeenCalled();
+    });
+
+    /**
      * 대상이 없는데 실행이 나가면 빈 요청이 서버에 도달한다.
      *
      * @effects submit_disabled_without_targets

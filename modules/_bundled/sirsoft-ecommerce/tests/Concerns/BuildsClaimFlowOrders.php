@@ -198,8 +198,17 @@ trait BuildsClaimFlowOrders
     /**
      * 테스트 PG provider 를 레지스트리에 등록하고 기본 PG 로 지정합니다.
      *
+     * 기본 PG 설정은 **테스트가 끝나면 원래 값으로 되돌린다.** 훅 등록은 `ModuleTestCase` 가
+     * 스냅샷으로 복원하지만 설정 쓰기는 그 밖이라, 되돌리지 않으면 값이 그대로 남는다 —
+     * 개발 DB 를 보는 환경에서 `artisan test` 를 돌리면 **상점의 기본 PG 가 `testpg` 로 바뀐다.**
+     * 그러면 이후 만들어지는 결제행이 그 값으로 고정되고(`buildPaymentPayload()` 가 행에 박힌
+     * 값을 우선한다), 고객 화면은 **200 을 받고도 결제창을 못 연다** — 등록된 provider 가
+     * 아니라 `pg_payment_handler` 가 `null` 이 되기 때문이다. 오류가 없어 원인이 드러나지
+     * 않는다(2026-09-15 실측 — `CP20260915-1004285647` 이 그렇게 고정됐다).
+     *
      * @param  string  $id  provider id
      * @param  string|null  $handler  프론트 결제 진입 핸들러
+     * @return void
      */
     protected function registerTestPgProvider(string $id = 'testpg', ?string $handler = 'sirsoft-testpg.requestPayment'): void
     {
@@ -209,7 +218,14 @@ trait BuildsClaimFlowOrders
             return $providers;
         });
 
-        app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', $id);
+        $settings = app(EcommerceSettingsService::class);
+        $previous = $settings->getSetting('order_settings.default_pg_provider');
+
+        $settings->setSetting('order_settings.default_pg_provider', $id);
+
+        $this->beforeApplicationDestroyed(static function () use ($previous): void {
+            app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', $previous);
+        });
     }
 
     /**

@@ -160,8 +160,22 @@ class EcommerceSettingsController extends AdminBaseController
             // 규칙이 nullable 이라 null 로도 도착한다. isset() 으로만 분기하면 null 이
             // 걸러지지 않고 JSON 에 남아, DB 가 단일 출처여야 할 카탈로그와 같은 이름의
             // 죽은 키가 설정 파일에 생긴다 — 나중에 그 키를 믿는 코드는 빈 카탈로그를 본다.
+            // 삭제는 `{type}_reasons_deleted` 에 운영자가 휴지통으로 지목한 id 로만 일어난다 —
+            // 페이로드에 없는 행을 삭제로 읽으면 다른 탭에서 만든 사유가 저장 한 번에 사라진다
+            // (#599 S0-D2). 이 키도 DB 전용이라 JSON 에서 뺀다.
             $claimReasons = [];
+            $claimReasonDeletions = [];
             foreach (ClaimReasonTypeEnum::cases() as $reasonType) {
+                $deletedKey = $reasonType->value.'_reasons_deleted';
+                if (array_key_exists($deletedKey, $settings['claim'] ?? [])) {
+                    $deleted = $settings['claim'][$deletedKey];
+                    unset($settings['claim'][$deletedKey]);
+
+                    if (is_array($deleted)) {
+                        $claimReasonDeletions[$reasonType->value] = $deleted;
+                    }
+                }
+
                 $key = $reasonType->value.'_reasons';
                 if (! array_key_exists($key, $settings['claim'] ?? [])) {
                     continue;
@@ -221,7 +235,7 @@ class EcommerceSettingsController extends AdminBaseController
             }
 
             foreach ($claimReasons as $reasonType => $rows) {
-                $this->claimReasonService->assertSyncDeletable($reasonType, $rows);
+                $this->claimReasonService->assertSyncDeletable($reasonType, $rows, $claimReasonDeletions[$reasonType] ?? []);
             }
 
             $result = $this->settingsService->saveSettings($settings);
@@ -239,7 +253,7 @@ class EcommerceSettingsController extends AdminBaseController
             // claim reasons DB 동기화 (유형별)
             if ($result) {
                 foreach ($claimReasons as $reasonType => $rows) {
-                    $this->claimReasonService->syncReasons($reasonType, $rows);
+                    $this->claimReasonService->syncReasons($reasonType, $rows, $claimReasonDeletions[$reasonType] ?? []);
                 }
             }
 

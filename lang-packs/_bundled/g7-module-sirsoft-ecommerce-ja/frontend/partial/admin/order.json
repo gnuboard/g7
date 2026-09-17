@@ -115,7 +115,8 @@
       },
       "earn_status": {
         "earned": "積立完了",
-        "pending": "積立予定"
+        "pending": "積立予定",
+        "cancelled": "積立なし"
       },
       "cancel_reason": {
         "title": "キャンセル理由",

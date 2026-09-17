@@ -98,6 +98,7 @@ effects:
   - partial_refund_sends_cancel_amount
   - remaining_refund_after_partial_stays_partial
   - refund_sends_apportioned_tax_free_amount
+  - refund_tax_free_never_exceeds_approved_total   # S1-D14 순차 부분취소 누적 면세분 상한·장부 갱신
   - vbank_refund_sends_refund_receive_account
   - vbank_refund_without_account_fails_before_api_call
   # 에스크로 (E4)

@@ -330,7 +330,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "className": "w-4 h-4 mr-2"
+                                            "className": "text-base mr-2"
                                         }
                                     },
                                     {
@@ -395,6 +395,7 @@
         "directIssueSelectedUsers": [],
         "directIssueSearchKeyword": "",
         "directIssueSearchResults": [],
+        "directIssueSearchResultsKeyword": null,
         "directIssueSubmitting": false,
         "cancelIssueTarget": null,
         "cancelIssueSubmitting": false

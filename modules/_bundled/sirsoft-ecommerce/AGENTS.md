@@ -160,7 +160,7 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 533개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 178개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 182개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 38개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 12개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -247,17 +247,38 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 취소 가능 금액을 화면이나 서비스에서 따로 계산 | `CancellableAmountCalculator::calculate()` 하나를 표시와 실행 가드가 함께 쓴다 | 화면이 예고한 금액과 실제 실행 상한이 갈리고, 어긋남은 환불이 나간 뒤에야 드러난다 |
 | 완료 처리 옵션(재고 복구 · 환불신청서 접수)의 기본값을 서비스가 설정에서 읽어 채움 | 호출자가 `ClaimCompletionOptions` 를 명시 전달 (`claim.complete_defaults.*` 는 화면 초기 선택값 전용) | "요청에 없으면 설정대로" 가 되면 운영자가 고르지 않은 재고 복구·환불 접수가 조용히 실행된다 |
 | 결제 플러그인 콜백에서 `CP` 결제번호를 주문번호로 조회 | `ClaimPayment::isClaimPaymentNumber()` 로 먼저 분기해 `ClaimPaymentCallback` 경로로 | 주문 경로를 타면 `order_not_found` 로 끝나 추가결제가 승인되지 않고, 실패 원인이 화면에 드러나지 않는다 |
+| 환불이 동기화할 주문 헤더 컬럼 목록을 서비스마다 따로 들기 | `OrderRefundRequestService::TAX_SYNC_COLUMNS` 하나가 정본 — `RefundExecutionService` 는 받은 것을 그대로 쓴다 | 두 곳이 각자 목록을 들면 한쪽만 늘렸을 때 조용히 잘린다(S3-D17 실측: 실행 쪽 목록이 3개뿐이라 `total_cash_equivalent_amount` 가 빠져 전액 환불 주문의 현금영수증 발급 가능액이 62,000 으로 남았다) |
+| 환불 경로에서 `total_paid_amount`·`total_amount` 를 함께 갱신 | 세금 분류 + 현금성 금액만 동기화한다 | 클레임 환불은 `total_refunded_amount` 로 누적한다 — 결제액까지 깎으면 잔여 한도(`paid - refunded`)가 같은 금액을 두 번 뺀다 |
 <!-- @intent END -->
+
+### 환불 후 주문 헤더 동기화 계약 (S3-D17)
+
+`CashReceiptService::calculateIssuableAmount()` 는 주문 헤더의 세금·현금성 컬럼을 **그대로**
+읽고, 그 주석이 「**지금 이 주문이 얼마짜리인가**만 읽으면 된다」를 계약으로 명시한다.
+따라서 **환불이 끝나면 헤더가 현재 상태를 반영해야 한다.**
+
+전액취소 경로는 이미 0 으로 내린다(S1-D22). **반품·교환 발 환불도 같아야 한다** —
+`OrderRefundRequestService` 가 `previewRefund()` 재계산에서 `TAX_SYNC_COLUMNS` 를 뽑아
+`AdjustmentResult::orderUpdates` 에 실으면, `RefundExecutionService::accumulateRefundTotals()`
+가 환불 누적과 **한 트랜잭션에서 함께** 저장한다.
+
+**직접 환불신청만 `previewRefund()` 를 부른다**(`ownsOptionQuantities`) — 반품·교환 발
+환불은 부르지 않으므로 `taxColumnUpdatesFor()` 가 그 경로에서 재계산을 다시 구한다.
+이 분기를 없애면 반품·교환 축에 결함이 되돌아온다.
+
+**실측(2026-09-16)**: 수정 전 주문 964 전액 환불 후 `tax 62,000 · issuable 62,000`,
+수정 후 주문 973 전액 환불 후 `tax 0 · vat 0 · cash_eq 0 · issuable 0` ·
+`total_paid_amount 62,000` 보존(이중 차감 없음).
 
 ## 7. 테스트 실행
 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 489개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 165개 | `vitest.config.ts` |
-| Playwright | 61개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 122개 | `tests/scenarios` |
+| PHPUnit | 513개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 166개 | `vitest.config.ts` |
+| Playwright | 62개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 154개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

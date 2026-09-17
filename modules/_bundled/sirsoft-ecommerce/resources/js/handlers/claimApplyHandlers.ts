@@ -269,6 +269,21 @@ export async function claimApplyOrderMissingHandler(
  * @param action 액션 객체
  * @param _context 액션 컨텍스트
  */
+/**
+ * 저장된 신청서의 금액 분해로 환불 우선순위를 역산합니다. (S1-D13)
+ *
+ * 신청서에는 우선순위 컬럼이 없고 결과 분해(`refund_amount` / `refund_points_amount`)만 남는다.
+ * 마일리지 환불액이 0 이면 PG 우선으로 처리된 것이고, 마일리지가 먼저 소진됐다면 마일리지 우선이다.
+ *
+ * @param claim 신청서 페이로드
+ * @returns 'points_first' | 'pg_first'
+ */
+function resolveRefundPriorityFromClaim(claim: any): string {
+    const points = Number(claim?.refund_points_amount ?? 0);
+
+    return points > 0 ? 'points_first' : 'pg_first';
+}
+
 export async function initClaimEditHandler(
     action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
     _context: ActionContext
@@ -312,6 +327,15 @@ export async function initClaimEditHandler(
             // 404 로 끝나고(claimApplyOrderMissing 이 그 404 를 정상 경로로 판정한다),
             // 여기서 값을 세운 뒤의 refetch 가 실제 주문을 읽는다.
             claimEditOrderNumber: claim.order_number ?? null,
+            // 접수 때 고른 환불 우선순위를 되살린다 (S1-D13).
+            //
+            // 세우지 않으면 `_local.claimRefundPriority` 가 기본값 `pg_first` 로 남아,
+            // **마일리지 우선으로 접수한 신청서의 수정 화면이 PG 우선으로 보인다** — 읽기 전용
+            // 라벨도, 미리보기가 다시 계산하는 금액 분해(결제수단/마일리지 줄·잔여 마일리지)도
+            // 전부 저장값과 어긋나고, 그 상태로 저장하면 분해가 조용히 뒤집힌다.
+            // 신청서에 우선순위 컬럼은 없으므로 **저장된 분해로 역산**한다 — 마일리지 환불액이
+            // 있는데 PG 잔여가 남아 있었다면 마일리지를 먼저 쓴 것이다.
+            claimRefundPriority: resolveRefundPriorityFromClaim(claim),
         });
 
         await G7Core.dispatch?.({
@@ -377,7 +401,10 @@ export function buildClaimEditItems(claim: any, currency: string | null): ClaimA
             price_difference: Number(item.price_difference ?? 0),
             price_difference_formatted: item.price_difference_formatted
                 ?? formatAmountInCurrency(Math.abs(Number(item.price_difference ?? 0)), currency),
-            mc_unit_price: toSecondaryCurrencyList(item.mc_price_difference, currency),
+            // 단가 줄의 보조 통화는 **단가**에서 온다. 예전에는 여기에 `mc_price_difference` 를
+            // 실어, 수정 화면의 `28,000원` 줄에 교환 차액인 `$-3.00` 이 붙었다(S3-D6 실측).
+            // 이름은 단가인데 값이 차액이라 서식은 정상이고 금액만 틀려 흔적이 남지 않는다.
+            mc_unit_price: toSecondaryCurrencyList(item.mc_unit_price, currency),
             validation_error: '',
         } as ClaimApplyItem;
     });
@@ -928,7 +955,10 @@ function seedClaimEditState(G7Core: any, claim: any, claimable: any, claimType: 
         claimRemoveImageIds: [],
         claimChargeMethod: claim.charge_method ?? '',
         claimPaymentMethod: '',
-        claimRefundPriority: 'pg_first',
+        // 접수 때 고른 환불 우선순위를 되살린다 (S1-D13) — `pg_first` 로 고정하면 마일리지
+        // 우선으로 접수한 신청서의 수정 화면이 PG 우선으로 보이고, 읽기 전용 라벨도 미리보기
+        // 금액 분해(결제수단/마일리지 줄·잔여 마일리지)도 저장값과 어긋난다.
+        claimRefundPriority: resolveRefundPriorityFromClaim(claim),
         claimComparisonOpen: defaultClaimComparisonOpen(G7Core),
         // 환불계좌는 이 신청서 행의 값이며 서버가 마스킹해 내려준다 — 수정 대상이 아니다
         // (D13 이 여는 것은 사유·상세 사유·첨부와 재발송지뿐이다).
@@ -1208,6 +1238,27 @@ export function updateClaimQuantityHandler(
     const max = Math.max(1, Number(target.available_quantity ?? 1));
     const parsed = parseInt(String(action.params?.value ?? ''), 10);
     const clamped = Math.max(1, Math.min(Number.isNaN(parsed) ? 1 : parsed, max));
+
+    // 클램프 결과가 **이미 들고 있던 값과 같으면** state 가 안 바뀌어 리렌더가 일어나지 않는다.
+    // 그러면 입력 칸에는 사용자가 친 값(가용 2인데 99)이 그대로 남고 전송만 2 로 나간다 —
+    // 화면이 말하는 수량과 실제 신청 수량이 어긋난다(S2-D9).
+    // 잔여 2에서 3을 치면 state 가 1→2 로 바뀌어 칸이 따라오지만, 이어서 99를 치면
+    // 이미 2라 아무 일도 일어나지 않는 것이 그 차이다. 그래서 칸을 직접 맞춰 준다.
+    if (clamped !== parsed && typeof document !== 'undefined') {
+        const el = document.activeElement;
+        if (el instanceof HTMLInputElement && el.type === 'number') {
+            // 리액트가 관리하는 칸이라 `el.value = …` 만으로는 되돌려 놓는다 — 리액트가
+            // 추적하는 네이티브 setter 로 써야 그 값이 살아남는다. 값을 바꾼 뒤에는
+            // input 이벤트를 흘려 보내 리액트의 내부 값도 같은 수로 맞춘다.
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+            if (setter) {
+                setter.call(el, String(clamped));
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            } else {
+                el.value = String(clamped);
+            }
+        }
+    }
 
     items[index] = { ...target, quantity: clamped };
 

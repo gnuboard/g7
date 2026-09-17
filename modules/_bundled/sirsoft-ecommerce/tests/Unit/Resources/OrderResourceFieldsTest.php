@@ -320,6 +320,88 @@ class OrderResourceFieldsTest extends ModuleTestCase
     }
 
     /**
+     * 취소된 옵션은 「지킬 수 없는 적립예정」을 말하지 않는다 (S1-D19)
+     *
+     * 적립 여부는 단 두 가지(발행됨/아직)로 노출되었지만 도메인 상태는 셋이다.
+     * 취소된 옵션은 `MileageTransactionListener` 가 기적립분을 회수하고,
+     * 스케줄러의 `getEarnableOptions` 는 `option_status = 적립트리거`(confirmed·delivered)
+     * 만 곱으므로 **어느 설정에서도** 다시 적립 대상이 되지 않는다.
+     *
+     * 실측(#599 통합실측 세션1 · 1-M · 주문 108 `20260915-0604289654`): 전량 취소되어
+     * 76,500원 전액 환불된 주문의 옵션 3행이 각각 `228P 적립예정` · `160P 적립예정` ·
+     * `440P 적립예정` 을 말하고 있었다 — 그 주문의 `purchase_earn` 거래는 0건이고
+     * 앞으로도 0건이다. 오류도 나지 않고 잡히는 신호도 없다 — 운영자가 물어봐야 생기는 차이다.
+     *
+     * 계약: 취소된 옵션은 적립보다 상위의 상태를 싣는다. 판정은 화면이 아니라
+     * Resource 가 소유한다 — 같은 배지를 그리는 자리가 늘어나도 한 자리만 고치면 된다.
+     *
+     * @scenario stock_deduction=not_deducted, points_earn=earn_cancelled, non_purchase_tx=none
+     *
+     * @effects resource_marks_cancelled_option_as_earn_cancelled
+     */
+    public function test_order_option_resource_marks_cancelled_option_as_earn_cancelled(): void
+    {
+        // Given: 적립예정액은 스냅샷에 남아 있지만 옵션은 취소된 주문
+        $order = OrderFactory::new()->create(['user_id' => $this->createUser()->id]);
+        OrderOptionFactory::new()->forOrder($order)->create([
+            'subtotal_earned_points_amount' => 520,
+            'option_status' => OrderStatusEnum::CANCELLED->value,
+        ]);
+
+        // When: Repository 의 findWithRelations 로 로드 (withExists 집계 경로 포함)
+        $loaded = app(OrderRepositoryInterface::class)->findWithRelations($order->id);
+        $resource = (new OrderOptionResource($loaded->options->first()))->resolve();
+
+        // Then: 지킬 수 없는 예정이 아니라 「적립 없음」으로 읽힌다
+        $this->assertArrayHasKey('is_points_earn_cancelled', $resource);
+        $this->assertTrue(
+            $resource['is_points_earn_cancelled'],
+            '취소된 옵션은 다시 적립 대상이 되지 않는다 — 「적립예정」은 지킬 수 없는 약속이다'
+        );
+        $this->assertFalse($resource['is_points_earned']);
+    }
+
+    /**
+     * 취소 전에 이미 적립된 옵션은 「적립완료」가 이긴다 (S1-D19 경계)
+     *
+     * 지연 적립 설정에서는 구매확정 후 적립된 다음 취소가 들어오는 시간차가 실제로
+     * 있다(회수 전 한 찰나). 그 사이에는 「적립 없음」이 아니라 지금까지처럼
+     * 「적립완료」를 말해야 한다 — 돈은 실제로 나갔기 때문이다.
+     *
+     * @scenario stock_deduction=not_deducted, points_earn=earned, non_purchase_tx=none
+     *
+     * @effects resource_marks_cancelled_option_as_earn_cancelled
+     */
+    public function test_cancelled_option_with_issued_earn_still_reads_as_earned(): void
+    {
+        // Given: 취소된 옵션 + 그러나 PURCHASE_EARN 은 이미 발행된 상태
+        $user = $this->createUser();
+        $order = OrderFactory::new()->create(['user_id' => $user->id]);
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'subtotal_earned_points_amount' => 520,
+            'option_status' => OrderStatusEnum::CANCELLED->value,
+        ]);
+        MileageTransaction::create([
+            'user_id' => $user->id,
+            'currency' => 'KRW',
+            'type' => MileageTransactionTypeEnum::PURCHASE_EARN->value,
+            'amount' => 520,
+            'remaining_amount' => 520,
+            'balance_after' => 520,
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+        ]);
+
+        // When
+        $loaded = app(OrderRepositoryInterface::class)->findWithRelations($order->id);
+        $resource = (new OrderOptionResource($loaded->options->first()))->resolve();
+
+        // Then: 상위는 사실(지급됨) — 취소라는 이유로 지급 사실을 지우지 않는다
+        $this->assertTrue($resource['is_points_earned']);
+        $this->assertFalse($resource['is_points_earn_cancelled']);
+    }
+
+    /**
      * OrderResource 가 cancelled_at native 컬럼과 cancelled_at_formatted 를 노출하는지 확인.
      */
     public function test_order_resource_exposes_cancelled_at_and_formatted(): void

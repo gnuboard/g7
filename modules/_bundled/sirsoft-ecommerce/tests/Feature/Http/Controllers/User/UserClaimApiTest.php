@@ -526,6 +526,60 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->fresh()->order_status);
     }
 
+    /**
+     * 입금이 끝난 가상계좌 주문은 환불 계좌 없이 접수되지 않는다. (S1-D8)
+     *
+     * 막지 않으면 계좌 없이 접수·승인까지 통과한 뒤 마지막 [환불하기] 에서 PG 가
+     * `MISSING_REFUND_ACCOUNT` 로 거절한다 — 그때는 이미 승인된 신청서라 화면에 계좌를 넣을
+     * 자리가 없어 **운영자가 되돌릴 수 없다**. 관리자 [주문취소] 는 같은 판정을 이미 갖고 있었고
+     * (`CancelOrderRequest::requiresRefundBank`) 고객 접수 경로에만 빠져 있었다.
+     *
+     * 실측(주문 20260915-0631411217 · RF20260915-0824214349): 계좌 없이 접수 201 → 승인 200 →
+     * 실행 **422** `환불 실행에 실패했습니다.` · 로그 `MISSING_REFUND_ACCOUNT`.
+     *
+     * @scenario gate_case=vbank_paid_requires_refund_bank
+     *
+     * @effects refund_bank_required_before_intake_for_paid_vbank
+     */
+    public function test_refund_request_of_a_paid_vbank_order_requires_a_refund_bank(): void
+    {
+        $order = $this->myPaidOrder(['payment_method' => 'vbank']);
+
+        $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/refund-requests", [
+            'items' => $this->items($order), 'reason_code' => 'changed_mind',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('refund_bank');
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count(), '계좌 없이 신청서가 만들어지면 안 된다');
+    }
+
+    /**
+     * 환불 계좌를 실어 보내면 가상계좌 주문도 정상 접수된다. (S1-D8)
+     *
+     * @scenario gate_case=vbank_paid_with_refund_bank
+     *
+     * @effects refund_bank_required_before_intake_for_paid_vbank
+     */
+    public function test_refund_request_of_a_paid_vbank_order_passes_with_a_refund_bank(): void
+    {
+        $order = $this->myPaidOrder(['payment_method' => 'vbank']);
+
+        $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/refund-requests", [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'refund_bank' => [
+                'bank_code' => '003',
+                'account_number' => '01012345678',
+                'holder' => 'MEAS599',
+            ],
+        ])->assertCreated()
+            ->assertJsonPath('data.branch', 'auto')
+            // 가상계좌는 정지 수단이므로 접수에서 멈춘다 (P16)
+            ->assertJsonPath('data.claim.status', 'requested');
+
+        $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
+    }
+
     public function test_refund_request_files_a_refund_request_for_preparing_items(): void
     {
         $order = $this->myPaidOrder();
@@ -565,7 +619,10 @@ class UserClaimApiTest extends ModuleTestCase
         $order = $this->myDeliveredOrder(quantity: 3);
         $claims = app(UserClaimService::class);
         $claims->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
-        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'size_mismatch', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+        // 교환은 판매자 귀책(`defective_product`)으로 낸다 — 이 목록 테스트는 청구가 없는 신청서를
+        // 전제한다. 고객 귀책이면 왕복 배송비가 청구되고 `deduct_from_refund` 는 차감 전 환불액이
+        // 청구액보다 작을 때 거절된다(`OrderExchangeService::assertChargeMethodUsable`).
+        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'defective_product', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
         // 다른 회원의 반품은 보이지 않는다.
         $other = $this->deliveredClaimOrder();
         $claims->requestReturn($other, ['items' => $this->items($other), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $other->user_id]);
@@ -604,7 +661,7 @@ class UserClaimApiTest extends ModuleTestCase
         $order = $this->myDeliveredOrder(quantity: 3);
         $claims = app(UserClaimService::class);
         $claims->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
-        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'size_mismatch', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'defective_product', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
 
         // 다른 회원의 건은 세지 않는다 — 뱃지가 남의 건을 포함하면 탭을 눌렀을 때 빈 목록이 나온다.
         $other = $this->deliveredClaimOrder();
@@ -634,7 +691,7 @@ class UserClaimApiTest extends ModuleTestCase
         $order = $this->myDeliveredOrder(quantity: 3);
         $claims = app(UserClaimService::class);
         $claims->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
-        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'size_mismatch', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'defective_product', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
 
         // 반품 탭을 '완료' 로 좁힌다 — 접수 상태뿐이므로 반품 뱃지는 0, 교환 뱃지는 그대로 1.
         $this->actingAs($this->user)->getJson($this->base().'/claims?type=return&status=completed')
@@ -1550,7 +1607,7 @@ class UserClaimApiTest extends ModuleTestCase
         $order = $this->myDeliveredOrder(quantity: 3);
         $claims = app(UserClaimService::class);
         $claims->requestReturn($order, ['items' => $this->items($order, 1), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
-        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'size_mismatch', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
+        $claims->requestExchange($order->fresh(['options']), ['items' => $this->items($order, 1), 'reason_code' => 'defective_product', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id]);
 
         $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claims")
             ->assertOk()

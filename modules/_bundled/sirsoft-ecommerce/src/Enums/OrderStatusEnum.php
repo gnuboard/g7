@@ -12,7 +12,7 @@ enum OrderStatusEnum: string
     case PAYMENT_COMPLETE = 'payment_complete';     // 결제완료
     case SHIPPING_HOLD = 'shipping_hold';           // 배송보류
     case PREPARING = 'preparing';                   // 상품준비중
-    case SHIPPING_READY = 'shipping_ready';         // 배송준비완료
+    case SHIPPING_READY = 'shipping_ready';         // 배송준비중
     case SHIPPING = 'shipping';                     // 배송중
     case DELIVERED = 'delivered';                   // 배송완료
     case CONFIRMED = 'confirmed';                   // 구매확정

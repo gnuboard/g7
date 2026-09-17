@@ -220,6 +220,8 @@
     "history_title": "Order History",
     "ordered_at": "Order Date",
     "paid_at": "Payment Date",
+    "delivered_at": "Delivered At",
+    "confirmed_at": "Purchase Confirmed At",
     "cancel_reason_title": "Cancellation Reason",
     "cancel_reason": "Reason",
     "cancel_reason_detail": "Details",
@@ -234,7 +236,7 @@
       "title": "Confirm Purchase",
       "option_label": "Option",
       "earned_points": "Expected Reward Points",
-      "warning": "After confirming, cancellation/exchange/refund is not available.",
+      "warning": "After confirming, you can no longer request a cancellation or refund. Exchanges and returns remain available.",
       "confirm_button": "Confirm Purchase"
     },
     "review_modal": {

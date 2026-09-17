@@ -650,6 +650,7 @@
                               "params": {
                                 "target": "local",
                                 "form.claim.refund_reasons": "{{(_local.form?.claim?.refund_reasons ?? []).filter((_, i) => i !== reason._idx)}}",
+                                "form.claim.refund_reasons_deleted": "{{[...(_local.form?.claim?.refund_reasons_deleted ?? []), ...(reason?.id ? [reason.id] : [])]}}",
                                 "hasChanges": true
                               }
                             }

@@ -215,6 +215,7 @@ return [
         'guest_password_reset_failed' => '비회원 조회 비밀번호 재설정에 실패했습니다.',
         'guest_password_reset_not_guest' => '비회원 주문만 조회 비밀번호를 재설정할 수 있습니다.',
         'deposit_confirmed' => '입금이 확인되어 결제완료 처리되었습니다.',
+        'deposit_recorded' => '입금 내역을 기록했습니다. 주문 상태는 결제대기로 유지됩니다.',
         'deposit_confirm_failed' => '입금확인 처리에 실패했습니다.',
         'deposit_amount_mismatch' => '입금액이 결제예정금액과 일치하지 않습니다.',
         'deposit_not_dbank' => '무통장입금 주문만 입금확인할 수 있습니다.',
@@ -478,6 +479,7 @@ return [
         // 수단별 잔여 한도의 표시 라벨 (D19) — 마일리지는 결제행이 없는 주문 컬럼 원장이라
         // 결제수단 어휘(PaymentMethodEnum)에 없다. 라벨이 없으면 원시값이 화면에 나간다.
         'cancellable_method' => [
+            'payment' => '결제수단',
             'mileage' => '마일리지',
         ],
         'payment_order_name' => ':type 추가결제 (:number)',

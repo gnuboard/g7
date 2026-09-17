@@ -948,6 +948,85 @@ class RefundExecutionServiceTest extends ModuleTestCase
         $this->assertSame(5000.0, (float) $order->fresh()->total_refunded_amount);
     }
 
+    /**
+     * PG 를 부르지 않은 환불은 **결제행의 취소 누적을 건드리지 않는다.** (S1-D24)
+     *
+     * `cancelled_amount` 는 「그 결제수단에서 실제로 취소된 금액」이다 — PG 환불가능액을
+     * 되짚는 근거이자 대사의 기준이다. 그런데 카드 주문에 `계좌이체` 환불수단을 지정하면
+     * PG 왕복은 건너뛰면서(bank 이므로 당연) 이 누적만 깎였다. 카드사 잔액은 그대로인데
+     * 장부의 환불가능액만 줄어, 이후 정상적인 카드 환불이 한도에 먼저 걸린다.
+     *
+     * 실측(#599 세션1 · 1-P): 결제 58,000 카드 주문에 bank 수단으로 14,000 을 실행하니
+     * 200 으로 통과하고 `cancelled_amount` 가 14,000 — 환불가능액이 58,000 → 44,000 으로
+     * 줄었다. 토스 잔액은 58,000 그대로다.
+     *
+     * 방향은 PO 확정(2026-09-16): **허용하되 장부는 건드리지 않는다.** 운영자가 카드 주문을
+     * 손으로 계좌 송금하는 운영은 막지 않는다 — 다만 그 송금은 카드 취소가 아니므로 카드
+     * 결제행의 취소 누적이 아니다. 주문 축 누적(`total_refunded_amount`)은 그대로 쌓인다.
+     *
+     * @scenario payment_method=card, refund_method=bank
+     *
+     * @effects non_pg_refund_leaves_payment_cancelled_amount_untouched
+     */
+    public function test_execute_does_not_touch_payment_cancelled_amount_without_pg_call(): void
+    {
+        $order = $this->createPaidOrder(paymentOverrides: ['cancelled_amount' => 0]);
+        $refund = $this->createRefund($order, ['refund_method' => RefundMethodEnum::BANK]);
+
+        // 실측 1-P 과 같은 호출 — 호출부(OrderRefundRequestService)는 수단이 PG 가 아니고
+        // 바깥 집행도 아니므로 장부를 쌓지 않도록 부른다.
+        $this->service->execute(
+            $order,
+            $refund,
+            new AdjustmentResult(refundAmount: 14000),
+            null,
+            executePg: false,
+            recordPaymentLedger: false,
+        );
+
+        $this->assertSame(
+            0.0,
+            (float) $order->payment->fresh()->cancelled_amount,
+            'PG 를 부르지 않았는데 카드 결제행의 취소 누적이 깎이면 환불가능액이 실제와 어긋난다.'
+        );
+
+        // 주문 축 누적은 그대로다 — 돈은 실제로 나갔고 그 사실은 기록되어야 한다.
+        $this->assertSame(14000.0, (float) $order->fresh()->total_refunded_amount);
+    }
+
+    /**
+     * 바깥에서 PG 환불을 이미 끝낸 건은 **장부에 그대로 남는다.** (S1-D24 경계)
+     *
+     * `executePg=false` 는 두 가지를 함께 뜻한다 — ① 바깥에서 이미 집행(가상계좌 환불 화면 ·
+     * `cancelPg: false`)과 ② 애초에 PG 로 나가지 않는 환불. S1-D24 가 막아야 하는 것은 ② 뿐이다.
+     * 둘을 묶어 막으면 **정상 취소의 취소 누적이 사라진다** — 이 테스트가 그 과잉 구현을 잡는다.
+     *
+     * @scenario payment_method=card, refund_method=pg, pg_already_settled=true
+     *
+     * @effects externally_settled_pg_refund_still_records_ledger
+     */
+    public function test_execute_records_ledger_when_pg_was_settled_outside(): void
+    {
+        $order = $this->createPaidOrder(paymentOverrides: ['cancelled_amount' => 0]);
+        $refund = $this->createRefund($order, ['refund_method' => RefundMethodEnum::PG]);
+
+        // 수단은 PG 인데 코어는 왕복을 건너뛴다 — 이미 바깥에서 취소됐기 때문이다.
+        $this->service->execute(
+            $order,
+            $refund,
+            new AdjustmentResult(refundAmount: 5000),
+            null,
+            executePg: false,
+            recordPaymentLedger: true,
+        );
+
+        $this->assertSame(
+            5000.0,
+            (float) $order->payment->fresh()->cancelled_amount,
+            '실제로 취소된 금액이 장부에서 빠지면 이후 환불가능액이 실제보다 크게 남는다.'
+        );
+    }
+
     public function test_execute_skips_pg_hook_when_refund_amount_is_zero(): void
     {
         $called = false;

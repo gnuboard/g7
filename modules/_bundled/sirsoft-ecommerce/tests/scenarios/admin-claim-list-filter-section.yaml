@@ -20,6 +20,17 @@ description: |
   ③ 검색 드롭다운 4축(클레임번호·주문번호·신청자·상품명)을 상세 필터에 또 두면 같은 값을
      두 경로로 걸 수 있고, 어느 쪽이 이겼는지는 화면에 드러나지 않는다(D27).
 
+  ④ 그 4축이 **각자 맞는 컬럼을 짚는지**는 드롭다운에 있다는 것만으로 보장되지 않는다.
+     「신청자」는 주문자 이름을 **배송지 행**(`OrderAddress.orderer_name`)에서 찾아야 한다 —
+     주문 헤더에는 그 컬럼이 없어서 `order` 관계에 직접 걸면 SQL 이 죽고 **목록 전체가 500**
+     이 된다(S3-D19). 화면에는 그것이 「검색 결과 없음」으로 보여 **장애가 빈 결과로 위장**
+     된다. 그래서 이 축은 「0건이 아니라 맞는 행이 나온다」까지 잠근다.
+
+     「상품명」도 같은 계열이다 — `product_name` 은 다국어 JSON 이고 MySQL 이 비ASCII 를
+     유니코드 이스케이프로 저장하므로, 평문 `like` 로 훑으면 **한글이 영영 안 걸리고 영문만
+     걸린다**(S3-D20). 영문 상품명으로 시험하면 통과하기 때문에 결함이 가려진다. 로케일별
+     `->{locale}` 로 꺼내 비교하고, **한글과 영문이 같은 건을 집는다**를 단언한다.
+
 # axis 의미:
 #   축을 가르는 것은 유형 서브탭 하나다 — 상태 어휘·귀책 유무·청구 유무가 전부 여기서 갈린다.
 #   필터 축(검색·기간·사유·회원구분)은 유형과 무관하게 같은 모양이라 별도 축으로 세지 않는다.
@@ -42,10 +53,14 @@ effects:
   - fault_axis_absent_for_cancel
   - charge_axis_absent_for_refund_and_cancel
   - search_action_omits_params_for_axes_the_type_lacks
-  # 검색 드롭다운 (D27)
+  # 검색 드롭다운 (D27 · S3-D19)
   - search_dropdown_has_four_fields_and_no_all_option
   - search_field_options_match_request_gate
   - search_axes_not_duplicated_in_detail_filter
+  # 각 검색 축이 실제로 맞는 컬럼을 짚는다 — 되돌리면 빈 결과가 아니라 SQL 예외가 난다
+  - requester_search_reads_orderer_name_from_shipping_address
+  # 상품명은 다국어 JSON — 평문 like 는 한글을 영영 못 만난다(영문만 걸려 결함이 가려진다)
+  - product_name_search_matches_korean_not_only_ascii
   # 목록 컨텍스트 왕복
   - search_navigate_merges_list_context
   - reset_clears_every_filter_key_but_keeps_subtab
@@ -75,6 +90,7 @@ effects:
   - amount_range_reads_the_column_the_list_amount_shows
 
 test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/AdminClaimListRequesterSearchTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListFilterSection.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListFilterSectionRender.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimControllerTest.php
