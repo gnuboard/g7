@@ -65,6 +65,7 @@ modules/_bundled/<id>/
 ├── composer.json                # PSR-4 오토로딩
 ├── CHANGELOG.md                 # Keep a Changelog
 ├── LICENSE                      # MIT
+├── assets/icon.svg              # 확장 아이콘(관례, 선택) — 정사각·100KB 이하
 ├── config/settings/defaults.json
 ├── database/{migrations,seeders,factories}/
 ├── src/
@@ -330,6 +331,7 @@ plugins/_bundled/<id>/
 ├── composer.json                # PSR-4 (src/ + ./)
 ├── CHANGELOG.md                 # Keep a Changelog
 ├── LICENSE                      # MIT
+├── assets/icon.svg              # 확장 아이콘(관례, 선택) — 정사각·100KB 이하
 ├── config/settings/defaults.json      # 설정 기본값 + frontend_schema
 ├── resources/
 │   ├── extensions/              # layout_extensions JSON
@@ -584,7 +586,7 @@ templates/_bundled/<id>/
 ├── src/index.ts · src/test-setup.ts
 ├── src/components/{basic,composite,layout}/
 ├── assets/{css,fonts,images}/
-├── preview/thumbnail.png
+├── assets/icon.svg                # 확장 아이콘(관례, 선택) — 정사각·100KB 이하
 └── __tests__/layouts/           # 레이아웃 렌더링 테스트 (createLayoutTest)
 ```
 
@@ -624,7 +626,7 @@ templates/_bundled/<id>/
     "composite": ["admin-header", "admin-sidebar", "admin-footer", "data-grid", "modal", "toast", "pagination", "page-header", "loading-spinner", "empty-state", "breadcrumb", "card", "dropdown"],
     "layout": ["container", "flex", "grid", "section"]
   },
-  "preview": { "thumbnail": "preview/thumbnail.png", "screenshots": [] },
+  // 아이콘은 assets/icon.svg 관례로 자동 감지된다. 다른 경로를 쓸 때만 "icon": "assets/brand/mark.svg" 를 적는다.
   "error_config": {
     "layouts": { "401": "401", "403": "403", "404": "404", "500": "500", "503": "503", "maintenance": "maintenance" }
   },

@@ -92,12 +92,12 @@ php artisan template:update sirsoft-admin_basic --force
 ## 제공 컴포넌트
 
 <!-- @generated:settings-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 130개 (루트: `src/components`).
+컴포넌트 131개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 84개 |
+| `composite` | 85개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
 | `shared` | 1개 |

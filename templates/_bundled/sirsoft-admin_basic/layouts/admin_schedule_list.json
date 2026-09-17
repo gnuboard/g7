@@ -34,10 +34,13 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 20,
-                    "total": 0
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0,
+                        "has_more_pages": false
+                    }
                 }
             },
             "comment": "예약 작업 목록. 조건 열둘을 전부 `query.*` 에서 읽는다(필터는 표 조각이 갖고 있다)."

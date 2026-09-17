@@ -42,6 +42,11 @@ class LanguagePackControllerTest extends TestCase
      */
     private User $stranger;
 
+    /**
+     * 권한 등급별 계정 세 개를 세운다 — 읽기 전용·관리·무권한.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -105,6 +110,14 @@ class LanguagePackControllerTest extends TestCase
         ]);
     }
 
+    /**
+     * 목록은 쪽 나눔 봉투에 담겨 온다 — 화면이 「총 N개」와 쪽 단추를 그리는 근거다.
+     *
+     * @scenario endpoint=index, outcome=success
+     * @effects index_returns_paginated_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_returns_paginated_list(): void
     {
         $this->makeActiveCorePack();
@@ -118,6 +131,64 @@ class LanguagePackControllerTest extends TestCase
             ->assertJsonPath('data.meta.total', 1);
     }
 
+    /**
+     * 목록 화면의 쪽 단추는 `data.pagination` 만 읽는다. 이 자리가 비면 마지막 쪽 수를 몰라
+     * 단추가 하나만 남고 쪽 이동이 죽는다(보호된 팩까지 펼쳐 63건이 된 화면의 실제 증상).
+     * 모듈·플러그인·템플릿 목록과 같은 계약이므로 키와 값 둘 다 잠근다.
+     *
+     * @scenario envelope_slot=pagination, surface=language_pack_list, consumer=pager_buttons, position=first
+     * @effects language_pack_index_exposes_pagination_slot, pagination_slot_carries_last_page_and_has_more, meta_slot_is_kept_for_backward_compatibility
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_exposes_pagination_block_for_page_navigation(): void
+    {
+        // 한 쪽에 2건씩 → 3건이면 두 쪽이 되어 "다음 쪽이 있다" 가 참이어야 한다.
+        foreach (['ja', 'fr', 'de'] as $locale) {
+            LanguagePack::query()->create([
+                'identifier' => "acme-core-{$locale}",
+                'vendor' => 'acme',
+                'scope' => LanguagePackScope::Core->value,
+                'target_identifier' => null,
+                'locale' => $locale,
+                'locale_name' => $locale,
+                'locale_native_name' => $locale,
+                'text_direction' => 'ltr',
+                'version' => '1.0.0',
+                'status' => LanguagePackStatus::Inactive->value,
+                'is_protected' => false,
+                'manifest' => [],
+                'source_type' => 'zip',
+            ]);
+        }
+        Sanctum::actingAs($this->reader);
+
+        $response = $this->getJson('/api/admin/language-packs?scope=core&status=inactive&exclude_protected=1&per_page=2');
+
+        $response->assertOk()
+            ->assertJsonPath('data.pagination.total', 3)
+            ->assertJsonPath('data.pagination.last_page', 2)
+            ->assertJsonPath('data.pagination.current_page', 1)
+            ->assertJsonPath('data.pagination.per_page', 2)
+            ->assertJsonPath('data.pagination.has_more_pages', true)
+            ->assertJsonCount(2, 'data.data');
+
+        // 둘째 쪽이 실제로 나머지 1건을 준다 — 쪽 이동이 값으로도 살아 있는지.
+        $this->getJson('/api/admin/language-packs?scope=core&status=inactive&exclude_protected=1&per_page=2&page=2')
+            ->assertOk()
+            ->assertJsonPath('data.pagination.current_page', 2)
+            ->assertJsonPath('data.pagination.has_more_pages', false)
+            ->assertJsonCount(1, 'data.data');
+    }
+
+    /**
+     * 범위·상태 필터가 실제로 행을 줄인다. 필터가 무시되면 관리자가 다른 팩을 지운다.
+     *
+     * @scenario endpoint=index, outcome=success
+     * @effects index_filters_by_scope_and_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filter_by_scope(): void
     {
         $this->makeActiveCorePack();
@@ -145,6 +216,15 @@ class LanguagePackControllerTest extends TestCase
             ->assertJsonCount(1, 'data.data');
     }
 
+    /**
+     * 미설치 번들 팩은 DB 행이 없어도 목록에 낀다 — 설치를 결정하기 전에 보여야 하므로
+     * `id` 가 null 인 가상 행으로 오고 `abilities.can_install` 로 설치 단추가 열린다.
+     *
+     * @scenario endpoint=index, outcome=success
+     * @effects uninstalled_bundled_packs_appear_as_virtual_rows_with_install_ability
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_includes_uninstalled_bundled_rows_with_install_ability(): void
     {
         // 임시 번들 디렉토리 — 본 테스트의 슬롯 충돌만 회피.
@@ -186,6 +266,14 @@ class LanguagePackControllerTest extends TestCase
         }
     }
 
+    /**
+     * 번들 팩을 설치하면 가상 행이 실제 행으로 승격된다 — 같은 식별자가 두 번 뜨면 안 된다.
+     *
+     * @scenario endpoint=install, outcome=success
+     * @effects installing_a_bundled_pack_promotes_the_virtual_row_to_a_real_one
+     *
+     * @return void 반환값 없음
+     */
     public function test_install_from_bundled_promotes_uninstalled_row(): void
     {
         // 검증기는 core 스코프에서 identifier 가 `{vendor}-core-{locale}` 형식이어야 한다고 요구.
@@ -238,6 +326,14 @@ class LanguagePackControllerTest extends TestCase
         }
     }
 
+    /**
+     * 상세는 매니페스트까지 펼친다 — 설치 여부를 판단할 정보가 목록보다 많아야 한다.
+     *
+     * @scenario endpoint=show, outcome=success
+     * @effects show_returns_pack_details_with_manifest
+     *
+     * @return void 반환값 없음
+     */
     public function test_show_returns_pack_details(): void
     {
         $pack = $this->makeActiveCorePack();
@@ -250,6 +346,14 @@ class LanguagePackControllerTest extends TestCase
             ->assertJsonStructure(['data' => ['manifest']]);
     }
 
+    /**
+     * 없는 id 는 404 다. 라우트 모델 바인딩이 풀리면 500 이 되어 원인을 가린다.
+     *
+     * @scenario endpoint=show, outcome=not_found
+     * @effects show_returns_not_found_for_missing_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_show_404_for_missing_pack(): void
     {
         Sanctum::actingAs($this->reader);
@@ -259,6 +363,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(404);
     }
 
+    /**
+     * 업로드 상한을 넘는 파일은 압축을 풀기 전에 끊는다 — 풀고 나서 재면 디스크가 먼저 찬다.
+     *
+     * @scenario endpoint=install, outcome=validation_rejected
+     * @effects oversize_upload_is_rejected
+     *
+     * @return void 반환값 없음
+     */
     public function test_install_from_file_rejects_oversize(): void
     {
         Sanctum::actingAs($this->manager);
@@ -271,6 +383,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * GitHub 설치 경로는 github.com 만 받는다. 호스트를 열어 두면 임의 URL 다운로드가 된다.
+     *
+     * @scenario endpoint=install, outcome=validation_rejected
+     * @effects non_github_url_is_rejected
+     *
+     * @return void 반환값 없음
+     */
     public function test_install_from_github_rejects_invalid_url(): void
     {
         Sanctum::actingAs($this->manager);
@@ -282,6 +402,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * URL 설치는 체크섬 형식부터 본다 — 형식이 깨졌으면 받아 볼 필요가 없다.
+     *
+     * @scenario endpoint=install, outcome=validation_rejected
+     * @effects invalid_checksum_is_rejected
+     *
+     * @return void 반환값 없음
+     */
     public function test_install_from_url_rejects_invalid_checksum(): void
     {
         Sanctum::actingAs($this->manager);
@@ -294,6 +422,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 활성화는 상태를 active 로 올리고 fallback 경로에 배선한다.
+     *
+     * @scenario endpoint=activate, outcome=success
+     * @effects activate_promotes_an_inactive_pack
+     *
+     * @return void 반환값 없음
+     */
     public function test_activate_promotes_inactive_pack(): void
     {
         $pack = LanguagePack::query()->create([
@@ -319,6 +455,15 @@ class LanguagePackControllerTest extends TestCase
         $this->assertSame('active', $pack->fresh()->status);
     }
 
+    /**
+     * 활성 슬롯은 로케일·범위당 하나다. 찬 슬롯에 걸면 409 로 멈춘다 — 조용히 덮어쓰면
+     * 어느 팩이 실제로 배선됐는지 알 수 없게 된다.
+     *
+     * @scenario endpoint=activate, outcome=conflict
+     * @effects activate_conflicts_when_the_locale_slot_is_taken
+     *
+     * @return void 반환값 없음
+     */
     public function test_activate_returns_409_when_slot_already_active(): void
     {
         // 슬롯에 이미 active 인 코어/ja 팩 + 같은 슬롯 후보 (inactive)
@@ -351,6 +496,14 @@ class LanguagePackControllerTest extends TestCase
         $this->assertSame('inactive', $candidate->fresh()->status);
     }
 
+    /**
+     * `force` 를 준 경우에만 슬롯을 교체한다 — 교체는 운영자의 명시적 선택이어야 한다.
+     *
+     * @scenario endpoint=activate, outcome=success
+     * @effects force_activate_replaces_the_occupying_pack
+     *
+     * @return void 반환값 없음
+     */
     public function test_activate_with_force_replaces_active_pack(): void
     {
         $current = $this->makeActiveCorePack();
@@ -380,6 +533,14 @@ class LanguagePackControllerTest extends TestCase
         $this->assertSame('active', $candidate->fresh()->status);
     }
 
+    /**
+     * 비활성화는 상태를 inactive 로 되돌려 배선을 끊는다.
+     *
+     * @scenario endpoint=deactivate, outcome=success
+     * @effects deactivate_returns_the_pack_to_inactive
+     *
+     * @return void 반환값 없음
+     */
     public function test_deactivate_changes_status(): void
     {
         $pack = $this->makeActiveCorePack();
@@ -391,6 +552,14 @@ class LanguagePackControllerTest extends TestCase
         $this->assertSame('inactive', $pack->fresh()->status);
     }
 
+    /**
+     * 보호되지 않은 팩은 행까지 지운다.
+     *
+     * @scenario endpoint=uninstall, outcome=success
+     * @effects uninstall_removes_an_unprotected_pack
+     *
+     * @return void 반환값 없음
+     */
     public function test_uninstall_removes_pack(): void
     {
         $pack = LanguagePack::query()->create([
@@ -416,6 +585,14 @@ class LanguagePackControllerTest extends TestCase
         $this->assertNull(LanguagePack::query()->find($pack->id));
     }
 
+    /**
+     * 보호된 팩은 지워지지 않는다 — 코어 한국어팩이 사라지면 관리 화면 자체가 뜨지 않는다.
+     *
+     * @scenario endpoint=uninstall, outcome=success
+     * @effects protected_pack_cannot_be_uninstalled
+     *
+     * @return void 반환값 없음
+     */
     public function test_uninstall_protected_pack_returns_500(): void
     {
         $pack = LanguagePack::query()->create([
@@ -439,6 +616,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(500);
     }
 
+    /**
+     * 언어팩 권한이 없는 계정은 목록조차 볼 수 없다.
+     *
+     * @scenario endpoint=index, outcome=permission_denied
+     * @effects user_without_language_pack_permission_is_denied
+     *
+     * @return void 반환값 없음
+     */
     public function test_unauthorized_user_cannot_access(): void
     {
         Sanctum::actingAs($this->stranger);
@@ -448,6 +633,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 읽기 권한만으로는 설치할 수 없다 — 설치는 서버에 파일을 쓰는 일이다.
+     *
+     * @scenario endpoint=install, outcome=permission_denied
+     * @effects reader_cannot_install
+     *
+     * @return void 반환값 없음
+     */
     public function test_reader_cannot_install(): void
     {
         Sanctum::actingAs($this->reader);
@@ -459,6 +652,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 읽기 권한만으로는 활성화할 수 없다 — 활성 팩만 `require` 경로에 배선된다.
+     *
+     * @scenario endpoint=activate, outcome=permission_denied
+     * @effects reader_cannot_activate
+     *
+     * @return void 반환값 없음
+     */
     public function test_reader_cannot_activate(): void
     {
         $pack = LanguagePack::query()->create([
@@ -482,6 +683,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 갱신 확인은 팩별 결과를 요약으로 돌려준다.
+     *
+     * @scenario endpoint=check_updates, outcome=success
+     * @effects check_updates_returns_a_summary
+     *
+     * @return void 반환값 없음
+     */
     public function test_check_updates_returns_summary(): void
     {
         Sanctum::actingAs($this->manager);
@@ -493,6 +702,14 @@ class LanguagePackControllerTest extends TestCase
             ->assertJsonPath('data.updates', 0);
     }
 
+    /**
+     * 갱신 확인은 update 권한을 요구한다 — 조회처럼 보이지만 원격을 부르는 작업이다.
+     *
+     * @scenario endpoint=check_updates, outcome=permission_denied
+     * @effects check_updates_requires_update_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_check_updates_requires_update_permission(): void
     {
         Sanctum::actingAs($this->reader);
@@ -502,6 +719,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 갱신 수행은 GitHub 로 설치된 팩만 대상이다 — 다른 출처는 되받을 곳이 없다.
+     *
+     * @scenario endpoint=install, outcome=validation_rejected
+     * @effects perform_update_rejects_non_github_source
+     *
+     * @return void 반환값 없음
+     */
     public function test_perform_update_rejects_non_github_source(): void
     {
         $pack = $this->makeActiveCorePack();
@@ -512,6 +737,14 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(500);
     }
 
+    /**
+     * 없는 팩의 갱신은 404 다.
+     *
+     * @scenario endpoint=show, outcome=not_found
+     * @effects show_returns_not_found_for_missing_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_perform_update_404_for_missing_pack(): void
     {
         Sanctum::actingAs($this->manager);
@@ -521,6 +754,15 @@ class LanguagePackControllerTest extends TestCase
         $response->assertStatus(404);
     }
 
+    /**
+     * 캐시 갱신은 레지스트리·번역기·템플릿 세 축의 결과를 각각 돌려준다 — 하나만 실패해도
+     * 어디가 실패했는지 보여야 다음 조치를 정할 수 있다.
+     *
+     * @scenario endpoint=refresh_cache, outcome=success
+     * @effects refresh_cache_reports_status_per_registry
+     *
+     * @return void 반환값 없음
+     */
     public function test_refresh_cache_returns_status_map(): void
     {
         Sanctum::actingAs($this->manager);
@@ -531,6 +773,14 @@ class LanguagePackControllerTest extends TestCase
             ->assertJsonStructure(['data' => ['registry', 'translator', 'template']]);
     }
 
+    /**
+     * 변경 이력이 없는 팩은 실패가 아니라 「없음」으로 답한다 — 없는 것이 정상이다.
+     *
+     * @scenario endpoint=changelog, outcome=success
+     * @effects changelog_reports_absence_instead_of_failing
+     *
+     * @return void 반환값 없음
+     */
     public function test_changelog_returns_empty_when_missing(): void
     {
         $pack = $this->makeActiveCorePack();
@@ -542,6 +792,14 @@ class LanguagePackControllerTest extends TestCase
             ->assertJsonPath('data.has_changelog', false);
     }
 
+    /**
+     * 검색어는 식별자·벤더를 가로질러 걸린다.
+     *
+     * @scenario endpoint=index, outcome=success
+     * @effects index_filters_by_search_term
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_search_filter(): void
     {
         $this->makeActiveCorePack();
@@ -589,6 +847,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_untrusted_source, actor_permission=install_only
      *
      * @effects install_only_user_cannot_auto_activate
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('externalInstallEndpointProvider')]
     public function test_install_only_user_cannot_auto_activate(string $endpoint, array $payload): void
@@ -614,6 +874,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_untrusted_source, actor_permission=install_only
      *
      * @effects install_without_auto_activate_is_not_blocked
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('externalInstallEndpointProvider')]
     public function test_install_without_auto_activate_is_not_blocked_for_install_only_user(string $endpoint, array $payload): void
@@ -638,6 +900,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_untrusted_source, actor_permission=install_and_manage
      *
      * @effects manage_user_can_auto_activate
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('externalInstallEndpointProvider')]
     public function test_manage_user_is_not_blocked_by_the_activation_gate(string $endpoint, array $payload): void
@@ -667,6 +931,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_untrusted_source, actor_permission=manage_only
      *
      * @effects manage_only_user_cannot_install_at_all
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('externalInstallEndpointProvider')]
     public function test_manage_only_user_cannot_install(string $endpoint, array $payload): void
@@ -687,6 +953,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_untrusted_source, actor_permission=install_only
      *
      * @effects install_only_user_cannot_auto_activate
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_blocks_auto_activate_for_install_only_user(): void
     {
@@ -714,6 +982,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_bundled, actor_permission=install_only
      *
      * @effects install_only_user_cannot_auto_activate
+     *
+     * @return void 반환값 없음
      */
     public function test_bundled_install_blocks_auto_activate_for_install_only_user(): void
     {
@@ -740,6 +1010,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_bundled, actor_permission=install_only
      *
      * @effects install_without_auto_activate_is_not_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_bundled_install_without_auto_activate_is_not_blocked(): void
     {
@@ -764,6 +1036,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_bundled, actor_permission=install_and_manage
      *
      * @effects manage_user_can_auto_activate
+     *
+     * @return void 반환값 없음
      */
     public function test_bundled_install_allows_auto_activate_for_manage_user(): void
     {
@@ -802,6 +1076,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario vector=install_from_untrusted_source, actor_permission=install_only
      *
      * @effects overwriting_an_active_pack_does_not_inherit_active_status
+     *
+     * @return void 반환값 없음
      */
     public function test_install_only_user_cannot_reactivate_by_overwriting_active_pack(): void
     {
@@ -877,7 +1153,7 @@ class LanguagePackControllerTest extends TestCase
     /**
      * 외부 소스 설치 엔드포인트 목록 (유효성만 통과하는 최소 본문).
      *
-     * @return array<string, array{string, array<string, mixed>}>
+     * @return array<string, array{string, array<string, mixed>}> 소스 이름 => [엔드포인트 경로, 요청 본문]
      */
     public static function externalInstallEndpointProvider(): array
     {
@@ -902,6 +1178,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario endpoint=manifest_preview
      *
      * @effects language_pack_manifest_preview_failure_omits_exception_text
+     *
+     * @return void 반환값 없음
      */
     public function test_manifest_preview_failure_does_not_leak_exception_message(): void
     {
@@ -932,6 +1210,8 @@ class LanguagePackControllerTest extends TestCase
      * @scenario endpoint=refresh_cache
      *
      * @effects language_pack_refresh_cache_failure_omits_exception_text
+     *
+     * @return void 반환값 없음
      */
     public function test_refresh_cache_failure_does_not_leak_exception_message(): void
     {

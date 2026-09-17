@@ -60,6 +60,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
 | status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | assets | object | `{"js":"\/api\/modules\/assets\/sirsoft-ecommerce?file=dis…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| icon_url | string\|null | `/api/extensions/module/sirsoft-board/icon?v=1.2.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
+| icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.3` | 감지된 최신 배포 버전 |
@@ -821,6 +823,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
 | status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | assets | object | `{"js":"\/api\/modules\/assets\/sirsoft-ecommerce?file=dis…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| icon_url | string\|null | `/api/extensions/module/sirsoft-board/icon?v=1.2.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
+| icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `0.1.1` | 감지된 최신 배포 버전 |

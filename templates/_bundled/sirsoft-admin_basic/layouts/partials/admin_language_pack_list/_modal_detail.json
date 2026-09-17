@@ -123,6 +123,92 @@
                                             },
                                             "children": [
                                                 {
+                                                    "id": "lp_detail_icon",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "col-span-2 flex items-center gap-3 mb-4"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "comment": "글리프를 늘 깔아 두고 이미지가 그 위를 덮는다 — 로드 전에도 자리가 유지된다.\n                     깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 언어팩까지 전부\n                     아이콘을 잃으므로(다른 상세 창과 같은 결함) 식별자 목록으로 든다.",
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "fas fa-language",
+                                                                        "className": "text-xl text-gray-600 dark:text-gray-400",
+                                                                        "aria-hidden": "true"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Img",
+                                                                    "if": "{{language_pack_detail?.data?.icon_url && !(_local.detailIconBroken ?? []).includes(language_pack_detail?.data?.identifier)}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "event": "onError",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "detailIconBroken": "{{[...(_local.detailIconBroken ?? []), language_pack_detail?.data?.identifier]}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "src": "{{language_pack_detail?.data?.icon_url}}",
+                                                                        "alt": "$t:defer:extensions.icon.alt|name={{language_pack_detail?.data?.name ?? ''}}",
+                                                                        "loading": "lazy",
+                                                                        "decoding": "async",
+                                                                        "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{language_pack_detail?.data?.icon_source !== 'manifest'}}",
+                                                                    "props": {
+                                                                        "className": "absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800",
+                                                                        "aria-label": "$t:defer:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}"
+                                                                    },
+                                                                    "text": "{{language_pack_detail?.data?.locale}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-primary font-semibold truncate"
+                                                                    },
+                                                                    "text": "{{language_pack_detail?.data?.name ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Code",
+                                                                    "props": {
+                                                                        "className": "text-label-subtle text-xs"
+                                                                    },
+                                                                    "text": "{{language_pack_detail?.data?.identifier ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "if": "{{language_pack_detail?.data?.name}}",

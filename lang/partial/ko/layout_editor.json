@@ -418,7 +418,10 @@
       "onSelect": "선택하면",
       "onSelectionChange": "선택이 바뀌면",
       "onToggle": "펼치거나 접으면",
-      "onComponentEvent": "특정 이벤트가 발생하면"
+      "onComponentEvent": "특정 이벤트가 발생하면",
+      "onPrimaryAction": "주 버튼을 누르면",
+      "onSecondaryAction": "보조 버튼을 누르면",
+      "onAction": "더보기 메뉴를 고르면"
     },
     "advanced": "고급",
     "add_search": "동작 검색…",

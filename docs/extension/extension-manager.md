@@ -334,6 +334,17 @@ php artisan extension:composer-install
 
 ---
 
+## 확장 아이콘
+
+확장과 언어팩은 자기 아이콘을 담을 수 있습니다. 패키지 루트에 `assets/icon.svg` 를 두거나
+매니페스트에 `"icon"` 경로를 적으면 관리자 확장 관리 목록·상세·확인 창과 설치 마법사에
+그 그림이 나옵니다. 아이콘이 없는 확장은 종류별 기본 그림으로 표시됩니다.
+
+규격(정사각·100KB 이하·스크립트 없는 SVG), 서빙 주소, 언어팩 합성 규칙은
+[확장 아이콘](extension-icons.md)에 있습니다.
+
+---
+
 ## 관리자 UI 필터링 (hidden 플래그)
 
 확장 manifest (`module.json` / `plugin.json` / `template.json`) 에 `"hidden": true` 를 설정하면, 관리자 UI 목록 응답과 artisan `*:list` 기본 출력에서 제외됩니다. 학습용 샘플 확장, 내부 운영 전용 확장을 숨길 때 사용합니다.

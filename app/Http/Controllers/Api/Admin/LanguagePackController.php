@@ -53,6 +53,18 @@ class LanguagePackController extends AdminBaseController
             $collection = new LanguagePackCollection(collect($paginator->items()));
             $payload = [
                 'data' => $collection->toArray($request)['data'],
+                // 쪽 이동 값은 `pagination` 에 담는다 — 관리자 목록 화면이 모두 이 자리를 읽고,
+                // 여기가 비면 쪽 단추가 하나만 남아 이동이 죽는다(모듈·플러그인·템플릿과 같은 계약).
+                'pagination' => [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'has_more_pages' => $paginator->hasMorePages(),
+                ],
+                // `meta` 의 쪽 값은 이미 쓰고 있는 화면(쪽 요약 줄)이 있어 그대로 둔다.
                 'meta' => array_merge(
                     $collection->with($request)['meta'] ?? [],
                     [

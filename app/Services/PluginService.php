@@ -12,6 +12,7 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Vendor\VendorMode;
+use App\Services\Extension\ExtensionIconResolver;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +24,12 @@ class PluginService
      */
     private const SEARCHABLE_FIELDS = ['name', 'identifier', 'description', 'vendor'];
 
+    /**
+     * 플러그인 서비스를 생성합니다.
+     *
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 저장소
+     * @param  PluginManagerInterface  $pluginManager  플러그인 매니저
+     */
     public function __construct(
         private PluginRepositoryInterface $pluginRepository,
         private PluginManagerInterface $pluginManager
@@ -845,6 +852,7 @@ class PluginService
         $extractPath = $tempPath.'/preview-'.uniqid('plugin_');
         $manifest = null;
         $errors = [];
+        $icon = null;
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -854,6 +862,11 @@ class PluginService
             );
 
             $manifest = $result['config'];
+
+            // 추출본은 finally 에서 지워지므로 아이콘 검사는 여기(try 안)에서 끝낸다.
+            // 아이콘 규격 위반은 설치를 막지 않는다 — 경고만 보이고 화면은 유형 글리프로 떨어진다.
+            $icon = app(ExtensionIconResolver::class)
+                ->inspectRootForApi($result['sourcePath'], $manifest['icon'] ?? null);
         } catch (\Throwable $e) {
             $errors[] = $e->getMessage();
         } finally {
@@ -868,6 +881,7 @@ class PluginService
 
         return [
             'manifest' => $manifest,
+            'icon' => $icon,
             'validation' => [
                 'errors' => $errors,
                 'is_valid' => $errors === [] && $manifest !== null,
@@ -994,6 +1008,7 @@ class PluginService
      * _bundled/_pending에만 존재하는 경우(is_installed=false)는 설치 허용합니다.
      *
      * @param  string  $identifier  플러그인 식별자
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 이미 설치된 경우
      */

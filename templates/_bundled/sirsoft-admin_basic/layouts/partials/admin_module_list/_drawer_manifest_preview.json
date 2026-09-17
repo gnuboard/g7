@@ -156,6 +156,89 @@
                     ]
                 },
                 {
+                    "id": "module_preview_icon",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.modulePreviewResult?.icon}}",
+                    "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm flex items-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "cube",
+                                        "className": "text-xl text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.modulePreviewResult?.icon?.present && _global.modulePreviewResult?.icon?.valid}}",
+                                    "props": {
+                                        "className": "text-success-soft"
+                                    },
+                                    "text": "$t:defer:extensions.manifest_preview.icon_present|path={{_global.modulePreviewResult?.icon?.path ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.modulePreviewResult?.icon?.present && !_global.modulePreviewResult?.icon?.valid}}",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "text": "$t:extensions.manifest_preview.icon_invalid"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!_global.modulePreviewResult?.icon?.present}}",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:extensions.manifest_preview.icon_missing"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_global.modulePreviewResult?.icon?.warnings",
+                                        "item_var": "w"
+                                    },
+                                    "props": {
+                                        "className": "text-label-subtle text-xs mt-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "text": "• {{w.message}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.modulePreviewResult?.validation?.is_valid === true}}",

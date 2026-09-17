@@ -8,6 +8,9 @@
 
 ### Added
 
+- 확장 카드가 새로 내보내는 동작 3종(주 버튼·보조 버튼·더보기 메뉴)의 편집기 라벨
+  일본어 번역을 추가했습니다. 없으면 동작 탭에 키가 그대로 노출됩니다.
+- 確認画面と拡張アイコンの案内文言（アイコン規格の警告 25 件）を追加しました。
 - 코어 권한 2건(`core.system`·`core.system.update`)의 일본어 번역을 추가했습니다 — 일본어 로케일의 역할 수정 화면에서 「시스템 관리」·「코어 업데이트」가 한국어로 남아 있었습니다.
 
 - 레이아웃 파일 생성·삭제·이름변경 안내 문구 일본어 번역 추가 (`layouts.messages.*`·`layouts.errors.*`·`layouts.reference_kinds.*`) — 코드 편집기에서 화면 파일을 직접 만들고 지우고 옮길 수 있게 되면서 새로 생긴 안내입니다. 쓸 수 없는 이름(`invalid_name`)·이미 있는 이름(`name_taken`) 같은 입력 오류와, 지우거나 옮길 수 없는 사유 — 모듈·플러그인이 제공한 원본이라서(`delete_blocked_source_type`·`rename_blocked_source_type`), 다른 화면이 상속·조각으로 참조하고 있어서(`delete_blocked_by_reference`·`rename_blocked_by_reference`) — 그리고 라우트가 연결된 화면을 지울 때 한 번 더 묻는 안내(`delete_requires_confirmation`)가 일본어 로케일에서 자연스럽게 표시됩니다. 참조 목록에 붙는 갈래 이름(상속·조각 참조·라우트 연결)도 함께 번역했습니다.

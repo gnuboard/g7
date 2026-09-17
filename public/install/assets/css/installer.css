@@ -3568,6 +3568,16 @@ body {
   transition: all 0.2s ease;
 }
 
+/* 확장이 동봉한 아이콘 — 박스를 채우되 비율은 지킨다.
+   선택/다크 규칙은 박스 배경만 바꾸므로 이 규칙과 충돌하지 않는다. */
+.extension-card-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+  border-radius: inherit;
+}
+
 .extension-card.selected .extension-card-icon {
   background-color: var(--primary-color);
   color: white;

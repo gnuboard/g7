@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 130개 (루트: `src/components`).
+컴포넌트 131개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 84개 |
+| `composite` | 85개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
 | `shared` | 1개 |
@@ -411,6 +411,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 |----------|------|-----------|
 | `DataGrid` | 정렬/필터링/페이지네이션 데이터 그리드 | columns, data, sortable, pagination, pageSize, ... |
 | `CardGrid` | 카드 그리드 레이아웃 (스켈레톤 로딩, 페이지네이션) | data, cardColumns, columns, gap, responsiveColumns, ... |
+| `ExtensionCardGrid` | 확장·언어팩 목록 전용 카드/목록 전환 그리드 | items, viewMode, minCardWidth, maxColumns, pagination, ... |
 | `Pagination` | 페이지네이션 | currentPage, totalPages, onPageChange, maxVisiblePages, showFirstLast, ... |
 | `Badge` | 색상 기반 라벨 뱃지 | color, text, size, style |
 | `StatusBadge` | 상태 뱃지 (아이콘 포함) | status, label, showIcon, iconName, style |

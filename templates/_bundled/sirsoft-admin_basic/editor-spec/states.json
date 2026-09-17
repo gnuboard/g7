@@ -72,7 +72,10 @@
                 "name": "이서연",
                 "email": "seoyeon.lee@example.com",
                 "nickname": "서연",
-                "role_ids": [2, 5],
+                "role_ids": [
+                  2,
+                  5
+                ],
                 "status": "active",
                 "mobile": "010-3456-7890",
                 "phone": "02-777-8800",
@@ -110,7 +113,10 @@
                 "name": "",
                 "email": "invalid-email",
                 "nickname": "서연",
-                "role_ids": [2, 5],
+                "role_ids": [
+                  2,
+                  5
+                ],
                 "status": "active",
                 "mobile": "010-3456-7890",
                 "phone": "02-777-8800",
@@ -128,8 +134,12 @@
             }
           },
           "formErrors": {
-            "_local.errors.name": ["필수 입력 항목입니다"],
-            "_local.errors.email": ["올바른 이메일 형식이 아닙니다"]
+            "_local.errors.name": [
+              "필수 입력 항목입니다"
+            ],
+            "_local.errors.email": [
+              "올바른 이메일 형식이 아닙니다"
+            ]
           }
         }
       ]
@@ -146,88 +156,132 @@
           "label": "$t:editor.state.settings_general",
           "default": true,
           "initialState": {
-            "query": { "tab": "general" },
-            "global": { "activeSettingsTab": "general" }
+            "query": {
+              "tab": "general"
+            },
+            "global": {
+              "activeSettingsTab": "general"
+            }
           }
         },
         {
           "id": "settings_mail",
           "label": "$t:editor.state.settings_mail",
           "initialState": {
-            "query": { "tab": "mail" },
-            "global": { "activeSettingsTab": "mail" }
+            "query": {
+              "tab": "mail"
+            },
+            "global": {
+              "activeSettingsTab": "mail"
+            }
           }
         },
         {
           "id": "settings_upload",
           "label": "$t:editor.state.settings_upload",
           "initialState": {
-            "query": { "tab": "upload" },
-            "global": { "activeSettingsTab": "upload" }
+            "query": {
+              "tab": "upload"
+            },
+            "global": {
+              "activeSettingsTab": "upload"
+            }
           }
         },
         {
           "id": "settings_seo",
           "label": "$t:editor.state.settings_seo",
           "initialState": {
-            "query": { "tab": "seo" },
-            "global": { "activeSettingsTab": "seo" }
+            "query": {
+              "tab": "seo"
+            },
+            "global": {
+              "activeSettingsTab": "seo"
+            }
           }
         },
         {
           "id": "settings_security",
           "label": "$t:editor.state.settings_security",
           "initialState": {
-            "query": { "tab": "security" },
-            "global": { "activeSettingsTab": "security" }
+            "query": {
+              "tab": "security"
+            },
+            "global": {
+              "activeSettingsTab": "security"
+            }
           }
         },
         {
           "id": "settings_drivers",
           "label": "$t:editor.state.settings_drivers",
           "initialState": {
-            "query": { "tab": "drivers" },
-            "global": { "activeSettingsTab": "drivers" }
+            "query": {
+              "tab": "drivers"
+            },
+            "global": {
+              "activeSettingsTab": "drivers"
+            }
           }
         },
         {
           "id": "settings_advanced",
           "label": "$t:editor.state.settings_advanced",
           "initialState": {
-            "query": { "tab": "advanced" },
-            "global": { "activeSettingsTab": "advanced" }
+            "query": {
+              "tab": "advanced"
+            },
+            "global": {
+              "activeSettingsTab": "advanced"
+            }
           }
         },
         {
           "id": "settings_notification_definitions",
           "label": "$t:editor.state.settings_notification_definitions",
           "initialState": {
-            "query": { "tab": "notification_definitions" },
-            "global": { "activeSettingsTab": "notification_definitions" }
+            "query": {
+              "tab": "notification_definitions"
+            },
+            "global": {
+              "activeSettingsTab": "notification_definitions"
+            }
           }
         },
         {
           "id": "settings_language_packs",
           "label": "$t:editor.state.settings_language_packs",
           "initialState": {
-            "query": { "tab": "language_packs" },
-            "global": { "activeSettingsTab": "language_packs" }
+            "query": {
+              "tab": "language_packs"
+            },
+            "global": {
+              "activeSettingsTab": "language_packs"
+            }
           }
         },
         {
           "id": "settings_identity",
           "label": "$t:editor.state.settings_identity",
           "initialState": {
-            "query": { "tab": "identity" },
-            "global": { "activeSettingsTab": "identity" }
+            "query": {
+              "tab": "identity"
+            },
+            "global": {
+              "activeSettingsTab": "identity"
+            }
           }
         },
         {
           "id": "settings_info",
           "label": "$t:editor.state.settings_info",
           "initialState": {
-            "query": { "tab": "info" },
-            "global": { "activeSettingsTab": "info" }
+            "query": {
+              "tab": "info"
+            },
+            "global": {
+              "activeSettingsTab": "info"
+            }
           }
         }
       ]
@@ -269,8 +323,12 @@
             }
           },
           "formErrors": {
-            "_local.resetErrors.password": ["필수 입력 항목입니다"],
-            "_local.resetErrors.password_confirmation": ["필수 입력 항목입니다"]
+            "_local.resetErrors.password": [
+              "필수 입력 항목입니다"
+            ],
+            "_local.resetErrors.password_confirmation": [
+              "필수 입력 항목입니다"
+            ]
           }
         },
         {
@@ -310,7 +368,9 @@
           "id": "validation_failed",
           "label": "$t:editor.state.validation_failed",
           "formErrors": {
-            "_global.formErrors.name": ["필수 입력 항목입니다"]
+            "_global.formErrors.name": [
+              "필수 입력 항목입니다"
+            ]
           }
         }
       ]
@@ -375,16 +435,24 @@
           "label": "$t:editor.state.tab.template_user",
           "default": true,
           "initialState": {
-            "route": { "type": "user" },
-            "global": { "activeTemplateTab": "user" }
+            "route": {
+              "type": "user"
+            },
+            "global": {
+              "activeTemplateTab": "user"
+            }
           }
         },
         {
           "id": "admin_templates",
           "label": "$t:editor.state.tab.template_admin",
           "initialState": {
-            "route": { "type": "admin" },
-            "global": { "activeTemplateTab": "admin" }
+            "route": {
+              "type": "admin"
+            },
+            "global": {
+              "activeTemplateTab": "admin"
+            }
           }
         }
       ]
@@ -406,8 +474,12 @@
           "label": "$t:editor.state.login_failed",
           "formErrors": {
             "_local.loginError": "올바른 이메일 형식이 아닙니다",
-            "_local.loginErrors.email": ["올바른 이메일 형식이 아닙니다"],
-            "_local.loginErrors.password": ["필수 입력 항목입니다"]
+            "_local.loginErrors.email": [
+              "올바른 이메일 형식이 아닙니다"
+            ],
+            "_local.loginErrors.password": [
+              "필수 입력 항목입니다"
+            ]
           }
         }
       ]
@@ -424,14 +496,46 @@
           "label": "$t:editor.state.forgot_default",
           "default": true,
           "initialState": {
-            "local": { "success": false }
+            "local": {
+              "success": false
+            }
           }
         },
         {
           "id": "success",
           "label": "$t:editor.state.forgot_success",
           "initialState": {
-            "local": { "success": true }
+            "local": {
+              "success": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "확장 관리 4화면의 보기 방식. 편집기 캔버스는 정적 시뮬레이션이라 토글 클릭이 없으므로 _global.extensionViewMode 를 상태로 주입해야 갤러리·목록 두 배치를 모두 편집할 수 있다. 기본은 갤러리이며, 목록 변종은 회귀 축이라 현행 배치를 그대로 보여 준다.",
+      "scope": {
+        "kind": "layout",
+        "match": "admin_plugin_list|admin_module_list|admin_template_list|admin_language_pack_list"
+      },
+      "items": [
+        {
+          "id": "extensions_list_view_gallery",
+          "label": "$t:editor.state.extensions_list_view_gallery",
+          "default": true,
+          "initialState": {
+            "global": {
+              "extensionViewMode": "gallery"
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_list",
+          "label": "$t:editor.state.extensions_list_view_list",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "list"
+            }
           }
         }
       ]

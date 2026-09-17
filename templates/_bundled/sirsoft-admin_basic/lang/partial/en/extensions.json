@@ -34,5 +34,24 @@
     "rebuild_search_index_title": "Search index",
     "rebuild_search_index_label": "Rebuild search indexes that hold no indexed content after the update",
     "rebuild_search_index_desc": "Rebuilding locks or re-indexes the target. On a live site, leave this unchecked and run it during a maintenance window."
+  },
+  "view_mode": {
+    "toggle_label": "View mode",
+    "gallery": "Gallery view",
+    "list": "List view",
+    "gallery_aria": "Show as gallery",
+    "list_aria": "Show as list"
+  },
+  "card": {
+    "open_detail": "View details of {{name}}"
+  },
+  "icon": {
+    "alt": "{{name}} icon",
+    "locale_badge_sr": "{{locale}} language pack"
+  },
+  "manifest_preview": {
+    "icon_present": "Icon included: {{path}}",
+    "icon_missing": "No icon; the default icon will be shown.",
+    "icon_invalid": "The icon does not meet the specification; the default icon will be shown."
   }
 }

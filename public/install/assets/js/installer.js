@@ -2244,6 +2244,15 @@
         else if (type === 'modules') iconClass = 'fa-cube';
         else if (type === 'plugins') iconClass = 'fa-plug';
 
+        // 확장이 아이콘을 동봉했으면 유형 글리프 대신 그 그림을 그린다.
+        // 서버(scan-extensions.php)가 검증기를 통과한 바이트만 data URI 로 보내지만,
+        // innerHTML 조립이라 여기서도 형태를 다시 검사한다 — 정규식이 따옴표·꺾쇠를
+        // 배제하므로 속성 탈출이 성립하지 않는다.
+        const DATA_URI_RE = /^data:image\/(svg\+xml|png|webp);base64,[A-Za-z0-9+/]+=*$/;
+        const iconHtml = (typeof item.icon_data_uri === 'string' && DATA_URI_RE.test(item.icon_data_uri))
+            ? '<img class="extension-card-icon-img" src="' + item.icon_data_uri + '" alt="" loading="lazy">'
+            : '<i class="fas ' + iconClass + '"></i>';
+
         const name = getLocalizedText(item.name) || item.identifier;
         const description = getLocalizedText(item.description);
         const version = item.version || '1.0.0';
@@ -2269,7 +2278,7 @@
 
         card.innerHTML =
             '<div class="extension-card-header">' +
-                '<div class="extension-card-icon"><i class="fas ' + iconClass + '"></i></div>' +
+                '<div class="extension-card-icon">' + iconHtml + '</div>' +
                 '<div class="extension-card-info">' +
                     '<h4 class="extension-card-name">' + escapeHtml(name) + '</h4>' +
                     '<div class="extension-card-meta">v' + escapeHtml(version) + (author ? ' · ' + escapeHtml(author) : '') + '</div>' +

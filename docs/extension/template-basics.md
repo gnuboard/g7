@@ -210,6 +210,16 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 
 ## 템플릿 메타데이터 (template.json)
 
+### icon 필드 (선택)
+
+템플릿도 자기 아이콘을 담을 수 있습니다. 보통은 `assets/icon.svg` 를 두면 되고, 다른
+경로를 쓸 때만 `template.json` 에 `"icon": "assets/brand/mark.svg"` 를 적습니다.
+규격과 표시 자리는 [확장 아이콘](extension-icons.md)에 있습니다.
+
+> `preview` · `thumbnail` · `screenshots` 는 **지원하지 않습니다.** 과거 일부 템플릿이
+> 선언했지만 코드가 읽지 않던 값이라 제거했습니다. 아이콘은 위 관례를 쓰세요.
+
+
 **위치**: `/templates/_bundled/[vendor-template]/template.json`
 
 ### 구조

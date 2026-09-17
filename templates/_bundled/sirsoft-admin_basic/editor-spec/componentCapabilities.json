@@ -1035,6 +1035,41 @@
       }
     ]
   },
+  "ExtensionCardGrid": {
+    "label": "$t:editor.component.extension_card_grid",
+    "propControls": [
+      "ecgViewMode",
+      "ecgMinCardWidth",
+      "ecgMaxColumns",
+      "ecgPagination"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onPageChange",
+      "onItemClick",
+      "onToggle",
+      "onPrimaryAction",
+      "onSecondaryAction",
+      "onAction"
+    ],
+    "dataProps": [
+      {
+        "propKey": "items",
+        "shape": "array",
+        "label": "$t:editor.data_prop.items",
+        "itemFields": [
+          "id",
+          "name",
+          "version",
+          "description",
+          "iconUrl"
+        ],
+        "required": true
+      }
+    ]
+  },
   "Pagination": {
     "label": "$t:editor.component.pagination",
     "propControls": [

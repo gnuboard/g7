@@ -1127,6 +1127,18 @@
     },
     "sh_description": {
       "label": "Description"
+    },
+    "ecg_view_mode": {
+      "label": "View mode"
+    },
+    "ecg_min_card_width": {
+      "label": "Min card width (px)"
+    },
+    "ecg_max_columns": {
+      "label": "Max columns"
+    },
+    "ecg_pagination": {
+      "label": "Pagination"
     }
   },
   "component": {
@@ -1215,7 +1227,8 @@
     "theme_toggle": "Theme Toggle",
     "notification_center": "Notification Center",
     "column_selector": "Column Selector",
-    "section_header": "Section Header"
+    "section_header": "Section Header",
+    "extension_card_grid": "Extension card grid"
   },
   "action": {
     "go_to_page": {
@@ -1292,6 +1305,12 @@
     "init_filter_visibility": {
       "label": "Initialize filter visibility",
       "param_storage_key": "Storage key"
+    },
+    "persist_view_mode": {
+      "label": "Persist view mode (save then read back)",
+      "param_storage_key": "Browser storage key",
+      "param_state_key": "Global state key",
+      "param_value": "Value to save (literal)"
     }
   },
   "computed": {
@@ -1463,7 +1482,9 @@
       "deposit": "Deposit tab",
       "template_user": "User templates tab",
       "template_admin": "Admin templates tab"
-    }
+    },
+    "extensions_list_view_gallery": "Extension list — gallery view",
+    "extensions_list_view_list": "Extension list — list view"
   },
   "cell_border": {
     "side_all": "All",

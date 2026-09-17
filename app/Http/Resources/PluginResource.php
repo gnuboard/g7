@@ -31,6 +31,8 @@ class PluginResource extends BaseApiResource
             'has_settings' => $this->getValue('has_settings', false),
             'settings_route' => $this->getValue('settings_route'),
             'assets' => $this->getValue('assets'),
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
@@ -105,6 +107,10 @@ class PluginResource extends BaseApiResource
             'has_settings' => $this->getValue('has_settings', false),
             'settings_route' => $this->getValue('settings_route'),
             // 상세 정보
+            // 상세 응답은 목록이 골라 둔 전역 자리를 통째로 덮는다(상세 창의 initGlobal).
+            // 여기서 빠뜨리면 창이 열린 뒤 아이콘만 사라지므로 목록과 같은 두 필드를 싣는다.
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             'permissions' => $this->getValue('permissions', []),
             'roles' => $this->getValue('roles', []),
             'hooks' => $this->getValue('hooks', []),

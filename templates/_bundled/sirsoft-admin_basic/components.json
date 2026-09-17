@@ -1353,6 +1353,129 @@
         }
       },
       {
+        "name": "ExtensionCardGrid",
+        "type": "composite",
+        "description": "확장 목록 전용 그리드 — 갤러리(카드)와 목록(행)을 각각 독립 DOM 으로 렌더한다",
+        "path": "src/components/composite/ExtensionCardGrid.tsx",
+        "props": {
+          "items": {
+            "type": "array",
+            "required": false,
+            "description": "확장 카드 데이터 배열 (ExtensionCardItem[])"
+          },
+          "viewMode": {
+            "type": "string",
+            "required": false,
+            "default": "gallery",
+            "description": "보기 방식 — gallery(기본) 또는 list"
+          },
+          "minCardWidth": {
+            "type": "number",
+            "required": false,
+            "default": 250,
+            "description": "카드 최소 폭(px) — 열 수는 컨테이너 실측 폭을 이 값으로 나눠 정한다"
+          },
+          "maxColumns": {
+            "type": "number",
+            "required": false,
+            "default": 5,
+            "description": "열 수 상한 — 초대형 화면에서 카드가 잘게 쪼개지는 것을 막는다"
+          },
+          "emptyMessage": {
+            "type": "string",
+            "required": false,
+            "description": "데이터 0건일 때 표시할 문구"
+          },
+          "pagination": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "페이지네이션 표시 여부"
+          },
+          "currentPage": {
+            "type": "number",
+            "required": false,
+            "default": 1,
+            "description": "현재 페이지 (서버 페이지네이션)"
+          },
+          "totalPages": {
+            "type": "number",
+            "required": false,
+            "default": 1,
+            "description": "전체 페이지 수"
+          },
+          "hasMorePages": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "다음 페이지 존재 여부 — 총 건수를 상한까지만 센 목록에서 다음 이동을 열어 둔다"
+          },
+          "alwaysShowPagination": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "페이지가 1개여도 페이지네이션 항상 표시"
+          },
+          "paginationInfoText": {
+            "type": "string",
+            "required": false,
+            "description": "페이지네이션 아래 안내 문구"
+          },
+          "onPageChange": {
+            "type": "function",
+            "required": false,
+            "description": "페이지 변경 콜백 (page: number) => void"
+          },
+          "onItemClick": {
+            "type": "function",
+            "required": false,
+            "description": "카드 본문 클릭 콜백 (id: string) => void"
+          },
+          "onToggle": {
+            "type": "function",
+            "required": false,
+            "description": "토글 변경 콜백 (id: string, next: boolean) => void"
+          },
+          "onPrimaryAction": {
+            "type": "function",
+            "required": false,
+            "description": "주 버튼 클릭 콜백 (id: string) => void"
+          },
+          "onSecondaryAction": {
+            "type": "function",
+            "required": false,
+            "description": "보조 버튼 클릭 콜백 (id: string) => void"
+          },
+          "onAction": {
+            "type": "function",
+            "required": false,
+            "description": "액션 메뉴 선택 콜백 (actionId: string|number, id: string) => void"
+          },
+          "loading": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "로딩 여부 — 참이면 자리표시자를 그린다"
+          },
+          "skeletonCount": {
+            "type": "number",
+            "required": false,
+            "description": "자리표시자 개수 — 생략하면 실제 열 수를 따른다(갤러리 = 열 수 · 목록 = 1)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "전체 컨테이너 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
         "name": "Modal",
         "type": "composite",
         "description": "Modal dialog with overlay and focus trap",
