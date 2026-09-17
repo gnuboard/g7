@@ -177,6 +177,11 @@
             "withdrawModal": "Withdraw Membership"
         },
         "identity_challenge_modal": "Identity Verification",
-        "notification_delete_all_confirm_modal": "Delete All Notifications"
+        "notification_delete_all_confirm_modal": "Delete All Notifications",
+        "mypage_board": {
+            "reactionDeleteModal": "Confirm reaction removal",
+            "reactionBulkDeleteModal": "Confirm bulk reaction removal",
+            "reportCancelModal": "Confirm report cancellation"
+        }
     }
 }

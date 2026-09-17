@@ -89,6 +89,12 @@ export interface FileUploaderProps {
     initialFiles?: Attachment[];
     /** 비활성화 여부 (읽기 전용 모드) */
     disabled?: boolean;
+    /**
+     * 업로더 크기. 기본 `md` 는 전체 폭 영역용이고, 표 한 칸처럼 좁은 자리에는
+     * `sm`·`xs` 를 준다 — 드롭존 여백·아이콘·글자가 함께 줄어든다.
+     * 크기를 클래스로 덮어쓰지 말고 이 속성을 쓴다(호출처마다 값이 갈리면 화면이 서로 달라진다).
+     */
+    size?: 'md' | 'sm' | 'xs';
     /** 추가 CSS 클래스 */
     className?: string;
     /**

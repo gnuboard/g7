@@ -123,6 +123,17 @@
           <icon name="comment" class="text-base"/>
           <span>$t:sirsoft-board.admin.posts.detail.comments_title|count={{post?.data?.comment_count ?? 0}}</span>
         </div>
+        <!-- 반응 — 읽기 전용. 게시판이 반응을 끄면 백엔드가 reaction_type_options 를 빈 배열로 내리므로 이 줄 전체가 사라진다. 유형별 개수를 아이콘(업로드 이미지 우선)과 함께 편다 -->
+        <span data-if="{{post?.data?.board?.use_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0}}">·</span>
+        <div data-if="{{post?.data?.board?.use_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0}}" class="flex-center gap-2">
+          <div data-each="adminReactionType, adminReactionIdx in {{post?.data?.board?.reaction_type_options ?? []}}">
+            <span class="flex-center gap-1" title="{{adminReactionType.name ?? ''}}">
+              <img data-if="{{adminReactionType.icon_url}}" src="{{adminReactionType.icon_url}}" alt="{{adminReactionType.name ?? ''}}" class="w-4 h-4 object-contain"/>
+              <icon data-if="{{!adminReactionType.icon_url}}" name="{{adminReactionType.icon_name ?? 'fa-thumbs-up'}}" class="text-base"/>
+              <span>{{post?.data?.reaction_counts?.[adminReactionType.id] ?? 0}}</span>
+            </span>
+          </div>
+        </div>
         <span data-if="{{post?.data?.ip_address}}">·</span>
         <span data-if="{{post?.data?.ip_address}}" class="text-tertiary">IP: {{post?.data?.ip_address}}</span>
       </div>

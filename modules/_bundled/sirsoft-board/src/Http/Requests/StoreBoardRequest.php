@@ -38,6 +38,8 @@ class StoreBoardRequest extends FormRequest
      *
      * 프론트엔드에서 값이 전달되지 않은 필드에 대해
      * 모듈 환경설정의 기본값을 자동으로 설정합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -54,6 +56,9 @@ class StoreBoardRequest extends FormRequest
             'secret_mode' => $settings['secret_mode'] ?? 'disabled',
             'use_comment' => $settings['use_comment'] ?? true,
             'use_reply' => $settings['use_reply'] ?? true,
+            'use_reaction' => $settings['use_reaction'] ?? true,
+            'use_comment_reaction' => $settings['use_comment_reaction'] ?? true,
+            'active_reaction_types' => $settings['active_reaction_types'] ?? [],
             'max_reply_depth' => $settings['max_reply_depth'] ?? 5,
             'reply_delete_policy' => $settings['reply_delete_policy'] ?? ReplyDeletePolicy::Cascade->value,
             'max_comment_depth' => $settings['max_comment_depth'] ?? 10,
@@ -66,6 +71,17 @@ class StoreBoardRequest extends FormRequest
 
         // 요청 데이터와 기본값 병합 (요청 데이터 우선)
         $data = array_merge($defaults, $this->all());
+
+        // active_reaction_types 가 명시적 null 로 오면 빈 배열로 정규화한다 (validation 전).
+        // boards.active_reaction_types 는 nullable·기본값 없음이라 값을 주지 않고 만든 게시판은
+        // NULL 이고, 복제(copyBoard)는 $board->toArray() 로 그 NULL 을 **키와 함께** 실어 보낸다.
+        // 이때 위 array_merge 의 기본값(?? [])은 키가 이미 있어 발동하지 않고, 규칙
+        // ['sometimes','array'] 가 명시적 null 을 거부해 복제 저장이 422 가 된다.
+        // 규칙을 nullable 로 넓히는 대신 여기서 정규화한다 — "null 도 유효" 라는 새 계약을
+        // 만들지 않고, 컬럼의 array 캐스트 계약과도 일치한다.
+        if (array_key_exists('active_reaction_types', $data) && $data['active_reaction_types'] === null) {
+            $data['active_reaction_types'] = [];
+        }
 
         // blocked_keywords가 문자열이면 배열로 변환 (validation 전)
         if (isset($data['blocked_keywords']) && is_string($data['blocked_keywords'])) {
@@ -88,7 +104,7 @@ class StoreBoardRequest extends FormRequest
         // boolean 필드 캐스팅 (Toggle 컴포넌트가 "on"/"off" 문자열을 전송할 수 있음)
         $booleanFields = [
             'is_active', 'use_comment', 'use_reply', 'use_file_upload',
-            'use_report', 'use_scrap', 'show_view_count', 'is_notice',
+            'use_report', 'use_scrap', 'use_reaction', 'use_comment_reaction', 'show_view_count', 'is_notice',
             'notify_admin_on_post', 'notify_author',
         ];
 
@@ -172,6 +188,10 @@ class StoreBoardRequest extends FormRequest
             'use_reply' => ['required', 'boolean'],
             'use_report' => ['required', 'boolean'],
             'use_scrap' => ['sometimes', 'boolean'],
+            'use_reaction' => ['required', 'boolean'],
+            'use_comment_reaction' => ['sometimes', 'boolean'],
+            'active_reaction_types' => ['sometimes', 'array'],
+            'active_reaction_types.*' => ['string'],
             'comment_order' => ['required', 'in:ASC,DESC'],
             // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
@@ -233,6 +253,7 @@ class StoreBoardRequest extends FormRequest
      * 길이 제한 필드의 min ≤ max 관계를 검증합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {

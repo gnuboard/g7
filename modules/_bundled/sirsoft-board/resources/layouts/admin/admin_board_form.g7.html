@@ -1,6 +1,6 @@
 <!-- 게시판 생성·편집 화면. 한 레이아웃이 세 갈래를 겸한다 — 신규(`route.slug` 없음) · 편집 · 복제(`query.copy_id`). 본문은 기본/권한/목록/글/알림 5탭을 조각으로 나눠 싣고, 저장은 하단 고정 버튼 하나로 모은다 -->
 <layout name="admin_board_form" version="1.0.0" extends="_admin_base">
-  <meta title="{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}" description="$t:sirsoft-board.admin.form.description"/>
+  <meta _e2e_allow="e2e:allow F6 정정 — initLocal 과 동일한 죽은 state 키 제거뿐(2026-09-17 저작 트랙 게이트), 화면 동작 변화 없음" title="{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}" description="$t:sirsoft-board.admin.form.description"/>
   <!-- 폼 한 벌을 통째로 받아 `_local.form` 을 채운다(initLocal) — 신규는 기본값, 편집은 `board_slug`, 복제는 `copy_id` 로 갈린다. 권한 없음(403)·없는 게시판(404)은 화면 자리에 오류 페이지를 세워 빈 폼이 뜨지 않게 한다 -->
   <data-source id="boards" label_key="$t:sirsoft-board.editor.data_source.boards" type="api" endpoint="/api/modules/sirsoft-board/admin/boards/form-data" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" loading_strategy="blocking" initLocal="form" :refetchOnMount="true">
     <params board_slug="{{route?.slug}}" copy_id="{{query?.copy_id}}"/>
@@ -20,6 +20,14 @@
     <fallback>
       <field name="data">
         <field name="channels" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 반응 유형 전체 목록 — 「기본」 탭의 「사용 반응 유형」 체크박스 선택지. 게시판에 저장되는 값은 코드 배열(active_reaction_types)이다 -->
+  <data-source id="reactionTypes" label_key="$t:sirsoft-board.editor.data_source.reactionTypes" type="api" endpoint="/api/modules/sirsoft-board/admin/reaction-types" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="reaction_types" :value="[]"/>
       </field>
     </fallback>
   </data-source>
@@ -108,7 +116,7 @@
               <!-- 저장 — 신규는 POST 후 발급된 slug 의 편집 화면으로 갈아타고(그래야 이어지는 저장이 PUT 이 된다), 편집은 PUT 하고 그 자리에 머문다. 성공하면 변경 표시를 지워 저장 버튼이 다시 잠긴다 -->
               <sequence>
                 <set-state target="local" :isSaving="true"/>
-                <api-call :auth_required="true" target="{{route?.slug ? '/api/modules/sirsoft-board/admin/boards/' + route.slug : '/api/modules/sirsoft-board/admin/boards'}}" method="{{route?.slug ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                <api-call target="{{route?.slug ? '/api/modules/sirsoft-board/admin/boards/' + route.slug : '/api/modules/sirsoft-board/admin/boards'}}" :auth_required="true" method="{{route?.slug ? 'PUT' : 'POST'}}" body="{{_local.form}}">
                   <success>
                     <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
                     <toast type="success" message="{{route?.slug ? '$t:sirsoft-board.admin.board.messages.update_success' : '$t:sirsoft-board.admin.board.messages.create_success'}}"/>

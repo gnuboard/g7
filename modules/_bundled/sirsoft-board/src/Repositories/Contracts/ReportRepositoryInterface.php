@@ -19,6 +19,7 @@ interface ReportRepositoryInterface
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator
      */
     public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
@@ -103,6 +104,7 @@ interface ReportRepositoryInterface
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator 그룹 목록
      */
     public function paginateGrouped(array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
@@ -175,6 +177,7 @@ interface ReportRepositoryInterface
      * @param  int  $reportId  신고 케이스 ID
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
+     * @return LengthAwarePaginator 신고 로그 목록
      */
     public function paginateLogsByReport(int $reportId, int $perPage = 10, int $page = 1): LengthAwarePaginator;
 
@@ -206,9 +209,9 @@ interface ReportRepositoryInterface
      * ID 목록으로 신고를 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  신고 ID 목록
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
-    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
+    public function findByIdsKeyed(array $ids): Collection;
 
     /**
      * 전체 게시판에서 미처리 신고를 최신순으로 조회합니다 (대시보드 신고 카드용).
@@ -229,4 +232,58 @@ interface ReportRepositoryInterface
      * @return int 미처리 신고 건수
      */
     public function countPendingAcrossBoards(): int;
+
+    /**
+     * 신고자 본인이 남긴 신고 로그 목록을 조회합니다 (마이페이지 「내 신고」).
+     *
+     * 케이스(boards_reports)가 소프트 삭제됐어도 로그는 남아야 한다 — 신고자에게는
+     * "내가 신고했다" 는 사실 자체가 이력이다(목록에서는 삭제 배지로 표시).
+     *
+     * @param  int  $reporterId  신고자 ID
+     * @param  array<string, mixed>  $filters  필터 (status·target_type·board_slug·search·search_field·sort)
+     * @param  int  $perPage  페이지당 건수
+     * @return LengthAwarePaginator 신고 로그 목록
+     */
+    public function paginateLogsByReporter(int $reporterId, array $filters, int $perPage): LengthAwarePaginator;
+
+    /**
+     * 신고자가 남긴 신고 로그 수를 셉니다 (마이페이지 활동 통계).
+     *
+     * @param  int  $reporterId  신고자 ID
+     * @return int 신고 건수
+     */
+    public function countLogsByReporter(int $reporterId): int;
+
+    /**
+     * 신고 로그 1건을 신고자 소유 조건으로 조회합니다.
+     *
+     * @param  int  $logId  신고 로그 ID
+     * @param  int  $reporterId  신고자 ID
+     * @return ReportLog|null 신고 로그 (없거나 남의 것이면 null)
+     */
+    public function findLogByIdAndReporter(int $logId, int $reporterId): ?ReportLog;
+
+    /**
+     * 신고 로그 1건을 삭제합니다 (신고 취소).
+     *
+     * @param  int  $logId  신고 로그 ID
+     * @return bool 삭제 여부
+     */
+    public function deleteLog(int $logId): bool;
+
+    /**
+     * 케이스에 남아 있는 신고 로그 수를 셉니다.
+     *
+     * @param  int  $reportId  신고 케이스 ID
+     * @return int 로그 수
+     */
+    public function countLogsByReport(int $reportId): int;
+
+    /**
+     * 케이스의 가장 최근 신고 로그 시각을 반환합니다.
+     *
+     * @param  int  $reportId  신고 케이스 ID
+     * @return mixed 최근 신고 시각 (없으면 null)
+     */
+    public function latestLogCreatedAt(int $reportId);
 }

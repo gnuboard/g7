@@ -1,4 +1,5 @@
 {
+    "comment": "수출입은행 환율 플러그인 설정 — 관리자가 인증키·자동 갱신 정책·실패 알림 발송 수단을 정하고 실행 이력을 본다. 탭은 query.tab 으로 가르며 설정 탭이 기본이다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -16,7 +17,8 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "플러그인 설정값 — 화면을 열 때마다 다시 받아 폼(_local.form)의 초기값으로 깐다. 저장 뒤에도 다시 받는다"
         },
         {
             "id": "koreaeximStatus",
@@ -34,7 +36,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "상태 요약(자동 관리·키 등록·마지막 실행·호출 예산·다음 실행 시각). 권한이 없으면 403 을 콘텐츠 영역 오류 화면으로 보인다"
         },
         {
             "id": "koreaeximRecentRuns",
@@ -57,7 +60,8 @@
                         "total": 0
                     }
                 }
-            }
+            },
+            "comment": "설정 탭에서만 최근 실행 5건을 받는다 — 응답이 없을 때도 빈 목록·페이지 1 로 그린다"
         },
         {
             "id": "koreaeximRuns",
@@ -93,7 +97,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "이력 탭에서만 실행 이력을 받는다 — 페이지·결과·계기·기간을 전부 쿼리에서 읽으므로 필터 변경은 navigate 로만 한다"
         },
         {
             "id": "koreaeximNotificationChannels",
@@ -109,7 +114,8 @@
                 "data": {
                     "channels": []
                 }
-            }
+            },
+            "comment": "코어가 런타임에 정한 발송 채널 목록 — 설정 탭에서만, 다른 요청을 막지 않도록 progressive 로 받는다"
         },
         {
             "id": "koreaeximNotificationDefinitions",
@@ -132,7 +138,8 @@
                         "total": 0
                     }
                 }
-            }
+            },
+            "comment": "이 플러그인 소유 알림 정의 — 켠 채널 전부의 템플릿을 한 번에 그리려고 template_channel=all 로 받는다"
         }
     ],
     "computed": {
@@ -205,6 +212,7 @@
                         "name": "TabNavigation",
                         "actions": [
                             {
+                                "comment": "탭 전환 — 전역에 기억해 두고 query.tab 을 replace 로 바꿔 뒤로 가기 이력을 쌓지 않는다",
                                 "type": "change",
                                 "event": "onTabChange",
                                 "handler": "sequence",
@@ -310,6 +318,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "설정 저장 — 폼 전체를 PUT 하고 성공하면 설정·상태를 다시 받아 변경 표시를 내린다. 검증 오류는 _local.errors 로 각 필드 밑에 그린다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -400,12 +409,15 @@
     },
     "modals": [
         {
+            "comment": "알림 템플릿 편집 창 — 알림 카드의 템플릿 행 「편집」에서 연다",
             "partial": "partials/plugin_settings/_modal_notification_template_edit.json"
         },
         {
+            "comment": "템플릿 미리보기 창 — 편집 창 안에서 연다",
             "partial": "partials/plugin_settings/_modal_notification_template_preview.json"
         },
         {
+            "comment": "알림 정의 초기화 확인 창 — 알림 카드의 「초기화」에서 연다",
             "partial": "partials/plugin_settings/_modal_notification_definition_reset.json"
         }
     ]

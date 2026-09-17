@@ -29,9 +29,11 @@ use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -1101,14 +1103,21 @@ class PostController extends PublicBaseController
             $reportedCommentIds = $this->reportService
                 ->getReportedTargetIds($user->id, $board->id, 'comment', $commentIds);
 
+            // 내 댓글 반응도 같은 이유로 일괄 조회한다 (댓글 수와 무관하게 쿼리 1회).
+            $myCommentReactions = app(ReactionRepositoryInterface::class)
+                ->getUserReactionTypeIdsByTargets($user->id, ReactionService::TARGET_COMMENT, $commentIds);
+
             foreach ($comments as $comment) {
                 $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
+                // 정당한 null("반응 없음")과 "프리로드 안 됨"을 구분하려면 키 자체가 있어야 한다.
+                $comment->my_reaction_type_id_preloaded = $myCommentReactions[$comment->id] ?? null;
                 $comment->setRelation('post', $post);
             }
         } else {
-            // 비로그인: 신고 불가이므로 모두 false
+            // 비로그인: 신고·반응 불가이므로 모두 false/null
             foreach ($comments as $comment) {
                 $comment->is_already_reported_preloaded = false;
+                $comment->my_reaction_type_id_preloaded = null;
                 $comment->setRelation('post', $post);
             }
         }

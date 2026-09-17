@@ -33,6 +33,7 @@ class PostCollection extends BaseApiCollection
      * 전체 일반 게시글 수를 설정합니다.
      *
      * @param  BoundedCount  $total  전체 일반 게시글 수 + 정확도
+     * @return void
      */
     public function setTotalNormalPosts(BoundedCount $total): void
     {
@@ -43,6 +44,7 @@ class PostCollection extends BaseApiCollection
      * 정렬 방향을 설정합니다.
      *
      * @param  string  $direction  정렬 방향 (asc 또는 desc, 대소문자 무관)
+     * @return void
      */
     public function setOrderDirection(string $direction): void
     {

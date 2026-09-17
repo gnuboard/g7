@@ -9,12 +9,15 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\CommentController as AdminComme
 use Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\PostController as AdminPostController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\PostScrapController as AdminPostScrapController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionController as AdminReactionController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionTypeController as AdminReactionTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\ReportController as AdminReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\AttachmentController as UserAttachmentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\BoardController as UserBoardController;
 use Modules\Sirsoft\Board\Http\Controllers\User\CommentController as UserCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostController as UserPostController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostScrapController as UserPostScrapController;
+use Modules\Sirsoft\Board\Http\Controllers\User\ReactionController as UserReactionController;
 use Modules\Sirsoft\Board\Http\Controllers\User\ReportController as UserReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\UserActivityController;
 
@@ -129,6 +132,21 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->name('admin.settings.show');
 
     // 대시보드 - 오늘 새 글/댓글 현황 (형제 settings 라우트와 동일하게 명시적 permission 가드)
+    // 반응 유형 목록 (게시판 설정 체크박스 옵션 소스, 확정 02·03)
+    Route::get('reaction-types', [AdminReactionTypeController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.settings.read')
+        ->name('admin.reaction-types.index');
+
+    // 반응 유형 아이콘 이미지 업로드/삭제 (환경설정 인라인 편집기의 행별 업로더)
+    Route::post('reaction-types/icons', [AdminReactionTypeController::class, 'uploadIcon'])
+        ->middleware('permission:admin,sirsoft-board.settings.update')
+        ->name('admin.reaction-types.icons.upload');
+    Route::delete('reaction-types/icons/{attachmentId}', [AdminReactionTypeController::class, 'destroyIcon'])
+        ->whereNumber('attachmentId')
+        ->middleware('permission:admin,sirsoft-board.settings.update')
+        ->name('admin.reaction-types.icons.destroy');
+
+    // 대시보드 - 오늘 새 글/댓글 현황 (진입 가드는 코어 core.dashboard.read + admin)
     Route::get('dashboard/overview', [DashboardController::class, 'overview'])
         ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.overview');
@@ -300,6 +318,36 @@ Route::prefix('admin/scraps')->middleware(['auth:sanctum', 'admin', 'throttle:60
     Route::delete('/{id}', [AdminPostScrapController::class, 'destroy'])
         ->whereNumber('id')
         ->middleware('permission:admin,sirsoft-board.scraps.manage')
+        ->name('destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Reaction Routes (반응 관리)
+|--------------------------------------------------------------------------
+|
+| 최종 URL 예시: /api/modules/sirsoft-board/admin/reactions
+| 최종 Name 예시: api.modules.sirsoft-board.admin.reactions.index
+|
+| 반응은 회원 소유 데이터라 게시판 경계를 넘어 조회되므로 게시판별 권한이 아니라
+| 모듈 레벨 권한(sirsoft-board.reactions.*)을 쓴다 (스크랩 관리와 동형).
+|
+*/
+Route::prefix('admin/reactions')->middleware(['auth:sanctum', 'admin', 'throttle:600,1'])->name('admin.reactions.')->group(function () {
+    // 일괄 삭제 — /{id} 보다 먼저 선언해야 'bulk' 가 id 로 잡히지 않는다
+    Route::delete('/bulk', [AdminReactionController::class, 'bulkDestroy'])
+        ->middleware('permission:admin,sirsoft-board.reactions.manage')
+        ->name('bulk-destroy');
+
+    // 전 회원 반응 목록
+    Route::get('/', [AdminReactionController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.reactions.view')
+        ->name('index');
+
+    // 반응 개별 삭제 (소유자 무관)
+    Route::delete('/{id}', [AdminReactionController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-board.reactions.manage')
         ->name('destroy');
 });
 
@@ -587,6 +635,33 @@ Route::delete('/me/scraps/{id}', [UserPostScrapController::class, 'destroy'])
     ->middleware(['auth:sanctum', 'throttle:600,1'])
     ->name('me.scraps.destroy');
 
+// 마이페이지 「내 반응」 목록 (최근 반응순)
+Route::get('/me/reactions', [UserReactionController::class, 'index'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reactions.index');
+
+// 마이페이지 반응 선택 해제 (본문 JSON 의 ids[], 본인 소유만) — /{id} 보다 먼저 선언한다
+Route::delete('/me/reactions', [UserReactionController::class, 'bulkDestroy'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reactions.bulk-destroy');
+
+// 마이페이지 반응 개별 해제 (반응 ID 기준, 본인 소유만)
+Route::delete('/me/reactions/{id}', [UserReactionController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reactions.destroy');
+
+// 마이페이지 「내 신고」 목록 (본인이 남긴 신고 로그)
+Route::get('/me/reports', [UserReportController::class, 'index'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reports.index');
+
+// 마이페이지 신고 취소 (접수 상태만)
+Route::delete('/me/reports/{reportLogId}', [UserReportController::class, 'cancel'])
+    ->whereNumber('reportLogId')
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reports.cancel');
+
 /*
 |--------------------------------------------------------------------------
 | User Report Routes (사용자 신고) - 회원 전용
@@ -611,6 +686,13 @@ Route::prefix('boards/{slug}')->middleware(['throttle:600,1', 'auth:sanctum'])->
     // 게시글 스크랩 토글 (상세 버튼 — 있으면 해제, 없으면 등록)
     Route::post('/posts/{postId}/scrap/toggle', [UserPostScrapController::class, 'toggle'])
         ->name('posts.scrap.toggle');
+    // 게시글 반응 (추천/비추천) — 등록/전환/해제 통합 (회원 전용, 확정 07)
+    Route::post('/posts/{postId}/react', [UserReactionController::class, 'react'])
+        ->name('posts.react');
+    // 댓글 반응 — 게시판이 use_reaction + use_comment_reaction 을 모두 켰을 때만 동작
+    Route::post('/comments/{commentId}/react', [UserReactionController::class, 'reactToComment'])
+        ->whereNumber('commentId')
+        ->name('comments.react');
 });
 
 /*

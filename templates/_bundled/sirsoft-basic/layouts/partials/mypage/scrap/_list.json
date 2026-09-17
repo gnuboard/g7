@@ -3,6 +3,7 @@
         "is_partial": true,
         "description": "마이페이지 스크랩 목록 탭"
     },
+    "comment": "스크랩 목록 탭 — 검색·전체 선택·일괄 해제와 PC 표/모바일 카드 두 벌. 선택 ID 는 로컬 scrapSelectedIds 에 둔다",
     "type": "basic",
     "name": "Div",
     "blur_until_loaded": {
@@ -102,6 +103,7 @@
                     "name": "Input",
                     "actions": [
                         {
+                            "comment": "검색어 — 담아만 둔다",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -110,6 +112,7 @@
                             }
                         },
                         {
+                            "comment": "엔터 검색 — 검색 버튼과 같은 순서(잠금 → 1쪽·선택 비움 → 재조회 → 잠금 해제)를 탄다",
                             "type": "keypress",
                             "key": "Enter",
                             "handler": "sequence",
@@ -314,6 +317,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "전체 선택(모바일) — 체크 상태에 따라 이 쪽 전부를 선택하거나 비운다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -685,6 +689,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -781,6 +786,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -835,6 +841,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -1001,6 +1008,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1247,6 +1255,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [

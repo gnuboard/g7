@@ -541,6 +541,13 @@ effects:
   - plugin_layout_count_includes_markup_only_layouts
   - plugin_layout_count_does_not_double_count_pairs
   - plugin_layout_count_keeps_json_only_behaviour
+  # --- 2026-09-15: 플러그인 설정 UI 를 소스 우선순위 규약에 수렴 (AbstractPlugin::getSettingsLayout)
+  #     이 경로만 `.json` 을 하드코딩해 짝의 **디스크 실재**를 요구했고, 굽기를 빠뜨린 플러그인은
+  #     설정 화면이 통째로 사라졌다(null → hasSettingsLayout() false). 다른 8개 소비 경로가 쓰는
+  #     layoutSourceCandidates() 를 타게 해 9개 전부가 한 규약을 본다.
+  - plugin_settings_layout_resolves_markup_source_first
+  - plugin_settings_layout_falls_back_to_json_twin
+  - plugin_settings_layout_compiles_markup_in_memory
   - module_layout_count_includes_markup_only_layouts
   # --- S10 W1 이관 회귀: 이관된 .g7.html 이 원본 .json 과 100% 동등하고 escape-0 (명시 목록형)
   - every_migrated_markup_file_matches_its_json_and_is_escape_free
@@ -1000,6 +1007,8 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/StructuredValueGrammarTest.php
   - tests/Unit/Support/LayoutMarkup/EmbeddingCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutValidatorTest.php
+  # 플러그인 설정 레이아웃 소스 해석 — 마크업 우선순위 규약 수렴 (2026-09-15)
+  - tests/Unit/Support/LayoutMarkup/PluginSettingsLayoutSourceTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutLinterTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupCompilerTest.php
   - tests/Unit/Enums/LayoutMarkupErrorCodeTest.php

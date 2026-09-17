@@ -13,6 +13,7 @@ use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
@@ -84,6 +85,11 @@ class PostResource extends BaseApiResource
             // 상세 전용: 스크랩 여부 (로그인 사용자만) + 스크랩 수 (확정 10 — 상세에만 노출)
             'is_scraped' => $this->getIsScraped($request),
             'scrap_count' => (int) ($this->scrap_count ?? 0),
+            // 상세 전용: 반응 카운트 (활성 유형 전체 항상 포함 — 확정 09, 0도 노출)
+            'reaction_counts' => $this->getReactionCountsForResponse(),
+
+            // 상세 전용: 내가 누른 반응 유형 ID (로그인 사용자 + board 관계 로드 시에만, null 가능)
+            'my_reaction_type_id' => $this->getMyReactionTypeId($request),
 
             // 권한 정보 (is_owner + abilities) — 상세 페이지에서만 포함
             ...$this->resourceMeta($request),
@@ -204,6 +210,11 @@ class PostResource extends BaseApiResource
             'reply_count' => (int) ($this->replies_count ?? 0),
             'attachment_count' => (int) ($this->attachments_count ?? 0),
             'has_attachment' => ((int) ($this->attachments_count ?? 0)) > 0,
+            // 목록의 반응 표시는 «몇 명이 눌렀나» 한 숫자면 된다 — 유형별로 나눠 보여 줄 자리가
+            // 없다. 캐시 컬럼(board_posts.reaction_counts)의 합이라 목록에서 COUNT 를 돌리지 않는다.
+            // 반응을 끈 게시판에서는 키 자체를 싣지 않는다(PO 결정 2026-09-16) — 캐시 컬럼을
+            // 통째로 더하던 기존 식은 비활성 유형의 잔여 카운트까지 합산해 상세(0)와 어긋났다.
+            ...$this->getReactionTotalForList(),
 
             // 썸네일 이미지 (첫 번째 이미지 첨부파일)
             'thumbnail' => $this->getThumbnailUrlFromRelations(),
@@ -364,6 +375,11 @@ class PostResource extends BaseApiResource
             'use_reply' => $this->board->use_reply,
             'use_report' => $this->board->use_report,
             'use_scrap' => $this->board->use_scrap,
+            'use_reaction' => $this->board->use_reaction,
+            'use_comment_reaction' => $this->board->use_comment_reaction,
+            'reaction_type_options' => BoardResource::reactionsEnabled($this->board)
+                ? BoardResource::buildReactionTypeOptions($this->board->active_reaction_types ?? [])
+                : [],
             'show_view_count' => $this->board->show_view_count,
             'max_reply_depth' => $this->board->max_reply_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_reply_depth', 5),
             'max_comment_depth' => $this->board->max_comment_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_comment_depth', 10),
@@ -520,6 +536,88 @@ class PostResource extends BaseApiResource
 
         return app(PostScrapRepositoryInterface::class)
             ->isScraped($user->id, $this->id);
+    }
+
+    /**
+     * 목록용 반응 합계를 스프레드 가능한 형태로 반환합니다.
+     *
+     * 반응을 끈 게시판에서는 **빈 배열**을 반환해 `reaction_total` 키 자체가 응답에
+     * 실리지 않게 한다(PO 결정 2026-09-16 — 0 으로 두지 않고 키를 제거). 켜져 있으면
+     * 게시판이 켠 활성 유형의 카운트만 더한다 — 유형을 비활성으로 돌린 뒤에도 캐시
+     * 컬럼에는 옛 카운트가 남아 있어, 통째로 더하면 상세(활성 유형만 집계)와 어긋난다.
+     *
+     * @return array<string, int> `reaction_total` 한 칸 또는 빈 배열
+     */
+    private function getReactionTotalForList(): array
+    {
+        $board = $this->relationLoaded('board') ? $this->board : null;
+
+        if (! BoardResource::reactionsEnabled($board)) {
+            return [];
+        }
+
+        $stored = $this->reaction_counts ?? [];
+        $total = 0;
+
+        foreach (BoardResource::buildReactionTypeOptions($board->active_reaction_types ?? []) as $option) {
+            $total += (int) ($stored[(string) $option['id']] ?? 0);
+        }
+
+        return ['reaction_total' => $total];
+    }
+
+    /**
+     * 반응 카운트를 응답용으로 반환합니다.
+     *
+     * 게시판이 켠(활성) 유형 전체를 키로 항상 포함하며, 저장된 카운트가 없는 유형은
+     * 0 으로 채웁니다 (확정 09 — 활성 유형은 개수 0이어도 항상 노출). 키는 유형 ID.
+     *
+     * 반드시 stdClass(객체)로 반환한다 — 키가 정수(유형 ID)뿐이면 배열이 list 로 오인되어
+     * JsonResource::resolve() 가 `[count1, count2]` 로 재인덱싱하고, 그러면 프론트가
+     * `reaction_counts[유형ID]` 로 읽을 때 엉뚱한 인덱스를 읽어 개수가 항상 0/어긋난다.
+     * stdClass 는 array 필터의 재인덱싱을 타지 않아 항상 `{"유형ID": 개수}` JSON 객체로 나간다.
+     *
+     * @return \stdClass 유형 ID => 개수 (JSON 객체)
+     */
+    private function getReactionCountsForResponse(): \stdClass
+    {
+        // 반응을 끈 게시판은 카운트를 통째로 비운다 — board 관계 로드 여부만 보던
+        // 기존 판정은 «기능은 껐는데 개수는 그대로 나가는» 누출이었다(PO 지시 2026-09-16).
+        if (! $this->relationLoaded('board') || ! BoardResource::reactionsEnabled($this->board)) {
+            return new \stdClass;
+        }
+
+        $stored = $this->reaction_counts ?? [];
+        $options = BoardResource::buildReactionTypeOptions($this->board->active_reaction_types ?? []);
+
+        $counts = [];
+        foreach ($options as $option) {
+            $key = (string) $option['id'];
+            $counts[$key] = (int) ($stored[$key] ?? 0);
+        }
+
+        return (object) $counts;
+    }
+
+    /**
+     * 로그인 사용자가 이 게시글에 남긴 반응 유형 ID 를 반환합니다.
+     *
+     * 로그인 사용자 + board 관계 로드 시에만 조회하며, 반응이 없으면 null 을 반환합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return int|null 내가 누른 반응 유형 ID (없으면 null)
+     */
+    private function getMyReactionTypeId(Request $request): ?int
+    {
+        $user = $request->user();
+        if (! $user || ! $this->relationLoaded('board') || ! BoardResource::reactionsEnabled($this->board)) {
+            return null;
+        }
+
+        $reaction = app(ReactionRepositoryInterface::class)
+            ->findByUserAndTarget($user->id, 'post', $this->id);
+
+        return $reaction?->reaction_type_id;
     }
 
     // =========================================================================
@@ -772,6 +870,7 @@ class PostResource extends BaseApiResource
      * 권한에 따라 필터링된 제목을 반환합니다.
      *
      * @param  string|null  $slug  게시판 슬러그
+     * @param  mixed  $request
      * @return string 필터링된 제목
      */
     private function getFilteredTitle(Request $request, ?string $slug): string

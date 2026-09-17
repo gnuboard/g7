@@ -61,5 +61,6 @@
   "next_page": "다음 페이지",
   "last_page": "마지막 페이지",
   "page_n": "페이지 {{n}}",
-  "currency_unit": "원"
+  "currency_unit": "원",
+  "select_all": "전체 선택"
 }

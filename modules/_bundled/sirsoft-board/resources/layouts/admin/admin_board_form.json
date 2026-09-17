@@ -4,6 +4,7 @@
     "layout_name": "admin_board_form",
     "extends": "_admin_base",
     "meta": {
+        "_e2e_allow": "e2e:allow F6 정정 — initLocal 과 동일한 죽은 state 키 제거뿐(2026-09-17 저작 트랙 게이트), 화면 동작 변화 없음",
         "title": "{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}",
         "description": "$t:sirsoft-board.admin.form.description"
     },
@@ -64,6 +65,21 @@
                 }
             },
             "comment": "알림 탭이 고를 수 있는 발송 채널(메일·SMS 등) — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어져 탭이 깨지지 않는다"
+        },
+        {
+            "id": "reactionTypes",
+            "label_key": "$t:sirsoft-board.editor.data_source.reactionTypes",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/reaction-types",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "reaction_types": []
+                }
+            },
+            "comment": "반응 유형 전체 목록 — 「기본」 탭의 「사용 반응 유형」 체크박스 선택지. 게시판에 저장되는 값은 코드 배열(active_reaction_types)이다"
         }
     ],
     "initLocal": {

@@ -467,16 +467,15 @@
         "stats": {
             "total_posts": "Posts Written",
             "total_comments": "Comments Written",
-            "total_views": "Total Views"
+            "total_views": "Total Views",
+            "total_reactions": "Reactions left",
+            "total_reports": "Reports filed"
         },
         "tabs": {
             "my_posts": "My Posts",
-            "my_comments": "My Comments"
-        },
-        "sub_tabs": {
-            "my_posts": "My Posts",
             "my_comments": "My Comments",
-            "my_reports": "My Reports"
+            "my_reactions": "My reactions",
+            "my_reports": "My reports"
         },
         "filter": {
             "all_boards": "All"
@@ -498,8 +497,7 @@
         },
         "activity_type": {
             "authored": "Authored",
-            "commented": "Commented",
-            "reported": "Reported"
+            "commented": "Commented"
         },
         "empty": "No board activities found.",
         "empty_posts": "No posts written yet.",
@@ -508,11 +506,66 @@
         "search_fields": {
             "title_content": "Title + content",
             "title": "Title",
-            "content": "Content"
+            "content": "Content",
+            "reason": "Report reason"
         },
         "comment_search_fields": {
             "content": "Comment text",
             "post_title": "Post title"
+        },
+        "target": {
+            "post": "Post",
+            "comment": "Comment"
+        },
+        "reactions": {
+            "filter": {
+                "all_types": "All types",
+                "all_targets": "All targets"
+            },
+            "table": {
+                "type": "Type",
+                "target": "Target",
+                "title": "Title",
+                "board": "Board",
+                "reacted_at": "Reacted on",
+                "manage": "Manage"
+            },
+            "selected_count": "{{count}} selected",
+            "bulk_remove": "Remove selected",
+            "remove": "Remove",
+            "disabled_flag": "Reactions off",
+            "board_deleted": "Board deleted",
+            "deleted_flag": "Deleted",
+            "deleted_post": "Deleted post",
+            "deleted_comment": "Deleted comment",
+            "empty": "You have not left any reactions.",
+            "removed": "Reaction removed.",
+            "delete_title": "Remove this reaction?",
+            "delete_confirm": "Removes the reaction you left on \"{{title}}\".",
+            "delete_confirm_deleted": "Removes the reaction you left on an already deleted item.",
+            "delete_notice": "The post or comment itself is not deleted.",
+            "bulk_delete_title": "Remove the selected reactions?",
+            "bulk_delete_confirm": "Removes {{count}} selected reactions.",
+            "delete_confirm_button": "Remove"
+        },
+        "reports": {
+            "filter": {
+                "all_statuses": "All statuses",
+                "all_targets": "All targets"
+            },
+            "status": {
+                "pending": "Submitted",
+                "review": "Under review",
+                "rejected": "Rejected",
+                "suspended": "Content suspended"
+            },
+            "target_deleted": "Target deleted",
+            "cancel": "Cancel",
+            "cancel_title": "Cancel this report?",
+            "cancel_confirm": "Withdraws the report. Only reports that have not been reviewed yet can be cancelled.",
+            "cancel_notice": "The reported post or comment stays as it is.",
+            "cancel_confirm_button": "Cancel report",
+            "empty": "You have not filed any reports."
         }
     },
     "inquiries": {

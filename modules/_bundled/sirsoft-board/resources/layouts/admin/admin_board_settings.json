@@ -4,6 +4,7 @@
     "layout_name": "admin_board_settings",
     "extends": "_admin_base",
     "meta": {
+        "_e2e_allow": "e2e:allow F6 정정 — 죽은 state 키 3개(알림 정의 페이지 번호)를 initLocal 로 옮긴 것뿐(2026-09-17 저작 트랙 게이트), 값·화면 동작 동일",
         "title": "$t:sirsoft-board.admin.settings.title",
         "description": "$t:sirsoft-board.admin.settings.description"
     },
@@ -138,7 +139,7 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "meta": {}
+                    "meta": []
                 }
             },
             "comment": "본인인증 정책 목록 — 코어 표를 게시판 몫(`source_identifier`)으로 좁혀 받는다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다"
@@ -183,11 +184,17 @@
             "searchType": "all"
         },
         "expandedNotificationDefinitionIds": [],
-        "expandedNotifications": {},
+        "expandedNotifications": [],
         "templateErrors": null,
         "isSaving": false,
         "recipientRoleSearchResults": [],
-        "recipientUserSearchResults": []
+        "recipientUserSearchResults": [],
+        "isAddingReactionType": false,
+        "reactionTypeForm": null,
+        "reactionTypeFormErrors": null,
+        "notificationDefinitionCurrentPage": 1,
+        "notificationDefinitionTotalPages": 1,
+        "notificationDefinitionTotalItems": 0
     },
     "computed": {
         "isReadOnly": "{{!!settings?.data && settings?.data?.abilities?.can_update !== true}}",

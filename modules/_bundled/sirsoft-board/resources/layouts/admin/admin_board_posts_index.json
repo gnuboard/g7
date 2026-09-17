@@ -814,6 +814,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "갈래를 블라인드로 정하고 직전 사유를 비운다 — 공용 모달이 갈래에 따라 문구·사유 입력을 바꾼다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -848,6 +849,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "갈래를 복원으로 정하고 직전 사유를 비운다 — 블라인드 사유가 남아 복원 이력에 실리지 않게",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -1004,7 +1006,7 @@
                                                     "if": "{{row.is_reply}}",
                                                     "props": {
                                                         "name": "level-up-alt",
-                                                        "className": "text-sm fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"
+                                                        "className": "text-sm rotate-90 mt-1 text-gray-400 dark:text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -1202,6 +1204,23 @@
                                                 "className": "text-gray-900 dark:text-white"
                                             },
                                             "text": "{{row.view_count || 0}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "reaction_total",
+                                    "header": "$t:sirsoft-board.admin.posts.columns.reaction_total",
+                                    "sortable": false,
+                                    "if": "{{posts?.data?.board?.settings?.use_reaction}}",
+                                    "cellChildren": [
+                                        {
+                                            "comment": "게시판이 반응을 끄면 백엔드가 reaction_total 키 자체를 빼므로 열도 함께 내려간다",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{row.reaction_total || 0}}"
                                         }
                                     ]
                                 },
@@ -1440,6 +1459,7 @@
                                     "name": "Textarea",
                                     "actions": [
                                         {
+                                            "comment": "사유는 전역 bulkPostReason 에 모아 두었다가 확인 시 요청에 싣는다(삭제 갈래에는 입력칸 자체가 없다)",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

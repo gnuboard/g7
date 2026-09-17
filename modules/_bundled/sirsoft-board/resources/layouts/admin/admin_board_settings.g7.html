@@ -1,6 +1,6 @@
 <!-- 게시판 모듈 전역 설정. 탭이 여섯이고 데이터소스가 아홉인데, 설정 본체(`settings`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다 -->
 <layout name="admin_board_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
+  <meta _e2e_allow="e2e:allow F6 정정 — 죽은 state 키 3개(알림 정의 페이지 번호)를 initLocal 로 옮긴 것뿐(2026-09-17 저작 트랙 게이트), 값·화면 동작 동일" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
   <!-- 설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다) -->
   <data-source id="settings" label_key="$t:sirsoft-board.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-board/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
     <error-handling>
@@ -59,7 +59,7 @@
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
-        <field name="meta" :value="{}"/>
+        <field name="meta" :value="[]"/>
       </field>
     </fallback>
   </data-source>
@@ -86,11 +86,17 @@
       <field name="searchType" value="all"/>
     </field>
     <field name="expandedNotificationDefinitionIds" :value="[]"/>
-    <field name="expandedNotifications" :value="{}"/>
+    <field name="expandedNotifications" :value="[]"/>
     <field name="templateErrors" :value="null"/>
     <field name="isSaving" :value="false"/>
     <field name="recipientRoleSearchResults" :value="[]"/>
     <field name="recipientUserSearchResults" :value="[]"/>
+    <field name="isAddingReactionType" :value="false"/>
+    <field name="reactionTypeForm" :value="null"/>
+    <field name="reactionTypeFormErrors" :value="null"/>
+    <field name="notificationDefinitionCurrentPage" :value="1"/>
+    <field name="notificationDefinitionTotalPages" :value="1"/>
+    <field name="notificationDefinitionTotalItems" :value="0"/>
   </init-local>
   <computed name="isReadOnly">{{!!settings?.data &amp;&amp; settings?.data?.abilities?.can_update !== true}}</computed>
   <computed name="isNotificationReadOnly">{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
@@ -209,7 +215,7 @@
               <!-- 저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여섯 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다 -->
               <sequence>
                 <set-state target="local" :isSaving="true" :errors="null"/>
-                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/settings" method="PUT" body="{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
+                <api-call target="/api/modules/sirsoft-board/admin/settings" :auth_required="true" method="PUT" body="{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
                   <success>
                     <set-state target="local" :isSaving="false" :hasChanges="false"/>
                     <refetch-data-source dataSourceId="settings"/>

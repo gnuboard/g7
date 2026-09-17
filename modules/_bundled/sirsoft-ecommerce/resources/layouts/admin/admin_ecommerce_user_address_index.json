@@ -46,7 +46,8 @@
                         "total": 0
                     }
                 }
-            }
+            },
+            "comment": "배송지 목록 — 페이지·정렬·검색·기간·회원 한정을 전부 쿼리에서 읽어 넘긴다. progressive 라 첫 그림은 폴백(빈 목록)으로 먼저 그리고, 권한이 없으면 403 을 콘텐츠 영역 오류 화면으로 보인다"
         }
     ],
     "initLocal": {
@@ -251,6 +252,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "검색 대상만 손에 담아 둔다 — 조회는 검색 버튼(또는 엔터)이 URL 로 옮길 때 일어난다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -312,6 +314,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "검색어를 손에 담아 둔다 — 엔터가 검색 액션을 부른다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -365,6 +368,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "기간 시작 — 담아만 둔다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -395,6 +399,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "기간 끝 — 담아만 둔다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -437,6 +442,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "기본 배송지 여부 — 담아만 둔다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -497,6 +503,7 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "초기화 ②  선택도 비운다 — 조건이 바뀌면 다른 행 집합이다",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -675,6 +682,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "페이지당 개수 — 행 집합이 바뀌므로 선택을 먼저 비우고 1쪽으로",
                                                 "type": "change",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -735,6 +743,7 @@
                         "blur_until_loaded": true,
                         "actions": [
                             {
+                                "comment": "선택 행 ID 를 전역에 둔다 — 일괄 삭제 버튼과 확인 모달이 같은 값을 읽는다",
                                 "type": "change",
                                 "event": "onSelectionChange",
                                 "handler": "setState",
@@ -744,6 +753,7 @@
                                 }
                             },
                             {
+                                "comment": "쪽 이동 — 선택을 비우고 page 만 바꾼다",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "sequence",
@@ -771,6 +781,7 @@
                                 ]
                             },
                             {
+                                "comment": "행 메뉴 — 삭제는 대상을 전역에 두고 확인 모달로, 회원 보기는 회원 상세로",
                                 "event": "onRowAction",
                                 "handler": "switch",
                                 "cases": {
@@ -1047,6 +1058,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -1055,6 +1067,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "배송지 단건 삭제 — 성공하면 목록을 다시 받고 실패 사유는 오류 모달에 싣는다",
                                     "type": "click",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-ecommerce/admin/user-addresses/{{_global.deleteTarget_addresses?.id}}",
@@ -1195,6 +1208,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "선택 배송지 일괄 삭제 — 선택 ID 배열을 본문에 싣고 성공하면 선택을 비운 뒤 목록을 다시 받는다",
                                     "type": "click",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-ecommerce/admin/user-addresses/bulk",

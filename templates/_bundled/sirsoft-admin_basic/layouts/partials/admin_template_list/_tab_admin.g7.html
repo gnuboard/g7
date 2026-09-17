@@ -40,6 +40,9 @@
           <button data-ref="tpl_admin_view_mode_list" type="button" aria-pressed="{{(_global.extensionViewMode ?? 'gallery') === 'list'}}" title="$t:extensions.view_mode.list" class="px-3 h-10 transition-colors">
             <class-map key="{{_global.extensionViewMode ?? 'gallery'}}" default="bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"><variant when="list">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant></class-map>
             <on type="click">
+              <!-- 갤러리 버튼과 같은 순서 — 리터럴 `list` 를 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).
+                   GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이 비면 이번 세션 동안만
+                   목록 보기가 유지되고 새로고침하면 기본값(갤러리)으로 돌아간다. -->
               <sequence>
                 <set-state target="global" extensionViewMode="list"/>
                 <save-to-local-storage key="g7_view_mode_extensions" value="list"/>

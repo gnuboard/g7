@@ -956,7 +956,7 @@ class ExtensionDocScaffolder
             return [
                 'template.json' => ['manifest (버전 SSoT)', 'version 변경 시 package.json·package-lock.json 동기화'],
                 'routes.json' => ['라우트 → 레이아웃 매핑', $updateCmd],
-                'layouts/' => ['레이아웃 JSON', $updateCmd.' (빌드 불필요)'],
+                'layouts/' => ['레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출)', $updateCmd.' (빌드 불필요)'],
                 // 모듈·플러그인의 `resources/extensions/` 와 같은 개념인데 템플릿은
                 // 확장 루트 직속에 둔다. 유형 분기를 놓치면 다른 확장 화면에 끼워 넣는
                 // 조각을 고쳐도 문서에 반영할 자리가 없다.
@@ -996,7 +996,7 @@ class ExtensionDocScaffolder
             'database/migrations/' => ['마이그레이션', '한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필'],
             'database/seeders/' => ['시더', 'composer autoload 등록 + `extension:update-autoload`'],
             'upgrades/' => ['업그레이드 스텝', 'DB·설정 구조 변경 시 작성 (모듈/플러그인 전용)'],
-            'resources/layouts/' => ['레이아웃 JSON', $updateCmd.' (빌드 불필요)'],
+            'resources/layouts/' => ['레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출)', $updateCmd.' (빌드 불필요)'],
             // 모듈·플러그인의 라우트 → 레이아웃 매핑은 `resources/routes.json`(단일) 또는
             // `resources/routes/*.json`(분할)에 있다(실측 7파일). 여기 자리가 없으면
             // "라우트를 고쳤는데 문서에 반영할 곳이 없다" 가 된다 — editor-spec 과 같은 형태다.
@@ -1944,7 +1944,7 @@ class ExtensionDocScaffolder
         $layouts = $frontend['layouts'];
 
         if ($layouts === []) {
-            return $this->none('레이아웃 JSON 이 없습니다.');
+            return $this->none('레이아웃이 없습니다.');
         }
 
         $groupRows = [];
@@ -1962,7 +1962,13 @@ class ExtensionDocScaffolder
             ];
         }
 
-        return sprintf('레이아웃 %d개 (루트: `%s`).', count($layouts), $frontend['layoutRoot'])."\n\n"
+        // 목록은 이름만 싣지만 작성 지점은 소스(`.g7.html`)다 — 짝 `.json` 은 굽기 산출이라
+        // 직접 고치면 다음 `layout:decompile --sync` 에 소실된다.
+        return sprintf(
+            '레이아웃 %d개 (루트: `%s` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).',
+            count($layouts),
+            $frontend['layoutRoot']
+        )."\n\n"
             .$this->table(['그룹', '개수'], $groupRows)."\n\n"
             .$this->table(['레이아웃', '그룹', '종류', 'extends'], $rows);
     }
@@ -2328,7 +2334,7 @@ class ExtensionDocScaffolder
         }
 
         if ($ctx['frontend']['layouts'] !== []) {
-            $items[] = '레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인';
+            $items[] = '레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인';
         }
 
         if ($ctx['frontend']['builtAssets'] !== []) {

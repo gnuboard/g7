@@ -16,7 +16,7 @@
 | `duplicate_field` | `enum` | `di` | 중복 판정 필드 |
 | `duplicate_block_enabled` | `boolean` | `true` | 중복 가입 차단 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->

@@ -197,7 +197,8 @@
       "rejected": "반려",
       "suspended": "게시 중단",
       "deleted": "삭제",
-      "restored": "복구"
+      "restored": "복구",
+      "report_cancelled": "신고 취소"
     },
     "no_histories": "처리 내역이 없습니다.",
     "cancelled_badge": "취소됨 ({{cancelled_at}})",

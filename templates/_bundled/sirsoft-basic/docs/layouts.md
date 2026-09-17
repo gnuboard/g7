@@ -5,7 +5,7 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 168개 (루트: `layouts`).
+레이아웃 173개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -15,7 +15,7 @@
 | `errors` | 6개 |
 | `mypage` | 12개 |
 | `page` | 1개 |
-| `partials` | 125개 |
+| `partials` | 130개 |
 | `search` | 1개 |
 | `shop` | 9개 |
 | `users` | 2개 |
@@ -104,8 +104,13 @@
 | `_modal_confirm_delete` | `partials` | partial | - |
 | `_modal_confirm_overwrite` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
+| `_modal_reaction_bulk_delete` | `partials` | partial | - |
+| `_modal_reaction_delete` | `partials` | partial | - |
+| `_modal_report_cancel` | `partials` | partial | - |
 | `_my_comments` | `partials` | partial | - |
 | `_my_posts` | `partials` | partial | - |
+| `_my_reactions` | `partials` | partial | - |
+| `_my_reports` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
@@ -363,6 +368,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── register.g7.html (회원가입)
 │   ├── forgot_password.g7.html (비밀번호 찾기)
 │   ├── reset_password.g7.html (비밀번호 재설정)
+│   ├── identity_challenge.g7.html (2단계 인증 챌린지 — #657)
 │   └── partials/auth/
 │       ├── _login_form.g7.html (로그인 폼)
 │       ├── _register_form.g7.html (회원가입 폼)
@@ -377,6 +383,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── index.g7.html (게시글 목록)
 │   │   └── partials/board/index/
 │   │       ├── _type_renderer.g7.html (타입별 렌더러 분기)
+│   │       ├── _admin_links.g7.html (관리자 전용 바로가기)
 │   │       ├── _empty_states.g7.html (빈 상태)
 │   │       ├── _loading_error.g7.html (로딩/에러)
 │   │       └── _write_button.g7.html (글쓰기 버튼)
@@ -437,7 +444,11 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_cart_added.g7.html (장바구니 추가 확인)
 │   │       ├── _modal_coupon_download_confirm.g7.html (쿠폰 다운로드 확인)
 │   │       ├── _modal_login_required.g7.html (로그인 필요)
-│   │       └── _modal_review_image.g7.html (리뷰 이미지 확대)
+│   │       ├── _modal_review_image.g7.html (리뷰 이미지 확대)
+│   │       ├── _admin_edit_link.g7.html (관리자 상품 수정 바로가기)
+│   │       ├── _modal_inquiry_delete.g7.html (1:1 문의 삭제 확인)
+│   │       ├── _modal_qna_reply.g7.html (Q&A 답글)
+│   │       └── _modal_qna_write.g7.html (Q&A 작성)
 │   ├── cart.g7.html (장바구니)
 │   │   └── partials/shop/
 │   │       ├── _cart_list.g7.html (장바구니 목록)
@@ -459,7 +470,10 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_address_manage.g7.html (배송지 관리)
 │   │       ├── _modal_coupon_download.g7.html (쿠폰 다운로드)
 │   │       └── _modal_exclusive_coupon_confirm.g7.html (전용 쿠폰 확인)
-│   └── order_complete.g7.html (주문 완료)
+│   ├── order_complete.g7.html (주문 완료)
+│   ├── guest_order_form.g7.html (비회원 주문 조회 폼)
+│   ├── guest_order_show.g7.html (비회원 주문 상세)
+│   └── reorder.g7.html (재주문)
 │
 ├── 마이페이지 (mypage/)
 │   ├── profile.g7.html (프로필 보기)
@@ -471,7 +485,10 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       └── _modal_withdraw.g7.html (회원 탈퇴)
 │   ├── orders.g7.html (주문 내역)
 │   │   └── partials/mypage/orders/
-│   │       └── _list.g7.html (주문 목록)
+│   │       ├── _list.g7.html (주문 목록)
+│   │       ├── _orderer.g7.html (주문자 정보)
+│   │       ├── _modal_confirm_purchase.g7.html (구매 확정)
+│   │       └── _modal_write_review.g7.html (리뷰 작성)
 │   ├── orders/show.g7.html (주문 상세)
 │   │   └── partials/mypage/orders/
 │   │       ├── _status_header.g7.html (주문 상태 헤더)
@@ -485,7 +502,12 @@ _user_base.g7.html (베이스 레이아웃)
 │   │   └── partials/mypage/board/
 │   │       ├── _list.g7.html (탭 목록)
 │   │       ├── _my_posts.g7.html (내 게시글)
-│   │       └── _my_comments.g7.html (내 댓글)
+│   │       ├── _my_comments.g7.html (내 댓글)
+│   │       ├── _my_reactions.g7.html (내 반응)
+│   │       ├── _my_reports.g7.html (내 신고)
+│   │       ├── _modal_reaction_delete.g7.html (반응 삭제)
+│   │       ├── _modal_reaction_bulk_delete.g7.html (반응 일괄 삭제)
+│   │       └── _modal_report_cancel.g7.html (신고 취소)
 │   ├── addresses.g7.html (배송지 관리)
 │   │   └── partials/mypage/addresses/
 │   │       ├── _list.g7.html (배송지 목록)
@@ -502,6 +524,11 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── inquiries.g7.html (상품 1:1 문의내역)
 │   │   └── partials/mypage/inquiries/
 │   │       └── _list.g7.html (문의 목록)
+│   ├── mileage.g7.html (마일리지 내역)
+│   ├── scrap.g7.html (스크랩)
+│   │   └── partials/mypage/scrap/
+│   │       ├── _modal_scrap_delete.g7.html (스크랩 삭제)
+│   │       └── _modal_scrap_bulk_delete.g7.html (스크랩 일괄 삭제)
 │   └── partials/mypage/
 │       └── _tab_navigation.g7.html (마이페이지 공통 탭)
 │           hiddenTabIds: inquiries 탭은 sirsoft-ecommerce inquiry 설정 시에만 노출
@@ -531,8 +558,10 @@ _user_base.g7.html (베이스 레이아웃)
 │   └── show.g7.html (정적 페이지)
 │
 ├── 공통 Partial
-│   └── partials/common/
-│       └── _currency_selector.g7.html (통화 선택기)
+│   ├── partials/common/
+│   │   └── _currency_selector.g7.html (통화 선택기)
+│   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달 — #657)
+│   └── partials/_modal_notification_delete_all_confirm.g7.html (알림 전체 삭제 확인)
 │
 └── 에러 페이지 (errors/)
     ├── 401.g7.html (인증 필요)
@@ -671,7 +700,6 @@ show.g7.html:
   └── _type_renderer.g7.html → types/basic/show.g7.html
       ├── 게시글 본문 (HtmlContent)
       ├── _post_attachments.g7.html (첨부파일)
-      ├── PostReactions (리액션)
       ├── _comment_section.g7.html
       │   ├── _comment_input.g7.html (댓글 입력)
       │   └── _comment_item.g7.html (댓글 아이템, iteration)

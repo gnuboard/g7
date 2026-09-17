@@ -949,7 +949,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **92종**입니다
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **98종**입니다
 > (등록 건수는 94건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
 > 구매자 관점 두 리스너가 각각 구독합니다).
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
@@ -1146,6 +1146,10 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
 | `sirsoft-ecommerce.shipping_policy.after_bulk_delete` | `handleShippingPolicyAfterBulkDelete` | `shipping_policy.bulk_delete` | Admin | - |
+| `sirsoft-ecommerce.wishlist.after_bulk_delete` | `handleWishlistAfterBulkDelete` | `wishlist.bulk_delete` | Admin | ProductWishlist |
+| `sirsoft-ecommerce.cart.after_bulk_delete` | `handleCartAfterBulkDelete` | `cart.bulk_delete` | Admin | Cart |
+| `sirsoft-ecommerce.user_address.after_bulk_delete` | `handleUserAddressAfterBulkDelete` | `user_address.bulk_delete` | Admin | UserAddress |
+| `sirsoft-ecommerce.product_inquiry.after_bulk_delete` | `handleProductInquiryAfterBulkDelete` | `product_inquiry.bulk_delete` | Admin | ProductInquiry |
 | `sirsoft-ecommerce.shipping_policy.after_bulk_toggle_active` | `handleShippingPolicyAfterBulkToggleActive` | `shipping_policy.bulk_toggle_active` | Admin | - |
 
 ##### ProductOption (3훅)

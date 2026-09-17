@@ -2,7 +2,8 @@
     "comment": "댓글 한 줄. 같은 조각이 원댓글과 대댓글 양쪽에 쓰이고 `comment.depth` 로만 갈린다. 본문은 세 갈래 중 하나만 뜬다 — 삭제됨 · 가려짐 · 보통. 앞 둘은 원문을 감춘 채 「원문 보기」로 펼치게 하고 그 버튼은 관리 권한이 있을 때만 눌린다",
     "meta": {
         "is_partial": true,
-        "description": "Admin Board Post Detail - Single Comment Component (Enhanced Design)"
+        "description": "Admin Board Post Detail - Single Comment Component (Enhanced Design)",
+        "_e2e_allow": "e2e:allow 댓글 반응 수는 읽기 전용 표시 한 줄이다 — 버튼·api-call 이 없어 조작할 동작 자체가 없다(읽기 전용임을 admin-board-post-detail-comment-reactions.test.tsx 가 /react 경로 부재로 잠근다). 노출 3조건·아이콘 2단 폴백·집계 바인딩은 같은 Vitest 레이아웃 테스트 5건이 커버하고, 줄을 지우면 4건이 red 다. 표시할 값이 실제로 내려오는지는 관리자 상세 API 실측으로 확인했다(use_comment_reaction·reaction_type_options·comment.reaction_counts)."
     },
     "type": "basic",
     "name": "Div",
@@ -523,6 +524,63 @@
                         "className": "mt-1.5 px-4 text-body whitespace-pre-line leading-relaxed"
                     },
                     "text": "{{comment.content}}"
+                },
+                {
+                    "comment": "댓글 반응 수 — 읽기 전용. 관리자는 집계를 보기만 하고 반응을 남기지 않는다(버튼·api-call 없음). 삭제된 댓글은 집계를 감춘다",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{post?.data?.board?.use_comment_reaction && (post?.data?.board?.reaction_type_options ?? []).length > 0 && !comment?.deleted_at}}",
+                    "props": {
+                        "data-testid": "comment_reaction_counts",
+                        "className": "mt-2 px-4 flex flex-wrap items-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "iteration": {
+                                "source": "{{post?.data?.board?.reaction_type_options ?? []}}",
+                                "item_var": "rt"
+                            },
+                            "props": {
+                                "className": "text-tertiary inline-flex items-center gap-1 text-xs"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{!!rt.icon_url}}",
+                                    "props": {
+                                        "src": "{{rt.icon_url}}",
+                                        "alt": "",
+                                        "className": "w-4 h-4 object-contain"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!rt.icon_url}}",
+                                    "props": {
+                                        "name": "{{rt.icon_name ?? 'fa-thumbs-up'}}",
+                                        "size": "xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{rt.name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium"
+                                    },
+                                    "text": "{{comment?.reaction_counts?.[rt.id] ?? 0}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },

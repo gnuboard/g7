@@ -449,8 +449,22 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `MultilingualTagInput` | 다국어 태그 입력 (모달 편집) | value, onChange, placeholder, disabled, creatable, ... |
 | `MultilingualTabPanel` | 다국어 탭 패널 (로케일 제어) | style, variant, defaultLocale, onLocaleChange |
 | `DynamicFieldList` | 동적 필드 목록 (드래그 정렬, 추가/삭제) | items, columns, onChange, onAddItem, onRemoveItem, ... |
-| `FileUploader` | 파일 업로드 (드래그앤드롭, 이미지 압축) | attachmentableType, attachmentableId, collection, maxFiles, maxSize, ... |
+| `FileUploader` | 파일 업로드 (드래그앤드롭, 이미지 압축) | attachmentableType, attachmentableId, collection, maxFiles, maxSize, **size**, ... |
 | `IconSelect` | 아이콘 선택 드롭다운 | value, onChange, options, placeholder, searchPlaceholder, ... |
+
+##### FileUploader 크기(`size`)
+
+전체 폭 영역이 아닌 **표 한 칸·종형 패널**같은 좁은 자리에 넣을 때는 `size` 로 줄인다.
+드롭존의 안쪽 여백·아이콘·글자가 함께 줄어든다.
+
+| 값 | 쓰는 자리 | 드롭존 |
+| --- | --- | --- |
+| `md`(기본) | 전체 폭 첸부 영역 | 여백 `p-8`, 안내 문구 2줄 |
+| `sm` | 종형 패널·좌우 분할 폼 | 여백 `p-4` |
+| `xs` | 표 한 칸(아이콘 지정 등) | 여백 `p-2`, 제한 안내 접음 |
+
+크기를 호출처 className 으로 덮어쓰지 않는다 — 화면마다 값이 갈려 같은 부품이 서로 다르게 보인다.
+받지 않는 속성을 적으면 **조용히 무시**된다(감사 룰 `component-unknown-prop` 이 잡는다).
 
 #### 에디터
 

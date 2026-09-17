@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 스크랩 탭 — 내 스크랩을 검색하고 선택 해제한다. 조회 조건은 URL 이 아니라 로컬 상태(scrapPage·scrapSearch·scrapSearchField)에 있어 데이터소스 URL 에 직접 보간한다",
     "version": "1.0.0",
     "layout_name": "mypage/scrap",
     "extends": "_user_base",
@@ -11,7 +12,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "내 스크랩 목록 — 페이지·검색어·검색 대상을 로컬 상태에서 읽어 URL 에 보간한다. 검색·쪽 이동은 refetch 로 다시 받는다"
         }
     ],
     "computed": {
@@ -113,9 +115,11 @@
     },
     "modals": [
         {
+            "comment": "스크랩 단건 해제 확인",
             "partial": "partials/mypage/scrap/_modal_scrap_delete.json"
         },
         {
+            "comment": "선택 스크랩 일괄 해제 확인",
             "partial": "partials/mypage/scrap/_modal_scrap_bulk_delete.json"
         }
     ]

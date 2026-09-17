@@ -3,6 +3,7 @@
         "is_partial": true,
         "description": "최근 실행 다섯 건 요약"
     },
+    "comment": "설정 탭 하단의 최근 실행 5건 — 데이터소스 koreaeximRecentRuns(per_page 5)를 페이지 없이 그린다. 전체는 이력 탭에서 본다",
     "type": "basic",
     "name": "Div",
     "props": {
@@ -29,6 +30,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "이력 탭으로 이동 — 다른 쿼리는 유지한 채 tab 만 바꾼다",
                             "type": "click",
                             "handler": "navigate",
                             "params": {

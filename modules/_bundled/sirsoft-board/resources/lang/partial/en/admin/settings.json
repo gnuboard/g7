@@ -103,17 +103,19 @@
     "notify_author_description": "Send email to the original author when a comment or reply is posted",
     "use_report": "Enable Reports",
     "use_scrap": "Enable Scrap",
+    "use_reaction": "Enable Reactions",
+    "active_reaction_types": "Select Reaction Types",
     "auto_hide_threshold": "Auto Blind Threshold",
-    "auto_hide_threshold_hint": "Automatically blind content when reports reach this count. (0=disabled, 1\u2013100)",
+    "auto_hide_threshold_hint": "Automatically blind content when reports reach this count. (0=disabled, 1–100)",
     "auto_hide_target": "Blind Target",
     "auto_hide_target_hint": "Select the target for auto blind processing.",
     "daily_report_limit": "Daily Report Limit",
-    "daily_report_limit_hint": "Max reports per user per day across all boards. 0 = no limit. (0\u2013100)",
+    "daily_report_limit_hint": "Max reports per user per day across all boards. 0 = no limit. (0–100)",
     "rejection_limit_count": "Rejection Limit (count)",
     "rejection_limit_days": "Rejection Limit Period (days)",
-    "rejection_limit_hint": "Reporting is blocked once rejections within this period reach the limit. 0 count = no limit. (Count: 0\u201350, Period: 1\u2013365 days)",
+    "rejection_limit_hint": "Reporting is blocked once rejections within this period reach the limit. 0 count = no limit. (Count: 0–50, Period: 1–365 days)",
     "report_cooldown_seconds": "Report Cooldown (sec)",
-    "report_cooldown_seconds_hint": "Minimum interval between consecutive reports. 0 = no limit. (0\u20133600 sec)",
+    "report_cooldown_seconds_hint": "Minimum interval between consecutive reports. 0 = no limit. (0–3600 sec)",
     "notify_author_on_report_action": "Report Action Notification",
     "notify_author_on_report_action_description": "Send a notification to the author when their content is processed (blinded/deleted/restored) due to reports",
     "notify_admin_on_report": "Report Received Admin Notification",
@@ -128,8 +130,8 @@
     "notify_author_on_report_action_channels_placeholder": "Select channels",
     "notify_author_on_report_action_channels_help": "Author notifications will be sent through the selected channels",
     "notification_channels": {
-        "mail": "Email",
-        "database": "Site Notification"
+      "mail": "Email",
+      "database": "Site Notification"
     },
     "report_notification_template_status_title": "Delivery Status by Channel",
     "report_notification_template_status_active": "Active",
@@ -146,12 +148,12 @@
     "blocked_keywords_description": "List of keywords to block in posts and comments",
     "blocked_keywords_hint": "Posts or comments containing registered keywords will be blocked",
     "post_cooldown_seconds": "Post Cooldown (sec)",
-    "post_cooldown_seconds_hint": "Wait time between consecutive posts by the same user (0\u20133600 sec, 0 = no limit)",
+    "post_cooldown_seconds_hint": "Wait time between consecutive posts by the same user (0–3600 sec, 0 = no limit)",
     "comment_cooldown_seconds": "Comment Cooldown (sec)",
-    "comment_cooldown_seconds_hint": "Wait time between consecutive comments by the same user (0\u20133600 sec, 0 = no limit)",
+    "comment_cooldown_seconds_hint": "Wait time between consecutive comments by the same user (0–3600 sec, 0 = no limit)",
     "spam_security_identifier_info": "Cooldown and view count deduplication identify members by user_id and guests by IP address",
     "view_count_cache_ttl": "View Count Cache TTL (sec)",
-    "view_count_cache_ttl_hint": "Cache duration for view count deduplication (60\u2013604800 sec, max 7 days)",
+    "view_count_cache_ttl_hint": "Cache duration for view count deduplication (60–604800 sec, max 7 days)",
     "date_display_format": "Date Display Format",
     "date_display_format_hint": "Choose how dates are displayed in post and comment lists. Applied immediately across all boards on the user-facing pages.",
     "clear_cache": "Clear Cache",
@@ -164,6 +166,7 @@
       "show_view_count": "Display view count on post list and detail pages",
       "use_report": "Enable reporting of inappropriate posts and comments",
       "use_scrap": "Enable the scrap feature that lets members save posts to their personal collection",
+      "use_reaction": "Enable reactions such as recommend/not recommend on posts",
       "new_display_hours": "Duration to display [New] badge after posting (in hours)",
       "per_page": "Number of posts to display per page on desktop ({{min}}–{{max}})",
       "per_page_mobile": "Number of posts to display per page on mobile ({{min}}–{{max}})",
@@ -185,17 +188,19 @@
       "use_file_upload": "Must be ON to apply file attachment feature to new boards.",
       "max_file_size": "Maximum file size for uploads (in MB, {{min}}–{{max}})",
       "max_file_count": "Maximum number of files per post ({{min}}–{{max}})",
-      "allowed_extensions": "Enter at least one allowed file extension"
-    }
+      "allowed_extensions": "Enter at least one allowed file extension",
+      "use_comment_reaction": "Show reaction buttons on comments too. Works only where \"Reactions\" is on."
+    },
+    "use_comment_reaction": "Comment reactions"
   },
   "options": {
     "date_display_format": {
       "standard": "Standard",
       "standard_description": "Recent posts show as 'N min ago / N hours ago', this year as 'MM-DD', older as 'YY-MM-DD'",
-      "standard_example": "e.g. 3 min ago \u00b7 2 hours ago \u00b7 03-18 \u00b7 24-12-25",
+      "standard_example": "e.g. 3 min ago · 2 hours ago · 03-18 · 24-12-25",
       "relative": "Relative",
-      "relative_description": "All dates shown as relative time (N min \u00b7 N hours \u00b7 N days \u00b7 N months \u00b7 N years ago)",
-      "relative_example": "e.g. 3 min ago \u00b7 2 hours ago \u00b7 5 days ago \u00b7 3 months ago \u00b7 2 years ago"
+      "relative_description": "All dates shown as relative time (N min · N hours · N days · N months · N years ago)",
+      "relative_example": "e.g. 3 min ago · 2 hours ago · 5 days ago · 3 months ago · 2 years ago"
     },
     "type": {
       "basic": "Basic",
@@ -294,6 +299,8 @@
       "secret_mode": "Secret Mode",
       "use_comment": "Enable Comments",
       "use_reply": "Enable Replies",
+      "use_reaction": "Enable Reactions",
+      "use_comment_reaction": "Enable Comment Reactions",
       "max_reply_depth": "Max Reply Depth",
       "reply_delete_policy": "Reply Delete Policy",
       "max_comment_depth": "Max Comment Depth",
@@ -390,12 +397,12 @@
     "reset_success": "Notification settings have been reset to default.",
     "reset_failed": "Failed to reset notification settings.",
     "reset_modal": {
-        "title": "Reset to Default",
-        "confirm_message": "All channel templates of this notification will be restored to defaults.",
-        "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
-        "target_label": "Target:",
-        "btn_confirm": "Reset",
-        "btn_confirming": "Resetting..."
+      "title": "Reset to Default",
+      "confirm_message": "All channel templates of this notification will be restored to defaults.",
+      "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+      "target_label": "Target:",
+      "btn_confirm": "Reset",
+      "btn_confirming": "Resetting..."
     },
     "no_template_for_channel": "No template for this channel.",
     "body_preview": "Body Preview",
@@ -465,5 +472,43 @@
       "plugin": "Plugin",
       "admin": "Admin"
     }
+  },
+  "reaction_types": {
+    "title": "Reaction types",
+    "add_button": "Add type",
+    "empty": "No reaction types yet. Add one with \"Add type\", then save.",
+    "none_hint": "Add a type in the editor below first.",
+    "form": {
+      "code": "Code",
+      "name": "Name",
+      "name_placeholder": "e.g. Like",
+      "confirm": "Add"
+    },
+    "columns": {
+      "order": "Order",
+      "code": "Code",
+      "name": "Name",
+      "icon": "Icon",
+      "is_active": "Active",
+      "reaction_count": "Reactions"
+    },
+    "actions": {
+      "move_up": "Move up",
+      "move_down": "Move down"
+    },
+    "badges": {
+      "inactive": "Inactive"
+    },
+    "validation": {
+      "code_required": "Enter a code",
+      "code_duplicate": "That code already exists",
+      "name_required": "Enter the name in the default language"
+    },
+    "confirm_delete": "Delete this reaction type? It applies once you save.",
+    "messages": {
+      "icon_upload_failed": "Failed to upload the icon",
+      "icon_delete_failed": "Failed to delete the icon"
+    },
+    "delete_blocked_suffix": " reaction(s) use this type, so it cannot be deleted — you can turn it off instead"
   }
 }

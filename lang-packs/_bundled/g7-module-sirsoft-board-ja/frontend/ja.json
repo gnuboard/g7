@@ -20,7 +20,10 @@
       "roles": "ロール一覧",
       "settings": "掲示板設定",
       "scraps": "スクラップ一覧",
-      "scrap_boards": "スクラップ掲示板選択肢"
+      "scrap_boards": "スクラップ掲示板選択肢",
+      "reactionTypes": "レスポンスタイプ",
+      "reactions": "リアクション一覧",
+      "reaction_boards": "リアクション掲示板選択肢"
     }
   },
   "common": {
@@ -59,6 +62,9 @@
     },
     "scraps": {
       "$partial": "partial/admin/scraps.json"
+    },
+    "reactions": {
+      "$partial": "partial/admin/reactions.json"
     }
   },
   "board": {

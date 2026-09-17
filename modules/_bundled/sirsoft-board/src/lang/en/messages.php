@@ -126,6 +126,55 @@ return [
         'post_secret' => 'You cannot comment on a secret post you are not allowed to view.',
     ],
 
+    // Reaction (recommend/not recommend) messages
+    'reaction' => [
+        'list_success' => 'Reaction types have been retrieved.',
+        'add_success' => 'Your reaction has been added.',
+        'change_success' => 'Your reaction has been changed.',
+        'remove_success' => 'Your reaction has been removed.',
+        'failed' => 'Failed to process the reaction.',
+        'disabled' => 'Reactions are disabled for this board.',
+        'inactive_type' => 'This reaction type is not available on this board.',
+        'self_post' => 'You cannot react to your own post.',
+        'secret_denied' => 'You cannot react to a secret post you are not allowed to view.',
+        'login_required' => 'You need to sign in to use this feature.',
+        'target_unavailable' => 'You cannot react to a deleted or hidden target.',
+        'self_comment' => 'You cannot react to your own comment.',
+        'retrieved' => 'Reactions retrieved successfully.',
+        'retrieve_failed' => 'Failed to retrieve reactions.',
+        'removed' => 'The reaction has been removed.',
+        'bulk_removed' => ':count reaction(s) have been removed.',
+        'not_found' => 'Reaction not found.',
+        'delete_failed' => 'Failed to remove the reaction.',
+        'admin' => [
+            'retrieved' => 'Reactions retrieved successfully.',
+            'retrieve_failed' => 'Failed to retrieve reactions.',
+            'removed' => 'The reaction has been deleted.',
+            'bulk_removed' => ':count reaction(s) have been deleted.',
+            'bulk_delete_failed' => 'Failed to delete reactions in bulk.',
+            'permission_denied' => 'You do not have permission to manage reactions.',
+        ],
+    ],
+
+    'reaction_type' => [
+        'in_use' => 'This type has :count reaction(s) and cannot be deleted (:name). You can only deactivate it.',
+        'code_taken' => 'This code is already in use.',
+        'icon_upload_success' => 'The icon has been uploaded.',
+        'icon_upload_failed' => 'Failed to upload the icon.',
+        'icon_deleted' => 'The icon has been deleted.',
+        'icon_delete_failed' => 'Failed to delete the icon.',
+        'icon_not_found' => 'Icon not found.',
+    ],
+
+    'report' => [
+        'my_retrieved' => 'Your reports have been retrieved.',
+        'my_retrieve_failed' => 'Failed to retrieve your reports.',
+        'cancelled' => 'The report has been cancelled.',
+        'cancel_failed' => 'Failed to cancel the report.',
+        'cancel_not_allowed' => 'Reports can only be cancelled while pending (current: :status).',
+        'log_not_found' => 'Report not found.',
+    ],
+
     // Additional comment messages
     'comments' => [
         'comments_disabled' => 'Comments are disabled for this board.',

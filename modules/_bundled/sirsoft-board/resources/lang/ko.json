@@ -20,7 +20,10 @@
             "roles": "역할 목록",
             "settings": "게시판 설정",
             "scraps": "스크랩 목록",
-            "scrap_boards": "스크랩 게시판 선택지"
+            "scrap_boards": "스크랩 게시판 선택지",
+            "reactionTypes": "반응 유형",
+            "reactions": "반응 목록",
+            "reaction_boards": "반응 게시판 선택지"
         }
     },
     "common": {
@@ -41,6 +44,9 @@
         },
         "scraps": {
             "$partial": "partial/ko/admin/scraps.json"
+        },
+        "reactions": {
+            "$partial": "partial/ko/admin/reactions.json"
         },
         "posts": {
             "$partial": "partial/ko/admin/posts.json"

@@ -115,7 +115,8 @@
 | post_status_label | string | `게시됨` | 상태 표시 문자열 |
 | is_deleted | boolean | `false` | 원글 삭제 여부 |
 | author_name | string | `스크랩회원B` | 원글 작성자 (스크랩한 회원과 다를 수 있습니다) |
-| scrapped_at | string | `방금 전` | 스크랩 시각 |
+| scrapped_at | string | `방금 전` | 스크랩 시각 — 모듈 표시 설정(`display.date_display_format`)을 따르므로 「방금 전」 같은 상대 표기일 수 있습니다 |
+| created_at | string | `2026-09-14 15:05:31` | 스크랩 시각의 절대 표기(초 단위). 저장은 UTC 이고 이 값은 회원 표시 시간대로 환산됩니다 — 관리 목록은 선후를 가려야 하므로 이 필드를 씁니다 |
 | abilities.can_delete | boolean | `true` | 삭제 권한 — 화면의 체크 칸이 이 값으로 열립니다 |
 
 ### DELETE /api/modules/sirsoft-board/admin/scraps/{id}

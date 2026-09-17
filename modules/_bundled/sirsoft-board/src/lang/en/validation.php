@@ -312,6 +312,22 @@ return [
 
     // Field attributes
     'attributes' => [
+        'report_my' => [
+            'search_field' => 'Search Field',
+            'target_type' => 'Target Type',
+            'status' => 'Status',
+        ],
+        'reaction_type' => [
+            'id' => 'Reaction Type',
+            'icon' => 'Icon Image',
+        ],
+        'reaction' => [
+            'ids' => 'Reaction IDs',
+            'search_field' => 'Search Field',
+            'target_type' => 'Target Type',
+            'reaction_type_id' => 'Reaction Type',
+        ],
+        'use_comment_reaction' => 'Comment Reaction Usage',
         'scrap' => [
             'ids' => 'Scrap IDs',
             'search_field' => 'Search target',
@@ -332,6 +348,16 @@ return [
             'basic_defaults.comment_order' => 'Comment Order',
             'basic_defaults.show_view_count' => 'Show View Count',
             'basic_defaults.use_report' => 'Use Report',
+            'basic_defaults.use_reaction' => 'Use Reaction',
+            'basic_defaults.use_comment_reaction' => 'Comment Reaction Usage',
+            'basic_defaults.reaction_types' => 'Reaction Types',
+            'basic_defaults.reaction_types.*.code' => 'Reaction Type Code',
+            'basic_defaults.reaction_types.*.name' => 'Reaction Type Name',
+            'basic_defaults.reaction_types.*.name.ko' => 'Reaction Type Name (Korean)',
+            'basic_defaults.reaction_types.*.icon_attachment_id' => 'Reaction Type Icon',
+            'basic_defaults.reaction_types.*.display_order' => 'Reaction Type Display Order',
+            'basic_defaults.reaction_types.*.is_active' => 'Reaction Type Active',
+            'basic_defaults.active_reaction_types' => 'Active Reaction Types',
             'basic_defaults.min_title_length' => 'Min Title Length',
             'basic_defaults.max_title_length' => 'Max Title Length',
             'basic_defaults.min_content_length' => 'Min Content Length',
@@ -611,6 +637,28 @@ return [
     ],
 
     // Report validation messages
+    'reaction' => [
+        'reaction_type_id' => [
+            'required' => 'The reaction type is required.',
+            'integer' => 'The reaction type must be an integer.',
+            'exists' => 'The reaction type does not exist.',
+        ],
+        'ids' => [
+            'required' => 'Reaction IDs are required.',
+            'array' => 'Reaction IDs must be an array.',
+            'min' => 'Please select at least one reaction.',
+            'max' => 'You can select up to :max at a time.',
+            'integer' => 'Reaction IDs must be integers.',
+            'distinct' => 'Reaction IDs must be unique.',
+            'exists' => 'The reaction does not exist.',
+        ],
+        'search_field' => [
+            'in' => 'Invalid search field.',
+        ],
+        'target_type' => [
+            'in' => 'Invalid target type.',
+        ],
+    ],
     'report' => [
         'invalid_status_transition' => 'The report cannot be changed to that status from its current status.',
         'status' => [
@@ -653,6 +701,42 @@ return [
         ],
         'search_field' => [
             'in' => 'Invalid search target.',
+        ],
+    ],
+
+    // Reaction type validation messages
+    'reaction_type' => [
+        'code' => [
+            'regex' => 'The code must start with a lowercase letter and contain only lowercase letters, numbers, and underscores (2-50 characters).',
+            'distinct' => 'Reaction type codes must be unique.',
+            'unique' => 'This code is already in use.',
+        ],
+        'name' => [
+            'ko' => [
+                'required' => 'Please enter the name in the default language.',
+            ],
+        ],
+        'icon_attachment_id' => [
+            'exists' => 'Invalid icon image.',
+        ],
+        'icon' => [
+            'required' => 'Please select an icon image.',
+            'image' => 'The icon must be an image file.',
+            'mimes' => 'The icon must be a JPG, PNG, GIF, or WEBP file.',
+            'max' => 'The icon image must be 1MB or smaller.',
+        ],
+    ],
+
+    // My reports (mypage) validation messages
+    'report_my' => [
+        'search_field' => [
+            'in' => 'Invalid search field.',
+        ],
+        'target_type' => [
+            'in' => 'Invalid target type.',
+        ],
+        'status' => [
+            'in' => 'Invalid status.',
         ],
     ],
 ];

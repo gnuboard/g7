@@ -334,6 +334,7 @@
         <div class="relative md:hidden">
           <button type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" aria-haspopup="menu" aria-expanded="{{!!_global.headerMoreOpen}}" data-testid="layout-more-menu">
             <on type="click">
+              <!-- 모바일 더보기 메뉴 — 내려받기·복사를 접어 둔 메뉴를 열고 닫는다 -->
               <set-state target="global" headerMoreOpen="{{!_global.headerMoreOpen}}"/>
             </on>
             <icon name="fa-solid fa-ellipsis" class="text-base"/>
@@ -341,6 +342,7 @@
           <div data-if="{{!!_global.headerMoreOpen}}" role="menu" class="absolute right-0 mt-1 w-48 z-40 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1" data-testid="layout-more-menu-items">
             <button type="button" role="menuitem" class="w-full text-left px-3 py-2 text-sm flex-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" data-testid="layout-download-markup-mobile">
               <on type="click">
+                <!-- 마크업 내려받기(모바일) — 메뉴를 닫고 편집 중인 마크업을 파일로 내린다. 파일명은 확장 조각이면 fragment_key, 아니면 레이아웃 이름 -->
                 <sequence>
                   <set-state target="global" :headerMoreOpen="false"/>
                   <action handler="downloadMarkupFile" filename="{{(_global.selectedNodeKind === 'extension' ? (current_extension?.data?.fragment_key ?? current_extension?.data?.target_name ?? 'extension') : (_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'layout'))}}.g7.html" content="{{_global.editorMarkup ?? ''}}"/>
@@ -351,6 +353,7 @@
             </button>
             <button type="button" role="menuitem" class="w-full text-left px-3 py-2 text-sm flex-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" data-testid="layout-copy-markup-mobile">
               <on type="click">
+                <!-- 마크업 복사(모바일) — 메뉴를 닫고 편집 중인 마크업을 클립보드에 넣는다 -->
                 <sequence>
                   <set-state target="global" :headerMoreOpen="false"/>
                   <action handler="copyMarkupToClipboard" content="{{_global.editorMarkup ?? ''}}" successMessage="$t:admin.templates.layout_edit.copy_success" failureMessage="$t:admin.templates.layout_edit.copy_failed"/>
@@ -442,6 +445,7 @@
           <set-state :debounce="200" target="global" fileSearchQuery="{{$args[0]}}"/>
         </on>
         <on type="search" event="onSearch">
+          <!-- 내용 검색은 2글자 이상일 때만 서버에 묻고, 타이핑이 멎은 뒤(600ms) 한 번만 부른다 -->
           <conditions>
             <when if="{{String($args[0] ?? '').length >= 2}}">
               <refetch-data-source :debounce="600" dataSourceId="layout_search"/>
@@ -449,24 +453,28 @@
           </conditions>
         </on>
         <on type="createFile" event="onCreateFile">
+          <!-- 파일 만들기 — 폴더 노드에서 열면 그 경로를 접두로 채워 폼 창을 연다 -->
           <sequence>
             <set-state target="global" fileFormMode="create_file" fileFormName="{{$args[0] ? ($args[0] + '/') : ''}}" fileFormContent="" :fileFormError="null"/>
             <open-modal target="file_form_modal"/>
           </sequence>
         </on>
         <on type="createFolder" event="onCreateFolder">
+          <!-- 폴더 만들기 — 같은 폼 창을 폴더 모드로 연다 -->
           <sequence>
             <set-state target="global" fileFormMode="create_folder" fileFormName="{{$args[0] ? ($args[0] + '/') : ''}}" :fileFormError="null"/>
             <open-modal target="file_form_modal"/>
           </sequence>
         </on>
         <on type="rename" event="onRename">
+          <!-- 이름 바꾸기 — 노드 키의 종류 접두를 떼어 대상·초기 이름으로 삼는다 -->
           <sequence>
             <set-state target="global" fileFormMode="rename" fileFormTarget="{{String($args[0]).slice(7)}}" fileFormName="{{String($args[0]).slice(7)}}" :fileFormError="null"/>
             <open-modal target="file_form_modal"/>
           </sequence>
         </on>
         <on type="delete" event="onDelete">
+          <!-- 삭제 확인 창 — 대상 경로를 두고 이전 오류·참조 정보는 비운 채 연다 -->
           <sequence>
             <set-state target="global" fileDeleteTarget="{{String($args[0]).slice(7)}}" :fileDeleteError="null" :fileDeleteReferences="[]" :fileDeleteRouteRequired="false"/>
             <open-modal target="file_delete_modal"/>
@@ -593,9 +601,11 @@
               </on>
               <on type="saveAs" event="onSaveAs">
                 <!-- 없어진 파일의 복원분을 살린다. 생성 흐름을 그대로 쓰되 본문을 실어 보낸다 —
-                     빈 골격으로 만들면 사용자가 쓴 글이 그 자리에서 사라진다. -->
-                <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="{{$event.target.value}}" :fileFormError="null"/>
-                <open-modal target="file_form_modal"/>
+                빈 골격으로 만들면 사용자가 쓴 글이 그 자리에서 사라진다. -->
+                <sequence>
+                  <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="{{$event.target.value}}" :fileFormError="null"/>
+                  <open-modal target="file_form_modal"/>
+                </sequence>
               </on>
               <on type="save" event="onSave">
                 <!-- `Ctrl+S` — 머리말의 저장 버튼과 **같은 액션**을 부른다. 두 경로를 각자 적으면
@@ -611,6 +621,7 @@
                 <action-ref name="preview_current_file"/>
               </on>
               <on type="newFile" event="onNewFile">
+                <!-- 새 파일 — 빈 본문으로 생성 폼 창을 연다 -->
                 <sequence>
                   <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="" :fileFormError="null"/>
                   <open-modal target="file_form_modal"/>
@@ -626,9 +637,11 @@
                 <set-state target="global" fileSearchFocusNonce="{{(_global.fileSearchFocusNonce ?? 0) + 1}}"/>
               </on>
               <on type="searchContent" event="onSearchContent">
+                <!-- 내용 검색(Ctrl+Shift+F) — 빠른 이동과 같은 검색창에 포커스를 준다 -->
                 <set-state target="global" fileSearchFocusNonce="{{(_global.fileSearchFocusNonce ?? 0) + 1}}"/>
               </on>
               <on type="toggleView" event="onToggleView">
+                <!-- 편집기 표기를 마크업↔JSON 으로 바꾼다 — 정본은 마크업이고 JSON 은 굽기 산출이다 -->
                 <set-state target="global" editorFormat="{{(_global.editorFormat ?? 'markup') === 'json' ? 'markup' : 'json'}}"/>
               </on>
               <on type="exit" event="onExit">

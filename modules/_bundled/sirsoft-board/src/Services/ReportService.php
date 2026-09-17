@@ -11,13 +11,16 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Exceptions\DeletedReportStatusChangeException;
 use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
+use Modules\Sirsoft\Board\Exceptions\ReportCancelNotAllowedException;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Models\ReportLog;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
@@ -654,6 +657,7 @@ class ReportService
      * Service를 통해 호출하여 훅이 실행되도록 합니다.
      *
      * @param  Report  $report  신고 모델
+     * @return void
      */
     protected function restoreContent(Report $report): void
     {
@@ -688,6 +692,7 @@ class ReportService
      * Service를 통해 호출하여 훅이 실행되도록 합니다.
      *
      * @param  Report  $report  신고 모델
+     * @return void
      */
     protected function blindContent(Report $report): void
     {
@@ -725,6 +730,7 @@ class ReportService
      *
      * @param  Report  $report  생성된 신고 모델
      * @param  int|null  $cycleCount  현재 사이클 신고 수 (null 시 DB 재조회)
+     * @return void
      */
     private function checkAndApplyAutoHide(Report $report, ?int $cycleCount = null): void
     {
@@ -769,6 +775,7 @@ class ReportService
      * blindPost/blindComment의 멱등성 체크로 중복 블라인드가 방지됩니다.
      *
      * @param  Report  $report  신고 모델
+     * @return void
      */
     private function blindContentForAutoHide(Report $report): void
     {
@@ -857,6 +864,7 @@ class ReportService
      * Service를 통해 호출하여 훅이 실행되도록 합니다.
      *
      * @param  Report  $report  신고 모델
+     * @return void
      */
     protected function deleteContent(Report $report): void
     {
@@ -1535,5 +1543,88 @@ class ReportService
     public function recordReportCooldown(string $slug, string|int $identifier, int $seconds): void
     {
         $this->cache->put("report_cooldown_{$slug}_{$identifier}", true, $seconds);
+    }
+
+    /**
+     * 신고자 본인의 신고 목록을 조회합니다 (마이페이지 「내 신고」).
+     *
+     * @param  int  $reporterId  신고자 ID
+     * @param  array<string, mixed>  $filters  필터
+     * @param  int  $perPage  페이지당 건수
+     * @return LengthAwarePaginator 신고 로그 목록
+     */
+    public function paginateMyReports(int $reporterId, array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->reportRepository->paginateLogsByReporter($reporterId, $filters, $perPage);
+    }
+
+    /**
+     * 신고를 취소합니다 (접수 상태만 — PO 결정 R10).
+     *
+     * 내 신고 로그만 지운다. 그 케이스에 다른 신고자가 남아 있으면 케이스는 유지하고
+     * 최근 신고 시각·처리 이력만 갱신하며, 내가 마지막 신고자였으면 케이스를
+     * **영구 삭제(forceDelete)** 한다 — 소프트 삭제로 남기면 unique(board,target) 제약이
+     * 살아 있어 같은 대상을 다시 신고할 수 없게 된다.
+     *
+     * 취소는 이미 적용된 자동 숨김 등 조치를 되돌리지 않는다.
+     *
+     * @param  int  $reportLogId  신고 로그 ID
+     * @param  int  $userId  신고자(본인) ID
+     * @return array{case_deleted: bool, remaining: int} 취소 결과
+     *
+     * @throws ModelNotFoundException 로그가 없거나 본인 것이 아닐 때
+     * @throws ReportCancelNotAllowedException 접수 상태가 아닐 때
+     */
+    public function cancelReport(int $reportLogId, int $userId): array
+    {
+        [$result, $report, $reasonType] = DB::transaction(function () use ($reportLogId, $userId) {
+            $log = $this->reportRepository->findLogByIdAndReporter($reportLogId, $userId);
+
+            if ($log === null) {
+                throw (new ModelNotFoundException)->setModel(ReportLog::class, [$reportLogId]);
+            }
+
+            /** @var Report $report */
+            $report = Report::withTrashed()->lockForUpdate()->findOrFail($log->report_id);
+
+            if ($report->trashed() || $report->status !== ReportStatus::Pending) {
+                throw new ReportCancelNotAllowedException($report->status);
+            }
+
+            HookManager::doAction('sirsoft-board.report.before_cancel', $log, $report);
+
+            $reasonType = $log->reason_type?->value;
+
+            $this->reportRepository->deleteLog($log->id);
+
+            $remaining = $this->reportRepository->countLogsByReport($report->id);
+
+            if ($remaining === 0) {
+                // 소프트 삭제는 unique_report_case 가 재신고를 막는다 — 영구 삭제한다.
+                $this->reportRepository->forceDelete($report->id);
+
+                return [['case_deleted' => true, 'remaining' => 0], $report, $reasonType];
+            }
+
+            $histories = $report->process_histories ?? [];
+            $histories[] = $this->createHistoryEntry('report_cancelled', null, null, now(), $remaining);
+
+            $report->update([
+                'last_reported_at' => $this->reportRepository->latestLogCreatedAt($report->id),
+                'process_histories' => $histories,
+            ]);
+
+            return [['case_deleted' => false, 'remaining' => $remaining], $report, $reasonType];
+        });
+
+        HookManager::doAction(
+            'sirsoft-board.report.after_cancel',
+            $userId,
+            $report,
+            $reasonType,
+            $result['case_deleted'],
+        );
+
+        return $result;
     }
 }

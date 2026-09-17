@@ -3,6 +3,7 @@
         "is_partial": true,
         "description": "인증키와 자동 갱신 정책 입력"
     },
+    "comment": "설정 폼 — 인증키·자동 관리·갱신 시각·환율 종류·재시도·소수 자릿수·조회 소급일·이력 보존일·실패 알림·실행 요일. 입력은 data-key 폼(_local.form)에 묶이고 저장은 상위 레이아웃의 저장 버튼이 한다",
     "type": "basic",
     "name": "Div",
     "props": {
@@ -428,6 +429,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -462,6 +464,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -496,6 +499,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -530,6 +534,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -564,6 +569,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -598,6 +604,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -632,6 +639,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {

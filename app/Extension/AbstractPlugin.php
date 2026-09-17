@@ -11,6 +11,7 @@ use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
+use App\Extension\Traits\ResolvesLayoutInstallSource;
 use App\Support\PublicAssetDisk;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
@@ -28,6 +29,8 @@ use ReflectionClass;
 abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInterface
 {
     use ReportsLifecycleFailure;
+    // 설정 레이아웃 소스 우선순위(`.g7.html` → 짝 `.json`)를 저장소 규약 한 곳에서 받는다.
+    use ResolvesLayoutInstallSource;
 
     /**
      * 플러그인 디렉토리 경로 (캐시)
@@ -1207,17 +1210,29 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 플러그인 설정 페이지 레이아웃 경로를 반환합니다.
      *
-     * 기본적으로 resources/layouts/admin/plugin_settings.json 경로를 반환합니다.
+     * 기본적으로 resources/layouts/admin/plugin_settings 의 소스를 반환합니다.
      * 파일이 존재하지 않으면 null을 반환합니다.
      * 플러그인 개발자가 커스텀 경로가 필요한 경우 오버라이드합니다.
+     *
+     * 소스 우선순위는 저장소 규약과 같다 — `.g7.html`(작성 SSoT) → 짝 `.json`(굽기 산출).
+     * 종전에는 이 메서드만 `.json` 을 하드코딩해, 다른 모든 레이아웃 소비 경로가 쓰는
+     * {@see ResolvesLayoutInstallSource::layoutSourceCandidates()} 규약 밖에 홀로 남아 있었다.
+     * 그 결과 플러그인 설정 UI 만 짝 `.json` 의 **디스크 실재**를 요구했고, 굽기를 빠뜨린
+     * 플러그인은 설정 화면이 통째로 사라졌다(`null` → `hasSettingsLayout()` false).
      *
      * @return string|null 레이아웃 파일 절대 경로 또는 null
      */
     public function getSettingsLayout(): ?string
     {
-        $layoutPath = $this->getPluginPath().'/resources/layouts/admin/plugin_settings.json';
+        $base = $this->getPluginPath().'/resources/layouts/admin/plugin_settings';
 
-        return file_exists($layoutPath) ? $layoutPath : null;
+        foreach ($this->layoutSourceCandidates($base.'.json') as $candidate) {
+            if (file_exists($candidate['path'])) {
+                return $candidate['path'];
+            }
+        }
+
+        return null;
     }
 
     /**

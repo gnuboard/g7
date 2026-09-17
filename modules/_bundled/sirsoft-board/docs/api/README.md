@@ -7,9 +7,20 @@
 > 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)가 막고 있어 이 블록만 다시 굽는 방법이
 > 없는데, 표에 없는 문서는 아무도 찾지 못하기 때문입니다. 가드가 풀려 생성기를 다시 돌리면 이 값들은
 > 생성기 산식으로 덮여도 무방합니다 — `scraps.md` 의 6개 절 중 회원용 2개는 `scrap.md` 와 겹칩니다.
+>
+> **이슈 #525 주의**: `reports.md` 행의 7→9 와 총계의 +2 도 같은 이유로 **손으로 넣었습니다**.
+> 마이페이지 「내 신고」 2개(`GET /me/reports`·`DELETE /me/reports/{reportLogId}`)는 회원 인증과
+> 본인 소유 데이터가 필요해 `api:docgen` 의 실측 대상이 아니라, 생성기가 세지 못합니다.
+>
+> **2026-09-16 (develop-7.1.0 2차 병합) 실측 대조**: `php artisan api:docgen --scope=module:sirsoft-board --check`
+> 결과 **drift 없음** — 이 문서가 코드 실측과 어긋나지 않음을 확인했습니다(병합으로 유입된 라우트 변경 없음).
+> 다만 아래 자동 생성 블록의 **선언 총계(문서 12 · 엔드포인트 94)가 표 실물(행 15 · 합 106)과 어긋나** 있습니다.
+> #524·#525 가 손으로 더한 행(`scraps`·`reaction*` 3종)이 표에는 들어갔지만 총계에는 반영되지 않은 상태이며,
+> 위 두 주의 항목이 밝힌 대로 이 블록은 `--check` 가드 때문에 부분 재생성이 불가합니다. 가드가 풀려
+> 생성기를 다시 돌리면 총계가 산식으로 바로잡힙니다 — 엔드포인트 문서 자체의 정확성과는 무관합니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 12 · **엔드포인트 수**: 92
+- **문서 수**: 12 · **엔드포인트 수**: 94
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -20,7 +31,10 @@
 | [boards.md](boards.md) | `boards` | 37 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
 | [my-comments.md](my-comments.md) | `my-comments` | 1 |
-| [reports.md](reports.md) | `reports` | 7 |
+| [reaction.md](reaction.md) | `reaction` | 3 |
+| [reaction-types.md](reaction-types.md) | `reaction-types` | 3 |
+| [reactions.md](reactions.md) | `reactions` | 6 |
+| [reports.md](reports.md) | `reports` | 9 |
 | [scrap.md](scrap.md) | `scrap` | 3 |
 | [scraps.md](scraps.md) | `scraps` | 6 |
 | [settings.md](settings.md) | `settings` | 5 |

@@ -45,6 +45,7 @@
             <option value="author">$t:board.search_fields.author</option>
           </options>
           <on type="change">
+            <!-- 검색 대상만 담아 둔다 — 조회는 검색창 제출 때 일어난다 -->
             <set-state target="local" boardSearchField="{{$event.target.value}}"/>
           </on>
         </select>

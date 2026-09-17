@@ -3,6 +3,7 @@
         "is_partial": true,
         "description": "자동 관리·인증키·갱신 결과와 호출 예산"
     },
+    "comment": "상태 카드 — 데이터소스 koreaeximStatus 를 그대로 보여주고, 연결 테스트(모의 실행)·지금 갱신(실제 실행) 두 버튼을 둔다. 권한이 없거나 실행 중이면 둘 다 잠긴다",
     "id": "koreaexim_status_card",
     "type": "basic",
     "name": "Div",
@@ -74,6 +75,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "연결 테스트 — dry_run 으로 실행을 요청한다. 실행 결과 status 에 따라 토스트 색을 가르고(성공·부분·모의=success, 자료 없음·건너뜀=info, 그 외=error) 상태·최근 실행·이력을 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -176,6 +178,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "지금 갱신 — 실제 실행(dry_run=false)을 요청한다. 자동 관리가 꺼져 있으면 버튼이 잠기므로 여기서는 켜진 상태만 온다. 결과 처리는 연결 테스트와 같다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
