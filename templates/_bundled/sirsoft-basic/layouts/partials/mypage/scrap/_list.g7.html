@@ -1,4 +1,5 @@
 <partial description="마이페이지 스크랩 목록 탭">
+  <!-- 스크랩 목록 탭 — 검색·전체 선택·일괄 해제와 PC 표/모바일 카드 두 벌. 선택 ID 는 로컬 scrapSelectedIds 에 둔다 -->
   <div class="space-y-6">
     <blur-until-loaded sources="scrap"/>
     <responsive on="portable" class="space-y-4"/>
@@ -25,13 +26,17 @@
       </select>
       <input data-ref="scrap_search_input" data-testid="scrap-search-input" type="text" placeholder="$t:mypage.scrap.search_placeholder" value="{{_local.scrapSearch ?? ''}}" class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
+          <!-- 검색어 — 담아만 둔다 -->
           <set-state target="local" scrapSearch="{{$event.target.value}}"/>
         </on>
         <on type="keypress" key="Enter">
-          <!-- 엔터도 검색 버튼과 같은 순서를 탄다 — 입력칸에서 엔터를 쳤는데 아무 일도 없으면 사용자는 검색이 없다고 읽는다 -->
-          <set-state target="local" :scrapSearching="true" :scrapPage="1" :scrapSelectedIds="[]"/>
-          <refetch-data-source dataSourceId="scrap"/>
-          <set-state target="local" :scrapSearching="false"/>
+          <!-- 엔터 검색 — 검색 버튼과 같은 순서(잠금 → 1쪽·선택 비움 → 재조회 → 잠금 해제)를 탄다 -->
+          <sequence>
+            <!-- 엔터도 검색 버튼과 같은 순서를 탄다 — 입력칸에서 엔터를 쳤는데 아무 일도 없으면 사용자는 검색이 없다고 읽는다 -->
+            <set-state target="local" :scrapSearching="true" :scrapPage="1" :scrapSelectedIds="[]"/>
+            <refetch-data-source dataSourceId="scrap"/>
+            <set-state target="local" :scrapSearching="false"/>
+          </sequence>
         </on>
       </input>
       <!-- 검색 버튼 — 클릭한 버튼에만 스피너 표시(_local.scrapSearching). 두 버튼 모두 disabled 는 어느 쪽이든 진행 중이면 함께 잠가 중복 클릭을 막되, 스피너/텍스트 전환은 각자의 상태만 반영해 눌리지 않은 버튼까지 로딩으로 보이지 않게 한다. refetchDataSource 완료 후에야 다음 setState 로 로딩을 끈다(sequence 는 각 액션을 순차 await) -->
@@ -68,6 +73,7 @@
         <responsive on="portable" class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer"/>
         <input data-testid="scrap-select-all-m" type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(scrap?.data?.data ?? []).length > 0 &amp;&amp; (scrap?.data?.data ?? []).every(r => (_local.scrapSelectedIds ?? []).includes(r.id))}}">
           <on type="change">
+            <!-- 전체 선택(모바일) — 체크 상태에 따라 이 쪽 전부를 선택하거나 비운다 -->
             <set-state target="local" scrapSelectedIds="{{$event.target.checked ? (scrap?.data?.data ?? []).map(r => r.id) : []}}"/>
           </on>
         </input>
@@ -161,6 +167,7 @@
               <td class="px-4 py-3">
                 <input data-testid="scrap-check-{{item.id}}" type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(_local.scrapSelectedIds ?? []).includes(item.id)}}">
                   <on type="change">
+                    <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                     <set-state target="local" scrapSelectedIds="{{(_local.scrapSelectedIds ?? []).includes(item.id) ? (_local.scrapSelectedIds ?? []).filter(v => v !== item.id) : [...(_local.scrapSelectedIds ?? []), item.id]}}"/>
                   </on>
                 </input>
@@ -177,14 +184,17 @@
               <td class="px-4 py-3 text-center">
                 <button data-testid="scrap-remove-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer whitespace-nowrap">
                   <on type="click">
-                    <set-state target="global">
-                      <field name="scrapDeleteModal">
-                        <field name="id" value="{{item.id}}"/>
-                        <field name="title" value="{{item.title ?? ''}}"/>
-                        <field name="isDeleted" :value="false"/>
-                      </field>
-                    </set-state>
-                    <open-modal target="scrap_delete_modal"/>
+                    <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
+                    <sequence>
+                      <set-state target="global">
+                        <field name="scrapDeleteModal">
+                          <field name="id" value="{{item.id}}"/>
+                          <field name="title" value="{{item.title ?? ''}}"/>
+                          <field name="isDeleted" :value="false"/>
+                        </field>
+                      </set-state>
+                      <open-modal target="scrap_delete_modal"/>
+                    </sequence>
                   </on>
                   $t:mypage.scrap.table.remove
                 </button>
@@ -195,6 +205,7 @@
               <td class="px-4 py-3">
                 <input data-testid="scrap-check-{{item.id}}" type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(_local.scrapSelectedIds ?? []).includes(item.id)}}">
                   <on type="change">
+                    <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                     <set-state target="local" scrapSelectedIds="{{(_local.scrapSelectedIds ?? []).includes(item.id) ? (_local.scrapSelectedIds ?? []).filter(v => v !== item.id) : [...(_local.scrapSelectedIds ?? []), item.id]}}"/>
                   </on>
                 </input>
@@ -235,6 +246,7 @@
           <div class="flex items-center gap-2 mb-2">
             <input data-testid="scrap-check-m-{{item.id}}" type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(_local.scrapSelectedIds ?? []).includes(item.id)}}">
               <on type="change">
+                <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                 <set-state target="local" scrapSelectedIds="{{(_local.scrapSelectedIds ?? []).includes(item.id) ? (_local.scrapSelectedIds ?? []).filter(v => v !== item.id) : [...(_local.scrapSelectedIds ?? []), item.id]}}"/>
               </on>
             </input>
@@ -286,14 +298,17 @@
           <div class="flex justify-end mt-1">
             <button data-testid="scrap-remove-m-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer whitespace-nowrap">
               <on type="click">
-                <set-state target="global">
-                  <field name="scrapDeleteModal">
-                    <field name="id" value="{{item.id}}"/>
-                    <field name="title" value="{{item.is_deleted ? '' : (item.title ?? '')}}"/>
-                    <field name="isDeleted" value="{{item.is_deleted}}"/>
-                  </field>
-                </set-state>
-                <open-modal target="scrap_delete_modal"/>
+                <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
+                <sequence>
+                  <set-state target="global">
+                    <field name="scrapDeleteModal">
+                      <field name="id" value="{{item.id}}"/>
+                      <field name="title" value="{{item.is_deleted ? '' : (item.title ?? '')}}"/>
+                      <field name="isDeleted" value="{{item.is_deleted}}"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="scrap_delete_modal"/>
+                </sequence>
               </on>
               $t:mypage.scrap.table.remove
             </button>

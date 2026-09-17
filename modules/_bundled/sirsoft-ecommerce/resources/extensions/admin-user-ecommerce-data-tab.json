@@ -222,6 +222,7 @@
                                             "name": "A",
                                             "actions": [
                                                 {
+                                                    "comment": "이 회원으로 한정한 찜 목록으로 — user_uuid 를 실어 보내면 목록 화면이 회원 배너를 띄운다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -258,6 +259,7 @@
                                             "name": "A",
                                             "actions": [
                                                 {
+                                                    "comment": "이 회원으로 한정한 장바구니 목록으로 — user_uuid 를 실어 보낸다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -294,6 +296,7 @@
                                             "name": "A",
                                             "actions": [
                                                 {
+                                                    "comment": "이 회원으로 한정한 배송지 목록으로 — user_uuid 를 실어 보낸다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -330,6 +333,7 @@
                                             "name": "A",
                                             "actions": [
                                                 {
+                                                    "comment": "이 회원으로 한정한 상품문의 목록으로 — user_uuid 를 실어 보낸다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {

@@ -188,9 +188,11 @@
             "partial": "partials/mypage/board/_modal_reaction_delete.json"
         },
         {
+            "comment": "선택 반응 일괄 해제 확인",
             "partial": "partials/mypage/board/_modal_reaction_bulk_delete.json"
         },
         {
+            "comment": "대기 중 신고 취소 확인",
             "partial": "partials/mypage/board/_modal_report_cancel.json"
         }
     ]

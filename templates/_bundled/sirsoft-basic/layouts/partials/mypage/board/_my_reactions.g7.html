@@ -73,11 +73,13 @@
             <option value="content">$t:mypage.board_activities.search_fields.content</option>
           </options>
           <on type="change">
+            <!-- 검색 대상 — 담아만 둔다. 조회는 검색 버튼이 한다 -->
             <set-state target="global" myReactionsSearchField="{{$event.target.value}}"/>
           </on>
         </select>
         <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myReactionsSearch ?? ''}}" class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
           <on type="change">
+            <!-- 검색어 — 담아만 둔다 -->
             <set-state target="global" myReactionsSearch="{{$event.target.value}}"/>
           </on>
         </input>
@@ -136,6 +138,7 @@
       </div>
       <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
         <on type="click">
+          <!-- 조건 초기화 — 게시판·유형·대상·검색어·정렬·쪽을 기본값으로 되돌리고 선택을 비운 뒤 다시 받는다 -->
           <sequence>
             <set-state target="global" myReactionsBoard="" myReactionsTypeId="" myReactionsTargetType="" myReactionsSearch="" myReactionsSearchField="title_content" myReactionsSort="latest" :myReactionsPage="1"/>
             <set-state target="global" :myReactionsSelectedIds="[]"/>
@@ -153,6 +156,7 @@
             <th class="w-10 px-4 py-3 text-center">
               <input data-testid="my-reactions-select-all" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(myReactions?.data?.data ?? []).length > 0 &amp;&amp; (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}">
                 <on type="change">
+                  <!-- 전체 선택 — 이 쪽의 행이 모두 선택돼 있으면 비우고, 아니면 이 쪽 전부를 선택한다 -->
                   <set-state target="global" myReactionsSelectedIds="{{(myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id)) ? [] : (myReactions?.data?.data ?? []).map(r => r.id)}}"/>
                 </on>
               </input>
@@ -171,6 +175,7 @@
             <td class="px-4 py-3 text-center">
               <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
                 <on type="change">
+                  <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                   <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"/>
                 </on>
               </input>
@@ -206,6 +211,7 @@
             <td class="px-4 py-3 text-center">
               <button data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
+                  <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                   <sequence>
                     <set-state target="global">
                       <field name="reactionDeleteModal">
@@ -226,6 +232,7 @@
             <td class="px-4 py-3 text-center">
               <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
                 <on type="change">
+                  <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                   <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"/>
                 </on>
               </input>
@@ -256,6 +263,7 @@
             <td class="px-4 py-3 text-center">
               <button data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
+                  <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                   <sequence>
                     <set-state target="global">
                       <field name="reactionDeleteModal">
@@ -276,6 +284,7 @@
             <td class="px-4 py-3 text-center">
               <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
                 <on type="change">
+                  <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                   <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"/>
                 </on>
               </input>
@@ -305,6 +314,7 @@
             <td class="px-4 py-3 text-center">
               <button data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
+                  <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                   <sequence>
                     <set-state target="global">
                       <field name="reactionDeleteModal">
@@ -329,6 +339,7 @@
         <div class="flex items-start gap-3">
           <input data-testid="my-reaction-check-m-{{reaction.id}}" type="checkbox" class="mt-1 rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
             <on type="change">
+              <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
               <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"/>
             </on>
           </input>
@@ -357,6 +368,7 @@
               <span class="text-xs text-gray-400 dark:text-gray-500">{{reaction.board_name ?? ''}} · {{reaction.reacted_at ?? ''}}</span>
               <button data-testid="my-reaction-remove-m-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
+                  <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                   <sequence>
                     <set-state target="global">
                       <field name="reactionDeleteModal">

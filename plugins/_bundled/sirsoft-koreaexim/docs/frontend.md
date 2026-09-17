@@ -41,6 +41,8 @@ _등록하는 액션 핸들러가 없습니다._
 별도 JavaScript 핸들러 없이 코어 apiCall/navigate/setState/refetchDataSource를 사용합니다. Select는 $event.target.value, TabNavigation과 DataGrid는 각 컴포넌트의 인자 계약을 사용합니다.
 
 상태 카드의 「연결 테스트」와 「지금 갱신」은 나란히 놓여 항상 둘 다 보이므로, 진행 중 표시를 `_local.busy` 한 개의 참·거짓으로 두지 않습니다. 누른 쪽이 `busy` 에 자기 이름(`test` · `update`)을 넣고 스피너는 `_local.busy === '<자기 이름>'` 으로 자기 것만 봅니다. 반면 `disabled` 는 `_local.busy` 단독 판정을 그대로 씁니다 — 서버가 두 경로에 같은 실행 락을 걸어 한쪽이 도는 동안 다른 쪽을 눌러도 거절되므로, 함께 잠그는 편이 화면과 서버가 일치합니다.
+
+레이아웃 소스는 코어 `docs/frontend/layout-markup.md` §10.5 의 주석 규약(S21)을 따릅니다 — 파일 헤더·데이터소스·모달·액션 블록마다 「무엇을 언제 왜」 를 적고, 자식이 둘 이상인 `<on>` 은 `<sequence>` 로 감싸 그 앞에 씁니다. 실행 이력 그리드처럼 한 줄에 `data-each` 와 정적 `data-ref` 가 함께 놓이면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)가 반복 안 정적 id 로 잡으므로 태그 경계에서 줄을 나눠 둡니다(2026-09-17 develop-7.1.0 2차 병합 전수 보존 검사에서 정정).
 <!-- @intent END -->
 
 ## 전역 진입점

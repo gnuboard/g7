@@ -4,6 +4,7 @@
     "layout_name": "admin_board_form",
     "extends": "_admin_base",
     "meta": {
+        "_e2e_allow": "e2e:allow F6 정정 — initLocal 과 동일한 죽은 state 키 제거뿐(2026-09-17 저작 트랙 게이트), 화면 동작 변화 없음",
         "title": "{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}",
         "description": "$t:sirsoft-board.admin.form.description"
     },
@@ -77,7 +78,8 @@
                 "data": {
                     "reaction_types": []
                 }
-            }
+            },
+            "comment": "반응 유형 전체 목록 — 「기본」 탭의 「사용 반응 유형」 체크박스 선택지. 게시판에 저장되는 값은 코드 배열(active_reaction_types)이다"
         }
     ],
     "initLocal": {
@@ -487,15 +489,5 @@
                 ]
             }
         ]
-    },
-    "state": {
-        "activeTab": "section_basic_card",
-        "isSaving": false,
-        "hasChanges": false,
-        "showCancelConfirmModal": false,
-        "form": [],
-        "isDataLoaded": false,
-        "managerSearchResults": [],
-        "stepSearchResults": []
     }
 }

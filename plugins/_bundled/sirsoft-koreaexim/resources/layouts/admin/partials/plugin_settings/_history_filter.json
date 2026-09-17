@@ -3,6 +3,7 @@
         "is_partial": true,
         "description": "실행 이력의 기간·결과·계기 필터"
     },
+    "comment": "이력 필터 — 값은 전부 query 에 실린다(새로고침·뒤로 가기에도 유지). 어느 필터를 바꾸든 1페이지부터 다시 조회하고, 데이터소스 koreaeximRuns 가 쿼리에서 읽는다",
     "type": "basic",
     "name": "Div",
     "props": {
@@ -33,6 +34,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "시작일 변경 — 이력 탭을 유지한 채 date_from 만 바꾸고 1페이지로 돌아간다",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -71,6 +73,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "종료일 변경 — 이력 탭을 유지한 채 date_to 만 바꾸고 1페이지로 돌아간다",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -109,6 +112,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "결과 상태 필터 — RunStatus 코드 하나(빈 값은 전체)로 좁히고 1페이지로 돌아간다",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -200,6 +204,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "실행 계기 필터 — 예약·재시도·수동·모의·통화 변경 중 하나로 좁히고 1페이지로 돌아간다",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {

@@ -89,6 +89,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "반응 단건 해제 — 성공하면 선택 배열에서 그 ID 를 빼고 목록·통계를 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

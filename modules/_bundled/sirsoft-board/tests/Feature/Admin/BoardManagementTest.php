@@ -130,6 +130,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * 게시판 생성 시 is_active 기본값 true 테스트
      *
+     * @scenario case=create_default_active
+     *
+     * @effects board_is_active_defaults_true_on_create
+     *
      * @return void 반환값 없음
      */
     public function test_board_created_with_default_is_active_true(): void
@@ -198,6 +202,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * is_active false로 게시판 생성 테스트
      *
+     * @scenario case=create_inactive
+     *
+     * @effects board_is_active_false_honoured_on_create
+     *
      * @return void 반환값 없음
      */
     public function test_board_created_with_is_active_false(): void
@@ -226,6 +234,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * is_active 수정 테스트 (true → false)
      *
+     * @scenario case=update_active_off
+     *
+     * @effects board_is_active_update_persists_and_is_exposed
+     *
      * @return void 반환값 없음
      */
     public function test_board_is_active_can_be_updated_to_false(): void
@@ -252,6 +264,10 @@ class BoardManagementTest extends ModuleTestCase
      *
      * BoardResource 에 use_scrap 미노출 시 편집 화면 토글이 DB 값을 못 받고,
      * UpdateBoardRequest 에 규칙 미정의 시 저장이 누락된다. 두 경로를 함께 방어한다.
+     *
+     * @scenario case=update_scrap_toggle
+     *
+     * @effects board_use_scrap_update_persists_and_is_exposed
      *
      * @return void 반환값 없음
      */
@@ -280,6 +296,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * is_active 수정 테스트 (false → true)
+     *
+     * @scenario case=update_active_on
+     *
+     * @effects board_is_active_update_persists_and_is_exposed
      *
      * @return void 반환값 없음
      */
@@ -484,6 +504,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * 게시판 목록 조회 시 is_active 필드 포함 테스트
      *
+     * @scenario case=list_exposes_is_active
+     *
+     * @effects admin_list_rows_carry_is_active
+     *
      * @return void 반환값 없음
      */
     public function test_board_list_includes_is_active_field(): void
@@ -515,6 +539,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * getFormData에 is_active 기본값 포함 테스트 (생성 모드)
+     *
+     * @scenario case=form_data_default_active
+     *
+     * @effects form_data_create_mode_is_active_true
      *
      * @return void 반환값 없음
      */
@@ -562,6 +590,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * getFormData에 _meta (limits) 포함 테스트
+     *
+     * @scenario case=form_data_meta_limits
+     *
+     * @effects form_data_meta_carries_limits_and_depth_fields
      *
      * @return void 반환값 없음
      */
@@ -625,6 +657,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * 게시판 상세 조회 시 is_active 필드 포함 테스트
      *
+     * @scenario case=detail_exposes_is_active
+     *
+     * @effects detail_carries_is_active
+     *
      * @return void 반환값 없음
      */
     public function test_board_detail_includes_is_active_field(): void
@@ -653,6 +689,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * 게시판 상세를 slug 로 조회할 수 있다 (#450 관리자 라우팅 slug 전환)
      *
+     * @scenario case=detail_by_slug
+     *
+     * @effects slug_resolves_board_in_admin_routes
+     *
      * @return void 반환값 없음
      */
     public function test_board_detail_can_be_fetched_by_slug(): void
@@ -672,6 +712,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판을 slug 로 수정할 수 있다 (#450)
+     *
+     * @scenario case=update_by_slug
+     *
+     * @effects slug_resolves_board_in_admin_routes
      *
      * @return void 반환값 없음
      */
@@ -705,7 +749,6 @@ class BoardManagementTest extends ModuleTestCase
      * @effects unchanged_form_data_round_trip_saves
      *
      * @param  array<string, mixed>  $attributes  게시판 속성
-     *
      * @return void 반환값 없음
      */
     public function test_form_data_round_trip_save_passes(array $attributes): void
@@ -772,6 +815,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * 폼 데이터를 board_slug 로 수정 모드 조회할 수 있다 (#450)
      *
+     * @scenario case=form_data_edit_by_slug
+     *
+     * @effects slug_resolves_board_in_admin_routes
+     *
      * @return void 반환값 없음
      */
     public function test_get_form_data_edit_mode_by_board_slug(): void
@@ -794,6 +841,10 @@ class BoardManagementTest extends ModuleTestCase
      * 라우트 파라미터가 {board} 이므로 컨트롤러가 Board route-model binding 으로
      * slug 를 해석해야 한다. int $id 로 받으면 slug 문자열이 전달될 때 실패한다.
      *
+     * @scenario case=add_to_menu_by_slug
+     *
+     * @effects slug_resolves_board_in_admin_routes
+     *
      * @return void 반환값 없음
      */
     public function test_add_to_admin_menu_resolves_board_by_slug(): void
@@ -815,6 +866,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 부분 업데이트 시 is_active만 변경 가능 테스트
+     *
+     * @scenario case=partial_update_is_active_only
+     *
+     * @effects partial_update_leaves_other_fields_untouched
      *
      * @return void 반환값 없음
      */
@@ -841,6 +896,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판 생성 시 관리자/스텝 사용자가 역할에 연결되는지 테스트
+     *
+     * @scenario case=create_assigns_role_users
+     *
+     * @effects create_links_manager_and_step_users_to_board_roles
      *
      * @return void 반환값 없음
      */
@@ -889,6 +948,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * 게시판 생성 시 권한에 manager/step 역할이 config 기본값으로 포함되는지 테스트
      *
+     * @scenario case=create_default_permissions_include_roles
+     *
+     * @effects default_permissions_grant_manager_and_step_except_admin_manage
+     *
      * @return void 반환값 없음
      */
     public function test_board_creation_auto_includes_manager_step_in_permissions(): void
@@ -930,6 +993,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 사용자가 커스텀 권한을 설정해도 Manager/Step이 자동 포함되는지 테스트
+     *
+     * @scenario case=custom_permissions_keep_roles
+     *
+     * @effects custom_permissions_still_include_manager_and_step
      *
      * @return void 반환값 없음
      */
@@ -975,6 +1042,10 @@ class BoardManagementTest extends ModuleTestCase
     /**
      * getFormData 생성 모드에서 로그인 관리자가 기본 관리자로 지정되는지 테스트
      *
+     * @scenario case=form_data_default_manager
+     *
+     * @effects form_data_default_manager_is_requesting_admin
+     *
      * @return void 반환값 없음
      */
     public function test_get_form_data_includes_current_user_as_default_manager(): void
@@ -996,6 +1067,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판명 변경 시 연관 역할(manager/step)의 이름이 동기화되는지 테스트
+     *
+     * @scenario case=name_update_syncs_roles
+     *
+     * @effects name_update_syncs_board_role_names
      *
      * @return void 반환값 없음
      */
@@ -1044,6 +1119,10 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판명 미변경(이름 외 필드만 수정) 시 역할명이 변경되지 않는지 테스트
+     *
+     * @scenario case=update_without_name_keeps_roles
+     *
+     * @effects update_without_name_leaves_role_names_untouched
      *
      * @return void 반환값 없음
      */

@@ -1,6 +1,6 @@
 <!-- 게시판 모듈 전역 설정. 탭이 여섯이고 데이터소스가 아홉인데, 설정 본체(`settings`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다 -->
 <layout name="admin_board_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
+  <meta _e2e_allow="e2e:allow F6 정정 — 죽은 state 키 3개(알림 정의 페이지 번호)를 initLocal 로 옮긴 것뿐(2026-09-17 저작 트랙 게이트), 값·화면 동작 동일" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
   <!-- 설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다) -->
   <data-source id="settings" label_key="$t:sirsoft-board.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-board/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
     <error-handling>
@@ -94,6 +94,9 @@
     <field name="isAddingReactionType" :value="false"/>
     <field name="reactionTypeForm" :value="null"/>
     <field name="reactionTypeFormErrors" :value="null"/>
+    <field name="notificationDefinitionCurrentPage" :value="1"/>
+    <field name="notificationDefinitionTotalPages" :value="1"/>
+    <field name="notificationDefinitionTotalItems" :value="0"/>
   </init-local>
   <computed name="isReadOnly">{{!!settings?.data &amp;&amp; settings?.data?.abilities?.can_update !== true}}</computed>
   <computed name="isNotificationReadOnly">{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
@@ -250,5 +253,4 @@
   <modal src="partials/admin_board_settings/_modal_identity_policy_form.g7.html"/>
   <!-- 본인인증 정책 삭제 확인 -->
   <modal src="partials/admin_board_settings/_modal_identity_policy_delete.g7.html"/>
-  <json key="state">{"notificationDefinitionCurrentPage":1,"notificationDefinitionTotalPages":1,"notificationDefinitionTotalItems":0}</json>
 </layout>

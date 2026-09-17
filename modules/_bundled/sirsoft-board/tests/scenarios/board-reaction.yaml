@@ -50,6 +50,8 @@ axes:
     - icon_image_priority_settings
     - icon_image_priority_board_form
     - navigation_resets_reaction_overrides
+    # 활성 표시는 색상만, 클릭 순간은 두 분기 모두 눌림(active:scale-95) — 레이아웃 계약
+    - reaction_active_button_color_only_highlight
     # 끈 기능의 정보가 응답 본문에 남지 않는지 (PO 지시 2026-09-16)
     - use_reaction_off_payload_omits_reaction
     - deactivated_type_excluded_from_payload
@@ -96,6 +98,9 @@ effects:
   - reaction_failure_rolls_back_optimistic_state
   - reaction_pending_disables_button
   - self_post_click_shows_denied_toast
+  # 활성 상태는 배경·테두리 색상으로만, 클릭 순간에는 두 분기 모두 살짝 눌린다 (유입 룰 개정 test-scenario-reverse-mapping 이 잡은 미선언 2건)
+  - reaction_active_button_color_highlight
+  - reaction_click_moment_tactile_pulse
   # E2E 흐름
   - detail_register_then_switch_then_remove_updates_ui
 

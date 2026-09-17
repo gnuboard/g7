@@ -812,6 +812,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "모바일 더보기 메뉴 — 내려받기·복사를 접어 둔 메뉴를 열고 닫는다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -853,6 +854,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "마크업 내려받기(모바일) — 메뉴를 닫고 편집 중인 마크업을 파일로 내린다. 파일명은 확장 조각이면 fragment_key, 아니면 레이아웃 이름",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -900,6 +902,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "마크업 복사(모바일) — 메뉴를 닫고 편집 중인 마크업을 클립보드에 넣는다",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -1151,6 +1154,7 @@
                                         "debounce": 200
                                     },
                                     {
+                                        "comment": "내용 검색은 2글자 이상일 때만 서버에 묻고, 타이핑이 멎은 뒤(600ms) 한 번만 부른다",
                                         "type": "search",
                                         "event": "onSearch",
                                         "handler": "conditions",
@@ -1168,6 +1172,7 @@
                                         ]
                                     },
                                     {
+                                        "comment": "파일 만들기 — 폴더 노드에서 열면 그 경로를 접두로 채워 폼 창을 연다",
                                         "type": "createFile",
                                         "event": "onCreateFile",
                                         "handler": "sequence",
@@ -1189,6 +1194,7 @@
                                         ]
                                     },
                                     {
+                                        "comment": "폴더 만들기 — 같은 폼 창을 폴더 모드로 연다",
                                         "type": "createFolder",
                                         "event": "onCreateFolder",
                                         "handler": "sequence",
@@ -1209,6 +1215,7 @@
                                         ]
                                     },
                                     {
+                                        "comment": "이름 바꾸기 — 노드 키의 종류 접두를 떼어 대상·초기 이름으로 삼는다",
                                         "type": "rename",
                                         "event": "onRename",
                                         "handler": "sequence",
@@ -1230,6 +1237,7 @@
                                         ]
                                     },
                                     {
+                                        "comment": "삭제 확인 창 — 대상 경로를 두고 이전 오류·참조 정보는 비운 채 연다",
                                         "type": "delete",
                                         "event": "onDelete",
                                         "handler": "sequence",
@@ -1609,12 +1617,12 @@
                                                         ]
                                                     },
                                                     {
+                                                        "comment": "없어진 파일의 복원분을 살린다. 생성 흐름을 그대로 쓰되 본문을 실어 보낸다 —\n                빈 골격으로 만들면 사용자가 쓴 글이 그 자리에서 사라진다.",
                                                         "type": "saveAs",
                                                         "event": "onSaveAs",
                                                         "handler": "sequence",
                                                         "actions": [
                                                             {
-                                                                "comment": "없어진 파일의 복원분을 살린다. 생성 흐름을 그대로 쓰되 본문을 실어 보낸다 —\n                     빈 골격으로 만들면 사용자가 쓴 글이 그 자리에서 사라진다.",
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "global",
@@ -1648,6 +1656,7 @@
                                                         "actionRef": "preview_current_file"
                                                     },
                                                     {
+                                                        "comment": "새 파일 — 빈 본문으로 생성 폼 창을 연다",
                                                         "type": "newFile",
                                                         "event": "onNewFile",
                                                         "handler": "sequence",
@@ -1684,6 +1693,7 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "내용 검색(Ctrl+Shift+F) — 빠른 이동과 같은 검색창에 포커스를 준다",
                                                         "type": "searchContent",
                                                         "event": "onSearchContent",
                                                         "handler": "setState",
@@ -1693,6 +1703,7 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "편집기 표기를 마크업↔JSON 으로 바꾼다 — 정본은 마크업이고 JSON 은 굽기 산출이다",
                                                         "type": "toggleView",
                                                         "event": "onToggleView",
                                                         "handler": "setState",

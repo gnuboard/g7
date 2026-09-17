@@ -283,6 +283,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "대상 구분(전체/글/댓글) — 값은 전역에 두었다가 검색 버튼이 쿼리로 옮긴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -344,6 +345,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "시작일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -373,6 +375,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "종료일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

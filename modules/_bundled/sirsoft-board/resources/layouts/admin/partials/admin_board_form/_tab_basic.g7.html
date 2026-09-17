@@ -150,6 +150,7 @@
               <label class="flex-center gap-2 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.active_reaction_types ?? []).includes(reactionType.code)}}">
                   <on type="change">
+                    <!-- 사용 반응 유형 토글 — 코드 배열에 넣고 빼며 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                     <set-state target="local" form.active_reaction_types="{{(_local.form?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.active_reaction_types ?? []), reactionType.code]}}" :hasChanges="true"/>
                   </on>
                 </input>

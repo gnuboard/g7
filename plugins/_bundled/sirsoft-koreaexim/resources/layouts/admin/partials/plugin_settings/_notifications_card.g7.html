@@ -1,4 +1,5 @@
 <partial description="환율 실패 알림의 발송 수단 복수 지정과 채널별 템플릿 활성화">
+<!-- 실패 알림 카드 — 이 플러그인 소유 알림 정의마다 발송 채널(복수)을 고르고, 켠 채널의 템플릿을 활성화·편집한다. 채널 선택은 저장 버튼으로, 템플릿 활성화는 토글 즉시 서버에 반영한다 -->
 <div class="admin-card mb-4">
   <h3 class="card-title">$t:sirsoft-koreaexim.notifications</h3>
   <div data-each="def, defIdx in {{koreaeximNotificationDefinitions?.data?.data ?? []}}" data-ref="koreaexim_notification_definition_{{defIdx}}">
@@ -60,6 +61,7 @@
       </button>
       <button type="button" data-ref="koreaexim_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.koreaeximSavingChannels !== null &amp;&amp; _local.koreaeximSavingChannels !== undefined}}">
         <on type="click">
+          <!-- 취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다) -->
           <set-state target="local" :koreaeximChannels="{}"/>
         </on>
         <span>$t:sirsoft-koreaexim.cancel</span>
@@ -72,6 +74,7 @@
       <span>{{((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}</span>
       <toggle label="{{$localized(def.name) + ' / ' + ((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}" checked="{{template.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
         <on type="change">
+          <!-- 채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다 -->
           <api-call target="/api/admin/notification-templates/{{template.id}}/toggle-active" method="PATCH" :auth_required="true">
             <success><refetch-data-source dataSourceId="koreaeximNotificationDefinitions"/></success>
             <fail><toast type="error" message="{{error.message}}"/></fail>
@@ -80,6 +83,7 @@
       </toggle>
       <button type="button" class="btn btn-secondary" disabled="{{_computed.isNotificationReadOnly}}">
         <on type="click">
+          <!-- 템플릿 편집 창 열기 — 템플릿·수신자를 깊은 복사로 전역 폼에 실어, 창 안의 편집이 목록 데이터를 건드리지 않게 한다 -->
           <sequence>
             <set-state target="global">
               <field name="koreaexim_notification_template_form_modal">
@@ -102,6 +106,7 @@
 
     <button type="button" class="btn btn-secondary" disabled="{{_computed.isNotificationReadOnly}}">
       <on type="click">
+        <!-- 정의 초기화 창 열기 — 대상 ID·이름을 전역에 두고 확인 창에서 실제 초기화를 보낸다 -->
         <sequence>
           <set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name)}}"/>
           <open-modal target="modal_koreaexim_notification_definition_reset"/>

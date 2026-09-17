@@ -581,6 +581,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "일괄 적용 대상 표시 — 이 필드를 전 게시판에 덮어쓸지 bulkApplyFields 배열에 넣고 뺀다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -682,6 +683,7 @@
                                                                     "name": "Input",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "활성 유형 토글 — 코드 배열에 넣고 빼며 새 배열로 갈아 끼운다. 비활성 유형은 잠겨 있어 여기 오지 않는다",
                                                                             "type": "change",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -785,6 +787,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "일괄 적용 대상 표시 — 이 필드를 전 게시판에 덮어쓸지 bulkApplyFields 배열에 넣고 뺀다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {

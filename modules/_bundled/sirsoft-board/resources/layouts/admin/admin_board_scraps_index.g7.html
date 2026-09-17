@@ -234,9 +234,11 @@
         </button>
         <button class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.scrapDeleteLoading}}">
           <on type="click">
+            <!-- 확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다 -->
             <set-state target="global" :scrapDeleteLoading="true"/>
           </on>
           <on type="click">
+            <!-- 스크랩 단건 삭제 — 성공하면 선택 목록에서 그 ID 를 빼고 목록을 다시 받는다. 실패 사유는 오류 모달에 싣는다 -->
             <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/scraps/{{_global.deleteTarget?.id}}" method="DELETE">
               <success>
                 <set-state target="global" :scrapDeleteLoading="false"/>

@@ -70,9 +70,11 @@
                 <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, icon_attachment_id: null, icon_url: null, icon_attachment: null} : r)}}" :hasChanges="true"/>
               </on>
               <on type="change" event="onUploadError">
+                <!-- 업로드 실패 — 형식·크기 검증에 걸린 경우다. 고정 문구로 알리고 값은 그대로 둔다 -->
                 <toast type="error" message="$t:sirsoft-board.admin.settings.reaction_types.messages.icon_upload_failed"/>
               </on>
               <on type="change" event="onDeleteError">
+                <!-- 첨부 삭제 실패 — 아이콘 값은 이미 비워졌으므로 알림만 낸다 -->
                 <toast type="error" message="$t:sirsoft-board.admin.settings.reaction_types.messages.icon_delete_failed"/>
               </on>
             </file-uploader>
@@ -137,6 +139,7 @@
           <div class="excel-card-value">
             <multilingual-input value="{{_local.reactionTypeForm?.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name_ko ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
+                <!-- 이름 입력 — 로케일 맵을 통째로 폼에 둔다. 기본 언어(ko) 필수 검증은 확인 버튼에서 한다 -->
                 <set-state target="local" reactionTypeForm.name="{{$event.target.value}}"/>
               </on>
             </multilingual-input>
@@ -153,12 +156,15 @@
                   <field name="delete" value="/api/modules/sirsoft-board/admin/reaction-types/icons/:id"/>
                 </prop>
                 <on type="change" event="onUploadComplete">
+                  <!-- 새 유형의 아이콘 — 유형이 아직 없어 첨부 ID·URL·첨부 객체를 폼에 두었다가 확인 시 행에 싣는다 -->
                   <set-state target="local" reactionTypeForm.icon_attachment_id="{{$args[0]?.[0]?.id ?? null}}" reactionTypeForm.icon_url="{{$args[0]?.[0]?.download_url ?? null}}" reactionTypeForm.icon_attachment="{{$args[0]?.[0] ?? null}}"/>
                 </on>
                 <on type="change" event="onRemove">
+                  <!-- 아이콘 제거 — 세 값을 비워 글꼴 아이콘 폴백으로 돌아간다 -->
                   <set-state target="local" :reactionTypeForm.icon_attachment_id="null" :reactionTypeForm.icon_url="null" :reactionTypeForm.icon_attachment="null"/>
                 </on>
                 <on type="change" event="onUploadError">
+                  <!-- 업로드 실패 — 형식·크기 검증에 걸린 경우다. 고정 문구로 알리고 값은 그대로 둔다 -->
                   <toast type="error" message="$t:sirsoft-board.admin.settings.reaction_types.messages.icon_upload_failed"/>
                 </on>
               </file-uploader>
@@ -169,6 +175,7 @@
       <div class="excel-card-footer">
         <button data-testid="reaction-type-form-cancel-m" type="button" class="px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
           <on type="click">
+            <!-- 추가 취소 — 추가 모드·입력 폼·오류를 함께 비운다 -->
             <set-state target="local" :isAddingReactionType="false" :reactionTypeForm="null" :reactionTypeFormErrors="null"/>
           </on>
           <span>$t:common.cancel</span>

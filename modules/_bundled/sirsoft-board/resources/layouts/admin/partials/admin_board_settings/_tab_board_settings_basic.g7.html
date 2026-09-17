@@ -134,6 +134,7 @@
             <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reaction')}}">
                 <on type="change">
+                  <!-- 일괄 적용 대상 표시 — 이 필드를 전 게시판에 덮어쓸지 bulkApplyFields 배열에 넣고 뺀다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reaction') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reaction') : [...(_local.bulkApplyFields ?? []), 'use_reaction']}}"/>
                 </on>
               </input>
@@ -159,6 +160,7 @@
                 <label class="flex-center gap-2 cursor-pointer">
                   <input data-testid="reaction-type-check-{{reactionType.code}}" type="checkbox" class="checkbox-aligned" disabled="{{_computed.isReadOnly || reactionType.is_active === false}}" checked="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code)}}">
                     <on type="change">
+                      <!-- 활성 유형 토글 — 코드 배열에 넣고 빼며 새 배열로 갈아 끼운다. 비활성 유형은 잠겨 있어 여기 오지 않는다 -->
                       <set-state target="local" form.basic_defaults.active_reaction_types="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.basic_defaults?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.basic_defaults?.active_reaction_types ?? []), reactionType.code]}}" :hasChanges="true"/>
                     </on>
                   </input>
@@ -183,6 +185,7 @@
             <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction')}}">
                 <on type="change">
+                  <!-- 일괄 적용 대상 표시 — 이 필드를 전 게시판에 덮어쓸지 bulkApplyFields 배열에 넣고 뺀다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_comment_reaction') : [...(_local.bulkApplyFields ?? []), 'use_comment_reaction']}}"/>
                 </on>
               </input>

@@ -46,9 +46,13 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
     private const CORPUS_MINIMUM = 634;
 
     /**
+     * 번들 레이아웃 전량이 decompile → compile 왕복에서 항등이고 escape 가 0 인지 확인한다.
+     *
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects every_bundled_layout_round_trips_through_decompile_and_compile
+     *
+     * @return void 반환값 없음
      */
     public function test_every_bundled_layout_round_trips(): void
     {
@@ -771,6 +775,49 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/shop/show.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/users/posts.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/users/show.g7.html',
+        // ── develop-7.1.0 2차 병합 전수 보존 검사(2026-09-17)가 등재한 39건. 저작 트랙 종료 게이트를 1·2차 병합
+        // 어느 회차도 돌리지 않아 세 갈래가 검사 없이 합류했다 — issue524 가 만든 회원 데이터 관리자 화면·
+        // 스크랩·알림 목록·코드 편집기 모달 14건(base 선재), #525 반응·신고 저작본 13건, #675 수출입은행
+        // 환율 플러그인 12건. 전건 짝 `.json` 굽기 최신·escape 0 을 이 게이트가 다시 잰다.
+        'modules/_bundled/sirsoft-board/resources/extensions/admin-user-reactions-tab.g7.html',
+        'modules/_bundled/sirsoft-board/resources/extensions/admin-user-scraps-tab.g7.html',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reactions_index.g7.html',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_scraps_index.g7.html',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_reactions_index/_partial_filter.g7.html',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_scraps_index/_partial_filter.g7.html',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_reaction_type_cards.g7.html',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_reaction_type_editor.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-ecommerce-data-tab.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_cart_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_inquiry_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_user_address_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_wishlist_index.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_history_filter.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_history_grid.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_modal_notification_definition_reset.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_preview.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_notifications_card.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_recent_runs.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_settings_form.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_status_card.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_tab_history.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_tab_settings.g7.html',
+        'plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/plugin_settings.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_member_notification_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_member_notification_list/_partial_datagrid.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_member_notification_list/_partial_filter.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_layout_edit/_modal_file_delete_confirm.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_layout_edit/_modal_file_form.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/scrap.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_modal_reaction_bulk_delete.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_modal_reaction_delete.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_modal_report_cancel.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_reactions.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_reports.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/scrap/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/scrap/_modal_scrap_bulk_delete.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/scrap/_modal_scrap_delete.g7.html',
     ];
 
     /**
@@ -876,6 +923,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects every_migrated_markup_file_matches_its_json_and_is_escape_free, first_class_grammar_replaces_raw_json_in_migrated_markup
+     *
+     * @return void 반환값 없음
      */
     public function test_every_migrated_markup_file_matches_its_json_and_is_escape_free(): void
     {
@@ -1014,6 +1063,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=defect
      *
      * @effects migration_exclusions_are_pinned_with_reasons
+     *
+     * @return void 반환값 없음
      */
     public function test_migration_exclusions_match_the_ledger(): void
     {

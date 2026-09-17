@@ -79,6 +79,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "신고 취소 — 접수(pending) 상태에서만 허용되고 다른 상태는 서버가 422 로 막는다. 성공하면 목록·통계를 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

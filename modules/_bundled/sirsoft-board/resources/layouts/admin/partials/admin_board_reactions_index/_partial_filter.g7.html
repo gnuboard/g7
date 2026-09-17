@@ -79,6 +79,7 @@
               <option value="comment">$t:sirsoft-board.admin.reactions.filters.target_comment</option>
             </options>
             <on type="change">
+              <!-- 대상 구분(전체/글/댓글) — 값은 전역에 두었다가 검색 버튼이 쿼리로 옮긴다 -->
               <set-state target="global" reactionTargetFilter="{{$event.target.value}}"/>
             </on>
           </select>
@@ -89,12 +90,14 @@
         <div class="flex-center gap-2 flex-wrap">
           <input data-ref="date_from" type="date" class="input w-40" value="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reacted_at_from || '')}}">
             <on type="change">
+              <!-- 시작일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다 -->
               <set-state target="global" dateFrom="{{$event.target.value}}" dateQuick=""/>
             </on>
           </input>
           <span class="text-gray-400 dark:text-gray-500">~</span>
           <input data-ref="date_to" type="date" class="input w-40" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.reacted_at_to || '')}}">
             <on type="change">
+              <!-- 종료일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다 -->
               <set-state target="global" dateTo="{{$event.target.value}}" dateQuick=""/>
             </on>
           </input>

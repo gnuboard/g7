@@ -61,6 +61,7 @@ effects:
   - comment_reaction_failure_rolls_back_overrides
   - comment_reaction_self_and_guest_branch_without_redirect_helper
   - comment_reaction_icon_image_precedes_font_icon
+  - comment_reaction_names_the_type_when_icon_is_absent
   - admin_comment_reaction_counts_are_read_only
   - admin_comment_reaction_icon_falls_back_to_font_icon
   # 비밀글 게이트·카운트 캐시 재집계 (4차 검증 신설)
@@ -74,6 +75,8 @@ test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/CommentReactionApiTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/User/CommentReactionSecretAndRecalcTest.php
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-post-detail-comment-reactions.test.tsx
+  # 댓글 반응 토글이 부모 토글(use_reaction)에 종속되는 설정 화면 계약 — comment_reaction_toggle_off_blocks 케이스를 이 파일이 검증한다
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-settings.test.tsx
   - modules/_bundled/sirsoft-board/tests/Feature/PostDetailQueryCountRegressionTest.php
   - templates/_bundled/sirsoft-basic/__tests__/layouts/board-comment-reactions.test.tsx
   - tests/Playwright/specs/user/board-comment-reaction.spec.ts

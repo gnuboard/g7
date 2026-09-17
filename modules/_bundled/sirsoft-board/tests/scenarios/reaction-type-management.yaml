@@ -82,6 +82,7 @@ effects:
   - settings_editor_iterates_form_reaction_types_not_datasource
   - settings_editor_add_form_checks_required_and_duplicate
   - settings_editor_row_edit_uses_map_by_index
+  - settings_editor_reorder_is_drag_and_drop
   - settings_editor_delete_is_confirmed_and_blocked_by_count
   - settings_editor_delete_strips_code_from_active_types
   - settings_editor_icon_uploader_declares_module_endpoints

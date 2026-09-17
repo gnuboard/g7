@@ -66,6 +66,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "선택 반응 일괄 해제 — 선택 ID 배열을 본문에 싣고, 성공하면 선택을 비운 뒤 목록·통계를 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

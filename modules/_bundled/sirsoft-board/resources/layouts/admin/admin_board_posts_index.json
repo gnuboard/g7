@@ -814,6 +814,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "갈래를 블라인드로 정하고 직전 사유를 비운다 — 공용 모달이 갈래에 따라 문구·사유 입력을 바꾼다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -848,6 +849,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "갈래를 복원으로 정하고 직전 사유를 비운다 — 블라인드 사유가 남아 복원 이력에 실리지 않게",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -1457,6 +1459,7 @@
                                     "name": "Textarea",
                                     "actions": [
                                         {
+                                            "comment": "사유는 전역 bulkPostReason 에 모아 두었다가 확인 시 요청에 싣는다(삭제 갈래에는 입력칸 자체가 없다)",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

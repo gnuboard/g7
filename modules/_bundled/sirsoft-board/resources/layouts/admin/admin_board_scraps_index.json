@@ -781,6 +781,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -789,6 +790,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "스크랩 단건 삭제 — 성공하면 선택 목록에서 그 ID 를 빼고 목록을 다시 받는다. 실패 사유는 오류 모달에 싣는다",
                                     "type": "click",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-board/admin/scraps/{{_global.deleteTarget?.id}}",

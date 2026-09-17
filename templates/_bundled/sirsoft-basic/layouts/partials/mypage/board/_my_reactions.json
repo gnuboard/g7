@@ -259,6 +259,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "검색 대상 — 담아만 둔다. 조회는 검색 버튼이 한다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -291,6 +292,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "검색어 — 담아만 둔다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -523,6 +525,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "조건 초기화 — 게시판·유형·대상·검색어·정렬·쪽을 기본값으로 되돌리고 선택을 비운 뒤 다시 받는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -601,6 +604,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "전체 선택 — 이 쪽의 행이 모두 선택돼 있으면 비우고, 아니면 이 쪽 전부를 선택한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -700,6 +704,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -870,6 +875,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -923,6 +929,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -1092,6 +1099,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1145,6 +1153,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -1304,6 +1313,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1374,6 +1384,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1530,6 +1541,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [

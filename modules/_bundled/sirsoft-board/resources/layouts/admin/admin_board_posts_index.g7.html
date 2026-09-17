@@ -218,6 +218,7 @@
           </button>
           <button data-ref="bulk_blind" data-testid="admin-post-bulk-blind" class="px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
             <on type="click">
+              <!-- 갈래를 블라인드로 정하고 직전 사유를 비운다 — 공용 모달이 갈래에 따라 문구·사유 입력을 바꾼다 -->
               <set-state target="global" bulkPostAction="blind" bulkPostReason="" :bulkPostLoading="false"/>
             </on>
             <on type="click">
@@ -227,6 +228,7 @@
           </button>
           <button data-ref="bulk_restore" data-testid="admin-post-bulk-restore" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
             <on type="click">
+              <!-- 갈래를 복원으로 정하고 직전 사유를 비운다 — 블라인드 사유가 남아 복원 이력에 실리지 않게 -->
               <set-state target="global" bulkPostAction="restore" bulkPostReason="" :bulkPostLoading="false"/>
             </on>
             <on type="click">
@@ -384,6 +386,7 @@
           <label class="form-label">$t:sirsoft-board.admin.posts.bulk.modal.reason_label</label>
           <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" :rows="3" placeholder="$t:sirsoft-board.admin.posts.bulk.modal.reason_placeholder" value="{{_global.bulkPostReason || ''}}">
             <on type="change">
+              <!-- 사유는 전역 bulkPostReason 에 모아 두었다가 확인 시 요청에 싣는다(삭제 갈래에는 입력칸 자체가 없다) -->
               <set-state target="global" bulkPostReason="{{$event.target.value}}"/>
             </on>
           </textarea>

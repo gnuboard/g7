@@ -360,6 +360,7 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "comment": "업로드 실패 — 형식·크기 검증에 걸린 경우다. 고정 문구로 알리고 값은 그대로 둔다",
                                                                         "type": "change",
                                                                         "event": "onUploadError",
                                                                         "handler": "toast",
@@ -369,6 +370,7 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "comment": "첨부 삭제 실패 — 아이콘 값은 이미 비워졌으므로 알림만 낸다",
                                                                         "type": "change",
                                                                         "event": "onDeleteError",
                                                                         "handler": "toast",
@@ -658,6 +660,7 @@
                                                             "name": "FileUploader",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "새 유형의 아이콘 — 유형이 아직 없어 첨부 ID·URL·첨부 객체를 폼에 두었다가 확인 시 행에 싣는다",
                                                                     "type": "change",
                                                                     "event": "onUploadComplete",
                                                                     "handler": "setState",
@@ -669,6 +672,7 @@
                                                                     }
                                                                 },
                                                                 {
+                                                                    "comment": "아이콘 제거 — 세 값을 비워 글꼴 아이콘 폴백으로 돌아간다",
                                                                     "type": "change",
                                                                     "event": "onRemove",
                                                                     "handler": "setState",
@@ -680,6 +684,7 @@
                                                                     }
                                                                 },
                                                                 {
+                                                                    "comment": "업로드 실패 — 형식·크기 검증에 걸린 경우다. 고정 문구로 알리고 값은 그대로 둔다",
                                                                     "type": "change",
                                                                     "event": "onUploadError",
                                                                     "handler": "toast",
@@ -689,6 +694,7 @@
                                                                     }
                                                                 },
                                                                 {
+                                                                    "comment": "첨부 삭제 실패 — 아이콘 값은 이미 비워졌으므로 알림만 낸다",
                                                                     "type": "change",
                                                                     "event": "onDeleteError",
                                                                     "handler": "toast",
