@@ -341,7 +341,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 30개입니다.
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 33개입니다.
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
 > 총계와 이 문서로의 링크만 남습니다.
@@ -408,7 +408,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-board.attachment.after_delete` | `handleAttachmentAfterDelete` | `attachment.delete` | Admin | Attachment |
 | `sirsoft-board.attachment.after_download` | `handleAttachmentAfterDownload` | `attachment.download` | Admin / User | Attachment |
 
-#### Report (7훅)
+#### Report (8훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -419,3 +419,16 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-board.report.after_restore_content` | `handleReportAfterRestoreContent` | `report.restore_content` | Admin | Report |
 | `sirsoft-board.report.after_blind_content` | `handleReportAfterBlindContent` | `report.blind_content` | Admin | Report |
 | `sirsoft-board.report.after_delete_content` | `handleReportAfterDeleteContent` | `report.delete_content` | Admin | Report |
+| `sirsoft-board.report.after_cancel` | `handleReportAfterCancel` | `report.cancel` | User | Report |
+
+#### Scrap (1훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.scrap.after_toggle` | `handleScrapAfterToggle` | `scrap.scrap` / `scrap.unscrap` | User | Post |
+
+#### Reaction (1훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.reaction.after_react` | `handleReactionAfterReact` | `reaction.add` / `reaction.change` / `reaction.remove` (댓글이면 `comment_reaction.*`) | User | Post / Comment |
