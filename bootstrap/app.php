@@ -7,6 +7,8 @@ use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\Analytics\TrackBotHit;
+use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Http\Middleware\CheckTemplateDependencies;
 use App\Http\Middleware\CheckUserStatus;
 use App\Http\Middleware\DatabaseCredentialGuard;
@@ -167,6 +169,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'identity.policy' => EnforceIdentityPolicy::class,
             'extension.middleware' => ExtensionMiddlewareGate::class,
             'debug.gate' => EnsureDebugMode::class,
+            // 방문자 통계: 봇 기록은 SEO 앞(그 판정과 캐시 상태를 함께 읽는다),
+            // 서버 폴백은 SEO 뒤(봇으로 판정된 요청을 사람 방문으로 세지 않는다).
+            'analytics.bots' => TrackBotHit::class,
+            'analytics.fallback' => TrackServerVisit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

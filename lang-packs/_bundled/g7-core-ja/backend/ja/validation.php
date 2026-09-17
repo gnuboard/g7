@@ -904,8 +904,6 @@ return [
         'debug_mode_boolean' => 'デバッグモードはtrueまたはfalse値である必要があります。',
         'sql_query_log_required' => 'SQLクエリログ設定を選択してください。',
         'sql_query_log_boolean' => 'SQLクエリログはtrueまたはfalse値である必要があります。',
-
-        // アウトバウンド HTTP プロキシ
         'outbound_proxy_required' => 'アウトバウンドプロキシアドレスを入力してください。',
         'outbound_proxy_string' => 'アウトバウンドプロキシアドレスは文字列である必要があります。',
         'outbound_proxy_max' => 'アウトバウンドプロキシアドレスは:max文字を超えることはできません。',
@@ -1206,5 +1204,13 @@ return [
             'min' => '閲覧数は1以上である必要があります。',
             'max' => '閲覧数は最大:max件です。',
         ],
+    ],
+    'analytics' => [
+        'type_required' => 'アクションタイプが必要です。',
+        'type_invalid' => '不明なアクションタイプです。',
+        'url_required' => '訪問アドレスが必要です。',
+        'url_too_long' => '訪問アドレスが長すぎます。',
+        'resolution_invalid' => '画面解像度形式が正しくありません。',
+        'dimensions_too_many' => 'ディメンション値は最大20個まで送信できます。',
     ],
 ];

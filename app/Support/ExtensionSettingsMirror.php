@@ -45,12 +45,14 @@ class ExtensionSettingsMirror
         'seo',
         'identity',
         'pagination',
+        'analytics',
     ];
 
     /**
      * 코어 설정 미러(`g7_settings.core`)를 다시 채웁니다.
      *
      * @param  JsonConfigRepository|null  $configRepository  설정 저장소 (미지정 시 새로 생성)
+     * @return void
      */
     public function refreshCore(?JsonConfigRepository $configRepository = null): void
     {
@@ -73,6 +75,8 @@ class ExtensionSettingsMirror
 
     /**
      * 활성 모듈 전체의 설정 미러를 다시 채웁니다.
+     *
+     * @return void
      */
     public function refreshAllModules(): void
     {
@@ -94,6 +98,7 @@ class ExtensionSettingsMirror
      * 모듈 하나의 설정 미러를 다시 채웁니다.
      *
      * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
+     * @return void
      */
     public function refreshModule(string $identifier): void
     {
@@ -110,6 +115,8 @@ class ExtensionSettingsMirror
 
     /**
      * 활성 플러그인 전체의 설정 미러를 다시 채웁니다.
+     *
+     * @return void
      */
     public function refreshAllPlugins(): void
     {
@@ -131,6 +138,7 @@ class ExtensionSettingsMirror
      * 플러그인 하나의 설정 미러를 다시 채웁니다.
      *
      * @param  string  $identifier  플러그인 식별자 (예: sirsoft-gdpr)
+     * @return void
      */
     public function refreshPlugin(string $identifier): void
     {

@@ -496,6 +496,21 @@ return [
                     ['identifier' => 'core.language_packs.update', 'type' => 'admin', 'name' => ['ko' => '언어팩 업데이트', 'en' => 'Update Language Packs'], 'description' => ['ko' => '설치된 언어팩의 업데이트를 확인하고 실행할 수 있습니다.', 'en' => 'Can check and apply updates for installed language packs.'], 'order' => 4],
                 ],
             ],
+            [
+                'identifier' => 'core.analytics',
+                'name' => ['ko' => '방문자 통계', 'en' => 'Analytics'],
+                'description' => ['ko' => '방문자 통계 권한', 'en' => 'Analytics permissions'],
+                'category' => 'analytics',
+                'order' => 14,
+                'type' => 'admin',
+                // 조회(집계 숫자) · 설정(수집 방식·삭제) · 개인정보(방문자 원장) 세 단계로 나눈다.
+                // 통계를 보는 것과 개인 방문 기록을 들여다보는 것은 다른 권한이어야 한다.
+                'permissions' => [
+                    ['identifier' => 'core.analytics.read', 'type' => 'admin', 'name' => ['ko' => '방문자 통계 조회', 'en' => 'View Analytics'], 'description' => ['ko' => '개요·리포트·패턴·실시간·봇·진단 통계와 CSV 내보내기를 조회할 수 있습니다. 개별 방문자의 IP 는 보이지 않습니다.', 'en' => 'Can view overview, reports, patterns, realtime, bot and diagnostics statistics and export CSV. Individual visitor IPs stay hidden.'], 'order' => 1],
+                    ['identifier' => 'core.analytics.update', 'type' => 'admin', 'name' => ['ko' => '방문자 통계 설정', 'en' => 'Manage Analytics'], 'description' => ['ko' => '수집 설정 저장, 수동 집계·재집계, 통계 데이터 삭제, 소급 익명화를 할 수 있습니다.', 'en' => 'Can save collection settings, run manual or re-aggregation, delete statistics data and anonymize retroactively.'], 'order' => 2],
+                    ['identifier' => 'core.analytics.privacy', 'type' => 'admin', 'name' => ['ko' => '방문자 개인정보 열람', 'en' => 'Access Visitor Data'], 'description' => ['ko' => '방문자 프로필과 액션 타임라인, 실시간 IP 원값, 정보주체 검색·내보내기·삭제를 할 수 있습니다.', 'en' => 'Can view visitor profiles and action timelines, raw realtime IPs, and search, export or delete data subject records.'], 'order' => 3],
+                ],
+            ],
         ],
     ],
 
@@ -593,7 +608,7 @@ return [
             'url' => '/admin/settings',
             'icon' => 'fas fa-cog',
             'parent_id' => null,
-            'order' => 2,
+            'order' => 3,
             'is_active' => true,
         ],
         [
@@ -602,7 +617,7 @@ return [
             'url' => '/admin/notification-logs',
             'icon' => 'fas fa-bell',
             'parent_id' => null,
-            'order' => 3,
+            'order' => 4,
             'is_active' => true,
         ],
         [
@@ -611,7 +626,7 @@ return [
             'url' => '/admin/member-notifications',
             'icon' => 'fas fa-inbox',
             'parent_id' => null,
-            'order' => 3.5,
+            'order' => 5,
             'is_active' => true,
         ],
         [
@@ -620,7 +635,7 @@ return [
             'url' => '/admin/identity/logs',
             'icon' => 'fas fa-clipboard-check',
             'parent_id' => null,
-            'order' => 4,
+            'order' => 6,
             'is_active' => true,
         ],
         [
@@ -629,7 +644,7 @@ return [
             'url' => '/admin/activity-logs',
             'icon' => 'fas fa-history',
             'parent_id' => null,
-            'order' => 5,
+            'order' => 7,
             'is_active' => true,
         ],
         [
@@ -638,7 +653,7 @@ return [
             'url' => '/admin/menus',
             'icon' => 'fas fa-bars',
             'parent_id' => null,
-            'order' => 6,
+            'order' => 8,
             'is_active' => true,
         ],
         [
@@ -647,7 +662,7 @@ return [
             'url' => '/admin/users',
             'icon' => 'fas fa-users',
             'parent_id' => null,
-            'order' => 7,
+            'order' => 9,
             'is_active' => true,
         ],
         [
@@ -656,7 +671,7 @@ return [
             'url' => '/admin/roles',
             'icon' => 'fas fa-lock',
             'parent_id' => null,
-            'order' => 8,
+            'order' => 10,
             'is_active' => true,
         ],
         [
@@ -665,7 +680,7 @@ return [
             'url' => '/admin/modules',
             'icon' => 'fas fa-cube',
             'parent_id' => null,
-            'order' => 9,
+            'order' => 11,
             'is_active' => true,
         ],
         [
@@ -674,7 +689,7 @@ return [
             'url' => '/admin/plugins',
             'icon' => 'fas fa-puzzle-piece',
             'parent_id' => null,
-            'order' => 10,
+            'order' => 12,
             'is_active' => true,
         ],
         [
@@ -683,7 +698,7 @@ return [
             'url' => '/admin/templates',
             'icon' => 'fas fa-palette',
             'parent_id' => null,
-            'order' => 11,
+            'order' => 13,
             'is_active' => true,
         ],
         [
@@ -692,8 +707,126 @@ return [
             'url' => '/admin/schedules',
             'icon' => 'fas fa-clock',
             'parent_id' => null,
-            'order' => 12,
+            'order' => 14,
             'is_active' => false,
+        ],
+        // 방문자 통계 — 화면이 13개라 대시보드 바로 아래에 부모 하나로 묶는다.
+        // children 은 ExtensionMenuSyncHelper::syncMenuRecursive 와 CoreAdminMenuSeeder 가
+        // 부모를 먼저 만들고 그 id 를 parent_id 로 넣어 준다.
+        [
+            'slug' => 'admin-analytics',
+            'name' => ['ko' => '방문자 통계', 'en' => 'Analytics'],
+            'url' => '/admin/analytics',
+            'icon' => 'fas fa-chart-line',
+            'parent_id' => null,
+            'order' => 2,
+            'is_active' => true,
+            'children' => [
+                [
+                    'slug' => 'admin-analytics-overview',
+                    'name' => ['ko' => '개요', 'en' => 'Overview'],
+                    'url' => '/admin/analytics',
+                    'icon' => 'fas fa-chart-pie',
+                    'order' => 1,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-pages',
+                    'name' => ['ko' => '페이지', 'en' => 'Pages'],
+                    'url' => '/admin/analytics/pages',
+                    'icon' => 'fas fa-file-alt',
+                    'order' => 2,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-referrers',
+                    'name' => ['ko' => '유입 경로', 'en' => 'Referrers'],
+                    'url' => '/admin/analytics/referrers',
+                    'icon' => 'fas fa-sign-in-alt',
+                    'order' => 3,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-environment',
+                    'name' => ['ko' => '환경', 'en' => 'Environment'],
+                    'url' => '/admin/analytics/environment',
+                    'icon' => 'fas fa-desktop',
+                    'order' => 4,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-regions',
+                    'name' => ['ko' => '지역', 'en' => 'Regions'],
+                    'url' => '/admin/analytics/regions',
+                    'icon' => 'fas fa-globe',
+                    'order' => 5,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-patterns',
+                    'name' => ['ko' => '요일·시간대', 'en' => 'Patterns'],
+                    'url' => '/admin/analytics/patterns',
+                    'icon' => 'fas fa-calendar-week',
+                    'order' => 6,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-actions',
+                    'name' => ['ko' => '검색어·다운로드·전환', 'en' => 'Actions'],
+                    'url' => '/admin/analytics/actions',
+                    'icon' => 'fas fa-bullseye',
+                    'order' => 7,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-realtime',
+                    'name' => ['ko' => '실시간', 'en' => 'Realtime'],
+                    'url' => '/admin/analytics/realtime',
+                    'icon' => 'fas fa-bolt',
+                    'order' => 8,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-visitors',
+                    'name' => ['ko' => '방문자', 'en' => 'Visitors'],
+                    'url' => '/admin/analytics/visitors',
+                    'icon' => 'fas fa-user-friends',
+                    'order' => 9,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-bots',
+                    'name' => ['ko' => '봇·크롤러', 'en' => 'Bots'],
+                    'url' => '/admin/analytics/bots',
+                    'icon' => 'fas fa-robot',
+                    'order' => 10,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-diagnostics',
+                    'name' => ['ko' => '수집 진단', 'en' => 'Diagnostics'],
+                    'url' => '/admin/analytics/diagnostics',
+                    'icon' => 'fas fa-stethoscope',
+                    'order' => 11,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-privacy',
+                    'name' => ['ko' => '정보주체 요청', 'en' => 'Data Requests'],
+                    'url' => '/admin/analytics/privacy-requests',
+                    'icon' => 'fas fa-user-shield',
+                    'order' => 12,
+                    'is_active' => true,
+                ],
+                [
+                    'slug' => 'admin-analytics-settings',
+                    'name' => ['ko' => '설정', 'en' => 'Settings'],
+                    'url' => '/admin/analytics/settings',
+                    'icon' => 'fas fa-sliders-h',
+                    'order' => 13,
+                    'is_active' => true,
+                ],
+            ],
         ],
     ],
 
@@ -928,6 +1061,228 @@ return [
                     'subject' => ['ko' => '사이트맵 재생성 실패', 'en' => 'Sitemap regeneration failed'],
                     'body' => ['ko' => '요청하신 사이트맵 재생성이 실패했습니다. 오류: {error}', 'en' => 'Your sitemap regeneration failed. Error: {error}'],
                     'click_url' => '/admin/settings?tab=seo',
+                ],
+            ],
+        ],
+
+        // 방문자 통계 집계 실패 — 집계 배치가 끝내 실패하면 화면 숫자가 그 시점에 멈춘다.
+        // 운영자가 모르면 며칠치 통계가 조용히 비므로 관리자 역할 전체에 알린다.
+        'analytics_archive_failed' => [
+            'hook_prefix' => 'core.analytics',
+            'name' => ['ko' => '방문자 통계 집계 실패', 'en' => 'Analytics Archiving Failed'],
+            'description' => ['ko' => '방문자 통계 집계 배치가 실패하면 관리자에게 발송되는 알림', 'en' => 'Notification sent to administrators when the analytics archiving batch fails'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['core.analytics.archive_failed'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'run_type', 'description' => '집계 종류(시간/일/재집계)'],
+                ['key' => 'period', 'description' => '대상 기간'],
+                ['key' => 'error', 'description' => '실패 사유 메시지'],
+                ['key' => 'diagnostics_url', 'description' => '수집 진단 화면 URL'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 방문자 통계 집계가 실패했습니다',
+                        'en' => '[{app_name}] Analytics Archiving Failed',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>방문자 통계 집계 실패</h1>'
+                            .'<p>{period} 기간의 {run_type} 집계가 실패했습니다. 집계가 밀린 동안에는 통계 화면의 숫자가 갱신되지 않습니다.</p>'
+                            .'<p>오류: <strong>{error}</strong></p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{diagnostics_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">수집 진단 열기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Analytics Archiving Failed</h1>'
+                            .'<p>The {run_type} archiving for {period} failed. Statistics screens will not update while archiving is behind.</p>'
+                            .'<p>Error: <strong>{error}</strong></p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{diagnostics_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Open Diagnostics</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => ['ko' => '방문자 통계 집계 실패', 'en' => 'Analytics archiving failed'],
+                    'body' => ['ko' => '{period} 기간의 {run_type} 집계가 실패했습니다. 오류: {error}', 'en' => 'The {run_type} archiving for {period} failed. Error: {error}'],
+                    'click_url' => '/admin/analytics/diagnostics',
+                ],
+            ],
+        ],
+
+        // 원장 행수 임계 초과 — 방문·액션 원장이 계속 늘면 조회가 느려지고 디스크를 먹는다.
+        // 보존일을 줄이거나 정리 배치를 확인하라는 신호.
+        'analytics_ledger_limit_exceeded' => [
+            'hook_prefix' => 'core.analytics',
+            'name' => ['ko' => '방문자 통계 원장 임계 초과', 'en' => 'Analytics Ledger Threshold Exceeded'],
+            'description' => ['ko' => '방문·액션 원장 행수가 설정한 경고 임계치를 넘으면 관리자에게 발송되는 알림', 'en' => 'Notification sent to administrators when visit or action ledger rows exceed the configured warning threshold'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['core.analytics.ledger_limit_exceeded'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'visits', 'description' => '현재 방문 행수'],
+                ['key' => 'actions', 'description' => '현재 액션 행수'],
+                ['key' => 'threshold_visits', 'description' => '방문 경고 임계치'],
+                ['key' => 'threshold_actions', 'description' => '액션 경고 임계치'],
+                ['key' => 'retention_days', 'description' => '현재 원장 보존일'],
+                ['key' => 'settings_url', 'description' => '보존 설정 화면 URL'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 방문자 통계 원장이 임계치를 넘었습니다',
+                        'en' => '[{app_name}] Analytics Ledger Exceeded Threshold',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>방문자 통계 원장 임계 초과</h1>'
+                            .'<p>방문 {visits}행(임계 {threshold_visits}) · 액션 {actions}행(임계 {threshold_actions})입니다. 현재 보존일은 {retention_days}일입니다.</p>'
+                            .'<p>보존일을 줄이거나 정리 배치가 도는지 확인해 주세요.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{settings_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">보존 설정 열기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Analytics Ledger Exceeded Threshold</h1>'
+                            .'<p>{visits} visit rows (threshold {threshold_visits}) and {actions} action rows (threshold {threshold_actions}). Current retention is {retention_days} days.</p>'
+                            .'<p>Consider lowering retention or checking that the prune batch runs.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{settings_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Open Retention Settings</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => ['ko' => '방문자 통계 원장 임계 초과', 'en' => 'Analytics ledger exceeded threshold'],
+                    'body' => ['ko' => '방문 {visits}행 · 액션 {actions}행으로 경고 임계치를 넘었습니다.', 'en' => '{visits} visit rows and {actions} action rows exceeded the warning threshold.'],
+                    'click_url' => '/admin/analytics/settings?tab=retention',
+                ],
+            ],
+        ],
+
+        // 한 방문의 액션 수 상한 초과 — 그 방문의 이후 액션은 버려진다.
+        // 자동화 트래픽이거나 상한이 너무 낮다는 신호라 화면 알림만 남긴다.
+        'analytics_visit_limit_exceeded' => [
+            'hook_prefix' => 'core.analytics',
+            'name' => ['ko' => '방문당 액션 상한 초과', 'en' => 'Visit Action Limit Exceeded'],
+            'description' => ['ko' => '한 방문의 액션 수가 상한을 넘어 이후 액션이 기록되지 않을 때 관리자에게 남기는 알림', 'en' => 'Notification left for administrators when a single visit exceeds the action limit and further actions are dropped'],
+            'channels' => ['database'],
+            'hooks' => ['core.analytics.visit_limit_exceeded'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'visitor_key', 'description' => '방문자 키(앞 8자)'],
+                ['key' => 'actions', 'description' => '기록된 액션 수'],
+                ['key' => 'limit', 'description' => '방문당 액션 상한'],
+                ['key' => 'ip_display', 'description' => '표시용 IP(설정에 따라 마스킹)'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => ['ko' => '방문당 액션 상한 초과', 'en' => 'Visit action limit exceeded'],
+                    'body' => ['ko' => '방문자 {visitor_key}({ip_display})의 액션이 상한 {limit}건을 넘어 이후 액션은 기록되지 않았습니다.', 'en' => 'Visitor {visitor_key} ({ip_display}) exceeded the {limit} action limit; further actions were not recorded.'],
+                    'click_url' => '/admin/analytics/diagnostics',
+                ],
+            ],
+        ],
+
+        // 주간 리포트 — 설정의 report_weekly_enabled 와 이 정의의 활성 상태가 둘 다 참일 때만 발송된다.
+        'analytics_weekly_report' => [
+            'hook_prefix' => 'core.analytics',
+            'name' => ['ko' => '방문자 통계 주간 리포트', 'en' => 'Weekly Analytics Report'],
+            'description' => ['ko' => '매주 월요일 지난 한 주의 방문자 통계 요약을 관리자에게 보내는 리포트', 'en' => 'Weekly summary of visitor statistics sent to administrators every Monday'],
+            'channels' => ['mail'],
+            'hooks' => ['core.analytics.weekly_report_ready'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'period_label', 'description' => '기간 표기(예: 2026-09-08 ~ 2026-09-14)'],
+                ['key' => 'visits', 'description' => '방문 수'],
+                ['key' => 'visitors', 'description' => '순방문자 수'],
+                ['key' => 'pageviews', 'description' => '페이지뷰 수'],
+                ['key' => 'change_pct', 'description' => '직전 기간 대비 증감률'],
+                ['key' => 'top_pages', 'description' => '인기 페이지 표(HTML)'],
+                ['key' => 'top_referrers', 'description' => '유입 경로 표(HTML)'],
+                ['key' => 'report_url', 'description' => '통계 개요 화면 URL'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 주간 방문자 통계 ({period_label})',
+                        'en' => '[{app_name}] Weekly Analytics Report ({period_label})',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>주간 방문자 통계</h1>'
+                            .'<p>{period_label} 기간 요약입니다.</p>'
+                            .'<p>방문 <strong>{visits}</strong> · 순방문자 <strong>{visitors}</strong> · 페이지뷰 <strong>{pageviews}</strong> (직전 기간 대비 {change_pct})</p>'
+                            .'<h2>인기 페이지</h2>{top_pages}'
+                            .'<h2>유입 경로</h2>{top_referrers}'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{report_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">통계 전체 보기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Weekly Analytics Report</h1>'
+                            .'<p>Summary for {period_label}.</p>'
+                            .'<p>Visits <strong>{visits}</strong> · Unique visitors <strong>{visitors}</strong> · Pageviews <strong>{pageviews}</strong> ({change_pct} vs previous period)</p>'
+                            .'<h2>Top Pages</h2>{top_pages}'
+                            .'<h2>Top Referrers</h2>{top_referrers}'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{report_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">View Full Statistics</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+            ],
+        ],
+
+        // 월간 리포트 — 주간과 같은 구성, 매월 1일 발송.
+        'analytics_monthly_report' => [
+            'hook_prefix' => 'core.analytics',
+            'name' => ['ko' => '방문자 통계 월간 리포트', 'en' => 'Monthly Analytics Report'],
+            'description' => ['ko' => '매월 1일 지난달의 방문자 통계 요약을 관리자에게 보내는 리포트', 'en' => 'Monthly summary of visitor statistics sent to administrators on the first of each month'],
+            'channels' => ['mail'],
+            'hooks' => ['core.analytics.monthly_report_ready'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'period_label', 'description' => '기간 표기(예: 2026년 8월)'],
+                ['key' => 'visits', 'description' => '방문 수'],
+                ['key' => 'visitors', 'description' => '순방문자 수'],
+                ['key' => 'pageviews', 'description' => '페이지뷰 수'],
+                ['key' => 'change_pct', 'description' => '직전 기간 대비 증감률'],
+                ['key' => 'top_pages', 'description' => '인기 페이지 표(HTML)'],
+                ['key' => 'top_referrers', 'description' => '유입 경로 표(HTML)'],
+                ['key' => 'report_url', 'description' => '통계 개요 화면 URL'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 월간 방문자 통계 ({period_label})',
+                        'en' => '[{app_name}] Monthly Analytics Report ({period_label})',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>월간 방문자 통계</h1>'
+                            .'<p>{period_label} 요약입니다.</p>'
+                            .'<p>방문 <strong>{visits}</strong> · 순방문자 <strong>{visitors}</strong> · 페이지뷰 <strong>{pageviews}</strong> (직전 기간 대비 {change_pct})</p>'
+                            .'<h2>인기 페이지</h2>{top_pages}'
+                            .'<h2>유입 경로</h2>{top_referrers}'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{report_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">통계 전체 보기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Monthly Analytics Report</h1>'
+                            .'<p>Summary for {period_label}.</p>'
+                            .'<p>Visits <strong>{visits}</strong> · Unique visitors <strong>{visitors}</strong> · Pageviews <strong>{pageviews}</strong> ({change_pct} vs previous period)</p>'
+                            .'<h2>Top Pages</h2>{top_pages}'
+                            .'<h2>Top Referrers</h2>{top_referrers}'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{report_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">View Full Statistics</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
                 ],
             ],
         ],

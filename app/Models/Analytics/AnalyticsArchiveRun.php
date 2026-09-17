@@ -1,0 +1,99 @@
+<?php
+
+namespace App\Models\Analytics;
+
+use App\Enums\Analytics\ArchiveRunStatus;
+use App\Enums\Analytics\ArchiveRunType;
+use Database\Factories\Analytics\AnalyticsArchiveRunFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+
+/**
+ * 배치 실행 이력 모델
+ *
+ * 집계·정리·익명화가 언제 돌았고 얼마나 처리했는지를 남깁니다. 배치가 조용히
+ * 실패하면 화면 숫자가 그대로 멈추므로, 운영자가 진단 화면에서 이 표를 보고
+ * 「마지막 집계가 몇 시간 전인지」를 판단할 수 있어야 합니다.
+ *
+ * @property int $id
+ * @property ArchiveRunType $run_type
+ * @property Carbon|null $period_start
+ * @property Carbon|null $period_end
+ * @property string $trigger
+ * @property ArchiveRunStatus $status
+ * @property int $processed_visits
+ * @property int $processed_actions
+ * @property int $chunks
+ * @property int $progress_percent
+ * @property Carbon $started_at
+ * @property Carbon|null $finished_at
+ * @property string|null $error
+ * @property int|null $triggered_by
+ * @property Carbon $created_at
+ */
+class AnalyticsArchiveRun extends Model
+{
+    /** @use HasFactory<AnalyticsArchiveRunFactory> */
+    use HasFactory;
+
+    /**
+     * 테이블명
+     *
+     * @var string
+     */
+    protected $table = 'analytics_archive_runs';
+
+    /**
+     * 타임스탬프 설정
+     * 진행 상태는 started_at·finished_at 이 담는다
+     *
+     * @var bool
+     */
+    public $timestamps = false;
+
+    /**
+     * 대량 할당 가능한 속성
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'run_type',
+        'period_start',
+        'period_end',
+        'trigger',
+        'status',
+        'processed_visits',
+        'processed_actions',
+        'chunks',
+        'progress_percent',
+        'started_at',
+        'finished_at',
+        'error',
+        'triggered_by',
+        'created_at',
+    ];
+
+    /**
+     * 속성 캐스팅
+     *
+     * @return array<string, string> 캐스팅 정의
+     */
+    protected function casts(): array
+    {
+        return [
+            'run_type' => ArchiveRunType::class,
+            'status' => ArchiveRunStatus::class,
+            'period_start' => 'datetime',
+            'period_end' => 'datetime',
+            'started_at' => 'datetime',
+            'finished_at' => 'datetime',
+            'created_at' => 'datetime',
+            'processed_visits' => 'integer',
+            'processed_actions' => 'integer',
+            'chunks' => 'integer',
+            'progress_percent' => 'integer',
+            'triggered_by' => 'integer',
+        ];
+    }
+}

@@ -5,6 +5,24 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.72.0] - 2026-09-17
+
+### Added
+
+#### 방문자 통계 트래커 — 사용자 템플릿에서만 켜지고, 실패해도 화면을 막지 않는다
+
+- `TemplateApp` 초기화 8.1 단계에 트래커가 붙는다. `templateType` 이 `user` 일 때만 만든다 —
+  관리자 화면까지 세면 인기 페이지 1위가 관리자 대시보드가 되어 통계가 쓸모없어진다.
+  설정(`G7Config.settings.analytics`)이 없거나 꺼져 있으면 아무것도 만들지 않는다.
+- SPA 이동은 라우터의 `routeChange` 로 잡는다. 라우터가 핸들러를 `Promise.all` 로 기다리므로
+  이 구독은 **동기로 반환**하고, 전송은 트래커 안에서 다음 틱으로 미룬다 — 화면 전환이 비콘
+  왕복만큼 늦어지면 안 된다. 첫 화면은 `routeChange` 없이 그려지므로 한 번 직접 알린다.
+- `window.G7Core.analytics` 로 확장이 쓸 수 있는 4가지가 열린다 — `trackGoal`·`trackEvent`·
+  `setDimension`·`isOptedOut`. 넷 다 안에서 예외를 삼킨다. 통계가 깨졌다고 남의 화면이
+  깨지면 안 된다.
+- 트래커 초기화가 실패해도 부팅은 계속된다(`setupAnalytics` 전체가 `try`/`catch`). 실패는
+  경고로 남고, 방문자는 아무 차이를 느끼지 않는다.
+
 ## [engine-v1.71.0] - 2026-09-13
 
 ### Added

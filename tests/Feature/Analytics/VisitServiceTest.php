@@ -1,0 +1,595 @@
+<?php
+
+namespace Tests\Feature\Analytics;
+
+use App\Analytics\TrackingRequest;
+use App\Analytics\TrackingRequestFactory;
+use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
+use App\Enums\Analytics\CollectFailureReason;
+use App\Extension\HookManager;
+use App\Models\Analytics\AnalyticsAction;
+use App\Models\Analytics\AnalyticsCollectFailure;
+use App\Models\Analytics\AnalyticsVisit;
+use App\Services\Analytics\VisitService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Mockery\MockInterface;
+use Tests\TestCase;
+
+/**
+ * 방문 적재 — 방문 묶기·카운터·체류 확정·상한·예외 격리.
+ *
+ * 이 서비스의 실패는 전부 조용하다. 방문이 두 개로 갈리거나 페이지뷰가 두 배가 되어도
+ * 화면에는 그럴듯한 숫자가 나오고, 예외를 밖으로 던지면 방문자가 보던 화면이 깨진다.
+ * 그래서 「무엇이 몇 개 적혔는가」를 행 수로 직접 단언한다.
+ */
+class VisitServiceTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private VisitService $service;
+
+    /**
+     * 테스트 준비 — 서비스 해석.
+     *
+     * @return void 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->service = app(VisitService::class);
+    }
+
+    /**
+     * 수집 요청 하나를 만듭니다.
+     *
+     * @param  array<string, mixed>  $overrides  덮어쓸 값
+     * @return TrackingRequest 수집 요청
+     */
+    private function request(array $overrides = []): TrackingRequest
+    {
+        return new TrackingRequest(...array_merge([
+            'type' => 'pageview',
+            'url' => 'https://example.test/board/free',
+            'title' => '자유게시판',
+            'ip' => '203.0.113.50',
+            'userAgent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/128.0.0.0 Safari/537.36',
+            'browserLanguage' => 'ko-KR',
+            'resolution' => '1920x1080',
+            'cookies' => ['g7_vid' => str_repeat('b', 32)],
+            'receivedAt' => now()->format('Y-m-d H:i:s'),
+        ], $overrides));
+    }
+
+    /**
+     * 첫 방문이 방문 1건과 액션 1건을 남긴다.
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects first_request_creates_visit_and_action
+     *
+     * @return void 없음
+     */
+    public function test_creates_visit_and_action(): void
+    {
+        $result = $this->service->track($this->request(['init' => true]));
+
+        $this->assertNotNull($result['visit_id']);
+        $this->assertSame(1, AnalyticsVisit::count());
+        $this->assertSame(1, AnalyticsAction::count());
+
+        $visit = AnalyticsVisit::first();
+        $this->assertSame('guest', $visit->visitor_type->value);
+        $this->assertSame('Chrome', $visit->browser_name);
+        $this->assertSame('Windows', $visit->os_name);
+        $this->assertSame(1, $visit->pageviews_count);
+        $this->assertTrue($visit->is_bounce);
+        $this->assertNotNull($visit->entry_action_name_id);
+    }
+
+    /**
+     * 창 안의 두 번째 요청은 같은 방문에 붙는다.
+     *
+     * @scenario visit_state=open, source=beacon
+     *
+     * @effects second_request_within_window_joins_same_visit, bounce_flag_releases_on_second_pageview
+     *
+     * @return void 없음
+     */
+    public function test_second_request_joins_same_visit(): void
+    {
+        $first = $this->service->track($this->request());
+        $second = $this->service->track($this->request(['url' => 'https://example.test/board/free/1']));
+
+        $this->assertSame($first['visit_id'], $second['visit_id']);
+        $this->assertSame(1, AnalyticsVisit::count());
+        $this->assertSame(2, AnalyticsAction::count());
+
+        $visit = AnalyticsVisit::find($first['visit_id']);
+        $this->assertSame(2, $visit->pageviews_count);
+        $this->assertFalse($visit->is_bounce, '두 번째 페이지를 보면 이탈이 아니다');
+    }
+
+    /**
+     * 창 밖의 요청은 새 방문이 된다.
+     *
+     * @scenario visit_state=timed_out
+     *
+     * @effects request_after_timeout_starts_new_visit
+     *
+     * @return void 없음
+     */
+    public function test_request_after_timeout_starts_new_visit(): void
+    {
+        $first = $this->service->track($this->request());
+
+        // 마지막 활동을 창 밖으로 밀어 낸다.
+        AnalyticsVisit::find($first['visit_id'])->update([
+            'last_action_at' => now()->subMinutes(120),
+        ]);
+
+        $second = $this->service->track($this->request());
+
+        $this->assertNotSame($first['visit_id'], $second['visit_id']);
+        $this->assertSame(2, AnalyticsVisit::count());
+    }
+
+    /**
+     * 직전 페이지의 체류 시간을 다음 요청이 확정한다.
+     *
+     * 확정 시점이 어긋나면(새 액션을 넣은 뒤에 직전을 찾으면) 방금 넣은 행이 잡혀
+     * 체류 시간이 영영 null 로 남는다.
+     *
+     * @scenario prev_time_spent=present
+     *
+     * @effects previous_pageview_dwell_time_is_confirmed_by_next_request
+     *
+     * @return void 없음
+     */
+    public function test_confirms_previous_dwell_time(): void
+    {
+        $first = $this->service->track($this->request());
+        $this->service->track($this->request(['url' => 'https://example.test/x', 'prevTimeSpent' => 42]));
+
+        $this->assertSame(42, AnalyticsAction::find($first['action_id'])->time_spent_seconds);
+        $this->assertSame(42, AnalyticsVisit::find($first['visit_id'])->total_time_seconds);
+    }
+
+    /**
+     * 서버 폴백이 센 페이지뷰를 첫 비콘이 다시 세지 않는다.
+     *
+     * 병합이 있어도 카운터를 다시 올리면 페이지뷰가 2배가 된다 — 행 수와 카운터를
+     * 함께 단언해야 그 어긋남이 잡힌다.
+     *
+     * @scenario source=server+beacon, init=true, merge=within_window
+     *
+     * @effects server_fallback_and_first_beacon_merge_into_one_action, merged_action_does_not_double_count_pageviews
+     *
+     * @return void 없음
+     */
+    public function test_merges_server_fallback_with_first_beacon(): void
+    {
+        $server = $this->service->track($this->request(['source' => 'server', 'title' => null]));
+        $beacon = $this->service->track($this->request(['init' => true]));
+
+        $this->assertSame($server['action_id'], $beacon['action_id'], '같은 액션 행을 채워야 한다');
+        $this->assertSame(1, AnalyticsAction::count(), '행이 늘어나면 안 된다');
+
+        $visit = AnalyticsVisit::find($beacon['visit_id']);
+        $this->assertSame(1, $visit->pageviews_count, '페이지뷰가 2배가 되면 안 된다');
+        $this->assertSame(1, $visit->actions_count);
+        $this->assertNotNull(AnalyticsAction::find($beacon['action_id'])->page_title_id, '제목이 보강돼야 한다');
+    }
+
+    /**
+     * 병합 창 밖의 비콘은 새 액션이 된다.
+     *
+     * @scenario source=server+beacon, merge=outside_window
+     *
+     * @effects beacon_outside_merge_window_creates_new_action
+     *
+     * @return void 없음
+     */
+    public function test_does_not_merge_outside_window(): void
+    {
+        $server = $this->service->track($this->request(['source' => 'server']));
+
+        AnalyticsAction::find($server['action_id'])->update([
+            'occurred_at' => now()->subSeconds(120),
+        ]);
+
+        $beacon = $this->service->track($this->request(['init' => true]));
+
+        $this->assertNotSame($server['action_id'], $beacon['action_id']);
+        $this->assertSame(2, AnalyticsAction::count());
+    }
+
+    /**
+     * 다른 URL 이면 병합하지 않는다.
+     *
+     * @scenario source=server+beacon, merge=different_url
+     *
+     * @effects beacon_for_different_url_creates_new_action
+     *
+     * @return void 없음
+     */
+    public function test_does_not_merge_different_url(): void
+    {
+        $server = $this->service->track($this->request(['source' => 'server']));
+        $beacon = $this->service->track($this->request(['init' => true, 'url' => 'https://example.test/other']));
+
+        $this->assertNotSame($server['action_id'], $beacon['action_id']);
+        $this->assertSame(2, AnalyticsAction::count());
+    }
+
+    /**
+     * 방문당 액션 상한을 넘으면 더 적지 않고 사유를 남긴다.
+     *
+     * @scenario visit_state=max_actions
+     *
+     * @effects actions_beyond_visit_limit_are_dropped_with_failure_log
+     *
+     * @return void 없음
+     */
+    public function test_stops_recording_beyond_action_limit(): void
+    {
+        config(['g7_settings.core.analytics.max_actions_per_visit' => 2]);
+
+        $this->service->track($this->request());
+        $this->service->track($this->request(['url' => 'https://example.test/2']));
+        $before = AnalyticsAction::count();
+
+        $blocked = $this->service->track($this->request(['url' => 'https://example.test/3']));
+
+        $this->assertNull($blocked['action_id']);
+        $this->assertSame($before, AnalyticsAction::count(), '상한을 넘으면 액션이 늘지 않는다');
+        $this->assertSame(
+            1,
+            AnalyticsCollectFailure::where('reason', CollectFailureReason::MaxActions->value)->count(),
+            '왜 버렸는지 남아야 한다',
+        );
+    }
+
+    /**
+     * 봇은 원장에 들어가지 않고 제외 사유로 끝난다.
+     *
+     * @scenario visitor=bot
+     *
+     * @effects bot_requests_never_enter_the_visit_ledger, excluded_requests_record_nothing
+     *
+     * @return void 없음
+     */
+    public function test_excludes_bot_without_recording(): void
+    {
+        $result = $this->service->track($this->request([
+            'userAgent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        ]));
+
+        $this->assertSame('bot', $result['excluded']);
+        $this->assertNull($result['visit_id']);
+        $this->assertSame(0, AnalyticsVisit::count());
+    }
+
+    /**
+     * 수집이 꺼져 있으면 아무것도 적지 않는다.
+     *
+     * @scenario exclusion=disabled
+     *
+     * @effects excluded_requests_record_nothing, each_exclusion_reason_is_counted_separately
+     *
+     * @return void 없음
+     */
+    public function test_records_nothing_when_disabled(): void
+    {
+        config(['g7_settings.core.analytics.enabled' => false]);
+
+        $result = $this->service->track($this->request());
+
+        $this->assertSame('disabled', $result['excluded']);
+        $this->assertSame(0, AnalyticsVisit::count());
+    }
+
+    /**
+     * 쿠키가 없으면 새 키를 발급해 돌려준다.
+     *
+     * @scenario mode=full, visitor=guest
+     *
+     * @effects full_mode_stores_masked_ip_and_issues_cookie
+     *
+     * @return void 없음
+     */
+    public function test_issues_new_visitor_cookie(): void
+    {
+        $result = $this->service->track($this->request(['cookies' => []]));
+
+        $this->assertNotNull($result['new_cookie']);
+        $this->assertSame(32, strlen($result['new_cookie']));
+        $this->assertFalse(AnalyticsVisit::first()->is_returning);
+    }
+
+    /**
+     * 쿠키가 있으면 재방문으로 본다.
+     *
+     * @scenario mode=full, visitor=guest
+     *
+     * @effects full_mode_reports_returning_visitors
+     *
+     * @return void 없음
+     */
+    public function test_existing_cookie_marks_returning(): void
+    {
+        $result = $this->service->track($this->request());
+
+        $this->assertNull($result['new_cookie']);
+        $this->assertTrue(AnalyticsVisit::first()->is_returning);
+    }
+
+    /**
+     * 내부 검색 액션이 결과 건수와 함께 남는다.
+     *
+     * @scenario source=search
+     *
+     * @effects site_search_action_stores_result_count_and_tab
+     *
+     * @return void 없음
+     */
+    public function test_records_site_search_with_result_count(): void
+    {
+        $result = $this->service->track($this->request([
+            'type' => 'site_search',
+            'searchQuery' => '그누보드',
+            'searchTotal' => 12,
+            'searchTab' => 'all',
+        ]));
+
+        $action = AnalyticsAction::find($result['action_id']);
+        $this->assertSame('site_search', $action->action_type->value);
+        $this->assertSame(12, $action->search_result_count);
+        $this->assertSame('그누보드', $action->actionName->name);
+        $this->assertSame('search', $action->actionName->type);
+    }
+
+    /**
+     * 적재 중 오류가 나도 예외를 밖으로 던지지 않는다.
+     *
+     * 수집이 실패했다고 방문자 화면이 깨지거나 큐 잡이 재시도로 쌓이면 안 된다.
+     *
+     * @scenario exclusion=none
+     *
+     * @effects tracking_never_throws_to_the_caller
+     *
+     * @return void 없음
+     */
+    public function test_never_throws_to_caller(): void
+    {
+        $result = $this->service->track($this->request(['url' => '://broken']));
+
+        // 예외가 밖으로 나왔다면 여기 도달하지 못한다.
+        $this->assertIsArray($result);
+    }
+
+    /**
+     * 열린 방문 조회는 행을 잠근다 — 동시 두 요청이 방문 두 개를 만들지 않는다.
+     *
+     * 트랜잭션 두 개를 순차로 흉내 내고 조회 SQL 에 `for update` 가 있는지 단언한다.
+     * 잠금이 빠져도 순차 실행에서는 방문이 하나로 나오므로 SQL 자체를 봐야 한다.
+     *
+     * @scenario source=beacon, visit_state=open, dispatch=sync
+     *
+     * @effects open_visit_lookup_locks_the_row, second_request_within_window_joins_same_visit
+     *
+     * @return void 없음
+     */
+    public function test_open_visit_lookup_locks_the_row(): void
+    {
+        DB::enableQueryLog();
+
+        $first = $this->service->track($this->request());
+        $second = $this->service->track($this->request(['url' => 'https://example.test/2']));
+
+        $locking = array_filter(DB::getQueryLog(), fn (array $q): bool => stripos($q['query'], 'for update') !== false);
+        DB::disableQueryLog();
+
+        $this->assertSame($first['visit_id'], $second['visit_id'], '두 요청은 한 방문이어야 한다');
+        $this->assertSame(1, AnalyticsVisit::count());
+        $this->assertGreaterThanOrEqual(2, count($locking), '방문 조회마다 FOR UPDATE 로 잠가야 한다');
+    }
+
+    /**
+     * 체류 시간은 요청 조립 단계에서 상한으로 잘린다 — 트래커를 우회해도 마찬가지다.
+     *
+     * @scenario source=beacon, visit_state=open
+     *
+     * @effects dwell_time_is_capped_at_configured_maximum
+     *
+     * @return void 없음
+     */
+    public function test_dwell_time_is_capped_when_request_is_assembled(): void
+    {
+        $http = Request::create('/api/analytics/collect', 'POST');
+        $dto = TrackingRequestFactory::fromHttp($http, ['t' => 'pageview', 'url' => 'https://example.test/', 'prev' => 86400]);
+
+        $this->assertSame(1800, $dto->prevTimeSpent);
+
+        $this->service->track($this->request());
+        $this->service->track($this->request(['url' => 'https://example.test/2', 'prevTimeSpent' => $dto->prevTimeSpent]));
+
+        $this->assertSame(1800, AnalyticsAction::orderBy('id')->first()->time_spent_seconds);
+    }
+
+    /**
+     * 진입·이탈 페이지가 첫 액션과 마지막 액션으로 채워진다.
+     *
+     * @scenario source=beacon, visit_state=open
+     *
+     * @effects entry_and_exit_pages_are_recorded
+     *
+     * @return void 없음
+     */
+    public function test_entry_and_exit_pages_are_recorded(): void
+    {
+        $first = $this->service->track($this->request(['url' => 'https://example.test/entry']));
+        $second = $this->service->track($this->request(['url' => 'https://example.test/exit']));
+
+        $visit = AnalyticsVisit::find($second['visit_id']);
+
+        $this->assertSame(AnalyticsAction::find($first['action_id'])->action_name_id, $visit->entry_action_name_id);
+        $this->assertSame(AnalyticsAction::find($second['action_id'])->action_name_id, $visit->exit_action_name_id);
+        $this->assertNotSame($visit->entry_action_name_id, $visit->exit_action_name_id);
+    }
+
+    /**
+     * 적재가 끝나면 `after_track` 훅이 원장 ID 와 함께 발화한다.
+     *
+     * @scenario source=beacon, visit_state=new
+     *
+     * @effects after_track_hook_fires_with_ledger_ids
+     *
+     * @return void 없음
+     */
+    public function test_after_track_hook_fires_with_ledger_ids(): void
+    {
+        $received = [];
+        HookManager::addAction('core.analytics.after_track', function (array $payload) use (&$received): void {
+            $received[] = $payload;
+        });
+
+        $result = $this->service->track($this->request());
+
+        $this->assertCount(1, $received);
+        $this->assertSame($result['visit_id'], $received[0]['visit_id']);
+        $this->assertSame($result['action_id'], $received[0]['action_id']);
+        $this->assertSame('pageview', $received[0]['action_type']);
+        $this->assertSame('https://example.test/board/free', $received[0]['dto']['url']);
+
+        // 제외된 요청에서는 발화하지 않는다.
+        $this->service->track($this->request(['headers' => ['dnt' => '1']]));
+        $this->assertCount(1, $received);
+    }
+
+    /**
+     * 액션 상한을 넘기면 알림 훅이 발화하고 방문 카운터는 그대로다.
+     *
+     * @scenario visit_state=max_actions
+     *
+     * @effects actions_beyond_visit_limit_are_dropped_with_failure_log, visit_limit_notification_hook_fires
+     *
+     * @return void 없음
+     */
+    public function test_visit_limit_fires_notification_hook(): void
+    {
+        config(['g7_settings.core.analytics.max_actions_per_visit' => 2]);
+
+        $received = [];
+        HookManager::addAction('core.analytics.visit_limit_exceeded', function (array $payload) use (&$received): void {
+            $received[] = $payload;
+        });
+
+        $this->service->track($this->request());
+        $second = $this->service->track($this->request(['url' => 'https://example.test/2']));
+        $this->service->track($this->request(['url' => 'https://example.test/3']));
+
+        $visit = AnalyticsVisit::find($second['visit_id']);
+
+        $this->assertCount(1, $received);
+        $this->assertSame(2, $received[0]['limit']);
+        $this->assertSame(2, $visit->actions_count, '상한을 넘긴 요청은 카운터를 올리지 않는다');
+        $this->assertSame(2, $visit->pageviews_count);
+    }
+
+    /**
+     * 적재 중 예외는 실패 로그 행과 애플리케이션 경고 로그로 남고 밖으로 나가지 않는다.
+     *
+     * @scenario source=beacon, exclusion=none
+     *
+     * @effects tracking_never_throws_to_the_caller, failures_are_recorded_with_a_reason, tracking_failure_is_logged_to_application_log
+     *
+     * @return void 없음
+     */
+    public function test_exception_is_logged_twice_and_swallowed(): void
+    {
+        $this->mock(VisitRepositoryInterface::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('findOpenVisitForUpdate')->andThrow(new \RuntimeException('deadlock'));
+        });
+        Log::spy();
+
+        $result = app(VisitService::class)->track($this->request());
+
+        $this->assertNull($result['visit_id']);
+        $this->assertSame(1, AnalyticsCollectFailure::where('reason', CollectFailureReason::DbError->value)->count());
+        $this->assertStringContainsString('deadlock', AnalyticsCollectFailure::first()->message);
+
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn (string $message): bool => $message === '방문자 통계 적재 실패')
+            ->once();
+    }
+
+    /**
+     * 쿠키 없는 서버 폴백 뒤에 온 쿠키 없는 첫 비콘은 그 방문을 이어받는다.
+     *
+     * 서버 폴백은 응답 뒤(terminate)에 돌아 쿠키를 심을 수 없다. 그래서 신규 방문자의
+     * 첫 로드는 서버 폴백도 첫 비콘도 쿠키가 없다 — 둘이 각자 새 키를 만들면 한 사람의
+     * 첫 로드가 방문 2건(하나는 이탈 100%)이 되어 순방문자와 이탈률이 구조적으로 부푼다.
+     *
+     * @scenario source=server+beacon, visitor=guest, visit_state=new, merge=within_window
+     *
+     * @effects cookieless_server_fallback_is_adopted_by_first_beacon, server_fallback_and_first_beacon_merge_into_one_action
+     *
+     * @return void 없음
+     */
+    public function test_cookieless_server_fallback_is_adopted_by_first_beacon(): void
+    {
+        $server = $this->service->track($this->request(['source' => 'server', 'cookies' => [], 'resolution' => null, 'title' => null]));
+        $beacon = $this->service->track($this->request(['source' => 'beacon', 'cookies' => [], 'init' => true]));
+
+        $this->assertSame(1, AnalyticsVisit::count(), '첫 로드는 방문 1건이어야 한다');
+        $this->assertSame($server['visit_id'], $beacon['visit_id'], '비콘이 서버 폴백의 방문을 이어받는다');
+        $this->assertSame($server['action_id'], $beacon['action_id'], '페이지뷰도 병합된다');
+
+        $visit = AnalyticsVisit::find($beacon['visit_id']);
+        $this->assertNotNull($beacon['new_cookie'], '비콘 응답에 쿠키가 나간다');
+        $this->assertSame($beacon['new_cookie'], $visit->visitor_key, '방문 키가 그 쿠키 값으로 바뀐다');
+        $this->assertSame('cookie', $visit->visitor_key_type);
+        $this->assertSame(1, $visit->pageviews_count);
+        $this->assertSame($visit->visitor_key, AnalyticsAction::find($beacon['action_id'])->visitor_key, '액션의 키 복제본도 함께 바뀐다');
+
+        // 쿠키를 받은 뒤의 이동은 같은 방문에 붙는다.
+        $next = $this->service->track($this->request(['cookies' => ['g7_vid' => $visit->visitor_key], 'url' => 'https://example.test/2']));
+        $this->assertSame($visit->id, $next['visit_id']);
+        $this->assertSame(1, AnalyticsVisit::count());
+    }
+
+    /**
+     * 익명 모드에서는 서버 폴백과 비콘이 같은 일자 해시를 얻어 한 방문이 된다.
+     *
+     * 서버 요청에는 화면 해상도와 클라이언트 힌트가 없다. 그 값이 해시 재료에 들어가면
+     * 두 경로가 영원히 다른 키를 얻어 매 로드가 방문 2건이 된다.
+     *
+     * @scenario mode=anonymous, source=server+beacon, visit_state=new
+     *
+     * @effects anonymous_server_fallback_and_beacon_share_a_visit, anonymous_visitor_key_is_deterministic_within_a_day
+     *
+     * @return void 없음
+     */
+    public function test_anonymous_server_fallback_and_beacon_share_visit(): void
+    {
+        config(['g7_settings.core.analytics.privacy_mode' => 'anonymous']);
+
+        $server = $this->service->track($this->request(['source' => 'server', 'cookies' => [], 'resolution' => null, 'title' => null]));
+        $beacon = $this->service->track($this->request([
+            'source' => 'beacon',
+            'cookies' => [],
+            'init' => true,
+            'resolution' => '1920x1080',
+            'clientHints' => ['brands' => [['brand' => 'Google Chrome', 'version' => '128']], 'platform' => 'Windows', 'mobile' => false],
+        ]));
+
+        $this->assertSame(1, AnalyticsVisit::count());
+        $this->assertSame($server['visit_id'], $beacon['visit_id']);
+        $this->assertSame($server['action_id'], $beacon['action_id']);
+        $this->assertNull($beacon['new_cookie']);
+    }
+}

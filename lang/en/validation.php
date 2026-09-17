@@ -1178,6 +1178,16 @@ return [
     ],
 
     // Validation attribute names (validation.attributes)
+    // Analytics beacon validation messages
+    'analytics' => [
+        'type_required' => 'An action type is required.',
+        'type_invalid' => 'Unknown action type.',
+        'url_required' => 'A visit URL is required.',
+        'url_too_long' => 'The visit URL is too long.',
+        'resolution_invalid' => 'The screen resolution format is invalid.',
+        'dimensions_too_many' => 'At most 20 dimension values may be sent.',
+    ],
+
     'attributes' => [
         'ids' => 'ID list',
         'user_ids' => 'user ID list',

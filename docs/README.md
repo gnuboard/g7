@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 37개 | 정상 |
+| [백엔드](backend/) | 38개 | 정상 |
 | [프론트엔드](frontend/) | 47개 | 정상 |
 | [확장 시스템](extension/) | 34개 | 정상 |
 | 공통 | 20개 | 정상 |
@@ -129,13 +129,14 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (37개)
+### 백엔드 (38개)
 
 | 문서 | 제목 |
 |------|------|
 | [activity-log-hooks.md](backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) |
 | [activity-log.md](backend/activity-log.md) | 활동 로그 시스템 (Activity Log System) |
 | [admin-settings-access.md](backend/admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) |
+| [analytics.md](backend/analytics.md) | 방문자 통계 |
 | [api-documentation.md](backend/api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) |
 | [api-resources.md](backend/api-resources.md) | API 리소스 |
 | [authentication.md](backend/authentication.md) | 인증 및 세션 처리 |
@@ -301,7 +302,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](backend/api/README.md) | 36 / 328 |
+| 코어 | [docs/backend/api/README.md](backend/api/README.md) | 37 / 329 |
 
 
 ### 확장 API 레퍼런스 (15개 확장, 자동 스캔)

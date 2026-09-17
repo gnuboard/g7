@@ -49,6 +49,7 @@ use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
+use App\Http\Controllers\Api\Public\AnalyticsCollectController;
 use App\Http\Controllers\Api\Public\AssetProbeController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
@@ -79,6 +80,13 @@ use Illuminate\Support\Facades\Route;
 
 // 공개 API 라우트 (인증 불필요, 속도 제한 없음)
 Route::group([], function () {
+    // 방문자 통계 수집 비콘 — 브라우저가 페이지 이동·내려받기·외부 링크를 알려 온다.
+    // optional.sanctum 을 두는 이유: 토큰이 있으면 회원·관리자 방문으로 가르고, 없으면
+    // 비회원으로 센다. 응답은 언제나 204 이므로 스로틀에 걸려도 화면에 영향이 없다.
+    Route::post('analytics/collect', [AnalyticsCollectController::class, 'store'])
+        ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum'])
+        ->name('api.public.analytics.collect');
+
     // 템플릿 라우트 정보 조회
     Route::prefix('templates')->group(function () {
         // 아래 dual* 매크로는 확장자 형태와 확장자 없는 형태를 동시에 등록한다.

@@ -13,6 +13,15 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface as AnalyticsActionNameRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ActionRepositoryInterface as AnalyticsActionRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface as AnalyticsArchiveRunRepositoryInterface;
+use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface as AnalyticsBotHitRepositoryInterface;
+use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface as AnalyticsCollectFailureRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface as AnalyticsConversionRepositoryInterface;
+use App\Contracts\Repositories\Analytics\SaltRepositoryInterface as AnalyticsSaltRepositoryInterface;
+use App\Contracts\Repositories\Analytics\StatsRepositoryInterface as AnalyticsStatsRepositoryInterface;
+use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
@@ -62,6 +71,15 @@ use App\Extension\TemplateManager;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Repositories\ActivityLogRepository;
+use App\Repositories\Analytics\ActionNameRepository as AnalyticsActionNameRepository;
+use App\Repositories\Analytics\ActionRepository as AnalyticsActionRepository;
+use App\Repositories\Analytics\ArchiveRunRepository as AnalyticsArchiveRunRepository;
+use App\Repositories\Analytics\BotHitRepository as AnalyticsBotHitRepository;
+use App\Repositories\Analytics\CollectFailureRepository as AnalyticsCollectFailureRepository;
+use App\Repositories\Analytics\ConversionRepository as AnalyticsConversionRepository;
+use App\Repositories\Analytics\SaltRepository as AnalyticsSaltRepository;
+use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
+use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
 use App\Repositories\IdentityMessageDefinitionRepository;
 use App\Repositories\IdentityMessageTemplateRepository;
@@ -261,6 +279,19 @@ class CoreServiceProvider extends ServiceProvider
 
         // SEO Repository 바인딩
         $this->app->bind(SeoCacheStatRepositoryInterface::class, SeoCacheStatRepository::class);
+
+        // 방문자 통계 Repository 바인딩
+        // 솔트 저장소는 싱글톤이다 — 익명 모드에서 방문마다 그날 솔트를 찾는데,
+        // 요청 안에서 인스턴스가 새로 생기면 캐시가 매번 비어 DB 를 다시 읽는다.
+        $this->app->bind(AnalyticsActionNameRepositoryInterface::class, AnalyticsActionNameRepository::class);
+        $this->app->bind(AnalyticsVisitRepositoryInterface::class, AnalyticsVisitRepository::class);
+        $this->app->bind(AnalyticsActionRepositoryInterface::class, AnalyticsActionRepository::class);
+        $this->app->bind(AnalyticsConversionRepositoryInterface::class, AnalyticsConversionRepository::class);
+        $this->app->bind(AnalyticsBotHitRepositoryInterface::class, AnalyticsBotHitRepository::class);
+        $this->app->bind(AnalyticsStatsRepositoryInterface::class, AnalyticsStatsRepository::class);
+        $this->app->bind(AnalyticsArchiveRunRepositoryInterface::class, AnalyticsArchiveRunRepository::class);
+        $this->app->bind(AnalyticsCollectFailureRepositoryInterface::class, AnalyticsCollectFailureRepository::class);
+        $this->app->singleton(AnalyticsSaltRepositoryInterface::class, AnalyticsSaltRepository::class);
 
         // IdentityVerification Repository 바인딩
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);

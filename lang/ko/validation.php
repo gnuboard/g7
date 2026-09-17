@@ -1170,6 +1170,16 @@ return [
         ],
     ],
 
+    // 방문자 통계 비콘 검증 메시지
+    'analytics' => [
+        'type_required' => '액션 종류가 필요합니다.',
+        'type_invalid' => '알 수 없는 액션 종류입니다.',
+        'url_required' => '방문 주소가 필요합니다.',
+        'url_too_long' => '방문 주소가 너무 깁니다.',
+        'resolution_invalid' => '화면 해상도 형식이 올바르지 않습니다.',
+        'dimensions_too_many' => '차원 값은 최대 20개까지 보낼 수 있습니다.',
+    ],
+
     // 검증 속성명 (validation.attributes)
     'attributes' => [
         'ids' => 'ID 목록',
