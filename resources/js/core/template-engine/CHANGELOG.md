@@ -16,10 +16,13 @@
   설정(`G7Config.settings.analytics`)이 없거나 꺼져 있으면 아무것도 만들지 않는다.
 - SPA 이동은 라우터의 `routeChange` 로 잡는다. 라우터가 핸들러를 `Promise.all` 로 기다리므로
   이 구독은 **동기로 반환**하고, 전송은 트래커 안에서 다음 틱으로 미룬다 — 화면 전환이 비콘
-  왕복만큼 늦어지면 안 된다. 첫 화면은 `routeChange` 없이 그려지므로 한 번 직접 알린다.
-- `window.G7Core.analytics` 로 확장이 쓸 수 있는 4가지가 열린다 — `trackGoal`·`trackEvent`·
-  `setDimension`·`isOptedOut`. 넷 다 안에서 예외를 삼킨다. 통계가 깨졌다고 남의 화면이
-  깨지면 안 된다.
+  왕복만큼 늦어지면 안 된다. 첫 화면은 라우터가 매칭되지 않는 경우(404 등)까지 세려고 직접
+  한 번 알리고, 라우터가 같은 경로로 내는 첫 `routeChange` 는 한 번 거른다 — 거르지 않으면
+  모든 첫 로드가 페이지뷰 2건이 되고 한 쪽만 본 방문이 이탈로 잡히지 않는다.
+- `window.G7Core.analytics` 로 확장이 쓸 수 있는 6가지가 열린다 — `trackGoal`·`trackEvent`·
+  `setDimension`·`isOptedOut` 에 더해 `optOut`·`optIn` 으로 방문자가 자기 방문을 세지 말라고
+  고를 수 있다(쿠키는 서버가 심는다). 여섯 다 안에서 예외를 삼킨다. 통계가 깨졌다고 남의
+  화면이 깨지면 안 된다.
 - 트래커 초기화가 실패해도 부팅은 계속된다(`setupAnalytics` 전체가 `try`/`catch`). 실패는
   경고로 남고, 방문자는 아무 차이를 느끼지 않는다.
 

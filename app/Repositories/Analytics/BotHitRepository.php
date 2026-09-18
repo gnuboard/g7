@@ -4,6 +4,7 @@ namespace App\Repositories\Analytics;
 
 use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface;
 use App\Models\Analytics\AnalyticsBotHit;
+use App\Repositories\Concerns\FiltersByDateRange;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -12,6 +13,8 @@ use Illuminate\Support\Collection;
  */
 class BotHitRepository implements BotHitRepositoryInterface
 {
+    use FiltersByDateRange;
+
     /**
      * 봇 요청을 기록합니다.
      *
@@ -88,5 +91,35 @@ class BotHitRepository implements BotHitRepositoryInterface
     public function countOlderThan(Carbon $before): int
     {
         return AnalyticsBotHit::query()->where('occurred_at', '<', $before)->count();
+    }
+
+    /**
+     * 기간 안의 봇 기록을 나눠서 순회합니다.
+     *
+     * @param  string|null  $from  시작 일자 (Y-m-d, null 이면 처음부터)
+     * @param  string|null  $to  끝 일자 (Y-m-d, null 이면 끝까지)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkInDateRange(?string $from, ?string $to, int $chunkSize, callable $callback): void
+    {
+        $query = AnalyticsBotHit::query();
+
+        $this->applyDateRangeFilter($query, 'occurred_at', $from, $to);
+
+        $query->orderBy('id')->chunkById(max(1, $chunkSize), $callback);
+    }
+
+    /**
+     * 봇 기록의 주소를 덮어씁니다.
+     *
+     * @param  AnalyticsBotHit  $hit  대상 기록
+     * @param  string|null  $ip  새 주소 (null 이면 지움)
+     * @return void 없음
+     */
+    public function updateIp(AnalyticsBotHit $hit, ?string $ip): void
+    {
+        $hit->forceFill(['ip' => $ip])->save();
     }
 }

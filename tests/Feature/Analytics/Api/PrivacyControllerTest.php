@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Analytics\Api;
 
+use App\Analytics\VisitorRecognizer;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Jobs\Analytics\AnonymizeLedgerJob;
 use App\Models\Analytics\AnalyticsAction;
@@ -90,6 +91,80 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
             (int) AnalyticsStatsDaily::query()->value('visits'),
             '집계에는 개인을 가리키는 값이 없어 지울 것이 없고, 함께 지우면 그 기간 통계가 통째로 사라진다',
         );
+    }
+
+    /**
+     * 가명화된 구간도 회원 번호로 찾아지는지 확인합니다.
+     *
+     * 가명화가 켜지면 `user_id` 가 지워지고 `user_hash` 만 남는다. 조회가 해시를
+     * 함께 보지 않으면 그 구간의 기록이 한 건도 잡히지 않아, 열람·삭제 요청이
+     * 「없음」으로 조용히 끝난다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects pseudonymized_visits_are_found_by_member_number
+     */
+    public function test_a_pseudonymized_visit_is_found_by_its_member_number(): void
+    {
+        // 가명화되어 저장된 방문 — 번호는 지워지고 해시만 남는다.
+        $this->visit([
+            'user_id' => null,
+            'user_hash' => VisitorRecognizer::userHash(77),
+        ]);
+        $this->visit(['user_id' => null, 'user_hash' => VisitorRecognizer::userHash(88)]);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/privacy/subjects?user_id=77');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.visits'), '가명화된 구간도 회원 번호로 찾아야 한다');
+    }
+
+    /**
+     * 가명화된 구간의 삭제 요청이 실제로 지우는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects pseudonymized_visits_are_found_by_member_number
+     */
+    public function test_deleting_a_pseudonymized_subject_removes_its_ledger(): void
+    {
+        $this->visit(['user_id' => null, 'user_hash' => VisitorRecognizer::userHash(77)]);
+        $this->visit(['user_id' => null, 'user_hash' => VisitorRecognizer::userHash(88)]);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->deleteJson('/api/admin/analytics/privacy/subjects', ['user_id' => 77, 'confirm' => true]);
+
+        $response->assertOk();
+        $this->assertSame(1, $response->json('data.deleted.visits'), '삭제 요청이 0건으로 조용히 끝나면 안 된다');
+        $this->assertSame(1, AnalyticsVisit::query()->count(), '다른 사람의 방문은 남는다');
+    }
+
+    /**
+     * 번호로 저장된 구간과 해시로 저장된 구간이 함께 나오는지 확인합니다.
+     *
+     * 소급 익명화를 중간에 돌리면 한 사람의 기록이 두 모양으로 나뉘어 남는다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects pseudonymized_visits_are_found_by_member_number
+     */
+    public function test_a_lookup_spans_both_plain_and_pseudonymized_visits(): void
+    {
+        $this->visit(['user_id' => 77, 'user_hash' => null]);
+        $this->visit(['user_id' => null, 'user_hash' => VisitorRecognizer::userHash(77)]);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/privacy/subjects?user_id=77');
+
+        $response->assertOk();
+        $this->assertCount(2, $response->json('data.visits'), '두 모양으로 남은 같은 사람의 기록이 함께 나와야 한다');
     }
 
     /**

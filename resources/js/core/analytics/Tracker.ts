@@ -15,6 +15,9 @@ import { resolvePageTitle, type TitleSource } from './pageTitle';
 /** 수집 경로 */
 const COLLECT_ENDPOINT = '/api/analytics/collect';
 
+/** 수집 제외 토글 주소 — 서버가 `g7_analytics_optout` 쿠키를 심고 지운다. */
+const OPT_OUT_ENDPOINT = '/api/admin/analytics/opt-out';
+
 /** 직전 페이지 체류 시간 상한 (초) — 서버도 같은 값으로 자른다 */
 const MAX_TIME_SPENT_SECONDS = 1800;
 
@@ -94,6 +97,7 @@ export class AnalyticsTracker {
     // IP 저장 모드 사이트에서 미동의 방문자의 화면 이동이 전부 빠진다.
     this.consent = new ConsentBridge(
       consentGateRequired(options.consentPluginActive === true, options.settings.privacy_mode),
+      options.getAuthToken,
     );
   }
 
@@ -211,6 +215,51 @@ export class AnalyticsTracker {
    */
   isOptedOut(): boolean {
     return shouldSkip(this.currentUrl(), this.options.settings) === 'opt_out';
+  }
+
+  /**
+   * 이 브라우저를 수집에서 뺍니다.
+   *
+   * 쿠키는 **서버가** 심습니다 — GDPR 플러그인의 쿠키 가로채기가 `document.cookie`
+   * 쓰기를 막고, 트래커가 되읽어야 하므로 HttpOnly 도 아니어야 하기 때문입니다.
+   * 관리자가 자기 방문을 인기 페이지·순방문자에서 빼는 데 씁니다.
+   *
+   * @returns 서버가 쿠키를 심으면 완료되는 약속 (실패해도 거부하지 않습니다)
+   */
+  async optOut(): Promise<void> {
+    await this.toggleOptOut('POST');
+  }
+
+  /**
+   * 수집 제외를 해제합니다.
+   *
+   * @returns 서버가 쿠키를 지우면 완료되는 약속 (실패해도 거부하지 않습니다)
+   */
+  async optIn(): Promise<void> {
+    await this.toggleOptOut('DELETE');
+  }
+
+  /**
+   * 수집 제외 쿠키를 서버에 요청합니다.
+   *
+   * 비콘과 달리 응답을 기다립니다 — 화면이 「제외됨」 상태를 다시 그리려면 쿠키가
+   * 실제로 심긴 뒤여야 하기 때문입니다. 다만 실패를 호출자에게 던지지는 않습니다
+   * (D15 — 통계 호출이 화면을 깨뜨리지 않는다).
+   *
+   * @param method POST 면 제외, DELETE 면 해제
+   * @returns 없음
+   */
+  private async toggleOptOut(method: 'POST' | 'DELETE'): Promise<void> {
+    try {
+      const token = this.options.getAuthToken?.();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      await fetch(OPT_OUT_ENDPOINT, { method, credentials: 'same-origin', headers });
+    } catch {
+      // 제외 토글 실패는 화면에 드러나지 않는다 — 상태는 쿠키가 단일 출처다.
+    }
   }
 
   /**

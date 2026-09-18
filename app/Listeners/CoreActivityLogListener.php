@@ -157,15 +157,18 @@ class CoreActivityLogListener implements HookListenerInterface
             // ─── Analytics ───
             // 운영자가 방문 데이터에 손대는 행위만 남긴다. 수집 자체(초당 여러 건)는
             // 활동 로그에 넣지 않는다 — 감사 기록이 통계 트래픽에 묻힌다.
-            'core.analytics.settings_updated' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
-            'core.analytics.privacy_mode_changed' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
-            'core.analytics.data_purged' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
-            'core.analytics.anonymized' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
-            'core.analytics.subject_exported' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
-            'core.analytics.subject_deleted' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
-            'core.analytics.opt_out_changed' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
-            'core.analytics.archive_requested' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
-            'core.analytics.extension_purged' => ['method' => 'handleAnalyticsHook', 'priority' => 20],
+            // 동기(sync)여야 한다 — 아홉 훅이 한 메서드를 나눠 쓰며 어느 훅인지를 실행 중인
+            // 훅 이름으로 가린다(handleAnalyticsHook). 큐 워커는 그 이름을 되살리지 않아
+            // 기본 큐(database)에서는 감사 기록이 한 줄도 남지 않는다.
+            'core.analytics.settings_updated' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.privacy_mode_changed' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.data_purged' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.anonymized' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.subject_exported' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.subject_deleted' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.opt_out_changed' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.archive_requested' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.extension_purged' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
         ];
     }
 
@@ -1452,6 +1455,22 @@ class CoreActivityLogListener implements HookListenerInterface
             if (isset($context[$key]) && is_scalar($context[$key])) {
                 $params[$key] = (string) $context[$key];
             }
+        }
+
+        // 발화부가 쓰는 키 이름이 문구의 자리표시자와 다른 훅 — 맞춰 주지 않으면 설명문에
+        // `(:mode)` 같은 글자가 그대로 보인다. 모드는 바뀐 뒤 값, 확장은 식별자다.
+        if (! isset($params['mode']) && isset($context['to']) && is_scalar($context['to'])) {
+            $params['mode'] = (string) $context['to'];
+        }
+
+        if (! isset($params['identifier']) && isset($context['extension_identifier']) && is_scalar($context['extension_identifier'])) {
+            $params['identifier'] = (string) $context['extension_identifier'];
+        }
+
+        // 정보주체는 「무엇으로 찾았는가」(ip·user_id·visitor_key) 이름 목록으로 온다 —
+        // 값이 아니라 기준 이름이라 설명문에 넣어도 개인정보가 섞이지 않는다.
+        if (! isset($params['subject']) && isset($context['subject']) && is_array($context['subject'])) {
+            $params['subject'] = implode(', ', array_filter($context['subject'], 'is_string'));
         }
 
         return $params;

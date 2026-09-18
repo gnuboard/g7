@@ -239,4 +239,44 @@ class PruneCommandTest extends TestCase
         $this->assertCount(1, $after);
         $this->assertSame(1, $after[0]['counts']['visits']);
     }
+
+    /**
+     * 방문이 사라질 때 그 액션·전환이 고아로 남지 않는지 확인합니다.
+     *
+     * 삭제 순서를 코드가 소유한다(`PruneService` 는 액션·전환을 먼저 지우고 방문을
+     * 지운다). 순서가 뒤집히면 외래키 연쇄가 없는 이 스키마에서는 방문만 사라지고
+     * 액션이 존재하지 않는 방문을 가리킨 채 남아, 다음 집계가 그 행을 영원히 끌고 간다.
+     *
+     * @return void 없음
+     *
+     * @scenario target=actions, row_age=beyond
+     *
+     * @effects actions_are_deleted_before_their_visits
+     */
+    public function test_no_action_outlives_the_visit_it_belongs_to(): void
+    {
+        config(['g7_settings.core.analytics.retention_days' => 30]);
+
+        $old = $this->ledgerAt(60);
+        $this->ledgerAt(5);
+
+        $this->artisan('analytics:prune')->assertSuccessful();
+
+        $this->assertDatabaseMissing('analytics_visits', ['id' => $old->id]);
+        $this->assertSame(
+            0,
+            AnalyticsAction::query()->where('visit_id', $old->id)->count(),
+            '방문이 지워졌는데 액션이 남으면 그 액션은 영영 주인을 못 찾는다',
+        );
+        $this->assertSame(
+            0,
+            AnalyticsConversion::query()->where('visit_id', $old->id)->count(),
+            '전환도 같은 순서로 방문보다 먼저 지워져야 한다',
+        );
+
+        // 살아남은 방문 쪽은 반대로 액션이 그대로 붙어 있어야 한다 — 순서 보장이
+        // 「필요한 것까지 지운다」로 번지지 않았는지 함께 잠근다.
+        $survivor = AnalyticsVisit::query()->firstOrFail();
+        $this->assertSame(1, AnalyticsAction::query()->where('visit_id', $survivor->id)->count());
+    }
 }

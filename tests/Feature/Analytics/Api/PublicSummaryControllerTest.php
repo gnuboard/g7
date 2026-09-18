@@ -4,6 +4,7 @@ namespace Tests\Feature\Analytics\Api;
 
 use App\Analytics\AnalyticsClock;
 use App\Enums\Analytics\VisitorType;
+use App\Models\Analytics\AnalyticsStatsDaily;
 use Illuminate\Support\Carbon;
 
 /**
@@ -90,5 +91,53 @@ class PublicSummaryControllerTest extends AnalyticsApiTestCase
 
         $response->assertOk();
         $this->assertSame(5, $response->json('data.yesterday'), '사이드바 카운터에 봇이 섞이면 숫자가 무의미해진다');
+    }
+
+    /**
+     * 두 번째 호출이 집계를 다시 세지 않고 캐시를 읽는지 확인합니다.
+     *
+     * 이 API 는 로그인 없이 누구나 부르므로 매 호출이 원장을 훑으면 사람이 몰릴 때
+     * 그 집계가 사이트를 함께 느리게 만든다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=summary, role=none
+     *
+     * @effects public_summary_is_cached_between_requests
+     */
+    public function test_the_second_call_is_served_from_cache(): void
+    {
+        $yesterday = Carbon::parse(AnalyticsClock::today())->subDay()->toDateString();
+        $this->daily($yesterday, ['visitors' => 7]);
+
+        $this->getJson('/api/analytics/summary')->assertOk();
+
+        // 캐시가 없다면 이 변경이 곧바로 보인다. 캐시가 살아 있으면 옛 숫자가 나온다.
+        AnalyticsStatsDaily::query()->where('date', $yesterday)->update(['visitors' => 999]);
+
+        $second = $this->getJson('/api/analytics/summary');
+
+        $second->assertOk();
+        $this->assertSame(7, $second->json('data.yesterday'), '두 번째 호출이 원장을 다시 세면 캐시가 동작하지 않는 것이다');
+    }
+
+    /**
+     * 분당 한도를 넘기면 429 로 막히는지 확인합니다.
+     *
+     * 공개 경로라 한도가 없으면 한 대의 클라이언트가 집계 캐시 갱신을 계속 유발할 수 있다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=summary, role=none
+     *
+     * @effects public_summary_is_rate_limited
+     */
+    public function test_it_throttles_after_sixty_requests_per_minute(): void
+    {
+        for ($i = 0; $i < 60; $i++) {
+            $this->getJson('/api/analytics/summary')->assertOk();
+        }
+
+        $this->getJson('/api/analytics/summary')->assertStatus(429);
     }
 }

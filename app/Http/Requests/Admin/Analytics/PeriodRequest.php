@@ -49,10 +49,23 @@ class PeriodRequest extends FormRequest
             'unit' => ['nullable', 'string', 'in:auto,hour,day,week,month,year'],
             'exclude' => ['nullable', 'array'],
             'exclude.*' => ['string', 'in:admin,member'],
+            // 내려받기는 기간 규약을 쓰는 화면 어디서나 된다 — 추이·방문자 상세도
+            // 목록과 같은 방식으로 받는다(부록 D).
+            'format' => ['nullable', 'string', 'in:json,csv'],
         ];
 
         // 확장이 자기 필드를 이 요청에 얹을 수 있게 규칙을 훅으로 연다.
         return HookManager::applyFilters('core.analytics.period_validation_rules', $rules, $this);
+    }
+
+    /**
+     * CSV 로 내려받는 요청인지 확인합니다.
+     *
+     * @return bool CSV 요청이면 true
+     */
+    public function wantsCsv(): bool
+    {
+        return $this->input('format') === 'csv';
     }
 
     /**

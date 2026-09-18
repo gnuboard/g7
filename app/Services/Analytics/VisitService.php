@@ -14,6 +14,7 @@ use App\Analytics\VisitExclusionPipeline;
 use App\Analytics\VisitorRecognizer;
 use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Enums\Analytics\ActionType;
 use App\Enums\Analytics\CollectFailureReason;
@@ -44,11 +45,20 @@ class VisitService
     public const MERGE_WINDOW_SECONDS = 60;
 
     /**
+     * 전환 금액의 상한
+     *
+     * `analytics_conversions.revenue` 가 `decimal(15,2)` 라 정수부는 13자리까지다.
+     * 넘는 값을 그대로 넘기면 적재가 통째로 실패해 전환도 액션도 남지 않는다.
+     */
+    private const MAX_REVENUE = 9999999999999.99;
+
+    /**
      * 방문 적재기를 생성합니다.
      *
      * @param  VisitRepositoryInterface  $visits  방문 원장 저장소
      * @param  ActionRepositoryInterface  $actions  액션 원장 저장소
      * @param  ActionNameRepositoryInterface  $names  이름 사전 저장소
+     * @param  ConversionRepositoryInterface  $conversions  전환 원장 저장소
      * @param  VisitExclusionPipeline  $exclusions  제외 판정기
      * @param  VisitorRecognizer  $recognizer  방문자 식별기
      * @param  VisitEnricher  $enricher  방문 속성 조립기
@@ -61,6 +71,7 @@ class VisitService
         private readonly VisitRepositoryInterface $visits,
         private readonly ActionRepositoryInterface $actions,
         private readonly ActionNameRepositoryInterface $names,
+        private readonly ConversionRepositoryInterface $conversions,
         private readonly VisitExclusionPipeline $exclusions,
         private readonly VisitorRecognizer $recognizer,
         private readonly VisitEnricher $enricher,
@@ -189,8 +200,25 @@ class VisitService
             AnalyticsClock::visitWindowStart($config->visitTimeoutMinutes),
         );
 
+        // 서버 폴백이 먼저 연 방문에 첫 비콘이 합류할 때는 회원 여부를 비콘 쪽이 정한다
+        // (아래 보강). 그 밖에 방문 도중 로그인·로그아웃이 일어났다면 그때부터는 다른
+        // 사람의 방문이므로 이어 붙이지 않고 새 방문을 연다(§8 M1-T5).
+        if ($visit !== null
+            && ! $this->isFirstBeaconJoiningServerVisit($request, $visit)
+            && ! $this->enricher->identityMatches($request, $config, $visit)
+        ) {
+            $visit = null;
+        }
+
         if ($visit === null) {
             $visit = $this->visits->create($this->enricher->build($request, $config, $identity, $anonymous));
+        }
+
+        // 서버 폴백이 먼저 연 방문에 첫 비콘이 합류하면, 서버가 알 수 없던 값(해상도·보던
+        // 로케일·빠진 유입)을 채우고 출처를 비콘으로 바꾼다(D14). 그러지 않으면 전체 로드로
+        // 시작한 거의 모든 방문이 해상도 없이 「서버로만 잡힌 방문」으로 남는다.
+        if ($this->isFirstBeaconJoiningServerVisit($request, $visit)) {
+            $this->visits->update($visit, $this->enricher->enrichFromFirstBeacon($request, $config, $visit));
         }
 
         // 한 방문이 끝없이 늘어나면 조회가 느려지고 저장소를 잠식한다. 상한을 넘으면
@@ -226,6 +254,7 @@ class VisitService
 
         $recorded = $this->recordAction($request, $visit);
         $this->updateVisitCounters($request, $visit, $recorded['action'], $previousPageview, $recorded['merged']);
+        $this->recordConversion($request, $visit);
 
         return ['visit_id' => $visit->id, 'action_id' => $recorded['action']?->id];
     }
@@ -246,6 +275,22 @@ class VisitService
             && $request->init
             && $identity['key_type'] === 'cookie'
             && $identity['is_returning'] === false;
+    }
+
+    /**
+     * 서버 폴백이 연 방문에 합류하는 첫 비콘인지 판정합니다.
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @param  AnalyticsVisit  $visit  대상 방문
+     * @return bool 서버 출처 방문에 합류하는 첫 비콘이면 true
+     */
+    private function isFirstBeaconJoiningServerVisit(TrackingRequest $request, AnalyticsVisit $visit): bool
+    {
+        $visitSource = $visit->source instanceof VisitSource ? $visit->source->value : (string) $visit->source;
+
+        return $request->source === VisitSource::Beacon->value
+            && $request->init
+            && $visitSource === VisitSource::Server->value;
     }
 
     /**
@@ -313,6 +358,143 @@ class VisitService
         ]);
 
         return ['action' => $action, 'merged' => false];
+    }
+
+    /**
+     * 목표 달성(전환)을 원장에 남깁니다.
+     *
+     * 액션 1행만으로는 「무엇을 얼마에 달성했는지」가 남지 않습니다. 전환은 금액·통화·
+     * 라벨을 따로 들고 확장별로 집계되어야 하므로 전용 원장에 한 행을 더 씁니다.
+     * 액션과 같은 트랜잭션 안이므로 둘 중 하나만 남는 일이 없습니다.
+     *
+     * 목표 키는 `{확장식별자}.{목표}` 또는 `core.{목표}` 형태입니다. 앞자리를 떼어
+     * `extension_identifier` 로 남겨 두어야, 확장을 데이터까지 지우며 제거할 때 그
+     * 확장이 남긴 전환만 골라 지울 수 있습니다.
+     *
+     * 등록된 목표인지 확인하는 레지스트리는 아직 없습니다(계획서 §4.13-1, S4). 그때까지는
+     * 들어온 키를 그대로 받습니다 — 버리면 그 전환은 어디에도 남지 않기 때문입니다.
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @param  AnalyticsVisit  $visit  대상 방문
+     * @return void
+     */
+    private function recordConversion(TrackingRequest $request, AnalyticsVisit $visit): void
+    {
+        if ($request->type !== ActionType::Goal->value) {
+            return;
+        }
+
+        $goalKey = $request->goalKey;
+
+        if ($goalKey === null || $goalKey === '') {
+            return;
+        }
+
+        $attributes = $request->goalAttributes;
+        $owner = $this->goalOwner($goalKey);
+
+        $this->conversions->create([
+            'visit_id' => $visit->id,
+            'visitor_key' => $visit->visitor_key,
+            'goal_key' => $goalKey,
+            'extension_type' => $owner['type'],
+            'extension_identifier' => $owner['identifier'],
+            'label' => self::goalLabel($attributes),
+            'revenue' => self::goalRevenue($attributes),
+            'currency' => self::goalCurrency($attributes),
+            'occurred_at' => AnalyticsClock::now(),
+            'custom_dimensions' => $request->dimensions === [] ? null : $request->dimensions,
+        ]);
+    }
+
+    /**
+     * 목표 키에서 공급한 확장을 가려냅니다.
+     *
+     * 코어 목표(`core.`)와 앞자리가 없는 키는 확장 소유가 아닙니다. 모듈인지 플러그인인지는
+     * 설치된 확장 목록을 봐야 알 수 있는데, 수집 경로에서 확장 목록을 매번 읽으면 비콘마다
+     * 부하가 붙습니다. 지금은 식별자만 남기고 종류는 비워 둡니다 — 삭제 시 정리는
+     * 식별자로 찾습니다(`deleteForExtension`).
+     *
+     * @param  string  $goalKey  목표 키
+     * @return array{type: string|null, identifier: string|null} 확장 종류와 식별자
+     */
+    private function goalOwner(string $goalKey): array
+    {
+        $separator = strpos($goalKey, '.');
+
+        if ($separator === false || $separator === 0) {
+            return ['type' => null, 'identifier' => null];
+        }
+
+        $prefix = substr($goalKey, 0, $separator);
+
+        if ($prefix === 'core') {
+            return ['type' => null, 'identifier' => null];
+        }
+
+        return ['type' => null, 'identifier' => $prefix];
+    }
+
+    /**
+     * 전환 속성에서 표시 라벨을 꺼냅니다.
+     *
+     * @param  array<string, mixed>  $attributes  전환 속성
+     * @return string|null 라벨
+     */
+    private static function goalLabel(array $attributes): ?string
+    {
+        $label = $attributes['label'] ?? null;
+
+        if (! is_string($label) && ! is_numeric($label)) {
+            return null;
+        }
+
+        $label = trim((string) $label);
+
+        return $label === '' ? null : mb_substr($label, 0, 255);
+    }
+
+    /**
+     * 전환 속성에서 금액을 꺼냅니다.
+     *
+     * 음수는 매출이 아니므로 버립니다. 컬럼이 `decimal(15,2)` 라 상한을 넘는 값은
+     * 적재가 통째로 실패하므로 여기서 걸러 냅니다.
+     *
+     * @param  array<string, mixed>  $attributes  전환 속성
+     * @return string|null 금액 (소수 2자리 문자열)
+     */
+    private static function goalRevenue(array $attributes): ?string
+    {
+        $revenue = $attributes['revenue'] ?? null;
+
+        if (! is_numeric($revenue)) {
+            return null;
+        }
+
+        $revenue = (float) $revenue;
+
+        if ($revenue < 0 || $revenue > self::MAX_REVENUE) {
+            return null;
+        }
+
+        return number_format($revenue, 2, '.', '');
+    }
+
+    /**
+     * 전환 속성에서 통화 코드를 꺼냅니다.
+     *
+     * @param  array<string, mixed>  $attributes  전환 속성
+     * @return string|null 통화 코드 (대문자 3자리)
+     */
+    private static function goalCurrency(array $attributes): ?string
+    {
+        $currency = $attributes['currency'] ?? null;
+
+        if (! is_string($currency) || ! preg_match('/^[A-Za-z]{3}$/', $currency)) {
+            return null;
+        }
+
+        return strtoupper($currency);
     }
 
     /**
@@ -395,7 +577,9 @@ class VisitService
     private function nameValueFor(TrackingRequest $request, string $normalizedUrl): string
     {
         $value = match ($request->type) {
-            ActionType::Download->value, ActionType::Outlink->value => $request->target ?? $normalizedUrl,
+            // 트래커가 만들어 보낸 표시 이름(`download` 속성 → 링크 글자 → 파일명)이 있으면
+            // 그것이 사전 이름이다 — 주소를 담으면 타임라인과 리포트가 파일이 아니라 주소를 센다.
+            ActionType::Download->value, ActionType::Outlink->value => $request->name ?? $request->target ?? $normalizedUrl,
             ActionType::SiteSearch->value => $request->searchQuery ?? '',
             default => $normalizedUrl,
         };

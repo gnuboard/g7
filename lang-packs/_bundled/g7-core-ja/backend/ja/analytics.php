@@ -115,6 +115,7 @@ return [
     ],
     'archive' => [
         'skipped_locked' => '同じ期間は既に集計中のためスキップしました。',
+        'skipped_beyond_retention' => '元の記録が保存期間を過ぎて再計算できないためスキップしました。既存の集計はそのまま残します。',
         'range_invalid' => '再集計期間が正しくありません。',
     ],
     'alerts' => [
@@ -124,6 +125,9 @@ return [
     ],
     'privacy' => [
         'ip_lookup_limited' => '匿名モードで収集された期間は、最近:days日以内のみIPで検索できます — それより前の記録はアドレスを復元できません。',
+        'subjects_fetch_success' => 'データ主体の記録を読み込みました。',
+        'subject_delete_success' => 'データ主体の記録を削除しました。',
+        'anonymize_queued' => '遡及匿名化を開始しました。',
     ],
     'overview' => [
         'fetch_success' => '訪問者統計概要を読み込みました。',

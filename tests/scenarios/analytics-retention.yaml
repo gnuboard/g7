@@ -66,6 +66,7 @@ effects:
   # 소급 익명화
   - retro_masking_rewrites_stored_addresses
   - retro_hashing_clears_the_address_and_keeps_a_hash
+  - retro_masking_reaches_bot_hits_and_failure_logs
   - retro_anonymization_pseudonymizes_member_ids
   - retro_anonymization_reduces_referrers_to_their_domain
   - retro_anonymization_leaves_aggregates_untouched
@@ -76,6 +77,14 @@ effects:
   - purge_removes_the_action_name_dictionary
   - purge_requires_explicit_confirmation
   - purge_fires_the_data_purged_hook
+  # 확장 제거 정리 (S2 결함 보수 — 호출부·발사부가 없어 죽어 있던 배선)
+  - extension_purge_removes_only_that_extensions_rows
+  - extension_purge_is_recorded_in_the_run_history
+  - extension_purged_hook_fires_with_counts
+  - preserved_extension_data_survives_uninstall
+  - uninstall_hook_argument_order_is_read_per_extension_type
+  # 부분 실패 시 되돌림 — 전환만 지워지고 차원이 남으면 운영자가 원인을 못 찾는다
+  - extension_purge_rolls_back_when_a_target_fails
   # 예약 등록
   - analytics_schedules_are_registered_with_their_periods
   - only_prune_lives_inside_the_gc_block
@@ -93,6 +102,7 @@ test_files:
   - tests/Feature/Console/Analytics/CheckVolumeCommandTest.php
   - tests/Feature/Console/Analytics/AnonymizeCommandTest.php
   - tests/Feature/Console/Analytics/PurgeCommandTest.php
+  - tests/Feature/Analytics/ExtensionPurgeTest.php
   - tests/Feature/Console/Analytics/UpdateCloudRangesCommandTest.php
   - tests/Feature/Console/Analytics/AnalyticsScheduleRegistrationTest.php
 

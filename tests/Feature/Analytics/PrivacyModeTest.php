@@ -7,6 +7,7 @@ use App\Analytics\ExclusionCounter;
 use App\Analytics\TrackingRequest;
 use App\Enums\Analytics\ReferrerType;
 use App\Extension\HookManager;
+use App\Extension\PluginManager;
 use App\Models\Analytics\AnalyticsCollectFailure;
 use App\Models\Analytics\AnalyticsVisit;
 use App\Services\Analytics\PrivacyService;
@@ -187,7 +188,7 @@ class PrivacyModeTest extends TestCase
     }
 
     /**
-     * IP 저장 모드는 익명으로 내려가지 않는다.
+     * 동의 관리 플러그인이 없으면 IP 저장 모드는 그대로 IP 저장 모드다.
      *
      * @scenario mode=full, gdpr=absent
      *
@@ -195,9 +196,12 @@ class PrivacyModeTest extends TestCase
      *
      * @return void 없음
      */
-    public function test_full_mode_never_falls_back(): void
+    public function test_full_mode_without_a_consent_plugin_stays_full(): void
     {
-        $this->assertFalse($this->privacy->isAnonymous(AnalyticsConfig::fromSettings()));
+        $config = AnalyticsConfig::fromSettings();
+
+        $this->assertFalse($this->privacy->isAnonymous($config));
+        $this->assertNull($this->privacy->anonymousFallbackReason($config));
     }
 
     /**
@@ -594,5 +598,58 @@ class PrivacyModeTest extends TestCase
         $this->assertSame('https://www.google.com', $anonymized->referrer_url, '도메인까지만 남긴다');
         $this->assertSame(ReferrerType::Search, $anonymized->referrer_type, '유입 유형은 그대로');
         $this->assertSame('그누보드', $anonymized->referrer_keyword, '검색어 추출은 익명화와 무관');
+    }
+
+    /**
+     * 동의 관리 플러그인을 활성으로 흉내 냅니다.
+     *
+     * 동의 출처 판정은 활성 플러그인 목록을 본다. 목록만 바꿔 「그 플러그인이 켜진 사이트」를
+     * 만든다 — 플러그인 파일을 설치하지 않아도 판정 경로는 같다.
+     *
+     * @return void 없음
+     */
+    private function activateConsentPlugin(): void
+    {
+        $this->mock(PluginManager::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('getActivePlugins')->andReturn(['sirsoft-gdpr' => ['identifier' => 'sirsoft-gdpr']]);
+        });
+
+        $this->privacy = app(PrivacyService::class);
+    }
+
+    /**
+     * IP 저장 모드라도 동의 관리 플러그인이 켜져 있으면 익명으로 내려간다.
+     *
+     * 그 플러그인은 동의 전 응답에서 방문자 쿠키를 지운다. 쿠키가 남지 않으면 비콘마다
+     * 새 방문자 키가 생겨 한 사람의 이동이 방문 여러 건이 되고, 방문·순방문자가 페이지뷰만큼
+     * 부풀며 이탈률이 100% 가 된다. 처음부터 일자 회전 해시로 묶는 편이 정직하다.
+     *
+     * @scenario mode=full, gdpr=active_declined
+     *
+     * @effects full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
+     *
+     * @return void 없음
+     */
+    public function test_full_mode_falls_back_to_anonymous_when_cookies_are_blocked(): void
+    {
+        $this->activateConsentPlugin();
+
+        $config = AnalyticsConfig::fromSettings();
+
+        $this->assertTrue($this->privacy->isAnonymous($config), 'IP 저장 모드인데 쿠키가 막히면 익명으로 센다');
+        $this->assertSame(
+            AnalyticsConfig::ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES,
+            $this->privacy->anonymousFallbackReason($config),
+            '왜 익명으로 도는지 화면이 설명할 수 있어야 한다',
+        );
+
+        ['visit' => $visit, 'result' => $result] = $this->trackOne();
+
+        $this->assertNotNull($visit);
+        $this->assertNull($visit->ip, '익명 모드의 행이 남는다');
+        $this->assertSame(64, strlen($visit->ip_hash));
+        $this->assertSame('config', $visit->visitor_key_type);
+        $this->assertNull($result['new_cookie'], '지워질 쿠키를 심지 않는다');
+        $this->assertNull($visit->is_returning);
     }
 }

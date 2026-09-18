@@ -9,6 +9,7 @@ use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface;
 use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Enums\Analytics\ArchiveRunType;
+use App\Enums\Analytics\PrivacyMode;
 use App\Services\GeoIpService;
 use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\Request;
@@ -97,6 +98,12 @@ class DiagnosticsService
         return [
             'enabled' => $config->enabled,
             'mode' => $config->privacyMode->value,
+            // 운영자가 고른 모드와 실제로 도는 모드가 다를 수 있다 — 사유 없이 숫자만 보면
+            // 「설정은 IP 저장인데 왜 재방문이 0 인가」를 알 길이 없다.
+            'effective_mode' => $this->privacy->isAnonymous($config)
+                ? PrivacyMode::Anonymous->value
+                : $config->privacyMode->value,
+            'anonymous_fallback_reason' => $this->privacy->anonymousFallbackReason($config),
             'consent_source' => $this->privacy->consentSource(),
             'dispatch_mode' => $config->dispatchMode->value,
             'last_tracked_at' => $this->visits->lastTrackedAt()?->toIso8601String(),

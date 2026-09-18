@@ -86,7 +86,7 @@ interface VisitRepositoryInterface
     /**
      * 정보주체 기준으로 방문을 찾습니다.
      *
-     * @param  array<string, mixed>  $subject  검색 조건 (ip, ip_hash, user_id, visitor_key 중 하나 이상)
+     * @param  array<string, mixed>  $subject  검색 조건 (ip, ip_hash, user_id, user_hash, visitor_key 중 하나 이상)
      * @param  string|null  $from  조회 시작일 (Y-m-d)
      * @param  string|null  $to  조회 종료일 (Y-m-d)
      * @return Collection<int, AnalyticsVisit> 방문 목록
@@ -122,6 +122,20 @@ interface VisitRepositoryInterface
      * @return void 없음
      */
     public function chunkByDate(string $date, int $chunkSize, callable $callback): void;
+
+    /**
+     * 그 날짜보다 먼저 시작해 그 날짜까지 이어진 방문을 ID 순서로 나눠 읽습니다.
+     *
+     * 자정을 넘긴 방문의 뒷부분 액션은 그 날짜의 시각에 떨어지는데, 방문은 시작한 날에
+     * 속하므로 그 날짜의 방문 목록(`chunkByDate`)에는 나오지 않습니다.
+     *
+     * @param  string  $date  방문 일자 (Y-m-d, 사이트 표준시 기준)
+     * @param  Carbon  $dayStart  그 날짜의 시작 시각 (UTC)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkCarriedIntoDate(string $date, Carbon $dayStart, int $chunkSize, callable $callback): void;
 
     /**
      * 기준 시각보다 오래된 방문 수를 셉니다.

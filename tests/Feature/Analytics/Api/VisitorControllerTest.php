@@ -3,6 +3,7 @@
 namespace Tests\Feature\Analytics\Api;
 
 use App\Enums\Analytics\VisitorType;
+use App\Services\Analytics\CsvExporter;
 use Illuminate\Support\Carbon;
 
 /**
@@ -144,6 +145,68 @@ class VisitorControllerTest extends AnalyticsApiTestCase
         $this->assertCount(1, $response->json('data.visits'), '고른 사람의 방문만 나온다');
         $this->assertSame($key, $response->json('data.visits.0.visitor_key'));
         $this->assertCount(1, $response->json('data.visits.0.actions'));
+    }
+
+    /**
+     * 방문자 활동 내역을 CSV 로 내려받을 수 있는지 확인합니다.
+     *
+     * 정보주체가 열람을 요구하면 운영자는 그 사람의 기록을 건네줘야 합니다. 화면으로만
+     * 볼 수 있으면 건넬 수단이 없습니다. 액션 하나가 한 줄이고 방문 정보는 줄마다
+     * 되풀이됩니다(부록 D).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid, format=csv
+     *
+     * @effects csv_export_starts_with_a_byte_order_mark, visitor_detail_can_be_downloaded_as_csv
+     */
+    public function test_the_detail_can_be_downloaded_as_csv(): void
+    {
+        $key = str_repeat('7', 32);
+        $this->visit(['visitor_key' => $key, 'referrer_name' => 'naver.com']);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->get('/api/admin/analytics/visitors/'.$key.'?format=csv');
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString(
+            'analytics-visitor-'.$key,
+            (string) $response->headers->get('content-disposition'),
+        );
+
+        $body = $response->streamedContent();
+
+        $this->assertStringStartsWith(CsvExporter::BOM, $body, 'BOM 이 없으면 엑셀에서 한글이 전부 깨진다');
+        $this->assertStringContainsString(
+            "referrer_type,referrer_name,pageviews,total_time_seconds,action_occurred_at,action_type,action_name,time_spent_seconds\r\n",
+            $body,
+        );
+        // 액션 줄에 방문 정보가 함께 실려야 엑셀에서 한 줄만 보고도 맥락을 안다.
+        $this->assertStringContainsString('naver.com', $body);
+        $this->assertStringContainsString('pageview', $body);
+    }
+
+    /**
+     * 읽기 권한만으로는 방문자 CSV 도 받을 수 없는지 확인합니다.
+     *
+     * 내려받기는 화면보다 더 샌다 — 파일은 그대로 남아 옮겨 다닌다. 권한 판정이
+     * `format` 뒤에 있으면 목록은 막히는데 파일은 빠져나가는 구멍이 생긴다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=read, format=csv
+     *
+     * @effects visitor_views_require_the_privacy_permission
+     */
+    public function test_read_permission_cannot_download_the_detail_csv(): void
+    {
+        $key = str_repeat('6', 32);
+        $this->visit(['visitor_key' => $key]);
+
+        $this->actingAs($this->readAdmin())
+            ->get('/api/admin/analytics/visitors/'.$key.'?format=csv')
+            ->assertForbidden();
     }
 
     /**

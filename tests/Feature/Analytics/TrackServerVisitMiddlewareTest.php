@@ -8,6 +8,7 @@ use App\Enums\Analytics\VisitSource;
 use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Models\Analytics\AnalyticsAction;
 use App\Models\Analytics\AnalyticsVisit;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -174,6 +175,147 @@ class TrackServerVisitMiddlewareTest extends TestCase
         $this->assertSame(1, AnalyticsVisit::count(), '첫 로드는 방문 1건');
         $this->assertSame(1, AnalyticsAction::count(), '페이지뷰도 1건');
         $this->assertSame('cookie', AnalyticsVisit::first()->visitor_key_type);
+    }
+
+    /**
+     * 화면 요청을 web 그룹의 쿠키 미들웨어에 통과시킨 뒤 서버 폴백을 돌립니다.
+     *
+     * 운영에서 서버 폴백이 보는 쿠키는 이 미들웨어를 거친 값이다. 미들웨어를 건너뛰고
+     * 쿠키를 바로 넣으면 「평문 쿠키를 web 그룹이 못 읽는」 결함이 테스트에서 사라진다.
+     *
+     * @param  string  $path  요청 경로
+     * @param  string  $visitorCookie  브라우저가 가진 방문자 쿠키(수집 API 가 심은 값 그대로)
+     * @return void 없음
+     */
+    private function reloadThroughWebCookieMiddleware(string $path, string $visitorCookie): void
+    {
+        $request = Request::create($path, 'GET', [], ['g7_vid' => $visitorCookie], [], [
+            'HTTP_USER_AGENT' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'HTTP_ACCEPT_LANGUAGE' => 'ko-KR,ko;q=0.9',
+            'REMOTE_ADDR' => '203.0.113.50',
+        ]);
+
+        $seen = null;
+        app(EncryptCookies::class)->handle($request, function (Request $passed) use (&$seen): Response {
+            $seen = $passed;
+
+            return new Response('');
+        });
+
+        $this->assertInstanceOf(Request::class, $seen);
+        $this->middleware->terminate($seen, $this->htmlResponse());
+    }
+
+    /**
+     * 브라우저가 쿠키를 가진 채 비콘을 보냅니다.
+     *
+     * @param  string  $visitorCookie  방문자 쿠키
+     * @param  array<string, mixed>  $payload  비콘 본문
+     * @return void 없음
+     */
+    private function beaconWithCookie(string $visitorCookie, array $payload): void
+    {
+        $this->withCredentials()
+            ->withServerVariables(['REMOTE_ADDR' => '203.0.113.50'])
+            ->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                'Accept-Language' => 'ko-KR,ko;q=0.9',
+            ])
+            ->withUnencryptedCookie('g7_vid', $visitorCookie)
+            ->postJson('/api/analytics/collect', $payload)
+            ->assertNoContent();
+    }
+
+    /**
+     * 재방문자가 새로고침해도 방문은 하나이고 페이지뷰는 한 번만 센다.
+     *
+     * 수집 API 는 쿠키 암호화 미들웨어가 없는 api 그룹이라 방문자 쿠키를 평문으로 심는다.
+     * 화면 요청(web 그룹)이 그것을 복호화하려다 실패하면 서버 폴백이 쿠키 없는 방문자로 보고
+     * 임시 키로 방문을 따로 연다 — 전체 로드마다 방문이 둘로 갈라지고 페이지뷰가 2배가 된다.
+     *
+     * @scenario source=server, visitor=guest, visit_state=open, merge=within_window
+     *
+     * @effects returning_visitor_reload_stays_in_one_visit
+     *
+     * @return void 없음
+     */
+    public function test_returning_visitor_reload_stays_in_one_visit(): void
+    {
+        $cookie = str_repeat('d', 32);
+
+        $this->travel(-5)->minutes();
+        $this->beaconWithCookie($cookie, ['t' => 'pageview', 'url' => 'http://localhost/', 'init' => true]);
+        $this->travelBack();
+
+        $this->reloadThroughWebCookieMiddleware('/board/free', $cookie);
+        $this->beaconWithCookie($cookie, ['t' => 'pageview', 'url' => 'http://localhost/board/free', 'init' => true]);
+
+        $this->assertSame(1, AnalyticsVisit::count(), '새로고침이 방문을 둘로 가르면 안 된다');
+        $this->assertSame(2, AnalyticsVisit::first()->pageviews_count, '두 화면 = 페이지뷰 2 (서버 폴백과 첫 비콘은 한 번으로)');
+    }
+
+    /**
+     * 재방문자가 방문 창(30분) 뒤에 다시 오면 새 방문은 정확히 하나다.
+     *
+     * @scenario source=server, visitor=guest, visit_state=timed_out, merge=within_window
+     *
+     * @effects returning_visitor_reload_stays_in_one_visit
+     *
+     * @return void 없음
+     */
+    public function test_returning_visitor_after_timeout_opens_exactly_one_visit(): void
+    {
+        $cookie = str_repeat('b', 32);
+
+        $this->travel(-40)->minutes();
+        $this->beaconWithCookie($cookie, ['t' => 'pageview', 'url' => 'http://localhost/', 'init' => true]);
+        $this->travelBack();
+
+        $this->reloadThroughWebCookieMiddleware('/board/free', $cookie);
+        $this->beaconWithCookie($cookie, ['t' => 'pageview', 'url' => 'http://localhost/board/free', 'init' => true]);
+
+        $this->assertSame(2, AnalyticsVisit::count(), '옛 방문 1 + 새 방문 1 — 서버 폴백이 따로 방문을 열면 3');
+        $this->assertSame(0, AnalyticsVisit::query()->where('visitor_key_type', 'server')->count());
+    }
+
+    /**
+     * 서버 폴백이 연 방문에 첫 비콘이 합류하면 서버가 몰랐던 값을 채우고 출처가 비콘이 된다.
+     *
+     * 문서 요청에는 해상도가 없고 로케일은 서버의 짐작이다. 채우지 않으면 해상도 리포트가
+     * 비고, 브라우저가 보고한 방문까지 「서버로만 잡힌 방문」으로 세어진다.
+     *
+     * @scenario source=beacon, visitor=guest, visit_state=new, merge=within_window
+     *
+     * @effects first_beacon_fills_what_the_server_could_not_know
+     *
+     * @return void 없음
+     */
+    public function test_first_beacon_fills_what_the_server_could_not_know(): void
+    {
+        $this->middleware->terminate($this->shellRequest('/board/free'), $this->htmlResponse());
+
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.50'])
+            ->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                'Accept-Language' => 'ko-KR,ko;q=0.9',
+            ])
+            ->postJson('/api/analytics/collect', [
+                't' => 'pageview',
+                'url' => 'http://localhost/board/free',
+                'res' => '1920x1080',
+                'locale' => 'ja',
+                'ref' => 'https://www.google.com/search?q=g7',
+                'init' => true,
+            ])
+            ->assertNoContent();
+
+        $visit = AnalyticsVisit::first();
+
+        $this->assertSame(1, AnalyticsVisit::count());
+        $this->assertSame(VisitSource::Beacon, $visit->source);
+        $this->assertSame('1920x1080', $visit->screen_resolution);
+        $this->assertSame('ja', $visit->locale);
+        $this->assertNotNull($visit->referrer_url, '문서 요청에 없던 유입을 비콘 값으로 채운다');
     }
 
     /**

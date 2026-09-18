@@ -58,15 +58,21 @@ effects:
   - patterns_average_instead_of_summing
   # 상위 목록·CSV
   - every_report_dimension_answers
+  - detail_top_n_setting_drives_the_page_size
   - unknown_report_is_not_found
   - report_rows_carry_display_labels
   - report_rows_carry_dimension_extra_values
   - report_rows_without_extra_stay_shaped
   - bot_reports_read_bot_typed_rows
+  - bot_reports_ignore_the_human_exclude_toggle
   - bot_report_carries_recent_hits
   - csv_export_starts_with_a_byte_order_mark
   - csv_export_uses_crlf_line_endings
   - csv_export_covers_the_whole_period_not_one_page
+  # 차원별 부가 열 — 화면에서 보이던 값이 파일에서 빠지면 안 된다(부록 D)
+  - csv_export_includes_per_report_extra_columns
+  # 목록 말고도 내려받는 곳 — 추이 그래프와 방문자 활동 내역(부록 D)
+  - series_can_be_downloaded_as_csv
   # 실시간·진단
   - realtime_hides_addresses_without_the_privacy_permission
   - realtime_shows_addresses_with_the_privacy_permission
@@ -88,6 +94,7 @@ effects:
   - anonymize_requires_a_mask_or_hash
   - subject_delete_requires_confirmation
   - subject_lookup_requires_at_least_one_criterion
+  - pseudonymized_visits_are_found_by_member_number
   - subject_delete_leaves_aggregates_intact
   - opt_out_sets_and_clears_a_readable_cookie
   # 권한 매트릭스
@@ -106,6 +113,9 @@ effects:
   - visitor_card_survives_an_empty_period
   - visitor_views_announce_the_anonymous_mode_limit
   - anonymous_profile_lookup_is_clamped_to_today
+  # 정보주체에게 건네줄 파일 — 내려받기도 목록과 같은 권한을 요구한다(부록 D)
+  - visitor_detail_can_be_downloaded_as_csv
+  - visitor_views_require_the_privacy_permission
   # 이용 패턴
   - patterns_always_return_seven_weekdays_and_twenty_four_hours
   - patterns_hour_buckets_come_from_hourly_stats

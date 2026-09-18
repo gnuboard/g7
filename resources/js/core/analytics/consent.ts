@@ -51,8 +51,12 @@ export class ConsentBridge {
    * 동의 브리지를 만듭니다.
    *
    * @param pluginActive 동의 관리 플러그인 활성 여부
+   * @param getAuthToken 로그인 토큰을 돌려주는 함수 (없으면 게스트로 조회)
    */
-  constructor(private readonly pluginActive: boolean) {
+  constructor(
+    private readonly pluginActive: boolean,
+    private readonly getAuthToken?: () => string | null,
+  ) {
     if (pluginActive) {
       this.state = { source: 'gdpr', granted: null };
     }
@@ -70,9 +74,16 @@ export class ConsentBridge {
     if (!this.pluginActive) return;
 
     try {
+      // 회원의 동의는 회원 번호로 저장된다. 토큰을 싣지 않으면 서버가 게스트 세션으로
+      // 조회해, 동의한 회원도 「미동의」로 읽혀 그 방문이 통째로 빠진다.
+      const token = this.getAuthToken?.();
+      const headers: Record<string, string> = { Accept: 'application/json' };
+
+      if (token) headers.Authorization = `Bearer ${token}`;
+
       const response = await fetch(CONSENT_STATUS_URL, {
         credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
+        headers,
       });
 
       if (response.ok) {
@@ -130,7 +141,9 @@ export class ConsentBridge {
    */
   private handleChange = (event: Event): void => {
     const detail = (event as CustomEvent).detail ?? {};
-    const consents = detail.consents ?? detail;
+    // 동의 관리 플러그인은 자기 스냅샷 모양(`categories`)으로 알린다. 평평한 맵으로 보내는
+    // 쪽도 있어 셋 다 받는다 — 모양 하나를 놓치면 동의 변경이 조용히 무시된다.
+    const consents = detail.consents ?? detail.categories ?? detail;
 
     if (typeof consents?.analytics === 'boolean') {
       this.state.granted = consents.analytics;

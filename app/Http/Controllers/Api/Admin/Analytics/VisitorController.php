@@ -9,8 +9,10 @@ use App\Enums\Analytics\PrivacyMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\VisitorIndexRequest;
 use App\Http\Requests\Admin\Analytics\VisitorShowRequest;
+use App\Services\Analytics\CsvExporter;
 use App\Services\Analytics\DataSubjectService;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 방문자 프로필 API
@@ -28,10 +30,12 @@ class VisitorController extends AdminBaseController
      *
      * @param  DataSubjectService  $subjects  정보주체 처리기
      * @param  VisitRepositoryInterface  $visits  방문 원장 저장소
+     * @param  CsvExporter  $csv  CSV 내보내기
      */
     public function __construct(
         private readonly DataSubjectService $subjects,
         private readonly VisitRepositoryInterface $visits,
+        private readonly CsvExporter $csv,
     ) {
         parent::__construct();
     }
@@ -92,9 +96,9 @@ class VisitorController extends AdminBaseController
      *
      * @param  VisitorShowRequest  $request  조회 요청
      * @param  string  $visitorKey  볼 방문자 키 (목록에서 고른 값)
-     * @return JsonResponse 프로필 응답
+     * @return JsonResponse|StreamedResponse 프로필 응답 또는 CSV 내려받기
      */
-    public function show(VisitorShowRequest $request, string $visitorKey): JsonResponse
+    public function show(VisitorShowRequest $request, string $visitorKey): JsonResponse|StreamedResponse
     {
         $config = AnalyticsConfig::fromSettings();
         $anonymous = $config->privacyMode === PrivacyMode::Anonymous;
@@ -108,6 +112,10 @@ class VisitorController extends AdminBaseController
 
         $profile = $this->subjects->export(['visitor_key' => $visitorKey], $config, $from, $to);
 
+        if ($request->wantsCsv()) {
+            return $this->exportProfileCsv($profile, $visitorKey);
+        }
+
         return $this->success('analytics.visitors.fetch_success', array_merge($profile, [
             // 화면의 「방문자 카드」가 읽을 한 덩어리. 방문이 0건이어도 카드가 비지 않도록
             // 키·유형만이라도 채워 둔다 — 목록에서 고른 값이 곧 그 사람의 신원이다.
@@ -117,6 +125,65 @@ class VisitorController extends AdminBaseController
                 ? __('analytics.visitors.anonymous_mode_notice')
                 : null,
         ]));
+    }
+
+    /**
+     * 방문자 활동 내역을 CSV 로 내보냅니다.
+     *
+     * 액션 하나가 한 줄이고 방문 정보는 줄마다 되풀이됩니다(부록 D) — 정보주체가
+     * 열람을 요구했을 때 스프레드시트로 건네줄 수 있는 모양입니다. 액션이 없는 방문도
+     * 한 줄로 남깁니다. 방문했다는 사실 자체가 기록이라 빠지면 안 됩니다.
+     *
+     * @param  array<string, mixed>  $profile  내보낸 프로필
+     * @param  string  $visitorKey  방문자 키
+     * @return StreamedResponse 내려받기 응답
+     */
+    private function exportProfileCsv(array $profile, string $visitorKey): StreamedResponse
+    {
+        $rows = function () use ($profile): iterable {
+            foreach ($profile['visits'] as $visit) {
+                $base = [
+                    $visit['visit_id'],
+                    $visit['first_action_at'],
+                    $visit['last_action_at'],
+                    $visit['visitor_type'],
+                    $visit['country_code'],
+                    $visit['device_type'],
+                    $visit['browser_name'],
+                    $visit['os_name'],
+                    $visit['referrer_type'],
+                    $visit['referrer_name'],
+                    $visit['pageviews'],
+                    $visit['total_time_seconds'],
+                ];
+
+                if ($visit['actions'] === []) {
+                    yield array_merge($base, [null, null, null, null]);
+
+                    continue;
+                }
+
+                foreach ($visit['actions'] as $action) {
+                    yield array_merge($base, [
+                        $action['occurred_at'],
+                        $action['action_type'],
+                        $action['name'],
+                        $action['time_spent_seconds'],
+                    ]);
+                }
+            }
+        };
+
+        return $this->csv->stream(
+            sprintf('analytics-visitor-%s.csv', $visitorKey),
+            [
+                'visit_id', 'first_action_at', 'last_action_at', 'visitor_type',
+                'country_code', 'device_type', 'browser', 'os',
+                'referrer_type', 'referrer_name', 'pageviews', 'total_time_seconds',
+                'action_occurred_at', 'action_type', 'action_name', 'time_spent_seconds',
+            ],
+            $rows(),
+        );
     }
 
     /**

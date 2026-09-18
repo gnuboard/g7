@@ -171,6 +171,7 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | to | query | date | 아니오 | Y-m-d, `from` 이후 | 조회 종료일. `from` 만 주면 그 하루 |
 | unit | query | string | 아니오 | auto, hour, day, week, month, year | 시계열 단위. 기본 `auto` (구간 길이로 고름) |
 | exclude[] | query | array | 아니오 | admin, member | 합산에서 뺄 방문자 유형. 화면의 「관리자 제외」·「회원 제외」 토글 |
+| format | query | string | 아니오 | json, csv | `csv` 면 추이를 파일로 내려받는다 |
 
 
 **응답 필드** (`data` 내부)
@@ -180,6 +181,11 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | unit | string | 실제 단위 (auto 는 구간 ≤2일 hour, ≤92일 day, ≤730일 week, 그 밖 month) |
 | unit_downgraded | boolean | 시간 집계 보존기간 밖을 시간 단위로 요청해 일 단위로 낮춘 경우 `true` |
 | points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit}` |
+
+**CSV 내려받기** — `?format=csv` 는 `ts, visits, visitors, pageviews, bounce_rate,
+avg_time_seconds, pages_per_visit` 일곱 열입니다. 화면의 그래프를 운영자가 스프레드시트에서
+자기 방식대로 다시 그릴 수 있어야 하기 때문입니다. BOM·CRLF 규약은 목록 내려받기와 같고
+파일명은 `analytics-series-{from}_{to}.csv` 입니다.
 <!-- @generated:end:api.admin.analytics.series -->
 
 ---
@@ -198,10 +204,10 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | from | query | date | 아니오 | Y-m-d | 조회 시작일. 주면 `preset` 보다 우선한다 (주소를 공유했을 때 보던 화면이 그대로 열려야 하므로) |
 | to | query | date | 아니오 | Y-m-d, `from` 이후 | 조회 종료일. `from` 만 주면 그 하루 |
 | unit | query | string | 아니오 | auto, hour, day, week, month, year | 시계열 단위. 기본 `auto` (구간 길이로 고름) |
-| exclude[] | query | array | 아니오 | admin, member | 합산에서 뺄 방문자 유형. 화면의 「관리자 제외」·「회원 제외」 토글 |
+| exclude[] | query | array | 아니오 | admin, member | 합산에서 뺄 방문자 유형. 화면의 「관리자 제외」·「회원 제외」 토글. **봇 차원(`bot_name`·`bot_pages`)에는 적용되지 않습니다** — 봇 행에는 뺄 사람 유형이 없어, 적용하면 목록이 통째로 비어 버립니다 |
 | report | path | string | 예 | 차원 이름 또는 별칭 | 무엇의 상위 목록인지. 차원 이름(`page_url`·`referrer_name`·`browser`·`country`·`city`·`site_search`·`download`·`outlink`·`bot_name` 등) 또는 별칭(`entry_pages`·`exit_pages`·`bot_pages`·`goals`) |
 | page | query | integer | 아니오 | min 1 | 쪽 번호 |
-| per_page | query | integer | 아니오 | min 1, max 100 | 쪽당 건수. 기본 25 |
+| per_page | query | integer | 아니오 | min 1, max 100 | 쪽당 건수. 기본값은 설정의 「상세 화면 상위 목록 건수」(`top_n_detail`, 기본 25) |
 | sort | query | string | 아니오 | visits, hits, entries, exits | 정렬 기준. 기본 `visits` |
 | q | query | string | 아니오 | max 255 | 라벨 부분 검색 |
 | format | query | string | 아니오 | json, csv | `csv` 면 표를 파일로 내려받는다 |
@@ -223,7 +229,14 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | pagination.has_more | boolean | 다음 쪽이 있는지 |
 
 **CSV 내려받기** — `?format=csv` 는 `text/csv; charset=UTF-8` 스트림입니다.
-`extra` 는 차원마다 키가 달라 열을 고정할 수 없으므로 CSV 에는 싣지 않습니다(부록 D 의 아홉 열 그대로).
+공통 아홉 열(`label, label_display, visits, hits, entries, exits, bounce_rate, avg_time_seconds,
+pages_per_visit`) 뒤에 **그 차원의 부가 열**이 붙습니다. 내부 검색어(`site_search`)는
+`no_result_count`(결과 없음 건수), 목표(`goal`)는 `revenue_sum`(전환 금액 합계) 한 열이며,
+부가 값이 없는 차원은 아홉 열 그대로입니다. `revenue_sum` 은 집계가 센트 정수로 담아 둔
+값을 소수점 두 자리로 되돌린 것입니다 — `extra` 가 정수 칸이라 금액을 그대로 담으면
+반올림으로 값이 샙니다.
+화면에서 보이던 값이 파일에서 빠지면 운영자는 내려받은 표가 틀린 것인지 화면이 틀린
+것인지 판단할 근거가 없으므로, 차원이 `extra` 에 담는 값은 열로 내보냅니다.
 파일 앞에 바이트 순서 표식(BOM)을 답니다. 없으면 엑셀이 UTF-8 로 읽지 않아 한글이 전부
 깨집니다. 줄 끝은 CRLF, 파일명은 `analytics-{report}-{from}_{to}.csv` 입니다.
 내려받기는 쪽을 나누지 않습니다 — 운영자가 받으려는 것은 화면에 보이던 25행이 아니라
@@ -281,7 +294,12 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | from | query | date | 아니오 | Y-m-d | 조회 시작일. 주면 `preset` 보다 우선한다 (주소를 공유했을 때 보던 화면이 그대로 열려야 하므로) |
 | to | query | date | 아니오 | Y-m-d, `from` 이후 | 조회 종료일. `from` 만 주면 그 하루 |
 | unit | query | string | 아니오 | auto, hour, day, week, month, year | 시계열 단위. 기본 `auto` (구간 길이로 고름) |
-| exclude[] | query | array | 아니오 | admin, member | 합산에서 뺄 방문자 유형. 화면의 「관리자 제외」·「회원 제외」 토글 |
+| exclude[] | query | array | 아니오 | admin, member | 합산에서 뺄 방문자 유형. 화면의 「관리자 제외」·「회원 제외」 토글. **봇 차원(`bot_name`·`bot_pages`)에는 적용되지 않습니다** — 봇 행에는 뺄 사람 유형이 없어, 적용하면 목록이 통째로 비어 버립니다 |
+| page | query | integer | 아니오 | 1 이상 | 쪽 번호. 기본 1 |
+| per_page | query | integer | 아니오 | 1~100 | 한 쪽에 담을 행 수. 기본값은 설정의 `top_n_detail` |
+| sort | query | string | 아니오 | visits, hits, entries, exits | 정렬 기준 열 |
+| q | query | string | 아니오 | — | 라벨 검색어 |
+| format | query | string | 아니오 | json, csv | `csv` 면 집계 표를 파일로 내려받습니다 |
 
 
 **응답 필드** (`data` 내부)
@@ -344,6 +362,8 @@ _없음._
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
 | collection.enabled / mode / consent_source / dispatch_mode | mixed | 수집이 켜져 있는지, 어떤 모드로, 동의를 어디서 받는지, 즉시 적재인지 큐인지 |
+| collection.effective_mode | string | 실제로 도는 모드. 운영자가 고른 `mode` 와 다를 수 있다(익명 폴백) |
+| collection.anonymous_fallback_reason | string\|null | 익명으로 내려간 사유. `consent_source_missing`(동의 모드인데 물어볼 곳이 없음) · `consent_plugin_blocks_cookies`(동의 관리 플러그인이 동의 전 방문자 쿠키를 막음). 내려가지 않았으면 `null` |
 | collection.last_tracked_at | string\|null | 마지막으로 무언가 세어진 때 |
 | collection.tracked_today | integer | 오늘 순방문자 |
 | collection.excluded_today / excluded_yesterday | object | 사유별 제외 건수. 캐시에 살기 때문에 캐시를 비우거나 서버를 다시 띄우면 사라진다 — 화면이 그 사실을 함께 적는다 |
@@ -379,7 +399,7 @@ _없음._
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
-| data[] | array | 실패 기록 (사유·메시지·주소·발생 시각·개인정보를 뺀 페이로드 발췌) |
+| data[] | array | 실패 기록 (사유·메시지·주소·요청 IP·브라우저 문자열·발생 시각). 페이로드 발췌는 목록에 싣지 않습니다 — 행이 커져 목록 조회가 느려집니다 |
 | pagination | object | 쪽 정보 |
 <!-- @generated:end:api.admin.analytics.collect-failures -->
 
@@ -409,7 +429,8 @@ _없음._
 | period_start / period_end | string\|null | 대상 기간 |
 | processed_visits / processed_actions / chunks | integer | 처리량 |
 | progress_percent | integer | 진행률. 화면이 이 값을 2초마다 물어본다 |
-| started_at / finished_at / error | mixed | 시작·종료 시각과 실패 사유 |
+| started_at / finished_at | string\|null | 시작·종료 시각 |
+| error | string\|null | 실패·건너뜀 사유. **단건 조회에만** 실립니다(목록은 행을 가볍게 둡니다) |
 
 > 단건 조회는 없는 ID 에 **404** 를 돌려줍니다.
 <!-- @generated:end:api.admin.analytics.archive-runs.index -->
@@ -440,6 +461,8 @@ _없음._
 | queued | boolean | `reaggregate` 는 워커에게 넘기므로 `true` — 화면은 이력 목록에서 진행률을 찾는다 |
 
 응답은 **202 Accepted** 입니다. 같은 기간을 이미 집계 중이면 새 실행은 `skipped` 이력만 남기고 집계 표를 건드리지 않습니다.
+원장 보존 기간이 지난 날(`오늘 − 보존일` 이전)도 `skipped` 로 남깁니다 — 원장이 이미 지워져 다시 계산하면
+영구 보존되는 일·차원 집계를 빈 값으로 덮어쓰기 때문입니다. `force` 도 이 경계를 넘지 못합니다.
 <!-- @generated:end:api.admin.analytics.archive-runs.store -->
 
 ---
@@ -461,9 +484,11 @@ _없음._
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
-| settings | object | 저장된 전체 설정 |
-| meta.retro_anonymize_available | boolean | 개인정보 수준이 **더 엄격한 쪽으로** 바뀐 경우 `true` — 화면이 「기존 데이터도 소급 적용할까요?」 모달을 띄운다. 약해진 쪽으로 바꿀 때는 과거 기록이 이미 그보다 약한 정보를 담고 있어 소급할 것이 없다 |
-| meta.ledger_rows | object | 소급이 몇 건에 적용되는지 (방문·액션 행 수) |
+| settings | object | 저장된 전체 설정 (GET·PUT 공통) |
+| meta.retro_anonymize_available | boolean | **PUT 응답에만 담깁니다.** 개인정보 수준이 **더 엄격한 쪽으로** 바뀐 경우 `true` — 화면이 「기존 데이터도 소급 적용할까요?」 모달을 띄운다. 약해진 쪽으로 바꿀 때는 과거 기록이 이미 그보다 약한 정보를 담고 있어 소급할 것이 없다 |
+| meta.ledger_rows | object | **PUT 응답에만 담깁니다.** 소급이 몇 건에 적용되는지 (방문·액션 행 수) |
+
+`meta` 는 「무엇이 바뀌었는가」에 답하는 값이라 저장 응답에만 실립니다. GET 은 현재 설정만 돌려줍니다.
 
 저장 규칙은 **전용 API 와 코어 설정 API(`PUT /api/admin/settings`) 양쪽에서 같습니다** —
 규칙을 한쪽에만 두면 다른 길로 들어온 값이 검증 없이 저장되고, 그 값이 수집·정리·집계를
@@ -574,7 +599,7 @@ _없음._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | ip | query/body | string | 셋 중 하나 | IP | 주소로 찾는다 |
-| user_id | query/body | integer | 셋 중 하나 | min 1 | 회원 번호로 찾는다 |
+| user_id | query/body | integer | 셋 중 하나 | min 1 | 회원 번호로 찾는다. 회원 ID 가명화를 켰거나 소급 익명화를 돌린 구간은 번호 대신 해시로 저장되는데, 같은 번호를 넣으면 두 구간이 함께 나온다 |
 | visitor_key | query/body | string | 셋 중 하나 | max 64 | 방문자 키로 찾는다 |
 | from / to | query/body | date | 아니오 | Y-m-d | 기간 제한 |
 | confirm | body | boolean | 삭제 시 예 | accepted | 되돌릴 수 없음을 확인 |
@@ -614,7 +639,8 @@ _없음._
 
 **요청 파라미터**
 
-기간 규약(`preset`·`from`·`to`·`exclude[]`)에 아래를 얹습니다.
+기간 규약(`preset`·`from`·`to`)에 아래를 얹습니다. 방문자 목록은 사람을 찾는 화면이라
+`exclude[]`(합산에서 빼는 토글)를 쓰지 않습니다 — 유형으로 좁히려면 `type` 을 씁니다.
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
@@ -653,6 +679,7 @@ _없음._
 | --- | --- | --- | --- | --- | --- |
 | visitorKey | path | string | 예 | — | 목록에서 고른 방문자 키 |
 | from / to | query | date | 아니오 | Y-m-d | 기간 제한. **익명 모드에서는 무시하고 당일로 좁힌다** — 방문자 키가 날마다 새로 만들어져, 과거 구간을 함께 펼치면 우연히 같은 키를 쓴 다른 날의 다른 사람이 한 프로필에 섞인다 |
+| format | query | string | 아니오 | json, csv | `csv` 면 활동 내역을 파일로 내려받는다 |
 
 **응답 필드** (`data` 내부)
 
@@ -662,6 +689,14 @@ _없음._
 | visits[] | array | 방문과 그 안의 액션 타임라인·전환 (시간순) |
 | mode | string | 지금 수집 모드 |
 | mode_notice | string\|null | 익명 모드에서는 방문자 키가 날마다 바뀌어 같은 사람의 방문이 하루 안에서만 묶인다는 안내 |
+
+**CSV 내려받기** — `?format=csv` 는 액션 하나가 한 줄이고 방문 정보는 줄마다 되풀이됩니다
+(`visit_id, first_action_at, last_action_at, visitor_type, country_code, device_type, browser,
+os, referrer_type, referrer_name, pageviews, total_time_seconds, action_occurred_at,
+action_type, action_name, time_spent_seconds`). 정보주체가 열람을 요구했을 때 건네줄 파일이
+이 모양입니다. 액션이 없는 방문도 한 줄로 남습니다 — 방문했다는 사실 자체가 기록이기
+때문입니다. 파일명은 `analytics-visitor-{visitorKey}.csv` 이고, 내려받기도 목록과 같은
+`core.analytics.privacy` 권한을 요구합니다.
 <!-- @generated:end:api.admin.analytics.visitors.show -->
 
 ---

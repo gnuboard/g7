@@ -23,7 +23,9 @@ return new class extends Migration
 
         Schema::create('analytics_archive_runs', function (Blueprint $table) {
             $table->id()->comment('ID');
-            $table->string('run_type', 12)->comment('실행 종류 (hour, day, reaggregate, anonymize, purge, extension_purge)');
+            // 길이는 가장 긴 값인 extension_purge(15자)에 맞춘다 — 12자로 두면 그 값이
+            // 저장되지 않아 확장 제거 정리가 통째로 실패한다.
+            $table->string('run_type', 20)->comment('실행 종류 (hour, day, reaggregate, anonymize, purge, extension_purge)');
             $table->dateTime('period_start')->nullable()->comment('대상 기간 시작');
             $table->dateTime('period_end')->nullable()->comment('대상 기간 끝');
             $table->string('trigger', 10)->comment('실행 주체 (scheduled, manual)');

@@ -1,5 +1,8 @@
 <?php
 
+// changelog:allow 미출시 7.1.0 방문자 통계의 누락 키 보충 — 배포된 적이 없어 운영자가
+// 원문 키를 본 화면 자체가 없다. 기능 자체는 같은 절의 Added 항목이 이미 서술한다.
+
 return [
     // Privacy collection modes
     'privacy_mode' => [
@@ -144,6 +147,7 @@ return [
     // Archiving
     'archive' => [
         'skipped_locked' => 'Skipped because the same period is already being archived.',
+        'skipped_beyond_retention' => 'Skipped because the raw records for this day are past the retention period. Existing aggregates are kept as they are.',
         'range_invalid' => 'The re-aggregation period is invalid.',
     ],
 
@@ -157,6 +161,9 @@ return [
     // Data subject requests
     'privacy' => [
         'ip_lookup_limited' => 'Records collected in anonymous mode can only be looked up by IP for the last :days days — older entries cannot be matched back to an address.',
+        'subjects_fetch_success' => 'Loaded the data subject records.',
+        'subject_delete_success' => 'Deleted the data subject records.',
+        'anonymize_queued' => 'Started the retroactive anonymization.',
     ],
 
     // API response messages

@@ -74,6 +74,8 @@ export function createPublicApi(handle: TrackerHandle | null): Record<string, un
       trackGoal: noop,
       trackEvent: noop,
       setDimension: noop,
+      optOut: (): Promise<void> => Promise.resolve(),
+      optIn: (): Promise<void> => Promise.resolve(),
       isOptedOut: () => false,
     };
   }
@@ -98,6 +100,20 @@ export function createPublicApi(handle: TrackerHandle | null): Record<string, un
     setDimension: (key: string, value: string): void => {
       try {
         tracker.setDimension(key, value);
+      } catch {
+        // 삼킨다.
+      }
+    },
+    optOut: async (): Promise<void> => {
+      try {
+        await tracker.optOut();
+      } catch {
+        // 삼킨다.
+      }
+    },
+    optIn: async (): Promise<void> => {
+      try {
+        await tracker.optIn();
       } catch {
         // 삼킨다.
       }

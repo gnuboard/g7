@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Enums\Analytics\ActionType;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
@@ -9,11 +10,13 @@ use App\Enums\Analytics\StatsDimension;
 use App\Enums\Analytics\VisitorType;
 use App\Enums\Analytics\VisitSource;
 use App\Extension\HookManager;
+use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Jobs\Analytics\ArchiveRangeJob;
 use App\Models\Analytics\AnalyticsAction;
 use App\Models\Analytics\AnalyticsActionName;
 use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Models\Analytics\AnalyticsBotHit;
+use App\Models\Analytics\AnalyticsConversion;
 use App\Models\Analytics\AnalyticsDimensionStat;
 use App\Models\Analytics\AnalyticsStatsDaily;
 use App\Models\Analytics\AnalyticsStatsHourly;
@@ -21,6 +24,8 @@ use App\Models\Analytics\AnalyticsVisit;
 use App\Services\Analytics\ArchiveCollector;
 use App\Services\Analytics\ArchiveService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -292,6 +297,101 @@ class ArchiveServiceTest extends TestCase
     }
 
     /**
+     * 전환 금액이 목표마다 따로 잡히는지 확인합니다.
+     *
+     * 한 방문이 목표 둘을 달성해도 매출은 자기 목표 행에만 붙어야 합니다. 방문 합계를
+     * 목표마다 복사하면 매출이 없는 목표에도 금액이 붙고, 같은 목표가 두 번 일어나면
+     * 같은 금액이 두 번 더해집니다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=conversions, trigger=manual
+     *
+     * @effects goal_revenue_is_attributed_per_goal_key
+     */
+    public function test_goal_revenue_belongs_to_its_own_goal_only(): void
+    {
+        $date = '2026-09-19';
+        $visit = $this->visit($date);
+
+        // 한 방문에서 두 목표 — 하나는 금액이 있고 하나는 없다.
+        AnalyticsConversion::factory()->create([
+            'visit_id' => $visit->id,
+            'visitor_key' => $visit->visitor_key,
+            'goal_key' => 'core.purchase',
+            'revenue' => 45000.00,
+            'occurred_at' => Carbon::parse($date.' 01:02:00', 'UTC'),
+        ]);
+
+        AnalyticsConversion::factory()->create([
+            'visit_id' => $visit->id,
+            'visitor_key' => $visit->visitor_key,
+            'goal_key' => 'core.signup',
+            'revenue' => 0,
+            'occurred_at' => Carbon::parse($date.' 01:03:00', 'UTC'),
+        ]);
+
+        $this->service->archiveDay($date);
+
+        $rows = AnalyticsDimensionStat::query()
+            ->where('date', $date)
+            ->where('dimension', StatsDimension::Goal->value)
+            ->get()
+            ->keyBy('label');
+
+        $this->assertCount(2, $rows, '목표마다 자기 행이 생긴다');
+
+        $purchase = json_decode((string) $rows['core.purchase']->getRawOriginal('extra'), true);
+        $this->assertSame(['revenue_cents' => 4500000], $purchase, '매출은 자기 목표 행에만 붙는다');
+
+        $this->assertNull(
+            $rows['core.signup']->getRawOriginal('extra'),
+            '매출이 없는 목표에 다른 목표의 금액이 붙으면 안 된다',
+        );
+    }
+
+    /**
+     * 같은 목표가 한 방문에서 두 번 일어나도 금액이 부풀지 않는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=conversions, trigger=manual
+     *
+     * @effects goal_revenue_is_attributed_per_goal_key
+     */
+    public function test_repeated_goal_in_one_visit_sums_only_its_own_revenue(): void
+    {
+        $date = '2026-09-20';
+        $visit = $this->visit($date);
+
+        foreach ([10000.00, 5000.00] as $offset => $revenue) {
+            AnalyticsConversion::factory()->create([
+                'visit_id' => $visit->id,
+                'visitor_key' => $visit->visitor_key,
+                'goal_key' => 'core.purchase',
+                'revenue' => $revenue,
+                'occurred_at' => Carbon::parse($date.' 01:0'.($offset + 2).':00', 'UTC'),
+            ]);
+        }
+
+        $this->service->archiveDay($date);
+
+        $row = AnalyticsDimensionStat::query()
+            ->where('date', $date)
+            ->where('dimension', StatsDimension::Goal->value)
+            ->where('label', 'core.purchase')
+            ->first();
+
+        $this->assertSame(
+            ['revenue_cents' => 1500000],
+            json_decode((string) $row->getRawOriginal('extra'), true),
+            '두 전환의 금액 합계 그대로여야 한다',
+        );
+        $this->assertSame(2, (int) $row->hits, '전환 두 건이 두 번으로 세어진다');
+        $this->assertSame(1, (int) $row->visits, '같은 방문이므로 방문 수는 1이다');
+    }
+
+    /**
      * 다시 집계하면 같은 결과가 나오고 사라진 라벨이 남지 않는지 확인합니다.
      *
      * @return void 없음
@@ -526,6 +626,94 @@ class ArchiveServiceTest extends TestCase
     }
 
     /**
+     * 봇 방문 수가 일 표와 시간 표에서 같은 값으로 세어지는지 확인합니다.
+     *
+     * 시간 표에 방문 시작을 올리지 않으면 페이지뷰는 차 있는데 방문 수만 0 으로
+     * 남아, 같은 데이터를 두고 두 표가 다른 수를 보고한다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=bot_only, trigger=manual
+     *
+     * @effects bot_visits_agree_between_daily_and_hourly
+     */
+    public function test_bot_visits_agree_between_daily_and_hourly(): void
+    {
+        $date = '2026-09-19';
+
+        // 같은 시각에 Googlebot 2건(같은 IP)·Bingbot 1건 → 방문 2건, 페이지뷰 3건.
+        foreach ([['Googlebot', 'example.test/a'], ['Googlebot', 'example.test/b'], ['Bingbot', 'example.test/a']] as [$bot, $url]) {
+            AnalyticsBotHit::factory()->create([
+                'bot_name' => $bot,
+                'url' => $url,
+                'url_hash' => md5($url),
+                'ip' => '203.0.113.9',
+                'occurred_at' => Carbon::parse($date.' 03:00:00', 'UTC'),
+            ]);
+        }
+
+        $this->service->archiveDay($date);
+
+        $dailyVisits = (int) AnalyticsStatsDaily::query()
+            ->where('date', $date)
+            ->where('visitor_type', VisitorType::Bot->value)
+            ->value('visits');
+
+        $hourlyVisits = (int) AnalyticsStatsHourly::query()
+            ->where('visitor_type', VisitorType::Bot->value)
+            ->sum('visits');
+
+        $this->assertSame(2, $dailyVisits);
+        $this->assertSame(
+            $dailyVisits,
+            $hourlyVisits,
+            '봇 방문 수는 일 표와 시간 표가 같아야 한다',
+        );
+    }
+
+    /**
+     * 한 봇이 여러 시간에 걸쳐 오면 방문 1건이 처음 시각에만 잡히는지 확인합니다.
+     *
+     * 시각마다 방문 시작을 올리면 하루 합이 일 표보다 커진다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=bot_only, trigger=manual
+     *
+     * @effects bot_visit_counted_once_at_its_first_hour
+     */
+    public function test_bot_visit_is_counted_once_at_its_first_hour(): void
+    {
+        $date = '2026-09-19';
+
+        // 같은 봇·같은 IP 가 세 시각에 걸쳐 방문 → 방문은 여전히 1건이어야 한다.
+        foreach (['01:00:00', '05:00:00', '09:00:00'] as $time) {
+            AnalyticsBotHit::factory()->create([
+                'bot_name' => 'Googlebot',
+                'url' => 'example.test/a',
+                'url_hash' => md5('example.test/a'),
+                'ip' => '203.0.113.9',
+                'occurred_at' => Carbon::parse($date.' '.$time, 'UTC'),
+            ]);
+        }
+
+        $this->service->archiveDay($date);
+
+        $dailyVisits = (int) AnalyticsStatsDaily::query()
+            ->where('date', $date)
+            ->where('visitor_type', VisitorType::Bot->value)
+            ->value('visits');
+
+        $hourlyRows = AnalyticsStatsHourly::query()
+            ->where('visitor_type', VisitorType::Bot->value)
+            ->get();
+
+        $this->assertSame(1, $dailyVisits);
+        $this->assertSame(1, (int) $hourlyRows->sum('visits'), '여러 시각에 걸쳐도 방문은 1건이다');
+        $this->assertSame(3, (int) $hourlyRows->sum('pageviews'), '페이지뷰는 시각마다 쌓인다');
+    }
+
+    /**
      * 확장이 수집기에 넣은 행이 집계 표에 함께 들어가는지 확인합니다.
      *
      * @return void 없음
@@ -577,6 +765,9 @@ class ArchiveServiceTest extends TestCase
      */
     public function test_finalized_days_are_skipped_unless_forced(): void
     {
+        // 재집계는 원장 보존일 안의 날만 다시 계산한다 — 오늘을 고정해 날짜가 보존일 밖으로
+        // 밀려나지 않게 한다.
+        $this->travelTo(Carbon::parse('2026-09-25 12:00:00', 'UTC'));
         $date = '2026-09-21';
         $this->visit($date);
         $this->service->archiveDay($date, ['is_final' => true]);
@@ -608,6 +799,155 @@ class ArchiveServiceTest extends TestCase
         $this->assertNull($run);
         $this->assertSame(0, AnalyticsStatsDaily::query()->count());
         $this->assertSame(0, AnalyticsArchiveRun::query()->count());
+    }
+
+    /**
+     * 「서버로만 잡힌 방문」은 비콘이 끝내 오지 않은 방문만 센다.
+     *
+     * 전체 로드는 언제나 서버 폴백이 먼저 방문을 연다. 뒤이어 온 첫 비콘이 출처를 바꾸지
+     * 않으면 브라우저가 멀쩡히 보고한 방문까지 이 지표에 들어가, 「비콘이 오지 않는 환경을
+     * 진단한다」는 지표가 방문 수와 같아진다. 실제 수집 경로(서버 폴백 → 비콘)로 만든다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects server_only_visits_are_counted_separately
+     */
+    public function test_server_only_visits_count_only_visits_the_beacon_never_joined(): void
+    {
+        config(['g7_settings.core.analytics.dispatch_mode' => 'sync']);
+        $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+        $html = new Response('<!doctype html><html></html>', 200, ['Content-Type' => 'text/html; charset=UTF-8']);
+
+        // 스크립트가 막힌 방문자 — 서버 폴백만 남는다.
+        app(TrackServerVisit::class)->terminate(
+            Request::create('/board/free', 'GET', server: ['HTTP_USER_AGENT' => $ua, 'REMOTE_ADDR' => '203.0.113.11']),
+            $html,
+        );
+
+        // 평범한 방문자 — 서버 폴백 뒤에 첫 비콘이 합류한다.
+        app(TrackServerVisit::class)->terminate(
+            Request::create('/board/free', 'GET', server: ['HTTP_USER_AGENT' => $ua, 'REMOTE_ADDR' => '203.0.113.12']),
+            $html,
+        );
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.12'])
+            ->withHeaders(['User-Agent' => $ua])
+            ->postJson('/api/analytics/collect', ['t' => 'pageview', 'url' => 'http://localhost/board/free', 'res' => '1920x1080', 'init' => true])
+            ->assertNoContent();
+
+        $this->assertSame(2, AnalyticsVisit::query()->count());
+
+        $this->service->archiveDay(AnalyticsClock::today());
+
+        $daily = AnalyticsStatsDaily::query()->where('visitor_type', VisitorType::Guest->value)->firstOrFail();
+        $this->assertSame(2, $daily->visits);
+        $this->assertSame(1, $daily->server_only_visits, '비콘이 합류한 방문은 서버 전용이 아니다');
+        $this->assertSame(1, (int) AnalyticsStatsHourly::query()->where('visitor_type', VisitorType::Guest->value)->sum('server_only_visits'));
+    }
+
+    /**
+     * 원장이 보존일에 걸려 지워진 날은 재집계가 건너뛰고 영구 집계를 지우지 않는다.
+     *
+     * 원장은 보존일(기본 90일)이 지나면 지워지지만 일·차원 집계는 영구 보존된다. 강제
+     * 재집계가 그날을 다시 계산하면 빈 재료로 집계를 덮어써 과거 숫자가 0 이 된다 —
+     * 업그레이드 뒤 「재집계」를 전 기간으로 돌리는 것이 바로 그 경로다. 경계일(오늘 −
+     * 보존일)은 새벽 정리로 일부가 이미 지워지므로 건너뛰고, 그다음 날부터 다시 계산한다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=range, trigger=manual, final=true, data=empty
+     *
+     * @effects reaggregation_never_erases_days_past_ledger_retention
+     */
+    public function test_reaggregation_keeps_aggregates_of_days_past_ledger_retention(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-18 12:00:00', 'UTC'));
+        config(['g7_settings.core.analytics.retention_days' => 90]);
+
+        $boundary = '2026-06-20';
+        $firstKept = '2026-06-21';
+
+        foreach (['2026-06-01', $boundary] as $date) {
+            AnalyticsStatsDaily::factory()->create([
+                'date' => $date,
+                'visitor_type' => VisitorType::Guest->value,
+                'visits' => 42,
+                'is_final' => true,
+            ]);
+            AnalyticsDimensionStat::factory()->create([
+                'date' => $date,
+                'visitor_type' => VisitorType::Guest->value,
+                'dimension' => StatsDimension::PageUrl->value,
+            ]);
+        }
+
+        $runs = $this->service->archiveRange('2026-06-01', $firstKept, ['force' => true]);
+
+        foreach (['2026-06-01', $boundary] as $date) {
+            $this->assertSame(42, (int) AnalyticsStatsDaily::query()->where('date', $date)->value('visits'), $date.' 영구 집계가 빈 재료로 덮였다');
+            $this->assertSame(1, AnalyticsDimensionStat::query()->where('date', $date)->count(), $date.' 차원 집계가 지워졌다');
+        }
+
+        $skipped = collect($runs)->filter(fn (AnalyticsArchiveRun $run): bool => $this->statusOf($run) === ArchiveRunStatus::Skipped->value);
+        $this->assertCount(20, $skipped, '06-01 ~ 06-20 스무 날은 건너뛰고 이유를 이력에 남긴다');
+        $this->assertSame(__('analytics.archive.skipped_beyond_retention'), $skipped->first()->error);
+        $this->assertSame(ArchiveRunStatus::Success->value, $this->statusOf(collect($runs)->last()), '보존일 안쪽 첫날은 다시 계산한다');
+    }
+
+    /**
+     * 자정을 넘긴 방문의 뒷부분 액션이 시간 표에서 사라지지 않는다.
+     *
+     * 방문은 시작한 날(23:50)에 속해 그날 집계가 읽지만, 그날 집계는 자기 24칸만 써서
+     * 자정 뒤(00:10) 액션을 둘 칸이 없다. 다음 날 집계는 그날 시작한 방문만 읽는다. 둘
+     * 사이에서 액션이 빠지면 시간 표 합이 일 표보다 작아진다 — 두 표를 나란히 놓아 잰다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects actions_after_midnight_land_in_the_next_days_hours
+     */
+    public function test_actions_after_midnight_are_not_lost_from_the_hourly_table(): void
+    {
+        $start = Carbon::parse('2026-09-13 23:50:00', 'UTC');
+        $visit = AnalyticsVisit::factory()->create([
+            'visit_date' => '2026-09-13',
+            'first_action_at' => $start,
+            'last_action_at' => $start->copy()->addMinutes(20),
+            'visitor_type' => VisitorType::Guest,
+            'source' => VisitSource::Beacon,
+            'actions_count' => 2,
+            'pageviews_count' => 2,
+            'is_bounce' => false,
+        ]);
+
+        foreach ([0, 20] as $minutes) {
+            AnalyticsAction::factory()->create([
+                'visit_id' => $visit->id,
+                'visitor_key' => $visit->visitor_key,
+                'action_type' => ActionType::Pageview,
+                'action_name_id' => $this->actionName('url', 'example.test/'.$minutes)->id,
+                'occurred_at' => $start->copy()->addMinutes($minutes),
+                'time_spent_seconds' => null,
+            ]);
+        }
+
+        $this->service->archiveDay('2026-09-13');
+        $this->service->archiveDay('2026-09-14');
+        $this->service->archiveDay('2026-09-14');
+
+        $hourly = fn (string $hour): ?AnalyticsStatsHourly => AnalyticsStatsHourly::query()
+            ->where('hour_start', $hour)->where('visitor_type', VisitorType::Guest->value)->first();
+
+        $this->assertSame(1, (int) $hourly('2026-09-13 23:00:00')?->pageviews);
+        $this->assertSame(1, (int) $hourly('2026-09-14 00:00:00')?->pageviews, '자정 뒤 페이지가 다음 날 00시 칸에 없다');
+        $this->assertSame(0, (int) $hourly('2026-09-14 00:00:00')?->visits, '방문은 시작한 시각에만 센다');
+        $this->assertSame(
+            (int) AnalyticsStatsDaily::query()->where('date', '2026-09-13')->where('visitor_type', VisitorType::Guest->value)->value('pageviews'),
+            (int) AnalyticsStatsHourly::query()->where('visitor_type', VisitorType::Guest->value)->sum('pageviews'),
+            '시간 표 합이 일 표와 같아야 한다',
+        );
     }
 
     /**

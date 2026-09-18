@@ -291,4 +291,37 @@ describe('AnalyticsTracker', () => {
     tracker.trackEvent('newsletter_open');
     expect(flush()?.t).toBe('event');
   });
+
+  // @scenario source=admin, exclusion=opt_out
+  // @effects tracker_toggles_opt_out_through_the_server
+  it('수집 제외·해제를 서버에 요청한다', async () => {
+    const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+    await tracker.optOut();
+
+    // 쿠키는 서버가 심는다 — GDPR 가로채기가 document.cookie 쓰기를 막기 때문이다.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/admin/analytics/opt-out');
+    expect(fetchMock.mock.calls[0][1].method).toBe('POST');
+
+    await tracker.optIn();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][1].method).toBe('DELETE');
+  });
+
+  // @scenario source=admin, exclusion=opt_out
+  // @effects tracker_toggles_opt_out_through_the_server
+  it('제외 토글에 인증 토큰을 싣고 실패해도 던지지 않는다', async () => {
+    const tracker = new AnalyticsTracker({ settings: SETTINGS, getAuthToken: () => 'tok-1' });
+
+    await tracker.optOut();
+
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer tok-1');
+
+    fetchMock.mockRejectedValueOnce(new Error('network down'));
+
+    // 실패가 호출자에게 새면 관리자 설정 화면이 깨진다(D15).
+    await expect(tracker.optIn()).resolves.toBeUndefined();
+  });
 });

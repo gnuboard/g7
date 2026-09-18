@@ -3,6 +3,7 @@
 namespace Tests\Feature\Analytics\Api;
 
 use App\Analytics\AnalyticsClock;
+use App\Services\Analytics\CsvExporter;
 use Illuminate\Support\Carbon;
 
 /**
@@ -208,5 +209,43 @@ class OverviewControllerTest extends AnalyticsApiTestCase
         $response->assertOk();
         $this->assertSame('day', $response->json('data.unit'));
         $this->assertTrue($response->json('data.unit_downgraded'), '빈 차트 대신 낮췄다는 사실을 화면에 알린다');
+    }
+
+    /**
+     * 추이를 CSV 로 내려받을 수 있는지 확인합니다.
+     *
+     * 화면의 그래프를 운영자가 스프레드시트에서 자기 방식대로 다시 그릴 수 있어야
+     * 합니다. 목록만 내려받을 수 있으면 「추이는 눈으로만 보라」는 뜻이 됩니다(부록 D).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=series, role=read, period=valid, format=csv
+     *
+     * @effects csv_export_starts_with_a_byte_order_mark, series_can_be_downloaded_as_csv
+     */
+    public function test_series_can_be_downloaded_as_csv(): void
+    {
+        $date = Carbon::parse(AnalyticsClock::today())->subDays(3)->toDateString();
+        $this->daily($date, ['visits' => 7, 'visitors' => 5, 'pageviews' => 19]);
+
+        $response = $this->actingAs($this->readAdmin())
+            ->get('/api/admin/analytics/series?preset=30d&format=csv');
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString(
+            'analytics-series-',
+            (string) $response->headers->get('content-disposition'),
+        );
+
+        $body = $response->streamedContent();
+
+        $this->assertStringStartsWith(CsvExporter::BOM, $body, 'BOM 이 없으면 엑셀에서 한글이 전부 깨진다');
+        $this->assertStringContainsString(
+            "ts,visits,visitors,pageviews,bounce_rate,avg_time_seconds,pages_per_visit\r\n",
+            $body,
+        );
+        // 헤더만 나가고 값이 비면 내려받은 파일이 화면과 다르다.
+        $this->assertMatchesRegularExpression("/{$date},7,5,19,/u", $body);
     }
 }

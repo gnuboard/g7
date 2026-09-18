@@ -895,13 +895,25 @@ export class TemplateApp {
             (window as any).G7Core = (window as any).G7Core || {};
             (window as any).G7Core.analytics = createPublicApi(this.analytics);
 
+            // 첫 화면도 라우터가 `navigateToCurrentPath()` 로 routeChange 를 한 번 낸다. 아래에서
+            // 직접 알린 그 한 번을 거르지 않으면 모든 첫 로드가 페이지뷰 2건이 되고, 한 쪽만
+            // 보고 떠난 방문이 이탈로 잡히지 않는다. 그 뒤의 이동은 전부 그대로 센다.
+            const initialPath = window.location.pathname;
+            let initialRouteChangeSeen = false;
+
             // 라우트 구독은 동기로 반환한다 — 라우터가 핸들러를 기다리기 때문이다.
             this.router?.on('routeChange', (route: Route) => {
+                if (!initialRouteChangeSeen) {
+                    initialRouteChangeSeen = true;
+
+                    if ((route as any)?.path === initialPath) return;
+                }
+
                 this.analytics?.tracker.trackPageview(route);
             });
 
-            // 첫 화면은 라우트 변경 이벤트 없이 그려지므로 직접 한 번 알린다.
-            // 매칭이 안 되면(404 등) 라우트 없이 보낸다 — 제목은 경로로 떨어진다.
+            // 404 등 라우터가 routeChange 를 내지 않는 경우까지 첫 화면을 세려면 여기서 한 번
+            // 알려야 한다. 매칭이 안 되면 라우트 없이 보낸다 — 제목은 경로로 떨어진다.
             const initialMatch = this.router?.match(window.location.pathname);
             this.analytics.tracker.trackPageview(initialMatch?.route ?? null);
         } catch (error) {

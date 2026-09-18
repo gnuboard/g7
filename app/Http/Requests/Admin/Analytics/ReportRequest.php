@@ -23,20 +23,9 @@ class ReportRequest extends PeriodRequest
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'sort' => ['nullable', 'string', 'in:visits,hits,entries,exits'],
             'q' => ['nullable', 'string', 'max:255'],
-            'format' => ['nullable', 'string', 'in:json,csv'],
         ]);
 
         // 확장이 자기 필드를 이 요청에 얹을 수 있게 규칙을 훅으로 연다.
         return HookManager::applyFilters('core.analytics.report_validation_rules', $rules, $this);
-    }
-
-    /**
-     * CSV 로 내려받는 요청인지 확인합니다.
-     *
-     * @return bool CSV 요청이면 true
-     */
-    public function wantsCsv(): bool
-    {
-        return $this->input('format') === 'csv';
     }
 }

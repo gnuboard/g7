@@ -138,4 +138,34 @@ describe('ConsentBridge', () => {
 
     expect(bridge.current().granted).toBe(true);
   });
+  // @scenario mode=consent, visitor=member
+  // @effects consent_lookup_identifies_the_logged_in_member
+  it('로그인 회원의 동의는 토큰을 실어야 그 회원 것으로 조회된다', async () => {
+    const bridge = new ConsentBridge(true, () => 'member-token');
+    await bridge.start();
+
+    // 토큰이 없으면 서버가 게스트 세션으로 조회해, 동의한 회원도 미동의로 읽힌다.
+    const headers = (fetch as any).mock.calls[0][1].headers;
+
+    expect(headers.Authorization).toBe('Bearer member-token');
+  });
+
+  // @scenario mode=consent
+  // @effects consent_bridge_updates_on_consent_change_events
+  it('동의 관리 플러그인이 보내는 스냅샷 모양(categories)도 반영한다', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: { consents: { analytics: false } } }),
+    }));
+
+    const bridge = new ConsentBridge(true);
+    await bridge.start();
+    expect(bridge.allowsSending()).toBe(false);
+
+    window.dispatchEvent(new CustomEvent('gdpr:consent-changed', {
+      detail: { categories: { analytics: true }, needs_renewal: false },
+    }));
+
+    expect(bridge.allowsSending()).toBe(true);
+  });
 });

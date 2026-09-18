@@ -5,6 +5,7 @@ namespace App\Services\Analytics;
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Analytics\IpAddress;
+use App\Analytics\VisitorRecognizer;
 use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface;
@@ -114,6 +115,12 @@ class DataSubjectService
                 'browser_name' => $visit->browser_name,
                 'os_name' => $visit->os_name,
                 'device_type' => $this->enumValue($visit->device_type),
+                // 유입과 방문 규모는 정보주체가 「나에 대해 무엇을 아는가」를 볼 때 함께
+                // 읽어야 하는 값이고, 방문자 상세 CSV(부록 D)가 그대로 내보낸다.
+                'referrer_type' => $this->enumValue($visit->referrer_type),
+                'referrer_name' => $visit->referrer_name,
+                'pageviews' => $visit->pageviews_count,
+                'total_time_seconds' => $visit->total_time_seconds,
                 'actions' => $actions->get($visit->id, collect())->map(fn ($action): array => [
                     'occurred_at' => $action->occurred_at?->toIso8601String(),
                     'action_type' => $this->enumValue($action->action_type),
@@ -172,6 +179,10 @@ class DataSubjectService
      * 주소는 저장할 때 마스킹을 거치므로, 찾을 때도 같은 마스킹을 입력에 적용해야
      * 맞습니다. 익명 모드 구간은 주소 대신 해시로 찾습니다.
      *
+     * 회원 번호도 같습니다 — 가명화가 켜졌거나 소급 익명화를 돌린 구간은 `user_id`
+     * 가 지워지고 `user_hash` 만 남으므로, 두 값을 함께 만들어 어느 쪽으로 저장된
+     * 구간이든 찾습니다. 해시가 고정 키(HMAC)라 날짜에 상관없이 계산됩니다.
+     *
      * @param  array<string, mixed>  $subject  찾을 기준
      * @param  AnalyticsConfig  $config  설정
      * @return array<string, mixed> 저장값과 맞춘 기준
@@ -182,6 +193,12 @@ class DataSubjectService
             'visitor_key' => $subject['visitor_key'] ?? null,
             'user_id' => $subject['user_id'] ?? null,
         ];
+
+        $userId = $subject['user_id'] ?? null;
+
+        if (is_numeric($userId) && (int) $userId > 0) {
+            $resolved['user_hash'] = VisitorRecognizer::userHash((int) $userId);
+        }
 
         $ip = $subject['ip'] ?? null;
 

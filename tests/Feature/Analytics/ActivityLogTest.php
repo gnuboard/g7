@@ -4,8 +4,10 @@ namespace Tests\Feature\Analytics;
 
 use App\Extension\HookManager;
 use App\Listeners\CoreActivityLogListener;
+use App\Models\ActivityLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -77,5 +79,85 @@ class ActivityLogTest extends TestCase
         HookManager::doAction('core.analytics.archive_requested', ['run_type' => 'hour']);
 
         $this->assertSame('admin', DB::table('activity_logs')->where('action', 'analytics.archive_requested')->value('log_type'));
+    }
+
+    /**
+     * 큐 워커가 도는 운영 환경에서도 감사 기록이 남는다.
+     *
+     * 테스트 환경의 큐는 sync 라 큐로 보낸 리스너도 발화 자리에서 곧바로 돈다. 운영 기본값
+     * (database)에서는 워커가 훅 바깥에서 돌려 「어느 훅이었는지」를 잃는다 — 큐를 막아 둔
+     * 채로 발화해 그 차이를 드러낸다. 훅 목록은 리스너 구독에서 뽑는다.
+     *
+     * @scenario visitor=admin, dispatch=queue
+     *
+     * @effects activity_log_survives_queued_listener_dispatch
+     *
+     * @return void 없음
+     */
+    public function test_analytics_hooks_are_logged_even_when_the_queue_is_not_immediate(): void
+    {
+        $hooks = array_values(array_filter(
+            array_keys(CoreActivityLogListener::getSubscribedHooks()),
+            fn (string $hook): bool => str_starts_with($hook, 'core.analytics.'),
+        ));
+
+        $this->assertNotEmpty($hooks, '통계 활동 로그 훅 구독을 하나도 찾지 못했다');
+
+        Queue::fake();
+
+        foreach ($hooks as $hook) {
+            HookManager::doAction($hook, ['run_type' => 'hour']);
+
+            $this->assertTrue(
+                DB::table('activity_logs')->where('action', 'analytics.'.substr($hook, strlen('core.analytics.')))->exists(),
+                $hook.' 이 큐에 넘어가 워커에서 훅 이름을 잃는다',
+            );
+        }
+    }
+
+    /**
+     * 설명 문구의 자리표시자가 발화부가 넘기는 값으로 모두 채워진다.
+     *
+     * 발화부의 키 이름(`to`·`extension_identifier`·배열 `subject`)이 문구의 자리표시자와
+     * 달라 활동 로그 화면에 `(:mode)` 같은 글자가 그대로 보이던 자리를 잠근다. 자리표시자를
+     * 가진 문구는 언어 파일에서 뽑으므로 새 문구가 생기면 여기 발화 예시가 없어 red 가 된다.
+     *
+     * @scenario visitor=admin
+     *
+     * @effects activity_log_descriptions_fill_every_placeholder
+     *
+     * @return void 없음
+     */
+    public function test_every_description_placeholder_is_filled(): void
+    {
+        // 발화부(SettingsController·DataSubjectService·ExtensionPurgeService·ArchiveRunController)가
+        // 실제로 넘기는 모양 그대로.
+        $payloads = [
+            'privacy_mode_changed' => ['from' => 'full', 'to' => 'anonymous'],
+            'subject_exported' => ['subject' => ['ip', 'from'], 'visits' => 2],
+            'subject_deleted' => ['subject' => ['user_id'], 'counts' => ['visits' => 1]],
+            'extension_purged' => ['extension_type' => null, 'extension_identifier' => 'sirsoft-board', 'counts' => [], 'failed' => false],
+            'archive_requested' => ['run_type' => 'hour', 'from' => null, 'to' => null, 'triggered_by' => 1],
+        ];
+
+        $withPlaceholders = array_keys(array_filter(
+            (array) trans('activity_log.analytics', [], 'ko'),
+            fn ($text): bool => is_string($text) && preg_match('/:[a-z_]+/', $text) === 1,
+        ));
+
+        $this->assertNotEmpty($withPlaceholders, '자리표시자를 가진 통계 활동 로그 문구를 찾지 못했다');
+
+        foreach ($withPlaceholders as $action) {
+            $this->assertArrayHasKey($action, $payloads, $action.' 의 발화 예시가 없다 — 자리표시자가 채워지는지 잴 수 없다');
+
+            HookManager::doAction('core.analytics.'.$action, $payloads[$action]);
+
+            foreach (['ko', 'en'] as $locale) {
+                app()->setLocale($locale);
+                $description = ActivityLog::query()->where('action', 'analytics.'.$action)->latest('id')->firstOrFail()->localized_description;
+
+                $this->assertDoesNotMatchRegularExpression('/:[a-z_]+/', $description, $action.' ('.$locale.') 설명에 자리표시자가 남았다: '.$description);
+            }
+        }
     }
 }

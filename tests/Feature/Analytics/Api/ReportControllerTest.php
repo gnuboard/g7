@@ -155,6 +155,38 @@ class ReportControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 사람 방문을 빼는 제외 토글이 봇 목록을 비우지 않는지 확인합니다.
+     *
+     * 제외 토글은 기간 쿼리와 함께 모든 통계 화면으로 따라다닌다. 봇 차원에 사람 유형
+     * 목록을 걸면 봇 행이 하나도 남지 않는다 — 별칭 경로(`bot_pages`)까지 같은 규칙이다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=preset
+     *
+     * @effects bot_reports_ignore_the_human_exclude_toggle
+     */
+    public function test_exclude_toggle_does_not_empty_bot_reports(): void
+    {
+        $this->dimensionRow(StatsDimension::BotName->value, 'Googlebot', [
+            'visitor_type' => VisitorType::Bot->value,
+        ]);
+        $this->dimensionRow(StatsDimension::BotPage->value, '/board/free', [
+            'visitor_type' => VisitorType::Bot->value,
+        ]);
+
+        $admin = $this->readAdmin();
+
+        $bots = $this->actingAs($admin)->getJson('/api/admin/analytics/bots?preset=today&exclude[]=admin');
+        $bots->assertOk();
+        $this->assertSame('Googlebot', $bots->json('data.data.0.label'), '관리자 제외를 켰다고 봇 목록이 비면 안 된다');
+
+        $pages = $this->actingAs($admin)->getJson('/api/admin/analytics/reports/bot_pages?preset=today&exclude[]=member');
+        $pages->assertOk();
+        $this->assertSame('/board/free', $pages->json('data.data.0.label'));
+    }
+
+    /**
      * CSV 내려받기가 엑셀이 읽을 모양인지 확인합니다.
      *
      * @return void 없음
@@ -183,6 +215,114 @@ class ReportControllerTest extends AnalyticsApiTestCase
         $this->assertStringContainsString("\r\n", $body);
         $this->assertStringContainsString('label,label_display,visits', $body);
         $this->assertStringContainsString('자유게시판', $body);
+    }
+
+    /**
+     * 검색어 CSV 가 「결과 없음」 열을 함께 내는지 확인합니다.
+     *
+     * 이 값은 집계가 `extra` 에 담아 두고 화면이 읽는다. CSV 에서만 빠지면 운영자는
+     * 「찾았는데 없는 것」을 엑셀로 가져갈 수 없고, 내려받은 파일이 틀린 것인지
+     * 화면이 틀린 것인지 판단할 근거도 없다(부록 D).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, report=site_search, role=read, format=csv
+     *
+     * @effects csv_export_includes_per_report_extra_columns
+     */
+    public function test_site_search_csv_carries_the_no_result_column(): void
+    {
+        $this->dimensionRow(StatsDimension::SiteSearch->value, '환불 규정', ['extra' => ['no_result' => 4]]);
+
+        $response = $this->actingAs($this->readAdmin())
+            ->get('/api/admin/analytics/reports/site_search?preset=today&format=csv');
+
+        $response->assertOk();
+
+        $body = $response->streamedContent();
+
+        $this->assertStringContainsString('pages_per_visit,no_result_count', $body);
+        // 값 자체가 실려야 한다 — 헤더만 있고 0 이 나오면 열을 붙인 의미가 없다.
+        $this->assertMatchesRegularExpression('/환불 규정.*,4\r\n/u', $body);
+    }
+
+    /**
+     * 목표 CSV 가 전환 금액 합계 열을 함께 내는지 확인합니다.
+     *
+     * 집계는 `extra.revenue_cents` 로 센트를 담아 둔다 — `extra` 가 정수 칸이라
+     * 소수점을 그대로 넣으면 반올림으로 값이 샌다. 내보낼 때 사람이 쓰는 단위로
+     * 되돌려야 운영자가 엑셀에서 그대로 더할 수 있다(부록 D `goal` + `revenue_sum`).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, report=goal, role=read, format=csv
+     *
+     * @effects csv_export_includes_per_report_extra_columns
+     */
+    public function test_goal_csv_carries_the_revenue_sum_column(): void
+    {
+        $this->dimensionRow(StatsDimension::Goal->value, 'core.signup', ['extra' => ['revenue_cents' => 1234567]]);
+
+        $response = $this->actingAs($this->readAdmin())
+            ->get('/api/admin/analytics/reports/goal?preset=today&format=csv');
+
+        $response->assertOk();
+
+        $body = $response->streamedContent();
+
+        $this->assertStringContainsString('pages_per_visit,revenue_sum', $body);
+        // 센트를 그대로 흘리면 12345.67 이 1234567 로 보여 매출이 백 배가 된다.
+        $this->assertMatchesRegularExpression('/core\.signup.*,12345\.67\r\n/u', $body);
+    }
+
+    /**
+     * 별칭 주소로 받은 CSV 도 같은 부가 열을 내는지 확인합니다.
+     *
+     * `reports/goals` 는 `reports/goal` 의 별칭이라 화면은 둘 중 아무 주소나 쓴다.
+     * 부가 열 표가 차원 이름으로만 키를 잡으면 별칭으로 받은 파일에서만 매출 열이
+     * 조용히 빠져, 운영자는 같은 화면에서 받은 두 파일이 다른 이유를 알 수 없다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, report=goal, role=read, format=csv
+     *
+     * @effects csv_export_includes_per_report_extra_columns
+     */
+    public function test_alias_report_csv_carries_the_same_extra_columns(): void
+    {
+        $this->dimensionRow(StatsDimension::Goal->value, 'core.signup', ['extra' => ['revenue_cents' => 1234567]]);
+
+        $response = $this->actingAs($this->readAdmin())
+            ->get('/api/admin/analytics/reports/goals?preset=today&format=csv');
+
+        $response->assertOk();
+
+        $body = $response->streamedContent();
+
+        $this->assertStringContainsString('pages_per_visit,revenue_sum', $body);
+        $this->assertMatchesRegularExpression('/core\.signup.*,12345\.67\r\n/u', $body);
+    }
+
+    /**
+     * 부가 열이 없는 차원은 공통 9열만 내는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, report=page_url, role=read, format=csv
+     *
+     * @effects csv_export_includes_per_report_extra_columns
+     */
+    public function test_other_reports_keep_the_nine_common_columns(): void
+    {
+        $this->dimensionRow(StatsDimension::PageUrl->value, 'example.test/공지');
+
+        $response = $this->actingAs($this->readAdmin())
+            ->get('/api/admin/analytics/reports/page_url?preset=today&format=csv');
+
+        $body = $response->streamedContent();
+
+        $this->assertStringContainsString("pages_per_visit\r\n", $body);
+        $this->assertStringNotContainsString('no_result_count', $body);
     }
 
     /**
@@ -264,6 +404,34 @@ class ReportControllerTest extends AnalyticsApiTestCase
             ->getJson('/api/admin/analytics/reports/browser?preset=today&q=bet');
         $this->assertCount(1, $searched->json('data.data'));
         $this->assertSame('beta', $searched->json('data.data.0.label'));
+    }
+
+    /**
+     * 상세 목록 건수 설정이 실제로 먹는지 확인합니다.
+     *
+     * 기본값과 같은 숫자를 코드에 박아 두면 설정을 바꿔도 목록이 그대로여서, 저장은
+     * 되는데 안 먹는 설정이 됩니다 — 기본값이 아닌 값으로 재야 그 어긋남이 드러납니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=valid
+     *
+     * @effects detail_top_n_setting_drives_the_page_size
+     */
+    public function test_detail_top_n_setting_decides_the_page_size(): void
+    {
+        config(['g7_settings.core.analytics.top_n_detail' => 3]);
+
+        foreach (range(1, 6) as $index) {
+            $this->dimensionRow(StatsDimension::Browser->value, 'browser-'.$index, ['visits' => 10 - $index]);
+        }
+
+        $response = $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/reports/browser?preset=today');
+
+        $response->assertOk();
+        $this->assertCount(3, $response->json('data.data'), '설정한 건수만큼만 한 쪽에 담긴다');
+        $this->assertTrue($response->json('data.pagination.has_more'), '나머지는 다음 쪽으로 넘어간다');
     }
 
     /**

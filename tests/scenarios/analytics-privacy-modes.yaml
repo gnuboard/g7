@@ -41,6 +41,7 @@ exclusions:
   - { geo_before_mask: false, mask_octets: 0, reason: "마스킹이 없으면 조회 순서가 결과를 바꾸지 않는다" }
 
 effects:
+  - full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
   - full_mode_stores_masked_ip_and_issues_cookie
   - full_mode_reports_returning_visitors
   - anonymous_mode_stores_no_ip

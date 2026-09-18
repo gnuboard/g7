@@ -170,8 +170,20 @@ class VisitRepository implements VisitRepositoryInterface
             $matched = true;
         }
 
-        if (! empty($subject['user_id'])) {
-            $query->where('user_id', $subject['user_id']);
+        // 회원 번호는 모드에 따라 원값으로 남기도, 해시로만 남기도 한다. 주소와 같은
+        // 이유로 둘을 OR 로 묶는다 — AND 로 묶으면 가명화된 구간의 기록이 통째로
+        // 안 잡혀 삭제 요청이 아무것도 못 지운다.
+        if (! empty($subject['user_id']) || ! empty($subject['user_hash'])) {
+            $query->where(function (Builder $q) use ($subject): void {
+                if (! empty($subject['user_id'])) {
+                    $q->orWhere('user_id', $subject['user_id']);
+                }
+
+                if (! empty($subject['user_hash'])) {
+                    $q->orWhere('user_hash', $subject['user_hash']);
+                }
+            });
+
             $matched = true;
         }
 
@@ -239,6 +251,18 @@ class VisitRepository implements VisitRepositoryInterface
     {
         AnalyticsVisit::query()
             ->where('visit_date', $date)
+            ->orderBy('id')
+            ->chunkById(max(1, $chunkSize), $callback);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkCarriedIntoDate(string $date, Carbon $dayStart, int $chunkSize, callable $callback): void
+    {
+        AnalyticsVisit::query()
+            ->where('last_action_at', '>=', $dayStart)
+            ->where('visit_date', '<', $date)
             ->orderBy('id')
             ->chunkById(max(1, $chunkSize), $callback);
     }

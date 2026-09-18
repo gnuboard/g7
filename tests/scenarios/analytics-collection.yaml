@@ -64,6 +64,9 @@ effects:
   - entry_and_exit_pages_are_recorded
   - server_fallback_and_first_beacon_merge_into_one_action
   - merged_action_does_not_double_count_pageviews
+  - returning_visitor_reload_stays_in_one_visit
+  - first_beacon_fills_what_the_server_could_not_know
+  - login_during_a_visit_starts_a_new_visit
   - cookieless_server_fallback_is_adopted_by_first_beacon
   - anonymous_server_fallback_and_beacon_share_a_visit
   - beacon_outside_merge_window_creates_new_action
@@ -84,6 +87,14 @@ effects:
   - visit_limit_notification_hook_fires
   - visit_limit_notification_is_sent_once_a_day
   - beacon_cannot_forge_site_search
+  # 전환 원장 (S1 결함 보수 — goal 비콘이 수신 후 버려지던 것)
+  - goal_action_records_a_conversion_row
+  - conversion_keeps_the_supplying_extension_identifier
+  - core_goal_is_not_attributed_to_an_extension
+  - conversion_revenue_and_currency_are_normalized
+  - malformed_conversion_attributes_do_not_break_tracking
+  - non_goal_actions_record_no_conversion
+  - download_action_name_prefers_the_display_name
   # 서버 폴백·봇·검색 경로 (미들웨어·훅이 원장에 닿는 배선)
   - server_fallback_records_html_page_loads_only
   - bot_hits_are_recorded_with_cache_status
@@ -92,6 +103,8 @@ effects:
   - settings_schema_exposes_only_public_keys
   - permissions_menus_and_definitions_are_seeded
   - activity_log_records_analytics_hooks_as_admin
+  - activity_log_survives_queued_listener_dispatch
+  - activity_log_descriptions_fill_every_placeholder
   - migrations_roll_back_and_forward_idempotently
   - geo_location_lookup_returns_null_without_database
   # 방문 환경·유입 분류 (원장 컬럼을 채우는 판정)
@@ -116,11 +129,14 @@ effects:
   - tracker_swallows_transport_failures
   - tracker_skips_excluded_requests_before_sending
   - tracker_honours_do_not_track_and_opt_out
+  - tracker_toggles_opt_out_through_the_server
   - client_and_server_exclusion_rules_agree
   - page_title_falls_back_through_meta_document_and_path
   - consent_bridge_blocks_sending_until_consent_is_known
   - consent_bridge_does_not_block_when_there_is_no_consent_source
   - consent_bridge_updates_on_consent_change_events
+  - consent_lookup_identifies_the_logged_in_member
+  - first_screen_sends_exactly_one_pageview
   - consent_gate_applies_only_in_consent_mode
   - link_clicks_are_classified_into_download_and_outlink
   - same_site_links_are_not_counted_as_outlinks

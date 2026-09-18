@@ -1,5 +1,8 @@
 <?php
 
+// changelog:allow 미출시 7.1.0 방문자 통계의 누락 키 보충 — 배포된 적이 없어 운영자가
+// 원문 키를 본 화면 자체가 없다. 기능 자체는 같은 절의 Added 항목이 이미 서술한다.
+
 return [
     // 개인정보 수집 모드
     'privacy_mode' => [
@@ -144,6 +147,7 @@ return [
     // 집계 배치
     'archive' => [
         'skipped_locked' => '같은 기간을 이미 집계하고 있어 건너뛰었습니다.',
+        'skipped_beyond_retention' => '원장 보존 기간이 지나 다시 계산할 기록이 없어 건너뛰었습니다. 이미 있는 집계는 그대로 둡니다.',
         'range_invalid' => '재집계 기간이 올바르지 않습니다.',
     ],
 
@@ -157,6 +161,9 @@ return [
     // 정보주체 요청
     'privacy' => [
         'ip_lookup_limited' => '익명 모드로 모은 구간은 최근 :days일치만 IP 로 찾을 수 있습니다 — 그보다 이전 기록은 주소를 되돌릴 수 없습니다.',
+        'subjects_fetch_success' => '정보주체 기록을 불러왔습니다.',
+        'subject_delete_success' => '정보주체 기록을 삭제했습니다.',
+        'anonymize_queued' => '소급 익명화를 시작했습니다.',
     ],
 
     // API 응답 메시지

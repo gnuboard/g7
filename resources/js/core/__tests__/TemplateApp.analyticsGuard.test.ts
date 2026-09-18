@@ -27,6 +27,10 @@ vi.mock('../api/ApiClient', () => ({
     getApiClient: () => mockApiClient,
 }));
 
+const { routerBus } = vi.hoisted(() => ({
+    routerBus: { handlers: new Map<string, Array<(...args: any[]) => any>>() },
+}));
+
 const { sharedActionDispatcher } = vi.hoisted(() => ({
     sharedActionDispatcher: {
         setNavigate: vi.fn(),
@@ -52,13 +56,22 @@ vi.mock('../template-engine', () => ({
     }),
 }));
 
+// 실제 라우터는 첫 화면에서도 `navigateToCurrentPath()` 로 routeChange 를 낸다. 그 사실을
+// 흉내 내지 않으면 「첫 로드에 비콘이 몇 건 나가는가」를 여기서 잴 수 없다.
 vi.mock('../routing/Router', () => ({
     Router: vi.fn(function (this: any) {
         this.loadRoutes = vi.fn().mockResolvedValue(undefined);
         this.setRoutes = vi.fn();
-        this.on = vi.fn();
-        this.match = vi.fn().mockReturnValue(null);
-        this.navigateToCurrentPath = vi.fn();
+        this.on = vi.fn((event: string, handler: (...args: any[]) => any) => {
+            const list = routerBus.handlers.get(event) ?? [];
+            list.push(handler);
+            routerBus.handlers.set(event, list);
+        });
+        this.match = vi.fn((path: string) => ({ route: { path, layout: 'home', meta: {} }, params: {} }));
+        this.navigateToCurrentPath = vi.fn(async () => {
+            const path = window.location.pathname;
+            await Promise.all((routerBus.handlers.get('routeChange') ?? []).map((handler) => handler({ path, layout: 'home', meta: {}, params: {}, query: {} })));
+        });
         this.getRoutes = vi.fn().mockReturnValue([]);
     }),
 }));
@@ -85,6 +98,11 @@ function ok(data: Record<string, unknown> = {}): Response {
     } as unknown as Response;
 }
 
+/** 수집 비콘 요청 수 */
+function collectCalls(): number {
+    return (globalThis.fetch as any).mock.calls.filter((call: any[]) => String(call[0]).includes('/api/analytics/collect')).length;
+}
+
 /** 템플릿 종류별 부팅 설정 */
 function makeConfig(templateType: 'user' | 'admin'): TemplateAppConfig {
     return {
@@ -99,17 +117,27 @@ describe('TemplateApp 방문자 통계 가드', () => {
     beforeEach(() => {
         document.body.innerHTML = '<div id="app"></div>';
         vi.clearAllMocks();
+        routerBus.handlers.clear();
         localStorage.clear();
         vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
             const u = String(url);
             if (u.includes('/routes')) return Promise.resolve(ok({ routes: [] }));
             return Promise.resolve(ok());
         }));
+        // jsdom 에는 keepalive 를 가진 Request 가 없다 — 없으면 트래커가 sendBeacon 으로 내려가
+        // 요청이 fetch 에 잡히지 않는다. 브라우저와 같은 조건으로 맞춘다.
+        vi.stubGlobal('Request', class {
+            keepalive = false;
+        });
         (window as any).G7Config = { settings: { analytics: { enabled: true, privacy_mode: 'full' } } };
         delete (window as any).G7Core;
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        // 트래커는 전송을 다음 틱으로 미룬다 — 흘려 보내지 않으면 앞 테스트의 첫 비콘이
+        // 다음 테스트의 fetch 에 잡혀 「첫 화면 비콘 수」를 잴 수 없다.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
         localStorage.clear();
@@ -137,6 +165,28 @@ describe('TemplateApp 방문자 통계 가드', () => {
         expect(api).toBeDefined();
         expect(typeof api.trackGoal).toBe('function');
         expect(typeof api.isOptedOut).toBe('function');
+    });
+
+    // @scenario visitor=guest, source=beacon, visit_state=new
+    // @effects first_screen_sends_exactly_one_pageview
+    it('첫 화면은 비콘을 한 번만 보내고, 이후 이동은 그대로 센다', async () => {
+        const app = new TemplateApp(makeConfig('user'));
+        await app.init();
+        await vi.waitFor(() => expect(collectCalls()).toBeGreaterThan(0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(collectCalls()).toBe(1);
+
+        const bodies = (globalThis.fetch as any).mock.calls
+            .filter((call: any[]) => String(call[0]).includes('/api/analytics/collect'))
+            .map((call: any[]) => JSON.parse(call[1].body));
+        expect(bodies[0].init).toBe(true);
+
+        const handlers = routerBus.handlers.get('routeChange') ?? [];
+        await Promise.all(handlers.map((handler) => handler({ path: '/board/free', layout: 'board', meta: {}, params: {}, query: {} })));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(collectCalls()).toBe(2);
     });
 
     // @scenario visitor=guest, exclusion=disabled

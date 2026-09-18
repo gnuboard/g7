@@ -47,6 +47,8 @@ effects:
   - bounce_counts_only_single_pageview_visits
   - new_and_returning_are_null_without_cookie_mode
   - server_only_visits_are_counted_separately
+  - reaggregation_never_erases_days_past_ledger_retention
+  - actions_after_midnight_land_in_the_next_days_hours
   # 시간 집계
   - hourly_rows_use_site_local_hours
   - visit_count_lands_only_in_the_hour_the_visit_started
@@ -60,6 +62,7 @@ effects:
   - region_and_city_labels_carry_their_country
   - repeat_views_of_one_label_count_one_visit_many_hits
   - zero_result_searches_are_counted_in_extra
+  - goal_revenue_is_attributed_per_goal_key
   # 멱등·재실행
   - rerun_produces_the_same_rows
   - labels_that_disappeared_are_removed_on_rerun
@@ -78,6 +81,8 @@ effects:
   # 봇·확장
   - bot_hits_become_bot_typed_rows
   - bot_visits_are_counted_by_name_and_address_pair
+  - bot_visits_agree_between_daily_and_hourly
+  - bot_visit_counted_once_at_its_first_hour
   - extension_collector_rows_are_stored_with_the_batch
   - extension_cannot_write_into_core_dimensions
   # 표준시

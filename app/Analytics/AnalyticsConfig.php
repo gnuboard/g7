@@ -17,6 +17,12 @@ use App\Enums\Analytics\ReferrerAnonymization;
  */
 readonly class AnalyticsConfig
 {
+    /** 익명 폴백 사유 — 동의 모드인데 동의를 물어볼 곳이 없다 */
+    public const ANONYMOUS_REASON_NO_CONSENT_SOURCE = 'consent_source_missing';
+
+    /** 익명 폴백 사유 — 동의 관리 플러그인이 동의 전 방문자 쿠키를 막는다 */
+    public const ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES = 'consent_plugin_blocks_cookies';
+
     /**
      * 설정 값 객체를 생성합니다.
      *
@@ -193,11 +199,35 @@ readonly class AnalyticsConfig
      */
     public function resolvesToAnonymous(?string $consentSource): bool
     {
-        if ($this->privacyMode === PrivacyMode::Anonymous) {
-            return true;
+        return $this->privacyMode === PrivacyMode::Anonymous
+            || $this->anonymousFallbackReason($consentSource) !== null;
+    }
+
+    /**
+     * 운영자가 고른 모드 대신 익명으로 내려간 사유를 돌려줍니다.
+     *
+     * 화면이 「왜 익명으로 수집되고 있는가」를 운영자에게 설명할 수 있어야 합니다 —
+     * 사유 없이 모드만 바뀌면 설정과 실제 동작이 달라 보이고 그 이유를 알 길이 없습니다.
+     *
+     * @param  string|null  $consentSource  동의 출처 (없으면 null 또는 'none')
+     * @return string|null 사유 키 (내려가지 않으면 null)
+     */
+    public function anonymousFallbackReason(?string $consentSource): ?string
+    {
+        // 동의 모드인데 동의를 물어볼 곳이 없다 — 아무것도 모으지 않는 대신 익명으로 모은다.
+        if ($this->privacyMode === PrivacyMode::Consent
+            && ($consentSource === null || $consentSource === 'none')
+        ) {
+            return self::ANONYMOUS_REASON_NO_CONSENT_SOURCE;
         }
 
-        return $this->privacyMode === PrivacyMode::Consent
-            && ($consentSource === null || $consentSource === 'none');
+        // IP 저장 모드인데 동의 관리 플러그인이 동의 전 쿠키를 막는다. 방문자 쿠키가
+        // 브라우저에 남지 않으므로 비콘마다 새 방문자 키가 생겨 방문·순방문자가 페이지뷰만큼
+        // 부풀고 이탈률이 100% 가 된다. 그런 사이트는 처음부터 일자 회전 해시로 묶는다.
+        if ($this->privacyMode === PrivacyMode::Full && $consentSource === 'gdpr') {
+            return self::ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES;
+        }
+
+        return null;
     }
 }

@@ -33,9 +33,21 @@ class VisitorShowRequest extends FormRequest
         $rules = [
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            // 정보주체가 열람을 요구하면 건네줄 파일이 있어야 한다(부록 D).
+            'format' => ['nullable', 'string', 'in:json,csv'],
         ];
 
         // 확장이 자기 필드를 이 요청에 얹을 수 있게 규칙을 훅으로 연다.
         return HookManager::applyFilters('core.analytics.visitor_show_validation_rules', $rules, $this);
+    }
+
+    /**
+     * CSV 로 내려받는 요청인지 확인합니다.
+     *
+     * @return bool CSV 요청이면 true
+     */
+    public function wantsCsv(): bool
+    {
+        return $this->input('format') === 'csv';
     }
 }

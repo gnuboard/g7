@@ -74,6 +74,17 @@ class PrivacyService
     }
 
     /**
+     * 운영자가 고른 모드 대신 익명으로 내려간 사유를 돌려줍니다.
+     *
+     * @param  AnalyticsConfig  $config  설정
+     * @return string|null 사유 키 (내려가지 않으면 null)
+     */
+    public function anonymousFallbackReason(AnalyticsConfig $config): ?string
+    {
+        return $config->anonymousFallbackReason($this->consentSource());
+    }
+
+    /**
      * 동의 모드에서 이 방문자가 동의했는지 확인합니다.
      *
      * 동의 출처가 없으면 판정 자체를 하지 않습니다(null) — 익명으로 내려가므로

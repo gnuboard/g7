@@ -8,7 +8,9 @@ use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Enums\Analytics\CollectFailureReason;
 use App\Extension\HookManager;
 use App\Models\Analytics\AnalyticsAction;
+use App\Models\Analytics\AnalyticsActionName;
 use App\Models\Analytics\AnalyticsCollectFailure;
+use App\Models\Analytics\AnalyticsConversion;
 use App\Models\Analytics\AnalyticsVisit;
 use App\Services\Analytics\VisitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -625,5 +627,229 @@ class VisitServiceTest extends TestCase
         $this->assertSame($server['visit_id'], $beacon['visit_id']);
         $this->assertSame($server['action_id'], $beacon['action_id']);
         $this->assertNull($beacon['new_cookie']);
+    }
+
+    /**
+     * 목표 액션이 전환 원장에 한 행을 남긴다.
+     *
+     * 액션 1행만으로는 「무엇을 얼마에 달성했는지」가 남지 않는다. 이 단언이 없으면
+     * 전환이 수신 후 조용히 버려져도 액션 수는 정상이라 아무도 알아채지 못한다.
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects goal_action_records_a_conversion_row, conversion_keeps_the_supplying_extension_identifier, conversion_revenue_and_currency_are_normalized
+     *
+     * @return void 없음
+     */
+    public function test_goal_action_records_conversion(): void
+    {
+        $result = $this->service->track($this->request([
+            'type' => 'goal',
+            'goalKey' => 'sirsoft-ecommerce.order_completed',
+            'goalAttributes' => ['revenue' => 45000, 'currency' => 'krw', 'label' => '#1023'],
+        ]));
+
+        $this->assertSame(1, AnalyticsConversion::count());
+
+        $conversion = AnalyticsConversion::first();
+
+        $this->assertSame($result['visit_id'], $conversion->visit_id);
+        $this->assertSame('sirsoft-ecommerce.order_completed', $conversion->goal_key);
+        // 확장 식별자가 없으면 확장을 지울 때 그 확장의 전환만 골라낼 수 없다.
+        $this->assertSame('sirsoft-ecommerce', $conversion->extension_identifier);
+        $this->assertSame('#1023', $conversion->label);
+        $this->assertSame('45000.00', $conversion->revenue);
+        $this->assertSame('KRW', $conversion->currency);
+    }
+
+    /**
+     * 코어 목표는 확장 소유로 기록되지 않는다.
+     *
+     * `core.` 를 확장 식별자로 적으면 확장 제거 정리가 코어 전환까지 지운다.
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects core_goal_is_not_attributed_to_an_extension
+     *
+     * @return void 없음
+     */
+    public function test_core_goal_is_not_attributed_to_extension(): void
+    {
+        $this->service->track($this->request([
+            'type' => 'goal',
+            'goalKey' => 'core.user_registered',
+        ]));
+
+        $conversion = AnalyticsConversion::first();
+
+        $this->assertNotNull($conversion);
+        $this->assertNull($conversion->extension_identifier);
+        $this->assertNull($conversion->revenue);
+    }
+
+    /**
+     * 망가진 전환 속성이 적재 전체를 깨뜨리지 않는다.
+     *
+     * 금액 자리에 문자열이 오거나 컬럼 상한을 넘는 값이 와도 방문과 액션은 남아야 한다.
+     * 전환 하나 때문에 그 방문의 페이지뷰까지 사라지면 통계가 통째로 어긋난다.
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects malformed_conversion_attributes_do_not_break_tracking
+     *
+     * @return void 없음
+     */
+    public function test_malformed_conversion_attributes_do_not_break_tracking(): void
+    {
+        $result = $this->service->track($this->request([
+            'type' => 'goal',
+            'goalKey' => 'sirsoft-ecommerce.order_completed',
+            'goalAttributes' => ['revenue' => '공짜', 'currency' => 'KRW1', 'label' => ''],
+        ]));
+
+        $this->assertNotNull($result['visit_id']);
+        $this->assertNotNull($result['action_id']);
+        $this->assertSame(1, AnalyticsConversion::count());
+
+        $conversion = AnalyticsConversion::first();
+
+        $this->assertNull($conversion->revenue);
+        // 3자리 문자만 통화 코드다 — 아니면 비운다.
+        $this->assertNull($conversion->currency);
+        $this->assertNull($conversion->label);
+    }
+
+    /**
+     * 컬럼 상한을 넘는 금액이 적재를 깨뜨리지 않는다.
+     *
+     * `revenue` 는 `decimal(15,2)` 라 정수부 13자리가 한계다. 넘는 값을 그대로 넘기면
+     * INSERT 가 실패해 그 방문의 액션까지 통째로 사라진다.
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects malformed_conversion_attributes_do_not_break_tracking
+     *
+     * @return void 없음
+     */
+    public function test_oversized_conversion_revenue_is_dropped(): void
+    {
+        $result = $this->service->track($this->request([
+            'type' => 'goal',
+            'goalKey' => 'sirsoft-ecommerce.order_completed',
+            'goalAttributes' => ['revenue' => '99999999999999999', 'currency' => 'KRW'],
+        ]));
+
+        $this->assertNotNull($result['action_id']);
+        $this->assertSame(1, AnalyticsConversion::count());
+        $this->assertNull(AnalyticsConversion::first()->revenue);
+    }
+
+    /**
+     * 목표가 아닌 액션은 전환을 남기지 않는다.
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects non_goal_actions_record_no_conversion
+     *
+     * @return void 없음
+     */
+    public function test_non_goal_action_records_no_conversion(): void
+    {
+        $this->service->track($this->request());
+        $this->service->track($this->request(['type' => 'download', 'target' => 'https://example.test/report.pdf']));
+
+        $this->assertSame(0, AnalyticsConversion::count());
+    }
+
+    /**
+     * 내려받기 액션이 보내온 표시 이름을 사전에 담는지 확인합니다.
+     *
+     * 트래커는 `download` 속성 → 링크 글자 → 파일명 순으로 표시 이름을 만들어 보낸다.
+     * 그 값을 버리고 주소를 담으면 방문자 타임라인(§4.11)이 「다운로드 report.pdf」 대신
+     * 긴 주소를 그리고, 내려받기 리포트의 라벨도 파일마다가 아니라 주소마다가 된다.
+     *
+     * @return void 없음
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects download_action_name_prefers_the_display_name
+     */
+    public function test_download_action_stores_the_display_name(): void
+    {
+        $this->service->track($this->request([
+            'type' => 'download',
+            'target' => 'https://example.test/files/a8f3e1/report.pdf?token=abc',
+            'name' => 'report.pdf',
+        ]));
+
+        $action = AnalyticsAction::where('action_type', 'download')->firstOrFail();
+
+        $this->assertSame(
+            'report.pdf',
+            (string) AnalyticsActionName::findOrFail($action->action_name_id)->name,
+            '보내온 표시 이름이 사전에 담긴다'
+        );
+    }
+
+    /**
+     * 방문 도중 로그인하면 그때부터 새 방문이 되고 유형·회원 번호가 따라간다.
+     *
+     * 이어 붙이면 로그인한 관리자의 열람이 게스트 방문으로 남아 「관리자 제외」로 빠지지
+     * 않는다 — 계획서 §8 M1-T5 가 「로그인 후 이동 → 새 방문 행 visitor_type=member」를
+     * 기대하는 이유다. 방문자 키(쿠키)는 그대로다.
+     *
+     * @scenario source=beacon, visitor=member, visit_state=open
+     *
+     * @effects login_during_a_visit_starts_a_new_visit
+     *
+     * @return void 없음
+     */
+    public function test_logging_in_during_a_visit_starts_a_new_visit(): void
+    {
+        $this->service->track($this->request());
+
+        $this->service->track($this->request([
+            'url' => 'https://example.test/board/free/2',
+            'init' => false,
+            'userId' => 42,
+        ]));
+
+        $visits = AnalyticsVisit::query()->orderBy('id')->get();
+
+        $this->assertCount(2, $visits, '로그인 전후는 다른 사람의 방문이다');
+        $this->assertSame('guest', $this->enumValue($visits[0]->visitor_type));
+        $this->assertNull($visits[0]->user_id);
+        $this->assertSame('member', $this->enumValue($visits[1]->visitor_type));
+        $this->assertSame(42, (int) $visits[1]->user_id);
+        $this->assertSame($visits[0]->visitor_key, $visits[1]->visitor_key, '같은 브라우저다 — 방문자 키는 그대로');
+    }
+
+    /**
+     * 같은 사람이 이어 보는 동안에는 방문이 갈라지지 않는다.
+     *
+     * @scenario source=beacon, visitor=member, visit_state=open
+     *
+     * @effects login_during_a_visit_starts_a_new_visit
+     *
+     * @return void 없음
+     */
+    public function test_same_member_keeps_one_visit(): void
+    {
+        $this->service->track($this->request(['userId' => 42]));
+        $this->service->track($this->request(['url' => 'https://example.test/board/free/2', 'init' => false, 'userId' => 42]));
+
+        $this->assertSame(1, AnalyticsVisit::query()->count());
+        $this->assertSame(2, (int) AnalyticsVisit::query()->value('pageviews_count'));
+    }
+
+    /**
+     * Enum 이거나 문자열인 값에서 문자열을 꺼냅니다.
+     *
+     * @param  mixed  $value  값
+     * @return string 문자열 값
+     */
+    private function enumValue(mixed $value): string
+    {
+        return $value instanceof \BackedEnum ? (string) $value->value : (string) $value;
     }
 }

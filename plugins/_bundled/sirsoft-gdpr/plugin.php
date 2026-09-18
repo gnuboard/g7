@@ -107,6 +107,10 @@ class Plugin extends AbstractPlugin
         'cookie' => [
             // 유지보수 모드 우회 (운영자 전용)
             'laravel_maintenance',
+            // 방문자 통계 수집 거부 기록 — 「세지 말라」는 의사 자체를 담는 쿠키다.
+            // 목록에서 빠져 있으면 동의하지 않은 방문자일수록 제외가 안 되는 역설이
+            // 생긴다(서버는 200 을 주는데 Set-Cookie 가 제거돼 아무 일도 일어나지 않았다).
+            'g7_analytics_optout',
         ],
     ];
 

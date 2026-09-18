@@ -9,6 +9,7 @@ use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface;
 use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Enums\Analytics\ActionType;
@@ -21,6 +22,7 @@ use App\Extension\HookManager;
 use App\Models\Analytics\AnalyticsAction;
 use App\Models\Analytics\AnalyticsActionName;
 use App\Models\Analytics\AnalyticsArchiveRun;
+use App\Models\Analytics\AnalyticsConversion;
 use App\Models\Analytics\AnalyticsVisit;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -73,6 +75,7 @@ class ArchiveService
      * @param  ActionRepositoryInterface  $actions  액션 원장 저장소
      * @param  BotHitRepositoryInterface  $botHits  봇 기록 저장소
      * @param  NotificationCooldown  $cooldown  알림 쿨다운
+     * @param  ConversionRepositoryInterface  $conversions  전환 원장 저장소
      */
     public function __construct(
         private readonly StatsRepositoryInterface $stats,
@@ -82,6 +85,7 @@ class ArchiveService
         private readonly ActionRepositoryInterface $actions,
         private readonly BotHitRepositoryInterface $botHits,
         private readonly NotificationCooldown $cooldown,
+        private readonly ConversionRepositoryInterface $conversions,
     ) {}
 
     /**
@@ -107,18 +111,7 @@ class ArchiveService
         $lock = Cache::lock('analytics:archive:'.$runType.':'.$date, self::LOCK_SECONDS);
 
         if (! $lock->get()) {
-            return $this->runs->create([
-                'run_type' => $runType,
-                'period_start' => $periodStart,
-                'period_end' => $periodEnd,
-                'trigger' => $options['trigger'] ?? 'scheduled',
-                'status' => ArchiveRunStatus::Skipped->value,
-                'progress_percent' => 0,
-                'started_at' => AnalyticsClock::now(),
-                'finished_at' => AnalyticsClock::now(),
-                'error' => __('analytics.archive.skipped_locked'),
-                'triggered_by' => $options['triggered_by'] ?? null,
-            ]);
+            return $this->recordSkipped($runType, $date, $options, __('analytics.archive.skipped_locked'));
         }
 
         $run = isset($options['run_id']) ? $this->runs->findById((int) $options['run_id']) : null;
@@ -213,6 +206,33 @@ class ArchiveService
     }
 
     /**
+     * 집계를 돌리지 않은 날을 건너뜀으로 실행 이력에 남깁니다.
+     *
+     * @param  string  $runType  실행 종류
+     * @param  string  $date  집계 일자 (Y-m-d, 사이트 표준시 기준)
+     * @param  array<string, mixed>  $options  실행 옵션 (trigger, triggered_by)
+     * @param  string  $reason  건너뛴 이유
+     * @return AnalyticsArchiveRun 건너뜀 실행 이력
+     */
+    private function recordSkipped(string $runType, string $date, array $options, string $reason): AnalyticsArchiveRun
+    {
+        [$periodStart, $periodEnd] = AnalyticsClock::dayRangeUtc($date);
+
+        return $this->runs->create([
+            'run_type' => $runType,
+            'period_start' => $periodStart,
+            'period_end' => $periodEnd,
+            'trigger' => $options['trigger'] ?? 'scheduled',
+            'status' => ArchiveRunStatus::Skipped->value,
+            'progress_percent' => 0,
+            'started_at' => AnalyticsClock::now(),
+            'finished_at' => AnalyticsClock::now(),
+            'error' => $reason,
+            'triggered_by' => $options['triggered_by'] ?? null,
+        ]);
+    }
+
+    /**
      * 기간을 하루씩 다시 집계합니다.
      *
      * @param  string  $from  시작일 (Y-m-d)
@@ -226,11 +246,30 @@ class ArchiveService
         $today = AnalyticsClock::today();
         $runs = [];
 
+        // 보존일에 걸린 날은 원장이 (일부라도) 이미 지워졌다. 그날을 다시 계산하면 빈 재료로
+        // 영구 보존되는 일·차원 집계를 덮어써 과거 숫자가 되돌릴 수 없이 사라진다 — 확정 여부·
+        // --force 와 무관하게 건너뛰고 이유를 실행 이력에 남긴다.
+        $ledgerFloor = Carbon::parse($today)
+            ->subDays(AnalyticsConfig::fromSettings()->effectiveRetentionDays())
+            ->toDateString();
+
         $cursor = Carbon::parse($from);
         $end = Carbon::parse($to);
 
         while ($cursor->lessThanOrEqualTo($end)) {
             $date = $cursor->toDateString();
+
+            if ($date <= $ledgerFloor) {
+                $runs[] = $this->recordSkipped(
+                    $options['run_type'] ?? ArchiveRunType::Reaggregate->value,
+                    $date,
+                    $options,
+                    __('analytics.archive.skipped_beyond_retention'),
+                );
+                $cursor->addDay();
+
+                continue;
+            }
 
             // 확정된 날은 다시 계산하지 않는다 — 집계 로직이 바뀌어 일부러 다시
             // 돌리는 경우만 --force 로 연다.
@@ -294,6 +333,10 @@ class ArchiveService
             $visitIds = $visits->pluck('id')->all();
             $actions = $this->actions->groupedForVisits($visitIds);
 
+            // 전환 금액은 액션이 아니라 전환 원장에 있다 — 목표 차원에 매출 합계를
+            // 실으려면 같은 방문 묶음의 전환을 함께 읽어야 한다(부록 D `revenue_sum`).
+            $conversions = $this->conversions->findForVisits($visitIds)->groupBy('visit_id');
+
             $nameIds = [];
             foreach ($visits as $visit) {
                 $nameIds[] = $visit->entry_action_name_id;
@@ -310,7 +353,14 @@ class ArchiveService
 
             foreach ($visits as $visit) {
                 $visitActions = $actions->get($visit->id, collect());
-                $this->accumulateVisit($visit, $visitActions, $nameMap, $daily, $hourly);
+                $this->accumulateVisit(
+                    $visit,
+                    $visitActions,
+                    $nameMap,
+                    $daily,
+                    $hourly,
+                    $conversions->get($visit->id, collect()),
+                );
 
                 $processedVisits++;
                 $processedActions += $visitActions->count();
@@ -330,6 +380,8 @@ class ArchiveService
             }
         });
 
+        $this->accumulateCarriedOverActions($date, $periodStart, $periodEnd, $config, $hourly);
+
         $this->accumulateBots($periodStart, $periodEnd, $daily, $hourly);
 
         return [
@@ -342,6 +394,60 @@ class ArchiveService
     }
 
     /**
+     * 전날 시작해 자정을 넘어온 방문의 이날 액션을 시간 표에 더합니다.
+     *
+     * 방문은 시작한 날에 속하므로 전날 집계가 그 방문을 읽는다. 그런데 전날 집계는 자기
+     * 날의 24칸만 쓰므로 자정 뒤 액션은 어느 칸에도 들어가지 못한다. 이날 집계가 그
+     * 액션만 자기 시각 칸에 더한다 — 방문 수·일 지표는 방문이 시작한 날의 몫이라 건드리지
+     * 않는다(방문 시작은 전날 시간 칸에 이미 있다).
+     *
+     * @param  string  $date  집계 일자 (Y-m-d)
+     * @param  Carbon  $periodStart  구간 시작 (UTC)
+     * @param  Carbon  $periodEnd  구간 끝 (UTC, 제외)
+     * @param  AnalyticsConfig  $config  설정
+     * @param  HourlyAccumulator  $hourly  시간 누적기
+     * @return void 없음
+     */
+    private function accumulateCarriedOverActions(
+        string $date,
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        AnalyticsConfig $config,
+        HourlyAccumulator $hourly,
+    ): void {
+        $this->visits->chunkCarriedIntoDate($date, $periodStart, $config->archiveChunkSize, function ($visits) use (
+            $periodStart,
+            $periodEnd,
+            $hourly,
+        ) {
+            $actions = $this->actions->groupedForVisits($visits->pluck('id')->all());
+
+            foreach ($visits as $visit) {
+                $visitorType = $visit->visitor_type instanceof VisitorType
+                    ? $visit->visitor_type->value
+                    : (string) $visit->visitor_type;
+
+                foreach ($actions->get($visit->id, collect()) as $action) {
+                    if ($action->occurred_at === null
+                        || $action->occurred_at->lt($periodStart)
+                        || $action->occurred_at->gte($periodEnd)
+                    ) {
+                        continue;
+                    }
+
+                    $hourly->addAction(
+                        AnalyticsClock::hourStartOf($action->occurred_at),
+                        $visitorType,
+                        (string) $visit->visitor_key,
+                        $this->enumValue($action->action_type) === ActionType::Pageview->value,
+                        (int) ($action->time_spent_seconds ?? 0),
+                    );
+                }
+            }
+        });
+    }
+
+    /**
      * 방문 하나와 그 액션들을 누적기에 더합니다.
      *
      * @param  AnalyticsVisit  $visit  방문
@@ -349,6 +455,7 @@ class ArchiveService
      * @param  array<int, AnalyticsActionName>  $nameMap  이름 사전
      * @param  DailyAccumulator  $daily  일 누적기
      * @param  HourlyAccumulator  $hourly  시간 누적기
+     * @param  Collection<int, AnalyticsConversion>|null  $conversions  방문의 전환 목록
      * @return void 없음
      */
     private function accumulateVisit(
@@ -357,6 +464,7 @@ class ArchiveService
         array $nameMap,
         DailyAccumulator $daily,
         HourlyAccumulator $hourly,
+        ?Collection $conversions = null,
     ): void {
         $visitorType = $visit->visitor_type instanceof VisitorType
             ? $visit->visitor_type->value
@@ -388,6 +496,58 @@ class ArchiveService
 
         foreach ($actions as $action) {
             $this->accumulateAction($action, $visit, $nameMap, $visitorType, $visitorKey, $daily, $hourly);
+        }
+
+        $this->accumulateConversions($conversions, $visit, $visitorType, $daily);
+    }
+
+    /**
+     * 전환을 목표 차원에 더합니다.
+     *
+     * 금액은 목표마다 따로 붙는다 — 방문 합계를 목표 행마다 복사하면 매출이 없는 목표에도
+     * 금액이 붙고(오귀속), 같은 목표가 두 번 일어나면 같은 금액이 두 번 더해진다.
+     * 원장이 `goal_key` 를 갖고 있으므로 그 키로 갈라 담는다.
+     *
+     * `extra` 는 정수 칸이라 소수점을 그대로 담으면 반올림으로 값이 샙니다. 100 을 곱해
+     * 두고 읽는 쪽에서 되돌립니다 — `decimal(15,2)` 의 두 자리를 그대로 보존합니다.
+     *
+     * @param  Collection<int, AnalyticsConversion>|null  $conversions  이 방문의 전환 목록
+     * @param  AnalyticsVisit  $visit  방문
+     * @param  string  $visitorType  방문자 유형
+     * @param  DailyAccumulator  $daily  일 누적기
+     * @return void 없음
+     */
+    private function accumulateConversions(
+        ?Collection $conversions,
+        AnalyticsVisit $visit,
+        string $visitorType,
+        DailyAccumulator $daily,
+    ): void {
+        if ($conversions === null) {
+            return;
+        }
+
+        $visitKey = (string) $visit->id;
+
+        foreach ($conversions as $conversion) {
+            $goalKey = (string) ($conversion->goal_key ?? '');
+
+            if ($goalKey === '') {
+                continue;
+            }
+
+            $metrics = [
+                'visit_key' => $visitKey,
+                'hits' => 1,
+            ];
+
+            $revenueCents = (int) round(((float) ($conversion->revenue ?? 0)) * 100);
+
+            if ($revenueCents > 0) {
+                $metrics['extra'] = ['revenue_cents' => $revenueCents];
+            }
+
+            $daily->addDimension(StatsDimension::Goal->value, $goalKey, $visitorType, $metrics);
         }
     }
 
@@ -516,7 +676,8 @@ class ArchiveService
             ActionType::Download->value => StatsDimension::Download->value,
             ActionType::Outlink->value => StatsDimension::Outlink->value,
             ActionType::SiteSearch->value => StatsDimension::SiteSearch->value,
-            ActionType::Goal->value => StatsDimension::Goal->value,
+            // 목표 차원은 액션이 아니라 전환 원장이 채운다 — 액션 이름은 목표가 일어난
+            // 주소라서, 그것으로 행을 만들면 목표별이 아니라 주소별로 갈린다.
             default => null,
         };
 
@@ -573,15 +734,26 @@ class ArchiveService
     ): void {
         $botType = VisitorType::Bot->value;
         $visitKeys = [];
+        $firstHourOf = [];
 
-        $this->botHits->chunkBetween($periodStart, $periodEnd, self::BOT_CHUNK_SIZE, function ($hits) use ($daily, $hourly, $botType, &$visitKeys) {
+        $this->botHits->chunkBetween($periodStart, $periodEnd, self::BOT_CHUNK_SIZE, function ($hits) use ($daily, $hourly, $botType, &$visitKeys, &$firstHourOf) {
             foreach ($hits as $hit) {
                 $botName = (string) $hit->bot_name;
                 $identity = $botName.'|'.($hit->getRawOriginal('ip') ?? '');
                 $visitKeys[$identity] = ($visitKeys[$identity] ?? 0) + 1;
 
+                $hourStart = AnalyticsClock::hourStartOf($hit->occurred_at);
+
+                // 방문 수는 「봇 이름 × IP」 조합을 1건으로 세므로, 그 조합이 처음
+                // 나타난 시각에만 방문 시작을 올린다. 액션만 올리면 시간 표의 방문
+                // 수가 0 으로 남아 같은 데이터인데 일 표와 수가 어긋난다.
+                if (! isset($firstHourOf[$identity])) {
+                    $firstHourOf[$identity] = $hourStart;
+                    $hourly->addVisitStart($hourStart, $botType);
+                }
+
                 $hourly->addAction(
-                    AnalyticsClock::hourStartOf($hit->occurred_at),
+                    $hourStart,
                     $botType,
                     $identity,
                     true,

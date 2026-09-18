@@ -5,6 +5,8 @@ namespace App\Services\Analytics;
 use App\Analytics\AnalyticsClock;
 use App\Analytics\IpAddress;
 use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface;
+use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface;
+use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
 use App\Contracts\Repositories\Analytics\SaltRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Enums\Analytics\ArchiveRunStatus;
@@ -23,6 +25,9 @@ use Throwable;
  * 않습니다.
  *
  * 집계 표는 건드리지 않습니다. 집계에는 개인을 가리키는 값이 없기 때문입니다.
+ *
+ * 주소가 남는 표는 방문 원장만이 아닙니다 — 봇 기록과 적재 실패 로그도 수집할 때 같은
+ * 마스킹 규칙을 따르므로, 소급 적용도 세 표에 함께 겁니다.
  */
 class AnonymizeService
 {
@@ -37,11 +42,15 @@ class AnonymizeService
      * @param  VisitRepositoryInterface  $visits  방문 원장 저장소
      * @param  ArchiveRunRepositoryInterface  $runs  실행 이력 저장소
      * @param  SaltRepositoryInterface  $salts  솔트 저장소
+     * @param  BotHitRepositoryInterface  $botHits  봇 기록 저장소
+     * @param  CollectFailureRepositoryInterface  $failures  적재 실패 로그 저장소
      */
     public function __construct(
         private readonly VisitRepositoryInterface $visits,
         private readonly ArchiveRunRepositoryInterface $runs,
         private readonly SaltRepositoryInterface $salts,
+        private readonly BotHitRepositoryInterface $botHits,
+        private readonly CollectFailureRepositoryInterface $failures,
     ) {}
 
     /**
@@ -90,6 +99,10 @@ class AnonymizeService
                 ]);
             });
 
+            // 봇 기록·실패 로그에는 해시를 담을 칸이 없다. 해시 모드에서는 주소를 지우고,
+            // 마스킹 모드에서는 방문 원장과 같은 옥텟 수로 가린다.
+            $this->anonymizeSideLedgers($from, $to, $maskOctets, $hash);
+
             $this->runs->update($run, [
                 'status' => ArchiveRunStatus::Success->value,
                 'processed_visits' => $processed,
@@ -115,6 +128,43 @@ class AnonymizeService
         }
 
         return $run->refresh();
+    }
+
+    /**
+     * 봇 기록·적재 실패 로그의 주소에도 같은 규칙을 적용합니다.
+     *
+     * 두 표에는 `ip_hash` 칸이 없습니다. 해시 모드는 되돌릴 수 없게 주소를 지우는 것이
+     * 목적이므로, 담을 곳이 없으면 지우는 쪽이 그 목적에 맞습니다.
+     *
+     * @param  string|null  $from  시작 일자 (Y-m-d, null 이면 처음부터)
+     * @param  string|null  $to  끝 일자 (Y-m-d, null 이면 끝까지)
+     * @param  int  $maskOctets  가릴 옥텟 수
+     * @param  bool  $hash  주소를 지울지 여부
+     * @return void 없음
+     */
+    private function anonymizeSideLedgers(?string $from, ?string $to, int $maskOctets, bool $hash): void
+    {
+        if (! $hash && $maskOctets <= 0) {
+            return;
+        }
+
+        $newIp = fn (string $ip): ?string => $hash ? null : IpAddress::mask($ip, $maskOctets);
+
+        $this->botHits->chunkInDateRange($from, $to, self::CHUNK_SIZE, function ($hits) use ($newIp): void {
+            foreach ($hits as $hit) {
+                if ($hit->ip !== null) {
+                    $this->botHits->updateIp($hit, $newIp((string) $hit->ip));
+                }
+            }
+        });
+
+        $this->failures->chunkInDateRange($from, $to, self::CHUNK_SIZE, function ($failures) use ($newIp): void {
+            foreach ($failures as $failure) {
+                if ($failure->ip !== null) {
+                    $this->failures->updateIp($failure, $newIp((string) $failure->ip));
+                }
+            }
+        });
     }
 
     /**

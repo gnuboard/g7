@@ -54,4 +54,26 @@ interface CollectFailureRepositoryInterface
      * @return int 해당 건수
      */
     public function countOlderThan(Carbon $before): int;
+
+    /**
+     * 기간 안의 실패 로그를 나눠서 순회합니다.
+     *
+     * 소급 익명화가 이 로그의 주소도 방문 원장과 같은 규칙으로 바꾸는 데 씁니다.
+     *
+     * @param  string|null  $from  시작 일자 (Y-m-d, null 이면 처음부터)
+     * @param  string|null  $to  끝 일자 (Y-m-d, null 이면 끝까지)
+     * @param  int  $chunkSize  한 번에 읽을 건수
+     * @param  callable  $callback  청크마다 부를 콜백
+     * @return void 없음
+     */
+    public function chunkInDateRange(?string $from, ?string $to, int $chunkSize, callable $callback): void;
+
+    /**
+     * 실패 로그의 주소를 덮어씁니다.
+     *
+     * @param  AnalyticsCollectFailure  $failure  대상 로그
+     * @param  string|null  $ip  새 주소 (null 이면 지움)
+     * @return void 없음
+     */
+    public function updateIp(AnalyticsCollectFailure $failure, ?string $ip): void;
 }

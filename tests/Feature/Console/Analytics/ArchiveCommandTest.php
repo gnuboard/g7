@@ -135,6 +135,9 @@ class ArchiveCommandTest extends TestCase
      */
     public function test_range_reaggregates_day_by_day_and_respects_final_flag(): void
     {
+        // 재집계는 원장 보존일 안의 날만 다시 계산한다 — 오늘을 고정해 두지 않으면 이 날짜가
+        // 보존일 밖으로 밀려나는 날부터 건너뜀으로 바뀐다.
+        $this->travelTo(Carbon::parse('2026-08-20 12:00:00', 'UTC'));
         $this->visitOn('2026-08-01');
         $this->visitOn('2026-08-02');
 
