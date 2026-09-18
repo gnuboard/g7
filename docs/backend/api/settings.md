@@ -20,6 +20,40 @@
 
 상한을 넘긴 목록의 응답 형태는 [pagination.md](../pagination.md) 를 참고하세요.
 
+## IP 접근 제한 (`security` 탭)
+
+허용한 IP 에서만 관리자 영역·지정 경로에 접근하게 합니다. 저장 경로는 `security` 탭이며, 키는
+`ip_restriction_enabled`(마스터 토글)·`admin_allowed_ips`(관리자 영역 허용 목록)·`ip_restriction_rules`(경로별 규칙) 셋입니다.
+
+판정은 전역 미들웨어가 모든 요청에 대해 수행하고, 순서는 다음과 같습니다(첫 거부에서 멈춤).
+
+1. 마스터 토글이 꺼져 있으면 통과
+2. **관리자 영역**이면 `admin_allowed_ips` 를 대조한다 — 빈 목록이면 이 축은 적용하지 않는다.
+   관리자 영역은 관리자 화면(`/admin*`)·코어 관리자 API(`/api/admin/*`)·관리자 로그인 API(`/api/auth/admin/*`)·
+   확장 관리자 API(`/api/modules/{id}/admin/*`, `/api/plugins/{id}/admin/*`)다.
+3. 관리자 영역이 아니면 **인바운드 콜백 경로**(결제 승인·입금통보·웹훅·본인인증 콜백)인지 먼저 보고, 해당하면 통과시킨다.
+   코어 고정 목록(`plugins/*/payment/*`, `*/webhook*`, `plugins/*/plugin/*/callback`) 외의 경로는 확장이
+   `core.security.ip_restriction_exempt_paths` 필터 훅으로 등록한다. 관리자 영역은 어떤 제외 경로로도 빠져나갈 수 없다.
+4. `ip_restriction_rules` 에서 **사용 중인 첫 매칭 규칙** 하나의 `ips` 를 대조한다.
+
+IP 는 신뢰 프록시 해석 뒤의 값이다 — 리버스 프록시 뒤에서 신뢰 프록시를 설정하지 않으면 전원이 프록시 주소 하나로
+보이므로, 환경설정 화면이 그 상태를 경고로 띄운다([reverse-proxy.md](../reverse-proxy.md)).
+
+**차단 응답** — API 요청은 403 JSON, 웹 요청은 403 페이지(접속 IP 표시)입니다.
+
+```json
+{
+    "success": false,
+    "message": "허용된 IP 에서만 접근할 수 있습니다. 접근이 필요하면 사이트 관리자에게 문의하세요."
+}
+```
+
+차단은 활동 로그 `security.ip_blocked`(유형 시스템)로 남으며, 같은 IP 는 60초에 한 건만 기록합니다.
+
+**자기 잠금 방지** — 저장 요청자의 현재 IP 가 저장 후 설정에서 막히면(관리자 영역 허용 목록 밖, 또는 설정 화면 경로를
+막는 규칙) 저장하지 않고 422 를 돌려줍니다. 그래도 잠긴 경우의 구제는 서버 셸의
+`php artisan security:ip-restriction --disable` 입니다(목록·규칙은 지우지 않고 토글만 끈다).
+
 ## TL;DR (5초 요약)
 
 ```text
@@ -59,7 +93,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | general | object | `{"site_name":"그누보드7","site_url":"https:\/\/g7_2.dev","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고 첨부). site_logo 는 SettingsService 가 별도 주입한 첨부 정보 |
-| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다 |
+| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질) |
 | seo | object | `{"meta_title_suffix":null,"meta_description":null,"meta_k…` | SEO 탭 설정 그룹 (메타 타이틀 접미사·메타 설명/키워드·검색엔진 인증 코드·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기 설정) |
@@ -235,6 +269,15 @@ HTTP/1.1 200
 | security.auth_token_lifetime | body | integer | 아니오 | min 0, max 3600 | 인증 토큰 유효 시간 (분) |
 | security.max_login_attempts | body | integer | 아니오 | min 0, max 100 | 로그인 실패 허용 횟수 (초과 시 잠금) |
 | security.login_lockout_time | body | integer | 아니오 | min 0, max 1440 | 로그인 잠금 지속 시간 (분) |
+| security.ip_restriction_enabled | body | boolean | 아니오 | — | IP 접근 제한 마스터 토글 (기본 false). 끄면 아래 목록·규칙은 저장만 되고 적용되지 않는다 |
+| security.admin_allowed_ips | body | array | 아니오 | max 100 | 관리자 영역(관리자 화면·코어/확장 관리자 API·관리자 로그인 API)에 접근을 허용할 IP·CIDR 목록. **빈 목록 = 이 축 미적용**. 앞뒤 공백·빈 항목·중복은 저장 전에 정리된다 |
+| security.admin_allowed_ips.* | body | string | 아니오 | IPv4·IPv6·CIDR (`203.0.113.0/24`, `2001:db8::/32`) | 허용 항목. 호스트명·범위 표기(`a-b`)·와일드카드(`192.168.*`)는 422 |
+| security.ip_restriction_rules | body | array | 아니오 | max 50 | 경로별 접근 규칙 목록. **사용 중인 첫 매칭 규칙 하나만** 적용된다 |
+| security.ip_restriction_rules.*.pattern | body | string | 예 | max 255, 공백·`?`·`#` 불가 | URI glob — `*` 는 `/` 를 포함해 무엇이든 맞고 앞뒤 `/` 는 무시 (예: `/api/admin/users*`) |
+| security.ip_restriction_rules.*.ips | body | array | 예 | 1개 이상, max 100 | 이 규칙에 맞는 경로를 허용할 IP·CIDR 목록 |
+| security.ip_restriction_rules.*.ips.* | body | string | 아니오 | IPv4·IPv6·CIDR | 허용 항목 |
+| security.ip_restriction_rules.*.memo | body | string | 아니오 | max 255 | 운영자 메모 |
+| security.ip_restriction_rules.*.enabled | body | boolean | 아니오 | — | 규칙 사용 여부 (미지정 = 사용). 삭제하지 않고 잠시 끌 때 쓴다 |
 | advanced.cache_enabled | body | boolean | 아니오 | — | 캐시 사용 여부 |
 | advanced.layout_cache_enabled | body | boolean | 아니오 | — | 레이아웃 캐시 사용 여부 (레이아웃 데이터를 캐시) |
 | advanced.layout_cache_ttl | body | integer | 아니오 | min 0, max 14400 | 레이아웃 캐시 만료 시간 (초, 0 = 만료 없음) |
@@ -403,6 +446,19 @@ Content-Type: application/json
     "security.require_password_special_char": true,
     "security.two_factor_auth": true,
     "security.allow_internal_outbound_urls": true,
+    "security.ip_restriction_enabled": true,
+    "security.admin_allowed_ips": [
+        "203.0.113.24",
+        "10.0.0.0/8"
+    ],
+    "security.ip_restriction_rules": [
+        {
+            "pattern": "/api/admin/users*",
+            "ips": ["203.0.113.0/24"],
+            "memo": "본사망만",
+            "enabled": true
+        }
+    ],
     "advanced.cache_enabled": true,
     "advanced.layout_cache_enabled": true,
     "advanced.layout_cache_ttl": 1,
@@ -520,7 +576,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 보안 탭에서는 **저장하면 요청자 자신이 잠기는 IP 접근 제한**(현재 IP 가 관리자 영역 허용 목록 밖이거나, 설정 화면 경로를 막는 규칙에 걸림)도 422 — `security.admin_allowed_ips` 또는 `security.ip_restriction_rules` 에 현재 IP 가 담긴 문구 |
 
 <!-- @generated:end -->
 

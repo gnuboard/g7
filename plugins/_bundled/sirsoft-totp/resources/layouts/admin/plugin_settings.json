@@ -1,5 +1,5 @@
 {
-    "comment": "인증 앱 등록 화면 — 시크릿과 백업 코드는 발급 응답에만 실리므로 이 화면이 그 1회 노출을 책임진다.\n     평문은 _local 상태에만 두어 화면을 떠나면 사라지고, 새로고침하면 다시 볼 수 없다는 사실을 각 단계에 명시한다.\n\n     파일명이 계약이다 — `plugin_settings` 라야 코어 `AbstractPlugin::getSettingsLayout()` 이\n     「플러그인 관리 → 설정」(/admin/plugins/sirsoft-totp/settings)으로 띄운다. 전용 메뉴도\n     routes.json 도 두지 않는다(PO 확정 2026-09-18 — 이 화면은 플러그인 환경설정이지 별도\n     메뉴로 세울 사항이 아니다). 이름을 바꾸면 설정 화면이 통째로 사라지므로 바꾸지 않는다.",
+    "comment": "인증 앱 등록 화면 — 시크릿과 백업 코드는 발급 응답에만 실리므로 이 화면이 그 1회 노출을 책임진다.\n     e2e:allow 이번 변경은 `<on>` 블록 주석 4곳 추가뿐 — 마크업·배선·문구가 그대로라 브라우저에서 잴 차이가 없다(화면 동작은 admin-totp-enrollment.spec.ts 가 덮는다).\n     audit:allow extension-doc-coverage 주석만 추가해 생성 문서 블록에 반영될 변경이 없다(ext:docgen 재실행 시 이슈 0·산출 무변경).\n\n     평문은 _local 상태에만 두어 화면을 떠나면 사라지고, 새로고침하면 다시 볼 수 없다는 사실을 각 단계에 명시한다.\n\n     파일명이 계약이다 — `plugin_settings` 라야 코어 `AbstractPlugin::getSettingsLayout()` 이\n     「플러그인 관리 → 설정」(/admin/plugins/sirsoft-totp/settings)으로 띄운다. 전용 메뉴도\n     routes.json 도 두지 않는다(PO 확정 2026-09-18 — 이 화면은 플러그인 환경설정이지 별도\n     메뉴로 세울 사항이 아니다). 이름을 바꾸면 설정 화면이 통째로 사라지므로 바꾸지 않는다.",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -179,6 +179,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "해제·재발급에 쓸 현재 앱 코드(또는 백업 코드)를 담는다 — 입력을 고치는 순간 이전 실패 문구를 지운다",
                                                 "event": "onChange",
                                                 "handler": "setState",
                                                 "params": {
@@ -636,6 +637,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "등록 확정에 쓸 6자리 코드를 담는다 — 입력을 고치는 순간 이전 실패 문구를 지운다",
                                                                 "event": "onChange",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -747,6 +749,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "등록 취소 — 받아 둔 시크릿·QR 주소를 화면 상태에서 버려 시작 전 카드로 돌아간다. 서버에는 요청하지 않는다",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -909,6 +912,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "「보관했습니다」 — 백업 코드 평문을 화면 상태에서 지워 등록됨 카드로 돌아간다. 다시 볼 방법은 재발급뿐이다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {

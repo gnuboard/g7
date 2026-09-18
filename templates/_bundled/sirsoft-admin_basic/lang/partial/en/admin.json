@@ -1556,7 +1556,44 @@
       "two_factor_scope_all": "All members",
       "two_factor_scope_admin": "Administrators only",
       "two_factor_scope_hint": "With administrators only, ordinary members keep signing in with just their password.",
-      "ip_throttle_floor_hint": "The per-IP request limit is six times this value, with a guaranteed floor of 30 requests per minute."
+      "ip_throttle_floor_hint": "The per-IP request limit is six times this value, with a guaranteed floor of 30 requests per minute.",
+      "ip_restriction": {
+        "title": "Access restriction",
+        "desc": "Only allow the admin area from the IP addresses you permit.",
+        "proxy_warning": "Forwarding headers such as X-Forwarded-For are arriving while no trusted proxy is configured. Every visitor then appears as the single proxy address and the IP restriction misbehaves — configure trusted proxies first.",
+        "enabled": "Enable IP access restriction",
+        "enabled_desc": "When off, the lists and rules below are saved but not applied.",
+        "admin_allowed_ips": "Admin area allowed IPs",
+        "current_ip": "Your current IP {{ip}}",
+        "add_current_ip": "Add current IP",
+        "ip_placeholder": "Type an IP or CIDR and press Enter (e.g. 203.0.113.24, 10.0.0.0/8)",
+        "admin_allowed_ips_hint": "Applies to the admin screens, admin APIs (including extension admin screens) and admin login. Leave empty to not apply this item. A list that leaves out your current IP cannot be saved.",
+        "rules": "Route rules",
+        "add_rule": "Add rule",
+        "rules_empty": "No rules yet.",
+        "rules_hint": "Only the first matching rule from the top applies. A * in a pattern matches anything, including /.",
+        "rules_callback_warning": "Rules on paths outside the admin area can also cut off requests from external servers, such as payment approvals and deposit notifications. Known payment, webhook and identity verification callbacks are excluded automatically, but requests an extension receives on other paths may be blocked.",
+        "emergency_hint": "If you get locked out, disable it on the server: php artisan security:ip-restriction --disable",
+        "col_pattern": "URI pattern",
+        "col_ips": "Allowed IPs",
+        "col_memo": "Memo",
+        "col_enabled": "On",
+        "modal": {
+          "create_title": "Add rule",
+          "edit_title": "Edit rule",
+          "pattern": "URI pattern",
+          "pattern_hint": "A leading / makes no difference. A * matches anything, including /.",
+          "pattern_placeholder": "e.g. /api/admin/users*",
+          "ips": "Allowed IPs",
+          "memo": "Memo",
+          "memo_placeholder": "e.g. Member management from HQ network only",
+          "enabled": "Use this rule",
+          "pattern_required": "Please enter a URI pattern.",
+          "ips_required": "Please enter at least one allowed IP.",
+          "apply": "Apply",
+          "apply_hint": "Applied rules are stored only after you press Save at the bottom of the screen."
+        }
+      }
     },
     "identity": {
       "sub_tabs": {
@@ -2985,6 +3022,7 @@
       "modal_identity_message_template_preview": "Preview Identity Verification Message Template",
       "identity_policy_delete_modal": "Delete Identity Verification Policy",
       "identity_policy_form_modal": "Edit Identity Verification Policy",
+      "ip_restriction_rule_form_modal": "Edit IP Access Restriction Rule",
       "modal_mail_template_form": "Edit Mail Template",
       "modal_notification_definition_reset": "Reset Notification Definition",
       "modal_notification_template_form": "Edit Notification Template",

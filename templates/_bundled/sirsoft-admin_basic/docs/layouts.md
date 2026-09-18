@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 149개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 151개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 27개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 115개 |
+| `partials` | 117개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -120,6 +120,7 @@
 | `_modal_identity_message_template_preview` | `partials` | partial | - |
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
+| `_modal_ip_restriction_rule_form` | `partials` | partial | - |
 | `_modal_mail_template_form` | `partials` | partial | - |
 | `_modal_notification_definition_reset` | `partials` | partial | - |
 | `_modal_notification_template_form` | `partials` | partial | - |
@@ -140,6 +141,7 @@
 | `_tab_mail_templates` | `partials` | partial | - |
 | `_tab_notification_definitions` | `partials` | partial | - |
 | `_tab_security` | `partials` | partial | - |
+| `_tab_security_ip_restriction` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
 | `_tab_upload` | `partials` | partial | - |
 | `_modal_extension_preview_layout` | `partials` | partial | - |

@@ -80,6 +80,11 @@ return [
         'version_restore' => 'Version Restored',
         'reset' => 'Reset',
 
+        // IP access restriction (security.*) — compound words that do not collide with existing segments
+        // (so the 4th-stage "last segment" lookup never attaches an unrelated label)
+        'ip_blocked' => 'IP Access Blocked',
+        'ip_restriction_disabled' => 'IP Restriction Disabled',
+
         // Ecommerce/Board common
     ],
 
@@ -155,6 +160,10 @@ return [
         'auth_account_locked' => 'Account locked (:attempts attempts, :minutes min lockout)',
         'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempts, administrator unlock required)',
         'auth_account_unlocked' => 'Account unlocked (:email)',
+
+        // Security — IP access restriction
+        'security_ip_blocked' => 'IP access blocked (:ip → :path)',
+        'security_ip_restriction_disabled' => 'IP access restriction emergency-disabled (console)',
 
         // Schedule management
         'schedule_index' => 'Schedule list viewed',

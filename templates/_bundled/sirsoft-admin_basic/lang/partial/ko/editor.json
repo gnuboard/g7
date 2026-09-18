@@ -1442,6 +1442,7 @@
     "settings_mail": "메일 탭",
     "settings_upload": "업로드 탭",
     "settings_security": "보안 탭",
+    "settings_security_ip_restriction": "보안 탭 — IP 접근 제한",
     "settings_drivers": "드라이버 탭",
     "settings_advanced": "고급 탭",
     "settings_notification_definitions": "알림 정의 탭",

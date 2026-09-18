@@ -2,13 +2,16 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\Attachment;
+use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
 use App\Services\DriverRegistryService;
 use App\Support\AllowedExtensions;
 use App\Support\AssetUrl;
+use App\Support\IpAccessMatcher;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -67,6 +70,21 @@ class SaveSettingsRequest extends FormRequest
     private const SUPPORTED_LOG_LEVELS = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
 
     /**
+     * IP 접근 제한 — 허용 IP 목록 하나(관리자 영역·규칙 공용)에 담을 수 있는 최대 항목 수
+     */
+    private const IP_LIST_MAX = 100;
+
+    /**
+     * IP 접근 제한 — 라우트별 규칙 최대 개수
+     */
+    private const IP_RULES_MAX = 50;
+
+    /**
+     * IP 접근 제한 — 규칙 URI 패턴·메모 최대 길이
+     */
+    private const IP_RULE_TEXT_MAX = 255;
+
+    /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool 권한 체크는 permission 미들웨어 체인이 담당하므로 항상 true 반환
@@ -122,6 +140,89 @@ class SaveSettingsRequest extends FormRequest
         ]);
 
         $this->normalizeAllowedExtensions();
+        $this->normalizeIpRestrictionLists();
+    }
+
+    /**
+     * IP 접근 제한 목록의 공백·빈 항목·중복을 정리합니다.
+     *
+     * 태그 입력은 붙여 넣은 값의 앞뒤 공백을 그대로 보낼 수 있다. 그대로 두면 형식 검사에서
+     * 떨어져 운영자는 "올바른 IP 를 넣었는데 저장이 안 된다" 로 겪는다. 문자열이 아닌 항목은
+     * 건드리지 않고 남겨 형식 검사가 잡게 한다.
+     *
+     * @return void 입력을 제자리에서 고친다
+     */
+    private function normalizeIpRestrictionLists(): void
+    {
+        $security = $this->input('security');
+
+        if (! is_array($security)) {
+            return;
+        }
+
+        $changed = false;
+
+        if (is_array($security['admin_allowed_ips'] ?? null)) {
+            $security['admin_allowed_ips'] = $this->normalizeIpList($security['admin_allowed_ips']);
+            $changed = true;
+        }
+
+        if (is_array($security['ip_restriction_rules'] ?? null)) {
+            $security['ip_restriction_rules'] = array_map(function ($rule) {
+                if (! is_array($rule)) {
+                    return $rule;
+                }
+
+                if (is_string($rule['pattern'] ?? null)) {
+                    $rule['pattern'] = trim($rule['pattern']);
+                }
+
+                if (is_array($rule['ips'] ?? null)) {
+                    $rule['ips'] = $this->normalizeIpList($rule['ips']);
+                }
+
+                return $rule;
+            }, array_values($security['ip_restriction_rules']));
+            $changed = true;
+        }
+
+        if ($changed) {
+            $this->merge(['security' => $security]);
+        }
+    }
+
+    /**
+     * IP 목록 하나를 정리합니다 (앞뒤 공백 제거·빈 항목 제거·중복 제거, 순서 유지).
+     *
+     * 빈 항목에는 `null` 도 포함한다 — 전역 ConvertEmptyStringsToNull 미들웨어가 빈 문자열을
+     * 이 단계 전에 이미 `null` 로 바꿔 둔다.
+     *
+     * @param  array<int|string, mixed>  $list  원래 목록
+     * @return array<int, mixed> 정리된 목록
+     */
+    private function normalizeIpList(array $list): array
+    {
+        $normalized = [];
+
+        foreach ($list as $item) {
+            if ($item === null) {
+                continue;
+            }
+
+            if (is_string($item)) {
+                $item = trim($item);
+
+                if ($item === '') {
+                    continue;
+                }
+            }
+
+            if (! in_array($item, $normalized, true)) {
+                $normalized[] = $item;
+            }
+        }
+
+        return $normalized;
     }
 
     /**
@@ -154,8 +255,7 @@ class SaveSettingsRequest extends FormRequest
      * prepareForValidation 단계에서 명시 캐스팅합니다.
      *
      * @param  array<int, string>  $fields  dot-notation 필드 경로 배열
-     *
-     * @return void
+     * @return void 입력을 제자리에서 고친다
      */
     private function castAdvancedBooleanFields(array $fields): void
     {
@@ -305,6 +405,20 @@ class SaveSettingsRequest extends FormRequest
             'security.two_factor_scope' => ['nullable', 'string', 'in:all,admin'],
             // 신규 설정이므로 미전송(기존 클라이언트)을 허용한다 — 미전송 시 기본값 false 유지
             'security.allow_internal_outbound_urls' => ['nullable', 'boolean'],
+            // IP 접근 제한. 항목 형식과 자기 잠금 판정은 IpAccessMatcher 가 단독 소유한다(이중화 금지).
+            // 중첩 필드는 **전부** 선언한다 — 컨트롤러는 validated() 만 저장하므로 규칙이 없는 하위 키는
+            // 저장 응답이 성공인 채로 조용히 버려진다.
+            'security.ip_restriction_enabled' => ['nullable', 'boolean'],
+            'security.admin_allowed_ips' => ['nullable', 'array', 'max:'.self::IP_LIST_MAX],
+            // 항목 규칙은 IpOrCidr 하나 — 문자열 여부·길이도 형식 판정이 함께 거른다.
+            'security.admin_allowed_ips.*' => [new IpOrCidr],
+            'security.ip_restriction_rules' => ['nullable', 'array', 'max:'.self::IP_RULES_MAX],
+            'security.ip_restriction_rules.*' => ['array'],
+            'security.ip_restriction_rules.*.pattern' => ['required', 'string', 'max:'.self::IP_RULE_TEXT_MAX, 'regex:/^[^\s?#]+$/'],
+            'security.ip_restriction_rules.*.ips' => ['required', 'array', 'max:'.self::IP_LIST_MAX],
+            'security.ip_restriction_rules.*.ips.*' => [new IpOrCidr],
+            'security.ip_restriction_rules.*.memo' => ['nullable', 'string', 'max:'.self::IP_RULE_TEXT_MAX],
+            'security.ip_restriction_rules.*.enabled' => ['nullable', 'boolean'],
 
             // 캐시 설정 (advanced 탭)
             'advanced.cache_enabled' => $this->getTabRules($tab, 'advanced', 'boolean'),
@@ -577,7 +691,6 @@ class SaveSettingsRequest extends FormRequest
      * 임의 깊이의 leaf 값을 재귀 순회하며 string|max:100 으로 검증합니다.
      *
      * @param  Validator  $validator  검증기 인스턴스
-     *
      * @return void
      */
     public function withValidator($validator): void
@@ -592,7 +705,73 @@ class SaveSettingsRequest extends FormRequest
                     $validator
                 );
             }
+
+            $this->validateIpRestrictionSelfLockout($validator);
         });
+    }
+
+    /**
+     * IP 접근 제한 저장이 저장하는 관리자 자신을 잠그는지 검사합니다.
+     *
+     * 저장이 끝나면 다음 요청부터 곧바로 차단이 걸린다. 현재 IP 가 빠진 목록을 저장하게 두면
+     * 되돌릴 화면까지 함께 잃고 구제 수단은 셸뿐이다 — 그래서 저장 **전에** 422 로 막는다.
+     *
+     * 판정은 실제 차단과 같은 `IpAccessMatcher::decide()` 를 그대로 쓰고, 입력도 저장 경로와 같은
+     * 병합(저장값 위에 제출분)으로 "저장 후 설정" 을 재구성한다. 관리자 영역 축뿐 아니라 규칙 축도
+     * 함께 본다 — 설정 화면이나 다시 들어올 로그인 경로를 막는 규칙에서 자기 IP 를 빼도 같은 잠금이
+     * 된다. 대조할 경로 목록은 판정과 같은 곳(`IpAccessMatcher::SELF_LOCKOUT_PATHS`)이 소유한다.
+     *
+     * @param  Validator  $validator  검증기 인스턴스
+     * @return void 검증기에 오류를 직접 더한다
+     */
+    private function validateIpRestrictionSelfLockout(Validator $validator): void
+    {
+        if ($this->input('_tab') !== 'security') {
+            return;
+        }
+
+        $submitted = $this->input('security');
+
+        if (! is_array($submitted)) {
+            return;
+        }
+
+        // 형식 오류가 있으면 그것부터 고치게 한다 — 깨진 목록으로 잠금을 판정하면 엉뚱한 안내가 된다.
+        foreach (array_keys($validator->errors()->messages()) as $field) {
+            if (str_starts_with($field, 'security.admin_allowed_ips') || str_starts_with($field, 'security.ip_restriction')) {
+                return;
+            }
+        }
+
+        $stored = app(ConfigRepositoryInterface::class)->getCategory('security');
+        $effective = array_merge($stored, $submitted);
+        $ip = $this->ip();
+
+        foreach ([$this->path(), ...IpAccessMatcher::SELF_LOCKOUT_PATHS] as $path) {
+            try {
+                $decision = IpAccessMatcher::decide($ip, $path, $effective);
+            } catch (\UnexpectedValueException) {
+                // 저장값 쪽 형태가 깨진 경우다 — 제출분이 그 키를 덮지 않았으면 여기서 판정할 수 없다.
+                return;
+            }
+
+            if ($decision === null) {
+                continue;
+            }
+
+            if ($decision['axis'] === IpAccessMatcher::AXIS_ADMIN) {
+                $validator->errors()->add('security.admin_allowed_ips', __('validation.settings.ip_restriction_self_lockout', [
+                    'ip' => (string) $ip,
+                ]));
+            } else {
+                $validator->errors()->add('security.ip_restriction_rules', __('validation.settings.ip_restriction_self_lockout_rule', [
+                    'ip' => (string) $ip,
+                    'pattern' => (string) $decision['pattern'],
+                ]));
+            }
+
+            return;
+        }
     }
 
     /**
@@ -609,7 +788,6 @@ class SaveSettingsRequest extends FormRequest
      * @param  array<string, mixed>  $node  검증할 노드 (purpose_providers 또는 중첩 하위)
      * @param  string  $path  현재 노드의 dot-path (에러 키 prefix)
      * @param  Validator  $validator  검증기 인스턴스
-     *
      * @return void
      */
     private function validatePurposeProviderLeaves(array $node, string $path, $validator): void
@@ -784,6 +962,23 @@ class SaveSettingsRequest extends FormRequest
             'security.login_lockout_time.integer' => __('validation.settings.login_lockout_time_integer'),
             'security.login_lockout_time.min' => __('validation.settings.login_lockout_time_min'),
             'security.login_lockout_time.max' => __('validation.settings.login_lockout_time_max'),
+            // IP 접근 제한 (자기 잠금 문구는 withValidator() 가 현재 IP 를 넣어 직접 부착한다)
+            'security.ip_restriction_enabled.boolean' => __('validation.settings.ip_restriction_enabled_boolean'),
+            'security.admin_allowed_ips.array' => __('validation.settings.admin_allowed_ips_array'),
+            'security.admin_allowed_ips.max' => __('validation.settings.admin_allowed_ips_max', ['max' => self::IP_LIST_MAX]),
+            'security.ip_restriction_rules.array' => __('validation.settings.ip_restriction_rules_array'),
+            'security.ip_restriction_rules.max' => __('validation.settings.ip_restriction_rules_max', ['max' => self::IP_RULES_MAX]),
+            'security.ip_restriction_rules.*.array' => __('validation.settings.ip_restriction_rules_array'),
+            'security.ip_restriction_rules.*.pattern.required' => __('validation.settings.ip_restriction_rule_pattern_required'),
+            'security.ip_restriction_rules.*.pattern.string' => __('validation.settings.ip_restriction_rule_pattern_required'),
+            'security.ip_restriction_rules.*.pattern.max' => __('validation.settings.ip_restriction_rule_pattern_max', ['max' => self::IP_RULE_TEXT_MAX]),
+            'security.ip_restriction_rules.*.pattern.regex' => __('validation.settings.ip_restriction_rule_pattern_invalid'),
+            'security.ip_restriction_rules.*.ips.required' => __('validation.settings.ip_restriction_rule_ips_required'),
+            'security.ip_restriction_rules.*.ips.array' => __('validation.settings.ip_restriction_rule_ips_required'),
+            'security.ip_restriction_rules.*.ips.max' => __('validation.settings.ip_restriction_rule_ips_max', ['max' => self::IP_LIST_MAX]),
+            'security.ip_restriction_rules.*.memo.string' => __('validation.settings.ip_restriction_rule_memo_max', ['max' => self::IP_RULE_TEXT_MAX]),
+            'security.ip_restriction_rules.*.memo.max' => __('validation.settings.ip_restriction_rule_memo_max', ['max' => self::IP_RULE_TEXT_MAX]),
+            'security.ip_restriction_rules.*.enabled.boolean' => __('validation.settings.ip_restriction_rule_enabled_boolean'),
 
             // 캐시 설정
             'advanced.cache_enabled.required' => __('validation.settings.cache_enabled_required'),
@@ -1007,6 +1202,13 @@ class SaveSettingsRequest extends FormRequest
             'security.two_factor_auth' => __('validation.attributes.two_factor_auth'),
             'security.two_factor_scope' => __('validation.attributes.two_factor_scope'),
             'security.allow_internal_outbound_urls' => __('validation.attributes.allow_internal_outbound_urls'),
+            'security.ip_restriction_enabled' => __('validation.attributes.ip_restriction_enabled'),
+            'security.admin_allowed_ips' => __('validation.attributes.admin_allowed_ips'),
+            'security.ip_restriction_rules' => __('validation.attributes.ip_restriction_rules'),
+            'security.ip_restriction_rules.*.pattern' => __('validation.attributes.ip_restriction_rule_pattern'),
+            'security.ip_restriction_rules.*.ips' => __('validation.attributes.ip_restriction_rule_ips'),
+            'security.ip_restriction_rules.*.memo' => __('validation.attributes.ip_restriction_rule_memo'),
+            'security.ip_restriction_rules.*.enabled' => __('validation.attributes.ip_restriction_rule_enabled'),
             // advanced
             'advanced.cache_enabled' => __('validation.attributes.advanced_cache_enabled'),
             'advanced.layout_cache_enabled' => __('validation.attributes.layout_cache_enabled'),

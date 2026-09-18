@@ -130,6 +130,12 @@ abstract class TestCase extends BaseTestCase
             // ('admin') 을 그대로 읽어, 2단계 인증을 켠 테스트가 **일반 회원 경로에서만**
             // 조용히 건너뛴다 — 관리자 케이스는 통과하므로 원인이 더 가려진다.
             'g7_settings.core.security.two_factor_scope' => 'all',
+            // IP 접근 제한도 꺼 둔다. 개발 사이트에서 켜 두면 전역 미들웨어가 테스트 요청(127.0.0.1)을
+            // 관리자 영역·규칙 경로에서 무더기로 403 으로 끊는데, 실패 메시지는 원인을 가리키지 않는다.
+            // 제한을 검증하는 테스트는 이 세 키를 자기 setUp 에서 명시한다.
+            'g7_settings.core.security.ip_restriction_enabled' => false,
+            'g7_settings.core.security.admin_allowed_ips' => [],
+            'g7_settings.core.security.ip_restriction_rules' => [],
         ]);
     }
 

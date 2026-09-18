@@ -1,0 +1,126 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 조건부다 — admin_list 는 관리자 표면에서만,
+# rule 은 제외 경로가 아닌 표면에서만, ip_source 는 목록 대조가 일어날 때만 의미가 있다. 명목상 곱
+# (2×6×3×4×4 = 576)은 실체 없는 칸이 대부분이라 조합별 docblock 을 매핑할 대상이 없다. 실제 회귀
+# 가드는 effects 이며 전부 test_files 의 테스트에 @effects 로 귀속되어 있다(미검증 0건).
+
+feature: IP 접근 제한 (관리자 영역 · 라우트별 규칙)
+
+description: |
+  허용한 IP 에서만 관리자 영역·지정 경로에 접근하게 한다(이슈 #636 트랙 2). 설정은 코어
+  환경설정 보안 탭 한 곳이며, 판정은 App\Support\IpAccessMatcher 한 곳에서만 계산한다 —
+  차단 미들웨어·설정 저장의 자기 잠금 검사·구제 커맨드가 모두 그 결과만 소비한다.
+
+  판정 순서 (첫 거부에서 멈춘다):
+    1. 마스터 토글(ip_restriction_enabled)이 꺼져 있으면 통과.
+    2. 관리자 영역이면 admin_allowed_ips 대조 — 빈 목록이면 이 축은 적용하지 않는다.
+       관리자 영역 = 관리자 셸(admin*) · 코어 관리자 API(api/admin/*) · 관리자 로그인 API
+       (api/auth/admin/*) · 확장 관리자 API(api/{modules|plugins}/{id}/admin/*).
+       관리자 영역이 아니면 인바운드 콜백(결제·웹훅·본인인증)인지 먼저 보고 해당하면 통과.
+    3. ip_restriction_rules 에서 사용 중인 첫 매칭 규칙 하나만 대조한다.
+
+  배치:
+    - 전역 미들웨어를 Laravel 기본 전역 스택 **뒤**(append)에 둔다. 신뢰 프록시는 그 스택의
+      TrustProxies 가 적용하므로, 앞(prepend)에 두면 프록시 뒤에서 모든 요청이 프록시 주소
+      하나로 보인다. 그룹·라우트 미들웨어보다는 먼저 돌아 withoutMiddleware() 로 빠져나갈 수 없다.
+    - 설정 읽기가 깨지면 열어 두고(fail-open) 오류를 기록한다 — 닫아 두면 설정 한 줄이 깨졌을 때
+      관리자를 포함한 전원이 잠기고 복구 수단이 셸뿐이다.
+
+  안전장치:
+    - 저장하는 관리자 자신을 잠그는 조합(현재 IP 가 목록 밖, 또는 설정 화면을 막는 규칙)은
+      저장 전에 422 로 막는다.
+    - 그래도 잠겼으면 `php artisan security:ip-restriction --disable` 이 토글만 끈다.
+    - 관리자 영역은 제외 경로 훅으로도 빠져나갈 수 없다.
+
+axes:
+  master_toggle: [on, off]
+  surface: [admin_shell, core_admin_api, admin_login_api, extension_admin_api, public_path, inbound_callback]
+  admin_list: [empty, contains_client, excludes_client]
+  rule: [none, allows_client, blocks_client, disabled]
+  ip_source: [direct, forwarded_untrusted, forwarded_trusted, ipv4_mapped]
+
+exclusions:
+  - { master_toggle: off, admin_list: excludes_client, reason: "토글이 꺼지면 목록은 저장만 되고 판정에 쓰이지 않는다 — 결과가 목록과 무관하다" }
+  - { master_toggle: off, rule: blocks_client, reason: "동일 사유" }
+  - { surface: public_path, admin_list: excludes_client, reason: "관리자 허용 목록은 관리자 영역에만 쓰인다 — 공개 경로 결과를 바꾸지 않는다" }
+  - { surface: inbound_callback, admin_list: excludes_client, reason: "동일 사유" }
+  - { surface: inbound_callback, rule: blocks_client, reason: "인바운드 콜백은 규칙 판정 전에 빠진다 — 결과가 규칙과 무관하다 (effects 가 그 사실을 잠근다)" }
+
+effects:
+  # 판정 규약 (IpAccessMatcher)
+  - entry_format_is_ip_or_cidr_only
+  - cidr_and_ipv6_are_matched
+  - ipv4_mapped_address_matches_ipv4_entry
+  - prefix_with_leading_zero_is_canonicalized
+  - admin_area_covers_core_extension_and_login_surfaces
+  - encoded_path_cannot_bypass_admin_area
+  - rule_pattern_is_uri_glob
+  - first_enabled_matching_rule_applies
+  - fixed_exempt_paths_cover_inbound_callbacks
+  - exemption_never_opens_admin_area
+  - master_toggle_off_allows_everything
+  - empty_admin_list_does_not_apply
+  - admin_axis_then_rule_axis_decide
+  - malformed_lists_raise_for_caller_to_fail_open
+  # 요청 파이프라인 (RestrictIpAccess)
+  - admin_area_blocks_outside_ip_with_json_403
+  - allowed_ip_passes_through
+  - web_block_renders_403_page_with_client_ip
+  - extension_admin_api_is_covered
+  - admin_login_api_is_covered
+  - non_admin_path_is_not_affected_by_admin_list
+  - rule_blocks_outside_ip
+  - payment_callbacks_are_exempt_from_rules
+  - extension_hook_can_exempt_its_callback
+  - forwarded_header_cannot_spoof_without_trusted_proxy
+  - ip_is_resolved_after_trusted_proxies
+  - malformed_settings_fail_open_with_error_log
+  - block_is_recorded_as_system_activity
+  - block_log_is_throttled_per_ip
+  - admin_area_matches_every_admin_route
+  - every_bundled_inbound_callback_is_exempt
+  # 설정 저장 (SaveSettingsRequest)
+  - settings_persist_nested_rules_without_loss
+  - list_entries_are_normalized_before_save
+  - invalid_entries_are_rejected
+  - self_lockout_by_admin_list_is_rejected
+  - self_lockout_by_rule_is_rejected
+  - disabled_toggle_skips_self_lockout_check
+  - self_lockout_uses_post_save_settings
+  - saved_restriction_applies_to_next_request
+  # 구제 커맨드 (security:ip-restriction)
+  - status_reports_settings_and_invalid_entries
+  - artisan_disable_turns_off_only_the_toggle
+  - artisan_disable_is_idempotent
+  - artisan_status_and_disable_are_mutually_exclusive
+  - artisan_disable_rescues_locked_admin
+  # 설정 화면 (보안 탭 카드 · 규칙 편집 창)
+  - settings_card_warns_when_proxy_untrusted
+  - settings_card_dims_lists_while_toggle_off
+  - settings_card_adds_current_ip_once
+  - settings_card_renders_rules_with_row_toggle_and_delete
+  - settings_card_always_shows_callback_warning_and_rescue_hint
+  - settings_card_desktop_and_mobile_rows_share_wiring
+  - settings_card_mounts_with_current_ip
+  - rule_modal_opens_with_copied_rules_and_row_index
+  - rule_modal_requires_pattern_then_ips
+  - rule_modal_commits_once_to_parent_form
+  - applied_rule_survives_save
+  - rule_modal_edit_replaces_only_that_row
+  - self_lockout_message_is_shown_in_place
+  - blocked_json_request_answers_with_translated_403
+
+test_files:
+  - tests/Unit/Support/IpAccessMatcherTest.php
+  - tests/Feature/Http/RestrictIpAccessTest.php
+  - tests/Feature/Settings/IpRestrictionSettingsTest.php
+  - tests/Feature/Console/SecurityIpRestrictionCommandTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-ip-restriction.test.tsx
+  - tests/Playwright/specs/admin/settings-ip-restriction.spec.ts
+
+notes: |
+  화면 축은 레이아웃 렌더링 테스트(배포 JSON 노드를 그대로 렌더)와 Playwright spec(실제 브라우저)이
+  나눠 덮는다 — 앞은 배선·분기, 뒤는 실제 렌더러·모달·저장 왕복이다. 규칙 편집 창의 단추가 모달
+  고정 하단에 있으면 방금 친 값을 읽지 못한다는 것은 브라우저 쪽에서만 드러났다.
+
+  운영 사이트에서 측정할 때는 반드시 존재하지 않는 고유 접두사(`/api/__ip-probe*`)만 규칙으로
+  막는다. 관리자 영역 목록을 건드리면 측정 중인 관리자 세션이 끊기고 복구는 셸뿐이다.

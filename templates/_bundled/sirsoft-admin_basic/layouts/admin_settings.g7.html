@@ -1,5 +1,5 @@
 <!-- 환경설정 — 이 템플릿에서 가장 넓은 화면이다. 탭 11개의 본문이 모두 조각 파일로 나뉘어 있고
-  여기에는 **소스·탭 뼈대·공용 저장 버튼·창 스물셋**만 있다.
+  여기에는 **소스·탭 뼈대·공용 저장 버튼·창 스물넷**만 있다.
 
   두 가지가 이 화면의 뼈대를 정한다.
   ⑴ **탭마다 필요한 소스만 받는다** — 소스 대부분에 `if="지금 이 탭인가"` 가 걸려 있어, 설정 화면에
@@ -88,8 +88,9 @@
       </field>
     </fallback>
   </data-source>
-  <!-- 리버스 프록시 진단 — 고급 탭에서만 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다. -->
-  <data-source id="trustedProxy" label_key="$t:editor.data_source.trustedProxy" type="api" endpoint="/api/admin/settings/trusted-proxy" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}" :auto_fetch="true" :auth_required="true">
+  <!-- 리버스 프록시 진단 — 고급 탭과 보안 탭에서 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다.
+       보안 탭의 접근 제한 카드는 이 값으로 현재 접속 IP 를 보여 주고 프록시 경고를 띄운다 — 저장 검증이 자기 잠금을 판정할 때 쓰는 IP 와 같은 해석(신뢰 프록시 반영)이라, 화면에 보이는 IP 를 넣으면 그 검증을 통과한다. -->
+  <data-source id="trustedProxy" label_key="$t:editor.data_source.trustedProxy" type="api" endpoint="/api/admin/settings/trusted-proxy" method="GET" if="{{['advanced', 'security'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
         <field name="forwarded_headers" :value="[]"/>
@@ -210,6 +211,7 @@
   </init-local>
   <computed name="isReadOnly">{{!!_global.settingsAbilities &amp;&amp; !(_global.settingsAbilities?.can_update ?? false)}}</computed>
   <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
+  <computed name="ipRestrictionEnabled">{{!!_local.form?.security?.ip_restriction_enabled &amp;&amp; _local.form?.security?.ip_restriction_enabled !== '0' &amp;&amp; _local.form?.security?.ip_restriction_enabled !== 'false'}}</computed>
   <permissions>
     <permission>core.settings.read</permission>
   </permissions>
@@ -405,6 +407,8 @@
   <!-- 코어 업데이트 안내 창. **확장 화면 셋(모듈·플러그인·템플릿)이 이 조각을 함께 쓴다** —
        자동 비활성 배너의 안내 링크가 여는 것이 이것이다. -->
   <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
+  <!-- IP 접근 제한 규칙 추가·편집 겸용 창(보안 탭) — 서버에 저장하지 않고 설정 폼의 규칙 배열만 고친다. -->
+  <modal src="partials/admin_settings/_modal_ip_restriction_rule_form.g7.html"/>
   <!-- 인증 정책 등록·수정 겸용 창. -->
   <modal src="partials/admin_settings/_modal_identity_policy_form.g7.html"/>
   <!-- 인증 정책 삭제 확인 창. -->

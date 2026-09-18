@@ -215,6 +215,10 @@ core.settings.available_mail_drivers
 # 드라이버 확장 훅 (Action) — 플러그인 드라이버 선택 시 Config 적용
 core.settings.apply_driver_config
 
+# IP 접근 제한 제외 경로 훅 (Filter) — 확장이 자기 인바운드 콜백 경로를 제외 목록에 추가
+# 아래 "IP 접근 제한 제외 경로 훅 페이로드" 참조
+core.security.ip_restriction_exempt_paths   # applyFilters($patterns)
+
 # 사용자 추가 에셋 훅 (Filter) — 운영자가 확장에 덧붙인 CSS·JS 목록을 보정/추가
 core.assets.custom_assets   # applyFilters($assets, $extensionType, $identifier)
 
@@ -276,6 +280,45 @@ core.seo.sitemap.after_regenerate_failed # 재생성 실패 시 (['status'=>'fai
 | `provider` | string | 공급 플러그인 식별자 — 비활성화 시 "사용 중 드라이버" 경고 판정에 사용 (코어 기본 항목에는 없음) |
 
 `core.settings.available_public_asset_drivers` 로 등록하는 디스크는 플러그인 ServiceProvider 에서 `filesystems.disks.{id}` 정의가 함께 있어야 하며, 그 정의에 `url` 키가 있어야 직접 URL 이 생성됩니다(없으면 스트리밍 폴백). 플러그인이 비활성화되어 디스크 정의가 사라지면 저장값은 보존된 채 스트리밍으로 자동 폴백합니다.
+
+#### `core.security.ip_restriction_exempt_paths`
+
+운영자가 켠 **IP 접근 제한**(환경설정 > 보안)이 확장의 인바운드 콜백을 끊지 않도록, 확장이 자기 콜백 경로를 제외 목록에 추가합니다. 첫 인자는 URI 패턴 문자열 배열이며 같은 모양의 문자열을 append 합니다.
+
+| 항목 | 값 |
+| --- | --- |
+| 패턴 문법 | `Str::is()` 글롭 — `*` 는 `/` 를 포함해 무엇이든 맞습니다 (예: `plugins/my-pay/notify/*`) |
+| 기준 경로 | 앞뒤 `/` 를 뗀 요청 경로 (`$request->path()` 와 같은 모양) |
+| 적용 시점 | 규칙 판정 **이전**. 제외에 걸리면 그 요청은 규칙을 보지 않고 통과합니다 |
+| 적용 한계 | **관리자 영역은 이 훅으로 열 수 없습니다** — 관리자 화면·관리자 API·관리자 로그인 API 는 제외 판정 자체를 건너뜁니다 |
+
+코어는 관례적인 콜백 경로(`plugins/*/payment/*`, `plugins/*/webhook`, `api/plugins/*/webhook*`, `plugins/*/plugin/*/callback`)를 이미 제외하므로, 그 관례를 따르는 확장은 훅을 구독하지 않아도 됩니다. 관례 밖 경로로 외부 통보를 받는 확장만 등록하면 됩니다 — 등록하지 않으면 운영자가 `plugins/*` 류 규칙을 넣는 순간 결제 승인·입금 통보가 403 으로 끊기고, 실패는 상대편 재시도 로그에만 남습니다.
+
+```php
+public static function getSubscribedHooks(): array
+{
+    return [
+        'core.security.ip_restriction_exempt_paths' => [
+            'method' => 'exemptCallbacks',
+            'priority' => 10,
+        ],
+    ];
+}
+
+/**
+ * 이 플러그인이 외부에서 통보받는 경로를 IP 제한 제외 목록에 더합니다.
+ *
+ * @param  array<int, string>  $patterns  현재 제외 패턴 목록
+ * @return array<int, string> 패턴 목록
+ */
+public static function exemptCallbacks(array $patterns): array
+{
+    $patterns[] = 'pay/my-gateway/notify';
+    $patterns[] = 'pay/my-gateway/notify/*';
+
+    return $patterns;
+}
+```
 
 #### `sirsoft-ckeditor5.image.filter_reference_sources`
 

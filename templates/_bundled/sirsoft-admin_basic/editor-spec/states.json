@@ -213,6 +213,56 @@
           }
         },
         {
+          "id": "settings_security_ip_restriction",
+          "label": "$t:editor.state.settings_security_ip_restriction",
+          "comment": "IP 접근 제한 카드 미리보기 — 편집기는 데이터소스 initLocal(\"form\")을 실행하지 않아 보안 탭 입력칸이 비고, 접근 제한 토글이 꺼진 채라 허용 목록·규칙 표가 흐리게만 보인다. _local.form.security 를 직접 시드해 켜진 토글·허용 목록·사용/미사용 규칙 두 줄을 그린다(나머지 보안 값은 sampleData settings 와 같은 값). IP 는 문서용 예약 대역(203.0.113.0/24·198.51.100.0/24)만 쓴다.",
+          "initialState": {
+            "query": {
+              "tab": "security"
+            },
+            "global": {
+              "activeSettingsTab": "security"
+            },
+            "local": {
+              "form": {
+                "security": {
+                  "force_https": false,
+                  "login_attempt_enabled": true,
+                  "auth_token_lifetime": "3600",
+                  "max_login_attempts": 5,
+                  "login_lockout_time": 5,
+                  "two_factor_auth": false,
+                  "password_min_length": 8,
+                  "require_password_special_char": false,
+                  "ip_restriction_enabled": true,
+                  "admin_allowed_ips": [
+                    "203.0.113.24",
+                    "198.51.100.0/24"
+                  ],
+                  "ip_restriction_rules": [
+                    {
+                      "pattern": "/api/admin/users*",
+                      "ips": [
+                        "203.0.113.0/24"
+                      ],
+                      "memo": "본사 사무실망에서만 회원 관리",
+                      "enabled": true
+                    },
+                    {
+                      "pattern": "/api/modules/sirsoft-ecommerce/admin/*",
+                      "ips": [
+                        "198.51.100.7"
+                      ],
+                      "memo": "주문 담당자 고정 IP",
+                      "enabled": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
           "id": "settings_drivers",
           "label": "$t:editor.state.settings_drivers",
           "initialState": {

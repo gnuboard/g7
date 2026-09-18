@@ -13952,7 +13952,10 @@
           "login_lockout_time": 5,
           "two_factor_auth": false,
           "password_min_length": 8,
-          "require_password_special_char": false
+          "require_password_special_char": false,
+          "ip_restriction_enabled": false,
+          "admin_allowed_ips": [],
+          "ip_restriction_rules": []
         },
         "mail": {
           "mailer": "smtp",

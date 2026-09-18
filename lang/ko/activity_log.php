@@ -80,6 +80,11 @@ return [
         'version_restore' => '버전 복원',
         'reset' => '초기화',
 
+        // IP 접근 제한 (security.*) — 기존 세그먼트와 겹치지 않는 복합어로 둔다
+        // (4단계 "마지막 세그먼트" 조회가 무관한 라벨을 붙이지 않게)
+        'ip_blocked' => 'IP 접근 차단',
+        'ip_restriction_disabled' => 'IP 접근 제한 해제',
+
         // 이커머스/게시판 공용
     ],
 
@@ -155,6 +160,10 @@ return [
         'auth_account_locked' => '계정 잠금 (:attempts회 실패, :minutes분 차단)',
         'auth_account_locked_permanently' => '계정 영구 잠금 (:attempts회 실패, 관리자 해제 필요)',
         'auth_account_unlocked' => '계정 잠금 해제 (:email)',
+
+        // 보안 — IP 접근 제한
+        'security_ip_blocked' => 'IP 접근 차단 (:ip → :path)',
+        'security_ip_restriction_disabled' => 'IP 접근 제한 비상 해제 (콘솔)',
 
         // 스케줄 관리
         'schedule_index' => '스케줄 목록 조회',

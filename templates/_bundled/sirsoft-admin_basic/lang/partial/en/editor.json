@@ -1442,6 +1442,7 @@
     "settings_mail": "Mail tab",
     "settings_upload": "Upload tab",
     "settings_security": "Security tab",
+    "settings_security_ip_restriction": "Security tab — IP access restriction",
     "settings_drivers": "Drivers tab",
     "settings_advanced": "Advanced tab",
     "settings_notification_definitions": "Notification definitions tab",

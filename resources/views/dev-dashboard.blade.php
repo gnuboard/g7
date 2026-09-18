@@ -1121,6 +1121,14 @@ if (isset($_GET['ajax_action'])) {
                                     <span>의존성 취약점 점검</span>
                                     <span class="text-[10px] opacity-60">(security:audit-dependencies)</span>
                                 </button>
+                                <button onclick="runCommand('security:ip-restriction --status')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>IP 접근 제한 점검</span>
+                                    <span class="text-[10px] opacity-60">(security:ip-restriction --status)</span>
+                                </button>
+                                <button onclick="runCommand('security:ip-restriction --disable')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>IP 접근 제한 비상 해제</span>
+                                    <span class="text-[10px] opacity-60">(security:ip-restriction --disable)</span>
+                                </button>
                                 <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 캐시 통계 정리</span>
                                     <span class="text-[10px] opacity-60">(seo:prune-stats)</span>

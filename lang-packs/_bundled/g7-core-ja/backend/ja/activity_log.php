@@ -71,6 +71,8 @@ return [
         'version_update' => 'バージョンアップデート',
         'version_restore' => 'バージョン復元',
         'reset' => '初期化',
+        'ip_blocked' => 'IPアクセスブロック',
+        'ip_restriction_disabled' => 'IPアクセス制限解除',
     ],
     'description' => [
         'user_index' => 'ユーザーリスト閲覧',
@@ -215,6 +217,8 @@ return [
         'custom_asset_delete' => 'カスタム資産削除 (:identifier — :path)',
         'custom_asset_rename' => 'カスタム資産の名前変更 (:identifier — :path)',
         'member_notification_bulk_delete' => '会員通知ボックス一括削除 (:count件)',
+        'security_ip_blocked' => 'IPアクセスブロック (:ip → :path)',
+        'security_ip_restriction_disabled' => 'IPアクセス制限緊急解除 (コンソール)',
     ],
     'fields' => [
         'name' => '名前',

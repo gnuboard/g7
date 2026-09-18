@@ -8,6 +8,7 @@
 
 ### Added
 
+- IP 접근 제한 문구의 일본어 번역을 추가했습니다 — 허용되지 않은 IP 가 받는 403 화면의 제목·설명·접속 IP 표시(`errors.ip_restricted.*`), 환경설정 > 보안에서 목록·규칙을 저장할 때의 검증 문구와 항목명(`validation.settings.ip_*`·`validation.attributes.*`), 차단과 비상 해제가 남는 활동 로그 문구(`activity_log.action.ip_blocked`·`ip_restriction_disabled`와 그 설명)입니다. 없으면 일본어 로케일에서 차단 화면과 저장 오류가 한국어로 남습니다.
 - 인증 앱(OTP) 2단계 인증 관련 코어 문구의 일본어 번역을 추가했습니다 — 인증 앱으로 코드를 받을 때의 로그인 안내(`auth.two_factor_required_app`), 인증 앱 등록이 필요해 로그인이 막혔을 때의 안내(`auth.two_factor_enrollment_required`), 본인인증 채널 「인증 앱」 이름(`identity.channels.app`), 환경설정의 2단계 인증 적용 범위 항목명(`validation.attributes.two_factor_scope`) 입니다. 없으면 일본어 로케일에서 이 문구들이 한국어로 남습니다.
 - 확장 카드가 새로 내보내는 동작 3종(주 버튼·보조 버튼·더보기 메뉴)의 편집기 라벨
   일본어 번역을 추가했습니다. 없으면 동작 탭에 키가 그대로 노출됩니다.

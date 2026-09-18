@@ -1,4 +1,7 @@
 <!-- 인증 앱 등록 화면 — 시크릿과 백업 코드는 발급 응답에만 실리므로 이 화면이 그 1회 노출을 책임진다.
+     e2e:allow 이번 변경은 `<on>` 블록 주석 4곳 추가뿐 — 마크업·배선·문구가 그대로라 브라우저에서 잴 차이가 없다(화면 동작은 admin-totp-enrollment.spec.ts 가 덮는다).
+     audit:allow extension-doc-coverage 주석만 추가해 생성 문서 블록에 반영될 변경이 없다(ext:docgen 재실행 시 이슈 0·산출 무변경).
+
      평문은 _local 상태에만 두어 화면을 떠나면 사라지고, 새로고침하면 다시 볼 수 없다는 사실을 각 단계에 명시한다.
 
      파일명이 계약이다 — `plugin_settings` 라야 코어 `AbstractPlugin::getSettingsLayout()` 이
@@ -53,6 +56,7 @@
           <label data-ref="totp_security_enrolled_label" for="totp_manage_code" class="form-label">$t:sirsoft-totp.admin.security.enrolled.code_label</label>
           <input data-ref="totp_security_enrolled_input" id="totp_manage_code" type="text" name="totp_manage_code" value="{{_local.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="16" placeholder="$t:sirsoft-totp.admin.security.enrolled.code_placeholder" class="input font-mono" disabled="{{_local.busy}}">
             <on event="onChange">
+              <!-- 해제·재발급에 쓸 현재 앱 코드(또는 백업 코드)를 담는다 — 입력을 고치는 순간 이전 실패 문구를 지운다 -->
               <set-state target="local" code="{{$event.target.value}}" :error="null"/>
             </on>
           </input>
@@ -150,6 +154,7 @@
               <label data-ref="totp_security_confirm_label" for="totp_confirm_code" class="form-label">$t:sirsoft-totp.admin.security.enroll.code_label</label>
               <input data-ref="totp_security_confirm_input" id="totp_confirm_code" type="text" name="totp_confirm_code" value="{{_local.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="6" placeholder="$t:sirsoft-totp.admin.security.enroll.code_placeholder" class="input py-3 text-center text-xl tracking-widest font-mono" disabled="{{_local.busy}}">
                 <on event="onChange">
+                  <!-- 등록 확정에 쓸 6자리 코드를 담는다 — 입력을 고치는 순간 이전 실패 문구를 지운다 -->
                   <set-state target="local" code="{{$event.target.value}}" :error="null"/>
                 </on>
               </input>
@@ -176,6 +181,7 @@
               </button>
               <button data-ref="totp_security_cancel" type="button" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer" disabled="{{_local.busy}}">
                 <on type="click">
+                  <!-- 등록 취소 — 받아 둔 시크릿·QR 주소를 화면 상태에서 버려 시작 전 카드로 돌아간다. 서버에는 요청하지 않는다 -->
                   <set-state target="local" :secret="null" :otpauthUri="null" code="" :error="null"/>
                 </on>
                 <span data-ref="totp_security_cancel_text">$t:sirsoft-totp.admin.security.enroll.cancel</span>
@@ -210,6 +216,7 @@
           </button>
           <button data-ref="totp_security_backup_done" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer">
             <on type="click">
+              <!-- 「보관했습니다」 — 백업 코드 평문을 화면 상태에서 지워 등록됨 카드로 돌아간다. 다시 볼 방법은 재발급뿐이다 -->
               <set-state target="local" :backupCodes="null"/>
             </on>
             <span data-ref="totp_security_backup_done_text">$t:sirsoft-totp.admin.security.backup.done</span>

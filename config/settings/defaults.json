@@ -27,7 +27,10 @@
             "two_factor_scope": "all",
             "password_min_length": 8,
             "require_password_special_char": false,
-            "allow_internal_outbound_urls": false
+            "allow_internal_outbound_urls": false,
+            "ip_restriction_enabled": false,
+            "admin_allowed_ips": [],
+            "ip_restriction_rules": []
         },
         "mail": {
             "mailer": "smtp",

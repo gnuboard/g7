@@ -1560,7 +1560,44 @@
       "two_factor_scope": "適用範囲",
       "two_factor_scope_all": "全会員",
       "two_factor_scope_admin": "管理者のみ",
-      "two_factor_scope_hint": "管理者のみに設定すると、一般ユーザーは従来通りパスワードのみでログインします。"
+      "two_factor_scope_hint": "管理者のみに設定すると、一般ユーザーは従来通りパスワードのみでログインします。",
+      "ip_restriction": {
+        "title": "アクセス制限",
+        "desc": "許可されたIPアドレスからのみ管理者領域へのアクセスを許可します。",
+        "proxy_warning": "信頼できるプロキシが設定されていない状態でX-Forwarded-Forなどの転送ヘッダーが受信されています。このままではすべての訪問者がプロキシアドレス1つに見え、IP制限が誤動作します — 先に信頼できるプロキシを設定してください。",
+        "enabled": "IP アクセス制限を使用",
+        "enabled_desc": "無効にすると、下のリストとルールは保存されますが適用されません。",
+        "admin_allowed_ips": "管理者領域許可IP",
+        "current_ip": "現在のアクセスIP {{ip}}",
+        "add_current_ip": "現在のIPを追加",
+        "ip_placeholder": "IPまたはCIDRを入力してEnterキーを押してください（例：203.0.113.24、10.0.0.0/8）",
+        "admin_allowed_ips_hint": "管理画面・管理者API（拡張管理画面を含む）・管理者ログインに適用されます。空白の場合、この項目は適用されません。現在のアクセスIPが含まれていないリストは保存されません。",
+        "rules": "ルート別ルール",
+        "add_rule": "ルールを追加",
+        "rules_empty": "登録されたルールがありません。",
+        "rules_hint": "上から最初にマッチするルール1つだけが適用されます。パターンの*は/を含めて何にでもマッチします。",
+        "rules_callback_warning": "管理者領域外のパスをブロックするルールは、決済承認・入金通知など外部サーバーからのリクエストまでを切断する可能性があります。コアが認識している決済・webhook・本人認証コールバックパスは自動的に除外されますが、拡張が別のパスで受け取るリクエストはブロックされる可能性があります。",
+        "emergency_hint": "ロックされた場合のサーバー解除：php artisan security:ip-restriction --disable",
+        "col_pattern": "URIパターン",
+        "col_ips": "許可IP",
+        "col_memo": "メモ",
+        "col_enabled": "使用",
+        "modal": {
+          "create_title": "ルールを追加",
+          "edit_title": "ルール編集",
+          "pattern": "URIパターン",
+          "pattern_hint": "前の/があってもなくても同じです。*は/を含めて何にでもマッチします。",
+          "pattern_placeholder": "例：/api/admin/users*",
+          "ips": "許可IP",
+          "memo": "メモ",
+          "memo_placeholder": "例：会員管理は本社ネットワークのみ",
+          "enabled": "このルールを使用",
+          "pattern_required": "URIパターンを入力してください。",
+          "ips_required": "許可IPを1つ以上入力してください。",
+          "apply": "適用",
+          "apply_hint": "適用したルールは、画面下の「保存」をクリックして初めて実際に保存されます。"
+        }
+      }
     },
     "identity": {
       "sub_tabs": {
@@ -2940,7 +2977,8 @@
       "core_changelog_modal": "コア変更履歴",
       "core_update_guide_modal": "コアアップデートお知らせ",
       "core_update_result_modal": "コアアップデート確認結果",
-      "settings_static_cache_republish_modal": "初期画面静的ファイルの再作成確認"
+      "settings_static_cache_republish_modal": "初期画面静的ファイルの再作成確認",
+      "ip_restriction_rule_form_modal": "IP アクセス制限ルール編集"
     },
     "admin_template_list": {
       "template_activate_modal": "テンプレート有効化確認",
