@@ -904,8 +904,6 @@ return [
         'debug_mode_boolean' => 'デバッグモードはtrueまたはfalse値である必要があります。',
         'sql_query_log_required' => 'SQLクエリログ設定を選択してください。',
         'sql_query_log_boolean' => 'SQLクエリログはtrueまたはfalse値である必要があります。',
-
-        // アウトバウンド HTTP プロキシ
         'outbound_proxy_required' => 'アウトバウンドプロキシアドレスを入力してください。',
         'outbound_proxy_string' => 'アウトバウンドプロキシアドレスは文字列である必要があります。',
         'outbound_proxy_max' => 'アウトバウンドプロキシアドレスは:max文字を超えることはできません。',
@@ -1199,6 +1197,7 @@ return [
         'public_asset_disk' => '公開アセットディスク',
         'orphan_cleanup_enabled' => '孤立した添付ファイルの自動クリーンアップ',
         'orphan_retention_days' => '孤立した添付ファイルの保持期間',
+        'two_factor_scope' => '2段階認証の適用範囲',
     ],
     'layout_version' => [
         'limit' => [

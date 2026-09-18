@@ -447,6 +447,7 @@ cp .env.example .env
 | **sirsoft-tosspayments** | 토스페이먼츠 결제 연동 |
 | **sirsoft-verification_kginicis** | KG이니시스 본인인증 |
 | **sirsoft-verification_nhnkcp** | NHN KCP 휴대폰 본인확인 |
+| **sirsoft-totp** | 인증 앱 2단계 인증 (RFC 6238 TOTP) |
 | **sirsoft-daum_postcode** | 다음 우편번호 검색 |
 | **sirsoft-marketing** | 마케팅 도구 |
 | **sirsoft-koreaexim** | 수출입은행 환율 자동 갱신·갱신 이력 |
@@ -481,6 +482,7 @@ cp .env.example .env
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | 나이스페이먼츠 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-tosspayments-ja** | 토스페이먼츠 플러그인 일본어 |
+| **g7-plugin-sirsoft-totp-ja** | 인증 앱(TOTP) 2단계 인증 플러그인 일본어 |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG이니시스 본인인증 플러그인 일본어 |
 | **g7-plugin-sirsoft-verification_nhnkcp-ja** | NHN KCP 휴대폰 본인확인 플러그인 일본어 |
 | **g7-template-sirsoft-admin_basic-ja** | 관리자 기본 템플릿 일본어 |

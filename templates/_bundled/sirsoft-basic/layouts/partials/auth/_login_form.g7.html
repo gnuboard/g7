@@ -81,23 +81,27 @@
          상태를 _global 에 두는 이유는 위와 같다(바깥 화면·재발송 버튼이 함께 읽는다). 「인증번호 다시 받기」는 새 challenge 를 받아 입력값을 비우고, 「처음부터」는 1단계로 되돌린다. -->
     <div data-if="{{_global.twoFactor?.required}}" class="space-y-6">
       <div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800" role="status" aria-live="polite">
-        <p data-if="{{!_global.twoFactor?.resent}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.two_factor.sent</p>
-        <p data-if="{{_global.twoFactor?.resent}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.two_factor.resent</p>
+        <!-- 인증 앱은 서버가 아무것도 보내지 않는다 — 「보냈습니다」로 안내하면 오지 않는 메일을 기다리게 된다. -->
+        <p data-if="{{!_global.twoFactor?.resent && _global.twoFactor?.provider_id !== 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.two_factor.sent</p>
+        <p data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.two_factor.sent_app</p>
+        <p data-if="{{_global.twoFactor?.resent && _global.twoFactor?.provider_id !== 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.two_factor.resent</p>
       </div>
       <!-- 인증번호 오류 -->
       <div data-if="{{_global.twoFactor?.error}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" role="alert">
         <p class="text-sm text-red-600 dark:text-red-400">{{_global.twoFactor?.error ?? ''}}</p>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.two_factor.code_label</label>
+        <label data-if="{{_global.twoFactor?.provider_id !== 'totp'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.two_factor.code_label</label>
+        <label data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.two_factor.code_label_app</label>
         <!-- 자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다 -->
-        <input type="text" name="two_factor_code" value="{{_global.twoFactor?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" :maxLength="10" placeholder="$t:auth.two_factor.code_placeholder" class="w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" disabled="{{_global.isLoggingIn}}">
+        <input type="text" name="two_factor_code" value="{{_global.twoFactor?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="{{_global.twoFactor?.provider_id === 'totp' ? 24 : 10}}" placeholder="{{_global.twoFactor?.provider_id === 'totp' ? $t('auth.two_factor.code_placeholder_app') : $t('auth.two_factor.code_placeholder')}}" class="w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" disabled="{{_global.isLoggingIn}}">
           <on event="onChange">
             <set-state target="global" twoFactor.code="{{$event.target.value}}" :twoFactor.error="null"/>
           </on>
         </input>
         <!-- 유효시각 정적 표기 — 남은 시간 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다 -->
         <p data-if="{{_global.twoFactor?.expires_at}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:auth.two_factor.valid_until|until={{_global.twoFactor?.expires_at | datetime}}</p>
+        <p data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:auth.two_factor.backup_hint</p>
       </div>
       <!-- 인증번호 확인 — submit 이라 Enter 키로도 제출된다 -->
       <button type="submit" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{!_global.twoFactor?.code || _global.twoFactor.code.length < 4 || _global.isLoggingIn}}">
@@ -106,7 +110,9 @@
         <span data-if="{{_global.isLoggingIn}}">$t:auth.two_factor.verifying</span>
       </button>
       <div class="flex flex-col sm:flex-row gap-2">
-        <button type="button" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.twoFactor?.resending || _global.isLoggingIn}}">
+        <!-- 인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급
+             이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다. -->
+        <button type="button" data-if="{{_global.twoFactor?.provider_id !== 'totp'}}" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.twoFactor?.resending || _global.isLoggingIn}}">
           <on type="click">
             <!-- 인증번호 다시 받기 — 진행 표시를 켜고 새 challenge 를 발급받는다. 성공하면 응답 값으로 2단계 상태를 통째로 교체해
                  입력값을 비우고 「다시 보냈다」 안내로 바꾼다(같은 시퀀스 안에서는 상태가 아직 갱신 전이라 응답 값만 읽는다). 실패 문구는 2단계 오류 자리에 싣는다. -->

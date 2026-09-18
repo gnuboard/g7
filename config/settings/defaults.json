@@ -24,6 +24,7 @@
             "max_login_attempts": 5,
             "login_lockout_time": 5,
             "two_factor_auth": false,
+            "two_factor_scope": "all",
             "password_min_length": 8,
             "require_password_special_char": false,
             "allow_internal_outbound_urls": false
@@ -168,7 +169,8 @@
             "purpose_providers": {
                 "password_reset": null,
                 "self_update": null,
-                "sensitive_action": null
+                "sensitive_action": null,
+                "login": null
             },
             "challenge_ttl_minutes": 15,
             "max_attempts": 5

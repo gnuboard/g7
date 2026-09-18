@@ -1556,7 +1556,11 @@
       "two_factor_auth": "2段階認証",
       "two_factor_auth_label": "ログイン時に認証番号をもう一度確認",
       "two_factor_auth_hint": "有効にすると、パスワード確認後に登録メールへ認証番号を送信し、その番号を入力してログインが完了します。",
-      "ip_throttle_floor_hint": "IP単位のリクエスト制限はこの値の6倍で適用され、1分あたり最低30回は常に保証されます。"
+      "ip_throttle_floor_hint": "IP単位のリクエスト制限はこの値の6倍で適用され、1分あたり最低30回は常に保証されます。",
+      "two_factor_scope": "適用範囲",
+      "two_factor_scope_all": "全会員",
+      "two_factor_scope_admin": "管理者のみ",
+      "two_factor_scope_hint": "管理者のみに設定すると、一般ユーザーは従来通りパスワードのみでログインします。"
     },
     "identity": {
       "sub_tabs": {

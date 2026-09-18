@@ -1311,6 +1311,7 @@ return [
         'password_min_length' => 'minimum password length',
         'require_password_special_char' => 'require special character in password',
         'two_factor_auth' => 'two-factor authentication',
+        'two_factor_scope' => 'two-factor authentication scope',
         'allow_internal_outbound_urls' => 'allow internal outbound URLs',
         // Advanced settings (additional)
         'advanced_cache_enabled' => 'cache',

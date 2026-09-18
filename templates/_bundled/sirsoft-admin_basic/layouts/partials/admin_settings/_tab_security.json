@@ -529,6 +529,45 @@
                                         "className": "text-hint mt-1"
                                     },
                                     "text": "$t:admin.settings.security.two_factor_auth_hint"
+                                },
+                                {
+                                    "comment": "적용 범위는 마스터 토글이 켜져 있을 때만 뜻이 있다 — 꺼진 채로 보이면 범위를 골라도\n               아무 일이 없어 설정이 먹히지 않는 것처럼 읽힌다.\n               저장값이 boolean 이 아닐 수 있어(미저장이면 null, 자동바인딩이 빈 문자열을 넣기도 한다)\n               느슨하게 참 판정한다 — 엄격 비교로 두면 켜 둔 사이트에서 범위 칸이 사라진다.",
+                                    "id": "field_two_factor_scope",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_local.form?.security?.two_factor_auth && _local.form?.security?.two_factor_auth !== '0'}}",
+                                    "props": {
+                                        "className": "mt-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.security.two_factor_scope"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "security.two_factor_scope",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "w-full",
+                                                "error": "{{_local.errors?.['security.two_factor_scope']?.[0] ?? ''}}",
+                                                "options": "{{[{value: 'all', label: $t('admin.settings.security.two_factor_scope_all')}, {value: 'admin', label: $t('admin.settings.security.two_factor_scope_admin')}]}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-hint mt-1"
+                                            },
+                                            "text": "$t:admin.settings.security.two_factor_scope_hint"
+                                        }
+                                    ]
                                 }
                             ]
                         }

@@ -350,7 +350,7 @@ HTTP/1.1 200
 
 **403 거부는 이미 발급된 세션을 회수한다.** `AuthService::login()` 은 관리자 판정보다 먼저 토큰과 web 세션을 발급하므로, 거부하면서 그대로 두면 관리자가 아닌 사용자가 응답만 `403` 을 받을 뿐 유효한 세션을 손에 쥔다. 거부 경로는 `AuthService::revokeIssuedSession()` 으로 그 발급분을 되돌린다.
 
-**2단계 인증이 켜져 있는 경우**: 사용자 로그인과 동일하게 `200` + `message: auth.two_factor_required` 와 `two_factor_required` / `challenge_id` / `provider_id` / `expires_at` 을 반환한다(필드 정의는 `POST /api/auth/login` 의 같은 절 참조). 이 단계에서는 아직 사용자도 토큰도 없으므로 **관리자 판정을 하지 않는다** — 판정은 `POST /api/auth/admin/login/two-factor` 가 코드 확인에 성공한 뒤에 수행한다.
+**2단계 인증이 켜져 있는 경우**: 사용자 로그인과 동일하게 `200` + `two_factor_required` / `challenge_id` / `provider_id` / `expires_at` 을 반환한다(필드 정의·수단별 `message` 분기·수단 해석 순서는 `POST /api/auth/login` 의 같은 절 참조). 쓸 수 있는 수단이 없고 운영자가 메일 폴백을 껐으면 `401 auth.two_factor_enrollment_required` 로 차단한다. 이 단계에서는 아직 사용자도 토큰도 없으므로 **관리자 판정을 하지 않는다** — 판정은 `POST /api/auth/admin/login/two-factor` 가 코드 확인에 성공한 뒤에 수행한다.
 
 
 ### POST /api/auth/admin/login/two-factor
@@ -668,12 +668,18 @@ HTTP/1.1 200
 | --- | --- | --- |
 | `two_factor_required` | boolean | 항상 `true` — 이 응답이 추가 확인 단계임을 나타낸다 |
 | `challenge_id` | string(uuid) | 확인 단계에 그대로 전달할 challenge 식별자 |
-| `provider_id` | string | 코드를 발송한 본인인증 프로바이더 |
+| `provider_id` | string | 이 challenge 를 발행한 본인인증 프로바이더. 메일은 `g7:core.mail`, 인증 앱(TOTP)은 `totp` |
 | `expires_at` | string(ISO8601)\|null | challenge 만료 시각 |
+
+**수단에 따라 `message` 가 갈린다.** 코드를 보내는 수단(메일)은 `auth.two_factor_required`("인증번호를 보냈습니다"), 서버가 아무것도 보내지 않는 수단(인증 앱)은 `auth.two_factor_required_app`("인증 앱의 6자리 코드를 입력해주세요") 를 쓴다. 판정 기준은 `provider_id` 가 아니라 그 프로바이더가 선언한 채널이 코어 어휘 `app` 인지 여부이므로, 같은 성질의 수단이 추가돼도 분기가 따라온다. 클라이언트는 `provider_id` 로 「인증번호 다시 받기」 노출 여부를 정한다 — 발송이 없는 수단에서 그 버튼은 새 challenge 발급 이상의 의미가 없다.
+
+**어떤 수단이 선택되는가**: `security.two_factor_scope` 가 대상을 고르고(`all` 전체 / `admin` 관리자만, 기본 `all`), 그 다음 사용자별로 쓸 수 있는 수단을 해석한다. 인증 앱을 등록한 사용자는 앱으로, 등록하지 않은 사용자는 메일로 되돌아간다 — 등록하지 않았다는 이유로 관리자가 로그인하지 못하면 설정을 되돌릴 수단까지 사라지기 때문이다.
 
 이 응답에는 `data.token` 과 `data.user` 가 없다. **클라이언트는 `two_factor_required` 를 먼저 판정해야 한다** — 응답 형태가 하나라고 가정하고 `data.user.*` 를 읽으면 그 자리에서 예외가 나고, `data.token` 을 그대로 저장하면 `"undefined"` 문자열이 남아 이후 모든 요청이 `401` 로 튕긴다(공개 #133). 코어 클라이언트(`AuthManager.login()`)는 `LoginResult` 판별 유니온으로 두 형태를 구분해 돌려준다.
 
 **인증번호를 보내지 못한 경우**: 자격 증명은 올바르지만 코드를 전달할 수단이 없으므로 로그인을 완료할 수 없다. 이때는 `401`(자격 증명 오류)이 아니라 `503 auth.two_factor_delivery_failed` 를 반환한다 — `401` 로 뭉뚱그리면 사용자는 비밀번호를 의심하며 같은 실패를 반복하고, 운영자는 메일 설정이 깨진 사실을 알 방법이 없다. 발송에 실패해도 2단계 인증을 건너뛰고 로그인시키지는 않는다.
+
+**쓸 수 있는 수단이 하나도 없는 경우**: 갈림길은 그것이 **운영자의 결정인지** 다. 인증 앱 플러그인 설정에서 메일 폴백을 명시적으로 껐다면 `401 auth.two_factor_enrollment_required` 로 로그인을 차단한다 — 그냥 통과시키면 운영자가 끈 결과가 "2단계 인증이 아예 없는 로그인" 이 되어 정반대가 되기 때문이다. 구제는 관리자의 등록 해제(`DELETE /api/plugins/sirsoft-totp/admin/credentials/{user}`) 또는 `totp:reset` artisan 이다. 반면 운영자의 결정이 아닌 이유(메일 설정이 깨진 경우 등)로 수단이 없을 때는 차단하지 않고 경고 로그만 남긴다 — 차단하면 아무도 로그인하지 못해 설정을 되돌릴 수단까지 사라진다.
 
 
 ### POST /api/auth/login/two-factor

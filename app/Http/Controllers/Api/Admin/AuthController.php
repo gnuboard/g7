@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\Auth\AccountLockedException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
+use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
@@ -19,6 +20,11 @@ class AuthController extends AdminBaseController
 {
     use BuildsAuthFailureResponses;
 
+    /**
+     * 관리자 인증 컨트롤러를 생성합니다.
+     *
+     * @param  AuthService  $authService  인증 서비스
+     */
     public function __construct(
         private AuthService $authService
     ) {
@@ -52,7 +58,7 @@ class AuthController extends AdminBaseController
             // 뒤로 미룬다. 이 분기가 없으면 $data['user'] 가 없어 500 이 되고, 관리자까지
             // 로그인할 수 없어 설정을 되돌릴 수단이 사라진다.
             if ($data['two_factor_required'] ?? false) {
-                return $this->success('auth.two_factor_required', $data);
+                return $this->success($this->twoFactorRequiredMessageKey($data), $data);
             }
 
             $user = $data['user'];
@@ -72,6 +78,8 @@ class AuthController extends AdminBaseController
             return $this->success('auth.admin_login_success', $data);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {
@@ -115,6 +123,8 @@ class AuthController extends AdminBaseController
         } catch (AccountLockedException $e) {
             // 세션을 여는 지점이므로 `login` 과 같은 423 계약을 따른다.
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {
@@ -147,9 +157,11 @@ class AuthController extends AdminBaseController
                 return $this->forbidden('auth.admin_required');
             }
 
-            return $this->success('auth.two_factor_required', $data);
+            return $this->success($this->twoFactorRequiredMessageKey($data), $data);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {

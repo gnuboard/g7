@@ -81,6 +81,8 @@ class SaveSettingsRequest extends FormRequest
      *
      * site_logo 필드가 Attachment 객체 배열로 전송될 수 있으므로
      * 정수 ID 배열로 변환합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -128,6 +130,8 @@ class SaveSettingsRequest extends FormRequest
      * 화면 입력 칸은 콤마로 구분한 한 줄 텍스트라 이 값은 문자열로 들어온다. 문자열 그대로
      * 저장하면 업로드 제한을 적용하는 지점이 그 값을 쓰지 못해, 저장은 성공하는데 제한은
      * 종전 목록으로 남는다. 형태 판정은 저장 경로 진입 전 이 한 곳에서만 수행한다.
+     *
+     * @return void
      */
     private function normalizeAllowedExtensions(): void
     {
@@ -150,6 +154,8 @@ class SaveSettingsRequest extends FormRequest
      * prepareForValidation 단계에서 명시 캐스팅합니다.
      *
      * @param  array<int, string>  $fields  dot-notation 필드 경로 배열
+     *
+     * @return void
      */
     private function castAdvancedBooleanFields(array $fields): void
     {
@@ -294,6 +300,9 @@ class SaveSettingsRequest extends FormRequest
             ],
             'security.require_password_special_char' => ['nullable', 'boolean'],
             'security.two_factor_auth' => ['nullable', 'boolean'],
+            // 적용 범위. 미전송(기존 클라이언트)은 기본값 'all' 유지 — 레거시 저장값
+            // (two_factor_auth=true 단독)의 "전체" 의미가 그대로 보존된다.
+            'security.two_factor_scope' => ['nullable', 'string', 'in:all,admin'],
             // 신규 설정이므로 미전송(기존 클라이언트)을 허용한다 — 미전송 시 기본값 false 유지
             'security.allow_internal_outbound_urls' => ['nullable', 'boolean'],
 
@@ -568,6 +577,8 @@ class SaveSettingsRequest extends FormRequest
      * 임의 깊이의 leaf 값을 재귀 순회하며 string|max:100 으로 검증합니다.
      *
      * @param  Validator  $validator  검증기 인스턴스
+     *
+     * @return void
      */
     public function withValidator($validator): void
     {
@@ -598,6 +609,8 @@ class SaveSettingsRequest extends FormRequest
      * @param  array<string, mixed>  $node  검증할 노드 (purpose_providers 또는 중첩 하위)
      * @param  string  $path  현재 노드의 dot-path (에러 키 prefix)
      * @param  Validator  $validator  검증기 인스턴스
+     *
+     * @return void
      */
     private function validatePurposeProviderLeaves(array $node, string $path, $validator): void
     {
@@ -992,6 +1005,7 @@ class SaveSettingsRequest extends FormRequest
             'security.password_min_length' => __('validation.attributes.password_min_length'),
             'security.require_password_special_char' => __('validation.attributes.require_password_special_char'),
             'security.two_factor_auth' => __('validation.attributes.two_factor_auth'),
+            'security.two_factor_scope' => __('validation.attributes.two_factor_scope'),
             'security.allow_internal_outbound_urls' => __('validation.attributes.allow_internal_outbound_urls'),
             // advanced
             'advanced.cache_enabled' => __('validation.attributes.advanced_cache_enabled'),

@@ -1304,6 +1304,7 @@ return [
         'password_min_length' => '비밀번호 최소 길이',
         'require_password_special_char' => '비밀번호 특수문자 필수',
         'two_factor_auth' => '2단계 인증',
+        'two_factor_scope' => '2단계 인증 적용 범위',
         'allow_internal_outbound_urls' => '내부 네트워크 주소 호출 허용',
         // 고급 설정 (추가)
         'advanced_cache_enabled' => '캐시 사용',

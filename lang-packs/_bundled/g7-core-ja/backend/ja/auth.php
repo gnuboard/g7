@@ -43,4 +43,6 @@ return [
     'password_reset_email_sent' => 'パスワードリセットメールが送信されました。',
     'email_send_failed' => 'メール送信に失敗しました。しばらく後に再度お試しください。',
     'two_factor_delivery_failed' => '認証番号を送信できませんでした。管理者にお問い合わせください。',
+    'two_factor_required_app' => '認証アプリの6桁コードを入力してログインを完了してください。',
+    'two_factor_enrollment_required' => 'ログインするには認証アプリの登録が必要です。管理者にお問い合わせください。',
 ];

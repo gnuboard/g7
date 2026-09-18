@@ -1,0 +1,58 @@
+{
+    "editor": {
+        "data_source": {
+            "totpEnrollment": "Authenticator enrollment status"
+        }
+    },
+    "admin": {
+        "security": {
+            "title": "Authenticator App",
+            "description": "Use the 6-digit code from your authenticator app as the second step when signing in.",
+            "intro": {
+                "title": "Set up your authenticator app",
+                "description": "Link the authenticator app on your phone to this account, and signing in will ask for the app's code in addition to your password.",
+                "step_install": "Install an authenticator app on your phone (Google Authenticator, Authy, 1Password, and so on).",
+                "step_scan": "Scan the QR code shown here with the app, or enter the key by hand.",
+                "step_confirm": "Enter the 6-digit code shown in the app to finish enrolling.",
+                "start": "Start setup"
+            },
+            "enroll": {
+                "title": "Connect your app",
+                "description": "Add the account to your app, then enter the 6-digit code it shows. The code changes every 30 seconds.",
+                "qr_hint": "Use «Scan QR code» in your authenticator app.",
+                "manual_label": "Key for manual entry",
+                "manual_hint": "If you cannot use the camera, type this key into the app instead.",
+                "code_label": "Authenticator code",
+                "code_placeholder": "6 digits",
+                "confirm": "Finish setup",
+                "cancel": "Cancel"
+            },
+            "enrolled": {
+                "title": "Your authenticator app is enrolled",
+                "description": "Signing in asks for the code from your app. Removing the enrollment or issuing new backup codes requires a current code.",
+                "since": "Enrolled on {{at}}",
+                "backup_remaining": "{{count}} backup codes left",
+                "code_label": "Current code",
+                "code_placeholder": "6-digit code or backup code",
+                "code_hint": "If you cannot use your phone, enter a backup code instead.",
+                "regenerate": "Issue new backup codes",
+                "disable": "Remove enrollment"
+            },
+            "backup": {
+                "title": "Backup codes",
+                "warning": "These codes are shown once, right now. Write them down somewhere safe. They are the only way to sign in if you lose your phone, and each code disappears once used.",
+                "copy": "Copy all",
+                "copied": "Backup codes copied. Paste them somewhere safe to keep them.",
+                "done": "I saved them"
+            }
+        },
+        "user_card": {
+            "tab_label": "Authenticator",
+            "title": "Authenticator two-factor",
+            "description": "Remove this member's authenticator enrollment. Use this when they have lost both their phone and their backup codes and cannot sign in.",
+            "reset": "Remove enrollment",
+            "confirm": "Remove this member's authenticator enrollment? This cannot be undone and they will have to enroll again.",
+            "hint": "After removal this member is no longer asked for an app code when signing in. If the mail fallback is off, they cannot sign in until they enroll again."
+        }
+    }
+}

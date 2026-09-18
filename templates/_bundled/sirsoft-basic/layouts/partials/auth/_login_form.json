@@ -320,9 +320,10 @@
                     },
                     "children": [
                         {
+                            "comment": "인증 앱은 서버가 아무것도 보내지 않는다 — 「보냈습니다」로 안내하면 오지 않는 메일을 기다리게 된다.",
                             "type": "basic",
                             "name": "P",
-                            "if": "{{!_global.twoFactor?.resent}}",
+                            "if": "{{!_global.twoFactor?.resent && _global.twoFactor?.provider_id !== 'totp'}}",
                             "props": {
                                 "className": "text-sm text-blue-700 dark:text-blue-300"
                             },
@@ -331,7 +332,16 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "if": "{{_global.twoFactor?.resent}}",
+                            "if": "{{_global.twoFactor?.provider_id === 'totp'}}",
+                            "props": {
+                                "className": "text-sm text-blue-700 dark:text-blue-300"
+                            },
+                            "text": "$t:auth.two_factor.sent_app"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.twoFactor?.resent && _global.twoFactor?.provider_id !== 'totp'}}",
                             "props": {
                                 "className": "text-sm text-blue-700 dark:text-blue-300"
                             },
@@ -366,10 +376,20 @@
                         {
                             "type": "basic",
                             "name": "Label",
+                            "if": "{{_global.twoFactor?.provider_id !== 'totp'}}",
                             "props": {
                                 "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
                             },
                             "text": "$t:auth.two_factor.code_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "if": "{{_global.twoFactor?.provider_id === 'totp'}}",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                            },
+                            "text": "$t:auth.two_factor.code_label_app"
                         },
                         {
                             "comment": "자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다",
@@ -392,8 +412,8 @@
                                 "value": "{{_global.twoFactor?.code ?? ''}}",
                                 "inputMode": "numeric",
                                 "autoComplete": "one-time-code",
-                                "maxLength": 10,
-                                "placeholder": "$t:auth.two_factor.code_placeholder",
+                                "maxLength": "{{_global.twoFactor?.provider_id === 'totp' ? 24 : 10}}",
+                                "placeholder": "{{_global.twoFactor?.provider_id === 'totp' ? $t('auth.two_factor.code_placeholder_app') : $t('auth.two_factor.code_placeholder')}}",
                                 "className": "w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
                                 "disabled": "{{_global.isLoggingIn}}"
                             }
@@ -407,6 +427,15 @@
                                 "className": "mt-2 text-xs text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:auth.two_factor.valid_until|until={{_global.twoFactor?.expires_at | datetime}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.twoFactor?.provider_id === 'totp'}}",
+                            "props": {
+                                "className": "mt-2 text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:auth.two_factor.backup_hint"
                         }
                     ]
                 },
@@ -450,8 +479,10 @@
                     },
                     "children": [
                         {
+                            "comment": "인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급\n             이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다.",
                             "type": "basic",
                             "name": "Button",
+                            "if": "{{_global.twoFactor?.provider_id !== 'totp'}}",
                             "actions": [
                                 {
                                     "comment": "인증번호 다시 받기 — 진행 표시를 켜고 새 challenge 를 발급받는다. 성공하면 응답 값으로 2단계 상태를 통째로 교체해\n                 입력값을 비우고 「다시 보냈다」 안내로 바꾼다(같은 시퀀스 안에서는 상태가 아직 갱신 전이라 응답 값만 읽는다). 실패 문구는 2단계 오류 자리에 싣는다.",

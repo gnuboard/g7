@@ -50,4 +50,50 @@ trait BuildsAuthFailureResponses
     {
         return $this->error('auth.two_factor_delivery_failed', 503);
     }
+
+    /**
+     * 2단계 인증 수단 미등록 차단 응답(401)을 구성합니다.
+     *
+     * 운영자가 메일 폴백을 껐고 이 사용자에게 쓸 수 있는 수단이 없을 때다. 통과시키면
+     * 운영자가 끈 것과 정반대(2단계 인증 없는 로그인)가 되므로 막는다 — 구제는 등록이나
+     * 관리자 초기화다.
+     *
+     * @return JsonResponse 401 응답
+     */
+    protected function enrollmentRequiredResponse(): JsonResponse
+    {
+        return $this->error('auth.two_factor_enrollment_required', 401);
+    }
+
+    /**
+     * challenge 를 발행한 수단에 맞는 안내 메시지 키를 고릅니다.
+     *
+     * 기본 문구("인증번호를 보냈습니다")는 메일을 전제로 한 안내다. 인증 앱(TOTP)은
+     * 아무것도 보내지 않으므로 그대로 쓰면 오지 않는 메일을 기다리게 만든다.
+     * 채널이 코어 어휘로 `app` 인 프로바이더만 앱 안내로 바꾸고, 그 밖의 수단(메일·
+     * 외부 프로바이더)은 기존 문구를 그대로 유지한다 — 기존 테스트 계약 보존.
+     *
+     * @param  array<string, mixed>  $challenge  startTwoFactorChallenge 반환 페이로드
+     * @return string 번역 키
+     */
+    protected function twoFactorRequiredMessageKey(array $challenge): string
+    {
+        $providerId = (string) ($challenge['provider_id'] ?? '');
+
+        if ($providerId === '') {
+            return 'auth.two_factor_required';
+        }
+
+        $manager = app(\App\Extension\IdentityVerification\IdentityVerificationManager::class);
+
+        if (! $manager->has($providerId)) {
+            return 'auth.two_factor_required';
+        }
+
+        $channels = $manager->get($providerId)->getChannels();
+
+        return in_array(\App\Enums\IdentityVerificationChannel::App->value, $channels, true)
+            ? 'auth.two_factor_required_app'
+            : 'auth.two_factor_required';
+    }
 }

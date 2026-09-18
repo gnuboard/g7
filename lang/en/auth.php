@@ -5,6 +5,8 @@ return [
     'login_success' => 'Login successful.',
     'login_failed' => 'Authentication failed.',
     'two_factor_required' => 'A verification code has been sent. Enter it to finish signing in.',
+    'two_factor_required_app' => 'Enter the 6-digit code from your authenticator app to finish signing in.',
+    'two_factor_enrollment_required' => 'You must enroll an authenticator app before signing in. Please contact the administrator.',
     'two_factor_failed' => 'The verification code is incorrect or has expired.',
     'two_factor_invalid_challenge' => 'Verification request not found. Please sign in again.',
     'two_factor_delivery_failed' => 'Could not send the verification code. Please contact the administrator.',

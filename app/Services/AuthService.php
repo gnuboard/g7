@@ -7,13 +7,18 @@ use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Contracts\Extension\IdentityVerificationInterface;
+use App\Contracts\Extension\MailFallbackAwareProviderInterface;
+use App\Contracts\Extension\UserScopedIdentityProviderInterface;
 use App\Enums\ConsentType;
 use App\Enums\IdentityVerificationPurpose;
 use App\Enums\IdentityVerificationStatus;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\AccountLockedException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
+use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
 use App\Extension\HookManager;
+use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +31,21 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthService
 {
+    /**
+     * 코어 메일 프로바이더 id — 2단계 인증의 최후 폴백 수단.
+     */
+    private const MAIL_PROVIDER_ID = 'g7:core.mail';
+
+    /**
+     * 인증 서비스를 생성합니다.
+     *
+     * @param  UserRepositoryInterface  $userRepository  사용자 저장소
+     * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
+     * @param  UserConsentRepositoryInterface  $userConsentRepository  약관 동의 저장소
+     * @param  PasswordResetTokenRepositoryInterface  $passwordResetTokenRepository  비밀번호 재설정 토큰 저장소
+     * @param  IdentityPolicyService  $policyService  본인인증 정책 서비스
+     * @param  IdentityVerificationLogRepositoryInterface  $identityLogRepository  본인인증 로그 저장소
+     */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private RoleRepositoryInterface $roleRepository,
@@ -139,10 +159,12 @@ class AuthService
         // 2단계 인증이 켜져 있으면 여기서 토큰을 발급하지 않는다.
         // 비밀번호 확인만으로 세션이 열리면 2단계가 없는 것과 같으므로, 인증 코드를 확인할
         // 때까지 로그인 상태를 만들지 않고 challenge 만 돌려준다.
-        if ($this->isTwoFactorRequired($user)) {
+        $twoFactorProviderId = $this->resolveTwoFactorProviderId($user);
+
+        if ($twoFactorProviderId !== null) {
             Auth::logout();
 
-            return $this->startTwoFactorChallenge($user, $email);
+            return $this->startTwoFactorChallenge($user, $email, $twoFactorProviderId);
         }
 
         return $this->issueLoginSession($user, $email);
@@ -158,6 +180,8 @@ class AuthService
      * 초기화해 흔적도 남지 않습니다.
      *
      * @param  User|null  $user  검사 대상 사용자 (없으면 검사 대상 아님)
+     *
+     * @return void
      *
      * @throws AccountLockedException 계정이 잠겨 있을 때
      */
@@ -183,18 +207,150 @@ class AuthService
     }
 
     /**
-     * 이 사용자에게 2단계 인증을 요구해야 하는지 판정합니다.
+     * 2단계 인증을 요구해야 하는지 판정하고, 요구한다면 쓸 프로바이더 id 를 돌려줍니다.
+     *
+     * 판정(요구 여부)과 발행(어떤 수단으로)이 갈라지면, 판정이 "가능" 이라 한 수단과 실제
+     * 발행된 수단이 어긋난다(예: 판정은 메일 폴백인데 발행은 미등록 TOTP). 한 메서드가
+     * 두 답을 함께 내서 그 틈을 없앤다.
      *
      * @param  User  $user  로그인 시도 사용자
-     * @return bool 2단계 인증 필요 여부
+     * @return string|null 2단계 인증에 쓸 provider id, 요구하지 않으면 null
+     *
+     * @throws TwoFactorEnrollmentRequiredException 수단이 없는데 운영자가 메일 폴백을 껐을 때
      */
-    private function isTwoFactorRequired(User $user): bool
+    private function resolveTwoFactorProviderId(User $user): ?string
     {
         if (! (bool) g7_core_settings('security.two_factor_auth', false)) {
-            return false;
+            return null;
+        }
+
+        // 적용 범위. 레거시 저장값(`two_factor_auth=true` 단독)의 의미는 "전체"였으므로
+        // 기본값 'all' 이 그 의미를 그대로 보존한다 — 설정 마이그레이션 불필요.
+        $scope = (string) g7_core_settings('security.two_factor_scope', 'all');
+
+        if ($scope === 'admin' && ! $user->isAdmin()) {
+            return null;
         }
 
         // 코드를 받을 수단이 없으면 요구할 수 없다 — 요구하면 그 계정은 영구히 잠긴다.
+        return $this->resolveTwoFactorProvider($user);
+    }
+
+    /**
+     * 이 사용자의 2단계 인증을 실제로 수행할 프로바이더 id 를 해석합니다.
+     *
+     * 해석 순서:
+     * 1. login purpose 로 해석된 프로바이더가 이 사용자에게 사용 가능하면 채택
+     *    (TOTP 처럼 사용자별 등록이 필요한 수단은 `UserScopedIdentityProviderInterface` 로 답한다)
+     * 2. 불가하면 메일 폴백 — 미등록 관리자가 콜드스타트로 잠기는 경우를 구조적으로 배제한다.
+     *    폴백을 원치 않는 사이트는 `identity.allow_mail_fallback=false` 로 끌 수 있다.
+     * 3. 둘 다 불가하면 null — 호출자는 2단계 인증을 요구하지 않는다(요구하면 영구 잠금).
+     *
+     * 판정은 부작용이 없어야 한다 — 로그인 판정 경로에서 호출되므로 challenge 를 만들지 않는다.
+     *
+     * @param  User  $user  로그인 시도 사용자
+     * @return string|null 사용할 provider id, 없으면 null
+     *
+     * @throws TwoFactorEnrollmentRequiredException 수단이 없는데 운영자가 메일 폴백을 껐을 때
+     */
+    private function resolveTwoFactorProvider(User $user): ?string
+    {
+        $manager = app(IdentityVerificationManager::class);
+        $purpose = IdentityVerificationPurpose::Login->value;
+
+        $provider = null;
+
+        try {
+            $provider = $manager->resolveForPurpose($purpose);
+        } catch (\Throwable $e) {
+            // 등록된 프로바이더가 하나도 purpose 를 지원하지 않는 상태 — 메일 폴백으로 넘어간다.
+        }
+
+        if ($provider !== null && $this->canProviderChallengeUser($provider, $user)) {
+            return $provider->getId();
+        }
+
+        // 메일 폴백. 해석된 프로바이더가 이미 메일이었다면 위에서 걸러졌다는 뜻이므로
+        // (= 이메일이 없거나 메일 설정이 꺼졌다) 여기서도 통과하지 못한다.
+        //
+        // 폴백 허용 여부는 **해석된 프로바이더를 소유한 확장**이 정한다 — 사용자별 등록이
+        // 필요한 수단을 들여온 쪽이 "미등록자를 어떻게 할지" 를 아는 유일한 주체다.
+        // 그 프로바이더가 답하지 않으면(보조 계약 미구현) 허용으로 본다.
+        $allowMailFallback = $this->isMailFallbackAllowed($provider);
+
+        if ($allowMailFallback && $manager->has(self::MAIL_PROVIDER_ID)) {
+            $mail = $manager->get(self::MAIL_PROVIDER_ID);
+
+            if ($mail->supportsPurpose($purpose) && $this->canProviderChallengeUser($mail, $user)) {
+                return $mail->getId();
+            }
+        }
+
+        // 여기부터는 이 사용자에게 요구할 수 있는 수단이 하나도 없다. 갈림길은 그것이
+        // **운영자의 결정인지** 다.
+        //
+        // 운영자가 폴백을 명시적으로 껐다면 그대로 통과시킬 수 없다 — 끈 결과가 "2단계
+        // 인증이 아예 없는 로그인" 이 되어 정반대가 된다. 등록을 마치거나 관리자 초기화·
+        // `totp:reset` 으로 구제받아야 한다.
+        if (! $allowMailFallback) {
+            Log::warning('2단계 인증 수단이 없고 메일 폴백이 꺼져 있어 로그인을 차단합니다', [
+                'user_id' => $user->id,
+                'resolved_provider_id' => $provider?->getId(),
+            ]);
+
+            throw new TwoFactorEnrollmentRequiredException;
+        }
+
+        // 운영자의 결정이 아니라면(메일 설정이 깨진 경우 등) 차단하지 않는다 — 차단하면
+        // 아무도 로그인하지 못해 설정을 되돌릴 수단까지 사라진다. 대신 운영자가 알아차릴
+        // 수 있도록 남긴다.
+        Log::warning('2단계 인증이 켜져 있으나 이 사용자에게 사용할 수 있는 수단이 없습니다 — 2단계 인증 없이 로그인시킵니다', [
+            'user_id' => $user->id,
+            'resolved_provider_id' => $provider?->getId(),
+        ]);
+
+        return null;
+    }
+
+    /**
+     * 해석된 프로바이더가 메일 폴백을 허용하는지 판정합니다.
+     *
+     * 판정 주체는 그 프로바이더를 들여온 확장이다 — 자기 설정에서 값을 읽어
+     * `allowsMailFallback()` 으로 답한다. 이 계약을 구현하지 않은 프로바이더(메일 자신,
+     * 외부 본인확인 등)는 폴백 개념이 없으므로 허용으로 본다.
+     *
+     * @param  IdentityVerificationInterface|null  $provider  해석된 프로바이더
+     * @return bool 메일 폴백 허용 여부
+     */
+    private function isMailFallbackAllowed(?IdentityVerificationInterface $provider): bool
+    {
+        if ($provider instanceof MailFallbackAwareProviderInterface) {
+            return $provider->allowsMailFallback();
+        }
+
+        return true;
+    }
+
+    /**
+     * 프로바이더가 이 사용자에게 challenge 를 발행할 수 있는지 판정합니다.
+     *
+     * 보조 계약을 구현한 프로바이더는 자기 판정을 쓰고, 구현하지 않은 기존 프로바이더는
+     * 코어의 기존 규칙(이메일 보유)을 그대로 적용한다 — 기존 동작·테스트 계약 보존.
+     *
+     * @param  IdentityVerificationInterface  $provider  대상 프로바이더
+     * @param  User  $user  대상 사용자
+     * @return bool challenge 발행 가능 여부
+     */
+    private function canProviderChallengeUser(IdentityVerificationInterface $provider, User $user): bool
+    {
+        if (! $provider->isAvailable()) {
+            return false;
+        }
+
+        if ($provider instanceof UserScopedIdentityProviderInterface) {
+            return $provider->canChallengeUser($user);
+        }
+
         return filled($user->email);
     }
 
@@ -203,9 +359,10 @@ class AuthService
      *
      * @param  User  $user  대상 사용자
      * @param  string  $email  로그인에 사용한 이메일
+     * @param  string|null  $providerId  사용할 provider id (null 이면 Manager 기본 해석)
      * @return array{two_factor_required: bool, challenge_id: string, provider_id: string, expires_at: mixed} challenge 정보
      */
-    private function startTwoFactorChallenge(User $user, string $email): array
+    private function startTwoFactorChallenge(User $user, string $email, ?string $providerId = null): array
     {
         $identity = app(IdentityVerificationService::class);
 
@@ -217,7 +374,8 @@ class AuthService
                 'origin_identifier' => 'auth.login',
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
-            ]
+            ],
+            $providerId,
         );
 
         // 코드를 보내지 못하면 사용자는 완료할 수 없는 challenge 를 들고 막다른 길에 선다.
@@ -355,7 +513,13 @@ class AuthService
 
         app(IdentityVerificationService::class)->cancel($log->id);
 
-        return $this->startTwoFactorChallenge($user, (string) $user->email);
+        // 재발송은 같은 수단으로 다시 발급한다 — 원 challenge 의 프로바이더를 그대로 쓰고,
+        // 그 사이 사용할 수 없게 됐으면(자격증명 삭제 등) 현재 해석 결과로 되돌린다.
+        return $this->startTwoFactorChallenge(
+            $user,
+            (string) $user->email,
+            $log->provider_id ?: $this->resolveTwoFactorProviderId($user),
+        );
     }
 
     /**
@@ -367,6 +531,8 @@ class AuthService
      *
      * @param  User  $user  대상 사용자
      * @param  string  $plainTextToken  방금 발급한 평문 토큰 ({id}|{token} 형식)
+     *
+     * @return void
      */
     public function revokeIssuedSession(User $user, string $plainTextToken): void
     {
@@ -499,6 +665,8 @@ class AuthService
      * 사용자를 로그아웃시키고 현재 디바이스의 인증 토큰만 삭제합니다.
      *
      * @param  User  $user  로그아웃할 사용자
+     *
+     * @return void
      */
     public function logout(User $user): void
     {
@@ -582,6 +750,8 @@ class AuthService
      * 모든 디바이스에서 사용자를 로그아웃시킵니다.
      *
      * @param  User  $user  로그아웃할 사용자
+     *
+     * @return void
      */
     public function logoutFromAllDevices(User $user): void
     {
@@ -599,6 +769,8 @@ class AuthService
      * @param  string|null  $redirectPrefix  리다이렉트 경로 접두사 (예: 'admin')
      *
      * @throws ValidationException 등록되지 않은 이메일일 때
+     *
+     * @return void
      */
     public function forgotPassword(string $email, ?string $redirectPrefix = null): void
     {
@@ -692,6 +864,8 @@ class AuthService
      * @param  string  $password  새로운 비밀번호
      *
      * @throws ValidationException 등록되지 않은 이메일이거나 토큰이 유효하지 않을 때
+     *
+     * @return void
      */
     public function resetPassword(string $token, string $email, string $password): void
     {
@@ -760,6 +934,8 @@ class AuthService
      * @param  User  $user  가입 완료된 사용자
      * @param  array  $data  요청 데이터
      * @param  Carbon  $agreedAt  동의 일시
+     *
+     * @return void
      */
     private function recordConsents(User $user, array $data, Carbon $agreedAt): void
     {

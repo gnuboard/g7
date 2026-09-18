@@ -465,20 +465,31 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "인증 앱은 서버가 아무것도 보내지 않는다 — 「보냈습니다」로 안내하면 오지 않는 메일을 기다리게 된다.",
                                                     "id": "login_two_factor_notice_sent",
                                                     "type": "basic",
                                                     "name": "P",
-                                                    "if": "{{!_local.twoFactor?.resent}}",
+                                                    "if": "{{!_local.twoFactor?.resent && _local.twoFactor?.provider_id !== 'totp'}}",
                                                     "props": {
                                                         "className": "text-sm text-blue-700 dark:text-blue-300"
                                                     },
                                                     "text": "$t:auth.login.two_factor.sent"
                                                 },
                                                 {
+                                                    "id": "login_two_factor_notice_app",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.twoFactor?.provider_id === 'totp'}}",
+                                                    "props": {
+                                                        "className": "text-sm text-blue-700 dark:text-blue-300"
+                                                    },
+                                                    "text": "$t:auth.login.two_factor.sent_app"
+                                                },
+                                                {
                                                     "id": "login_two_factor_notice_resent",
                                                     "type": "basic",
                                                     "name": "P",
-                                                    "if": "{{_local.twoFactor?.resent}}",
+                                                    "if": "{{_local.twoFactor?.resent && _local.twoFactor?.provider_id !== 'totp'}}",
                                                     "props": {
                                                         "className": "text-sm text-blue-700 dark:text-blue-300"
                                                     },
@@ -516,6 +527,7 @@
                                                     "id": "login_two_factor_label",
                                                     "type": "basic",
                                                     "name": "Label",
+                                                    "if": "{{_local.twoFactor?.provider_id !== 'totp'}}",
                                                     "props": {
                                                         "htmlFor": "two_factor_code",
                                                         "className": "form-label"
@@ -523,7 +535,18 @@
                                                     "text": "$t:auth.login.two_factor.code_label"
                                                 },
                                                 {
-                                                    "comment": "자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다",
+                                                    "id": "login_two_factor_label_app",
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "if": "{{_local.twoFactor?.provider_id === 'totp'}}",
+                                                    "props": {
+                                                        "htmlFor": "two_factor_code",
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:auth.login.two_factor.code_label_app"
+                                                },
+                                                {
+                                                    "comment": "자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다.\n                 인증 앱 경로는 백업 코드(xxxxx-xxxxx)도 받으므로 자릿수 상한을 늘리고 안내 문구를 바꾼다.\n                 inputMode 는 numeric 을 유지해 6자리 코드 입력이 휴대폰에서 숫자 키패드로 열리게 한다.",
                                                     "id": "login_two_factor_input",
                                                     "type": "basic",
                                                     "name": "Input",
@@ -545,8 +568,8 @@
                                                         "value": "{{_local.twoFactor?.code ?? ''}}",
                                                         "inputMode": "numeric",
                                                         "autoComplete": "one-time-code",
-                                                        "maxLength": 10,
-                                                        "placeholder": "$t:auth.login.two_factor.code_placeholder",
+                                                        "maxLength": "{{_local.twoFactor?.provider_id === 'totp' ? 24 : 10}}",
+                                                        "placeholder": "{{_local.twoFactor?.provider_id === 'totp' ? $t('auth.login.two_factor.code_placeholder_app') : $t('auth.login.two_factor.code_placeholder')}}",
                                                         "className": "input py-3 text-center text-xl tracking-widest font-mono",
                                                         "disabled": "{{_local.isLoggingIn}}"
                                                     }
@@ -561,6 +584,16 @@
                                                         "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "$t:auth.login.two_factor.valid_until|until={{_local.twoFactor?.expires_at | datetime}}"
+                                                },
+                                                {
+                                                    "id": "login_two_factor_backup_hint",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.twoFactor?.provider_id === 'totp'}}",
+                                                    "props": {
+                                                        "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:auth.login.two_factor.backup_hint"
                                                 }
                                             ]
                                         },
@@ -609,9 +642,11 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급\n                 이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다.",
                                                     "id": "login_two_factor_resend",
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "if": "{{_local.twoFactor?.provider_id !== 'totp'}}",
                                                     "actions": [
                                                         {
                                                             "comment": "인증번호 다시 받기 — 진행 표시를 켜고 새 challenge 를 발급받는다. 성공하면 응답 값으로 2단계 상태를 통째로 교체해\n                     입력값을 비우고 「다시 보냈다」 안내로 바꾼다(같은 시퀀스 안에서는 상태가 아직 갱신 전이라 응답 값만 읽는다). 실패 문구는 2단계 오류 자리에 싣는다.",

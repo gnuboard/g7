@@ -444,6 +444,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-tosspayments/resources/extensions/checkout-payment-error.g7.html',
         'plugins/_bundled/sirsoft-tosspayments/resources/extensions/user_order_show.g7.html',
         'plugins/_bundled/sirsoft-tosspayments/resources/layouts/admin/plugin_settings.g7.html',
+        'plugins/_bundled/sirsoft-totp/resources/extensions/admin_user_totp_card.g7.html',
+        'plugins/_bundled/sirsoft-totp/resources/layouts/admin/plugin_settings.g7.html',
         'plugins/_bundled/sirsoft-verification_kginicis/resources/extensions/identity_provider_inicis.g7.html',
         'plugins/_bundled/sirsoft-verification_kginicis/resources/extensions/mypage_identity_card.g7.html',
         'plugins/_bundled/sirsoft-verification_kginicis/resources/layouts/admin/plugin_settings.g7.html',
