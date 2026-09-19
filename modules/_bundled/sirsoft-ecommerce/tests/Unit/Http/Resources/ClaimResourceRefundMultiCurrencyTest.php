@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *  - 환불 유형: 기준 줄이 `refund_total`(현금 + 마일리지)이므로 보조 통화도 **합계**여야 한다
  *  - 취소 유형: 보조 통화 키가 아예 없어 다통화 상점에서 그 줄이 통째로 사라졌다
  *
- * @scenario claim_resource_secondary_currency
+ * 소유 시나리오: `claim-resource-secondary-currency` (축 매핑은 각 테스트 메서드에 있다)
  */
 class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
 {

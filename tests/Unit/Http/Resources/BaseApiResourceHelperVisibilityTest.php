@@ -33,14 +33,13 @@ use Tests\TestCase;
 class BaseApiResourceHelperVisibilityTest extends TestCase
 {
     /**
-     * @scenario base_resource_helper_visibility
+     * @scenario child_declaration=narrowed
      *
      * @effects child_must_not_narrow_parent_helper_visibility
      */
     #[Test]
     public function 자식_리소스는_부모_헬퍼를_더_좁은_가시성으로_재선언하지_않는다(): void
     {
-        // @scenario child_declaration=narrowed
         $parentHelpers = $this->parentHelperVisibilities();
 
         $this->assertNotEmpty(
@@ -85,14 +84,13 @@ class BaseApiResourceHelperVisibilityTest extends TestCase
      * 포맷 결과까지 단언하는 이유: 자식 선언을 지우기만 하고 부모에 헬퍼가 없으면
      * `Call to undefined method` 로 바뀔 뿐 증상이 그대로다.
      *
-     * @scenario base_resource_helper_visibility
+     * @scenario child_declaration=inherited
      *
      * @effects layout_resources_inherit_shared_file_size_formatter
      */
     #[Test]
     public function 레이아웃_리소스_3종은_로드되고_부모의_크기_포맷터를_상속한다(): void
     {
-        // @scenario child_declaration=inherited
         $classes = [
             LayoutListResource::class,
             LayoutExtensionResource::class,

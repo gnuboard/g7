@@ -93,7 +93,7 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
-     * @scenario user-claim-list-detail-edit
+     * @scenario claim_type=return, screen=detail, entry=none
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
      */
@@ -120,7 +120,7 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
-     * @scenario user-claim-exchange-apply
+     * @scenario exchange_mode=change, preview_result=ok
      *
      * @effects claim_apply_exchange_substituted_rows_render
      */
@@ -150,7 +150,7 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
-     * @scenario user-claim-list-detail-edit
+     * @scenario claim_type=refund, screen=detail, entry=none
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
      */
@@ -201,7 +201,7 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
-     * @scenario user-claim-list-detail-edit
+     * @scenario claim_type=return, screen=detail, entry=none
      *
      * @effects claim_detail_comparison_absent_notice_for_legacy_claims
      */
@@ -223,7 +223,7 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
-     * @scenario guest-claim
+     * @scenario claim_type=return, screen=detail, entry=none
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
      */
@@ -250,7 +250,7 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
-     * @scenario admin-claim-detail-payment
+     * @scenario claim_type=return, cancellable=absent
      *
      * @effects admin_claim_detail_comparison_in_settlement_card
      */

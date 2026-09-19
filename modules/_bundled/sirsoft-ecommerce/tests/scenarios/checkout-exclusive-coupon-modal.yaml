@@ -15,7 +15,7 @@ description: >
   `CheckoutRequest` 검증 규칙에는 있었으나 **최초 커밋부터 읽는 곳이 없어**(#599 세션1 실측 ·
   git `72156e6f0` 시점의 컨트롤러도 단수형만 읽는다) 보낸 쪽은 **200 을 받고 할인만 조용히
   빠졌다.** 단언이 `handler`·`endpoint`·`method` 만 확인해 픽스처가 실제 레이아웃
-  (`checkout.json` · `_checkout_discount.json`)과 다른 채로 계속 green 이었다.
+  (`templates/_bundled/sirsoft-basic/layouts/shop/checkout.g7.html` · `templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_discount.g7.html`)과 다른 채로 계속 green 이었다.
 
   실측(#599 세션1): 주문서에 `coupon_issue_ids:[193]` → 200 인데 쿠폰할인 0,
   같은 주문서에 `order_coupon_issue_id:193` → 200 · 쿠폰할인 5,000(80,000 → 75,000).

@@ -57,7 +57,7 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
     /**
      * 상세가 다시 만든 다통화 스냅샷은 미리보기가 낸 것과 같다. (원 열은 동결 정가 합계를 넘긴다)
      *
-     * @scenario user-claim-list-detail-edit
+     * @scenario screen=detail
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
      */
@@ -87,7 +87,7 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
     /**
      * 통화 스냅샷이 없으면 다통화 줄은 null 이다. (화면은 그 줄을 세우지 않는다)
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario screen=detail
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
      */
@@ -100,8 +100,6 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
      * 정가 합계는 옵션 치환을 반영한다 — 치환 수량만큼 원 정가를 빼고 신규 옵션 정가를 더한다.
      *
      * 29,000 × 2 = 58,000 → 1개를 정가 35,000 옵션으로 치환하면 64,000. 1개 제외 + 1개 치환이면 35,000.
-     *
-     * @scenario claim-exchange-lifecycle
      *
      * @effects exchange_preview_two_pass_keeps_refund_math
      */
@@ -127,7 +125,7 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
      *
      * 되돌림 축: 인자를 무시하고 `$order->mc_subtotal_amount` 를 읽으면 주문의 현재 값이 나와 red.
      *
-     * @scenario user-claim-list-detail-edit
+     * @scenario screen=detail
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
      */
@@ -162,8 +160,6 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
      * 동결값을 넘기지 않으면 종전대로 주문의 현재 값을 읽는다. (접수 시점 경로는 불변)
      *
      * 미리보기는 주문과 스냅샷이 같은 시점이라 넘길 동결값이 없다 — 그 경로를 깨지 않는다.
-     *
-     * @scenario claim-exchange-lifecycle
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
      */

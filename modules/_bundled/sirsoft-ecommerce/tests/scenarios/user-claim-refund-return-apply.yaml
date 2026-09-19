@@ -133,7 +133,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-cancel-refund.spec.ts
 
 notes: |
-  **철회 모달의 진입점은 S13 소유다.** 이 세션은 확인 절차(`_modal_withdraw.json`)와 실행
+  **철회 모달의 진입점은 S13 소유다.** 이 세션은 확인 절차(`templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_modal_withdraw.g7.html`)와 실행
   핸들러를 놓고, 목록·상세의 [철회] 버튼은 S13 이 세운다 — 계획서 §8-1 이 철회 실측을 S13 에
   배정한 것과 같은 순서다. 화면마다 확인 모달을 복제하지 않으려면 공용 partial 이 먼저 있어야
   하므로 여기서 만든다. 진입점이 없는 동안에도 구조·상태 전이는 렌더 테스트와 핸들러 테스트가

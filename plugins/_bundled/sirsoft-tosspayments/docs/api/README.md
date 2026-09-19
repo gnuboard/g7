@@ -20,5 +20,5 @@
 처리되고, 완료 후 주문 완료 화면이 아니라 신청서 상세(`?claim_payment=success|failed|cancelled`)로
 리다이렉트합니다. 상태변경 웹훅도 같은 판별로 분기해 클레임 결제 건은 주문 조회 없이 종료합니다.
 승인·환급 계약(인자·반환 키·`paid_amount` 최소 화폐단위·멱등 규칙)의 단일 출처는 쇼핑몰 모듈
-`docs/api/claim-payments.md` 의 "결제 플러그인 연동 계약 (필터 훅)" 절입니다 — 이 문서에는
+`modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 의 "결제 플러그인 연동 계약 (필터 훅)" 절입니다 — 이 문서에는
 계약을 복제해 적지 않습니다.

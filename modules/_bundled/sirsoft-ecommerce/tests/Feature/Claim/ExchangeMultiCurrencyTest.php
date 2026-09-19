@@ -29,7 +29,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *  - **표기 축**: 응답의 `mc_*` 가 `{amount, formatted}` 객체인지. 맨숫자면 화면이
  *    `[1]?.formatted ?? [1]` 로 폴백해 **기호도 자릿수도 없는 숫자**를 그린다(S3-D14 전례).
  *
- * @scenario exchange_multi_currency
+ * 소유 시나리오: `exchange-multi-currency` (축 매핑은 각 테스트 메서드에 있다)
  *
  * 픽스처 `foreignPaidClaimOrder()` 는 있었지만 **교환 경로에서 한 번도 쓰이지 않았다** —
  * 환불 축(`ClaimRefundExecutionTest`)만 쓰고 있었다.

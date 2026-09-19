@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
  * CBT(일본 엔화) 경로의 클레임 추가결제(CP 채번) 공용 분기입니다.
  *
  * 결제 통화가 JPY 인 상점에서는 프론트가 `pg_payment_data.currency` 로 CBT 경로를 고르므로
- * (`resources/js/handlers/requestPayment.ts`), 클레임 추가결제도 토큰·해시·콜백 3단계를 그대로
+ * (`plugins/_bundled/sirsoft-pay_kginicis/resources/js/handlers/requestPayment.ts`), 클레임 추가결제도 토큰·해시·콜백 3단계를 그대로
  * 탄다. 그 세 지점이 CP 번호를 주문번호로 조회하면 `Order not found` 404 로 끝나므로
  * — 결제창이 열리기도 전에, 원인을 알 수 없는 형태로 — 국내 원화 경로(`HandlesClaimPaymentCallbacks`)
  * 와 같은 강도의 검증을 이 자리에 둔다.

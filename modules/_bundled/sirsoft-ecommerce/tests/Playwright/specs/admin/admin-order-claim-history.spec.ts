@@ -17,7 +17,7 @@
  * 축이 아직 stub 이라(계획서 이월) 목록에서 발견되는 주문으로 진행하고, 한 건도 없으면 그
  * 사실을 드러내며 건너뛴다 — 없는 데이터를 있는 척 단언하지 않는다.
  *
- * @scenario admin-order-claim-history
+ * 소유 시나리오: `admin-order-claim-history` (축 매핑은 각 테스트에 있다)
  * @axes claim_type=exchange|return|cancel|refund
  * @effects order_detail_claim_history_tab_reveals_section, order_detail_claim_history_subtabs_switch_without_refetch, order_detail_claim_history_detail_link_targets_blank, order_detail_claim_history_cancel_number_opens_cancel_detail, order_detail_claim_history_thumbnail_placeholder_visible, order_detail_claim_history_default_subtab_has_claims
  */

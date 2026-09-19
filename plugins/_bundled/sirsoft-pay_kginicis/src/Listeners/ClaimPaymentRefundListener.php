@@ -14,7 +14,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
  * 클레임 추가결제 환급 리스너
  *
  * 이커머스 모듈의 `claim_payment.refund` 필터를 구독해 KG 이니시스 취소 API(INIAPI v2)로
- * 클레임 결제 건을 환급합니다. 계약은 이커머스 모듈 `docs/api/claim-payments.md`
+ * 클레임 결제 건을 환급합니다. 계약은 이커머스 모듈 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md`
  * "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
  *
  * 승인 경로가 둘이므로 환급도 둘이다 — 국내 표준결제(KRW)는 INIAPI 취소, 일본 CBT(JPY)는

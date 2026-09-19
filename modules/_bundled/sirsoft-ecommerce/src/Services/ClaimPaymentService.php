@@ -907,7 +907,7 @@ class ClaimPaymentService
         // 상태 전이가 훅보다 **먼저**다. 이 훅의 소비자는 알림·활동 로그이고 둘 다 신청서의
         // 현재 상태를 읽는다 — 훅을 앞세우면 정상 경로에서도 리스너가 보는 상태가 언제나
         // `payment_pending` 이라 '결제완료' 를 통지하면서 결제대기라고 적게 된다. 문서
-        // (`docs/api/claim-payments.md` 결제 확정 절)도 "옮겨지고 … 훅이 발행됩니다" 로
+        // (`modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 결제 확정 절)도 "옮겨지고 … 훅이 발행됩니다" 로
         // 이 순서를 계약으로 공표한다.
         //
         // 전이는 결제대기 건에서만 일어난다. 이미 `paid` 인 건의 차액을 마저 수납한 경우처럼

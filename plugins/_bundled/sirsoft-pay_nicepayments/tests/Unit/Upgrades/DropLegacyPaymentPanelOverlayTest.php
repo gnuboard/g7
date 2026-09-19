@@ -14,7 +14,7 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
  *
  * 이 플러그인은 가상계좌 입금 안내·영수증·부가세 내역을 주문 상세의 결제 정보 카드에
  * 끼워 넣는다. 그 주입이 레이아웃 이름을 겨냥하는 overlay(`target_layout: mypage/orders/show`)
- * 였는데, 그 카드는 `partials/mypage/orders/_payment.json` 이고 클레임 신청서 상세도 같은
+ * 였는데, 그 카드는 `templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_payment.g7.html` 이고 클레임 신청서 상세도 같은
  * partial 을 재사용한다. overlay 는 `extends` 상속 체인만 따라가고 partial 재사용은 따라가지
  * 않으므로 그 화면에서는 카드는 뜨는데 이 블록만 빠진 채 열렸다. 그래서 주입 대상을 공용 슬롯
  * (`mypage_order_payment_provider_slot`)으로 옮겼다.

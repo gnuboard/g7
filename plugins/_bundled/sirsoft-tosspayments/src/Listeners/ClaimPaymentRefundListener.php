@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
  * 클레임 추가결제 환급 리스너
  *
  * 이커머스 모듈의 `claim_payment.refund` 필터를 구독해 토스페이먼츠 결제 취소 API 로
- * 클레임 결제 건을 환급합니다. 계약은 이커머스 모듈 `docs/api/claim-payments.md`
+ * 클레임 결제 건을 환급합니다. 계약은 이커머스 모듈 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md`
  * "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
  *
  * 클레임 결제는 즉시 확정 수단만 지원하므로 주문 환불의 가상계좌 환불계좌(R3)·에스크로

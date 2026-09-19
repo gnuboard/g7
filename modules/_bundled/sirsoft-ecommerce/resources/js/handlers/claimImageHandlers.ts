@@ -3,7 +3,7 @@
  *
  * 신청서 작성 화면의 사진 첨부를 담당한다. 첨부는 신청서보다 먼저 만들어지므로
  * **주문에 임시로 묶어(pending) 올려 두고**, 신청 시 `image_ids` 로 넘겨 신청서에 귀속시킨다
- * (2단계 업로드 — `docs/api/orders.md` 의 `claims/images`).
+ * (2단계 업로드 — `modules/_bundled/sirsoft-ecommerce/docs/api/orders.md` 의 `claims/images`).
  *
  * 업로드 시점은 **제출 직전**이다. 파일을 고를 때마다 올리면 FileUploader 가 change 마다
  * 선택 전체를 다시 넘기므로 같은 파일이 거듭 올라가고, 그 중복이 운영자 설정 장수 상한을

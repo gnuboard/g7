@@ -229,7 +229,7 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
      * **조용히 통과한다.** 결함이 재발해도 초록인 가드는 가드가 아니다
      * (#599 세션2 계획서준수검증 결함3).
      *
-     * 그래서 이 테스트는 표를 읽지 않는다. `lang/ko/messages.php` 를 훑어 `:이름` 을 가진
+     * 그래서 이 테스트는 표를 읽지 않는다. `modules/_bundled/sirsoft-ecommerce/src/lang/ko/messages.php` 를 훑어 `:이름` 을 가진
      * 키를 전부 모으고, `src/Http/Controllers/` 전체에서 그 키의 호출을 찾아 같은 규칙으로
      * 판정한다. **새 호출부는 추가되는 순간 이 검사에 들어온다.**
      *
@@ -317,7 +317,7 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
     }
 
     /**
-     * `lang/ko/messages.php` 에서 **플레이스홀더를 가진 키**를 전수 수집합니다.
+     * `modules/_bundled/sirsoft-ecommerce/src/lang/ko/messages.php` 에서 **플레이스홀더를 가진 키**를 전수 수집합니다.
      *
      * @return array<string, array<int, string>> 'messages.a.b' => ['count', …]
      */

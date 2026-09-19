@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
  * 주문 상태 라벨이 화면마다 갈리지 않는지 검증한다 (S1-D18)
  *
  * 주문 상태의 한국어 어휘는 `enums.json` 이 소유한다. 그런데 관리자 주문목록의
- * 일괄 변경 바와 확인 모달은 `admin/order.json` 의 `status.*` 라는 **별도 사본**을
+ * 일괄 변경 바와 확인 모달은 `modules/_bundled/sirsoft-ecommerce/resources/lang/partial/{ko,en}/admin/order.json` 의 `status.*` 라는 **별도 사본**을
  * 참조한다. 두 사본이 갈리면 **같은 상태가 화면마다 다른 이름으로 보인다**.
  *
  * 실측(#599 통합실측 세션1 · 1-O): 같은 운영자에게 같은 상태가 이렇게 보였다.
@@ -17,7 +17,7 @@ import { resolve } from 'node:path';
  * 10개 중 8개는 일치하고 2개만 갈렸다 — 그래서 눈에 잘 띄지 않는다. 오류도 나지 않고
  * 기능도 정상이라, 운영자가 "다른 상태인가?" 하고 멈추는 것 말고는 드러나는 신호가 없다.
  *
- * 계약: `admin/order.json` 의 `status.*` 는 `enums.json` 의 `OrderStatusEnum` 라벨과
+ * 계약: `modules/_bundled/sirsoft-ecommerce/resources/lang/partial/{ko,en}/admin/order.json` 의 `status.*` 는 `enums.json` 의 `OrderStatusEnum` 라벨과
  * 글자 그대로 같아야 한다. 사본을 없애는 것이 더 낫지만 그 키는 4개 레이아웃이
  * 참조하므로, 최소한 **두 사본이 갈리지 않는다**를 계약으로 잠근다.
  */
@@ -27,7 +27,7 @@ describe('주문 상태 라벨 단일 어휘 (S1-D18)', () => {
     const readJson = (path: string): Record<string, unknown> =>
         JSON.parse(readFileSync(resolve(base, path), 'utf-8'));
 
-    /** `admin/order.json` 의 status 키 → `enums.json` 의 OrderStatusEnum 키 */
+    /** `modules/_bundled/sirsoft-ecommerce/resources/lang/partial/{ko,en}/admin/order.json` 의 status 키 → `enums.json` 의 OrderStatusEnum 키 */
     const KEY_MAP: Record<string, string> = {
         waiting: 'pending_order',
         payment_pending: 'pending_payment',

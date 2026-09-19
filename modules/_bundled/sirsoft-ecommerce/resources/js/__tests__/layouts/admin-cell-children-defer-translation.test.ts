@@ -13,8 +13,7 @@
  * 모집단은 이 확장의 레이아웃 전수다 — 손으로 적은 목록이 아니라 파일에서 파생하므로
  * 나중에 추가되는 셀도 자동으로 검사 대상이 된다.
  *
- * @scenario surface=admin_layouts
- * @effects cell_children_parameterized_translation_uses_defer
+ * 소유 시나리오: `admin-claim-detail.yaml` (효과 매핑은 각 테스트에 있다 — 클레임 유형·단계와 무관한 정적 스캔)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -87,11 +86,17 @@ function collectViolations(node: unknown, inRepeated: boolean, out: string[]): v
 describe('DataGrid 셀 안의 치환 파라미터 다국어 문구', () => {
     const files = collectLayoutFiles(LAYOUTS_ROOT);
 
+    /**
+     * @effects cell_children_parameterized_translation_uses_defer
+     */
     it('검사 대상 레이아웃이 비어 있지 않다', () => {
         // 모집단이 비면 아래 단언이 조용히 통과한다 — 하한을 먼저 고정한다.
         expect(files.length).toBeGreaterThan(10);
     });
 
+    /**
+     * @effects cell_children_parameterized_translation_uses_defer
+     */
     it('cellChildren·expandChildren 안에서는 반드시 $t:defer: 를 쓴다', () => {
         const offenders: Array<{ file: string; text: string }> = [];
 

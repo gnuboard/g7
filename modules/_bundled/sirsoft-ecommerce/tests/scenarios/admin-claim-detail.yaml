@@ -135,6 +135,9 @@ effects:
   - claim_items_grid_renders_server_formatted_amounts
   - claim_items_grid_hides_zero_difference
   - claim_items_grid_marks_option_change_by_flag
+  # 차액 줄이 `$t:` 라 `{{amount}}` 가 지워지고 라벨만 남던 결함(S17 재실측) — 셀 안에서 치환
+  # 파라미터를 받는 문구는 `$t:defer:` 여야 한다. 모집단은 이 확장 레이아웃 전수라 다른 DataGrid 셀도 함께 잠긴다.
+  - cell_children_parameterized_translation_uses_defer
   # 완료 처리 모달 공유 (D26 — 진입점 ②·③)
   - claim_complete_modal_shared_not_copied
   - claim_completion_card_opens_shared_modal
@@ -177,6 +180,9 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimDetailHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimDetailScreenTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-detail.spec.ts
+  # 신청상품 표 차액 줄의 번역 경로(`cell_children_parameterized_translation_uses_defer`)를 잠근다 — 등재 전에는
+  # 마킹이 어느 매니페스트에도 계상되지 않아 지워도 커버리지가 초록으로 남았다.
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-cell-children-defer-translation.test.ts
 
 notes: |
   **결제 정보·환불 실행 탭은 이 세션의 범위 밖이었고 S9b 가 섹션과 함께 더했다.** 그 축의

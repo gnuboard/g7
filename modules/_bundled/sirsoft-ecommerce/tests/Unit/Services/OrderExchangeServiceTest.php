@@ -3150,7 +3150,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
     /**
      * 미리보기의 재계산 스냅샷은 신규 옵션 단가를 반영한다. ("교환 후" 열 — 전 = 후가 아니다)
      *
-     * @scenario user-claim-exchange-apply
+     * @scenario exchange_mode=change, preview_result=ok
      *
      * @effects claim_apply_exchange_after_column_reflects_substitution
      */
@@ -3177,7 +3177,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
     /**
      * 고가 교환의 표시 스냅샷은 후열이 커지지만 취소 차단으로 읽히지 않는다.
      *
-     * @scenario user-claim-exchange-apply
+     * @scenario exchange_mode=change, preview_result=ok
      *
      * @effects claim_apply_exchange_after_column_reflects_substitution
      */
@@ -3198,7 +3198,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
     /**
      * 접수는 미리보기와 같은 재료로 계산한 전/후 스냅샷을 신청서에 동결한다. (치환 근거 행 포함)
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
      *
      * @effects exchange_request_freezes_calculation_snapshots
      */

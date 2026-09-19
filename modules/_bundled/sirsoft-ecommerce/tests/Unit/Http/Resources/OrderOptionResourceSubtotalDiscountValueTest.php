@@ -35,8 +35,7 @@ class OrderOptionResourceSubtotalDiscountValueTest extends ModuleTestCase
      * 통과하고 묶어 돌릴 때만 실패하는 형태 — 실제로 관측됐다).
      *
      * 부팅 시 로드된 운영 설정이 단위 테스트로 스며드는 것과 같은 성질이므로, 전제를
-     * 주석이 아니라 코드로 고정한다
-     * (`.agents/docs/memory/backend-patterns.md#mem-core-settings-boot-config-leaks-into-unit-tests`).
+     * 주석이 아니라 코드로 고정한다.
      *
      * @return void 반환값 없음
      */

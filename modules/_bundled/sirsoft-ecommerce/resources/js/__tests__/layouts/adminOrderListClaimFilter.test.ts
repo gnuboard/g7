@@ -38,7 +38,7 @@ interface Node {
  * OrderListRequest 가 게이트로 쓰는 Enum 값.
  *
  * 이 상수는 **사본**이다 — Vitest 는 PHP Enum 을 읽을 수 없다. 어휘의 단일 출처 대조는
- * `tests/Unit/Layouts/OrderListClaimFilterVocabularyTest.php` 가 맡는다(Enum 에서 파생해
+ * `modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/OrderListClaimFilterVocabularyTest.php` 가 맡는다(Enum 에서 파생해
  * 같은 파셜을 대조하므로 회귀 구멍은 없다). 여기는 화면 배선(칩 → URL → 데이터소스 → 복원)을
  * 보는 축이고, 그 배선을 읽으려면 값 목록이 필요해 사본을 둔다.
  *

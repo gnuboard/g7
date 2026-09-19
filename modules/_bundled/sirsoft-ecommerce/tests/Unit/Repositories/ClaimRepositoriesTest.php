@@ -163,7 +163,7 @@ class ClaimRepositoriesTest extends ModuleTestCase
      * 환불∩반품 4종 `changed_mind`·`delayed_delivery`·`product_info_different`·`etc`),
      * 스코프 없이 세면 **반품 한 건이 환불 카탈로그의 동명 사유를 잠근다** — 그 사유는 쓰인
      * 적이 없는데 삭제도 코드 변경도 영구히 400 이 되고, 안내에 뜨는 "사용 횟수" 는 환불·취소
-     * 어디에서도 찾을 수 없는 수치다. `docs/api/claim-reasons.md` 가 "그 사유의 유형에 맞는
+     * 어디에서도 찾을 수 없는 수치다. `modules/_bundled/sirsoft-ecommerce/docs/api/claim-reasons.md` 가 "그 사유의 유형에 맞는
      * 표 전수를 센다(환불 유형은 환불신청과 즉시취소 두 표를 합산)" 로 이미 이 계약을 적었고,
      * 같은 저장소의 형제 메서드도 `DIRECT` 로 좁혀 센다.
      *

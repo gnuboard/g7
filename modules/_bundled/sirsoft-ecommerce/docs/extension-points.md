@@ -579,7 +579,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `order_shipping.tracking_updated` | 1 | 운송장 기록·정정. 전이를 동반하지 않는 정정은 어떤 전이 훅도 지나지 않습니다 |
 | `order.tax_invoice_stale_after_cancel` | 1 | 취소가 일어났는데 발급 완료 세금계산서가 남아 있는 상태. 국세청 연동 자동 취소는 코어 범위 밖이라 **누락을 드러내는** 자리입니다 |
 | `payment.supports_partial_cancel` | 1 | 이 결제가 부분취소를 지원하는가(filter). 제약을 아는 자리는 PG 플러그인이므로 코어가 수단·PG 조합표를 들지 않습니다 |
-| `claim_payment.approve` · `claim_payment.refund` | 2 | 클레임 추가결제(`CP` 채번)의 PG 승인·환급 — 결제 플러그인이 구현하는 필터. 계약(인자·반환 키·멱등 규칙)의 단일 출처는 `docs/api/claim-payments.md` |
+| `claim_payment.approve` · `claim_payment.refund` | 2 | 클레임 추가결제(`CP` 채번)의 PG 승인·환급 — 결제 플러그인이 구현하는 필터. 계약(인자·반환 키·멱등 규칙)의 단일 출처는 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` |
 | `claim-image.*` | 3 | 첨부 업로드 파일 검사(filter)와 업로드·삭제 후처리 |
 
 ### 취소·환불 축의 훅 계약 (#599 후속)
@@ -614,7 +614,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 수단(가상계좌·계좌이체·휴대폰·편의점 등)은 선언하지 않거나 `false` 로 둡니다.
 
 선언한 수단은 관리자 환경설정 > 클레임 정책 탭의 '환불 자동 승인 결제수단' 목록에 `PG 즉시 환불`
-배지와 함께 나타나고, 운영자가 아직 결정한 적 없으면 목록에 자동 합류합니다(`docs/settings.md`
+배지와 함께 나타나고, 운영자가 아직 결정한 적 없으면 목록에 자동 합류합니다(`modules/_bundled/sirsoft-ecommerce/docs/settings.md`
 의 `claim.auto_approve_refund_payment_methods` 참조). 선언하지 않으면 그 수단의 환불은 결제완료
 상품이라도 `requested` 에서 멈춰 운영자 승인을 기다립니다 — 돈이 새지는 않지만 자동 전이가 없으므로,
 즉시 환불이 가능한 수단이라면 반드시 선언합니다.
@@ -1095,7 +1095,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 1. `php artisan module:update sirsoft-ecommerce --force` — 선언형 산출물(권한·메뉴·알림) 동기화
 2. `php artisan optimize:clear` — 정의 캐시 비우기. **이 단계를 빼면 신설 알림이 조용히 안 나간다**
 3. 확인: 환경설정 › 알림 설정 목록에 새 `type` 이 보이는가
-   (자동 확인은 `tests/Feature/Notifications/StaffNotificationDefinitionsSeedTest.php` 가 같은 축을 잰다)
+   (자동 확인은 `modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/StaffNotificationDefinitionsSeedTest.php` 가 같은 축을 잰다)
 
 기존 정의의 **수신자·링크를 바꾼 경우**는 한 가지가 더 있다. 운영자가 그 템플릿을 관리
 화면에서 한 번이라도 고쳤으면 그 값이 `user_overrides` 로 보존되어 새 기본값이 반영되지

@@ -38,7 +38,7 @@ use ReflectionMethod;
  * 세 세션(환불·반품·교환)의 금액이 동시에 움직이고, 교환은 `EXCHANGED` 승계 규칙과
  * 상호작용한다. 반품 안에서 끝내면 같은 결과를 **공용 계약 변경 없이** 얻는다.
  *
- * @scenario returned_rows_in_recalc
+ * 소유 시나리오: `returned-rows-in-recalc` (축 매핑은 각 테스트 메서드에 있다)
  */
 class ReturnedRowsExcludedFromRecalcTest extends ModuleTestCase
 {

@@ -153,7 +153,7 @@ trait AssertsExtensionDataSourcesAreDeclared
     }
 
     /**
-     * `plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/x.json` → `sirsoft-pay_kginicis`
+     * `plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/{name}.json` → `sirsoft-pay_kginicis`
      */
     private function extensionIdOf(string $relativePath): string
     {

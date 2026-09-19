@@ -1,7 +1,7 @@
 feature: 관리자 클레임 목록 필터 섹션 (#599 S8a — D21/D27/D28)
 
 description: |
-  클레임 목록의 필터 카드는 주문관리 `_partial_filter_section.json` 의 구조를 정본으로
+  클레임 목록의 필터 카드는 주문관리 `modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_partial_filter_section.g7.html` 의 구조를 정본으로
   복제한 화면이다(D21). 복제이므로 "무엇이 그려지는가" 보다 "어떤 순서로, 어떤 축이"
   놓였는지가 계약이고, 어긋나도 오류가 나지 않는다 — 운영자가 늘 보던 자리에서 컨트롤이
   사라질 뿐이다.

@@ -15,7 +15,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
  *
  * 이커머스 모듈의 `claim_payment.approve` 필터를 구독해 KG 이니시스 승인 API 로
  * 클레임 결제 건(CP 채번)을 승인합니다. 계약은 이커머스 모듈
- * `docs/api/claim-payments.md` "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
+ * `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
  *
  * 콜백 파라미터의 형태로 PC(authToken + authUrl)/모바일(P_TID + P_REQ_URL)을 구분한다.
  * 두 경로 모두 승인 URL 은 idc_name 화이트리스트로 검증한다 — 이 필터는 클라이언트가

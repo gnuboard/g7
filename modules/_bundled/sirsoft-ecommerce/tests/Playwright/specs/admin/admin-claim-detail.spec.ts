@@ -24,7 +24,7 @@
  *     브라우저에서만 확인된다. 교환 후 금액이 단가가 아닌 소계인지도 수량 2 이상에서만
  *     드러난다.
  *
- * @scenario admin-claim-detail
+ * 소유 시나리오: `admin-claim-detail` · `admin-claim-detail-payment` (축 매핑은 각 테스트에 있다)
  * @axes claim_type=exchange|return|refund|cancel
  * @effects detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll, claim_detail_cancel_is_read_only, claim_detail_cancel_info_card_rendered
  */

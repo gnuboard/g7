@@ -1638,7 +1638,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
    * 되돌림 축: 링크 노드를 Span 으로 되돌리거나 `requester_user_id` 를 `requested_by` 로
    * 바꾸면 anchor 가 사라져 red. 실측(2026-09-16) `RT20260916-0302483148` = `/admin/users/853`.
    *
-   * @scenario claim_request_source_badge
+   * @scenario claim_type=exchange, claim_stage=in_progress
    * @effects requester_link_targets_the_order_owner_not_the_filer
    */
   it('회원 신청은 이름이 링크로 서고 뱃지가 고객 신청이다', async () => {
@@ -1671,7 +1671,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
    * 링크가 사라진다.** 실측(2026-09-16) `RF20260915-1707536717` = `requested_by` NULL ·
    * 주문 766 의 `user_id` 3 → `/admin/users/3`.
    *
-   * @scenario claim_request_source_badge
+   * @scenario claim_type=exchange, claim_stage=in_progress
    * @effects requester_link_targets_the_order_owner_not_the_filer
    */
   it('운영자 대리 접수도 회원 주문이면 링크가 서고 뱃지는 운영자 접수다', async () => {
@@ -1695,7 +1695,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
   /**
    * 비회원 주문은 **평문 이름**이다 — 누를 곳 없는 링크를 보이면 회원이 있다고 오해한다.
    *
-   * @scenario claim_request_source_badge
+   * @scenario claim_type=exchange, claim_stage=in_progress
    * @effects requester_link_targets_the_order_owner_not_the_filer
    */
   it('비회원 신청은 링크가 아니라 평문 이름으로 서고 뱃지가 비회원 신청이다', async () => {

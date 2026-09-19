@@ -78,8 +78,6 @@ class ClaimResourceRequestSourceTest extends ModuleTestCase
     /**
      * 회원 주문의 고객 신청은 `customer` 다.
      *
-     * @scenario claim_request_source_badge
-     *
      * @effects request_source_splits_customer_guest_and_admin
      */
     public function test_member_order_customer_request_is_customer(): void
@@ -93,8 +91,6 @@ class ClaimResourceRequestSourceTest extends ModuleTestCase
 
     /**
      * 비회원 주문의 신청은 `guest` 다 — 판정은 **주문의 주인**이 한다.
-     *
-     * @scenario claim_request_source_badge
      *
      * @effects request_source_splits_customer_guest_and_admin
      */
@@ -112,7 +108,7 @@ class ClaimResourceRequestSourceTest extends ModuleTestCase
      * 이 축이 이 스위트의 핵심이다. `requested_by` 는 비회원 신청과 똑같이 null 이라,
      * 그 값만 보면 **회원 주문인데 「비회원 신청」으로 표시된다.**
      *
-     * @scenario claim_request_source_badge
+     * @scenario refund_source=admin
      *
      * @effects request_source_splits_customer_guest_and_admin
      */
@@ -131,7 +127,7 @@ class ClaimResourceRequestSourceTest extends ModuleTestCase
      * 되돌림 축: `admin` 검사를 뒤로 미루면 이 건이 `guest` 가 되어 red. 운영자는 자기가 낸
      * 신청서를 「비회원이 낸 것」으로 읽고, 철회할 수 있다고 오해한다.
      *
-     * @scenario claim_request_source_badge
+     * @scenario refund_source=admin
      *
      * @effects request_source_splits_customer_guest_and_admin
      */
@@ -149,8 +145,6 @@ class ClaimResourceRequestSourceTest extends ModuleTestCase
      * 화면은 `requester_user_id` 가 있을 때만 이름을 링크로 그린다. 이 값이 없으면 링크가
      * 사라지는 게 아니라 **평문 이름**이 대신 선다 — 누를 곳 없는 링크를 보이면 운영자는
      * 회원이 있다고 오해한다.
-     *
-     * @scenario claim_request_source_badge
      *
      * @effects requester_link_targets_the_order_owner_not_the_filer
      */
@@ -174,7 +168,7 @@ class ClaimResourceRequestSourceTest extends ModuleTestCase
      * 실측 대조(2026-09-16): `RF20260915-1707536717` = `requested_by` NULL · 주문 766 의
      * `user_id` 3 — 접수자 축으로 걸었다면 이 실제 신청서에서 링크가 없었다.
      *
-     * @scenario claim_request_source_badge
+     * @scenario refund_source=admin
      *
      * @effects requester_link_targets_the_order_owner_not_the_filer
      */
@@ -195,8 +189,6 @@ class ClaimResourceRequestSourceTest extends ModuleTestCase
      *
      * 이 축이 없으면 「항상 주문의 user_id 를 싣는」 구현과 「아무 값이나 싣는」 구현이
      * 구분되지 않는다.
-     *
-     * @scenario claim_request_source_badge
      *
      * @effects requester_link_targets_the_order_owner_not_the_filer
      */

@@ -196,7 +196,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 금액 계산 단계에 개입 | `calculation.after_item_subtotals` · `calculation.after_final_result` 등 `calculation.*` 18종 (9단계 사이사이) |
 | 취소 시 쿠폰·마일리지 안분 되돌리기 규칙 변경 | `adjustment.filter_restore_promotions` |
 | 새 PG·결제수단 추가 | 결제수단 카탈로그에 능력 선언(`needs_pg`·`pg_locked`·`refund_method`·`auto_approve_refund` 등) + `payment.*` 6종 (이 모듈 수정 불필요) |
-| 그 수단의 환불을 운영자 승인 없이 자동 완료 | 카탈로그 `auto_approve_refund: true` 선언 — 운영자가 클레임 정책 탭에서 최종 결정 (`docs/extension-points.md` "결제수단 능력 선언") |
+| 그 수단의 환불을 운영자 승인 없이 자동 완료 | 카탈로그 `auto_approve_refund: true` 선언 — 운영자가 클레임 정책 탭에서 최종 결정 (`modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "결제수단 능력 선언") |
 | 결제 직전/취소/입금확인에 본인인증 강제 | `getIdentityPolicies()` 가 선언한 4개 정책의 target 훅 (`checkout.before_payment` · `payment.before_cancel` · `payment.before_approve` · `payment.before_confirm_deposit`) — 기본 `enabled: false` |
 | 상품 문의를 다른 저장소로 | `inquiry.store_validation_rules` · `inquiry.update_validation_rules` + 게시판 측 `sirsoft-board.post.after_*` (`ProductInquiryBoardListener` 가 선례) |
 | 재고 차감/복원 시점 개입 | `stock.*` 4종 |
@@ -204,7 +204,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 신청서의 상품 단위 전이에 개입 | `claim.{exchange,return,refund,cancel}.option_status_changed` — 헤더가 따라 움직이지 않는 조합이 있어 층이 다른 사실로 따로 낸다 |
 | 주문 상태 동기화가 끌고 간 상품 전이·운송장 정정에 개입 | `order_option.after_sync_status` · `order_shipping.tracking_updated` — 둘 다 전이 훅을 지나지 않는 경로다 |
 | 결제수단의 부분취소 지원 여부 선언 | `payment.supports_partial_cancel` 필터 — 제약을 아는 자리는 PG 플러그인이다 |
-| 새 PG 로 클레임 추가결제(`CP` 채번) 승인·환급 | `claim_payment.approve` · `claim_payment.refund` 필터 — 결제 플러그인이 구현하며 계약의 단일 출처는 `docs/api/claim-payments.md` |
+| 새 PG 로 클레임 추가결제(`CP` 채번) 승인·환급 | `claim_payment.approve` · `claim_payment.refund` 필터 — 결제 플러그인이 구현하며 계약의 단일 출처는 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` |
 | 클레임 첨부 파일 검사·후처리 | `claim-image.filter_upload_file` · `claim-image.after_upload` · `claim-image.after_delete` |
 
 **금전이 움직이는 훅을 구독할 때는 `'sync' => true` 를 붙입니다.** 쿠폰 차감·복원, 마일리지

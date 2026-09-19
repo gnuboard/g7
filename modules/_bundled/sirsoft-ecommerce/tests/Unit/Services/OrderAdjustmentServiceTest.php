@@ -8421,7 +8421,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     /**
      * 치환 라인은 환불 산식·업데이트 페이로드를 바꾸지 않고 표시 열만 바꾼다. (2-패스 계약)
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=higher
      *
      * @effects exchange_preview_two_pass_keeps_refund_math
      */
@@ -8464,7 +8464,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 승계하지 않으면 스냅샷 모드는 폴백 없이 그 라인을 배송 그룹에서 빼고, 남은 원 라인만으로
      * 기준금액을 판정해 배송비가 생긴다.
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=lower
      *
      * @effects exchange_substitution_inherits_shipping_policy_and_coupons
      */
@@ -8487,7 +8487,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     /**
      * 치환 라인은 원 라인의 상품쿠폰 슬롯을 승계한다. (정액 1,000 × 수량 → 갈려도 합계 불변)
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=equal
      *
      * @effects exchange_substitution_inherits_shipping_policy_and_coupons
      */
@@ -8516,7 +8516,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 원 20,000 × 2 = 40,000 · 10% 상한 3,000 → 3,000. 1개 치환(동가) 뒤 라인별 상한 없이 계산하면
      * 2,000 + 2,000 = 4,000 이 되어 원 주문보다 할인이 커진다. 1,500 + 1,500 으로 3,000 을 유지한다.
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=equal
      *
      * @effects exchange_substitution_inherits_shipping_policy_and_coupons
      */
@@ -8546,7 +8546,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 엔진 맵은 `product_option_id` 키라 같은 키의 두 라인은 나중 것이 조용히 덮어쓴다 — 치환 라인이
      * 음수 키를 쓰면 원 라인(20,000)과 치환 라인(20,000 + 추가옵션 2,000)이 둘 다 산다.
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=equal, additional_options=picked
      *
      * @effects exchange_preview_two_pass_keeps_refund_math
      */
@@ -8572,7 +8572,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 스냅샷의 조정액(+5,000)대로면 25,000 이지만 신규 단가가 27,000 이면 후열은 27,000 을 쓴다.
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=higher
      *
      * @effects exchange_preview_two_pass_keeps_refund_math
      */
@@ -8594,7 +8594,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 정가: 25,000 × 1 + 30,000 × 1 = 55,000. 적립: 원 라인 1개 몫 + 신규 옵션 정액 500.
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=equal
      *
      * @effects exchange_preview_two_pass_keeps_refund_math
      */
@@ -8658,8 +8658,6 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 패스 B 는 `getSubstitutions() === []` 이면 실행되지 않고 `buildRecalcInput()` 은 한 줄도
      * 바뀌지 않는다는 계약을 변경 전 덤프로 고정한다(취소 · 회수비 차감 반품 · 치환 없는 교환).
-     *
-     * @scenario mp02-order-cancellation
      *
      * @effects cancel_preview_output_unchanged_with_empty_substitutions
      */
@@ -8775,7 +8773,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 설계는 다른 상품의 부분취소를 정확하게 하려는 것이지, 후속 행 자신의 환불까지 승계 단가로
      * 하라는 뜻이 아니다 — 고객이 그 행에 실제로 낸 돈은 승계 단가 − 환불된 차액이다.
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=lower
      *
      * @effects exchanged_successor_row_refunds_at_new_option_price
      */
@@ -8794,7 +8792,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     /**
      * 같은 주문에서 **다른 상품**을 부분취소하는 환불액은 종전과 같다. (2026-08-22 판정 1 보존 · 회차 ⑤)
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=lower
      *
      * @effects exchanged_successor_pricing_keeps_other_item_refunds
      */
@@ -8812,7 +8810,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     /**
      * 차액이 환불되지 않은 교환(「접수하지 않음」 완료)의 후속 행은 승계 단가 그대로다. (과잉 적용 방지)
      *
-     * @scenario claim-exchange-lifecycle
+     * @scenario price_delta=lower
      *
      * @effects exchanged_successor_pricing_requires_a_refunded_difference
      */

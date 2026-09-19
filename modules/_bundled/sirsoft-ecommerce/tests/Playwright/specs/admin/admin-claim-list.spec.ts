@@ -12,7 +12,7 @@
  *  ③ 일괄 상태 변경 컨트롤은 전이 권한과 유형이 함께 정한다 — 취소 탭에는 아예 없고,
  *     읽기 권한만 가진 운영자에게는 잠긴다.
  *
- * @scenario admin-claim-list-body
+ * 소유 시나리오: `admin-claim-list-body` (축 매핑은 각 테스트에 있다)
  * @axes claim_type=exchange|return|refund|cancel
  * @effects subtab_switch_resets_type_scoped_filters, list_context_preserved_across_cluster_navigation, bulk_bar_absent_for_cancel
  */

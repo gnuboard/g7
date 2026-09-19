@@ -118,6 +118,9 @@ describe('다국어 객체 필드 출력 — 엔진이 정한 로케일 선택�
     // 문자열로도 나가는 키는 레이아웃 글자만으로 구분이 안 되므로 강제 대상에서 뺀다.
     const enforced = [...objectKeys].filter((k) => !stringKeys.has(k)).sort();
 
+    /**
+     * @effects multilingual_field_keys_derived_from_php_resources
+     */
     it('PHP 파생이 살아 있다 — 다국어 객체 키와 문자열 키를 실제로 뽑아낸다', () => {
         // 하한 — 두 집합이 비면 아래 검사는 아무것도 재지 않는다.
         expect(objectKeys.size, '다국어 객체 키를 하나도 못 뽑았다 — PHP 파생이 깨졌다').toBeGreaterThan(0);
@@ -125,6 +128,9 @@ describe('다국어 객체 필드 출력 — 엔진이 정한 로케일 선택�
         expect(enforced.length, '강제 대상이 0개다 — 전부 충돌로 걸러졌다').toBeGreaterThan(0);
     });
 
+    /**
+     * @effects layout_population_spans_templates_modules_plugins
+     */
     it('레이아웃 모집단이 살아 있다 — 세 종류의 확장을 모두 훑는다', () => {
         const total = LAYOUT_ROOTS.reduce((n, r) => n + walk(path.join(REPO_ROOT, r), '.json').length, 0);
         expect(total, '레이아웃 JSON 을 하나도 못 찾았다 — 경로 파생이 깨졌다').toBeGreaterThan(0);
@@ -162,6 +168,9 @@ describe('다국어 객체 필드 출력 — 엔진이 정한 로케일 선택�
      *
      * `_global.locale ?? $locale` 처럼 뒤에 다른 항을 둔 형태는 여기서 거르지 않는다 —
      * 이 축이 막는 것은 템플릿에서 `_global.locale` 이 **유일한 출처**인 경우뿐이다.
+     *
+     * @scenario output_form=global_locale_sole_source
+     * @effects template_layouts_never_use_global_locale_as_sole_source
      */
     it('템플릿 레이아웃이 _global.locale 을 유일한 로케일 출처로 쓰지 않는다', () => {
         const templateRoots = LAYOUT_ROOTS.filter((r) => r.startsWith('templates'));
@@ -181,6 +190,10 @@ describe('다국어 객체 필드 출력 — 엔진이 정한 로케일 선택�
     });
 
     for (const field of enforced) {
+        /**
+         * @scenario output_form=localized_helper
+         * @effects multilingual_field_output_uses_localized_helper
+         */
         it(`${field} 를 출력하는 모든 지점이 $localized() 로 로케일을 고른다`, () => {
             const refs = layoutLinesMentioning(field);
 

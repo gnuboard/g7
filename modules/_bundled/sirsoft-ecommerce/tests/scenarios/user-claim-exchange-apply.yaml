@@ -2,7 +2,7 @@ feature: 구매자 클레임 신청서 작성 — 주문상세 진입 + 교환 �
 
 description: |
   주문상세의 [교환 신청]·[반품 신청]·[취소·환불 신청] 세 버튼이 하나의 작성 셸
-  (`mypage/claims/apply.json`, 라우트 `:type`)로 들어가고, 그 셸이 유형별 partial 로 화면을
+  (`templates/_bundled/sirsoft-basic/layouts/mypage/claims/apply.g7.html`, 라우트 `:type`)로 들어가고, 그 셸이 유형별 partial 로 화면을
   만든다. 이 세션은 교환을 관통까지 완성하고, 반품·취소·환불의 유형 고유 축(환불계좌·분기
   라벨·철회)은 S12 가 잇는다. 조용히 깨지는 지점은 일곱이다.
 
@@ -36,7 +36,7 @@ description: |
      같은 sequence 의 **앞**에 있어야 한다 — 뒤에 두면 빈 URL 로 조회돼 404 가 된다.
 
   ⑦ **주문상세의 취소 버튼과 클레임 버튼이 함께 남으면** 같은 일을 하는 입구가 둘이 된다.
-     `_items.json` 은 비회원 주문상세와 공유하므로 셸 표식(`useClaimActions`)으로 가른다 —
+     `templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.g7.html` 은 비회원 주문상세와 공유하므로 셸 표식(`useClaimActions`)으로 가른다 —
      표식이 없는 비회원 셸은 종전 취소 모달을 그대로 쓰고, S14 가 같은 표식을 세워 전환한다.
 
 # axis 의미:

@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
  *
  * 이커머스 모듈의 `claim_payment.approve` 필터를 구독해 토스페이먼츠 Confirm API 로
  * 클레임 결제 건(CP 채번)을 승인합니다. 계약은 이커머스 모듈
- * `docs/api/claim-payments.md` "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
+ * `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
  *
  * 주문 결제와 달리 `Order`/`OrderPayment` 를 전제하지 않는다 — 인자로 받은
  * `ClaimPayment` 와 콜백 파라미터만 사용한다.

@@ -86,7 +86,7 @@ class SeedClaimReasons implements DataMigration
      * 신규 설치는 `ClaimReasonSeeder` 가 `seed.*.translations` 필터로 언어팩 번역을 병합하지만,
      * 업그레이드 경로는 이 데이터 마이그레이션이 직접 삽입하므로 그 병합을 타지 않는다 — 그대로 두면
      * 업그레이드한 일본어 상점에서만 기본 사유 이름이 한국어로 남는다. V-1 규약(Illuminate 파사드만)
-     * 에 맞춰 활성 언어팩 디렉토리의 `seed/claim_reasons.json` 을 직접 읽는다.
+     * 에 맞춰 활성 언어팩 디렉토리의 `lang-packs/{pack}/seed/claim_reasons.json` 을 직접 읽는다.
      *
      * @param  UpgradeContext  $context  업그레이드 컨텍스트
      * @return array<string, array<string, string>> code → [locale → 번역 이름]

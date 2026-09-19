@@ -52,7 +52,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 그 실측은 **기준=결제=KRW** 라 「기준을 박았는지 결제를 박았는지」를 가르지 못한다.
  * 이 스위트가 그 구분을 담당한다. 실 해외결제는 처리할 수 없어 시뮬레이션으로 대체한다.
  *
- * @scenario return_multi_currency
+ * 소유 시나리오: `return-multi-currency` (축 매핑은 각 테스트 메서드에 있다)
  */
 class ReturnMultiCurrencyTest extends ModuleTestCase
 {

@@ -25,7 +25,7 @@ description: |
   검사 방식은 **소스 텍스트 스캔**이다 — 라벨이 런타임 코드가 아니라 JSON 에 있어, 화면을
   띄우는 테스트로는 사본이 갈렸다는 사실 자체를 관측할 수 없다.
 
-  계약: `admin/order.json` 의 두 사본은 `enums.json` 의 주문 상태 라벨과 글자 그대로 같다.
+  계약: `modules/_bundled/sirsoft-ecommerce/resources/lang/partial/{ko,en}/admin/order.json` 의 두 사본은 `enums.json` 의 주문 상태 라벨과 글자 그대로 같다.
 
 axes:
   label_copy:

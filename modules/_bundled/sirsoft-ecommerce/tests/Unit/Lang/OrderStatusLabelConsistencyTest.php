@@ -74,10 +74,14 @@ class OrderStatusLabelConsistencyTest extends ModuleTestCase
         return is_string($node) ? $node : null;
     }
 
+    // 이 테스트는 세 경로를 한 루프로 함께 대조한다 (docblock 은 조합을 1건만 인식하므로 나머지 둘은 라인 주석으로 병기).
+    // @scenario label_path=admin_order_status
+    // @scenario label_path=admin_order_filter_options
+
     /**
      * 한 주문상태는 어느 화면에서도 같은 이름으로 불려야 한다.
      *
-     * @scenario label_path=enums_order_status,admin_order_status,admin_order_filter_options
+     * @scenario label_path=enums_order_status
      *
      * @effects order_status_label_identical_across_paths
      */

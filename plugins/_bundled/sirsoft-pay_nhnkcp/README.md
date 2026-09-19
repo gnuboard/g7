@@ -253,7 +253,7 @@ php artisan plugin:update sirsoft-pay_nhnkcp --force
 `sirsoft-ecommerce.claim_payment.refund` 필터로 승인·환급되며, 이 플러그인이 두 필터를 구현합니다.
 결제번호가 `CP` 로 시작하는 콜백은 주문이 아니라 클레임 결제 건으로 처리되고, 완료 후 신청서
 상세 화면으로 돌아갑니다. 인자·반환 키·멱등 규칙 등 계약의 단일 출처는 쇼핑몰 모듈
-`docs/api/claim-payments.md` 의 "결제 플러그인 연동 계약 (필터 훅)" 절입니다 — 이 문서에는
+`modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 의 "결제 플러그인 연동 계약 (필터 훅)" 절입니다 — 이 문서에는
 계약을 복제해 적지 않습니다.
 <!-- @intent END -->
 

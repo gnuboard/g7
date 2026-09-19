@@ -34,7 +34,7 @@ description: |
 
   계약: 이 매니페스트는 **훅 배선**을 잠근다 — 훅을 받은 뒤의 로그 모양
   (loggable = OrderAddress · description_key · 전/후값)은
-  `tests/Unit/Listeners/OrderActivityLogListenerTest.php` 가 이미 잠그고 있다.
+  `modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php` 가 이미 잠그고 있다.
 
 axes:
   admin_order_update:

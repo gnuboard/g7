@@ -57,13 +57,13 @@
 사람이 확인해야 끝나므로 `false` 입니다. `true` 로 잘못 선언하면 코어가 환불신청서를 완료까지
 보내 고객에게 "환불 완료" 알림이 가는데 돈은 아직 나가지 않은 상태가 되고, 반대로 카드 계열에서
 선언을 빠뜨리면 그 수단의 환불이 전부 운영자 승인 대기로 쌓입니다. 계약은 이커머스
-`docs/extension-points.md` "결제수단 능력 선언" 절이 갖습니다.
+`modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "결제수단 능력 선언" 절이 갖습니다.
 
 `sirsoft-ecommerce.claim_payment.approve` / `.refund` 두 필터는 클레임 추가결제(`CP` 채번)의
 승인·환급을 이 플러그인이 맡는 접합면입니다. 콜백 컨트롤러는 결제번호가 `CP` 로 시작하면 주문
 경로를 타지 않고 모듈의 `approvePgPayment()` 에 위임하며, 그 안에서 이 필터가 발화합니다 —
 서버 콜백 경로와 API 승인 경로가 같은 구현을 탑니다. 인자·반환 키·멱등 규칙은 쇼핑몰 모듈
-`docs/api/claim-payments.md` 가 단일 출처입니다.
+`modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 가 단일 출처입니다.
 <!-- @intent END -->
 
 ## 훅 리스너

@@ -54,12 +54,12 @@
 승인·환급을 이 플러그인이 맡는 접합면입니다. 콜백 컨트롤러는 결제번호가 `CP` 로 시작하면 주문
 경로를 타지 않고 모듈의 `approvePgPayment()` 에 위임하며, 그 안에서 이 필터가 발화합니다 —
 서버 콜백 경로와 API 승인 경로가 같은 구현을 탑니다. 인자·반환 키·멱등 규칙은 쇼핑몰 모듈
-`docs/api/claim-payments.md` 가 단일 출처입니다.
+`modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 가 단일 출처입니다.
 주입하는 결제수단 항목은 이커머스의 결제수단 **능력 키**를 함께 선언합니다. 그중
 `auto_approve_refund` 는 "사람의 개입 없이 환불이 집행되는가" 이고, 이 플러그인이 등록하는 것은
 모두 간편결제라 나이스페이먼츠 결제취소 API 가 그 자리에서 환불을 끝냅니다 — 전부 `true` 입니다.
 선언을 빠뜨리면(코어 기본값 `false`) 그 수단의 환불이 전부 운영자 승인 대기로 쌓입니다. 계약은
-이커머스 `docs/extension-points.md` "결제수단 능력 선언" 절이 갖습니다.
+이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "결제수단 능력 선언" 절이 갖습니다.
 <!-- @intent END -->
 
 ## 활동 로그 훅

@@ -15,7 +15,7 @@ use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
  *
  * 이커머스 모듈의 `claim_payment.approve` 필터를 구독해 나이스페이먼츠 서버 승인 API 로
  * 클레임 결제 건(CP 채번)을 승인합니다. 계약은 이커머스 모듈
- * `docs/api/claim-payments.md` "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
+ * `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
  *
  * 이 필터는 클라이언트가 호출하는 승인 API 경로에서도 발화하므로, 주문 콜백과 같은
  * 서명 검증(AuthToken + MID + Amt)을 여기서 다시 수행한다 — 컨트롤러 검증에 기대지 않는다.

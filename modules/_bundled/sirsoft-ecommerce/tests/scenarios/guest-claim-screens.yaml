@@ -18,8 +18,8 @@ description: |
      `init_actions` 에서 `_local` 을 **읽는** 것은 언제나 빈 값이다(2026-09-01 회원 화면 실측
      결함 ⓑ) — `_global` 은 부모 레이아웃이 이미 세웠으므로 그 제약을 받지 않는다.
 
-  ③ **공유 partial 이 회원 전용 주소를 리터럴로 들고 있었다.** `_list.json` 의 서브탭·상세·수정·
-     페이지 이동과 `_apply_summary.json` 의 접수·저장 뒤 목적지가 `/mypage/claims…` 였다. 비회원이
+  ③ **공유 partial 이 회원 전용 주소를 리터럴로 들고 있었다.** `templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_list.g7.html` 의 서브탭·상세·수정·
+     페이지 이동과 `templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_apply_summary.g7.html` 의 접수·저장 뒤 목적지가 `/mypage/claims…` 였다. 비회원이
      그 주소를 타면 로그인 화면이 열리고, 카드는 정상으로 그려지므로 **누르기 전에는 드러나지
      않는다**. 주소도 셸 계약값이 된다(claimListPath · claimDetailPathBase · claimEmptyCtaPath).
 
@@ -118,4 +118,4 @@ notes: |
   **응답 형태가 바뀐 엔드포인트가 하나 있다.** `GET guest/orders/{주문번호}/claims` 가 네 유형
   그룹(`claims.{유형}[]` + `counts`)에서 회원 목록과 같은 페이지 봉투(`data[]` + `pagination`)로
   바뀌었다. 프로덕션 소비처는 이 세션이 만드는 섹션이 처음이라 깨질 화면은 없고, 기존 Feature
-  단언 3건을 새 계약으로 고쳤다(API 문서 `docs/api/guest.md` 동반 갱신).
+  단언 3건을 새 계약으로 고쳤다(API 문서 `modules/_bundled/sirsoft-ecommerce/docs/api/guest.md` 동반 갱신).

@@ -1,12 +1,18 @@
-# audit:allow test-scenario-coverage reason: |
-#   이 기능의 커버리지 단위는 384 셀 곱이 아니라 **알림 정의 29종과 그 훅**이다. 축은 정의를
-#   낳는 재료(유형 x 이벤트 x 신청자 x 채널)이고, 한 셀이 곧 한 정의가 아니다 — 철회는 유형
-#   3종이 관리자 알림 1건으로 수렴하고 환불 processing 은 아무것도 발화하지 않는다. 그래서
-#   조합마다 테스트를 두면 서로 다른 셀이 같은 정의를 여러 번 재확인하게 된다.
-#   그 단위인 effects 는 test_files 의 테스트 메서드와 1:1 로 대응하며, 2026-09-02(S15b)에
-#   그 대응을 전건 @effects 마킹으로 코드에 적었다(정의 5 + 매핑 6 + 데이터 5 + 활동로그 10 +
-#   훅 순서 2 = 28). 남은 것은 이 면제가 cases 와 effects 를 함께 덮어 그 마킹을 게이트가
-#   검사하지 않는다는 점이며, 면제를 축별로 나누는 것은 룰 쪽 과제로 남긴다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: |
+#   [cross_product] 이 기능의 커버리지 단위는 384 셀 곱이 아니라 **알림 정의 29종과 그 훅**이다.
+#   축은 정의를 낳는 재료(유형 x 이벤트 x 신청자 x 채널)이고, 한 셀이 곧 한 정의가 아니다 — 철회는
+#   유형 3종이 관리자 알림 1건으로 수렴하고 환불 processing 은 아무것도 발화하지 않는다. 그래서
+#   조합마다 테스트를 두면 서로 다른 셀이 같은 정의를 여러 번 재확인하게 된다(실측 384/384 미커버).
+#   [effects] 그 단위인 effects 는 test_files 의 테스트 메서드와 1:1 로 대응하며 2026-09-02(S15b)에
+#   전건 @effects 마킹으로 적었으나, 2026-09-19 실측에서 37건 중 4건이 test_files 의 마킹과 이름이
+#   맞지 않는다 — payment_completion_hook_sees_the_claim_already_moved_to_paid 와
+#   partial_payment_does_not_fire_the_completion_hook 는 ClaimPaymentServiceTest 가 단언하지만
+#   claim-additional-payment.yaml 의 이름으로 마킹돼 있고, auto_advance_sends_one_notification_but_logs_every_step
+#   은 mp02-order-cancellation 소유인 ClaimCancellationRecordTest 에만 마킹돼 있으며,
+#   admin_withdrawal_data_links_to_admin_screen_and_defers_recipient_name 은 어느 test_files 도 이 이름으로
+#   마킹하지 않는다(ClaimNotificationDataListenerTest 는 추출 단계 링크를 고객 링크로 잠근다 —
+#   extracted_claim_link_defaults_to_the_customer_screen). 네 이름을 맞추면 이 축을 면제에서 뺀다.
+#   sub_flows(선언 없음)·test_files(6건 실재)는 면제하지 않는다 — 전면 면제였을 때는 둘도 꺼져 있었다.
 #   (2026-09-02 정정: 종전 사유였던 "js-yaml 부재로 expandCases 가 throw 한다" 는 더 이상
 #   사실이 아니다 — 지금은 384 케이스로 정상 전개된다. 함께 적혀 있던 "브라우저 축(E2E)은
 #   S15 가 spec 을 얹을 때 채운다" 도 성립하지 않는다: 알림 발송과 활동 로그 행은 브라우저에서

@@ -28,7 +28,7 @@ description: |
   내일 누군가 새 일괄 API 를 추가하며 `$messageParams` 를 빼면 표에 없으니 **조용히
   통과한다.** 결함이 재발해도 초록인 가드는 가드가 아니다.
 
-  그래서 `lang/ko/messages.php` 에서 `:이름` 을 가진 키를 **전수 수집**하고
+  그래서 `modules/_bundled/sirsoft-ecommerce/src/lang/ko/messages.php` 에서 `:이름` 을 가진 키를 **전수 수집**하고
   (실측 **83개**), `src/Http/Controllers/` 전체에서 그 키의 `moduleSuccess`·`moduleError`
   호출을 찾아 같은 규칙으로 판정하는 검사를 더했다 — 실측 **26개 호출**을 본다(표는 11개).
 

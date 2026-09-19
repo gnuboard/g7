@@ -11,7 +11,7 @@
  *  - 취소 비교표 primary 가 하드코딩 통화단위였던 것 → base 포맷(formatted) 바인딩
  *  - 배송 카드 배송비가 표시통화 값만 찍어 기준통화 줄이 사라지던 것 (S3-D10 — 앞 사례 일괄수정에서 누락)
  *
- * @scenario order_base_currency_display
+ * 소유 시나리오: `order-base-currency-display` (축 매핑은 각 테스트에 있다)
  *
  * 백엔드 정합 SSoT: OrderResource/OrderListResource(base_currency·payment_currency·is_cross_currency),
  *   AdjustmentResult.toPreviewArray(original_snapshot.formatted·refund_formatted).

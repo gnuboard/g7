@@ -31,7 +31,7 @@ description: |
   누가 눌렀는지에 따라 로그에서 사라지면 감사 근거가 되지 못한다.
 
   계약: 이 매니페스트는 **두 경로가 같은 인자수로 발화하는 것**을 잠근다 —
-  훅을 받은 뒤의 로그 모양은 `tests/Unit/Listeners/OrderActivityLogListenerTest.php`
+  훅을 받은 뒤의 로그 모양은 `modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php`
   가 이미 잠그고 있으므로 중복하지 않는다. 한쪽만 고쳐지면 red 가 된다.
 
 axes:

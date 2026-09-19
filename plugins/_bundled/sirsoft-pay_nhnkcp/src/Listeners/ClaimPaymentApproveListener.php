@@ -16,7 +16,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
  *
  * 이커머스 모듈의 `claim_payment.approve` 필터를 구독해 NHN KCP CLI 승인으로
  * 클레임 결제 건(CP 채번)을 승인합니다. 계약은 이커머스 모듈
- * `docs/api/claim-payments.md` "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
+ * `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
  *
  * KCP 는 PC/모바일 모두 같은 콜백(enc_data + enc_info)으로 돌아오므로 승인 경로는 하나다.
  * KCP 는 KRW 전용이라 결제 통화가 KRW 가 아니면 승인 없이 거절한다.

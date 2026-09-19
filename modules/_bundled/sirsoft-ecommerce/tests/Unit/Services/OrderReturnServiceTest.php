@@ -3047,7 +3047,7 @@ class OrderReturnServiceTest extends ModuleTestCase
      *
      * 2개 중 1개 반품: 전 58,000 → 후 29,000. 저장값은 미리보기와 같은 형태(`formatted`·`base_currency` 포함)다.
      *
-     * @scenario user-claim-list-detail-edit
+     * @scenario claim_type=return
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
      */

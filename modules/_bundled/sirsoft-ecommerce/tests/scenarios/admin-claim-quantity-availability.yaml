@@ -9,7 +9,7 @@ description: |
   잡는다.
 
   그러나 **관리자 주문상세 응답에는 그 필드가 아예 없었다.** 그래서 [주문취소] 모달은
-  수량 상한을 `cancelItem.quantity`(주문행의 원 수량)로 묶었고(`_modal_cancel_order.json:357`),
+  수량 상한을 `cancelItem.quantity`(주문행의 원 수량)로 묶었고(`modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_cancel_order.g7.html:89`),
   운영자에게 고를 수 없는 수를 기본값으로 제시했다.
 
   조용한 지점은 여기다 — 서버는 선점을 정확히 알고 있어서 422 로 거절한다. 즉 **데이터는

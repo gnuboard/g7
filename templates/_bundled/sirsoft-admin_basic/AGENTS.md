@@ -147,7 +147,7 @@ m.then(h => (a.current = h) && I(!1))   // h 가 falsy 면 && 단락 → 로딩 
 그 경로를 타면 `m` 을 읽지 않는다. `m` 을 뒤늦게 채우는 것으로는 고쳐지지 **않는다**
 (`wrapperPromise` 는 1회만 resolve 된다).
 
-Monaco 를 올릴 때는 `tests/Playwright/specs/admin/code-editor-monaco-vendored-version.spec.ts`
+Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-monaco-vendored-version.spec.ts`
 세 축(자산 200 · 마운트 · **로더 1회 실행**)을 함께 확인한다. 마운트만 재면 로더가 두 번
 돌아도 green 이다 — 먼저 뜬 편집기가 살아 있기 때문이다.
 
