@@ -22,7 +22,7 @@
         "url": "https://sirsoft.com"
     },
     "release_date": "2026-01-07",
-    "g7_version": ">=7.0.11",
+    "g7_version": ">=7.1.0",
     "dependencies": {
         "modules": {
             "sirsoft-board": ">=1.0.0",
@@ -83,7 +83,6 @@
             "rich-text-editor",
             "image-gallery",
             "quantity-selector",
-            "post-reactions",
             "social-login-buttons",
             "file-uploader",
             "card",
@@ -104,13 +103,6 @@
             "flex",
             "grid",
             "section"
-        ]
-    },
-    "preview": {
-        "thumbnail": "preview/thumbnail.png",
-        "screenshots": [
-            "preview/screenshot1.png",
-            "preview/screenshot2.png"
         ]
     },
     "error_config": {

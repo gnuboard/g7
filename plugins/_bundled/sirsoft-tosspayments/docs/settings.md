@@ -29,7 +29,7 @@
 | `use_escrow` | `string` | `off` | 에스크로 사용 |
 | `webhook_secret_verify` | `boolean` | `true` | 웹훅 secret 검증 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -61,7 +61,7 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:menus END -->
 
 <!-- @intent START -->
-설정 화면(`plugin_settings.json`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
+설정 화면(`plugin_settings.g7.html`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
 접근합니다 — PG 플러그인마다 전용 사이드바 메뉴를 만들면 PG 를 여러 개 설치했을 때 메뉴가
 난립합니다.
 <!-- @intent END -->

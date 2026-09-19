@@ -103,7 +103,7 @@ _단건 응답: `data` 객체의 필드. FileUploader 컴포넌트 호환을 위
 | data.stored_filename | string | `—` | 스토리지에 실제 저장된 파일명 (충돌 방지용 내부 파일명) |
 | data.mime_type | string | `image/png` | 업로드 파일의 MIME 타입 |
 | data.size | integer | `2048` | 파일 크기 (바이트) |
-| data.url | string | `/api/modules/sirsoft-board/boards/apidoc-sample-board/attachment/apidocsmpl1` | 첨부파일 접근 URL (`AttachmentService::getUrl()` 산물) |
+| data.url | string | `/api/modules/sirsoft-board/boards/apidoc-sample-board/attachment/apidocsmpl1` | 첨부파일 접근 URL (`AttachmentService::getUrl()` 산물 — 비밀글·삭제글 게이트가 걸린 다운로드 서빙 URL. 공개 자산 디스크를 켜도 직접 URL 로 바뀌지 않는다, 7.0.11+) |
 | data.order | integer | `0` | 첨부파일 표시 순서 (0 부터 오름차순) |
 | data.created_at | string | `2026-07-08 10:41:34` | 업로드(생성) 일시 |
 
@@ -451,6 +451,7 @@ HTTP/1.1 200
                 "use_comment": true,
                 "use_reply": true,
                 "use_report": true,
+                "use_scrap": true,
                 "secret_mode": "{MASKED}",
                 "per_page": 20,
                 "per_page_mobile": 15,
@@ -772,6 +773,7 @@ HTTP/1.1 200
             "use_reply": true,
             "max_reply_depth": 5,
             "use_report": true,
+            "use_scrap": true,
             "comment_order": "ASC",
             "max_comment_depth": 10,
             "min_title_length": 2,
@@ -903,6 +905,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1066,6 +1070,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1125,6 +1131,7 @@ HTTP/1.1 200
             "use_comment": true,
             "use_reply": true,
             "use_report": true,
+            "use_scrap": true,
             "show_view_count": true,
             "max_reply_depth": 5,
             "max_comment_depth": 10,
@@ -1323,6 +1330,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1482,6 +1491,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -2089,6 +2100,8 @@ _단건 응답: `data` 객체의 필드._
 | is_author | boolean | `true` | author 여부 |
 | is_guest_comment | boolean | `false` | guest comment 여부 |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_manage":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -2297,3 +2310,95 @@ HTTP/1.1 200
 **설명** 게시판 관리자가 블라인드 처리된 댓글을 복원합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 게시판의 `use_comment`가 꺼져 있으면 403으로 차단됩니다. 요청 본문의 선택적 `reason`을 사유로 받아 `CommentService::restoreComment()`가 블라인드 상태를 해제해 댓글을 다시 노출합니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다.
 
 
+
+---
+
+## 관리자 게시글 일괄 처리 (삭제 · 블라인드 · 복구)
+
+> 이 절은 **수기 작성**입니다. `api:docgen` 기본 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)로
+> 막혀 있어 위쪽 `@generated` 블록처럼 실측 스캐폴딩을 만들 수 없습니다. 값은 전부 코드에서 옮겼고
+> 근거 위치를 각 항목에 적었습니다 (이슈 #524).
+
+세 엔드포인트는 같은 요청 형태·같은 응답 형태·같은 권한을 쓰고 동작만 다릅니다.
+
+| 메서드 | 경로 | 라우트명 | 동작 |
+| --- | --- | --- | --- |
+| DELETE | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk` | `…admin.board.posts.bulk-destroy` | 선택한 글을 삭제 |
+| PATCH | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-blind` | `…admin.board.posts.bulk-blind` | 선택한 글을 블라인드 |
+| PATCH | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-restore` | `…admin.board.posts.bulk-restore` | 블라인드·삭제된 글을 복구 |
+
+- **컨트롤러**: `Admin\PostController@bulkDestroy` / `@bulkBlind` / `@bulkRestore` (`src/Http/Controllers/Admin/PostController.php:623,635,647`)
+- **미들웨어**: `auth:sanctum` + `admin` + `permission:admin,sirsoft-board.{slug}.admin.manage`
+  셋 다 `admin.manage` 를 요구합니다 — 단건 삭제의 「본인 글이면 `posts.write`」 완화를 일괄에 적용하면
+  한 요청에 남의 글이 섞여 들어갈 수 있기 때문입니다 (`src/routes/api.php:330-344`).
+- **선언 순서**: 세 라우트는 `/{id}` 계열보다 **먼저** 선언됩니다. 뒤에 두면 `bulk` 가 `{id}` 로 잡힙니다.
+
+### 요청 파라미터
+
+`BulkPostActionRequest` (`src/Http/Requests/Admin/BulkPostActionRequest.php:35-37`)
+
+| 이름 | 위치 | 타입 | 필수 | 제한 | 설명 |
+| --- | --- | --- | --- | --- | --- |
+| ids | body | array | 예 | 1~100개 | 대상 게시글 ID 목록 |
+| ids.* | body | integer | 예 | distinct | `exists` 를 두지 않습니다 — 없는 ID·다른 게시판의 ID 는 `skipped` 로만 드러나고 422 가 되지 않습니다 |
+| reason | body | string | 아니오 | 최대 1000자 | 사유. 블라인드·복구 이력에 남습니다(삭제는 사용하지 않음) |
+
+`DELETE /bulk` 도 **본문 JSON** 으로 `ids` 를 받습니다. 레이아웃 엔진은 GET 이 아닌 모든 메서드에 본문을
+실어 보냅니다(`resources/js/core/template-engine/ActionDispatcher.ts`) — 스크랩 일괄 해제와 같은 방식입니다.
+
+### 응답
+
+```json
+{
+    "success": true,
+    "message": "2개의 게시글을 삭제했습니다. (건너뜀 1개)",
+    "data": {
+        "affected_count": 2,
+        "affected_ids": [12, 15],
+        "skipped": [{ "id": 19, "reason": "has_replies" }]
+    }
+}
+```
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| affected_count | integer | 실제로 처리된 건수 |
+| affected_ids | array | 처리된 게시글 ID 목록 |
+| skipped | array | 건너뛴 항목 `{id, reason}` 목록 |
+
+메시지 키는 `sirsoft-board::messages.posts_bulk.{delete,blind,restore}_success` 이며 `:count`·`:skipped`
+를 치환합니다 (`src/lang/{ko,en}/messages.php:311-316`).
+
+### 건너뛰는 사유 (`skipped[].reason`)
+
+`PostService::resolveBulkSkipReason()` (`src/Services/PostService.php:711-738`)
+
+| reason | 동작 | 조건 |
+| --- | --- | --- |
+| `already_deleted` | delete | 이미 삭제 상태이거나 소프트 삭제된 글 |
+| `has_replies` | delete | 게시판의 답글 삭제 정책이 `block` 인데 살아 있는 답글이 있는 글 — 단건 삭제와 같은 판정이라 일괄에서만 규칙이 느슨해지지 않습니다 |
+| `already_blinded` | blind | 이미 블라인드된 글 |
+| `already_published` | restore | 이미 정상 게시 중인 글 |
+| `error` | 공통 | 항목 처리 중 예외. **한 건의 실패가 나머지를 막지 않습니다** — 사유만 남기고 계속합니다 |
+
+### 훅과 본인인증(IDV)
+
+- `sirsoft-board.post.before_bulk_action($slug, $action, $ids, $reason)` — **루프에 들어가기 전 1회**만
+  발화합니다 (`PostService.php:660`). 항목마다 `before_delete`·`before_blind` 를 태우지 않으므로,
+  본인인증이 필요한 상황에서 428 이 루프 **중간**에 터져 일부만 처리되는 일이 없습니다(부수효과 0).
+- `sirsoft-board.post.after_bulk_action($slug, $action, $affectedIds, $skipped)` — 처리 뒤 1회 (`:692`).
+- 본인인증 정책 `sirsoft-board.post.bulk_action` 이 위 `before_bulk_action` 을 대상으로 선언돼 있습니다
+  (`module.php:827-834`, 기본 `enabled=false`). 켜면 미충족 시 **HTTP 428** 과 함께
+  `verification.return_request` 가 내려가고, 프론트 인터셉터가 인증 모달을 연 뒤 원요청을 재전송합니다.
+  컨트롤러는 `catch (\Exception)` 만 잡습니다 — 428 을 일으키는 예외는 `\Error` 를 상속하므로 삼켜지지 않습니다.
+
+### 에러 응답
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | `sirsoft-board.{slug}.admin.manage` 권한이 없는 경우 |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 |
+| 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘거나 정수가 아닌 경우 |
+| 428 | Identity Verification Required | 본인인증 정책이 켜져 있고 미충족인 경우 (아무 항목도 처리되지 않음) |
+| 500 | Internal Server Error | 일괄 처리 실패 (`sirsoft-board::messages.posts_bulk.action_failed`) |

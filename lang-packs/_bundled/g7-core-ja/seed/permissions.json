@@ -334,5 +334,33 @@
   "core.language_packs.update": {
     "name": "言語パックアップデート",
     "description": "インストールされた言語パックのアップデートを確認して実行できます。"
+  },
+  "core.system": {
+    "name": "システム管理",
+    "description": "コア自体の保守権限"
+  },
+  "core.system.update": {
+    "name": "コアアップデート",
+    "description": "GNU Board 7 のコアを新しいバージョンに更新できます。"
+  },
+  "core.extensions": {
+    "name": "拡張 共通",
+    "description": "モジュール·プラグイン·テンプレートに共通に適用される権限"
+  },
+  "core.extensions.custom_assets.manage": {
+    "name": "カスタム資産管理",
+    "description": "モジュール·プラグイン·テンプレートに運営者CSS·JS·フォント·画像を追加または編集できます。追加したスクリプトはサイト全体で実行されるため、レイアウト編集と別途付与します。"
+  },
+  "core.member-notifications": {
+    "name": "会員通知箱",
+    "description": "全会員アプリ内通知箱閲覧・削除権限"
+  },
+  "core.member-notifications.read": {
+    "name": "会員通知箱閲覧",
+    "description": "全会員が受け取った通知を閲覧することができます。"
+  },
+  "core.member-notifications.delete": {
+    "name": "会員通知箱削除",
+    "description": "会員が受け取った通知を削除することができます。"
   }
 }

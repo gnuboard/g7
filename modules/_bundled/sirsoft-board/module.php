@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board;
 use App\Extension\AbstractModule;
 use App\Models\Role;
 use App\Seo\Concerns\LocalizesSeoValues;
+use App\Services\AttachmentService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
@@ -24,6 +25,8 @@ use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
 use Modules\Sirsoft\Board\Listeners\UserNotificationSettingsListener;
+use Modules\Sirsoft\Board\Listeners\UserReactionInfoListener;
+use Modules\Sirsoft\Board\Listeners\UserScrapInfoListener;
 use Modules\Sirsoft\Board\Models\Board;
 
 class Module extends AbstractModule
@@ -54,6 +57,11 @@ class Module extends AbstractModule
                     $role->delete();
                 }
             });
+
+        // 반응 유형 아이콘 첨부 정리 — source_identifier 가 붙은 첨부는 코어 고아 정리
+        // 대상이 아니므로(정리 대상은 source_identifier 가 NULL 인 행뿐) 여기서 지우지
+        // 않으면 모듈을 지운 뒤에도 파일과 attachments 행이 남는다.
+        app(AttachmentService::class)->deleteBySourceIdentifier('sirsoft-board');
 
         return parent::uninstall();
     }
@@ -95,6 +103,7 @@ class Module extends AbstractModule
      * 모듈 레벨 권한만 정의:
      * - sirsoft-board.boards.* (게시판 관리)
      * - sirsoft-board.reports.* (신고 관리)
+     * - sirsoft-board.scraps.* (전 회원 스크랩 조회·삭제)
      */
     public function getPermissions(): array
     {
@@ -325,6 +334,89 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
+                [
+                    'identifier' => 'scraps',
+                    'resource_route_key' => 'scrap',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '게시글 스크랩 관리',
+                        'en' => 'Scrap Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 게시글 스크랩 조회·삭제 권한',
+                        'en' => 'View and delete post scraps across all members',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'view',
+                            'name' => [
+                                'ko' => '스크랩 조회',
+                                'en' => 'View Scraps',
+                            ],
+                            'description' => [
+                                'ko' => '전 회원 스크랩 목록 조회',
+                                'en' => 'View scrap list across all members',
+                            ],
+                            'type' => 'admin',
+                            'roles' => ['admin', 'manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '스크랩 삭제',
+                                'en' => 'Delete Scraps',
+                            ],
+                            'description' => [
+                                'ko' => '회원 스크랩 개별·일괄 삭제',
+                                'en' => 'Delete member scraps individually or in bulk',
+                            ],
+                            'type' => 'admin',
+                            'roles' => ['admin'],
+                        ],
+                    ],
+                ],
+                // 반응 관리 권한 (type: admin) — 스크랩과 동형
+                [
+                    'identifier' => 'reactions',
+                    'resource_route_key' => 'reaction',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '게시글 반응 관리',
+                        'en' => 'Reaction Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 게시글·댓글 반응 조회·삭제 권한',
+                        'en' => 'View and delete post/comment reactions across all members',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'view',
+                            'name' => [
+                                'ko' => '반응 조회',
+                                'en' => 'View Reactions',
+                            ],
+                            'description' => [
+                                'ko' => '전 회원 반응 목록 조회',
+                                'en' => 'View reaction list across all members',
+                            ],
+                            'type' => 'admin',
+                            'roles' => ['admin', 'manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '반응 삭제',
+                                'en' => 'Delete Reactions',
+                            ],
+                            'description' => [
+                                'ko' => '회원 반응 개별·일괄 삭제',
+                                'en' => 'Delete member reactions individually or in bulk',
+                            ],
+                            'type' => 'admin',
+                            'roles' => ['admin'],
+                        ],
+                    ],
+                ],
             ],
         ];
     }
@@ -454,6 +546,8 @@ class Module extends AbstractModule
             BoardPostsCountSyncListener::class,
             BoardCommentsCountSyncListener::class,
             Ckeditor5ReferenceSourcesListener::class,
+            UserScrapInfoListener::class,
+            UserReactionInfoListener::class,
         ];
     }
 
@@ -726,6 +820,28 @@ class Module extends AbstractModule
                         'order' => 3,
                         'permission' => 'sirsoft-board.reports.view',
                     ],
+                    [
+                        'name' => [
+                            'ko' => '스크랩 관리',
+                            'en' => 'Scrap Management',
+                        ],
+                        'slug' => 'sirsoft-board-scraps',
+                        'url' => '/admin/boards/scraps',
+                        'icon' => 'fas fa-bookmark',
+                        'order' => 4,
+                        'permission' => 'sirsoft-board.scraps.view',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '반응 관리',
+                            'en' => 'Reaction Management',
+                        ],
+                        'slug' => 'sirsoft-board-reactions',
+                        'url' => '/admin/boards/reactions',
+                        'icon' => 'fas fa-thumbs-up',
+                        'order' => 5,
+                        'permission' => 'sirsoft-board.reactions.view',
+                    ],
                 ],
             ],
         ];
@@ -759,6 +875,19 @@ class Module extends AbstractModule
                 'key' => 'sirsoft-board.post.blind',
                 'scope' => 'hook',
                 'target' => 'sirsoft-board.post.before_blind',
+                'purpose' => 'sensitive_action',
+                'grace_minutes' => 5,
+                'enabled' => false,
+                'applies_to' => 'admin',
+                'fail_mode' => 'block',
+            ],
+            // 게시글 일괄 처리 (관리자 민감 작업) — 삭제·블라인드·복구 공통.
+            // 항목별 before_delete/before_blind 가 아니라 일괄 훅 하나를 대상으로 삼는다:
+            // 루프 중간에 428 이 터지면 앞 항목만 처리된 상태로 끝나기 때문이다.
+            [
+                'key' => 'sirsoft-board.post.bulk_action',
+                'scope' => 'hook',
+                'target' => 'sirsoft-board.post.before_bulk_action',
                 'purpose' => 'sensitive_action',
                 'grace_minutes' => 5,
                 'enabled' => false,

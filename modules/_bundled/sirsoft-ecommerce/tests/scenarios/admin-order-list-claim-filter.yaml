@@ -65,6 +65,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/OrderListClaimFilterTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderListClaimFilter.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/OrderListClaimFilterVocabularyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/ClaimWordingMatchesBehaviourTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-order-list-claim-filter.spec.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderListDeferredJoinTest.php
 

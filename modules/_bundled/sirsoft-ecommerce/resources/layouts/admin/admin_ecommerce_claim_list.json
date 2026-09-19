@@ -1,20 +1,95 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_claim_list",
-    "permissions": [
-        "sirsoft-ecommerce.claims.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.claim.title",
         "description": "$t:sirsoft-ecommerce.admin.claim.description"
     },
-    "computed": {
-        "claimReasonOptions": "{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.claim.filter.reason_all' }, ...((claim_reasons?.data?.data || []).map(r => ({ value: r.code, label: r.localized_name })))]}}",
-        "claimCurrencyOptions": "{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.claim.filter.currency_all' }, ...((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code })))]}}",
-        "claimChargePaymentMethods": "{{((ecommerce_settings?.data?.claim?.charge_payment_methods || []).map(m => ({ value: m, label: $t('sirsoft-ecommerce.enums.payment_method.' + m) })))}}"
-    },
-    "state": {
+    "data_sources": [
+        {
+            "id": "claims",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claims",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/claims",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "type": "{{query.type || 'exchange'}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "statuses": "{{query['statuses[]']}}",
+                "fault_types": "{{(query.type || 'exchange') !== 'cancel' ? query['fault_types[]'] : null}}",
+                "charge_methods": "{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_methods[]'] : null}}",
+                "reason_code": "{{query.reason_code}}",
+                "requester_type": "{{query.requester_type}}",
+                "min_amount": "{{query.min_amount}}",
+                "max_amount": "{{query.max_amount}}",
+                "currency_code": "{{query.currency_code}}",
+                "charge_payment_methods": "{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_payment_methods[]'] : null}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "유형별 금지 축(귀책·청구·청구 결제수단)은 `named_actions.searchClaims` 와 동일한 게이트를 거친다. URL 은 검색 액션 말고도 북마크·뒤로가기·수기 편집으로도 만들어지므로, 이쪽을 비워 두면 교차 조합 URL 에서 목록 전체가 422 가 되고 화면은 '로딩 중...' 에 멈춘 상태로 남는다."
+        },
+        {
+            "id": "claim_reasons",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claim_reasons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/claim-reasons/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "type": "{{(query.type || 'exchange') === 'cancel' ? 'refund' : (query.type || 'exchange')}}"
+            },
+            "comment": "사유 필터 카탈로그. 취소 유형이 저장하는 cancel_reason_type 은 환불 사유 코드이므로 같은 카탈로그를 읽는다."
+        },
+        {
+            "id": "presets",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.presets",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/presets",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "target_screen": "claims"
+            }
+        },
+        {
+            "id": "ecommerce_settings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "comment": "청구 결제수단 허용값(`claim.charge_payment_methods`)의 단일 출처. 통화 선택지는 이젠 `_global.modules['sirsoft-ecommerce'].language_currency.currencies` 가 줌—이 엔드포인트는 `settings.read` 를 요구하는데 화면 라우트는 `claims.read` 라, 둘만 가진 운영자(기본 역할 manager)에게는 이 응답이 403 이 되어 드롭다운이 조용히 빈다. 주문 목록 정본과 동형으로 전역을 쓰는 축부터 옮겼다."
+        }
+    ],
+    "initLocal": {
         "showDetailFilter": false,
         "isEditMode": false,
         "filter": {
@@ -59,94 +134,47 @@
         "bulkClaimStatus": "",
         "perPage": "20"
     },
+    "computed": {
+        "claimReasonOptions": "{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.claim.filter.reason_all' }, ...((claim_reasons?.data?.data || []).map(r => ({ value: r.code, label: r.localized_name })))]}}",
+        "claimCurrencyOptions": "{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.claim.filter.currency_all' }, ...((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code })))]}}",
+        "claimChargePaymentMethods": "{{((ecommerce_settings?.data?.claim?.charge_payment_methods || []).map(m => ({ value: m, label: $t('sirsoft-ecommerce.enums.payment_method.' + m) })))}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.claims.read"
+    ],
     "transition_overlay": {
         "wait_for": [
             "claims"
         ]
     },
-    "data_sources": [
-        {
-            "id": "claims",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claims",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/claims",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "comment": "유형별 금지 축(귀책·청구·청구 결제수단)은 `named_actions.searchClaims` 와 동일한 게이트를 거친다. URL 은 검색 액션 말고도 북마크·뒤로가기·수기 편집으로도 만들어지므로, 이쪽을 비워 두면 교차 조합 URL 에서 목록 전체가 422 가 되고 화면은 '로딩 중...' 에 멈춘 상태로 남는다.",
+    "named_actions": {
+        "searchClaims": {
+            "comment": "귀책·청구 파라미터는 그 축을 가진 유형에서만 싣는다 — 게이트(`Admin\\ClaimListRequest`)가 취소·환불에서 prohibited 로 거절하므로, 유형을 바꾼 뒤 남아 있던 값을 그대로 보내면 목록 전체가 422 가 된다.",
+            "handler": "navigate",
             "params": {
-                "type": "{{query.type || 'exchange'}}",
-                "page": "{{query.page || 1}}",
-                "per_page": "{{query.per_page || 20}}",
-                "search_field": "{{query.search_field}}",
-                "search_keyword": "{{query.search_keyword}}",
-                "from": "{{query.from}}",
-                "to": "{{query.to}}",
-                "statuses": "{{query['statuses[]']}}",
-                "fault_types": "{{(query.type || 'exchange') !== 'cancel' ? query['fault_types[]'] : null}}",
-                "charge_methods": "{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_methods[]'] : null}}",
-                "reason_code": "{{query.reason_code}}",
-                "requester_type": "{{query.requester_type}}",
-                "min_amount": "{{query.min_amount}}",
-                "max_amount": "{{query.max_amount}}",
-                "currency_code": "{{query.currency_code}}",
-                "charge_payment_methods": "{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_payment_methods[]'] : null}}"
-            },
-            "errorHandling": {
-                "403": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
-                },
-                "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                "path": "/admin/ecommerce/claims",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "claim_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search_field": "{{_local.filter.searchField || 'claim_number'}}",
+                    "search_keyword": "{{_local.filter.searchKeyword || null}}",
+                    "from": "{{_local.filter.startDate || null}}",
+                    "to": "{{_local.filter.endDate || null}}",
+                    "statuses[]": "{{(_local.filter.claimStatus || []).length > 0 ? _local.filter.claimStatus : null}}",
+                    "fault_types[]": "{{(query.type || 'exchange') !== 'cancel' && (_local.filter.faultTypes || []).length > 0 ? _local.filter.faultTypes : null}}",
+                    "charge_methods[]": "{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') && (_local.filter.chargeMethods || []).length > 0 ? _local.filter.chargeMethods : null}}",
+                    "reason_code": "{{_local.filter.reasonCode || null}}",
+                    "requester_type": "{{_local.filter.requesterType || null}}",
+                    "min_amount": "{{_local.filter.minAmount || null}}",
+                    "max_amount": "{{_local.filter.maxAmount || null}}",
+                    "currency_code": "{{_local.filter.currencyCode || null}}",
+                    "charge_payment_methods[]": "{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') && (_local.filter.chargePaymentMethods || []).length > 0 ? _local.filter.chargePaymentMethods : null}}"
                 }
             }
-        },
-        {
-            "id": "claim_reasons",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claim_reasons",
-            "comment": "사유 필터 카탈로그. 취소 유형이 저장하는 cancel_reason_type 은 환불 사유 코드이므로 같은 카탈로그를 읽는다.",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/claim-reasons/active",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background",
-            "params": {
-                "type": "{{(query.type || 'exchange') === 'cancel' ? 'refund' : (query.type || 'exchange')}}"
-            }
-        },
-        {
-            "id": "presets",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.presets",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/presets",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background",
-            "params": {
-                "target_screen": "claims"
-            }
-        },
-        {
-            "id": "ecommerce_settings",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings",
-            "comment": "청구 결제수단 허용값(`claim.charge_payment_methods`)의 단일 출처. 통화 선택지는 이젠 `_global.modules['sirsoft-ecommerce'].language_currency.currencies` 가 줌—이 엔드포인트는 `settings.read` 를 요구하는데 화면 라우트는 `claims.read` 라, 둘만 가진 운영자(기본 역할 manager)에게는 이 응답이 403 이 되어 드롭다운이 조용히 빈다. 주문 목록 정본과 동형으로 전역을 쓰는 축부터 옮겼다.",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background"
         }
-    ],
+    },
     "init_actions": [
         {
             "comment": "URL 이 필터 상태의 단일 근거다 — 새로고침·뒤로가기·프리셋 링크 어느 경로로 들어와도 화면이 같은 조건을 그린다.",
@@ -194,34 +222,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchClaims": {
-            "comment": "귀책·청구 파라미터는 그 축을 가진 유형에서만 싣는다 — 게이트(`Admin\\ClaimListRequest`)가 취소·환불에서 prohibited 로 거절하므로, 유형을 바꾼 뒤 남아 있던 값을 그대로 보내면 목록 전체가 422 가 된다.",
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/ecommerce/claims",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": 1,
-                    "search_field": "{{_local.filter.searchField || 'claim_number'}}",
-                    "search_keyword": "{{_local.filter.searchKeyword || null}}",
-                    "from": "{{_local.filter.startDate || null}}",
-                    "to": "{{_local.filter.endDate || null}}",
-                    "statuses[]": "{{(_local.filter.claimStatus || []).length > 0 ? _local.filter.claimStatus : null}}",
-                    "fault_types[]": "{{(query.type || 'exchange') !== 'cancel' && (_local.filter.faultTypes || []).length > 0 ? _local.filter.faultTypes : null}}",
-                    "charge_methods[]": "{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') && (_local.filter.chargeMethods || []).length > 0 ? _local.filter.chargeMethods : null}}",
-                    "reason_code": "{{_local.filter.reasonCode || null}}",
-                    "requester_type": "{{_local.filter.requesterType || null}}",
-                    "min_amount": "{{_local.filter.minAmount || null}}",
-                    "max_amount": "{{_local.filter.maxAmount || null}}",
-                    "currency_code": "{{_local.filter.currencyCode || null}}",
-                    "charge_payment_methods[]": "{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') && (_local.filter.chargePaymentMethods || []).length > 0 ? _local.filter.chargePaymentMethods : null}}"
-                },
-                "transition_overlay_target": "claim_datagrid__body"
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -248,20 +248,27 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "모바일 뒤로가기",
                                         "id": "mb_001_back_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "comment": "모바일 뒤로가기",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-ghost btn-square hidden"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
                                                     "className": "btn btn-ghost btn-square flex"
                                                 }
                                             }
+                                        },
+                                        "actions": [
+                                            {
+                                                "comment": "브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 \"back\" 을 주면 /back 으로 이동한다",
+                                                "type": "click",
+                                                "handler": "navigateBack"
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-ghost btn-square hidden"
                                         },
                                         "children": [
                                             {
@@ -271,13 +278,6 @@
                                                     "name": "arrow-left",
                                                     "className": "text-xl"
                                                 }
-                                            }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "comment": "브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 \"back\" 을 주면 /back 으로 이동한다",
-                                                "type": "click",
-                                                "handler": "navigateBack"
                                             }
                                         ]
                                     },
@@ -318,6 +318,18 @@
                                         "id": "h_004_refresh_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 유형 서브탭과 걸어둔 필터를 유지한다.",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/claims",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
                                             "className": "btn btn-icon"
@@ -331,18 +343,6 @@
                                                     "className": "text-xl"
                                                 }
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 유형 서브탭과 걸어둔 필터를 유지한다.",
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/claims",
-                                                    "mergeQuery": true,
-                                                    "query": {}
-                                                }
-                                            }
                                         ]
                                     }
                                 ]
@@ -350,13 +350,10 @@
                         ]
                     },
                     {
+                        "comment": "모바일 상단 액션 (검색 편집 / 프리셋 관리)",
                         "id": "mobile_top_actions",
                         "type": "basic",
                         "name": "Div",
-                        "comment": "모바일 상단 액션 (검색 편집 / 프리셋 관리)",
-                        "props": {
-                            "className": "hidden"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -364,11 +361,25 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "hidden"
+                        },
                         "children": [
                             {
                                 "id": "mb_010_search_edit_button",
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "_local",
+                                            "isEditMode": "{{!_local.isEditMode}}",
+                                            "showDetailFilter": "{{!_local.isEditMode ? true : _local.showDetailFilter}}"
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "type": "button",
                                     "className": "btn btn-outline flex-1"
@@ -387,23 +398,19 @@
                                         "name": "Span",
                                         "text": "$t:sirsoft-ecommerce.admin.claim.search.edit_search"
                                     }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "_local",
-                                            "isEditMode": "{{!_local.isEditMode}}",
-                                            "showDetailFilter": "{{!_local.isEditMode ? true : _local.showDetailFilter}}"
-                                        }
-                                    }
                                 ]
                             },
                             {
                                 "id": "mb_011_preset_manage_button",
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "modal_claim_preset_manage"
+                                    }
+                                ],
                                 "props": {
                                     "type": "button",
                                     "className": "btn btn-outline flex-1"
@@ -422,23 +429,50 @@
                                         "name": "Span",
                                         "text": "$t:sirsoft-ecommerce.admin.claim.search.preset_manage"
                                     }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "openModal",
-                                        "target": "modal_claim_preset_manage"
-                                    }
                                 ]
                             }
                         ]
                     },
                     {
+                        "comment": "유형 서브탭. 건수 뱃지는 응답의 `counts` 를 그대로 그린다 — 유형 공통 필터(기간·검색·회원구분)만 반영된 값이라 \"그 탭으로 넘어가면 몇 건이 보이는가\" 를 답한다.",
                         "id": "claim_type_subtabs",
                         "type": "composite",
                         "name": "TabNavigation",
-                        "comment": "유형 서브탭. 건수 뱃지는 응답의 `counts` 를 그대로 그린다 — 유형 공통 필터(기간·검색·회원구분)만 반영된 값이라 \"그 탭으로 넘어가면 몇 건이 보이는가\" 를 답한다.",
+                        "actions": [
+                            {
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "comment": "일괄 상태 어휘는 유형이 정한다 — 앞 유형에서 고른 값을 그대로 들고 넘어가면 그 상태는 새 유형의 어휘에 없어 [일괄 적용] 이 요청 전체를 422 로 만든다. 선택도 함께 비운다 — DataGrid 의 `selectionScope: \"page\"` 는 지금 페이지에 없는 id 만 버리는데, `id` 는 유형마다 다른 테이블의 기본키(`order_exchanges`/`order_returns`/`order_refunds`)라 값이 겹치면 앞 유형에서 고른 선택이 살아남아 운영자가 체크한 적 없는 다른 유형의 신청서가 대상이 된다. 페이지 크기도 함께 되돌린다 — 아래 이동이 `per_page` 를 URL 에서 떨구므로 서버는 기본값 20 으로 응답하는데, 셀렉트만 앞 유형의 값을 붙들고 있으면 화면이 실제와 다른 페이지 크기를 가리킨다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "_local",
+                                            "selectedItems": [],
+                                            "bulkClaimStatus": "",
+                                            "perPage": "20"
+                                        }
+                                    },
+                                    {
+                                        "comment": "audit:allow layout-list-context-navigate-merge-query 유형 전환은 의도적 리셋이다 — 유형마다 상태·귀책·청구 어휘가 달라 앞 유형의 `statuses[]` 가 따라오면 목록 전체가 422 가 된다(실측). `type` 만 갈아끼운다.",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/claims",
+                                            "replace": true,
+                                            "transition_overlay_target": "claim_datagrid__body",
+                                            "query": {
+                                                "type": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
                         "props": {
+                            "activeTabId": "{{query.type ?? 'exchange'}}",
+                            "variant": "default",
+                            "className": "mb-4",
                             "tabs": [
                                 {
                                     "id": "exchange",
@@ -460,44 +494,8 @@
                                     "label": "$t:sirsoft-ecommerce.admin.claim.subtab.cancel",
                                     "badge": "{{claims?.data?.counts?.cancel ?? 0}}"
                                 }
-                            ],
-                            "activeTabId": "{{query.type ?? 'exchange'}}",
-                            "variant": "default",
-                            "className": "mb-4"
-                        },
-                        "actions": [
-                            {
-                                "event": "onTabChange",
-                                "type": "change",
-                                "handler": "sequence",
-                                "params": {
-                                    "actions": [
-                                        {
-                                            "comment": "일괄 상태 어휘는 유형이 정한다 — 앞 유형에서 고른 값을 그대로 들고 넘어가면 그 상태는 새 유형의 어휘에 없어 [일괄 적용] 이 요청 전체를 422 로 만든다. 선택도 함께 비운다 — DataGrid 의 `selectionScope: \"page\"` 는 지금 페이지에 없는 id 만 버리는데, `id` 는 유형마다 다른 테이블의 기본키(`order_exchanges`/`order_returns`/`order_refunds`)라 값이 겹치면 앞 유형에서 고른 선택이 살아남아 운영자가 체크한 적 없는 다른 유형의 신청서가 대상이 된다. 페이지 크기도 함께 되돌린다 — 아래 이동이 `per_page` 를 URL 에서 떨구므로 서버는 기본값 20 으로 응답하는데, 셀렉트만 앞 유형의 값을 붙들고 있으면 화면이 실제와 다른 페이지 크기를 가리킨다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "selectedItems": [],
-                                                "bulkClaimStatus": "",
-                                                "perPage": "20"
-                                            }
-                                        },
-                                        {
-                                            "comment": "audit:allow layout-list-context-navigate-merge-query 유형 전환은 의도적 리셋이다 — 유형마다 상태·귀책·청구 어휘가 달라 앞 유형의 `statuses[]` 가 따라오면 목록 전체가 422 가 된다(실측). `type` 만 갈아끼운다.",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/ecommerce/claims",
-                                                "query": {
-                                                    "type": "{{$args[0]}}"
-                                                },
-                                                "replace": true,
-                                                "transition_overlay_target": "claim_datagrid__body"
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
+                            ]
+                        }
                     },
                     {
                         "partial": "partials/admin_ecommerce_claim_list/_partial_filter_section.json"

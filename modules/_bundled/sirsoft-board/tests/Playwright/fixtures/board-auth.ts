@@ -31,6 +31,10 @@ type BoardAuthFixtures = {
   attachmentDownloadToken: string;
   /** 본문 썸네일 폴백 E2E 용 — 게시판 CRUD + 전용 게시판(e2e-content-thumbnail) 글/첨부 관리 토큰 (공개 #22) */
   contentThumbnailToken: string;
+  /** 게시글 조회 권한 토큰 (#524 스크랩 사용자 흐름 검증용) */
+  memberScrapToken: string;
+  /** 게시판/게시글 조회 권한 토큰 (반응 등록/전환/해제 흐름 검증용, 반응은 로그인만 요구) */
+  reactionToken: string;
 };
 
 export const test = base.extend<BoardAuthFixtures>({
@@ -104,6 +108,19 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.e2e-content-thumbnail.admin.posts.write',
         'sirsoft-board.e2e-content-thumbnail.admin.manage',
         'sirsoft-board.e2e-content-thumbnail.admin.attachments.upload',
+      ),
+    );
+  },
+  memberScrapToken: async ({}, use) => {
+    // 스크랩은 로그인 회원이면 누구나 가능. 게시글 조회 권한만 있으면 상세 진입 → 토글 가능.
+    await use(issueToken('sirsoft-board.free.posts.read'));
+  },
+  reactionToken: async ({}, use) => {
+    // 반응은 별도 권한 없이 로그인(auth:sanctum)만 요구. 게시글 조회 권한만 발급.
+    await use(
+      issueToken(
+        'sirsoft-board.boards.read',
+        'sirsoft-board.notice.posts.read',
       ),
     );
   },

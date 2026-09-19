@@ -9,6 +9,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\ModuleCacheDriver;
 use App\Extension\Storage\ModuleStorageDriver;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
 use App\Support\PublicAssetDisk;
 use Illuminate\Database\Seeder;
@@ -108,6 +109,8 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 모듈 디렉토리 경로 반환
+     *
+     * @return string 모듈 디렉토리 절대 경로
      */
     protected function getModulePath(): string
     {
@@ -123,6 +126,8 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * 모듈 식별자 반환 (디렉토리명에서 자동 추론)
      *
      * 디렉토리명이 'sirsoft-sample'이면 식별자도 'sirsoft-sample'
+     *
+     * @return string 모듈 식별자
      */
     final public function getIdentifier(): string
     {
@@ -919,6 +924,23 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 매니페스트에 선언된 아이콘 상대경로 반환
+     *
+     * module.json 의 icon 필드 값을 그대로 돌려줍니다. 경로 규칙(확장 루트 기준 상대경로)과
+     * 규격(정사각·100KB 이하·안전한 SVG) 검증은 ExtensionIconResolver·
+     * ExtensionIconValidator 의 몫이며, 여기서는 선언값만 봅니다.
+     * 선언이 없으면 파일 관례(assets/icon.svg → png → webp)로 해석됩니다.
+     *
+     * @return string|null 아이콘 상대경로 (선언이 없으면 null)
+     */
+    public function getIcon(): ?string
+    {
+        $icon = $this->loadManifest()['icon'] ?? null;
+
+        return is_string($icon) && trim($icon) !== '' ? $icon : null;
+    }
+
+    /**
      * 모듈 메타데이터 반환
      *
      * 기본적으로 빈 배열 반환
@@ -968,6 +990,12 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 레이아웃 확장 파일 목록 반환
+     *
+     * **`.json` 만 돌려주는 것이 계약이다** — 소스(`.g7.html`) 판별은 여기가 아니라 **호출처**
+     * ({@see CollectsFragmentSources::collectFragmentSources()}) 소관이다.
+     * 호출처가 이 목록 위에 같은 디렉토리의 `.g7.html` 을 얹어 소스 SSoT 를 우선하고, 짝 마크업이
+     * 없는 `.json` 만 남긴다. 여기서 `.g7.html` 까지 반환하도록 바꾸면 확장 공개 표면이 바뀌어
+     * 번들 확장의 `g7_version` 상향 대상이 되고, 호출처의 짝 판별과 이중으로 겹친다.
      *
      * @return array<string> JSON 파일 경로 목록
      */

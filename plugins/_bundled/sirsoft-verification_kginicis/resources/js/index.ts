@@ -4,7 +4,7 @@
  * 설계 (Phase E′ 전환):
  *  - 코어 IDV 흐름 (428 → 템플릿 launcher → POST /api/identity/challenges → 모달 open) 을 그대로 사용
  *  - 코어 모달의 `identity_provider_ui:text_code` Extension Point 슬롯을 본 plugin 의
- *    `resources/extensions/identity_provider_inicis.json` (mode: 'replace') 로 교체
+ *    `resources/extensions/identity_provider_inicis.g7.html` (mode: 'replace') 로 교체
  *  - 슬롯 안의 "이니시스 본인인증 시작" 버튼이 본 파일의 핸들러 `startAuth` 를 호출
  *  - 사용자 클릭 직접 호출 → window.open 이 사용자 제스처 컨텍스트 안에서 실행 →
  *    Chrome popup blocker 회피 (자동 호출은 차단됨)

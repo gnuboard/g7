@@ -42,10 +42,35 @@ export interface ModalProps {
    */
   closeOnEscape?: boolean;
   children?: React.ReactNode;
+  /**
+   * 이름 있는 크기 단계 — `width` 를 직접 적지 않고 고르는 자리.
+   *
+   * `width` 를 함께 주면 `width` 가 이긴다(기존 `width` 사용처 무영향). 알 수 없는 값은
+   * 기본값으로 떨어져 작성 오타가 화면을 깨뜨리지 않는다. 컨테이너에 CSS
+   * `max-w-[calc(100vw-2rem)]` 이 걸려 있어 좁은 화면 넘침은 스타일 계층이 막는다.
+   */
+  size?: 'sm' | 'small' | 'md' | 'medium' | 'lg' | 'large' | 'xl' | '2xl';
   width?: string;
   className?: string;
   style?: React.CSSProperties;
 }
+
+/**
+ * `size` 단계 → 실제 너비 매핑.
+ *
+ * `md`/`medium` 은 종전 기본값 `500px` 과 같은 값이다 — 이 표면을 뒤늦게 살릴 때
+ * 그 두 단계를 쓰던 화면이 한 픽셀도 움직이지 않도록 일부러 맞췄다.
+ */
+export const MODAL_SIZE_WIDTHS: Record<string, string> = {
+  sm: '400px',
+  small: '400px',
+  md: '500px',
+  medium: '500px',
+  lg: '720px',
+  large: '720px',
+  xl: '900px',
+  '2xl': '1120px',
+};
 
 /**
  * Modal 집합 컴포넌트
@@ -76,10 +101,15 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   closeOnEscape = true,
   children,
-  width = '500px',
+  size,
+  width,
   className = '',
   style,
 }) => {
+  // 너비 결정 순서: 명시 width > size 단계 > 종전 기본값.
+  // size 를 모르는 값으로 적어도 기본값으로 떨어져 화면이 깨지지 않는다.
+  const resolvedWidth = width ?? (size ? MODAL_SIZE_WIDTHS[size] : undefined) ?? '500px';
+
   // closeOnOverlayClick 별칭 지원 (레이아웃 JSON 호환)
   const shouldCloseOnBackdrop = closeOnOverlayClick !== undefined
     ? closeOnOverlayClick
@@ -178,7 +208,7 @@ export const Modal: React.FC<ModalProps> = ({
       <Div
         ref={modalRef}
         className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-hidden ${className}`}
-        style={{ width, ...(style ? { ...style, zIndex: undefined } : {}) }}
+        style={{ width: resolvedWidth, ...(style ? { ...style, zIndex: undefined } : {}) }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

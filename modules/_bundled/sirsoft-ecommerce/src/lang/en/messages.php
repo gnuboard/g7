@@ -262,6 +262,9 @@ return [
 
     // Cart Messages
     'cart' => [
+        'admin_list_retrieved' => 'Carts retrieved.',
+        'admin_deleted' => 'Cart item deleted.',
+        'admin_bulk_deleted' => ':count cart item(s) deleted.',
         'list_retrieved' => 'Cart items retrieved successfully.',
         'added' => 'Item has been added to cart.',
         'bulk_added' => ':count items have been added to cart.',
@@ -1231,6 +1234,9 @@ return [
     ],
 
     'wishlist' => [
+        'admin_list_retrieved' => 'Wishlists retrieved.',
+        'admin_deleted' => 'Wishlist item deleted.',
+        'admin_bulk_deleted' => ':count wishlist item(s) deleted.',
         'added' => 'Product has been added to wishlist.',
         'removed' => 'Product has been removed from wishlist.',
         'retrieved' => 'Wishlist retrieved successfully.',
@@ -1312,6 +1318,19 @@ return [
         'fetched' => 'Shipping country retrieved.',
         'updated' => 'Shipping country updated.',
         'update_failed' => 'Failed to update shipping country.',
+    ],
+
+    // Member-owned data admin lists (#524 §4.1)
+    'user_address' => [
+        'admin_list_retrieved' => 'Member addresses retrieved.',
+        'admin_deleted' => 'Address deleted.',
+        'admin_bulk_deleted' => ':count address(es) deleted.',
+    ],
+
+    'product_inquiry' => [
+        'admin_list_retrieved' => 'Product inquiries retrieved.',
+        'admin_deleted' => 'Product inquiry deleted.',
+        'admin_bulk_deleted' => ':count inquiry(ies) deleted.',
     ],
 
     // Dashboard

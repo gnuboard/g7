@@ -14,7 +14,7 @@ const FLAG = '__kginicisOrderShowInjectorInstalled';
 const ROW_ID = 'kginicis-mp-receipt-row';
 
 // 회원 마이페이지(/mypage/orders/{N}) + 비회원 주문 상세(/shop/guest/orders/{N}) 두 URL 매칭.
-// 두 페이지가 동일 _payment.json partial 을 공유하므로 DOM 구조도 동일 — 같은 injector 가 양쪽 처리.
+// 두 페이지가 동일 _payment.g7.html partial 을 공유하므로 DOM 구조도 동일 — 같은 injector 가 양쪽 처리.
 // 단 URL 세그먼트의 의미가 다르다: 회원 경로는 주문 ID, 비회원 경로는 주문번호.
 const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/]+))$/;
 // 클레임 신청서 상세도 같은 결제 정보 카드를 재사용한다(§6-2). 그 주소에 실린 것은 클레임

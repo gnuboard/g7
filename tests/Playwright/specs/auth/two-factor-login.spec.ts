@@ -32,7 +32,7 @@ let memberEmail: string;
 let adminEmail: string;
 let nonAdminEmail: string;
 
-test.beforeAll(async ({ playwright }) => {
+test.beforeAll(async ({ playwright }, testInfo) => {
   adminToken = issueToken('core.settings.read', 'core.settings.update');
 
   memberEmail = ensureTwoFactorUser('user', { password: PASSWORD });
@@ -40,8 +40,11 @@ test.beforeAll(async ({ playwright }) => {
   nonAdminEmail = ensureTwoFactorUser('nonadmin', { password: PASSWORD });
 
   // worker 범위 request 컨텍스트 — baseURL·ignoreHTTPSErrors 는 설정에서 온다.
+  // env 를 직접 읽지 않는다: `playwright.config.ts` 의 resolveBaseUrl() 이 PLAYWRIGHT_BASE_URL → `.env` APP_URL
+  // 순으로 해석한 값을 프로젝트 설정에서 받는다. env 만 읽으면 문서가 약속한 APP_URL 폴백이 없어
+  // 환경변수 없이 실행할 때 상대 경로 요청이 "Invalid URL" 로 죽는다.
   fixtureRequest = await playwright.request.newContext({
-    baseURL: process.env.PLAYWRIGHT_BASE_URL,
+    baseURL: testInfo.project.use.baseURL,
     ignoreHTTPSErrors: true,
   });
 

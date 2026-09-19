@@ -17,9 +17,21 @@ import type { TranslationEngine, TranslationContext as ITranslationContext } fro
 import { useLayoutEditor, type RouteTreeNode } from '../LayoutEditorContext';
 import { useLayoutDocumentContext } from '../LayoutDocumentContext';
 import { buildEditorUrl, EDITOR_HISTORY_STATE_MARKER } from '../hooks/useEditorMode';
+import { highlightMatch } from '../shared/treeSearch';
 
 // 안정 식별자 — docCtx 부재(Provider 밖 테스트 등) 시 매 렌더 새 Set 생성 회피.
 const EMPTY_DIRTY_SET: ReadonlySet<string> = new Set();
+
+/**
+ * 라우트 트리가 표시하는 레이아웃 파일의 확장자 — **소스 SSoT** 를 가리킨다.
+ *
+ * 짝 `.json` 은 S18.5(D63)에서 기계 산출로 강등됐고 사람은 편집하지 않는다. 편집기가 그
+ * 경로를 보여 주면 따라간 개발자가 산출물을 손으로 고치게 되고, 그 수정은 다음 굽기에서
+ * 지워진다. 표기는 정본을 가리켜야 한다 (S19 ⑦ · R1).
+ *
+ * @since engine-v1.69.0
+ */
+const AUTHORING_EXTENSION = '.g7.html';
 
 /**
  * 그룹 헤더 노드 여부 — 최상위 그룹(`__group__/`)과 라우트 자식의 연결 그룹
@@ -125,49 +137,18 @@ function normalizeQuery(raw: string): string {
 }
 
 /**
- * 텍스트에서 검색어와 일치하는 부분을 `<mark>` 로 강조한 React 노드 배열을 만든다.
- *
- * 대소문자 무시 매칭. 검색어가 비었거나 매칭이 없으면 원문 텍스트만 반환한다.
- *
- * @param text 표시 텍스트
- * @param query 정규화된 검색어 (소문자)
- * @returns 강조 적용된 React 노드 (또는 원문 문자열)
- * @since engine-v1.50.0
- */
-function highlightMatch(text: string, query: string): React.ReactNode {
-  if (!query) return text;
-  const lower = text.toLocaleLowerCase();
-  const parts: React.ReactNode[] = [];
-  let cursor = 0;
-  let matchIdx = lower.indexOf(query, cursor);
-  if (matchIdx === -1) return text;
-  let segKey = 0;
-  while (matchIdx !== -1) {
-    if (matchIdx > cursor) parts.push(text.slice(cursor, matchIdx));
-    parts.push(
-      <mark
-        key={`m${segKey++}`}
-        className="g7le-route-tree__highlight"
-        style={{ background: '#fde68a', color: 'inherit', borderRadius: 2, padding: '0 1px' }}
-      >
-        {text.slice(matchIdx, matchIdx + query.length)}
-      </mark>,
-    );
-    cursor = matchIdx + query.length;
-    matchIdx = lower.indexOf(query, cursor);
-  }
-  if (cursor < text.length) parts.push(text.slice(cursor));
-  return parts;
-}
-
-/**
  * 노드의 레이아웃 파일 전체 경로 문자열을 구성한다 (확장 prefix 포함).
  *
  * routes 의 `layout` 값(= layoutName)은 레이아웃 디렉토리 기준 상대 경로(확장자 제외)다.
  * 출처(source.kind)별로 실제 파일이 위치하는 디렉토리 규약이 다르므로 prefix 를 달리한다:
- *   - template:        `{identifier} · layouts/{layoutName}.json`
- *   - module/plugin:   `{identifier} · resources/layouts/{layoutName}.json`
- *   - core(base 등):   `layouts/{layoutName}.json`
+ *   - template:        `{identifier} · layouts/{layoutName}.g7.html`
+ *   - module/plugin:   `{identifier} · resources/layouts/{layoutName}.g7.html`
+ *   - core(base 등):   `layouts/{layoutName}.g7.html`
+ *
+ * **확장자는 소스 SSoT 를 가리킨다 (S19 ⑦ · R1).** 종전에는 `.json` 을 붙였는데, 그것은
+ * 사람이 여는 파일이 아니다 — S18.5(D63)가 짝 `.json` 을 **기계 산출로 강등**했고 마크업은
+ * `.g7.html` 로 한다. 편집기가 `.json` 을 보여 주면 그 경로를 따라간 개발자가 기계 산출물을
+ * 손으로 고치게 되고, 그것은 다음 굽기에서 지워진다. 표기는 사람을 정본으로 안내해야 한다.
  *
  * layoutName 이 없으면(그룹/확장 가상 노드 등) null 을 반환해 표시하지 않는다.
  *
@@ -177,7 +158,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
  */
 function buildLayoutPathLabel(node: RouteTreeNode): string | null {
   if (!node.layoutName) return null;
-  const file = `${node.layoutName}.json`;
+  const file = `${node.layoutName}${AUTHORING_EXTENSION}`;
   switch (node.source.kind) {
     case 'module':
     case 'plugin': {
@@ -445,7 +426,7 @@ function RouteTreeItem({
             />
           )}
           {/* 그룹 헤더는 검색 강조 대상 아님(항상 표시) — 라우트 라벨만 강조 */}
-          {isGroup ? labelText : highlightMatch(labelText, query)}
+          {isGroup ? labelText : highlightMatch(labelText, query, 'g7le-route-tree__highlight')}
           {typeof layoutVersion === 'number' && (
             <span
               className="g7le-route-tree__version-badge"
@@ -487,7 +468,7 @@ function RouteTreeItem({
               whiteSpace: 'nowrap',
             }}
           >
-            {highlightMatch(layoutPathLabel, query)}
+            {highlightMatch(layoutPathLabel, query, 'g7le-route-tree__highlight')}
           </span>
         )}
       </div>

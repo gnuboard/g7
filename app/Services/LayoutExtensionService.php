@@ -7,14 +7,17 @@ use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
 use App\Exceptions\ConcurrentModificationException;
+use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
@@ -33,6 +36,7 @@ use Illuminate\Support\Facades\Log;
 class LayoutExtensionService
 {
     use ClearsTemplateCaches;
+    use CollectsFragmentSources;
     use ComputesLayoutContentHash;
 
     /**
@@ -79,7 +83,7 @@ class LayoutExtensionService
      *
      * @param  int  $extensionId  확장 ID
      * @param  array  $content  치환할 확장 정의 JSON
-     * @return void 반환값 없음
+     * @return void
      */
     public function setPreviewContentOverride(int $extensionId, array $content): void
     {
@@ -89,7 +93,7 @@ class LayoutExtensionService
     /**
      * 미리보기 확장 content 오버라이드를 모두 제거합니다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     public function clearPreviewContentOverrides(): void
     {
@@ -123,11 +127,11 @@ class LayoutExtensionService
      * 순환 의존성 방지를 위해 ModuleManager, PluginManager는 생성자에서 주입받지 않고
      * 필요한 시점에 app() 헬퍼로 가져옵니다.
      *
-     * @param  LayoutExtensionRepositoryInterface  $repository  확장 리포지터리
-     * @param  LayoutExtensionVersionRepositoryInterface  $versionRepository  확장 버전 리포지터리
-     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 리포지터리
-     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 리포지터리
-     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지터리
+     * @param  LayoutExtensionRepositoryInterface  $repository
+     * @param  LayoutExtensionVersionRepositoryInterface  $versionRepository
+     * @param  LayoutRepositoryInterface  $layoutRepository
+     * @param  PluginRepositoryInterface  $pluginRepository
+     * @param  ModuleRepositoryInterface  $moduleRepository
      */
     public function __construct(
         private LayoutExtensionRepositoryInterface $repository,
@@ -434,7 +438,7 @@ class LayoutExtensionService
      *
      * 순환 의존성 방지를 위해 app() 헬퍼로 매니저를 가져옵니다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     private function initializeActiveExtensions(): void
     {
@@ -517,13 +521,20 @@ class LayoutExtensionService
     }
 
     /**
-     * 레이아웃의 extension_point 노드에 확장 컴포넌트를 주입합니다.
+     * 레이아웃의 확장 지점(`type: extension_point`)에 등록된 조각을 주입합니다.
      *
-     * @param  array  $layout  대상 레이아웃
-     * @param  int  $templateId  템플릿 ID
-     * @param  array  &$scripts  스크립트 배열 (참조)
-     * @param  bool  $withSourceMeta  편집 모드 출처 메타 부여 여부
-     * @return array 확장이 주입된 레이아웃
+     * `components` 뿐 아니라 **`modals` 트리도 함께** 순회한다 — 모달 안에 둔 확장 지점이
+     * 빈 채로 남으면 그 자리를 채우던 확장이 화면에서 조용히 사라진다(모달은 열려야 보이므로
+     * 목록 화면만 보고는 알 수 없다).
+     *
+     * 주입된 조각이 스크립트를 동반하면 `$scripts` 에 누적한다 — 호출부가 문서 전체의 스크립트를
+     * 한 번에 모아 중복 없이 내보내기 위해서다.
+     *
+     * @param  array<string, mixed>  $layout  레이아웃 JSON
+     * @param  int  $templateId  이 레이아웃이 속한 템플릿 ID (조각 조회 범위)
+     * @param  array<int, mixed>  $scripts  주입 조각이 동반한 스크립트 누적함 (참조)
+     * @param  bool  $withSourceMeta  편집기용 출처 메타(`__source`)를 노드에 남길지
+     * @return array<string, mixed> 확장 지점이 채워진 레이아웃 JSON
      */
     private function applyExtensionPoints(array $layout, int $templateId, array &$scripts, bool $withSourceMeta = false): array
     {
@@ -576,7 +587,7 @@ class LayoutExtensionService
      * @param  array  &$dataSources  데이터 소스 배열 (참조)
      * @param  array  &$scripts  스크립트 배열 (참조)
      * @param  array  &$modals  모달 배열 (참조)
-     * @param  bool  $withSourceMeta  편집 모드 출처 메타 부여 여부
+     * @param  bool  $withSourceMeta
      * @return array 처리된 컴포넌트 배열
      */
     private function processExtensionPointsRecursive(array $components, int $templateId, array &$dataSources, array &$scripts, array &$modals, bool $withSourceMeta = false): array
@@ -719,7 +730,7 @@ class LayoutExtensionService
      * @param  array<int, string>  $targetNames  overlay 매칭 대상 레이아웃명 목록 (서빙 레이아웃 + 상속 체인 base)
      * @param  array  &$scripts  스크립트 배열 (참조)
      * @param  array  &$modals  모달 배열 (참조)
-     * @param  bool  $withSourceMeta  편집 모드 출처 메타 부여 여부
+     * @param  bool  $withSourceMeta
      * @return array 확장이 적용된 레이아웃
      */
     private function applyOverlays(array $layout, int $templateId, array $targetNames, array &$scripts, array &$modals, bool $withSourceMeta = false): array
@@ -942,7 +953,7 @@ class LayoutExtensionService
      * @param  int  $targetIndex  타겟 인덱스
      * @param  string  $position  주입 위치
      * @param  array  $newComponents  주입할 컴포넌트들
-     * @return void 반환값 없음(참조 인자를 직접 고친다)
+     * @return void
      */
     private function injectComponents(
         array &$siblings,
@@ -1093,7 +1104,7 @@ class LayoutExtensionService
      *
      * @param  array  &$component  대상 컴포넌트 (참조)
      * @param  array  $propsToInject  주입할 Props 정의
-     * @return void 반환값 없음(참조 인자를 직접 고친다)
+     * @return void
      */
     private function injectProps(array &$component, array $propsToInject): void
     {
@@ -1350,6 +1361,9 @@ class LayoutExtensionService
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
      * @param  bool  $preserveModified  사용자 수정분 보존 여부
+     * @param  string|null  $fragmentKey  조각 식별자 (소스 파일 기본 이름 — {@see LayoutFragmentSourceHelper::fragmentKey()}).
+     *                                    코어 등록 경로는 반드시 넘긴다. null 은 키를 모르는 호환 호출(확장 Listener 등) —
+     *                                    같은 대상의 기존 행이 정확히 하나면 그 키를 잇고, 없으면 대상 이름, 둘 이상이면 처리하지 않는다
      * @return string|null 'created', 'updated', 'skipped', 또는 null (처리하지 않음)
      */
     public function registerExtension(
@@ -1357,7 +1371,8 @@ class LayoutExtensionService
         LayoutSourceType $sourceType,
         string $identifier,
         int $templateId,
-        bool $preserveModified = false
+        bool $preserveModified = false,
+        ?string $fragmentKey = null
     ): ?string {
         $result = null;
 
@@ -1370,7 +1385,8 @@ class LayoutExtensionService
                 $sourceType,
                 $identifier,
                 $templateId,
-                $preserveModified
+                $preserveModified,
+                $fragmentKey
             );
         }
 
@@ -1383,7 +1399,8 @@ class LayoutExtensionService
                 $sourceType,
                 $identifier,
                 $templateId,
-                $preserveModified
+                $preserveModified,
+                $fragmentKey
             );
         }
 
@@ -1406,7 +1423,8 @@ class LayoutExtensionService
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
      * @param  bool  $preserveModified  사용자 수정분 보존 여부
-     * @return string 'created', 'updated', 또는 'skipped'
+     * @param  string|null  $fragmentKey  조각 식별자 (null 이면 호환 해석 — {@see resolveLegacyFragmentKey()})
+     * @return string|null 'created', 'updated', 'skipped', 또는 null (키를 정할 수 없어 처리하지 않음)
      */
     private function registerExtensionRecord(
         array $content,
@@ -1415,15 +1433,26 @@ class LayoutExtensionService
         LayoutSourceType $sourceType,
         string $identifier,
         int $templateId,
-        bool $preserveModified
-    ): string {
-        $attributes = [
+        bool $preserveModified,
+        ?string $fragmentKey = null
+    ): ?string {
+        $scope = [
             'template_id' => $templateId,
             'extension_type' => $extensionType,
             'target_name' => $targetName,
             'source_type' => $sourceType,
             'source_identifier' => $identifier,
         ];
+
+        $fragmentKey = $this->resolveLegacyFragmentKey($scope, $fragmentKey, $targetName);
+
+        if ($fragmentKey === null) {
+            return null;
+        }
+
+        // 고유 키 = 대상 5축 + 조각 식별자. 같은 확장이 같은 대상에 조각 둘을 보내면 종전 5축 키는 뒤가 앞을
+        // 덮었다(ecommerce 통화 필드 조각 소실, C13).
+        $attributes = $scope + ['fragment_key' => $fragmentKey];
 
         $existing = LayoutExtension::withTrashed()->where($attributes)->first();
 
@@ -1465,6 +1494,64 @@ class LayoutExtensionService
     }
 
     /**
+     * 키를 넘기지 않은 호출의 조각 식별자를 정합니다 (호환 경로).
+     *
+     * 코어 등록 루프는 소스 파일에서 키를 파생해 넘기지만, 확장이 직접 `registerExtension()` 을 부르는
+     * 자리(업데이트 뒤 overlay 를 복원하는 결제 플러그인 Listener 등)는 파일 경로를 모른다. 그 호출을
+     * 깨지 않되 옛 5축 키로 **새 행을 만들지 않도록**: 같은 대상의 기존 행이 정확히 하나면 그 행의 키를
+     * 잇고(갱신), 없으면 대상 이름을 키로 만든다(갱신 경로가 파일 키로 정정한다), 둘 이상이면 어느 조각인지
+     * 알 수 없으므로 경고만 남기고 처리하지 않는다.
+     *
+     * @param  array<string, mixed>  $scope  대상 5축 조회 조건
+     * @param  string|null  $fragmentKey  호출부가 넘긴 키
+     * @param  string  $targetName  대상 이름
+     * @return string|null 조각 식별자, 정할 수 없으면 null
+     */
+    private function resolveLegacyFragmentKey(array $scope, ?string $fragmentKey, string $targetName): ?string
+    {
+        if ($fragmentKey !== null && $fragmentKey !== '') {
+            return $fragmentKey;
+        }
+
+        $all = LayoutExtension::withTrashed()->where($scope)->get(['id', 'fragment_key', 'deleted_at']);
+
+        // 살아 있는 행을 우선 본다 — 갱신 경로가 옛 키 행을 soft delete 하고 파일 키 행을 만든 뒤 Listener 가
+        // 키 없이 다시 부르면, 지워진 옛 행까지 세어 "둘 이상" 으로 판정하거나 옛 행을 되살리게 된다.
+        $rows = $all->whereNull('deleted_at')->values();
+
+        if ($rows->isEmpty()) {
+            $rows = $all;
+        }
+
+        $keys = $rows->pluck('fragment_key')->unique()->values();
+
+        if ($keys->count() > 1) {
+            Log::warning('레이아웃 확장 등록 건너뜀 — 조각 식별자 없이 호출됐고 같은 대상에 조각이 둘 이상입니다', [
+                'target_name' => $targetName,
+                'source' => $scope['source_identifier'],
+                'template_id' => $scope['template_id'],
+                'fragment_keys' => $keys->all(),
+            ]);
+
+            return null;
+        }
+
+        $existing = $keys->first();
+
+        if (is_string($existing) && $existing !== '') {
+            return $existing;
+        }
+
+        // 키가 비어 있는 행(마이그레이션 백필 이전에 만들어졌거나 직접 삽입된 행)은 대상 이름을 키로 삼아 잇는다 —
+        // 그대로 두면 아래 조회가 그 행을 못 찾아 옆에 새 행을 만든다.
+        if ($rows->count() === 1) {
+            LayoutExtension::withTrashed()->whereKey($rows->first()->id)->update(['fragment_key' => $targetName]);
+        }
+
+        return $targetName;
+    }
+
+    /**
      * 확장 정의가 해당 템플릿에 적용 가능한지(대상이 존재하는지) 판별합니다.
      *
      * - Overlay: content.target_layout 이 그 템플릿의 레이아웃명으로 존재해야 함
@@ -1485,7 +1572,9 @@ class LayoutExtensionService
         }
 
         if (isset($content['target_layout'])) {
-            return $this->layoutRepository->exists($templateId, $content['target_layout']);
+            // 모듈 레이아웃은 `{모듈}.{name}` 으로 저장되고 overlay 는 논리 이름을 가리키므로 정확 일치(`exists`)로는
+            // 모듈 화면 대상 조각이 어디서도 "부재" 가 된다 — 서빙과 같은 해석으로 본다.
+            return $this->layoutRepository->existsForOverlay($templateId, $content['target_layout']);
         }
 
         // extension_point/target_layout 둘 다 없는 정의는 처리 대상이 아님
@@ -1502,13 +1591,15 @@ class LayoutExtensionService
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
+     * @param  string|null  $fragmentKey  조각 식별자 (있으면 그 조각의 행만 본다)
      * @return bool 정리된 행이 있으면 true
      */
     public function removeInapplicableExtension(
         array $content,
         LayoutSourceType $sourceType,
         string $identifier,
-        int $templateId
+        int $templateId,
+        ?string $fragmentKey = null
     ): bool {
         $extensionType = isset($content['extension_point'])
             ? LayoutExtensionType::ExtensionPoint
@@ -1520,13 +1611,14 @@ class LayoutExtensionService
 
         $targetName = $content['extension_point'] ?? $content['target_layout'];
 
-        $existing = $this->repository->findByAttributes([
+        $existing = $this->repository->findByAttributes(array_filter([
             'template_id' => $templateId,
             'extension_type' => $extensionType,
             'target_name' => $targetName,
             'source_type' => $sourceType,
             'source_identifier' => $identifier,
-        ]);
+            'fragment_key' => $fragmentKey,
+        ], static fn ($value): bool => $value !== null));
 
         if (! $existing) {
             return false;
@@ -1543,7 +1635,7 @@ class LayoutExtensionService
         // 따라서 동일 확장(같은 source/type/target)이 *다른* 템플릿에서 적용 가능할 때만
         // 삭제한다(그 다른 템플릿이 정답 타입 → 이 행은 타입 불일치 오등록). 어느 템플릿
         // 에서도 적용 불가(전부 stale)면 보존하여 정상 확장 전멸을 막는다.
-        if (! $this->isApplicableInAnyOtherTemplate($content, $extensionType, $targetName, $sourceType, $identifier, $templateId)) {
+        if (! $this->isApplicableInAnyOtherTemplate($content, $extensionType, $targetName, $sourceType, $identifier, $templateId, $fragmentKey)) {
             return false;
         }
 
@@ -1572,6 +1664,7 @@ class LayoutExtensionService
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
      * @param  int  $candidateTemplateId  부재로 판정된 후보 행의 템플릿 ID
+     * @param  string|null  $fragmentKey  조각 식별자 (있으면 그 조각의 형제 행만 본다)
      * @return bool 다른 템플릿에서 적용 가능한 동일 확장이 존재하는지
      */
     private function isApplicableInAnyOtherTemplate(
@@ -1580,14 +1673,16 @@ class LayoutExtensionService
         string $targetName,
         LayoutSourceType $sourceType,
         string $identifier,
-        int $candidateTemplateId
+        int $candidateTemplateId,
+        ?string $fragmentKey = null
     ): bool {
-        $siblings = $this->repository->getAllByAttributesAcrossTemplates([
+        $siblings = $this->repository->getAllByAttributesAcrossTemplates(array_filter([
             'extension_type' => $extensionType,
             'target_name' => $targetName,
             'source_type' => $sourceType,
             'source_identifier' => $identifier,
-        ]);
+            'fragment_key' => $fragmentKey,
+        ], static fn ($value): bool => $value !== null));
 
         foreach ($siblings as $sibling) {
             if ($sibling->template_id === $candidateTemplateId) {
@@ -2057,7 +2152,7 @@ class LayoutExtensionService
      * @param  int  $templateId  템플릿 ID
      * @param  string  $targetName  타겟 이름
      * @param  LayoutExtensionType  $type  확장 타입
-     * @return void 반환값 없음
+     * @return void
      */
     public function invalidateExtensionCache(int $templateId, string $targetName, LayoutExtensionType $type): void
     {
@@ -2117,39 +2212,67 @@ class LayoutExtensionService
      * 템플릿 활성화 시 호출하여, 이미 활성화된 모듈/플러그인의 확장이
      * 새 템플릿에도 적용되도록 합니다.
      *
+     * 조각은 **붙을 템플릿의 `components.json` 으로 컴파일**하고, 붙을 자리(호스트 레이아웃·확장점)가 없으면
+     * 등록하지 않는다 (C10). 확장 활성화·업데이트도 자기 등록을 마친 뒤 이 메서드를 전 활성 템플릿에 다시 불러,
+     * 호스트가 나중에 설치된 조각을 메운다(멱등).
+     *
      * @param  int  $templateId  대상 템플릿 ID
-     * @return array{modules: int, plugins: int} 소스 타입별 등록된 확장 수
+     * @return array{modules: int, plugins: int, skipped: int} 소스 타입별 등록 수 + 대상 부재로 건너뛴 수
      */
     public function registerAllActiveExtensionsToTemplate(int $templateId): array
     {
-        $stats = ['modules' => 0, 'plugins' => 0];
+        $stats = ['modules' => 0, 'plugins' => 0, 'skipped' => 0];
+
+        // 붙을 템플릿의 표로 컴파일하기 위해 식별자가 필요하다 (C10). 템플릿이 없으면 등록할 곳도 없다.
+        $template = app(TemplateRepositoryInterface::class)->findById($templateId);
+
+        if ($template === null) {
+            return $stats;
+        }
+
+        $templateIdentifier = (string) $template->identifier;
 
         // 활성 모듈의 레이아웃 확장 등록
         $moduleManager = app(ModuleManager::class);
         foreach ($moduleManager->getActiveModules() as $module) {
-            $stats['modules'] += $this->registerExtensionFilesToTemplate(
-                $module->getLayoutExtensions(),
+            [$registered, $skipped] = $this->registerExtensionFilesToTemplate(
+                $this->loadFragmentDefinitions(
+                    $module->getExtensionsPath(),
+                    $module->getLayoutExtensions(),
+                    ['source' => $module->getIdentifier(), 'template' => $templateIdentifier],
+                    $templateIdentifier
+                ),
                 LayoutSourceType::Module,
                 $module->getIdentifier(),
                 $templateId
             );
+            $stats['modules'] += $registered;
+            $stats['skipped'] += $skipped;
         }
 
         // 활성 플러그인의 레이아웃 확장 등록
         $pluginManager = app(PluginManager::class);
         foreach ($pluginManager->getActivePlugins() as $plugin) {
-            $stats['plugins'] += $this->registerExtensionFilesToTemplate(
-                $plugin->getLayoutExtensions(),
+            [$registered, $skipped] = $this->registerExtensionFilesToTemplate(
+                $this->loadFragmentDefinitions(
+                    $plugin->getExtensionsPath(),
+                    $plugin->getLayoutExtensions(),
+                    ['source' => $plugin->getIdentifier(), 'template' => $templateIdentifier],
+                    $templateIdentifier
+                ),
                 LayoutSourceType::Plugin,
                 $plugin->getIdentifier(),
                 $templateId
             );
+            $stats['plugins'] += $registered;
+            $stats['skipped'] += $skipped;
         }
 
         $total = $stats['modules'] + $stats['plugins'];
         if ($total > 0) {
             Log::info("템플릿에 활성 확장 등록 완료: 모듈 {$stats['modules']}건, 플러그인 {$stats['plugins']}건", [
                 'template_id' => $templateId,
+                'skipped' => $stats['skipped'],
             ]);
         }
 
@@ -2157,51 +2280,92 @@ class LayoutExtensionService
     }
 
     /**
-     * 확장 JSON 파일 목록을 특정 템플릿에 등록합니다.
+     * 읽어 둔 fragment 정의를 특정 템플릿에 등록합니다 — 붙을 자리가 없는 조각은 건너뜁니다.
      *
-     * @param  array<string>  $extensionFiles  JSON 파일 경로 목록
+     * 소스 선택·읽기는 호출처가 {@see CollectsFragmentSources::loadFragmentDefinitions()}
+     * 로 끝내고 여기는 판별·등록만 한다 — 종전에는 경로 배열을 받아 여기서 `File::get`+`json_decode` 로
+     * 직행했고, 그래서 **템플릿 활성화**만 소스(`.g7.html`)을 보지 못하는 네 번째 갈래로 남아 있었다.
+     *
+     * 적용 필터(C10): 호스트 레이아웃·확장점이 이 템플릿에 없으면 등록하지 않는다 — 종전엔 모든 활성 템플릿에
+     * 무조건 등록해 사용자 템플릿에 관리자 대상 조각(죽은 행)이 쌓였다. 호스트가 나중에 설치되는 경우는
+     * 확장 활성화·업데이트가 이 메서드를 전 템플릿에 다시 불러 메운다.
+     *
+     * @param  array<int, array{path: string, data: array<string, mixed>, key: string}>  $definitions  fragment 정의 목록
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
-     * @return int 등록된 확장 수
+     * @return array{0: int, 1: int} `[등록 수, 건너뛴 수]`
      */
     private function registerExtensionFilesToTemplate(
-        array $extensionFiles,
+        array $definitions,
         LayoutSourceType $sourceType,
         string $identifier,
         int $templateId
-    ): int {
-        if (empty($extensionFiles)) {
-            return 0;
-        }
-
+    ): array {
         $registered = 0;
+        $skipped = 0;
 
-        foreach ($extensionFiles as $extensionFile) {
+        foreach ($definitions as $definition) {
             try {
-                $content = File::get($extensionFile);
-                $extensionData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error("레이아웃 확장 JSON 파싱 실패: {$extensionFile}", [
+                if (! $this->isExtensionApplicableToTemplate($definition['data'], $templateId)) {
+                    $skipped++;
+                    Log::info("레이아웃 확장 등록 건너뜀 (대상 부재): {$definition['path']}", [
                         'source' => $identifier,
-                        'error' => json_last_error_msg(),
+                        'template_id' => $templateId,
                     ]);
 
                     continue;
                 }
 
-                $this->registerExtension($extensionData, $sourceType, $identifier, $templateId);
+                $this->registerExtension($definition['data'], $sourceType, $identifier, $templateId, false, $definition['key']);
                 $registered++;
             } catch (\Exception $e) {
-                Log::error("레이아웃 확장 등록 실패: {$extensionFile}", [
+                Log::error("레이아웃 확장 등록 실패: {$definition['path']}", [
                     'source' => $identifier,
                     'error' => $e->getMessage(),
                 ]);
             }
         }
 
-        return $registered;
+        return [$registered, $skipped];
+    }
+
+    /**
+     * 파일에 더는 없는 조각의 행을 정리합니다 (같은 출처·같은 템플릿, soft delete).
+     *
+     * 갱신 경로가 소스 디렉토리의 조각 키 집합을 넘긴다. 키가 그 집합에 없는 행은 소스가 사라졌거나 이름이
+     * 바뀐 조각이다(옛 5축 키로 만들어진 `target_name` 키 행도 여기서 파일 키로 정정된다 — 등록이 새 키로
+     * 행을 만들고 이 정리가 옛 행을 지운다).
+     *
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @param  string  $identifier  출처 식별자
+     * @param  int  $templateId  템플릿 ID
+     * @param  array<int, string>  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합
+     * @return int 정리된 행 수
+     */
+    public function removeOrphanFragments(LayoutSourceType $sourceType, string $identifier, int $templateId, array $liveKeys): int
+    {
+        $live = array_fill_keys($liveKeys, true);
+        $deleted = 0;
+
+        foreach ($this->repository->getBySource($sourceType, $identifier) as $row) {
+            if ((int) $row->template_id !== $templateId || isset($live[(string) $row->fragment_key])) {
+                continue;
+            }
+
+            $row->delete();
+            $deleted++;
+
+            Log::info('고아 레이아웃 확장 행 정리 (소스에 없는 조각)', [
+                'extension_id' => $row->id,
+                'template_id' => $templateId,
+                'target_name' => $row->target_name,
+                'fragment_key' => $row->fragment_key,
+                'source' => $identifier,
+            ]);
+        }
+
+        return $deleted;
     }
 
     /**
@@ -2214,13 +2378,15 @@ class LayoutExtensionService
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  string  $overrideTarget  오버라이드 대상 모듈/플러그인 식별자
      * @param  int  $templateId  템플릿 ID
+     * @param  string|null  $fragmentKey  조각 식별자 (null 이면 대상 이름)
      * @return string|null 'created', 'updated', 또는 null (처리하지 않음)
      */
     public function registerTemplateOverride(
         array $content,
         string $templateIdentifier,
         string $overrideTarget,
-        int $templateId
+        int $templateId,
+        ?string $fragmentKey = null
     ): ?string {
         $result = null;
 
@@ -2231,6 +2397,7 @@ class LayoutExtensionService
                     'template_id' => $templateId,
                     'extension_type' => LayoutExtensionType::ExtensionPoint,
                     'target_name' => $content['extension_point'],
+                    'fragment_key' => $fragmentKey ?? $content['extension_point'],
                     'source_type' => LayoutSourceType::Template,
                     'source_identifier' => $templateIdentifier,
                     'override_target' => $overrideTarget,
@@ -2257,6 +2424,7 @@ class LayoutExtensionService
                     'template_id' => $templateId,
                     'extension_type' => LayoutExtensionType::Overlay,
                     'target_name' => $content['target_layout'],
+                    'fragment_key' => $fragmentKey ?? $content['target_layout'],
                     'source_type' => LayoutSourceType::Template,
                     'source_identifier' => $templateIdentifier,
                     'override_target' => $overrideTarget,

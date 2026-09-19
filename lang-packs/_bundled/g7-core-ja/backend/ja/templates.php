@@ -73,6 +73,7 @@ return [
         'delete_directory_failed' => 'テンプレートディレクトリの削除に失敗しました: :error',
         'update_failed' => 'テンプレート ":template" のアップデートに失敗しました: :error',
         'invalid_layout_strategy' => '無効なレイアウト戦略です。(overwrite または keep のみ許可)',
+        'layout_validation_markup_error' => ':file - マークアップコンパイルエラー: :error',
     ],
     'messages' => [
         'activated' => 'テンプレートが有効化されました。',
@@ -307,5 +308,9 @@ return [
             'file_max' => 'ファイルサイズは最大 :max MB までです。',
             'layout_name_max' => 'レイアウト名は最大 150 文字までです。',
         ],
+    ],
+    'layout_install_source' => [
+        'invalid' => '❌ --layout-source は auto または json である必要があります。(入力値: :value)',
+        'json_notice' => '⚠️  レイアウトインストールソースを JSON に強制的に変換します — ペア .json がある .g7.html は無視されます。',
     ],
 ];

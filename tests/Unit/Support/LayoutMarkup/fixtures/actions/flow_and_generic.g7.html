@@ -1,0 +1,24 @@
+<div data-ref="panel">
+  <button data-ref="bulk_btn">
+    <on type="click">
+      <set-state target="_local" loading="true"/>
+      <api-call target="/api/admin/bulk" method="POST">
+        <error-handling>
+          <on-code code="403"><show-error-page target="content"/></on-code>
+          <default><toast message="{{error.message}}" type="error"/></default>
+        </error-handling>
+      </api-call>
+    </on>
+  </button>
+  <div data-ref="opts">
+    <on type="change">
+      <action handler="sirsoft-ecommerce.toggleArrayValue" :auth_required="true" field="opts"/>
+    </on>
+    <on type="change">
+      <parallel>
+        <emit-event event="opts:changed"/>
+        <refetch-data-source dataSourceId="preview"/>
+      </parallel>
+    </on>
+  </div>
+</div>

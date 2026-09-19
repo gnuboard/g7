@@ -114,7 +114,7 @@ class UserCollection extends BaseApiCollection
             return [
                 'uuid' => $user->uuid,
                 'name' => $user->name,
-                'email' => $user->email,
+                'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
             ];
         })->toArray();
     }

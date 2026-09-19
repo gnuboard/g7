@@ -43,8 +43,8 @@ class MileageTransactionControllerTest extends ModuleTestCase
     /**
      * 목록 조회 — 페이지네이션 + 통화 옵션 응답 (배송정책/쿠폰 Collection 규약 1:1).
      *
-     * 프론트(_transactions_table.json)가 transactions.data.pagination.* 와
-     * _filters.json 이 transactions.data.currencies 를 읽으므로 둘 다 응답에 실려야 한다.
+     * 프론트(_transactions_table.g7.html)가 transactions.data.pagination.* 와
+     * _filters.g7.html 이 transactions.data.currencies 를 읽으므로 둘 다 응답에 실려야 한다.
      */
     public function test_index_returns_paginated_list(): void
     {

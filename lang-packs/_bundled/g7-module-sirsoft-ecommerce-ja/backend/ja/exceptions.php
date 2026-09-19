@@ -139,4 +139,5 @@ return [
     'claim_payment_currency_unavailable' => '注文の決済通貨情報を確認できないため、決済を進めることができません。管理者にお問い合わせください。',
     'claim_item_not_splittable' => 'この商品は数量を分けて処理することができません。全体数量で処理してください。',
     'claim_refund_method_unavailable' => 'この注文の決済方法としては、選択された返金方法は使用できません。',
+    'exchange_rate_save_failed' => '為替レート設定を保存できませんでした。',
 ];

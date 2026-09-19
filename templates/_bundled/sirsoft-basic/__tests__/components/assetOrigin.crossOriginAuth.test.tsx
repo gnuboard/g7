@@ -87,6 +87,7 @@ describe('SortableThumbnailItem 의 공개 자산 URL 처리', () => {
     // 이 테스트 환경에는 토큰이 없으므로 빈 headers 가 실린다.
     expect(apiGet).toHaveBeenCalledWith(
       '/api/modules/sirsoft-ecommerce/product-image/abc',
+      // 비밀글 첨부 열람 토큰은 같은 요청에 실린다(secretContentHeaders) — 토큰이 없으면 빈 객체다.
       { responseType: 'blob', headers: {} }
     );
   });

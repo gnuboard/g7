@@ -19,7 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * [case:backend-29] 로그인 2단계 인증 테스트
+ * [case:backend-30] 로그인 2단계 인증 테스트
  *
  * `security.two_factor_auth` 는 설정 화면에만 있고 구현이 없어, 켜도 아무 일도 일어나지
  * 않았습니다. 관리자는 2단계 인증이 걸린 줄 알지만 실제로는 비밀번호 하나로 로그인됩니다.

@@ -52,36 +52,41 @@ async function gotoOrderSettings(page: Page, token: string): Promise<void> {
   await expect.poll(async () => (await catalogMethods(page)).length, { timeout: 30_000 }).toBeGreaterThan(0);
 }
 
-/** 관리자 API 로 저장된 결제수단 배열을 읽는다 (런타임 전용 플래그 포함). */
-async function readSavedMethods(request: APIRequestContext, token: string): Promise<CatalogMethod[]> {
+/** 관리자 API 로 주문설정 카테고리 전체를 읽는다. */
+async function readOrderSettings(
+  request: APIRequestContext,
+  token: string,
+): Promise<Record<string, unknown>> {
   const response = await request.get(ADMIN_SETTINGS_API, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
   });
   expect(response.ok(), '관리자 설정 조회 실패').toBeTruthy();
   const body = await response.json();
-  return body?.data?.order_settings?.payment_methods ?? [];
+
+  return (body?.data?.order_settings ?? {}) as Record<string, unknown>;
+}
+
+/** 관리자 API 로 저장된 결제수단 배열을 읽는다 (런타임 전용 플래그 포함). */
+async function readSavedMethods(request: APIRequestContext, token: string): Promise<CatalogMethod[]> {
+  const orderSettings = await readOrderSettings(request, token);
+
+  return (orderSettings.payment_methods ?? []) as CatalogMethod[];
 }
 
 /**
  * 결제수단 배열을 저장한다 (런타임 전용 플래그는 서버가 제거한다).
  *
- * `order_settings` 는 **섹션 단위로 치환**된다 — `payment_methods` 만 실어 보내면 같은 섹션의
- * 다른 키(무통장 입금계좌·현금영수증 발급사·자동취소 기한 …)가 전부 사라지고, 원복도 같은
- * 부분 payload 라 되살아나지 않는다. 그 상태는 이 spec 을 통과시키면서 뒤따르는
- * 무통장·현금영수증 spec 9케이스를 조용히 red 로 만든다(실측 2026-09-02). 그래서 현재 섹션을
- * 통째로 읽어 이 키만 갈아끼운다.
+ * 저장은 카테고리 단위 **대체**다 — 보낸 키만 파일에 남는다. 그래서 결제수단만 담아 보내면
+ * 같은 카테고리의 다른 설정(발급사·계좌·자동취소 등)이 함께 사라지고, 읽기 경로가 기본값을
+ * 병합해 돌려주므로 오류 없이 "기본값으로 되돌아간" 상태가 된다. 화면의 저장 액션도
+ * `form[tab]` 전체를 싣는다 — 여기서도 현재 카테고리를 그대로 실어 같은 계약을 지킨다.
  */
 async function saveMethods(
   request: APIRequestContext,
   token: string,
   methods: CatalogMethod[],
 ): Promise<void> {
-  const current = await request.get(ADMIN_SETTINGS_API, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-  });
-  expect(current.ok(), '관리자 설정 조회 실패').toBeTruthy();
-  const orderSettings = (await current.json())?.data?.order_settings ?? {};
-
+  const orderSettings = await readOrderSettings(request, token);
   const response = await request.put(ADMIN_SETTINGS_API, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     data: { _tab: 'order_settings', order_settings: { ...orderSettings, payment_methods: methods } },

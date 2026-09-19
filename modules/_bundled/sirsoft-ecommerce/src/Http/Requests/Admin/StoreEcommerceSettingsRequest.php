@@ -53,7 +53,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * 대상 필드는 rules() 에서 파생한다 — 손으로 열거하면 규칙이 추가될 때 누락된다.
      *
-     * @return void 요청값 정규화
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -239,6 +239,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // default_language 제거 (A1-⑤, D-LANG): 사이트 언어는 코어 일반설정으로 일원화. 모듈 orphan 필드.
             'language_currency.default_currency' => ['nullable', 'string', 'max:10'],
             'language_currency.currencies' => ['nullable', 'array'],
+            'language_currency.rate_provider' => ['nullable', 'string', 'max:50'],
             'language_currency.currencies.*.code' => ['required_with:language_currency.currencies', 'string', 'regex:/^[A-Z]{3}$/'],
             'language_currency.currencies.*.name' => ['required_with:language_currency.currencies', 'array'],
             'language_currency.currencies.*.name.*' => ['string', 'max:100'],
@@ -532,11 +533,13 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 추가 검증 로직 설정
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 설정의 연관 검증 실행
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->validateRateProviderRegistered($validator);
+            $this->validateManagedExchangeRatesUnchanged($validator);
             $this->validateBaseCurrencyChangeable($validator);
             $this->validateUniqueCurrencyCodes($validator);
             $this->validateCurrencyNames($validator);
@@ -563,14 +566,62 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
-     * 기본 통화(default_currency) 변경 가능 여부 검증 (A2 — D-BASE-1)
-     *
-     * 상품 또는 주문이 1건이라도 존재하면 기본 통화 변경을 차단한다. base 통화는 모든 금액
-     * 테이블의 SSoT 이고 소급 변환이 데이터 정합성을 깨므로, 데이터가 생긴 이후에는 영구 잠금한다.
-     * (소프트삭제 포함 — 삭제분도 과거 base 로 생성된 이력) 동일 통화 재저장은 변경이 아니므로 통과.
+     * 새로 선택한 환율 제공자의 등록 여부를 검증합니다.
+     * 비활성화된 제공자의 기존 선택값은 그대로 보존합니다.
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
+     */
+    protected function validateRateProviderRegistered(Validator $validator): void
+    {
+        $selected = $this->input('language_currency.rate_provider');
+        $service = app(EcommerceSettingsService::class);
+        // 비활성 제공자의 기존 선택값은 보존합니다. 새로운 미등록 값만 거절합니다.
+        if (! $selected || $selected === $service->getSetting('language_currency.rate_provider')) {
+            return;
+        }
+        if (! in_array($selected, array_column($service->getRegisteredRateProviders(), 'id'), true)) {
+            $validator->errors()->add('language_currency.rate_provider', __('sirsoft-ecommerce::validation.exchange_rate_provider_unavailable'));
+        }
+    }
+
+    /** 기존 관리 환율 변경만 막고 통화 구성·표시 설정 변경은 허용합니다.
+     * @param  Validator  $validator  validator 입력값
+     * @return void 반환값 없음
+     */
+    protected function validateManagedExchangeRatesUnchanged(Validator $validator): void
+    {
+        $service = app(EcommerceSettingsService::class);
+        $provider = $service->getActiveRateProvider();
+        if ($provider === null || ! is_array($this->input('language_currency.currencies'))) {
+            return;
+        }
+        $saved = $service->getSettings('language_currency');
+        $oldByCode = array_column($saved['currencies'] ?? [], null, 'code');
+        $base = $this->input('language_currency.default_currency', $saved['default_currency'] ?? null);
+        foreach ($this->input('language_currency.currencies') as $index => $currency) {
+            if (! is_array($currency) || ! is_string($currency['code'] ?? null)) {
+                continue; // 잘못된 행 구조는 기본 rules에서 422로 처리합니다.
+            }
+            $code = $currency['code'] ?? null;
+            if ($code === $base || ! isset($oldByCode[$code]) || ! in_array($code, $provider['managed_codes'] ?? [], true)) {
+                continue;
+            }
+            if (abs((float) ($oldByCode[$code]['exchange_rate'] ?? 0) - (float) ($currency['exchange_rate'] ?? 0)) > 1e-9) {
+                $validator->errors()->add("language_currency.currencies.{$index}.exchange_rate", __('sirsoft-ecommerce::validation.custom.language_currency.currencies.exchange_rate_managed', [
+                    'currency' => $code,
+                    'provider' => $provider['name'] ?? $provider['id'],
+                ]));
+            }
+        }
+    }
+
+    /**
+     * 상품·주문이 있을 때 기본통화 변경을 거절합니다.
+     * 소프트삭제된 상품·주문도 과거 금액의 기준이므로 변경 가능 판정에 포함합니다.
+     *
+     * @param  Validator  $validator  validator 입력값
+     * @return void 반환값 없음
      */
     protected function validateBaseCurrencyChangeable(Validator $validator): void
     {
@@ -603,7 +654,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 활성화 의미가 없으므로 거부한다. (비활성 상태에서는 0% 허용)
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateMileageEarnRate(Validator $validator): void
     {
@@ -632,7 +683,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 형식(ISO 4217)은 rules() 의 regex 로 선검증되며, 여기서는 도메인 정합성만 다룬다.
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateMileageCurrencyRules(Validator $validator): void
     {
@@ -723,7 +774,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 통화 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateUniqueCurrencyCodes(Validator $validator): void
     {
@@ -754,7 +805,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 통화명 필수 검증 - 최소 하나의 로케일에 이름이 있어야 함
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateCurrencyNames(Validator $validator): void
     {
@@ -799,7 +850,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 결제수단 최소 1개 활성화 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateAtLeastOneActivePaymentMethod(Validator $validator): void
     {
@@ -832,7 +883,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 해당 결제수단의 pg_provider 또는 default_pg_provider가 설정되어 있어야 합니다.
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validatePgRequiredForActivation(Validator $validator): void
     {
@@ -877,7 +928,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 계좌가 존재하는 경우 하나 이상은 기본 선택 + 사용 선택 상태여야 합니다.
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateBankAccountDefaults(Validator $validator): void
     {
@@ -907,7 +958,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송가능국가 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateUniqueCountryCodes(Validator $validator): void
     {
@@ -938,7 +989,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송가능국가 이름 필수 검증 - 최소 하나의 로케일에 이름이 있어야 함
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateCountryNames(Validator $validator): void
     {
@@ -981,7 +1032,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 기본 국가가 배송가능국가 목록에 존재하는지 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateDefaultCountryExists(Validator $validator): void
     {
@@ -1077,7 +1128,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송사 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateUniqueCarrierCodes(Validator $validator): void
     {
@@ -1108,7 +1159,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송사명 필수 검증 - ko 로케일에 이름이 있어야 함
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateCarrierNames(Validator $validator): void
     {
@@ -1149,7 +1200,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송유형 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateUniqueShippingTypeCodes(Validator $validator): void
     {
@@ -1180,7 +1231,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 배송유형명 필수 검증 - ko 로케일에 이름이 있어야 함
      *
      * @param  Validator  $validator  Validator 인스턴스
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateShippingTypeNames(Validator $validator): void
     {
@@ -1379,7 +1430,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @param  Validator  $validator  Validator 인스턴스
      * @param  string  $type  사유 유형 (exchange|return|refund)
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateUniqueClaimReasonCodes(Validator $validator, string $type): void
     {
@@ -1419,7 +1470,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @param  Validator  $validator  Validator 인스턴스
      * @param  string  $type  사유 유형 (exchange|return|refund)
-     * @return void 입력값을 검사하고 검증 오류를 등록
+     * @return void 반환값 없음
      */
     protected function validateClaimReasonCodeSwaps(Validator $validator, string $type): void
     {

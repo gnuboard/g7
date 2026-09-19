@@ -15,6 +15,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import { initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const LAYOUTS_BASE = path.resolve(__dirname, '../../layouts');
 
@@ -58,7 +59,7 @@ describe('admin_role_form.json — 생성 모드 form 잔존 제거', () => {
       .slice(resetIdx + 1)
       .find((a) => a.handler === 'setState' && a.if === CREATE && a.params?.target === 'local' && a.params?.form);
     expect(defaults).toBeDefined();
-    expect(defaults!.params!.form).toEqual(roleForm.state.form);
+    expect(defaults!.params!.form).toEqual(initStateOf(roleForm).form);
   });
 
   /**

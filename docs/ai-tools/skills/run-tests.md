@@ -136,9 +136,11 @@ Playwright spec 과 Chrome MCP 실측을 같은 개발 서버에서 동시에 �
 | `app/Http/Controllers/**` | `tests/Feature/**/*Test.php` |
 | `modules/_bundled/{id}/src/**`, `plugins/_bundled/{id}/src/**` | 해당 확장 `tests/{Feature,Unit}/` |
 | `resources/js/core/**/*.ts` | `resources/js/core/**/__tests__/*.test.ts` |
-| `resources/layouts/**/*.json` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` |
-| `modules/_bundled/{id}/resources/layouts/**/*.json` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` |
-| `templates/_bundled/{id}/layouts/**/*.json`, `.../src/components/**/*.tsx` | `templates/_bundled/{id}/__tests__/layouts/`, `.../src/**/__tests__/` |
+| `resources/layouts/**/*.{json,g7.html}` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` |
+| `modules/_bundled/{id}/resources/layouts/**/*.{json,g7.html}` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` |
+| `templates/_bundled/{id}/layouts/**/*.{json,g7.html}`, `.../src/components/**/*.tsx` | `templates/_bundled/{id}/__tests__/layouts/`, `.../src/**/__tests__/` |
+| `plugins/_bundled/{id}/resources/layouts/**/*.{json,g7.html}` | `plugins/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` |
+| `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` | 해당 확장의 `__tests__/layouts/*.test.tsx` (확장 주입 fragment) |
 
 확장 테스트는 확장 디렉토리에서 수집한다. 코어와 확장 테스트를 한 `--filter` 로 섞어 수집하면 모듈 마이그레이션이 누락된다(test-filter-cross-pollination).
 

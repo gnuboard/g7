@@ -1,9 +1,15 @@
 /**
  * extensionPointProps/extensionPointCallbacks 테스트
  *
+ * @scenario leak_path=extension_point_host, prop_shape=primitive
+ * @effects extension_point_payload_still_reaches_injected_child
+ *
  * engine-v1.28.0: props/callbacks 분리
  * - extensionPointProps: resolveObject()로 재귀 표현식 평가
  * - extensionPointCallbacks: 평가 없이 그대로 전달
+ *
+ * engine-v1.68.1 이후 이 축이 **누출 수정의 반대편 보증**이다 — 호스트 `<div>` 에서 페이로드를
+ * 걷어냈으므로, 그 페이로드가 여전히 주입된 자식에게 평가되어 전달되는지를 여기가 잠근다.
  */
 
 import React from 'react';

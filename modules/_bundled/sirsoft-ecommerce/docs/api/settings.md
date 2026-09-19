@@ -2194,3 +2194,11 @@ HTTP/1.1 200
 확장 결제수단(간편결제)은 코어의 `card` 로 치환되지 않고 자기 ID 그대로 저장·조회된다.
 주문 생성 시 `payment_method` 로 확장 ID 를 그대로 보내면 되며, 서버는 이 카탈로그를 화이트리스트로
 사용해 검증한다.
+
+
+
+## 환율 제공자 계약 (1.3.0)
+
+설정 조회·일괄 저장 응답은 `data.available_rate_providers`(등록 제공자 배열)와 `data.active_rate_provider`(선택된 등록 제공자 또는 null)를 포함합니다. 제공자는 `id`, `name`, `managed_codes`, `unsupported_codes`, `settings_url`, `last_updated_at`, `last_updated_at_formatted`(사이트 시간대의 표시용 시각), `notice_key` 등을 전달합니다. 등록만으로 자동 선택하지 않습니다.
+
+`language_currency.rate_provider`는 null 또는 등록된 제공자 ID(최대 50자)입니다. 비활성화된 기존 선택값은 변경하지 않는 경우 보존할 수 있습니다. 관리 중인 기존 통화의 환율 변경은 422로 거부하며 숫자 문자열과 수치의 차이는 허용오차 1e-9로 비교합니다. 통화 추가·삭제·기본 통화 변경과 기타 필드는 계속 허용합니다. 단건 설정 저장의 `key=language_currency` 및 하위 키에도 같은 검증이 적용됩니다.

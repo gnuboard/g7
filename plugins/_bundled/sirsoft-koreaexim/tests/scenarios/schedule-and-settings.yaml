@@ -1,0 +1,16 @@
+feature: koreaexim_schedule_settings
+description: 시각·한국시간에서 사이트 시간대로 변환·요일 집합·자동 관리·인증키 상태의 전 조합을 검증한다. 누락 시각은 저장된 시각을 유지한다.
+coverage_strategy: full
+axes:
+  update_time: [valid, invalid, missing]
+  site_timezone: [Asia/Seoul, America/New_York]
+  run_days: [weekdays, all, empty]
+  auto_manage: [on, off]
+  auth_key: [set, unset, masked]
+effects:
+  - three_schedules_and_kst_timezone_conversion
+  - settings_validation
+  - schedule_timezone_conversion
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Unit/PluginScheduleTest.php
+  - plugins/_bundled/sirsoft-koreaexim/tests/fixtures/ScheduleCases.php

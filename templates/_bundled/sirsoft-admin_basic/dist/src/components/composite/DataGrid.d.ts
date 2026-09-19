@@ -263,6 +263,16 @@ export interface DataGridProps {
      */
     subRowCondition?: string;
     /**
+     * 데이터 행에 덧붙일 CSS 클래스 (선택적)
+     *
+     * 행 유형을 배경색으로 구분할 때 쓴다. 마크업에서 행 표현식으로 넘기면
+     * 템플릿 엔진이 행마다 풀어 문자열로 전달한다.
+     * 예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`
+     *
+     * 선택 행 강조(`bg-blue-50`)보다 먼저 놓여 선택 상태가 덮어쓴다.
+     */
+    rowClassName?: string;
+    /**
      * 서브 행 셀의 CSS 클래스 (선택적)
      *
      * @default "px-6 py-2 bg-gray-50 dark:bg-gray-900"

@@ -87,7 +87,7 @@ describe('체크아웃 결제 진입 provider-agnostic 동적 dispatch', () => {
 
     it('PG 분기의 handler 는 응답값 바인딩이어야 한다 (리터럴 핸들러명 금지)', () => {
       expect(pgBranch, 'PG 결제 진입 분기').toBeDefined();
-      expect(pgDispatch, 'PG 결제 진입 dispatch 액션').toBeDefined();
+      expect(pgDispatch, 'PG 동적 dispatch 액션').toBeDefined();
       expect(pgDispatch.handler).toBe('{{response.data.pg_payment_handler}}');
     });
 

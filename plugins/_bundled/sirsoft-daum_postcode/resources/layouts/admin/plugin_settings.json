@@ -1,9 +1,7 @@
 {
+    "comment": "다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-daum_postcode.settings.title",
@@ -19,8 +17,12 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         }
+    ],
+    "permissions": [
+        "core.plugins.update"
     ],
     "slots": {
         "content": [
@@ -120,12 +122,12 @@
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
-                                                },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
                                                 },
                                                 "children": [
                                                     {
@@ -457,9 +459,6 @@
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -469,6 +468,9 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -481,12 +483,9 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -500,8 +499,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{_local.form}}"
@@ -550,6 +549,10 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -579,46 +582,5 @@
                 ]
             }
         ]
-    },
-    "pageConfig": {
-        "notice": "$t:sirsoft-daum_postcode.settings.notice",
-        "guide": {
-            "title": "$t:sirsoft-daum_postcode.settings.guide.title",
-            "steps": [
-                "$t:sirsoft-daum_postcode.settings.guide.step1",
-                "$t:sirsoft-daum_postcode.settings.guide.step2",
-                "$t:sirsoft-daum_postcode.settings.guide.step3"
-            ]
-        }
-    },
-    "schema": {
-        "display_mode": {
-            "type": "enum",
-            "options": [
-                "popup",
-                "layer"
-            ],
-            "default": "layer",
-            "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode.label",
-            "hint": "$t:sirsoft-daum_postcode.settings.fields.display_mode.hint"
-        },
-        "popup_width": {
-            "type": "integer",
-            "default": 500,
-            "label": "$t:sirsoft-daum_postcode.settings.fields.popup_width.label",
-            "hint": "$t:sirsoft-daum_postcode.settings.fields.popup_width.hint"
-        },
-        "popup_height": {
-            "type": "integer",
-            "default": 600,
-            "label": "$t:sirsoft-daum_postcode.settings.fields.popup_height.label",
-            "hint": "$t:sirsoft-daum_postcode.settings.fields.popup_height.hint"
-        },
-        "theme_color": {
-            "type": "string",
-            "default": "#1D4ED8",
-            "label": "$t:sirsoft-daum_postcode.settings.fields.theme_color.label",
-            "hint": "$t:sirsoft-daum_postcode.settings.fields.theme_color.hint"
-        }
     }
 }

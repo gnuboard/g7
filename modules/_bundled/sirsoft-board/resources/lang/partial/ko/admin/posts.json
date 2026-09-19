@@ -29,6 +29,7 @@
     "report": "신고",
     "reported": "신고됨",
     "view_count": "조회 {{count}}",
+    "reaction_total": "반응 {{count}}",
     "attachments": "첨부파일 ({{count}})",
     "prev": "이전",
     "next": "다음",
@@ -202,12 +203,15 @@
     "category": "분류",
     "author": "작성자",
     "view_count": "조회수",
+    "reaction_total": "반응",
     "created_at": "작성일"
   },
   "search_fields": {
     "all": "전체",
     "title_content": "제목+내용",
-    "author": "작성자(이름, 이메일)"
+    "author": "작성자(이름, 이메일)",
+    "title": "제목",
+    "content": "내용"
   },
   "filters": {
     "category_label": "분류",
@@ -284,5 +288,23 @@
     "30": "30개씩 보기",
     "50": "50개씩 보기",
     "100": "100개씩 보기"
+  },
+  "bulk": {
+    "selected_count": "{{count}}개 선택됨",
+    "delete": "삭제",
+    "blind": "블라인드",
+    "restore": "복구",
+    "modal": {
+      "delete_title": "선택한 게시글을 삭제할까요?",
+      "delete_confirm": "선택한 {{count}}개 게시글을 삭제하시겠습니까?",
+      "replies_notice": "답글이 있는 글은 답글 삭제 정책에 따라 건너뛸 수 있습니다.",
+      "blind_title": "선택한 게시글을 블라인드 처리할까요?",
+      "blind_confirm": "선택한 {{count}}개 게시글을 블라인드 처리하시겠습니까?",
+      "restore_title": "선택한 게시글을 복구할까요?",
+      "restore_confirm": "선택한 {{count}}개 게시글을 복구하시겠습니까?",
+      "reason_label": "사유 (선택)",
+      "reason_placeholder": "처리 사유를 입력하세요",
+      "processing": "처리 중..."
+    }
   }
 }

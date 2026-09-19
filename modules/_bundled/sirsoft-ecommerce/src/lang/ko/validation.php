@@ -6,6 +6,8 @@
  * FormRequest 검증 실패 시 사용되는 메시지
  */
 return [
+    'exchange_rate_save_failed' => '환율 설정을 저장하지 못했습니다.',
+    'exchange_rate_provider_unavailable' => '사용할 수 없는 환율 제공자입니다.',
     // 상품 1:1 문의 검증 메시지
     'inquiries' => [
         'content' => [
@@ -1673,6 +1675,7 @@ return [
                 'max' => '기본 통화는 최대 10자까지 입력 가능합니다.',
             ],
             'currencies' => [
+                'exchange_rate_managed' => ':currency 환율은 :provider 제공자가 관리 중입니다. 화면을 새로고침하세요.',
                 'duplicate_code' => '중복된 통화 코드가 있습니다.',
                 'name_required' => '통화명은 최소 하나의 언어로 입력해야 합니다.',
                 'code' => [

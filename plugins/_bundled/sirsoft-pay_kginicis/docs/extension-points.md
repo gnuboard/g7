@@ -125,19 +125,26 @@ KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/admin_order_list_test_badge.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/admin_order_payment_query.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/checkout_payment_error.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user_order_show.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/admin_order_list_test_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_list` |
+| `resources/extensions/admin_order_payment_query.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_detail` |
+| `resources/extensions/checkout_payment_error.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/checkout` |
+| `resources/extensions/user_order_show.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `mypage_order_payment_provider_slot` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-`checkout_payment_error.json`은 체크아웃 화면에 KG 이니시스 특유의 오류 메시지(예: 계약되지
-않은 결제수단 선택 시 안내)를 끼워 넣고, `user_order_show.json`은 주문 상세에 영수증 버튼을
+`checkout_payment_error.g7.html`은 체크아웃 화면에 KG 이니시스 특유의 오류 메시지(예: 계약되지
+않은 결제수단 선택 시 안내)를 끼워 넣고, `user_order_show.g7.html`은 주문 상세에 영수증 버튼을
 추가합니다. 관리자 쪽 두 조각(`admin_order_list_test_badge`/`admin_order_payment_query`)은
 "이 주문이 테스트 모드로 결제됐는가"와 "PG 거래 상태를 다시 조회"를 관리자 화면에서 바로
 확인하게 하는 운영 편의 기능입니다 — 실제 결제 로직과는 분리돼 있어 이 조각만 비활성화해도
 결제 자체는 영향받지 않습니다.
+
+조각의 **고유 키는 파일 이름**입니다(`fragment_key` — 확장자를 뗀 기본 이름). 같은 확장이 같은 대상
+화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치 경로와
+`RestoreLayoutExtensionsAfterUpdateListener` 가 **같은 키**를 써야 하므로, 리스너는
+`LayoutFragmentSourceHelper::readDirectoryKeyed()` 로 파일에서 키를 얻어 그대로 넘깁니다. 키 없이
+등록하면 대상 화면 이름이 키가 되어 두 경로가 갈리고, 그 뒤로는 같은 대상에 행이 둘 생겨 복원이
+어느 행인지 가리지 못한 채 조용히 멈춥니다.
 <!-- @intent END -->
 
 ## 미들웨어

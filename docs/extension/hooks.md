@@ -188,6 +188,19 @@ core.user.upload_avatar_validation_rules            # 구: core.user.upload_avat
 core.layout_extension.before_apply
 core.layout_extension.after_apply
 
+# 레이아웃 파일 관리 훅 (Action) — 관리자 코드 편집기에서 파일을 만들고·옮기고·지운 전후
+core.layout.before_create    # doAction($templateId, $name, $content)
+core.layout.after_create     # doAction($layout, $templateId, $name)  — 지워진 같은 이름을 되살린 경우도 같은 훅
+core.layout.before_rename    # doAction($templateId, $name, $newName)
+core.layout.after_rename     # doAction($layout, $templateId, $name, $newName)  — 같은 행(판본 이력 승계)
+core.layout.before_delete    # doAction($templateId, $name)
+core.layout.after_delete     # doAction($layout, $templateId, $name)  — soft delete, 행은 남는다
+
+# 레이아웃 파일 관리 검증 훅 (Filter) — FormRequest 규칙 확장
+core.layout.create_validation_rules
+core.layout.rename_validation_rules
+core.layout.search_validation_rules
+
 # 드라이버 확장 훅 (Filter) — 플러그인이 새 드라이버를 등록
 # 항목 3키 구조는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
 core.settings.available_storage_drivers

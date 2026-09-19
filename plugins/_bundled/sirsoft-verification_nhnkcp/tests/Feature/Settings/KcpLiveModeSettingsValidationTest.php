@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\PluginSettingsService;
 use App\Support\SensitiveSettingMask;
 use Illuminate\Testing\TestResponse;
+use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
 use Plugins\Sirsoft\VerificationNhnkcp\Tests\PluginTestCase;
 
 /**
@@ -246,7 +247,7 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
         ])->assertStatus(200);
 
         $provider = app()->makeWith(
-            \Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider::class,
+            KcpIdentityProvider::class,
             ['config' => app(PluginSettingsService::class)->get(self::PLUGIN_IDENTIFIER)],
         );
 

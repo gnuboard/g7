@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingCountryResolver;
  *
  * 코어 UserResource 의 프로필(/api/me)·관리자 상세 응답에 발화하는 core.user.filter_resource_data
  * 필터 훅을 구독해, 유저의 영속 배송국가(ecommerce_preferred_shipping_country)와 현지화된
- * 국가명(_name)을 병합합니다(UserCurrencyInfoListener 미러). 프론트(_user_base.json)는 로그인
+ * 국가명(_name)을 병합합니다(UserCurrencyInfoListener 미러). 프론트(_user_base.g7.html)는 로그인
  * 유저면 이 값으로 _global.preferredShippingCountry 를 초기화합니다.
  */
 class UserShippingCountryInfoListener implements HookListenerInterface

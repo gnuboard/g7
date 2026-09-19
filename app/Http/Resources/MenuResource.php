@@ -73,7 +73,7 @@ class MenuResource extends BaseApiResource
                 return $this->creator ? [
                     'uuid' => $this->creator->uuid,
                     'name' => $this->creator->name,
-                    'email' => $this->creator->email,
+                    'email' => $this->canExposeMemberEmail($request, $this->creator->id) ? $this->creator->email : null,
                 ] : null;
             }),
 

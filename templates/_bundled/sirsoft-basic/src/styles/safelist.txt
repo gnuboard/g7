@@ -365,6 +365,7 @@ dark:text-slate-50 dark:text-slate-100 dark:text-slate-200 dark:text-slate-300 d
 dark:text-blue-50 dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-500 dark:text-blue-600 dark:text-blue-700 dark:text-blue-800 dark:text-blue-900
 dark:text-red-50 dark:text-red-100 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-red-700 dark:text-red-800 dark:text-red-900
 dark:text-green-50 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-500 dark:text-green-600 dark:text-green-700 dark:text-green-800 dark:text-green-900
+dark:text-rose-50 dark:text-rose-100 dark:text-rose-200 dark:text-rose-300 dark:text-rose-400 dark:text-rose-500 dark:text-rose-600 dark:text-rose-700 dark:text-rose-800 dark:text-rose-900
 dark:text-yellow-50 dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:text-yellow-600 dark:text-yellow-700 dark:text-yellow-800 dark:text-yellow-900
 dark:text-purple-50 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-purple-500 dark:text-purple-600 dark:text-purple-700 dark:text-purple-800 dark:text-purple-900
 dark:text-pink-50 dark:text-pink-100 dark:text-pink-200 dark:text-pink-300 dark:text-pink-400 dark:text-pink-500 dark:text-pink-600 dark:text-pink-700 dark:text-pink-800 dark:text-pink-900
@@ -537,7 +538,7 @@ sm:text-xs sm:text-sm sm:text-base sm:text-lg sm:text-xl sm:text-2xl sm:text-3xl
 sm:p-0 sm:p-1 sm:p-2 sm:p-3 sm:p-4 sm:p-5 sm:p-6 sm:p-8
 sm:px-0 sm:px-1 sm:px-2 sm:px-3 sm:px-4 sm:px-5 sm:px-6 sm:px-8
 sm:py-0 sm:py-1 sm:py-2 sm:py-3 sm:py-4 sm:py-5 sm:py-6 sm:py-8
-sm:m-0 sm:m-1 sm:m-2 sm:m-3 sm:m-4 sm:m-auto sm:mx-auto sm:my-auto
+sm:m-0 sm:m-1 sm:m-2 sm:m-3 sm:m-4 sm:m-auto sm:mx-auto sm:my-auto sm:ml-auto
 sm:gap-0 sm:gap-1 sm:gap-2 sm:gap-3 sm:gap-4 sm:gap-5 sm:gap-6 sm:gap-8
 sm:space-x-0 sm:space-x-1 sm:space-x-2 sm:space-x-3 sm:space-x-4 sm:space-y-0 sm:space-y-1 sm:space-y-2 sm:space-y-3 sm:space-y-4
 sm:justify-start sm:justify-end sm:justify-center sm:justify-between sm:items-start sm:items-end sm:items-center

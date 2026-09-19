@@ -1,9 +1,7 @@
 {
+    "comment": "관리자 메모 작성·수정 화면 — 한 장이 두 모드를 겸하며 route.id 유무가 모드를 가른다.",
     "version": "1.0.0",
     "layout_name": "admin_memo_form",
-    "permissions": [
-        "gnuboard7-hello_module.memos.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"
@@ -21,14 +19,18 @@
             "initLocal": "form",
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "수정 모드에서만 기존 메모를 받아 폼 초기값으로 넣는다(initLocal=form). 생성 모드는 data-if 가 요청 자체를 걸러 낸다."
         }
+    ],
+    "permissions": [
+        "gnuboard7-hello_module.memos.read"
     ],
     "init_actions": [
         {
             "comment": "생성 모드에서 폼 기본값 초기화",
-            "if": "{{!route?.id}}",
             "handler": "setState",
+            "if": "{{!route?.id}}",
             "params": {
                 "target": "local",
                 "form": {
@@ -85,7 +87,6 @@
                                     {
                                         "type": "basic",
                                         "name": "Input",
-                                        "name_attr": "title",
                                         "props": {
                                             "type": "text",
                                             "name": "title",
@@ -133,12 +134,9 @@
                                         "id": "memo_cancel_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "취소하고 목록으로. 목록 상태를 그대로 넘겨 보던 페이지로 돌아간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -148,6 +146,10 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -160,16 +162,13 @@
                                         "id": "memo_save_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "저장 — route.id 유무로 생성(POST)과 수정(PUT)을 같은 버튼에서 가른다. 성공하면 목록으로 돌아간다.",
                                                 "type": "click",
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                     "body": "{{_local.form}}"
@@ -191,17 +190,19 @@
                                                         }
                                                     }
                                                 ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? 'error'}}"
-                                                        }
+                                                "onError": {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? 'error'}}"
                                                     }
-                                                ]
+                                                }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",

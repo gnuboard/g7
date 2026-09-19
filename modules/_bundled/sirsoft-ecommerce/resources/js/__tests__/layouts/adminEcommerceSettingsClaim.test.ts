@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import { callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import defaults from '../../../../config/settings/defaults.json';
 import claimPolicy from '../../../layouts/admin/partials/admin_ecommerce_settings/_claim_policy_section.json';
@@ -357,9 +358,9 @@ describe('사유 카탈로그 3종 — 각자의 상태 키를 읽고 쓴다', (
     const text = JSON.stringify(layout);
 
     expect(text.includes(`_local.${form}?.name?.ko`), 'ko 고정 게이트가 남아 있다').toBe(false);
-    expect(text.includes(`_local.${form}?.name?.[(_global.locale ?? 'ko')]`)).toBe(true);
+    expect(text.includes(`_local.${form}?.name?.[($locale ?? 'ko')]`)).toBe(true);
     expect(text.includes(`'${section}.' + reason._idx + '.name.ko'`), '행 오류 바인딩이 ko 고정이다').toBe(false);
-    expect(text.includes(`'${section}.' + reason._idx + '.name.' + (_global.locale ?? 'ko')`)).toBe(true);
+    expect(text.includes(`'${section}.' + reason._idx + '.name.' + ($locale ?? 'ko')`)).toBe(true);
   });
 
   /**
@@ -375,7 +376,7 @@ describe('사유 카탈로그 3종 — 각자의 상태 키를 읽고 쓴다', (
     const input = findNode(layout, (n) => n.name === 'MultilingualInput');
 
     expect(input).toBeDefined();
-    expect(String(input.props?.error ?? '')).toContain(`'${section}.' + reason._idx + '.name.' + (_global.locale ?? 'ko')`);
+    expect(String(input.props?.error ?? '')).toContain(`'${section}.' + reason._idx + '.name.' + ($locale ?? 'ko')`);
   });
 
 });
@@ -616,7 +617,7 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
   });
 
   const save = findNode(settingsShell, (n) => n?.props?.['data-testid'] === 'ecommerce-settings-save' || n?.props?.testId === 'ecommerce-settings-save');
-  const actions: any[] = save?.actions?.[0]?.params?.actions ?? [];
+  const actions: any[] = callbacksOf(save?.actions?.[0], 'actions');
 
   // 경고 토스트는 둘이다 — 통화 2축은 `save_pending_currency`, 나머지 인라인 폼은 `save_pending_form`.
   // 어느 쪽이 맡는지는 문구 선택의 문제이므로, 계약은 **둘을 합쳐 파생 집합 전부를 덮는가** 다.
@@ -929,13 +930,13 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
      * @effects settings_claim_reason_name_required_locale_is_current_locale
      */
     it('확정 게이트는 현재 로케일의 이름을 요구한다 (시드와 같은 축)', () => {
-      const gates = partialSources.flatMap((source) => source.match(/name\?\.\[\(_global\.locale \?\? 'ko'\)\]/g) ?? []);
+      const gates = partialSources.flatMap((source) => source.match(/name\?\.\[\(\$locale \?\? 'ko'\)\]/g) ?? []);
       expect(gates.length, '확정 게이트가 현재 로케일을 읽지 않는다 — 시드만 넓히면 서버 422 를 화면이 막지 못한다').toBeGreaterThanOrEqual(5);
       const koFixed = partialSources.flatMap((source) => source.match(/Form\?\.name\?\.ko/g) ?? []);
       expect(koFixed, '확정 게이트가 ko 고정으로 되돌아갔다').toEqual([]);
     });
 
-    // 위 검사는 게이트가 `_global.locale` 을 **읽는지**만 본다. 그런데 그것을 **쓰는 쪽**이
+    // 위 검사는 게이트가 `$locale`(엔진 전역 변수 — `_global.locale` 은 심는 곳이 없는 사어 바인딩) 을 **읽는지**만 본다. 그런데 그것을 **쓰는 쪽**이
     // 없으면 표현식은 그대로인 채 값만 언제나 비어, 게이트가 조용히 'ko' 고정으로 돌아간다
     // — 표현식 형태를 고정하는 단언만으로는 그 상태와 정상을 구분하지 못한다.
     // `$locale` 은 편집 모드에서만 주입되고 코어는 `_global.locale` 을 쓰지 않으므로,
@@ -966,7 +967,7 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
      */
     it('서버 422 필드 오류 조회 키도 현재 로케일을 쓴다', () => {
       const errorKeys = partialSources.flatMap(
-        (source) => source.match(/\.name\.' \+ \(_global\.locale \?\? 'ko'\)/g) ?? []
+        (source) => source.match(/\.name\.' \+ \(\$locale \?\? 'ko'\)/g) ?? []
       );
       expect(
         errorKeys.length,

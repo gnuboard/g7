@@ -26,6 +26,7 @@
     "report": "Report",
     "reported": "Reported",
     "view_count": "Views {{count}}",
+    "reaction_total": "Reactions {{count}}",
     "attachments": "Attachments ({{count}})",
     "prev": "Previous",
     "next": "Next",
@@ -199,12 +200,15 @@
     "category": "Category",
     "author": "Author",
     "view_count": "Views",
+    "reaction_total": "Reactions",
     "created_at": "Created At"
   },
   "search_fields": {
     "all": "All",
     "title_content": "Title+Content",
-    "author": "Author (Name, Email)"
+    "author": "Author (Name, Email)",
+    "title": "Title",
+    "content": "Content"
   },
   "filters": {
     "category_label": "Category",
@@ -284,5 +288,23 @@
     "30": "30 per page",
     "50": "50 per page",
     "100": "100 per page"
+  },
+  "bulk": {
+    "selected_count": "{{count}} selected",
+    "delete": "Delete",
+    "blind": "Blind",
+    "restore": "Restore",
+    "modal": {
+      "delete_title": "Delete the selected posts?",
+      "delete_confirm": "Delete {{count}} selected post(s)?",
+      "replies_notice": "Posts with replies may be skipped depending on the reply deletion policy.",
+      "blind_title": "Blind the selected posts?",
+      "blind_confirm": "Blind {{count}} selected post(s)?",
+      "restore_title": "Restore the selected posts?",
+      "restore_confirm": "Restore {{count}} selected post(s)?",
+      "reason_label": "Reason (optional)",
+      "reason_placeholder": "Enter a reason",
+      "processing": "Processing..."
+    }
   }
 }

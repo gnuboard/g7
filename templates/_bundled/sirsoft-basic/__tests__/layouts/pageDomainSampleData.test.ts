@@ -7,12 +7,12 @@
  *
  * 실제 Resource shape 대조:
  *  - page           : PublicPageResource (서버 localize 된 문자열 title/content, attachments[],
- *                     seo_meta, current_version, published_at) — layouts/page/show.json 소비
+ *                     seo_meta, current_version, published_at) — layouts/page/show.g7.html 소비
  *  - termsContent   : PageController(공개) terms — data.{content, content_mode, published_at}
- *                     (partials/auth/_modal_terms.json 소비, 모달 — 단위 계약 검증)
- *  - privacyContent : 동일 shape (partials/auth/_modal_privacy.json 소비)
+ *                     (partials/auth/_modal_terms.g7.html 소비, 모달 — 단위 계약 검증)
+ *  - privacyContent : 동일 shape (partials/auth/_modal_privacy.g7.html 소비)
  *
- * 바인딩 SSoT: layouts/page/show.json, partials/auth/_modal_{terms,privacy}.json.
+ * 바인딩 SSoT: layouts/page/show.g7.html, partials/auth/_modal_{terms,privacy}.g7.html.
  */
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';

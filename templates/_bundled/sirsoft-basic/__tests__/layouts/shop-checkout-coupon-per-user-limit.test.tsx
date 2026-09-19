@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest';
 import checkoutItemsJson from '../../layouts/partials/shop/_checkout_items.json';
 import shopKo from '../../lang/partial/ko/shop.json';
 import shopEn from '../../lang/partial/en/shop.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 트리 전체에서 조건을 만족하는 모든 노드 수집 */
 function collectNodes(node: any, predicate: (n: any) => boolean, acc: any[] = []): any[] {
@@ -52,11 +53,13 @@ describe('상품 쿠폰 per_user_limit 중복 비활성화/안내 (_checkout_ite
       checkoutItemsJson,
       (n) =>
         n.handler === 'conditions' &&
-        JSON.stringify(n.params ?? {}).includes('validation_errors')
+        // 제어 핸들러의 분기는 `params.conditions` 에서 top-level `conditions` 로 올라간다 —
+        // 한쪽만 보면 정본 형태에서 0건이 된다. 노드 전체를 직렬화해 본다.
+        JSON.stringify(n).includes('validation_errors')
     );
     expect(conditionNodes.length).toBeGreaterThanOrEqual(2); // 상품쿠폰 1·2 각 onSuccess
     conditionNodes.forEach((c) => {
-      const cond = c.params.conditions[0];
+      const cond = callbacksOf(c, 'conditions')[0];
       expect(cond.if).toContain('validation_errors');
       expect(cond.then.handler).toBe('toast');
       expect(cond.then.params.message).toBe('$t:shop.checkout.coupon_not_applied');

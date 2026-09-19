@@ -28,7 +28,7 @@ trait IssuesGuestSessionCookie
      * 쿠키 값에 서명을 붙입니다.
      *
      * @param  string  $sessionId  UUID v4 게스트 세션 식별자
-     * @return string  "{sessionId}|{expiresTs}|{signature}" 형태의 쿠키 값
+     * @return string "{sessionId}|{expiresTs}|{signature}" 형태의 쿠키 값
      */
     protected function signGuestSessionId(string $sessionId): string
     {
@@ -44,7 +44,7 @@ trait IssuesGuestSessionCookie
      * (호출자는 미식별 게스트로 취급해야 함).
      *
      * @param  string|null  $cookieValue  요청 쿠키 원본 값
-     * @return string|null  검증된 session_id, 위조/형식 오류/만료 시 null
+     * @return string|null 검증된 session_id, 위조/형식 오류/만료 시 null
      */
     protected function verifyGuestSessionId(?string $cookieValue): ?string
     {
@@ -79,7 +79,7 @@ trait IssuesGuestSessionCookie
      *
      * @param  string  $sessionId  게스트 세션 식별자
      * @param  int  $expiresTs  서명 만료 시각(unix timestamp)
-     * @return string  64자 hex 서명
+     * @return string 64자 hex 서명
      */
     private function computeGuestSessionSignature(string $sessionId, int $expiresTs): string
     {

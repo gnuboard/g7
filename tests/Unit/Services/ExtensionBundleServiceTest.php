@@ -13,7 +13,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * [case:backend-30] ExtensionBundleService 단위 테스트
+ * [case:backend-31] ExtensionBundleService 단위 테스트
  *
  * 활성 확장 IIFE/CSS 의 priority 정렬, `\n;\n` 구분자 병합, sourceMappingURL
  * 처리, 확장별 fault tolerance, 캐시 파일 생성/정리를 검증한다.

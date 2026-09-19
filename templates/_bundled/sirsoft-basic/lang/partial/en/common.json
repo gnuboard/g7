@@ -61,5 +61,6 @@
   "next_page": "Next page",
   "last_page": "Last page",
   "page_n": "Page {{n}}",
-  "currency_unit": ""
+  "currency_unit": "",
+  "select_all": "Select all"
 }

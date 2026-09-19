@@ -37,11 +37,22 @@
 | `navigate` + `replace: true` (URL만 변경 시) | `handler: "replaceUrl"` |
 | `navigate` `params.path: "back"` (동작 키워드로 착각) | `handler: "navigateBack"` — path 는 주소로 해석되어 조용히 `/back` 으로 이동한다 |
 | `navigate` `params.url` / `href` / `to` 로 목적지 전달 | `params.path` (또는 액션 `target`) — 엔진은 이 둘만 읽는다. 다른 이름은 무시되어 목적지가 `undefined` 가 되고, 예외도 404 도 없이 버튼만 동작하지 않는다 |
+| 에러 전파 방지를 위한 무의미한 `setState` | `{ "handler": "suppress" }` |
 | apiCall `params.target` (params 내부) | `target` 은 액션 top-level. params 내부 위치 시 URL 미해석 |
 | apiCall `params.onSuccess` / `params.onError` (params 내부) | 액션 top-level. params 내부면 무시됨 |
 | `refetchDataSource` `params.id` | `params.dataSourceId` 사용 |
 | `handler: "showToast"` | `handler: "toast"` |
 | 모달 안에서 부모 `_local.*` 참조 | 데이터소스 응답 필드 또는 `_global` 사용 (모달은 별도 컨텍스트) |
+
+## 브로드캐스팅/이벤트
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `broadcast(new SpecificEvent(...))` | `HookManager::broadcast($channel, $eventName, $payload)` |
+| 개별 Event 클래스 직접 생성 (`app/Events/`) | `HookManager::broadcast()` 사용 (GenericBroadcastEvent는 내부 구현) |
+| `CoreServiceProvider`에 특정 리스너 하드코딩 | 리스너에 `registerDynamicHooks()` 메서드 구현 (자동 발견) |
+| 채널명에 확장 프리픽스 미사용 | 코어: `core.*`, 모듈: `module.{id}.*`, 플러그인: `plugin.{id}.*` |
+| `routes/channels.php`에 모듈/플러그인 채널 하드코딩 | `getChannels()` 오버라이드 (자동 등록) |
 
 ## 데이터 바인딩
 
@@ -54,6 +65,14 @@
 | `$value` (이벤트 값) | `$event.target.value` |
 | `{{props.xxx}}` (Partial) | data_sources ID 직접 참조 |
 | `{{$response.xxx}}` (onSuccess) | `{{response.xxx}}` ($ 접두사 없음) |
+| `if: "{{x}} === 'y'"` (보간 + 비교) | `if: "{{x === 'y'}}"` (식 전체를 `{{}}` 로 감싸기) |
+| `if: "x === 'y'"` (`{{}}` 없음) | `if: "{{x === 'y'}}"` (`{{}}` 없으면 원본 문자열 그대로 → 항상 truthy) |
+| `{{route.query.xxx}}` / `{{route?.query?.xxx}}` | `{{query.xxx}}` / `{{query?.xxx}}` (query 가 root 직접 노출, `route.query` 경로 부재) |
+| `{{x?.[_global.locale]}}` (엔진이 심지 않는 죽은 바인딩) | `{{x?.[$locale]}}` — 현재 로케일은 전역 변수 `$locale` 로만 노출된다 |
+
+> **`if` 표현식 평가 규칙** (engine-v1.47.1 명문화): `ConditionEvaluator.evaluateStringCondition` 은 `{{...}}` **단일 바인딩 형태**만 식으로 평가한다 (`evaluateExpression`). 그 외 형태(보간 텍스트 / `{{}}` 없는 식)는 `resolveBindings` 로 문자열 보간만 수행하고 결과 문자열을 `Boolean()` 캐스팅하므로 비-빈 문자열은 항상 truthy. 비교/논리/옵셔널체이닝 등 연산자가 포함된 식은 반드시 전체를 `{{...}}` 한 쌍 안에 넣어야 한다.
+
+> **G7 컨텍스트의 `route` vs `query`** (engine-v1.47.1 명문화): URL query string 은 `query.xxx` / `query?.xxx` 로 root 컨텍스트에 직접 노출된다. `route.xxx` 는 path params 만 (예: `/users/:id` → `route.id`). `route.query.xxx` 경로는 존재하지 않으며, 표현식이 항상 `undefined` → 비교 결과 false 가 된다.
 
 ## iteration/반복 렌더링
 
@@ -78,12 +97,21 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 | `w-N h-N` | px | 등가 `className` |
 |---|---|---|
+| `w-2.5 h-2.5` | 10 | `text-[10px]` |
 | `w-3 h-3` | 12 | `text-xs` |
 | `w-3.5 h-3.5` | 14 | `text-sm` |
 | `w-4 h-4` | 16 | `text-base` |
 | `w-5 h-5` | 20 | `text-xl` |
 | `w-6 h-6` | 24 | `text-2xl` |
+| `w-8 h-8` | 32 | `text-[2rem]` |
+| `w-10 h-10` | 40 | `text-[2.5rem]` |
 | `w-12 h-12` | 48 | `text-5xl` |
+| `w-16 h-16` | 64 | `text-[4rem]` |
+| `w-24 h-24` | 96 | `text-8xl` |
+
+표준 스케일에 같은 px 이 없는 크기는 **임의값**(`text-[2rem]` 등)으로 둔다 — 근사한 표준 클래스로 바꾸면 화면이 조용히 달라진다. 임의값은 평문 safelist 파일에서 추출되지 않으므로 템플릿 `main.css` 의 `@source inline(...)` 에 있어야 한다.
+
+두 템플릿 모두 **모듈·플러그인 레이아웃을 Tailwind 스캔 대상에 넣지 않는다.** 그래서 모듈·플러그인 소스에 새 크기 클래스를 쓰면 **렌더 템플릿의 도달 범위에 그 클래스가 있는지 먼저 확인**해야 한다. 없으면 CSS 가 생성되지 않아 크기가 사라진다.
 
 `size` prop 은 Font Awesome `fa-*` 클래스로 매핑되며 등가가 아니다 — `size="sm"` → `fa-sm` → `font-size: 0.875em`(상대값) + `line-height` 붕괴로 16px 이 12.25×0.88px 이 된다. 새 아이콘에는 써도 되지만, 기존 `w-N h-N` 의 치환용으로는 쓰지 않는다.
 

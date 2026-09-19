@@ -52,7 +52,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `extensions/` | 다른 확장 화면에 주입하는 레이아웃 조각 | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `seo-config.json` | SEO 렌더 설정 | `php artisan template:update sirsoft-basic --force` |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-basic --force` |
@@ -62,7 +62,8 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | `editor-spec/` | 분할 편집기 스펙 | `php artisan template:update sirsoft-basic --force` |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update sirsoft-basic --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update sirsoft-basic --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update sirsoft-basic --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -106,8 +107,8 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 79개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 185개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 제공 컴포넌트 | 78개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 레이아웃 | 192개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 32개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 1개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -135,7 +136,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update sirsoft-basic --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 새 화면을 추가했다면 `_user_base` 를 상속하는지, `routes.json` 에 경로가 등록됐는지 확인
@@ -146,6 +147,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 - [ ] `extensions/sirsoft-daum_postcode/` 오버라이드는 원본이 바뀌어도 따라가지 않는다 — 그 플러그인 업그레이드 후 확인
 - [ ] TSX/TS 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 프론트엔드 변경은 Playwright spec 동반 — 단위 테스트만으로는 화면 회귀가 드러나지 않는다
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-17 마이페이지 반응·신고·스크랩 13건이 미등재·앵커 40 으로 red)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-basic --force` (편집기는 활성 디렉토리만 읽는다)
 - [ ] 로그인 화면의 2단계 인증 단계를 고쳤다면 1단계·2단계 `if` 의 상보성과 `login`/`loginTwoFactor` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호 단계에서 Enter 가 새 challenge 를 발급한다
 
@@ -175,7 +177,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 165개 | `vitest.config.ts` |
+| Vitest | 173개 | `vitest.config.ts` |
 | Playwright | 9개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 5개 | `tests/scenarios` |
 

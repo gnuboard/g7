@@ -409,10 +409,18 @@ AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' })
 
 레이아웃 fetch 가 토큰 만료 등으로 401 재시도까지 실패하면, 코어 `TemplateApp.showRouteError` 가드가 자동으로 로그인 페이지로 리다이렉트한다 — `getLoginRedirectUrl(authType, returnUrl, 'session_expired')` 호출하여 `?reason=session_expired` 쿼리 포함. 로그인 레이아웃의 `init_actions` 에서 해당 reason 을 감지해 안내 토스트를 표시한다.
 
+```html
+<on type="click">
+  <toast if="{{query?.reason === 'session_expired'}}" type="warning" message="$t:auth.session_expired_toast"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 로그인 레이아웃 init_actions 예시
 {
-  "if": "{{route?.query?.reason}} === 'session_expired'",
+  "if": "{{query?.reason === 'session_expired'}}",
   "handler": "toast",
   "params": {
     "type": "warning",

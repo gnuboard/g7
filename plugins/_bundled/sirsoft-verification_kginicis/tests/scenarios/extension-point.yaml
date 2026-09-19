@@ -122,7 +122,7 @@ test_files:
 
 rules_layer_coverage:
   - rule: extension-point-mode-replace
-    coverage: identity_provider_inicis.json 은 mode='replace' 사용 + if=provider_id 조건으로 다른 provider 흐름 안전. providerInProgress 추가 분기로 같은 provider 안 두 상태 노출.
+    coverage: identity_provider_inicis.g7.html 은 mode='replace' 사용 + if=provider_id 조건으로 다른 provider 흐름 안전. providerInProgress 추가 분기로 같은 provider 안 두 상태 노출.
   - rule: api-resource-pii-masking
     coverage: InicisIdentityResource 마스킹 유지 (Phase E)
   - rule: middleware-auth-route-scoped

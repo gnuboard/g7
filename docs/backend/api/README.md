@@ -162,6 +162,11 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 
 두 형태는 **모두 영구 유지**됩니다. 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨집니다.
 
+확장 아이콘 주소(`GET /api/extensions/{type}/{identifier}/icon`)는 이 표에 없습니다 —
+애초에 확장자로 끝나지 않게 설계해 정적 최적화 블록과 무관하기 때문입니다. 확장자는 파일
+내용에서 정해지고 응답의 `Content-Type` 으로만 알립니다. 자산 엔드포인트와 달리 인증이 없고
+설치 전 동봉 확장도 대상이며 정적 게시 lane 밖입니다 — [확장 아이콘](../../extension/extension-icons.md).
+
 #### CSS 응답의 상대 참조 치환
 
 확장 자산 엔드포인트(`/api/{templates|modules|plugins}/assets/…`)가 **CSS 를 서빙할 때**는 본문 안의
@@ -223,6 +228,15 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
   - `scripts[].src`·`data_sources[].endpoint` 가 same-origin path-only(`/` 시작)가 아니면 `422` (`validation.layout.external_resource_url`). 단, 활성 확장(모듈·플러그인·템플릿)이 자기 manifest 의 `trusted_script_hosts` 로 선언한 호스트는 예외로 허용됩니다 — 이 목록은 확장 배포물이 정하며 요청으로 바꿀 수 없습니다.
   - 정상 표현식(조건·계산·목록 가공·화살표 함수·템플릿 리터럴·경로 조립)은 통과합니다.
 
+### 회원 이메일 노출 범위
+
+응답에 실리는 회원 이메일(`author.email`, `user.email`, `reporter.email`, `board_managers[].email` 등)은
+**관리자 엔드포인트 응답**과 **본인이 자기 정보를 조회할 때**만 값이 채워집니다. 그 밖의 경로에서는
+필드가 그대로 있고 값만 `null` 입니다 — 필드 자체가 사라지지 않으므로 응답 구조는 변하지 않습니다.
+
+게시글 목록·상세, 댓글 목록, 게시판 상세, 상품평 목록처럼 인증 없이 열람되는 경로가 이에 해당합니다.
+회원 이메일이 필요한 화면은 관리자 엔드포인트를 사용하세요.
+
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
@@ -274,7 +288,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 > 각 확장이 자신의 API 문서를 소유합니다. 아래 표는 자동 생성됩니다.
 
 <!-- @generated:start:api-readme-extensions -->
-- **확장 수**: 14 · **엔드포인트 수**: 476
+- **확장 수**: 15 · **엔드포인트 수**: 432
 
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 | --- | --- | --- | --- |
@@ -284,6 +298,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | `sirsoft-page` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
 | `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
+| `sirsoft-koreaexim` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-koreaexim/docs/api/README.md) | 2 / 4 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
 | `sirsoft-message_bizppurio` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-message_bizppurio/docs/api/README.md) | 6 / 21 |
 | `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 6 / 35 |

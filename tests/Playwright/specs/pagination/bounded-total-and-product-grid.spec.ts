@@ -102,15 +102,18 @@ test.describe('총 건수 상한과 페이지 이동', () => {
       await route.fulfill({ response, json: body });
     });
 
-    await gotoAndSettle(page, '/search?q=' + encodeURIComponent('테스트'));
+    // 페이저는 특정 탭(type)에서만 렌더된다 — 통합(all) 탭은 유형별 섹션만 보여 준다.
+    // 검색어도 결과가 실제로 있는 것을 쓴다: 0건이면 섹션도 페이저도 없어 "페이저가 사라졌다"
+    // 와 구분되지 않는다(판정 전제가 무너진다).
+    await gotoAndSettle(page, '/search?q=' + encodeURIComponent('상품') + '&type=products');
 
     expect(errors, '검색 화면 렌더 중 자바스크립트 오류가 발생했다').toEqual([]);
 
     // "다음" 이동 수단이 실제로 화면에 남아 있어야 한다. 이것이 사라지면 상한 초과
     // 검색에서 2페이지 이후에 도달할 방법이 없어진다.
-    const nextControl = page
-      .locator('button:has(i.fa-chevron-right), a:has(i.fa-chevron-right)')
-      .first();
+    // 이 화면의 페이저는 아이콘이 아니라 글리프(`‹` `›`)로 이전/다음을 그린다 —
+    // 마지막 페이지를 모르면 번호 목록과 끝 페이지 점프가 빠지고 이 둘만 남는다.
+    const nextControl = page.locator('button').filter({ hasText: /^›$/ }).first();
 
     await expect(nextControl, '마지막 페이지를 모른다는 이유로 "다음" 이동이 사라졌다')
       .toBeVisible({ timeout: 15_000 });

@@ -8,7 +8,7 @@
  *
  * G7Core API 사용:
  * - G7Core.state.set() - 전역 상태 설정
- * - G7Core.state.get()._global?.currentUser - 현재 사용자 확인
+ * - G7Core.state.get()?.currentUser - 현재 사용자 확인 (반환값이 곧 `_global` 이라 `._global` 을 덧붙이지 않는다)
  */
 /**
  * 장바구니 키 초기화

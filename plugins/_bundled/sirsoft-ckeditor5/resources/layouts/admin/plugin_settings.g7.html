@@ -1,0 +1,192 @@
+<!-- CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
+  <data-source id="settings" label_key="$t:sirsoft-ckeditor5.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="notice_banner" class="alert-info">
+        <div class="flex-center gap-3">
+          <icon name="circle-info" size="lg" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+          <p class="text-info-soft">$t:sirsoft-ckeditor5.settings.notice</p>
+        </div>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+        <div class="flex-center gap-3">
+          <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+          <div>
+            <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="grid-3col-responsive">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_toolbar_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_toolbar_header" class="panel-header-row">
+          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_toolbar</h3>
+        </div>
+        <div data-ref="section_toolbar_fields" class="p-6 space-y-6">
+          <div data-ref="field_toolbar" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.toolbar.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.toolbar.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <select name="toolbar" class="focus:border-transparent">
+                <option value="minimal">$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal</option>
+                <option value="standard">$t:sirsoft-ckeditor5.settings.fields.toolbar.standard</option>
+                <option value="full">$t:sirsoft-ckeditor5.settings.fields.toolbar.full</option>
+              </select>
+            </div>
+          </div>
+          <div data-ref="field_editor_height" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.editor_height.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.editor_height.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" name="editorHeight" class="focus:border-transparent"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_image_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_image_header" class="panel-header-row">
+          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_image</h3>
+        </div>
+        <div data-ref="section_image_fields" class="p-6 space-y-6">
+          <div data-ref="field_image_upload" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.image_upload.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.image_upload.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <toggle name="imageUpload"/>
+            </div>
+          </div>
+          <div data-ref="field_image_max_size" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.image_max_size.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.image_max_size.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" name="imageMaxSizeMb" class="focus:border-transparent"/>
+            </div>
+          </div>
+          <div data-ref="field_public_asset_disk" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <select name="public_asset_disk" class="w-full" options="{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_cleanup_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_cleanup_header" class="panel-header-row">
+          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_cleanup</h3>
+        </div>
+        <div data-ref="section_cleanup_fields" class="p-6 space-y-6">
+          <div data-ref="field_unused_image_cleanup" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.cleanup.toggle_label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.cleanup.toggle_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <toggle name="unusedImageCleanup"/>
+            </div>
+          </div>
+          <div data-ref="field_unused_image_retention_days" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.cleanup.retention_label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.cleanup.retention_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" name="unusedImageRetentionDays" :min="1" class="focus:border-transparent"/>
+            </div>
+          </div>
+          <div data-ref="cleanup_manual_hint" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 space-y-3">
+            <p class="text-sm text-gray-600 dark:text-gray-300 break-all">$t:sirsoft-ckeditor5.settings.cleanup.manual_hint</p>
+            <button data-ref="open_uploads_button" type="button" class="btn btn-secondary">
+              <on type="click">
+                <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads"/>
+              </on>
+              <span>$t:sirsoft-ckeditor5.settings.cleanup.open_uploads</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div data-ref="guide_section" class="mt-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 class="section-heading mb-4">$t:sirsoft-ckeditor5.settings.guide.title</h3>
+        <ol class="list-decimal list-inside space-y-3">
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step1</li>
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step2</li>
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step3</li>
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step4</li>
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step5</li>
+        </ol>
+      </div>
+      <div data-ref="section_preview_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_preview_header" class="px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+          <on type="click">
+            <!-- 미리보기 접기·펴기 — 화면 안에서만 쓰는 상태다 -->
+            <set-state target="local" showPreview="{{!_local.showPreview}}"/>
+          </on>
+          <div>
+            <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_preview</h3>
+            <p class="form-hint">$t:sirsoft-ckeditor5.settings.section_preview_hint</p>
+          </div>
+          <icon name="{{_local.showPreview ? 'chevron-up' : 'chevron-down'}}" class="text-gray-400 dark:text-gray-500"/>
+        </div>
+        <div data-ref="section_preview_body" data-if="{{_local.showPreview}}" class="p-6 border-t border-gray-200 dark:border-gray-700">
+          <!-- trackChanges:false — 미리보기는 설정을 시험해 보는 자리라 저장 대상이 아니다(위 저장 액션의 body 에서도 제외된다). 이것을 빼면 미리보기에 글자만 쳐도 _local.hasChanges 가 켜져 [저장] 버튼이 활성화되고, 운영자는 바뀐 것이 없는데 바뀐 줄 알고 누르게 된다. 어느 편집기가 저장 대상인지는 레이아웃만 알므로 핸들러가 필드명으로 알아보게 하지 않고 여기서 선언한다. -->
+          <extension-point name="html_editor" data-ref="preview_editor" content="" placeholder="$t:sirsoft-ckeditor5.settings.preview_placeholder" :multilingual="true" :trackChanges="false">
+            <prop name="name">"preview_content"</prop>
+            <default>
+              <html-editor name="preview_content" content="{{extensionPointProps.content ?? ''}}" multilingual="{{extensionPointProps.multilingual ?? false}}" placeholder="{{extensionPointProps.placeholder ?? ''}}" :isHtml="true" :rows="15" :showHtmlModeToggle="false"/>
+            </default>
+          </extension-point>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 미리보기 편집기(preview_editor)는 props.name 이 preview_content 라 폼 자동바인딩으로 _local.form 에 쌓인다. 저장 대상이 아니므로 body 에서 제외한다 — 그대로 두면 운영자가 미리보기에 입력한 내용이 플러그인 설정으로 저장된다. 표현식 평가기는 구조분해 rest(const { a, ...rest } = obj)와 콜백 안의 멤버 대입(out[k] = v)을 지원하지 않는다 — 쓰면 식이 평가되지 않고 원문 문자열이 그대로 body 로 전송된다(오류 없이 200 이 떨어져 드러나지 않는다). Object.entries/filter/fromEntries 조합만 사용할 것(브라우저 실측으로 확인). 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 성공하면 전역 플러그인 설정까지 갱신하고 미리보기 에디터를 다시 마운트한다 — 툴바 구성은 에디터 생성 시점에 굳어 새로 만들지 않으면 바뀐 설정이 미리보기에 반영되지 않는다. -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{(function() { const form = _local.form || {}; return Object.fromEntries(Object.entries(form).filter(entry => entry[0] !== 'preview_content' &amp;&amp; entry[0] !== 'preview_content_mode')); })()}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <set-state target="global" plugins="{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                  <remount componentId="preview_editor"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

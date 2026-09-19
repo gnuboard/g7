@@ -47,6 +47,7 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       onReorder,
       initialFiles = [],
       disabled = false,
+      size = 'md',
       className = '',
       confirmBeforeRemove = false,
       confirmRemoveTitle,
@@ -195,6 +196,7 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
             maxFiles={maxFiles}
             maxSize={maxSize}
             disabled={disabled}
+            size={size}
           >
             {/* 파일이 있을 때만 FileList 렌더링 */}
             {uploader.hasFiles && (

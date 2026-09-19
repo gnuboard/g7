@@ -2,7 +2,7 @@
  * @file shop-index-category-filter.test.tsx
  * @description shop/index 카테고리 버튼 → ?category= navigate + active 표시 검증 (U6②)
  *
- * 테스트 대상: templates/.../layouts/shop/index.json
+ * 테스트 대상: templates/.../layouts/shop/index.g7.html
  *
  * 검증 항목:
  * - products 데이터소스가 category_id 를 query.category 에 바인딩

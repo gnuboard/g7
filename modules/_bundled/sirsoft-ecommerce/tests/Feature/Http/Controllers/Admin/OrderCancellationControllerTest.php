@@ -1092,7 +1092,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
      * 하나씩 밟는 것이 기본 운영이다. 취소신청서는 그 환불이 완료되는 순간에 생기므로 이
      * 시점의 주문은 아직 취소로 확정돼 있지 않다.
      *
-     * 이 테스트는 `[case:backend-37]` 의 회귀 그물도 겸한다 — 컨트롤러가 리소스를
+     * 이 테스트는 `[case:backend-41]` 의 회귀 그물도 겸한다 — 컨트롤러가 리소스를
      * `array_merge` 로 펼 때 `resolve()` 대신 `toArray()` 를 부르면 미로드 관계가
      * `MissingValue` 로 남아 이 응답만 500 이 된다.
      *

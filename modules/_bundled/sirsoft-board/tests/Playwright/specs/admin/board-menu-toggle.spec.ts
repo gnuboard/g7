@@ -24,7 +24,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 const CREATE_URL = '/admin/boards/create';
 
 test.describe.skip('게시판 생성/수정 — 관리자 메뉴 표시 토글 (#413)', () => {
-  // @scenario mode=create toggle=on
+  // @scenario mode=create, toggle=on
   // @effects create_with_toggle_on_registers_menu
   test('생성 폼에서 토글 ON 후 저장하면 좌측 관리자 메뉴에 게시판이 표시된다', async ({
     page,
@@ -51,7 +51,7 @@ test.describe.skip('게시판 생성/수정 — 관리자 메뉴 표시 토글 (
     ).toBeVisible({ timeout: 10_000 });
   });
 
-  // @scenario mode=create toggle=off
+  // @scenario mode=create, toggle=off
   // @effects create_without_toggle_keeps_menu_empty
   test('생성 폼에서 토글 OFF(기본)로 저장하면 관리자 메뉴에 표시되지 않는다', async ({
     page,
@@ -74,7 +74,7 @@ test.describe.skip('게시판 생성/수정 — 관리자 메뉴 표시 토글 (
     ).toHaveCount(0, { timeout: 10_000 });
   });
 
-  // @scenario mode=update toggle=off preexisting=yes
+  // @scenario mode=update, toggle=off, preexisting=yes
   // @effects update_on_to_off_removes_menu, form_data_returns_current_menu_state_as_toggle_initial
   test('메뉴 등록 게시판을 수정 폼에서 토글 끄고 저장하면 메뉴에서 제거된다', async ({
     page,

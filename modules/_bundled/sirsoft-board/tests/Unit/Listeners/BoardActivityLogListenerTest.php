@@ -43,6 +43,11 @@ class BoardActivityLogListenerTest extends ModuleTestCase
 
     private $logChannel;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -62,16 +67,45 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // getSubscribedHooks 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=subscription_contract
+     *
+     * @effects subscribed_hooks_map_to_existing_handlers
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
-    public function get_subscribed_hooks는_30개_훅을_반환한다(): void
+    public function 구독한_훅은_전건_실재하는_핸들러를_가리킨다(): void
     {
         $hooks = BoardActivityLogListener::getSubscribedHooks();
 
-        // #413-58: attachment.after_download 추가 (이전 stale 기대값 27 → 실제 28 이었고, 본 추가로 29)
-        // #413-26: settings.after_bulk_apply_aborted 추가 → 30
-        $this->assertCount(30, $hooks);
+        // 개수를 손으로 박지 않는다 — 종전 `assertCount(N)` 은 27→28→29→30 으로 네 번
+        // 낡았고 기준 커밋 221beb3a4 시점에 이미 red 였다(실제 32 ≠ 기대 30). 개수만
+        // 재느라 정작 「매핑이 실재하는가」는 끝내 재지 못했다(부록 B D8).
+        // 모집단은 선언 자체에서 파생하고, 재는 것을 「구독한 훅마다 그 이름의 public
+        // 핸들러가 실제로 있는가」로 바꾼다.
+        $this->assertNotEmpty($hooks, '구독 훅 목록이 비면 아래 루프가 공허하게 통과한다');
+
+        foreach ($hooks as $hookName => $config) {
+            $this->assertArrayHasKey('method', $config, "{$hookName} 에 method 키가 없다");
+            $this->assertTrue(
+                method_exists(BoardActivityLogListener::class, $config['method']),
+                "{$hookName} => {$config['method']}() 가 리스너에 없다",
+            );
+        }
     }
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=subscription_contract
+     *
+     * @effects subscribed_hooks_map_to_existing_handlers
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function get_subscribed_hooks는_올바른_메서드_매핑을_포함한다(): void
     {
@@ -119,24 +153,47 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals('handleReportAfterDeleteContent', $hooks['sirsoft-board.report.after_delete_content']['method']);
     }
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=subscription_contract
+     *
+     * @effects all_hooks_registered_at_priority_20
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 모든_훅은_priority_20이다(): void
     {
         $hooks = BoardActivityLogListener::getSubscribedHooks();
 
+        // 모집단을 손으로 적지 않는다 — 구독 선언 전량을 돌려야 나중에 추가된 훅도 감시 안에 든다.
+        // 손으로 고른 목록이던 시절, 이번에 늘어난 훅 4종이 검사 밖에 있었다.
+        $this->assertNotEmpty($hooks, '구독 훅 모집단이 비면 이 검사는 공허하게 통과한다.');
+
         // 모든 훅은 로깅 훅 (priority 20)
-        $this->assertEquals(20, $hooks['sirsoft-board.board.after_create']['priority']);
-        $this->assertEquals(20, $hooks['sirsoft-board.board.after_update']['priority']);
-        $this->assertEquals(20, $hooks['sirsoft-board.board.after_delete']['priority']);
-        $this->assertEquals(20, $hooks['sirsoft-board.post.after_update']['priority']);
-        $this->assertEquals(20, $hooks['sirsoft-board.comment.after_update']['priority']);
-        $this->assertEquals(20, $hooks['sirsoft-board.report.after_bulk_update_status']['priority']);
+        foreach ($hooks as $hookName => $definition) {
+            $this->assertSame(
+                20,
+                $definition['priority'],
+                "훅 {$hookName} 의 priority 가 로깅 훅 규약(20)과 다르다."
+            );
+        }
     }
 
     // ═══════════════════════════════════════════
     // Board 핸들러 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 게시판 · 생성을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=board_handlers
+     *
+     * @effects board_crud_and_menu_changes_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_after_create는_board_create_로그를_기록한다(): void
     {
@@ -155,6 +212,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBoardAfterCreate($board, ['name' => '공지사항']);
     }
 
+    /**
+     * 게시판 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=board_handlers
+     *
+     * @effects board_crud_and_menu_changes_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_after_update는_변경사항과_함께_board_update_로그를_기록한다(): void
     {
@@ -176,6 +242,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBoardAfterUpdate($updatedBoard, ['name' => '새공지사항'], $snapshot);
     }
 
+    /**
+     * 게시판 · 삭제을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=board_handlers
+     *
+     * @effects board_crud_and_menu_changes_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_after_delete는_board_delete_로그를_기록한다(): void
     {
@@ -194,6 +269,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBoardAfterDelete($board);
     }
 
+    /**
+     * 게시판을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=board_handlers
+     *
+     * @effects board_crud_and_menu_changes_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_after_add_to_menu는_board_add_to_menu_로그를_기록한다(): void
     {
@@ -217,6 +301,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBoardAfterAddToMenu($menu, $board);
     }
 
+    /**
+     * 설정 · 일괄을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=settings_bulk_apply_handlers
+     *
+     * @effects bulk_apply_logs_with_and_without_loggable
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_settings_after_bulk_apply는_settings_bulk_apply_로그를_기록한다(): void
     {
@@ -236,6 +329,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleSettingsAfterBulkApply($fields, $updatedCount);
     }
 
+    /**
+     * 설정 · 일괄을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=settings_bulk_apply_handlers
+     *
+     * @effects bulk_apply_logs_with_and_without_loggable
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_settings_after_bulk_apply_aborted는_권한_실패_시_게시판명을_담아_기록한다(): void
     {
@@ -265,6 +367,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleSettingsAfterBulkApplyAborted($fields, $context);
     }
 
+    /**
+     * 설정 · 일괄을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=settings_bulk_apply_handlers
+     *
+     * @effects bulk_apply_logs_with_and_without_loggable
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_settings_after_bulk_apply_aborted는_컬럼_실패_시_게시판명없이_기록한다(): void
     {
@@ -293,6 +404,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // BoardType 핸들러 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 게시판 · 유형 · 생성을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=board_type_handlers
+     *
+     * @effects board_type_crud_is_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_type_after_create는_board_type_create_로그를_기록한다(): void
     {
@@ -310,6 +430,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBoardTypeAfterCreate($boardType, ['name' => '일반형']);
     }
 
+    /**
+     * 게시판 · 유형 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=board_type_handlers
+     *
+     * @effects board_type_crud_is_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_type_after_update는_변경사항과_함께_board_type_update_로그를_기록한다(): void
     {
@@ -330,6 +459,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBoardTypeAfterUpdate($updatedBoardType, ['name' => '갤러리형'], $snapshot);
     }
 
+    /**
+     * 게시판 · 유형 · 삭제을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=board_type_handlers
+     *
+     * @effects board_type_crud_is_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_type_after_delete는_board_type_delete_로그를_기록한다(): void
     {
@@ -351,6 +489,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // Post 핸들러 검증 (dataProvider 사용)
     // ═══════════════════════════════════════════
 
+    /**
+     * 게시글 · 생성을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=post_handlers
+     *
+     * @effects post_crud_and_state_changes_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_post_after_create는_post_create_로그를_기록한다(): void
     {
@@ -371,6 +518,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handlePostAfterCreate($post, 'notice');
     }
 
+    /**
+     * 게시글 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=post_handlers
+     *
+     * @effects post_crud_and_state_changes_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_post_after_update는_변경사항과_함께_post_update_로그를_기록한다(): void
     {
@@ -396,7 +552,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Post 단순 로깅 핸들러 데이터 프로바이더 (delete, blind, restore)
      *
-     * @return array<string, array{string, string, string}>
+     * @return array<string, array{string, string, string}> array<string, 인스턴스
      */
     public static function postSimpleLogDataProvider(): array
     {
@@ -407,6 +563,18 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 게시글을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=post_handlers
+     *
+     * @effects post_crud_and_state_changes_are_logged
+     * @param $method HTTP 메서드
+     * @param $expectedAction expectedAction 값
+     * @param $expectedDescriptionKey expectedDescriptionKey 값
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('postSimpleLogDataProvider')]
     public function post_단순_로깅_핸들러는_올바른_로그를_기록한다(
@@ -435,6 +603,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // Comment 핸들러 검증 (dataProvider 사용)
     // ═══════════════════════════════════════════
 
+    /**
+     * 댓글 · 생성을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=comment_handlers
+     *
+     * @effects comment_crud_and_state_changes_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_comment_after_create는_comment_create_로그를_기록한다(): void
     {
@@ -455,6 +632,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleCommentAfterCreate($comment, 'notice');
     }
 
+    /**
+     * 댓글 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=comment_handlers
+     *
+     * @effects comment_crud_and_state_changes_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_comment_after_update는_변경사항과_함께_comment_update_로그를_기록한다(): void
     {
@@ -478,7 +664,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Comment 단순 로깅 핸들러 데이터 프로바이더 (delete, blind, restore)
      *
-     * @return array<string, array{string, string, string}>
+     * @return array<string, array{string, string, string}> array<string, 인스턴스
      */
     public static function commentSimpleLogDataProvider(): array
     {
@@ -489,6 +675,18 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 댓글을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=comment_handlers
+     *
+     * @effects comment_crud_and_state_changes_are_logged
+     * @param $method HTTP 메서드
+     * @param $expectedAction expectedAction 값
+     * @param $expectedDescriptionKey expectedDescriptionKey 값
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('commentSimpleLogDataProvider')]
     public function comment_단순_로깅_핸들러는_올바른_로그를_기록한다(
@@ -515,6 +713,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // Attachment 핸들러 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=attachment_handlers
+     *
+     * @effects attachment_upload_delete_download_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_attachment_after_upload은_attachment_upload_로그를_기록한다(): void
     {
@@ -534,6 +741,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAttachmentAfterUpload($attachment);
     }
 
+    /**
+     * 삭제을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=attachment_handlers
+     *
+     * @effects attachment_upload_delete_download_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_attachment_after_delete는_attachment_delete_로그를_기록한다(): void
     {
@@ -552,6 +768,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAttachmentAfterDelete($attachment);
     }
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=attachment_handlers
+     *
+     * @effects attachment_upload_delete_download_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_attachment_after_download은_attachment_download_로그를_기록한다(): void
     {
@@ -571,6 +796,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAttachmentAfterDownload($attachment, 'user');
     }
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=snapshotless_and_null_inputs
+     *
+     * @effects handlers_tolerate_missing_snapshot_and_null_models
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_attachment_after_download은_null_첨부에_안전하다(): void
     {
@@ -586,6 +820,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // Report 핸들러 검증 (dataProvider 사용)
     // ═══════════════════════════════════════════
 
+    /**
+     * 신고 · 생성을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=report_handlers
+     *
+     * @effects report_lifecycle_events_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_report_after_create는_report_create_로그를_기록한다(): void
     {
@@ -604,6 +847,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleReportAfterCreate($report);
     }
 
+    /**
+     * 신고 · 수정 · 상태을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=report_handlers
+     *
+     * @effects report_lifecycle_events_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_report_after_update_status는_report_update_status_로그를_기록한다(): void
     {
@@ -623,6 +875,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleReportAfterUpdateStatus($report);
     }
 
+    /**
+     * 신고 · 일괄 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=report_handlers
+     *
+     * @effects report_lifecycle_events_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_report_after_bulk_update_status는_per_item_로그를_기록한다(): void
     {
@@ -653,6 +914,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->assertCount(3, $loggedContexts);
     }
 
+    /**
+     * 신고 · 삭제을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=report_handlers
+     *
+     * @effects report_lifecycle_events_are_logged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_report_after_delete는_report_delete_로그를_기록한다(): void
     {
@@ -672,7 +942,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Report 콘텐츠 처리 핸들러 데이터 프로바이더 (restore_content, blind_content, delete_content)
      *
-     * @return array<string, array{string, string, string}>
+     * @return array<string, array{string, string, string}> array<string, 인스턴스
      */
     public static function reportContentActionDataProvider(): array
     {
@@ -695,6 +965,18 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 신고을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=report_handlers
+     *
+     * @effects report_lifecycle_events_are_logged
+     * @param $method HTTP 메서드
+     * @param $expectedAction expectedAction 값
+     * @param $expectedDescriptionKey expectedDescriptionKey 값
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('reportContentActionDataProvider')]
     public function report_콘텐츠_처리_핸들러는_올바른_로그를_기록한다(
@@ -719,6 +1001,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // 예외 처리 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 로그 · 활동을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=logging_failure_is_absorbed
+     *
+     * @effects logging_exception_is_absorbed_into_log_error
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function log_activity_예외_발생_시_log_error로_기록한다(): void
     {
@@ -743,6 +1034,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // handle() 기본 핸들러 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 테스트을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=snapshotless_and_null_inputs
+     *
+     * @effects handlers_tolerate_missing_snapshot_and_null_models
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_기본_핸들러는_아무_작업도_수행하지_않는다(): void
     {
@@ -755,6 +1055,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // 엣지 케이스: loggable 미포함 훅 (settings, bulk_update_status)
     // ═══════════════════════════════════════════
 
+    /**
+     * 설정 · 일괄을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=settings_bulk_apply_handlers
+     *
+     * @effects bulk_apply_logs_with_and_without_loggable
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_settings_after_bulk_apply는_loggable_없이_로그를_기록한다(): void
     {
@@ -768,6 +1077,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleSettingsAfterBulkApply(['field1'], 3);
     }
 
+    /**
+     * 신고 · 일괄 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=snapshotless_and_null_inputs
+     *
+     * @effects handlers_tolerate_missing_snapshot_and_null_models
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_report_after_bulk_update_status는_존재하지_않는_id는_건너뛴다(): void
     {
@@ -787,6 +1105,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // 엣지 케이스: 스냅샷 없이 update 호출
     // ═══════════════════════════════════════════
 
+    /**
+     * 게시판 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=snapshotless_and_null_inputs
+     *
+     * @effects handlers_tolerate_missing_snapshot_and_null_models
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_after_update_스냅샷_없이_호출해도_정상_동작한다(): void
     {
@@ -802,6 +1129,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBoardAfterUpdate($board, []);
     }
 
+    /**
+     * 게시판 · 유형 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=snapshotless_and_null_inputs
+     *
+     * @effects handlers_tolerate_missing_snapshot_and_null_models
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_board_type_after_update_스냅샷_없이_호출해도_정상_동작한다(): void
     {
@@ -816,6 +1152,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBoardTypeAfterUpdate($boardType, []);
     }
 
+    /**
+     * 게시글 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=snapshotless_and_null_inputs
+     *
+     * @effects handlers_tolerate_missing_snapshot_and_null_models
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_post_after_update_스냅샷_없이_호출해도_정상_동작한다(): void
     {
@@ -831,6 +1176,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handlePostAfterUpdate($post, 'notice');
     }
 
+    /**
+     * 댓글 · 수정을(를) 돕는 헬퍼입니다.
+     *
+     * @scenario case=snapshotless_and_null_inputs
+     *
+     * @effects handlers_tolerate_missing_snapshot_and_null_models
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_comment_after_update_스냅샷_없이_호출해도_정상_동작한다(): void
     {
@@ -857,7 +1211,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      * @param  int  $id  게시판 ID
      * @param  string  $name  게시판 이름
      * @param  string  $slug  게시판 슬러그
-     * @return Board&MockInterface
+     * @return Board&MockInterface Board&MockInterface 인스턴스
      */
     private function createMockBoard(int $id, string $name, string $slug): Board
     {
@@ -879,7 +1233,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      *
      * @param  int  $id  유형 ID
      * @param  string  $name  유형 이름
-     * @return BoardType&MockInterface
+     * @return BoardType&MockInterface BoardType&MockInterface 인스턴스
      */
     private function createMockBoardType(int $id, string $name): BoardType
     {
@@ -899,7 +1253,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      *
      * @param  int  $id  게시글 ID
      * @param  string  $title  게시글 제목
-     * @return Post&MockInterface
+     * @return Post&MockInterface Post&MockInterface 인스턴스
      */
     private function createMockPost(int $id, string $title): Post
     {
@@ -920,7 +1274,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      * @param  int  $id  게시글 ID
      * @param  string  $title  게시글 제목
      * @param  Board&MockInterface  $board  관련 게시판
-     * @return Post&MockInterface
+     * @return Post&MockInterface Post&MockInterface 인스턴스
      */
     private function createMockPostWithBoard(int $id, string $title, $board): Post
     {
@@ -942,7 +1296,8 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      *
      * @param  int  $id  댓글 ID
      * @param  int  $postId  게시글 ID
-     * @return Comment&MockInterface
+     * @return Comment&MockInterface Comment&MockInterface 인스턴스
+     * @param $board board 값
      */
     private function createMockComment(int $id, int $postId, $board = null): Comment
     {
@@ -969,7 +1324,8 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      *
      * @param  string  $originalName  원본 파일명
      * @param  int  $size  파일 크기
-     * @return Attachment&MockInterface
+     * @return Attachment&MockInterface Attachment&MockInterface 인스턴스
+     * @param $postId postId 값
      */
     private function createMockAttachment(string $originalName, int $size, ?int $postId = null): Attachment
     {
@@ -988,7 +1344,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      * @param  int  $id  신고 ID
      * @param  string  $reason  신고 사유
      * @param  string  $reportableType  신고 대상 타입
-     * @return Report&MockInterface
+     * @return Report&MockInterface Report&MockInterface 인스턴스
      */
     private function createMockReport(int $id, string $reason, string $reportableType): Report
     {

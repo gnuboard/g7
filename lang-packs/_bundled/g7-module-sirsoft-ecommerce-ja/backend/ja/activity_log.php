@@ -220,6 +220,10 @@ return [
         'claim_image_upload' => 'クレーム添付アップロード (:original_name)',
         'claim_image_delete' => 'クレーム添付削除 (:original_name)',
         'user_shipping_country_change' => '会員配送国変更',
+        'wishlist_bulk_delete' => 'お気に入り一括削除 (:count件)',
+        'cart_bulk_delete' => 'カート一括削除 (:count件)',
+        'user_address_bulk_delete' => '会員配送先一括削除 (:count件)',
+        'product_inquiry_bulk_delete' => '商品問い合わせ一括削除 (:count件)',
     ],
     'fields' => [
         'website' => 'ウェブサイト',

@@ -1,0 +1,84 @@
+feature: ActionDispatcher 핸들러 계약 — 액션 하나하나가 지키는 약속
+
+description: |
+  엔진의 액션 디스패처가 각 핸들러·각 국면에서 지키는 약속을 잠근다. 231 케이스가 한 파일에
+  모여 있는 이유는 대상이 하나이기 때문이고(`ActionDispatcher`), 그 안에서 갈리는 것은
+  **어느 핸들러의 어느 국면인가** 다.
+
+  ## 효과 단위를 `describe` 그룹으로 잡은 이유
+
+  케이스마다 이름을 새로 지으면 목록이 테스트 파일의 사본이 되고, 사본은 갈린다. 그룹은 이미
+  "이 핸들러가 지키는 약속" 을 뜻하고 케이스들은 그 약속의 조각이므로, 그룹을 계약 단위로 둔다.
+  한 효과를 여러 케이스가 마킹하는 것은 정상이다 — 약속 하나를 여러 각도로 재는 것이다.
+
+  ## 축
+
+  `surface` 는 디스패처를 **어디서 건드리는가** 다. `binding` 은 props 에 핸들러를 다는 단계
+  (이벤트 종류 판정·key 필터·커스텀 컴포넌트 이벤트 승격), `execution` 은 실제 실행 단계
+  (핸들러별 동작·상태 병합·격리 상태), `security` 는 외부 코드·출처를 다루는 자리다.
+  보안 축을 따로 세운 이유는 그 자리의 실패가 **기능 실패로 보이지 않기** 때문이다 —
+  프로토타입 오염이나 출처 우회는 화면이 멀쩡한 채로 성립한다.
+
+axes:
+  surface: [binding, execution, security]
+
+effects:
+  - api_call_auth_required_gates_the_request
+  - api_call_supports_multipart_form_data
+  - append_data_source_adds_items
+  - bind_actions_to_props_wires_event_props
+  - call_external_blocks_arbitrary_code_execution_seams
+  - call_external_embed_mounts_third_party_widgets
+  - callback_set_state_blocks_prototype_pollution
+  - callback_set_state_writes_back_into_layout_state
+  - component_callback_events_pass_their_arguments_as_args
+  - concurrent_load_script_calls_share_one_promise
+  - create_handler_builds_the_action_context
+  - custom_component_events_are_promoted_to_synthetic_events
+  - custom_handlers_can_be_registered_and_removed
+  - deep_merge_keeps_non_plain_objects_intact
+  - drag_and_drop_events_are_bound
+  - emit_event_dispatches_component_events
+  - error_handling_is_resolved_through_the_resolver
+  - global_set_state_expands_dot_notation_keys
+  - global_state_updater_is_settable_and_used
+  - key_filter_ignores_keydown_while_ime_is_composing
+  - key_filtered_keydown_runs_only_for_the_declared_key
+  - load_script_injects_the_requested_script
+  - load_script_rejects_sources_outside_the_gate
+  - load_script_respects_the_consent_block
+  - modal_stack_opens_and_closes_in_order
+  - navigate_merges_query_with_the_current_one
+  - navigate_scroll_object_form_targets_container_and_offset
+  - navigate_scroll_option_controls_post_navigation_scroll
+  - parallel_uses_one_isolated_state_snapshot
+  - prevent_default_is_applied_per_event_type
+  - raw_value_callbacks_have_no_fallback_by_design
+  - refetch_data_source_reloads_the_named_source
+  - registered_handlers_are_listable
+  - regression_api_call_body_reads_local_written_earlier_in_the_sequence
+  - regression_deep_dot_notation_paths_resolve
+  - regression_dot_notation_accepts_null
+  - regression_dot_notation_keys_sharing_a_root_merge
+  - regression_dot_notation_result_is_order_independent
+  - regression_on_success_set_state_keeps_earlier_results
+  - regression_plain_keys_and_dot_notation_mix
+  - regression_replace_only_keys_with_dot_notation
+  - regression_sequence_multiple_set_state_does_not_overwrite
+  - regression_sequence_set_state_does_not_merge_into_stale_state
+  - replace_url_changes_the_address_without_refetching
+  - result_to_writes_into_isolated_state
+  - scroll_event_actions_are_bound
+  - scroll_into_view_targets_the_requested_element
+  - sequence_and_parallel_accept_actions_under_params
+  - sequence_threads_state_between_steps
+  - sequence_tracks_isolated_state_between_steps
+  - set_state_deep_merges_nested_objects
+  - set_state_spread_expression_expands_into_the_payload
+  - set_state_targets_isolated_state
+  - switch_handler_drives_data_grid_row_actions
+  - switch_handler_picks_the_matching_case
+  - update_data_source_replaces_matching_items
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.test.ts

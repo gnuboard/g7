@@ -896,6 +896,9 @@ export class TemplateApp {
 
             logger.log('Layout loaded:', layoutData);
 
+            // 1.4 확장 컴포넌트 등록 누락 관측 (렌더 전에 원인을 가리킨다)
+            this.reportMissingExtensionComponents(layoutData);
+
             // 1.5 레이아웃 레벨 에러 핸들링 설정을 ErrorHandlingResolver에 등록
             const errorHandlingResolver = getErrorHandlingResolver();
             if (layoutData.errorHandling) {
@@ -2040,6 +2043,60 @@ export class TemplateApp {
 
         // 일반 경로로 처리
         return this.getNestedValue(obj, pathOrExpression);
+    }
+
+    /**
+     * 레이아웃이 쓰는 확장 컴포넌트 중 등록되지 않은 것을 보고합니다.
+     *
+     * 확장 번들 로드는 초기 라우트 처리 **전에** await 되므로(init 7 → 8) 등록이 첫 렌더보다
+     * 늦는 일은 구조적으로 없다. 그러나 번들 로드 자체가 실패하면 등록은 영영 오지 않고,
+     * 그때 DynamicRenderer 는 노드마다 null 을 반환해 화면에서 조용히 사라진다.
+     *
+     * 노드별 에러는 "이 컴포넌트가 없다" 까지만 말하고 원인(번들 실패)을 가리키지 못하므로,
+     * 레이아웃 단위로 모아 한 번에 보고한다 — 확장 컴포넌트가 통째로 빠졌다는 사실 자체가
+     * 곧 원인을 지목한다.
+     *
+     * @param layout 로드된 레이아웃 JSON
+     */
+    private reportMissingExtensionComponents(layout: any): void {
+        const COMPONENT_NODE_TYPES = new Set(['basic', 'composite', 'layout']);
+        const usedNames = new Set<string>();
+
+        // 자식 운반 키(children/slots/cellChildren…)를 열거하지 않고 전 구조를 훑는다.
+        // 열거하면 새 키가 생길 때 그 가지가 조용히 검사에서 빠진다.
+        const walk = (value: any): void => {
+            if (Array.isArray(value)) {
+                value.forEach(walk);
+
+                return;
+            }
+
+            if (value === null || typeof value !== 'object') {
+                return;
+            }
+
+            // 컴포넌트 노드는 name + 컴포넌트 타입을 함께 갖는다. `type` 만 보면 폼 필드 props
+            // (`{ name: "mail.host", type: "text" }`)가 같은 모양이라 대량 오검출된다.
+            if (typeof value.name === 'string' && COMPONENT_NODE_TYPES.has(value.type)) {
+                usedNames.add(value.name);
+            }
+
+            Object.values(value).forEach(walk);
+        };
+
+        walk(layout);
+
+        const missing = ComponentRegistry.getInstance().getMissingExtensionComponents([...usedNames]);
+
+        if (missing.length === 0) {
+            return;
+        }
+
+        logger.error(
+            '확장 컴포넌트가 등록되지 않았습니다 — 해당 확장의 번들 로드가 실패했을 수 있습니다. '
+            + '이 컴포넌트들은 화면에서 렌더되지 않습니다:',
+            missing
+        );
     }
 
     /**

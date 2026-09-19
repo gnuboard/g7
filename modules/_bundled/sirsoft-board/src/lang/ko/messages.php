@@ -126,6 +126,55 @@ return [
         'post_secret' => '열람 권한이 없는 비밀글에는 댓글을 작성할 수 없습니다.',
     ],
 
+    // 반응(추천/비추천) 관련 메시지
+    'reaction' => [
+        'list_success' => '반응 유형 목록을 조회했습니다.',
+        'add_success' => '반응을 남겼습니다.',
+        'change_success' => '반응을 변경했습니다.',
+        'remove_success' => '반응을 취소했습니다.',
+        'failed' => '반응 처리에 실패했습니다.',
+        'disabled' => '이 게시판은 반응 기능이 비활성화되어 있습니다.',
+        'inactive_type' => '이 게시판에서 사용할 수 없는 반응 유형입니다.',
+        'self_post' => '본인 글에는 반응할 수 없습니다.',
+        'secret_denied' => '열람 권한이 없는 비밀글에는 반응할 수 없습니다.',
+        'login_required' => '로그인이 필요한 기능입니다.',
+        'target_unavailable' => '삭제되었거나 숨김 처리된 대상에는 반응할 수 없습니다.',
+        'self_comment' => '본인 댓글에는 반응할 수 없습니다.',
+        'retrieved' => '반응 목록을 조회했습니다.',
+        'retrieve_failed' => '반응 목록 조회에 실패했습니다.',
+        'removed' => '반응을 해제했습니다.',
+        'bulk_removed' => ':count개의 반응을 해제했습니다.',
+        'not_found' => '반응을 찾을 수 없습니다.',
+        'delete_failed' => '반응 해제에 실패했습니다.',
+        'admin' => [
+            'retrieved' => '반응 목록을 조회했습니다.',
+            'retrieve_failed' => '반응 목록 조회에 실패했습니다.',
+            'removed' => '반응을 삭제했습니다.',
+            'bulk_removed' => ':count개의 반응을 삭제했습니다.',
+            'bulk_delete_failed' => '반응 일괄 삭제에 실패했습니다.',
+            'permission_denied' => '반응 관리 권한이 없습니다.',
+        ],
+    ],
+
+    'reaction_type' => [
+        'in_use' => '이 유형에 :count건의 반응이 있어 삭제할 수 없습니다 (:name). 비활성화만 가능합니다.',
+        'code_taken' => '이미 사용 중인 코드입니다.',
+        'icon_upload_success' => '아이콘을 업로드했습니다.',
+        'icon_upload_failed' => '아이콘 업로드에 실패했습니다.',
+        'icon_deleted' => '아이콘을 삭제했습니다.',
+        'icon_delete_failed' => '아이콘 삭제에 실패했습니다.',
+        'icon_not_found' => '아이콘을 찾을 수 없습니다.',
+    ],
+
+    'report' => [
+        'my_retrieved' => '신고 내역을 조회했습니다.',
+        'my_retrieve_failed' => '신고 내역 조회에 실패했습니다.',
+        'cancelled' => '신고를 취소했습니다.',
+        'cancel_failed' => '신고 취소에 실패했습니다.',
+        'cancel_not_allowed' => '접수 상태에서만 취소할 수 있습니다 (현재: :status).',
+        'log_not_found' => '신고 내역을 찾을 수 없습니다.',
+    ],
+
     // 댓글 관련 추가 메시지
     'comments' => [
         'comments_disabled' => '이 게시판은 댓글 기능이 비활성화되어 있습니다.',
@@ -283,6 +332,36 @@ return [
         // 모달 안내 메시지
         'blinded_will_be_public' => '블라인드 처리된 게시물 {count}건이 공개로 전환됩니다.',
         'already_reported' => '이미 신고한 게시물입니다.',
+    ],
+
+    // 스크랩(북마크) 작업 메시지
+    'scrap' => [
+        'added' => '게시글을 스크랩했습니다.',
+        'removed' => '스크랩을 해제했습니다.',
+        'toggle_failed' => '스크랩 처리에 실패했습니다.',
+        'retrieved' => '스크랩 목록을 조회했습니다.',
+        'retrieve_failed' => '스크랩 목록 조회에 실패했습니다.',
+        'delete_failed' => '스크랩 삭제에 실패했습니다.',
+        'not_found' => '스크랩을 찾을 수 없습니다.',
+        'scrap_disabled' => '이 게시판은 스크랩 기능이 비활성화되어 있습니다.',
+        'post_not_found' => '게시글을 찾을 수 없습니다.',
+        'bulk_removed' => ':count개의 스크랩을 해제했습니다.',
+        'admin' => [
+            'retrieved' => '스크랩 목록을 조회했습니다.',
+            'retrieve_failed' => '스크랩 목록 조회에 실패했습니다.',
+            'removed' => '스크랩을 삭제했습니다.',
+            'bulk_removed' => ':count개의 스크랩을 삭제했습니다.',
+            'bulk_delete_failed' => '스크랩 일괄 삭제에 실패했습니다.',
+            'permission_denied' => '스크랩 관리 권한이 없습니다.',
+        ],
+    ],
+
+    // 게시글 일괄 처리 메시지
+    'posts_bulk' => [
+        'delete_success' => ':count개의 게시글을 삭제했습니다. (건너뜀 :skipped개)',
+        'blind_success' => ':count개의 게시글을 블라인드 처리했습니다. (건너뜀 :skipped개)',
+        'restore_success' => ':count개의 게시글을 복구했습니다. (건너뜀 :skipped개)',
+        'action_failed' => '게시글 일괄 처리에 실패했습니다.',
     ],
 
     // 게시판 유형 작업 메시지

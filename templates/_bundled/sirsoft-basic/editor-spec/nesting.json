@@ -37,7 +37,6 @@
     "FileUploader",
     "AvatarUploader",
     "SocialLoginButtons",
-    "PostReactions",
     "Input",
     "Textarea",
     "Select",
@@ -87,13 +86,18 @@
         "FileUploader",
         "AvatarUploader",
         "SocialLoginButtons",
-        "PostReactions",
         "Input",
         "Textarea",
         "Select",
         "Checkbox",
         "PasswordInput",
-        "Label"
+        "Label",
+        "BrandMark",
+        "Footer",
+        "Header",
+        "NotificationCenter",
+        "SlotContainer",
+        "ThemeToggle"
       ]
     },
     "Nav": {
@@ -126,7 +130,9 @@
       "accepts": [
         "Span",
         "Img",
-        "Icon"
+        "Icon",
+        "Div",
+        "H3"
       ]
     },
     "Ul": {
@@ -169,7 +175,8 @@
         "ProductCard",
         "ImageGallery",
         "Pagination",
-        "SearchBar"
+        "SearchBar",
+        "TabNavigation"
       ]
     },
     "Flex": {

@@ -5,7 +5,7 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 2개 (루트: `resources/layouts`).
+레이아웃 2개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -22,10 +22,10 @@
 (`plugin_settings`).
 
 **이 플러그인의 실제 UI 는 여기 없습니다.** 편집기는 레이아웃이 아니라 확장점 조각
-(`resources/extensions/html-editor.json` · `html-content.json`)으로 다른 화면 안에 들어가므로,
+(`resources/extensions/html-editor.g7.html` · `html-content.g7.html`)으로 다른 화면 안에 들어가므로,
 편집기 모양을 바꾸는 작업은 이 두 레이아웃이 아니라 그 조각과 핸들러 쪽입니다.
 
-`plugin_settings.json` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정
+`plugin_settings.g7.html` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정
 경로를 찾아 설정 화면을 그리므로, 이름을 바꾸면 설정 화면이 사라집니다.
 
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan plugin:update sirsoft-ckeditor5 --force`
@@ -110,7 +110,7 @@
 확인**합니다.
 
 버전을 올릴 때 기재가 여러 곳에 흩어져 있습니다 — 디렉토리명 · `resources/extensions/
-html-editor.json` 의 `scripts.src` · 소스 상수 · 테스트 단언. 하나만 어긋나도 그 자산이
+html-editor.g7.html` 의 `scripts.src` · 소스 상수 · 테스트 단언. 하나만 어긋나도 그 자산이
 404 가 되는데 빌드와 테스트는 통과하므로, 한 벌로 함께 고칩니다.
 
 배포 산출물이므로 `sourceMappingURL` 참조를 남기지 않습니다(`.map` 은 커밋 대상이 아니라

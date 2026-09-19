@@ -24,6 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { callbacksOf, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import shell from '../../../layouts/admin/admin_ecommerce_claim_list.json';
 import filterSection from '../../../layouts/admin/partials/admin_ecommerce_claim_list/_partial_filter_section.json';
@@ -225,7 +226,7 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
    * @effects subtab_switch_resets_type_scoped_filters
    */
   it('유형 전환은 병합하지 않고, 그 의도를 면제 표식으로 남긴다', () => {
-    const actions = byId(shell, 'claim_type_subtabs').actions[0].params.actions as Node[];
+    const actions = callbacksOf(byId(shell, 'claim_type_subtabs').actions[0], 'actions') as Node[];
     const navigate = actions.find((a) => a.handler === 'navigate') as Node;
 
     expect(navigate.params.mergeQuery).toBeUndefined();
@@ -240,7 +241,7 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
    * @effects subtab_switch_clears_bulk_status, subtab_switch_clears_carried_selection
    */
   it('유형 전환이 일괄 상태 선택과 체크한 행을 함께 비운다', () => {
-    const actions = byId(shell, 'claim_type_subtabs').actions[0].params.actions as Node[];
+    const actions = callbacksOf(byId(shell, 'claim_type_subtabs').actions[0], 'actions') as Node[];
     const reset = actions.find((a) => a.handler === 'setState') as Node;
 
     expect(reset.params.target).toBe('_local');
@@ -253,9 +254,9 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
   });
 
   it('본체가 쓰는 상태가 셸에 선언돼 있다', () => {
-    expect((shell as Node).state.selectedItems).toEqual([]);
-    expect((shell as Node).state.bulkClaimStatus).toBe('');
-    expect((shell as Node).state.perPage).toBe('20');
+    expect(initStateOf(shell as Node).selectedItems).toEqual([]);
+    expect(initStateOf(shell as Node).bulkClaimStatus).toBe('');
+    expect(initStateOf(shell as Node).perPage).toBe('20');
   });
 
   /**
@@ -265,7 +266,7 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
    * @effects page_size_control_restores_from_url
    */
   it('유형 전환이 페이지 크기 선택도 기본값으로 되돌린다', () => {
-    const actions = byId(shell, 'claim_type_subtabs').actions[0].params.actions as Node[];
+    const actions = callbacksOf(byId(shell, 'claim_type_subtabs').actions[0], 'actions') as Node[];
     const reset = actions.find((a) => a.handler === 'setState') as Node;
 
     expect(reset.params.perPage).toBe('20');

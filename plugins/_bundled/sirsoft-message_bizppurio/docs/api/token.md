@@ -69,6 +69,6 @@ HTTP/1.1 200
 
 비즈뿌리오 서버 자체에 연결할 수 없는 경우(타임아웃·DNS 실패 등)는 `BizppurioApiException` 이 아닌 `ConnectionException` 으로 던져지므로 별도 catch 하여 `error.connection_failed` 메시지와 함께 422 로 응답합니다(`result_code` 없이 500 대신 매끄러운 실패 안내).
 
-프론트 화면(`admin/plugin_settings.json` "연결 확인" 필드)은 저장하지 않은 변경사항(`_local.hasChanges`)이 있으면 이 API 를 호출하지 않고 "변경사항을 먼저 저장해주세요" toast 만 표시합니다 — 저장 전 값으로 확인하면 실제 저장된 자격증명과 다른 결과가 나올 수 있기 때문입니다.
+프론트 화면(`admin/plugin_settings.g7.html` "연결 확인" 필드)은 저장하지 않은 변경사항(`_local.hasChanges`)이 있으면 이 API 를 호출하지 않고 "변경사항을 먼저 저장해주세요" toast 만 표시합니다 — 저장 전 값으로 확인하면 실제 저장된 자격증명과 다른 결과가 나올 수 있기 때문입니다.
 
 조회가 아닌 재인증(쓰기 성격의 외부 API 호출)이므로 `messaging.view` 가 아닌 `messaging.manage` 권한을 요구합니다.

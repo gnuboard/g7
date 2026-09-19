@@ -266,6 +266,9 @@ return [
 
     // 장바구니 메시지
     'cart' => [
+        'admin_list_retrieved' => '장바구니 목록을 조회했습니다.',
+        'admin_deleted' => '장바구니 항목을 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 장바구니 항목을 삭제했습니다.',
         'list_retrieved' => '장바구니 목록을 조회했습니다.',
         'added' => '장바구니에 상품이 추가되었습니다.',
         'bulk_added' => ':count개 상품이 장바구니에 추가되었습니다.',
@@ -1220,6 +1223,9 @@ return [
     ],
 
     'wishlist' => [
+        'admin_list_retrieved' => '찜 목록을 조회했습니다.',
+        'admin_deleted' => '찜을 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 찜을 삭제했습니다.',
         'added' => '상품이 찜 목록에 추가되었습니다.',
         'removed' => '상품이 찜 목록에서 제거되었습니다.',
         'retrieved' => '찜 목록을 불러왔습니다.',
@@ -1301,6 +1307,19 @@ return [
         'fetched' => '배송국가를 조회했습니다.',
         'updated' => '배송국가가 변경되었습니다.',
         'update_failed' => '배송국가 변경에 실패했습니다.',
+    ],
+
+    // 회원 소유 데이터 관리자 목록 (#524 §4.1)
+    'user_address' => [
+        'admin_list_retrieved' => '회원 배송지 목록을 조회했습니다.',
+        'admin_deleted' => '배송지를 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 배송지를 삭제했습니다.',
+    ],
+
+    'product_inquiry' => [
+        'admin_list_retrieved' => '상품문의 목록을 조회했습니다.',
+        'admin_deleted' => '상품문의를 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 상품문의를 삭제했습니다.',
     ],
 
     // 대시보드

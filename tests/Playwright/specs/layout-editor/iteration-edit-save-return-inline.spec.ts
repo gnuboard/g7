@@ -123,4 +123,63 @@ test.describe('@layout-editor 반복 항목 편집 — 저장/복귀/인라인/�
       timeout: 10_000,
     });
   });
+
+  /**
+   * 반복 항목을 저장하면 그 내용은 **호스트 화면**의 레이아웃에 들어간다. 그래서 저장 뒤
+   * 호스트를 다시 읽을 때 옛 응답을 그대로 받으면 방금 저장한 것이 화면에 없다. 저장 직후
+   * 캐시 우회 값이 올라가 새 요청이 나가는지를 잠근다.
+   *
+   * 저장 요청은 서버로 보내지 않고 이 자리에서 성공 응답을 만들어 돌려준다 — 실제 화면
+   * 레이아웃은 건드리지 않는다(중단돼도 남는 것이 없다).
+   */
+  /** @effects iteration_save_invalidates_host_route_cache_and_busts_get */
+  test('반복 항목 저장 → 호스트 레이아웃을 캐시 우회 값이 바뀐 채로 다시 읽는다', async ({ page }) => {
+    const layoutGets: string[] = [];
+    let saves = 0;
+    await page.route(/\/api\/layouts\//, async (route) => {
+      if (route.request().method() === 'GET') layoutGets.push(route.request().url());
+      await route.fallback();
+    });
+    await page.route(/\/api\/admin\/templates\/[^/]+\/layouts\//, async (route) => {
+      if (route.request().method() !== 'PUT') {
+        await route.fallback();
+        return;
+      }
+      saves += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'ok', data: { content_version: 1 } }),
+      });
+    });
+
+    await gotoIterationEdit(page);
+    await expect
+      .poll(() => layoutGets.length, { timeout: 20_000 })
+      .toBeGreaterThan(0);
+
+    /** URL 의 캐시 우회 값(`v=` 파라미터) 을 뽑는다. */
+    const bustOf = (u: string): string => new URL(u, 'https://x').searchParams.get('v') ?? '';
+    const beforeBusts = new Set(layoutGets.map(bustOf));
+    expect([...beforeBusts].every((b) => b !== '')).toBe(true); // 캐시 우회 값이 실재한다
+
+    const seen = layoutGets.length;
+
+    // 편집분을 만들고 저장
+    await page.getByTestId('g7le-toolbar-add-element').click();
+    await page.waitForSelector('[data-testid="g7le-palette-item-Div"]', { timeout: 10_000 });
+    await page.getByTestId('g7le-palette-item-Div').click();
+    await page.getByTestId('g7le-toolbar-save').click();
+
+    // 저장이 실제로 나갔는지 먼저 확정한다(안 나갔는데 "GET 이 없다"로 오판하지 않도록).
+    await expect.poll(() => saves, { timeout: 20_000 }).toBeGreaterThan(0);
+
+    // 편집을 끝내고 호스트 라우트로 복귀 — 이때 호스트 레이아웃을 다시 읽는다.
+    await page.locator('[data-testid="g7le-toolbar-exit-alt-mode"]').click();
+
+    // 새 GET 이 나가고, 그 캐시 우회 값이 이전과 달라야 한다.
+    await expect.poll(() => layoutGets.length, { timeout: 20_000 }).toBeGreaterThan(seen);
+    const afterBusts = layoutGets.slice(seen).map(bustOf);
+    expect(afterBusts.some((b) => !beforeBusts.has(b))).toBe(true);
+  });
 });

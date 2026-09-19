@@ -7,7 +7,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 위치: modules/_bundled/vendor-module/resources/layouts/admin/*.json 또는 user/*.json
+1. 위치: modules/_bundled/vendor-module/resources/layouts/admin/*.g7.html 또는 user/*.g7.html
 2. 네이밍: vendor-module.layout-name 형식 (DOT 구분자)
 3. admin/ 하위 → Admin 템플릿, user/ 하위 → User 템플릿에 등록
 4. 활성화 시 자동 등록, 비활성화 시 자동 삭제
@@ -64,22 +64,22 @@ modules/
         └── resources/
             └── layouts/
             ├── admin/              ← Admin 템플릿에 등록
-            │   ├── index.json
-            │   └── edit.json
+            │   ├── index.g7.html
+            │   └── edit.g7.html
             └── user/               ← User 템플릿에 등록
-                ├── main.json
-                └── detail.json
+                ├── main.g7.html
+                └── detail.g7.html
 ```
 
-> **주의**: `layouts/` 루트에 직접 배치된 파일(예: `layouts/settings.json`)은 등록되지 않고 경고 로그가 출력됩니다. 반드시 `admin/` 또는 `user/` 하위에 배치하세요.
+> **주의**: `layouts/` 루트에 직접 배치된 파일(예: `layouts/settings.g7.html`)은 등록되지 않고 경고 로그가 출력됩니다. 반드시 `admin/` 또는 `user/` 하위에 배치하세요.
 
 ### 등록 대상 템플릿 결정
 
 | 파일 위치                | 등록 대상            | 예시                 |
 | ----------------------- | ------------------- | ------------------- |
-| `layouts/admin/*.json`  | 활성 Admin 템플릿     | sirsoft-admin_basic  |
-| `layouts/user/*.json`   | 활성 User 템플릿      | sirsoft-user_theme1  |
-| `layouts/*.json` (루트)  | 등록 안됨 (스킵)      | 경고 로그 출력         |
+| `layouts/admin/*.g7.html` | 활성 Admin 템플릿     | sirsoft-admin_basic  |
+| `layouts/user/*.g7.html` | 활성 User 템플릿      | sirsoft-user_theme1  |
+| `layouts/*.{g7.html,json}` (루트) | 등록 안됨 (스킵)      | 경고 로그 출력         |
 
 ---
 
@@ -96,15 +96,15 @@ modules/
 ### 예시
 
 ```
-파일: modules/_bundled/sirsoft-sample/resources/layouts/admin/index.json
+파일: modules/_bundled/sirsoft-sample/resources/layouts/admin/index.g7.html
 파일 내 layout_name: admin_sample_index
 DB 등록명: sirsoft-sample.admin_sample_index
 
-파일: modules/_bundled/sirsoft-sample/resources/layouts/admin/edit.json
+파일: modules/_bundled/sirsoft-sample/resources/layouts/admin/edit.g7.html
 파일 내 layout_name: admin_sample_edit
 DB 등록명: sirsoft-sample.admin_sample_edit
 
-파일: modules/_bundled/sirsoft-sample/resources/layouts/user/main.json
+파일: modules/_bundled/sirsoft-sample/resources/layouts/user/main.g7.html
 파일 내 layout_name: user_sample_main
 DB 등록명: sirsoft-sample.user_sample_main
 ```
@@ -116,6 +116,15 @@ DB 등록명: sirsoft-sample.user_sample_main
 - 점(`.`) 구분자는 moduleIdentifier와 layoutName의 경계를 명확히 구분합니다
 
 ### 파일 내 layout_name 지정 예시
+
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-sample.admin.index.title"/>
+  <slot name="content"/>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -348,6 +357,16 @@ if ($this->isModuleLayoutName($layoutName)) {
 
 #### 사용 예시
 
+```html
+<extension target-layout="sirsoft-board.admin_board_settings">
+  <inject target-id="notification_section" position="append">
+    <card data-ref="custom_notification" title="$t:template.custom_notification.title"/>
+  </inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "sirsoft-board.admin_board_settings",
@@ -355,7 +374,7 @@ if ($this->isModuleLayoutName($layoutName)) {
   "injections": [
     {
       "target_id": "notification_section",
-      "position": "after",
+      "position": "append",
       "components": [
         {
           "id": "custom_notification",
@@ -412,6 +431,14 @@ if ($this->isModuleLayoutName($layoutName)) {
 ## 레이아웃 상속 처리
 
 ### extends 필드 사용
+
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <slot name="content"/>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -534,10 +561,26 @@ protected function invalidateLayoutCache(string $moduleIdentifier): void
 mkdir -p modules/_bundled/sirsoft-sample/resources/layouts/admin
 
 # 레이아웃 파일 생성
-touch modules/_bundled/sirsoft-sample/resources/layouts/admin/index.json
+touch modules/_bundled/sirsoft-sample/resources/layouts/admin/index.g7.html
 ```
 
-### 2. 레이아웃 JSON 작성
+### 2. 레이아웃 작성
+
+마크업은 1단계에서 만든 `.g7.html` 마크업에 한다. 문법은 [layout-markup.md](../frontend/layout-markup.md) 가 SSoT 이고,
+설치 시 서버가 이 소스를 컴파일해 아래 JSON 을 만든다. 아래 블록은 그 **컴파일 산출물의 런타임 계약**이며
+([layout-json.md](../frontend/layout-json.md)), 어떤 키가 나와야 하는지를 보여주기 위한 것이다 — 손으로 쓰는 대상이 아니다.
+
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-sample.admin.index.title" description="$t:sirsoft-sample.admin.index.description" :auth_required="true"/>
+  <data-source id="items" type="api" method="GET" endpoint="/api/modules/sirsoft-sample/admin/items" :auto_fetch="true" :auth_required="true"/>
+  <slot name="content">
+    <page-header data-ref="page_header" title="$t:sirsoft-sample.admin.index.title"/>
+  </slot>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

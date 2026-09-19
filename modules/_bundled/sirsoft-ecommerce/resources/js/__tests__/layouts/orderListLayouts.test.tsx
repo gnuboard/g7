@@ -17,6 +17,7 @@ import { describe, it, expect } from 'vitest';
 import orderList from '../../../layouts/admin/admin_ecommerce_order_list.json';
 import filterSection from '../../../layouts/admin/partials/admin_ecommerce_order_list/_partial_filter_section.json';
 import datagrid from '../../../layouts/admin/partials/admin_ecommerce_order_list/_partial_order_datagrid.json';
+import { asArray, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 재귀적으로 JSON 트리에서 특정 조건의 노드를 찾는 유틸리티 */
 function findNodes(node: any, predicate: (n: any) => boolean, results: any[] = []): any[] {
@@ -60,8 +61,8 @@ describe('주문 목록 검색 Input 디바운스/Enter 검증', () => {
             filterSection,
             (n: any) =>
                 n.name === 'Input' &&
-                Array.isArray(n.actions) &&
-                n.actions.some(
+                asArray(n?.actions).length > 0 &&
+                asArray(n?.actions).some(
                     (a: any) =>
                         a.type === 'change' && a.params?.['filter.searchKeyword'],
                 ),
@@ -71,7 +72,7 @@ describe('주문 목록 검색 Input 디바운스/Enter 검증', () => {
         const searchInput = getSearchInput();
         expect(searchInput).toBeDefined();
 
-        const changeAction = searchInput.actions.find(
+        const changeAction = asArray(searchInput?.actions).find(
             (a: any) =>
                 a.type === 'change' &&
                 a.handler === 'setState' &&
@@ -86,20 +87,20 @@ describe('주문 목록 검색 Input 디바운스/Enter 검증', () => {
         const searchInput = getSearchInput();
         expect(searchInput).toBeDefined();
 
-        const enterAction = searchInput.actions.find(
+        const enterAction = asArray(searchInput?.actions).find(
             (a: any) => a.type === 'keypress' && a.key === 'Enter'
         );
         expect(enterAction).toBeDefined();
         // race 회피: debounce 대기 중 Enter 시 최신 입력값을 즉시 반영 후 navigate
         expect(enterAction.handler).toBe('sequence');
-        expect(Array.isArray(enterAction.actions)).toBe(true);
+        expect(asArray(enterAction?.actions).length > 0).toBe(true);
 
-        const firstSetState = enterAction.actions[0];
+        const firstSetState = asArray(enterAction?.actions)[0];
         expect(firstSetState.handler).toBe('setState');
         expect(firstSetState.params?.['filter.searchKeyword']).toContain('$event.target.value');
         expect(firstSetState.debounce).toBeUndefined();
 
-        const navStep = enterAction.actions.find((a: any) => a.actionRef === 'searchOrders');
+        const navStep = asArray(enterAction?.actions).find((a: any) => a.actionRef === 'searchOrders');
         expect(navStep).toBeDefined();
     });
 });
@@ -272,7 +273,7 @@ describe('주문 목록 DataGrid 설정 검증', () => {
 // ========================================
 
 describe('주문 목록 visibleColumns 검증', () => {
-    const state = (orderList as any).state;
+    const state = initStateOf(orderList as any);
 
     it('visibleColumns에 device가 포함되어야 함', () => {
         expect(state.visibleColumns).toContain('device');
@@ -435,7 +436,7 @@ describe('주문 목록 클레임 기준 필터 배선 (D22)', () => {
     });
 
     it('state 에 클레임 필터 필드가 있어야 함', () => {
-        const state = (orderList as any).state;
+        const state = initStateOf(orderList as any);
         const filterState = state.filter || {};
         const claimKeys = Object.keys(filterState).filter((k: string) =>
             k.toLowerCase().includes('claim')
@@ -454,7 +455,7 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
     const dataSources = (orderList as any).data_sources;
     const ordersDS = dataSources.find((ds: any) => ds.id === 'orders');
     const computed = (orderList as any).computed;
-    const state = (orderList as any).state;
+    const state = initStateOf(orderList as any);
 
     // --- 데이터소스 파라미터 검증 ---
 
@@ -682,7 +683,7 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
 describe('주문 목록 주문자 필터 검증', () => {
     const dataSources = (orderList as any).data_sources;
     const ordersDS = dataSources.find((ds: any) => ds.id === 'orders');
-    const state = (orderList as any).state;
+    const state = initStateOf(orderList as any);
     const initActions = (orderList as any).init_actions;
     const namedActions = (orderList as any).named_actions;
 

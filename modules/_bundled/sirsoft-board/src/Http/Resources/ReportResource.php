@@ -83,7 +83,7 @@ class ReportResource extends BaseApiResource
                 ? [
                     'uuid' => $this->author->uuid,
                     'name' => $this->author->name,
-                    'email' => $this->author->email,
+                    'email' => $this->canExposeMemberEmail(null, $this->author->id) ? $this->author->email : null,
                     'is_guest' => false,
                 ]
                 : [
@@ -99,7 +99,7 @@ class ReportResource extends BaseApiResource
                     ? [
                         'uuid'     => $firstLog->reporter->uuid,
                         'name'     => $firstLog->reporter->name,
-                        'email'    => $firstLog->reporter->email,
+                        'email'    => $this->canExposeMemberEmail(null, $firstLog->reporter->id) ? $firstLog->reporter->email : null,
                         'is_guest' => false,
                     ]
                     : [

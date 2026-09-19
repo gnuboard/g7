@@ -10,6 +10,9 @@
  * 회귀 차단: 버튼 액션이 (a) redirectToLoginWithReturn 핸들러이고 (b) 깨진
  *   navigate+{{_global.currentPath}} 패턴이 잔존하지 않는지 고정한다.
  *
+ * query 유무 cross product 는 짝 핸들러 테스트가 담당하고, 이 파일은 매니페스트의
+ * secret_post_login_button 진입점 축을 커버한다 (버튼 액션이 그 핸들러를 쓰고
+ * 깨진 패턴이 잔존하지 않는지 고정).
  * @scenario entry_point=secret_post_login_button
  * @effects secret_button_redirect_not_empty,login_returns_to_original_path
  */

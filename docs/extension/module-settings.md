@@ -74,7 +74,8 @@ modules/{vendor-module}/
 └── resources/
     └── layouts/
         └── admin/
-            └── admin_{module}_settings.json    ← 설정 UI
+            ├── admin_{module}_settings.g7.html  ← 설정 UI 소스 SSoT (여기를 편집)
+            └── admin_{module}_settings.json     ← 짝 런타임 계약 (설치 시 컴파일 산출)
 ```
 
 ### 2.2 설정 저장 경로
@@ -434,13 +435,24 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
 ### 7.1 data_sources 설정
 
+```html
+<data-source id="settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+<init-local>
+  <field name="isSaving" :value="false"/>
+  <field name="hasChanges" :value="false"/>
+  <field name="form" :value="[]"/>
+</init-local>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "settings",
       "type": "api",
-      "endpoint": "/api/modules/{module-id}/admin/settings",
+      "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
       "method": "GET",
       "auto_fetch": true,
       "auth_required": true,
@@ -448,7 +460,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
       "refetchOnMount": true
     }
   ],
-  "state": {
+  "initLocal": {
     "isSaving": false,
     "hasChanges": false,
     "form": {}
@@ -458,11 +470,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
 ### 7.2 저장 버튼 액션
 
+```html
+<on type="click">
+  <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/settings" method="PUT" body="{{_local.form}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "apiCall",
   "auth_required": true,
-  "target": "/api/modules/{module-id}/admin/settings",
+  "target": "/api/modules/sirsoft-ecommerce/admin/settings",
   "params": {
     "method": "PUT",
     "body": "{{_local.form}}"

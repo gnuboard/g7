@@ -3,7 +3,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. _bundled에서 레이아웃 JSON만 수정 → 확장 업데이트(--force)만 실행 (빌드 불필요)
+1. _bundled에서 레이아웃만 수정(`.g7.html`·`.json`) → 확장 업데이트(--force)만 실행 (빌드 불필요)
 2. _bundled에서 TSX/TS 수정 → build 필수 + 확장 업데이트(--force) 필요
 3. 프론트엔드 테스트 → PowerShell 래퍼 필수 (powershell -Command)
 4. 백엔드 테스트 → Bash 직접 실행 (php artisan test)
@@ -15,14 +15,14 @@
 ## 빌드 vs 확장 업데이트
 
 ```
-_bundled에서 레이아웃 JSON만 수정한 경우 → 빌드 불필요, 확장 업데이트(--force)만 필요
+_bundled에서 레이아웃만 수정한 경우(`.g7.html`·`.json`) → 빌드 불필요, 확장 업데이트(--force)만 필요
 _bundled에서 TSX/TS 파일 수정한 경우    → 빌드 후 확장 업데이트(--force) 필요
 ```
 
 | 수정 파일 유형 | 필요한 작업 |
 |---------------|-------------|
-| `*.json` (레이아웃만) | `{type}:update {id} --force` 실행 |
-| `*.tsx`, `*.ts` + `*.json` | `{type}:build` + `{type}:update {id} --force` |
+| `*.g7.html`, `*.json` (레이아웃만) | `{type}:update {id} --force` 실행 (`.g7.html` 은 설치 시 JSON 컴파일 — 빌드 불필요) |
+| `*.tsx`, `*.ts` (± 레이아웃) | `{type}:build` + `{type}:update {id} --force` |
 | `*.tsx`, `*.ts`만 | `{type}:build` + `{type}:update {id} --force` |
 | `modules/**/resources/js/**/*.ts` (핸들러) | `module:build` + `module:update {id} --force` |
 | `templates/**/src/**/*.tsx` (컴포넌트) | `template:build` + `template:update {id} --force` |
@@ -314,6 +314,33 @@ php artisan g7:bench --profile=sirsoft-ecommerce/orders --json   # 기계 판독
 php artisan g7:bench --profile=sirsoft-ecommerce/order_create --allow-write
 ```
 
+### 레이아웃 마크업 형식 Artisan 커맨드
+
+```bash
+# compile = JSON → HTML (소스 산출 · 이관용). 상세: docs/frontend/layout-markup.md
+php artisan layout:compile <path>                  # 단일 .json → 짝 .g7.html 생성
+php artisan layout:compile --all                   # 번들 확장·템플릿 전량 생성
+php artisan layout:compile --all --roundtrip       # 생성 없이 왕복 동등성만 검사 (불일치·escape 집계)
+php artisan layout:compile --all --template=sirsoft-admin_basic  # 대상 템플릿 한정
+php artisan layout:compile <path> --out=<file>     # 산출 경로 지정
+
+# decompile = HTML → JSON (설치·검증). 산출 JSON 은 디스크에 병존시키지 않는다
+php artisan layout:decompile <path>                # 단일 .g7.html 강검증 (기본이 검증 전용)
+php artisan layout:decompile --all                 # 이관된 .g7.html 전량 강검증
+php artisan layout:decompile <path> --out=<file>   # 진단용 단일 JSON 덤프 (--out 지정 시에만 기록)
+```
+
+설치 소스는 기본 `auto`(`.g7.html` 우선 → 설치 시점 인메모리 컴파일)이며, 컴파일러 회귀가 의심될 때
+`--layout-source=json` 으로 원본 `.json` 기준 설치로 되돌릴 수 있다 (install/update/refresh-layout 9개 커맨드 공통).
+
+```bash
+php artisan module:update <id> --force --layout-source=json     # 짝 .json 이 있으면 원본 JSON 으로 등록
+php artisan template:refresh-layout <id> --layout-source=json   # 레이아웃만 원본 JSON 기준 재동기화
+```
+
+`{type}:update` 의 기존 `--source=auto|bundled|github` 는 **업데이트 패키지 출처**로 의미가 달라 별개 옵션이다.
+짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 `json` 강제에서도 컴파일되며, 로그에 미이행이 남는다
+(조용히 누락시키면 등록이 사라져 빈 화면이 된다). 환경 기본값은 `.env` 의 `LAYOUT_INSTALL_SOURCE`.
 ### 의존성 취약점 점검 Artisan 커맨드
 
 ```bash
@@ -396,6 +423,8 @@ vendor/bin/pint --dirty
 ```
 
 ### PHPDoc
+
+`/**`는 선언과 같은 깊이로 들여쓰고, 본문과 닫는 줄의 `*`는 그보다 한 칸 안쪽에 맞춘다. 주석을 일괄 생성하거나 수정한 뒤에도 변경 PHP 파일에 Pint를 적용하고 `--test`로 확인한다.
 
 메서드는 접근 수준(public/protected/private)과 반환형(void 포함)에 관계없이 PHPDoc을 작성한다. 파라미터마다 이름이 일치하는 `@param`, 반환값에는 `@return`을 명시하고 한국어 설명을 붙인다. 생성자·소멸자는 `@return`만 생략한다. 상속 계약을 그대로 따르는 경우 `{@inheritDoc}`를 사용할 수 있다. 테스트는 테스트별 목적과 시나리오 매핑을 기록하며, 타입만 있는 태그가 Pint에서 제거되지 않도록 설명을 유지한다.
 

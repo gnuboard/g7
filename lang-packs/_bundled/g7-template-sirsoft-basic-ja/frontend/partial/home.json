@@ -1,12 +1,12 @@
 {
   "welcome": {
-    "title": "いらっしゃいませ!",
+    "title": "ようこそ！",
     "description": "グヌボード7 コミュニティへようこそ。",
-    "login_prompt": "ログインしてコミュニティに参加してください。",
-    "greeting": "こんにちは、{{name}}さん!"
+    "login_prompt": "ログインしてコミュニティに参加しましょう。",
+    "greeting": "こんにちは、{{name}}さん！"
   },
   "welcome_suffix": "へようこそ",
-  "welcome_description": "一緒に成長するコミュニティでさまざまなお話を共有してください。",
+  "welcome_description": "共に成長するコミュニティで、様々な話題を共有しましょう。",
   "get_started": "始める",
   "go_to_mypage": "マイページ",
   "learn_more": "詳しく知る",
@@ -20,19 +20,19 @@
     "comments": "コメント",
     "boards": "掲示板"
   },
-  "recent_posts": "最新投稿",
+  "recent_posts": "最近の投稿",
   "no_posts": "まだ投稿がありません。",
-  "popular_boards": "人気掲示板",
-  "no_boards": "まだ人気掲示板がありません。",
+  "popular_boards": "人気の掲示板",
+  "no_boards": "まだ人気の掲示板がありません。",
   "shop": "ショッピングモール",
-  "shop_description": "新鮮な商品を見てみる",
+  "shop_description": "新鮮な商品をチェック",
   "community_guide": "コミュニティガイド",
-  "guide_rule_1": "相互に尊重する対話",
-  "guide_rule_2": "暴言、非難禁止",
+  "guide_rule_1": "互いに尊重する会話",
+  "guide_rule_2": "暴言、誹謗中傷禁止",
   "guide_rule_3": "広告/スパム禁止",
   "shop_promo": {
     "title": "ショッピングモール",
-    "description": "さまざまな商品をご紹介します",
-    "go_to_shop": "買い物に行く"
+    "description": "様々な商品をご覧ください",
+    "go_to_shop": "ショッピングへ"
   }
 }

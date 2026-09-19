@@ -1,0 +1,37 @@
+<partial description="Claim List - Preset Edit Modal">
+  <modal data-ref="modal_claim_preset_edit" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_edit.title" size="sm">
+    <input type="text" placeholder="$t:sirsoft-ecommerce.admin.claim.modal.preset_save.placeholder" class="input" value="{{_global.editingPresetName}}">
+      <on type="input">
+        <set-state target="global" editingPresetName="{{$event.target.value}}"/>
+      </on>
+    </input>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.editingPresetName || _global.editingPresetName.trim() === '' || _global.isSaving}}">
+        <on type="click">
+          <set-state target="global" :isSaving="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}" method="PUT">
+            <success>
+              <set-state target="global" :isSaving="false"/>
+              <refetch-data-source dataSourceId="presets"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.updated"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isSaving="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body name="{{_global.editingPresetName}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isSaving}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

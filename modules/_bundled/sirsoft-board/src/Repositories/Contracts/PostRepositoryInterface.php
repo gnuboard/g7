@@ -432,6 +432,27 @@ interface PostRepositoryInterface
     public function recalculateCommentsCount(int $postId): int;
 
     /**
+     * 게시글의 scrap_count 를 1 증가시키고 갱신된 값을 반환합니다.
+     *
+     * 스크랩 등록 시 PostScrapService 가 호출하는 영속 단일 진입점.
+     * 반환값은 낙관적 UI 없이 화면 수치를 서버 응답으로 갱신하는 데 쓰인다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return int 증가 후 scrap_count
+     */
+    public function incrementScrapCount(int $postId): int;
+
+    /**
+     * 게시글의 scrap_count 를 1 감소시키고 갱신된 값을 반환합니다 (0 미만으로 내려가지 않음).
+     *
+     * 스크랩 해제 시 PostScrapService 가 호출하는 영속 단일 진입점.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return int 감소 후 scrap_count
+     */
+    public function decrementScrapCount(int $postId): int;
+
+    /**
      * 게시글의 attachments_count 컬럼을 활성 첨부파일 수로 재계산해 갱신합니다.
      *
      * @param  int  $postId  게시글 ID

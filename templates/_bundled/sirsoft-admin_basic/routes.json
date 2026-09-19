@@ -171,6 +171,15 @@
       }
     },
     {
+      "path": "*/admin/member-notifications",
+      "layout": "admin_member_notification_list",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.member_notification.page_title",
+        "permission": "core.member-notifications.read"
+      }
+    },
+    {
       "path": "*/admin/notification-logs",
       "layout": "admin_notification_log_list",
       "auth_required": true,

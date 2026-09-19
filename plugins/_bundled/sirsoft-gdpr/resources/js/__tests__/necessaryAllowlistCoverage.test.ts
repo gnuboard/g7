@@ -1,3 +1,6 @@
+// e2e:allow 이 파일은 런타임 코드가 아니라 저장소 소스를 훑는 정적 대장이다. 브라우저에서
+// 관측할 동작이 없고(번들에 실리지 않는다), 이 변경도 스캐너가 읽지 못하는 쓰기 지점을
+// 기록한 것뿐이라 E2E 로 재현할 대상이 존재하지 않는다.
 /**
  * strictly necessary 허용목록 커버리지·정합성 테스트
  *
@@ -346,7 +349,11 @@ function discoverStorageKeys(): { keys: DiscoveredKey[]; unresolved: string[] } 
 /**
  * PHP 원문에서 `이름 => [ ... ]` 형태의 스코프 그룹을 문자열 배열로 파싱합니다.
  *
- * 대상은 `plugin.php` 의 출하 카탈로그와 `Support/NecessaryAllowlist.php` 의 잠금 집합.
+ * 대상은 둘 다 `plugin.php` — 출하 카탈로그와 잠금 집합이다. 잠금 집합이 진입 파일에 있는 것은
+ * 취향이 아니라 제약이다: 신규 설치에서 `getConfigValues()` 는 이 플러그인의 오토로드가 등록되기
+ * 전에 호출되므로, 진입 파일이 `src/` 클래스를 부르면 "Class not found" 로 설치가 멈춘다.
+ * `NecessaryAllowlist::locked()` 는 그 정의에 위임만 하며, 그 위임은 PHPUnit
+ * (`EntryFileAutoloadIndependenceTest`) 이 잠근다.
  * PHP 를 실행하지 않고 원문을 읽는 이유는, 이 대조가 **두 언어의 목록이 어긋났는지** 를
  * 보는 것이라 한쪽 런타임에 의존하면 안 되기 때문이다.
  *
@@ -421,7 +428,7 @@ const SHIPPED_CATALOG = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'DEFAULT_NECESSARY_ALLOWLIST_CATALOG ='),
 );
 const PHP_LOCKED = parsePhpScopeMap(
-    sliceBracketBlock(ALLOWLIST_PHP, 'public static function locked(): array'),
+    sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array'),
 );
 
 /**
@@ -431,6 +438,24 @@ const PHP_LOCKED = parsePhpScopeMap(
  * 새 동적 쓰기 지점이 생기면 그 즉시 붉어진다.
  */
 const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string }> = [
+    // 관리자 코드 편집기 — 키가 레이아웃별로 갈리므로 정적 해석이 안 된다. 다만 접두사는
+    // 고정이다: 레이아웃이 `storageKey="g7le.codeEditor.{{route.identifier}}"` 를 넘기고
+    // 편집기 기본값도 `g7le.codeEditor` 다. 허용목록의 `g7le.*` 가 그 전부를 덮으므로
+    // functional 미동의 파기(`cleanupFunctionalArtifacts`)의 대상이 아니다 — 즉 여기 등재는
+    // 「파기돼도 된다」는 판단이 아니라 **스캐너가 못 읽는 지점의 기록**이다.
+    // 정렬된 문자열로 비교하므로 순서는 도출 결과(사전순)를 따른다.
+    {
+        site: '`${namespace}${FONT_SIZE_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
+        reason: '편집기 글꼴 크기 — `g7le.codeEditor.<레이아웃>.fontSize`. 접두사 `g7le.*` 로 파기 면제.',
+    },
+    {
+        site: '`${namespace}${WORD_WRAP_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
+        reason: '편집기 줄바꿈 — `g7le.codeEditor.<레이아웃>.wordWrap`. 위와 같은 접두사.',
+    },
+    {
+        site: '`${storageKey}.treeWidth` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/FileTreePicker.tsx',
+        reason: '파일 트리 너비 — `storageKey` 는 레이아웃이 넘기는 `g7le.codeEditor.<레이아웃>`.',
+    },
     {
         site: 'key ← resources/js/core/template-engine/ActionDispatcher.ts',
         reason: '`saveToLocalStorage` 핸들러 — 키를 레이아웃 액션이 넘긴다. 레이아웃이 임의로 정하는 값이라 목록으로 열거할 수 없다.',
@@ -438,6 +463,14 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
     {
         site: 'key ← templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         reason: '`setLocalStorage` 핸들러 — 위와 같은 이유 (레이아웃이 키를 정한다).',
+    },
+    {
+        site: 'storageKey ← templates/_bundled/sirsoft-admin_basic/src/components/composite/FileTree.tsx',
+        reason: '폴더 접힘 상태 — FileTreePicker 가 `${storageKey}.expanded` 로 넘긴다. 같은 `g7le.*` 계열.',
+    },
+    {
+        site: 'storageKey ← templates/_bundled/sirsoft-admin_basic/src/hooks/useFileDrafts.ts',
+        reason: '미저장 편집분 — `g7le.codeEditor.<레이아웃>.drafts`. 파기되면 저장 안 한 작업이 사라지므로 `g7le.*` 면제가 특히 중요한 자리다.',
     },
 ];
 
@@ -533,7 +566,7 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
     });
 
     it('세션 쿠키 이름은 런타임 해석 값이다 (하드코딩 금지)', () => {
-        const locked = sliceBracketBlock(ALLOWLIST_PHP, 'public static function locked(): array');
+        const locked = sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array');
 
         expect(locked).toContain("config('session.cookie'");
         // 폴백 인자로서의 등장 1회만 허용 — 목록에 직접 적힌 항목으로 남아서는 안 된다.

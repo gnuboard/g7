@@ -44,6 +44,16 @@ export const SANDBOX_ROUTE = {
 export const SANDBOX_ROOT_ID = 'e2e_sandbox_root';
 
 /**
+ * 커스텀 다국어 키를 붙였다 떼는 전용 노드의 id.
+ *
+ * 키를 만드는 UI 경로는 캔버스 인라인 편집뿐인데 그 훅은 자동화 부적합 판정(`useInlineEdit.ts`
+ * 헤더의 면제 표식)이라 spec 이 밟을 수 없다. 그래서 **키 부착은 API 로 준비**하고, 검사 대상인
+ * "참조가 끊기면 미사용으로 전이" 는 이 노드를 편집기에서 지우고 저장하는 실제 조작으로 태운다.
+ * 전용 노드를 두는 이유는 다른 spec 이 넣고 지우는 `e2e_sandbox_slot` 과 간섭하지 않기 위해서다.
+ */
+export const SANDBOX_I18N_NODE_ID = 'e2e_sandbox_i18n';
+
+/**
  * 편집기 진입 URL 의 `?route=` 에 넣을 인코딩된 시드 라우트를 반환한다.
  *
  * spec 의 `gotoEditor(page, route)` 가 `?route=${route}` 로 조립하므로 인코딩된 값을 넘긴다.

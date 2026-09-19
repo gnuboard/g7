@@ -24,6 +24,7 @@ import paymentInfo from '../../../layouts/admin/partials/admin_ecommerce_order_d
 import issueModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.json';
 import cancelModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_cancel_order.json';
 import orderSettingsTab from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_order_settings.json';
+import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const engine = new DataBindingEngine();
 const evalIf = (expr: string, ctx: Record<string, any>) => evaluateStringCondition(expr, ctx, engine);
@@ -70,6 +71,12 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
 
     it('신청 전에는 하위 필드가 렌더되지 않는다 (M4: 0 → 3)', () => {
         const fields = byId(checkoutExt, 'ext_checkout_cash_receipt_fields');
+        const requested = {
+            _local: {
+                cashReceiptRequested: true,
+                checkoutExtraPayload: { cash_receipt_requested: true },
+            },
+        };
 
         expect(evalIf(fields.if, { _local: {} })).toBe(false);
         // 표시 게이트는 스크래치와 제출 payload 의 **합의**를 본다 — 한쪽만 보면
@@ -78,19 +85,23 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
         expect(
             evalIf(fields.if, { _local: { checkoutExtraPayload: { cash_receipt_requested: true } } }),
         ).toBe(false);
-        expect(
-            evalIf(fields.if, {
-                _local: {
-                    cashReceiptRequested: true,
-                    checkoutExtraPayload: { cash_receipt_requested: true },
-                },
-            }),
-        ).toBe(true);
+        expect(evalIf(fields.if, requested)).toBe(true);
+    });
+
+    it('결제수단 전환으로 확장 칸이 비워지면 신청 표시도 함께 닫힌다', () => {
+        // 템플릿은 결제수단을 바꿀 때 `checkoutExtraPayload` 만 비운다(조각 전용 미러는 모른다).
+        // 표시 상태가 미러만 읽으면 "신청함으로 보이지만 주문에는 실리지 않는" 상태로 남는다.
+        const cleared = { _local: { cashReceiptRequested: true, checkoutExtraPayload: {} } };
+        const fields = byId(checkoutExt, 'ext_checkout_cash_receipt_fields');
+        const toggle = byId(checkoutExt, 'ext_checkout_cash_receipt_toggle');
+
+        expect(evalIf(fields.if, cleared)).toBe(false);
+        expect(evalIf(toggle.props.checked, cleared)).toBe(false);
     });
 
     it('신청 체크박스는 확장 병합 칸에 4키를 기입한다 (직접 _local 기입은 서버 미도달)', () => {
         const toggle = byId(checkoutExt, 'ext_checkout_cash_receipt_toggle');
-        const params = toggle.actions[0].params;
+        const params = actionsOf(toggle)[0].params;
 
         expect(params.checkoutExtraPayload).toBeDefined();
 
@@ -170,7 +181,7 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
     it('소득공제로 전환하면 사업자등록번호 선택이 휴대폰번호로 리셋된다 (M5)', () => {
         const purpose = byId(checkoutExt, 'ext_checkout_cash_receipt_purpose');
         const incomeRadio = flatten(purpose).find((n) => n.props?.value === 'income');
-        const params = incomeRadio.actions[0].params;
+        const params = actionsOf(incomeRadio)[0].params;
 
         const ctx = { _local: { cashReceiptIdentifierType: 'business', cashReceiptIdentifier: '1234567890' } };
         const nextType = engine.evaluateExpression(String(params.cashReceiptIdentifierType).slice(2, -2), ctx);
@@ -184,7 +195,7 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
         const purpose = byId(checkoutExt, 'ext_checkout_cash_receipt_purpose');
         const expenseRadio = flatten(purpose).find((n) => n.props?.value === 'expense');
         const payload = engine.evaluateExpression(
-            String(expenseRadio.actions[0].params.checkoutExtraPayload).slice(2, -2),
+            String(actionsOf(expenseRadio)[0].params.checkoutExtraPayload).slice(2, -2),
             { _local: { cashReceiptIdentifierType: 'phone', cashReceiptIdentifier: '01012345678' } }
         );
 
@@ -207,7 +218,7 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
 
     it('발급수단을 바꾸면 번호를 비운다 (형식 불일치로 인한 422 방지)', () => {
         const select = byId(checkoutExt, 'ext_checkout_cash_receipt_identifier_type');
-        expect(select.actions[0].params.cashReceiptIdentifier).toBe('');
+        expect(actionsOf(select)[0].params.cashReceiptIdentifier).toBe('');
     });
 
     it('Select 는 valueKey/labelKey prop 을 쓰지 않는다', () => {
@@ -332,7 +343,7 @@ describe('W-2 유저 주문상세 현금영수증 카드 — 상태머신 5종',
 
     it('회원은 user/orders/{id}, 비회원은 guest/orders/{orderNumber} 로 발급한다', () => {
         const submit = byId(mypageExt, 'ext_cash_receipt_issue_submit');
-        const expr = String(submit.actions[0].target).slice(2, -2);
+        const expr = String(actionsOf(submit)[0].target).slice(2, -2);
 
         const member = engine.evaluateExpression(expr, {
             _global: { currentUser: { uuid: 'u1' } },
@@ -430,8 +441,8 @@ describe('W-3 관리자 주문상세 현금영수증 카드', () => {
         const cancel = byRowId(paymentInfo, 'payment_cash_receipt_cancel_button');
         const reissue = byRowId(paymentInfo, 'payment_cash_receipt_reissue_button');
 
-        expect(cancel.actions[0].params.method).toBe('DELETE');
-        expect(reissue.actions[0].target).toContain('/cash-receipt/reissue');
+        expect(actionsOf(cancel)[0].params.method).toBe('DELETE');
+        expect(actionsOf(reissue)[0].target).toContain('/cash-receipt/reissue');
     });
 
     it('발급 이력표는 이력이 있을 때만, 그리고 기본 접힌 상태로 존재한다', () => {
@@ -455,7 +466,7 @@ describe('W-3 관리자 주문상세 현금영수증 카드', () => {
         // 0번 행을 펼쳐도 1번 행이 함께 펼쳐지지 않는다.
         const toggle = byRowId(paymentInfo, 'payment_cash_receipt_history_toggle');
         const body = byRowId(paymentInfo, 'payment_cash_receipt_history_body');
-        const expr = String(toggle.actions[0].params.expandedCashReceiptHistory).slice(2, -2);
+        const expr = String(actionsOf(toggle)[0].params.expandedCashReceiptHistory).slice(2, -2);
 
         // 0번 행 펼치기
         const afterOpen0 = engine.evaluateExpression(expr, { payIdx: 0, _local: { expandedCashReceiptHistory: [] } });
@@ -544,7 +555,7 @@ describe('W-3 관리자 발급 모달', () => {
 
     it('성공 시 setState 를 closeModal 보다 먼저 실행한다 (순서 역전 시 상태 잔존)', () => {
         const submit = byId(issueModal, 'modal_cash_receipt_submit');
-        const onSuccess = submit.actions[0].onSuccess.map((a: any) => a.handler);
+        const onSuccess = callbacksOf(actionsOf(submit)[0], 'onSuccess').map((a: any) => a.handler);
 
         expect(onSuccess.indexOf('setState')).toBeLessThan(onSuccess.indexOf('closeModal'));
         expect(onSuccess).toContain('refetchDataSource');

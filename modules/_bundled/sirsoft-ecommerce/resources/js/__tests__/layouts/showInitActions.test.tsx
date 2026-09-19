@@ -11,10 +11,15 @@
 
 import { describe, it, expect } from 'vitest';
 
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+
 import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
 
 describe('상품 상세 페이지 init_actions 검증', () => {
-    const initActions = showLayout.init_actions;
+    // **모양이 아니라 뜻으로 읽는다** (D67 ⓐ). 컴파일러 정본은 액션이 1건이면 배열을 접으므로
+    // `init_actions` 는 배열일 수도 객체일 수도 있다. `?? []` 폴백은 이 자리를 못 막는다 —
+    // 접힘은 부재가 아니라 **객체**라서 폴백이 발동하지 않고 `.find` 가 그대로 터진다.
+    const initActions = asArray<any>(showLayout.init_actions);
 
     it('init_actions에 closeModal이 포함되어야 함 (이전 페이지에서 열린 모달 닫기)', () => {
         const closeModalAction = initActions.find(
@@ -36,9 +41,12 @@ describe('상품 상세 페이지 init_actions 검증', () => {
         );
         expect(resetAction).toBeDefined();
         expect(resetAction.params.selectedOptionItems).toEqual([]);
-        expect(resetAction.params.currentSelection).toEqual({});
+        // 소스가 `currentSelection="[]"`·`additionalOptions="[]"` 로 선언하므로 정본은 `[]` 다.
+        // 종전 짝 `.json` 에는 `{}` 가 있었고 이 단언이 그것을 보고 있었는데, **설치는 소스를 읽으므로
+        // 실제로 돌던 값은 처음부터 `[]`** 였다 — 이 단언은 한 번도 실동작을 보지 않았다.
+        expect(resetAction.params.currentSelection).toEqual([]);
         expect(resetAction.params.noOptionQuantity).toBe(1);
-        expect(resetAction.params.additionalOptions).toEqual({});
+        expect(resetAction.params.additionalOptions).toEqual([]);
     });
 });
 

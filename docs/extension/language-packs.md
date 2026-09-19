@@ -174,6 +174,7 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 | `requires.depends_on_core_locale` | ✓ | true 일 때 활성화 시 동일 locale 의 코어 언어팩 활성 상태를 강제 |
 | `github_url` | ✓ | GitHub 저장소 URL (없으면 빈 문자열). 비어있지 않으면 GitHub 기반 업데이트 경로 활성화 — 모듈/플러그인 매니페스트와 동일 동작 |
 | `github_changelog_url` | ✓ | GitHub release/CHANGELOG URL (없으면 빈 문자열) |
+| `icon` | — | **선택**. 패키지 루트 기준 아이콘 상대경로. 적지 않으면 대상 확장(또는 코어) 아이콘에 로케일 표시를 얹어 자동 합성합니다 — [확장 아이콘](extension-icons.md) |
 
 ### 콘텐츠 파일
 
@@ -280,7 +281,7 @@ foreach ($config['categories'] as $cat) { ... }
 **확장 시드 필터 자동 결선** (`LanguagePackServiceProvider::registerExtensionSeedFilters`): 활성 모듈/플러그인 언어팩의 `seed/*.json` 마다 위 패턴의 필터에 listener 가 자동 등록됩니다. 매칭 키는 entry 의 컬럼을 우선순위(`code` > `slug` > `key` > `identifier` > `id`) 로 자동 감지합니다.
 
 엔티티별 결선 정책:
-- `notifications.json` → `seed.{target}.notifications.translations` 필터 (Definition × Template 3-tier 구조)
+- `notifications.g7.html` → `seed.{target}.notifications.translations` 필터 (Definition × Template 3-tier 구조)
 - `identity_messages.json` → `seed.{target}.identity_messages.translations` 필터 (Definition × Template × Channel — provider/scope_type/scope_value 복합 키 매칭)
 - `menus.json` → `module.{target}.admin_menus.translations` 필터 (모듈 전용)
 - `roles.json` → `{scope}.{target}.roles.translations` 필터 (module/plugin)
@@ -335,7 +336,7 @@ foreach ($config['categories'] as $cat) { ... }
 
 | SSoT 블록 | lang pack seed | 사유 |
 |---|---|---|
-| `notification_definitions` | ✓ `seed/notifications.json` | 정의/템플릿이 다국어 데이터 직접 보유 |
+| `notification_definitions` | ✓ `seed/notifications.g7.html` | 정의/템플릿이 다국어 데이터 직접 보유 |
 | `identity_messages` | ✓ `seed/identity_messages.json` | 메일 본문/제목이 다국어 데이터 직접 보유 |
 | `identity_policies` | ❌ | `IdentityPolicy` 모델에 다국어 필드 부재 — 관리자 UI 라벨은 `lang/{locale}/identity.php` 또는 `frontend/partial/admin.json` 의 i18n 키로 처리 |
 | `identity_purposes` | ❌ | `label_key`/`description_key` 참조 패턴 — 실제 ja 라벨은 `frontend/partial/admin.json::identity.purposes.*` 키로 처리 |
@@ -535,6 +536,7 @@ ko 에서 키 제거 시 번들 ja 의 대응 키도 수동 제거 권장 (자�
 번들 언어팩 자산을 수정할 때마다 모듈/플러그인/템플릿 확장과 동일한 수준의 버전 + CHANGELOG 관리를 적용한다.
 
 - **버전 bump 시점**: 패키지가 외부에 한 번이라도 출시(릴리즈/배포) 된 이후의 수정에 한해 버전을 올린다. 아직 출시되지 않은 번들 패키지의 사전 보강(키 추가/번역 정정 등) 은 `1.0.0` 그대로 유지한다. 이미 출시된 버전의 콘텐츠를 수정하면 patch bump 가 필수다 (출시 확정 버전의 콘텐츠를 버전 유지한 채 덮어쓰지 않는다).
+  - 여기서 "수정" 은 **결과물이 출시본과 달라지는 것**을 뜻한다. 브랜치를 출시본 쪽으로 맞추는 작업(상위 브랜치 병합 등)은 그 파일이 변경 목록에 오르더라도 결과가 출시본과 같으므로 bump 대상이 아니다. 판정은 파일 내용을 출시본과 직접 대조해서 한다.
 - **버전 bump 단위**: 출시 후 키 추가/누락 보강은 패치 (1.0.0 → 1.0.1), 의미적으로 큰 변경이나 제거는 마이너 (1.0.0 → 1.1.0).
 - **CHANGELOG.md**: 패키지 루트에 `CHANGELOG.md` 작성. Keep a Changelog 표준 (`## [버전] - YYYY-MM-DD` + `### Added/Changed/Fixed/Removed`).
 - **톤**: 사용자 관점, 1~2줄 불릿. 내부 파일 경로/내부 함수명/이슈 번호 미기재.
@@ -600,7 +602,7 @@ ZIP 업로드 전 manifest 검증 결과를 사전 확인할 수 있다. 모듈/
 - 라우트: `POST /api/admin/{language-packs|modules|plugins|templates}/manifest-preview`
 - 응답: `{ manifest, validation: { errors[], is_valid, already_installed, existing_version } }`
 - 검증 실패 시에도 HTTP 200 — `validation.is_valid: false` + `errors[]` 노출
-- UI: 각 도메인의 수동 설치 모달(`_modal_manual_install.json`) 에 "manifest 미리보기" 버튼 → 별도 드로어 partial(`_drawer_manifest_preview.json`) 로 ZIP 업로드 + 결과 표시
+- UI: 각 도메인의 수동 설치 모달(`_modal_manual_install.g7.html`) 에 "manifest 미리보기" 버튼 → 별도 드로어 partial(`_drawer_manifest_preview.g7.html`) 로 ZIP 업로드 + 결과 표시
 - 드로어 작성 패턴: [modal-usage.md ZIP 파일 업로드 모달/드로어 패턴](../frontend/modal-usage.md#zip-파일-업로드-모달드로어-패턴-multipart-백엔드)
 
 ## 관련 파일
@@ -616,4 +618,4 @@ ZIP 업로드 전 manifest 검증 결과를 사전 확인할 수 있다. 모듈/
 - `app/Providers/LanguagePackServiceProvider.php`
 - `app/Http/Controllers/Api/Admin/LanguagePackController.php`
 - `database/migrations/2026_04_27_000001_create_language_packs_table.php`
-- `templates/_bundled/sirsoft-admin_basic/layouts/admin_language_pack_list.json`
+- `templates/_bundled/sirsoft-admin_basic/layouts/admin_language_pack_list.g7.html`

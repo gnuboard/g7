@@ -12,7 +12,12 @@ class WhitelistedEndpointTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->rule = new WhitelistedEndpoint();
+
+        // 네임스페이스 집합은 요청 수명 캐시라 프로세스를 공유하는 테스트 간에 남는다 —
+        // 라우트 등록 상태가 다른 테스트끼리 서로의 캐시를 보지 않도록 매 케이스 비운다.
+        WhitelistedEndpoint::flushNamespaceCache();
+
+        $this->rule = new WhitelistedEndpoint;
     }
 
     /**
@@ -56,12 +61,27 @@ class WhitelistedEndpointTest extends TestCase
         }
     }
 
-    public function test_allows_whitelisted_public_endpoints(): void
+    /**
+     * 코어가 실제 등록한 API 네임스페이스는 전부 허용한다 (라우트 표 기반 동적 검증).
+     *
+     * 종전 규칙은 `/api/(admin|auth|public)/` 만 하드코딩해, 코어 라우트 표의 14개 네임스페이스 중
+     * 5개만 알고 있었다. 그래서 번들 레이아웃이 정상 출하 중인 코어 엔드포인트를 44+회 쓰는데도
+     * **레이아웃 편집기 저장 API 가 그 레이아웃들을 거부**했다(설치 경로는 이 규칙을 안 돌려 출하만
+     * 무사했다). 화이트리스트를 손으로 관리하는 한 라우트가 늘 때마다 같은 갭이 재발하므로
+     * 라우트 표를 근거로 판정한다.
+     */
+    public function test_allows_registered_core_api_namespaces(): void
     {
         $validEndpoints = [
-            '/api/public/posts',
-            '/api/public/products',
-            '/api/public/search',
+            '/api/identity/purposes',
+            '/api/identity/challenges',
+            '/api/user/notifications',
+            '/api/users/1',
+            '/api/me',
+            '/api/me/password',
+            '/api/search?q=hello',
+            '/api/templates/sirsoft-admin_basic/components',
+            '/api/locales',
         ];
 
         foreach ($validEndpoints as $endpoint) {
@@ -75,11 +95,35 @@ class WhitelistedEndpointTest extends TestCase
     }
 
     /**
+     * 등록되지 않은 네임스페이스는 차단한다 (대조군).
+     *
+     * `/api/public/` 은 종전 하드코딩 화이트리스트에 있었으나 **등록된 라우트도 사용처도 0건**인
+     * 유령 항목이었다. 라우트 표 기반으로 바뀌면서 자연히 빠진다 — 실재하지 않는 네임스페이스를
+     * 열어두지 않는 것이 이 규칙의 취지에 맞다.
+     */
+    public function test_blocks_unregistered_api_namespaces(): void
+    {
+        $invalidEndpoints = [
+            '/api/public/posts',
+            '/api/internal/secret',
+            '/api/system/config',
+        ];
+
+        foreach ($invalidEndpoints as $endpoint) {
+            $failed = false;
+            $this->rule->validate('endpoint', $endpoint, function () use (&$failed) {
+                $failed = true;
+            });
+
+            $this->assertTrue($failed, "Expected endpoint '{$endpoint}' to be blocked");
+        }
+    }
+
+    /**
      * 모듈/플러그인 API 프리픽스 허용 테스트
      *
      * ModuleRouteServiceProvider/PluginRouteServiceProvider 가 등록하는
      * /api/(modules|plugins)/{vendor-id}/ 프리픽스는 코어 정식 라우트 네임스페이스다
-     *
      */
     public function test_allows_module_and_plugin_api_endpoints(): void
     {

@@ -1,0 +1,62 @@
+<!-- 목록 위의 검색·정렬 줄. 모든 조건이 URL 쿼리로 나가므로 이 조각은 목록을 직접 다시 받지 않는다 —
+     주소가 바뀌면 목록 데이터소스가 알아서 따라온다. -->
+<partial description="검색 바 + 정렬 바 (검색 입력, 총 상품 수, 초기화, 정렬)">
+  <div class="space-y-4">
+    <!-- 검색 영역 -->
+    <div class="flex gap-2">
+      <input type="text" name="keyword" placeholder="$t:shop.search_placeholder" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" value="{{_local.keyword ?? query.keyword ?? ''}}">
+        <on type="change">
+          <!-- 타이핑은 로컬에만 담는다 — 글자마다 목록을 다시 받지 않기 위해서다 -->
+          <set-state target="local" keyword="{{$event.target.value}}"/>
+        </on>
+        <on type="keydown" key="Enter">
+          <!-- Enter 로 검색. `mergeQuery` 라 카테고리·정렬은 그대로 두고 검색어와 쪽수만 갈아 끼운다 -->
+          <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
+            <query keyword="{{_local.keyword ?? ''}}" page="1"/>
+          </navigate>
+        </on>
+      </input>
+      <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium">
+        <on type="click">
+          <!-- 검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다 -->
+          <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
+            <query keyword="{{_local.keyword ?? query.keyword ?? ''}}" page="1"/>
+          </navigate>
+        </on>
+        $t:shop.search
+      </button>
+    </div>
+    <!-- 정렬 바 (총 상품 수 + 초기화 + 정렬) -->
+    <div class="flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50">
+      <!-- 총 상품 수 -->
+      <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}</span>
+      <!-- 오른쪽: 초기화 버튼 + 정렬 -->
+      <div class="flex items-center gap-2">
+        <!-- 전체 초기화 버튼 (필터 적용 시에만 표시) -->
+        <button data-if="{{!!query.category || !!query.keyword}}" class="h-9 px-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+          <on type="click">
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색어·카테고리·정렬·페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다 -->
+            <navigate path="{{_global.shopBase}}/products">
+              <query/>
+            </navigate>
+          </on>
+          $t:shop.reset_all
+        </button>
+        <!-- 정렬 Select -->
+        <select name="sort" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
+          <options>
+            <option value="latest">$t:shop.sort.latest</option>
+            <option value="sales">$t:shop.sort.sales</option>
+            <option value="price_asc">$t:shop.sort.price_asc</option>
+            <option value="price_desc">$t:shop.sort.price_desc</option>
+          </options>
+          <on type="change">
+            <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
+              <query sort="{{$event.target.value}}" page="1"/>
+            </navigate>
+          </on>
+        </select>
+      </div>
+    </div>
+  </div>
+</partial>

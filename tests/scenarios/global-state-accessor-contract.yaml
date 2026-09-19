@@ -1,0 +1,34 @@
+feature: 전역 상태 접근자 계약 — `state.get()` 결과에 `._global` 을 덧붙이지 않는다
+
+description: |
+  `G7Core.state.get()` 은 `TemplateApp.getGlobalState()` 를 그대로 돌려주고, 그 값이 **곧
+  `_global` 의 내용물**이다(`GlobalState` 에 `_global` 키는 없다). 그런데 네 자리가 그 결과에
+  `._global` 을 한 번 더 붙여 읽고 있었고, 값이 언제나 `undefined`/`{}` 라:
+
+    - `evaluateExpression` 두 분기의 stale closure 방어가 `if (latestGlobal)` 가드에 걸려
+      **한 번도 돌지 않았다**
+    - DataGrid `cellChildren`·`expandChildren` 문맥은 `_global` 이 **통째로 빈 객체**였다
+
+  둘 다 예외도 경고도 없이 조용히 틀린다.
+
+  ## 왜 목이 아니라 소스를 훑는가
+
+  이 결함은 **단위 테스트가 green 으로 고정하고 있었다** — 목이 `{_global: {...}}` 를 돌려주도록
+  쓰여 어긋난 접근자와 짝이 맞았기 때문이다. 목만 고치면 다음에 또 틀린 목이 들어와 프로덕션과
+  다시 짝이 맞을 수 있다. 그래서 판정을 **소스 문자열**로 옮긴다 — 그 공모가 성립하지 않는 자리다.
+
+  `_global` 이라는 이름 자체는 데이터 문맥의 정당한 키(`dataContext._global`)이므로 이름만으로는
+  판정하지 않는다. `state.get()`/`getGlobalState()` 호출 **직후**의 `._global` 접근만 잡는다.
+  변수를 한 번 거친 형태(`globalState._global`)는 이 가드의 사각이며, 자기시험 케이스가 그 한계를
+  기대값으로 적어 둔다.
+
+axes:
+  accessor: [global_state_get]
+  surface: [engine_source, synthetic_sample]
+
+effects:
+  - global_state_getter_result_is_not_dereferenced_by_global_again
+  - accessor_guard_detects_a_planted_violation
+
+test_files:
+  - resources/js/core/template-engine/__tests__/globalStateAccessorContract.test.ts

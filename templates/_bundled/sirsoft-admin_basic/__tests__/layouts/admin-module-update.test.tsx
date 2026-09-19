@@ -4,7 +4,7 @@
  *
  * 테스트 대상:
  * - admin_module_list.json: updating 배지, 업데이트 확인 버튼, 행별 업데이트 버튼
- * - partials/admin_module_list/_modal_update.json: 업데이트 확인 모달
+ * - partials/admin_module_list/_modal_update.g7.html: 업데이트 확인 모달
  *
  * 검증 항목:
  * - updating 상태 배지 렌더링

@@ -1,128 +1,124 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "메뉴 삭제 확인 모달",
-    "editor_label": "$t:admin.modal_label.admin_menu_list.delete_confirm_modal"
-  },
-  "id": "delete_confirm_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.menus.modals.delete_title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "comment": "관리자 메뉴 항목 하나를 지우기 전 되묻는 창. 하위 항목이 딸린 메뉴를 지울 때 그것들이 어떻게\n  되는지는 서버가 정하며, 이 창은 그 사정을 보여 주지 않는다.\n  **실패 갈래가 없다** — 지우지 못했을 때 창은 이미 닫혀 있고 아무 안내도 뜨지 않아, 화면에서는\n  성공과 구분되지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "메뉴 삭제 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_menu_list.delete_confirm_modal"
+    },
+    "id": "delete_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.menus.modals.delete_title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label"
-          },
-          "text": "$t:admin.menus.modals.delete_confirm"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-3 justify-end"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              },
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "closeModal",
-                  "target": "delete_confirm_modal"
-                }
-              ],
-              "text": "$t:common.cancel"
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "closeModal",
-                      "target": "delete_confirm_modal"
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label"
                     },
-                    {
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "/api/admin/menus/{{_global.selectedMenuId}}",
-                      "params": {
-                        "method": "DELETE"
-                      },
-                      "onSuccess": [
+                    "text": "$t:admin.menus.modals.delete_confirm"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3 justify-end"
+                    },
+                    "children": [
                         {
-                          "handler": "parallel",
-                          "actions": [
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "$t:admin.menus.messages.deleted"
-                              }
-                            },
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "menus"
-                              }
-                            },
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "admin_menu"
-                              }
-                            },
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "selectedMenuId": null,
-                                "selectedMenu": null,
-                                "panelMode": "view"
-                              }
-                            }
-                          ]
-                        }
-                      ],
-                        "onError": [
-                            {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "{{error.message}}"
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "target": "delete_confirm_modal"
                                 }
-                            }
-                        ]
-                    }
-                  ]
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "comment": "메뉴 삭제. 하위 메뉴가 딸려 있으면 서버가 막으므로 여기서는 요청만 보내고 사유는 응답 안내로 전한다",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "delete_confirm_modal"
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/menus/{{_global.selectedMenuId}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "parallel",
+                                                "actions": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.menus.messages.deleted"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "menus"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "admin_menu"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedMenuId": null,
+                                                            "selectedMenu": null,
+                                                            "panelMode": "view"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
+                            },
+                            "text": "$t:common.delete"
+                        }
+                    ]
                 }
-              ],
-              "text": "$t:common.delete"
-            }
-          ]
+            ]
         }
-      ],
-      "props": {
-      }
-    }
-  ]
+    ]
 }

@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 79개 (루트: `src/components`).
+컴포넌트 78개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 38개 |
-| `composite` | 36개 |
+| `composite` | 35개 |
 | `layout` | 5개 |
 <!-- @generated:components END -->
 
@@ -34,7 +34,7 @@
 
 **이 템플릿은 방문자 화면 전용**이라 관리자 템플릿(`sirsoft-admin_basic`)과 컴포넌트 구성이
 크게 다릅니다. `DataGrid` · `AdminSidebar` · `MultilingualInput` 같은 관리 도구가 없고, 대신
-`ProductCard` · `ProductImageViewer` · `QuantitySelector` · `PostReactions` · `MobileNav` ·
+`ProductCard` · `ProductImageViewer` · `QuantitySelector` · `MobileNav` ·
 `SocialLoginButtons` 처럼 상점·게시판·인증 화면에 필요한 것들이 있습니다. **모듈이 방문자
 화면을 그리지 않고 API 만 제공하는 구조**(게시판·이커머스 모두 레이아웃이 전부 `admin` 그룹)
 이므로, 방문자가 보는 커머스·게시판 UI 는 사실상 이 템플릿의 컴포넌트가 전부입니다.
@@ -188,7 +188,6 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `PostReactions` | 게시글 리액션 버튼 그룹 | postId, reactions |
 | `ExpandableContent` | 콘텐츠 펼치기/접기 (높이 초과 시 그라데이션) | maxHeight, expandText, collapseText |
 
 #### 인증
@@ -203,7 +202,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 |----------|------|-----------|
 | `Avatar` | 사용자 아바타 (이미지 또는 이름 첫 글자) | name, avatar, size, text |
 | `AvatarUploader` | 아바타 이미지 업로드 (원형 UI, 즉시 업로드) | src, fallbackText, size, uploadEndpoint, deleteEndpoint, showDeleteButton, ... |
-| `UserInfo` | 사용자 정보 표시 및 드롭다운 | name, userId, subText, isGuest, showDropdown, clickable, ... |
+| `UserInfo` | 사용자 정보 표시 및 드롭다운 | name, userId, subText, subTextTitle, isGuest, isWithdrawn, showDropdown, clickable, profilePath, text, author, layout, stopPropagation, menuItems, hideMenuItems, appendMenuItems, className |
 
 #### 에디터/콘텐츠
 
@@ -238,7 +237,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 > }
 > ```
 | `SearchBar` | 검색 바 (자동완성 지원) | name, placeholder, value, showButton, suggestions, showSuggestions |
-| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, width |
+| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, icon, iconClassName, size, width, className, style |
 | `ConfirmDialog` | 확인/취소 다이얼로그 | isOpen, onClose, title, message, confirmText, cancelText, ... |
 | `Toast` | 토스트 알림 | toasts, position, duration |
 | `ThemeToggle` | 테마 전환 토글 (auto/light/dark) | autoText, lightText, darkText |
@@ -289,7 +288,6 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | Composite | `MobileNav` | 모바일 드로어 네비게이션 |
 | Composite | `ProductImageViewer` | 상품 이미지 뷰어 |
 | Composite | `QuantitySelector` | 수량 선택기 |
-| Composite | `PostReactions` | 게시글 리액션 |
 | Composite | `SocialLoginButtons` | 소셜 로그인 |
 | Composite | `Avatar`, `AvatarUploader` | 아바타 관련 |
 | Composite | `UserInfo` | 사용자 정보 드롭다운 |

@@ -1,149 +1,199 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "게시글 상단 네비게이션. 목록으로 버튼 + 게시판 이름 + 이전글/다음글 버튼"
-  },
-  "comment": "상단 네비게이션 버튼",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "flex items-center justify-between mb-6"
-  },
-  "responsive": {
-    "mobile": {
-      "comment": "모바일(0~767px)에서는 게시판명을 자기 줄로 올리고(order-first w-full) 아래 줄에 목록/이전글/다음글만 남긴다. 한 줄에 셋을 밀어넣으면 게시판명이 길수록 flex 가 좌우 버튼을 압착했다 (390px 실측: '이전글' 폭 5자 87px → 11자 73px → 21자 62px, chevron 과 텍스트가 겹침). 버튼 3개 고정폭 261px + 21자 제목 자연폭 323px = 584px 이므로 태블릿(768px+, 콘텐츠 735px)은 한 줄로 충분하다 — portable 이 아니라 mobile 로 한정한다.",
-      "props": { "className": "flex flex-wrap items-center justify-between gap-y-3 mb-6" }
-    }
-  },
-  "children": [
-    {
-      "comment": "목록으로 버튼 — 상세 URL 에 실린 목록 상태(category/search/page/del/filters)를 그대로 목록으로 복귀 (45-1). shrink-0: 게시판명이 길어도 눌리지 않는다.",
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "className": "shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
-      },
-      "actions": [
-        {
-          "type": "click",
-          "handler": "navigate",
-          "params": {
-            "path": "/board/{{route.slug}}",
-            "mergeQuery": true,
-            "query": {}
-          }
-        }
-      ],
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "list",
-            "size": "sm"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "text": "$t:board.back_to_list"
-        }
-      ]
+    "meta": {
+        "is_partial": true,
+        "description": "게시글 상단 네비게이션. 목록으로 버튼 + 게시판 이름 + 이전글/다음글 버튼"
     },
-    {
-      "comment": "게시판 이름 (가운데)",
-      "type": "basic",
-      "name": "Span",
-      "props": {
-        "className": "text-lg font-semibold text-gray-900 dark:text-white"
-      },
-      "responsive": {
+    "comment": "상단 네비게이션 버튼",
+    "type": "basic",
+    "name": "Div",
+    "responsive": {
         "mobile": {
-          "comment": "order-first + w-full 로 첫 줄 전체를 차지. 이 노드가 형제를 압착하던 원인이므로 폭 경쟁에서 아예 빼낸다.",
-          "props": { "className": "order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white" }
+            "comment": "모바일(0~767px)에서는 게시판명을 자기 줄로 올리고(order-first w-full) 아래 줄에 목록/이전글/다음글만 남긴다. 한 줄에 셋을 밀어넣으면 게시판명이 길수록 flex 가 좌우 버튼을 압착했다 (390px 실측: '이전글' 폭 5자 87px → 11자 73px → 21자 62px, chevron 과 텍스트가 겹침). 버튼 3개 고정폭 261px + 21자 제목 자연폭 323px = 584px 이므로 태블릿(768px+, 콘텐츠 735px)은 한 줄로 충분하다 — portable 이 아니라 mobile 로 한정한다.",
+            "props": {
+                "className": "flex flex-wrap items-center justify-between gap-y-3 mb-6"
+            }
         }
-      },
-      "text": "{{post?.data?.board?.name ?? ''}}"
     },
-    {
-      "comment": "이전글/다음글 그룹. shrink-0: 게시판명이 길어도 눌리지 않는다.",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "shrink-0 flex items-center gap-2"
-      },
-      "children": [
+    "props": {
+        "className": "flex items-center justify-between mb-6"
+    },
+    "children": [
         {
-          "comment": "이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{navigation?.data?.prev?.id}}",
-          "props": {
-            "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "navigate",
-              "params": {
-                "path": "/board/{{route.slug}}/{{navigation.data.prev.id}}",
-                "mergeQuery": true,
-                "query": {}
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "composite",
-              "name": "Icon",
-              "props": {
-                "name": "chevron-left",
-                "size": "sm"
-              }
+            "comment": "목록으로 버튼 — 상세 URL 에 실린 목록 상태(category/search/page/del/filters)를 그대로 목록으로 복귀 (45-1). shrink-0: 게시판명이 길어도 눌리지 않는다.",
+            "type": "basic",
+            "name": "Button",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/board/{{route.slug}}",
+                        "mergeQuery": true,
+                        "query": {}
+                    }
+                }
+            ],
+            "props": {
+                "className": "shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:board.prev"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "list",
+                        "size": "sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:board.back_to_list"
+                }
+            ]
         },
         {
-          "comment": "다음글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{navigation?.data?.next?.id}}",
-          "props": {
-            "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "navigate",
-              "params": {
-                "path": "/board/{{route.slug}}/{{navigation.data.next.id}}",
-                "mergeQuery": true,
-                "query": {}
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:board.next"
+            "comment": "게시판 이름 (가운데)",
+            "type": "basic",
+            "name": "Span",
+            "responsive": {
+                "mobile": {
+                    "comment": "order-first + w-full 로 첫 줄 전체를 차지. 이 노드가 형제를 압착하던 원인이므로 폭 경쟁에서 아예 빼낸다.",
+                    "props": {
+                        "className": "order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white"
+                    }
+                }
             },
-            {
-              "type": "composite",
-              "name": "Icon",
-              "props": {
-                "name": "chevron-right",
-                "size": "sm"
-              }
-            }
-          ]
+            "props": {
+                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+            },
+            "text": "{{post?.data?.board?.name ?? ''}}"
+        },
+        {
+            "comment": "이전글/다음글 그룹. shrink-0: 게시판명이 길어도 눌리지 않는다.",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "shrink-0 flex items-center gap-2"
+            },
+            "children": [
+                {
+                    "comment": "이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{navigation?.data?.prev?.id}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "이전글로 이동하기 전 스크랩·반응 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 값(is_scraped·my_reaction_type_id·reaction_counts)보다 이전 게시글에서 세팅된 override 가 우선 적용돼, 옆 글의 반응이 눌린 것처럼 보인다",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isScraped": null,
+                                        "scrapCount": null,
+                                        "scrapLoading": null,
+                                        "reactingTypeId": null,
+                                        "reactionApplied": null,
+                                        "myReactionTypeId": null,
+                                        "reactionCounts": null,
+                                        "commentReacting": null,
+                                        "commentReactionApplied": null,
+                                        "commentMyReaction": null,
+                                        "commentReactionCounts": null
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/board/{{route.slug}}/{{navigation.data.prev.id}}",
+                                        "mergeQuery": true,
+                                        "query": {}
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "chevron-left",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:board.prev"
+                        }
+                    ]
+                },
+                {
+                    "comment": "다음글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{navigation?.data?.next?.id}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "다음글로 이동하기 전 스크랩·반응 로컬 상태를 비워 형제 상세로 승계되지 않게 한다 — 비워두지 않으면 새 게시글의 실제 값(is_scraped·my_reaction_type_id·reaction_counts)보다 이전 게시글에서 세팅된 override 가 우선 적용돼, 옆 글의 반응이 눌린 것처럼 보인다",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isScraped": null,
+                                        "scrapCount": null,
+                                        "scrapLoading": null,
+                                        "reactingTypeId": null,
+                                        "reactionApplied": null,
+                                        "myReactionTypeId": null,
+                                        "reactionCounts": null,
+                                        "commentReacting": null,
+                                        "commentReactionApplied": null,
+                                        "commentMyReaction": null,
+                                        "commentReactionCounts": null
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/board/{{route.slug}}/{{navigation.data.next.id}}",
+                                        "mergeQuery": true,
+                                        "query": {}
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:board.next"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "chevron-right",
+                                "size": "sm"
+                            }
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

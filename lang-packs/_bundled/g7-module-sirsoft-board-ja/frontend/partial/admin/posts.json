@@ -144,7 +144,8 @@
       "error": "通報受付に失敗しました。",
       "report_target": "通報対象: ",
       "comment_by_author": "{{author}}さんのコメント"
-    }
+    },
+    "reaction_total": "反応 {{count}}"
   },
   "form": {
     "description": "投稿を作成または編集します",
@@ -202,12 +203,15 @@
     "category": "カテゴリー",
     "author": "投稿者",
     "view_count": "閲覧数",
-    "created_at": "作成日"
+    "created_at": "作成日",
+    "reaction_total": "反応"
   },
   "search_fields": {
     "all": "すべて",
     "title_content": "タイトル+内容",
-    "author": "投稿者(名前、メールアドレス)"
+    "author": "投稿者(名前、メールアドレス)",
+    "title": "タイトル",
+    "content": "内容"
   },
   "filters": {
     "category_label": "カテゴリー",
@@ -284,5 +288,23 @@
     "30": "30件ずつ表示",
     "50": "50件ずつ表示",
     "100": "100件ずつ表示"
+  },
+  "bulk": {
+    "selected_count": "{{count}}個選択されました",
+    "delete": "削除",
+    "blind": "ブラインド",
+    "restore": "復元",
+    "modal": {
+      "delete_title": "選択した投稿を削除しますか？",
+      "delete_confirm": "選択した{{count}}個の投稿を削除しますか？",
+      "replies_notice": "返信がある投稿は、返信削除ポリシーに従ってスキップされる場合があります。",
+      "blind_title": "選択した投稿をブラインド処理しますか？",
+      "blind_confirm": "選択した{{count}}個の投稿をブラインド処理しますか？",
+      "restore_title": "選択した投稿を復元しますか？",
+      "restore_confirm": "選択した{{count}}個の投稿を復元しますか？",
+      "reason_label": "理由（選択）",
+      "reason_placeholder": "処理理由を入力してください",
+      "processing": "処理中..."
+    }
   }
 }

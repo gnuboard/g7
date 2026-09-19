@@ -162,9 +162,6 @@
       "label": "Product image viewer",
       "default_alt": "Product image"
     },
-    "post_reactions": {
-      "label": "Post reactions"
-    },
     "group": {
       "design": "Design",
       "db": "Data"

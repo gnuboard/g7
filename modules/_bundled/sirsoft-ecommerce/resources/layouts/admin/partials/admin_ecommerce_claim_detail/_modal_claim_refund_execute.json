@@ -1,338 +1,336 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Claim Refund Execution Confirm Modal (D18) - detail screen only"
-  },
-  "id": "modal_claim_refund_execute",
-  "type": "composite",
-  "name": "Modal",
-  "comment": "환불 실행 확인 모달 (D18). 환불은 되돌릴 수 없는 처리라 실행 전에 무엇이 나가는지 한 번 더 보인다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 여는 핸들러가 `_global.claimRefundExecuteContext` 로 값을 넘긴다 — 그 하나를 모달 표시와 실행 본문이 함께 읽어야 '예고한 값 = 실행하는 값' 이 성립한다. 모달이 제 사본을 들면 왕복 중 입력이 바뀌었을 때 둘이 갈린다.",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.title",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
-      "children": [
+    "meta": {
+        "is_partial": true,
+        "description": "Claim Refund Execution Confirm Modal (D18) - detail screen only"
+    },
+    "comment": "환불 실행 확인 모달 (D18). 환불은 되돌릴 수 없는 처리라 실행 전에 무엇이 나가는지 한 번 더 보인다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 여는 핸들러가 `_global.claimRefundExecuteContext` 로 값을 넘긴다 — 그 하나를 모달 표시와 실행 본문이 함께 읽어야 '예고한 값 = 실행하는 값' 이 성립한다. 모달이 제 사본을 들면 왕복 중 입력이 바뀌었을 때 둘이 갈린다.",
+    "id": "modal_claim_refund_execute",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.title",
+        "size": "md"
+    },
+    "children": [
         {
-          "id": "crm_001_description",
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.description|number={{_global.claimRefundExecuteContext?.claimNumber ?? ''}}"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-secondary"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount"
-                },
-                {
-                  "id": "crm_002_pg_amount",
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-900 dark:text-gray-100"
-                  },
-                  "text": "{{(_global.claimRefundExecuteContext?.refundAmount ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
-                }
-              ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between text-sm"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-purple-600 dark:text-purple-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount"
-                },
-                {
-                  "id": "crm_003_points_amount",
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-purple-600 dark:text-purple-400"
-                  },
-                  "text": "{{(_global.claimRefundExecuteContext?.refundPointsAmount ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-secondary"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method"
-                },
-                {
-                  "id": "crm_004_method",
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-900 dark:text-gray-100"
-                  },
-                  "text": "{{_global.claimRefundExecuteContext?.refundMethodLabel ?? '-'}}"
-                }
-              ]
-            },
-            {
-              "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
-              "if": "{{!!_global.claimRefundExecuteContext?.refundBankName}}",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-secondary"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name"
-                },
-                {
-                  "id": "crm_005_bank_name",
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-900 dark:text-gray-100"
-                  },
-                  "text": "{{_global.claimRefundExecuteContext?.refundBankName}}"
-                }
-              ]
-            },
-            {
-              "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
-              "if": "{{!!_global.claimRefundExecuteContext?.refundBankAccount}}",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-secondary"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_account"
-                },
-                {
-                  "id": "crm_006_bank_account",
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-900 dark:text-gray-100"
-                  },
-                  "text": "{{_global.claimRefundExecuteContext?.refundBankAccount}}"
-                }
-              ]
-            },
-            {
-              "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
-              "if": "{{!!_global.claimRefundExecuteContext?.refundBankHolder}}",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-secondary"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_holder"
-                },
-                {
-                  "id": "crm_007_bank_holder",
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-900 dark:text-gray-100"
-                  },
-                  "text": "{{_global.claimRefundExecuteContext?.refundBankHolder}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-900 dark:text-gray-100"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.total"
-                },
-                {
-                  "id": "crm_005_total",
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-900 dark:text-gray-100"
-                  },
-                  "text": "{{((_global.claimRefundExecuteContext?.refundAmount ?? 0) + (_global.claimRefundExecuteContext?.refundPointsAmount ?? 0)) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "crm_006_irreversible_notice",
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-sm text-yellow-700 dark:text-yellow-400"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.warning"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-2 pt-2"
-          },
-          "children": [
-            {
-              "id": "crm_007_cancel",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-outline",
-                "disabled": "{{_global.isProcessing}}"
-              },
-              "text": "$t:common.cancel",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "closeModal"
-                }
-              ]
-            },
-            {
-              "id": "crm_008_confirm",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-primary",
-                "disabled": "{{!_global.claimRefundExecuteContext || _global.isProcessing}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isProcessing": true
-                      }
+                    "id": "crm_001_description",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label"
                     },
-                    {
-                      "handler": "sirsoft-ecommerce.executeClaimRefund",
-                      "onSuccess": [
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.description|number={{_global.claimRefundExecuteContext?.claimNumber ?? ''}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2"
+                    },
+                    "children": [
                         {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "isProcessing": false
-                          }
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount"
+                                },
+                                {
+                                    "id": "crm_002_pg_amount",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{(_global.claimRefundExecuteContext?.refundAmount ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                }
+                            ]
                         },
                         {
-                          "handler": "closeModal"
-                        }
-                      ],
-                      "comment": "onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. 모달은 닫지 않는다: 409(더블클릭)·422(상한 초과)는 운영자가 그 자리에서 확인해야 할 사유다.",
-                      "onError": [
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-purple-600 dark:text-purple-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount"
+                                },
+                                {
+                                    "id": "crm_003_points_amount",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-purple-600 dark:text-purple-400"
+                                    },
+                                    "text": "{{(_global.claimRefundExecuteContext?.refundPointsAmount ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                }
+                            ]
+                        },
                         {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "isProcessing": false
-                          }
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method"
+                                },
+                                {
+                                    "id": "crm_004_method",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.claimRefundExecuteContext?.refundMethodLabel ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_global.claimRefundExecuteContext?.refundBankName}}",
+                            "props": {
+                                "className": "flex justify-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name"
+                                },
+                                {
+                                    "id": "crm_005_bank_name",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.claimRefundExecuteContext?.refundBankName}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_global.claimRefundExecuteContext?.refundBankAccount}}",
+                            "props": {
+                                "className": "flex justify-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_account"
+                                },
+                                {
+                                    "id": "crm_006_bank_account",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.claimRefundExecuteContext?.refundBankAccount}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_global.claimRefundExecuteContext?.refundBankHolder}}",
+                            "props": {
+                                "className": "flex justify-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_holder"
+                                },
+                                {
+                                    "id": "crm_007_bank_holder",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.claimRefundExecuteContext?.refundBankHolder}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.total"
+                                },
+                                {
+                                    "id": "crm_005_total",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{((_global.claimRefundExecuteContext?.refundAmount ?? 0) + (_global.claimRefundExecuteContext?.refundPointsAmount ?? 0)) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "if": "{{_global.isProcessing}}",
-                  "props": {
-                    "name": "spinner",
-                    "className": "spinner-sm"
-                  }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "{{_global.isProcessing ? '$t:common.processing' : ''}}"
+                    "id": "crm_006_irreversible_notice",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-sm text-yellow-700 dark:text-yellow-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.warning"
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{!_global.isProcessing}}",
-                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.confirm"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2 pt-2"
+                    },
+                    "children": [
+                        {
+                            "id": "crm_007_cancel",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-outline",
+                                "disabled": "{{_global.isProcessing}}"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "id": "crm_008_confirm",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": true
+                                            }
+                                        },
+                                        {
+                                            "comment": "onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. 모달은 닫지 않는다: 409(더블클릭)·422(상한 초과)는 운영자가 그 자리에서 확인해야 할 사유다.",
+                                            "handler": "sirsoft-ecommerce.executeClaimRefund",
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-primary",
+                                "disabled": "{{!_global.claimRefundExecuteContext || _global.isProcessing}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isProcessing}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isProcessing ? '$t:common.processing' : ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.isProcessing}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.confirm"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

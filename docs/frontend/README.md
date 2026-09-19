@@ -78,6 +78,7 @@
 | [layout-json-features.md](layout-json-features.md) | 레이아웃 JSON - 기능 (에러 핸들링, 초기화, 모달, 액션) |
 | [layout-json-inheritance.md](layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) |
 | [layout-json.md](layout-json.md) | 레이아웃 JSON 스키마 |
+| [layout-markup.md](layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 형식 |
 | [state-management-advanced.md](state-management-advanced.md) | 상태 관리 - 고급 기능 |
 | [state-management-forms.md](state-management-forms.md) | 상태 관리 - 폼 자동 바인딩 및 setState |
 | [state-management.md](state-management.md) | 전역 상태 관리 |
@@ -135,6 +136,12 @@
 ---
 
 ## 데이터 바인딩 문법 (빠른 참조)
+
+```html
+<div title="{{user.name}}" userId="{{route.id}}" label="$t:dashboard.title" total="{{users?.data?.total ?? 0}}">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

@@ -6,6 +6,7 @@
  * Custom exception messages for the ecommerce module
  */
 return [
+    'exchange_rate_save_failed' => '환율 설정을 저장하지 못했습니다.',
     // 마일리지 검증 예외
     'mileage' => [
         'insufficient_balance' => '사용 가능한 마일리지 잔액이 부족합니다.',

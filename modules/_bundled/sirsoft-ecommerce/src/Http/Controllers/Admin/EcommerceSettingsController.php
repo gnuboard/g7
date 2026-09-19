@@ -41,11 +41,11 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingTypeService;
 class EcommerceSettingsController extends AdminBaseController
 {
     /**
-     * 설정과 DB 카탈로그를 관리하는 서비스를 주입합니다.
+     * 설정 화면의 도메인 서비스를 주입합니다.
      *
-     * @param  EcommerceSettingsService  $settingsService  설정 저장·조회 서비스
+     * @param  EcommerceSettingsService  $settingsService  환경설정 서비스
      * @param  ShippingCarrierService  $carrierService  배송사 서비스
-     * @param  ShippingTypeService  $shippingTypeService  배송 유형 서비스
+     * @param  ShippingTypeService  $shippingTypeService  배송유형 서비스
      * @param  ClaimReasonService  $claimReasonService  클레임 사유 서비스
      */
     public function __construct(
@@ -65,6 +65,8 @@ class EcommerceSettingsController extends AdminBaseController
         try {
             $settings = $this->settingsWithCatalogs();
             $settings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
+            $settings['available_rate_providers'] = $this->settingsService->getRegisteredRateProviders();
+            $settings['active_rate_provider'] = $this->settingsService->getActiveRateProvider($settings['available_rate_providers']);
             // 현금영수증 발급 프로바이더 후보 — 결제 플러그인이 훅으로 자신을 등록한다.
             // 발급 PG 와 결제 PG 는 독립 선택이므로 목록도 별도로 내린다 (KG 결제 + 토스 발급 등).
             $settings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
@@ -287,6 +289,8 @@ class EcommerceSettingsController extends AdminBaseController
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $updatedSettings = $this->settingsWithCatalogs();
                 $updatedSettings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
+                $updatedSettings['available_rate_providers'] = $this->settingsService->getRegisteredRateProviders();
+                $updatedSettings['active_rate_provider'] = $this->settingsService->getActiveRateProvider($updatedSettings['available_rate_providers']);
                 $updatedSettings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
                 // 공개 자산 디스크 선택지 — 저장 응답에도 재부착 (관리자 UI 상태 갱신용)
                 $updatedSettings['available_public_asset_disks'] = app(DriverRegistryService::class)
@@ -452,6 +456,7 @@ class EcommerceSettingsController extends AdminBaseController
                 // dot-key 를 카테고리 하위 구조로 되돌려 벌크 저장과 같은 payload 형태로 만든다
                 $payload = [];
                 Arr::set($payload, $key, $value);
+                HookManager::doAction('sirsoft-ecommerce.settings.after_save', array_keys($payload));
                 HookManager::doAction('core.module_settings.after_save', 'sirsoft-ecommerce', $payload, $result);
 
                 return ResponseHelper::moduleSuccess(

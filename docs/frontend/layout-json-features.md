@@ -52,6 +52,18 @@
 
 ### classMap - 조건부 스타일
 
+```html
+<div>
+  <class-map base="px-2 py-1 rounded-full text-xs font-medium" key="{{row.status}}" default="bg-gray-100 text-gray-600">
+    <variant when="success">bg-green-100 text-green-800</variant>
+    <variant when="danger">bg-red-100 text-red-800</variant>
+  </class-map>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "classMap": {
@@ -70,6 +82,13 @@
 
 ### computed - 계산된 값
 
+```html
+<computed name="displayPrice">{{$get(product.prices, [_global.currency, 'formatted'], product.price_formatted)}}</computed>
+<computed name="canEdit">{{!product.deleted_at &amp;&amp; product.permissions?.can_edit}}</computed>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "computed": {
@@ -82,6 +101,25 @@
 → [상세 문서](layout-json-features-styling.md#computed---계산된-값-v190)
 
 ### errorHandling - 에러 핸들링
+
+```html
+<error-handling>
+  <on-code code="401">
+    <navigate path="/admin/login"/>
+  </on-code>
+  <on-code code="403">
+    <toast type="warning" message="$t:errors.forbidden"/>
+  </on-code>
+  <on-code code="404">
+    <show-error-page target="content"/>
+  </on-code>
+  <default>
+    <toast type="error" message="{{error.message}}"/>
+  </default>
+</error-handling>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -98,6 +136,12 @@
 
 ### init_actions - 초기화 액션
 
+```html
+<json key="init_actions">[{"handler":"initTheme"},{"handler":"customInit","target":"some_value","params":{"key":"value"}}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -110,6 +154,14 @@
 → [상세 문서](layout-json-features-actions.md#초기화-액션-init_actions)
 
 ### modals - 모달 시스템
+
+```html
+<modal>
+  <modal data-ref="confirm_modal" title="$t:modals.confirm_title" width="400px"/>
+</modal>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -129,6 +181,12 @@
 
 ### scripts - 외부 스크립트 로드
 
+```html
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "scripts": [
@@ -145,9 +203,27 @@
 
 ### isolatedState - 격리된 상태 (engine-v1.14.0+)
 
+```html
+<div>
+  <isolated-state scope-id="category-selector">
+    <field name="selectedCategories" :value="[]"/>
+    <field name="currentStep" :value="1"/>
+  </isolated-state>
+  <button disabled="{{_isolated.currentStep === 1}}">
+    <on type="click">
+      <set-state target="isolated" currentStep="{{_isolated.currentStep - 1}}"/>
+    </on>
+    이전
+  </button>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "selectedCategories": [],
     "currentStep": 1

@@ -1,46 +1,47 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "템플릿 Include 테스트 - Level 2 헤더 섹션"
-  },
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "p-4 bg-green-50 dark:bg-green-900 rounded-lg border-2 border-green-300 dark:border-green-600"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-center gap-2 mb-2"
-      },
-      "children": [
+    "comment": "끼워넣기 예제의 둘째 겹 — 이 조각이 화면에 보이면 「두 겹까지 펼쳐졌다」는 뜻이다.\n  **본문에 적힌 파일 위치는 낡았다** — 소스가 `partials/` 아래로 옮겨지고 확장자도 바뀐 뒤에도\n  글이 따라가지 않았다. 예제 문구라 화면에 그대로 보이므로, 손볼 때 함께 고칠 자리다.",
+    "meta": {
+        "is_partial": true,
+        "description": "템플릿 Include 테스트 - Level 2 헤더 섹션"
+    },
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "p-4 bg-green-50 dark:bg-green-900 rounded-lg border-2 border-green-300 dark:border-green-600"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-2xl"
-          },
-          "text": "✅"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-center gap-2 mb-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-2xl"
+                    },
+                    "text": "✅"
+                },
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-lg font-bold text-green-900 dark:text-green-100"
+                    },
+                    "text": "Level 2 Include: 헤더 섹션 로드됨"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "text-lg font-bold text-green-900 dark:text-green-100"
-          },
-          "text": "Level 2 Include: 헤더 섹션 로드됨"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-success-soft"
+            },
+            "text": "이 파일은 templates/sirsoft-admin_basic/layouts/includes/_header_section.json 입니다"
         }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-success-soft"
-      },
-      "text": "이 파일은 templates/sirsoft-admin_basic/layouts/includes/_header_section.json 입니다"
-    }
-  ]
+    ]
 }

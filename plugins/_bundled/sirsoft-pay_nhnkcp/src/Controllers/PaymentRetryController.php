@@ -22,7 +22,7 @@ class PaymentRetryController
     /**
      * 같은 주문번호로 NHN KCP 결제를 다시 열기 전 실패 주문을 결제대기 상태로 복구합니다.
      *
-     * @param PaymentRetryRequest $request 결제 재시도 준비 요청
+     * @param  PaymentRetryRequest  $request  결제 재시도 준비 요청
      * @return JsonResponse 재시도 준비 처리 결과
      */
     public function store(PaymentRetryRequest $request): JsonResponse
@@ -88,6 +88,6 @@ class PaymentRetryController
 
     private function rateLimitKey(PaymentRetryRequest $request, string $oid): string
     {
-        return 'sirsoft-pay_nhnkcp:payment-retry:' . sha1($request->ip() . '|' . $oid);
+        return 'sirsoft-pay_nhnkcp:payment-retry:'.sha1($request->ip().'|'.$oid);
     }
 }

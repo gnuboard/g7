@@ -52,6 +52,8 @@ class LanguagePackResource extends BaseApiResource
             'files_missing' => (bool) $this->getValue('files_missing', false),
             'bundled_source_available' => (bool) $this->getValue('bundled_source_available', false),
             'target_name' => $this->resolveTargetName(),
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             'installed_at' => $this->formatTimestamp('installed_at'),
             'activated_at' => $this->formatTimestamp('activated_at'),
             'created_at' => $this->formatTimestamp('created_at'),

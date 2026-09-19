@@ -244,6 +244,11 @@ return [
         'content' => [
             'required' => '레이아웃 content가 필요합니다.',
             'array' => '레이아웃 content는 배열이어야 합니다.',
+            'markup_compile_failed' => '레이아웃 마크업(.g7.html)을 컴파일하지 못했습니다: :detail',
+        ],
+        'markup' => [
+            'required' => '변환할 마크업(.g7.html)이 필요합니다.',
+            'string' => '마크업은 문자열이어야 합니다.',
         ],
         'version' => [
             'required' => '레이아웃 버전이 필요합니다.',
@@ -452,7 +457,7 @@ return [
         'extension_point_invalid' => 'extension_point 필드는 비어있지 않은 문자열이어야 합니다.',
         'target_layout_invalid' => 'target_layout 필드는 비어있지 않은 문자열이어야 합니다.',
         'components_must_be_array' => 'components 필드는 배열이어야 합니다.',
-        'injections_required' => 'overlay 확장은 injections 필드가 필요합니다.',
+        'contribution_required' => 'overlay 확장은 injections·modals·data_sources·scripts·init_actions 중 하나 이상이 필요합니다.',
         'injections_must_be_array' => 'injections 필드는 배열이어야 합니다.',
         'injection_must_be_array' => 'injections[:index]는 배열이어야 합니다.',
         'injection_target_id_required' => 'injections[:index]에 target_id 필드가 필요합니다.',
@@ -470,6 +475,7 @@ return [
         'content' => [
             'required' => '확장 콘텐츠는 필수입니다.',
             'array' => '확장 콘텐츠는 배열이어야 합니다.',
+            'markup_compile_failed' => '확장 마크업(.g7.html)을 컴파일하지 못했습니다: :detail',
         ],
         'priority' => [
             'integer' => 'priority는 정수여야 합니다.',

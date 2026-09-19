@@ -19,6 +19,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const mainLayout = require('../../layouts/admin_identity_logs.json');
 const filterPartial = require('../../layouts/partials/admin_identity_logs/_partial_filter.json');
@@ -108,7 +109,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
     describe('Filter partial — search type + 상태/Purpose 멀티 체크박스', () => {
         it('searchType select 가 auto/user_id/target_hash 옵션을 가진다', () => {
             const selects = collectNodes(filterPartial, (n) =>
-                n.type === 'composite' && n.name === 'Select' && n.props?.name === 'searchType'
+                n.name === 'Select' && n.props?.name === 'searchType'
             );
             expect(selects.length).toBe(1);
             const values = selects[0].props.options.map((o: any) => o.value);
@@ -169,7 +170,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         });
 
         it('onPageChange 가 identity_log_datagrid__body 로 부분 로딩', () => {
-            const pageActions = (datagridPartial.actions ?? []).filter(
+            const pageActions = asArray(datagridPartial?.actions).filter(
                 (a: any) => a.event === 'onPageChange'
             );
             expect(pageActions.length).toBe(1);
@@ -188,7 +189,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
     describe('main layout — 정렬/페이지 사이즈 select + refresh + partial 참조', () => {
         it('정렬 select 가 created_at_desc/asc, attempts_desc 옵션 제공', () => {
             const sortSelect = collectNodes(mainLayout, (n) =>
-                n.type === 'composite' && n.name === 'Select' && n.props?.name === 'sortBy'
+                n.name === 'Select' && n.props?.name === 'sortBy'
             );
             expect(sortSelect.length).toBe(1);
             const values = sortSelect[0].props.options.map((o: any) => o.value);
@@ -199,7 +200,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
 
         it('per_page select 가 10/20/50/100 옵션 제공', () => {
             const perPage = collectNodes(mainLayout, (n) =>
-                n.type === 'composite' && n.name === 'Select' && n.props?.name === 'perPage'
+                n.name === 'Select' && n.props?.name === 'perPage'
             );
             expect(perPage.length).toBe(1);
             const values = perPage[0].props.options.map((o: any) => o.value);
@@ -435,7 +436,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         //   replace:true 경로(G7Core.updateQueryParams)는 컴포넌트 리마운트/init_actions 재실행이
         //   없어 _local.filter 가 그대로 살아남아 "UI 체크 / 조회 미적용" 불일치가 발생한다.
         // 수정: onTabChange 를 sequence[ setState(local, filter 리셋) → navigate ] 로 변경
-        //   (admin_settings.json onTabChange 와 동일한 검증된 sequence 패턴).
+        //   (admin_settings.g7.html onTabChange 와 동일한 검증된 sequence 패턴).
 
         const FILTER_RESET_KEYS = [
             'searchType', 'search', 'statuses', 'purposes', 'channels',
@@ -452,14 +453,14 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         it('onTabChange 가 sequence 핸들러로 정의된다 (단일 navigate 아님)', () => {
             const action = findTabChangeAction();
             expect(action.handler).toBe('sequence');
-            const subActions = action.actions || action.params?.actions;
+            const subActions = action.actions || callbacksOf(action, 'actions');
             expect(Array.isArray(subActions)).toBe(true);
             expect(subActions.length).toBeGreaterThanOrEqual(2);
         });
 
         it('sequence 첫 단계가 _local.filter 전체를 기본값으로 초기화한다', () => {
             const action = findTabChangeAction();
-            const subActions = action.actions || action.params?.actions;
+            const subActions = action.actions || callbacksOf(action, 'actions');
             const resetStep = subActions.find(
                 (a: any) => a.handler === 'setState'
                     && a.params?.target === 'local'
@@ -481,7 +482,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
 
         it('sequence 마지막 단계가 provider_id 로 navigate (replace + transition_overlay 유지)', () => {
             const action = findTabChangeAction();
-            const subActions = action.actions || action.params?.actions;
+            const subActions = action.actions || callbacksOf(action, 'actions');
             const navStep = subActions.find((a: any) => a.handler === 'navigate');
             expect(navStep).toBeTruthy();
             expect(navStep.params.path).toBe('/admin/identity/logs');
@@ -495,7 +496,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
 
         it('리셋(setState) 이 navigate 보다 먼저 실행된다 (순서 정합)', () => {
             const action = findTabChangeAction();
-            const subActions = action.actions || action.params?.actions;
+            const subActions = action.actions || callbacksOf(action, 'actions');
             const resetIdx = subActions.findIndex(
                 (a: any) => a.handler === 'setState' && a.params?.filter
             );
@@ -515,7 +516,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
 
         it('basic Table/Thead/Tr/Td 직접 작성 패턴 제거 (composite DataGrid 사용)', () => {
             const tables = collectNodes({ ...datagridPartial, ...mainLayout }, (n) =>
-                n.type === 'basic' && n.name === 'Table'
+                n.name === 'Table'
             );
             expect(tables.length).toBe(0);
         });

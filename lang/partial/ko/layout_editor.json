@@ -131,7 +131,14 @@
     "delete": "삭제",
     "delete_confirm": "이 파일을 삭제합니다. 되돌릴 수 없습니다.",
     "binary_hint": "이 형식(:extension)은 본문을 직접 편집할 수 없습니다. 같은 이름으로 다시 올려 교체하세요.",
-    "apply_hint": "저장하면 다음 화면부터 적용됩니다."
+    "apply_hint": "저장하면 다음 화면부터 적용됩니다.",
+    "discard_confirm": "저장하지 않은 편집 :count건이 있습니다. 버리고 계속할까요?",
+    "rename": "이름변경",
+    "rename_prompt": "새 경로를 입력하세요. 확장자는 바꿀 수 없습니다.",
+    "search_placeholder": "파일명·내용 검색",
+    "no_match": "':keyword' 와 일치하는 파일·내용이 없습니다",
+    "unsaved": "저장되지 않음",
+    "word_wrap": "줄바꿈"
   },
   "version_history": {
     "title": "버전 기록",
@@ -412,7 +419,10 @@
       "onSelect": "선택하면",
       "onSelectionChange": "선택이 바뀌면",
       "onToggle": "펼치거나 접으면",
-      "onComponentEvent": "특정 이벤트가 발생하면"
+      "onComponentEvent": "특정 이벤트가 발생하면",
+      "onPrimaryAction": "주 버튼을 누르면",
+      "onSecondaryAction": "보조 버튼을 누르면",
+      "onAction": "더보기 메뉴를 고르면"
     },
     "advanced": "고급",
     "add_search": "동작 검색…",

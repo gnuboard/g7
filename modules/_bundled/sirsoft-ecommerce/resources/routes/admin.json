@@ -9,9 +9,17 @@
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product.title_create",
         "breadcrumb": [
-          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
-          { "label": "$t:sirsoft-ecommerce.admin.menu.products", "path": "/admin/ecommerce/products" },
-          { "label": "$t:sirsoft-ecommerce.admin.product.title_create" }
+          {
+            "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce",
+            "path": "/admin/ecommerce"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.menu.products",
+            "path": "/admin/ecommerce/products"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.product.title_create"
+          }
         ]
       }
     },
@@ -23,9 +31,17 @@
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product.title_edit",
         "breadcrumb": [
-          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
-          { "label": "$t:sirsoft-ecommerce.admin.menu.products", "path": "/admin/ecommerce/products" },
-          { "label": "$t:sirsoft-ecommerce.admin.product.title_edit" }
+          {
+            "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce",
+            "path": "/admin/ecommerce"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.menu.products",
+            "path": "/admin/ecommerce/products"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.product.title_edit"
+          }
         ]
       }
     },
@@ -263,8 +279,13 @@
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title",
         "breadcrumb": [
-          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
-          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title" }
+          {
+            "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce",
+            "path": "/admin/ecommerce"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title"
+          }
         ]
       }
     },
@@ -276,9 +297,17 @@
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title_create",
         "breadcrumb": [
-          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
-          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title", "path": "/admin/ecommerce/shipping-policies" },
-          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title_create" }
+          {
+            "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce",
+            "path": "/admin/ecommerce"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title",
+            "path": "/admin/ecommerce/shipping-policies"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title_create"
+          }
         ]
       }
     },
@@ -290,9 +319,17 @@
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title_edit",
         "breadcrumb": [
-          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
-          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title", "path": "/admin/ecommerce/shipping-policies" },
-          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title_edit" }
+          {
+            "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce",
+            "path": "/admin/ecommerce"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title",
+            "path": "/admin/ecommerce/shipping-policies"
+          },
+          {
+            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title_edit"
+          }
         ]
       }
     },
@@ -301,6 +338,42 @@
       "redirect": "/admin/ecommerce/products/create",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product.title_create"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/wishlists",
+      "layout": "admin_ecommerce_wishlist_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.wishlists.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.wishlists.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/carts",
+      "layout": "admin_ecommerce_cart_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.carts.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.carts.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/user-addresses",
+      "layout": "admin_ecommerce_user_address_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.user-addresses.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.user_addresses.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/inquiries",
+      "layout": "admin_ecommerce_inquiry_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.inquiries.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.inquiries.title"
       }
     }
   ]

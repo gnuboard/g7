@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Models\Template;
 use App\Services\TemplateService;
 use Illuminate\Console\Command;
@@ -10,20 +11,26 @@ use Illuminate\Support\Facades\Log;
 /**
  * 템플릿 레이아웃 갱신 커맨드
  *
- * 레이아웃 JSON 파일만 수정된 경우, 빌드 없이 레이아웃만 갱신합니다.
+ * 레이아웃만 수정된 경우(소스 SSoT `.g7.html` 또는 짝 `.json`), 빌드 없이 레이아웃만 갱신합니다.
+ *
+ * 설치 소스는 `--layout-source` 가 결정한다 — 기본 `auto` 는 `.g7.html` 우선이며
+ * `json` 은 짝 `.json` 이 있으면 그것으로 뒤로 물러선다(진단·복구용).
  */
 class RefreshTemplateLayoutCommand extends Command
 {
+    use SelectsLayoutInstallSource;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'template:refresh-layout
-        {identifier? : 특정 템플릿의 식별자 (생략 시 모든 활성 템플릿)}';
+        {identifier? : 특정 템플릿의 식별자 (생략 시 모든 활성 템플릿)}
+        {--layout-source=auto : 레이아웃 설치 소스 (auto|json) — json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
 
     /**
      * The console command description.
      */
-    protected $description = '템플릿 레이아웃을 갱신합니다 (빌드 없이 JSON만 DB에 동기화)';
+    protected $description = '템플릿 레이아웃을 갱신합니다 (빌드 없이 레이아웃만 DB에 동기화)';
 
     public function __construct(
         private TemplateService $templateService
@@ -36,6 +43,11 @@ class RefreshTemplateLayoutCommand extends Command
      */
     public function handle(): int
     {
+        // `--layout-source` 검증 + 런타임 반영 (알 수 없는 값이면 즉시 실패).
+        if (! $this->applyLayoutInstallSource()) {
+            return self::FAILURE;
+        }
+
         $identifier = $this->argument('identifier');
 
         try {

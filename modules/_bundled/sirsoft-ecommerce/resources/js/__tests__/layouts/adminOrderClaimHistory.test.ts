@@ -28,6 +28,7 @@
  * @vitest-environment node
  */
 
+import { initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -407,7 +408,7 @@ describe('S9c — 주문상세 클레임 내역 섹션 구조 계약 (D20)', () 
         '{{_local.claimHistoryType || ' + DEFAULT_TYPE + '}}'
       );
       // 누른 값이 비어 있어야 판정이 돈다 — 초기 상태와 진입 초기화 둘 다
-      expect((shell as Node).state?.claimHistoryType).toBe('');
+      expect(initStateOf(shell as any)?.claimHistoryType).toBe('');
       const initActions = ((shell as Node).init_actions ?? []) as Array<{ params?: Record<string, unknown> }>;
       const entry = initActions.find((a) => a.params && 'claimHistoryType' in a.params);
       expect(entry?.params?.claimHistoryType).toBe('');

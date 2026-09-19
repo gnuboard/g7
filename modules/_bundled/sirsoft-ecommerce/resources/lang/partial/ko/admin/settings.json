@@ -140,6 +140,17 @@
       },
       "edit": "수정",
       "duplicate_currency_error": "이미 등록된 통화 코드입니다."
+    },
+    "rate_provider": {
+      "label": "환율 제공자",
+      "manual": "직접 입력",
+      "managed_badge": "자동 관리",
+      "manual_badge": "수동 관리",
+      "last_updated": "마지막 갱신",
+      "settings": "제공자 설정",
+      "auth_key_required": "인증키를 입력하면 자동 관리가 시작됩니다.",
+      "unsupported_base": "기본통화를 지원하지 않아 환율을 직접 입력해야 합니다.",
+      "auto_manage_disabled": "제공자 설정에서 환율 자동 관리를 켜세요."
     }
   },
   "order_settings": {

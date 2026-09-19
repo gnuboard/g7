@@ -1,0 +1,82 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_user_list",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.users.title"
+    },
+    "data_sources": [
+        {
+            "id": "users",
+            "endpoint": "/api/admin/users",
+            "method": "GET",
+            "auto_fetch": true,
+            "label_key": "admin.users.source",
+            "loading_strategy": "blocking"
+        }
+    ],
+    "initLocal": {
+        "selectedIds_admin_users": []
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "user_list_card",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-card"
+                },
+                "children": [
+                    {
+                        "id": "user_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "actions": [
+                            {
+                                "event": "onRowAction",
+                                "handler": "switch",
+                                "params": {
+                                    "value": "{{$args[0]}}"
+                                },
+                                "cases": {
+                                    "edit": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users/{{$args[1].uuid}}/edit"
+                                        }
+                                    },
+                                    "delete": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "modal_data": "{{$args[1]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "delete_confirm_modal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "serverSidePagination": true,
+                            "data": "{{users?.data?.data ?? []}}"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_user_list/_modal_delete.json"
+        }
+    ]
+}

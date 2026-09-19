@@ -1,0 +1,39 @@
+feature: 게시판 폼 — 신규/편집 판정 (라우트 파라미터)
+
+description: |
+  게시판 폼의 라우트는 `admin/boards/create` 와 `admin/boards/:slug/edit` 둘뿐이라 path param 은
+  `slug` 하나다. 그런데 「편집 중인가」를 `route?.id` 로 갈라 두 화면 모두에서 늘 undefined 였다.
+
+  76차 g7.dev 실측 — 편집 화면과 신규 화면의 렌더 결과가 **완전히 동일**했다:
+    - `!!route?.id` 로 감싼 역할별 접근 제어 UI(관리자·사용자 아코디언, 안내, 오류 알림)가
+      편집 화면에서도 나타나지 않았다
+    - 그 자리에 `!route?.id` 인 「생성 후 수정 화면에서 설정하세요」가 남아, 편집 화면이
+      스스로를 가리키는 막다른 길이 되었다
+    - slug 입력칸의 잠금 조건도 같은 값을 봐서 편집 화면에서 열려 있었다. 서버(`UpdateBoardRequest`)는
+      slug 를 아예 받지 않으므로 고쳐 써도 조용히 무시되는 칸이었다
+
+  아울러 이 화면의 `transition_overlay.wait_for` 가 선언한 적 없는 데이터소스 이름
+  (`notification_channels`)을 가리키고 있었다. 엔진은 미존재 id 를 조용히 무시하도록 설계돼 있어
+  런타임에 드러나지 않으며, 실제 이름은 `availableChannels` 다.
+
+axes:
+  screen: [create, edit]
+
+cross_product: |
+  screen × (권한 UI 표시 · slug 입력 잠금) — 신규는 숨김/열림, 편집은 표시/잠금.
+  두 화면이 같은 결과를 내면 판정이 죽은 것이므로 양쪽을 모두 단언한다.
+
+effects:
+  - edit_screen_shows_role_permission_sections
+  - create_screen_hides_role_permission_sections
+  - create_mode_notice_only_on_create
+  - slug_input_locked_on_edit
+  - slug_input_open_on_create
+  - wait_for_references_declared_source_only
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-form-route-param.test.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-route-param-and-filter-reset.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

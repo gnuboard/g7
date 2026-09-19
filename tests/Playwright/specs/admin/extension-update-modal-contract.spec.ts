@@ -48,7 +48,7 @@ async function stubSupportingSources(page: Page): Promise<void> {
         message: 'ok',
         data: {
           items: { plugins: [], modules: [], templates: [] },
-          current_core_version: '7.0.6',
+          current_core_version: '7.1.0',
         },
       }),
     });

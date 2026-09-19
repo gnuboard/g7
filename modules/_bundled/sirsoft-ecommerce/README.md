@@ -7,7 +7,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.3.0-0066FF?style=flat-square" alt="version 1.3.0">
   <img src="https://img.shields.io/badge/type-%EB%AA%A8%EB%93%88-555555?style=flat-square" alt="type 모듈">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.10-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.10">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -155,7 +155,7 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.0.10` |
+| 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -190,7 +190,7 @@ _별도의 관리자 설정 항목이 없습니다._
 | 탭 | 언제 바꾸는가 | 바꾸면 달라지는 것 |
 |---|---|---|
 | 기본 정보 | 개점 준비 시 1회 | 상점명·사업자 정보·상점 주소 경로가 상점 화면과 주문서에 반영됩니다 |
-| 언어·통화 | 판매 국가를 늘릴 때 | 기본 통화와 취급 통화 목록. 기본 통화를 바꿔도 **이미 만들어진 주문의 표기는 그대로**입니다 |
+| 언어·통화 | 판매 국가를 늘릴 때 | 기본 통화와 취급 통화 목록, 그리고 **환율 제공자** 선택. 기본 통화를 바꿔도 **이미 만들어진 주문의 표기는 그대로**입니다. 환율 제공자를 고르면 그 제공자가 관리하는 통화의 환율 입력이 잠기고 자동으로 갱신됩니다(제공자는 플러그인이 등록하며, 「직접 입력」으로 되돌리면 다시 손으로 고칠 수 있습니다) |
 | 주문 설정 | 결제사를 도입·교체할 때 | 기본 PG·현금영수증 발행처·결제수단 노출·무통장 계좌·미입금 자동취소 기한·취소 허용 상태 |
 | 클레임 | 반품·교환 정책을 정할 때 | 유형별 신청 가능 주문 상태·신청 기한(일)·첨부 이미지 수와 용량·추가 결제 방식과 결제수단·자동 승인 조건·**환불 자동 승인 결제수단**·완료 시 재고 복원 여부 |
 | 배송 | 해외 배송을 시작할 때 | 기본 배송 국가·취급 국가·무료배송 기준·주소 검증 사용 여부 |
@@ -253,6 +253,7 @@ _별도의 관리자 설정 항목이 없습니다._
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
+| `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
 | `sirsoft-pay_kginicis` | 플러그인 | `>=1.3.0` |
 | `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.0` |
 | `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.0` |

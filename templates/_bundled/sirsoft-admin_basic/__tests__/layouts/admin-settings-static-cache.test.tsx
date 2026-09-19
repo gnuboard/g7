@@ -17,6 +17,9 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+// 레이아웃 JSON 은 모양이 아니라 뜻으로 읽는다 — 컴파일러가 원소 하나짜리 배열을 객체로 접으므로
+// `actions`/`onSuccess` 를 배열로 단정하면 다음 굽기에서 깨진다 (D67).
+import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const layout = require('../../layouts/admin_settings.json');
 const generalPartial = JSON.parse(
@@ -103,7 +106,7 @@ describe('_tab_general — 초기 화면 정적 파일 카드 스키마', () => 
     expect(btn.props.type).toBe('button');
     expect(btn.props.disabled).toContain('staticCacheStatus?.data?.publishable');
     expect(btn.props.disabled).toContain('_computed.isReadOnly');
-    const open = btn.actions.find((a: AnyJson) => a.handler === 'openModal');
+    const open = actionsOf(btn).find((a: AnyJson) => a.handler === 'openModal');
     expect(open).toBeTruthy();
     expect(open.target).toBe('settings_static_cache_republish_modal');
   });
@@ -118,8 +121,8 @@ describe('_tab_general — 초기 화면 정적 파일 카드 스키마', () => 
 
 describe('_modal_static_cache_republish — 확인 → POST → 후속 체인', () => {
   const confirmBtn = findNodeById(republishModal, 'static_cache_republish_confirm_button');
-  const seq = confirmBtn?.actions?.[0];
-  const apiCall = (seq?.actions as AnyJson[] | undefined)?.find(a => a.handler === 'apiCall');
+  const seq = actionsOf(confirmBtn)[0];
+  const apiCall = callbacksOf(seq, 'actions').find(a => a.handler === 'apiCall');
 
   // @scenario permission=granted, publishable=production_enabled, outcome=success
   // @effects confirm_modal_then_toast_and_refetch
@@ -135,7 +138,8 @@ describe('_modal_static_cache_republish — 확인 → POST → 후속 체인', 
   // @scenario permission=granted, publishable=production_enabled, outcome=publish_failed_marker
   // @effects confirm_modal_then_toast_and_refetch
   it('성공 시 상태 재조회 → 토스트 → 모달 닫기 순서다', () => {
-    const handlers = (apiCall!.onSuccess as AnyJson[]).map(a => a.handler);
+    const onSuccess = callbacksOf(apiCall, 'onSuccess');
+    const handlers = onSuccess.map(a => a.handler);
     const refetchIdx = handlers.indexOf('refetchDataSource');
     const toastIdx = handlers.indexOf('toast');
     const closeIdx = handlers.indexOf('closeModal');
@@ -143,17 +147,17 @@ describe('_modal_static_cache_republish — 확인 → POST → 후속 체인', 
     expect(toastIdx).toBeGreaterThan(refetchIdx);
     expect(closeIdx).toBeGreaterThan(toastIdx);
 
-    const refetch = (apiCall!.onSuccess as AnyJson[])[refetchIdx];
+    const refetch = onSuccess[refetchIdx];
     expect(refetch.params.dataSourceId).toBe('staticCacheStatus');
 
     // 게시 실패도 HTTP 200 이다 — 토스트가 페이로드(republished)로 분기해야 한다
-    const toast = (apiCall!.onSuccess as AnyJson[])[toastIdx];
+    const toast = onSuccess[toastIdx];
     expect(toast.params.message).toContain('response?.data?.republished');
     expect(toast.params.type).toContain('response?.data?.republished');
   });
 
   it('실패 시 에러 토스트 후 모달을 닫는다', () => {
-    const handlers = (apiCall!.onError as AnyJson[]).map(a => a.handler);
+    const handlers = callbacksOf(apiCall, 'onError').map(a => a.handler);
     expect(handlers).toContain('toast');
     expect(handlers).toContain('closeModal');
   });

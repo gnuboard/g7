@@ -44,14 +44,15 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 |---|---|---|
 | `plugin.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json·composer.json 동기화 |
 | `plugin.php` | 진입 클래스 (선언형 표면 SSoT) | 표면 변경 시 `ext:docgen` 재실행 + 코어 최소 버전 검토 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->
 
@@ -61,7 +62,7 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 백엔드 흐름이 없으므로 전부 프론트에서 일어납니다.
 
 **장착**: 어떤 화면이 `address_search_slot` 확장점을 열면 → 코어가
-`resources/extensions/ecommerce-address-search.json` 을 그 자리에 넣음 → 조각의 `scripts` 가
+`resources/extensions/ecommerce-address-search.g7.html` 을 그 자리에 넣음 → 조각의 `scripts` 가
 Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.setFieldReadOnly` 가 대상
 주소 필드를 읽기 전용으로 바꿉니다(검색으로만 채우게 해서 오타를 막습니다). 이 핸들러는
 **SDK 확보를 먼저 확인**하고, 확보하지 못했으면 필드를 편집 가능한 상태로 남깁니다 — 읽기
@@ -107,7 +108,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 `buildingName`(건물명). 발행 위치가 "선언(호출 위치 미확인)" 인 것은 실제 발행이 **프론트
 핸들러**에서 이루어져 PHP 소스 스캔에 잡히지 않기 때문입니다.
 
-레이아웃 조각 하나(`ecommerce-address-search.json`)가 이 플러그인의 UI 전부입니다. 파일
+레이아웃 조각 하나(`ecommerce-address-search.g7.html`)가 이 플러그인의 UI 전부입니다. 파일
 이름에 `ecommerce` 가 붙어 있지만 **확장점 이름(`address_search_slot`)으로 매칭**되므로,
 그 확장점을 여는 화면이면 어디든 붙습니다 — 이커머스 전용이 아닙니다.
 
@@ -119,7 +120,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 - [ ] `_bundled` 에서만 수정하고 `php artisan plugin:update sirsoft-daum_postcode --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 외부 스크립트 호스트를 늘린다면 `trusted_script_hosts` 와 **사유**(`trusted_script_hosts_reason`)를 함께 선언 — 자체 제공이 원칙이고 이 플러그인은 예외 기재의 선례다
 - [ ] SDK 확보 실패 경로(통지·재시도·직접 입력)를 건드렸다면 `resources/js/__tests__/postcode-fallback.test.ts` 를 함께 갱신·실행

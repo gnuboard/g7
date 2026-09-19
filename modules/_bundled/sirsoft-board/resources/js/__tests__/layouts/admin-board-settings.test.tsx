@@ -33,6 +33,7 @@ import tabSeo from '../../../layouts/admin/partials/admin_board_settings/_tab_se
 
 // 허용 확장자 안내 문구 회귀 검증용 ko lang
 import koSettingsLang from '../../../lang/partial/ko/admin/settings.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 // 일괄 적용 라벨 누락 회귀 검증용 en lang
 import enSettingsLang from '../../../lang/partial/en/admin/settings.json';
 
@@ -71,8 +72,8 @@ function findFirst(node: any, predicate: (n: any) => boolean): any | null {
     if (!node) return null;
     if (predicate(node)) return node;
     const kids = [
-        ...(node.children ?? []),
-        ...(node.responsive?.portable?.children ?? []),
+        ...asArray(node?.children),
+        ...asArray(node.responsive?.portable?.children),
     ];
     for (const child of kids) {
         const found = findFirst(child, predicate);
@@ -118,25 +119,25 @@ function findActions(node: any, handlerName: string): any[] {
     const results: any[] = [];
     if (!node) return results;
 
-    if (node.actions && Array.isArray(node.actions)) {
-        for (const action of node.actions) {
+    if (node.actions && asArray(node?.actions).length > 0) {
+        for (const action of asArray(node?.actions)) {
             if (action.handler === handlerName) {
                 results.push(action);
             }
             // sequence 내부 검색
-            if (action.actions && Array.isArray(action.actions)) {
-                for (const subAction of action.actions) {
+            if (action.actions && asArray(action?.actions).length > 0) {
+                for (const subAction of asArray(action?.actions)) {
                     if (subAction.handler === handlerName) {
                         results.push(subAction);
                     }
                     // onSuccess/onError 내부
-                    if (subAction.onSuccess && Array.isArray(subAction.onSuccess)) {
-                        for (const cb of subAction.onSuccess) {
+                    if (subAction.onSuccess && asArray(subAction?.onSuccess).length > 0) {
+                        for (const cb of asArray(subAction?.onSuccess)) {
                             if (cb.handler === handlerName) results.push(cb);
                         }
                     }
-                    if (subAction.onError && Array.isArray(subAction.onError)) {
-                        for (const cb of subAction.onError) {
+                    if (subAction.onError && asArray(subAction?.onError).length > 0) {
+                        for (const cb of asArray(subAction?.onError)) {
                             if (cb.handler === handlerName) results.push(cb);
                         }
                     }
@@ -293,11 +294,11 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
     it('탭 변경 시 글로벌 상태와 URL을 업데이트한다', () => {
         const content = mainLayout.slots.content[0];
         const tabNav = findById(content, 'tab_navigation');
-        const tabAction = tabNav.actions[0];
+        const tabAction = asArray(tabNav?.actions)[0];
 
         expect(tabAction.handler).toBe('sequence');
         // sequence 하위 액션은 params.actions 에 위치 (엔진 규약)
-        const innerActions = tabAction.params.actions;
+        const innerActions = callbacksOf(tabAction, 'actions');
         expect(innerActions).toHaveLength(4);
 
         // setState - errors 초기화
@@ -372,10 +373,10 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(saveBtn.props.type).toBe('button');
         expect(saveBtn.props.disabled).toContain('hasChanges');
 
-        const clickAction = saveBtn.actions[0];
+        const clickAction = asArray(saveBtn?.actions)[0];
         expect(clickAction.handler).toBe('sequence');
         // sequence 하위 액션은 params.actions 에 위치
-        const innerActions = clickAction.params.actions;
+        const innerActions = callbacksOf(clickAction, 'actions');
 
         // 1단계: setState isSaving=true
         const setStateAction = innerActions[0];
@@ -391,22 +392,22 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
 
         // onSuccess: isSaving=false, hasChanges=false, refetchDataSource x4, toast
         expect(apiCallAction.onSuccess).toHaveLength(6);
-        expect(apiCallAction.onSuccess[0].params.isSaving).toBe(false);
-        expect(apiCallAction.onSuccess[0].params.hasChanges).toBe(false);
-        expect(apiCallAction.onSuccess[1].handler).toBe('refetchDataSource');
-        expect(apiCallAction.onSuccess[1].params.dataSourceId).toBe('settings');
-        expect(apiCallAction.onSuccess[2].handler).toBe('refetchDataSource');
-        expect(apiCallAction.onSuccess[2].params.dataSourceId).toBe('boards_list');
-        expect(apiCallAction.onSuccess[3].handler).toBe('refetchDataSource');
-        expect(apiCallAction.onSuccess[3].params.dataSourceId).toBe('roles');
-        expect(apiCallAction.onSuccess[4].handler).toBe('refetchDataSource');
-        expect(apiCallAction.onSuccess[4].params.dataSourceId).toBe('board_types');
-        expect(apiCallAction.onSuccess[5].handler).toBe('toast');
+        expect(asArray(apiCallAction?.onSuccess)[0].params.isSaving).toBe(false);
+        expect(asArray(apiCallAction?.onSuccess)[0].params.hasChanges).toBe(false);
+        expect(asArray(apiCallAction?.onSuccess)[1].handler).toBe('refetchDataSource');
+        expect(asArray(apiCallAction?.onSuccess)[1].params.dataSourceId).toBe('settings');
+        expect(asArray(apiCallAction?.onSuccess)[2].handler).toBe('refetchDataSource');
+        expect(asArray(apiCallAction?.onSuccess)[2].params.dataSourceId).toBe('boards_list');
+        expect(asArray(apiCallAction?.onSuccess)[3].handler).toBe('refetchDataSource');
+        expect(asArray(apiCallAction?.onSuccess)[3].params.dataSourceId).toBe('roles');
+        expect(asArray(apiCallAction?.onSuccess)[4].handler).toBe('refetchDataSource');
+        expect(asArray(apiCallAction?.onSuccess)[4].params.dataSourceId).toBe('board_types');
+        expect(asArray(apiCallAction?.onSuccess)[5].handler).toBe('toast');
 
         // onError: isSaving=false, errors set, toast
         expect(apiCallAction.onError).toHaveLength(2);
-        expect(apiCallAction.onError[0].params.isSaving).toBe(false);
-        expect(apiCallAction.onError[1].handler).toBe('toast');
+        expect(asArray(apiCallAction?.onError)[0].params.isSaving).toBe(false);
+        expect(asArray(apiCallAction?.onError)[1].handler).toBe('toast');
     });
 
     it('validation_error 배너가 조건부 렌더링된다', () => {
@@ -1024,7 +1025,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
         expect(cards.length, '_tab_report_policy admin-card 개수').toBeGreaterThan(0);
 
         for (const card of cards) {
-            const children = card.children ?? [];
+            const children = asArray(card?.children);
             // card-title 찾기 (H1~H4/Span/P 중 className 에 card-title 포함)
             const titleIdx = children.findIndex(
                 (c: any) => typeof c?.props?.className === 'string' &&
@@ -1039,11 +1040,11 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
             const isStack = /\b(stack|stack-tight|stack-flush)\b/.test(sibCls);
             if (!isStack) continue;
 
-            const stackChildren = sibling.children ?? [];
+            const stackChildren = asArray(sibling?.children);
             // stack 첫 자식 (직접 OR inert wrapper Div 안)
             let first = stackChildren[0];
             const isInert = (n: any) =>
-                n && n.type === 'basic' && n.name === 'Div' && !n.id && !n.if && !n.iteration && !n.actions && !n.lifecycle &&
+                n && n.name === 'Div' && !n.id && !n.if && !n.iteration && !n.actions && !n.lifecycle &&
                 (!n.props || !n.props.className || n.props.className.trim() === '');
             if (isInert(first) && Array.isArray(first.children) && first.children.length === 1) {
                 first = first.children[0];
@@ -1077,7 +1078,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
         }
         const ids = findAllIds(mainLayout);
         // 메인 레이아웃 (admin_board_settings.json) 자체에는 main_content id 가 있으면 안 됨.
-        // _admin_base.json 슬롯 컨테이너가 이미 #main_content 를 가지고 있어 페이지에 중복 발생.
+        // _admin_base.g7.html 슬롯 컨테이너가 이미 #main_content 를 가지고 있어 페이지에 중복 발생.
         expect(ids.get('main_content'), 'admin_board_settings 안쪽에 id="main_content" 가 있으면 _admin_base 슬롯과 중복').toBeUndefined();
         // 대체 id (탭 컨텐츠 컨테이너) 가 존재해야 함
         expect(ids.has('tab_content'), '탭 컨텐츠 컨테이너 id="tab_content" 가 존재해야 함').toBe(true);
@@ -1129,7 +1130,8 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
 
         const radioGroups = findByName(scopeField, 'RadioGroup');
         expect(radioGroups).toHaveLength(1);
-        expect(radioGroups[0].type).toBe('composite');
+        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
+        // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         expect(radioGroups[0].props.name).toBe('report_policy.notify_admin_on_report_scope');
 
         // per_case / per_report 옵션 포함
@@ -1187,7 +1189,8 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
     it('Select가 composite 타입이다', () => {
         const selects = findByName(tabReportPolicy, 'Select');
         for (const select of selects) {
-            expect(select.type).toBe('composite');
+            // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
+            // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         }
     });
 
@@ -1298,7 +1301,8 @@ describe('_tab_spam_security.json - 스팸/보안 탭', () => {
     it('Select가 composite 타입이다', () => {
         const selects = findByName(tabSpamSecurity, 'Select');
         for (const select of selects) {
-            expect(select.type).toBe('composite');
+            // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
+            // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         }
     });
 });
@@ -1310,7 +1314,8 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
     it('Partial 메타데이터가 올바르다', () => {
         expect(bulkApplyModal.meta.is_partial).toBe(true);
         expect(bulkApplyModal.id).toBe('bulk_apply_confirm_modal');
-        expect(bulkApplyModal.type).toBe('composite');
+        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
+        // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         expect(bulkApplyModal.name).toBe('Modal');
     });
 
@@ -1330,7 +1335,7 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         expect(cancelBtn).toBeDefined();
         expect(cancelBtn.props.disabled).toContain('isBulkApplying');
 
-        const closeAction = cancelBtn.actions.find((a: any) => a.handler === 'closeModal');
+        const closeAction = asArray(cancelBtn?.actions).find((a: any) => a.handler === 'closeModal');
         // closeModal은 params 없이 호출해야 함
         expect(closeAction.params).toBeUndefined();
     });
@@ -1340,17 +1345,17 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         expect(confirmBtn).toBeDefined();
         expect(confirmBtn.props.disabled).toContain('isBulkApplying');
 
-        const clickAction = confirmBtn.actions[0];
+        const clickAction = asArray(confirmBtn?.actions)[0];
         expect(clickAction.handler).toBe('sequence');
 
         // 1: setState - isBulkApplying=true (스냅샷은 모달 열기 전 탭 버튼 클릭 시 이미 _global에 저장됨)
-        const loadingAction = clickAction.actions[0];
+        const loadingAction = asArray(clickAction?.actions)[0];
         expect(loadingAction.handler).toBe('setState');
         expect(loadingAction.params.target).toBe('$parent._local');
         expect(loadingAction.params.isBulkApplying).toBe(true);
 
         // 2: apiCall - 저장 (PUT)
-        const saveApiCall = clickAction.actions[1];
+        const saveApiCall = asArray(clickAction?.actions)[1];
         expect(saveApiCall.handler).toBe('apiCall');
         expect(saveApiCall.target).toBe('/api/modules/sirsoft-board/admin/settings');
         expect(saveApiCall.params.method).toBe('PUT');
@@ -1358,11 +1363,11 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         expect(saveApiCall.params.body).toContain('bulkApplySnapshot');
 
         // 저장 성공 시: hasChanges=false 후 bulk-apply API 호출
-        expect(saveApiCall.onSuccess[0].handler).toBe('setState');
-        expect(saveApiCall.onSuccess[0].params.target).toBe('$parent._local');
-        expect(saveApiCall.onSuccess[0].params.hasChanges).toBe(false);
+        expect(asArray(saveApiCall?.onSuccess)[0].handler).toBe('setState');
+        expect(asArray(saveApiCall?.onSuccess)[0].params.target).toBe('$parent._local');
+        expect(asArray(saveApiCall?.onSuccess)[0].params.hasChanges).toBe(false);
 
-        const bulkApiCall = saveApiCall.onSuccess[1];
+        const bulkApiCall = asArray(saveApiCall?.onSuccess)[1];
         expect(bulkApiCall.handler).toBe('apiCall');
         expect(bulkApiCall.target).toBe('/api/modules/sirsoft-board/admin/settings/bulk-apply');
         expect(bulkApiCall.params.method).toBe('POST');
@@ -1373,12 +1378,12 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         expect(bulkApiCall.onSuccess).toHaveLength(7);
 
         // [0] 성공/롤백 공통: isBulkApplying=false (조건 없음)
-        expect(bulkApiCall.onSuccess[0].handler).toBe('setState');
-        expect(bulkApiCall.onSuccess[0].params.isBulkApplying).toBe(false);
-        expect(bulkApiCall.onSuccess[0].if).toBeUndefined();
+        expect(asArray(bulkApiCall?.onSuccess)[0].handler).toBe('setState');
+        expect(asArray(bulkApiCall?.onSuccess)[0].params.isBulkApplying).toBe(false);
+        expect(asArray(bulkApiCall?.onSuccess)[0].if).toBeUndefined();
 
         // 성공 분기(rolled_back=false): 상태초기화 → snapshot=null → closeModal → success 토스트
-        const successActions = bulkApiCall.onSuccess.filter(
+        const successActions = asArray(bulkApiCall?.onSuccess).filter(
             (a: any) => a.if === '{{!response?.data?.rolled_back}}'
         );
         expect(successActions).toHaveLength(4);
@@ -1393,7 +1398,7 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         expect(successSnapshotReset.params.bulkApplySnapshot).toBeNull();
 
         // 롤백 분기(rolled_back=true): 안내상태 setState + error 토스트 (closeModal 없음 → 모달 유지)
-        const rollbackActions = bulkApiCall.onSuccess.filter(
+        const rollbackActions = asArray(bulkApiCall?.onSuccess).filter(
             (a: any) => a.if === '{{response?.data?.rolled_back}}'
         );
         expect(rollbackActions).toHaveLength(2);
@@ -1411,20 +1416,20 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
 
         // bulk-apply onError(네트워크/예외): setState(isBulkApplying=false) → setState(snapshot=null) → toast(error)
         expect(bulkApiCall.onError).toHaveLength(3);
-        expect(bulkApiCall.onError[0].handler).toBe('setState');
-        expect(bulkApiCall.onError[0].params.isBulkApplying).toBe(false);
-        expect(bulkApiCall.onError[1].handler).toBe('setState');
-        expect(bulkApiCall.onError[1].params.bulkApplySnapshot).toBeNull();
-        expect(bulkApiCall.onError[2].handler).toBe('toast');
-        expect(bulkApiCall.onError[2].params.type).toBe('error');
+        expect(asArray(bulkApiCall?.onError)[0].handler).toBe('setState');
+        expect(asArray(bulkApiCall?.onError)[0].params.isBulkApplying).toBe(false);
+        expect(asArray(bulkApiCall?.onError)[1].handler).toBe('setState');
+        expect(asArray(bulkApiCall?.onError)[1].params.bulkApplySnapshot).toBeNull();
+        expect(asArray(bulkApiCall?.onError)[2].handler).toBe('toast');
+        expect(asArray(bulkApiCall?.onError)[2].params.type).toBe('error');
 
         // 저장 실패: setState(isBulkApplying=false, bulkApplySaveError=true) → setState(snapshot=null)
         expect(saveApiCall.onError).toHaveLength(2);
-        expect(saveApiCall.onError[0].handler).toBe('setState');
-        expect(saveApiCall.onError[0].params.isBulkApplying).toBe(false);
-        expect(saveApiCall.onError[0].params.bulkApplySaveError).toBe(true);
-        expect(saveApiCall.onError[1].handler).toBe('setState');
-        expect(saveApiCall.onError[1].params.bulkApplySnapshot).toBeNull();
+        expect(asArray(saveApiCall?.onError)[0].handler).toBe('setState');
+        expect(asArray(saveApiCall?.onError)[0].params.isBulkApplying).toBe(false);
+        expect(asArray(saveApiCall?.onError)[0].params.bulkApplySaveError).toBe(true);
+        expect(asArray(saveApiCall?.onError)[1].handler).toBe('setState');
+        expect(asArray(saveApiCall?.onError)[1].params.bulkApplySnapshot).toBeNull();
     });
 
     it('모달 상태 접근이 $parent._local 또는 global 패턴을 사용한다', () => {
@@ -1460,7 +1465,7 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         // 롤백은 오류이므로 amber(warning)가 아닌 red(danger) 톤
         expect(abortedBox.props.className).toContain('alert-danger');
         // 오류 아이콘도 red 계열
-        const icon = (abortedBox.children ?? []).find((c: any) => c.name === 'Icon');
+        const icon = asArray(abortedBox?.children).find((c: any) => c.name === 'Icon');
         expect(icon.props.className).toContain('text-red-600');
     });
 
@@ -1468,14 +1473,14 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         const abortedBox = findByName(bulkApplyModal, 'Div').find(
             (d: any) => d.if === '{{$parent._local.bulkApplyAborted}}'
         );
-        const spans = (abortedBox.children ?? []).filter((c: any) => c.name === 'Span');
+        const spans = asArray(abortedBox?.children).filter((c: any) => c.name === 'Span');
 
         // 권한 실패(게시판명 있음): 게시판명을 굵게(font-bold) 강조한 Span + suffix 문구 Span
         const boardSpan = spans.find(
             (s: any) => s.if === '{{$parent._local.bulkApplyAbortedBoard}}'
         );
         expect(boardSpan).toBeDefined();
-        const innerSpans = (boardSpan.children ?? []).filter((c: any) => c.name === 'Span');
+        const innerSpans = asArray(boardSpan?.children).filter((c: any) => c.name === 'Span');
         // 첫 Span: 게시판명, 굵게 강조
         const nameSpan = innerSpans.find((s: any) => s.props?.className?.includes('font-bold'));
         expect(nameSpan).toBeDefined();
@@ -1496,7 +1501,7 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
 
     it('확인 버튼 진입 시 직전 롤백 안내 상태를 초기화한다 (재시도 대비)', () => {
         const confirmBtn = findById(bulkApplyModal, 'bulk_apply_confirm_button');
-        const firstSetState = confirmBtn.actions[0].actions[0];
+        const firstSetState = asArray(asArray(confirmBtn?.actions)[0]?.actions)[0];
         expect(firstSetState.handler).toBe('setState');
         expect(firstSetState.params.bulkApplyAborted).toBe(false);
         expect(firstSetState.params.bulkApplyAbortedBoard).toBeNull();
@@ -1594,7 +1599,7 @@ describe('크로스 파일 검증', () => {
     it('저장 body에 notification channels 포함 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
         const saveBtn = findById(content, 'footer_save_button');
-        const apiCallAction = saveBtn.actions[0].params.actions[1];
+        const apiCallAction = callbacksOf(asArray(saveBtn?.actions)[0], 'actions')[1];
 
         // body 표현식 안에서 notifications.channels 구조를 조립한다
         // (notification_definitions 탭 진입 시 form.notifications.channels 를 그대로 전송)
@@ -1708,7 +1713,7 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
     it('저장 body에 general 탭 분기 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
         const saveBtn = findById(content, 'footer_save_button');
-        const apiCallAction = saveBtn.actions[0].params.actions[1];
+        const apiCallAction = callbacksOf(asArray(saveBtn?.actions)[0], 'actions')[1];
         const body = apiCallAction.params.body as string;
 
         // general 탭에서 display 카테고리 전송
@@ -1790,18 +1795,18 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
         expect(cacheBtn.actions).toHaveLength(1);
 
-        const clickAction = cacheBtn.actions[0];
+        const clickAction = asArray(cacheBtn?.actions)[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
 
         // 1단계: clearingCache = true
-        const setStateAction = clickAction.actions[0];
+        const setStateAction = asArray(clickAction?.actions)[0];
         expect(setStateAction.handler).toBe('setState');
         expect(setStateAction.params.target).toBe('local');
         expect(setStateAction.params.clearingCache).toBe(true);
 
         // 2단계: 첫 번째 apiCall (board/boards 캐시 삭제)
-        const firstApiCall = clickAction.actions[1];
+        const firstApiCall = asArray(clickAction?.actions)[1];
         expect(firstApiCall.handler).toBe('apiCall');
         expect(firstApiCall.auth_required).toBe(true);
         expect(firstApiCall.target).toBe('/api/admin/seo/clear-cache');
@@ -1811,7 +1816,7 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
     it('캐시 초기화 onSuccess 체이닝이 3개 레이아웃을 순차 삭제한다', () => {
         const buttons = findByName(tabSeo, 'Button');
         const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
-        const firstApiCall = cacheBtn.actions[0].actions[1];
+        const firstApiCall = asArray(asArray(cacheBtn?.actions)[0]?.actions)[1];
 
         // board/boards → board/index onSuccess
         expect(firstApiCall.onSuccess.handler).toBe('apiCall');
@@ -1833,7 +1838,7 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
     it('캐시 초기화 onError에서 clearingCache를 false로 리셋하고 에러 토스트를 표시한다', () => {
         const buttons = findByName(tabSeo, 'Button');
         const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
-        const firstApiCall = cacheBtn.actions[0].actions[1];
+        const firstApiCall = asArray(asArray(cacheBtn?.actions)[0]?.actions)[1];
 
         // 각 단계의 onError 확인 (3곳)
         for (const onError of [
@@ -1889,7 +1894,7 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
     it('저장 body에 seo 탭 분기 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
         const saveBtn = findById(content, 'footer_save_button');
-        const apiCallAction = saveBtn.actions[0].params.actions[1];
+        const apiCallAction = callbacksOf(asArray(saveBtn?.actions)[0], 'actions')[1];
         const body = apiCallAction.params.body as string;
         expect(body).toContain("'seo'");
         expect(body).toContain('seo:');

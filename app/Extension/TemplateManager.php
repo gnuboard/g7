@@ -12,6 +12,7 @@ use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
@@ -34,12 +35,24 @@ use Illuminate\Support\Facades\Log;
  */
 class TemplateManager implements TemplateManagerInterface
 {
+    use ResolvesExtensionIcons;
     use Traits\CachesTemplateStatus;
     use Traits\ClearsTemplateCaches;
+    use Traits\CollectsFragmentSources;
     use Traits\ComputesLayoutContentHash;
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
     use Traits\ValidatesLayoutFiles;
+
+    /**
+     * 아이콘 해석기에 넘길 확장 유형을 반환합니다.
+     *
+     * @return string 확장 유형 ('template')
+     */
+    protected function extensionIconType(): string
+    {
+        return 'template';
+    }
 
     /** @var int install 프로그레스바 단계 수 */
     public const INSTALL_STEPS = 4;
@@ -80,6 +93,14 @@ class TemplateManager implements TemplateManagerInterface
 
     protected string $bundledTemplatesPath;
 
+    /**
+     * @param  ExtensionManager  $extensionManager  설치·활성 상태 등 확장 공통 관리
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 행 조회·저장
+     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 행 조회·저장
+     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 행 조회·저장
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 행 조회·저장
+     * @param  LayoutExtensionService  $layoutExtensionService  확장 조각 등록·해제 (설치·제거에 동반)
+     */
     public function __construct(
         protected ExtensionManager $extensionManager,
         protected TemplateRepositoryInterface $templateRepository,
@@ -101,6 +122,8 @@ class TemplateManager implements TemplateManagerInterface
      * 바인딩(모듈/플러그인 테스트가 일시적으로 `PluginCacheDriver` 등으로
      * 재바인딩할 수 있음)에 의존하면 누수된 바인딩 때문에 forget/remember 가
      * `g7:plugin.*` 네임스페이스로 빗나가므로, 항상 CoreCacheDriver 를 직접 생성한다.
+     *
+     * @return CacheInterface
      */
     private function cache(): CacheInterface
     {
@@ -113,6 +136,8 @@ class TemplateManager implements TemplateManagerInterface
      * 소비자가 "템플릿 맵이 채워져 있음" 만 필요로 할 때 쓴다. `loadTemplates()` 는 맵을
      * 리셋하고 디렉토리를 통째로 재스캔하므로, 그것을 무조건 호출하면 공유 인스턴스의
      * 상태를 매번 갈아엎으면서 풀스캔 비용까지 반복된다.
+     *
+     * @return void
      */
     public function ensureLoaded(): void
     {
@@ -128,6 +153,8 @@ class TemplateManager implements TemplateManagerInterface
      *
      * 항상 재스캔한다 — 설치/삭제/업데이트 직후 갱신을 보장하는 계약이다.
      * 단순히 "채워져 있으면 됨" 인 호출자는 `ensureLoaded()` 를 쓴다.
+     *
+     * @return void
      */
     public function loadTemplates(): void
     {
@@ -221,6 +248,8 @@ class TemplateManager implements TemplateManagerInterface
      *
      * 클래스 로드 없이 template.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리에 로드된 템플릿은 제외합니다.
+     *
+     * @return void
      */
     protected function loadPendingTemplates(): void
     {
@@ -241,6 +270,8 @@ class TemplateManager implements TemplateManagerInterface
      *
      * 클래스 로드 없이 template.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리 또는 _pending에 로드된 템플릿은 제외합니다.
+     *
+     * @return void
      */
     protected function loadBundledTemplates(): void
     {
@@ -668,6 +699,7 @@ class TemplateManager implements TemplateManagerInterface
      * 지정된 타입의 모든 템플릿을 비활성화합니다.
      *
      * @param  string  $type  템플릿 타입 ('admin' 또는 'user')
+     * @return void
      */
     protected function deactivateTemplatesByType(string $type): void
     {
@@ -890,6 +922,7 @@ class TemplateManager implements TemplateManagerInterface
                     'status' => 'uninstalled',
                     'source' => 'active',
                     'hidden' => (bool) ($template['hidden'] ?? false),
+                    ...$this->resolveIconFields($template['identifier'], $template['version']),
                 ];
             }
         }
@@ -910,6 +943,7 @@ class TemplateManager implements TemplateManagerInterface
                     'status' => 'uninstalled',
                     'source' => 'pending',
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
+                    ...$this->resolveIconFields($identifier, $metadata['version'] ?? '0.0.0'),
                 ];
             }
         }
@@ -930,6 +964,7 @@ class TemplateManager implements TemplateManagerInterface
                     'status' => 'uninstalled',
                     'source' => 'bundled',
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
+                    ...$this->resolveIconFields($identifier, $metadata['version'] ?? '0.0.0'),
                 ];
             }
         }
@@ -969,13 +1004,21 @@ class TemplateManager implements TemplateManagerInterface
                     $latestVersion = $bundledVersion ?? $fileVersion;
                 }
 
+                // 다국어 필드는 DB row(applyExtensionManifests 가 활성 언어팩 ja 등을 주입) 우선,
+                // 미설치 시 template.json 폴백 — 상세 조회(getTemplateDetails)·모듈·플러그인과 같은 규약이다.
+                // 종전에는 이 목록 경로만 디스크 매니페스트를 바로 읽어, 언어팩이 DB 에 넣어 둔 ja 가
+                // 버려졌다(실측 2026-09-12: 같은 응답에서 모듈 description 은 활성 언어팩의 번역으로
+                // 내려가는데 템플릿 description 만 ko 원문이 내려갔다).
+                $nameJson = $record->name ?: $template['name'];
+                $descriptionJson = $record->description ?: ($template['description'] ?? '');
+
                 $installedTemplates[$identifier] = [
                     'identifier' => $template['identifier'],
                     'vendor' => $template['vendor'],
-                    'name' => $this->getLocalizedValue($template['name'], $locale),
+                    'name' => $this->getLocalizedValue($nameJson, $locale),
                     'version' => $record->version,
                     'type' => $template['type'],
-                    'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
+                    'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $template['dependencies'] ?? [],
                     'status' => $record->status,
                     'update_available' => $updateAvailable,
@@ -985,6 +1028,7 @@ class TemplateManager implements TemplateManagerInterface
                     'github_url' => $template['github_url'] ?? ($record->github_url ?? null),
                     'github_changelog_url' => $record->github_changelog_url ?? ($template['github_changelog_url'] ?? null),
                     'hidden' => (bool) ($template['hidden'] ?? false),
+                    ...$this->resolveIconFields($template['identifier'], $record->version),
                     'user_modified_at' => $record->user_modified_at,
                     'created_at' => $record->created_at,
                     'updated_at' => $record->updated_at,
@@ -1053,6 +1097,7 @@ class TemplateManager implements TemplateManagerInterface
             'user_modified_at' => $templateRecord?->user_modified_at,
             'created_at' => $templateRecord?->created_at,
             'updated_at' => $templateRecord?->updated_at,
+            ...$this->resolveIconFields($template['identifier'], $template['version']),
         ];
     }
 
@@ -1101,20 +1146,21 @@ class TemplateManager implements TemplateManagerInterface
             'user_modified_at' => null,
             'created_at' => null,
             'updated_at' => null,
+            ...$this->resolveIconFields($metadata['identifier'] ?? $templateName, $metadata['version'] ?? '0.0.0'),
         ];
     }
 
     /**
-     * 템플릿의 에러 레이아웃 설정을 검증합니다.
+     * 템플릿의 `seo-config.json` 을 검증합니다.
      *
-     * error_config 섹션 존재 확인, 필수 에러 코드(404, 403, 500) 레이아웃 정의 확인,
-     * 정의된 레이아웃 파일 실제 존재 확인을 수행합니다.
+     * 파일은 선택이라 없으면 통과시키고(SEO 렌더가 div 폴백으로 돈다), 있으면 JSON 파싱 ·
+     * `component_map` 의 `tag` 필수 · `render` 가 가리키는 모드의 실재 · `render_modes` 의
+     * 타입 허용값을 본다.
      *
      * @param  string  $templateId  템플릿 식별자
-     * @param  array  $templateData  template.json 데이터
-     * @return bool 검증 성공 여부
+     * @return bool 검증 성공 여부 (파일이 없어도 true)
      *
-     * @throws \Exception 검증 실패 시
+     * @throws \Exception 파싱 실패·구조 위반 시
      */
     protected function validateSeoConfig(string $templateId): bool
     {
@@ -1267,9 +1313,21 @@ class TemplateManager implements TemplateManagerInterface
             // 동일하게 디렉토리 접두사 포함된 식별자를 그대로 사용한다 (예: "errors/404").
             $layoutName = $errorLayouts[$code] ?? $errorLayouts[(string) $code];
 
-            // 3. 레이아웃 파일 실제 존재 확인 — layout_name 그대로 layouts/ 하위 파일 경로로 사용
-            $layoutFilePath = $templatePath.'/layouts/'.$layoutName.'.json';
-            if (! File::exists($layoutFilePath)) {
+            // 3. 레이아웃 파일 실제 존재 확인 — layout_name 그대로 layouts/ 하위 파일 경로로 사용.
+            //    소스 선택은 설치 경로와 **같은 우선순위 규약**을 쓴다. 종전에는 여기만 `.json` 을
+            //    하드코딩해, 소스(`.g7.html`)으로만 작성된 에러 레이아웃이 registerLayouts() 로
+            //    정상 등록된 직후 이 검증에서 "없다" 로 판정돼 설치가 세워졌다 (34차 ❌2).
+            $found = false;
+
+            foreach ($this->layoutSourceCandidates($templatePath.'/layouts/'.$layoutName.'.json') as $candidate) {
+                if (File::exists($candidate['path'])) {
+                    $found = true;
+
+                    break;
+                }
+            }
+
+            if (! $found) {
                 throw new \Exception(
                     __('templates.errors.error_layout_not_found', [
                         'code' => $code,
@@ -1282,6 +1340,17 @@ class TemplateManager implements TemplateManagerInterface
         return true;
     }
 
+    /**
+     * 템플릿의 코어 버전 호환성(`template.json` 의 `g7_version`)을 확인하고, 아니면 예외로 세웁니다.
+     *
+     * 모듈·플러그인의 동명 메서드와 판정 대상이 다르다 — 저쪽은 다른 확장에 대한 의존이고,
+     * 템플릿은 코어 버전 범위만 선언한다.
+     *
+     * @param  array<string, mixed>  $template  템플릿 메타데이터 (`template.json`)
+     * @return void
+     *
+     * @throws \Exception 코어 버전이 선언 범위를 벗어날 때
+     */
     protected function checkDependencies(array $template): void
     {
         // 그누보드7 코어 버전 호환성 검증 (template.json의 g7_version 필드 활용)
@@ -1488,6 +1557,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  int  $templateId  템플릿 DB ID
+     * @return void
      */
     protected function registerLayouts(string $templateName, int $templateId): void
     {
@@ -1556,6 +1626,7 @@ class TemplateManager implements TemplateManagerInterface
      * 특정 템플릿의 모든 레이아웃을 삭제합니다.
      *
      * @param  int  $templateId  템플릿 DB ID
+     * @return void
      */
     protected function unregisterLayouts(int $templateId): void
     {
@@ -1579,6 +1650,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  int  $templateId  템플릿 DB ID
+     * @return void
      */
     protected function registerLayoutOverrides(string $templateName, int $templateId): void
     {
@@ -1703,6 +1775,7 @@ class TemplateManager implements TemplateManagerInterface
      * @param  int  $templateId  템플릿 DB ID
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  array  $registeredLayoutNames  현재 파일에서 등록된 레이아웃 이름 목록
+     * @return void
      */
     protected function cleanupOrphanOverrideLayouts(int $templateId, string $templateName, array $registeredLayoutNames): void
     {
@@ -1759,6 +1832,7 @@ class TemplateManager implements TemplateManagerInterface
      * 캐시를 무효화하여 다음 요청 시 새로운 데이터가 로드되도록 합니다.
      *
      * @param  int  $templateId  템플릿 DB ID
+     * @return void
      */
     protected function invalidateOverrideLayoutCaches(int $templateId): void
     {
@@ -1900,6 +1974,7 @@ class TemplateManager implements TemplateManagerInterface
      * 템플릿의 주요 레이아웃을 미리 캐싱합니다 (캐시 워밍).
      *
      * @param  string  $templateIdentifier  템플릿 식별자
+     * @return void
      */
     protected function warmTemplateCache(string $templateIdentifier): void
     {
@@ -2271,28 +2346,26 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($moduleDirectories as $moduleDir) {
             $moduleIdentifier = basename($moduleDir);
-            $overrideFiles = glob($moduleDir.'/*.json');
 
-            foreach ($overrideFiles as $file) {
+            // 소스 선택 + 읽기 — 둘 다 규약 SSoT 가 끝낸다 (CollectsFragmentSources).
+            // 읽기를 여기서 다시 구현하면 그것이 사본이 되고, 사본은 트레이트보다 반드시 약해진다
+            // (실제로 그랬다 — `is_array` 미검사로 스칼라 JSON 이 통과해 등록에 닿았다).
+            $definitions = $this->loadFragmentDefinitions($moduleDir, [], [
+                'template' => $templateIdentifier,
+                'module' => $moduleIdentifier,
+            ], $templateIdentifier);
+
+            foreach ($definitions as $definition) {
+                $file = $definition['path'];
+
                 try {
-                    $jsonContent = file_get_contents($file);
-                    $content = json_decode($jsonContent, true);
-
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        Log::warning('Extension 오버라이드 파일 JSON 파싱 실패', [
-                            'file' => $file,
-                            'error' => json_last_error_msg(),
-                        ]);
-
-                        continue;
-                    }
-
                     // 템플릿 오버라이드로 등록
                     $result = $this->layoutExtensionService->registerTemplateOverride(
-                        $content,
+                        $definition['data'],
                         $templateIdentifier,
                         $moduleIdentifier,  // override_target = 오버라이드 대상 모듈
-                        $templateId
+                        $templateId,
+                        $definition['key']
                     );
 
                     $stats['registered']++;
@@ -2302,7 +2375,9 @@ class TemplateManager implements TemplateManagerInterface
                         $stats['updated']++;
                     }
 
-                } catch (\Exception $e) {
+                    // `\Exception` 이 아니라 `\Throwable` 이다 — 등록 한 건이 던지는 `Error`(타입 오류 등)에
+                    // 나머지 확장점이 끌려 사라지면 안 된다 (트레이트 읽기 계약과 같은 이유).
+                } catch (\Throwable $e) {
                     Log::error('Extension 오버라이드 등록 실패', [
                         'file' => $file,
                         'template' => $templateIdentifier,
@@ -2329,6 +2404,7 @@ class TemplateManager implements TemplateManagerInterface
      * 템플릿 삭제 시 오버라이드를 제거합니다.
      *
      * @param  string  $templateIdentifier  템플릿 식별자
+     * @return void
      */
     protected function unregisterExtensionOverrides(string $templateIdentifier): void
     {
@@ -2565,6 +2641,8 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  템플릿 식별자
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  bool  $force
+     * @return void
      *
      * @throws \RuntimeException 소스를 찾을 수 없을 때
      */
@@ -2603,6 +2681,7 @@ class TemplateManager implements TemplateManagerInterface
      * 활성 디렉토리의 template.json을 다시 읽어 메모리에 로드합니다.
      *
      * @param  string  $templateName  템플릿 식별자
+     * @return void
      */
     protected function reloadTemplate(string $templateName): void
     {

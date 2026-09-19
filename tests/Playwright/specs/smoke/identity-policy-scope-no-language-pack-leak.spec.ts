@@ -3,7 +3,7 @@
  *        유발하던 회귀 (#415).
  *
  * 버그:
- *   admin_settings.json 에 정책(policies)·언어팩(language_packs) 데이터소스가 공존하며 둘 다
+ *   admin_settings.g7.html 에 정책(policies)·언어팩(language_packs) 데이터소스가 공존하며 둘 다
  *   query.scope 를 읽고 if 없이 항상 fetch 되었다. scope 값 도메인이 달라(정책=route/hook/custom,
  *   언어팩=core/module/plugin/template) 한 탭의 필터가 반대쪽 데이터소스로 새어 422 토스트가
  *   양방향으로 발생했다.
@@ -19,7 +19,7 @@
  * waitForResponse 로 기다린 뒤 판정한다 (고정 sleep 은 토큰 주입 환경의 느린 부트스트랩에서
  * 데이터 미완료 시점에 단언될 수 있어 불안정 — 응답 대기로 대체).
  *
- * @scenario source=settings-tab-scope-filter axis=tab:identity,tab:language_packs
+ * @scenario source=settings-tab-scope-filter, axis=tab:identity, tab=language_packs
  * @effects no-cross-tab-422, no-error-toast, per-tab-datasource-isolation
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

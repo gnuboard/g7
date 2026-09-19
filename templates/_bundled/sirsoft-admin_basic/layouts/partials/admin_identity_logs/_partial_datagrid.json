@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 기록 표. **줄을 고를 수 없다** — 이 기록은 감사 자료라 한 건씩 골라 지우는 길을\n  두지 않았고, 정리는 화면 머리의 보존기간 삭제 하나로만 한다.\n  줄을 펼치면 목록에 못 싣는 것들이 나온다(대상 해시 전문, 인증을 건 자리, 제공자가 남긴\n  부가 정보). 부가 정보 두 덩이는 정해진 모양이 없어 원문 그대로 펼쳐 보여 준다.",
     "meta": {
         "is_partial": true,
         "description": "Identity Logs DataGrid"
@@ -6,6 +7,23 @@
     "id": "identity_log_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "actions": [
+        {
+            "comment": "쪽 번호만 주소에 갈아 끼우고 걸어 둔 조건은 그대로 물려받는다. 표 몸통에 덮개를 씌워 새 쪽이 올 때까지 이전 내용이 깜박이지 않게 한다.",
+            "type": "change",
+            "event": "onPageChange",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/identity/logs",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "identity_log_datagrid__body",
+                "query": {
+                    "page": "{{$args[0]}}"
+                }
+            }
+        }
+    ],
     "props": {
         "data": "{{identityLogs?.data?.data}}",
         "pagination": true,
@@ -162,32 +180,31 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "펼친 줄을 통째로 전역에 옮겨 담고 상세 창을 연다 — 창은 이 값만 읽으므로 서버를 다시 부르지 않는다(펼친 자리와 같은 내용에 시각·시도 횟수 등이 더 붙는다).",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "identity_log_modal_data": "{{row}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "identity_log_detail_modal"
+                                            }
+                                        ]
+                                    }
+                                ],
                                 "props": {
                                     "type": "button",
                                     "className": "px-3 py-1.5 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                 },
-                                "text": "$t:admin.identity.logs.detail_title",
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "sequence",
-                                        "params": {
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "identity_log_modal_data": "{{row}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "identity_log_detail_modal"
-                                                }
-                                            ]
-                                        }
-                                    }
-                                ]
+                                "text": "$t:admin.identity.logs.detail_title"
                             }
                         ]
                     }
@@ -319,21 +336,5 @@
                 ]
             }
         ]
-    },
-    "actions": [
-        {
-            "event": "onPageChange",
-            "type": "change",
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/identity/logs",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": "{{$args[0]}}"
-                },
-                "transition_overlay_target": "identity_log_datagrid__body"
-            }
-        }
-    ]
+    }
 }

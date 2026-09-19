@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 14축 full cross product 691만 조합 — 전개 상한 초과.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 14축 full cross product 691만 조합 — 전개 상한 초과.
 #   test_files 실재 검사는 이 면제와 무관하게 항상 수행된다(끄려면 `:test-files` 접미사).
 #   실제 커버는 아래 effects 69건과 test_files 12개가 담당한다. S2 가 이월한 E2E axis 를 본 매니페스트에서 채운다.
 feature: 현금영수증 신청/발급 UI · 환불계좌 수집
@@ -7,7 +7,7 @@ description: |
   S1(인프라)·S2(API·자동발급) 위에 사람이 조작하는 표면을 얹는다. 그 전까지는 구매자가 신청할 곳도,
   관리자가 발급을 볼 곳도 없었다.
 
-  발견한 구조적 구멍(S3 착수 시 실측): 주문 생성 POST body 는 템플릿 소유 파일(_checkout_summary.json)의
+  발견한 구조적 구멍(S3 착수 시 실측): 주문 생성 POST body 는 템플릿 소유 파일(_checkout_summary.g7.html)의
   리터럴 객체다. 슬롯에 주입된 모듈 폼이 _local 에 값을 써도 그 body 에 실릴 방법이 없다 —
   결제 버튼에 id 가 없어 overlay 로 타겟할 수 없고, inject_props 는 컴포넌트 props 전용이라
   actions[].params.body 에 도달하지 못한다. 그대로 두면 구매자가 신청해도 주문에 아무 기록이 남지 않는다.
@@ -19,7 +19,7 @@ description: |
       validated() 가 떨궜다. 관리자가 저장해도 아무 일도 일어나지 않았다.
     · payment 응답에 cash_receipt_provider 가 없어, 주문상세 현금영수증 카드가 영원히 렌더될 수 없었다.
     · payment 응답에 refund_bank_* 4키가 없어, 취소 모달이 주문 시 입력된 계좌를 프리필할 수 없었다.
-    · _payment.json 루트에 id 가 없어 KG 플러그인의 overlay 주입(세금내역·영수증 링크·에스크로 버튼)이
+    · _payment.g7.html 루트에 id 가 없어 KG 플러그인의 overlay 주입(세금내역·영수증 링크·에스크로 버튼)이
       조용히 no-op 이었다. 본 이슈가 부수 복구한다(R1).
 
   실서버(Playwright MCP) 실측에서만 드러난 결함 — 유닛 테스트는 전부 green 이었다:

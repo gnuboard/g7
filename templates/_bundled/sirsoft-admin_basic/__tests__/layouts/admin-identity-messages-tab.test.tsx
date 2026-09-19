@@ -15,6 +15,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const tabPartial = require('../../layouts/partials/admin_settings/_tab_identity_messages.json');
 const tabIdentity = require('../../layouts/partials/admin_settings/_tab_identity.json');
@@ -44,7 +45,7 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
     describe('상단 영역 (헤더 + 채널 서브탭 + 정보 행)', () => {
         it('채널 서브탭에 mail 버튼 + activeIdentityMessageChannel setState', () => {
             const buttons = collectNodes(tabPartial, (n) =>
-                n.name === 'Button' && (n.children ?? []).some((c: any) => c.text === '$t:admin.settings.identity.messages.channels.mail')
+                n.name === 'Button' && asArray(n?.children).some((c: any) => c.text === '$t:admin.settings.identity.messages.channels.mail')
             );
             expect(buttons.length).toBeGreaterThan(0);
             const action = buttons[0].actions?.[0];
@@ -76,18 +77,18 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
 
         it('"정의 추가" Button — sequence(setState init form + openModal modal_identity_message_definition_add)', () => {
             const addBtns = collectNodes(tabPartial, (n) =>
-                n.name === 'Button' && (n.children ?? []).some((c: any) => c.text === '$t:admin.settings.identity.messages.btn_add_definition')
+                n.name === 'Button' && asArray(n?.children).some((c: any) => c.text === '$t:admin.settings.identity.messages.btn_add_definition')
             );
             expect(addBtns.length).toBe(1);
-            const seq = addBtns[0].actions[0];
+            const seq = asArray(addBtns[0]?.actions)[0];
             expect(seq.handler).toBe('sequence');
-            const setStateAction = seq.params.actions[0];
+            const setStateAction = callbacksOf(seq, 'actions')[0];
             expect(setStateAction.params.target).toBe('global');
             expect(setStateAction.params.identity_message_definition_add_modal?.form).toMatchObject({
                 provider_id: 'g7:core.mail',
                 scope_type: 'policy',
             });
-            const openModal = seq.params.actions[1];
+            const openModal = callbacksOf(seq, 'actions')[1];
             expect(openModal).toMatchObject({
                 handler: 'openModal',
                 target: 'modal_identity_message_definition_add',
@@ -108,10 +109,10 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
             );
             expect(chevrons.length).toBeGreaterThan(0);
             const button = collectNodes(tabPartial, (n) =>
-                n.name === 'Button' && (n.children ?? []).some((c: any) => c.name === 'Icon' && c.props?.name?.includes('expandedIdentityMessages'))
+                n.name === 'Button' && asArray(n?.children).some((c: any) => c.name === 'Icon' && c.props?.name?.includes('expandedIdentityMessages'))
             );
-            expect(button[0].actions[0].handler).toBe('setState');
-            expect(button[0].actions[0].params.target).toBe('local');
+            expect(asArray(button[0]?.actions)[0].handler).toBe('setState');
+            expect(asArray(button[0]?.actions)[0].params.target).toBe('local');
         });
 
         it('Toggle apiCall 패턴 + onSuccess(toast + refetchDataSource)', () => {
@@ -137,9 +138,9 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
                 n.name === 'Button' && n.text === '$t:admin.settings.identity.messages.edit'
             );
             expect(editBtns.length).toBeGreaterThan(0);
-            const seq = editBtns[0].actions[0];
+            const seq = asArray(editBtns[0]?.actions)[0];
             expect(seq.handler).toBe('sequence');
-            const setStateAction = seq.params.actions[0];
+            const setStateAction = callbacksOf(seq, 'actions')[0];
             const payload = setStateAction.params.identity_message_template_form_modal;
             expect(payload).toBeDefined();
             // 알림 패턴 미러: editLang + nested definition/template 객체
@@ -154,7 +155,7 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
             expect(setStateAction.params.key).toBeUndefined();
             expect(setStateAction.params.value).toBeUndefined();
 
-            const openModal = seq.params.actions[1];
+            const openModal = callbacksOf(seq, 'actions')[1];
             expect(openModal).toMatchObject({
                 handler: 'openModal',
                 target: 'modal_identity_message_template_form',
@@ -167,10 +168,10 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
             );
             expect(resetBtns.length).toBe(1);
             expect(resetBtns[0].if).toBe('{{!def.is_default}}');
-            const seq = resetBtns[0].actions[0];
-            const setStateAction = seq.params.actions[0];
+            const seq = asArray(resetBtns[0]?.actions)[0];
+            const setStateAction = callbacksOf(seq, 'actions')[0];
             expect(setStateAction.params.resetIdentityMessageTargetId).toBe('{{def.id}}');
-            const openModal = seq.params.actions[1];
+            const openModal = callbacksOf(seq, 'actions')[1];
             expect(openModal.target).toBe('modal_identity_message_definition_reset');
         });
 
@@ -181,10 +182,10 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
             expect(deleteBtns.length).toBe(1);
             expect(deleteBtns[0].if).toContain('def.abilities?.can_delete');
             expect(deleteBtns[0].if).toContain("def.scope_type === 'policy'");
-            const seq = deleteBtns[0].actions[0];
-            const setStateAction = seq.params.actions[0];
+            const seq = asArray(deleteBtns[0]?.actions)[0];
+            const setStateAction = callbacksOf(seq, 'actions')[0];
             expect(setStateAction.params.deleteIdentityMessageTargetId).toBe('{{def.id}}');
-            const openModal = seq.params.actions[1];
+            const openModal = callbacksOf(seq, 'actions')[1];
             expect(openModal.target).toBe('modal_identity_message_definition_delete');
         });
     });
@@ -223,7 +224,7 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
 
         it('"정의 추가" Button — 컬렉션 abilities.can_create 가드 (조회 권한 사용자에서 disabled)', () => {
             const addBtns = collectNodes(tabPartial, (n) =>
-                n.name === 'Button' && (n.children ?? []).some((c: any) => c.text === '$t:admin.settings.identity.messages.btn_add_definition')
+                n.name === 'Button' && asArray(n?.children).some((c: any) => c.text === '$t:admin.settings.identity.messages.btn_add_definition')
             );
             expect(addBtns.length).toBe(1);
             const disabledExpr = addBtns[0].props?.disabled;
@@ -264,7 +265,7 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
                 if (n.name !== 'Button') return false;
                 return n.text === '$t:admin.settings.identity.messages.edit'
                     || n.text === '$t:admin.settings.identity.messages.btn_reset'
-                    || (n.children ?? []).some((c: any) => c.text === '$t:admin.settings.identity.messages.btn_add_definition');
+                    || asArray(n?.children).some((c: any) => c.text === '$t:admin.settings.identity.messages.btn_add_definition');
             });
             guardedButtons.forEach((btn) => {
                 expect(btn.props?.className ?? '').toMatch(/disabled:opacity-50/);
@@ -303,7 +304,7 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
             expect(modalsPartials).toContain('partials/admin_settings/_modal_identity_message_definition_reset.json');
 
             // _tab_identity.json 자식에 IDV 메시지 모달 partial 이 남아있지 않아야 함
-            const tabPartials = (tabIdentity.children ?? [])
+            const tabPartials = asArray(tabIdentity?.children)
                 .map((c: any) => c.partial)
                 .filter(Boolean);
             expect(tabPartials).not.toContain('partials/admin_settings/_modal_identity_message_template_form.json');

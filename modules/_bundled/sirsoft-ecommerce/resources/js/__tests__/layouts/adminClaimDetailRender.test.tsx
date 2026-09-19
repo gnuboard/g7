@@ -333,7 +333,7 @@ function collectPartialRefs(node: any, out: string[] = []): string[] {
   return out;
 }
 
-describe('[case:backend-36] 클레임 상세 partial 안의 partial 참조 — 같은 디렉터리 기준 상대 경로 (서버 병합기 규약)', () => {
+describe('[case:backend-40] 클레임 상세 partial 안의 partial 참조 — 같은 디렉터리 기준 상대 경로 (서버 병합기 규약)', () => {
   // 회귀(2026-09-11 관리자 화면 실측, #599 후속): `partials/admin_ecommerce_claim_detail/…` 로 적은 참조는
   // 서버 병합기(ValidatesLayoutFiles::resolvePartialPath)가 partial 디렉터리 기준으로 못 찾고 layouts 루트
   // (admin/ 없이)로 되돌려 다시 찾다 실패한다 — 운영(APP_DEBUG=false)에서는 빈 배열로 조용히 사라져

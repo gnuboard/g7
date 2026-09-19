@@ -140,6 +140,17 @@
       },
       "edit": "Edit",
       "duplicate_currency_error": "This currency code is already registered."
+    },
+    "rate_provider": {
+      "label": "Exchange rate provider",
+      "manual": "Manual entry",
+      "managed_badge": "Automatically managed",
+      "manual_badge": "Manually managed",
+      "last_updated": "Last updated",
+      "settings": "Provider settings",
+      "auth_key_required": "Enter an API key to start automatic management.",
+      "unsupported_base": "The base currency is unsupported. Enter rates manually.",
+      "auto_manage_disabled": "Enable automatic management in provider settings."
     }
   },
   "order_settings": {

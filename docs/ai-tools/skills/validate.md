@@ -21,7 +21,7 @@
 | `**/Listeners/**`, 훅을 발행·등록하는 Service·Provider | hook |
 | `**/database/migrations/**`, `**/upgrades/Upgrade_*.php`, `**/seeders/**` | migration |
 | `lang/**`, `**/lang/**`, `lang-packs/**` | i18n |
-| `**/layouts/**/*.json`, `**/*.tsx`, 핸들러·`resources/js/core/template-engine/**` | frontend |
+| `**/layouts/**/*.{json,g7.html}`, `**/extensions/**/*.{json,g7.html}`, `**/*.tsx`, 핸들러·`resources/js/core/template-engine/**` | frontend (`.g7.html` = 소스 SSoT, `.json` = 런타임 계약 — 동일 취급) |
 | 사용자가 브랜치·이슈 전체를 지시 · 위 표가 2개 이상 영역을 켠 경우 | branch (전 영역) |
 
 한 파일이 여러 영역에 속할 수 있다 — 겹치면 모두 켠다. 어느 영역에도 걸리지 않는 변경도 미분류 사유를 적고 audit 와 파일 유형 규정 대조는 수행한다.
@@ -229,7 +229,7 @@ SKILL.md 의 자동 선택 표에 더해 브랜치 검증에서만 활성화되�
 
 ## frontend
 
-`validate frontend` 의 2단계에서 쓴다. 대상: `resources/layouts/**/*.json`, `templates/**/layouts/**/*.json`, `{modules,plugins}/**/resources/layouts/**/*.json`, `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, `resources/js/core/template-engine/**`. 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
+`validate frontend` 의 2단계에서 쓴다. 대상: `resources/layouts/**/*.{json,g7.html}`, `templates/**/layouts/**/*.{json,g7.html}`, `{modules,plugins}/**/resources/layouts/**/*.{json,g7.html}`, `(templates|modules|plugins)/**/extensions/**/*.{json,g7.html}`(확장 주입 fragment), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, `resources/js/core/template-engine/**`. 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md(태그·속성 3분할·구조 태그·액션 top-level)가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다(역방향 `layout:compile` 은 `.json` → `.g7.html`). 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
 
 규정: layout-json.md · layout-json-features.md · layout-json-components.md · layout-json-inheritance.md · data-binding.md · data-binding-i18n.md · data-sources.md · actions.md · actions-handlers.md · state-management.md · components.md(인덱스: types/patterns/advanced) · component-props-composite.md · dark-mode.md · responsive-layout.md · modal-usage.md · layout-json-features-error.md · security.md · editors.md.
 
@@ -308,6 +308,12 @@ happy path 만 다루고 다크모드·반응형·빈/로딩/에러 상태·다�
 
 룰 위반(error/warn 분리) · 컴포넌트 props 소스 대조 결과 · 미정의 속성·핸들러 · 아이콘 검증 · 이중 저장소 미러 · 엔진 연동(DevTools/WYSIWYG/문서) · 테스트 결과 — 각각 통과/위반과 file:line.
 
+### Playwright E2E 동반 의무
+
+프론트엔드(레이아웃 `.g7.html`·`.json`, 컴포넌트 TSX, 엔진 TS, 핸들러 TS) 변경은 Playwright spec 동반 추가·수정이 함께 요구된다. 단위 테스트(Vitest)만으로 완료를 선언하지 않는다 — 위지윅 발행 회귀 #238 은 단위 4건 green 상태에서 브라우저 재현으로만 드러났다.
+
+자동 차단: audit 룰 `frontend-change-requires-e2e`(변경셋에 spec 미동반 시 error). 면제는 변경 파일 헤더의 `// e2e:allow <사유>` 또는 시나리오 매니페스트(`tests/scenarios/*.yaml`) 동반 갱신.
+
 ---
 
 ## hook
@@ -370,7 +376,7 @@ class ProductCacheListener implements HookListenerInterface
 
 ## i18n
 
-`validate i18n` 의 2단계에서 쓴다. 대상: `lang/{ko,en}/*.php`, `**/lang/**`, `**/resources/lang/**/*.json`, `templates/**/lang/*.json`, `lang-packs/_bundled/g7-*-{locale}/**`, 그리고 문자열을 표시하는 PHP·TSX·레이아웃 JSON. 계획서 안 코드 블록은 plan-code-blocks.md. 키 추출은 `/i18n extract`, 언어팩 동기화는 `/i18n sync`.
+`validate i18n` 의 2단계에서 쓴다. 대상: `lang/{ko,en}/*.php`, `**/lang/**`, `**/resources/lang/**/*.json`, `templates/**/lang/*.json`, `lang-packs/_bundled/g7-*-{locale}/**`, 그리고 문자열을 표시하는 PHP·TSX·레이아웃 소스(`.g7.html`)와 런타임 계약(`.json`)(`{resources,templates/_bundled/*,modules/_bundled/*/resources,plugins/_bundled/*/resources}/{layouts,extensions}/**`). `.g7.html` 은 소스 SSoT 라 `$t:` 소비처로 `.json` 과 동일 취급한다. 계획서 안 코드 블록은 plan-code-blocks.md. 키 추출은 `/i18n extract`, 언어팩 동기화는 `/i18n sync`.
 
 규정: database-guide.md 다국어 · validation.md · exceptions.md · module-i18n.md · data-binding-i18n.md · components-patterns.md(`G7Core.t`) · language-packs.md.
 
@@ -439,7 +445,7 @@ ko 키만 추가하고 en·ja·번들 팩을 빠뜨리지 않았는가. 새 문�
 | 상황 | 필요 작업 |
 | --- | --- |
 | 신규 테이블 | 마이그레이션만 |
-| 기존 테이블 스키마 변경 | 마이그레이션 + `upgrades/Upgrade_X_Y_Z.php` |
+| 기존 테이블 스키마 변경 | 마이그레이션 + `upgrades/` 의 `Upgrade_X_Y_Z` 클래스 (`X_Y_Z` = 대상 버전) |
 | 기존 데이터 백필·변환 | 업그레이드 스텝만(마이그레이션 아님) |
 
 ### 부수의무 (migration)

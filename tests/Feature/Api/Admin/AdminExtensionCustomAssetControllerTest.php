@@ -127,6 +127,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         return ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json'];
     }
 
+    /**
+     * @scenario operation=delete, target=custom_asset
+     *
+     * @effects code_editor_deletes_softly
+     */
     public function test_저장_조회_목록_삭제_왕복(): void
     {
         // @scenario manage_actor=with_permission, manage_action=save
@@ -176,6 +181,187 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         $this->assertFileDoesNotExist($this->customDir.DIRECTORY_SEPARATOR.$path);
     }
 
+    /**
+     * @scenario operation=rename, target=custom_asset
+     *
+     * @effects custom_asset_editor_renames_through_the_api
+     */
+    public function test_이름변경은_파일을_옮기고_원본을_남기지_않는다(): void
+    {
+        $from = '__t123-before.css';
+        $to = '__t123-after.css';
+
+        $this->putJson(
+            $this->url('/custom-assets/content'),
+            ['path' => $from, 'content' => 'body { color: red; }'],
+            $this->headers($this->managerToken)
+        )->assertStatus(200);
+
+        $rename = $this->postJson(
+            $this->url('/custom-assets/rename'),
+            ['from' => $from, 'to' => $to],
+            $this->headers($this->managerToken)
+        );
+
+        $rename->assertStatus(200);
+        $rename->assertJsonPath('data.path', $to);
+
+        $this->assertFileDoesNotExist($this->customDir.DIRECTORY_SEPARATOR.$from);
+        $this->assertFileExists($this->customDir.DIRECTORY_SEPARATOR.$to);
+        $this->assertSame('body { color: red; }', file_get_contents($this->customDir.DIRECTORY_SEPARATOR.$to));
+
+        // 이름변경도 활동 로그에 남고, 설명 키가 실제 번역으로 풀린다(키 문자열 노출 0).
+        $this->assertDatabaseHas('activity_logs', ['action' => 'custom_asset.rename']);
+        $this->assertNotSame(
+            'activity_log.description.custom_asset_rename',
+            __('activity_log.description.custom_asset_rename'),
+        );
+    }
+
+    /**
+     * 대상이 이미 있으면 **덮어쓰지 않는다**.
+     *
+     * PHP `rename()` 은 대상이 있어도 조용히 덮어쓴다. 그대로 두면 운영자가 올린 다른 파일이
+     * 경고 없이 사라지므로 서비스가 먼저 막는다. 입력 오류가 아니라 상태 충돌이라 409 다.
+     *
+     * @effects custom_asset_editor_renames_through_the_api
+     */
+    public function test_이름변경_대상이_이미_있으면_409_로_막힌다(): void
+    {
+        $from = '__t123-before.css';
+        $to = '__t123-taken.css';
+
+        foreach ([$from => 'a{}', $to => 'b{}'] as $path => $content) {
+            $this->putJson(
+                $this->url('/custom-assets/content'),
+                ['path' => $path, 'content' => $content],
+                $this->headers($this->managerToken)
+            )->assertStatus(200);
+        }
+
+        $this->postJson(
+            $this->url('/custom-assets/rename'),
+            ['from' => $from, 'to' => $to],
+            $this->headers($this->managerToken)
+        )->assertStatus(409);
+
+        // 둘 다 그대로 남아야 한다 — 막혔다면 아무것도 옮기지 않은 것이다.
+        $this->assertSame('a{}', file_get_contents($this->customDir.DIRECTORY_SEPARATOR.$from));
+        $this->assertSame('b{}', file_get_contents($this->customDir.DIRECTORY_SEPARATOR.$to));
+    }
+
+    /**
+     * @effects code_editor_rejects_invalid_file_names
+     */
+    public function test_이름변경이_확장자를_바꾸면_거부된다(): void
+    {
+        $from = '__t123-before.css';
+
+        $this->putJson(
+            $this->url('/custom-assets/content'),
+            ['path' => $from, 'content' => 'a{}'],
+            $this->headers($this->managerToken)
+        )->assertStatus(200);
+
+        // `.css` → `.txt` 는 그 파일이 더 이상 실리지 않는다는 뜻인데 화면에는 그대로 보인다.
+        $this->postJson(
+            $this->url('/custom-assets/rename'),
+            ['from' => $from, 'to' => '__t123-before.txt'],
+            $this->headers($this->managerToken)
+        )->assertStatus(422);
+
+        $this->assertFileExists($this->customDir.DIRECTORY_SEPARATOR.$from);
+    }
+
+    /**
+     * @dataProvider 탈출_경로_제공자
+     *
+     * @effects code_editor_rejects_invalid_file_names
+     */
+    public function test_이름변경도_경로_탈출을_차단한다(string $path): void
+    {
+        $this->postJson(
+            $this->url('/custom-assets/rename'),
+            ['from' => $path, 'to' => '__t123-x.css'],
+            $this->headers($this->managerToken)
+        )->assertStatus(422);
+
+        $this->postJson(
+            $this->url('/custom-assets/rename'),
+            ['from' => '__t123-x.css', 'to' => $path],
+            $this->headers($this->managerToken)
+        )->assertStatus(422);
+    }
+
+    /**
+     * @scenario scope=name, target=extension_fragment
+     *
+     * @effects custom_asset_editor_filters_by_name
+     */
+    public function test_검색은_파일명과_본문을_모두_찾는다(): void
+    {
+        $this->putJson(
+            $this->url('/custom-assets/content'),
+            ['path' => '__t123-theme.css', 'content' => "a{}\n.probe-token { color: red; }\n"],
+            $this->headers($this->managerToken)
+        )->assertStatus(200);
+
+        $byContent = $this->getJson(
+            $this->url('/custom-assets/search?q=probe-token'),
+            $this->headers($this->managerToken)
+        );
+
+        $byContent->assertStatus(200);
+        $hit = collect($byContent->json('data'))->firstWhere('path', '__t123-theme.css');
+
+        $this->assertNotNull($hit);
+        $this->assertSame(1, $hit['match_count']);
+        // 좌표는 1-base 다 — 편집기 줄 번호와 같아야 결과를 눌러 그 줄로 갈 수 있다.
+        $this->assertSame(2, $hit['lines'][0]['line']);
+        $this->assertStringContainsString('probe-token', $hit['lines'][0]['preview']);
+
+        $byName = $this->getJson(
+            $this->url('/custom-assets/search?q=__t123-theme'),
+            $this->headers($this->managerToken)
+        );
+
+        $byName->assertStatus(200);
+        $nameHit = collect($byName->json('data'))->firstWhere('path', '__t123-theme.css');
+        $this->assertNotNull($nameHit);
+        $this->assertTrue($nameHit['name_matched']);
+    }
+
+    /**
+     * @effects code_editor_skips_content_search_below_two_characters
+     */
+    public function test_검색어가_2자_미만이면_422(): void
+    {
+        $this->getJson(
+            $this->url('/custom-assets/search?q=a'),
+            $this->headers($this->managerToken)
+        )->assertStatus(422);
+    }
+
+    /**
+     * @effects code_editor_can_create_rename_and_delete_files
+     */
+    public function test_이름변경과_검색도_전용_권한을_요구한다(): void
+    {
+        $this->postJson(
+            $this->url('/custom-assets/rename'),
+            ['from' => '__t123-a.css', 'to' => '__t123-b.css'],
+            $this->headers($this->outsiderToken)
+        )->assertStatus(403);
+
+        $this->getJson(
+            $this->url('/custom-assets/search?q=probe'),
+            $this->headers($this->outsiderToken)
+        )->assertStatus(403);
+    }
+
+    /**
+     * @effects code_editor_can_create_rename_and_delete_files
+     */
     public function test_레이아웃_편집_권한만으로는_접근할_수_없다(): void
     {
         // 여기서 올린 스크립트는 그 레이아웃 한 장이 아니라 사이트 전 화면에서 실행된다.
@@ -203,6 +389,9 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         $this->assertFileDoesNotExist($this->customDir.DIRECTORY_SEPARATOR.'__t123-evil.css');
     }
 
+    /**
+     * @effects code_editor_can_create_rename_and_delete_files
+     */
     public function test_비인증_요청은_거부된다(): void
     {
         // @scenario manage_actor=unauthenticated, manage_action=list
@@ -227,6 +416,8 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
 
     /**
      * @dataProvider 탈출_경로_제공자
+     *
+     * @effects code_editor_rejects_invalid_file_names
      */
     public function test_경로_탈출은_422_로_차단된다(string $path): void
     {
@@ -239,6 +430,9 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         )->assertStatus(422);
     }
 
+    /**
+     * @effects code_editor_rejects_invalid_file_names
+     */
     public function test_편집_불가_확장자는_본문_저장이_거부된다(): void
     {
         // @scenario manage_actor=with_permission, manage_action=save
@@ -251,6 +445,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         )->assertStatus(422);
     }
 
+    /**
+     * @scenario operation=create, target=custom_asset
+     *
+     * @effects code_editor_can_create_rename_and_delete_files
+     */
     public function test_업로드는_허용_확장자만_받는다(): void
     {
         // @scenario manage_actor=with_permission, manage_action=upload
@@ -272,6 +471,9 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         $this->assertFileExists($this->customDir.DIRECTORY_SEPARATOR.'__t123-logo.png');
     }
 
+    /**
+     * @effects custom_asset_editor_filters_by_name
+     */
     public function test_목록_응답이_편집기_메타를_함께_싣는다(): void
     {
         // @scenario manage_actor=with_permission, manage_action=list
@@ -306,6 +508,8 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
      * 동작하면 운영자는 "모듈에서는 왜 안 되는지" 를 알 수 없다.
      *
      * @dataProvider 확장_타입_제공자
+     *
+     * @effects code_editor_can_create_rename_and_delete_files
      */
     public function test_세_타입_모두_같은_왕복을_지원한다(string $type, string $identifier): void
     {
@@ -358,6 +562,9 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         }
     }
 
+    /**
+     * @effects code_editor_rejects_invalid_file_names
+     */
     public function test_알_수_없는_확장_타입은_라우트가_받지_않는다(): void
     {
         // 정규식이 세 값으로 제한하므로 404 다 — 통과시켜 빈 목록으로 응답하면 오타가
@@ -368,6 +575,9 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         )->assertStatus(404);
     }
 
+    /**
+     * @effects code_editor_can_create_rename_and_delete_files
+     */
     public function test_저장이_확장_캐시_버전을_올린다(): void
     {
         // 올리지 않으면 편집한 파일이 게시본에 반영되지 않아, 운영자에게는

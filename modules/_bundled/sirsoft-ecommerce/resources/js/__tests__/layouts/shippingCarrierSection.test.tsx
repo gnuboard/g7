@@ -241,7 +241,7 @@ describe('택배사 추가 폼', () => {
 
     it('이름(name) 필드가 MultilingualInput 컴포지트 컴포넌트이다', () => {
         const composites = allNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const addFormMultilingual = composites.find(
             (c: any) => c.props?.value?.includes('carrierForm?.name')
@@ -252,7 +252,7 @@ describe('택배사 추가 폼', () => {
 
     it('MultilingualInput의 onChange가 carrierForm.name을 setState한다', () => {
         const composites = allNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const addFormMultilingual = composites.find(
             (c: any) => c.props?.value?.includes('carrierForm?.name')
@@ -428,7 +428,7 @@ describe('추가 폼 Validation 에러 표시', () => {
 
     it('이름 MultilingualInput에 error prop이 carrierFormErrors.name_ko 기반으로 설정된다', () => {
         const composites = allNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const addFormMultilingual = composites.find(
             (c: any) => c.props?.value?.includes('carrierForm?.name')
@@ -575,7 +575,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     describe('이름(name) 컬럼', () => {
         it('이름 필드가 MultilingualInput 컴포지트 컴포넌트이다 (compact 레이아웃)', () => {
             const composites = allNodes.filter(
-                (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+                (n: any) => n.name === 'MultilingualInput'
             );
             const tableMultilingual = composites.find(
                 (c: any) =>
@@ -587,7 +587,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
 
         it('이름 MultilingualInput 변경 시 .map() 패턴 setState로 carriers 배열을 수정한다', () => {
             const composites = allNodes.filter(
-                (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+                (n: any) => n.name === 'MultilingualInput'
             );
             const tableMultilingual = composites.find(
                 (c: any) =>
@@ -743,7 +743,7 @@ describe('테이블 행 Validation 에러 표시', () => {
 
     it('이름 MultilingualInput에 _local.errors 기반 error prop이 설정된다', () => {
         const composites = allNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const tableMultilingual = composites.find(
             (c: any) =>
@@ -1191,7 +1191,7 @@ describe('택배사 카드 바디 필드', () => {
     describe('이름(name) 필드', () => {
         it('MultilingualInput (compact)이다', () => {
             const composites = allCardNodes.filter(
-                (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+                (n: any) => n.name === 'MultilingualInput'
             );
             const nameInput = composites.find(
                 (c: any) => c.props?.value?.includes('$carrier.name')
@@ -1202,7 +1202,7 @@ describe('택배사 카드 바디 필드', () => {
 
         it('이름 변경 시 테이블과 동일한 .map() 패턴 setState를 사용한다', () => {
             const composites = allCardNodes.filter(
-                (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+                (n: any) => n.name === 'MultilingualInput'
             );
             const nameInput = composites.find(
                 (c: any) => c.props?.value?.includes('$carrier.name')
@@ -1300,7 +1300,7 @@ describe('택배사 카드 validation 에러', () => {
 
     it('이름 MultilingualInput에 _local.errors 기반 error prop이 설정된다', () => {
         const composites = allCardNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const nameInput = composites.find(
             (c: any) => c.props?.value?.includes('$carrier.name')

@@ -69,6 +69,6 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 **설명**
 
-현재 로그인한 사용자의 비밀번호를 재확인한다. 민감한 작업 직전 본인 확인 게이트로 사용되며, 프론트의 `_password_verify_section.json` 이 호출한다. 요청의 `password` 를 `Hash::check` 로 저장된 해시와 대조해, 일치하면 성공 응답(`user.password_verified`)을, 틀리면 401(`user.password_incorrect`)을 반환한다. 비밀번호를 변경하지 않고 신원만 확인하므로 사용자 데이터는 바뀌지 않는다.
+현재 로그인한 사용자의 비밀번호를 재확인한다. 민감한 작업 직전 본인 확인 게이트로 사용되며, 프론트의 `_password_verify_section.g7.html` 이 호출한다. 요청의 `password` 를 `Hash::check` 로 저장된 해시와 대조해, 일치하면 성공 응답(`user.password_verified`)을, 틀리면 401(`user.password_incorrect`)을 반환한다. 비밀번호를 변경하지 않고 신원만 확인하므로 사용자 데이터는 바뀌지 않는다.
 
 

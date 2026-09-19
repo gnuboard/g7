@@ -40,7 +40,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-admin_basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `src/handlers/` | 템플릿 전용 액션 핸들러 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
@@ -48,7 +48,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `editor-spec/` | 분할 편집기 스펙 | `php artisan template:update sirsoft-admin_basic --force` |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update sirsoft-admin_basic --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update sirsoft-admin_basic --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update sirsoft-admin_basic --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -65,7 +66,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 
 **사이드바 접힘 상태 복원**: 페이지 로드 → `src/index.ts` 부트스트랩이 `initSidebar()` 직접
 호출(레이아웃 `init_actions` 아님) → localStorage 값을 `_global.sidebarCollapsed` 에 반영 →
-`_admin_base.json` 의 사이드바 영역 className 표현식이 그 값을 읽어 접힘 스타일 적용.
+`_admin_base.g7.html` 의 사이드바 영역 className 표현식이 그 값을 읽어 접힘 스타일 적용.
 
 **로케일 전환**: 코어가 로케일을 바꾸면 이 템플릿의 `initTemplate()` 재등록 진입점이 호출되어
 핸들러 맵을 다시 등록합니다(§docs/handlers.md "부트스트랩"). 사이드바 접힘 등 1회성 부팅
@@ -77,9 +78,9 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 125개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 146개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
-| 전용 핸들러 | 17개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
+| 제공 컴포넌트 | 131개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 레이아웃 | 149개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 전용 핸들러 | 19개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
 
@@ -94,14 +95,17 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 
 ## 5. 수정 시 동반 의무
 
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-17 develop-7.1.0 2차 병합 전수 보존 검사에서 이 확장의 미등재 레이아웃이 red)
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update sirsoft-admin_basic --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
 - [ ] `template.json` 의 `assets` 경로는 실제 산출물을 가리켜야 한다 — 없는 경로를 선언하면 검색엔진용(봇) 화면이 404 를 가리키는 `<link>` 를 싣고, 일반 화면에는 흔적이 남지 않는다
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 아이콘 컨테이너(`w-N h-N` 상자) 안의 `<icon>` 은 컨테이너와 **다른 줄**에 둔다 — `AuthoringDebtLedgerTest` 가 줄 단위로 `<icon` 과 박스 크기 표기를 함께 재므로 한 줄에 있으면 글리프가 박스 크기를 쓴 것으로 읽힌다(3차 병합 후속, 확장 관리 모달 9파일 선례). 새 `<on>`(자식 있는 액션)·`<data-source>`·`<modal>` 은 S21 주석 자리를 비워 두지 않는다 — `CommentAnchorStageLedgerTest` 가 완료 단락(S21.4·S21.5)의 잔여 앵커 0 을 잠근다
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 컴포넌트가 `localStorage` 에 적는 키는 `g7le.` 접두를 쓴다 — GDPR 동의 플러그인의 strictly-necessary 허용 목록(`plugins/_bundled/sirsoft-gdpr/plugin.php`)이 이 접두만 통과시키고, 밖의 키는 동의 전 쓰기가 조용히 버려지며 부팅 때 정리된다. 쓴 직후 되읽어 성공을 확인한다
 - [ ] 필수 컴포넌트(35개) 의 Props 시그니처를 깨는 변경은 전체 번들 확장 관리자 화면에 영향 — 변경 전 `src/components/{basic,composite}/` 의 실사용처를 넓게 확인
-- [ ] `_admin_base.json` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
+- [ ] `_admin_base.g7.html` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
 - [ ] AdminSidebar 의 `MenuItem`/`AdminSidebarProps` 인터페이스 확장 시 이 문서의 §docs/components.md "AdminSidebar 상세" 동기화
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-admin_basic --force` (편집기는 활성 디렉토리만 읽는다)
 - [ ] 로그인 화면의 2단계 인증 단계를 고쳤다면 1단계·2단계 `if` 의 상보성과 `login`/`loginTwoFactor` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호 단계에서 Enter 가 새 challenge 를 발급한다
@@ -153,9 +157,9 @@ Monaco 를 올릴 때는 `tests/Playwright/specs/admin/code-editor-monaco-vendor
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 213개 | `vitest.config.ts` |
-| Playwright | 10개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
+| Vitest | 231개 | `vitest.config.ts` |
+| Playwright | 18개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 13개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

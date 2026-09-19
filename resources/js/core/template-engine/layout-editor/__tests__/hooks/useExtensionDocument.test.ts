@@ -683,9 +683,9 @@ describe('useExtensionDocument — 로드/저장', () => {
 });
 
 // ============================================================================
-// [case:backend-34] overlay 확장 — 호스트 병합 모드 저장이 injections 를 보존해야 한다
+// [case:backend-35] overlay 확장 — 호스트 병합 모드 저장이 injections 를 보존해야 한다
 // ============================================================================
-describe('[case:backend-34] overlay 확장 호스트 병합 저장 — injections 보존', () => {
+describe('[case:backend-35] overlay 확장 호스트 병합 저장 — injections 보존', () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {

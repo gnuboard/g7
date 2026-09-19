@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file adminOrderConfirmDeposit.test.tsx
  * @description 관리자 주문상세 무통장 입금확인 버튼+모달 구조 + 핸들러 회귀 테스트 (B2 / D7 / 입금UI#2 scope)
@@ -26,6 +27,7 @@ import {
   openConfirmDepositModalHandler,
   confirmDepositHandler,
 } from '../../handlers/orderDetailHandlers';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 interface Action {
   type?: string;
@@ -74,7 +76,7 @@ describe('_partial_payment_info.json — 입금확인 버튼 (B2 / 입금UI#2)',
       (n) =>
         n.name === 'Button' &&
         Array.isArray(n.actions) &&
-        n.actions.some((a) => a.handler === 'sirsoft-ecommerce.openConfirmDepositModal')
+        actionsOf(n).some((a) => a.handler === 'sirsoft-ecommerce.openConfirmDepositModal')
     );
   }
 
@@ -86,7 +88,7 @@ describe('_partial_payment_info.json — 입금확인 버튼 (B2 / 입금UI#2)',
       (n) =>
         n.name === 'Button' &&
         Array.isArray(n.actions) &&
-        n.actions.some((a) => a.handler === 'openModal' && a.target === 'modal_confirm_deposit')
+        actionsOf(n).some((a) => a.handler === 'openModal' && a.target === 'modal_confirm_deposit')
     );
     expect(usesRawOpenModal, '입금확인 버튼은 선언적 openModal 을 직접 호출하면 안 된다').toBe(false);
   });

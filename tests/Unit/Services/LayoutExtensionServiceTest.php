@@ -103,6 +103,11 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects extension_point_node_receives_injected_components_as_children, extension_data_sources_merge_into_host_data_sources
      */
+    /**
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects applies_extension_point_components
+     */
     public function test_applies_extension_point_components(): void
     {
         // Extension Point 확장 등록
@@ -160,6 +165,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 함께 담아, 편집기 오버레이가 "어느 확장인지" 표시할 수 있게 하는지 검증한다.
      *
      * @effects applyextensions_with_source_meta_tags_extension_nodes_and_injected_props
+     */
+    /**
+     * @effects marks_extension_source_with_type_and_identifier_in_edit_mode
      */
     public function test_marks_extension_source_with_type_and_identifier_in_edit_mode(): void
     {
@@ -222,6 +230,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects applyextensions_with_source_meta_tags_extension_nodes_and_injected_props
      */
+    /**
+     * @effects marks_extension_source_on_injected_data_sources_in_edit_mode
+     */
     public function test_marks_extension_source_on_injected_data_sources_in_edit_mode(): void
     {
         LayoutExtension::create([
@@ -271,6 +282,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 메타가 부여되는지 검증한다.
      *
      * @effects applyextensions_with_source_meta_tags_extension_nodes_and_injected_props, inject_props_host_node_property_modal_shows_origin_section
+     */
+    /**
+     * @effects marks_injected_props_on_host_node_in_edit_mode
      */
     public function test_marks_injected_props_on_host_node_in_edit_mode(): void
     {
@@ -328,6 +342,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 그 확장점을 포함하는 레이아웃 전체.
      *
      * @effects extension_show_returns_host_layouts_candidates, extension_point_multiple_hosts_signals_needs_host_picker
+     */
+    /**
+     * @effects get_extension_host_layouts_overlay_and_extension_point
      */
     public function test_get_extension_host_layouts_overlay_and_extension_point(): void
     {
@@ -388,6 +405,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects extension_show_returns_host_layouts_candidates
      */
+    /**
+     * @effects get_extension_host_layouts_extension_point_requires_components
+     */
     public function test_get_extension_host_layouts_extension_point_requires_components(): void
     {
         TemplateLayout::create([
@@ -446,6 +466,9 @@ class LayoutExtensionServiceTest extends TestCase
      * (결제 overlay 가 존재하지 않는 target 을 가리켜 "주입됨"으로 오판되던 결함 방지).
      *
      * @effects extension_show_returns_host_layouts_candidates
+     */
+    /**
+     * @effects get_extension_host_layouts_overlay_requires_existing_target_id
      */
     public function test_get_extension_host_layouts_overlay_requires_existing_target_id(): void
     {
@@ -525,6 +548,11 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects overlay_append_child_adds_after_existing_children
      */
+    /**
+     * @scenario kind=overlay, merge_target=components
+     *
+     * @effects applies_overlay_at_correct_position
+     */
     public function test_applies_overlay_at_correct_position(): void
     {
         // Overlay 확장 등록
@@ -586,6 +614,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects overlay_init_actions_append_after_host_init_actions
      */
+    /**
+     * @effects merges_overlay_init_actions_after_host
+     */
     public function test_merges_overlay_init_actions_after_host(): void
     {
         LayoutExtension::create([
@@ -646,6 +677,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects snake_init_actions_absorbed_into_single_camel_init_actions
      */
+    /**
+     * @effects overlay_snake_init_actions_merge_into_standard_camel_key
+     */
     public function test_overlay_snake_init_actions_merge_into_standard_camel_key(): void
     {
         LayoutExtension::create([
@@ -702,6 +736,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects init_actions_array_created_from_extension_only
      */
+    /**
+     * @effects merges_overlay_init_actions_when_host_has_none
+     */
     public function test_merges_overlay_init_actions_when_host_has_none(): void
     {
         LayoutExtension::create([
@@ -750,6 +787,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects register_extension_derives_type_and_target_from_content
      */
+    /**
+     * @effects registers_extension_point
+     */
     public function test_registers_extension_point(): void
     {
         $content = [
@@ -780,6 +820,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 확장 등록 테스트 (Overlay 타입)
      *
      * @effects register_extension_derives_type_and_target_from_content
+     */
+    /**
+     * @effects registers_overlay
      */
     public function test_registers_overlay(): void
     {
@@ -814,6 +857,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 출처별 확장 제거 테스트 (Soft Delete)
      *
      * @effects unregister_by_source_soft_deletes_only_that_sources_rows
+     */
+    /**
+     * @effects unregisters_by_source
      */
     public function test_unregisters_by_source(): void
     {
@@ -864,6 +910,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects restore_by_source_brings_back_soft_deleted_rows
      */
+    /**
+     * @effects restores_by_source
+     */
     public function test_restores_by_source(): void
     {
         // Soft deleted 확장 생성
@@ -894,6 +943,11 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects register_template_override_records_override_target
      */
+    /**
+     * @scenario kind=template_override, merge_target=components
+     *
+     * @effects registers_template_override
+     */
     public function test_registers_template_override(): void
     {
         $content = [
@@ -921,6 +975,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 우선순위 순서 테스트
      *
      * @effects extensions_inject_in_ascending_priority_order
+     */
+    /**
+     * @effects extensions_ordered_by_priority
      */
     public function test_extensions_ordered_by_priority(): void
     {
@@ -978,6 +1035,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects inactive_extension_contributes_nothing
      */
+    /**
+     * @effects inactive_extensions_not_applied
+     */
     public function test_inactive_extensions_not_applied(): void
     {
         LayoutExtension::create([
@@ -1016,6 +1076,9 @@ class LayoutExtensionServiceTest extends TestCase
      * Overlay의 prepend 위치 테스트
      *
      * @effects overlay_prepend_inserts_before_target_keeping_siblings
+     */
+    /**
+     * @effects overlay_prepend_position
      */
     public function test_overlay_prepend_position(): void
     {
@@ -1063,6 +1126,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects overlay_replace_swaps_target_node_out
      */
+    /**
+     * @effects overlay_replace_position
+     */
     public function test_overlay_replace_position(): void
     {
         LayoutExtension::create([
@@ -1108,6 +1174,9 @@ class LayoutExtensionServiceTest extends TestCase
      * data_sources 병합 테스트
      *
      * @effects extension_data_sources_merge_into_host_data_sources
+     */
+    /**
+     * @effects merges_data_sources_from_extensions
      */
     public function test_merges_data_sources_from_extensions(): void
     {
@@ -1155,6 +1224,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 활성 모듈/플러그인의 확장이 특정 템플릿에 등록되는지 테스트
      *
      * @effects register_all_active_loads_module_and_plugin_extension_files
+     */
+    /**
+     * @effects registers_all_active_extensions_to_template
      */
     public function test_registers_all_active_extensions_to_template(): void
     {
@@ -1205,6 +1277,18 @@ class LayoutExtensionServiceTest extends TestCase
             'status' => ExtensionStatus::Active->value,
         ]);
 
+        // 붙을 자리가 있는 템플릿에만 등록된다 (C10) — 확장점을 가진 호스트와 overlay 대상 레이아웃을 둔다.
+        TemplateLayout::factory()->create([
+            'template_id' => $newTemplate->id,
+            'name' => 'admin_dashboard',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'admin_dashboard',
+                'components' => [['type' => 'extension_point', 'name' => 'admin.dashboard.widgets']],
+            ],
+        ]);
+        TemplateLayout::factory()->create(['template_id' => $newTemplate->id, 'name' => 'admin_settings']);
+
         $stats = $this->service->registerAllActiveExtensionsToTemplate($newTemplate->id);
 
         // 모듈 1건, 플러그인 1건 등록 확인
@@ -1237,6 +1321,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects register_all_active_creates_nothing_without_active_extensions
      */
+    /**
+     * @effects registers_all_active_extensions_returns_empty_when_no_active_extensions
+     */
     public function test_registers_all_active_extensions_returns_empty_when_no_active_extensions(): void
     {
         $mockModuleManager = $this->createMock(ModuleManager::class);
@@ -1259,6 +1346,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 확장 파일이 없는 모듈/플러그인은 건너뛰는지 테스트
      *
      * @effects register_all_active_skips_sources_without_extension_files
+     */
+    /**
+     * @effects registers_all_active_extensions_skips_extensions_without_files
      */
     public function test_registers_all_active_extensions_skips_extensions_without_files(): void
     {
@@ -1287,6 +1377,11 @@ class LayoutExtensionServiceTest extends TestCase
      * Extension Point에서 modals가 호스트 레이아웃에 병합되는지 테스트
      *
      * @effects extension_modals_create_modals_section_when_host_has_none
+     */
+    /**
+     * @scenario kind=extension_point, merge_target=modals
+     *
+     * @effects merges_modals_from_extension_point
      */
     public function test_merges_modals_from_extension_point(): void
     {
@@ -1334,6 +1429,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 호스트 레이아웃에 기존 modals가 있을 때 확장 modals가 병합되는지 테스트
      *
      * @effects extension_modals_merge_with_existing_host_modals
+     */
+    /**
+     * @effects merges_modals_with_existing_host_modals
      */
     public function test_merges_modals_with_existing_host_modals(): void
     {
@@ -1394,6 +1492,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects no_modals_key_created_when_extension_declares_none
      */
+    /**
+     * @effects extension_without_modals_does_not_add_modals_key
+     */
     public function test_extension_without_modals_does_not_add_modals_key(): void
     {
         LayoutExtension::create([
@@ -1437,6 +1538,9 @@ class LayoutExtensionServiceTest extends TestCase
      * 여러 확장의 modals가 모두 병합되는지 테스트
      *
      * @effects modals_from_every_extension_survive_the_merge
+     */
+    /**
+     * @effects merges_modals_from_multiple_extensions
      */
     public function test_merges_modals_from_multiple_extensions(): void
     {
@@ -1517,6 +1621,11 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects inject_props_append_adds_to_existing_array_prop
      */
+    /**
+     * @scenario kind=extension_point, merge_target=props
+     *
+     * @effects inject_props_append_adds_items_to_array_prop
+     */
     public function test_inject_props_append_adds_items_to_array_prop(): void
     {
         // 타겟 컴포넌트에 기존 tabs 배열이 있는 레이아웃
@@ -1579,6 +1688,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects inject_props_prepend_adds_before_existing_array_prop
      */
+    /**
+     * @effects inject_props_prepend_adds_items_before_array_prop
+     */
     public function test_inject_props_prepend_adds_items_before_array_prop(): void
     {
         $layout = [
@@ -1639,6 +1751,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects inject_props_merge_shallow_merges_object_prop
      */
+    /**
+     * @effects inject_props_merge_merges_object_prop
+     */
     public function test_inject_props_merge_merges_object_prop(): void
     {
         $layout = [
@@ -1693,6 +1808,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects inject_props_scalar_overwrites_host_value
      */
+    /**
+     * @effects inject_props_scalar_overwrites_value
+     */
     public function test_inject_props_scalar_overwrites_value(): void
     {
         $layout = [
@@ -1741,6 +1859,9 @@ class LayoutExtensionServiceTest extends TestCase
      * A-5: prop 미존재 시 신규 생성 — 빈 배열에 append
      *
      * @effects inject_props_creates_the_prop_when_host_lacks_it
+     */
+    /**
+     * @effects inject_props_creates_new_prop_when_not_exists
      */
     public function test_inject_props_creates_new_prop_when_not_exists(): void
     {
@@ -1795,6 +1916,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects inject_props_creates_props_object_on_a_component_without_one
      */
+    /**
+     * @effects inject_props_creates_props_when_component_has_no_props
+     */
     public function test_inject_props_creates_props_when_component_has_no_props(): void
     {
         $layout = [
@@ -1841,6 +1965,9 @@ class LayoutExtensionServiceTest extends TestCase
      * A-7: 표현식 문자열 대상에 _append 시 경고 로그 + 값 변경 없음
      *
      * @effects inject_props_on_expression_string_warns_and_keeps_the_value
+     */
+    /**
+     * @effects inject_props_append_on_expression_string_logs_warning
      */
     public function test_inject_props_append_on_expression_string_logs_warning(): void
     {
@@ -1903,6 +2030,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects inject_props_warns_when_the_target_node_is_absent
      */
+    /**
+     * @effects inject_props_logs_warning_when_target_not_found
+     */
     public function test_inject_props_logs_warning_when_target_not_found(): void
     {
         $layout = [
@@ -1956,6 +2086,9 @@ class LayoutExtensionServiceTest extends TestCase
      * A-9: 깊은 중첩 컴포넌트에 inject_props 주입
      *
      * @effects inject_props_reaches_deeply_nested_target_nodes
+     */
+    /**
+     * @effects inject_props_works_on_deeply_nested_component
      */
     public function test_inject_props_works_on_deeply_nested_component(): void
     {
@@ -2026,6 +2159,9 @@ class LayoutExtensionServiceTest extends TestCase
      * A-10: 동일 prop에 _append와 _merge 혼합 시 _append 우선 적용
      *
      * @effects inject_props_append_takes_precedence_over_merge_on_the_same_prop
+     */
+    /**
+     * @effects inject_props_append_takes_precedence_over_merge_in_same_prop
      */
     public function test_inject_props_append_takes_precedence_over_merge_in_same_prop(): void
     {
@@ -2575,6 +2711,11 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects overlay_computed_merges_into_host_computed
      */
+    /**
+     * @scenario kind=overlay, merge_target=sections
+     *
+     * @effects overlay_merges_computed_into_layout
+     */
     public function test_overlay_merges_computed_into_layout(): void
     {
         $layout = [
@@ -2629,6 +2770,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects overlay_state_merges_into_host_state
      */
+    /**
+     * @effects overlay_merges_state_into_layout
+     */
     public function test_overlay_merges_state_into_layout(): void
     {
         $layout = [
@@ -2678,6 +2822,11 @@ class LayoutExtensionServiceTest extends TestCase
      * B-3: overlay에 modals 정의 시 레이아웃 modals에 병합
      *
      * @effects overlay_modals_merge_into_host_modals
+     */
+    /**
+     * @scenario kind=overlay, merge_target=modals
+     *
+     * @effects overlay_merges_modals_into_layout
      */
     public function test_overlay_merges_modals_into_layout(): void
     {
@@ -2731,6 +2880,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects overlay_creates_missing_section_on_host
      */
+    /**
+     * @effects overlay_creates_computed_when_layout_has_none
+     */
     public function test_overlay_creates_computed_when_layout_has_none(): void
     {
         $layout = [
@@ -2776,6 +2928,9 @@ class LayoutExtensionServiceTest extends TestCase
      * B-5: 하위 호환 — overlay에 computed/state/modals가 없을 때 기존 레이아웃 영향 없음
      *
      * @effects overlay_without_sections_leaves_host_sections_untouched
+     */
+    /**
+     * @effects overlay_without_sections_does_not_affect_layout
      */
     public function test_overlay_without_sections_does_not_affect_layout(): void
     {
@@ -2823,6 +2978,9 @@ class LayoutExtensionServiceTest extends TestCase
      * B-6: 여러 overlay에서 동일 섹션 순차 병합
      *
      * @effects multiple_overlays_accumulate_into_the_same_section
+     */
+    /**
+     * @effects overlay_multiple_overlays_merge_computed_sequentially
      */
     public function test_overlay_multiple_overlays_merge_computed_sequentially(): void
     {
@@ -2898,6 +3056,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects later_priority_overlay_wins_the_same_section_key
      */
+    /**
+     * @effects overlay_later_priority_overwrites_same_computed_key
+     */
     public function test_overlay_later_priority_overwrites_same_computed_key(): void
     {
         $layout = [
@@ -2969,6 +3130,9 @@ class LayoutExtensionServiceTest extends TestCase
      * modals 내부의 extension_point에 플러그인 컴포넌트가 주입되는지 테스트
      *
      * @effects modal_extension_point_receives_injected_components
+     */
+    /**
+     * @effects applies_extension_points_inside_modals
      */
     public function test_applies_extension_points_inside_modals(): void
     {
@@ -3044,6 +3208,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects extension_point_props_forwarded_as_extension_point_props
      */
+    /**
+     * @effects passes_extension_point_props_inside_modals
+     */
     public function test_passes_extension_point_props_inside_modals(): void
     {
         LayoutExtension::create([
@@ -3107,6 +3274,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects extension_point_callbacks_forwarded_as_extension_point_callbacks
      */
+    /**
+     * @effects passes_extension_point_callbacks_to_injected_components
+     */
     public function test_passes_extension_point_callbacks_to_injected_components(): void
     {
         LayoutExtension::create([
@@ -3168,6 +3338,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects no_extension_point_callbacks_key_when_extension_declares_none
      */
+    /**
+     * @effects no_callbacks_key_when_extension_point_has_no_callbacks
+     */
     public function test_no_callbacks_key_when_extension_point_has_no_callbacks(): void
     {
         LayoutExtension::create([
@@ -3209,6 +3382,9 @@ class LayoutExtensionServiceTest extends TestCase
      * components와 modals 양쪽에 동일 이름의 extension_point가 있을 때 모두 주입되는지 테스트
      *
      * @effects same_extension_point_injects_into_both_components_and_modals
+     */
+    /**
+     * @effects injects_into_both_components_and_modals_extension_points
      */
     public function test_injects_into_both_components_and_modals_extension_points(): void
     {
@@ -3275,6 +3451,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects extension_point_replace_mode_drops_host_default
      */
+    /**
+     * @effects extension_point_mode_replace_removes_default
+     */
     public function test_extension_point_mode_replace_removes_default(): void
     {
         LayoutExtension::create([
@@ -3323,6 +3502,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects extension_point_prepend_mode_places_extension_before_default
      */
+    /**
+     * @effects extension_point_mode_prepend_inserts_before_default
+     */
     public function test_extension_point_mode_prepend_inserts_before_default(): void
     {
         LayoutExtension::create([
@@ -3370,6 +3552,9 @@ class LayoutExtensionServiceTest extends TestCase
      * Extension Point mode 미지정 시 기본 동작 (append) 테스트
      *
      * @effects extension_point_default_mode_appends_after_host_default
+     */
+    /**
+     * @effects extension_point_default_mode_appends_after_default
      */
     public function test_extension_point_default_mode_appends_after_default(): void
     {
@@ -3420,6 +3605,9 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @effects source_label_reads_db_name_for_the_current_locale
      */
+    /**
+     * @effects resolve_source_label_reads_ja_from_db_name
+     */
     public function test_resolve_source_label_reads_ja_from_db_name(): void
     {
         Plugin::factory()->create([
@@ -3459,6 +3647,9 @@ class LayoutExtensionServiceTest extends TestCase
      * DB 레코드가 없으면 매니페스트 객체 getName() 으로 폴백한다(역호환, 크래시 없음).
      *
      * @effects source_label_falls_back_to_manifest_when_no_db_row
+     */
+    /**
+     * @effects resolve_source_label_falls_back_to_manifest_when_no_db_row
      */
     public function test_resolve_source_label_falls_back_to_manifest_when_no_db_row(): void
     {

@@ -8,6 +8,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\ValidateBizppurioSettingsListener;
 use Plugins\Sirsoft\MessageBizppurio\Plugin;
@@ -215,10 +216,10 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
         // storage_path 가 아니라 격리된 디스크를 통해 파일을 조회한다.
         $relativePath = self::IDENTIFIER.'/settings/setting.json';
         $this->assertTrue(
-            \Illuminate\Support\Facades\Storage::disk('plugins')->exists($relativePath),
+            Storage::disk('plugins')->exists($relativePath),
             '설정 파일이 격리된 plugins 디스크에 저장되어야 한다.'
         );
-        $raw = \Illuminate\Support\Facades\Storage::disk('plugins')->get($relativePath);
+        $raw = Storage::disk('plugins')->get($relativePath);
         $this->assertStringNotContainsString('super-secret', $raw);
 
         // 복호화 왕복은 원문과 일치해야 한다.

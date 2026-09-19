@@ -1,0 +1,56 @@
+<!-- 게시판 폼 「목록」 탭 — 글 목록을 어떻게 늘어놓을지만 다룬다(정렬 기준과 방향, 한 쪽에 몇 건). 한 쪽 건수는 데스크톱과 모바일을 따로 두어 좁은 화면에서 더 적게 보일 수 있다 -->
+<partial description="Board Form - List Tab Content">
+  <div data-ref="section_list_card" class="admin-card">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <h3 data-ref="section_list" class="card-title">$t:sirsoft-board.admin.form.tabs.list</h3>
+    <div data-ref="section_list_fields" class="row-stack">
+      <div data-ref="list_sort_group" class="grid-2col">
+        <div data-ref="order_by_field" class="">
+          <label data-ref="order_by_label" class="form-label">
+            <span>$t:sirsoft-board.admin.form.fields.order_by.label</span>
+          </label>
+          <select data-ref="order_by_select" name="order_by" disabled="{{_computed.isReadOnly}}" class="w-full">
+            <options>
+              <option value="created_at">$t:sirsoft-board.admin.form.fields.order_by.options.created_at</option>
+              <option value="view_count">$t:sirsoft-board.admin.form.fields.order_by.options.view_count</option>
+              <option value="title">$t:sirsoft-board.admin.form.fields.order_by.options.title</option>
+              <option value="author">$t:sirsoft-board.admin.form.fields.order_by.options.author</option>
+            </options>
+          </select>
+        </div>
+        <div data-ref="order_direction_field" class="">
+          <label data-ref="order_direction_label" class="form-label">
+            <span>$t:sirsoft-board.admin.form.fields.order_direction.label</span>
+          </label>
+          <select data-ref="order_direction_select" name="order_direction" disabled="{{_computed.isReadOnly}}" class="w-full">
+            <options>
+              <option value="DESC">$t:sirsoft-board.admin.form.fields.order_direction.options.desc</option>
+              <option value="ASC">$t:sirsoft-board.admin.form.fields.order_direction.options.asc</option>
+            </options>
+          </select>
+        </div>
+      </div>
+      <div data-ref="list_per_page_group" class="grid-2col">
+        <div data-ref="per_page_field" class="">
+          <label data-ref="per_page_label" class="form-label">
+            <span>$t:sirsoft-board.admin.form.fields.per_page.label</span>
+          </label>
+          <input data-ref="per_page_input" type="number" name="per_page" min="{{_local?.form?._meta?.limits?.per_page_min ?? 5}}" max="{{_local?.form?._meta?.limits?.per_page_max ?? 100}}" :required="true" disabled="{{_computed.isReadOnly}}" class=""/>
+          <p data-ref="per_page_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.per_page.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}</p>
+          <span data-if="{{_local.errors?.per_page}}" class="form-error-xs mt-1">{{_local.errors?.per_page?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="per_page_mobile_field" class="">
+          <label data-ref="per_page_mobile_label" class="form-label">
+            <span>$t:sirsoft-board.admin.form.fields.per_page_mobile.label</span>
+          </label>
+          <input data-ref="per_page_mobile_input" type="number" name="per_page_mobile" min="{{_local?.form?._meta?.limits?.per_page_min ?? 5}}" max="{{_local?.form?._meta?.limits?.per_page_max ?? 100}}" :required="true" disabled="{{_computed.isReadOnly}}" class=""/>
+          <p data-ref="per_page_mobile_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.per_page_mobile.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}</p>
+          <span data-if="{{_local.errors?.per_page_mobile}}" class="form-error-xs mt-1">{{_local.errors?.per_page_mobile?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

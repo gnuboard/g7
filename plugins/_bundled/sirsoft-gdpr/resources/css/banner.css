@@ -1,7 +1,7 @@
 /**
  * sirsoft-gdpr 쿠키 배너·환경설정 모달 스타일
  *
- * 레이아웃 확장(`cookie_banner.json` 등)이 Tailwind 클래스로 대부분 스타일링하므로
+ * 레이아웃 확장(소스 SSoT `cookie_banner.g7.html` 등)이 Tailwind 클래스로 대부분 스타일링하므로
  * 본 파일은 다음 두 가지에 한정:
  *
  * 1. JS 토글용 유틸리티 클래스 (`.gdpr-hidden`)

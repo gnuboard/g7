@@ -49,6 +49,26 @@ class LayoutResource extends BaseApiResource
     }
 
     /**
+     * `?with_markup=1` 응답에 싣는 마크업 페이로드 — 컨트롤러가 변환 서비스로 만들어 주입한다(없으면 미부착).
+     *
+     * @var array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null}|null
+     */
+    protected ?array $markup = null;
+
+    /**
+     * 마크업 페이로드를 주입합니다 (`?with_markup=1`).
+     *
+     * @param  array<string, mixed>  $markup  변환 결과
+     * @return $this
+     */
+    public function withMarkup(array $markup): static
+    {
+        $this->markup = $markup;
+
+        return $this;
+    }
+
+    /**
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  현재 요청 객체
@@ -89,6 +109,9 @@ class LayoutResource extends BaseApiResource
             'current_version' => $this->getValue('current_version') !== null
                 ? (int) $this->getValue('current_version')
                 : null,
+
+            // `?with_markup=1` — 코드 편집기 HTML 탭용 역변환 결과 (기본 응답은 무변경)
+            ...($this->markup ?? []),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),

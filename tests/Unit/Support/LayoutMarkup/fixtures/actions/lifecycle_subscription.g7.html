@@ -1,0 +1,18 @@
+<div data-ref="dashboard">
+  <on event="mount">
+    <api-call target="/api/admin/dashboard" method="GET"/>
+    <toast message="$t:dashboard.loaded" type="info"/>
+  </on>
+  <on event="unmount"><stop-interval/></on>
+  <on listen="dashboard.stats.updated">
+    <refetch-data-source dataSourceId="dashboard_stats"/>
+  </on>
+  <button data-ref="filter_btn">
+    <on type="click">
+      <conditions>
+        <when if="{{_local.tab === 'all'}}"><set-state target="_local" filtered="false"/></when>
+        <else><set-state target="_local" filtered="true"/></else>
+      </conditions>
+    </on>
+  </button>
+</div>

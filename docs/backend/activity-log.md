@@ -717,6 +717,16 @@ Route::get('products/{product}/logs', [ProductController::class, 'logs']);
 
 ### 레이아웃 JSON에서 처리로그 탭 구현
 
+```html
+<json key="id">"activity_logs"</json>
+<json key="endpoint">"/api/admin/vendor-module/products/{{route.id}}/logs"</json>
+<json key="method">"GET"</json>
+<json key="autoFetch">false</json>
+<json key="params">{"per_page":10,"page":1}</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "id": "activity_logs",

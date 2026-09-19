@@ -10,7 +10,7 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-marketing.filter_consent_data` | filter | 마케팅 동의 데이터를 필터링하는 훅 | 선언 (호출 위치 미확인) |
-| `sirsoft-marketing.user.consent_changed` | action | 사용자 마케팅 동의 변경 시 실행되는 액션 훅 | `src/Services/MarketingConsentService.php:205` |
+| `sirsoft-marketing.user.consent_changed` | action | 사용자 마케팅 동의 변경 시 실행되는 액션 훅 | `src/Services/MarketingConsentService.php:266` |
 | `sirsoft-marketing.user.subscribed` | action | 사용자 마케팅 동의 필드가 동의(granted)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
 | `sirsoft-marketing.user.unsubscribed` | action | 사용자 마케팅 동의 필드가 철회(revoked)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
 <!-- @generated:hooks-published END -->
@@ -99,11 +99,11 @@ Repository 인터페이스 주입으로만 하며, `Model::query()` · `DB::tabl
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/user-marketing-detail.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-marketing-form.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-marketing-profile-view.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-marketing-profile.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-marketing-register.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/user-marketing-detail.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
+| `resources/extensions/user-marketing-form.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_form` |
+| `resources/extensions/user-marketing-profile-view.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile` |
+| `resources/extensions/user-marketing-profile.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile-edit` |
+| `resources/extensions/user-marketing-register.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `auth/register` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
@@ -112,10 +112,10 @@ Repository 인터페이스 주입으로만 하며, `Model::query()` · `DB::tabl
 
 | 조각 | 들어가는 자리 |
 |---|---|
-| `user-marketing-register.json` | 회원가입 폼 |
-| `user-marketing-form.json` | 관리자 회원 수정 폼 |
-| `user-marketing-detail.json` | 관리자 회원 상세 |
-| `user-marketing-profile.json` · `user-marketing-profile-view.json` | 마이페이지 (수정·보기) |
+| `user-marketing-register.g7.html` | 회원가입 폼 |
+| `user-marketing-form.g7.html` | 관리자 회원 수정 폼 |
+| `user-marketing-detail.g7.html` | 관리자 회원 상세 |
+| `user-marketing-profile.g7.html` · `user-marketing-profile-view.g7.html` | 마이페이지 (수정·보기) |
 
 대상 화면을 소유한 쪽(템플릿·코어)이 그 자리(슬롯)를 없애면 조각은 **오류 없이 사라집니다.**
 증상은 "가입 폼에 동의 항목이 안 보인다" 뿐이고 로그에는 아무것도 남지 않으므로, 템플릿이나

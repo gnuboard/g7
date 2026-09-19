@@ -1,0 +1,653 @@
+<partial description="Claim List - Filter Section with Slot System">
+  <!-- 주문관리 `_partial_filter_section.json` 의 노드 순서·클래스·슬롯 구조를 정본으로 복제한 화면이다(D21). 주문관리 쪽이 바뀌면 이 파일도 함께 바꾼다. 노드 순서: 프리셋 → 검색행 → 기본필터 → 상세필터 → 액션행. -->
+  <div data-ref="filter_card" data-key="filter" class="admin-card">
+    <!-- 필터 표시/숨김 컨트롤 (UI 를 렌더하지 않는다 — 상태 관리 전용) -->
+    <filter-visibility-selector data-ref="filter_visibility_selector" id="admin_ecommerce_claim_filters" visibleFilters="{{_local.visibleFilters}}">
+      <prop name="defaultFilters">
+        <item>searchField</item>
+        <item>searchKeyword</item>
+        <item>date</item>
+        <item>claimStatus</item>
+        <item>faultType</item>
+        <item>chargeMethod</item>
+        <item>reasonCode</item>
+      </prop>
+      <on type="change" event="onFilterVisibilityChange">
+        <set-state target="_local" visibleFilters="{{$args[0]}}"/>
+      </on>
+    </filter-visibility-selector>
+    <!-- 슬롯 등록 영역 - 모든 필터 행 정의 (hidden) -->
+    <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
+      <!-- 신청일 필터 (기간 컬럼은 created_at 단일 — dateType 축 없음) -->
+      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — date -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_010_date_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.date</span>
+        <div class="flex-center gap-2">
+          <input data-ref="f_020_start_date" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.filter.start_date" class="input w-36">
+            <on type="change">
+              <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
+            </on>
+          </input>
+          <span class="text-secondary">~</span>
+          <input data-ref="f_030_end_date" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.filter.end_date" class="input w-36">
+            <on type="change">
+              <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>
+            </on>
+          </input>
+        </div>
+        <div class="flex-center gap-1">
+          <button data-ref="f_040_quick_today" type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.filter.date_quick.today
+          </button>
+          <button data-ref="f_050_quick_week" type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.filter.date_quick.week
+          </button>
+          <button data-ref="f_060_quick_month" type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.filter.date_quick.1_month
+          </button>
+          <button data-ref="f_070_quick_3months" type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.filter.date_quick.3_months
+          </button>
+          <button data-ref="f_080_quick_6months" type="button" class="{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="6months"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.filter.date_quick.6_months
+          </button>
+          <button data-ref="f_090_quick_1year" type="button" class="{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="1year"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.filter.date_quick.1_year
+          </button>
+        </div>
+      </div>
+      <!-- 상태 필터 — 유형별 어휘(교환 14 / 반품 11 / 환불 7 / 취소 2, D28). 활성 유형의 칩만 등록된다 -->
+      <div data-ref="claimStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — claimStatus -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimStatus')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('claimStatus') ? (_local.visibleFilters || []).filter(f => f !== 'claimStatus') : [...(_local.visibleFilters || []), 'claimStatus']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_440_claimStatus_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.claim_status</span>
+        <!-- exchange 상태 칩 14종 -->
+        <div data-ref="claim_status_chips_exchange" data-if="{{(query.type || 'exchange') === 'exchange'}}" class="flex-center flex-wrap gap-2">
+          <chip-checkbox data-ref="f_100_status_exchange_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.exchange_status.requested" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="requested"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_110_status_exchange_payment_pending" value="payment_pending" checked="{{(_local.filter.claimStatus || []).includes('payment_pending')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.exchange_status.payment_pending" variant="orange">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="payment_pending"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_120_status_exchange_paid" value="paid" checked="{{(_local.filter.claimStatus || []).includes('paid')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.paid" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="paid"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_130_status_exchange_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.approved" variant="blue">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="approved"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_140_status_exchange_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.exchange_status.on_hold" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="on_hold"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_150_status_exchange_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.exchange_status.rejected" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="rejected"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_160_status_exchange_collection_ready" value="collection_ready" checked="{{(_local.filter.claimStatus || []).includes('collection_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.exchange_status.collection_ready" variant="yellow">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collection_ready"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_170_status_exchange_collecting" value="collecting" checked="{{(_local.filter.claimStatus || []).includes('collecting')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.exchange_status.collecting" variant="yellow">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collecting"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_180_status_exchange_collected" value="collected" checked="{{(_local.filter.claimStatus || []).includes('collected')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.collected" variant="yellow">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collected"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_190_status_exchange_redelivery_ready" value="redelivery_ready" checked="{{(_local.filter.claimStatus || []).includes('redelivery_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivery_ready" variant="blue">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="redelivery_ready"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_200_status_exchange_redelivering" value="redelivering" checked="{{(_local.filter.claimStatus || []).includes('redelivering')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivering" variant="blue">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="redelivering"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_210_status_exchange_redelivered" value="redelivered" checked="{{(_local.filter.claimStatus || []).includes('redelivered')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivered" variant="blue">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="redelivered"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_220_status_exchange_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.completed" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="completed"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_230_status_exchange_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.exchange_status.withdrawn" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="withdrawn"/>
+            </on>
+          </chip-checkbox>
+        </div>
+        <!-- return 상태 칩 11종 -->
+        <div data-ref="claim_status_chips_return" data-if="{{(query.type || 'exchange') === 'return'}}" class="flex-center flex-wrap gap-2">
+          <chip-checkbox data-ref="f_240_status_return_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.return_status.requested" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="requested"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_250_status_return_payment_pending" value="payment_pending" checked="{{(_local.filter.claimStatus || []).includes('payment_pending')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.return_status.payment_pending" variant="orange">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="payment_pending"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_260_status_return_paid" value="paid" checked="{{(_local.filter.claimStatus || []).includes('paid')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.paid" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="paid"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_270_status_return_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.approved" variant="blue">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="approved"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_280_status_return_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.return_status.on_hold" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="on_hold"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_290_status_return_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.return_status.rejected" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="rejected"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_300_status_return_collection_ready" value="collection_ready" checked="{{(_local.filter.claimStatus || []).includes('collection_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.return_status.collection_ready" variant="yellow">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collection_ready"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_310_status_return_collecting" value="collecting" checked="{{(_local.filter.claimStatus || []).includes('collecting')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.return_status.collecting" variant="yellow">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collecting"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_320_status_return_collected" value="collected" checked="{{(_local.filter.claimStatus || []).includes('collected')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.collected" variant="yellow">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collected"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_330_status_return_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.completed" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="completed"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_340_status_return_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.return_status.withdrawn" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="withdrawn"/>
+            </on>
+          </chip-checkbox>
+        </div>
+        <!-- refund 상태 칩 7종 -->
+        <div data-ref="claim_status_chips_refund" data-if="{{(query.type || 'exchange') === 'refund'}}" class="flex-center flex-wrap gap-2">
+          <chip-checkbox data-ref="f_350_status_refund_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.refund_status.requested" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="requested"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_360_status_refund_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.refund_status.approved" variant="blue">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="approved"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_370_status_refund_processing" value="processing" checked="{{(_local.filter.claimStatus || []).includes('processing')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.refund_status.processing" variant="orange">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="processing"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_380_status_refund_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.refund_status.on_hold" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="on_hold"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_390_status_refund_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.refund_status.completed" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="completed"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_400_status_refund_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.refund_status.rejected" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="rejected"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_410_status_refund_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.refund_status.withdrawn" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="withdrawn"/>
+            </on>
+          </chip-checkbox>
+        </div>
+        <!-- cancel 상태 칩 2종 -->
+        <div data-ref="claim_status_chips_cancel" data-if="{{(query.type || 'exchange') === 'cancel'}}" class="flex-center flex-wrap gap-2">
+          <chip-checkbox data-ref="f_420_status_cancel_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.cancel_status.requested" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="requested"/>
+            </on>
+          </chip-checkbox>
+          <chip-checkbox data-ref="f_430_status_cancel_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.cancel_status.completed" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="completed"/>
+            </on>
+          </chip-checkbox>
+        </div>
+      </div>
+      <!-- 귀책 필터 — 취소 유형은 귀책 컬럼이 없어 게이트가 prohibited 로 거절하므로 행을 등록하지 않는다 -->
+      <div data-ref="faultType_filter_row" data-slot="{{(_local.visibleFilters || []).includes('faultType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" data-if="{{(query.type || 'exchange') !== 'cancel'}}" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — faultType -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('faultType')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('faultType') ? (_local.visibleFilters || []).filter(f => f !== 'faultType') : [...(_local.visibleFilters || []), 'faultType']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_450_faultType_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.fault_type</span>
+        <div class="flex-center flex-wrap gap-4">
+          <label data-ref="f_460_faultTypes_customer" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" value="customer" checked="{{(_local.filter.faultTypes || []).includes('customer')}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.faultTypes" value="customer"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.claim_reason_fault_type.customer</span>
+          </label>
+          <label data-ref="f_470_faultTypes_seller" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" value="seller" checked="{{(_local.filter.faultTypes || []).includes('seller')}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.faultTypes" value="seller"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.claim_reason_fault_type.seller</span>
+          </label>
+          <label data-ref="f_480_faultTypes_carrier" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" value="carrier" checked="{{(_local.filter.faultTypes || []).includes('carrier')}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.faultTypes" value="carrier"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.claim_reason_fault_type.carrier</span>
+          </label>
+        </div>
+      </div>
+      <!-- 청구방식 필터 — 환불·취소 유형은 청구 컬럼이 없어 게이트가 prohibited 로 거절하므로 행을 등록하지 않는다 -->
+      <div data-ref="chargeMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('chargeMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" data-if="{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — chargeMethod -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('chargeMethod')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('chargeMethod') ? (_local.visibleFilters || []).filter(f => f !== 'chargeMethod') : [...(_local.visibleFilters || []), 'chargeMethod']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_490_chargeMethod_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.charge_method</span>
+        <div class="flex-center flex-wrap gap-4">
+          <label data-ref="f_500_chargeMethods_pay_on_request" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" value="pay_on_request" checked="{{(_local.filter.chargeMethods || []).includes('pay_on_request')}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.chargeMethods" value="pay_on_request"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.claim_charge_method.pay_on_request</span>
+          </label>
+          <label data-ref="f_510_chargeMethods_pay_on_approval" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" value="pay_on_approval" checked="{{(_local.filter.chargeMethods || []).includes('pay_on_approval')}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.chargeMethods" value="pay_on_approval"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.claim_charge_method.pay_on_approval</span>
+          </label>
+          <label data-ref="f_520_chargeMethods_deduct_from_refund" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" value="deduct_from_refund" checked="{{(_local.filter.chargeMethods || []).includes('deduct_from_refund')}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.chargeMethods" value="deduct_from_refund"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.claim_charge_method.deduct_from_refund</span>
+          </label>
+        </div>
+      </div>
+      <!-- 사유 필터 — 사유 카탈로그 코드 단건. 취소는 저장 컬럼(cancel_reason_type)이 환불 사유 코드를 담는다 -->
+      <div data-ref="reasonCode_filter_row" data-slot="{{(_local.visibleFilters || []).includes('reasonCode') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — reasonCode -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('reasonCode')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('reasonCode') ? (_local.visibleFilters || []).filter(f => f !== 'reasonCode') : [...(_local.visibleFilters || []), 'reasonCode']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_530_reasonCode_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.reason</span>
+        <select data-ref="f_540_reason_select" name="reasonCode" class="!w-48" value="{{_local.filter.reasonCode || ''}}" options="{{_computed.claimReasonOptions ?? []}}">
+          <on type="change">
+            <set-state target="_local" filter.reasonCode="{{$event.target.value}}"/>
+          </on>
+        </select>
+      </div>
+      <!-- 회원 구분 필터 — 신청자 컬럼의 NULL 여부가 회원/비회원의 단일 근거 -->
+      <div data-ref="requesterType_filter_row" data-slot="{{(_local.visibleFilters || []).includes('requesterType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — requesterType -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('requesterType')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('requesterType') ? (_local.visibleFilters || []).filter(f => f !== 'requesterType') : [...(_local.visibleFilters || []), 'requesterType']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_550_requesterType_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.requester_type</span>
+        <select data-ref="f_560_requester_type_select" name="requesterType" class="w-32" value="{{_local.filter.requesterType || ''}}">
+          <options>
+            <option value="">$t:sirsoft-ecommerce.admin.claim.filter.requester_type_option.all</option>
+            <option value="member">$t:sirsoft-ecommerce.admin.claim.filter.requester_type_option.member</option>
+            <option value="guest">$t:sirsoft-ecommerce.admin.claim.filter.requester_type_option.guest</option>
+          </options>
+          <on type="change">
+            <set-state target="_local" filter.requesterType="{{$event.target.value}}"/>
+          </on>
+        </select>
+      </div>
+      <!-- 금액 범위 필터 — 목록 금액 컬럼과 같은 축. 통화는 운영자가 등록한 통화 목록에서 고른다 -->
+      <div data-ref="amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('amount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — amount -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('amount')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('amount') ? (_local.visibleFilters || []).filter(f => f !== 'amount') : [...(_local.visibleFilters || []), 'amount']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_570_amount_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.amount</span>
+        <div class="flex-center gap-2">
+          <input data-ref="f_580_min_amount" type="number" name="minAmount" min="0" value="{{_local.filter.minAmount || ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.filter.min_amount" class="input w-32 text-right">
+            <on type="change">
+              <set-state target="_local" filter.minAmount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-secondary">~</span>
+          <input data-ref="f_590_max_amount" type="number" name="maxAmount" min="0" value="{{_local.filter.maxAmount || ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.filter.max_amount" class="input w-32 text-right">
+            <on type="change">
+              <set-state target="_local" filter.maxAmount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <select data-ref="f_600_currency_select" name="currencyCode" class="w-24" value="{{_local.filter.currencyCode || ''}}" options="{{_computed.claimCurrencyOptions ?? []}}">
+            <on type="change">
+              <set-state target="_local" filter.currencyCode="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <!-- 청구 결제수단 필터 — 추가결제(claim_payments)가 성립하는 교환·반품에만 있다. 환불·취소는 게이트가 prohibited 로 거절한다 -->
+      <div data-ref="chargePaymentMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('chargePaymentMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" data-if="{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — chargePaymentMethod -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('chargePaymentMethod')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('chargePaymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'chargePaymentMethod') : [...(_local.visibleFilters || []), 'chargePaymentMethod']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_610_chargePaymentMethod_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method</span>
+        <div class="flex-center flex-wrap gap-4">
+          <fragment data-each="method, methodIdx in _computed.claimChargePaymentMethods || []">
+            <label class="flex-center gap-2 cursor-pointer text-label">
+              <input type="checkbox" class="checkbox" value="{{method.value}}" checked="{{(_local.filter.chargePaymentMethods || []).includes(method.value)}}">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.chargePaymentMethods" value="{{method.value}}"/>
+                </on>
+              </input>
+              <span>{{method.label}}</span>
+            </label>
+          </fragment>
+        </div>
+      </div>
+    </div>
+    <!-- 프리셋 영역 — 데이터소스 기반 동적 표시 (카드 안 최상단, D21 ①) -->
+    <div data-ref="preset_row" class="flex-center flex-wrap gap-3 mb-4">
+      <div class="flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
+        <on type="click">
+          <open-modal target="modal_claim_preset_manage"/>
+        </on>
+        <icon name="sliders" class="text-base"/>
+        <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.claim.preset.label</span>
+      </div>
+      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}">
+        <on type="click">
+          <set-state target="_local" merge="shallow">
+            <field name="filter">
+              <field name="searchField" value="{{preset.conditions?.searchField || 'claim_number'}}"/>
+              <field name="searchKeyword" value="{{preset.conditions?.searchKeyword || ''}}"/>
+              <field name="startDate" value="{{preset.conditions?.startDate || ''}}"/>
+              <field name="endDate" value="{{preset.conditions?.endDate || ''}}"/>
+              <field name="dateQuick" value="{{preset.conditions?.dateQuick || ''}}"/>
+              <field name="claimStatus" value="{{preset.conditions?.claimStatus || []}}"/>
+              <field name="faultTypes" value="{{preset.conditions?.faultTypes || []}}"/>
+              <field name="chargeMethods" value="{{preset.conditions?.chargeMethods || []}}"/>
+              <field name="reasonCode" value="{{preset.conditions?.reasonCode || ''}}"/>
+              <field name="requesterType" value="{{preset.conditions?.requesterType || ''}}"/>
+              <field name="minAmount" value="{{preset.conditions?.minAmount || ''}}"/>
+              <field name="maxAmount" value="{{preset.conditions?.maxAmount || ''}}"/>
+              <field name="currencyCode" value="{{preset.conditions?.currencyCode || ''}}"/>
+              <field name="chargePaymentMethods" value="{{preset.conditions?.chargePaymentMethods || []}}"/>
+              <field name="selectedPreset" value="{{preset.id}}"/>
+            </field>
+          </set-state>
+          <!-- audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 화면에 보이지 않는 채로 남는다. -->
+          <navigate path="/admin/ecommerce/claims" :replace="true" :mergeQuery="false" transition_overlay_target="claim_datagrid__body">
+            <query :page="1" type="{{preset.conditions?.claimType || (query.type || 'exchange')}}" preset_id="{{preset.id}}" search_field="{{preset.conditions?.searchField || null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" from="{{preset.conditions?.startDate || null}}" to="{{preset.conditions?.endDate || null}}" statuses[]="{{(preset.conditions?.claimStatus || []).length > 0 ? preset.conditions?.claimStatus : null}}" fault_types[]="{{(preset.conditions?.claimType || query.type || 'exchange') !== 'cancel' &amp;&amp; (preset.conditions?.faultTypes || []).length > 0 ? preset.conditions?.faultTypes : null}}" charge_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargeMethods || []).length > 0 ? preset.conditions?.chargeMethods : null}}" reason_code="{{preset.conditions?.reasonCode || null}}" requester_type="{{preset.conditions?.requesterType || null}}" min_amount="{{preset.conditions?.minAmount || null}}" max_amount="{{preset.conditions?.maxAmount || null}}" currency_code="{{preset.conditions?.currencyCode || null}}" charge_payment_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargePaymentMethods || []).length > 0 ? preset.conditions?.chargePaymentMethods : null}}"/>
+          </navigate>
+          <toast type="info" message="$t:sirsoft-ecommerce.admin.claim.preset.applied|name={{preset.name}}"/>
+        </on>
+        {{preset.name}}
+      </div>
+    </div>
+    <!-- 검색 영역 — 검색 필드와 버튼 영역 분리 (D21 ②). `flex flex-col` 은 기준 display 다 — 빼면 md:flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다. -->
+    <div data-ref="search_row_wrapper" class="flex flex-col md:flex-row md:items-center gap-3">
+      <!-- 검색 필드 + 검색어 입력 -->
+      <div data-ref="search_row_line1" class="flex-1 flex-center gap-2">
+        <!-- 검색 드롭다운 4종 (D27) — 이 4축은 상세 필터에 중복 배치하지 않는다. 게이트(`search_field`)에 'all' 이 없으므로 전체 옵션도 두지 않는다 -->
+        <select data-ref="f_001_search_field_select" name="searchField" class="w-80 shrink-0" value="{{_local.filter.searchField || 'claim_number'}}">
+          <options>
+            <option value="claim_number">$t:sirsoft-ecommerce.admin.claim.search.field.claim_number</option>
+            <option value="order_number">$t:sirsoft-ecommerce.admin.claim.search.field.order_number</option>
+            <option value="requester">$t:sirsoft-ecommerce.admin.claim.search.field.requester</option>
+            <option value="product_name">$t:sirsoft-ecommerce.admin.claim.search.field.product_name</option>
+          </options>
+          <on type="change">
+            <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div data-ref="f_002_search_keyword_input" class="flex-1 min-w-64 relative">
+          <input type="text" placeholder="$t:sirsoft-ecommerce.admin.claim.search.placeholder" class="input w-full pr-10" value="{{_local.filter.searchKeyword}}">
+            <on type="change">
+              <set-state :debounce="300" target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <set-state target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+              <action-ref name="searchClaims"/>
+            </on>
+          </input>
+          <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+        </div>
+      </div>
+      <!-- 컬럼 선택 + 상세검색 버튼 -->
+      <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
+        <responsive on="portable" class="flex-center gap-2 w-full"/>
+        <column-selector data-ref="f_003_column_selector" id="admin_claim_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.claim.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+          <prop name="columns">
+            <item field="requested_at" header="$t:sirsoft-ecommerce.admin.claim.column.requested_at" :required="true"/>
+            <item field="claim_number" header="$t:sirsoft-ecommerce.admin.claim.column.claim_number" :required="true"/>
+            <item field="order_number" header="$t:sirsoft-ecommerce.admin.claim.column.order_number"/>
+            <item field="item_summary" header="$t:sirsoft-ecommerce.admin.claim.column.item"/>
+            <item field="requester_name" header="$t:sirsoft-ecommerce.admin.claim.column.requester"/>
+            <item field="status" header="$t:sirsoft-ecommerce.admin.claim.column.status" :required="true"/>
+            <item field="reason_label" header="$t:sirsoft-ecommerce.admin.claim.column.reason"/>
+            <item field="fault_type" header="$t:sirsoft-ecommerce.admin.claim.column.fault_type"/>
+            <item field="amount" header="$t:sirsoft-ecommerce.admin.claim.column.amount"/>
+            <item field="completed_at" header="$t:sirsoft-ecommerce.admin.claim.column.completed_at"/>
+          </prop>
+          <prop name="defaultColumns">
+            <item>requested_at</item>
+            <item>claim_number</item>
+            <item>order_number</item>
+            <item>item_summary</item>
+            <item>requester_name</item>
+            <item>status</item>
+            <item>reason_label</item>
+            <item>fault_type</item>
+            <item>amount</item>
+          </prop>
+          <on type="change" event="onColumnVisibilityChange">
+            <set-state target="_local" visibleColumns="{{$args[0]}}"/>
+          </on>
+        </column-selector>
+        <button data-ref="f_004_detail_search_button" type="button" class="{{_local.showDetailFilter ? 'btn btn-primary' : 'btn btn-outline'}}">
+          <on type="click">
+            <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
+          </on>
+          <icon name="filter" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.claim.search.detail_search</span>
+          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="text-base"/>
+        </button>
+      </div>
+    </div>
+    <!-- 기본 필터 영역 - SlotContainer로 렌더링 -->
+    <div data-ref="basic_filter_section" class="flex flex-col p-4">
+      <slot-container data-ref="basic_filters_slot" slotId="basic_filters" class="filter-grid"/>
+    </div>
+    <!-- 상세 필터 영역 - showDetailFilter 시 표시. 검색 드롭다운 4축(클레임번호·주문번호·신청자·상품명)은 여기 두지 않는다 (D27) -->
+    <div data-ref="detail_filter_wrapper" data-if="{{_local.showDetailFilter}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 mx-4">
+      <span class="text-body font-medium mb-2 block">$t:sirsoft-ecommerce.admin.claim.filter.detail_title</span>
+      <slot-container data-ref="detail_filters_slot" slotId="detail_filters" class="filter-grid"/>
+    </div>
+    <!-- 필터 액션 버튼 영역 (D21 ⑤ 3분할) -->
+    <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+      <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+      <div data-ref="filter_actions_row1" class="contents">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <!-- 좌측: 검색편집 버튼 래퍼 (flex-1) -->
+        <div data-ref="edit_search_button_wrapper" class="flex-1">
+          <responsive on="portable" class="hidden"/>
+          <button data-ref="f_910_edit_search_button" type="button" class="{{_local.isEditMode ? 'btn btn-primary' : 'btn btn-outline'}}">
+            <on type="click">
+              <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+            </on>
+            <icon name="sliders" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.claim.search.edit_search</span>
+          </button>
+        </div>
+        <!-- 중앙: 검색/초기화/프리셋 버튼 그룹 -->
+        <div class="flex-center flex-1 justify-center gap-2">
+          <responsive on="portable" class="contents"/>
+          <button data-ref="f_911_search_button" type="button" class="btn btn-primary">
+            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <on type="click">
+              <action-ref name="searchClaims"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.action.search
+          </button>
+          <button data-ref="f_912_reset_button" type="button" class="btn btn-outline">
+            <responsive on="portable" class="btn btn-outline flex-1"/>
+            <on type="click">
+              <set-state target="_local" merge="shallow">
+                <field name="filter">
+                  <field name="selectedPreset" value=""/>
+                  <field name="searchField" value="claim_number"/>
+                  <field name="searchKeyword" value=""/>
+                  <field name="startDate" value=""/>
+                  <field name="endDate" value=""/>
+                  <field name="dateQuick" value=""/>
+                  <field name="claimStatus" :value="[]"/>
+                  <field name="faultTypes" :value="[]"/>
+                  <field name="chargeMethods" :value="[]"/>
+                  <field name="reasonCode" value=""/>
+                  <field name="requesterType" value=""/>
+                  <field name="minAmount" value=""/>
+                  <field name="maxAmount" value=""/>
+                  <field name="currencyCode" value=""/>
+                  <field name="chargePaymentMethods" :value="[]"/>
+                </field>
+              </set-state>
+              <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. 유형 서브탭은 목록 정체성이라 초기화 뒤에도 유지한다. -->
+              <navigate path="/admin/ecommerce/claims" :mergeQuery="false">
+                <query type="{{(query.type || 'exchange')}}"/>
+              </navigate>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.action.reset
+          </button>
+          <button data-ref="f_913_preset_button" type="button" class="btn btn-outline">
+            <responsive on="portable" class="hidden"/>
+            <on type="click">
+              <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
+              <open-modal target="modal_claim_preset_save"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.preset.save_title
+          </button>
+        </div>
+        <!-- 우측: 스페이서 (flex-1) -->
+        <div class="flex-1">
+          <responsive on="portable" class="hidden"/>
+        </div>
+      </div>
+      <!-- 모바일용 2번째 행 (검색편집 + 프리셋 저장) -->
+      <div data-ref="filter_actions_row2_mobile" class="hidden">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <button data-ref="edit_search_button_mobile" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex-1' : 'btn btn-outline flex-1'}}">
+          <on type="click">
+            <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+          </on>
+          <icon name="sliders" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.claim.search.edit_search</span>
+        </button>
+        <button data-ref="preset_save_button_mobile" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
+            <open-modal target="modal_claim_preset_save"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.claim.preset.save_title
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

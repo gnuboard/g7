@@ -20,6 +20,8 @@ return [
         'invalid_extension_target' => 'Target extension not found: :identifier',
         'extension_not_allowed' => 'File type not allowed: :extension',
         'upload_too_large' => 'The uploaded file is too large. (limit: :limit bytes)',
+        'rename_target_exists' => 'A file with that name already exists: :path',
+        'rename_extension_changed' => 'Renaming cannot change the extension from :from to :to — the file would no longer be served the same way.',
     ],
 
     'validation' => [
@@ -28,6 +30,7 @@ return [
         'file_required' => 'Please choose a file to upload.',
         'file_invalid' => 'The upload is not a valid file.',
         'file_mimes' => 'File type not allowed. (allowed: :allowed)',
+        'rename_same_path' => 'Enter a path different from the current one.',
     ],
 
     'messages' => [
@@ -35,5 +38,6 @@ return [
         'saved' => 'Saved.',
         'uploaded' => 'File uploaded.',
         'deleted' => 'File deleted.',
+        'renamed' => 'File renamed.',
     ],
 ];

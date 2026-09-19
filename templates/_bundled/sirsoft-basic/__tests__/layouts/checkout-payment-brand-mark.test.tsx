@@ -44,12 +44,12 @@ function findNode(node: any, predicate: (n: any) => boolean): any {
 
 const brandMarkNode = findNode(
   checkoutPaymentJson,
-  (n) => n.type === 'composite' && n.name === 'BrandMark'
+  (n) => n.name === 'BrandMark'
 );
 
 const iconFallbackNode = findNode(
   checkoutPaymentJson,
-  (n) => n.type === 'basic' && n.name === 'Icon' && typeof n.if === 'string' && n.if.includes('_cached_brand_mark')
+  (n) => n.name === 'Icon' && typeof n.if === 'string' && n.if.includes('_cached_brand_mark')
 );
 
 const iterationNode = findNode(

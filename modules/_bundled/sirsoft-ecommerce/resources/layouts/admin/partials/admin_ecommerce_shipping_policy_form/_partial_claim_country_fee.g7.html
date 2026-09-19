@@ -1,0 +1,57 @@
+<partial description="배송정책 폼 - 국가별 클레임 배송비 (반품 편도 / 교환 왕복, 고정액 또는 원래 정책 재계산)">
+  <div data-ref="claim_country_fee_section" data-if="{{_computed.activeCountrySetting}}" class="admin-card">
+    <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_claim_fee</h2>
+    <div class="card-description">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_description</div>
+    <div data-ref="claim_fee_content" class="row-stack">
+      <div data-ref="field_claim_fee_mode">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode</label>
+        <div class="flex-center gap-4 flex-wrap">
+          <label data-ref="claim_fee_mode_fixed" class="flex-center gap-2 cursor-pointer">
+            <input type="radio" name="claim_fee_mode" :autoBinding="false" class="radio" checked="{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.updateCountryField" field="claim_fee_mode" value="fixed"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.claim_shipping_fee_mode.fixed</span>
+          </label>
+          <label data-ref="claim_fee_mode_original_policy" class="flex-center gap-2 cursor-pointer">
+            <input type="radio" name="claim_fee_mode" :autoBinding="false" class="radio" checked="{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'original_policy'}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.updateCountryField" field="claim_fee_mode" value="original_policy"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.claim_shipping_fee_mode.original_policy</span>
+          </label>
+        </div>
+        <p class="form-hint mt-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode_hint</p>
+        <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']}}" class="form-error-xs mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']?.[0]}}</span>
+      </div>
+      <div data-ref="claim_fixed_fee_fields" data-if="{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}" class="grid-2col-responsive">
+        <div data-ref="field_return_fixed_fee">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee</label>
+          <input type="number" min="0" step="1" class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_computed.activeCountrySetting?.return_fixed_fee ?? 0}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.updateCountryField" field="return_fixed_fee" value="{{Number($event.target.value)}}"/>
+            </on>
+          </input>
+          <p class="form-hint mt-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee_hint</p>
+          <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee']}}" class="form-error-xs mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee']?.[0]}}</span>
+        </div>
+        <div data-ref="field_exchange_fixed_fee">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.exchange_fixed_fee</label>
+          <input type="number" min="0" step="1" class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_computed.activeCountrySetting?.exchange_fixed_fee ?? 0}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.updateCountryField" field="exchange_fixed_fee" value="{{Number($event.target.value)}}"/>
+            </on>
+          </input>
+          <p class="form-hint mt-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.exchange_fixed_fee_hint</p>
+          <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee']}}" class="form-error-xs mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee']?.[0]}}</span>
+        </div>
+      </div>
+      <div data-ref="claim_fee_original_policy_notice" data-if="{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'original_policy'}}" class="alert-info">
+        <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+        <span class="text-info-soft">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_original_policy_notice</span>
+      </div>
+    </div>
+  </div>
+</partial>

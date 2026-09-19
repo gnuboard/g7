@@ -1,5 +1,10 @@
 {
-    "meta": { "is_partial": true, "description": "코어 업데이트 확인 결과 모달", "editor_label": "$t:admin.modal_label.admin_settings.core_update_result_modal" },
+    "comment": "코어 새 버전 확인 결과 창 — 있으면 버전과 이력을, 없으면 최신이라는 안내를 보여 준다.\n  올리는 것은 여기서 하지 않고 안내 창(`_modal_core_update_guide`)으로 넘긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "코어 업데이트 확인 결과 모달",
+        "editor_label": "$t:admin.modal_label.admin_settings.core_update_result_modal"
+    },
     "id": "core_update_result_modal",
     "type": "composite",
     "name": "Modal",
@@ -11,24 +16,58 @@
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "row-stack" },
+            "props": {
+                "className": "row-stack"
+            },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "flex-between border-b border-gray-100 dark:border-gray-700" },
+                    "props": {
+                        "className": "flex-between border-b border-gray-100 dark:border-gray-700"
+                    },
                     "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-label" }, "text": "$t:admin.settings.info.current_version" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-heading" }, "text": "{{$parent._local.coreUpdateInfo?.current_version ?? '-'}}" }
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.settings.info.current_version"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "{{$parent._local.coreUpdateInfo?.current_version ?? '-'}}"
+                        }
                     ]
                 },
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "flex-between border-b border-gray-100 dark:border-gray-700" },
+                    "props": {
+                        "className": "flex-between border-b border-gray-100 dark:border-gray-700"
+                    },
                     "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-label" }, "text": "$t:admin.settings.info.latest_version" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-heading" }, "text": "{{$parent._local.coreUpdateInfo?.latest_version ?? '-'}}" }
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.settings.info.latest_version"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "{{$parent._local.coreUpdateInfo?.latest_version ?? '-'}}"
+                        }
                     ]
                 },
                 {
@@ -36,17 +75,23 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{$parent._local.coreUpdateInfo?.update_available}}",
-                    "props": { "className": "space-y-3" },
+                    "props": {
+                        "className": "space-y-3"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "alert-success" },
+                            "props": {
+                                "className": "alert-success"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "props": { "className": "text-success-soft" },
+                                    "props": {
+                                        "className": "text-success-soft"
+                                    },
                                     "text": "$t:admin.settings.info.update_available_message"
                                 }
                             ]
@@ -54,21 +99,20 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex gap-2 justify-end" },
+                            "props": {
+                                "className": "flex gap-2 justify-end"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로\n     창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고\n     이력 창이 그것을 `$parent` 로 읽는다.",
                                             "type": "click",
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/core-update/changelog",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "GET",
                                                 "query": {
@@ -104,15 +148,15 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                    },
                                     "text": "$t:admin.settings.info.view_changelog"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -120,6 +164,10 @@
                                             "target": "core_update_guide_modal"
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                    },
                                     "text": "$t:admin.settings.info.how_to_update"
                                 }
                             ]
@@ -131,14 +179,25 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{!$parent._local.coreUpdateInfo?.update_available}}",
-                    "props": { "className": "" },
+                    "props": {
+                        "className": ""
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "alert-info" },
+                            "props": {
+                                "className": "alert-info"
+                            },
                             "children": [
-                                { "type": "basic", "name": "P", "props": { "className": "text-info-soft" }, "text": "$t:admin.settings.info.no_update_message" }
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-info-soft"
+                                    },
+                                    "text": "$t:admin.settings.info.no_update_message"
+                                }
                             ]
                         }
                     ]

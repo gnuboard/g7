@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Helpers\TimezoneHelper;
+use App\Http\Resources\Traits\ExposesMemberContact;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\App;
 
 class BaseApiResource extends JsonResource
 {
+    use ExposesMemberContact;
     use HasAbilityCheck;
 
     /**

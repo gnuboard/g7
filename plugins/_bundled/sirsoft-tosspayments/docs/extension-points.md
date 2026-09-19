@@ -93,17 +93,24 @@
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/admin_order_payment.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/checkout-payment-error.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user_order_show.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/admin_order_payment.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_detail` |
+| `resources/extensions/checkout-payment-error.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `shop_checkout_extensions` |
+| `resources/extensions/user_order_show.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `mypage_order_payment_provider_slot` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-`checkout-payment-error.json`은 다른 PG 플러그인에는 없는 조각입니다 — 승인 확인 실패
+`checkout-payment-error.g7.html`은 다른 PG 플러그인에는 없는 조각입니다 — 승인 확인 실패
 (`amount_mismatch`, 서명 오류 등)가 `?error=` 쿼리로 체크아웃에 되돌아왔을 때 그 오류를
 사용자에게 보여주는 전용 UI입니다. 다른 PG는 오류 안내를 체크아웃 레이아웃이 이미 가진
 공용 오류 처리에 맡기지만, 이 플러그인은 리다이렉트 기반 승인이라 오류 사유가 다양해
 전용 조각을 둡니다.
+
+조각의 **고유 키는 파일 이름**입니다(`fragment_key` — 확장자를 뗀 기본 이름). 같은 확장이 같은 대상
+화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치 경로와
+`RestoreLayoutExtensionsAfterUpdateListener` 가 **같은 키**를 써야 하므로, 리스너는
+`LayoutFragmentSourceHelper::readDirectoryKeyed()` 로 파일에서 키를 얻어 그대로 넘깁니다. 키 없이
+등록하면 대상 화면 이름이 키가 되어 두 경로가 갈리고, 그 뒤로는 같은 대상에 행이 둘 생겨 복원이
+어느 행인지 가리지 못한 채 조용히 멈춥니다.
 <!-- @intent END -->
 
 ## 미들웨어

@@ -1,4 +1,5 @@
 {
+    "comment": "언어팩을 새로 들여오는 창. 길이 둘이고 탭으로 가른다 — 파일(ZIP)을 올리거나 GitHub 주소를 주거나.\n  두 갈래는 **보내는 방식까지 다르다**(파일은 폼 전송, 주소는 JSON)라서 아래 설치 버튼이\n  지금 탭에 맞춰 주소·형식·본문을 통째로 갈아 끼운다.\n  깔린 뒤에는 목록을 다시 받고 확장을 새로 읽는다 — 새 언어 자원이 곧바로 쓰이게 하려는 것이다.\n  실패는 토스트가 아니라 창 위쪽 붉은 띠와 각 칸 아래 문구로 보여 준다(고칠 자리가 이 창 안에 있다).",
     "meta": {
         "is_partial": true,
         "description": "언어팩 설치 모달 (ZIP/GitHub 2-tab) — 모듈 설치 모달 UX 패턴 동일",
@@ -30,10 +31,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md"
-                    },
                     "actions": [
                         {
                             "event": "onClick",
@@ -41,6 +38,10 @@
                             "target": "language_pack_manifest_preview_drawer"
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md"
+                    },
                     "children": [
                         {
                             "type": "basic",
@@ -105,7 +106,23 @@
             "id": "language_pack_install_tabs",
             "type": "composite",
             "name": "TabNavigation",
+            "actions": [
+                {
+                    "comment": "탭을 옮기면 앞 탭에서 난 오류를 지운다 — 남겨 두면 파일 탭 오류가 주소 탭 위에 떠 있는다. 입력값 자체는 지우지 않아 오가며 채울 수 있다.",
+                    "type": "change",
+                    "event": "onTabChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "languagePackInstallTab": "{{$args[0]}}",
+                        "languagePackInstallError": null,
+                        "languagePackInstallErrors": null
+                    }
+                }
+            ],
             "props": {
+                "activeTabId": "{{_global.languagePackInstallTab || 'file_upload'}}",
+                "variant": "underline",
                 "tabs": [
                     {
                         "id": "file_upload",
@@ -117,23 +134,8 @@
                         "label": "$t:admin.language_packs.install_modal.tabs.github",
                         "iconName": "code-branch"
                     }
-                ],
-                "activeTabId": "{{_global.languagePackInstallTab || 'file_upload'}}",
-                "variant": "underline"
-            },
-            "actions": [
-                {
-                    "event": "onTabChange",
-                    "type": "change",
-                    "handler": "setState",
-                    "params": {
-                        "target": "global",
-                        "languagePackInstallTab": "{{$args[0]}}",
-                        "languagePackInstallError": null,
-                        "languagePackInstallErrors": null
-                    }
-                }
-            ]
+                ]
+            }
         },
         {
             "id": "language_pack_file_upload_tab",
@@ -166,14 +168,9 @@
                                 {
                                     "type": "basic",
                                     "name": "FileInput",
-                                    "props": {
-                                        "accept": ".zip",
-                                        "className": "{{_global.languagePackInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
-                                        "buttonText": "$t:common.browse",
-                                        "placeholder": "$t:admin.language_packs.install_modal.no_file_selected"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "파일을 다시 고르는 것은 곧 「방금 것을 물린다」는 뜻이라 직전 오류도 함께 지운다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -184,7 +181,13 @@
                                                 "languagePackInstallErrors": null
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "accept": ".zip",
+                                        "className": "{{_global.languagePackInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
+                                        "buttonText": "$t:common.browse",
+                                        "placeholder": "$t:admin.language_packs.install_modal.no_file_selected"
+                                    }
                                 }
                             ]
                         },
@@ -281,14 +284,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "type": "url",
-                                        "placeholder": "https://github.com/username/language-pack-name",
-                                        "value": "{{_global.languagePackGithubUrl ?? ''}}",
-                                        "className": "{{_global.languagePackInstallErrors?.github_url ? 'input-error' : ''}}"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "저장소 주소만 받는다 — 어느 판본을 가져올지는 서버가 최신 릴리스로 정하므로 여기서 고르지 않는다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -298,7 +296,13 @@
                                                 "languagePackInstallErrors": null
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "url",
+                                        "placeholder": "https://github.com/username/language-pack-name",
+                                        "value": "{{_global.languagePackGithubUrl ?? ''}}",
+                                        "className": "{{_global.languagePackInstallErrors?.github_url ? 'input-error' : ''}}"
+                                    }
                                 }
                             ]
                         },
@@ -374,13 +378,9 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isLanguagePackInstalling}}"
-                    },
                     "actions": [
                         {
+                            "comment": "취소는 창을 닫는 것으로 끝나지 않는다 — 입력값·오류·탭을 처음 상태로 되돌린다. 이 값들이 전역이라 그냥 닫으면 다음에 열 때 지난 내용이 그대로 남는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -402,6 +402,11 @@
                             ]
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isLanguagePackInstalling}}"
+                    },
                     "children": [
                         {
                             "type": "basic",
@@ -413,13 +418,9 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isLanguagePackInstalling || ((!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? !_global.languagePackUploadFile : !_global.languagePackGithubUrl)}}"
-                    },
                     "actions": [
                         {
+                            "comment": "지금 탭에 따라 보낼 곳·형식·본문이 통째로 갈린다(파일은 폼 전송, 주소는 JSON). 성공 갈래에서만 값들을 비우므로 실패하면 고쳐서 다시 누를 수 있다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -434,8 +435,8 @@
                                 },
                                 {
                                     "handler": "apiCall",
-                                    "auth_required": true,
                                     "target": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? '/api/admin/language-packs/install-from-file' : '/api/admin/language-packs/install-from-github'}}",
+                                    "auth_required": true,
                                     "params": {
                                         "method": "POST",
                                         "contentType": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}",
@@ -475,21 +476,24 @@
                                             "handler": "closeModal"
                                         }
                                     ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isLanguagePackInstalling": false,
-                                                "languagePackInstallError": "{{error.message}}",
-                                                "languagePackInstallErrors": "{{error.errors}}"
-                                            }
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isLanguagePackInstalling": false,
+                                            "languagePackInstallError": "{{error.message}}",
+                                            "languagePackInstallErrors": "{{error.errors}}"
                                         }
-                                    ]
+                                    }
                                 }
                             ]
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isLanguagePackInstalling || ((!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? !_global.languagePackUploadFile : !_global.languagePackGithubUrl)}}"
+                    },
                     "children": [
                         {
                             "type": "basic",

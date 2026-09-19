@@ -14,6 +14,7 @@ use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\LanguagePack;
+use App\Services\Extension\ExtensionIconResolver;
 use App\Services\LanguagePack\LanguagePackBaseLocales;
 use App\Services\LanguagePack\LanguagePackManifestValidator;
 use App\Services\LanguagePack\LanguagePackPhpArrayValidator;
@@ -188,7 +189,80 @@ class LanguagePackService
             $pack->setAttribute('bundled_source_available', $this->hasBundledSource($pack));
         }
 
+        return $this->annotateIcons($packs);
+    }
+
+    /**
+     * 언어팩 행에 아이콘 URL·출처를 부여합니다.
+     *
+     * 언어팩은 대개 자기 아이콘을 담지 않는다 — 기본은 **대상 확장의 아이콘**이고
+     * 화면이 거기에 로케일 배지를 얹는다(국기는 쓰지 않는다. 언어≠국가).
+     * 우선순위는 자기 선언 → 코어 아이콘(scope=core) → 대상 확장 아이콘 → 없음이다.
+     *
+     * @param  Collection<int, LanguagePack>  $packs  대상 컬렉션
+     * @return Collection<int, LanguagePack> 동일 컬렉션(icon_url·icon_source 부여됨)
+     */
+    private function annotateIcons(Collection $packs): Collection
+    {
+        foreach ($packs as $pack) {
+            $this->annotateIcon($pack);
+        }
+
         return $packs;
+    }
+
+    /**
+     * 언어팩 한 벌에 icon_url·icon_source 를 부여합니다.
+     *
+     * 목록과 단건 조회가 같은 판정을 쓰도록 여기 한 곳에 둔다 — 상세 창은 목록을 거치지 않고
+     * 이 경로로 받은 행을 그대로 그리므로, 목록에만 얹으면 상세 창에서 아이콘이 사라진다.
+     *
+     * 설치 확인 창(`ExtensionInstallPreviewBuilder`)도 이 메서드를 쓴다 — 거기서 해석기를
+     * 따로 부르면 「자기 선언 → 코어 → 대상 확장 → 없음」 4갈래 판정이 두 벌로 갈린다.
+     * **읽기 전용 경로에서만** 부른다(`find()`·`findByIdentifier()` 는 활성화·삭제로 이어져
+     * 모델이 그대로 저장되는데, 이 두 속성은 컬럼이 아니라 저장 시 500 이 된다).
+     *
+     * @param  LanguagePack  $pack  대상 언어팩
+     * @return LanguagePack 동일 인스턴스(icon_url·icon_source 부여됨)
+     */
+    public function annotateIcon(LanguagePack $pack): LanguagePack
+    {
+        $resolver = app(ExtensionIconResolver::class);
+
+        $identifier = (string) $pack->identifier;
+        $version = $pack->version !== null ? (string) $pack->version : null;
+
+        if ($identifier !== '' && $resolver->resolve('language-pack', $identifier) !== null) {
+            $pack->setAttribute('icon_url', $resolver->url('language-pack', $identifier, $version));
+            $pack->setAttribute('icon_source', 'manifest');
+
+            return $pack;
+        }
+
+        $scope = (string) $pack->scope;
+
+        if ($scope === 'core') {
+            $pack->setAttribute('icon_url', ExtensionIconResolver::CORE_ICON_URL);
+            $pack->setAttribute('icon_source', 'core');
+
+            return $pack;
+        }
+
+        $target = (string) ($pack->target_identifier ?? '');
+
+        if ($target !== ''
+            && in_array($scope, ['module', 'plugin', 'template'], true)
+            && $resolver->resolve($scope, $target) !== null) {
+            $pack->setAttribute('icon_url', $resolver->url($scope, $target));
+            $pack->setAttribute('icon_source', 'target');
+
+            return $pack;
+        }
+
+        $pack->setAttribute('icon_url', null);
+        $pack->setAttribute('icon_source', 'none');
+
+        return $pack;
     }
 
     /**
@@ -431,6 +505,7 @@ class LanguagePackService
      *
      * @param  LanguagePack  $pack  가상 행
      * @param  array<string, mixed>  $filters  필터
+     * @return bool 필터에 맞으면 true
      */
     private function matchesBuiltInFilters(LanguagePack $pack, array $filters): bool
     {
@@ -600,6 +675,8 @@ class LanguagePackService
      */
     public function find(int $id): ?LanguagePack
     {
+        // 아이콘을 얹지 않는다 — 이 경로는 활성화·해제·삭제로 이어져 모델이 그대로 저장되는데,
+        // 컬럼이 없는 속성이 실려 있으면 저장이 깨진다. 화면용 주석은 findOrBundled 가 맡는다.
         return $this->repository->findById($id);
     }
 
@@ -613,6 +690,7 @@ class LanguagePackService
      */
     public function findByIdentifier(string $identifier): ?LanguagePack
     {
+        // find() 와 같은 이유로 아이콘을 얹지 않는다 — Artisan 커맨드가 이 모델을 저장한다.
         return $this->repository->findByIdentifier($identifier);
     }
 
@@ -645,8 +723,11 @@ class LanguagePackService
      */
     public function findOrBundled(int|string $id): ?LanguagePack
     {
+        // 이 메서드는 상세 화면이 쓰는 읽기 전용 경로다 — 저장으로 이어지지 않으므로 아이콘을 얹는다.
         if (is_numeric($id)) {
-            return $this->find((int) $id);
+            $pack = $this->find((int) $id);
+
+            return $pack !== null ? $this->annotateIcon($pack) : null;
         }
 
         // 1) lang-packs/_bundled/{id}/ 의 ja 등 별도 패키지 가상 행
@@ -654,14 +735,16 @@ class LanguagePackService
         if (File::isFile($manifestPath)) {
             $manifest = json_decode(File::get($manifestPath), true);
             if (is_array($manifest) && ($manifest['identifier'] ?? null) === $id) {
-                return $this->repository->buildVirtualFromManifest($manifest, (string) $id);
+                return $this->annotateIcon(
+                    $this->repository->buildVirtualFromManifest($manifest, (string) $id)
+                );
             }
         }
 
         // 2) 코어/번들 확장의 lang/{ko,en}/ 가상 보호 행
         foreach ($this->getVirtualBuiltInPacks() as $pack) {
             if ($pack->identifier === $id) {
-                return $pack;
+                return $this->annotateIcon($pack);
             }
         }
 
@@ -838,6 +921,7 @@ class LanguagePackService
      * @param  string  $sourceUrl  설치 소스 URL/파일명
      * @param  bool  $autoActivate  설치 후 자동 활성화 여부
      * @param  int|null  $installedBy  설치자 사용자 ID
+     * @param  bool  $force  다운그레이드·충돌 가드를 건너뛸지 여부
      * @return LanguagePack 설치/갱신된 언어팩
      *
      * @throws RuntimeException 검증/의존성/충돌 실패 시
@@ -1066,6 +1150,7 @@ class LanguagePackService
      *
      * @param  LanguagePack  $pack  대상 언어팩
      * @param  bool  $cascade  코어 제거 시 하위(module/plugin/template) 동일 locale 팩도 함께 제거
+     * @return void 반환값 없음
      */
     public function uninstall(LanguagePack $pack, bool $cascade = false): void
     {
@@ -1110,6 +1195,7 @@ class LanguagePackService
      * 슬롯 비활성화 후 다음 후보를 active 로 승격합니다.
      *
      * @param  LanguagePack  $pack  방금 비활성화된 언어팩
+     * @return void 반환값 없음
      */
     private function promoteSlotSuccessor(LanguagePack $pack): void
     {
@@ -1178,6 +1264,7 @@ class LanguagePackService
      *
      * @param  string  $packageRoot  패키지 루트 디렉토리
      * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @return void 반환값 없음
      *
      * @throws RuntimeException 보안 위반 발견 시
      */
@@ -1294,6 +1381,7 @@ class LanguagePackService
      * 모듈/플러그인/템플릿 install 과 동일 수준의 가드 — 권한 부족 시 chmod 안내 메시지가
      * 포함된 `RuntimeException` 을 던집니다. 컨트롤러는 본 예외를 422 응답으로 변환합니다.
      *
+     * @return void 반환값 없음
      *
      * @throws RuntimeException 디렉토리 미존재/쓰기 불가 시
      */
@@ -1316,6 +1404,7 @@ class LanguagePackService
      * 의존성 검증 — depends_on_core_locale 이 true 면 코어 언어팩 active 여부 확인.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @return void 반환값 없음
      *
      * @throws RuntimeException 의존성 미충족 시
      */
@@ -1335,6 +1424,7 @@ class LanguagePackService
      * 모듈/플러그인 시스템과 동일한 강도로 — 비활성 확장에도 언어팩이 들러붙지 않게 차단합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @return void 반환값 없음
      *
      * @throws RuntimeException 대상 확장 미설치/비활성 시
      */
@@ -1444,6 +1534,7 @@ class LanguagePackService
      *
      * @param  LanguagePack  $existing  기존 언어팩
      * @param  array<string, mixed>  $manifest  새 manifest
+     * @return void 반환값 없음
      *
      * @throws RuntimeException 다운그레이드 시도 시
      */
@@ -1488,6 +1579,7 @@ class LanguagePackService
      * _pending 임시 디렉토리를 정리합니다.
      *
      * @param  string  $path  정리 대상 경로
+     * @return void 반환값 없음
      */
     private function cleanupPending(string $path): void
     {
@@ -1852,6 +1944,7 @@ class LanguagePackService
      * status=Updating 인 팩에 대해 활성/제거/재업데이트 진입을 차단합니다.
      *
      * @param  LanguagePack  $pack  대상 언어팩
+     * @return void 반환값 없음
      *
      * @throws RuntimeException 진행 중일 때
      */
@@ -1955,8 +2048,13 @@ class LanguagePackService
 
             $existing = $this->repository->findByIdentifier($manifest['identifier'] ?? '');
 
+            // 아이콘 규격 검사는 설치를 막지 않는다 — 경고만 보이고 화면은 유형 글리프로 떨어진다.
+            $icon = app(ExtensionIconResolver::class)
+                ->inspectRootForApi($packageRoot, $manifest['icon'] ?? null);
+
             return [
                 'manifest' => $manifest,
+                'icon' => $icon,
                 'validation' => [
                     'errors' => $validationErrors,
                     'is_valid' => $validationErrors === [],

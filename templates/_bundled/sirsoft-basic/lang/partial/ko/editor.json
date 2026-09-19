@@ -452,23 +452,6 @@
       "full": "전체",
       "icon": "아이콘"
     },
-    "pr_user_reaction": {
-      "label": "내 반응",
-      "like": "좋아요",
-      "funny": "웃겨요",
-      "agree": "공감해요",
-      "thanks": "고마워요",
-      "wow": "놀라워요"
-    },
-    "pr_post_id": {
-      "label": "게시글 ID"
-    },
-    "pr_size": {
-      "label": "크기",
-      "sm": "작게",
-      "md": "보통",
-      "lg": "크게"
-    },
     "pi_label": {
       "label": "라벨"
     },
@@ -717,7 +700,6 @@
     "file_uploader": "파일 업로더",
     "avatar_uploader": "아바타 업로더",
     "social_login_buttons": "소셜 로그인 버튼",
-    "post_reactions": "게시글 반응",
     "input": "입력 필드",
     "textarea": "여러 줄 입력",
     "select": "선택 상자",
@@ -1085,7 +1067,6 @@
     "user": "사용자",
     "current_page": "현재 페이지",
     "total_pages": "전체 페이지 수",
-    "reactions": "반응",
     "product": "상품",
     "author": "작성자",
     "value": "값",
@@ -1122,7 +1103,6 @@
     "category": "카테고리",
     "challenge": "본인인증 요청",
     "checkoutData": "주문서 데이터",
-    "claimable": "클레임 신청 가능 상품",
     "current_user": "현재 사용자",
     "form_data": "폼 데이터",
     "form_meta": "폼 메타",
@@ -1133,6 +1113,8 @@
     "myComments": "내 댓글",
     "myInquiries": "내 문의",
     "myPosts": "내 게시글",
+    "myReactions": "내 반응",
+    "myReports": "내 신고",
     "navigation": "이전/다음 글",
     "newProducts": "신상품",
     "notification_unread_count": "읽지 않은 알림 수",
@@ -1173,6 +1155,8 @@
     "userProfile": "사용자 프로필",
     "user_notification_ws": "알림 (실시간)",
     "wishlist": "위시리스트",
+    "scrap": "스크랩",
+    "claimable": "클레임 신청 가능 상품",
     "claims": "클레임 신청내역",
     "claim": "클레임 신청서"
   }

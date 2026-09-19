@@ -1,0 +1,31 @@
+<layout name="_admin_base" version="1.0.0">
+  <meta title="$t:admin.base_layout_title" :is_base="true">
+    <seo :enabled="true" page_type="article" :priority="0.8">
+      <og>{"type": "website", "site_name": "G7"}</og>
+      <data-sources>["users"]</data-sources>
+    </seo>
+  </meta>
+
+  <data-source id="countries" type="static">
+    <data>[{"code": "KR"}, {"code": "US"}]</data>
+  </data-source>
+
+  <data-source id="users" endpoint="/api/admin/users" method="GET" :auto_fetch="true">
+    <init-local key="userList"><from-source>usersData</from-source></init-local>
+    <init-global key="counters" merge="deep">
+      <field name="userCount" :value="0"/>
+    </init-global>
+    <success><toast message="loaded"/></success>
+    <all-of>
+      <expr>{{isReady}}</expr>
+      <expr>{{hasPermission}}</expr>
+    </all-of>
+  </data-source>
+
+  <div data-ref="admin_shell" class="admin-shell">
+    <slot name="sidebar"/>
+    <slot name="content">
+      <span text="기본 콘텐츠"/>
+    </slot>
+  </div>
+</layout>

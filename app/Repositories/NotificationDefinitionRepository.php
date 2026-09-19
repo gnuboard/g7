@@ -10,6 +10,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class NotificationDefinitionRepository implements NotificationDefinitionRepositoryInterface
 {
+    /** `template_channel` 이 이 값이면 채널을 좁히지 않고 전 채널 템플릿을 싣는다. */
+    public const TEMPLATE_CHANNEL_ALL = 'all';
+
     use ResolvesSortSpec;
 
     /** 허용 정렬 컬럼 (NotificationDefinitionIndexRequest 와 동일 집합) */
@@ -134,9 +137,13 @@ class NotificationDefinitionRepository implements NotificationDefinitionReposito
         // 목록은 템플릿 본문을 싣지 않는다.
         //
         // 좁히지 않으면 한 페이지를 여는 것만으로 그 페이지 전 정의의 **모든 채널** 제목·본문이
-        // 응답에 실린다(정의 하나당 채널 × 로케일). 화면은 한 번에 한 채널만 그리므로 그 채널을
-        // `template_channel` 로 지정해 요청한다 — 지정하지 않은 호출자는 템플릿을 받지 않고,
-        // 필요하면 단건 조회(`GET .../notification-definitions/{id}`)가 전 채널을 제공한다.
+        // 응답에 실린다(정의 하나당 채널 × 로케일). 그래서 볼 채널을 `template_channel` 로
+        // 지정해 요청한다 — 지정하지 않은 호출자는 템플릿을 받지 않고, 필요하면 단건
+        // 조회(`GET .../notification-definitions/{id}`)가 전 채널을 제공한다.
+        //
+        // `all` 은 채널을 나눠 보여주지 않고 **켠 채널을 한 목록에 함께** 그리는 화면을 위한
+        // 예외다. 그런 화면은 채널을 바꿀 때마다 목록을 다시 부르지 않아도 되는 대신 응답이
+        // 커지므로, 정의를 좁혀 부르는 호출자(확장 설정 화면 등)만 쓴다.
         $templateChannel = $filters['template_channel'] ?? null;
 
         $query = NotificationDefinition::query()
@@ -148,7 +155,9 @@ class NotificationDefinitionRepository implements NotificationDefinitionReposito
                 },
             ]);
 
-        if (! empty($templateChannel)) {
+        if ($templateChannel === self::TEMPLATE_CHANNEL_ALL) {
+            $query->with('templates');
+        } elseif (! empty($templateChannel)) {
             $query->with([
                 'templates' => fn ($q) => $q->where('channel', $templateChannel),
             ]);

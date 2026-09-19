@@ -34,5 +34,20 @@
   },
   "sirsoft-ecommerce-reviews": {
     "name": "レビュー管理"
+  },
+  "sirsoft-ecommerce-mileage-transactions": {
+    "name": "マイレージ履歴"
+  },
+  "sirsoft-ecommerce-wishlists": {
+    "name": "お気に入り管理"
+  },
+  "sirsoft-ecommerce-carts": {
+    "name": "カート管理"
+  },
+  "sirsoft-ecommerce-user-addresses": {
+    "name": "会員配送先"
+  },
+  "sirsoft-ecommerce-inquiries": {
+    "name": "商品問い合わせ管理"
   }
 }

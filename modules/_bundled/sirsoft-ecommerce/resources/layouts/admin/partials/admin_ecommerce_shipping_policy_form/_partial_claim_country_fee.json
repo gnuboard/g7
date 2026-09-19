@@ -1,308 +1,308 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "배송정책 폼 - 국가별 클레임 배송비 (반품 편도 / 교환 왕복, 고정액 또는 원래 정책 재계산)"
-  },
-  "id": "claim_country_fee_section",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{_computed.activeCountrySetting}}",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "H2",
-      "props": {
-        "className": "card-title"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_claim_fee"
+    "meta": {
+        "is_partial": true,
+        "description": "배송정책 폼 - 국가별 클레임 배송비 (반품 편도 / 교환 왕복, 고정액 또는 원래 정책 재계산)"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "card-description"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_description"
+    "id": "claim_country_fee_section",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeCountrySetting}}",
+    "props": {
+        "className": "admin-card"
     },
-    {
-      "id": "claim_fee_content",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "row-stack"
-      },
-      "children": [
+    "children": [
         {
-          "id": "field_claim_fee_mode",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode"
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-4 flex-wrap"
-              },
-              "children": [
-                {
-                  "id": "claim_fee_mode_fixed",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-center gap-2 cursor-pointer"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "claim_fee_mode",
-                        "autoBinding": false,
-                        "className": "radio",
-                        "checked": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "sirsoft-ecommerce.updateCountryField",
-                          "params": {
-                            "field": "claim_fee_mode",
-                            "value": "fixed"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-body"
-                      },
-                      "text": "$t:sirsoft-ecommerce.enums.claim_shipping_fee_mode.fixed"
-                    }
-                  ]
-                },
-                {
-                  "id": "claim_fee_mode_original_policy",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-center gap-2 cursor-pointer"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "claim_fee_mode",
-                        "autoBinding": false,
-                        "className": "radio",
-                        "checked": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'original_policy'}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "sirsoft-ecommerce.updateCountryField",
-                          "params": {
-                            "field": "claim_fee_mode",
-                            "value": "original_policy"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-body"
-                      },
-                      "text": "$t:sirsoft-ecommerce.enums.claim_shipping_fee_mode.original_policy"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint mt-1"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode_hint"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']}}",
-              "props": {
-                "className": "form-error-xs mt-0.5"
-              },
-              "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']?.[0]}}"
-            }
-          ]
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_claim_fee"
         },
         {
-          "id": "claim_fixed_fee_fields",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}",
-          "props": {
-            "className": "grid-2col-responsive"
-          },
-          "children": [
-            {
-              "id": "field_return_fixed_fee",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "min": "0",
-                    "step": "1",
-                    "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee'] ? 'input input-error w-full' : 'input w-full'}}",
-                    "value": "{{_computed.activeCountrySetting?.return_fixed_fee ?? 0}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "sirsoft-ecommerce.updateCountryField",
-                      "params": {
-                        "field": "return_fixed_fee",
-                        "value": "{{Number($event.target.value)}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint mt-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee_hint"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee']}}",
-                  "props": {
-                    "className": "form-error-xs mt-0.5"
-                  },
-                  "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee']?.[0]}}"
-                }
-              ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-description"
             },
-            {
-              "id": "field_exchange_fixed_fee",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.exchange_fixed_fee"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "min": "0",
-                    "step": "1",
-                    "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee'] ? 'input input-error w-full' : 'input w-full'}}",
-                    "value": "{{_computed.activeCountrySetting?.exchange_fixed_fee ?? 0}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "sirsoft-ecommerce.updateCountryField",
-                      "params": {
-                        "field": "exchange_fixed_fee",
-                        "value": "{{Number($event.target.value)}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint mt-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.exchange_fixed_fee_hint"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee']}}",
-                  "props": {
-                    "className": "form-error-xs mt-0.5"
-                  },
-                  "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee']?.[0]}}"
-                }
-              ]
-            }
-          ]
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_description"
         },
         {
-          "id": "claim_fee_original_policy_notice",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'original_policy'}}",
-          "props": {
-            "className": "alert-info"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "circle-info",
-                "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0"
-              }
+            "id": "claim_fee_content",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-info-soft"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_original_policy_notice"
-            }
-          ]
+            "children": [
+                {
+                    "id": "field_claim_fee_mode",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-4 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "id": "claim_fee_mode_fixed",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateCountryField",
+                                                    "params": {
+                                                        "field": "claim_fee_mode",
+                                                        "value": "fixed"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "claim_fee_mode",
+                                                "autoBinding": false,
+                                                "className": "radio",
+                                                "checked": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.claim_shipping_fee_mode.fixed"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "claim_fee_mode_original_policy",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateCountryField",
+                                                    "params": {
+                                                        "field": "claim_fee_mode",
+                                                        "value": "original_policy"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "claim_fee_mode",
+                                                "autoBinding": false,
+                                                "className": "radio",
+                                                "checked": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'original_policy'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.claim_shipping_fee_mode.original_policy"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint mt-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode_hint"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']}}",
+                            "props": {
+                                "className": "form-error-xs mt-0.5"
+                            },
+                            "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']?.[0]}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "claim_fixed_fee_fields",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "id": "field_return_fixed_fee",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.updateCountryField",
+                                            "params": {
+                                                "field": "return_fixed_fee",
+                                                "value": "{{Number($event.target.value)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "min": "0",
+                                        "step": "1",
+                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "value": "{{_computed.activeCountrySetting?.return_fixed_fee ?? 0}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee']}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-0.5"
+                                    },
+                                    "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee']?.[0]}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_exchange_fixed_fee",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.exchange_fixed_fee"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.updateCountryField",
+                                            "params": {
+                                                "field": "exchange_fixed_fee",
+                                                "value": "{{Number($event.target.value)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "min": "0",
+                                        "step": "1",
+                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "value": "{{_computed.activeCountrySetting?.exchange_fixed_fee ?? 0}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.exchange_fixed_fee_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee']}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-0.5"
+                                    },
+                                    "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee']?.[0]}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "claim_fee_original_policy_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'original_policy'}}",
+                    "props": {
+                        "className": "alert-info"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-info-soft"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_original_policy_notice"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

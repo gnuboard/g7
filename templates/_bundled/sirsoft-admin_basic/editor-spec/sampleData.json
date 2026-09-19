@@ -1,12 +1,79 @@
 {
   "comment": "admin 자체 + 코어 SSoT 도메인. locales/admin_menus/me/installed_modules/active_plugins/users 등. 실제 데이터소스 ID 는 착수 시점 admin 레이아웃 data_sources 로 재검증 — 본 블록은 코어 SSoT/공통 폴백.",
   "byDataSourceId": {
+    "memberNotifications": {
+      "data": {
+        "data": [
+          {
+            "id": "00000000-0000-4000-8000-000000000201",
+            "member": {
+              "uuid": "00000000-0000-4000-8000-000000000101",
+              "name": "김서연",
+              "email": "seoyeon@example.com",
+              "is_withdrawn": false
+            },
+            "type": "App\\\\Notifications\\\\BoardCommentNotification",
+            "type_label": "댓글 알림",
+            "subject": "회원님의 글에 새 댓글이 달렸습니다",
+            "body_excerpt": "맛집 추천해요 — 저도 가봤는데 좋았어요.",
+            "url": "/board/free/1201",
+            "read_at": null,
+            "is_read": false,
+            "created_at": "2026-09-13 14:02"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000202",
+            "member": {
+              "uuid": "00000000-0000-4000-8000-000000000102",
+              "name": "박지훈",
+              "email": "jihun@example.com",
+              "is_withdrawn": false
+            },
+            "type": "App\\\\Notifications\\\\OrderShippedNotification",
+            "type_label": "주문 알림",
+            "subject": "주문하신 상품이 발송되었습니다",
+            "body_excerpt": "송장번호 1234-5678-9012 로 발송되었습니다.",
+            "url": "/mypage/orders/7781",
+            "read_at": "2026-09-13 09:31",
+            "is_read": true,
+            "created_at": "2026-09-12 21:18"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000203",
+            "member": null,
+            "type": "App\\\\Notifications\\\\SystemNoticeNotification",
+            "type_label": "시스템 알림",
+            "subject": "정기 점검 안내",
+            "body_excerpt": null,
+            "url": null,
+            "read_at": null,
+            "is_read": false,
+            "created_at": "2026-09-10 03:00"
+          }
+        ],
+        "abilities": {
+          "can_delete": true
+        },
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 20,
+          "total": 3,
+          "from": 1,
+          "to": 3,
+          "has_more_pages": false
+        }
+      }
+    },
     "trustedProxy": {
       "data": {
         "status": "warning",
         "trusted_configured": false,
         "configured_proxies": null,
-        "forwarded_headers": ["X-Forwarded-For", "X-Forwarded-Proto"],
+        "forwarded_headers": [
+          "X-Forwarded-For",
+          "X-Forwarded-Proto"
+        ],
         "is_secure": false,
         "client_ip": "10.0.2.31",
         "remote_addr": "203.0.113.7"
@@ -48,7 +115,10 @@
         "tree_writable": true,
         "process_user": "www-data",
         "failure": null,
-        "retained_versions": [1788171201, 1788656566]
+        "retained_versions": [
+          1788171201,
+          1788656566
+        ]
       }
     },
     "locales": {
@@ -11414,31 +11484,6 @@
         }
       ]
     },
-    "dashboard_recent_notifications": {
-      "comment": "대시보드 최근 발송 알림 (admin_dashboard.json — {{(dashboard_recent_notifications?.data ?? []).length}}).",
-      "data": [
-        {
-          "id": 10,
-          "type": "email",
-          "channel": "email",
-          "recipient": "user@example.com",
-          "subject": "주문 확인",
-          "status": "sent",
-          "time": "3시간 전",
-          "timestamp": "2026-06-03 13:45:00"
-        },
-        {
-          "id": 9,
-          "type": "sms",
-          "channel": "sms",
-          "recipient": "010-1234-5678",
-          "subject": "배송 알림",
-          "status": "failed",
-          "time": "1일 전",
-          "timestamp": "2026-06-02 10:15:00"
-        }
-      ]
-    },
     "dashboard_alerts": {
       "data": {
         "data": []
@@ -11797,7 +11842,9 @@
               "번역 보강"
             ]
           }
-        ]
+        ],
+        "icon_url": "/assets/icons/core/g7-core.svg",
+        "icon_source": "core"
       }
     },
     "language_packs": {
@@ -11808,21 +11855,29 @@
             "code": "ko",
             "name": "한국어 언어팩",
             "version": "1.2.0",
-            "installed": true
+            "installed": true,
+            "icon_url": null,
+            "icon_source": "none"
           },
           {
             "id": 2,
             "code": "en",
             "name": "English Pack",
             "version": "1.1.0",
-            "installed": true
+            "installed": true,
+            "icon_url": null,
+            "icon_source": "none"
           },
           {
             "id": 3,
             "code": "ja",
+            "locale": "ja",
+            "locale_native_name": "日本語",
             "name": "日本語パック",
             "version": "1.0.0",
-            "installed": false
+            "installed": false,
+            "icon_url": "/api/extensions/module/sirsoft-board/icon?v=1.2.0",
+            "icon_source": "target"
           }
         ],
         "meta": {
@@ -11874,6 +11929,43 @@
         {
           "name": "_admin_base.json",
           "path": "layouts/_admin_base.json"
+        }
+      ]
+    },
+    "layout_search": {
+      "data": [
+        {
+          "key": "layout:admin_user_list",
+          "kind": "layout",
+          "name": "admin_user_list",
+          "name_matched": false,
+          "match_count": 2,
+          "lines": [
+            {
+              "line": 42,
+              "column": 11,
+              "preview": "<input name=\"email\" class=\"input\"/>"
+            },
+            {
+              "line": 87,
+              "column": 5,
+              "preview": "<span>{{item.email}}</span>"
+            }
+          ]
+        },
+        {
+          "key": "ext:200",
+          "kind": "extension",
+          "name": "html_content",
+          "name_matched": true,
+          "match_count": 1,
+          "lines": [
+            {
+              "line": 3,
+              "column": 7,
+              "preview": "<div class=\"html-content\"></div>"
+            }
+          ]
         }
       ]
     },
@@ -12895,7 +12987,9 @@
         "changelog": [
           "1.0.0 최초 릴리스"
         ],
-        "readme": "이커머스 모듈 안내 문서"
+        "readme": "이커머스 모듈 안내 문서",
+        "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon",
+        "icon_source": "convention"
       }
     },
     "moduleInstallPreview": {
@@ -12927,7 +13021,9 @@
             "status": "active",
             "enabled": true,
             "author": "sirsoft",
-            "description": "쇼핑몰 모듈"
+            "description": "쇼핑몰 모듈",
+            "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon?v=1.0.0",
+            "icon_source": "convention"
           },
           {
             "identifier": "sirsoft-board",
@@ -12936,7 +13032,9 @@
             "status": "active",
             "enabled": true,
             "author": "sirsoft",
-            "description": "게시판 모듈"
+            "description": "게시판 모듈",
+            "icon_url": null,
+            "icon_source": "none"
           },
           {
             "identifier": "sirsoft-page",
@@ -12945,7 +13043,9 @@
             "status": "active",
             "enabled": true,
             "author": "sirsoft",
-            "description": "정적 페이지 모듈"
+            "description": "정적 페이지 모듈",
+            "icon_url": null,
+            "icon_source": "none"
           }
         ],
         "current_page": 1,
@@ -13137,7 +13237,9 @@
         "changelog": [
           "1.0.0 최초 릴리스"
         ],
-        "readme": "결제 플러그인 안내 문서"
+        "readme": "결제 플러그인 안내 문서",
+        "icon_url": "/api/extensions/plugin/sirsoft-payment/icon",
+        "icon_source": "convention"
       }
     },
     "pluginInstallPreview": {
@@ -13165,7 +13267,9 @@
             "status": "active",
             "enabled": true,
             "author": "sirsoft",
-            "description": "결제 플러그인"
+            "description": "결제 플러그인",
+            "icon_url": "/api/extensions/plugin/sirsoft-payment/icon?v=1.0.0",
+            "icon_source": "convention"
           },
           {
             "identifier": "sirsoft-seo",
@@ -13174,7 +13278,9 @@
             "status": "active",
             "enabled": true,
             "author": "sirsoft",
-            "description": "SEO 최적화 플러그인"
+            "description": "SEO 최적화 플러그인",
+            "icon_url": null,
+            "icon_source": "none"
           },
           {
             "identifier": "sirsoft-analytics",
@@ -13183,7 +13289,9 @@
             "status": "inactive",
             "enabled": false,
             "author": "sirsoft",
-            "description": "방문 통계 플러그인"
+            "description": "방문 통계 플러그인",
+            "icon_url": null,
+            "icon_source": "none"
           }
         ],
         "current_page": 1,
@@ -14265,7 +14373,9 @@
         "changelog": [
           "1.0.0 최초 릴리스"
         ],
-        "readme": "관리자 기본 템플릿 안내 문서"
+        "readme": "관리자 기본 템플릿 안내 문서",
+        "icon_url": "/api/extensions/template/sirsoft-admin_basic/icon",
+        "icon_source": "convention"
       }
     },
     "templateInstallPreview": {
@@ -14310,7 +14420,9 @@
               "can_activate": true,
               "can_uninstall": true,
               "can_edit_layouts": true
-            }
+            },
+            "icon_url": "/api/extensions/template/sirsoft-admin_basic/icon?v=1.0.0-beta.8",
+            "icon_source": "convention"
           },
           {
             "identifier": "sirsoft-basic",
@@ -14363,7 +14475,9 @@
               "can_activate": true,
               "can_uninstall": true,
               "can_edit_layouts": true
-            }
+            },
+            "icon_url": null,
+            "icon_source": "none"
           }
         ],
         "current_page": 1,

@@ -6,7 +6,7 @@
 The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.0.12-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.1.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -35,7 +35,7 @@ The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 Everything from security to architecture was rewritten from scratch on Laravel and React.
 
-- **JSON layout engine**: define React-based UI declaratively with JSON alone, no React knowledge required. Modules and plugins inject or extend UI dynamically through JSON without a frontend build. When you need something more advanced, you can develop and register custom React components
+- **Declarative layout engine**: define React-based UI declaratively with HTML-like markup (`.g7.html`) alone, no React knowledge required — the server compiles it into a runtime JSON contract at install time. Modules and plugins inject or extend UI dynamically without a frontend build. When you need something more advanced, you can develop and register custom React components
 - **One platform, many business models**: community, storefront, subscription, booking — extend it to fit your business
 - **Fine-grained access control**: Role + Permission + Scope, a three-tier model that keeps control as your service grows
 - **Global-ready**: native i18n support, locale-driven UI, multi-currency handling
@@ -56,7 +56,7 @@ Everything a modern web platform needs, built in.
 | **Access control** | Control menus, features, and even data scope per role. Role + Permission + Scope three-tier access control provides flexible management that mirrors your organization |
 | **Identity verification (IDV)** | Every verification point — signup, password reset, sensitive operations — is managed centrally through declarative route/hook-level policies. The core ships a mail provider built in, and external providers (Korean identity-verification services such as KG Inicis and NHN KCP, as well as SMS, PortOne, and Stripe Identity-style services) attach through the same provider contract. When the server returns HTTP 428, the frontend interceptor opens a verification modal automatically and replays the original request on success |
 | **Security** | Automatic input validation and token-based authentication. Layered defense designed in from the start (CSRF/XSS/SQL injection), a real implementation of login throttling and account lockout (HTTP 423), and automatic blocking of installer endpoints once setup completes (HTTP 410) |
-| **Flexible screen composition** | Define a screen structure and see it applied immediately. Web-app-grade dynamic screens are achievable with JSON declarations alone, no frontend infrastructure required |
+| **Flexible screen composition** | Define a screen structure and see it applied immediately. Web-app-grade dynamic screens are achievable with markup authoring (`.g7.html`) alone, no frontend infrastructure required |
 | **Layout editor** | A WYSIWYG layout editor lets you place screen blocks directly and see the result right away |
 | **Proven foundation** | Built on Laravel + React — a stack adopted by companies worldwide, offering high extensibility and flexible UI implementation |
 | **Shared cache system** | `CacheInterface` plus three drivers (core/module/plugin) isolate key prefixes automatically (`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`). Tag-based automatic invalidation and central TTL management via `g7_core_settings('cache.*_ttl')` keep operations free of hardcoded values |
@@ -105,19 +105,19 @@ Gnuboard7
 
 ### How the template engine works
 
-In Gnuboard7 you **declare the UI structure in JSON**, and the engine interprets it and renders React components.
+In Gnuboard7 you **declare the UI structure in `.g7.html` markup**; the server compiles it into JSON (the runtime contract) at install time, and the engine interprets that JSON and renders React components.
 
 #### What it gives you
 
-- Build React-based UI from JSON declarations alone — screen development without React expertise
-- Modules and plugins inject or extend UI dynamically through JSON, with no frontend build
+- Build React-based UI from markup authoring (`.g7.html`) alone — screen development without React expertise
+- Modules and plugins inject or extend UI dynamically, with no frontend build
 - Develop and register custom React components when a screen needs something more advanced
 - Because the UI is defined as data (JSON) rather than code, a **WYSIWYG layout editor** lets non-developers place and edit screen blocks and see the result immediately
 
 ```mermaid
 flowchart TB
     subgraph Backend ["🔧 Backend — Laravel"]
-        A["📄 JSON layout file"] --> B["⚙️ LayoutService"]
+        A["📄 Layout source .g7.html<br/>compiled to JSON at install"] --> B["⚙️ LayoutService"]
         B --> |"inheritance<br/>extends / partial"| B
         M["📦 Module layout"] -.-> |"layout_extensions<br/>extension_point injection"| B
         P["🔌 Plugin layout"] -.-> |"layout_extensions<br/>extension_point injection"| B
@@ -181,40 +181,92 @@ flowchart TB
     linkStyle default stroke:#374151,stroke-width:2px
 ```
 
-**JSON layout example** — the JSON below renders as a real React UI:
+**Layout example** — you author in `.g7.html` markup like the block below; at install time the server compiles it into the runtime contract JSON shown beneath it, which renders as a real React UI:
+
+```html
+<layout name="product_list" version="1.0.0">
+  <data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET"/>
+  <div>
+    <h1 text="$t:product_list"/>
+    <div data-each="item in {{products?.data?.data}}">
+      <span text="{{item.name}}"/>
+    </div>
+    <button text="$t:add" data-if="{{products?.data?.abilities?.can_create}}">
+      <on type="click">
+        <navigate path="/products/create"/>
+      </on>
+    </button>
+  </div>
+</layout>
+```
+
+> Above is the authoring source (`.g7.html`); below is its compiled result, the runtime contract JSON.
 
 ```json
 {
+  "version": "1.0.0",
+  "layout_name": "product_list",
   "data_sources": [
-    { "id": "products", "endpoint": "/api/products", "method": "GET" }
+    {
+      "id": "products",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products",
+      "method": "GET"
+    }
   ],
-  "layout": {
-    "type": "basic", "name": "Div",
-    "children": [
-      { "type": "basic", "name": "H1", "text": "$t:product_list" },
-      {
-        "type": "basic", "name": "Div",
-        "iteration": { "source": "{{products?.data?.data}}", "item_var": "$item" },
-        "children": [
-          { "type": "basic", "name": "Span", "text": "{{$item.name}}" }
-        ]
-      },
-      {
-        "type": "basic", "name": "Button", "text": "$t:add",
-        "if": "{{products?.data?.abilities?.can_create}}",
-        "actions": [{
-          "event": "onClick",
-          "handler": "navigate",
-          "params": { "path": "/products/create" }
-        }]
-      }
-    ]
-  }
+  "components": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "H1",
+          "props": {
+            "text": "$t:product_list"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{products?.data?.data}}",
+            "item_var": "item"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "text": "{{item.name}}"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{products?.data?.abilities?.can_create}}",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/products/create"
+              }
+            }
+          ],
+          "props": {
+            "text": "$t:add"
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 
 Activating a module or plugin injects its UI and components automatically.
-Developers add or change UI with JSON alone — no separate frontend build — and UI elements are shown or hidden automatically according to permissions (abilities).
+Developers add or change UI with markup authoring alone — no separate frontend build — and UI elements are shown or hidden automatically according to permissions (abilities).
 
 ### Core systems
 
@@ -410,6 +462,7 @@ The setup wizard creates the application key, configures the database connection
 | **sirsoft-verification_nhnkcp** | NHN KCP mobile identity verification (Korean identity verification) |
 | **sirsoft-daum_postcode** | Daum postcode lookup (Korean address search) |
 | **sirsoft-marketing** | Marketing tools |
+| **sirsoft-koreaexim** | Korea Eximbank exchange rate updates and history |
 | **sirsoft-ckeditor5** | CKEditor 5 editor |
 | **sirsoft-gdpr** | Privacy and GDPR support |
 | **sirsoft-message_bizppurio** | Bizppurio messaging (SMS/LMS and KakaoTalk alimtalk delivery) |
@@ -435,6 +488,7 @@ Official language packs you can install alongside the initial setup, so the core
 | **g7-plugin-sirsoft-daum_postcode-ja** | Daum postcode plugin, Japanese |
 | **g7-plugin-sirsoft-gdpr-ja** | Privacy/GDPR plugin, Japanese |
 | **g7-plugin-sirsoft-marketing-ja** | Marketing plugin, Japanese |
+| **g7-plugin-sirsoft-koreaexim-ja** | Korea Eximbank exchange rates plugin Japanese |
 | **g7-plugin-sirsoft-message_bizppurio-ja** | Bizppurio messaging plugin, Japanese |
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG Inicis payment plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | NICE Payments plugin, Japanese |

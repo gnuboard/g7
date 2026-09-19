@@ -154,7 +154,7 @@ describe('apply.json — 작성 셸', () => {
     const sequence = order.onSuccess[0];
     expect(sequence.handler).toBe('sequence');
 
-    const actions = sequence.params.actions;
+    const actions = sequence.actions;
     expect(actions[0].handler).toBe('setState');
     expect(actions[0].params.claimOrderId).toBe('{{response.data.data.id}}');
     expect(actions[1].handler).toBe('refetchDataSource');
@@ -171,7 +171,7 @@ describe('apply.json — 작성 셸', () => {
     // 않는다. 그래서 수정 화면은 사유·재발송지를 바꿔도 claims/preview 를 부르지 않았고(D14 사문),
     // 주문금액 비교도 "계산됩니다" 자리표시에 머물렀다.
     const order = apply.data_sources.find((s: any) => s.id === 'order');
-    const setState = order.onSuccess[0].params.actions[0];
+    const setState = order.onSuccess[0].actions[0];
     expect(setState.params.claimApiBase).toBe("{{'/api/modules/sirsoft-ecommerce/user/orders/' + response.data.data.id}}");
     // 작성 진입(initLocal)과 같은 기준 경로여야 한다 — 두 곳이 갈리면 작성·수정의 미리보기가 다른 주소를 부른다.
     expect(order.initLocal.claimApiBase).toBe("{{'/api/modules/sirsoft-ecommerce/user/orders/' + data.id}}");
@@ -332,7 +332,11 @@ describe('_apply_reason.json — 사유', () => {
   it('첨부 상한은 운영자 설정에서 읽는다 (리터럴 금지)', () => {
     const uploader = flatten(reason).find((n) => n.name === 'FileUploader');
     expect(String(uploader.props.maxFiles)).toContain('claimableSnapshot ?? claimable?.data)?.settings?.max_images');
-    expect(String(uploader.props.maxSize)).toContain('image_max_size_kb');
+    // S2-D10: maxSize 는 컴포지트에 넘기지 않는다(넘기면 초과 파일이 change 전에 걸러져 핸들러·토스트가 0건).
+    // 용량 상한은 안내 문구(P)가 같은 설정값으로 보여 주고, 판정은 setClaimImageFiles 가 한다.
+    expect(uploader.props.maxSize).toBeUndefined();
+    const hint = flatten(reason).find((n) => n.name === 'P' && String(n.text).includes('claim.apply.images_hint'));
+    expect(String(hint.text)).toContain('image_max_size_kb');
   });
 
   it('첨부는 change 시점에 올리지 않고 대기열에만 담는다', () => {
@@ -635,7 +639,7 @@ describe('mypage/orders/show.json — 클레임 신청 진입', () => {
     expect(claimable.endpoint).toContain('{{_local.claimOrderId}}');
 
     const order = orderShow.data_sources.find((s: any) => s.id === 'order');
-    expect(order.onSuccess[0].params.actions[1].params.dataSourceId).toBe('claimable');
+    expect(order.onSuccess[0].actions[1].params.dataSourceId).toBe('claimable');
   });
 
   /**

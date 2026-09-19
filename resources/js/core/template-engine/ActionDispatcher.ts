@@ -85,6 +85,7 @@ const PREVIEW_SUPPRESSED_HANDLERS: ReadonlySet<string> = new Set([
     'navigateBack',
     'navigateForward',
     'replaceUrl',
+    'redirect',         // 외부 주소로 통째 이탈 — 프리뷰에서 돌면 미리보기 창이 사라진다
 
     // 간접 네비게이션 — 페이지 리로드 또는 리다이렉트 유발
     'refresh',          // window.location.reload()
@@ -227,6 +228,13 @@ export interface ActionDefinition {
   errorHandling?: import('../types/ErrorHandling').ErrorHandlingMap;
   /** 확인 메시지 표시 여부 */
   confirm?: string;
+  /**
+   * 상위로 이벤트 전파를 차단할지 여부 (engine-v1.68.0)
+   *
+   * 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 싶을 때 쓴다.
+   * 진입점 액션에서만 의미가 있다 — 이벤트 객체를 쥐고 있는 것이 그 자리뿐이다.
+   */
+  stopPropagation?: boolean;
   /** 키보드 이벤트에서 특정 키 필터링 (예: "Enter", "Escape") */
   key?: string;
   /** switch 핸들러용 케이스 정의 - $args[0] 값을 기준으로 분기 */
@@ -2107,6 +2115,15 @@ export class ActionDispatcher {
           event.preventDefault();
         }
 
+        // 상위로 이벤트 전파 차단 (engine-v1.68.0)
+        //
+        // 클릭 가능한 행 안에 토글/버튼을 두는 구조에서, 안쪽 컨트롤을 눌러도 바깥 행의
+        // click 이 함께 발화한다. 레이아웃은 예전부터 액션에 `stopPropagation: true` 를
+        // 적어 이를 막으려 했으나 엔진에 소비처가 없어 **한 번도 동작한 적이 없었다**.
+        if (action.stopPropagation === true) {
+          event.stopPropagation();
+        }
+
         // 폼 데이터 추출 (submit 이벤트인 경우)
         let formData: Record<string, any> = {};
         if (
@@ -2415,6 +2432,13 @@ export class ActionDispatcher {
         case 'openWindow': {
           const openWindowPath = resolvedParams.path || resolvedTarget;
           result = await this.handleOpenWindow(openWindowPath!, resolvedParams);
+          break;
+        }
+
+        case 'redirect': {
+          // `url` 을 먼저 본다 — 이 핸들러의 유일한 호출처(본인인증 외부 이동)가 그 이름으로 적는다.
+          const redirectUrl = resolvedParams.url || resolvedParams.path || resolvedTarget;
+          result = await this.handleRedirect(redirectUrl!, resolvedParams);
           break;
         }
 
@@ -3333,6 +3357,39 @@ export class ActionDispatcher {
       window.location.assign(finalPath);
     } else {
       window.open(finalPath, '_blank');
+    }
+  }
+
+  /**
+   * 현재 탭을 주어진 주소로 통째로 이동시킵니다 (SPA 라우팅 밖).
+   *
+   * `navigate` 는 SPA 경로용이라 외부 절대 주소를 넘기면 라우트로 해석해 엉뚱한 곳에 닿고,
+   * `openWindow` 는 새 창이라 팝업 차단에 걸린다. 본인인증 제공자처럼 **같은 탭에서 나갔다가
+   * 돌아오는** 흐름은 그 둘 어느 쪽도 아니다 — 그 자리가 이 핸들러다.
+   *
+   * `<action handler="redirect" url="…">` 는 #297 부터 레이아웃에 적혀 있었으나 엔진에 소비처가
+   * 없어 **한 번도 동작한 적이 없었다**(전 이력 조사 — `case 'redirect'` 0건, 매니페스트 0건,
+   * 확장 등록 0건). 미등록 핸들러는 조용히 무동작이라 콘솔·네트워크에 흔적이 남지 않는다.
+   *
+   * 프리뷰에서는 {@link PREVIEW_SUPPRESSED_HANDLERS} 가 막는다 — 미리보기 창이 사라지기 때문이다.
+   *
+   * @param target 이동할 주소 (절대·상대 모두)
+   * @param params `replace: true` 면 뒤로가기 이력을 남기지 않는다
+   * @since engine-v1.70.0
+   */
+  private async handleRedirect(target: string, params: Record<string, any>): Promise<void> {
+    if (typeof target !== 'string' || target.trim() === '') {
+      logger.warn('[handleRedirect] 이동할 주소가 비어 있어 아무것도 하지 않습니다.', params);
+
+      return;
+    }
+
+    logger.log('handleRedirect:', { target, replace: params.replace === true });
+
+    if (params.replace === true) {
+      window.location.replace(target);
+    } else {
+      window.location.assign(target);
     }
   }
 
@@ -7148,7 +7205,10 @@ export class ActionDispatcher {
       let effectiveContext = dataContext;
       if (expr.includes('_global')) {
         const G7Core = (window as any).G7Core;
-        const latestGlobal = G7Core?.state?.get()?._global;
+        // `state.get()` 이 **곧 `_global` 의 내용물**이다(`TemplateApp.getGlobalState()` → `{...globalState}`).
+        // 여기에 `._global` 을 한 번 더 붙이면 언제나 undefined 라, 이 stale closure 방어는
+        // engine-v1.70.0 이전까지 **한 번도 돈 적이 없었다** — 가드가 falsy 라 조용히 건너뛴다.
+        const latestGlobal = G7Core?.state?.get?.();
         if (latestGlobal) {
           effectiveContext = { ...dataContext, _global: latestGlobal };
         }
@@ -7178,7 +7238,8 @@ export class ActionDispatcher {
     let effectiveDataContext = dataContext;
     if (expression.includes('_global')) {
       const G7Core = (window as any).G7Core;
-      const latestGlobal = G7Core?.state?.get()?._global;
+      // 위 복합 표현식 분기와 **같은 이유**로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
+      const latestGlobal = G7Core?.state?.get?.();
       if (latestGlobal) {
         effectiveDataContext = {
           ...dataContext,
@@ -7752,9 +7813,12 @@ export class ActionDispatcher {
    * 비디바운스 액션이 실행되기 전에 호출하여, 디바운스로 인해
    * 아직 state에 반영되지 않은 변경사항을 즉시 적용합니다.
    * 이를 통해 비디바운스 핸들러가 항상 최신 state를 읽을 수 있습니다.
+   *
+   * @return 실제로 flush 한 대기분이 있었으면 true (호출부가 데이터 문맥을 새로 읽을지 판단한다)
+   * @since engine-v1.70.0 반환 타입이 `void` 에서 `boolean` 으로 바뀌었다 — 종전 호출부는 반환을 무시하므로 그대로 동작한다.
    */
-  flushPendingDebounceTimers(): void {
-    if (this.pendingDebounceFlushers.size === 0) return;
+  flushPendingDebounceTimers(): boolean {
+    if (this.pendingDebounceFlushers.size === 0) return false;
 
     // 반복 중 맵 변경 방지를 위해 복사 후 정리
     const flushers = new Map(this.pendingDebounceFlushers);
@@ -7779,6 +7843,34 @@ export class ActionDispatcher {
     if (this.globalStateUpdater) {
       this.globalStateUpdater({});
     }
+
+    return true;
+  }
+
+  /**
+   * flush 직후의 store 값으로 데이터 문맥의 `_global` 을 덮은 사본을 만듭니다.
+   *
+   * 렌더 시점에 만들어진 `dataContext` 는 스냅샷이라 flush 로 바뀐 값을 담고 있지 않다. 이 좁은
+   * 덮어쓰기가 없으면 디바운스 창 안에서 눌린 비디바운스 액션(저장 등)이 **직전 버퍼**를 보낸다.
+   *
+   * `_local` 은 여기서 손대지 않는다 — {@link createHandler} 가 `componentContext.state` 로 무조건
+   * 다시 덮으므로 이 자리의 갱신은 도달하지 못한다(그쪽 축은 별도다). 데이터소스 키·`route` 등
+   * 나머지 문맥도 그대로 둔다 — flush 가 바꿀 수 있는 것은 상태뿐이다.
+   *
+   * @param dataContext 렌더 시점 데이터 문맥
+   * @return 전역 상태만 최신화한 사본 (읽을 수 없으면 원본)
+   * @since engine-v1.70.0
+   */
+  private withFlushedState(dataContext: any): any {
+    if (!dataContext || typeof dataContext !== 'object' || typeof window === 'undefined') {
+      return dataContext;
+    }
+
+    const nextGlobal = (window as any).G7Core?.state?.get?.();
+
+    if (!nextGlobal || typeof nextGlobal !== 'object') return dataContext;
+
+    return { ...dataContext, _global: { ...(dataContext._global ?? {}), ...nextGlobal } };
   }
 
   /**
@@ -7907,15 +7999,23 @@ export class ActionDispatcher {
                 args
               );
             } else {
-              // 대기 중인 debounce 액션을 즉시 실행하여 state 최신화
-              this.flushPendingDebounceTimers();
+              // 대기 중인 debounce 액션을 즉시 실행하여 state 최신화.
+              //
+              // flush 는 store 를 갱신하지만 `dataContext` 는 **렌더 시점 스냅샷**이라 그대로 두면
+              // 핸들러가 flush 이전 값을 읽는다 — 타이핑 직후(디바운스 창 안에) 저장을 누르면
+              // 마지막 편집이 빠진 채 요청이 나가고, 응답은 200 이라 화면에는 성공으로 보인다.
+              // 그래서 실제로 flush 한 경우에만 문맥의 `_global` 을 최신 store 값으로 덮는다
+              // (`_local` 은 아래 `createHandler` 가 `componentContext.state` 로 무조건 다시
+              //  덮으므로 여기서 손대지 않는다 — {@link withFlushedState} 참조).
+              const flushed = this.flushPendingDebounceTimers();
+              const freshContext = flushed ? this.withFlushedState(dataContext) : dataContext;
 
               // 기존 로직 (debounce 없음)
               // 커스텀 이벤트 핸들러인 경우 (action.event 사용)
               if (action.event) {
                 // 커스텀 콜백의 모든 인자를 $args 배열로 전달
                 const contextWithArgs = {
-                  ...dataContext,
+                  ...freshContext,
                   $args: args,
                 };
 
@@ -7929,7 +8029,7 @@ export class ActionDispatcher {
               } else {
                 // 표준 이벤트 핸들러
                 if (isStandardEvent) {
-                  this.createHandler(action, dataContext, componentContext)(firstArg);
+                  this.createHandler(action, freshContext, componentContext)(firstArg);
                 } else {
                   // 커스텀 컴포넌트 이벤트 감지 (예: MultilingualInput의 { target: { name, value } })
                   // React 컴포넌트에서 onChange로 emit하는 plain object
@@ -7948,7 +8048,7 @@ export class ActionDispatcher {
                       preventDefault: () => {},
                       stopPropagation: () => {},
                     } as unknown as Event;
-                    this.createHandler(action, dataContext, componentContext)(eventForHandler);
+                    this.createHandler(action, freshContext, componentContext)(eventForHandler);
                   }
                   // 주의: raw value fallback 없음 — 컴포넌트는 `{ target: { value } }` 패턴을 사용해야 함
                   // (사례 26 회귀 테스트 참조: 마운트 시 raw value로 초기 setState가 발동하여

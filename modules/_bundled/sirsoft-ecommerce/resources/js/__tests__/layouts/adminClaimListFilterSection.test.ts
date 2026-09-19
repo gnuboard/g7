@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import filterSection from '../../../layouts/admin/partials/admin_ecommerce_claim_list/_partial_filter_section.json';
 import shell from '../../../layouts/admin/admin_ecommerce_claim_list.json';
@@ -430,7 +431,7 @@ describe('클레임 목록 필터 섹션 — 목록 컨텍스트 왕복', () => 
     const setState = reset.actions.find((a: any) => a.handler === 'setState');
 
     expect(Object.keys(setState.params.filter).sort()).toEqual(
-      Object.keys((shell as any).state.filter).sort()
+      Object.keys(initStateOf(shell as any).filter).sort()
     );
   });
 });
@@ -498,7 +499,7 @@ describe('클레임 목록 필터 섹션 — 프리셋', () => {
     // 초기화가 지우지 않는 키가 하나 생긴다.
     const chip = collect(root, (n) => n.id === 'preset_buttons_dynamic_{{presetIdx}}')[0];
     const setState = (chip.actions![0] as any).actions.find((a: any) => a.handler === 'setState');
-    const shellKeys = Object.keys((shell as any).state.filter).sort();
+    const shellKeys = Object.keys(initStateOf(shell as any).filter).sort();
 
     expect(Object.keys(setState.params.filter).sort()).toEqual(shellKeys);
   });

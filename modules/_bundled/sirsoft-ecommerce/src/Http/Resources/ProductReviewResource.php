@@ -26,10 +26,12 @@ class ProductReviewResource extends BaseApiResource
             'user_id' => $this->user?->uuid,
 
             // 작성자 정보
+            // 이메일은 관리자 화면 응답과 본인 열람에만 싣는다 — 상품 리뷰 목록은 인증 없이
+            // 열리므로, 이메일을 그대로 실으면 구매자 주소록이 응답 본문으로 수집된다.
             'user' => $this->whenLoaded('user', fn () => [
                 'uuid' => $this->user->uuid,
                 'name' => $this->user->name,
-                'email' => $this->user->email,
+                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ]),
 
             // 상품 정보
@@ -91,7 +93,7 @@ class ProductReviewResource extends BaseApiResource
             'reply_admin' => $this->whenLoaded('replyAdmin', fn () => [
                 'uuid' => $this->replyAdmin->uuid,
                 'name' => $this->replyAdmin->name,
-                'email' => $this->replyAdmin->email,
+                'email' => $this->canExposeMemberEmail($request, $this->replyAdmin->id) ? $this->replyAdmin->email : null,
             ]),
             'replied_at' => $this->formatDateTimeStringForUser($this->replied_at),
             'reply_updated_at' => $this->formatDateTimeStringForUser($this->reply_updated_at),

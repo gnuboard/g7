@@ -14,7 +14,7 @@
 feature: 비즈뿌리오 메시지 발송 환경설정 (Phase 1)
 
 description: |
-  관리자 환경설정 화면(admin/plugin_settings.json)에서 비즈뿌리오 연동 정보를 입력·저장한다.
+  관리자 환경설정 화면(admin/plugin_settings.g7.html)에서 비즈뿌리오 연동 정보를 입력·저장한다.
   코어 플러그인 설정 인프라(/api/admin/plugins/{id}/settings)에 자동바인딩(_local.form)으로
   위임하며, 상단 안내 패널 + 2 섹션(API 연동 / 발송 설정) + 리포트 수신 설정 카드로 구성된다.
 

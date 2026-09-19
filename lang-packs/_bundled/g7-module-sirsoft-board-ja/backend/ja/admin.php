@@ -7,4 +7,10 @@ return [
             'channel_database' => 'サイト通知',
         ],
     ],
+    'reactions' => [
+        'badges' => [
+            'post' => '投稿',
+            'comment' => 'コメント',
+        ],
+    ],
 ];

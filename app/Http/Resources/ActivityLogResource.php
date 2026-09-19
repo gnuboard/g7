@@ -39,7 +39,7 @@ class ActivityLogResource extends BaseApiResource
             'user' => $this->user ? [
                 'uuid' => $this->user->uuid,
                 'name' => $this->user->name,
-                'email' => $this->user->email,
+                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ] : [
                 'name' => __('common.system'),
             ],

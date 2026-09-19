@@ -299,8 +299,8 @@ describe('상세 셸 — 원 주문을 신청서 뒤에 읽는다', () => {
     // 직전 setState 의 pending 값이다.
     const chain = claim.onSuccess[0];
     expect(chain.handler).toBe('sequence');
-    expect(chain.params.actions[0].handler).toBe('setState');
-    expect(chain.params.actions[1].params.dataSourceId).toBe('order');
+    expect(chain.actions[0].handler).toBe('setState');
+    expect(chain.actions[1].params.dataSourceId).toBe('order');
 
     // 주문은 **스스로 부르지 않는다**. auto_fetch 를 켜 두면 주문번호를 모르는 첫 호출이
     // 나가고, 그 404 가 체인의 200 뒤에 해소되면서 이미 받아 둔 주문을 덮어 쓴다 —

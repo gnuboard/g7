@@ -65,6 +65,7 @@ modules/_bundled/<id>/
 ├── composer.json                # PSR-4 오토로딩
 ├── CHANGELOG.md                 # Keep a Changelog
 ├── LICENSE                      # MIT
+├── assets/icon.svg              # 확장 아이콘(관례, 선택) — 정사각·100KB 이하
 ├── config/settings/defaults.json
 ├── database/{migrations,seeders,factories}/
 ├── src/
@@ -75,7 +76,7 @@ modules/_bundled/<id>/
 │   └── routes/web.php
 ├── resources/
 │   ├── lang/{ko,en}.json        # 프론트엔드 다국어 (JSON)
-│   ├── layouts/admin/pages/index.json
+│   ├── layouts/admin/pages/index.g7.html   # 레이아웃 소스 SSoT (.g7.html — 설치 시 서버가 JSON 컴파일)
 │   └── routes.json              # 프론트엔드 라우트
 └── tests/{Feature,Unit}/
 ```
@@ -330,11 +331,13 @@ plugins/_bundled/<id>/
 ├── composer.json                # PSR-4 (src/ + ./)
 ├── CHANGELOG.md                 # Keep a Changelog
 ├── LICENSE                      # MIT
+├── assets/icon.svg              # 확장 아이콘(관례, 선택) — 정사각·100KB 이하
 ├── config/settings/defaults.json      # 설정 기본값 + frontend_schema
 ├── resources/
 │   ├── extensions/              # layout_extensions JSON
 │   ├── lang/{ko,en}.json        # 프론트엔드 다국어 (JSON 만 — 백엔드 PHP 다국어 없음)
-│   └── layouts/admin/plugin_settings.json   # 설정 UI (유일한 완전 레이아웃)
+│   ├── layouts/admin/plugin_settings.g7.html  # 설정 UI 소스 SSoT (유일한 완전 레이아웃)
+│   └── layouts/admin/plugin_settings.json     # 위 소스의 컴파일 산출 — 디스크 상주 필수
 ├── src/
 │   ├── Listeners/  Services/
 │   └── routes/web.php           # 웹 라우트 (선택)
@@ -549,7 +552,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `plugin.json` 이 메타데이터 SSoT — identifier·version 을 코드에 하드코딩하지 않는다.
 - `plugin.php` 는 루트에 두고 `AbstractPlugin` 을 상속한다. `composer.json` autoload 에 `"./"` 를 포함한다.
 - 플러그인은 모듈에만 의존한다. 플러그인 간 직접 의존은 금지이며 통신이 필요하면 API·훅 경로를 골격에 반영한다.
-- 완전한 레이아웃은 등록하지 않는다 — `layout_extensions` 만 사용(예외: `plugin_settings.json`).
+- 완전한 레이아웃은 등록하지 않는다 — `layout_extensions` 만 사용(예외: `plugin_settings`).
+- 설정 UI 소스 SSoT 는 `plugin_settings.g7.html` 이지만, DB 설치 레이아웃과 달리 짝 `plugin_settings.json` 이 디스크에 있어야 한다 — `AbstractPlugin::getSettingsLayout()` 이 그 `.json` 경로를 `file_exists` 로 직접 읽는다.
 - 다국어는 `resources/lang/*.json` 만 있다(백엔드 PHP 다국어 없음).
 - `Storage::disk()` 직접 호출 금지 → `StorageInterface`.
 - Filter 훅 리스너는 `type: 'filter'` 를 명시한다(미지정 시 반환값 무시).
@@ -576,13 +580,13 @@ templates/_bundled/<id>/
 ├── package.json · vite.config.ts · vitest.config.ts · tsconfig.json
 ├── lang/{ko,en}.json
 ├── layouts/
-│   ├── _admin_base.json 또는 _user_base.json     # 베이스 (slot)
-│   ├── admin_dashboard.json 또는 home.json       # 초기 페이지
+│   ├── _admin_base.g7.html 또는 _user_base.g7.html  # 베이스 (data-slot)
+│   ├── admin_dashboard.g7.html 또는 home.g7.html # 초기 페이지
 │   └── errors/{401,403,404,500,503,maintenance}.json   # 6종 필수
 ├── src/index.ts · src/test-setup.ts
 ├── src/components/{basic,composite,layout}/
 ├── assets/{css,fonts,images}/
-├── preview/thumbnail.png
+├── assets/icon.svg                # 확장 아이콘(관례, 선택) — 정사각·100KB 이하
 └── __tests__/layouts/           # 레이아웃 렌더링 테스트 (createLayoutTest)
 ```
 
@@ -593,7 +597,7 @@ templates/_bundled/<id>/
 | type | `"admin"` | `"user"` |
 | 라우트 접두사 · auth_required 기본 | `*/admin/*` · `true` | `/` · `false` |
 | 버전 히스토리 | 미지원 (레이아웃 읽기 전용) | 지원 (편집 가능) |
-| 베이스 레이아웃 | `_admin_base.json` (sidebar + header + content + footer) | `_user_base.json` (header + content + footer) |
+| 베이스 레이아웃 | `_admin_base.g7.html` (sidebar + header + content + footer) | `_user_base.g7.html` (header + content + footer) |
 | 초기 페이지 | `admin_dashboard.json` | `home.json` |
 | 필수 composite | AdminHeader, AdminSidebar, AdminFooter, Modal, Toast | Header, Footer, Modal, Toast |
 | features | 없음 | `dark_mode`, `responsive`, `multi_language`, `multi_currency` |
@@ -622,7 +626,7 @@ templates/_bundled/<id>/
     "composite": ["admin-header", "admin-sidebar", "admin-footer", "data-grid", "modal", "toast", "pagination", "page-header", "loading-spinner", "empty-state", "breadcrumb", "card", "dropdown"],
     "layout": ["container", "flex", "grid", "section"]
   },
-  "preview": { "thumbnail": "preview/thumbnail.png", "screenshots": [] },
+  // 아이콘은 assets/icon.svg 관례로 자동 감지된다. 다른 경로를 쓸 때만 "icon": "assets/brand/mark.svg" 를 적는다.
   "error_config": {
     "layouts": { "401": "401", "403": "403", "404": "404", "500": "500", "503": "503", "maintenance": "maintenance" }
   },
@@ -684,78 +688,73 @@ templates/_bundled/<id>/
 }
 ```
 
-#### layouts/_admin_base.json
+#### layouts/_admin_base.g7.html
 
-```json
-{
-  "meta": { "title": "[Template] Admin", "description": "관리자 베이스 레이아웃" },
-  "components": [
-    {
-      "type": "layout", "name": "Flex", "props": { "className": "min-h-screen bg-gray-100 dark:bg-gray-900" },
-      "children": [
-        { "type": "composite", "name": "AdminSidebar", "id": "sidebar" },
-        {
-          "type": "basic", "name": "Div", "props": { "className": "flex-1 flex flex-col" },
-          "children": [
-            { "type": "composite", "name": "AdminHeader", "id": "header" },
-            { "type": "basic", "name": "Div", "props": { "className": "flex-1 p-6" }, "children": [{ "type": "slot", "name": "content" }] },
-            { "type": "composite", "name": "AdminFooter", "id": "footer" }
-          ]
-        }
-      ]
-    }
-  ]
-}
+> 소스는 `.g7.html`(layout-markup.md), 설치 시 서버가 JSON 으로 컴파일해 DB(`template_layouts`)에 등록한다(키 계약: layout-json.md).
+> **슬롯은 실제 노드의 `data-slot`** — `type: "slot"` 자리표시 노드 + 별도 `slots` 섹션은 정본이 아니고 강검증도 통과하지 못한다.
+> **스캐폴드는 기본 컴포넌트로 조립한다** — `components.composite` 에 선언해도 React 구현이 없으면 `registry.getComponent()` 가 null 이라 그 노드가 통째로 렌더되지 않는다. 구현 뒤 태그(`<admin-sidebar/>`)로 교체한다.
+
+```html
+<layout name="_admin_base" version="1.0.0">
+  <meta title="$t:admin.base_layout_title" :is_base="true"/>
+  <div data-ref="admin_shell" class="flex min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div data-ref="sidebar" class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
+      <h2 data-ref="sidebar_title" class="text-lg font-bold mb-4">$t:admin.sidebar.title</h2>
+      <a data-ref="nav_dashboard" href="/admin" class="block px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700">$t:admin.sidebar.dashboard</a>
+    </div>
+    <div data-ref="main_column" class="flex-1 flex flex-col">
+      <div data-ref="header" class="flex items-center h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <span data-ref="header_title" class="text-sm font-medium">$t:admin.header.title</span>
+      </div>
+      <!-- 자식 레이아웃이 끼워지는 자리 -->
+      <div data-ref="main_content" data-slot="content" class="flex-1 p-6"/>
+    </div>
+  </div>
+</layout>
 ```
 
-#### layouts/_user_base.json
+#### layouts/_user_base.g7.html
 
-```json
-{
-  "meta": { "title": "[Template]", "description": "사용자 베이스 레이아웃" },
-  "components": [
-    {
-      "type": "basic", "name": "Div", "props": { "className": "min-h-screen bg-white dark:bg-gray-900" },
-      "children": [
-        { "type": "composite", "name": "Header", "id": "header" },
-        { "type": "basic", "name": "Div", "props": { "className": "flex-1" }, "children": [{ "type": "slot", "name": "content" }] },
-        { "type": "composite", "name": "Footer", "id": "footer" }
-      ]
-    }
-  ]
-}
+```html
+<layout name="_user_base" version="1.0.0">
+  <meta title="$t:user.base_layout_title" description="$t:user.base_layout_description" :is_base="true"/>
+  <div data-ref="user_layout_root" class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
+    <div data-ref="site_header" class="border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex justify-between">
+      <a href="/" class="text-lg font-bold">$t:user.header.home_link</a>
+    </div>
+    <!-- 자식 레이아웃이 끼워지는 자리 -->
+    <div data-ref="main_content" data-slot="content" class="flex-1 max-w-3xl w-full mx-auto px-4 py-6"/>
+    <div data-ref="site_footer" class="border-t border-gray-200 dark:border-gray-700 px-4 py-3 text-sm">$t:user.footer.copyright</div>
+  </div>
+</layout>
 ```
 
 베이스가 아닌 독립 레이아웃(extends 없음)은 Toast·ModalRoot 같은 글로벌 호스트 컴포넌트를 직접 마운트한다.
 
-#### layouts/errors/404.json (401·403·500·503·maintenance 동일 패턴)
+#### layouts/errors/404.g7.html (401·403·500·503·maintenance 동일 패턴)
 
-`extends` 의 `_[type]_base` 는 `_admin_base` 또는 `_user_base` 로 바꾼다.
+자식 레이아웃은 베이스가 `data-slot` 으로 연 자리를 `<slot name="...">` 으로 채운다. `extends` 의 `_[type]_base` 는 `_admin_base` 또는 `_user_base` 로 바꾼다.
 
-```json
-{
-  "extends": "_[type]_base",
-  "meta": { "title": "404 - 페이지를 찾을 수 없습니다", "is_error_layout": true, "error_code": 404 },
-  "slots": {
-    "content": [
-      {
-        "type": "basic", "name": "Div",
-        "props": { "className": "flex flex-col items-center justify-center min-h-[60vh] text-center px-4" },
-        "children": [
-          { "type": "basic", "name": "Icon", "props": { "name": "fa-solid fa-triangle-exclamation", "className": "text-6xl text-gray-400 dark:text-gray-500 mb-6" } },
-          { "type": "basic", "name": "H1", "props": { "className": "text-4xl font-bold text-gray-800 dark:text-gray-200 mb-2", "text": "404" } },
-          { "type": "basic", "name": "P", "props": { "className": "text-lg text-gray-600 dark:text-gray-400 mb-8", "text": "$t:common.page_not_found" } },
-          {
-            "type": "basic", "name": "Button",
-            "props": { "className": "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600", "text": "$t:common.go_back" },
-            "actions": [{ "event": "onClick", "handler": "navigate", "params": { "path": "/" } }]
-          }
-        ]
-      }
-    ]
-  }
-}
+```html
+<layout name="errors/404" version="1.0.0" extends="_[type]_base">
+  <meta title="$t:errors.404.title" :is_error_layout="true" :error_code="404"/>
+  <slot name="content">
+    <div data-ref="error_container" class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <icon data-ref="error_icon" name="fa-solid fa-triangle-exclamation" class="text-6xl text-gray-400 dark:text-gray-500 mb-6"/>
+      <h1 data-ref="error_code" class="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-2">404</h1>
+      <p data-ref="error_message" class="text-lg text-gray-600 dark:text-gray-400 mb-8">$t:common.page_not_found</p>
+      <button data-ref="go_home" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+        <on type="click">
+          <navigate path="/"/>
+        </on>
+        <span>$t:common.go_back</span>
+      </button>
+    </div>
+  </slot>
+</layout>
 ```
+
+실물 최소 선례: `templates/_bundled/gnuboard7-hello_{admin,user}_template/layouts/` (베이스·에러 전 6종)
 
 #### components.json
 

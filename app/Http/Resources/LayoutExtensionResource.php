@@ -17,6 +17,26 @@ class LayoutExtensionResource extends BaseApiResource
     use ComputesLayoutContentHash;
 
     /**
+     * `?with_markup=1` 응답에 싣는 마크업 페이로드 — 컨트롤러가 변환 서비스로 만들어 주입한다(없으면 미부착).
+     *
+     * @var array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null}|null
+     */
+    protected ?array $markup = null;
+
+    /**
+     * 마크업 페이로드를 주입합니다 (`?with_markup=1`).
+     *
+     * @param  array<string, mixed>  $markup  변환 결과
+     * @return $this
+     */
+    public function withMarkup(array $markup): static
+    {
+        $this->markup = $markup;
+
+        return $this;
+    }
+
+    /**
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청 객체
@@ -35,6 +55,8 @@ class LayoutExtensionResource extends BaseApiResource
             'template_id' => $this->getValue('template_id'),
             'extension_type' => $extensionType?->value ?? $extensionType,
             'target_name' => $this->getValue('target_name'),
+            // 조각 식별자 — 같은 대상에 조각이 둘일 때 목록 행을 가른다 (소스 파일 기본 이름).
+            'fragment_key' => $this->getValue('fragment_key'),
             'source_type' => $sourceType?->value ?? $sourceType,
             'source_identifier' => $this->getValue('source_identifier'),
             'source_label' => $this->getValue('source_label', $this->getValue('source_identifier')),
@@ -65,6 +87,9 @@ class LayoutExtensionResource extends BaseApiResource
             'current_version' => $this->getValue('current_version') !== null
                 ? (int) $this->getValue('current_version')
                 : null,
+
+            // `?with_markup=1` — 코드 편집기 HTML 탭용 역변환 결과 (기본 응답은 무변경)
+            ...($this->markup ?? []),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
@@ -99,6 +124,8 @@ class LayoutExtensionResource extends BaseApiResource
             'id' => $this->getValue('id'),
             'extension_type' => $extensionType?->value ?? $extensionType,
             'target_name' => $this->getValue('target_name'),
+            // 조각 식별자 — 같은 대상에 조각이 둘일 때 목록 행을 가른다 (소스 파일 기본 이름).
+            'fragment_key' => $this->getValue('fragment_key'),
             'source_type' => $sourceType?->value ?? $sourceType,
             'source_identifier' => $this->getValue('source_identifier'),
             'source_label' => $this->getValue('source_label', $this->getValue('source_identifier')),

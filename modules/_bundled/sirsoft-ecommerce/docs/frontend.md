@@ -9,20 +9,22 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 230개 (루트: `resources/layouts`).
+레이아웃 233개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 230개 |
+| `admin` | 233개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
 | `admin_ecommerce_brand_index` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_cart_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_category_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_claim_detail` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_claim_list` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_deposit_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_excel_download_index` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_inquiry_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_main_banner_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_mileage_transaction_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_order_detail` | `admin` | 화면 | `_admin_base` |
@@ -44,6 +46,8 @@
 | `admin_ecommerce_settings` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_shipping_policy_form` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_shipping_policy_list` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_user_address_index` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_wishlist_index` | `admin` | 화면 | `_admin_base` |
 | `_modal_delete_confirm` | `admin` | partial | - |
 | `_modal_editing_confirm` | `admin` | partial | - |
 | `_panel_brand_list` | `admin` | partial | - |
@@ -113,7 +117,6 @@
 | `_partial_bulk_action_section` | `admin` | partial | - |
 | `_partial_filter_section` | `admin` | partial | - |
 | `_partial_order_datagrid` | `admin` | partial | - |
-| `_partial_preset_section` | `admin` | partial | - |
 | `_modal_member_search` | `admin` | partial | - |
 | `_modal_order_search` | `admin` | partial | - |
 | `_modal_content_mode_change` | `admin` | partial | - |

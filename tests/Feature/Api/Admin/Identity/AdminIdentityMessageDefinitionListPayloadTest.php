@@ -16,7 +16,6 @@ use Tests\TestCase;
  *
  * 정의 목록 화면이 그리는 것은 대표 템플릿 1건의 제목/본문뿐인데, 종전에는 정의마다 모든 채널의
  * 템플릿 본문이 통째로 응답에 실렸다. 목록은 대표 1건만 싣고 전체는 단건 조회가 공급한다.
- *
  */
 class AdminIdentityMessageDefinitionListPayloadTest extends TestCase
 {
@@ -99,6 +98,7 @@ class AdminIdentityMessageDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=identity_message_definition,endpoint=list,observation=response_payload
+     *
      * @effects identity_definition_list_carries_representative_template_only
      */
     public function test_definition_list_carries_only_the_representative_template(): void
@@ -128,6 +128,7 @@ class AdminIdentityMessageDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=identity_message_definition,endpoint=list,observation=response_payload
+     *
      * @effects identity_definition_list_reports_total_template_count
      */
     public function test_definition_list_reports_total_template_count(): void
@@ -148,6 +149,7 @@ class AdminIdentityMessageDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=identity_message_definition,endpoint=detail,observation=response_payload
+     *
      * @effects identity_definition_detail_returns_every_template, detail_still_returns_full_payload
      */
     public function test_definition_detail_still_returns_every_template(): void
@@ -175,6 +177,7 @@ class AdminIdentityMessageDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=identity_message_definition,endpoint=list,observation=response_payload
+     *
      * @effects identity_definition_every_row_gets_its_own_representative
      */
     public function test_every_definition_gets_its_own_representative_template(): void
@@ -212,6 +215,7 @@ class AdminIdentityMessageDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=identity_message_definition,endpoint=list,templates=zero,observation=response_payload
+     *
      * @effects identity_definition_zero_template_serializes_as_empty_array
      */
     public function test_definition_without_any_template_serializes_templates_as_empty_array(): void
@@ -242,6 +246,7 @@ class AdminIdentityMessageDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=identity_message_definition,endpoint=list+detail,observation=response_payload
+     *
      * @effects identity_definition_list_and_detail_agree_on_representative
      */
     public function test_list_representative_matches_detail_first_template(): void
@@ -280,6 +285,7 @@ class AdminIdentityMessageDefinitionListPayloadTest extends TestCase
      * @return void
      *
      * @scenario resource=identity_message_definition,endpoint=list,observation=response_payload
+     *
      * @effects query_count_does_not_scale_with_row_count
      */
     public function test_template_query_count_does_not_grow_with_definition_count(): void

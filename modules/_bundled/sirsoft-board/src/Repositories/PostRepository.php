@@ -65,6 +65,9 @@ class PostRepository implements PostRepositoryInterface
             'title', 'author_name', 'content_mode', 'content_thumbnail_url',
             'is_notice', 'is_secret', 'status', 'depth',
             'view_count', 'comments_count', 'replies_count', 'attachments_count',
+            // 목록의 반응 수는 이 캐시 컬럼의 합이다 — 빼면 목록에서만 항상 0 이 된다
+            // (2026-09-16 실측: 상세는 {1:1} 인데 목록은 reaction_total 0).
+            'reaction_counts',
             'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',
             DB::raw('SUBSTRING(content, 1, 200) as content_preview_raw'),
         ];
@@ -89,6 +92,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건
+     * @return void
      */
     private function applyFilters($query, array $filters): void
     {
@@ -105,6 +109,17 @@ class PostRepository implements PostRepositoryInterface
                 // 코어 헬퍼를 거쳐야 BOOLEAN MODE 연산자(+ - * " 등) 입력이 500 이 되지 않는다.
                 if ($searchField === 'all' || $searchField === 'title_content') {
                     KeywordSearch::apply($q, ['title', 'content'], $rawKeyword, 'or');
+                }
+
+                // 단일 컬럼 검색 (title / content)
+                // board_posts 에는 (title, content) 복합 FULLTEXT 만 있어 단일 컬럼 MATCH 가
+                // 불가능하다 — KeywordSearch 를 단일 컬럼으로 부르면 인덱스를 타지 못하므로 LIKE 를 쓴다.
+                if ($searchField === 'title') {
+                    $q->orWhere('title', 'like', "%{$likeKeyword}%");
+                }
+
+                if ($searchField === 'content') {
+                    $q->orWhere('content', 'like', "%{$likeKeyword}%");
                 }
 
                 // 작성자 검색
@@ -753,6 +768,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  array  $filters  필터 조건 (검색, 상태, 분류 등)
      * @param  int|null  $perPage  페이지당 원글 수 (null이면 전체 조회)
      * @param  int  $currentPage  현재 페이지 번호
+     * @param  Board|null  $board  게시판 모델 (재조회 회피용 공유 인스턴스)
      * @return Collection|LengthAwarePaginator 정렬된 게시글 컬렉션 또는 페이지네이터
      */
     private function buildSortedPostList(
@@ -1072,6 +1088,9 @@ class PostRepository implements PostRepositoryInterface
     {
         $boardSlugFilter = $filters['board_slug'] ?? null;
         $search = $filters['search'] ?? null;
+        // 검색 대상 (title_content 기본 / title / content). 모르는 값은 기본값으로 떨어뜨린다 —
+        // 허용값 게이트는 컨트롤러가 담당하고, 저장소는 닫힌 분기만 유지한다.
+        $searchField = $filters['search_field'] ?? 'title_content';
         $activityType = $filters['activity_type'] ?? 'authored';
         $sort = $filters['sort'] ?? 'latest'; // latest, oldest, views
         // 열람자 관점. 이 값이 대상 사용자와 다르면(비로그인 포함) **타인 관점**이므로
@@ -1116,7 +1135,7 @@ class PostRepository implements PostRepositoryInterface
         }
 
         // authored (기본값, 공개 프로필 포함)
-        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isOwnView, $orderColumn, $orderDirection, $perPage, $cachedTotal);
+        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isOwnView, $orderColumn, $orderDirection, $perPage, $cachedTotal, $searchField);
     }
 
     /**
@@ -1129,6 +1148,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $orderColumn  정렬 컬럼
      * @param  string  $orderDirection  정렬 방향
      * @param  int  $perPage  페이지당 항목 수
+     * @param  int|null  $cachedTotal  캐시된 총 건수
+     * @param  string  $searchField  검색 대상 (title_content|title|content)
+     * @param  array<int, int>  $excludeBoardIds  제외할 게시판 ID 목록
+     * @return LengthAwarePaginator 게시글 활동 목록
      */
     private function getUserAuthoredActivities(
         int $userId,
@@ -1139,7 +1162,8 @@ class PostRepository implements PostRepositoryInterface
         string $orderColumn,
         string $orderDirection,
         int $perPage,
-        ?int $cachedTotal = null
+        ?int $cachedTotal = null,
+        string $searchField = 'title_content'
     ): LengthAwarePaginator {
         // JOIN 대신 whereNotIn으로 비활성 게시판 제외 — idx_board_posts_user_created 인덱스 활용
         $inactiveBoardIds = $this->getInactiveBoardIds();
@@ -1159,9 +1183,15 @@ class PostRepository implements PostRepositoryInterface
 
         if ($search) {
             $keyword = $this->escapeLikeKeyword($search);
-            $query->where(function ($q) use ($keyword) {
-                $q->where('board_posts.title', 'like', "%{$keyword}%")
-                    ->orWhere('board_posts.content', 'like', "%{$keyword}%");
+            $columns = match ($searchField) {
+                'title' => ['board_posts.title'],
+                'content' => ['board_posts.content'],
+                default => ['board_posts.title', 'board_posts.content'],
+            };
+            $query->where(function ($q) use ($columns, $keyword) {
+                foreach ($columns as $column) {
+                    $q->orWhere($column, 'like', "%{$keyword}%");
+                }
             });
         }
 
@@ -1230,6 +1260,9 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $orderColumn  정렬 컬럼
      * @param  string  $orderDirection  정렬 방향
      * @param  int  $perPage  페이지당 항목 수
+     * @param  int|null  $cachedTotal  캐시된 총 건수 (null 이면 COUNT 수행)
+     * @param  int|null  $viewerId  열람자 ID (대상 본인이 아니면 비밀글 본문 마스킹)
+     * @return LengthAwarePaginator 댓글 단 게시글 목록
      */
     private function getUserCommentedActivities(
         int $userId,
@@ -1246,9 +1279,12 @@ class PostRepository implements PostRepositoryInterface
         $postsTable = (new Post)->getTable();
         $commentsTable = (new Comment)->getTable();
 
-        // 비활성 게시판 제외 — JOIN 없이 인덱스 활용
+        // 비활성 게시판 + 댓글 기능을 끈 게시판 제외 — JOIN 없이 인덱스 활용.
+        // use_comment 를 끈 게시판의 기존 댓글은 더 이상 열람·수정 경로가 없으므로
+        // "내가 댓글 단 글" 집계에도 남기지 않는다 (마이페이지 내 댓글과 같은 기준).
         $inactiveBoardIds = $this->getInactiveBoardIds();
-        $allExcludeIds = array_unique(array_merge($excludeBoardIds, $inactiveBoardIds));
+        $commentDisabledBoardIds = $this->getCommentDisabledBoardIds();
+        $allExcludeIds = array_unique(array_merge($excludeBoardIds, $inactiveBoardIds, $commentDisabledBoardIds));
 
         /**
          * 내가 이 글에 단 댓글 조건 (검색어까지 반영 — 활동 판정 · 건수 집계 공통).
@@ -1534,6 +1570,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $keyword  검색 키워드
+     * @return void
      */
     private function applyKeywordSearch(Builder $query, string $keyword): void
     {
@@ -1910,6 +1947,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $boardId  게시판 ID
      * @param  int  $size  청크 크기
      * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
+     * @return void
      */
     public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void
     {
@@ -1936,6 +1974,20 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * 댓글 기능을 끈 게시판 ID 목록을 조회합니다.
+     *
+     * 비활성 게시판과 별개의 축이다 — 게시판은 살아 있지만 댓글만 꺼진 상태가 있고,
+     * 그런 게시판의 기존 댓글은 열람·수정 경로가 닫혀 있어 집계 화면에만 남는다.
+     *
+     * @return array<int> 댓글 비활성 게시판 ID 배열
+     */
+    private function getCommentDisabledBoardIds(): array
+    {
+        // audit:allow query-unbounded-get reason: 게시판은 운영자가 만든 수만큼만 존재한다 (글 수와 무관)
+        return Board::where('use_comment', false)->pluck('id')->all();
+    }
+
+    /**
      * 게시글의 comments_count 컬럼을 활성 댓글 수로 재계산해 갱신합니다.
      *
      * @param  int  $postId  게시글 ID
@@ -1947,6 +1999,27 @@ class PostRepository implements PostRepositoryInterface
         Post::where('id', $postId)->update(['comments_count' => $count]);
 
         return $count;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function incrementScrapCount(int $postId): int
+    {
+        Post::where('id', $postId)->increment('scrap_count');
+
+        return (int) (Post::where('id', $postId)->value('scrap_count') ?? 0);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function decrementScrapCount(int $postId): int
+    {
+        // 음수 방지 — 정합성이 깨진 상태(0)에서 해제해도 0 미만으로 내려가지 않게 한다.
+        Post::where('id', $postId)->where('scrap_count', '>', 0)->decrement('scrap_count');
+
+        return (int) (Post::where('id', $postId)->value('scrap_count') ?? 0);
     }
 
     /**

@@ -369,7 +369,7 @@ const mockCheckoutData = {
 
 // ========== 메인 레이아웃 테스트 ==========
 
-describe('checkout.json (체크아웃 메인 레이아웃)', () => {
+describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
     let testUtils: ReturnType<typeof createLayoutTest>;
     let registry: ComponentRegistry;
 

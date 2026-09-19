@@ -1,511 +1,512 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "IDV 메시지 템플릿 편집 모달 — 알림 템플릿 모달 패리티 (언어 탭 + 고정 footer + 검증 에러 영역)",
-    "editor_label": "$t:admin.modal_label.admin_settings.modal_identity_message_template_form"
-  },
-  "id": "modal_identity_message_template_form",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "size": "xl",
-    "title": "$t:admin.settings.identity.messages.modal.title",
-    "closeOnOverlayClick": false
-  },
-  "children": [
-    {
-      "id": "identity_message_form_container",
-      "type": "basic",
-      "name": "Div",
-      "blur_until_loaded": "{{_global.identity_message_template_form_modal?.isSaving}}",
-      "props": {
-        "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
-      },
-      "children": [
+    "comment": "본인인증 메시지 **템플릿 본문을 고치는** 창(정의 자체를 만드는 창은 `_modal_identity_message_definition_add`).\n  상태를 전역 한 객체(`identity_message_template_form_modal`)에 모으고, 다국어 입력은 언어 탭이 고른\n  로케일 키만 갈아 끼우는 방식이다 — 추가 창과 같은 규칙이다.\n  쓸 수 있는 변수 목록을 **정의가 실어 온 값에서** 그린다(추가 창은 화면에 박아 두었다) —\n  정의마다 변수가 다르기 때문이다.\n  푸터에 버튼이 넷이다 — 미리보기 · 기본값 복원 · 취소 · 저장.",
+    "meta": {
+        "is_partial": true,
+        "description": "IDV 메시지 템플릿 편집 모달 — 알림 템플릿 모달 패리티 (언어 탭 + 고정 footer + 검증 에러 영역)",
+        "editor_label": "$t:admin.modal_label.admin_settings.modal_identity_message_template_form"
+    },
+    "id": "modal_identity_message_template_form",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "size": "xl",
+        "title": "$t:admin.settings.identity.messages.modal.title",
+        "closeOnOverlayClick": false
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1 overflow-y-auto space-y-5 pr-1"
-          },
-          "children": [
-            {
-              "id": "identity_message_form_errors",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.identity_message_template_form_modal?.errors}}",
-              "props": {
-                "className": "rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-error-strong mb-1"
-                  },
-                  "text": "$t:admin.settings.identity.messages.modal.errors_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Ul",
-                  "props": {
-                    "className": "text-danger-soft list-disc pl-5 space-y-0.5"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Li",
-                      "iteration": {
-                        "source": "{{Object.values(_global.identity_message_template_form_modal?.errors ?? {}).flat()}}",
-                        "item_var": "errMsg"
-                      },
-                      "text": "{{errMsg}}"
-                    }
-                  ]
-                }
-              ]
+            "id": "identity_message_form_container",
+            "type": "basic",
+            "name": "Div",
+            "blur_until_loaded": "{{_global.identity_message_template_form_modal?.isSaving}}",
+            "props": {
+                "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
             },
-            {
-              "id": "identity_message_form_meta",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-4 py-3"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-info-soft"
-                  },
-                  "text": "{{_global.identity_message_template_form_modal?.definition?.provider_id ?? ''}} · {{_global.identity_message_template_form_modal?.definition?.scope_type ?? ''}}{{_global.identity_message_template_form_modal?.definition?.scope_value ? ' · ' + _global.identity_message_template_form_modal.definition.scope_value : ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-sm font-medium text-blue-900 dark:text-blue-100 mt-1"
-                  },
-                  "text": "{{_global.identity_message_template_form_modal?.definition?.name?.[$locale] ?? _global.identity_message_template_form_modal?.definition?.name?.ko ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "identity_message_form_variables",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(_global.identity_message_template_form_modal?.definition?.variables ?? []).length > 0}}",
-              "props": {
-                "className": "rounded-md bg-gray-100 dark:bg-gray-700 p-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "H4",
-                  "props": {
-                    "className": "text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2"
-                  },
-                  "text": "$t:admin.settings.identity.messages.modal.variables_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex flex-wrap gap-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "iteration": {
-                        "source": "{{_global.identity_message_template_form_modal?.definition?.variables ?? []}}",
-                        "item_var": "varItem"
-                      },
-                      "props": {
-                        "className": "px-2 py-1 text-[11px] rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-mono"
-                      },
-                      "text": "{{'{' + (varItem.key ?? '') + '}'}}"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "identity_message_form_lang_tabs",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex border-b border-gray-200 dark:border-gray-700"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "iteration": {
-                    "source": "{{$locales}}",
-                    "item_var": "loc"
-                  },
-                  "props": {
-                    "type": "button",
-                    "className": "{{(_global.identity_message_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
-                  },
-                  "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "identity_message_template_form_modal.editLang": "{{loc}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "identity_message_form_subject",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "text": "$t:admin.settings.identity.messages.modal.subject"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 overflow-y-auto space-y-5 pr-1"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "value": "{{_global.identity_message_template_form_modal?.template?.subject?.[_global.identity_message_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                        "className": " focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      },
-                      "actions": [
+                    "children": [
                         {
-                          "type": "input",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "identity_message_template_form_modal.template.subject": "{{Object.assign({}, _global.identity_message_template_form_modal?.template?.subject, {[_global.identity_message_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "identity_message_form_body",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "text": "$t:admin.settings.identity.messages.modal.body"
-                    },
-                    {
-                      "type": "composite",
-                      "name": "HtmlEditor",
-                      "props": {
-                        "content": "{{_global.identity_message_template_form_modal?.template?.body?.[_global.identity_message_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                        "isHtml": true,
-                        "showHtmlModeToggle": false,
-                        "className": "min-h-[200px]"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "identity_message_template_form_modal.template.body": "{{Object.assign({}, _global.identity_message_template_form_modal?.template?.body, {[_global.identity_message_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "identity_message_form_footer",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.identity_message_template_form_modal?.isSaving ?? false}}"
-                  },
-                  "text": "$t:admin.settings.identity.messages.modal.preview",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "/api/admin/identity/messages/templates/preview",
-                      "params": {
-                        "method": "POST",
-                        "body": {
-                          "template_id": "{{_global.identity_message_template_form_modal?.template?.id}}",
-                          "locale": "{{_global.identity_message_template_form_modal?.editLang ?? $locale}}",
-                          "data": {
-                            "code": "123456",
-                            "action_url": "https://example.com/verify?token=preview",
-                            "expire_minutes": 15,
-                            "purpose_label": "{{_global.identity_message_template_form_modal?.definition?.scope_value ?? 'sample'}}",
-                            "app_name": "{{_global.appName ?? 'G7'}}",
-                            "site_url": "{{_global.siteUrl ?? '/'}}",
-                            "recipient_email": "preview@example.com"
-                          }
-                        }
-                      },
-                      "onSuccess": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "identity_message_template_preview_modal": {
-                              "subject": "{{response.data.subject ?? ''}}",
-                              "body": "{{response.data.body ?? ''}}"
-                            }
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "modal_identity_message_template_preview"
-                        }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "toast",
-                          "params": {
-                            "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.preview_failed'}}",
-                            "type": "error"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.identity_message_template_form_modal?.isSaving ?? false}}"
-                  },
-                  "text": "$t:admin.settings.identity.messages.modal.reset",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "{{'/api/admin/identity/messages/templates/' + _global.identity_message_template_form_modal?.template?.id + '/reset'}}",
-                      "params": {
-                        "method": "POST"
-                      },
-                      "confirm": "$t:admin.settings.identity.messages.modal.reset_confirm",
-                      "onSuccess": [
-                        {
-                          "handler": "toast",
-                          "params": {
-                            "message": "$t:admin.settings.identity.messages.modal.reset_success",
-                            "type": "success"
-                          }
-                        },
-                        {
-                          "handler": "refetchDataSource",
-                          "params": {
-                            "dataSourceId": "identityMessages"
-                          }
-                        },
-                        {
-                          "handler": "closeModal",
-                          "target": "modal_identity_message_template_form"
-                        }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "toast",
-                          "params": {
-                            "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.reset_failed'}}",
-                            "type": "error"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.identity_message_template_form_modal?.isSaving ?? false}}"
-                  },
-                  "text": "$t:common.cancel",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "closeModal",
-                      "target": "modal_identity_message_template_form"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.identity_message_template_form_modal?.isSaving ?? false}}"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "if": "{{_global.identity_message_template_form_modal?.isSaving}}",
-                      "props": {
-                        "name": "spinner",
-                        "className": "animate-spin",
-                        "size": "sm"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "{{_global.identity_message_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
-                    }
-                  ],
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "sequence",
-                      "params": {
-                        "actions": [
-                          {
-                            "handler": "setState",
-                            "params": {
-                              "target": "global",
-                              "identity_message_template_form_modal.isSaving": true,
-                              "identity_message_template_form_modal.errors": null
-                            }
-                          },
-                          {
-                            "handler": "apiCall",
-                            "auth_required": true,
-                            "target": "{{'/api/admin/identity/messages/templates/' + _global.identity_message_template_form_modal?.template?.id}}",
-                            "params": {
-                              "method": "PATCH",
-                              "body": {
-                                "subject": "{{_global.identity_message_template_form_modal?.template?.subject}}",
-                                "body": "{{_global.identity_message_template_form_modal?.template?.body}}",
-                                "is_active": true
-                              }
+                            "id": "identity_message_form_errors",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.identity_message_template_form_modal?.errors}}",
+                            "props": {
+                                "className": "rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3"
                             },
-                            "onSuccess": [
-                              {
-                                "handler": "refetchDataSource",
-                                "params": {
-                                  "dataSourceId": "identityMessages"
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-error-strong mb-1"
+                                    },
+                                    "text": "$t:admin.settings.identity.messages.modal.errors_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "text-danger-soft list-disc pl-5 space-y-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "{{Object.values(_global.identity_message_template_form_modal?.errors ?? {}).flat()}}",
+                                                "item_var": "errMsg"
+                                            },
+                                            "text": "{{errMsg}}"
+                                        }
+                                    ]
                                 }
-                              },
-                              {
-                                "handler": "toast",
-                                "params": {
-                                  "message": "$t:admin.settings.identity.messages.modal.save_success",
-                                  "type": "success"
-                                }
-                              },
-                              {
-                                "handler": "closeModal",
-                                "target": "modal_identity_message_template_form"
-                              },
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "global",
-                                  "identity_message_template_form_modal": null
-                                }
-                              }
-                            ],
-                            "onError": [
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "global",
-                                  "identity_message_template_form_modal.isSaving": false,
-                                  "identity_message_template_form_modal.errors": "{{error.errors}}"
-                                }
-                              },
-                              {
-                                "handler": "toast",
-                                "params": {
-                                  "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.save_failed'}}",
-                                  "type": "error"
-                                }
-                              }
                             ]
-                          }
-                        ]
-                      }
-                    }
-                  ]
+                        },
+                        {
+                            "id": "identity_message_form_meta",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-4 py-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-info-soft"
+                                    },
+                                    "text": "{{_global.identity_message_template_form_modal?.definition?.provider_id ?? ''}} · {{_global.identity_message_template_form_modal?.definition?.scope_type ?? ''}}{{_global.identity_message_template_form_modal?.definition?.scope_value ? ' · ' + _global.identity_message_template_form_modal.definition.scope_value : ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium text-blue-900 dark:text-blue-100 mt-1"
+                                    },
+                                    "text": "{{_global.identity_message_template_form_modal?.definition?.name?.[$locale] ?? _global.identity_message_template_form_modal?.definition?.name?.ko ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "identity_message_form_variables",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.identity_message_template_form_modal?.definition?.variables ?? []).length > 0}}",
+                            "props": {
+                                "className": "rounded-md bg-gray-100 dark:bg-gray-700 p-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H4",
+                                    "props": {
+                                        "className": "text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                                    },
+                                    "text": "$t:admin.settings.identity.messages.modal.variables_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-wrap gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{_global.identity_message_template_form_modal?.definition?.variables ?? []}}",
+                                                "item_var": "varItem"
+                                            },
+                                            "props": {
+                                                "className": "px-2 py-1 text-[11px] rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-mono"
+                                            },
+                                            "text": "{{'{' + (varItem.key ?? '') + '}'}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "identity_message_form_lang_tabs",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex border-b border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "iteration": {
+                                        "source": "{{$locales}}",
+                                        "item_var": "loc"
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "편집 언어 전환 — 아래 제목·본문이 함께 이 로케일을 바라본다.\n     값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "identity_message_template_form_modal.editLang": "{{loc}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{(_global.identity_message_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                    },
+                                    "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "identity_message_form_subject",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.identity.messages.modal.subject"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "제목(언어별) — 기존 객체를 복사해 지금 탭의 로케일 키만 갈아 끼운다.",
+                                                    "type": "input",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_message_template_form_modal.template.subject": "{{Object.assign({}, _global.identity_message_template_form_modal?.template?.subject, {[_global.identity_message_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "value": "{{_global.identity_message_template_form_modal?.template?.subject?.[_global.identity_message_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                                                "className": " focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "identity_message_form_body",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.identity.messages.modal.body"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "HtmlEditor",
+                                            "actions": [
+                                                {
+                                                    "comment": "본문(언어별) — 제목과 같은 방식이고, 편집기라 `input` 대신 `change` 로 받는다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_message_template_form_modal.template.body": "{{Object.assign({}, _global.identity_message_template_form_modal?.template?.body, {[_global.identity_message_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "content": "{{_global.identity_message_template_form_modal?.template?.body?.[_global.identity_message_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                                                "isHtml": true,
+                                                "showHtmlModeToggle": false,
+                                                "className": "min-h-[200px]"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "identity_message_form_footer",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "comment": "기본 문안으로 되돌린다. 손댄 내용을 버리고 코어가 제공하는 원문을 다시 싣는 자리다",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/identity/messages/templates/preview",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "template_id": "{{_global.identity_message_template_form_modal?.template?.id}}",
+                                                    "locale": "{{_global.identity_message_template_form_modal?.editLang ?? $locale}}",
+                                                    "data": {
+                                                        "code": "123456",
+                                                        "action_url": "https://example.com/verify?token=preview",
+                                                        "expire_minutes": 15,
+                                                        "purpose_label": "{{_global.identity_message_template_form_modal?.definition?.scope_value ?? 'sample'}}",
+                                                        "app_name": "{{_global.appName ?? 'G7'}}",
+                                                        "site_url": "{{_global.siteUrl ?? '/'}}",
+                                                        "recipient_email": "preview@example.com"
+                                                    }
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_message_template_preview_modal": {
+                                                            "subject": "{{response.data.subject ?? ''}}",
+                                                            "body": "{{response.data.body ?? ''}}"
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "modal_identity_message_template_preview"
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.preview_failed'}}",
+                                                    "type": "error"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.identity_message_template_form_modal?.isSaving ?? false}}"
+                                    },
+                                    "text": "$t:admin.settings.identity.messages.modal.preview"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-2"
+                            },
+                            "children": [
+                                {
+                                    "comment": "저장. 본인인증 안내 문구는 알림 시스템과 분리된 전용 템플릿이라 저장 경로도 따로다",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "{{'/api/admin/identity/messages/templates/' + _global.identity_message_template_form_modal?.template?.id + '/reset'}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST"
+                                            },
+                                            "confirm": "$t:admin.settings.identity.messages.modal.reset_confirm",
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "message": "$t:admin.settings.identity.messages.modal.reset_success",
+                                                        "type": "success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "identityMessages"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "modal_identity_message_template_form"
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.reset_failed'}}",
+                                                    "type": "error"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "text-sm px-4 py-2 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.identity_message_template_form_modal?.isSaving ?? false}}"
+                                    },
+                                    "text": "$t:admin.settings.identity.messages.modal.reset"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "closeModal",
+                                            "target": "modal_identity_message_template_form"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.identity_message_template_form_modal?.isSaving ?? false}}"
+                                    },
+                                    "text": "$t:common.cancel"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "저장 — 제목·본문 **언어별 객체를 통째로** 보낸다(지금 탭의 값만 보내지 않는다).\n                   성공하면 목록을 다시 받고 창 상태를 통째로 비운다. 실패는 오류를 상단에 남기고\n                   창을 닫지 않는다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_message_template_form_modal.isSaving": true,
+                                                        "identity_message_template_form_modal.errors": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "{{'/api/admin/identity/messages/templates/' + _global.identity_message_template_form_modal?.template?.id}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "PATCH",
+                                                        "body": {
+                                                            "subject": "{{_global.identity_message_template_form_modal?.template?.subject}}",
+                                                            "body": "{{_global.identity_message_template_form_modal?.template?.body}}",
+                                                            "is_active": true
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "identityMessages"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "message": "$t:admin.settings.identity.messages.modal.save_success",
+                                                                "type": "success"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal",
+                                                            "target": "modal_identity_message_template_form"
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "identity_message_template_form_modal": null
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "identity_message_template_form_modal.isSaving": false,
+                                                                "identity_message_template_form_modal.errors": "{{error.errors}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.save_failed'}}",
+                                                                "type": "error"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.identity_message_template_form_modal?.isSaving ?? false}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_global.identity_message_template_form_modal?.isSaving}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "animate-spin",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{_global.identity_message_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

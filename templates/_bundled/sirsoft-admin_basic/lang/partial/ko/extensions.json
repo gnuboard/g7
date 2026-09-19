@@ -34,5 +34,24 @@
     "rebuild_search_index_title": "검색 인덱스",
     "rebuild_search_index_label": "업데이트 후 색인이 누락된 검색 인덱스를 재생성",
     "rebuild_search_index_desc": "재생성 중에는 대상 인덱스가 잠기거나 다시 색인됩니다. 운영 중인 사이트라면 체크하지 말고, 유지보수 시간에 별도로 수행하세요."
+  },
+  "view_mode": {
+    "toggle_label": "보기 방식",
+    "gallery": "갤러리 보기",
+    "list": "목록 보기",
+    "gallery_aria": "갤러리로 보기",
+    "list_aria": "목록으로 보기"
+  },
+  "card": {
+    "open_detail": "{{name}} 상세 보기"
+  },
+  "icon": {
+    "alt": "{{name}} 아이콘",
+    "locale_badge_sr": "{{locale}} 언어팩"
+  },
+  "manifest_preview": {
+    "icon_present": "아이콘 포함: {{path}}",
+    "icon_missing": "아이콘이 없어 기본 아이콘으로 표시됩니다.",
+    "icon_invalid": "아이콘이 규격에 맞지 않아 기본 아이콘으로 표시됩니다."
   }
 }

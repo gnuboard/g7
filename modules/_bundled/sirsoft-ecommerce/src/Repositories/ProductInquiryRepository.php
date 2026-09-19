@@ -2,10 +2,13 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
@@ -15,8 +18,14 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInt
  */
 class ProductInquiryRepository implements ProductInquiryRepositoryInterface
 {
+    use FiltersByDateRange;
     use PaginatesWithDeferredJoin;
 
+    /**
+     * ProductInquiryRepository 생성자
+     *
+     * @param  ProductInquiry  $model  상품문의 모델
+     */
     public function __construct(
         protected ProductInquiry $model
     ) {}
@@ -263,5 +272,138 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
         return $this->model->newQuery()
             ->where('is_answered', false)
             ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        $table = $this->model->getTable();
+        $query = $this->model->newQuery();
+
+        if (! empty($filters['user_id'])) {
+            $query->where("{$table}.user_id", (int) $filters['user_id']);
+        }
+
+        // 답변 여부는 false 가 「미답변만」 이라는 뜻이라 empty() 로 보면 안 된다.
+        if (array_key_exists('is_answered', $filters) && $filters['is_answered'] !== null && $filters['is_answered'] !== '') {
+            $query->where("{$table}.is_answered", (bool) $filters['is_answered']);
+        }
+
+        $this->applyDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
+        $this->applyAdminSearch($query, (string) ($filters['search_field'] ?? 'member'), $filters['search_keyword'] ?? null);
+
+        $direction = ($filters['sort'] ?? 'created_at_desc') === 'created_at_asc' ? 'asc' : 'desc';
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ["{$table}.*"],
+            sort: [['column' => 'created_at', 'direction' => $direction]],
+            perPage: $perPage,
+            // inquirable 은 eager load 하지 않는다 — 문의 본문은 게시판 모듈의 글에 morph 로
+            // 걸려 있고, 그 모듈이 없거나 morph 별칭이 등록되지 않은 환경에서는 관계를 푸는
+            // 순간 "Class not found" 로 목록 전체가 죽는다. 본문 요약은 Resource 가 타입을
+            // 확인한 뒤에만 읽는다(미등록 타입이면 null).
+            relations: ['user:id,uuid,name,email,status', 'product:id,name,display_status,sales_status'],
+            resultCap: PaginationLimits::resultCap('admin.product_inquiries'),
+        );
+    }
+
+    /**
+     * 관리자 목록의 검색 조건을 적용합니다.
+     *
+     * 문의 본문은 게시판 글(inquirable)에 있으므로 content 검색은 그 관계를 탄다 —
+     * 문의 테이블 자체에는 본문 컬럼이 없다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  string  $field  검색 대상
+     * @param  string|null  $keyword  검색어
+     * @return void
+     */
+    private function applyAdminSearch(Builder $query, string $field, ?string $keyword): void
+    {
+        if ($keyword === null || trim($keyword) === '') {
+            return;
+        }
+
+        $needle = '%'.trim($keyword).'%';
+
+        match ($field) {
+            'member_id' => $query->whereHas('user', fn (Builder $u) => $u->where('uuid', trim($keyword))),
+            'email' => $query->whereHas('user', fn (Builder $u) => $u->where('email', 'like', $needle)),
+            'product' => $query->whereHas('product', function (Builder $p) use ($needle) {
+                $p->where(function (Builder $inner) use ($needle) {
+                    foreach (config('app.translatable_locales', ['ko', 'en']) as $locale) {
+                        $inner->orWhere("name->{$locale}", 'like', $needle);
+                    }
+                });
+            }),
+            // 본문은 morph 로 연결된 글에 있다. 해석 가능한 타입만 골라 건네지 않으면
+            // 미등록 별칭 하나가 쿼리 전체를 죽인다 — 해석 가능한 타입이 없으면 결과를 비운다.
+            'content' => $this->applyContentSearch($query, $needle),
+            default => $query->whereHas('user', fn (Builder $u) => $u->where(
+                fn (Builder $w) => $w->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
+            )),
+        };
+    }
+
+    /**
+     * 문의 본문 검색을 적용합니다 (morph 로 연결된 글의 content).
+     *
+     * 문의 테이블에는 본문 컬럼이 없다 — 본문은 게시판 글에 있고 inquirable_type 은
+     * 'board_post' 같은 별칭이다. 그 별칭을 실제 클래스로 풀 수 없는 환경(모듈 미설치 등)에서
+     * whereHasMorph 에 넘기면 쿼리가 통째로 죽으므로, 해석되는 타입만 골라 넘긴다.
+     * 하나도 해석되지 않으면 "본문으로는 찾을 수 없다" 가 정답이므로 빈 결과로 만든다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  string  $needle  LIKE 패턴
+     * @return void
+     */
+    private function applyContentSearch(Builder $query, string $needle): void
+    {
+        // audit:allow query-unbounded-get reason: distinct 한 morph 타입 목록이라 행 수가 «등록된 문의 대상 종류» 수만큼으로 상한이 잡힌다(문의 건수와 무관)
+        $types = $this->model->newQuery()
+            ->select('inquirable_type')
+            ->distinct()
+            ->pluck('inquirable_type')
+            ->filter()
+            ->map(fn ($type) => Relation::getMorphedModel($type) ?? $type)
+            ->filter(fn ($class) => is_string($class) && class_exists($class))
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($types === []) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->whereHasMorph('inquirable', $types, fn (Builder $q) => $q->where('content', 'like', $needle));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function bulkDelete(array $ids): int
+    {
+        return (int) $this->model->whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByUser(int $userId): int
+    {
+        return (int) $this->model->where('user_id', $userId)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countPendingByUser(int $userId): int
+    {
+        return (int) $this->model->where('user_id', $userId)->where('is_answered', false)->count();
     }
 }

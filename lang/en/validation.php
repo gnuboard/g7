@@ -245,6 +245,11 @@ return [
         'content' => [
             'required' => 'The layout content is required.',
             'array' => 'The layout content must be an array.',
+            'markup_compile_failed' => 'The layout markup (.g7.html) could not be compiled: :detail',
+        ],
+        'markup' => [
+            'required' => 'The markup (.g7.html) to compile is required.',
+            'string' => 'The markup must be a string.',
         ],
         'version' => [
             'required' => 'The layout version is required.',
@@ -453,7 +458,7 @@ return [
         'extension_point_invalid' => 'The extension_point field must be a non-empty string.',
         'target_layout_invalid' => 'The target_layout field must be a non-empty string.',
         'components_must_be_array' => 'The components field must be an array.',
-        'injections_required' => 'An overlay extension requires the injections field.',
+        'contribution_required' => 'An overlay extension requires at least one of injections, modals, data_sources, scripts, or init_actions.',
         'injections_must_be_array' => 'The injections field must be an array.',
         'injection_must_be_array' => 'injections[:index] must be an array.',
         'injection_target_id_required' => 'injections[:index] requires the target_id field.',
@@ -471,6 +476,7 @@ return [
         'content' => [
             'required' => 'Extension content is required.',
             'array' => 'Extension content must be an array.',
+            'markup_compile_failed' => 'The extension markup (.g7.html) could not be compiled: :detail',
         ],
         'priority' => [
             'integer' => 'priority must be an integer.',

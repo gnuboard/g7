@@ -609,7 +609,9 @@ class ActivityLogResourceTest extends TestCase
     // ========================================================================
 
     /**
-     * user가 있으면 uuid, name, email이 포함된 객체 반환
+     * user가 있으면 uuid, name이 포함된 객체 반환
+     *
+     * 이메일은 관리자 응답과 본인 열람에만 실린다 — 아래 두 테스트가 그 축을 나눠 본다.
      */
     public function test_resource_includes_user_info_when_user_exists(): void
     {
@@ -631,7 +633,59 @@ class ActivityLogResourceTest extends TestCase
         $this->assertIsArray($resource['user']);
         $this->assertEquals($user->uuid, $resource['user']['uuid']);
         $this->assertEquals('Test User', $resource['user']['name']);
+    }
+
+    /**
+     * 관리자 컨트롤러로 라우팅된 요청에서는 이메일이 실린다
+     */
+    public function test_resource_includes_user_email_on_admin_request(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+
+        $log = ActivityLog::create([
+            'log_type' => ActivityLogType::Admin,
+            'action' => 'user.create',
+            'user_id' => $user->id,
+        ]);
+        $log->load('user');
+
+        $request = $this->makeRequest();
+        $route = new \Illuminate\Routing\Route(
+            ['GET'],
+            '/api/admin/activity-logs',
+            ['uses' => \App\Http\Controllers\Api\Admin\ActivityLogController::class.'@index']
+        );
+        $route->setContainer($this->app);
+        $request->setRouteResolver(fn () => $route);
+
+        $resource = (new ActivityLogResource($log))->toArray($request);
+
         $this->assertEquals('test@example.com', $resource['user']['email']);
+    }
+
+    /**
+     * 관리자 요청이 아니면 이메일이 가려진다 (공개 응답에서 회원 주소록 수집 차단)
+     */
+    public function test_resource_masks_user_email_outside_admin_request(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+
+        $log = ActivityLog::create([
+            'log_type' => ActivityLogType::Admin,
+            'action' => 'user.create',
+            'user_id' => $user->id,
+        ]);
+        $log->load('user');
+
+        $resource = (new ActivityLogResource($log))->toArray($this->makeRequest());
+
+        $this->assertNull($resource['user']['email']);
     }
 
     /**

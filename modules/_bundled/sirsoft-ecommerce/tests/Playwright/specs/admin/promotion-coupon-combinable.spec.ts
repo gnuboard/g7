@@ -32,7 +32,7 @@ async function fillDebounced(
 }
 
 test.describe('쿠폰 중복 사용 라디오 boolean 저장 (#97)', () => {
-  // @scenario request=store surface=browser_form
+  // @scenario request=store, surface=browser_form
   // @effects radio_click_saves_boolean_state
   test('등록: "불가능" 클릭 후 저장하면 boolean false 로 201 저장되고, 수정 화면 반영 + "가능" 재저장까지 왕복한다', async ({
     page,

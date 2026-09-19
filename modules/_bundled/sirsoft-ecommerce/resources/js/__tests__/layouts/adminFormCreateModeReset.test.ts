@@ -17,6 +17,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import productForm from '../../../layouts/admin/admin_ecommerce_product_form.json';
 import shippingPolicyForm from '../../../layouts/admin/admin_ecommerce_shipping_policy_form.json';
 
@@ -124,7 +125,7 @@ describe('admin_ecommerce_shipping_policy_form.json — 생성 모드 form 잔�
             (a) => a.handler === 'setState' && a.if === CREATE && a.params?.target === 'local' && a.params?.form
         );
         expect(defaults).toBeDefined();
-        expect(defaults!.params!.form).toEqual((shippingPolicyForm as any).state.form);
+        expect(defaults!.params!.form).toEqual(initStateOf(shippingPolicyForm as any).form);
         expect(defaults!.params!.errors).toBeNull();
     });
 

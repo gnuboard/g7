@@ -1,7 +1,7 @@
 /**
  * 실제 배포 번들의 인증 진단이 빈 사용자와 남은 토큰을 로그인으로 오인하지 않는다.
  * 브라우저 컨텍스트 안에서만 입력을 교체하며 실제 인증·저장소·덤프는 변경하지 않는다.
- * @scenario devtools_auth_diagnostic
+ * @scenario link=devtools_auth_diagnostic
  * @effects empty_user_is_not_authenticated
  */
 import { test, expect } from '@playwright/test';

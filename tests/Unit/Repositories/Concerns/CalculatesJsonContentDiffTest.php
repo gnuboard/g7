@@ -6,7 +6,7 @@ use App\Repositories\Concerns\CalculatesJsonContentDiff;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 버전 변경량(라인 LCS 카운트) 계산의 메모리 상한과 카운트 불변을 고정합니다. [case:backend-32]
+ * 버전 변경량(라인 LCS 카운트) 계산의 메모리 상한과 카운트 불변을 고정합니다. [case:backend-33]
  *
  * 큰 공통 레이아웃(직렬화 2,000줄 이상)의 첫 편집기 저장은 변경 영역이 파일 전체가 된다 —
  * 편집기가 `comment` 키를 떼어내 첫 줄과 끝 근처가 동시에 달라져 prefix/suffix 트리밍이

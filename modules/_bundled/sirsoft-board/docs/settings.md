@@ -29,6 +29,8 @@ _`getSettingsSchema()` 선언이 없습니다._
 | `identity.policies` | 게시판 본인인증 정책 | `read`, `update` | - |
 | `dashboard` | 게시판 대시보드 | `view` | - |
 | `reports` | 게시판 신고 관리 | `view`, `manage` | `report` |
+| `scraps` | 게시글 스크랩 관리 | `view`, `manage` | `scrap` |
+| `reactions` | 게시글 반응 관리 | `view`, `manage` | `reaction` |
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
@@ -46,7 +48,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 <!-- @generated:menus START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 구분 | slug | 이름 | URL | 하위 |
 |---|---|---|---|---|
-| 관리자 | `sirsoft-board` | 게시판 관리 | - | 3개 |
+| 관리자 | `sirsoft-board` | 게시판 관리 | - | 5개 |
 <!-- @generated:menus END -->
 
 <!-- @intent START -->

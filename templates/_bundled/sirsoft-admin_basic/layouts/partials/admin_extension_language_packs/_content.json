@@ -1,112 +1,111 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "확장(모듈/플러그인/템플릿) 언어팩 관리 공통 본문 — 환경설정 탭 UI 와 분리된 독립 wrapper. 상단에 부모 확장 페이지로의 back 버튼 + 스코프 안내 배너를 두고, 본문은 partials/admin_language_pack_list/_content.json (검색/필터/리스트/페이지네이션 SSoT) 을 재사용."
-  },
-  "id": "ext_lang_pack_content",
-  "type": "basic",
-  "name": "Div",
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "comment": "확장 하나에 딸린 언어팩만 다루는 화면. 목록·필터·카드는 언어팩 관리 화면의 본문 조각을\n  **그대로 끌어다 쓰고**, 여기서 얹는 것은 위쪽 안내 띠와 돌아가기 버튼뿐이다 — 그래서 목록\n  동작을 고칠 자리는 여기가 아니라 그 조각 하나다.\n  모듈·플러그인·템플릿 셋이 이 한 파일을 같이 쓰므로, 어디서 들어왔는지는 **주소 앞머리로\n  가려** 안내 문구와 돌아갈 곳을 정한다(셋 중 어디에도 안 걸리면 환경설정의 언어팩 탭으로 보낸다).",
+    "meta": {
+        "is_partial": true,
+        "description": "확장(모듈/플러그인/템플릿) 언어팩 관리 공통 본문 — 환경설정 탭 UI 와 분리된 독립 wrapper. 상단에 부모 확장 페이지로의 back 버튼 + 스코프 안내 배너를 두고, 본문은 partials/admin_language_pack_list/_content.json (검색/필터/리스트/페이지네이션 SSoT) 을 재사용."
+    },
+    "id": "ext_lang_pack_content",
+    "type": "basic",
+    "name": "Div",
+    "children": [
         {
-          "id": "ext_lp_back_bar",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 text-info-soft"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "fas fa-info-circle",
-                    "size": "sm"
-                  }
+                    "id": "ext_lp_back_bar",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 text-info-soft"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fas fa-info-circle",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{route.path && route.path.indexOf('/admin/modules/') === 0}}",
+                                    "text": "$t:admin.language_packs.banner.scoped|scope=module|target={{route.identifier}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{route.path && route.path.indexOf('/admin/plugins/') === 0}}",
+                                    "text": "$t:admin.language_packs.banner.scoped|scope=plugin|target={{route.identifier}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{route.path && route.path.indexOf('/admin/templates/') === 0}}",
+                                    "text": "$t:admin.language_packs.banner.scoped|scope=template|target={{route.identifier}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "event": "onClick",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{route.path && route.path.indexOf('/admin/modules/') === 0 ? '/admin/modules' : (route.path && route.path.indexOf('/admin/plugins/') === 0 ? '/admin/plugins' : (route.path && route.path.indexOf('/admin/templates/') === 0 ? '/admin/templates' : '/admin/settings?tab=language_packs'))}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fas fa-arrow-left",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{route.path && route.path.indexOf('/admin/modules/') === 0}}",
+                                    "text": "$t:admin.language_packs.banner.back_to_modules"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{route.path && route.path.indexOf('/admin/plugins/') === 0}}",
+                                    "text": "$t:admin.language_packs.banner.back_to_plugins"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{route.path && route.path.indexOf('/admin/templates/') === 0}}",
+                                    "text": "$t:admin.language_packs.banner.back_to_templates"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{route.path && route.path.indexOf('/admin/modules/') === 0}}",
-                  "text": "$t:admin.language_packs.banner.scoped|scope=module|target={{route.identifier}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{route.path && route.path.indexOf('/admin/plugins/') === 0}}",
-                  "text": "$t:admin.language_packs.banner.scoped|scope=plugin|target={{route.identifier}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{route.path && route.path.indexOf('/admin/templates/') === 0}}",
-                  "text": "$t:admin.language_packs.banner.scoped|scope=template|target={{route.identifier}}"
+                    "partial": "partials/admin_language_pack_list/_content.json"
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
-              },
-              "actions": [
-                {
-                  "event": "onClick",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "{{route.path && route.path.indexOf('/admin/modules/') === 0 ? '/admin/modules' : (route.path && route.path.indexOf('/admin/plugins/') === 0 ? '/admin/plugins' : (route.path && route.path.indexOf('/admin/templates/') === 0 ? '/admin/templates' : '/admin/settings?tab=language_packs'))}}"
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "fas fa-arrow-left",
-                    "size": "sm"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{route.path && route.path.indexOf('/admin/modules/') === 0}}",
-                  "text": "$t:admin.language_packs.banner.back_to_modules"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{route.path && route.path.indexOf('/admin/plugins/') === 0}}",
-                  "text": "$t:admin.language_packs.banner.back_to_plugins"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{route.path && route.path.indexOf('/admin/templates/') === 0}}",
-                  "text": "$t:admin.language_packs.banner.back_to_templates"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "partial": "partials/admin_language_pack_list/_content.json"
+            ]
         }
-      ],
-      "props": {
-      }
-    }
-  ]
+    ]
 }

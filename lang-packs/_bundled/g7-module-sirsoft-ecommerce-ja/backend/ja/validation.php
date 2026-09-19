@@ -1547,6 +1547,7 @@ return [
                 'is_default' => [
                     'boolean' => '基本通貨の有無は真偽値である必要があります。',
                 ],
+                'exchange_rate_managed' => ':currency の為替レートは :provider プロバイダーが管理中です。画面を更新してください。',
             ],
             'base_locked_after_data' => '商品または注文が1件以上登録された後は、基本通貨を変更できません。',
         ],
@@ -2054,4 +2055,6 @@ return [
             'item_min' => '商品 ID は1以上である必要があります。',
         ],
     ],
+    'exchange_rate_save_failed' => '為替レート設定を保存できませんでした。',
+    'exchange_rate_provider_unavailable' => '使用できない為替レートプロバイダーです。',
 ];

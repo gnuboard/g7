@@ -37,6 +37,8 @@ import footerActions from '../../../extensions/notification_template_form_footer
 import ko from '../../../lang/ko.json';
 import en from '../../../lang/en.json';
 import { findById, findAllByName, type AnyNode, evalBinding } from './helpers';
+// 굽기는 단일 원소 actions/lifecycle 배열을 객체로 접는다 — 모양에 기대지 않고 헬퍼로 읽는다.
+import { actionsOf, asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const overlay = coreOverlay;
 const bannerRoot = {
@@ -316,8 +318,8 @@ describe('lifecycle UI — 승인 여부 2단 배지 실평가 (행 하단 + 섹
 
 describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠금 분기 실평가', () => {
     const root = findById(sectionsRoot, 'bizppurio_tpl_sections') as AnyNode;
-    const onMount = ((root.lifecycle as { onMount?: AnyNode[] })?.onMount ?? []);
-    const steps = ((onMount[0]?.params as { actions?: AnyNode[] })?.actions ?? []);
+    const onMount = asArray((root.lifecycle as { onMount?: AnyNode[] | AnyNode })?.onMount);
+    const steps = actionsOf(onMount[0]);
 
     it('마운트 시 sequence 1개: 상태 시딩 → 상세 GET(행 있을 때) → 카테고리·발신프로필 조회', () => {
         expect(onMount).toHaveLength(1);
@@ -449,7 +451,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         expect(bound.some((b) => b.includes('bz_sms_modal?.sms_only'))).toBe(true);
         for (const c of boxes) {
             expect((c.props as { autoBinding?: boolean }).autoBinding).toBe(false);
-            const change = (c.actions as AnyNode[]).find((a) => a.type === 'change') as AnyNode;
+            const change = actionsOf(c).find((a) => a.type === 'change') as AnyNode;
             expect(change.handler, '토글은 setState 만').toBe('setState');
         }
     });
@@ -484,7 +486,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
 
     it('두 버튼 모두 클릭 if 재진입 가드 + isSaving/uploading disabled 바인딩을 갖는다', () => {
         for (const b of [saveBtn, requestBtn]) {
-            const click = (b.actions as AnyNode[])[0];
+            const click = actionsOf(b)[0];
             expect(click.type).toBe('click');
             expect(click.if).toMatch(/!\(_global\.bz_tpl_modal\?\.isSaving \?\? false\)/);
             const disabled = String((b.props as { disabled?: string }).disabled);
@@ -516,7 +518,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
     ];
 
     it.each(MATRIX)('[저장] %s → 분기 정확히 하나만 실행된다', (_label, modal, want) => {
-        const steps = ((saveBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions;
+        const steps = actionsOf(actionsOf(saveBtn)[0]);
         expect(steps[0].handler).toBe('setState');
         const branches = steps.slice(1);
         expect(branches).toHaveLength(3);
@@ -526,7 +528,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
     });
 
     it('분기 엔드포인트/메서드: ① POST templates ② PUT templates/{id} ③ PUT templates/delivery/{type} — delivery 필드 4종은 셋 다 싣는다', () => {
-        const steps = ((saveBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
+        const steps = actionsOf(actionsOf(saveBtn)[0]).slice(1);
         expect([steps[0].target, (steps[0].params as { method: string }).method]).toEqual(['/api/plugins/sirsoft-message_bizppurio/admin/templates', 'POST']);
         expect([steps[1].target, (steps[1].params as { method: string }).method]).toEqual(['/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}', 'PUT']);
         expect([steps[2].target, (steps[2].params as { method: string }).method]).toEqual(['/api/plugins/sirsoft-message_bizppurio/admin/templates/delivery/{{_global.bz_tpl_modal?.notification_type}}', 'PUT']);
@@ -541,9 +543,9 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
     });
 
     it('각 분기 성공 후: 수신자 규칙이 바뀐 경우에만 코어 PUT(extensionPointProps.saveEndpoint) → 마무리, 아니면 바로 마무리', () => {
-        const steps = ((saveBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
+        const steps = actionsOf(actionsOf(saveBtn)[0]).slice(1);
         for (const s of steps) {
-            const tail = s.onSuccess as AnyNode[];
+            const tail = callbacksOf(s, 'onSuccess');
             expect(tail).toHaveLength(2);
             const [corePut, skip] = tail;
             expect(corePut.handler).toBe('apiCall');
@@ -561,7 +563,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
             expect(Object.keys(body).sort()).toEqual(['body', 'click_url', 'recipients', 'subject']);
             for (const v of Object.values(body)) expect(v).toContain('_global?.[extensionPointProps.stateKey]');
             // 마무리: 요약 맵 + 면별 정의 목록 재조회 → 토스트 → closeModal
-            for (const fin of [corePut.onSuccess as AnyNode[], (skip.params as { actions: AnyNode[] }).actions]) {
+            for (const fin of [callbacksOf(corePut, 'onSuccess'), actionsOf(skip)]) {
                 const handlers = fin.map((a) => a.handler);
                 expect(handlers).toEqual(['setState', 'refetchDataSource', 'refetchDataSource', 'toast', 'closeModal']);
                 expect((fin[1].params as { dataSourceId: string }).dataSourceId).toBe('bizppurioTemplates');
@@ -571,23 +573,23 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
     });
 
     it('[저장 후 검수 신청]: 알림톡 upsert(①/②) 성공 → POST .../request → 코어 PUT(조건) → 마무리; delivery 전용 분기 ③ 은 없다', () => {
-        const steps = ((requestBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
+        const steps = actionsOf(actionsOf(requestBtn)[0]).slice(1);
         expect(steps).toHaveLength(2);
         const [create, update] = steps;
-        const createReq = (create.onSuccess as AnyNode[])[0];
+        const createReq = callbacksOf(create, 'onSuccess')[0];
         expect(createReq.target).toBe('/api/plugins/sirsoft-message_bizppurio/admin/templates/{{response.data?.template?.id}}/request');
-        const updateReq = (update.onSuccess as AnyNode[])[0];
+        const updateReq = callbacksOf(update, 'onSuccess')[0];
         expect(updateReq.target).toBe('/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}/request');
         for (const req of [createReq, updateReq]) {
             expect((req.params as { method: string }).method).toBe('POST');
-            expect((req.onSuccess as AnyNode[])[0].target).toBe('{{extensionPointProps.saveEndpoint}}');
+            expect(callbacksOf(req, 'onSuccess')[0].target).toBe('{{extensionPointProps.saveEndpoint}}');
             expect(JSON.stringify(req.onSuccess)).toContain('template.form.requested_toast');
         }
     });
 
     it('[저장 후 검수 신청]의 request 2노드는 검수자 전달 의견(bz_tpl_modal.request_comment)을 comment 로 싣는다 (#597 §18.7)', () => {
-        const steps = ((requestBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
-        const reqs = steps.map((s) => (s.onSuccess as AnyNode[])[0]);
+        const steps = actionsOf(actionsOf(requestBtn)[0]).slice(1);
+        const reqs = steps.map((s) => callbacksOf(s, 'onSuccess')[0]);
         expect(reqs).toHaveLength(2);
         for (const req of reqs) {
             const body = (req.params as { body: Record<string, string> }).body;
@@ -596,7 +598,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
             expect(evalExpr(body.comment, { _global: { bz_tpl_modal: {} } }), '미입력 시 빈 문자열(서버가 미전달로 처리)').toBe('');
         }
         // 일반 [저장] 3분기에는 request 호출 자체가 없으므로 comment 도 없다
-        const saveSteps = ((saveBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
+        const saveSteps = actionsOf(actionsOf(saveBtn)[0]).slice(1);
         expect(JSON.stringify(saveSteps)).not.toContain('/request"');
     });
 
@@ -628,7 +630,7 @@ describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, 제�
         expect(props.name).toBe('bz_request_comment');
         expect(props.maxLength).toBe(500);
         expect(props.value).toBe("{{_global.bz_tpl_modal?.request_comment ?? ''}}");
-        const change = (ta.actions as AnyNode[])[0];
+        const change = actionsOf(ta)[0];
         expect(change.type).toBe('change');
         expect((change.params as Record<string, string>)['bz_tpl_modal.request_comment']).toBe('{{$event.target.value}}');
         const counter = findAllByName(block, 'Span').map((s) => String(s.text)).find((t) => t.endsWith('/500')) as string;

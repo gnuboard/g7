@@ -1,0 +1,67 @@
+<!-- 공통정보 상세 보기 시안.
+  **어느 레이아웃도 이 조각을 끼워 넣지 않는다** — 실제로 쓰이는 상세는 `_panel_view` 이고, 이
+  파일은 그 이전 형태로 남은 것이다. 데이터소스도 API 호출도 없고 본문은 마크업에 박힌 예시다.
+  살아 있는 것은 언어 탭과 편집·삭제 전환뿐이며, 그 상태 키(`_local.viewMode`)도 실제 화면이 쓰는
+  `_global.panelMode` 와 다르다.
+  짝인 `_partial_common_info_form` 도 같은 상태다. -->
+<partial description="Common Info Detail View Partial">
+  <div data-ref="common_info_detail_view" class="admin-card">
+    <div data-ref="detail_card_header" class="flex-start justify-between gap-4 mb-6">
+      <responsive on="portable" class="row-stack mb-6"/>
+      <div>
+        <div class="flex-center gap-2 mb-2">
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.common_info.detail.name</span>
+          <span class="text-base font-medium text-primary">일반 상품 안내</span>
+        </div>
+        <div class="flex-center gap-4 mb-2">
+          <div class="flex-center gap-2">
+            <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.common_info.detail.status</span>
+            <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.common_info.detail.default</span>
+            <span class="badge badge-green">$t:sirsoft-ecommerce.admin.common_info.detail.active</span>
+          </div>
+        </div>
+        <div class="flex-center gap-4 text-sm text-secondary">
+          <span>
+            <span>$t:sirsoft-ecommerce.admin.common_info.detail.created_at</span>
+            <span class="ml-2 text-primary">2024-01-15 14:30:00</span>
+          </span>
+          <span>
+            <span>$t:sirsoft-ecommerce.admin.common_info.detail.updated_at</span>
+            <span class="ml-2 text-primary">2024-01-20 10:20:00</span>
+          </span>
+        </div>
+      </div>
+      <div class="flex-center gap-2">
+        <button type="button" class="btn btn-outline">$t:sirsoft-ecommerce.admin.common_info.detail.copy</button>
+        <button type="button" class="btn btn-outline">
+          <on type="click">
+            <!-- 편집으로 전환 — 이 시안 안에서만 도는 상태다(실제 화면은 `_global.panelMode` 를 쓴다). 옆 복사 버튼에는 액션이 아예 없다. -->
+            <set-state target="_local" viewMode="edit"/>
+          </on>
+          $t:sirsoft-ecommerce.common.edit
+        </button>
+        <button type="button" class="btn btn-danger text-sm">
+          <on type="click">
+            <open-modal target="modal_delete_confirm"/>
+          </on>
+          $t:sirsoft-ecommerce.common.delete
+        </button>
+      </div>
+    </div>
+    <div data-ref="section_language_tabs" class="mb-4">
+      <div class="flex-center gap-2 mb-4">
+        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
+        <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <on type="click">
+            <!-- 언어 탭 — 탭 목록은 앱 지원 로케일에서 만들어지지만 아래 본문이 하드코딩이라 탭을 바꿔도 내용은 그대로다. -->
+            <set-state target="_local" activeLanguageTab="{{loc}}"/>
+          </on>
+          {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+        </button>
+      </div>
+    </div>
+    <div data-ref="content_display" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 min-h-64 bg-gray-50 dark:bg-gray-800">
+      <p class="text-sm text-secondary text-center py-8">$t:sirsoft-ecommerce.admin.common_info.detail.content_placeholder</p>
+    </div>
+  </div>
+</partial>

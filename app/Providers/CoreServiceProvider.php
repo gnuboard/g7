@@ -24,6 +24,7 @@ use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
+use App\Contracts\Repositories\MemberNotificationRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
@@ -72,6 +73,7 @@ use App\Repositories\LayoutExtensionVersionRepository;
 use App\Repositories\LayoutPreviewRepository;
 use App\Repositories\LayoutRepository;
 use App\Repositories\LayoutVersionRepository;
+use App\Repositories\MemberNotificationRepository;
 use App\Repositories\MenuRepository;
 use App\Repositories\ModuleRepository;
 use App\Repositories\NotificationDefinitionRepository;
@@ -254,6 +256,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(NotificationDefinitionRepositoryInterface::class, NotificationDefinitionRepository::class);
         $this->app->bind(NotificationLogRepositoryInterface::class, NotificationLogRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
+        // 회원 알림함(관리자 전 회원 조회)은 사용자 스코프 저장소와 목적이 달라 별도 계약이다 (#524 §4.1)
+        $this->app->bind(MemberNotificationRepositoryInterface::class, MemberNotificationRepository::class);
         $this->app->bind(NotificationTemplateRepositoryInterface::class, NotificationTemplateRepository::class);
 
         // SEO Repository 바인딩
@@ -451,8 +455,8 @@ class CoreServiceProvider extends ServiceProvider
      *
      * DB 에 저장되지 않으며, 매 요청 부팅 시 수집됩니다 (코드 계약).
      *
-     * @param  ModuleManager  $moduleManager  활성 모듈 조회용 매니저
-     * @param  PluginManager  $pluginManager  활성 플러그인 조회용 매니저
+     * @param  ModuleManager  $moduleManager  활성 모듈 관리자
+     * @param  PluginManager  $pluginManager  활성 플러그인 관리자
      * @return void
      */
     private function collectDeclaredIdentityPurposes(ModuleManager $moduleManager, PluginManager $pluginManager): void
@@ -852,10 +856,9 @@ class CoreServiceProvider extends ServiceProvider
     // registerActivityLogManager() 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
 
     /**
-     * 코어 훅 리스너를 자동 발견해 등록합니다.
+     * 코어 훅 리스너를 일괄 등록합니다.
      *
-     * 캐시(`bootstrap/cache/hooks.php`)가 있으면 스캔·리플렉션 없이 등록하고,
-     * 테스트 환경에서는 격리를 위해 항상 스캔합니다.
+     * 캐시(bootstrap/cache/hooks.php)가 있으면 스캔 없이 등록하고, 없으면 디렉터리를 훑는다.
      *
      * @return void
      */

@@ -1,44 +1,45 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "게시글 작성/수정 유형별 렌더러. 비밀번호 확인 조건 + 유형별 폼(basic/gallery/card)을 렌더링한다. 새 유형 추가: 1) types/새유형/form.json 생성, 2) 아래 유형 블록 추가, 3) basic 블록 !includes 배열에 새 유형 추가"
-  },
-  "type": "basic",
-  "name": "Div",
-  "if": "{{!form_meta?.data?.requires_password || _local.passwordVerified || form_meta?.data?.board?.user_abilities?.can_manage}}",
-  "children": [
-    {
-      "comment": "basic + fallback. 새 유형 추가 시 이 블록 아래에 해당 유형 블록 추가 후 !includes 배열에도 추가",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{form_meta?.data?.board?.type === 'basic' || !['gallery','card'].includes(form_meta?.data?.board?.type ?? 'basic')}}",
-      "children": [
-        {
-          "partial": "partials/board/types/basic/form.json"
-        }
-      ]
+    "comment": "글쓰기 폼 유형 갈래 — 게시판 유형별로 다른 폼을 고르는 자리다. 지금은 셋 다 basic 폼을 함께 쓰지만 갈래를 미리 갈라 두어 전용 폼이 생기면 이 파일만 바꾸면 되게 했다. 비밀번호 확인이 필요한 게시판이면 확인 전까지 아무것도 그리지 않는다(관리 권한자는 통과).",
+    "meta": {
+        "is_partial": true,
+        "description": "게시글 작성/수정 유형별 렌더러. 비밀번호 확인 조건 + 유형별 폼(basic/gallery/card)을 렌더링한다. 새 유형 추가: 1) types/새유형/form.json 생성, 2) 아래 유형 블록 추가, 3) basic 블록 !includes 배열에 새 유형 추가"
     },
-    {
-      "comment": "gallery 유형 (전용 폼 파일 생성 전까지 basic 공유)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{form_meta?.data?.board?.type === 'gallery'}}",
-      "children": [
+    "type": "basic",
+    "name": "Div",
+    "if": "{{!form_meta?.data?.requires_password || _local.passwordVerified || form_meta?.data?.board?.user_abilities?.can_manage}}",
+    "children": [
         {
-          "partial": "partials/board/types/basic/form.json"
-        }
-      ]
-    },
-    {
-      "comment": "card 유형 (전용 폼 파일 생성 전까지 basic 공유)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{form_meta?.data?.board?.type === 'card'}}",
-      "children": [
+            "comment": "basic + fallback. 새 유형 추가 시 이 블록 아래에 해당 유형 블록 추가 후 !includes 배열에도 추가",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{form_meta?.data?.board?.type === 'basic' || !['gallery','card'].includes(form_meta?.data?.board?.type ?? 'basic')}}",
+            "children": [
+                {
+                    "partial": "partials/board/types/basic/form.json"
+                }
+            ]
+        },
         {
-          "partial": "partials/board/types/basic/form.json"
+            "comment": "gallery 유형 (전용 폼 파일 생성 전까지 basic 공유)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{form_meta?.data?.board?.type === 'gallery'}}",
+            "children": [
+                {
+                    "partial": "partials/board/types/basic/form.json"
+                }
+            ]
+        },
+        {
+            "comment": "card 유형 (전용 폼 파일 생성 전까지 basic 공유)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{form_meta?.data?.board?.type === 'card'}}",
+            "children": [
+                {
+                    "partial": "partials/board/types/basic/form.json"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

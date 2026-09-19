@@ -8,8 +8,8 @@
  * 않았다 — 화면만 비어 있는 것이 유일한 증상이었다. 그래서 이 파일은 "무엇이 컨텍스트에
  * 실리는가" 라는 계약 자체를 붙든다.
  *
- * @see docs/frontend/troubleshooting-state-global.md
- * @see docs/frontend/troubleshooting-state-advanced.md
+ * @see 트러블슈팅 가이드 troubleshooting-state-global.md
+ * @see 트러블슈팅 가이드 troubleshooting-state-advanced.md
  *
  * @vitest-environment jsdom
  */

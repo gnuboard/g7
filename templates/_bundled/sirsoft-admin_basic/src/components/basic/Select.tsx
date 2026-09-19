@@ -294,8 +294,17 @@ export const Select: React.FC<SelectProps> = ({
   // DOM-safe 레코드로 캐스팅해 커스텀 드롭다운 루트에 전달한다.
   const rootDomProps = { ...editorAttrs, ...props } as Record<string, unknown>;
 
+  // 폭은 **바깥 상자**가 쥔다. 커스텀 드롭다운의 버튼은 `w-full` 로 부모를 채우는데,
+  // 부모(`relative`)에 폭이 없으면 글자 길이만큼 줄어 호출처가 준 `w-44` 가 무의미해진다
+  // (2026-09-16 실측: 「전체」 선택 상자가 80px 로 눌렸다). 호출처의 폭 토큰만 골라
+  // 바깥 상자로 올려 준다 — 나머지 외형은 종전대로 버튼이 받는다.
+  const widthClass = (className ?? '')
+    .split(/\s+/)
+    .filter((t) => /^(?:sm:|md:|lg:|xl:)?(?:w-|min-w-|max-w-|flex-1|grow)/.test(t))
+    .join(' ');
+
   return (
-    <Div ref={containerRef} className="relative" {...rootDomProps}>
+    <Div ref={containerRef} className={`relative ${widthClass}`.trim()} {...rootDomProps}>
       <Button
         ref={buttonRef}
         type="button"

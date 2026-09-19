@@ -7,7 +7,6 @@ use App\Contracts\Extension\PluginInterface;
 use App\Enums\LayoutSourceType;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -23,6 +22,8 @@ use Illuminate\Support\Facades\Log;
  */
 trait RefreshesLayoutExtensions
 {
+    use CollectsFragmentSources;
+
     /**
      * 확장(모듈/플러그인)의 레이아웃 확장을 파일에서 다시 읽어 DB에 갱신합니다.
      *
@@ -38,7 +39,6 @@ trait RefreshesLayoutExtensions
         LayoutSourceType $sourceType,
         bool $preserveModified = false
     ): array {
-        $extensionFiles = $extension->getLayoutExtensions();
         $identifier = $extension->getIdentifier();
         $extensionType = $sourceType === LayoutSourceType::Module ? 'module' : 'plugin';
         $stats = ['refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'skipped' => 0];
@@ -47,39 +47,33 @@ trait RefreshesLayoutExtensions
             return $stats;
         }
 
-        // 파일에서 읽은 확장 데이터 수집 (target_layout 또는 extension_point)
-        $fileExtensions = [];
-        foreach ($extensionFiles as $extensionFile) {
-            try {
-                $content = File::get($extensionFile);
-                $extensionData = json_decode($content, true);
+        $extensionsPath = $extension->getExtensionsPath();
+        $jsonFiles = $extension->getLayoutExtensions();
 
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error("레이아웃 확장 JSON 파싱 실패: {$extensionFile}", [
-                        $extensionType => $identifier,
-                        'error' => json_last_error_msg(),
-                    ]);
+        // 소스 디렉토리에 실재하는 조각 키 집합 — 컴파일 성공 여부와 무관하다. 고아 정리는 이 집합으로 판정해,
+        // 컴파일에 실패한 조각의 행을 지우지 않는다(실패는 로그, 행은 보존).
+        $liveKeys = $this->fragmentSourceKeys($extensionsPath, $jsonFiles);
 
+        // 각 템플릿에 대해 확장 동기화 — 정의 로드를 템플릿 루프 안에서 한다. 태그→컴포넌트 표가 템플릿마다
+        // 다르므로 조각은 붙을 템플릿의 표로 컴파일해야 한다 (C10). 색인은 조각 식별자(`fragment_key`) 기준이다 —
+        // 종전 대상(target) 색인은 같은 대상에 조각이 둘이면 하나를 잃었다 (C13).
+        foreach ($adminTemplates as $template) {
+            $definitions = $this->loadFragmentDefinitions(
+                $extensionsPath,
+                $jsonFiles,
+                [$extensionType => $identifier, 'template' => $template->identifier],
+                (string) $template->identifier
+            );
+
+            foreach ($definitions as $definition) {
+                $extensionData = $definition['data'];
+                $fragmentKey = $definition['key'];
+                $targetKey = $extensionData['target_layout'] ?? $extensionData['extension_point'] ?? null;
+
+                if (! $targetKey) {
                     continue;
                 }
 
-                // target_layout (overlay) 또는 extension_point 중 하나가 있어야 함
-                $targetKey = $extensionData['target_layout'] ?? $extensionData['extension_point'] ?? null;
-                if ($targetKey) {
-                    $fileExtensions[$targetKey] = $extensionData;
-                }
-            } catch (\Exception $e) {
-                Log::error("레이아웃 확장 파일 읽기 실패: {$extensionFile}", [
-                    $extensionType => $identifier,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        // 각 admin 템플릿에 대해 확장 동기화
-        foreach ($adminTemplates as $template) {
-            // 파일에서 읽은 확장 등록/업데이트
-            foreach ($fileExtensions as $targetKey => $extensionData) {
                 try {
                     // 대상(target_layout / extension_point)이 이 템플릿에 존재하지 않으면 등록하지 않는다.
                     // 모든 활성 템플릿에 일괄 적용 시, admin 레이아웃 대상 확장이 user 템플릿에
@@ -90,7 +84,8 @@ trait RefreshesLayoutExtensions
                             $extensionData,
                             $sourceType,
                             $identifier,
-                            $template->id
+                            $template->id,
+                            $fragmentKey
                         )) {
                             $stats['deleted']++;
                         }
@@ -103,7 +98,8 @@ trait RefreshesLayoutExtensions
                         $sourceType,
                         $identifier,
                         $template->id,
-                        $preserveModified
+                        $preserveModified,
+                        $fragmentKey
                     );
 
                     if ($result === 'created') {
@@ -118,10 +114,19 @@ trait RefreshesLayoutExtensions
                     Log::error("레이아웃 확장 갱신 실패: {$targetKey}", [
                         $extensionType => $identifier,
                         'template' => $template->identifier,
+                        'fragment_key' => $fragmentKey,
                         'error' => $e->getMessage(),
                     ]);
                 }
             }
+
+            // 소스에 더는 없는 조각의 행 정리 (같은 출처·같은 템플릿). 옛 5축 키(`target_name`) 행도 파일 키로 정정된다.
+            $stats['deleted'] += $this->layoutExtensionService->removeOrphanFragments(
+                $sourceType,
+                $identifier,
+                $template->id,
+                $liveKeys
+            );
         }
 
         if ($stats['refreshed'] > 0) {

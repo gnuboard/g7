@@ -227,6 +227,22 @@ return [
 
     // 게시글 검증
     'post' => [
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+        'bulk' => [
+            'ids' => [
+                'required' => '게시글 ID는 필수입니다.',
+                'array' => '게시글 ID는 배열 형식이어야 합니다.',
+                'min' => '최소 1개 이상의 게시글을 선택해야 합니다.',
+                'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+                'integer' => '게시글 ID는 정수여야 합니다.',
+                'distinct' => '게시글 ID가 중복되었습니다.',
+            ],
+            'reason' => [
+                'max' => '사유는 :max자를 초과할 수 없습니다.',
+            ],
+        ],
         'title' => [
             'required' => '제목은 필수입니다.',
             'string' => '제목은 문자열이어야 합니다.',
@@ -296,6 +312,26 @@ return [
 
     // 필드 속성명 (attributes)
     'attributes' => [
+        'report_my' => [
+            'search_field' => '검색 대상',
+            'target_type' => '대상 구분',
+            'status' => '처리 상태',
+        ],
+        'reaction_type' => [
+            'id' => '반응 유형',
+            'icon' => '아이콘 이미지',
+        ],
+        'reaction' => [
+            'ids' => '반응 ID',
+            'search_field' => '검색 대상',
+            'target_type' => '대상 구분',
+            'reaction_type_id' => '반응 유형',
+        ],
+        'use_comment_reaction' => '댓글 반응 사용',
+        'scrap' => [
+            'ids' => '스크랩 ID',
+            'search_field' => '검색 대상',
+        ],
         'settings' => [
             // basic_defaults
             'basic_defaults.type' => '게시판 유형',
@@ -312,6 +348,16 @@ return [
             'basic_defaults.comment_order' => '댓글 정렬',
             'basic_defaults.show_view_count' => '조회수 표시',
             'basic_defaults.use_report' => '신고 기능 사용',
+            'basic_defaults.use_reaction' => '반응 기능 사용',
+            'basic_defaults.use_comment_reaction' => '댓글 반응 사용',
+            'basic_defaults.reaction_types' => '반응 유형',
+            'basic_defaults.reaction_types.*.code' => '반응 유형 코드',
+            'basic_defaults.reaction_types.*.name' => '반응 유형 이름',
+            'basic_defaults.reaction_types.*.name.ko' => '반응 유형 이름(한국어)',
+            'basic_defaults.reaction_types.*.icon_attachment_id' => '반응 유형 아이콘',
+            'basic_defaults.reaction_types.*.display_order' => '반응 유형 표시 순서',
+            'basic_defaults.reaction_types.*.is_active' => '반응 유형 사용 여부',
+            'basic_defaults.active_reaction_types' => '사용할 반응 유형',
             'basic_defaults.min_title_length' => '최소 제목 길이',
             'basic_defaults.max_title_length' => '최대 제목 길이',
             'basic_defaults.min_content_length' => '최소 내용 길이',
@@ -591,6 +637,28 @@ return [
     ],
 
     // 신고 검증 메시지
+    'reaction' => [
+        'reaction_type_id' => [
+            'required' => '반응 유형은 필수입니다.',
+            'integer' => '반응 유형은 정수여야 합니다.',
+            'exists' => '존재하지 않는 반응 유형입니다.',
+        ],
+        'ids' => [
+            'required' => '반응 ID는 필수입니다.',
+            'array' => '반응 ID는 배열 형식이어야 합니다.',
+            'min' => '최소 1개 이상의 반응을 선택해야 합니다.',
+            'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+            'integer' => '반응 ID는 정수여야 합니다.',
+            'distinct' => '반응 ID가 중복되었습니다.',
+            'exists' => '존재하지 않는 반응입니다.',
+        ],
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+        'target_type' => [
+            'in' => '유효하지 않은 대상 구분입니다.',
+        ],
+    ],
     'report' => [
         'invalid_status_transition' => '현재 신고 상태에서는 해당 상태로 변경할 수 없습니다.',
         'status' => [
@@ -618,5 +686,57 @@ return [
         ],
         'daily_limit_exceeded' => '오늘 신고 가능 횟수(:limit회)를 초과하였습니다.',
         'rejection_limit_exceeded' => '최근 :days일간 신고 반려가 :count회 누적되어 신고가 제한되었습니다.',
+    ],
+
+    // 스크랩 검증 메시지
+    'scrap' => [
+        'ids' => [
+            'required' => '스크랩 ID는 필수입니다.',
+            'array' => '스크랩 ID는 배열 형식이어야 합니다.',
+            'min' => '최소 1개 이상의 스크랩을 선택해야 합니다.',
+            'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+            'integer' => '스크랩 ID는 정수여야 합니다.',
+            'distinct' => '스크랩 ID가 중복되었습니다.',
+            'exists' => '존재하지 않는 스크랩입니다.',
+        ],
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+    ],
+
+    // 반응 유형 검증 메시지
+    'reaction_type' => [
+        'code' => [
+            'regex' => '코드는 영문 소문자로 시작하고 영문 소문자·숫자·밑줄만 쓸 수 있습니다 (2~50자).',
+            'distinct' => '반응 유형 코드가 중복되었습니다.',
+            'unique' => '이미 사용 중인 코드입니다.',
+        ],
+        'name' => [
+            'ko' => [
+                'required' => '기본 언어(한국어) 이름을 입력하세요.',
+            ],
+        ],
+        'icon_attachment_id' => [
+            'exists' => '유효하지 않은 아이콘 이미지입니다.',
+        ],
+        'icon' => [
+            'required' => '아이콘 이미지를 선택하세요.',
+            'image' => '아이콘은 이미지 파일이어야 합니다.',
+            'mimes' => '아이콘은 JPG·PNG·GIF·WEBP 형식만 올릴 수 있습니다.',
+            'max' => '아이콘 이미지는 1MB 이하여야 합니다.',
+        ],
+    ],
+
+    // 내 신고(마이페이지) 검증 메시지
+    'report_my' => [
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+        'target_type' => [
+            'in' => '유효하지 않은 대상 구분입니다.',
+        ],
+        'status' => [
+            'in' => '유효하지 않은 처리 상태입니다.',
+        ],
     ],
 ];

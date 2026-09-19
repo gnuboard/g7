@@ -100,9 +100,10 @@ test.describe('@layout-editor chrome controls', () => {
 
   /** @effects route_tree_item_shows_layout_file_path_under_label_with_source_prefix */
   test('후속 — 좌측 트리 라우트 노드에 레이아웃 파일 경로가 라벨 하단에 노출 (출처 prefix)', async ({ page }) => {
-    // sirsoft-basic 은 템플릿 소스 → 경로 표기는 "layouts/{layoutName}.json".
+    // sirsoft-basic 은 템플릿 소스 → 경로 표기는 "layouts/{layoutName}.g7.html".
     // 트리의 라우트 항목마다 라벨 아래 회색 보조 줄(g7le-route-tree-layout-path)이
-    // 노출되고, 그 텍스트가 layouts/ 로 시작하는.json 파일 경로여야 한다.
+    // 노출되고, 그 텍스트가 layouts/ 로 시작하는 소스(.g7.html) 경로여야 한다.
+    // 확장자가 소스 SSoT 를 가리키는 근거는 S19 ⑦ (R1) — 짝 .json 은 기계 산출이라 사람이 열 파일이 아니다.
     await enterEditor(page);
     await page.waitForSelector('[data-testid="g7le-route-tree-item"]', { timeout: 15_000 });
 
@@ -113,14 +114,14 @@ test.describe('@layout-editor chrome controls', () => {
       const paths = items
         .map((it) => it.querySelector('[data-testid="g7le-route-tree-layout-path"]') as HTMLElement | null)
         .filter(Boolean) as HTMLElement[];
-      // 홈 라우트(/)의 경로 줄 텍스트 확인 — layouts/home.json
+      // 홈 라우트(/)의 경로 줄 텍스트 확인 — layouts/home.g7.html
       const home = items.find((it) => it.getAttribute('data-route-path') === '/');
       const homePathEl = home?.querySelector('[data-testid="g7le-route-tree-layout-path"]') as HTMLElement | null;
       return {
         itemCount: items.length,
         pathCount: paths.length,
-        // 표시된 경로 줄은 모두 .json 으로 끝나야 한다
-        allEndJson: paths.length > 0 && paths.every((p) => (p.textContent || '').trim().endsWith('.json')),
+        // 표시된 경로 줄은 모두 소스 확장자(.g7.html)로 끝나야 한다
+        allEndAuthoring: paths.length > 0 && paths.every((p) => (p.textContent || '').trim().endsWith('.g7.html')),
         homePathText: (homePathEl?.textContent || '').trim(),
         // 그룹 헤더에는 경로 줄이 없어야 한다
         groupHasPath: Array.from(document.querySelectorAll('[data-testid="g7le-route-tree-group"]')).some(
@@ -131,9 +132,9 @@ test.describe('@layout-editor chrome controls', () => {
 
     expect(result.itemCount).toBeGreaterThan(0);
     expect(result.pathCount).toBeGreaterThan(0);
-    expect(result.allEndJson).toBe(true);
-    // 홈 라우트는 layouts/home.json (sirsoft-basic 템플릿 소스, 식별자 prefix 동반)
-    expect(result.homePathText).toContain('layouts/home.json');
+    expect(result.allEndAuthoring).toBe(true);
+    // 홈 라우트는 layouts/home.g7.html (sirsoft-basic 템플릿 소스, 식별자 prefix 동반)
+    expect(result.homePathText).toContain('layouts/home.g7.html');
     expect(result.groupHasPath).toBe(false);
   });
 
@@ -291,5 +292,54 @@ test.describe('@layout-editor chrome controls', () => {
 
     expect(overlayLeak.handlesRightOfFrame).toBe(0);
     expect(overlayLeak.dashedRightOfFrame).toBe(0);
+  });
+
+  /**
+   * 결함 6 — 저장 진행 표시.
+   *
+   * 단위 가드(`EditorToolbar.test.tsx`)는 `onSave` 가 Promise 를 돌려주는 mock 을 주입해
+   * 스피너를 확인한다. 그러나 스피너가 뜨는 조건은 **실제 호출부가 Promise 를 돌려주는가** 이고,
+   * 그 축은 단위에서 볼 수 없다 — 그래서 이 자리를 브라우저로 잠근다.
+   *
+   * 사이트 레이아웃을 실제로 바꾸지 않도록 저장 PUT 을 서버로 보내지 않고 이 자리에서 잡아
+   * 두었다가 성공 응답을 만들어 돌려준다(중단돼도 화면이 바뀐 채로 남지 않는다).
+   */
+  /** @effects toolbar_save_shows_spinner_while_pending_then_restores */
+  test('결함 6 — 저장 클릭 시 진행 스피너 + 버튼 비활성, 완료 후 복원', async ({ page }) => {
+    await enterEditor(page);
+
+    let release: (() => void) | null = null;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route(/\/api\/admin\/templates\/[^/]+\/layouts\//, async (route) => {
+      if (route.request().method() !== 'PUT') {
+        await route.fallback();
+        return;
+      }
+      await held;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'ok', data: { content_version: 1 } }),
+      });
+    });
+
+    const save = page.getByTestId('g7le-toolbar-save');
+    await expect(save).toHaveAttribute('data-saving', 'false');
+
+    await save.click();
+
+    // 저장 중 — 존재를 먼저 확정한다(부재 단언은 렌더 전에 즉시 통과하므로 순서가 중요).
+    await expect(page.getByTestId('g7le-toolbar-save-spinner')).toBeVisible({ timeout: 15_000 });
+    await expect(save).toHaveAttribute('data-saving', 'true');
+    await expect(save).toBeDisabled();
+
+    (release as unknown as () => void)();
+
+    // 완료 후 복원
+    await expect(page.getByTestId('g7le-toolbar-save-spinner')).toHaveCount(0, { timeout: 15_000 });
+    await expect(save).toHaveAttribute('data-saving', 'false');
+    await expect(save).toBeEnabled();
   });
 });

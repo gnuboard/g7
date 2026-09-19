@@ -15,6 +15,7 @@ import path from 'path';
 import fs from 'fs';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { asArray, findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ==============================
 // 실제 admin_dashboard.json 로드
@@ -272,11 +273,11 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
       }
       return null;
     }
-    const dismissBtn = findById(dashboardLayout, 'alert_dismiss_button');
+    const dismissBtn = findByIdPrefix(dashboardLayout, 'alert_dismiss_button');
     expect(dismissBtn).not.toBeNull();
     expect(dismissBtn.if).toBe('{{alert.extension_type && alert.identifier}}');
 
-    const action = dismissBtn.actions[0];
+    const action = asArray(dismissBtn?.actions)[0];
     expect(action.type).toBe('click');
     expect(action.handler).toBe('apiCall');
     expect(action.target).toBe(
@@ -285,7 +286,7 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
     expect(action.params.method).toBe('POST');
 
     // onSuccess 에 dashboard_alerts 재조회가 포함되어야 함
-    const refetch = action.onSuccess.find(
+    const refetch = asArray(action?.onSuccess).find(
       (a: any) => a.handler === 'refetchDataSource',
     );
     expect(refetch).toBeDefined();

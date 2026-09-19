@@ -71,6 +71,9 @@ class Plugin extends AbstractPlugin
             'g7_admin_sidebar_collapsed',
             'g7_filter_visibility_*',
             'g7_dismissed_warnings',
+            // 확장 목록 보기 방식(갤러리/목록) — 사이드바 접힘과 같은 범주다.
+            // 목록에서 빠지면 보기를 바꿔도 새로고침마다 되돌아간다 (#640 테마와 같은 함정).
+            'g7_view_mode_*',
             // 레이아웃 편집기 작업 상태 (라우트 트리 접힘) — 운영자 편집 동선 유지
             'g7le.*',
             // 결제·본인인증 복귀 기록 — 실제 쓰기는 sessionStorage 지만, 이관 전 목록이 저장소

@@ -1,119 +1,122 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Shipping Policy List Bulk Actions Bar"
-  },
-  "id": "bulk_action_bar",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Span",
-      "props": {
-        "className": "text-body font-medium whitespace-nowrap"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.bulk.selected_count|count={{(_global.bulkSelectedItems || []).length}}"
+    "comment": "배송정책 목록의 일괄 작업 줄 — 체크한 건수와 두 작업(일괄 삭제·상태 일괄 적용).\n  **체크한 항목은 전역, 고른 상태는 지역**에 있다. 체크는 표와 확인 창이 함께 봐야 하지만 상태\n  선택은 이 줄에서만 쓰기 때문이다. 그래서 [적용]을 누를 때 그 값을 전역으로 한 번 옮겨 준다 —\n  확인 창이 지역 상태에 손이 닿지 않는다.\n  두 버튼 모두 서버 권한(`abilities`)까지 함께 본다 — 삭제 권한과 수정 권한이 갈린다.\n  이 줄은 아무것도 실행하지 않는다. 실제 처리는 각 확인 창의 몫이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Shipping Policy List Bulk Actions Bar"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-center gap-2"
-      },
-      "children": [
+    "id": "bulk_action_bar",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Select",
-          "props": {
-            "name": "bulkToggleValue",
-            "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50",
-            "value": "{{_local.bulkToggleValue || ''}}",
-            "disabled": "{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_update !== true}}",
-            "options": [
-              {
-                "value": "",
-                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.bulk.select_status",
-                "disabled": true
-              },
-              {
-                "value": "true",
-                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active"
-              },
-              {
-                "value": "false",
-                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_inactive"
-              }
-            ]
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "_local",
-                "bulkToggleValue": "{{$event.target.value}}"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-1"
-      }
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed",
-        "disabled": "{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_delete !== true}}"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_delete",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "openModal",
-          "target": "bulk_delete_modal"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-        "disabled": "{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || !_local.bulkToggleValue || shipping_policies?.data?.abilities?.can_update !== true}}"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_apply",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "sequence",
-          "actions": [
-            {
-              "handler": "setState",
-              "params": {
-                "target": "global",
-                "bulkToggleValue": "{{_local.bulkToggleValue}}"
-              }
+            "type": "basic",
+            "name": "Span",
+            "props": {
+                "className": "text-body font-medium whitespace-nowrap"
             },
-            {
-              "handler": "openModal",
-              "target": "bulk_toggle_modal"
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.bulk.selected_count|count={{(_global.bulkSelectedItems || []).length}}"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-center gap-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "comment": "바꿀 상태 고르기 — 지역에만 담는다. 값이 `'true'`/`'false'` 라는 **글자**이고, 확인 창도 그 글자로 비교한다.",
+                            "type": "change",
+                            "handler": "setState",
+                            "params": {
+                                "target": "_local",
+                                "bulkToggleValue": "{{$event.target.value}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "name": "bulkToggleValue",
+                        "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50",
+                        "value": "{{_local.bulkToggleValue || ''}}",
+                        "disabled": "{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_update !== true}}",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.bulk.select_status",
+                                "disabled": true
+                            },
+                            {
+                                "value": "true",
+                                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active"
+                            },
+                            {
+                                "value": "false",
+                                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_inactive"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-1"
             }
-          ]
+        },
+        {
+            "type": "basic",
+            "name": "Button",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "openModal",
+                    "target": "bulk_delete_modal"
+                }
+            ],
+            "props": {
+                "type": "button",
+                "className": "px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_delete !== true}}"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_delete"
+        },
+        {
+            "type": "basic",
+            "name": "Button",
+            "actions": [
+                {
+                    "comment": "[적용] — 고른 상태를 전역으로 옮긴 뒤 확인 창을 연다. 창은 지역 상태를 볼 수 없으므로 이 옮겨 담기가 빠지면 창의 미리보기 배지가 늘 '중지' 로 보인다.",
+                    "type": "click",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "bulkToggleValue": "{{_local.bulkToggleValue}}"
+                            }
+                        },
+                        {
+                            "handler": "openModal",
+                            "target": "bulk_toggle_modal"
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "type": "button",
+                "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || !_local.bulkToggleValue || shipping_policies?.data?.abilities?.can_update !== true}}"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_apply"
         }
-      ]
-    }
-  ]
+    ]
 }

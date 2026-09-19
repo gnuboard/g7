@@ -66,6 +66,11 @@
     "reply": "Reply",
     "report": "Report",
     "reported": "Reported",
+    "scrap": "Scrap",
+    "scrapped": "Scrapped",
+    "scrap_login_required": "Login is required for this feature.",
+    "scrap_added": "Post scrapped.",
+    "scrap_removed": "Scrap removed.",
     "report_post": "Report Post",
     "report_comment": "Report Comment",
     "report_reason": "Report Reason",
@@ -137,11 +142,10 @@
     "incorrect": "Password is incorrect."
   },
   "reaction": {
-    "like": "Like",
-    "laugh": "Funny",
-    "agree": "Agree",
-    "thanks": "Thanks",
-    "wow": "Wow"
+    "login_required": "You need to sign in to use this feature.",
+    "failed": "Failed to process the reaction. Please try again.",
+    "self_post_denied": "You cannot react to your own post.",
+    "self_comment_denied": "You cannot react to your own comment."
   },
   "attachments": {
     "title": "Attachments",
@@ -231,5 +235,11 @@
       "confirm_remove_attachment_title": "Delete Attachment",
       "confirm_remove_attachment_message": "The file will be deleted immediately. This action cannot be undone regardless of saving the post."
     }
+  },
+  "search_fields": {
+    "title_content": "Title + content",
+    "title": "Title",
+    "content": "Content",
+    "author": "Author"
   }
 }

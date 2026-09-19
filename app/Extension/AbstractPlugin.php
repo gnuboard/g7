@@ -9,7 +9,9 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
+use App\Extension\Traits\ResolvesLayoutInstallSource;
 use App\Support\PublicAssetDisk;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
@@ -27,6 +29,8 @@ use ReflectionClass;
 abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInterface
 {
     use ReportsLifecycleFailure;
+    // 설정 레이아웃 소스 우선순위(`.g7.html` → 짝 `.json`)를 저장소 규약 한 곳에서 받는다.
+    use ResolvesLayoutInstallSource;
 
     /**
      * 플러그인 디렉토리 경로 (캐시)
@@ -111,6 +115,8 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
 
     /**
      * 플러그인 디렉토리 경로 반환
+     *
+     * @return string 플러그인 디렉토리 절대 경로
      */
     protected function getPluginPath(): string
     {
@@ -126,6 +132,8 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      * 플러그인 식별자 반환 (디렉토리명에서 자동 추론)
      *
      * 디렉토리명이 'sirsoft-sample'이면 식별자도 'sirsoft-sample'
+     *
+     * @return string 플러그인 식별자
      */
     final public function getIdentifier(): string
     {
@@ -764,6 +772,23 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
+     * 매니페스트에 선언된 아이콘 상대경로 반환
+     *
+     * plugin.json 의 icon 필드 값을 그대로 돌려줍니다. 경로 규칙(확장 루트 기준 상대경로)과
+     * 규격(정사각·100KB 이하·안전한 SVG) 검증은 ExtensionIconResolver·
+     * ExtensionIconValidator 의 몫이며, 여기서는 선언값만 봅니다.
+     * 선언이 없으면 파일 관례(assets/icon.svg → png → webp)로 해석됩니다.
+     *
+     * @return string|null 아이콘 상대경로 (선언이 없으면 null)
+     */
+    public function getIcon(): ?string
+    {
+        $icon = $this->loadManifest()['icon'] ?? null;
+
+        return is_string($icon) && trim($icon) !== '' ? $icon : null;
+    }
+
+    /**
      * 플러그인 메타데이터 반환
      *
      * 기본적으로 빈 배열 반환
@@ -813,6 +838,12 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
 
     /**
      * 레이아웃 확장 파일 목록 반환
+     *
+     * **`.json` 만 돌려주는 것이 계약이다** — 소스(`.g7.html`) 판별은 여기가 아니라 **호출처**
+     * ({@see CollectsFragmentSources::collectFragmentSources()}) 소관이다.
+     * 호출처가 이 목록 위에 같은 디렉토리의 `.g7.html` 을 얹어 소스 SSoT 를 우선하고, 짝 마크업이
+     * 없는 `.json` 만 남긴다. 여기서 `.g7.html` 까지 반환하도록 바꾸면 확장 공개 표면이 바뀌어
+     * 번들 확장의 `g7_version` 상향 대상이 되고, 호출처의 짝 판별과 이중으로 겹친다.
      *
      * @return array<string> JSON 파일 경로 목록
      */
@@ -1179,17 +1210,29 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 플러그인 설정 페이지 레이아웃 경로를 반환합니다.
      *
-     * 기본적으로 resources/layouts/admin/plugin_settings.json 경로를 반환합니다.
+     * 기본적으로 resources/layouts/admin/plugin_settings 의 소스를 반환합니다.
      * 파일이 존재하지 않으면 null을 반환합니다.
      * 플러그인 개발자가 커스텀 경로가 필요한 경우 오버라이드합니다.
+     *
+     * 소스 우선순위는 저장소 규약과 같다 — `.g7.html`(작성 SSoT) → 짝 `.json`(굽기 산출).
+     * 종전에는 이 메서드만 `.json` 을 하드코딩해, 다른 모든 레이아웃 소비 경로가 쓰는
+     * {@see ResolvesLayoutInstallSource::layoutSourceCandidates()} 규약 밖에 홀로 남아 있었다.
+     * 그 결과 플러그인 설정 UI 만 짝 `.json` 의 **디스크 실재**를 요구했고, 굽기를 빠뜨린
+     * 플러그인은 설정 화면이 통째로 사라졌다(`null` → `hasSettingsLayout()` false).
      *
      * @return string|null 레이아웃 파일 절대 경로 또는 null
      */
     public function getSettingsLayout(): ?string
     {
-        $layoutPath = $this->getPluginPath().'/resources/layouts/admin/plugin_settings.json';
+        $base = $this->getPluginPath().'/resources/layouts/admin/plugin_settings';
 
-        return file_exists($layoutPath) ? $layoutPath : null;
+        foreach ($this->layoutSourceCandidates($base.'.json') as $candidate) {
+            if (file_exists($candidate['path'])) {
+                return $candidate['path'];
+            }
+        }
+
+        return null;
     }
 
     /**

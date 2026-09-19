@@ -60,6 +60,7 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [extension-manager.md](extension-manager.md) | Composer 오토로드, 서비스 등록, hidden 필터링 |
+| [extension-icons.md](extension-icons.md) | 확장 아이콘 — 파일 관례·manifest icon 필드·규격·언어팩 합성 |
 
 ### 학습용 샘플
 

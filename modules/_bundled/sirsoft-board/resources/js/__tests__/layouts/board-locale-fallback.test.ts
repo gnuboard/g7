@@ -9,7 +9,7 @@
  *   - _tab_board_settings_basic.json (게시판 설정 — board_types 옵션 라벨)
  *   - _board_type_manage_modal.json (게시판 타입 관리 모달 — 이름 표시)
  *
- * 참조 패턴: sirsoft-page admin_page_detail.json 의 `_local.lang ?? $locale ?? 'ko'`
+ * 참조 패턴: sirsoft-page admin_page_detail.g7.html 의 `_local.lang ?? $locale ?? 'ko'`
  */
 
 import { describe, it, expect } from 'vitest';

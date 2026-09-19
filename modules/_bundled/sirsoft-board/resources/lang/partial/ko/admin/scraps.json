@@ -1,0 +1,67 @@
+{
+  "page_title": "스크랩 관리",
+  "page_description": "전 회원이 스크랩한 게시글을 조회하고 정리합니다.",
+  "search_placeholder": "검색어 입력",
+  "search": "검색",
+  "reset": "초기화",
+  "advanced_search": "상세검색",
+  "selected_count": "{{count}}개 선택됨",
+  "search_fields": {
+    "all": "전체",
+    "post_title": "게시글 제목",
+    "post_content": "게시글 내용",
+    "board_name": "게시판명",
+    "member": "회원(이름, 이메일)",
+    "author_name": "작성자명"
+  },
+  "filters": {
+    "board_label": "게시판",
+    "board_all": "전체 게시판",
+    "scrapped_at_label": "스크랩일",
+    "member_filter_notice": "특정 회원의 스크랩만 표시 중",
+    "member_filter_clear": "회원 필터 해제",
+    "date_quick_today": "오늘",
+    "date_quick_3days": "3일",
+    "date_quick_week": "1주",
+    "date_quick_month": "1개월",
+    "date_quick_3months": "3개월",
+    "date_quick_all": "전체"
+  },
+  "columns": {
+    "scrapped_at": "스크랩일",
+    "member": "회원",
+    "board_name": "게시판",
+    "post_title": "게시글 제목",
+    "author_name": "작성자",
+    "post_status": "상태"
+  },
+  "cell": {
+    "view_member": "회원정보 보기",
+    "search_member": "이 회원으로 검색"
+  },
+  "badges": {
+    "deleted_post": "삭제된 게시글",
+    "board_deleted": "게시판 삭제됨",
+    "scrap_off": "스크랩 꺼짐",
+    "withdrawn": "탈퇴"
+  },
+  "actions": {
+    "go_to_post": "게시글 보기",
+    "go_to_member": "회원 정보",
+    "delete": "삭제",
+    "bulk_delete": "선택 삭제"
+  },
+  "modals": {
+    "delete_title": "이 스크랩을 삭제할까요?",
+    "delete_confirm": "회원의 스크랩 목록에서 사라집니다. 게시글 자체는 삭제되지 않습니다.",
+    "delete_editor_label": "스크랩 삭제 확인",
+    "bulk_delete_title": "선택한 스크랩을 삭제할까요?",
+    "bulk_delete_confirm": "선택한 {{count}}개의 스크랩을 삭제하시겠습니까? 회원의 스크랩 목록에서 사라집니다.",
+    "bulk_delete_editor_label": "스크랩 선택 삭제 확인",
+    "processing": "처리 중..."
+  },
+  "pagination_info": "총 {{total}}건 중 {{from}}-{{to}}",
+  "table_empty": "조건에 맞는 스크랩이 없습니다.",
+  "refresh": "새로고침",
+  "total_count": "총 {{count}}건"
+}

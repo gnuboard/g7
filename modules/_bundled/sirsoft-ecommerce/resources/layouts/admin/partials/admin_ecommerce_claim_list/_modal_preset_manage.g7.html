@@ -1,0 +1,34 @@
+<partial description="Claim List - Preset Management Modal">
+  <modal data-ref="modal_claim_preset_manage" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.title" description="$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.description" size="md">
+    <div data-if="{{!presets.data || presets.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.empty</div>
+    <div data-if="{{presets.data &amp;&amp; presets.data.length > 0}}">
+      <div data-each="presetItem in presets.data" class="flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <span class="text-heading">{{presetItem.name}}</span>
+        <div class="flex-center gap-2">
+          <button type="button" class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg">
+            <on type="click">
+              <set-state target="global" editingPresetId="{{presetItem.id}}" editingPresetName="{{presetItem.name}}"/>
+              <open-modal target="modal_claim_preset_edit"/>
+            </on>
+            <icon name="pen-to-square" class="text-sm"/>
+          </button>
+          <button type="button" class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+            <on type="click">
+              <set-state target="global" deletingPresetId="{{presetItem.id}}" deletingPresetName="{{presetItem.name}}"/>
+              <open-modal target="modal_claim_preset_delete_confirm"/>
+            </on>
+            <icon name="trash" class="text-sm"/>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="mt-6">
+      <button type="button" class="w-full px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">
+        <on type="click">
+          <open-modal target="modal_claim_preset_save"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.claim.modal.preset_manage.add_new
+      </button>
+    </div>
+  </modal>
+</partial>

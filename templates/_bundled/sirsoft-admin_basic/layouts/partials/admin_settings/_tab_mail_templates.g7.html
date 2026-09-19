@@ -1,0 +1,192 @@
+<!-- 메일 템플릿 탭 — 템플릿을 카드로 늘어놓고 켜기/끄기·편집·기본값 복원을 건다.
+  검색은 다른 목록과 같이 **입력을 화면 상태에 모았다가 Enter 또는 검색 버튼에서 URL 로 옮긴다**.
+  갱신 방식이 이 탭만 다르다 — 목록 소스를 다시 부르지 않고 **같은 URL 을 다시 밟는다**
+  (`navigate` + 빈 쿼리). 편집 창도 같은 방식이라 그쪽과 짝이 맞는다.
+  코어 기본 템플릿은 "기본" 배지가 붙고 복원 버튼이 나오지 않는다. -->
+<partial description="환경설정 메일 템플릿 탭 콘텐츠">
+  <div data-ref="tab_content_mail_templates" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'mail_templates'}}">
+    <div data-ref="mail_templates_header" class="flex-between">
+      <div class="section-header">
+        <h3>$t:admin.settings.mail_templates.title</h3>
+        <p>$t:admin.settings.mail_templates.description</p>
+      </div>
+    </div>
+    <div data-ref="mail_templates_search" class="admin-card">
+      <div class="flex-center gap-2">
+        <select name="mailTemplateSearchType" class="w-32 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-body font-medium focus:ring-2 focus:ring-indigo-500" value="{{_local.mailTemplateFilter?.searchType || 'all'}}">
+          <options>
+            <option value="all">$t:admin.settings.mail_templates.search_type_all</option>
+            <option value="subject">$t:admin.settings.mail_templates.search_type_subject</option>
+            <option value="body">$t:admin.settings.mail_templates.search_type_body</option>
+          </options>
+          <on type="change">
+            <!-- 검색 대상(제목/본문/전체)을 담아만 둔다 — 조회는 Enter 또는 검색 버튼이 낸다. -->
+            <set-state target="local" mailTemplateFilter.searchType="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <input name="mailTemplateSearch" type="text" placeholder="$t:admin.settings.mail_templates.search_placeholder" class="input pl-10" value="{{_local.mailTemplateFilter?.search || ''}}">
+            <on type="change">
+              <!-- 검색어를 담아만 둔다 — 위 대상 선택과 같은 이유다. -->
+              <set-state target="local" mailTemplateFilter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keydown" key="Enter">
+              <!-- Enter 로 검색 — 옆 검색 버튼과 **같은 이동**이다(둘 중 무엇을 눌러도 결과가 같다).
+                   쿼리를 합치지 않고 갈아 끼우므로 탭·검색·항목수만 남고 나머지는 떨어진다.
+                   그래서 항목수(`per_page`)만 따로 실어 나른다. -->
+              <navigate path="/admin/settings" :replace="true">
+                <query tab="mail_templates" :page="1" search="{{_local.mailTemplateFilter?.search || undefined}}" search_type="{{_local.mailTemplateFilter?.searchType !== 'all' ? _local.mailTemplateFilter?.searchType : undefined}}" per_page="{{query.per_page || undefined}}"/>
+              </navigate>
+            </on>
+          </input>
+        </div>
+        <button type="button" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors">
+          <on type="click">
+            <!-- 검색 버튼 — 위 Enter 와 같은 이동이다(인증 정책 탭의 검색 버튼과 달리 여기서는 조건이 반영된다). -->
+            <navigate path="/admin/settings" :replace="true">
+              <query tab="mail_templates" :page="1" search="{{_local.mailTemplateFilter?.search || undefined}}" search_type="{{_local.mailTemplateFilter?.searchType !== 'all' ? _local.mailTemplateFilter?.searchType : undefined}}" per_page="{{query.per_page || undefined}}"/>
+            </navigate>
+          </on>
+          $t:admin.settings.mail_templates.btn_search
+        </button>
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-body font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <!-- 필터 초기화 — **입력칸과 URL 을 둘 다** 비운다. 화면 상태만 비우면 URL 의 조건이 남아
+     목록은 그대로이고, URL 만 비우면 입력칸에 쓰던 글자가 남는다. -->
+            <sequence>
+              <set-state target="local">
+                <field name="mailTemplateFilter">
+                  <field name="search" value=""/>
+                  <field name="searchType" value="all"/>
+                </field>
+              </set-state>
+              <navigate path="/admin/settings" :replace="true">
+                <query tab="mail_templates"/>
+              </navigate>
+            </sequence>
+          </on>
+          $t:admin.settings.mail_templates.btn_reset_filter
+        </button>
+      </div>
+    </div>
+    <div data-ref="mail_templates_info" class="flex-between">
+      <span class="text-label-subtle">$t:admin.settings.mail_templates.total_count|count={{mailTemplates?.data?.pagination?.total ?? 0}}</span>
+      <div class="flex-center gap-2">
+        <span class="text-label-subtle">$t:admin.settings.mail_templates.per_page_label</span>
+        <select name="mailTemplatePerPage" class="w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String(query.per_page || 20)}}">
+          <options>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </options>
+          <on type="change">
+            <!-- 페이지당 항목 수 — 검색과 달리 쿼리를 **합쳐** 이동한다(걸린 검색 조건을 유지한다). -->
+            <navigate path="/admin/settings" :replace="true" :mergeQuery="true">
+              <query per_page="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+      </div>
+    </div>
+    <div data-ref="mail_templates_list" class="grid grid-cols-1 gap-4">
+      <div data-ref="template_card_{{tplIdx}}" data-each="tpl, tplIdx in {{mailTemplates?.data?.data ?? []}}" class="admin-card mb-3">
+        <div data-ref="btn_expand_{{tplIdx}}" class="flex-shrink-0 pt-0.5">
+          <button type="button" class="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <on type="click">
+              <!-- 카드 펼치기/접기 — 펼친 카드를 **id 배열**로 모은다(본인인증 메시지 탭은 같은 일을
+                   객체로 한다 — 두 화면이 다른 방식이지만 결과는 같다). -->
+              <set-state target="local" expandedMailTemplateIds="{{(_local.expandedMailTemplateIds ?? []).includes(tpl.id) ? (_local.expandedMailTemplateIds ?? []).filter(id => id !== tpl.id) : [...(_local.expandedMailTemplateIds ?? []), tpl.id]}}"/>
+            </on>
+            <icon name="{{(_local.expandedMailTemplateIds ?? []).includes(tpl.id) ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-sm"/>
+          </button>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex-start justify-between">
+            <div class="flex-1 min-w-0">
+              <div class="flex-center gap-2 mb-1">
+                <h4 data-if="{{tpl.is_default}}" class="text-primary text-base font-medium">$t:admin.settings.mail_templates.types.{{tpl.type}}</h4>
+                <h4 data-if="{{!tpl.is_default}}" class="text-primary text-base font-medium">{{tpl.type}}</h4>
+                <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{tpl.type}}</span>
+                <span class="{{tpl.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full">{{tpl.is_active ? '$t:admin.settings.mail_templates.active' : '$t:admin.settings.mail_templates.inactive'}}</span>
+                <span data-if="{{tpl.is_default}}" class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs font-medium px-2 py-0.5 rounded-full">$t:admin.settings.mail_templates.default_badge</span>
+              </div>
+              <p class="text-label-subtle truncate">{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? ''}}</p>
+            </div>
+            <div class="flex-center gap-2 ml-4 flex-shrink-0">
+              <!-- 이 메일 문안의 사용 여부를 뒤집는다. 목록 안 반복이라 대상은 그 행의 정의다 -->
+              <button data-ref="btn_toggle_{{tplIdx}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-body px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <on type="click">
+                  <api-call :auth_required="true" target="/api/admin/mail-templates/{{tpl.id}}/toggle-active" method="PATCH">
+                    <success>
+                      <navigate path="/admin/settings" :replace="true" :mergeQuery="true">
+                        <query/>
+                      </navigate>
+                      <toast message="$t:admin.settings.mail_templates.toggle_success" type="success"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                {{tpl.is_active ? '$t:admin.settings.mail_templates.btn_deactivate' : '$t:admin.settings.mail_templates.btn_activate'}}
+              </button>
+              <!-- 메일 문안 편집. 편집기는 모달이라 이 화면의 상태를 읽지 못하므로 대상 정의를 전역으로 옮겨 담은 뒤 연다 -->
+              <button data-ref="btn_edit_{{tplIdx}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <on type="click">
+                  <set-state target="local" editingTemplate="{{tpl}}" editLang="{{$locale}}" :templateErrors="null" :isSaving="false"/>
+                  <open-modal target="modal_mail_template_form"/>
+                </on>
+                $t:admin.settings.mail_templates.btn_edit
+              </button>
+              <!-- 기본 문안으로 되돌린다. 기본 정의가 아닌 것에만 보이므로 되돌릴 것이 없을 때는 버튼 자체가 뜨지 않는다 -->
+              <button data-ref="btn_reset_{{tplIdx}}" data-if="{{!tpl.is_default}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <on type="click">
+                  <api-call :auth_required="true" target="/api/admin/mail-templates/{{tpl.id}}/reset" method="POST">
+                    <success>
+                      <navigate path="/admin/settings" :replace="true" :mergeQuery="true">
+                        <query/>
+                      </navigate>
+                      <toast message="$t:admin.settings.mail_templates.reset_success" type="success"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                $t:admin.settings.mail_templates.btn_reset
+              </button>
+            </div>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-1.5">
+            <span data-each="variable, varIdx in {{tpl.variables ?? []}}" class="text-secondary inline-flex items-center text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono">
+              <span>{</span>
+              <span>{{variable.key}}</span>
+              <span>} - {{variable.description ?? ''}}</span>
+            </span>
+          </div>
+          <div data-if="{{(_local.expandedMailTemplateIds ?? []).includes(tpl.id)}}" class="mt-3 pt-3">
+            <div class="text-tertiary font-medium mb-2">$t:admin.settings.mail_templates.edit_modal.body</div>
+            <div class="text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">{{tpl.body?.[$locale] ?? tpl.body?.ko ?? ''}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="mail_templates_empty" data-if="{{(mailTemplates?.data?.data ?? []).length === 0}}" class="admin-card">
+      <icon name="fa-solid fa-envelope" class="text-4xl text-gray-300 dark:text-gray-600 mb-3"/>
+      <p data-if="{{query.search || query.search_type}}" class="text-label-subtle">$t:admin.settings.mail_templates.empty_no_results</p>
+      <p data-if="{{!query.search &amp;&amp; !query.search_type}}" class="text-label-subtle">$t:admin.settings.mail_templates.empty_message</p>
+    </div>
+    <div data-ref="mail_templates_pagination" class="flex justify-center">
+      <pagination currentPage="{{mailTemplates?.data?.pagination?.current_page ?? 1}}" totalPages="{{mailTemplates?.data?.pagination?.last_page ?? null}}" hasMorePages="{{mailTemplates?.data?.pagination?.has_more_pages ?? false}}">
+        <on type="action" event="onPageChange">
+          <!-- 페이지 이동 — 검색 조건과 항목수를 유지한다. -->
+          <navigate path="/admin/settings" :replace="true" :mergeQuery="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+      </pagination>
+    </div>
+  </div>
+</partial>

@@ -63,13 +63,13 @@ _훅 리스너가 없습니다._
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/ecommerce-address-search.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/ecommerce-address-search.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `address_search_slot` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
 조각 하나가 이 플러그인의 **UI 본체**입니다.
 
-파일 이름은 `ecommerce-address-search.json` 이지만 **확장점 이름(`address_search_slot`)으로
+파일 이름은 `ecommerce-address-search.g7.html` 이지만 **확장점 이름(`address_search_slot`)으로
 매칭**되므로 이커머스 전용이 아닙니다. 그 확장점을 여는 화면이면 어디든 붙습니다 — 이름은
 최초 도입 맥락이 남은 것일 뿐입니다.
 

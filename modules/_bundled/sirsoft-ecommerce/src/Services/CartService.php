@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -28,12 +29,14 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 class CartService
 {
     /**
-     * @param  CartRepositoryInterface  $cartRepository  장바구니 리포지터리
-     * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 리포지터리
+     * CartService 생성자
+     *
+     * @param  CartRepositoryInterface  $cartRepository  장바구니 리포지토리
+     * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 리포지토리
      * @param  OrderCalculationService  $orderCalculationService  주문 금액 계산 서비스
-     * @param  OrderRepositoryInterface  $orderRepository  주문 리포지터리
-     * @param  ProductRepositoryInterface  $productRepository  상품 리포지터리
-     * @param  AdditionalOptionSelectionService  $additionalOptionSelectionService  추가옵션 선택 서비스
+     * @param  OrderRepositoryInterface  $orderRepository  주문 리포지토리
+     * @param  ProductRepositoryInterface  $productRepository  상품 리포지토리
+     * @param  AdditionalOptionSelectionService  $additionalOptionSelectionService  추가 옵션 선택 서비스
      */
     public function __construct(
         protected CartRepositoryInterface $cartRepository,
@@ -837,6 +840,7 @@ class CartService
      * @param  int  $productOptionId  상품 옵션 ID
      * @param  int  $requestedQuantity  요청 수량
      * @param  int  $currentQuantity  현재 장바구니에 담긴 수량 (합산용, 기본값 0)
+     * @return void
      *
      * @throws \Exception 재고 초과 시 예외
      * @return void 반환값 없음
@@ -879,6 +883,7 @@ class CartService
      * 재고 검증보다 먼저 호출하여 판매상태 메시지를 우선 노출합니다.
      *
      * @param  int  $productOptionId  상품 옵션 ID
+     * @return void
      *
      * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품인 경우
      * @throws \Exception 옵션/상품을 찾을 수 없는 경우
@@ -910,6 +915,7 @@ class CartService
      *
      * @param  int  $productId  상품 ID
      * @param  int  $totalQuantity  검증 후 상품 총수량 (기존 장바구니 + 이번 요청)
+     * @return void
      *
      * @throws CartUnavailableException 최소 미달/최대 초과 시
      * @return void 반환값 없음
@@ -951,6 +957,7 @@ class CartService
      *
      * @param  Cart  $cart  현재 장바구니 아이템
      * @param  int  $newProductOptionId  변경하려는 옵션 ID
+     * @return void
      *
      * @throws \Exception 다른 상품의 옵션으로 변경 시도 시
      * @return void 반환값 없음
@@ -1037,6 +1044,7 @@ class CartService
      * 필드 규칙(`max:`)은 이번 요청분만 보므로, 기존 수량과 합산되는 경로는 여기서 판정합니다.
      *
      * @param  int  $totalQuantity  합산 후 라인 수량
+     * @return void
      *
      * @throws CartOperationException 상한 초과 시
      * @return void 반환값 없음
@@ -1048,5 +1056,73 @@ class CartService
         if ($max > 0 && $totalQuantity > $max) {
             throw new CartQuantityLimitException($max, $totalQuantity);
         }
+    }
+
+    /**
+     * 관리자용 전 회원 장바구니 목록을 조회합니다.
+     *
+     * @param  array<string, mixed>  $filters  필터 (검색 대상·검색어·회원·기간·정렬)
+     * @param  int  $perPage  페이지당 개수
+     * @return LengthAwarePaginator 페이지네이션된 목록
+     */
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->cartRepository->paginateForAdmin($filters, $perPage);
+    }
+
+    /**
+     * 관리자가 장바구니 한 건을 삭제합니다 (소유자 무관).
+     *
+     * @param  int  $id  행 ID
+     * @return bool 삭제 성공 여부
+     */
+    public function deleteByAdmin(int $id): bool
+    {
+        return $this->cartRepository->deleteById($id);
+    }
+
+    /**
+     * 관리자가 장바구니를 일괄 삭제합니다 (소유자 무관).
+     *
+     * 훅을 루프 앞뒤로 한 번씩만 발화한다 — 항목마다 발화하면 활동 로그가 폭주하고,
+     * IDV 같은 before 훅 소비자가 루프 중간에 끼어들어 앞부분만 지워진 상태가 된다.
+     *
+     * @param  array<int, int>  $ids  행 ID 목록
+     * @return int 실제로 삭제된 건수
+     */
+    public function bulkDeleteByAdmin(array $ids): int
+    {
+        // 스냅샷은 삭제 «전» 에 뜬다 — 장바구니는 소프트 삭제가 아니라 지우고 나면 행이
+        // 사라져 활동 로그에 남은 id 로는 「누구의 무엇」을 되짚을 수 없다.
+        $snapshots = $this->cartRepository->findByIds($ids)
+            ->map(fn ($row) => [
+                'id' => (int) $row->id,
+                'user_id' => $row->user_id !== null ? (int) $row->user_id : null,
+                'user_uuid' => $row->user?->uuid,
+                'user_name' => $row->user?->name,
+                'product_id' => $row->product_id !== null ? (int) $row->product_id : null,
+                'product_name' => $row->product?->getLocalizedName(),
+                'quantity' => $row->quantity !== null ? (int) $row->quantity : null,
+            ])
+            ->all();
+
+        HookManager::doAction('sirsoft-ecommerce.cart.before_bulk_delete', $ids);
+
+        $count = $this->cartRepository->bulkDelete($ids);
+
+        HookManager::doAction('sirsoft-ecommerce.cart.after_bulk_delete', $ids, $count, $snapshots);
+
+        return $count;
+    }
+
+    /**
+     * 회원의 장바구니 건수를 조회합니다 (회원 상세 요약용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 건수
+     */
+    public function countByUserForAdmin(int $userId): int
+    {
+        return $this->cartRepository->countByUser($userId);
     }
 }

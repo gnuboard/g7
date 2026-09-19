@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: S5 현금영수증 프로바이더·환불 정합성 명세 SSoT. 11축 pairwise 13조합을 테스트 docblock @scenario 로 나열하는 것은 거짓 매핑이 된다 — 축(발급 프로바이더 / 환불 스코프 / 결제수단 / 에스크로)이 서로 다른 테스트 클래스에 격리 검증되어 한 메서드가 11축 전부를 재현하지 않는다(S4 toss-payment-methods-vbank-escrow · KG security-callback-defense 선례 동일). effects 27건은 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며(미매핑 0건, 실측 확인), 그것이 이 기능의 실질 커버리지다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: S5 현금영수증 프로바이더·환불 정합성 명세 SSoT. 11축 pairwise 13조합을 테스트 docblock @scenario 로 나열하는 것은 거짓 매핑이 된다 — 축(발급 프로바이더 / 환불 스코프 / 결제수단 / 에스크로)이 서로 다른 테스트 클래스에 격리 검증되어 한 메서드가 11축 전부를 재현하지 않는다(S4 toss-payment-methods-vbank-escrow · KG security-callback-defense 선례 동일). effects 27건은 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며(미매핑 0건, 실측 확인), 그것이 이 기능의 실질 커버리지다.
 # 시나리오 매니페스트 — 현금영수증 프로바이더(토스·KG) · 환불 정합성 (S5)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 계획서 §12-5 / §13-3
 

@@ -16,12 +16,12 @@
  * @vitest-environment node
  */
 
+import { initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import { describe, expect, it } from 'vitest';
 
 import shell from '../../../layouts/admin/admin_ecommerce_order_list.json';
 import datagrid from '../../../layouts/admin/partials/admin_ecommerce_order_list/_partial_order_datagrid.json';
 import filterSection from '../../../layouts/admin/partials/admin_ecommerce_order_list/_partial_filter_section.json';
-import presetSection from '../../../layouts/admin/partials/admin_ecommerce_order_list/_partial_preset_section.json';
 import excelModal from '../../../layouts/admin/partials/admin_ecommerce_order_list/_modal_excel_download.json';
 import presetSaveModal from '../../../layouts/admin/partials/admin_ecommerce_order_list/_modal_preset_save.json';
 
@@ -111,7 +111,7 @@ describe('클레임 기준 필터 블록 (D22)', () => {
     );
 
     expect(restore?.params?.defaultFilters).toContain('claim');
-    expect((shell as any).state?.visibleFilters).toContain('claim');
+    expect(initStateOf(shell as any)?.visibleFilters).toContain('claim');
 
     const toggles = collect(claimRow, (n) => n.props?.type === 'checkbox');
 
@@ -158,7 +158,7 @@ describe('필터 왕복 — 상태 · URL · 데이터소스 · 재진입 네 �
   const orders = (shell as any).data_sources.find((d: any) => d.id === 'orders');
   const seed = (shell as any).init_actions.find((a: any) => a?.params?._local?.filter)?.params._local.filter;
   const searchQuery = (shell as any).named_actions.searchOrders.params.query;
-  const state = (shell as any).state.filter;
+  const state = initStateOf(shell as any).filter;
 
   it.each(AXES)('%s 축이 네 지점 모두에 있다', (stateKey, param, isArray) => {
     const urlKey = isArray ? `${param}[]` : param;
@@ -197,7 +197,7 @@ describe('필터 왕복 — 상태 · URL · 데이터소스 · 재진입 네 �
     // 죽은 단수 키는 필터 섹션뿐 아니라 엑셀 다운로드·프리셋 저장 모달에도 있었다. 한 파일만
     // 훑으면 나머지 두 곳에서 되살아나도 초록이다. 또 실제 형태는 `claimRefundStatus ||` 처럼
     // 따옴표가 아니라 공백이 뒤따르므로, 바늘에 `"` 를 붙이면 그 형태를 잡지 못한다.
-    const text = JSON.stringify([shell, filterSection, presetSection, excelModal, presetSaveModal]);
+    const text = JSON.stringify([shell, filterSection, excelModal, presetSaveModal]);
 
     // 살아 있는 복수 키(`claimExchangeStatuses`)가 단수 키를 접두로 포함하므로 단순 substring
     // 으로는 정상 배선까지 걸린다 — 뒤에 영문자가 오지 않을 때만 단수형으로 판정한다.
@@ -269,7 +269,7 @@ describe('클레임 컬럼 (D22)', () => {
     // 되살아나지 않게 하는 장치이므로 직렬화에서 뺀다 — 넣으면 설명이 곧 위반이 되어,
     // 다음 사람이 검사를 통과시키려고 설명을 지우게 된다.
     const serialized = JSON.stringify(
-      [shell, filterSection, presetSection, datagrid, excelModal, presetSaveModal],
+      [shell, filterSection, datagrid, excelModal, presetSaveModal],
       (key, value) => (key === 'comment' ? undefined : value)
     );
 
@@ -332,7 +332,7 @@ describe('클레임 기준 필터 — 귀책 · 신청일 축', () => {
     expect(Object.keys(orders.params)).toContain('claim_requested_from');
     expect(Object.keys(orders.params)).toContain('claim_requested_to');
 
-    const filterState = (shell as any).state?.filter ?? {};
+    const filterState = initStateOf(shell as any)?.filter ?? {};
     const keys = Object.keys(filterState).filter((k) => k.toLowerCase().includes('claimrequested'));
 
     expect(keys.length).toBe(2);
@@ -457,7 +457,7 @@ describe('모달 파셜 — 페이지 로컬 상태를 직접 읽지 않는다 (
  * 두 정본이 비면 모든 단언이 공집합 대조로 통과하므로, 하한 단언을 함께 둔다.
  */
 describe('프리셋 3출처는 필터 상태의 전 축을 나른다', () => {
-  const filterState: Record<string, unknown> = (shell as any).state.filter;
+  const filterState: Record<string, unknown> = initStateOf(shell as any).filter;
 
   const searchQuery: Record<string, string> = (shell as any).named_actions.searchOrders.params.query;
   const stateToUrl = new Map<string, string>();

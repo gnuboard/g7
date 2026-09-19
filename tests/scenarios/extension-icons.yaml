@@ -1,0 +1,64 @@
+# audit:allow test-scenario-coverage[cross_product] reason: extension_type × location × declaration × validity × surface 의 전개(4×3×5×5×5)는 대부분 같은 판정을 반복한다. 회귀 핵심은 test_files 의 단위·Feature 테스트가 축별 대표 변종으로 덮는다.
+feature: 확장 아이콘 — 규격·해석·서빙·노출
+
+description: |
+  확장(모듈·플러그인·템플릿·언어팩)이 자기 아이콘을 담는 규정을 잠근다. 규정 원문은
+  docs/extension/extension-icons.md 다.
+
+  ## 왜 축이 이렇게 갈리는가
+
+  `location` 이 축인 이유는 **기존 자산 서빙 lane 과 다르기 때문**이다. 확장 자산 lane
+  (`/api/plugins/assets/...`)은 활성 디렉터리만 본다. 아이콘은 **미설치 번들 확장**도
+  목록에 떠야 하므로 활성 → _pending → _bundled 를 순서대로 본다. 이 차이가 사례 38 이다.
+
+  `validity` 가 축인 이유는 규격 위반이 **설치를 막지 않고 표시만 떨어뜨리기** 때문이다.
+  위반 아이콘은 서빙되지 않고(404) 행의 icon_url 이 null 이며 화면은 유형 글리프로 간다.
+  수동 설치 미리보기는 그 사실을 경고로 알리되 `validation.is_valid` 는 건드리지 않는다.
+
+  `surface` 가 축인 이유는 같은 파일을 **네 경로가 서로 다른 방식으로** 읽기 때문이다 —
+  목록 행(해석기), 공개 라우트(파일 서빙), ZIP 미리보기(추출본 검사), 웹 인스톨러
+  (Laravel 없이 순수 PHP 검증기 + data URI).
+
+axes:
+  extension_type: [module, plugin, template, language_pack]
+  location: [active, pending, bundled]
+  declaration: [convention_svg, convention_png, convention_webp, manifest_path, none]
+  validity: [valid, invalid_svg, too_large, not_square, path_escape]
+  surface: [list, detail, public_route, manifest_preview, installer_scan]
+
+exclusions:
+  - { extension_type: language_pack, location: pending, reason: "언어팩에는 _pending 디렉터리가 없다 — 설치본과 _bundled 둘뿐" }
+  - { surface: installer_scan, extension_type: language_pack, reason: "인스톨러 언어팩 행은 체크박스라 아이콘 자리가 없다(D10)" }
+  - { surface: installer_scan, location: active, reason: "인스톨러는 설치 전 화면이라 _bundled 만 스캔한다" }
+  - { surface: installer_scan, location: pending, reason: "인스톨러는 설치 전 화면이라 _bundled 만 스캔한다" }
+
+effects:
+  - icon_resolves_manifest_over_convention
+  - uninstalled_bundled_icon_resolves_from_bundled_dir
+  - invalid_icon_is_not_served_and_row_falls_back
+  - public_icon_route_needs_no_auth
+  - preview_reports_icon_warnings_without_blocking_install
+  - installer_scan_embeds_valid_icon_only
+  - language_pack_icon_source_derivation
+  # 상세 응답은 목록이 골라 둔 전역 자리를 덮으므로 목록에만 실으면 창에서 아이콘이 사라진다.
+  - icon_fields_exposed_on_list_and_detail
+  # 아이콘 없는 행의 API 기본값(null·none) — 화면의 글리프 폴백은 관리자 템플릿 매니페스트 소관이다.
+  - icon_absent_row_defaults_to_none
+  - manifest_icon_path_is_validated
+  # 언어팩 매니페스트 스키마 전반(아이콘 경로 규칙이 이 검증기에 붙어 함께 잠긴다)
+  - manifest_schema_is_validated
+  # 설치 확인 창은 목록을 거치지 않으므로 target 과 언어팩 줄 양쪽이 아이콘을 실어야 한다.
+  - icon_fields_exposed_on_install_preview
+
+test_files:
+  - tests/Unit/Support/ExtensionIconValidatorTest.php
+  - tests/Unit/Services/Extension/ExtensionIconResolverTest.php
+  - tests/Unit/Extension/BundledExtensionIconTest.php
+  - tests/Feature/Extension/ExtensionIconServingTest.php
+  - tests/Feature/Extension/ExtensionIconExposureTest.php
+  - tests/Feature/Extension/ManifestPreviewIconTest.php
+  - tests/Unit/Installer/ScanExtensionIconsTest.php
+  - tests/Unit/Services/LanguagePack/LanguagePackManifestValidatorTest.php
+  - tests/Unit/Services/Extension/ExtensionInstallPreviewBuilderTest.php
+  # 리소스는 값을 보존만 하므로 `icon_source` 가 **어떻게 정해지는가**는 여기서 잰다.
+  - tests/Unit/Services/LanguagePack/LanguagePackIconSourceDerivationTest.php

@@ -144,12 +144,24 @@ const renderListItems = (items: any[], itemTemplate: ComponentDefinition[]) => {
 
 `renderItemChildren`이 처리하는 레이아웃 JSON 구조:
 
+```html
+<data-grid>
+  <column field="status" header="$t:user.status">
+    <cell>
+      <span data-ref="status_badge" class="{{row.status_variant === 'success' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}} px-2.5 py-0.5 rounded-full text-xs font-medium">{{row.status_label}}</span>
+    </cell>
+  </column>
+</data-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "columns": [
     {
-      "key": "status",
-      "label": "$t:user.status",
+      "field": "status",
+      "header": "$t:user.status",
       "cellChildren": [
         {
           "id": "status_badge",
@@ -338,6 +350,18 @@ const finalProps = bindComponentActions(resolvedProps, childDef.actions, itemCon
 ```
 
 ### 레이아웃 JSON 예시
+
+```html
+<button variant="primary">
+  <on type="click">
+    <set-state target="global" selectedModule="{{row}}"/>
+    <open-modal target="install_modal"/>
+  </on>
+  설치
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

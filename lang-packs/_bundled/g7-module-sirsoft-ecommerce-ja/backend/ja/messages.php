@@ -287,6 +287,9 @@ return [
         'reorder_failed' => '再注文に失敗しました。',
         'reorder_option_not_found' => '商品オプションはもう存在しません。',
         'unknown_product' => '不明な商品',
+        'admin_list_retrieved' => 'カート一覧を閲覧しました。',
+        'admin_deleted' => 'カート項目を削除しました。',
+        'admin_bulk_deleted' => ':count個のカート項目を削除しました。',
     ],
     'checkout' => [
         'created' => '注文書が作成されました。',
@@ -1079,6 +1082,9 @@ return [
         'toggle_failed' => 'お気に入り処理に失敗しました。',
         'retrieve_failed' => 'お気に入り一覧の読み込みに失敗しました。',
         'delete_failed' => 'お気に入り削除に失敗しました。',
+        'admin_list_retrieved' => 'お気に入り一覧を閲覧しました。',
+        'admin_deleted' => 'お気に入りを削除しました。',
+        'admin_bulk_deleted' => ':count個のお気に入りを削除しました。',
     ],
     'extra_fee_template' => [
         'list_retrieved' => '追加配送料テンプレート一覧を閲覧しました。',
@@ -1190,5 +1196,15 @@ return [
             'payment' => '決済手段',
             'mileage' => 'マイレージ',
         ],
+    ],
+    'user_address' => [
+        'admin_list_retrieved' => '会員配送先一覧を閲覧しました。',
+        'admin_deleted' => '配送先を削除しました。',
+        'admin_bulk_deleted' => ':count個の配送先を削除しました。',
+    ],
+    'product_inquiry' => [
+        'admin_list_retrieved' => '商品問い合わせ一覧を閲覧しました。',
+        'admin_deleted' => '商品問い合わせを削除しました。',
+        'admin_bulk_deleted' => ':count個の商品問い合わせを削除しました。',
     ],
 ];

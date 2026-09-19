@@ -148,6 +148,7 @@ test_files:
   - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php
   - tests/Unit/Services/CoreUpdateServiceFreshDiskConfigTest.php
   - tests/Unit/Support/RouteCacheHelperContainerTest.php
+  - tests/Unit/Support/ConfigCacheHelperContainerTest.php
   - tests/Feature/Console/CoreUpdateCommandHandoffTest.php
   - tests/Feature/Console/CoreUpdateResumeGuidanceTest.php
   - tests/Feature/Upgrades/MultiVersionUpgradePathTest.php

@@ -23,10 +23,23 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
 {
+    /** 기존 테스트 스키마를 사용하고 각 케이스의 변경만 롤백합니다.
+     * @return void 반환값 없음
+     */
+    public function refreshDatabase(): void
+    {
+        $this->beginDatabaseTransaction();
+    }
+
     private EcommerceSettingsService $service;
 
     private string $storagePath;
 
+    /**
+     * 각 테스트의 격리된 설정과 의존 객체를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,9 +50,14 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
             File::cleanDirectory($this->storagePath);
         }
 
-        $this->service = new EcommerceSettingsService;
+        $this->service = app(EcommerceSettingsService::class);
     }
 
+    /**
+     * 테스트가 변경한 설정과 시간을 복구합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->storagePath)) {
@@ -58,6 +76,7 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
      *
      * @param  string  $category  카테고리명
      * @param  array  $data  파일에 기록할 데이터
+     * @return void 반환값 없음
      */
     private function seedFile(string $category, array $data): void
     {
@@ -187,6 +206,8 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
      * @scenario pipeline_stage=stored_file_basis
      *
      * @effects read_time_enrichment_not_persisted, other_category_file_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_persists_stored_basis_only(): void
     {
@@ -216,6 +237,8 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
      * @scenario pipeline_stage=stored_file_basis
      *
      * @effects removed_currency_tombstone_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_preserves_removed_currency_tombstone(): void
     {
@@ -249,6 +272,8 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
      * @scenario pipeline_stage=currency_default_sync
      *
      * @effects saved_file_default_currency_matches_is_default
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_syncs_currency_is_default(): void
     {
@@ -279,6 +304,8 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
      * @scenario pipeline_stage=split_fields
      *
      * @effects split_input_fields_merged_on_single_key_save
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_merges_split_fields(): void
     {
@@ -300,6 +327,8 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
      * @scenario pipeline_stage=payment_method_snapshot
      *
      * @effects payment_method_metadata_snapshotted, runtime_only_flag_not_persisted
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_snapshots_payment_method_metadata(): void
     {
@@ -329,9 +358,14 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
      * @scenario pipeline_stage=currency_cache_flush
      *
      * @effects currency_request_cache_cleared_on_single_key_save
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_clears_currency_request_cache(): void
     {
+        // 요청 부팅이 수행하는 설정 미러 초기화를 격리된 테스트에서도 완료합니다.
+        g7_refresh_module_settings_config('sirsoft-ecommerce');
+        CurrencySettingsCache::clear();
         // 캐시 선점 (저장 전 통화 구성)
         $before = array_map(fn ($c) => $c['code'] ?? null, CurrencySettingsCache::currencies());
         $this->assertNotEmpty($before);
@@ -357,6 +391,8 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
      * @scenario pipeline_stage=normalize_category_data
      *
      * @effects bank_name_normalized_to_multilingual, sibling_keys_preserved_on_bank_save
+     *
+     * @return void 반환값 없음
      */
     public function test_save_banks_normalizes_and_preserves_siblings(): void
     {

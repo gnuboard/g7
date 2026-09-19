@@ -452,23 +452,6 @@
       "full": "Full",
       "icon": "Icon"
     },
-    "pr_user_reaction": {
-      "label": "My Reaction",
-      "like": "Like",
-      "funny": "Funny",
-      "agree": "Agree",
-      "thanks": "Thanks",
-      "wow": "Wow"
-    },
-    "pr_post_id": {
-      "label": "Post ID"
-    },
-    "pr_size": {
-      "label": "Size",
-      "sm": "SM",
-      "md": "MD",
-      "lg": "LG"
-    },
     "pi_label": {
       "label": "Label"
     },
@@ -717,7 +700,6 @@
     "file_uploader": "File Uploader",
     "avatar_uploader": "Avatar Uploader",
     "social_login_buttons": "Social Login Buttons",
-    "post_reactions": "Post Reactions",
     "input": "Input",
     "textarea": "Textarea",
     "select": "Select",
@@ -1085,7 +1067,6 @@
     "user": "User",
     "current_page": "Current page",
     "total_pages": "Total pages",
-    "reactions": "Reactions",
     "product": "Product",
     "author": "Author",
     "value": "Value",
@@ -1122,7 +1103,6 @@
     "category": "Category",
     "challenge": "Identity Challenge",
     "checkoutData": "Checkout Data",
-    "claimable": "Claimable items",
     "current_user": "Current User",
     "form_data": "Form Data",
     "form_meta": "Form Meta",
@@ -1133,6 +1113,8 @@
     "myComments": "My Comments",
     "myInquiries": "My Inquiries",
     "myPosts": "My Posts",
+    "myReactions": "My Reactions",
+    "myReports": "My Reports",
     "navigation": "Navigation",
     "newProducts": "New Products",
     "notification_unread_count": "Unread Notification Count",
@@ -1173,6 +1155,8 @@
     "userProfile": "User Profile",
     "user_notification_ws": "Notifications (Live)",
     "wishlist": "Wishlist",
+    "scrap": "Scrap",
+    "claimable": "Claimable items",
     "claims": "Claim requests",
     "claim": "Claim request"
   }

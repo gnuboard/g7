@@ -1,3 +1,4 @@
+// e2e:allow 시나리오 매니페스트(deleted-post-detail-visibility.yaml)가 선언한 이 파일에 @scenario/@effects 표식만 추가 — 대상 레이아웃·런타임 동작 무변경
 /**
  * 관리자 게시글 상세 - cascade 댓글 노출 분기 회귀 테스트 (#413-69-②)
  *
@@ -15,6 +16,8 @@
  *   - normal_comment_content (원문):   status!=='blinded' && (!deleted_at || is_cascade_deleted)
  *       → cascade 댓글은 일반 댓글처럼 원문 노출
  *
+ * @scenario comment_trigger=cascade
+ * @scenario comment_trigger=user
  * @effects cascade_comment_content_visible,
  *   cascade_comment_flag_exposed
  */

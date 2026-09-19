@@ -1,7 +1,7 @@
 /**
  * 체크아웃 배타적 쿠폰 모달 테스트
  *
- * checkout.json의 modals.exclusiveCouponConfirm 모달 동작을 테스트합니다.
+ * checkout.g7.html의 modals.exclusiveCouponConfirm 모달 동작을 테스트합니다.
  * - 배타적 쿠폰 선택 시 확인 모달 표시
  * - 확인 버튼 클릭 시 기존 쿠폰 해제 및 새 쿠폰 적용
  * - 취소 버튼 클릭 시 모달 닫기

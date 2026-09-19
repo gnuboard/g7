@@ -178,6 +178,7 @@ return [
         'update_failed' => 'モジュール ":module"のアップデートに失敗しました: :error',
         'invalid_layout_strategy' => '無効なレイアウト戦略です。(overwrite または keep のみ許可)',
         'invalid_vendor_mode' => '無効な Vendor インストールモードです。(auto、composer、bundled のみ許可)',
+        'layout_validation_markup_error' => 'レイアウトファイル :file のマークアップコンパイルに失敗しました: :error',
     ],
     'validation' => [
         'name_required' => 'モジュール名は必須です。',

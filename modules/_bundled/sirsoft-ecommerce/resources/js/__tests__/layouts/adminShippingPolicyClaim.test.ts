@@ -14,6 +14,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { callbacksOf, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import shell from '../../../layouts/admin/admin_ecommerce_shipping_policy_form.json';
 import claimAddresses from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_claim_addresses.json';
@@ -153,7 +154,7 @@ describe('회수지 — 조회와 저장', () => {
     // 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 `{exchange:null, return:null}` 이라 "못 받았다" 와
     // "비어 있다" 가 값으로 구분되지 않는다. 저장은 두 회수지를 항상 함께 실으므로 조회가 실패한 채
     // 한쪽만 입력해 저장하면 다른 쪽이 확인창 없이 지워진다 — 저장 술어가 loaded 를 함께 본다.
-    expect((shell as any).state?.claimAddresses?._loaded).toBe(false);
+    expect(initStateOf(shell as any).claimAddresses?._loaded).toBe(false);
 
     const call = collect(shell, (n) => n.handler === 'apiCall' && String(n.target ?? '').includes('claim-settings'))[0];
     expect(call.if).toBe('{{_local.claimAddressesDirty === true && _local.claimAddresses?._loaded === true}}');
@@ -309,10 +310,10 @@ describe('국가별 클레임 배송비', () => {
     expect(save.target).toContain('_local.savedPolicyId');
     expect(save.params?.method).toContain('_local.savedPolicyId');
 
-    const record = (save.onSuccess ?? []).find((a: any) => a?.handler === 'setState' && 'savedPolicyId' in (a.params ?? {}));
+    const record = callbacksOf(save, 'onSuccess').find((a: any) => a?.handler === 'setState' && 'savedPolicyId' in (a.params ?? {}));
 
     expect(record, '저장 성공 직후 savedPolicyId 를 기록하지 않는다').toBeDefined();
-    expect((shell as any).state).toHaveProperty('savedPolicyId');
+    expect(initStateOf(shell as any)).toHaveProperty('savedPolicyId');
   });
 
   /**

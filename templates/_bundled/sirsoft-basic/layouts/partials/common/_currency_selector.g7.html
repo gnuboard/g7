@@ -1,0 +1,41 @@
+<!-- 통화 선택 드롭다운 — 템플릿이 소유한 조각이지만 화면에 얹는 것은 이커머스 모듈이다(헤더의 통화 슬롯에 주입). 고른 통화는 전역에 담고 브라우저에도 남겨 다음 방문에 이어진다. -->
+<partial description="통화 선택 드롭다운">
+  <div class="relative">
+    <button class="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+      <on type="click">
+        <!-- 목록 펼치기·접기 — 열림 여부는 이 조각 안에서만 쓰이므로 _local 이다(고른 통화만 전역으로 나간다). -->
+        <set-state target="local" showCurrencyDropdown="{{!_local.showCurrencyDropdown}}"/>
+      </on>
+      <icon name="globe" class="text-base"/>
+      <span>{{_global.preferredCurrency ?? _global.defaultCurrency}}</span>
+      <icon name="chevron-down" class="text-xs"/>
+    </button>
+    <!-- 드롭다운 메뉴 -->
+    <div data-if="{{_local.showCurrencyDropdown}}" class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden">
+      <div data-each="currency in {{_global.availableCurrencies ?? []}}">
+        <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}}">
+          <on type="click">
+            <!-- 통화 고르기 — 전역에 담아 화면의 값 표기가 즉시 따르게 하고, 브라우저에도 남겨 새로고침·재방문에 이어지게 한다. 로그인한 사람은 상속원이 계정에 저장된 통화로 이 값을 다시 덮으므로 여기 저장은 비회원·현재 세션용이다. -->
+            <sequence>
+              <set-state target="global" preferredCurrency="{{currency.code}}"/>
+              <save-to-local-storage key="g7_preferred_currency" value="{{currency.code}}"/>
+              <set-state target="local" :showCurrencyDropdown="false"/>
+            </sequence>
+          </on>
+          <span class="text-base">{{currency.flag}}</span>
+          <div class="flex-1">
+            <span class="font-medium">{{currency.code}}</span>
+            <span class="text-gray-500 dark:text-gray-400 ml-1">({{currency.symbol}})</span>
+          </div>
+          <icon data-if="{{_global.preferredCurrency === currency.code}}" name="check" class="text-base"/>
+        </button>
+      </div>
+    </div>
+    <!-- 배경 클릭 시 닫기 -->
+    <div data-if="{{_local.showCurrencyDropdown}}" class="fixed inset-0 z-40">
+      <on type="click">
+        <set-state target="local" :showCurrencyDropdown="false"/>
+      </on>
+    </div>
+  </div>
+</partial>

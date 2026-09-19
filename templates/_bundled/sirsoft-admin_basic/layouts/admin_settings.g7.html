@@ -1,0 +1,422 @@
+<!-- 환경설정 — 이 템플릿에서 가장 넓은 화면이다. 탭 11개의 본문이 모두 조각 파일로 나뉘어 있고
+  여기에는 **소스·탭 뼈대·공용 저장 버튼·창 스물셋**만 있다.
+
+  두 가지가 이 화면의 뼈대를 정한다.
+  ⑴ **탭마다 필요한 소스만 받는다** — 소스 대부분에 `if="지금 이 탭인가"` 가 걸려 있어, 설정 화면에
+     들어왔다고 시스템 정보·언어팩·인증 정책을 한꺼번에 부르지 않는다. 그래서 같은 판정식
+     (`query.tab || _global.activeSettingsTab || 'general'`)이 여러 소스에 반복해 적혀 있다.
+  ⑵ **저장은 지금 보고 있는 탭 것만 보낸다** — 폼은 `_local.form` 한 덩어리지만 요청 본문은 그중
+     현재 탭 몫만 잘라 담는다(아래 저장 버튼). 한 번에 전부 보내면 안 본 탭의 값까지 덮어쓴다.
+
+  언어팩 탭은 조각·창을 **언어팩 관리 화면 것을 그대로 빌려 쓴다** — 아래 창 목록 앞쪽 일곱이 그것이다. -->
+<layout name="admin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.settings.page_title" description="$t:admin.settings.page_description"/>
+  <!-- 언어팩 목록 — 언어팩 탭에서만 받는다(빌려 온 조각이 이 id 를 그대로 읽는다). -->
+  <data-source id="language_packs" label_key="$t:editor.data_source.language_packs" type="api" endpoint="/api/admin/language-packs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page}}" per_page="{{query.per_page ?? 10}}" scope="{{_local.filterScope || query.scope}}" target_identifier="{{_local.filterTarget || query.target_identifier}}" locale="{{query.locale}}" status="{{query.status}}" search="{{query.search}}" exclude_protected="{{query.exclude_protected ?? '1'}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="meta">
+          <field name="total" :value="0"/>
+          <field name="active" :value="0"/>
+          <field name="installed" :value="0"/>
+          <field name="inactive" :value="0"/>
+          <field name="error" :value="0"/>
+        </field>
+        <field name="abilities" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 언어팩 상세 — 상세 창이 열릴 때만 따라 받는다(`_local.detailId` 에 매여 있다). -->
+  <data-source id="language_pack_detail" label_key="$t:editor.data_source.language_pack_detail" type="api" endpoint="/api/admin/language-packs/{{_local.detailId}}" method="GET" :auto_fetch="false" :auth_required="true">
+    <field name="depends_on">
+      <item>_local.detailId</item>
+    </field>
+  </data-source>
+  <!-- 그 언어팩의 변경 이력 — 위 상세와 같은 값에 매여 함께 따라온다. -->
+  <data-source id="language_pack_changelog" label_key="$t:editor.data_source.language_pack_changelog" type="api" endpoint="/api/admin/language-packs/{{_local.detailId}}/changelog" method="GET" :auto_fetch="false" :auth_required="true">
+    <field name="depends_on">
+      <item>_local.detailId</item>
+    </field>
+  </data-source>
+  <!-- 설정값 전체 — **탭 조건이 없는 유일한 소스**다(어느 탭에서도 폼의 뿌리이므로).
+       응답을 `_local.form` 으로 풀어 편집 대상으로 삼고, 드라이버 원본값은 따로 남긴다
+       (드라이버 탭이 "바뀐 항목만 연결 시험을 다시 요구" 하려면 처음 값이 있어야 한다).
+       권한은 전역으로 올려 조각들이 각자 읽는다. -->
+  <data-source id="settings" label_key="$t:editor.data_source.settings" type="api" endpoint="/api/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <init-local>
+      <field name="form" value="{{data}}"/>
+      <field name="originalDrivers" value="drivers"/>
+    </init-local>
+    <init-global>
+      <field name="settingsAbilities" value="abilities"/>
+    </init-global>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 서버·프레임워크 정보 — 정보 탭에서만 받는다(읽기 전용이라 저장 대상이 아니다). -->
+  <data-source id="systemInfo" label_key="$t:editor.data_source.systemInfo" type="api" endpoint="/api/admin/settings/system-info" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="php_version" value="-"/>
+        <field name="laravel_version" value="-"/>
+        <field name="database_type" value="-"/>
+        <field name="server_software" value="-"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 초기 화면 정적 파일 상태 — 일반 탭에서만 받는다. 게시가 켜져 있는지·지금 게시할 수 있는 환경인지·
+    현재 버전·파일 수·마지막 게시 시각·최근 실패·게시 프로세스의 실행 계정을 서버가 판정해 돌려준다.
+    응답이 없으면 fallback 의 publishable=false 로 떨어져 「지금 다시 만들기」 버튼이 잠긴 채 그려진다 —
+    상태를 모르는 채로 재게시를 누르게 두지 않기 위해서다. -->
+  <data-source id="staticCacheStatus" label_key="$t:editor.data_source.staticCacheStatus" type="api" endpoint="/api/admin/settings/static-cache" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'general'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="enabled" :value="true"/>
+        <field name="publishable" :value="false"/>
+        <field name="environment" :value="null"/>
+        <field name="version" :value="0"/>
+        <field name="published" :value="false"/>
+        <field name="files" :value="0"/>
+        <field name="published_at" :value="null"/>
+        <field name="tree_writable" :value="null"/>
+        <field name="process_user" :value="null"/>
+        <field name="failure" :value="null"/>
+        <field name="retained_versions" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 리버스 프록시 진단 — 고급 탭에서만 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다. -->
+  <data-source id="trustedProxy" label_key="$t:editor.data_source.trustedProxy" type="api" endpoint="/api/admin/settings/trusted-proxy" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="forwarded_headers" :value="[]"/>
+        <field name="trusted_configured" :value="false"/>
+        <field name="configured_proxies" :value="null"/>
+        <field name="is_secure" :value="null"/>
+        <field name="client_ip" :value="null"/>
+        <field name="remote_addr" :value="null"/>
+        <field name="status" value="not_applicable"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다. -->
+  <data-source id="appKey" label_key="$t:editor.data_source.appKey" type="api" endpoint="/api/admin/settings/app-key" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="key" value="-"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 알림 정의 목록 — 알림 정의 탭 전용. `extension_identifier="core"` 로 **코어 정의만** 받는다
+       (확장이 들인 정의는 그 확장의 설정 화면 몫이다). -->
+  <data-source id="notificationDefinitions" label_key="$t:editor.data_source.notificationDefinitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" extension_identifier="core" template_channel="{{query.channel ?? 'mail'}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 알림 채널 목록 — 정의마다 어느 채널로 보낼지 고르는 선택지다(같은 탭에서만 받는다). -->
+  <data-source id="availableChannels" label_key="$t:editor.data_source.availableChannels" type="api" endpoint="/api/admin/notification-channels" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 본인인증 제공자 목록 — 아래 넷과 함께 인증 탭에서만 받는다. -->
+  <data-source id="identityProviders" label_key="$t:editor.data_source.identityProviders" type="api" endpoint="/api/admin/identity/providers" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 인증 목적 목록 — 정책·메시지가 함께 쓰는 선택지다.
+       **이 화면에서 유일하게 인증 없이 부르는 소스**다(목적 정의는 공개 값이다). -->
+  <data-source id="identityPurposes" label_key="$t:editor.data_source.identityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 인증 메시지 정의 목록(메시지 하위 탭). 페이지 파라미터를 `messages_*` 로 따로 쓰는 것은
+       같은 탭 안에 정책 목록이 함께 있어 `page` 를 나눠 갖지 않으면 서로 밀어내기 때문이다. -->
+  <data-source id="identityMessages" label_key="$t:editor.data_source.identityMessages" type="api" endpoint="/api/admin/identity/messages/definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.messages_page || 1}}" per_page="{{query.messages_per_page || 20}}" sort_by="id" sort_order="asc"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 관리자 화면용 인증 정책만 따로 받는다(기본 하위 탭이 이것만 보여 준다).
+       아래 `policies` 와 **같은 주소를 다른 조건으로** 부르는 것이라, 둘을 합치면 한쪽 필터가
+       다른 쪽 목록을 흔든다. 100건까지 한 번에 받아 페이지를 두지 않는다. -->
+  <data-source id="adminIdentityPolicies" label_key="$t:editor.data_source.adminIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <params source_type="admin" :per_page="100"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 인증 정책 전체 목록(정책 하위 탭) — 위와 달리 화면에서 건 필터·페이지를 쿼리에서 읽는다. -->
+  <data-source id="policies" label_key="$t:editor.data_source.policies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <params scope="{{query.scope}}" purpose="{{query.purpose}}" source_type="{{query.source_type}}" enabled="{{query.enabled}}" search="{{query.search}}" page="{{query.page || 1}}" per_page="{{query.per_page || 10}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="meta" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 사이트맵 생성 상태. SEO 탭을 보고 있을 때만 부른다 — 다른 탭에서는 쓰지 않는 값이라 매번 조회하면 화면 진입만 느려진다 -->
+  <data-source id="sitemap_status" label_key="$t:editor.data_source.sitemap_status" type="api" endpoint="/api/admin/seo/sitemap/status" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'seo'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="last_updated_at" :value="null"/>
+        <field name="progress" :value="null"/>
+        <field name="realtime_enabled" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <start-interval if="{{response?.data?.data?.realtime_enabled !== true &amp;&amp; ['queued','running','writing'].includes(response?.data?.data?.progress?.status ?? '')}}" id="sitemap_progress_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="sitemap_status"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{['completed','failed'].includes(response?.data?.data?.progress?.status ?? '')}}" id="sitemap_progress_poll"/>
+    </success>
+  </data-source>
+  <!-- 사이트맵 생성 진행률. 생성은 오래 걸려 응답을 기다릴 수 없으므로 웹소켓으로 진행 상황을 받아 위 상태 소스에 흘려 넣는다 -->
+  <data-source id="sitemap_progress_ws" label_key="$t:editor.data_source.sitemap_progress_ws" type="websocket" channel="core.admin.seo.sitemap" event="sitemap.progress.updated" channel_type="private" target_source="sitemap_status"/>
+  <init-local>
+    <field name="driverTestResults" :value="[]"/>
+    <field name="editingDefinition" :value="null"/>
+    <field name="editingTemplate" :value="null"/>
+    <field name="editLang" value="ko"/>
+    <field name="previewData" :value="null"/>
+    <field name="isSaving" :value="false"/>
+    <field name="templateErrors" :value="null"/>
+    <field name="checkingCoreUpdate" :value="false"/>
+    <field name="coreUpdateInfo" :value="null"/>
+    <field name="coreChangelog" :value="null"/>
+    <field name="loadingChangelog" :value="false"/>
+    <field name="policyForm" :value="null"/>
+    <field name="policyErrors" :value="null"/>
+    <field name="policyIsNew" :value="true"/>
+    <field name="policyIsSaving" :value="false"/>
+  </init-local>
+  <computed name="isReadOnly">{{!!_global.settingsAbilities &amp;&amp; !(_global.settingsAbilities?.can_update ?? false)}}</computed>
+  <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
+  <permissions>
+    <permission>core.settings.read</permission>
+  </permissions>
+  <transition-overlay target="settings_tab_content" fallback-target="right_content_area">
+    <wait-for>settings</wait-for>
+    <wait-for>systemInfo</wait-for>
+    <wait-for>appKey</wait-for>
+    <wait-for>notificationDefinitions</wait-for>
+    <wait-for>availableChannels</wait-for>
+    <wait-for>identityProviders</wait-for>
+    <wait-for>identityPurposes</wait-for>
+    <wait-for>identityMessages</wait-for>
+    <wait-for>adminIdentityPolicies</wait-for>
+    <wait-for>policies</wait-for>
+    <wait-for>language_packs</wait-for>
+    <wait-for>sitemap_status</wait-for>
+    <wait-for>staticCacheStatus</wait-for>
+    <wait-for>trustedProxy</wait-for>
+  </transition-overlay>
+  <init>
+    <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
+         저장값이 없거나 깨졌으면 갤러리다(기본 보기). GDPR 허용목록에 등재된 키라
+         functional 미동의 상태에서도 살아남는다. -->
+    <load-from-local-storage key="g7_view_mode_extensions" defaultValue="gallery">
+      <field name="resultTo">
+        <field name="target" value="_global"/>
+        <field name="key" value="extensionViewMode"/>
+      </field>
+    </load-from-local-storage>
+    <set-state target="local" filterScope="{{query.scope || ''}}" filterStatus="{{query.status || ''}}" filterLocale="{{query.locale || ''}}" filterSearch="{{query.search || ''}}" filterTarget="" :scopeLocked="false">
+      <field name="notificationDefinitionFilter">
+        <field name="search" value="{{query.search || ''}}"/>
+        <field name="searchType" value="{{query.search_type || 'all'}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:admin.settings.page_title">
+        <button data-ref="refresh_button" type="button" class="btn-icon">
+          <on type="click">
+            <refetch-data-source dataSourceId="settings"/>
+          </on>
+          <icon name="refresh" class="text-xl"/>
+        </button>
+      </page-header>
+      <div data-ref="readonly_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
+        <div class="flex-center gap-3">
+          <icon name="lock" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <p class="text-warning-soft">$t:admin.settings.readonly_notice</p>
+        </div>
+      </div>
+      <div data-ref="env_priority_banner" data-if="{{_local.form?._meta?.env_priority_enabled === true}}" class="alert-info">
+        <div class="flex-center gap-3">
+          <icon name="lock" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+          <p class="text-info-soft">$t:admin.settings.env_locked_notice</p>
+        </div>
+      </div>
+      <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
+        <tab-navigation data-ref="tab_navigation" class="sticky-tab-nav-responsive" activeTabId="{{_global.activeSettingsTab || query.tab || 'general'}}" variant="default">
+          <prop name="tabs">
+            <item id="general" label="$t:admin.settings.tabs.general"/>
+            <item id="mail" label="$t:admin.settings.tabs.mail"/>
+            <item id="upload" label="$t:admin.settings.tabs.upload"/>
+            <item id="seo" label="$t:admin.settings.tabs.seo"/>
+            <item id="security" label="$t:admin.settings.tabs.security"/>
+            <item id="drivers" label="$t:admin.settings.tabs.drivers"/>
+            <item id="advanced" label="$t:admin.settings.tabs.advanced"/>
+            <item id="notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
+            <item id="language_packs" label="$t:admin.settings.tabs.language_packs"/>
+            <item id="identity" label="$t:admin.settings.tabs.identity"/>
+            <item id="info" label="$t:admin.settings.tabs.info"/>
+          </prop>
+          <on type="change" event="onTabChange">
+            <!-- 탭 전환 — 검증 오류를 **먼저 지운다**(다른 탭의 오류가 새 탭 머리에 남아 있으면
+                 그 탭이 잘못된 것으로 읽힌다). 전역과 URL 둘 다에 탭을 남기는 이유는, 전역은 소스의
+                 `if` 판정이 즉시 읽고 URL 은 새로고침·링크 공유를 위해 필요하기 때문이다. -->
+            <sequence>
+              <set-state target="local" :errors="null"/>
+              <set-state target="global" activeSettingsTab="{{$args[0]}}"/>
+              <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+              <navigate path="/admin/settings" :replace="true">
+                <query tab="{{$args[0]}}"/>
+              </navigate>
+            </sequence>
+          </on>
+        </tab-navigation>
+        <tab-navigation-scroll data-ref="identity_sub_tab_navigation" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}" class="sub-tab-nav" sectionIdPrefix="identity_section_" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+          <prop name="tabs">
+            <item id="basic" label="$t:admin.settings.identity.sub_tabs.basic"/>
+            <item id="providers" label="$t:admin.settings.identity.sub_tabs.providers"/>
+            <item id="policies" label="$t:admin.settings.identity.sub_tabs.policies"/>
+            <item id="messages" label="$t:admin.settings.identity.sub_tabs.messages"/>
+          </prop>
+        </tab-navigation-scroll>
+      </div>
+      <div data-ref="settings_tab_content" class="tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+          <div class="flex gap-3">
+            <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <div>
+              <h3 class="text-error-strong">$t:admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{message}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <include src="partials/admin_settings/_tab_general.g7.html"/>
+        <include src="partials/admin_settings/_tab_mail.g7.html"/>
+        <include src="partials/admin_settings/_tab_upload.g7.html"/>
+        <include src="partials/admin_settings/_tab_seo.g7.html"/>
+        <include src="partials/admin_settings/_tab_security.g7.html"/>
+        <include src="partials/admin_settings/_tab_drivers.g7.html"/>
+        <include src="partials/admin_settings/_tab_advanced.g7.html"/>
+        <include src="partials/admin_settings/_tab_notification_definitions.g7.html"/>
+        <include src="partials/admin_settings/_tab_language_packs.g7.html"/>
+        <include src="partials/admin_settings/_tab_identity.g7.html"/>
+        <include src="partials/admin_settings/_tab_info.g7.html"/>
+      </div>
+      <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <refetch-data-source dataSourceId="settings"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' &amp;&amp; (((_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3') &amp;&amp; !_local.driverTestResults?.s3?.success &amp;&amp; ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || '') || (_local.form?.drivers?.s3_endpoint || '') !== (_local.originalDrivers?.s3_endpoint || '') || Boolean(_local.form?.drivers?.s3_use_path_style) !== Boolean(_local.originalDrivers?.s3_use_path_style))) || (_local.form?.drivers?.cache_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' &amp;&amp; !_local.driverTestResults?.memcached?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled &amp;&amp; !_local.driverTestResults?.websocket?.success &amp;&amp; (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).
+                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가
+                 다른 유일한 자리다.
+                 맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아
+                 처리하므로 여기서 파일을 다루지 않는다.
+                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다. -->
+            <sequence>
+              <emit-event event="upload:site_logo"/>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <set-state target="global" settings="{{result.data.settings}}" uploadSettings="{{result.data.settings.upload}}"/>
+                  <toast type="success" message="$t:admin.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+  <!-- 언어팩 설치 창.
+       여기부터 일곱은 **언어팩 관리 화면 소유 조각을 그대로 빌려 온 것**이다 — 언어팩 탭이 그 화면의
+       목록 조각을 쓰므로 창도 같은 것이어야 동작이 이어진다(사본을 두면 한쪽만 고쳐져 갈린다). -->
+  <modal src="partials/admin_language_pack_list/_modal_install.g7.html"/>
+  <!-- 번들 언어팩 설치 창. -->
+  <modal src="partials/admin_language_pack_list/_modal_install_bundled.g7.html"/>
+  <!-- 언어팩 상세 창. -->
+  <modal src="partials/admin_language_pack_list/_modal_detail.g7.html"/>
+  <!-- 언어팩 업데이트 확인 창. -->
+  <modal src="partials/admin_language_pack_list/_modal_update.g7.html"/>
+  <!-- 언어팩 삭제 확인 창. -->
+  <modal src="partials/admin_language_pack_list/_modal_uninstall.g7.html"/>
+  <!-- 번역 캐시 다시 굽기 확인 창. -->
+  <modal src="partials/admin_language_pack_list/_modal_refresh_cache.g7.html"/>
+  <!-- 언어팩 매니페스트 원문 서랍. -->
+  <modal src="partials/admin_language_pack_list/_drawer_manifest_preview.g7.html"/>
+  <!-- 비밀번호 재확인 창 — 민감한 값(앱 키 등)을 보거나 바꾸기 전에 본인을 다시 묻는다. -->
+  <modal src="partials/admin_settings/_modal_password_confirm.g7.html"/>
+  <!-- 캐시 비우기 확인 창(고급 탭). -->
+  <modal src="partials/admin_settings/_modal_cache_delete.g7.html"/>
+  <!-- 초기 화면 정적 파일 재게시 확인 창 — 전체 재생성이라 누르기 전에 한 번 묻는다. -->
+  <modal src="partials/admin_settings/_modal_static_cache_republish.g7.html"/>
+  <!-- 알림 템플릿 편집 창 — 정의 하나의 채널별 본문을 고친다. -->
+  <modal src="partials/admin_settings/_modal_notification_template_form.g7.html"/>
+  <!-- 알림 템플릿 미리보기 창 — 치환값을 넣어 실제 발송 모습을 보여 준다. -->
+  <modal src="partials/admin_settings/_modal_notification_template_preview.g7.html"/>
+  <!-- 알림 정의를 기본값으로 되돌리는 확인 창(고친 내용이 사라진다). -->
+  <modal src="partials/admin_settings/_modal_notification_definition_reset.g7.html"/>
+  <!-- 코어 업데이트 결과 창 — 실행 뒤 성공/실패와 로그를 보여 준다. -->
+  <modal src="partials/admin_settings/_modal_core_update_result.g7.html"/>
+  <!-- 코어 변경 이력 창 — 업데이트 전에 무엇이 바뀌는지 확인하는 자리다. -->
+  <modal src="partials/admin_settings/_modal_core_changelog.g7.html"/>
+  <!-- 코어 업데이트 안내 창. **확장 화면 셋(모듈·플러그인·템플릿)이 이 조각을 함께 쓴다** —
+       자동 비활성 배너의 안내 링크가 여는 것이 이것이다. -->
+  <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
+  <!-- 인증 정책 등록·수정 겸용 창. -->
+  <modal src="partials/admin_settings/_modal_identity_policy_form.g7.html"/>
+  <!-- 인증 정책 삭제 확인 창. -->
+  <modal src="partials/admin_settings/_modal_identity_policy_delete.g7.html"/>
+  <!-- 인증 메시지 템플릿 편집 창(채널별 본문). -->
+  <modal src="partials/admin_settings/_modal_identity_message_template_form.g7.html"/>
+  <!-- 인증 메시지 미리보기 창. -->
+  <modal src="partials/admin_settings/_modal_identity_message_template_preview.g7.html"/>
+  <!-- 인증 메시지 정의를 새로 만드는 창 — 알림 쪽과 달리 정의 자체를 추가할 수 있다. -->
+  <modal src="partials/admin_settings/_modal_identity_message_definition_add.g7.html"/>
+  <!-- 인증 메시지 정의 삭제 확인 창(위에서 추가한 정의를 되돌리는 짝이다). -->
+  <modal src="partials/admin_settings/_modal_identity_message_definition_delete.g7.html"/>
+  <!-- 인증 메시지 정의를 기본값으로 되돌리는 확인 창. -->
+  <modal src="partials/admin_settings/_modal_identity_message_definition_reset.g7.html"/>
+</layout>

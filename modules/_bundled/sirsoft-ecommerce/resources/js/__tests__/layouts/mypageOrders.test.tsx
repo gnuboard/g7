@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 마이페이지 주문내역 레이아웃 구조 검증 테스트
  *
@@ -16,6 +17,7 @@ import ordersLayout from '../../../../../../../templates/_bundled/sirsoft-basic/
 import listPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_list.json';
 import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.json';
 import itemsPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json';
+import { actionsOf, asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ========================================================================
 // orders.json (주문 목록 페이지)
@@ -43,7 +45,7 @@ describe('마이페이지 주문 목록 레이아웃 검증 (orders.json)', () =
     });
 
     it('init_actions에서 ordersPage와 ordersStatus 초기값을 설정해야 함', () => {
-        const initAction = ordersLayout.init_actions[0];
+        const initAction = asArray((ordersLayout as any).init_actions)[0];
         expect(initAction.handler).toBe('setState');
         expect(initAction.params.target).toBe('local');
         expect(initAction.params.ordersPage).toContain('query.page');
@@ -98,17 +100,17 @@ describe('주문 목록 partial 구조 검증 (_list.json)', () => {
 
         it('상태 칸 클릭 시 sequence 액션으로 setState + navigate가 있어야 함', () => {
             expect(stepCell.actions).toBeDefined();
-            expect(stepCell.actions.length).toBe(1);
+            expect(actionsOf(stepCell).length).toBe(1);
 
-            const sequenceAction = stepCell.actions[0];
+            const sequenceAction = actionsOf(stepCell)[0];
             expect(sequenceAction.handler).toBe('sequence');
 
-            const setStateAction = sequenceAction.actions.find((a: any) => a.handler === 'setState');
+            const setStateAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'setState');
             expect(setStateAction).toBeDefined();
             expect(setStateAction.params.target).toBe('local');
             expect(setStateAction.params.ordersStatus).toBe('{{step.key}}');
 
-            const navAction = sequenceAction.actions.find((a: any) => a.handler === 'navigate');
+            const navAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'navigate');
             expect(navAction).toBeDefined();
             expect(navAction.params.path).toContain('/mypage/orders');
             expect(navAction.params.query.status).toBe('{{step.key}}');

@@ -658,6 +658,7 @@
         "type": "basic",
         "description": "Font Awesome icon wrapper",
         "path": "src/components/basic/Icon.tsx",
+        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -1352,11 +1353,158 @@
         }
       },
       {
+        "name": "ExtensionCardGrid",
+        "type": "composite",
+        "description": "확장 목록 전용 그리드 — 갤러리(카드)와 목록(행)을 각각 독립 DOM 으로 렌더한다",
+        "path": "src/components/composite/ExtensionCardGrid.tsx",
+        "props": {
+          "items": {
+            "type": "array",
+            "required": false,
+            "description": "확장 카드 데이터 배열 (ExtensionCardItem[])"
+          },
+          "viewMode": {
+            "type": "string",
+            "required": false,
+            "default": "gallery",
+            "description": "보기 방식 — gallery(기본) 또는 list"
+          },
+          "minCardWidth": {
+            "type": "number",
+            "required": false,
+            "default": 250,
+            "description": "카드 최소 폭(px) — 열 수는 컨테이너 실측 폭을 이 값으로 나눠 정한다"
+          },
+          "maxColumns": {
+            "type": "number",
+            "required": false,
+            "default": 5,
+            "description": "열 수 상한 — 초대형 화면에서 카드가 잘게 쪼개지는 것을 막는다"
+          },
+          "emptyMessage": {
+            "type": "string",
+            "required": false,
+            "description": "데이터 0건일 때 표시할 문구"
+          },
+          "pagination": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "페이지네이션 표시 여부"
+          },
+          "currentPage": {
+            "type": "number",
+            "required": false,
+            "default": 1,
+            "description": "현재 페이지 (서버 페이지네이션)"
+          },
+          "totalPages": {
+            "type": "number",
+            "required": false,
+            "default": 1,
+            "description": "전체 페이지 수"
+          },
+          "hasMorePages": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "다음 페이지 존재 여부 — 총 건수를 상한까지만 센 목록에서 다음 이동을 열어 둔다"
+          },
+          "alwaysShowPagination": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "페이지가 1개여도 페이지네이션 항상 표시"
+          },
+          "paginationInfoText": {
+            "type": "string",
+            "required": false,
+            "description": "페이지네이션 아래 안내 문구"
+          },
+          "onPageChange": {
+            "type": "function",
+            "required": false,
+            "description": "페이지 변경 콜백 (page: number) => void"
+          },
+          "onItemClick": {
+            "type": "function",
+            "required": false,
+            "description": "카드 본문 클릭 콜백 (id: string) => void"
+          },
+          "onToggle": {
+            "type": "function",
+            "required": false,
+            "description": "토글 변경 콜백 (id: string, next: boolean) => void"
+          },
+          "onPrimaryAction": {
+            "type": "function",
+            "required": false,
+            "description": "주 버튼 클릭 콜백 (id: string) => void"
+          },
+          "onSecondaryAction": {
+            "type": "function",
+            "required": false,
+            "description": "보조 버튼 클릭 콜백 (id: string) => void"
+          },
+          "onAction": {
+            "type": "function",
+            "required": false,
+            "description": "액션 메뉴 선택 콜백 (actionId: string|number, id: string) => void"
+          },
+          "loading": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "로딩 여부 — 참이면 자리표시자를 그린다"
+          },
+          "skeletonCount": {
+            "type": "number",
+            "required": false,
+            "description": "자리표시자 개수 — 생략하면 실제 열 수를 따른다(갤러리 = 열 수 · 목록 = 1)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "전체 컨테이너 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
         "name": "Modal",
         "type": "composite",
         "description": "Modal dialog with overlay and focus trap",
         "path": "src/components/composite/Modal.tsx",
         "props": {
+          "closeOnBackdropClick": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "Backdrop(오버레이) 클릭 시 모달 닫기 여부"
+          },
+          "closeOnOverlayClick": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "closeOnBackdropClick 별칭 (레이아웃 JSON 호환)"
+          },
+          "showCloseButton": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "헤더 닫기 버튼 표시 여부"
+          },
+          "closeOnEscape": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "ESC 키로 모달 닫기 허용 여부"
+          },
           "isOpen": {
             "type": "boolean",
             "required": true,
@@ -1372,15 +1520,36 @@
             "required": false,
             "description": "모달 제목"
           },
+          "titlePrefix": {
+            "type": "array",
+            "required": false,
+            "description": "모달 제목 앞에 렌더링할 컴포넌트 배열"
+          },
+          "titleSuffix": {
+            "type": "array",
+            "required": false,
+            "description": "모달 제목 뒤에 렌더링할 컴포넌트 배열"
+          },
           "children": {
             "type": "ReactNode",
             "required": false,
             "description": "모달 내용"
           },
+          "footer": {
+            "type": "array",
+            "required": false,
+            "description": "본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 배열 (확인/취소 버튼)"
+          },
+          "size": {
+            "type": "string",
+            "required": false,
+            "description": "이름 있는 너비 단계 (sm/small 400px, md/medium 500px, lg/large 720px, xl 900px, 2xl 1120px). width 를 함께 주면 width 가 우선하며, 모르는 값은 기본 500px 으로 떨어진다"
+          },
           "width": {
             "type": "string",
             "required": false,
-            "description": "모달 너비"
+            "default": "500px",
+            "description": "모달 너비 CSS 값 (size 보다 우선)"
           },
           "className": {
             "type": "string",
@@ -2306,6 +2475,7 @@
         "type": "composite",
         "description": "Template card for template selection",
         "path": "src/components/composite/TemplateCard.tsx",
+        "autoBinding": false,
         "props": {
           "image": {
             "type": "string",
@@ -2771,7 +2941,7 @@
       {
         "name": "CodeEditor",
         "type": "composite",
-        "description": "JSON code editor (Monaco Editor wrapper)",
+        "description": "JSON/HTML code editor (Monaco Editor wrapper)",
         "path": "src/components/composite/CodeEditor.tsx",
         "props": {
           "value": {
@@ -2805,9 +2975,151 @@
           "theme": {
             "type": "string",
             "required": false,
-            "default": "vs-dark",
-            "description": "에디터 테마 (vs-dark | vs-light)"
+            "default": "auto",
+            "description": "에디터 테마 (auto | vs-dark | vs-light) — auto 는 <html class=\"dark\"> 를 따라간다"
+          },
+          "wordWrap": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "자동 줄바꿈"
+          },
+          "fontSize": {
+            "type": "number",
+            "required": false,
+            "default": 14,
+            "description": "글자 크기 (12~20)"
+          },
+          "modelKey": {
+            "type": "string",
+            "required": false,
+            "description": "파일별 Monaco 모델 키 — 주면 커서·스크롤·되돌리기 스택이 파일별로 보존된다"
+          },
+          "revealAt": {
+            "type": "object",
+            "required": false,
+            "description": "커서를 옮길 좌표 {line, column?, nonce?} — 검색 결과·오류 패널 클릭"
+          },
+          "commands": {
+            "type": "array",
+            "required": false,
+            "description": "편집기 안에서 잡을 단축키 [{key, mod?, shift?, alt?, run}]"
+          },
+          "onReady": {
+            "type": "function",
+            "required": false,
+            "description": "편집기 준비 완료 콜백"
+          },
+          "markers": {
+            "type": "array",
+            "required": false,
+            "description": "서버 컴파일 오류·경고 마커 [{line, column, endLine?, endColumn?, message, severity: 'error'|'warning'}] — 줄에 물결로 표시"
           }
+        }
+      },
+      {
+        "name": "CodeWorkspace",
+        "type": "composite",
+        "description": "파일별 편집 버퍼 소유자 — 탭 + 코드 편집기 + 단축키 + 초안 복원 + 충돌 바",
+        "path": "src/components/composite/CodeWorkspace.tsx",
+        "props": {
+          "fileKey": { "type": "string", "required": true, "description": "지금 서버가 준 파일의 키 (layout:<name> | ext:<id>)" },
+          "serverKey": { "type": "string", "required": false, "description": "serverValue 가 실제로 어느 파일 것인지 — fileKey 와 다르면 그 렌더의 serverValue 를 무시한다(암당 응답 오염 방지)" },
+          "serverValue": { "type": "string", "required": false, "default": "", "description": "그 파일의 서버 본문 — prop 으로 들어오기만 하고 편집 값은 컴포넌트가 소유한다" },
+          "serverRevision": { "type": "number", "required": false, "default": 0, "description": "그 파일의 서버 판본 (lock_version) — 충돌 판정에 쓴다" },
+          "fileLabel": { "type": "string", "required": false, "description": "탭에 보일 이름 (없으면 키에서 뽑는다)" },
+          "isLoading": { "type": "boolean", "required": false, "default": false, "description": "본문 로딩 — 편집기를 언마운트하지 않고 덮개만 얹는다" },
+          "language": { "type": "string", "required": false, "default": "html", "description": "편집 언어" },
+          "readOnly": { "type": "boolean", "required": false, "default": false, "description": "읽기 전용" },
+          "markers": { "type": "array", "required": false, "default": "[]", "description": "서버 컴파일 오류·경고 마커" },
+          "revealAt": { "type": "object", "required": false, "description": "커서를 옮길 좌표 {line, column?, nonce?}" },
+          "draftNamespace": { "type": "string", "required": false, "default": "g7le.codeEditor", "description": "localStorage 초안 네임스페이스" },
+          "maxTabs": { "type": "number", "required": false, "default": 20, "description": "열린 탭 상한 — 초과 시 오래된 clean 탭부터 해제 (dirty 탭은 절대 자동으로 닫지 않는다)" },
+          "defaultWordWrap": { "type": "boolean", "required": false, "default": false, "description": "줄바꿈 기본값 (모바일 true)" },
+          "onChange": { "type": "function", "required": false, "description": "활성 버퍼 변경 — 파일을 열 때도 한 번 불린다 ({target:{value}}) => void" },
+          "onUserEdit": { "type": "function", "required": false, "description": "사람이 글자를 고쳤을 때만 — 서버 왕복은 여기에 건다 ({target:{value}}) => void" },
+          "onDirtyChange": { "type": "function", "required": false, "description": "미저장 키 목록 변경 ({target:{value: string[]}}) => void" },
+          "onRequestSelect": { "type": "function", "required": false, "description": "탭 클릭 — 레이아웃이 그 파일을 다시 받는다 (key: string) => void" },
+          "onSave": { "type": "function", "required": false, "description": "저장 (Ctrl+S)" },
+          "onSaveAll": { "type": "function", "required": false, "description": "모두 저장 (Ctrl+Alt+S)" },
+          "onPreview": { "type": "function", "required": false, "description": "미리보기 (Ctrl+P)" },
+          "onNewFile": { "type": "function", "required": false, "description": "새 파일 (Ctrl+N)" },
+          "onVersionHistory": { "type": "function", "required": false, "description": "판본 이력 (Ctrl+H)" },
+          "onToggleView": { "type": "function", "required": false, "description": "HTML/JSON 전환 (Ctrl+\\)" },
+          "onQuickOpen": { "type": "function", "required": false, "description": "파일 빠른 이동 (Ctrl+K)" },
+          "onSearchContent": { "type": "function", "required": false, "description": "내용 검색 (Ctrl+Shift+F)" },
+          "onExit": { "type": "function", "required": false, "description": "나가기 (Esc)" },
+          "knownKeys": { "type": "array", "required": false, "description": "서버 목록에 있는 파일 키 전부 — 여기 없는 열린 탭은 «없는 파일» 로 읽기 전용이 된다. 비어 있으면 판정하지 않는다" },
+          "onSaveAs": { "type": "function", "required": false, "description": "«없는 파일» 의 편집분을 새 이름으로 살린다 ({target:{value}}) => void" },
+          "className": { "type": "string", "required": false, "default": "", "description": "추가 클래스명" }
+        }
+      },
+      {
+        "name": "FileTree",
+        "type": "composite",
+        "description": "레이아웃 파일 트리 (폴더 접기·검색 강조·미저장 표시·키보드 내비)",
+        "path": "src/components/composite/FileTree.tsx",
+        "props": {
+          "nodes": { "type": "array", "required": false, "default": "[]", "description": "평면 파일 목록 (FileTreeNode[]) — 트리 변환은 컴포넌트가 한다" },
+          "selectedKey": { "type": "string", "required": false, "description": "지금 열려 있는 파일 키" },
+          "dirtyKeys": { "type": "array", "required": false, "default": "[]", "description": "미저장 파일 키 — ● 점 + 강조 + 상위 폴더 개수 배지" },
+          "expandedPaths": { "type": "array", "required": false, "description": "제어형 펼침 경로 (미지정이면 내부 상태 + localStorage)" },
+          "searchKeyword": { "type": "string", "required": false, "default": "", "description": "파일명 필터·강조에 쓸 검색어" },
+          "contentMatches": { "type": "array", "required": false, "default": "[]", "description": "내용 검색 결과 [{key, count, lines:[{line, column, preview}]}]" },
+          "pendingFolders": { "type": "array", "required": false, "default": "[]", "description": "아직 파일이 없는 가상 폴더 경로" },
+          "rowSize": { "type": "string", "required": false, "default": "compact", "description": "행 높이 (compact 32px | touch 44px)" },
+          "storageKey": { "type": "string", "required": false, "description": "펼침 상태를 적어 둘 localStorage 키" },
+          "canManage": { "type": "boolean", "required": false, "default": true, "description": "이름변경·삭제 버튼 노출 (권한)" },
+          "isLoading": { "type": "boolean", "required": false, "default": false, "description": "목록 로딩 — 스켈레톤 표시" },
+          "onSelect": { "type": "function", "required": false, "description": "파일 선택 (key: string, revealAt?: {line, column}) => void" },
+          "onToggle": { "type": "function", "required": false, "description": "펼침 변경 (expandedPaths: string[]) => void" },
+          "onCreateFile": { "type": "function", "required": false, "description": "새 파일 (parentPath: string) => void" },
+          "onRename": { "type": "function", "required": false, "description": "이름변경 (key: string) => void" },
+          "onDelete": { "type": "function", "required": false, "description": "삭제 (key: string) => void" },
+          "onClearSearch": { "type": "function", "required": false, "description": "검색 지우기 () => void" },
+          "className": { "type": "string", "required": false, "default": "", "description": "추가 클래스명" }
+        }
+      },
+      {
+        "name": "FileTreePicker",
+        "type": "composite",
+        "description": "파일 트리를 기기 폭에 맞는 그릇에 담는다 (인라인 / 서랍 / 시트)",
+        "path": "src/components/composite/FileTreePicker.tsx",
+        "props": {
+          "nodes": { "type": "array", "required": false, "default": "[]", "description": "평면 파일 목록 (FileTreeNode[])" },
+          "selectedKey": { "type": "string", "required": false, "description": "지금 열려 있는 파일 키" },
+          "dirtyKeys": { "type": "array", "required": false, "default": "[]", "description": "미저장 파일 키" },
+          "searchKeyword": { "type": "string", "required": false, "default": "", "description": "검색어" },
+          "contentMatches": { "type": "array", "required": false, "default": "[]", "description": "내용 검색 결과" },
+          "pendingFolders": { "type": "array", "required": false, "default": "[]", "description": "가상 폴더 경로" },
+          "mode": { "type": "string", "required": false, "default": "auto", "description": "표시 형태 (auto | inline | drawer | sheet) — auto 는 window.innerWidth 로 고른다" },
+          "storageKey": { "type": "string", "required": false, "description": "트리 폭·펼침 상태를 적어 둘 localStorage 키 접두" },
+          "canManage": { "type": "boolean", "required": false, "default": true, "description": "파일 조작 버튼 노출 (권한)" },
+          "isLoading": { "type": "boolean", "required": false, "default": false, "description": "목록 로딩" },
+          "searchFileCount": { "type": "number", "required": false, "default": 0, "description": "내용 검색이 걸린 파일 수 (0 이면 요약 숨김)" },
+          "searchMatchCount": { "type": "number", "required": false, "default": 0, "description": "내용 검색이 찾은 매치 총수" },
+          "focusSearchNonce": { "type": "number", "required": false, "default": 0, "description": "값이 오를 때마다 검색창에 포커스 — 단축키 Ctrl+K·Ctrl+Shift+F 가 쓴다. 서랍·시트면 먼저 연다" },
+          "onSelect": { "type": "function", "required": false, "description": "파일 선택 (key, revealAt?) => void" },
+          "onSearch": { "type": "function", "required": false, "description": "검색어 변경 (keyword: string) => void" },
+          "onCreateFile": { "type": "function", "required": false, "description": "새 파일 (parentPath: string) => void" },
+          "onCreateFolder": { "type": "function", "required": false, "description": "새 폴더 (parentPath: string) => void" },
+          "onRename": { "type": "function", "required": false, "description": "이름변경 (key: string) => void" },
+          "onDelete": { "type": "function", "required": false, "description": "삭제 (key: string) => void" },
+          "className": { "type": "string", "required": false, "default": "", "description": "추가 클래스명" }
+        }
+      },
+      {
+        "name": "FileTabs",
+        "type": "composite",
+        "description": "열린 파일 탭 줄 (가로 스크롤·미저장 ●·닫기)",
+        "path": "src/components/composite/FileTabs.tsx",
+        "props": {
+          "tabs": { "type": "array", "required": false, "default": "[]", "description": "탭 목록 [{key, label, title?, dirty?}]" },
+          "activeKey": { "type": "string", "required": false, "description": "활성 탭 키" },
+          "size": { "type": "string", "required": false, "default": "compact", "description": "탭 높이 (compact | touch)" },
+          "onSelect": { "type": "function", "required": false, "description": "탭 선택 (key: string) => void" },
+          "onClose": { "type": "function", "required": false, "description": "탭 닫기 (key: string) => void" },
+          "className": { "type": "string", "required": false, "default": "", "description": "추가 클래스명" }
         }
       },
       {
@@ -3590,6 +3902,7 @@
         "type": "composite",
         "description": "모듈 또는 플러그인에 의해 추가된 섹션임을 표시하는 배지 컴포넌트. identifier로 이름 자동 조회 지원",
         "path": "src/components/composite/ExtensionBadge.tsx",
+        "autoBinding": false,
         "props": {
           "type": {
             "type": "string",

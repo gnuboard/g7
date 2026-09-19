@@ -1,0 +1,22 @@
+feature: koreaexim_failure_notification
+description: 실패 종류·알림 설정·당일 중복·재시도 소진을 교차해 실제 실행의 알림 훅 발행 여부를 검증한다. 날짜별로 격리해 호출예산과 중복 키가 다른 조합에 영향을 주지 않게 한다.
+axes:
+  status: [auth_error, network_error, no_data, quota_exceeded, bad_response, success]
+  notify_on_failure: [on, off]
+  already_notified_today: [yes, no]
+  retry_exhausted: [yes, no]
+effects:
+  - reapply_hook_runs_synchronously_with_database_queue_and_ignores_other_categories
+  - failure_definition_and_extracted_template_variables_belong_to_plugin
+  - reapply_uses_snapshot_without_http_and_is_idempotent
+  - base_unit_change_reapplies_without_http
+  - management_requires_key_and_auto_manage_and_supported_base
+  - pruning_preserves_latest_success_and_deletes_children_of_old_runs
+  - failure_notifications_are_deduplicated_and_dry_run_is_silent
+  - history_filters_and_resources_do_not_expose_raw_responses
+  - manual_cooldown_rejects_second_request_without_http
+  - settings_validate_key_time_weekdays_and_leave_other_plugins_untouched
+  - failure_notification_policy
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Feature/RateLifecycleTest.php
+  - plugins/_bundled/sirsoft-koreaexim/tests/fixtures/NotificationCases.php

@@ -7,7 +7,12 @@ use Illuminate\Support\Facades\File;
 /**
  * 확장 프론트엔드 진입점 수집기
  *
- * 레이아웃 JSON · 액션 핸들러 · 전역 재등록 진입점 · 컴포넌트 · 빌드 산출물을 수집합니다.
+ * 레이아웃 · 액션 핸들러 · 전역 재등록 진입점 · 컴포넌트 · 빌드 산출물을 수집합니다.
+ *
+ * 레이아웃과 확장 조각은 **소스(`.g7.html`)을 기본으로** 표기한다 — 소스 SSoT 가 `.g7.html` 이고
+ * 짝 `.json` 은 컴파일 산출이라, 문서가 `.json` 만 부르면 작성자가 고칠 파일을 문서에서 찾지 못한다.
+ * 조각 목록은 등록 경로와 같은 규약({@see FragmentSourceInventory})으로 고른다 — 규약을 여기서
+ * 복제하면 `.g7.html` 만 있는 조각이 문서에서 조용히 빠진다.
  *
  * 레이아웃 경로는 유형마다 다릅니다 — 모듈/플러그인은 `resources/layouts/`, 템플릿은
  * `layouts/` 가 루트입니다. 유형별 분기를 이 수집기 한 곳에 두어, 소비자(스캐폴더·검사
@@ -29,7 +34,7 @@ class FrontendInventory
             'layoutRoot' => $this->layoutRoot($record),
             'layouts' => $layouts,
             'layoutGroups' => $this->groupLayouts($layouts),
-            'layoutExtensions' => $this->collectJsonFiles($record, $this->layoutExtensionRoot($record)),
+            'layoutExtensions' => $this->collectFragmentSourceFiles($record, $this->layoutExtensionRoot($record)),
             'handlers' => $this->collectHandlers($record),
             'entryPoints' => $this->collectEntryPoints($record),
             'components' => $this->collectComponents($record),
@@ -121,7 +126,8 @@ class FrontendInventory
             $segments = explode('/', $inner);
 
             $layouts[] = [
-                'relFile' => $rel,
+                // 표기는 소스 우선 — 계약값(`extends`)은 짝 `.json` 에서 읽는다(컴파일 산출이라 값이 같다).
+                'relFile' => $this->authoringPath($record, $rel),
                 'name' => basename($inner, '.json'),
                 'group' => count($segments) > 1 ? $segments[0] : '(root)',
                 'partial' => str_starts_with(basename($inner), '_'),
@@ -380,6 +386,44 @@ class FrontendInventory
      * @param  string  $sub  확장 루트 기준 하위 경로
      * @return array<int, string> 상대 경로 목록 (정렬)
      */
+    /**
+     * 레이아웃 확장 조각 파일을 등록 규약으로 수집합니다 — `.g7.html`(있으면 우선) + 짝이 없는 `.json`.
+     *
+     * 템플릿의 오버라이드 조각은 `extensions/{확장식별자}/` 아래에 있으므로 디렉토리마다 규약을 적용한다.
+     *
+     * @param  array<string, mixed>  $record  확장 레코드
+     * @param  string  $sub  조각 루트(확장 루트 기준 상대 경로)
+     * @return array<int, string> 확장 루트 기준 상대 경로 (정렬됨)
+     */
+    private function collectFragmentSourceFiles(array $record, string $sub): array
+    {
+        $dir = $record['path'].DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $sub);
+
+        $files = [];
+        foreach ((new FragmentSourceInventory)->sourceFiles($dir) as $path) {
+            $files[] = $this->relative($record, $path);
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
+    /**
+     * 짝 소스가 있으면 그 경로를, 없으면 원래 `.json` 경로를 돌려줍니다.
+     *
+     * @param  array<string, mixed>  $record  확장 레코드
+     * @param  string  $rel  `.json` 상대 경로
+     * @return string 소스 우선 상대 경로
+     */
+    private function authoringPath(array $record, string $rel): string
+    {
+        $markup = preg_replace('/\.json$/', '.g7.html', $rel) ?? $rel;
+        $abs = $record['path'].DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $markup);
+
+        return is_file($abs) ? $markup : $rel;
+    }
+
     private function collectJsonFiles(array $record, string $sub): array
     {
         $dir = $record['path'].DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $sub);

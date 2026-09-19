@@ -2,6 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Repositories\Concerns\FiltersByDateRange;
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Support\Query\PaginationLimits;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
@@ -12,6 +17,14 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterf
  */
 class UserAddressRepository implements UserAddressRepositoryInterface
 {
+    use FiltersByDateRange;
+    use PaginatesWithDeferredJoin;
+
+    /**
+     * UserAddressRepository 생성자
+     *
+     * @param  UserAddress  $model  배송지 모델
+     */
     public function __construct(
         protected UserAddress $model
     ) {}
@@ -55,6 +68,7 @@ class UserAddressRepository implements UserAddressRepositoryInterface
      */
     public function findByUserId(int $userId): Collection
     {
+        // audit:allow query-unbounded-get reason: 한 회원의 배송지 목록만 고른다 — 주소록은 회원이 직접 등록하는 소량 집합이라 데이터 증가에 비례하지 않는다
         return $this->model
             ->where('user_id', $userId)
             ->orderByDesc('is_default')
@@ -123,5 +137,111 @@ class UserAddressRepository implements UserAddressRepositoryInterface
             ->where('user_id', $userId)
             ->where('name', $name)
             ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        $table = $this->model->getTable();
+        $query = $this->model->newQuery();
+
+        if (! empty($filters['user_id'])) {
+            $query->where("{$table}.user_id", (int) $filters['user_id']);
+        }
+
+        if (! empty($filters['country_code'])) {
+            $query->where("{$table}.country_code", $filters['country_code']);
+        }
+
+        // is_default 는 「기본 배송지만」 이라는 뜻이라 false 를 명시적으로 구분한다 —
+        // empty() 로 보면 "false 로 거르기" 가 필터 미적용으로 삼켜진다.
+        if (array_key_exists('is_default', $filters) && $filters['is_default'] !== null && $filters['is_default'] !== '') {
+            $query->where("{$table}.is_default", (bool) $filters['is_default']);
+        }
+
+        $this->applyDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
+        $this->applyAdminSearch($query, (string) ($filters['search_field'] ?? 'member'), $filters['search_keyword'] ?? null);
+
+        $direction = ($filters['sort'] ?? 'created_at_desc') === 'created_at_asc' ? 'asc' : 'desc';
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ["{$table}.*"],
+            sort: [['column' => 'created_at', 'direction' => $direction]],
+            perPage: $perPage,
+            relations: ['user:id,uuid,name,email,status'],
+            resultCap: PaginationLimits::resultCap('admin.user_addresses'),
+        );
+    }
+
+    /**
+     * 관리자 목록의 검색 조건을 적용합니다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  string  $field  검색 대상
+     * @param  string|null  $keyword  검색어
+     * @return void
+     */
+    private function applyAdminSearch(Builder $query, string $field, ?string $keyword): void
+    {
+        if ($keyword === null || trim($keyword) === '') {
+            return;
+        }
+
+        $needle = '%'.trim($keyword).'%';
+        $table = $this->model->getTable();
+
+        match ($field) {
+            'member_id' => $query->whereHas('user', fn (Builder $u) => $u->where('uuid', trim($keyword))),
+            'email' => $query->whereHas('user', fn (Builder $u) => $u->where('email', 'like', $needle)),
+            'recipient' => $query->where(fn (Builder $w) => $w
+                ->where("{$table}.recipient_name", 'like', $needle)
+                ->orWhere("{$table}.recipient_phone", 'like', $needle)),
+            // 국내/해외 주소가 서로 다른 컬럼에 담기므로 둘 다 본다
+            'address' => $query->where(fn (Builder $w) => $w
+                ->where("{$table}.address", 'like', $needle)
+                ->orWhere("{$table}.address_line_1", 'like', $needle)
+                ->orWhere("{$table}.city", 'like', $needle)),
+            default => $query->whereHas('user', fn (Builder $u) => $u->where(
+                fn (Builder $w) => $w->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
+            )),
+        };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteById(int $id): bool
+    {
+        return (bool) $this->model->where('id', $id)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findByIds(array $ids): Collection
+    {
+        return $this->model
+            ->with(['user:id,uuid,name,email,status'])
+            ->whereIn('id', $ids)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function bulkDelete(array $ids): int
+    {
+        return (int) $this->model->whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByUser(int $userId): int
+    {
+        return (int) $this->model->where('user_id', $userId)->count();
     }
 }
