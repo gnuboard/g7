@@ -7,6 +7,7 @@ use App\Extension\ModuleManager;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
 use Modules\Sirsoft\Ecommerce\Listeners\ClaimStatusNotificationListener;
+use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -31,6 +32,8 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
         'order_completed',
         'order_cancelled',
         'new_order_admin',
+        'order_confirmed_admin',
+        'order_completed_admin',
         'inquiry_received',
         'inquiry_replied',
     ];
@@ -45,9 +48,12 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
         // 클레임 알림(§4-8)은 유형 × 고객 가시 상태의 곱이라 여기에 다시 열거하지 않는다 —
         // 두 벌이 되면 한쪽만 늘어난 채로 통과한다. 그 집합의 전수 검증은
         // ClaimNotificationDefinitionsTest 가 담당하고, 여기서는 개수만 합산한다.
-        $claimCount = 1; // claim_withdrawn (관리자 수신)
+        // 운영자 사본(접수·추가결제 완료처럼 운영자도 알아야 하는 사건)은 모듈 상수가 정하므로 같은
+        // 목록을 읽어 센다 — 숫자를 적어 두면 상수가 늘 때 이 합산만 낡는다.
+        $staffKeys = (new \ReflectionClassConstant(Module::class, 'STAFF_NOTIFIED_CLAIM_KEYS'))->getValue();
+        $claimCount = 2; // claim_withdrawn (관리자 수신) · claim_partially_processed
         foreach (ClaimStatusNotificationListener::notifiableStatuses() as $keys) {
-            $claimCount += count($keys);
+            $claimCount += count($keys) + count(array_intersect($keys, $staffKeys));
         }
 
         $this->assertCount(count($this->expectedTypes) + $claimCount, $definitions);

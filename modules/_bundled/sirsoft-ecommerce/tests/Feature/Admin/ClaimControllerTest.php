@@ -784,7 +784,7 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
-     * @effects status_rejection_stores_the_reject_reason
+     * @effects rejecting_a_return_stores_its_reason
      */
     public function test_status_rejection_stores_the_reject_reason(): void
     {
