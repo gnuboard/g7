@@ -1,5 +1,16 @@
 @import "tailwindcss";
 /*
+ * `@import` 는 **반드시 `@plugin` 보다 위**에 둔다.
+ *
+ * CSS 명세상 `@import` 는 다른 at-rule 뒤에 오면 무시되고 Tailwind v4 도 그대로 따른다.
+ * `@plugin` 아래로 내려가면 아래 두 파일이 **빌드에서 통째로 사라져** 관리자 셸(사이드바·헤더)이
+ * 무스타일이 된다 — 그런데 **빌드는 성공하고 경고도 없다**. 테스트·짝 파일 검사도 전부 초록이라
+ * 사람이 브라우저를 열어야만 드러난다(2026-09-18 실측: `.admin_layout_root` 산출물 0건 →
+ * 사이드바가 `display:block` 전체폭으로 펼쳐짐).
+ */
+@import "./components/dashboard.css";
+@import "./layout/_admin_base.css";
+/*
  * Typography — `prose` / `dark:prose-invert` 를 쓰는 화면(게시판 본문·댓글 미리보기,
  * 알림 템플릿 미리보기, 상품 공통정보 등 20개 레이아웃)이 의존한다. Tailwind v4 는
  * CSS 우선 설정이라 JS config 가 아니라 여기서 @plugin 으로 등록한다.
@@ -7,8 +18,6 @@
  * audit `layout-component-contract`).
  */
 @plugin "@tailwindcss/typography";
-@import "./components/dashboard.css";
-@import "./layout/_admin_base.css";
 
 /* Pretendard 폰트를 기본 sans-serif 폰트로 설정 */
 /* 동봉본은 Variable 1종이라 패밀리명이 `Pretendard Variable` 이다. 구 static 배포본을

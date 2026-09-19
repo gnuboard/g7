@@ -56,6 +56,7 @@
 | CSS 로드에 `onerror` 미설치 또는 `resolve()` 로 삼킴 | `loadStylesheetWithRetry` — 아이콘만으로 조작하는 버튼이 있는 화면에서 스타일 소실은 곧 조작 불능이다 |
 | 자산 실패를 `console.error` 한 줄로 끝냄 | `G7Core.assets.notifyFailure({id,label,retry})` — 사용자가 사실을 알고 조치할 수 있어야 한다 |
 | 편집기·코드편집기 확보 실패 시 빈 컨테이너를 남김 | 평문 입력(textarea) 폴백 + 저장 계약 유지(`{name}_mode='text'`) + 재시도 시 입력 내용 승계 |
+| CSS `@import` 를 `@plugin`·`@config` **뒤**에 둠 | `@import` 를 전부 위로 — 명세상 다른 at-rule 뒤의 `@import` 는 무시되어 **그 파일이 통째로 빌드에서 사라진다**. 빌드 성공·경고 0·테스트 초록이라 화면을 열기 전엔 드러나지 않는다 |
 | 확장 `dist/`·`src/` 에 운영자 CSS 를 둠 | 확장 디렉토리 안의 **`custom/`** — 빌드 불필요, 확장 교체가 보존 |
 | 번들 확장이 `custom/` 을 담아 배포 | `dist/vendor/` 에 담는다. `custom/` 은 운영자 소유라 보존 계층이 덮어쓰지 않아 **작성자 파일이 영영 반영되지 않는다** |
 | 사용자 추가 에셋 URL 을 `ext.cache_version` 으로 무효화 | 파일 서명(수정 시각) — 확장 캐시 버전은 운영자가 파일을 고쳤다고 오르지 않는다 |
