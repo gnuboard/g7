@@ -168,6 +168,7 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "돌아갈 주문번호는 신청서 응답의 값을 먼저 읽고, 없으면 조회 토큰의 짝 주문번호를 쓴다. 쿼리를 물려주므로 주문 상세의 클레임 목록이 보던 서브탭·페이지로 다시 열린다.",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -340,7 +341,7 @@
                                                         "if": "{{claim.data?.claim?.is_editable === true}}",
                                                         "actions": [
                                                             {
-                                                                "comment": "수정 화면 주소 — `.../claims/{번호}/edit` 의 **위치**로 번호를 읽는다(resolveClaimEditNumber). 접두사(EX/RT/…)로 유형을 가르지 않으므로 회원과 같은 핸들러가 이 주소도 해석한다.",
+                                                                "comment": "수정 화면 주소 — .../claims/{번호}/edit 의 **위치**로 번호를 읽는다(resolveClaimEditNumber). 접두사(EX/RT/…)로 유형을 가르지 않으므로 회원과 같은 핸들러가 이 주소도 해석한다.",
                                                                 "type": "click",
                                                                 "handler": "navigate",
                                                                 "params": {
@@ -357,6 +358,7 @@
                                                         "text": "$t:claim.list.edit"
                                                     },
                                                     {
+                                                        "comment": "[철회] — 회원 상세와 같은 확인 모달을 연다. 비회원 철회 주소는 주문 스코프가 붙은 모양이라, 그 앞부분은 이 셸이 진입 때 세운 값을 모달이 읽는다.",
                                                         "type": "basic",
                                                         "name": "Button",
                                                         "if": "{{claim.data?.claim?.is_withdrawable === true}}",

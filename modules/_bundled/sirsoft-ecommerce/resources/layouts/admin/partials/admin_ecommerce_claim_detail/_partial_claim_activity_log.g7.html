@@ -6,6 +6,7 @@
       <div data-ref="log_filters" class="flex-center justify-end gap-4 mb-4">
         <div class="flex-center gap-2">
           <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.sort.label</span>
+          <!-- 정렬은 서버가 한다 — 받아 둔 한 쪽만 뒤집으면 다른 쪽 로그와 순서가 섞이므로, 정렬을 바꾸면 1쪽으로 돌아가 다시 받는다. -->
           <select value="{{_local.logsSort}}" class="w-auto min-w-40">
             <options>
               <option value="date_desc">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.sort.date_desc</option>
@@ -21,6 +22,7 @@
         </div>
         <div class="flex-center gap-2">
           <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.per_page</span>
+          <!-- 쪽당 건수가 바뀌면 지금 쪽 번호가 가리키던 범위도 달라진다 — 없는 쪽에 떨어지지 않도록 1쪽으로 되돌린 뒤 다시 받는다. -->
           <select value="{{String(_local.logsPerPage)}}" class="w-auto min-w-20">
             <options>
               <option value="5">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.per_page_option|count=5</option>
@@ -50,6 +52,7 @@
           <div class="flex-center gap-4">
             <span class="w-40 shrink-0 text-label">{{log.created_at ?? ''}}</span>
             <div class="w-40 shrink-0">
+              <!-- 행위자 이름을 누르면 그 회원 상세를 새 창으로 연다 — 보던 신청서를 잃지 않고 누가 처리했는지 확인하게 한다. 행위자가 없는 시스템 기록에는 메뉴 대신 글자만 선다. -->
               <action-menu data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
@@ -109,6 +112,7 @@
         <div class="md:hidden border-b border-gray-100 dark:border-gray-800 py-3 px-2 space-y-1">
           <div class="flex-between gap-2">
             <div class="flex-center gap-2">
+              <!-- 좁은 화면 카드의 행위자 메뉴 — 넓은 화면 행의 메뉴와 같은 동작이므로 한쪽을 고치면 다른 쪽도 함께 고친다. -->
               <action-menu data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
@@ -166,6 +170,7 @@
         </div>
       </div>
       <div data-ref="log_pagination" class="flex justify-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+        <!-- 쪽 이동 — 정렬과 쪽당 건수는 그대로 두고 쪽 번호만 바꿔 다시 받는다. 전체 쪽 수와 다음 쪽 유무는 응답의 meta 가 알려 준다. -->
         <pagination currentPage="{{claim_logs.data?.meta?.current_page ?? 1}}" totalPages="{{claim_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{claim_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
           <on event="onPageChange">
             <sequence>

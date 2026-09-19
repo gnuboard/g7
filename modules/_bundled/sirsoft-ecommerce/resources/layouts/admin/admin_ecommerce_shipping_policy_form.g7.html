@@ -26,7 +26,7 @@
   <data-source id="copy_source" label_key="$t:sirsoft-ecommerce.editor.data_source.copy_source" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{query.copy_id}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{!!query?.copy_id &amp;&amp; !route?.id}}" initLocal="form" loading_strategy="blocking">
     <fallback :data="null"/>
   </data-source>
-  <!-- 배송 국가·배송 방식·통화·API 규격이 전부 쇼핑몰 설정에서 온다. 아래 computed 대부분이 이 응답을 선택지로 접는 것이고, 폼 초기화도 국가 목록을 먼저 알아야 해서 blocking 이다 -->
+  <!-- 수정 진입일 때만 이 정책의 교환·반품 회수지를 받는다. 폼 본체를 기다리게 하지 않도록 background 로 받고 마운트마다 새로 받는다 — 응답이 편집보다 늦게 와도 아래 success 가 이미 손댄 버퍼를 지킨다 -->
   <data-source id="claim_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.claim_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{route.id}}/claim-settings" method="GET" if="{{!!route.id}}" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <success>
       <!-- 회수지 편집 버퍼의 시드는 initLocal 이 아니라 응답 시점의 단일 setState 다 — initLocal 은 마운트 후 한 번 더 적용되며, 그 재적용이 명시적 setState 로 기록한 편집(자동바인딩이 아닌 경로)을 되돌린다. 조회가 `background` 라 응답이 편집보다 늦게 올 수 있다 — 이미 손댄 버퍼(dirty)는 덮지 않고 로딩 완료 표식(`_loaded`)만 합친다. 표식을 별도 로컬 키로 두면 입력 change 의 setState 뒤에 초기값으로 되돌아가고(10차 실측), 편집 뒤의 점 경로 쓰기도 붙지 않으므로 객체 전체를 한 번에 쓴다. `_loaded` 는 회수지 저장 허용 조건이다 — 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 `{exchange:null, return:null}` 이라 '못 받았다' 와 '비어 있다' 가 값으로 구분되지 않는데, 저장은 두 회수지를 항상 함께 실어 `null` 이 서버 삭제 계약을 탄다. -->
@@ -41,6 +41,7 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 배송 국가·배송 방식·통화·API 규격이 전부 쇼핑몰 설정에서 온다. 아래 computed 대부분이 이 응답을 선택지로 접는 것이고, 폼 초기화도 국가 목록을 먼저 알아야 해서 blocking 이다 -->
   <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking"/>
   <!-- 지역별 추가배송비 템플릿(도서산간 등). 추가배송비 구획을 펼칠 때만 필요해 자동 조회를 끄고, 검색어가 바뀌면 그때 다시 받는다 -->
   <data-source id="extra_fee_templates" label_key="$t:sirsoft-ecommerce.editor.data_source.extra_fee_templates" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/extra-fee-templates" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">

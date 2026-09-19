@@ -1,4 +1,5 @@
 {
+    "comment": "클레임 목록 (운영자) — 교환·반품·환불·취소 신청서를 유형 서브탭으로 나눠 조회하고, 취소를 뺀 세 유형은 체크한 신청서의 상태를 한꺼번에 바꾼다. 조회 조건은 전부 URL 쿼리에 싣고, 자주 쓰는 조합은 운영자별 검색 프리셋으로 저장해 불러 쓴다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_claim_list",
     "extends": "_admin_base",
@@ -75,7 +76,8 @@
             "loading_strategy": "background",
             "params": {
                 "target_screen": "claims"
-            }
+            },
+            "comment": "지금 로그인한 운영자가 이 화면에 저장해 둔 검색 프리셋. 프리셋은 운영자·화면별로 따로 저장되고 대상 화면을 빼면 서버가 상품 화면 것을 돌려주므로 claims 로 지정하며, 프리셋 저장·이름 변경·삭제 창이 성공할 때마다 다시 부른다."
         },
         {
             "id": "ecommerce_settings",
@@ -366,6 +368,7 @@
                         },
                         "children": [
                             {
+                                "comment": "검색 편집 모드 토글. 켤 때는 상세 필터도 함께 펼친다 — 기본 표시 여부를 고르는 체크박스가 필터 행마다 붙어 있어, 접힌 상세 영역의 필터는 펼쳐야 기본 영역으로 끌어올릴 수 있다.",
                                 "id": "mb_010_search_edit_button",
                                 "type": "basic",
                                 "name": "Button",
@@ -522,21 +525,27 @@
     },
     "modals": [
         {
+            "comment": "일괄 상태 변경 확인 창 — 일괄 변경 바에서 상태를 고르고 [일괄 적용] 을 누르면 뜬다. 고른 상태가 '완료' 면 이 창 대신 완료 처리 창이 뜬다.",
             "partial": "partials/admin_ecommerce_claim_list/_modal_bulk_confirm.json"
         },
         {
+            "comment": "완료 처리 창 — 일괄 변경 바에서 '완료' 를 골라 적용하면 뜬다. 신청서별 재고 복구와 환불신청서 접수 여부를 고르고 미리보기 요약을 확인한 뒤 실행하며, 상세 화면도 같은 파일을 연다.",
             "partial": "partials/admin_ecommerce_claim_list/_modal_claim_complete.json"
         },
         {
+            "comment": "검색 프리셋 관리 창 — 필터 카드의 [검색 프리셋] 라벨이나 모바일 상단 [프리셋 관리] 로 연다. 이름 바꾸기·삭제·새 프리셋 저장 창이 이 창 위에 겹쳐 뜬다.",
             "partial": "partials/admin_ecommerce_claim_list/_modal_preset_manage.json"
         },
         {
+            "comment": "새 프리셋 저장 창 — 필터 영역의 [프리셋 저장] 이나 관리 창의 [새 프리셋 추가] 로 연다.",
             "partial": "partials/admin_ecommerce_claim_list/_modal_preset_save.json"
         },
         {
+            "comment": "프리셋 이름 바꾸기 창 — 관리 창의 연필 버튼으로 열려 그 위에 겹친다.",
             "partial": "partials/admin_ecommerce_claim_list/_modal_preset_edit.json"
         },
         {
+            "comment": "프리셋 삭제 확인 창 — 관리 창의 휴지통 버튼으로 열린다. 지울 프리셋 이름을 문장에 넣어 한 번 더 확인받는다.",
             "partial": "partials/admin_ecommerce_claim_list/_modal_preset_delete_confirm.json"
         }
     ]

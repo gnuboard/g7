@@ -23,6 +23,7 @@
           <set-state target="_local" bulkClaimStatus="{{$event.target.value}}"/>
         </on>
       </select>
+      <!-- 반품 탭의 상태 어휘 — 게이트가 받는 반품 관리자 지정 8종이며, 반품에는 재발송이 없어 교환 셀렉트에서 재발송 3단계가 빠진다. 신청·결제완료·철회는 각자 만드는 경로가 따로 있어 목록에서 고를 수 없다. -->
       <select data-ref="cb_003_status_select_return" data-if="{{(query.type ?? 'exchange') === 'return'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
         <options>
           <option value="" disabled>$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder</option>

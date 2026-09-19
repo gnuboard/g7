@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 반품 사유 목록, 넓은 화면용 표와 사유 추가 폼. 좁은 화면용 카드와 같은 배열을 고치고, 새 사유는 임시 폼에서 [추가]로 확정해야 배열에 들어가며 모든 변경은 페이지 [저장] 때 서버의 사유 카탈로그에 한꺼번에 동기화된다.",
     "meta": {
         "is_partial": true
     },
@@ -106,6 +107,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.code"
                                 },
                                 {
+                                    "comment": "새 반품 사유의 코드. 접수된 반품 건이 사유를 이 코드로만 가리키므로 목록에 붙고 나면 표에서는 고칠 수 없고, 사용 중인 사유라면 서버도 코드 변경을 거절한다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -150,6 +152,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.name"
                                 },
                                 {
+                                    "comment": "새 반품 사유 문구. 설치된 언어마다 칸이 생기지만 [추가] 확정은 지금 화면 언어의 문구가 있어야 통과한다.",
                                     "type": "composite",
                                     "name": "MultilingualInput",
                                     "actions": [
@@ -185,6 +188,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_type"
                                 },
                                 {
+                                    "comment": "새 반품 사유의 귀책. 고객 귀책이면 이 사유의 반품에서 회수 배송비를 고객에게 받고, 판매자·배송사 귀책이면 받지 않는다.",
                                     "type": "basic",
                                     "name": "Select",
                                     "actions": [
@@ -234,6 +238,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "새 반품 사유를 고객 신청 화면에 보일지. 끄면 고객은 이 사유로 반품을 신청하거나 신청서 사유를 이것으로 바꿀 수 없다.",
                                             "type": "basic",
                                             "name": "Input",
                                             "actions": [
@@ -275,6 +280,7 @@
                     },
                     "children": [
                         {
+                            "comment": "반품 사유 추가 취소. 임시 폼과 오류 표시만 버리고 목록의 기존 반품 사유는 손대지 않는다.",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -303,6 +309,7 @@
                             ]
                         },
                         {
+                            "comment": "반품 사유 추가 확정. 코드 형식·길이·중복과 현재 언어 문구를 화면에서 먼저 걸러 통과한 것만 목록 끝에 붙이고, 저장 때 서버가 같은 규칙으로 한 번 더 판정한다.",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -504,6 +511,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "등록된 반품 사유의 문구. 과거 반품 건도 사유 표시를 이 문구에서 가져오므로, 저장하면 지난 건의 사유 표시까지 새 문구로 바뀐다.",
                                                     "type": "composite",
                                                     "name": "MultilingualInput",
                                                     "actions": [
@@ -535,6 +543,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "등록된 반품 사유의 귀책 변경. 이후 접수되는 반품의 회수 배송비 청구만 달라지고, 이미 접수된 건은 접수 때 적어 둔 귀책을 계속 쓴다.",
                                                     "type": "basic",
                                                     "name": "Select",
                                                     "actions": [
@@ -578,6 +587,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "고객 직접 선택 허용. 끄면 고객 반품 신청 화면에서 빠지고 요청으로 보내도 서버가 받지 않아, 감춘 판매자 귀책 사유로 회수 배송비를 면제받는 우회를 막는다.",
                                                     "type": "basic",
                                                     "name": "Input",
                                                     "actions": [
@@ -608,6 +618,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "반품 사유 사용 여부. 꺼도 줄이 남아 지난 반품 건의 사유 표시는 유지되고, 새 반품 신청에서만 빠진다.",
                                                     "type": "composite",
                                                     "name": "Toggle",
                                                     "actions": [
@@ -637,6 +648,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "반품 사유 삭제 지목. 저장 전까지는 화면에서만 사라지고, 저장 때 이 사유로 접수된 반품 건이 하나라도 있으면 서버가 저장 전체를 거절한다.",
                                                     "type": "basic",
                                                     "name": "Button",
                                                     "actions": [

@@ -118,6 +118,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
       <p class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:claim.apply.refund_priority.title</p>
       <div data-if="{{_local.claimEditMode !== true}}" class="space-y-1">
         <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- PG 우선(기본값) — 환불액을 카드 등 원 결제금에서 먼저 돌려주고, 그것을 넘는 몫만 마일리지로 돌린다. 배분이 바뀌면 수단별 환불액이 달라지므로 고를 때마다 미리보기를 다시 부른다. -->
           <input type="radio" name="claimRefundPriority" value="pg_first" checked="{{(_local.claimRefundPriority ?? 'pg_first') === 'pg_first'}}" class="text-blue-600">
             <on type="change">
               <action handler="sirsoft-ecommerce.changeClaimRefundPriority" value="pg_first" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
@@ -126,6 +127,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
           <span class="text-sm text-gray-700 dark:text-gray-300">$t:claim.apply.refund_priority.pg_first</span>
         </label>
         <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- 마일리지 우선 — 쓴 마일리지에서 먼저 돌려주고, 그것을 넘는 몫을 원 결제수단으로 환불한다. 카드로 돌아오는 금액이 줄어드는 쪽이라 구매자가 직접 골라야만 적용된다. -->
           <input type="radio" name="claimRefundPriority" value="points_first" checked="{{(_local.claimRefundPriority ?? 'pg_first') === 'points_first'}}" class="text-blue-600">
             <on type="change">
               <action handler="sirsoft-ecommerce.changeClaimRefundPriority" value="points_first" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
@@ -158,6 +160,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
       <p class="{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm font-medium text-gray-400 dark:text-gray-500 mb-2' : 'text-sm font-medium text-gray-900 dark:text-white mb-2'}}">$t:claim.apply.payment_method_title</p>
       <div data-each="chargePaymentMethod in {{(_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []}}" class="space-y-1">
         <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- 청구액을 무엇으로 낼지 고른다 — 결제 시점(축1)과 따로 고르는 축2 값이다. 수단은 금액을 바꾸지 않아 미리보기를 다시 부르지 않고 제출에만 실린다. -->
           <input type="radio" name="claimPaymentMethod" value="{{chargePaymentMethod}}" checked="{{_local.claimPaymentMethod === chargePaymentMethod}}" disabled="{{_local.claimChargeMethod === 'deduct_from_refund'}}" class="text-blue-600 disabled:opacity-50">
             <on type="change">
               <action handler="sirsoft-ecommerce.setClaimPaymentMethod" value="{{chargePaymentMethod}}"/>

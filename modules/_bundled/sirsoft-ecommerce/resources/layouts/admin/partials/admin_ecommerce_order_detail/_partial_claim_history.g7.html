@@ -1,7 +1,5 @@
-<!-- 주문 상세의 클레임 이력 구역 — 환불·반품·교환 세 목록을 담는 껍데기.
-  **아직 시안이다** — 이 파일에는 데이터 바인딩도 액션도 하나 없다. 위쪽 탭 버튼은 `active` 클래스가
-  글자로 박혀 있어 눌러도 바뀌지 않고, 세 조각이 탭으로 갈리는 대신 **세로로 모두 이어 붙어** 있다.
-  배선할 때 탭 상태를 지역 키 하나로 두고 세 구역에 조건을 걸면 지금 구조 그대로 동작한다. -->
+<!-- 주문 상세의 클레임 내역 구역 — 이 주문에 접수된 교환·반품·취소·환불 신청서를 유형 서브탭으로 갈라 신청서 단위로 보여 준다.
+  주문을 보던 운영자가 클레임 경과를 확인하는 자리이고, 신청번호를 누르면 그 건의 클레임 상세가 새 창으로 열린다. -->
 <partial description="Order Detail - Claim History Section (D20) — 유형 서브탭 + 신청서 단위 rowspan 병합 표 · 조회 전용 · 모바일 카드 (S9c). 신청번호는 새 창 상세 링크, 상품은 썸네일(없으면 자리표시)">
   <div data-ref="section_claim_history" data-section-id="claim_history">
     <!-- 조회 전용 섹션이다 (D20) — 상태 변경 select·송장 input·금액 수정·환불 실행을 두지 않는다. 그 조작은 전부 클레임 상세(S9a·S9b)가 소유하며, 여기에 사본을 두면 같은 값을 바꾸는 지점이 두 곳이 된다. 구조 테스트가 이 섹션의 입력 요소 0개를 붙든다. -->
@@ -12,6 +10,7 @@
       </div>
       <!-- 유형 서브탭. 서버가 전 유형을 한 응답에 싣고(D20 — counts + 평면 배열) 화면이 claim_type 으로 거르므로 전환에 재조회가 없다. 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다. 활성 판정은 셸 computed claimHistoryActiveType 이다 — 누른 값이 없으면 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)이 서므로, 여기서 _local 값에 'exchange' 를 직접 폴백하면 그 판정을 건너뛴다. -->
       <div data-ref="claim_history_subtabs" class="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
+        <!-- 운영자가 고른 유형을 고정한다 — 고른 뒤로는 화면에 다시 들어올 때까지 '접수 건이 있는 첫 유형' 자동 선택이 끼어들지 않는다. -->
         <button data-ref="claim_history_subtab_{{claimType.value}}" data-each="claimType in {{_computed.claimHistoryTypes ?? []}}" type="button">
           <class-map base="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors" key="{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}" default="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
             <variant when="active">border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500 font-medium</variant>

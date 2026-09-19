@@ -19,6 +19,7 @@
               <set-state target="_local" collectionCarrierId="{{$event.target.value}}"/>
             </on>
           </select>
+          <!-- 회수 송장번호 — 택배사와 짝으로만 저장된다. 한쪽만 채운 채 [저장] 을 누르면 요청 전에 화면이 먼저 알리고, 둘 다 비우고 저장하면 등록된 송장이 지워진다. -->
           <input data-ref="cs_005_collection_tracking_number" type="text" name="collectionTrackingNumber" :maxLength="100" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder" value="{{_local.collectionTrackingNumber ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}">
             <on type="change">
               <set-state target="_local" collectionTrackingNumber="{{$event.target.value}}"/>
@@ -59,16 +60,19 @@
           <span class="text-gray-900 dark:text-gray-100 ml-2">{{[claim?.data?.claim?.redelivery_address_snapshot?.recipient_name, claim?.data?.claim?.redelivery_address_snapshot?.phone, claim?.data?.claim?.redelivery_address_snapshot?.zipcode, claim?.data?.claim?.redelivery_address_snapshot?.address1, claim?.data?.claim?.redelivery_address_snapshot?.address2].filter(Boolean).join(' ') || '-'}}</span>
         </div>
         <div data-ref="cs_013_redelivery_tracking_row" class="flex-center flex-wrap gap-2">
+          <!-- 재발송 택배사 — 교환품을 다시 보낼 때 쓰는 택배사라 회수 택배사와 따로 고른다. 고른 값은 송장번호와 함께 저장해야 기록된다. -->
           <select data-ref="cs_014_redelivery_carrier" name="redeliveryCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.redeliveryCarrierId ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{claim?.data?.carriers ?? []}}">
             <on type="change">
               <set-state target="_local" redeliveryCarrierId="{{$event.target.value}}"/>
             </on>
           </select>
+          <!-- 재발송 송장번호 — 저장되면 고객의 신청 내역에도 택배사 이름과 함께 실리고, 배송 조회 링크는 서버가 택배사 규칙으로 만든다. -->
           <input data-ref="cs_015_redelivery_tracking_number" type="text" name="redeliveryTrackingNumber" :maxLength="100" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder" value="{{_local.redeliveryTrackingNumber ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}">
             <on type="change">
               <set-state target="_local" redeliveryTrackingNumber="{{$event.target.value}}"/>
             </on>
           </input>
+          <!-- 재발송준비중인 교환이면 이 저장이 재발송중 전이와 교환품의 새 주문옵션 생성을 함께 일으킨다 — 그래서 성공 뒤 상세와 활동 로그를 다시 읽어 진행단계와 뱃지를 맞춘다. -->
           <button data-ref="cs_016_redelivery_save" type="button" class="btn btn-primary" disabled="{{claim?.data?.abilities?.can_update_status !== true || _local.isSavingRedelivery === true}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.saveClaimTracking" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" kind="redelivery" carrierId="{{_local.redeliveryCarrierId ?? ''}}" trackingNumber="{{_local.redeliveryTrackingNumber ?? ''}}">

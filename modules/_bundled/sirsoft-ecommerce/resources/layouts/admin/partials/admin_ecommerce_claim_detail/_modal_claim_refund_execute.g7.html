@@ -44,6 +44,7 @@
           </on>
           $t:common.cancel
         </button>
+        <!-- 이 창에서 실제로 환불을 일으키는 유일한 버튼이다 — 진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 버튼 비활성으로 막는다(서버의 409 는 그다음 방어선이다). -->
         <button data-ref="crm_008_confirm" type="button" class="btn btn-primary" disabled="{{!_global.claimRefundExecuteContext || _global.isProcessing}}">
           <on type="click">
             <set-state target="global" :isProcessing="true"/>

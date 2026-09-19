@@ -65,6 +65,7 @@
         <responsive on="portable" class="py-4"/>
         <!-- 뒤로가기 — 비회원에게는 신청내역 목록이 없다(토큰이 주문 하나에 묶인다). 그래서 돌아갈 곳은 이 주문의 상세이며, 그 화면의 '이 주문의 클레임' 섹션이 곧 비회원의 목록이다. -->
         <div class="flex items-center gap-2 mb-4">
+          <!-- 돌아갈 주문번호는 신청서 응답의 값을 먼저 읽고, 없으면 조회 토큰의 짝 주문번호를 쓴다. 쿼리를 물려주므로 주문 상세의 클레임 목록이 보던 서브탭·페이지로 다시 열린다. -->
           <button type="button" class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
             <on type="click">
               <navigate path="{{_global.shopBase}}/guest/orders/{{claim.data?.claim?.order_number ?? _global.guestOrderNumber ?? ''}}" :mergeQuery="true">
@@ -111,13 +112,14 @@
             <div data-if="{{claim.data?.claim?.is_editable === true || claim.data?.claim?.is_withdrawable === true}}" class="flex items-center gap-2 flex-shrink-0">
               <button data-if="{{claim.data?.claim?.is_editable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
                 <on type="click">
-                  <!-- 수정 화면 주소 — `.../claims/{번호}/edit` 의 **위치**로 번호를 읽는다(resolveClaimEditNumber). 접두사(EX/RT/…)로 유형을 가르지 않으므로 회원과 같은 핸들러가 이 주소도 해석한다. -->
+                  <!-- 수정 화면 주소 — .../claims/{번호}/edit 의 **위치**로 번호를 읽는다(resolveClaimEditNumber). 접두사(EX/RT/…)로 유형을 가르지 않으므로 회원과 같은 핸들러가 이 주소도 해석한다. -->
                   <navigate path="{{_global.shopBase}}/guest/claims/{{claim.data?.claim?.claim_number}}/edit" :mergeQuery="true">
                     <query/>
                   </navigate>
                 </on>
                 $t:claim.list.edit
               </button>
+              <!-- [철회] — 회원 상세와 같은 확인 모달을 연다. 비회원 철회 주소는 주문 스코프가 붙은 모양이라, 그 앞부분은 이 셸이 진입 때 세운 값을 모달이 읽는다. -->
               <button data-if="{{claim.data?.claim?.is_withdrawable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer">
                 <on type="click">
                   <action handler="sirsoft-ecommerce.openClaimWithdraw" claimNumber="{{claim.data?.claim?.claim_number}}" claimLabel="{{claim.data?.claim?.claim_type_label ?? ''}}"/>

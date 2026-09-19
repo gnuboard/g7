@@ -117,6 +117,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "회수 송장번호 — 택배사와 짝으로만 저장된다. 한쪽만 채운 채 [저장] 을 누르면 요청 전에 화면이 먼저 알리고, 둘 다 비우고 저장하면 등록된 송장이 지워진다.",
                                     "id": "cs_005_collection_tracking_number",
                                     "type": "basic",
                                     "name": "Input",
@@ -321,6 +322,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "재발송 택배사 — 교환품을 다시 보낼 때 쓰는 택배사라 회수 택배사와 따로 고른다. 고른 값은 송장번호와 함께 저장해야 기록된다.",
                                     "id": "cs_014_redelivery_carrier",
                                     "type": "basic",
                                     "name": "Select",
@@ -344,6 +346,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "재발송 송장번호 — 저장되면 고객의 신청 내역에도 택배사 이름과 함께 실리고, 배송 조회 링크는 서버가 택배사 규칙으로 만든다.",
                                     "id": "cs_015_redelivery_tracking_number",
                                     "type": "basic",
                                     "name": "Input",
@@ -368,6 +371,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "재발송준비중인 교환이면 이 저장이 재발송중 전이와 교환품의 새 주문옵션 생성을 함께 일으킨다 — 그래서 성공 뒤 상세와 활동 로그를 다시 읽어 진행단계와 뱃지를 맞춘다.",
                                     "id": "cs_016_redelivery_save",
                                     "type": "basic",
                                     "name": "Button",

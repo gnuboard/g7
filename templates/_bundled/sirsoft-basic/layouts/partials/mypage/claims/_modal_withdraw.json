@@ -109,6 +109,7 @@
                     "text": "$t:claim.withdraw.cancel"
                 },
                 {
+                    "comment": "철회를 실제로 보내는 버튼 — 성공하면 모달을 닫고 셸이 지정한 데이터소스를 다시 읽어 바뀐 상태를 보여 준다. 승인 뒤라 거절되면 사유를 이 모달 안에 남기고, 서버 장애만 토스트로 알린다.",
                     "type": "basic",
                     "name": "Button",
                     "actions": [

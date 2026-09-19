@@ -33,6 +33,7 @@
             <action handler="sirsoft-ecommerce.refreshClaimAttachments" event="upload"/>
           </on>
           <on event="onRemove">
+            <!-- 지우는 일은 업로더가 확인창을 거쳐 이미 끝냈고 자기 격자만 고쳤다 — 출처 스트립과 활동 로그는 상세를 다시 읽어야 따라오므로 여기서 다시 읽고 삭제 안내를 띄운다. -->
             <action handler="sirsoft-ecommerce.refreshClaimAttachments" event="remove"/>
           </on>
           <on event="onUploadError">
@@ -52,6 +53,7 @@
         </div>
         <!-- 첨부 일괄 정리 (F6). 개별 삭제는 업로더가 하고, 이 버튼은 반려·종결 건을 한 번에 비울 때 쓴다. -->
         <div data-ref="cr_007_image_admin_actions" class="flex items-center flex-wrap gap-2 mt-3">
+          <!-- 올린 사람과 무관하게 이 신청서의 첨부를 파일째 전부 지운다 — 개별 삭제와 달리 확인창을 거치지 않는다. -->
           <button data-ref="cr_007_image_clear" data-if="{{(claim?.data?.claim?.images ?? []).length > 0}}" type="button" class="btn btn-secondary btn-sm" disabled="{{claim?.data?.abilities?.can_update_status !== true || _local.isClearingClaimImages === true}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.clearClaimImages" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}"/>
@@ -91,6 +93,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
       <!-- 취소 신청서도 관리자 메모 컬럼이 없다 — 환불신청서와 같은 이유로 입력을 그리지 않는다. -->
       <p data-ref="cm_001b_memo_unavailable_cancel" data-if="{{(claim?.data?.claim?.claim_type ?? '') === 'cancel'}}" class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.memo.not_supported_cancel</p>
       <div data-ref="cm_002_memo_editor" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}">
+        <!-- 적는 동안은 화면에만 있고 아래 [메모 저장] 을 눌러야 서버에 간다. 저장하지 않고 떠나면 적던 내용은 버려지고, 다시 열면 서버에 마지막으로 저장된 메모가 채워진다. -->
         <textarea data-ref="cm_003_memo_textarea" name="adminMemo" :rows="6" :maxLength="2000" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.memo.placeholder" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.adminMemo ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
           <on type="change">
             <set-state target="_local" adminMemo="{{$event.target.value}}"/>

@@ -56,6 +56,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "동일상품 교환 — 같은 옵션의 새 상품으로 바꿔 받는다. 고른 방식은 모달 안에서만 바뀌고 신청서 줄에는 [적용]을 눌러야 반영된다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -93,6 +94,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "옵션 변경 교환 — 같은 상품의 다른 옵션으로 받는다. 이 방식을 고르면 옵션·추가옵션 칸이 열리고, 재고가 있는 조합이 잡혀야 [적용]이 풀린다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -166,6 +168,7 @@
                                             "text": "{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}"
                                         },
                                         {
+                                            "comment": "옵션 그룹은 차례로 고른다 — 앞 그룹을 골라야 다음 그룹이 풀리고, 고를 때마다 지금까지의 선택 조합으로 실제 옵션을 다시 찾아 아래 요약(가격·재고)에 세운다.",
                                             "type": "basic",
                                             "name": "Select",
                                             "actions": [
@@ -254,6 +257,7 @@
                                             "text": "{{claimAddGroup.name}}"
                                         },
                                         {
+                                            "comment": "추가옵션 — 빈 값을 고르면 그 그룹을 선택에서 빼고, 값을 바꿀 때마다 그 그룹의 직접입력 글을 비워 앞 값에 쓴 글이 새 값에 따라붙지 않게 한다.",
                                             "type": "basic",
                                             "name": "Select",
                                             "actions": [
@@ -283,6 +287,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "직접입력 글 — 공백만 남기면 그 그룹의 글을 아예 지워 빈 글이 신청서에 실리지 않게 한다. 적용하면 글은 추가옵션 이름 옆 괄호로 붙어 신청서 줄에 보인다.",
                                                     "type": "basic",
                                                     "name": "Input",
                                                     "actions": [
@@ -390,6 +395,7 @@
                     "text": "$t:claim.change_product.cancel"
                 },
                 {
+                    "comment": "[적용] — 모달을 연 그 상품 줄에만 교환 방식·옵션·추가옵션을 써 넣고 창을 닫는다. 옵션 차액은 이어서 부르는 미리보기가 신청서 요약에서 확정한다.",
                     "type": "basic",
                     "name": "Button",
                     "actions": [

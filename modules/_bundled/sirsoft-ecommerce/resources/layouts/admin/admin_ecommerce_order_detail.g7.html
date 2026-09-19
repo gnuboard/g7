@@ -48,8 +48,7 @@
   <data-source id="order_logs" label_key="$t:sirsoft-ecommerce.editor.data_source.order_logs" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/logs" method="GET" :auto_fetch="true" :auth_required="true">
     <params per_page="{{_local.logsPerPage ?? 10}}" page="{{_local.logsPage ?? 1}}" sort_order="{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"/>
   </data-source>
-  <!-- 취소/환불 창의 사유 선택지 — 운영자가 관리하는 사유 중 사용 중인 환불 사유만 받는다
-주문 스코프 클레임 내역 (D20 — 유형 서브탭 뱃지용 counts + 신청서가 상품 배열을 품는 그룹 구조). 이 게이트(claims.read)는 화면 라우트 권한(orders.read)보다 좁다 — 클레임 권한이 없는 운영자에게는 403 이므로 suppress 로 전파를 끊고 fallback 의 unavailable 로 '못 불러왔다' 를 섹션이 말한다. 화면 전체를 오류 페이지로 떨어뜨리거나 '접수된 건 없음' 으로 뭉뚱그리지 않는다. transition_overlay 에는 넣지 않는다 — 한 섹션이 주문 화면 전체의 진입을 막아서는 안 된다. -->
+  <!-- 주문 스코프 클레임 내역 (D20 — 유형 서브탭 뱃지용 counts + 신청서가 상품 배열을 품는 그룹 구조). 이 게이트(claims.read)는 화면 라우트 권한(orders.read)보다 좁다 — 클레임 권한이 없는 운영자에게는 403 이므로 suppress 로 전파를 끊고 fallback 의 unavailable 로 '못 불러왔다' 를 섹션이 말한다. 화면 전체를 오류 페이지로 떨어뜨리거나 '접수된 건 없음' 으로 뭉뚱그리지 않는다. transition_overlay 에는 넣지 않는다 — 한 섹션이 주문 화면 전체의 진입을 막아서는 안 된다. -->
   <data-source id="orderClaims" label_key="$t:sirsoft-ecommerce.editor.data_source.orderClaims" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
@@ -65,6 +64,7 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 취소/환불 창의 사유 선택지 — 운영자가 관리하는 사유 중 사용 중인 환불 사유만 받는다 -->
   <data-source id="refundReasons" label_key="$t:sirsoft-ecommerce.editor.data_source.refundReasons" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claim-reasons/active" method="GET" :auto_fetch="true" :auth_required="true">
     <params type="refund"/>
   </data-source>

@@ -1,3 +1,5 @@
+<!-- 배송정책 폼의 클레임 회수지 구역 — 교환·반품 신청이 접수될 때 고객에게 안내할 회수지를 유형별로 한 곳씩 정한다.
+  정책 본문과 다른 그릇에 쓴다 — 입력은 회수지 편집 버퍼에 모이고, 손댄 표식이 선 경우에만 정책 저장이 끝난 뒤 회수지 전용 요청으로 따로 저장된다. -->
 <partial description="배송정책 폼 - 클레임 회수지 (교환/반품 각각 1건)">
   <div data-ref="claim_addresses_section" class="admin-card">
     <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_claim_addresses</h2>
@@ -16,6 +18,7 @@
             <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_recipient_name</span>
             <span class="text-required">*</span>
           </label>
+          <!-- 교환 회수지의 받는 사람(필수) — 여기에 적는 순간 회수지를 손댄 것으로 표시되어, 정책 저장이 끝난 뒤 회수지만 따로 저장하는 요청이 이어진다. -->
           <input data-ref="claim_address_exchange_recipient_name" type="text" class="{{_local.errors?.['addresses.exchange.recipient_name'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_local.claimAddresses?.addresses?.exchange?.recipient_name ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_recipient_name_placeholder" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.exchange.recipient_name="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -25,6 +28,7 @@
         </div>
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_phone</label>
+          <!-- 교환 회수지 연락처(선택) — 비워 두어도 회수지는 저장되지만, 이 칸만 고쳐도 회수지 저장 요청은 따로 나간다. -->
           <input data-ref="claim_address_exchange_phone" type="text" class="input w-full" value="{{_local.claimAddresses?.addresses?.exchange?.phone ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_phone_placeholder" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.exchange.phone="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -33,6 +37,7 @@
         </div>
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_zipcode</label>
+          <!-- 교환 회수지 우편번호(선택) — 서버는 형식을 따지지 않고 길이만 보므로, 주소 검색 없이 적은 값이 그대로 신청서에 복사된다. -->
           <input data-ref="claim_address_exchange_zipcode" type="text" class="input w-full" value="{{_local.claimAddresses?.addresses?.exchange?.zipcode ?? ''}}" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.exchange.zipcode="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -44,6 +49,7 @@
             <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_address1</span>
             <span class="text-required">*</span>
           </label>
+          <!-- 교환 회수지 기본주소(필수) — 받는 사람과 짝을 이루는 필수 칸이라, 한쪽만 적힌 회수지는 정책이 저장된 뒤에도 회수지 저장에서 거절되고 화면은 이 폼에 머문다. -->
           <input data-ref="claim_address_exchange_address1" type="text" class="{{_local.errors?.['addresses.exchange.address1'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_local.claimAddresses?.addresses?.exchange?.address1 ?? ''}}" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.exchange.address1="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -53,6 +59,7 @@
         </div>
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_address2</label>
+          <!-- 교환 회수지 상세주소(선택) — 운영자 클레임 상세의 회수지 줄에서 기본주소 바로 뒤에 이어 붙어 보인다. -->
           <input data-ref="claim_address_exchange_address2" type="text" class="input w-full" value="{{_local.claimAddresses?.addresses?.exchange?.address2 ?? ''}}" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.exchange.address2="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -74,6 +81,7 @@
             <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_recipient_name</span>
             <span class="text-required">*</span>
           </label>
+          <!-- 반품 회수지의 받는 사람(필수) — 반품 신청은 교환 회수지로 대신하지 않으므로, 같은 창고를 쓰더라도 이 구획을 따로 채워야 반품 신청서에 회수지가 실린다. -->
           <input data-ref="claim_address_return_recipient_name" type="text" class="{{_local.errors?.['addresses.return.recipient_name'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_local.claimAddresses?.addresses?.return?.recipient_name ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_recipient_name_placeholder" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.return.recipient_name="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -83,6 +91,7 @@
         </div>
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_phone</label>
+          <!-- 반품 회수지 연락처(선택) — 고친 값은 이미 접수된 반품에는 닿지 않고 저장 이후 들어오는 신청부터 복사된다. -->
           <input data-ref="claim_address_return_phone" type="text" class="input w-full" value="{{_local.claimAddresses?.addresses?.return?.phone ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_phone_placeholder" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.return.phone="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -91,6 +100,7 @@
         </div>
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_zipcode</label>
+          <!-- 반품 회수지 우편번호(선택) — 이 칸 하나만 적혀 있어도 저장은 그 회수지를 입력된 것으로 보고 그대로 보내므로, 받는 사람·기본주소가 비었으면 서버가 빠진 칸을 알려 준다. -->
           <input data-ref="claim_address_return_zipcode" type="text" class="input w-full" value="{{_local.claimAddresses?.addresses?.return?.zipcode ?? ''}}" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.return.zipcode="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -102,6 +112,7 @@
             <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_address1</span>
             <span class="text-required">*</span>
           </label>
+          <!-- 반품 회수지 기본주소(필수) — 다섯 칸을 모두 비운 채 저장하면 반품 회수지는 삭제로 처리된다(지우기 버튼과 달리 확인창이 없다). -->
           <input data-ref="claim_address_return_address1" type="text" class="{{_local.errors?.['addresses.return.address1'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_local.claimAddresses?.addresses?.return?.address1 ?? ''}}" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.return.address1="{{$event.target.value}}" :claimAddressesDirty="true"/>
@@ -111,6 +122,7 @@
         </div>
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_address2</label>
+          <!-- 반품 회수지 상세주소(선택) — 비워도 회수지는 유효하다. 필수 검사는 받는 사람과 기본주소 두 칸에만 걸린다. -->
           <input data-ref="claim_address_return_address2" type="text" class="input w-full" value="{{_local.claimAddresses?.addresses?.return?.address2 ?? ''}}" disabled="{{_computed.isReadOnly || (!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true)}}">
             <on type="change">
               <set-state target="local" claimAddresses.addresses.return.address2="{{$event.target.value}}" :claimAddressesDirty="true"/>

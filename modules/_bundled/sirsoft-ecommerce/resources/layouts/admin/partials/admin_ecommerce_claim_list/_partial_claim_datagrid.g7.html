@@ -1,3 +1,4 @@
+<!-- 클레임 목록 — 결과 표(총 건수·페이지당 건수·DataGrid). 날짜·금액·상태는 서버가 준 서식 문자열과 라벨을 그대로 그리고, 쪽과 페이지당 건수는 URL 쿼리로 바꿔 새로고침·뒤로가기에도 같은 화면이 선다. -->
 <partial description="Claim List - DataGrid Section (S8b)">
   <div>
     <div data-ref="claim_table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
@@ -7,6 +8,7 @@
       </div>
       <!-- 우측: 페이지당 건수. 정렬 셀렉트는 두지 않는다 — 목록 게이트(`Admin\ClaimListRequest`)에 정렬 파라미터가 없어, 옵션을 만들면 화면에만 있고 저장소가 모르는 축이 된다. -->
       <div class="flex-center gap-2">
+        <!-- 페이지당 건수. 조회 크기는 URL 의 per_page 가 정하지만 replace 이동은 화면을 다시 마운트하지 않아 셸의 init 이 돌지 않으므로, 셀렉트가 보여 줄 로컬 값도 여기서 함께 바꾼다. -->
         <select data-ref="d_002_per_page_select" name="perPage" class="w-24" value="{{_local.perPage ?? '20'}}">
           <options>
             <option value="10">10</option>
@@ -34,6 +36,7 @@
         </column>
         <column field="claim_number" header="$t:sirsoft-ecommerce.admin.claim.column.claim_number" width="160px" :sortable="false" :required="true">
           <cell>
+            <!-- 클레임번호를 눌러 상세로. 보던 목록 조건(유형·필터·쪽)을 주소에 이고 가므로 상세의 [목록] 버튼이 같은 자리로 되돌아온다. -->
             <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
               <on type="click">
                 <navigate path="/admin/ecommerce/claims/{{row.claim_number}}" :mergeQuery="true">
@@ -106,14 +109,17 @@
           <item id="view_detail" label="$t:sirsoft-ecommerce.admin.claim.action.view_detail" iconName="eye"/>
         </prop>
         <on type="change" event="onSelectionChange">
+          <!-- 체크할 때뿐 아니라 재조회·쪽 이동으로 행이 빠질 때도 그리드가 남은 선택만 다시 올려 보낸다(selectionScope page) — 그래서 일괄 변경 바가 읽는 선택은 언제나 지금 보이는 행이다. -->
           <set-state target="_local" selectedItems="{{$args[0]}}"/>
         </on>
         <on type="change" event="onPageChange">
+          <!-- 쪽 이동도 주소로 한다 — 걸어 둔 조건을 이어받아 page 만 바꾸고, 이력을 새로 쌓지 않아 뒤로가기가 쪽마다 멈추지 않는다. -->
           <navigate path="/admin/ecommerce/claims" :mergeQuery="true" :replace="true" transition_overlay_target="claim_datagrid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
         </on>
         <on type="action" event="onRowAction">
+          <!-- 행 메뉴 [상세 보기] 도 id 가 아니라 클레임번호 주소로 간다 — id 는 유형마다 다른 테이블의 키라 겹칠 수 있고, 번호에서 유형을 찾는 것은 서버 몫이다. -->
           <switch>
             <case when="view_detail">
               <navigate path="/admin/ecommerce/claims/{{$args[1].claim_number}}" :mergeQuery="true">

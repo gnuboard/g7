@@ -1965,6 +1965,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "유무는 서버가 한 값만 받으므로 세 칩이 라디오처럼 하나만 켜지고, 켜진 칩을 다시 누르면 조건이 빠진다. 「없음」에 아래 상태·귀책·신청일을 더하면 조건 전체가 뒤집혀 그런 클레임이 없는 주문이 걸린다.",
                                                     "id": "f_200_claimPresence_none",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -1986,6 +1987,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "완료·반려·철회로 이미 끝난 클레임만 있는 주문도 걸린다 — 유형을 가리지 않고 클레임이 한 번이라도 접수된 주문 전체다.",
                                                     "id": "f_201_claimPresence_any",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2007,6 +2009,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "완료·반려·철회에 이르지 않은 클레임이 있는 주문만 남겨, 아직 처리가 끝나지 않은 주문을 추릴 때 쓴다. 취소는 완료 전(신청 상태)인 건만 진행 중으로 친다.",
                                                     "id": "f_202_claimPresence_active",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2062,6 +2065,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "교환이 접수돼 운영자 검토를 기다리는 첫 단계다. 신청 때 결제하는 방식으로 배송비·차액이 청구되면 접수 직후 결제대기로 넘어간다.",
                                                     "id": "f_204_claimExchangeStatuses_requested",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2084,6 +2088,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "교환 배송비나 옵션 차액을 고객이 더 내야 하는데 아직 다 들어오지 않은 건 — 일부만 결제돼 잔액이 남아도 여기 머문다.",
                                                     "id": "f_205_claimExchangeStatuses_payment_pending",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2106,6 +2111,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "추가 결제가 다 들어왔지만 승인으로 넘어가지 못한 건 — 신청 때 결제한 건의 자동 승인이 꺼져 있거나 재고 부족 등으로 승인이 막히면 여기 남아 운영자가 직접 승인한다.",
                                                     "id": "f_206_claimExchangeStatuses_paid",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2128,6 +2134,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "교환을 받아들여 회수 준비로 넘어가기 직전의 건. 여기서부터는 신청자 철회도 운영자 반려도 불가능하고 회수 단계로만 나아간다.",
                                                     "id": "f_207_claimExchangeStatuses_approved",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2150,6 +2157,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "결정을 미뤄 둔 건 — 보류에서는 곧바로 회수로 가지 못하고 승인·반려·철회 중 하나로 풀려야 한다.",
                                                     "id": "f_208_claimExchangeStatuses_on_hold",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2172,6 +2180,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "운영자가 교환을 거절해 종결된 건. 종결 상태라 「진행 중만」과 함께 켜면 이 칩으로는 아무것도 걸리지 않는다.",
                                                     "id": "f_209_claimExchangeStatuses_rejected",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2194,6 +2203,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "승인된 교환에서 고객이 가진 원래 상품을 거둬 올 채비를 하는 단계다. 회수 송장을 넣는 순간 회수중으로 넘어가므로, 여기 머문 건은 대개 회수 송장이 아직 없는 건이다.",
                                                     "id": "f_210_claimExchangeStatuses_collection_ready",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2216,6 +2226,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "원래 상품이 고객에게서 판매자 쪽으로 돌아오는 중인 건. 도착하면 회수도착을 거쳐 새 상품 발송 준비로 넘어간다.",
                                                     "id": "f_211_claimExchangeStatuses_collecting",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2238,6 +2249,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "거둬 온 원래 상품이 도착해 새 상품을 보낼 차례인 건이다. 필터가 보는 신청서 상태는 살아 있는 신청 상품이 모두 같은 단계에 이르러야 옮겨지므로(반품도 같다), 일부 상품만 도착한 신청서는 이전 단계 칩에 남는다.",
                                                     "id": "f_212_claimExchangeStatuses_collected",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2260,6 +2272,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "교환해 줄 새 상품을 보낼 준비를 하는 건. 발송 송장을 넣으면 곧바로 발송중으로 넘어가며, 재발송 세 단계(준비중·발송중·도착)는 교환에만 있다.",
                                                     "id": "f_213_claimExchangeStatuses_redelivery_ready",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2282,6 +2295,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "새 상품이 고객에게 가는 중인 건 — 발송이 시작되는 순간 교환 상품이 주문에 새 상품 줄로 붙는다. 세부 교환 단계는 클레임 신청서에만 기록돼 주문상태 필터로는 가를 수 없다.",
                                                     "id": "f_214_claimExchangeStatuses_redelivering",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2304,6 +2318,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "새 상품이 고객에게 도착한 건 — 남은 것은 운영자의 교환완료 처리뿐이라 완료를 빠뜨린 건을 찾을 때 쓴다.",
                                                     "id": "f_215_claimExchangeStatuses_redelivered",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2326,6 +2341,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "교환이 끝난 건. 새 상품이 더 싼 교환이면 차액 환불신청서가 완료 때 또는 그 뒤에 따로 접수되므로, 교환완료라도 환불 줄 칩에는 아직 안 걸릴 수 있다.",
                                                     "id": "f_216_claimExchangeStatuses_completed",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2348,6 +2364,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "신청자가 스스로 교환을 거둬 종결된 건 — 운영자가 지정할 수 없는 상태라, 운영자가 거절한 반려와 갈라 볼 수 있다.",
                                                     "id": "f_217_claimExchangeStatuses_withdrawn",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2404,6 +2421,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "반품이 접수돼 운영자 검토를 기다리는 첫 단계다. 반품은 교환과 달리 새 상품을 보내지 않아 회수도착 다음이 곧바로 완료다.",
                                                     "id": "f_219_claimReturnStatuses_requested",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2426,6 +2444,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "반품 배송비를 환불액에서 빼지 않고 따로 받는 경우에만 거치는 단계 — 그 결제가 아직 끝나지 않은 건이다.",
                                                     "id": "f_220_claimReturnStatuses_payment_pending",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2448,6 +2467,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "반품 배송비 수납이 끝난 건. 승인하면서 청구한 건은 결제가 끝나는 즉시 승인으로 넘어가므로, 여기 머무는 것은 대개 신청 때 결제한 건이다.",
                                                     "id": "f_221_claimReturnStatuses_paid",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2470,6 +2490,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "반품을 받아들여 회수를 시작할 건. 환불은 승인 때가 아니라 반품완료 처리 때(또는 그 뒤에) 환불신청서로 따로 접수된다.",
                                                     "id": "f_222_claimReturnStatuses_approved",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2492,6 +2513,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "반품 판단을 미뤄 둔 건. 보류 중에도 신청자는 철회할 수 있다.",
                                                     "id": "f_223_claimReturnStatuses_on_hold",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2514,6 +2536,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "운영자가 반품을 거절해 종결된 건 — 반려는 승인 전에만 가능해 회수가 시작된 반품은 여기 오지 않는다.",
                                                     "id": "f_224_claimReturnStatuses_rejected",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2536,6 +2559,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "승인된 반품 상품을 고객에게서 거둬 올 채비를 하는 단계다. 교환에도 같은 이름의 단계가 있지만 이 칩은 반품 신청서만 보므로, 둘 다 보려면 위 교환 줄의 칩도 함께 켠다.",
                                                     "id": "f_225_claimReturnStatuses_collection_ready",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2558,6 +2582,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "반품 상품이 판매자 쪽으로 돌아오는 중인 건 — 회수 송장이 입력되면 회수준비중에서 자동으로 이 단계가 된다.",
                                                     "id": "f_226_claimReturnStatuses_collecting",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2580,6 +2605,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "돌려받은 상품이 도착해 반품완료 처리만 남은 건 — 완료 때 운영자가 재고 복구 여부와 환불신청서 접수 여부를 고른다.",
                                                     "id": "f_227_claimReturnStatuses_collected",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2602,6 +2628,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "반품이 끝난 건. 환불신청서는 완료 때 접수하지 않고 미뤄 둘 수 있어, 반품완료 주문이 환불 줄 칩에는 아직 안 걸릴 수 있다.",
                                                     "id": "f_228_claimReturnStatuses_completed",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2624,6 +2651,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "신청자가 반품을 거둬 종결된 건 — 추가 결제를 이미 했다면 철회와 함께 전액 환급된다.",
                                                     "id": "f_229_claimReturnStatuses_withdrawn",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2680,6 +2708,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "환불 신청이 접수돼 운영자 승인을 기다리는 건. 출처를 가리지 않아 취소에서 생긴 환불신청서도 함께 걸린다.",
                                                     "id": "f_231_claimRefundStatuses_requested",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2702,6 +2731,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "승인됐지만 돈은 아직 나가지 않은 건 — 다음은 환불 실행으로, 처리중을 거치거나 곧바로 완료된다.",
                                                     "id": "f_232_claimRefundStatuses_approved",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2724,6 +2754,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "PG 에 환불을 요청하는 동안의 내부 단계다. PG 왕복이 도중에 끊기면 이 상태에 멈춰 남으므로, 멈춘 환불을 찾을 때 쓴다.",
                                                     "id": "f_233_claimRefundStatuses_processing",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2746,6 +2777,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "환불을 멈춰 둔 건 — 신청 직후뿐 아니라 승인·처리중에서도 보류로 올 수 있어, 실행 도중 멈춘 건도 섞여 있다.",
                                                     "id": "f_234_claimRefundStatuses_on_hold",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2768,6 +2800,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "환불 실행을 거쳐 돈이 실제로 돌아간 건. 이 상태는 실행 절차만 만들 수 있어 운영자가 상태 변경으로 지정하지 못한다.",
                                                     "id": "f_235_claimRefundStatuses_completed",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2790,6 +2823,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "운영자가 환불을 거절해 종결된 건 — 반려는 신청·보류 상태에서만 가능해, 승인된 환불은 보류를 거쳐야 여기 온다.",
                                                     "id": "f_236_claimRefundStatuses_rejected",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2812,6 +2846,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "신청자가 환불 신청을 거둔 건. 환불 철회는 신청·보류 상태에서만 열려 있다.",
                                                     "id": "f_237_claimRefundStatuses_withdrawn",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2868,6 +2903,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "나눠 취소하다 마지막에 남은 수량을 모두 취소한 건도 전체취소로 기록돼, 한 주문이 부분·전체 두 칩에 함께 걸릴 수 있다. 취소는 상태가 신청·완료 둘뿐이라 이 줄만 상태 대신 유형으로 가른다.",
                                                     "id": "f_239_claimCancelTypes_full",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2890,6 +2926,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "주문 상품 일부만 취소한 건. 취소 기록에는 귀책이 없어 귀책 칩을 켜면 이 줄은 무시되고, 취소 칩만 고른 채 귀책을 켜면 0건이 된다(유무가 「없음」이면 전건).",
                                                     "id": "f_240_claimCancelTypes_partial",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2946,6 +2983,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "단순 변심·사이즈·옵션 착오처럼 고객 사정으로 접수된 클레임이다(기본 사유 기준). 교환·반품 배송비가 자동으로 산정돼 고객에게 청구되는 것은 이 귀책뿐이다.",
                                                     "id": "f_242_claimFaultTypes_customer",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2968,6 +3006,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "상품 불량·오배송·정보 상이·배송 지연처럼 판매자 책임으로 접수된 클레임이다(기본 사유 기준). 귀책·상태·신청일은 한 클레임이 모두 만족해야 해서, 판매자 귀책 건과 기간 안 접수 건이 서로 다른 클레임이면 그 주문은 걸리지 않는다.",
                                                     "id": "f_243_claimFaultTypes_seller",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -2990,6 +3029,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "배송 중 파손처럼 택배사 책임으로 접수된 클레임이다 — 기본 사유로는 교환·반품에만 있다. 귀책은 신청 사유에 딸린 값이라 사유가 바뀌면 함께 바뀐다.",
                                                     "id": "f_244_claimFaultTypes_carrier",
                                                     "type": "composite",
                                                     "name": "ChipCheckbox",
@@ -3046,6 +3086,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "일자 필터(주문·결제·배송일)와 달리 클레임이 접수된 날로 거른다 — 위 상태·귀책을 만족하는 바로 그 클레임이 이 기간에 접수됐어야 걸린다. 한쪽만 채우면 그쪽 경계만 적용된다.",
                                                     "id": "f_261_claim_requested_from",
                                                     "type": "basic",
                                                     "name": "Input",
@@ -3075,6 +3116,7 @@
                                                     "text": "~"
                                                 },
                                                 {
+                                                    "comment": "종료일은 그날 하루 끝까지 포함한다. 시작일보다 앞선 날을 넣어도 화면은 막지 않고 서버 검증이 요청을 거부한다.",
                                                     "id": "f_263_claim_requested_to",
                                                     "type": "basic",
                                                     "name": "Input",

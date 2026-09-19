@@ -29,6 +29,7 @@
           <set-state target="local" claimRefundBankCode="{{$event.target.value}}"/>
         </on>
       </select>
+      <!-- 계좌번호는 입력한 그대로 두었다가 제출 때 앞뒤 공백만 걷어 보낸다 — 하이픈 없이 쓰라는 것은 안내 문구일 뿐 화면이 걷어 내지 않는다. 금액과 무관해 바꿔도 미리보기를 다시 부르지 않는다. -->
       <input type="text" value="{{_local.claimRefundBankAccount ?? ''}}" placeholder="$t:claim.apply.refund_account_number_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"/>
         <on type="change">
@@ -36,6 +37,7 @@
         </on>
       </input>
     </div>
+    <!-- 예금주 — 작성 화면에서는 주문 때 등록한 계좌가 있으면 그 원문으로 채워 열리고, 수정 화면에서는 빈 칸으로 열린다. 수정 화면에서 계좌번호만 새로 적고 이 칸을 비워 두면 세 칸이 짝을 이루지 못해 서버가 거절한다. -->
     <input type="text" value="{{_local.claimRefundBankHolder ?? ''}}" placeholder="$t:claim.apply.refund_account_holder_placeholder" class="w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
       <responsive on="portable" class="w-full mt-3 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"/>
       <on type="change">

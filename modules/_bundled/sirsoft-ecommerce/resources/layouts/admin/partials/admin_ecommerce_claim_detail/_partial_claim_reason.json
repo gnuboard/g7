@@ -158,6 +158,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "지우는 일은 업로더가 확인창을 거쳐 이미 끝냈고 자기 격자만 고쳤다 — 출처 스트립과 활동 로그는 상세를 다시 읽어야 따라오므로 여기서 다시 읽고 삭제 안내를 띄운다.",
                                     "event": "onRemove",
                                     "handler": "sirsoft-ecommerce.refreshClaimAttachments",
                                     "params": {
@@ -274,6 +275,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "올린 사람과 무관하게 이 신청서의 첨부를 파일째 전부 지운다 — 개별 삭제와 달리 확인창을 거치지 않는다.",
                                     "id": "cr_007_image_clear",
                                     "type": "basic",
                                     "name": "Button",
@@ -475,6 +477,7 @@
                     "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
                     "children": [
                         {
+                            "comment": "적는 동안은 화면에만 있고 아래 [메모 저장] 을 눌러야 서버에 간다. 저장하지 않고 떠나면 적던 내용은 버려지고, 다시 열면 서버에 마지막으로 저장된 메모가 채워진다.",
                             "id": "cm_003_memo_textarea",
                             "type": "basic",
                             "name": "Textarea",

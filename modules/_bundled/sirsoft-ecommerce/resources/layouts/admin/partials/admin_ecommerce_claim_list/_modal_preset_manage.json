@@ -1,4 +1,5 @@
 {
+    "comment": "클레임 목록 — 검색 프리셋 관리 창. 저장해 둔 조건 묶음의 이름을 바꾸거나 지우고 새 프리셋 저장 창을 여는데, 그 창들은 이 창을 닫지 않고 위에 겹쳐 떴다가 닫히면 이 창으로 돌아온다.",
     "meta": {
         "is_partial": true,
         "description": "Claim List - Preset Management Modal"
@@ -53,6 +54,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "연필 버튼 — 이름 바꾸기 창을 이 창 위에 겹쳐 연다. 반복 변수 presetItem 은 이 목록 안에서만 살아 있으므로, 입력칸이 현재 이름으로 시작하도록 id 와 이름을 _global 로 옮겨 담고 연다.",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [
@@ -91,6 +93,7 @@
                                     ]
                                 },
                                 {
+                                    "comment": "휴지통 버튼 — 삭제 확인 창을 겹쳐 연다. 확인 창은 문장에 프리셋 이름을 넣지만 목록을 따로 조회하지 않으므로 id 와 함께 이름도 _global 로 넘긴다.",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [

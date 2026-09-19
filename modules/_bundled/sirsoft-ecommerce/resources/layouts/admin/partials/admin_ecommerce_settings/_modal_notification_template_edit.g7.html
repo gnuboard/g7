@@ -181,6 +181,7 @@
             </html-editor>
                 </default>
               </extension-point>
+              <!-- 리치 편집기를 쓰지 않는 채널(사이트내 알림 등)의 본문 칸. 알림센터가 본문을 태그 해석 없이 글자 그대로 그리므로, 서식 없는 입력으로 받아야 관리자가 쓴 글과 고객이 받는 알림이 같아진다. -->
               <html-editor data-ref="template_body_plain" data-if="{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor !== 'rich'}}" content="{{_global.ecommerce_notification_template_form_modal?.template?.body?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="false" :showHtmlModeToggle="false" class="min-h-[200px]">
                 <on type="change">
                   <set-state target="global" ecommerce_notification_template_form_modal.template.body="{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.body, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>

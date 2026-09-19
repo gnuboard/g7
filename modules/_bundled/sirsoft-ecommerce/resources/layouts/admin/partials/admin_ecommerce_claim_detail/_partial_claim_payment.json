@@ -783,6 +783,7 @@
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_exchange"
                                         },
                                         {
+                                            "comment": "교환 왕복 배송비 — 상세 응답의 현재 값이 채워져 있고, 고친 값은 아래 [금액 저장] 을 눌러야 서버에 가며 그때 총 청구액이 함께 다시 계산된다.",
                                             "id": "cst_001_shipping_fee_input",
                                             "type": "basic",
                                             "name": "Input",
@@ -825,6 +826,7 @@
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_return"
                                         },
                                         {
+                                            "comment": "반품 회수 배송비 — 교환 칸과 같은 값을 공유하고 유형에 따라 한쪽만 선다. 비운 채 저장하면 이 금액은 보내지 않아 기존 값이 남으므로, 청구를 없애려면 0 을 적는다.",
                                             "id": "cst_002_shipping_fee_input_return",
                                             "type": "basic",
                                             "name": "Input",
@@ -1338,6 +1340,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "금액을 싣지 않고 접수만 요청한다 — 무엇을 얼마나 환불할지는 서버가 이 신청서를 보고 정하고, 화면은 성공 뒤 상세와 활동 로그를 다시 읽는다.",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -1819,6 +1822,7 @@
                                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount"
                                                         },
                                                         {
+                                                            "comment": "현금 환불액 — 저장하지 않아도 [환불하기] 는 지금 칸에 적힌 값을 확인창으로 넘겨 그대로 실행한다. 비워 두면 [금액 저장] 은 이 값을 건너뛰지만 실행은 0원으로 싣는다.",
                                                             "id": "cre_008_pg_amount",
                                                             "type": "basic",
                                                             "name": "Input",
@@ -1892,6 +1896,7 @@
                                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount"
                                                         },
                                                         {
+                                                            "comment": "마일리지 환불액 — 회원 주문에서만 쓰는 칸이다(비회원에게는 되돌릴 적립 계정이 없다). 적은 값은 현금 칸과 더해져 아래 합계와 상한 초과 안내에 바로 쓰인다.",
                                                             "id": "cre_009_points_amount",
                                                             "type": "basic",
                                                             "name": "Input",

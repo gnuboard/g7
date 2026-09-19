@@ -188,6 +188,7 @@
       <!-- 환불까지 한 번에 처리 (D7) — 기본 꺼짐. 관리자 [주문취소]는 환불신청서를 만들 뿐이고, 금액확인 → 승인 → 환불완료는 운영자가 하나씩 밟는 것이 기본 운영이다. 체크하면 승인·완료까지 자동으로 민다(계좌 환불 수단은 그래도 승인에서 멈춘다). -->
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <label data-ref="cancel_auto_advance_refund_field" class="flex items-start gap-2 cursor-pointer select-none">
+          <!-- 이번 취소에 한해 환불 단계를 자동으로 밀지 고르는 표식이다 — 체크만으로는 서버에 아무것도 가지 않고, [주문 취소] 실행 요청에 실려 가서야 효력이 생긴다. -->
           <input id="cancel_auto_advance_refund_checkbox" type="checkbox" checked="{{_local.autoAdvanceRefund === true}}" class="checkbox mt-0.5">
             <on type="change">
               <set-state target="local" autoAdvanceRefund="{{!(_local.autoAdvanceRefund === true)}}"/>

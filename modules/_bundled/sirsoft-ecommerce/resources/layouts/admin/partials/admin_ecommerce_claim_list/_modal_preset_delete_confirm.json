@@ -1,4 +1,5 @@
 {
+    "comment": "클레임 목록 — 검색 프리셋 삭제 확인 창(관리 창 위에 겹쳐 뜬다). 지울 프리셋의 id·이름은 관리 창이 `_global` 에 담아 둔 값을 읽으며, 이 창은 프리셋 목록을 따로 조회하지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "Claim List - Preset Delete Confirm Modal"
@@ -49,6 +50,7 @@
                     ]
                 },
                 {
+                    "comment": "삭제 실행. 성공하면 프리셋 목록만 다시 불러 필터 카드의 프리셋 버튼과 아래 깔린 관리 창에서 함께 빠지게 한다 — 지운 것은 조건 묶음이지 신청서가 아니므로 클레임 목록은 다시 읽지 않는다.",
                     "type": "basic",
                     "name": "Button",
                     "actions": [

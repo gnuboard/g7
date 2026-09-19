@@ -15,6 +15,7 @@
           <span>$t:claim.apply.reason_label</span>
           <span class="text-red-500 dark:text-red-400 ml-0.5">*</span>
         </label>
+        <!-- 사유를 바꾸면 귀책이 다시 정해져 배송비 부담 주체가 달라지므로 미리보기를 다시 부르고, 지난 제출이 남긴 오류 표시도 걷는다. 사유가 비어 있는 동안에는 미리보기가 돌지 않아 요약 금액도 서지 않는다. -->
         <select class="{{_local.claimValidationErrors?.reason_code ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}" value="{{_local.claimReason ?? ''}}">
           <on type="change">
             <action handler="sirsoft-ecommerce.setClaimReason" value="{{$event.target.value}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
@@ -32,6 +33,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:claim.apply.reason_detail_label</label>
+        <!-- 상세 사유는 금액에 영향을 주지 않아 미리보기를 다시 부르지 않는다. 고쳐 쓰기 시작하면 지난 제출의 거절 표시를 걷어 이미 고친 칸이 붉게 남지 않게 한다. -->
         <textarea class="w-full px-3 py-2 min-h-20 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="$t:claim.apply.reason_detail_placeholder" :maxLength="1000" value="{{_local.claimReasonDetail ?? ''}}">
           <on type="input">
             <set-state target="_local" claimReasonDetail="{{$event.target.value}}" :claimValidationErrors="null" :claimSubmitError="null"/>
@@ -58,6 +60,7 @@
               <img src="{{claimImage.download_url ?? ''}}" alt="{{claimImage.original_name ?? ''}}" class="w-10 h-10 rounded object-cover bg-gray-100 dark:bg-gray-700"/>
               <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{claimImage.original_name ?? ''}}</span>
             </div>
+            <!-- 첨부 지우기 — 아직 신청서에 붙지 않은 사진은 서버에서 곧바로 지우고, 수정 화면의 기존 사진은 삭제 목록에만 담았다가 저장할 때 함께 넘긴다. 저장을 취소하고 나가도 원래 사진이 남게 하기 위해서다. -->
             <button type="button" class="flex-shrink-0 text-sm text-red-600 dark:text-red-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.removingClaimImageId != null || _local.isSubmittingClaim === true}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.removeClaimImage" imageId="{{claimImage.id}}" imageDeleteBase="{{_local.imageDeleteBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>

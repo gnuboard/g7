@@ -90,7 +90,7 @@
                     }
                 }
             },
-            "comment": "배송 국가·배송 방식·통화·API 규격이 전부 쇼핑몰 설정에서 온다. 아래 computed 대부분이 이 응답을 선택지로 접는 것이고, 폼 초기화도 국가 목록을 먼저 알아야 해서 blocking 이다"
+            "comment": "수정 진입일 때만 이 정책의 교환·반품 회수지를 받는다. 폼 본체를 기다리게 하지 않도록 background 로 받고 마운트마다 새로 받는다 — 응답이 편집보다 늦게 와도 아래 success 가 이미 손댄 버퍼를 지킨다"
         },
         {
             "id": "ecommerce_settings",
@@ -100,7 +100,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "blocking"
+            "loading_strategy": "blocking",
+            "comment": "배송 국가·배송 방식·통화·API 규격이 전부 쇼핑몰 설정에서 온다. 아래 computed 대부분이 이 응답을 선택지로 접는 것이고, 폼 초기화도 국가 목록을 먼저 알아야 해서 blocking 이다"
         },
         {
             "id": "extra_fee_templates",

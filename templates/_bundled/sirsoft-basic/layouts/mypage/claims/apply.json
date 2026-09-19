@@ -339,6 +339,7 @@
     },
     "modals": [
         {
+            "comment": "교환상품 변경 — 교환 신청서에서 고른 상품 줄의 [교환상품 변경]을 누르면 열리고, 그 상품의 옵션을 불러와 고르게 한다. 수정 화면에는 그 버튼이 서지 않아 이 창도 열리지 않는다.",
             "partial": "partials/mypage/claims/_modal_change_product.json"
         }
     ]

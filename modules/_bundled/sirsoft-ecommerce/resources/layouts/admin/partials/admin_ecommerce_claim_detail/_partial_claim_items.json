@@ -3,6 +3,7 @@
         "is_partial": true,
         "description": "Claim Detail - Claim Info Section (progress stepper + claim items with bulk transition + completion card + reason/memo) — S9a"
     },
+    "comment": "클레임 상세의 신청 정보 구획 — 운영자가 신청서를 열면 가장 먼저 보는 자리로, 진행단계·신청서 단위 전이·신청 상품과 상품 단위 일괄 전이·완료 처리·사유와 메모를 위에서부터 차례로 싣는다. 어느 조작이 열리는지는 화면이 판정하지 않고 상세 응답의 능력 값(abilities)을 따른다.",
     "id": "section_claim_info",
     "type": "basic",
     "name": "Div",
@@ -314,6 +315,7 @@
                     },
                     "children": [
                         {
+                            "comment": "옮길 상태를 고르기만 하는 칸이다 — 서버에는 옆 [일괄 적용] 을 눌러야 가고, 반려를 고르면 그 사이에 사유 입력칸이 열린다.",
                             "id": "cts_001_status_select",
                             "type": "basic",
                             "name": "Select",
@@ -360,6 +362,7 @@
                             }
                         },
                         {
+                            "comment": "고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 완료는 재고 복구·환불 접수 선택이 딸려 있어 이 경로로 보내지 않고 완료 처리 모달로 안내하며, 반려는 사유가 비면 보내지 않는다.",
                             "id": "cts_003_apply",
                             "type": "basic",
                             "name": "Button",

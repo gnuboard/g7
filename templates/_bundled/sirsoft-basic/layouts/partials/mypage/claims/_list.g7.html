@@ -212,6 +212,7 @@
         </div>
         <!-- 카드 푸터 — 상세보기. 목록 상태(서브탭·페이지)를 그대로 물려주어 뒤로 돌아왔을 때 보던 자리가 남게 한다. 주문상세 셸(claimDetailLinkMode 가 선 곳)에서는 번호 자체가 링크라 이 푸터가 중복이므로 세우지 않는다. -->
         <div data-ref="claim_list_card_footer_{{claim.claim_number}}" data-if="{{!_local.claimDetailLinkMode}}" class="flex justify-end pt-3 mt-3 border-t border-gray-100 dark:border-gray-700">
+          <!-- [상세보기] — 지금 이 푸터가 서는 곳은 회원 신청내역 목록뿐이지만, 주소는 리터럴로 들지 않고 셸이 준 상세 주소 앞부분에 신청번호를 잇는다. 다른 셸이 푸터를 켜도 자기 상세 화면으로 가게 하기 위해서다. -->
           <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
             <on type="click">
               <navigate path="{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number}}" :mergeQuery="true">

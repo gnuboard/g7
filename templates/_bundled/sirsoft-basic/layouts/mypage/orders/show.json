@@ -86,7 +86,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "회원 주소록 — 배송지 변경 창의 '저장된 배송지' 탭이 읽는다. 화면을 막지 않도록 진입 때 뒤에서 받아 두며, 배송지를 바꾼 뒤에는 주문만 다시 읽고 이 목록은 다시 받지 않는다."
         },
         {
             "id": "refundReasons",
@@ -256,6 +257,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "[취소·환불 신청] — 체크한 상품을 미리 고른 채 신청서를 연다. 즉시 취소될지 환불 심사를 거칠지는 그 화면이 상품별로 가르고, 주소에 함께 실은 주문 ID 로 신청서가 주문 조회를 기다리지 않고 신청 가능 상품을 곧바로 부른다.",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "actions": [
@@ -280,6 +282,7 @@
                                                 "text": "$t:claim.apply.entry_refund"
                                             },
                                             {
+                                                "comment": "[반품 신청] — 체크한 상품을 미리 고른 채 반품 신청서를 연다. 회수 배송비는 그 화면의 서버 미리보기가 계산하고 청구 방식도 거기서 고르며, 주소에 실은 주문 ID 덕에 뒤로가기로 되돌아와도 신청서가 빈 채로 남지 않는다.",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "actions": [
@@ -304,6 +307,7 @@
                                                 "text": "$t:claim.apply.entry_return"
                                             },
                                             {
+                                                "comment": "[교환 신청] — 체크한 상품을 미리 고른 채 교환 신청서를 연다. 교환받을 옵션은 그 화면에서 상품 줄마다 따로 고르고, 주문 ID 를 주소로 넘겨 신청서의 첫 조회를 주문 응답과 떼어 놓는다.",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "actions": [
@@ -467,6 +471,7 @@
             "partial": "partials/mypage/claims/_modal_withdraw.json"
         },
         {
+            "comment": "배송지 변경 창 — 결제대기·결제완료 주문에서 배송지 카드의 버튼이 연다. 회원은 주소록에서 고르거나 직접 입력하고, 적용하면 주문을 다시 읽어 카드가 바뀐다.",
             "partial": "partials/mypage/orders/_modal_change_address.json"
         },
         {

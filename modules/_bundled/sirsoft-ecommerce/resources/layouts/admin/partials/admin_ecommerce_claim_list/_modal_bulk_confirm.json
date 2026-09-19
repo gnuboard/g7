@@ -1,4 +1,5 @@
 {
+    "comment": "클레임 목록 — 일괄 상태 변경 확인 창(교환·반품·환불 탭). 유형·바꿀 상태와 라벨·대상 id 는 목록의 선택 상태를 직접 보지 않고, [일괄 적용] 핸들러가 창을 열기 전에 채워 둔 `_global.claimBulkConfirmData` 에서 읽는다.",
     "meta": {
         "is_partial": true,
         "description": "Claim List - Bulk Status Confirm Modal (S8b)"
@@ -148,6 +149,7 @@
                     ]
                 },
                 {
+                    "comment": "[변경] — 고른 신청서를 한꺼번에 전이한다. 부분 성공 계약이라 게이트에 막힌 건은 건너뛰고 성공·결제 요청으로 돌려진 건·건너뛴 건을 나눠 알린 뒤, 목록의 선택과 상태 셀렉트를 비우고 목록을 다시 부른다.",
                     "id": "cbc_006_apply_button",
                     "type": "basic",
                     "name": "Button",

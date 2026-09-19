@@ -720,6 +720,7 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "평문 편집기 — 채널의 편집기 선언이 rich 가 아닐 때(사이트내 알림, 선언이 없는 확장 채널) 뜬다. 그 채널들은 본문을 글자 그대로 보여 주므로 서식 입력을 주지 않는다.",
                                                     "id": "template_body_plain",
                                                     "type": "composite",
                                                     "name": "HtmlEditor",

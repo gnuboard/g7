@@ -43,6 +43,7 @@
         <responsive on="portable" class="py-4"/>
         <!-- 뒤로가기 — 신청내역 목록으로. 같은 목록 클러스터 안의 이동이므로 서브탭·페이지를 그대로 물려준다. -->
         <div class="flex items-center gap-2 mb-4">
+          <!-- 회원 신청내역 목록으로 돌아가는 버튼이다. 비회원 상세는 목록 대신 주문 상세로 돌아가므로 이 버튼은 공유 partial 이 아니라 셸마다 따로 둔다. -->
           <button type="button" class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
             <on type="click">
               <navigate path="/mypage/claims" :mergeQuery="true">
@@ -101,6 +102,7 @@
               </button>
             </div>
             <div data-if="{{claim.data?.claim?.is_editable === true || claim.data?.claim?.is_withdrawable === true}}" class="flex items-center gap-2 flex-shrink-0">
+              <!-- [수정] — 작성 화면을 수정 모드로 연다. 주소에는 신청번호만 싣고 유형·주문번호는 그 화면이 신청서를 읽어 세우며, 목록 쿼리를 물려주어 수정·상세를 거쳐 목록으로 돌아와도 보던 서브탭이 남는다. -->
               <button data-if="{{claim.data?.claim?.is_editable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
                 <on type="click">
                   <navigate path="/mypage/claims/{{claim.data?.claim?.claim_number}}/edit" :mergeQuery="true">
@@ -109,6 +111,7 @@
                 </on>
                 $t:claim.list.edit
               </button>
+              <!-- [철회] — 누르는 즉시 철회하지 않고 신청번호를 넘겨 확인 모달을 연다. 되돌릴 수 없는 조작이라 실제 요청은 모달의 확인 버튼만 보낸다. -->
               <button data-if="{{claim.data?.claim?.is_withdrawable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer">
                 <on type="click">
                   <action handler="sirsoft-ecommerce.openClaimWithdraw" claimNumber="{{claim.data?.claim?.claim_number}}" claimLabel="{{claim.data?.claim?.claim_type_label ?? ''}}"/>
@@ -138,5 +141,6 @@
   </slot>
   <!-- 철회 확인 — 목록과 같은 파일. 철회 뒤에는 이 화면의 신청서를 다시 읽어 상태가 바뀐 것이 보이게 한다(withdrawRefreshDataSourceId). -->
   <modal src="partials/mypage/claims/_modal_withdraw.g7.html"/>
+  <!-- 첨부 확대 — 사유 카드(공유 partial)의 사진을 누르면 뜨는 창이다. 여는 쪽은 partial 이지만 창은 셸이 마운트하므로 회원·비회원 상세 셸이 모두 이 줄을 가져야 한다. -->
   <modal src="partials/mypage/claims/_modal_image_viewer.g7.html"/>
 </layout>

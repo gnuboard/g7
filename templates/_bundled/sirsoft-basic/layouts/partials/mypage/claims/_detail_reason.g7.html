@@ -36,6 +36,7 @@
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">$t:claim.detail.images</p>
       <div data-each="claimImage in {{claim.data?.claim?.images ?? []}}" class="grid grid-cols-5 gap-2">
         <responsive on="portable" class="grid grid-cols-3 gap-2"/>
+        <!-- 사진을 누르면 확대 창을 연다 — 확대 창은 페이지 로컬에서 대상을 읽으므로 그 사진의 서명 주소와 파일명을 먼저 세운 뒤 연다. -->
         <button type="button" class="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:opacity-90 transition-opacity">
           <on type="click">
             <set-state target="local" claimImageViewerUrl="{{claimImage.download_url ?? ''}}" claimImageViewerName="{{claimImage.original_name ?? ''}}"/>

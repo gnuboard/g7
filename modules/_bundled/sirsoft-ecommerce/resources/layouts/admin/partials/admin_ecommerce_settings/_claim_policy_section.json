@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 클레임 탭의 정책 카드들. 신청 조건·추가결제·첨부 값은 고객 신청 화면의 안내와 서버의 접수 판정이 같은 설정을 함께 읽고, 자동 승인 값은 서버 판정에만, 완료 처리 기본값은 관리자 완료 처리 창의 첫 선택값으로만 쓰인다.",
     "meta": {
         "is_partial": true,
         "description": "쇼핑몰 설정 클레임 탭 - 클레임 정책 (신청 가능 조건 / 추가결제 / 자동 승인 / 첨부 / 완료 처리 기본값)"
@@ -350,6 +351,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_label"
                                 },
                                 {
+                                    "comment": "교환·반품 신청 가능 기간(일) — 서버가 배송완료 시각(없으면 구매확정 시각)부터 이 일수가 지난 신청을 거절한다. 0 이면 기간 제한이 통째로 꺼지므로, 칸을 비워 0 이 담기면 저장 때 최소값 검증에서 막힌다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -866,6 +868,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_label"
                                 },
                                 {
+                                    "comment": "신청서 한 건에 붙일 수 있는 이미지 장수. 교환·반품·환불 신청과 수정, 업로드 단계의 서버 거절선이 모두 이 값을 읽고 고객 신청 화면의 안내도 같은 값을 받으므로 둘이 어긋나지 않는다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -940,6 +943,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_label"
                                 },
                                 {
+                                    "comment": "첨부 이미지 한 장의 용량 상한(KB). 고객·관리자 업로드 검증이 모두 이 값으로 거절하고 고객 신청 화면도 같은 값을 안내하므로, 여기만 바꾸면 화면과 서버가 함께 움직인다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [

@@ -1,3 +1,5 @@
+<!-- 클레임 상세 (운영자) — 교환·반품·취소·환불 신청서 한 건을 열어 신청 정보·배송·결제와 정산·환불 실행·활동 로그를 한 페이지에 잇고, 탭은 스크롤 위치를 따라간다.
+  클레임 목록에서 들어오거나 주문 상세의 클레임 내역에서 새 창으로 열리며, 어느 구획이 서는지는 신청서 유형이 정한다(배송은 교환·반품, 환불 실행은 환불만, 취소는 조회 전용). -->
 <layout name="admin_ecommerce_claim_detail" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.claim.detail.title" description="$t:sirsoft-ecommerce.admin.claim.detail.description"/>
   <!-- 번호 기반 진입이다 — 유형 스코프 API 는 `(유형, id)` 를 받지만 화면 라우트는 번호(§5-3)이고, 번호에서 유형을 읽어내는 것은 채번 규칙(운영자가 바꿀 수 있다)을 아는 서버의 일이다. 응답은 신청서 외에 능력·완료 기본값·진행단계·택배사 선택지를 함께 나른다 — 그 넷을 각자의 엔드포인트에서 읽으면 게이트가 이 화면(`claims.read`)보다 좁아, 클레임 권한만 가진 운영자(기본 역할 manager)에게만 403 이 되어 값이 조용히 빈다. -->

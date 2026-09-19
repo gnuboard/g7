@@ -113,6 +113,7 @@
                     "text": "$t:claim.apply.redelivery_fee_recalculated"
                 },
                 {
+                    "comment": "적용해 둔 재발송지를 버리고 원 배송지로 돌아간다. 그러면 신청서에 재발송지가 실리지 않고, 도서산간 판정이 달라질 수 있어 미리보기를 다시 부른다.",
                     "type": "basic",
                     "name": "Button",
                     "if": "{{!!_local.claimRedelivery}}",
@@ -170,6 +171,7 @@
                                     "text": "$t:claim.apply.recipient_name"
                                 },
                                 {
+                                    "comment": "교환품을 받을 사람 — 원 주문의 수령인과 달라도 된다. 금액과 무관한 칸이라 입력 중에는 미리보기를 부르지 않고, 편집 중인 주소에 쌓였다가 제출 때 함께 실린다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -204,6 +206,7 @@
                                     "text": "$t:claim.apply.recipient_phone"
                                 },
                                 {
+                                    "comment": "재발송 연락처 — 칸의 최대 길이는 서버 규칙과 같은 값이라, 길이 초과로 제출이 거절되는 일을 입력 단계에서 막는다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -240,6 +243,7 @@
                             "text": "$t:claim.apply.zipcode"
                         },
                         {
+                            "comment": "우편번호는 도서산간 판정의 입력이라 이 카드에서 배송비를 바꿀 수 있는 유일한 칸이다. 입력마다 다시 계산하지 않고 [적용]에서 한 번 미리보기를 부르며, 비워 두면 재발송지가 신청서에 아예 실리지 않는다.",
                             "type": "basic",
                             "name": "Input",
                             "actions": [
@@ -274,6 +278,7 @@
                             "text": "$t:claim.apply.address1"
                         },
                         {
+                            "comment": "기본 주소 — 처음 [변경]을 누르면 원 배송지 값으로 채워지고, 한 번 적용한 뒤에는 그 값에서 다시 고친다. 주소 검색 없이 직접 고치는 칸이다.",
                             "type": "basic",
                             "name": "Input",
                             "actions": [
@@ -308,6 +313,7 @@
                             "text": "$t:claim.apply.address2"
                         },
                         {
+                            "comment": "상세 주소 — 비워 둬도 접수가 막히지 않는 선택 칸이다(서버 규칙이 재발송지의 모든 칸을 비워 둘 수 있게 둔다).",
                             "type": "basic",
                             "name": "Input",
                             "actions": [
@@ -345,6 +351,7 @@
                     },
                     "children": [
                         {
+                            "comment": "[적용] — 편집을 닫고 미리보기를 다시 부른다. 미리보기에는 우편번호·국가만 실려 도서산간 여부가 다시 판정되고, 나머지 칸은 제출할 때 함께 간다.",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -364,6 +371,7 @@
                             "text": "$t:claim.apply.redelivery_apply"
                         },
                         {
+                            "comment": "편집 중에 누르면 입력하던 값뿐 아니라 이미 적용해 둔 재발송지까지 버리고 원 배송지로 돌아간다. 편집만 닫는 취소 버튼은 따로 두지 않았다.",
                             "type": "basic",
                             "name": "Button",
                             "actions": [

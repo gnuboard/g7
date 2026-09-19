@@ -110,6 +110,7 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "회원 신청내역 목록으로 돌아가는 버튼이다. 비회원 상세는 목록 대신 주문 상세로 돌아가므로 이 버튼은 공유 partial 이 아니라 셸마다 따로 둔다.",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -352,6 +353,7 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "[수정] — 작성 화면을 수정 모드로 연다. 주소에는 신청번호만 싣고 유형·주문번호는 그 화면이 신청서를 읽어 세우며, 목록 쿼리를 물려주어 수정·상세를 거쳐 목록으로 돌아와도 보던 서브탭이 남는다.",
                                                         "type": "basic",
                                                         "name": "Button",
                                                         "if": "{{claim.data?.claim?.is_editable === true}}",
@@ -373,6 +375,7 @@
                                                         "text": "$t:claim.list.edit"
                                                     },
                                                     {
+                                                        "comment": "[철회] — 누르는 즉시 철회하지 않고 신청번호를 넘겨 확인 모달을 연다. 되돌릴 수 없는 조작이라 실제 요청은 모달의 확인 버튼만 보낸다.",
                                                         "type": "basic",
                                                         "name": "Button",
                                                         "if": "{{claim.data?.claim?.is_withdrawable === true}}",
@@ -454,6 +457,7 @@
             "partial": "partials/mypage/claims/_modal_withdraw.json"
         },
         {
+            "comment": "첨부 확대 — 사유 카드(공유 partial)의 사진을 누르면 뜨는 창이다. 여는 쪽은 partial 이지만 창은 셸이 마운트하므로 회원·비회원 상세 셸이 모두 이 줄을 가져야 한다.",
             "partial": "partials/mypage/claims/_modal_image_viewer.json"
         }
     ]

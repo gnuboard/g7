@@ -706,6 +706,7 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "평문 채널의 게시판 알림 본문. 사이트 안 알림함은 본문을 평문으로 그려 여기 넣은 태그가 회원 화면에 글자로 드러나고, 편집기를 따로 선언하지 않은 채널도 이 칸을 쓴다.",
                                                     "id": "template_body_plain",
                                                     "type": "composite",
                                                     "name": "HtmlEditor",
