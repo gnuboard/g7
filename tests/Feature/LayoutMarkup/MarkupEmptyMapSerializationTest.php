@@ -45,6 +45,8 @@ class MarkupEmptyMapSerializationTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects empty_map_stays_object_and_empty_list_stays_array
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_map_serializes_as_object_and_empty_list_as_array(): void
     {
@@ -59,6 +61,12 @@ class MarkupEmptyMapSerializationTest extends TestCase
 
     /**
      * 축 ① 보강 — 빈 map 은 PHP 배열 안에 중첩돼 있어도 `{}` 로 나온다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects empty_map_stays_object_and_empty_list_stays_array
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_empty_map_serializes_as_object(): void
     {
@@ -70,7 +78,72 @@ class MarkupEmptyMapSerializationTest extends TestCase
     }
 
     /**
+     * 축 ③ **설치 경로** — `.json` 을 그대로 설치할 때도 빈 map 이 살아남아야 한다.
+     *
+     * 축 ①은 마크업에서 구운 산출의 직렬화를 잠그지만, 설치는 `.g7.html` 을 거치지 않고 짝
+     * `.json` 을 **직접 읽는 경로**가 따로 있다({@see \App\Extension\Traits\ValidatesLayoutFiles}).
+     * 그쪽이 `json_decode($s, true)` 를 쓰면 `{}` 와 `[]` 가 둘 다 빈 PHP 배열이 되고, 설치본은
+     * 그 배열을 `content`(cast `array`)에 담아 다시 인코딩하므로 파일의 `{}` 가 DB 에서 `[]` 로
+     * 굳는다. 두 경로가 같은 계약을 지어야 어느 쪽으로 설치하든 산출이 같다.
+     *
+     * 실측 근거 — `templates/_bundled/sirsoft-basic/layouts/shop/checkout.json` 의 `initLocal.checkout.item_coupons` 가 파일에는 `{}` 인데
+     * 종전 설치 경로를 지나면 `[]` 가 됐다(코퍼스 전체로는 92파일 153자리).
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects empty_map_survives_the_json_install_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_json_install_path_preserves_empty_maps(): void
+    {
+        $probe = new class
+        {
+            use \App\Extension\Traits\ValidatesLayoutFiles;
+
+            /**
+             * 트레이트의 디코드 계약만 외부에 연다.
+             *
+             * @param  string  $json  파일 원문
+             * @return mixed 디코드 결과
+             */
+            public function decode(string $json): mixed
+            {
+                return $this->decodeLayoutJson($json);
+            }
+        };
+
+        // 빈 map 은 살아남고, 빈 list 는 **그대로 list 여야** 한다 (과잉 보존 회귀 차단).
+        $source = '{"a":{},"b":[],"c":{"d":[]},"e":[{}],"f":{"g":{}}}';
+
+        $this->assertSame(
+            $source,
+            json_encode($probe->decode($source), JSON_UNESCAPED_SLASHES),
+            '설치 경로의 디코드가 빈 map/list 구분을 잃었습니다.',
+        );
+
+        // 실물 — 코퍼스에서 빈 map 을 든 파일이 지나가도 자리가 유지된다.
+        $file = base_path('templates/_bundled/sirsoft-basic/layouts/shop/checkout.json');
+
+        if (is_file($file)) {
+            $raw = (string) file_get_contents($file);
+
+            $this->assertSame(
+                substr_count($raw, '{}'),
+                substr_count((string) json_encode($probe->decode($raw), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), '{}'),
+                '실물 레이아웃의 빈 map 이 설치 경로에서 줄었습니다.',
+            );
+        }
+    }
+
+    /**
      * 축 ② 서버 전송 자리 — 코퍼스 전량의 `params.query`·`params.body` 가 `[]` 로 서 있지 않아야 한다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects empty_map_stays_object_and_empty_list_stays_array
+     *
+     * @return void 반환값 없음
      */
     public function test_server_bound_map_keys_are_never_empty_arrays_in_corpus(): void
     {
@@ -113,6 +186,8 @@ class MarkupEmptyMapSerializationTest extends TestCase
      * @param  string  $path  현재 경로
      * @param  string  $relative  파일 상대 경로
      * @param  array<int, string>  $offenders  누적 위반 목록 (참조)
+     *
+     * @return void 반환값 없음
      */
     private function collectEmptyServerBoundMaps(object|array $node, string $path, string $relative, array &$offenders): void
     {

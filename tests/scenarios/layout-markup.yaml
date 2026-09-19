@@ -878,6 +878,9 @@ effects:
   # 선언만 있고 무엇을 떠받치는지 알 수 없던 자리라, 그 파일을 지워도 아무 룰이 울지 않았다.
   - serializer_emits_authoring_notation_verbatim
   - empty_map_stays_object_and_empty_list_stays_array
+  # 15차 병합 — 빈 map 보존이 마크업 경로에만 있고 **짝 `.json` 을 직접 읽는 설치 경로**에는
+  # 없었다. 두 경로가 갈리면 어느 쪽으로 설치했느냐에 따라 산출이 달라진다(실측 92파일 153자리).
+  - empty_map_survives_the_json_install_path
   - extension_badge_injection_is_idempotent_and_scoped
   - overlay_extensions_are_restored_after_plugin_update
   # #476 C13 — 업데이트 복원이 조각 파일 이름을 식별자로 넘긴다. 설치 경로와 키가 갈리면 같은 대상에
