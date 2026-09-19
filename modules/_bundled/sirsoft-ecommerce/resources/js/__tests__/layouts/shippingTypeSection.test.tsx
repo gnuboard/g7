@@ -186,12 +186,12 @@ describe('배송유형 추가 폼', () => {
         const clickAction = saveBtn.actions?.find((a: any) => a.type === 'click');
 
         const validCondition = clickAction.conditions[0];
-        expect(validCondition.if).toContain("shippingTypeForm?.name?.[(_global.locale ?? 'ko')]");
+        expect(validCondition.if).toContain("shippingTypeForm?.name?.[($locale ?? 'ko')]");
         expect(validCondition.if).not.toContain('shippingTypeForm?.name?.ko');
 
         const elseCondition = clickAction.conditions[clickAction.conditions.length - 1];
         expect(elseCondition.then.params?.shippingTypeFormErrors?.name_ko).toContain(
-            "shippingTypeForm?.name?.[(_global.locale ?? 'ko')]"
+            "shippingTypeForm?.name?.[($locale ?? 'ko')]"
         );
         expect(elseCondition.then.params?.shippingTypeFormErrors?.name_ko).not.toContain(
             'shippingTypeForm?.name?.ko'

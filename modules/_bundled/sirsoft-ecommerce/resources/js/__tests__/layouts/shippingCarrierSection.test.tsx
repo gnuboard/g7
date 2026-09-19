@@ -364,7 +364,7 @@ describe('택배사 추가 폼', () => {
         // 이름 필수 판정은 **현재 로케일**이다 — `ko` 고정이 아니다. 사유 3종에 적용한 계약을
         // 형제인 배송사에도 밀어 넣은 결과이며(S10), en/ja 로케일 운영자가 자기 언어 칸을 채우고도
         // 폼 게이트에서 막히던 것을 없앤다. `ko` 로 되돌아가면 이 두 단언이 붉어진다.
-        expect(validCondition.if).toContain("carrierForm?.name?.[(_global.locale ?? 'ko')]");
+        expect(validCondition.if).toContain("carrierForm?.name?.[($locale ?? 'ko')]");
         expect(validCondition.if).not.toContain('carrierForm?.name?.ko');
         expect(validCondition.then.handler).toBe('setState');
         expect(validCondition.then.params?.['form.shipping.carriers']).toContain('...');
@@ -393,7 +393,7 @@ describe('택배사 추가 폼', () => {
         expect(elseCondition.then.params?.carrierFormErrors).toBeDefined();
         expect(elseCondition.then.params?.carrierFormErrors.code).toContain('carrierForm?.code');
         expect(elseCondition.then.params?.carrierFormErrors.name_ko).toContain(
-            "carrierForm?.name?.[(_global.locale ?? 'ko')]"
+            "carrierForm?.name?.[($locale ?? 'ko')]"
         );
         expect(elseCondition.then.params?.carrierFormErrors.name_ko).not.toContain('carrierForm?.name?.ko');
     });
