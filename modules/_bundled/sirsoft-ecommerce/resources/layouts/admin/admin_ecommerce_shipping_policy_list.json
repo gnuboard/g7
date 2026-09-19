@@ -110,10 +110,6 @@
     },
     "init_actions": [
         {
-            "comment": "레이아웃 표현식에는 현재 로케일을 알려 주는 변수가 없다 — `$locale` 은 편집 모드에서만 주입되고 `_global.locale` 은 코어가 쓰지 않아, 관례 체인 `$locale ?? _global.locale ?? 'ko'` 가 어떤 로케일에서도 마지막 항으로 굳는다. 이 화면(또는 그 파티션)이 그 체인을 쓰므로 다른 액션보다 먼저 주입한다.",
-            "handler": "sirsoft-ecommerce.initAdminLocale"
-        },
-        {
             "handler": "setState",
             "params": {
                 "target": "global",

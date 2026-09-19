@@ -152,7 +152,6 @@ effects:
   # 확인 모달을 여는 분기는 입력 버퍼를 보관하고 [취소]·[확인] 양쪽이 비운다.
   - settings_disable_intl_modal_stashes_and_restores_the_country_buffer
   # 게이트가 `_global.locale` 을 읽어도 그것을 **쓰는 쪽**이 없으면 값이 언제나 비어 조용히 ko 로 굳는다.
-  - settings_current_locale_is_injected_before_other_init_actions
   - settings_server_field_error_keys_follow_the_current_locale
   # 이름 입력칸 placeholder 는 한 폼의 모든 언어 칸이 공유하는 단일 prop 이다 — 어떤 언어명도 값이 될 수 없다.
   - settings_name_placeholder_never_names_a_language

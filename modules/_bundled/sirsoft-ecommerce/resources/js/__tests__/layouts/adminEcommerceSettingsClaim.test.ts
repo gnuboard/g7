@@ -936,29 +936,6 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
       expect(koFixed, '확정 게이트가 ko 고정으로 되돌아갔다').toEqual([]);
     });
 
-    // 위 검사는 게이트가 `$locale`(엔진 전역 변수 — `_global.locale` 은 심는 곳이 없는 사어 바인딩) 을 **읽는지**만 본다. 그런데 그것을 **쓰는 쪽**이
-    // 없으면 표현식은 그대로인 채 값만 언제나 비어, 게이트가 조용히 'ko' 고정으로 돌아간다
-    // — 표현식 형태를 고정하는 단언만으로는 그 상태와 정상을 구분하지 못한다.
-    // `$locale` 은 편집 모드에서만 주입되고 코어는 `_global.locale` 을 쓰지 않으므로,
-    // 이 화면은 주입을 스스로 책임진다.
-    /**
-     * @effects settings_current_locale_is_injected_before_other_init_actions
-     */
-    it('현재 로케일을 _global 에 주입하는 지점이 다른 init_actions 보다 먼저 있다', () => {
-      const initActions = (settingsShell as any).init_actions ?? [];
-      const handlers = initActions.map((a: any) => a?.handler);
-
-      const seedIndex = handlers.indexOf('sirsoft-ecommerce.initAdminLocale');
-      expect(
-        seedIndex,
-        '현재 로케일을 _global.locale 에 주입하는 init_action 이 없다 — 게이트와 422 오류 키가 어떤 로케일에서도 ko 로 굳는다',
-      ).toBeGreaterThanOrEqual(0);
-      expect(
-        seedIndex,
-        '로케일 주입이 다른 init_action 뒤에 있다 — 그 사이의 액션은 빈 로케일을 읽는다',
-      ).toBe(0);
-    });
-
     // 읽는 쪽의 모집단은 게이트만이 아니다. 저장 실패 시 서버가 돌려주는 422 키는
     // `...name.{현재로케일}` 이라, 오류 조회 키가 ko 고정이면 비-ko 관리자에게는 필드
     // 오류가 **표시되지 않는다**(토스트만 뜬다). 두 소비처가 같은 축을 보는지 함께 고정한다.

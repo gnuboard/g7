@@ -223,17 +223,14 @@ describe('shippingPolicyFormLayouts', () => {
             expect(computed.defaultCurrencyLabel).toContain('language_currency?.default_currency');
         });
 
-        it('init_actions: 로케일 주입 + 글로벌 상태 초기화 + 커스텀 핸들러 + 복사 모드 is_default 해제 + 신규 등록 회수지 허용', () => {
+        it('init_actions: 글로벌 상태 초기화 + 커스텀 핸들러 + 복사 모드 is_default 해제 + 신규 등록 회수지 허용', () => {
             // 개수·인덱스로 고정하지 않는다 — 같은 파일의 partial 순서 검사(아래)가 이미 남긴
             // 이유와 같다. 이 수는 계약이 아니라 당시 구조의 스냅샷이라, init_action 이 하나 늘 때마다
             // 무관한 단언이 함께 깨진다(18차에 로케일 주입이 들어오며 실제로 그렇게 됐다).
-            // 계약은 "무엇이 있는가" 이고, 순서가 계약인 것은 로케일 주입 하나뿐이라
-            // 그 축은 전용 검사(adminLocaleInjectionCoverage)가 저장소 파생 모집단으로 본다.
+            // 계약은 "무엇이 있는가" 다. 한때 순서가 계약이던 로케일 주입 액션은 걷어냈다 — 표현식은
+            // 엔진이 렌더·액션 컨텍스트에 넣어 주는 `$locale` 을 읽는다.
             const actions: any[] = mainLayout.init_actions;
             const byHandler = (h: string) => actions.filter((a) => a.handler === h);
-
-            // 현재 로케일 주입 — 뒤에 두면 그보다 앞선 액션의 표현식이 빈 값을 읽는다.
-            expect(actions[0].handler).toBe('sirsoft-ecommerce.initAdminLocale');
 
             // 글로벌 상태 초기화 (템플릿 모달 로딩 플래그)
             const globalInit = byHandler('setState').find((a) => a.params?.target === 'global');
@@ -270,7 +267,6 @@ describe('shippingPolicyFormLayouts', () => {
             // 같은 형태로 상한을 세운다: 개수가 아니라 **이 화면의 init_actions 에 설 수 있는
             // 핸들러 집합**을 못박아, 예상 밖의 핸들러가 들어오면 그 이름과 함께 붉어지게 한다.
             const ALLOWED_INIT_HANDLERS = [
-                'sirsoft-ecommerce.initAdminLocale',
                 'sirsoft-ecommerce.initShippingPolicyForm',
                 'setState',
             ];

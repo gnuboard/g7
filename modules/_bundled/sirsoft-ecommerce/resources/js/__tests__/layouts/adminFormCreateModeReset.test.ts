@@ -74,13 +74,6 @@ describe('admin_ecommerce_product_form.json — 생성 모드 form 잔존 제거
         expect(reset.if).toBe(CREATE);
     });
 
-    /**
-     * @scenario form=product
-     * @effects locale_injection_stays_first
-     */
-    it('로케일 주입 액션(initAdminLocale)이 여전히 첫 번째다', () => {
-        expect(actions[0]?.handler).toBe('sirsoft-ecommerce.initAdminLocale');
-    });
 
     /**
      * @scenario form=product
@@ -139,12 +132,5 @@ describe('admin_ecommerce_shipping_policy_form.json — 생성 모드 form 잔�
         expect(handlerIdx).toBeGreaterThan(resetIdx + 1);
     });
 
-    /**
-     * @scenario form=shipping_policy
-     * @effects locale_injection_stays_first
-     */
-    it('로케일 주입 액션(initAdminLocale)이 여전히 첫 번째다', () => {
-        expect(actions[0]?.handler).toBe('sirsoft-ecommerce.initAdminLocale');
-    });
 });
 });

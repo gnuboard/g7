@@ -80,14 +80,14 @@
           <on type="click">
             <!-- 추가 확인. 코드와 기본 언어 이름이 있어야 통과하고, 없으면 배열을 건드리지 않고 오류 표시만 세운다. -->
             <conditions>
-              <when if="{{(_local.carrierForm?.code ?? '').trim() &amp;&amp; (_local.carrierForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim()}}">
+              <when if="{{(_local.carrierForm?.code ?? '').trim() &amp;&amp; (_local.carrierForm?.name?.[($locale ?? 'ko')] ?? '').trim()}}">
                 <set-state target="local" form.shipping.carriers="{{[...(_local.form?.shipping?.carriers ?? []), _local.carrierForm]}}" :isAddingCarrier="false" :carrierForm="null" :carrierFormErrors="null" :hasChanges="true"/>
               </when>
               <else>
                 <set-state target="local">
                   <field name="carrierFormErrors">
                     <field name="code" value="{{!(_local.carrierForm?.code ?? '').trim() ? true : null}}"/>
-                    <field name="name_ko" value="{{!(_local.carrierForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
+                    <field name="name_ko" value="{{!(_local.carrierForm?.name?.[($locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
                   </field>
                 </set-state>
               </else>
@@ -133,7 +133,7 @@
                 <span data-if="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']}}" class="form-error">{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']?.[0] ?? ''}}</span>
               </td>
               <td class="px-4 py-2">
-                <multilingual-input value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + (_global.locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 이름(언어별). -->
                     <set-state target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, name: $event.target.value} : c)}}" :hasChanges="true"/>

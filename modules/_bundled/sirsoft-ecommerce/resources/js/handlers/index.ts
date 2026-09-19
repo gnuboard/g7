@@ -8,7 +8,6 @@
 import { updateProductFieldHandler } from './updateProductField';
 import { updateOptionFieldHandler } from './updateOptionField';
 import { calculateCurrencyPricesHandler } from './calculateCurrencyPrices';
-import { initAdminLocaleHandler } from './initAdminLocale';
 import { initPreferredCurrencyHandler } from './initPreferredCurrency';
 import { initPreferredShippingCountryHandler } from './initPreferredShippingCountry';
 import { setDateRangeHandler } from './setDateRange';
@@ -321,7 +320,6 @@ export const handlerMap = {
     updateProductField: updateProductFieldHandler,
     updateOptionField: updateOptionFieldHandler,
     calculateCurrencyPrices: calculateCurrencyPricesHandler,
-    initAdminLocale: initAdminLocaleHandler,
     initPreferredCurrency: initPreferredCurrencyHandler,
     initPreferredShippingCountry: initPreferredShippingCountryHandler,
     setDateRange: setDateRangeHandler,

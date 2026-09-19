@@ -288,14 +288,13 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 201개 (정의: `resources/js/handlers/index.ts`).
+핸들러 200개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
 | `updateProductField` | `sirsoft-ecommerce.updateProductField` |
 | `updateOptionField` | `sirsoft-ecommerce.updateOptionField` |
 | `calculateCurrencyPrices` | `sirsoft-ecommerce.calculateCurrencyPrices` |
-| `initAdminLocale` | `sirsoft-ecommerce.initAdminLocale` |
 | `initPreferredCurrency` | `sirsoft-ecommerce.initPreferredCurrency` |
 | `initPreferredShippingCountry` | `sirsoft-ecommerce.initPreferredShippingCountry` |
 | `setDateRange` | `sirsoft-ecommerce.setDateRange` |

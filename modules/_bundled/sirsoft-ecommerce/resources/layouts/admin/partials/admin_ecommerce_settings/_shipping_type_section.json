@@ -272,7 +272,7 @@
                                     "handler": "conditions",
                                     "conditions": [
                                         {
-                                            "if": "{{(_local.shippingTypeForm?.code ?? '').trim() && (_local.shippingTypeForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim()}}",
+                                            "if": "{{(_local.shippingTypeForm?.code ?? '').trim() && (_local.shippingTypeForm?.name?.[($locale ?? 'ko')] ?? '').trim()}}",
                                             "then": {
                                                 "handler": "setState",
                                                 "params": {
@@ -292,7 +292,7 @@
                                                     "target": "local",
                                                     "shippingTypeFormErrors": {
                                                         "code": "{{!(_local.shippingTypeForm?.code ?? '').trim() ? true : null}}",
-                                                        "name_ko": "{{!(_local.shippingTypeForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim() ? true : null}}"
+                                                        "name_ko": "{{!(_local.shippingTypeForm?.name?.[($locale ?? 'ko')] ?? '').trim() ? true : null}}"
                                                     }
                                                 }
                                             }
@@ -502,7 +502,7 @@
                                                     "value": "{{$type.name ?? {}}}",
                                                     "layout": "compact",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
-                                                    "error": "{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}",
+                                                    "error": "{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 }
                                             }

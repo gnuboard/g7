@@ -72,14 +72,14 @@
           <on type="click">
             <!-- 추가 확인. 코드와 기본 언어 이름이 있어야 통과하고, 없으면 오류 표시만 세운다. -->
             <conditions>
-              <when if="{{(_local.shippingTypeForm?.code ?? '').trim() &amp;&amp; (_local.shippingTypeForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim()}}">
+              <when if="{{(_local.shippingTypeForm?.code ?? '').trim() &amp;&amp; (_local.shippingTypeForm?.name?.[($locale ?? 'ko')] ?? '').trim()}}">
                 <set-state target="local" form.shipping.types="{{[...(_local.form?.shipping?.types ?? []), {..._local.shippingTypeForm, sort_order: (_local.form?.shipping?.types ?? []).length}]}}" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :hasChanges="true"/>
               </when>
               <else>
                 <set-state target="local">
                   <field name="shippingTypeFormErrors">
                     <field name="code" value="{{!(_local.shippingTypeForm?.code ?? '').trim() ? true : null}}"/>
-                    <field name="name_ko" value="{{!(_local.shippingTypeForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
+                    <field name="name_ko" value="{{!(_local.shippingTypeForm?.name?.[($locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
                   </field>
                 </set-state>
               </else>
@@ -118,7 +118,7 @@
                 <span class="font-mono text-body">{{$type.code}}</span>
               </td>
               <td class="px-4 py-2">
-                <multilingual-input value="{{$type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input value="{{$type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 이름(언어별). -->
                     <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, name: $event.target.value} : t)}}" :hasChanges="true"/>

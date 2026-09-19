@@ -122,8 +122,6 @@
     <wait-for>availableChannels</wait-for>
   </transition-overlay>
   <init>
-    <!-- 레이아웃 표현식에는 현재 로케일을 알려 주는 변수가 없다 — `$locale` 은 편집 모드에서만 주입되고 `_global.locale` 은 코어가 쓰지 않아, 관례 체인 `$locale ?? _global.locale ?? 'ko'` 가 어떤 로케일에서도 'ko' 로 굳는다. 이 화면의 추가 폼 확정 게이트와 서버 422 필드 오류 키는 **현재 로케일**을 정확히 알아야 하므로(폴백이 있는 `$localized()` 로는 대체 불가), 다른 액션보다 먼저 주입한다. 로케일 전환 시 레이아웃이 재마운트되며 다시 실행된다. -->
-    <action handler="sirsoft-ecommerce.initAdminLocale"/>
     <set-state target="_local" notificationDefinitionCurrentPage="{{+(query.page || 1)}}"/>
   </init>
   <slot name="content">

@@ -150,15 +150,13 @@ describe('다국어 객체 필드 출력 — 엔진이 정한 로케일 선택�
      * 결과적으로 동작하므로 여기서 막는 것은 **`_global.locale` 이 유일한 로케일 출처인**
      * 경우뿐이다.
      *
-     * **범위는 템플릿 레이아웃이다** — `_global.locale` 이 언제나 죽은 값인 것은 아니다.
-     * `sirsoft-ecommerce` 는 자기 관리자 화면에서 `initAdminLocale` 핸들러로 이 키를 직접
-     * 주입하고(그 모듈의 `adminLocaleInjectionCoverage` 가 주입 누락을 따로 감시한다),
-     * 그 화면들에서는 이 형태가 실제로 동작한다. 반대로 템플릿 쪽에는 어떤 writer 도 없어
-     * 같은 형태가 조용히 `?.ko` 로 굳는다.
+     * **범위는 템플릿 레이아웃이다** — 템플릿 쪽에는 이 키를 쓰는 곳이 없어 같은 형태가
+     * 조용히 `?.ko` 로 굳는다. (`sirsoft-ecommerce` 관리자 화면이 셸 초기화 액션으로 이 키를
+     * 직접 채우던 방식은 걷어냈고, 그 화면들도 `$locale` 을 읽는다.)
      *
-     * 그렇다고 `$locale` 로 바꾸면 안 된다 — 그 컨텍스트 키는 `DynamicRenderer` 가
-     * **편집 모드에서만** 주입한다(`DynamicRenderer.tsx` `if (isEditMode)`). 일반 렌더에서는
-     * 비어 있어 같은 결함이 된다. 표시용의 정답은 `$localized(…)` 다 — 그 헬퍼는 컨텍스트에
+     * 고칠 때는 `$locale` 을 읽는다 — 엔진이 렌더마다 컨텍스트 최상위에 넣는다
+     * (`template-engine.ts` `createGlobalVariables()`; `DynamicRenderer` 의 편집 모드 주입은
+     * 편집기 미리보기용 보강이다). 표시용으로는 `$localized(…)` 도 된다 — 그 헬퍼는 컨텍스트에
      * `$locale` 이 없으면 `window.__templateApp.getConfig().locale` 로 회수한다
      * (`DataBindingEngine.ts` engine-v1.52.1).
      *

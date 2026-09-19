@@ -19,7 +19,6 @@ effects:
   - defaults_follow_clear                              # 비운 뒤 레이아웃 기본값(state.form 상당)을 다시 씀
   - clear_precedes_country_settings_handler            # 배송정책: initShippingPolicyForm(복사 모드 country_settings 기록)보다 앞
   - copy_source_payload_not_merged_with_previous_form  # 상품 복사 진입 페이로드가 기존 form 과 병합되지 않음
-  - locale_injection_stays_first                       # initAdminLocale 이 여전히 첫 액션
   - edit_mode_untouched                                # 수정 모드 데이터소스·조건은 그대로
 
 test_files:

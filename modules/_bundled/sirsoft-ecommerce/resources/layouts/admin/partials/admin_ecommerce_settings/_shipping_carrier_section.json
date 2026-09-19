@@ -315,7 +315,7 @@
                                     "handler": "conditions",
                                     "conditions": [
                                         {
-                                            "if": "{{(_local.carrierForm?.code ?? '').trim() && (_local.carrierForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim()}}",
+                                            "if": "{{(_local.carrierForm?.code ?? '').trim() && (_local.carrierForm?.name?.[($locale ?? 'ko')] ?? '').trim()}}",
                                             "then": {
                                                 "handler": "setState",
                                                 "params": {
@@ -335,7 +335,7 @@
                                                     "target": "local",
                                                     "carrierFormErrors": {
                                                         "code": "{{!(_local.carrierForm?.code ?? '').trim() ? true : null}}",
-                                                        "name_ko": "{{!(_local.carrierForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim() ? true : null}}"
+                                                        "name_ko": "{{!(_local.carrierForm?.name?.[($locale ?? 'ko')] ?? '').trim() ? true : null}}"
                                                     }
                                                 }
                                             }
@@ -577,7 +577,7 @@
                                                     "value": "{{$carrier.name ?? {}}}",
                                                     "layout": "compact",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
-                                                    "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + (_global.locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
+                                                    "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 }
                                             }
