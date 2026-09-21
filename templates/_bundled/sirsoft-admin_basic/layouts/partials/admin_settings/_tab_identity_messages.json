@@ -163,12 +163,12 @@
                                                         "provider_id": "g7:core.mail",
                                                         "scope_type": "policy",
                                                         "scope_value": "",
-                                                        "name": [],
+                                                        "name": {},
                                                         "channels": [
                                                             "mail"
                                                         ],
-                                                        "subject": [],
-                                                        "body": []
+                                                        "subject": {},
+                                                        "body": {}
                                                     },
                                                     "errors": null,
                                                     "isSaving": false

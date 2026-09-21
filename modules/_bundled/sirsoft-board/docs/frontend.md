@@ -79,6 +79,10 @@ notification/permissions/post/reply), 모듈 전역 환경설정 화면(`_tab_ge
 세 화면의 탭 이름이 겹치더라도(`_tab_basic`, `_tab_board_settings_basic` 등) 서로 다른
 partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 — 같은 항목을 여러 화면에
 반영해야 한다면 파일을 전부 찾아 고쳐야 합니다.
+빈 값도 **모양**이 계약입니다. 이름표로 값을 꺼내는 자리(`_local.expandedNotifications?.[알림키]` 처럼)는 비어도 map(`{}`)이고,
+순서가 있는 목록은 빈 배열(`[]`)입니다. 마크업에서는 `:value="{}"` 와 `:value="[]"` 로 갈리며,
+화면이 읽기만 할 때는 둘 다 똑같이 비어 보이지만 그 값이 서버로 실리거나 레이아웃을 `.json`
+원문으로 설치하면 서버가 대상을 찾지 못해 오류도 로그도 없이 적용되지 않습니다. 이 모듈에서는 환경설정의 `initLocal.expandedNotifications` 와 본인인증 정책 폼의 `conditions`, 알림 정의 데이터소스의 `fallback.data.meta` 가 그 자리입니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

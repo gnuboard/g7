@@ -12,7 +12,7 @@
             "auth_required": true,
             "fallback": {
                 "data": {
-                    "templates": []
+                    "templates": {}
                 }
             },
             "comment": "행 라이프사이클 표시용 요약 맵(notification_type 키). auto_fetch:false — 설정 페이지 전 탭 자동 호출 방지, 비즈뿌리오 탭 진입 시 init_actions 로 조회."

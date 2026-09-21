@@ -139,7 +139,7 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "meta": []
+                    "meta": {}
                 }
             },
             "comment": "본인인증 정책 목록 — 코어 표를 게시판 몫(`source_identifier`)으로 좁혀 받는다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다"
@@ -184,7 +184,7 @@
             "searchType": "all"
         },
         "expandedNotificationDefinitionIds": [],
-        "expandedNotifications": [],
+        "expandedNotifications": {},
         "templateErrors": null,
         "isSaving": false,
         "recipientRoleSearchResults": [],

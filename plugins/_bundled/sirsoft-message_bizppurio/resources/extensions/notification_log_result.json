@@ -14,7 +14,7 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": {
-                    "results": []
+                    "results": {}
                 }
             },
             "comment": "최근 발송 결과 맵(로그 id 키) — 코어 발송 이력 목록에 결과 컬럼을 그리기 위해 받는다. 실패하면 빈 맵으로 폴백해 컬럼만 비운다."

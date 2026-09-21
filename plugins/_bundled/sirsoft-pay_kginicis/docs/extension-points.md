@@ -145,6 +145,12 @@ KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure
 `LayoutFragmentSourceHelper::readDirectoryKeyed()` 로 파일에서 키를 얻어 그대로 넘깁니다. 키 없이
 등록하면 대상 화면 이름이 키가 되어 두 경로가 갈리고, 그 뒤로는 같은 대상에 행이 둘 생겨 복원이
 어느 행인지 가리지 못한 채 조용히 멈춥니다.
+`user_order_show.g7.html` 은 대상 레이아웃 이름이 아니라 **공용 확장 슬롯**
+(`mypage_order_payment_provider_slot`)을 겨냥합니다. 이 슬롯이 사는 결제 정보 카드
+(`partials/mypage/orders/_payment`)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용하기
+때문입니다. `target_layout`(`mypage/orders/show`)으로 겨냥하면 그 한 화면에서만 뜨고, 나머지
+화면은 카드는 나오는데 이 블록만 빠진 채 열립니다 — 오류도 경고도 남지 않아 알아채기 어렵습니다.
+슬롯은 partial 을 따라가므로 그 카드가 새 화면에 마운트돼도 조각이 함께 갑니다.
 <!-- @intent END -->
 
 ## 미들웨어

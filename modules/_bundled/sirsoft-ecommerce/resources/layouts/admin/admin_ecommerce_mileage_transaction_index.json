@@ -67,7 +67,7 @@
         },
         "selectedItems": [],
         "expandedRows": [],
-        "linkedTransactions": [],
+        "linkedTransactions": {},
         "batchAction": "",
         "manualModalOpen": false,
         "extendModalOpen": false,

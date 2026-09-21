@@ -283,7 +283,7 @@
               <!-- GeoIP 데이터베이스를 내려받아 갱신한다. 파일이 커서 시간이 걸리므로 진행 중에는 버튼을 잠근다 -->
               <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
                 <on type="click">
-                  <set-state target="local" :geoipUpdating="true" :errors="[]">
+                  <set-state target="local" :geoipUpdating="true" :errors="{}">
                     <success>
                       <api-call :auth_required="true" target="/api/admin/settings/geoip/update" method="POST">
                         <success>

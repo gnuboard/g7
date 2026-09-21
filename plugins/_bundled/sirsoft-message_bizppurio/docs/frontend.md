@@ -29,6 +29,10 @@
 
 레이아웃·조각 JSON 만 고쳤다면 빌드는 필요 없고
 `php artisan plugin:update sirsoft-message_bizppurio --force` 로 반영합니다.
+빈 값도 **모양**이 계약입니다. 이름표로 값을 꺼내는 자리(`results?.[row.id]` 처럼)는 비어도 map(`{}`)이고,
+순서가 있는 목록은 빈 배열(`[]`)입니다. 마크업에서는 `:value="{}"` 와 `:value="[]"` 로 갈리며,
+화면이 읽기만 할 때는 둘 다 똑같이 비어 보이지만 그 값이 서버로 실리거나 레이아웃을 `.json`
+원문으로 설치하면 서버가 대상을 찾지 못해 오류도 로그도 없이 적용되지 않습니다. 이 플러그인에서는 알림 로그의 `fallback.data.results`(`row.id` 키)와 통합 탭 3종의 `fallback.data.templates`(`notification_type` 키 요약 맵)가 그 자리입니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

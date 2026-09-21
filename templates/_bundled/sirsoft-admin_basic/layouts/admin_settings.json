@@ -37,7 +37,7 @@
                         "inactive": 0,
                         "error": 0
                     },
-                    "abilities": []
+                    "abilities": {}
                 }
             },
             "comment": "언어팩 목록 — 언어팩 탭에서만 받는다(빌려 온 조각이 이 id 를 그대로 읽는다)."
@@ -301,7 +301,7 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "meta": []
+                    "meta": {}
                 }
             },
             "comment": "인증 정책 전체 목록(정책 하위 탭) — 위와 달리 화면에서 건 필터·페이지를 쿼리에서 읽는다."
@@ -361,7 +361,7 @@
         }
     ],
     "initLocal": {
-        "driverTestResults": [],
+        "driverTestResults": {},
         "editingDefinition": null,
         "editingTemplate": null,
         "editLang": "ko",

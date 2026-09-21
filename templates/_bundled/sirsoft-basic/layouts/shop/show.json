@@ -256,9 +256,9 @@
             "params": {
                 "target": "local",
                 "selectedOptionItems": [],
-                "currentSelection": [],
+                "currentSelection": {},
                 "noOptionQuantity": 1,
-                "additionalOptions": [],
+                "additionalOptions": {},
                 "wishlistLoading": false,
                 "isOrdering": false,
                 "downloadableCoupons": null,
@@ -270,7 +270,7 @@
                 "reviewSortBy": "created_at_desc",
                 "reviewPhotoOnly": false,
                 "reviewRating": "",
-                "reviewOptionFilters": [],
+                "reviewOptionFilters": {},
                 "activeTab": "{{query.tab ?? 'info'}}",
                 "starNums": [
                     5,

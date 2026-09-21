@@ -98,7 +98,7 @@
             "auth_required": true,
             "fallback": {
                 "data": {
-                    "counts": [],
+                    "counts": {},
                     "claims": [],
                     "unavailable": true
                 }

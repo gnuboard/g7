@@ -52,7 +52,7 @@
   <data-source id="orderClaims" label_key="$t:sirsoft-ecommerce.editor.data_source.orderClaims" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
-        <field name="counts" :value="[]"/>
+        <field name="counts" :value="{}"/>
         <field name="claims" :value="[]"/>
         <field name="unavailable" :value="true"/>
       </field>

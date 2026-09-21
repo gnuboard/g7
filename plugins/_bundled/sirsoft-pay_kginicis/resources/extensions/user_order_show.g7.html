@@ -1,4 +1,4 @@
-<!-- 내 주문 상세에 부가세·면세 내역을 덧붙이는 조각 — KG이니시스로 결제했고 과세 구분이 실린 주문에서만 뜬다 -->
+<!-- 내 주문 상세에 부가세·면세 내역을 덧붙이는 조각 — KG이니시스로 결제했고 과세 구분이 실린 주문에서만 뜬다. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정. -->
 <extension extension-point="mypage_order_payment_provider_slot" mode="append" priority="100">
     <div data-if="{{order.data.payment?.pg_provider === 'kginicis' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
       <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">$t:sirsoft-pay_kginicis.user.tax_breakdown_title</p>
