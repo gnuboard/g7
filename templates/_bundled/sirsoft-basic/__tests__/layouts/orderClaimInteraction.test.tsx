@@ -82,3 +82,70 @@ describe('클레임 부분 갱신과 주문 식별자', () => {
     }
   });
 });
+
+describe('주문 상품 체크박스 자리 — 신청 불가 항목도 칸은 선다', () => {
+  // 종전에는 취소됐거나 열린 클레임 유형이 없는 상품에서 체크박스 칸을 통째로 감췄다. 그러면
+  // 같은 목록 안에서 그 줄만 상품 이미지가 왼쪽으로 밀려, 목록을 훑을 때 「왜 이 줄만 다르게
+  // 생겼나」 가 먼저 눈에 들어온다(2026-09-21 PO 지시 — 모든 클레임 화면 공통). 칸을 두고
+  // 잠그면 줄 머리가 가지런하고, 「이 상품은 고를 수 없다」 도 그 자리에서 말한다.
+  const render = async (options: any[], claimableTypes: Record<number, string[]>) => {
+    active = createLayoutTest({
+      data_sources: [
+        { id: 'order', type: 'api', endpoint: '/order', auto_fetch: true },
+        { id: 'claimable', type: 'api', endpoint: '/claimable', auto_fetch: true },
+      ],
+      components: [read('partials/mypage/orders/_items.json')],
+    } as any, {
+      componentRegistry: createMockComponentRegistryWithBasics(),
+      initialState: { _local: { selectedItemIds: [] } },
+    });
+    active.mockApi('order', { response: { data: { options } } });
+    active.mockApi('claimable', {
+      response: {
+        data: {
+          options: options.map((o) => ({
+            option: { id: o.id, option_status: o.option_status },
+            available_quantity: 1,
+            claimable_types: claimableTypes[o.id] ?? [],
+          })),
+        },
+      },
+    });
+    await active.render();
+    return [...document.querySelectorAll('input[type="checkbox"]')] as HTMLInputElement[];
+  };
+
+  /** @effects order_item_checkbox_column_always_renders */
+  it('신청 가능·불가가 섞여도 상품 수만큼 체크박스가 서고, 불가 항목만 잠긴다', async () => {
+    const boxes = await render(
+      [
+        { id: 416, option_status: 'payment_complete' },
+        { id: 417, option_status: 'cancelled' },
+        { id: 418, option_status: 'payment_complete' },
+      ],
+      { 416: ['refund'], 418: [] },
+    );
+
+    // 전체선택 라벨 1개 + 상품 3개.
+    const perItem = boxes.slice(-3);
+
+    expect(perItem).toHaveLength(3);
+    expect(perItem.map((b) => b.disabled)).toEqual([false, true, true]);
+  });
+
+  /** @effects order_item_checkbox_locked_state_is_visible */
+  it('잠긴 칸은 눈에도 잠겨 보인다 — 흐리게 + 금지 커서', async () => {
+    const boxes = await render(
+      [
+        { id: 416, option_status: 'payment_complete' },
+        { id: 417, option_status: 'cancelled' },
+      ],
+      { 416: ['refund'] },
+    );
+    const [open, locked] = boxes.slice(-2);
+
+    expect(open).toHaveClass('cursor-pointer');
+    expect(open).not.toHaveClass('opacity-40');
+    expect(locked).toHaveClass('opacity-40', 'cursor-not-allowed');
+  });
+});

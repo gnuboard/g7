@@ -66,6 +66,10 @@ effects:
   - order_claim_section_address_type_beats_server_default
   # 썸네일 (⑤)
   - order_claim_section_thumbnail_placeholder_when_missing
+  # 체크박스 자리 (⑦) — 신청할 수 없는 상품에서 칸을 감추면 그 줄만 이미지가 왼쪽으로 밀려
+  # 목록의 줄 머리가 어긋난다. 칸은 두고 잠근다(2026-09-21 PO 지시, 모든 클레임 화면 공통).
+  - order_item_checkbox_column_always_renders
+  - order_item_checkbox_locked_state_is_visible
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-pending-feedback.spec.ts

@@ -44,7 +44,7 @@
                             "name": "Div",
                             "if": "{{_global.marketingTermsLoading}}",
                             "props": {
-                                "className": "flex-center justify-center py-12"
+                                "className": "flex items-center justify-center py-12"
                             },
                             "children": [
                                 {
@@ -62,14 +62,14 @@
                             "name": "Div",
                             "if": "{{_global.marketingTermsPageData?.published_at}}",
                             "props": {
-                                "className": "flex-center flex-shrink-0 gap-2 mb-3"
+                                "className": "flex items-center flex-shrink-0 gap-2 mb-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}"
                                 }
@@ -162,7 +162,7 @@
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "section-heading-md mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                                "className": "text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
                             },
                             "text": "$t:sirsoft-marketing.marketing_consent_title"
                         },
@@ -185,14 +185,14 @@
                                             "name": "Div",
                                             "if": "{{_local.profileEditForm?.marketing_consent_enabled === true}}",
                                             "props": {
-                                                "className": "flex-start gap-3"
+                                                "className": "flex items-start gap-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-3 flex-1 cursor-pointer"
+                                                        "className": "flex items-start gap-3 flex-1 cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -216,6 +216,8 @@
                                                             ],
                                                             "props": {
                                                                 "name": "marketing_consent",
+                                                                "checked": "{{!!_local.profileEditForm?.marketing_consent}}",
+                                                                "autoBinding": false,
                                                                 "className": "mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                                                             }
                                                         },
@@ -230,7 +232,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-heading"
+                                                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.marketing_consent"
                                                                 },
@@ -238,7 +240,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-tertiary"
+                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.marketing_consent_desc"
                                                                 }
@@ -318,14 +320,14 @@
                                                 "item_var": "channel"
                                             },
                                             "props": {
-                                                "className": "flex-start gap-3 ml-8"
+                                                "className": "flex items-start gap-3 ml-8"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-3 flex-1 cursor-pointer"
+                                                        "className": "flex items-start gap-3 flex-1 cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -344,6 +346,8 @@
                                                             ],
                                                             "props": {
                                                                 "name": "{{channel.key}}",
+                                                                "checked": "{{!!_local.profileEditForm?.[channel.key]}}",
+                                                                "autoBinding": false,
                                                                 "className": "mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                                                             }
                                                         },
@@ -358,7 +362,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-heading"
+                                                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
                                                                     },
                                                                     "text": "{{$localized(channel.label_i18n) || channel.label}}"
                                                                 }
@@ -443,14 +447,14 @@
                                             "name": "Div",
                                             "if": "{{_local.profileEditForm?.third_party_consent_enabled === true}}",
                                             "props": {
-                                                "className": "flex-start gap-3"
+                                                "className": "flex items-start gap-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-3 flex-1 cursor-pointer"
+                                                        "className": "flex items-start gap-3 flex-1 cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -458,6 +462,8 @@
                                                             "name": "Checkbox",
                                                             "props": {
                                                                 "name": "third_party_consent",
+                                                                "checked": "{{!!_local.profileEditForm?.third_party_consent}}",
+                                                                "autoBinding": false,
                                                                 "className": "mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                                                             }
                                                         },
@@ -472,7 +478,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-heading"
+                                                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.third_party_consent"
                                                                 },
@@ -480,7 +486,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-tertiary"
+                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.third_party_consent_desc"
                                                                 }
@@ -563,14 +569,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-start gap-3"
+                                                        "className": "flex items-start gap-3"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Label",
                                                             "props": {
-                                                                "className": "flex-start gap-3 flex-1 cursor-pointer"
+                                                                "className": "flex items-start gap-3 flex-1 cursor-pointer"
                                                             },
                                                             "children": [
                                                                 {
@@ -578,6 +584,8 @@
                                                                     "name": "Checkbox",
                                                                     "props": {
                                                                         "name": "info_disclosure",
+                                                                        "checked": "{{!!_local.profileEditForm?.info_disclosure}}",
+                                                                        "autoBinding": false,
                                                                         "className": "mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                                                                     }
                                                                 },
@@ -592,7 +600,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "block text-heading"
+                                                                                "className": "block text-sm font-medium text-gray-900 dark:text-white"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.info_disclosure"
                                                                         },
@@ -600,7 +608,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "block text-tertiary"
+                                                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.info_disclosure_desc"
                                                                         }
@@ -675,7 +683,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-hint block ml-8"
+                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block ml-8"
                                                     },
                                                     "text": "$t:sirsoft-marketing.info_disclosure_warning"
                                                 }

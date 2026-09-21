@@ -117,6 +117,40 @@ effects:
   - claim_apply_exchange_substituted_rows_render
   # 비교표는 요약 카드 안에 산다 — 카드가 스크롤을 만들지 않는다(2026-09-11 제품 결정)
   - claim_apply_comparison_partial_mounts_inside_the_summary_card
+  # 비교표의 기본 펼침 여부는 화면 폭이 정한다 — 좁은 화면에서 열어 두면 신청 버튼이 한참
+  # 아래로 밀려 「무엇을 눌러야 하는가」 가 첫 화면에서 사라진다. 토글은 aria-expanded/
+  # aria-controls 를 잇고, 접힌 상태에서는 본문을 아예 렌더하지 않는다(P6).
+  - claim_apply_comparison_default_open_follows_breakpoint
+  # 환불 불가(cancel_blocked)면 제출 버튼이 그 자리에서 잠기고 사유가 버튼 옆에 선다 —
+  # 눌러 본 뒤 서버 오류로 알게 되면, 무엇을 고쳐야 신청이 되는지 화면이 말해 주지 않는다.
+  - claim_apply_cancel_blocked_locks_submit_inline
+  # 신청서 화면이 처음부터 재고 있었으나 선언이 빠져 있던 축 (2026-09-21 — 클레임 체크박스
+  # 계약을 고치며 파일이 변경 집합에 들어오자 미매핑 47건이 드러났다. 그중 기존 어휘로
+  # 덮이지 않는 12건을 여기 선언한다).
+  # 셸의 initLocal 은 정적 계약값만 갖는다 — 핸들러가 쓰는 키를 두면 재적용이 사용자 입력을 되돌린다
+  - claim_apply_shell_initlocal_holds_only_static_contract
+  # 신청서 셸이 싣는 조각의 수와 교환상품 변경 모달 — 하나가 빠지면 그 구획만 조용히 사라진다
+  - claim_apply_shell_mounts_four_partials_and_the_change_modal
+  # 금액은 서버 표기 문자열을 그대로 쓴다 — 화면이 통화 기호·단위를 이어 붙이면 통화마다 어긋난다
+  - claim_apply_amounts_use_server_formatted_strings
+  # 「환불금에서 차감」 은 환불이 발생할 때만 고를 수 있고, 고르면 축2 가 비활성이 된다
+  - claim_apply_deduct_from_refund_gated_by_refund_presence
+  # 환불 예정액 행은 교환에서 그리지 않는다 — 교환에서 돈이 오가는 축은 옵션 차액과 총 청구액뿐이다
+  - claim_apply_refund_row_hidden_for_exchange
+  # 청구 축의 체크 표시는 사용자의 선택 상태에서 읽는다 — 서버 응답을 읽으면 되돌린 선택이 되살아난다
+  - claim_apply_charge_axis_check_reads_user_selection
+  # claimable 을 읽는 자리는 전부 스냅샷을 1순위로 둔다 — store 를 단독으로 읽으면 재조회 중 빈 값이 스친다
+  - claim_apply_claimable_reads_prefer_the_snapshot
+  # 교환상품 변경 모달의 id 가 claim_ 접두를 지킨다 — 다른 화면의 모달과 id 가 겹치면 엉뚱한 창이 열린다
+  - claim_apply_change_product_modal_id_uses_the_claim_prefix
+  # 모달은 페이지 로컬(_local)을 그대로 본다 — $parent._local 은 이 모달 컨텍스트에 없어 값이 비어 온다
+  - claim_apply_change_product_modal_reads_page_local_state
+  # 적용 버튼은 옵션변경인데 옵션이 없거나 품절이면 잠긴다
+  - claim_apply_change_product_apply_locked_without_a_valid_option
+  # 주문상품 공유 조각은 로그인 여부를 스스로 판단하지 않는다 — 회원·비회원 셸이 함께 쓰므로 판단은 셸의 몫이다
+  - order_items_partial_does_not_decide_authentication
+  # 결제 정보의 확장 슬롯은 목록 말단에 남는다 — 금액 줄이 슬롯 뒤로 밀리면 합계가 부가 정보처럼 읽힌다
+  - order_payment_extension_slot_stays_at_the_end
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimImageHandlers.test.ts

@@ -4,6 +4,22 @@
  */
 @import 'tailwindcss';
 
+/*
+ * Typography — `prose` / `prose-sm` / `dark:prose-invert` 를 쓰는 화면이 의존한다.
+ * 이 템플릿 자기 레이아웃 5개(게시글 본문·댓글 답변·상품 상세 탭·약관/개인정보 모달)와
+ * 플러그인이 주입하는 약관 본문 창이 그 클래스로 서식을 잡는다.
+ *
+ * 형제 템플릿 `sirsoft-admin_basic` 은 2026-09-16 에 **같은 이유로** 이 줄을 넣었다
+ * (그쪽 main.css 주석 참조 — 미등록 상태에서는 그 클래스들이 전부 무효라 서식이 죽어 있었다).
+ * 이쪽은 그때 함께 넣지 않아 `prose` 가 계속 무효였다(2026-09-21 실측: 로드된 스타일시트
+ * 5개 어디에도 `.prose` 규칙이 없다). Tailwind v4 는 CSS 우선 설정이라 JS config 가 아니라
+ * 여기서 등록한다.
+ *
+ * `@import` 는 **반드시 `@plugin` 보다 위**에 둔다 — CSS 명세상 `@import` 가 다른 at-rule
+ * 뒤에 오면 무시되고, 그래도 빌드는 성공하며 경고도 없다.
+ */
+@plugin "@tailwindcss/typography";
+
 /**
  * Dark mode variant 설정
  * class 기반 dark 모드 활성화 (.dark 클래스 사용)

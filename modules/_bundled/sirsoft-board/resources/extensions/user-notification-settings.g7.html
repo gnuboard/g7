@@ -13,35 +13,35 @@
     <div data-ref="ext_notification_form_content" id="ext_notification" class="scroll-mt-32 mt-6">
       <div data-ref="section_notification_settings" class="admin-card">
         <div class="flex-between mb-4">
-          <div class="flex-center gap-2">
-            <icon name="bell" class="text-secondary text-xl"/>
+          <div class="flex items-center gap-2">
+            <icon name="bell" class="text-gray-600 dark:text-gray-400 text-xl"/>
             <h3 class="section-heading">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
           </div>
           <extension-badge type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
         </div>
         <div class="grid-2col-responsive">
           <div data-ref="field_notify_post_complete">
-            <label class="flex-center gap-2 cursor-pointer">
+            <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="notify_post_complete" checked="{{_local.form?.notify_post_complete ?? false}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"/>
-              <span class="text-body">$t:sirsoft-board.admin.users.form.notifications.post_complete</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.users.form.notifications.post_complete</span>
             </label>
           </div>
           <div data-ref="field_notify_post_reply">
-            <label class="flex-center gap-2 cursor-pointer">
+            <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="notify_post_reply" checked="{{_local.form?.notify_post_reply ?? false}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"/>
-              <span class="text-body">$t:sirsoft-board.admin.users.form.notifications.post_reply</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.users.form.notifications.post_reply</span>
             </label>
           </div>
           <div data-ref="field_notify_comment">
-            <label class="flex-center gap-2 cursor-pointer">
+            <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="notify_comment" checked="{{_local.form?.notify_comment ?? false}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"/>
-              <span class="text-body">$t:sirsoft-board.admin.users.form.notifications.comment</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.users.form.notifications.comment</span>
             </label>
           </div>
           <div data-ref="field_notify_reply_comment">
-            <label class="flex-center gap-2 cursor-pointer">
+            <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="notify_reply_comment" checked="{{_local.form?.notify_reply_comment ?? false}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"/>
-              <span class="text-body">$t:sirsoft-board.admin.users.form.notifications.reply_comment</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.users.form.notifications.reply_comment</span>
             </label>
           </div>
         </div>

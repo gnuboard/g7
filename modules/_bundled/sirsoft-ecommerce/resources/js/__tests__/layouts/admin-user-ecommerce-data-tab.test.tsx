@@ -82,6 +82,48 @@ describe('회원 상세 쇼핑 데이터 탭 (#524 WP-E)', () => {
         expect(pending.if).toMatch(/inquiry_pending_count.*>\s*0/);
     });
 
+    // @scenario surface=member_detail_tab, list=user_address
+    // @effects ecommerce_member_tab_shows_saved_address_lines
+    it('배송지는 건수 말고 «주소 자체» 도 편다 — 서버가 접어 보낸 줄을 그대로 읽는다', () => {
+        // 건수만으로는 「어디로 보내는 회원인가」 를 알 수 없어, 상담 중에 배송지 관리 화면으로
+        // 나갔다 돌아오면 그 화면의 조회 조건을 잃는다(2026-09-21 PO 지적).
+        const block = flattenNodes(content).find((n: any) => n?.id === 'ecommerce_saved_addresses');
+
+        expect(block).toBeTruthy();
+        // 블록 자체에는 조건이 없다 — 0건이어도 자리를 지킨다(아래 시험이 이유를 적는다).
+        expect(block.if).toBeUndefined();
+        expect(JSON.stringify(block)).toMatch(/ecommerce_data\?\.addresses/);
+
+        // 국내/해외 주소를 합치는 규칙은 서버가 소유한다 — 화면이 다시 쓰면 한쪽만 고쳐져 어긋난다.
+        const json = JSON.stringify(block);
+
+        expect(json).toContain('address.address_summary');
+        expect(json).not.toMatch(/address\.zipcode/);
+        // 담기지 않은 나머지는 건수로 알린다 — 목록을 다 편 것처럼 보이면 안 된다.
+        expect(JSON.stringify(content)).toContain('address_more');
+    });
+
+    // @scenario surface=member_detail_tab, list=user_address
+    // @effects ecommerce_member_tab_address_block_stands_when_empty
+    it('배송지가 0건이어도 블록은 서고, 없다고 말한다 — 감추면 미구현과 구분되지 않는다', () => {
+        // 종전에는 0건이면 블록을 통째로 접어, 배송지 없는 회원을 연 PO 에게 「버튼만 딸랑」
+        // 남은 화면으로 보였다(2026-09-21). 「이 회원은 배송지가 없다」 와 「이 기능이 없다」 는
+        // 다른 사실인데 화면에서 같아 보이면 안 된다.
+        const nodes = flattenNodes(content);
+        const block = nodes.find((n: any) => n?.id === 'ecommerce_saved_addresses');
+        const empty = nodes.find((n: any) => n?.id === 'ecommerce_saved_addresses_empty');
+
+        expect(block.if).toBeUndefined();
+        expect(empty).toBeTruthy();
+        expect(empty.if).toMatch(/length === 0/);
+        expect(JSON.stringify(empty)).toContain('user_ecommerce_data.address_empty');
+
+        // 줄 목록 쪽은 반대 조건을 들어야 0건에서 빈 상자가 겹쳐 서지 않는다.
+        const lines = (block.children ?? []).find((n: any) => typeof n?.if === 'string' && /length > 0/.test(n.if));
+
+        expect(lines).toBeTruthy();
+    });
+
     // @scenario surface=member_detail_tab
     // @effects ecommerce_member_tab_carries_no_list_of_its_own
     it('탭이 자기 목록을 들고 있지 않다 — 표도 조회도 없다', () => {

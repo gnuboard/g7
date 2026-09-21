@@ -78,7 +78,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary font-medium"
+                                        "className": "text-gray-900 dark:text-white font-medium"
                                     },
                                     "text": "{{order.data.payment?.vbank_name}}"
                                 }
@@ -103,7 +103,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary font-medium font-mono tracking-wide"
+                                        "className": "text-gray-900 dark:text-white font-medium font-mono tracking-wide"
                                     },
                                     "text": "{{order.data.payment?.vbank_number}}"
                                 }
@@ -128,7 +128,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary font-medium"
+                                        "className": "text-gray-900 dark:text-white font-medium"
                                     },
                                     "text": "{{order.data.payment?.vbank_holder}}"
                                 }
@@ -153,7 +153,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary font-medium"
+                                        "className": "text-gray-900 dark:text-white font-medium"
                                     },
                                     "text": "{{order.data.payment?.due_date_formatted}}"
                                 }
@@ -206,7 +206,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_taxable_supply_amount_formatted}}"
                         }
@@ -231,7 +231,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_vat_amount_formatted}}"
                         }
@@ -257,7 +257,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_tax_free_amount_formatted}}"
                         }
@@ -285,7 +285,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nhnkcp.user.receipt_label"
                         },

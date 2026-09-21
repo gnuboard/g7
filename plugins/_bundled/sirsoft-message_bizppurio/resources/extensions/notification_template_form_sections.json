@@ -169,7 +169,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center flex-wrap gap-2"
+                                        "className": "flex items-center flex-wrap gap-2"
                                     },
                                     "children": [
                                         {
@@ -236,7 +236,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center flex-wrap gap-1.5"
+                                        "className": "flex items-center flex-wrap gap-1.5"
                                     },
                                     "children": [
                                         {
@@ -771,7 +771,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "flex items-center gap-2"
                                     },
                                     "children": [
                                         {
@@ -812,7 +812,7 @@
                             "name": "Div",
                             "if": "{{_global.bz_tpl_modal?.error}}",
                             "props": {
-                                "className": "flex-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+                                "className": "flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
                             },
                             "children": [
                                 {
@@ -872,7 +872,7 @@
                             "name": "Div",
                             "if": "{{!((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}",
                             "props": {
-                                "className": "flex-center gap-2 text-xs text-gray-500 dark:text-gray-400 py-2"
+                                "className": "flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 py-2"
                             },
                             "children": [
                                 {
@@ -912,7 +912,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-300"
+                                        "className": "flex items-center flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-300"
                                     },
                                     "children": [
                                         {
@@ -962,7 +962,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.sender_profile"
                                                 },
@@ -1004,7 +1004,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.category *"
                                                 },
@@ -1040,7 +1040,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-secondary block text-xs font-medium mb-1"
+                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.name *"
                                         },
@@ -1075,7 +1075,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-secondary block text-xs font-medium mb-1"
+                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.message_type *"
                                         },
@@ -1179,7 +1179,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-secondary block text-xs font-medium mb-1"
+                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.emphasize_type *"
                                         },
@@ -1291,7 +1291,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.emphasize_title *"
                                                 },
@@ -1324,7 +1324,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.emphasize_subtitle *"
                                                 },
@@ -1363,7 +1363,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-secondary block text-xs font-medium mb-1"
+                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.image *"
                                         },
@@ -1438,7 +1438,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-secondary text-xs font-medium"
+                                                "className": "text-gray-600 dark:text-gray-400 text-xs font-medium"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.item_highlight"
                                         },
@@ -1523,7 +1523,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary text-xs font-medium"
+                                                        "className": "text-gray-600 dark:text-gray-400 text-xs font-medium"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.item_list"
                                                 },
@@ -1648,7 +1648,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-secondary text-xs font-medium mt-2"
+                                                "className": "text-gray-600 dark:text-gray-400 text-xs font-medium mt-2"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.item_summary"
                                         },
@@ -1720,7 +1720,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.content *"
                                                 },
@@ -1820,7 +1820,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-secondary block text-xs font-medium mb-1"
+                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.extra *"
                                         },
@@ -1854,7 +1854,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-secondary block text-xs font-medium mb-1"
+                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.header"
                                         },
@@ -1906,7 +1906,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary text-xs font-medium"
+                                                        "className": "text-gray-600 dark:text-gray-400 text-xs font-medium"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.buttons"
                                                 },
@@ -2181,7 +2181,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary text-xs font-medium"
+                                                        "className": "text-gray-600 dark:text-gray-400 text-xs font-medium"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.quick_replies"
                                                 },
@@ -2455,7 +2455,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.request_comment"
                                                 },
@@ -2526,7 +2526,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "flex items-center gap-2"
                                     },
                                     "children": [
                                         {
@@ -2551,7 +2551,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center flex-wrap gap-3"
+                                        "className": "flex items-center flex-wrap gap-3"
                                     },
                                     "children": [
                                         {

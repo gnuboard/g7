@@ -19,7 +19,10 @@ description: |
   - 찜: 숨김·품절 상품은 목록에서 빠진다(`Product::scopeVisible`) — 회원 화면에서 사라진
     상품이 관리자 목록에만 남아 있으면 그 행을 설명할 수 없다.
   - 장바구니: 비회원 것이 섞이므로 `owner` 로 가른다(정리 기준이 다르다).
-  - 배송지: 받는 사람·주소가 회원 이름과 다를 수 있어 별도 검색 갈래를 둔다.
+  - 배송지: 받는 사람·주소가 회원 이름과 다를 수 있어 별도 검색 갈래를 둔다. 회원 한정은
+    검색 대상/검색어와 **다른 축**이라 전용 다중선택 필터가 쥐고(`user_uuids[]`), 고른 회원의
+    이름표는 목록 응답이 `filters.members` 로 되돌려 준다 — 코어 회원 검색은 uuid 를 한 건씩만
+    받아, 한정이 세 명이면 화면이 왕복을 세 번 해야 한다(2026-09-21 PO 지적).
   - 상품문의: 본문 검색이 다형 관계를 넘어가야 해서 서버가 morph 타입을 먼저 푼다.
     해석되지 않는 타입이 섞여 있어도 화면이 500 으로 죽지 않고 그 타입만 건너뛴다.
 
@@ -34,7 +37,7 @@ description: |
 axes:
   list: [wishlist, cart, user_address, inquiry]
   permission: [read, manage]
-  member_scope: [true, false]
+  member_scope: [true, false, multi]
   extra_filter: [none, owner, is_default, is_answered]
 
 # 의미 없는 조합 컷: 전용 필터는 그 목록에만 있다
@@ -81,6 +84,11 @@ effects:
   - admin_user_address_destroy_requires_manage_permission
   - admin_user_address_bulk_delete_writes_activity_log
   - admin_user_address_is_default_filter
+  - admin_user_address_filters_by_multiple_user_uuids
+  - admin_user_address_unknown_user_uuids_returns_empty
+  - admin_user_address_returns_resolved_member_filter
+  - admin_user_address_accepts_comma_joined_user_uuids
+  - admin_user_address_all_search_spans_recipient_address_and_member
   # 백엔드 — 상품문의
   - admin_product_inquiry_requires_read_permission
   - admin_product_inquiry_returns_pagination_and_abilities
@@ -101,13 +109,23 @@ effects:
   - admin_user_detail_includes_ecommerce_summary
   - admin_user_detail_includes_pending_inquiry_count
   - profile_endpoint_omits_ecommerce_summary
+  - admin_user_detail_includes_saved_address_lines
+  - profile_endpoint_includes_default_address
   # 레이아웃 — 네 목록이 공유하는 뼈대
   - ecommerce_admin_list_datasource_passes_all_filters
   - ecommerce_admin_list_requires_read_permission
   - ecommerce_admin_list_search_field_matches_server_whitelist
-  - ecommerce_admin_list_search_action_resets_page_keeps_member_scope
+  - ecommerce_admin_list_search_action_resets_page_and_carries_member_scope
   - ecommerce_admin_list_initlocal_matches_filter_fields
-  - ecommerce_admin_list_member_banner_shows_only_when_scoped
+  - ecommerce_admin_list_member_filter_is_its_own_multi_select_axis
+  - ecommerce_admin_list_member_filter_keeps_labels_outside_search_results
+  - ecommerce_admin_list_member_labels_come_from_the_list_response
+  - ecommerce_admin_list_member_name_opens_context_menu_not_navigation
+  # 배송지 목록 전면 재작성(2026-09-21 PO 지시) — 쿠폰·주문·상품과 같은 뼈대로 옮기면서 생긴 축
+  - ecommerce_admin_list_reset_clears_state_before_url
+  - ecommerce_admin_list_page_change_clears_selection
+  - ecommerce_admin_list_has_no_preset_or_edit_mode
+  - ecommerce_admin_list_has_no_create_or_edit_entry
   - ecommerce_admin_list_grid_columns_fixed
   - ecommerce_admin_list_selectable_requires_manage
   - ecommerce_admin_list_single_delete_targets_row
@@ -130,6 +148,10 @@ effects:
   - ecommerce_member_tab_shows_pending_inquiry_count
   - ecommerce_member_tab_carries_no_list_of_its_own
   - ecommerce_member_tab_links_carry_user_uuid
+  - ecommerce_member_tab_shows_saved_address_lines
+  # 0건이어도 블록은 서고 「없다」 고 말한다 — 통째로 감추면 배송지가 없는 회원과 기능이 없는
+  # 화면이 구분되지 않는다(2026-09-21 PO 가 0건 회원을 열어 「버튼만 딸랑」 으로 읽은 자리).
+  - ecommerce_member_tab_address_block_stands_when_empty
   # 실브라우저에서 «눌렀을 때 주소가 바뀌는가» — 레이아웃 JSON 검사로는 잡히지 않는 축이다.
   # (href 식이 렌더 시 undefined 가 되어 링크가 죽어 있던 결함, 2026-09-15)
   - member_detail_tab_links_navigate_in_browser

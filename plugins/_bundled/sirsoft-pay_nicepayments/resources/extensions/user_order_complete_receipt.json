@@ -27,7 +27,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm"
+                                        "className": "text-gray-600 dark:text-gray-400 text-sm"
                                     },
                                     "text": "$t:sirsoft-pay_nicepayments.user.easy_pay_label"
                                 },
@@ -35,7 +35,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
                                     },
                                     "text": "{{({'NAVERPAY':'네이버페이','KAKAOPAY':'카카오페이','SAMSUNGPAY':'삼성페이','APPLEPAY':'애플페이','PAYCO':'PAYCO','SKPAY':'11pay','SSGPAY':'SSG페이','LPAY':'L.pay'})[orderData?.data?.payment?.payment_meta?.PayMethod] ?? orderData?.data?.payment?.payment_meta?.PayMethod}}"
                                 }
@@ -53,7 +53,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm"
+                                        "className": "text-gray-600 dark:text-gray-400 text-sm"
                                     },
                                     "text": "$t:sirsoft-pay_nicepayments.user.receipt_label"
                                 },
@@ -61,7 +61,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-3"
+                                        "className": "flex items-center gap-3"
                                     },
                                     "children": [
                                         {

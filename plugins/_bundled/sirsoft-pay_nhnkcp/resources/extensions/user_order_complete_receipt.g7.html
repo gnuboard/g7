@@ -6,27 +6,27 @@
       <div class="space-y-1.5">
         <div class="flex-between text-sm">
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_bank_name</span>
-          <span class="text-primary font-medium">{{orderData?.data?.payment?.vbank_name}}</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.vbank_name}}</span>
         </div>
         <div class="flex-between text-sm">
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_account</span>
-          <span class="text-primary font-medium font-mono tracking-wide">{{orderData?.data?.payment?.vbank_number}}</span>
+          <span class="text-gray-900 dark:text-white font-medium font-mono tracking-wide">{{orderData?.data?.payment?.vbank_number}}</span>
         </div>
         <div class="flex-between text-sm">
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_holder</span>
-          <span class="text-primary font-medium">{{orderData?.data?.payment?.vbank_holder}}</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.vbank_holder}}</span>
         </div>
         <div class="flex-between text-sm">
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_due</span>
-          <span class="text-primary font-medium">{{orderData?.data?.payment?.due_date_formatted}}</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.due_date_formatted}}</span>
         </div>
       </div>
       <p class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
     </div>
     <div data-if="{{orderData?.data?.payment?.pg_provider === 'nhnkcp' &amp;&amp; orderData?.data?.payment?.transaction_id &amp;&amp; !orderData?.data?.payment?.vbank_name}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
       <div class="flex-between">
-        <span class="text-secondary text-sm">$t:sirsoft-pay_nhnkcp.user.receipt_label</span>
-        <div class="flex-center gap-3">
+        <span class="text-gray-600 dark:text-gray-400 text-sm">$t:sirsoft-pay_nhnkcp.user.receipt_label</span>
+        <div class="flex items-center gap-3">
           <button data-if="{{!_local._kcpOcReceiptLoaded}}" type="button" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50" disabled="{{_local._kcpOcReceiptLoading === true}}">
             <on type="click">
               <!-- 매출전표 불러오기 — 받아 온 전표를 팝업으로 띄우고, 한 번 불러온 뒤에는 버튼을 감춘다 -->

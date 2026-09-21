@@ -137,10 +137,9 @@
                             },
                             "children": [
                                 {
-                                    "comment": "체크박스 — 취소 가능하거나 이 상품에 클레임이 열려 있을 때. 열린 유형이 없는 상품에 체크를 허용하면 신청 버튼이 활성화되지 않는 이유가 화면에 드러나지 않는다.",
+                                    "comment": "체크박스 — **칸은 언제나 선다.** 신청할 수 없는 상품(취소됨·열린 클레임 유형 없음)은 잠근 채로\n               둔다(PO 지시 2026-09-21). 종전에는 그런 상품에서 칸을 통째로 감춰, 같은 목록 안에서 상품 이미지가\n               한 줄만 왼쪽으로 밀려 정렬이 어긋났다 — 「왜 이 줄만 다르게 생겼나」 가 먼저 눈에 들어온다.\n               잠긴 칸은 스스로 「이 상품은 고를 수 없다」 를 말하므로 신청 버튼이 왜 안 켜지는지도 함께 설명한다.",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0}}",
                                     "responsive": {
                                         "portable": {
                                             "props": {
@@ -168,7 +167,8 @@
                                             "props": {
                                                 "type": "checkbox",
                                                 "checked": "{{(_local.selectedItemIds ?? []).includes(item.id)}}",
-                                                "className": "w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 cursor-pointer"
+                                                "disabled": "{{!(item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0)}}",
+                                                "className": "{{(item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0) ? 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 cursor-pointer' : 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 opacity-40 cursor-not-allowed'}}"
                                             }
                                         }
                                     ]

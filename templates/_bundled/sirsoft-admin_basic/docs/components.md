@@ -43,13 +43,18 @@ Flex/Container)를 정의합니다. 레이아웃 JSON 작성자는 이 구분을
 따라갑니다 — 이 문서는 "이 템플릿에서만" 유효한 계약(필수 컴포넌트·AdminSidebar·SlotContainer)
 만 다룹니다.
 
-이 템플릿에서만 유효한 계약 둘을 덧붙입니다. `StatusBadge` 의 상태 어휘(`StatusType`)는 도메인
+이 템플릿에서만 유효한 계약 셋을 덧붙입니다. `StatusBadge` 의 상태 어휘(`StatusType`)는 도메인
 Enum 의 `variant()` 가 실제로 내려보내는 값(`danger` · `primary` · `secondary` · `dark` 포함)을
 전부 담아야 합니다 — 유니언에 없는 값은 스타일 조회가 `undefined` 가 되어 배경·글자색·테두리가
 통째로 사라지고, 레이아웃 JSON 은 TS 타입 검사 밖이라 컴파일에도 걸리지 않습니다.
 `ColumnSelector` 의 `onColumnVisibilityChange` 는 두 번째 인자로 발화 출처
 (`{ source: 'user' | 'init' | 'dynamic' }` — 사람이 고른 것 · 저장값 복원 · 새 컬럼 자동 포함)를
 넘기므로, 저장 여부를 출처로 가려야 하는 화면은 그 인자를 읽습니다.
+`SearchableDropdown` 의 다중 선택 트리거 문구는 `selectedCountLabel` 로 넘깁니다 — 화면이 주지
+않으면 `{count} selected` 라는 영어가 그대로 섭니다. 컴포넌트는 언어 파일을 읽지 않으므로(레이아웃
+JSON 의 `$t:` 로만 번역이 들어옵니다) 이 칸을 비운 화면은 한국어·일본어 운영자에게 영어 문구를
+보입니다. 실제로 회원 배송지 목록의 회원 다중선택이 「2 selected」 로 서 있던 것을 브라우저
+실측에서 발견해 이 prop 을 신설했습니다(2026-09-21). `{count}` 자리에 고른 개수가 들어갑니다.
 <!-- @intent END -->
 
 ## 필수 컴포넌트 (모듈 호환성)

@@ -39,7 +39,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_taxable_supply_amount_formatted}}"
                         }
@@ -64,7 +64,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_vat_amount_formatted}}"
                         }
@@ -90,7 +90,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_tax_free_amount_formatted}}"
                         }
@@ -118,7 +118,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_kginicis.user.payment_type_label"
                         },
@@ -143,7 +143,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_kginicis.user.receipt_label"
                         },

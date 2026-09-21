@@ -329,6 +329,100 @@ class UserAddressService
     }
 
     /**
+     * 주문서가 보낸 배송지를 주소록에 남깁니다 (갱신 또는 추가).
+     *
+     * `$addressId` 가 오면 그 행을 «갱신» 한다 — 주문서에서 저장된 배송지를 고른 뒤 그 자리에서
+     * 고친 경우다. 갱신을 두지 않으면 고친 주소가 주소록에 남지 않아 다음 주문서도 옛 주소로
+     * 열리고, 같은 손질을 매번 반복하게 된다(2026-09-21 PO 요청). 배송지명(`name`)은 건드리지
+     * 않는다 — 구매자가 붙여 둔 이름("회사", "본가")이 주소를 고칠 때마다 사라지면 목록에서
+     * 어느 것이 무엇인지 알 수 없다.
+     *
+     * 소유자가 아닌 행 ID 면 `updateAddress` 가 null 을 돌린다. 그때 새로 만들지 않는 것은
+     * 의도다 — 남의 행을 가리킨 요청이 "그럼 추가" 로 조용히 성공하면, 잘못 실린 ID 가 드러날
+     * 자리가 영영 없다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array<string, mixed>  $shippingInfo  주문서가 보낸 배송지 정보
+     * @param  int|null  $addressId  갱신할 주소록 행 ID (없으면 새로 추가)
+     * @return UserAddress|null 저장된 배송지 (갱신 대상이 없으면 null)
+     */
+    public function storeShippingInfoForUser(int $userId, array $shippingInfo, ?int $addressId = null): ?UserAddress
+    {
+        if ($addressId !== null && $addressId > 0) {
+            $data = $this->mapShippingInfoToAddressData($userId, '', $shippingInfo);
+            unset($data['name'], $data['user_id']);
+
+            return $this->updateAddress($userId, $addressId, $data);
+        }
+
+        $name = $this->generateUniqueName(
+            $userId,
+            __('sirsoft-ecommerce::messages.address.auto_saved_label')
+        );
+
+        // 국가별 명시 매핑 (B4 — 폴백 혼재 해외 필드 누락/오저장 방지)
+        return $this->createAddress($this->mapShippingInfoToAddressData($userId, $name, $shippingInfo));
+    }
+
+    /**
+     * 회원정보 화면이 쓸 배송지 요약 줄을 만듭니다.
+     *
+     * 관리자 회원 상세와 마이페이지 프로필이 같은 모양을 읽는다 — 건수만 있고 «어디로 보내는
+     * 주소인가» 가 없으면, 두 화면 모두 배송지를 확인하려고 다른 화면으로 나가야 한다
+     * (2026-09-21 PO 지적). 기본 배송지가 맨 앞이고(리포지토리 정렬), 상한을 두는 것은
+     * 회원 상세가 주소록 관리 화면을 대신하지는 않기 때문이다 — 전체는 그 화면이 낸다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  int  $limit  최대 건수
+     * @return array<int, array<string, mixed>> 요약 줄 목록 (기본 배송지 우선)
+     */
+    public function summarizeForUserInfo(int $userId, int $limit = 5): array
+    {
+        return $this->addressRepository->findByUserId($userId)
+            ->take(max(1, $limit))
+            ->map(fn (UserAddress $address) => $this->toSummaryLine($address))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 회원의 기본 배송지를 요약 줄 하나로 만듭니다 (없으면 null).
+     *
+     * 프로필(/api/me)은 목록 대신 이 한 줄만 읽는다 — 부팅 경로라 질의를 늘리지 않는다.
+     *
+     * @param  int  $userId  회원 ID
+     * @return array<string, mixed>|null 기본 배송지 요약 (없으면 null)
+     */
+    public function defaultSummaryForUserInfo(int $userId): ?array
+    {
+        $address = $this->getDefaultAddress($userId);
+
+        return $address !== null ? $this->toSummaryLine($address) : null;
+    }
+
+    /**
+     * 배송지 한 건을 요약 줄로 접습니다.
+     *
+     * 주소 문자열은 모델이 만든다(`getFullAddressWithZipcode`) — 국내/해외가 서로 다른 컬럼에
+     * 담기므로 화면마다 합치는 규칙을 다시 쓰면 한쪽만 고쳐져 어긋난다.
+     *
+     * @param  UserAddress  $address  배송지 모델
+     * @return array<string, mixed> 요약 줄
+     */
+    private function toSummaryLine(UserAddress $address): array
+    {
+        return [
+            'id' => (int) $address->id,
+            'label' => (string) $address->name,
+            'recipient_name' => (string) $address->recipient_name,
+            'recipient_phone' => (string) $address->recipient_phone,
+            'country_code' => (string) $address->country_code,
+            'address_summary' => $address->getFullAddressWithZipcode(),
+            'is_default' => (bool) $address->is_default,
+        ];
+    }
+
+    /**
      * 회원의 배송지 건수를 조회합니다 (회원 상세 요약용).
      *
      * @param  int  $userId  회원 ID

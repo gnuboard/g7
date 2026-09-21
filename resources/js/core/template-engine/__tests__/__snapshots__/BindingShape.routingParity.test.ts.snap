@@ -86,14 +86,14 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `710`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `715`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
-  "numericIndex": 41,
+  "numericIndex": 42,
   "other": 2,
-  "quotedBracket": 27,
-  "total": 70,
+  "quotedBracket": 28,
+  "total": 72,
 }
 `;
 
@@ -230,7 +230,6 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_review_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_promotion_coupon_list.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_settings.json",
-      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_user_address_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_wishlist_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_brand_list.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_category_list.json",
@@ -261,6 +260,8 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_notification_template_edit.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_notification_definitions.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json",
+      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_user_address_index/_partial_address_datagrid.json",
+      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_user_address_index/_partial_filter_section.json",
       "modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_form.json",
       "modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_list.json",
       "plugins/_bundled/sirsoft-ckeditor5/resources/layouts/admin/ckeditor5_uploads.json",
@@ -460,7 +461,6 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_scraps_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_cart_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_inquiry_index.json",
-      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_user_address_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_wishlist_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_partial_product_datagrid.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json",
@@ -528,6 +528,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "files": [
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_transactions_table.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_partial_coupon_datagrid.json",
+      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_user_address_index/_partial_address_datagrid.json",
       "modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_role_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_content.json",
@@ -586,6 +587,19 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "files": [
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_role_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_tab_schedules.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": false,
+      "DataBindingEngine.resolveBindings": false,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
+    "expr": "$args[1].recipient_name",
+    "files": [
+      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_user_address_index/_partial_address_datagrid.json",
     ],
     "old": {
       "DataBindingEngine.isBaseExpression": false,
@@ -1065,6 +1079,19 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "expr": "query['type[]']",
     "files": [
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reports_index.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": true,
+      "DataBindingEngine.resolveBindings": true,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
+    "expr": "query['user_uuids[]']",
+    "files": [
+      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_user_address_index.json",
     ],
     "old": {
       "DataBindingEngine.isBaseExpression": true,

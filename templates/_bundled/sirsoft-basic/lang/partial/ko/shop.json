@@ -473,6 +473,7 @@
     "save_address": "배송지 저장",
     "new_address_label": "새 배송지",
     "save_shipping_address_checkbox": "입력한 배송지를 저장합니다",
+    "update_selected_address_checkbox": "고친 내용으로 저장된 배송지를 갱신합니다",
     "vbank_payment": "가상계좌",
     "vbank_payment_desc": "가상계좌 발급 후 입금",
     "vbank_info": "주문 완료 후 가상계좌가 발급됩니다.",

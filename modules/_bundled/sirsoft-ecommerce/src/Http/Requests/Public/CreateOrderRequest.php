@@ -119,6 +119,9 @@ class CreateOrderRequest extends FormRequest
 
             // 배송지 저장
             'save_shipping_address' => 'nullable|boolean',
+            // 주문서에서 고른 배송지를 «그 자리에서 고쳤을 때» 그 행을 갱신한다. 소유권은
+            // 컨트롤러가 확인한다 — 여기서는 형식만 본다(남의 행 ID 를 실어도 갱신되지 않는다).
+            'save_shipping_address_id' => 'nullable|integer|min:1',
 
             // 현금영수증 신청 (무통장입금 전용 — 신청 시에만 하위 3키 필수)
             'cash_receipt_requested' => 'nullable|boolean',
@@ -165,6 +168,8 @@ class CreateOrderRequest extends FormRequest
      * 따라서 "전부 비었거나 전부 채워졌거나" 둘 중 하나만 허용합니다.
      *
      * @param  Validator  $validator  검증기
+     *
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {

@@ -20,7 +20,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 mb-4"
+                                "className": "flex items-center gap-2 mb-4"
                             },
                             "children": [
                                 {
@@ -61,7 +61,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label-subtle"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.escrow_label"
                                         },
@@ -88,7 +88,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label-subtle"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.vbank_label"
                                         },
@@ -96,7 +96,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "text-gray-900 dark:text-white font-medium"
                                             },
                                             "text": "{{(order.data?.payment?.vbank_name ?? '') + ' ' + (order.data?.payment?.vbank_number ?? '') + ' (' + (order.data?.payment?.vbank_holder ?? '') + ')'}}"
                                         }
@@ -115,7 +115,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label-subtle"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.vbank_due_label"
                                         },
@@ -123,7 +123,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "text-gray-900 dark:text-white font-medium"
                                             },
                                             "text": "{{order.data?.payment?.vbank_due_at_formatted ?? ''}}"
                                         }
@@ -142,7 +142,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label-subtle"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-tosspayments.admin.receipt_label"
                                         },

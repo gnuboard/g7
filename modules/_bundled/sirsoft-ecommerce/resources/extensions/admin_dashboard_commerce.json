@@ -105,7 +105,7 @@
                                 "data_sources": "commerce_overview"
                             },
                             "props": {
-                                "className": "flex-center flex-wrap gap-2 md:col-span-2 lg:col-span-4"
+                                "className": "flex items-center flex-wrap gap-2 md:col-span-2 lg:col-span-4"
                             },
                             "children": [
                                 {
@@ -292,7 +292,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-4"
+                                                "className": "flex items-center gap-4"
                                             },
                                             "children": [
                                                 {
@@ -300,7 +300,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-center gap-2"
+                                                        "className": "flex items-center gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -327,7 +327,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-center gap-2"
+                                                        "className": "flex items-center gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -579,7 +579,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "shrink-0 flex-center gap-1 text-rose-500 text-xs font-medium"
+                                                                "className": "shrink-0 flex items-center gap-1 text-rose-500 text-xs font-medium"
                                                             },
                                                             "children": [
                                                                 {
@@ -641,7 +641,7 @@
                                             "type": "basic",
                                             "name": "H3",
                                             "props": {
-                                                "className": "flex-center text-base font-semibold text-slate-900 dark:text-white gap-1"
+                                                "className": "flex items-center text-base font-semibold text-slate-900 dark:text-white gap-1"
                                             },
                                             "children": [
                                                 {

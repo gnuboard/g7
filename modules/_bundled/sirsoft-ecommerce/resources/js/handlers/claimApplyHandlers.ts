@@ -1058,7 +1058,10 @@ export function initClaimApplyHandler(
                 claimable_types: entry.claimable_types ?? [],
                 refund_branch: entry.refund_branch ?? null,
                 selected: preselected.includes(Number(option.id ?? 0)),
-                quantity: available > 0 ? Math.min(1, available) || available : 1,
+                // 신청 가능한 잔여 수량을 처음부터 다 담는다 — 취소·반품은 「고른 상품을 통째로」 가
+                // 대부분이라 1 로 두면 구매자가 줄마다 수량을 다시 올려야 한다(2026-09-21 PO 요청).
+                // 줄여 신청하는 경우는 입력칸에서 내리면 되고, 상한은 그대로 available_quantity 다.
+                quantity: available > 0 ? available : 1,
                 exchange_mode: 'same',
                 new_product_option_id: null,
                 new_option_label: '',

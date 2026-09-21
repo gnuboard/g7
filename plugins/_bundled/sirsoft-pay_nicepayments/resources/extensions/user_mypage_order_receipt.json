@@ -24,7 +24,7 @@
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "text-sm font-semibold text-info-soft mb-3"
+                                "className": "text-sm font-semibold text-xs text-blue-700 dark:text-blue-300 mb-3"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_deposit_info"
                         },
@@ -46,7 +46,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_bank"
                                         },
@@ -54,7 +54,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "text-gray-900 dark:text-white font-medium"
                                             },
                                             "text": "{{order.data.payment?.vbank_name}}"
                                         }
@@ -71,7 +71,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_account"
                                         },
@@ -79,7 +79,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium font-mono"
+                                                "className": "text-gray-900 dark:text-white font-medium font-mono"
                                             },
                                             "text": "{{order.data.payment?.vbank_number}}"
                                         }
@@ -96,7 +96,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_holder"
                                         },
@@ -104,7 +104,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "text-gray-900 dark:text-white font-medium"
                                             },
                                             "text": "{{order.data.payment?.vbank_holder}}"
                                         }
@@ -121,7 +121,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_amount"
                                         },
@@ -147,7 +147,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_due"
                                         },
@@ -168,7 +168,7 @@
                             "name": "P",
                             "if": "{{!order.data.payment?.paid_at}}",
                             "props": {
-                                "className": "text-info-soft mt-3"
+                                "className": "text-xs text-blue-700 dark:text-blue-300 mt-3"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_notice"
                         }
@@ -211,7 +211,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_taxable_supply_amount_formatted}}"
                         }
@@ -236,7 +236,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_vat_amount_formatted}}"
                         }
@@ -262,7 +262,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_tax_free_amount_formatted}}"
                         }
@@ -291,7 +291,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.easy_pay_label"
                         },
@@ -299,7 +299,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-heading"
+                                "className": "text-sm font-medium text-gray-900 dark:text-white"
                             },
                             "text": "{{({'NAVERPAY':'네이버페이','KAKAOPAY':'카카오페이','SAMSUNGPAY':'삼성페이','APPLEPAY':'애플페이','PAYCO':'PAYCO','SKPAY':'11pay','SSGPAY':'SSG페이','LPAY':'L.pay'})[order.data.payment?.payment_meta?.PayMethod] ?? order.data.payment?.payment_meta?.PayMethod}}"
                         }
@@ -317,7 +317,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.receipt_label"
                         },
@@ -325,7 +325,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex items-center gap-3"
                             },
                             "children": [
                                 {

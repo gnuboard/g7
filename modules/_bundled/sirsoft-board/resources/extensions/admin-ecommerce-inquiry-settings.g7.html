@@ -1,20 +1,20 @@
 <!-- 이커머스 설정의 「문의 게시판」 자리를 게시판 모듈이 통째로 대체한다(mode=replace) — 게시판이 설치돼 있을 때만 실제 게시판 목록에서 고르게 하고, 고른 게시판으로 바로 넘어가는 경로까지 함께 준다 -->
 <extension extension-point="inquiry_board_setting" mode="replace" priority="100">
   <div data-ref="inquiry_board_setting_active" class="space-y-4">
-    <p data-ref="inquiry_board_setting_description" class="text-body">$t:sirsoft-board.admin.ecommerce_settings.inquiry.description</p>
-    <div data-ref="inquiry_board_field" class="row-stack">
+    <p data-ref="inquiry_board_setting_description" class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.ecommerce_settings.inquiry.description</p>
+    <div data-ref="inquiry_board_field" class="flex flex-col gap-2">
       <div>
-        <label data-ref="inquiry_board_label" class="form-label">$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label</label>
+        <label data-ref="inquiry_board_label" class="block text-sm font-medium text-gray-900 mb-1 dark:text-white">$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label</label>
         <select data-ref="inquiry_board_select" name="inquiry.board_slug" value="{{_local.form?.inquiry?.board_slug ?? ''}}" options="{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}" class="{{_local.errors?.['inquiry.board_slug'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
       </div>
-      <span data-ref="inquiry_board_select_error" data-if="{{_local.errors?.['inquiry.board_slug']}}" class="form-error">{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}</span>
+      <span data-ref="inquiry_board_select_error" data-if="{{_local.errors?.['inquiry.board_slug']}}" class="block text-xs text-red-500 mt-1 dark:text-red-400">{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}</span>
     </div>
     <div data-ref="inquiry_board_hints" class="space-y-3">
-      <p data-ref="inquiry_board_hint_secret" class="text-tertiary">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret</p>
-      <p data-ref="inquiry_board_hint_category" class="text-tertiary">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category</p>
+      <p data-ref="inquiry_board_hint_secret" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret</p>
+      <p data-ref="inquiry_board_hint_category" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category</p>
       <div data-ref="inquiry_board_actions" data-if="{{!!(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}" class="flex flex-col gap-2 md:flex-row">
         <div data-ref="inquiry_board_go_edit_card" class="flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-          <p class="flex-start gap-1.5 text-tertiary">
+          <p class="flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
             <icon name="gear" class="text-xs shrink-0 mt-0.5"/>
             <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit_desc</span>
           </p>
@@ -27,7 +27,7 @@
           </button>
         </div>
         <div data-ref="inquiry_board_go_posts_card" class="flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-          <p class="flex-start gap-1.5 text-tertiary">
+          <p class="flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
             <icon name="clipboard-list" class="text-xs shrink-0 mt-0.5"/>
             <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts_desc</span>
           </p>

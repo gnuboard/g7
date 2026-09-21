@@ -3,7 +3,7 @@
   <inject target-id="ecommerce_notif_channel_content" position="prepend_child">
     <div data-ref="bizppurio_ecommerce_status_banner" data-if="{{['sms','alimtalk'].includes(query.channel ?? '') &amp;&amp; (((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false) || ((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true))}}" class="mt-4 mb-3 space-y-2">
       <div data-ref="bizppurio_ecommerce_banner_not_ready" data-if="{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false}}" class="flex-between gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
-        <div class="flex-center gap-2">
+        <div class="flex items-center gap-2">
           <icon name="fas fa-circle-exclamation" size="sm" class="text-red-600 dark:text-red-400"/>
           <span class="text-sm text-red-800 dark:text-red-200">$t:sirsoft-message_bizppurio.banner.not_ready</span>
         </div>
@@ -14,7 +14,7 @@
           $t:sirsoft-message_bizppurio.banner.setup_action
         </button>
       </div>
-      <div data-ref="bizppurio_ecommerce_banner_test_mode" data-if="{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true}}" class="flex-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700">
+      <div data-ref="bizppurio_ecommerce_banner_test_mode" data-if="{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true}}" class="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700">
         <icon name="fas fa-flask" size="sm" class="text-amber-600 dark:text-amber-400"/>
         <span class="text-sm text-amber-800 dark:text-amber-200">$t:sirsoft-message_bizppurio.banner.test_mode</span>
       </div>

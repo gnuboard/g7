@@ -219,6 +219,8 @@ describe('claimApplyHandlers', () => {
         expect(mockLocalState.claimItems).toHaveLength(1);
         expect(mockLocalState.claimItems[0].order_option_id).toBe(310);
         expect(mockLocalState.claimItems[0].selected).toBe(true);
+        // 기본 수량은 신청 가능한 잔여 수량 전부다 — 1 로 두면 구매자가 줄마다 수량을 올려야 한다.
+        expect(mockLocalState.claimItems[0].quantity).toBe(2);
         // 청구 2축 기본값은 운영자 허용 목록의 첫 값이다 (리터럴 기본값 금지)
         expect(mockLocalState.claimChargeMethod).toBe('pay_on_request');
         expect(mockLocalState.claimPaymentMethod).toBe('card');

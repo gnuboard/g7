@@ -128,6 +128,9 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimListHandlers.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyRender.test.tsx
+  # 교환 신청서 시험이지만 「우선순위 라디오가 미리보기를 다시 부른다」 한 건은 이 매니페스트의
+  # 효과(claim_apply_refund_priority_reestimates)를 잰다 — 한 화면이 두 유형의 계약을 함께 진다.
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyExchange.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-return.spec.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-cancel-refund.spec.ts

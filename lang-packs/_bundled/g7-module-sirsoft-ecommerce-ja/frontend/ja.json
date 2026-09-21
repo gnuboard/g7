@@ -222,7 +222,7 @@
     },
     "user_addresses": {
       "title": "会員配送先",
-      "description": "全会員が保存した配送先を確認し、整理します。",
+      "description": "全会員が保存した配送先を照会・整理します。",
       "search_fields": {
         "member": "会員",
         "member_id": "会員ID",
@@ -230,24 +230,28 @@
         "recipient": "受取人",
         "address": "住所"
       },
-      "filters": {
-        "search_label": "検索対象",
-        "keyword_label": "検索キーワード",
-        "keyword_placeholder": "検索キーワードを入力",
-        "date_label": "登録日",
-        "search": "検索",
-        "reset": "初期化",
-        "is_default_label": "基本配送先",
-        "is_default_all": "すべて",
+      "search": {
+        "placeholder": "受取人・住所で検索",
+        "column_select": "列を選択"
+      },
+      "filter": {
+        "member": "会員",
+        "member_select": "会員を選択",
+        "member_selected_count": "{count}名選択",
+        "member_search_placeholder": "名前・メールで検索",
+        "member_search_initial": "名前またはメールを入力してください",
+        "created_at": "登録日",
+        "is_default": "基本配送先",
         "is_default_only": "基本のみ",
         "is_default_except": "基本を除外",
-        "member_filter_notice": "特定ユーザーの配送先のみ表示中",
-        "member_filter_clear": "ユーザーフィルター解除"
+        "search": "検索",
+        "reset": "初期化"
       },
       "columns": {
         "created_at": "登録日",
         "member": "会員",
         "recipient": "受取人",
+        "contact": "連絡先",
         "address": "住所"
       },
       "badges": {
@@ -257,10 +261,10 @@
       },
       "actions": {
         "delete": "削除",
-        "view_member": "会員情報"
+        "view_member": "会員情報",
+        "search_member": "この会員で検索"
       },
       "bulk": {
-        "selected_count": "{{count}}件選択されました",
         "delete": "選択削除"
       },
       "sort": {
@@ -269,17 +273,18 @@
       },
       "table": {
         "total_count": "合計{{count}}件",
+        "selected_count": "{{count}}件選択されました",
         "empty": "配送先がありません。"
       },
       "modal": {
         "delete": {
-          "title": "この配送先を削除しますか?",
-          "message": "会員の配送先リストから削除されます。既に受け付けられた注文の配送先には影響を与えません。"
+          "title": "この配送先を削除しますか？",
+          "message": "{{member}} 会員の配送先（受取人 {{recipient}}）を削除します。",
+          "warning": "会員の配送先一覧から消えます。すでに受け付けた注文の配送先には影響しません。"
         },
         "bulk_delete": {
-          "title": "選択した配送先を削除しますか?",
-          "message": "選択した{{count}}件の配送先を削除しますか?",
-          "deleting": "削除中..."
+          "title": "選択した配送先を削除しますか？",
+          "message": "選択した{{count}}件の配送先を削除します。"
         }
       }
     },
@@ -371,7 +376,11 @@
       "view_carts": "カート",
       "view_addresses": "配送先",
       "view_inquiries": "商品問い合わせ",
-      "inquiry_pending": "未回答 {{count}}件"
+      "inquiry_pending": "未回答 {{count}}件",
+      "saved_addresses": "保存された配送先",
+      "address_empty": "登録された配送先がありません。",
+      "address_default": "基本",
+      "address_more": "他 {{count}}件は配送先管理で確認できます。"
     },
     "claim": {
       "$partial": "partial/admin/claim.json"
@@ -463,6 +472,12 @@
       "response_pg_handler": "決済ハンドラー(レスポンス)",
       "response_pg_data": "決済データ(レスポンス)"
     }
+  },
+  "user_address_card": {
+    "title": "基本の配送先",
+    "manage": "配送先管理",
+    "default_badge": "基本",
+    "empty_notice": "登録された配送先がありません。登録すると注文書に自動で入力されます。"
   },
   "user_mileage": {
     "title": "私のマイレージ",

@@ -3,24 +3,24 @@
   <!-- 시작 전 상태 — provider_id=nhnkcp && !providerInProgress -->
   <div data-if="{{_global.identityChallenge?.provider_id === 'nhnkcp' &amp;&amp; !(_global.identityChallenge?.providerInProgress)}}" class="space-y-4">
     <!-- 헤더 — 아이콘 + 제목 + 안내 -->
-    <div class="flex-center flex-col text-center space-y-2 pt-2">
+    <div class="flex items-center flex-col text-center space-y-2 pt-2">
       <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full">
         <icon name="mobile-screen" class="text-2xl text-blue-600 dark:text-blue-400"/>
       </div>
       <!-- 성인인증 purpose 전용 제목 -->
-      <h3 data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="section-heading-md">$t:sirsoft-verification_nhnkcp.modal.adult_title</h3>
+      <h3 data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-verification_nhnkcp.modal.adult_title</h3>
       <!-- 기본 본인확인 제목 (signup/password_reset/self_update/sensitive_action 등) -->
-      <h3 data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="section-heading-md">$t:sirsoft-verification_nhnkcp.modal.title</h3>
+      <h3 data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-verification_nhnkcp.modal.title</h3>
       <!-- 성인인증 purpose 전용 설명 -->
-      <p data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="text-label">$t:sirsoft-verification_nhnkcp.modal.adult_description</p>
+      <p data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.modal.adult_description</p>
       <!-- 기본 본인확인 설명 (데스크톱) -->
-      <p data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="text-label">
-        <responsive on="portable" class="text-label hidden"/>
+      <p data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="text-sm text-gray-600 dark:text-gray-400">
+        <responsive on="portable" class="text-sm text-gray-600 dark:text-gray-400 hidden"/>
         $t:sirsoft-verification_nhnkcp.modal.description
       </p>
       <!-- 모바일 전용 안내 — 페이지가 인증 화면으로 이동함을 알린다 -->
-      <p class="text-label hidden">
-        <responsive on="portable" class="text-label"/>
+      <p class="text-sm text-gray-600 dark:text-gray-400 hidden">
+        <responsive on="portable" class="text-sm text-gray-600 dark:text-gray-400"/>
         $t:sirsoft-verification_nhnkcp.modal.mobile_description
       </p>
     </div>
@@ -38,9 +38,9 @@
     </div>
   </div>
   <!-- 진행 중 상태 — provider_id=nhnkcp && providerInProgress. 표준창이 열린 뒤 결과 대기 -->
-  <div data-if="{{_global.identityChallenge?.provider_id === 'nhnkcp' &amp;&amp; (_global.identityChallenge?.providerInProgress)}}" class="flex-center flex-col text-center space-y-4 py-6" role="status" aria-live="polite">
+  <div data-if="{{_global.identityChallenge?.provider_id === 'nhnkcp' &amp;&amp; (_global.identityChallenge?.providerInProgress)}}" class="flex items-center flex-col text-center space-y-4 py-6" role="status" aria-live="polite">
     <icon name="spinner" class="fa-spin text-3xl text-blue-600 dark:text-blue-400"/>
-    <p class="text-heading">$t:sirsoft-verification_nhnkcp.modal.in_progress.title</p>
+    <p class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-verification_nhnkcp.modal.in_progress.title</p>
     <div class="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-yellow-700 dark:text-yellow-300">
       <span class="inline-flex items-start gap-1.5">
         <icon name="circle-info" class="mt-0.5"/>

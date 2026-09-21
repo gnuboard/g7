@@ -109,6 +109,7 @@ const orderItems = load('partials/mypage/orders/_items.json');
 const orderPayment = load('partials/mypage/orders/_payment.json');
 
 describe('apply.json — 작성 셸', () => {
+  /** @effects claim_apply_route_type_guard_404 */
   it('라우트 유형 가드가 허용값 밖을 404 로 세운다', () => {
     const guard = flatten(apply.init_actions).find(
       (n) => typeof n.if === 'string' && n.if.includes("'exchange'") && n.if.includes("'refund'")
@@ -118,6 +119,7 @@ describe('apply.json — 작성 셸', () => {
     expect(guard.then?.params?.errorCode).toBe(404);
   });
 
+  /** @effects claim_apply_claimable_datasource_waits_for_order_id */
   it('claimable 은 주소가 실어 온 주문 ID 로 곧바로 부른다 (체인만으로는 뒤로가기에서 값이 닿지 않는다)', () => {
     // 회귀(2026-08-31 브라우저 실측): order 응답 → setState → refetchDataSource 체인에만 기대면
     // SPA 뒤로가기로 되돌아왔을 때 refetch 결과가 새로 마운트된 화면의 상태에 닿지 않는다.
@@ -132,6 +134,7 @@ describe('apply.json — 작성 셸', () => {
     expect(claimable.errorHandling['404'].handler).toBe('suppress');
   });
 
+  /** @effects order_detail_claim_entry_passes_checked_options */
   it('주문상세는 클레임 진입에 주문 ID 를 함께 넘긴다', () => {
     const buttons = flatten(orderShow).filter(
       (n: any) => n.name === 'Button' && String(n.props?.disabled ?? '').includes('claimable_types')
@@ -141,6 +144,7 @@ describe('apply.json — 작성 셸', () => {
     }
   });
 
+  /** @effects claim_apply_claimable_datasource_waits_for_order_id */
   it('주문 데이터소스는 진입할 때마다 다시 부른다 (뒤로가기 캐시)', () => {
     for (const layout of [apply, orderShow]) {
       const order = layout.data_sources.find((s: any) => s.id === 'order');
@@ -149,6 +153,7 @@ describe('apply.json — 작성 셸', () => {
     }
   });
 
+  /** @effects claim_apply_claimable_datasource_waits_for_order_id */
   it('order.onSuccess 는 setState 다음에 refetchDataSource 를 둔다 (순서가 뒤바뀌면 빈 URL 로 조회된다)', () => {
     const order = apply.data_sources.find((s: any) => s.id === 'order');
     const sequence = order.onSuccess[0];
@@ -177,6 +182,7 @@ describe('apply.json — 작성 셸', () => {
     expect(order.initLocal.claimApiBase).toBe("{{'/api/modules/sirsoft-ecommerce/user/orders/' + data.id}}");
   });
 
+  /** @effects claim_apply_claimable_datasource_waits_for_order_id */
   it('claimable.onSuccess 는 응답 페이로드를 액션 파라미터로 넘긴다', () => {
     // 회귀(2026-08-31 브라우저 실측): 핸들러가 자기 onSuccess 시점에 데이터소스 store 를 읽으면
     // 아직 비어 있어(TemplateApp 상태 갱신이 refetch 해소 뒤) 응답 200 인데 화면만 빈 신청서로
@@ -193,6 +199,7 @@ describe('apply.json — 작성 셸', () => {
     expect(init.params.preselected).toBeUndefined();
   });
 
+  /** @effects claim_apply_shell_initlocal_holds_only_static_contract */
   it('레이아웃 initLocal 은 셸이 정하는 정적 계약값만 갖는다 (핸들러가 쓰는 키를 두면 재적용이 되돌린다)', () => {
     // 회귀(2026-08-31 브라우저 실측): initLocal 은 마운트 뒤 한 번 더 적용되며 핸들러가 쓴 값을
     // 초기값으로 되돌린다. 첫 진입에서는 순서가 맞아 보이지만 SPA 뒤로가기로 되돌아오면 재적용이
@@ -222,12 +229,14 @@ describe('apply.json — 작성 셸', () => {
     expect(order.initLocal.claimApiBase).toContain('/user/orders/');
   });
 
+  /** @effects claim_apply_unmount_clears_estimate_timers */
   it('화면을 떠날 때 미리보기 타이머와 세대 번호를 정리한다', () => {
     const withUnmount = flatten(apply.slots.content).find((n) => n.lifecycle?.onUnmount);
     expect(withUnmount).toBeTruthy();
     expect(withUnmount.lifecycle.onUnmount[0].handler).toBe('sirsoft-ecommerce.clearClaimApplyTimers');
   });
 
+  /** @effects claim_apply_shell_mounts_four_partials_and_the_change_modal */
   it('4개 partial 과 교환상품 변경 모달을 싣는다', () => {
     const partials = flatten(apply).map((n) => n.partial).filter(Boolean);
     expect(partials).toEqual(
@@ -246,17 +255,20 @@ describe('_apply_items.json — 신청 상품 (D29)', () => {
   const nodes = flattenChildren(items);
   const itemLoop = nodes.find((n) => n.iteration?.item_var === 'claimItem');
 
+  /** @effects claim_apply_change_product_button_is_per_item */
   it('상품 반복은 _local.claimItems 를 순회하고 index_var 를 갖는다', () => {
     expect(itemLoop?.iteration?.source).toBe('{{_local.claimItems ?? []}}');
     expect(itemLoop?.iteration?.index_var).toBe('claimIdx');
   });
 
+  /** @effects claim_apply_has_no_global_exchange_mode_card */
   it("신청서 전체에 걸린 '교환 방식' 라디오 그룹이 없다", () => {
     // 전체 라디오로 접으면 상품마다 다른 교환 대상을 표현할 수 없다(D29).
     const radios = flatten(items).filter((n) => n.props?.type === 'radio');
     expect(radios).toHaveLength(0);
   });
 
+  /** @effects claim_apply_change_product_button_is_per_item */
   it('[교환상품 변경] 버튼은 상품 반복 안에 있고 그 행의 index 를 넘긴다', () => {
     // flatten 은 조상·자손을 모두 훑으므로 같은 액션 객체가 여러 번 잡힌다 — 참조로 중복을 접는다.
     const openActions = [...new Set(
@@ -273,11 +285,13 @@ describe('_apply_items.json — 신청 상품 (D29)', () => {
     expect(openActions[0].params.index).toBe('{{claimIdx}}');
   });
 
+  /** @effects user_claim_apply_exchange_renders_per_item_change_button */
   it('교환 대상 블록은 교환 유형에서만 그린다', () => {
     const block = nodes.find((n) => typeof n.if === 'string' && n.if.includes("_local.claimType === 'exchange'"));
     expect(block).toBeTruthy();
   });
 
+  /** @effects claim_apply_quantity_clamped_to_available */
   it('수량 입력은 잔여 수량을 상한으로 갖고 핸들러에 index 를 넘긴다', () => {
     const quantity = flatten(items).find((n) => n.props?.type === 'number');
     expect(quantity.props.max).toBe('{{claimItem.available_quantity ?? 1}}');
@@ -287,12 +301,14 @@ describe('_apply_items.json — 신청 상품 (D29)', () => {
     expect(action.params.index).toBe('{{claimIdx}}');
   });
 
+  /** @effects claim_apply_amounts_use_server_formatted_strings */
   it('단가는 서버가 준 표기 문자열을 그대로 쓴다 (화면이 통화 기호를 붙이지 않는다)', () => {
     const texts = flatten(items).map((n) => n.text).filter((t): t is string => typeof t === 'string');
     expect(texts).toContain('{{claimItem.unit_price_formatted ?? \'\'}}');
     expect(texts.some((t) => t.includes('toLocaleString'))).toBe(false);
   });
 
+  /** @effects claim_apply_secondary_currency_absorbs_all_server_shapes */
   it('단가에도 보조통화를 병기한다 (§5-4 — 형제 금액 줄과 같은 규약)', () => {
     const loop = flatten(items).find((n) => n.iteration?.item_var === 'unitPriceCurrency');
     expect(loop?.iteration?.source).toBe('{{claimItem.mc_unit_price ?? []}}');
@@ -301,6 +317,7 @@ describe('_apply_items.json — 신청 상품 (D29)', () => {
     expect(texts).toContain("{{unitPriceCurrency.formatted ?? ''}}");
   });
 
+  /** @effects claim_apply_item_validation_error_maps_to_its_row */
   it('제출 거절의 항목별 오류를 그 상품 줄에 그린다 (§6-3 P13)', () => {
     // 회귀(2026-08-31 3차 계획 검증): 서버가 `items.{순번}.{필드}` 로 보낸 오류가
     // `claimValidationErrors` 에 담기기만 하고 어디에도 그려지지 않아, 요약 카드에는
@@ -317,6 +334,7 @@ describe('_apply_items.json — 신청 상품 (D29)', () => {
 });
 
 describe('_apply_reason.json — 사유', () => {
+  /** @effects claim_apply_reason_catalog_is_type_scoped */
   it('사유 목록은 유형별 카탈로그에서 온다', () => {
     const option = flatten(reason).find((n) => n.name === 'Option' && n.iteration);
     expect(option.iteration.source).toBe(
@@ -324,11 +342,13 @@ describe('_apply_reason.json — 사유', () => {
     );
   });
 
+  /** @effects claim_apply_reason_label_uses_localized_name */
   it('사유 라벨은 localized_name 이다 (name 은 다국어 맵이라 객체가 찍힌다)', () => {
     const option = flatten(reason).find((n) => n.name === 'Option' && n.iteration);
     expect(option.text).toBe('{{claimReason.localized_name}}');
   });
 
+  /** @effects claim_image_limits_come_from_operator_settings */
   it('첨부 상한은 운영자 설정에서 읽는다 (리터럴 금지)', () => {
     const uploader = flatten(reason).find((n) => n.name === 'FileUploader');
     expect(String(uploader.props.maxFiles)).toContain('claimableSnapshot ?? claimable?.data)?.settings?.max_images');
@@ -339,6 +359,7 @@ describe('_apply_reason.json — 사유', () => {
     expect(String(hint.text)).toContain('image_max_size_kb');
   });
 
+  /** @effects claim_image_upload_defers_to_submit_and_keeps_uploaded_on_retry */
   it('첨부는 change 시점에 올리지 않고 대기열에만 담는다', () => {
     const uploader = flatten(reason).find((n) => n.name === 'FileUploader');
     expect(uploader.props.autoUpload).toBe(false);
@@ -347,15 +368,18 @@ describe('_apply_reason.json — 사유', () => {
 });
 
 describe('_apply_redelivery.json — 재발송지 (D14)', () => {
+  /** @effects claim_apply_redelivery_maps_order_address_fields */
   it('교환에서만 그린다', () => {
     expect(redelivery.if).toBe("{{_local.claimType === 'exchange'}}");
   });
 
+  /** @effects claim_apply_redelivery_maps_order_address_fields */
   it('국가는 바꿀 수 없음을 안내한다', () => {
     const texts = flatten(redelivery).map((n) => n.text).filter((t): t is string => typeof t === 'string');
     expect(texts.some((t) => t.includes('claim.apply.redelivery_country_locked'))).toBe(true);
   });
 
+  /** @effects claim_apply_estimate_applies_latest_generation_only */
   it('적용은 미리보기를 다시 부르는 핸들러를 탄다 (도서산간 재판정)', () => {
     const apply = flatten(redelivery).filter((n) => n.handler === 'sirsoft-ecommerce.applyClaimRedelivery');
     expect(apply.length).toBeGreaterThan(0);
@@ -363,6 +387,7 @@ describe('_apply_redelivery.json — 재발송지 (D14)', () => {
 });
 
 describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
+  /** @effects claim_apply_preview_rejection_stays_on_screen */
   it('미리보기 거절 사유가 요약 자리에 남는다 (P13)', () => {
     const block = flatten(summary).find(
       (n) => typeof n.if === 'string' && n.if.includes('_local.claimEstimateError')
@@ -373,6 +398,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(texts).toContain("{{_local.claimEstimateError ?? ''}}");
   });
 
+  /** @effects claim_apply_submit_requires_successful_preview */
   it('제출 버튼은 미리보기 성공을 조건으로 한다', () => {
     const submit = flatten(summary).find(
       (n) => n.name === 'Button' && String(n.props?.disabled ?? '').includes('claimEstimateError')
@@ -404,6 +430,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(successPath).toContain('_local.claimType');
   });
 
+  /** @effects claim_apply_charge_axes_are_two_and_operator_sourced */
   it('청구는 2축이고 두 축 모두 운영자 허용 목록에서 나온다', () => {
     const loops = flatten(summary).filter((n) => n.iteration?.source);
     const chargeAxis = loops.find((n) => n.iteration.item_var === 'chargeMethod');
@@ -417,6 +444,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     );
   });
 
+  /** @effects claim_apply_charge_axes_hidden_for_refund */
   it('취소·환불 유형에서는 두 축 모두 미노출이다', () => {
     const axisBlocks = flatten(summary).filter(
       (n) => typeof n.if === 'string' && n.if.includes('allowed_charge_methods') || (typeof n.if === 'string' && n.if.includes('charge_payment_methods'))
@@ -427,6 +455,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     }
   });
 
+  /** @effects claim_apply_deduct_from_refund_gated_by_refund_presence */
   it("'환불금에서 차감' 은 환불이 발생할 때만 고를 수 있고, 고르면 축2 가 비활성이 된다", () => {
     const radios = flatten(summary).filter((n) => n.props?.type === 'radio');
     const chargeRadio = radios.find((n) => n.props.name === 'claimChargeMethod');
@@ -440,6 +469,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(String(paymentRadio.props.disabled)).toContain("_local.claimChargeMethod === 'deduct_from_refund'");
   });
 
+  /** @effects claim_apply_refund_row_hidden_for_exchange */
   it('환불 예정액 행은 교환에서 그리지 않는다 (교환에서 돈이 오가는 축은 옵션 차액과 총 청구액뿐)', () => {
     // 회귀(2026-08-31 브라우저 실측): 차액 0원 교환에서 adjustment.refund_total 이 15,000원으로
     // 내려와 "환불 예정액 15,000원" 이 그려졌다. 구매자에게 돌려줄 돈이 아닌데 그렇게 읽힌다.
@@ -449,6 +479,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(row.if).toContain("_local.claimType !== 'exchange'");
   });
 
+  /** @effects claim_apply_charge_axis_check_reads_user_selection */
   it('체크 표시는 사용자의 선택 상태에서 읽는다 (서버 응답이 아니다)', () => {
     const radios = flatten(summary).filter((n) => n.props?.type === 'radio');
     for (const radio of radios) {
@@ -456,6 +487,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     }
   });
 
+  /** @effects claim_apply_claimable_reads_prefer_the_snapshot */
   it('claimable 을 읽는 자리는 전부 스냅샷을 1순위로 둔다 (store 단독 읽기 0)', () => {
     // 회귀(2026-08-31 3차 검증 실측): `?order_id` 없이 들어온 진입(주소 직접 입력·북마크)은
     // claimable 첫 호출이 404 로 끝나고 체인이 다시 부르는데, 그 재조회 결과는 응답
@@ -483,6 +515,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     }
   });
 
+  /** @effects claim_apply_summary_amount_rows_all_show_secondary_currency */
   it('요약의 금액 줄에는 보조통화를 병기한다 (§6-3 · §5-4)', () => {
     // 보조통화 값은 서버가 주문 통화 스냅샷의 동결 환율로 낸 것을 핸들러가 그 통화로 포맷한
     // 결과다 — 화면이 환산하면 예고와 실제 청구의 근거가 갈린다.
@@ -523,6 +556,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     }
   });
 
+  /** @effects claim_apply_total_charge_row_hidden_for_refund */
   it('총 청구액 줄은 취소·환불에 서지 않는다 (§6-3 — 청구가 발생하지 않는 유형)', () => {
     // 회귀(2026-08-31 3차 계획 검증): 형제 줄(청구 2축·환불 예정액)에는 유형 가드가
     // 있는데 이 줄만 없어 취소 신청서에 "총 청구액 0원" 이 섰다. 서버가 그 유형에 총액
@@ -535,12 +569,14 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(row?.if).toBe("{{_local.claimType !== 'refund'}}");
   });
 
+  /** @effects claim_apply_amounts_use_server_formatted_strings */
   it('금액은 서버 표기 문자열만 쓴다 (화면이 통화 단위를 이어 붙이지 않는다)', () => {
     const texts = flatten(summary).map((n) => n.text).filter((t): t is string => typeof t === 'string');
     expect(texts.some((t) => t.includes('toLocaleString'))).toBe(false);
     expect(texts.some((t) => /원'|원"/.test(t))).toBe(false);
   });
 
+  /** @effects claim_apply_shipping_fee_basis_shown_for_policy_mode */
   it('배송비에는 산출 근거가 붙는다 — 편도 단가 × 왕복 배수 (§6-3)', () => {
     // 합계만 보이면 구매자는 청구액이 어떻게 나왔는지 확인할 방법이 없다. 근거는 서버가
     // 배송정책 그룹마다 내려주므로 화면은 옮기기만 한다 — 그룹이 여럿이면 줄도 여럿이다.
@@ -565,6 +601,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(block.if).toContain("_local.claimType !== 'refund'");
   });
 
+  /** @effects claim_apply_option_price_difference_broken_down_per_item */
   it('옵션 차액은 상품별로 나뉜다 — 상품이 둘 이상일 때 (§6-3·D29)', () => {
     // 교환 대상은 상품마다 다르므로(D29) 합계만 보이면 어느 상품이 얼마를 보탰는지 알 수 없다.
     const loop = flatten(summary).find((n) => n.iteration?.item_var === 'summaryItem');
@@ -585,10 +622,12 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
 });
 
 describe('_modal_change_product.json — 교환상품 변경 모달 (D29)', () => {
+  /** @effects claim_apply_change_product_modal_id_uses_the_claim_prefix */
   it('모달 id 는 claim_ 접두를 지킨다', () => {
     expect(changeProduct.id).toBe('modal_claim_change_product');
   });
 
+  /** @effects claim_apply_change_product_modal_reads_page_local_state */
   it('상태는 페이지 로컬(_local)을 그대로 본다 ($parent._local 은 이 모달 컨텍스트에 없다)', () => {
     // 회귀(2026-08-31 브라우저 실측): $parent._local 로 쓰면 조건이 전부 거짓이 되어 제목과
     // 푸터만 남은 빈 모달이 열린다 — 오류도 경고도 없다. 레이아웃 modals 배열에 등록된 모달의
@@ -602,6 +641,7 @@ describe('_modal_change_product.json — 교환상품 변경 모달 (D29)', () =
     expect(bindings.filter((b) => b.includes('_local.changeProduct')).length).toBeGreaterThan(0);
   });
 
+  /** @effects claim_apply_change_product_apply_locked_without_a_valid_option */
   it('적용 버튼은 옵션변경인데 옵션이 없거나 품절이면 잠긴다', () => {
     const applyButton = flatten(changeProduct).find(
       (n) => n.name === 'Button' && n.actions?.[0]?.handler === 'sirsoft-ecommerce.applyClaimChangeProduct'
@@ -612,6 +652,7 @@ describe('_modal_change_product.json — 교환상품 변경 모달 (D29)', () =
 });
 
 describe('mypage/orders/show.json — 클레임 신청 진입', () => {
+  /** @effects order_detail_claim_entry_buttons_gated_by_claimable_types */
   it('클레임 신청 버튼 3종이 있고 각각 유형이 열린 상품에서만 활성이다', () => {
     const buttons = flatten(orderShow).filter(
       (n) => n.name === 'Button' && String(n.props?.disabled ?? '').includes('claimable_types')
@@ -633,6 +674,7 @@ describe('mypage/orders/show.json — 클레임 신청 진입', () => {
     }
   });
 
+  /** @effects claim_apply_claimable_datasource_waits_for_order_id */
   it('claimable 데이터소스를 싣고 주문 응답 뒤에 부른다', () => {
     const claimable = orderShow.data_sources.find((s: any) => s.id === 'claimable');
     expect(claimable.auto_fetch).toBe(false);
@@ -740,18 +782,33 @@ describe('_items.json — 공유 partial (회원/비회원)', () => {
    *
    * @effects order_detail_claim_entry_buttons_gated_by_claimable_types
    */
-  it('체크박스는 신청 가능한 유형이 있는 상품에서만 보인다 (#599 후속 U-3)', () => {
-    // 회귀: 조건이 `abilities?.can_cancel` 을 함께 보던 시절, 미결제 주문에서는 체크박스만
-    // 서고 **누를 버튼이 없었다** — 취소 버튼은 이미 취소·환불 신청 입구로 통합돼
-    // `claimable_types` 를 보는데 체크박스만 옛 축에 남아 있었기 때문이다.
-    const checkboxWrapper = flatten(orderItems).find(
-      (n) => typeof n.if === 'string' && n.if.includes('claimable?.data?.options') && n.if.includes('item.id')
+  it('체크박스는 신청 가능 여부로 **잠기고**, 칸은 언제나 선다 (#599 후속 U-3)', () => {
+    // 종전 계약은 「신청 가능한 유형이 있는 상품에서만 **보인다**」 였다. 그러면 같은 목록 안에서
+    // 그 줄만 상품 이미지가 왼쪽으로 밀려 줄 머리가 어긋나고, 신청 버튼이 왜 안 켜지는지도
+    // 화면에 드러나지 않는다 — PO 가 2026-09-21 에 「칸은 표시하되 disabled 로 간격을 맞춰라,
+    // 모든 클레임 공통」 으로 뒤집었다.
+    //
+    // 판정 축(`claimable_types`)은 그대로다. 바뀐 것은 그 축이 **가시성**이 아니라 **잠금**을
+    // 정한다는 점뿐이다. 옛 축(`abilities?.can_cancel`)으로 되돌아가지 않는 것도 함께 잠근다 —
+    // 그 시절 미결제 주문에서는 체크박스만 서고 누를 버튼이 없었다.
+    const checkbox = flatten(orderItems).find(
+      (n) => n?.props?.type === 'checkbox' && typeof n?.props?.disabled === 'string'
     );
-    expect(checkboxWrapper).toBeTruthy();
-    expect(checkboxWrapper.if).toContain('claimable_types');
-    expect(checkboxWrapper.if).not.toContain('can_cancel');
+
+    expect(checkbox).toBeTruthy();
+    expect(checkbox.props.disabled).toContain('claimable?.data?.options');
+    expect(checkbox.props.disabled).toContain('claimable_types');
+    expect(checkbox.props.disabled).not.toContain('can_cancel');
+
+    // 칸을 감추는 조건이 어디에도 남아 있지 않아야 한다.
+    const hider = flatten(orderItems).find(
+      (n) => typeof n.if === 'string' && n.if.includes('claimable_types') && n.if.includes('item.id')
+    );
+
+    expect(hider).toBeUndefined();
   });
 
+  /** @effects order_items_partial_does_not_decide_authentication */
   it('공유 partial 은 로그인 여부를 스스로 판단하지 않는다', () => {
     expect(JSON.stringify(orderItems)).not.toContain('_global.currentUser');
   });
@@ -762,16 +819,19 @@ describe('_payment.json — 클레임 추가결제 합계 행 (D20)', () => {
     (n) => typeof n.if === 'string' && n.if.includes('claim_additional_paid_total')
   );
 
+  /** @effects order_detail_claim_additional_paid_row_present */
   it('행이 존재하고 0원이면 그리지 않는다', () => {
     expect(row).toBeTruthy();
     expect(row.if).toBe('{{(order.data.claim_additional_paid_total ?? 0) > 0}}');
   });
 
+  /** @effects order_detail_claim_additional_paid_row_present */
   it('표기는 서버가 준 문자열을 그대로 쓴다', () => {
     const texts = flattenChildren(row).map((n) => n.text).filter((t): t is string => typeof t === 'string');
     expect(texts).toContain("+{{order.data.claim_additional_paid_total_formatted ?? ''}}");
   });
 
+  /** @effects order_detail_claim_additional_paid_row_shows_secondary_currency */
   it('보조통화를 함께 적는다 — 형제 금액 줄과 같은 규약 (§5-4)', () => {
     // 이 줄만 기준통화 단독이면, 보조통화를 쓰는 구매자가 같은 카드 안에서 한 줄만
     // 자기 통화로 읽지 못한다. 서버는 이 금액의 보조통화 값을 이미 내려준다.
@@ -784,6 +844,7 @@ describe('_payment.json — 클레임 추가결제 합계 행 (D20)', () => {
     expect(texts).toContain("{{claimPaidCurrency[1]?.formatted ?? ''}}");
   });
 
+  /** @effects order_payment_extension_slot_stays_at_the_end */
   it('확장 슬롯은 여전히 결제 정보 목록의 말단에 있다 (금액 줄이 슬롯 뒤로 밀리지 않는다)', () => {
     // 이 축이 재는 것은 "새로 더한 금액 줄이 확장 슬롯 뒤로 가지 않았는가" 다 — 뒤로 가면
     // 확장이 주입한 카드와 금액 줄의 순서가 뒤집혀 결제 정보가 두 덩이로 갈라진다.

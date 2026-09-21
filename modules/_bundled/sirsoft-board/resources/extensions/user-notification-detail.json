@@ -50,7 +50,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "flex items-center gap-2"
                                             },
                                             "children": [
                                                 {
@@ -58,7 +58,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "bell",
-                                                        "className": "text-secondary text-xl"
+                                                        "className": "text-gray-600 dark:text-gray-400 text-xl"
                                                     }
                                                 },
                                                 {
@@ -98,7 +98,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-label-subtle block font-medium mb-1"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.notifications.post_complete"
                                                 },
@@ -106,7 +106,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary text-sm"
+                                                        "className": "text-gray-900 dark:text-white text-sm"
                                                     },
                                                     "text": "{{user?.data?.notify_post_complete ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
                                                 }
@@ -121,7 +121,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-label-subtle block font-medium mb-1"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.notifications.post_reply"
                                                 },
@@ -129,7 +129,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary text-sm"
+                                                        "className": "text-gray-900 dark:text-white text-sm"
                                                     },
                                                     "text": "{{user?.data?.notify_post_reply ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
                                                 }
@@ -144,7 +144,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-label-subtle block font-medium mb-1"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.notifications.comment"
                                                 },
@@ -152,7 +152,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary text-sm"
+                                                        "className": "text-gray-900 dark:text-white text-sm"
                                                     },
                                                     "text": "{{user?.data?.notify_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
                                                 }
@@ -167,7 +167,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-label-subtle block font-medium mb-1"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.notifications.reply_comment"
                                                 },
@@ -175,7 +175,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary text-sm"
+                                                        "className": "text-gray-900 dark:text-white text-sm"
                                                     },
                                                     "text": "{{user?.data?.notify_reply_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
                                                 }

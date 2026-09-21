@@ -57,6 +57,25 @@ class OrderProcessingService
     /** 입금기한 허용 상한(일) — 설정(limits)에 값이 없을 때의 fallback */
     private const AUTO_CANCEL_DAYS_MAX_FALLBACK = 30;
 
+    /**
+     * 주문 생성·결제 완료·입금 확인이 함께 쓰는 협력자를 주입받습니다.
+     *
+     * @param  OrderRepositoryInterface  $orderRepository  주문 저장소
+     * @param  TempOrderService  $tempOrderService  임시 주문(주문서) 서비스
+     * @param  OrderCalculationService  $orderCalculationService  금액 계산 서비스
+     * @param  CurrencyConversionService  $currencyConversionService  통화 환산 서비스
+     * @param  ProductRepositoryInterface  $productRepository  상품 저장소
+     * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 저장소
+     * @param  SequenceService  $sequenceService  주문번호 채번 서비스
+     * @param  EcommerceSettingsService  $settingsService  이커머스 환경설정 서비스
+     * @param  StockService  $stockService  재고 서비스
+     * @param  UserAddressService  $userAddressService  회원 주소록 서비스
+     * @param  CartRepositoryInterface  $cartRepository  장바구니 저장소
+     * @param  PurchaseEligibilityService  $purchaseEligibilityService  구매 자격 판정 서비스
+     * @param  UserMileageService  $userMileageService  마일리지 서비스
+     * @param  ShippingTypeRepositoryInterface  $shippingTypeRepository  배송 유형 저장소
+     * @param  ShippingPolicyResolver  $shippingPolicyResolver  배송 정책 해석기
+     */
     public function __construct(
         protected OrderRepositoryInterface $orderRepository,
         protected TempOrderService $tempOrderService,
@@ -280,6 +299,8 @@ class OrderProcessingService
      * 결제액 0원(전액 비현금 충당) 주문의 결제완료 DB 상태를 확정합니다 (트랜잭션 내부 호출).
      *
      * @param  Order  $order  대상 주문
+     *
+     * @return void 반환값 없음
      */
     protected function finalizeZeroAmountPayment(Order $order): void
     {
@@ -334,6 +355,8 @@ class OrderProcessingService
      *
      * @param  string  $paymentMethod  결제 수단
      * @param  int  $finalAmount  최종 결제액(마일리지 차감 후). 0 이면 전액 마일리지 결제.
+     *
+     * @return OrderStatusEnum 반환값
      */
     protected function determineInitialStatus(string $paymentMethod, int $finalAmount = 0): OrderStatusEnum
     {
@@ -361,6 +384,8 @@ class OrderProcessingService
      * @param  float  $expectedAmount  프론트엔드 결제예정금액
      *
      * @throws PaymentAmountMismatchException 금액 불일치 시
+     *
+     * @return void 반환값 없음
      */
     protected function validateOrderAmount(OrderCalculationResult $calculationResult, float $expectedAmount): void
     {
@@ -451,6 +476,8 @@ class OrderProcessingService
      * @param  float|int  $baseFinalAmount  결제예정 base 통화 금액
      *
      * @throws UnsupportedPaymentCurrencyException 결제 통화로 청구할 수 없는 경우
+     *
+     * @return void 반환값 없음
      */
     protected function assertPaymentCurrencyChargeable(array $currencySnapshot, float|int $baseFinalAmount): void
     {
@@ -535,6 +562,7 @@ class OrderProcessingService
      * @param  string|null  $guestLookupPassword  비회원 조회 비밀번호
      * @param  array  $shippingInfo  배송 정보
      * @param  string|null  $paymentMethod  결제수단 (현금성 금액 산정용)
+     * @return Order 생성된 주문
      */
     protected function createOrder(
         TempOrder $tempOrder,
@@ -727,15 +755,7 @@ class OrderProcessingService
      * @param  TempOrder  $tempOrder  임시 주문
      * @param  OrderCalculationResult  $calculationResult  계산 결과
      * @param  array  $currencySnapshot  통화 스냅샷
-     * @return void
-     */
-    /**
-     * 주문 옵션 생성
-     *
-     * @param  Order  $order  주문
-     * @param  TempOrder  $tempOrder  임시 주문
-     * @param  OrderCalculationResult  $calculationResult  계산 결과
-     * @param  array  $currencySnapshot  통화 스냅샷
+     * @param  string|null  $paymentMethod  결제수단 (현금영수증 동기화 판정에 쓴다)
      * @return array<int, OrderOption> productOptionId => OrderOption 매핑
      */
     protected function createOrderOptions(
@@ -930,6 +950,7 @@ class OrderProcessingService
      * @param  array  $ordererInfo  주문자 정보
      * @param  array  $shippingInfo  배송지 정보
      * @param  string|null  $shippingMemo  배송 메모
+     * @return void 반환값 없음
      */
     protected function createOrderAddresses(
         Order $order,
@@ -979,6 +1000,7 @@ class OrderProcessingService
      * @param  array  $ordererInfo  주문자 정보 (name/email/phone — 결제 구매자 정보로 기록)
      * @param  array|null  $cashReceiptInfo  현금영수증 신청 정보 (type/identifier_type/identifier, 미신청 시 null)
      * @param  array|null  $refundBankInfo  환불 계좌 정보 (bank_code/account_number/holder, 미입력 시 null)
+     * @return void 반환값 없음
      */
     protected function createOrderPayment(
         Order $order,
@@ -1236,6 +1258,7 @@ class OrderProcessingService
      * @param  OrderCalculationResult  $calculationResult  계산 결과
      * @param  array  $currencySnapshot  통화 스냅샷
      * @param  array  $createdOptions  productOptionId => OrderOption 매핑
+     * @return void 반환값 없음
      */
     protected function createOrderShippings(
         Order $order,
@@ -1285,6 +1308,8 @@ class OrderProcessingService
      *
      * @param  object|null  $shippingPolicy  배송 정책
      * @param  TempOrder  $tempOrder  임시 주문
+     *
+     * @return string 결과 문자열
      */
     protected function determineShippingType(?object $shippingPolicy, TempOrder $tempOrder): string
     {
@@ -1322,6 +1347,8 @@ class OrderProcessingService
 
     /**
      * 디바이스 타입 감지
+     *
+     * @return DeviceTypeEnum 반환값
      */
     protected function detectDevice(): DeviceTypeEnum
     {
@@ -1344,6 +1371,8 @@ class OrderProcessingService
      * @param  TempOrder  $tempOrder  임시 주문
      *
      * @throws CartUnavailableException 구매 권한이 없는 상품이 있는 경우
+     *
+     * @return void 반환값 없음
      */
     protected function validatePurchaseEligibility(TempOrder $tempOrder): void
     {
@@ -1388,6 +1417,8 @@ class OrderProcessingService
      * @param  string|null  $countryCode  제출된 배송국가 코드 (없으면 KR)
      *
      * @throws CartUnavailableException 미지원 배송국가 상품이 1개 이상이면
+     *
+     * @return void 반환값 없음
      */
     protected function validateShippingCountrySupported(TempOrder $tempOrder, ?string $countryCode): void
     {
@@ -1431,6 +1462,8 @@ class OrderProcessingService
      * 아니므로 항상 false 로 처리합니다.
      *
      * @param  int|null  $userId  회원 ID (비회원은 null)
+     *
+     * @return bool 판정 결과
      */
     protected function isFirstOrder(?int $userId): bool
     {
@@ -1480,6 +1513,8 @@ class OrderProcessingService
      * @param  OrderCalculationResult  $calculationResult  재계산 결과
      *
      * @throws MileageValidationException 정책 위반 시
+     *
+     * @return void 반환값 없음
      */
     protected function validateMileageUsagePolicy(TempOrder $tempOrder, OrderCalculationResult $calculationResult): void
     {
@@ -1504,6 +1539,8 @@ class OrderProcessingService
      * TempOrderService::getTempOrderWithCalculation()의 패턴을 따릅니다.
      *
      * @param  TempOrder  $tempOrder  임시 주문
+     *
+     * @return CalculationInput 반환값
      */
     protected function buildCalculationInputFromTempOrder(TempOrder $tempOrder): CalculationInput
     {
@@ -1541,6 +1578,8 @@ class OrderProcessingService
      * 적용된 프로모션 스냅샷을 구성합니다.
      *
      * @param  OrderCalculationResult  $result  계산 결과
+     *
+     * @return array 결과 배열
      */
     protected function buildPromotionsAppliedSnapshot(OrderCalculationResult $result): array
     {
@@ -1561,6 +1600,9 @@ class OrderProcessingService
      * 적용된 배송정책 스냅샷을 구성합니다.
      *
      * @param  OrderCalculationResult  $result  계산 결과
+     * @param  array  $shippingInfo  주문서가 보낸 배송지 정보 (국가·우편번호가 정책 선택에 쓰인다)
+     *
+     * @return array 결과 배열
      */
     protected function buildShippingPolicyAppliedSnapshot(OrderCalculationResult $result, array $shippingInfo = []): array
     {
@@ -1591,6 +1633,8 @@ class OrderProcessingService
      * 주문 메타데이터를 구성합니다.
      *
      * @param  TempOrder  $tempOrder  임시 주문
+     *
+     * @return array 결과 배열
      */
     protected function buildOrderMeta(TempOrder $tempOrder): array
     {
@@ -1617,6 +1661,8 @@ class OrderProcessingService
      * 장바구니 수량 <= 주문 수량: 삭제
      *
      * @param  Order  $order  주문
+     *
+     * @return void 반환값 없음
      */
     protected function clearOrderedCartItems(Order $order): void
     {
@@ -1796,19 +1842,17 @@ class OrderProcessingService
         $orderMeta = $order->order_meta ?? [];
         if ($order->user_id && ($orderMeta['save_shipping_address'] ?? false)) {
             try {
-                $shippingData = $orderMeta['shipping_info_for_save'] ?? [];
-                $name = $this->userAddressService->generateUniqueName(
-                    $order->user_id,
-                    __('sirsoft-ecommerce::messages.address.auto_saved_label')
-                );
-                // 국가별 명시 매핑 (B4 — 폴백 혼재 해외 필드 누락/오저장 방지)
-                $this->userAddressService->createAddress(
-                    $this->userAddressService->mapShippingInfoToAddressData($order->user_id, $name, $shippingData)
+                // 주문서에서 고른 배송지를 그 자리에서 고쳤으면 그 행을 갱신하고, 직접 입력한
+                // 주소면 새로 추가한다 — 주문 생성 시점(OrderController)과 같은 갈래다.
+                $this->userAddressService->storeShippingInfoForUser(
+                    (int) $order->user_id,
+                    $orderMeta['shipping_info_for_save'] ?? [],
+                    $orderMeta['save_shipping_address_id'] ?? null
                 );
 
                 // 메타에서 배송지 저장 플래그 제거
                 $order->update([
-                    'order_meta' => array_diff_key($orderMeta, array_flip(['save_shipping_address', 'shipping_info_for_save'])),
+                    'order_meta' => array_diff_key($orderMeta, array_flip(['save_shipping_address', 'save_shipping_address_id', 'shipping_info_for_save'])),
                 ]);
             } catch (\Exception $e) {
                 Log::warning('Auto save shipping address failed on payment complete', [
@@ -1896,6 +1940,8 @@ class OrderProcessingService
      * @param  float  $amount  입금 금액
      *
      * @throws PaymentAmountMismatchException 입금액이 결제예정금액과 불일치 시
+     *
+     * @return void 반환값 없음
      */
     protected function recordDepositPayment(Order $order, float $amount): void
     {
@@ -1936,6 +1982,8 @@ class OrderProcessingService
      * @param  int  $pgAmount  PG사에서 전달받은 결제금액
      *
      * @throws PaymentAmountMismatchException 금액 불일치 시
+     *
+     * @return void 반환값 없음
      */
     protected function validatePaymentAmount(Order $order, int $pgAmount): void
     {
@@ -2064,6 +2112,8 @@ class OrderProcessingService
      *
      * @param  Order  $order  주문
      * @param  int  $usedPoints  사용 마일리지
+     *
+     * @return void 반환값 없음
      */
     protected function deductMileageForOrder(Order $order, int $usedPoints): void
     {
@@ -2084,6 +2134,8 @@ class OrderProcessingService
      *
      * @param  Order  $order  대상 주문
      * @param  OrderStatusEnum  $newStatus  동기화할 상태
+     *
+     * @return void 반환값 없음
      */
     protected function syncOptionStatuses(Order $order, OrderStatusEnum $newStatus): void
     {

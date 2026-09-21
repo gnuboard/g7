@@ -98,7 +98,7 @@ interface UserAddressRepositoryInterface
     /**
      * 관리자용 전 회원 배송지 목록을 페이지네이션합니다.
      *
-     * @param  array<string, mixed>  $filters  필터 (search_field, search_keyword, user_id, 기간, 정렬)
+     * @param  array<string, mixed>  $filters  필터 (search_field, search_keyword, user_id, user_ids, 기간, 정렬)
      * @param  int  $perPage  페이지당 개수
      * @return LengthAwarePaginator 페이지네이션된 목록
      */

@@ -51,6 +51,17 @@ class OrderController extends PublicBaseController
 {
     use HandlesOrderCreation;
 
+    /**
+     * 주문 생성 경로가 함께 쓰는 협력자를 주입받습니다.
+     *
+     * @param  OrderProcessingService  $orderProcessingService  주문 생성·결제완료 처리 서비스
+     * @param  TempOrderService  $tempOrderService  임시 주문(주문서) 서비스
+     * @param  StockService  $stockService  재고 서비스
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 주문 조회 인증 서비스
+     * @param  OrderService  $orderService  주문 조회·수정 서비스
+     * @param  OrderCancellationService  $cancellationService  주문 취소 서비스
+     * @param  UserAddressService  $userAddressService  회원 주소록 서비스 (배송지 자동 저장·갱신)
+     */
     public function __construct(
         protected OrderProcessingService $orderProcessingService,
         protected TempOrderService $tempOrderService,
@@ -112,14 +123,24 @@ class OrderController extends PublicBaseController
      * non-PG 결제는 즉시 저장하고, PG 결제는 order_meta 에 플래그를 남겨
      * completePayment() 시점에 저장하도록 위임합니다.
      *
+     * 갈래가 둘이다 — 주문서에서 저장된 배송지를 고쳐 보냈으면(`save_shipping_address_id`)
+     * 그 행을 «갱신» 하고, 직접 입력한 주소면 새로 «추가» 한다. 갱신을 두지 않으면 주문서에서
+     * 고친 주소가 주소록에 남지 않아 다음 주문서도 옛 주소로 열리고, 같은 손질을 매번 반복하게
+     * 된다(2026-09-21 PO 요청). 소유자가 아닌 행 ID 가 오면 서비스가 null 을 돌려 아무 일도
+     * 일어나지 않는다 — 남의 주소록은 이 경로로 닿지 않는다.
+     *
      * @param  int  $userId  회원 ID (비회원은 호출 측에서 가드)
      * @param  CreateOrderRequest  $request  검증된 요청 데이터
      * @param  Order  $order  생성된 주문
      * @param  bool  $requiresPg  PG 결제 필요 여부
+     *
+     * @return void 반환값 없음
      */
     protected function maybeSaveShippingAddress(int $userId, CreateOrderRequest $request, Order $order, bool $requiresPg): void
     {
-        if (! $request->boolean('save_shipping_address')) {
+        $updateAddressId = (int) ($request->input('save_shipping_address_id') ?? 0);
+
+        if (! $request->boolean('save_shipping_address') && $updateAddressId <= 0) {
             return;
         }
 
@@ -128,6 +149,7 @@ class OrderController extends PublicBaseController
             $order->update([
                 'order_meta' => array_merge($order->order_meta ?? [], [
                     'save_shipping_address' => true,
+                    'save_shipping_address_id' => $updateAddressId > 0 ? $updateAddressId : null,
                     'shipping_info_for_save' => $request->getShippingInfo(),
                 ]),
             ]);
@@ -137,13 +159,10 @@ class OrderController extends PublicBaseController
 
         // 비PG 결제: 즉시 배송지 저장
         try {
-            $name = $this->userAddressService->generateUniqueName(
+            $this->userAddressService->storeShippingInfoForUser(
                 $userId,
-                __('sirsoft-ecommerce::messages.address.auto_saved_label')
-            );
-            $shippingInfo = $request->getShippingInfo();
-            $this->userAddressService->createAddress(
-                $this->userAddressService->mapShippingInfoToAddressData($userId, $name, $shippingInfo)
+                $request->getShippingInfo(),
+                $updateAddressId > 0 ? $updateAddressId : null
             );
         } catch (Exception $e) {
             Log::warning('Auto save shipping address failed on order creation', [
