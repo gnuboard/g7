@@ -2,8 +2,11 @@
 
 namespace Plugins\Sirsoft\Gdpr\Http\Requests;
 
+use App\Rules\TranslatableField;
+use App\Services\PluginSettingsService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Plugins\Sirsoft\Gdpr\Plugin;
 
 /**
  * 관리자 GDPR 설정 저장 요청 검증
@@ -75,6 +78,20 @@ class UpdateAdminSettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // 자동 통지가 꺼져 있으면 하위 항목은 운영에 쓰이지 않으므로 강제하지 않는다.
+            // 화면도 같은 조건으로 입력을 비활성화한다 — 끄기만 했는데 "상한은 필수" 로 막히면
+            // 운영자는 끌 수가 없다. 켠 상태에서는 종전 그대로 채널 1개 이상·상한 범위를 강제한다.
+            'annual_notice' => ['sometimes', 'array:enabled,channels,batch_size,introduction'],
+            'annual_notice.enabled' => ['required_with:annual_notice', 'boolean'],
+            'annual_notice.channels' => $this->annualNoticeEnabled()
+                ? ['required_with:annual_notice', 'array', 'min:1', 'max:2']
+                : ['sometimes', 'array', 'max:2'],
+            'annual_notice.channels.*' => ['required', 'string', 'distinct', 'in:mail,database'],
+            'annual_notice.batch_size' => $this->annualNoticeEnabled()
+                ? ['required_with:annual_notice', 'integer', 'min:'.Plugin::ANNUAL_NOTICE_MIN, 'max:'.Plugin::ANNUAL_NOTICE_MAX]
+                : ['sometimes', 'nullable', 'integer', 'min:'.Plugin::ANNUAL_NOTICE_MIN, 'max:'.Plugin::ANNUAL_NOTICE_MAX],
+            'annual_notice.introduction' => ['sometimes', new TranslatableField(maxLength: 2000, strictLocales: true)],
+            'annual_notice.introduction.*' => ['nullable', 'string', 'max:2000'],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT.
             // 운영자가 직접 입력하지 않으므로 본 FormRequest 에서 검증하지 않음 (전달되어도 stripped).
             'privacy_policy_slug' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9\-]*$/'],
@@ -162,6 +179,14 @@ class UpdateAdminSettingsRequest extends FormRequest
     {
         return [
             // cookie_policy_version 은 자동 발행이므로 FormRequest 가 검증하지 않음 (attributes 도 불필요).
+            // 연간 통지 — 라벨이 없으면 "annual notice.batch size 필드는 …" 처럼 키가 그대로 노출된다.
+            'annual_notice' => __('sirsoft-gdpr::messages.settings.fields.annual_notice.label'),
+            'annual_notice.enabled' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_enabled.label'),
+            'annual_notice.channels' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_channels.label'),
+            'annual_notice.channels.*' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_channels.label'),
+            'annual_notice.batch_size' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_batch_size.label'),
+            'annual_notice.introduction' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_introduction.label'),
+            'annual_notice.introduction.*' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_introduction.label'),
             'privacy_policy_slug' => __('sirsoft-gdpr::messages.settings.fields.privacy_policy_slug.label'),
             'legal_entity_name' => __('sirsoft-gdpr::messages.settings.fields.legal_entity_name.label'),
             'data_storage_location' => __('sirsoft-gdpr::messages.settings.fields.data_storage_location.label'),
@@ -170,7 +195,64 @@ class UpdateAdminSettingsRequest extends FormRequest
             'cookie_categories' => __('sirsoft-gdpr::messages.settings.section.cookie_categories'),
             'blocked_domains' => __('sirsoft-gdpr::messages.settings.section.auto_blocking'),
             'necessary_storage_allowlist' => __('sirsoft-gdpr::messages.settings.section.necessary_storage'),
+            // 배열 항목 — 커스텀 메시지가 없는 규칙(string·required_with 등)에서 인덱스가 붙은
+            // 원시 키(cookie_categories.0.label.ko)가 그대로 노출되던 자리다.
+            'cookie_categories.*.key' => __('sirsoft-gdpr::messages.settings.attributes.cookie_category_key'),
+            'cookie_categories.*.label' => __('sirsoft-gdpr::messages.settings.attributes.cookie_category_label'),
+            'cookie_categories.*.label.ko' => __('sirsoft-gdpr::messages.settings.attributes.cookie_category_label'),
+            'cookie_categories.*.label.en' => __('sirsoft-gdpr::messages.settings.attributes.cookie_category_label'),
+            'cookie_categories.*.description' => __('sirsoft-gdpr::messages.settings.attributes.cookie_category_description'),
+            'blocked_domains.*' => __('sirsoft-gdpr::messages.settings.section.auto_blocking'),
+            'blocked_domains.*.*' => __('sirsoft-gdpr::messages.settings.attributes.blocked_domain'),
+            'necessary_storage_allowlist.*' => __('sirsoft-gdpr::messages.settings.section.necessary_storage'),
+            'necessary_storage_allowlist.*.*' => __('sirsoft-gdpr::messages.settings.attributes.necessary_storage_item'),
         ];
+    }
+
+    /**
+     * 자동 통지 사용 여부(느슨한 참 판정).
+     *
+     * 저장값·전송값이 boolean 이 아닐 수 있어(문자열 '0'/'1', 체크박스 'on') 엄격 비교를 쓰지
+     * 않는다 — 코어 보안 탭의 two_factor_scope 조건식과 같은 이유다. 키를 아예 보내지 않은
+     * 요청은 하위 항목도 함께 안 보내므로(부분 저장) 꺼진 것으로 보고 강제하지 않는다.
+     *
+     * @return bool 자동 통지가 켜져 있으면 true
+     */
+    private function annualNoticeEnabled(): bool
+    {
+        return filter_var($this->input('annual_notice.enabled'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * 자동 통지가 꺼진 상태에서 비워져 들어온 하위 항목을 기존 저장값으로 복원합니다.
+     *
+     * 화면이 입력을 비활성화하면 빈 값이 올 수 있는데, 그대로 저장하면 운영자가 토글만
+     * 껐는데 상한·채널 설정이 사라진다. 채널이 비면 시험 발송까지 막히므로(저장된 채널을
+     * 그대로 검증한다) 상한과 같은 규칙으로 되돌린다. 켠 상태의 빈 값은 복원하지 않는다 —
+     * 그건 운영자가 지운 것이므로 검증이 422 로 알려야 한다.
+     *
+     * @return void 반환값 없음
+     */
+    private function normalizeAnnualNotice(): void
+    {
+        if (! is_array($this->input('annual_notice')) || $this->annualNoticeEnabled()) {
+            return;
+        }
+
+        $settings = app(PluginSettingsService::class);
+        $annualNotice = $this->input('annual_notice');
+        $batchSize = $this->input('annual_notice.batch_size');
+        $channels = $this->input('annual_notice.channels');
+
+        if ($batchSize === null || $batchSize === '') {
+            $annualNotice['batch_size'] = $settings->get('sirsoft-gdpr', 'annual_notice.batch_size', Plugin::ANNUAL_NOTICE_DEFAULT);
+        }
+
+        if ($channels === null || $channels === [] || $channels === '') {
+            $annualNotice['channels'] = $settings->get('sirsoft-gdpr', 'annual_notice.channels', Plugin::ANNUAL_NOTICE_CHANNELS);
+        }
+
+        $this->merge(['annual_notice' => $annualNotice]);
     }
 
     /**
@@ -188,6 +270,8 @@ class UpdateAdminSettingsRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $this->normalizeAnnualNotice();
+
         $cookieCategories = $this->normalizeJsonArray($this->input('cookie_categories'));
 
         $blockedDomains = $this->normalizeBlockedDomains(

@@ -29,6 +29,35 @@
             "_global.loginErrors.email": "이메일 또는 비밀번호가 올바르지 않습니다",
             "_global.loginErrors.password": "이메일 또는 비밀번호가 올바르지 않습니다"
           }
+        },
+        {
+          "id": "two_factor_challenge",
+          "label": "$t:editor.state.two_factor_challenge",
+          "comment": "2단계 인증 입력 구역과 로그인 오류 안내 — 로그인 응답이 _global.twoFactor / loginErrors 에 담는 값이라 상태 없이는 그려지지 않는다.",
+          "initialState": {
+            "global": {
+              "loginErrors": {
+                "email": [
+                  "등록되지 않은 이메일입니다."
+                ],
+                "password": [
+                  "비밀번호가 올바르지 않습니다."
+                ],
+                "locked_until": "2026-09-19 11:45:00",
+                "permanent": false
+              },
+              "twoFactor": {
+                "required": true,
+                "challenge_id": 1,
+                "provider_id": "totp",
+                "code": "",
+                "error": null,
+                "expires_at": "2026-09-19 11:35:00",
+                "resending": false,
+                "resent": false
+              }
+            }
+          }
         }
       ]
     },
@@ -611,6 +640,675 @@
           "initialState": {
             "global": {
               "mobileMenuOpen": true
+            }
+          }
+        },
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "secretViewToken": "샘플 값",
+              "notificationsCurrentPage": "샘플 값",
+              "mobileUserMenuOpen": "샘플 값",
+              "notificationsLoadingMore": false,
+              "toasts": "샘플 값",
+              "notificationCount": 0,
+              "cartKey": "sample_key",
+              "notificationsUnreadOnly": true,
+              "cartCount": 0,
+              "guestOrderToken": "샘플 값",
+              "notificationsHasMore": "샘플 값",
+              "shopBase": "/shop",
+              "mobileLanguageOpen": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(editingAddress, preferredShippingCountry) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "addressModal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "preferredShippingCountry": "KR",
+              "editingAddress": {
+                "address": "샘플 값",
+                "address_detail": "샘플 값",
+                "country_code": "KR",
+                "id": 1,
+                "is_default": false,
+                "name": "샘플 제목",
+                "recipient_name": "샘플 제목",
+                "recipient_phone": "샘플 값",
+                "zipcode": "sample"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deleteModal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "board_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "deleteModal": {
+                "apiEndpoint": "샘플 값",
+                "isGuest": true,
+                "password": "샘플 값",
+                "type": "comment"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(guestPasswordModal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "board_guest_password_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "guestPasswordModal": {
+                "action": "edit",
+                "apiEndpoint": "샘플 값",
+                "commentEdit": "샘플 값",
+                "isVerifying": false,
+                "redirectPath": "샘플 값",
+                "storageKey": "sample_key",
+                "targetType": "comment"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(reportForm, reportModal, reportSubmitting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "board_report_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "reportModal": {
+                "apiEndpoint": "샘플 값",
+                "comment_author_avatar": "샘플 값",
+                "comment_author_name": "샘플 제목",
+                "comment_content": "샘플 설명 문구입니다.",
+                "comment_created_at": "2026-09-19 11:30:00",
+                "type": "comment"
+              },
+              "reportForm": {
+                "reason_detail": "샘플 값",
+                "reason_type": "sample"
+              },
+              "reportSubmitting": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isNavigatingToCart, shopBase) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "cart_added_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "shopBase": "/shop",
+              "isNavigatingToCart": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(cartKey, isDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "cart_delete_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "cartKey": "sample_key",
+              "isDeleting": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(availableCurrencies, cartKey, defaultCurrency, isUpdatingOption, preferredCurrency) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "cart_option_change_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "defaultCurrency": "KRW",
+              "cartKey": "sample_key",
+              "preferredCurrency": "KRW",
+              "availableCurrencies": [],
+              "isUpdatingOption": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(shopBase) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "cart_unavailable_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "shopBase": "/shop"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(changeAddressMode, editingShippingAddress, selectedAddressId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "changeAddressModal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "changeAddressMode": "sample",
+              "selectedAddressId": 1,
+              "editingShippingAddress": "샘플 값"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deletingAddressId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "confirmDeleteAddressModal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "deletingAddressId": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(editingAddress) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "confirmOverwriteModal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "editingAddress": {
+                "address": "샘플 값",
+                "address_detail": "샘플 값",
+                "country_code": "KR",
+                "id": 1,
+                "is_default": false,
+                "name": "샘플 제목",
+                "recipient_name": "샘플 제목",
+                "recipient_phone": "샘플 값",
+                "zipcode": "sample"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(defaultCurrency, preferredCurrency) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "coupon_download_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "defaultCurrency": "KRW",
+              "preferredCurrency": "KRW"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(pendingExclusiveCoupon) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "exclusiveCouponConfirm"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "pendingExclusiveCoupon": {
+                "id": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(qnaDeleteId, qnaDeleteIsAdmin, qnaDeleteIsAnswered, qnaDeleteIsReply, qnaDeleteSource, qnaDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "inquiry_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "qnaDeleteIsReply": false,
+              "qnaDeleteIsAdmin": false,
+              "qnaDeleteIsAnswered": "샘플 값",
+              "qnaDeleting": false,
+              "qnaDeleteId": 1,
+              "qnaDeleteSource": "product"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(defaultCurrency, preferredCurrency) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_cancel_order"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "defaultCurrency": "KRW",
+              "preferredCurrency": "KRW"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isDeletingAllNotifications) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "notification_delete_all_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isDeletingAllNotifications": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(qnaErrors, qnaReplyEditId, qnaReplyForm, qnaReplyTargetId, qnaSubmitting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "qna_reply_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "qnaReplyEditId": 1,
+              "qnaErrors": {
+                "category": [],
+                "content": [],
+                "title": []
+              },
+              "qnaReplyForm": {
+                "content": "샘플 설명 문구입니다."
+              },
+              "qnaSubmitting": false,
+              "qnaReplyTargetId": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(qnaCreatedAt, qnaEditId, qnaErrors, qnaForm, qnaModalBoardSettings, qnaProductId, qnaProductImage, qnaProductName, qnaSubmitting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "qna_write_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "qnaErrors": {
+                "category": [],
+                "content": [],
+                "title": []
+              },
+              "qnaSubmitting": false,
+              "qnaEditId": 1,
+              "qnaProductImage": "샘플 값",
+              "qnaProductName": "샘플 제목",
+              "qnaCreatedAt": "2026-09-19 11:30:00",
+              "qnaModalBoardSettings": "샘플 값",
+              "qnaForm": {
+                "category": "샘플 값",
+                "content": "샘플 설명 문구입니다.",
+                "is_secret": true,
+                "title": "샘플 제목"
+              },
+              "qnaProductId": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(myReactionsSelectedIds) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "reaction_bulk_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "myReactionsSelectedIds": [
+                11,
+                12,
+                13
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(myReactionsSelectedIds, reactionDeleteModal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "reaction_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "myReactionsSelectedIds": [
+                11,
+                12,
+                13
+              ],
+              "reactionDeleteModal": {
+                "id": 1,
+                "isDeleted": true,
+                "title": "샘플 제목"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(reportCancelModal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "report_cancel_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "reportCancelModal": {
+                "id": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(reviewForModal, reviewImageIndex) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "review_image_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "reviewForModal": {
+                "content": "샘플 설명 문구입니다.",
+                "createdAt": "2026-09-19 11:30:00",
+                "images": [],
+                "optionValues": [],
+                "rating": 0,
+                "userAvatar": "샘플 값",
+                "userName": "홍길동"
+              },
+              "reviewImageIndex": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(scrapDeleteModal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "scrap_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "scrapDeleteModal": {
+                "id": 1,
+                "isDeleted": true,
+                "title": "샘플 제목"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(shopBase) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "tempOrderNotFoundModal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "shopBase": "/shop"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(shopBase, site_name, site_url) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "/"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "site_url": "/sample",
+              "site_name": "샘플 제목",
+              "shopBase": "/shop"
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "서비스 점검 안내 화면 — 비활성 확장 목록(_global.errorData)은 점검 응답이 담는 값이라 편집기에서는 상태로 담아야 목록이 그려진다.",
+      "scope": {
+        "kind": "layout",
+        "match": "503"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "errorData": {
+                "modules": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판"
+                  }
+                ],
+                "plugins": [
+                  {
+                    "identifier": "sirsoft-gdpr",
+                    "name": "개인정보 동의"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "게시글 읽기 화면의 댓글 인라인 수정 — [수정] 클릭이 _global.commentEdit 에 담는 값이다. 이 라우트의 다른 변종은 게시판 모듈 스펙이 소유한다(중복 정의 금지).",
+      "scope": {
+        "kind": "route",
+        "match": "/board/:slug/:id"
+      },
+      "items": [
+        {
+          "id": "comment_editing",
+          "label": "$t:editor.state.comment_editing",
+          "initialState": {
+            "global": {
+              "commentEdit": {
+                "editingCommentId": 31,
+                "editingCommentContent": "수정 중인 댓글 내용입니다."
+              }
             }
           }
         }

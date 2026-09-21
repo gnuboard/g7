@@ -42,6 +42,32 @@ G7의 훅 시스템은 WordPress 스타일로 구현되어 코어 수정 없이 
 
 ## 훅 타입
 
+### 환경설정 검증 규칙과 라벨 계약
+
+`core.settings.save_validation_rules`(규칙)와 `core.settings.save_validation_attributes`(라벨)는
+코어 소유 필터이며 **짝으로 씁니다**. 각각 `(array $rules, SaveSettingsRequest $request)` ·
+`(array $attributes, SaveSettingsRequest $request)` 를 받아 같은 형태로 반환합니다.
+
+확장이 규칙만 더하면 그 필드의 오류 문구에 **원시 키가 그대로** 나갑니다(`x.y 필드는 …`) —
+화면은 확장이 그렸는데 문구는 코어가 만들므로 운영자에게 고칠 자리가 보이지 않습니다.
+라벨 값은 확장 네임스페이스 문구(`__('sirsoft-x::messages.…')`)를 씁니다. 확장 lang 은 코어
+`validation.attributes` 경로에 합류하지 않습니다. 규율과 배경은 `docs/backend/validation.md`
+「검증 문구의 필드 라벨」 절에 있습니다.
+
+### 개인정보 통지 섹션 계약
+
+`core.privacy.notice_sections`는 코어 소유 필터이며 개인정보 통지 소비자가 호출합니다.
+입력은 `(array $sections, string $locale)`, 반환은 `array<array{title: string, body: string}>`입니다.
+확장은 수신자 로케일에 맞춘 수집 항목·이용 목적·보유 기간 섹션을 추가합니다.
+반환 텍스트는 소비자가 HTML 이스케이프합니다. 개인 식별정보를 포함하지 않습니다.
+통지 플러그인 설치 여부와 관계없이 확장이 구독할 수 있으며 통지 발행자는 독립적으로 선택합니다.
+
+### 알림 추출의 선택 채널
+
+`{hookPrefix}.notification.extract_data` 반환의 `context.channels`에 채널 ID 배열을 지정하면
+코어 알림 리스너가 해당 채널의 활성 템플릿만 발송합니다. 키가 없으면 기존 전체 채널 동작을
+유지하며 빈 배열은 발송하지 않습니다. `context.skip`은 기존처럼 전체 발송을 중단합니다.
+
 ### 1. Action Hooks (액션 훅)
 
 **목적**: 특정 시점에 부가 작업 실행

@@ -7,6 +7,7 @@
 <!-- @generated:settings-schema START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 키 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
+| `annual_notice` | `array` | `{"enabled":false,"channels":["mail","database"],"batch_size":500,"introduction":[]}` | 개인정보 연간 통지 |
 | `privacy_policy_slug` | `string` | `privacy` | 개인정보처리방침 페이지 슬러그 |
 | `legal_entity_name` | `string` | - | 운영 주체명 |
 | `data_storage_location` | `string` | - | 데이터 저장 위치 |
@@ -65,6 +66,7 @@
 | 구분 | slug | 이름 | URL | 하위 |
 |---|---|---|---|---|
 | 관리자 | `sirsoft-gdpr-consent-log` | GDPR 동의 이력 | `/admin/plugins/sirsoft-gdpr/consent-log` | - |
+| 관리자 | `sirsoft-gdpr-notice-log` | 개인정보 통지 이력 | `/admin/plugins/sirsoft-gdpr/notice-log` | - |
 <!-- @generated:menus END -->
 
 <!-- @intent START -->

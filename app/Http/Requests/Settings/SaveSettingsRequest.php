@@ -1116,11 +1116,17 @@ class SaveSettingsRequest extends FormRequest
      *
      * nested 구조에 맞게 'category.field' 형식으로 정의합니다.
      *
+     * 끝에 `core.settings.save_validation_attributes` 필터를 건다 — `rules()` 가
+     * `core.settings.save_validation_rules` 로 확장의 규칙 키를 받으므로, 라벨도 같은 자리에서
+     * 받지 못하면 **확장이 얹은 필드는 라벨을 줄 방법이 없다.** 그러면 오류 문구에 원시 키가
+     * 그대로 나가고(`x.y 필드는 …`), 화면은 확장이 그렸는데 문구는 코어가 만들어 고칠 자리도
+     * 보이지 않는다. 두 훅은 한 리스너 안에서 짝으로 쓴다.
+     *
      * @return array<string, string>
      */
     public function attributes(): array
     {
-        return [
+        $attributes = [
             'general.site_name' => __('validation.attributes.site_name'),
             'general.site_url' => __('validation.attributes.site_url'),
             'general.site_description' => __('validation.attributes.site_description'),
@@ -1132,8 +1138,32 @@ class SaveSettingsRequest extends FormRequest
             'identity.purpose_providers' => __('validation.attributes.identity_purpose_providers'),
             'identity.challenge_ttl_minutes' => __('validation.attributes.identity_challenge_ttl_minutes'),
             'identity.max_attempts' => __('validation.attributes.identity_max_attempts'),
+            // 탭 묶음 자체 — 페이로드가 배열이 아닐 때 "general 필드는 배열이어야 합니다" 로
+            // 키가 그대로 노출되던 자리다(운영자 화면 라벨은 한국어인데 문구만 영문 키).
+            'general' => __('validation.attributes.settings_tab_general'),
+            'mail' => __('validation.attributes.settings_tab_mail'),
+            'upload' => __('validation.attributes.settings_tab_upload'),
+            'seo' => __('validation.attributes.settings_tab_seo'),
+            'security' => __('validation.attributes.settings_tab_security'),
+            'drivers' => __('validation.attributes.settings_tab_drivers'),
+            'advanced' => __('validation.attributes.settings_tab_advanced'),
+            'notifications' => __('validation.attributes.settings_tab_notifications'),
+            'identity' => __('validation.attributes.settings_tab_identity'),
+            // 배열 항목 — 인덱스가 붙은 원시 키(seo.bot_user_agents.0 …)가 문구에 실리지 않도록
+            // 와일드카드 한 줄로 전 인덱스를 덮는다.
+            'general.site_logo.*' => __('validation.attributes.site_logo'),
+            'seo.bot_user_agents.*' => __('validation.attributes.bot_user_agents'),
+            'seo.og_image_default.*' => __('validation.attributes.og_image_default'),
+            'advanced.outbound_proxy_bypass.*' => __('validation.attributes.outbound_proxy_bypass'),
+            'security.ip_restriction_rules.*' => __('validation.attributes.ip_restriction_rules'),
+            'security.admin_allowed_ips.*' => __('validation.attributes.admin_allowed_ips'),
+            'security.ip_restriction_rules.*.ips.*' => __('validation.attributes.ip_restriction_rule_ips'),
+            '_tab' => __('validation.attributes.settings_tab'),
             // notifications
             'notifications.channels' => __('validation.attributes.notification_channels'),
+            'notifications.channels.*.id' => __('validation.attributes.notification_channel_id'),
+            'notifications.channels.*.is_active' => __('validation.attributes.notification_channel_is_active'),
+            'notifications.channels.*.sort_order' => __('validation.attributes.notification_channel_sort_order'),
             // general
             'general.currency' => __('validation.attributes.default_currency'),
             'general.maintenance_mode' => __('validation.attributes.maintenance_mode'),
@@ -1265,5 +1295,8 @@ class SaveSettingsRequest extends FormRequest
             'drivers.log_days' => __('validation.attributes.log_days'),
             'drivers.public_asset_disk' => __('validation.attributes.public_asset_disk'),
         ];
+
+        // 규칙을 더한 확장이 같은 자리에서 라벨도 더한다 (rules() 의 훅과 짝).
+        return HookManager::applyFilters('core.settings.save_validation_attributes', $attributes, $this);
     }
 }

@@ -87,6 +87,7 @@ SDK 가 막힌 환경에서 필드가 잠긴 채 남아 주소를 아예 입력�
 | 경로 | 구분 |
 |---|---|
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
+| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->

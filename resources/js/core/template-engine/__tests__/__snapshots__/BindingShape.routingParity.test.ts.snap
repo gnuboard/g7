@@ -70,14 +70,14 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `587`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `596`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
   "numericIndex": 41,
   "other": 2,
-  "quotedBracket": 22,
-  "total": 65,
+  "quotedBracket": 23,
+  "total": 66,
 }
 `;
 
@@ -131,6 +131,19 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "old": {
       "DataBindingEngine.isBaseExpression": false,
       "DataBindingEngine.resolveBindings": false,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
+    "expr": "['created_at', 'user_id', 'status_label', 'is_test']",
+    "files": [
+      "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_notice_log.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": true,
+      "DataBindingEngine.resolveBindings": true,
       "DynamicRenderer/ConditionEvaluator": false,
       "RenderHelpers": true,
     },
@@ -243,6 +256,8 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_list.json",
       "plugins/_bundled/sirsoft-ckeditor5/resources/layouts/admin/ckeditor5_uploads.json",
       "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_consent_log.json",
+      "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_notice_log.json",
+      "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.json",
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_history_grid.json",
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.json",
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/plugin_settings.json",

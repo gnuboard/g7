@@ -9,7 +9,8 @@
       "gdprPolicyVersionHistory": "ポリシーバージョン履歴",
       "gdprPolicyVersionSnapshot": "ポリシーバージョンスナップショット",
       "gdprPublicSettings": "GDPR公開設定",
-      "gdprSettings": "GDPR設定"
+      "gdprSettings": "GDPR設定",
+      "gdprNoticeLog": "個人情報通知履歴"
     }
   },
   "consent": {
@@ -358,5 +359,68 @@
     "too_long_cookie": "クッキー — 項目は128文字を超えることはできません。",
     "must_be_array": "ストレージごとの項目リストは配列である必要があります。",
     "invalid_scope": "不明なストレージ区分です: :scope （ブラウザストレージ·セッションストレージ·クッキーのみ使用できます）"
-  }
+  },
+  "annual_notice": {
+    "title": "個人情報年間通知",
+    "description": "加入後1年が経過した有効な会員に対して、年1回個人情報の処理内容をご案内します。",
+    "policy_hint": "機能をオンにする前に、プライバシーポリシーで通知内容と運営方法を確認し、収集項目・目的・保有期間をご確認ください。",
+    "enabled": "自動通知を使用",
+    "channels": "配信チャネル",
+    "mail": "メール",
+    "database": "サイト通知",
+    "batch_size": "1回の実行当たりの配信上限(1～1,000人)",
+    "introduction": "通知文の前文",
+    "test_send": "テスト配信を自分に送信",
+    "test_queued": "テスト配信を受け付けました。履歴からチャネル別の結果をご確認ください。",
+    "save_before_test": "設定を先に保存してください。テスト配信は定期通知周期に影響を与えません。",
+    "log_title": "個人情報通知履歴",
+    "log_description": "受付とチャネル別の成功・失敗をそれぞれ記録します。受付状態は配信完了を意味しません。",
+    "total": "全 {count} 件",
+    "empty": "通知履歴がありません。",
+    "created_at": "記録時刻",
+    "user_id": "会員番号",
+    "status": "ステータス",
+    "kind": "区分",
+    "test": "テスト",
+    "scheduled": "定期"
+  },
+  "edit_template": "テンプレート編集",
+  "reset": "デフォルト値を復元",
+  "notification_definitions": {
+    "reset_success": "通知設定がデフォルト値に復元されました。",
+    "reset_failed": "通知設定の復元に失敗しました。",
+    "reset_modal": {
+      "title": "デフォルト値に復元",
+      "confirm_message": "この通知のすべてのチャネル テンプレートをデフォルト値に復元します。",
+      "warning_message": "保存されたタイトル/本文/受信者設定がすべて削除され、復旧できません。",
+      "target_label": "復元対象:",
+      "btn_confirm": "復元",
+      "btn_confirming": "復元中..."
+    },
+    "save_success": "通知設定が保存されました。",
+    "save_error": "通知設定の保存に失敗しました。",
+    "edit_modal": {
+      "title": "通知テンプレート編集",
+      "type_label": "タイプ:",
+      "channel_label": "チャネル:",
+      "subject": "タイトル",
+      "body": "本文",
+      "variables_title": "使用可能な変数",
+      "btn_preview": "プレビュー",
+      "validation_error": "入力情報を確認してください。"
+    },
+    "preview_modal": {
+      "title": "通知プレビュー",
+      "rendered_subject": "レンダリング済みタイトル",
+      "rendered_body": "レンダリング済み本文",
+      "btn_close": "閉じる"
+    },
+    "card_description": "各通知の配信チャネルを選択し、チャネル別にタイトル・本文・受信者を編集します。この拡張機能の定義はコア「通知定義」画面には表示されません。",
+    "empty_message": "登録された通知定義がありません。"
+  },
+  "notification_channels": "配信手段",
+  "save_channels": "配信手段を保存",
+  "cancel": "キャンセル",
+  "channel_template_missing": "この手段のテンプレートがないため配信されません",
+  "notifications": "通知テンプレート"
 }

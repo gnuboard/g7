@@ -4,10 +4,13 @@ namespace Plugins\Sirsoft\Gdpr\Providers;
 
 use App\Extension\BasePluginServiceProvider;
 use Plugins\Sirsoft\Gdpr\Console\Commands\PlaywrightSeedGdprGuestLogin;
+use Plugins\Sirsoft\Gdpr\Console\Commands\SendAnnualNotices;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPolicyVersionRepositoryInterface;
+use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPrivacyNoticeRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprPolicyVersionRepository;
+use Plugins\Sirsoft\Gdpr\Repositories\GdprPrivacyNoticeRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentHistoryRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentRepository;
 
@@ -24,17 +27,24 @@ class GdprServiceProvider extends BasePluginServiceProvider
     protected string $pluginIdentifier = 'sirsoft-gdpr';
 
     protected array $repositories = [
+        GdprPrivacyNoticeRepositoryInterface::class => GdprPrivacyNoticeRepository::class,
         GdprUserConsentRepositoryInterface::class => GdprUserConsentRepository::class,
         GdprUserConsentHistoryRepositoryInterface::class => GdprUserConsentHistoryRepository::class,
         GdprPolicyVersionRepositoryInterface::class => GdprPolicyVersionRepository::class,
     ];
 
+    /**
+     * 콘솔에서 개인정보 관리 명령을 등록합니다.
+     *
+     * @return void 반환값 없음
+     */
     public function boot(): void
     {
         parent::boot();
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                SendAnnualNotices::class,
                 PlaywrightSeedGdprGuestLogin::class,
             ]);
         }

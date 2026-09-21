@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'annual_notice' => ['attributes' => ['page' => 'page', 'per_page' => 'items per page'], 'collection_summary' => 'Name, email and account information provided during registration and service use', 'purpose' => 'Member identification, service delivery and support', 'retention' => 'Retained until withdrawal, except records subject to statutory retention periods.', 'queued_count' => ':count recipients queued', 'test_queued' => 'Test queued. Check the log for results.', 'unavailable' => 'Check active member status and delivery channels.', 'status' => ['queued' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed']],
     'consent' => [
         'granted' => 'Consent has been saved.',
         'granted_again' => 'Consent has been renewed.',
@@ -66,7 +67,32 @@ return [
             'visible' => 'Visible',
             'hidden' => 'Hidden',
         ],
+        // Labels for array-item validation messages (otherwise raw keys leak).
+        'attributes' => [
+            'cookie_category_key' => 'cookie category key',
+            'cookie_category_label' => 'cookie category name',
+            'cookie_category_description' => 'cookie category description',
+            'blocked_domain' => 'blocked domain',
+            'necessary_storage_item' => 'strictly necessary storage item',
+        ],
         'fields' => [
+            // Labels used for the :attribute placeholder in validation messages. Without them
+            // Laravel prints the raw key ("annual notice.batch size field …").
+            'annual_notice' => [
+                'label' => 'Annual privacy notice',
+            ],
+            'annual_notice_enabled' => [
+                'label' => 'Automatic notice',
+            ],
+            'annual_notice_channels' => [
+                'label' => 'Delivery channels',
+            ],
+            'annual_notice_batch_size' => [
+                'label' => 'Recipients per run',
+            ],
+            'annual_notice_introduction' => [
+                'label' => 'Notice introduction',
+            ],
             'cookie_policy_version' => [
                 'label' => 'Policy Version',
                 'hint' => "Managed automatically by the system — operators do not enter values directly.\n• Adding/removing categories, category semantic changes, privacy policy page changes → new version auto-published + all members re-consent\n• Domain add/remove, label changes, etc. → no publication",

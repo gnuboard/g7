@@ -1245,6 +1245,58 @@ wiring 테스트로 회귀 고정한다.
 
 ---
 
+## 검증 문구의 필드 라벨
+
+검증 메시지의 `:attribute` 자리는 **운영자가 화면에서 보는 라벨**이어야 한다. 라벨을 주지 않으면
+Laravel 이 필드 키를 풀어쓴 영문을 그대로 넣는다.
+
+```
+annual notice.batch size 필드는 1000를 초과하면 안 됩니다.      ❌ 키가 그대로 노출
+seo.bot_user_agents.0 필드는 100자를 초과하면 안 됩니다.        ❌ 인덱스까지 노출
+1회 실행당 발송 상한 필드는 1000를 초과하면 안 됩니다.           ✅
+```
+
+화면 라벨은 한국어인데 오류 문구만 영문 키면 운영자는 어느 칸을 고쳐야 하는지 알 수 없다.
+
+### 라벨을 주는 방법
+
+- **`FormRequest::attributes()`** — 기본 경로. 중첩·배열 키는 `'a.b.*' => …` 와일드카드 한 줄이
+  모든 인덱스를 덮는다(`'a.b.0'`, `'a.b.1'` 을 따로 쓰지 않는다).
+- **`lang/{ko,en}/validation.php` 의 `attributes`** — 코어의 **단일 세그먼트 키**만 해소된다.
+  점이 포함된 키(`security.max_login_attempts`)는 이 배열에 넣어도 적용되지 않으므로
+  `attributes()` 에서 `__('validation.attributes.…')` 로 가리킨다.
+- **확장의 lang 은 이 경로에 합류하지 않는다** — 네임스페이스(`sirsoft-gdpr::messages.…`)로
+  격리돼 있으므로 확장 FormRequest 는 반드시 `attributes()` 에서 명시 참조한다.
+
+### 훅으로 규칙을 얹을 때 (확장)
+
+`core.settings.save_validation_rules` 처럼 **필터 훅으로 규칙 키를 더하는** 경로는 라벨을 함께
+주어야 한다. 규칙만 더하면 그 필드의 오류 문구에 원시 키가 그대로 나가고, 화면은 확장이
+그렸는데 문구는 코어가 만들므로 어디를 고칠지도 보이지 않는다.
+
+- 규칙을 더하는 리스너는 **같은 자리에서 `core.settings.save_validation_attributes` 에도 라벨을
+  더한다** — 둘을 한 리스너 안에 두어 한쪽만 바뀌는 일을 막는다.
+- 라벨 값은 그 확장의 네임스페이스 문구(`__('sirsoft-x::messages.…')`)를 쓴다. 확장 lang 은
+  코어 `validation.attributes` 경로에 합류하지 않는다(위 항목).
+
+**자동 검사는 이 경로를 재지 못한다** — 감사 룰과 PHPUnit 은 FormRequest 의 **정적 리터럴**만
+읽으므로 훅이 런타임에 얹는 키는 잔량 집계에도 잡히지 않는다. 그래서 이 절이 규율이고,
+확장 리뷰에서 눈으로 대조한다.
+
+### 라벨이 필요 없는 경우
+
+그 키에 걸린 모든 메시지가 `:attribute` 를 쓰지 않는 완성 문장일 때다(커스텀 Rule 이
+`:value` 만 쓰는 경우 등). 이때는 `// audit:allow formrequest-attribute-label-coverage reason: …`
+로 사유를 남긴다.
+
+### 자동 검사
+
+감사 룰 `formrequest-attribute-label-coverage` 가 파일별 잔량을 기준선과 대조해 **늘어나면 차단**한다.
+기존 부채는 기준선으로 고정돼 있어 무관한 파일을 건드릴 때 막히지 않는다. 기준선은 **낮추는
+방향으로만** 갱신한다 — 새 누락을 통과시키려고 올리지 않는다.
+
+---
+
 ## Custom Rule 개발 체크리스트
 
 - [ ] `/lang/ko/validation.php`에 한국어 메시지 추가

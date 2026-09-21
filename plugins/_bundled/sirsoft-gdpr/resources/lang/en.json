@@ -9,7 +9,8 @@
             "gdprPolicyVersionHistory": "Policy Version History",
             "gdprPolicyVersionSnapshot": "Policy Version Snapshot",
             "gdprPublicSettings": "GDPR Public Settings",
-            "gdprSettings": "GDPR Settings"
+            "gdprSettings": "GDPR Settings",
+            "gdprNoticeLog": "Privacy notice log"
         }
     },
     "consent": {
@@ -358,5 +359,68 @@
         "operator_and_storage_line": "This site is operated by {entity}, and data is stored in {location}.",
         "operator_only_line": "This site is operated by {entity}.",
         "storage_only_line": "User data is stored in {location}."
-    }
+    },
+    "annual_notice": {
+        "title": "Annual privacy notice",
+        "description": "Notify active members annually once they have been registered for one year.",
+        "policy_hint": "Before enabling, explain the notices in your privacy policy and verify the data collected, purposes and retention periods.",
+        "enabled": "Enable automatic notices",
+        "channels": "Delivery channels",
+        "mail": "Email",
+        "database": "Site notification",
+        "batch_size": "Recipients per run (1–1,000)",
+        "introduction": "Introduction",
+        "test_send": "Send a test to me",
+        "test_queued": "Test queued. Check the log for delivery results.",
+        "save_before_test": "Save settings first. Tests do not change the annual notice schedule.",
+        "log_title": "Privacy notice log",
+        "log_description": "Requests and per-channel results are recorded separately. Queued does not mean delivered.",
+        "total": "{count} events",
+        "empty": "No notice history.",
+        "created_at": "Recorded at",
+        "user_id": "Member ID",
+        "status": "Status",
+        "kind": "Kind",
+        "test": "Test",
+        "scheduled": "Scheduled"
+    },
+    "edit_template": "Edit template",
+    "reset": "Restore defaults",
+    "notification_definitions": {
+        "reset_success": "Notification has been reset to default.",
+        "reset_failed": "Failed to reset notification.",
+        "reset_modal": {
+            "title": "Reset to Default",
+            "confirm_message": "All channel templates of this notification will be restored to defaults.",
+            "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+            "target_label": "Target:",
+            "btn_confirm": "Reset",
+            "btn_confirming": "Resetting..."
+        },
+        "save_success": "Notification settings saved successfully.",
+        "save_error": "Failed to save notification settings.",
+        "edit_modal": {
+            "title": "Edit Notification Template",
+            "type_label": "Type:",
+            "channel_label": "Channel:",
+            "subject": "Subject",
+            "body": "Body",
+            "variables_title": "Available Variables",
+            "btn_preview": "Preview",
+            "validation_error": "Please check the input fields."
+        },
+        "preview_modal": {
+            "title": "Notification Preview",
+            "rendered_subject": "Rendered Subject",
+            "rendered_body": "Rendered Body",
+            "btn_close": "Close"
+        },
+        "card_description": "Choose delivery channels for each notification and edit per-channel subject, body and recipients. Definitions added by this extension do not appear on the core notification list.",
+        "empty_message": "No notification definitions yet."
+    },
+    "notification_channels": "Delivery channels",
+    "save_channels": "Save channels",
+    "cancel": "Cancel",
+    "channel_template_missing": "No template for this channel — nothing will be sent",
+    "notifications": "Notification templates"
 }

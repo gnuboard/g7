@@ -1,0 +1,164 @@
+{
+    "comment": "개인정보 통지 접수와 실제 채널별 결과를 구분하는 이력 화면",
+    "version": "1.0.0",
+    "layout_name": "gdpr_notice_log",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-gdpr.annual_notice.log_title"
+    },
+    "data_sources": [
+        {
+            "id": "gdprNoticeLog",
+            "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprNoticeLog",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-gdpr/admin/notice-log?page={{query.page || 1}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true
+        }
+    ],
+    "permissions": [
+        "sirsoft-gdpr.privacy.view"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "gdprNoticeLog"
+        ]
+    },
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-gdpr.annual_notice.log_title",
+                            "description": "$t:sirsoft-gdpr.annual_notice.log_description",
+                            "backPath": "/admin/plugins/sirsoft-gdpr/settings"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between my-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-gdpr.annual_notice.total|count={{gdprNoticeLog?.data?.pagination?.total ?? 0}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "gdprNoticeLog"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.refresh"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "gdpr_notice_log_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "responsive": {
+                            "mobile": {
+                                "props": {
+                                    "visibleColumns": "{{['created_at', 'user_id', 'status_label', 'is_test']}}"
+                                }
+                            }
+                        },
+                        "actions": [
+                            {
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-gdpr/notice-log",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "transition_overlay_target": "gdpr_notice_log_grid__body",
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "data": "{{gdprNoticeLog?.data?.data ?? []}}",
+                            "pagination": true,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{gdprNoticeLog?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{gdprNoticeLog?.data?.pagination?.last_page ?? null}}",
+                            "pageSize": 20,
+                            "alwaysShowPagination": true,
+                            "selectable": false,
+                            "idField": "id",
+                            "serverHasMorePages": "{{gdprNoticeLog?.data?.pagination?.has_more_pages ?? false}}",
+                            "emptyMessage": "$t:sirsoft-gdpr.annual_notice.empty",
+                            "columns": [
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:sirsoft-gdpr.annual_notice.created_at",
+                                    "sortable": false
+                                },
+                                {
+                                    "field": "user_id",
+                                    "header": "$t:sirsoft-gdpr.annual_notice.user_id",
+                                    "sortable": false
+                                },
+                                {
+                                    "field": "status_label",
+                                    "header": "$t:sirsoft-gdpr.annual_notice.status",
+                                    "sortable": false
+                                },
+                                {
+                                    "field": "channels_label",
+                                    "header": "$t:sirsoft-gdpr.annual_notice.channels",
+                                    "sortable": false
+                                },
+                                {
+                                    "field": "is_test",
+                                    "header": "$t:sirsoft-gdpr.annual_notice.kind",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{row.is_test ? $t('sirsoft-gdpr.annual_notice.test') : $t('sirsoft-gdpr.annual_notice.scheduled')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

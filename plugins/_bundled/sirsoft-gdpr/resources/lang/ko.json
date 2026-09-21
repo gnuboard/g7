@@ -9,7 +9,8 @@
             "gdprPolicyVersionHistory": "정책 버전 이력",
             "gdprPolicyVersionSnapshot": "정책 버전 스냅샷",
             "gdprPublicSettings": "GDPR 공개 설정",
-            "gdprSettings": "GDPR 설정"
+            "gdprSettings": "GDPR 설정",
+            "gdprNoticeLog": "개인정보 통지 이력"
         }
     },
     "consent": {
@@ -358,5 +359,68 @@
         "operator_and_storage_line": "본 사이트는 {entity}이(가) 운영하며, 데이터는 {location}에 저장됩니다",
         "operator_only_line": "본 사이트는 {entity}이(가) 운영합니다",
         "storage_only_line": "사용자 데이터는 {location}에 저장됩니다"
-    }
+    },
+    "annual_notice": {
+        "title": "개인정보 연간 통지",
+        "description": "가입 후 1년이 지난 활성 회원에게 연 1회 개인정보 처리 내역을 안내합니다.",
+        "policy_hint": "기능을 켜기 전에 개인정보처리방침에 통지 내용과 운영 방식을 안내하고 수집 항목·목적·보유 기간을 확인하세요.",
+        "enabled": "자동 통지 사용",
+        "channels": "발송 채널",
+        "mail": "이메일",
+        "database": "사이트 알림",
+        "batch_size": "1회 실행당 발송 상한 (1~1,000명)",
+        "introduction": "통지문 서문",
+        "test_send": "나에게 시험 발송",
+        "test_queued": "시험 발송을 접수했습니다. 이력에서 채널별 결과를 확인하세요.",
+        "save_before_test": "설정을 먼저 저장하세요. 시험 발송은 정기 통지 주기에 영향을 주지 않습니다.",
+        "log_title": "개인정보 통지 이력",
+        "log_description": "접수와 채널별 성공·실패를 각각 기록합니다. 접수 상태는 발송 완료를 뜻하지 않습니다.",
+        "total": "전체 {count}건",
+        "empty": "통지 이력이 없습니다.",
+        "created_at": "기록 시각",
+        "user_id": "회원 번호",
+        "status": "상태",
+        "kind": "구분",
+        "test": "시험",
+        "scheduled": "정기"
+    },
+    "edit_template": "템플릿 편집",
+    "reset": "기본값 되돌리기",
+    "notification_definitions": {
+        "reset_success": "알림 설정이 기본값으로 복원되었습니다.",
+        "reset_failed": "알림 설정 복원에 실패했습니다.",
+        "reset_modal": {
+            "title": "기본값으로 복원",
+            "confirm_message": "이 알림의 모든 채널 템플릿을 기본값으로 복원합니다.",
+            "warning_message": "저장된 제목/본문/수신자 설정이 모두 사라지며 복구할 수 없습니다.",
+            "target_label": "복원 대상:",
+            "btn_confirm": "복원",
+            "btn_confirming": "복원 중..."
+        },
+        "save_success": "알림 설정이 저장되었습니다.",
+        "save_error": "알림 설정 저장에 실패했습니다.",
+        "edit_modal": {
+            "title": "알림 템플릿 편집",
+            "type_label": "유형:",
+            "channel_label": "채널:",
+            "subject": "제목",
+            "body": "본문",
+            "variables_title": "사용 가능한 변수",
+            "btn_preview": "미리보기",
+            "validation_error": "입력 정보를 확인해주세요."
+        },
+        "preview_modal": {
+            "title": "알림 미리보기",
+            "rendered_subject": "렌더링된 제목",
+            "rendered_body": "렌더링된 본문",
+            "btn_close": "닫기"
+        },
+        "card_description": "각 알림의 발송 채널을 고르고 채널별 제목·본문·수신자를 편집합니다. 이 확장이 들인 정의는 코어 「알림 정의」 화면에 나오지 않습니다.",
+        "empty_message": "등록된 알림 정의가 없습니다."
+    },
+    "notification_channels": "발송 수단",
+    "save_channels": "발송 수단 저장",
+    "cancel": "취소",
+    "channel_template_missing": "이 수단의 템플릿이 없어 발송되지 않습니다",
+    "notifications": "알림 템플릿"
 }

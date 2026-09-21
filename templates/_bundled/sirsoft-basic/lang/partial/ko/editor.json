@@ -1002,7 +1002,11 @@
     "user_base_default": "기본",
     "mobile_menu_open": "모바일 메뉴 펼침",
     "gdpr_cookie_banner_visible": "쿠키 배너 표시",
-    "identity_challenge_inicis": "본인인증 모달 (이니시스)"
+    "identity_challenge_inicis": "본인인증 모달 (이니시스)",
+    "modal_filled": "창 내용 채움",
+    "screen_filled": "화면 상태 채움",
+    "two_factor_challenge": "2단계 인증 입력",
+    "comment_editing": "댓글 수정 중"
   },
   "cell_border": {
     "side_all": "전체",

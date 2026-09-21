@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 단일 파일 · 프리뷰 샘플 1
+> 단일 파일 · 프리뷰 샘플 1 · 페이지 상태 1
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -46,6 +46,7 @@
 | 블록 | 역할 | 항목 수 | 출처 |
 |---|---|---|---|
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 1 | `editor-spec.json (인라인)` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 1 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
 
 <!-- @intent START -->
@@ -81,7 +82,7 @@ _이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 �
 |---|---|---|---|
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 1 | `totpEnrollment` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 미선언 | - |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 1 | `*/admin/plugins/sirsoft-totp/settings` |
 
 _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->

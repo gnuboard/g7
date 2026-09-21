@@ -1,6 +1,23 @@
 <?php
 
 return [
+    'annual_notice' => [
+        'collection_summary' => '会員登録·サービス利用時に提供いただいた氏名、メールアドレスおよびアカウント情報',
+        'purpose' => '会員識別、サービス提供および利用お問い合わせ処理',
+        'retention' => '会員退会時まで保有し、法令上保存対象は該当保存期間に従います。',
+        'queued_count' => ':count名通知受付',
+        'test_queued' => 'テスト発送を受け付けました。履歴で結果をご確認ください。',
+        'unavailable' => '発送可能なアクティブ会員とチャネル設定をご確認ください。',
+        'status' => [
+            'queued' => '受付',
+            'sent' => '発送完了',
+            'failed' => '発送失敗',
+        ],
+        'attributes' => [
+            'page' => 'ページ',
+            'per_page' => 'ページ当たりの件数',
+        ],
+    ],
     'consent' => [
         'granted' => '同意が保存されました。',
         'granted_again' => '同意が更新されました。',
@@ -113,6 +130,21 @@ return [
             'necessary_storage_allowlist' => [
                 'label' => '必須の保存項目許可リスト',
             ],
+            'annual_notice' => [
+                'label' => '個人情報年次通知',
+            ],
+            'annual_notice_enabled' => [
+                'label' => '自動通知の使用',
+            ],
+            'annual_notice_channels' => [
+                'label' => '発送チャネル',
+            ],
+            'annual_notice_batch_size' => [
+                'label' => '1回実行当たりの発送上限',
+            ],
+            'annual_notice_introduction' => [
+                'label' => '通知文序文',
+            ],
         ],
         'save_success' => '設定が保存されました。',
         'save_error' => '設定保存中にエラーが発生しました。',
@@ -173,6 +205,13 @@ return [
                 'no_policy_slug' => '登録されたポリシー本文ページがありません。',
             ],
             'not_found' => '該当するポリシーバージョンが見つかりません。',
+        ],
+        'attributes' => [
+            'cookie_category_key' => 'クッキーカテゴリ区分',
+            'cookie_category_label' => 'クッキーカテゴリ名',
+            'cookie_category_description' => 'クッキーカテゴリ説明',
+            'blocked_domain' => 'ブロックドメイン',
+            'necessary_storage_item' => '必須保存項目',
         ],
     ],
     'admin' => [

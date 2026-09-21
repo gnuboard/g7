@@ -1,0 +1,24 @@
+<!-- gdpr 설정 — 알림 템플릿 미리보기 창. 편집 창이 만들어 둔 결과를 보여 주기만 하고
+  입력이 없다 — 그래서 이 조각에는 액션이 하나도 없다. -->
+<partial description="알림 템플릿 치환 결과 미리보기">
+  <modal data-ref="modal_gdpr_notification_definition_preview" title="$t:sirsoft-gdpr.notification_definitions.preview_modal.title" size="lg">
+    <div data-ref="gdpr_preview_content">
+      <div>
+        <label class="form-label">$t:sirsoft-gdpr.notification_definitions.preview_modal.rendered_subject</label>
+        <p class="text-primary text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700">{{_global.gdpr_notification_template_form_modal?.preview?.subject ?? ''}}</p>
+      </div>
+      <div>
+        <label class="form-label">$t:sirsoft-gdpr.notification_definitions.preview_modal.rendered_body</label>
+        <html-content content="{{_global.gdpr_notification_template_form_modal?.preview?.body ?? ''}}" :isHtml="true" class="text-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"/>
+      </div>
+      <div class="flex justify-end border-t border-gray-200 dark:border-gray-700">
+        <button data-ref="gdpr_btn_close_preview" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal target="modal_gdpr_notification_definition_preview"/>
+          </on>
+          $t:sirsoft-gdpr.notification_definitions.preview_modal.btn_close
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

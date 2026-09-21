@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Gdpr\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use Plugins\Sirsoft\Gdpr\Services\GdprAnnualNoticeService;
 use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 
 /**
@@ -27,10 +28,12 @@ class GdprUserDeleteListener implements HookListenerInterface
     /**
      * GdprUserDeleteListener 생성자
      *
+     * @param  GdprAnnualNoticeService  $notices  통지 이력 익명화 서비스
      * @param  GdprConsentService  $consentService  동의 서비스 (status 삭제 + history 익명화)
      */
     public function __construct(
         private readonly GdprConsentService $consentService,
+        private readonly GdprAnnualNoticeService $notices,
     ) {}
 
     /**
@@ -69,5 +72,6 @@ class GdprUserDeleteListener implements HookListenerInterface
     {
         // status 테이블 명시적 삭제 + history 익명화 (Service 내부에서 처리)
         $this->consentService->purgeOnUserDelete($user->id);
+        $this->notices->anonymize($user->id);
     }
 }

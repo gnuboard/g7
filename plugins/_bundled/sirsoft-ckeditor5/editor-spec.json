@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — CKEditor5 플러그인 sampleData. admin/ckeditor5_uploads.g7.html 의 ckeditor5Uploads 응답(data/pagination/meta 3자리)을 ImageUploadResource·ImageUploadAdminService 기준으로 작성. scan_window 는 ImageUploadAdminService::SCAN_WINDOW 상수값이다.",
+  "pluginId": "sirsoft-ckeditor5",
+  "version": "1.0.0",
+  "description": "CKEditor5 이미지 업로드 관리 화면 레이아웃 편집기 샘플 데이터.",
+  "sampleData": {
+    "byDataSourceId": {
+      "ckeditor5Uploads": {
+        "data": {
+          "data": [
+            {
+              "id": 41,
+              "hash": "b2c4e9f1a7d3",
+              "original_name": "봄맞이-등산-사진.jpg",
+              "file_size": 284160,
+              "mime_type": "image/jpeg",
+              "uploaded_by": 3,
+              "uploader_name": "김민준",
+              "created_at": "2026-05-12 14:08:00",
+              "download_url": "/api/plugins/sirsoft-ckeditor5/images/b2c4e9f1a7d3",
+              "referenced": true
+            },
+            {
+              "id": 40,
+              "hash": "7f1d0a55c6b2",
+              "original_name": "삭제된-글의-첨부.png",
+              "file_size": 51200,
+              "mime_type": "image/png",
+              "uploaded_by": 1,
+              "uploader_name": "운영자",
+              "created_at": "2026-05-10 09:31:00",
+              "download_url": "/api/plugins/sirsoft-ckeditor5/images/7f1d0a55c6b2",
+              "referenced": false
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 2,
+            "from": 1,
+            "to": 2
+          },
+          "meta": {
+            "scan_limited": false,
+            "scan_window": 500,
+            "reference_sources_incomplete": false
+          }
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "CKEditor5 업로드 관리·플러그인 설정 화면 변종. 검색 필터·선택 행·삭제 모달의 대상은 전부 클릭이 담는 값(query / _global)이라, 상태 없이는 필터 해제 줄·일괄 작업 막대·삭제 확인 문구가 캔버스에 나타나지 않는다.",
+    "groups": [
+      {
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-ckeditor5/uploads"
+        },
+        "items": [
+          {
+            "id": "with_data",
+            "label": "$t:editor.state.with_data",
+            "default": true
+          },
+          {
+            "id": "filtered_by_search",
+            "label": "$t:editor.state.filtered_by_search",
+            "comment": "필터 해제 줄(clear_filters_row)은 query 에 검색 조건이 있을 때만 그려지고, 검색 폼 초기값도 query 에서 온다.",
+            "initialState": {
+              "query": {
+                "search": "banner",
+                "referenced": "unreferenced",
+                "date_from": "2026-09-01",
+                "date_to": "2026-09-19"
+              }
+            }
+          },
+          {
+            "id": "rows_selected",
+            "label": "$t:editor.state.rows_selected",
+            "comment": "일괄 작업 막대(bulk_action_bar)는 선택 행이 있을 때만 열린다 — 편집기는 체크박스를 누르지 않으므로 선택 상태를 직접 담는다.",
+            "initialState": {
+              "global": {
+                "selectedIds_ckeditor5_uploads": [
+                  11,
+                  12
+                ]
+              }
+            }
+          },
+          {
+            "id": "empty_data",
+            "label": "$t:editor.state.empty_data",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "ckeditor5Uploads": {
+                  "data": {
+                    "data": [],
+                    "pagination": {
+                      "current_page": 1,
+                      "last_page": 1,
+                      "per_page": 20,
+                      "total": 0,
+                      "has_more_pages": false
+                    },
+                    "meta": {
+                      "scan_window": 500
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "단건 삭제 확인 모달 — 삭제 대상은 행 [삭제] 클릭이 _global.modal_data 에 담는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "delete_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "delete_confirm",
+            "label": "$t:editor.state.delete_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "modal_data": {
+                  "id": 11,
+                  "file_name": "banner-top.png"
+                },
+                "isDeletingUpload": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "일괄 삭제 확인 모달 — 안내 문구가 선택 건수를 끼워 넣는다(선택이 비면 0건으로 열린다).",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_delete_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "bulk_delete_confirm",
+            "label": "$t:editor.state.bulk_delete_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedIds_ckeditor5_uploads": [
+                  11,
+                  12
+                ],
+                "isDeletingUpload": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "CKEditor5 플러그인 설정 — 미리보기 구역은 [미리보기] 토글로만 열리고, 검증 오류 알림은 저장 실패 때만 뜬다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-ckeditor5/settings"
+        },
+        "items": [
+          {
+            "id": "settings_default",
+            "label": "$t:editor.state.with_data",
+            "default": true,
+            "initialState": {
+              "local": {
+                "showPreview": false,
+                "isSaving": false,
+                "errors": null,
+                "form": {
+                  "toolbar": "full",
+                  "editorHeight": 400,
+                  "imageUpload": true,
+                  "imageMaxSizeMb": 5,
+                  "public_asset_disk": "",
+                  "unusedImageCleanup": true,
+                  "unusedImageRetentionDays": 30,
+                  "available_public_asset_disks": [
+                    {
+                      "id": "public",
+                      "label": {
+                        "ko": "기본 공개 디스크",
+                        "en": "Default public disk"
+                      }
+                    },
+                    {
+                      "id": "s3_public",
+                      "label": {
+                        "ko": "S3 공개 디스크",
+                        "en": "S3 public disk"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": "preview_open",
+            "label": "$t:editor.state.editor_preview_open",
+            "comment": "미리보기 본문(section_preview_body)은 _local.showPreview 가 켜져야 그려진다.",
+            "initialState": {
+              "local": {
+                "showPreview": true,
+                "isSaving": false,
+                "errors": null,
+                "form": {
+                  "toolbar": "full",
+                  "editorHeight": 400,
+                  "imageUpload": true,
+                  "imageMaxSizeMb": 5,
+                  "public_asset_disk": "",
+                  "unusedImageCleanup": true,
+                  "unusedImageRetentionDays": 30,
+                  "available_public_asset_disks": [
+                    {
+                      "id": "public",
+                      "label": {
+                        "ko": "기본 공개 디스크",
+                        "en": "Default public disk"
+                      }
+                    },
+                    {
+                      "id": "s3_public",
+                      "label": {
+                        "ko": "S3 공개 디스크",
+                        "en": "S3 public disk"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": "settings_validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "initialState": {
+              "local": {
+                "showPreview": false,
+                "isSaving": false,
+                "form": {
+                  "toolbar": "full",
+                  "editorHeight": 400,
+                  "imageUpload": true,
+                  "imageMaxSizeMb": "",
+                  "public_asset_disk": "",
+                  "unusedImageCleanup": true,
+                  "unusedImageRetentionDays": "",
+                  "available_public_asset_disks": [
+                    {
+                      "id": "public",
+                      "label": {
+                        "ko": "기본 공개 디스크",
+                        "en": "Default public disk"
+                      }
+                    },
+                    {
+                      "id": "s3_public",
+                      "label": {
+                        "ko": "S3 공개 디스크",
+                        "en": "S3 public disk"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "formErrors": {
+              "_local.errors.imageMaxSizeMb": [
+                "1 이상의 값을 입력해 주세요."
+              ],
+              "_local.errors.unusedImageRetentionDays": [
+                "1 이상의 일수를 입력해 주세요."
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

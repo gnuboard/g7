@@ -364,11 +364,13 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_mail.g7.html (메일 발송 SMTP 설정)
 │           ├── _tab_notification_definitions.g7.html (알림 정의)
 │           ├── _tab_security.g7.html (보안)
+│           ├── _tab_security_ip_restriction.g7.html (보안 > IP 접근 제한 카드)
 │           ├── _tab_upload.g7.html (업로드)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)
 │           ├── _tab_advanced.g7.html (고급)
 │           ├── _tab_info.g7.html (시스템 정보)
+│           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)
 │           ├── _modal_cache_delete.g7.html
 │           ├── _modal_core_changelog.g7.html
 │           ├── _modal_core_update_guide.g7.html
